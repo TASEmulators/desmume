@@ -1,0 +1,90 @@
+# Project: DeSmuME
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = obj/yopyop_private.res
+OBJ  = obj/main.o obj/MMU.o obj/mem_view.o obj/ARM_CPU.o obj/arm_instructions.o obj/des_view.o obj/Desassembleur.o obj/thumb_instructions.o obj/NDSSystem.o obj/ginfo.o obj/CP15.o obj/bios.o obj/IORegView.o obj/log.o obj/palView.o obj/CWindow.o obj/tileView.o obj/mapView.o obj/GPU.o obj/oamView.o $(RES)
+LINKOBJ  = obj/main.o obj/MMU.o obj/mem_view.o obj/ARM_CPU.o obj/arm_instructions.o obj/des_view.o obj/Desassembleur.o obj/thumb_instructions.o obj/NDSSystem.o obj/ginfo.o obj/CP15.o obj/bios.o obj/IORegView.o obj/log.o obj/palView.o obj/CWindow.o obj/tileView.o obj/mapView.o obj/GPU.o obj/oamView.o $(RES)
+LIBS =  -L"C:/teleir/Dev-Cpp/lib" -lmingw32 -lopengl32 -lSDLmain -lSDL -mwindows  -s -march=pentium4 -msse2 
+INCS =  -I"C:/teleir/Dev-Cpp/include" 
+CXXINCS =  -I"C:/teleir/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/teleir/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/teleir/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/teleir/Dev-Cpp/include/c++/3.4.2"  -I"C:/teleir/Dev-Cpp/include" 
+BIN  = DeSmuME.exe
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O3 -march=pentium4 -msse2
+CFLAGS = $(INCS)   -fexpensive-optimizations -O3 -march=pentium4 -msse2
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before DeSmuME.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o "DeSmuME.exe" $(LIBS)
+
+obj/main.o: main.cpp
+	$(CPP) -c main.cpp -o obj/main.o $(CXXFLAGS)
+
+obj/MMU.o: ../EmuSRC/MMU.cpp
+	$(CPP) -c ../EmuSRC/MMU.cpp -o obj/MMU.o $(CXXFLAGS)
+
+obj/mem_view.o: mem_view.cpp
+	$(CPP) -c mem_view.cpp -o obj/mem_view.o $(CXXFLAGS)
+
+obj/ARM_CPU.o: ../EmuSRC/ARM_CPU.cpp
+	$(CPP) -c ../EmuSRC/ARM_CPU.cpp -o obj/ARM_CPU.o $(CXXFLAGS)
+
+obj/arm_instructions.o: ../EmuSRC/arm_instructions.cpp
+	$(CC) -c ../EmuSRC/arm_instructions.cpp -o obj/arm_instructions.o $(CFLAGS)
+
+obj/des_view.o: des_view.cpp
+	$(CPP) -c des_view.cpp -o obj/des_view.o $(CXXFLAGS)
+
+obj/Desassembleur.o: ../EmuSRC/Desassembleur.cpp
+	$(CC) -c ../EmuSRC/Desassembleur.cpp -o obj/Desassembleur.o $(CFLAGS)
+
+obj/thumb_instructions.o: ../EmuSRC/thumb_instructions.cpp
+	$(CC) -c ../EmuSRC/thumb_instructions.cpp -o obj/thumb_instructions.o $(CFLAGS)
+
+obj/NDSSystem.o: ../EmuSRC/NDSSystem.cpp
+	$(CPP) -c ../EmuSRC/NDSSystem.cpp -o obj/NDSSystem.o $(CXXFLAGS)
+
+obj/ginfo.o: ginfo.cpp
+	$(CPP) -c ginfo.cpp -o obj/ginfo.o $(CXXFLAGS)
+
+obj/CP15.o: ../EmuSRC/CP15.cpp
+	$(CPP) -c ../EmuSRC/CP15.cpp -o obj/CP15.o $(CXXFLAGS)
+
+obj/bios.o: ../EmuSRC/bios.cpp
+	$(CC) -c ../EmuSRC/bios.cpp -o obj/bios.o $(CFLAGS)
+
+obj/IORegView.o: IORegView.cpp
+	$(CPP) -c IORegView.cpp -o obj/IORegView.o $(CXXFLAGS)
+
+obj/log.o: ../EmuSRC/log.cpp
+	$(CPP) -c ../EmuSRC/log.cpp -o obj/log.o $(CXXFLAGS)
+
+obj/palView.o: palView.cpp
+	$(CPP) -c palView.cpp -o obj/palView.o $(CXXFLAGS)
+
+obj/CWindow.o: CWindow.cpp
+	$(CPP) -c CWindow.cpp -o obj/CWindow.o $(CXXFLAGS)
+
+obj/tileView.o: tileView.cpp
+	$(CPP) -c tileView.cpp -o obj/tileView.o $(CXXFLAGS)
+
+obj/mapView.o: mapView.cpp
+	$(CPP) -c mapView.cpp -o obj/mapView.o $(CXXFLAGS)
+
+obj/GPU.o: GPU.cpp
+	$(CPP) -c GPU.cpp -o obj/GPU.o $(CXXFLAGS)
+
+obj/oamView.o: oamView.cpp
+	$(CPP) -c oamView.cpp -o obj/oamView.o $(CXXFLAGS)
+
+obj/yopyop_private.res: yopyop_private.rc resources.rc 
+	$(WINDRES) -i yopyop_private.rc --input-format=rc -o obj/yopyop_private.res -O coff 
