@@ -1,4 +1,4 @@
-SUBDIRS = . gtk
+SUBDIRS = . $(UI_DIR)
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
 	ARM_CPU.cpp ARM_CPU.hpp \
