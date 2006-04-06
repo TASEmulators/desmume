@@ -25,15 +25,21 @@ else
 	LIBS="$LIBS $SDL_LIBS"
 fi
 
+case $target in
+	*linux*)
+		AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 
-AC_CHECK_TOOL(HAVE_PKG, pkg-config)
+		if test ! x$HAVE_PKG = x ; then
+			GTK_CFLAGS=`$HAVE_PKG gtk+-2.0 --cflags`
+			GTK_LIBS=`$HAVE_PKG gtk+-2.0 --libs`
+			AC_SUBST(GTK_CFLAGS)
+			AC_SUBST(GTK_LIBS)
+		fi
 
-if test ! x$HAVE_PKG = x ; then
-	GTK_CFLAGS=`$HAVE_PKG gtk+-2.0 --cflags`
-	GTK_LIBS=`$HAVE_PKG gtk+-2.0 --libs`
-	AC_SUBST(GTK_CFLAGS)
-	AC_SUBST(GTK_LIBS)
-fi
+		UI_DIR=gtk
+		AC_SUBST([UI_DIR])
+		;;
+esac
 
 AC_CONFIG_FILES([Makefile
 	src/Makefile
