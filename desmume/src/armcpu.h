@@ -24,13 +24,7 @@
 
 #include "types.h"
 
-#include "ICoProc.hpp"
-
-#include "arm_instructions.hpp"
-#include "thumb_instructions.hpp"
 #include "MMU.hpp"
-#include "CP15.hpp"
-#include "bios.hpp"
 
 #define BIT_N(i,n)  (((i)>>(n))&1)
 #define CONDITION(i)  (i)>>28
@@ -151,7 +145,9 @@ union Status_Reg
 	unsigned long val;
 };
 
-typedef struct
+typedef void* armcp_t;
+
+typedef struct armcpu_t
 {
 	unsigned long proc_ID;
 	unsigned long instruction; //4
@@ -170,8 +166,8 @@ typedef struct
 	unsigned long R8_fiq, R9_fiq, R10_fiq, R11_fiq, R12_fiq, R13_fiq, R14_fiq;
 	Status_Reg SPSR_svc, SPSR_abt, SPSR_und, SPSR_irq, SPSR_fiq;
 	
-	ICoProc * coproc[16];
-       
+	armcp_t *coproc[16];
+	       
 	unsigned long intVector;
 	unsigned char LDTBit;  //1 : ARMv5 style 0 : non ARMv5
 	bool waitIRQ;
@@ -179,79 +175,16 @@ typedef struct
 	bool wirq;
 
 
-	unsigned long (* *swi_tab)(ARMCPU * cpu);
+	unsigned long (* *swi_tab)(struct armcpu_t * cpu);
 	
 } armcpu_t;
 	
+int armcpu_new(armcpu_t *armcpu, unsigned long id);
 void armcpu_init(armcpu_t *armcpu, unsigned long adr);
 unsigned long armcpu_switchMode(armcpu_t *armcpu, unsigned char mode);
-
-inline unsigned long armcpu_prefetch(armcpu_t *armcpu)
-{
-	if(armcpu->CPSR.bits.T == 0)
-	{
-		armcpu->instruction = MMU::readWord(armcpu->proc_ID, armcpu->next_instruction);
-		armcpu->instruct_adr = armcpu->next_instruction;
-		armcpu->next_instruction += 4;
-		armcpu->R[15] = armcpu->next_instruction + 4;
-		return MMU::MMU_WAIT32[armcpu->proc_ID][(armcpu->instruct_adr>>24)&0xF];
-	}
-	armcpu->instruction = MMU::readHWord(armcpu->proc_ID, armcpu->next_instruction);
-	armcpu->instruct_adr = armcpu->next_instruction;
-	armcpu->next_instruction = armcpu->next_instruction + 2;
-	armcpu->R[15] = armcpu->next_instruction + 2;
-	return MMU::MMU_WAIT16[armcpu->proc_ID][(armcpu->instruct_adr>>24)&0xF];
-}
- 
-inline unsigned long armcpu_exec(armcpu_t *armcpu)
-{
-	unsigned long c = 1;
-	if(armcpu->CPSR.bits.T == 0)
-	{
-		if((TEST_COND(CONDITION(armcpu->instruction), armcpu->CPSR)) || ((CONDITION(armcpu->instruction)==0xF)&&(CODE(armcpu->instruction)==0x5)))
-		{
-			c = arm_instructions_set[INSTRUCTION_INDEX(armcpu->instruction)](armcpu);
-		}
-		c += armcpu_prefetch(armcpu);
-		return c;
-	}
-	c = thumb_instructions_set[armcpu->instruction>>6](armcpu);
-	c += armcpu_prefetch(armcpu);
-	return c;
-}
-
-inline bool irqExeption(armcpu_t *armcpu)
-{
-	if(armcpu->CPSR.bits.I) return false;
-	Status_Reg tmp = armcpu->CPSR;
-	armcpu_switchMode(armcpu, IRQ);
-	armcpu->R[14] = armcpu->instruct_adr + 4;
-	armcpu->SPSR = tmp;
-	armcpu->CPSR.bits.T = 0;
-	armcpu->CPSR.bits.I = 1;
-	armcpu->next_instruction = armcpu->intVector + 0x18;
-	armcpu->R[15] = armcpu->next_instruction;
-	armcpu->waitIRQ = 0;
-	armcpu_prefetch(armcpu);
-	return true;
-}
-
-inline bool prefetchExeption(armcpu_t *armcpu)
-{
-	if(armcpu->CPSR.bits.I) return false;
-	Status_Reg tmp = armcpu->CPSR;
-	armcpu_switchMode(armcpu, ABT);
-	armcpu->R[14] = armcpu->instruct_adr + 4;
-	armcpu->SPSR = tmp;
-	armcpu->CPSR.bits.T = 0;
-	armcpu->CPSR.bits.I = 1;
-	armcpu->next_instruction = armcpu->intVector + 0xC;
-	armcpu->R[15] = armcpu->next_instruction;
-	armcpu->waitIRQ = 0;
-	armcpu_prefetch(armcpu);
-	return true;
-}
-
-
+unsigned long armcpu_prefetch(armcpu_t *armcpu);
+unsigned long armcpu_exec(armcpu_t *armcpu);
+bool armcpu_irqExeption(armcpu_t *armcpu);
+bool armcpu_prefetchExeption(armcpu_t *armcpu);
 
 #endif 
