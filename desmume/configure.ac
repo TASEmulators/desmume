@@ -16,15 +16,6 @@ AC_C_BIGENDIAN
 
 AC_PATH_PROGS(HAVE_LIBSDL, [sdl-config sdl11-config])
 
-if test x$HAVE_LIBSDL = x ; then
-        AC_MSG_ERROR([You need to install SDL])
-else
-        SDL_CFLAGS=`$HAVE_LIBSDL --cflags`
-        SDL_LIBS=`$HAVE_LIBSDL --libs`
-	CXXFLAGS="$CXXFLAGS $SDL_CFLAGS"
-	LIBS="$LIBS $SDL_LIBS"
-fi
-
 case $target in
 	*linux*)
 		AC_CHECK_TOOL(HAVE_PKG, pkg-config)
@@ -32,9 +23,18 @@ case $target in
 		if test ! x$HAVE_PKG = x ; then
 			GTK_CFLAGS=`$HAVE_PKG gtk+-2.0 --cflags`
 			GTK_LIBS=`$HAVE_PKG gtk+-2.0 --libs`
-			AC_SUBST(GTK_CFLAGS)
-			AC_SUBST(GTK_LIBS)
 		fi
+
+		if test x$HAVE_LIBSDL = x ; then
+        		AC_MSG_ERROR([You need to install SDL])
+		else
+		        SDL_CFLAGS=`$HAVE_LIBSDL --cflags`
+		        SDL_LIBS=`$HAVE_LIBSDL --libs`
+			GTK_CFLAGS="$GTK_CFLAGS $SDL_CFLAGS"
+			GTK_LIBS="$GTK_LIBS $SDL_LIBS"
+		fi
+		AC_SUBST(GTK_CFLAGS)
+		AC_SUBST(GTK_LIBS)
 
 		UI_DIR=gtk
 		AC_SUBST([UI_DIR])
