@@ -40,6 +40,7 @@ case $target in
 		AC_SUBST([UI_DIR])
 		;;
 	*mingw*)
+		LIBS="$LIBS -mwindows"
 		UI_DIR=windows
 		AC_SUBST([UI_DIR])
 		;;
