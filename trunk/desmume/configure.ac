@@ -39,10 +39,15 @@ case $target in
 		UI_DIR=gtk
 		AC_SUBST([UI_DIR])
 		;;
+	*mingw*)
+		UI_DIR=windows
+		AC_SUBST([UI_DIR])
+		;;
 esac
 
 AC_CONFIG_FILES([Makefile
 	src/Makefile
 	src/gtk/Makefile
+	src/windows/Makefile
 ])
 AC_OUTPUT

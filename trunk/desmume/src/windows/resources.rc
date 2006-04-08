@@ -20,7 +20,7 @@
 */
 
 #include <windows.h>
-#include "resource.hpp"
+#include "resource.h"
  
 IconDeSmuME ICON MOVEABLE PURE LOADONCALL DISCARDABLE "DeSmuME.ico"
 //IconDeSmuME ICON MOVEABLE PURE LOADONCALL DISCARDABLE "DeSmuME3D.ico"
