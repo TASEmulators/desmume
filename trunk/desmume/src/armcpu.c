@@ -31,7 +31,7 @@
                       a=b;\
                       b=c;
                       
-armcpu_t *armcpu_new(unsigned long id)
+armcpu_t *armcpu_new(u32 id)
 {
 	armcpu_t *armcpu;
 	
@@ -48,7 +48,7 @@ armcpu_t *armcpu_new(unsigned long id)
 	return armcpu;
 } 
 
-void armcpu_init(armcpu_t *armcpu, unsigned long adr)
+void armcpu_init(armcpu_t *armcpu, u32 adr)
 {
 	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
@@ -57,7 +57,7 @@ void armcpu_init(armcpu_t *armcpu, unsigned long adr)
 	
 	if(armcpu->coproc[15]) delete armcpu->coproc[15];
 	
-   for(unsigned long i = 0; i < 15; ++i)
+   for(u32 i = 0; i < 15; ++i)
 	{
 		armcpu->R[i] = 0;
 		armcpu->coproc[i] = NULL;
@@ -80,9 +80,9 @@ void armcpu_init(armcpu_t *armcpu, unsigned long adr)
 	armcpu_prefetch(armcpu);
 }
 
-unsigned long armcpu_switchMode(armcpu_t *armcpu, unsigned char mode)
+u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 {
-	unsigned long oldmode = armcpu->CPSR.bits.mode;
+        u32 oldmode = armcpu->CPSR.bits.mode;
 	
 	switch(oldmode)
 	{
@@ -94,7 +94,7 @@ unsigned long armcpu_switchMode(armcpu_t *armcpu, unsigned char mode)
 			
 		case FIQ :
 			{
-				unsigned long tmp;
+                                u32 tmp;
 				SWAP(armcpu->R[8], armcpu->R8_fiq, tmp);
 				SWAP(armcpu->R[9], armcpu->R9_fiq, tmp);
 				SWAP(armcpu->R[10], armcpu->R10_fiq, tmp);
@@ -143,7 +143,7 @@ unsigned long armcpu_switchMode(armcpu_t *armcpu, unsigned char mode)
 				
 			case FIQ :
 				{
-					unsigned long tmp;
+                                        u32 tmp;
 					SWAP(armcpu->R[8], armcpu->R8_fiq, tmp);
 					SWAP(armcpu->R[9], armcpu->R9_fiq, tmp);
 					SWAP(armcpu->R[10], armcpu->R10_fiq, tmp);
