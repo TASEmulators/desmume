@@ -26,7 +26,7 @@
 
 #include "armcpu.h"
 
-extern unsigned long (* __fastcall thumb_instructions_set[1024])(armcpu_t * cpu);
+extern u32 (* FASTCALL thumb_instructions_set[1024])(armcpu_t * cpu);
 
 #endif
  
