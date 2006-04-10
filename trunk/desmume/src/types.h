@@ -21,15 +21,13 @@
 #define TYPES_HPP
 
 #ifndef FASTCALL
-#ifdef __i386__
+#ifdef __MINGW32__
+#define FASTCALL __attribute__((fastcall))
+#elif defined (__i386__)
 #define FASTCALL __attribute__((regparm(3)))
 #else
 #define FASTCALL
 #endif
-#endif
-
-#ifndef __fastcall
-#define __fastcall FASTCALL
 #endif
 
 #ifndef INLINE
