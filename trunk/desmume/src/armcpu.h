@@ -68,7 +68,7 @@
 
 #define REG_POS(i,n)         (((i)>>n)&0xF)
 
-#define ROR(i, j)   ((((unsigned long)(i))>>(j)) | (((unsigned long)(i))<<(32-(j))))
+#define ROR(i, j)   ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j))))
 
 #define UNSIGNED_OVERFLOW(a,b,c) ((BIT31(a)&BIT31(b)) | \
 								  ((BIT31(a)|BIT31(b))&BIT31(~c)))
@@ -131,7 +131,7 @@ union Status_Reg
 {
 	struct 
 	{
-		unsigned long mode : 5,
+                u32 mode : 5,
 		T : 1,
 		F : 1,
 		I : 1,
@@ -142,48 +142,48 @@ union Status_Reg
 		Z : 1, 
 		N : 1;
 	} bits;
-	unsigned long val;
+        u32 val;
 };
 
 typedef void* armcp_t;
 
 typedef struct armcpu_t
 {
-	unsigned long proc_ID;
-	unsigned long instruction; //4
-	unsigned long instruct_adr; //8
-	unsigned long next_instruction; //12
+        u32 proc_ID;
+        u32 instruction; //4
+        u32 instruct_adr; //8
+        u32 next_instruction; //12
        
-	unsigned long R[16]; //16
+        u32 R[16]; //16
 	Status_Reg CPSR;  //80
 	Status_Reg SPSR;
        
-	unsigned long R13_usr, R14_usr;
-	unsigned long R13_svc, R14_svc;
-	unsigned long R13_abt, R14_abt;
-	unsigned long R13_und, R14_und;
-	unsigned long R13_irq, R14_irq;
-	unsigned long R8_fiq, R9_fiq, R10_fiq, R11_fiq, R12_fiq, R13_fiq, R14_fiq;
+        u32 R13_usr, R14_usr;
+        u32 R13_svc, R14_svc;
+        u32 R13_abt, R14_abt;
+        u32 R13_und, R14_und;
+        u32 R13_irq, R14_irq;
+        u32 R8_fiq, R9_fiq, R10_fiq, R11_fiq, R12_fiq, R13_fiq, R14_fiq;
 	Status_Reg SPSR_svc, SPSR_abt, SPSR_und, SPSR_irq, SPSR_fiq;
 	
 	armcp_t *coproc[16];
 	       
-	unsigned long intVector;
-	unsigned char LDTBit;  //1 : ARMv5 style 0 : non ARMv5
+        u32 intVector;
+        u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5
 	bool waitIRQ;
 	bool wIRQ;
 	bool wirq;
 
 
-	unsigned long (* *swi_tab)(struct armcpu_t * cpu);
+        u32 (* *swi_tab)(struct armcpu_t * cpu);
 	
 } armcpu_t;
 	
-int armcpu_new(armcpu_t *armcpu, unsigned long id);
-void armcpu_init(armcpu_t *armcpu, unsigned long adr);
-unsigned long armcpu_switchMode(armcpu_t *armcpu, unsigned char mode);
-unsigned long armcpu_prefetch(armcpu_t *armcpu);
-unsigned long armcpu_exec(armcpu_t *armcpu);
+int armcpu_new(armcpu_t *armcpu, u32 id);
+void armcpu_init(armcpu_t *armcpu, u32 adr);
+u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
+u32 armcpu_prefetch(armcpu_t *armcpu);
+u32 armcpu_exec(armcpu_t *armcpu);
 bool armcpu_irqExeption(armcpu_t *armcpu);
 bool armcpu_prefetchExeption(armcpu_t *armcpu);
 
