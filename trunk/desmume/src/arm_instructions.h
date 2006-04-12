@@ -26,7 +26,7 @@
 
 typedef struct armcpu_t armcpu_t;
 
-extern unsigned long (*__fastcall arm_instructions_set[4096])(armcpu_t * cpu);
+extern unsigned long (*FASTCALL arm_instructions_set[4096])(armcpu_t * cpu);
  
 #endif
 
