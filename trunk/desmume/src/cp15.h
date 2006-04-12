@@ -28,43 +28,43 @@
 
 typedef struct
 {
-	unsigned long IDCode;
-	unsigned long cacheType;
-	unsigned long TCMSize;
-	unsigned long ctrl;
-	unsigned long DCConfig;
-	unsigned long ICConfig;
-	unsigned long writeBuffCtrl;
-	unsigned long und;
-	unsigned long DaccessPerm;
-	unsigned long IaccessPerm;
-	unsigned long protectBaseSize0;
-	unsigned long protectBaseSize1;
-	unsigned long protectBaseSize2;
-	unsigned long protectBaseSize3;
-	unsigned long protectBaseSize4;
-	unsigned long protectBaseSize5;
-	unsigned long protectBaseSize6;
-	unsigned long protectBaseSize7;
-	unsigned long cacheOp;
-	unsigned long DcacheLock;
-	unsigned long IcacheLock;
-	unsigned long ITCMRegion;
-	unsigned long DTCMRegion;
-	unsigned long processID;
-	unsigned long RAM_TAG;
-	unsigned long testState;
-	unsigned long cacheDbg;
+        u32 IDCode;
+        u32 cacheType;
+        u32 TCMSize;
+        u32 ctrl;
+        u32 DCConfig;
+        u32 ICConfig;
+        u32 writeBuffCtrl;
+        u32 und;
+        u32 DaccessPerm;
+        u32 IaccessPerm;
+        u32 protectBaseSize0;
+        u32 protectBaseSize1;
+        u32 protectBaseSize2;
+        u32 protectBaseSize3;
+        u32 protectBaseSize4;
+        u32 protectBaseSize5;
+        u32 protectBaseSize6;
+        u32 protectBaseSize7;
+        u32 cacheOp;
+        u32 DcacheLock;
+        u32 IcacheLock;
+        u32 ITCMRegion;
+        u32 DTCMRegion;
+        u32 processID;
+        u32 RAM_TAG;
+        u32 testState;
+        u32 cacheDbg;
 
 	armcpu_t * cpu;
 
 } armcp15_t;
 
 armcp15_t *armcp15_new(armcpu_t *c);
-bool armcp15_dataProcess(armcp15_t *armcp15, unsigned char CRd, unsigned char CRn, unsigned char CRm, unsigned char opcode1, unsigned char opcode2);
-bool armcp15_load(armcp15_t *armcp15, unsigned char CRd, unsigned char adr);
-bool armcp15_store(armcp15_t *armcp15, unsigned char CRd, unsigned char adr);
-bool armcp15_moveCP2ARM(armcp15_t *armcp15, unsigned long * R, unsigned char CRn, unsigned char CRm, unsigned char opcode1, unsigned char opcode2);
-bool armcp15_moveARM2CP(armcp15_t *armcp15, unsigned long val, unsigned char CRn, unsigned char CRm, unsigned char opcode1, unsigned char opcode2);
+bool armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+bool armcp15_load(armcp15_t *armcp15, u8 CRd, u8 adr);
+bool armcp15_store(armcp15_t *armcp15, u8 CRd, u8 adr);
+bool armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+bool armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
 
 #endif /* __CP15_H__*/
