@@ -34,8 +34,8 @@ void refreshAll();
 #define IconDeSmuME         100
 
 #define IDC_STATIC          101
-#define IDM_OUVRIR          102
-#define IDM_QUITTER         103
+#define IDM_OPEN            102
+#define IDM_QUIT            103
 #define IDC_FERMER          104
 #define IDC_STEP            105
 #define IDC_SETPNUM         106
@@ -43,8 +43,8 @@ void refreshAll();
 #define IDC_GO              108
 #define IDC_AUTO_UPDATE     109
 
-#define IDM_MEMOIRE         110
-#define IDM_DESASSEMBLEUR   111
+#define IDM_MEMORY          110
+#define IDM_DISASSEMBLER    111
 #define IDM_GAME_INFO       112
 #define IDM_EXEC            113
 #define IDM_PAUSE           114
