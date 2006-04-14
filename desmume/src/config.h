@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "log.h"
+#include "debug.h"
 
 #endif /*__CONFIG_H__*/
 
