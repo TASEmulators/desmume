@@ -4,6 +4,7 @@
 #include <windows.h> // include for version info constants
 
 #include "resources.rc"
+#include "yopyop_private.rc"
 
 //
 // SUPPORT FOR WINDOWS XP THEMES:

@@ -149,4 +149,6 @@ void refreshAll();
 #define IDC_PROP1               909
 #define IDC_OAM_BOX             910
 
+#define IDM_PRINTSCREEN          140
+#define IDM_QUICK_PRINTSCREEN    141
 #endif
