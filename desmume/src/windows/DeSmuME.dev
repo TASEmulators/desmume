@@ -11,7 +11,7 @@ PrivateResource=yopyop_private.rc
 ResourceIncludes=
 MakeIncludes=
 Compiler=
-CppCompiler=
+CppCompiler=-DVERSION=\"0.3.3\"_@@_
 Linker=
 IsCpp=1
 Icon=
