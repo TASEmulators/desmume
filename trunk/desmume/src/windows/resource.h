@@ -63,6 +63,8 @@ void refreshAll();
 #define IDM_SBG2            127
 #define IDM_SBG3            128
 #define IDM_OAM             129
+#define IDM_PRINTSCREEN          140
+#define IDM_QUICK_PRINTSCREEN    141
 
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
@@ -148,7 +150,4 @@ void refreshAll();
 #define IDC_PROP0               908
 #define IDC_PROP1               909
 #define IDC_OAM_BOX             910
-
-#define IDM_PRINTSCREEN          140
-#define IDM_QUICK_PRINTSCREEN    141
 #endif
