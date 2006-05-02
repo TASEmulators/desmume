@@ -10,7 +10,7 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
-AC_LANG(C)
+AC_LANG(C++)
 
 AC_C_BIGENDIAN
 
@@ -45,6 +45,8 @@ case $target in
 		AC_SUBST([UI_DIR])
 		;;
 esac
+
+AC_ARG_ENABLE(debug, AC_HELP_STRING(--enable-debug, enable debug information) , AC_DEFINE(DEBUG))
 
 AC_CONFIG_FILES([Makefile
 	src/Makefile
