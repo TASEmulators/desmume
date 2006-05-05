@@ -33,10 +33,12 @@ case $target in
 			GTK_CFLAGS="$GTK_CFLAGS $SDL_CFLAGS"
 			GTK_LIBS="$GTK_LIBS $SDL_LIBS"
 		fi
+		AC_SUBST(SDL_CFLAGS)
+		AC_SUBST(SDL_LIBS)
 		AC_SUBST(GTK_CFLAGS)
 		AC_SUBST(GTK_LIBS)
 
-		UI_DIR=gtk
+		UI_DIR="gtk cli"
 		AC_SUBST([UI_DIR])
 		;;
 	*mingw*)
@@ -50,6 +52,7 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING(--enable-debug, enable debug information) , 
 
 AC_CONFIG_FILES([Makefile
 	src/Makefile
+	src/cli/Makefile
 	src/gtk/Makefile
 	src/windows/Makefile
 ])
