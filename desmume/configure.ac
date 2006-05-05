@@ -17,6 +17,19 @@ AC_C_BIGENDIAN
 AC_PATH_PROGS(HAVE_LIBSDL, [sdl-config sdl11-config])
 
 case $target in
+	*darwin*)
+		if test x$HAVE_LIBSDL = x ; then
+        		AC_MSG_ERROR([You need to install SDL])
+		else
+		        SDL_CFLAGS=`$HAVE_LIBSDL --cflags`
+		        SDL_LIBS=`$HAVE_LIBSDL --libs`
+		fi
+		AC_SUBST(SDL_CFLAGS)
+		AC_SUBST(SDL_LIBS)
+
+		UI_DIR="cli"
+		AC_SUBST([UI_DIR])
+		;;
 	*linux*)
 		AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 
