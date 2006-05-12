@@ -26,7 +26,7 @@
 #include "../NDSSystem.hpp"
 
 extern NDSSystem nds;
-extern bool execute;
+extern BOOL execute;
 extern unsigned long glock;
 void refreshAll();
 #endif
