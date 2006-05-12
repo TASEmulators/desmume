@@ -61,10 +61,10 @@ typedef struct
 } armcp15_t;
 
 armcp15_t *armcp15_new(armcpu_t *c);
-bool armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
-bool armcp15_load(armcp15_t *armcp15, u8 CRd, u8 adr);
-bool armcp15_store(armcp15_t *armcp15, u8 CRd, u8 adr);
-bool armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
-bool armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+BOOL armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+BOOL armcp15_load(armcp15_t *armcp15, u8 CRd, u8 adr);
+BOOL armcp15_store(armcp15_t *armcp15, u8 CRd, u8 adr);
+BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
+BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);
 
 #endif /* __CP15_H__*/

@@ -125,8 +125,6 @@ enum Mode
 	SYS = 0x1F
 };
 
-extern bool execute;
-
 union Status_Reg
 {
 	struct 
@@ -170,9 +168,9 @@ typedef struct armcpu_t
 	       
         u32 intVector;
         u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5
-	bool waitIRQ;
-	bool wIRQ;
-	bool wirq;
+	BOOL waitIRQ;
+	BOOL wIRQ;
+	BOOL wirq;
 
 
         u32 (* *swi_tab)(struct armcpu_t * cpu);
@@ -184,7 +182,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
 u32 armcpu_prefetch(armcpu_t *armcpu);
 u32 armcpu_exec(armcpu_t *armcpu);
-bool armcpu_irqExeption(armcpu_t *armcpu);
-bool armcpu_prefetchExeption(armcpu_t *armcpu);
+BOOL armcpu_irqExeption(armcpu_t *armcpu);
+BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
 
 #endif 
