@@ -66,6 +66,9 @@ void refreshAll();
 #define IDM_PRINTSCREEN          140
 #define IDM_QUICK_PRINTSCREEN    141
 
+#define IDM_STATE_LOAD      150
+#define IDM_STATE_SAVE      151
+
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
 #define IDC_16_BIT          303

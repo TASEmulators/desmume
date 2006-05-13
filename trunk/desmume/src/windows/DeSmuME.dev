@@ -1,7 +1,7 @@
 [Project]
 FileName=DeSmuME.dev
 Name=DeSmuME
-UnitCount=48
+UnitCount=50
 Type=0
 Ver=1
 ObjFiles=
@@ -12,7 +12,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=
 CppCompiler=-DVERSION=\"0.3.3\"_@@_
-Linker=
+Linker=-lz -lz.dll_@@_
 IsCpp=1
 Icon=
 ExeOutput=
@@ -398,9 +398,9 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit49]
-FileName=yopyop_private.h
+FileName=saves.cpp
 CompileCpp=1
-Folder=
+Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
@@ -408,9 +408,9 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit50]
-FileName=yopyop_private.hpp
+FileName=saves.hpp
 CompileCpp=1
-Folder=
+Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
