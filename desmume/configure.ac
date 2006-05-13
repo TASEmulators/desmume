@@ -14,6 +14,7 @@ AC_LANG(C++)
 
 AC_C_BIGENDIAN
 
+AC_CHECK_LIB(z, gzopen)
 AC_PATH_PROGS(HAVE_LIBSDL, [sdl-config sdl11-config])
 
 case $target in
