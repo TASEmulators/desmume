@@ -28,39 +28,39 @@ void LogStart(void);
 void LogStop(void);
 
 #ifdef DEBUG
-#define LOG(f, r...) DebugPrintf(MainLog, __FILE__, __LINE__, f, ## r)
+#define LOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
 #else
-#define LOG(f, r...)
+#define LOG(f, ...)
 #endif
 
 #ifdef GPUDEBUG
-#define GPULOG(f, r...) DebugPrintf(MainLog, __FILE__, __LINE__, f, ## r)
+#define GPULOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
 #else
-#define GPULOG(f, r...)
+#define GPULOG(f, ...)
 #endif
 
 #ifdef DIVDEBUG
-#define DIVLOG(f, r...) DebugPrintf(MainLog, __FILE__, __LINE__, f, ## r)
+#define DIVLOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
 #else
-#define DIVLOG(f, r...)
+#define DIVLOG(f, ...)
 #endif
 
 #ifdef SQRTDEBUG
-#define SQRTLOG(f, r...) DebugPrintf(MainLog, __FILE__, __LINE__, f, ## r)
+#define SQRTLOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
 #else
-#define SQRTLOG(f, r...)
+#define SQRTLOG(f, ...)
 #endif
 
 #ifdef CARDDEBUG
-#define CARDLOG(f, r...) DebugPrintf(MainLog, __FILE__, __LINE__, f, ## r)
+#define CARDLOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
 #else
-#define CARDLOG(f, r...)
+#define CARDLOG(f, ...)
 #endif
 
 #ifdef DMADEBUG
-#define DMALOG(f, r...) DebugPrintf(MainLog, __FILE__, __LINE__, f, ## r)
+#define DMALOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
 #else
-#define DMALOG(f, r...)
+#define DMALOG(f, ...)
 #endif
 
 #endif
