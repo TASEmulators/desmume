@@ -4,6 +4,10 @@
 #include "types.h"
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum { DEBUG_STRING, DEBUG_STREAM , DEBUG_STDOUT, DEBUG_STDERR } DebugOutType;
 
 typedef struct {
@@ -28,39 +32,43 @@ void LogStart(void);
 void LogStop(void);
 
 #ifdef DEBUG
-#define LOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
+#define LOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define LOG(f, ...)
+#define LOG(...)
 #endif
 
 #ifdef GPUDEBUG
-#define GPULOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
+#define GPULOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define GPULOG(f, ...)
+#define GPULOG(...)
 #endif
 
 #ifdef DIVDEBUG
-#define DIVLOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
+#define DIVLOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define DIVLOG(f, ...)
+#define DIVLOG(...)
 #endif
 
 #ifdef SQRTDEBUG
-#define SQRTLOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
+#define SQRTLOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define SQRTLOG(f, ...)
+#define SQRTLOG(...)
 #endif
 
 #ifdef CARDDEBUG
-#define CARDLOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
+#define CARDLOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define CARDLOG(f, ...)
+#define CARDLOG(...)
 #endif
 
 #ifdef DMADEBUG
-#define DMALOG(f, ...) DebugPrintf(MainLog, __FILE__, __LINE__, f, __VA_ARGS__)
+#define DMALOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define DMALOG(f, ...)
+#define DMALOG(...)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
