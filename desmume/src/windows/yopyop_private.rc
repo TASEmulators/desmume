@@ -4,7 +4,6 @@
 #include <windows.h> // include for version info constants
 
 #include "resources.rc"
-#include "yopyop_private.rc"
 
 A ICON MOVEABLE PURE LOADONCALL DISCARDABLE "DeSmuME.ico"
 
