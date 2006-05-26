@@ -4,6 +4,9 @@
 #include <windows.h> // include for version info constants
 
 #include "resources.rc"
+#include "yopyop_private.rc"
+
+A ICON MOVEABLE PURE LOADONCALL DISCARDABLE "DeSmuME.ico"
 
 //
 // SUPPORT FOR WINDOWS XP THEMES:
@@ -16,13 +19,13 @@
 // TO CHANGE VERSION INFORMATION, EDIT PROJECT OPTIONS...
 //
 1 VERSIONINFO
-FILEVERSION 0,0,0,1
-PRODUCTVERSION 0,0,0,1
+FILEVERSION 0,0,3,4
+PRODUCTVERSION 0,0,3,4
 FILETYPE VFT_APP
 {
   BLOCK "StringFileInfo"
 	 {
-		 BLOCK "040C04E4"
+		 BLOCK "140904E4"
 		 {
 			 VALUE "CompanyName", "yopyop"
 			 VALUE "FileVersion", ""
@@ -37,7 +40,7 @@ FILETYPE VFT_APP
 	 }
   BLOCK "VarFileInfo"
 	 {
-		 VALUE "Translation", 0x040C, 1252
+		 VALUE "Translation", 0x1409, 1252
 	 }
 }
 
