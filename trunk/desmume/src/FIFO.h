@@ -30,17 +30,17 @@ extern "C" {
 
 typedef struct
 {
-       unsigned long data[0x2000];
-       unsigned long begin;
-       unsigned long end;
+       u32 data[0x2000];
+       u32 begin;
+       u32 end;
        BOOL full;
        BOOL empty;
        BOOL error;
 } FIFO;
 
 void FIFOInit(FIFO * fifo);
-void FIFOAdd(FIFO * fifo, unsigned long v);
-unsigned long FIFOValue(FIFO * fifo);
+void FIFOAdd(FIFO * fifo, u32 v);
+u32 FIFOValue(FIFO * fifo);
 
 #ifdef __cplusplus
 }

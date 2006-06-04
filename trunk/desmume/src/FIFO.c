@@ -23,7 +23,7 @@
 
 void FIFOInit(FIFO * fifo)
 {
-	unsigned long i;
+        u32 i;
 
 	fifo->begin = 0;
         fifo->end = 0;
@@ -34,7 +34,7 @@ void FIFOInit(FIFO * fifo)
         fifo->error = FALSE;
 }
 
-void FIFOAdd(FIFO * fifo, unsigned long v)
+void FIFOAdd(FIFO * fifo, u32 v)
 {
 	if(fifo->full) 
         {
@@ -47,14 +47,14 @@ void FIFOAdd(FIFO * fifo, unsigned long v)
         fifo->empty = FALSE;
 }
        
-unsigned long FIFOValue(FIFO * fifo)
+u32 FIFOValue(FIFO * fifo)
 {
 	if(fifo->empty)
         {
         	fifo->error = TRUE;
                 return 0;
         }
-        unsigned long v = fifo->data[fifo->begin];
+        u32 v = fifo->data[fifo->begin];
         fifo->begin = (fifo->begin + 1)& 0x1FFF;
         fifo->empty = (fifo->begin == fifo->end);
         return v;
