@@ -8,4 +8,5 @@ libdesmume_a_SOURCES = \
 	FIFO.c FIFO.h \
         GPU.cpp GPU.hpp debug.c debug.h \
 	MMU.cpp MMU.hpp NDSSystem.cpp NDSSystem.hpp \
-	thumb_instructions.cpp thumb_instructions.hpp
+	thumb_instructions.cpp thumb_instructions.hpp \
+	windows/cflash.cpp windows/cflash.h fs.c fs.h
