@@ -2,10 +2,13 @@
 
 #include <windows.h>
 
-void * FsReadFirst(const char * path, FsEntry * entry) {
+void * FsReadFirst(const char * p, FsEntry * entry) {
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind;
 	HANDLE * ret;
+	char path[1024];
+
+	sprintf(path, "%s\\*", p);
 
 	hFind = FindFirstFile(path, &FindFileData);
 	if (hFind == INVALID_HANDLE_VALUE)
