@@ -9,4 +9,5 @@ libdesmume_a_SOURCES = \
         GPU.cpp GPU.hpp debug.c debug.h \
 	MMU.cpp MMU.hpp NDSSystem.cpp NDSSystem.hpp \
 	thumb_instructions.cpp thumb_instructions.hpp \
-	windows/cflash.cpp windows/cflash.h fs.c fs.h
+	windows/cflash.cpp windows/cflash.h fs.h
+libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)

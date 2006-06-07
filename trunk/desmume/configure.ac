@@ -3,6 +3,12 @@ AC_INIT(desmume, 0.3.3)
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+case $target in
+	*linux*) desmume_arch=linux;;
+	*mingw*) desmume_arch=windows;;
+esac
+AC_SUBST(desmume_arch)
+
 AM_INIT_AUTOMAKE(desmume, 0.3.3)
 
 AC_PROG_CC
