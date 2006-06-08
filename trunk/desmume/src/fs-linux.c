@@ -6,10 +6,14 @@
 #include <stdio.h>
 #include <string.h>
 
+const char FS_SEPARATOR = '/';
+
 void * FsReadFirst(const char * path, FsEntry * entry) {
 	DIR * dir;
 	struct dirent * e;
 	struct stat s;
+
+	printf("reading %s\n", path);
 
 	/* hack: reading a directory gives relative file names
 	 * and there's no way to know that directory from

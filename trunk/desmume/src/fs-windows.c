@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+const char FS_SEPARATOR = '\\';
+
 void * FsReadFirst(const char * p, FsEntry * entry) {
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind;
