@@ -11,6 +11,8 @@ extern "C" {
 
 #define FS_ERR_NO_MORE_FILES 1
 
+extern const char FS_SEPARATOR;
+
 typedef struct {
 	char cFileName[256];
 	char cAlternateFileName[14];
