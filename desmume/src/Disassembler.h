@@ -19,12 +19,22 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef THUMB_INSTRUCTIONS_H
-#define THUMB_INSTRUCTIONS_H
+#ifndef DISASSEMBLER_H
+#define DISASSEMBLER_H
 
-#include "armcpu.h"
+#include "types.h"
 
-extern u32 (* FASTCALL thumb_instructions_set[1024])(armcpu_t * cpu);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern char * (* des_arm_instructions_set[4096])(u32 adr, u32 i, char * txt);
+extern char * (* des_thumb_instructions_set[1024])(u32 adr, u32 i, char * txt);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+
  

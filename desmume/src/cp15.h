@@ -22,8 +22,6 @@
 #ifndef __CP15_H__
 #define __CP15_H__
 
-#include "types.h"
-
 #include "armcpu.h"
 
 typedef struct
