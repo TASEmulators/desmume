@@ -69,6 +69,24 @@ void refreshAll();
 #define IDM_STATE_LOAD      150
 #define IDM_STATE_SAVE      151
 
+#define IDC_COMBO1          160
+#define IDC_COMBO2          161
+#define IDC_COMBO3          162
+#define IDC_COMBO4          163
+#define IDC_COMBO5          164
+#define IDC_COMBO6          165
+#define IDC_COMBO7          166
+#define IDC_COMBO8          167
+#define IDC_COMBO9          168
+#define IDC_COMBO10         169
+#define IDC_COMBO11         170
+#define IDC_COMBO12         171
+#define IDC_COMBO13         172
+
+#define IDC_BUTTON1         173
+#define IDM_CONFIG          180
+#define IDD_CONFIG          181
+
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
 #define IDC_16_BIT          303
