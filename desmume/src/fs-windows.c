@@ -1,5 +1,8 @@
 #include "fs.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <windows.h>
 
 const char FS_SEPARATOR = '\\';
@@ -23,7 +26,7 @@ void * FsReadFirst(const char * p, FsEntry * entry) {
 		entry->flags = FS_IS_DIR;
 	}
 
-	ret = malloc(sizeof(HANDLE));
+	ret = (void**)malloc(sizeof(HANDLE));
 	*ret = hFind;
 	return ret;
 }
