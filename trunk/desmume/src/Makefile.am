@@ -7,7 +7,7 @@ libdesmume_a_SOURCES = \
 	bios.cpp bios.hpp cp15.cpp cp15.hpp \
 	Disassembler.c Disassembler.h \
 	FIFO.c FIFO.h \
-        GPU.cpp GPU.hpp debug.c debug.h \
+        GPU.c GPU.h debug.c debug.h \
 	MMU.cpp MMU.hpp NDSSystem.cpp NDSSystem.hpp \
 	thumb_instructions.cpp thumb_instructions.hpp \
 	windows/cflash.cpp windows/cflash.h fs.h
