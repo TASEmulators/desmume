@@ -29,6 +29,11 @@
 extern "C" {
 #endif
 
+
+#define GPU_MAIN	0
+#define GPU_SUB	1
+
+
 typedef struct
 {
      u16 attr0;
@@ -68,6 +73,7 @@ struct _GPU
        s16 BGPD[4];
 
        u8 lcd;
+		 u8 core;
        
        u8 nbBGActif;
        u8 BGIndex[4];

@@ -70,6 +70,10 @@ typedef signed long long s64;
 #endif
 #endif
 
+typedef u8  uint8;
+typedef u16 uint16;
+typedef u32 uint32;
+
 typedef int BOOL;
 
 #ifndef TRUE
