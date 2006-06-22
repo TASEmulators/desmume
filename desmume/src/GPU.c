@@ -25,6 +25,8 @@
 #include "GPU.h"
 #include "debug.h"
 
+#include "nds/video.h"
+
 extern BOOL click;
 
 //#define DEBUG_TRI
@@ -122,15 +124,16 @@ GPU * GPUInit(u8 l)
      memset(g, 0, sizeof(GPU));
 
      g->lcd = l;
+	  g->core = l;
      g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
      g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
      g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
      
      g->spriteRender = sprite1D;
      
-     if(g->lcd)
+	  if(g->core == GPU_SUB)
      {
-          g->oam = (OAM *)(ARM9.ARM9_OAM+0x400);
+          g->oam = (OAM *)(ARM9.ARM9_OAM + 0x400);
           g->sprMem = ARM9.ARM9_BOBJ;
      }
      else
@@ -142,7 +145,8 @@ GPU * GPUInit(u8 l)
      return g;
 }
 
-void GPUDeInit(GPU * gpu) {
+void GPUDeInit(GPU * gpu)
+{
      free(gpu);
 }
 
@@ -188,139 +192,164 @@ void GPUDeInit(GPU * gpu) {
 }
 */
 
+/* NOTICE: the name of function is unclear, but it's about writing in DISPLAY_CR */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
-     gpu->prop = p;
+	gpu->prop = p;
+	
+	gpu->nbBGActif = 0;
+	if(p & DISPLAY_SPR_1D_LAYOUT)
+	{
+		/* 1-d sprite mapping */
+		
+		gpu->sprBlock = 5 + DISPLAY_SPR_1D_SIZE_MASK(p);	/* TODO: better comment (and understanding btw 8S) */
+		if((gpu->core == GPU_SUB) && (DISPLAY_SPR_1D_SIZE_MASK(p) == 3))
+		{
+			gpu->sprBlock = 7;
+		}
+		gpu->spriteRender = sprite1D;
+	}
+	else
+	{
+		/* 2d sprite mapping */
+		gpu->sprBlock = 5;
+		gpu->spriteRender = sprite2D;
+	}
      
-     gpu->nbBGActif = 0;
-     if(p&(1<<4))
-     {
-          gpu->sprBlock = 5 + ((p>>20)&3);
-          if((gpu->lcd)&&(((p>>20)&3)==3))
-               gpu->sprBlock = 7;
-     }     
-     else
-          gpu->sprBlock = 5;
-     
-     if((p&(1<<22))&&(!gpu->lcd))
-          gpu->sprBMPBlock = 8;
-     else
-          gpu->sprBMPBlock = 7;
-     
-     GPU_setBGProp(gpu, 3, ((u16 *)ARM9.ARM9_REG)[gpu->lcd*0x800+7]);
-     GPU_setBGProp(gpu, 2, ((u16 *)ARM9.ARM9_REG)[gpu->lcd*0x800+6]);
-     GPU_setBGProp(gpu, 1, ((u16 *)ARM9.ARM9_REG)[gpu->lcd*0x800+5]);
-     GPU_setBGProp(gpu, 0, ((u16 *)ARM9.ARM9_REG)[gpu->lcd*0x800+4]);
-     
-     if(p&(1<<4))
-          gpu->spriteRender = sprite1D;
-     else
-          gpu->spriteRender = sprite2D;
-          
-     if((p&(1<<11))&&gpu->dispBG[3])
-     {
-          gpu->ordre[0] = 3;
-          gpu->BGIndex[3] = 1;
-          ++gpu->nbBGActif;
-     }
-     else
-          gpu->BGIndex[3] = 0;
-     
-     if((p&(1<<10))&&gpu->dispBG[2])
-     {
-          if(gpu->nbBGActif)
-               if((gpu->BGProp[2]&3)>(gpu->BGProp[3]&3))
-               {
-                    gpu->ordre[0] = 2;
-                    gpu->BGIndex[2] = 1;
-                    gpu->ordre[1] = 3;
-                    gpu->BGIndex[3] = 2;
-               }
-               else
-               {
-                    gpu->ordre[1] = 2;
-                    gpu->BGIndex[2] = 2;
-               }     
-          else
-          {
-               gpu->ordre[0] = 2;
-               gpu->BGIndex[2] = 1;
-          }
-          ++gpu->nbBGActif;
-     }
-     else
-          gpu->BGIndex[2] = 0;
-     
-     if((p&(1<<9))&&gpu->dispBG[1])
-     {
-          if(!gpu->nbBGActif)
-          {
-               gpu->ordre[0] = 1;
-               gpu->BGIndex[1] = 1;
-          }
-          else
-          {
-               u8 i = 0;
-	       s8 j;
-               for(; (i < gpu->nbBGActif) && ((gpu->BGProp[gpu->ordre[i]]&3)>=(gpu->BGProp[1]&3)); ++i);
-               for(j = gpu->nbBGActif-1; j >= i; --j)
-               {
-                    gpu->ordre[j+1] = gpu->ordre[j];
-                    ++gpu->BGIndex[gpu->ordre[j]];
-               }
-               gpu->ordre[i] = 1;
-               gpu->BGIndex[1] = i+1;
-          }
-          ++gpu->nbBGActif;
-     }
-     else
-          gpu->BGIndex[1] = 0;
-     
-     if((p&(1<<8))&&(!(p&(1<<3)))&&gpu->dispBG[0])
-     {
-          if(!gpu->nbBGActif)
-          {
-               gpu->ordre[0] = 0;
-               gpu->BGIndex[0] = 1;
-          }
-          else
-          {
-               u8 i = 0;
-	       s8 j;
-               for(; (i < gpu->nbBGActif) && ((gpu->BGProp[gpu->ordre[i]]&3)>=(gpu->BGProp[0]&3)); ++i);
-               for(j = gpu->nbBGActif-1; j >= i; --j)
-               {
-                    gpu->ordre[j+1] = gpu->ordre[j];
-                    ++gpu->BGIndex[gpu->ordre[j]];
-               }
-               gpu->ordre[i] = 0;
-               gpu->BGIndex[0] = i+1;
-          }
-          ++gpu->nbBGActif;
-     }
-     else
-          gpu->BGIndex[0] = 0;
-     
-     #ifdef DEBUG_TRI
-     log::ajouter("------------------");
-     for(u8 i = 0; i < gpu->nbBGActif; ++i)
-     {
-          sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
-          log::ajouter(logbuf);
-     }
-     log::ajouter("_________________");
-     #endif
+	if((p & DISPLAY_SPR_1D_BMP_SIZE_256) && (gpu->core == GPU_MAIN))
+	{
+		gpu->sprBMPBlock = 8;
+	}
+	else
+	{
+		gpu->sprBMPBlock = 7;
+	}
+	
+	GPU_setBGProp(gpu, 3, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+7]);
+	GPU_setBGProp(gpu, 2, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+6]);
+	GPU_setBGProp(gpu, 1, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+5]);
+	GPU_setBGProp(gpu, 0, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+4]);
+	
+	if((p & DISPLAY_BG3_ACTIVE) && gpu->dispBG[3])
+	{
+		gpu->ordre[0] = 3;
+		gpu->BGIndex[3] = 1;
+		gpu->nbBGActif++;
+	}
+	else
+	{
+		gpu->BGIndex[3] = 0;
+	}
+	
+	if((p & DISPLAY_BG2_ACTIVE) && gpu->dispBG[2])
+	{
+		if(gpu->nbBGActif)
+		{
+			if(BG_PRIORITY_MASK(gpu->BGProp[2]) > BG_PRIORITY_MASK(gpu->BGProp[3]))
+			{
+				gpu->ordre[0] = 2;
+				gpu->BGIndex[2] = 1;
+				gpu->ordre[1] = 3;
+				gpu->BGIndex[3] = 2;
+			}
+			else
+			{
+				gpu->ordre[1] = 2;
+				gpu->BGIndex[2] = 2;
+			}
+		} 
+		else
+		{
+			gpu->ordre[0] = 2;
+			gpu->BGIndex[2] = 1;
+		}
+		
+		gpu->nbBGActif++;
+		
+	}
+	else
+	{
+			gpu->BGIndex[2] = 0;
+	}
+	
+	if((p & DISPLAY_BG1_ACTIVE) && gpu->dispBG[1])
+	{
+		if(gpu->nbBGActif == 0)
+		{
+			gpu->ordre[0] = 1;
+			gpu->BGIndex[1] = 1;
+		}
+		else
+		{
+			u8 i = 0;
+			s8 j;
+			for(; (i < gpu->nbBGActif) && (BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]) >= BG_PRIORITY_MASK(gpu->BGProp[1])); ++i);
+			for(j = gpu->nbBGActif-1; j >= i; --j)
+			{
+				gpu->ordre[j+1] = gpu->ordre[j];
+				gpu->BGIndex[gpu->ordre[j]]++;
+			}
+			gpu->ordre[i] = 1;
+			gpu->BGIndex[1] = i+1;
+		}
+		gpu->nbBGActif++;
+	}
+	else
+	{
+		gpu->BGIndex[1] = 0;
+	}
+	
+	if((p & DISPLAY_BG0_ACTIVE) && (!(p & ENABLE_3D)) && gpu->dispBG[0])
+	{
+		if(gpu->nbBGActif == 0)
+		{
+			gpu->ordre[0] = 0;
+			gpu->BGIndex[0] = 1;
+		}
+		else
+		{
+			u8 i = 0;
+			s8 j;
+			for(; (i < gpu->nbBGActif) && (BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]) >= BG_PRIORITY_MASK(gpu->BGProp[0])); ++i);
+			for(j = gpu->nbBGActif-1; j >= i; --j)
+			{
+				gpu->ordre[j+1] = gpu->ordre[j];
+				gpu->BGIndex[gpu->ordre[j]]++;
+			}
+			gpu->ordre[i] = 0;
+			gpu->BGIndex[0] = i+1;
+		}
+			gpu->nbBGActif++;
+	}
+	else
+	{
+		gpu->BGIndex[0] = 0;
+	}
+	
+	/* FIXME: this debug won't work, obviously ... */
+#ifdef DEBUG_TRI
+	log::ajouter("------------------");
+	for(u8 i = 0; i < gpu->nbBGActif; ++i)
+	{
+		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
+		log::ajouter(logbuf);
+	}
+	log::ajouter("_________________");
+#endif
 }
 
+/* this is writing in BGxCNT */
+/* FIXME: all DEBUG_TRI are broken */
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
-     u8 index;
-     if((gpu->nbBGActif)&&(index = gpu->BGIndex[num]))
-     {
-          --index;
-          if((gpu->BGProp[num]&3)<(p&3))
-          {
-               #ifdef DEBUG_TRI
+	u8 index = gpu->BGIndex[num];
+	
+	if((gpu->nbBGActif != 0) && (index != 0))
+	{
+		index--;
+		if(BG_PRIORITY_MASK(gpu->BGProp[num]) < BG_PRIORITY_MASK(p))
+		{
+#ifdef DEBUG_TRI
                sprintf(logbuf, "INF NEW bg %d prio %d %d", num, p&3, index);
                log::ajouter(logbuf);
                for(u8 i = 0; i < gpu->nbBGActif; ++i)
@@ -328,25 +357,28 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                     sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
                     log::ajouter(logbuf);
                }
-               #endif
-               u8 i = 0;
-               for(; (i<index) && (((gpu->BGProp[gpu->ordre[i]]&3)>(p&3)) || (((gpu->BGProp[gpu->ordre[i]]&3)==(p&3))&&(gpu->ordre[i]>num))); ++i);
-               #ifdef DEBUG_TRI
+#endif
+			u8 i = 0;
+			for(; (i < index) && (((BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]))>(BG_PRIORITY_MASK(p))) || (((BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]))==(BG_PRIORITY_MASK(p)))&&(gpu->ordre[i]>num))); ++i);	/* TODO: commenting and understanding */
+               
+#ifdef DEBUG_TRI
+					
                sprintf(logbuf, "new i %d old %d", i, index);
                log::ajouter(logbuf);
-               #endif
-               if(i!=index)
-               {
-		    s8 j;
-                    for(j = index-1; j>=i; --j)
-                    {
-                         gpu->ordre[j+1] = gpu->ordre[j];
-                         ++gpu->BGIndex[gpu->ordre[j]];
-                    }
-                    gpu->ordre[i] = num;
-                    gpu->BGIndex[num] = i + 1;
-               }
-               #ifdef DEBUG_TRI
+#endif
+
+			if(i != index)
+			{
+				s8 j;
+				for(j = index-1; j>=i; --j)
+				{
+					gpu->ordre[j+1] = gpu->ordre[j];
+					++gpu->BGIndex[gpu->ordre[j]];
+				}
+				gpu->ordre[i] = num;
+				gpu->BGIndex[num] = i + 1;
+			}
+#ifdef DEBUG_TRI
                log::ajouter("");
                for(u8 i = 0; i < gpu->nbBGActif; ++i)
                {
@@ -354,12 +386,13 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                     log::ajouter(logbuf);
                }
                log::ajouter("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-               #endif
-          }
-          else
-          if((gpu->BGProp[num]&3)>(p&3))
-          {
-               #ifdef DEBUG_TRI
+#endif
+		}
+		else
+		{
+			if((gpu->BGProp[num]&3)>(p&3))
+			{
+#ifdef DEBUG_TRI
                sprintf(logbuf, "SUP NEW bg %d prio %d", num, p&3);
                log::ajouter(logbuf);
                for(u8 i = 0; i < gpu->nbBGActif; ++i)
@@ -367,25 +400,25 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                     sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
                     log::ajouter(logbuf);
                }
-               #endif
-               u8 i = gpu->nbBGActif-1;
-               for(; (i>index) && (((gpu->BGProp[gpu->ordre[i]]&3)<(p&3)) || (((gpu->BGProp[gpu->ordre[i]]&3)==(p&3))&&(gpu->ordre[i]<num))); --i);
-               #ifdef DEBUG_TRI
+#endif
+				u8 i = gpu->nbBGActif-1;
+				for(; (i>index) && (((gpu->BGProp[gpu->ordre[i]]&3)<(p&3)) ||  (((gpu->BGProp[gpu->ordre[i]]&3)==(p&3))&&(gpu->ordre[i]<num))); --i);
+#ifdef DEBUG_TRI
                sprintf(logbuf, "new i %d old %d", i, index);
                log::ajouter(logbuf);
-               #endif
-               if(i!=index)
-               {
-		    s8 j;
-                    for(j = index; j<i; ++j)
-                    {
-                         gpu->ordre[j] = gpu->ordre[j+1];
-                         --gpu->BGIndex[gpu->ordre[j]];
-                    }
-                    gpu->ordre[i] = num;
-                    gpu->BGIndex[num] = i + 1;
-               }
-               #ifdef DEBUG_TRI
+#endif
+				if(i!=index)
+				{
+					s8 j;
+					for(j = index; j<i; ++j)
+					{
+						gpu->ordre[j] = gpu->ordre[j+1];
+						gpu->BGIndex[gpu->ordre[j]]--;
+					}
+					gpu->ordre[i] = num;
+					gpu->BGIndex[num] = i + 1;
+				}
+#ifdef DEBUG_TRI
                log::ajouter("");
                for(u8 i = 0; i < gpu->nbBGActif; ++i)
                {
@@ -393,22 +426,25 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                     log::ajouter(logbuf);
                }
                log::ajouter("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-               #endif
-          }
-     }
-     gpu->BGProp[num] = p;
-     if(gpu->lcd)
-     {
-          gpu->BGBmpBB[num] = ((u8 *)ARM9.ARM9_BBG) + ((p>>8)&0x1F)*0x4000;
-          gpu->BGChBB[num] = ((u8 *)ARM9.ARM9_BBG) + ((p>>2)&0xF)*0x4000;
-          gpu->BGScrBB[num] = ((u16 *)ARM9.ARM9_BBG) + 0x400*((p>>8)&0x1F);
-     }
-     else
-     {
-          gpu->BGBmpBB[num] = ((u8 *)ARM9.ARM9_ABG) + ((p>>8)&0x1F)*0x4000;
-          gpu->BGChBB[num] = ((u8 *)ARM9.ARM9_ABG) + ((p>>2)&0xF)*0x4000 + ((gpu->prop>>24)&7)*0x10000;
-          gpu->BGScrBB[num] = ((u16 *)ARM9.ARM9_ABG) + 0x400*((p>>8)&0x1F) + ((gpu->prop>>27)&7)*0x8000;
-     }
+#endif
+			}
+		}
+	}
+		
+	gpu->BGProp[num] = p;
+	
+	if(gpu->core == GPU_SUB)
+	{
+		gpu->BGBmpBB[num] = ((u8 *)ARM9.ARM9_BBG) + BG_BMP_BASE_MASK(p) * 0x4000;
+		gpu->BGChBB[num] = ((u8 *)ARM9.ARM9_BBG) + BG_TILE_BASE_MASK(p) * 0x4000;
+		gpu->BGScrBB[num] = ((u16 *)ARM9.ARM9_BBG) + BG_MAP_BASE_MASK(p) * 0x400;
+	}
+	else
+	{
+		gpu->BGBmpBB[num] = ((u8 *)ARM9.ARM9_ABG) + BG_BMP_BASE_MASK(p) * 0x4000;
+		gpu->BGChBB[num] = ((u8 *)ARM9.ARM9_ABG) + BG_TILE_BASE_MASK(p) * 0x4000 + DISPLAY_TILE_BASE_MASK(gpu->prop) * 0x10000;
+		gpu->BGScrBB[num] = ((u16 *)ARM9.ARM9_ABG) + BG_MAP_BASE_MASK(p) * 0x400 + DISPLAY_MAP_BASE_MASK(gpu->prop) * 0x8000;
+	}
      
      /*if(!(p&(1<<7)))
           BGExtPalSlot[num] = 0;
@@ -416,27 +452,30 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           if(!(prop&(1<<30)))
                BGExtPalSlot[num] = 0;
           else*/
-               switch(num)
-               {
-                    case 0 :
-                         gpu->BGExtPalSlot[num] = (p&(1<<13))?2:0;
-                         break;
-                    case 1 :
-                         gpu->BGExtPalSlot[num] = (p&(1<<13))?3:1;
-                         break;
-                    default :
-                            gpu->BGExtPalSlot[num] = num;
-                            break;
-                  }
+	switch(num)
+	{
+		case 0 :
+			gpu->BGExtPalSlot[num] = BG_PALETTE_SLOT_MASK(p) ? 2 : 0;
+			break;
+			
+		case 1 :
+			gpu->BGExtPalSlot[num] = BG_PALETTE_SLOT_MASK(p) ? 3 : 1;
+			break;
+			
+		default :
+			gpu->BGExtPalSlot[num] = num;
+			break;
+	}
                   
      /*if(!(prop&(3<<16)))
      {
           BGSize[num][0] = lcdSizeTab[p>>14][0];
-          BGSize[num][1] = lcdSizeTab[p>>14][1];
+          BGSize[num][1] =  lcdSizeTab[p>>14][1];
           return;
      }*/
-     gpu->BGSize[num][0] = sizeTab[mode2type[gpu->prop&7][num]][p>>14][0];
-     gpu->BGSize[num][1] = sizeTab[mode2type[gpu->prop&7][num]][p>>14][1];
+	
+	gpu->BGSize[num][0] = sizeTab[mode2type[DISPLAY_MODE_MASK(gpu->prop)][num]][BG_SIZE_MASK(p)][0];
+	gpu->BGSize[num][1] = sizeTab[mode2type[DISPLAY_MODE_MASK(gpu->prop)][num]][BG_SIZE_MASK(p)][1];
 }
 
 void GPU_remove(GPU * gpu, u8 num)
@@ -480,92 +519,80 @@ void GPU_addBack(GPU * gpu, u8 num)
 
 void GPU_scrollX(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGSX[num] = v;
+	gpu->BGSX[num] = v;
 }
 
 void GPU_scrollY(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGSY[num] = v;
+	gpu->BGSY[num] = v;
 }
 
 void GPU_scrollXY(GPU * gpu, u8 num, u32 v)
 {
-     gpu->BGSX[num] = (v & 0xFFFF);
-     gpu->BGSY[num] = (v >> 16);
+	gpu->BGSX[num] = (v & 0xFFFF);
+	gpu->BGSY[num] = (v >> 16);
 }
 
 void GPU_setX(GPU * gpu, u8 num, u32 v)
 {
-     gpu->BGX[num] = (((s32)(v<<4))>>4);
-     /*sprintf(logbuf, "setX %08X", BGX[num]);
-     log::ajouter(logbuf);*/
+	gpu->BGX[num] = (((s32)(v<<4))>>4);
 }
 
 void GPU_setXH(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGX[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGX[num]&0xFFFF);
+	gpu->BGX[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGX[num]&0xFFFF);
 }
 
 void GPU_setXL(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGX[num] = (gpu->BGX[num]&0xFFFF0000) | v;
+	gpu->BGX[num] = (gpu->BGX[num]&0xFFFF0000) | v;
 }
 
 void GPU_setY(GPU * gpu, u8 num, u32 v)
 {
-     gpu->BGY[num] = (((s32)(v<<4))>>4);
-     /*sprintf(logbuf, "setY %08X", BGY[num]);
-     log::ajouter(logbuf);*/
+	gpu->BGY[num] = (((s32)(v<<4))>>4);
 }
 
 void GPU_setYH(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGY[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGY[num]&0xFFFF);
+	gpu->BGY[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGY[num]&0xFFFF);
 }
 
 void GPU_setYL(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGY[num] = (gpu->BGY[num]&0xFFFF0000) | v;
+	gpu->BGY[num] = (gpu->BGY[num]&0xFFFF0000) | v;
 }
 
 void GPU_setPA(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGPA[num] = (s32)v;
-     /*sprintf(logbuf, "PA %04X", BGPA[num]);
-     log::ajouter(logbuf);*/
+	gpu->BGPA[num] = (s32)v;
 }
 
 void GPU_setPB(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGPB[num] = (s32)v;
-     /*sprintf(logbuf, "PB %04X", BGPB[num]);
-     log::ajouter(logbuf);*/
+	gpu->BGPB[num] = (s32)v;
 }
 
 void GPU_setPC(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGPC[num] = (s32)v;
-     /*sprintf(logbuf, "PC %04X", BGPC[num]);
-     log::ajouter(logbuf);*/
+	gpu->BGPC[num] = (s32)v;
 }
 
 void GPU_setPD(GPU * gpu, u8 num, u16 v)
 {
-     gpu->BGPD[num] = (s32)v;
-     /*sprintf(logbuf, "PD %04X", BGPD[num]);
-     log::ajouter(logbuf);*/
+	gpu->BGPD[num] = (s32)v;
 }
-       
+
 void GPU_setPAPB(GPU * gpu, u8 num, u32 v)
 {
-     gpu->BGPA[num] = (s16)v;
-     gpu->BGPB[num] = (s16)(v>>16);
+	gpu->BGPA[num] = (s16)v;
+	gpu->BGPB[num] = (s16)(v>>16);
 }
 
 void GPU_setPCPD(GPU * gpu, u8 num, u32 v)
 {
-     gpu->BGPC[num] = (s16)v;
-     gpu->BGPD[num] = (s16)(v>>16);     
+	gpu->BGPC[num] = (s16)v;
+	gpu->BGPD[num] = (s16)(v>>16);
 }
 
 INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
@@ -595,7 +622,7 @@ INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
 
      if(!(bgprop&(1<<7)))
      {
-          u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->lcd*0x200;
+		  u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
           u16 yoff = ((Y&7)<<2);
 	  u16 x;
           
@@ -673,7 +700,7 @@ INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
      if(!(gpu->prop&(1<<30)))
      {
           u16 yoff = ((Y&7)<<3);
-          u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->lcd*0x200;
+			 u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
 	  u16 x;
           
           for(x = 0; x < LG;)
@@ -710,7 +737,7 @@ INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
           }
           return;
      }
-          u16 * pal = ((u16 *)ARM9.ExtPal[gpu->lcd][gpu->BGExtPalSlot[num]]);
+	  u16 * pal = ((u16 *)ARM9.ExtPal[gpu->core][gpu->BGExtPalSlot[num]]);
           
           if(!pal) return;
                
@@ -776,7 +803,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s1
      u8 coul;
      
      if((!tile)||(!map)) return;
-     u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->lcd*0x200;
+	  u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
      u32 i;
      for(i = 0; i < LG; ++i)
      {
@@ -830,7 +857,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
           case 1 :
                {
                u16 * map = gpu->BGScrBB[num];
-               u16 * pal = ((u16 *)ARM9.ExtPal[gpu->lcd][gpu->BGExtPalSlot[num]]);
+					u16 * pal = ((u16 *)ARM9.ExtPal[gpu->core][gpu->BGExtPalSlot[num]]);
 	       u16 i;
                if(!pal) return;
                for(i = 0; i < LG; ++i)
@@ -863,7 +890,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
           case 2 :
                {
                u8 * map = (u8 *)gpu->BGBmpBB[num];
-               u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->lcd*0x200;
+					u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
 	       u16 i;
                for(i = 0; i < LG; ++i)
                {
@@ -1079,9 +1106,9 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 	       u16 i;
                
                if(gpu->prop&(1<<31))
-                    pal = (u16 *)ARM9.ObjExtPal[gpu->lcd][0]+((aux->attr2>>12)*0x100);
+						pal = (u16 *)ARM9.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x100);
                else
-                    pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->lcd*0x200;
+						pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
                
                if(aux->attr1&(1<<12))
                {
@@ -1113,7 +1140,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                continue;
           }
           u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-          u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->lcd*0x200;
+			 u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
           if(x&1)
           {
                if(aux->attr1&(1<<12))
@@ -1309,7 +1336,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           if(aux->attr0&(1<<13))
           {
                u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-               u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->lcd*0x200;
+					u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
                u16 i;
                
                if(aux->attr1&(1<<12))
@@ -1342,7 +1369,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                continue;
           }
           u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-          u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->lcd*0x200;
+			 u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
           if(x&1)
           {
                if(aux->attr1&(1<<12))
