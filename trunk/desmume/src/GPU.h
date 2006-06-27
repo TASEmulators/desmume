@@ -105,6 +105,17 @@ extern size sprSizeTab[4][4];
 extern s8 mode2type[8][4];
 extern void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u16 * DST);
 
+typedef struct {
+	GPU * gpu;
+	u16 offset;
+} Screen;
+
+extern Screen MainScreen;
+extern Screen SubScreen;
+
+void ScreenInit(void);
+void ScreenDeInit(void);
+
 INLINE void GPU_ligne(GPU * gpu, u16 * buffer, u16 l)
 {
      u16 * dst =  buffer + l*256;
