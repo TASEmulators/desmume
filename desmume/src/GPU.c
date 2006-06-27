@@ -28,6 +28,8 @@
 #include "nds/video.h"
 
 extern BOOL click;
+Screen MainScreen;
+Screen SubScreen;
 
 //#define DEBUG_TRI
 
@@ -124,14 +126,14 @@ GPU * GPUInit(u8 l)
      memset(g, 0, sizeof(GPU));
 
      g->lcd = l;
-	  g->core = l;
+     g->core = l;
      g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
      g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
      g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
      
      g->spriteRender = sprite1D;
      
-	  if(g->core == GPU_SUB)
+     if(g->core == GPU_SUB)
      {
           g->oam = (OAM *)(ARM9.ARM9_OAM + 0x400);
           g->sprMem = ARM9.ARM9_BOBJ;
@@ -660,6 +662,8 @@ INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
                     mapinfo += 32*32;
                u8 * ligne = (u8 * )tile + (((*mapinfo)&0x3FF)*0x20) + (((*mapinfo)& 0x800 ? (7*4)-yoff : yoff));
                u16 xfin = x + (8 - (xoff&7));
+	       if (xfin > LG)
+		       xfin = LG;
                
                if((*mapinfo)& 0x400)
                {
@@ -711,6 +715,8 @@ INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
                     mapinfo += 32*32;
                u8 * ligne = (u8 * )tile + (((*mapinfo)&0x3FF)*0x40) + (((*mapinfo)& 0x800 ? (7*8)-yoff : yoff));
                u16 xfin = x + (8 - (xoff&7));
+	       if (xfin > LG)
+		       xfin = LG;
                
                if((*mapinfo)& 0x400)
                {
@@ -1459,4 +1465,14 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                ++sprX;
           }  
      }
+}
+
+void ScreenInit(void) {
+	MainScreen.gpu = GPUInit(0);
+	SubScreen.gpu = GPUInit(1);
+}
+
+void ScreenDeInit(void) {
+	GPUDeInit(MainScreen.gpu);
+	GPUDeInit(SubScreen.gpu);
 }

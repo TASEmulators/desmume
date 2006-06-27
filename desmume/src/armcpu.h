@@ -22,7 +22,7 @@
 #ifndef ARM_CPU
 #define ARM_CPU
 
-#include "MMU.hpp"
+#include "types.h"
 
 #include "bits.h"
 
