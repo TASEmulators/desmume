@@ -84,4 +84,8 @@ typedef int BOOL;
 #define FALSE 0
 #endif
 
+#ifdef __GNUC__
+#define PACKED __attribute__((packed))
+#endif
+
 #endif
