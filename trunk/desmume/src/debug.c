@@ -146,7 +146,7 @@ Debug * MainLog;
 //////////////////////////////////////////////////////////////////////////////
 
 void LogStart(void) {
-        MainLog = DebugInit("main", DEBUG_STDOUT, NULL);
+        MainLog = DebugInit("main", DEBUG_STDERR, NULL);
 //        MainLog = DebugInit("main", DEBUG_STREAM, "stdout.txt");
 }
 

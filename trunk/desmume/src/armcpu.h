@@ -26,6 +26,9 @@
 
 #include "bits.h"
 
+#define ARMCPU_ARM7 1
+#define ARMCPU_ARM9 0
+
 #define CODE(i)     (((i)>>25)&0X7)
 #define OPCODE(i)   (((i)>>21)&0xF)
 #define SIGNEBIT(i) BIT_N(i,20)
