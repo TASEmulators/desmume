@@ -417,16 +417,6 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit51]
-FileName=..\..\..\desmume1\src\windows\ConfigKeys.c
-CompileCpp=1
-Folder=DeSmuME
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit31]
 FileName=..\cp15.cpp
 CompileCpp=1
@@ -468,26 +458,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit52]
-FileName=..\..\..\desmume1\src\windows\ConfigKeys.h
-CompileCpp=1
-Folder=DeSmuME
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit53]
-FileName=..\fs-windows.c
-CompileCpp=1
-Folder=DeSmuME
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit54]
 FileName=..\fs.h
 CompileCpp=1
 Folder=DeSmuME
@@ -497,7 +467,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit55]
+[Unit53]
 FileName=..\GPU.c
 CompileCpp=1
 Folder=DeSmuME
@@ -507,7 +477,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit56]
+[Unit54]
 FileName=..\GPU.h
 CompileCpp=1
 Folder=DeSmuME
@@ -517,7 +487,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit57]
+[Unit55]
 FileName=..\ARM9.c
 CompileCpp=1
 Folder=DeSmuME
@@ -527,8 +497,28 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit58]
+[Unit56]
 FileName=..\ARM9.h
+CompileCpp=1
+Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit57]
+FileName=ConfigKeys.hpp
+CompileCpp=1
+Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit58]
+FileName=ConfigKeys.cpp
 CompileCpp=1
 Folder=DeSmuME
 Compile=1
@@ -672,6 +662,16 @@ FileName=resources.rc
 Folder=Resources
 Compile=1
 Link=0
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit51]
+FileName=..\fs-windows.c
+CompileCpp=1
+Folder=DeSmuME
+Compile=1
+Link=1
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
