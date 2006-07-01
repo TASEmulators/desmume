@@ -7,7 +7,7 @@
 #include "../types.h"
 #include "../nds/interrupts.h"
 
-typedef void (*dTool_openFn)();
+typedef void (*dTool_openFn)(int id);
 typedef void (*dTool_updateFn)();
 typedef void (*dTool_closeFn)();
 
@@ -19,5 +19,7 @@ typedef struct
 	dTool_closeFn close;
 	
 } dTool_t;
+
+extern void dTool_CloseCallback(int id);
 
 #endif /*__DTOOL_H__*/
