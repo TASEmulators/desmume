@@ -3,7 +3,7 @@
 
 #include "../types.h"
 
-#define DESMUME_NB_KEYS		12
+#define DESMUME_NB_KEYS		13
 
 #define DESMUME_KEYMASK_(k)	(1 << k)
 
@@ -20,6 +20,7 @@
 
 #define DESMUME_KEY_Y			11
 #define DESMUME_KEY_X			12
+#define DESMUME_KEY_DEBUG		13
 
 extern void desmume_init();
 extern void desmume_free();
