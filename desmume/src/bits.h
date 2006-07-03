@@ -1,7 +1,7 @@
 #ifndef BITS_H
 #define BITS_H
 
-#define BIT(n)  BIT_N(1,n)
+#define BIT(n)  (1<<(n))
 
 #define BIT_N(i,n)  (((i)>>(n))&1)
 #define BIT0(i)     ((i)&1)
