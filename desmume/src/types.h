@@ -96,9 +96,9 @@ typedef int BOOL;
 
 /* little endian (ds' endianess) to local endianess convert macros */
 #ifdef LOCAL_BE	/* local arch is big endian */
-# define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|((()x>>8)&0xff))
+# define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))
 # define LE_TO_LOCAL_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
-# define LOCAL_TO_LE_16(x) ((((x)&0xff)<<8)|((()x>>8)&0xff))
+# define LOCAL_TO_LE_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))
 # define LOCAL_TO_LE_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
 #else		/* local arch is little endian */
 # define LE_TO_LOCAL_16(x) (x)
