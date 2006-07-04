@@ -92,7 +92,7 @@ enum Mode
 	SYS = 0x1F
 };
 
-union Status_Reg
+typedef union 
 {
 	struct 
 	{
@@ -108,7 +108,7 @@ union Status_Reg
 		N : 1;
 	} bits;
         u32 val;
-};
+} Status_Reg;
 
 typedef void* armcp_t;
 
