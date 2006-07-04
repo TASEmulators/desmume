@@ -88,4 +88,29 @@ typedef int BOOL;
 #define PACKED __attribute__((packed))
 #endif
 
+#if WORDS_BIGENDIAN
+# define LOCAL_BE
+#else
+# define LOCAL_LE
+#endif
+
+/* little endian (ds' endianess) to local endianess convert macros */
+#ifdef LOCAL_BE	/* local arch is big endian */
+# define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|((()x>>8)&0xff))
+# define LE_TO_LOCAL_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
+# define LOCAL_TO_LE_16(x) ((((x)&0xff)<<8)|((()x>>8)&0xff))
+# define LOCAL_TO_LE_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
+#else		/* local arch is little endian */
+# define LE_TO_LOCAL_16(x) (x)
+# define LE_TO_LOCAL_32(x) (x)
+# define LOCAL_TO_LE_16(x) (x)
+# define LOCAL_TO_LE_32(x) (x)
+#endif
+
+typedef enum
+{
+	ARM9 = 0,
+	ARM7 = 1
+} cpu_id_t;
+
 #endif
