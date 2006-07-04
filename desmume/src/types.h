@@ -107,6 +107,10 @@ typedef int BOOL;
 # define LOCAL_TO_LE_32(x) (x)
 #endif
 
+/* kilobytes and megabytes macro */
+#define MB(x) ((x)*1024*1024)
+#define KB(x) ((x)*1024)
+
 typedef enum
 {
 	ARM9 = 0,
