@@ -23,8 +23,8 @@
 #define ARM_CPU
 
 #include "types.h"
-
 #include "bits.h"
+#include "MMU.hpp"
 
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
@@ -151,5 +151,20 @@ u32 armcpu_prefetch(armcpu_t *armcpu);
 u32 armcpu_exec(armcpu_t *armcpu);
 BOOL armcpu_irqExeption(armcpu_t *armcpu);
 BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
+
+extern armcpu_t NDS_ARM7;
+extern armcpu_t NDS_ARM9;
+
+INLINE void NDS_makeARM9Int(u32 num)
+{
+	MMU.reg_IF[0] |= (1<<num);// & (MMU.reg_IME[0] << num);//& (MMU.reg_IE[0] & (1<<num));
+	NDS_ARM9.wIRQ = TRUE;
+}
+       
+INLINE void NDS_makeARM7Int(u32 num)
+{
+	MMU.reg_IF[1] |= (1<<num);// & (MMU.reg_IME[1] << num);// (MMU.reg_IE[1] & (1<<num));
+	NDS_ARM7.wIRQ = TRUE;
+}
 
 #endif 
