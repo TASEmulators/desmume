@@ -111,6 +111,7 @@ typedef int BOOL;
 #define MB(x) ((x)*1024*1024)
 #define KB(x) ((x)*1024)
 
+#define CPU_STR(c) ((c==ARM9)?"ARM9":"ARM7")
 typedef enum
 {
 	ARM9 = 0,
