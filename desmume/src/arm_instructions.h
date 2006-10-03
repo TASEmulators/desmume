@@ -23,8 +23,7 @@
 #define ARMINSTRUCTION_H
 
 #include "types.h"
-
-typedef struct armcpu_t armcpu_t;
+#include "armcpu.h"
 
 extern u32 (*FASTCALL arm_instructions_set[4096])(armcpu_t * cpu);
  
