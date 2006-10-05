@@ -3,7 +3,7 @@
 #endif
 #include <stdio.h>
 #include "saves.h"
-#include "MMU.hpp"
+#include "MMU.h"
 
 u8 sram_read (u32 address) {
 	address = address - SRAM_ADDRESS;
