@@ -263,9 +263,12 @@ void MMUInit(void) {
 	for(i = 0;i < 16;i++)
 		FIFOInit(MMU.fifos + i);
 	
-	fw_init(&MMU.spi7.fw);	/* init fw device */
-	fw_alloc(&MMU.spi7.fw, NDS_FW_SIZE_V1);
-	
+        mc_init(&MMU.spi7.fw, MC_TYPE_FLASH);  /* init fw device */
+        mc_alloc(&MMU.spi7.fw, NDS_FW_SIZE_V1);
+
+        // Init Backup Memory device, this should really be done when the rom is loaded
+        mc_init(&MMU.spi7.bupmem, MC_TYPE_EEPROM2);
+        mc_alloc(&MMU.spi7.bupmem, 65536); // For now we're use 512Kbit support. Eventually this should be detected when rom is loaded
 }
 
 void MMUDeInit(void) {
@@ -276,6 +279,8 @@ void MMUDeInit(void) {
 
 u16 SPI_CNT = 0;
 u16 SPI_CMD = 0;
+u16 AUX_SPI_CNT = 0;
+u16 AUX_SPI_CMD = 0;
 
 u32 rom_mask = 0;
 
@@ -684,7 +689,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 			}
 			break;
 			
-#ifdef LOG_CARD	
+#ifdef LOG_CARD 
 		case 0x040001A0 : /* TODO (clear): ??? */
 		case 0x040001A1 :
 		case 0x040001A2 :
@@ -696,7 +701,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		case 0x040001AD :
 		case 0x040001AE :
 		case 0x040001AF :
-			LOG("%08X : %02X\r\n", adr, val);
+                    LOG("%08X : %02X\r\n", adr, val);
 #endif
 		
 		default :
@@ -775,6 +780,24 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				}
 				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x304>>1] = val;
 				return;
+
+                        case CARD_CR1:
+                                MEM_16(MMU.MMU_MEM[proc], CARD_CR1) = val;
+                                AUX_SPI_CNT = val;
+
+                                if (val == 0)
+                                   mc_reset_com(&MMU.spi7.bupmem);     /* reset backup memory device communication */
+				return;
+				
+                        case CARD_EEPDATA:
+                                if(val!=0)
+                                {
+                                   AUX_SPI_CMD = val & 0xFF;
+                                }
+
+                                MEM_16(MMU.MMU_MEM[proc], CARD_EEPDATA) = bm_transfer(&MMU.spi7.bupmem, val);        /* transfer data to backup memory chip and receive back */
+				return;
+
 			case REG_SPICNT :
 				if(proc == ARMCPU_ARM7)
 				{
@@ -782,9 +805,8 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 					
 					//MMU.spi7.fw.com == 0;	/* reset fw device communication */
 					
-					fw_reset_com(&MMU.spi7.fw);	/* reset fw device communication */
-					
-				}
+                                        mc_reset_com(&MMU.spi7.fw);     /* reset fw device communication */
+                                }
 				
 				MEM_16(MMU.MMU_MEM[proc], REG_SPICNT) = val;
 				return;
@@ -831,7 +853,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 											break;
 										}
 										val = (nds.touchY>>5);
-										partie = 1;
+                                                                                partie = 1;
 										break;
 									}
 									val = ((nds.touchY<<3)&0x7FF);
@@ -1868,7 +1890,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					if(MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND) == 0xB7)
 					{
 						MMU.dscard[proc].adress = (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+1) << 24) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+2) << 16) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+3) << 8) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+4));
-						MMU.dscard[proc].transfer_count = 0x80;// * ((val>>24)&7));	
+						MMU.dscard[proc].transfer_count = 0x80;// * ((val>>24)&7));
 					}
 					else
 					{
