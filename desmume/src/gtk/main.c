@@ -12,7 +12,6 @@
 #include "../debug.h"
 
 #include "desmume.h"
-#include "ini.h"
 
 #include <string.h>
 #include <libgen.h>
@@ -45,22 +44,16 @@ const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 
 #define CONFIG_FILE "desmume.ini"
 
-ini_file_t *Config_INI;
-
 int Write_ConfigFile()
 {
 	int i;
-	char buffer[64];
-	ini_file_t *ini;
+	GKeyFile * keyfile;
 	
-	ini = ini_blank_new();
-	
-	ini_add_section(ini, "KEYS");
+	keyfile = g_key_file_new();
 	
 	for(i = 0; i < DESMUME_NB_KEYS; i++)
 	{
-		sprintf(buffer, "%d", Keypad_Config[i]);
-		ini_add_value(ini, "KEYS", Ini_Keypad_Values[i], buffer);
+		g_key_file_set_integer(keyfile, "KEYS", Ini_Keypad_Values[i], Keypad_Config[i]);
 	}
 	
 // 	if(FirmwareFile[0])
@@ -69,8 +62,9 @@ int Write_ConfigFile()
 // 		ini_add_value(ini, "FIRMWARE", "FILE", FirmwareFile);
 // 	}
 	
-	ini_write(ini, CONFIG_FILE);
-	ini_free_file(ini);
+	g_file_set_contents(CONFIG_FILE, g_key_file_to_data(keyfile, 0, 0), -1, 0);
+
+	g_key_file_free(keyfile);
 	
 	return 0;
 }
@@ -78,28 +72,28 @@ int Write_ConfigFile()
 void Load_DefaultConfig();
 int Read_ConfigFile()
 {
-	int i;
-	ini_file_t *ini;
+	int i, tmp;
+	GKeyFile * keyfile = g_key_file_new();
+	GError * error = NULL;
 	
 	Load_DefaultConfig();
 	
-	ini = ini_parse(CONFIG_FILE);
+	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
 
-	if(ini)
+	const char *c;
+		
+	for(i = 0; i < DESMUME_NB_KEYS; i++)
 	{
-		const char *c;
-		
-		for(i = 0; i < DESMUME_NB_KEYS; i++)
-		{
-			c = ini_req_value(ini, "KEYS", Ini_Keypad_Values[i]);
-			if(c && *c != '0' && *c != '\0') { Keypad_Config[i] = atoi(c); }
+		tmp = g_key_file_get_integer(keyfile, "KEYS", Ini_Keypad_Values[i], &error);
+		if (error != NULL) {
+			g_error_free(error);
+			error = NULL;
+		} else {
+			Keypad_Config[i] = g_key_file_get_integer(keyfile, "KEYS", Ini_Keypad_Values[i], &error);
 		}
-		
-// 		c = ini_req_value(ini, "FIRMWARE", "FILE");
-// 		if(c && *c != '0' && *c != '\0') LoadFirmware(c);
-	
-		ini_free_file(ini);
 	}
+		
+	g_key_file_free(keyfile);
 		
 	return 0;
 }
