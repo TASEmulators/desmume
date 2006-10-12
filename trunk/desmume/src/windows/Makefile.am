@@ -1,6 +1,6 @@
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
-        CWindow.c CWindow.h cflash.c cflash.h \
+        CWindow.c CWindow.h \
         disView.c disView.h ginfo.c ginfo.h \
         IORegView.c IORegView.h \
         main.cpp mapView.c mapView.h memView.c memView.h \
