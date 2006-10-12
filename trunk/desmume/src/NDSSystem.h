@@ -27,6 +27,10 @@
 
 #include "arm9/GPU.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern BOOL execute;
 extern BOOL click;
 
@@ -797,5 +801,9 @@ void NDS_releasTouch(void);
             }
             return nds.cycles;
        }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

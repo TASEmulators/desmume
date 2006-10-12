@@ -26,6 +26,10 @@
 #include "bits.h"
 #include "MMU.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
 
@@ -166,5 +170,9 @@ static INLINE void NDS_makeARM7Int(u32 num)
 	MMU.reg_IF[1] |= (1<<num);// & (MMU.reg_IME[1] << num);// (MMU.reg_IE[1] & (1<<num));
 	NDS_ARM7.wIRQ = TRUE;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 
