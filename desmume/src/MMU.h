@@ -26,7 +26,8 @@
 #include "dscard.h"
 
 #include "arm9/ARM9.h"
-#include "arm7/spi.h"
+#include "nds/serial.h"
+#include "mc.h"
 
 extern char szRomPath[512];
 
@@ -88,9 +89,10 @@ typedef struct {
         u32 DMACrt[2][4];
         BOOL DMAing[2][4];
 		  
-		  nds7_spi_t spi7;	/* NOTICE: arm7 only, perhaps should be moved in an arm7-specific struct */
+        memory_chip_t fw;
+        memory_chip_t bupmem;
 		  
-		  nds_dscard dscard[2];
+        nds_dscard dscard[2];
 		  
 } MMU_struct;
 
