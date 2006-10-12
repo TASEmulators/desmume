@@ -12,6 +12,6 @@ libdesmume_a_SOURCES = \
         mc.c mc.h \
 	arm9/GPU.c arm9/GPU.h \
 	arm9/ARM9.c arm9/ARM9.h \
-        windows/cflash.c windows/cflash.h fs.h \
+        cflash.c cflash.h fs.h \
         saves.c saves.h
 libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)

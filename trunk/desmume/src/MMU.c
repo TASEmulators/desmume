@@ -27,7 +27,7 @@
 
 #include "debug.h"
 #include "NDSSystem.h"
-#include "windows/cflash.h"
+#include "cflash.h"
 
 #include "nds/interrupts.h"
 #include "nds/video.h"
