@@ -263,12 +263,12 @@ void MMUInit(void) {
 	for(i = 0;i < 16;i++)
 		FIFOInit(MMU.fifos + i);
 	
-        mc_init(&MMU.spi7.fw, MC_TYPE_FLASH);  /* init fw device */
-        mc_alloc(&MMU.spi7.fw, NDS_FW_SIZE_V1);
+        mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
+        mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
 
         // Init Backup Memory device, this should really be done when the rom is loaded
-        mc_init(&MMU.spi7.bupmem, MC_TYPE_EEPROM2);
-        mc_alloc(&MMU.spi7.bupmem, 65536); // For now we're use 512Kbit support. Eventually this should be detected when rom is loaded
+        mc_init(&MMU.bupmem, MC_TYPE_EEPROM2);
+        mc_alloc(&MMU.bupmem, 65536); // For now we're use 512Kbit support. Eventually this should be detected when rom is loaded
 }
 
 void MMUDeInit(void) {
@@ -786,7 +786,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
                                 AUX_SPI_CNT = val;
 
                                 if (val == 0)
-                                   mc_reset_com(&MMU.spi7.bupmem);     /* reset backup memory device communication */
+                                   mc_reset_com(&MMU.bupmem);     /* reset backup memory device communication */
 				return;
 				
                         case CARD_EEPDATA:
@@ -795,7 +795,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
                                    AUX_SPI_CMD = val & 0xFF;
                                 }
 
-                                MEM_16(MMU.MMU_MEM[proc], CARD_EEPDATA) = bm_transfer(&MMU.spi7.bupmem, val);        /* transfer data to backup memory chip and receive back */
+                                MEM_16(MMU.MMU_MEM[proc], CARD_EEPDATA) = bm_transfer(&MMU.bupmem, val);        /* transfer data to backup memory chip and receive back */
 				return;
 
 			case REG_SPICNT :
@@ -803,9 +803,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				{
 					SPI_CNT = val;
 					
-					//MMU.spi7.fw.com == 0;	/* reset fw device communication */
+                                        //MMU.fw.com == 0; /* reset fw device communication */
 					
-                                        mc_reset_com(&MMU.spi7.fw);     /* reset fw device communication */
+                                        mc_reset_com(&MMU.fw);     /* reset fw device communication */
                                 }
 				
 				MEM_16(MMU.MMU_MEM[proc], REG_SPICNT) = val;
@@ -832,7 +832,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 								MEM_16(MMU.MMU_MEM[proc], REG_SPIDATA) = 0;
 								break;
 							}
-							MEM_16(MMU.MMU_MEM[proc], REG_SPIDATA) = fw_transfer(&MMU.spi7.fw, val);	/* transfer data to fw chip and receive back */
+                                                        MEM_16(MMU.MMU_MEM[proc], REG_SPIDATA) = fw_transfer(&MMU.fw, val);        /* transfer data to fw chip and receive back */
 							return;
 							
 						case SPI_DEVICE_TOUCH:
