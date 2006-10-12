@@ -5,7 +5,7 @@
 
 #include "../MMU.h"
 #include "../NDSSystem.h"
-#include "../windows/cflash.h"
+#include "../cflash.h"
 #include "../debug.h"
 
 BOOL execute = FALSE;

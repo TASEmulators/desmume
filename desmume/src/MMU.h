@@ -29,6 +29,10 @@
 #include "nds/serial.h"
 #include "mc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern char szRomPath[512];
 
 /* theses macros are designed for reading/writing in memory (m is a pointer to memory, like MMU.MMU_MEM[proc], and a is an adress, like 0x04000000 */
@@ -121,5 +125,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val);
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val);
  
 void FASTCALL MMU_doDMA(u32 proc, u32 num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
