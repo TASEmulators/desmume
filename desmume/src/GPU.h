@@ -22,7 +22,7 @@
 #ifndef GPU_H
 #define GPU_H
 
-#include "ARM9.h"
+#include "arm9/ARM9.h"
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -57,9 +57,15 @@ struct _GPU
        u32 prop;
 
        u16 BGProp[4];
-       u8 * (BGBmpBB[4]);
-       u8 * (BGChBB[4]);
-       u16 * (BGScrBB[4]);
+		 
+#define BGBmpBB BG_bmp_ram
+#define BGChBB BG_tile_ram
+#define BGScrBB BG_map_ram
+		 
+		 u8 *(BG_bmp_ram[4]);
+		 u8 *(BG_tile_ram[4]);
+		 u16 *(BG_map_ram[4]);
+		 
        u8 BGExtPalSlot[4];
        u32 BGSize[4][2];
        u16 BGSX[4];
@@ -116,7 +122,7 @@ extern Screen SubScreen;
 void ScreenInit(void);
 void ScreenDeInit(void);
 
-INLINE void GPU_ligne(GPU * gpu, u16 * buffer, u16 l)
+static INLINE void GPU_ligne(GPU * gpu, u16 * buffer, u16 l)
 {
      u16 * dst =  buffer + l*256;
      u16 spr[256];
@@ -130,18 +136,18 @@ INLINE void GPU_ligne(GPU * gpu, u16 * buffer, u16 l)
       * I'm really not sure it's correct.
       */
      if (gpu->lcd == 0) {
-        unsigned long mainlcdcnt = ((unsigned long *)ARM9.ARM9_REG)[0];
+        unsigned long mainlcdcnt = ((unsigned long *)ARM9Mem.ARM9_REG)[0];
         int ii = l*256;
         if ((mainlcdcnt&0x10000)==0) {
            for (i=0; i<256; i++) {
-               ((unsigned short*)dst)[i] = ((unsigned short*)ARM9.ARM9_LCD)[ii];
+               ((unsigned short*)dst)[i] = ((unsigned short*)ARM9Mem.ARM9_LCD)[ii];
                ii++;
            }
            return;
         }
      }
      
-     u32 c = ((u16 *)ARM9.ARM9_VMEM)[0 + gpu->lcd * 0x200];
+     u32 c = ((u16 *)ARM9Mem.ARM9_VMEM)[0 + gpu->lcd * 0x200];
      c |= (c<<16);
      
      for(i8 = 0; i8< 128; ++i8)

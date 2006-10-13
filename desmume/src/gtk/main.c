@@ -284,8 +284,6 @@ int ScreenCoeff_Size;
 /* Drawing callback */
 int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-
-	
 	SDL_PixelFormat screenPixFormat;
 	SDL_Surface *rawImage, *screenImage;
 	
@@ -294,8 +292,6 @@ int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data
 	
 	memcpy(&screenPixFormat, rawImage->format, sizeof(SDL_PixelFormat));
 	
-	//fprintf(stderr,"%p,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",screenPixFormat.palette,screenPixFormat.	BitsPerPixel,screenPixFormat.	BytesPerPixel,screenPixFormat.	Rloss,screenPixFormat.	Gloss,screenPixFormat.	Bloss,screenPixFormat.	Aloss,screenPixFormat.	Rshift,screenPixFormat.	Gshift,screenPixFormat.	Bshift,screenPixFormat.	Ashift,screenPixFormat.	Rmask,screenPixFormat.	Gmask,screenPixFormat.	Bmask,screenPixFormat.	Amask,screenPixFormat.colorkey,screenPixFormat. alpha);
-
 	screenPixFormat.BitsPerPixel = 24;
 	screenPixFormat.BytesPerPixel = 3;
 	screenPixFormat.Rshift = 0;
@@ -306,21 +302,14 @@ int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data
 	screenPixFormat.Bmask = 0xFF0000;
 	
 	screenImage = SDL_ConvertSurface(rawImage, &screenPixFormat, 0);
-	//screenImage = rawImage;
   
- /*gdk_window_clear_area (widget->window, event->area.x, event->area.y,
-event->area.width, event->area.height);
- gdk_gc_set_clip_rectangle (widget->style->fg_gc[widget->state],
-	&event->area);*/
-	/*gdk_draw_rgb_32_image*/
 	gdk_draw_rgb_image	(widget->window,
 							  widget->style->fg_gc[widget->state],0,0,screenImage->w, screenImage->h,
 							  GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,screenImage->pitch);
- //gdk_gc_set_clip_rectangle (widget->style->fg_gc[widget->state],NULL);
+	SDL_FreeSurface(screenImage);
+	SDL_FreeSurface(rawImage);
 	
- SDL_FreeSurface(screenImage);
- SDL_FreeSurface(rawImage);
- return 1;
+	return 1;
 }
 
 static void Draw()
@@ -475,11 +464,11 @@ void Modify_Key(GtkWidget* widget, gpointer data)
 	
 	sprintf(Title, "Press \"%s\" key ...\n", Keys_Name[Key]);
 	mkDialog = gtk_dialog_new_with_buttons(Title,
-														GTK_WINDOW(pWindow),
-														GTK_DIALOG_MODAL,
-														GTK_STOCK_OK,GTK_RESPONSE_OK,
-														GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
-														NULL);
+		GTK_WINDOW(pWindow),
+		GTK_DIALOG_MODAL,
+		GTK_STOCK_OK,GTK_RESPONSE_OK,
+		GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+		NULL);
 	
 	g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), NULL);
 	
