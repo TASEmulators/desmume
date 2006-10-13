@@ -122,9 +122,10 @@ extern Screen SubScreen;
 void ScreenInit(void);
 void ScreenDeInit(void);
 
-static INLINE void GPU_ligne(GPU * gpu, u16 * buffer, u16 l)
+static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
-     u16 * dst =  buffer + l*256;
+     GPU * gpu = screen->gpu;
+     u16 * dst =  GPU_screen + (screen->offset + l) * 256;
      u16 spr[256];
      u8 sprPrio[256];
      u8 bgprio;

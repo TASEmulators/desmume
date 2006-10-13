@@ -292,8 +292,8 @@ void NDS_releasTouch(void);
                       {
                          if(nds.VCount<192)
                            {
-				GPU_ligne(MainScreen.gpu, GPU_screen + (MainScreen.offset * 256), nds.VCount);
-				GPU_ligne(SubScreen.gpu, GPU_screen + (SubScreen.offset * 256), nds.VCount);
+				GPU_ligne(&MainScreen, nds.VCount);
+				GPU_ligne(&SubScreen, nds.VCount);
                                 ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] |= 2;
                                 ((u16 *)MMU.ARM7_REG)[0x0004>>1] |= 2;
                                 NDS_ARM9HBlankInt();
