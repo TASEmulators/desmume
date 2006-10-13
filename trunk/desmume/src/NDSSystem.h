@@ -25,7 +25,7 @@
 #include "armcpu.h"
 #include "MMU.h"
 
-#include "arm9/GPU.h"
+#include "GPU.h"
 
 #ifdef __cplusplus
 extern "C" {

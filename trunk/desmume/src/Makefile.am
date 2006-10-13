@@ -10,7 +10,7 @@ libdesmume_a_SOURCES = \
         MMU.c MMU.h NDSSystem.c NDSSystem.h \
         thumb_instructions.c thumb_instructions.h \
         mc.c mc.h \
-	arm9/GPU.c arm9/GPU.h \
+	GPU.c GPU.h \
 	arm9/ARM9.c arm9/ARM9.h \
         cflash.c cflash.h fs.h \
         saves.c saves.h

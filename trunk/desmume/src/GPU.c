@@ -107,13 +107,13 @@ GPU::GPU(u8 l) : lcd(l)
      
      if(lcd)
      {
-          oam = (OAM *)(ARM9.ARM9_OAM+0x400);
-          sprMem = ARM9.ARM9_BOBJ;
+          oam = (OAM *)(ARM9Mem.ARM9_OAM+0x400);
+          sprMem = ARM9Mem.ARM9_BOBJ;
      }
      else
      {
-          oam = (OAM *)(ARM9.ARM9_OAM);
-          sprMem = ARM9.ARM9_AOBJ;
+          oam = (OAM *)(ARM9Mem.ARM9_OAM);
+          sprMem = ARM9Mem.ARM9_AOBJ;
      }
 }
 #endif
@@ -135,13 +135,13 @@ GPU * GPUInit(u8 l)
      
      if(g->core == GPU_SUB)
      {
-          g->oam = (OAM *)(ARM9.ARM9_OAM + 0x400);
-          g->sprMem = ARM9.ARM9_BOBJ;
+          g->oam = (OAM *)(ARM9Mem.ARM9_OAM + 0x400);
+          g->sprMem = ARM9Mem.ARM9_BOBJ;
      }
      else
      {
-          g->oam = (OAM *)(ARM9.ARM9_OAM);
-          g->sprMem = ARM9.ARM9_AOBJ;
+          g->oam = (OAM *)(ARM9Mem.ARM9_OAM);
+          g->sprMem = ARM9Mem.ARM9_AOBJ;
      }
 
      return g;
@@ -159,7 +159,7 @@ void GPUDeInit(GPU * gpu)
      u8 sprPrio[256];
      u8 bgprio;
      
-     u32 c = ((u16 *)ARM9.ARM9_VMEM)[0+lcd*0x200];
+     u32 c = ((u16 *)ARM9Mem.ARM9_VMEM)[0+lcd*0x200];
      c |= (c<<16);
      
      for(u8 i = 0; i< 128; ++i)
@@ -227,10 +227,10 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->sprBMPBlock = 7;
 	}
 	
-	GPU_setBGProp(gpu, 3, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+7]);
-	GPU_setBGProp(gpu, 2, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+6]);
-	GPU_setBGProp(gpu, 1, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+5]);
-	GPU_setBGProp(gpu, 0, ((u16 *)ARM9.ARM9_REG)[gpu->core*0x800+4]);
+	GPU_setBGProp(gpu, 3, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+7]);
+	GPU_setBGProp(gpu, 2, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+6]);
+	GPU_setBGProp(gpu, 1, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+5]);
+	GPU_setBGProp(gpu, 0, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+4]);
 	
 	if((p & DISPLAY_BG3_ACTIVE) && gpu->dispBG[3])
 	{
@@ -437,15 +437,15 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	
 	if(gpu->core == GPU_SUB)
 	{
-		gpu->BGBmpBB[num] = ((u8 *)ARM9.ARM9_BBG) + BG_BMP_BASE_MASK(p) * 0x4000;
-		gpu->BGChBB[num] = ((u8 *)ARM9.ARM9_BBG) + BG_TILE_BASE_MASK(p) * 0x4000;
-		gpu->BGScrBB[num] = ((u16 *)ARM9.ARM9_BBG) + BG_MAP_BASE_MASK(p) * 0x400;
+		gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BG_BMP_BASE_MASK(p) * 0x4000;
+		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BG_TILE_BASE_MASK(p) * 0x4000;
+		gpu->BG_map_ram[num] = ((u16 *)ARM9Mem.ARM9_BBG) + BG_MAP_BASE_MASK(p) * 0x400;
 	}
 	else
 	{
-		gpu->BGBmpBB[num] = ((u8 *)ARM9.ARM9_ABG) + BG_BMP_BASE_MASK(p) * 0x4000;
-		gpu->BGChBB[num] = ((u8 *)ARM9.ARM9_ABG) + BG_TILE_BASE_MASK(p) * 0x4000 + DISPLAY_TILE_BASE_MASK(gpu->prop) * 0x10000;
-		gpu->BGScrBB[num] = ((u16 *)ARM9.ARM9_ABG) + BG_MAP_BASE_MASK(p) * 0x400 + DISPLAY_MAP_BASE_MASK(gpu->prop) * 0x8000;
+		gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BG_BMP_BASE_MASK(p) * 0x4000;
+		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BG_TILE_BASE_MASK(p) * 0x4000 + DISPLAY_TILE_BASE_MASK(gpu->prop) * 0x10000;
+		gpu->BG_map_ram[num] = ((u16 *)ARM9Mem.ARM9_ABG) + BG_MAP_BASE_MASK(p) * 0x400 + DISPLAY_MAP_BASE_MASK(gpu->prop) * 0x8000;
 	}
      
      /*if(!(p&(1<<7)))
@@ -597,36 +597,39 @@ void GPU_setPCPD(GPU * gpu, u8 num, u32 v)
 	gpu->BGPD[num] = (s16)(v>>16);
 }
 
-INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
+INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
 {
-     u32 bgprop = gpu->BGProp[num];
-     u16 lg = gpu->BGSize[num][0];
-     u16 ht = gpu->BGSize[num][1];
-     u16 tmp = ((Y&(ht-1))>>3);
-     u16 * map = gpu->BGScrBB[num] + (tmp&31) * 32;
-     u16 * dst = DST;
-     
-     if(tmp>31)
-          switch(bgprop>>14)
-          {
-               case 2 :
-                    map += 32*32;
-                    break;
-               case 3 :
-                    map += 32*64;
-                    break;
-          }
-     u8 * tile = (u8 * )gpu->BGChBB[num];
-     
-     if((!tile)||(!gpu->BGScrBB[num])) return;
-     
-     u16 xoff = X;
+	u32 bgprop = gpu->BGProp[num];
+	u16 lg = gpu->BGSize[num][0];
+	u16 ht = gpu->BGSize[num][1];
+	u16 tmp = ((Y&(ht-1))>>3);
+	u16 *map = gpu->BG_map_ram[num] + (tmp&31) * 32;
+	u16 *dst = DST;
 
-     if(!(bgprop&(1<<7)))
-     {
-		  u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
-          u16 yoff = ((Y&7)<<2);
-	  u16 x;
+	if(tmp>31)
+	{
+		switch(BG_SIZE_MASK(bgprop))
+		{
+			case 2 :
+				map += 32*32;
+				break;
+			case 3 :
+				map += 32*64;
+				break;
+		}
+	}
+	
+	u8 *tile = (u8*) gpu->BG_tile_ram[num];
+	
+	if((!tile) || (!gpu->BG_map_ram[num])) return;
+	
+	u16 xoff = X;
+	
+	if(!(bgprop & BG_256_COLOR))
+	{
+		u16 * pal = ((u16 *)ARM9Mem.ARM9_VMEM) + gpu->core*0x200;
+		u16 yoff = ((Y&7)<<2);
+		u16 x;
           
           /*if(xoff&1)
           {
@@ -654,134 +657,130 @@ INLINE void textBG2(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
                LG -=2;
           }*/
           
-          for(x = 0; x < LG;)
-          {
-               tmp = ((xoff&(lg-1))>>3);
-               u16 * mapinfo = map + (tmp&0x1F);
-               if(tmp>31)
-                    mapinfo += 32*32;
-               u8 * ligne = (u8 * )tile + (((*mapinfo)&0x3FF)*0x20) + (((*mapinfo)& 0x800 ? (7*4)-yoff : yoff));
-               u16 xfin = x + (8 - (xoff&7));
-	       if (xfin > LG)
-		       xfin = LG;
-               
-               if((*mapinfo)& 0x400)
-               {
-                    ligne += 3 - ((xoff&7)>>1);
-                    for(; x < xfin; )
-                    {
-                         if((*ligne)>>4)
-                         *dst = pal[((*ligne)>>4) + ((*mapinfo>>12)&0xF)*0x10];
-                         //else *dst = 0x7FFF;
-                         ++dst;++x, ++xoff;
-                         if((*ligne)&0xF)
-                         *dst = pal[((*ligne)&0xF) + ((*mapinfo>>12)&0xF)*0x10];
-                         //else *dst = 0x7FFF;
-                         ++dst;--ligne;
-                         ++x, ++xoff;
-                    }
-               }
-               else
-               {
-                   ligne += ((xoff&7)>>1);
-                   for(; x < xfin; )
-                   {
-                         if((*ligne)&0xF)
-                        *dst = pal[((*ligne)&0xF) + ((*mapinfo>>12)&0xF)*0x10];
-                         //else *dst = 0x7FFF;
-                        ++dst;++x, ++xoff;
-                         if((*ligne)>>4)
-                        *dst = pal[((*ligne)>>4) + ((*mapinfo>>12)&0xF)*0x10];
-                         //else *dst = 0x7FFF;
-                        ++dst;++ligne;
-                        ++x, ++xoff;
-                   }
-               }
-          }
-          return;
-     }
-     
-     if(!(gpu->prop&(1<<30)))
-     {
-          u16 yoff = ((Y&7)<<3);
-			 u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
-	  u16 x;
-          
-          for(x = 0; x < LG;)
-          {
-               tmp = ((xoff&(lg-1))>>3);
-               u16 * mapinfo = map + (tmp&31);
-               if(tmp>31)
-                    mapinfo += 32*32;
-               u8 * ligne = (u8 * )tile + (((*mapinfo)&0x3FF)*0x40) + (((*mapinfo)& 0x800 ? (7*8)-yoff : yoff));
-               u16 xfin = x + (8 - (xoff&7));
-	       if (xfin > LG)
-		       xfin = LG;
-               
-               if((*mapinfo)& 0x400)
-               {
-                    ligne += (7 - (xoff&7));
-                    for(; x < xfin; ++x, ++xoff)
-                    {
-                         if(*ligne)
-                         *dst = pal[*ligne];
-                         //else *dst = 0x7FFF;
-                         ++dst;--ligne;
-                    }
-               }
-               else
-               {
-                    ligne += (xoff&7);
-                    for(; x < xfin; ++x, ++xoff)
-                    {
-                         if(*ligne)
-                         *dst = pal[*ligne];
-                         //else *dst = 0x7FFF;
-                         ++dst;++ligne;
-                    }
-               }
-          }
-          return;
-     }
-	  u16 * pal = ((u16 *)ARM9.ExtPal[gpu->core][gpu->BGExtPalSlot[num]]);
-          
-          if(!pal) return;
-               
-          u16 yoff = ((Y&7)<<3);
-	  u16 x;
-          
-          for(x = 0; x < LG;)
-          {
-               tmp = ((xoff&(lg-1))>>3);
-               u16 * mapinfo = (u16 *)map + (tmp&0x1F);
-               if(tmp>31)
-                    mapinfo += 32*32;
-               u8 * ligne = (u8 * )tile + (((*mapinfo)&0x3FF)*0x40) + (((*mapinfo)& 0x800 ? (7*8)-yoff : yoff));
-               u16 xfin = x + (8 - (xoff&7));
-               
-               if((*mapinfo)& 0x400)
-               {
-                    ligne += (7 - (xoff&7));
-                    for(; x < xfin; ++x, ++xoff)
-                    {
-                         if(*ligne)
-                              *dst = pal[*ligne + ((*mapinfo>>12)&0xF)*0x100];
-                         //else *dst = 0x7FFF;
-                         ++dst;--ligne;
-                    }
-               }
-               else
-               {
-                    ligne += (xoff&7);
-                    for(; x < xfin; ++x, ++xoff)
-                    {
-                         if(*ligne)
-                              *dst = pal[*ligne + ((*mapinfo>>12)&0xF)*0x100];
-                         //else *dst = 0x7FFF;
-                         ++dst;++ligne;
-                    }
-               }
-          }
+		for(x = 0; x < LG;)
+		{
+			tmp = ((xoff&(lg-1))>>3);
+			u16 *mapinfo = map + (tmp&0x1F);
+			if(tmp>31) mapinfo += 32*32;
+			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(*mapinfo) * 0x20) + (((*mapinfo)& MAP_ENTRY_FLIP_Y ? (7*4)-yoff : yoff));
+			u16 xfin = x + (8 - (xoff&7));
+			if (xfin > LG)
+				xfin = LG;
+			
+			if((*mapinfo) & MAP_ENTRY_FLIP_X)
+			{
+				line += 3 - ((xoff&7)>>1);
+				for(; x < xfin; )
+				{
+					if((*line)>>4) *dst = pal[((*line)>>4) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10];
+					//else *dst = 0x7FFF;
+					dst++; x++; xoff++;
+					if((*line)&0xF) *dst = pal[((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10];
+					//else *dst = 0x7FFF;
+					dst++; x++; xoff++;
+					line--;
+				}
+			}
+			else
+			{
+				line += ((xoff&7)>>1);
+				for(; x < xfin; )
+				{
+					if((*line)&0xF) *dst = pal[((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10];
+					//else *dst = 0x7FFF;
+					dst++; x++; xoff++;
+					if((*line)>>4) *dst = pal[((*line)>>4) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10];
+					//else *dst = 0x7FFF;
+					dst++; x++; xoff++;
+					line++;
+				}
+			}
+		}
+		return;
+	}
+	
+	if(!(gpu->prop & DISPLAY_BG_EXT_PALETTE))
+	{
+		u16 yoff = ((Y&7)<<3);
+		u16 * pal = ((u16 *)ARM9Mem.ARM9_VMEM) + gpu->core*0x200;
+		u16 x;
+		
+		for(x = 0; x < LG;)
+		{
+			tmp = ((xoff&(lg-1))>>3);
+			u16 *mapinfo = map + (tmp&31);
+			if(tmp > 31) mapinfo += 32*32;
+			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(*mapinfo)*0x40) + (((*mapinfo)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+			u16 xfin = x + (8 - (xoff&7));
+			if (xfin > LG)
+				xfin = LG;
+			
+			if((*mapinfo)& MAP_ENTRY_FLIP_X)
+			{
+					line += (7 - (xoff&7));
+					for(; x < xfin; ++x, ++xoff)
+					{
+							if(*line) *dst = pal[*line];
+							//else *dst = 0x7FFF;
+							dst++;
+							line--;
+					}
+			}
+			else
+			{
+					line += (xoff&7);
+					for(; x < xfin; ++x, ++xoff)
+					{
+							if(*line) *dst = pal[*line];
+							//else *dst = 0x7FFF;
+							dst++;
+							line++;
+					}
+			}
+		}
+		return;
+	}
+
+	u16 * pal = ((u16 *)ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]]);
+	
+	if(!pal) return;
+	
+	u16 yoff = ((Y&7)<<3);
+	u16 x;
+	
+	for(x = 0; x < LG;)
+	{
+		tmp = ((xoff&(lg-1))>>3);
+		u16 * mapinfo = (u16 *)map + (tmp&0x1F);
+		if(tmp>31) mapinfo += 32*32;
+		u8 * line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(*mapinfo)*0x40) + (((*mapinfo)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+		u16 xfin = x + (8 - (xoff&7));
+		if (xfin > LG)
+			xfin = LG;
+		
+		if((*mapinfo)& MAP_ENTRY_FLIP_X)
+		{
+			line += (7 - (xoff&7));
+			for(; x < xfin; ++x, ++xoff)
+			{
+				if(*line) *dst = pal[*line + ((*mapinfo>>12)&0xF)*0x100];
+				//else *dst = 0x7FFF;
+				dst++;
+				line--;
+			}
+		}
+		else
+		{
+			line += (xoff&7);
+			for(; x < xfin; ++x, ++xoff)
+			{
+				if(*line) *dst = pal[*line + ((*mapinfo>>12)&0xF)*0x100];
+				//else *dst = 0x7FFF;
+				dst++;
+				line++;
+			}
+		}
+	}
 }
 
 INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
@@ -802,14 +801,14 @@ INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s1
      s32 ht = gpu->BGSize[num][1];
      s32 lgmap = (lg>>3);
      
-     u8 * map = (u8 *)gpu->BGScrBB[num];
-     u8 * tile = (u8 *)gpu->BGChBB[num];
+	  u8 * map = (u8 *)gpu->BG_map_ram[num];
+	  u8 * tile = (u8 *)gpu->BG_tile_ram[num];
      u16 * dst = DST;
      u8 mapinfo;
      u8 coul;
      
      if((!tile)||(!map)) return;
-	  u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
+	  u16 * pal = ((u16 *)ARM9Mem.ARM9_VMEM) + gpu->core*0x200;
      u32 i;
      for(i = 0; i < LG; ++i)
      {
@@ -852,7 +851,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
      s16 ht = gpu->BGSize[num][1];
      u16 lgmap = (lg>>3);
      
-     u8 * tile = (u8 *)gpu->BGChBB[num];
+	  u8 * tile = (u8 *)gpu->BG_tile_ram[num];
      u16 * dst = DST;
      u16 mapinfo;
      u8 coul;
@@ -862,8 +861,8 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
           case 0 :
           case 1 :
                {
-               u16 * map = gpu->BGScrBB[num];
-					u16 * pal = ((u16 *)ARM9.ExtPal[gpu->core][gpu->BGExtPalSlot[num]]);
+						u16 * map = gpu->BG_map_ram[num];
+					u16 * pal = ((u16 *)ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]]);
 	       u16 i;
                if(!pal) return;
                for(i = 0; i < LG; ++i)
@@ -895,8 +894,8 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                return;
           case 2 :
                {
-               u8 * map = (u8 *)gpu->BGBmpBB[num];
-					u16 * pal = ((u16 *)ARM9.ARM9_VMEM) + gpu->core*0x200;
+						u8 * map = (u8 *)gpu->BG_bmp_ram[num];
+					u16 * pal = ((u16 *)ARM9Mem.ARM9_VMEM) + gpu->core*0x200;
 	       u16 i;
                for(i = 0; i < LG; ++i)
                {
@@ -923,7 +922,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                return;
           case 3 :
                {
-               u16 * map = (u16 *)gpu->BGBmpBB[num];
+						u16 * map = (u16 *)gpu->BG_bmp_ram[num];
 	       u16 i;
                for(i = 0; i < LG; ++i)
                {
@@ -953,7 +952,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
 
 void lineText(GPU * gpu, u8 num, u16 l, u16 * DST)
 {
-          textBG2(gpu, num, DST, gpu->BGSX[num], l + gpu->BGSY[num], 256);
+	renderline_textBG(gpu, num, DST, gpu->BGSX[num], l + gpu->BGSY[num], 256);
 }
 
 void lineRot(GPU * gpu, u8 num, u16 l, u16 * DST)
@@ -982,9 +981,11 @@ void lineExtRot(GPU * gpu, u8 num, u16 l, u16 * DST)
 
 void textBG(GPU * gpu, u8 num, u16 * DST)
 {
-     u32 i;
-     for(i = 0; i < gpu->BGSize[num][1]; ++i)
-          textBG2(gpu, num, DST + i*gpu->BGSize[num][0], 0, i, gpu->BGSize[num][0]);
+	u32 i;
+	for(i = 0; i < gpu->BGSize[num][1]; ++i)
+	{
+		renderline_textBG(gpu, num, DST + i*gpu->BGSize[num][0], 0, i, gpu->BGSize[num][0]);
+	}
 }
 
 void rotBG(GPU * gpu, u8 num, u16 * DST)
@@ -1112,9 +1113,9 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 	       u16 i;
                
                if(gpu->prop&(1<<31))
-						pal = (u16 *)ARM9.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x100);
+						pal = (u16 *)ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x100);
                else
-						pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
+						pal = ((u16 *)(ARM9Mem.ARM9_VMEM +0x200)) + gpu->core*0x200;
                
                if(aux->attr1&(1<<12))
                {
@@ -1146,7 +1147,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                continue;
           }
           u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-			 u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
+			 u16 * pal = ((u16 *)(ARM9Mem.ARM9_VMEM +0x200)) + gpu->core*0x200;
           if(x&1)
           {
                if(aux->attr1&(1<<12))
@@ -1342,7 +1343,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           if(aux->attr0&(1<<13))
           {
                u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-					u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
+					u16 * pal = ((u16 *)(ARM9Mem.ARM9_VMEM +0x200)) + gpu->core*0x200;
                u16 i;
                
                if(aux->attr1&(1<<12))
@@ -1375,7 +1376,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                continue;
           }
           u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-			 u16 * pal = ((u16 *)(ARM9.ARM9_VMEM +0x200)) + gpu->core*0x200;
+			 u16 * pal = ((u16 *)(ARM9Mem.ARM9_VMEM +0x200)) + gpu->core*0x200;
           if(x&1)
           {
                if(aux->attr1&(1<<12))
