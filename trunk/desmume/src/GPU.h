@@ -22,7 +22,7 @@
 #ifndef GPU_H
 #define GPU_H
 
-#include "arm9/ARM9.h"
+#include "ARM9.h"
 #include <stdio.h>
 
 #ifdef __cplusplus

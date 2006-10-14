@@ -27,6 +27,8 @@
 
 #include "nds/video.h"
 
+ARM9_struct ARM9Mem;
+
 extern BOOL click;
 Screen MainScreen;
 Screen SubScreen;
