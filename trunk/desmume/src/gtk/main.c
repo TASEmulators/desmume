@@ -23,6 +23,20 @@
 // extern char FirmwareFile[256];
 // int LoadFirmware(const char *filename);
 
+static void *Open_Select(GtkWidget* widget, gpointer data);
+static void Launch();
+static void Pause();
+static void Quit(GtkWidget* widget, gpointer data);
+static void Printscreen(GtkWidget* widget, gpointer data);
+
+static GtkActionEntry action_entries[] = {
+	{ "open",	"gtk-open",		"Open",		"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
+	{ "run",	"gtk-media-play",	"Run",		"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
+	{ "pause",	"gtk-media-pause",	"Pause",	"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },
+	{ "quit",	"gtk-quit",		"Quit",		"<Ctrl>q",	NULL,	G_CALLBACK(Quit) },
+	{ "printscreen",NULL,			"Printscreen",	NULL,		NULL,	G_CALLBACK(Printscreen) }
+};
+
 static gint Keypad_Config[DESMUME_NB_KEYS];
 
 const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
@@ -965,6 +979,10 @@ int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgumen
 }
 #endif
 
+static void dui_set_accel_group(gpointer action, gpointer group) {
+        gtk_action_set_accel_group(action, group);
+}
+
 int main (int argc, char *argv[])
 {
 	int i;
@@ -974,9 +992,9 @@ int main (int argc, char *argv[])
 	GtkWidget *pMenuBar;
 	GtkWidget *pMenu, *pSubMenu;
 	GtkWidget *pMenuItem, *pSubMenuItem;
-
-	pthread_t emu_thread;
-	
+	GtkActionGroup * action_group;
+	GtkAccelGroup * accel_group;
+       
 	if(argc == 2) commandLine_File = argv[1];
 	
 #ifdef DEBUG
@@ -1008,6 +1026,15 @@ int main (int argc, char *argv[])
 	pVBox = gtk_vbox_new(FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(pWindow), pVBox);
 
+	accel_group = gtk_accel_group_new();
+	action_group = gtk_action_group_new("dui");
+	gtk_action_group_add_actions(action_group, action_entries, sizeof(action_entries) / sizeof(GtkActionEntry), pWindow);
+        {
+                GList * list = gtk_action_group_list_actions(action_group);
+                g_list_foreach(list, dui_set_accel_group, accel_group);
+        }
+	gtk_window_add_accel_group(GTK_WINDOW(pWindow), accel_group);
+
 	/**** Creation du menu ****/
 
 	pMenuBar = gtk_menu_bar_new();
@@ -1016,22 +1043,9 @@ int main (int argc, char *argv[])
 
 	pMenu = gtk_menu_new();
 
-	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_OPEN,NULL);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Open_Select), (GtkWidget*) pWindow);
-
-	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_CLOSE,NULL);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-
-    pMenuItem = gtk_menu_item_new_with_label("Printscreen");
-    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Printscreen), (GtkWidget*) pWindow);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-    
-    
-	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT,NULL);
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Quit), (GtkWidget*) pWindow);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
 	
 	pMenuItem = gtk_menu_item_new_with_label("File");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
@@ -1053,21 +1067,9 @@ int main (int argc, char *argv[])
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mEmulation);
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 	
-#if ((GTK_MAJOR_VERSION >= 2) && (GTK_MINOR_VERSION >= 6))
-		pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_MEDIA_PLAY,NULL);
-#else
-		pMenuItem = gtk_menu_item_new_with_label("Run");
-#endif
-		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Launch), (GtkWidget*) pWindow);
-		gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
+	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
 	
-#if ((GTK_MAJOR_VERSION >= 2) && (GTK_MINOR_VERSION >= 6))
-		pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_MEDIA_PAUSE,NULL);
-#else
-		pMenuItem = gtk_menu_item_new_with_label("Pause");
-#endif
-		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Pause), (GtkWidget*) pWindow);
-		gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
+	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
 	
 		pMenuItem = gtk_menu_item_new_with_label("Reset");
 		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Reset), (GtkWidget*) pWindow);
@@ -1124,6 +1126,9 @@ int main (int argc, char *argv[])
 	
 	/** Menu "Options" **/
 	GtkWidget *mConfig = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Config");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mConfig);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 	
 	pMenuItem = gtk_menu_item_new_with_label("Edit controls");
 	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
@@ -1186,45 +1191,12 @@ int main (int argc, char *argv[])
 	
 	pToolbar = gtk_toolbar_new();
 	gtk_box_pack_start(GTK_BOX(pVBox), pToolbar, FALSE, FALSE, 0);
-	gtk_toolbar_insert_stock(GTK_TOOLBAR(pToolbar),
-									 GTK_STOCK_OPEN,
-									 "Open",
-									 NULL,
-									 G_CALLBACK(Open_Select),
-									 NULL,
-									 -1);
 
-	gtk_toolbar_insert_stock(GTK_TOOLBAR(pToolbar),
-#if ((GTK_MAJOR_VERSION >= 2) && (GTK_MINOR_VERSION >= 6))
-									GTK_STOCK_MEDIA_PLAY,
-#else
-									NULL
-#endif
-									 "Run",
-									 NULL,
-									 G_CALLBACK(Launch),
-									 NULL,
-									 -1);
-	gtk_toolbar_insert_stock(GTK_TOOLBAR(pToolbar),
-#if ((GTK_MAJOR_VERSION >= 2) && (GTK_MINOR_VERSION >= 6))
-									 GTK_STOCK_MEDIA_PAUSE,
-#else
-									 NULL,
-#endif
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "open"))), -1);
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "run"))), -1);
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "pause"))), -1);
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "quit"))), -1);
 
-									 "Pause",
-									 NULL,
-									 G_CALLBACK(Pause),
-									 NULL,
-									 -1);
-	gtk_toolbar_insert_stock(GTK_TOOLBAR(pToolbar),
-									 GTK_STOCK_QUIT,
-									 "Quit",
-									 NULL,
-									 G_CALLBACK(Quit),
-									 NULL,
-									 -1);
-	
 	/* Création de l'endroit pour l'affichage des écrans */
 	
 	pDrawingArea= gtk_drawing_area_new();
@@ -1296,8 +1268,3 @@ int main (int argc, char *argv[])
 	
 	return EXIT_SUCCESS;
 }
-
-
-
-
-
