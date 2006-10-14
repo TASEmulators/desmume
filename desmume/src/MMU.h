@@ -25,7 +25,7 @@
 #include "FIFO.h"
 #include "dscard.h"
 
-#include "arm9/ARM9.h"
+#include "ARM9.h"
 #include "nds/serial.h"
 #include "mc.h"
 
