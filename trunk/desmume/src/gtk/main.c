@@ -28,14 +28,18 @@ static void Launch();
 static void Pause();
 static void Quit(GtkWidget* widget, gpointer data);
 static void Printscreen(GtkWidget* widget, gpointer data);
+static void Reset();
 
 static GtkActionEntry action_entries[] = {
 	{ "open",	"gtk-open",		"Open",		"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
 	{ "run",	"gtk-media-play",	"Run",		"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
 	{ "pause",	"gtk-media-pause",	"Pause",	"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },
 	{ "quit",	"gtk-quit",		"Quit",		"<Ctrl>q",	NULL,	G_CALLBACK(Quit) },
-	{ "printscreen",NULL,			"Printscreen",	NULL,		NULL,	G_CALLBACK(Printscreen) }
+	{ "printscreen",NULL,			"Printscreen",	NULL,		NULL,	G_CALLBACK(Printscreen) },
+	{ "reset",	"gtk-refresh",		"Reset",	NULL,		NULL,	G_CALLBACK(Reset) }
 };
+
+GtkActionGroup * action_group;
 
 static gint Keypad_Config[DESMUME_NB_KEYS];
 
@@ -56,7 +60,7 @@ const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 	"KEY_DEBUG",
 };
 
-#define CONFIG_FILE "desmume.ini"
+char * CONFIG_FILE;
 
 int Write_ConfigFile()
 {
@@ -200,12 +204,17 @@ static void Launch()
 	
 	pStatusBar_Change("Running ...");
 
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
 }
 
 static void Pause()
 {
 	desmume_pause();
 	pStatusBar_Change("Paused");
+
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
 }
 
 /* Sélectionne un fichier puis le charge */
@@ -272,6 +281,9 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 	}
 	gtk_widget_destroy(pFileSelection);
 	
+	// FIXME: should be set sensitive only if a file was really loaded
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
 }
 
 static void Close()
@@ -336,7 +348,7 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
 {
 	GdkModifierType state;
 	gint x,y;
-	signed long EmuX, EmuY;
+	s32 EmuX, EmuY;
 	
 	
 	if(click)
@@ -368,7 +380,7 @@ static gboolean Stylus_Press(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
 	GdkModifierType state;
 	gint x,y;
-	signed long EmuX, EmuY;
+	s32 EmuX, EmuY;
 	
 	if(desmume_running()) 
 	{
@@ -397,12 +409,12 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 	return TRUE;
 }
 
-static unsigned short Cur_Keypad = 0;
+static u16 Cur_Keypad = 0;
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 {
 	int i;
-	unsigned short Key = 0;
+	u16 Key = 0;
 	
 	for(i = 0; i < DESMUME_NB_KEYS; i++)
 		if(e->keyval == Keypad_Config[i]) break;
@@ -420,7 +432,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 {
 	int i;
-	unsigned short Key = 0;
+	u16 Key = 0;
 	
 	for(i = 0; i < DESMUME_NB_KEYS; i++)
 		if(e->keyval == Keypad_Config[i]) break;
@@ -630,23 +642,23 @@ const char *Layers_Menu[10] =
 
 typedef struct
 {
-    unsigned long header_size;
-    long width;
-    long height;
-    unsigned short r1;
-    unsigned short depth;
-    unsigned long r2;
-    unsigned long size;
-    long r3,r4;
-    unsigned long r5,r6;
+    u32 header_size;
+    s32 width;
+    s32 height;
+    u16 r1;
+    u16 depth;
+    u32 r2;
+    u32 size;
+    s32 r3,r4;
+    u32 r5,r6;
 }BmpImageHeader;
 
 typedef struct
 {
-    unsigned short type;
-    unsigned long size;
-    unsigned short r1, r2;
-    unsigned long data_offset;
+    u16 type;
+    u32 size;
+    u16 r1, r2;
+    u32 data_offset;
 }BmpFileHeader;
 
 
@@ -693,7 +705,7 @@ int WriteBMP(const char *filename,u16 *bmp){
     fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
     int i,j,k;
     for(j=0;j<192*2;j++)for(i=0;i<256;i++){
-    unsigned char r,g,b;
+    u8 r,g,b;
     u16 pixel = bmp[i+(192*2-j)*256];
     r = pixel>>10;
     pixel-=r<<10;
@@ -992,7 +1004,6 @@ int main (int argc, char *argv[])
 	GtkWidget *pMenuBar;
 	GtkWidget *pMenu, *pSubMenu;
 	GtkWidget *pMenuItem, *pSubMenuItem;
-	GtkActionGroup * action_group;
 	GtkAccelGroup * accel_group;
        
 	if(argc == 2) commandLine_File = argv[1];
@@ -1008,9 +1019,8 @@ int main (int argc, char *argv[])
  	dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
 	for(i=0; i<dTools_list_size; i++) dTools_running[i]=FALSE;
 	
+	CONFIG_FILE = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
 	Read_ConfigFile();
-	
-	//pthread_create(&emu_thread, NULL, &EmuThread, NULL);	/* Lance le thread de l'Ã©mulateur */
 	
 	/* Creation de la fenetre */
 	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1034,6 +1044,10 @@ int main (int argc, char *argv[])
                 g_list_foreach(list, dui_set_accel_group, accel_group);
         }
 	gtk_window_add_accel_group(GTK_WINDOW(pWindow), accel_group);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
 
 	/**** Creation du menu ****/
 
@@ -1070,10 +1084,8 @@ int main (int argc, char *argv[])
 	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
 	
 	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
-	
-		pMenuItem = gtk_menu_item_new_with_label("Reset");
-		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Reset), (GtkWidget*) pWindow);
-		gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
+
+	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
 	
 		mFrameskip = gtk_menu_new();
 		pMenuItem = gtk_menu_item_new_with_label("Frameskip");
