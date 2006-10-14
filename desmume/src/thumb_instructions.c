@@ -27,13 +27,13 @@
 
 extern BOOL execute;
 
-u32 FASTCALL OP_UND_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_UND_THUMB(armcpu_t *cpu)
 {
      execute = FALSE;
      return 1;
 }
 
-u32 FASTCALL OP_LSL_0(armcpu_t *cpu)
+static u32 FASTCALL OP_LSL_0(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] = cpu->R[REG_NUM(i, 3)];
@@ -43,7 +43,7 @@ u32 FASTCALL OP_LSL_0(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_LSL(armcpu_t *cpu)
+static u32 FASTCALL OP_LSL(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = (i>>6) & 0x1F;
@@ -55,7 +55,7 @@ u32 FASTCALL OP_LSL(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_LSR_0(armcpu_t *cpu)
+static u32 FASTCALL OP_LSR_0(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
 	  // cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 0)]);
@@ -67,7 +67,7 @@ u32 FASTCALL OP_LSR_0(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_LSR(armcpu_t *cpu)
+static u32 FASTCALL OP_LSR(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = (i>>6) & 0x1F;
@@ -79,7 +79,7 @@ u32 FASTCALL OP_LSR(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_ASR_0(armcpu_t *cpu)
+static u32 FASTCALL OP_ASR_0(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->CPSR.bits.C = BIT31(cpu->R[REG_NUM(i, 3)]);
@@ -90,7 +90,7 @@ u32 FASTCALL OP_ASR_0(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_ASR(armcpu_t *cpu)
+static u32 FASTCALL OP_ASR(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = (i>>6) & 0x1F;
@@ -102,7 +102,7 @@ u32 FASTCALL OP_ASR(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_ADD_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_ADD_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 3)];
@@ -116,7 +116,7 @@ u32 FASTCALL OP_ADD_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_SUB_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_SUB_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 3)];
@@ -130,7 +130,7 @@ u32 FASTCALL OP_SUB_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_ADD_IMM3(armcpu_t *cpu)
+static u32 FASTCALL OP_ADD_IMM3(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 3)];
@@ -143,7 +143,7 @@ u32 FASTCALL OP_ADD_IMM3(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_SUB_IMM3(armcpu_t *cpu)
+static u32 FASTCALL OP_SUB_IMM3(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 3)];
@@ -156,7 +156,7 @@ u32 FASTCALL OP_SUB_IMM3(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_MOV_IMM8(armcpu_t *cpu)
+static u32 FASTCALL OP_MOV_IMM8(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 8)] = i & 0xFF;
@@ -166,7 +166,7 @@ u32 FASTCALL OP_MOV_IMM8(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_CMP_IMM8(armcpu_t *cpu)
+static u32 FASTCALL OP_CMP_IMM8(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 8)] - (i & 0xFF);
@@ -178,7 +178,7 @@ u32 FASTCALL OP_CMP_IMM8(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_ADD_IMM8(armcpu_t *cpu)
+static u32 FASTCALL OP_ADD_IMM8(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 8)] + (i & 0xFF);
@@ -191,7 +191,7 @@ u32 FASTCALL OP_ADD_IMM8(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_SUB_IMM8(armcpu_t *cpu)
+static u32 FASTCALL OP_SUB_IMM8(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 8)] - (i & 0xFF);
@@ -204,7 +204,7 @@ u32 FASTCALL OP_SUB_IMM8(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_AND(armcpu_t *cpu)
+static u32 FASTCALL OP_AND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] &= cpu->R[REG_NUM(i, 3)];
@@ -214,7 +214,7 @@ u32 FASTCALL OP_AND(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_EOR(armcpu_t *cpu)
+static u32 FASTCALL OP_EOR(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] ^= cpu->R[REG_NUM(i, 3)];
@@ -224,7 +224,7 @@ u32 FASTCALL OP_EOR(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_LSL_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_LSL_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
@@ -254,7 +254,7 @@ u32 FASTCALL OP_LSL_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_LSR_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_LSR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
@@ -284,7 +284,7 @@ u32 FASTCALL OP_LSR_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_ASR_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_ASR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
@@ -312,7 +312,7 @@ u32 FASTCALL OP_ASR_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_ADC_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_ADC_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 0)];
@@ -331,7 +331,7 @@ u32 FASTCALL OP_ADC_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_SBC_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_SBC_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 0)];
@@ -349,7 +349,7 @@ u32 FASTCALL OP_SBC_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_ROR_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_ROR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 v = cpu->R[REG_NUM(i, 3)]&0xFF;
@@ -376,7 +376,7 @@ u32 FASTCALL OP_ROR_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_TST(armcpu_t *cpu)
+static u32 FASTCALL OP_TST(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 0)] & cpu->R[REG_NUM(i, 3)];
@@ -386,7 +386,7 @@ u32 FASTCALL OP_TST(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_NEG(armcpu_t *cpu)
+static u32 FASTCALL OP_NEG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 3)];
@@ -400,7 +400,7 @@ u32 FASTCALL OP_NEG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_CMP(armcpu_t *cpu)
+static u32 FASTCALL OP_CMP(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 0)] -cpu->R[REG_NUM(i, 3)];
@@ -413,7 +413,7 @@ u32 FASTCALL OP_CMP(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_CMN(armcpu_t *cpu)
+static u32 FASTCALL OP_CMN(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 0)] + cpu->R[REG_NUM(i, 3)];
@@ -428,7 +428,7 @@ u32 FASTCALL OP_CMN(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_ORR(armcpu_t *cpu)
+static u32 FASTCALL OP_ORR(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] |= cpu->R[REG_NUM(i, 3)];
@@ -438,7 +438,7 @@ u32 FASTCALL OP_ORR(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_MUL_REG(armcpu_t *cpu)
+static u32 FASTCALL OP_MUL_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] *= cpu->R[REG_NUM(i, 3)];
@@ -448,7 +448,7 @@ u32 FASTCALL OP_MUL_REG(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_BIC(armcpu_t *cpu)
+static u32 FASTCALL OP_BIC(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] &= (~cpu->R[REG_NUM(i, 3)]);
@@ -458,7 +458,7 @@ u32 FASTCALL OP_BIC(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_MVN(armcpu_t *cpu)
+static u32 FASTCALL OP_MVN(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 0)] = (~cpu->R[REG_NUM(i, 3)]);
@@ -468,7 +468,7 @@ u32 FASTCALL OP_MVN(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_ADD_SPE(armcpu_t *cpu)
+static u32 FASTCALL OP_ADD_SPE(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u8 Rd = (i&7) | ((i>>4)&8);
@@ -480,7 +480,7 @@ u32 FASTCALL OP_ADD_SPE(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_CMP_SPE(armcpu_t *cpu)
+static u32 FASTCALL OP_CMP_SPE(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u8 Rn = (i&7) | ((i>>4)&8);
@@ -494,7 +494,7 @@ u32 FASTCALL OP_CMP_SPE(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_MOV_SPE(armcpu_t *cpu)
+static u32 FASTCALL OP_MOV_SPE(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u8 Rd = (i&7) | ((i>>4)&8);
@@ -506,7 +506,7 @@ u32 FASTCALL OP_MOV_SPE(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_BX_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_BX_THUMB(armcpu_t *cpu)
 {
      u32 Rm = cpu->R[REG_POS(cpu->instruction, 3)];
      
@@ -517,7 +517,7 @@ u32 FASTCALL OP_BX_THUMB(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_BLX_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_BLX_THUMB(armcpu_t *cpu)
 {
      u32 Rm = cpu->R[REG_POS(cpu->instruction, 3)];
      
@@ -529,7 +529,7 @@ u32 FASTCALL OP_BLX_THUMB(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_LDR_PCREL(armcpu_t *cpu)
+static u32 FASTCALL OP_LDR_PCREL(armcpu_t *cpu)
 {
      u32 adr = (cpu->R[15]&0xFFFFFFFC) + ((cpu->instruction&0xFF)<<2);
      
@@ -538,7 +538,7 @@ u32 FASTCALL OP_LDR_PCREL(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STR_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_STR_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 6)] + cpu->R[REG_NUM(i, 3)];
@@ -547,7 +547,7 @@ u32 FASTCALL OP_STR_REG_OFF(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STRH_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_STRH_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -556,7 +556,7 @@ u32 FASTCALL OP_STRH_REG_OFF(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STRB_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_STRB_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -565,7 +565,7 @@ u32 FASTCALL OP_STRB_REG_OFF(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDRSB_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDRSB_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -574,7 +574,7 @@ u32 FASTCALL OP_LDRSB_REG_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDR_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDR_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -583,7 +583,7 @@ u32 FASTCALL OP_LDR_REG_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDRH_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDRH_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -592,7 +592,7 @@ u32 FASTCALL OP_LDRH_REG_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDRB_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDRB_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -601,7 +601,7 @@ u32 FASTCALL OP_LDRB_REG_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDRSH_REG_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDRSH_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
@@ -610,7 +610,7 @@ u32 FASTCALL OP_LDRSH_REG_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STR_IMM_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_STR_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>4)&0x7C);
@@ -619,7 +619,7 @@ u32 FASTCALL OP_STR_IMM_OFF(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDR_IMM_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDR_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>4)&0x7C);
@@ -628,7 +628,7 @@ u32 FASTCALL OP_LDR_IMM_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STRB_IMM_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_STRB_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>6)&0x1F);
@@ -637,7 +637,7 @@ u32 FASTCALL OP_STRB_IMM_OFF(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDRB_IMM_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDRB_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>6)&0x1F);
@@ -646,7 +646,7 @@ u32 FASTCALL OP_LDRB_IMM_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STRH_IMM_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_STRH_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>5)&0x3E);
@@ -655,7 +655,7 @@ u32 FASTCALL OP_STRH_IMM_OFF(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDRH_IMM_OFF(armcpu_t *cpu)
+static u32 FASTCALL OP_LDRH_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>5)&0x3E);
@@ -664,7 +664,7 @@ u32 FASTCALL OP_LDRH_IMM_OFF(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_STR_SPREL(armcpu_t *cpu)
+static u32 FASTCALL OP_STR_SPREL(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] + ((i&0xFF)<<2);
@@ -673,7 +673,7 @@ u32 FASTCALL OP_STR_SPREL(armcpu_t *cpu)
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_LDR_SPREL(armcpu_t *cpu)
+static u32 FASTCALL OP_LDR_SPREL(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] + ((i&0xFF)<<2);
@@ -682,7 +682,7 @@ u32 FASTCALL OP_LDR_SPREL(armcpu_t *cpu)
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
-u32 FASTCALL OP_ADD_2PC(armcpu_t *cpu)
+static u32 FASTCALL OP_ADD_2PC(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 8)] = (cpu->R[15]&0xFFFFFFFC) + ((i&0xFF)<<2);
@@ -690,7 +690,7 @@ u32 FASTCALL OP_ADD_2PC(armcpu_t *cpu)
      return 5;
 }
 
-u32 FASTCALL OP_ADD_2SP(armcpu_t *cpu)
+static u32 FASTCALL OP_ADD_2SP(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[REG_NUM(i, 8)] = cpu->R[13] + ((i&0xFF)<<2);
@@ -698,21 +698,21 @@ u32 FASTCALL OP_ADD_2SP(armcpu_t *cpu)
      return 2;
 }
 
-u32 FASTCALL OP_ADJUST_P_SP(armcpu_t *cpu)
+static u32 FASTCALL OP_ADJUST_P_SP(armcpu_t *cpu)
 {
      cpu->R[13] += ((cpu->instruction&0x7F)<<2);
      
      return 1;
 }
 
-u32 FASTCALL OP_ADJUST_M_SP(armcpu_t *cpu)
+static u32 FASTCALL OP_ADJUST_M_SP(armcpu_t *cpu)
 {
      cpu->R[13] -= ((cpu->instruction&0x7F)<<2);
      
      return 1;
 }
 
-u32 FASTCALL OP_PUSH(armcpu_t *cpu)
+static u32 FASTCALL OP_PUSH(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] - 4;
@@ -731,7 +731,7 @@ u32 FASTCALL OP_PUSH(armcpu_t *cpu)
      return c + 3;
 }
 
-u32 FASTCALL OP_PUSH_LR(armcpu_t *cpu)
+static u32 FASTCALL OP_PUSH_LR(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] - 4;
@@ -754,7 +754,7 @@ u32 FASTCALL OP_PUSH_LR(armcpu_t *cpu)
      return c + 4;
 }
 
-u32 FASTCALL OP_POP(armcpu_t *cpu)
+static u32 FASTCALL OP_POP(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13];
@@ -773,7 +773,7 @@ u32 FASTCALL OP_POP(armcpu_t *cpu)
      return c + 2;
 }
 
-u32 FASTCALL OP_POP_PC(armcpu_t *cpu)
+static u32 FASTCALL OP_POP_PC(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13];
@@ -800,12 +800,12 @@ u32 FASTCALL OP_POP_PC(armcpu_t *cpu)
      return c + 5;    
 }
 
-u32 FASTCALL OP_BKPT_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_BKPT_THUMB(armcpu_t *cpu)
 {
      return 1;
 }
 
-u32 FASTCALL OP_STMIA_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_STMIA_THUMB(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 8)];
@@ -823,7 +823,7 @@ u32 FASTCALL OP_STMIA_THUMB(armcpu_t *cpu)
      return c + 2;
 }
 
-u32 FASTCALL OP_LDMIA_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_LDMIA_THUMB(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 8)];
@@ -841,7 +841,7 @@ u32 FASTCALL OP_LDMIA_THUMB(armcpu_t *cpu)
      return c + 3;
 }
 
-u32 FASTCALL OP_B_COND(armcpu_t *cpu)
+static u32 FASTCALL OP_B_COND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      if(!TEST_COND((i>>8)&0xF, cpu->CPSR))
@@ -852,7 +852,7 @@ u32 FASTCALL OP_B_COND(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_SWI_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_SWI_THUMB(armcpu_t *cpu)
 {
      u32 swinum = cpu->instruction & 0xFF;
      return cpu->swi_tab[swinum](cpu) + 3;  
@@ -861,7 +861,7 @@ u32 FASTCALL OP_SWI_THUMB(armcpu_t *cpu)
 
 #define SIGNEEXT_IMM11(i)     (((i)&0x7FF) | (BIT10(i) * 0xFFFFF800))
 
-u32 FASTCALL OP_B_UNCOND(armcpu_t *cpu)
+static u32 FASTCALL OP_B_UNCOND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[15] += (SIGNEEXT_IMM11(i)<<1);
@@ -869,7 +869,7 @@ u32 FASTCALL OP_B_UNCOND(armcpu_t *cpu)
      return 3;
 }
  
-u32 FASTCALL OP_BLX(armcpu_t *cpu)
+static u32 FASTCALL OP_BLX(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[15] = (cpu->R[14] + ((i&0x7FF)<<1))&0xFFFFFFFC;
@@ -879,14 +879,14 @@ u32 FASTCALL OP_BLX(armcpu_t *cpu)
      return 3;
 }
 
-u32 FASTCALL OP_BL_10(armcpu_t *cpu)
+static u32 FASTCALL OP_BL_10(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[14] = cpu->R[15] + (SIGNEEXT_IMM11(i)<<12);
      return 1;
 }
 
-u32 FASTCALL OP_BL_THUMB(armcpu_t *cpu)
+static u32 FASTCALL OP_BL_THUMB(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      cpu->R[15] = (cpu->R[14] + ((i&0x7FF)<<1));

@@ -267,225 +267,225 @@ const char MSR_FIELD[16][5] = {
      }\
      lreg[strlen(lreg)-1]='\0';
 
-char * OP_UND(u32 adr, u32 i, char * txt)
+static char * OP_UND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "--<UNDEFINED>--");
      return txt;
 }
  
 //-----------------------AND------------------------------------
-char * OP_AND_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(AND, "");
      return txt;
 }
 
-char * OP_AND_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, LSL, "");
      return txt;
 }
 
-char * OP_AND_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(AND, LSR, "");
      return txt;
 }
 
-char * OP_AND_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, LSR, "");
      return txt;
 }
 
-char * OP_AND_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(AND, ASR, "");
      return txt;
 }
 
-char * OP_AND_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, ASR, "");
      return txt;
 }
 
-char * OP_AND_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(AND, "");
      return txt;
 }
 
-char * OP_AND_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, ROR, "");
      return txt;
 }
 
-char * OP_AND_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_AND_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(AND, "");
      return txt;
 }
 
-char * OP_AND_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(AND, "S");
      return txt;
 }
 
-char * OP_AND_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, LSL, "S");
      return txt;
 }
 
-char * OP_AND_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(AND, LSR, "S");
      return txt;
 }
 
-char * OP_AND_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, LSR, "S");
      return txt;
 }
 
-char * OP_AND_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(AND, ASR, "S");
      return txt;
 }
 
-char * OP_AND_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, ASR, "S");
      return txt;
 }
 
-char * OP_AND_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(AND, "S");
      return txt;
 }
 
-char * OP_AND_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(AND, ROR, "S");
      return txt;
 }
 
-char * OP_AND_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_AND_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(AND, "S");
      return txt;
 }
 
 //--------------EOR------------------------------
-char * OP_EOR_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(EOR, "");
      return txt;
 }
 
-char * OP_EOR_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, LSL, "");
      return txt;
 }
 
-char * OP_EOR_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_LSR_IMM(u32 adr, u32 i, char * txt)
 {
     DATAPROC_IMM_SHIFT(EOR, LSR, "");
     return txt;
 }
     
-char * OP_EOR_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, LSR, "");
      return txt;
 }
 
-char * OP_EOR_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(EOR, ASR, "");
      return txt;
 }
 
-char * OP_EOR_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, ASR, "");
      return txt;
 }
 
-char * OP_EOR_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(EOR, "");
      return txt;
 }
 
-char * OP_EOR_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, ROR, "");
      return txt;
 }
 
-char * OP_EOR_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_EOR_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(EOR, "");
      return txt;
 }
 
-char * OP_EOR_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(EOR, "S");
      return txt;
 }
 
-char * OP_EOR_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, LSL, "S");
      return txt;
 }
 
-char * OP_EOR_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(EOR, LSR, "S");
      return txt;
 }
 
-char * OP_EOR_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, LSR, "S");
      return txt;
 }
 
-char * OP_EOR_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(EOR, ASR, "S");
      return txt;
 }
 
-char * OP_EOR_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, ASR, "S");
      return txt;
 }
 
-char * OP_EOR_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(EOR, "S");
      return txt;
 }
 
-char * OP_EOR_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(EOR, ROR, "S");
      return txt;
 }
 
-char * OP_EOR_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_EOR_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(EOR, "S");
      return txt;
@@ -493,1113 +493,1113 @@ char * OP_EOR_S_IMM_VAL(u32 adr, u32 i, char * txt)
 
 //-------------SUB-------------------------------------
 
-char * OP_SUB_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(SUB, "");
      return txt;
 }
 
-char * OP_SUB_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, LSL, "");
      return txt;
 }
 
-char * OP_SUB_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SUB, LSR, "");
      return txt;
 }
 
-char * OP_SUB_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, LSR, "");
      return txt;
 }
 
-char * OP_SUB_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SUB, ASR, "");
      return txt;
 }
 
-char * OP_SUB_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, ASR, "");
 return txt;}
 
-char * OP_SUB_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(SUB, "");
 return txt;}
 
-char * OP_SUB_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, ROR, "");
 return txt;}
 
-char * OP_SUB_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_SUB_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(SUB, "");
 return txt;}
 
-char * OP_SUB_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(SUB, "S");
 return txt;}
 
-char * OP_SUB_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, LSL, "S");
 return txt;}
 
-char * OP_SUB_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SUB, LSR, "S");
 return txt;}
 
-char * OP_SUB_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, LSR, "S");
 return txt;}
 
-char * OP_SUB_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SUB, ASR, "S");
 return txt;}
 
-char * OP_SUB_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, ASR, "S");
 return txt;}
 
-char * OP_SUB_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(SUB, "S");
 return txt;}
 
-char * OP_SUB_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SUB, ROR, "S");
 return txt;}
 
-char * OP_SUB_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_SUB_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(SUB, "S");
 return txt;}
 
 //------------------RSB------------------------
 
-char * OP_RSB_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(RSB, "");
 return txt;}
 
-char * OP_RSB_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, LSL, "");
 return txt;}
 
-char * OP_RSB_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSB, LSR, "");
 return txt;}
 
-char * OP_RSB_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, LSR, "");
 return txt;}
 
-char * OP_RSB_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSB, ASR, "");
 return txt;}
 
-char * OP_RSB_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, ASR, "");
 return txt;}
 
-char * OP_RSB_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(RSB, "");
 return txt;}
 
-char * OP_RSB_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, ROR, "");
 return txt;}
 
-char * OP_RSB_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_RSB_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(RSB, "");
 return txt;}
 
-char * OP_RSB_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(RSB, "S");
 return txt;}
 
-char * OP_RSB_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, LSL, "S");
 return txt;}
 
-char * OP_RSB_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSB, LSR, "S");
 return txt;}
 
-char * OP_RSB_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, LSR, "S");
 return txt;}
 
-char * OP_RSB_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSB, ASR, "S");
 return txt;}
 
-char * OP_RSB_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, ASR, "S");
 return txt;}
 
-char * OP_RSB_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(RSB, "S");
 return txt;}
 
-char * OP_RSB_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSB, ROR, "S");
 return txt;}
 
-char * OP_RSB_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_RSB_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(RSB, "S");
 return txt;}
 
 //------------------ADD-----------------------------------
 
-char * OP_ADD_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(ADD, "");
 return txt;}
 
-char * OP_ADD_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, LSL, "");
 return txt;}
 
-char * OP_ADD_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADD, LSR, "");
 return txt;}
 
-char * OP_ADD_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, LSR, "");
 return txt;}
 
-char * OP_ADD_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADD, ASR, "");
 return txt;}
 
-char * OP_ADD_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, ASR, "");
 return txt;}
 
-char * OP_ADD_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(ADD, "");
 return txt;}
 
-char * OP_ADD_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, ROR, "");
 return txt;}
 
-char * OP_ADD_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_ADD_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(ADD, "");
 return txt;}
 
-char * OP_ADD_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(ADD, "S");
 return txt;}
 
-char * OP_ADD_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, LSL, "S");
 return txt;}
 
-char * OP_ADD_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADD, LSR, "S");
 return txt;}
 
-char * OP_ADD_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, LSR, "S");
 return txt;}
 
-char * OP_ADD_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADD, ASR, "S");
 return txt;}
 
-char * OP_ADD_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, ASR, "S");
 return txt;}
 
-char * OP_ADD_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(ADD, "S");
 return txt;}
 
-char * OP_ADD_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADD, ROR, "S");
 return txt;}
 
-char * OP_ADD_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_ADD_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(ADD, "S");
 return txt;}
 
 //------------------ADC-----------------------------------
 
-char * OP_ADC_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(ADC, "");
 return txt;}
 
-char * OP_ADC_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, LSL, "");
 return txt;}
 
-char * OP_ADC_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADC, LSR, "");
 return txt;}
 
-char * OP_ADC_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, LSR, "");
 return txt;}
 
-char * OP_ADC_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADC, ASR, "");
 return txt;}
 
-char * OP_ADC_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, ASR, "");
 return txt;}
 
-char * OP_ADC_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(ADC, "");
 return txt;}
 
-char * OP_ADC_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, ROR, "");
 return txt;}
 
-char * OP_ADC_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_ADC_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(ADC, "");
 return txt;}
 
-char * OP_ADC_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(ADC, "S");
 return txt;}
 
-char * OP_ADC_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, LSL, "S");
 return txt;}
 
-char * OP_ADC_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADC, LSR, "S");
 return txt;}
 
-char * OP_ADC_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, LSR, "S");
 return txt;}
 
-char * OP_ADC_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ADC, ASR, "S");
 return txt;}
 
-char * OP_ADC_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, ASR, "S");
 return txt;}
 
-char * OP_ADC_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(ADC, "S");
 return txt;}
 
-char * OP_ADC_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ADC, ROR, "S");
 return txt;}
 
-char * OP_ADC_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_ADC_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(ADC, "S");
 return txt;}
 
 //-------------SBC-------------------------------------
 
-char * OP_SBC_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(SBC, "");
 return txt;}
 
-char * OP_SBC_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, LSL, "");
 return txt;}
 
-char * OP_SBC_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SBC, LSR, "");
 return txt;}
 
-char * OP_SBC_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, LSR, "");
 return txt;}
 
-char * OP_SBC_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SBC, ASR, "");
 return txt;}
 
-char * OP_SBC_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, ASR, "");
 return txt;}
 
-char * OP_SBC_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(SBC, "");
 return txt;}
 
-char * OP_SBC_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, ROR, "");
 return txt;}
 
-char * OP_SBC_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_SBC_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(SBC, "");
 return txt;}
 
-char * OP_SBC_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(SBC, "S");
 return txt;}
 
-char * OP_SBC_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, LSL, "S");
 return txt;}
 
-char * OP_SBC_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SBC, LSR, "S");
 return txt;}
 
-char * OP_SBC_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, LSR, "S");
 return txt;}
 
-char * OP_SBC_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(SBC, ASR, "S");
 return txt;}
 
-char * OP_SBC_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, ASR, "S");
 return txt;}
 
-char * OP_SBC_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(SBC, "S");
 return txt;}
 
-char * OP_SBC_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(SBC, ROR, "S");
 return txt;}
 
-char * OP_SBC_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_SBC_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(SBC, "S");
 return txt;}
 
 //---------------RSC----------------------------------
 
-char * OP_RSC_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(RSC, "");
 return txt;}
 
-char * OP_RSC_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, LSL, "");
 return txt;}
 
-char * OP_RSC_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSC, LSR, "");
 return txt;}
 
-char * OP_RSC_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, LSR, "");
 return txt;}
 
-char * OP_RSC_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSC, ASR, "");
 return txt;}
 
-char * OP_RSC_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, ASR, "");
 return txt;}
 
-char * OP_RSC_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(RSC, "");
 return txt;}
 
-char * OP_RSC_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, ROR, "");
 return txt;}
 
-char * OP_RSC_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_RSC_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(RSC, "");
 return txt;}
 
-char * OP_RSC_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(RSC, "S");
 return txt;}
 
-char * OP_RSC_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, LSL, "S");
 return txt;}
 
-char * OP_RSC_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSC, LSR, "S");
 return txt;}
 
-char * OP_RSC_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, LSR, "S");
 return txt;}
 
-char * OP_RSC_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(RSC, ASR, "S");
 return txt;}
 
-char * OP_RSC_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, ASR, "S");
 return txt;}
 
-char * OP_RSC_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(RSC, "S");
 return txt;}
 
-char * OP_RSC_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(RSC, ROR, "S");
 return txt;}
 
-char * OP_RSC_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_RSC_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(RSC, "S");
 return txt;}
 
 //-------------------TST----------------------------
 
-char * OP_TST_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TST_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(TST, "", 16);
 return txt;}
 
-char * OP_TST_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_TST_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TST, LSL, "", 16);
 return txt;}
 
-char * OP_TST_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TST_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(TST, LSR, "", 16);
 return txt;}
 
-char * OP_TST_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_TST_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TST, LSR, "", 16);
 return txt;}
 
-char * OP_TST_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TST_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(TST, ASR, "", 16);
 return txt;}
 
-char * OP_TST_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_TST_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TST, ASR, "", 16);
 return txt;}
 
-char * OP_TST_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TST_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(TST, "", 16);
 return txt;}
 
-char * OP_TST_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_TST_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TST, ROR, "", 16);
 return txt;}
 
-char * OP_TST_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_TST_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(TST, "", 16);
 return txt;}
 
 //-------------------TEQ----------------------------
 
-char * OP_TEQ_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(TEQ, "", 16);
 return txt;}
 
-char * OP_TEQ_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TEQ, LSL, "", 16);
 return txt;}
 
-char * OP_TEQ_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(TEQ, LSR, "", 16);
 return txt;}
 
-char * OP_TEQ_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TEQ, LSR, "", 16);
 return txt;}
 
-char * OP_TEQ_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(TEQ, ASR, "", 16);
 return txt;}
 
-char * OP_TEQ_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TEQ, ASR, "", 16);
 return txt;}
 
-char * OP_TEQ_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(TEQ, "", 16);
 return txt;}
 
-char * OP_TEQ_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(TEQ, ROR, "", 16);
 return txt;}
 
-char * OP_TEQ_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_TEQ_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(TEQ, "", 16);
 return txt;}
 
 //-------------CMP-------------------------------------
 
-char * OP_CMP_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMP_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(CMP, "", 16);
 return txt;}
 
-char * OP_CMP_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMP_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMP, LSL, "", 16);
 return txt;}
 
-char * OP_CMP_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMP_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(CMP, LSR, "", 16);
 return txt;}
 
-char * OP_CMP_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMP_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMP, LSR, "", 16);
 return txt;}
 
-char * OP_CMP_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMP_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(CMP, ASR, "", 16);
 return txt;}
 
-char * OP_CMP_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMP_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMP, ASR, "", 16);
 return txt;}
 
-char * OP_CMP_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMP_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(CMP, "", 16);
 return txt;}
 
-char * OP_CMP_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMP_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMP, ROR, "", 16);
 return txt;}
 
-char * OP_CMP_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_CMP_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(CMP, "", 16);
 return txt;}
 
 //---------------CMN---------------------------
 
-char * OP_CMN_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMN_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(CMN, "", 16);
 return txt;}
 
-char * OP_CMN_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMN_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMN, LSL, "", 16);
 return txt;}
 
-char * OP_CMN_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMN_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(CMP, ASR, "", 16);
 return txt;}
 
-char * OP_CMN_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMN_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMN, LSR, "", 16);
 return txt;}
 
-char * OP_CMN_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMN_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(CMN, ASR, "", 16);
 return txt;}
 
-char * OP_CMN_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMN_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMN, ASR, "", 16);
 return txt;}
 
-char * OP_CMN_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_CMN_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(CMN, "", 16);
 return txt;}
 
-char * OP_CMN_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_CMN_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(CMN, ROR, "", 16);
 return txt;}
 
-char * OP_CMN_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_CMN_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(CMN, "", 16);
 return txt;}
 
 //------------------ORR-------------------
 
-char * OP_ORR_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(ORR, "");
 return txt;}
 
-char * OP_ORR_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, LSL, "");
 return txt;}
 
-char * OP_ORR_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ORR, LSR, "");
 return txt;}
 
-char * OP_ORR_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, LSR, "");
 return txt;}
 
-char * OP_ORR_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ORR, ASR, "");
 return txt;}
 
-char * OP_ORR_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, ASR, "");
 return txt;}
 
-char * OP_ORR_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(ORR, "");
 return txt;}
 
-char * OP_ORR_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, ROR, "");
 return txt;}
 
-char * OP_ORR_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_ORR_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(ORR, "");
 return txt;}
 
-char * OP_ORR_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(ORR, "S");
 return txt;}
 
-char * OP_ORR_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, LSL, "S");
 return txt;}
 
-char * OP_ORR_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ORR, LSR, "S");
 return txt;}
 
-char * OP_ORR_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, LSR, "S");
 return txt;}
 
-char * OP_ORR_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(ORR, ASR, "S");
 return txt;}
 
-char * OP_ORR_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, ASR, "S");
 return txt;}
 
-char * OP_ORR_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(ORR, "S");
 return txt;}
 
-char * OP_ORR_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(ORR, ROR, "S");
 return txt;}
 
-char * OP_ORR_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_ORR_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(ORR, "S");
 return txt;}
 
 //------------------MOV-------------------
 
-char * OP_MOV_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(MOV, "", 12);
 return txt;}
 
-char * OP_MOV_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, LSL, "", 12);
 return txt;}
 
-char * OP_MOV_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MOV, LSR, "", 12);
 return txt;}
 
-char * OP_MOV_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, LSR, "", 12);
 return txt;}
 
-char * OP_MOV_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MOV, ASR, "", 12);
 return txt;}
 
-char * OP_MOV_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, ASR, "", 12);
 return txt;}
 
-char * OP_MOV_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(MOV, "", 12);
 return txt;}
 
-char * OP_MOV_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, ROR, "", 12);
 return txt;}
 
-char * OP_MOV_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_MOV_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(MOV, "", 12);
 return txt;}
 
-char * OP_MOV_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(MOV, "S", 12);
 return txt;}
 
-char * OP_MOV_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, LSL, "S", 12);
 return txt;}
 
-char * OP_MOV_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MOV, LSR, "S", 12);
 return txt;}
 
-char * OP_MOV_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, LSR, "S", 12);
 return txt;}
 
-char * OP_MOV_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MOV, ASR, "S", 12);
 return txt;}
 
-char * OP_MOV_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, ASR, "S", 12);
 return txt;}
 
-char * OP_MOV_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(MOV, "S", 12);
 return txt;}
 
-char * OP_MOV_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MOV, ROR, "S", 12);
 return txt;}
 
-char * OP_MOV_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_MOV_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(MOV, "S", 12);
 return txt;}
 
 //------------------BIC-------------------
 
-char * OP_BIC_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(BIC, "");
 return txt;}
 
-char * OP_BIC_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, LSL, "");
 return txt;}
 
-char * OP_BIC_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(BIC, LSR, "");
 return txt;}
 
-char * OP_BIC_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, LSR, "");
 return txt;}
 
-char * OP_BIC_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(BIC, ASR, "");
 return txt;}
 
-char * OP_BIC_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, ASR, "");
 return txt;}
 
-char * OP_BIC_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(BIC, "");
 return txt;}
 
-char * OP_BIC_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, ROR, "");
 return txt;}
 
-char * OP_BIC_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_BIC_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(BIC, "");
 return txt;}
 
-char * OP_BIC_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_LSL_IMM(BIC, "S");
 return txt;}
 
-char * OP_BIC_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, LSL, "S");
 return txt;}
 
-char * OP_BIC_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(BIC, LSR, "S");
 return txt;}
 
-char * OP_BIC_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, LSR, "S");
 return txt;}
 
-char * OP_BIC_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_SHIFT(BIC, ASR, "S");
 return txt;}
 
-char * OP_BIC_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, ASR, "S");
 return txt;}
 
-char * OP_BIC_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ROR_IMM(BIC, "S");
 return txt;}
 
-char * OP_BIC_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_REG_SHIFT(BIC, ROR, "S");
 return txt;}
 
-char * OP_BIC_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_BIC_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_IMM_VALUE(BIC, "S");
 return txt;}
 
 //------------------MVN-------------------
 
-char * OP_MVN_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(MVN, "", 12);
 return txt;}
 
-char * OP_MVN_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, LSL, "", 12);
 return txt;}
 
-char * OP_MVN_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MVN, LSR, "", 12);
 return txt;}
 
-char * OP_MVN_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, LSR, "", 12);
 return txt;}
 
-char * OP_MVN_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MVN, ASR, "", 12);
 return txt;}
 
-char * OP_MVN_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, ASR, "", 12);
 return txt;}
 
-char * OP_MVN_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(MVN, "", 12);
 return txt;}
 
-char * OP_MVN_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, ROR, "", 12);
 return txt;}
 
-char * OP_MVN_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_MVN_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(MVN, "", 12);
 return txt;}
 
-char * OP_MVN_S_LSL_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_LSL_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_LSL_IMM(MVN, "S", 12);
 return txt;}
 
-char * OP_MVN_S_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_LSL_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, LSL, "S", 12);
 return txt;}
 
-char * OP_MVN_S_LSR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_LSR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MVN, LSR, "S", 12);
 return txt;}
 
-char * OP_MVN_S_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_LSR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, LSR, "S", 12);
 return txt;}
 
-char * OP_MVN_S_ASR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_ASR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_SHIFT(MOV, ASR, "S", 12);
 return txt;}
 
-char * OP_MVN_S_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_ASR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, ASR, "S", 12);
 return txt;}
 
-char * OP_MVN_S_ROR_IMM(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_ROR_IMM(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_ROR_IMM(MVN, "S", 12);
 return txt;}
 
-char * OP_MVN_S_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_ROR_REG(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_REG_SHIFT(MVN, ROR, "S", 12);
 return txt;}
 
-char * OP_MVN_S_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_MVN_S_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      DATAPROC_ONE_OP_IMM_VALUE(MVN, "S", 12);
 return txt;}
@@ -1607,22 +1607,22 @@ return txt;}
 
 //-------------MUL------------------------
 
-char * OP_MUL(u32 adr, u32 i, char * txt)
+static char * OP_MUL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MUL%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_MLA(u32 adr, u32 i, char * txt)
+static char * OP_MLA(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MLA%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
-char * OP_MUL_S(u32 adr, u32 i, char * txt)
+static char * OP_MUL_S(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MUL%sS %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_MLA_S(u32 adr, u32 i, char * txt)
+static char * OP_MLA_S(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MLA%sS %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
@@ -1630,355 +1630,355 @@ return txt;}
 
 //----------UMUL--------------------------
 
-char * OP_UMULL(u32 adr, u32 i, char * txt)
+static char * OP_UMULL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "UMULL%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_UMLAL(u32 adr, u32 i, char * txt)
+static char * OP_UMLAL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "UMLAL%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_UMULL_S(u32 adr, u32 i, char * txt)
+static char * OP_UMULL_S(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "UMULL%sS %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_UMLAL_S(u32 adr, u32 i, char * txt)
+static char * OP_UMLAL_S(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "UMLAL%sS %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
 //----------SMUL--------------------------
 
-char * OP_SMULL(u32 adr, u32 i, char * txt)
+static char * OP_SMULL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULL%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMLAL(u32 adr, u32 i, char * txt)
+static char * OP_SMLAL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLAL%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMULL_S(u32 adr, u32 i, char * txt)
+static char * OP_SMULL_S(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULL%sS %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMLAL_S(u32 adr, u32 i, char * txt)
+static char * OP_SMLAL_S(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLAL%sS %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
 //---------------SWP------------------------------
 
-char * OP_SWP(u32 adr, u32 i, char * txt)
+static char * OP_SWP(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SWP%s %s, %s, [%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
-char * OP_SWPB(u32 adr, u32 i, char * txt)
+static char * OP_SWPB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SWPB%s %s, %s, [%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
 //------------LDRH-----------------------------
 
-char * OP_LDRH_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRH_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRH_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, %s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRH_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, -%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRH_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRH_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRH_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, %s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRH_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s, -%s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRH_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s], #%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRH_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s], -#%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRH_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s], %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRH_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH%s %s, [%s], -%s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
 //------------STRH-----------------------------
 
-char * OP_STRH_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_STRH_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_STRH_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, %s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_STRH_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, -%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_STRH_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_STRH_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_STRH_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, %s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_STRH_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s, -%s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_STRH_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s], #%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_STRH_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s], -#%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_STRH_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s], %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_STRH_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH%s %s, [%s], -%s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
 //----------------LDRSH--------------------------
 
-char * OP_LDRSH_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSH_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSH_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, %s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSH_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, -%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSH_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSH_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSH_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, %s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSH_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s, -%s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSH_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s], #%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSH_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s], -#%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSH_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s], %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSH_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH%s %s, [%s], -%s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
 //----------------------LDRSB----------------------
 
-char * OP_LDRSB_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSB_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSB_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, %s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSB_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, -%s]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSB_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_PRE_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSB_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_PRE_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSB_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_PRE_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, %s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSB_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_PRE_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s, -%s]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSB_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_POS_INDE_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s], #%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSB_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_POS_INDE_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s], -#%X", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(((i>>4)&0xF0)|(i&0xF)));
 return txt;}
 
-char * OP_LDRSB_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_POS_INDE_P_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s], %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_LDRSB_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_POS_INDE_M_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB%s %s, [%s], -%s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
 //--------------MRS--------------------------------
 
-char * OP_MRS_CPSR(u32 adr, u32 i, char * txt)
+static char * OP_MRS_CPSR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MRS%s %s, CPSR", Condition[CONDITION(i)], Registre[REG_POS(i,12)]);
 return txt;}
 
-char * OP_MRS_SPSR(u32 adr, u32 i, char * txt)
+static char * OP_MRS_SPSR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MRS%s %s, SPSR", Condition[CONDITION(i)], Registre[REG_POS(i,12)]);
 return txt;}
 
 //--------------MSR--------------------------------
 
-char * OP_MSR_CPSR(u32 adr, u32 i, char * txt)
+static char * OP_MSR_CPSR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MSR%s CPSR_%s, %s", Condition[CONDITION(i)], MSR_FIELD[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_MSR_SPSR(u32 adr, u32 i, char * txt)
+static char * OP_MSR_SPSR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MSR%s SPSR_%s, %s", Condition[CONDITION(i)], MSR_FIELD[REG_POS(i,16)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_MSR_CPSR_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_MSR_CPSR_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MSR%s CPSR_%s, #%X", Condition[CONDITION(i)], MSR_FIELD[REG_POS(i,16)], (int)ROR((i&0xFF), ((i>>7)&0x1E)));
 return txt;}
 
-char * OP_MSR_SPSR_IMM_VAL(u32 adr, u32 i, char * txt)
+static char * OP_MSR_SPSR_IMM_VAL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MSR%s SPSR_%s, #%X", Condition[CONDITION(i)], MSR_FIELD[REG_POS(i,16)], (int)ROR((i&0xFF), (i>>7)&0x1E));
 return txt;}
 
 //-----------------BRANCH--------------------------
 
-char * OP_BX(u32 adr, u32 i, char * txt)
+static char * OP_BX(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BX%s %s", Condition[CONDITION(i)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_BLX_REG(u32 adr, u32 i, char * txt)
+static char * OP_BLX_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BLX%s %s", Condition[CONDITION(i)], Registre[REG_POS(i,0)]);
 return txt;}
 
-char * OP_B(u32 adr, u32 i, char * txt)
+static char * OP_B(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -1987,7 +1987,7 @@ char * OP_B(u32 adr, u32 i, char * txt)
      sprintf(txt, "B%s %08X", Condition[CONDITION(i)], (int)(adr+(SIGNEXTEND_24(i)<<2)+8));
 return txt;}
 
-char * OP_BL(u32 adr, u32 i, char * txt)
+static char * OP_BL(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -1998,7 +1998,7 @@ return txt;}
 
 //----------------CLZ-------------------------------
 
-char * OP_CLZ(u32 adr, u32 i, char * txt)
+static char * OP_CLZ(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "CLZ%s %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)]);
 return txt;}
@@ -2006,928 +2006,928 @@ return txt;}
 
 //--------------------QADD--QSUB------------------------------
 
-char * OP_QADD(u32 adr, u32 i, char * txt)
+static char * OP_QADD(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "QADD%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
-char * OP_QSUB(u32 adr, u32 i, char * txt)
+static char * OP_QSUB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "QSUB%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
-char * OP_QDADD(u32 adr, u32 i, char * txt)
+static char * OP_QDADD(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "QDADD%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
-char * OP_QDSUB(u32 adr, u32 i, char * txt)
+static char * OP_QDSUB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "QDSUB%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,0)], Registre[REG_POS(i,16)]);
 return txt;}
 
 //-----------------SMUL-------------------------------
 
-char * OP_SMUL_B_B(u32 adr, u32 i, char * txt)
+static char * OP_SMUL_B_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULBB%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMUL_B_T(u32 adr, u32 i, char * txt)
+static char * OP_SMUL_B_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULBT%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMUL_T_B(u32 adr, u32 i, char * txt)
+static char * OP_SMUL_T_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULTB%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMUL_T_T(u32 adr, u32 i, char * txt)
+static char * OP_SMUL_T_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULTT%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
 //-----------SMLA----------------------------
 
-char * OP_SMLA_B_B(u32 adr, u32 i, char * txt)
+static char * OP_SMLA_B_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLABB%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
-char * OP_SMLA_B_T(u32 adr, u32 i, char * txt)
+static char * OP_SMLA_B_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLABT%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
-char * OP_SMLA_T_B(u32 adr, u32 i, char * txt)
+static char * OP_SMLA_T_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLATB%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
-char * OP_SMLA_T_T(u32 adr, u32 i, char * txt)
+static char * OP_SMLA_T_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLATT%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
 //--------------SMLAL---------------------------------------
 
-char * OP_SMLAL_B_B(u32 adr, u32 i, char * txt)
+static char * OP_SMLAL_B_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLABB%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMLAL_B_T(u32 adr, u32 i, char * txt)
+static char * OP_SMLAL_B_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLABT%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMLAL_T_B(u32 adr, u32 i, char * txt)
+static char * OP_SMLAL_T_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLATB%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMLAL_T_T(u32 adr, u32 i, char * txt)
+static char * OP_SMLAL_T_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLATT%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
 //--------------SMULW--------------------
 
-char * OP_SMULW_B(u32 adr, u32 i, char * txt)
+static char * OP_SMULW_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULWB%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
-char * OP_SMULW_T(u32 adr, u32 i, char * txt)
+static char * OP_SMULW_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMULWT%s %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)]);
 return txt;}
 
 //--------------SMLAW-------------------
-char * OP_SMLAW_B(u32 adr, u32 i, char * txt)
+static char * OP_SMLAW_B(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLAWB%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
-char * OP_SMLAW_T(u32 adr, u32 i, char * txt)
+static char * OP_SMLAW_T(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SMLAWT%s %s, %s, %s, %s", Condition[CONDITION(i)], Registre[REG_POS(i,16)], Registre[REG_POS(i,0)], Registre[REG_POS(i,8)], Registre[REG_POS(i,12)]);
 return txt;}
 
 //------------LDR---------------------------
 
-char * OP_LDR_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "", "", "]");
 return txt;}
 
-char * OP_LDR_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "-", "", "]");
 return txt;}
 
-char * OP_LDR_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, LSR, "", "", "]");
 return txt;}
 
-char * OP_LDR_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, LSR, "M", "", "]");
 return txt;}
 
-char * OP_LDR_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, ASR, "", "", "]");
 return txt;}
 
-char * OP_LDR_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, ASR, "-", "", "]");
 return txt;}
 
-char * OP_LDR_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDR, "", "", "]");
 return txt;}
 
-char * OP_LDR_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDR, "-", "", "]");
 return txt;}
 
-char * OP_LDR_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "", "", "]!");
 return txt;}
 
-char * OP_LDR_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "-", "", "]!");
 return txt;}
 
-char * OP_LDR_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, LSR, "", "", "]!");
 return txt;}
 
-char * OP_LDR_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, LSR, "-", "", "]!");
 return txt;}
 
-char * OP_LDR_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, ASR, "", "", "]!");
 return txt;}
 
-char * OP_LDR_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, ASR, "-", "", "]!");
 return txt;}
 
-char * OP_LDR_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDR, "", "", "]!");
 return txt;}
 
-char * OP_LDR_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDR, "-", "", "]!");
 return txt;}
 
-char * OP_LDR_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_P_IMM_OFF_POSTIND2(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_IMM_OFF_POSTIND2(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR%s %s, [%s], -#%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDR_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "", "]", "");
 return txt;}
 
-char * OP_LDR_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDR, "-", "]", "");
 return txt;}
 
-char * OP_LDR_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, LSR, "", "]", "");
 return txt;}
 
-char * OP_LDR_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, LSR, "-", "]", "");
 return txt;}
 
-char * OP_LDR_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, ASR, "", "]", "");
 return txt;}
 
-char * OP_LDR_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDR, ASR, "-", "]", "");
 return txt;}
 
-char * OP_LDR_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDR, "", "]", "");
 return txt;}
 
-char * OP_LDR_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDR_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDR, "-", "]", "");
 return txt;}
 
 //-----------------LDRB-------------------------------------------
 
-char * OP_LDRB_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRB_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRB_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRB, "", "", "]");
 return txt;}
 
-char * OP_LDRB_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRB, "-", "", "]");
 return txt;}
 
-char * OP_LDRB_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, LSR, "", "", "]");
 return txt;}
 
-char * OP_LDRB_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, LSR, "M", "", "]");
 return txt;}
 
-char * OP_LDRB_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, ASR, "", "", "]");
 return txt;}
 
-char * OP_LDRB_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, ASR, "-", "", "]");
 return txt;}
 
-char * OP_LDRB_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRB, "", "", "]");
 return txt;}
 
-char * OP_LDRB_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRB, "-", "", "]");
 return txt;}
 
-char * OP_LDRB_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRB_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRB_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRB, "", "", "]!");
 return txt;}
 
-char * OP_LDRB_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRB, "-", "", "]!");
 return txt;}
 
-char * OP_LDRB_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, LSR, "", "", "]!");
 return txt;}
 
-char * OP_LDRB_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, LSR, "-", "", "]!");
 return txt;}
 
-char * OP_LDRB_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, ASR, "", "", "]!");
 return txt;}
 
-char * OP_LDRB_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, ASR, "-", "", "]!");
 return txt;}
 
-char * OP_LDRB_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRB, "", "", "]!");
 return txt;}
 
-char * OP_LDRB_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRB, "-", "", "]!");
 return txt;}
 
-char * OP_LDRB_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRB_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB%s %s, [%s], -#%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRB_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRB, "", "]", "");
 return txt;}
 
-char * OP_LDRB_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRB, "-", "]", "");
 return txt;}
 
-char * OP_LDRB_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, LSR, "", "]", "");
 return txt;}
 
-char * OP_LDRB_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, LSR, "-", "]", "");
 return txt;}
 
-char * OP_LDRB_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, ASR, "", "]", "");
 return txt;}
 
-char * OP_LDRB_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRB, ASR, "-", "]", "");
 return txt;}
 
-char * OP_LDRB_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRB, "", "]", "");
 return txt;}
 
-char * OP_LDRB_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRB, "-", "]", "");
 return txt;}
 
 //----------------------STR--------------------------------
 
-char * OP_STR_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STR_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STR_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STR, "", "", "]");
 return txt;}
 
-char * OP_STR_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STR, "-", "", "]");
 return txt;}
 
-char * OP_STR_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, LSR, "", "", "]");
 return txt;}
 
-char * OP_STR_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, LSR, "M", "", "]");
 return txt;}
 
-char * OP_STR_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, ASR, "", "", "]");
 return txt;}
 
-char * OP_STR_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, ASR, "-", "", "]");
 return txt;}
 
-char * OP_STR_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STR, "", "", "]");
 return txt;}
 
-char * OP_STR_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STR, "-", "", "]");
 return txt;}
 
-char * OP_STR_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STR_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STR_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STR, "", "", "]!");
 return txt;}
 
-char * OP_STR_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STR, "-", "", "]!");
 return txt;}
 
-char * OP_STR_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, LSR, "", "", "]!");
 return txt;}
 
-char * OP_STR_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, LSR, "-", "", "]!");
 return txt;}
 
-char * OP_STR_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, ASR, "", "", "]!");
 return txt;}
 
-char * OP_STR_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, ASR, "-", "", "]!");
 return txt;}
 
-char * OP_STR_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STR, "", "", "]!");
 return txt;}
 
-char * OP_STR_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STR, "-", "", "]!");
 return txt;}
 
-char * OP_STR_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STR_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR%s %s, [%s], -#%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STR_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STR, "", "]", "");
 return txt;}
 
-char * OP_STR_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STR, "-", "]", "");
 return txt;}
 
-char * OP_STR_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, LSR, "", "]", "");
 return txt;}
 
-char * OP_STR_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, LSR, "-", "]", "");
 return txt;}
 
-char * OP_STR_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, ASR, "", "]", "");
 return txt;}
 
-char * OP_STR_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STR, ASR, "-", "]", "");
 return txt;}
 
-char * OP_STR_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STR, "", "]", "");
 return txt;}
 
-char * OP_STR_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STR_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STR, "-", "]", "");
 return txt;}
 
 //-----------------------STRB-------------------------------------
 
-char * OP_STRB_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB%s %s, [%s, #%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRB_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB%s %s, [%s, -#%X]", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRB_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRB, "", "", "]");
 return txt;}
 
-char * OP_STRB_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_LSL_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRB, "-", "", "]");
 return txt;}
 
-char * OP_STRB_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, LSR, "", "", "]");
 return txt;}
 
-char * OP_STRB_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_LSR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, LSR, "M", "", "]");
 return txt;}
 
-char * OP_STRB_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, ASR, "", "", "]");
 return txt;}
 
-char * OP_STRB_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_ASR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, ASR, "-", "", "]");
 return txt;}
 
-char * OP_STRB_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRB, "", "", "]");
 return txt;}
 
-char * OP_STRB_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_ROR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRB, "-", "", "]");
 return txt;}
 
-char * OP_STRB_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB%s %s, [%s, #%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRB_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB%s %s, [%s, -#%X]!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRB_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRB, "", "", "]!");
 return txt;}
 
-char * OP_STRB_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_LSL_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRB, "-", "", "]!");
 return txt;}
 
-char * OP_STRB_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, LSR, "", "", "]!");
 return txt;}
 
-char * OP_STRB_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_LSR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, LSR, "-", "", "]!");
 return txt;}
 
-char * OP_STRB_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, ASR, "", "", "]!");
 return txt;}
 
-char * OP_STRB_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_ASR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, ASR, "-", "", "]!");
 return txt;}
 
-char * OP_STRB_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRB, "", "", "]!");
 return txt;}
 
-char * OP_STRB_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_ROR_IMM_OFF_PREIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRB, "-", "", "]!");
 return txt;}
 
-char * OP_STRB_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRB_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB%s %s, [%s], -#%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRB_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRB, "", "]", "");
 return txt;}
 
-char * OP_STRB_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRB, "-", "]", "");
 return txt;}
 
-char * OP_STRB_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, LSR, "", "]", "");
 return txt;}
 
-char * OP_STRB_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, LSR, "-", "]", "");
 return txt;}
 
-char * OP_STRB_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, ASR, "", "]", "");
 return txt;}
 
-char * OP_STRB_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRB, ASR, "-", "]", "");
 return txt;}
 
-char * OP_STRB_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRB, "", "]", "");
 return txt;}
 
-char * OP_STRB_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRB_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRB, "-", "]", "");
 return txt;}
 
 //-----------------------LDRBT-------------------------------------
 
-char * OP_LDRBT_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRBT%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRBT_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRBT%s %s, [%s], -#%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_LDRBT_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRBT, "", "]", "");
 return txt;}
 
-char * OP_LDRBT_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(LDRBT, "-", "]", "");
 return txt;}
 
-char * OP_LDRBT_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRBT, LSR, "", "]", "");
 return txt;}
 
-char * OP_LDRBT_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRBT, LSR, "-", "]", "");
 return txt;}
 
-char * OP_LDRBT_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRBT, ASR, "", "]", "");
 return txt;}
 
-char * OP_LDRBT_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(LDRBT, ASR, "-", "]", "");
 return txt;}
 
-char * OP_LDRBT_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRBT, "", "]", "");
 return txt;}
 
-char * OP_LDRBT_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDRBT_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(LDRBT, "-", "]", "");
 return txt;}
 
 //----------------------STRBT----------------------------
 
-char * OP_STRBT_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_P_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRBT%s %s, [%s], #%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRBT_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_M_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRBT%s %s, [%s], -#%X!", Condition[CONDITION(i)], Registre[REG_POS(i,12)], Registre[REG_POS(i,16)], (int)(i&0xFF));
 return txt;}
 
-char * OP_STRBT_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_P_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRBT, "", "]", "");
 return txt;}
 
-char * OP_STRBT_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_M_LSL_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_LSL_IMM(STRBT, "-", "]", "");
 return txt;}
 
-char * OP_STRBT_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_P_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRBT, LSR, "", "]", "");
 return txt;}
 
-char * OP_STRBT_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_M_LSR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRBT, LSR, "-", "]", "");
 return txt;}
 
-char * OP_STRBT_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_P_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRBT, ASR, "", "]", "");
 return txt;}
 
-char * OP_STRBT_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_M_ASR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_IMM_SHIFT(STRBT, ASR, "-", "]", "");
 return txt;}
 
-char * OP_STRBT_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_P_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRBT, "", "]", "");
 return txt;}
 
-char * OP_STRBT_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STRBT_M_ROR_IMM_OFF_POSTIND(u32 adr, u32 i, char * txt)
 {
      LDRSTR_ROR_IMM(STRBT, "-", "]", "");
 return txt;}
 
 //---------------------LDM-----------------------------
 
-char * OP_LDMIA(u32 adr, u32 i, char * txt)
+static char * OP_LDMIA(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIA%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMIB(u32 adr, u32 i, char * txt)
+static char * OP_LDMIB(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIB%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMDA(u32 adr, u32 i, char * txt)
+static char * OP_LDMDA(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDA%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMDB(u32 adr, u32 i, char * txt)
+static char * OP_LDMDB(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDB%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMIA_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMIA_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIA%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMIB_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMIB_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIB%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMDA_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMDA_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDA%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMDB_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMDB_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDB%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMIA2(u32 adr, u32 i, char * txt)
+static char * OP_LDMIA2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIA%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMIB2(u32 adr, u32 i, char * txt)
+static char * OP_LDMIB2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIB%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMDA2(u32 adr, u32 i, char * txt)
+static char * OP_LDMDA2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDA%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMDB2(u32 adr, u32 i, char * txt)
+static char * OP_LDMDB2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDB%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_LDMIA2_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMIA2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIA%s %s!, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
      if(BIT15(i)==0) sprintf(txt, "%s ?????", txt);
 return txt;}
 
-char * OP_LDMIB2_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMIB2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMIB%s %s!, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
      if(BIT15(i)==0) sprintf(txt, "%s ?????", txt);
 return txt;}
 
-char * OP_LDMDA2_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMDA2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDA%s %s!, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
      if(BIT15(i)==0) sprintf(txt, "%s ?????", txt);
 return txt;}
 
-char * OP_LDMDB2_W(u32 adr, u32 i, char * txt)
+static char * OP_LDMDB2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "LDMDB%s %s!, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
@@ -2936,98 +2936,98 @@ return txt;}
 
 //------------------------------STM----------------------------------
 
-char * OP_STMIA(u32 adr, u32 i, char * txt)
+static char * OP_STMIA(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIA%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIB(u32 adr, u32 i, char * txt)
+static char * OP_STMIB(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIB%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDA(u32 adr, u32 i, char * txt)
+static char * OP_STMDA(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDA%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDB(u32 adr, u32 i, char * txt)
+static char * OP_STMDB(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDB%s %s, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIA_W(u32 adr, u32 i, char * txt)
+static char * OP_STMIA_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIA%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIB_W(u32 adr, u32 i, char * txt)
+static char * OP_STMIB_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIB%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDA_W(u32 adr, u32 i, char * txt)
+static char * OP_STMDA_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDA%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDB_W(u32 adr, u32 i, char * txt)
+static char * OP_STMDB_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDB%s %s!, {%s}", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIA2(u32 adr, u32 i, char * txt)
+static char * OP_STMIA2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIA%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIB2(u32 adr, u32 i, char * txt)
+static char * OP_STMIB2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIB%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDA2(u32 adr, u32 i, char * txt)
+static char * OP_STMDA2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDA%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDB2(u32 adr, u32 i, char * txt)
+static char * OP_STMDB2(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDB%s %s, {%s}^", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIA2_W(u32 adr, u32 i, char * txt)
+static char * OP_STMIA2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIA%s %s!, {%s}^ ?????", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMIB2_W(u32 adr, u32 i, char * txt)
+static char * OP_STMIB2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMIB%s %s!, {%s}^ ?????", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
 return txt;}
 
-char * OP_STMDA2_W(u32 adr, u32 i, char * txt)
+static char * OP_STMDA2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDA%s %s!, {%s}^ ?????", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
      return txt;
 }
 
-char * OP_STMDB2_W(u32 adr, u32 i, char * txt)
+static char * OP_STMDB2_W(u32 adr, u32 i, char * txt)
 {
      RegList(16);
      sprintf(txt, "STMDB%s %s!, {%s}^ ?????", Condition[CONDITION(i)], Registre[REG_POS(i,16)], lreg);
@@ -3036,7 +3036,7 @@ char * OP_STMDB2_W(u32 adr, u32 i, char * txt)
 
 //---------------------STC----------------------------------
 
-char * OP_STC_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STC_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3047,7 +3047,7 @@ char * OP_STC_P_IMM_OFF(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_STC_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STC_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3058,7 +3058,7 @@ char * OP_STC_M_IMM_OFF(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_STC_P_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STC_P_PREIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3069,7 +3069,7 @@ char * OP_STC_P_PREIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_STC_M_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_STC_M_PREIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3080,7 +3080,7 @@ char * OP_STC_M_PREIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_STC_P_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STC_P_POSTIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3091,7 +3091,7 @@ char * OP_STC_P_POSTIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_STC_M_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_STC_M_POSTIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3102,7 +3102,7 @@ char * OP_STC_M_POSTIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_STC_OPTION(u32 adr, u32 i, char * txt)
+static char * OP_STC_OPTION(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3115,7 +3115,7 @@ char * OP_STC_OPTION(u32 adr, u32 i, char * txt)
 
 //---------------------LDC----------------------------------
 
-char * OP_LDC_P_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDC_P_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3126,7 +3126,7 @@ char * OP_LDC_P_IMM_OFF(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_LDC_M_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDC_M_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3137,7 +3137,7 @@ char * OP_LDC_M_IMM_OFF(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_LDC_P_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDC_P_PREIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3148,7 +3148,7 @@ char * OP_LDC_P_PREIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_LDC_M_PREIND(u32 adr, u32 i, char * txt)
+static char * OP_LDC_M_PREIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3159,7 +3159,7 @@ char * OP_LDC_M_PREIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_LDC_P_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDC_P_POSTIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3170,7 +3170,7 @@ char * OP_LDC_P_POSTIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_LDC_M_POSTIND(u32 adr, u32 i, char * txt)
+static char * OP_LDC_M_POSTIND(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3181,7 +3181,7 @@ char * OP_LDC_M_POSTIND(u32 adr, u32 i, char * txt)
      return txt;
 }
 
-char * OP_LDC_OPTION(u32 adr, u32 i, char * txt)
+static char * OP_LDC_OPTION(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3194,7 +3194,7 @@ char * OP_LDC_OPTION(u32 adr, u32 i, char * txt)
 
 //----------------MCR-----------------------
 
-char * OP_MCR(u32 adr, u32 i, char * txt)
+static char * OP_MCR(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3207,7 +3207,7 @@ char * OP_MCR(u32 adr, u32 i, char * txt)
 
 //----------------MRC-----------------------
 
-char * OP_MRC(u32 adr, u32 i, char * txt)
+static char * OP_MRC(u32 adr, u32 i, char * txt)
 {
      if(CONDITION(i)==0xF)
      {
@@ -3220,14 +3220,14 @@ char * OP_MRC(u32 adr, u32 i, char * txt)
 
 //--------------SWI--------------------------
 
-char * OP_SWI(u32 adr, u32 i, char * txt)
+static char * OP_SWI(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SWI%s %X",Condition[CONDITION(i)], (int)((i&0xFFFFFF)>>16));
      return txt;
 }
 
 //----------------BKPT-------------------------
-char * OP_BKPT(u32 adr, u32 i, char * txt)
+static char * OP_BKPT(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BKPT #%X",(int)(((i>>4)&0xFFF)|(i&0xF)));
      return txt;
@@ -3246,406 +3246,406 @@ char *  OP_CDP(u32 adr, u32 i, char * txt)
 //------------------------------------------------------------
 #define REG_NUM(i, n) (((i)>>n)&0x7)
 
-char * OP_UND_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_UND_THUMB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "--<UNDEFINED>--");
      return txt;
 }
  
-char * OP_LSL_0(u32 adr, u32 i, char * txt)
+static char * OP_LSL_0(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LSL %s, %s, #0", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_LSL(u32 adr, u32 i, char * txt)
+static char * OP_LSL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LSL %s, %s, #%X", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>6) & 0x1F));
      return txt;
 }
 
-char * OP_LSR_0(u32 adr, u32 i, char * txt)
+static char * OP_LSR_0(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LSR %s, %s, #0", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_LSR(u32 adr, u32 i, char * txt)
+static char * OP_LSR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LSR %s, %s, #%X", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>6) & 0x1F));
      return txt;
 }
 
-char * OP_ASR_0(u32 adr, u32 i, char * txt)
+static char * OP_ASR_0(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ASR %s, %s, #0", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_ASR(u32 adr, u32 i, char * txt)
+static char * OP_ASR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ASR %s, %s, #%X", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>6) & 0x1F));
      return txt;
 }
 
-char * OP_ADD_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADD_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADD %s, %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_SUB_REG(u32 adr, u32 i, char * txt)
+static char * OP_SUB_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SUB %s, %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_ADD_IMM3(u32 adr, u32 i, char * txt)
+static char * OP_ADD_IMM3(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADD %s, %s, #%X", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)REG_NUM(i, 6));
      return txt;
 }
 
-char * OP_SUB_IMM3(u32 adr, u32 i, char * txt)
+static char * OP_SUB_IMM3(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SUB %s, %s, #%X", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)REG_NUM(i, 6));
      return txt;
 }
 
-char * OP_MOV_IMM8(u32 adr, u32 i, char * txt)
+static char * OP_MOV_IMM8(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MOV %s, #%X", Registre[REG_NUM(i, 8)], (int)(i&0xFF));
      return txt;
 }
 
-char * OP_CMP_IMM8(u32 adr, u32 i, char * txt)
+static char * OP_CMP_IMM8(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "CMP %s, #%X", Registre[REG_NUM(i, 8)], (int)(i&0xFF));
      return txt;
 }
 
-char * OP_ADD_IMM8(u32 adr, u32 i, char * txt)
+static char * OP_ADD_IMM8(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADD %s, #%X", Registre[REG_NUM(i, 8)], (int)(i&0xFF));
      return txt;
 }
 
-char * OP_SUB_IMM8(u32 adr, u32 i, char * txt)
+static char * OP_SUB_IMM8(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SUB %s, #%X", Registre[REG_NUM(i, 8)], (int)(i&0xFF));
      return txt;
 }
 
-char * OP_AND(u32 adr, u32 i, char * txt)
+static char * OP_AND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "AND %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_EOR(u32 adr, u32 i, char * txt)
+static char * OP_EOR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "EOR %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_LSL_REG(u32 adr, u32 i, char * txt)
+static char * OP_LSL_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LSL %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_LSR_REG(u32 adr, u32 i, char * txt)
+static char * OP_LSR_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LSR %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_ASR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ASR_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ASR %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_ADC_REG(u32 adr, u32 i, char * txt)
+static char * OP_ADC_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADC %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_SBC_REG(u32 adr, u32 i, char * txt)
+static char * OP_SBC_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SBC %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_ROR_REG(u32 adr, u32 i, char * txt)
+static char * OP_ROR_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ROR %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_TST(u32 adr, u32 i, char * txt)
+static char * OP_TST(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "TST %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_NEG(u32 adr, u32 i, char * txt)
+static char * OP_NEG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "NEG %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_CMP(u32 adr, u32 i, char * txt)
+static char * OP_CMP(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "CMP %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_CMN(u32 adr, u32 i, char * txt)
+static char * OP_CMN(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "CMN %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_ORR(u32 adr, u32 i, char * txt)
+static char * OP_ORR(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ORR %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_MUL_REG(u32 adr, u32 i, char * txt)
+static char * OP_MUL_REG(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MUL %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_BIC(u32 adr, u32 i, char * txt)
+static char * OP_BIC(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BIC %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_MVN(u32 adr, u32 i, char * txt)
+static char * OP_MVN(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "MVN %s, %s", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)]);
      return txt;
 }
 
-char * OP_ADD_SPE(u32 adr, u32 i, char * txt)
+static char * OP_ADD_SPE(u32 adr, u32 i, char * txt)
 {
      u8 Rd = (i&7) | ((i>>4)&8);
      sprintf(txt, "ADD %s, %s", Registre[Rd], Registre[REG_POS(i, 3)]);
      return txt;
 }
 
-char * OP_CMP_SPE(u32 adr, u32 i, char * txt)
+static char * OP_CMP_SPE(u32 adr, u32 i, char * txt)
 {
      u8 Rd = (i&7) | ((i>>4)&8);
      sprintf(txt, "CMP %s, %s", Registre[Rd], Registre[REG_POS(i, 3)]);
      return txt;
 }
 
-char * OP_MOV_SPE(u32 adr, u32 i, char * txt)
+static char * OP_MOV_SPE(u32 adr, u32 i, char * txt)
 {
      u8 Rd = (i&7) | ((i>>4)&8);
      sprintf(txt, "MOV %s, %s", Registre[Rd], Registre[REG_POS(i, 3)]);
      return txt;
 }
 
-char * OP_BX_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_BX_THUMB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BX %s", Registre[REG_POS(i, 3)]);
      return txt;
 }
 
-char * OP_BLX_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_BLX_THUMB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BLX %s", Registre[REG_POS(i, 3)]);
      return txt;
 }
 
-char * OP_LDR_PCREL(u32 adr, u32 i, char * txt)
+static char * OP_LDR_PCREL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR %s, [PC, #%X]", Registre[REG_NUM(i, 8)], (int)((i&0xFF)<<2));
      return txt;
 }
 
-char * OP_STR_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_STRH_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_STRB_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_LDRSB_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSB_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSB %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_LDR_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_LDRH_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_LDRB_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_LDRSH_REG_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRSH_REG_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRSH %s, [%s, %s]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], Registre[REG_NUM(i, 6)]);
      return txt;
 }
 
-char * OP_STR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR %s, [%s, #%X]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>4)&0x7C));
      return txt;
 }
 
-char * OP_LDR_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDR_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR %s, [%s, #%X]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>4)&0x7C));
      return txt;
 }
 
-char * OP_STRB_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRB_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRB %s, [%s, #%X]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>6)&0x1F));
      return txt;
 }
 
-char * OP_LDRB_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRB_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRB %s, [%s, #%X]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>6)&0x1F));
      return txt;
 }
 
-char * OP_STRH_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_STRH_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STRH %s, [%s, #%X]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>5)&0x3E));
      return txt;
 }
 
-char * OP_LDRH_IMM_OFF(u32 adr, u32 i, char * txt)
+static char * OP_LDRH_IMM_OFF(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDRH %s, [%s, #%X]", Registre[REG_NUM(i, 0)], Registre[REG_NUM(i, 3)], (int)((i>>5)&0x3E));
      return txt;
 }
 
-char * OP_STR_SPREL(u32 adr, u32 i, char * txt)
+static char * OP_STR_SPREL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "STR %s, [SP, #%X]", Registre[REG_NUM(i, 8)], (int)((i&0xFF)<<2));
      return txt;
 }
 
-char * OP_LDR_SPREL(u32 adr, u32 i, char * txt)
+static char * OP_LDR_SPREL(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "LDR %s, [SP, #%X]", Registre[REG_NUM(i, 8)], (int)((i&0xFF)<<2));
      return txt;
 }
 
-char * OP_ADD_2PC(u32 adr, u32 i, char * txt)
+static char * OP_ADD_2PC(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADD %s, PC, #%X", Registre[REG_NUM(i, 8)], (int)((i&0xFF)<<2));
      return txt;
 }
 
-char * OP_ADD_2SP(u32 adr, u32 i, char * txt)
+static char * OP_ADD_2SP(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADD %s, SP, #%X", Registre[REG_NUM(i, 8)], (int)((i&0xFF)<<2));
      return txt;
 }
 
-char * OP_ADJUST_P_SP(u32 adr, u32 i, char * txt)
+static char * OP_ADJUST_P_SP(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "ADD SP, #%X", (int)((i&0x7F)<<2));
      return txt;
 }
 
-char * OP_ADJUST_M_SP(u32 adr, u32 i, char * txt)
+static char * OP_ADJUST_M_SP(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SUB SP, #%X", (int)((i&0x7F)<<2));
      return txt;
 }
 
-char * OP_PUSH(u32 adr, u32 i, char * txt)
+static char * OP_PUSH(u32 adr, u32 i, char * txt)
 {
      RegList(8);
      sprintf(txt, "PUSH {%s}", lreg);
      return txt;
 }
 
-char * OP_PUSH_LR(u32 adr, u32 i, char * txt)
+static char * OP_PUSH_LR(u32 adr, u32 i, char * txt)
 {
      RegList(8);
      sprintf(txt, "PUSH {%s, LR}", lreg);
      return txt;
 }
 
-char * OP_POP(u32 adr, u32 i, char * txt)
+static char * OP_POP(u32 adr, u32 i, char * txt)
 {
      RegList(8);
      sprintf(txt, "POP {%s}", lreg);
      return txt;
 }
 
-char * OP_POP_PC(u32 adr, u32 i, char * txt)
+static char * OP_POP_PC(u32 adr, u32 i, char * txt)
 {
      RegList(8);
      sprintf(txt, "POP {%s, PC}", lreg);
      return txt;
 }
 
-char * OP_BKPT_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_BKPT_THUMB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BKPT");
      return txt;
 }
 
-char * OP_STMIA_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_STMIA_THUMB(u32 adr, u32 i, char * txt)
 {
      RegList(8);
      sprintf(txt, "STMIA %s!, {%s}", Registre[REG_NUM(i, 8)], lreg);
      return txt;
 }
 
-char * OP_LDMIA_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_LDMIA_THUMB(u32 adr, u32 i, char * txt)
 {
      RegList(8);
      sprintf(txt, "LDMIA %s!, {%s}", Registre[REG_NUM(i, 8)], lreg);
      return txt;
 }
 
-char * OP_B_COND(u32 adr, u32 i, char * txt)
+static char * OP_B_COND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "B%s #%X", Condition[(i>>8)&0xF], (int)(adr+(((signed long)((signed char)(i&0xFF)))<<1)+4));
      return txt;
 }
 
-char * OP_SWI_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_SWI_THUMB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "SWI #%X", (int)(i & 0xFF));
      return txt;
@@ -3653,7 +3653,7 @@ char * OP_SWI_THUMB(u32 adr, u32 i, char * txt)
 
 #define SIGNEEXT_IMM11(i)     (((i)&0x7FF) | (BIT10(i) * 0xFFFFF800))
 
-char * OP_B_UNCOND(u32 adr, u32 i, char * txt)
+static char * OP_B_UNCOND(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "B #%X", (int)(adr+(SIGNEEXT_IMM11(i)<<1)+4));
      return txt;
@@ -3661,13 +3661,13 @@ char * OP_B_UNCOND(u32 adr, u32 i, char * txt)
 
 u32 part = 0;
 
-char * OP_BLX(u32 adr, u32 i, char * txt)
+static char * OP_BLX(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BLX #%X", (int)(part + ((i&0x7FF)<<1))&0xFFFFFFFC);
      return txt;
 }
 
-char * OP_BL_10(u32 adr, u32 i, char * txt)
+static char * OP_BL_10(u32 adr, u32 i, char * txt)
 {
      part = adr+4 + (SIGNEEXT_IMM11(i)<<12);
      sprintf(txt, "CALCUL LA PARTIE HAUTE DE L'ADRESSE");
@@ -3675,7 +3675,7 @@ char * OP_BL_10(u32 adr, u32 i, char * txt)
 
 }
 
-char * OP_BL_THUMB(u32 adr, u32 i, char * txt)
+static char * OP_BL_THUMB(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "BL #%X", (int)(part + ((i&0x7FF)<<1))&0xFFFFFFFC);
      return txt;
