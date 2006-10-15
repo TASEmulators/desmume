@@ -194,6 +194,7 @@ void NDS_FreeROM(void);
 void NDS_Reset(void);
 
 int NDS_WriteBMP(const char *filename);
+int NDS_LoadFirmware(const char *filename);
 
        static INLINE void NDS_ARM9HBlankInt(void)
        {

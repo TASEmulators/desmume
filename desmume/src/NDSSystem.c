@@ -413,3 +413,28 @@ int NDS_WriteBMP(const char *filename)
 
     return 1;
 }
+
+int NDS_LoadFirmware(const char *filename)
+{
+    int i;
+    long size;
+    FILE *file;
+	
+    if ((file = fopen(filename, "rb")) == NULL)
+       return -1;
+	
+    fseek(file, 0, SEEK_END);
+    size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+	
+    if(size > MMU.fw.size)
+    {
+       fclose(file);
+       return -1;
+    }
+	
+    i = fread(MMU.fw.data, size, 1, file);
+    fclose(file);
+	
+    return i;
+}
