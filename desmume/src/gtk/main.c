@@ -188,8 +188,7 @@ Build date: " __DATE__ ", " __TIME__ ".");
 
 static int Open(const char *filename)
 {
-	int i = desmume_load_rom(filename);
-	desmume_reset();
+	int i = NDS_LoadROM(filename);
 	return i;
 }
 
@@ -292,7 +291,7 @@ static void Close()
 
 static void Reset()
 {
-	desmume_reset();
+        NDS_Reset();
 	desmume_resume();
 	
 	pStatusBar_Change("Running ...");
