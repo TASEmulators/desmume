@@ -25,10 +25,6 @@
 extern void desmume_init();
 extern void desmume_free();
 
-extern int desmume_load_rom(const char *filename);
-extern void desmume_free_rom();
-extern void desmume_reset();
-
 extern void desmume_pause();
 extern void desmume_resume();
 extern void desmume_toggle();
