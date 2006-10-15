@@ -14,10 +14,6 @@
 
 #define FILE_FREE 0xE5
 
-#define __PACKED __attribute__((__packed__))
-
-
-
 // Boot Sector - must be packed
 typedef struct
 {
