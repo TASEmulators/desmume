@@ -1,7 +1,7 @@
 #ifndef ARM9_H
 #define ARM9_H
 
-#include "../types.h"
+#include "types.h"
 
 typedef struct {
         //ARM9 mem
