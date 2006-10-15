@@ -10,10 +10,6 @@
 
 BOOL execute = FALSE;
 
-void * DeSmuME_Rom_Data;
-unsigned long DeSmuME_Rom_Mask;
-unsigned long DeSmuME_Cycles;
-
 SDL_Surface * surface;
 
 int Draw() {
@@ -29,73 +25,6 @@ int Draw() {
 	return 1;
 }
 
-static int DeSmuME_MMU_Init()
-{
-	    //ARM7 BIOS IRQ HANDLER
-	MMU_writeWord(1, 0x00, 0xE25EF002);
-	MMU_writeWord(1, 0x04, 0xEAFFFFFE);
-	MMU_writeWord(1, 0x18, 0xEA000000);
-	MMU_writeWord(1, 0x20, 0xE92D500F);
-	MMU_writeWord(1, 0x24, 0xE3A00301);
-	MMU_writeWord(1, 0x28, 0xE28FE000);
-	MMU_writeWord(1, 0x2C, 0xE510F004);
-	MMU_writeWord(1, 0x30, 0xE8BD500F);
-	MMU_writeWord(1, 0x34, 0xE25EF004);
-
-    //ARM9 BIOS IRQ HANDLER
-	MMU_writeWord(0, 0xFFF0018, 0xEA000000);
-	MMU_writeWord(0, 0xFFF0020, 0xE92D500F);
-	MMU_writeWord(0, 0xFFF0024, 0xEE190F11);
-	MMU_writeWord(0, 0xFFF0028, 0xE1A00620);
-	MMU_writeWord(0, 0xFFF002C, 0xE1A00600);
-	MMU_writeWord(0, 0xFFF0030, 0xE2800C40);
-	MMU_writeWord(0, 0xFFF0034, 0xE28FE000);
-	MMU_writeWord(0, 0xFFF0038, 0xE510F004);
-	MMU_writeWord(0, 0xFFF003C, 0xE8BD500F);
-	MMU_writeWord(0, 0xFFF0040, 0xE25EF004);
-
-	return 0;
-}
-
-int DeSmuME_Load(const char * filename) {
-	FILE * NdsFile;
-	unsigned long DeSmuME_Rom_Size;
-	
-	NdsFile = fopen(filename, "rb");
-	
-	if(!NdsFile)
-		return -1;
-	
-	fseek(NdsFile, 0, SEEK_END);
-	DeSmuME_Rom_Size = ftell(NdsFile);
-	fseek(NdsFile, 0, SEEK_SET);
-	
-	DeSmuME_Rom_Mask = DeSmuME_Rom_Size;
-	DeSmuME_Rom_Mask |= (DeSmuME_Rom_Mask >>1);
-	DeSmuME_Rom_Mask |= (DeSmuME_Rom_Mask >>2);
-	DeSmuME_Rom_Mask |= (DeSmuME_Rom_Mask >>4);
-	DeSmuME_Rom_Mask |= (DeSmuME_Rom_Mask >>8);
-	DeSmuME_Rom_Mask |= (DeSmuME_Rom_Mask >>16);
-	
-	DeSmuME_Rom_Data = malloc(DeSmuME_Rom_Mask + 1);
-	
-	if(!DeSmuME_Rom_Data)
-	{
-		fclose(NdsFile);
-		return -1;
-	}
-	
-	if(fread(DeSmuME_Rom_Data, 1, DeSmuME_Rom_Size, NdsFile) != DeSmuME_Rom_Size)
-	{
-		fclose(NdsFile);
-		return -1;
-	}
-	
-	fclose(NdsFile);
-	
-	return DeSmuME_Rom_Size;
-}
-
 int main(int argc, char ** argv) {
 	BOOL click;
 	unsigned short keypad;
@@ -107,24 +36,21 @@ int main(int argc, char ** argv) {
 #endif
 	NDSInit();
 
-	DeSmuME_Cycles = 0;
-
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s filename\n", argv[0]);
 		return 1;
 	}
 
-	if (DeSmuME_Load(argv[1]) < 0) {
+        if (NDS_LoadROM(argv[1]) < 0) {
 		fprintf(stderr, "error while loading %s\n", argv[1]);
 		return 2;
 	}
 
-	DeSmuME_MMU_Init();
-	NDS_loadROM((unsigned char*) DeSmuME_Rom_Data, DeSmuME_Rom_Mask);
-
+/*      // This has to get fixed yet
 	strcpy(szRomPath, dirname(argv[1]));
 	cflash_close();
 	cflash_init();
+*/
 
 	execute = TRUE;
 
