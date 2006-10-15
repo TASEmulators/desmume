@@ -233,7 +233,7 @@ u32 MMU_ARM7_WAIT32[16]={
 	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
 };
 
-void MMUInit(void) {
+void MMU_Init(void) {
 	int i;
 
 	LOG("MMU init\n");
@@ -271,7 +271,7 @@ void MMUInit(void) {
         mc_alloc(&MMU.bupmem, 65536); // For now we're use 512Kbit support. Eventually this should be detected when rom is loaded
 }
 
-void MMUDeInit(void) {
+void MMU_DeInit(void) {
 	LOG("MMU deinit\n");
 }
 

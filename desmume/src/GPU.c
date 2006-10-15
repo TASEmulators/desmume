@@ -120,36 +120,43 @@ GPU::GPU(u8 l) : lcd(l)
 }
 #endif
  
-GPU * GPUInit(u8 l)
+GPU * GPU_Init(u8 l)
 {
      GPU * g;
 
-     g = (GPU *) malloc(sizeof(GPU));
-     memset(g, 0, sizeof(GPU));
+     if ((g = (GPU *) malloc(sizeof(GPU))) == NULL)
+        return NULL;
 
-     g->lcd = l;
-     g->core = l;
-     g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
-     g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
-     g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
-     
-     g->spriteRender = sprite1D;
-     
-     if(g->core == GPU_SUB)
-     {
-          g->oam = (OAM *)(ARM9Mem.ARM9_OAM + 0x400);
-          g->sprMem = ARM9Mem.ARM9_BOBJ;
-     }
-     else
-     {
-          g->oam = (OAM *)(ARM9Mem.ARM9_OAM);
-          g->sprMem = ARM9Mem.ARM9_AOBJ;
-     }
+     GPU_Reset(g, l);
 
      return g;
 }
 
-void GPUDeInit(GPU * gpu)
+void GPU_Reset(GPU *g, u8 l)
+{
+   memset(g, 0, sizeof(GPU));
+
+   g->lcd = l;
+   g->core = l;
+   g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
+   g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
+   g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
+     
+   g->spriteRender = sprite1D;
+     
+   if(g->core == GPU_SUB)
+   {
+      g->oam = (OAM *)(ARM9Mem.ARM9_OAM + 0x400);
+      g->sprMem = ARM9Mem.ARM9_BOBJ;
+   }
+   else
+   {
+      g->oam = (OAM *)(ARM9Mem.ARM9_OAM);
+      g->sprMem = ARM9Mem.ARM9_AOBJ;
+   }
+}
+
+void GPU_DeInit(GPU * gpu)
 {
      free(gpu);
 }
@@ -1470,12 +1477,17 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
      }
 }
 
-void ScreenInit(void) {
-	MainScreen.gpu = GPUInit(0);
-	SubScreen.gpu = GPUInit(1);
+void Screen_Init(void) {
+        MainScreen.gpu = GPU_Init(0);
+        SubScreen.gpu = GPU_Init(1);
 }
 
-void ScreenDeInit(void) {
-	GPUDeInit(MainScreen.gpu);
-	GPUDeInit(SubScreen.gpu);
+void Screen_Reset(void) {
+   GPU_Reset(MainScreen.gpu, 0);
+   GPU_Reset(SubScreen.gpu, 1);
+}
+
+void Screen_DeInit(void) {
+        GPU_DeInit(MainScreen.gpu);
+        GPU_DeInit(SubScreen.gpu);
 }

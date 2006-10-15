@@ -97,8 +97,9 @@ struct _GPU
 
 extern u16 GPU_screen[2*256*192];
 
-GPU * GPUInit(u8 l);
-void GPUDeInit(GPU *);
+GPU * GPU_Init(u8 l);
+void GPU_Reset(GPU *g, u8 l);
+void GPU_DeInit(GPU *);
 
 void textBG(GPU * gpu, u8 num, u16 * DST);
 void rotBG(GPU * gpu, u8 num, u16 * DST);
@@ -119,8 +120,9 @@ typedef struct {
 extern Screen MainScreen;
 extern Screen SubScreen;
 
-void ScreenInit(void);
-void ScreenDeInit(void);
+void Screen_Init(void);
+void Screen_Reset(void);
+void Screen_DeInit(void);
 
 static INLINE void GPU_ligne(Screen * screen, u16 l)
 {

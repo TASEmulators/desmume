@@ -38,7 +38,7 @@
 #include "../debug.h"
 #include "mapview.h"
 #include "../saves.h"
-#include "cflash.h"
+#include "../cflash.h"
 #include "ConfigKeys.h"
 
 #ifdef RENDER3D
@@ -101,7 +101,7 @@ DWORD WINAPI run( LPVOID lpParameter)
      QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
      QueryPerformanceCounter((LARGE_INTEGER *)&count);
      nextcount = count + freq;
-     
+
      while(!finished)
      {
           while(execute)
@@ -139,59 +139,13 @@ DWORD WINAPI run( LPVOID lpParameter)
 }
 
 BOOL LoadROM(char * filename)
-{
-    HANDLE File;
-    u32 FileSize;
-    u32 nblu = 0;
-    u32 mask;
-    u8 *ROM;
-
-    if(!strlen(filename)) return FALSE;
-    
-    if((*filename)=='\"')
-    {
-         ++filename;
-         filename[strlen(filename)-1] = '\0';
-    }
-         
-    if(strncmp(filename + strlen(filename)-3, "nds", 3))
-    {
-         MessageBox(hwnd,"Error, not a nds file","Error",MB_OK);
-         return FALSE;
-    }
-    
-    File = CreateFile(filename,
-                      GENERIC_READ | FILE_FLAG_OVERLAPPED,
-                      FILE_SHARE_READ, 
-                      NULL,OPEN_EXISTING,
-                      FILE_ATTRIBUTE_NORMAL, 
-                      NULL);
-                                 
-    if(File == INVALID_HANDLE_VALUE)
-    {
-         MessageBox(hwnd,"Error opening the file","Error",MB_OK);
-         return FALSE;
-    }
-    
+{    
     execute = FALSE;
-                
-    mask = FileSize = GetFileSize(File, NULL) - 1;
-    mask |= (mask >>1);
-    mask |= (mask >>2);
-    mask |= (mask >>4);
-    mask |= (mask >>8);
-    mask |= (mask >>16);
 
-    if ((ROM = (u8 *)malloc((mask+1)*sizeof(u8))) == NULL)
-    {
-       CloseHandle(File);
-       return FALSE;
-    }
+    if (NDS_LoadROM(filename) > 0)
+       return TRUE;
 
-    ReadFile(File, ROM, FileSize, &nblu, NULL);
-    NDS_loadROM(ROM, mask);
-    CloseHandle(File);
-    return TRUE;
+    return FALSE;
 }
 
 int WriteBMP(const char *filename,u16 *bmp){
@@ -283,7 +237,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
-    NDSInit();
+    NDS_Init();
 
     //ARM7 BIOS IRQ HANDLER
     MMU_writeWord(1, 0x00, 0xE25EF002);
@@ -317,8 +271,18 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     
     CreateThread(NULL, 0, run, NULL, 0, &threadID);
     
-    if(LoadROM(lpszArgument)) execute = TRUE;
-    
+    if(LoadROM(lpszArgument))
+    {
+       EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
+       EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+       execute = TRUE;
+    }
+    else
+    {
+       EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
+       EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
+    }
+
     while (GetMessage (&messages, NULL, 0, 0))
     {
         // Translate virtual-key messages into character messages
@@ -356,7 +320,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   char filename[MAX_PATH] = "";
                   DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
                   DragFinish((HDROP)wParam);
-                  if(LoadROM(filename)) execute = TRUE;
+                  if(LoadROM(filename))
+                  {
+                     EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
+                     EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+                     execute = TRUE;
+                  }
              }
              return 0;
         case WM_KEYDOWN:
@@ -534,20 +503,28 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             }
                             
                             LOG("%s\r\n", filename);
-                            
+
+/*                          // This should be moved to NDSSystem.c
+
                             // Added for FAT generation
                             // Mic
  					        if (ofn.nFileOffset>0) {
 					           	strncpy(szRomPath,filename,ofn.nFileOffset-1);
                 	            cflash_close();
              	                cflash_init();
-                            } 
+                            }
                            
                             strcpy(SavName,filename);
                             
                             romnum+=1;
+*/
                             
-                            if(LoadROM(filename)) execute = FALSE;
+                            if(LoadROM(filename))
+                            {
+                               EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
+                               EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+                               execute = TRUE;
+                            }
                        }
                   return 0;
                   case IDM_PRINTSCREEN:
@@ -803,12 +780,17 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        }
                        return 0;
                   case IDM_EXEC:
+                       EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
+                       EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
                        execute = TRUE;
                   return 0;
                   case IDM_PAUSE:
+                       EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
+                       EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
                        execute = FALSE;
                   return 0;
                   case IDM_RESET:
+                       NDS_Reset();
                   return 0;
                   case IDM_CONFIG:
                        {
@@ -825,7 +807,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             return DefWindowProc (hwnd, message, wParam, lParam);
     }
 
-    NDSDeInit();
+    NDS_DeInit();
 
     return 0;
 }

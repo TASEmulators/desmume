@@ -23,7 +23,7 @@
 #define OAMVIEW_H
 
 #include "CWindow.h"
-#include "../arm9/GPU.h"
+#include "../GPU.h"
 
 typedef struct
 {

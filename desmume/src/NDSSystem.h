@@ -183,12 +183,16 @@ extern NDSSystem nds;
 void NDSInit(void);
 void NDSDeInit(void);
 
-BOOL NDS_loadROM(u8 * rom, u32 mask);
+BOOL NDS_SetROM(u8 * rom, u32 mask);
 NDS_header * NDS_getROMHeader(void);
  
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releasTouch(void);
-       
+
+int NDS_LoadROM(const char *filename);
+void NDS_FreeROM(void);
+void NDS_Reset(void);
+
        static INLINE void NDS_ARM9HBlankInt(void)
        {
             if(((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]&0x10)
