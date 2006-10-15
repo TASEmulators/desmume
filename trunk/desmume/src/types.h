@@ -118,4 +118,6 @@ typedef enum
 	ARM7 = 1
 } cpu_id_t;
 
+#define __PACKED __attribute__((__packed__))
+
 #endif

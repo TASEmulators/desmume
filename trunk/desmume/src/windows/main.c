@@ -148,55 +148,6 @@ BOOL LoadROM(char * filename)
     return FALSE;
 }
 
-int WriteBMP(const char *filename,u16 *bmp){
-    BITMAPFILEHEADER fileheader;
-    BITMAPV4HEADER imageheader;
-    FILE *file;
-    int i,j,k;
-
-    memset(&fileheader, 0, sizeof(fileheader));
-    fileheader.bfType = 'B' | ('M' << 8);
-    fileheader.bfSize = sizeof(fileheader);
-    fileheader.bfOffBits = sizeof(fileheader)+sizeof(imageheader);
-    
-    memset(&imageheader, 0, sizeof(imageheader));
-    imageheader.bV4Size = sizeof(imageheader);
-    imageheader.bV4Width = 256;
-    imageheader.bV4Height = 192*2;
-    imageheader.bV4Planes = 1;
-    imageheader.bV4BitCount = 24;
-    imageheader.bV4V4Compression = BI_RGB;
-    imageheader.bV4SizeImage = imageheader.bV4Width * imageheader.bV4Height * sizeof(RGBTRIPLE);
-    
-    if ((file = fopen(filename,"wb")) == NULL)
-       return 0;
-
-    fwrite(&fileheader, 1, sizeof(fileheader), file);
-    fwrite(&imageheader, 1, sizeof(imageheader), file);
-
-    for(j=0;j<192*2;j++)
-    {
-       for(i=0;i<256;i++)
-       {
-          u8 r,g,b;
-          u16 pixel = bmp[(192*2-j-1)*256+i];
-          r = pixel>>10;
-          pixel-=r<<10;
-          g = pixel>>5;
-          pixel-=g<<5;
-          b = pixel;
-          r*=255/31;
-          g*=255/31;
-          b*=255/31;
-          fwrite(&r, 1, sizeof(u8), file); 
-          fwrite(&g, 1, sizeof(u8), file); 
-          fwrite(&b, 1, sizeof(u8), file);
-       }
-    }
-    fclose(file);
-
-    return 1;
-}
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
                     LPSTR lpszArgument,
@@ -238,36 +189,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
     NDS_Init();
-
-    //ARM7 BIOS IRQ HANDLER
-    MMU_writeWord(1, 0x00, 0xE25EF002);
-    MMU_writeWord(1, 0x04, 0xEAFFFFFE);
-    MMU_writeWord(1, 0x18, 0xEA000000);
-    MMU_writeWord(1, 0x20, 0xE92D500F);
-    MMU_writeWord(1, 0x24, 0xE3A00301);
-    MMU_writeWord(1, 0x28, 0xE28FE000);
-    MMU_writeWord(1, 0x2C, 0xE510F004);
-    MMU_writeWord(1, 0x30, 0xE8BD500F);
-    MMU_writeWord(1, 0x34, 0xE25EF004);
-    
-    //ARM9 BIOS IRQ HANDLER
-    MMU_writeWord(0, 0xFFF0018, 0xEA000000);
-    MMU_writeWord(0, 0xFFF0020, 0xE92D500F);
-    MMU_writeWord(0, 0xFFF0024, 0xEE190F11);
-    MMU_writeWord(0, 0xFFF0028, 0xE1A00620);
-    MMU_writeWord(0, 0xFFF002C, 0xE1A00600);
-    MMU_writeWord(0, 0xFFF0030, 0xE2800C40);
-    MMU_writeWord(0, 0xFFF0034, 0xE28FE000);
-    MMU_writeWord(0, 0xFFF0038, 0xE510F004);
-    MMU_writeWord(0, 0xFFF003C, 0xE8BD500F);
-    MMU_writeWord(0, 0xFFF0040, 0xE25EF004);
-        
-    MMU_writeWord(0, 0x0000004, 0xE3A0010E);
-    MMU_writeWord(0, 0x0000008, 0xE3A01020);
-//    MMU_writeWord(0, 0x000000C, 0xE1B02110);
-    MMU_writeWord(0, 0x000000C, 0xE1B02040);
-    MMU_writeWord(0, 0x0000010, 0xE3B02020);
-//    MMU_writeWord(0, 0x0000010, 0xE2100202);
     
     CreateThread(NULL, 0, run, NULL, 0, &threadID);
     
@@ -541,12 +462,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             ofn.lpstrDefExt = "bmp";
                             ofn.Flags = OFN_OVERWRITEPROMPT;
                             GetSaveFileName(&ofn);
-                            WriteBMP(filename,GPU_screen);
+                            NDS_WriteBMP(filename);
                        }
                   return 0;
                   case IDM_QUICK_PRINTSCREEN:
                        {
-                          WriteBMP("./printscreen.bmp",GPU_screen);
+                          NDS_WriteBMP("./printscreen.bmp");
                        }
                   return 0;
                   case IDM_STATE_LOAD:

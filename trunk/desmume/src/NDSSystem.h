@@ -193,6 +193,8 @@ int NDS_LoadROM(const char *filename);
 void NDS_FreeROM(void);
 void NDS_Reset(void);
 
+int NDS_WriteBMP(const char *filename);
+
        static INLINE void NDS_ARM9HBlankInt(void)
        {
             if(((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]&0x10)
