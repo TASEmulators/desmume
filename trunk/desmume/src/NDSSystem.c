@@ -24,41 +24,34 @@
 
 NDSSystem nds;
 
-void NDSInit(void) {
+void NDS_Init(void) {
      nds.ARM9Cycle = 0;
      nds.ARM7Cycle = 0;
      nds.cycles = 0;
-     MMUInit();
+     MMU_Init();
      nds.nextHBlank = 3168;
      nds.VCount = 0;
      nds.lignerendu = FALSE;
 
-     ScreenInit();
+     Screen_Init();
      
      armcpu_new(&NDS_ARM7,1);
      armcpu_new(&NDS_ARM9,0);
 }
 
-void NDSDeInit(void) {
+void NDS_DeInit(void) {
      if(MMU.CART_ROM != MMU.UNUSED_RAM)
-     {
-		  // free(MMU.CART_ROM); IT'S UP TO THE GUI TO LOAD/UNLOAD AND MALLOC/FREE ROM >(
-          MMU_unsetRom();
-     }
+        NDS_FreeROM();
+
      nds.nextHBlank = 3168;
-     ScreenDeInit();
-     MMUDeInit();
+     Screen_DeInit();
+     MMU_DeInit();
 }
 
-BOOL NDS_loadROM(u8 * rom, u32 mask)
+BOOL NDS_SetROM(u8 * rom, u32 mask)
 {
      u32 i;
 
-     if(MMU.CART_ROM != MMU.UNUSED_RAM)
-     {
-         // free(MMU.CART_ROM); IT'S UP TO THE GUI TO LOAD/UNLOAD AND MALLOC/FREE ROM >(
-          MMU_unsetRom();
-     }
      MMU_setRom(rom, mask);
      
      NDS_header * header = (NDS_header *)MMU.CART_ROM;
@@ -218,4 +211,99 @@ void debug()
      }*/
      //if(NDS_ARM9.instruction==0) execute = FALSE;
      //if((NDS_ARM9.R[15]>>28)) execute = FALSE;
+}
+
+#define DSGBA_EXTENSTION ".ds.gba"
+#define DSGBA_LOADER_SIZE 512
+enum
+{
+	ROM_NDS = 0,
+	ROM_DSGBA
+};
+
+int NDS_LoadROM(const char *filename)
+{
+   int i;
+   int type;
+   const char *p = filename;
+   FILE *file;
+   u32 size, mask;
+   u8 *data;
+
+   if (filename == NULL)
+      return -1;
+
+   type = ROM_NDS;
+	
+   p += strlen(p);
+   p -= strlen(DSGBA_EXTENSTION);
+
+   if(memcmp(p, DSGBA_EXTENSTION, strlen(DSGBA_EXTENSTION)) == 0)
+      type = ROM_DSGBA;
+	
+   if ((file = fopen(filename, "rb")) == NULL)
+      return -1;
+	
+   fseek(file, 0, SEEK_END);
+   size = ftell(file);
+   fseek(file, 0, SEEK_SET);
+	
+   if(type == ROM_DSGBA)
+   {
+      fseek(file, DSGBA_LOADER_SIZE, SEEK_SET);
+      size -= DSGBA_LOADER_SIZE;
+   }
+	
+   mask = size;
+   mask |= (mask >>1);
+   mask |= (mask >>2);
+   mask |= (mask >>4);
+   mask |= (mask >>8);
+   mask |= (mask >>16);
+
+   // Make sure old ROM is freed first(at least this way we won't be eating
+   // up a ton of ram before the old ROM is freed)
+   if(MMU.CART_ROM != MMU.UNUSED_RAM)
+      NDS_FreeROM();
+
+   if ((data = (u8*)malloc(mask + 1)) == NULL)
+   {
+      fclose(file);
+      return -1;
+   }
+	
+   i = fread(data, 1, size, file);
+	
+   fclose(file);
+	
+   MMU_unsetRom();
+   NDS_Reset();
+   NDS_SetROM(data, mask);
+
+/* // Will be added later
+   strcpy(szRomPath, dirname((char *) filename));
+   cflash_close();
+   cflash_init();
+*/
+
+   return i;
+}
+
+void NDS_FreeROM(void)
+{
+   if (MMU.CART_ROM != MMU.UNUSED_RAM)
+      free(MMU.CART_ROM);
+   MMU_unsetRom();
+}
+
+void NDS_Reset(void)
+{
+   BOOL oldexecute=execute;
+   int i;
+
+   execute = FALSE;
+
+   // Reset emulation here
+
+   execute = oldexecute;
 }

@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include "resource.h"
 #include "oamView.h"
-#include "../arm9/GPU.h"
+#include "../GPU.h"
 
 #include "../MMU.h"
 
