@@ -34,7 +34,7 @@ int main(int argc, char ** argv) {
 #ifdef DEBUG
 	LogStart();
 #endif
-	NDSInit();
+	NDS_Init();
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s filename\n", argv[0]);
@@ -121,7 +121,7 @@ int main(int argc, char ** argv) {
 	}
 
 	SDL_Quit();
-	NDSDeInit();
+	NDS_DeInit();
 #ifdef DEBUG
 	LogStop();
 #endif
