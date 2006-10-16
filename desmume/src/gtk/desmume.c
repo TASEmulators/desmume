@@ -54,15 +54,6 @@ void desmume_cycle()
 	desmume_last_cycle = NDS_exec((560190 << 1) - desmume_last_cycle, FALSE);
 }
 
-void desmume_touch(s16 x, s16 y)
-{
-	NDS_setTouchPos(x, y);
-}
-void desmume_touch_release()
-{
-	NDS_releasTouch();
-}
-
 void desmume_keypad(u16 k)
 {
 	unsigned short k_ext = (k >> 10) & 0x3;

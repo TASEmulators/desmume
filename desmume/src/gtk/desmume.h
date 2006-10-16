@@ -32,8 +32,6 @@ extern BOOL desmume_running();
 
 extern void desmume_cycle();
 
-extern void desmume_touch(s16 x, s16 y);
-extern void desmume_touch_release();
 extern void desmume_keypad(u16 k); 
 
 #endif /*__DESMUME_H__*/

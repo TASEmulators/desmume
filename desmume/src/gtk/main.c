@@ -16,6 +16,8 @@
 #include <string.h>
 #include <libgen.h>
 
+#include "DeSmuME.xpm"
+
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
 /************************ CONFIG FILE *****************************/
@@ -26,15 +28,14 @@
 static void *Open_Select(GtkWidget* widget, gpointer data);
 static void Launch();
 static void Pause();
-static void Quit(GtkWidget* widget, gpointer data);
-static void Printscreen(GtkWidget* widget, gpointer data);
+static void Printscreen();
 static void Reset();
 
 static GtkActionEntry action_entries[] = {
 	{ "open",	"gtk-open",		"Open",		"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
 	{ "run",	"gtk-media-play",	"Run",		"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
 	{ "pause",	"gtk-media-pause",	"Pause",	"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },
-	{ "quit",	"gtk-quit",		"Quit",		"<Ctrl>q",	NULL,	G_CALLBACK(Quit) },
+	{ "quit",	"gtk-quit",		"Quit",		"<Ctrl>q",	NULL,	G_CALLBACK(gtk_main_quit) },
 	{ "printscreen",NULL,			"Printscreen",	NULL,		NULL,	G_CALLBACK(Printscreen) },
 	{ "reset",	"gtk-refresh",		"Reset",	NULL,		NULL,	G_CALLBACK(Reset) }
 };
@@ -162,28 +163,17 @@ gboolean EmuLoop(gpointer data);
 
 void About(GtkWidget* widget, gpointer data)
 {
-	GtkWidget *pAbout;
+	GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
+	
+	gtk_show_about_dialog(pWindow,
+			"name", "DeSmuME",
+			"version", VERSION,
+			"website", "http://desmume.sf.net",
+			"logo", pixbuf,
+			"comments", "Nintendo DS emulator based on work by Yopyop",
+			NULL);
 
-	pAbout = gtk_message_dialog_new (GTK_WINDOW(data),
-												GTK_DIALOG_MODAL,
-												GTK_MESSAGE_INFO,
-												GTK_BUTTONS_OK,
-"Desmume v0.33 \n\
-------------------\n\
-Base Emulator by Yopyop\n\
-http://yopyop156.ifrance.com/index.htm\n\
-------------------\n\
-Open source project\n\
-http://desmume.sourceforge.net/\n\
-------------------\n\
-GTK interface by Thoduv\n\
-http://thoduv.drunkencoders.com/\n\
-------------------\n\
-Build date: " __DATE__ ", " __TIME__ ".");
-
-	gtk_dialog_run(GTK_DIALOG(pAbout));
-
-	gtk_widget_destroy(pAbout);
+	g_object_unref(pixbuf);
 }
 
 static int Open(const char *filename)
@@ -216,7 +206,7 @@ static void Pause()
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
 }
 
-/* Sélectionne un fichier puis le charge */
+/* Choose a file then load it */
 static void *Open_Select(GtkWidget* widget, gpointer data)
 {
 	Pause();
@@ -240,7 +230,7 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 	gtk_file_filter_add_pattern(pFilter_any, "*");
 	gtk_file_filter_set_name(pFilter_any, "All files");
 
-	/* Creation de la fenetre de selection */
+	/* Creating the selection window */
 	pFileSelection = gtk_file_chooser_dialog_new("Open...",
 			GTK_WINDOW(pParent),
 			GTK_FILE_CHOOSER_ACTION_OPEN,
@@ -295,11 +285,6 @@ static void Reset()
 	desmume_resume();
 	
 	pStatusBar_Change("Running ...");
-}
-
-static void Quit(GtkWidget* widget, gpointer data)
-{
-	gtk_main_quit();
 }
 
 int ScreenCoeff_Size;
@@ -369,7 +354,7 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
 			EmuY = y - 192;
 			if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
 			if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-			desmume_touch(EmuX, EmuY);
+			NDS_setTouchPos(EmuX, EmuY);
 		}
 	}
 	
@@ -394,7 +379,7 @@ static gboolean Stylus_Press(GtkWidget *w, GdkEventButton *e, gpointer data)
 				EmuY = y - 192;
 				if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
 				if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-				desmume_touch(EmuX, EmuY);
+				NDS_setTouchPos(EmuX, EmuY);
 			}
 		}
 	}
@@ -403,7 +388,7 @@ static gboolean Stylus_Press(GtkWidget *w, GdkEventButton *e, gpointer data)
 }
 static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
-	if(click) desmume_touch_release();
+	if(click) NDS_releasTouch();
 	click = FALSE;
 	return TRUE;
 }
@@ -620,8 +605,6 @@ void Modify_Layer(GtkWidget* widget, gpointer data)
 	//fprintf(stderr,"Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
 }
 
-#include "DeSmuME.xpm"
-
 const char *Layers_Menu[10] =
 {
 	"Main BG 0",
@@ -722,7 +705,7 @@ int WriteBMP(const char *filename,u16 *bmp){
 return 1;
 }
 
-static void Printscreen(GtkWidget* widget, gpointer data)
+static void Printscreen()
 {
 	WriteBMP("./test.bmp",GPU_screen);
 }
@@ -1027,7 +1010,7 @@ int main (int argc, char *argv[])
 	gtk_window_set_policy (GTK_WINDOW (pWindow), FALSE, FALSE, FALSE);
 	gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 	
-	g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(Quit), NULL);
+	g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
 	g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
 
