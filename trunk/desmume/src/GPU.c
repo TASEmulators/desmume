@@ -24,6 +24,7 @@
 
 #include "GPU.h"
 #include "debug.h"
+#include "mem.h"
 
 #include "nds/video.h"
 
@@ -236,10 +237,10 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->sprBMPBlock = 7;
 	}
 	
-	GPU_setBGProp(gpu, 3, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+7]);
-	GPU_setBGProp(gpu, 2, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+6]);
-	GPU_setBGProp(gpu, 1, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+5]);
-	GPU_setBGProp(gpu, 0, ((u16 *)ARM9Mem.ARM9_REG)[gpu->core*0x800+4]);
+	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 7) << 1));
+	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 6) << 1));
+	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 5) << 1));
+	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 4) << 1));
 	
 	if((p & DISPLAY_BG3_ACTIVE) && gpu->dispBG[3])
 	{

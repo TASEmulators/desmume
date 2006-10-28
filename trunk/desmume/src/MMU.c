@@ -358,7 +358,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
 	{
 		/* Returns data from DTCM (ARM9 only) */
-		return ((u16 *)ARM9Mem.ARM9_DTCM)[(adr&0x3FFF)>>1];
+		return T1ReadWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
 	}
 	
 	// CFlash reading, Mic
@@ -430,7 +430,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 	}
 	
 	/* Returns data from memory */
-	return ((u16 *)(MMU.MMU_MEM[proc][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>1];
+	return T1ReadWord(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]); 
 }
 	 
 u32 FASTCALL MMU_read32(u32 proc, u32 adr)
@@ -466,18 +466,18 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				
 			case 0x04100000 :
 			{
-				u16 IPCFIFO_CNT = ((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1];
+				u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 				if(IPCFIFO_CNT&0x8000)
 				{
 				//execute = FALSE;
 				u32 fifonum = IPCFIFO+proc;
 				u32 val = FIFOValue(MMU.fifos + fifonum);
 				u32 remote = (proc+1) & 1;
-				u16 IPCFIFO_CNT_remote = ((u16 *)(MMU.MMU_MEM[remote][0x40]))[0x184>>1];
+				u16 IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
 				IPCFIFO_CNT |= (MMU.fifos[fifonum].empty<<8) | (MMU.fifos[fifonum].full<<9) | (MMU.fifos[fifonum].error<<14);
 				IPCFIFO_CNT_remote |= (MMU.fifos[fifonum].empty) | (MMU.fifos[fifonum].full<<1);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1] = IPCFIFO_CNT;
-				((u16 *)(MMU.MMU_MEM[remote][0x40]))[0x184>>1] = IPCFIFO_CNT_remote;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
+				T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
 				if(MMU.fifos[fifonum].empty)
 					MMU.reg_IF[proc] |=  ((IPCFIFO_CNT & (1<<2))<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc] & (1<<17));// 
 				return val;
@@ -489,7 +489,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			case 0x04000108 :
 			case 0x0400010C :
 			{
-				u32 val = (((u16 *)(MMU.MMU_MEM[proc][0x40]))[((adr+2)&0xFFF)>>1]);
+				u32 val = T1ReadWord(MMU.MMU_MEM[proc][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[proc][(adr&0xF)>>2] | (val<<16);
 			}	
 			case 0x04000640 :	/* TODO (clear): again, ??? */
@@ -522,7 +522,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 					/* = 0x7f7fffff */
 					
 					/* if needed, throw irq for the end of transfer */
-					if(MEM_16(MMU.MMU_MEM[proc], CARD_CR1) & CARD_CR1_IRQ)
+					if(T1ReadWord(MMU.MMU_MEM[proc][(CARD_CR1 >> 20) & 0xff], CARD_CR1 & 0xfff) & CARD_CR1_IRQ)
 					{
 						if(proc == ARMCPU_ARM7)	NDS_makeARM7Int(IRQ_CARD); 
 						else NDS_makeARM9Int(IRQ_CARD);
@@ -718,7 +718,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
 	{
 		/* Writes in DTCM (ARM9 only) */
-		((u16 *)ARM9Mem.ARM9_DTCM)[(adr&0x3FFF)>>1] = val;
+		T1WriteWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val);
 		return;
 	}
 	
@@ -778,11 +778,11 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 						SubScreen.offset = 0;
 					}
 				}
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x304>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x304, val);
 				return;
 
                         case CARD_CR1:
-                                MEM_16(MMU.MMU_MEM[proc], CARD_CR1) = val;
+				T1WriteWord(MMU.MMU_MEM[proc][(CARD_CR1 >> 20) & 0xff], CARD_CR1 & 0xfff, val);
                                 AUX_SPI_CNT = val;
 
                                 if (val == 0)
@@ -795,7 +795,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
                                    AUX_SPI_CMD = val & 0xFF;
                                 }
 
-                                MEM_16(MMU.MMU_MEM[proc], CARD_EEPDATA) = bm_transfer(&MMU.bupmem, val);        /* transfer data to backup memory chip and receive back */
+				T1WriteWord(MMU.MMU_MEM[proc][(CARD_EEPDATA >> 20) & 0xff], CARD_EEPDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				return;
 
 			case REG_SPICNT :
@@ -808,7 +808,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
                                         mc_reset_com(&MMU.fw);     /* reset fw device communication */
                                 }
 				
-				MEM_16(MMU.MMU_MEM[proc], REG_SPICNT) = val;
+				T1WriteWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
 				return;
 				
 			case REG_SPIDATA :
@@ -819,7 +819,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 						SPI_CMD = val;
 					}
 			
-					u16 spicnt = MEM_16(MMU.MMU_MEM[proc], REG_SPICNT);
+					u16 spicnt = T1ReadWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
 					
 					switch(spicnt & 0x300)
 					{
@@ -829,10 +829,10 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 						case SPI_DEVICE_NVRAM :	/* firmware memory device */
 							if(SPI_BAUD_MASK(spicnt) != SPI_BAUD_4MHz) 	/* check SPI baudrate (must be 4mhz) */
 							{
-								MEM_16(MMU.MMU_MEM[proc], REG_SPIDATA) = 0;
+								T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
 								break;
 							}
-                                                        MEM_16(MMU.MMU_MEM[proc], REG_SPIDATA) = fw_transfer(&MMU.fw, val);        /* transfer data to fw chip and receive back */
+							T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, val));
 							return;
 							
 						case SPI_DEVICE_TOUCH:
@@ -899,7 +899,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 					}
 				}
 				
-				MEM_16(MMU.MMU_MEM[proc], REG_SPIDATA) = val;
+				T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, val);
 				return;
 				
 				/* NOTICE: Perhaps we have to use gbatek-like reg names instead of libnds-like ones ...*/
@@ -1051,47 +1051,47 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case BG0_CR :
 				GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 0, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x8>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x8, val);
 				return;
 			case BG1_CR :
 				GPULOG("MAIN BG1 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 1, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xA>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xA, val);
 				return;
 			case BG2_CR :
 				GPULOG("MAIN BG2 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 2, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xC>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xC, val);
 				return;
 			case BG3_CR :
 				GPULOG("MAIN BG3 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 3, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xE>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xE, val);
 				return;
 			case SUB_BG0_CR :
 				GPULOG("SUB BG0 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 0, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x1008>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x1008, val);
 				return;
 			case SUB_BG1_CR :
 				GPULOG("SUB BG1 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 1, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x100A>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100A, val);
 				return;
 			case SUB_BG2_CR :
 				GPULOG("SUB BG2 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 2, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x100C>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100C, val);
 				return;
 			case SUB_BG3_CR :
 				GPULOG("SUB BG3 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 3, val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x100E>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100E, val);
 				return;
 				
 			case REG_IME :
 				MMU.reg_IME[proc] = val&1;
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x208>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x208, val);
 				return;
 				
 			case REG_IE :
@@ -1114,9 +1114,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case 0x04000180 :
 				{
 				u32 remote = (proc+1)&1;
-				u16 IPCSYNC_remote = ((u16 *)(MMU.MMU_MEM[remote][0x40]))[0x180>>1];
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x180>>1] = (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF);
-				((u16 *)(MMU.MMU_MEM[remote][0x40]))[0x180>>1] = (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF);
+				u16 IPCSYNC_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x180);
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
+				T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF));
 				MMU.reg_IF[remote] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));// 
 				//execute = FALSE;
 				}
@@ -1126,12 +1126,12 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				if(val & 0x4008)
 				{
 					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
-					((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1] = (val & 0xBFF4) | 1;
-					((u16 *)(MMU.MMU_MEM[(proc+1)&1][0x40]))[0x184>>1] |= (1<<8);
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (val & 0xBFF4) | 1);
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) | 1);
 					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
 					return;
 				}
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1] |= (val & 0xBFF4);
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) | (val & 0xBFF4));
 				}
 				return;
 			case 0x04000100 :
@@ -1170,7 +1170,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				}
 				if(!(val & 0x80))
 				MMU.timerRUN[proc][((adr-2)>>2)&0x3] = FALSE;
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[(adr&0xFFF)>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
 			case 0x04000002 : 
 				{
@@ -1210,7 +1210,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				{
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma0 %04X\r\n", val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xBA>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xBA, val);
 				DMASrc[proc][0] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB0>>2];
 				DMADst[proc][0] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB4>>2];
 				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB8>>2];
@@ -1230,7 +1230,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				{
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma1 %04X\r\n", val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xC6>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xC6, val);
 				DMASrc[proc][1] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xBC>>2];
 				DMADst[proc][1] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC0>>2];
 				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC4>>2];
@@ -1250,7 +1250,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				{
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma2 %04X\r\n", val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xD2>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xD2, val);
 				DMASrc[proc][2] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC8>>2];
 				DMADst[proc][2] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xCC>>2];
 				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD0>>2];
@@ -1270,7 +1270,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				{
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma3 %04X\r\n", val);
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0xDE>>1] = val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xDE, val);
 				DMASrc[proc][3] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD4>>2];
 				DMADst[proc][3] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD8>>2];
 				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xDC>>2];
@@ -1289,11 +1289,11 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
 			//case 0x040001A0 : execute = FALSE;
 			default :
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>1]=val;
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val); 
 				return;
 		}
 	}
-	((u16 *)(MMU.MMU_MEM[proc][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>1]=val;
+	T1WriteWord(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
 } 
 
 u32 testval = 0;
@@ -1627,7 +1627,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			case 0x04000298 :
 				{
 					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x298>>2] = val;
-					u16 cnt = ((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x280>>1];
+					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
 					s64 num = 0;
 					s64 den = 1;
 					s64 res;
@@ -1682,7 +1682,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			case 0x0400029C :
 			{
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x29C>>2] = val;
-				u16 cnt = ((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x280>>1];
+				u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
 				s64 num = 0;
 				s64 den = 1;
 				s64 res;
@@ -1739,7 +1739,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				{
 					//execute = FALSE;
 					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B8>>2] = val;
-					u16 cnt = ((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x2B0>>1];
+					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
 					u64 v = 1;
 					switch(cnt&1)
 					{
@@ -1760,7 +1760,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			case 0x040002BC :
 				{
 					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2BC>>2] = val;
-					u16 cnt = ((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x2B0>>1];
+					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
 					u64 v = 1;
 					switch(cnt&1)
 					{
@@ -1792,17 +1792,17 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				if(val & 0x4008)
 				{
 					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
-					((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1] = (val & 0xBFF4) | 1;
-					((u16 *)(MMU.MMU_MEM[(proc+1)&1][0x40]))[0x184>>1] |= (1<<8);
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (val & 0xBFF4) | 1);
+					T1WriteWord(MMU.MMU_MEM[(proc+1)&1][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[(proc+1)&1][0x40], 0x184) | 256);
 					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc] << 17);// & (MMU.reg_IE[proc] & 0x20000);//
 					return;
 				}
-				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1] = (val & 0xBFF4);
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
 				//execute = FALSE;
 				return;
 			case 0x04000188 :
 				{
-					u16 IPCFIFO_CNT = ((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1];
+					u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 					if(IPCFIFO_CNT&0x8000)
 					{
 					//if(val==43) execute = FALSE;
@@ -1810,10 +1810,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					u32 fifonum = IPCFIFO+remote;
 					FIFOAdd(MMU.fifos + fifonum, val);
 					IPCFIFO_CNT = (IPCFIFO_CNT & 0xFFFC) | (MMU.fifos[fifonum].full<<1);
-					u16 IPCFIFO_CNT_remote = ((u16 *)(MMU.MMU_MEM[remote][0x40]))[0x184>>1];
+					u16 IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
 					IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
-					((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x184>>1] = IPCFIFO_CNT;
-					((u16 *)(MMU.MMU_MEM[remote][0x40]))[0x184>>1] = IPCFIFO_CNT_remote;
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
+					T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
 					//((u32 *)(MMU.MMU_MEM[rote][0x40]))[0x214>>2] = (IPCFIFO_CNT_remote & (1<<10))<<8;
 					MMU.reg_IF[remote] |= ((IPCFIFO_CNT_remote & (1<<10))<<8);// & (MMU.reg_IME[remote] << 18);// & (MMU.reg_IE[remote] & 0x40000);//
 					//execute = FALSE;
