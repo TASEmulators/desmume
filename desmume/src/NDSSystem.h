@@ -27,6 +27,8 @@
 
 #include "GPU.h"
 
+#include "mem.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -198,7 +200,7 @@ int NDS_LoadFirmware(const char *filename);
 
        static INLINE void NDS_ARM9HBlankInt(void)
        {
-            if(((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]&0x10)
+            if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x10)
             {
                  MMU.reg_IF[0] |= 2;// & (MMU.reg_IME[0] << 1);// (MMU.reg_IE[0] & (1<<1));
                  NDS_ARM9.wIRQ = TRUE;
@@ -207,7 +209,7 @@ int NDS_LoadFirmware(const char *filename);
        
        static INLINE void NDS_ARM7HBlankInt(void)
        {
-            if(((u16 *)MMU.ARM7_REG)[0x0004>>1]&0x10)
+            if(T1ReadWord(MMU.ARM7_REG, 4) & 0x10)
             {
                  MMU.reg_IF[1] |= 2;// & (MMU.reg_IME[1] << 1);// (MMU.reg_IE[1] & (1<<1));
                  NDS_ARM7.wIRQ = TRUE;
@@ -216,7 +218,7 @@ int NDS_LoadFirmware(const char *filename);
        
        static INLINE void NDS_ARM9VBlankInt(void)
        {
-            if(((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]&0x8)
+            if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x8)
             {
                  MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
                  NDS_ARM9.wIRQ = TRUE;
@@ -227,7 +229,7 @@ int NDS_LoadFirmware(const char *filename);
        
        static INLINE void NDS_ARM7VBlankInt(void)
        {
-            if(((u16 *)MMU.ARM7_REG)[0x0004>>1]&0x8)
+            if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8)
                  MMU.reg_IF[1] |= 1;// & (MMU.reg_IME[1]);// (MMU.reg_IE[1] & 1);
                  NDS_ARM7.wIRQ = TRUE;
                  //execute = FALSE;
@@ -301,8 +303,8 @@ int NDS_LoadFirmware(const char *filename);
                            {
 				GPU_ligne(&MainScreen, nds.VCount);
 				GPU_ligne(&SubScreen, nds.VCount);
-                                ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] |= 2;
-                                ((u16 *)MMU.ARM7_REG)[0x0004>>1] |= 2;
+				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
+				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
                                 NDS_ARM9HBlankInt();
                                 NDS_ARM7HBlankInt();
                                 if(MMU.DMAStartTime[0][0] == 2)
@@ -320,8 +322,8 @@ int NDS_LoadFirmware(const char *filename);
                       {
                            ++nds.VCount;
                            nds.nextHBlank += 4260;
-                           ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] &= 0xFFFD;
-                           ((u16 *)MMU.ARM7_REG)[0x0004>>1] &= 0xFFFD;
+			   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFD);
+			   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFD);
                            
                            if(MMU.DMAStartTime[0][0] == 3)
                                 MMU_doDMA(0, 0);
@@ -335,8 +337,8 @@ int NDS_LoadFirmware(const char *filename);
                            nds.lignerendu = FALSE;
                            if(nds.VCount==193)
                            {
-                                ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] |= 1;
-                                ((u16 *)MMU.ARM7_REG)[0x0004>>1] |= 1;
+				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
+				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
                                 NDS_ARM9VBlankInt();
                                 NDS_ARM7VBlankInt();
                                 
@@ -363,8 +365,8 @@ int NDS_LoadFirmware(const char *filename);
                                 {
                                      nds.nextHBlank = 3168;
                                      nds.VCount = 0;
-                                     ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] &= 0xFFFE;
-                                     ((u16 *)MMU.ARM7_REG)[0x0004>>1] &= 0xFFFE;
+			             T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFE);
+			             T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
 
                                      nds.cycles -= (560190<<1);
                                      nds.ARM9Cycle -= (560190<<1);
@@ -405,28 +407,28 @@ int NDS_LoadFirmware(const char *filename);
                                           MMU.DMACycle[1][3] -= (560190<<1);
                                 }
                                 
-                           ((u16 *)ARM9Mem.ARM9_REG)[0x0006>>1] = nds.VCount;
-                           ((u16 *)MMU.ARM7_REG)[0x0006>>1] = nds.VCount;
+			   T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
+			   T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
                            
-                           u32 vmatch = ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1];
+                           u32 vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
                            if((nds.VCount==(vmatch>>8)|((vmatch<<1)&(1<<8))))
                            {
-                                ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] |= (1<<2);
-                                if((((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]&(1<<5)))
+				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 4);
+                                if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 32)
                                      NDS_makeARM9Int(2);
                            }
                            else
-                                ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1] &= 0xFFFB;
+			        T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFB);
                            
-                           vmatch = ((u16 *)MMU.ARM7_REG)[0x0004>>1];
+                           vmatch = T1ReadWord(MMU.ARM7_REG, 4);
                            if((nds.VCount==(vmatch>>8)|((vmatch<<1)&(1<<8))))
                            {
-                                ((u16 *)MMU.ARM7_REG)[0x0004>>1] |= (1<<2);
-                                if((((u16 *)MMU.ARM7_REG)[0x0004>>1]&(1<<5)))
+				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
+                                if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
                                      NDS_makeARM7Int(2);
                            }
                            else
-                                ((u16 *)MMU.ARM7_REG)[0x0004>>1] &= 0xFFFB;
+			        T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
                       }
                  }
                  if(MMU.timerON[0][0])
@@ -446,7 +448,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][0] = nds.old>MMU.timer[0][0];
                                           if(nds.timerOver[0][0])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x102>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x102) & 0x40)
                                                     NDS_makeARM9Int(3);
                                                MMU.timer[0][0] += MMU.timerReload[0][0];
                                           }
@@ -473,7 +475,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][1] = !MMU.timer[0][1];
                                           if (nds.timerOver[0][1])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x106>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
                                                     NDS_makeARM9Int(4);
                                           }
                                      }
@@ -487,7 +489,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][1] = nds.old>MMU.timer[0][1];
                                           if(nds.timerOver[0][1])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x106>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
                                                     NDS_makeARM9Int(4);
                                                MMU.timer[0][1] += MMU.timerReload[0][1];
                                           }
@@ -514,7 +516,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][2] = !MMU.timer[0][2];
                                           if (nds.timerOver[0][2])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x10A>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
                                                     NDS_makeARM9Int(5);
                                           }
                                      }
@@ -528,7 +530,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][2] = nds.old>MMU.timer[0][2];
                                           if(nds.timerOver[0][2])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x10A>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
                                                     NDS_makeARM9Int(5);
                                                MMU.timer[0][2] += MMU.timerReload[0][2];
                                           }
@@ -555,7 +557,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][3] = !MMU.timer[0][3];
                                           if (nds.timerOver[0][3])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x10E>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
                                                     NDS_makeARM9Int(6);
                                           }
                                      }
@@ -569,7 +571,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[0][3] = nds.old>MMU.timer[0][3];
                                           if(nds.timerOver[0][3])
                                           {
-                                               if(((u16 *)ARM9Mem.ARM9_REG)[0x10E>>1]&0x40)
+					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
                                                     NDS_makeARM9Int(6);
                                                MMU.timer[0][3] += MMU.timerReload[0][3];
                                           }
@@ -601,7 +603,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][0] = nds.old>MMU.timer[1][0];
                                           if(nds.timerOver[1][0])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x102>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x102) & 0x40)
                                                     NDS_makeARM7Int(3);
                                                MMU.timer[1][0] += MMU.timerReload[1][0];
                                           }
@@ -628,7 +630,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][1] = !MMU.timer[1][1];
                                           if (nds.timerOver[1][1])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x106>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
                                                     NDS_makeARM7Int(4);
                                           }
                                      }
@@ -642,7 +644,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][1] = nds.old>MMU.timer[1][1];
                                           if(nds.timerOver[1][1])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x106>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
                                                     NDS_makeARM7Int(4);
                                                MMU.timer[1][1] += MMU.timerReload[1][1];
                                           }
@@ -669,7 +671,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][2] = !MMU.timer[1][2];
                                           if (nds.timerOver[1][2])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x10A>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
                                                     NDS_makeARM7Int(5);
                                           }
                                      }
@@ -683,7 +685,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][2] = nds.old>MMU.timer[1][2];
                                           if(nds.timerOver[1][2])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x10A>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
                                                     NDS_makeARM7Int(5);
                                                MMU.timer[1][2] += MMU.timerReload[1][2];
                                           }
@@ -710,7 +712,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][3] = !MMU.timer[1][3];
                                           if (nds.timerOver[1][3])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x10E>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
                                                     NDS_makeARM7Int(6);
                                           }
                                      }
@@ -724,7 +726,7 @@ int NDS_LoadFirmware(const char *filename);
                                           nds.timerOver[1][3] = nds.old>MMU.timer[1][3];
                                           if(nds.timerOver[1][3])
                                           {
-                                               if(((u16 *)MMU.ARM7_REG)[0x10E>>1]&0x40)
+					       if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
                                                     NDS_makeARM7Int(6);
                                                MMU.timer[1][3] += MMU.timerReload[1][3];
                                           }

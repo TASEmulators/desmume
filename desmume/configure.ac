@@ -69,7 +69,8 @@ case $target in
 		;;
 esac
 
-AC_ARG_ENABLE(debug, AC_HELP_STRING(--enable-debug, enable debug information) , AC_DEFINE(DEBUG))
+AC_ARG_ENABLE(debug, AC_HELP_STRING(--enable-debug, enable debug information),
+	AC_DEFINE(DEBUG))
 
 AC_CONFIG_FILES([Makefile
 	src/Makefile
