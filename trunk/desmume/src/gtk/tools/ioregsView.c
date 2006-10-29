@@ -344,7 +344,7 @@ static void _clearContainer(GtkWidget *widget, gpointer data)
 
 static void selected_reg(GtkWidget* widget, gpointer data)
 {
-	int c = (int)data;
+	int c = GPOINTER_TO_INT(data);
 
 	guint active = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
 		
@@ -389,7 +389,8 @@ static void close()
 
 static void _closeOne(GtkWidget *widget, gpointer data)
 {
-	int c = (int)data;
+	int c = GPOINTER_TO_INT(data);
+
 	CPUS[c] = FALSE;
 	if(c == 0 && !CPUS[1]) close();
 	if(c == 1 && !CPUS[0]) close();
@@ -424,7 +425,7 @@ static void open(int ID)
 		mWin[c]= gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		if(c == 0)	gtk_window_set_title(GTK_WINDOW(mWin[c]), TOOL_NAME " : ARM9");
 		else	gtk_window_set_title(GTK_WINDOW(mWin[c]), TOOL_NAME " : ARM7");
-		g_signal_connect(G_OBJECT(mWin[c]), "destroy", G_CALLBACK(&_closeOne), (gpointer)c);
+		g_signal_connect(G_OBJECT(mWin[c]), "destroy", G_CALLBACK(&_closeOne), GINT_TO_POINTER(c));
 		
 		mVbox0[c] = gtk_vbox_new(FALSE, 0);
 		gtk_container_add(GTK_CONTAINER(mWin[c]), mVbox0[c]);
@@ -440,11 +441,11 @@ static void open(int ID)
 		}
 		
 		gtk_combo_box_set_active(GTK_COMBO_BOX(mIoRegCombo[c]), 0);
-		g_signal_connect(G_OBJECT(mIoRegCombo[c]), "changed", G_CALLBACK(selected_reg), (gpointer)c);
+		g_signal_connect(G_OBJECT(mIoRegCombo[c]), "changed", G_CALLBACK(selected_reg), GINT_TO_POINTER(c));
 		
 		gtk_box_pack_start(GTK_BOX(mVbox0[c]), mIoRegCombo[c], FALSE, FALSE, 0);
 		gtk_box_pack_start(GTK_BOX(mVbox0[c]), mRegInfos[c], FALSE, FALSE, 0);
-		selected_reg(mIoRegCombo[c], (gpointer)c);
+		selected_reg(mIoRegCombo[c], GINT_TO_POINTER(c));
 		
 		gtk_widget_show_all(mWin[c]);
 	}

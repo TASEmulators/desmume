@@ -438,7 +438,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
 	{
 		/* Returns data from DTCM (ARM9 only) */
-		return ((u32 *)ARM9Mem.ARM9_DTCM)[(adr&0x3FFF)>>2];
+		return T1ReadLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
 	}
 	
 	// CFlash reading, Mic
@@ -506,9 +506,8 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			{
 				if(!MMU.dscard[proc].adress) return 0;
 				
-				//u32 val = ((u32 *)MMU.CART_ROM)[MMU.dscard[proc].adress >> 2];
-				u32 val = ROM_32(MMU.CART_ROM, MMU.dscard[proc].adress); /* get data from rom */
-				
+				u32 val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
+
 				MMU.dscard[proc].adress += 4;	/* increment adress */
 				
 				MMU.dscard[proc].transfer_count--;	/* update transfer counter */
@@ -518,7 +517,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				}
 				else	/* transfer is done */
 				{
-					MEM_32(MMU.MMU_MEM[proc], CARD_CR2) &= ~(CARD_DATA_READY | CARD_ACTIVATE);	/* we're done, edit control register */
+					T1WriteLong(MMU.MMU_MEM[proc][(CARD_CR2 >> 20) & 0xff], CARD_CR2 & 0xfff, T1ReadLong(MMU.MMU_MEM[proc][(CARD_CR2 >> 20) & 0xff], CARD_CR2 & 0xfff) & ~(CARD_DATA_READY | CARD_ACTIVATE));
 					/* = 0x7f7fffff */
 					
 					/* if needed, throw irq for the end of transfer */
@@ -538,7 +537,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 	}
 	
 	/* Returns data from memory */
-	return ((u32 *)(MMU.MMU_MEM[proc][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>2];
+	return T1ReadLong(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]);
 }
 	
 void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
@@ -1175,31 +1174,31 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case 0x04000002 : 
 				{
 				//execute = FALSE;
-				u32 v = (((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x0>>2]&0xFFFF)|((u32)val<<16);
+				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0) & 0xFFFF) | ((u32) val << 16);
 				GPU_setVideoProp(MainScreen.gpu, v);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x0>>2] = v;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, v);
 				}
 				return;
 			case 0x04000000 :
 				{
-				u32 v = (((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x0]&0xFFFF0000)|val;
+				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0) & 0xFFFF0000) | val;
 				GPU_setVideoProp(MainScreen.gpu, v);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x0] = v;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, v);
 				}
 				return;
 			case 0x04001002 : 
 				{
 				//execute = FALSE;
-				u32 v = (((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x1000>>2]&0xFFFF)|((u32)val<<16);
+				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x1000) & 0xFFFF) | ((u32) val << 16);
 				GPU_setVideoProp(SubScreen.gpu, v);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x1000>>2] = v;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, v);
 				}
 				return;
 			case 0x04001000 :
 				{
-				u32 v = (((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x1000>>2]&0xFFFF0000)|val;
+				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x1000) & 0xFFFF0000) | val;
 				GPU_setVideoProp(SubScreen.gpu, v);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x1000>>2] = v;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, v);
 				}
 				return;
 			//case 0x020D8460 :
@@ -1211,9 +1210,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma0 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xBA, val);
-				DMASrc[proc][0] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB0>>2];
-				DMADst[proc][0] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB4>>2];
-				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB8>>2];
+				DMASrc[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB0);
+				DMADst[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB4);
+				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8);
 				MMU.DMAStartTime[proc][0] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][0] = v;
 				if(MMU.DMAStartTime[proc][0] == 0)
@@ -1231,9 +1230,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma1 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xC6, val);
-				DMASrc[proc][1] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xBC>>2];
-				DMADst[proc][1] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC0>>2];
-				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC4>>2];
+				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xBC);
+				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC0);
+				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC4);
 				MMU.DMAStartTime[proc][1] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][1] = v;
 				if(MMU.DMAStartTime[proc][1] == 0)
@@ -1251,9 +1250,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma2 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xD2, val);
-				DMASrc[proc][2] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC8>>2];
-				DMADst[proc][2] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xCC>>2];
-				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD0>>2];
+				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC8);
+				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xCC);
+				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD0);
 				MMU.DMAStartTime[proc][2] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][2] = v;
 				if(MMU.DMAStartTime[proc][2] == 0)
@@ -1271,9 +1270,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma3 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xDE, val);
-				DMASrc[proc][3] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD4>>2];
-				DMADst[proc][3] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD8>>2];
-				u32 v = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xDC>>2];
+				DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD4);
+				DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD8);
+				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xDC);
 				MMU.DMAStartTime[proc][3] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][3] = v;
 		
@@ -1302,7 +1301,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 {
 	if((proc==ARMCPU_ARM9)&((adr&(~0x3FFF))==MMU.DTCMRegion))
 	{
-		((u32 *)ARM9Mem.ARM9_DTCM)[(adr&0x3FFF)>>2] = val;
+		T1WriteLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val);
 		return ;
 	}
 	
@@ -1320,7 +1319,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 		{
 #ifdef RENDER3D
 			case 0x040004AC :
-			((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4AC>>2] = val;
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x4AC, val);
 			if(proc==ARMCPU_ARM9)
 				OGLRender::glTexImage2D(testval, TRUE);
 			//execute = FALSE;
@@ -1567,18 +1566,18 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				GPU_setVideoProp(MainScreen.gpu, val);
 				
 				GPULOG("MAIN INIT 32B %08X\r\n", val);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x0] = val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, val);
 				return;
 				
 			case 0x04001000 : 
 				GPU_setVideoProp(SubScreen.gpu, val);
 				GPULOG("SUB INIT 32B %08X\r\n", val);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x1000>>2] = val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, val);
 				return;
 				
 			case REG_IME :
 				MMU.reg_IME[proc] = val & 1;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x208>>2] = val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x208, val);
 				return;
 				
 			case REG_IE :
@@ -1622,11 +1621,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				{
 					MMU.timerRUN[proc][(adr>>2)&0x3] = FALSE;
 				}
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[(adr&0xFFF)>>2] = val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
 			case 0x04000298 :
 				{
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x298>>2] = val;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x298, val);
 					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
 					s64 num = 0;
 					s64 den = 1;
@@ -1636,21 +1635,19 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					{
 					case 0:
 					{
-						num = (s64)(((s32 *)(MMU.MMU_MEM[proc][0x40]))[0x290>>2]);
-						den = (s64)(((s32 *)(MMU.MMU_MEM[proc][0x40]))[0x298>>2]);
+						num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
+						den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
 					}
 					break;
 					case 1:
 					{
-						num = ((s64*)(MMU.MMU_MEM[proc][0x40]))[0x290>>3];
-						den = (s64)(((s32 *)(MMU.MMU_MEM[proc][0x40]))[0x298>>2]);
+						num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
+						den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
 					}
 					break;
 					case 2:
 					{
 						return;
-						//num = ((s64*)(MMU.MMU_MEM[proc][0x40]))[0x290>>3];
-						//den = ((s64*)(MMU.MMU_MEM[proc][0x40]))[0x298>>3];
 					}
 					break;
 					default: 
@@ -1672,16 +1669,16 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					DIVLOG("BOUT1 %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num, 
 											(u32)(den>>32), (u32)den, 
 											(u32)(res>>32), (u32)res);
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2A0>>2] = (u32)res;
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2A4>>2] = (u32)(res>>32);
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2A8>>2] = (u32)mod;
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2AC>>2] = (u32)(mod>>32);
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x280>>2] = cnt;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
 				}
 				return;
 			case 0x0400029C :
 			{
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x29C>>2] = val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x29C, val);
 				u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
 				s64 num = 0;
 				s64 den = 1;
@@ -1691,22 +1688,18 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				{
 				case 0:
 				{
-					return;//
-					//num = (s64)(((s32 *)(MMU.MMU_MEM[proc][0x40]))[0x290>>2]);
-					//den = (s64)(((s32 *)(MMU.MMU_MEM[proc][0x40]))[0x298>>2]);
+					return;
 				}
 				break;
 				case 1:
 				{
-					return;//
-					//num = ((s64*)(MMU.MMU_MEM[proc][0x40]))[0x290>>3];
-					//den = (s64)(((s32 *)(MMU.MMU_MEM[proc][0x40]))[0x298>>2]);
+					return;
 				}
 				break;
 				case 2:
 				{
-					num = ((s64*)(MMU.MMU_MEM[proc][0x40]))[0x290>>3];
-					den = ((s64*)(MMU.MMU_MEM[proc][0x40]))[0x298>>3];
+					num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
+					den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
 				}
 				break;
 				default: 
@@ -1728,63 +1721,60 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				DIVLOG("BOUT2 %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num, 
 										(u32)(den>>32), (u32)den, 
 										(u32)(res>>32), (u32)res);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2A0>>2] = (u32)res;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2A4>>2] = (u32)(res>>32);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2A8>>2] = (u32)mod;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2AC>>2] = (u32)(mod>>32);
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x280>>2] = cnt;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
 			}
 			return;
 			case 0x040002B8 :
 				{
 					//execute = FALSE;
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B8>>2] = val;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B8, val);
 					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
 					u64 v = 1;
 					switch(cnt&1)
 					{
 					case 0:
-						v = (u64)(((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B8>>2]);
+						v = (u64) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B8);
 						break;
 					case 1:
 						return;
-						//v = ((u64*)(MMU.MMU_MEM[proc][0x40]))[0x2B8>>3];
-						//break;
 					}
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B4>>2] = (u32)sqrt(v);
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B0>>2] = cnt & 0x7FFF;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt(v));
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
 					SQRTLOG("BOUT1 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v, 
-										((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B4>>2]);
+										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
 				}
 				return;
 			case 0x040002BC :
 				{
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2BC>>2] = val;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2BC, val);
 					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
 					u64 v = 1;
 					switch(cnt&1)
 					{
 					case 0:
 						return;
-						//v = (u64)(((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B8>>2]);
 						//break;
 					case 1:
-						v = ((u64*)(MMU.MMU_MEM[proc][0x40]))[0x2B8>>3];
+						v = T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x2B8);
 						break;
 					}
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B4>>2] = (u32)sqrt(v);
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B0>>2] = cnt & 0x7FFF;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt(v));
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
 					SQRTLOG("BOUT2 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v, 
-										((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x2B4>>2]);
+										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
 				}
 				return;
 			case 0x04000180 :
 				{
 					//execute=FALSE;
 					u32 remote = (proc+1)&1;
-					u32 IPCSYNC_remote = ((u32 *)(MMU.MMU_MEM[remote][0x40]))[0x180>>2];
-					((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x180>>2] = (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF);
-					((u32 *)(MMU.MMU_MEM[remote][0x40]))[0x180>>2] = (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF);
+					u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[remote][0x40], 0x180);
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
+					T1WriteLong(MMU.MMU_MEM[remote][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF));
 					MMU.reg_IF[remote] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));//
 				}
 				return;
@@ -1814,7 +1804,6 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
 					T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
-					//((u32 *)(MMU.MMU_MEM[rote][0x40]))[0x214>>2] = (IPCFIFO_CNT_remote & (1<<10))<<8;
 					MMU.reg_IF[remote] |= ((IPCFIFO_CNT_remote & (1<<10))<<8);// & (MMU.reg_IME[remote] << 18);// & (MMU.reg_IE[remote] & 0x40000);//
 					//execute = FALSE;
 					}
@@ -1822,11 +1811,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			case 0x040000B8 :
 				//LOG("32 bit dma0 %04X\r\n", val);
-				DMASrc[proc][0] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB0>>2];
-				DMADst[proc][0] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB4>>2];
+				DMASrc[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB0);
+				DMADst[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB4);
 				MMU.DMAStartTime[proc][0] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][0] = val;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xB8>>2]=val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8, val);
 				if(MMU.DMAStartTime[proc][0] == 0)
 					MMU_doDMA(proc, 0);
 				#ifdef LOG_DMA2
@@ -1839,11 +1828,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 				case 0x040000C4 :
 				//LOG("32 bit dma1 %04X\r\n", val);
-				DMASrc[proc][1] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xBC>>2];
-				DMADst[proc][1] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC0>>2];
+				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xBC);
+				DMADst[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC0);
 				MMU.DMAStartTime[proc][1] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][1] = val;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC4>>2]=val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xC4, val);
 				if(MMU.DMAStartTime[proc][1] == 0)
 					MMU_doDMA(proc, 1);
 				#ifdef LOG_DMA2
@@ -1855,11 +1844,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			case 0x040000D0 :
 				//LOG("32 bit dma2 %04X\r\n", val);
-				DMASrc[proc][2] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xC8>>2];
-				DMADst[proc][2] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xCC>>2];
+				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC8);
+				DMADst[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xCC);
 				MMU.DMAStartTime[proc][2] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][2] = val;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD0>>2]=val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xD0, val);
 				if(MMU.DMAStartTime[proc][2] == 0)
 					MMU_doDMA(proc, 2);
 				#ifdef LOG_DMA2
@@ -1871,11 +1860,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 				case 0x040000DC :
 				//LOG("32 bit dma3 %04X\r\n", val);
-				DMASrc[proc][3] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD4>>2];
-				DMADst[proc][3] = ((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xD8>>2];
+				DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD4);
+				DMADst[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD8);
 				MMU.DMAStartTime[proc][3] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][3] = val;
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0xDC>>2]=val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xDC, val);
 				if(MMU.DMAStartTime[proc][3] == 0)
 					MMU_doDMA(proc, 3);
 				#ifdef LOG_DMA2
@@ -1903,10 +1892,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					if(MMU.dscard[proc].adress == 0)
 					{
 						val &= ~CARD_ACTIVATE; 
-						MEM_32(MMU.MMU_MEM[proc], CARD_CR2) = val;
+						T1WriteLong(MMU.MMU_MEM[proc][(CARD_CR2 >> 20) & 0xff], CARD_CR2 & 0xfff, val);
 						return;
 					}
-					MEM_32(MMU.MMU_MEM[proc], CARD_CR2) = val;
+					T1WriteLong(MMU.MMU_MEM[proc][(CARD_CR2 >> 20) & 0xff], CARD_CR2 & 0xfff, val);
 					
 					int i;
 					
@@ -1942,32 +1931,31 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				GPU_setBGProp(MainScreen.gpu, 0, (val&0xFFFF));
 				GPU_setBGProp(MainScreen.gpu, 1, (val>>16));
 				//if((val>>16)==0x400) execute = FALSE;
-				((u32 *)ARM9Mem.ARM9_REG)[8>>2] = val;
+				T1WriteLong(ARM9Mem.ARM9_REG, 8, val);
 				return;
 			case 0x0400000C :
 				GPU_setBGProp(MainScreen.gpu, 2, (val&0xFFFF));
 				GPU_setBGProp(MainScreen.gpu, 3, (val>>16));
-				((u32 *)ARM9Mem.ARM9_REG)[0xC>>2] = val;
+				T1WriteLong(ARM9Mem.ARM9_REG, 0xC, val);
 				return;
 			case 0x04001008 :
 				GPU_setBGProp(SubScreen.gpu, 0, (val&0xFFFF));
 				GPU_setBGProp(SubScreen.gpu, 1, (val>>16));
-				((u32 *)ARM9Mem.ARM9_REG)[0x1008>>2] = val;
+				T1WriteLong(ARM9Mem.ARM9_REG, 0x1008, val);
 				return;
 			case 0x0400100C :
 				GPU_setBGProp(SubScreen.gpu, 2, (val&0xFFFF));
 				GPU_setBGProp(SubScreen.gpu, 3, (val>>16));
-				((u32 *)ARM9Mem.ARM9_REG)[0x100C>>2] = val;
+				T1WriteLong(ARM9Mem.ARM9_REG, 0x100C, val);
 				return;
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;
 			//case 0x21FDFB0 :  if(val==0) execute = FALSE;
 			default :
-				((u32 *)(MMU.MMU_MEM[proc][0x40]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>2]=val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
 				return;
 		}
 	}
-	((u32 *)(MMU.MMU_MEM[proc][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>2]=val;
-	
+	T1WriteLong(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
 }
 
 
@@ -1977,7 +1965,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	u32 dst = DMADst[proc][num];
 	if(src==dst)
 	{
-	 ((u32 *)(MMU.MMU_MEM[proc][0x40]))[(0xB8 + (0xC*num))>>2] &= 0x7FFFFFFF;
+	 T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
 	 return;
 	}
 	
@@ -2198,7 +2186,4 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	 }
 	 break;
 	}
-
-	//MMU.DMACrt[proc][num] &= 0x7FFFFFFF;
-	//((u32 *)(MMU.MMU_MEM[proc][0x40]))[(0xB8 + (0xC*num))>>2] = MMU.DMACrt[proc][num];
 }

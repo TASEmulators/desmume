@@ -24,6 +24,7 @@
 
 #include "ARM9.h"
 #include <stdio.h>
+#include "mem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,11 +61,10 @@ struct _GPU
 		 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
-#define BGScrBB BG_map_ram
 		 
-		 u8 *(BG_bmp_ram[4]);
-		 u8 *(BG_tile_ram[4]);
-		 u16 *(BG_map_ram[4]);
+       u8 *(BG_bmp_ram[4]);
+       u8 *(BG_tile_ram[4]);
+       u8 *(BG_map_ram[4]);
 		 
        u8 BGExtPalSlot[4];
        u32 BGSize[4][2];
@@ -150,14 +150,14 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
         }
      }
      
-     u32 c = ((u16 *)ARM9Mem.ARM9_VMEM)[0 + gpu->lcd * 0x200];
+     u32 c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);
      c |= (c<<16);
      
      for(i8 = 0; i8< 128; ++i8)
      {
           ((u32 *)dst)[i8] = c;
           ((u32 *)spr)[i8] = c;
-          ((u16 *)sprPrio)[i8] = (4<<8) | (4);
+	  T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
      }
      
      if(!gpu->nbBGActif)

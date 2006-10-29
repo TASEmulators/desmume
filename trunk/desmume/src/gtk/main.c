@@ -165,7 +165,7 @@ void About(GtkWidget* widget, gpointer data)
 {
 	GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 	
-	gtk_show_about_dialog(pWindow,
+	gtk_show_about_dialog(GTK_WINDOW(pWindow),
 			"name", "DeSmuME",
 			"version", VERSION,
 			"website", "http://desmume.sf.net",
@@ -466,7 +466,7 @@ gint Keypad_Temp[DESMUME_NB_KEYS];
 
 void Modify_Key(GtkWidget* widget, gpointer data)
 {
-	gint Key = (gint)data;
+	gint Key = GPOINTER_TO_INT(data);
 	char Title[64];
 	char Key_Label[64];
 	
@@ -527,7 +527,7 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 	{
 		sprintf(Key_Label, "%s (%d)", Keys_Name[i], Keypad_Temp[i]);
 		ecKey = gtk_button_new_with_label(Key_Label);
-		g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), (gpointer*)i);
+		g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);	
 	}
 
@@ -551,7 +551,7 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 
 void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 {
-	int Size = (int)data;
+	int Size = GPOINTER_TO_INT(data);
 	
 	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 384 * Size);
 	gtk_widget_set_usize (pDrawingArea, 256 * Size, 384 * Size);
@@ -888,7 +888,7 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
 
 void Modify_Frameskip(GtkWidget *widget, gpointer data)
 {
-	Frameskip = (int)data;
+	Frameskip = GPOINTER_TO_INT(data);
 }
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
@@ -902,7 +902,7 @@ BOOL *dTools_running;
 
 void Start_dTool(GtkWidget *widget, gpointer data)
 {
-	int tool = (int)data;
+	int tool = GPOINTER_TO_INT(data);
 	
 	if(dTools_running[tool]) return;
 	
@@ -1079,7 +1079,7 @@ int main (int argc, char *argv[])
 			sprintf(frameskipRadio_buf, "%d", i);
 			if(i>0) mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), frameskipRadio_buf);
 			else mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, frameskipRadio_buf);
-			g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), (gpointer)i);
+			g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
 			gtk_menu_shell_append(GTK_MENU_SHELL(mFrameskip), mFrameskip_Radio[i]);
 		}
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
@@ -1100,7 +1100,7 @@ int main (int argc, char *argv[])
 				sprintf(sizeRadio_buf, "x%d", i);
 				if(i>1) mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), sizeRadio_buf);
 				else mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, sizeRadio_buf);
-				g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), (gpointer)i);
+				g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GINT_TO_POINTER(i));
 				gtk_menu_shell_append(GTK_MENU_SHELL(mSize), mSize_Radio[i]);
 			}
 			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
@@ -1154,7 +1154,7 @@ int main (int argc, char *argv[])
 	for(i = 0; i < dTools_list_size; i++)
 	{
 		pMenuItem = gtk_menu_item_new_with_label(dTools_list[i]->name);
-		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), (gpointer)i);
+		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
 		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 	}
 		

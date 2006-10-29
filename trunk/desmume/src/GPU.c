@@ -24,7 +24,6 @@
 
 #include "GPU.h"
 #include "debug.h"
-#include "mem.h"
 
 #include "nds/video.h"
 
@@ -83,44 +82,6 @@ void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u16 * DST)=
      {lineText, lineText, lineText, lineText},     //7
 };
 
-#if 0
-GPU::GPU(u8 l) : lcd(l)
-{
-     prop = 0;
-     BGProp[0] = BGProp[1] = BGProp[2] = BGProp[3] = 0;
-     BGBmpBB[0] = 0;BGBmpBB[1] = 0;BGBmpBB[2] = 0;BGBmpBB[3] = 0;
-     BGChBB[0] = 0;BGChBB[1] = 0;BGProp[2] = 0;BGChBB[3] = 0;
-     BGScrBB[0] = 0;BGScrBB[1] = 0;BGScrBB[2] = 0;BGScrBB[3] = 0;
-     BGExtPalSlot[0] = BGExtPalSlot[1] = BGExtPalSlot[2] = BGExtPalSlot[3] = 0;
-     BGSize[0][0] = BGSize[1][0] = BGSize[2][0] = BGSize[3][0] = 256;
-     BGSize[0][1] = BGSize[1][1] = BGSize[2][1] = BGSize[3][1] = 256;
-     BGSX[0] = BGSX[1] = BGSX[2] = BGSX[3] = 0;
-     BGSY[0] = BGSY[1] = BGSY[2] = BGSY[3] = 0;
-     BGX[0] = BGX[1] = BGX[2] = BGX[3] = 0;
-     BGY[0] = BGY[1] = BGY[2] = BGY[3] = 0;
-     BGPA[0] = BGPA[1] = BGPA[2] = BGPA[3] = 0;
-     BGPB[0] = BGPB[1] = BGPB[2] = BGPB[3] = 0;
-     BGPC[0] = BGPC[1] = BGPC[2] = BGPC[3] = 0;
-     BGPD[0] = BGPD[1] = BGPD[2] = BGPD[3] = 0;
-     BGIndex[0] = BGIndex[1] = BGIndex[2] = BGIndex[3] = 0; 
-     dispBG[0] = dispBG[1] = dispBG[2] = dispBG[3] = TRUE;
-     nbBGActif = 0;
-     
-     spriteRender = sprite1D;
-     
-     if(lcd)
-     {
-          oam = (OAM *)(ARM9Mem.ARM9_OAM+0x400);
-          sprMem = ARM9Mem.ARM9_BOBJ;
-     }
-     else
-     {
-          oam = (OAM *)(ARM9Mem.ARM9_OAM);
-          sprMem = ARM9Mem.ARM9_AOBJ;
-     }
-}
-#endif
- 
 GPU * GPU_Init(u8 l)
 {
      GPU * g;
@@ -161,48 +122,6 @@ void GPU_DeInit(GPU * gpu)
 {
      free(gpu);
 }
-
-/*void GPU::ligne(u16 * buffer, u16 l)
-{
-     u16 * dst =  buffer + l*256;
-     u16 spr[256];
-     u8 sprPrio[256];
-     u8 bgprio;
-     
-     u32 c = ((u16 *)ARM9Mem.ARM9_VMEM)[0+lcd*0x200];
-     c |= (c<<16);
-     
-     for(u8 i = 0; i< 128; ++i)
-     {
-          ((u32 *)dst)[i] = c;
-          ((u32 *)spr)[i] = c;
-          ((u16 *)sprPrio)[i] = (4<<8) | (4);
-     }
-     
-     if(!nbBGActif)
-     {
-          spriteRender(this, l, dst, sprPrio);
-          return;
-     }
-     
-     spriteRender(this, l, spr, sprPrio);
-     
-     if((BGProp[ordre[0]]&3)!=3)
-     {
-          for(u16 i = 0; i < 128; ++i)
-               ((u32 *)dst)[i] = ((u32 *)spr)[i];
-     }
-     
-     for(u8 i = 0; i < nbBGActif; ++i)
-     {
-          modeRender[prop&7][ordre[i]](this, ordre[i], l, dst);
-          bgprio = BGProp[ordre[i]]&3;
-          for(u16 i = 0; i < 256; ++i)
-               if(bgprio>=sprPrio[i]) 
-                    dst[i] = spr[i];
-     }
-}
-*/
 
 /* NOTICE: the name of function is unclear, but it's about writing in DISPLAY_CR */
 void GPU_setVideoProp(GPU * gpu, u32 p)
@@ -449,15 +368,15 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	{
 		gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BG_BMP_BASE_MASK(p) * 0x4000;
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BG_TILE_BASE_MASK(p) * 0x4000;
-		gpu->BG_map_ram[num] = ((u16 *)ARM9Mem.ARM9_BBG) + BG_MAP_BASE_MASK(p) * 0x400;
+		gpu->BG_map_ram[num] = ARM9Mem.ARM9_BBG + BG_MAP_BASE_MASK(p) * 0x800;
 	}
 	else
 	{
 		gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BG_BMP_BASE_MASK(p) * 0x4000;
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BG_TILE_BASE_MASK(p) * 0x4000 + DISPLAY_TILE_BASE_MASK(gpu->prop) * 0x10000;
-		gpu->BG_map_ram[num] = ((u16 *)ARM9Mem.ARM9_ABG) + BG_MAP_BASE_MASK(p) * 0x400 + DISPLAY_MAP_BASE_MASK(gpu->prop) * 0x8000;
+		gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BG_MAP_BASE_MASK(p) * 0x800 + DISPLAY_MAP_BASE_MASK(gpu->prop) * 0x10000;
 	}
-     
+
      /*if(!(p&(1<<7)))
           BGExtPalSlot[num] = 0;
      else
@@ -613,7 +532,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 	u16 lg = gpu->BGSize[num][0];
 	u16 ht = gpu->BGSize[num][1];
 	u16 tmp = ((Y&(ht-1))>>3);
-	u16 *map = gpu->BG_map_ram[num] + (tmp&31) * 32;
+	u8 * map = gpu->BG_map_ram[num] + (tmp&31) * 64;
 	u16 *dst = DST;
 
 	if(tmp>31)
@@ -621,10 +540,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 		switch(BG_SIZE_MASK(bgprop))
 		{
 			case 2 :
-				map += 32*32;
+				map += 32 * 32 * 2;
 				break;
 			case 3 :
-				map += 32*64;
+				map += 32 * 64 * 2;
 				break;
 		}
 	}
@@ -644,22 +563,27 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 		for(x = 0; x < LG;)
 		{
 			tmp = ((xoff&(lg-1))>>3);
-			u16 *mapinfo = map + (tmp&0x1F);
-			if(tmp>31) mapinfo += 32*32;
-			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(*mapinfo) * 0x20) + (((*mapinfo)& MAP_ENTRY_FLIP_Y ? (7*4)-yoff : yoff));
+			u8 * mapinfo = map + (tmp&0x1F) * 2;
+			u16 mapinfovalue;
+
+			if(tmp>31) mapinfo += 32*32*2;
+
+			mapinfovalue = T1ReadWord(mapinfo, 0);
+
+			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue) * 0x20) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*4)-yoff : yoff));
 			u16 xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
-			if((*mapinfo) & MAP_ENTRY_FLIP_X)
+			if((mapinfovalue) & MAP_ENTRY_FLIP_X)
 			{
 				line += 3 - ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-					if((*line)>>4) *dst = T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10) << 1);
+					if((*line)>>4) *dst = T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
 					//else *dst = 0x7FFF;
 					dst++; x++; xoff++;
-					if((*line)&0xF) *dst = T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10) << 1);
+					if((*line)&0xF) *dst = T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
 					//else *dst = 0x7FFF;
 					dst++; x++; xoff++;
 					line--;
@@ -670,10 +594,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 				line += ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-					if((*line)&0xF) *dst = T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10) << 1);
+					if((*line)&0xF) *dst = T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
 					//else *dst = 0x7FFF;
 					dst++; x++; xoff++;
-					if((*line)>>4) *dst = T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(*mapinfo) * 0x10) << 1);
+					if((*line)>>4) *dst = T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
 					//else *dst = 0x7FFF;
 					dst++; x++; xoff++;
 					line++;
@@ -692,14 +616,19 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 		for(x = 0; x < LG;)
 		{
 			tmp = ((xoff&(lg-1))>>3);
-			u16 *mapinfo = map + (tmp&31);
-			if(tmp > 31) mapinfo += 32*32;
-			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(*mapinfo)*0x40) + (((*mapinfo)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+			u8 * mapinfo = map + (tmp & 31) * 2;
+			u16 mapinfovalue;
+
+			if(tmp > 31) mapinfo += 32*32*2;
+
+			mapinfovalue = T1ReadWord(mapinfo, 0);
+
+			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
 			u16 xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
-			if((*mapinfo)& MAP_ENTRY_FLIP_X)
+			if((mapinfovalue)& MAP_ENTRY_FLIP_X)
 			{
 					line += (7 - (xoff&7));
 					for(; x < xfin; ++x, ++xoff)
@@ -735,19 +664,24 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 	for(x = 0; x < LG;)
 	{
 		tmp = ((xoff&(lg-1))>>3);
-		u16 * mapinfo = (u16 *)map + (tmp&0x1F);
-		if(tmp>31) mapinfo += 32*32;
-		u8 * line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(*mapinfo)*0x40) + (((*mapinfo)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+		u8 * mapinfo = map + (tmp & 0x1F) * 2;
+		u16 mapinfovalue;
+
+		if(tmp>31) mapinfo += 32 * 32 * 2;
+
+		mapinfovalue = T1ReadWord(mapinfo, 0);
+
+		u8 * line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
 		u16 xfin = x + (8 - (xoff&7));
 		if (xfin > LG)
 			xfin = LG;
 		
-		if((*mapinfo)& MAP_ENTRY_FLIP_X)
+		if((mapinfovalue)& MAP_ENTRY_FLIP_X)
 		{
 			line += (7 - (xoff&7));
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) *dst = T1ReadWord(pal, (*line + ((*mapinfo>>12)&0xF)*0x100) << 1);
+				if(*line) *dst = T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1);
 				//else *dst = 0x7FFF;
 				dst++;
 				line--;
@@ -758,7 +692,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 			line += (xoff&7);
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) *dst = T1ReadWord(pal, (*line + ((*mapinfo>>12)&0xF)*0x100) << 1);
+				if(*line) *dst = T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1);
 				//else *dst = 0x7FFF;
 				dst++;
 				line++;
@@ -785,8 +719,8 @@ INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s1
      s32 ht = gpu->BGSize[num][1];
      s32 lgmap = (lg>>3);
      
-	  u8 * map = (u8 *)gpu->BG_map_ram[num];
-	  u8 * tile = (u8 *)gpu->BG_tile_ram[num];
+     u8 * map = gpu->BG_map_ram[num];
+     u8 * tile = (u8 *)gpu->BG_tile_ram[num];
      u16 * dst = DST;
      u8 mapinfo;
      u8 coul;
@@ -836,7 +770,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
      s16 ht = gpu->BGSize[num][1];
      u16 lgmap = (lg>>3);
      
-	  u8 * tile = (u8 *)gpu->BG_tile_ram[num];
+     u8 * tile = (u8 *)gpu->BG_tile_ram[num];
      u16 * dst = DST;
      u16 mapinfo;
      u8 coul;
@@ -846,7 +780,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
           case 0 :
           case 1 :
                {
-	       u16 * map = gpu->BG_map_ram[num];
+	       u8 * map = gpu->BG_map_ram[num];
 	       u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 	       u16 i;
                if(!pal) return;
@@ -862,7 +796,8 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                     }
                     if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
                     {
-                         mapinfo = map[(auxX>>3) + (auxY>>3) * lgmap];
+			 mapinfo = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * lgmap) << 1);
+
                          u16 x1 = (mapinfo & 0x400) ? 7 - (auxX&7) : (auxX&7);
                          u16 y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
                          coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
@@ -879,7 +814,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                return;
           case 2 :
                {
-	       u8 * map = (u8 *)gpu->BG_bmp_ram[num];
+	       u8 * map = gpu->BG_bmp_ram[num];
 	       u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 	       u16 i;
                for(i = 0; i < LG; ++i)
@@ -907,7 +842,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                return;
           case 3 :
                {
-						u16 * map = (u16 *)gpu->BG_bmp_ram[num];
+	       u8 * map = gpu->BG_bmp_ram[num];
 	       u16 i;
                for(i = 0; i < LG; ++i)
                {
@@ -920,7 +855,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                     }
                     if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
                     {
-                         mapinfo = map[auxX + auxY * lg];
+			 mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
                          if(mapinfo)
                               *dst = mapinfo;
                          //else *dst = 0x7FFF;
@@ -988,34 +923,6 @@ void extRotBG(GPU * gpu, u8 num, u16 * DST)
 }
 
 #define nbShow 128
-               /*u16 * src = (u16 *)(gpu->sprMem + ((aux->attr2&0x3FF)<<gpu->sprBMPBlock) + (y*sprSize.x));
-               if(aux->attr1&(1<<12))
-               {
-                    x = sprSize.x -x - 1;
-                    for(u16 i = 0; i < lg; ++i, --x, ++sprX)
-                    {
-                         u8 c = src[x];
-                         if((c>>15) && (prioTab[sprX]>=prio))
-                         {
-                              dst[sprX] = c;
-                              prioTab[sprX] = prio;
-                         }
-                         else dst[sprX] = 0x7FFF;
-                    }
-                    continue;
-               }
-               for(u16 i = 0; i < lg; ++i, ++x, ++sprX)
-               {
-                    u16 c = src[x];
-                    if((c>>15) && (prioTab[sprX]>=prio))
-                     {
-                          dst[sprX] = c;
-                          prioTab[sprX] = prio;
-                     }
-                     else dst[sprX] = 0x7FFF;
-               }
-               continue;*/
-/*(aux->attr2&0x3E0)*64 + (aux->attr2&0x1F)*8*/
 
 void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 {
@@ -1061,8 +968,9 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           
           if((aux->attr0&(3<<10))==(3<<10))
           {
-               u16 * src = (u16 *)(gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
+	       u8 * src = (gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
 	       u16 i;
+
                if(aux->attr1&(1<<12))
                {
                     x = sprSize.x -x - 1;
@@ -1080,7 +988,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                }
                for(i = 0; i < lg; ++i, ++x, ++sprX)
                {
-                    u16 c = src[x];
+                    u16 c = T1ReadWord(src, x << 1);
                     if((c>>15) && (prioTab[sprX]>=prio))
                      {
                           dst[sprX] = c;
@@ -1224,35 +1132,6 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
      }
 }
 
-               /*u16 * src = (u16 *)(gpu->sprMem + ((aux->attr2&0x3FF)<<gpu->sprBMPBlock) + (y*sprSize.x));
-               if(aux->attr1&(1<<12))
-               {
-                    x = sprSize.x -x - 1;
-                    for(u16 i = 0; i < lg; ++i, --x, ++sprX)
-                    {
-                         u8 c = src[x];
-                         if((c) && (prioTab[sprX]>=prio))
-                         {
-                              dst[sprX] = c;
-                              prioTab[sprX] = prio;
-                         }
-                         //else dst[sprX] = 0x7FFF;
-                    }
-                    continue;
-               }
-               for(u16 i = 0; i < lg; ++i, ++x, ++sprX)
-               {
-                    u16 c = src[x];
-                    if((c) && (prioTab[sprX]>=prio))
-                     {
-                          dst[sprX] = c;
-                          prioTab[sprX] = prio;
-                     }
-                     //else dst[sprX] = 0x7FFF;
-               }
-               continue;*/
-/*gpu->sprBMPBlock*/
-
 void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 {
      u16 i;
@@ -1295,7 +1174,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           
           if((aux->attr0&(3<<10))==(3<<10))
           {
-               u16 * src = (u16 *)(gpu->sprMem) +(aux->attr2&0x3E0)*64 + (aux->attr2&0x1F)*8 + (y<<8);
+               u8 * src = (gpu->sprMem) +(aux->attr2&0x3E0)*64 + (aux->attr2&0x1F)*8 + (y<<8);
 	       u16 i;
                if(aux->attr1&(1<<12))
                {
@@ -1314,7 +1193,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                }
                for(i = 0; i < lg; ++i, ++x, ++sprX)
                {
-                    u16 c = src[x];
+                    u16 c = T1ReadWord(src, x << 1);
                     if((c>>15) && (prioTab[sprX]>=prio))
                      {
                           dst[sprX] = c;

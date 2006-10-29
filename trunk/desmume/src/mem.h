@@ -50,6 +50,18 @@ static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
 #endif
 }
 
+static INLINE u64 T1ReadQuad(u8 * mem, u32 addr)
+{
+#ifdef WORDS_BIGENDIAN
+   return (mem[addr] << 56 | mem[addr + 1] << 48 |
+	   mem[addr + 2] << 40 | mem[addr + 3] << 32 |
+           mem[addr + 4] << 24 | mem[addr + 5] << 16 |
+           mem[addr + 6] << 8 | mem[addr + 7]);
+#else
+   return *((u64 *) (mem + addr));
+#endif
+}
+
 static INLINE void T1WriteByte(u8 * mem, u32 addr, u8 val)
 {
    mem[addr] = val;
