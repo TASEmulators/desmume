@@ -59,8 +59,6 @@ int main(int argc, char ** argv) {
 
 	surface = SDL_SetVideoMode(256, 384, 32, SDL_SWSURFACE);
 
-	
-	
 	while(!end) {
 		
 		
