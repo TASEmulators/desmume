@@ -21,6 +21,7 @@
 
 #include "NDSSystem.h"
 #include <stdlib.h>
+#include <string.h>
 
 NDSSystem nds;
 
@@ -86,24 +87,24 @@ BOOL NDS_SetROM(u8 * rom, u32 mask)
      
      NDS_header * header = (NDS_header *)MMU.CART_ROM;
      
-     u32 src = header->ARM9src>>2;
+     u32 src = header->ARM9src;
      u32 dst = header->ARM9cpy;
 
      for(i = 0; i < (header->ARM9binSize>>2); ++i)
      {
-          MMU_writeWord(0, dst, ((u32 *)rom)[src]);
-          dst+=4;
-          ++src;
+          MMU_writeWord(0, dst, T1ReadLong(rom, src));
+          dst += 4;
+          src += 4;
      }
 
-     src = header->ARM7src>>2;
+     src = header->ARM7src;
      dst = header->ARM7cpy;
      
      for(i = 0; i < (header->ARM7binSize>>2); ++i)
      {
-          MMU_writeWord(1, dst, ((u32 *)rom)[src]);
-          dst+=4;
-          ++src;
+          MMU_writeWord(1, dst, T1ReadLong(rom, src));
+          dst += 4;
+          src += 4;
      }
      armcpu_init(&NDS_ARM7, header->ARM7exe);
      armcpu_init(&NDS_ARM9, header->ARM9exe);

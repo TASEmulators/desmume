@@ -271,9 +271,6 @@ BOOL cflash_build_fat() {
 
 	list_files(sRomPath);
 
-	//wsprintf(buffer,"Found %d files\n",numFiles);
-        //WriteConsole(hStdOut,buffer,lstrlen(buffer),(u32*)&dummy,NULL);
-
 	k            = 0;
 	clusterNum   = rootCluster = (SECRESV + SECPERFAT)/SECPERCLUS;
 	numClusters  = 0;
@@ -548,9 +545,6 @@ unsigned int cflash_read(unsigned int address) {
 	int i;
 	u32 cluster,cluster2,cluster3,fileLBA;
 
-	//wsprintf(buffer,"Reading from %08X\n",address);
-        //WriteConsole(hStdOut,buffer,lstrlen(buffer),(u32*)&dummy,NULL);
-
 	if (address == CF_REG_STS) {
 		s = cf_reg_sts;
 		return s; 
@@ -563,12 +557,12 @@ unsigned int cflash_read(unsigned int address) {
 			// Reading from the MBR 
 			if (currLBA < 512) {
 				p = (unsigned char*)&MBR;
-                                s = *(u16 *)(p + currLBA);
+                                s = T1ReadWord(p, currLBA);
 
 			// Reading the FAT 
 			} else if ((currLBA >= filesysFAT*512) && (currLBA < filesysRootDir*512)) {
 				p = (unsigned char*)&FAT16[0];
-                                s = *(u16 *)(p + (currLBA-filesysFAT*512));
+                                s = T1ReadWord(p, currLBA - filesysFAT * 512);
 
 			// Reading directory entries 
 			} else if ((currLBA >= filesysRootDir*512) &&
@@ -578,13 +572,13 @@ unsigned int cflash_read(unsigned int address) {
 				if (i < (dirEntriesInCluster[cluster3]*32)) {
 
 					p = (unsigned char*)dirEntryPtr[cluster3];
-                                        s = *(u16 *)(p + i);
+                                	s = T1ReadWord(p, i);
 				} else {
 					i /= 32;
 					i -= dirEntriesInCluster[cluster3];
 					if ((i>=0)&&(i<numExtraEntries[cluster3])) {
 						p = (unsigned char*)extraDirEntries[cluster3];
-                                                s = *(u16 *)(p + i*32 + (currLBA&0x1F));                                       
+                                		s = T1ReadWord(p, i * 32 + (currLBA & 0x1F));
 					} else if ((currLBA&0x1F)==0) {
 						s = FILE_FREE;
 					} else {

@@ -39,8 +39,6 @@ extern BOOL click;
 //#define LOG_ARM9
 //#define LOG_ARM7
 
-#define ARM9_IO_REGS        ((u32 *)ARM9Mem.ARM9_REG)
-#define ARM7_IO_REGS        ((u32 *)MMU.ARM7_REG)
 #define REG_DIVCNT          (0x280>>2)
 #define REG_DIV_NUMER_L     (0x290>>2)
 #define REG_DIV_NUMER_H     (0x294>>2)
@@ -743,63 +741,63 @@ int NDS_LoadFirmware(const char *filename);
                  
                  if((MMU.DMAing[0][0])&&(MMU.DMACycle[0][0]<=nds.cycles))
                  {
-                      ((u32 *)ARM9Mem.ARM9_REG)[(0xB8 + (0xC*0))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[0][0])&(1<<30)) NDS_makeARM9Int(8);
                       MMU.DMAing[0][0] = FALSE;
                  }
                  
                  if((MMU.DMAing[0][1])&&(MMU.DMACycle[0][1]<=nds.cycles))
                  {
-                      ((u32 *)ARM9Mem.ARM9_REG)[(0xB8 + (0xC*1))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[0][1])&(1<<30)) NDS_makeARM9Int(9);
                       MMU.DMAing[0][1] = FALSE;
                  }
                  
                  if((MMU.DMAing[0][2])&&(MMU.DMACycle[0][2]<=nds.cycles))
                  {
-                      ((u32 *)ARM9Mem.ARM9_REG)[(0xB8 + (0xC*2))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[0][2])&(1<<30)) NDS_makeARM9Int(10);
                       MMU.DMAing[0][2] = FALSE;
                  }
                  
                  if((MMU.DMAing[0][3])&&(MMU.DMACycle[0][3]<=nds.cycles))
                  {
-                      ((u32 *)ARM9Mem.ARM9_REG)[(0xB8 + (0xC*3))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[0][3])&(1<<30)) NDS_makeARM9Int(11);
                       MMU.DMAing[0][3] = FALSE;
                  }
                  
                  if((MMU.DMAing[1][0])&&(MMU.DMACycle[1][0]<=nds.cycles))
                  {
-                      ((u32 *)MMU.ARM7_REG)[(0xB8 + (0xC*0))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*0), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[1][0])&(1<<30)) NDS_makeARM7Int(8);
                       MMU.DMAing[1][0] = FALSE;
                  }
                  
                  if((MMU.DMAing[1][1])&&(MMU.DMACycle[1][1]<=nds.cycles))
                  {
-                      ((u32 *)MMU.ARM7_REG)[(0xB8 + (0xC*1))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*1), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[1][1])&(1<<30)) NDS_makeARM7Int(9);
                       MMU.DMAing[1][1] = FALSE;
                  }
                  
                  if((MMU.DMAing[1][2])&&(MMU.DMACycle[1][2]<=nds.cycles))
                  {
-                      ((u32 *)MMU.ARM7_REG)[(0xB8 + (0xC*2))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*2), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[1][2])&(1<<30)) NDS_makeARM7Int(10);
                       MMU.DMAing[1][2] = FALSE;
                  }
                  
                  if((MMU.DMAing[1][3])&&(MMU.DMACycle[1][3]<=nds.cycles))
                  {
-                      ((u32 *)MMU.ARM7_REG)[(0xB8 + (0xC*3))>>2] &= 0x7FFFFFFF;
+		      T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*3), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
                       if((MMU.DMACrt[1][3])&(1<<30)) NDS_makeARM7Int(11);
                       MMU.DMAing[1][3] = FALSE;
                  }
                  
                  if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
                       //if(NDS_ARM9.irqExeption())
-						  if(armcpu_irqExeption(&NDS_ARM9))
+		      if(armcpu_irqExeption(&NDS_ARM9))
                       {
                            nds.ARM9Cycle = nds.cycles;
                       }

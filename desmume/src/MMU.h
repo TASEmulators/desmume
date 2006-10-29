@@ -37,12 +37,9 @@ extern char szRomPath[512];
 
 /* theses macros are designed for reading/writing in memory (m is a pointer to memory, like MMU.MMU_MEM[proc], and a is an adress, like 0x04000000 */
 #define MEM_8(m, a)  (((u8*)(m[((a)>>20)&0xff]))[((a)&0xfff)])
-#define MEM_32(m, a) (((u32*)(m[((a)>>20)&0xff]))[((a)&0xfff)>>2])
 
 /* theses ones for reading in rom data */
 #define ROM_8(m, a)  (((u8*)(m))[(a)])
-#define ROM_32(m, a) (((u32*)(m))[(a)>>2])
-
  
 #define IPCFIFO  0
  
