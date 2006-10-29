@@ -55,58 +55,6 @@ extern BOOL click;
 #define reg_IPCSYNC         (0x180>>1)
 #define reg_IPCFIFOCNT      (0x184>>1)
 
-#ifdef WORDS_BIGENDIAN
-typedef struct
-{
-       u8      reserved[160];
-       u16     headerCRC16;
-       u16     logoCRC16;
-       u8      logo[156];
-       u8      unknown5[56];
-       u32     HeaderSize;
-       u32     ROMSize;
-       u8      unknown3c[8];
-
-       u32     ARM7unk;
-       u32     ARM9unk;
-       u16     ROMtimeout;
-       u16     CRC16;
-       u32     IconOff;
-       
-       u32     unknown2b;
-       u32     unknown2a;
-       
-       u32     ARM7OverlaySize;
-       u32     ARM7OverlayOff;
-       u32     ARM9OverlaySize;
-       u32     ARM9OverlayOff;
-       
-       u32      FATSize;
-       u32      FATOff;
-       
-       u32      FNameTblSize;
-       u32      FNameTblOff;
-       
-       u32      ARM7binSize;
-       u32      ARM7cpy;
-       u32      ARM7exe;
-       u32      ARM7src;
-       
-       u32      ARM9binSize;
-       u32      ARM9cpy;
-       u32      ARM9exe;
-       u32      ARM9src;
-       
-       u8       flags;
-       u8       cardInfo[8];
-       u8       cardSize;
-       u8       deviceCode;
-       u8       unitCode;
-       u16      makerCode;
-       char     gameCode[4];
-       char     gameTile[12];
-} NDS_header;
-#else
 typedef struct
 {
        char     gameTile[12];
@@ -157,7 +105,6 @@ typedef struct
        u16     headerCRC16;
        u8      reserved[160];
 } NDS_header;
-#endif
 
 extern void debug();
 
@@ -805,6 +752,7 @@ int NDS_LoadFirmware(const char *filename);
                  if((MMU.reg_IF[1]&MMU.reg_IE[1]) && (MMU.reg_IME[1]))
                       if (armcpu_irqExeption(&NDS_ARM7))
                            nds.ARM7Cycle = nds.cycles;
+
             }
             return nds.cycles;
        }

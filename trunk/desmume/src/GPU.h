@@ -139,11 +139,11 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
       * I'm really not sure it's correct.
       */
      if (gpu->lcd == 0) {
-        unsigned long mainlcdcnt = ((unsigned long *)ARM9Mem.ARM9_REG)[0];
+        u32 mainlcdcnt = ((u32 *)ARM9Mem.ARM9_REG)[0];
         int ii = l*256;
         if ((mainlcdcnt&0x10000)==0) {
            for (i=0; i<256; i++) {
-               ((unsigned short*)dst)[i] = ((unsigned short*)ARM9Mem.ARM9_LCD)[ii];
+               ((u16 *)dst)[i] = ((u16 *)ARM9Mem.ARM9_LCD)[ii];
                ii++;
            }
            return;

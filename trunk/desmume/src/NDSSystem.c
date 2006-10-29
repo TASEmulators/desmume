@@ -85,7 +85,7 @@ BOOL NDS_SetROM(u8 * rom, u32 mask)
 
      MMU_setRom(rom, mask);
      
-     NDS_header * header = (NDS_header *)MMU.CART_ROM;
+     NDS_header * header = NDS_getROMHeader();
      
      u32 src = header->ARM9src;
      u32 dst = header->ARM9cpy;
@@ -193,7 +193,51 @@ BOOL NDS_SetROM(u8 * rom, u32 mask)
 
 NDS_header * NDS_getROMHeader(void)
 {
-     return (NDS_header *)MMU.CART_ROM;
+	NDS_header * header = malloc(sizeof(NDS_header));
+
+	memcpy(header->gameTile, MMU.CART_ROM, 12);
+	memcpy(header->gameCode, MMU.CART_ROM + 12, 4);
+	header->makerCode = T1ReadWord(MMU.CART_ROM, 16);
+	header->unitCode = MMU.CART_ROM[18];
+	header->deviceCode = MMU.CART_ROM[19];
+	header->cardSize = MMU.CART_ROM[20];
+	memcpy(header->cardInfo, MMU.CART_ROM + 21, 8);
+	header->flags = MMU.CART_ROM[29];
+	header->ARM9src = T1ReadLong(MMU.CART_ROM, 32);
+	header->ARM9exe = T1ReadLong(MMU.CART_ROM, 36);
+	header->ARM9cpy = T1ReadLong(MMU.CART_ROM, 40);
+	header->ARM9binSize = T1ReadLong(MMU.CART_ROM, 44);
+	header->ARM7src = T1ReadLong(MMU.CART_ROM, 48);
+	header->ARM7exe = T1ReadLong(MMU.CART_ROM, 52);
+	header->ARM7cpy = T1ReadLong(MMU.CART_ROM, 56);
+	header->ARM7binSize = T1ReadLong(MMU.CART_ROM, 60);
+	header->FNameTblOff = T1ReadLong(MMU.CART_ROM, 64);
+	header->FNameTblSize = T1ReadLong(MMU.CART_ROM, 68);
+	header->FATOff = T1ReadLong(MMU.CART_ROM, 72);
+	header->FATSize = T1ReadLong(MMU.CART_ROM, 76);
+	header->ARM9OverlayOff = T1ReadLong(MMU.CART_ROM, 80);
+	header->ARM9OverlaySize = T1ReadLong(MMU.CART_ROM, 84);
+	header->ARM7OverlayOff = T1ReadLong(MMU.CART_ROM, 88);
+	header->ARM7OverlaySize = T1ReadLong(MMU.CART_ROM, 92);
+	header->unknown2a = T1ReadLong(MMU.CART_ROM, 96);
+	header->unknown2b = T1ReadLong(MMU.CART_ROM, 100);
+	header->IconOff = T1ReadLong(MMU.CART_ROM, 104);
+	header->CRC16 = T1ReadWord(MMU.CART_ROM, 108);
+	header->ROMtimeout = T1ReadWord(MMU.CART_ROM, 110);
+	header->ARM9unk = T1ReadLong(MMU.CART_ROM, 112);
+	header->ARM7unk = T1ReadLong(MMU.CART_ROM, 116);
+	memcpy(header->unknown3c, MMU.CART_ROM + 120, 8);
+	header->ROMSize = T1ReadLong(MMU.CART_ROM, 128);
+	header->HeaderSize = T1ReadLong(MMU.CART_ROM, 132);
+	memcpy(header->unknown5, MMU.CART_ROM + 136, 56);
+	memcpy(header->logo, MMU.CART_ROM + 192, 156);
+	header->logoCRC16 = T1ReadWord(MMU.CART_ROM, 348);
+	header->headerCRC16 = T1ReadWord(MMU.CART_ROM, 350);
+	memcpy(header->reserved, MMU.CART_ROM + 352, 160);
+
+	return header;
+
+     //return (NDS_header *)MMU.CART_ROM;
 } 
 
 void NDS_setTouchPos(u16 x, u16 y)

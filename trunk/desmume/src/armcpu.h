@@ -96,6 +96,25 @@ enum Mode
 	SYS = 0x1F
 };
 
+#ifdef WORDS_BIGENDIAN
+typedef union 
+{
+	struct 
+	{
+		u32 N : 1,
+		Z : 1, 
+		C : 1, 
+		V : 1,
+		Q : 1,
+		RAZ : 19,
+		I : 1,
+		F : 1,
+		T : 1,
+                mode : 5;
+	} bits;
+        u32 val;
+} Status_Reg;
+#else
 typedef union 
 {
 	struct 
@@ -113,6 +132,7 @@ typedef union
 	} bits;
         u32 val;
 } Status_Reg;
+#endif
 
 typedef void* armcp_t;
 

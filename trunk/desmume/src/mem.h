@@ -34,7 +34,7 @@ static INLINE u8 T1ReadByte(u8 * mem, u32 addr)
 static INLINE u16 T1ReadWord(u8 * mem, u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
-   return (mem[addr] << 8) | mem[addr + 1];
+   return (mem[addr + 1] << 8) | mem[addr];
 #else
    return *((u16 *) (mem + addr));
 #endif
@@ -43,8 +43,8 @@ static INLINE u16 T1ReadWord(u8 * mem, u32 addr)
 static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
-   return (mem[addr] << 24 | mem[addr + 1] << 16 |
-           mem[addr + 2] << 8 | mem[addr + 3]);
+   return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
+           mem[addr + 1] << 8 | mem[addr]);
 #else
    return *((u32 *) (mem + addr));
 #endif
@@ -53,10 +53,10 @@ static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
 static INLINE u64 T1ReadQuad(u8 * mem, u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
-   return (mem[addr] << 56 | mem[addr + 1] << 48 |
-	   mem[addr + 2] << 40 | mem[addr + 3] << 32 |
-           mem[addr + 4] << 24 | mem[addr + 5] << 16 |
-           mem[addr + 6] << 8 | mem[addr + 7]);
+   return (mem[addr + 7] << 56 | mem[addr + 6] << 48 |
+	   mem[addr + 5] << 40 | mem[addr + 4] << 32 |
+           mem[addr + 3] << 24 | mem[addr + 2] << 16 |
+           mem[addr + 1] << 8 | mem[addr]);
 #else
    return *((u64 *) (mem + addr));
 #endif
@@ -70,8 +70,8 @@ static INLINE void T1WriteByte(u8 * mem, u32 addr, u8 val)
 static INLINE void T1WriteWord(u8 * mem, u32 addr, u16 val)
 {
 #ifdef WORDS_BIGENDIAN
-   mem[addr] = val >> 8;
-   mem[addr + 1] = val & 0xFF;
+   mem[addr + 1] = val >> 8;
+   mem[addr] = val & 0xFF;
 #else
    *((u16 *) (mem + addr)) = val;
 #endif
@@ -80,10 +80,10 @@ static INLINE void T1WriteWord(u8 * mem, u32 addr, u16 val)
 static INLINE void T1WriteLong(u8 * mem, u32 addr, u32 val)
 {
 #ifdef WORDS_BIGENDIAN
-   mem[addr] = val >> 24;
-   mem[addr + 1] = (val >> 16) & 0xFF;
-   mem[addr + 2] = (val >> 8) & 0xFF;
-   mem[addr + 3] = val & 0xFF;
+   mem[addr + 3] = val >> 24;
+   mem[addr + 2] = (val >> 16) & 0xFF;
+   mem[addr + 1] = (val >> 8) & 0xFF;
+   mem[addr] = val & 0xFF;
 #else
    *((u32 *) (mem + addr)) = val;
 #endif
