@@ -6,35 +6,46 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef struct {
+	DIR * dir;
+	char * path;
+} FsLinuxDir;
+
 const char FS_SEPARATOR = '/';
 
 void * FsReadFirst(const char * path, FsEntry * entry) {
-	DIR * dir;
+	FsLinuxDir * dir;
 	struct dirent * e;
 	struct stat s;
+	char buffer[1024];
+	DIR * tmp;
 
-	printf("reading %s\n", path);
-
-	/* hack: reading a directory gives relative file names
-	 * and there's no way to know that directory from
-	 * DIR, so we're changing working directory... */ 
-	chdir(path);
-
-	dir = opendir(path);
-	if (!dir)
+	tmp = opendir(path);
+	if (!tmp)
 		return NULL;
 
-	e = readdir(dir);
+	e = readdir(tmp);
 	if (!e)
 		return NULL;
+
+	dir = malloc(sizeof(FsLinuxDir));
+	dir->dir = tmp;
 
 	strcpy(entry->cFileName, e->d_name);
 	// there's no 8.3 file names support on linux :)
 	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
 
+
+	/* hack: reading a directory gives relative file names
+	 * and there's no way to know that directory from
+	 * DIR, so we're changing working directory... */ 
+	chdir(path);
+	getcwd(buffer, 1024);
+	dir->path = strdup(buffer);
+
 	stat(e->d_name, &s);
-	if (s.st_mode & S_IFDIR) {
+	if (S_ISDIR(s.st_mode)) {
 		entry->flags = FS_IS_DIR;
 	}
 
@@ -42,10 +53,11 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 }
 
 int FsReadNext(void * search, FsEntry * entry) {
+	FsLinuxDir * dir = search;
 	struct dirent * e;
 	struct stat s;
 
-	e = readdir(search);
+	e = readdir(dir->dir);
 	if (!e)
 		return 0;
 
@@ -53,6 +65,8 @@ int FsReadNext(void * search, FsEntry * entry) {
 	// there's no 8.3 file names support on linux :)
 	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
+
+	chdir(dir->path);
 
 	stat(e->d_name, &s);
 	if (S_ISDIR(s.st_mode)) {
@@ -63,9 +77,10 @@ int FsReadNext(void * search, FsEntry * entry) {
 }
 
 void FsClose(void * search) {
-	DIR * dir = search;
+	DIR * dir = ((FsLinuxDir *) search)->dir;
 
 	closedir(dir);
+	free(search);
 }
 
 int FsError(void) {
