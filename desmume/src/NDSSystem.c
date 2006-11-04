@@ -355,11 +355,11 @@ int NDS_LoadROM(const char *filename)
    NDS_Reset();
    NDS_SetROM(data, mask);
 
-/* // Will be added later
-   strcpy(szRomPath, dirname((char *) filename));
+   /* I guess any directory can be used
+    * so the current one should be ok */
+   strcpy(szRomPath, ".");
    cflash_close();
    cflash_init();
-*/
 
    return i;
 }

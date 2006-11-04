@@ -724,7 +724,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s1
      u16 * dst = DST;
      u8 mapinfo;
      u8 coul;
-     
+
      if((!tile)||(!map)) return;
 
      u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
@@ -930,7 +930,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
      
      u8 block = gpu->sprBlock;
      u16 i;
-     
+
      for(i = 0; i<nbShow; ++i, --aux)
      {
           s32 sprX = aux->attr1 & 0x1FF;
@@ -1136,7 +1136,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 {
      u16 i;
      OAM * aux = gpu->oam + (nbShow-1);// + 127;
-     
+
      for(i = 0; i<nbShow; ++i, --aux)
      {
           s32 sprX = aux->attr1 & 0x1FF;
@@ -1174,14 +1174,15 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           
           if((aux->attr0&(3<<10))==(3<<10))
           {
-               u8 * src = (gpu->sprMem) +(aux->attr2&0x3E0)*64 + (aux->attr2&0x1F)*8 + (y<<8);
+               u8 * src = (gpu->sprMem) + (((aux->attr2&0x3E0) * 64 + (aux->attr2&0x1F) * 8 + ( y << 8)) << 1);
 	       u16 i;
+
                if(aux->attr1&(1<<12))
                {
                     x = sprSize.x -x - 1;
                     for(i = 0; i < lg; ++i, --x, ++sprX)
                     {
-                         u8 c = src[x];
+			 u8 c = src[x << 1];
                          if((c>>15) && (prioTab[sprX]>=prio))
                          {
                               dst[sprX] = c;
