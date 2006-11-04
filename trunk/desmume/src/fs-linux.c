@@ -29,7 +29,8 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 		return NULL;
 
 	strcpy(entry->cFileName, e->d_name);
-	strncpy(entry->cAlternateFileName, e->d_name, 12);
+	// there's no 8.3 file names support on linux :)
+	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
 
 	stat(e->d_name, &s);
@@ -49,7 +50,8 @@ int FsReadNext(void * search, FsEntry * entry) {
 		return 0;
 
 	strcpy(entry->cFileName, e->d_name);
-	strncpy(entry->cAlternateFileName, e->d_name, 12);
+	// there's no 8.3 file names support on linux :)
+	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
 
 	stat(e->d_name, &s);
