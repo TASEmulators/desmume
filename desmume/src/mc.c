@@ -161,7 +161,6 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                                 case BM_CMD_READLOW:
                                         if(mc->addr < mc->size)  /* check if we can read */
                                         {
-                                                LOG("Read Backup Memory addr %08X(%02X)\n", mc->addr, mc->data[mc->addr]);
                                                 data = mc->data[mc->addr];       /* return byte */
                                                 mc->addr++;      /* then increment address */
                                         }
@@ -170,7 +169,6 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                                 case BM_CMD_WRITELOW:
                                         if(mc->addr < mc->size)
                                         {
-                                                LOG("Write Backup Memory addr %08X with %02X\n", mc->addr, data);
                                                 mc->data[mc->addr] = data;       /* write byte */
                                                 mc->addr++;
                                         }
@@ -181,7 +179,6 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 	}
         else if(mc->com == BM_CMD_READSTATUS)
 	{
-                LOG("Backup Memory Read Status: %02X\n", mc->writeable_buffer << 1);
                 return (mc->writeable_buffer << 1);
 	}
 	else	/* finally, check if it's a new command */
