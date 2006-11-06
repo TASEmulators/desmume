@@ -63,7 +63,7 @@ case $target in
 		AC_SUBST([UI_DIR])
 		;;
 	*mingw*)
-		LIBS="$LIBS -mwindows"
+                LIBS="$LIBS -ldxguid -ldxerr8 -ldsound -mwindows"
 		UI_DIR=windows
 		AC_SUBST([UI_DIR])
 		;;
