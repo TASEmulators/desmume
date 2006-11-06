@@ -331,6 +331,7 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 	   return (unsigned char)cflash_read(adr);
 
 	adr &= 0x0FFFFFFF;
+
 	switch(adr)
 	{
 		case 0x027FFCDC :
@@ -366,7 +367,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 	   return (unsigned short)cflash_read(adr);
 	
 	adr &= 0x0FFFFFFF;
-	
+
 	if((adr>>24)==4)
 	{
 		/* Adress is an IO register */
@@ -554,9 +555,19 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		cflash_write(adr,val);
 		return;
 	}
-	
+
 	adr &= 0x0FFFFFFF;
-	
+
+        // This is bad, remove it
+        if(proc == ARMCPU_ARM7)
+        {
+           if ((adr>=0x04000400)&&(adr<0x0400051D))
+           {
+              SPU_WriteByte(adr, val);
+              return;
+           }
+        }
+
 	switch(adr)
 	{
 		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
@@ -687,8 +698,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 				}
 			}
 			break;
-			
-#ifdef LOG_CARD 
+#ifdef LOG_CARD
 		case 0x040001A0 : /* TODO (clear): ??? */
 		case 0x040001A1 :
 		case 0x040001A2 :
@@ -727,8 +737,18 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 		cflash_write(adr,val);
 		return;
 	}
-		
+
 	adr &= 0x0FFFFFFF;
+
+        // This is bad, remove it
+        if(proc == ARMCPU_ARM7)
+        {
+           if ((adr>=0x04000400)&&(adr<0x0400051D))
+           {
+              SPU_WriteWord(adr, val);
+              return;
+           }
+        }
 
 	if((adr >> 24) == 4)
 	{
@@ -1310,9 +1330,19 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 	   cflash_write(adr,val);
 	   return;
 	}
-		
+
 	adr &= 0x0FFFFFFF;
-	
+
+        // This is bad, remove it
+        if(proc == ARMCPU_ARM7)
+        {
+           if ((adr>=0x04000400)&&(adr<0x0400051D))
+           {
+              SPU_WriteLong(adr, val);
+              return;
+           }
+        }
+
 	if((adr>>24)==4)
 	{
 		switch(adr)

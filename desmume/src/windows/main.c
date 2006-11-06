@@ -40,6 +40,7 @@
 #include "../saves.h"
 #include "../cflash.h"
 #include "ConfigKeys.h"
+#include "snddx.h"
 
 #ifdef RENDER3D
      #include "OGLRender.h"
@@ -71,6 +72,13 @@ HMENU menu;
 
 const DWORD tabkey[48]={0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,VK_SPACE,VK_UP,VK_DOWN,VK_LEFT,VK_RIGHT,VK_TAB,VK_SHIFT,VK_DELETE,VK_INSERT,VK_HOME,VK_END,0x0d};
 DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_start,ds_debug;
+
+SoundInterface_struct *SNDCoreList[] = {
+&SNDDummy,
+&SNDFile,
+&SNDDIRECTX,
+NULL
+};
 
 DWORD WINAPI run( LPVOID lpParameter)
 {
@@ -107,6 +115,8 @@ DWORD WINAPI run( LPVOID lpParameter)
           while(execute)
           {
                cycles = NDS_exec((560190<<1)-cycles,FALSE);
+               SPU_Emulate();
+
                ++nbframe;
                QueryPerformanceCounter((LARGE_INTEGER *)&count);
                if(nextcount<=count)
@@ -229,11 +239,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case WM_DESTROY:
              execute = FALSE;
              finished = TRUE;
+             NDS_DeInit();
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
         case WM_CLOSE:
              execute = FALSE;
              finished = TRUE;
+             NDS_DeInit();
              PostMessage(hwnd, WM_QUIT, 0, 0);
              return 0;
         case WM_DROPFILES:
@@ -301,7 +313,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              if(wParam==tabkey[ds_debug]){
              ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFB;
              return 0; }
-             break;
+             return 0;
                   /*case 0x1E :
                        MMU.ARM7_REG[0x136] &= 0xFE;
                        break;
@@ -727,8 +739,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         default:                      /* for messages that we don't deal with */
             return DefWindowProc (hwnd, message, wParam, lParam);
     }
-
-    NDS_DeInit();
 
     return 0;
 }

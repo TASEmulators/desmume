@@ -26,6 +26,7 @@
 #include "MMU.h"
 
 #include "GPU.h"
+#include "SPU.h"
 
 #include "mem.h"
 

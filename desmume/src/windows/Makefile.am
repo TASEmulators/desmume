@@ -6,6 +6,7 @@ desmume_SOURCES = \
         main.cpp mapView.c mapView.h memView.c memView.h \
         oamView.c oamView.h palView.c palView.h \
         resource.h \
+        snddx.c snddx.h \
         tileView.c tileView.h yopyop_private.h \
         ConfigKeys.c ConfigKeys.h
 desmume_LDADD = ../libdesmume.a yopyop_private.o
