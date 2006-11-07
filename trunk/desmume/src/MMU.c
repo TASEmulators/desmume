@@ -505,7 +505,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			
 			case CARD_DATA_RD:
 			{
-				if(!MMU.dscard[proc].adress) return 0;
+                                if(!MMU.dscard[proc].adress) return 0;
 				
 				u32 val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
 
@@ -1911,6 +1911,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 						MMU.dscard[proc].adress = (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+1) << 24) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+2) << 16) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+3) << 8) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+4));
 						MMU.dscard[proc].transfer_count = 0x80;// * ((val>>24)&7));
 					}
+                                        else if (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND) == 0xB8)
+                                        {
+                                                // Get ROM chip ID
+                                                val |= 0x800000; // Data-Word Status
+						T1WriteLong(MMU.MMU_MEM[proc][(CARD_CR2 >> 20) & 0xff], CARD_CR2 & 0xfff, val);
+                                                MMU.dscard[proc].adress = 0;
+                                        }
 					else
 					{
 						LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND));
