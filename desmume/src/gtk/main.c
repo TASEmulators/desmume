@@ -63,6 +63,12 @@ const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 
 char * CONFIG_FILE;
 
+SoundInterface_struct *SNDCoreList[] = {
+&SNDDummy,
+&SNDFile,
+NULL
+};
+
 int Write_ConfigFile()
 {
 	int i;

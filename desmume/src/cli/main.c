@@ -12,6 +12,12 @@ BOOL execute = FALSE;
 
 SDL_Surface * surface;
 
+SoundInterface_struct *SNDCoreList[] = {
+&SNDDummy,
+&SNDFile,
+NULL
+};
+
 int Draw() {
 	SDL_Surface *rawImage;
 	
