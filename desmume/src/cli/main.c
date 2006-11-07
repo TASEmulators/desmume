@@ -7,6 +7,7 @@
 #include "../NDSSystem.h"
 #include "../cflash.h"
 #include "../debug.h"
+#include "../sndsdl.h"
 
 BOOL execute = FALSE;
 
@@ -15,6 +16,7 @@ SDL_Surface * surface;
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
+&SNDSDL,
 NULL
 };
 
@@ -121,6 +123,7 @@ int main(int argc, char ** argv) {
 			}
 		}
 		NDS_exec(1120380, FALSE);
+                SPU_Emulate();
 		Draw();
 	}
 

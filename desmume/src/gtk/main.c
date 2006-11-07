@@ -10,6 +10,7 @@
 #include "../armcpu.h"
 #include "../NDSSystem.h"
 #include "../debug.h"
+#include "../sndsdl.h"
 
 #include "desmume.h"
 
@@ -66,6 +67,7 @@ char * CONFIG_FILE;
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
+&SNDSDL,
 NULL
 };
 
