@@ -36,15 +36,11 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
 
+	dir->path = strdup(path);
 
-	/* hack: reading a directory gives relative file names
-	 * and there's no way to know that directory from
-	 * DIR, so we're changing working directory... */ 
-	chdir(path);
-	getcwd(buffer, 1024);
-	dir->path = strdup(buffer);
+	sprintf(buffer, "%s/%s", dir->path, e->d_name);
 
-	stat(e->d_name, &s);
+	stat(buffer, &s);
 	if (S_ISDIR(s.st_mode)) {
 		entry->flags = FS_IS_DIR;
 	}
@@ -56,6 +52,7 @@ int FsReadNext(void * search, FsEntry * entry) {
 	FsLinuxDir * dir = search;
 	struct dirent * e;
 	struct stat s;
+	char buffer[1024];
 
 	e = readdir(dir->dir);
 	if (!e)
@@ -66,9 +63,9 @@ int FsReadNext(void * search, FsEntry * entry) {
 	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
 
-	chdir(dir->path);
+	sprintf(buffer, "%s/%s", dir->path, e->d_name);
 
-	stat(e->d_name, &s);
+	stat(buffer, &s);
 	if (S_ISDIR(s.st_mode)) {
 		entry->flags = FS_IS_DIR;
 	}
