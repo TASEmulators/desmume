@@ -10,10 +10,8 @@
 #include "../debug.h"
 #include "resource.h"
 
-#define FNAME_LENGTH 512
-
-char IniName[FNAME_LENGTH+1];
-char			vPath[256],*szPath,currDir[256];
+char IniName[MAX_PATH];
+char                    vPath[MAX_PATH],*szPath,currDir[MAX_PATH];
 u32 keytab[12];
 
 const char tabkeytext[48][8] = {"0","1","2","3","4","5","6","7","8","9","A","B","C",
@@ -80,57 +78,50 @@ void  ReadConfig(void)
 {
 	FILE *fp;
     int i;
-    
-    szPath = (char*)get_path();
-    wsprintf(IniName,"%s\\desmume.ini",szPath);
 
-    fp=fopen(IniName,"r");
-    fclose(fp);
-    if(fp==NULL)
-    {
-    	WritePrivateProfileString(NULL, NULL, NULL, IniName);
-    }
-    
-    i=GetPrivateProfileInt("KEYS","KEY_A",-1, IniName);
+    szPath = (char*)get_path();
+    sprintf(IniName,"%s\\desmume.ini",szPath);
+
+    i=GetPrivateProfileInt("KEYS","KEY_A",31, IniName);
     KEY_A = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_B",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_B",11, IniName);
     KEY_B = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_SELECT",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_SELECT",36, IniName);
     KEY_SELECT = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_START",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_START",13, IniName);
     if(i==13)
     KEY_START = 47;
     else
     KEY_START = i;
         
-    i=GetPrivateProfileInt("KEYS","KEY_RIGHT",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_RIGHT",40, IniName);
     KEY_RIGHT = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_LEFT",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_LEFT",39, IniName);
     KEY_LEFT = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_UP",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_UP",37, IniName);
     KEY_UP = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_DOWN",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_DOWN",38, IniName);
     KEY_DOWN = i;  
     
-    i=GetPrivateProfileInt("KEYS","KEY_R",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_R",23, IniName);
     KEY_R = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_L",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_L",12, IniName);
     KEY_L = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_X",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_X",16, IniName);
     KEY_X = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_Y",-1, IniName);
+    i=GetPrivateProfileInt("KEYS","KEY_Y",17, IniName);
     KEY_Y = i;
-    
-    /*i=GetPrivateProfileInt("KEYS","KEY_DEBUG",-1, IniName);
+
+    /*i=GetPrivateProfileInt("KEYS","KEY_DEBUG",13, IniName);
     KEY_DEBUG = i;*/
 }
 
@@ -147,15 +138,8 @@ void  WriteConfig(void)
     int i;
     
     szPath = (char*)get_path();
-    wsprintf(IniName,"%s\\desmume.ini",szPath);
+    sprintf(IniName,"%s\\desmume.ini",szPath);
 
-    fp=fopen(IniName,"w");
-    fclose(fp);
-    if(fp==NULL)
-    {
-    	WritePrivateProfileString(NULL, NULL, NULL, IniName);
-    }
-    
     WritePrivateProfileInt("KEYS","KEY_A",KEY_A,IniName);
     WritePrivateProfileInt("KEYS","KEY_B",KEY_B,IniName);
     WritePrivateProfileInt("KEYS","KEY_SELECT",KEY_SELECT,IniName);
