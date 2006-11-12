@@ -2,6 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+    Copyright 2006 Theo Berkau
+
     This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
@@ -69,6 +71,7 @@ BOOL click = FALSE;
 BOOL finished = FALSE;
 
 HMENU menu;
+HANDLE runthread=INVALID_HANDLE_VALUE;
 
 const DWORD tabkey[48]={0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,VK_SPACE,VK_UP,VK_DOWN,VK_LEFT,VK_RIGHT,VK_TAB,VK_SHIFT,VK_DELETE,VK_INSERT,VK_HOME,VK_END,0x0d};
 DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_start,ds_debug;
@@ -82,14 +85,21 @@ NULL
 
 DWORD WINAPI run( LPVOID lpParameter)
 {
-     u64 count;
-     u64 freq;
-     u64 nextcount=0;
-     u32 nbframe = 0;
      char txt[80];
      BITMAPV4HEADER bmi;
      u32 cycles = 0;
      int wait=0;
+     u64 freq;
+     u64 OneFrameTime;
+     int autoframeskipenab=1;
+     int framestoskip=0;
+     int framesskipped=0;
+     int skipnextframe=0;
+     u64 lastticks=0;
+     u64 curticks=0;
+     u64 diffticks=0;
+     u32 framecount=0;
+     u64 onesecondticks=0;
 
      //CreateBitmapIndirect(&bmi);
      memset(&bmi, 0, sizeof(bmi));
@@ -107,8 +117,8 @@ DWORD WINAPI run( LPVOID lpParameter)
      OGLRender::init(&hdc);
      #endif
      QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
-     QueryPerformanceCounter((LARGE_INTEGER *)&count);
-     nextcount = count + freq;
+     QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
+     OneFrameTime = freq / 60;
 
      while(!finished)
      {
@@ -117,28 +127,71 @@ DWORD WINAPI run( LPVOID lpParameter)
                cycles = NDS_exec((560190<<1)-cycles,FALSE);
                SPU_Emulate();
 
-               ++nbframe;
-               QueryPerformanceCounter((LARGE_INTEGER *)&count);
-               if(nextcount<=count)
+               if (!skipnextframe)
                {
-                    if(wait>0)
-                       Sleep(wait);
-                    sprintf(txt,"DeSmuME %d", (int)nbframe);
-                    if(nbframe>60)
-                       wait += (nbframe-60)*2;
-                    else if(nbframe<60 && wait>0)
-                       wait -= (60-nbframe);
-                    SetWindowText(hwnd, txt);
-                    nbframe = 0;
-                    nextcount += freq;
+                  #ifndef RENDER3D
+                  SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 0, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                  //SetDIBitsToDevice(hdc, 0, 192, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                  #else
+                  SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                  //SetDIBitsToDevice(hdc, 0, 0, 256, 192, 0, 0, 0, 192, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                  #endif
+
+                  framesskipped = 0;
+
+                  if (framestoskip > 0)
+                     skipnextframe = 1;
                }
-               #ifndef RENDER3D
-               SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 0, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-               //SetDIBitsToDevice(hdc, 0, 192, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-               #else
-               SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-               //SetDIBitsToDevice(hdc, 0, 0, 256, 192, 0, 0, 0, 192, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-               #endif
+               else
+               {
+                  framestoskip--;
+
+                  if (framestoskip < 1)
+                     skipnextframe = 0;
+                  else
+                     skipnextframe = 1;
+
+                  framesskipped++;
+               }
+
+               if (autoframeskipenab)
+               {
+                  framecount++;
+
+                  if (framecount > 60)
+                  {
+                     framecount = 1;
+                     onesecondticks = 0;
+                  }
+
+                  QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
+                  diffticks = curticks-lastticks;
+
+                  if ((onesecondticks+diffticks) > (OneFrameTime * (u64)framecount) &&
+                      framesskipped < 9)
+                  {                     
+                     // Skip the next frame
+                     skipnextframe = 1;
+ 
+                     // How many frames should we skip?
+                     framestoskip = 1;
+                  }
+                  else if ((onesecondticks+diffticks) < (OneFrameTime * (u64)framecount))
+                  {
+                     // Check to see if we need to limit speed at all
+                     for (;;)
+                     {
+                        QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
+                        diffticks = curticks-lastticks;
+                        if ((onesecondticks+diffticks) >= (OneFrameTime * (u64)framecount))
+                           break;
+                     }
+                  }
+
+                  onesecondticks += diffticks;
+                  lastticks = curticks;
+               }
+
                CWindow_RefreshALL();
                Sleep(0);
                //execute = FALSE;
@@ -199,8 +252,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
     NDS_Init();
+    if (SPU_ChangeSoundCore(SNDCORE_DIRECTX, 735 * 4) != 0)
+    {
+       MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
+       return messages.wParam;
+    }
     
-    CreateThread(NULL, 0, run, NULL, 0, &threadID);
+    runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
     
     if(LoadROM(lpszArgument))
     {
@@ -238,13 +296,36 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              return 0;
         case WM_DESTROY:
              execute = FALSE;
-             finished = TRUE;
+
+             if (runthread != INVALID_HANDLE_VALUE)
+             {
+                finished = TRUE;
+                if (WaitForSingleObject(runthread,INFINITE) == WAIT_TIMEOUT)
+                {
+                   // Couldn't close thread cleanly
+                   TerminateThread(runthread,0);
+                }
+                CloseHandle(runthread);
+             }
+
              NDS_DeInit();
+
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
         case WM_CLOSE:
              execute = FALSE;
-             finished = TRUE;
+
+             if (runthread != INVALID_HANDLE_VALUE)
+             {
+                finished = TRUE;
+                if (WaitForSingleObject(runthread,INFINITE) == WAIT_TIMEOUT)
+                {
+                   // Couldn't close thread cleanly
+                   TerminateThread(runthread,0);
+                }
+                CloseHandle(runthread);
+             }
+
              NDS_DeInit();
              PostMessage(hwnd, WM_QUIT, 0, 0);
              return 0;
