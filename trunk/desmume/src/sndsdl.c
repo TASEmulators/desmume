@@ -25,7 +25,7 @@
 #include "sndsdl.h"
 #include "debug.h"
 
-int SNDSDLInit();
+int SNDSDLInit(int buffersize);
 void SNDSDLDeInit();
 void SNDSDLUpdateAudio(s16 *buffer, u32 num_samples);
 u32 SNDSDLGetAudioSpace();
@@ -44,8 +44,6 @@ SNDSDLMuteAudio,
 SNDSDLUnMuteAudio,
 SNDSDLSetVolume
 };
-
-#define NUMSOUNDBLOCKS  4
 
 static u16 *stereodata16;
 static u32 soundoffset;
@@ -72,7 +70,7 @@ void MixAudio(void *userdata, Uint8 *stream, int len) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-int SNDSDLInit()
+int SNDSDLInit(int buffersize)
 {
    SDL_InitSubSystem(SDL_INIT_AUDIO);
 //   if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0);
@@ -94,7 +92,7 @@ int SNDSDLInit()
    audiofmt.samples = normSamples;
    
    soundlen = audiofmt.freq / 60; // 60 for NTSC
-   soundbufsize = soundlen * NUMSOUNDBLOCKS * 2 * 2;
+   soundbufsize = buffersize * sizeof(s16) * 2;
 
    if (SDL_OpenAudio(&audiofmt, NULL) != 0)
    {
@@ -152,7 +150,7 @@ void SNDSDLUpdateAudio(s16 *buffer, u32 num_samples)
 //   ScspConvert32uto16s((s32 *)leftchanbuffer, (s32 *)rightchanbuffer, (s16 *)(((u8 *)stereodata16)+soundoffset), copy1size / sizeof(s16) / 2);
 
    if (copy2size)
-      memcpy(stereodata16, buffer+copy1size, copy2size);
+      memcpy(stereodata16, ((u8 *)buffer)+copy1size, copy2size);
 //      ScspConvert32uto16s((s32 *)leftchanbuffer, (s32 *)rightchanbuffer, (s16 *)stereodata16, copy2size / sizeof(s16) / 2);
 
    soundoffset += copy1size + copy2size;
