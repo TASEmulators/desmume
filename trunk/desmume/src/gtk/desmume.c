@@ -7,6 +7,7 @@
 #include "../armcpu.h"
 #include "../NDSSystem.h"
 #include "../cflash.h"
+#include "../sndsdl.h"
 
 #include "desmume.h"
 
@@ -23,6 +24,7 @@ u32 desmume_last_cycle;
 void desmume_init()
 {
 	NDS_Init();
+        SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 	execute = FALSE;
 }
 
