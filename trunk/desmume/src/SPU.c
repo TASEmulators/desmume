@@ -73,14 +73,19 @@ FILE *spufp=NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 
-int SPU_Init(int coreid, int buffersize)
+int SPU_ChangeSoundCore(int coreid, int buffersize)
 {
    int i;
 
-   if ((SPU = (SPU_struct *)malloc(sizeof(SPU_struct))) == NULL)
-      return -1;
+   if (SPU->sndbuf)
+      free(SPU->sndbuf);
 
-   SPU_Reset();
+   if (SPU->outbuf)
+      free(SPU->outbuf);
+
+   // Make sure the old core is freed
+   if (SNDCore)
+      SNDCore->DeInit();
 
    // Allocate memory for sound buffer
    if ((SPU->sndbuf = malloc(buffersize * 4 * 2)) == NULL)
@@ -110,17 +115,31 @@ int SPU_Init(int coreid, int buffersize)
    }
 
    if (SNDCore == NULL)
+   {
+      SNDCore = &SNDDummy;
       return -1;
+   }
 
    if (SNDCore->Init(buffersize * 2) == -1)
    {
       // Since it failed, instead of it being fatal, we'll just use the dummy
       // core instead
       SNDCore = &SNDDummy;
-      SNDCore->Init(buffersize * 2);
    }
 
    return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+int SPU_Init(int coreid, int buffersize)
+{
+   if ((SPU = (SPU_struct *)malloc(sizeof(SPU_struct))) == NULL)
+      return -1;
+
+   SPU_Reset();
+
+   return SPU_ChangeSoundCore(coreid, buffersize);
 }
 
 //////////////////////////////////////////////////////////////////////////////
