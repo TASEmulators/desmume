@@ -39,7 +39,6 @@ void NDS_Init(void) {
      armcpu_new(&NDS_ARM7,1);
      armcpu_new(&NDS_ARM9,0);
 
-//     if (SPU_Init(SNDCORE_FILEWRITE, 735) != 0)
      if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
         return -1;
 
