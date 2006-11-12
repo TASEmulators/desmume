@@ -43,6 +43,7 @@ int main(int argc, char ** argv) {
 	LogStart();
 #endif
 	NDS_Init();
+        SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s filename\n", argv[0]);
