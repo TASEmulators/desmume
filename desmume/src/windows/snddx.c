@@ -208,7 +208,7 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
    memcpy(buffer1, buffer, buffer1_size);
    if (buffer2)
-      memcpy(buffer2, buffer+buffer1_size, buffer2_size);
+      memcpy(buffer2, ((u8 *)buffer)+buffer1_size, buffer2_size);
 
    soundoffset += buffer1_size + buffer2_size;
    soundoffset %= soundbufsize;
@@ -261,4 +261,6 @@ void SNDDXSetVolume(int volume)
    if (!issoundmuted)
       IDirectSoundBuffer8_SetVolume (lpDSB2, soundvolume);
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
