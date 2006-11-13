@@ -11,6 +11,18 @@ extern "C" {
 #define MC_TYPE_EEPROM1         0x1
 #define MC_TYPE_EEPROM2         0x2
 #define MC_TYPE_FLASH           0x3
+#define MC_TYPE_FRAM            0x4
+
+#define MC_SIZE_4KBITS                  0x000200
+#define MC_SIZE_64KBITS                 0x002000
+#define MC_SIZE_256KBITS                0x008000
+#define MC_SIZE_512KBITS                0x010000
+#define MC_SIZE_1MBITS                  0x020000
+#define MC_SIZE_2MBITS                  0x040000
+#define MC_SIZE_4MBITS                  0x080000
+#define MC_SIZE_8MBITS                  0x100000
+#define MC_SIZE_16MBITS                 0x200000
+#define MC_SIZE_64MBITS                 0x800000
 
 typedef struct
 {
