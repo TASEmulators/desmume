@@ -18,6 +18,15 @@
 #define BM_CMD_WRITEHIGH        0xA
 #define BM_CMD_READHIGH         0xB
 
+/* FLASH*/
+#define COMM_PAGE_WRITE		0x0A
+#define COMM_PAGE_ERASE		0xDB
+#define COMM_SECTOR_ERASE	0xD8
+#define COMM_CHIP_ERASE		0xC7
+#define CARDFLASH_READ_BYTES_FAST	0x0B    /* Not used*/
+#define CARDFLASH_DEEP_POWDOWN		0xB9    /* Not used*/
+#define CARDFLASH_WAKEUP			0xAB    /* Not used*/
+
 void mc_init(memory_chip_t *mc, int type)
 {
         mc->com = 0;
@@ -35,6 +44,7 @@ void mc_init(memory_chip_t *mc, int type)
               mc->addr_size = 1;
               break;
            case MC_TYPE_EEPROM2:
+           case MC_TYPE_FRAM:
               mc->addr_size = 2;
               break;
            case MC_TYPE_FLASH:
@@ -48,6 +58,14 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 {
 	u8 *buffer;
 	buffer = malloc(size);
+	
+	//Experimental code
+	/*
+    if(size<MC_SIZE_64KBITS) mc->type=MC_TYPE_EEPROM1; mc->addr_size = 1;
+	else if((size>MC_SIZE_64KBITS)&&(size<=MC_SIZE_512KBITS)) mc->type=MC_TYPE_EEPROM2; mc->addr_size = 2;
+	else if((size>MC_SIZE_1MBITS)&&(size<MC_SIZE_64MBITS)) mc->type=MC_TYPE_FLASH; mc->addr_size = 3;
+	*/
+	
 	if(!buffer) { return NULL; }
         mc->data = buffer;
         mc->size = size;
@@ -161,6 +179,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                                 case BM_CMD_READLOW:
                                         if(mc->addr < mc->size)  /* check if we can read */
                                         {
+                                                //LOG("Read Backup Memory addr %08X(%02X)\n", mc->addr, mc->data[mc->addr]);
                                                 data = mc->data[mc->addr];       /* return byte */
                                                 mc->addr++;      /* then increment address */
                                         }
@@ -169,6 +188,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                                 case BM_CMD_WRITELOW:
                                         if(mc->addr < mc->size)
                                         {
+                                                //LOG("Write Backup Memory addr %08X with %02X\n", mc->addr, data);
                                                 mc->data[mc->addr] = data;       /* write byte */
                                                 mc->addr++;
                                         }
@@ -179,6 +199,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 	}
         else if(mc->com == BM_CMD_READSTATUS)
 	{
+                //LOG("Backup Memory Read Status: %02X\n", mc->writeable_buffer << 1);
                 return (mc->writeable_buffer << 1);
 	}
 	else	/* finally, check if it's a new command */
