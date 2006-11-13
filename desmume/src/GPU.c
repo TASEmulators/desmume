@@ -611,8 +611,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 	{
 		u16 yoff = ((Y&7)<<3);
 		u16 x;
-		u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-		
+                u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+
 		for(x = 0; x < LG;)
 		{
 			tmp = ((xoff&(lg-1))>>3);
@@ -783,6 +783,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
 	       u8 * map = gpu->BG_map_ram[num];
 	       u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 	       u16 i;
+
                if(!pal) return;
                for(i = 0; i < LG; ++i)
                {
@@ -1006,10 +1007,10 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 	       u16 i;
                
                if(gpu->prop&(1<<31))
-						pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x100);
+                                                pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x200);
                else
 						pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
-               
+
                if(aux->attr1&(1<<12))
                {
                     x = sprSize.x -x - 1;
@@ -1041,6 +1042,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           }
           u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 	  u8 * pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+
           if(x&1)
           {
                if(aux->attr1&(1<<12))
@@ -1210,7 +1212,7 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 	       u8 * pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
                u16 i;
-               
+
                if(aux->attr1&(1<<12))
                {
                     x = sprSize.x -x - 1;
