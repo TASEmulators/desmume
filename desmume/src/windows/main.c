@@ -42,7 +42,12 @@
 #include "../saves.h"
 #include "../cflash.h"
 #include "ConfigKeys.h"
+
+#ifdef USE_SDL_AUDIO
+#include "../sndsdl.h"
+#else
 #include "snddx.h"
+#endif
 
 #ifdef RENDER3D
      #include "OGLRender.h"
@@ -79,7 +84,11 @@ DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
+#ifdef USE_SDL_AUDIO
+&SNDSDL,
+#else
 &SNDDIRECTX,
+#endif
 NULL
 };
 
@@ -124,6 +133,7 @@ DWORD WINAPI run( LPVOID lpParameter)
      {
           while(execute)
           {
+               SPU_Pause(0);
                cycles = NDS_exec((560190<<1)-cycles,FALSE);
                SPU_Emulate();
 
@@ -193,9 +203,10 @@ DWORD WINAPI run( LPVOID lpParameter)
                }
 
                CWindow_RefreshALL();
-               Sleep(0);
+               //Sleep(0);
                //execute = FALSE;
           }
+          SPU_Pause(1);
           Sleep(500);
      }
      return 1;
@@ -252,7 +263,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
     NDS_Init();
-    if (SPU_ChangeSoundCore(SNDCORE_DIRECTX, 735 * 4) != 0)
+    if (SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4) != 0)
     {
        MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
        return messages.wParam;
@@ -500,6 +511,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              {
                   case IDM_OPEN:
                        {
+                            execute = FALSE; //Stop emulation while opening new rom
+                            
                             OPENFILENAME ofn;
                             char filename[MAX_PATH] = "";
                             ZeroMemory(&ofn, sizeof(ofn));
@@ -513,6 +526,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             
                             if(!GetOpenFileName(&ofn))
                             {
+                                 execute = TRUE; //Restart emulation if no new rom chosen
                                  return 0;
                             }
                             
