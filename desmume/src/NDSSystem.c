@@ -86,6 +86,8 @@ void NDS_DeInit(void) {
 BOOL NDS_SetROM(u8 * rom, u32 mask)
 {
      u32 i;
+     
+     MMU_clearMem();
 
      MMU_setRom(rom, mask);
      

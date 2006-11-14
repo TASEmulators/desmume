@@ -100,6 +100,8 @@ extern MMU_struct MMU;
 void MMUInit(void);
 void MMUDeInit(void);
 
+void MMU_clearMem();
+
 void MMU_setRom(u8 * rom, u32 mask);
 void MMU_unsetRom();
 

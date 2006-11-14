@@ -287,6 +287,28 @@ u32 rom_mask = 0;
 u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
+void MMU_clearMem()
+{
+     memset(ARM9Mem.ARM9_ABG, 0, 0x80000);
+     memset(ARM9Mem.ARM9_AOBJ, 0, 0x40000);
+     memset(ARM9Mem.ARM9_BBG, 0, 0x20000);
+     memset(ARM9Mem.ARM9_BOBJ, 0, 0x20000);
+     memset(ARM9Mem.ARM9_DTCM, 0, 0x4000);
+     memset(ARM9Mem.ARM9_ITCM, 0, 0x8000);
+     memset(ARM9Mem.ARM9_LCD, 0, 0xA4000);
+     memset(ARM9Mem.ARM9_OAM, 0, 0x800);
+     memset(ARM9Mem.ARM9_REG, 0, 0x1000000);
+     memset(ARM9Mem.ARM9_VMEM, 0, 0x800);
+     memset(ARM9Mem.ARM9_WRAM, 0, 0x1000000);
+     memset(ARM9Mem.MAIN_MEM, 0, 0x400000);
+     //memset(&ARM9, 0, sizeof(ARM9_struct));
+     
+     memset(MMU.ARM7_ERAM, 0, 0x10000);
+     memset(MMU.ARM7_REG, 0, 0x10000);
+     
+     MainScreen.offset = 192;
+     SubScreen.offset = 0;
+}
 
 void MMU_setRom(u8 * rom, u32 mask)
 {
@@ -1068,42 +1090,42 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				GPU_setYH(SubScreen.gpu, 3, val);
 				return;
 			case BG0_CR :
-				GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
+				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 0, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x8, val);
 				return;
 			case BG1_CR :
-				GPULOG("MAIN BG1 SETPROP 16B %08X\r\n", val);
+				//GPULOG("MAIN BG1 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 1, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xA, val);
 				return;
 			case BG2_CR :
-				GPULOG("MAIN BG2 SETPROP 16B %08X\r\n", val);
+				//GPULOG("MAIN BG2 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 2, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xC, val);
 				return;
 			case BG3_CR :
-				GPULOG("MAIN BG3 SETPROP 16B %08X\r\n", val);
+				//GPULOG("MAIN BG3 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 3, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xE, val);
 				return;
 			case SUB_BG0_CR :
-				GPULOG("SUB BG0 SETPROP 16B %08X\r\n", val);
+				//GPULOG("SUB BG0 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 0, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x1008, val);
 				return;
 			case SUB_BG1_CR :
-				GPULOG("SUB BG1 SETPROP 16B %08X\r\n", val);
+				//GPULOG("SUB BG1 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 1, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100A, val);
 				return;
 			case SUB_BG2_CR :
-				GPULOG("SUB BG2 SETPROP 16B %08X\r\n", val);
+				//GPULOG("SUB BG2 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 2, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100C, val);
 				return;
 			case SUB_BG3_CR :
-				GPULOG("SUB BG3 SETPROP 16B %08X\r\n", val);
+				//GPULOG("SUB BG3 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(SubScreen.gpu, 3, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100E, val);
 				return;
@@ -1595,13 +1617,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			case 0x04000000 :
 				GPU_setVideoProp(MainScreen.gpu, val);
 				
-				GPULOG("MAIN INIT 32B %08X\r\n", val);
+				//GPULOG("MAIN INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, val);
 				return;
 				
 			case 0x04001000 : 
 				GPU_setVideoProp(SubScreen.gpu, val);
-				GPULOG("SUB INIT 32B %08X\r\n", val);
+				//GPULOG("SUB INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, val);
 				return;
 				
