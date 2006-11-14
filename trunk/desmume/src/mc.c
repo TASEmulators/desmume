@@ -83,6 +83,22 @@ void mc_reset_com(memory_chip_t *mc)
         mc->com = 0;
 }
 
+void mc_read_file(memory_chip_t *mc, char* filename)
+{
+     FILE* file = fopen(filename, "rb");
+     if(file == NULL) return;
+     fread (mc->data, mc->size, 1, file);
+	 fclose (file);
+}
+
+void mc_write_file(memory_chip_t *mc, char* filename)
+{
+     FILE* file = fopen(filename, "wb");
+     if(file == NULL) return;
+     fwrite (mc->data, mc->size, 1, file);
+	 fclose (file);
+}
+
 u8 fw_transfer(memory_chip_t *mc, u8 data)
 {
         if(mc->com == FW_CMD_READ || mc->com == FW_CMD_PAGEWRITE) /* check if we are in a command that needs 3 bytes address */
@@ -164,6 +180,7 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 
 u8 bm_transfer(memory_chip_t *mc, u8 data)
 {
+    mc_read_file(mc,"test.sav");
         if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_READHIGH ||
            mc->com == BM_CMD_WRITELOW || mc->com == BM_CMD_WRITEHIGH) /* check if we are in a command that needs multiple byte address */
 	{
@@ -258,6 +275,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 		}
 	}
 	
+	mc_write_file(mc,"test.sav");
 	return data;
 }	
 
