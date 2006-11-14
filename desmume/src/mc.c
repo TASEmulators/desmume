@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include "MMU.h"
 #include "debug.h"
 #include "types.h"
 #include "mc.h"
@@ -60,13 +59,6 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 	u8 *buffer;
 	buffer = malloc(size);
 	
-	//Experimental code
-	/*
-    if(size<MC_SIZE_64KBITS) mc->type=MC_TYPE_EEPROM1; mc->addr_size = 1;
-	else if((size>MC_SIZE_64KBITS)&&(size<=MC_SIZE_512KBITS)) mc->type=MC_TYPE_EEPROM2; mc->addr_size = 2;
-	else if((size>MC_SIZE_1MBITS)&&(size<MC_SIZE_64MBITS)) mc->type=MC_TYPE_FLASH; mc->addr_size = 3;
-	*/
-	
 	if(!buffer) { return NULL; }
         mc->data = buffer;
         mc->size = size;
@@ -84,11 +76,11 @@ void mc_reset_com(memory_chip_t *mc)
         mc->com = 0;
 }
 
-void mc_realloc(int type, u32 size)
+void mc_realloc(memory_chip_t *mc, int type, u32 size)
 {
-        if(MMU.bupmem.data) free(MMU.bupmem.data);
-        mc_init(&MMU.bupmem, type);
-        mc_alloc(&MMU.bupmem, size);     
+        if(mc->data) free(mc->data);
+        mc_init(mc, type);
+        mc_alloc(mc, size);     
 }
 
 void mc_read_file(memory_chip_t *mc, char* filename)
@@ -188,7 +180,7 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 
 u8 bm_transfer(memory_chip_t *mc, u8 data)
 {
-    mc_read_file(mc,"test.sav");
+//    mc_read_file(mc,"test.sav");
         if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_READHIGH ||
            mc->com == BM_CMD_WRITELOW || mc->com == BM_CMD_WRITEHIGH) /* check if we are in a command that needs multiple byte address */
 	{
@@ -264,7 +256,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                         case BM_CMD_WRITEHIGH:       /* write command that's only available on ST M95040-W that I know of */
                                 if(mc->write_enable)
 				{
-                                        mc->addr = 0x1;
+                                        mc->addr = 0x100;
                                         mc->addr_shift = mc->addr_size;
                                         mc->com = BM_CMD_WRITELOW;
 				}
@@ -272,9 +264,10 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 				break;
 
                         case BM_CMD_READHIGH:    /* read command that's only available on ST M95040-W that I know of */
-                                mc->addr = 0x1;
+                                mc->addr = 0x100;
                                 mc->addr_shift = mc->addr_size;
                                 mc->com = BM_CMD_READLOW;
+
 				break;
 
 			default:
@@ -283,7 +276,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 		}
 	}
 	
-	mc_write_file(mc,"test.sav");
+//        mc_write_file(mc,"test.sav");
 	return data;
 }	
 
