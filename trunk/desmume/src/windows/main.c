@@ -829,23 +829,23 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   
                   case IDC_SAVETYPE1:
                        saver(MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       mc_realloc(MC_TYPE_EEPROM1,MC_SIZE_4KBITS);
+                       mc_realloc(&MMU.bupmem, MC_TYPE_EEPROM1,MC_SIZE_4KBITS);
                   return 0;   
                   case IDC_SAVETYPE2:
                        saver(MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       mc_realloc(MC_TYPE_EEPROM2,MC_SIZE_64KBITS);
+                       mc_realloc(&MMU.bupmem, MC_TYPE_EEPROM2,MC_SIZE_64KBITS);
                   return 0;   
                   case IDC_SAVETYPE3:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       mc_realloc(MC_TYPE_EEPROM2,MC_SIZE_512KBITS);
+                       mc_realloc(&MMU.bupmem, MC_TYPE_EEPROM2,MC_SIZE_512KBITS);
                   return 0;
                   case IDC_SAVETYPE4:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED);
-                       mc_realloc(MC_TYPE_FRAM,MC_SIZE_256KBITS);
+                       mc_realloc(&MMU.bupmem, MC_TYPE_FRAM,MC_SIZE_256KBITS);
                   return 0; 
                   case IDC_SAVETYPE5:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED);
-                       mc_realloc(MC_TYPE_FLASH,MC_SIZE_2MBITS);
+                       mc_realloc(&MMU.bupmem, MC_TYPE_FLASH,MC_SIZE_2MBITS);
                   return 0; 
                   
                   case IDM_RESET:
