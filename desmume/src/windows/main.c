@@ -43,11 +43,7 @@
 #include "../cflash.h"
 #include "ConfigKeys.h"
 
-#ifdef USE_SDL_AUDIO
-#include "../sndsdl.h"
-#else
 #include "snddx.h"
-#endif
 
 #ifdef RENDER3D
      #include "OGLRender.h"
@@ -84,11 +80,7 @@ DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
-#ifdef USE_SDL_AUDIO
-&SNDSDL,
-#else
 &SNDDIRECTX,
-#endif
 NULL
 };
 
@@ -133,7 +125,6 @@ DWORD WINAPI run( LPVOID lpParameter)
      {
           while(execute)
           {
-               SPU_Pause(0);
                cycles = NDS_exec((560190<<1)-cycles,FALSE);
                SPU_Emulate();
 
@@ -203,18 +194,28 @@ DWORD WINAPI run( LPVOID lpParameter)
                }
 
                CWindow_RefreshALL();
-               //Sleep(0);
-               //execute = FALSE;
+               Sleep(0);
           }
-          SPU_Pause(1);
           Sleep(500);
      }
      return 1;
 }
 
+void NDS_Pause()
+{
+   execute = FALSE;
+   SPU_Pause(1);
+}
+
+void NDS_UnPause()
+{
+   execute = TRUE;
+   SPU_Pause(0);
+}
+
 BOOL LoadROM(char * filename)
-{    
-    execute = FALSE;
+{
+    NDS_Pause();
 
     if (NDS_LoadROM(filename) > 0)
        return TRUE;
@@ -264,11 +265,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     NDS_Init();
     
-#ifdef USE_SDL_AUDIO
-    if (SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4) != 0)
-#else
     if (SPU_ChangeSoundCore(SNDCORE_DIRECTX, 735 * 4) != 0)
-#endif
     {
        MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
        return messages.wParam;
@@ -280,7 +277,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     {
        EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
        EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-       execute = TRUE;
+       NDS_UnPause();
     }
     else
     {
@@ -311,7 +308,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              ReadConfig();
              return 0;
         case WM_DESTROY:
-             execute = FALSE;
+             NDS_Pause();
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
@@ -329,7 +326,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
         case WM_CLOSE:
-             execute = FALSE;
+             NDS_Pause();
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
@@ -354,7 +351,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   {
                      EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                      EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                     execute = TRUE;
+                     NDS_UnPause();
                   }
              }
              return 0;
@@ -516,7 +513,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              {
                   case IDM_OPEN:
                        {
-                            execute = FALSE; //Stop emulation while opening new rom
+                            NDS_Pause(); //Stop emulation while opening new rom
                             
                             OPENFILENAME ofn;
                             char filename[MAX_PATH] = "";
@@ -531,7 +528,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             
                             if(!GetOpenFileName(&ofn))
                             {
-                                 execute = TRUE; //Restart emulation if no new rom chosen
+                                 NDS_UnPause(); //Restart emulation if no new rom chosen
                                  return 0;
                             }
                             
@@ -556,7 +553,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             {
                                EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                                EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                               execute = TRUE;
+                               NDS_UnPause();
                             }
                        }
                   return 0;
@@ -584,7 +581,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_STATE_LOAD:
                        {
-                            execute = FALSE;
+                            NDS_Pause();
                             OPENFILENAME ofn;
                             //char nomFichier[MAX_PATH] = "";
                             ZeroMemory(&ofn, sizeof(ofn));
@@ -604,12 +601,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             //log::ajouter(SavName);
                             
                             savestate_load(SavName);
-                            execute = TRUE;
+                            NDS_UnPause();
                        }
                   return 0;
                   case IDM_STATE_SAVE:
                        {
-                            execute = FALSE;
+                            NDS_Pause();
                             OPENFILENAME ofn;
                             //char nomFichier[MAX_PATH] = "";
                             ZeroMemory(&ofn, sizeof(ofn));
@@ -637,7 +634,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             //strcpy(SavName, SavName + "dst");
                             
                             savestate_save(SavName);
-                            execute = TRUE;
+                            NDS_UnPause();
                        }
                   return 0;
                   case IDM_GAME_INFO:
@@ -815,12 +812,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDM_EXEC:
                        EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                        EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                       execute = TRUE;
+                       NDS_UnPause();
                   return 0;
                   case IDM_PAUSE:
                        EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
                        EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
-                       execute = FALSE;
+                       NDS_Pause();
                   return 0;
                   
                   #define saver(one,two,three,four,five) \
