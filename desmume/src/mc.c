@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "MMU.h"
 #include "debug.h"
 #include "types.h"
 #include "mc.h"
@@ -81,6 +82,13 @@ void mc_free(memory_chip_t *mc)
 void mc_reset_com(memory_chip_t *mc)
 {
         mc->com = 0;
+}
+
+void mc_realloc(int type, u32 size)
+{
+        if(MMU.bupmem.data) free(MMU.bupmem.data);
+        mc_init(&MMU.bupmem, type);
+        mc_alloc(&MMU.bupmem, size);     
 }
 
 void mc_read_file(memory_chip_t *mc, char* filename)
