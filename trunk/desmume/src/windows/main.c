@@ -263,7 +263,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
     NDS_Init();
+    
+#ifdef USE_SDL_AUDIO
     if (SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4) != 0)
+#else
+    if (SPU_ChangeSoundCore(SNDCORE_DIRECTX, 735 * 4) != 0)
+#endif
     {
        MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
        return messages.wParam;
