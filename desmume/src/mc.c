@@ -216,8 +216,8 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 	}
         else if(mc->com == BM_CMD_READSTATUS)
 	{
-                //LOG("Backup Memory Read Status: %02X\n", mc->writeable_buffer << 1);
-                return (mc->writeable_buffer << 1);
+                //LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
+                return (mc->write_enable << 1);
 	}
 	else	/* finally, check if it's a new command */
 	{
@@ -256,7 +256,10 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                         case BM_CMD_WRITEHIGH:       /* write command that's only available on ST M95040-W that I know of */
                                 if(mc->write_enable)
 				{
-                                        mc->addr = 0x100;
+                                        if (mc->type == MC_TYPE_EEPROM1)
+                                           mc->addr = 0x100;
+                                        else
+                                           mc->addr = 0;
                                         mc->addr_shift = mc->addr_size;
                                         mc->com = BM_CMD_WRITELOW;
 				}
@@ -264,7 +267,10 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 				break;
 
                         case BM_CMD_READHIGH:    /* read command that's only available on ST M95040-W that I know of */
-                                mc->addr = 0x100;
+                                if (mc->type == MC_TYPE_EEPROM1)
+                                   mc->addr = 0x100;
+                                else
+                                   mc->addr = 0;
                                 mc->addr_shift = mc->addr_size;
                                 mc->com = BM_CMD_READLOW;
 
