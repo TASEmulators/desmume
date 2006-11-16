@@ -3,9 +3,6 @@
 	CompactFlash/FAT emulation routines for DeSmuME
 	/Mic, 2006
 
-    Portability note: Uses some Win32 API calls, e.g. FindNextFile,
-    which would have to be replaced for other operating systems.
-    
 	Logical memory layout:
 
 	----------------------
@@ -53,7 +50,7 @@ u32						filesysFAT,filesysRootDir,filesysData;
 u16							FAT16[SECPERFAT*256];
 u16							numExtraEntries[SECPERFAT*256];
 DIR_ENT						*extraDirEntries[SECPERFAT*256];
-int							numFiles,fileLevel,maxLevel,dirNum,numRootFiles;
+int							numFiles,maxLevel,dirNum,numRootFiles;
 int							*dirEntriesInCluster,clusterNum,
 							firstDirEntCluster,lastDirEntCluster,
 							lastFileDataCluster;
@@ -86,7 +83,7 @@ const int lfnPos[13] = {1,3,5,7,9,14,16,18,20,22,24,28,30};
 
 
 /* Add a DIR_ENT for the files */
-void add_file(char *fname, FsEntry * entry) {
+void add_file(char *fname, FsEntry * entry, int fileLevel) {
 	int i,j,k,n;
         u8 chk;
 	char *p;
@@ -184,16 +181,18 @@ void add_file(char *fname, FsEntry * entry) {
 
 
 /* List all files and subdirectories recursively */
-void list_files(char *fpath) {
+void list_files(char *fpath, int fileLevel) {
 	void * hFind;
 	FsEntry entry;
-	char			DirSpec[255 + 1],SubDir[255+1],fnameu[256];
+	char			DirSpec[255 + 1],SubDir[255+1];
 	u32			dwError;
 	char			*fname;
 	int				i,j;
 
 	fileLevel++;
-	maxLevel++;
+	if (fileLevel > maxLevel) {
+		maxLevel = fileLevel;
+	}
 
 	strncpy(DirSpec, fpath, strlen(fpath)+1);
 
@@ -203,24 +202,19 @@ void list_files(char *fpath) {
 		return;
 	} else {
 		fname = (strlen(entry.cAlternateFileName)>0)?entry.cAlternateFileName:entry.cFileName;
-		strcpy(fnameu,fname);
-		//strupr(fnameu);
-		add_file(fnameu,&entry);
+		add_file(fname, &entry, fileLevel);
 
 		while (FsReadNext(hFind, &entry) != 0) {
 			fname = (strlen(entry.cAlternateFileName)>0)?entry.cAlternateFileName:entry.cFileName;
-			strcpy(fnameu,fname);
-			//strupr(fnameu);
 
-			add_file(fnameu,&entry);
+			add_file(fname, &entry, fileLevel);
 
 			if (numFiles==MAXFILES-1) break;
 
-			if ((entry.flags & FS_IS_DIR)&&
-			   (fname[0] != '.')) {
-				//sprintf(SubDir,"%s\\%s",fpath,fname);
-				sprintf(SubDir,"%s%c%s",fpath,FS_SEPARATOR,fname);
-				list_files(SubDir);
+			// FIXME: Unix filenames can start with a .
+			if ((entry.flags & FS_IS_DIR) && (fname[0] != '.')) {
+				sprintf(SubDir, "%s%c%s", fpath, FS_SEPARATOR, fname);
+				list_files(SubDir, fileLevel);
 			}
 		}
     
@@ -234,7 +228,6 @@ void list_files(char *fpath) {
 		fileLink[numFiles].parent = maxLevel * ((fileLevel>0)?1:0);
 		files[numFiles++].name[0] = 0;
 	}
-	fileLevel--;
 }
 
 
@@ -247,6 +240,7 @@ BOOL cflash_build_fat() {
 	int i,j,k,l,
 		clust,baseCluster,numClusters,
 		clusterNum2,rootCluster;
+	int fileLevel;
 
 	numFiles  = 0;
 	fileLevel = -1;
@@ -269,7 +263,7 @@ BOOL cflash_build_fat() {
 		numExtraEntries[i] = 0;
 	}
 
-	list_files(sRomPath);
+	list_files(sRomPath, fileLevel);
 
 	k            = 0;
 	clusterNum   = rootCluster = (SECRESV + SECPERFAT)/SECPERCLUS;
