@@ -176,9 +176,14 @@ static u8 getvoltbl[] = {
 
 u32 bios_nop(armcpu_t * cpu)
 {
-     //sprintf(biostxt, "PROC %d, SWI PO IMPLEMENTE %08X R0:%08X", cpu->proc_ID, (cpu->instruction)&0x1F, cpu->R[0]);
-     //execute = FALSE;
-     //log::ajouter(biostxt);
+     if (cpu->proc_ID == ARMCPU_ARM9)
+     {
+        LOG("Unimplemented bios function %02X(ARM9) was used. R0:%08X\n", (cpu->instruction)&0x1F, cpu->R[0]);
+     }
+     else
+     {
+        LOG("Unimplemented bios function %02X(ARM7) was used. R0:%08X\n", (cpu->instruction)&0x1F, cpu->R[0]);
+     }
      return 3;
 }
 
