@@ -103,14 +103,14 @@ void mc_reset_com(memory_chip_t *mc)
          mc->type = MC_TYPE_EEPROM2;
          mc->size = MC_SIZE_512KBITS;
       }
-      else if (mc->autodetectsize == (32+2) || mc->autodetectsize == (20+2) || mc->autodetectsize == (10+2))
+      else if (mc->autodetectsize == (32+2))
       {
          // 64 Kbit EEPROM
          addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
          mc->type = MC_TYPE_EEPROM2;
          mc->size = MC_SIZE_64KBITS;
       }
-      else if (mc->autodetectsize == (16+1) || mc->autodetectsize == (8+1) || mc->autodetectsize == (1+1))
+      else if (mc->autodetectsize == (16+1))
       {
          // 4 Kbit EEPROM
          addr = mc->autodetectbuf[0];
