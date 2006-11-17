@@ -367,6 +367,17 @@ int NDS_LoadROM(const char *filename)
    cflash_close();
    cflash_init();
 
+   // Setup Backup Memory
+   p = strdup(filename);
+
+   if(type == ROM_DSGBA)
+      strcpy(p+strlen(p)-strlen(DSGBA_EXTENSTION), ".sav");
+   else
+      strcpy(p+strlen(p)-4, ".sav");
+
+   mc_load_file(&MMU.bupmem, p);
+   free(p);
+
    return i;
 }
 

@@ -265,14 +265,22 @@ void MMU_Init(void) {
 	
         mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
         mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
+        MMU.fw.fp = NULL;
 
         // Init Backup Memory device, this should really be done when the rom is loaded
-        mc_init(&MMU.bupmem, MC_TYPE_EEPROM2);
-        mc_alloc(&MMU.bupmem, 65536); // For now we're use 512Kbit support. Eventually this should be detected when rom is loaded
-}
+        mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
+        mc_alloc(&MMU.bupmem, 1);
+        MMU.bupmem.fp = NULL;
+} 
 
 void MMU_DeInit(void) {
 	LOG("MMU deinit\n");
+    if (MMU.fw.fp)
+       fclose(MMU.fw.fp);
+    mc_free(&MMU.fw);      
+    if (MMU.bupmem.fp)
+       fclose(MMU.bupmem.fp);
+    mc_free(&MMU.bupmem);
 }
 
 //Card rom & ram

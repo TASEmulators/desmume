@@ -285,6 +285,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
     }
 
+    CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
+    CheckMenuItem(menu, IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menu, IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menu, IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menu, IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+
     while (GetMessage (&messages, NULL, 0, 0))
     {
         // Translate virtual-key messages into character messages
@@ -820,31 +827,36 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        NDS_Pause();
                   return 0;
                   
-                  #define saver(one,two,three,four,five) \
+                  #define saver(one,two,three,four,five, six) \
                   CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | one); \
                   CheckMenuItem(menu, IDC_SAVETYPE2, MF_BYCOMMAND | two); \
                   CheckMenuItem(menu, IDC_SAVETYPE3, MF_BYCOMMAND | three); \
                   CheckMenuItem(menu, IDC_SAVETYPE4, MF_BYCOMMAND | four); \
-                  CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | five);
+                  CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | five); \
+                  CheckMenuItem(menu, IDC_SAVETYPE6, MF_BYCOMMAND | six);
                   
                   case IDC_SAVETYPE1:
-                       saver(MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                       saver(MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                       mc_realloc(&MMU.bupmem, MC_TYPE_AUTODETECT,1);
+                  return 0;
+                  case IDC_SAVETYPE2:
+                       saver(MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
                        mc_realloc(&MMU.bupmem, MC_TYPE_EEPROM1,MC_SIZE_4KBITS);
                   return 0;   
-                  case IDC_SAVETYPE2:
-                       saver(MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                  case IDC_SAVETYPE3:
+                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
                        mc_realloc(&MMU.bupmem, MC_TYPE_EEPROM2,MC_SIZE_64KBITS);
                   return 0;   
-                  case IDC_SAVETYPE3:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                  case IDC_SAVETYPE4:
+                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED);
                        mc_realloc(&MMU.bupmem, MC_TYPE_EEPROM2,MC_SIZE_512KBITS);
                   return 0;
-                  case IDC_SAVETYPE4:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED);
+                  case IDC_SAVETYPE5:
+                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED);
                        mc_realloc(&MMU.bupmem, MC_TYPE_FRAM,MC_SIZE_256KBITS);
                   return 0; 
-                  case IDC_SAVETYPE5:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED);
+                  case IDC_SAVETYPE6:
+                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED);
                        mc_realloc(&MMU.bupmem, MC_TYPE_FLASH,MC_SIZE_2MBITS);
                   return 0; 
                   
