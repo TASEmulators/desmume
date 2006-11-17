@@ -12,7 +12,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-DVERSION=\"0.3.3\"_@@_
 CppCompiler=_@@_
-Linker=-lz -lSDL_@@_
+Linker=-lz -ldxguid -ldxerr8 -ldsound_@@_
 IsCpp=1
 Icon=DeSmuME.ico
 ExeOutput=
@@ -27,7 +27,7 @@ CustomMakefile=
 IncludeVersionInfo=1
 SupportXPThemes=1
 CompilerSet=0
-CompilerSettings=00000000010010000001ib
+CompilerSettings=0000000001001000000100
 
 [Unit1]
 FileName=resources.rc
@@ -457,27 +457,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit52]
-FileName=..\sndsdl.h
-CompileCpp=1
-Folder=DeSmuME
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit53]
-FileName=..\SPU.h
-CompileCpp=1
-Folder=DeSmuME
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit54]
 FileName=..\arm_instructions.c
 CompileCpp=0
 Folder=DeSmuME
@@ -487,7 +467,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c arm_instructions.c -o obj/arm_instructions.o $(CFLAGS)
 
-[Unit55]
+[Unit54]
 FileName=..\armcpu.c
 CompileCpp=0
 Folder=DeSmuME
@@ -497,7 +477,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c armcpu.c -o obj/armcpu.o $(CFLAGS)
 
-[Unit56]
+[Unit55]
 FileName=..\bios.c
 CompileCpp=0
 Folder=DeSmuME
@@ -507,7 +487,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c bios.c -o obj/bios.o $(CFLAGS)
 
-[Unit57]
+[Unit56]
 FileName=..\cflash.c
 CompileCpp=0
 Folder=DeSmuME
@@ -517,7 +497,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c cflash.c -o obj/cflash.o $(CFLAGS)
 
-[Unit58]
+[Unit57]
 FileName=..\cp15.c
 CompileCpp=0
 Folder=DeSmuME
@@ -527,17 +507,17 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c cp15.c -o obj/cp15.o $(CFLAGS)
 
-[Unit60]
-FileName=..\MMU.c
+[Unit58]
+FileName=..\mc.c
 CompileCpp=0
 Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
-BuildCmd=$(CC) -c MMU.c -o obj/MMU.o $(CFLAGS)
+BuildCmd=$(CC) -c mc.c -o obj/mc.o $(CFLAGS)
 
-[Unit61]
+[Unit60]
 FileName=..\NDSSystem.c
 CompileCpp=0
 Folder=DeSmuME
@@ -547,7 +527,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c NDSSystem.c -o obj/NDSSystem.o $(CFLAGS)
 
-[Unit62]
+[Unit61]
 FileName=..\saves.c
 CompileCpp=0
 Folder=DeSmuME
@@ -557,15 +537,15 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=$(CC) -c saves.c -o obj/saves.o $(CFLAGS)
 
-[Unit63]
-FileName=..\sndsdl.c
+[Unit62]
+FileName=..\SPU.c
 CompileCpp=0
 Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
-BuildCmd=$(CC) -c sndsdl.c -o obj/sndsdl.o $(CFLAGS)
+BuildCmd=$(CC) -c SPU.c -o obj/SPU.o $(CFLAGS)
 
 [Unit5]
 FileName=..\armcpu.h
@@ -667,24 +647,24 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit64]
-FileName=..\SPU.c
+FileName=snddx.c
 CompileCpp=0
 Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
-BuildCmd=$(CC) -c SPU.c -o obj/SPU.o $(CFLAGS)
+BuildCmd=$(CC) -c snddx.c -o obj/snddx.o $(CFLAGS)
 
 [Unit65]
-FileName=..\thumb_instructions.c
-CompileCpp=0
+FileName=snddx.h
+CompileCpp=1
 Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
-BuildCmd=$(CC) -c thumb_instructions.c -o obj/thumb_instructions.o $(CFLAGS)
+BuildCmd=
 
 [Unit66]
 FileName=..\thumb_instructions.c
@@ -697,12 +677,32 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit59]
-FileName=..\mc.c
+FileName=..\MMU.c
 CompileCpp=0
 Folder=DeSmuME
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
-BuildCmd=$(CC) -c mc.c -o obj/mc.o $(CFLAGS)
+BuildCmd=$(CC) -c MMU.c -o obj/MMU.o $(CFLAGS)
+
+[Unit52]
+FileName=..\SPU.h
+CompileCpp=1
+Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit63]
+FileName=..\thumb_instructions.c
+CompileCpp=0
+Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=$(CC) -c thumb_instructions.c -o obj/thumb_instructions.o $(CFLAGS)
 
