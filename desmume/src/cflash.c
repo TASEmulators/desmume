@@ -105,7 +105,7 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 			for (; j<3; j++)
 				files[numFiles].ext[j] = 0x20;
 
-			fileLink[maxLevel * ((fileLevel>0)?1:0)].filesInDir += 1;
+			fileLink[fileLevel].filesInDir += 1;
 
 			// See if LFN entries need to be added
 			if (strlen(entry->cAlternateFileName)>0) {
@@ -113,7 +113,7 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 				k = (strlen(entry->cFileName)/13) + (((strlen(entry->cFileName)%13)!=0)?1:0);
 				numFiles += k;
 
-				fileLink[maxLevel * ((fileLevel>0)?1:0)].filesInDir += k;
+				fileLink[fileLevel].filesInDir += k;
 
 				n = 0;
 				j = 13;
@@ -121,7 +121,7 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 					if (j == 13) {
 						n++;
 						p = (char*)&files[numFiles-n].name[0];
-						fileLink[numFiles-n].parent = maxLevel * ((fileLevel>0)?1:0);	
+						fileLink[numFiles-n].parent = fileLevel;	
 						p[0] = n;
 						((DIR_ENT*)p)->attrib = ATTRIB_LFN;
 						p[0xD] = chk;
@@ -165,14 +165,14 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 				files[numFiles].attrib = 0;
 			}
 
-			fileLink[numFiles].parent = maxLevel * ((fileLevel>0)?1:0);	
+			fileLink[numFiles].parent = fileLevel;	
 
 			numFiles++;
 		} else if (fileLevel > 0) {
-			fileLink[maxLevel * ((fileLevel>0)?1:0)].filesInDir += 1;
+			fileLink[fileLevel].filesInDir += 1;
 			strncpy((char*)&files[numFiles].name[0],"..      ",8);
 			strncpy((char*)&files[numFiles].ext[0],"   ",3);
-			fileLink[numFiles].parent = maxLevel * ((fileLevel>0)?1:0);	
+			fileLink[numFiles].parent = fileLevel;	
 			files[numFiles].attrib = 0x10;
 			numFiles++;
 		}
@@ -205,7 +205,6 @@ void list_files(char *fpath) {
 
 		while (FsReadNext(hFind, &entry) != 0) {
 			fname = (strlen(entry.cAlternateFileName)>0)?entry.cAlternateFileName:entry.cFileName;
-
 			add_file(fname, &entry, fileLevel);
 
 			if (numFiles==MAXFILES-1) break;
@@ -224,7 +223,7 @@ void list_files(char *fpath) {
 		}
 	}
 	if (numFiles < MAXFILES) {
-		fileLink[numFiles].parent = maxLevel * ((fileLevel>0)?1:0);
+		fileLink[numFiles].parent = fileLevel;
 		files[numFiles++].name[0] = 0;
 	}
 }
