@@ -181,18 +181,17 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 
 
 /* List all files and subdirectories recursively */
-void list_files(char *fpath, int fileLevel) {
+void list_files(char *fpath) {
 	void * hFind;
 	FsEntry entry;
 	char			DirSpec[255 + 1],SubDir[255+1];
 	u32			dwError;
 	char			*fname;
 	int				i,j;
+	int fileLevel;
 
-	fileLevel++;
-	if (fileLevel > maxLevel) {
-		maxLevel = fileLevel;
-	}
+	maxLevel++;
+	fileLevel = maxLevel;
 
 	strncpy(DirSpec, fpath, strlen(fpath)+1);
 
@@ -214,7 +213,7 @@ void list_files(char *fpath, int fileLevel) {
 			// FIXME: Unix filenames can start with a .
 			if ((entry.flags & FS_IS_DIR) && (fname[0] != '.')) {
 				sprintf(SubDir, "%s%c%s", fpath, FS_SEPARATOR, fname);
-				list_files(SubDir, fileLevel);
+				list_files(SubDir);
 			}
 		}
     
@@ -263,7 +262,7 @@ BOOL cflash_build_fat() {
 		numExtraEntries[i] = 0;
 	}
 
-	list_files(sRomPath, fileLevel);
+	list_files(sRomPath);
 
 	k            = 0;
 	clusterNum   = rootCluster = (SECRESV + SECPERFAT)/SECPERCLUS;
