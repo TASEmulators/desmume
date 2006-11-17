@@ -929,6 +929,25 @@ u32 getVolumeTab(armcpu_t* cpu)
      return 1;
 }
 
+u32 getCRC16(armcpu_t* cpu)
+{
+  int i,j;
+  u32 crc;
+  
+  u16 start = cpu->R[0];
+  u16 datap = cpu->R[1];
+  u32 size = cpu->R[2];
+  
+  static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+  for(i=datap; i<(datap+size); i++)
+  {
+    crc=crc ^ MMU_readHWord(cpu->proc_ID,datap+i);
+    for(j=0; j<7; j++) crc=crc >> 1; if(crc) crc=crc ^ (val[j] << (7-j));
+  }
+  cpu->R[0] = crc;
+  return 1;
+}
+
 u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
          bios_nop,             // 0x00
          bios_nop,             // 0x01
@@ -944,7 +963,7 @@ u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
          copy,                 // 0x0B
          fastCopy,             // 0x0C
          bios_sqrt,            // 0x0D
-         bios_nop,             // 0x0E
+         getCRC16,             // 0x0E
          bios_nop,             // 0x0F
          BitUnPack,            // 0x10
          LZ77UnCompWram,       // 0x11
@@ -979,7 +998,7 @@ u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
          copy,                 // 0x0B
          fastCopy,             // 0x0C
          bios_sqrt,            // 0x0D
-         bios_nop,             // 0x0E
+         getCRC16,             // 0x0E
          bios_nop,             // 0x0F
          BitUnPack,            // 0x10
          LZ77UnCompWram,       // 0x11
