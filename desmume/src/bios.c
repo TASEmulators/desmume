@@ -948,11 +948,14 @@ u32 getCRC16(armcpu_t* cpu)
   return 1;
 }
 
-void SoundBias(armcpu_t* cpu)
+u32 SoundBias(armcpu_t* cpu)
 {
-     SPU_WriteLong(0x4000504, cpu->R[0] & 0x3FF);
-     //Insert Delay Statement Here
-     return;
+     u32 current = SPU_ReadLong(0x4000504);
+     if (cpu->R[0] > current)
+	SPU_WriteLong(0x4000504, current + 0x1);
+     else
+	SPU_WriteLong(0x4000504, current - 0x1);
+     return cpu->R[1];
 }
 
 u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
@@ -964,7 +967,7 @@ u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
          waitVBlankARM,        // 0x05
          wait4IRQ,             // 0x06
          bios_nop,             // 0x07
-         bios_nop,             // 0x08
+         SoundBias,             // 0x08
          devide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
@@ -999,7 +1002,7 @@ u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
          waitVBlankARM,        // 0x05
          wait4IRQ,             // 0x06
          wait4IRQ,             // 0x07
-         SoundBias,            // 0x08
+         bios_nop,             // 0x08
          devide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
