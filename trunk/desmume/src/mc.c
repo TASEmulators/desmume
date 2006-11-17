@@ -9,6 +9,7 @@
 #define FW_CMD_WRITEENABLE      0x6
 #define FW_CMD_PAGEWRITE        0xA
 
+#define BM_CMD_AUTODETECT       0xFF
 #define BM_CMD_WRITESTATUS      0x1
 #define BM_CMD_WRITELOW         0x2
 #define BM_CMD_READLOW          0x3
@@ -37,7 +38,8 @@ void mc_init(memory_chip_t *mc, int type)
         mc->write_enable = FALSE;
         mc->writeable_buffer = FALSE;
         mc->type = type;
-
+        mc->autodetectsize = 0;
+                               
         switch(mc->type)
         {
            case MC_TYPE_EEPROM1:
@@ -73,7 +75,80 @@ void mc_free(memory_chip_t *mc)
 
 void mc_reset_com(memory_chip_t *mc)
 {
-        mc->com = 0;
+   if (mc->type == MC_TYPE_AUTODETECT && mc->com == BM_CMD_AUTODETECT)
+   {
+      u32 i;
+      u32 addr, size;
+
+      if (mc->autodetectsize == (32768+2))
+      {
+         // FRAM
+         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
+         mc->type = MC_TYPE_FRAM;
+         mc->size = MC_SIZE_256KBITS;
+      }
+      else if (mc->autodetectsize == (256+3))
+      {
+         // Flash
+         addr = (mc->autodetectbuf[0] << 16) |
+                    (mc->autodetectbuf[1] << 8) |
+                     mc->autodetectbuf[2];
+         mc->type = MC_TYPE_FLASH;
+         mc->size = MC_SIZE_2MBITS;
+      }
+      else if (mc->autodetectsize == (128+2))
+      {
+         // 512 Kbit EEPROM
+         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
+         mc->type = MC_TYPE_EEPROM2;
+         mc->size = MC_SIZE_512KBITS;
+      }
+      else if (mc->autodetectsize == (32+2))
+      {
+         // 64 Kbit EEPROM
+         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
+         mc->type = MC_TYPE_EEPROM2;
+         mc->size = MC_SIZE_64KBITS;
+      }
+      else if (mc->autodetectsize == (16+1))
+      {
+         // 4 Kbit EEPROM
+         addr = mc->autodetectbuf[0];
+         mc->type = MC_TYPE_EEPROM1;
+         mc->size = MC_SIZE_4KBITS;
+      }
+      else
+      {
+         // Assume it's a Flash non-page write 
+         LOG("Flash detected(guessed). autodetectsize = %d\n", mc->autodetectsize);
+         addr = (mc->autodetectbuf[0] << 16) |
+                    (mc->autodetectbuf[1] << 8) |
+                     mc->autodetectbuf[2];
+         mc->type = MC_TYPE_FLASH;
+         mc->size = MC_SIZE_2MBITS;
+      }
+
+      size = mc->autodetectsize;
+      mc_realloc(mc, mc->type, mc->size);
+      memcpy(mc->data+addr, mc->autodetectbuf+mc->addr_size, size-mc->addr_size);
+      mc->autodetectsize = 0;
+      mc->write_enable = FALSE;
+
+      // Generate file
+      if ((mc->fp = fopen(mc->filename, "wb+")) != NULL)
+         fwrite((void *)mc->data, 1, mc->size, mc->fp);
+   }
+   else if (mc->com == BM_CMD_WRITELOW)
+   {      
+      if (mc->fp)
+      {
+         fseek(mc->fp, 0, SEEK_SET);
+         fwrite((void *)mc->data, 1, mc->size, mc->fp); // fix me
+      }
+      mc->write_enable = FALSE;
+   }
+
+   mc->com = 0;
 }
 
 void mc_realloc(memory_chip_t *mc, int type, u32 size)
@@ -83,20 +158,36 @@ void mc_realloc(memory_chip_t *mc, int type, u32 size)
         mc_alloc(mc, size);     
 }
 
-void mc_read_file(memory_chip_t *mc, char* filename)
+void mc_load_file(memory_chip_t *mc, const char* filename)
 {
-     FILE* file = fopen(filename, "rb");
-     if(file == NULL) return;
-     fread (mc->data, mc->size, 1, file);
-	 fclose (file);
-}
+   long size;
+   FILE* file = fopen(filename, "rb+");
+   if(file == NULL)
+   {
+      mc->filename = strdup(filename);
+      return;
+   }
 
-void mc_write_file(memory_chip_t *mc, char* filename)
-{
-     FILE* file = fopen(filename, "wb");
-     if(file == NULL) return;
-     fwrite (mc->data, mc->size, 1, file);
-	 fclose (file);
+   fseek(file, 0, SEEK_END);
+   size = ftell(file);
+   fseek(file, 0, SEEK_SET);
+
+   if (size == MC_SIZE_4KBITS)
+      mc->type = MC_TYPE_EEPROM1;
+   else if (size == MC_SIZE_64KBITS)
+      mc->type = MC_TYPE_EEPROM2;
+   else if (size == MC_SIZE_256KBITS)
+      mc->type = MC_TYPE_FRAM;
+   else if (size == MC_SIZE_512KBITS)
+      mc->type = MC_TYPE_EEPROM2;
+   else if (size >= MC_SIZE_2MBITS)
+      mc->type = MC_TYPE_FLASH;
+
+   mc->size = size;
+
+   mc_realloc(mc, mc->type, mc->size);
+   fread (mc->data, 1, mc->size, file);
+   mc->fp = file;
 }
 
 u8 fw_transfer(memory_chip_t *mc, u8 data)
@@ -180,9 +271,7 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 
 u8 bm_transfer(memory_chip_t *mc, u8 data)
 {
-//    mc_read_file(mc,"test.sav");
-        if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_READHIGH ||
-           mc->com == BM_CMD_WRITELOW || mc->com == BM_CMD_WRITEHIGH) /* check if we are in a command that needs multiple byte address */
+        if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_WRITELOW) /* check if we are in a command that needs multiple byte address */
 	{
                 if(mc->addr_shift > 0)   /* if we got a complete address */
 		{
@@ -214,6 +303,13 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 			
 		}
 	}
+        else if(mc->com == BM_CMD_AUTODETECT)
+        {
+           // Store everything in a temporary
+           mc->autodetectbuf[mc->autodetectsize] = data;
+           mc->autodetectsize++;
+           return 0;
+        }
         else if(mc->com == BM_CMD_READSTATUS)
 	{
                 //LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
@@ -228,6 +324,12 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                         case BM_CMD_WRITELOW:       /* write command */
                                 if(mc->write_enable)
 				{
+                                        if(mc->type == MC_TYPE_AUTODETECT)
+                                        {
+                                           mc->com = BM_CMD_AUTODETECT;
+                                           break;
+                                        }
+
                                         mc->addr = 0;
                                         mc->addr_shift = mc->addr_size;
                                         mc->com = BM_CMD_WRITELOW;
@@ -256,6 +358,12 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
                         case BM_CMD_WRITEHIGH:       /* write command that's only available on ST M95040-W that I know of */
                                 if(mc->write_enable)
 				{
+                                        if(mc->type == MC_TYPE_AUTODETECT)
+                                        {
+                                           mc->com = BM_CMD_AUTODETECT;
+                                           break;
+                                        }
+
                                         if (mc->type == MC_TYPE_EEPROM1)
                                            mc->addr = 0x100;
                                         else
@@ -282,7 +390,6 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 		}
 	}
 	
-//        mc_write_file(mc,"test.sav");
 	return data;
 }	
 

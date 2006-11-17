@@ -92,6 +92,7 @@ void refreshAll();
 #define IDC_SAVETYPE3       184
 #define IDC_SAVETYPE4       185
 #define IDC_SAVETYPE5       186
+#define IDC_SAVETYPE6       187
 
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
