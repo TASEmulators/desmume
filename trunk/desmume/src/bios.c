@@ -948,6 +948,13 @@ u32 getCRC16(armcpu_t* cpu)
   return 1;
 }
 
+void SoundBias(armcpu_t* cpu)
+{
+     SPU_WriteLong(0x4000504, cpu->R[0] & 0x3FF);
+     //Insert Delay Statement Here
+     return;
+}
+
 u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
          bios_nop,             // 0x00
          bios_nop,             // 0x01
@@ -992,7 +999,7 @@ u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
          waitVBlankARM,        // 0x05
          wait4IRQ,             // 0x06
          wait4IRQ,             // 0x07
-         bios_nop,             // 0x08
+         SoundBias,            // 0x08
          devide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
