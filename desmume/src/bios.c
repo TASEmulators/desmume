@@ -26,6 +26,17 @@
 
 extern BOOL execute;
 
+static u16 getsinetbl[] = {
+0x0000, 0x0324, 0x0648, 0x096A, 0x0C8C, 0x0FAB, 0x12C8, 0x15E2, 
+0x18F9, 0x1C0B, 0x1F1A, 0x2223, 0x2528, 0x2826, 0x2B1F, 0x2E11, 
+0x30FB, 0x33DF, 0x36BA, 0x398C, 0x3C56, 0x3F17, 0x41CE, 0x447A, 
+0x471C, 0x49B4, 0x4C3F, 0x4EBF, 0x5133, 0x539B, 0x55F5, 0x5842, 
+0x5A82, 0x5CB3, 0x5ED7, 0x60EB, 0x62F1, 0x64E8, 0x66CF, 0x68A6, 
+0x6A6D, 0x6C23, 0x6DC9, 0x6F5E, 0x70E2, 0x7254, 0x73B5, 0x7504, 
+0x7641, 0x776B, 0x7884, 0x7989, 0x7A7C, 0x7B5C, 0x7C29, 0x7CE3, 
+0x7D89, 0x7E1D, 0x7E9C, 0x7F09, 0x7F61, 0x7FA6, 0x7FD8, 0x7FF5
+};
+
 static u16 getpitchtbl[] = {
 0x0000, 0x003B, 0x0076, 0x00B2, 0x00ED, 0x0128, 0x0164, 0x019F, 
 0x01DB, 0x0217, 0x0252, 0x028E, 0x02CA, 0x0305, 0x0341, 0x037D, 
@@ -917,6 +928,12 @@ u32 setHaltCR(armcpu_t* cpu)
      return 1;
 }
 
+u32 getSineTab(armcpu_t* cpu)
+{ 
+     cpu->R[0] = getsinetbl[cpu->R[0]];
+     return 1;
+}
+
 u32 getPitchTab(armcpu_t* cpu)
 { 
      cpu->R[0] = getpitchtbl[cpu->R[0]];
@@ -967,7 +984,7 @@ u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
          waitVBlankARM,        // 0x05
          wait4IRQ,             // 0x06
          bios_nop,             // 0x07
-         SoundBias,             // 0x08
+         bios_nop,             // 0x08
          devide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
@@ -1002,7 +1019,7 @@ u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
          waitVBlankARM,        // 0x05
          wait4IRQ,             // 0x06
          wait4IRQ,             // 0x07
-         bios_nop,             // 0x08
+         SoundBias,            // 0x08
          devide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
@@ -1020,7 +1037,7 @@ u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
          bios_nop,             // 0x17
          bios_nop,             // 0x18
          bios_nop,             // 0x19
-         bios_nop,             // 0x1A
+         getSineTab,           // 0x1A
          getPitchTab,          // 0x1B
          getVolumeTab,         // 0x1C
          bios_nop,             // 0x1D
