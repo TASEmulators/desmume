@@ -223,8 +223,9 @@ u32 armcpu_exec(armcpu_t *armcpu)
 
 BOOL armcpu_irqExeption(armcpu_t *armcpu)
 {
+        Status_Reg tmp;
 	if(armcpu->CPSR.bits.I) return FALSE;
-	Status_Reg tmp = armcpu->CPSR;
+        tmp = armcpu->CPSR;
 	armcpu_switchMode(armcpu, IRQ);
 	armcpu->R[14] = armcpu->instruct_adr + 4;
 	armcpu->SPSR = tmp;
@@ -239,8 +240,9 @@ BOOL armcpu_irqExeption(armcpu_t *armcpu)
 
 BOOL armcpu_prefetchExeption(armcpu_t *armcpu)
 {
+        Status_Reg tmp;
 	if(armcpu->CPSR.bits.I) return FALSE;
-	Status_Reg tmp = armcpu->CPSR;
+        tmp = armcpu->CPSR;
 	armcpu_switchMode(armcpu, ABT);
 	armcpu->R[14] = armcpu->instruct_adr + 4;
 	armcpu->SPSR = tmp;
