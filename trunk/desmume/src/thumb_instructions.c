@@ -1,8 +1,13 @@
-/*  Copyright (C) 2006 yopyop
+/*  
+	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    This file is part of DeSmuME
+	Code added on 18/08/2006 by shash
+		- Missing missaligned addresses correction
+			(reference in http://nocash.emubase.de/gbatek.htm#cpumemoryalignments)
+
+    This file is part of DeSmuME 
 
     DeSmuME is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -390,7 +395,7 @@ static u32 FASTCALL OP_NEG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 a = cpu->R[REG_NUM(i, 3)];
-     cpu->R[REG_NUM(i, 0)] = -a;
+     cpu->R[REG_NUM(i, 0)] = -((signed int)a);
      
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_NUM(i, 0)]);
      cpu->CPSR.bits.Z = cpu->R[REG_NUM(i, 0)] == 0;
@@ -471,7 +476,7 @@ static u32 FASTCALL OP_MVN(armcpu_t *cpu)
 static u32 FASTCALL OP_ADD_SPE(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
-     u8 Rd = (i&7) | ((i>>4)&8);
+     u32 Rd = (i&7) | ((i>>4)&8);
      cpu->R[Rd] += cpu->R[REG_POS(i, 3)];
      
      if(Rd==15)
@@ -483,7 +488,7 @@ static u32 FASTCALL OP_ADD_SPE(armcpu_t *cpu)
 static u32 FASTCALL OP_CMP_SPE(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
-     u8 Rn = (i&7) | ((i>>4)&8);
+     u32 Rn = (i&7) | ((i>>4)&8);
      u32 tmp = cpu->R[Rn] -cpu->R[REG_POS(i, 3)];
      
      cpu->CPSR.bits.N = BIT31(tmp);
@@ -497,7 +502,7 @@ static u32 FASTCALL OP_CMP_SPE(armcpu_t *cpu)
 static u32 FASTCALL OP_MOV_SPE(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
-     u8 Rd = (i&7) | ((i>>4)&8);
+     u32 Rd = (i&7) | ((i>>4)&8);
      cpu->R[Rd] = cpu->R[REG_POS(i, 3)];
      
      if(Rd==15)
@@ -531,11 +536,11 @@ static u32 FASTCALL OP_BLX_THUMB(armcpu_t *cpu)
 
 static u32 FASTCALL OP_LDR_PCREL(armcpu_t *cpu)
 {
-     u32 adr = (cpu->R[15]&0xFFFFFFFC) + ((cpu->instruction&0xFF)<<2);
+	u32 adr = (cpu->R[15]&0xFFFFFFFC) + ((cpu->instruction&0xFF)<<2);
      
-     cpu->R[REG_NUM(cpu->instruction, 8)] = MMU_readWord(cpu->proc_ID, adr);
+    cpu->R[REG_NUM(cpu->instruction, 8)] = MMU_readWord(cpu->proc_ID, adr);
                
-     return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
+    return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
 
 static u32 FASTCALL OP_STR_REG_OFF(armcpu_t *cpu)
@@ -577,8 +582,12 @@ static u32 FASTCALL OP_LDRSB_REG_OFF(armcpu_t *cpu)
 static u32 FASTCALL OP_LDR_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
-     u32 adr = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
-     cpu->R[REG_NUM(i, 0)] = MMU_readWord(cpu->proc_ID, adr);
+     u32 adr = (cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)]);
+	 u32 tempValue = MMU_readWord(cpu->proc_ID, adr&0xFFFFFFFC);
+
+	 adr = (adr&3)*8;
+	 tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
+	 cpu->R[REG_NUM(i, 0)] = tempValue;
                
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -623,7 +632,10 @@ static u32 FASTCALL OP_LDR_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>4)&0x7C);
-     cpu->R[REG_NUM(i, 0)] = MMU_readWord(cpu->proc_ID, adr);
+     u32 tempValue = MMU_readWord(cpu->proc_ID, adr&0xFFFFFFFC);
+	 adr = (adr&3)*8;
+	 tempValue = (tempValue>>adr) | (tempValue<<(32-adr));
+	 cpu->R[REG_NUM(i, 0)] = tempValue;
                
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -632,7 +644,7 @@ static u32 FASTCALL OP_STRB_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>6)&0x1F);
-     MMU_writeByte(cpu->proc_ID, adr, cpu->R[REG_NUM(i, 0)]);
+     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_NUM(i, 0)]);
                
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -650,7 +662,7 @@ static u32 FASTCALL OP_STRH_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 3)] + ((i>>5)&0x3E);
-     MMU_writeHWord(cpu->proc_ID, adr, cpu->R[REG_NUM(i, 0)]);
+     MMU_writeHWord(cpu->proc_ID, adr, (u16)cpu->R[REG_NUM(i, 0)]);
                
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -677,7 +689,7 @@ static u32 FASTCALL OP_LDR_SPREL(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] + ((i&0xFF)<<2);
-     cpu->R[REG_NUM(i, 8)] = MMU_readWord(cpu->proc_ID, adr);
+	 cpu->R[REG_NUM(i, 8)] = MMU_readWord(cpu->proc_ID, adr);
                
      return 3 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -716,8 +728,7 @@ static u32 FASTCALL OP_PUSH(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] - 4;
-     u32 c = 0;
-     u32 j;
+     u32 c = 0, j;
      
      for(j = 0; j<8; ++j)
           if(BIT_N(i, 7-j))
@@ -735,8 +746,7 @@ static u32 FASTCALL OP_PUSH_LR(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13] - 4;
-     u32 c = 0;
-     u32 j;
+     u32 c = 0, j;
      
      MMU_writeWord(cpu->proc_ID, adr, cpu->R[14]);
      c += MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -758,8 +768,7 @@ static u32 FASTCALL OP_POP(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13];
-     u32 c = 0;
-     u32 j;
+     u32 c = 0, j;
 
      for(j = 0; j<8; ++j)
           if(BIT_N(i, j))
@@ -777,8 +786,7 @@ static u32 FASTCALL OP_POP_PC(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13];
-     u32 c = 0;
-     u32 j;
+     u32 c = 0, j;
 
      for(j = 0; j<8; ++j)
           if(BIT_N(i, j))
@@ -809,8 +817,7 @@ static u32 FASTCALL OP_STMIA_THUMB(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 8)];
-     u32 c = 0;
-     u32 j;
+     u32 c = 0, j;
 
      for(j = 0; j<8; ++j)
           if(BIT_N(i, j))
@@ -827,8 +834,7 @@ static u32 FASTCALL OP_LDMIA_THUMB(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_NUM(i, 8)];
-     u32 c = 0;
-     u32 j;
+     u32 c = 0, j;
 
      for(j = 0; j<8; ++j)
           if(BIT_N(i, j))
