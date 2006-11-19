@@ -49,12 +49,14 @@ void FIFOAdd(FIFO * fifo, u32 v)
        
 u32 FIFOValue(FIFO * fifo)
 {
+        u32 v;
+
 	if(fifo->empty)
         {
         	fifo->error = TRUE;
                 return 0;
         }
-        u32 v = fifo->data[fifo->begin];
+        v = fifo->data[fifo->begin];
         fifo->begin = (fifo->begin + 1)& 0x1FFF;
         fifo->empty = (fifo->begin == fifo->end);
         return v;
