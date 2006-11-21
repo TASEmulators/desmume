@@ -89,4 +89,53 @@ static INLINE void T1WriteLong(u8 * mem, u32 addr, u32 val)
 #endif
 }
 
+/* Type 2 Memory, faster for word (16 bits) accesses */
+
+static INLINE u8 T2ReadByte(u8 * mem, u32 addr)
+{
+#ifdef WORDS_BIGENDIAN
+   return mem[addr ^ 1];
+#else
+   return mem[addr];
+#endif
+}
+
+static INLINE u16 T2ReadWord(u8 * mem, u32 addr)
+{
+   return *((u16 *) (mem + addr));
+}
+
+static INLINE u32 T2ReadLong(u8 * mem, u32 addr)
+{
+#ifdef WORDS_BIGENDIAN
+   return *((u16 *) (mem + addr + 2)) << 16 | *((u16 *) (mem + addr));
+#else
+   return *((u32 *) (mem + addr));
+#endif
+}
+
+static INLINE void T2WriteByte(u8 * mem, u32 addr, u8 val)
+{
+#ifdef WORDS_BIGENDIAN
+   mem[addr ^ 1] = val;
+#else
+   mem[addr] = val;
+#endif
+}
+
+static INLINE void T2WriteWord(u8 * mem, u32 addr, u16 val)
+{
+   *((u16 *) (mem + addr)) = val;
+}
+
+static INLINE void T2WriteLong(u8 * mem, u32 addr, u32 val)
+{
+#ifdef WORDS_BIGENDIAN
+   *((u16 *) (mem + addr + 2)) = val >> 16;
+   *((u16 *) (mem + addr)) = val & 0xFFFF;
+#else
+   *((u32 *) (mem + addr)) = val;
+#endif
+}
+
 #endif

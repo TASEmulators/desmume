@@ -92,7 +92,7 @@ struct _GPU
        u8 sprBMPBlock;
        u8 sprBMPMode;
        
-       void (*spriteRender)(GPU * gpu, u16 l, u16 * dst, u8 * prioTab);
+       void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 
 extern u16 GPU_screen[2*256*192];
@@ -101,16 +101,16 @@ GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
 void GPU_DeInit(GPU *);
 
-void textBG(GPU * gpu, u8 num, u16 * DST);
-void rotBG(GPU * gpu, u8 num, u16 * DST);
-void extRotBG(GPU * gpu, u8 num, u16 * DST);
-void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab);
-void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab);
+void textBG(GPU * gpu, u8 num, u8 * DST);
+void rotBG(GPU * gpu, u8 num, u8 * DST);
+void extRotBG(GPU * gpu, u8 num, u8 * DST);
+void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
+void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 
 extern short sizeTab[4][4][2];
 extern size sprSizeTab[4][4];
 extern s8 mode2type[8][4];
-extern void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u16 * DST);
+extern void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u8 * DST);
 
 typedef struct {
 	GPU * gpu;
@@ -127,8 +127,10 @@ void Screen_DeInit(void);
 static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
      GPU * gpu = screen->gpu;
-     u16 * dst =  GPU_screen + (screen->offset + l) * 256;
-     u16 spr[256];
+     //u16 * dst =  GPU_screen + (screen->offset + l) * 256;
+     u8 * dst =  GPU_screen + (screen->offset + l) * 256;
+     //u16 spr[256];
+     u8 spr[512];
      u8 sprPrio[256];
      u8 bgprio;
      int i;
@@ -139,11 +141,12 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
       * I'm really not sure it's correct.
       */
      if (gpu->lcd == 0) {
-        u32 mainlcdcnt = ((u32 *)ARM9Mem.ARM9_REG)[0];
-        int ii = l*256;
-        if ((mainlcdcnt&0x10000)==0) {
+        u32 mainlcdcnt = T1ReadLong(ARM9Mem.ARM9_REG, 0);
+        int ii = l * 256;
+
+        if ((mainlcdcnt & 0x10000) == 0) {
            for (i=0; i<256; i++) {
-               ((u16 *)dst)[i] = ((u16 *)ARM9Mem.ARM9_LCD)[ii];
+	       T2WriteWord(dst, i << 1, T1ReadWord(ARM9Mem.ARM9_LCD, ii << 1));
                ii++;
            }
            return;
@@ -155,8 +158,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      for(i8 = 0; i8< 128; ++i8)
      {
-          ((u32 *)dst)[i8] = c;
-          ((u32 *)spr)[i8] = c;
+	  T2WriteLong(dst, i8 << 2, c);
+	  T2WriteLong(spr, i8 << 2, c);
 	  T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
      }
      
@@ -170,8 +173,9 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
      {
-          for(i16 = 0; i16 < 128; ++i16)
-               ((u32 *)dst)[i16] = ((u32 *)spr)[i16];
+          for(i16 = 0; i16 < 128; ++i16) {
+	       T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
+	  }
      }
      
      for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
@@ -180,7 +184,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
           bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
           for(i16 = 0; i16 < 256; ++i16)
                if(bgprio>=sprPrio[i16]) 
-                    dst[i16] = spr[i16];
+		    T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
      }
 }
  

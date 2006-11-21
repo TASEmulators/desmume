@@ -66,11 +66,11 @@ s8 mode2type[8][4] =
       {0, 0, 0, 0}
 };
 
-void lineText(GPU * gpu, u8 num, u16 l, u16 * DST);
-void lineRot(GPU * gpu, u8 num, u16 l, u16 * DST);
-void lineExtRot(GPU * gpu, u8 num, u16 l, u16 * DST);
+void lineText(GPU * gpu, u8 num, u16 l, u8 * DST);
+void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST);
+void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST);
 
-void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u16 * DST)=
+void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u8 * DST)=
 {
      {lineText, lineText, lineText, lineText},     //0
      {lineText, lineText, lineText, lineRot},      //1
@@ -526,14 +526,14 @@ void GPU_setPCPD(GPU * gpu, u8 num, u32 v)
 	gpu->BGPD[num] = (s16)(v>>16);
 }
 
-INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG)
+INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 {
 	u32 bgprop = gpu->BGProp[num];
 	u16 lg = gpu->BGSize[num][0];
 	u16 ht = gpu->BGSize[num][1];
 	u16 tmp = ((Y&(ht-1))>>3);
 	u8 * map = gpu->BG_map_ram[num] + (tmp&31) * 64;
-	u16 *dst = DST;
+	u8 *dst = DST;
 
 	if(tmp>31)
 	{
@@ -580,12 +580,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 				line += 3 - ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-					if((*line)>>4) *dst = T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
-					//else *dst = 0x7FFF;
-					dst++; x++; xoff++;
-					if((*line)&0xF) *dst = T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
-					//else *dst = 0x7FFF;
-					dst++; x++; xoff++;
+					if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+					dst += 2; x++; xoff++;
+					if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+					dst += 2; x++; xoff++;
 					line--;
 				}
 			}
@@ -594,12 +592,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 				line += ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-					if((*line)&0xF) *dst = T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
-					//else *dst = 0x7FFF;
-					dst++; x++; xoff++;
-					if((*line)>>4) *dst = T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1);
-					//else *dst = 0x7FFF;
-					dst++; x++; xoff++;
+					if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+					dst += 2; x++; xoff++;
+					if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+					dst += 2; x++; xoff++;
 					line++;
 				}
 			}
@@ -633,9 +629,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 					line += (7 - (xoff&7));
 					for(; x < xfin; ++x, ++xoff)
 					{
-							if(*line) *dst = T1ReadWord(pal, *line << 1);
-							//else *dst = 0x7FFF;
-							dst++;
+							if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
+							dst += 2;
 							line--;
 					}
 			}
@@ -644,9 +639,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 					line += (xoff&7);
 					for(; x < xfin; ++x, ++xoff)
 					{
-							if(*line) *dst = T1ReadWord(pal, *line << 1);
-							//else *dst = 0x7FFF;
-							dst++;
+							if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
+							dst += 2;
 							line++;
 					}
 			}
@@ -681,9 +675,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 			line += (7 - (xoff&7));
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) *dst = T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1);
-				//else *dst = 0x7FFF;
-				dst++;
+				if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
+				dst += 2;
 				line--;
 			}
 		}
@@ -692,16 +685,15 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u16 * DST, u16 X, u16 Y, u16 LG
 			line += (xoff&7);
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) *dst = T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1);
-				//else *dst = 0x7FFF;
-				dst++;
+				if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
+				dst += 2;
 				line++;
 			}
 		}
 	}
 }
 
-INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
+INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
      u32 bgprop = gpu->BGProp[num];
      
@@ -721,7 +713,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s1
      
      u8 * map = gpu->BG_map_ram[num];
      u8 * tile = (u8 *)gpu->BG_tile_ram[num];
-     u16 * dst = DST;
+     u8 * dst = DST;
      u8 mapinfo;
      u8 coul;
 
@@ -745,15 +737,15 @@ INLINE void rotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s1
                mapinfo = map[(auxX>>3) + ((auxY>>3) * lgmap)];
                coul = tile[mapinfo*64 + ((auxY&7)<<3) + (auxX&7)];
                if(coul)
-		    *dst = T1ReadWord(pal, coul << 1);
+		    T2WriteWord(dst, 0, T1ReadWord(pal, coul << 1));
           }
-          ++dst;
+          dst += 2;
           x += dx;
           y += dy;
      }
 }
 
-INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
+INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
      u32 bgprop = gpu->BGProp[num];
      
@@ -771,7 +763,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
      u16 lgmap = (lg>>3);
      
      u8 * tile = (u8 *)gpu->BG_tile_ram[num];
-     u16 * dst = DST;
+     u8 * dst = DST;
      u16 mapinfo;
      u8 coul;
 
@@ -803,11 +795,9 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                          u16 y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
                          coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
                          if(coul)
-                              *dst = T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1);
-                         //else *dst = 0x7FFF;                    
+			      T2WriteWord(dst, 0, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1));
                     }
-                    //else *dst = 0x7FFF;
-                    ++dst;
+                    dst += 2;
                     x += dx;
                     y += dy;
                }
@@ -831,11 +821,9 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                     {
                          mapinfo = map[auxX + auxY * lg];
                          if(mapinfo)
-                              *dst = T1ReadWord(pal, mapinfo << 1);
-                         //else *dst = 0x7FFF;
+			      T2WriteWord(dst, 0, T1ReadWord(pal, mapinfo << 1));
                     }
-                    //else *dst = 0x7FFF;
-                    ++dst;
+                    dst += 2;
                     x += dx;
                     y += dy;
                }
@@ -858,11 +846,9 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
                     {
 			 mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
                          if(mapinfo)
-                              *dst = mapinfo;
-                         //else *dst = 0x7FFF;
+		              T2WriteWord(dst, 0, mapinfo);
                     }
-                    //else *dst = 0x7FFF;
-                    ++dst;
+                    dst += 2;
                     x += dx;
                     y += dy;
                }
@@ -871,12 +857,12 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u16 * DST, u16 H, s32 X, s32 Y, s16 PA,
      }
 }
 
-void lineText(GPU * gpu, u8 num, u16 l, u16 * DST)
+void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
 	renderline_textBG(gpu, num, DST, gpu->BGSX[num], l + gpu->BGSY[num], 256);
 }
 
-void lineRot(GPU * gpu, u8 num, u16 l, u16 * DST)
+void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
      rotBG2(gpu, num, DST, l, 
               gpu->BGX[num],
@@ -888,7 +874,7 @@ void lineRot(GPU * gpu, u8 num, u16 l, u16 * DST)
               256);
 }
 
-void lineExtRot(GPU * gpu, u8 num, u16 l, u16 * DST)
+void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
      extRotBG2(gpu, num, DST, l, 
               gpu->BGX[num],
@@ -900,7 +886,7 @@ void lineExtRot(GPU * gpu, u8 num, u16 l, u16 * DST)
               256);
 }
 
-void textBG(GPU * gpu, u8 num, u16 * DST)
+void textBG(GPU * gpu, u8 num, u8 * DST)
 {
 	u32 i;
 	for(i = 0; i < gpu->BGSize[num][1]; ++i)
@@ -909,14 +895,14 @@ void textBG(GPU * gpu, u8 num, u16 * DST)
 	}
 }
 
-void rotBG(GPU * gpu, u8 num, u16 * DST)
+void rotBG(GPU * gpu, u8 num, u8 * DST)
 {
      u32 i;
      for(i = 0; i < gpu->BGSize[num][1]; ++i)
           rotBG2(gpu, num, DST + i*gpu->BGSize[num][0], i, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
 }
 
-void extRotBG(GPU * gpu, u8 num, u16 * DST)
+void extRotBG(GPU * gpu, u8 num, u8 * DST)
 {
      u32 i;
      for(i = 0; i < gpu->BGSize[num][1]; ++i)
@@ -925,7 +911,7 @@ void extRotBG(GPU * gpu, u8 num, u16 * DST)
 
 #define nbShow 128
 
-void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
+void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
      OAM * aux = gpu->oam + (nbShow-1);// + 127;
      
@@ -942,7 +928,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
           size sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
           
           u32 lg = sprSize.x;
-          
+
           if(sprY>192)
                sprY = (s32)((s8)(aux->attr0 & 0xFF));
 
@@ -980,10 +966,9 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                          u8 c = src[x];
                          if((c>>15) && (prioTab[sprX]>=prio))
                          {
-                              dst[sprX] = c;
+			      T2WriteByte(dst, sprX << 1, c);
                               prioTab[sprX] = prio;
                          }
-                         //else dst[sprX] = 0x7FFF;
                     }
                     continue;
                }
@@ -992,11 +977,10 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u16 c = T1ReadWord(src, x << 1);
                     if((c>>15) && (prioTab[sprX]>=prio))
                      {
-                          dst[sprX] = c;
+			  T2WriteWord(dst, sprX << 1, c);
                           prioTab[sprX] = prio;
                      }
-                     //else dst[sprX] = 0x7FFF;
-               }//
+               }
                continue;
           }
           
@@ -1005,7 +989,7 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	       u8 * pal;
 	       u16 i;
-               
+
                if(gpu->prop&(1<<31))
                                                 pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x200);
                else
@@ -1019,10 +1003,9 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                          u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
                          if((c) && (prioTab[sprX]>=prio))
                          {
-                              dst[sprX] = T1ReadWord(pal, c << 1);
+			      T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
                               prioTab[sprX] = prio;
                          }
-                         //else dst[sprX] = 0x7FFF;
                     }
                     continue;
                }
@@ -1033,10 +1016,9 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                      
                      if((c) && (prioTab[sprX]>=prio))
                      {
-                          dst[sprX] = T1ReadWord(pal, c << 1);
+			  T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
                           prioTab[sprX] = prio;
                      }
-                     //else dst[sprX] = 0x7FFF;
                }  
                continue;
           }
@@ -1051,14 +1033,14 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((sprSize.x-x-lg)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX+lg-1] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1068,14 +1050,14 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((x+lg-1)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX+lg-1] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1093,18 +1075,16 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-                    dst[sprX] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
-                    //else dst[sprX] = 0x7FFF;
                      ++sprX;
                      
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-                    dst[sprX] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
-                    //else dst[sprX] = 0x7FFF;
                     ++sprX;
                }
                continue;
@@ -1117,24 +1097,22 @@ void sprite1D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                      
                if((c&0xF)&&(prioTab[sprX]>=prio))
                {
-                    dst[sprX] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
-               //else dst[sprX] = 0x7FFF;
                ++sprX;
                
                if((c>>4)&&(prioTab[sprX]>=prio))
                {
-                    dst[sprX] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
-               //else dst[sprX] = 0x7FFF;
                ++sprX;
           }  
      }
 }
 
-void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
+void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
      u16 i;
      OAM * aux = gpu->oam + (nbShow-1);// + 127;
@@ -1187,10 +1165,9 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
 			 u8 c = src[x << 1];
                          if((c>>15) && (prioTab[sprX]>=prio))
                          {
-                              dst[sprX] = c;
+			      T2WriteByte(dst, sprX << 1, c);
                               prioTab[sprX] = prio;
                          }
-                         //else dst[sprX] = 0x7FFF;
                     }
                     continue;
                }
@@ -1199,10 +1176,9 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u16 c = T1ReadWord(src, x << 1);
                     if((c>>15) && (prioTab[sprX]>=prio))
                      {
-                          dst[sprX] = c;
+			  T2WriteWord(dst, sprX << 1, c);
                           prioTab[sprX] = prio;
                      }
-                     //else dst[sprX] = 0x7FFF;
                }//
                continue;
           }
@@ -1221,10 +1197,9 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                          u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
                          if((c) && (prioTab[sprX]>=prio))
                          {
-                              dst[sprX] = T1ReadWord(pal, c << 1);
+			      T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
                               prioTab[sprX] = prio;
                          }
-                         //else dst[sprX] = 0x7FFF;
                     }
                     continue;
                }
@@ -1235,10 +1210,9 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                      
                      if((c) && (prioTab[sprX]>=prio))
                      {
-                          dst[sprX] = T1ReadWord(pal, c << 1);
+			  T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
                           prioTab[sprX] = prio;
                      }
-                     //else dst[sprX] = 0x7FFF;
                }  
                continue;
           }
@@ -1252,14 +1226,14 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((sprSize.x-x-lg)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX+lg-1] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1269,14 +1243,14 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((x+lg-1)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-                         dst[sprX+lg-1] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1294,18 +1268,16 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                     u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-                    dst[sprX] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
-                    //else dst[sprX] = 0x7FFF;
                      ++sprX;
                      
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-                    dst[sprX] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
-                    //else dst[sprX] = 0x7FFF;
                     ++sprX;
                }
                continue;
@@ -1318,18 +1290,16 @@ void sprite2D(GPU * gpu, u16 l, u16 * dst, u8 * prioTab)
                      
                if((c&0xF)&&(prioTab[sprX]>=prio))
                {
-                    dst[sprX] = T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
-               //else dst[sprX] = 0x7FFF;
                ++sprX;
                
                if((c>>4)&&(prioTab[sprX]>=prio))
                {
-                    dst[sprX] = T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1);
+		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
-               //else dst[sprX] = 0x7FFF;
                ++sprX;
           }  
      }
