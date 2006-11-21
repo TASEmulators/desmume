@@ -209,8 +209,7 @@ void list_files(char *fpath) {
 
 			if (numFiles==MAXFILES-1) break;
 
-			// FIXME: Unix filenames can start with a .
-			if ((entry.flags & FS_IS_DIR) && (fname[0] != '.')) {
+			if ((entry.flags & FS_IS_DIR) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) {
 				sprintf(SubDir, "%s%c%s", fpath, FS_SEPARATOR, fname);
 				list_files(SubDir);
 			}
