@@ -147,8 +147,6 @@ int SPU_Init(int coreid, int buffersize)
 
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-
 void SPU_Pause(int pause)
 {
    if(pause)
@@ -1084,6 +1082,7 @@ void (*SPU_ChanUpdate[4][3])(channel_struct *chan) = {
 void SPU_MixAudio(int length)
 {
    channel_struct *chan;
+   u8 vol;
    int i;
 
    memset(SPU->sndbuf, 0, length*4*2);
@@ -1091,6 +1090,8 @@ void SPU_MixAudio(int length)
    // If Master Enable isn't set, don't output audio
    if (!(MMU.ARM7_REG[0x501] & 0x80))
       return;
+
+   vol = MMU.ARM7_REG[0x500] & 0x7F;
 
    for(chan = &(SPU->chan[0]); chan < &(SPU->chan[16]); chan++)
    {
@@ -1112,6 +1113,9 @@ void SPU_MixAudio(int length)
    // convert from 32-bit->16-bit
    for (i = 0; i < length*2; i++)
    {
+      // Apply Master Volume
+      SPU->sndbuf[i] = SPU->sndbuf[i] * vol / 127;
+
       if (SPU->sndbuf[i] > 0x7FFF)
          SPU->outbuf[i] = 0x7FFF;
       else if (SPU->sndbuf[i] < -0x8000)
