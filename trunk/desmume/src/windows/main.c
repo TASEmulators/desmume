@@ -101,6 +101,9 @@ DWORD WINAPI run( LPVOID lpParameter)
      u64 diffticks=0;
      u32 framecount=0;
      u64 onesecondticks=0;
+     int fps=0;
+     int fpsframecount=0;
+     u64 fpsticks=0;
 
      //CreateBitmapIndirect(&bmi);
      memset(&bmi, 0, sizeof(bmi));
@@ -137,6 +140,16 @@ DWORD WINAPI run( LPVOID lpParameter)
                   SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
                   //SetDIBitsToDevice(hdc, 0, 0, 256, 192, 0, 0, 0, 192, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
                   #endif
+                  fpsframecount++;
+                  QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
+                  if(curticks >= fpsticks + freq)
+                  {
+                     fps = fpsframecount;
+                     sprintf(txt,"DeSmuME %d", fps);
+                     SetWindowText(hwnd, txt);
+                     fpsframecount = 0;
+                     QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
+                  }
 
                   framesskipped = 0;
 
