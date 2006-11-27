@@ -2,6 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+    Copyright (C) 2006 Theo Berkau
+
     This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
@@ -80,7 +82,10 @@ struct _GPU
 
        u8 lcd;
 		 u8 core;
-       
+
+       u8 dispMode;
+       u8 vramBlock;
+
        u8 nbBGActif;
        u8 BGIndex[4];
        u8 ordre[4];
@@ -137,20 +142,33 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      u8 i8;
      u16 i16;
 
-     /* FIXME I've just quickly added mic's framebuffer patch here.
-      * I'm really not sure it's correct.
-      */
-     if (gpu->lcd == 0) {
-        u32 mainlcdcnt = T1ReadLong(ARM9Mem.ARM9_REG, 0);
-        int ii = l * 256;
-
-        if ((mainlcdcnt & 0x10000) == 0) {
-           for (i=0; i<256; i++) {
-	       T2WriteWord(dst, i << 1, T1ReadWord(ARM9Mem.ARM9_LCD, ii << 1));
-               ii++;
+     // This could almost be changed to use function pointers
+     switch (gpu->dispMode)
+     {
+        case 1: // Display BG and OBJ layers
+           break;
+        case 0: // Display Off(Display white)
+        {
+           for (i=0; i<256; i++)
+           {
+              T2WriteWord(dst, i << 1, 0x7FFF);
            }
            return;
         }
+        case 2: // Display framebuffer
+        {
+           int ii = l * 256 * 2;
+           for (i=0; i<(256 * 2); i+=2)
+           {
+              u8 * vram = ARM9Mem.ARM9_LCD + (gpu->vramBlock * 0x20000);
+
+              T2WriteWord(dst, i, T1ReadWord(vram, ii));
+              ii+=2;
+           }
+           return;
+        }
+        case 3: // Display from Main RAM(FIX ME)
+           return;
      }
      
      u32 c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);

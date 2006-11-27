@@ -2,6 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+    Copyright (C) 2006 Theo Berkau
+
     This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
@@ -123,11 +125,30 @@ void GPU_DeInit(GPU * gpu)
      free(gpu);
 }
 
-/* NOTICE: the name of function is unclear, but it's about writing in DISPLAY_CR */
+/* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
 	gpu->prop = p;
-	
+
+        gpu->dispMode = p >> 16;
+        if (gpu->lcd == 0)
+           gpu->dispMode &= 0x3;
+        else
+           gpu->dispMode &= 0x1;
+        switch (gpu->dispMode)
+        {
+           case 0: // Display Off
+              return;
+           case 1: // Display BG and OBJ layers
+              break;
+           case 2: // Display framebuffer
+              gpu->vramBlock = (p >> 18) & 0x3;
+              return;
+           case 3: // Display from Main RAM
+              LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
+              return;
+        }
+
 	gpu->nbBGActif = 0;
 	if(p & DISPLAY_SPR_1D_LAYOUT)
 	{
@@ -1127,7 +1148,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
           size sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
           
           u32 lg = sprSize.x;
-          
+
           if(sprY>192)
                sprY = (s32)((s8)(aux->attr0 & 0xFF));
 
