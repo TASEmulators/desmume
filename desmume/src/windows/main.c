@@ -540,7 +540,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             ZeroMemory(&ofn, sizeof(ofn));
                             ofn.lStructSize = sizeof(ofn);
                             ofn.hwndOwner = hwnd;
-                            ofn.lpstrFilter = "Nds file (*.nds)\0*.nds\0Any file (*.*)\0*.*\0\0";
+                            ofn.lpstrFilter = "NDS ROM file (*.nds)\0*.nds\0NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0Any file (*.*)\0*.*\0\0";
                             ofn.nFilterIndex = 1;
                             ofn.lpstrFile =  filename;
                             ofn.nMaxFile = MAX_PATH;
