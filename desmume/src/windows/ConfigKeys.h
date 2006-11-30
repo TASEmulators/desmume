@@ -18,7 +18,7 @@ extern DWORD ds_select;
 extern DWORD ds_start;
 extern DWORD ds_debug;
 
-char *get_path();
+void GetINIPath(char *initpath);
 void  ReadConfig(void);
 
 BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);

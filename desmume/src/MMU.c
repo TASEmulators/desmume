@@ -43,10 +43,6 @@
 //#define LOG_DMA2
 //#define LOG_DIV
 
-extern BOOL execute;
-extern BOOL click;
-extern NDSSystem nds;
-
 char szRomPath[512];
 
 MMU_struct MMU;

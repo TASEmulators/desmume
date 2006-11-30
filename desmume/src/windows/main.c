@@ -24,6 +24,7 @@
 //#define RENDER3D
 
 #include <windows.h>
+#include <commctrl.h>
 #include <stdio.h>
 #include "CWindow.h"
 #include "../MMU.h"
@@ -64,7 +65,8 @@ HWND hwnd;
 HDC  hdc;
 HINSTANCE hAppInst;  
 
-BOOL execute = FALSE;
+volatile BOOL execute = FALSE;
+volatile BOOL paused = TRUE;
 u32 glock = 0;
 
 BOOL click = FALSE;
@@ -76,6 +78,10 @@ HANDLE runthread=INVALID_HANDLE_VALUE;
 
 const DWORD tabkey[48]={0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,VK_SPACE,VK_UP,VK_DOWN,VK_LEFT,VK_RIGHT,VK_TAB,VK_SHIFT,VK_DELETE,VK_INSERT,VK_HOME,VK_END,0x0d};
 DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_start,ds_debug;
+static char IniName[MAX_PATH];
+int sndcoretype=SNDCORE_DIRECTX;
+int sndbuffersize=735*4;
+int sndvolume=100;
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
@@ -83,6 +89,9 @@ SoundInterface_struct *SNDCoreList[] = {
 &SNDDIRECTX,
 NULL
 };
+
+LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
+                                      LPARAM lParam);
 
 DWORD WINAPI run( LPVOID lpParameter)
 {
@@ -209,6 +218,7 @@ DWORD WINAPI run( LPVOID lpParameter)
                CWindow_RefreshALL();
                Sleep(0);
           }
+          paused = TRUE;
           Sleep(500);
      }
      return 1;
@@ -218,10 +228,12 @@ void NDS_Pause()
 {
    execute = FALSE;
    SPU_Pause(1);
+   while (!paused) {}
 }
 
 void NDS_UnPause()
 {
+   paused = FALSE;
    execute = TRUE;
    SPU_Pause(0);
 }
@@ -276,13 +288,21 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
+    GetINIPath(IniName);
+
     NDS_Init();
-    
-    if (SPU_ChangeSoundCore(SNDCORE_DIRECTX, 735 * 4) != 0)
+
+    sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
+    sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
+
+    if (SPU_ChangeSoundCore(sndcoretype, sndbuffersize) != 0)
     {
        MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
        return messages.wParam;
     }
+
+    sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
+    SPU_SetVolume(sndvolume);
     
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
     
@@ -329,10 +349,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              return 0;
         case WM_DESTROY:
              NDS_Pause();
+             finished = TRUE;
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
-                finished = TRUE;
                 if (WaitForSingleObject(runthread,INFINITE) == WAIT_TIMEOUT)
                 {
                    // Couldn't close thread cleanly
@@ -347,10 +367,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              return 0;
         case WM_CLOSE:
              NDS_Pause();
+             finished = TRUE;
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
-                finished = TRUE;
                 if (WaitForSingleObject(runthread,INFINITE) == WAIT_TIMEOUT)
                 {
                    // Couldn't close thread cleanly
@@ -657,6 +677,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             NDS_UnPause();
                        }
                   return 0;
+                  case IDM_SOUNDSETTINGS:
+                  {
+                      DialogBox(GetModuleHandle(NULL), "SoundSettingsDlg", hwnd, (DLGPROC)SoundSettingsDlgProc);                    
+                  }
+                  return 0;
                   case IDM_GAME_INFO:
                        {
                             CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
@@ -893,3 +918,108 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
     return 0;
 }
+
+LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
+                                      LPARAM lParam)
+{
+   static timerid=0;
+
+   switch (uMsg)
+   {
+      case WM_INITDIALOG:
+      {
+         int i;
+         char tempstr[MAX_PATH];
+
+         // Setup Sound Core Combo box
+         SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_RESETCONTENT, 0, 0);
+         SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (long)"None");
+
+         for (i = 1; SNDCoreList[i] != NULL; i++)
+            SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (long)SNDCoreList[i]->Name);
+
+         // Set Selected Sound Core
+         for (i = 0; SNDCoreList[i] != NULL; i++)
+         {
+            if (sndcoretype == SNDCoreList[i]->id)
+               SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_SETCURSEL, i, 0);
+         }
+
+         // Setup Sound Buffer Size Edit Text
+         sprintf(tempstr, "%d", sndbuffersize);
+         SetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr);
+
+         // Setup Volume Slider
+         SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETRANGE, 0, MAKELONG(0, 100));
+
+         // Set Selected Volume
+         SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETPOS, TRUE, sndvolume);
+
+         timerid = SetTimer(hDlg, 1, 500, NULL);
+         return TRUE;
+      }
+      case WM_TIMER:
+      {
+         if (timerid == wParam)
+         {
+            int setting;
+            setting = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);
+            SPU_SetVolume(setting);
+            break;
+         }
+         break;
+      }
+      case WM_COMMAND:
+      {
+         switch (LOWORD(wParam))
+         {
+            case IDOK:
+            {
+               char tempstr[MAX_PATH];
+
+               EndDialog(hDlg, TRUE);
+
+               NDS_Pause();
+
+               // Write Sound core type
+               sndcoretype = SNDCoreList[SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_GETCURSEL, 0, 0)]->id;
+               sprintf(tempstr, "%d", sndcoretype);
+               WritePrivateProfileString("Sound", "SoundCore", tempstr, IniName);
+
+               // Write Sound Buffer size
+               GetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr, 6);
+               sscanf(tempstr, "%d", &sndbuffersize);
+               WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
+
+               SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
+
+               // Write Volume
+               sndvolume = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);
+               sprintf(tempstr, "%d", sndvolume);
+               WritePrivateProfileString("Sound", "Volume", tempstr, IniName);
+               SPU_SetVolume(sndvolume);
+               NDS_UnPause();
+
+               return TRUE;
+            }
+            case IDCANCEL:
+            {
+               EndDialog(hDlg, FALSE);
+               return TRUE;
+            }
+            default: break;
+         }
+
+         break;
+      }
+      case WM_DESTROY:
+      {
+         if (timerid != 0)
+            KillTimer(hDlg, timerid);
+         break;
+      }
+   }
+
+   return FALSE;
+}
+

@@ -157,6 +157,14 @@ void SPU_Pause(int pause)
 
 //////////////////////////////////////////////////////////////////////////////
 
+void SPU_SetVolume(int volume)
+{
+   if (SNDCore)
+      SNDCore->SetVolume(volume);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 void SPU_Reset(void)
 {
    int i;
@@ -1213,7 +1221,7 @@ void SNDDummySetVolume(int volume)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// File Write Interface
+// WAV Write Interface
 //////////////////////////////////////////////////////////////////////////////
 
 int SNDFileInit(int buffersize);
@@ -1226,7 +1234,7 @@ void SNDFileSetVolume(int volume);
 
 SoundInterface_struct SNDFile = {
 SNDCORE_FILEWRITE,
-"File Write Sound Interface",
+"WAV Write Sound Interface",
 SNDFileInit,
 SNDFileDeInit,
 SNDFileUpdateAudio,

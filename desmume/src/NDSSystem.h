@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-extern BOOL execute;
+extern volatile BOOL execute;
 extern BOOL click;
 
 //#define LOG_ARM9

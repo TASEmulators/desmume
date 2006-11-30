@@ -63,8 +63,9 @@ void refreshAll();
 #define IDM_SBG2            127
 #define IDM_SBG3            128
 #define IDM_OAM             129
-#define IDM_PRINTSCREEN          140
-#define IDM_QUICK_PRINTSCREEN    141
+#define IDM_PRINTSCREEN     140
+#define IDM_QUICK_PRINTSCREEN 141
+#define IDM_SOUNDSETTINGS   142
 
 #define IDM_STATE_LOAD      150
 #define IDM_STATE_SAVE      151
@@ -178,4 +179,9 @@ void refreshAll();
 #define IDC_PROP0               908
 #define IDC_PROP1               909
 #define IDC_OAM_BOX             910
+
+#define IDC_SOUNDCORECB         1000
+#define IDC_SOUNDBUFFERET       1001
+#define IDC_SLVOLUME            1002
+
 #endif
