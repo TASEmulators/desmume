@@ -11,7 +11,7 @@
 
 #include "desmume.h"
 
-BOOL execute = FALSE;
+volatile BOOL execute = FALSE;
 BOOL click = FALSE;
 BOOL fini = FALSE;
 unsigned long glock = 0;
