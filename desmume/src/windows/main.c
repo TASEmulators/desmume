@@ -255,9 +255,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 {
     MSG messages;            /* Here messages to the application are saved */
-    hAppInst=hThisInstance;
     char text[80];
     cwindow_struct MainWindow;
+    hAppInst=hThisInstance;
 
     InitializeCriticalSection(&section);
     sprintf(text, "DeSmuME v%s", VERSION);
@@ -534,9 +534,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case WM_LBUTTONDOWN:
              if(HIWORD(lParam)>=192)
              {
+                  s32 x;
+                  s32 y;
                   SetCapture(hwnd);
-                  s32 x = LOWORD(lParam);
-                  s32 y = HIWORD(lParam) - 192;
+                  x = LOWORD(lParam);
+                  y = HIWORD(lParam) - 192;
                   if(x<0) x = 0; else if(x>255) x = 255;
                   if(y<0) y = 0; else if(y>192) y = 192;
                   NDS_setTouchPos(x, y);
@@ -553,10 +555,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              {
                   case IDM_OPEN:
                        {
-                            NDS_Pause(); //Stop emulation while opening new rom
-                            
                             OPENFILENAME ofn;
                             char filename[MAX_PATH] = "";
+                            NDS_Pause(); //Stop emulation while opening new rom
+                            
                             ZeroMemory(&ofn, sizeof(ofn));
                             ofn.lStructSize = sizeof(ofn);
                             ofn.hwndOwner = hwnd;
@@ -574,21 +576,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             
                             LOG("%s\r\n", filename);
 
-/*                          // This should be moved to NDSSystem.c
-
-                            // Added for FAT generation
-                            // Mic
- 					        if (ofn.nFileOffset>0) {
-					           	strncpy(szRomPath,filename,ofn.nFileOffset-1);
-                	            cflash_close();
-             	                cflash_init();
-                            }
-                           
-                            strcpy(SavName,filename);
-                            
-                            romnum+=1;
-*/
-                            
                             if(LoadROM(filename))
                             {
                                EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
@@ -621,9 +608,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_STATE_LOAD:
                        {
-                            NDS_Pause();
                             OPENFILENAME ofn;
-                            //char nomFichier[MAX_PATH] = "";
+                            NDS_Pause();
                             ZeroMemory(&ofn, sizeof(ofn));
                             ofn.lStructSize = sizeof(ofn);
                             ofn.hwndOwner = hwnd;
@@ -635,10 +621,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             
                             if(!GetOpenFileName(&ofn))
                             {
+                                 NDS_UnPause();
                                  return 0;
                             }
-                            
-                            //log::ajouter(SavName);
                             
                             savestate_load(SavName);
                             NDS_UnPause();
@@ -646,9 +631,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_STATE_SAVE:
                        {
-                            NDS_Pause();
                             OPENFILENAME ofn;
-                            //char nomFichier[MAX_PATH] = "";
+                            NDS_Pause();
                             ZeroMemory(&ofn, sizeof(ofn));
                             ofn.lStructSize = sizeof(ofn);
                             ofn.hwndOwner = hwnd;
@@ -662,16 +646,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             {
                                  return 0;
                             }
-                            
-                            //strncpy(SavName + "dst", FileName, strlen(FileName)-3);
-                            //strcpy(SavName, SavName + "dst");
-                            //log = "sram saved to: ";
-                            //strcat(log, (const char*)SavName);
-                            //log::ajouter(log);
-                            
-                            //strncpy(SavName2, SavName, strlen(SavName)-3);
-                            //strncat(SavName2, "dst", 3);
-                            //strcpy(SavName, SavName + "dst");
                             
                             savestate_save(SavName);
                             NDS_UnPause();

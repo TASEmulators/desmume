@@ -301,16 +301,23 @@ LRESULT MemViewBox_OnPaint(memview_struct * win, WPARAM wParam, LPARAM lParam)
         SIZE fontsize;
         TCHAR text[80];
         int i;
-        
         RECT rect;
+        int lg;
+        int ht;
+        HDC mem_dc;
+        HBITMAP mem_bmp;
+        int nbligne;
+        RECT r;
+        u32 adr;
+
         GetClientRect(hwnd, &rect);
-        int lg = rect.right - rect.left;
-        int ht = rect.bottom - rect.top;
+        lg = rect.right - rect.left;
+        ht = rect.bottom - rect.top;
         
         hdc = BeginPaint(hwnd, &ps);
         
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
+        mem_dc = CreateCompatibleDC(hdc);
+        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
@@ -319,25 +326,23 @@ LRESULT MemViewBox_OnPaint(memview_struct * win, WPARAM wParam, LPARAM lParam)
         
         GetTextExtentPoint32(mem_dc, "0", 1, &fontsize);
         
-        int nbligne = ht/fontsize.cy;
+        nbligne = ht/fontsize.cy;
         
         SetTextColor(mem_dc, RGB(0,0,0));
-        
-        RECT r;
-        
+                
         r.top = 3;
         r.left = 3;
         r.bottom = r.top+fontsize.cy;
         r.right = rect.right-3;
         
-        u32 adr = win->curr_ligne*0x10;
+        adr = win->curr_ligne*0x10;
         
         for(i=0; i<nbligne; ++i)
         {
+                int j;
                 sprintf(text, "%04X:%04X", (int)(adr>>16), (int)(adr&0xFFFF));
                 DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                 r.left += 11*fontsize.cx;
-                int j;
 
                 if(win->representation == 0)
                      for(j=0; j<16; ++j)
@@ -417,12 +422,16 @@ LRESULT CALLBACK MemViewBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
                         {
                              RECT rect;
                              SIZE fontsize;
+                             HDC dc;
+                             HFONT old;
+                             int nbligne;
+
                              GetClientRect(hwnd, &rect);
-                             HDC dc = GetDC(hwnd);
-                             HFONT old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
+                             dc = GetDC(hwnd);
+                             old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
                              GetTextExtentPoint32(dc, "0", 1, &fontsize);
         
-                             int nbligne = (rect.bottom - rect.top)/fontsize.cy;
+                             nbligne = (rect.bottom - rect.top)/fontsize.cy;
 
                              switch LOWORD(wParam)
                              {

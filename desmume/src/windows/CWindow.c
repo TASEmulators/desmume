@@ -27,7 +27,7 @@ cwindow_struct *updatewindowlist = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 
-int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * title, int style, int sx, int sy, LRESULT CALLBACK (* wP) (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam))
+int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * title, int style, int sx, int sy, WNDPROC wP)
 {
     static BOOL first = FALSE;
     RECT clientaera;
@@ -95,7 +95,7 @@ int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * ti
 
 //////////////////////////////////////////////////////////////////////////////
 
-int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, BOOL CALLBACK (*wP) (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam))
+int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, DLGPROC wP)
 {
     cwindow_struct *win2=(cwindow_struct *)win;
 

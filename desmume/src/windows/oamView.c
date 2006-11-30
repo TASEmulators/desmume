@@ -71,16 +71,20 @@ LRESULT OAMViewBox_OnPaint(oamview_struct * win, WPARAM wParam, LPARAM lParam)
         HDC          hdc;
         PAINTSTRUCT  ps;
 //        TCHAR text[80];
-
         RECT rect;
+        int lg;
+        int ht;
+        HDC mem_dc;
+        HBITMAP mem_bmp;
+
         GetClientRect(hwnd, &rect);
-        int lg = rect.right - rect.left;
-        int ht = rect.bottom - rect.top;
+        lg = rect.right - rect.left;
+        ht = rect.bottom - rect.top;
         
         hdc = BeginPaint(hwnd, &ps);
         
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
+        mem_dc = CreateCompatibleDC(hdc);
+        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
@@ -131,6 +135,7 @@ LRESULT OamView_OnPaint(oamview_struct *win, WPARAM wParam, LPARAM lParam)
         u8 prio[256*192];
         BITMAPV4HEADER bmi;
         u16 i;
+        s16 x;
 
         //CreateBitmapIndirect(&bmi);
         memset(&bmi, 0, sizeof(bmi));
@@ -181,8 +186,8 @@ LRESULT OamView_OnPaint(oamview_struct *win, WPARAM wParam, LPARAM lParam)
         sprintf(text, "%d 0x%08X", (oam->attr2>>10)&3, oam->attr2);
         SetWindowText(GetDlgItem(hwnd, IDC_PRIO), text);
         
-        signed short x = oam->attr1&0x1FF;
-        x = ((signed short)(x<<7)>>7);
+        x = oam->attr1&0x1FF;
+        x = ((s16)(x<<7)>>7);
         sprintf(text, "%d x %d", x, oam->attr0&0xFF);
         SetWindowText(GetDlgItem(hwnd, IDC_COOR), text);
         
@@ -204,7 +209,7 @@ LRESULT OamView_OnPaint(oamview_struct *win, WPARAM wParam, LPARAM lParam)
              if(oam->attr0&(1<<9))
                   sprintf(text, "INVISIBLE");
              else
-                  sprintf(text, "%s %s", oam->attr0&(1<<12)?"H FLIP":"",  oam->attr0&(1<<12)?"V FLIP":"");
+                  sprintf(text, "%s %s", oam->attr0&(1<<12)?"H FLIP":"",  oam->attr0&(1<<13)?"V FLIP":"");
                   
              SetWindowText(GetDlgItem(hwnd, IDC_PROP0), text);
              

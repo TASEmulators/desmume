@@ -37,8 +37,8 @@ typedef struct
    void (*Refresh)(void *win);
 } cwindow_struct;
 
-int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * title, int style, int sx, int sy, LRESULT CALLBACK (* wP) (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam));
-int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, BOOL CALLBACK (*wP) (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam));
+int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * title, int style, int sx, int sy, WNDPROC wP);
+int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, DLGPROC wP);
 void CWindow_Show(void *win);
 void CWindow_Hide(void *win);
 void CWindow_Refresh(void *win);

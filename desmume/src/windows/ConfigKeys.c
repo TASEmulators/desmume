@@ -69,9 +69,10 @@ void GetINIPath(char *inipath)
        szPath = vPath;
     else
     {
+       char *p;
        ZeroMemory(vPath, sizeof(vPath));
        GetModuleFileName(NULL, vPath, sizeof(vPath));
-       char *p = vPath + lstrlen(vPath);
+       p = vPath + lstrlen(vPath);
        while (p >= vPath && *p != '\\') p--;
        if (++p >= vPath) *p = 0;
        szPath = vPath;
