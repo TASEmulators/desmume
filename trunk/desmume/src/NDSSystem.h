@@ -128,7 +128,7 @@ typedef struct
 
 extern NDSSystem nds;
 
-void NDSInit(void);
+int NDSInit(void);
 void NDSDeInit(void);
 
 BOOL NDS_SetROM(u8 * rom, u32 mask);
@@ -247,8 +247,8 @@ int NDS_LoadFirmware(const char *filename);
                       {
                          if(nds.VCount<192)
                            {
-				GPU_ligne(&MainScreen, nds.VCount);
-				GPU_ligne(&SubScreen, nds.VCount);
+                                GPU_ligne(&MainScreen, nds.VCount);
+                                GPU_ligne(&SubScreen, nds.VCount);
 				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
 				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
                                 NDS_ARM9HBlankInt();
@@ -266,6 +266,8 @@ int NDS_LoadFirmware(const char *filename);
                       }
                       if(nds.cycles>=nds.nextHBlank+1092)
                       {
+                           u32 vmatch;
+
                            ++nds.VCount;
                            nds.nextHBlank += 4260;
 			   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFD);
@@ -356,7 +358,7 @@ int NDS_LoadFirmware(const char *filename);
 			   T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
 			   T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
                            
-                           u32 vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
+                           vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
                            if((nds.VCount==(vmatch>>8)|((vmatch<<1)&(1<<8))))
                            {
 				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 4);
