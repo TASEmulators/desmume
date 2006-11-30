@@ -141,6 +141,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      int i;
      u8 i8;
      u16 i16;
+     u32 c;
 
      // This could almost be changed to use function pointers
      switch (gpu->dispMode)
@@ -171,7 +172,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
            return;
      }
      
-     u32 c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);
+     c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);
      c |= (c<<16);
      
      for(i8 = 0; i8< 128; ++i8)
