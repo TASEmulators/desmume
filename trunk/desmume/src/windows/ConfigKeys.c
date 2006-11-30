@@ -63,15 +63,21 @@ extern DWORD ds_start;
 #define KEY_SELECT       ds_select
 #define KEY_DEBUG        ds_debug
 
-const char *get_path()
-{
-	if (*vPath) return vPath;
-	ZeroMemory(vPath, sizeof(vPath));
-	GetModuleFileName(NULL, vPath, sizeof(vPath));
-	char *p = vPath + lstrlen(vPath);
-	while (p >= vPath && *p != '\\') p--;
-	if (++p >= vPath) *p = 0;
-	return vPath;
+void GetINIPath(char *inipath)
+{   
+    if (*vPath)
+       szPath = vPath;
+    else
+    {
+       ZeroMemory(vPath, sizeof(vPath));
+       GetModuleFileName(NULL, vPath, sizeof(vPath));
+       char *p = vPath + lstrlen(vPath);
+       while (p >= vPath && *p != '\\') p--;
+       if (++p >= vPath) *p = 0;
+       szPath = vPath;
+    }
+
+    sprintf(inipath, "%s\\desmume.ini",szPath);
 }
 
 void  ReadConfig(void)
@@ -79,8 +85,7 @@ void  ReadConfig(void)
 	FILE *fp;
     int i;
 
-    szPath = (char*)get_path();
-    sprintf(IniName,"%s\\desmume.ini",szPath);
+    GetINIPath(IniName);
 
     i=GetPrivateProfileInt("KEYS","KEY_A",31, IniName);
     KEY_A = i;
@@ -137,8 +142,7 @@ void  WriteConfig(void)
 	FILE *fp;
     int i;
     
-    szPath = (char*)get_path();
-    sprintf(IniName,"%s\\desmume.ini",szPath);
+    GetINIPath(IniName);
 
     WritePrivateProfileInt("KEYS","KEY_A",KEY_A,IniName);
     WritePrivateProfileInt("KEYS","KEY_B",KEY_B,IniName);

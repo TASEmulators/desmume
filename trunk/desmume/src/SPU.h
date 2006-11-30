@@ -68,9 +68,6 @@ typedef struct
 
 typedef struct
 {
-//   u8 mvol;
-//   u8 lout;
-//   u8 rout;
    BOOL enable;
    u32 bufpos;
    u32 buflength;
@@ -84,6 +81,7 @@ extern SPU_struct *SPU;
 
 int SPU_ChangeSoundCore(int coreid, int buffersize);
 int SPU_Init(int coreid, int buffersize);
+void SPU_SetVolume(int volume);
 void SPU_Reset(void);
 void SPU_DeInit(void);
 void SPU_KeyOn(int channel);
