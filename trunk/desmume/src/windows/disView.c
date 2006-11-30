@@ -411,16 +411,21 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         SIZE fontsize;
         TCHAR text[100];
         TCHAR txt[100];
-        
         RECT rect;
+        int lg;
+        int ht;
+        HDC mem_dc;
+        HBITMAP mem_bmp;
+        u32  nbligne;
+
         GetClientRect(hwnd, &rect);
-        int lg = rect.right - rect.left;
-        int ht = rect.bottom - rect.top;
+        lg = rect.right - rect.left;
+        ht = rect.bottom - rect.top;
         
         hdc = BeginPaint(hwnd, &ps);
         
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
+        mem_dc = CreateCompatibleDC(hdc);
+        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
@@ -429,7 +434,7 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         
         GetTextExtentPoint32(mem_dc, "0", 1, &fontsize);
         
-        u32  nbligne = ht/fontsize.cy;
+        nbligne = ht/fontsize.cy;
         
         SetTextColor(mem_dc, RGB(0,0,0));
         
@@ -591,12 +596,16 @@ LRESULT CALLBACK DisViewBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
                         {
                              RECT rect;
                              SIZE fontsize;
+                             HDC dc;
+                             HFONT old;
+                             int nbligne;
+
                              GetClientRect(hwnd, &rect);
-                             HDC dc = GetDC(hwnd);
-                             HFONT old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
+                             dc = GetDC(hwnd);
+                             old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
                              GetTextExtentPoint32(dc, "0", 1, &fontsize);
         
-                             int nbligne = (rect.bottom - rect.top)/fontsize.cy;
+                             nbligne = (rect.bottom - rect.top)/fontsize.cy;
 
                              switch LOWORD(wParam)
                              {
@@ -686,20 +695,21 @@ BOOL CALLBACK DisView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                              return 1;
                         case IDC_STEP :
                              {
-     BITMAPV4HEADER bmi;
+                                  BITMAPV4HEADER bmi;
+                                  int ndstep;
 
-     //CreateBitmapIndirect(&bmi);
-     memset(&bmi, 0, sizeof(bmi));
-     bmi.bV4Size = sizeof(bmi);
-     bmi.bV4Planes = 1;
-     bmi.bV4BitCount = 16;
-     bmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
-     bmi.bV4RedMask = 0x001F;
-     bmi.bV4GreenMask = 0x03E0;
-     bmi.bV4BlueMask = 0x7C00;
-     bmi.bV4Width = 256;
-     bmi.bV4Height = -192;
-                                  int ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
+                                  //CreateBitmapIndirect(&bmi);
+                                  memset(&bmi, 0, sizeof(bmi));
+                                  bmi.bV4Size = sizeof(bmi);
+                                  bmi.bV4Planes = 1;
+                                  bmi.bV4BitCount = 16;
+                                  bmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
+                                  bmi.bV4RedMask = 0x001F;
+                                  bmi.bV4GreenMask = 0x03E0;
+                                  bmi.bV4BlueMask = 0x7C00;
+                                  bmi.bV4Width = 256;
+                                  bmi.bV4Height = -192;
+                                  ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
                                   NDS_exec(ndstep, TRUE);
                                   if(!win->autoup) win->Refresh(win);
                                   CWindow_RefreshALL();

@@ -35,33 +35,32 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         char text[80];
         u32 dispcnt = ((volatile u32 *)ARM9Mem.ARM9_REG)[(win->lcd*0x400)];
         u32 bgcnt =  ((volatile u16 *)ARM9Mem.ARM9_REG)[(8 + (win->map<<1) + (win->lcd*0x1000))>>1];
-        
-        
-     BITMAPV4HEADER bmi;
+        BITMAPV4HEADER bmi;
+        u16 lg;
+        u16 ht;
 
-     //CreateBitmapIndirect(&bmi);
-     memset(&bmi, 0, sizeof(bmi));
-     bmi.bV4Size = sizeof(bmi);
-     bmi.bV4Planes = 1;
-     bmi.bV4BitCount = 16;
-     bmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
-     bmi.bV4RedMask = 0x001F;
-     bmi.bV4GreenMask = 0x03E0;
-     bmi.bV4BlueMask = 0x7C00;
-     u16 lg;
-     u16 ht;
-     if(win->lcd)
-     {
-          lg = SubScreen.gpu->BGSize[win->map][0];
-          ht = SubScreen.gpu->BGSize[win->map][1];
-     }
-     else
-     {
-          lg = MainScreen.gpu->BGSize[win->map][0];
-          ht = MainScreen.gpu->BGSize[win->map][1];
-     }
-     bmi.bV4Width = lg;
-     bmi.bV4Height = -ht;
+        //CreateBitmapIndirect(&bmi);
+        memset(&bmi, 0, sizeof(bmi));
+        bmi.bV4Size = sizeof(bmi);
+        bmi.bV4Planes = 1;
+        bmi.bV4BitCount = 16;
+        bmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
+        bmi.bV4RedMask = 0x001F;
+        bmi.bV4GreenMask = 0x03E0;
+        bmi.bV4BlueMask = 0x7C00;
+
+        if(win->lcd)
+        {
+             lg = SubScreen.gpu->BGSize[win->map][0];
+             ht = SubScreen.gpu->BGSize[win->map][1];
+        }
+        else
+        {
+             lg = MainScreen.gpu->BGSize[win->map][0];
+             ht = MainScreen.gpu->BGSize[win->map][1];
+        }
+        bmi.bV4Width = lg;
+        bmi.bV4Height = -ht;
      
         hdc = BeginPaint(hwnd, &ps);        
         
@@ -105,11 +104,11 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), text);
         
         if(win->lcd)
-             textBG(SubScreen.gpu, win->map, win->bitmap);
+             textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
              //rotBG(SubScreen.gpu, win->map, win->bitmap);
              //extRotBG(SubScreen.gpu, win->map, win->bitmap);
         else
-             textBG(MainScreen.gpu, win->map, win->bitmap);
+             textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
              //rotBG(MainScreen.gpu, win->map, win->bitmap);
              //extRotBG(MainScreen.gpu, win->map, win->bitmap);
         

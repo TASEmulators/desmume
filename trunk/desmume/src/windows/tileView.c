@@ -121,6 +121,11 @@ LRESULT TileViewBox_Direct(tileview_struct * win, WPARAM wParam, LPARAM lParam)
 //        SIZE fontsize;
 //        TCHAR text[80];
         BITMAPV4HEADER bmi;
+        RECT rect;
+        HDC mem_dc;
+        HBITMAP mem_bmp;
+        int lg;
+        int ht;
         
         memset(&bmi, 0, sizeof(bmi));
         bmi.bV4Size = sizeof(bmi);
@@ -133,15 +138,14 @@ LRESULT TileViewBox_Direct(tileview_struct * win, WPARAM wParam, LPARAM lParam)
         bmi.bV4Width = 256;
         bmi.bV4Height = -256;
         
-        RECT rect;
         GetClientRect(hwnd, &rect);
-        int lg = rect.right - rect.left;
-        int ht = rect.bottom - rect.top;
+        lg = rect.right - rect.left;
+        ht = rect.bottom - rect.top;
         
         hdc = BeginPaint(hwnd, &ps);
         
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
+        mem_dc = CreateCompatibleDC(hdc);
+        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
@@ -169,6 +173,12 @@ LRESULT TileViewBox_Pal256(tileview_struct * win, WPARAM wParam, LPARAM lParam)
         u16 bitmap[256*256];
         u16 * pal = ((u16 *)win->pal) + win->palnum*256;
         BITMAPV4HEADER bmi;
+        RECT rect;
+        int lg;
+        int ht;
+        HDC mem_dc;
+        HBITMAP mem_bmp;
+
         memset(&bmi, 0, sizeof(bmi));
         bmi.bV4Size = sizeof(bmi);
         bmi.bV4Planes = 1;
@@ -180,15 +190,14 @@ LRESULT TileViewBox_Pal256(tileview_struct * win, WPARAM wParam, LPARAM lParam)
         bmi.bV4Width = 256;
         bmi.bV4Height = -256;
         
-        RECT rect;
         GetClientRect(hwnd, &rect);
-        int lg = rect.right - rect.left;
-        int ht = rect.bottom - rect.top;
+        lg = rect.right - rect.left;
+        ht = rect.bottom - rect.top;
         
         hdc = BeginPaint(hwnd, &ps);
         
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
+        mem_dc = CreateCompatibleDC(hdc);
+        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
@@ -232,6 +241,12 @@ LRESULT TileViewBox_Pal16(tileview_struct * win, WPARAM wParam, LPARAM lParam)
         u16 bitmap[512*512];
         u16 * pal = ((u16 *)win->pal) + win->palnum*16;
         BITMAPV4HEADER bmi;
+        RECT rect;
+        int lg;
+        int ht;
+        HDC mem_dc;
+        HBITMAP mem_bmp;
+
         memset(&bmi, 0, sizeof(bmi));
         bmi.bV4Size = sizeof(bmi);
         bmi.bV4Planes = 1;
@@ -243,15 +258,14 @@ LRESULT TileViewBox_Pal16(tileview_struct * win, WPARAM wParam, LPARAM lParam)
         bmi.bV4Width = 512;
         bmi.bV4Height = -256;
         
-        RECT rect;
         GetClientRect(hwnd, &rect);
-        int lg = rect.right - rect.left;
-        int ht = rect.bottom - rect.top;
+        lg = rect.right - rect.left;
+        ht = rect.bottom - rect.top;
         
         hdc = BeginPaint(hwnd, &ps);
         
-        HDC mem_dc = CreateCompatibleDC(hdc);
-        HBITMAP mem_bmp = CreateCompatibleBitmap(hdc, 512, 256);
+        mem_dc = CreateCompatibleDC(hdc);
+        mem_bmp = CreateCompatibleBitmap(hdc, 512, 256);
         SelectObject(mem_dc, mem_bmp);
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
