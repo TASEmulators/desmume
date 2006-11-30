@@ -555,6 +555,11 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	u16 tmp = ((Y&(ht-1))>>3);
 	u8 * map = gpu->BG_map_ram[num] + (tmp&31) * 64;
 	u8 *dst = DST;
+        u8 *tile;
+	u16 xoff = X;
+        u8 * pal;
+        u16 yoff;
+	u16 x;
 
 	if(tmp>31)
 	{
@@ -569,30 +574,33 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 	}
 	
-	u8 *tile = (u8*) gpu->BG_tile_ram[num];
+        tile = (u8*) gpu->BG_tile_ram[num];
 	
 	if((!tile) || (!gpu->BG_map_ram[num])) return;
 	
-	u16 xoff = X;
+        xoff = X;
 	
 	if(!(bgprop & BG_256_COLOR))
 	{
-		u16 yoff = ((Y&7)<<2);
-		u16 x;
-		u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+                yoff = ((Y&7)<<2);
+                pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 
 		for(x = 0; x < LG;)
 		{
-			tmp = ((xoff&(lg-1))>>3);
-			u8 * mapinfo = map + (tmp&0x1F) * 2;
+                        u8 * mapinfo;
 			u16 mapinfovalue;
+                        u8 *line;
+                        u16 xfin;
+			tmp = ((xoff&(lg-1))>>3);
+                        mapinfo = map + (tmp&0x1F) * 2;
+                        mapinfovalue;
 
 			if(tmp>31) mapinfo += 32*32*2;
 
 			mapinfovalue = T1ReadWord(mapinfo, 0);
 
-			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue) * 0x20) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*4)-yoff : yoff));
-			u16 xfin = x + (8 - (xoff&7));
+                        line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue) * 0x20) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*4)-yoff : yoff));
+                        xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
@@ -626,22 +634,25 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	
 	if(!(gpu->prop & DISPLAY_BG_EXT_PALETTE))
 	{
-		u16 yoff = ((Y&7)<<3);
-		u16 x;
-                u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+                yoff = ((Y&7)<<3);
+                pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 
 		for(x = 0; x < LG;)
 		{
-			tmp = ((xoff&(lg-1))>>3);
-			u8 * mapinfo = map + (tmp & 31) * 2;
+                        u8 * mapinfo;
 			u16 mapinfovalue;
+                        u8 *line;
+                        u16 xfin;
+			tmp = ((xoff&(lg-1))>>3);
+                        mapinfo = map + (tmp & 31) * 2;
+                        mapinfovalue;
 
 			if(tmp > 31) mapinfo += 32*32*2;
 
 			mapinfovalue = T1ReadWord(mapinfo, 0);
 
-			u8 *line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
-			u16 xfin = x + (8 - (xoff&7));
+                        line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+                        xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
@@ -669,25 +680,28 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		return;
 	}
 
-	u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+        pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 
 	if(!pal) return;
 	
-	u16 yoff = ((Y&7)<<3);
-	u16 x;
+        yoff = ((Y&7)<<3);
 	
 	for(x = 0; x < LG;)
 	{
-		tmp = ((xoff&(lg-1))>>3);
-		u8 * mapinfo = map + (tmp & 0x1F) * 2;
+                u8 * mapinfo;
 		u16 mapinfovalue;
+                u8 * line;
+                u16 xfin;
+		tmp = ((xoff&(lg-1))>>3);
+                mapinfo = map + (tmp & 0x1F) * 2;
+                mapinfovalue;
 
 		if(tmp>31) mapinfo += 32 * 32 * 2;
 
 		mapinfovalue = T1ReadWord(mapinfo, 0);
 
-		u8 * line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
-		u16 xfin = x + (8 - (xoff&7));
+                line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+                xfin = x + (8 - (xoff&7));
 		if (xfin > LG)
 			xfin = LG;
 		
@@ -737,11 +751,12 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
      u8 * dst = DST;
      u8 mapinfo;
      u8 coul;
+     u8 * pal;
+     u32 i;
 
      if((!tile)||(!map)) return;
 
-     u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-     u32 i;
+     pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
      for(i = 0; i < LG; ++i)
      {
           auxX = x>>8;
@@ -810,10 +825,12 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
                     }
                     if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
                     {
+                         u16 x1;
+                         u16 y1;
 			 mapinfo = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * lgmap) << 1);
 
-                         u16 x1 = (mapinfo & 0x400) ? 7 - (auxX&7) : (auxX&7);
-                         u16 y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
+                         x1 = (mapinfo & 0x400) ? 7 - (auxX&7) : (auxX&7);
+                         y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
                          coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
                          if(coul)
 			      T2WriteWord(dst, 0, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1));
@@ -942,13 +959,22 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
      for(i = 0; i<nbShow; ++i, --aux)
      {
           s32 sprX = aux->attr1 & 0x1FF;
-          sprX = ((s32)(sprX<<23))>>23;
-          s32 sprY = aux->attr0 & 0xFF;
+          s32 sprY;
           s32 x = 0;
+          u32 lg;
+          size sprSize;
+          s32 y;
+          u8 prio;
+          u8 * src;
+          u8 * pal;
+          u16 j;
+
+          sprX = ((s32)(sprX<<23))>>23;
+          sprY = aux->attr0 & 0xFF;
           
-          size sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+          sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
           
-          u32 lg = sprSize.x;
+          lg = sprSize.x;
 
           if(sprY>192)
                sprY = (s32)((s8)(aux->attr0 & 0xFF));
@@ -969,23 +995,23 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                if(sprX+sprSize.x>256)
                     lg = 255 - sprX;
                
-          s32 y = l - sprY;
-          u8 prio = (aux->attr2>>10)&3;
+          y = l - sprY;
+          prio = (aux->attr2>>10)&3;
           
           if(aux->attr1&(1<<13)) y = sprSize.y - y -1;
           
           if((aux->attr0&(3<<10))==(3<<10))
           {
-	       u8 * src = (gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
 	       u16 i;
+               src = (gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
 
                if(aux->attr1&(1<<12))
                {
                     x = sprSize.x -x - 1;
                     for(i = 0; i < lg; ++i, --x, ++sprX)
-                    {
+                    {                         
                          u8 c = src[x];
-                         if((c>>15) && (prioTab[sprX]>=prio))
+                         if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
                          {
 			      T2WriteByte(dst, sprX << 1, c);
                               prioTab[sprX] = prio;
@@ -1007,9 +1033,8 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
           
           if(aux->attr0&(1<<13))
           {
-               u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
-	       u8 * pal;
 	       u16 i;
+               src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 
                if(gpu->prop&(1<<31))
                                                 pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x200);
@@ -1043,8 +1068,8 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                }  
                continue;
           }
-          u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-	  u8 * pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+          src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+          pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
 
           if(x&1)
           {
@@ -1111,8 +1136,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                continue;
           }
                
-	  u16 i;
-          for(i = 0; i < lg; ++i, ++x)
+          for(j = 0; j < lg; ++j, ++x)
           {
                u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
                      
@@ -1141,13 +1165,22 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
      for(i = 0; i<nbShow; ++i, --aux)
      {
           s32 sprX = aux->attr1 & 0x1FF;
-          sprX = ((s32)(sprX<<23))>>23;
-          s32 sprY = aux->attr0 & 0xFF;
+          s32 sprY;
           s32 x = 0;
+          size sprSize;
+          u32 lg;
+          s32 y;
+          u8 prio;
+          u8 * src;
+          u8 * pal;
+          u16 j;
+
+          sprX = ((s32)(sprX<<23))>>23;
+          sprY = aux->attr0 & 0xFF;
           
-          size sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+          sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
           
-          u32 lg = sprSize.x;
+          lg = sprSize.x;
 
           if(sprY>192)
                sprY = (s32)((s8)(aux->attr0 & 0xFF));
@@ -1168,23 +1201,25 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                if(sprX+sprSize.x>256)
                     lg = 255 - sprX;
                
-          s32 y = l - sprY;
-          u8 prio = (aux->attr2>>10)&3;
+          y = l - sprY;
+          prio = (aux->attr2>>10)&3;
           
           if(aux->attr1&(1<<13)) y = sprSize.y - y -1;
           
           if((aux->attr0&(3<<10))==(3<<10))
           {
-               u8 * src = (gpu->sprMem) + (((aux->attr2&0x3E0) * 64 + (aux->attr2&0x1F) * 8 + ( y << 8)) << 1);
 	       u16 i;
+               src = (gpu->sprMem) + (((aux->attr2&0x3E0) * 64 + (aux->attr2&0x1F) * 8 + ( y << 8)) << 1);
 
                if(aux->attr1&(1<<12))
                {
+                    LOG("Using fubared h-flip\n");
+
                     x = sprSize.x -x - 1;
                     for(i = 0; i < lg; ++i, --x, ++sprX)
                     {
 			 u8 c = src[x << 1];
-                         if((c>>15) && (prioTab[sprX]>=prio))
+                         if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
                          {
 			      T2WriteByte(dst, sprX << 1, c);
                               prioTab[sprX] = prio;
@@ -1206,9 +1241,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
           
           if(aux->attr0&(1<<13))
           {
-               u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-	       u8 * pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
                u16 i;
+               src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
+               pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
 
                if(aux->attr1&(1<<12))
                {
@@ -1237,8 +1272,8 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                }  
                continue;
           }
-          u8 * src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-	  u8 * pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+          src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
+          pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
           if(x&1)
           {
                if(aux->attr1&(1<<12))
@@ -1304,8 +1339,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                continue;
           }
                
-	  u16 i;
-          for(i = 0; i < lg; ++i, ++x)
+          for(j = 0; j < lg; ++j, ++x)
           {
                u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
                      
