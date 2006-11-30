@@ -531,9 +531,11 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			
 			case CARD_DATA_RD:
 			{
+                                u32 val;
+
                                 if(!MMU.dscard[proc].adress) return 0;
 				
-				u32 val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
+                                val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
 
 				MMU.dscard[proc].adress += 4;	/* increment adress */
 				
@@ -859,12 +861,14 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case REG_SPIDATA :
 				if(proc==ARMCPU_ARM7)
 				{
+                                        u16 spicnt;
+
 					if(val!=0)
 					{
 						SPI_CMD = val;
 					}
 			
-					u16 spicnt = T1ReadWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
+                                        spicnt = T1ReadWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
 					
 					switch(spicnt & 0x300)
 					{
@@ -1253,12 +1257,14 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				execute = FALSE;*/
 				case 0x040000BA :
 				{
+                                u32 v;
+
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma0 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xBA, val);
 				DMASrc[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB0);
 				DMADst[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB4);
-				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8);
+                                v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8);
 				MMU.DMAStartTime[proc][0] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][0] = v;
 				if(MMU.DMAStartTime[proc][0] == 0)
@@ -1273,12 +1279,13 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
 				case 0x040000C6 :
 				{
+                                u32 v;
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma1 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xC6, val);
 				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xBC);
 				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC0);
-				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC4);
+                                v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC4);
 				MMU.DMAStartTime[proc][1] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][1] = v;
 				if(MMU.DMAStartTime[proc][1] == 0)
@@ -1293,12 +1300,13 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
 				case 0x040000D2 :
 				{
+                                u32 v;
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma2 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xD2, val);
 				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC8);
 				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xCC);
-				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD0);
+                                v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD0);
 				MMU.DMAStartTime[proc][2] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][2] = v;
 				if(MMU.DMAStartTime[proc][2] == 0)
@@ -1313,12 +1321,13 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
 				case 0x040000DE :
 				{
+                                u32 v;
 				//if(val&0x8000) execute = FALSE;
 				//LOG("16 bit dma3 %04X\r\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0xDE, val);
 				DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD4);
 				DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD8);
-				u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xDC);
+                                v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xDC);
 				MMU.DMAStartTime[proc][3] = (proc ? (v>>28) & 0x3 : (v>>27) & 0x7);
 				MMU.DMACrt[proc][3] = v;
 		
@@ -1681,12 +1690,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			case 0x04000298 :
 				{
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x298, val);
-					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
+                                        u16 cnt;
 					s64 num = 0;
 					s64 den = 1;
 					s64 res;
 					s64 mod;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x298, val);
+                                        cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
 					switch(cnt&3)
 					{
 					case 0:
@@ -1734,12 +1744,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			case 0x0400029C :
 			{
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x29C, val);
-				u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
+                                u16 cnt;
 				s64 num = 0;
 				s64 den = 1;
 				s64 res;
 				s64 mod;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x29C, val);
+                                cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
 				switch(cnt&3)
 				{
 				case 0:
@@ -1786,10 +1797,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			return;
 			case 0x040002B8 :
 				{
+                                        u16 cnt;
+					u64 v = 1;
 					//execute = FALSE;
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B8, val);
-					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
-					u64 v = 1;
+                                        cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
 					switch(cnt&1)
 					{
 					case 0:
@@ -1806,9 +1818,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			case 0x040002BC :
 				{
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2BC, val);
-					u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
+                                        u16 cnt;
 					u64 v = 1;
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2BC, val);
+                                        cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
 					switch(cnt&1)
 					{
 					case 0:
@@ -1854,9 +1867,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					//if(val==43) execute = FALSE;
 					u32 remote = (proc+1)&1;
 					u32 fifonum = IPCFIFO+remote;
+                                        u16 IPCFIFO_CNT_remote;
 					FIFOAdd(MMU.fifos + fifonum, val);
 					IPCFIFO_CNT = (IPCFIFO_CNT & 0xFFFC) | (MMU.fifos[fifonum].full<<1);
-					u16 IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
+                                        IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
 					IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
 					T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
@@ -1932,6 +1946,8 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			case CARD_CR2 :
 				{
+					int i;
+
 					if(MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND) == 0xB7)
 					{
 						MMU.dscard[proc].adress = (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+1) << 24) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+2) << 16) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+3) << 8) | (MEM_8(MMU.MMU_MEM[proc], CARD_COMMAND+4));
@@ -1959,9 +1975,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 						return;
 					}
 					T1WriteLong(MMU.MMU_MEM[proc][(CARD_CR2 >> 20) & 0xff], CARD_CR2 & 0xfff, val);
-					
-					int i;
-					
+										
 					/* launch DMA if start flag was set to "DS Cart" */
 					if(proc == ARMCPU_ARM7) i = 2;
 					else i = 5;
@@ -2026,6 +2040,8 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 {
 	u32 src = DMASrc[proc][num];
 	u32 dst = DMADst[proc][num];
+        u32 taille;
+
 	if(src==dst)
 	{
 	 T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
@@ -2040,7 +2056,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	 return;
 	}
 	
-	u32 taille = (MMU.DMACrt[proc][num]&0xFFFF);
+        taille = (MMU.DMACrt[proc][num]&0xFFFF);
 	
 	if(MMU.DMAStartTime[proc][num] == 5) taille *= 0x80;
 	
