@@ -10,6 +10,7 @@ case $target in
   *linux*) desmume_arch=linux;;
   *mingw*) desmume_arch=windows;;
   *darwin*) desmume_arch=linux;;
+  *bsd*) desmume_arch=linux;;
 esac
 AC_SUBST(desmume_arch)
 
