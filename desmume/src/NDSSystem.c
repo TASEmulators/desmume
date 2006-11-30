@@ -25,7 +25,7 @@
 
 NDSSystem nds;
 
-void NDS_Init(void) {
+int NDS_Init(void) {
      nds.ARM9Cycle = 0;
      nds.ARM7Cycle = 0;
      nds.cycles = 0;
@@ -86,15 +86,18 @@ void NDS_DeInit(void) {
 BOOL NDS_SetROM(u8 * rom, u32 mask)
 {
      u32 i;
-     
+     NDS_header * header;
+     u32 src;
+     u32 dst;
+
      MMU_clearMem();
 
      MMU_setRom(rom, mask);
      
-     NDS_header * header = NDS_getROMHeader();
+     header = NDS_getROMHeader();
      
-     u32 src = header->ARM9src;
-     u32 dst = header->ARM9cpy;
+     src = header->ARM9src;
+     dst = header->ARM9cpy;
 
      for(i = 0; i < (header->ARM9binSize>>2); ++i)
      {
@@ -415,6 +418,18 @@ typedef struct
     u32 numimpcol;
 } bmpimgheader_struct;
 
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+typedef struct
+{
+    u16 id;
+    u32 size;
+    u16 reserved1;
+    u16 reserved2;
+    u32 imgoffset;
+} bmpfileheader_struct;
+#pragma pack(pop)
+#else
 typedef struct
 {
     u16 id __PACKED;
@@ -423,6 +438,7 @@ typedef struct
     u16 reserved2 __PACKED;
     u32 imgoffset __PACKED;
 } bmpfileheader_struct;
+#endif
 
 int NDS_WriteBMP(const char *filename)
 {
