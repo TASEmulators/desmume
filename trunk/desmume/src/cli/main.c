@@ -9,7 +9,7 @@
 #include "../debug.h"
 #include "../sndsdl.h"
 
-BOOL execute = FALSE;
+volatile BOOL execute = FALSE;
 
 SDL_Surface * surface;
 
