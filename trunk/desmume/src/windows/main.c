@@ -884,6 +884,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
                        }
                   return 0;
+                  case IDM_WEBSITE:
+                       ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
+                  return 0;
+                  case IDM_FORUM:
+                       ShellExecute(NULL, "open", "http://sourceforge.net/forum/?group_id=164579", NULL, NULL, SW_SHOWNORMAL);
+                  return 0;
+                  case IDM_SUBMITBUGREPORT:
+                       ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
+                  return 0;
              }
              return 0;
         default:                      /* for messages that we don't deal with */
