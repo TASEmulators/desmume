@@ -33,7 +33,7 @@ void refreshAll();
 
 #define IconDeSmuME         100
 
-#define IDC_STATIC          101
+#define IDC_STATIC          -1
 #define IDM_OPEN            102
 #define IDM_QUIT            103
 #define IDC_FERMER          104
@@ -66,6 +66,9 @@ void refreshAll();
 #define IDM_PRINTSCREEN     140
 #define IDM_QUICK_PRINTSCREEN 141
 #define IDM_SOUNDSETTINGS   142
+#define IDM_WEBSITE         143
+#define IDM_FORUM           144
+#define IDM_SUBMITBUGREPORT 145
 
 #define IDM_STATE_LOAD      150
 #define IDM_STATE_SAVE      151
