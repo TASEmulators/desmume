@@ -608,6 +608,7 @@ unsigned int cflash_read(unsigned int address) {
 		s = cf_reg_lba1;
 		return s; 
 	}
+        return 0;
 }
 
 

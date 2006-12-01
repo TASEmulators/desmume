@@ -71,6 +71,7 @@ int NDS_Init(void) {
      MMU_writeWord(0, 0x000000C, 0xE1B02040);
      MMU_writeWord(0, 0x0000010, 0xE3B02020);
 //     MMU_writeWord(0, 0x0000010, 0xE2100202);
+     return 0;
 }
 
 void NDS_DeInit(void) {
