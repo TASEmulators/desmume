@@ -371,6 +371,13 @@ int NDS_LoadROM(const char *filename)
    cflash_close();
    cflash_init();
 
+   strcpy(szRomBaseName, filename);
+
+   if(type == ROM_DSGBA)
+      szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;
+   else
+      szRomBaseName[strlen(szRomBaseName)-4] = 0x00;
+
    // Setup Backup Memory
    p = strdup(filename);
 

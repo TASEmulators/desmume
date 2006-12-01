@@ -44,6 +44,7 @@
 //#define LOG_DIV
 
 char szRomPath[512];
+char szRomBaseName[512];
 
 MMU_struct MMU;
 
