@@ -100,7 +100,7 @@ struct _GPU
        void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 
-extern u16 GPU_screen[2*256*192];
+extern u8 GPU_screen[4*256*192];
 
 GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
@@ -132,9 +132,7 @@ void Screen_DeInit(void);
 static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
      GPU * gpu = screen->gpu;
-     //u16 * dst =  GPU_screen + (screen->offset + l) * 256;
-     u8 * dst =  GPU_screen + (screen->offset + l) * 256;
-     //u16 spr[256];
+     u8 * dst =  GPU_screen + (screen->offset + l) * 512;
      u8 spr[512];
      u8 sprPrio[256];
      u8 bgprio;

@@ -447,7 +447,7 @@ int NDS_WriteBMP(const char *filename)
     bmpimgheader_struct imageheader;
     FILE *file;
     int i,j,k;
-    u16 *bmp = GPU_screen;
+    u16 * bmp = GPU_screen;
 
     memset(&fileheader, 0, sizeof(fileheader));
     fileheader.size = sizeof(fileheader);

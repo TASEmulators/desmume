@@ -22,6 +22,7 @@
 #include <zlib.h>
 #endif
 #include <stdio.h>
+#include <string.h>
 #include "saves.h"
 #include "MMU.h"
 #include "NDSSystem.h"
