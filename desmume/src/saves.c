@@ -213,6 +213,8 @@ int savestate_load (const char *file_name)    {
         gzclose (file);
 
 	return 1;
+#else
+        return 0;
 #endif
 }
 
@@ -326,6 +328,8 @@ int savestate_save (const char *file_name)    {
         gzclose (file);
 
 	return 1;
+#else
+        return 0;
 #endif
 }
 
