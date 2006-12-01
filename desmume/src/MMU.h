@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 extern char szRomPath[512];
+extern char szRomBaseName[512];
 
 /* theses macros are designed for reading/writing in memory (m is a pointer to memory, like MMU.MMU_MEM[proc], and a is an adress, like 0x04000000 */
 #define MEM_8(m, a)  (((u8*)(m[((a)>>20)&0xff]))[((a)&0xfff)])

@@ -257,10 +257,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     MSG messages;            /* Here messages to the application are saved */
     char text[80];
     cwindow_struct MainWindow;
+    HACCEL hAccel;
     hAppInst=hThisInstance;
 
     InitializeCriticalSection(&section);
     sprintf(text, "DeSmuME v%s", VERSION);
+
+    hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
     if (CWindow_Init(&MainWindow, hThisInstance, szClassName, text,
                      WS_CAPTION| WS_SYSMENU |WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
@@ -327,10 +330,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     while (GetMessage (&messages, NULL, 0, 0))
     {
-        // Translate virtual-key messages into character messages
-        TranslateMessage(&messages);
-        // Send message to WindowProcedure 
-        DispatchMessage(&messages);
+       if (TranslateAccelerator(hwnd, hAccel, &messages) == 0)
+       {
+          // Translate virtual-key messages into character messages
+          TranslateMessage(&messages);
+          // Send message to WindowProcedure 
+          DispatchMessage(&messages);
+       }  
     }
     
 #ifdef DEBUG
@@ -338,6 +344,26 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
     /* The program return-value is 0 - The value that PostQuitMessage() gave */
     return messages.wParam;
+}
+
+void StateSaveSlot(int num)
+{
+   char filename[MAX_PATH];
+   NDS_Pause();
+   strcpy(filename, szRomBaseName);
+   sprintf(filename+strlen(filename), "%d.dst", num);
+   savestate_save(filename);
+   NDS_UnPause();
+}
+
+void StateLoadSlot(int num)
+{
+   char filename[MAX_PATH];
+   NDS_Pause();
+   strcpy(filename, szRomBaseName);
+   sprintf(filename+strlen(filename), "%d.dst", num);
+   savestate_load(filename);
+   NDS_UnPause();
 }
 
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -651,6 +677,66 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             NDS_UnPause();
                        }
                   return 0;
+                  case IDM_STATE_SAVE_F1:
+                     StateSaveSlot(1);
+                     return 0;
+                  case IDM_STATE_SAVE_F2:
+                     StateSaveSlot(2);
+                     return 0;
+                  case IDM_STATE_SAVE_F3:
+                     StateSaveSlot(3);
+                     return 0;
+                  case IDM_STATE_SAVE_F4:
+                     StateSaveSlot(4);
+                     return 0;
+                  case IDM_STATE_SAVE_F5:
+                     StateSaveSlot(5);
+                     return 0;
+                  case IDM_STATE_SAVE_F6:
+                     StateSaveSlot(6);
+                     return 0;
+                  case IDM_STATE_SAVE_F7:
+                     StateSaveSlot(7);
+                     return 0;
+                  case IDM_STATE_SAVE_F8:
+                     StateSaveSlot(8);
+                     return 0;
+                  case IDM_STATE_SAVE_F9:
+                     StateSaveSlot(9);
+                     return 0;
+                  case IDM_STATE_SAVE_F10:
+                     StateSaveSlot(10);
+                     return 0;
+                  case IDM_STATE_LOAD_F1:
+                     StateLoadSlot(1);
+                     return 0;
+                  case IDM_STATE_LOAD_F2:
+                     StateLoadSlot(2);
+                     return 0;
+                  case IDM_STATE_LOAD_F3:
+                     StateLoadSlot(3);
+                     return 0;
+                  case IDM_STATE_LOAD_F4:
+                     StateLoadSlot(4);
+                     return 0;
+                  case IDM_STATE_LOAD_F5:
+                     StateLoadSlot(5);
+                     return 0;
+                  case IDM_STATE_LOAD_F6:
+                     StateLoadSlot(6);
+                     return 0;
+                  case IDM_STATE_LOAD_F7:
+                     StateLoadSlot(7);
+                     return 0;
+                  case IDM_STATE_LOAD_F8:
+                     StateLoadSlot(8);
+                     return 0;
+                  case IDM_STATE_LOAD_F9:
+                     StateLoadSlot(9);
+                     return 0;
+                  case IDM_STATE_LOAD_F10:
+                     StateLoadSlot(10);
+                     return 0;
                   case IDM_SOUNDSETTINGS:
                   {
                       DialogBox(GetModuleHandle(NULL), "SoundSettingsDlg", hwnd, (DLGPROC)SoundSettingsDlgProc);                    
