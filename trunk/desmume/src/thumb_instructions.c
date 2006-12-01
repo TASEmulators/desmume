@@ -787,6 +787,7 @@ static u32 FASTCALL OP_POP_PC(armcpu_t *cpu)
      u32 i = cpu->instruction;
      u32 adr = cpu->R[13];
      u32 c = 0, j;
+     u32 v;
 
      for(j = 0; j<8; ++j)
           if(BIT_N(i, j))
@@ -796,7 +797,7 @@ static u32 FASTCALL OP_POP_PC(armcpu_t *cpu)
                adr += 4;
           }
 
-     u32 v = MMU_readWord(cpu->proc_ID, adr);
+     v = MMU_readWord(cpu->proc_ID, adr);
      c += MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
      cpu->R[15] = v & 0xFFFFFFFE;
      cpu->next_instruction = v & 0xFFFFFFFE;
