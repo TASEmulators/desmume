@@ -37,7 +37,7 @@ Screen SubScreen;
 
 //#define DEBUG_TRI
 
-u16 GPU_screen[2*256*192];
+u8 GPU_screen[4*256*192];
 
 short sizeTab[4][4][2] =
 {
