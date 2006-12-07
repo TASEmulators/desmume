@@ -68,7 +68,6 @@ typedef struct
 
 typedef struct
 {
-   BOOL enable;
    u32 bufpos;
    u32 buflength;
    s32 *sndbuf;

@@ -169,7 +169,7 @@ void SPU_Reset(void)
 {
    int i;
 
-   memset((void *)SPU, 0, sizeof(SPU_struct));
+   memset((void *)SPU->chan, 0, sizeof(channel_struct) * 16);
 
    // Reset Registers
    for (i = 0x400; i < 0x51D; i++)
