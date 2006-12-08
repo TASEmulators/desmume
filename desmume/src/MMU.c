@@ -294,6 +294,8 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
+     int i;
+
      memset(ARM9Mem.ARM9_ABG, 0, 0x80000);
      memset(ARM9Mem.ARM9_AOBJ, 0, 0x40000);
      memset(ARM9Mem.ARM9_BBG, 0, 0x20000);
@@ -306,11 +308,33 @@ void MMU_clearMem()
      memset(ARM9Mem.ARM9_VMEM, 0, 0x800);
      memset(ARM9Mem.ARM9_WRAM, 0, 0x1000000);
      memset(ARM9Mem.MAIN_MEM, 0, 0x400000);
-     //memset(&ARM9, 0, sizeof(ARM9_struct));
      
      memset(MMU.ARM7_ERAM, 0, 0x10000);
      memset(MMU.ARM7_REG, 0, 0x10000);
-     
+
+     for(i = 0;i < 16;i++)
+        FIFOInit(MMU.fifos + i);
+
+     MMU.DTCMRegion = 0;
+     MMU.ITCMRegion = 0x00800000;
+        
+     memset(MMU.timer, 0, sizeof(u16) * 2 * 4);
+     memset(MMU.timerMODE, 0, sizeof(s32) * 2 * 4);
+     memset(MMU.timerON, 0, sizeof(u32) * 2 * 4);
+     memset(MMU.timerRUN, 0, sizeof(u32) * 2 * 4);
+     memset(MMU.timerReload, 0, sizeof(u16) * 2 * 4);
+        
+     memset(MMU.reg_IME, 0, sizeof(u32) * 2);
+     memset(MMU.reg_IE, 0, sizeof(u32) * 2);
+     memset(MMU.reg_IF, 0, sizeof(u32) * 2);
+        
+     memset(MMU.DMAStartTime, 0, sizeof(u32) * 2 * 4);
+     memset(MMU.DMACycle, 0, sizeof(s32) * 2 * 4);
+     memset(MMU.DMACrt, 0, sizeof(u32) * 2 * 4);
+     memset(MMU.DMAing, 0, sizeof(BOOL) * 2 * 4);
+		  
+     memset(MMU.dscard, 0, sizeof(nds_dscard) * 2);
+
      MainScreen.offset = 192;
      SubScreen.offset = 0;
 }
