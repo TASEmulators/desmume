@@ -42,35 +42,6 @@ int NDS_Init(void) {
      if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
         return -1;
 
-     //ARM7 BIOS IRQ HANDLER
-     MMU_writeWord(1, 0x00, 0xE25EF002);
-     MMU_writeWord(1, 0x04, 0xEAFFFFFE);
-     MMU_writeWord(1, 0x18, 0xEA000000);
-     MMU_writeWord(1, 0x20, 0xE92D500F);
-     MMU_writeWord(1, 0x24, 0xE3A00301);
-     MMU_writeWord(1, 0x28, 0xE28FE000);
-     MMU_writeWord(1, 0x2C, 0xE510F004);
-     MMU_writeWord(1, 0x30, 0xE8BD500F);
-     MMU_writeWord(1, 0x34, 0xE25EF004);
-    
-     //ARM9 BIOS IRQ HANDLER
-     MMU_writeWord(0, 0xFFF0018, 0xEA000000);
-     MMU_writeWord(0, 0xFFF0020, 0xE92D500F);
-     MMU_writeWord(0, 0xFFF0024, 0xEE190F11);
-     MMU_writeWord(0, 0xFFF0028, 0xE1A00620);
-     MMU_writeWord(0, 0xFFF002C, 0xE1A00600);
-     MMU_writeWord(0, 0xFFF0030, 0xE2800C40);
-     MMU_writeWord(0, 0xFFF0034, 0xE28FE000);
-     MMU_writeWord(0, 0xFFF0038, 0xE510F004);
-     MMU_writeWord(0, 0xFFF003C, 0xE8BD500F);
-     MMU_writeWord(0, 0xFFF0040, 0xE25EF004);
-        
-     MMU_writeWord(0, 0x0000004, 0xE3A0010E);
-     MMU_writeWord(0, 0x0000008, 0xE3A01020);
-//     MMU_writeWord(0, 0x000000C, 0xE1B02110);
-     MMU_writeWord(0, 0x000000C, 0xE1B02040);
-     MMU_writeWord(0, 0x0000010, 0xE3B02020);
-//     MMU_writeWord(0, 0x0000010, 0xE2100202);
      return 0;
 }
 
@@ -86,118 +57,8 @@ void NDS_DeInit(void) {
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
 {
-     u32 i;
-     NDS_header * header;
-     u32 src;
-     u32 dst;
-
-     MMU_clearMem();
-
      MMU_setRom(rom, mask);
-     
-     header = NDS_getROMHeader();
-     
-     src = header->ARM9src;
-     dst = header->ARM9cpy;
 
-     for(i = 0; i < (header->ARM9binSize>>2); ++i)
-     {
-          MMU_writeWord(0, dst, T1ReadLong(rom, src));
-          dst += 4;
-          src += 4;
-     }
-
-     src = header->ARM7src;
-     dst = header->ARM7cpy;
-     
-     for(i = 0; i < (header->ARM7binSize>>2); ++i)
-     {
-          MMU_writeWord(1, dst, T1ReadLong(rom, src));
-          dst += 4;
-          src += 4;
-     }
-     armcpu_init(&NDS_ARM7, header->ARM7exe);
-     armcpu_init(&NDS_ARM9, header->ARM9exe);
-     
-     nds.ARM9Cycle = 0;
-     nds.ARM7Cycle = 0;
-     nds.cycles = 0;
-     nds.nextHBlank = 3168;
-     nds.VCount = 0;
-     nds.lignerendu = FALSE;
-
-     MMU_writeHWord(0, 0x04000130, 0x3FF);
-     MMU_writeHWord(1, 0x04000130, 0x3FF);
-     MMU_writeByte(1, 0x04000136, 0x43);
-
-     MMU_writeByte(0, 0x027FFCDC, 0x20);
-     MMU_writeByte(0, 0x027FFCDD, 0x20);
-     MMU_writeByte(0, 0x027FFCE2, 0xE0);
-     MMU_writeByte(0, 0x027FFCE3, 0x80);
-     
-     MMU_writeHWord(0, 0x027FFCD8, 0x20<<4);
-     MMU_writeHWord(0, 0x027FFCDA, 0x20<<4);
-     MMU_writeHWord(0, 0x027FFCDE, 0xE0<<4);
-     MMU_writeHWord(0, 0x027FFCE0, 0x80<<4);
-
-     MMU_writeWord(0, 0x027FFE40, 0xE188);
-     MMU_writeWord(0, 0x027FFE44, 0x9);
-     MMU_writeWord(0, 0x027FFE48, 0xE194);
-     MMU_writeWord(0, 0x027FFE4C, 0x0);
-//     logcount = 0;
-     
-     MMU_writeByte(0, 0x023FFC80, 1);
-     MMU_writeByte(0, 0x023FFC82, 10);
-     MMU_writeByte(0, 0x023FFC83, 7);
-     MMU_writeByte(0, 0x023FFC84, 15);
-     
-     MMU_writeHWord(0, 0x023FFC86, 'y');
-     MMU_writeHWord(0, 0x023FFC88, 'o');
-     MMU_writeHWord(0, 0x023FFC8A, 'p');
-     MMU_writeHWord(0, 0x023FFC8C, 'y');
-     MMU_writeHWord(0, 0x023FFC8E, 'o');
-     MMU_writeHWord(0, 0x023FFC90, 'p');
-     MMU_writeHWord(0, 0x023FFC9A, 6);
-     
-     MMU_writeHWord(0, 0x023FFC9C, 'H');
-     MMU_writeHWord(0, 0x023FFC9E, 'i');
-     MMU_writeHWord(0, 0x023FFCA0, ',');
-     MMU_writeHWord(0, 0x023FFCA2, 'i');
-     MMU_writeHWord(0, 0x023FFCA4, 't');
-     MMU_writeHWord(0, 0x023FFCA6, '\'');
-     MMU_writeHWord(0, 0x023FFCA8, 's');
-     MMU_writeHWord(0, 0x023FFCAA, ' ');
-     MMU_writeHWord(0, 0x023FFCAC, 'm');
-     MMU_writeHWord(0, 0x023FFCAE, 'e');
-     MMU_writeHWord(0, 0x023FFCB0, '!');
-     MMU_writeHWord(0, 0x023FFCD0, 11);
-
-     MMU_writeHWord(0, 0x023FFCE4, 2);
-          
-     MMU_writeWord(0, 0x027FFE40, header->FNameTblOff);
-     MMU_writeWord(0, 0x027FFE44, header->FNameTblSize);
-     MMU_writeWord(0, 0x027FFE48, header->FATOff);
-     MMU_writeWord(0, 0x027FFE4C, header->FATSize);
-     
-     MMU_writeWord(0, 0x027FFE50, header->ARM9OverlayOff);
-     MMU_writeWord(0, 0x027FFE54, header->ARM9OverlaySize);
-     MMU_writeWord(0, 0x027FFE58, header->ARM7OverlayOff);
-     MMU_writeWord(0, 0x027FFE5C, header->ARM7OverlaySize);
-     
-     MMU_writeWord(0, 0x027FFE60, header->unknown2a);
-     MMU_writeWord(0, 0x027FFE64, header->unknown2b);  //merci EACKiX
-
-     MMU_writeWord(0, 0x027FFE70, header->ARM9unk);
-     MMU_writeWord(0, 0x027FFE74, header->ARM7unk);
-
-     MMU_writeWord(0, 0x027FFF9C, 0x027FFF90); // ?????? besoin d'avoir la vrai valeur sur ds
-     
-     nds.touchX = nds.touchY = 0;
-     MainScreen.offset = 192;
-     SubScreen.offset = 0;
-     
-     //MMU_writeWord(0, 0x02007FFC, 0xE92D4030);
-     
      return TRUE;
 } 
 
@@ -362,8 +223,8 @@ int NDS_LoadROM(const char *filename)
    fclose(file);
 	
    MMU_unsetRom();
-   NDS_Reset();
    NDS_SetROM(data, mask);
+   NDS_Reset();
 
    /* I guess any directory can be used
     * so the current one should be ok */
@@ -403,10 +264,151 @@ void NDS_Reset(void)
 {
    BOOL oldexecute=execute;
    int i;
+   u32 src;
+   u32 dst;
+   NDS_header * header = NDS_getROMHeader();
 
    execute = FALSE;
 
-   // Reset emulation here
+   MMU_clearMem();
+
+   src = header->ARM9src;
+   dst = header->ARM9cpy;
+
+   for(i = 0; i < (header->ARM9binSize>>2); ++i)
+   {
+      MMU_writeWord(0, dst, T1ReadLong(MMU.CART_ROM, src));
+      dst += 4;
+      src += 4;
+   }
+
+   src = header->ARM7src;
+   dst = header->ARM7cpy;
+     
+   for(i = 0; i < (header->ARM7binSize>>2); ++i)
+   {
+      MMU_writeWord(1, dst, T1ReadLong(MMU.CART_ROM, src));
+      dst += 4;
+      src += 4;
+   }
+
+   armcpu_init(&NDS_ARM7, header->ARM7exe);
+   armcpu_init(&NDS_ARM9, header->ARM9exe);
+     
+   nds.ARM9Cycle = 0;
+   nds.ARM7Cycle = 0;
+   nds.cycles = 0;
+   nds.nextHBlank = 3168;
+   nds.VCount = 0;
+   nds.lignerendu = FALSE;
+
+   MMU_writeHWord(0, 0x04000130, 0x3FF);
+   MMU_writeHWord(1, 0x04000130, 0x3FF);
+   MMU_writeByte(1, 0x04000136, 0x43);
+
+   MMU_writeByte(0, 0x027FFCDC, 0x20);
+   MMU_writeByte(0, 0x027FFCDD, 0x20);
+   MMU_writeByte(0, 0x027FFCE2, 0xE0);
+   MMU_writeByte(0, 0x027FFCE3, 0x80);
+     
+   MMU_writeHWord(0, 0x027FFCD8, 0x20<<4);
+   MMU_writeHWord(0, 0x027FFCDA, 0x20<<4);
+   MMU_writeHWord(0, 0x027FFCDE, 0xE0<<4);
+   MMU_writeHWord(0, 0x027FFCE0, 0x80<<4);
+
+   MMU_writeWord(0, 0x027FFE40, 0xE188);
+   MMU_writeWord(0, 0x027FFE44, 0x9);
+   MMU_writeWord(0, 0x027FFE48, 0xE194);
+   MMU_writeWord(0, 0x027FFE4C, 0x0);
+//     logcount = 0;
+   
+   MMU_writeByte(0, 0x023FFC80, 1);
+   MMU_writeByte(0, 0x023FFC82, 10);
+   MMU_writeByte(0, 0x023FFC83, 7);
+   MMU_writeByte(0, 0x023FFC84, 15);
+     
+   MMU_writeHWord(0, 0x023FFC86, 'y');
+   MMU_writeHWord(0, 0x023FFC88, 'o');
+   MMU_writeHWord(0, 0x023FFC8A, 'p');
+   MMU_writeHWord(0, 0x023FFC8C, 'y');
+   MMU_writeHWord(0, 0x023FFC8E, 'o');
+   MMU_writeHWord(0, 0x023FFC90, 'p');
+   MMU_writeHWord(0, 0x023FFC9A, 6);
+     
+   MMU_writeHWord(0, 0x023FFC9C, 'H');
+   MMU_writeHWord(0, 0x023FFC9E, 'i');
+   MMU_writeHWord(0, 0x023FFCA0, ',');
+   MMU_writeHWord(0, 0x023FFCA2, 'i');
+   MMU_writeHWord(0, 0x023FFCA4, 't');
+   MMU_writeHWord(0, 0x023FFCA6, '\'');
+   MMU_writeHWord(0, 0x023FFCA8, 's');
+   MMU_writeHWord(0, 0x023FFCAA, ' ');
+   MMU_writeHWord(0, 0x023FFCAC, 'm');
+   MMU_writeHWord(0, 0x023FFCAE, 'e');
+   MMU_writeHWord(0, 0x023FFCB0, '!');
+   MMU_writeHWord(0, 0x023FFCD0, 11);
+
+   MMU_writeHWord(0, 0x023FFCE4, 2);
+          
+   MMU_writeWord(0, 0x027FFE40, header->FNameTblOff);
+   MMU_writeWord(0, 0x027FFE44, header->FNameTblSize);
+   MMU_writeWord(0, 0x027FFE48, header->FATOff);
+   MMU_writeWord(0, 0x027FFE4C, header->FATSize);
+     
+   MMU_writeWord(0, 0x027FFE50, header->ARM9OverlayOff);
+   MMU_writeWord(0, 0x027FFE54, header->ARM9OverlaySize);
+   MMU_writeWord(0, 0x027FFE58, header->ARM7OverlayOff);
+   MMU_writeWord(0, 0x027FFE5C, header->ARM7OverlaySize);
+     
+   MMU_writeWord(0, 0x027FFE60, header->unknown2a);
+   MMU_writeWord(0, 0x027FFE64, header->unknown2b);  //merci EACKiX
+
+   MMU_writeWord(0, 0x027FFE70, header->ARM9unk);
+   MMU_writeWord(0, 0x027FFE74, header->ARM7unk);
+
+   MMU_writeWord(0, 0x027FFF9C, 0x027FFF90); // ?????? besoin d'avoir la vrai valeur sur ds
+     
+   nds.touchX = nds.touchY = 0;
+   MainScreen.offset = 192;
+   SubScreen.offset = 0;
+     
+   //MMU_writeWord(0, 0x02007FFC, 0xE92D4030);
+
+     //ARM7 BIOS IRQ HANDLER
+     MMU_writeWord(1, 0x00, 0xE25EF002);
+     MMU_writeWord(1, 0x04, 0xEAFFFFFE);
+     MMU_writeWord(1, 0x18, 0xEA000000);
+     MMU_writeWord(1, 0x20, 0xE92D500F);
+     MMU_writeWord(1, 0x24, 0xE3A00301);
+     MMU_writeWord(1, 0x28, 0xE28FE000);
+     MMU_writeWord(1, 0x2C, 0xE510F004);
+     MMU_writeWord(1, 0x30, 0xE8BD500F);
+     MMU_writeWord(1, 0x34, 0xE25EF004);
+    
+     //ARM9 BIOS IRQ HANDLER
+     MMU_writeWord(0, 0xFFF0018, 0xEA000000);
+     MMU_writeWord(0, 0xFFF0020, 0xE92D500F);
+     MMU_writeWord(0, 0xFFF0024, 0xEE190F11);
+     MMU_writeWord(0, 0xFFF0028, 0xE1A00620);
+     MMU_writeWord(0, 0xFFF002C, 0xE1A00600);
+     MMU_writeWord(0, 0xFFF0030, 0xE2800C40);
+     MMU_writeWord(0, 0xFFF0034, 0xE28FE000);
+     MMU_writeWord(0, 0xFFF0038, 0xE510F004);
+     MMU_writeWord(0, 0xFFF003C, 0xE8BD500F);
+     MMU_writeWord(0, 0xFFF0040, 0xE25EF004);
+        
+     MMU_writeWord(0, 0x0000004, 0xE3A0010E);
+     MMU_writeWord(0, 0x0000008, 0xE3A01020);
+//     MMU_writeWord(0, 0x000000C, 0xE1B02110);
+     MMU_writeWord(0, 0x000000C, 0xE1B02040);
+     MMU_writeWord(0, 0x0000010, 0xE3B02020);
+//     MMU_writeWord(0, 0x0000010, 0xE2100202);
+
+   free(header);
+
+   GPU_Reset(MainScreen.gpu, 0);
+   GPU_Reset(SubScreen.gpu, 1);
+   SPU_Reset();
 
    execute = oldexecute;
 }
