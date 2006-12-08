@@ -298,9 +298,14 @@ void NDS_Reset(void)
    nds.ARM9Cycle = 0;
    nds.ARM7Cycle = 0;
    nds.cycles = 0;
+   memset(nds.timerCycle, 0, sizeof(s32) * 2 * 4);
+   memset(nds.timerOver, 0, sizeof(BOOL) * 2 * 4);
    nds.nextHBlank = 3168;
    nds.VCount = 0;
+   nds.old = 0;
+   nds.diff = 0;
    nds.lignerendu = FALSE;
+   nds.touchX = nds.touchY = 0;
 
    MMU_writeHWord(0, 0x04000130, 0x3FF);
    MMU_writeHWord(1, 0x04000130, 0x3FF);
@@ -368,7 +373,6 @@ void NDS_Reset(void)
 
    MMU_writeWord(0, 0x027FFF9C, 0x027FFF90); // ?????? besoin d'avoir la vrai valeur sur ds
      
-   nds.touchX = nds.touchY = 0;
    MainScreen.offset = 192;
    SubScreen.offset = 0;
      
