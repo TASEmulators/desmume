@@ -57,6 +57,8 @@ LRESULT Ginfo_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         
         EndPaint(hwnd, &ps);
 
+        free(header);
+
         return 0;
 }
 

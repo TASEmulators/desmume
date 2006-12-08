@@ -72,6 +72,7 @@ u32 glock = 0;
 BOOL click = FALSE;
 
 BOOL finished = FALSE;
+BOOL romloaded = FALSE;
 
 HMENU menu;
 HANDLE runthread=INVALID_HANDLE_VALUE;
@@ -313,12 +314,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     {
        EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
        EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+       EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
+       EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+       romloaded = TRUE;
        NDS_UnPause();
     }
     else
     {
        EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
        EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
+       EnableMenuItem(menu, IDM_RESET, MF_GRAYED);
+       EnableMenuItem(menu, IDM_GAME_INFO, MF_GRAYED);
     }
 
     CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
@@ -417,6 +423,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   {
                      EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                      EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+                     EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
+                     EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+                     romloaded = TRUE;
                      NDS_UnPause();
                   }
              }
@@ -596,7 +605,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             
                             if(!GetOpenFileName(&ofn))
                             {
-                                 NDS_UnPause(); //Restart emulation if no new rom chosen
+                                 if (romloaded)
+                                    NDS_UnPause(); //Restart emulation if no new rom chosen
                                  return 0;
                             }
                             
@@ -606,6 +616,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             {
                                EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                                EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+                               EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
+                               EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+                               romloaded = TRUE;
                                NDS_UnPause();
                             }
                        }
