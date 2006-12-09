@@ -10,7 +10,7 @@ libdesmume_a_SOURCES = \
 	FIFO.c FIFO.h \
 	GPU.c GPU.h \
         mc.c mc.h \
-        MMU.c MMU.h NDSSystem.c NDSSystem.h \
+        MMU.c MMU.h NDSSystem.c NDSSystem.h registers.h \
         saves.c saves.h \
         SPU.c SPU.h \
         thumb_instructions.c thumb_instructions.h

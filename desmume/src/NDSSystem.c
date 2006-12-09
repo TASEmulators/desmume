@@ -258,6 +258,9 @@ void NDS_FreeROM(void)
    if (MMU.CART_ROM != MMU.UNUSED_RAM)
       free(MMU.CART_ROM);
    MMU_unsetRom();
+   if (MMU.bupmem.fp)
+      fclose(MMU.bupmem.fp);
+   MMU.bupmem.fp = NULL;
 }
 
 void NDS_Reset(void)
