@@ -119,6 +119,18 @@ void refreshAll();
 #define IDC_SAVETYPE5       186
 #define IDC_SAVETYPE6       187
 
+#define IDC_FRAMESKIPAUTO   190
+#define IDC_FRAMESKIP0      191
+#define IDC_FRAMESKIP1      192
+#define IDC_FRAMESKIP2      193
+#define IDC_FRAMESKIP3      194
+#define IDC_FRAMESKIP4      195
+#define IDC_FRAMESKIP5      196
+#define IDC_FRAMESKIP6      197
+#define IDC_FRAMESKIP7      198
+#define IDC_FRAMESKIP8      199
+#define IDC_FRAMESKIP9      200
+
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
 #define IDC_16_BIT          303

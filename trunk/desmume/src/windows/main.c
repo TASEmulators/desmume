@@ -91,6 +91,9 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
+int autoframeskipenab=1;
+int frameskiprate=0;
+
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam);
 
@@ -102,7 +105,6 @@ DWORD WINAPI run( LPVOID lpParameter)
      int wait=0;
      u64 freq;
      u64 OneFrameTime;
-     int autoframeskipenab=1;
      int framestoskip=0;
      int framesskipped=0;
      int skipnextframe=0;
@@ -215,6 +217,11 @@ DWORD WINAPI run( LPVOID lpParameter)
                   onesecondticks += diffticks;
                   lastticks = curticks;
                }
+               else
+               {
+                  if (framestoskip < 1)
+                     framestoskip = frameskiprate + 1;
+               }
 
                CWindow_RefreshALL();
                Sleep(0);
@@ -295,6 +302,21 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     GetINIPath(IniName);
 
     NDS_Init();
+
+    GetPrivateProfileString("Video", "FrameSkip", "AUTO", text, 80, IniName);
+
+    if (strcmp(text, "AUTO") == 0)
+    {
+       autoframeskipenab=1;
+       frameskiprate=0;
+       CheckMenuItem(menu, IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_CHECKED);
+    }
+    else
+    {
+       autoframeskipenab=0;
+       frameskiprate=atoi(text);
+       CheckMenuItem(menu, frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
+    }
 
     sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
     sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
@@ -988,6 +1010,46 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                CWindow_Show(&ConfigView);
 
                        }
+                  return 0;
+                  case IDC_FRAMESKIPAUTO:
+                  case IDC_FRAMESKIP0:
+                  case IDC_FRAMESKIP1:
+                  case IDC_FRAMESKIP2:
+                  case IDC_FRAMESKIP3:
+                  case IDC_FRAMESKIP4:
+                  case IDC_FRAMESKIP5:
+                  case IDC_FRAMESKIP6:
+                  case IDC_FRAMESKIP7:
+                  case IDC_FRAMESKIP8:
+                  case IDC_FRAMESKIP9:
+                  {
+                       if(LOWORD(wParam) == IDC_FRAMESKIPAUTO)
+                       {
+                          autoframeskipenab = 1;
+                          WritePrivateProfileString("Video", "FrameSkip", "AUTO", IniName);
+                       }
+                       else
+                       {
+                          char text[80];
+                          autoframeskipenab = 0;
+                          frameskiprate = LOWORD(wParam) - IDC_FRAMESKIP0;
+                          sprintf(text, "%d", frameskiprate);
+                          WritePrivateProfileString("Video", "FrameSkip", text, IniName);
+                       }
+
+                       CheckMenuItem(menu, IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP0, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP1, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP2, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP3, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP4, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP5, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP6, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP7, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP8, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
+                  }
                   return 0;
                   case IDM_WEBSITE:
                        ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
