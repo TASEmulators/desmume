@@ -27,8 +27,6 @@
 #include "GPU.h"
 #include "debug.h"
 
-#include "nds/video.h"
-
 ARM9_struct ARM9Mem;
 
 extern BOOL click;
@@ -150,12 +148,12 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         }
 
 	gpu->nbBGActif = 0;
-	if(p & DISPLAY_SPR_1D_LAYOUT)
+        if(p & 0x10)
 	{
 		/* 1-d sprite mapping */
 		
-		gpu->sprBlock = 5 + DISPLAY_SPR_1D_SIZE_MASK(p);	/* TODO: better comment (and understanding btw 8S) */
-		if((gpu->core == GPU_SUB) && (DISPLAY_SPR_1D_SIZE_MASK(p) == 3))
+                gpu->sprBlock = 5 + ((p>>20)&3);        /* TODO: better comment (and understanding btw 8S) */
+                if((gpu->core == GPU_SUB) && (((p>>20)&3) == 3))
 		{
 			gpu->sprBlock = 7;
 		}
@@ -168,7 +166,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->spriteRender = sprite2D;
 	}
      
-	if((p & DISPLAY_SPR_1D_BMP_SIZE_256) && (gpu->core == GPU_MAIN))
+        if((p & 0x400000) && (gpu->core == GPU_MAIN))
 	{
 		gpu->sprBMPBlock = 8;
 	}
@@ -182,7 +180,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 5) << 1));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 4) << 1));
 	
-	if((p & DISPLAY_BG3_ACTIVE) && gpu->dispBG[3])
+        if((p & 0x800) && gpu->dispBG[3])
 	{
 		gpu->ordre[0] = 3;
 		gpu->BGIndex[3] = 1;
@@ -193,11 +191,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[3] = 0;
 	}
 	
-	if((p & DISPLAY_BG2_ACTIVE) && gpu->dispBG[2])
+        if((p & 0x400) && gpu->dispBG[2])
 	{
 		if(gpu->nbBGActif)
 		{
-			if(BG_PRIORITY_MASK(gpu->BGProp[2]) > BG_PRIORITY_MASK(gpu->BGProp[3]))
+                        if((gpu->BGProp[2] & 0x3) > (gpu->BGProp[3] & 0x3))
 			{
 				gpu->ordre[0] = 2;
 				gpu->BGIndex[2] = 1;
@@ -224,7 +222,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			gpu->BGIndex[2] = 0;
 	}
 	
-	if((p & DISPLAY_BG1_ACTIVE) && gpu->dispBG[1])
+        if((p & 0x200) && gpu->dispBG[1])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -235,7 +233,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		{
 			u8 i = 0;
 			s8 j;
-			for(; (i < gpu->nbBGActif) && (BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]) >= BG_PRIORITY_MASK(gpu->BGProp[1])); ++i);
+                        for(; (i < gpu->nbBGActif) && ((gpu->BGProp[gpu->ordre[i]] & 0x3) >= (gpu->BGProp[1] & 0x3)); ++i);
 			for(j = gpu->nbBGActif-1; j >= i; --j)
 			{
 				gpu->ordre[j+1] = gpu->ordre[j];
@@ -251,7 +249,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[1] = 0;
 	}
 	
-	if((p & DISPLAY_BG0_ACTIVE) && (!(p & ENABLE_3D)) && gpu->dispBG[0])
+        if((p & 0x100) && (!(p & 0x8)) && gpu->dispBG[0])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -262,7 +260,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		{
 			u8 i = 0;
 			s8 j;
-			for(; (i < gpu->nbBGActif) && (BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]) >= BG_PRIORITY_MASK(gpu->BGProp[0])); ++i);
+                        for(; (i < gpu->nbBGActif) && ((gpu->BGProp[gpu->ordre[i]] & 0x3) >= (gpu->BGProp[0] & 0x3)); ++i);
 			for(j = gpu->nbBGActif-1; j >= i; --j)
 			{
 				gpu->ordre[j+1] = gpu->ordre[j];
@@ -299,7 +297,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	if((gpu->nbBGActif != 0) && (index != 0))
 	{
 		index--;
-		if(BG_PRIORITY_MASK(gpu->BGProp[num]) < BG_PRIORITY_MASK(p))
+                if((gpu->BGProp[num] & 0x3) < (p & 0x3))
 		{
 #ifdef DEBUG_TRI
                sprintf(logbuf, "INF NEW bg %d prio %d %d", num, p&3, index);
@@ -311,7 +309,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                }
 #endif
 			u8 i = 0;
-			for(; (i < index) && (((BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]))>(BG_PRIORITY_MASK(p))) || (((BG_PRIORITY_MASK(gpu->BGProp[gpu->ordre[i]]))==(BG_PRIORITY_MASK(p)))&&(gpu->ordre[i]>num))); ++i);	/* TODO: commenting and understanding */
+                        for(; (i < index) && ((((gpu->BGProp[gpu->ordre[i]] & 0x3))>((p & 0x3))) || ((((gpu->BGProp[gpu->ordre[i]] & 0x3))==((p & 0x3)))&&(gpu->ordre[i]>num))); ++i);  /* TODO: commenting and understanding */
                
 #ifdef DEBUG_TRI
 					
@@ -387,15 +385,15 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	
 	if(gpu->core == GPU_SUB)
 	{
-		gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BG_BMP_BASE_MASK(p) * 0x4000;
-		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BG_TILE_BASE_MASK(p) * 0x4000;
-		gpu->BG_map_ram[num] = ARM9Mem.ARM9_BBG + BG_MAP_BASE_MASK(p) * 0x800;
+                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + ((p>>8)&0x1F) * 0x4000;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + ((p>>2)&0xF) * 0x4000;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_BBG + ((p>>8)&0x1F) * 0x800;
 	}
 	else
 	{
-		gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BG_BMP_BASE_MASK(p) * 0x4000;
-		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BG_TILE_BASE_MASK(p) * 0x4000 + DISPLAY_TILE_BASE_MASK(gpu->prop) * 0x10000;
-		gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BG_MAP_BASE_MASK(p) * 0x800 + DISPLAY_MAP_BASE_MASK(gpu->prop) * 0x10000;
+                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>8)&0x1F) * 0x4000;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>2)&0xF) * 0x4000 + ((gpu->prop >> 24) & 0x7) * 0x10000;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + ((p>>8)&0x1F) * 0x800 + ((gpu->prop >> 27) & 0x7) * 0x10000;
 	}
 
      /*if(!(p&(1<<7)))
@@ -406,12 +404,12 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           else*/
 	switch(num)
 	{
-		case 0 :
-			gpu->BGExtPalSlot[num] = BG_PALETTE_SLOT_MASK(p) ? 2 : 0;
+                case 0 :                        
+                        gpu->BGExtPalSlot[num] = (p & 0x2000) ? 2 : 0;
 			break;
 			
 		case 1 :
-			gpu->BGExtPalSlot[num] = BG_PALETTE_SLOT_MASK(p) ? 3 : 1;
+                        gpu->BGExtPalSlot[num] = (p & 0x2000) ? 3 : 1;
 			break;
 			
 		default :
@@ -425,9 +423,9 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           BGSize[num][1] =  lcdSizeTab[p>>14][1];
           return;
      }*/
-	
-	gpu->BGSize[num][0] = sizeTab[mode2type[DISPLAY_MODE_MASK(gpu->prop)][num]][BG_SIZE_MASK(p)][0];
-	gpu->BGSize[num][1] = sizeTab[mode2type[DISPLAY_MODE_MASK(gpu->prop)][num]][BG_SIZE_MASK(p)][1];
+                                                                                                      
+        gpu->BGSize[num][0] = sizeTab[mode2type[gpu->prop & 0x7][num]][p >> 14][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[gpu->prop & 0x7][num]][p >> 14][1];
 }
 
 void GPU_remove(GPU * gpu, u8 num)
@@ -563,7 +561,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 	if(tmp>31)
 	{
-		switch(BG_SIZE_MASK(bgprop))
+                switch(bgprop >> 14)
 		{
 			case 2 :
 				map += 32 * 32 * 2;
@@ -580,7 +578,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	
         xoff = X;
 	
-	if(!(bgprop & BG_256_COLOR))
+        if(!(bgprop & 0x80))
 	{
                 yoff = ((Y&7)<<2);
                 pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
@@ -599,19 +597,19 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 			mapinfovalue = T1ReadWord(mapinfo, 0);
 
-                        line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue) * 0x20) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*4)-yoff : yoff));
+                        line = (u8 * )tile + ((mapinfovalue&0x3FF) * 0x20) + (((mapinfovalue)& 0x800 ? (7*4)-yoff : yoff));
                         xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
-			if((mapinfovalue) & MAP_ENTRY_FLIP_X)
+                        if((mapinfovalue) & 0x400)
 			{
 				line += 3 - ((xoff&7)>>1);
 				for(; x < xfin; )
-				{
-					if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+                                {                                                                                                                 
+                                        if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
-					if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+                                        if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
 					line--;
 				}
@@ -621,9 +619,9 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 				line += ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-					if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+                                        if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
-					if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + MAP_ENTRY_PALETTE_MASK(mapinfovalue) * 0x10) << 1));
+                                        if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
 					line++;
 				}
@@ -632,7 +630,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		return;
 	}
 	
-	if(!(gpu->prop & DISPLAY_BG_EXT_PALETTE))
+        if(!(gpu->prop & 0x40000000))
 	{
                 yoff = ((Y&7)<<3);
                 pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
@@ -650,13 +648,13 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			if(tmp > 31) mapinfo += 32*32*2;
 
 			mapinfovalue = T1ReadWord(mapinfo, 0);
-
-                        line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+                                                                                 
+                        line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
                         xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
-			if((mapinfovalue)& MAP_ENTRY_FLIP_X)
+                        if((mapinfovalue)& 0x400)
 			{
 					line += (7 - (xoff&7));
 					for(; x < xfin; ++x, ++xoff)
@@ -700,12 +698,12 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 		mapinfovalue = T1ReadWord(mapinfo, 0);
 
-                line = (u8 * )tile + (MAP_ENTRY_TILEID_MASK(mapinfovalue)*0x40) + (((mapinfovalue)& MAP_ENTRY_FLIP_Y ? (7*8)-yoff : yoff));
+                line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
                 xfin = x + (8 - (xoff&7));
 		if (xfin > LG)
 			xfin = LG;
 		
-		if((mapinfovalue)& MAP_ENTRY_FLIP_X)
+                if((mapinfovalue)& 0x400)
 		{
 			line += (7 - (xoff&7));
 			for(; x < xfin; ++x, ++xoff)

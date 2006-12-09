@@ -40,22 +40,6 @@ extern BOOL click;
 //#define LOG_ARM9
 //#define LOG_ARM7
 
-#define REG_DIVCNT          (0x280>>2)
-#define REG_DIV_NUMER_L     (0x290>>2)
-#define REG_DIV_NUMER_H     (0x294>>2)
-#define REG_DIV_DENOM_L     (0x298>>2)
-#define REG_DIV_DENOM_H     (0x29C>>2)
-#define REG_DIV_RESULT_L    (0x2A0>>2)
-#define REG_DIV_RESULT_H    (0x2A4>>2)
-#define REG_DIV_REMAIN_L    (0x2A8>>2)
-#define REG_DIV_REMAIN_H    (0x2AC>>2)
-#define REG_SQRTCNT         (0x2B0>>2)
-#define REG_SQRT_PARAM_L    (0x2B8>>2)
-#define REG_SQRT_PARAM_H    (0x2BC>>2)
-#define REG_SQRT_RESULT     (0x2B4>>2)
-#define reg_IPCSYNC         (0x180>>1)
-#define reg_IPCFIFOCNT      (0x184>>1)
-
 typedef struct
 {
        char     gameTile[12];

@@ -26,7 +26,6 @@
 #include "dscard.h"
 
 #include "ARM9.h"
-#include "nds/serial.h"
 #include "mc.h"
 
 #ifdef __cplusplus

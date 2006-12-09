@@ -7,7 +7,6 @@ extern "C" {
 
 #include <stdio.h>
 #include "types.h"
-#include "nds/serial.h"
 
 #define MC_TYPE_AUTODETECT      0x0
 #define MC_TYPE_EEPROM1         0x1
