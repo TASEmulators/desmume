@@ -99,7 +99,6 @@
 #define REG_AUXSPIDATA                          0x040001A2
 #define REG_GCROMCTRL                           0x040001A4
 #define REG_GCCMDOUT                            0x040001A8
-#define REG_GCDATAIN                            0x04100010
 #define REG_ENCSEED0L                           0x040001B0
 #define REG_ENCSEED1L                           0x040001B4
 #define REG_ENCSEED0H                           0x040001B8
@@ -183,5 +182,9 @@
 #define REG_DISPB_BLDALPHA                      0x04001052
 #define REG_DISPB_BLDY                          0x04001054
 #define REG_DISPB_MASTERBRIGHT                  0x0400106C
+
+// Receive ports
+#define REG_IPCFIFORECV                         0x04100000
+#define REG_GCDATAIN                            0x04100010
 
 #endif
