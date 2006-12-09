@@ -778,10 +778,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_IOREG:
                        {
-                            cwindow_struct IoregView;
+                            cwindow_struct *IoregView;
 
-                            if (CWindow_Init2(&IoregView, hAppInst, HWND_DESKTOP, "IO REG VIEW", IDD_IO_REG, IoregView_Proc) == 0)
-                               CWindow_Show(&IoregView);
+                            if ((IoregView = malloc(sizeof(cwindow_struct))) == NULL)
+                               return 0;
+
+                            if (CWindow_Init2(IoregView, hAppInst, HWND_DESKTOP, "IO REG VIEW", IDD_IO_REG, IoregView_Proc) == 0)
+                            {
+                               CWindow_AddToRefreshList(IoregView);
+                               CWindow_Show(IoregView);
+                            }
                        }
                   return 0;
                   case IDM_QUIT:
