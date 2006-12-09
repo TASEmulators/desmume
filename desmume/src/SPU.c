@@ -140,6 +140,8 @@ int SPU_Init(int coreid, int buffersize)
    if ((SPU = (SPU_struct *)malloc(sizeof(SPU_struct))) == NULL)
       return -1;
 
+   memset((void *)SPU, 0, sizeof(SPU_struct));
+
    SPU_Reset();
 
    return SPU_ChangeSoundCore(coreid, buffersize);
