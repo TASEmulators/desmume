@@ -390,9 +390,9 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 			return 0xE0;
 		case 0x027FFCE3 :
 			return 0x80;
-		/*case 0x04000300 :
+                /*case REG_POSTFLG :
 			return 1;
-		case 0x04000208 :
+                case REG_IME :
 			execute = FALSE;*/
 		default :
 		    return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
@@ -420,7 +420,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 		/* Adress is an IO register */
 		switch(adr)
 		{
-			case 0x04100000 :		/* TODO (clear): ??? */
+                        case REG_IPCFIFORECV :               /* TODO (clear): ??? */
 				execute = FALSE;
 				return 1;
 				
@@ -437,10 +437,10 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 			case REG_IF + 2 :
 				return (u16)(MMU.reg_IF[proc]>>16);
 				
-			case 0x04000100 :
-			case 0x04000104 :
-			case 0x04000108 :
-			case 0x0400010C :
+                        case REG_TM0CNTL :
+                        case REG_TM1CNTL :
+                        case REG_TM2CNTL :
+                        case REG_TM3CNTL :
 				return MMU.timer[proc][(adr&0xF)>>2];
 			
 			case 0x04000630 :
@@ -452,7 +452,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 			/*case 0x2330F84 :
 				if(click) execute = FALSE;*/
 			//case 0x27FF018 : execute = FALSE;
-			case 0x04000300 :
+                        case REG_POSTFLG :
 				return 1;
 			default :
 				break;
@@ -512,7 +512,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			case REG_IF :
 				return MMU.reg_IF[proc];
 				
-			case 0x04100000 :
+                        case REG_IPCFIFORECV :
 			{
 				u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 				if(IPCFIFO_CNT&0x8000)
@@ -532,10 +532,10 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				}
 			}
 			return 0;
-			case 0x04000100 :
-			case 0x04000104 :
-			case 0x04000108 :
-			case 0x0400010C :
+                        case REG_TM0CNTL :
+                        case REG_TM1CNTL :
+                        case REG_TM2CNTL :
+                        case REG_TM3CNTL :
 			{
 				u32 val = T1ReadWord(MMU.MMU_MEM[proc][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[proc][(adr&0xF)>>2] | (val<<16);
@@ -817,7 +817,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 					OGLRender::glAlphaFunc(val);
 				}
 				return;
-			case 0x04000060 :
+                        case REG_DISPA_DISP3DCNT :
 				if(proc == ARMCPU_ARM9)
 				{
 					OGLRender::glControl(val);
@@ -1181,7 +1181,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				MMU.reg_IF[proc] &= (~(((u32)val)<<16));
 				return;
 				
-			case 0x04000180 :
+                        case REG_IPCSYNC :
 				{
 				u32 remote = (proc+1)&1;
 				u16 IPCSYNC_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x180);
@@ -1191,7 +1191,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				//execute = FALSE;
 				}
 				return;
-			case 0x04000184 :
+                        case REG_IPCFIFOCNT :
 				{
 				if(val & 0x4008)
 				{
@@ -1204,16 +1204,16 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) | (val & 0xBFF4));
 				}
 				return;
-			case 0x04000100 :
-			case 0x04000104 :
-			case 0x04000108 :
-			case 0x0400010C :
+                        case REG_TM0CNTL :
+                        case REG_TM1CNTL :
+                        case REG_TM2CNTL :
+                        case REG_TM3CNTL :
 				MMU.timerReload[proc][(adr>>2)&3] = val;
 				return;
-			case 0x04000102 :
-			case 0x04000106 :
-			case 0x0400010A :
-			case 0x0400010E :
+                        case REG_TM0CNTH :
+                        case REG_TM1CNTH :
+                        case REG_TM2CNTH :
+                        case REG_TM3CNTH :
 				if(val&0x80)
 				{
 				if(!(val&4)) MMU.timer[proc][((adr-2)>>2)&0x3] = MMU.timerReload[proc][((adr-2)>>2)&0x3];
@@ -1242,7 +1242,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				MMU.timerRUN[proc][((adr-2)>>2)&0x3] = FALSE;
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
-			case 0x04000002 : 
+                        case REG_DISPA_DISPCNT+2 : 
 				{
 				//execute = FALSE;
 				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0) & 0xFFFF) | ((u32) val << 16);
@@ -1250,14 +1250,14 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, v);
 				}
 				return;
-			case 0x04000000 :
+                        case REG_DISPA_DISPCNT :
 				{
 				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0) & 0xFFFF0000) | val;
 				GPU_setVideoProp(MainScreen.gpu, v);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, v);
 				}
 				return;
-			case 0x04001002 : 
+                        case REG_DISPB_DISPCNT+2 : 
 				{
 				//execute = FALSE;
 				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x1000) & 0xFFFF) | ((u32) val << 16);
@@ -1265,7 +1265,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, v);
 				}
 				return;
-			case 0x04001000 :
+                        case REG_DISPB_DISPCNT :
 				{
 				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x1000) & 0xFFFF0000) | val;
 				GPU_setVideoProp(SubScreen.gpu, v);
@@ -1276,7 +1276,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			/*case 0x0235A904 :
 				LOG("ECRIRE %d %04X\r\n", proc, val);
 				execute = FALSE;*/
-				case 0x040000BA :
+                                case REG_DMA0CNTH :
 				{
                                 u32 v;
 
@@ -1298,7 +1298,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				#endif
 				}
 				return;
-				case 0x040000C6 :
+                                case REG_DMA1CNTH :
 				{
                                 u32 v;
 				//if(val&0x8000) execute = FALSE;
@@ -1319,7 +1319,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				#endif
 				}
 				return;
-				case 0x040000D2 :
+                                case REG_DMA2CNTH :
 				{
                                 u32 v;
 				//if(val&0x8000) execute = FALSE;
@@ -1340,7 +1340,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				#endif
 				}
 				return;
-				case 0x040000DE :
+                                case REG_DMA3CNTH :
 				{
                                 u32 v;
 				//if(val&0x8000) execute = FALSE;
@@ -1362,7 +1362,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				#endif
 				}
 				return;
-			//case 0x040001A0 : execute = FALSE;
+                        //case REG_AUXSPICNT : execute = FALSE;
 			default :
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val); 
 				return;
@@ -1576,86 +1576,87 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				return;
 #endif
-			case 0x04000020 :
+                        case REG_DISPA_BG2PA :
 				GPU_setPAPB(MainScreen.gpu, 2, val);
 				return;
-			case 0x04000024 :
+                        case REG_DISPA_BG2PC :
 				GPU_setPCPD(MainScreen.gpu, 2, val);
 				return;
-			case 0x04001020 :
+
+                        case REG_DISPB_BG2PA :
 				GPU_setPAPB(SubScreen.gpu, 2, val);
 				return;
-			case 0x04001024 :
+                        case REG_DISPB_BG2PC :
 				GPU_setPCPD(SubScreen.gpu, 2, val);
 				return;
-			case 0x04000030 :
+                        case REG_DISPA_BG3PA :
 				GPU_setPAPB(MainScreen.gpu, 3, val);
 				return;
-			case 0x04000034 :
+                        case REG_DISPA_BG3PC :
 				GPU_setPCPD(MainScreen.gpu, 3, val);
 				return;
-			case 0x04001030 :
+                        case REG_DISPB_BG3PA :
 				GPU_setPAPB(SubScreen.gpu, 3, val);
 				return;
-			case 0x04001034 :
+                        case REG_DISPB_BG3PC :
 				GPU_setPCPD(SubScreen.gpu, 3, val);
 				return;
-			case 0x04000028 :
+                        case REG_DISPA_BG2XL :
 				GPU_setX(MainScreen.gpu, 2, val);
 				return;
-			case 0x0400002C :
+                        case REG_DISPA_BG2YL :
 				GPU_setY(MainScreen.gpu, 2, val);
 				return;
-			case 0x04001028 :
+                        case REG_DISPB_BG2XL :
 				GPU_setX(SubScreen.gpu, 2, val);
 				return;
-			case 0x0400102C :
+                        case REG_DISPB_BG2YL :
 				GPU_setY(SubScreen.gpu, 2, val);
 				return;
-			case 0x04000038 :
+                        case REG_DISPA_BG3XL :
 				GPU_setX(MainScreen.gpu, 3, val);
 				return;
-			case 0x0400003C :
+                        case REG_DISPA_BG3YL :
 				GPU_setY(MainScreen.gpu, 3, val);
 				return;
-			case 0x04001038 :
+                        case REG_DISPB_BG3XL :
 				GPU_setX(SubScreen.gpu, 3, val);
 				return;
-			case 0x0400103C :
+                        case REG_DISPB_BG3YL :
 				GPU_setY(SubScreen.gpu, 3, val);
 				return;
-			case 0x04000010 :
+                        case REG_DISPA_BG0HOFS :
 				GPU_scrollXY(MainScreen.gpu, 0, val);
 				return;
-			case 0x04000014 :
+                        case REG_DISPA_BG1HOFS :
 				GPU_scrollXY(MainScreen.gpu, 1, val);
 				return;
-			case 0x04000018 :
+                        case REG_DISPA_BG2HOFS :
 				GPU_scrollXY(MainScreen.gpu, 2, val);
 				return;
-			case 0x0400001C :
+                        case REG_DISPA_BG3HOFS :
 				GPU_scrollXY(MainScreen.gpu, 3, val);
 				return;
-			case 0x04001010 :
+                        case REG_DISPB_BG0HOFS :
 				GPU_scrollXY(SubScreen.gpu, 0, val);
 				return;
-			case 0x04001014 :
+                        case REG_DISPB_BG1HOFS :
 				GPU_scrollXY(SubScreen.gpu, 1, val);
 				return;
-			case 0x04001018 :
+                        case REG_DISPB_BG2HOFS :
 				GPU_scrollXY(SubScreen.gpu, 2, val);
 				return;
-			case 0x0400101C :
+                        case REG_DISPB_BG3HOFS :
 				GPU_scrollXY(SubScreen.gpu, 3, val);
 				return;
-			case 0x04000000 :
+                        case REG_DISPA_DISPCNT :
 				GPU_setVideoProp(MainScreen.gpu, val);
 				
 				//GPULOG("MAIN INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, val);
 				return;
 				
-			case 0x04001000 : 
+                        case REG_DISPB_DISPCNT : 
 				GPU_setVideoProp(SubScreen.gpu, val);
 				//GPULOG("SUB INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, val);
@@ -1673,11 +1674,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			case REG_IF :
 				MMU.reg_IF[proc] &= (~val); 
 				return;
-				
-			case 0x04000100 :
-			case 0x04000104 :
-			case 0x04000108 :
-			case 0x0400010C :
+                        case REG_TM0CNTL :
+                        case REG_TM1CNTL :
+                        case REG_TM2CNTL :
+                        case REG_TM3CNTL :
 				MMU.timerReload[proc][(adr>>2)&0x3] = (u16)val;
 				if(val&0x800000)
 				{
@@ -1709,7 +1709,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
-			case 0x04000298 :
+                        case REG_DIVDENOM :
 				{
                                         u16 cnt;
 					s64 num = 0;
@@ -1763,7 +1763,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
 				}
 				return;
-			case 0x0400029C :
+                        case REG_DIVDENOM+4 :
 			{
                                 u16 cnt;
 				s64 num = 0;
@@ -1816,7 +1816,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
 			}
 			return;
-			case 0x040002B8 :
+                        case REG_SQRTPARAM :
 				{
                                         u16 cnt;
 					u64 v = 1;
@@ -1837,7 +1837,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
 				}
 				return;
-			case 0x040002BC :
+                        case REG_SQRTPARAM+4 :
 				{
                                         u16 cnt;
 					u64 v = 1;
@@ -1858,7 +1858,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
 				}
 				return;
-			case 0x04000180 :
+                        case REG_IPCSYNC :
 				{
 					//execute=FALSE;
 					u32 remote = (proc+1)&1;
@@ -1868,7 +1868,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					MMU.reg_IF[remote] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));//
 				}
 				return;
-			case 0x04000184 :
+                        case REG_IPCFIFOCNT :
 				if(val & 0x4008)
 				{
 					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
@@ -1880,7 +1880,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
 				//execute = FALSE;
 				return;
-			case 0x04000188 :
+                        case REG_IPCFIFOSEND :
 				{
 					u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 					if(IPCFIFO_CNT&0x8000)
@@ -1900,7 +1900,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					}
 				}
 				return;
-			case 0x040000B8 :
+                        case REG_DMA0CNTL :
 				//LOG("32 bit dma0 %04X\r\n", val);
 				DMASrc[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB0);
 				DMADst[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB4);
@@ -1917,7 +1917,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				#endif
 				//execute = FALSE;
 				return;
-				case 0x040000C4 :
+                                case REG_DMA1CNTL :
 				//LOG("32 bit dma1 %04X\r\n", val);
 				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xBC);
 				DMADst[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC0);
@@ -1933,7 +1933,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				#endif
 				return;
-			case 0x040000D0 :
+                        case REG_DMA2CNTL :
 				//LOG("32 bit dma2 %04X\r\n", val);
 				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC8);
 				DMADst[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xCC);
@@ -2025,23 +2025,23 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 
 				}
 				return;
-			case 0x04000008 :
+                        case REG_DISPA_BG0CNT :
 				GPU_setBGProp(MainScreen.gpu, 0, (val&0xFFFF));
 				GPU_setBGProp(MainScreen.gpu, 1, (val>>16));
 				//if((val>>16)==0x400) execute = FALSE;
 				T1WriteLong(ARM9Mem.ARM9_REG, 8, val);
 				return;
-			case 0x0400000C :
+                        case REG_DISPA_BG2CNT :
 				GPU_setBGProp(MainScreen.gpu, 2, (val&0xFFFF));
 				GPU_setBGProp(MainScreen.gpu, 3, (val>>16));
 				T1WriteLong(ARM9Mem.ARM9_REG, 0xC, val);
 				return;
-			case 0x04001008 :
+                        case REG_DISPB_BG0CNT :
 				GPU_setBGProp(SubScreen.gpu, 0, (val&0xFFFF));
 				GPU_setBGProp(SubScreen.gpu, 1, (val>>16));
 				T1WriteLong(ARM9Mem.ARM9_REG, 0x1008, val);
 				return;
-			case 0x0400100C :
+                        case REG_DISPB_BG2CNT :
 				GPU_setBGProp(SubScreen.gpu, 2, (val&0xFFFF));
 				GPU_setBGProp(SubScreen.gpu, 3, (val>>16));
 				T1WriteLong(ARM9Mem.ARM9_REG, 0x100C, val);
