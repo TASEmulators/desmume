@@ -32,7 +32,6 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         HDC          hdc;
         PAINTSTRUCT  ps;
         TCHAR        text[80];
-//        NDS_header * header = nds.getROMHeader();
         
         hdc = BeginPaint(hwnd, &ps);
         
@@ -73,7 +72,8 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
                  return 1;
             case WM_CLOSE :
                  CWindow_RemoveFromRefreshList(win);
-                 free(win);
+                 if (win)
+                    free(win);
                  EndDialog(hwnd, 0);
                  return 1;
             case WM_PAINT:
@@ -84,7 +84,8 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
                  {
                         case IDC_FERMER :
                              CWindow_RemoveFromRefreshList(win);
-                             free(win);
+                             if (win)
+                                free(win);
                              EndDialog(hwnd, 0);
                              return 1;
                  }
