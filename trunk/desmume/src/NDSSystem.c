@@ -167,7 +167,7 @@ enum
 	ROM_DSGBA
 };
 
-int NDS_LoadROM(const char *filename)
+int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 {
    int i;
    int type;
@@ -247,6 +247,7 @@ int NDS_LoadROM(const char *filename)
    else
       strcpy(p+strlen(p)-4, ".sav");
 
+   mc_realloc(&MMU.bupmem, bmtype, bmsize);
    mc_load_file(&MMU.bupmem, p);
    free(p);
 

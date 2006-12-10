@@ -161,6 +161,7 @@ void mc_realloc(memory_chip_t *mc, int type, u32 size)
 void mc_load_file(memory_chip_t *mc, const char* filename)
 {
    long size;
+   int type;
    FILE* file = fopen(filename, "rb+");
    if(file == NULL)
    {
@@ -172,21 +173,24 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
    size = ftell(file);
    fseek(file, 0, SEEK_SET);
 
-   if (size == MC_SIZE_4KBITS)
-      mc->type = MC_TYPE_EEPROM1;
-   else if (size == MC_SIZE_64KBITS)
-      mc->type = MC_TYPE_EEPROM2;
-   else if (size == MC_SIZE_256KBITS)
-      mc->type = MC_TYPE_FRAM;
-   else if (size == MC_SIZE_512KBITS)
-      mc->type = MC_TYPE_EEPROM2;
-   else if (size >= MC_SIZE_2MBITS)
-      mc->type = MC_TYPE_FLASH;
+   if (mc->type == MC_TYPE_AUTODETECT)
+   {
+      if (size == MC_SIZE_4KBITS)
+         type = MC_TYPE_EEPROM1;
+      else if (size == MC_SIZE_64KBITS)
+         type = MC_TYPE_EEPROM2;
+      else if (size == MC_SIZE_256KBITS)
+         type = MC_TYPE_FRAM;
+      else if (size == MC_SIZE_512KBITS)
+         type = MC_TYPE_EEPROM2;
+      else if (size >= MC_SIZE_2MBITS)
+         type = MC_TYPE_FLASH;
+      mc_realloc(mc, type, size);
+   }
 
-   mc->size = size;
-
-   mc_realloc(mc, mc->type, mc->size);
-   fread (mc->data, 1, mc->size, file);
+   if (size > mc->size)
+      size = mc->size;
+   fread (mc->data, 1, size, file);
    mc->fp = file;
 }
 
