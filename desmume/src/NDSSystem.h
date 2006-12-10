@@ -121,7 +121,7 @@ NDS_header * NDS_getROMHeader(void);
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releasTouch(void);
 
-int NDS_LoadROM(const char *filename);
+int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize);
 void NDS_FreeROM(void);
 void NDS_Reset(void);
 

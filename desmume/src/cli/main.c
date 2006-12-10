@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
 		return 1;
 	}
 
-        if (NDS_LoadROM(argv[1]) < 0) {
+        if (NDS_LoadROM(argv[1], MC_TYPE_AUTODETECT, 1) < 0) {
 		fprintf(stderr, "error while loading %s\n", argv[1]);
 		return 2;
 	}

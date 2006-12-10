@@ -186,7 +186,7 @@ void About(GtkWidget* widget, gpointer data)
 
 static int Open(const char *filename)
 {
-	int i = NDS_LoadROM(filename);
+        int i = NDS_LoadROM(filename, MC_TYPE_AUTODETECT, 1);
 	return i;
 }
 
