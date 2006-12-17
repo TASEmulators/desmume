@@ -2,8 +2,6 @@
 #include "../dTool.h"
 
 #include "../MMU.h"
-#include "../nds/system.h"
-#include "../nds/serial.h"
 
 #define TOOL_NAME "IO regs view"
 
@@ -314,7 +312,7 @@ static const reg_t regs_list_9[] =
 	{"REG_IE", REG_IE, BITS_32, REG_FNS(REG_IE)},
 	{"REG_IF", REG_IF, BITS_32, REG_FNS(REG_IF)},
 	{"REG_IPCFIFOCNT", 0x04000184, BITS_16, REG_FNS(REG_IPCFIFOCNT)},
-	{"POWER_CR", POWER_CR, BITS_16, REG_FNS(POWER_CR)}
+	{"POWER_CR", REG_POWCNT1, BITS_16, REG_FNS(POWER_CR)}
 };
 
 //////// ARM7 ////////
@@ -325,7 +323,7 @@ static const reg_t regs_list_7[] =
 	{"REG_IE", REG_IE, BITS_32, REG_FNS(REG_IE)},
 	{"REG_IF", REG_IF, BITS_32, REG_FNS(REG_IF)},
 	{"REG_IPCFIFOCNT", 0x04000184, BITS_16, REG_FNS(REG_IPCFIFOCNT)},
-	{"POWER_CR", POWER_CR, BITS_16, REG_FNS(POWER_CR)},
+	{"POWER_CR", REG_POWCNT1, BITS_16, REG_FNS(POWER_CR)},
 	{"REG_SPICNT", REG_SPICNT, BITS_16, REG_FNS(REG_SPICNT)}
 };
 

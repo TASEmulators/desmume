@@ -5,7 +5,7 @@
 #define DTOOL_LOG(...) fprintf(stderr, __VA_ARGS__);
 
 #include "../types.h"
-#include "../nds/interrupts.h"
+#include "../registers.h"
 
 typedef void (*dTool_openFn)(int id);
 typedef void (*dTool_updateFn)();
