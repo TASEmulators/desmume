@@ -2,8 +2,8 @@
  arm:
   - Fixed MSR with immediate value opcode.
   - Fixed LSR_0 thumb opcode (C flag is correctly set now).
-  - Fixed LDR*/STR* opcodes
-  - Fixed unaligned memory access on THUMB Core
+  - Fixed LDR*/STR* opcodes.
+  - Fixed unaligned memory access on THUMB Core.
   - Added relocating SWI routines.
  bios:
   - Added decompression functions.
@@ -11,15 +11,15 @@
   - Added GetVolumeTable function.
   - Added GetCRC16 function.
   - Added experimental SoundBias function.
-  - Added GetSineTable function
+  - Added GetSineTable function.
  cart:
   - Added CompactFlash/FAT emulation.
   - Added Get ROM chip ID Cartridge command.
  gpu:
   - Added framebuffer emulation.
   - Fixed a bug in GPU (xfin could be greater than LG causing a segfault).
-  - Added support for Display Mode 0(Display Off)
-  - Added the basic framework for Display Mode 3(Display from Main RAM)
+  - Added support for Display Mode 0(Display Off).
+  - Added the basic framework for Display Mode 3(Display from Main RAM).
  spu:
   - Added sound emulation.
   - Added sound core system.
@@ -29,7 +29,7 @@
  linux port:
   - Added GTK+ GUI.
   - Added command line interface.
-  - Added stylus and arm9 keypad support in CLI version
+  - Added stylus and arm9 keypad support in CLI version.
   - Added FPS display.
   - Added basic frameskip.
  windows port:
