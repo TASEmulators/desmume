@@ -111,5 +111,6 @@ AC_CONFIG_FILES([Makefile
                  src/cli/Makefile
                  src/gtk/Makefile
                  src/windows/Makefile
+		 autopackage/default.apspec
 ])
 AC_OUTPUT
