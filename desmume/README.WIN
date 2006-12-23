@@ -4,17 +4,16 @@
         Copyright (C) 2006 DeSmuME team
 
 
-
-1) Compiling instructions...................................14
-2) How to use DeSmuME.......................................38
-3) Contact information......................................98
-4) Disclaimer..............................................117
+1) Compiling instructions...................................13
+2) How to use DeSmuME.......................................37
+3) Contact information......................................97
+4) Disclaimer..............................................116
 
 
 1 Compiling instructions______________________________________
 
 DeSmuME is written in C, so you need a working C compiler(such
-as mingw). Other support compilers include Visual C++ 2005 and
+as mingw). Other supported compilers include Visual C++ 2005 and
 dev-cpp.
 
 mingw:
