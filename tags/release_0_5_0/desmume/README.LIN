@@ -1,0 +1,86 @@
+                        DeSmuME
+        _________________________________________
+        Copyright (C) 2006 yopyop
+        Copyright (C) 2006 DeSmuME team
+
+
+1) Compiling instructions...................................13
+2) How to use DeSmuME.......................................36
+3) Contact information......................................50
+4) Disclaimer...............................................69
+
+
+1 Compiling instructions______________________________________
+
+Yabause is written in C using the gtk+ and SDL libraries.
+So you need a working C compiler, such as gcc and
+the above libraries runtime and development packages:
+
+  * http://www.gtk.org
+
+  * http://www.libsdl.org/
+
+Once these libraries are installed, you should be ready to
+install DeSmuME.
+
+Uncompress the DeSmuME. source archive, move to the newly
+created directory, type "./configure", then "make",
+it will generate two programs: "desmume" in the "src/gtk"
+directory and "desmume-cli" in the "src/cli" directory.
+
+You can even type "make install" to install those programs on
+your system (in /usr/local/ by default), then uninstalling is
+done by typing "make uninstall".
+
+
+2 How to use DeSmuME__________________________________________
+
+2.1 Gtk+ version______________________________________________
+
+Type "desmume" in a shell, a window should appear, then open
+a rom file using the "open" button, next use the "run" button
+to start emulation.
+
+
+2.2 CLI version_______________________________________________
+
+Just type "desmume-cli path-to-a-rom" in a shell.
+
+
+3 Contact information_________________________________________
+
+General inquiries should go to:
+E-mail:	guillaume.duhamel@gmail.com
+E-mail: cwx@cyberwarriorx.com
+
+Linux Port-related inquiries should go to:
+E-mail: guillaume.duhamel@gmail.com
+
+Web:    http://desmume.sourceforge.net
+
+Please don't ask for roms, bios files or any other copyrighted
+stuff.
+
+If you want to submit a bug report, please run desmume, go into
+the "Help" menu, and click on "Submit a bug report". If you're
+having trouble with it, please feel free to email.
+
+
+4 Disclaimer__________________________________________________
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as 
+published by the Free Software Foundation; either version 2 of 
+the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be
+useful,but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free
+Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+MA  02111-1307  USA
+
+See the GNU General Public License details in COPYING.

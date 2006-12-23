@@ -1,0 +1,104 @@
+/*  Copyright (C) 2006 Guillaume Duhamel
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+#include "fs.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <string.h>
+
+typedef struct {
+	DIR * dir;
+	char * path;
+} FsLinuxDir;
+
+const char FS_SEPARATOR = '/';
+
+void * FsReadFirst(const char * path, FsEntry * entry) {
+	FsLinuxDir * dir;
+	struct dirent * e;
+	struct stat s;
+	char buffer[1024];
+	DIR * tmp;
+
+	tmp = opendir(path);
+	if (!tmp)
+		return NULL;
+
+	e = readdir(tmp);
+	if (!e)
+		return NULL;
+
+	dir = malloc(sizeof(FsLinuxDir));
+	dir->dir = tmp;
+
+	strcpy(entry->cFileName, e->d_name);
+	// there's no 8.3 file names support on linux :)
+	strcpy(entry->cAlternateFileName, "");
+	entry->flags = 0;
+
+	dir->path = strdup(path);
+
+	sprintf(buffer, "%s/%s", dir->path, e->d_name);
+
+	stat(buffer, &s);
+	if (S_ISDIR(s.st_mode)) {
+		entry->flags = FS_IS_DIR;
+	}
+
+	return dir;
+}
+
+int FsReadNext(void * search, FsEntry * entry) {
+	FsLinuxDir * dir = search;
+	struct dirent * e;
+	struct stat s;
+	char buffer[1024];
+
+	e = readdir(dir->dir);
+	if (!e)
+		return 0;
+
+	strcpy(entry->cFileName, e->d_name);
+	// there's no 8.3 file names support on linux :)
+	strcpy(entry->cAlternateFileName, "");
+	entry->flags = 0;
+
+	sprintf(buffer, "%s/%s", dir->path, e->d_name);
+
+	stat(buffer, &s);
+	if (S_ISDIR(s.st_mode)) {
+		entry->flags = FS_IS_DIR;
+	}
+
+	return 1;
+}
+
+void FsClose(void * search) {
+	DIR * dir = ((FsLinuxDir *) search)->dir;
+
+	closedir(dir);
+	free(search);
+}
+
+int FsError(void) {
+	return 0;
+}
