@@ -17,7 +17,7 @@ as mingw). Other supported compilers include Visual C++ 2005 and
 dev-cpp.
 
 mingw:
-All you have to do now is now is go into your mingw shell
+All you have to do now is go into your mingw shell
 environment, go into the directory where you extracted DeSmuME,
 and type: "./configure". Once that's done(and there was no
 errors), type: "make". It should now take some time to compile so
