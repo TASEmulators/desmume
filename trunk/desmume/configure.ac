@@ -1,7 +1,7 @@
 dnl --- Package name is first argument to AC_INIT
 dnl --- Release version is second argument to AC_INIT
 
-AC_INIT(desmume, [0.3.3])
+AC_INIT(desmume, [0.5.0])
 AM_INIT_AUTOMAKE
 
 dnl -- find target architecture for some os specific libraries
