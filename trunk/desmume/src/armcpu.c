@@ -29,9 +29,13 @@
 armcpu_t NDS_ARM7;
 armcpu_t NDS_ARM9;
 
-#define SWAP(a, b, c) c=a;\
-                      a=b;\
-                      b=c;
+#define SWAP(a, b, c) do      \
+	              {       \
+                         c=a; \
+                         a=b; \
+                         b=c; \
+		      }       \
+                      while(0)
                       
 int armcpu_new(armcpu_t *armcpu, u32 id)
 {
