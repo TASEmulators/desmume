@@ -57,7 +57,7 @@ if test "x$HAVE_SDL" = "xyes"; then
   UI_DIR="cli $UI_DIR"
   if test "x$HAVE_GTK" = "xyes"; then
     # GTK requires SDL
-    UI_DIR="gtk $UI_DIR"
+    UI_DIR="gtk gtk-glade $UI_DIR"
   fi
 fi
 
@@ -110,6 +110,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/cli/Makefile
                  src/gtk/Makefile
+                 src/gtk-glade/Makefile
                  src/windows/Makefile
 		 autopackage/default.apspec
 ])
