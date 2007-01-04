@@ -1,4 +1,4 @@
-SUBDIRS = . $(UI_DIR) gtk-glade
+SUBDIRS = . $(UI_DIR)
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
         armcpu.c armcpu.h ARM9.h \
