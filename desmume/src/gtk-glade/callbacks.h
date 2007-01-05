@@ -58,3 +58,4 @@ void  on_wc_2b_BG1_toggled (GtkToggleButton *togglebutton, gpointer user_data);
 void  on_wc_2b_BG2_toggled (GtkToggleButton *togglebutton, gpointer user_data);
 void  on_wc_2b_BG3_toggled (GtkToggleButton *togglebutton, gpointer user_data);
 void  on_wc_2b_BG4_toggled (GtkToggleButton *togglebutton, gpointer user_data);
+void  on_wc_2b_OBJ_toggled (GtkToggleButton *togglebutton, gpointer user_data);
