@@ -28,6 +28,7 @@
 #include "debug.h"
 #include "NDSSystem.h"
 #include "cflash.h"
+#include "cp15.h"
 
 #include "registers.h"
 
@@ -402,7 +403,7 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 
 
 u16 FASTCALL MMU_read16(u32 proc, u32 adr)
-{
+{    
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
 	{
 		/* Returns data from DTCM (ARM9 only) */
@@ -2286,4 +2287,127 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	 }
 	 break;
 	}
+}
+
+u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access)
+{
+    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
+    {
+         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
+         {
+             /* is user mode access */
+             access &= ~1 ;
+         } else {
+             /* every other mode: sys */
+             access |= 1 ;
+         }
+         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
+         {
+              execute = FALSE ;
+         }
+    }
+     return MMU_read8(proc,adr) ;
+}
+
+u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access)
+{
+    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
+    {
+         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
+         {
+             /* is user mode access */
+             access &= ~1 ;
+         } else {
+             /* every other mode: sys */
+             access |= 1 ;
+         }
+         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
+         {
+              execute = FALSE ;
+         }
+    }
+     return MMU_read16(proc,adr) ;
+}
+
+u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access)
+{
+    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
+    {
+         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
+         {
+             /* is user mode access */
+             access &= ~1 ;
+         } else {
+             /* every other mode: sys */
+             access |= 1 ;
+         }
+         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
+         {
+              execute = FALSE ;
+         }
+    }
+     return MMU_read32(proc,adr) ;
+}
+
+void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val)
+{
+    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
+    {
+         u32 access = CP15_ACCESS_WRITE ;
+         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
+         {
+             /* is user mode access */
+             access &= ~1 ;
+         } else {
+             /* every other mode: sys */
+             access |= 1 ;
+         }
+         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
+         {
+              execute = FALSE ;
+         }
+    }
+    MMU_write8(proc,adr,val) ;
+}
+
+void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val)
+{
+    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
+    {
+         u32 access = CP15_ACCESS_WRITE ;
+         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
+         {
+             /* is user mode access */
+             access &= ~1 ;
+         } else {
+             /* every other mode: sys */
+             access |= 1 ;
+         }
+         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
+         {
+              execute = FALSE ;
+         }
+    }
+    MMU_write16(proc,adr,val) ;
+}
+
+void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
+{
+    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
+    {
+         u32 access = CP15_ACCESS_WRITE ;
+         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
+         {
+             /* is user mode access */
+             access &= ~1 ;
+         } else {
+             /* every other mode: sys */
+             access |= 1 ;
+         }
+         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
+         {
+              execute = FALSE ;
+         }
+    }
+    MMU_write32(proc,adr,val) ;
 }

@@ -55,10 +55,195 @@ armcp15_t *armcp15_new(armcpu_t * c)
 	armcp15->ITCMRegion = 0x0C;
 	armcp15->DTCMRegion = 0x0080000A;
 	armcp15->processID = 0;
+
+    /* preset calculated regionmasks */	
+    int i ;
+	for (i=0;i<8;i++) {
+        armcp15->regionWriteMask_USR[i] = 0 ;
+        armcp15->regionWriteMask_SYS[i] = 0 ;
+        armcp15->regionReadMask_USR[i] = 0 ;
+        armcp15->regionReadMask_SYS[i] = 0 ;
+        armcp15->regionExecuteMask_USR[i] = 0 ;
+        armcp15->regionExecuteMask_SYS[i] = 0 ;
+        armcp15->regionWriteSet_USR[i] = 0 ;
+        armcp15->regionWriteSet_SYS[i] = 0 ;
+        armcp15->regionReadSet_USR[i] = 0 ;
+        armcp15->regionReadSet_SYS[i] = 0 ;
+        armcp15->regionExecuteSet_USR[i] = 0 ;
+        armcp15->regionExecuteSet_SYS[i] = 0 ;
+    } ;
 	
 	return armcp15;
 }
 
+#define ACCESSTYPE(val,n)   (((val) > (4*n)) & 0x0F)
+#define SIZEIDENTIFIER(val) ((((val) >> 1) & 0x1F))
+#define SIZEBINARY(val)     (1 << (SIZEIDENTIFIER(val)+1))
+#define MASKFROMREG(val)    (~((SIZEBINARY(val)-1) | 0x3F))
+#define SETFROMREG(val)     ((val) & MASKFROMREG(val))
+/* sets the precalculated regions to mask,set for the affected accesstypes */
+void armcp15_setSingleRegionAccess(armcp15_t *armcp15,unsigned long dAccess,unsigned long iAccess,unsigned char num, unsigned long mask,unsigned long set) {
+      switch (ACCESSTYPE(dAccess,num)) {                                                       
+             case 4: /* UNP */                                                                              
+             case 7: /* UNP */                                                                              
+             case 8: /* UNP */                                                                              
+             case 9: /* UNP */                                                                              
+             case 10: /* UNP */                                                                             
+             case 11: /* UNP */                                                                             
+             case 12: /* UNP */                                                                             
+             case 13: /* UNP */                                                                             
+             case 14: /* UNP */                                                                             
+             case 15: /* UNP */                                                                             
+             case 0: /* no access at all */                                                                 
+                  armcp15->regionWriteMask_USR[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_USR[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_USR[num] = 0 ;                                                    
+                  armcp15->regionReadSet_USR[num] = 0xFFFFFFFF ;                                            
+                  armcp15->regionWriteMask_SYS[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_SYS[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_SYS[num] = 0 ;                                                    
+                  armcp15->regionReadSet_SYS[num] = 0xFFFFFFFF ;                                            
+                  break ;                                                                                   
+             case 1: /* no access at USR, all to sys */                                                     
+                  armcp15->regionWriteMask_USR[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_USR[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_USR[num] = 0 ;                                                    
+                  armcp15->regionReadSet_USR[num] = 0xFFFFFFFF ;                                            
+                  armcp15->regionWriteMask_SYS[num] = mask ;                                                
+                  armcp15->regionWriteSet_SYS[num] = set ;                                                  
+                  armcp15->regionReadMask_SYS[num] = mask ;                                                 
+                  armcp15->regionReadSet_SYS[num] = set ;                                                   
+                  break ;                                                                                   
+             case 2: /* read at USR, all to sys */                                                          
+                  armcp15->regionWriteMask_USR[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_USR[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_USR[num] = mask ;                                                 
+                  armcp15->regionReadSet_USR[num] = set ;                                                   
+                  armcp15->regionWriteMask_SYS[num] = mask ;                                                
+                  armcp15->regionWriteSet_SYS[num] = set ;                                                  
+                  armcp15->regionReadMask_SYS[num] = mask ;                                                 
+                  armcp15->regionReadSet_SYS[num] = set ;                                                   
+                  break ;                                                                                   
+             case 3: /* all to USR, all to sys */                                                           
+                  armcp15->regionWriteMask_USR[num] = mask ;                                                
+                  armcp15->regionWriteSet_USR[num] = set ;                                                  
+                  armcp15->regionReadMask_USR[num] = mask ;                                                 
+                  armcp15->regionReadSet_USR[num] = set ;                                                   
+                  armcp15->regionWriteMask_SYS[num] = mask ;                                                
+                  armcp15->regionWriteSet_SYS[num] = set ;                                                  
+                  armcp15->regionReadMask_SYS[num] = mask ;                                                 
+                  armcp15->regionReadSet_SYS[num] = set ;                                                   
+                  break ;                                                                                   
+             case 5: /* no access at USR, read to sys */                                                    
+                  armcp15->regionWriteMask_USR[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_USR[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_USR[num] = 0 ;                                                    
+                  armcp15->regionReadSet_USR[num] = 0xFFFFFFFF ;                                            
+                  armcp15->regionWriteMask_SYS[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_SYS[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_SYS[num] = mask ;                                                 
+                  armcp15->regionReadSet_SYS[num] = set ;                                                   
+                  break ;                                                                                   
+             case 6: /* read at USR, read to sys */                                                         
+                  armcp15->regionWriteMask_USR[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_USR[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_USR[num] = mask ;                                                 
+                  armcp15->regionReadSet_USR[num] = set ;                                                   
+                  armcp15->regionWriteMask_SYS[num] = 0 ;                                                   
+                  armcp15->regionWriteSet_SYS[num] = 0xFFFFFFFF ;                                           
+                  armcp15->regionReadMask_SYS[num] = mask ;                                                 
+                  armcp15->regionReadSet_SYS[num] = set ;                                                   
+                  break ;                                                                                   
+      }                                                                                                     
+      switch (ACCESSTYPE(iAccess,num)) {                                                       
+             case 4: /* UNP */                                                                              
+             case 7: /* UNP */                                                                              
+             case 8: /* UNP */                                                                              
+             case 9: /* UNP */                                                                              
+             case 10: /* UNP */                                                                             
+             case 11: /* UNP */                                                                             
+             case 12: /* UNP */                                                                             
+             case 13: /* UNP */                                                                             
+             case 14: /* UNP */                                                                             
+             case 15: /* UNP */                                                                             
+             case 0: /* no access at all */                                                                 
+                  armcp15->regionExecuteMask_USR[num] = 0 ;                                                 
+                  armcp15->regionExecuteSet_USR[num] = 0xFFFFFFFF ;                                         
+                  armcp15->regionExecuteMask_SYS[num] = 0 ;                                                 
+                  armcp15->regionExecuteSet_SYS[num] = 0xFFFFFFFF ;                                         
+                  break ;                                                                                   
+             case 1:                                                                                        
+                  armcp15->regionExecuteMask_USR[num] = 0 ;                                                 
+                  armcp15->regionExecuteSet_USR[num] = 0xFFFFFFFF ;                                         
+                  armcp15->regionExecuteMask_SYS[num] = mask ;                                              
+                  armcp15->regionExecuteSet_SYS[num] = set ;                                                
+                  break ;                                                                                   
+             case 2:                                                                                        
+             case 3:                                                                                        
+             case 6:                                                                                        
+                  armcp15->regionExecuteMask_USR[num] = mask ;                                              
+                  armcp15->regionExecuteSet_USR[num] = set ;                                                
+                  armcp15->regionExecuteMask_SYS[num] = mask ;                                              
+                  armcp15->regionExecuteSet_SYS[num] = set ;                                                
+                  break ;                                                                                   
+      }                                                                                                     
+} ;
+
+/* precalculate region masks/sets from cp15 register */
+void armcp15_maskPrecalc(armcp15_t *armcp15)
+{
+      #define precalc(num)        {                                                                         \
+      u32 mask = 0, set = 0xFFFFFFFF ;            /* (x & 0) == 0xFF..FF is allways false (disabled) */     \
+      if (BIT_N(armcp15->protectBaseSize##num,0)) /* if region is enabled */                                \
+      {                                           /* reason for this define: naming includes var */         \
+           mask = MASKFROMREG(armcp15->protectBaseSize##num) ;                                              \
+           set = SETFROMREG(armcp15->protectBaseSize##num) ;                                                \
+           if (SIZEIDENTIFIER(armcp15->protectBaseSize##num)==0x1F)                                         \
+           {                                      /* for the 4GB region, u32 suffers wraparound */          \
+                mask = 0 ; set = 0 ;              /* (x & 0) == 0  is allways true (enabled) */             \
+           }                                                                                                \
+      }                                                                                                     \
+           armcp15_setSingleRegionAccess(armcp15,armcp15->DaccessPerm,armcp15->IaccessPerm,num,mask,set) ;  \
+      }
+      precalc(0) ;                                                                                         
+      precalc(1) ;                                                                                         
+      precalc(2) ;                                                                                         
+      precalc(3) ;                                                                                         
+      precalc(4) ;                                                                                         
+      precalc(5) ;                                                                                         
+      precalc(6) ;                                                                                         
+      precalc(7) ;                                                                                         
+}
+
+BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access)
+{
+     if (!(armcp15->ctrl & 1)) return TRUE ;        /* protection checking is not enabled */
+     int i ;
+     for (i=0;i<8;i++) {
+         switch (access) {
+              case CP15_ACCESS_WRITEUSR:
+                   if ((address & armcp15->regionWriteMask_USR[i]) == armcp15->regionWriteSet_USR[i]) return TRUE ;
+                   break ;
+              case CP15_ACCESS_WRITESYS:
+                   if ((address & armcp15->regionWriteMask_SYS[i]) == armcp15->regionWriteSet_SYS[i]) return TRUE ;
+                   break ;
+              case CP15_ACCESS_READUSR:
+                   if ((address & armcp15->regionReadMask_USR[i]) == armcp15->regionReadSet_USR[i]) return TRUE ;
+                   break ;
+              case CP15_ACCESS_READSYS:
+                   if ((address & armcp15->regionReadMask_SYS[i]) == armcp15->regionReadSet_SYS[i]) return TRUE ;
+                   break ;
+              case CP15_ACCESS_EXECUSR:
+                   if ((address & armcp15->regionExecuteMask_USR[i]) == armcp15->regionExecuteSet_USR[i]) return TRUE ;
+                   break ;
+              case CP15_ACCESS_EXECSYS:
+                   if ((address & armcp15->regionExecuteMask_SYS[i]) == armcp15->regionExecuteSet_SYS[i]) return TRUE ;
+                   break ;
+         }
+     } 
+     /* when protections are enabled, but no region allows access, deny access */
+     return FALSE ;
+}
 
 BOOL armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 {
@@ -136,7 +321,7 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 				{
 					case 2 : 
 						*R = armcp15->DaccessPerm;
-					return TRUE;
+					    return TRUE;
 					case 3 :
 						*R = armcp15->IaccessPerm;
 					return TRUE;
@@ -293,7 +478,7 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 			{
 				case 2 : 
 					armcp15->DaccessPerm = val;
-					return TRUE;
+ 					return TRUE;
 				case 3 :
 					armcp15->IaccessPerm = val;
 					return TRUE;
@@ -309,27 +494,35 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 			{
 				case 0 : 
 					armcp15->protectBaseSize0 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 1 :
 					armcp15->protectBaseSize1 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 2 :
 					armcp15->protectBaseSize2 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 3 :
 					armcp15->protectBaseSize3 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 4 :
 					armcp15->protectBaseSize4 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 5 :
 					armcp15->protectBaseSize5 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 6 :
 					armcp15->protectBaseSize6 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				case 7 :
 					armcp15->protectBaseSize7 = val;
+					armcp15_maskPrecalc(armcp15) ;
 					return TRUE;
 				default :
 					return FALSE;
