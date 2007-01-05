@@ -44,7 +44,7 @@ gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, g
 
 
 
-const int offset_pixels_lower_screen = 256*2*192; // w * bpp * h
+const int offset_pixels_lower_screen = 256*192; // w * h
 
 #define MAX_SIZE 3
 guchar on_screen_image[256*192*3*2*MAX_SIZE*MAX_SIZE];
@@ -59,7 +59,7 @@ int screen (GtkWidget * widget, int offset_pix) {
 */	
 	int dx,x,dy,y, W,H,L;
 	u32 image[192][256], r,g,b;
-	u16 * pixel = &GPU_screen;
+	u16 * pixel = (u16*)&GPU_screen + offset_pix;
 	guchar * rgb = &on_screen_image[0];
 
 	for (y=0; y<192; y++) {
