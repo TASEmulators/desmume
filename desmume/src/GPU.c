@@ -545,23 +545,76 @@ void GPU_setPCPD(GPU * gpu, u8 num, u32 v)
 	gpu->BGPD[num] = (s16)(v>>16);
 }
 
+void GPU_setBLDCNT(GPU *gpu, u16 v)
+{
+    gpu->BLDCNT = v ;
+}
+
+void GPU_setBLDALPHA(GPU *gpu, u16 v)
+{
+	gpu->BLDALPHA = v ;
+}
+
+INLINE void renderline_setFinalColor(GPU *gpu,u8 bgnum,u8 *dst,u16 color) {
+	if (gpu->BLDCNT & (1 << bgnum))   /* the bg to draw has a special color effect */
+	{
+		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
+		{
+			case 0x00:              /* none (plain color passing) */
+				T2WriteWord(dst, 0, color) ;
+				break ;
+			case 0x40:              /* alpha blending */
+				{
+					#define min(a,b) (((a)<(b))?(a):(b))
+					u16 sourceFraction = (gpu->BLDALPHA & 0x1F) ;
+					u16 targetFraction = (gpu->BLDALPHA & 0x1F00) >> 8 ;
+					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
+					u16 sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
+					u16 sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
+					color = T2ReadWord(dst, 0) ;
+					u16 targetR = ((color & 0x1F) * sourceFraction) >> 4 ;
+					u16 targetG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
+					u16 targetB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
+					targetR = min(0x1F,targetR+sourceR) ;
+					targetG = min(0x1F,targetG+sourceG) ;
+					targetB = min(0x1F,targetB+sourceB) ;
+					color = (targetR & 0x1F) | ((targetG & 0x1F) << 5) | ((targetB & 0x1F) << 10) | 0x8000 ;
+				}
+				T2WriteWord(dst, 0, color) ;
+				break ;
+			case 0x80:               /* brightness increase */
+				/* Todo: calculate brightness increase */
+				T2WriteWord(dst, 0, color) ;
+				break ;
+			case 0xC0:               /* brightness decrease */
+				/* Todo: calculate brightness decrease */
+				T2WriteWord(dst, 0, color) ;
+				break ;
+		}
+	} else {
+		/* when no effect is active */
+		T2WriteWord(dst, 0, color) ;
+	}
+} ;
+
+/* render a text background to the combined pixelbuffer */
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 {
 	u32 bgprop = gpu->BGProp[num];
-	u16 lg = gpu->BGSize[num][0];
-	u16 ht = gpu->BGSize[num][1];
-	u16 tmp = ((Y&(ht-1))>>3);
-	u8 * map = gpu->BG_map_ram[num] + (tmp&31) * 64;
-	u8 *dst = DST;
-        u8 *tile;
-	u16 xoff = X;
-        u8 * pal;
-        u16 yoff;
+	u16 lg     = gpu->BGSize[num][0];
+	u16 ht     = gpu->BGSize[num][1];
+	u16 tmp    = ((Y&(ht-1))>>3);
+	u8 * map   = gpu->BG_map_ram[num] + (tmp&31) * 64;
+	u8 *dst    = DST;
+	u8 *tile;
+	u16 xoff   = X;
+	u8 * pal;
+	u16 yoff;
 	u16 x;
 
-	if(tmp>31)
+	if(tmp>31) 
 	{
-                switch(bgprop >> 14)
+		switch(bgprop >> 14)
 		{
 			case 2 :
 				map += 32 * 32 * 2;
@@ -572,56 +625,52 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 	}
 	
-        tile = (u8*) gpu->BG_tile_ram[num];
-	
-	if((!tile) || (!gpu->BG_map_ram[num])) return;
-	
-        xoff = X;
-	
-        if(!(bgprop & 0x80))
+	tile = (u8*) gpu->BG_tile_ram[num];
+	if((!tile) || (!gpu->BG_map_ram[num])) return; 	/* no tiles or no map*/
+	xoff = X;
+	if(!(bgprop & 0x80))    						/* color: 16 palette entries */
 	{
-                yoff = ((Y&7)<<2);
-                pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-
+		yoff = ((Y&7)<<2);
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		for(x = 0; x < LG;)
 		{
-                        u8 * mapinfo;
+			u8 * mapinfo;
 			u16 mapinfovalue;
-                        u8 *line;
-                        u16 xfin;
+			u8 *line;
+			u16 xfin;
 			tmp = ((xoff&(lg-1))>>3);
-                        mapinfo = map + (tmp&0x1F) * 2;
-                        mapinfovalue;
-
+			mapinfo = map + (tmp&0x1F) * 2;
 			if(tmp>31) mapinfo += 32*32*2;
-
 			mapinfovalue = T1ReadWord(mapinfo, 0);
 
-                        line = (u8 * )tile + ((mapinfovalue&0x3FF) * 0x20) + (((mapinfovalue)& 0x800 ? (7*4)-yoff : yoff));
-                        xfin = x + (8 - (xoff&7));
+			line = (u8 * )tile + ((mapinfovalue&0x3FF) * 0x20) + (((mapinfovalue)& 0x800 ? (7*4)-yoff : yoff));
+			xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
-                        if((mapinfovalue) & 0x400)
+			if((mapinfovalue) & 0x400)
 			{
-				line += 3 - ((xoff&7)>>1);
-				for(; x < xfin; )
-                                {                                                                                                                 
-                                        if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
+			    line += 3 - ((xoff&7)>>1);
+			    for(; x < xfin; )
+                {                                                                                                                 
+					if((*line)>>4) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
-                                        if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
+					if((*line)&0xF) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
 					line--;
 				}
-			}
-			else
+			} else
 			{
 				line += ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-                                        if((*line)&0xF) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
+					if((*line)&0xF) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
-                                        if((*line)>>4) T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
+					if((*line)>>4) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
 					line++;
 				}
@@ -629,96 +678,94 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	
-        if(!(gpu->prop & 0x40000000))
+	if(!(gpu->prop & 0x40000000))                   /* color: no extended palette */
 	{
-                yoff = ((Y&7)<<3);
-                pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-
+		yoff = ((Y&7)<<3);
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		for(x = 0; x < LG;)
 		{
-                        u8 * mapinfo;
+			u8 * mapinfo;
 			u16 mapinfovalue;
-                        u8 *line;
-                        u16 xfin;
+			u8 *line;
+			u16 xfin;
 			tmp = ((xoff&(lg-1))>>3);
-                        mapinfo = map + (tmp & 31) * 2;
-                        mapinfovalue;
+			mapinfo = map + (tmp & 31) * 2;
+			mapinfovalue;
 
 			if(tmp > 31) mapinfo += 32*32*2;
 
 			mapinfovalue = T1ReadWord(mapinfo, 0);
                                                                                  
-                        line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
-                        xfin = x + (8 - (xoff&7));
+			line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
+			xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
 				xfin = LG;
 			
-                        if((mapinfovalue)& 0x400)
+			if((mapinfovalue)& 0x400)
 			{
-					line += (7 - (xoff&7));
-					for(; x < xfin; ++x, ++xoff)
-					{
-							if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
-							dst += 2;
-							line--;
-					}
-			}
-			else
+				line += (7 - (xoff&7));
+				for(; x < xfin; ++x, ++xoff)
+				{
+					if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+							// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
+					dst += 2;
+					line--;
+				}
+			} else
 			{
-					line += (xoff&7);
-					for(; x < xfin; ++x, ++xoff)
-					{
-							if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
-							dst += 2;
-							line++;
-					}
+				line += (xoff&7);
+				for(; x < xfin; ++x, ++xoff)
+				{
+					if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+							// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
+					dst += 2;
+					line++;
+				}
 			}
 		}
 		return;
 	}
-
-        pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
-
+													/* color: extended palette */
+	pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 	if(!pal) return;
-	
-        yoff = ((Y&7)<<3);
-	
+	yoff = ((Y&7)<<3);
+
 	for(x = 0; x < LG;)
 	{
-                u8 * mapinfo;
+		u8 * mapinfo;
 		u16 mapinfovalue;
-                u8 * line;
-                u16 xfin;
+		u8 * line;
+		u16 xfin;
 		tmp = ((xoff&(lg-1))>>3);
-                mapinfo = map + (tmp & 0x1F) * 2;
-                mapinfovalue;
+		mapinfo = map + (tmp & 0x1F) * 2;
+		mapinfovalue;
 
 		if(tmp>31) mapinfo += 32 * 32 * 2;
 
 		mapinfovalue = T1ReadWord(mapinfo, 0);
 
-                line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
-                xfin = x + (8 - (xoff&7));
+		line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
+		xfin = x + (8 - (xoff&7));
 		if (xfin > LG)
 			xfin = LG;
 		
-                if((mapinfovalue)& 0x400)
+		if((mapinfovalue)& 0x400)
 		{
 			line += (7 - (xoff&7));
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
+				if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+						// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
 				dst += 2;
 				line--;
 			}
-		}
-		else
+		} else
 		{
 			line += (xoff&7);
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
+				if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+						// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
 				dst += 2;
 				line++;
 			}
