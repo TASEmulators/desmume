@@ -68,8 +68,8 @@ int screen (GtkWidget * widget, int offset_pix) {
   //TODO : use pixbuf for scaling...
 
 	gdk_draw_rgb_image	(widget->window,
-							  widget->style->fg_gc[widget->state],0,0,screenImage->w, screenImage->h,
-							  GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,screenImage->pitch);
+		  widget->style->fg_gc[widget->state],0,0,screenImage->w, screenImage->h,
+		  GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,screenImage->pitch);
 	SDL_FreeSurface(screenImage);
 	SDL_FreeSurface(rawImage);
 	

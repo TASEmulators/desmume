@@ -1,5 +1,4 @@
 #include "callbacks.h"
-#include "DeSmuME.xpm"
 
 /* globals */
 uint Frameskip = 0;
@@ -167,7 +166,8 @@ void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) 
 
 /* MENU TOOLS ***** ***** ***** ***** */
 void  on_menu_IO_regs_activate      (GtkMenuItem *menuitem, gpointer user_data) {
-
+	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_1_IOregs");
+	gtk_widget_show(dlg);
 }
 
 

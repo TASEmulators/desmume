@@ -2,12 +2,13 @@
 
 #include "callbacks.h"
 #include "callbacks_IO.h"
+#include "dtools/callbacks_dtools.h"
 #include "globals.h"
 
 GtkWidget * pWindow;
 GtkWidget * pDrawingArea;
 GtkWidget * pDrawingArea2;
-GladeXML  * xml;
+GladeXML  * xml, * xml_tools;
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
@@ -141,13 +142,15 @@ int main(int argc, char *argv[]) {
 	Read_ConfigFile();
 
 	/* load the interface */
-	xml = glade_xml_new("DeSmuMe.glade", NULL, NULL);
+	xml           = glade_xml_new("glade/DeSmuMe.glade", NULL, NULL);
+	xml_tools     = glade_xml_new("glade/DeSmuMe_Dtools.glade", NULL, NULL);
 	pWindow       = glade_xml_get_widget(xml, "wMainW");
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
 	
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(xml);
+	glade_xml_signal_autoconnect(xml_tools);
 
 	/* Vérifie la ligne de commandes */
 	if(commandLine_File) {
