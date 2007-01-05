@@ -440,6 +440,8 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         
         if((win->mode==1) || ((win->mode==0) && (win->cpu->CPSR.bits.T == 0)))
         {
+             if (win->autoup)
+                  win->curr_ligne = (win->cpu->instruct_adr >> 2) - (win->curr_ligne % nbligne) ;
              u32 i;
              u32 adr = win->curr_ligne*4;
         
@@ -452,6 +454,8 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
                   rect.top+=fontsize.cy;
                   adr += 4;
              }
+             
+             
         
              if(((win->cpu->instruct_adr&0x0FFFFFFF) >= win->curr_ligne<<2)&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+nbligne<<2)))
              {
@@ -467,7 +471,10 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
              }
         } 
         else
-        {
+        {    /* thumb display */
+             if (win->autoup)
+                  win->curr_ligne = (win->cpu->instruct_adr >> 1) - (win->curr_ligne % nbligne) ;
+             
              u32 i;
              u32 adr = win->curr_ligne*2;
         
@@ -669,16 +676,32 @@ BOOL CALLBACK DisView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                              EndDialog(hwnd, 0);
                              return 0;
                         case IDC_AUTO_DES :
+                             /* address to line correction */
+                             if ((win->cpu->CPSR.bits.T) && (win->mode == 1)) {
+                                  /* from arm to thumb, line * 2*/
+                                   win->curr_ligne <<= 1 ;
+                             } else if (!(win->cpu->CPSR.bits.T) && (win->mode == 2)) {
+                                  /* from thumb to arm, line / 2 */
+                                   win->curr_ligne >>= 1 ;
+                             }
                              win->mode = 0;
                              InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
                              UpdateWindow(GetDlgItem(hwnd, IDC_DES_BOX));
                              return 1;
                         case IDC_ARM :
+                             /* address to line correction */
+                             if ((win->mode==2) || ((win->mode==0) && (win->cpu->CPSR.bits.T))) {
+                                   win->curr_ligne >>= 1 ;
+                             } ;
                              win->mode = 1;
                              InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
                              UpdateWindow(GetDlgItem(hwnd, IDC_DES_BOX)); 
                              return 1;
                         case IDC_THUMB :
+                             /* address to line correction */
+                             if ((win->mode==1) || ((win->mode==0) && !(win->cpu->CPSR.bits.T))) {
+                                   win->curr_ligne <<= 1 ;
+                             } ;
                              win->mode = 2;
                              InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
                              UpdateWindow(GetDlgItem(hwnd, IDC_DES_BOX)); 
@@ -719,8 +742,8 @@ BOOL CALLBACK DisView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                         case IDC_GO :
                              {
                              u16 i;
-                             char tmp[8];
-                             int lg = GetDlgItemText(hwnd, IDC_GOTODES, tmp, 8);
+                             char tmp[16];
+                             int lg = GetDlgItemText(hwnd, IDC_GOTODES, tmp, 16);
                              u32 adr = 0;
                              for(i = 0; i<lg; ++i)
                              {
@@ -735,7 +758,21 @@ BOOL CALLBACK DisView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                        continue;
                                   }         
                              } 
-                             win->curr_ligne = adr>>2;
+                             /* address to line correction */
+                             switch (win->mode) {
+                                    case 0:    /* auto */
+                                         win->curr_ligne = adr>>1;
+                                         if (win->cpu->CPSR.bits.T) {
+                                             win->curr_ligne = adr>>1;
+                                         }
+                                         break ;
+                                    case 1:    /* thumb */
+                                         win->curr_ligne = adr>>2;
+                                         break ;
+                                    case 2:    /* arm */
+                                         win->curr_ligne = adr>>1;
+                                         break ;
+                             } ;
                              InvalidateRect(hwnd, NULL, FALSE);
                              UpdateWindow(GetDlgItem(hwnd, IDC_DES_BOX)); 
                              }
