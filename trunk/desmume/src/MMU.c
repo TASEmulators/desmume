@@ -1159,7 +1159,18 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				GPU_setBGProp(SubScreen.gpu, 3, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100E, val);
 				return;
-				
+			case REG_DISPA_BLDCNT:
+				GPU_setBLDCNT(MainScreen.gpu,val) ;
+				break ;
+			case REG_DISPB_BLDCNT:
+				GPU_setBLDCNT(SubScreen.gpu,val) ;
+				break ;
+			case REG_DISPA_BLDALPHA:
+				GPU_setBLDALPHA(MainScreen.gpu,val) ;
+				break ;
+			case REG_DISPB_BLDALPHA:
+				GPU_setBLDALPHA(SubScreen.gpu,val) ;
+				break ;
 			case REG_IME :
 				MMU.reg_IME[proc] = val&1;
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x208, val);
