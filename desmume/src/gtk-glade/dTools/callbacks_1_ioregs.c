@@ -8,7 +8,7 @@ void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
 	gtk_toggle_button_set_active((GtkToggleButton*)b, TRUE);
 }
 
-/* c == 0 (ARM9) */
+/* c == 0 means ARM9 */
 static u32 val_REG_IME(int c) { return MMU.reg_IME[c]; }
 static u32 val_REG_IE(int c) { return MMU.reg_IE[c]; }
 static u32 val_REG_IF(int c) { return MMU.reg_IF[c]; }
