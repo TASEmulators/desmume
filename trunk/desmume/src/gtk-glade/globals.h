@@ -31,6 +31,9 @@ GtkWidget * pDrawingArea;
 GtkWidget * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
 
+/* callbacks.c */
+int ScreenCoeff_Size;
+
 /* callbacks_IO.c */
 void edit_controls();
 
