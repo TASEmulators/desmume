@@ -13,6 +13,7 @@
 #include <glade/glade.h>
 
 #include "../MMU.h"
+#include "../registers.h"
 #include "../armcpu.h"
 #include "../NDSSystem.h"
 #include "../cflash.h"
