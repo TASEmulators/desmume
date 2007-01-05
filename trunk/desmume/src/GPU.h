@@ -99,6 +99,7 @@ struct _GPU
 
        u16 BLDCNT ;
 	   u16 BLDALPHA ;
+	   u16 BLDY ;
        
        void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
@@ -229,6 +230,7 @@ void GPU_setPCPD(GPU *, u8 num, u32 v);
        
 void GPU_setBLDCNT(GPU *gpu, u16 v) ;
 void GPU_setBLDALPHA(GPU *gpu, u16 v) ;
+void GPU_setBLDY(GPU *gpu, u16 v) ;
 
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);
