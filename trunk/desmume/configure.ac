@@ -40,7 +40,7 @@ else
   HAVE_SDL="no"
 fi
 
-dnl - Check for GTK
+dnl - Check for GTK and/or libglade
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 if test ! "x$HAVE_PKG" = "x" ; then
   PKG_CHECK_MODULES(GTK,
@@ -49,6 +49,13 @@ if test ! "x$HAVE_PKG" = "x" ; then
                     HAVE_GTK=no)
   AC_SUBST(GTK_CFLAGS)
   AC_SUBST(GTK_LIBS)
+
+  PKG_CHECK_MODULES(LIBGLADE,
+                    "libglade-2.0",
+                    HAVE_LIBGLADE=yes,
+                    HAVE_LIBGLADE=no)
+  AC_SUBST(LIBGLADE_CFLAGS)
+  AC_SUBST(LIBGLADE_LIBS)
 fi
 
 dnl - Determine which UI's to build
@@ -58,6 +65,14 @@ if test "x$HAVE_SDL" = "xyes"; then
   if test "x$HAVE_GTK" = "xyes"; then
     # GTK requires SDL
     UI_DIR="gtk $UI_DIR"
+  fi
+
+  if test "x$HAVE_LIBGLADE" = "xyes"; then
+    # libglade requires SDL too
+
+    # glade port is disabled for now as it doesn't compile
+    # UI_DIR="gtk-glade $UI_DIR"
+    UI_DIR="$UI_DIR"
   fi
 fi
 
@@ -110,6 +125,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/cli/Makefile
                  src/gtk/Makefile
+                 src/gtk-glade/Makefile
                  src/windows/Makefile
 		 autopackage/default.apspec
 ])
