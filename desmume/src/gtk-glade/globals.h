@@ -28,7 +28,7 @@ gint Keypad_Temp[DESMUME_NB_KEYS];
 GtkWidget * pWindow;
 GtkWidget * pDrawingArea;
 GtkWidget * pDrawingArea2;
-GladeXML  * xml;
+GladeXML  * xml, * xml_tools;
 
 /* callbacks_IO.c */
 void edit_controls();
