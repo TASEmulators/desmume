@@ -46,15 +46,49 @@ gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, g
 
 const int offset_pixels_lower_screen = 256*2*192; // w * bpp * h
 
+#define MAX_SIZE 3
+guchar on_screen_image[256*192*3*2*MAX_SIZE*MAX_SIZE];
+
 int screen (GtkWidget * widget, int offset_pix) {
+/*
 	SDL_PixelFormat screenPixFormat;
 	SDL_Surface *rawImage, *screenImage;
 	
 	rawImage = SDL_CreateRGBSurfaceFrom(((char*)&GPU_screen)+offset_pix, 256, 192, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
 	if(rawImage == NULL) return 1;
+*/	
+	int dx,x,dy,y, W,H,L;
+	u32 image[192][256], r,g,b;
+	u16 * pixel = &GPU_screen;
+	guchar * rgb = &on_screen_image[0];
+
+	for (y=0; y<192; y++) {
+		for (x=0; x<256; x++) {
+			r = (*pixel & 0x7C00) << 9;
+			g = (*pixel & 0x03E0) << 6;
+			b = (*pixel & 0x001F) << 3;
+			image[y][x]= r | g | b;
+			pixel++;
+		}
+	}
 	
-	memcpy(&screenPixFormat, rawImage->format, sizeof(SDL_PixelFormat));
-	
+	W=256; H=192; L=W*3*ScreenCoeff_Size;
+	for (y=0; y<H; y++) {
+		for (x=0; x<W; x++) {
+			*rgb = (image[y][x] & 0x0000FF); rgb++;
+			*rgb = (image[y][x] & 0x00FF00)>> 8; rgb++;
+			*rgb = (image[y][x] & 0xFF0000)>> 16; rgb++;
+			for (dx=1; dx<ScreenCoeff_Size; dx++) {
+				memmove(rgb, rgb-3, 3);
+				rgb += 3;
+			}
+		}
+		for (dy=1; dy<ScreenCoeff_Size; dy++) {
+			memmove(rgb, rgb-L, L);
+			rgb += L;
+		}
+	}
+/*	
 	screenPixFormat.BitsPerPixel = 24;
 	screenPixFormat.BytesPerPixel = 3;
 	screenPixFormat.Rshift = 0;
@@ -63,15 +97,22 @@ int screen (GtkWidget * widget, int offset_pix) {
 	screenPixFormat.Rmask = 0x0000FF;
 	screenPixFormat.Gmask = 0x00FF00;
 	screenPixFormat.Bmask = 0xFF0000;
-	
 	screenImage = SDL_ConvertSurface(rawImage, &screenPixFormat, 0);
-  //TODO : use pixbuf for scaling...
+*/
 
 	gdk_draw_rgb_image	(widget->window,
-		  widget->style->fg_gc[widget->state],0,0,screenImage->w, screenImage->h,
-		  GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,screenImage->pitch);
+		widget->style->fg_gc[widget->state],0,0, 
+		W*ScreenCoeff_Size, H*ScreenCoeff_Size,
+		GDK_RGB_DITHER_NONE,on_screen_image,W*3*ScreenCoeff_Size);
+
+/*
+	gdk_draw_rgb_image	(widget->window,
+		widget->style->fg_gc[widget->state],0,0, 
+		screenImage->w*ScreenCoeff_Size, screenImage->h*ScreenCoeff_Size,
+		GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,256*3);
 	SDL_FreeSurface(screenImage);
 	SDL_FreeSurface(rawImage);
+*/
 	
 	return 1;
 }

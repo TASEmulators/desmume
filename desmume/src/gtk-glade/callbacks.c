@@ -2,7 +2,7 @@
 
 /* globals */
 uint Frameskip = 0;
-static int ScreenCoeff_Size=1;
+int ScreenCoeff_Size=1;
 
 /* inline & protos */
 
