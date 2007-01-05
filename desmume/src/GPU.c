@@ -555,13 +555,18 @@ void GPU_setBLDALPHA(GPU *gpu, u16 v)
 	gpu->BLDALPHA = v ;
 }
 
-INLINE void renderline_setFinalColor(GPU *gpu,u8 bgnum,u8 *dst,u16 color) {
+void GPU_setBLDY(GPU *gpu, u16 v)
+{
+	gpu->BLDY = v ;
+}
+
+INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color) {
 	if (gpu->BLDCNT & (1 << bgnum))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
 		{
 			case 0x00:              /* none (plain color passing) */
-				T2WriteWord(dst, 0, color) ;
+				T2WriteWord(dst, passing, color) ;
 				break ;
 			case 0x40:              /* alpha blending */
 				{
@@ -571,7 +576,7 @@ INLINE void renderline_setFinalColor(GPU *gpu,u8 bgnum,u8 *dst,u16 color) {
 					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
 					u16 sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
 					u16 sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
-					color = T2ReadWord(dst, 0) ;
+					color = T2ReadWord(dst, passing) ;
 					u16 targetR = ((color & 0x1F) * sourceFraction) >> 4 ;
 					u16 targetG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
 					u16 targetB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
@@ -580,20 +585,42 @@ INLINE void renderline_setFinalColor(GPU *gpu,u8 bgnum,u8 *dst,u16 color) {
 					targetB = min(0x1F,targetB+sourceB) ;
 					color = (targetR & 0x1F) | ((targetG & 0x1F) << 5) | ((targetB & 0x1F) << 10) | 0x8000 ;
 				}
-				T2WriteWord(dst, 0, color) ;
+				T2WriteWord(dst, passing, color) ;
 				break ;
 			case 0x80:               /* brightness increase */
-				/* Todo: calculate brightness increase */
-				T2WriteWord(dst, 0, color) ;
+				{
+					if (gpu->BLDY != 0x0) { /* dont slow down if there is nothing to do */
+						u16 modFraction = (gpu->BLDY & 0x1F) ;
+						u16 sourceR = (color & 0x1F) ;
+						u16 sourceG = ((color>>5) & 0x1F) ;
+						u16 sourceB = ((color>>10) & 0x1F) ;
+						sourceR += ((31-sourceR) * modFraction) >> 4 ;
+						sourceG += ((31-sourceG) * modFraction) >> 4 ;
+						sourceB += ((31-sourceB) * modFraction) >> 4 ;
+						color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+					} ;
+				}
+				T2WriteWord(dst, passing, color) ;
 				break ;
 			case 0xC0:               /* brightness decrease */
-				/* Todo: calculate brightness decrease */
-				T2WriteWord(dst, 0, color) ;
+				{
+					if (gpu->BLDY!=0) { /* dont slow down if there is nothing to do */
+						u16 modFraction = (gpu->BLDY & 0x1F) ;
+						u16 sourceR = (color & 0x1F) ;
+						u16 sourceG = ((color>>5) & 0x1F) ;
+						u16 sourceB = ((color>>10) & 0x1F) ;
+						sourceR -= ((sourceR) * modFraction) >> 4 ;
+						sourceG -= ((sourceG) * modFraction) >> 4 ;
+						sourceB -= ((sourceB) * modFraction) >> 4 ;
+						color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+					}
+				}
+				T2WriteWord(dst, passing, color) ;
 				break ;
 		}
 	} else {
 		/* when no effect is active */
-		T2WriteWord(dst, 0, color) ;
+		T2WriteWord(dst, passing, color) ;
 	}
 } ;
 
@@ -653,10 +680,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			    line += 3 - ((xoff&7)>>1);
 			    for(; x < xfin; )
                 {                                                                                                                 
-					if((*line)>>4) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+					if((*line)>>4) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
 									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
-					if((*line)&0xF) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+					if((*line)&0xF) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
 									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
 					line--;
@@ -666,10 +693,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 				line += ((xoff&7)>>1);
 				for(; x < xfin; )
 				{
-					if((*line)&0xF) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+					if((*line)&0xF) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
 									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
-					if((*line)>>4) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
+					if((*line)>>4) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
 									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
 					dst += 2; x++; xoff++;
 					line++;
@@ -706,7 +733,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 				line += (7 - (xoff&7));
 				for(; x < xfin; ++x, ++xoff)
 				{
-					if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+					if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
 							// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
 					dst += 2;
 					line--;
@@ -716,7 +743,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 				line += (xoff&7);
 				for(; x < xfin; ++x, ++xoff)
 				{
-					if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+					if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
 							// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
 					dst += 2;
 					line++;
@@ -754,7 +781,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			line += (7 - (xoff&7));
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+				if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
 						// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
 				dst += 2;
 				line--;
@@ -764,7 +791,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			line += (xoff&7);
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) renderline_setFinalColor(gpu,num,dst,T1ReadWord(pal, *line << 1)) ;
+				if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
 						// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
 				dst += 2;
 				line++;
@@ -818,7 +845,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
                mapinfo = map[(auxX>>3) + ((auxY>>3) * lgmap)];
                coul = tile[mapinfo*64 + ((auxY&7)<<3) + (auxX&7)];
                if(coul)
-		    T2WriteWord(dst, 0, T1ReadWord(pal, coul << 1));
+		    		renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, coul << 1));
           }
           dst += 2;
           x += dx;
@@ -878,7 +905,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
                          y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
                          coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
                          if(coul)
-			      T2WriteWord(dst, 0, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1));
+			      renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1));
                     }
                     dst += 2;
                     x += dx;
@@ -904,7 +931,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
                     {
                          mapinfo = map[auxX + auxY * lg];
                          if(mapinfo)
-			      T2WriteWord(dst, 0, T1ReadWord(pal, mapinfo << 1));
+			      renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, mapinfo << 1));
                     }
                     dst += 2;
                     x += dx;
@@ -929,7 +956,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
                     {
 			 mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
                          if(mapinfo)
-		              T2WriteWord(dst, 0, mapinfo);
+		              renderline_setFinalColor(gpu,0,num,dst, mapinfo);
                     }
                     dst += 2;
                     x += dx;
@@ -1058,7 +1085,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                          u8 c = src[x];
                          if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
                          {
-			      T2WriteByte(dst, sprX << 1, c);
+			      renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
                               prioTab[sprX] = prio;
                          }
                     }
@@ -1069,7 +1096,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u16 c = T1ReadWord(src, x << 1);
                     if((c>>15) && (prioTab[sprX]>=prio))
                      {
-			  T2WriteWord(dst, sprX << 1, c);
+			  renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
                           prioTab[sprX] = prio;
                      }
                }
@@ -1094,7 +1121,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                          u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
                          if((c) && (prioTab[sprX]>=prio))
                          {
-			      T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
+			      renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
                               prioTab[sprX] = prio;
                          }
                     }
@@ -1107,7 +1134,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                      
                      if((c) && (prioTab[sprX]>=prio))
                      {
-			  T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
+			  renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
                           prioTab[sprX] = prio;
                      }
                }  
@@ -1124,14 +1151,14 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((sprSize.x-x-lg)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1141,14 +1168,14 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((x+lg-1)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1166,14 +1193,14 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
                      ++sprX;
                      
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
                     ++sprX;
@@ -1187,14 +1214,14 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                      
                if((c&0xF)&&(prioTab[sprX]>=prio))
                {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
                
                if((c>>4)&&(prioTab[sprX]>=prio))
                {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
@@ -1266,7 +1293,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			 u8 c = src[x << 1];
                          if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
                          {
-			      T2WriteByte(dst, sprX << 1, c);
+			      renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
                               prioTab[sprX] = prio;
                          }
                     }
@@ -1277,7 +1304,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u16 c = T1ReadWord(src, x << 1);
                     if((c>>15) && (prioTab[sprX]>=prio))
                      {
-			  T2WriteWord(dst, sprX << 1, c);
+			  renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
                           prioTab[sprX] = prio;
                      }
                }//
@@ -1298,7 +1325,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                          u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
                          if((c) && (prioTab[sprX]>=prio))
                          {
-			      T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
+			      renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
                               prioTab[sprX] = prio;
                          }
                     }
@@ -1311,7 +1338,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                      
                      if((c) && (prioTab[sprX]>=prio))
                      {
-			  T2WriteWord(dst, sprX << 1, T1ReadWord(pal, c << 1));
+			  renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
                           prioTab[sprX] = prio;
                      }
                }  
@@ -1327,14 +1354,14 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((sprSize.x-x-lg)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1344,14 +1371,14 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX] = prio;
                     }
                     x1 = ((x+lg-1)>>1);
                     c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-			 T2WriteWord(dst, (sprX+lg-1) << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                          prioTab[sprX+lg-1] = prio;
                     }
                }
@@ -1369,14 +1396,14 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
                     if((c>>4)&&(prioTab[sprX]>=prio))
                     {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
                      ++sprX;
                      
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                     }
                     ++sprX;
@@ -1390,14 +1417,14 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                      
                if((c&0xF)&&(prioTab[sprX]>=prio))
                {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
                
                if((c>>4)&&(prioTab[sprX]>=prio))
                {
-		    T2WriteWord(dst, sprX << 1, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
+		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
