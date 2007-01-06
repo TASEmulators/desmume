@@ -69,10 +69,7 @@ if test "x$HAVE_SDL" = "xyes"; then
 
   if test "x$HAVE_LIBGLADE" = "xyes"; then
     # libglade requires SDL too
-
-    # glade port is disabled for now as it doesn't compile
-    # UI_DIR="gtk-glade $UI_DIR"
-    UI_DIR="$UI_DIR"
+    UI_DIR="gtk-glade $UI_DIR"
   fi
 fi
 

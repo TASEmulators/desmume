@@ -2,7 +2,7 @@
 
 #include "callbacks.h"
 #include "callbacks_IO.h"
-#include "dtools/callbacks_dtools.h"
+#include "dTools/callbacks_dtools.h"
 #include "globals.h"
 
 GtkWidget * pWindow;
