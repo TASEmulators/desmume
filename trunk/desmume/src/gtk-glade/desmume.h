@@ -2,7 +2,7 @@
 #define __DESMUME_H__
 
 
-#define DESMUME_NB_KEYS		13
+#define DESMUME_NB_KEYS		14
 
 #define DESMUME_KEYMASK_(k)	(1 << k)
 
@@ -21,6 +21,7 @@
 #define DESMUME_KEY_Y			11
 #define DESMUME_KEY_X			12
 #define DESMUME_KEY_DEBUG		13
+#define DESMUME_KEY_BOOST		14
 
 #include "globals.h"
 

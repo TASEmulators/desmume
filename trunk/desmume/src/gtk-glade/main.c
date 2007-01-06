@@ -36,12 +36,13 @@ const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 	"KEY_Y",
 	"KEY_X",
 	"KEY_DEBUG",
+	"KEY_BOOST"
 };
 
 const gint Default_Keypad_Config[DESMUME_NB_KEYS] =
 {
-	GDK_A,
-	GDK_B,
+	GDK_b,
+	GDK_a,
 	GDK_BackSpace,
 	GDK_Return,
 	GDK_Right,
@@ -50,9 +51,10 @@ const gint Default_Keypad_Config[DESMUME_NB_KEYS] =
 	GDK_Down,
 	GDK_KP_Decimal,
 	GDK_KP_0,
-	GDK_Y,
-	GDK_X,
-	GDK_P
+	GDK_y,
+	GDK_x,
+	GDK_p,
+	GDK_o
 };
 
 char * CONFIG_FILE;

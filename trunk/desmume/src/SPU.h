@@ -80,6 +80,7 @@ extern SPU_struct *SPU;
 
 int SPU_ChangeSoundCore(int coreid, int buffersize);
 int SPU_Init(int coreid, int buffersize);
+void SPU_Pause(int pause);
 void SPU_SetVolume(int volume);
 void SPU_Reset(void);
 void SPU_DeInit(void);

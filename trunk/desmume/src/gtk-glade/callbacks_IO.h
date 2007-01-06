@@ -41,3 +41,4 @@ void  on_button_B_clicked       (GtkButton *button, gpointer user_data);
 void  on_button_Start_clicked   (GtkButton *button, gpointer user_data);
 void  on_button_Select_clicked  (GtkButton *button, gpointer user_data);
 void  on_button_Debug_clicked   (GtkButton *button, gpointer user_data);
+void  on_button_Boost_clicked   (GtkButton *button, gpointer user_data);

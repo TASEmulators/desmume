@@ -3,7 +3,9 @@
 static u16 Cur_Keypad = 0;
 int ScreenCoeff_Size=1;
 gboolean ScreenRotate=FALSE;
-
+gboolean Boost=FALSE;
+int BoostFS=20;
+int saveFS;
 
 /* ***** ***** INPUT BUTTONS / KEYBOARD ***** ***** */
 
@@ -22,7 +24,13 @@ u16 inline lookup_key (guint keyval) {
 
 gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
 	u16 Key = lookup_key(event->keyval);
-	if (Key != 0) {
+	if (event->keyval == Keypad_Config[DESMUME_KEY_BOOST-1]) {
+		Boost != Boost;
+		saveFS=Frameskip;
+		if (Boost) Frameskip = BoostFS;
+		else Frameskip = saveFS;
+	}
+	else if (Key != 0) {
 		Cur_Keypad |= Key;
 		if(desmume_running()) desmume_keypad(Cur_Keypad);
 	}
@@ -213,7 +221,7 @@ const char * DESMUME_KEY_NAMES[DESMUME_NB_KEYS]={
 	"A", "B", 
 	"Select", "Start",
 	"Right", "Left", "Up", "Down",
-	"R", "L", "Y", "X", "DEBUG"
+	"R", "L", "Y", "X", "DEBUG", "Boost"
 };
 gint Keypad_Temp[DESMUME_NB_KEYS];
 guint temp_Key=0;
@@ -292,3 +300,4 @@ void  on_button_B_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMU
 void  on_button_Start_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Start); }
 void  on_button_Select_clicked  (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Select); }
 void  on_button_Debug_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_DEBUG); }
+void  on_button_Boost_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_BOOST); }
