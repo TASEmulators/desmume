@@ -478,9 +478,11 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 			{
 				case 2 : 
 					armcp15->DaccessPerm = val;
+                    armcp15_maskPrecalc(armcp15)
  					return TRUE;
 				case 3 :
 					armcp15->IaccessPerm = val;
+                    armcp15_maskPrecalc(armcp15)
 					return TRUE;
 				default :
 					return FALSE;
@@ -564,7 +566,8 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 					return TRUE;
 				case 1 :
 					armcp15->ITCMRegion = val;
-					MMU.ITCMRegion = val & 0x0FFFFFFC0;
+					/* ITCM base is not writeable! */
+					MMU.ITCMRegion = 0;
 					return TRUE;
 				default :
 					return FALSE;
