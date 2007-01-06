@@ -146,6 +146,15 @@ void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 	edit_controls();
 }
 
+void  on_menu_audio_on_activate  (GtkMenuItem *menuitem, gpointer user_data) {
+	/* we want set audio emulation ON or OFF */
+	if (gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem)) {
+		SPU_Pause(0);
+	} else {
+		SPU_Pause(1);
+	}
+}
+
 void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	GtkBox * sbox = (GtkBox*)glade_xml_get_widget(xml, "whb_Sub");
 	GtkWidget * mbox = glade_xml_get_widget(xml, "whb_Main");

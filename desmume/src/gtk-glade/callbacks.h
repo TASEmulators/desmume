@@ -30,6 +30,7 @@ void  on_size3x_activate (GtkMenuItem *menuitem, gpointer user_data);
 
 /* MENU CONFIG */
 void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data);
+void  on_menu_audio_on_activate     (GtkMenuItem *menuitem, gpointer user_data);
 void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data);
 void  on_menu_rotatescreen_activate (GtkMenuItem *menuitem, gpointer user_data);
 /* MENU TOOLS */
