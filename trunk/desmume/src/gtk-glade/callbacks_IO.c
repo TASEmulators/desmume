@@ -1,7 +1,8 @@
 #include "callbacks_IO.h"
 
 static u16 Cur_Keypad = 0;
-
+int ScreenCoeff_Size=1;
+gboolean ScreenRotate=FALSE;
 
 
 /* ***** ***** INPUT BUTTONS / KEYBOARD ***** ***** */
@@ -44,26 +45,32 @@ gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, g
 
 
 
-const int offset_pixels_lower_screen = 256*192; // w * h
-
+#define RAW_W 256
+#define RAW_H 192*2
 #define MAX_SIZE 3
-guchar on_screen_image[256*192*3*2*MAX_SIZE*MAX_SIZE];
+guchar on_screen_image[RAW_W*RAW_H*3*MAX_SIZE*MAX_SIZE];
+int inline screen_bytes_size() {
+	return RAW_W*RAW_H*3*ScreenCoeff_Size*ScreenCoeff_Size;
+}
+int inline offset_pixels_lower_screen() {
+	return screen_bytes_size()/2;
+}
 
-int screen (GtkWidget * widget, int offset_pix) {
-/*
-	SDL_PixelFormat screenPixFormat;
-	SDL_Surface *rawImage, *screenImage;
-	
-	rawImage = SDL_CreateRGBSurfaceFrom(((char*)&GPU_screen)+offset_pix, 256, 192, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
-	if(rawImage == NULL) return 1;
-*/	
-	int dx,x,dy,y, W,H,L;
-	u32 image[192][256], r,g,b;
-	u16 * pixel = (u16*)&GPU_screen + offset_pix;
+void black_screen () {
+	/* removes artifacts when resizing with scanlines */
+	memset(on_screen_image,0,screen_bytes_size());
+}
+
+void decode_screen () {
+
+	int x,y, m, W,H,L,BL, Pw,Bw,Lw,Cw,Hw;
+	u32 image[RAW_H][RAW_W], r,g,b;
+	u16 * pixel = (u16*)&GPU_screen;
 	guchar * rgb = &on_screen_image[0];
 
-	for (y=0; y<192; y++) {
-		for (x=0; x<256; x++) {
+	/* decode colors */
+	for (y=0; y<RAW_H; y++) {
+		for (x=0; x<RAW_W; x++) {
 			r = (*pixel & 0x7C00) << 9;
 			g = (*pixel & 0x03E0) << 6;
 			b = (*pixel & 0x001F) << 3;
@@ -71,48 +78,50 @@ int screen (GtkWidget * widget, int offset_pix) {
 			pixel++;
 		}
 	}
-	
-	W=256; H=192; L=W*3*ScreenCoeff_Size;
-	for (y=0; y<H; y++) {
-		for (x=0; x<W; x++) {
-			*rgb = (image[y][x] & 0x0000FF); rgb++;
-			*rgb = (image[y][x] & 0x00FF00)>> 8; rgb++;
-			*rgb = (image[y][x] & 0xFF0000)>> 16; rgb++;
-			for (dx=1; dx<ScreenCoeff_Size; dx++) {
-				memmove(rgb, rgb-3, 3);
-				rgb += 3;
-			}
+#define LOOP(a,b,c,d,e,f) \
+		Pw=3*ScreenCoeff_Size; \
+		L=W*Pw; \
+		for (a; b; c) { \
+			for (d; e; f) { \
+				*rgb = (image[y][x] & 0x0000FF); rgb++; \
+				*rgb = (image[y][x] & 0x00FF00)>> 8; rgb++; \
+				*rgb = (image[y][x] & 0xFF0000)>> 16; rgb++; \
+				/* pixels duplicated for scaling width */ \
+				for (m=1; m<ScreenCoeff_Size; m++) { \
+					memmove(rgb, rgb-3, 3); \
+					rgb += 3; \
+				} \
+			} \
+			/* lines duplicated for scaling height */ \
+			for (m=1; m<ScreenCoeff_Size; m++) { \
+				memmove(rgb, rgb-L, L); \
+				rgb += L; \
+			} \
 		}
-		for (dy=1; dy<ScreenCoeff_Size; dy++) {
-			memmove(rgb, rgb-L, L);
-			rgb += L;
-		}
-	}
-/*	
-	screenPixFormat.BitsPerPixel = 24;
-	screenPixFormat.BytesPerPixel = 3;
-	screenPixFormat.Rshift = 0;
-	screenPixFormat.Gshift = 8;
-	screenPixFormat.Bshift = 16;
-	screenPixFormat.Rmask = 0x0000FF;
-	screenPixFormat.Gmask = 0x00FF00;
-	screenPixFormat.Bmask = 0xFF0000;
-	screenImage = SDL_ConvertSurface(rawImage, &screenPixFormat, 0);
-*/
+	/* load pixels in buffer accordingly */
+	if (ScreenRotate) {
+		W=RAW_H/2; H=RAW_W;
+		LOOP(x=RAW_W-1, x >= 0, x--, y=0, y < W, y++)
+		LOOP(x=RAW_W-1, x >= 0, x--, y=W, y < RAW_H, y++)
+	} else {
+		H=RAW_H; W=RAW_W;
+		LOOP(y=0, y < RAW_H, y++, x=0, x < RAW_W, x++)
 
+	}
+}
+
+int screen (GtkWidget * widget, int offset_pix) {
+	int H,W,L;
+	if (ScreenRotate) {
+		W=RAW_H/2; H=RAW_W;
+	} else {
+		H=RAW_H/2; W=RAW_W;
+	}
+	L=W*3*ScreenCoeff_Size;
 	gdk_draw_rgb_image	(widget->window,
 		widget->style->fg_gc[widget->state],0,0, 
 		W*ScreenCoeff_Size, H*ScreenCoeff_Size,
-		GDK_RGB_DITHER_NONE,on_screen_image,W*3*ScreenCoeff_Size);
-
-/*
-	gdk_draw_rgb_image	(widget->window,
-		widget->style->fg_gc[widget->state],0,0, 
-		screenImage->w*ScreenCoeff_Size, screenImage->h*ScreenCoeff_Size,
-		GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,256*3);
-	SDL_FreeSurface(screenImage);
-	SDL_FreeSurface(rawImage);
-*/
+		GDK_RGB_DITHER_NONE,on_screen_image+offset_pix,L);
 	
 	return 1;
 }
@@ -120,13 +129,14 @@ int screen (GtkWidget * widget, int offset_pix) {
 /* OUTPUT UPPER SCREEN  */
 void      on_wDraw_Main_realize       (GtkWidget *widget, gpointer user_data) { }
 gboolean  on_wDraw_Main_expose_event  (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
+	decode_screen();
 	return screen(widget, 0);
 }
 
 /* OUTPUT LOWER SCREEN  */
 void      on_wDraw_Sub_realize        (GtkWidget *widget, gpointer user_data) { }
 gboolean  on_wDraw_Sub_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
-	return screen(widget, offset_pixels_lower_screen);
+	return screen(widget, offset_pixels_lower_screen());
 }
 
 
@@ -137,31 +147,29 @@ gboolean  on_wDraw_Sub_expose_event   (GtkWidget *widget, GdkEventExpose  *event
 
 /* ***** ***** INPUT STYLUS / MOUSE ***** ***** */
 
-
+void set_touch_pos (int x, int y) {
+	s32 EmuX, EmuY;
+	x /= ScreenCoeff_Size;
+	y /= ScreenCoeff_Size;
+	EmuX = x; EmuY = y;
+	if (ScreenRotate) { EmuX = 256-y; EmuY = x; }
+	if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
+	if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
+	NDS_setTouchPos(EmuX, EmuY);
+}
 
 gboolean  on_wDraw_Sub_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
 	GdkModifierType state;
 	gint x,y;
-	s32 EmuX, EmuY;
 	
 	if(desmume_running()) 
+	if(event->button == 1) 
 	{
-		if(event->button == 1) 
-		{
-			click = TRUE;
-			
-			gdk_window_get_pointer(widget->window, &x, &y, &state);
-			if (state & GDK_BUTTON1_MASK)
-			{
-				EmuX = x;
-				EmuY = y;
-				if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
-				if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-				NDS_setTouchPos(EmuX, EmuY);
-			}
-		}
-	}
-	
+		click = TRUE;	
+		gdk_window_get_pointer(widget->window, &x, &y, &state);
+		if (state & GDK_BUTTON1_MASK)
+			set_touch_pos(x,y);
+	}	
 	return TRUE;
 }
 
@@ -174,8 +182,6 @@ gboolean  on_wDraw_Sub_button_release_event (GtkWidget *widget, GdkEventButton  
 gboolean  on_wDraw_Sub_motion_notify_event  (GtkWidget *widget, GdkEventMotion  *event, gpointer user_data) {
 	GdkModifierType state;
 	gint x,y;
-	s32 EmuX, EmuY;
-	
 	
 	if(click)
 	{
@@ -191,13 +197,7 @@ gboolean  on_wDraw_Sub_motion_notify_event  (GtkWidget *widget, GdkEventMotion  
 	//	fprintf(stderr,"X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
 	
 		if(state & GDK_BUTTON1_MASK)
-		{
-			EmuX = x;
-			EmuY = y;
-			if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
-			if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-			NDS_setTouchPos(EmuX, EmuY);
-		}
+			set_touch_pos(x,y);
 	}
 	
 	return TRUE;

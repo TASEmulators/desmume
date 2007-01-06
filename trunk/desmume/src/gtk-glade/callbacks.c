@@ -2,7 +2,6 @@
 
 /* globals */
 uint Frameskip = 0;
-int ScreenCoeff_Size=1;
 
 /* inline & protos */
 
@@ -121,13 +120,16 @@ void  on_fs9_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 
 
 
 /* SUBMENU SIZE ***** ***** ***** ***** */
+int H=192, W=256;
 void resize (int Size) {
 	/* we want to scale drawing areas by a factor (1x,2x or 3x) */
-	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 192 * Size);
-	gtk_widget_set_usize (pDrawingArea, 256 * Size, 192 * Size);	
-	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea2), 256 * Size, 192 * Size);
-	gtk_widget_set_usize (pDrawingArea2, 256 * Size, 192 * Size);	
+	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), W * Size, H * Size);
+	gtk_widget_set_usize (pDrawingArea, W * Size, H * Size);	
+	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea2), W * Size, H * Size);
+	gtk_widget_set_usize (pDrawingArea2, W * Size, H * Size);	
 	ScreenCoeff_Size = Size;
+	/* remove artifacts */
+	black_screen();
 	/* pack the window */
 	MAINWINDOW_RESIZE();
 }
@@ -163,6 +165,16 @@ void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) 
 	MAINWINDOW_RESIZE();
 }
 
+void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
+	/* we want to rotate the screen */
+	ScreenRotate = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
+	if (ScreenRotate) {
+		H=256; W=192;
+	} else {
+		W=256; H=192;
+	}
+	resize(ScreenCoeff_Size);
+}
 
 /* MENU TOOLS ***** ***** ***** ***** */
 void  on_menu_IO_regs_activate      (GtkMenuItem *menuitem, gpointer user_data) {

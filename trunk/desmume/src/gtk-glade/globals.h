@@ -31,10 +31,10 @@ GtkWidget * pDrawingArea;
 GtkWidget * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
 
-/* callbacks.c */
-int ScreenCoeff_Size;
-
 /* callbacks_IO.c */
+int ScreenCoeff_Size;
+gboolean ScreenRotate;
+void black_screen ();
 void edit_controls();
 
 /* printscreen.c */

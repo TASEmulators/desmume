@@ -117,7 +117,7 @@
 		      <signal name="activate" handler="on_menu_reset_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image9">
+			<widget class="GtkImage" id="image15">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">1</property>
@@ -127,6 +127,16 @@
 			  <property name="ypad">0</property>
 			</widget>
 		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkCheckMenuItem" id="menu_layers">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Layers</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">True</property>
+		      <signal name="activate" handler="on_menu_layers_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 		    </widget>
 		  </child>
 
@@ -253,16 +263,6 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckMenuItem" id="menu_layers">
-		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Layers</property>
-		      <property name="use_underline">True</property>
-		      <property name="active">True</property>
-		      <signal name="activate" handler="on_menu_layers_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
-		    </widget>
-		  </child>
-
-		  <child>
 		    <widget class="GtkMenuItem" id="menu_size">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Size</property>
@@ -328,7 +328,7 @@
 		      <signal name="activate" handler="on_menu_controls_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image10">
+			<widget class="GtkImage" id="image16">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -348,6 +348,16 @@
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <signal name="activate" handler="on_menu_rightscreen_activate" last_modification_time="Mon, 01 Jan 2007 20:16:24 GMT"/>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkCheckMenuItem" id="menu_rotatescreen">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Rotate Screen</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <signal name="activate" handler="on_menu_rotatescreen_activate" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -372,7 +382,7 @@
 		      <signal name="activate" handler="on_menu_IO_regs_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image11">
+			<widget class="GtkImage" id="image17">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>
