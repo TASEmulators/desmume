@@ -657,7 +657,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	tile = (u8*) gpu->BG_tile_ram[num];
 	if((!tile) || (!gpu->BG_map_ram[num])) return; 	/* no tiles or no map*/
 	xoff = X;
-	if(!(bgprop & 0x80))    						/* color: 16 palette entries */
+	if(!(bgprop & 0x80))    /* color: 16 palette entries */
 	{
 		yoff = ((Y&7)<<2);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
@@ -677,37 +677,32 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			if (xfin > LG)
 				xfin = LG;
 			
+#define RENDERL(c,m) \
+	if (c) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, ((c) + ((mapinfovalue>>12)&0xF) * m) << 1)) ; \
+	dst += 2; x++; xoff++;
+
 			if((mapinfovalue) & 0x400)
 			{
-			    line += 3 - ((xoff&7)>>1);
-			    for(; x < xfin; )
-                {                                                                                                                 
-					if((*line)>>4) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
-									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
-					dst += 2; x++; xoff++;
-					if((*line)&0xF) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
-									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
-					dst += 2; x++; xoff++;
+				line += 3 - ((xoff&7)>>1);
+				for(; x < xfin; ) {
+// XXX
+					RENDERL(((*line)>>4),0x10)
+					RENDERL(((*line)&0xF),0x10)
 					line--;
 				}
-			} else
-			{
+			} else {
 				line += ((xoff&7)>>1);
-				for(; x < xfin; )
-				{
-					if((*line)&0xF) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
-									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)&0xF) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
-					dst += 2; x++; xoff++;
-					if((*line)>>4) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1)) ;
-									// was: T2WriteWord(dst, 0, T1ReadWord(pal, (((*line)>>4) + ((mapinfovalue>>12)&0xF) * 0x10) << 1));
-					dst += 2; x++; xoff++;
+				for(; x < xfin; ) {
+// XXX
+					RENDERL(((*line)&0xF),0x10)
+					RENDERL(((*line)>>4),0x10)
 					line++;
 				}
 			}
 		}
 		return;
 	}
-	if(!(gpu->prop & 0x40000000))                   /* color: no extended palette */
+	if(!(gpu->prop & 0x40000000))  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
@@ -724,7 +719,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			if(tmp > 31) mapinfo += 32*32*2;
 
 			mapinfovalue = T1ReadWord(mapinfo, 0);
-                                                                                 
+
 			line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
 			xfin = x + (8 - (xoff&7));
 			if (xfin > LG)
@@ -733,21 +728,17 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			if((mapinfovalue)& 0x400)
 			{
 				line += (7 - (xoff&7));
-				for(; x < xfin; ++x, ++xoff)
+				for(; x < xfin; )
 				{
-					if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
-							// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
-					dst += 2;
+					RENDERL((*line),0)
 					line--;
 				}
 			} else
 			{
 				line += (xoff&7);
-				for(; x < xfin; ++x, ++xoff)
+				for(; x < xfin; )
 				{
-					if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
-							// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
-					dst += 2;
+					RENDERL((*line),0)
 					line++;
 				}
 			}
@@ -782,23 +773,19 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		if((mapinfovalue)& 0x400)
 		{
 			line += (7 - (xoff&7));
-			for(; x < xfin; ++x, ++xoff)
+			for(; x < xfin;)
 			{
 				/* this is was adapted */
-				 if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1)) ;
-						// was: T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
-				dst += 2;
+				RENDERL((*line),0x100)
 				line--;
 			}
 		} else
 		{
 			line += (xoff&7);
-			for(; x < xfin; ++x, ++xoff)
+			for(; x < xfin; )
 			{
 				/* this is was adapted */
-				if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1)) ;
-						// was: T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
-				dst += 2;
+				RENDERL((*line),0x100)
 				line++;
 			}
 		}
@@ -808,21 +795,21 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
      u32 bgprop = gpu->BGProp[num];
-     
+
      s32 x = X + (s32)PB*(s32)H;
      s32 y = Y + (s32)PD*(s32)H;
-     
-     
+
+
      s32 dx = (s32)PA;
      s32 dy = (s32)PC;
-     
+
      s32 auxX;
      s32 auxY;
-     
+
      s32 lg = gpu->BGSize[num][0];
      s32 ht = gpu->BGSize[num][1];
      s32 lgmap = (lg>>3);
-     
+
      u8 * map = gpu->BG_map_ram[num];
      u8 * tile = (u8 *)gpu->BG_tile_ram[num];
      u8 * dst = DST;
@@ -838,13 +825,13 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
      {
           auxX = x>>8;
           auxY = y>>8;
-          
+
           if(bgprop&(1<<13))
           {
                auxX &= (lg-1);
                auxY &= (ht-1);
           }
-          
+
           if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
           {
                mapinfo = map[(auxX>>3) + ((auxY>>3) * lgmap)];
@@ -861,20 +848,20 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
 INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
      u32 bgprop = gpu->BGProp[num];
-     
+
      s32 x = X + (s32)PB*(s32)H;
      s32 y = Y + (s32)PD*(s32)H;
-     
+
      s32 dx = PA;
      s32 dy = PC;
-     
+
      s32 auxX;
      s32 auxY;
-     
+
      s16 lg = gpu->BGSize[num][0];
      s16 ht = gpu->BGSize[num][1];
      u16 lgmap = (lg>>3);
-     
+
      u8 * tile = (u8 *)gpu->BG_tile_ram[num];
      u8 * dst = DST;
      u16 mapinfo;
@@ -894,7 +881,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
                {
                     auxX = x>>8;
                     auxY = y>>8;
-                    
+
                     if(bgprop&(1<<13))
                     {
                          auxX &= (lg-1);
@@ -979,7 +966,7 @@ void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
 
 void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
-     rotBG2(gpu, num, DST, l, 
+     rotBG2(gpu, num, DST, l,
               gpu->BGX[num],
               gpu->BGY[num],
               gpu->BGPA[num],
@@ -991,7 +978,7 @@ void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
 
 void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
-     extRotBG2(gpu, num, DST, l, 
+     extRotBG2(gpu, num, DST, l,
               gpu->BGX[num],
               gpu->BGY[num],
               gpu->BGPA[num],
@@ -1030,7 +1017,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	if (!gpu->sprEnable) return ;
      OAM * aux = gpu->oam + (nbShow-1);// + 127;
-     
+
      u8 block = gpu->sprBlock;
      u16 i;
 
@@ -1049,9 +1036,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
           sprX = ((s32)(sprX<<23))>>23;
           sprY = aux->attr0 & 0xFF;
-          
+
           sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
-          
+
           lg = sprSize.x;
 
           if(sprY>192)
@@ -1061,7 +1048,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
               (l<sprY)||(l>=sprY+sprSize.y) ||
               (sprX==256) )
               continue;
-          
+
           if(sprX<0)
           {
                if(sprX+sprSize.x<=0) continue;
@@ -1072,12 +1059,12 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
           else
                if(sprX+sprSize.x>256)
                     lg = 255 - sprX;
-               
+
           y = l - sprY;
           prio = (aux->attr2>>10)&3;
-          
+
           if(aux->attr1&(1<<13)) y = sprSize.y - y -1;
-          
+
           if((aux->attr0&(3<<10))==(3<<10))
           {
 	       u16 i;
@@ -1087,7 +1074,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                {
                     x = sprSize.x -x - 1;
                     for(i = 0; i < lg; ++i, --x, ++sprX)
-                    {                         
+                    {
                          u8 c = src[x];
                          if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
                          {
@@ -1108,7 +1095,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                }
                continue;
           }
-          
+
           if(aux->attr0&(1<<13))
           {
 	       u16 i;
@@ -1133,17 +1120,17 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     }
                     continue;
                }
-               
+
                for(i = 0; i < lg; ++i, ++x, ++sprX)
                {
                      u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-                     
+
                      if((c) && (prioTab[sprX]>=prio))
                      {
 			  renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
                           prioTab[sprX] = prio;
                      }
-               }  
+               }
                continue;
           }
           src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
@@ -1203,7 +1190,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     prioTab[sprX] = prio;
                     }
                      ++sprX;
-                     
+
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
 		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
@@ -1213,25 +1200,25 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                }
                continue;
           }
-               
+
           for(j = 0; j < lg; ++j, ++x)
           {
                u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-                     
+
                if((c&0xF)&&(prioTab[sprX]>=prio))
                {
 		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
-               
+
                if((c>>4)&&(prioTab[sprX]>=prio))
                {
 		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
-          }  
+          }
      }
 }
 
@@ -1256,9 +1243,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
           sprX = ((s32)(sprX<<23))>>23;
           sprY = aux->attr0 & 0xFF;
-          
+
           sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
-          
+
           lg = sprSize.x;
 
           if(sprY>192)
@@ -1268,7 +1255,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
               (l<sprY)||(l>=sprY+sprSize.y) ||
               (sprX==256) )
               continue;
-          
+
           if(sprX<0)
           {
                if(sprX+sprSize.x<=0) continue;
@@ -1279,12 +1266,12 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
           else
                if(sprX+sprSize.x>256)
                     lg = 255 - sprX;
-               
+
           y = l - sprY;
           prio = (aux->attr2>>10)&3;
-          
+
           if(aux->attr1&(1<<13)) y = sprSize.y - y -1;
-          
+
           if((aux->attr0&(3<<10))==(3<<10))
           {
 	       u16 i;
@@ -1317,7 +1304,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                }//
                continue;
           }
-          
+
           if(aux->attr0&(1<<13))
           {
                u16 i;
@@ -1338,17 +1325,17 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     }
                     continue;
                }
-               
+
                for(i = 0; i < lg; ++i, ++x, ++sprX)
                {
                      u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-                     
+
                      if((c) && (prioTab[sprX]>=prio))
                      {
 			  renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
                           prioTab[sprX] = prio;
                      }
-               }  
+               }
                continue;
           }
           src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
@@ -1407,7 +1394,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                     prioTab[sprX] = prio;
                     }
                      ++sprX;
-                     
+
                     if((c&0xF)&&(prioTab[sprX]>=prio))
                     {
 		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
@@ -1417,25 +1404,25 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
                }
                continue;
           }
-               
+
           for(j = 0; j < lg; ++j, ++x)
           {
                u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-                     
+
                if((c&0xF)&&(prioTab[sprX]>=prio))
                {
 		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
-               
+
                if((c>>4)&&(prioTab[sprX]>=prio))
                {
 		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
                     prioTab[sprX] = prio;
                }
                ++sprX;
-          }  
+          }
      }
 }
 
