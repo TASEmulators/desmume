@@ -61,7 +61,8 @@ void desmume_keypad(u16 k)
 {
 	unsigned short k_ext = (k >> 10) & 0x3;
 	unsigned short k_pad = k & 0x3FF;
-	((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] = ~k_pad;
-	((unsigned short *)MMU.ARM7_REG)[0x130>>1] = ~k_ext;
+	((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] = k_pad;
+	((unsigned short *)MMU.ARM7_REG)[0x130>>1] = k_pad;
+	MMU.ARM7_REG[0x136] = (k_ext & 0x3) | (MMU.ARM7_REG[0x136] & ~0x3);
 }
  

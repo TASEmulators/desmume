@@ -57,8 +57,8 @@ const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 	"KEY_DOWN",
 	"KEY_R",
 	"KEY_L",
-	"KEY_Y",
 	"KEY_X",
+	"KEY_Y",
 	"KEY_DEBUG",
 };
 
@@ -137,8 +137,8 @@ const gint Default_Keypad_Config[DESMUME_NB_KEYS] =
 	65364,
 	65454, // numeric .
 	65456, // numeric 0
-	121, // y
 	120, // x
+	121, // y
 	112
 };
 
@@ -407,7 +407,7 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 	return TRUE;
 }
 
-static u16 Cur_Keypad = 0;
+static u16 Cur_Keypad = 0x00FFF;
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 {
@@ -420,7 +420,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 	if(i < DESMUME_NB_KEYS)
 	{
 		Key = DESMUME_KEYMASK_(i);
-		Cur_Keypad |= Key;
+		Cur_Keypad &= ~Key;
 		if(desmume_running()) desmume_keypad(Cur_Keypad);
 	}
 	
@@ -438,7 +438,7 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 	if(i < DESMUME_NB_KEYS)
 	{
 		Key = DESMUME_KEYMASK_(i);
-		Cur_Keypad &= ~Key;
+		Cur_Keypad |= Key;
 		if(desmume_running()) desmume_keypad(Cur_Keypad);
 	}
 	

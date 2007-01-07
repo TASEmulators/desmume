@@ -18,8 +18,8 @@
 #define DESMUME_KEY_R			9
 #define DESMUME_KEY_L			10
 
-#define DESMUME_KEY_Y			11
-#define DESMUME_KEY_X			12
+#define DESMUME_KEY_X			11
+#define DESMUME_KEY_Y			12
 #define DESMUME_KEY_DEBUG		13
 
 extern void desmume_init();
