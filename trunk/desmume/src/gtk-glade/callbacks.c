@@ -7,6 +7,14 @@ gboolean ScreenGap=FALSE;
 
 /* inline & protos */
 
+void enable_rom_features() {
+	SET_SENSITIVE("menu_exec", TRUE);
+	SET_SENSITIVE("menu_pause", TRUE);
+	SET_SENSITIVE("menu_reset", TRUE);
+	SET_SENSITIVE("wgt_Exec", TRUE);
+	SET_SENSITIVE("wgt_Reset", TRUE);
+}
+
 void MAINWINDOW_RESIZE() {
 	GtkWidget * spacer1 = glade_xml_get_widget(xml, "misc_sep3");
 	GtkWidget * spacer2 = glade_xml_get_widget(xml, "misc_sep4");
@@ -81,12 +89,8 @@ void file_open() {
 				gtk_dialog_run(GTK_DIALOG(pDialog));
 				gtk_widget_destroy(pDialog);
 			} else {
-				SET_SENSITIVE("menu_exec", TRUE);
-				SET_SENSITIVE("menu_pause", TRUE);
-				SET_SENSITIVE("menu_reset", TRUE);
-				SET_SENSITIVE("wgt_Exec", TRUE);
-				SET_SENSITIVE("wgt_Reset", TRUE);
 				desmume_resume();
+				enable_rom_features();
 			}
 
 			g_free(sChemin);

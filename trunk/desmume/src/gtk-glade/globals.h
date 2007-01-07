@@ -31,6 +31,9 @@ GtkWidget * pDrawingArea;
 GtkWidget * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
 
+/* callbacks.c */
+void enable_rom_features();
+
 /* callbacks_IO.c */
 int ScreenCoeff_Size;
 gboolean ScreenRotate;
