@@ -28,6 +28,9 @@ dnl --- Other prerequisites ---
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen)
 
+dnl - Check for zziplib
+AC_CHECK_LIB(zzip, zzip_open)
+
 dnl - Check for SDL
 AC_PATH_PROGS(SDLCONFIG, [sdl-config sdl11-config])
 if test ! "x$SDLCONFIG" = "x" ; then
