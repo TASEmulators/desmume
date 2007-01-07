@@ -971,414 +971,353 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	if (!gpu->sprEnable) return ;
-     OAM * aux = gpu->oam + (nbShow-1);// + 127;
+	OAM * aux = gpu->oam + (nbShow-1);// + 127;
+	
+	u8 block = gpu->sprBlock;
+	u16 i;
+	
+	for(i = 0; i<nbShow; ++i, --aux)
+	{
+		s32 sprX = aux->attr1 & 0x1FF;
+		s32 sprY;
+		s32 x = 0;
+		u32 lg;
+		size sprSize;
+		s32 y;
+		u8 prio;
+		u8 * src;
+		u8 * pal;
+		u16 j;
+	
+		sprX = ((s32)(sprX<<23))>>23;
+		sprY = aux->attr0 & 0xFF;
+	
+		sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+	
+		lg = sprSize.x;
 
-     u8 block = gpu->sprBlock;
-     u16 i;
+		if(sprY>192)
+		sprY = (s32)((s8)(aux->attr0 & 0xFF));
+	
+		if( ((aux->attr0&(1<<9))&&(!(aux->attr0&(1<<8)))) ||
+		    (l<sprY)||(l>=sprY+sprSize.y) ||
+		    (sprX==256) )
+			continue;
+	
+		if(sprX<0)
+		{
+			if(sprX+sprSize.x<=0) continue;
+			lg += sprX;
+			x = -sprX;
+			sprX = 0;
+		} else if(sprX+sprSize.x>256)
+			lg = 255 - sprX;
+	
+		y = l - sprY;
+		prio = (aux->attr2>>10)&3;
+	
+		if(aux->attr1&(1<<13)) 
+			y = sprSize.y - y -1;
+	
+#define RENDERS(a) \
+	if((a)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, c); \
+		prioTab[sprX] = prio; \
+	}
+		if((aux->attr0&(3<<10))==(3<<10))
+		{
+			u16 i;
+			src = (gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
+	
+			if(aux->attr1&(1<<12))
+			{
+				x = sprSize.x -x - 1;
+				for(i = 0; i < lg; ++i, --x, ++sprX)
+				{
+					u8 c = src[x];
+					// What's the point in shifting down by 15 when c is 8-bits?
+					RENDERS(c>>15)
+				}
+				continue;
+			}
+			for(i = 0; i < lg; ++i, ++x, ++sprX)
+			{
+				u16 c = T1ReadWord(src, x << 1);
+				RENDERS(c>>15)
+			}
+			continue;
+		}
+#undef RENDERS
 
-     for(i = 0; i<nbShow; ++i, --aux)
-     {
-          s32 sprX = aux->attr1 & 0x1FF;
-          s32 sprY;
-          s32 x = 0;
-          u32 lg;
-          size sprSize;
-          s32 y;
-          u8 prio;
-          u8 * src;
-          u8 * pal;
-          u16 j;
+#define RENDERS(c) \
+	if((c)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1)); \
+		prioTab[sprX] = prio; \
+	}
 
-          sprX = ((s32)(sprX<<23))>>23;
-          sprY = aux->attr0 & 0xFF;
+		if(aux->attr0&(1<<13))
+		{
+		u16 i;
+		src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+	
+		if(gpu->prop&(1<<31))
+			pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x200);
+		else
+			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
+	
+		if(aux->attr1&(1<<12))
+		{
+			x = sprSize.x -x - 1;
+			for(i = 0; i < lg; ++i, --x, ++sprX)
+			{
+				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
+				RENDERS(c)
+			}
+			continue;
+		}
+		for(i = 0; i < lg; ++i, ++x, ++sprX)
+		{
+			u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
+			RENDERS(c)
+		}
+		continue;
+		}
+		src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
 
-          sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+#undef RENDERS
 
-          lg = sprSize.x;
+#define RENDERS(c,d) \
+	if((c)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+((aux->attr2>>12)*0x10)) << 1)); \
+		prioTab[sprX d] = prio; \
+	}
+	
+		if(x&1)
+		{
+			if(aux->attr1&(1<<12))
+			{
+				s32 x1 = ((sprSize.x-x)>>1);
+				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c&0xF),)
+				x1 = ((sprSize.x-x-lg)>>1);
+				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c&0xF),+lg-1)
+			} else {
+				s32 x1 = (x>>1);
+				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c>>4),)
+				x1 = ((x+lg-1)>>1);
+				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c>>4),+lg-1)
+		
+			}
+			++sprX;
+			++x;
+		}
+		lg >>= 1;
+		x >>= 1;
+	
+		if(aux->attr1&(1<<12))
+		{
+			u16 i;
+			x = (sprSize.x>>1) - x -1;
+			for(i = 0; i < lg; ++i, --x)
+			{
+				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				RENDERS((c>>4),)
+				++sprX;
+				RENDERS((c&0xF),)
+				++sprX;
+			}
+			continue;
+		}
 
-          if(sprY>192)
-               sprY = (s32)((s8)(aux->attr0 & 0xFF));
-
-          if( ((aux->attr0&(1<<9))&&(!(aux->attr0&(1<<8)))) ||
-              (l<sprY)||(l>=sprY+sprSize.y) ||
-              (sprX==256) )
-              continue;
-
-          if(sprX<0)
-          {
-               if(sprX+sprSize.x<=0) continue;
-               lg += sprX;
-               x = -sprX;
-               sprX = 0;
-          }
-          else
-               if(sprX+sprSize.x>256)
-                    lg = 255 - sprX;
-
-          y = l - sprY;
-          prio = (aux->attr2>>10)&3;
-
-          if(aux->attr1&(1<<13)) y = sprSize.y - y -1;
-
-          if((aux->attr0&(3<<10))==(3<<10))
-          {
-	       u16 i;
-               src = (gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
-
-               if(aux->attr1&(1<<12))
-               {
-                    x = sprSize.x -x - 1;
-                    for(i = 0; i < lg; ++i, --x, ++sprX)
-                    {
-                         u8 c = src[x];
-                         if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
-                         {
-			      renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
-                              prioTab[sprX] = prio;
-                         }
-                    }
-                    continue;
-               }
-               for(i = 0; i < lg; ++i, ++x, ++sprX)
-               {
-                    u16 c = T1ReadWord(src, x << 1);
-                    if((c>>15) && (prioTab[sprX]>=prio))
-                     {
-			  renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
-                          prioTab[sprX] = prio;
-                     }
-               }
-               continue;
-          }
-
-          if(aux->attr0&(1<<13))
-          {
-	       u16 i;
-               src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
-
-               if(gpu->prop&(1<<31))
-                                                pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x200);
-               else
-						pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
-
-               if(aux->attr1&(1<<12))
-               {
-                    x = sprSize.x -x - 1;
-                    for(i = 0; i < lg; ++i, --x, ++sprX)
-                    {
-                         u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-                         if((c) && (prioTab[sprX]>=prio))
-                         {
-			      renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
-                              prioTab[sprX] = prio;
-                         }
-                    }
-                    continue;
-               }
-
-               for(i = 0; i < lg; ++i, ++x, ++sprX)
-               {
-                     u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-
-                     if((c) && (prioTab[sprX]>=prio))
-                     {
-			  renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
-                          prioTab[sprX] = prio;
-                     }
-               }
-               continue;
-          }
-          src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-          pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-
-          if(x&1)
-          {
-               if(aux->attr1&(1<<12))
-               {
-                    s32 x1 = ((sprSize.x-x)>>1);
-                    u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c&0xF)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX] = prio;
-                    }
-                    x1 = ((sprSize.x-x-lg)>>1);
-                    c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c&0xF)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX+lg-1] = prio;
-                    }
-               }
-               else
-               {
-                    s32 x1 = (x>>1);
-                    u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c>>4)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX] = prio;
-                    }
-                    x1 = ((x+lg-1)>>1);
-                    c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c>>4)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX+lg-1] = prio;
-                    }
-               }
-               ++sprX;
-               ++x;
-          }
-          lg >>= 1;
-          x >>= 1;
-          if(aux->attr1&(1<<12))
-          {
-	       u16 i;
-               x = (sprSize.x>>1) - x -1;
-               for(i = 0; i < lg; ++i, --x)
-               {
-                    u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-                    if((c>>4)&&(prioTab[sprX]>=prio))
-                    {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-                    }
-                     ++sprX;
-
-                    if((c&0xF)&&(prioTab[sprX]>=prio))
-                    {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-                    }
-                    ++sprX;
-               }
-               continue;
-          }
-
-          for(j = 0; j < lg; ++j, ++x)
-          {
-               u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-
-               if((c&0xF)&&(prioTab[sprX]>=prio))
-               {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-               }
-               ++sprX;
-
-               if((c>>4)&&(prioTab[sprX]>=prio))
-               {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-               }
-               ++sprX;
-          }
-     }
+		for(j = 0; j < lg; ++j, ++x)
+		{
+			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];	
+			RENDERS((c&0xF),)
+			++sprX;
+			RENDERS((c>>4),)
+			++sprX;
+		}
+	}
+#undef RENDERS
 }
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	if (!gpu->sprEnable) return ;
-     u16 i;
-     OAM * aux = gpu->oam + (nbShow-1);// + 127;
+	u16 i;
+	OAM * aux = gpu->oam + (nbShow-1);// + 127;
+	
+	for(i = 0; i<nbShow; ++i, --aux)
+	{
+		s32 sprX = aux->attr1 & 0x1FF;
+		s32 sprY;
+		s32 x = 0;
+		size sprSize;
+		u32 lg;
+		s32 y;
+		u8 prio;
+		u8 * src;
+		u8 * pal;
+		u16 j;
+	
+		sprX = ((s32)(sprX<<23))>>23;
+		sprY = aux->attr0 & 0xFF;
+	
+		sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+	
+		lg = sprSize.x;
+	
+		if(sprY>192)
+			sprY = (s32)((s8)(aux->attr0 & 0xFF));
+	
+		if ( ((aux->attr0&(1<<9))&&(!(aux->attr0&(1<<8)))) ||
+		     (l<sprY)||(l>=sprY+sprSize.y) ||
+		     (sprX==256) )
+			continue;
+	
+		if(sprX<0) {
+			if(sprX+sprSize.x<=0) continue;
+			lg += sprX;
+			x = -sprX;
+			sprX = 0;
+		} else if(sprX+sprSize.x>256)
+			lg = 255 - sprX;
+	
+		y = l - sprY;
+		prio = (aux->attr2>>10)&3;
+	
+		if(aux->attr1&(1<<13))
+			y = sprSize.y - y -1;
+	
+#define RENDERS(a) \
+	if((a)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, c); \
+		prioTab[sprX] = prio; \
+	}
+		if((aux->attr0&(3<<10))==(3<<10))
+		{
+			u16 i;
+			src = (gpu->sprMem) + (((aux->attr2&0x3E0) * 64 + (aux->attr2&0x1F) * 8 + ( y << 8)) << 1);
+	
+			if(aux->attr1&(1<<12))
+			{
+				LOG("Using fubared h-flip\n");
+		
+				x = sprSize.x -x - 1;
+				for(i = 0; i < lg; ++i, --x, ++sprX)
+				{
+					u8 c = src[x << 1];
+					// What's the point in shifting down by 15 when c is 8-bits?
+					RENDERS((c>>15))
+				}
+				continue;
+			}
+			for(i = 0; i < lg; ++i, ++x, ++sprX)
+			{
+				u16 c = T1ReadWord(src, x << 1);
+				RENDERS((c>>15))
+			}//
+			continue;
+		}
+#undef RENDERS
 
-     for(i = 0; i<nbShow; ++i, --aux)
-     {
-          s32 sprX = aux->attr1 & 0x1FF;
-          s32 sprY;
-          s32 x = 0;
-          size sprSize;
-          u32 lg;
-          s32 y;
-          u8 prio;
-          u8 * src;
-          u8 * pal;
-          u16 j;
+#define RENDERS(c) \
+	if((c)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1)); \
+		prioTab[sprX] = prio; \
+	}
+		if(aux->attr0&(1<<13))
+		{
+			u16 i;
+			src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
+			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+		
+			if(aux->attr1&(1<<12))
+			{
+				x = sprSize.x -x - 1;
+				for(i = 0; i < lg; ++i, --x, ++sprX)
+				{
+					u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
+					RENDERS(c)
+				}
+				continue;
+			}
+	
+			for(i = 0; i < lg; ++i, ++x, ++sprX)
+			{
+				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
+				RENDERS(c)
+			}
+			continue;
+		}
+		src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
+		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+#undef RENDERS	
 
-          sprX = ((s32)(sprX<<23))>>23;
-          sprY = aux->attr0 & 0xFF;
+#define RENDERS(c,d) \
+	if((c)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+((aux->attr2>>12)*0x10)) << 1)); \
+		prioTab[sprX d] = prio; \
+	}
 
-          sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
-
-          lg = sprSize.x;
-
-          if(sprY>192)
-               sprY = (s32)((s8)(aux->attr0 & 0xFF));
-
-          if( ((aux->attr0&(1<<9))&&(!(aux->attr0&(1<<8)))) ||
-              (l<sprY)||(l>=sprY+sprSize.y) ||
-              (sprX==256) )
-              continue;
-
-          if(sprX<0)
-          {
-               if(sprX+sprSize.x<=0) continue;
-               lg += sprX;
-               x = -sprX;
-               sprX = 0;
-          }
-          else
-               if(sprX+sprSize.x>256)
-                    lg = 255 - sprX;
-
-          y = l - sprY;
-          prio = (aux->attr2>>10)&3;
-
-          if(aux->attr1&(1<<13)) y = sprSize.y - y -1;
-
-          if((aux->attr0&(3<<10))==(3<<10))
-          {
-	       u16 i;
-               src = (gpu->sprMem) + (((aux->attr2&0x3E0) * 64 + (aux->attr2&0x1F) * 8 + ( y << 8)) << 1);
-
-               if(aux->attr1&(1<<12))
-               {
-                    LOG("Using fubared h-flip\n");
-
-                    x = sprSize.x -x - 1;
-                    for(i = 0; i < lg; ++i, --x, ++sprX)
-                    {
-			 u8 c = src[x << 1];
-                         if((c>>15) && (prioTab[sprX]>=prio)) // What's the point in shifting down by 15 when c is 8-bits?
-                         {
-			      renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
-                              prioTab[sprX] = prio;
-                         }
-                    }
-                    continue;
-               }
-               for(i = 0; i < lg; ++i, ++x, ++sprX)
-               {
-                    u16 c = T1ReadWord(src, x << 1);
-                    if((c>>15) && (prioTab[sprX]>=prio))
-                     {
-			  renderline_setFinalColor(gpu, sprX << 1,4,dst, c);
-                          prioTab[sprX] = prio;
-                     }
-               }//
-               continue;
-          }
-
-          if(aux->attr0&(1<<13))
-          {
-               u16 i;
-               src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-               pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-
-               if(aux->attr1&(1<<12))
-               {
-                    x = sprSize.x -x - 1;
-                    for(i = 0; i < lg; ++i, --x, ++sprX)
-                    {
-                         u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-                         if((c) && (prioTab[sprX]>=prio))
-                         {
-			      renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
-                              prioTab[sprX] = prio;
-                         }
-                    }
-                    continue;
-               }
-
-               for(i = 0; i < lg; ++i, ++x, ++sprX)
-               {
-                     u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-
-                     if((c) && (prioTab[sprX]>=prio))
-                     {
-			  renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, c << 1));
-                          prioTab[sprX] = prio;
-                     }
-               }
-               continue;
-          }
-          src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-          pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-          if(x&1)
-          {
-               if(aux->attr1&(1<<12))
-               {
-                    s32 x1 = ((sprSize.x-x)>>1);
-                    u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c&0xF)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX] = prio;
-                    }
-                    x1 = ((sprSize.x-x-lg)>>1);
-                    c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c&0xF)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX+lg-1] = prio;
-                    }
-               }
-               else
-               {
-                    s32 x1 = (x>>1);
-                    u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c>>4)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX] = prio;
-                    }
-                    x1 = ((x+lg-1)>>1);
-                    c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-                    if((c>>4)&&(prioTab[sprX]>=prio))
-                    {
-			 renderline_setFinalColor(gpu, (sprX+lg-1) << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                         prioTab[sprX+lg-1] = prio;
-                    }
-               }
-               ++sprX;
-               ++x;
-          }
-          lg >>= 1;
-          x >>= 1;
-          if(aux->attr1&(1<<12))
-          {
-	       u16 i;
-               x = (sprSize.x>>1) - x -1;
-               for(i = 0; i < lg; ++i, --x)
-               {
-                    u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-                    if((c>>4)&&(prioTab[sprX]>=prio))
-                    {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-                    }
-                     ++sprX;
-
-                    if((c&0xF)&&(prioTab[sprX]>=prio))
-                    {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-                    }
-                    ++sprX;
-               }
-               continue;
-          }
-
-          for(j = 0; j < lg; ++j, ++x)
-          {
-               u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-
-               if((c&0xF)&&(prioTab[sprX]>=prio))
-               {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c&0xF)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-               }
-               ++sprX;
-
-               if((c>>4)&&(prioTab[sprX]>=prio))
-               {
-		    renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, ((c>>4)+((aux->attr2>>12)*0x10)) << 1));
-                    prioTab[sprX] = prio;
-               }
-               ++sprX;
-          }
-     }
+		if(x&1)
+		{
+			if(aux->attr1&(1<<12))
+			{
+				s32 x1 = ((sprSize.x-x)>>1);
+				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];	
+				RENDERS((c&0xF),)
+				x1 = ((sprSize.x-x-lg)>>1);
+				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c&0xF),+lg-1)
+			} else {
+				s32 x1 = (x>>1);
+				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c>>4),)
+				x1 = ((x+lg-1)>>1);
+				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+				RENDERS((c>>4),+lg-1)
+			}
+			++sprX;
+			++x;
+		}
+		lg >>= 1;
+		x >>= 1;
+		
+		if(aux->attr1&(1<<12))
+		{
+			u16 i;
+			x = (sprSize.x>>1) - x -1;
+			for(i = 0; i < lg; ++i, --x)
+			{
+				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				RENDERS((c>>4),)
+				++sprX;
+				RENDERS((c&0xF),)
+				++sprX;
+			}
+			continue;
+		}
+		for(j = 0; j < lg; ++j, ++x)
+		{
+			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			RENDERS((c&0xF),)
+			++sprX;
+			RENDERS((c>>4),)
+			++sprX;
+		}
+#undef RENDERS
+	}
 }
 
 void Screen_Init(void) {
