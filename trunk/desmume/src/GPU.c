@@ -563,7 +563,7 @@ void GPU_setBLDY(GPU *gpu, u16 v)
 }
 
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color) {
-	if (gpu->BLDCNT & (1 << bgnum))   /* the bg to draw has a special color effect */
+	if (0==1 && gpu->BLDCNT & (1 << bgnum))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
 		{
@@ -784,8 +784,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			line += (7 - (xoff&7));
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
-						// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
+				 if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1)) ;
+						// was: T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
 				dst += 2;
 				line--;
 			}
@@ -794,8 +794,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			line += (xoff&7);
 			for(; x < xfin; ++x, ++xoff)
 			{
-				if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, *line << 1)) ;
-						// was: T2WriteWord(dst, 0, T1ReadWord(pal, *line << 1));
+				if(*line) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1)) ;
+						// was: T2WriteWord(dst, 0, T1ReadWord(pal, (*line + ((mapinfovalue>>12)&0xF)*0x100) << 1));
 				dst += 2;
 				line++;
 			}
