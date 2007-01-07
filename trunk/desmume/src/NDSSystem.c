@@ -172,13 +172,24 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
    int i;
    int type;
    const char *p = filename;
+#ifdef HAVE_LIBZ
+   int gz = 0;
+   char* read_buf[1024];
+#endif
+   
    FILE *file;
    u32 size, mask;
    u8 *data;
 
    if (filename == NULL)
       return -1;
-
+   
+#ifdef HAVE_LIBZ
+   if(!strcasecmp(".gz", &filename[strlen(filename) - 3])){
+   	gz = 1;
+	p -= 3;
+   }
+#endif
    type = ROM_NDS;
 	
    p += strlen(p);
@@ -186,17 +197,36 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 
    if(memcmp(p, DSGBA_EXTENSTION, strlen(DSGBA_EXTENSTION)) == 0)
       type = ROM_DSGBA;
-	
-   if ((file = fopen(filename, "rb")) == NULL)
-      return -1;
-	
-   fseek(file, 0, SEEK_END);
-   size = ftell(file);
-   fseek(file, 0, SEEK_SET);
+
+#ifdef HAVE_LIBZ
+   if(gz)
+   {
+	if((file = (FILE *)gzopen(filename, "rb")) == 0)
+	   return -1;
+	while (gzeof (file) == 0)
+	   size += gzread(file,read_buf, 1024);
+	gzrewind(file);
+   }
+   else
+   {
+#endif
+   	if ((file = fopen(filename, "rb")) == NULL)
+	   return -1;
+	fseek(file, 0, SEEK_END);
+	size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+#ifdef HAVE_LIBZ
+   }
+#endif
 	
    if(type == ROM_DSGBA)
    {
-      fseek(file, DSGBA_LOADER_SIZE, SEEK_SET);
+#ifdef HAVE_LIBZ
+      if(gz)
+         gzseek(file, DSGBA_LOADER_SIZE, SEEK_SET);
+      else
+#endif
+         fseek(file, DSGBA_LOADER_SIZE, SEEK_SET);
       size -= DSGBA_LOADER_SIZE;
    }
 	
@@ -214,14 +244,29 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 
    if ((data = (u8*)malloc(mask + 1)) == NULL)
    {
-      fclose(file);
+#ifdef HAVE_LIBZ
+      if(gz)
+        gzclose(file);
+      else
+#endif
+        fclose(file);
       return -1;
    }
-	
-   i = fread(data, 1, size, file);
-	
-   fclose(file);
-	
+
+#ifdef HAVE_LIBZ
+   if(gz)
+   {
+      i = gzread(file,data,size);
+      gzclose(file);
+   }
+   else
+   { 
+#endif
+      i = fread(data, 1, size, file);	
+      fclose(file);
+#ifdef HAVE_LIBZ
+   }
+#endif
    MMU_unsetRom();
    NDS_SetROM(data, mask);
    NDS_Reset();
@@ -241,6 +286,10 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 
    // Setup Backup Memory
    p = strdup(filename);
+#ifdef HAVE_LIBZ
+   if(gz)
+     strcpy(p+strlen(p)-3, "");
+#endif
 
    if(type == ROM_DSGBA)
       strcpy(p+strlen(p)-strlen(DSGBA_EXTENSTION), ".sav");
