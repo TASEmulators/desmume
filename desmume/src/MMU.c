@@ -639,6 +639,13 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD + 0x84000;
 					ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD + 0x86000;
 				}
+                                else if((val & 7) == 4)
+				{
+					ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
+					ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x82000;
+					ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x84000;
+					ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
+				}
 			}
 			break;
 		
