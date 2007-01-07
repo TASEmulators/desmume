@@ -221,20 +221,26 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      gpu->spriteRender(gpu, l, spr, sprPrio);
      
-     if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
+     if (gpu->sprEnable)
      {
-          for(i16 = 0; i16 < 128; ++i16) {
-	       T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
-	  }
+        if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
+        {
+           for(i16 = 0; i16 < 128; ++i16) {
+	         T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
+	       }
+        }
      }
      
      for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
      {
           modeRender[gpu->prop&7][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
           bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
-          for(i16 = 0; i16 < 256; ++i16)
+          if (gpu->sprEnable)
+          {
+            for(i16 = 0; i16 < 256; ++i16)
                if(bgprio>=sprPrio[i16]) 
-		    T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+		         T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+          }
      }
 }
  
