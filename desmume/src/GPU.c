@@ -108,7 +108,7 @@ void GPU_Reset(GPU *g, u8 l)
      
    if(g->core == GPU_SUB)
    {
-      g->oam = (OAM *)(ARM9Mem.ARM9_OAM + 0x400);
+      g->oam = (OAM *)(ARM9Mem.ARM9_OAM + ADDRESS_STEP_1KB);
       g->sprMem = ARM9Mem.ARM9_BOBJ;
    }
    else
@@ -128,11 +128,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 {
 	gpu->prop = p;
 
-        gpu->dispMode = p >> 16;
-        if (gpu->lcd == 0)
-           gpu->dispMode &= 0x3;
-        else
-           gpu->dispMode &= 0x1;
+        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
+
         switch (gpu->dispMode)
         {
            case 0: // Display Off
@@ -140,7 +137,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
            case 1: // Display BG and OBJ layers
               break;
            case 2: // Display framebuffer
-              gpu->vramBlock = (p >> 18) & 0x3;
+              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
               return;
            case 3: // Display from Main RAM
               LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
@@ -148,12 +145,12 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         }
 
 	gpu->nbBGActif = 0;
-        if(p & 0x10)
+        if(DISPCNT_OBJMAPING1D(p))
 	{
 		/* 1-d sprite mapping */
 		
-                gpu->sprBlock = 5 + ((p>>20)&3);        /* TODO: better comment (and understanding btw 8S) */
-                if((gpu->core == GPU_SUB) && (((p>>20)&3) == 3))
+                gpu->sprBlock = 5 + DISPCNT_TILEOBJ1D_BOUNDARY(p) ;        /* TODO: better comment (and understanding btw 8S) */
+                if((gpu->core == GPU_SUB) && (DISPCNT_TILEOBJ1D_BOUNDARY(p) == 3))
 		{
 			gpu->sprBlock = 7;
 		}
@@ -166,7 +163,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->spriteRender = sprite2D;
 	}
      
-        if((p & 0x400000) && (gpu->core == GPU_MAIN))
+        if(DISPCNT_BMPOBJ1D_BOUNDARY(p) && (gpu->core == GPU_MAIN))
 	{
 		gpu->sprBMPBlock = 8;
 	}
@@ -175,14 +172,14 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->sprBMPBlock = 7;
 	}
 
-	gpu->sprEnable = (p & 0x00001000) ;
+	gpu->sprEnable = DISPCNT_SPRITEENABLE(p) ;
 	
-	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 7) << 1));
-	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 6) << 1));
-	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 5) << 1));
-	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 4) << 1));
+	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 14));
+	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 12));
+	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
+	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-        if((p & 0x800) && gpu->dispBG[3])
+        if(DISPCNT_BG3ENABLED(p) && gpu->dispBG[3])
 	{
 		gpu->ordre[0] = 3;
 		gpu->BGIndex[3] = 1;
@@ -193,11 +190,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[3] = 0;
 	}
 	
-        if((p & 0x400) && gpu->dispBG[2])
+        if(DISPCNT_BG2ENABLED(p) && gpu->dispBG[2])
 	{
 		if(gpu->nbBGActif)
 		{
-                        if((gpu->BGProp[2] & 0x3) > (gpu->BGProp[3] & 0x3))
+                        if(BGCNT_PRIORITY(gpu->BGProp[2]) > BGCNT_PRIORITY(gpu->BGProp[3]))
 			{
 				gpu->ordre[0] = 2;
 				gpu->BGIndex[2] = 1;
@@ -224,7 +221,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			gpu->BGIndex[2] = 0;
 	}
 	
-        if((p & 0x200) && gpu->dispBG[1])
+        if(DISPCNT_BG1ENABLED(p) && gpu->dispBG[1])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -235,7 +232,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		{
 			u8 i = 0;
 			s8 j;
-                        for(; (i < gpu->nbBGActif) && ((gpu->BGProp[gpu->ordre[i]] & 0x3) >= (gpu->BGProp[1] & 0x3)); ++i);
+                        for(; (i < gpu->nbBGActif) && (BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]) >= BGCNT_PRIORITY(gpu->BGProp[1])); ++i);
 			for(j = gpu->nbBGActif-1; j >= i; --j)
 			{
 				gpu->ordre[j+1] = gpu->ordre[j];
@@ -251,7 +248,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[1] = 0;
 	}
 	
-        if((p & 0x100) && (!(p & 0x8)) && gpu->dispBG[0])
+        if(DISPCNT_BG0ENABLED(p) && (!(p & 0x8)) && gpu->dispBG[0])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -262,7 +259,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		{
 			u8 i = 0;
 			s8 j;
-                        for(; (i < gpu->nbBGActif) && ((gpu->BGProp[gpu->ordre[i]] & 0x3) >= (gpu->BGProp[0] & 0x3)); ++i);
+                        for(; (i < gpu->nbBGActif) && (BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]) >= BGCNT_PRIORITY(gpu->BGProp[0])); ++i);
 			for(j = gpu->nbBGActif-1; j >= i; --j)
 			{
 				gpu->ordre[j+1] = gpu->ordre[j];
@@ -299,7 +296,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	if((gpu->nbBGActif != 0) && (index != 0))
 	{
 		index--;
-                if((gpu->BGProp[num] & 0x3) < (p & 0x3))
+                if(BGCNT_PRIORITY(gpu->BGProp[num]) < BGCNT_PRIORITY(p))
 		{
 #ifdef DEBUG_TRI
                sprintf(logbuf, "INF NEW bg %d prio %d %d", num, p&3, index);
@@ -311,7 +308,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                }
 #endif
 			u8 i = 0;
-                        for(; (i < index) && ((((gpu->BGProp[gpu->ordre[i]] & 0x3))>((p & 0x3))) || ((((gpu->BGProp[gpu->ordre[i]] & 0x3))==((p & 0x3)))&&(gpu->ordre[i]>num))); ++i);  /* TODO: commenting and understanding */
+                        for(; (i < index) && (((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]))>(BGCNT_PRIORITY(p))) || (((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]))==(BGCNT_PRIORITY(p)))&&(gpu->ordre[i]>num))); ++i);  /* TODO: commenting and understanding */
                
 #ifdef DEBUG_TRI
 					
@@ -342,7 +339,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 		}
 		else
 		{
-			if((gpu->BGProp[num]&3)>(p&3))
+			if(BGCNT_PRIORITY(gpu->BGProp[num])>BGCNT_PRIORITY(p))
 			{
 #ifdef DEBUG_TRI
                sprintf(logbuf, "SUP NEW bg %d prio %d", num, p&3);
@@ -354,7 +351,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                }
 #endif
 				u8 i = gpu->nbBGActif-1;
-				for(; (i>index) && (((gpu->BGProp[gpu->ordre[i]]&3)<(p&3)) ||  (((gpu->BGProp[gpu->ordre[i]]&3)==(p&3))&&(gpu->ordre[i]<num))); --i);
+				for(; (i>index) && ((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]])<BGCNT_PRIORITY(p)) ||  ((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]])==BGCNT_PRIORITY(p))&&(gpu->ordre[i]<num))); --i);
 #ifdef DEBUG_TRI
                sprintf(logbuf, "new i %d old %d", i, index);
                log::ajouter(logbuf);
@@ -387,15 +384,15 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	
 	if(gpu->core == GPU_SUB)
 	{
-                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + ((p>>8)&0x1F) * 0x4000;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + ((p>>2)&0xF) * 0x4000;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_BBG + ((p>>8)&0x1F) * 0x800;
+                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_BBG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB;
 	}
 	else
 	{
-                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>8)&0x1F) * 0x4000;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>2)&0xF) * 0x4000 + ((gpu->prop >> 24) & 0x7) * 0x10000 ;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + ((p>>8)&0x1F) * 0x800 + ((gpu->prop >> 27) & 0x7) * 0x10000;
+                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + ((gpu->prop >> 24) & 0x7) * ADDRESS_STEP_64kB ;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + DISPCNT_SCREENBASEBLOCK(gpu->prop) * ADDRESS_STEP_64kB;
 	}
 
      /*if(!(p&(1<<7)))
@@ -404,20 +401,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           if(!(prop&(1<<30)))
                BGExtPalSlot[num] = 0;
           else*/
-	switch(num)
-	{
-                case 0 :                        
-                        gpu->BGExtPalSlot[num] = (p & 0x2000) ? 2 : 0;
-			break;
-			
-		case 1 :
-                        gpu->BGExtPalSlot[num] = (p & 0x2000) ? 3 : 1;
-			break;
-			
-		default :
-			gpu->BGExtPalSlot[num] = num;
-			break;
-	}
+
+    gpu->BGExtPalSlot[num] = BGCNT_EXTPALSLOT(p) * 2 + num ;
                   
      /*if(!(prop&(3<<16)))
      {
@@ -426,8 +411,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           return;
      }*/
                                                                                                       
-        gpu->BGSize[num][0] = sizeTab[mode2type[gpu->prop & 0x7][num]][p >> 14][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[gpu->prop & 0x7][num]][p >> 14][1];
+        gpu->BGSize[num][0] = sizeTab[mode2type[DISPCNT_MODE(gpu->prop)][num]][BGCNT_SCREENSIZE(p)][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[DISPCNT_MODE(gpu->prop)][num]][BGCNT_SCREENSIZE(p)][1];
 }
 
 void GPU_remove(GPU * gpu, u8 num)

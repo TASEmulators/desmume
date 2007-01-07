@@ -36,6 +36,34 @@ extern "C" {
 #define GPU_MAIN	0
 #define GPU_SUB	1
 
+/* human readable bitmask names */
+#define ADDRESS_STEP_1KB        0x00400
+#define ADDRESS_STEP_2KB        0x00800
+#define ADDRESS_STEP_4KB        0x01000
+#define ADDRESS_STEP_8KB        0x02000
+#define ADDRESS_STEP_16KB       0x04000
+#define ADDRESS_STEP_32KB       0x08000
+#define ADDRESS_STEP_64kB       0x10000
+
+#define DISPCNT_OBJMAPING1D(val)			(((val) >> 4) & 1)
+#define DISPCNT_BG0ENABLED(val)				(((val) >> 8) & 1)
+#define DISPCNT_BG1ENABLED(val)				(((val) >> 9) & 1)
+#define DISPCNT_BG2ENABLED(val)				(((val) >> 10) & 1)
+#define DISPCNT_BG3ENABLED(val)				(((val) >> 11) & 1)
+#define DISPCNT_SPRITEENABLE(val)			(((val) >> 12) & 1)
+#define DISPCNT_MODE(val)					((val) & 7)
+/* display mode: gpu0: (val>>16) & 3, gpu1: (val>>16) & 1 */
+#define DISPCNT_DISPLAY_MODE(val,num)		(((val) >> 16) & ((((num)+1) * 2)-1))
+#define DISPCNT_VRAMBLOCK(val)				(((val) >> 18) & 3)
+#define DISPCNT_TILEOBJ1D_BOUNDARY(val)		(((val) >> 20) & 3)
+#define DISPCNT_BMPOBJ1D_BOUNDARY(val)		(((val) >> 22) & 1)
+#define DISPCNT_SCREENBASEBLOCK(val)		(((val) >> 27) & 7)
+
+#define BGCNT_PRIORITY(val)					((val) & 3)
+#define BGCNT_CHARBASEBLOCK(val)			(((val) >> 2) & 0x0F)
+#define BGCNT_SCREENBASEBLOCK(val)			(((val) >> 8) & 0x1F)
+#define BGCNT_EXTPALSLOT(val)				(((val) >> 13) & 0x1)
+#define BGCNT_SCREENSIZE(val)				(((val) >> 14) & 0x3)
 
 typedef struct
 {
