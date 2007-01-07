@@ -174,6 +174,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	{
 		gpu->sprBMPBlock = 7;
 	}
+
+	gpu->sprEnable = (p & 0x00001000) ;
 	
 	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 7) << 1));
 	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, (gpu->core * 0x800 + 6) << 1));
@@ -392,7 +394,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	else
 	{
                 gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>8)&0x1F) * 0x4000;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>2)&0xF) * 0x4000 + ((gpu->prop >> 24) & 0x7) * 0x10000;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + ((p>>2)&0xF) * 0x4000 + ((gpu->prop >> 24) & 0x7) * 0x10000 ;
                 gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + ((p>>8)&0x1F) * 0x800 + ((gpu->prop >> 27) & 0x7) * 0x10000;
 	}
 
@@ -755,6 +757,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 													/* color: extended palette */
 	pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 	if(!pal) return;
+
 	yoff = ((Y&7)<<3);
 
 	for(x = 0; x < LG;)
@@ -1023,6 +1026,7 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
+	if (!gpu->sprEnable) return ;
      OAM * aux = gpu->oam + (nbShow-1);// + 127;
      
      u8 block = gpu->sprBlock;
@@ -1231,6 +1235,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
+	if (!gpu->sprEnable) return ;
      u16 i;
      OAM * aux = gpu->oam + (nbShow-1);// + 127;
 
