@@ -579,9 +579,9 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 					u16 sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
 					u16 sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
 					color = T2ReadWord(dst, passing) ;
-					u16 targetR = ((color & 0x1F) * sourceFraction) >> 4 ;
-					u16 targetG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
-					u16 targetB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
+					u16 targetR = ((color & 0x1F) * targetFraction) >> 4 ;
+					u16 targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
+					u16 targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
 					targetR = min(0x1F,targetR+sourceR) ;
 					targetG = min(0x1F,targetG+sourceG) ;
 					targetB = min(0x1F,targetB+sourceB) ;
