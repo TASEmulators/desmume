@@ -89,7 +89,7 @@ void black_screen () {
 void decode_screen () {
 
 	int x,y, m, W,H,L,BL;
-	u32 image[RAW_H][RAW_W], r,g,b;
+	u32 image[RAW_H][RAW_W], pix;
 	u16 * pixel = (u16*)&GPU_screen;
 	u32 * rgb32 = &on_screen_image32[0];
 
@@ -106,8 +106,9 @@ void decode_screen () {
 		BL=L*sizeof(u32); \
 		for (a; b; c) { \
 			for (d; e; f) { \
+				pix = image[y][x]; \
 				for (m=0; m<ScreenCoeff_Size; m++) { \
-					*rgb32 = image[y][x]; rgb32++; \
+					*rgb32 = pix; rgb32++; \
 				} \
 			} \
 			/* lines duplicated for scaling height */ \
