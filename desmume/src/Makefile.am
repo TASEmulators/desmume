@@ -11,6 +11,7 @@ libdesmume_a_SOURCES = \
 	GPU.c GPU.h \
         mc.c mc.h \
         MMU.c MMU.h NDSSystem.c NDSSystem.h registers.h \
+	ROMReader.c ROMReader.h \
         saves.c saves.h \
         SPU.c SPU.h \
         thumb_instructions.c thumb_instructions.h
