@@ -197,6 +197,7 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
       type = ROM_DSGBA;
 
    file = reader->Init(filename);
+	if (!file) return -1 ;
    size = reader->Size(file);
 
    if(type == ROM_DSGBA)
@@ -272,6 +273,8 @@ void NDS_Reset(void)
    u32 src;
    u32 dst;
    NDS_header * header = NDS_getROMHeader();
+
+	if (!header) return ;
 
    execute = FALSE;
 

@@ -4,6 +4,7 @@
 
 ROMReader_struct * ROMReaderInit(const char ** filename)
 {
+#ifdef HAVE_LIBZ
 	if(!strcasecmp(".gz", *filename + (strlen(*filename) - 3)))
 	{
 		*filename -= 3;
@@ -13,6 +14,9 @@ ROMReader_struct * ROMReaderInit(const char ** filename)
 	{
 		return &STDROMReader;
 	}
+#else
+	return &STDROMReader;
+#endif
 }
 
 void * STDROMReaderInit(const char * filename);
@@ -39,12 +43,15 @@ void * STDROMReaderInit(const char * filename)
 
 void STDROMReaderDeInit(void * file)
 {
+	if (!file) return ;
 	fclose(file);
 }
 
 u32 STDROMReaderSize(void * file)
 {
 	u32 size;
+
+	if (!file) return 0 ;
 
 	fseek(file, 0, SEEK_END);
 	size = ftell(file);
@@ -55,11 +62,13 @@ u32 STDROMReaderSize(void * file)
 
 int STDROMReaderSeek(void * file, int offset, int whence)
 {
+	if (!file) return 0 ;
 	return fseek(file, offset, whence);
 }
 
 int STDROMReaderRead(void * file, void * buffer, u32 size)
 {
+	if (!file) return 0 ;
 	return fread(buffer, 1, size, file);
 }
 
