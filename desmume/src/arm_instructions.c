@@ -7623,7 +7623,7 @@ static u32 FASTCALL  OP_STMDB2_W(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_P_IMM_OFF(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7631,7 +7631,7 @@ static u32 FASTCALL  OP_STC_P_IMM_OFF(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_M_IMM_OFF(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7639,7 +7639,7 @@ static u32 FASTCALL  OP_STC_M_IMM_OFF(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_P_PREIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7647,7 +7647,7 @@ static u32 FASTCALL  OP_STC_P_PREIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_M_PREIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7655,7 +7655,7 @@ static u32 FASTCALL  OP_STC_M_PREIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_P_POSTIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7663,7 +7663,7 @@ static u32 FASTCALL  OP_STC_P_POSTIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_M_POSTIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7671,7 +7671,7 @@ static u32 FASTCALL  OP_STC_M_POSTIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_STC_OPTION(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7681,7 +7681,7 @@ static u32 FASTCALL  OP_STC_OPTION(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_P_IMM_OFF(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7689,7 +7689,7 @@ static u32 FASTCALL  OP_LDC_P_IMM_OFF(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_M_IMM_OFF(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7697,7 +7697,7 @@ static u32 FASTCALL  OP_LDC_M_IMM_OFF(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_P_PREIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7705,7 +7705,7 @@ static u32 FASTCALL  OP_LDC_P_PREIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_M_PREIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7713,7 +7713,7 @@ static u32 FASTCALL  OP_LDC_M_PREIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_P_POSTIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7721,7 +7721,7 @@ static u32 FASTCALL  OP_LDC_P_POSTIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_M_POSTIND(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
@@ -7729,7 +7729,7 @@ static u32 FASTCALL  OP_LDC_M_POSTIND(armcpu_t *cpu)
 static u32 FASTCALL  OP_LDC_OPTION(armcpu_t *cpu)
 {
      {
-          execute = FALSE;
+		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
           return 2;
      }
 }
