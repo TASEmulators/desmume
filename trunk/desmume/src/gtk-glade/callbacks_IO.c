@@ -49,63 +49,74 @@ gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, g
 
 
 /* ***** ***** SCREEN DRAWING ***** ***** */
+int has_pix_col_map=0;
+u32 pix_col_map[0x8000];
 
-
-
+void init_pix_col_map() {
+	/* precalc colors so we get some fps */
+	int a,b,c,A,B,C,rA,rB,rC;
+	if (has_pix_col_map) return;
+	for (a=0; a<0x20; a++) {
+		A=a<<10; rA=A<<9;
+		for (b=0; b<0x20; b++) {
+			B=b<<5; rB=B<<6;
+			for (c=0; c<0x20; c++) {
+				C=c; rC=C<<3;
+				pix_col_map[A|B|C]=rA|rB|rC;
+			}
+		}
+	}
+	has_pix_col_map=1;
+}
 
 #define RAW_W 256
 #define RAW_H 192*2
 #define MAX_SIZE 3
-guchar on_screen_image[RAW_W*RAW_H*3*MAX_SIZE*MAX_SIZE];
-int inline screen_bytes_size() {
-	return RAW_W*RAW_H*3*ScreenCoeff_Size*ScreenCoeff_Size;
+u32 on_screen_image32[RAW_W*RAW_H*MAX_SIZE*MAX_SIZE];
+
+int inline screen_size() {
+	return RAW_W*RAW_H*ScreenCoeff_Size*ScreenCoeff_Size*sizeof(u32);
 }
 int inline offset_pixels_lower_screen() {
-	return screen_bytes_size()/2;
+	return screen_size()/2;
 }
 
 void black_screen () {
 	/* removes artifacts when resizing with scanlines */
-	memset(on_screen_image,0,screen_bytes_size());
+	memset(on_screen_image32,0,screen_size());
 }
 
 void decode_screen () {
 
-	int x,y, m, W,H,L,BL, Pw,Bw,Lw,Cw,Hw;
+	int x,y, m, W,H,L,BL;
 	u32 image[RAW_H][RAW_W], r,g,b;
 	u16 * pixel = (u16*)&GPU_screen;
-	guchar * rgb = &on_screen_image[0];
+	u32 * rgb32 = &on_screen_image32[0];
 
 	/* decode colors */
+	init_pix_col_map();
 	for (y=0; y<RAW_H; y++) {
 		for (x=0; x<RAW_W; x++) {
-			r = (*pixel & 0x7C00) << 9;
-			g = (*pixel & 0x03E0) << 6;
-			b = (*pixel & 0x001F) << 3;
-			image[y][x]= r | g | b;
+			image[y][x] = pix_col_map[*pixel&0x07FFF];
 			pixel++;
 		}
 	}
 #define LOOP(a,b,c,d,e,f) \
-		Pw=3*ScreenCoeff_Size; \
-		L=W*Pw; \
+		L=W*ScreenCoeff_Size; \
+		BL=L*sizeof(u32); \
 		for (a; b; c) { \
 			for (d; e; f) { \
-				*rgb = (image[y][x] & 0x0000FF); rgb++; \
-				*rgb = (image[y][x] & 0x00FF00)>> 8; rgb++; \
-				*rgb = (image[y][x] & 0xFF0000)>> 16; rgb++; \
-				/* pixels duplicated for scaling width */ \
-				for (m=1; m<ScreenCoeff_Size; m++) { \
-					memmove(rgb, rgb-3, 3); \
-					rgb += 3; \
+				for (m=0; m<ScreenCoeff_Size; m++) { \
+					*rgb32 = image[y][x]; rgb32++; \
 				} \
 			} \
 			/* lines duplicated for scaling height */ \
 			for (m=1; m<ScreenCoeff_Size; m++) { \
-				memmove(rgb, rgb-L, L); \
-				rgb += L; \
+				memmove(rgb32, rgb32-L, BL); \
+				rgb32 += L; \
 			} \
 		}
+
 	/* load pixels in buffer accordingly */
 	if (ScreenRotate) {
 		W=RAW_H/2; H=RAW_W;
@@ -125,11 +136,12 @@ int screen (GtkWidget * widget, int offset_pix) {
 	} else {
 		H=RAW_H/2; W=RAW_W;
 	}
-	L=W*3*ScreenCoeff_Size;
-	gdk_draw_rgb_image	(widget->window,
+	L=W*ScreenCoeff_Size*sizeof(u32);
+
+	gdk_draw_rgb_32_image	(widget->window,
 		widget->style->fg_gc[widget->state],0,0, 
 		W*ScreenCoeff_Size, H*ScreenCoeff_Size,
-		GDK_RGB_DITHER_NONE,on_screen_image+offset_pix,L);
+		GDK_RGB_DITHER_NONE,((guchar*)on_screen_image32)+offset_pix,L);
 	
 	return 1;
 }
