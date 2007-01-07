@@ -185,6 +185,33 @@ void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data)
 	resize(ScreenCoeff_Size);
 }
 
+void  on_menu_gapscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
+	/* we want to add a gap between screens */
+	gboolean ScreenGap = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
+	GtkWidget * spacer = glade_xml_get_widget(xml, "misc_sep4");
+       GtkWidget * layoutvbox = glade_xml_get_widget(xml, "wvb_Layout");
+
+	if (ScreenGap) {
+          gtk_box_set_child_packing(
+                                    layoutvbox,
+                                    spacer,
+                                    FALSE,
+                                    FALSE,
+                                    33,
+                                    GTK_PACK_START);
+	} else {
+          gtk_box_set_child_packing(
+                                    layoutvbox,
+                                    spacer,
+                                    FALSE,
+                                    FALSE,
+                                    0,
+                                    GTK_PACK_START);
+	}
+        /* Resize so we don't end up with unwanted space at the bottom */
+        resize(ScreenCoeff_Size);
+}
+
 /* MENU TOOLS ***** ***** ***** ***** */
 void  on_menu_IO_regs_activate      (GtkMenuItem *menuitem, gpointer user_data) {
 	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_1_IOregs");
