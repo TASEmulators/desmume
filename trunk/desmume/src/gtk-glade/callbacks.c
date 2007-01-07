@@ -2,10 +2,27 @@
 
 /* globals */
 uint Frameskip = 0;
+gboolean ScreenRight=FALSE;
+gboolean ScreenGap=FALSE;
 
 /* inline & protos */
 
-void inline MAINWINDOW_RESIZE() {
+void MAINWINDOW_RESIZE() {
+	GtkWidget * spacer1 = glade_xml_get_widget(xml, "misc_sep3");
+	GtkWidget * spacer2 = glade_xml_get_widget(xml, "misc_sep4");
+	int dim = 66 * ScreenCoeff_Size;
+	
+	/* sees whether we want a gap */
+	if (!ScreenGap) dim = -1;
+	if (ScreenRight && ScreenRotate) {
+		gtk_widget_set_usize(spacer1, dim, -1);
+	} else if (!ScreenRight && !ScreenRotate) {
+		gtk_widget_set_usize(spacer2, -1, dim);
+	} else {
+		gtk_widget_set_usize(spacer1, -1, -1);	
+		gtk_widget_set_usize(spacer2, -1, -1);	
+	}
+
 	gtk_window_resize ((GtkWindow*)pWindow,1,1);
 }
 
@@ -155,14 +172,23 @@ void  on_menu_audio_on_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	}
 }
 
+void  on_menu_gapscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
+	/* we want to add a gap between screens */
+	ScreenGap = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
+
+	/* pack the window */
+	MAINWINDOW_RESIZE();
+}
+
 void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	GtkBox * sbox = (GtkBox*)glade_xml_get_widget(xml, "whb_Sub");
 	GtkWidget * mbox = glade_xml_get_widget(xml, "whb_Main");
 	GtkWidget * vbox = glade_xml_get_widget(xml, "wvb_Layout");
 	GtkWidget * w    = glade_xml_get_widget(xml, "wvb_2_Sub");
 
+	ScreenRight=gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
 	/* we want to change the layout, lower screen goes left */
-	if (gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem)==TRUE) {
+	if (ScreenRight) {
 		gtk_box_reorder_child(sbox,w,-1);
 		gtk_widget_reparent((GtkWidget*)sbox,mbox);
 	} else {
@@ -183,33 +209,6 @@ void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data)
 		W=256; H=192;
 	}
 	resize(ScreenCoeff_Size);
-}
-
-void  on_menu_gapscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
-	/* we want to add a gap between screens */
-	gboolean ScreenGap = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
-	GtkWidget * spacer = glade_xml_get_widget(xml, "misc_sep4");
-       GtkWidget * layoutvbox = glade_xml_get_widget(xml, "wvb_Layout");
-
-	if (ScreenGap) {
-          gtk_box_set_child_packing(
-                                    layoutvbox,
-                                    spacer,
-                                    FALSE,
-                                    FALSE,
-                                    33,
-                                    GTK_PACK_START);
-	} else {
-          gtk_box_set_child_packing(
-                                    layoutvbox,
-                                    spacer,
-                                    FALSE,
-                                    FALSE,
-                                    0,
-                                    GTK_PACK_START);
-	}
-        /* Resize so we don't end up with unwanted space at the bottom */
-        resize(ScreenCoeff_Size);
 }
 
 /* MENU TOOLS ***** ***** ***** ***** */

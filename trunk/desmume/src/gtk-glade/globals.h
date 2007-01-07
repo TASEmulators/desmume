@@ -34,6 +34,9 @@ GladeXML  * xml, * xml_tools;
 /* callbacks_IO.c */
 int ScreenCoeff_Size;
 gboolean ScreenRotate;
+gboolean ScreenRight;
+gboolean ScreenGap;
+
 void black_screen ();
 void edit_controls();
 
