@@ -37,6 +37,7 @@ extern "C" {
 #define GPU_SUB	1
 
 /* human readable bitmask names */
+#define ADDRESS_STEP_512B       0x00200
 #define ADDRESS_STEP_1KB        0x00400
 #define ADDRESS_STEP_2KB        0x00800
 #define ADDRESS_STEP_4KB        0x01000
@@ -58,9 +59,11 @@ extern "C" {
 #define DISPCNT_TILEOBJ1D_BOUNDARY(val)		(((val) >> 20) & 3)
 #define DISPCNT_BMPOBJ1D_BOUNDARY(val)		(((val) >> 22) & 1)
 #define DISPCNT_SCREENBASEBLOCK(val)		(((val) >> 27) & 7)
+#define DISPCNT_USEEXTPAL(val)				(((val) >> 30) & 1)
 
 #define BGCNT_PRIORITY(val)					((val) & 3)
 #define BGCNT_CHARBASEBLOCK(val)			(((val) >> 2) & 0x0F)
+#define BGCNT_256COL(val)					(((val) >> 7) & 0x1)
 #define BGCNT_SCREENBASEBLOCK(val)			(((val) >> 8) & 0x1F)
 #define BGCNT_EXTPALSLOT(val)				(((val) >> 13) & 0x1)
 #define BGCNT_SCREENSIZE(val)				(((val) >> 14) & 0x3)
@@ -238,7 +241,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
           if (gpu->sprEnable)
           {
             for(i16 = 0; i16 < 256; ++i16)
-               if(bgprio>=sprPrio[i16]) 
+               if(bgprio>=sprPrio[i16])
 		         T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
           }
      }
