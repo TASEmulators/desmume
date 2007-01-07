@@ -558,23 +558,29 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 			case 0x40:              /* alpha blending */
 				{
 					#define min(a,b) (((a)<(b))?(a):(b))
-					if (!(color & 0x8000)) return ; 								/* we cant do alpha on an invisible pixel */
+					//if (!(color & 0x8000)) return ;
+					/* we cant do alpha on an invisible pixel */
+
 					u16 sourceFraction = (gpu->BLDALPHA & 0x1F) ;
-					if (!sourceFraction) return ; 									/* no fraction of this BG to be showed, so don't do anything */
-					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;      	/* weighted component from color to draw */
+					if (!sourceFraction) return ;
+					/* no fraction of this BG to be showed, so don't do anything */
+					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
+					/* weighted component from color to draw */
 					u16 sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
 					u16 sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
 					u16 targetFraction = (gpu->BLDALPHA & 0x1F00) >> 8 ;
-                    if (targetFraction) { 											/* when we dont take any fraction from existing pixel, we can just draw */
-                        color = T2ReadWord(dst, passing) ;
-						if (color & 0x8000) {   									/* the existing pixel is not invisible */
+					if (targetFraction) {
+					/* when we dont take any fraction from existing pixel, we can just draw */
+						color = T2ReadWord(dst, passing) ;
+					//if (color & 0x8000) {
+						/* the existing pixel is not invisible */
 							u16 targetR = ((color & 0x1F) * targetFraction) >> 4 ;  /* weighted component from color we draw on */
 							u16 targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
 							u16 targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
 							sourceR = min(0x1F,targetR+sourceR) ;                   /* limit combined components to 31 max */
 							sourceG = min(0x1F,targetG+sourceG) ;
 							sourceB = min(0x1F,targetB+sourceB) ;
-						}
+						//}
 					}
 					color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 					#undef min
@@ -966,6 +972,25 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 }
 
 #define nbShow 128
+#define RENDERS_A(a) \
+	if((a)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, c); \
+		prioTab[sprX] = prio; \
+	}
+#define RENDERS_B(c) \
+	if((c)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1)); \
+		prioTab[sprX] = prio; \
+	}
+#define RENDERS_C(c,d) \
+	if((c)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+((aux->attr2>>12)*0x10)) << 1)); \
+		prioTab[sprX d] = prio; \
+	}
+
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
@@ -1017,13 +1042,8 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	
 		if(aux->attr1&(1<<13)) 
 			y = sprSize.y - y -1;
-	
-#define RENDERS(a) \
-	if((a)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, c); \
-		prioTab[sprX] = prio; \
-	}
+		
+		
 		if((aux->attr0&(3<<10))==(3<<10))
 		{
 			u16 i;
@@ -1036,26 +1056,18 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				{
 					u8 c = src[x];
 					// What's the point in shifting down by 15 when c is 8-bits?
-					RENDERS(c>>15)
+					RENDERS_A(c>>15)
 				}
 				continue;
 			}
 			for(i = 0; i < lg; ++i, ++x, ++sprX)
 			{
 				u16 c = T1ReadWord(src, x << 1);
-				RENDERS(c>>15)
+				RENDERS_A(c>>15)
 			}
 			continue;
 		}
-#undef RENDERS
-
-#define RENDERS(c) \
-	if((c)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1)); \
-		prioTab[sprX] = prio; \
-	}
-
+		
 		if(aux->attr0&(1<<13))
 		{
 		u16 i;
@@ -1072,46 +1084,37 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			for(i = 0; i < lg; ++i, --x, ++sprX)
 			{
 				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-				RENDERS(c)
+				RENDERS_B(c)
 			}
 			continue;
 		}
 		for(i = 0; i < lg; ++i, ++x, ++sprX)
 		{
 			u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-			RENDERS(c)
+			RENDERS_B(c)
 		}
 		continue;
 		}
 		src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-
-#undef RENDERS
-
-#define RENDERS(c,d) \
-	if((c)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+((aux->attr2>>12)*0x10)) << 1)); \
-		prioTab[sprX d] = prio; \
-	}
-	
+			
 		if(x&1)
 		{
 			if(aux->attr1&(1<<12))
 			{
 				s32 x1 = ((sprSize.x-x)>>1);
 				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c&0xF),)
+				RENDERS_C((c&0xF),)
 				x1 = ((sprSize.x-x-lg)>>1);
 				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c&0xF),+lg-1)
+				RENDERS_C((c&0xF),+lg-1)
 			} else {
 				s32 x1 = (x>>1);
 				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c>>4),)
+				RENDERS_C((c>>4),)
 				x1 = ((x+lg-1)>>1);
 				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c>>4),+lg-1)
+				RENDERS_C((c>>4),+lg-1)
 		
 			}
 			++sprX;
@@ -1127,9 +1130,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			for(i = 0; i < lg; ++i, --x)
 			{
 				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDERS((c>>4),)
+				RENDERS_C((c>>4),)
 				++sprX;
-				RENDERS((c&0xF),)
+				RENDERS_C((c&0xF),)
 				++sprX;
 			}
 			continue;
@@ -1138,13 +1141,12 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		for(j = 0; j < lg; ++j, ++x)
 		{
 			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];	
-			RENDERS((c&0xF),)
+			RENDERS_C((c&0xF),)
 			++sprX;
-			RENDERS((c>>4),)
+			RENDERS_C((c>>4),)
 			++sprX;
 		}
 	}
-#undef RENDERS
 }
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
@@ -1194,13 +1196,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	
 		if(aux->attr1&(1<<13))
 			y = sprSize.y - y -1;
-	
-#define RENDERS(a) \
-	if((a)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, c); \
-		prioTab[sprX] = prio; \
-	}
+		
 		if((aux->attr0&(3<<10))==(3<<10))
 		{
 			u16 i;
@@ -1215,25 +1211,18 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				{
 					u8 c = src[x << 1];
 					// What's the point in shifting down by 15 when c is 8-bits?
-					RENDERS((c>>15))
+					RENDERS_A(c>>15)
 				}
 				continue;
 			}
 			for(i = 0; i < lg; ++i, ++x, ++sprX)
 			{
 				u16 c = T1ReadWord(src, x << 1);
-				RENDERS((c>>15))
+				RENDERS_A(c>>15)
 			}//
 			continue;
 		}
-#undef RENDERS
-
-#define RENDERS(c) \
-	if((c)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1)); \
-		prioTab[sprX] = prio; \
-	}
+		
 		if(aux->attr0&(1<<13))
 		{
 			u16 i;
@@ -1246,7 +1235,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				for(i = 0; i < lg; ++i, --x, ++sprX)
 				{
 					u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-					RENDERS(c)
+					RENDERS_B(c)
 				}
 				continue;
 			}
@@ -1254,38 +1243,30 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			for(i = 0; i < lg; ++i, ++x, ++sprX)
 			{
 				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-				RENDERS(c)
+				RENDERS_B(c)
 			}
 			continue;
 		}
 		src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-#undef RENDERS	
-
-#define RENDERS(c,d) \
-	if((c)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+((aux->attr2>>12)*0x10)) << 1)); \
-		prioTab[sprX d] = prio; \
-	}
-
+		
 		if(x&1)
 		{
 			if(aux->attr1&(1<<12))
 			{
 				s32 x1 = ((sprSize.x-x)>>1);
 				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];	
-				RENDERS((c&0xF),)
+				RENDERS_C((c&0xF),)
 				x1 = ((sprSize.x-x-lg)>>1);
 				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c&0xF),+lg-1)
+				RENDERS_C((c&0xF),+lg-1)
 			} else {
 				s32 x1 = (x>>1);
 				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c>>4),)
+				RENDERS_C((c>>4),)
 				x1 = ((x+lg-1)>>1);
 				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS((c>>4),+lg-1)
+				RENDERS_C((c>>4),+lg-1)
 			}
 			++sprX;
 			++x;
@@ -1300,9 +1281,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			for(i = 0; i < lg; ++i, --x)
 			{
 				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDERS((c>>4),)
+				RENDERS_C((c>>4),)
 				++sprX;
-				RENDERS((c&0xF),)
+				RENDERS_C((c&0xF),)
 				++sprX;
 			}
 			continue;
@@ -1310,12 +1291,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		for(j = 0; j < lg; ++j, ++x)
 		{
 			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-			RENDERS((c&0xF),)
+			RENDERS_C((c&0xF),)
 			++sprX;
-			RENDERS((c>>4),)
+			RENDERS_C((c>>4),)
 			++sprX;
 		}
-#undef RENDERS
 	}
 }
 
