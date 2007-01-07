@@ -81,7 +81,7 @@ struct _GPU
        s16 BGPD[4];
 
        u8 lcd;
-		 u8 core;
+		u8 core;
 
        u8 dispMode;
        u8 vramBlock;
@@ -96,6 +96,7 @@ struct _GPU
        u8 sprBlock;
        u8 sprBMPBlock;
        u8 sprBMPMode;
+		u32 sprEnable ;
 
        u16 BLDCNT ;
 	   u16 BLDALPHA ;
