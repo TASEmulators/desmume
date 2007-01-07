@@ -558,19 +558,26 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 			case 0x40:              /* alpha blending */
 				{
 					#define min(a,b) (((a)<(b))?(a):(b))
+					if (!(color & 0x8000)) return ; 								/* we cant do alpha on an invisible pixel */
 					u16 sourceFraction = (gpu->BLDALPHA & 0x1F) ;
-					u16 targetFraction = (gpu->BLDALPHA & 0x1F00) >> 8 ;
-					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
+					if (!sourceFraction) return ; 									/* no fraction of this BG to be showed, so don't do anything */
+					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;      	/* weighted component from color to draw */
 					u16 sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
 					u16 sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
-					color = T2ReadWord(dst, passing) ;
-					u16 targetR = ((color & 0x1F) * targetFraction) >> 4 ;
-					u16 targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
-					u16 targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
-					targetR = min(0x1F,targetR+sourceR) ;
-					targetG = min(0x1F,targetG+sourceG) ;
-					targetB = min(0x1F,targetB+sourceB) ;
-					color = (targetR & 0x1F) | ((targetG & 0x1F) << 5) | ((targetB & 0x1F) << 10) | 0x8000 ;
+					u16 targetFraction = (gpu->BLDALPHA & 0x1F00) >> 8 ;
+                    if (targetFraction) { 											/* when we dont take any fraction from existing pixel, we can just draw */
+                        color = T2ReadWord(dst, passing) ;
+						if (color & 0x8000) {   									/* the existing pixel is not invisible */
+							u16 targetR = ((color & 0x1F) * targetFraction) >> 4 ;  /* weighted component from color we draw on */
+							u16 targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
+							u16 targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
+							sourceR = min(0x1F,targetR+sourceR) ;                   /* limit combined components to 31 max */
+							sourceG = min(0x1F,targetG+sourceG) ;
+							sourceB = min(0x1F,targetB+sourceB) ;
+						}
+					}
+					color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+					#undef min
 				}
 				T2WriteWord(dst, passing, color) ;
 				break ;
@@ -628,24 +635,16 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 	if(tmp>31) 
 	{
-		switch(bgprop >> 14)
-		{
-			case 2 :
-				map += 32 * 32 * 2;
-				break;
-			case 3 :
-				map += 32 * 64 * 2;
-				break;
-		}
+		map+= ADDRESS_STEP_512B << BGCNT_SCREENSIZE(bgprop) ;
 	}
 	
 	tile = (u8*) gpu->BG_tile_ram[num];
 	if((!tile) || (!gpu->BG_map_ram[num])) return; 	/* no tiles or no map*/
 	xoff = X;
-	if(!(bgprop & 0x80))    /* color: 16 palette entries */
+	if(!BGCNT_256COL(bgprop))    /* color: 16 palette entries */
 	{
 		yoff = ((Y&7)<<2);
-		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 		for(x = 0; x < LG;)
 		{
 			u8 * mapinfo;
@@ -687,10 +686,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	if(!(gpu->prop & 0x40000000))  /* color: no extended palette */
+	if(!DISPCNT_USEEXTPAL(gpu->prop))  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
-		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 		for(x = 0; x < LG;)
 		{
 			u8 * mapinfo;
