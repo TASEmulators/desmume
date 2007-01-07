@@ -775,6 +775,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			}
 		}
 	}
+#undef RENDERL
 }
 
 INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
@@ -832,115 +833,84 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
 
 INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
-     u32 bgprop = gpu->BGProp[num];
+	u32 bgprop = gpu->BGProp[num];
+	
+	s32 x = X + (s32)PB*(s32)H;
+	s32 y = Y + (s32)PD*(s32)H;
+	
+	s32 dx = PA;
+	s32 dy = PC;
+	
+	s32 auxX;
+	s32 auxY;
+	
+	s16 lg = gpu->BGSize[num][0];
+	s16 ht = gpu->BGSize[num][1];
+	u16 lgmap = (lg>>3);
+	
+	u8 * tile = (u8 *)gpu->BG_tile_ram[num];
+	u8 * dst = DST;
+	u16 mapinfo;
+	u8 coul;
+	
+	switch(((bgprop>>2)&1)|((bgprop>>6)&2))
+	{
+		case 0 :
+		case 1 :
+		{
+		u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+		if(!pal) return;
 
-     s32 x = X + (s32)PB*(s32)H;
-     s32 y = Y + (s32)PD*(s32)H;
+#define LOOP(c) \
+	u16 i; \
+	for(i = 0; i < LG; ++i) { \
+		auxX = x>>8; auxY = y>>8; \
+		if(bgprop&(1<<13)) { \
+			auxX &= (lg-1); auxY &= (ht-1); \
+		} \
+		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht)) c \
+		dst += 2; x += dx; y += dy; \
+	} 
+		u8 * map = gpu->BG_map_ram[num];
+		LOOP(
+		{
+			u16 x1;
+			u16 y1;
+			mapinfo = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * lgmap) << 1);
 
-     s32 dx = PA;
-     s32 dy = PC;
-
-     s32 auxX;
-     s32 auxY;
-
-     s16 lg = gpu->BGSize[num][0];
-     s16 ht = gpu->BGSize[num][1];
-     u16 lgmap = (lg>>3);
-
-     u8 * tile = (u8 *)gpu->BG_tile_ram[num];
-     u8 * dst = DST;
-     u16 mapinfo;
-     u8 coul;
-
-     switch(((bgprop>>2)&1)|((bgprop>>6)&2))
-     {
-          case 0 :
-          case 1 :
-               {
-	       u8 * map = gpu->BG_map_ram[num];
-	       u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
-	       u16 i;
-
-               if(!pal) return;
-               for(i = 0; i < LG; ++i)
-               {
-                    auxX = x>>8;
-                    auxY = y>>8;
-
-                    if(bgprop&(1<<13))
-                    {
-                         auxX &= (lg-1);
-                         auxY &= (ht-1);
-                    }
-                    if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
-                    {
-                         u16 x1;
-                         u16 y1;
-			 mapinfo = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * lgmap) << 1);
-
-                         x1 = (mapinfo & 0x400) ? 7 - (auxX&7) : (auxX&7);
-                         y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
-                         coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
-                         if(coul)
-			      renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1));
-                    }
-                    dst += 2;
-                    x += dx;
-                    y += dy;
-               }
-               }
-               return;
-          case 2 :
-               {
-	       u8 * map = gpu->BG_bmp_ram[num];
-	       u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-	       u16 i;
-               for(i = 0; i < LG; ++i)
-               {
-                    auxX = x>>8;
-                    auxY = y>>8;
-                    if(bgprop&(1<<13))
-                    {
-                         auxX &= (lg-1);
-                         auxY &= (ht-1);
-                    }
-                    if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
-                    {
-                         mapinfo = map[auxX + auxY * lg];
-                         if(mapinfo)
-			      renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, mapinfo << 1));
-                    }
-                    dst += 2;
-                    x += dx;
-                    y += dy;
-               }
-               }
-               return;
-          case 3 :
-               {
-	       u8 * map = gpu->BG_bmp_ram[num];
-	       u16 i;
-               for(i = 0; i < LG; ++i)
-               {
-                    auxX = x>>8;
-                    auxY = y>>8;
-                    if(bgprop&(1<<13))
-                    {
-                         auxX &= (lg-1);
-                         auxY &= (ht-1);
-                    }
-                    if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
-                    {
-			 mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
-                         if(mapinfo)
-		              renderline_setFinalColor(gpu,0,num,dst, mapinfo);
-                    }
-                    dst += 2;
-                    x += dx;
-                    y += dy;
-               }
-               }
-               return;
+			x1 = (mapinfo & 0x400) ? 7 - (auxX&7) : (auxX&7);
+			y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
+			coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
+			if(coul)
+			renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1));
+		})
+	
+		}
+		return;
+	case 2 :
+		{
+		u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		u8 * map = gpu->BG_bmp_ram[num];
+		LOOP(
+		{
+			mapinfo = map[auxX + auxY * lg];
+			if(mapinfo)
+				renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, mapinfo << 1));
+		})
+		}
+		return;
+	case 3 :
+		{
+		u8 * map = gpu->BG_bmp_ram[num];
+		LOOP(
+		{
+			mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
+			if(mapinfo)
+			renderline_setFinalColor(gpu,0,num,dst, mapinfo);
+		})
+		}
+		return;
+#undef LOOP
      }
 }
 
