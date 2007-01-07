@@ -158,6 +158,7 @@ int main(int argc, char *argv[]) {
 	if(commandLine_File) {
 		if(desmume_open(commandLine_File) >= 0)	{
 			desmume_resume();
+			enable_rom_features();
 		} else {
 			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
 					GTK_DIALOG_MODAL,
