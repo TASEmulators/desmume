@@ -405,23 +405,28 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 
 u32 CP15wait4IRQ(armcpu_t *cpu)
 {
+	/* on the first call, wirq is not set */
 	if(cpu->wirq)
 	{
+		/* check wether an irq was issued */
 		if(!cpu->waitIRQ)
 		{
 			cpu->waitIRQ = 0;
 			cpu->wirq = 0;
-			//cpu->switchMode(oldmode[cpu->proc_ID]);
-		return 1;
+			return 1;   /* return execution */
 		}
+		/* otherwise, repeat this instruction */
 		cpu->R[15] = cpu->instruct_adr;
 		cpu->next_instruction = cpu->R[15];
 		return 1;
 	}
+	/* first run, set us into waiting state */
 	cpu->waitIRQ = 1;
 	cpu->wirq = 1;
+	/* and set next instruction to repeat this */
 	cpu->R[15] = cpu->instruct_adr;
 	cpu->next_instruction = cpu->R[15];
+	/* CHECKME: IME shouldn't be modified (?) */
 	MMU.reg_IME[0] = 1;
 	return 1;
 }
