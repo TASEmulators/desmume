@@ -1,22 +1,27 @@
 #include "ROMReader.h"
 
 #include <stdio.h>
+#ifdef HAVE_LIBZZIP
+#include <zzip/zzip.h>
+#endif
 
-ROMReader_struct * ROMReaderInit(const char ** filename)
+ROMReader_struct * ROMReaderInit(char ** filename)
 {
 #ifdef HAVE_LIBZ
 	if(!strcasecmp(".gz", *filename + (strlen(*filename) - 3)))
 	{
-		*filename -= 3;
+		(*filename)[strlen(*filename) - 3] = '\0';
 		return &GZIPROMReader;
 	}
-	else
-	{
-		return &STDROMReader;
-	}
-#else
-	return &STDROMReader;
 #endif
+#ifdef HAVE_LIBZZIP
+	if (!strcasecmp(".zip", *filename + (strlen(*filename) - 4)))
+	{
+		(*filename)[strlen(*filename) - 4] = '\0';
+		return &ZIPROMReader;
+	}
+#endif
+	return &STDROMReader;
 }
 
 void * STDROMReaderInit(const char * filename);
@@ -103,7 +108,7 @@ void GZIPROMReaderDeInit(void * file)
 u32 GZIPROMReaderSize(void * file)
 {
 	char useless[1024];
-	u32 size;
+	u32 size = 0;
 
 	/* FIXME this function should first save the current
 	 * position and restore it after size calculation */
@@ -123,5 +128,67 @@ int GZIPROMReaderSeek(void * file, int offset, int whence)
 int GZIPROMReaderRead(void * file, void * buffer, u32 size)
 {
 	return gzread(file, buffer, size);
+}
+#endif
+
+#ifdef HAVE_LIBZZIP
+void * ZIPROMReaderInit(const char * filename);
+void ZIPROMReaderDeInit(void *);
+u32 ZIPROMReaderSize(void *);
+int ZIPROMReaderSeek(void *, int, int);
+int ZIPROMReaderRead(void *, void *, u32);
+
+ROMReader_struct ZIPROMReader =
+{
+	ROMREADER_ZIP,
+	"Zip ROM Reader",
+	ZIPROMReaderInit,
+	ZIPROMReaderDeInit,
+	ZIPROMReaderSize,
+	ZIPROMReaderSeek,
+	ZIPROMReaderRead
+};
+
+void * ZIPROMReaderInit(const char * filename)
+{
+	ZZIP_DIRENT * dir = zzip_opendir(filename);
+	dir = zzip_readdir(dir);
+	if (dir != NULL)
+	{
+		char tmp1[1024];
+		char tmp2[1024];
+		strncpy(tmp1, filename, strlen(filename) - 4);
+		sprintf(tmp2, "%s/%s", tmp1, dir->d_name);
+		return zzip_fopen(tmp2, "rb");
+	}
+	return NULL;
+}
+
+void ZIPROMReaderDeInit(void * file)
+{
+	zzip_close(file);
+}
+
+u32 ZIPROMReaderSize(void * file)
+{
+	char useless[1024];
+	u32 tmp;
+	u32 size = 0;
+
+	zzip_seek(file, 0, SEEK_END);
+	size = zzip_tell(file);
+	zzip_seek(file, 0, SEEK_SET);
+
+	return size;
+}
+
+int ZIPROMReaderSeek(void * file, int offset, int whence)
+{
+	return zzip_seek(file, offset, whence);
+}
+
+int ZIPROMReaderRead(void * file, void * buffer, u32 size)
+{
+	return zzip_read(file, buffer, size);
 }
 #endif

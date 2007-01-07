@@ -230,11 +230,11 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 	gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
 #ifdef HAVE_LIBZ
 	gtk_file_filter_add_pattern(pFilter_nds, "*.nds.gz");
-	gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds/.nds.gz)");
-#else
-	gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
-	gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
 #endif
+#ifdef HAVE_LIBZZIP
+	gtk_file_filter_add_pattern(pFilter_nds, "*.nds.zip");
+#endif
+	gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
 	
 	pFilter_dsgba = gtk_file_filter_new();
 	gtk_file_filter_add_pattern(pFilter_dsgba, "*.ds.gba");
