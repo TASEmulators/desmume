@@ -17,7 +17,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include "global.h"
+#include "globals.h"
 
 /////////////////////////////// PRINTSCREEN /////////////////////////////////
 // TODO: improve (let choose filename, and use png)
