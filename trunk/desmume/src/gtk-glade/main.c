@@ -40,22 +40,22 @@ NULL
 
 gint Keypad_Config[DESMUME_NB_KEYS];
 
-        const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
-          { 1,  // A
-            0,  // B
-            5,  // select
-            8,  // start
-            20, // Right -- Start cheating abit...
-            21, // Left
-            22, // Up
-            23, // Down  -- End of cheating.
-            7,  // R
-            6,  // L
-            3,  // Y
-            4,  // X
-            -1, // DEBUG
-            -1  // BOOST
-          };
+const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
+  { 1,  // A
+    0,  // B
+    5,  // select
+    8,  // start
+    20, // Right -- Start cheating abit...
+    21, // Left
+    22, // Up
+    23, // Down  -- End of cheating.
+    7,  // R
+    6,  // L
+    3,  // Y
+    4,  // X
+    -1, // DEBUG
+    -1  // BOOST
+  };
 
 const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 {
