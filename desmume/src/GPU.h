@@ -46,6 +46,29 @@ extern "C" {
 #define ADDRESS_STEP_32KB       0x08000
 #define ADDRESS_STEP_64kB       0x10000
 
+typedef struct
+{
+/*0*/	unsigned DisplayMode:3;
+/*3*/	unsigned BG0_3D:1;
+/*4*/	unsigned SpriteMode:3;
+/*7*/	unsigned ForceBlank:1;
+/*8*/	unsigned BG0_Enable:1;
+/*9*/	unsigned BG1_Enable:1;
+/*10*/	unsigned BG2_Enable:1;
+/*11*/	unsigned BG3_Enable:1;
+/*12*/	unsigned Sprite_Enable:1;
+/*13*/	unsigned Win0_Enable:1;
+/*14*/	unsigned Win1_Enable:1;
+/*15*/	unsigned SpriteWin_Enable:1;
+/*16*/	unsigned ExMode:2; // (00: Framebuffer, 01: GBA-style, 10: Framebuffer-alike, 11: ?)
+/*18*/	unsigned FrameBufferSelect:2; // ExMode 2
+/*20*/	unsigned ExSpriteMode:3;
+/*23*/	unsigned :4;
+/*27*/	unsigned ScreenBaseBlock:3;
+/*30*/	unsigned ExBGPalette_Enable:1;
+/*31*/	unsigned ExSpritePalette_Enable:1;
+} _DISPCNT_;
+
 #define DISPCNT_OBJMAPING1D(val)			(((val) >> 4) & 1)
 #define DISPCNT_BG0ENABLED(val)				(((val) >> 8) & 1)
 #define DISPCNT_BG1ENABLED(val)				(((val) >> 9) & 1)
@@ -72,22 +95,22 @@ typedef struct
 {
 // found here : http://www.bottledlight.com/ds/index.php/Video/Sprites
 // attr0
-	unsigned Y:8;
-	unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
-	unsigned Mode:2;     // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
-	unsigned Mosaic:1;   // (1: Enabled)
-	unsigned Depth:1;    // (0: 16, 1: 256)
-	unsigned Shape:2;    // (00: Square, 01: Wide, 10: Tall, 11: Illegal)
+/*0*/	unsigned Y:8;
+/*8*/	unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
+/*10*/	unsigned Mode:2;     // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
+/*12*/	unsigned Mosaic:1;   // (1: Enabled)
+/*13*/	unsigned Depth:1;    // (0: 16, 1: 256)
+/*14*/	unsigned Shape:2;    // (00: Square, 01: Wide, 10: Tall, 11: Illegal)
 // attr1
-	unsigned X:9;
-	unsigned RotScalIndex:3; // Rot/scale matrix index 
-	unsigned HFlip:1;
-	unsigned VFlip:1;
-	unsigned Size:2;
+/*0*/	signed   X:9;
+/*9*/	unsigned RotScalIndex:3; // Rot/scale matrix index 
+/*12*/	unsigned HFlip:1;
+/*13*/	unsigned VFlip:1;
+/*14*/	unsigned Size:2;
 // attr2
-	unsigned TileIndex:10;
-	unsigned Priority:2;
-	unsigned PaletteIndex:4;
+/*0*/	unsigned TileIndex:10;
+/*10*/	unsigned Priority:2;
+/*12*/	unsigned PaletteIndex:4;
 // attr3
 	unsigned attr3:16;
 } _OAM_;
