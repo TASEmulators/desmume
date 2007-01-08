@@ -554,6 +554,11 @@ void GPU_setBLDY(GPU *gpu, u16 v)
 	gpu->BLDY = v ;
 }
 
+void GPU_setMOSAIC(GPU *gpu, u16 v)
+{
+	gpu->MOSAIC = v ;
+}
+
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color) {
 	if (gpu->BLDCNT & (1 << bgnum))   /* the bg to draw has a special color effect */
 	{
@@ -656,44 +661,126 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	xoff = X;
 	if(!BGCNT_256COL(bgprop))    /* color: 16 palette entries */
 	{
-		yoff = ((Y&7)<<2);
-		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
-		for(x = 0; x < LG;)
-		{
-			u8 * mapinfo;
-			u16 mapinfovalue;
-			u8 *line;
-			u16 xfin;
-			tmp = ((xoff&(lg-1))>>3);
-			mapinfo = map + (tmp&0x1F) * 2;
-			if(tmp>31) mapinfo += 32*32*2;
-			mapinfovalue = T1ReadWord(mapinfo, 0);
 
-			line = (u8 * )tile + ((mapinfovalue&0x3FF) * 0x20) + (((mapinfovalue)& 0x800 ? (7*4)-yoff : yoff));
-			xfin = x + (8 - (xoff&7));
-			if (xfin > LG)
-				xfin = LG;
-			
-#define RENDERL(c,m) \
-	if (c) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, ((c) + ((mapinfovalue>>12)&0xF) * m) << 1)) ; \
-	dst += 2; x++; xoff++;
+		if (bgprop & 0x0400){   /* CHECKME: mosaic mode: see @ http://nocash.emubase.de/gbatek.htm#lcdiobgcontrol */
+								/* test NDS: #2 of http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192 */
+			u8 mw = (gpu->MOSAIC & 0xF) +1 ;            /* horizontal granularity of the mosaic */
+			u8 mh = ((gpu->MOSAIC>>4) & 0xF) +1 ;       /* vertical granularity of the mosaic */
+			Y = (Y / mh) * mh ;                         /* align y by vertical granularity */
 
-			if((mapinfovalue) & 0x400)
+			yoff = ((Y&7)<<2);
+			pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
+			for(x = 0; x < LG;)
 			{
-				line += 3 - ((xoff&7)>>1);
-				for(; x < xfin; ) {
+				u8 * mapinfo;
+				u16 mapinfovalue;
+				u8 *line;
+				u16 xfin;
+				tmp = ((xoff&(lg-1))>>3);
+				mapinfo = map + (tmp&0x1F) * 2;
+				if(tmp>31) mapinfo += 32*32*2;
+				mapinfovalue = T1ReadWord(mapinfo, 0);
+
+				line = (u8 * )tile + ((mapinfovalue&0x3FF) * 0x20) + (((mapinfovalue)& 0x800 ? (7*4)-yoff : yoff));
+				xfin = x + (8 - (xoff&7));
+				if (xfin > LG)
+					xfin = LG;
+
+	#define RENDERL(c,m) \
+		if (c) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, ((c) + ((mapinfovalue>>12)&0xF) * m) << 1)) ; \
+		dst += 2; x++; xoff++;
+
+
+				if((mapinfovalue) & 0x400)
+				{
+					line += 3 - ((xoff&7)>>1);
+					u8 pt = 0 ;
+					u8 save = 0;
+					for(; x < xfin; ) {
 // XXX
-					RENDERL(((*line)>>4),0x10)
-					RENDERL(((*line)&0xF),0x10)
-					line--;
+						if ((pt % mw) == 0) {           /* only update the color we draw every n mw pixels */
+							if (pt & 1) {
+								save = (*line) & 0xF ;
+							} else {
+								save = (*line) >> 4 ;
+							}
+						}
+						RENDERL(save,0x10)
+						pt++ ;
+						if (!(pt % mw)) {               /* next pixel next possible color update */
+							if (pt & 1) {
+								save = (*line) & 0xF ;
+							} else {
+								save = (*line) >> 4 ;
+							}
+						}
+						RENDERL(save,0x10)
+						line--; pt++ ;
+					}
+				} else {
+					line += ((xoff&7)>>1);
+					u8 pt = 0 ;
+					u8 save = 0;
+					for(; x < xfin; ) {
+// XXX
+						if (!(pt % mw)) {               /* only update the color we draw every n mw pixels */
+							if (!(pt & 1)) {
+								save = (*line) & 0xF ;
+							} else {
+								save = (*line) >> 4 ;
+							}
+						}
+						RENDERL(save,0x10)
+						pt++ ;
+						if (!(pt % mw)) {               /* next pixel next possible color update */
+							if (!(pt & 1)) {
+								save = (*line) & 0xF ;
+							} else {
+								save = (*line) >> 4 ;
+							}
+						}
+						RENDERL(save,0x10)
+						line++; pt++ ;
+					}
 				}
-			} else {
-				line += ((xoff&7)>>1);
-				for(; x < xfin; ) {
+			}
+		} else {                /* no mosaic mode */
+
+			yoff = ((Y&7)<<2);
+			pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
+			for(x = 0; x < LG;)
+			{
+				u8 * mapinfo;
+				u16 mapinfovalue;
+				u8 *line;
+				u16 xfin;
+				tmp = ((xoff&(lg-1))>>3);
+				mapinfo = map + (tmp&0x1F) * 2;
+				if(tmp>31) mapinfo += 32*32*2;
+				mapinfovalue = T1ReadWord(mapinfo, 0);
+
+				line = (u8 * )tile + ((mapinfovalue&0x3FF) * 0x20) + (((mapinfovalue)& 0x800 ? (7*4)-yoff : yoff));
+				xfin = x + (8 - (xoff&7));
+				if (xfin > LG)
+					xfin = LG;
+
+				if((mapinfovalue) & 0x400)
+				{
+					line += 3 - ((xoff&7)>>1);
+					for(; x < xfin; ) {
 // XXX
-					RENDERL(((*line)&0xF),0x10)
-					RENDERL(((*line)>>4),0x10)
-					line++;
+						RENDERL(((*line)>>4),0x10)
+						RENDERL(((*line)&0xF),0x10)
+						line--;
+					}
+				} else {
+					line += ((xoff&7)>>1);
+					for(; x < xfin; ) {
+// XXX
+						RENDERL(((*line)&0xF),0x10)
+						RENDERL(((*line)>>4),0x10)
+						line++;
+					}
 				}
 			}
 		}
@@ -1082,33 +1169,34 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			continue;                           /* sprite drawing done, do next */
 		}
 		
-		if(spriteInfo->Depth)
+		if(spriteInfo->Depth)                   /* 256 colors */
 		{
-		u16 i;
-		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+			u16 i;
+			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
-		if(gpu->prop&(1<<31))
-			pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
-		else
-			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
+			if(gpu->prop&(1<<31))
+				pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
+			else
+				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-		if (spriteInfo->HFlip)
-		{
-			x = sprSize.x -x - 1;
-			for(i = 0; i < lg; ++i, --x, ++sprX)
+			if (spriteInfo->HFlip)
+			{
+				x = sprSize.x -x - 1;
+				for(i = 0; i < lg; ++i, --x, ++sprX)
+				{
+					u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
+					RENDERS_B(c)
+				}
+				continue;
+			}
+			for(i = 0; i < lg; ++i, ++x, ++sprX)
 			{
 				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
 				RENDERS_B(c)
 			}
 			continue;
 		}
-		for(i = 0; i < lg; ++i, ++x, ++sprX)
-		{
-			u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-			RENDERS_B(c)
-		}
-		continue;
-		}
+						/* 16 colors */
 		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
 			
