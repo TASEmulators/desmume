@@ -1,6 +1,6 @@
 /* globals.h - this file is part of $PROJECT_NAME_HERE$
  *
- * Copyright (C) 2007 Pascal Giard
+ * Copyright (C) 2007 DeSmuME Team
  *
  * Author: Pascal Giard <evilynux@gmail.com>
  *
