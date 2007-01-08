@@ -413,9 +413,13 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           BGSize[num][1] =  lcdSizeTab[p>>14][1];
           return;
      }*/
-                                                                                                      
-        gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
+
+		/* we got a naming problem here, dispMode actual is _DISPCNT_.ExMode */
+        // gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
+        // gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
+        gpu->BGSize[num][0] = sizeTab[mode2type[((_DISPCNT_*)(&(gpu->prop)))->DisplayMode][num]][BGCNT_SCREENSIZE(p)][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[((_DISPCNT_*)(&(gpu->prop)))->DisplayMode][num]][BGCNT_SCREENSIZE(p)][1];
+
 }
 
 void GPU_remove(GPU * gpu, u8 num)
@@ -1002,7 +1006,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	u8 block = gpu->sprBlock;
 	u16 i;
 	
-	for(i = 0; i<nbShow; ++i, --spriteInfo)
+	for(i = 0; i<nbShow; ++i, --spriteInfo)     /* check all sprites */
 	{
 		s32 sprX;
 		s32 sprY;
@@ -1015,58 +1019,67 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 * pal;
 		u16 j;
 	
-		sprX = (spriteInfo->X<<23)>>23;
+		sprX = (spriteInfo->X<<23)>>23;         /* get sprite location and size */
 		sprY = spriteInfo->Y;
 		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
 	
 		lg = sprSize.x;
 
 		if(sprY>192)
-		sprY = (s32)((s8)(spriteInfo->Y));
+			sprY = (s32)((s8)(spriteInfo->Y));
 	
-		if( (spriteInfo->RotScale == 2) ||
-		    (l<sprY)||(l>=sprY+sprSize.y) ||
-		    (sprX==256) )
-			continue;
+		/* FIXME: for rot/scale, a list of entries into the sprite should be maintained, that tells us where the first pixel */
+		/* of a screenline starts in the sprite, and how a step to the right in a screenline translates within the sprite */
+		/* CHECKME: if H-flipped, are the clippings meet? What happens if x direction is flipped, is the range checking working? */
+		if( (spriteInfo->RotScale == 2) ||      /* rotscale == 2 => sprite disabled */
+		    (l<sprY)||(l>=sprY+sprSize.y) ||    /* sprite occupies only lines outside the current drawn line */
+		    (sprX==256) )                       /* sprite is outside our line */
+			continue;                           /* for all these problems, continue with the next sprite */
 	
-		if(sprX<0)
+		if(sprX<0)                              /* when sprite start is left of the screen */
 		{
-			if(sprX+sprSize.x<=0) continue;
-			lg += sprX;
-			x = -sprX;
-			sprX = 0;
-		} else if(sprX+sprSize.x>256)
-			lg = 255 - sprX;
+			if(sprX+sprSize.x<=0) continue;     /* and the end also, continue with the next sprite */
+			lg += sprX;                         /* reduce the points pixels to draw by the amount we are left of screen */
+			x = -sprX;                          /* we start later in the sprite then */
+			sprX = 0;                           /* but at the lines #0 pixel */
+		} else if(sprX+sprSize.x>256)           /* if we would move over the right border */
+			lg = 255 - sprX;                    /* simply limit drawing to the number of pixels left till mostright visible pixel */
 	
-		y = l - sprY;
+		y = l - sprY;                           /* get the y line within sprite coords */
 		prio = spriteInfo->Priority;
 	
-		if (spriteInfo->VFlip) 
+		if (spriteInfo->VFlip)                  /* if Vflip, we start from the other side with the sprite */
 			y = sprSize.y - y -1;
 		
 		
-		if (spriteInfo->Mode == 3)
+		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
 			u16 i;
+												/* sprMemory + sprBlock + 16Bytes per line (8pixels a 2 bytes) */
 			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBlock);
 	
-			if (spriteInfo->HFlip)
+			if (spriteInfo->HFlip)              /* if h-flip */
 			{
-				x = sprSize.x -x - 1;
+				x = sprSize.x -x - 1;           /* start at the end of the sprite */
 				for(i = 0; i < lg; ++i, --x, ++sprX)
 				{
-					u8 c = src[x];
+					u8 c = src[x];              /* color of the sprites pixel */
 					// What's the point in shifting down by 15 when c is 8-bits?
-					RENDERS_A(c>>15)
+					// RENDERS_A(c>>15)
+												/* if i understand it correct, and it fixes some sprite problems in chameleon shot */
+												/* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
+												/* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
+					RENDERS_A(c) ;              /* FIXME: apply additional alpha */
 				}
 				continue;
 			}
-			for(i = 0; i < lg; ++i, ++x, ++sprX)
+			for(i = 0; i < lg; ++i, ++x, ++sprX)/* otherwise we start from the beginning of the sprite */
 			{
-				u16 c = T1ReadWord(src, x << 1);
-				RENDERS_A(c>>15)
+				u16 c = T1ReadWord(src, x << 1);/* CHECKME: do we need the endian conversation? if yes, change the one above also */
+				// RENDERS_A(c>>15)
+				RENDERS_A(c) ;
 			}
-			continue;
+			continue;                           /* sprite drawing done, do next */
 		}
 		
 		if(spriteInfo->Depth)
