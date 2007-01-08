@@ -904,14 +904,14 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 		})
 		}
 		return;
-	case 3 :
+	case 3 : /* direct color bitmap */
 		{
 		u8 * map = gpu->BG_bmp_ram[num];
 		LOOP(
 		{
 			mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
-			if(mapinfo)
-			renderline_setFinalColor(gpu,0,num,dst, mapinfo);
+			if ((mapinfo) && (mapinfo & 0x8000))
+				renderline_setFinalColor(gpu,0,num,dst, mapinfo);
 		})
 		}
 		return;
