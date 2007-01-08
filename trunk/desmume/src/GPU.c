@@ -127,8 +127,10 @@ void GPU_DeInit(GPU * gpu)
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
 	gpu->prop = p;
+	_DISPCNT_ * cnt = &p;
 
-        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
+//        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
+        gpu->dispMode = cnt->ExMode & ((gpu->lcd)?1:3);
 
         switch (gpu->dispMode)
         {
@@ -137,7 +139,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
            case 1: // Display BG and OBJ layers
               break;
            case 2: // Display framebuffer
-              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
+//              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
+	gpu->vramBlock = cnt->FrameBufferSelect;
               return;
            case 3: // Display from Main RAM
               LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
@@ -145,7 +148,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         }
 
 	gpu->nbBGActif = 0;
-        if(DISPCNT_OBJMAPING1D(p))
+        if(cnt->SpriteMode & 0x1)
 	{
 		/* 1-d sprite mapping */
 		
@@ -172,14 +175,14 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->sprBMPBlock = 7;
 	}
 
-	gpu->sprEnable = DISPCNT_SPRITEENABLE(p) ;
+	gpu->sprEnable = cnt->Sprite_Enable;
 	
 	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 14));
 	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 12));
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-        if(DISPCNT_BG3ENABLED(p) && gpu->dispBG[3])
+        if(cnt->BG3_Enable && gpu->dispBG[3])
 	{
 		gpu->ordre[0] = 3;
 		gpu->BGIndex[3] = 1;
@@ -190,7 +193,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[3] = 0;
 	}
 	
-        if(DISPCNT_BG2ENABLED(p) && gpu->dispBG[2])
+        if(cnt->BG2_Enable && gpu->dispBG[2])
 	{
 		if(gpu->nbBGActif)
 		{
@@ -221,7 +224,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			gpu->BGIndex[2] = 0;
 	}
 	
-        if(DISPCNT_BG1ENABLED(p) && gpu->dispBG[1])
+        if(cnt->BG1_Enable && gpu->dispBG[1])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -248,7 +251,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[1] = 0;
 	}
 	
-        if(DISPCNT_BG0ENABLED(p) && (!(p & 0x8)) && gpu->dispBG[0])
+        if(cnt->BG0_Enable && (!cnt->BG0_3D) && gpu->dispBG[0])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -392,7 +395,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	{
                 gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
                 gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + ((gpu->prop >> 24) & 0x7) * ADDRESS_STEP_64kB ;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + DISPCNT_SCREENBASEBLOCK(gpu->prop) * ADDRESS_STEP_64kB;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + ((_DISPCNT_*)(&(gpu->prop)))->ScreenBaseBlock * ADDRESS_STEP_64kB;
 	}
 
      /*if(!(p&(1<<7)))
@@ -411,8 +414,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           return;
      }*/
                                                                                                       
-        gpu->BGSize[num][0] = sizeTab[mode2type[DISPCNT_MODE(gpu->prop)][num]][BGCNT_SCREENSIZE(p)][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[DISPCNT_MODE(gpu->prop)][num]][BGCNT_SCREENSIZE(p)][1];
+        gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
 }
 
 void GPU_remove(GPU * gpu, u8 num)
@@ -692,7 +695,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	if(!DISPCNT_USEEXTPAL(gpu->prop))  /* color: no extended palette */
+	if(!((_DISPCNT_*)(&(gpu->prop)))->ExBGPalette_Enable)  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
