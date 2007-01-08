@@ -987,7 +987,7 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 #define RENDERS_C(c,d) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+((aux->attr2>>12)*0x10)) << 1)); \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1)); \
 		prioTab[sprX d] = prio; \
 	}
 
@@ -995,14 +995,13 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	if (!gpu->sprEnable) return ;
-	OAM * aux = gpu->oam + (nbShow-1);// + 127;
-	
+	_OAM_ * spriteInfo = gpu->oam + (nbShow-1);// + 127;
 	u8 block = gpu->sprBlock;
 	u16 i;
 	
-	for(i = 0; i<nbShow; ++i, --aux)
+	for(i = 0; i<nbShow; ++i, --spriteInfo)
 	{
-		s32 sprX = aux->attr1 & 0x1FF;
+		s32 sprX;
 		s32 sprY;
 		s32 x = 0;
 		u32 lg;
@@ -1013,17 +1012,16 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 * pal;
 		u16 j;
 	
-		sprX = ((s32)(sprX<<23))>>23;
-		sprY = aux->attr0 & 0xFF;
-	
-		sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+		sprX = (spriteInfo->X<<23)>>23;
+		sprY = spriteInfo->Y;
+		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
 	
 		lg = sprSize.x;
 
 		if(sprY>192)
-		sprY = (s32)((s8)(aux->attr0 & 0xFF));
+		sprY = (s32)((s8)(spriteInfo->Y));
 	
-		if( ((aux->attr0&(1<<9))&&(!(aux->attr0&(1<<8)))) ||
+		if( (spriteInfo->RotScale == 2) ||
 		    (l<sprY)||(l>=sprY+sprSize.y) ||
 		    (sprX==256) )
 			continue;
@@ -1038,18 +1036,18 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			lg = 255 - sprX;
 	
 		y = l - sprY;
-		prio = (aux->attr2>>10)&3;
+		prio = spriteInfo->Priority;
 	
-		if(aux->attr1&(1<<13)) 
+		if (spriteInfo->VFlip) 
 			y = sprSize.y - y -1;
 		
 		
-		if((aux->attr0&(3<<10))==(3<<10))
+		if (spriteInfo->Mode == 3)
 		{
 			u16 i;
-			src = (gpu->sprMem) +(aux->attr2&0x3FF)*16 + (y<<gpu->sprBMPBlock);
+			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBlock);
 	
-			if(aux->attr1&(1<<12))
+			if (spriteInfo->HFlip)
 			{
 				x = sprSize.x -x - 1;
 				for(i = 0; i < lg; ++i, --x, ++sprX)
@@ -1068,17 +1066,17 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			continue;
 		}
 		
-		if(aux->attr0&(1<<13))
+		if(spriteInfo->Depth)
 		{
 		u16 i;
-		src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
 		if(gpu->prop&(1<<31))
-			pal = ARM9Mem.ObjExtPal[gpu->core][0]+((aux->attr2>>12)*0x200);
+			pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
 		else
 			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-		if(aux->attr1&(1<<12))
+		if (spriteInfo->HFlip)
 		{
 			x = sprSize.x -x - 1;
 			for(i = 0; i < lg; ++i, --x, ++sprX)
@@ -1095,12 +1093,12 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		}
 		continue;
 		}
-		src = gpu->sprMem + ((aux->attr2&0x3FF)<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
 			
 		if(x&1)
 		{
-			if(aux->attr1&(1<<12))
+			if (spriteInfo->HFlip)
 			{
 				s32 x1 = ((sprSize.x-x)>>1);
 				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
@@ -1123,7 +1121,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		lg >>= 1;
 		x >>= 1;
 	
-		if(aux->attr1&(1<<12))
+		if (spriteInfo->HFlip)
 		{
 			u16 i;
 			x = (sprSize.x>>1) - x -1;
@@ -1152,38 +1150,38 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	if (!gpu->sprEnable) return ;
+	_OAM_ * spriteInfo = gpu->oam + (nbShow-1);// + 127;
 	u16 i;
-	OAM * aux = gpu->oam + (nbShow-1);// + 127;
 	
-	for(i = 0; i<nbShow; ++i, --aux)
+	for(i = 0; i<nbShow; ++i, --spriteInfo)
 	{
-		s32 sprX = aux->attr1 & 0x1FF;
+		s32 sprX;
 		s32 sprY;
 		s32 x = 0;
-		size sprSize;
 		u32 lg;
+		size sprSize;
 		s32 y;
 		u8 prio;
 		u8 * src;
 		u8 * pal;
 		u16 j;
 	
-		sprX = ((s32)(sprX<<23))>>23;
-		sprY = aux->attr0 & 0xFF;
-	
-		sprSize = sprSizeTab[(aux->attr1>>14)][(aux->attr0>>14)];
+		sprX = (spriteInfo->X<<23)>>23;
+		sprY = spriteInfo->Y;
+		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
 	
 		lg = sprSize.x;
-	
+
 		if(sprY>192)
-			sprY = (s32)((s8)(aux->attr0 & 0xFF));
+		sprY = (s32)((s8)(spriteInfo->Y));
 	
-		if ( ((aux->attr0&(1<<9))&&(!(aux->attr0&(1<<8)))) ||
-		     (l<sprY)||(l>=sprY+sprSize.y) ||
-		     (sprX==256) )
+		if( (spriteInfo->RotScale == 2) ||
+		    (l<sprY)||(l>=sprY+sprSize.y) ||
+		    (sprX==256) )
 			continue;
 	
-		if(sprX<0) {
+		if(sprX<0)
+		{
 			if(sprX+sprSize.x<=0) continue;
 			lg += sprX;
 			x = -sprX;
@@ -1192,24 +1190,23 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			lg = 255 - sprX;
 	
 		y = l - sprY;
-		prio = (aux->attr2>>10)&3;
+		prio = spriteInfo->Priority;
 	
-		if(aux->attr1&(1<<13))
+		if (spriteInfo->VFlip) 
 			y = sprSize.y - y -1;
 		
-		if((aux->attr0&(3<<10))==(3<<10))
+		
+		if (spriteInfo->Mode == 3)
 		{
 			u16 i;
-			src = (gpu->sprMem) + (((aux->attr2&0x3E0) * 64 + (aux->attr2&0x1F) * 8 + ( y << 8)) << 1);
+			src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
 	
-			if(aux->attr1&(1<<12))
+			if (spriteInfo->HFlip)
 			{
-				LOG("Using fubared h-flip\n");
-		
 				x = sprSize.x -x - 1;
 				for(i = 0; i < lg; ++i, --x, ++sprX)
 				{
-					u8 c = src[x << 1];
+					u8 c = src[x<<1];
 					// What's the point in shifting down by 15 when c is 8-bits?
 					RENDERS_A(c>>15)
 				}
@@ -1219,17 +1216,17 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			{
 				u16 c = T1ReadWord(src, x << 1);
 				RENDERS_A(c>>15)
-			}//
+			}
 			continue;
 		}
 		
-		if(aux->attr0&(1<<13))
+		if(spriteInfo->Depth)
 		{
 			u16 i;
-			src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+			src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
+			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 		
-			if(aux->attr1&(1<<12))
+			if (spriteInfo->HFlip)
 			{
 				x = sprSize.x -x - 1;
 				for(i = 0; i < lg; ++i, --x, ++sprX)
@@ -1239,7 +1236,6 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				}
 				continue;
 			}
-	
 			for(i = 0; i < lg; ++i, ++x, ++sprX)
 			{
 				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
@@ -1247,15 +1243,15 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			}
 			continue;
 		}
-		src = gpu->sprMem + ((aux->attr2&0x3FF)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
+		src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-		
+			
 		if(x&1)
 		{
-			if(aux->attr1&(1<<12))
+			if (spriteInfo->HFlip)
 			{
 				s32 x1 = ((sprSize.x-x)>>1);
-				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];	
+				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
 				RENDERS_C((c&0xF),)
 				x1 = ((sprSize.x-x-lg)>>1);
 				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
@@ -1267,14 +1263,15 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				x1 = ((x+lg-1)>>1);
 				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
 				RENDERS_C((c>>4),+lg-1)
+		
 			}
 			++sprX;
 			++x;
 		}
 		lg >>= 1;
 		x >>= 1;
-		
-		if(aux->attr1&(1<<12))
+	
+		if (spriteInfo->HFlip)
 		{
 			u16 i;
 			x = (sprSize.x>>1) - x -1;
@@ -1288,15 +1285,21 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			}
 			continue;
 		}
+
 		for(j = 0; j < lg; ++j, ++x)
 		{
-			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];	
 			RENDERS_C((c&0xF),)
 			++sprX;
 			RENDERS_C((c>>4),)
 			++sprX;
 		}
 	}
+
+
+
+
+
 }
 
 void Screen_Init(void) {

@@ -72,22 +72,24 @@ typedef struct
 {
 // found here : http://www.bottledlight.com/ds/index.php/Video/Sprites
 // attr0
-	u16 Y:8;
-	u16 RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
-	u16 Mode:2;     // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
-	u16 Mosaic:1;   // (1: Enabled)
-	u16 Depth:1;    // (0: 16, 1: 256)
-	u16 Shape:2;    // (00: Square, 01: Wide, 10: Tall, 11: Illegal)
+	unsigned Y:8;
+	unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
+	unsigned Mode:2;     // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
+	unsigned Mosaic:1;   // (1: Enabled)
+	unsigned Depth:1;    // (0: 16, 1: 256)
+	unsigned Shape:2;    // (00: Square, 01: Wide, 10: Tall, 11: Illegal)
 // attr1
-	u16 X:9;
-	u16 RotScalIndex:5; // Rot/scale matrix index
-	u16 Size:2;
+	unsigned X:9;
+	unsigned RotScalIndex:3; // Rot/scale matrix index 
+	unsigned HFlip:1;
+	unsigned VFlip:1;
+	unsigned Size:2;
 // attr2
-	u16 TileIndex:10;
-	u16 Priority:2;
-	u16 PaletteIndex:4;
+	unsigned TileIndex:10;
+	unsigned Priority:2;
+	unsigned PaletteIndex:4;
 // attr3
-	u16 attr3;
+	unsigned attr3:16;
 } _OAM_;
 
 typedef struct
