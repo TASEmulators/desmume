@@ -54,7 +54,7 @@ extern "C" {
 #define DISPCNT_SPRITEENABLE(val)			(((val) >> 12) & 1)
 #define DISPCNT_MODE(val)					((val) & 7)
 /* display mode: gpu0: (val>>16) & 3, gpu1: (val>>16) & 1 */
-#define DISPCNT_DISPLAY_MODE(val,num)		(((val) >> 16) & ((((num)+1) * 2)-1))
+#define DISPCNT_DISPLAY_MODE(val,num)		(((val) >> 16) & ((num)?1:3))
 #define DISPCNT_VRAMBLOCK(val)				(((val) >> 18) & 3)
 #define DISPCNT_TILEOBJ1D_BOUNDARY(val)		(((val) >> 20) & 3)
 #define DISPCNT_BMPOBJ1D_BOUNDARY(val)		(((val) >> 22) & 1)
