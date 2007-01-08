@@ -1184,6 +1184,12 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case REG_DISPB_BLDY:
 				GPU_setBLDY(SubScreen.gpu,val) ;
 				break ;
+			case REG_DISPA_MOSAIC:
+				GPU_setMOSAIC(MainScreen.gpu,val) ;
+				break ;
+			case REG_DISPB_MOSAIC:
+				GPU_setMOSAIC(SubScreen.gpu,val) ;
+				break ;
 			case REG_IME :
 				MMU.reg_IME[proc] = val&1;
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x208, val);
@@ -2095,13 +2101,14 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	}
 	
 	if((!(MMU.DMACrt[proc][num]&(1<<31)))&&(!(MMU.DMACrt[proc][num]&(1<<25))))
-	{
+	{       /* not enabled and not to be repeated */
 	 MMU.DMAStartTime[proc][num] = 0;
 	 MMU.DMACycle[proc][num] = 0;
 	 //MMU.DMAing[proc][num] = FALSE;
 	 return;
 	}
 	
+		/* word count */
         taille = (MMU.DMACrt[proc][num]&0xFFFF);
 	
 	if(MMU.DMAStartTime[proc][num] == 5) taille *= 0x80;
@@ -2116,11 +2123,11 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	
 	switch((MMU.DMACrt[proc][num]>>26)&1)
 	{
-	 case 1 :
+	 case 1 :           /* 32 bit DMA transfers */
 	 switch(((MMU.DMACrt[proc][num]>>21)&0xF))
 	 {
 		  u32 i;
-		 case 0 :
+		 case 0 :       /* dst and src increment */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
@@ -2128,7 +2135,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			  src += 4;
 		  }
 		  break;		  
-		 case 1 :
+		 case 1 :       /* dst decrement, src increment */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
@@ -2136,14 +2143,14 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			  src += 4;
 		  }
 		  break;
-		 case 2 :
+		 case 2 :       /* dst fixed, src increment */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
 			  src += 4;
 		  }
 		  break;
-		 case 3 :
+		 case 3 :       /*dst increment/reload, src increment */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
@@ -2151,7 +2158,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			  src += 4;
 		  }
 		  break;
-		 case 4 :
+		 case 4 :       /* dst increment, src decrement */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
@@ -2159,7 +2166,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			  src -= 4;
 		  }
 		  break;
-		 case 5 :
+		 case 5 :       /* dst decrement, src decrement */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
@@ -2167,14 +2174,14 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			  src -= 4;
 		  }
 		  break;
-		 case 6 :
+		 case 6 :       /* dst fixed, src decrement */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
 			  src -= 4;
 		  }
 		  break;
-		 case 7 :
+		 case 7 :       /* dst increment/reload, src decrement */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
@@ -2182,38 +2189,38 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			  src -= 4;
 		  }
 		  break;
-		 case 8 :
+		 case 8 :       /* dst increment, src fixed */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
 			  dst += 4;
 		  }
 		  break;
-		 case 9 :
+		 case 9 :       /* dst decrement, src fixed */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
 			  dst -= 4;
 		  }
 		  break;
-		 case 10 :
+		 case 10 :      /* dst fixed, src fixed */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
 		  }
 		  break;
-		 case 11 :
+		 case 11 :      /* dst increment/reload, src fixed */
 		  for(i = 0; i < taille; ++i)
 		  {
 			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
 			  dst += 4;
 		  }
 		  break;
-		 default :
+		 default :      /* reserved */
 			break;
 	 }
 	 break;
-	 case 0 :
+	 case 0 :   /* 16 bit transfers */
 	 switch(((MMU.DMACrt[proc][num]>>21)&0xF))
 	 {
 		  u32 i;
