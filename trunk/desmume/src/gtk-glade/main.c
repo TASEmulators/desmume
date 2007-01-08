@@ -21,6 +21,23 @@ NULL
 
 gint Keypad_Config[DESMUME_NB_KEYS];
 
+        const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
+          { 1,  // A
+            0,  // B
+            5,  // select
+            8,  // start
+            20, // Right -- Start cheating abit...
+            21, // Left
+            22, // Up
+            23, // Down  -- End of cheating.
+            7,  // R
+            6,  // L
+            3,  // Y
+            4,  // X
+            -1, // DEBUG
+            -1  // BOOST
+          };
+
 const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 {
 	"KEY_A",
@@ -128,20 +145,43 @@ int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgumen
 int main(int argc, char *argv[]) {
 	
 	const char *commandLine_File = NULL;
-	
+	int nbJoysticks;
+        int i;
+
 	if(argc == 2) commandLine_File = argv[1];
 
 #ifdef DEBUG
         LogStart();
 #endif
 	init_keyvals();
+        
+	memcpy(Joypad_Config, Default_Joypad_Config, sizeof(Joypad_Config));
 
 	gtk_init(&argc, &argv);
-	SDL_Init(SDL_INIT_VIDEO);
+	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) == -1)
+          {
+            fprintf(stderr, "Error trying to initialize SDL: %s\n",
+                    SDL_GetError());
+            return 1;
+          }
 	desmume_init();
-	
+
 	CONFIG_FILE = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
 	Read_ConfigFile();
+
+        /* Initialize joysticks */
+        nbJoysticks = SDL_NumJoysticks();
+        printf("Nbr of joysticks: %d\n\n", nbJoysticks);
+
+        for (i = 0; i < nbJoysticks; i++)
+          {
+            SDL_Joystick * joy = SDL_JoystickOpen(i);
+            printf("Joystick %s\n", i, SDL_JoystickName(i));
+            printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
+            printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
+            printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
+            printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
+          }
 
 	/* load the interface */
 	xml           = glade_xml_new("glade/DeSmuMe.glade", NULL, NULL);

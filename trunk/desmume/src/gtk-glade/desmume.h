@@ -24,6 +24,7 @@
 #define DESMUME_KEY_BOOST		14
 
 #include "globals.h"
+#include "joysdl.h"
 
 extern void desmume_init();
 extern void desmume_free();
