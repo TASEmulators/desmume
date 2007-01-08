@@ -66,6 +66,7 @@ BOOL desmume_running()
 
 void desmume_cycle()
 {
+	process_joy_events();
 	desmume_last_cycle = NDS_exec((560190 << 1) - desmume_last_cycle, FALSE);
         SPU_Emulate();
 }
