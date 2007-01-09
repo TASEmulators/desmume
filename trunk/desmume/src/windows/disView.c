@@ -440,10 +440,12 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         
         if((win->mode==1) || ((win->mode==0) && (win->cpu->CPSR.bits.T == 0)))
         {
+             u32 i;
+             u32 adr;
+
              if (win->autoup)
                   win->curr_ligne = (win->cpu->instruct_adr >> 2) - (win->curr_ligne % nbligne) ;
-             u32 i;
-             u32 adr = win->curr_ligne*4;
+             adr = win->curr_ligne*4;
         
              for(i = 0; i < nbligne; ++i)
              {
@@ -472,11 +474,12 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         } 
         else
         {    /* thumb display */
+             u32 i;
+             u32 adr;
              if (win->autoup)
                   win->curr_ligne = (win->cpu->instruct_adr >> 1) - (win->curr_ligne % nbligne) ;
              
-             u32 i;
-             u32 adr = win->curr_ligne*2;
+             adr = win->curr_ligne*2;
         
              for(i = 0; i < nbligne; ++i)
              {
