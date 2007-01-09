@@ -267,14 +267,18 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      if(!gpu->nbBGActif)
      {
-          gpu->spriteRender(gpu, l, dst, sprPrio);
-          return;
+		 if (gpu->sprEnable)
+		 {
+			gpu->spriteRender(gpu, l, dst, sprPrio);
+		 }
+
+		return;
      }
      
-     gpu->spriteRender(gpu, l, spr, sprPrio);
+	 if (gpu->sprEnable)
+	 {
+	     gpu->spriteRender(gpu, l, spr, sprPrio);
      
-     if (gpu->sprEnable)
-     {
         if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
         {
            for(i16 = 0; i16 < 128; ++i16) {

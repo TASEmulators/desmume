@@ -126,8 +126,8 @@ void GPU_DeInit(GPU * gpu)
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
+	_DISPCNT_ * cnt = (_DISPCNT_*)&p;
 	gpu->prop = p;
-	_DISPCNT_ * cnt = &p;
 
 //        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
         gpu->dispMode = cnt->ExMode & ((gpu->lcd)?1:3);
@@ -559,6 +559,10 @@ void GPU_setMOSAIC(GPU *gpu, u16 v)
 	gpu->MOSAIC = v ;
 }
 
+#ifndef min
+#define min(a,b) (((a)<(b))?(a):(b))
+#endif
+
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color) {
 	if (gpu->BLDCNT & (1 << bgnum))   /* the bg to draw has a special color effect */
 	{
@@ -569,26 +573,27 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 				break ;
 			case 0x40:              /* alpha blending */
 				{
-					#define min(a,b) (((a)<(b))?(a):(b))
 					//if (!(color & 0x8000)) return ;
 					/* we cant do alpha on an invisible pixel */
 
-					u16 sourceFraction = (gpu->BLDALPHA & 0x1F) ;
+					u16 sourceFraction = (gpu->BLDALPHA & 0x1F),
+						sourceR, sourceG, sourceB,targetFraction;
 					if (!sourceFraction) return ;
 					/* no fraction of this BG to be showed, so don't do anything */
-					u16 sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
+					sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
 					/* weighted component from color to draw */
-					u16 sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
-					u16 sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
-					u16 targetFraction = (gpu->BLDALPHA & 0x1F00) >> 8 ;
+					sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
+					sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
+					targetFraction = (gpu->BLDALPHA & 0x1F00) >> 8 ;
 					if (targetFraction) {
 					/* when we dont take any fraction from existing pixel, we can just draw */
+						u16 targetR, targetG, targetB;
 						color = T2ReadWord(dst, passing) ;
 					//if (color & 0x8000) {
 						/* the existing pixel is not invisible */
-							u16 targetR = ((color & 0x1F) * targetFraction) >> 4 ;  /* weighted component from color we draw on */
-							u16 targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
-							u16 targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
+							targetR = ((color & 0x1F) * targetFraction) >> 4 ;  /* weighted component from color we draw on */
+							targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
+							targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
 							sourceR = min(0x1F,targetR+sourceR) ;                   /* limit combined components to 31 max */
 							sourceG = min(0x1F,targetG+sourceG) ;
 							sourceB = min(0x1F,targetB+sourceB) ;
@@ -693,9 +698,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 				if((mapinfovalue) & 0x400)
 				{
-					line += 3 - ((xoff&7)>>1);
 					u8 pt = 0 ;
 					u8 save = 0;
+
+					line += 3 - ((xoff&7)>>1);
 					for(; x < xfin; ) {
 // XXX
 						if ((pt % mw) == 0) {           /* only update the color we draw every n mw pixels */
@@ -718,9 +724,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 						line--; pt++ ;
 					}
 				} else {
-					line += ((xoff&7)>>1);
 					u8 pt = 0 ;
 					u8 save = 0;
+					line += ((xoff&7)>>1);
+					
 					for(; x < xfin; ) {
 // XXX
 						if (!(pt % mw)) {               /* only update the color we draw every n mw pixels */
@@ -949,7 +956,8 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 	
 	u8 * tile = (u8 *)gpu->BG_tile_ram[num];
 	u8 * dst = DST;
-	u16 mapinfo;
+	u8 * map;
+	u16 mapinfo, i;
 	u8 coul;
 	
 	switch(((bgprop>>2)&1)|((bgprop>>6)&2))
@@ -961,7 +969,6 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 		if(!pal) return;
 
 #define LOOP(c) \
-	u16 i; \
 	for(i = 0; i < LG; ++i) { \
 		auxX = x>>8; auxY = y>>8; \
 		if(bgprop&(1<<13)) { \
@@ -970,7 +977,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht)) c \
 		dst += 2; x += dx; y += dy; \
 	} 
-		u8 * map = gpu->BG_map_ram[num];
+		map = gpu->BG_map_ram[num];
 		LOOP(
 		{
 			u16 x1;
@@ -1088,8 +1095,7 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
-	if (!gpu->sprEnable) return ;
-	_OAM_ * spriteInfo = gpu->oam + (nbShow-1);// + 127;
+	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
 	u8 block = gpu->sprBlock;
 	u16 i;
 	
@@ -1253,8 +1259,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
-	if (!gpu->sprEnable) return ;
-	_OAM_ * spriteInfo = gpu->oam + (nbShow-1);// + 127;
+	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
 	u16 i;
 	
 	for(i = 0; i<nbShow; ++i, --spriteInfo)
