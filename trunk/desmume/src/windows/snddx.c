@@ -18,6 +18,8 @@
 */
 
 
+
+
 #include <dsound.h>
 #ifdef __MINGW32__
 // I have to do this because for some reason because the dxerr8.h header is fubared
@@ -62,6 +64,7 @@ static LONG soundvolume;
 static int issoundmuted;
 
 //////////////////////////////////////////////////////////////////////////////
+
 
 int SNDDXInit(int buffersize)
 {
@@ -162,6 +165,7 @@ int SNDDXInit(int buffersize)
 
 //////////////////////////////////////////////////////////////////////////////
 
+
 void SNDDXDeInit()
 {
    DWORD status=0;
@@ -192,6 +196,7 @@ void SNDDXDeInit()
 
 //////////////////////////////////////////////////////////////////////////////
 
+
 void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 {
    LPVOID buffer1;
@@ -218,6 +223,7 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
 //////////////////////////////////////////////////////////////////////////////
 
+
 u32 SNDDXGetAudioSpace()
 {
    DWORD playcursor, writecursor;
@@ -239,6 +245,7 @@ u32 SNDDXGetAudioSpace()
 
 //////////////////////////////////////////////////////////////////////////////
 
+
 void SNDDXMuteAudio()
 {
    issoundmuted = 1;
@@ -246,6 +253,7 @@ void SNDDXMuteAudio()
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
 
 void SNDDXUnMuteAudio()
 {
@@ -255,12 +263,15 @@ void SNDDXUnMuteAudio()
 
 //////////////////////////////////////////////////////////////////////////////
 
+
 void SNDDXSetVolume(int volume)
 {
+	if (!lpDSB2) return ;     /* might happen when changing sounddevice on the fly, caused a gpf */
    soundvolume = (((LONG)volume) - 100) * 100;
    if (!issoundmuted)
       IDirectSoundBuffer8_SetVolume (lpDSB2, soundvolume);
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
 
