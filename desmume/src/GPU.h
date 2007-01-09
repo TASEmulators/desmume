@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include "mem.h"
 #include "registers.h"
+#include "FIFO.h"
 
 #ifdef __cplusplus
 extern "C" {
