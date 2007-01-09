@@ -27,6 +27,7 @@
 #include "ARM9.h"
 #include <stdio.h>
 #include "mem.h"
+#include "registers.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -278,7 +279,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      u8 i8;
      u16 i16;
      u32 c;
-
+	
      // This could almost be changed to use function pointers
      switch (gpu->dispMode)
      {
@@ -304,7 +305,14 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
            }
            return;
         }
-        case 3: // Display from Main RAM(FIX ME)
+        case 3: 
+		// it is just a wild wild guess (WWG)
+		// I dont need a game using this mode ...
+		for (i=0; i<256;) {
+			c = FIFOValue(REG_DISPA_DISPMMEMFIFO);
+			T2WriteWord(dst, i << 1, c&0xFFFF); i++;
+			T2WriteWord(dst, i << 1, c>>16); i++;
+		}
            return;
      }
      

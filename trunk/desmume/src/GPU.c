@@ -143,6 +143,19 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			gpu->vramBlock = cnt->VRAM_Block;
 			return;
 		case 3: // Display from Main RAM
+			{
+				/* would need a test to see if it works */
+// 				u16 x,y; u32 c;
+// 				u16 * dst = GPU_screen;
+// 				for (y=0; y<192; y++)
+// 				for (x=0; x<256; x+=2) {
+// 					c = FIFOValue(REG_DISPA_DISPMMEMFIFO);
+// 					T2WriteWord(dst, 0, c&0xFFFF); dst++;
+// 					T2WriteWord(dst, 0, c>>16); dst++;
+// 				}
+
+			}
+
 			LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
 			return;
 	}
