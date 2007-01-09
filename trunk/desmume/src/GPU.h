@@ -230,6 +230,7 @@ struct _GPU
 	u16 BLDALPHA ;
 	u16 BLDY ;
 	u16 MOSAIC ;
+	u16 MASTER_BRIGHT;
 
 	u16 WINDOW_XDIM[2] ;
 	u16 WINDOW_YDIM[2] ;
@@ -359,6 +360,71 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		         T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
           }
      }
+
+	 // Apply final brightness adjust (MASTER_BRIGHT)
+	 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
+	 switch ((gpu->MASTER_BRIGHT>>14)&3)
+	 {
+		// Disabled
+		case 0:
+			break;
+
+		// Bright up
+		case 1:
+		{
+			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
+			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
+
+			for(i16 = 0; i16 < 256; ++i16)
+			{
+				unsigned int	dstColor = T1ReadWord(dst, i16 << 1);
+				unsigned int	r = (dstColor>>10)&31,		// Get the components, 5bit each
+								g = (dstColor>> 5)&31,
+								b = (dstColor    )&31;				
+
+				r = (r + (r*masterBrightFactor)/16)&31;		// Bright up and clamp to 5bit
+				g = (g + (g*masterBrightFactor)/16)&31;
+				b = (b + (b*masterBrightFactor)/16)&31;
+
+				T2WriteWord (dst, i16 << 1, (r<<10) | (g<<5) | b);
+			}
+
+			break;
+		}
+
+		// Bright down
+		case 2:
+		{
+			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
+			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
+
+			for(i16 = 0; i16 < 256; ++i16)
+			{
+				unsigned int	dstColor = T1ReadWord(dst, i16 << 1);
+				unsigned int	r = (dstColor>>10)&31,		// Get the components, 5bit each
+								g = (dstColor>> 5)&31,
+								b = (dstColor    )&31;
+
+				/*
+					NOTE: gbatek (in the reference above) seems to expect 6bit values 
+							per component, but as desmume works with 5bit per component, 
+							we use 31 as top, instead of 63. Testing it on a few games, 
+							using 63 seems to give severe color wraping, and 31 works
+							nicely, so for now we'll just that, until proven wrong.
+				*/
+				r = (r + ((31-r)*masterBrightFactor)/16)&31;	// Bright down and clamp to 5bit
+				g = (g + ((31-g)*masterBrightFactor)/16)&31;
+				b = (b + ((31-b)*masterBrightFactor)/16)&31;
+
+				T2WriteWord (dst, i16 << 1, (r<<10) | (g<<5) | b);
+			}
+			break;
+		}
+
+		// Reserved
+		case 3:
+			break;
+	 }
 }
  
 void GPU_setVideoProp(GPU *, u32 p);
@@ -389,6 +455,8 @@ void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num) ;
 void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num) ;
 void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
 void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
+
+void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v);
 
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);
