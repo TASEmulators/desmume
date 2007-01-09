@@ -121,6 +121,28 @@ typedef struct
 	unsigned attr3:16;
 } _OAM_;
 
+typedef union windowcnt_t
+{
+	struct
+	{
+/* 0*/  unsigned WIN0_BG0_Enable:1;
+/* 1*/  unsigned WIN0_BG1_Enable:1;
+/* 2*/  unsigned WIN0_BG2_Enable:1;
+/* 3*/  unsigned WIN0_BG3_Enable:1;
+/* 4*/  unsigned WIN0_OBJ_Enabble:1;
+/* 5*/  unsigned WIN0_Effect_Enable:1;
+/* 6*/  unsigned :2;
+/* 8*/  unsigned WIN1_BG0_Enable:1;
+/* 9*/  unsigned WIN1_BG1_Enable:1;
+/*10*/  unsigned WIN1_BG2_Enable:1;
+/*11*/  unsigned WIN1_BG3_Enable:1;
+/*12*/  unsigned WIN1_OBJ_Enabble:1;
+/*13*/  unsigned WIN1_Effect_Enable:1;
+/*14*/  unsigned :2;
+	} bitfield ;
+	unsigned short val ;
+} windowcnt_t ;
+
 typedef struct
 {
      u16 attr0;
@@ -185,7 +207,12 @@ struct _GPU
 	u16 BLDALPHA ;
 	u16 BLDY ;
 	u16 MOSAIC ;
-	
+
+	u16 WINDOW_XDIM[2] ;
+	u16 WINDOW_YDIM[2] ;
+	windowcnt_t WINDOW_INCNT ;
+	windowcnt_t WINDOW_OUTCNT ;
+
 	void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 
@@ -327,6 +354,11 @@ void GPU_setBLDCNT(GPU *gpu, u16 v) ;
 void GPU_setBLDALPHA(GPU *gpu, u16 v) ;
 void GPU_setBLDY(GPU *gpu, u16 v) ;
 void GPU_setMOSAIC(GPU *gpu, u16 v) ;
+
+void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num) ;
+void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num) ;
+void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
+void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
 
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);

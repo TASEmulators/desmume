@@ -557,6 +557,26 @@ void GPU_setMOSAIC(GPU *gpu, u16 v)
 	gpu->MOSAIC = v ;
 }
 
+void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num)
+{
+	gpu->WINDOW_XDIM[num] = v ;
+}
+
+void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num)
+{
+	gpu->WINDOW_YDIM[num] = v ;
+}
+
+void GPU_setWINDOW_INCNT(GPU *gpu, u16 v)
+{
+	gpu->WINDOW_INCNT.val = v ;
+}
+
+void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v)
+{
+	gpu->WINDOW_OUTCNT.val = v ;
+}
+
 #ifndef min
 #define min(a,b) (((a)<(b))?(a):(b))
 #endif
@@ -702,7 +722,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 					line += 3 - ((xoff&7)>>1);
 					for(; x < xfin; ) {
 // XXX
-						if ((pt % mw) == 0) {           /* only update the color we draw every n mw pixels */
+						if ((pt % mw) == 0) {           /* only update the color we draw every mw pixels */
 							if (pt & 1) {
 								save = (*line) & 0xF ;
 							} else {
@@ -725,7 +745,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 					u8 pt = 0 ;
 					u8 save = 0;
 					line += ((xoff&7)>>1);
-					
+
 					for(; x < xfin; ) {
 // XXX
 						if (!(pt % mw)) {               /* only update the color we draw every n mw pixels */
