@@ -126,7 +126,8 @@ void GPU_DeInit(GPU * gpu)
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
-	gpu->dispCnt = (_DISPCNT_)p;
+	*((u32*) &gpu->dispCnt) = p;
+	gpu->bgXenabled = (p >> 8); // we want bits BG0_Enable..WinOBJ_Enable
 	_DISPCNT_ * cnt = &gpu->dispCnt;
 
 //        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
@@ -392,8 +393,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	else
 	{
                 gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + (gpu->dispCnt->CharacBase_Block * ADDRESS_STEP_64kB ;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + gpu->dispCnt->ScreenBase_Block * ADDRESS_STEP_64kB;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + (gpu->dispCnt).CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + (gpu->dispCnt).ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
 
      /*if(!(p&(1<<7)))
@@ -415,8 +416,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 		/* we got a naming problem here, dispMode actual is _DISPCNT_.ExMode */
         // gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
         // gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
-        gpu->BGSize[num][0] = sizeTab[mode2type[(gpu->dispCnt->BG_Mode][num]][BGCNT_SCREENSIZE(p)][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[(gpu->dispCnt->BG_Mode][num]][BGCNT_SCREENSIZE(p)][1];
+        gpu->BGSize[num][0] = sizeTab[mode2type[(gpu->dispCnt).BG_Mode][num]][BGCNT_SCREENSIZE(p)][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[(gpu->dispCnt).BG_Mode][num]][BGCNT_SCREENSIZE(p)][1];
 
 }
 
@@ -441,7 +442,7 @@ void GPU_remove(GPU * gpu, u8 num)
 
 void GPU_addBack(GPU * gpu, u8 num)
 {
-     if((!gpu->BGIndex[num])&& BGxENABLED(gpu->dispCnt,num))
+     if((!gpu->BGIndex[num])&& BGxENABLED(gpu,num))
      {
           u8 i = 0;
 	  s8 j;
@@ -791,7 +792,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	if(!(gpu->dispCnt->ExBGxPalette_Enable)  /* color: no extended palette */
+	if(!(gpu->dispCnt).ExBGxPalette_Enable)  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
@@ -1178,7 +1179,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			u16 i;
 			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
-			if(gpu->dispCnt->ExOBJPalette_Enable)
+			if ((gpu->dispCnt).ExOBJPalette_Enable)
 				pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
