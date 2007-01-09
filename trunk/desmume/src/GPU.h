@@ -81,7 +81,7 @@ typedef struct
 /*31*/	unsigned ExOBJPalette_Enable:1;	// A+B: 0=disable, 1=Enable OBJ extended Palette
 } _DISPCNT_;
 
-#define BGxENABLED(cnt,num)	((num<8)?(cnt>>8)&num:0)
+#define BGxENABLED(gpu,num)	((num<8)? (gpu->bgXenabled & num):0)
 
 /* these defines no more useful, do we keep them ? */
 #define DISPCNT_OBJMAPING1D(val)	(((val) >> 4) & 1)
@@ -149,6 +149,7 @@ typedef struct _GPU GPU;
 struct _GPU
 {
 	_DISPCNT_ dispCnt;
+	int bgXenabled;
 
 	u16 BGProp[4];
 			
@@ -301,7 +302,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
      {
-          modeRender[gpu->dispCnt->BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+          modeRender[gpu->dispCnt.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
           bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
           if (gpu->sprEnable)
           {
