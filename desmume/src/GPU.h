@@ -86,9 +86,31 @@ typedef union
 	struct _DISPCNT bitfield;
 	u32 integer;
 } DISPCNT;
-
 #define BGxENABLED(cnt,num)	((num<8)? ((cnt.integer>>8) & num):0)
 
+
+struct _BGxCNT 
+{
+/*0*/	unsigned Priority:2;		// 0..3=high..low
+/*2*/	unsigned CharacBase_Block:4;	// individual character base offset (n*16KB)
+/*6*/	unsigned Mosaic_Enable:1;	// 0=disable, 1=Enable mosaic
+/*7*/	unsigned Palette_256:1;		// 0=16x16, 1=1*256 palette
+/*8*/	unsigned ScreenBase_Block:5;	// individual screen base offset (text n*2KB, BMP n*16KB)
+/*13*/	unsigned PaletteSet_Wrap:1;	// BG0 extended palette set 0=set0, 1=set2
+					// BG1 extended palette set 0=set1, 1=set3
+					// BG2 overflow area wraparound 0=off, 1=wrap
+					// BG3 overflow area wraparound 0=off, 1=wrap
+/*14*/	unsigned ScreenSize:1;		// text    : 256x256 512x256 256x512 512x512
+					// x/rot/s : 128x128 256x256 512x512 1024x1024
+					// bmp     : 128x128 256x256 512x256 512x512
+					// large   : 512x1024 1024x512 - -
+};
+
+typedef union 
+{
+	struct _BGxCNT bitfield;
+	u16 integer;
+} BGxCNT;
 
 #define BGCNT_PRIORITY(val)		((val) & 3)
 #define BGCNT_CHARBASEBLOCK(val)	(((val) >> 2) & 0x0F)
@@ -162,7 +184,7 @@ typedef struct _GPU GPU;
 struct _GPU
 {
 	DISPCNT dispCnt;
-	int bgXenabled;
+	BGxCNT  bgCnt[4];
 
 	u16 BGProp[4];
 			

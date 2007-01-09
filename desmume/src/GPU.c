@@ -293,30 +293,24 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
 	u8 index = gpu->BGIndex[num];
-	
+	struct _BGxCNT * cnt = &(gpu->bgCnt[num].bitfield), *cnt2;
+	int lastPriority = cnt->Priority;
+	gpu->bgCnt[num].integer = p;
+
 	if((gpu->nbBGActif != 0) && (index != 0))
 	{
 		index--;
-                if(BGCNT_PRIORITY(gpu->BGProp[num]) < BGCNT_PRIORITY(p))
+		// do we have to re-order the layers ?
+                if(lastPriority < cnt->Priority)
 		{
-#ifdef DEBUG_TRI
-               sprintf(logbuf, "INF NEW bg %d prio %d %d", num, p&3, index);
-               log::ajouter(logbuf);
-               for(u8 i = 0; i < gpu->nbBGActif; ++i)
-               {
-                    sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
-                    log::ajouter(logbuf);
-               }
-#endif
-			u8 i = 0;
-                        for(; (i < index) && (((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]))>(BGCNT_PRIORITY(p))) || (((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]))==(BGCNT_PRIORITY(p)))&&(gpu->ordre[i]>num))); ++i);  /* TODO: commenting and understanding */
+			// check layers before
+			u8 i, ordre;
+                        for( i= 0; i<index; i++) {
+				ordre = gpu->ordre[i];
+				cnt2 = &(gpu->bgCnt[ordre].bitfield);
+				if ((cnt2->Priority >= cnt->Priority) || (ordre > num)) break;
+			}
                
-#ifdef DEBUG_TRI
-					
-               sprintf(logbuf, "new i %d old %d", i, index);
-               log::ajouter(logbuf);
-#endif
-
 			if(i != index)
 			{
 				s8 j;
@@ -328,82 +322,47 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 				gpu->ordre[i] = num;
 				gpu->BGIndex[num] = i + 1;
 			}
-#ifdef DEBUG_TRI
-               log::ajouter("");
-               for(u8 i = 0; i < gpu->nbBGActif; ++i)
-               {
-                    sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
-                    log::ajouter(logbuf);
-               }
-               log::ajouter("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-#endif
-		}
-		else
-		{
-			if(BGCNT_PRIORITY(gpu->BGProp[num])>BGCNT_PRIORITY(p))
+		} else if(lastPriority > cnt->Priority) {
+
+			// check layers after
+			u8 i, ordre;
+                        for( i= gpu->nbBGActif-1; i>index; i--) {
+				ordre = gpu->ordre[i];
+				cnt2 = &(gpu->bgCnt[ordre].bitfield);
+				if ((cnt2->Priority >= cnt->Priority) && (ordre < num)) break;
+			}
+
+			if(i!=index)
 			{
-#ifdef DEBUG_TRI
-               sprintf(logbuf, "SUP NEW bg %d prio %d", num, p&3);
-               log::ajouter(logbuf);
-               for(u8 i = 0; i < gpu->nbBGActif; ++i)
-               {
-                    sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
-                    log::ajouter(logbuf);
-               }
-#endif
-				u8 i = gpu->nbBGActif-1;
-				for(; (i>index) && ((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]])<BGCNT_PRIORITY(p)) ||  ((BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]])==BGCNT_PRIORITY(p))&&(gpu->ordre[i]<num))); --i);
-#ifdef DEBUG_TRI
-               sprintf(logbuf, "new i %d old %d", i, index);
-               log::ajouter(logbuf);
-#endif
-				if(i!=index)
+				s8 j;
+				for(j = index; j<i; ++j)
 				{
-					s8 j;
-					for(j = index; j<i; ++j)
-					{
-						gpu->ordre[j] = gpu->ordre[j+1];
-						gpu->BGIndex[gpu->ordre[j]]--;
-					}
-					gpu->ordre[i] = num;
-					gpu->BGIndex[num] = i + 1;
+					gpu->ordre[j] = gpu->ordre[j+1];
+					gpu->BGIndex[gpu->ordre[j]]--;
 				}
-#ifdef DEBUG_TRI
-               log::ajouter("");
-               for(u8 i = 0; i < gpu->nbBGActif; ++i)
-               {
-                    sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
-                    log::ajouter(logbuf);
-               }
-               log::ajouter("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-#endif
+				gpu->ordre[i] = num;
+				gpu->BGIndex[num] = i + 1;
 			}
 		}
 	}
-		
+	
+	gpu->bgCnt[num].integer = p;
 	gpu->BGProp[num] = p;
 	
-	if(gpu->core == GPU_SUB)
-	{
-                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_BBG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB;
+     	if(gpu->core == GPU_SUB) {
+		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
+		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
+		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_BBG;
+	} else {
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bitfield.CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
+                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bitfield.ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
-	else
-	{
-                gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + gpu->dispCnt.bitfield.CharacBase_Block * ADDRESS_STEP_64kB ;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + gpu->dispCnt.bitfield.ScreenBase_Block * ADDRESS_STEP_64kB;
-	}
+	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
+	gpu->BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
+	gpu->BG_map_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
 
-     /*if(!(p&(1<<7)))
-          BGExtPalSlot[num] = 0;
-     else
-          if(!(prop&(1<<30)))
-               BGExtPalSlot[num] = 0;
-          else*/
-
-    gpu->BGExtPalSlot[num] = BGCNT_EXTPALSLOT(p) * 2 + num ;
+    gpu->BGExtPalSlot[num] = cnt->PaletteSet_Wrap * 2 + num ;
                   
      /*if(!(prop&(3<<16)))
      {
@@ -412,11 +371,9 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           return;
      }*/
 
-		/* we got a naming problem here, dispMode actual is _DISPCNT_.ExMode */
-        // gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
-        // gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
-        gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispCnt.bitfield.BG_Mode][num]][BGCNT_SCREENSIZE(p)][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispCnt.bitfield.BG_Mode][num]][BGCNT_SCREENSIZE(p)][1];
+	int mode = mode2type[gpu->dispCnt.bitfield.BG_Mode][num];
+        gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
+        gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 
 }
 
