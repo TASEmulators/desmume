@@ -27,6 +27,7 @@
 
 armcp15_t *armcp15_new(armcpu_t * c)
 {
+	int i;
 	armcp15_t *armcp15 = (armcp15_t*)malloc(sizeof(armcp15_t));
 	if(!armcp15) return NULL;
 	
@@ -57,7 +58,6 @@ armcp15_t *armcp15_new(armcpu_t * c)
 	armcp15->processID = 0;
 
     /* preset calculated regionmasks */	
-    int i ;
 	for (i=0;i<8;i++) {
         armcp15->regionWriteMask_USR[i] = 0 ;
         armcp15->regionWriteMask_SYS[i] = 0 ;
@@ -218,8 +218,8 @@ void armcp15_maskPrecalc(armcp15_t *armcp15)
 
 BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access)
 {
-	if (!(armcp15->ctrl & 1)) return TRUE ;        /* protection checking is not enabled */
 	int i ;
+	if (!(armcp15->ctrl & 1)) return TRUE ;        /* protection checking is not enabled */
 	for (i=0;i<8;i++) {
 		switch (access) {
 		case CP15_ACCESS_WRITEUSR:
