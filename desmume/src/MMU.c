@@ -1190,6 +1190,12 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case REG_DISPB_MOSAIC:
 				GPU_setMOSAIC(SubScreen.gpu,val) ;
 				break ;
+			case REG_DISPA_MASTERBRIGHT:
+				GPU_setMASTER_BRIGHT (MainScreen.gpu, val);
+				break;
+			case REG_DISPB_MASTERBRIGHT:
+				GPU_setMASTER_BRIGHT (SubScreen.gpu, val);
+				break;
 			case REG_IME :
 				MMU.reg_IME[proc] = val&1;
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x208, val);

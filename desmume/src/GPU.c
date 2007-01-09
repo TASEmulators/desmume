@@ -126,11 +126,12 @@ void GPU_DeInit(GPU * gpu)
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
-	gpu->dispCnt.integer = p;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bitfield;
 
-//        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
-        gpu->dispMode = cnt->DisplayMode & ((gpu->lcd)?1:3);
+	gpu->dispCnt.integer = p;
+
+//  gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
+    gpu->dispMode = cnt->DisplayMode & ((gpu->lcd)?1:3);
 
 	switch (gpu->dispMode)
 	{
@@ -307,7 +308,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
 	u8 index = gpu->BGIndex[num];
 	struct _BGxCNT * cnt = &(gpu->bgCnt[num].bitfield), *cnt2;
-	int lastPriority = cnt->Priority;
+	int lastPriority = cnt->Priority, mode;
 	gpu->bgCnt[num].integer = p;
 
 	if((gpu->nbBGActif != 0) && (index != 0))
@@ -384,10 +385,9 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           return;
      }*/
 
-	int mode = mode2type[gpu->dispCnt.bitfield.BG_Mode][num];
-        gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
-        gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
-
+	mode = mode2type[gpu->dispCnt.bitfield.BG_Mode][num];
+    gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
+    gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 }
 
 void GPU_remove(GPU * gpu, u8 num)
@@ -545,6 +545,11 @@ void GPU_setWINDOW_INCNT(GPU *gpu, u16 v)
 void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v)
 {
 	gpu->WINDOW_OUTCNT.val = v ;
+}
+
+void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
+{
+	gpu->MASTER_BRIGHT = v;
 }
 
 #ifndef min
