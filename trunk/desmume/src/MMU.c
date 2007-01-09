@@ -2017,8 +2017,8 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
                                                 LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT));
 					}
 					
-					CARDLOG("%08X : %08X %08X\r\n", adr, val, adresse[proc]);
-                                        val |= 0x00800000;
+					//CARDLOG("%08X : %08X %08X\r\n", adr, val, adresse[proc]);
+                    val |= 0x00800000;
 					
 					if(MMU.dscard[proc].adress == 0)
 					{
@@ -2077,6 +2077,14 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				GPU_setBGProp(SubScreen.gpu, 3, (val>>16));
 				T1WriteLong(ARM9Mem.ARM9_REG, 0x100C, val);
 				return;
+			case REG_DISPA_BLDCNT:
+				GPU_setBLDCNT	(MainScreen.gpu,val&0xffff);
+				GPU_setBLDALPHA (MainScreen.gpu,val>>16);
+				break;
+			case REG_DISPB_BLDCNT:
+				GPU_setBLDCNT	(SubScreen.gpu,val&0xffff);
+				GPU_setBLDALPHA (SubScreen.gpu,val>>16);
+				break;
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;
 			//case 0x21FDFB0 :  if(val==0) execute = FALSE;
 			default :
