@@ -126,26 +126,26 @@ void GPU_DeInit(GPU * gpu)
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
-	_DISPCNT_ * cnt = (_DISPCNT_*)&p;
-	gpu->prop = p;
+	gpu->dispCnt = (_DISPCNT_)p;
+	_DISPCNT_ * cnt = &gpu->dispCnt;
 
 //        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
         gpu->dispMode = cnt->DisplayMode & ((gpu->lcd)?1:3);
 
-        switch (gpu->dispMode)
-        {
-           case 0: // Display Off
-              return;
-           case 1: // Display BG and OBJ layers
-              break;
-           case 2: // Display framebuffer
-//              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
-	gpu->vramBlock = cnt->VRAM_Block;
-              return;
-           case 3: // Display from Main RAM
-              LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
-              return;
-        }
+	switch (gpu->dispMode)
+	{
+		case 0: // Display Off
+			return;
+		case 1: // Display BG and OBJ layers
+			break;
+		case 2: // Display framebuffer
+	//              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
+			gpu->vramBlock = cnt->VRAM_Block;
+			return;
+		case 3: // Display from Main RAM
+			LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
+			return;
+	}
 
 	gpu->nbBGActif = 0;
         if(cnt->OBJ_Tile_1D)
@@ -392,8 +392,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	else
 	{
                 gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + ((_DISPCNT_*)&gpu->prop)->CharacBase_Block * ADDRESS_STEP_64kB ;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + ((_DISPCNT_*)&gpu->prop)->ScreenBase_Block * ADDRESS_STEP_64kB;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + (gpu->dispCnt->CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + gpu->dispCnt->ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
 
      /*if(!(p&(1<<7)))
@@ -415,8 +415,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 		/* we got a naming problem here, dispMode actual is _DISPCNT_.ExMode */
         // gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
         // gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
-        gpu->BGSize[num][0] = sizeTab[mode2type[((_DISPCNT_*)&gpu->prop)->BG_Mode][num]][BGCNT_SCREENSIZE(p)][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[((_DISPCNT_*)&gpu->prop)->BG_Mode][num]][BGCNT_SCREENSIZE(p)][1];
+        gpu->BGSize[num][0] = sizeTab[mode2type[(gpu->dispCnt->BG_Mode][num]][BGCNT_SCREENSIZE(p)][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[(gpu->dispCnt->BG_Mode][num]][BGCNT_SCREENSIZE(p)][1];
 
 }
 
@@ -441,7 +441,7 @@ void GPU_remove(GPU * gpu, u8 num)
 
 void GPU_addBack(GPU * gpu, u8 num)
 {
-     if((!gpu->BGIndex[num])&&(gpu->prop&((1<<8)<<num)))
+     if((!gpu->BGIndex[num])&& BGxENABLED(gpu->dispCnt,num))
      {
           u8 i = 0;
 	  s8 j;
@@ -791,7 +791,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	if(!((_DISPCNT_*)&gpu->prop)->ExBGxPalette_Enable)  /* color: no extended palette */
+	if(!(gpu->dispCnt->ExBGxPalette_Enable)  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
@@ -1178,7 +1178,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			u16 i;
 			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
-			if(((_DISPCNT_*)&gpu->prop)->ExOBJPalette_Enable)
+			if(gpu->dispCnt->ExOBJPalette_Enable)
 				pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;

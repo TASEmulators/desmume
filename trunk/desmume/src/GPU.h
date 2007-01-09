@@ -66,6 +66,11 @@ typedef struct
 /*15*/	unsigned WinOBJ_Enable:1;	// A+B: 0=disable, 1=Enable
 
 /*16*/	unsigned DisplayMode:2;		// A+B: coreA(0..3) coreB(0..1) GBA(Green Swap)
+					// 0=off (white screen)
+					// 1=on (normal BG & OBJ layers)
+					// 2=VRAM display (coreA only)
+					// 3=RAM display (coreA only, DMA transfers)
+					
 /*18*/	unsigned VRAM_Block:2;		// A  : VRAM block (0..3=A..D)
 /*20*/	unsigned OBJ_Tile_1D_Bound:2;	// A+B: 
 /*22*/	unsigned OBJ_BMP_1D_Bound:1;	// A  : 
@@ -76,20 +81,23 @@ typedef struct
 /*31*/	unsigned ExOBJPalette_Enable:1;	// A+B: 0=disable, 1=Enable OBJ extended Palette
 } _DISPCNT_;
 
-#define DISPCNT_OBJMAPING1D(val)			(((val) >> 4) & 1)
-#define DISPCNT_BG0ENABLED(val)				(((val) >> 8) & 1)
-#define DISPCNT_BG1ENABLED(val)				(((val) >> 9) & 1)
-#define DISPCNT_BG2ENABLED(val)				(((val) >> 10) & 1)
-#define DISPCNT_BG3ENABLED(val)				(((val) >> 11) & 1)
-#define DISPCNT_SPRITEENABLE(val)			(((val) >> 12) & 1)
-#define DISPCNT_MODE(val)					((val) & 7)
+#define BGxENABLED(cnt,num)	((num<8)?(cnt>>8)&num:0)
+
+/* these defines no more useful, do we keep them ? */
+#define DISPCNT_OBJMAPING1D(val)	(((val) >> 4) & 1)
+#define DISPCNT_BG0ENABLED(val)		(((val) >> 8) & 1)
+#define DISPCNT_BG1ENABLED(val)		(((val) >> 9) & 1)
+#define DISPCNT_BG2ENABLED(val)		(((val) >> 10) & 1)
+#define DISPCNT_BG3ENABLED(val)		(((val) >> 11) & 1)
+#define DISPCNT_SPRITEENABLE(val)	(((val) >> 12) & 1)
+#define DISPCNT_MODE(val)		((val) & 7)
 /* display mode: gpu0: (val>>16) & 3, gpu1: (val>>16) & 1 */
-#define DISPCNT_DISPLAY_MODE(val,num)		(((val) >> 16) & ((num)?1:3))
-#define DISPCNT_VRAMBLOCK(val)				(((val) >> 18) & 3)
-#define DISPCNT_TILEOBJ1D_BOUNDARY(val)		(((val) >> 20) & 3)
-#define DISPCNT_BMPOBJ1D_BOUNDARY(val)		(((val) >> 22) & 1)
-#define DISPCNT_SCREENBASEBLOCK(val)		(((val) >> 27) & 7)
-#define DISPCNT_USEEXTPAL(val)				(((val) >> 30) & 1)
+#define DISPCNT_DISPLAY_MODE(val,num)	(((val) >> 16) & ((num)?1:3))
+#define DISPCNT_VRAMBLOCK(val)		(((val) >> 18) & 3)
+#define DISPCNT_TILEOBJ1D_BOUNDARY(val)	(((val) >> 20) & 3)
+#define DISPCNT_BMPOBJ1D_BOUNDARY(val)	(((val) >> 22) & 1)
+#define DISPCNT_SCREENBASEBLOCK(val)	(((val) >> 27) & 7)
+#define DISPCNT_USEEXTPAL(val)		(((val) >> 30) & 1)
 
 #define BGCNT_PRIORITY(val)					((val) & 3)
 #define BGCNT_CHARBASEBLOCK(val)			(((val) >> 2) & 0x0F)
@@ -140,56 +148,53 @@ typedef struct _GPU GPU;
 
 struct _GPU
 {
-       //GPU(u8 l);
-       
-       u32 prop;
+	_DISPCNT_ dispCnt;
 
-       u16 BGProp[4];
-		 
+	u16 BGProp[4];
+			
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
 		 
-       u8 *(BG_bmp_ram[4]);
-       u8 *(BG_tile_ram[4]);
-       u8 *(BG_map_ram[4]);
-		 
-       u8 BGExtPalSlot[4];
-       u32 BGSize[4][2];
-       u16 BGSX[4];
-       u16 BGSY[4];
-
-       s32 BGX[4];
-       s32 BGY[4];
-       s16 BGPA[4];
-       s16 BGPB[4];
-       s16 BGPC[4];
-       s16 BGPD[4];
-
-       u8 lcd;
-		u8 core;
-
-       u8 dispMode;
-       u8 vramBlock;
-
-       u8 nbBGActif;
-       u8 BGIndex[4];
-       u8 ordre[4];
-       BOOL dispBG[4];
-       
-       OAM * oam;
-       u8 * sprMem;
-       u8 sprBlock;
-       u8 sprBMPBlock;
-       u8 sprBMPMode;
-		u32 sprEnable ;
-
-       u16 BLDCNT ;
-	   u16 BLDALPHA ;
-	   u16 BLDY ;
-
-	   u16 MOSAIC ;
-       
-       void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
+	u8 *(BG_bmp_ram[4]);
+	u8 *(BG_tile_ram[4]);
+	u8 *(BG_map_ram[4]);
+			
+	u8 BGExtPalSlot[4];
+	u32 BGSize[4][2];
+	u16 BGSX[4];
+	u16 BGSY[4];
+	
+	s32 BGX[4];
+	s32 BGY[4];
+	s16 BGPA[4];
+	s16 BGPB[4];
+	s16 BGPC[4];
+	s16 BGPD[4];
+	
+	u8 lcd;
+	u8 core;
+	
+	u8 dispMode;
+	u8 vramBlock;
+	
+	u8 nbBGActif;
+	u8 BGIndex[4];
+	u8 ordre[4];
+	BOOL dispBG[4];
+	
+	OAM * oam;
+	u8 * sprMem;
+	u8 sprBlock;
+	u8 sprBMPBlock;
+	u8 sprBMPMode;
+	u32 sprEnable ;
+	
+	u16 BLDCNT ;
+	u16 BLDALPHA ;
+	u16 BLDY ;
+	u16 MOSAIC ;
+	
+	void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 
 extern u8 GPU_screen[4*256*192];
@@ -296,7 +301,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
      {
-          modeRender[gpu->prop&7][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+          modeRender[gpu->dispCnt->BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
           bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
           if (gpu->sprEnable)
           {
