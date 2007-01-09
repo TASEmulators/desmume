@@ -46,7 +46,7 @@ extern "C" {
 #define ADDRESS_STEP_32KB       0x08000
 #define ADDRESS_STEP_64kB       0x10000
 
-typedef struct
+struct _DISPCNT
 {
 /*0*/	unsigned BG_Mode:3;		// A+B:
 /*3*/	unsigned BG0_3D:1;		// A  : 0=2D,         1=3D
@@ -79,32 +79,23 @@ typedef struct
 /*27*/	unsigned ScreenBase_Block:3;	// A  : Screen Base (64K step)
 /*30*/	unsigned ExBGxPalette_Enable:1;	// A+B: 0=disable, 1=Enable BG extended Palette
 /*31*/	unsigned ExOBJPalette_Enable:1;	// A+B: 0=disable, 1=Enable OBJ extended Palette
-} _DISPCNT_;
+};
 
-#define BGxENABLED(gpu,num)	((num<8)? (gpu->bgXenabled & num):0)
+typedef union 
+{
+	struct _DISPCNT bitfield;
+	u32 integer;
+} DISPCNT;
 
-/* these defines no more useful, do we keep them ? */
-#define DISPCNT_OBJMAPING1D(val)	(((val) >> 4) & 1)
-#define DISPCNT_BG0ENABLED(val)		(((val) >> 8) & 1)
-#define DISPCNT_BG1ENABLED(val)		(((val) >> 9) & 1)
-#define DISPCNT_BG2ENABLED(val)		(((val) >> 10) & 1)
-#define DISPCNT_BG3ENABLED(val)		(((val) >> 11) & 1)
-#define DISPCNT_SPRITEENABLE(val)	(((val) >> 12) & 1)
-#define DISPCNT_MODE(val)		((val) & 7)
-/* display mode: gpu0: (val>>16) & 3, gpu1: (val>>16) & 1 */
-#define DISPCNT_DISPLAY_MODE(val,num)	(((val) >> 16) & ((num)?1:3))
-#define DISPCNT_VRAMBLOCK(val)		(((val) >> 18) & 3)
-#define DISPCNT_TILEOBJ1D_BOUNDARY(val)	(((val) >> 20) & 3)
-#define DISPCNT_BMPOBJ1D_BOUNDARY(val)	(((val) >> 22) & 1)
-#define DISPCNT_SCREENBASEBLOCK(val)	(((val) >> 27) & 7)
-#define DISPCNT_USEEXTPAL(val)		(((val) >> 30) & 1)
+#define BGxENABLED(cnt,num)	((num<8)? ((cnt.integer>>8) & num):0)
 
-#define BGCNT_PRIORITY(val)					((val) & 3)
-#define BGCNT_CHARBASEBLOCK(val)			(((val) >> 2) & 0x0F)
-#define BGCNT_256COL(val)					(((val) >> 7) & 0x1)
-#define BGCNT_SCREENBASEBLOCK(val)			(((val) >> 8) & 0x1F)
-#define BGCNT_EXTPALSLOT(val)				(((val) >> 13) & 0x1)
-#define BGCNT_SCREENSIZE(val)				(((val) >> 14) & 0x3)
+
+#define BGCNT_PRIORITY(val)		((val) & 3)
+#define BGCNT_CHARBASEBLOCK(val)	(((val) >> 2) & 0x0F)
+#define BGCNT_256COL(val)		(((val) >> 7) & 0x1)
+#define BGCNT_SCREENBASEBLOCK(val)	(((val) >> 8) & 0x1F)
+#define BGCNT_EXTPALSLOT(val)		(((val) >> 13) & 0x1)
+#define BGCNT_SCREENSIZE(val)		(((val) >> 14) & 0x3)
 
 typedef struct
 {
@@ -148,7 +139,7 @@ typedef struct _GPU GPU;
 
 struct _GPU
 {
-	_DISPCNT_ dispCnt;
+	DISPCNT dispCnt;
 	int bgXenabled;
 
 	u16 BGProp[4];
@@ -302,7 +293,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      
      for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
      {
-          modeRender[gpu->dispCnt.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+          modeRender[gpu->dispCnt.bitfield.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
           bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
           if (gpu->sprEnable)
           {
