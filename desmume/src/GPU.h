@@ -48,25 +48,32 @@ extern "C" {
 
 typedef struct
 {
-/*0*/	unsigned DisplayMode:3;
-/*3*/	unsigned BG0_3D:1;
-/*4*/	unsigned SpriteMode:3;
-/*7*/	unsigned ForceBlank:1;
-/*8*/	unsigned BG0_Enable:1;
-/*9*/	unsigned BG1_Enable:1;
-/*10*/	unsigned BG2_Enable:1;
-/*11*/	unsigned BG3_Enable:1;
-/*12*/	unsigned Sprite_Enable:1;
-/*13*/	unsigned Win0_Enable:1;
-/*14*/	unsigned Win1_Enable:1;
-/*15*/	unsigned SpriteWin_Enable:1;
-/*16*/	unsigned ExMode:2; // (00: Framebuffer, 01: GBA-style, 10: Framebuffer-alike, 11: ?)
-/*18*/	unsigned FrameBufferSelect:2; // ExMode 2
-/*20*/	unsigned ExSpriteMode:3;
-/*23*/	unsigned :4;
-/*27*/	unsigned ScreenBaseBlock:3;
-/*30*/	unsigned ExBGPalette_Enable:1;
-/*31*/	unsigned ExSpritePalette_Enable:1;
+/*0*/	unsigned BG_Mode:3;		// A+B:
+/*3*/	unsigned BG0_3D:1;		// A  : 0=2D,         1=3D
+/*4*/	unsigned OBJ_Tile_1D:1;		// A+B: 0=2D (32KB),  1=1D (32..256KB)
+/*5*/	unsigned OBJ_BMP_2D_dim:1;	// A+B: 0=128x512,    1=256x256 pixels
+/*6*/	unsigned OBJ_BMP_mapping:1;	// A+B: 0=2D (128KB), 1=1D (128..256KB)
+
+// 7-15 same as GBA
+/*7*/	unsigned ForceBlank:1;		// A+B: 
+/*8*/	unsigned BG0_Enable:1;		// A+B: 0=disable, 1=Enable
+/*9*/	unsigned BG1_Enable:1;		// A+B: 0=disable, 1=Enable
+/*10*/	unsigned BG2_Enable:1;		// A+B: 0=disable, 1=Enable
+/*11*/	unsigned BG3_Enable:1;		// A+B: 0=disable, 1=Enable
+/*12*/	unsigned OBJ_Enable:1;		// A+B: 0=disable, 1=Enable
+/*13*/	unsigned Win0_Enable:1;		// A+B: 0=disable, 1=Enable
+/*14*/	unsigned Win1_Enable:1;		// A+B: 0=disable, 1=Enable
+/*15*/	unsigned WinOBJ_Enable:1;	// A+B: 0=disable, 1=Enable
+
+/*16*/	unsigned DisplayMode:2;		// A+B: coreA(0..3) coreB(0..1) GBA(Green Swap)
+/*18*/	unsigned VRAM_Block:2;		// A  : VRAM block (0..3=A..D)
+/*20*/	unsigned OBJ_Tile_1D_Bound:2;	// A+B: 
+/*22*/	unsigned OBJ_BMP_1D_Bound:1;	// A  : 
+/*23*/	unsigned OBJ_HBlank_process:1;	// A+B: OBJ processed during HBlank (GBA bit5)
+/*24*/	unsigned CharacBase_Block:3;	// A  : Character Base (64K step)
+/*27*/	unsigned ScreenBase_Block:3;	// A  : Screen Base (64K step)
+/*30*/	unsigned ExBGxPalette_Enable:1;	// A+B: 0=disable, 1=Enable BG extended Palette
+/*31*/	unsigned ExOBJPalette_Enable:1;	// A+B: 0=disable, 1=Enable OBJ extended Palette
 } _DISPCNT_;
 
 #define DISPCNT_OBJMAPING1D(val)			(((val) >> 4) & 1)

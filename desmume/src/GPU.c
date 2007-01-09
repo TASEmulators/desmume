@@ -130,7 +130,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	gpu->prop = p;
 
 //        gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
-        gpu->dispMode = cnt->ExMode & ((gpu->lcd)?1:3);
+        gpu->dispMode = cnt->DisplayMode & ((gpu->lcd)?1:3);
 
         switch (gpu->dispMode)
         {
@@ -140,7 +140,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
               break;
            case 2: // Display framebuffer
 //              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
-	gpu->vramBlock = cnt->FrameBufferSelect;
+	gpu->vramBlock = cnt->VRAM_Block;
               return;
            case 3: // Display from Main RAM
               LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
@@ -148,25 +148,23 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         }
 
 	gpu->nbBGActif = 0;
-        if(cnt->SpriteMode & 0x1)
+        if(cnt->OBJ_Tile_1D)
 	{
 		/* 1-d sprite mapping */
-		
-                gpu->sprBlock = 5 + DISPCNT_TILEOBJ1D_BOUNDARY(p) ;        /* TODO: better comment (and understanding btw 8S) */
-                if((gpu->core == GPU_SUB) && (DISPCNT_TILEOBJ1D_BOUNDARY(p) == 3))
+		/* TODO: better comment (and understanding btw 8S) */
+                gpu->sprBlock = 5 + cnt->OBJ_Tile_1D_Bound ;
+                if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3))
 		{
 			gpu->sprBlock = 7;
 		}
 		gpu->spriteRender = sprite1D;
-	}
-	else
-	{
+	} else {
 		/* 2d sprite mapping */
 		gpu->sprBlock = 5;
 		gpu->spriteRender = sprite2D;
 	}
      
-        if(DISPCNT_BMPOBJ1D_BOUNDARY(p) && (gpu->core == GPU_MAIN))
+        if(cnt->OBJ_BMP_1D_Bound && (gpu->core == GPU_MAIN))
 	{
 		gpu->sprBMPBlock = 8;
 	}
@@ -175,7 +173,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->sprBMPBlock = 7;
 	}
 
-	gpu->sprEnable = cnt->Sprite_Enable;
+	gpu->sprEnable = cnt->OBJ_Enable;
 	
 	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 14));
 	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 12));
@@ -394,8 +392,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	else
 	{
                 gpu->BG_bmp_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_16KB;
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + ((gpu->prop >> 24) & 0x7) * ADDRESS_STEP_64kB ;
-                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + ((_DISPCNT_*)(&(gpu->prop)))->ScreenBaseBlock * ADDRESS_STEP_64kB;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) + BGCNT_CHARBASEBLOCK(p) * ADDRESS_STEP_16KB + ((_DISPCNT_*)&gpu->prop)->CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_map_ram[num] = ARM9Mem.ARM9_ABG + BGCNT_SCREENBASEBLOCK(p) * ADDRESS_STEP_2KB + ((_DISPCNT_*)&gpu->prop)->ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
 
      /*if(!(p&(1<<7)))
@@ -417,8 +415,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 		/* we got a naming problem here, dispMode actual is _DISPCNT_.ExMode */
         // gpu->BGSize[num][0] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][0];
         // gpu->BGSize[num][1] = sizeTab[mode2type[gpu->dispMode][num]][BGCNT_SCREENSIZE(p)][1];
-        gpu->BGSize[num][0] = sizeTab[mode2type[((_DISPCNT_*)(&(gpu->prop)))->DisplayMode][num]][BGCNT_SCREENSIZE(p)][0];
-        gpu->BGSize[num][1] = sizeTab[mode2type[((_DISPCNT_*)(&(gpu->prop)))->DisplayMode][num]][BGCNT_SCREENSIZE(p)][1];
+        gpu->BGSize[num][0] = sizeTab[mode2type[((_DISPCNT_*)&gpu->prop)->BG_Mode][num]][BGCNT_SCREENSIZE(p)][0];
+        gpu->BGSize[num][1] = sizeTab[mode2type[((_DISPCNT_*)&gpu->prop)->BG_Mode][num]][BGCNT_SCREENSIZE(p)][1];
 
 }
 
@@ -793,7 +791,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	if(!((_DISPCNT_*)(&(gpu->prop)))->ExBGPalette_Enable)  /* color: no extended palette */
+	if(!((_DISPCNT_*)&gpu->prop)->ExBGxPalette_Enable)  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
@@ -1180,7 +1178,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			u16 i;
 			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
-			if(gpu->prop&(1<<31))
+			if(((_DISPCNT_*)&gpu->prop)->ExOBJPalette_Enable)
 				pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
