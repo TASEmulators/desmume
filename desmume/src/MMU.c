@@ -2353,6 +2353,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	}
 }
 
+#ifdef MMU_ENABLE_ACL
 u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access)
 {
     if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
@@ -2475,3 +2476,4 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
     }
     MMU_write32(proc,adr,val) ;
 }
+#endif
