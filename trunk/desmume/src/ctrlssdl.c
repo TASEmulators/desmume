@@ -125,7 +125,7 @@ u16 process_ctrls_events(u16 keypad)
           break;
 
           /* When GTK is in use, the keyboard, mouse and quit events are handled by GTK. */
-#ifndef GTK
+#ifndef GTK_UI
         case SDL_KEYDOWN:
           switch (event.key.keysym.sym)
             {
@@ -157,7 +157,7 @@ u16 process_ctrls_events(u16 keypad)
             case '.':	        RM_KEY( keypad, 0x100); break;
             }
           break;
-#endif
+#endif // GTK_UI
         default:
           break;
         }

@@ -23,7 +23,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#define GTK
+#ifndef GTK_UI
+#define GTK_UI
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
