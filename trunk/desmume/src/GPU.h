@@ -90,6 +90,19 @@ typedef union
 } DISPCNT;
 #define BGxENABLED(cnt,num)	((num<8)? ((cnt.integer>>8) & num):0)
 
+struct _COLOR {
+	unsigned red:5;
+	unsigned green:5;
+	unsigned blue:5;
+	unsigned alpha:1;	// sometimes it is unused
+};
+
+typedef union 
+{
+	struct _COLOR bitfield;
+	u16 val;
+} COLOR;
+
 
 struct _BGxCNT 
 {
@@ -284,87 +297,76 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      u16 i16;
      u32 c;
 	
-     // This could almost be changed to use function pointers
-     switch (gpu->dispMode)
-     {
-        case 1: // Display BG and OBJ layers
-           break;
-        case 0: // Display Off(Display white)
-        {
-           for (i=0; i<256; i++)
-           {
-              T2WriteWord(dst, i << 1, 0x7FFF);
-           }
-           return;
-        }
-        case 2: // Display framebuffer
-        {
-           int ii = l * 256 * 2;
-           for (i=0; i<(256 * 2); i+=2)
-           {
-              u8 * vram = ARM9Mem.ARM9_LCD + (gpu->vramBlock * 0x20000);
-
-              T2WriteWord(dst, i, T1ReadWord(vram, ii));
-              ii+=2;
-           }
-           return;
-        }
-        case 3:
-		//	Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels
-		//  at once format is 5bit per component, bit15 unused
-		//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
-	    //       (under DISP_MMEM_FIFO)
-		for (i=0; i<256;) {
-			c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
-			T2WriteWord(dst, i << 1, c&0xFFFF); i++;
-			T2WriteWord(dst, i << 1, c>>16); i++;
+	// This could almost be changed to use function pointers
+	switch (gpu->dispMode)
+	{
+		case 1: // Display BG and OBJ layers
+			break;
+		case 0: // Display Off(Display white)
+			for (i=0; i<256; i++)
+				T2WriteWord(dst, i << 1, 0x7FFF);
+			return;
+		case 2: // Display framebuffer
+		{
+			int ii = l * 256 * 2;
+			for (i=0; i<(256 * 2); i+=2)
+			{
+				u8 * vram = ARM9Mem.ARM9_LCD + (gpu->vramBlock * 0x20000);
+				T2WriteWord(dst, i, T1ReadWord(vram, ii));
+				ii+=2;
+			}
 		}
-           return;
-     }
-     
-     c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);
-     c |= (c<<16);
-     
-     for(i8 = 0; i8< 128; ++i8)
-     {
-	  T2WriteLong(dst, i8 << 2, c);
-	  T2WriteLong(spr, i8 << 2, c);
-	  T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
-     }
-     
-     if(!gpu->nbBGActif)
-     {
-		 if (gpu->sprEnable)
-		 {
+			return;
+		case 3:
+	// Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels at once format is x555, bit15 unused
+	// Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
+	// (under DISP_MMEM_FIFO)
+			for (i=0; i<256;) {
+				c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
+				T2WriteWord(dst, i << 1, c&0xFFFF); i++;
+				T2WriteWord(dst, i << 1, c>>16); i++;
+			}
+			return;
+	}
+	
+	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);
+	c |= (c<<16);
+	
+	for(i8 = 0; i8< 128; ++i8)
+	{
+		T2WriteLong(dst, i8 << 2, c);
+		T2WriteLong(spr, i8 << 2, c);
+		T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
+	}
+	
+	if(!gpu->nbBGActif)
+	{
+		if (gpu->sprEnable)
 			gpu->spriteRender(gpu, l, dst, sprPrio);
-		 }
-
 		return;
-     }
-     
-	 if (gpu->sprEnable)
-	 {
-	     gpu->spriteRender(gpu, l, spr, sprPrio);
-     
-        if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
-        {
-           for(i16 = 0; i16 < 128; ++i16) {
-	         T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
-	       }
-        }
-     }
-     
-     for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
-     {
-          modeRender[gpu->dispCnt.bitfield.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
-          bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
-          if (gpu->sprEnable)
-          {
-            for(i16 = 0; i16 < 256; ++i16)
-               if(bgprio>=sprPrio[i16])
-		         T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
-          }
-     }
+	}
+	if (gpu->sprEnable)
+	{
+		gpu->spriteRender(gpu, l, spr, sprPrio);	
+		if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
+		{
+			for(i16 = 0; i16 < 128; ++i16) {
+				T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
+			}
+		}
+	}
+	
+	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
+	{
+		modeRender[gpu->dispCnt.bitfield.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+		bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
+		if (gpu->sprEnable)
+		{
+			for(i16 = 0; i16 < 256; ++i16)
+			if(bgprio>=sprPrio[i16])
+				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+		}
+	}
 
 	 // Apply final brightness adjust (MASTER_BRIGHT)
 	 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
@@ -382,16 +384,17 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-				unsigned int	dstColor = T1ReadWord(dst, i16 << 1);
-				unsigned int	r = (dstColor>>10)&31,		// Get the components, 5bit each
-								g = (dstColor>> 5)&31,
-								b = (dstColor    )&31;				
-
-				r = (r + (r*masterBrightFactor)/16)&31;		// Bright up and clamp to 5bit
-				g = (g + (g*masterBrightFactor)/16)&31;
-				b = (b + (b*masterBrightFactor)/16)&31;
-
-				T2WriteWord (dst, i16 << 1, (r<<10) | (g<<5) | b);
+				COLOR dstColor;
+				dstColor.val = T1ReadWord(dst, i16 << 1);
+				unsigned int	r,g,b; // get components, 5bit each
+				r = dstColor.bitfield.red;
+				g = dstColor.bitfield.green;
+				b = dstColor.bitfield.blue;
+				// Bright up and clamp to 5bit
+				dstColor.bitfield.red   = (r + (r*masterBrightFactor)/16);
+				dstColor.bitfield.green = (g + (g*masterBrightFactor)/16);
+				dstColor.bitfield.blue  = (b + (b*masterBrightFactor)/16);
+				T2WriteWord (dst, i16 << 1, dstColor.val);
 			}
 
 			break;
@@ -400,28 +403,29 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		// Bright down
 		case 2:
 		{
+/*
+	NOTE: gbatek (in the reference above) seems to expect 6bit values 
+	per component, but as desmume works with 5bit per component, 
+			we use 31 as top, instead of 63. Testing it on a few games, 
+			using 63 seems to give severe color wraping, and 31 works
+			nicely, so for now we'll just that, until proven wrong.
+*/
 			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
 			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-				unsigned int	dstColor = T1ReadWord(dst, i16 << 1);
-				unsigned int	r = (dstColor>>10)&31,		// Get the components, 5bit each
-								g = (dstColor>> 5)&31,
-								b = (dstColor    )&31;
-
-				/*
-					NOTE: gbatek (in the reference above) seems to expect 6bit values 
-							per component, but as desmume works with 5bit per component, 
-							we use 31 as top, instead of 63. Testing it on a few games, 
-							using 63 seems to give severe color wraping, and 31 works
-							nicely, so for now we'll just that, until proven wrong.
-				*/
-				r = (r + ((31-r)*masterBrightFactor)/16)&31;	// Bright down and clamp to 5bit
-				g = (g + ((31-g)*masterBrightFactor)/16)&31;
-				b = (b + ((31-b)*masterBrightFactor)/16)&31;
-
-				T2WriteWord (dst, i16 << 1, (r<<10) | (g<<5) | b);
+				COLOR dstColor;
+				dstColor.val = T1ReadWord(dst, i16 << 1);
+				unsigned int	r,g,b; // get components, 5bit each
+				r = dstColor.bitfield.red;
+				g = dstColor.bitfield.green;
+				b = dstColor.bitfield.blue;
+				// Bright up and clamp to 5bit
+				dstColor.bitfield.red   = (r + ((31-r)*masterBrightFactor)/16);
+				dstColor.bitfield.green = (g + ((31-g)*masterBrightFactor)/16);
+				dstColor.bitfield.blue  = (b + ((31-b)*masterBrightFactor)/16);
+				T2WriteWord (dst, i16 << 1, dstColor.val);
 			}
 			break;
 		}
