@@ -553,10 +553,6 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 	gpu->MASTER_BRIGHT = v;
 }
 
-#ifndef min
-#define min(a,b) (((a)<(b))?(a):(b))
-#endif
-
 INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	/* priority to check the window regions: win0,win1,winobj */

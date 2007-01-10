@@ -127,6 +127,10 @@ typedef union
 	i.bitfield.blue  = w.bitfield.blue; \
 	i.bitfield.alpha = w.bitfield.alpha;
 
+#ifndef min
+#define min(a,b) (((a)<(b))?(a):(b))
+#endif
+
 struct _BGxCNT 
 {
 /*0*/	unsigned Priority:2;		// 0..3=high..low
