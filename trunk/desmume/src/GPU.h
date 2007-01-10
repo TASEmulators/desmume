@@ -214,6 +214,11 @@ typedef union windowcnt_t
 /*13*/  unsigned WIN1_Effect_Enable:1;
 /*14*/  unsigned :2;
 	} bitfield ;
+	struct
+	{
+		unsigned char low ;
+		unsigned char high ;
+	} bytes ;
 	unsigned short val ;
 } windowcnt_t ;
 
@@ -528,7 +533,9 @@ void GPU_setWINDOW_XDIM_Component(GPU *gpu, u8 v, u8 num) ;
 void GPU_setWINDOW_YDIM_Component(GPU *gpu, u8 v, u8 num) ;
 
 void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
-void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
+void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v) ;
+void GPU_setWINDOW_INCNT_Component(GPU *gpu, u8 v,u8 num) ;
+void GPU_setWINDOW_OUTCNT_Component(GPU *gpu, u8 v,u8 num) ;
 
 void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v);
 

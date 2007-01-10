@@ -803,6 +803,30 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 				case REG_DISPB_WIN1V+1:
                     GPU_setWINDOW_YDIM_Component(SubScreen.gpu,val,3) ;
 					break ;
+				case REG_DISPA_WININ:
+					GPU_setWINDOW_INCNT_Component(MainScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPA_WININ+1:
+					GPU_setWINDOW_INCNT_Component(MainScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPA_WINOUT:
+					GPU_setWINDOW_OUTCNT_Component(MainScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPA_WINOUT+1:
+					GPU_setWINDOW_OUTCNT_Component(MainScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPB_WININ:
+					GPU_setWINDOW_INCNT_Component(SubScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPB_WININ+1:
+					GPU_setWINDOW_INCNT_Component(SubScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPB_WINOUT:
+					GPU_setWINDOW_OUTCNT_Component(SubScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPB_WINOUT+1:
+					GPU_setWINDOW_OUTCNT_Component(SubScreen.gpu,val,1) ;
+					break ;
 #ifdef LOG_CARD
 		case 0x040001A0 : /* TODO (clear): ??? */
 		case 0x040001A1 :
@@ -1244,6 +1268,18 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case REG_DISPB_MASTERBRIGHT:
 				GPU_setMASTER_BRIGHT (SubScreen.gpu, val);
 				break;
+			case REG_DISPA_WININ:
+				GPU_setWINDOW_INCNT(MainScreen.gpu, val) ;
+				break ;
+			case REG_DISPA_WINOUT:
+				GPU_setWINDOW_OUTCNT(MainScreen.gpu, val) ;
+				break ;
+			case REG_DISPB_WININ:
+				GPU_setWINDOW_INCNT(SubScreen.gpu, val) ;
+				break ;
+			case REG_DISPB_WINOUT:
+				GPU_setWINDOW_OUTCNT(SubScreen.gpu, val) ;
+				break ;
 			case REG_IME :
 				MMU.reg_IME[proc] = val&1;
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x208, val);
@@ -1746,7 +1782,15 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				//GPULOG("SUB INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, val);
 				return;
-				
+			case REG_DISPA_WININ:
+				GPU_setWINDOW_INCNT(MainScreen.gpu, val & 0xFFFF) ;
+				GPU_setWINDOW_OUTCNT(MainScreen.gpu, (val >> 16) & 0xFFFF) ;
+				break ;
+			case REG_DISPB_WININ:
+				GPU_setWINDOW_INCNT(SubScreen.gpu, val & 0xFFFF) ;
+				GPU_setWINDOW_OUTCNT(SubScreen.gpu, (val >> 16) & 0xFFFF) ;
+				break ;
+
 			case REG_IME :
 				MMU.reg_IME[proc] = val & 1;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x208, val);
