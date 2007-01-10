@@ -565,9 +565,35 @@ void GPU_setWINDOW_INCNT(GPU *gpu, u16 v)
 	gpu->WINDOW_INCNT.val = v ;
 }
 
+void GPU_setWINDOW_INCNT_Component(GPU *gpu, u8 v,u8 num)
+{
+	switch (num)
+	{
+		case 0:
+			gpu->WINDOW_INCNT.bytes.low = v ;
+			break ;
+		case 1:
+			gpu->WINDOW_INCNT.bytes.high = v ;
+			break ;
+	}
+}
+
 void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v)
 {
 	gpu->WINDOW_OUTCNT.val = v ;
+}
+
+void GPU_setWINDOW_OUTCNT_Component(GPU *gpu, u8 v,u8 num)
+{
+	switch (num)
+	{
+		case 0:
+			gpu->WINDOW_OUTCNT.bytes.low = v ;
+			break ;
+		case 1:
+			gpu->WINDOW_OUTCNT.bytes.high = v ;
+			break ;
+	}
 }
 
 void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
@@ -580,10 +606,9 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 	/* priority to check the window regions: win0,win1,winobj */
 	if (gpu->dispCnt.bitfield.Win0_Enable)          					/* highest priority */
 	{
-		if ((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val))
-		{
-			if ((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) || (gpu->WINDOW_XDIM[0].bitfield.end==0))
-				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end))
+		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
+		 ((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
+				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end)))
 			{
 				switch (bgnum) {
 					case 0:
@@ -619,15 +644,13 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 				}
     	        *effect = gpu->WINDOW_INCNT.bitfield.WIN0_Effect_Enable ;
 				return TRUE ;
-			}
 		}
 	}
 	if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
 	{
-		if ((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val))
-		{
-			if ((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) || (gpu->WINDOW_XDIM[1].bitfield.end==0))
-				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end))
+		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
+		 ((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
+				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end)))
 			{
 				switch (bgnum) {
 					case 0:
@@ -663,7 +686,6 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 				}
     	        *effect = gpu->WINDOW_INCNT.bitfield.WIN1_Effect_Enable ;
 				return TRUE ;
-			}
 		}
 	}
 	if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
@@ -680,10 +702,11 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 	/* priority to check the window regions: win0,win1,winobj */
 	if (gpu->dispCnt.bitfield.Win0_Enable)          					/* highest priority */
 	{
-		if (!((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)))
-		{
-			if (!((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) || (gpu->WINDOW_XDIM[0].bitfield.end==0))
+		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
+		 ((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
 				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end)))
+			{
+			} else
 			{
 				switch (bgnum) {
 					case 0:
@@ -719,15 +742,15 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 				}
     	        *effect = gpu->WINDOW_OUTCNT.bitfield.WIN0_Effect_Enable ;
 				return TRUE ;
-			}
 		}
 	}
 	if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
 	{
-		if (!((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)))
-		{
-			if (!((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) || (gpu->WINDOW_XDIM[1].bitfield.end==0))
+		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
+		 ((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
 				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end)))
+			{
+			} else
 			{
 				switch (bgnum) {
 					case 0:
@@ -763,7 +786,6 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 				}
     	        *effect = gpu->WINDOW_OUTCNT.bitfield.WIN1_Effect_Enable ;
 				return TRUE ;
-			}
 		}
 	}
 	if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
@@ -778,14 +800,14 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
 	BOOL windowDraw = TRUE, windowEffect = TRUE ;
 	/* window priority: insides, if no rule, check outside */
-	if (!renderline_checkWindowInside(gpu,bgnum,x,y,&windowDraw,&windowEffect))
+	if (renderline_checkWindowInside(gpu,bgnum,x,y,&windowDraw,&windowEffect)==FALSE)
 	{
 		renderline_checkWindowOutside(gpu,bgnum,x,y,&windowDraw,&windowEffect) ;
 	}
-	if (!windowDraw) return ;
+	if (windowDraw==FALSE) return ;
 
 
-	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect))   /* the bg to draw has a special color effect */
+	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect==TRUE))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
 		{
