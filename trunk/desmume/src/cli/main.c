@@ -14,9 +14,6 @@
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 
-#define DESMUME_NB_KEYS		13
-#define DESMUME_KEYMASK_(k)	(1 << k)
-
 volatile BOOL execute = FALSE;
 
 SDL_Surface * surface;
@@ -28,7 +25,7 @@ SoundInterface_struct *SNDCoreList[] = {
   NULL
 };
 
-const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
+const u16 Default_Joypad_Config[NB_KEYS] =
   { 1,  // A
     0,  // B
     5,  // select
@@ -41,6 +38,7 @@ const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
     6,  // L
     3,  // Y
     4,  // X
+    -1, // BOOST
     -1  // DEBUG
   };
 
@@ -102,11 +100,11 @@ int main(int argc, char ** argv) {
     /* Look for queued events and update keypad status */
     keypad = process_ctrls_events(keypad);
     /* Update mouse position and click */
-    if(mouse_down) NDS_setTouchPos(mouse_pos.x, mouse_pos.y);
-    if(mouse_click)
+    if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
+    if(mouse.click)
       { 
         NDS_releasTouch();
-        mouse_click = FALSE;
+        mouse.click = FALSE;
       }
 
     /* Update keypad */

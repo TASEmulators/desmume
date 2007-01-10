@@ -40,20 +40,20 @@
 u16 joypadCfg[NB_KEYS];
 
 #ifndef GTK_UI
-struct pos
+struct mouse_status
 {
   signed long x;
   signed long y;
+  BOOL click;
+  BOOL down;
 };
 
-struct pos mouse_pos;
+struct mouse_status mouse;
 
 BOOL sdl_quit;
-BOOL mouse_click;
-BOOL mouse_down;
 
-void mouse_set_coord(signed long x,signed long y);
-#endif
+void set_mouse_coord(signed long x,signed long y);
+#endif // !GTK_UI
 
 BOOL init_joy(u16 joyCfg[]);
 void uninit_joy();

@@ -64,24 +64,22 @@ u16 inline lookup_joykey (u16 keyval) {
   u16 Key = 0;
   for(i = 0; i < NB_KEYS; i++)
     if(keyval == joypadCfg[i]) break;
-  if(i < NB_KEYS)	
-    Key = KEYMASK_(i);
-  printf("Lookup key %d from joypad...%x\n", keyval, Key);
+  if(i < NB_KEYS) Key = KEYMASK_(i);
   return Key;
 }
 
 #ifndef GTK_UI
 /* Set mouse coordinates */
-void mouse_set_coord(signed long x,signed long y)
+void set_mouse_coord(signed long x,signed long y)
 {
   if(x<0) x = 0; else if(x>255) x = 255;
   if(y<0) y = 0; else if(y>192) y = 192;
-  mouse_pos.x = x;
-  mouse_pos.y = y;
+  mouse.x = x;
+  mouse.y = y;
 }
-#endif
+#endif // !GTK_UI
 
-/* Manage joystick events */
+/* Manage input events */
 u16 process_ctrls_events(u16 keypad)
 {
   u16 key;
@@ -174,25 +172,25 @@ u16 process_ctrls_events(u16 keypad)
             }
           break;
 
-        case SDL_MOUSEBUTTONDOWN: // Un bouton fut appuyé
+        case SDL_MOUSEBUTTONDOWN:
           if(event.button.button==1)
-            mouse_down = TRUE;
+            mouse.down = TRUE;
 						
-        case SDL_MOUSEMOTION: // La souris a été déplacée sur l?écran
-          if(!mouse_down) break;
+        case SDL_MOUSEMOTION:
+          if(!mouse.down) break;
           if(event.button.y>=192)
-            mouse_set_coord(event.button.x, event.button.y - 192);
+            set_mouse_coord(event.button.x, event.button.y - 192);
           break;
 
-        case SDL_MOUSEBUTTONUP: // Le bouton de la souris a été relaché
-          if(mouse_down) mouse_click = TRUE;
-          mouse_down = FALSE;
+        case SDL_MOUSEBUTTONUP:
+          if(mouse.down) mouse.click = TRUE;
+          mouse.down = FALSE;
           break;
 
         case SDL_QUIT:
           sdl_quit = TRUE;
           break;
-#endif // GTK_UI
+#endif // !GTK_UI
 
         default:
           break;
