@@ -434,8 +434,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 				for(i16 = 0; i16 < 256; ++i16)
 				{
 					COLOR dstColor;
-					dstColor.val = T1ReadWord(dst, i16 << 1);
 					unsigned int	r,g,b; // get components, 5bit each
+					dstColor.val = T1ReadWord(dst, i16 << 1);
 					r = dstColor.bitfield.red;
 					g = dstColor.bitfield.green;
 					b = dstColor.bitfield.blue;
@@ -474,8 +474,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 				for(i16 = 0; i16 < 256; ++i16)
 				{
 					COLOR dstColor;
-					dstColor.val = T1ReadWord(dst, i16 << 1);
 					unsigned int	r,g,b; // get components, 5bit each
+					dstColor.val = T1ReadWord(dst, i16 << 1);
 					r = dstColor.bitfield.red;
 					g = dstColor.bitfield.green;
 					b = dstColor.bitfield.blue;
