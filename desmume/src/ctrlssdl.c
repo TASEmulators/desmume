@@ -70,12 +70,27 @@ u16 inline lookup_joykey (u16 keyval) {
   return Key;
 }
 
+#ifndef GTK_UI
+/* Set mouse coordinates */
+void mouse_set_coord(signed long x,signed long y)
+{
+  if(x<0) x = 0; else if(x>255) x = 255;
+  if(y<0) y = 0; else if(y>192) y = 192;
+  mouse_pos.x = x;
+  mouse_pos.y = y;
+}
+#endif
+
 /* Manage joystick events */
 u16 process_ctrls_events(u16 keypad)
 {
   u16 key;
 
   SDL_Event event;
+#ifndef GTK_UI
+  sdl_quit = FALSE;
+#endif
+
   /* There's an event waiting to be processed? */
   while (SDL_PollEvent(&event))
     {
@@ -124,7 +139,8 @@ u16 process_ctrls_events(u16 keypad)
           RM_KEY( keypad, key );
           break;
 
-          /* When GTK is in use, the keyboard, mouse and quit events are handled by GTK. */
+          /* GTK only needs joystick support. For others, we here provide the
+             mouse, keyboard and quit events. */
 #ifndef GTK_UI
         case SDL_KEYDOWN:
           switch (event.key.keysym.sym)
@@ -157,7 +173,27 @@ u16 process_ctrls_events(u16 keypad)
             case '.':	        RM_KEY( keypad, 0x100); break;
             }
           break;
+
+        case SDL_MOUSEBUTTONDOWN: // Un bouton fut appuyé
+          if(event.button.button==1)
+            mouse_down = TRUE;
+						
+        case SDL_MOUSEMOTION: // La souris a été déplacée sur l?écran
+          if(!mouse_down) break;
+          if(event.button.y>=192)
+            mouse_set_coord(event.button.x, event.button.y - 192);
+          break;
+
+        case SDL_MOUSEBUTTONUP: // Le bouton de la souris a été relaché
+          if(mouse_down) mouse_click = TRUE;
+          mouse_down = FALSE;
+          break;
+
+        case SDL_QUIT:
+          sdl_quit = TRUE;
+          break;
 #endif // GTK_UI
+
         default:
           break;
         }

@@ -39,6 +39,22 @@
 
 u16 joypadCfg[NB_KEYS];
 
+#ifndef GTK_UI
+struct pos
+{
+  signed long x;
+  signed long y;
+};
+
+struct pos mouse_pos;
+
+BOOL sdl_quit;
+BOOL mouse_click;
+BOOL mouse_down;
+
+void mouse_set_coord(signed long x,signed long y);
+#endif
+
 BOOL init_joy(u16 joyCfg[]);
 void uninit_joy();
 u16 process_ctrls_events(u16 oldkeypad);
