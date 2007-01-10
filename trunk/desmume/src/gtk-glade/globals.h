@@ -22,6 +22,8 @@
 #ifndef __GLOBALS_H__
 #define __GLOBALS_H__
 
+#define GTK
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,13 +41,13 @@
 #include "../NDSSystem.h"
 #include "../cflash.h"
 #include "../sndsdl.h"
+#include "../ctrlssdl.h"
 #include "../types.h"
 #include "desmume.h"
 
 uint Frameskip;
 gint Keypad_Config[DESMUME_NB_KEYS];
 gint Keypad_Temp[DESMUME_NB_KEYS];
-u16 Joypad_Config[DESMUME_NB_KEYS];
 
 /* main.c */
 GtkWidget * pWindow;

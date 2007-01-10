@@ -164,8 +164,6 @@ int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgumen
 int main(int argc, char *argv[]) {
 	
 	const char *commandLine_File = NULL;
-	int nbJoysticks;
-        int i;
 
 	if(argc == 2) commandLine_File = argv[1];
 
@@ -174,33 +172,19 @@ int main(int argc, char *argv[]) {
 #endif
 	init_keyvals();
         
-	memcpy(Joypad_Config, Default_Joypad_Config, sizeof(Joypad_Config));
-
 	gtk_init(&argc, &argv);
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) == -1)
+	if(SDL_Init(SDL_INIT_VIDEO) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
                     SDL_GetError());
             return 1;
           }
 	desmume_init();
+        /* Initialize joysticks */
+        if(!init_joy(Default_Joypad_Config)) return 1;
 
 	CONFIG_FILE = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
 	Read_ConfigFile();
-
-        /* Initialize joysticks */
-        nbJoysticks = SDL_NumJoysticks();
-        printf("Nbr of joysticks: %d\n\n", nbJoysticks);
-
-        for (i = 0; i < nbJoysticks; i++)
-          {
-            SDL_Joystick * joy = SDL_JoystickOpen(i);
-            printf("Joystick %s\n", i, SDL_JoystickName(i));
-            printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
-            printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
-            printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
-            printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-          }
 
 	/* load the interface */
 	xml           = glade_xml_new("glade/DeSmuMe.glade", NULL, NULL);
@@ -236,6 +220,8 @@ int main(int argc, char *argv[]) {
 #ifdef DEBUG
         LogStop();
 #endif
+        /* Unload joystick */
+        uninit_joy();
 
 	SDL_Quit();
 	Write_ConfigFile();

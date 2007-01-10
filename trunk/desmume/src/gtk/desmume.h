@@ -20,7 +20,7 @@
 #define DESMUME_KEY_Y			12
 #define DESMUME_KEY_DEBUG		13
 
-#include "joysdl.h"
+#include "globals.h"
 
 extern void desmume_init();
 extern void desmume_free();

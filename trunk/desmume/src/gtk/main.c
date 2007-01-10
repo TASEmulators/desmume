@@ -421,7 +421,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 	{
 		Key = DESMUME_KEYMASK_(i);
 		Cur_Keypad &= ~Key;
-		if(desmume_running()) desmume_keypad(Cur_Keypad);
+		if(desmume_running()) desmume_keypad(~Cur_Keypad);
 	}
 	
 	//fprintf(stderr,"P:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);
@@ -439,7 +439,7 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 	{
 		Key = DESMUME_KEYMASK_(i);
 		Cur_Keypad |= Key;
-		if(desmume_running()) desmume_keypad(Cur_Keypad);
+		if(desmume_running()) desmume_keypad(~Cur_Keypad);
 	}
 	
 	//fprintf(stderr,"R:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);
@@ -993,7 +993,6 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 
 int main (int argc, char *argv[])
 {
-	int nbJoysticks;
 	int i;
 	
 	const char *commandLine_File = NULL;
@@ -1008,34 +1007,20 @@ int main (int argc, char *argv[])
 #ifdef DEBUG
         LogStart();
 #endif
-	
-	memcpy(Joypad_Config, Default_Joypad_Config, sizeof(Joypad_Config));
 
 	gtk_init(&argc, &argv);
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) == -1)
+	if(SDL_Init(SDL_INIT_VIDEO) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
                     SDL_GetError());
             return 1;
           }
 	desmume_init();
+        /* Initialize joysticks */
+        if(!init_joy(Default_Joypad_Config)) return 1;
 	
  	dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
 	for(i=0; i<dTools_list_size; i++) dTools_running[i]=FALSE;
-	
-        /* Initialize joysticks */
-        nbJoysticks = SDL_NumJoysticks();
-        printf("Nbr of joysticks: %d\n\n", nbJoysticks);
-
-        for (i = 0; i < nbJoysticks; i++)
-          {
-            SDL_Joystick * joy = SDL_JoystickOpen(i);
-            printf("Joystick %s\n", i, SDL_JoystickName(i));
-            printf("Axes: %d\n", SDL_JoystickNumAxes(joy));
-            printf("Buttons: %d\n", SDL_JoystickNumButtons(joy));
-            printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
-            printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
-          }
 
 	CONFIG_FILE = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
 	Read_ConfigFile();
@@ -1291,6 +1276,8 @@ int main (int argc, char *argv[])
 #ifdef DEBUG
         LogStop();
 #endif
+        /* Unload joystick */
+        uninit_joy();
 
 	SDL_Quit();
 	

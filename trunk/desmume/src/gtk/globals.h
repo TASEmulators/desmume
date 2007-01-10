@@ -23,6 +23,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#define GTK
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,9 +41,8 @@
 #include "../NDSSystem.h"
 #include "../cflash.h"
 #include "../sndsdl.h"
+#include "../ctrlssdl.h"
 #include "../types.h"
 #include "desmume.h"
-
-u16 Joypad_Config[DESMUME_NB_KEYS];
 
 #endif /* GLOBALS_H */
