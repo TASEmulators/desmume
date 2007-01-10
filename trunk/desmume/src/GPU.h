@@ -419,22 +419,29 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
 
 			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
-
-			for(i16 = 0; i16 < 256; ++i16)
+			if (masterBrightFactor == 16)
 			{
-				COLOR dstColor;
-				dstColor.val = T1ReadWord(dst, i16 << 1);
-				unsigned int	r,g,b; // get components, 5bit each
-				r = dstColor.bitfield.red;
-				g = dstColor.bitfield.green;
-				b = dstColor.bitfield.blue;
-				// Bright up and clamp to 5bit
-				dstColor.bitfield.red   = min(31,(r + ((31-r)*masterBrightFactor)/16));
-				dstColor.bitfield.green = min(31,(g + ((31-g)*masterBrightFactor)/16));
-				dstColor.bitfield.blue  = min(31,(b + ((31-b)*masterBrightFactor)/16));
-				T2WriteWord (dst, i16 << 1, dstColor.val);
-			}
+				/* the formular would create only white, as (r + (31-r)) = 31 */
+				/* white = enable all bits */
+				memset(dst,0xFF, 256*sizeof(COLOR)) ;
+			} else
+			{
 
+				for(i16 = 0; i16 < 256; ++i16)
+				{
+					COLOR dstColor;
+					dstColor.val = T1ReadWord(dst, i16 << 1);
+					unsigned int	r,g,b; // get components, 5bit each
+					r = dstColor.bitfield.red;
+					g = dstColor.bitfield.green;
+					b = dstColor.bitfield.blue;
+					// Bright up and clamp to 5bit
+					dstColor.bitfield.red   = min(31,(r + ((31-r)*masterBrightFactor)/16));
+					dstColor.bitfield.green = min(31,(g + ((31-g)*masterBrightFactor)/16));
+					dstColor.bitfield.blue  = min(31,(b + ((31-b)*masterBrightFactor)/16));
+					T2WriteWord (dst, i16 << 1, dstColor.val);
+				}
+			}
 			break;
 		}
 
@@ -452,20 +459,28 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
 
 			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
-
-			for(i16 = 0; i16 < 256; ++i16)
+			if (masterBrightFactor == 16)
 			{
-				COLOR dstColor;
-				dstColor.val = T1ReadWord(dst, i16 << 1);
-				unsigned int	r,g,b; // get components, 5bit each
-				r = dstColor.bitfield.red;
-				g = dstColor.bitfield.green;
-				b = dstColor.bitfield.blue;
-				// Bright up and clamp to 5bit
-				dstColor.bitfield.red   = min(31,(r - (r*masterBrightFactor)/16));
-				dstColor.bitfield.green = min(31,(g - (g*masterBrightFactor)/16));
-				dstColor.bitfield.blue  = min(31,(b - (b*masterBrightFactor)/16));
-				T2WriteWord (dst, i16 << 1, dstColor.val);
+				/* the formular would create only black, as (r - r) = 0 */
+				/* black = disable all bits */
+				memset(dst,0, 256*sizeof(COLOR)) ;
+			} else
+			{
+
+				for(i16 = 0; i16 < 256; ++i16)
+				{
+					COLOR dstColor;
+					dstColor.val = T1ReadWord(dst, i16 << 1);
+					unsigned int	r,g,b; // get components, 5bit each
+					r = dstColor.bitfield.red;
+					g = dstColor.bitfield.green;
+					b = dstColor.bitfield.blue;
+					// Bright up and clamp to 5bit
+					dstColor.bitfield.red   = min(31,(r - (r*masterBrightFactor)/16));
+					dstColor.bitfield.green = min(31,(g - (g*masterBrightFactor)/16));
+					dstColor.bitfield.blue  = min(31,(b - (b*masterBrightFactor)/16));
+					T2WriteWord (dst, i16 << 1, dstColor.val);
+				}
 			}
 			break;
 		}
