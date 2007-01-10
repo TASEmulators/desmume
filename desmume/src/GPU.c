@@ -145,20 +145,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			gpu->vramBlock = cnt->VRAM_Block;
 			return;
 		case 3: // Display from Main RAM
-			{
-				/* would need a test to see if it works */
-// 				u16 x,y; u32 c;
-// 				u16 * dst = GPU_screen;
-// 				for (y=0; y<192; y++)
-// 				for (x=0; x<256; x+=2) {
-// 					c = FIFOValue(REG_DISPA_DISPMMEMFIFO);
-// 					T2WriteWord(dst, 0, c&0xFFFF); dst++;
-// 					T2WriteWord(dst, 0, c>>16); dst++;
-// 				}
-
-			}
-
-			LOG("FIXME: Display Mode 3 not supported(Display from Main RAM)\n");
+			// nothing to be done here
+			// see GPU_ligne who gets data from FIFO.
 			return;
 	}
 
@@ -195,7 +183,19 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-        if(cnt->BG3_Enable && gpu->dispBG[3])
+BOOL LayersEnable[5];
+u16 WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
+WinBG = WinBG | (WinBG >> 8);
+
+
+	// Let's prepare the field for WINDOWS implementation
+	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1));
+	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
+	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
+	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
+	LayersEnable[4] = (cnt->OBJ_Enable || (WinBG & 0x10));
+
+        if (LayersEnable[3])
 	{
 		gpu->ordre[0] = 3;
 		gpu->BGIndex[3] = 1;
@@ -206,7 +206,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[3] = 0;
 	}
 	
-        if(cnt->BG2_Enable && gpu->dispBG[2])
+        if(LayersEnable[2])
 	{
 		if(gpu->nbBGActif)
 		{
@@ -237,7 +237,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			gpu->BGIndex[2] = 0;
 	}
 	
-        if(cnt->BG1_Enable && gpu->dispBG[1])
+        if (LayersEnable[1])
 	{
 		if(gpu->nbBGActif == 0)
 		{
@@ -264,7 +264,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->BGIndex[1] = 0;
 	}
 	
-        if(cnt->BG0_Enable && (!cnt->BG0_3D) && gpu->dispBG[0])
+        if ((!cnt->BG0_3D) && LayersEnable[0])
 	{
 		if(gpu->nbBGActif == 0)
 		{
