@@ -30,7 +30,7 @@ extern "C" {
 
 typedef struct
 {
-       u32 data[0x2000];
+       u32 data[0x8000];
        u32 begin;
        u32 end;
        BOOL full;

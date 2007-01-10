@@ -270,6 +270,8 @@ void Screen_Init(void);
 void Screen_Reset(void);
 void Screen_DeInit(void);
 
+extern MMU_struct MMU;
+
 static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
      GPU * gpu = screen->gpu;
@@ -307,11 +309,13 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
            }
            return;
         }
-        case 3: 
-		// it is just a wild wild guess (WWG)
-		// I dont need a game using this mode ...
+        case 3:
+		//	Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels
+		//  at once format is 5bit per component, bit15 unused
+		//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
+	    //       (under DISP_MMEM_FIFO)
 		for (i=0; i<256;) {
-			c = FIFOValue(REG_DISPA_DISPMMEMFIFO);
+			c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
 			T2WriteWord(dst, i << 1, c&0xFFFF); i++;
 			T2WriteWord(dst, i << 1, c>>16); i++;
 		}

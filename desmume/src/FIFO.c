@@ -27,7 +27,7 @@ void FIFOInit(FIFO * fifo)
 
 	fifo->begin = 0;
         fifo->end = 0;
-        for(i = 0; i<0x2000; ++i)
+        for(i = 0; i<0x8000; ++i)
         	fifo->data[i] = 0;
         fifo->full = FALSE;
         fifo->empty = TRUE;
@@ -42,7 +42,7 @@ void FIFOAdd(FIFO * fifo, u32 v)
                 return;
         }
         fifo->data[fifo->end] = v;
-        fifo->end = (fifo->end + 1)& 0x1FFF;
+        fifo->end = (fifo->end + 1)& 0x7FFF;
         fifo->full = (fifo->end == fifo->begin);
         fifo->empty = FALSE;
 }
@@ -57,7 +57,7 @@ u32 FIFOValue(FIFO * fifo)
                 return 0;
         }
         v = fifo->data[fifo->begin];
-        fifo->begin = (fifo->begin + 1)& 0x1FFF;
+        fifo->begin = (fifo->begin + 1)& 0x7FFF;
         fifo->empty = (fifo->begin == fifo->end);
         return v;
 }
