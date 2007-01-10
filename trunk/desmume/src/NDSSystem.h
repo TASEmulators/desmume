@@ -265,6 +265,49 @@ int NDS_LoadFirmware(const char *filename);
                                 MMU_doDMA(0, 2);
                            if(MMU.DMAStartTime[0][3] == 3)
                                 MMU_doDMA(0, 3);
+
+						   // Main memory display
+						   if(MMU.DMAStartTime[0][0] == 4)
+						   {
+                                MMU_doDMA(0, 0);
+								MMU.DMAStartTime[0][0] = 0;
+						   }
+                           if(MMU.DMAStartTime[0][1] == 4)
+						   {
+                                MMU_doDMA(0, 1);
+								MMU.DMAStartTime[0][1] = 0;
+						   }
+                           if(MMU.DMAStartTime[0][2] == 4)
+						   {
+                                MMU_doDMA(0, 2);
+								MMU.DMAStartTime[0][2] = 0;
+						   }
+                           if(MMU.DMAStartTime[0][3] == 4)
+						   {
+                                MMU_doDMA(0, 3);
+								MMU.DMAStartTime[0][3] = 0;
+						   }
+
+						   if(MMU.DMAStartTime[1][0] == 4)
+						   {
+                                MMU_doDMA(1, 0);
+								MMU.DMAStartTime[1][0] = 0;
+						   }
+                           if(MMU.DMAStartTime[1][1] == 4)
+						   {
+                                MMU_doDMA(1, 1);
+								MMU.DMAStartTime[0][1] = 0;
+						   }
+                           if(MMU.DMAStartTime[1][2] == 4)
+						   {
+                                MMU_doDMA(1, 2);
+								MMU.DMAStartTime[1][2] = 0;
+						   }
+                           if(MMU.DMAStartTime[1][3] == 4)
+						   {
+                                MMU_doDMA(1, 3);
+								MMU.DMAStartTime[1][3] = 0;
+						   }
                                 
                            nds.lignerendu = FALSE;
                            if(nds.VCount==193)

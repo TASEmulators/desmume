@@ -42,6 +42,7 @@ extern char szRomBaseName[512];
 #define ROM_8(m, a)  (((u8*)(m))[(a)])
  
 #define IPCFIFO  0
+#define MAIN_MEMORY_DISP_FIFO 2
  
 typedef struct {
         //ARM7 mem

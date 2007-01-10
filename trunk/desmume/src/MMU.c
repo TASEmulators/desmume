@@ -1944,7 +1944,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				MMU.DMAStartTime[proc][0] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][0] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8, val);
-				if(MMU.DMAStartTime[proc][0] == 0)
+				if( MMU.DMAStartTime[proc][0] == 0)		// Start Immediately
 					MMU_doDMA(proc, 0);
 				#ifdef LOG_DMA2
 				else
@@ -1961,7 +1961,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				MMU.DMAStartTime[proc][1] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][1] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xC4, val);
-				if(MMU.DMAStartTime[proc][1] == 0)
+				if(MMU.DMAStartTime[proc][1] == 0)		// Start Immediately
 					MMU_doDMA(proc, 1);
 				#ifdef LOG_DMA2
 				else
@@ -1977,7 +1977,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				MMU.DMAStartTime[proc][2] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][2] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xD0, val);
-				if(MMU.DMAStartTime[proc][2] == 0)
+				if(MMU.DMAStartTime[proc][2] == 0)		// Start Immediately
 					MMU_doDMA(proc, 2);
 				#ifdef LOG_DMA2
 				else
@@ -1993,7 +1993,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				MMU.DMAStartTime[proc][3] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][3] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xDC, val);
-				if(MMU.DMAStartTime[proc][3] == 0)
+				if(	MMU.DMAStartTime[proc][3] == 0)		// Start Immediately
 					MMU_doDMA(proc, 3);
 				#ifdef LOG_DMA2
 				else
@@ -2091,6 +2091,15 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				GPU_setBLDCNT	(SubScreen.gpu,val&0xffff);
 				GPU_setBLDALPHA (SubScreen.gpu,val>>16);
 				break;
+
+			case REG_DISPA_DISPMMEMFIFO:
+			{
+				// NOTE: right now, the capture unit is not taken into account,
+				//       I don't know is it should be handled here or 
+			
+				FIFOAdd(MMU.fifos + MAIN_MEMORY_DISP_FIFO, val);
+				break;
+			}
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;
 			//case 0x21FDFB0 :  if(val==0) execute = FALSE;
 			default :
@@ -2122,8 +2131,18 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	 return;
 	}
 	
-		/* word count */
-        taille = (MMU.DMACrt[proc][num]&0xFFFF);
+
+	/* word count */
+    taille = (MMU.DMACrt[proc][num]&0xFFFF);
+
+	// If we are in "Main memory display" mode just copy an entire 
+	// screen (256x192 pixels). 
+	//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
+	//       (under DISP_MMEM_FIFO)
+	if ((MMU.DMAStartTime[proc][num]==4) &&		// Must be in main memory display mode
+		(taille==4) &&							// Word must be 4
+		(((MMU.DMACrt[proc][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
+		taille = 256*192/2;
 	
 	if(MMU.DMAStartTime[proc][num] == 5) taille *= 0x80;
 	

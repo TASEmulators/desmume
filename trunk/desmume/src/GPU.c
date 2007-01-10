@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "MMU.h"
 #include "GPU.h"
 #include "debug.h"
 
