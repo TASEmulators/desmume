@@ -333,7 +333,10 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      u8 i8;
      u16 i16;
      u32 c;
-	
+	/* initialize the scanline black */
+	/* not doing this causes invalid colors when all active BGs are prevented to draw at some place */
+	memset(dst,0,256*2) ;
+
 	// This could almost be changed to use function pointers
 	switch (gpu->dispMode)
 	{
@@ -521,6 +524,9 @@ void GPU_setMOSAIC(GPU *gpu, u16 v) ;
 
 void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num) ;
 void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num) ;
+void GPU_setWINDOW_XDIM_Component(GPU *gpu, u8 v, u8 num) ;
+void GPU_setWINDOW_YDIM_Component(GPU *gpu, u8 v, u8 num) ;
+
 void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
 void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
 
