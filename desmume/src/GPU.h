@@ -403,6 +403,9 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 
 	 // Apply final brightness adjust (MASTER_BRIGHT)
 	 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
+
+	 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
+	 /* it will most likly take acceleration, while we are stuck here with CPU power */
 	 switch ((gpu->MASTER_BRIGHT>>14)&3)
 	 {
 		// Disabled
@@ -414,6 +417,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		{
 			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
 			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
+
+			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
@@ -445,6 +450,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 */
 			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
 			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
+
+			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
