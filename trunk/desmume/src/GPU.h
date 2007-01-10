@@ -90,11 +90,11 @@ typedef union
 } DISPCNT;
 #define BGxENABLED(cnt,num)	((num<8)? ((cnt.integer>>8) & num):0)
 
-struct _COLOR {
+struct _COLOR { // abgr x555
 	unsigned red:5;
 	unsigned green:5;
 	unsigned blue:5;
-	unsigned alpha:1;	// sometimes it is unused
+	unsigned alpha:1;	// sometimes it is unused (pad)
 };
 
 typedef union 
@@ -102,6 +102,38 @@ typedef union
 	struct _COLOR bitfield;
 	u16 val;
 } COLOR;
+
+struct _COLOR32 { // ARGB
+	unsigned :3;
+	unsigned blue:5;
+	unsigned :3;
+	unsigned green:5;
+	unsigned :3;
+	unsigned red:5;
+	unsigned :7;
+	unsigned alpha:1;	// sometimes it is unused (pad)
+};
+
+typedef union 
+{
+	struct _COLOR32 bitfield;
+	u32 val;
+} COLOR32;
+
+#define COLOR_16_32(w,i)	\
+	/* doesnt matter who's 16bit who's 32bit */ \
+	i.bitfield.red   = w.bitfield.red; \
+	i.bitfield.green = w.bitfield.green; \
+	i.bitfield.blue  = w.bitfield.blue; \
+	i.bitfield.alpha = w.bitfield.alpha;
+
+
+typedef union 
+{
+	struct _COLOR bitfield;
+	u16 val;
+} COLOR;
+
 
 
 struct _BGxCNT 
