@@ -22,10 +22,9 @@
 #include <tchar.h>
 #include <stdio.h>
 #include "resource.h"
+#include "../MMU.h"
 #include "oamView.h"
 #include "../GPU.h"
-
-#include "../MMU.h"
 
 #include "../NDSSystem.h"
 
