@@ -628,7 +628,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 						if (!gpu->WINDOW_INCNT.bitfield.WIN1_BG2_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
-							draw = TRUE ;
+							*draw = TRUE ;
 						break ;
 					case 3:
 						if (!gpu->WINDOW_INCNT.bitfield.WIN1_BG3_Enable)
@@ -699,7 +699,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 							*draw = TRUE ;
 						break ;
 				}
-    	        effect = gpu->WINDOW_OUTCNT.bitfield.WIN0_Effect_Enable ;
+    	        *effect = gpu->WINDOW_OUTCNT.bitfield.WIN0_Effect_Enable ;
 				return TRUE ;
 			}
 		}
