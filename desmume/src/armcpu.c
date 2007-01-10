@@ -195,13 +195,13 @@ u32 armcpu_prefetch(armcpu_t *armcpu)
 {
 	if(armcpu->CPSR.bits.T == 0)
 	{
-		armcpu->instruction = MMU_readWord(armcpu->proc_ID, armcpu->next_instruction);
+		armcpu->instruction = MMU_readWordACL(armcpu->proc_ID, armcpu->next_instruction,ACCESS_EXECUTION);
 		armcpu->instruct_adr = armcpu->next_instruction;
 		armcpu->next_instruction += 4;
 		armcpu->R[15] = armcpu->next_instruction + 4;
 		return MMU.MMU_WAIT32[armcpu->proc_ID][(armcpu->instruct_adr>>24)&0xF];
 	}
-	armcpu->instruction = MMU_readHWord(armcpu->proc_ID, armcpu->next_instruction);
+	armcpu->instruction = MMU_readHWordACL(armcpu->proc_ID, armcpu->next_instruction,ACCESS_EXECUTION);
 	armcpu->instruct_adr = armcpu->next_instruction;
 	armcpu->next_instruction = armcpu->next_instruction + 2;
 	armcpu->R[15] = armcpu->next_instruction + 2;
