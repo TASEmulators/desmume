@@ -3,6 +3,10 @@
 #include <string.h>
 #include <libgen.h>
 
+#ifndef CLI_UI
+#define CLI_UI
+#endif
+
 #include "../MMU.h"
 #include "../NDSSystem.h"
 #include "../cflash.h"

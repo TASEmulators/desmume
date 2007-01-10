@@ -22,7 +22,9 @@
 #ifndef __GLOBALS_H__
 #define __GLOBALS_H__
 
-#define GTK
+#ifndef GTK_UI
+#define GTK_UI
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
