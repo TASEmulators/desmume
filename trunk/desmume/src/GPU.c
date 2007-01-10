@@ -533,9 +533,31 @@ void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num)
 	gpu->WINDOW_XDIM[num].val = v ;
 }
 
+void GPU_setWINDOW_XDIM_Component(GPU *gpu, u8 v, u8 num)  /* write start/end seperately */
+{
+	if (num & 1)
+	{
+		gpu->WINDOW_XDIM[num >> 1].bitfield.start = v ;
+	} else
+	{
+		gpu->WINDOW_XDIM[num >> 1].bitfield.end = v ;
+	}
+}
+
 void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num)
 {
 	gpu->WINDOW_YDIM[num].val = v ;
+}
+
+void GPU_setWINDOW_YDIM_Component(GPU *gpu, u8 v, u8 num)  /* write start/end seperately */
+{
+	if (num & 1)
+	{
+		gpu->WINDOW_YDIM[num >> 1].bitfield.start = v ;
+	} else
+	{
+		gpu->WINDOW_YDIM[num >> 1].bitfield.end = v ;
+	}
 }
 
 void GPU_setWINDOW_INCNT(GPU *gpu, u16 v)
@@ -577,19 +599,19 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 							*draw = TRUE ;
 						break ;
 					case 2:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG2_Enable) 
+						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG2_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 3:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG3_Enable)  
+						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG3_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 4:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_OBJ_Enable) 
+						if (!gpu->WINDOW_INCNT.bitfield.WIN0_OBJ_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
@@ -600,7 +622,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 			}
 		}
 	}
-	else if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
+	if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
 	{
 		if ((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val))
 		{
@@ -644,7 +666,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 			}
 		}
 	}
-	else if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
+	if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
 	{
 	}
 	/* we have no rule, so allow everything for now */
@@ -700,7 +722,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 			}
 		}
 	}
-	else if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
+	if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
 	{
 		if (!((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)))
 		{
@@ -744,7 +766,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 			}
 		}
 	}
-	else if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
+	if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
 	{
 	}
 	/* we have no rule, so allow everything for now */
