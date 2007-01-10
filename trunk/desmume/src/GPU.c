@@ -1310,6 +1310,17 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 * src;
 		u8 * pal;
 		u16 j;
+
+		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
+		if (spriteInfo->RotScale & 1) {
+			/* if we need to do rotscale, gather its parameters */
+			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
+			rotScaleA = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x06,0) ;
+			rotScaleB = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x0E,0) ;
+			rotScaleC = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x16,0) ;
+			rotScaleD = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x1E,0) ;
+		} ;
+
 	
 		sprX = (spriteInfo->X<<23)>>23;         /* get sprite location and size */
 		sprY = spriteInfo->Y;
@@ -1322,7 +1333,6 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	
 		/* FIXME: for rot/scale, a list of entries into the sprite should be maintained, that tells us where the first pixel */
 		/* of a screenline starts in the sprite, and how a step to the right in a screenline translates within the sprite */
-		/* CHECKME: if H-flipped, are the clippings meet? What happens if x direction is flipped, is the range checking working? */
 		if( (spriteInfo->RotScale == 2) ||      /* rotscale == 2 => sprite disabled */
 		    (l<sprY)||(l>=sprY+sprSize.y) ||    /* sprite occupies only lines outside the current drawn line */
 		    (sprX==256) )                       /* sprite is outside our line */
@@ -1474,6 +1484,16 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 * pal;
 		u16 j;
 	
+		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
+		if (spriteInfo->RotScale & 1) {
+			/* if we need to do rotscale, gather its parameters */
+			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
+			rotScaleA = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x06,0) ;
+			rotScaleB = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x0E,0) ;
+			rotScaleC = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x16,0) ;
+			rotScaleD = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x1E,0) ;
+		} ;
+
 		sprX = (spriteInfo->X<<23)>>23;
 		sprY = spriteInfo->Y;
 		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
