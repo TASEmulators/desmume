@@ -423,7 +423,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			{
 				/* the formular would create only white, as (r + (31-r)) = 31 */
 				/* white = enable all bits */
-				memset(dst,0xFF, 256*sizeof(COLOR)) ;
+				memset(dst,0xFF, 256*2 /* sizeof(COLOR) */) ;
 			} else
 			{
 
@@ -463,7 +463,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			{
 				/* the formular would create only black, as (r - r) = 0 */
 				/* black = disable all bits */
-				memset(dst,0, 256*sizeof(COLOR)) ;
+				memset(dst,0, 256*2 /* sizeof(COLOR) */) ;
 			} else
 			{
 
