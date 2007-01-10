@@ -127,6 +127,8 @@ void GPU_DeInit(GPU * gpu)
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
+        BOOL LayersEnable[5];
+        u16 WinBG;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bitfield;
 
 	gpu->dispCnt.integer = p;
@@ -183,10 +185,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-BOOL LayersEnable[5];
-u16 WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
-WinBG = WinBG | (WinBG >> 8);
-
+        WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
+        WinBG = WinBG | (WinBG >> 8);
 
 	// Let's prepare the field for WINDOWS implementation
 	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1));
