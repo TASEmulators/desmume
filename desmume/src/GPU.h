@@ -181,6 +181,16 @@ typedef struct
 	unsigned attr3:16;
 } _OAM_;
 
+typedef union windowdim_t
+{
+	struct
+	{
+/* 0*/	unsigned end:8;
+/* 8*/	unsigned start:8;
+	} bitfield ;
+	unsigned short val ;
+} windowdim_t ;
+
 typedef union windowcnt_t
 {
 	struct
@@ -189,14 +199,14 @@ typedef union windowcnt_t
 /* 1*/  unsigned WIN0_BG1_Enable:1;
 /* 2*/  unsigned WIN0_BG2_Enable:1;
 /* 3*/  unsigned WIN0_BG3_Enable:1;
-/* 4*/  unsigned WIN0_OBJ_Enabble:1;
+/* 4*/  unsigned WIN0_OBJ_Enable:1;
 /* 5*/  unsigned WIN0_Effect_Enable:1;
 /* 6*/  unsigned :2;
 /* 8*/  unsigned WIN1_BG0_Enable:1;
 /* 9*/  unsigned WIN1_BG1_Enable:1;
 /*10*/  unsigned WIN1_BG2_Enable:1;
 /*11*/  unsigned WIN1_BG3_Enable:1;
-/*12*/  unsigned WIN1_OBJ_Enabble:1;
+/*12*/  unsigned WIN1_OBJ_Enable:1;
 /*13*/  unsigned WIN1_Effect_Enable:1;
 /*14*/  unsigned :2;
 	} bitfield ;
@@ -269,8 +279,8 @@ struct _GPU
 	u16 MOSAIC ;
 	u16 MASTER_BRIGHT;
 
-	u16 WINDOW_XDIM[2] ;
-	u16 WINDOW_YDIM[2] ;
+	windowdim_t WINDOW_XDIM[2] ;
+	windowdim_t WINDOW_YDIM[2] ;
 	windowcnt_t WINDOW_INCNT ;
 	windowcnt_t WINDOW_OUTCNT ;
 
@@ -414,9 +424,9 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 				g = dstColor.bitfield.green;
 				b = dstColor.bitfield.blue;
 				// Bright up and clamp to 5bit
-				dstColor.bitfield.red   = (r + (r*masterBrightFactor)/16);
-				dstColor.bitfield.green = (g + (g*masterBrightFactor)/16);
-				dstColor.bitfield.blue  = (b + (b*masterBrightFactor)/16);
+				dstColor.bitfield.red   = min(31,(r + ((31-r)*masterBrightFactor)/16));
+				dstColor.bitfield.green = min(31,(g + ((31-g)*masterBrightFactor)/16));
+				dstColor.bitfield.blue  = min(31,(b + ((31-b)*masterBrightFactor)/16));
 				T2WriteWord (dst, i16 << 1, dstColor.val);
 			}
 
@@ -445,9 +455,9 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 				g = dstColor.bitfield.green;
 				b = dstColor.bitfield.blue;
 				// Bright up and clamp to 5bit
-				dstColor.bitfield.red   = (r + ((31-r)*masterBrightFactor)/16);
-				dstColor.bitfield.green = (g + ((31-g)*masterBrightFactor)/16);
-				dstColor.bitfield.blue  = (b + ((31-b)*masterBrightFactor)/16);
+				dstColor.bitfield.red   = min(31,(r - (r*masterBrightFactor)/16));
+				dstColor.bitfield.green = min(31,(g - (g*masterBrightFactor)/16));
+				dstColor.bitfield.blue  = min(31,(b - (b*masterBrightFactor)/16));
 				T2WriteWord (dst, i16 << 1, dstColor.val);
 			}
 			break;
