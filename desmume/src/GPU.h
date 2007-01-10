@@ -127,15 +127,6 @@ typedef union
 	i.bitfield.blue  = w.bitfield.blue; \
 	i.bitfield.alpha = w.bitfield.alpha;
 
-
-typedef union 
-{
-	struct _COLOR bitfield;
-	u16 val;
-} COLOR;
-
-
-
 struct _BGxCNT 
 {
 /*0*/	unsigned Priority:2;		// 0..3=high..low
