@@ -755,6 +755,54 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 				}
 			}
 			break;
+				case REG_DISPA_WIN0H:
+                    GPU_setWINDOW_XDIM_Component(MainScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPA_WIN0H+1:
+                    GPU_setWINDOW_XDIM_Component(MainScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPA_WIN1H:
+                    GPU_setWINDOW_XDIM_Component(MainScreen.gpu,val,2) ;
+					break ;
+				case REG_DISPA_WIN1H+1:
+                    GPU_setWINDOW_XDIM_Component(MainScreen.gpu,val,3) ;
+					break ;
+				case REG_DISPB_WIN0H:
+                    GPU_setWINDOW_XDIM_Component(SubScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPB_WIN0H+1:
+                    GPU_setWINDOW_XDIM_Component(SubScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPB_WIN1H:
+                    GPU_setWINDOW_XDIM_Component(SubScreen.gpu,val,2) ;
+					break ;
+				case REG_DISPB_WIN1H+1:
+                    GPU_setWINDOW_XDIM_Component(SubScreen.gpu,val,3) ;
+					break ;
+				case REG_DISPA_WIN0V:
+                    GPU_setWINDOW_YDIM_Component(MainScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPA_WIN0V+1:
+                    GPU_setWINDOW_YDIM_Component(MainScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPA_WIN1V:
+                    GPU_setWINDOW_YDIM_Component(MainScreen.gpu,val,2) ;
+					break ;
+				case REG_DISPA_WIN1V+1:
+                    GPU_setWINDOW_YDIM_Component(MainScreen.gpu,val,3) ;
+					break ;
+				case REG_DISPB_WIN0V:
+                    GPU_setWINDOW_YDIM_Component(SubScreen.gpu,val,0) ;
+					break ;
+				case REG_DISPB_WIN0V+1:
+                    GPU_setWINDOW_YDIM_Component(SubScreen.gpu,val,1) ;
+					break ;
+				case REG_DISPB_WIN1V:
+                    GPU_setWINDOW_YDIM_Component(SubScreen.gpu,val,2) ;
+					break ;
+				case REG_DISPB_WIN1V+1:
+                    GPU_setWINDOW_YDIM_Component(SubScreen.gpu,val,3) ;
+					break ;
 #ifdef LOG_CARD
 		case 0x040001A0 : /* TODO (clear): ??? */
 		case 0x040001A1 :
