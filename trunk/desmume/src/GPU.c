@@ -658,10 +658,10 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 	/* priority to check the window regions: win0,win1,winobj */
 	if (gpu->dispCnt.bitfield.Win0_Enable)          					/* highest priority */
 	{
-		if ((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val))
+		if (!((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)))
 		{
-			if ((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) || (gpu->WINDOW_XDIM[0].bitfield.end==0))
-				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end))
+			if (!((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) || (gpu->WINDOW_XDIM[0].bitfield.end==0))
+				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end)))
 			{
 				switch (bgnum) {
 					case 0:
@@ -702,10 +702,10 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 	}
 	else if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
 	{
-		if ((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val))
+		if (!((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)))
 		{
-			if ((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) || (gpu->WINDOW_XDIM[1].bitfield.end==0))
-				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end))
+			if (!((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) || (gpu->WINDOW_XDIM[1].bitfield.end==0))
+				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end)))
 			{
 				switch (bgnum) {
 					case 0:
