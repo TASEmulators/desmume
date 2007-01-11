@@ -335,3 +335,44 @@ void  on_button_Start_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMU
 void  on_button_Select_clicked  (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Select); }
 void  on_button_Debug_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_DEBUG); }
 void  on_button_Boost_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_BOOST); }
+
+/* Joystick configuration / Key definition */
+/* FIXME: popup is not shown!? */
+void ask_joy_key(GtkButton*b, int key)
+{
+  char text[50];
+  u16 joykey;
+
+  key--; /* remove 1 to get index */
+  GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wJoyDlg");
+  GtkDialog * parent = (GtkDialog*)glade_xml_get_widget(xml, "wJoyConfDlg");
+  gtk_widget_set_sensitive(parent, FALSE); /* Ugly workaround for bug below */
+  gtk_widget_show_now(dlg);
+  /* FIXME: when the following line is not commented, the widget is not even shown!! */
+  joykey = get_set_joy_key(key);
+  sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[key],joykey);
+  gtk_button_set_label(b,text);
+  gtk_widget_hide((GtkWidget*)dlg);
+  gtk_widget_set_sensitive(parent, TRUE); /* Ugly workaround for bug below */
+}
+
+void on_joy_button_A_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_A); }
+void on_joy_button_B_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_B); }
+void on_joy_button_X_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_X); }
+void on_joy_button_Y_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_Y); }
+void on_joy_button_L_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_L); }
+void on_joy_button_R_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_R); }
+void on_joy_button_Select_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_Select); }
+void on_joy_button_Start_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_Start); }
+void on_joy_button_Boost_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_BOOST); }
+void on_joy_button_Debug_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_key(b,DESMUME_KEY_DEBUG); }
