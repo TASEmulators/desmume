@@ -188,6 +188,86 @@ typedef struct rffilter_t
 	} VCOT1 ;
 } rffilter_t ;
 
+/* baseband chip refered as BB_, dataformat is unknown yet */
+/* it has at least 105 bytes of functional data */
+typedef struct
+{
+	bb_t    data[105] ;
+} bb_t ;
+
+/* communication interface between RF,BB and the mac */
+typedef union
+{
+	struct {
+/* 0*/  unsigned address:5;
+/* 5*/  unsigned :2;
+/* 7*/  unsigned readOperation:1;
+/* 8*/  unsigned :8;
+	} bits ;
+	u16 val ;
+} rfIOCnt_t ;
+
+typedef union
+{
+	struct {
+/* 0*/  unsigned address:7;
+/* 7*/  unsigned :5;
+/*12*/  unsigned mode:2;
+/*14*/  unsigned enable:1;
+/*15*/  unsigned :!;
+	} bits ;
+	u16 val ;
+} bbIOCnt_t ;
+
+/* definition of the irq bitfields for wifi irq's (cascaded at arm7 irq #24) */
+typedef union
+{
+	struct
+	{
+/* 0*/  unsigned recv_complete:1;
+/* 1*/  unsigned send_complete:1;
+/* 2*/  unsigned recv_countup:1;
+/* 3*/  unsigned send_error:1;
+/* 4*/  unsigned stat_coutup:1;
+/* 5*/  unsigned stat_ackup:1;
+/* 6*/  unsigned recv_start:1;
+/* 7*/  unsigned send_start:1;
+/* 8*/  unsigned :3;
+/*11*/  unsigned rf_wakeup:1;
+/*12*/  unsigned :2;
+/*14*/  unsigned time_beacon:1;
+/*15*/  unsigned time_prebeacon:1;
+	} bits ;
+	u16 val ;
+} wifiirq_t ;
+
+/* wifimac_t: the buildin mac (arm7 addressrange: 0x04800000-0x04FFFFFF )*/
+/* http://www.akkit.org/info/dswifi.htm#WifiIOMap */
+typedef struct 
+{
+
+	/* wifi interrupt handling */
+    wifiirq_t   IE ;
+    wifiirq_t   IF ;
+
+	/* modes */
+	u16 macMode ;
+	u16 wepMode ;
+
+	/* addressing/handshaking */
+	u8  mac[6] ;
+	u8  bss[6] ;
+
+	/* subchips */
+    rffilter_t 	RF ;
+	bb_t        BB ;
+
+	/* subchip communications */
+    rfIOCnt_t   rfIOCnt ;
+    bbIOCnt_t   bbIOCnt ;
+
+} wifimac_t ;
+
 #ifdef __cplusplus
 }
 #endif
