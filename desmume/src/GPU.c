@@ -270,15 +270,16 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 
     GPU_resortBGs(gpu) ;
 
-     	if(gpu->core == GPU_SUB) {
+    if(gpu->core == GPU_SUB) {
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_BBG;
 	} else {
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bits.CharacBase_Block * ADDRESS_STEP_64kB ;
-                gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
-                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
+		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bits.CharacBase_Block * ADDRESS_STEP_64kB ;
+		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
+		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
+	/* the charac base block has a differenet meaning in rotscale BGs */
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_map_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
@@ -1096,13 +1097,14 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 	u8 affineModeSelection ;
 	
 	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
-    affineModeSelection = (bgCnt.Palette_256) | ((bgCnt.CharacBase_Block & 1) << 1) ;
+    affineModeSelection = (bgCnt.Palette_256  << 1) | ((bgCnt.CharacBase_Block & 1)) ;
 	switch(affineModeSelection)
 	{
 		case 0 :
 		case 1 :
 		{
 		u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+
 		if(!pal) return;
 
 #define LOOP(c) \
