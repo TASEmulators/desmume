@@ -827,6 +827,19 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 				case REG_DISPB_WINOUT+1:
 					GPU_setWINDOW_OUTCNT_Component(SubScreen.gpu,val,1) ;
 					break ;
+				case REG_DISPA_MASTERBRIGHT:
+					GPU_setMASTER_BRIGHT (MainScreen.gpu, (val & 0xFF) | (T1ReadWord((u16 *)REG_DISPA_MASTERBRIGHT,0) & 0xFF00));
+					break;
+				case REG_DISPA_MASTERBRIGHT+1:
+					GPU_setMASTER_BRIGHT (MainScreen.gpu, (val & 0xFF00) | (T1ReadWord((u16 *)REG_DISPA_MASTERBRIGHT,0) & 0xFF));
+					break;
+				case REG_DISPB_MASTERBRIGHT:
+					GPU_setMASTER_BRIGHT (SubScreen.gpu, (val & 0xFF) | (T1ReadWord((u16 *)REG_DISPB_MASTERBRIGHT,0) & 0xFF00));
+					break;
+				case REG_DISPB_MASTERBRIGHT+1:
+					GPU_setMASTER_BRIGHT (SubScreen.gpu, (val & 0xFF00) | (T1ReadWord((u16 *)REG_DISPB_MASTERBRIGHT,0) & 0xFF));
+					break;
+
 #ifdef LOG_CARD
 		case 0x040001A0 : /* TODO (clear): ??? */
 		case 0x040001A1 :
@@ -1790,6 +1803,12 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				GPU_setWINDOW_INCNT(SubScreen.gpu, val & 0xFFFF) ;
 				GPU_setWINDOW_OUTCNT(SubScreen.gpu, (val >> 16) & 0xFFFF) ;
 				break ;
+			case REG_DISPA_MASTERBRIGHT:
+				GPU_setMASTER_BRIGHT (MainScreen.gpu, val & 0xFFFF);
+				break;
+			case REG_DISPB_MASTERBRIGHT:
+				GPU_setMASTER_BRIGHT (SubScreen.gpu, val & 0xFFFF);
+				break;
 
 			case REG_IME :
 				MMU.reg_IME[proc] = val & 1;
