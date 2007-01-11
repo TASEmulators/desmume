@@ -1120,9 +1120,11 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 	u8 * map;
 	u16 mapinfo, i;
 	u8 coul;
+	u8 affineModeSelection ;
 	
-	// damdoum : I just replaced here but I dont understand it yet
-	switch((bgCnt.CharacBase_Block&1)|(bgCnt.Mosaic_Enable << 1))
+	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
+    affineModeSelection = (bgCnt.Palette_256) | ((bgCnt.CharacBase_Block & 1) << 1) ;
+	switch(affineModeSelection)
 	{
 		case 0 :
 		case 1 :
