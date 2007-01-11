@@ -25,15 +25,17 @@
 extern "C" {
 #endif
 
+#include "types.h"
+
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
 /* using the register names as in docs ( http://www.rfmd.com/pdfs/2958.pdf )*/
 /* even tho every register only has 18 bits we are using u32 */
 typedef struct rffilter_t
 {
-	union
+	union CFG1
 	{
-		struct
+		struct bits
 		{
 /* 0*/		unsigned IF_VGA_REG_EN:1;
 /* 1*/		unsigned IF_VCO_REG_EN:1;
@@ -45,9 +47,9 @@ typedef struct rffilter_t
 		} bits ;
 		u32 val ;
 	} CFG1 ;
-	union
+	union IFPLL1
 	{
-		struct
+		struct bits
 		{
 /* 0*/		unsigned DAC:4;
 /* 4*/		unsigned :5;
@@ -62,30 +64,30 @@ typedef struct rffilter_t
 /*17*/		unsigned PLL_EN1:1;
 		} bits ;
 		u32 val ;
-	} IFPLL1
-	union
+	} IFPLL1 ;
+	union IFPLL2
 	{
-		struct
+		struct bits
 		{
 /* 0*/		unsigned IF_N:16;
 /*16*/		unsigned :2;
 		} bits ;
 		u32 val ;
-	} IFPLL2
-	union
+	} IFPLL2 ;
+	union IFPLL3
 	{
-		struct
+		struct bits
 		{
-/* 0*/		unsigned KV_DEF:4;
-/* 4*/		unsigned CT_DEF:4;
+/* 0*/		unsigned KV_DEF1:4;
+/* 4*/		unsigned CT_DEF1:4;
 /* 8*/		unsigned DN1:9;
 /*17*/		unsigned :1;
 		} bits ;
 		u32 val ;
-	} IFPLL3
-	union
+	} IFPLL3 ;
+	union RFPLL1
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned DAC:4;
 /* 4*/      unsigned :5;
@@ -101,26 +103,26 @@ typedef struct rffilter_t
 		} bits ;
 		u32 val ;
 	} RFPLL1 ;
-	union
+	union RFPLL2
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned NUM2:6;
 /* 6*/      unsigned N2:12;
 		} bits ;
 		u32 val ;
 	} RFPLL2 ;
-	union
+	union RFPLL3
 	{
-		struct
+		struct bits
 		{
 /* 0*/		unsigned NUM2:18;
 		} bits ;
 		u32 val ;
 	} RFPLL3 ;
-	union
+	union RFPLL4
 	{
-		struct
+		struct bits
 		{
 /* 0*/		unsigned KV_DEF:4;
 /* 4*/      unsigned CT_DEF:4;
@@ -129,9 +131,9 @@ typedef struct rffilter_t
 		} bits ;
 		u32 val ;
 	} RFPLL4 ;
-	union
+	union CAL1
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned LD_WINDOW:3;
 /* 3*/      unsigned M_CT_VALUE:5;
@@ -140,9 +142,9 @@ typedef struct rffilter_t
 		} bits ;
 		u32 val ;
 	} CAL1 ;
-	union
+	union TXRX1
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned TXBYPASS:1;
 /* 1*/      unsigned INTBIASEN:1;
@@ -156,9 +158,9 @@ typedef struct rffilter_t
 		} bits ;
 		u32 val ;
 	} TXRX1 ;
-	union
+	union PCNT1
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned TX_DELAY:3;
 /* 3*/      unsigned PC_OFFSET:6;
@@ -167,18 +169,18 @@ typedef struct rffilter_t
 		} bits ;
 		u32 val ;
 	} PCNT1 ;
-	union
+	union PCNT2
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned MIN_POWER:6;
 /* 6*/      unsigned MID_POWER:6;
 /*12*/      unsigned MAX_POWER:6;
 		} bits ;
 	} PCNT2 ;
-	union
+	union VCOT1
 	{
-		struct
+		struct bits
 		{
 /* 0*/      unsigned :16;
 /*16*/      unsigned AUX1:1;
@@ -192,14 +194,14 @@ typedef struct rffilter_t
 /* it has at least 105 bytes of functional data */
 typedef struct
 {
-	bb_t    data[105] ;
+	u8    data[105] ;
 } bb_t ;
 
 /* communication interface between RF,BB and the mac */
 typedef union
 {
 	struct {
-/* 0*/  unsigned address:5;
+/* 0*/  unsigned wordsize:5;
 /* 5*/  unsigned :2;
 /* 7*/  unsigned readOperation:1;
 /* 8*/  unsigned :8;
@@ -214,7 +216,7 @@ typedef union
 /* 7*/  unsigned :5;
 /*12*/  unsigned mode:2;
 /*14*/  unsigned enable:1;
-/*15*/  unsigned :!;
+/*15*/  unsigned :1;
 	} bits ;
 	u16 val ;
 } bbIOCnt_t ;
@@ -267,6 +269,9 @@ typedef struct
     bbIOCnt_t   bbIOCnt ;
 
 } wifimac_t ;
+
+void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;
+
 
 #ifdef __cplusplus
 }
