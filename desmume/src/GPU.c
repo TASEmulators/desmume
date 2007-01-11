@@ -103,7 +103,7 @@ void GPU_Reset(GPU *g, u8 l)
    g->core = l;
    g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
    g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
-   g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
+   g->dispOBJ = g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
      
    g->spriteRender = sprite1D;
      
@@ -126,68 +126,50 @@ void GPU_DeInit(GPU * gpu)
 
 void GPU_resortBGs(GPU *gpu)
 {
-    BOOL LayersEnable[5];
-    u16 WinBG=0;
-	int i,q ;
+BOOL LayersEnable[5];
+u16 WinBG=0;
+	u8 i, j, index;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
+	u8 priorities[16] = {	0xFF,0xFF,0xFF,0xFF,   0xFF,0xFF,0xFF,0xFF,
+				0xFF,0xFF,0xFF,0xFF,   0xFF,0xFF,0xFF,0xFF};
 
 	if (cnt->Win0_Enable || cnt->Win1_Enable)
 	{
-        WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
-        WinBG = WinBG | (WinBG >> 8);
+	WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
+	WinBG = WinBG | (WinBG >> 8);
 	}
 
 	// Let's prepare the field for WINDOWS implementation
-	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1)) && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
-	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2)) ;
-	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4)) ;
-	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8)) ;
+	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1))&& !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
+	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
+	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
+	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
 	LayersEnable[4] = (cnt->OBJ_Enable || (WinBG & 0x10));
 
-	/* first: place them all unsorted, just as they are */
-	for (i=0;i<4;i++)
-	{
-		gpu->ordre[i] = i ;
+	// KISS ! lower priority first, if same then lower num
+	for (i=0; i<4; i++) {
+		index = (gpu->bgCnt[i].bits.Priority << 2) | i;
+		priorities[index] = i;
 	}
-
-	/* sorting BGs by priority, keep same priorities ordered by their num */
-	/* selection sort*/
-	for (i=0;i<4;i++)
-	{
-		/* weighted priorities: first drawn/not drawm, then set priority bits, then the num */
-		/* the higher the value the lower the priority */
-		u8 curPrio = gpu->bgCnt[gpu->ordre[i]].bits.Priority*4 + (LayersEnable[gpu->ordre[i]]?16:0) + gpu->ordre[i] ;
-		for (q=i+1;q<4;q++)
-		{
-			u8 lookingPrio =  gpu->bgCnt[gpu->ordre[q]].bits.Priority*4 + (LayersEnable[gpu->ordre[q]]?16:0) + gpu->ordre[q] ;
-			/* if the one we are looking for is of higher priority then the current selected, swap them */
-			/* note: higher value = lower priority */
-			if (lookingPrio > curPrio)
-			{
-				/* swap the order */
-				u8 savedIndex = gpu->ordre[i] ;
-                gpu->ordre[i] = gpu->ordre[q] ;
-                gpu->ordre[q] = savedIndex ;
-				/* update the current info */
-                curPrio = lookingPrio ;
-			} ;
+	for (i=0,j=0; i<16; i++) {
+		if ((index=priorities[i])!=0xFF && LayersEnable[index]) {
+			gpu->ordre[j]=index;
+			gpu->BGIndex[index]=j;
+			j++;
 		}
 	}
-	/* once we are done ordering, create the inverse table */
-	for (i=0;i<4;i++)
-	{
-        gpu->BGIndex[gpu->ordre[i]] = i ;
-		/* and remember the processed highest enabled BG */
-		if (LayersEnable[gpu->ordre[i]]) gpu->nbBGActif = i+1 ;
-	}
+	gpu->nbBGActif = j;
+	if (1==1) return;
 }
+
+
+
 
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
         BOOL LayersEnable[5];
         u16 WinBG=0;
-		int i ;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
 
 	gpu->dispCnt.val = p;
@@ -238,21 +220,20 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	}
 
 	gpu->sprEnable = cnt->OBJ_Enable;
-
 	
 	GPU_setBGProp(gpu, 3, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 14));
 	GPU_setBGProp(gpu, 2, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 12));
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-    GPU_resortBGs(gpu) ; /* is allready done in GPU_setBGProb */
-	
+	GPU_resortBGs(gpu);
+
 	/* FIXME: this debug won't work, obviously ... */
 #ifdef DEBUG_TRI
 	log::ajouter("------------------");
 	for(u8 i = 0; i < gpu->nbBGActif; ++i)
 	{
-		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->bgCnt[gpu->ordre[i]].bitfield.Priority);
+		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->bgCnt[gpu->ordre[i]].bits.Priority);
 		log::ajouter(logbuf);
 	}
 	log::ajouter("_________________");
@@ -263,28 +244,27 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 /* FIXME: all DEBUG_TRI are broken */
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
-	u8 index = gpu->BGIndex[num];
 	struct _BGxCNT * cnt = &(gpu->bgCnt[num].bits), *cnt2;
-	int lastPriority = cnt->Priority, mode;
+	int mode;
 	gpu->bgCnt[num].val = p;
-
-    GPU_resortBGs(gpu) ;
-
-    if(gpu->core == GPU_SUB) {
+	
+	GPU_resortBGs(gpu);
+	
+     	if(gpu->core == GPU_SUB) {
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_BBG;
 	} else {
-		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bits.CharacBase_Block * ADDRESS_STEP_64kB ;
-		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
-		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bits.CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
+                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
 	/* the charac base block has a differenet meaning in rotscale BGs */
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_map_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
 
-    switch(num)
+	switch(num)
 	{
 		case 0:
 		case 1:
@@ -295,29 +275,26 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 			gpu->BGExtPalSlot[num] = (u8)num;
 			break;
 	}
-                  
-     /*if(!(prop&(3<<16)))
-     {
-          BGSize[num][0] = lcdSizeTab[p>>14][0];
-          BGSize[num][1] =  lcdSizeTab[p>>14][1];
-          return;
-     }*/
 
 	mode = mode2type[gpu->dispCnt.bits.BG_Mode][num];
-    gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
-    gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
+	gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
+	gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 }
 
 void GPU_remove(GPU * gpu, u8 num)
 {
-     gpu->dispBG[num] = !gpu->dispBG[num];
-	GPU_resortBGs(gpu) ;
+	gpu->dispBG[num] = 0;
+	GPU_resortBGs(gpu);
 }
 
 void GPU_addBack(GPU * gpu, u8 num)
 {
-     gpu->dispBG[num] = !gpu->dispBG[num];
-	GPU_resortBGs(gpu) ;
+	gpu->dispBG[num] = 1;
+	GPU_resortBGs(gpu);
+}
+
+void GPU_toggleOBJ(GPU * gpu, u8 disp) {
+	gpu->dispOBJ = disp;
 }
 
 void GPU_scrollX(GPU * gpu, u8 num, u16 v)
@@ -497,7 +474,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 	if (gpu->dispCnt.bits.Win0_Enable)          					/* highest priority */
 	{
 		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
+		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
 				&&(y >= gpu->WINDOW_YDIM[0].bits.start) && (y < gpu->WINDOW_YDIM[0].bits.end)))
 			{
 				switch (bgnum) {
@@ -539,7 +516,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 	if (gpu->dispCnt.bits.Win1_Enable)          				/* mid priority */
 	{
 		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
+		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
 				&&(y >= gpu->WINDOW_YDIM[1].bits.start) && (y < gpu->WINDOW_YDIM[1].bits.end)))
 			{
 				switch (bgnum) {
@@ -593,7 +570,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 	if (gpu->dispCnt.bits.Win0_Enable)          					/* highest priority */
 	{
 		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
+		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
 				&&(y >= gpu->WINDOW_YDIM[0].bits.start) && (y < gpu->WINDOW_YDIM[0].bits.end)))
 			{
 			} else
@@ -637,7 +614,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 	if (gpu->dispCnt.bits.Win1_Enable)          				/* mid priority */
 	{
 		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
+		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
 				&&(y >= gpu->WINDOW_YDIM[1].bits.start) && (y < gpu->WINDOW_YDIM[1].bits.end)))
 			{
 			} else
@@ -1095,16 +1072,15 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 	u16 mapinfo, i;
 	u8 coul;
 	u8 affineModeSelection ;
-	
+
 	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
-    affineModeSelection = (bgCnt.Palette_256  << 1) | ((bgCnt.CharacBase_Block & 1)) ;
+	affineModeSelection = (bgCnt.Palette_256 << 1) | (bgCnt.CharacBase_Block & 1) ;
 	switch(affineModeSelection)
 	{
 		case 0 :
 		case 1 :
 		{
 		u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
-
 		if(!pal) return;
 
 #define LOOP(c) \

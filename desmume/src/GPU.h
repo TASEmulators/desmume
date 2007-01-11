@@ -352,6 +352,7 @@ struct _GPU
 	u8 BGIndex[4];
 	u8 ordre[4];
 	BOOL dispBG[4];
+	BOOL dispOBJ;
 	
 	OAM * oam;
 	u8 * sprMem;
@@ -460,36 +461,53 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		T2WriteLong(dst, i8 << 2, c);
 		T2WriteLong(spr, i8 << 2, c);
 		T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
+
 	}
 	
-	if(!gpu->nbBGActif)
-	{
-		if (gpu->sprEnable)
+	if (gpu->sprEnable  && gpu->dispOBJ) {
+		if(!gpu->nbBGActif) {
 			gpu->spriteRender(gpu, l, dst, sprPrio);
-		return;
-	}
-	if (gpu->sprEnable)
-	{
-		gpu->spriteRender(gpu, l, spr, sprPrio);	
-		
-		if(gpu->bgCnt[gpu->ordre[0]].bits.Priority !=3)
-		{
-			for(i16 = 0; i16 < 128; ++i16) {
-				T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
-			}
+			return;
+		} else {
+	 		gpu->spriteRender(gpu, l, spr, sprPrio);	
 		}
 	}
 	
-	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
+u8 pixelsForPrio[4][256];
+u8 nbPixelsForPrio[4] = {0,0,0,0};
+u8 n,p;
+	// for all the pixels in the line
+	for(i= 0; i<256; i++) {
+		// assign them to the good priority table
+		p = sprPrio[i];
+		pixelsForPrio[p][nbPixelsForPrio[p]]=i;
+		nbPixelsForPrio[p]++;
+	}
+
+	// paint lower priorities fist
+	// then higher priorities on top
+	for(i8 = gpu->nbBGActif; i8 > 0; )
 	{
+		i8--;
 		if (! ((gpu->ordre[i8]==0) && gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) )
 			modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
 		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
-		if (gpu->sprEnable)
+		if (gpu->sprEnable && gpu->dispOBJ)
 		{
-			for(i16 = 0; i16 < 256; ++i16)
-			if(bgprio>=sprPrio[i16])
+			// there are sprite pixels on top of THAT layer
+			for (i=0; i<nbPixelsForPrio[bgprio]; i++) {
+				i16=pixelsForPrio[bgprio][i];
 				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+			}
+		}
+	}
+
+	if (gpu->sprEnable && gpu->dispOBJ)
+	for (; bgprio>0; ) {
+		bgprio--;
+		for (i=0; i<nbPixelsForPrio[bgprio]; i++) {
+			i16=pixelsForPrio[bgprio][i];
+			T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
 		}
 	}
 
@@ -507,7 +525,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
-			unsigned int    masterBrightFactor = gpu->masterBright.bits.Factor ;
+			unsigned int masterBrightFactor = gpu->masterBright.bits.Factor;
 
 			if (gpu->masterBright.bits.FactorEx)
 			{
@@ -521,21 +539,22 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			} else
 			{
 				if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
+
 				for(i16 = 0; i16 < 256; ++i16)
 				{
-					COLOR dstColor;
+ 					COLOR dstColor;
 					u8 base ;
-					unsigned int	r,g,b; // get components, 5bit each
-					dstColor.val = T1ReadWord(dst, i16 << 1);
-					r = dstColor.bits.red;
-					g = dstColor.bits.green;
-					b = dstColor.bits.blue;
-					// Bright up and clamp to 5bit <-- automatic
+ 					unsigned int	r,g,b; // get components, 5bit each
+ 					dstColor.val = T1ReadWord(dst, i16 << 1);
+ 					r = dstColor.bits.red;
+ 					g = dstColor.bits.green;
+ 					b = dstColor.bits.blue;
+ 					// Bright up and clamp to 5bit <-- automatic
 					base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
 					dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
 					dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
 					dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;
-					T2WriteWord (dst, i16 << 1, dstColor.val);
+ 					T2WriteWord (dst, i16 << 1, dstColor.val);
 				}
 			}
 			break;
@@ -559,10 +578,10 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	See: http://mightymax.org/gfx_test_brightness.nds
 	The Pokemon Problem could be a problem with 8/32 bit writes not recognized yet,
 	i'll add that so you can check back.
-
+.
 */
 			unsigned int    masterBrightFactor = gpu->masterBright.bits.Factor ;
-
+ 
 			if (gpu->masterBright.bits.FactorEx)
 			{
 				/* the formular would create only black, as (r - r) = 0 */
@@ -571,6 +590,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			} else
 			{
 			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
+ 
 				for(i16 = 0; i16 < 256; ++i16)
 				{
 					COLOR dstColor;
@@ -633,6 +653,7 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v);
 
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);
+void GPU_toggleOBJ(GPU *, u8 disp);
 
 #ifdef __cplusplus
 }

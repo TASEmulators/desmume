@@ -279,7 +279,7 @@ void change_bgx_layer(int layer, gboolean state, Screen scr) {
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
 void change_obj_layer(gboolean state, Screen scr) {
-	// TODO
+	GPU_toggleOBJ(scr.gpu, state);
 }
 
 /* LAYERS MAIN SCREEN ***** ***** ***** ***** */
