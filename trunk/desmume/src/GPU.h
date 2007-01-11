@@ -452,7 +452,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			return;
 	}
 	
-	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->lcd * 0x400);
+	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
 	c |= (c<<16);
 	
 	for(i8 = 0; i8< 128; ++i8)
@@ -482,7 +482,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	
 	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
 	{
-		if (! ((gpu->ordre[i8]==0) && (gpu->dispCnt.bits.BG0_3D)) )
+		if (! ((gpu->ordre[i8]==0) && gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) )
 			modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
 		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
 		if (gpu->sprEnable)

@@ -138,7 +138,7 @@ void GPU_resortBGs(GPU *gpu)
 	}
 
 	// Let's prepare the field for WINDOWS implementation
-	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1)) && !gpu->dispCnt.bits.BG0_3D ;
+	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1)) && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
 	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2)) ;
 	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4)) ;
 	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8)) ;
@@ -193,7 +193,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	gpu->dispCnt.val = p;
 
 //  gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
-    gpu->dispMode = cnt->DisplayMode & ((gpu->lcd)?1:3);
+    gpu->dispMode = cnt->DisplayMode & ((gpu->core)?1:3);
 
 	switch (gpu->dispMode)
 	{
@@ -309,43 +309,14 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 
 void GPU_remove(GPU * gpu, u8 num)
 {
-     u8 index;
-     //!!!!AJOUTER UN CRITICAL SECTION
-     if(index = gpu->BGIndex[num])
-     {
-	  u8 i;
-          --index;
-          --gpu->nbBGActif;
-          for(i = index; i < gpu->nbBGActif; ++i)
-          {
-               gpu->ordre[i] = gpu->ordre[i+1];
-               --gpu->BGIndex[gpu->ordre[i]];
-          }
-          gpu->BGIndex[num] = 0;
-     }
      gpu->dispBG[num] = !gpu->dispBG[num];
+	GPU_resortBGs(gpu) ;
 }
 
 void GPU_addBack(GPU * gpu, u8 num)
 {
-     if((!gpu->BGIndex[num])&& BGxENABLED(gpu->dispCnt,num))
-     {
-          u8 i = 0;
-	  s8 j;
-          u8 p = gpu->bgCnt[num].bits.Priority;
-          for(; i<gpu->nbBGActif; ++i)
-	if ((gpu->bgCnt[gpu->ordre[i]].bits.Priority >=p)&&(gpu->ordre[i]>num)) break;
-
-          for(j = gpu->nbBGActif-1; j >= i; --j)
-          {
-               gpu->ordre[j+1] = gpu->ordre[j];
-               ++gpu->BGIndex[gpu->ordre[j]];
-          }
-          gpu->ordre[i] = num;
-          gpu->BGIndex[num] = i+1;
-          ++gpu->nbBGActif;
-     }
      gpu->dispBG[num] = !gpu->dispBG[num];
+	GPU_resortBGs(gpu) ;
 }
 
 void GPU_scrollX(GPU * gpu, u8 num, u16 v)
