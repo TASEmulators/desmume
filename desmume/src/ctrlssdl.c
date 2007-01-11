@@ -183,8 +183,8 @@ u16 process_ctrls_events(u16 keypad)
             case 'x':	        ADD_KEY( keypad, 0x2); break;
             case SDLK_BACKSPACE:ADD_KEY( keypad, 0x4); break;
             case SDLK_RETURN:	ADD_KEY( keypad, 0x8); break;
-            case 's':	        ADD_KEY( keypad, 0x200); break;
-            case 'd':	        ADD_KEY( keypad, 0x100); break;
+            case 's':	        ADD_KEY( keypad, 0x100); break;
+            case 'd':	        ADD_KEY( keypad, 0x200); break;
             case 'w':	        ADD_KEY( keypad, 0x400); break;
             case 'e':	        ADD_KEY( keypad, 0x800); break;
             }
@@ -193,18 +193,18 @@ u16 process_ctrls_events(u16 keypad)
         case SDL_KEYUP:
           switch (event.key.keysym.sym)
             {
-            case SDLK_UP:       ADD_KEY( keypad, 0x40); break;
-            case SDLK_DOWN:	ADD_KEY( keypad, 0x80); break;
-            case SDLK_RIGHT:	ADD_KEY( keypad, 0x10); break;
-            case SDLK_LEFT:	ADD_KEY( keypad, 0x20); break;
-            case 'c':	        ADD_KEY( keypad, 0x1); break;
-            case 'x':	        ADD_KEY( keypad, 0x2); break;
-            case SDLK_BACKSPACE:ADD_KEY( keypad, 0x4); break;
-            case SDLK_RETURN:	ADD_KEY( keypad, 0x8); break;
-            case 's':	        ADD_KEY( keypad, 0x200); break;
-            case 'd':	        ADD_KEY( keypad, 0x100); break;
-            case 'w':	        ADD_KEY( keypad, 0x400); break;
-            case 'e':	        ADD_KEY( keypad, 0x800); break;
+            case SDLK_UP:       RM_KEY( keypad, 0x40); break;
+            case SDLK_DOWN:	RM_KEY( keypad, 0x80); break;
+            case SDLK_RIGHT:	RM_KEY( keypad, 0x10); break;
+            case SDLK_LEFT:	RM_KEY( keypad, 0x20); break;
+            case 'c':	        RM_KEY( keypad, 0x1); break;
+            case 'x':	        RM_KEY( keypad, 0x2); break;
+            case SDLK_BACKSPACE:RM_KEY( keypad, 0x4); break;
+            case SDLK_RETURN:	RM_KEY( keypad, 0x8); break;
+            case 's':	        RM_KEY( keypad, 0x100); break;
+            case 'd':	        RM_KEY( keypad, 0x200); break;
+            case 'w':	        RM_KEY( keypad, 0x400); break;
+            case 'e':	        RM_KEY( keypad, 0x800); break;
             }
           break;
 
