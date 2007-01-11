@@ -377,7 +377,17 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	gpu->BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_map_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
 
-    gpu->BGExtPalSlot[num] = cnt->PaletteSet_Wrap * 2 + num ;
+    switch(num)
+	{
+		case 0:
+		case 1:
+			gpu->BGExtPalSlot[num] = cnt->PaletteSet_Wrap * 2 + num ;
+			break;
+			
+		default:
+			gpu->BGExtPalSlot[num] = (u8)num;
+			break;
+	}
                   
      /*if(!(prop&(3<<16)))
      {
