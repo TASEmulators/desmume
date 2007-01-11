@@ -68,6 +68,33 @@ u16 inline lookup_joykey (u16 keyval) {
   return Key;
 }
 
+/* Get and set a new joystick key */
+u16 get_set_joy_key(int index) {
+  BOOL done = FALSE;
+  SDL_Event event;
+  u16 key = joypadCfg[index];
+
+  /* Enable joystick events if needed */
+  if( SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE )
+    SDL_JoystickEventState(SDL_ENABLE);
+
+  while(SDL_WaitEvent(&event) && !done)
+    {
+      switch(event.type)
+        {
+        case SDL_JOYBUTTONDOWN:
+          printf( "Got joykey: %d\n", event.jbutton.button );
+          key = event.jbutton.button;
+          done = TRUE;
+          break;
+        }
+    }
+  SDL_JoystickEventState(SDL_IGNORE);
+  joypadCfg[index] = key;
+
+  return key;
+}
+
 #ifndef GTK_UI
 /* Set mouse coordinates */
 void set_mouse_coord(signed long x,signed long y)
@@ -85,6 +112,11 @@ u16 process_ctrls_events(u16 keypad)
   u16 key;
 
   SDL_Event event;
+
+  /* IMPORTANT: Reenable joystick events iif needed. */
+  if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
+    SDL_JoystickEventState(SDL_ENABLE);
+
 #ifndef GTK_UI
   sdl_quit = FALSE;
 #endif
@@ -147,28 +179,32 @@ u16 process_ctrls_events(u16 keypad)
             case SDLK_DOWN:	ADD_KEY( keypad, 0x80); break;
             case SDLK_RIGHT:	ADD_KEY( keypad, 0x10); break;
             case SDLK_LEFT:	ADD_KEY( keypad, 0x20); break;
-            case SDLK_SPACE:	ADD_KEY( keypad, 0x1); break;
-            case 'b':	        ADD_KEY( keypad, 0x2); break;
+            case 'c':	        ADD_KEY( keypad, 0x1); break;
+            case 'x':	        ADD_KEY( keypad, 0x2); break;
             case SDLK_BACKSPACE:ADD_KEY( keypad, 0x4); break;
             case SDLK_RETURN:	ADD_KEY( keypad, 0x8); break;
-            case '0':	        ADD_KEY( keypad, 0x200); break;
-            case '.':	        ADD_KEY( keypad, 0x100); break;
+            case 's':	        ADD_KEY( keypad, 0x200); break;
+            case 'd':	        ADD_KEY( keypad, 0x100); break;
+            case 'w':	        ADD_KEY( keypad, 0x400); break;
+            case 'e':	        ADD_KEY( keypad, 0x800); break;
             }
           break;
 
         case SDL_KEYUP:
           switch (event.key.keysym.sym)
             {
-            case SDLK_UP:       RM_KEY( keypad, 0x40); break;
-            case SDLK_DOWN:	RM_KEY( keypad, 0x80); break;
-            case SDLK_RIGHT:	RM_KEY( keypad, 0x10); break;
-            case SDLK_LEFT:	RM_KEY( keypad, 0x20); break;
-            case SDLK_SPACE:	RM_KEY( keypad, 0x1); break;
-            case 'b':	        RM_KEY( keypad, 0x2); break;
-            case SDLK_BACKSPACE:RM_KEY( keypad, 0x4); break;
-            case SDLK_RETURN:	RM_KEY( keypad, 0x8); break;
-            case '0':	        RM_KEY( keypad, 0x200); break;
-            case '.':	        RM_KEY( keypad, 0x100); break;
+            case SDLK_UP:       ADD_KEY( keypad, 0x40); break;
+            case SDLK_DOWN:	ADD_KEY( keypad, 0x80); break;
+            case SDLK_RIGHT:	ADD_KEY( keypad, 0x10); break;
+            case SDLK_LEFT:	ADD_KEY( keypad, 0x20); break;
+            case 'c':	        ADD_KEY( keypad, 0x1); break;
+            case 'x':	        ADD_KEY( keypad, 0x2); break;
+            case SDLK_BACKSPACE:ADD_KEY( keypad, 0x4); break;
+            case SDLK_RETURN:	ADD_KEY( keypad, 0x8); break;
+            case 's':	        ADD_KEY( keypad, 0x200); break;
+            case 'd':	        ADD_KEY( keypad, 0x100); break;
+            case 'w':	        ADD_KEY( keypad, 0x400); break;
+            case 'e':	        ADD_KEY( keypad, 0x800); break;
             }
           break;
 
