@@ -213,7 +213,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	{
 		if(gpu->nbBGActif)
 		{
-                        if(BGCNT_PRIORITY(gpu->BGProp[2]) > BGCNT_PRIORITY(gpu->BGProp[3]))
+                        if(gpu->bgCnt[2].bitfield.Priority > gpu->bgCnt[3].bitfield.Priority)
 			{
 				gpu->ordre[0] = 2;
 				gpu->BGIndex[2] = 1;
@@ -249,9 +249,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		}
 		else
 		{
-			u8 i = 0;
+			u8 i;
 			s8 j;
-                        for(; (i < gpu->nbBGActif) && (BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]) >= BGCNT_PRIORITY(gpu->BGProp[1])); ++i);
+                        for(i=0; i < gpu->nbBGActif; i++)
+				if (gpu->bgCnt[gpu->ordre[i]].bitfield.Priority >= gpu->bgCnt[1].bitfield.Priority) break;
+				
 			for(j = gpu->nbBGActif-1; j >= i; --j)
 			{
 				gpu->ordre[j+1] = gpu->ordre[j];
@@ -278,7 +280,9 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		{
 			u8 i = 0;
 			s8 j;
-                        for(; (i < gpu->nbBGActif) && (BGCNT_PRIORITY(gpu->BGProp[gpu->ordre[i]]) >= BGCNT_PRIORITY(gpu->BGProp[0])); ++i);
+                        for(; (i < gpu->nbBGActif); i++)
+				if  (gpu->bgCnt[gpu->ordre[i]].bitfield.Priority >= gpu->bgCnt[0].bitfield.Priority) break;
+
 			for(j = gpu->nbBGActif-1; j >= i; --j)
 			{
 				gpu->ordre[j+1] = gpu->ordre[j];
@@ -299,7 +303,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	log::ajouter("------------------");
 	for(u8 i = 0; i < gpu->nbBGActif; ++i)
 	{
-		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->BGProp[gpu->ordre[i]]&3);
+		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->bgCnt[gpu->ordre[i]].bitfield.Priority);
 		log::ajouter(logbuf);
 	}
 	log::ajouter("_________________");
@@ -365,7 +369,6 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	}
 	
 	gpu->bgCnt[num].integer = p;
-	gpu->BGProp[num] = p;
 	
      	if(gpu->core == GPU_SUB) {
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
@@ -429,8 +432,10 @@ void GPU_addBack(GPU * gpu, u8 num)
      {
           u8 i = 0;
 	  s8 j;
-          u8 p = gpu->BGProp[num]&3;
-          for(; (i<gpu->nbBGActif) && (((gpu->BGProp[gpu->ordre[i]]&3)>p) || (((gpu->BGProp[gpu->ordre[i]]&3)==p)&&(gpu->ordre[i]>num))); ++i);
+          u8 p = gpu->bgCnt[num].bitfield.Priority;
+          for(; i<gpu->nbBGActif; ++i)
+	if ((gpu->bgCnt[gpu->ordre[i]].bitfield.Priority >=p)&&(gpu->ordre[i]>num)) break;
+
           for(j = gpu->nbBGActif-1; j >= i; --j)
           {
                gpu->ordre[j+1] = gpu->ordre[j];
@@ -900,7 +905,7 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 /* render a text background to the combined pixelbuffer */
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 {
-	u32 bgprop = gpu->BGProp[num];
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bitfield;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
 	u16 tmp    = ((Y&(ht-1))>>3);
@@ -914,17 +919,19 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 	if(tmp>31) 
 	{
-		map+= ADDRESS_STEP_512B << BGCNT_SCREENSIZE(bgprop) ;
+		map+= ADDRESS_STEP_512B << bgCnt.ScreenSize ;
 	}
 	
 	tile = (u8*) gpu->BG_tile_ram[num];
 	if((!tile) || (!gpu->BG_map_ram[num])) return; 	/* no tiles or no map*/
 	xoff = X;
-	if(!BGCNT_256COL(bgprop))    /* color: 16 palette entries */
+	if(!bgCnt.Palette_256)    /* color: 16 palette entries */
 	{
 
-		if (bgprop & 0x0400){   /* CHECKME: mosaic mode: see @ http://nocash.emubase.de/gbatek.htm#lcdiobgcontrol */
-								/* test NDS: #2 of http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192 */
+		if (bgCnt.Mosaic_Enable){
+/* test NDS: #2 of 
+   http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192 */
+
 			u8 mw = (gpu->MOSAIC & 0xF) +1 ;            /* horizontal granularity of the mosaic */
 			u8 mh = ((gpu->MOSAIC>>4) & 0xF) +1 ;       /* vertical granularity of the mosaic */
 			Y = (Y / mh) * mh ;                         /* align y by vertical granularity */
@@ -1142,7 +1149,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
-     u32 bgprop = gpu->BGProp[num];
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bitfield;
 
      s32 x = X + (s32)PB*(s32)H;
      s32 y = Y + (s32)PD*(s32)H;
@@ -1174,7 +1181,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
           auxX = x>>8;
           auxY = y>>8;
 
-          if(bgprop&(1<<13))
+          if(bgCnt.PaletteSet_Wrap)
           {
                auxX &= (lg-1);
                auxY &= (ht-1);
@@ -1195,7 +1202,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
 
 INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
-	u32 bgprop = gpu->BGProp[num];
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bitfield;
 	
 	s32 x = X + (s32)PB*(s32)H;
 	s32 y = Y + (s32)PD*(s32)H;
@@ -1216,7 +1223,8 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 	u16 mapinfo, i;
 	u8 coul;
 	
-	switch(((bgprop>>2)&1)|((bgprop>>6)&2))
+	// damdoum : I just replaced here but I dont understand it yet
+	switch((bgCnt.CharacBase_Block&1)|(bgCnt.Mosaic_Enable << 1))
 	{
 		case 0 :
 		case 1 :
@@ -1227,7 +1235,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 #define LOOP(c) \
 	for(i = 0; i < LG; ++i) { \
 		auxX = x>>8; auxY = y>>8; \
-		if(bgprop&(1<<13)) { \
+		if(bgCnt.PaletteSet_Wrap) { \
 			auxX &= (lg-1); auxY &= (ht-1); \
 		} \
 		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht)) c \
