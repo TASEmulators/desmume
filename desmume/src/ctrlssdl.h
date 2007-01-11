@@ -57,6 +57,7 @@ void set_mouse_coord(signed long x,signed long y);
 
 BOOL init_joy(u16 joyCfg[]);
 void uninit_joy();
+u16 get_set_joy_key(int index);
 u16 process_ctrls_events(u16 oldkeypad);
 
 #endif /* CTRLSSDL_H */
