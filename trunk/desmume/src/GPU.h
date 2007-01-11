@@ -417,6 +417,10 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
      u8 i8;
      u16 i16;
      u32 c;
+     u8 pixelsForPrio[4][256];
+     u8 nbPixelsForPrio[4] = {0,0,0,0};
+     u8 n,p;
+
 	/* initialize the scanline black */
 	/* not doing this causes invalid colors when all active BGs are prevented to draw at some place */
 	memset(dst,0,256*2) ;
@@ -473,9 +477,6 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		}
 	}
 	
-u8 pixelsForPrio[4][256];
-u8 nbPixelsForPrio[4] = {0,0,0,0};
-u8 n,p;
 	// for all the pixels in the line
 	for(i= 0; i<256; i++) {
 		// assign them to the good priority table
