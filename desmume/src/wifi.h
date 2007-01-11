@@ -27,7 +27,7 @@ extern "C" {
 
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
-/* using the register names as in docs */
+/* using the register names as in docs ( http://www.rfmd.com/pdfs/2958.pdf )*/
 /* even tho every register only has 18 bits we are using u32 */
 typedef struct rffilter_t
 {
