@@ -482,7 +482,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	
 	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
 	{
-		modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+		if (! ((gpu->ordre[i8]==0) && (gpu->dispCnt.bits.BG0_3D)) )
+			modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
 		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
 		if (gpu->sprEnable)
 		{
