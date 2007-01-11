@@ -506,34 +506,34 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
-			unsigned int    masterBrightFactor = 16;
-//			if (gpu->masterBright.bit.FactorEx)
-				gpu->masterBright.bits.Factor;
+			unsigned int    masterBrightFactor = gpu->masterBright.bits.Factor ;
 
-			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
-			if (masterBrightFactor == 16)
+			if (gpu->masterBright.bits.FactorEx)
 			{
 				/* the formular would create only white, as (r + (31-r)) = 31 */
 				/* white = enable all bits */
 
 				/* damdoum : well, i think the formula was with 63! 
 				   so (r + (63-r)) = 63 & 31 = 31 = still white*/
+
 				memset(dst,0xFF, 256*2 /* sizeof(COLOR) */) ;
 			} else
 			{
-
+				if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
 				for(i16 = 0; i16 < 256; ++i16)
 				{
 					COLOR dstColor;
+					u8 base ;
 					unsigned int	r,g,b; // get components, 5bit each
 					dstColor.val = T1ReadWord(dst, i16 << 1);
 					r = dstColor.bits.red;
 					g = dstColor.bits.green;
 					b = dstColor.bits.blue;
 					// Bright up and clamp to 5bit <-- automatic
-					dstColor.bits.red   = r + ((63-r)*masterBrightFactor)/16;
-					dstColor.bits.green = g + ((63-g)*masterBrightFactor)/16;
-					dstColor.bits.blue  = b + ((63-b)*masterBrightFactor)/16;
+					base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
+					dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
+					dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
+					dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;
 					T2WriteWord (dst, i16 << 1, dstColor.val);
 				}
 			}
@@ -552,20 +552,24 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 
 	i have seen pics of pokemon ranger getting white with 31, with 63 it is nice.
 	it could be pb of alpha or blending or...
-*/
-			unsigned int    masterBrightFactor = 16;
-//			if (gpu->masterBright.bit.FactorEx)
-				gpu->masterBright.bits.Factor;
 
-			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
-			if (masterBrightFactor == 16)
+	MightyMax> created a test NDS to check how the brightness values work,
+	and 31 seems to be correct. FactorEx is a override for max brighten/darken
+	See: http://mightymax.org/gfx_test_brightness.nds
+	The Pokemon Problem could be a problem with 8/32 bit writes not recognized yet,
+	i'll add that so you can check back.
+
+*/
+			unsigned int    masterBrightFactor = gpu->masterBright.bits.Factor ;
+
+			if (gpu->masterBright.bits.FactorEx)
 			{
 				/* the formular would create only black, as (r - r) = 0 */
 				/* black = disable all bits */
 				memset(dst,0, 256*2 /* sizeof(COLOR) */) ;
 			} else
 			{
-
+			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
 				for(i16 = 0; i16 < 256; ++i16)
 				{
 					COLOR dstColor;
