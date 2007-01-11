@@ -477,38 +477,34 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		}
 	}
 	
-	// for all the pixels in the line
-	for(i= 0; i<256; i++) {
-		// assign them to the good priority table
-		p = sprPrio[i];
-		pixelsForPrio[p][nbPixelsForPrio[p]]=i;
-		nbPixelsForPrio[p]++;
-	}
-
-	// paint lower priorities fist
-	// then higher priorities on top
-	for(i8 = gpu->nbBGActif; i8 > 0; )
+	if(!gpu->nbBGActif)
 	{
-		i8--;
-		if (! ((gpu->ordre[i8]==0) && gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) )
-			modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
-		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
-		if (gpu->sprEnable && gpu->dispOBJ)
+		if (gpu->sprEnable)
+			gpu->spriteRender(gpu, l, dst, sprPrio);
+		return;
+	}
+	if (gpu->sprEnable)
+	{
+		gpu->spriteRender(gpu, l, spr, sprPrio);
+
+		if(gpu->bgCnt[gpu->ordre[0]].bits.Priority !=3)
 		{
-			// there are sprite pixels on top of THAT layer
-			for (i=0; i<nbPixelsForPrio[bgprio]; i++) {
-				i16=pixelsForPrio[bgprio][i];
-				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+			for(i16 = 0; i16 < 128; ++i16) {
+				T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
 			}
 		}
 	}
 
-	if (gpu->sprEnable && gpu->dispOBJ)
-	for (; bgprio>0; ) {
-		bgprio--;
-		for (i=0; i<nbPixelsForPrio[bgprio]; i++) {
-			i16=pixelsForPrio[bgprio][i];
-			T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
+	{
+		if (! ((gpu->ordre[i8]==0) && gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) )
+			modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
+		if (gpu->sprEnable)
+		{
+			for(i16 = 0; i16 < 256; ++i16)
+			if(bgprio>=sprPrio[i16])
+				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
 		}
 	}
 
