@@ -169,7 +169,7 @@ struct _BGxCNT
 					// BG1 extended palette set 0=set1, 1=set3
 					// BG2 overflow area wraparound 0=off, 1=wrap
 					// BG3 overflow area wraparound 0=off, 1=wrap
-/*14*/	unsigned ScreenSize:1;		// text    : 256x256 512x256 256x512 512x512
+/*14*/	unsigned ScreenSize:2;		// text    : 256x256 512x256 256x512 512x512
 					// x/rot/s : 128x128 256x256 512x512 1024x1024
 					// bmp     : 128x128 256x256 512x256 512x512
 					// large   : 512x1024 1024x512 - -
@@ -299,9 +299,7 @@ struct _GPU
 {
 	DISPCNT dispCnt;
 	BGxCNT  bgCnt[4];
-
-	u16 BGProp[4];
-			
+	
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
 		 
@@ -451,7 +449,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	if (gpu->sprEnable)
 	{
 		gpu->spriteRender(gpu, l, spr, sprPrio);	
-		if((gpu->BGProp[gpu->ordre[0]]&3)!=3)
+		
+		if(gpu->bgCnt[gpu->ordre[0]].bitfield.Priority !=3)
 		{
 			for(i16 = 0; i16 < 128; ++i16) {
 				T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
@@ -462,7 +461,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
 	{
 		modeRender[gpu->dispCnt.bitfield.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
-		bgprio = gpu->BGProp[gpu->ordre[i8]]&3;
+		bgprio = gpu->bgCnt[gpu->ordre[i8]].bitfield.Priority;
 		if (gpu->sprEnable)
 		{
 			for(i16 = 0; i16 < 256; ++i16)
