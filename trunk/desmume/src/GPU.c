@@ -124,6 +124,64 @@ void GPU_DeInit(GPU * gpu)
      free(gpu);
 }
 
+void GPU_resortBGs(GPU *gpu)
+{
+    BOOL LayersEnable[5];
+    u16 WinBG=0;
+	int i,q ;
+	struct _DISPCNT * cnt = &gpu->dispCnt.bitfield;
+
+	if (cnt->Win0_Enable || cnt->Win1_Enable)
+	{
+        WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
+        WinBG = WinBG | (WinBG >> 8);
+	}
+
+	// Let's prepare the field for WINDOWS implementation
+	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1));
+	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
+	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
+	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
+	LayersEnable[4] = (cnt->OBJ_Enable || (WinBG & 0x10));
+
+	/* first: place them all unsorted, just as they are */
+	for (i=0;i<4;i++)
+	{
+		gpu->ordre[i] = i ;
+	}
+
+	/* sorting BGs by priority, keep same priorities ordered by their num */
+	/* selection sort*/
+	for (i=0;i<4;i++)
+	{
+		/* weighted priorities: first drawn/not drawm, then set priority bits, then the num */
+		/* the higher the value the lower the priority */
+		u8 curPrio = gpu->bgCnt[gpu->ordre[i]].bitfield.Priority*4 + (LayersEnable[gpu->ordre[i]]?16:0) + gpu->ordre[i] ;
+		for (q=i+1;q<4;q++)
+		{
+			u8 lookingPrio =  gpu->bgCnt[gpu->ordre[q]].bitfield.Priority*4 + (LayersEnable[gpu->ordre[q]]?16:0) + gpu->ordre[q] ;
+			/* if the one we are looking for is of higher priority then the current selected, swap them */
+			/* note: higher value = lower priority */
+			if (lookingPrio > curPrio)
+			{
+				/* swap the order */
+				u8 savedIndex = gpu->ordre[i] ;
+                gpu->ordre[i] = gpu->ordre[q] ;
+                gpu->ordre[q] = savedIndex ;
+				/* update the current info */
+                curPrio = lookingPrio ;
+			} ;
+		}
+	}
+	/* once we are done ordering, create the inverse table */
+	for (i=0;i<4;i++)
+	{
+        gpu->BGIndex[gpu->ordre[i]] = i ;
+		/* and remember the processed highest enabled BG */
+		if (LayersEnable[gpu->ordre[i]]) gpu->nbBGActif = i+1 ;
+	}
+}
+
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
@@ -185,118 +243,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-	if (cnt->Win0_Enable || cnt->Win1_Enable)
-	{
-        WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
-        WinBG = WinBG | (WinBG >> 8);
-	}
-
-	// Let's prepare the field for WINDOWS implementation
-	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1));
-	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
-	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
-	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
-	LayersEnable[4] = (cnt->OBJ_Enable || (WinBG & 0x10));
-
-        if (LayersEnable[3])
-	{
-		gpu->ordre[0] = 3;
-		gpu->BGIndex[3] = 1;
-		gpu->nbBGActif++;
-	}
-	else
-	{
-		gpu->BGIndex[3] = 0;
-	}
-	
-        if(LayersEnable[2])
-	{
-		if(gpu->nbBGActif)
-		{
-                        if(gpu->bgCnt[2].bitfield.Priority > gpu->bgCnt[3].bitfield.Priority)
-			{
-				gpu->ordre[0] = 2;
-				gpu->BGIndex[2] = 1;
-				gpu->ordre[1] = 3;
-				gpu->BGIndex[3] = 2;
-			}
-			else
-			{
-				gpu->ordre[1] = 2;
-				gpu->BGIndex[2] = 2;
-			}
-		} 
-		else
-		{
-			gpu->ordre[0] = 2;
-			gpu->BGIndex[2] = 1;
-		}
-		
-		gpu->nbBGActif++;
-		
-	}
-	else
-	{
-			gpu->BGIndex[2] = 0;
-	}
-	
-        if (LayersEnable[1])
-	{
-		if(gpu->nbBGActif == 0)
-		{
-			gpu->ordre[0] = 1;
-			gpu->BGIndex[1] = 1;
-		}
-		else
-		{
-			u8 i;
-			s8 j;
-                        for(i=0; i < gpu->nbBGActif; i++)
-				if (gpu->bgCnt[gpu->ordre[i]].bitfield.Priority >= gpu->bgCnt[1].bitfield.Priority) break;
-				
-			for(j = gpu->nbBGActif-1; j >= i; --j)
-			{
-				gpu->ordre[j+1] = gpu->ordre[j];
-				gpu->BGIndex[gpu->ordre[j]]++;
-			}
-			gpu->ordre[i] = 1;
-			gpu->BGIndex[1] = i+1;
-		}
-		gpu->nbBGActif++;
-	}
-	else
-	{
-		gpu->BGIndex[1] = 0;
-	}
-	
-        if ((!cnt->BG0_3D) && LayersEnable[0])
-	{
-		if(gpu->nbBGActif == 0)
-		{
-			gpu->ordre[0] = 0;
-			gpu->BGIndex[0] = 1;
-		}
-		else
-		{
-			u8 i = 0;
-			s8 j;
-                        for(; (i < gpu->nbBGActif); i++)
-				if  (gpu->bgCnt[gpu->ordre[i]].bitfield.Priority >= gpu->bgCnt[0].bitfield.Priority) break;
-
-			for(j = gpu->nbBGActif-1; j >= i; --j)
-			{
-				gpu->ordre[j+1] = gpu->ordre[j];
-				gpu->BGIndex[gpu->ordre[j]]++;
-			}
-			gpu->ordre[i] = 0;
-			gpu->BGIndex[0] = i+1;
-		}
-			gpu->nbBGActif++;
-	}
-	else
-	{
-		gpu->BGIndex[0] = 0;
-	}
+    GPU_resortBGs(gpu) ; /* is allready done in GPU_setBGProb */
 	
 	/* FIXME: this debug won't work, obviously ... */
 #ifdef DEBUG_TRI
@@ -319,57 +266,8 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	int lastPriority = cnt->Priority, mode;
 	gpu->bgCnt[num].integer = p;
 
-	if((gpu->nbBGActif != 0) && (index != 0))
-	{
-		index--;
-		// do we have to re-order the layers ?
-                if(lastPriority < cnt->Priority)
-		{
-			// check layers before
-			u8 i, ordre;
-                        for( i= 0; i<index; i++) {
-				ordre = gpu->ordre[i];
-				cnt2 = &(gpu->bgCnt[ordre].bitfield);
-				if ((cnt2->Priority >= cnt->Priority) || (ordre > num)) break;
-			}
-               
-			if(i != index)
-			{
-				s8 j;
-				for(j = index-1; j>=i; --j)
-				{
-					gpu->ordre[j+1] = gpu->ordre[j];
-					++gpu->BGIndex[gpu->ordre[j]];
-				}
-				gpu->ordre[i] = num;
-				gpu->BGIndex[num] = i + 1;
-			}
-		} else if(lastPriority > cnt->Priority) {
+    GPU_resortBGs(gpu) ;
 
-			// check layers after
-			u8 i, ordre;
-                        for( i= gpu->nbBGActif-1; i>index; i--) {
-				ordre = gpu->ordre[i];
-				cnt2 = &(gpu->bgCnt[ordre].bitfield);
-				if ((cnt2->Priority >= cnt->Priority) && (ordre < num)) break;
-			}
-
-			if(i!=index)
-			{
-				s8 j;
-				for(j = index; j<i; ++j)
-				{
-					gpu->ordre[j] = gpu->ordre[j+1];
-					gpu->BGIndex[gpu->ordre[j]]--;
-				}
-				gpu->ordre[i] = num;
-				gpu->BGIndex[num] = i + 1;
-			}
-		}
-	}
-	
-	gpu->bgCnt[num].integer = p;
-	
      	if(gpu->core == GPU_SUB) {
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
