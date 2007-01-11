@@ -39,6 +39,10 @@ extern "C" {
 #define min(a,b) (((a)<(b))?(a):(b))
 #endif
 
+#ifndef max
+#define max(a,b) (((a)>(b))?(a):(b))
+#endif
+
 
 #define GPU_MAIN	0
 #define GPU_SUB		1
@@ -96,10 +100,10 @@ struct _DISPCNT
 
 typedef union 
 {
-	struct _DISPCNT bitfield;
-	u32 integer;
+	struct _DISPCNT bits;
+	u32 val;
 } DISPCNT;
-#define BGxENABLED(cnt,num)	((num<8)? ((cnt.integer>>8) & num):0)
+#define BGxENABLED(cnt,num)	((num<8)? ((cnt.val>>8) & num):0)
 
 
 
@@ -119,7 +123,7 @@ struct _COLOR { // abgr x555
 
 typedef union 
 {
-	struct _COLOR bitfield;
+	struct _COLOR bits;
 	u16 val;
 } COLOR;
 
@@ -136,16 +140,16 @@ struct _COLOR32 { // ARGB
 
 typedef union 
 {
-	struct _COLOR32 bitfield;
+	struct _COLOR32 bits;
 	u32 val;
 } COLOR32;
 
 #define COLOR_16_32(w,i)	\
 	/* doesnt matter who's 16bit who's 32bit */ \
-	i.bitfield.red   = w.bitfield.red; \
-	i.bitfield.green = w.bitfield.green; \
-	i.bitfield.blue  = w.bitfield.blue; \
-	i.bitfield.alpha = w.bitfield.alpha;
+	i.bits.red   = w.bits.red; \
+	i.bits.green = w.bits.green; \
+	i.bits.blue  = w.bits.blue; \
+	i.bits.alpha = w.bits.alpha;
 
 
 
@@ -177,16 +181,34 @@ struct _BGxCNT
 
 typedef union 
 {
-	struct _BGxCNT bitfield;
-	u16 integer;
+	struct _BGxCNT bits;
+	u16 val;
 } BGxCNT;
 
-#define BGCNT_PRIORITY(val)		((val) & 3)
-#define BGCNT_CHARBASEBLOCK(val)	(((val) >> 2) & 0x0F)
-#define BGCNT_256COL(val)		(((val) >> 7) & 0x1)
-#define BGCNT_SCREENBASEBLOCK(val)	(((val) >> 8) & 0x1F)
-#define BGCNT_EXTPALSLOT(val)		(((val) >> 13) & 0x1)
-#define BGCNT_SCREENSIZE(val)		(((val) >> 14) & 0x3)
+/*
+	this structure is to represent global FX
+	applied to a pixel 
+
+	Factor (5bits values 0-16, values >16 same as 16)
+// damdoum : then the 4th bit use is questionnable ?
+
+	Lighten : New = Old + (63-Old) * Factor/16
+	Darken  : New = Old - Old      * Factor/16
+*/
+
+struct _MASTER_BRIGHT
+{
+/*0*/	unsigned Factor:4;	// brightnessFactor = Factor | FactorEx << 4
+/*4*/	unsigned FactorEx:1;	//
+/*5*/	unsigned :9;
+/*14*/	unsigned Mode:2;	// 0=off, 1=Lighten, 2=Darken, 3=?
+};
+
+typedef union 
+{
+	struct _MASTER_BRIGHT bits;
+	u16 val;
+} MASTER_BRIGHT;
 
 
 
@@ -255,7 +277,7 @@ typedef union windowdim_t
 	{
 /* 0*/	unsigned end:8;
 /* 8*/	unsigned start:8;
-	} bitfield ;
+	} bits ;
 	unsigned short val ;
 } windowdim_t ;
 
@@ -277,7 +299,7 @@ typedef union windowcnt_t
 /*12*/  unsigned WIN1_OBJ_Enable:1;
 /*13*/  unsigned WIN1_Effect_Enable:1;
 /*14*/  unsigned :2;
-	} bitfield ;
+	} bits ;
 	struct
 	{
 		unsigned char low ;
@@ -299,7 +321,8 @@ struct _GPU
 {
 	DISPCNT dispCnt;
 	BGxCNT  bgCnt[4];
-	
+	MASTER_BRIGHT masterBright;
+
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
 		 
@@ -341,7 +364,6 @@ struct _GPU
 	u16 BLDALPHA ;
 	u16 BLDY ;
 	u16 MOSAIC ;
-	u16 MASTER_BRIGHT;
 
 	windowdim_t WINDOW_XDIM[2] ;
 	windowdim_t WINDOW_YDIM[2] ;
@@ -450,7 +472,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	{
 		gpu->spriteRender(gpu, l, spr, sprPrio);	
 		
-		if(gpu->bgCnt[gpu->ordre[0]].bitfield.Priority !=3)
+		if(gpu->bgCnt[gpu->ordre[0]].bits.Priority !=3)
 		{
 			for(i16 = 0; i16 < 128; ++i16) {
 				T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
@@ -460,8 +482,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	
 	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
 	{
-		modeRender[gpu->dispCnt.bitfield.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
-		bgprio = gpu->bgCnt[gpu->ordre[i8]].bitfield.Priority;
+		modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
+		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
 		if (gpu->sprEnable)
 		{
 			for(i16 = 0; i16 < 256; ++i16)
@@ -470,12 +492,12 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		}
 	}
 
-	 // Apply final brightness adjust (MASTER_BRIGHT)
-	 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
+// Apply final brightness adjust (MASTER_BRIGHT)
+//  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
+/* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
+/* it will most likly take acceleration, while we are stuck here with CPU power */
 
-	 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
-	 /* it will most likly take acceleration, while we are stuck here with CPU power */
-	 switch ((gpu->MASTER_BRIGHT>>14)&3)
+	 switch (gpu->masterBright.bits.Mode)
 	 {
 		// Disabled
 		case 0:
@@ -484,14 +506,18 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
-			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
-			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
+			unsigned int    masterBrightFactor = 16;
+//			if (gpu->masterBright.bit.FactorEx)
+				gpu->masterBright.bits.Factor;
 
 			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
 			if (masterBrightFactor == 16)
 			{
 				/* the formular would create only white, as (r + (31-r)) = 31 */
 				/* white = enable all bits */
+
+				/* damdoum : well, i think the formula was with 63! 
+				   so (r + (63-r)) = 63 & 31 = 31 = still white*/
 				memset(dst,0xFF, 256*2 /* sizeof(COLOR) */) ;
 			} else
 			{
@@ -501,13 +527,13 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 					COLOR dstColor;
 					unsigned int	r,g,b; // get components, 5bit each
 					dstColor.val = T1ReadWord(dst, i16 << 1);
-					r = dstColor.bitfield.red;
-					g = dstColor.bitfield.green;
-					b = dstColor.bitfield.blue;
-					// Bright up and clamp to 5bit
-					dstColor.bitfield.red   = min(31,(r + ((31-r)*masterBrightFactor)/16));
-					dstColor.bitfield.green = min(31,(g + ((31-g)*masterBrightFactor)/16));
-					dstColor.bitfield.blue  = min(31,(b + ((31-b)*masterBrightFactor)/16));
+					r = dstColor.bits.red;
+					g = dstColor.bits.green;
+					b = dstColor.bits.blue;
+					// Bright up and clamp to 5bit <-- automatic
+					dstColor.bits.red   = r + ((63-r)*masterBrightFactor)/16;
+					dstColor.bits.green = g + ((63-g)*masterBrightFactor)/16;
+					dstColor.bits.blue  = b + ((63-b)*masterBrightFactor)/16;
 					T2WriteWord (dst, i16 << 1, dstColor.val);
 				}
 			}
@@ -523,9 +549,13 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			we use 31 as top, instead of 63. Testing it on a few games, 
 			using 63 seems to give severe color wraping, and 31 works
 			nicely, so for now we'll just that, until proven wrong.
+
+	i have seen pics of pokemon ranger getting white with 31, with 63 it is nice.
+	it could be pb of alpha or blending or...
 */
-			unsigned int    masterBrightFactor = gpu->MASTER_BRIGHT&31;
-			masterBrightFactor = masterBrightFactor > 16 ? 16 : masterBrightFactor;
+			unsigned int    masterBrightFactor = 16;
+//			if (gpu->masterBright.bit.FactorEx)
+				gpu->masterBright.bits.Factor;
 
 			if (!masterBrightFactor) break ;    /* when we wont do anything, we dont need to loop */
 			if (masterBrightFactor == 16)
@@ -541,13 +571,13 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 					COLOR dstColor;
 					unsigned int	r,g,b; // get components, 5bit each
 					dstColor.val = T1ReadWord(dst, i16 << 1);
-					r = dstColor.bitfield.red;
-					g = dstColor.bitfield.green;
-					b = dstColor.bitfield.blue;
-					// Bright up and clamp to 5bit
-					dstColor.bitfield.red   = min(31,(r - (r*masterBrightFactor)/16));
-					dstColor.bitfield.green = min(31,(g - (g*masterBrightFactor)/16));
-					dstColor.bitfield.blue  = min(31,(b - (b*masterBrightFactor)/16));
+					r = dstColor.bits.red;
+					g = dstColor.bits.green;
+					b = dstColor.bits.blue;
+					// Bright up and clamp to 5bit <- automatic
+					dstColor.bits.red   = r - (r*masterBrightFactor)/16;
+					dstColor.bits.green = g - (g*masterBrightFactor)/16;
+					dstColor.bits.blue  = b - (b*masterBrightFactor)/16;
 					T2WriteWord (dst, i16 << 1, dstColor.val);
 				}
 			}

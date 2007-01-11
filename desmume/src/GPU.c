@@ -126,15 +126,15 @@ void GPU_DeInit(GPU * gpu)
 
 void GPU_resortBGs(GPU *gpu)
 {
-    BOOL LayersEnable[5];
-    u16 WinBG=0;
+BOOL LayersEnable[5];
+u16 WinBG=0;
 	int i,q ;
-	struct _DISPCNT * cnt = &gpu->dispCnt.bitfield;
+	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
 
 	if (cnt->Win0_Enable || cnt->Win1_Enable)
 	{
-        WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
-        WinBG = WinBG | (WinBG >> 8);
+	WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
+	WinBG = WinBG | (WinBG >> 8);
 	}
 
 	// Let's prepare the field for WINDOWS implementation
@@ -154,29 +154,30 @@ void GPU_resortBGs(GPU *gpu)
 	/* selection sort*/
 	for (i=0;i<4;i++)
 	{
-		/* weighted priorities: first drawn/not drawm, then set priority bits, then the num */
-		/* the higher the value the lower the priority */
-		u8 curPrio = gpu->bgCnt[gpu->ordre[i]].bitfield.Priority*4 + (LayersEnable[gpu->ordre[i]]?16:0) + gpu->ordre[i] ;
+		/* weighted priorities: first drawn/not drawm, then set priority bits,
+		   then the num the higher the value the lower the priority */
+		u8 curPrio = gpu->bgCnt[gpu->ordre[i]].bits.Priority*4 + (LayersEnable[gpu->ordre[i]]?16:0) + gpu->ordre[i] ;
 		for (q=i+1;q<4;q++)
 		{
-			u8 lookingPrio =  gpu->bgCnt[gpu->ordre[q]].bitfield.Priority*4 + (LayersEnable[gpu->ordre[q]]?16:0) + gpu->ordre[q] ;
-			/* if the one we are looking for is of higher priority then the current selected, swap them */
-			/* note: higher value = lower priority */
+			u8 lookingPrio =  gpu->bgCnt[gpu->ordre[q]].bits.Priority*4 + (LayersEnable[gpu->ordre[q]]?16:0) + gpu->ordre[q] ;
+			/* if the one we are looking for is of higher priority then the
+			   current selected, swap them 
+			   note: higher value = lower priority */
 			if (lookingPrio > curPrio)
 			{
 				/* swap the order */
 				u8 savedIndex = gpu->ordre[i] ;
-                gpu->ordre[i] = gpu->ordre[q] ;
-                gpu->ordre[q] = savedIndex ;
+				gpu->ordre[i] = gpu->ordre[q] ;
+				gpu->ordre[q] = savedIndex ;
 				/* update the current info */
-                curPrio = lookingPrio ;
+				curPrio = lookingPrio ;
 			} ;
 		}
 	}
 	/* once we are done ordering, create the inverse table */
 	for (i=0;i<4;i++)
 	{
-        gpu->BGIndex[gpu->ordre[i]] = i ;
+		gpu->BGIndex[gpu->ordre[i]] = i ;
 		/* and remember the processed highest enabled BG */
 		if (LayersEnable[gpu->ordre[i]]) gpu->nbBGActif = i+1 ;
 	}
@@ -187,9 +188,9 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 {
         BOOL LayersEnable[5];
         u16 WinBG=0;
-	struct _DISPCNT * cnt = &gpu->dispCnt.bitfield;
+	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
 
-	gpu->dispCnt.integer = p;
+	gpu->dispCnt.val = p;
 
 //  gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
     gpu->dispMode = cnt->DisplayMode & ((gpu->lcd)?1:3);
@@ -243,14 +244,14 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	GPU_setBGProp(gpu, 1, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 10));
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
-    GPU_resortBGs(gpu) ; /* is allready done in GPU_setBGProb */
-	
+	GPU_resortBGs(gpu) ; /* is allready done in GPU_setBGProb */
+
 	/* FIXME: this debug won't work, obviously ... */
 #ifdef DEBUG_TRI
 	log::ajouter("------------------");
 	for(u8 i = 0; i < gpu->nbBGActif; ++i)
 	{
-		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->bgCnt[gpu->ordre[i]].bitfield.Priority);
+		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->bgCnt[gpu->ordre[i]].bits.Priority);
 		log::ajouter(logbuf);
 	}
 	log::ajouter("_________________");
@@ -262,20 +263,20 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
 	u8 index = gpu->BGIndex[num];
-	struct _BGxCNT * cnt = &(gpu->bgCnt[num].bitfield), *cnt2;
+	struct _BGxCNT * cnt = &(gpu->bgCnt[num].bits), *cnt2;
 	int lastPriority = cnt->Priority, mode;
-	gpu->bgCnt[num].integer = p;
-
-    GPU_resortBGs(gpu) ;
-
+	gpu->bgCnt[num].val = p;
+	
+	GPU_resortBGs(gpu) ; /* is allready done in GPU_setBGProb */	
+	
      	if(gpu->core == GPU_SUB) {
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_BBG;
 	} else {
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bitfield.CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bits.CharacBase_Block * ADDRESS_STEP_64kB ;
                 gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
-                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bitfield.ScreenBase_Block * ADDRESS_STEP_64kB;
+                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
@@ -300,7 +301,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
           return;
      }*/
 
-	mode = mode2type[gpu->dispCnt.bitfield.BG_Mode][num];
+	mode = mode2type[gpu->dispCnt.bits.BG_Mode][num];
     gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
     gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 }
@@ -330,9 +331,9 @@ void GPU_addBack(GPU * gpu, u8 num)
      {
           u8 i = 0;
 	  s8 j;
-          u8 p = gpu->bgCnt[num].bitfield.Priority;
+          u8 p = gpu->bgCnt[num].bits.Priority;
           for(; i<gpu->nbBGActif; ++i)
-	if ((gpu->bgCnt[gpu->ordre[i]].bitfield.Priority >=p)&&(gpu->ordre[i]>num)) break;
+	if ((gpu->bgCnt[gpu->ordre[i]].bits.Priority >=p)&&(gpu->ordre[i]>num)) break;
 
           for(j = gpu->nbBGActif-1; j >= i; --j)
           {
@@ -453,10 +454,10 @@ void GPU_setWINDOW_XDIM_Component(GPU *gpu, u8 v, u8 num)  /* write start/end se
 {
 	if (num & 1)
 	{
-		gpu->WINDOW_XDIM[num >> 1].bitfield.start = v ;
+		gpu->WINDOW_XDIM[num >> 1].bits.start = v ;
 	} else
 	{
-		gpu->WINDOW_XDIM[num >> 1].bitfield.end = v ;
+		gpu->WINDOW_XDIM[num >> 1].bits.end = v ;
 	}
 }
 
@@ -469,10 +470,10 @@ void GPU_setWINDOW_YDIM_Component(GPU *gpu, u8 v, u8 num)  /* write start/end se
 {
 	if (num & 1)
 	{
-		gpu->WINDOW_YDIM[num >> 1].bitfield.start = v ;
+		gpu->WINDOW_YDIM[num >> 1].bits.start = v ;
 	} else
 	{
-		gpu->WINDOW_YDIM[num >> 1].bitfield.end = v ;
+		gpu->WINDOW_YDIM[num >> 1].bits.end = v ;
 	}
 }
 
@@ -514,97 +515,97 @@ void GPU_setWINDOW_OUTCNT_Component(GPU *gpu, u8 v,u8 num)
 
 void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 {
-	gpu->MASTER_BRIGHT = v;
+	gpu->masterBright.val = v;
 }
 
 INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	/* priority to check the window regions: win0,win1,winobj */
-	if (gpu->dispCnt.bitfield.Win0_Enable)          					/* highest priority */
+	if (gpu->dispCnt.bits.Win0_Enable)          					/* highest priority */
 	{
 		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end)))
+		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
+				&&(y >= gpu->WINDOW_YDIM[0].bits.start) && (y < gpu->WINDOW_YDIM[0].bits.end)))
 			{
 				switch (bgnum) {
 					case 0:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG0_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN0_BG0_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 1:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG1_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN0_BG1_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 2:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG2_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN0_BG2_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 3:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG3_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN0_BG3_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 4:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_OBJ_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN0_OBJ_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 				}
-    	        *effect = gpu->WINDOW_INCNT.bitfield.WIN0_Effect_Enable ;
+    	        *effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable ;
 				return TRUE ;
 		}
 	}
-	if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
+	if (gpu->dispCnt.bits.Win1_Enable)          				/* mid priority */
 	{
 		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end)))
+		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
+				&&(y >= gpu->WINDOW_YDIM[1].bits.start) && (y < gpu->WINDOW_YDIM[1].bits.end)))
 			{
 				switch (bgnum) {
 					case 0:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN0_BG0_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN0_BG0_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 1:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN1_BG1_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN1_BG1_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 2:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN1_BG2_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN1_BG2_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 3:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN1_BG3_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN1_BG3_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 4:
-						if (!gpu->WINDOW_INCNT.bitfield.WIN1_OBJ_Enable)
+						if (!gpu->WINDOW_INCNT.bits.WIN1_OBJ_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 				}
-    	        *effect = gpu->WINDOW_INCNT.bitfield.WIN1_Effect_Enable ;
+    	        *effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable ;
 				return TRUE ;
 		}
 	}
-	if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
+	if ((gpu->dispCnt.bits.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
 	{
 	}
 	/* we have no rule, so allow everything for now */
@@ -616,95 +617,95 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	/* priority to check the window regions: win0,win1,winobj */
-	if (gpu->dispCnt.bitfield.Win0_Enable)          					/* highest priority */
+	if (gpu->dispCnt.bits.Win0_Enable)          					/* highest priority */
 	{
 		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[0].bitfield.start) && (x < gpu->WINDOW_XDIM[0].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[0].bitfield.start) && (y < gpu->WINDOW_YDIM[0].bitfield.end)))
+		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
+				&&(y >= gpu->WINDOW_YDIM[0].bits.start) && (y < gpu->WINDOW_YDIM[0].bits.end)))
 			{
 			} else
 			{
 				switch (bgnum) {
 					case 0:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN0_BG0_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG0_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 1:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN0_BG1_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG1_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 2:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN0_BG2_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG2_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 3:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN0_BG3_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG3_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 4:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN0_OBJ_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN0_OBJ_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 				}
-    	        *effect = gpu->WINDOW_OUTCNT.bitfield.WIN0_Effect_Enable ;
+    	        *effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
 				return TRUE ;
 		}
 	}
-	if (gpu->dispCnt.bitfield.Win1_Enable)          				/* mid priority */
+	if (gpu->dispCnt.bits.Win1_Enable)          				/* mid priority */
 	{
 		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[1].bitfield.start) && (x < gpu->WINDOW_XDIM[1].bitfield.end)) /* || (gpu->WINDOW_XDIM[1].bitfield.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[1].bitfield.start) && (y < gpu->WINDOW_YDIM[1].bitfield.end)))
+		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
+				&&(y >= gpu->WINDOW_YDIM[1].bits.start) && (y < gpu->WINDOW_YDIM[1].bits.end)))
 			{
 			} else
 			{
 				switch (bgnum) {
 					case 0:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN0_BG0_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG0_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 1:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN1_BG1_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG1_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 2:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN1_BG2_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG2_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 3:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN1_BG3_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG3_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 					case 4:
-						if (!gpu->WINDOW_OUTCNT.bitfield.WIN1_OBJ_Enable)
+						if (!gpu->WINDOW_OUTCNT.bits.WIN1_OBJ_Enable)
 							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
 						else
 							*draw = TRUE ;
 						break ;
 				}
-    	        *effect = gpu->WINDOW_OUTCNT.bitfield.WIN1_Effect_Enable ;
+    	        *effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable ;
 				return TRUE ;
 		}
 	}
-	if ((gpu->dispCnt.bitfield.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
+	if ((gpu->dispCnt.bits.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
 	{
 	}
 	/* we have no rule, so allow everything for now */
@@ -803,7 +804,7 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 /* render a text background to the combined pixelbuffer */
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bitfield;
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
 	u16 tmp    = ((Y&(ht-1))>>3);
@@ -954,7 +955,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 		}
 		return;
 	}
-	if(!gpu->dispCnt.bitfield.ExBGxPalette_Enable)  /* color: no extended palette */
+	if(!gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: no extended palette */
 	{
 		yoff = ((Y&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
@@ -1047,7 +1048,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bitfield;
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 
      s32 x = X + (s32)PB*(s32)H;
      s32 y = Y + (s32)PD*(s32)H;
@@ -1100,7 +1101,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16
 
 INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bitfield;
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 	
 	s32 x = X + (s32)PB*(s32)H;
 	s32 y = Y + (s32)PD*(s32)H;
@@ -1121,9 +1122,9 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 	u16 mapinfo, i;
 	u8 coul;
 	u8 affineModeSelection ;
-	
+
 	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
-    affineModeSelection = (bgCnt.Palette_256) | ((bgCnt.CharacBase_Block & 1) << 1) ;
+	affineModeSelection = (bgCnt.Palette_256) | ((bgCnt.CharacBase_Block & 1) << 1) ;
 	switch(affineModeSelection)
 	{
 		case 0 :
@@ -1354,7 +1355,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			u16 i;
 			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
-			if (gpu->dispCnt.bitfield.ExOBJPalette_Enable)
+			if (gpu->dispCnt.bits.ExOBJPalette_Enable)
 				pal = ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200);
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
