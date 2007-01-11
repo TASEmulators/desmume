@@ -128,10 +128,8 @@ void GPU_resortBGs(GPU *gpu)
 {
 BOOL LayersEnable[5];
 u16 WinBG=0;
-	u8 i, j, index;
+	u8 i, q, index;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
-	u8 priorities[16] = {	0xFF,0xFF,0xFF,0xFF,   0xFF,0xFF,0xFF,0xFF,
-				0xFF,0xFF,0xFF,0xFF,   0xFF,0xFF,0xFF,0xFF};
 
 	if (cnt->Win0_Enable || cnt->Win1_Enable)
 	{
@@ -146,20 +144,42 @@ u16 WinBG=0;
 	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
 	LayersEnable[4] = (cnt->OBJ_Enable || (WinBG & 0x10));
 
-	// KISS ! lower priority first, if same then lower num
-	for (i=0; i<4; i++) {
-		index = (gpu->bgCnt[i].bits.Priority << 2) | i;
-		priorities[index] = i;
+/* first: place them all unsorted, just as they are */
+	for (i=0;i<4;i++)
+	{
+		gpu->ordre[i] = i ;
 	}
-	for (i=0,j=0; i<16; i++) {
-		if ((index=priorities[i])!=0xFF && LayersEnable[index]) {
-			gpu->ordre[j]=index;
-			gpu->BGIndex[index]=j;
-			j++;
+
+	/* sorting BGs by priority, keep same priorities ordered by their num */
+	/* selection sort*/
+	for (i=0;i<4;i++)
+	{
+		/* weighted priorities: first drawn/not drawm, then set priority bits, then the num */
+		/* the higher the value the lower the priority */
+		u8 curPrio = gpu->bgCnt[gpu->ordre[i]].bits.Priority*4 + (LayersEnable[gpu->ordre[i]]?16:0) + gpu->ordre[i] ;
+		for (q=i+1;q<4;q++)
+		{
+			u8 lookingPrio =  gpu->bgCnt[gpu->ordre[q]].bits.Priority*4 + (LayersEnable[gpu->ordre[q]]?16:0) + gpu->ordre[q] ;
+			/* if the one we are looking for is of higher priority then the current selected, swap them */
+			/* note: higher value = lower priority */
+			if (lookingPrio > curPrio)
+			{
+				/* swap the order */
+				u8 savedIndex = gpu->ordre[i] ;
+                gpu->ordre[i] = gpu->ordre[q] ;
+                gpu->ordre[q] = savedIndex ;
+				/* update the current info */
+                curPrio = lookingPrio ;
+			} ;
 		}
 	}
-	gpu->nbBGActif = j;
-	if (1==1) return;
+	/* once we are done ordering, create the inverse table */
+	for (i=0;i<4;i++)
+	{
+        gpu->BGIndex[gpu->ordre[i]] = i ;
+		/* and remember the processed highest enabled BG */
+		if (LayersEnable[gpu->ordre[i]]) gpu->nbBGActif = i+1 ;
+	}
 }
 
 
