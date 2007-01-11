@@ -35,8 +35,13 @@ extern "C" {
 #endif
 
 
+#ifndef min
+#define min(a,b) (((a)<(b))?(a):(b))
+#endif
+
+
 #define GPU_MAIN	0
-#define GPU_SUB	1
+#define GPU_SUB		1
 
 /* human readable bitmask names */
 #define ADDRESS_STEP_512B       0x00200
@@ -47,6 +52,12 @@ extern "C" {
 #define ADDRESS_STEP_16KB       0x04000
 #define ADDRESS_STEP_32KB       0x08000
 #define ADDRESS_STEP_64kB       0x10000
+
+
+/*
+	this structure is for display control,
+	it holds flags for general display
+*/
 
 struct _DISPCNT
 {
@@ -90,6 +101,15 @@ typedef union
 } DISPCNT;
 #define BGxENABLED(cnt,num)	((num<8)? ((cnt.integer>>8) & num):0)
 
+
+
+/*
+	this structure is for color representation,
+	it holds 5 meaningful bits per color channel (red,green,blue)
+	and      1 meaningful bit for alpha representation
+	this bit can be unused or used for special FX
+*/
+
 struct _COLOR { // abgr x555
 	unsigned red:5;
 	unsigned green:5;
@@ -127,9 +147,16 @@ typedef union
 	i.bitfield.blue  = w.bitfield.blue; \
 	i.bitfield.alpha = w.bitfield.alpha;
 
-#ifndef min
-#define min(a,b) (((a)<(b))?(a):(b))
-#endif
+
+
+
+/*
+	this structure is for display control of a specific layer,
+	there are 4 background layers
+	their priority indicate which one to draw on top of the other
+	some flags indicate special drawing mode, size, FX
+*/
+
 
 struct _BGxCNT 
 {
@@ -161,9 +188,17 @@ typedef union
 #define BGCNT_EXTPALSLOT(val)		(((val) >> 13) & 0x1)
 #define BGCNT_SCREENSIZE(val)		(((val) >> 14) & 0x3)
 
+
+
+/*
+	this structure is for Sprite description,
+	it holds flags & transformations for 1 sprite
+	(max 128 OBJs / screen)
+ref: http://www.bottledlight.com/ds/index.php/Video/Sprites
+*/
+
 typedef struct
 {
-// found here : http://www.bottledlight.com/ds/index.php/Video/Sprites
 // attr0
 /*0*/	unsigned Y:8;
 /*8*/	unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
@@ -184,6 +219,35 @@ typedef struct
 // attr3
 	unsigned attr3:16;
 } _OAM_;
+
+typedef struct
+{
+     u16 attr0;
+     u16 attr1;
+     u16 attr2;
+     u16 attr3;
+} OAM;
+
+
+
+typedef struct
+{
+     s16 x;
+     s16 y;
+} size;
+
+
+/*
+	these structures are for window description,
+	windows are square regions and can "subclass"
+	background layers or object layers (i.e window controls the layers)
+
+	screen
+	|
+	+-- Window0/Window1/OBJwindow/OutOfWindows
+	    |
+	    +-- BG0/BG1/BG2/BG3/OBJ
+*/
 
 typedef union windowdim_t
 {
@@ -222,19 +286,12 @@ typedef union windowcnt_t
 	unsigned short val ;
 } windowcnt_t ;
 
-typedef struct
-{
-     u16 attr0;
-     u16 attr1;
-     u16 attr2;
-     u16 attr3;
-} OAM;
 
-typedef struct
-{
-     s16 x;
-     s16 y;
-} size;
+
+/*
+	this structure holds information
+	for rendering.
+*/
 
 typedef struct _GPU GPU;
 
@@ -297,6 +354,7 @@ struct _GPU
 };
 
 extern u8 GPU_screen[4*256*192];
+
 
 GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
