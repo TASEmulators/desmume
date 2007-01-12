@@ -614,14 +614,35 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              {
                   case IDM_OPEN:
                        {
+							int filterSize = 0, i = 0;
                             OPENFILENAME ofn;
-                            char filename[MAX_PATH] = "";
+                            char filename[MAX_PATH] = "",
+								 fileFilter[512]="";
                             NDS_Pause(); //Stop emulation while opening new rom
                             
                             ZeroMemory(&ofn, sizeof(ofn));
                             ofn.lStructSize = sizeof(ofn);
                             ofn.hwndOwner = hwnd;
-                            ofn.lpstrFilter = "NDS ROM file (*.nds)\0*.nds\0NDS/GBA ROM File (*.ds.gba)\0*.ds.gba\0Any file (*.*)\0*.*\0\0";
+
+							//  To avoid #ifdef hell, we'll do a little trick, as lpstrFilter
+							// needs 0 terminated string, and standard string library, of course,
+							// can't help us with string creation: just put a '|' were a string end
+							// should be, and later transform prior assigning to the OPENFILENAME structure
+							strcpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|");
+#ifdef HAVE_LIBZZIP
+							strcat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|");
+#endif
+#ifdef HAVE_LIBZ
+							strcat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|");
+#endif
+							strcat (fileFilter, "Any file (*.*)|*.*||");
+							
+							filterSize = strlen(fileFilter);
+							for (i = 0; i < filterSize; i++)
+							{
+								if (fileFilter[i] == '|')	fileFilter[i] = '\0';
+							}
+                            ofn.lpstrFilter = fileFilter;
                             ofn.nFilterIndex = 1;
                             ofn.lpstrFile =  filename;
                             ofn.nMaxFile = MAX_PATH;
