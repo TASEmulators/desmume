@@ -43,3 +43,15 @@ void on_wtools_1_r_dispb_win0v_toggled(GtkToggleButton *togglebutton, gpointer u
 void on_wtools_1_r_dispb_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_1_r_dispb_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+
+/* ***** ***** MEMORY VIEWER ***** ***** */
+
+void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data);
+void on_wtools_2_r8_toggled            (GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_2_r16_toggled           (GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_2_r32_toggled           (GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_2_GotoAddress_activate  (GtkEntry *entry, gpointer user_data);
+void on_wtools_2_GotoAddress_changed   (GtkEntry *entry, gpointer user_data);
+void on_wtools_2_GotoButton_clicked    (GtkButton *button, gpointer user_data);
+void on_wtools_2_scroll_scroll_child   (GtkScrolledWindow *scrolledwindow, GtkScrollType scroll, gboolean horizontal, gpointer user_data);
+gboolean on_wtools_2_draw_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);

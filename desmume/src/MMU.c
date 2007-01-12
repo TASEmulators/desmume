@@ -622,6 +622,33 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 	{
 		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
 		/* TODO: Not all mappings of VRAMs are handled... (especially BG and OBJ modes) */
+		case REG_VRAMCNTA:
+		case REG_VRAMCNTB:
+		case REG_VRAMCNTC:
+		case REG_VRAMCNTD:
+			if(proc == ARMCPU_ARM9)
+			{
+				switch(val & 0x1F)
+				{
+				case 1 :
+					MMU.vram_mode[adr-REG_VRAMCNTA] = 0; // BG-VRAM
+					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*0); // BG-VRAM
+					break;
+				case 1 | (1 << 3) :
+					MMU.vram_mode[adr-REG_VRAMCNTA] = 1; // BG-VRAM
+					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*1); // BG-VRAM
+					break;
+				case 1 | (2 << 3) :
+					MMU.vram_mode[adr-REG_VRAMCNTA] = 2; // BG-VRAM
+					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*2); // BG-VRAM
+					break;
+				case 1 | (3 << 3) :
+					MMU.vram_mode[adr-REG_VRAMCNTA] = 3; // BG-VRAM
+					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*3); // BG-VRAM
+					break;
+				}
+			}
+			break;
                 case REG_VRAMCNTE :
 			if(proc == ARMCPU_ARM9)
 			{

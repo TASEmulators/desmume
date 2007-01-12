@@ -421,11 +421,13 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
 	itemsForPriority_t * item;
 	u8 spr[512];
 	u8 sprPrio[256];
 	u8 bgprio,prio;
 	int i;
+	int vram_bank;
 	u8 i8;
 	u16 i16;
 	u32 c;
@@ -466,7 +468,33 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			}
 			return;
 	}
-	
+
+/* 
+//addition from Normatt
+	if (gpu->core==0)
+	for(vram_bank=0; vram_bank<8; vram_bank++) {
+		switch (MMU.vram_mode[vram_bank])
+		{
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+		{
+			int ii = l * 256 * 2;
+			for (i=0; i<(256 * 2); i+=2)
+			{
+				u8 * vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
+				T2WriteWord(mdst, i, T1ReadWord(vram, ii));
+				ii+=2;
+			} 
+			return;
+		}
+		default:
+			break;
+		}
+	}
+*/
+
 	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
 	c |= (c<<16);
 	

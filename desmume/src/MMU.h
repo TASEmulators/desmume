@@ -51,6 +51,8 @@ typedef struct {
         u8 ARM7_REG[0x10000];
         u8 ARM7_WIRAM[0x10000];
         
+	u8 vram_mode[9];
+
         //Shared ram
         u8 SWIRAM[0x8000];
         
