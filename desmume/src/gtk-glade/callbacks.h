@@ -57,6 +57,8 @@ void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data);
 void  on_menu_rotatescreen_activate (GtkMenuItem *menuitem, gpointer user_data);
 /* MENU TOOLS */
 void  on_menu_IO_regs_activate      (GtkMenuItem *menuitem, gpointer user_data);
+void  on_menu_memview_activate      (GtkMenuItem *menuitem, gpointer user_data);
+
 /* MENU ? */
 void  on_menu_apropos_activate      (GtkMenuItem *menuitem, gpointer user_data);
 

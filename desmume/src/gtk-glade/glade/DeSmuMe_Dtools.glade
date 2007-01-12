@@ -798,9 +798,16 @@ cpu : ARM9</property>
 	      <signal name="scroll_child" handler="on_wtools_2_scroll_scroll_child" last_modification_time="Fri, 12 Jan 2007 13:14:01 GMT"/>
 
 	      <child>
-		<widget class="GtkDrawingArea" id="wtools_2_draw">
+		<widget class="GtkViewport" id="viewport1">
 		  <property name="visible">True</property>
-		  <signal name="expose_event" handler="on_wtools_2_draw_expose_event" last_modification_time="Fri, 12 Jan 2007 13:14:44 GMT"/>
+		  <property name="shadow_type">GTK_SHADOW_IN</property>
+
+		  <child>
+		    <widget class="GtkDrawingArea" id="wtools_2_draw">
+		      <property name="visible">True</property>
+		      <signal name="expose_event" handler="on_wtools_2_draw_expose_event" last_modification_time="Fri, 12 Jan 2007 13:14:44 GMT"/>
+		    </widget>
+		  </child>
 		</widget>
 	      </child>
 	    </widget>

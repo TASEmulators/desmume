@@ -117,7 +117,7 @@
 		      <signal name="activate" handler="on_menu_reset_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image45">
+			<widget class="GtkImage" id="image47">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">1</property>
@@ -164,7 +164,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">1</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs1_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
 			    </widget>
@@ -175,7 +175,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">2</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs2_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -186,7 +186,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">3</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs3_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -197,7 +197,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">4</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs4_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -208,7 +208,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">5</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs5_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -219,7 +219,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">6</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs6_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -230,7 +230,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">7</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs7_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -241,7 +241,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">8</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs8_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -252,7 +252,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">9</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs9_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -286,7 +286,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">2x</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">size1x</property>
 			      <signal name="activate" handler="on_size2x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
@@ -297,7 +297,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">3x</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <property name="group">size1x</property>
 			      <signal name="activate" handler="on_size3x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
@@ -328,7 +328,7 @@
 		      <signal name="activate" handler="on_menu_controls_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image46">
+			<widget class="GtkImage" id="image48">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -402,7 +402,7 @@
 		      <signal name="activate" handler="on_menu_IO_regs_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image47">
+			<widget class="GtkImage" id="image49">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>
@@ -412,6 +412,15 @@
 			  <property name="ypad">0</property>
 			</widget>
 		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkMenuItem" id="menu_memview">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">View Memory</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="on_menu_memview_activate" last_modification_time="Fri, 12 Jan 2007 15:44:42 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
