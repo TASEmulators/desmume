@@ -24,7 +24,7 @@
 
 /* Initialize joysticks */
 BOOL init_joy(u16 joyCfg[]) {
-  int i, nbJoysticks;
+  int i;
 
   /* Joystick configuration */
   memcpy(joypadCfg, joyCfg, sizeof(joypadCfg));
@@ -36,10 +36,10 @@ BOOL init_joy(u16 joyCfg[]) {
       return FALSE;
     }
 
-  nbJoysticks = SDL_NumJoysticks();
-  printf("Nbr of joysticks: %d\n\n", nbJoysticks);
+  nbr_joy = SDL_NumJoysticks();
+  printf("Nbr of joysticks: %d\n\n", nbr_joy);
 
-  for (i = 0; i < nbJoysticks; i++)
+  for (i = 0; i < nbr_joy; i++)
     {
       SDL_Joystick * joy = SDL_JoystickOpen(i);
       printf("Joystick %s\n", i, SDL_JoystickName(i));

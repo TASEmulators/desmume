@@ -38,6 +38,7 @@
 #define KEYMASK_(k)	(1 << k)
 
 u16 joypadCfg[NB_KEYS];
+u16 nbr_joy;
 
 #ifndef GTK_UI
 struct mouse_status
