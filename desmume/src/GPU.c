@@ -493,91 +493,174 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 	gpu->masterBright.val = v;
 }
 
+/* check whether (x,y) is within the rectangle (including wraparounds) */
+INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
+{
+		if (startX > endX) {
+			/* if start > end, the window gets wrapped around */
+			/* check if the current pixel is in that x-wrapped area */
+			if ((x < endX) || (x >= startX))
+			{
+				/* x coord for this window is matched */
+				/* now check for y coord */
+				if (startY > endY)
+				{
+					/* rectangle is wrapped around y */
+					if ((y < endY) || (y >= startY))
+					{
+						/* y coord was mathched too, the point is within! */
+						return TRUE ;
+					} else
+					{
+						/* y coord is outside */
+						return FALSE ;
+					}
+				} else
+				{
+					/* y coord is not wraped, simple rectangle check */
+					if ((y < endY) && (y >= startY))
+					{
+						/* y coord was mathched too, the point is within! */
+						return TRUE ;
+					} else
+					{
+						/* y coord is outside */
+						return FALSE ;
+					}
+				}
+			} else
+			{
+				/* x coord is not matched, so we dont need to check further */
+				return FALSE ;
+			}
+		} else
+		{
+			/* if start >= end, it just describes an rectangle */
+			/* check we are within the limits */
+			if ((x >= startX) && (x < endX))
+			{
+				/* within the x range */
+				/* now check for y coord */
+				if (startY > endY)
+				{
+					/* rectangle is wrapped around y */
+					if ((y < endY) || (y >= startY))
+					{
+						/* y coord was mathched too, the point is within! */
+						return TRUE ;
+					} else
+					{
+						/* y coord is outside */
+						return FALSE ;
+					}
+				} else
+				{
+					/* y coord is not wraped, simple rectangle check */
+					if ((y < endY) && (y >= startY))
+					{
+						/* y coord was mathched too, the point is within! */
+						return TRUE ;
+					} else
+					{
+						/* y coord is outside */
+						return FALSE ;
+					}
+				}
+			} else
+			{
+				/* not within this rectangle */
+				return FALSE ;
+			}
+		}
+}
+
 INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	/* priority to check the window regions: win0,win1,winobj */
 	if (gpu->dispCnt.bits.Win0_Enable)          					/* highest priority */
 	{
-		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[0].bits.start) && (y < gpu->WINDOW_YDIM[0].bits.end)))
-			{
-				switch (bgnum) {
-					case 0:
-						if (!gpu->WINDOW_INCNT.bits.WIN0_BG0_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 1:
-						if (!gpu->WINDOW_INCNT.bits.WIN0_BG1_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 2:
-						if (!gpu->WINDOW_INCNT.bits.WIN0_BG2_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 3:
-						if (!gpu->WINDOW_INCNT.bits.WIN0_BG3_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 4:
-						if (!gpu->WINDOW_INCNT.bits.WIN0_OBJ_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-				}
-    	        *effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable ;
-				return TRUE ;
+		if (withinRect(	x,y,
+						gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+						gpu->WINDOW_XDIM[0].bits.end,gpu->WINDOW_YDIM[0].bits.end
+					 ))
+		{
+			switch (bgnum) {
+				case 0:
+					if (!gpu->WINDOW_INCNT.bits.WIN0_BG0_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 1:
+					if (!gpu->WINDOW_INCNT.bits.WIN0_BG1_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 2:
+					if (!gpu->WINDOW_INCNT.bits.WIN0_BG2_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 3:
+					if (!gpu->WINDOW_INCNT.bits.WIN0_BG3_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 4:
+					if (!gpu->WINDOW_INCNT.bits.WIN0_OBJ_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+			}
+    	    *effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable ;
+			return TRUE ;
 		}
 	}
 	if (gpu->dispCnt.bits.Win1_Enable)          				/* mid priority */
 	{
-		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[1].bits.start) && (y < gpu->WINDOW_YDIM[1].bits.end)))
-			{
-				switch (bgnum) {
-					case 0:
-						if (!gpu->WINDOW_INCNT.bits.WIN0_BG0_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 1:
-						if (!gpu->WINDOW_INCNT.bits.WIN1_BG1_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 2:
-						if (!gpu->WINDOW_INCNT.bits.WIN1_BG2_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 3:
-						if (!gpu->WINDOW_INCNT.bits.WIN1_BG3_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 4:
-						if (!gpu->WINDOW_INCNT.bits.WIN1_OBJ_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-				}
-    	        *effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable ;
-				return TRUE ;
+		if (withinRect(	x,y,
+						gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+						gpu->WINDOW_XDIM[1].bits.end,gpu->WINDOW_YDIM[1].bits.end
+					 ))
+		{
+			switch (bgnum) {
+				case 0:
+					if (!gpu->WINDOW_INCNT.bits.WIN1_BG0_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 1:
+					if (!gpu->WINDOW_INCNT.bits.WIN1_BG1_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 2:
+					if (!gpu->WINDOW_INCNT.bits.WIN1_BG2_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 3:
+					if (!gpu->WINDOW_INCNT.bits.WIN1_BG3_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 4:
+					if (!gpu->WINDOW_INCNT.bits.WIN1_OBJ_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+			}
+    	    *effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable ;
+			return TRUE ;
 		}
 	}
 	if ((gpu->dispCnt.bits.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
@@ -594,90 +677,88 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 	/* priority to check the window regions: win0,win1,winobj */
 	if (gpu->dispCnt.bits.Win0_Enable)          					/* highest priority */
 	{
-		if (((gpu->WINDOW_XDIM[0].val) && (gpu->WINDOW_YDIM[0].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[0].bits.start) && (x < gpu->WINDOW_XDIM[0].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[0].bits.start) && (y < gpu->WINDOW_YDIM[0].bits.end)))
-			{
-			} else
-			{
-				switch (bgnum) {
-					case 0:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG0_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 1:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG1_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 2:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG2_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 3:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG3_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 4:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN0_OBJ_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-				}
-    	        *effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
-				return TRUE ;
+		if (!withinRect(	x,y,
+						gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+						gpu->WINDOW_XDIM[0].bits.end,gpu->WINDOW_YDIM[0].bits.end
+					 ))
+		{
+			switch (bgnum) {
+				case 0:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG0_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 1:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG1_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 2:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG2_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 3:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG3_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 4:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN0_OBJ_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+			}
+    	    *effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
+			return TRUE ;
 		}
 	}
 	if (gpu->dispCnt.bits.Win1_Enable)          				/* mid priority */
 	{
-		if (((gpu->WINDOW_XDIM[1].val) && (gpu->WINDOW_YDIM[1].val)) &&
-		 ((((x >= gpu->WINDOW_XDIM[1].bits.start) && (x < gpu->WINDOW_XDIM[1].bits.end)) /* || (gpu->WINDOW_XDIM[1].bits.end==0)*/)
-				&&(y >= gpu->WINDOW_YDIM[1].bits.start) && (y < gpu->WINDOW_YDIM[1].bits.end)))
-			{
-			} else
-			{
-				switch (bgnum) {
-					case 0:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN0_BG0_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 1:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG1_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 2:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG2_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 3:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG3_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-					case 4:
-						if (!gpu->WINDOW_OUTCNT.bits.WIN1_OBJ_Enable)
-							*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
-						else
-							*draw = TRUE ;
-						break ;
-				}
-    	        *effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable ;
-				return TRUE ;
+		if (!withinRect(	x,y,
+						gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+						gpu->WINDOW_XDIM[1].bits.end,gpu->WINDOW_YDIM[1].bits.end
+					 ))
+		{
+			switch (bgnum) {
+				case 0:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG0_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 1:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG1_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 2:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG2_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 3:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN1_BG3_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+				case 4:
+					if (!gpu->WINDOW_OUTCNT.bits.WIN1_OBJ_Enable)
+						*draw = FALSE ; /* drawing explicit disabled for thios bg in this rectangle */
+					else
+						*draw = TRUE ;
+					break ;
+			}
+    	    *effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable ;
+			return TRUE ;
 		}
 	}
 	if ((gpu->dispCnt.bits.WinOBJ_Enable) && (bgnum==4))       /* low priority, but only applies to OBJ */
@@ -1216,19 +1297,19 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 #define RENDERS_A(a) \
 	if((a)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,x,l); \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,sprX,l); \
 		prioTab[sprX] = prio; \
 	}
 #define RENDERS_B(c) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),x,l); \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),sprX,l); \
 		prioTab[sprX] = prio; \
 	}
 #define RENDERS_C(c,d) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),x,l); \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),(sprX d),l); \
 		prioTab[sprX d] = prio; \
 	}
 
