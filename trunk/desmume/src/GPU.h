@@ -315,6 +315,15 @@ typedef union windowcnt_t
 	for rendering.
 */
 
+#define NB_PRIORITIES	4
+#define NB_BG		4
+typedef struct 
+{
+	u8 BGs[NB_BG], nbBGs;
+	u8 PixelsX[256], nbPixelsX;
+} itemsForPriority_t;
+
+
 typedef struct _GPU GPU;
 
 struct _GPU
@@ -322,6 +331,8 @@ struct _GPU
 	DISPCNT dispCnt;
 	BGxCNT  bgCnt[4];
 	MASTER_BRIGHT masterBright;
+	BOOL LayersEnable[5];
+	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
@@ -408,19 +419,18 @@ extern MMU_struct MMU;
 
 static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
-     GPU * gpu = screen->gpu;
-     u8 * dst =  GPU_screen + (screen->offset + l) * 512;
-     u8 spr[512];
-     u8 sprPrio[256];
-     u8 bgprio;
-     int i;
-     u8 i8;
-     u16 i16;
-     u32 c;
-     u8 pixelsForPrio[4][256];
-     u8 nbPixelsForPrio[4] = {0,0,0,0};
-     u8 n,p;
-
+	GPU * gpu = screen->gpu;
+	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+	itemsForPriority_t * item;
+	u8 spr[512];
+	u8 sprPrio[256];
+	u8 bgprio,prio;
+	int i;
+	u8 i8;
+	u16 i16;
+	u32 c;
+	u8 n,p;
+	
 	/* initialize the scanline black */
 	/* not doing this causes invalid colors when all active BGs are prevented to draw at some place */
 	memset(dst,0,256*2) ;
@@ -464,49 +474,60 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	{
 		T2WriteLong(dst, i8 << 2, c);
 		T2WriteLong(spr, i8 << 2, c);
+		// we init the sprites with priority 4 (if they keep it = unprocessed)
 		T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
-
 	}
 	
 	if (gpu->sprEnable  && gpu->dispOBJ) {
+		// nothing else to display but sprites...
 		if(!gpu->nbBGActif) {
 			gpu->spriteRender(gpu, l, dst, sprPrio);
 			return;
-		} else {
-	 		gpu->spriteRender(gpu, l, spr, sprPrio);	
 		}
+		// we also have backgrounds
+		gpu->spriteRender(gpu, l, spr, sprPrio);
 	}
 	
-	if(!gpu->nbBGActif)
-	{
-		if (gpu->sprEnable)
-			gpu->spriteRender(gpu, l, dst, sprPrio);
-		return;
+	// init pixels priorities
+	for (i=0;i<NB_PRIORITIES;i++) {
+		gpu->itemsForPriority[i].nbPixelsX = 0;
 	}
-	if (gpu->sprEnable)
-	{
-		gpu->spriteRender(gpu, l, spr, sprPrio);
 
-		if(gpu->bgCnt[gpu->ordre[0]].bits.Priority !=3)
-		{
-			for(i16 = 0; i16 < 128; ++i16) {
-				T2WriteLong(dst, i16 << 2, T2ReadLong(spr, i16 << 2));
-			}
+	// for all the pixels in the line
+	if (gpu->LayersEnable[4])
+	for(i= 0; i<256; i++) {
+		// assign them to the good priority item
+		prio = sprPrio[i];
+
+		// render 1 time, but prio 4 = isn't processed further
+		T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
+		if (prio >=4) continue;
+
+		item = &(gpu->itemsForPriority[prio]);
+		item->PixelsX[item->nbPixelsX]=i;
+		item->nbPixelsX++;
+	}
+
+
+	// paint lower priorities fist
+	// then higher priorities on top
+	for(prio=NB_PRIORITIES; prio > 0; )
+	{
+		prio--;
+		item = &(gpu->itemsForPriority[prio]);
+		// render BGs
+		for (i=0; i < item->nbBGs; i++) {
+			i16 = item->BGs[i];
+			if (gpu->LayersEnable[i16])
+			modeRender[gpu->dispCnt.bits.BG_Mode][i16](gpu, i16, l, dst);
+		}
+		// render sprite Pixels
+		for (i=0; i < item->nbPixelsX; i++) {
+			i16=item->PixelsX[i];
+			T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
 		}
 	}
 
-	for(i8 = 0; i8 < gpu->nbBGActif; ++i8)
-	{
-		if (! ((gpu->ordre[i8]==0) && gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) )
-			modeRender[gpu->dispCnt.bits.BG_Mode][gpu->ordre[i8]](gpu, gpu->ordre[i8], l, dst);
-		bgprio = gpu->bgCnt[gpu->ordre[i8]].bits.Priority;
-		if (gpu->sprEnable)
-		{
-			for(i16 = 0; i16 < 256; ++i16)
-			if(bgprio>=sprPrio[i16])
-				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
-		}
-	}
 
 // Apply final brightness adjust (MASTER_BRIGHT)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)

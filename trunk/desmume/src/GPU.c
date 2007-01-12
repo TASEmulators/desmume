@@ -126,60 +126,65 @@ void GPU_DeInit(GPU * gpu)
 
 void GPU_resortBGs(GPU *gpu)
 {
-BOOL LayersEnable[5];
-u16 WinBG=0;
-	u8 i, q, index;
+	u16 WinBG=0;
+	u8 i, j, prio;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
+	itemsForPriority_t * item;
 
-	if (cnt->Win0_Enable || cnt->Win1_Enable)
-	{
-	WinBG = (gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val);
-	WinBG = WinBG | (WinBG >> 8);
+	if (cnt->Win0_Enable || cnt->Win1_Enable) {
+		WinBG  = gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val;
+		WinBG |= (WinBG >> 8);
 	}
 
+/*
+	if (cnt->Win0_Enable || cnt->Win1_Enable) {
+		if (cnt->Win0_Enable)
+			WinBG |= (gpu->WINDOW_INCNT.val & 0xFF);
+		if (cnt->Win1_Enable)
+			WinBG |= (gpu->WINDOW_INCNT.val >> 8);
+		WinBG |= (gpu->WINDOW_OUTCNT.val & 0xFF);
+		WinBG |= (gpu->WINDOW_OUTCNT.val >> 8);
+	}
+*/
 	// Let's prepare the field for WINDOWS implementation
-	LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1))&& !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
-	LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
-	LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
-	LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
-	LayersEnable[4] = (cnt->OBJ_Enable || (WinBG & 0x10));
+	gpu->LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1))&& !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
+	gpu->LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
+	gpu->LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
+	gpu->LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
+	gpu->LayersEnable[4] = gpu->dispOBJ && (cnt->OBJ_Enable || (WinBG & 0x10));
 
-/* first: place them all unsorted, just as they are */
-	for (i=0;i<4;i++)
-	{
-		gpu->ordre[i] = i ;
+	// KISS ! lower priority first, if same then lower num
+	
+	for (i=0;i<NB_PRIORITIES;i++) {
+		item = &(gpu->itemsForPriority[i]);
+		item->nbBGs=0;
+		item->nbPixelsX=0;
 	}
-
-	/* sorting BGs by priority, keep same priorities ordered by their num */
-	/* selection sort*/
-	for (i=0;i<4;i++)
-	{
-		/* weighted priorities: first drawn/not drawm, then set priority bits, then the num */
-		/* the higher the value the lower the priority */
-		u8 curPrio = gpu->bgCnt[gpu->ordre[i]].bits.Priority*4 + (LayersEnable[gpu->ordre[i]]?16:0) + gpu->ordre[i] ;
-		for (q=i+1;q<4;q++)
-		{
-			u8 lookingPrio =  gpu->bgCnt[gpu->ordre[q]].bits.Priority*4 + (LayersEnable[gpu->ordre[q]]?16:0) + gpu->ordre[q] ;
-			/* if the one we are looking for is of higher priority then the current selected, swap them */
-			/* note: higher value = lower priority */
-			if (lookingPrio > curPrio)
-			{
-				/* swap the order */
-				u8 savedIndex = gpu->ordre[i] ;
-                gpu->ordre[i] = gpu->ordre[q] ;
-                gpu->ordre[q] = savedIndex ;
-				/* update the current info */
-                curPrio = lookingPrio ;
-			} ;
+	for (i=NB_BG,j=0; i>0; ) {
+		i--;
+		//if (!gpu->LayersEnable[i]) continue;
+		prio = gpu->bgCnt[i].bits.Priority;
+		item = &(gpu->itemsForPriority[prio]);
+		item->BGs[item->nbBGs]=i;
+		item->nbBGs++;
+		j++;
+	}
+	gpu->nbBGActif = j;
+	
+#if 0
+//debug
+	for (i=0;i<NB_PRIORITIES;i++) {
+		item = &(gpu->itemsForPriority[i]);
+		printf("%d : ", i);
+		for (j=0; j<NB_PRIORITIES; j++) {
+			if (j<item->nbBGs) 
+				printf("BG%d ", item->BGs[j]);
+			else
+				printf("... ", item->BGs[j]);
 		}
 	}
-	/* once we are done ordering, create the inverse table */
-	for (i=0;i<4;i++)
-	{
-        gpu->BGIndex[gpu->ordre[i]] = i ;
-		/* and remember the processed highest enabled BG */
-		if (LayersEnable[gpu->ordre[i]]) gpu->nbBGActif = i+1 ;
-	}
+	printf("\n");
+#endif
 }
 
 
