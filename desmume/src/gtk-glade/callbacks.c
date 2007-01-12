@@ -188,6 +188,14 @@ void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 	edit_controls();
 }
 
+void  on_menu_joy_controls_activate     (GtkMenuItem *menuitem, gpointer
+user_data)
+{
+  GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wJoyConfDlg");
+  init_joy_labels();
+  gtk_dialog_run(dlg);
+}
+
 void  on_menu_audio_on_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	/* we want set audio emulation ON or OFF */
 	if (gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem)) {

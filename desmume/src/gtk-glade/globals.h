@@ -68,6 +68,7 @@ gboolean ScreenGap;
 
 void black_screen ();
 void edit_controls();
+void init_joy_labels();
 
 /* printscreen.c */
 int WriteBMP(const char *filename,u16 *bmp);
