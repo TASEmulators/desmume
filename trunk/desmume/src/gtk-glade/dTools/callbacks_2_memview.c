@@ -32,12 +32,19 @@ enum SHOW {
 
 static BOOL init=FALSE;
 static enum SHOW packmode=Bit8;
-static u32 address=0, tmpaddr=0, bpl=0;
+static u32 address=0, tmpaddr=0, bpl=0; int cpu=0;
 static PangoAttrList *attr_Address, *attr_Pattern1, *attr_Pattern2, *attr_Text;
 
 static GtkEntry       *wAddress;
 static GtkDrawingArea *wPaint;
 void refresh();
+
+
+void on_wtools_2_cpu_changed           (GtkComboBox *widget, gpointer user_data) {
+	/* c == 0 means ARM9 */
+	cpu=gtk_combo_box_get_active(widget);
+	refresh();
+}
 
 
 /* how to pack bytes */
@@ -61,9 +68,13 @@ void on_wtools_2_GotoButton_clicked    (GtkButton *button, gpointer user_data) {
 }
 
 
+
+
 void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data) {
+	GtkWidget * combo = glade_xml_get_widget(xml_tools, "wtools_2_cpu");
 	wAddress = (GtkEntry*)glade_xml_get_widget(xml_tools, "wtools_2_GotoAddress");
 	wPaint   = (GtkDrawingArea*)glade_xml_get_widget(xml_tools, "wtools_2_draw");
+	gtk_combo_box_set_active((GtkComboBox*)combo, 0);
 	refresh();
 }
 
@@ -89,7 +100,7 @@ void refresh() {
 	GtkWidget * area = (GtkWidget*)wPaint;
 	PangoLayout* playout = gtk_widget_create_pango_layout(area, NULL);
 	GdkGC * GC = area->style->fg_gc[area->state];
-	int i,j,addr, w,h,x,y, cpu=0; u8 c;
+	int i,j,addr, w,h,x,y; u8 c;
 	char txt[80],*ptxt;
 	char words[4][13];
 
