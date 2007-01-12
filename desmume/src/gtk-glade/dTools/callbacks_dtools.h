@@ -46,6 +46,7 @@ void on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *togglebutton, gpointer 
 
 /* ***** ***** MEMORY VIEWER ***** ***** */
 
+void on_wtools_2_cpu_changed           (GtkComboBox *widget, gpointer user_data);
 void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data);
 void on_wtools_2_r8_toggled            (GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_2_r16_toggled           (GtkToggleButton *togglebutton, gpointer user_data);

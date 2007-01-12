@@ -640,7 +640,7 @@ cpu : ARM9</property>
 	<widget class="GtkTable" id="table2">
 	  <property name="visible">True</property>
 	  <property name="n_rows">2</property>
-	  <property name="n_columns">6</property>
+	  <property name="n_columns">7</property>
 	  <property name="homogeneous">False</property>
 	  <property name="row_spacing">0</property>
 	  <property name="column_spacing">0</property>
@@ -813,10 +813,29 @@ cpu : ARM9</property>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
-	      <property name="right_attach">6</property>
+	      <property name="right_attach">7</property>
 	      <property name="top_attach">1</property>
 	      <property name="bottom_attach">2</property>
 	      <property name="x_options">fill</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkComboBox" id="wtools_2_cpu">
+	      <property name="visible">True</property>
+	      <property name="items" translatable="yes">ARM9 cpu
+ARM7 cpu</property>
+	      <property name="add_tearoffs">False</property>
+	      <property name="focus_on_click">True</property>
+	      <signal name="changed" handler="on_wtools_2_cpu_changed" last_modification_time="Fri, 12 Jan 2007 18:36:24 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">6</property>
+	      <property name="right_attach">7</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options">fill</property>
 	    </packing>
 	  </child>
 	</widget>
