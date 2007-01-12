@@ -128,8 +128,18 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 			case 0: /* write to RF chip */
 				wifi->rfIOData.array16[part] = val ;
 				if (wifi->rfIOData.bits.address > (sizeof(wifi->RF) / 4)) return ; /* out of bound */
-				/* set content of the addressed register */
-				rfreg[wifi->rfIOData.bits.address].bits.content = wifi->rfIOData.bits.content ;
+				/* the actual transfer is done on high part write */
+				if (part==1)
+				{
+					/* special purpose register: TEST1, on write, the RF chip resets */
+					if (wifi->rfIOData.bits.address == 13)
+					{
+						WIFI_resetRF(&wifi->RF) ;
+						return ;
+					}
+					/* set content of the addressed register */
+					rfreg[wifi->rfIOData.bits.address].bits.content = wifi->rfIOData.bits.content ;
+				}
 				break ;
 		}
 	}
