@@ -97,7 +97,52 @@ void WIFI_resetRF(rffilter_t *rf) {
 
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val)
 {
-	wifi->rfIOCnt.val = val ;
+	if (!wifi->rfIOStatus.bits.busy)
+		wifi->rfIOCnt.val = val ;
+}
+
+void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
+{
+	if (!wifi->rfIOStatus.bits.busy)
+	{
+        rfIOData_t *rfreg = (rfIOData_t *)&wifi->RF;
+		switch (wifi->rfIOCnt.bits.readOperation)
+		{
+			case 1: /* read from RF chip */
+				/* low part of data is ignored on reads */
+				/* on high part, the address is read, and the data at this is written back */
+				if (part==1)
+				{
+					wifi->rfIOData.array16[part] = val ;
+					if (wifi->rfIOData.bits.address > (sizeof(wifi->RF) / 4)) return ; /* out of bound */
+					/* get content of the addressed register */
+					wifi->rfIOData.bits.content = rfreg[wifi->rfIOData.bits.address].bits.content ;
+				}
+				break ;
+			case 0: /* write to RF chip */
+				wifi->rfIOData.array16[part] = val ;
+				if (wifi->rfIOData.bits.address > (sizeof(wifi->RF) / 4)) return ; /* out of bound */
+				/* set content of the addressed register */
+				rfreg[wifi->rfIOData.bits.address].bits.content = wifi->rfIOData.bits.content ;
+				break ;
+		}
+	}
+}
+
+u16 WIFI_getRF_DATA(wifimac_t *wifi, u8 part)
+{
+	if (!wifi->rfIOStatus.bits.busy)
+	{
+		return wifi->rfIOData.array16[part] ;
+	} else
+	{   /* data is not (yet) available */
+		return 0 ;
+	}
+ }
+
+u16 WIFI_getRF_STATUS(wifimac_t *wifi)
+{
+	return rfIOStatus.val ;
 }
 
 

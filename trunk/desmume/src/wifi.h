@@ -212,6 +212,30 @@ typedef union
 typedef union
 {
 	struct {
+/* 0*/		unsigned busy:1;
+/* 1*/      unsigned :15;
+	} bits ;
+	u16 val ;
+} rfIOStat_t ;
+
+typedef union
+{
+	struct {
+/* 0*/  unsigned content:18 ;
+/*18*/  unsigned address:5;
+/*23*/  unsigned :9;
+	} bits ;
+	struct {
+/* 0*/  unsigned low:16 ;
+/*16*/  unsigned high:16 ;
+	} val16 ;
+	u16 array16[2] ;
+	u32 val ;
+} rfIOData_t ;
+
+typedef union
+{
+	struct {
 /* 0*/  unsigned address:7;
 /* 7*/  unsigned :5;
 /*12*/  unsigned mode:2;
@@ -266,11 +290,18 @@ typedef struct
 
 	/* subchip communications */
     rfIOCnt_t   rfIOCnt ;
+	rfIOStat_t  rfIOStatus ;
+	rfIOData_t  rfIOData ;
     bbIOCnt_t   bbIOCnt ;
 
 } wifimac_t ;
 
+
+/* subchip communication IO functions */
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;
+void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part) ;
+u16  WIFI_getRF_DATA(wifimac_t *wifi, u8 part) ;
+u16  WIFI_getRF_STATUS(wifimac_t *wifi) ;
 
 
 #ifdef __cplusplus
