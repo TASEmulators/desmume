@@ -303,6 +303,9 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part) ;
 u16  WIFI_getRF_DATA(wifimac_t *wifi, u8 part) ;
 u16  WIFI_getRF_STATUS(wifimac_t *wifi) ;
 
+void WIFI_setBB_CNT(wifimac_t *wifi,u16 val) ;
+u8   WIFI_getBB_DATA(wifimac_t *wifi) ;
+void WIFI_setBB_DATA(wifimac_t *wifi, u8 val) ;
 
 #ifdef __cplusplus
 }

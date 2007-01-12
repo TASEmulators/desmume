@@ -20,6 +20,12 @@
 
 #include "wifi.h"
 
+/*******************************************************************************
+
+	RF-Chip
+
+ *******************************************************************************/
+
 void WIFI_resetRF(rffilter_t *rf) {
 	/* reinitialize RF chip with the default values refer RF2958 docs */
 	/* CFG1 */
@@ -142,7 +148,28 @@ u16 WIFI_getRF_DATA(wifimac_t *wifi, u8 part)
 
 u16 WIFI_getRF_STATUS(wifimac_t *wifi)
 {
-	return rfIOStatus.val ;
+	return wifi->rfIOStatus.val ;
 }
 
+/*******************************************************************************
 
+	BB-Chip
+
+ *******************************************************************************/
+
+void WIFI_setBB_CNT(wifimac_t *wifi,u16 val)
+{
+	wifi->bbIOCnt.val = val ;
+}
+
+u8 WIFI_getBB_DATA(wifimac_t *wifi)
+{
+	if ((wifi->bbIOCnt.bits.mode != 2) || !(wifi->bbIOCnt.bits.enable)) return 0 ; /* not for read or disabled */
+	return wifi->BB.data[wifi->bbIOCnt.bits.address] ;
+}
+
+void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
+{
+	if ((wifi->bbIOCnt.bits.mode != 1) || !(wifi->bbIOCnt.bits.enable)) return ; /* not for write or disabled */
+    wifi->BB.data[wifi->bbIOCnt.bits.address] = val ;
+}
