@@ -496,6 +496,8 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 /* check whether (x,y) is within the rectangle (including wraparounds) */
 INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 {
+		if (startX==endX) endX+=256 ;
+		if (startY==endY) endY+=256 ;
 		if (startX > endX) {
 			/* if start > end, the window gets wrapped around */
 			/* check if the current pixel is in that x-wrapped area */
