@@ -183,3 +183,86 @@ void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
 	if ((wifi->bbIOCnt.bits.mode != 1) || !(wifi->bbIOCnt.bits.enable)) return ; /* not for write or disabled */
     wifi->BB.data[wifi->bbIOCnt.bits.address] = val ;
 }
+
+/*******************************************************************************
+
+	wifimac IO: a lot of the wifi regs are action registers, that are mirrored
+				without action, so the default IO via MMU.c does not seem to
+				be very suitable
+
+				all registers are 16 bit
+
+ *******************************************************************************/
+
+void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
+{
+	BOOL action = FALSE ;
+	if ((address & 0xFF800000) != 0x04800000) return ;      /* error: the address does not describe a wiifi register */
+
+	/* the first 0x1000 bytes are mirrored at +0x1000,+0x2000,+0x3000,+06000,+0x7000 */
+	/* only the first mirror causes an special action */
+	/* the gap at +0x4000 is filled with the circular bufferspace */
+	/* the so created 0x8000 byte block is then mirrored till 0x04FFFFFF */
+	/* see: http://www.akkit.org/info/dswifi.htm#Wifihwcap */
+	if (((address & 0x00007000) >= 0x00004000) && ((address & 0x00007000) < 0x00006000))
+	{
+		/* access to the circular buffer */
+        wifi->circularBuffer[(address & 0x1FFF) >> 1] = val ;
+		return ;
+	}
+	if (!(address & 0x00007000)) action = TRUE ;
+	/* mirrors => register address */
+	address &= 0x00000FFF ;
+	switch (address)
+	{
+		case REG_WIFI_IE:
+			wifi->IE.val = val ;
+			break ;
+		case REG_WIFI_IF:
+			wifi->IF.val = val ;
+			break ;
+		case REG_WIFI_RFIOCNT:
+			WIFI_setRF_CNT(wifi,val) ;
+			break ;
+		case REG_WIFI_RFIOBSY:
+			/* CHECKME: read only? */
+			break ;
+		case REG_WIFI_RFIODATA1:
+			WIFI_setRF_DATA(wifi,val,0) ;
+			break ;
+		case REG_WIFI_RFIODATA2:
+			WIFI_setRF_DATA(wifi,val,1) ;
+			break ;
+	}
+}
+
+u16 WIFI_read16(wifimac_t *wifi,u32 address)
+{
+	BOOL action = FALSE ;
+	if ((address & 0xFF800000) != 0x04800000) return 0 ;      /* error: the address does not describe a wiifi register */
+
+	/* the first 0x1000 bytes are mirrored at +0x1000,+0x2000,+0x3000,+06000,+0x7000 */
+	/* only the first mirror causes an special action */
+	/* the gap at +0x4000 is filled with the circular bufferspace */
+	/* the so created 0x8000 byte block is then mirrored till 0x04FFFFFF */
+	/* see: http://www.akkit.org/info/dswifi.htm#Wifihwcap */
+	if (((address & 0x00007000) >= 0x00004000) && ((address & 0x00007000) < 0x00006000))
+	{
+		/* access to the circular buffer */
+        return wifi->circularBuffer[(address & 0x1FFF) >> 1] ;
+	}
+	if (!(address & 0x00007000)) action = TRUE ;
+	/* mirrors => register address */
+	address &= 0x00000FFF ;
+	switch (address)
+	{
+		case REG_WIFI_IE:
+			return wifi->IE.val ;
+		case REG_WIFI_IF:
+			return wifi->IF.val ;
+		case REG_WIFI_RFIODATA1:
+			return WIFI_getRF_DATA(wifi,0) ;
+		case REG_WIFI_RFIODATA2:
+			return WIFI_getRF_DATA(wifi,1) ;
+	}
+}
