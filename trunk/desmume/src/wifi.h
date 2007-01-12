@@ -27,6 +27,13 @@ extern "C" {
 
 #include "types.h"
 
+#define     REG_WIFI_IF     	0x010
+#define     REG_WIFI_IE     	0x012
+#define     REG_WIFI_RFIODATA2  0x17C
+#define     REG_WIFI_RFIODATA1  0x17E
+#define     REG_WIFI_RFIOBSY    0x180
+#define     REG_WIFI_RFIOCNT    0x184
+
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
 /* using the register names as in docs ( http://www.rfmd.com/pdfs/2958.pdf )*/
@@ -294,6 +301,9 @@ typedef struct
 	rfIOData_t  rfIOData ;
     bbIOCnt_t   bbIOCnt ;
 
+	/* buffers */
+	u16         circularBuffer[0x1000] ;
+
 } wifimac_t ;
 
 
@@ -306,6 +316,10 @@ u16  WIFI_getRF_STATUS(wifimac_t *wifi) ;
 void WIFI_setBB_CNT(wifimac_t *wifi,u16 val) ;
 u8   WIFI_getBB_DATA(wifimac_t *wifi) ;
 void WIFI_setBB_DATA(wifimac_t *wifi, u8 val) ;
+
+/* wifimac io */
+void WIFI_write16(wifimac_t *wifi,u32 address, u16 val) ;
+u16  WIFI_read16(wifimac_t *wifi,u32 address) ;
 
 #ifdef __cplusplus
 }
