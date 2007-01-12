@@ -31,4 +31,15 @@ void on_wtools_1_r_ime_toggled        (GtkToggleButton *togglebutton, gpointer u
 void on_wtools_1_r_ie_toggled         (GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_1_r_if_toggled         (GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_1_r_power_cr_toggled   (GtkToggleButton *togglebutton, gpointer user_data);
-
+void on_wtools_1_r_dispa_win0h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispa_win1h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispa_win0v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispa_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispa_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispa_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispb_win0h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispb_win1h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispb_win0v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispb_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispb_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data);
