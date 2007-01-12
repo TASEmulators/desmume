@@ -272,6 +272,32 @@ void init_labels() {
 	}
 }
 
+/* Initialize the joystick controls labels for the configuration window */
+void init_joy_labels() {
+  int i;
+  char text[50], bname[30];
+  GtkButton *b;
+  for (i=0; i<4; i++) {
+    /* Key not configured */
+    if( joypadCfg[i] == (u16)(-1) ) continue;
+
+    sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[i],joypadCfg[i]);
+    sprintf(bname,"button_joy_%s\0\0",DESMUME_KEY_NAMES[i]);
+    b = (GtkButton*)glade_xml_get_widget(xml, bname);
+    gtk_button_set_label(b,text);
+  }
+  /* Skipping Axis */
+  for (i=8; i<DESMUME_NB_KEYS; i++) {
+    /* Key not configured */
+    if( joypadCfg[i] == (u16)(-1) ) continue;
+
+    sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[i],joypadCfg[i]);
+    sprintf(bname,"button_joy_%s\0\0",DESMUME_KEY_NAMES[i]);
+    b = (GtkButton*)glade_xml_get_widget(xml, bname);
+    gtk_button_set_label(b,text);
+  }
+}
+
 void edit_controls() {
 	GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wKeybConfDlg");
 	memcpy(&Keypad_Temp, &Keypad_Config, sizeof(Keypad_Config));
@@ -337,7 +363,6 @@ void  on_button_Debug_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMU
 void  on_button_Boost_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_BOOST); }
 
 /* Joystick configuration / Key definition */
-/* FIXME: popup is not shown!? */
 void ask_joy_key(GtkButton*b, int key)
 {
   char text[50];
@@ -345,15 +370,13 @@ void ask_joy_key(GtkButton*b, int key)
 
   key--; /* remove 1 to get index */
   GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wJoyDlg");
-  GtkDialog * parent = (GtkDialog*)glade_xml_get_widget(xml, "wJoyConfDlg");
-  gtk_widget_set_sensitive(parent, FALSE); /* Ugly workaround for bug below */
   gtk_widget_show_now(dlg);
-  /* FIXME: when the following line is not commented, the widget is not even shown!! */
+  /* Need to force event processing. Otherwise, popup won't show up. */
+  while ( gtk_events_pending() ) gtk_main_iteration();
   joykey = get_set_joy_key(key);
   sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[key],joykey);
   gtk_button_set_label(b,text);
   gtk_widget_hide((GtkWidget*)dlg);
-  gtk_widget_set_sensitive(parent, TRUE); /* Ugly workaround for bug below */
 }
 
 void on_joy_button_A_clicked (GtkButton *b, gpointer user_data)
