@@ -1,3 +1,21 @@
+0.5.0 -> 0.?.?
+ arm:
+  - Added relocation interrupt vector.
+  - Added region access right checks.
+  - Enabled LDC/STC instructions.
+  - Fixed powersave (cp15) IRQ wait.
+ gpu:
+  - Added special color effects.
+  - Added windowing feature.
+  - Fixed transparent direct color backgrounds.
+  - Fixed disabled sprites showing.
+  - Fixed 8/32 bit access to gpu registers.
+ wifi:
+  - Added RF chip interface.
+  - Added BB chip interface.
+ windows port:
+  - Fixed address calculation in disassembler.
+
 0.3.3 -> 0.5.0
  arm:
   - Fixed MSR with immediate value opcode.
