@@ -783,9 +783,6 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 	{
 		renderline_checkWindowOutside(gpu,bgnum,x,y,&windowDraw,&windowEffect) ;
 	}
-	if (windowDraw==FALSE) return ;
-
-
 	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect==TRUE))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
@@ -858,8 +855,9 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 				break ;
 		}
 	} else {
-		/* when no effect is active */
-		T2WriteWord(dst, passing, color) ;
+		/* only draw when effect is enabled on this pixel as source, or drawing itself is enabled */
+		if (((windowEffect==TRUE) && (gpu->BLDCNT & (0x100 << bgnum))) || (windowDraw == TRUE))
+			T2WriteWord(dst, passing, color) ;
 	}
 } ;
 
