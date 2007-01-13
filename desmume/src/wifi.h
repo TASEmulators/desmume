@@ -31,7 +31,7 @@ extern "C" {
 	#define socket_t SOCKET
 #else
 	#include <sys/socket.h>
-	#define socket_t socket
+	#define socket_t int
 #endif
 
 #include "types.h"
