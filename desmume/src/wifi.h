@@ -25,6 +25,15 @@
 extern "C" {
 #endif
 
+/* standardize socket interface for linux and windows */
+#ifdef WIN32
+	#include <winsock2.h>
+	#define socket_t SOCKET
+#else
+	#include <sys/socket.h>
+	#define socket_t socket
+#endif
+
 #include "types.h"
 
 #define     REG_WIFI_MODE       		0x004
@@ -297,6 +306,18 @@ typedef union
 	u16 val ;
 } bbIOCnt_t ;
 
+#define WIFI_IRQ_RECVCOMPLETE       	0x0001
+#define WIFI_IRQ_SENDCOMPLETE           0x0002
+#define WIFI_IRQ_COUNTUP                0x0004
+#define WIFI_IRQ_SENDERROR              0x0008
+#define WIFI_IRQ_STATCOUNTUP            0x0010
+#define WIFI_IRQ_STATACKUP              0x0020
+#define WIFI_IRQ_RECVSTART              0x0040
+#define WIFI_IRQ_SENDSTART              0x0080
+#define WIFI_IRQ_RFWAKEUP               0x0800
+#define WIFI_IRQ_TIMEBEACON             0x4000
+#define WIFI_IRQ_TIMEPREBEACON          0x8000
+
 /* definition of the irq bitfields for wifi irq's (cascaded at arm7 irq #24) */
 typedef union
 {
@@ -306,7 +327,7 @@ typedef union
 /* 1*/  unsigned send_complete:1;
 /* 2*/  unsigned recv_countup:1;
 /* 3*/  unsigned send_error:1;
-/* 4*/  unsigned stat_coutup:1;
+/* 4*/  unsigned stat_countup:1;
 /* 5*/  unsigned stat_ackup:1;
 /* 6*/  unsigned recv_start:1;
 /* 7*/  unsigned send_start:1;
@@ -342,6 +363,12 @@ typedef struct
 	u16 aid ;
 	u16 retryLimit ;
 
+	/* timing */
+	u64 usec ;
+	BOOL usecEnable ;
+	u64 ucmp ;
+	BOOL ucmpEnable ;
+
 	/* subchips */
     rffilter_t 	RF ;
 	bb_t        BB ;
@@ -364,6 +391,9 @@ typedef struct
 	u16         CircBufEnd ;
 	u16         CircBufSkip ;
 
+	/* desmume host communication */
+	socket_t    udpSocket ;
+
 } wifimac_t ;
 
 extern wifimac_t wifiMac ;
@@ -381,6 +411,9 @@ void WIFI_setBB_DATA(wifimac_t *wifi, u8 val) ;
 /* wifimac io */
 void WIFI_write16(wifimac_t *wifi,u32 address, u16 val) ;
 u16  WIFI_read16(wifimac_t *wifi,u32 address) ;
+
+/* wifimac timing */
+void WIFI_usTrigger(wifimac_t *wifi) ;
 
 #ifdef __cplusplus
 }

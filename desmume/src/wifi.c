@@ -19,6 +19,9 @@
 */
 
 #include "wifi.h"
+#include "armcpu.h"
+
+wifimac_t wifiMac ;
 
 /*******************************************************************************
 
@@ -325,4 +328,24 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 	}
 }
 
-wifimac_t wifiMac ;
+void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
+{
+	/* trigger an irq */
+	u16 irqBit = 1 << irq ;
+	if (wifi->IE.val & irqBit)
+	{
+		wifi->IF.val |= irqBit ;
+        NDS_makeARM7Int(24) ;   /* cascade it via arm7 wifi irq */
+	}
+}
+
+void WIFI_usTrigger(wifimac_t *wifi)
+{
+	/* a usec (=3F03 cycles) has passed */
+	if (wifi->usecEnable)
+		wifi->usec++ ;
+	if ((wifi->ucmpEnable) && (wifi->ucmp == wifi->usec))
+	{
+			WIFI_triggerIRQ(wifi,WIFI_IRQ_TIMEBEACON) ;
+	}
+}
