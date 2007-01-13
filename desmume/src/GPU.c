@@ -105,6 +105,11 @@ void GPU_Reset(GPU *g, u8 l)
    g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
    g->dispOBJ = g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
      
+  MMU.vram_mode[0] = 4 ;
+  MMU.vram_mode[1] = 5 ;
+  MMU.vram_mode[2] = 6 ;
+  MMU.vram_mode[3] = 7 ;
+
    g->spriteRender = sprite1D;
      
    if(g->core == GPU_SUB)
@@ -1210,7 +1215,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 			y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
 			coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
 			if(coul)
-			renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1),x,Y);
+			renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1),i,Y);
 		})
 	
 		}
@@ -1223,7 +1228,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 		{
 			mapinfo = map[auxX + auxY * lg];
 			if(mapinfo)
-				renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, mapinfo << 1),x,Y);
+				renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, mapinfo << 1),i,Y);
 		})
 		}
 		return;
@@ -1234,7 +1239,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 		{
 			mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
 			if ((mapinfo) && (mapinfo & 0x8000))
-				renderline_setFinalColor(gpu,0,num,dst, mapinfo,x,Y);
+				renderline_setFinalColor(gpu,0,num,dst, mapinfo,i,Y);
 		})
 		}
 		return;
@@ -1298,19 +1303,19 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 #define RENDERS_A(a) \
 	if((a)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,sprX,l); \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,i,l); \
 		prioTab[sprX] = prio; \
 	}
 #define RENDERS_B(c) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),sprX,l); \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),i,l); \
 		prioTab[sprX] = prio; \
 	}
 #define RENDERS_C(c,d) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),(sprX d),l); \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),i,l); \
 		prioTab[sprX d] = prio; \
 	}
 
