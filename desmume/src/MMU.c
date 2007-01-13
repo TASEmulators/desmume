@@ -29,6 +29,7 @@
 #include "NDSSystem.h"
 #include "cflash.h"
 #include "cp15.h"
+#include "wifi.h"
 
 #include "registers.h"
 
@@ -634,6 +635,10 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 	if ((adr>=0x08800000)&&(adr<0x09900000))
 	   return (unsigned short)cflash_read(adr);
 	
+	/* wifi mac access */
+	if ((proc==ARMCPU_ARM7) && (adr>=0x04800000)&&(adr<0x05000000))
+		return WIFI_read16(&wifiMac,adr) ;
+
 	adr &= 0x0FFFFFFF;
 
 	if((adr>>24)==4)
@@ -848,10 +853,10 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		case REG_VRAMCNTD:
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTA) ;
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTB) ;
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTC) ;
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTD) ;
+                MMU_VRAMWriteBackToLCD(0) ;
+                MMU_VRAMWriteBackToLCD(1) ;
+                MMU_VRAMWriteBackToLCD(2) ;
+                MMU_VRAMWriteBackToLCD(3) ;
 				switch(val & 0x1F)
 				{
 				case 1 :
@@ -1142,6 +1147,10 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 		cflash_write(adr,val);
 		return;
 	}
+
+	/* wifi mac access */
+	if ((proc==ARMCPU_ARM7) && (adr>=0x04800000)&&(adr<0x05000000))
+		WIFI_write16(&wifiMac,adr,val) ;
 
 	adr &= 0x0FFFFFFF;
 
