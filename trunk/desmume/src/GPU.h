@@ -422,6 +422,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	GPU * gpu = screen->gpu;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
+	u8 * sdst =  GPU_screen + (SubScreen.offset + l) * 512;
 	itemsForPriority_t * item;
 	u8 spr[512];
 	u8 sprPrio[256];
@@ -454,28 +455,25 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 				/* we only draw one of the VRAM blocks */
 				vram_bank = gpu->dispCnt.bits.VRAM_Block ;
 				
-				if(!(MMU.vScreen&1)) dest = mdst; else dest = dst;
-				
-				switch (MMU.vram_mode[vram_bank])
-				{
-				case 0:
-				case 1:
-				case 2:
-				case 3:
+//				if(!(gpu->lcd)) dest = mdst; else dest = sdst;
+				dest = dst ;
 				{
 					int ii = l * 256 * 2;
 					for (i=0; i<(256 * 2); i+=2)
 					{
-						u8 * vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
+						u8 * vram ;
+						if (MMU.vram_mode[vram_bank] & 4)
+						{
+							vram = ARM9Mem.ARM9_LCD + (MMU.vram_mode[vram_bank] & 3) * 0x20000;
+						} else
+						{
+							vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
+						}
+
 						T2WriteWord(dest, i, T1ReadWord(vram, ii));
 						ii+=2;
 					}
 					return;
-				}
-				break;
-				
-				default:
-					break;
 				}
 		}
 			return;

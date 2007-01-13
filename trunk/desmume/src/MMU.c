@@ -881,6 +881,9 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 3; // BG-VRAM
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*3); // BG-VRAM
 					break;
+				case 0: /* mapped to lcd */
+                    MMU.vram_mode[adr-REG_VRAMCNTA] = 4 | (adr-REG_VRAMCNTA) ;
+					break ;
 				}
                 MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
 			}
