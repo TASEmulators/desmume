@@ -27,12 +27,57 @@ extern "C" {
 
 #include "types.h"
 
-#define     REG_WIFI_IF     	0x010
-#define     REG_WIFI_IE     	0x012
-#define     REG_WIFI_RFIODATA2  0x17C
-#define     REG_WIFI_RFIODATA1  0x17E
-#define     REG_WIFI_RFIOBSY    0x180
-#define     REG_WIFI_RFIOCNT    0x184
+#define     REG_WIFI_MODE       		0x004
+#define     REG_WIFI_WEP        		0x006
+#define     REG_WIFI_IF     			0x010
+#define     REG_WIFI_IE     			0x012
+#define     REG_WIFI_MAC0       		0x018
+#define     REG_WIFI_MAC1       		0x01A
+#define     REG_WIFI_MAC2       		0x01C
+#define     REG_WIFI_BSS0       		0x020
+#define     REG_WIFI_BSS1       		0x022
+#define     REG_WIFI_BSS2       		0x024
+#define     REG_WIFI_AID        		0x028
+#define     REG_WIFI_RETRYLIMIT 		0x02C
+#define     REG_WIFI_POWERSTATE 		0x03C
+#define     REG_WIFI_FORCEPS    		0x040
+#define     REG_WIFI_RANDOM     		0x044
+#define     REG_WIFI_RXRANGEBEGIN       0x050
+#define     REG_WIFI_RXRANGEEND         0x052
+#define     REG_WIFI_RXHWWRITECSR       0x054
+#define     REG_WIFI_WRITECSRLATCH      0x056
+#define     REG_WIFI_CIRCBUFRADR        0x058
+#define     REG_WIFI_RXREADCSR          0x05A
+#define     REG_WIFI_CIRCBUFREAD        0x060
+#define     REG_WIFI_CIRCBUFWADR        0x068
+#define     REG_WIFI_CIRCBUFWRITE       0x070
+#define     REG_WIFI_CIRCBUFWR_END      0x074
+#define     REG_WIFI_CIRCBUFWR_SKIP     0x076
+#define     REG_WIFI_BEACONTRANS        0x080
+#define     REG_WIFI_LISTENCOUNT        0x088
+#define     REG_WIFI_BEACONPERIOD       0x08C
+#define     REG_WIFI_LISTENINT          0x08E
+#define     REG_WIFI_TXLOC1             0x0A0
+#define     REG_WIFI_TXLOC2             0x0A4
+#define     REG_WIFI_TXLOC3             0x0A8
+#define     REG_WIFI_TXOPT              0x0AC
+#define     REG_WIFI_TXCNT              0x0AE
+#define     REG_WIFI_TXSTAT             0x0B8
+#define     REG_WIFI_RXFILTER           0x0D0
+#define     REG_WIFI_USCOUNTERCNT       0x0E8
+#define     REG_WIFI_USCOMPARECNT       0x0EA
+#define     REG_WIFI_USCOMPARE0         0x0F0
+#define     REG_WIFI_USCOMPARE1         0x0F2
+#define     REG_WIFI_USCOMPARE2         0x0F4
+#define     REG_WIFI_USCOMPARE3         0x0F6
+#define     REG_WIFI_USCOUNTER0         0x0F8
+#define     REG_WIFI_USCOUNTER1         0x0FA
+#define     REG_WIFI_USCOUNTER2         0x0FC
+#define     REG_WIFI_USCOUNTER3         0x0FE
+#define     REG_WIFI_RFIODATA2  		0x17C
+#define     REG_WIFI_RFIODATA1  		0x17E
+#define     REG_WIFI_RFIOBSY    		0x180
+#define     REG_WIFI_RFIOCNT    		0x184
 
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
@@ -42,7 +87,7 @@ typedef struct rffilter_t
 {
 	union CFG1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/		unsigned IF_VGA_REG_EN:1;
 /* 1*/		unsigned IF_VCO_REG_EN:1;
@@ -56,7 +101,7 @@ typedef struct rffilter_t
 	} CFG1 ;
 	union IFPLL1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/		unsigned DAC:4;
 /* 4*/		unsigned :5;
@@ -74,7 +119,7 @@ typedef struct rffilter_t
 	} IFPLL1 ;
 	union IFPLL2
 	{
-		struct bits
+		struct 
 		{
 /* 0*/		unsigned IF_N:16;
 /*16*/		unsigned :2;
@@ -83,7 +128,7 @@ typedef struct rffilter_t
 	} IFPLL2 ;
 	union IFPLL3
 	{
-		struct bits
+		struct 
 		{
 /* 0*/		unsigned KV_DEF1:4;
 /* 4*/		unsigned CT_DEF1:4;
@@ -94,7 +139,7 @@ typedef struct rffilter_t
 	} IFPLL3 ;
 	union RFPLL1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned DAC:4;
 /* 4*/      unsigned :5;
@@ -112,7 +157,7 @@ typedef struct rffilter_t
 	} RFPLL1 ;
 	union RFPLL2
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned NUM2:6;
 /* 6*/      unsigned N2:12;
@@ -121,7 +166,7 @@ typedef struct rffilter_t
 	} RFPLL2 ;
 	union RFPLL3
 	{
-		struct bits
+		struct 
 		{
 /* 0*/		unsigned NUM2:18;
 		} bits ;
@@ -129,7 +174,7 @@ typedef struct rffilter_t
 	} RFPLL3 ;
 	union RFPLL4
 	{
-		struct bits
+		struct 
 		{
 /* 0*/		unsigned KV_DEF:4;
 /* 4*/      unsigned CT_DEF:4;
@@ -140,7 +185,7 @@ typedef struct rffilter_t
 	} RFPLL4 ;
 	union CAL1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned LD_WINDOW:3;
 /* 3*/      unsigned M_CT_VALUE:5;
@@ -151,7 +196,7 @@ typedef struct rffilter_t
 	} CAL1 ;
 	union TXRX1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned TXBYPASS:1;
 /* 1*/      unsigned INTBIASEN:1;
@@ -167,7 +212,7 @@ typedef struct rffilter_t
 	} TXRX1 ;
 	union PCNT1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned TX_DELAY:3;
 /* 3*/      unsigned PC_OFFSET:6;
@@ -178,7 +223,7 @@ typedef struct rffilter_t
 	} PCNT1 ;
 	union PCNT2
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned MIN_POWER:6;
 /* 6*/      unsigned MID_POWER:6;
@@ -187,7 +232,7 @@ typedef struct rffilter_t
 	} PCNT2 ;
 	union VCOT1
 	{
-		struct bits
+		struct 
 		{
 /* 0*/      unsigned :16;
 /*16*/      unsigned AUX1:1;
@@ -278,7 +323,6 @@ typedef union
 /* http://www.akkit.org/info/dswifi.htm#WifiIOMap */
 typedef struct 
 {
-
 	/* wifi interrupt handling */
     wifiirq_t   IE ;
     wifiirq_t   IF ;
@@ -287,9 +331,16 @@ typedef struct
 	u16 macMode ;
 	u16 wepMode ;
 
+	/* sending */
+
+	/* receiving */
+	u16 RXCnt ;
+
 	/* addressing/handshaking */
 	u8  mac[6] ;
 	u8  bss[6] ;
+	u16 aid ;
+	u16 retryLimit ;
 
 	/* subchips */
     rffilter_t 	RF ;
@@ -303,9 +354,19 @@ typedef struct
 
 	/* buffers */
 	u16         circularBuffer[0x1000] ;
+	u16         RXRangeBegin ;
+	u16         RXRangeEnd ;
+	u16         RXHWWriteCursor ;
+	u16         RXReadCursor ;
+	u16         RXUnits ;
+	u16         CircBufReadAddress ;
+	u16         CircBufWriteAddress ;
+	u16         CircBufEnd ;
+	u16         CircBufSkip ;
 
 } wifimac_t ;
 
+extern wifimac_t wifiMac ;
 
 /* subchip communication IO functions */
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;

@@ -215,11 +215,68 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 	address &= 0x00000FFF ;
 	switch (address)
 	{
+		case REG_WIFI_MODE:
+			wifi->macMode = val ;
+			break ;
+		case REG_WIFI_WEP:
+			wifi->wepMode = val ;
+			break ;
 		case REG_WIFI_IE:
 			wifi->IE.val = val ;
 			break ;
 		case REG_WIFI_IF:
 			wifi->IF.val = val ;
+			break ;
+		case REG_WIFI_MAC0:
+		case REG_WIFI_MAC1:
+		case REG_WIFI_MAC2:
+			wifi->mac[(address - REG_WIFI_MAC0) >> 1] = val ;
+			break ;
+		case REG_WIFI_BSS0:
+		case REG_WIFI_BSS1:
+		case REG_WIFI_BSS2:
+			wifi->bss[(address - REG_WIFI_BSS0) >> 1] = val ;
+			break ;
+		case REG_WIFI_AID:
+			wifi->aid = val ;
+			break ;
+		case REG_WIFI_RETRYLIMIT:
+			wifi->retryLimit = val ;
+			break ;
+		case REG_WIFI_RXRANGEBEGIN:
+			wifi->RXRangeBegin = val ;
+			break ;
+		case REG_WIFI_RXRANGEEND:
+			wifi->RXRangeEnd = val ;
+			break ;
+		case REG_WIFI_WRITECSRLATCH:
+			if ((action) && (wifi->RXCnt & 1))        /* only when action register and CSR change enabled */
+			{
+				wifi->RXHWWriteCursor = val ;
+			}
+			break ;
+		case REG_WIFI_CIRCBUFRADR:
+			wifi->CircBufReadAddress = val ;
+			break ;
+		case REG_WIFI_RXREADCSR:
+			wifi->RXReadCursor = val ;
+			break ;
+		case REG_WIFI_CIRCBUFWADR:
+			wifi->CircBufWriteAddress = val ;
+			break ;
+		case REG_WIFI_CIRCBUFWRITE:
+			/* set value into the circ buffer, and move cursor to the next hword on action */
+			wifi->circularBuffer[wifi->CircBufWriteAddress >> 1] = val ;
+			if (action)
+			{
+				/* move to next hword */
+                wifi->CircBufWriteAddress+=2 ;
+				if (wifi->CircBufWriteAddress == wifi->CircBufEnd)
+				{
+					/* on end of buffer, add skip hwords to it */
+					wifi->CircBufEnd += wifi->CircBufSkip * 2 ;
+				}
+			}
 			break ;
 		case REG_WIFI_RFIOCNT:
 			WIFI_setRF_CNT(wifi,val) ;
@@ -264,5 +321,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return WIFI_getRF_DATA(wifi,0) ;
 		case REG_WIFI_RFIODATA2:
 			return WIFI_getRF_DATA(wifi,1) ;
+
 	}
 }
+
+wifimac_t wifiMac ;
