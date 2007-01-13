@@ -29,6 +29,7 @@
 #include "SPU.h"
 
 #include "mem.h"
+#include "wifi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -200,6 +201,12 @@ int NDS_LoadFirmware(const char *filename);
                            //nds.ARM9Cycle += NDS_ARM9.exec();
 								 nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
                  }
+
+				 if((nds.ARM7Cycle % 0x3F03) == 0)
+				 {
+					/* 3F03 arm7 cyles = ~1usec */
+                    WIFI_usTrigger(&wifiMac) ;
+				 }
                  if(nds.ARM7Cycle<=nds.cycles)
                  {
                       #ifdef LOG_ARM7
