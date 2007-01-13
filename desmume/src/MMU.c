@@ -347,21 +347,41 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	u8 VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
 	switch (block)
 	{
-		case 0:
+		case 0: // Bank A
 			destination = ARM9Mem.ARM9_LCD ;
 			size = 0x20000 ;
 			break ;
-		case 1:
+		case 1: // Bank B
 			destination = ARM9Mem.ARM9_LCD + 0x20000 ;
 			size = 0x20000 ;
 			break ;
-		case 2:
+		case 2: // Bank C
 			destination = ARM9Mem.ARM9_LCD + 0x40000 ;
 			size = 0x20000 ;
 			break ;
-		case 3:
+		case 3: // Bank D
 			destination = ARM9Mem.ARM9_LCD + 0x60000 ;
 			size = 0x20000 ;
+			break ;
+		case 4: // Bank E
+			destination = ARM9Mem.ARM9_LCD + 0x80000 ;
+			size = 0x10000 ;
+			break ;
+		case 5: // Bank F
+			destination = ARM9Mem.ARM9_LCD + 0x90000 ;
+			size = 0x4000 ;
+			break ;
+		case 6: // Bank G
+			destination = ARM9Mem.ARM9_LCD + 0x94000 ;
+			size = 0x4000 ;
+			break ;
+		case 8: // Bank H
+			destination = ARM9Mem.ARM9_LCD + 0x98000 ;
+			size = 0x8000 ;
+			break ;
+		case 9: // Bank I
+			destination = ARM9Mem.ARM9_LCD + 0xA0000 ;
+			size = 0x4000 ;
 			break ;
 		default:
 			return ;
@@ -369,13 +389,36 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	switch (VRAMBankCnt & 7) {
 		case 0:
 			/* vram is allready stored at LCD, we dont need to write it back */
-			return ;
+			MMU.vScreen = 1;
+			break ;
 		case 1:
-			if (block < 4)
-			{
-				/* banks are in use for BG at ABG + ofs * 0x20000 */
-				source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-			} else return ;
+            switch(block){
+              case 0:
+              case 1:
+              case 2:
+              case 3:
+                  /* banks are in use for BG at ABG + ofs * 0x20000 */
+				  source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
+                  break ;
+              case 4:
+                  /* bank E is in use at ABG */ 
+                  source = ARM9Mem.ARM9_ABG ;
+                  break;
+              case 5:
+              case 6:
+                  /* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
+                  source = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
+                  break;
+              case 8:
+                  /* bank H is in use at BBG */ 
+                  source = ARM9Mem.ARM9_BBG ;
+                  break ;
+              case 9:
+                  /* bank I is in use at BBG */ 
+                  source = ARM9Mem.ARM9_BBG + 0x8000 ;
+                  break;
+              default: return ;
+            }
 			break ;
 		case 2:
 			if (block < 2)
@@ -385,11 +428,17 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 			} else return ;
 			break ;
 		case 4:
-			if (block==2)
-			{
-				/* bank C is in use at BBG */
-				source = ARM9Mem.ARM9_BBG ;
-			} else return ;
+            switch(block){
+              case 2:
+                  /* bank C is in use at BBG */ 
+                  source = ARM9Mem.ARM9_BBG ;
+                  break ;
+              case 3:
+                  /* bank D is in use at BOBJ */ 
+                  source = ARM9Mem.ARM9_BOBJ ;
+                  break ;
+              default: return ;
+            }
 			break ;
 		default:
 			return ;
@@ -406,21 +455,41 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 	u32 size = 0;
 	switch (block)
 	{
-		case 0:
+		case 0: // Bank A
 			source = ARM9Mem.ARM9_LCD ;
 			size = 0x20000 ;
 			break ;
-		case 1:
+		case 1: // Bank B
 			source = ARM9Mem.ARM9_LCD + 0x20000 ;
 			size = 0x20000 ;
 			break ;
-		case 2:
+		case 2: // Bank C
 			source = ARM9Mem.ARM9_LCD + 0x40000 ;
 			size = 0x20000 ;
 			break ;
-		case 3:
+		case 3: // Bank D
 			source = ARM9Mem.ARM9_LCD + 0x60000 ;
 			size = 0x20000 ;
+			break ;
+		case 4: // Bank E
+			source = ARM9Mem.ARM9_LCD + 0x80000 ;
+			size = 0x10000 ;
+			break ;
+		case 5: // Bank F
+			source = ARM9Mem.ARM9_LCD + 0x90000 ;
+			size = 0x4000 ;
+			break ;
+		case 6: // Bank G
+			source = ARM9Mem.ARM9_LCD + 0x94000 ;
+			size = 0x4000 ;
+			break ;
+		case 8: // Bank H
+			source = ARM9Mem.ARM9_LCD + 0x98000 ;
+			size = 0x8000 ;
+			break ;
+		case 9: // Bank I
+			source = ARM9Mem.ARM9_LCD + 0xA0000 ;
+			size = 0x4000 ;
 			break ;
 		default:
 			return ;
@@ -428,7 +497,8 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 	switch (VRAMBankCnt & 7) {
 		case 0:
 			/* vram is allready stored at LCD, we dont need to write it back */
-			return ;
+			MMU.vScreen = 1;
+			break ;
 		case 1:
 			if (block < 4)
 			{
@@ -437,18 +507,46 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 			} else return ;
 			break ;
 		case 2:
-			if (block < 2)
-			{
-				/* banks A,B are in use for OBJ at AOBJ + ofs * 0x20000 */
-				destination = ARM9Mem.ARM9_AOBJ + ((VRAMBankCnt >> 3) & 1) * 0x20000 ;
-			} else return ;
+			            switch(block){
+              case 0:
+              case 1:
+              case 2:
+              case 3:
+                  /* banks are in use for BG at ABG + ofs * 0x20000 */
+				  destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
+                  break ;
+              case 4:
+                  /* bank E is in use at ABG */ 
+                  destination = ARM9Mem.ARM9_ABG ;
+                  break;
+              case 5:
+              case 6:
+                  /* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
+                  destination = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
+                  break;
+              case 8:
+                  /* bank H is in use at BBG */ 
+                  destination = ARM9Mem.ARM9_BBG ;
+                  break ;
+              case 9:
+                  /* bank I is in use at BBG */ 
+                  destination = ARM9Mem.ARM9_BBG + 0x8000 ;
+                  break;
+              default: return ;
+            }
 			break ;
 		case 4:
-			if (block==2)
-			{
-				/* bank C is in use at BBG */
-				destination = ARM9Mem.ARM9_BBG ;
-			} else return ;
+            switch(block){
+              case 2:
+                  /* bank C is in use at BBG */ 
+                  destination = ARM9Mem.ARM9_BBG ;
+                  break ;
+              case 3:
+                  /* bank D is in use at BOBJ */ 
+                  destination = ARM9Mem.ARM9_BOBJ ;
+                  break ;
+              default: return ;
+            }
 			break ;
 		default:
 			return ;
@@ -779,6 +877,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 case REG_VRAMCNTE :
 			if(proc == ARMCPU_ARM9)
 			{
+                MMU_VRAMWriteBackToLCD(REG_VRAMCNTE) ;
                                 if((val & 7) == 5)
 				{
 					ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
@@ -800,6 +899,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x84000;
 					ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
 				}
+				
+				MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTE,val) ;
 			}
 			break;
 		
@@ -889,6 +990,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 case REG_VRAMCNTH  :
 			if(proc == ARMCPU_ARM9)
 			{
+                MMU_VRAMWriteBackToLCD(REG_VRAMCNTH) ;
+                
                                 if((val & 7) == 2)
 				{
 					ARM9Mem.ExtPal[1][0] = ARM9Mem.ARM9_LCD + 0x98000;
@@ -896,17 +999,23 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					ARM9Mem.ExtPal[1][2] = ARM9Mem.ARM9_LCD + 0x9C000;
 					ARM9Mem.ExtPal[1][3] = ARM9Mem.ARM9_LCD + 0x9E000;
 				}
+				
+				MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTH,val) ;
 			}
 			break;
 			
                 case REG_VRAMCNTI  :
 			if(proc == ARMCPU_ARM9)
 			{
+                MMU_VRAMWriteBackToLCD(REG_VRAMCNTI) ;
+                
                                 if((val & 7) == 3)
 				{
 					ARM9Mem.ObjExtPal[1][0] = ARM9Mem.ARM9_LCD + 0xA0000;
 					ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD + 0xA2000;
 				}
+				
+				MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTI,val) ;
 			}
 			break;
 				case REG_DISPA_WIN0H:
