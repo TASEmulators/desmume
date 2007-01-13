@@ -54,5 +54,6 @@ void on_wtools_2_r32_toggled           (GtkToggleButton *togglebutton, gpointer 
 void on_wtools_2_GotoAddress_activate  (GtkEntry *entry, gpointer user_data);
 void on_wtools_2_GotoAddress_changed   (GtkEntry *entry, gpointer user_data);
 void on_wtools_2_GotoButton_clicked    (GtkButton *button, gpointer user_data);
-void on_wtools_2_scroll_scroll_child   (GtkScrolledWindow *scrolledwindow, GtkScrollType scroll, gboolean horizontal, gpointer user_data);
+void on_wtools_2_scroll_value_changed  (GtkRange *range, gpointer user_data);
 gboolean on_wtools_2_draw_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
+gboolean on_wtools_2_draw_scroll_event (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
