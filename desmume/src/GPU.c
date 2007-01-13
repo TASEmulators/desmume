@@ -275,7 +275,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	
 	GPU_resortBGs(gpu);
 	
-     	if(gpu->core == GPU_SUB) {
+    if(gpu->core == GPU_SUB) {
 		gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_BBG;
@@ -284,7 +284,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
                 gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
                 gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
-	/* the charac base block has a differenet meaning in rotscale BGs */
+
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_bmp_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_16KB);
 	gpu->BG_map_ram[num]  += (cnt->ScreenBase_Block * ADDRESS_STEP_2KB);
@@ -497,7 +497,6 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 {
 		if (startX==endX) endX+=256 ;
-		if (startY==endY) endY+=256 ;
 		if (startX > endX) {
 			/* if start > end, the window gets wrapped around */
 			/* check if the current pixel is in that x-wrapped area */
