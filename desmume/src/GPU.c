@@ -1301,19 +1301,19 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 #define RENDERS_A(a) \
 	if((a)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,i,l); \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,sprX,l); \
 		prioTab[sprX] = prio; \
 	}
 #define RENDERS_B(c) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),i,l); \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),sprX,l); \
 		prioTab[sprX] = prio; \
 	}
 #define RENDERS_C(c,d) \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),i,l); \
+		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),(sprX d),l); \
 		prioTab[sprX d] = prio; \
 	}
 
