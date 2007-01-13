@@ -433,6 +433,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	u32 c;
 	u8 n,p;
 	
+	u8 *dest;
+	
 	/* initialize the scanline black */
 	/* not doing this causes invalid colors when all active BGs are prevented to draw at some place */
 	memset(dst,0,256*2) ;
@@ -449,10 +451,11 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		case 2: // Display framebuffer
 		{
 		//addition from Normatt
-			if (gpu->core==0)
-			{
 				/* we only draw one of the VRAM blocks */
 				vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+				
+				if(!(MMU.vScreen&1)) dest = mdst; else dest = dst;
+				
 				switch (MMU.vram_mode[vram_bank])
 				{
 				case 0:
@@ -464,15 +467,16 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 					for (i=0; i<(256 * 2); i+=2)
 					{
 						u8 * vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
-						T2WriteWord(mdst, i, T1ReadWord(vram, ii));
+						T2WriteWord(dest, i, T1ReadWord(vram, ii));
 						ii+=2;
 					}
 					return;
 				}
+				break;
+				
 				default:
 					break;
 				}
-			}
 		}
 			return;
 		case 3:
