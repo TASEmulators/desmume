@@ -1,7 +1,7 @@
 [Project]
 FileName=DeSmuME.dev
 Name=DeSmuME
-UnitCount=68
+UnitCount=70
 Type=0
 Ver=1
 ObjFiles=
@@ -10,7 +10,7 @@ Libs=
 PrivateResource=yopyop_private.rc
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DVERSION=\"0.5\"_@@_
+Compiler=-DVERSION=\"0.5\" _@@_
 CppCompiler=_@@_
 Linker=-ldxguid -ldxerr8 -ldsound_@@_
 IsCpp=1
@@ -27,7 +27,7 @@ CustomMakefile=
 IncludeVersionInfo=1
 SupportXPThemes=1
 CompilerSet=0
-CompilerSettings=0000000001001000000100
+CompilerSettings=00000000010010010000ib
 
 [Unit1]
 FileName=..\ROMReader.c
@@ -720,6 +720,26 @@ BuildCmd=
 FileName=..\ROMReader.h
 CompileCpp=1
 Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit69]
+FileName=..\wifi.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit70]
+FileName=..\wifi.c
+CompileCpp=1
+Folder=
 Compile=1
 Link=1
 Priority=1000
