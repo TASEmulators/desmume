@@ -188,6 +188,8 @@ void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 	edit_controls();
 }
 
+/* Show joystick controls configuration dialog
+   FIXME: sdl doesn't detect unplugged joysticks!! */
 void  on_menu_joy_controls_activate     (GtkMenuItem *menuitem, gpointer
 user_data)
 {
