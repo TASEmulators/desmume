@@ -153,7 +153,7 @@ void GPU_rotate(BITMAPV4HEADER *bmi)
                  for(i=0; i < 256*192*2; i++)
                           dst[(256*192*2)-i] = src[i];
                  bmi->bV4Width = 256;
-                 bmi->bV4Height = -192;
+                 bmi->bV4Height = -2*192;
                  break;
         default:
                 memcpy(&GPU_screenrotated[0], &GPU_screen[0], sizeof(u8)*4*256*192);
