@@ -178,6 +178,7 @@ gboolean EmuLoop(gpointer data)
 		Draw();
 		
 	//	_updateDTools();
+		notify_Tools();
 		gtk_widget_queue_draw(pDrawingArea);
 		gtk_widget_queue_draw(pDrawingArea2);
 		

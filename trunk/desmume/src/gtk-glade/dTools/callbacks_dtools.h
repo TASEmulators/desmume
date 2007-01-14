@@ -20,11 +20,15 @@
  */
 
 #include "../globals.h"
+/* update functions */
+void wtools_1_update();
+void wtools_2_update();
+
 
 /* ***** ***** IO REGISTERS ***** ***** */
-
 void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data);
 void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data);
+gboolean on_wtools_1_IOregs_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data);
 void on_wtools_1_r_ipcfifocnt_toggled (GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_1_r_spicnt_toggled     (GtkToggleButton *togglebutton, gpointer user_data);
 void on_wtools_1_r_ime_toggled        (GtkToggleButton *togglebutton, gpointer user_data);
@@ -45,7 +49,8 @@ void on_wtools_1_r_dispb_winin_toggled(GtkToggleButton *togglebutton, gpointer u
 void on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data);
 
 /* ***** ***** MEMORY VIEWER ***** ***** */
-
+gboolean on_wtools_2_MemView_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data);
+gboolean on_wtools_2_draw_button_release_event(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 void on_wtools_2_cpu_changed           (GtkComboBox *widget, gpointer user_data);
 void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data);
 void on_wtools_2_r8_toggled            (GtkToggleButton *togglebutton, gpointer user_data);

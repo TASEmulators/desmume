@@ -57,6 +57,11 @@ GtkWidget * pDrawingArea;
 GtkWidget * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
 
+typedef void (*VoidFunPtr)();
+void notify_Tools();
+void register_Tool(VoidFunPtr fun);
+void unregister_Tool(VoidFunPtr fun);
+
 /* callbacks.c */
 void enable_rom_features();
 

@@ -28,6 +28,16 @@ static BOOL hword;
 
 static GtkLabel * reg_address;
 static GtkEntry * reg_value;
+void display_current_reg();
+
+/* update */
+
+void wtools_1_update () {
+	display_current_reg();
+}
+
+
+/* registers */
 
 void display_current_reg() {
 	char text_address[16];
@@ -58,12 +68,20 @@ void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data) 
 void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
 	GtkWidget * b = glade_xml_get_widget(xml_tools, "wtools_1_r_ime");
 	GtkWidget * combo = glade_xml_get_widget(xml_tools, "wtools_1_combo_cpu");
+
 	reg_address = (GtkLabel*)glade_xml_get_widget(xml_tools, "wtools_1_REGADRESS");
 	reg_value = (GtkEntry*)glade_xml_get_widget(xml_tools, "wtools_1_REGVALUE");
+
 	// do as if we had selected this button and ARM7 cpu
 	gtk_toggle_button_set_active((GtkToggleButton*)b, TRUE);
 	gtk_combo_box_set_active((GtkComboBox*)combo, 0);
+
+	register_Tool(wtools_1_update);
 }
+gboolean on_wtools_1_IOregs_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
+	unregister_Tool(wtools_1_update);
+}
+
 
 void on_wtools_1_r_ipcfifocnt_toggled (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_IPCFIFOCNT,TRUE); }
 void on_wtools_1_r_spicnt_toggled     (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_SPICNT,TRUE); }
