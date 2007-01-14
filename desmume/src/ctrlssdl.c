@@ -119,9 +119,9 @@ void update_keypad(u16 keys)
 u16 get_keypad()
 {
   u16 keypad;
-  keypad = ~((unsigned short *)MMU.ARM7_REG)[0x130>>1];
+  keypad = ~((u16 *)MMU.ARM7_REG)[0x130>>1];
   keypad = (keypad & 0x3) << 10;
-  keypad |= ~((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x3FF;
+  keypad |= ~((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x3FF;
   return keypad;
 }
 
