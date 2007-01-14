@@ -65,7 +65,7 @@ static void update_regs()
 
   for( i = 0; i < NBR_IO_REGS; i++ )
     {
-      mask = ( Reg_Names_Addr[i].trunc ) ? "0x%04x" : "0x%08x";
+      mask = ( Reg_Names_Addr[i].trunc ) ? "0x%04X" : "0x%08X";
       sprintf(lbl_name,"wtools_1_%s_value\0\0", Reg_Names_Addr[i].name);
       w = MMU_read32(cpu,Reg_Names_Addr[i].addr);
       sprintf(lbl_text, mask, w);
