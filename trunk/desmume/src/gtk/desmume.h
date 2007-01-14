@@ -32,7 +32,5 @@ extern BOOL desmume_running();
 
 extern void desmume_cycle();
 
-extern void desmume_keypad(u16 k); 
-
 #endif /*__DESMUME_H__*/
 
