@@ -86,8 +86,6 @@ void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
   
   // do as if we had selected this button and ARM7 cpu
   gtk_combo_box_set_active((GtkComboBox*)combo, 0);
-  
-  register_Tool(wtools_1_update);
 }
 
 gboolean on_wtools_1_IOregs_close (GtkWidget *widget, ...) {
@@ -102,11 +100,13 @@ void on_wtools_1_autorefresh_toggled (GtkToggleButton *tb, gpointer user_data)
   if( gtk_toggle_button_get_active(tb) == TRUE )
     {
       autorefresh = TRUE;
+      register_Tool(wtools_1_update);
       gtk_widget_set_sensitive( b, FALSE );
     }
   else
     {
       autorefresh = FALSE;
+      unregister_Tool(wtools_1_update);
       gtk_widget_set_sensitive( b, TRUE );
     }
 }
