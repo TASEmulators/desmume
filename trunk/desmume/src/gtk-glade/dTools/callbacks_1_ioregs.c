@@ -23,64 +23,71 @@
 
 /* ***** ***** IO REGISTERS ***** ***** */
 static int cpu=0;
-static u32 address;
-static BOOL hword;
+static BOOL autorefresh;
 
-static GtkLabel * reg_address;
-static GtkEntry * reg_value;
-static void display_current_reg();
+static void update_regs();
+
+/* Register name list */
+#define NBR_IO_REGS 6
+
+typedef struct
+{
+  char name[20];
+  u32 addr;
+  BOOL trunc;
+} reg_name_addr;
+
+const reg_name_addr Reg_Names_Addr[NBR_IO_REGS] =
+  {
+    { "REG_IPCFIFOCNT", REG_IPCFIFOCNT, TRUE },
+    { "REG_SPICNT", REG_SPICNT, TRUE },
+    { "REG_IME", REG_IME, TRUE },
+    { "REG_IE", REG_IE, FALSE },
+    { "REG_IF", REG_IF, FALSE },
+    { "REG_POWCNT1", REG_POWCNT1, TRUE }
+  };
 
 /* update */
 
 static void wtools_1_update () {
-	display_current_reg();
+  if(autorefresh) update_regs();
 }
 
+/* Update register display */
+static void update_regs()
+{
+  char lbl_name[40];
+  char lbl_text[40];
+  char * mask;
+  GtkWidget * lbl;
+  int i;
+  u32 w;
 
-/* registers */
-
-static void display_current_reg() {
-	char text_address[16];
-	char text_value[16];
-	char * patt = "0x%08X";
-	u32 w = MMU_read32(cpu,address);
-
-	if (hword) { patt = "0x%04X"; w &= 0xFFFF; }
-	sprintf(text_address, "0x%08X", address);
-	sprintf(text_value,   patt, w);
-	gtk_label_set_text(reg_address, text_address);
-	gtk_entry_set_text(reg_value,   text_value);
+  for( i = 0; i < NBR_IO_REGS; i++ )
+    {
+      mask = ( Reg_Names_Addr[i].trunc ) ? "0x%04x" : "0x%08x";
+      sprintf(lbl_name,"wtools_1_%s_value\0\0", Reg_Names_Addr[i].name);
+      w = MMU_read32(cpu,Reg_Names_Addr[i].addr);
+      sprintf(lbl_text, mask, w);
+      lbl = glade_xml_get_widget(xml_tools, lbl_name);
+      gtk_label_set_text((GtkLabel *)lbl, lbl_text);
+    }
 }
-
-static void display_reg(u32 address_, BOOL hword_) {
-	address = address_;
-	hword = hword_;
-	display_current_reg();
-}
-
 
 void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data) {
-	/* c == 0 means ARM9 */
-	cpu=gtk_combo_box_get_active(widget);
-	display_current_reg();
+  /* c == 0 means ARM9 */
+  cpu=gtk_combo_box_get_active(widget);
+  update_regs();
 }
 
-
-
 /* show, register, unregister */
-
 void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
-	GtkWidget * b = glade_xml_get_widget(xml_tools, "wtools_1_r_ime");
-	GtkWidget * combo = glade_xml_get_widget(xml_tools, "wtools_1_combo_cpu");
-
-	reg_address = (GtkLabel*)glade_xml_get_widget(xml_tools, "wtools_1_REGADRESS");
-	reg_value = (GtkEntry*)glade_xml_get_widget(xml_tools, "wtools_1_REGVALUE");
-
-	// do as if we had selected this button and ARM7 cpu
-	gtk_toggle_button_set_active((GtkToggleButton*)b, TRUE);
-	gtk_combo_box_set_active((GtkComboBox*)combo, 0);
-
-	register_Tool(wtools_1_update);
+  GtkWidget * combo = glade_xml_get_widget(xml_tools, "wtools_1_combo_cpu");
+  
+  // do as if we had selected this button and ARM7 cpu
+  gtk_combo_box_set_active((GtkComboBox*)combo, 0);
+  
+  register_Tool(wtools_1_update);
 }
 
 gboolean on_wtools_1_IOregs_close (GtkWidget *widget, ...) {
@@ -89,23 +96,22 @@ gboolean on_wtools_1_IOregs_close (GtkWidget *widget, ...) {
 	return TRUE;
 }
 
+void on_wtools_1_autorefresh_toggled (GtkToggleButton *tb, gpointer user_data) 
+{
+  GtkWidget * b = glade_xml_get_widget(xml_tools, "wtools_1_refresh");
+  if( gtk_toggle_button_get_active(tb) == TRUE )
+    {
+      autorefresh = TRUE;
+      gtk_widget_set_sensitive( b, FALSE );
+    }
+  else
+    {
+      autorefresh = FALSE;
+      gtk_widget_set_sensitive( b, TRUE );
+    }
+}
 
-
-void on_wtools_1_r_ipcfifocnt_toggled (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_IPCFIFOCNT,TRUE); }
-void on_wtools_1_r_spicnt_toggled     (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_SPICNT,TRUE); }
-void on_wtools_1_r_ime_toggled        (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_IME,TRUE); }
-void on_wtools_1_r_ie_toggled         (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_IE,FALSE); }
-void on_wtools_1_r_if_toggled         (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_IF,FALSE); }
-void on_wtools_1_r_power_cr_toggled   (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_POWCNT1,TRUE); }
-void on_wtools_1_r_dispa_win0h_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPA_WIN0H,FALSE); }
-void on_wtools_1_r_dispa_win1h_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPA_WIN1H,FALSE); }
-void on_wtools_1_r_dispa_win0v_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPA_WIN0V,FALSE); }
-void on_wtools_1_r_dispa_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPA_WIN1V,FALSE); }
-void on_wtools_1_r_dispa_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPA_WININ,FALSE); }
-void on_wtools_1_r_dispa_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPA_WINOUT,FALSE); }
-void on_wtools_1_r_dispb_win0h_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPB_WIN0H,FALSE); }
-void on_wtools_1_r_dispb_win1h_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPB_WIN1H,FALSE); }
-void on_wtools_1_r_dispb_win0v_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPB_WIN0V,FALSE); }
-void on_wtools_1_r_dispb_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPB_WIN1V,FALSE); }
-void on_wtools_1_r_dispb_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPB_WININ,FALSE); }
-void on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_DISPB_WINOUT,FALSE); }
+void on_wtools_1_refresh_clicked (GtkButton *b, gpointer user_data)
+{
+  update_regs();
+}
