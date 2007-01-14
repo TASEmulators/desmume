@@ -35,9 +35,8 @@
 #define DESMUME_KEY_Down		8
 #define DESMUME_KEY_R			9
 #define DESMUME_KEY_L			10
-
-#define DESMUME_KEY_Y			11
-#define DESMUME_KEY_X			12
+#define DESMUME_KEY_X			11
+#define DESMUME_KEY_Y			12
 #define DESMUME_KEY_DEBUG		13
 #define DESMUME_KEY_BOOST		14
 
@@ -54,8 +53,5 @@ extern void desmume_toggle();
 extern BOOL desmume_running();
 
 extern void desmume_cycle();
-
-extern void desmume_keypad(u16 k); 
-
 #endif /*__DESMUME_H__*/
 

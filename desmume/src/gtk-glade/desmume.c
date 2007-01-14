@@ -89,26 +89,15 @@ void desmume_cycle()
   u16 keypad;
   /* Joystick events */
   /* Retrieve old value: can use joysticks w/ another device (from our side) */
-  keypad = ~((unsigned short *)MMU.ARM7_REG)[0x130>>1];
-  keypad = (keypad & 0x3) << 10;
-  keypad |= ~((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x3FF;
-  /* Look for queued events */
+  keypad = get_keypad();
+  /* Process joystick events if any */
   keypad = process_ctrls_events(keypad);
   /* Update keypad value */
-  desmume_keypad(keypad);
+  update_keypad(keypad);
 
   desmume_last_cycle = NDS_exec((560190 << 1) - desmume_last_cycle, FALSE);
   SPU_Emulate();
 }
-
-void desmume_keypad(u16 k)
-{
-	unsigned short k_ext = (k >> 10) & 0x3;
-	unsigned short k_pad = k & 0x3FF;
-	((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] = ~k_pad;
-	((unsigned short *)MMU.ARM7_REG)[0x130>>1] = ~k_ext;
-}
-
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
 #if 0
