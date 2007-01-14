@@ -26,6 +26,8 @@ static u16* base_addr[20];
 static BOOL init=FALSE;
 static void initialize() {
 	GtkComboBox * combo;
+	GtkTreeIter iter;
+
 	int i=0;
 	if (init) return;
 
@@ -78,7 +80,10 @@ gboolean on_wtools_3_PalView_close         (GtkWidget *widget, ...) {
 }
 
 
-gboolean on_wtools_3_draw_expose_event    (GtkWidget *, GdkEventExpose *, gpointer );
-void     on_wtools_3_palette_changed      (GtkComboBox *,   gpointer );
-void     on_wtools_3_palnum_value_changed (GtkSpinButton *, gpointer );
+gboolean on_wtools_3_draw_expose_event    (GtkWidget * widget, GdkEventExpose *event, gpointer user_data) {
+}
+void     on_wtools_3_palette_changed      (GtkComboBox *combo,   gpointer user_data) {
+}
+void     on_wtools_3_palnum_value_changed (GtkSpinButton *spin, gpointer user_data) {
+}
 
