@@ -36,6 +36,29 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
+/* ***** ***** TOOLS ***** ***** */
+
+GList * tools_to_update = NULL;
+
+// register tool
+void register_Tool(VoidFunPtr fun) {
+	tools_to_update = g_list_append(tools_to_update, fun);
+}
+void unregister_Tool(VoidFunPtr fun) {
+	if (tools_to_update == NULL) return;
+	tools_to_update = g_list_remove(tools_to_update, fun);
+}
+
+void notify_Tool (VoidFunPtr fun, gpointer func_data) {
+	fun();
+}
+
+void notify_Tools() {
+	g_list_foreach(tools_to_update, &notify_Tool, NULL);
+}
+
+
+
 /* ***** ***** CONFIG FILE ***** ***** */
 
 gint Keypad_Config[DESMUME_NB_KEYS];

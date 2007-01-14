@@ -18,9 +18,9 @@
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
-  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Thu, 04 Jan 2007 11:26:10 GMT"/>
   <signal name="response" handler="gtk_widget_hide" last_modification_time="Thu, 04 Jan 2007 11:19:44 GMT"/>
   <signal name="show" handler="on_wtools_1_IOregs_show" last_modification_time="Thu, 04 Jan 2007 12:47:11 GMT"/>
+  <signal name="delete_event" handler="on_wtools_1_IOregs_delete_event" last_modification_time="Sat, 13 Jan 2007 23:53:46 GMT"/>
 
   <child internal-child="vbox">
     <widget class="GtkVBox" id="dialog-vbox3">
@@ -600,9 +600,9 @@ cpu : ARM9</property>
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
-  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Sat, 13 Jan 2007 20:13:44 GMT"/>
   <signal name="response" handler="gtk_widget_hide" last_modification_time="Fri, 12 Jan 2007 12:58:38 GMT"/>
   <signal name="show" handler="on_wtools_2_MemView_show" last_modification_time="Fri, 12 Jan 2007 13:35:53 GMT"/>
+  <signal name="delete_event" handler="on_wtools_2_MemView_delete_event" last_modification_time="Sat, 13 Jan 2007 23:56:33 GMT"/>
 
   <child internal-child="vbox">
     <widget class="GtkVBox" id="dialog-vbox4">
@@ -825,6 +825,7 @@ ARM7 cpu</property>
 	      <property name="events">GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
 	      <signal name="expose_event" handler="on_wtools_2_draw_expose_event" last_modification_time="Fri, 12 Jan 2007 13:14:44 GMT"/>
 	      <signal name="scroll_event" handler="on_wtools_2_draw_scroll_event" last_modification_time="Sat, 13 Jan 2007 19:50:18 GMT"/>
+	      <signal name="button_release_event" handler="on_wtools_2_draw_button_release_event" last_modification_time="Sun, 14 Jan 2007 01:44:37 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
