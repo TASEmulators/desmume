@@ -23,9 +23,12 @@
 
 //#define RENDER3D
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shellapi.h>
 #include <Winuser.h>
 #include <commctrl.h>
+#include <commdlg.h>
 #include <stdio.h>
 #include "CWindow.h"
 #include "../MMU.h"
@@ -286,9 +289,9 @@ DWORD WINAPI run( LPVOID lpParameter)
                   	StretchDIBits (hdc, 0, 0, r.right-r.left, r.bottom-r.top, 0, 0, 256, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS,SRCCOPY);
                   } else
                   {
+                    RECT r ;
                     GPU_rotate(&rotationbmi);
-					RECT r ;
-					GetClientRect(hwnd,&r) ;
+                    GetClientRect(hwnd,&r) ;
                     StretchDIBits(hdc, 0, 0, r.right-r.left, r.bottom-r.top, 0, 0, GPU_width, rotationscanlines, GPU_screenrotated, (BITMAPINFO*)&rotationbmi, DIB_RGB_COLORS,SRCCOPY);
                   }
                   fpsframecount++;
