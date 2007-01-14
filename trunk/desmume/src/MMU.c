@@ -342,13 +342,16 @@ void MMU_clearMem()
 /* FIXME: VRAM Bank E,F,G,H,I missing */
 void MMU_VRAMWriteBackToLCD(u8 block)
 {
+        u8 *destination;
+        u8 *source;
+	u32 size ;
+        u8 VRAMBankCnt;
 	#if 1
 		return ;
 	#endif
-	u8 *destination = 0 ;
-	u8 *source = 0;
-	u32 size ;
-	u8 VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
+        destination = 0 ;
+        source = 0;
+        VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
 	switch (block)
 	{
 		case 0: // Bank A
@@ -454,12 +457,15 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 
 void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 {
+        u8 *destination;
+        u8 *source;
+        u32 size;
 	#if 1
 		return ;
 	#endif
-	u8 *destination = 0;
-	u8 *source = 0;
-	u32 size = 0;
+        destination = 0;
+        source = 0;
+        size = 0;
 	switch (block)
 	{
 		case 0: // Bank A
