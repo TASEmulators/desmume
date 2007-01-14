@@ -80,6 +80,8 @@ void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
 }
 gboolean on_wtools_1_IOregs_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
 	unregister_Tool(wtools_1_update);
+	gtk_widget_hide(widget);
+	return TRUE;
 }
 
 

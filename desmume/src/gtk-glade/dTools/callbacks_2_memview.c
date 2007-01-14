@@ -167,11 +167,12 @@ void on_wtools_2_GotoButton_clicked    (GtkButton *button, gpointer user_data) {
 
 void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data) {
 	initialize();
-	change_address(RANGE_MIN);
 	register_Tool(wtools_2_update);
 }
 gboolean on_wtools_2_MemView_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
 	unregister_Tool(wtools_2_update);
+	gtk_widget_hide(widget);
+	return TRUE;
 }
 
 
@@ -240,6 +241,7 @@ void initialize() {
 #undef DUP
 #undef PATT
 	init = TRUE;
+	change_address(RANGE_MIN);
 }
 
 /* PAINT memory panel */
