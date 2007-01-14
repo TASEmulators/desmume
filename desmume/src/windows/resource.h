@@ -220,4 +220,9 @@ void refreshAll();
 #define IDC_SOUNDBUFFERET       1001
 #define IDC_SLVOLUME            1002
 
+#define IDC_ROTATE0             1003
+#define IDC_ROTATE90            1004
+#define IDC_ROTATE180           1005
+#define IDC_ROTATE270           1006
+
 #endif

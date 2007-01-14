@@ -98,11 +98,131 @@ static u32 backupmemorysize=1;
 
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam);
+                                      
+// Rotation definitions
+u8    GPU_screenrotated[4*256*192];
+short GPU_rotation      = 0;
+DWORD GPU_width         = 256;
+DWORD GPU_height        = 192*2;
+DWORD rotationstartscan = 192;
+DWORD rotationscanlines = 192*2;
+
+void GPU_rotate(BITMAPV4HEADER *bmi)
+{
+     u16 *src, *dst;
+     int i,j, spos, dpos, desp;
+     src = (u16*)GPU_screen;
+     dst = (u16*)GPU_screenrotated;
+ 
+     switch(GPU_rotation)
+     {
+        case 90:
+                   desp=0;
+                   for(i=0;i<256;i++)
+                   {
+                            dpos = 192*2*i;
+                            spos = 256*(192*2-1) + desp;
+                            while(spos > 0)
+                            {
+                               dst[dpos++] = src[spos];
+                               spos-=256;
+                            }
+                            desp++;
+                   }
+                   bmi->bV4Width = 192*2;
+                   bmi->bV4Height = -256;
+                   break;
+        case 270:
+                   desp=255;
+                   for(i=0;i<256;i++)
+                   {
+                            dpos = 192*2*i;
+                            spos = desp;
+                            while(spos < 256*192*2)
+                            {
+                               dst[dpos++] = src[spos];
+                               spos+=256;
+                            }
+                            desp--;
+                   }
+                   bmi->bV4Width = 192*2;
+                   bmi->bV4Height = -256;
+                   break;
+        case 180:
+                 for(i=0; i < 256*192*2; i++)
+                          dst[(256*192*2)-i] = src[i];
+                 bmi->bV4Width = 256;
+                 bmi->bV4Height = -192;
+                 break;
+        default:
+                memcpy(&GPU_screenrotated[0], &GPU_screen[0], sizeof(u8)*4*256*192);
+     }
+}
+  
+void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msdn.com/oldnewthing/archive/2003/09/11/54885.aspx
+{
+    HMENU hmenu = GetMenu(hwnd);
+    RECT rcWindow = { 0, 0, cx, cy };
+
+    /*
+     *  First convert the client rectangle to a window rectangle the
+     *  menu-wrap-agnostic way.
+     */
+    AdjustWindowRect(&rcWindow, WS_CAPTION| WS_SYSMENU |WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, hmenu != NULL);
+
+    /*
+     *  If there is a menu, then check how much wrapping occurs
+     *  when we set a window to the width specified by AdjustWindowRect
+     *  and an infinite amount of height.  An infinite height allows
+     *  us to see every single menu wrap.
+     */
+    if (hmenu) {
+        RECT rcTemp = rcWindow;
+        rcTemp.bottom = 0x7FFF;     /* "Infinite" height */
+        SendMessage(hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp);
+
+        /*
+         *  Adjust our previous calculation to compensate for menu
+         *  wrapping.
+         */
+        rcWindow.bottom += rcTemp.top;
+    }
+
+    SetWindowPos(hwnd, NULL, 0, 0, rcWindow.right - rcWindow.left,
+                 rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
+
+}
+ 
+void translateXY(s32 *x, s32*y)
+{
+  s32 tmp;
+  switch(GPU_rotation)
+  {
+   case 90:
+           tmp = *x;
+           *x = *y;
+           *y = 192*2 -tmp;
+           break;
+   case 180:
+           *x = 256-*x;
+           *y = 192*2-*y;
+           break;
+   case 270:
+            tmp = *x;
+            *x = 255-*y;
+            *y = tmp;
+            break;
+ }
+ *y-=192;
+}
+     
+ // END Rotation definitions
 
 DWORD WINAPI run( LPVOID lpParameter)
 {
      char txt[80];
      BITMAPV4HEADER bmi;
+     BITMAPV4HEADER rotationbmi;
      u32 cycles = 0;
      int wait=0;
      u64 freq;
@@ -130,6 +250,17 @@ DWORD WINAPI run( LPVOID lpParameter)
      bmi.bV4BlueMask = 0x7C00;
      bmi.bV4Width = 256;
      bmi.bV4Height = -192;
+     
+     memset(&rotationbmi, 0, sizeof(rotationbmi));
+     rotationbmi.bV4Size = sizeof(rotationbmi);
+     rotationbmi.bV4Planes = 1;
+     rotationbmi.bV4BitCount = 16;
+     rotationbmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
+     rotationbmi.bV4RedMask = 0x001F;
+     rotationbmi.bV4GreenMask = 0x03E0;
+     rotationbmi.bV4BlueMask = 0x7C00;
+     rotationbmi.bV4Width = 256;
+     rotationbmi.bV4Height = -192;
 
      #ifdef RENDER3D
      OGLRender::init(&hdc);
@@ -147,13 +278,13 @@ DWORD WINAPI run( LPVOID lpParameter)
 
                if (!skipnextframe)
                {
-                  #ifndef RENDER3D
-                  SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 0, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-                  //SetDIBitsToDevice(hdc, 0, 192, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-                  #else
-                  SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 192, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-                  //SetDIBitsToDevice(hdc, 0, 0, 256, 192, 0, 0, 0, 192, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-                  #endif
+                  if (GPU_rotation == 0)
+                     SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 0, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+                  else
+                  {
+                     GPU_rotate(&rotationbmi);
+                     SetDIBitsToDevice(hdc, 0, 0, GPU_width, GPU_height, 0, 0, 0, rotationscanlines, GPU_screenrotated, (BITMAPINFO*)&rotationbmi, DIB_RGB_COLORS);
+                  }
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
                   if(curticks >= fpsticks + freq)
@@ -357,6 +488,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     CheckMenuItem(menu, IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menu, IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+    
+    CheckMenuItem(menu, IDC_ROTATE0, MF_BYCOMMAND | MF_CHECKED);
 
     while (GetMessage (&messages, NULL, 0, 0))
     {
@@ -581,7 +714,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   if (wParam & MK_LBUTTON)
                   {
                        s32 x = (s32)((s16)LOWORD(lParam));
-                       s32 y = (s32)((s16)HIWORD(lParam)) - 192;
+                       s32 y = (s32)((s16)HIWORD(lParam));
+                       if (GPU_rotation != 0)
+                          translateXY(&x,&y);
+                       else 
+                          y-=192;
                        if(x<0) x = 0; else if(x>255) x = 255;
                        if(y<0) y = 0; else if(y>192) y = 192;
                        NDS_setTouchPos(x, y);
@@ -593,15 +730,20 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case WM_LBUTTONDOWN:
              if(HIWORD(lParam)>=192)
              {
-                  s32 x;
-                  s32 y;
-                  SetCapture(hwnd);
-                  x = LOWORD(lParam);
-                  y = HIWORD(lParam) - 192;
-                  if(x<0) x = 0; else if(x>255) x = 255;
-                  if(y<0) y = 0; else if(y>192) y = 192;
-                  NDS_setTouchPos(x, y);
-                  click = TRUE;
+                s32 x = (s32)((s16)LOWORD(lParam));
+                s32 y = (s32)((s16)HIWORD(lParam));
+                if (GPU_rotation != 0)
+                   translateXY(&x,&y);
+                else
+                  y-=192;
+                if(y>=0)
+                {
+                     SetCapture(hwnd);
+                     if(x<0) x = 0; else if(x>255) x = 255;
+                     if(y<0) y = 0; else if(y>192) y = 192;
+                     NDS_setTouchPos(x, y);
+                     click = TRUE;
+                }
              }
              return 0;
         case WM_LBUTTONUP:
@@ -1094,6 +1236,54 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_SUBMITBUGREPORT:
                        ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
+                  return 0;
+                  case IDC_ROTATE0:
+                       GPU_rotation = 0;
+                       GPU_width    = 256;
+                       GPU_height   = 192*2;
+                       rotationstartscan = 192;
+                       rotationscanlines = 192*2;
+                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
+                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_CHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_UNCHECKED);
+                  return 0;
+                  case IDC_ROTATE90:
+                       GPU_rotation = 90;
+                       GPU_width    = 192*2;
+                       GPU_height   = 256;
+                       rotationstartscan = 0;
+                       rotationscanlines = 256;
+                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
+                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_CHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_UNCHECKED);
+                  return 0;
+                  case IDC_ROTATE180:
+                       GPU_rotation = 180;
+                       GPU_width    = 256;
+                       GPU_height   = 192*2;
+                       rotationstartscan = 0;
+                       rotationscanlines = 192*2;
+                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
+                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_CHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_UNCHECKED);
+                  return 0;
+                  case IDC_ROTATE270:
+                       GPU_rotation = 270;
+                       GPU_width    = 192*2;
+                       GPU_height   = 256;
+                       rotationstartscan = 0;
+                       rotationscanlines = 256;
+                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
+                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
+                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_CHECKED);
                   return 0;
              }
              return 0;
