@@ -36,8 +36,8 @@ const u16 Default_Joypad_Config[NB_KEYS] =
     23, // Down  -- End of cheating.
     7,  // R
     6,  // L
-    3,  // Y
     4,  // X
+    3,  // Y
     -1, // BOOST
     -1  // DEBUG
   };
@@ -107,11 +107,7 @@ int main(int argc, char ** argv) {
         mouse.click = FALSE;
       }
 
-    /* Update keypad */
-    ((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] = ~(keypad & 0x3FF);
-    ((unsigned short *)MMU.ARM7_REG)[0x130>>1] = ~((keypad >> 10) & 0x3);
-
-/*     NDS_exec(1120380, FALSE); */
+    update_keypad(keypad);     /* Update keypad */
     last_cycle = NDS_exec((560190 << 1) - last_cycle, FALSE);
     SPU_Emulate();
     Draw();
