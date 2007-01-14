@@ -22,7 +22,6 @@
 #ifndef MAPVIEW_H
 #define MAPVIEW_H
 
-#include <windows.h>
 #include "CWindow.h"
 
 typedef struct
