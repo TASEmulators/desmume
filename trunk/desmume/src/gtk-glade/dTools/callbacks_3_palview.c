@@ -27,9 +27,49 @@ static int palnum=0;
 static int palindex=0;
 static void refresh();
 static GtkWidget * wPaint;
+static GtkSpinButton * wSpin;
+static u16 mem[0x100];
+
+
+static COLOR c;
+static COLOR32 c32;
+static GdkGC * GC;
+
+static inline void paint_col(int x, int y, u16 col) {
+	c.val = col;
+	COLOR_16_32(c,c32)
+	gdk_rgb_gc_set_foreground(GC, c32.val);
+	gdk_draw_rectangle(wPaint->window, GC, TRUE, x, y, 15, 15);
+}
+static inline void paint_cross(int x, int y) {
+	gdk_rgb_gc_set_foreground(GC, 0x808080);
+	gdk_draw_rectangle(wPaint->window, GC, TRUE, x, y, 15, 15);
+	gdk_rgb_gc_set_foreground(GC, 0xFF0000);
+	gdk_draw_line(wPaint->window, GC, x+14, y+1, x+1, y+14);
+	gdk_draw_line(wPaint->window, GC, x+1, y+1, x+14, y+14);
+}
+
 
 static void wtools_3_update() {
-	refresh();
+	int i,x,y,X,Y; 
+	u16 * addr = base_addr[palindex], tmp;
+
+	GC = gdk_gc_new(wPaint->window);
+	if (addr) {
+		memcpy(mem, addr, 0x100*sizeof(u16));
+		i=0;
+		for(y=Y= 0; y < 16; y++,Y+=16)
+		for(x=X= 0; x < 16; x++,X+=16) {
+			tmp=mem[i];
+			if (tmp != (mem[i]=*(addr+Y+x+0x100*palnum)))
+			paint_col(X,Y,mem[i]);
+		}
+	} else {
+		for(y=Y= 0; y < 16; y++,Y+=16)
+		for(x=X= 0; x < 16; x++,X+=16)
+		paint_cross(X,Y);
+	}
+	g_object_unref(GC);
 }
 
 
@@ -37,25 +77,16 @@ static void refresh() {
 	int x,y,X,Y; u16 * addr = base_addr[palindex];
 	COLOR c; COLOR32 c32;
 
-	GdkGC * GC = gdk_gc_new(wPaint->window);
-
-	for(y=Y= 0; y < 16; y++,Y+=16)
-	for(x=X= 0; x < 16; x++,X+=16)
-	{
-		if (addr) {
-			c.val = *(addr+Y+x+0x100*palnum);
-			COLOR_16_32(c,c32)
-			gdk_rgb_gc_set_foreground(GC, c32.val);
-			gdk_draw_rectangle(wPaint->window, GC, TRUE, X, Y, 15, 15);
-		} else {
-			gdk_rgb_gc_set_foreground(GC, 0x808080);
-			gdk_draw_rectangle(wPaint->window, GC, TRUE, X, Y, 15, 15);
-			gdk_rgb_gc_set_foreground(GC, 0xFF0000);
-			gdk_draw_line(wPaint->window, GC, X+14, Y+1, X+1, Y+14);
-			gdk_draw_line(wPaint->window, GC, X+1, Y+1, X+14, Y+14);
-		}
-		
-		
+	GC = gdk_gc_new(wPaint->window);
+	if (addr) {
+		memcpy(mem, addr, 0x100*sizeof(u16));
+		for(y=Y= 0; y < 16; y++,Y+=16)
+		for(x=X= 0; x < 16; x++,X+=16)
+		paint_col(X,Y,*(addr+Y+x+0x100*palnum));
+	} else {
+		for(y=Y= 0; y < 16; y++,Y+=16)
+		for(x=X= 0; x < 16; x++,X+=16)
+		paint_cross(X,Y);
 	}
 	g_object_unref(GC);
 }
@@ -71,6 +102,7 @@ static void initialize() {
 	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_3_palette");
 	model = (GtkListStore*)gtk_combo_box_get_model(combo);
 	wPaint= glade_xml_get_widget(xml_tools, "wtools_3_draw");
+	wSpin = (GtkSpinButton*)glade_xml_get_widget(xml_tools, "wtools_3_palnum");
 
 #define DO(str,addr,r)  \
 	gtk_list_store_append (model, &iter); \
@@ -99,14 +131,16 @@ static void initialize() {
 	DO("Texture PAL 3", ARM9Mem.texPalSlot[3],)
 #undef DO
 	init=TRUE;
+	gtk_combo_box_set_active(combo,0);
 }
 
 
 void     on_wtools_3_PalView_show         (GtkWidget *widget, gpointer data) {
 	initialize();
+	register_Tool(wtools_3_update);
 }
 gboolean on_wtools_3_PalView_close         (GtkWidget *widget, ...) {
-//	unregister_Tool(wtools_1_update);
+	unregister_Tool(wtools_3_update);
 	gtk_widget_hide(widget);
 	return TRUE;
 }
@@ -117,8 +151,11 @@ gboolean on_wtools_3_draw_expose_event    (GtkWidget * widget, GdkEventExpose *e
 }
 void     on_wtools_3_palette_changed      (GtkComboBox *combo,   gpointer user_data) {
 	palindex = gtk_combo_box_get_active(combo);
+	gtk_widget_set_sensitive((GtkWidget*)wSpin,(palindex >=4));
+	gtk_spin_button_set_value(wSpin,0);
 	refresh();
 }
 void     on_wtools_3_palnum_value_changed (GtkSpinButton *spin, gpointer user_data) {
+	palnum = gtk_spin_button_get_value_as_int(spin);
+	refresh();
 }
-
