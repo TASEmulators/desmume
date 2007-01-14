@@ -20,10 +20,6 @@
  */
 
 #include "../globals.h"
-/* update functions */
-void wtools_1_update();
-void wtools_2_update();
-
 
 /* ***** ***** IO REGISTERS ***** ***** */
 void     on_wtools_1_combo_cpu_changed     (GtkComboBox *, gpointer );

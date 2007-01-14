@@ -32,7 +32,7 @@ static void display_current_reg();
 
 /* update */
 
-void wtools_1_update () {
+static void wtools_1_update () {
 	display_current_reg();
 }
 
