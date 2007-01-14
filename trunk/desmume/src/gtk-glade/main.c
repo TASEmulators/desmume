@@ -74,8 +74,8 @@ const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
     23, // Down  -- End of cheating.
     7,  // R
     6,  // L
-    3,  // Y
     4,  // X
+    3,  // Y
     -1, // DEBUG
     -1  // BOOST
   };
@@ -92,8 +92,8 @@ const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
 	"KEY_DOWN",
 	"KEY_R",
 	"KEY_L",
-	"KEY_Y",
 	"KEY_X",
+	"KEY_Y",
 	"KEY_DEBUG",
 	"KEY_BOOST"
 };
@@ -110,8 +110,8 @@ const gint Default_Keypad_Config[DESMUME_NB_KEYS] =
 	GDK_Down,
 	GDK_KP_Decimal,
 	GDK_KP_0,
-	GDK_y,
 	GDK_x,
+	GDK_y,
 	GDK_p,
 	GDK_o
 };

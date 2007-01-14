@@ -137,8 +137,8 @@ const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
     23, // Down  -- End of cheating.
     7,  // R
     6,  // L
-    3,  // Y
     4,  // X
+    3,  // Y
     -1  // DEBUG
   };
 
@@ -421,7 +421,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 	{
 		Key = DESMUME_KEYMASK_(i);
 		Cur_Keypad &= ~Key;
-		if(desmume_running()) desmume_keypad(~Cur_Keypad);
+		if(desmume_running()) update_keypad(~Cur_Keypad);
 	}
 	
 	//fprintf(stderr,"P:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);
@@ -439,7 +439,7 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 	{
 		Key = DESMUME_KEYMASK_(i);
 		Cur_Keypad |= Key;
-		if(desmume_running()) desmume_keypad(~Cur_Keypad);
+		if(desmume_running()) update_keypad(~Cur_Keypad);
 	}
 	
 	//fprintf(stderr,"R:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);

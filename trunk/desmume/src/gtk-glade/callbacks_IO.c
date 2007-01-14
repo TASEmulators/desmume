@@ -53,7 +53,7 @@ gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, g
 	}
 	else if (Key != 0) {
 		Cur_Keypad |= Key;
-		if(desmume_running()) desmume_keypad(Cur_Keypad);
+		if(desmume_running()) update_keypad(Cur_Keypad);
 	}
 	return 1;
 }
@@ -62,7 +62,7 @@ gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, g
 	u16 Key = lookup_key(event->keyval);
 	if (Key != 0) {
 		Cur_Keypad &= ~Key;
-		if(desmume_running()) desmume_keypad(Cur_Keypad);
+		if(desmume_running()) update_keypad(Cur_Keypad);
 	}	
 	return 1;
 }
@@ -255,7 +255,7 @@ const char * DESMUME_KEY_NAMES[DESMUME_NB_KEYS]={
 	"A", "B", 
 	"Select", "Start",
 	"Right", "Left", "Up", "Down",
-	"R", "L", "Y", "X", "DEBUG", "Boost"
+	"R", "L", "X", "Y", "DEBUG", "Boost"
 };
 gint Keypad_Temp[DESMUME_NB_KEYS];
 guint temp_Key=0;
