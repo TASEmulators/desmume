@@ -909,6 +909,7 @@ ARM7 cpu</property>
 	  <child>
 	    <widget class="GtkComboBox" id="wtools_3_palette">
 	      <property name="visible">True</property>
+	      <property name="items" translatable="yes"></property>
 	      <property name="add_tearoffs">False</property>
 	      <property name="focus_on_click">True</property>
 	      <signal name="changed" handler="on_wtools_3_palette_changed" last_modification_time="Sun, 14 Jan 2007 09:29:39 GMT"/>
@@ -985,8 +986,8 @@ ARM7 cpu</property>
 	      <property name="right_attach">3</property>
 	      <property name="top_attach">1</property>
 	      <property name="bottom_attach">2</property>
-	      <property name="x_options">fill</property>
-	      <property name="y_options">fill</property>
+	      <property name="x_options"></property>
+	      <property name="y_options"></property>
 	    </packing>
 	  </child>
 	</widget>

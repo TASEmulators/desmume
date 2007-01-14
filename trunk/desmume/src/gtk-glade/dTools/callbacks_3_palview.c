@@ -22,52 +22,84 @@
 #include "callbacks_dtools.h"
 
 static u16* base_addr[20];
-
 static BOOL init=FALSE;
+static int palnum=0;
+static int palindex=0;
+static void refresh();
+static GtkWidget * wPaint;
+
+static void wtools_3_update() {
+	refresh();
+}
+
+
+static void refresh() {
+	int x,y,X,Y; u16 * addr = base_addr[palindex];
+	COLOR c; COLOR32 c32;
+
+	GdkGC * GC = gdk_gc_new(wPaint->window);
+
+	for(y=Y= 0; y < 16; y++,Y+=16)
+	for(x=X= 0; x < 16; x++,X+=16)
+	{
+		if (addr) {
+			c.val = *(addr+Y+x+0x100*palnum);
+			COLOR_16_32(c,c32)
+			gdk_rgb_gc_set_foreground(GC, c32.val);
+			gdk_draw_rectangle(wPaint->window, GC, TRUE, X, Y, 15, 15);
+		} else {
+			gdk_rgb_gc_set_foreground(GC, 0x808080);
+			gdk_draw_rectangle(wPaint->window, GC, TRUE, X, Y, 15, 15);
+			gdk_rgb_gc_set_foreground(GC, 0xFF0000);
+			gdk_draw_line(wPaint->window, GC, X+14, Y+1, X+1, Y+14);
+			gdk_draw_line(wPaint->window, GC, X+1, Y+1, X+14, Y+14);
+		}
+		
+		
+	}
+	g_object_unref(GC);
+}
+
+
 static void initialize() {
 	GtkComboBox * combo;
-	GtkTreeIter iter;
-
+	GtkTreeIter iter, *parent=NULL;
+	GtkListStore* model;
 	int i=0;
 	if (init) return;
 
 	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_3_palette");
-#define DO(str,addr)  gtk_combo_box_append_text(combo,str); base_addr[i]=(u16*)(addr); i++;
-	DO("Main screen BG  PAL", ARM9Mem.ARM9_VMEM)
-	DO("Main screen SPR PAL", ARM9Mem.ARM9_VMEM + 0x100)
-	DO("Sub  screen BG  PAL", ARM9Mem.ARM9_VMEM + 0x200)
-	DO("Sub  screen SPR PAL", ARM9Mem.ARM9_VMEM + 0x300)
-	DO("Main screen ExtPAL 0", ARM9Mem.ExtPal[0][0])
-	DO("Main screen ExtPAL 1", ARM9Mem.ExtPal[0][1])
-	DO("Main screen ExtPAL 2", ARM9Mem.ExtPal[0][2])
-	DO("Main screen ExtPAL 3", ARM9Mem.ExtPal[0][3])
-	DO("Sub  screen ExtPAL 0", ARM9Mem.ExtPal[1][0])
-	DO("Sub  screen ExtPAL 1", ARM9Mem.ExtPal[1][1])
-	DO("Sub  screen ExtPAL 2", ARM9Mem.ExtPal[1][2])
-	DO("Sub  screen ExtPAL 3", ARM9Mem.ExtPal[1][3])
-	DO("Main screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[0][0])
-	DO("Main screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[0][1])
-	DO("Sub  screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[1][0])
-	DO("Sub  screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[1][1])
-	DO("Texture PAL 0", ARM9Mem.texPalSlot[0])
-	DO("Texture PAL 1", ARM9Mem.texPalSlot[1])
-	DO("Texture PAL 2", ARM9Mem.texPalSlot[2])
-	DO("Texture PAL 3", ARM9Mem.texPalSlot[3])
+	model = (GtkListStore*)gtk_combo_box_get_model(combo);
+	wPaint= glade_xml_get_widget(xml_tools, "wtools_3_draw");
+
+#define DO(str,addr,r)  \
+	gtk_list_store_append (model, &iter); \
+	gtk_list_store_set (model, &iter, 0, str,-1); \
+	base_addr[i]=((u16*)(addr) r); i++;
+
+	DO("Main screen BG  PAL", ARM9Mem.ARM9_VMEM,)
+	DO("Main screen SPR PAL", ARM9Mem.ARM9_VMEM,+0x100)
+	DO("Sub  screen BG  PAL", ARM9Mem.ARM9_VMEM,+0x200)
+	DO("Sub  screen SPR PAL", ARM9Mem.ARM9_VMEM,+0x300)
+	DO("Main screen ExtPAL 0", ARM9Mem.ExtPal[0][0],)
+	DO("Main screen ExtPAL 1", ARM9Mem.ExtPal[0][1],)
+	DO("Main screen ExtPAL 2", ARM9Mem.ExtPal[0][2],)
+	DO("Main screen ExtPAL 3", ARM9Mem.ExtPal[0][3],)
+	DO("Sub  screen ExtPAL 0", ARM9Mem.ExtPal[1][0],)
+	DO("Sub  screen ExtPAL 1", ARM9Mem.ExtPal[1][1],)
+	DO("Sub  screen ExtPAL 2", ARM9Mem.ExtPal[1][2],)
+	DO("Sub  screen ExtPAL 3", ARM9Mem.ExtPal[1][3],)
+	DO("Main screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[0][0],)
+	DO("Main screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[0][1],)
+	DO("Sub  screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[1][0],)
+	DO("Sub  screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[1][1],)
+	DO("Texture PAL 0", ARM9Mem.texPalSlot[0],)
+	DO("Texture PAL 1", ARM9Mem.texPalSlot[1],)
+	DO("Texture PAL 2", ARM9Mem.texPalSlot[2],)
+	DO("Texture PAL 3", ARM9Mem.texPalSlot[3],)
 #undef DO
 	init=TRUE;
 }
-
-#if 0
-             for(y = 0; y < 16; ++y)
-             {
-                  for(x = 0; x < 16; ++x)
-                  {
-                       c = adr[(y<<4)+x+0x100*num];
-                       brush = CreateSolidBrush(RGB((c&0x1F)<<3, (c&0x3E0)>>2, (c&0x7C00)>>7)
-                  }
-             }
-
-#endif
 
 
 void     on_wtools_3_PalView_show         (GtkWidget *widget, gpointer data) {
@@ -81,8 +113,11 @@ gboolean on_wtools_3_PalView_close         (GtkWidget *widget, ...) {
 
 
 gboolean on_wtools_3_draw_expose_event    (GtkWidget * widget, GdkEventExpose *event, gpointer user_data) {
+	refresh();
 }
 void     on_wtools_3_palette_changed      (GtkComboBox *combo,   gpointer user_data) {
+	palindex = gtk_combo_box_get_active(combo);
+	refresh();
 }
 void     on_wtools_3_palnum_value_changed (GtkSpinButton *spin, gpointer user_data) {
 }

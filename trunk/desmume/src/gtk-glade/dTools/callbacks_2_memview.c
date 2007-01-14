@@ -48,7 +48,7 @@ static void initialize();
 
 /* update */
 
-void wtools_2_update() {
+static void wtools_2_update() {
 	int i,j, x,y=5;
 	int px = w/78, qx;
 	u8  m8,  *mem8 =mem; u16 m16, *mem16=(u16*)mem; u32 m32, *mem32=(u32*)mem;
