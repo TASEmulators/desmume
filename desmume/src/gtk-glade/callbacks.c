@@ -195,26 +195,34 @@ user_data)
 {
   GtkDialog * dlg;
   GtkDialog * msgbox;
+  char * text;
   
-  if(nbr_joy>0) /* At least one joystick */
+  /* At least one joystick connected?
+   Can't configure joystick if SDL Event loop is already running. */
+  if( (nbr_joy < 1) || desmume_running() )
     {
-      dlg = (GtkDialog*)glade_xml_get_widget(xml, "wJoyConfDlg");
-      init_joy_labels();
-      gtk_dialog_run(dlg);
-    }
-  else
-    {
+      if( nbr_joy < 1 )
+        text = "You don't have any joystick!";
+      else
+        text = "Can't configure joystick while the game is running!";
+
       dlg = (GtkDialog*)glade_xml_get_widget(xml, "wMainW");
       msgbox =
         gtk_message_dialog_new(dlg, 
                                GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
                                GTK_MESSAGE_INFO,
                                GTK_BUTTONS_CLOSE,
-                               "You don't have any joystick!"
+                               text
                                );
       g_signal_connect(G_OBJECT(msgbox), "response", G_CALLBACK(gtk_widget_destroy), NULL);
 
       gtk_dialog_run( msgbox );
+    }
+  else
+    {
+      dlg = (GtkDialog*)glade_xml_get_widget(xml, "wJoyConfDlg");
+      init_joy_labels();
+      gtk_dialog_run(dlg);
     }
 }
 
