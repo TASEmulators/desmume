@@ -719,8 +719,25 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              {
                   if (wParam & MK_LBUTTON)
                   {
+					   RECT r ;
                        s32 x = (s32)((s16)LOWORD(lParam));
                        s32 y = (s32)((s16)HIWORD(lParam));
+						GetClientRect(hwnd,&r) ;
+						/* translate from scaling (screen reoltution to 256x384 or 512x192) */
+					   switch (GPU_rotation)
+						{
+							case 0:
+							case 180:
+								x = (x*256) / (r.right - r.left) ;
+								y = (y*384) / (r.bottom - r.top) ;
+								break ;
+							case 90:
+							case 270:
+								x = (x*512) / (r.right - r.left) ;
+								y = (y*192) / (r.bottom - r.top) ;
+								break ;
+						}
+						/* translate for rotation */
                        if (GPU_rotation != 0)
                           translateXY(&x,&y);
                        else 
