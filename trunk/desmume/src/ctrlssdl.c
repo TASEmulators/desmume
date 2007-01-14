@@ -106,6 +106,25 @@ void set_mouse_coord(signed long x,signed long y)
 }
 #endif // !GTK_UI
 
+/* Update NDS keypad */
+void update_keypad(u16 keys)
+{
+  ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = ~keys & 0x3FF;
+  ((u16 *)MMU.ARM7_REG)[0x130>>1] = ~(keys >> 10) & 0x3;
+  /* Update X and Y buttons */
+  MMU.ARM7_REG[0x136] = ( ~( keys >> 10) & 0x3 ) | (MMU.ARM7_REG[0x136] & ~0x3);
+}
+
+/* Retrieve current NDS keypad */
+u16 get_keypad()
+{
+  u16 keypad;
+  keypad = ~((unsigned short *)MMU.ARM7_REG)[0x130>>1];
+  keypad = (keypad & 0x3) << 10;
+  keypad |= ~((unsigned short *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x3FF;
+  return keypad;
+}
+
 /* Manage input events */
 u16 process_ctrls_events(u16 keypad)
 {
@@ -179,14 +198,14 @@ u16 process_ctrls_events(u16 keypad)
             case SDLK_DOWN:	ADD_KEY( keypad, 0x80); break;
             case SDLK_RIGHT:	ADD_KEY( keypad, 0x10); break;
             case SDLK_LEFT:	ADD_KEY( keypad, 0x20); break;
-            case 'c':	        ADD_KEY( keypad, 0x1); break;
-            case 'x':	        ADD_KEY( keypad, 0x2); break;
+            case SDLK_c:        ADD_KEY( keypad, 0x1); break;
+            case SDLK_x:        ADD_KEY( keypad, 0x2); break;
             case SDLK_BACKSPACE:ADD_KEY( keypad, 0x4); break;
             case SDLK_RETURN:	ADD_KEY( keypad, 0x8); break;
-            case 's':	        ADD_KEY( keypad, 0x100); break;
-            case 'd':	        ADD_KEY( keypad, 0x200); break;
-            case 'w':	        ADD_KEY( keypad, 0x400); break;
-            case 'e':	        ADD_KEY( keypad, 0x800); break;
+            case SDLK_e:        ADD_KEY( keypad, 0x100); break; // R
+            case SDLK_w:        ADD_KEY( keypad, 0x200); break; // L
+            case SDLK_d:        ADD_KEY( keypad, 0x400); break; // X
+            case SDLK_s:        ADD_KEY( keypad, 0x800); break; // Y
             }
           break;
 
@@ -197,14 +216,14 @@ u16 process_ctrls_events(u16 keypad)
             case SDLK_DOWN:	RM_KEY( keypad, 0x80); break;
             case SDLK_RIGHT:	RM_KEY( keypad, 0x10); break;
             case SDLK_LEFT:	RM_KEY( keypad, 0x20); break;
-            case 'c':	        RM_KEY( keypad, 0x1); break;
-            case 'x':	        RM_KEY( keypad, 0x2); break;
+            case SDLK_c:        RM_KEY( keypad, 0x1); break;
+            case SDLK_x:        RM_KEY( keypad, 0x2); break;
             case SDLK_BACKSPACE:RM_KEY( keypad, 0x4); break;
             case SDLK_RETURN:	RM_KEY( keypad, 0x8); break;
-            case 's':	        RM_KEY( keypad, 0x100); break;
-            case 'd':	        RM_KEY( keypad, 0x200); break;
-            case 'w':	        RM_KEY( keypad, 0x400); break;
-            case 'e':	        RM_KEY( keypad, 0x800); break;
+            case SDLK_e:        RM_KEY( keypad, 0x100); break; // R
+            case SDLK_w:        RM_KEY( keypad, 0x200); break; // L
+            case SDLK_d:        RM_KEY( keypad, 0x400); break; // X
+            case SDLK_s:        RM_KEY( keypad, 0x800); break; // Y
             }
           break;
 

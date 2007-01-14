@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <SDL/SDL.h>
+#include "MMU.h"
 
 #include "types.h"
 
@@ -59,6 +60,8 @@ void set_mouse_coord(signed long x,signed long y);
 BOOL init_joy(u16 joyCfg[]);
 void uninit_joy();
 u16 get_set_joy_key(int index);
+void update_keypad(u16 keys);
+u16 get_keypad();
 u16 process_ctrls_events(u16 oldkeypad);
 
 #endif /* CTRLSSDL_H */
