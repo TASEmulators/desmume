@@ -24,6 +24,7 @@
 //#define RENDER3D
 
 #include <windows.h>
+#include <Winuser.h>
 #include <commctrl.h>
 #include <stdio.h>
 #include "CWindow.h"
@@ -249,7 +250,7 @@ DWORD WINAPI run( LPVOID lpParameter)
      bmi.bV4GreenMask = 0x03E0;
      bmi.bV4BlueMask = 0x7C00;
      bmi.bV4Width = 256;
-     bmi.bV4Height = -192;
+     bmi.bV4Height = -192*2;
      
      memset(&rotationbmi, 0, sizeof(rotationbmi));
      rotationbmi.bV4Size = sizeof(rotationbmi);
@@ -279,11 +280,16 @@ DWORD WINAPI run( LPVOID lpParameter)
                if (!skipnextframe)
                {
                   if (GPU_rotation == 0)
-                     SetDIBitsToDevice(hdc, 0, 0, 256, 192*2, 0, 0, 0, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-                  else
+				  {
+					RECT r ;
+					GetClientRect(hwnd,&r) ;
+                  	StretchDIBits (hdc, 0, 0, r.right-r.left, r.bottom-r.top, 0, 0, 256, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS,SRCCOPY);
+                  } else
                   {
-                     GPU_rotate(&rotationbmi);
-                     SetDIBitsToDevice(hdc, 0, 0, GPU_width, GPU_height, 0, 0, 0, rotationscanlines, GPU_screenrotated, (BITMAPINFO*)&rotationbmi, DIB_RGB_COLORS);
+                    GPU_rotate(&rotationbmi);
+					RECT r ;
+					GetClientRect(hwnd,&r) ;
+                    StretchDIBits(hdc, 0, 0, r.right-r.left, r.bottom-r.top, 0, 0, GPU_width, rotationscanlines, GPU_screenrotated, (BITMAPINFO*)&rotationbmi, DIB_RGB_COLORS,SRCCOPY);
                   }
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
@@ -407,7 +413,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
     if (CWindow_Init(&MainWindow, hThisInstance, szClassName, text,
-                     WS_CAPTION| WS_SYSMENU |WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                     WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
                      256, 384, WindowProcedure) != 0)
     {
         MessageBox(NULL,"Unable to create main window","Error",MB_OK);
