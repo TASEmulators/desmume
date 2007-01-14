@@ -42,8 +42,8 @@ static GtkEntry       *wAddress;
 static GtkDrawingArea *wPaint;
 static GtkRange       *wRange;
 
-void refresh();
-void initialise();
+static void refresh();
+static void initialize();
 
 
 /* update */
@@ -142,14 +142,14 @@ void on_wtools_2_r32_toggled           (GtkToggleButton *togglebutton, gpointer 
 #define STEP_ONE_PAGE 0x100
 #define STEP_x10_PAGE 0x1000
 
-void scroll_address(u32 addr) {
+static void scroll_address(u32 addr) {
 	address = addr & ADDR_MASK;
 	refresh();
 }
-void change_address(u32 addr) {
+static void change_address(u32 addr) {
 	gtk_range_set_value(wRange, addr);
 }
-void add_to_address(u32 inc) {
+static void add_to_address(u32 inc) {
 	change_address(address+inc);
 }
 
@@ -164,12 +164,13 @@ void on_wtools_2_GotoButton_clicked    (GtkButton *button, gpointer user_data) {
 }
 
 
+/* show, register, unregister */
 
-void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data) {
+void on_wtools_2_MemView_show       (GtkWidget *widget, gpointer user_data) {
 	initialize();
 	register_Tool(wtools_2_update);
 }
-gboolean on_wtools_2_MemView_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
+gboolean on_wtools_2_MemView_close  (GtkWidget *widget, ...) {
 	unregister_Tool(wtools_2_update);
 	gtk_widget_hide(widget);
 	return TRUE;
@@ -201,7 +202,7 @@ gboolean on_wtools_2_draw_expose_event (GtkWidget *widget, GdkEventExpose *event
 
 /* initialise what we have to */
 
-void initialize() {
+static void initialize() {
 	GtkWidget * combo;
 	GtkAdjustment *adj;
 	int i,j;
@@ -245,7 +246,7 @@ void initialize() {
 }
 
 /* PAINT memory panel */
-void refresh() {
+static void refresh() {
 	GtkWidget * area = (GtkWidget*)wPaint;
 	PangoLayout* playout = gtk_widget_create_pango_layout(area, NULL);
 	GdkGC * GC = area->style->fg_gc[area->state];

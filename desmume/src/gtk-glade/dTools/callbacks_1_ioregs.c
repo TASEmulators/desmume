@@ -28,7 +28,7 @@ static BOOL hword;
 
 static GtkLabel * reg_address;
 static GtkEntry * reg_value;
-void display_current_reg();
+static void display_current_reg();
 
 /* update */
 
@@ -39,7 +39,7 @@ void wtools_1_update () {
 
 /* registers */
 
-void display_current_reg() {
+static void display_current_reg() {
 	char text_address[16];
 	char text_value[16];
 	char * patt = "0x%08X";
@@ -52,7 +52,7 @@ void display_current_reg() {
 	gtk_entry_set_text(reg_value,   text_value);
 }
 
-void display_reg(u32 address_, BOOL hword_) {
+static void display_reg(u32 address_, BOOL hword_) {
 	address = address_;
 	hword = hword_;
 	display_current_reg();
@@ -64,6 +64,10 @@ void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data) 
 	cpu=gtk_combo_box_get_active(widget);
 	display_current_reg();
 }
+
+
+
+/* show, register, unregister */
 
 void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
 	GtkWidget * b = glade_xml_get_widget(xml_tools, "wtools_1_r_ime");
@@ -78,11 +82,13 @@ void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
 
 	register_Tool(wtools_1_update);
 }
-gboolean on_wtools_1_IOregs_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data) {
+
+gboolean on_wtools_1_IOregs_close (GtkWidget *widget, ...) {
 	unregister_Tool(wtools_1_update);
 	gtk_widget_hide(widget);
 	return TRUE;
 }
+
 
 
 void on_wtools_1_r_ipcfifocnt_toggled (GtkToggleButton *togglebutton, gpointer user_data) { display_reg(REG_IPCFIFOCNT,TRUE); }

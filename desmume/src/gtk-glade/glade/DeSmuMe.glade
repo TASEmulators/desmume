@@ -117,7 +117,7 @@
 		      <signal name="activate" handler="on_menu_reset_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image52">
+			<widget class="GtkImage" id="image61">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">1</property>
@@ -328,7 +328,7 @@
 		      <signal name="activate" handler="on_menu_controls_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image53">
+			<widget class="GtkImage" id="image62">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -349,7 +349,7 @@
 		      <signal name="activate" handler="on_menu_joy_controls_activate" last_modification_time="Fri, 12 Jan 2007 22:26:36 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image54">
+			<widget class="GtkImage" id="image63">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -423,7 +423,7 @@
 		      <signal name="activate" handler="on_menu_IO_regs_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image55">
+			<widget class="GtkImage" id="image64">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>
@@ -444,7 +444,28 @@
 		      <signal name="activate" handler="on_menu_memview_activate" last_modification_time="Fri, 12 Jan 2007 15:44:42 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image56">
+			<widget class="GtkImage" id="image65">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-properties</property>
+			  <property name="icon_size">1</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkImageMenuItem" id="menu_palview">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">View Palette</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="on_menu_palview_activate" last_modification_time="Sun, 14 Jan 2007 10:34:32 GMT"/>
+
+		      <child internal-child="image">
+			<widget class="GtkImage" id="image66">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>

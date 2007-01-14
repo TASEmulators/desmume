@@ -26,39 +26,50 @@ void wtools_2_update();
 
 
 /* ***** ***** IO REGISTERS ***** ***** */
-void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data);
-void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data);
-gboolean on_wtools_1_IOregs_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data);
-void on_wtools_1_r_ipcfifocnt_toggled (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_spicnt_toggled     (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_ime_toggled        (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_ie_toggled         (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_if_toggled         (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_power_cr_toggled   (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispa_win0h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispa_win1h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispa_win0v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispa_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispa_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispa_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispb_win0h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispb_win1h_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispb_win0v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispb_win1v_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispb_winin_toggled(GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *togglebutton, gpointer user_data);
+void     on_wtools_1_combo_cpu_changed     (GtkComboBox *, gpointer );
+void     on_wtools_1_IOregs_show           (GtkWidget *,   gpointer );
+gboolean on_wtools_1_IOregs_close          (GtkWidget *, ...);
+
+void     on_wtools_1_r_ipcfifocnt_toggled  (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_spicnt_toggled      (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_ime_toggled         (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_ie_toggled          (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_if_toggled          (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_power_cr_toggled    (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispa_win0h_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispa_win1h_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispa_win0v_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispa_win1v_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispa_winin_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispa_winout_toggled(GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispb_win0h_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispb_win1h_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispb_win0v_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispb_win1v_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispb_winin_toggled (GtkToggleButton *, gpointer );
+void     on_wtools_1_r_dispb_winout_toggled(GtkToggleButton *, gpointer );
 
 /* ***** ***** MEMORY VIEWER ***** ***** */
-gboolean on_wtools_2_MemView_delete_event (GtkWidget *widget, GdkEvent  *event, gpointer user_data);
-gboolean on_wtools_2_draw_button_release_event(GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-void on_wtools_2_cpu_changed           (GtkComboBox *widget, gpointer user_data);
-void on_wtools_2_MemView_show          (GtkWidget *widget, gpointer user_data);
-void on_wtools_2_r8_toggled            (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_2_r16_toggled           (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_2_r32_toggled           (GtkToggleButton *togglebutton, gpointer user_data);
-void on_wtools_2_GotoAddress_activate  (GtkEntry *entry, gpointer user_data);
-void on_wtools_2_GotoAddress_changed   (GtkEntry *entry, gpointer user_data);
-void on_wtools_2_GotoButton_clicked    (GtkButton *button, gpointer user_data);
-void on_wtools_2_scroll_value_changed  (GtkRange *range, gpointer user_data);
-gboolean on_wtools_2_draw_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
-gboolean on_wtools_2_draw_scroll_event (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
+void     on_wtools_2_MemView_show             (GtkWidget *,   gpointer );
+gboolean on_wtools_2_MemView_close            (GtkWidget *, ...);
+
+void     on_wtools_2_cpu_changed              (GtkComboBox *, gpointer );
+void     on_wtools_2_r8_toggled               (GtkToggleButton *, gpointer );
+void     on_wtools_2_r16_toggled              (GtkToggleButton *, gpointer );
+void     on_wtools_2_r32_toggled              (GtkToggleButton *, gpointer );
+void     on_wtools_2_GotoAddress_activate     (GtkEntry *,  gpointer );
+void     on_wtools_2_GotoAddress_changed      (GtkEntry *,  gpointer );
+void     on_wtools_2_GotoButton_clicked       (GtkButton *, gpointer );
+void     on_wtools_2_scroll_value_changed     (GtkRange *,  gpointer );
+gboolean on_wtools_2_draw_button_release_event(GtkWidget *, GdkEventButton *, gpointer );
+gboolean on_wtools_2_draw_expose_event        (GtkWidget *, GdkEventExpose *, gpointer );
+gboolean on_wtools_2_draw_scroll_event        (GtkWidget *, GdkEventScroll *, gpointer );
+
+/* ***** ***** PALETTE VIEWER ***** ***** */
+void     on_wtools_3_PalView_show         (GtkWidget *, gpointer );
+gboolean on_wtools_3_PalView_close        (GtkWidget *, ...);
+
+gboolean on_wtools_3_PalView_delete_event (GtkWidget *, GdkEvent *,       gpointer );
+gboolean on_wtools_3_draw_expose_event    (GtkWidget *, GdkEventExpose *, gpointer );
+void     on_wtools_3_palette_changed      (GtkComboBox *,   gpointer );
+void     on_wtools_3_palnum_value_changed (GtkSpinButton *, gpointer );

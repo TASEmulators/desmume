@@ -275,6 +275,11 @@ void  on_menu_memview_activate      (GtkMenuItem *menuitem, gpointer user_data) 
 	gtk_widget_show(dlg);
 }
 
+void  on_menu_palview_activate      (GtkMenuItem *menuitem, gpointer user_data) {
+	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_3_PalView");
+	gtk_widget_show(dlg);
+}
+
 
 
 
