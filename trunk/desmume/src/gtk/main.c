@@ -460,8 +460,8 @@ const char *Keys_Name[DESMUME_NB_KEYS] =
 	"Down",
 	"R",
 	"L",
-	"Y",
 	"X",
+	"Y",
 	"Debug"
 };
 
