@@ -199,8 +199,8 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 
 void ScaleScreen(float factor)
 {
-	factor -= 1 ;
 	RECT fullSize,clientSize ;
+	factor -= 1 ;
 	GetWindowRect(hwnd,&fullSize) ;
 	GetClientRect(hwnd,&clientSize) ;
 	fullSize.right += (clientSize.right - clientSize.left) * factor ;
