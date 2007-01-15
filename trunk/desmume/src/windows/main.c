@@ -196,6 +196,18 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
                  rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
 
 }
+
+void ScaleScreen(float factor)
+{
+	factor -= 1 ;
+	RECT fullSize,clientSize ;
+	GetWindowRect(hwnd,&fullSize) ;
+	GetClientRect(hwnd,&clientSize) ;
+	fullSize.right += (clientSize.right - clientSize.left) * factor ;
+	fullSize.bottom += (clientSize.bottom - clientSize.top) * factor ;
+    SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
+                 fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+}
  
 void translateXY(s32 *x, s32*y)
 {
@@ -1328,6 +1340,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
                        CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_CHECKED);
                   return 0;
+				  case IDC_MAGNIFY:
+						ScaleScreen(1.2f) ;   /* 100-> 120% */
+						break ;
+				  case IDC_DEMAGNIFY:
+						ScaleScreen(0.833333f) ;   /* 120 -> 100% (== 100->83.33%) */
+						break ;
+
              }
              return 0;
         default:                      /* for messages that we don't deal with */
