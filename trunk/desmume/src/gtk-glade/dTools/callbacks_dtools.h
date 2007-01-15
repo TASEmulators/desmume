@@ -22,11 +22,11 @@
 #include "../globals.h"
 
 /* ***** ***** IO REGISTERS ***** ***** */
-void     on_wtools_1_combo_cpu_changed     (GtkComboBox *, gpointer );
-void     on_wtools_1_IOregs_show           (GtkWidget *,   gpointer );
-gboolean on_wtools_1_IOregs_close          (GtkWidget *, ...);
-void on_wtools_1_autorefresh_toggled       (GtkToggleButton *, gpointer);
-void on_wtools_1_refresh_clicked           (GtkButton *, gpointer);
+void     on_wtools_1_combo_cpu_changed        (GtkComboBox *, gpointer );
+void     on_wtools_1_IOregs_show              (GtkWidget *,   gpointer );
+gboolean on_wtools_1_IOregs_close             (GtkWidget *, ...);
+gboolean on_wtools_1_draw_button_release_event(GtkWidget *, GdkEventButton *, gpointer );
+gboolean on_wtools_1_draw_expose_event        (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
 
 /* ***** ***** MEMORY VIEWER ***** ***** */
 void     on_wtools_2_MemView_show             (GtkWidget *,   gpointer );

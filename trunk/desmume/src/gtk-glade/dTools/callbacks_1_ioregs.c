@@ -20,11 +20,15 @@
  */
 
 #include "callbacks_dtools.h"
+#include "dTools_display.h"
 
 /* ***** ***** IO REGISTERS ***** ***** */
 static int cpu=0;
-static BOOL autorefresh;
+static BOOL init=FALSE;
+static int size_=0;
+static dTools_dsp dsp;
 
+static void update_regs_fast();
 static void update_regs();
 
 /* Register name list */
@@ -50,29 +54,85 @@ const reg_name_addr Reg_Names_Addr[NBR_IO_REGS] =
 /* update */
 
 static void wtools_1_update () {
-  if(autorefresh) update_regs();
+	update_regs_fast();
 }
+
+
 
 /* Update register display */
+
+static u32 mem[NBR_IO_REGS];
+
+static void update_regs_fast(){
+	char text[10], *mask;
+	int i; u32 w, m;
+	for( i = 0; i < NBR_IO_REGS; i++ )
+	{	
+		w = MMU_read32(cpu,Reg_Names_Addr[i].addr);
+		m = mem[i];
+		if ( Reg_Names_Addr[i].trunc ) {
+			mask = "    0x%04X";
+			w &= 0xFFFF;
+			m &= 0xFFFF;
+		} else {
+			mask = "0x%08X";
+		}
+		mem[i] = w;
+		if (w == m) continue;
+
+		sprintf(text, mask, w);
+		dTools_display_select_attr(&dsp, 2);
+		dTools_display_clear_char(&dsp, size_+3, i, 10);
+		dTools_display_draw_text(&dsp, size_+3, i, text);
+	}
+}
+
 static void update_regs()
 {
-  char lbl_name[40];
-  char lbl_text[40];
-  char * mask;
-  GtkWidget * lbl;
-  int i;
-  u32 w;
+	char text[80], *mask;
+	int len, i;
 
-  for( i = 0; i < NBR_IO_REGS; i++ )
-    {
-      mask = ( Reg_Names_Addr[i].trunc ) ? "0x%04X" : "0x%08X";
-      sprintf(lbl_name,"wtools_1_%s_value\0\0", Reg_Names_Addr[i].name);
-      w = MMU_read32(cpu,Reg_Names_Addr[i].addr);
-      sprintf(lbl_text, mask, w);
-      lbl = glade_xml_get_widget(xml_tools, lbl_name);
-      gtk_label_set_text((GtkLabel *)lbl, lbl_text);
-    }
+	if (init==FALSE) {
+		GtkWidget * wPaint = glade_xml_get_widget(xml_tools, "wtools_1_draw");
+
+		for( i = 0; i < NBR_IO_REGS; i++ ) {
+			len = strlen(Reg_Names_Addr[i].name);
+			if (size_<len) size_=len;
+		}
+
+		len = size_ + strlen(" : 0x00000000");
+		dTools_display_init(&dsp, wPaint, len, NBR_IO_REGS, 5);
+		dTools_display_add_markup(&dsp, "<tt><span foreground=\"blue\">                    </span></tt>");
+		dTools_display_add_markup(&dsp, "<tt>0x00000000</tt>");
+		dTools_display_add_markup(&dsp, "<tt><span foreground=\"red\">0x00000000</span></tt>");
+		init=TRUE;
+	}
+
+	dTools_display_clear(&dsp);
+	for( i = 0; i < NBR_IO_REGS; i++ )
+	{
+		mask = ( Reg_Names_Addr[i].trunc ) ? "    0x%04X" : "0x%08X";
+		mem[i] = MMU_read32(cpu,Reg_Names_Addr[i].addr);
+		sprintf(text, mask, mem[i]);
+
+		dTools_display_select_attr(&dsp, 0);
+		dTools_display_draw_text(&dsp, 0, i, Reg_Names_Addr[i].name);
+		dTools_display_draw_text(&dsp, size_, i, " : ");
+		dTools_display_select_attr(&dsp, 1);
+		dTools_display_draw_text(&dsp, size_+3, i, text);
+	}
 }
+
+gboolean on_wtools_1_draw_button_release_event(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
+	// clear the red marks :)
+	if (event->button==1)
+		update_regs();
+}
+gboolean on_wtools_1_draw_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer user_data) {
+	update_regs();
+	return TRUE; 
+}
+
 
 void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data) {
   /* c == 0 means ARM9 */
@@ -82,10 +142,11 @@ void on_wtools_1_combo_cpu_changed    (GtkComboBox *widget, gpointer user_data) 
 
 /* show, register, unregister */
 void on_wtools_1_IOregs_show          (GtkWidget *widget, gpointer user_data) {
-  GtkWidget * combo = glade_xml_get_widget(xml_tools, "wtools_1_combo_cpu");
-  
-  // do as if we had selected this button and ARM7 cpu
-  gtk_combo_box_set_active((GtkComboBox*)combo, 0);
+	GtkWidget * combo = glade_xml_get_widget(xml_tools, "wtools_1_combo_cpu");
+
+	// do as if we had selected this button and ARM7 cpu
+	gtk_combo_box_set_active((GtkComboBox*)combo, 0);
+	register_Tool(wtools_1_update);
 }
 
 gboolean on_wtools_1_IOregs_close (GtkWidget *widget, ...) {
@@ -94,24 +155,3 @@ gboolean on_wtools_1_IOregs_close (GtkWidget *widget, ...) {
 	return TRUE;
 }
 
-void on_wtools_1_autorefresh_toggled (GtkToggleButton *tb, gpointer user_data) 
-{
-  GtkWidget * b = glade_xml_get_widget(xml_tools, "wtools_1_refresh");
-  if( gtk_toggle_button_get_active(tb) == TRUE )
-    {
-      autorefresh = TRUE;
-      register_Tool(wtools_1_update);
-      gtk_widget_set_sensitive( b, FALSE );
-    }
-  else
-    {
-      autorefresh = FALSE;
-      unregister_Tool(wtools_1_update);
-      gtk_widget_set_sensitive( b, TRUE );
-    }
-}
-
-void on_wtools_1_refresh_clicked (GtkButton *b, gpointer user_data)
-{
-  update_regs();
-}

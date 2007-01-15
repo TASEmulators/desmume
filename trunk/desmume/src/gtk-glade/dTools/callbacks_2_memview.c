@@ -20,7 +20,7 @@
  */
 
 #include "callbacks_dtools.h"
-
+#include "dTools_display.h"
 
 /* ***** ***** MEMORY VIEWER ***** ***** */
 
@@ -33,13 +33,11 @@ enum SHOW {
 static BOOL init=FALSE;
 static enum SHOW packmode=Bit8;
 static u32 address=0, tmpaddr=0, bpl=0; int cpu=0;
-static PangoAttrList *attr_Text8,*attr_Text16,*attr_Text32,*attr_red;
 static char patt[512];
 static u8 mem[0x100];
-static int w,h;
+static dTools_dsp dsp;
 
 static GtkEntry       *wAddress;
-static GtkDrawingArea *wPaint;
 static GtkRange       *wRange;
 
 static void refresh();
@@ -49,65 +47,55 @@ static void initialize();
 /* update */
 
 static void wtools_2_update() {
-	int i,j, x,y=5;
-	int px = w/78, qx;
-	u8  m8,  *mem8 =mem; u16 m16, *mem16=(u16*)mem; u32 m32, *mem32=(u32*)mem;
+	int i,j;
+	u8  m8,  *mem8 =mem; 
+	u16 m16, *mem16=(u16*)mem;
+	u32 m32, *mem32=(u32*)mem;
 	u32 addr;
 	char txt[16];
 
-	GtkWidget * area = (GtkWidget*)wPaint;
-	PangoLayout* playout = gtk_widget_create_pango_layout(area, NULL);
-	GdkGC * GC = area->style->fg_gc[area->state];
-
-	pango_layout_set_attributes(playout, attr_red);
-
-#define PAINT_TEXT(w) \
-	gdk_draw_rectangle(area->window, area->style->white_gc, TRUE, x, y, w, h); \
-	pango_layout_set_text(playout, txt, -1); \
-	gdk_draw_layout(area->window, GC, x, y, playout);
+	// red
+	dTools_display_select_attr(&dsp, 3);
 
 	addr = address;
 	switch (packmode) {
 	case Bit8:
-		for (i=0; i<0x10; i++, y+=h) {
-			x = 12 * px + 10; qx = 62 * px + 10;
-			for (j=0; j<16; j++, addr++,mem8++,x+=3*px,qx+=px) { 
+		for (i=0; i<0x10; i++) {
+			for (j=0; j<16; j++, addr++,mem8++) { 
 				m8 = *mem8; *mem8 = MMU_readByte(cpu, addr);
 				if (m8 != *mem8) {
 					sprintf(txt, "%02X", *mem8);
-					PAINT_TEXT(3*px)
+					dTools_display_clear_char(&dsp, 12+j, i, 3);
+					dTools_display_draw_text(&dsp, 12+j, i, txt);
 				}
 			}
 		}
 		break;
 	case Bit16:
-		for (i=0; i<0x10; i++, y+=h) {
-			x = 12 * px + 10; qx = 62 * px + 10;
-			for (j=0; j<8; j++, addr+=2,mem16++,x+=6*px,qx+=2*px) { 
+		for (i=0; i<0x10; i++) {
+			for (j=0; j<16; j+=2, addr+=2,mem16++) { 
 				m16 = *mem16; *mem16 = MMU_readHWord(cpu, addr);
 				if (m16 != *mem16) {
 					sprintf(txt, " %04X", *mem16);
-					PAINT_TEXT(6*px)
+					dTools_display_clear_char(&dsp, 12+j, i, 6);
+					dTools_display_draw_text(&dsp, 12+j, i, txt);
 				}
 			}
 		}
 		break;
 	case Bit32:
-		for (i=0; i<0x10; i++, y+=h) {
-			x = 12 * px + 10; qx = 62 * px + 10;
-			for (j=0; j<4; j++, addr+=4,mem32++,x+=12*px,qx+=4*px) { 
+		for (i=0; i<0x10; i++) {
+			for (j=0; j<16; j+=4, addr+=4,mem32++) { 
 				m32 = *mem32; *mem32 = MMU_readWord(cpu, addr);
 				if (m32 != *mem32) {
 					sprintf(txt, "  %08X", *mem32);
-					PAINT_TEXT(12*px)
+					dTools_display_clear_char(&dsp, 12+j, i, 12);
+					dTools_display_draw_text(&dsp, 12+j, i, txt);
 				}
 			}
 		}
 		break;
 	}
-	g_object_unref(playout);
-
-#undef PAINT_TEXT
 }
 
 gboolean on_wtools_2_draw_button_release_event(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
@@ -172,6 +160,7 @@ void on_wtools_2_MemView_show       (GtkWidget *widget, gpointer user_data) {
 }
 gboolean on_wtools_2_MemView_close  (GtkWidget *widget, ...) {
 	unregister_Tool(wtools_2_update);
+	dTools_display_free(&dsp);
 	gtk_widget_hide(widget);
 	return TRUE;
 }
@@ -204,6 +193,7 @@ gboolean on_wtools_2_draw_expose_event (GtkWidget *widget, GdkEventExpose *event
 
 static void initialize() {
 	GtkWidget * combo;
+	GtkWidget * wPaint;
 	GtkAdjustment *adj;
 	int i,j;
 
@@ -214,72 +204,56 @@ static void initialize() {
 
 	// get widget reference
 	wAddress = (GtkEntry*)glade_xml_get_widget(xml_tools, "wtools_2_GotoAddress");
-	wPaint   = (GtkDrawingArea*)glade_xml_get_widget(xml_tools, "wtools_2_draw");
 	wRange   = (GtkRange*)glade_xml_get_widget(xml_tools, "wtools_2_scroll");
+	wPaint   = glade_xml_get_widget(xml_tools, "wtools_2_draw");
 
-	gtk_combo_box_set_active((GtkComboBox*)combo, 0);
-	gtk_range_set_adjustment(wRange, adj);
+	dTools_display_init(&dsp, wPaint, 80, 16, 5);
 
-	strcpy(patt, "<tt><span foreground=\"red\">__00000000__</span></tt>");
-	pango_parse_markup(patt,-1,0,&attr_red,NULL,NULL,NULL);
-	
 #define PATT(x) x"<span foreground=\"#608060\">" x "</span>"
 #define DUP(x) x x
-	strcpy(patt,  "<tt><span foreground=\"blue\">0000:0000</span> | ");
-	strcat(patt, DUP(DUP(DUP(PATT("00_")))) );
-	strcat(patt, "| 0123456789ABCDEF</tt>");
-	pango_parse_markup(patt,-1,0,&attr_Text8,NULL,NULL,NULL);
-
-	strcpy(patt,  "<tt><span foreground=\"blue\">0000:0000</span> | ");
-	strcat(patt, DUP(DUP(PATT("_0000_"))) );
-	strcat(patt, "| 0123456789ABCDEF</tt>");
-	pango_parse_markup(patt,-1,0,&attr_Text16,NULL,NULL,NULL);
-
-	strcpy(patt,  "<tt><span foreground=\"blue\">0000:0000</span> | ");
-	strcat(patt, DUP(PATT("__00000000__")) );
-	strcat(patt, "| 0123456789ABCDEF</tt>");
-	pango_parse_markup(patt,-1,0,&attr_Text32,NULL,NULL,NULL);
+	sprintf(patt, "<tt><span foreground=\"blue\">0000:0000</span> | %s| 0123456789ABCDEF</tt>", DUP(DUP(DUP(PATT("00_")))) );
+	dTools_display_add_markup(&dsp, patt);
+	sprintf(patt, "<tt><span foreground=\"blue\">0000:0000</span> | %s| 0123456789ABCDEF</tt>", DUP(DUP(PATT("_0000_"))) );
+	dTools_display_add_markup(&dsp, patt);
+	sprintf(patt, "<tt><span foreground=\"blue\">0000:0000</span> | %s| 0123456789ABCDEF</tt>", DUP(PATT("__00000000__")) );
+	dTools_display_add_markup(&dsp, patt);
 #undef DUP
 #undef PATT
+	strcpy(patt, "<tt><span foreground=\"red\">__00000000__</span></tt>");
+	dTools_display_add_markup(&dsp, patt);
+
 	init = TRUE;
+	gtk_combo_box_set_active((GtkComboBox*)combo, 0);
+	gtk_range_set_adjustment(wRange, adj);
 	change_address(RANGE_MIN);
 }
 
 /* PAINT memory panel */
 static void refresh() {
-	GtkWidget * area = (GtkWidget*)wPaint;
-	PangoLayout* playout = gtk_widget_create_pango_layout(area, NULL);
-	GdkGC * GC = area->style->fg_gc[area->state];
-	int i,j,addr, x,y; u8 c;
+	int i,j,addr;
+	u8 c;
 	u8 *mem8=mem;
 	u16 *mem16=(u16*)mem;
 	u32 *mem32=(u32*)mem;
 
 	char *ptxt, txt[]="0000:0000 | 00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF | 0123456789ABCDEF\0";
-	PangoAttrList *attr;
 	
-	switch(packmode){
-	default:
-	case Bit8:	attr=attr_Text8;  break;
-	case Bit16:	attr=attr_Text16; break;
-	case Bit32:	attr=attr_Text32; break;
-	}
+	if (!init) return;
 
 	for (i=0; i<0x100; i++) 
 		mem[i] = MMU_readByte(cpu, address+i);
 
+	dTools_display_clear(&dsp);
+	switch(packmode) {
+	case Bit8:  dTools_display_select_attr(&dsp, 0); break;
+	case Bit16: dTools_display_select_attr(&dsp, 1); break;
+	case Bit32: dTools_display_select_attr(&dsp, 2); break;
+	}
 
-	gdk_draw_rectangle(area->window, area->style->white_gc, TRUE, 0, 0,
-		area->allocation.width, area->allocation.height);
-
-	pango_layout_set_text(playout, txt, -1);
-	pango_layout_set_attributes(playout, attr);
-	pango_layout_get_pixel_size(playout, &w, &h);
-	gtk_widget_set_usize(area,w+20, (0x10*h)+10);
 
 // draw memory content here
 	addr=address;
-	for (i=0,x=10,y=5; i<0x10; i++,y+=h) {
+	for (i=0; i<0x10; i++) {
 		ptxt = txt;
 		sprintf(ptxt, "%04X:%04X | ", (addr>>16)&0xFFFF, addr&0xFFFF); ptxt+=12;
 		switch(packmode) {
@@ -304,11 +278,6 @@ static void refresh() {
 		mem8 +=16;
 		*(ptxt)=0;
 
-		pango_layout_set_text(playout, txt, -1);
-		pango_layout_set_attributes(playout, attr);
-		gdk_draw_layout(area->window, GC, x, y, playout);
+		dTools_display_draw_text(&dsp, 0, i, txt);
 	}
-	
-// done
-	g_object_unref(playout);
 }
