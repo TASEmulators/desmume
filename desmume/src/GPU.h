@@ -305,6 +305,13 @@ typedef union windowcnt_t
 		unsigned char low ;
 		unsigned char high ;
 	} bytes ;
+	struct
+	{
+		unsigned win0_en:5;
+		unsigned :3;
+		unsigned win1_en:5;
+		unsigned :3;
+	} windows ;
 	unsigned short val ;
 } windowcnt_t ;
 
