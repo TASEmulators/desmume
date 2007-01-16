@@ -77,8 +77,8 @@ static void wtools_2_update() {
 				m16 = *mem16; *mem16 = MMU_readHWord(cpu, addr);
 				if (m16 != *mem16) {
 					sprintf(txt, " %04X", *mem16);
-					dTools_display_clear_char(&dsp, 12+6*j, i, 6);
-					dTools_display_draw_text(&dsp, 12+6*j, i, txt);
+					dTools_display_clear_char(&dsp, 12+3*j, i, 6);
+					dTools_display_draw_text(&dsp, 12+3*j, i, txt);
 				}
 			}
 		}
@@ -89,8 +89,8 @@ static void wtools_2_update() {
 				m32 = *mem32; *mem32 = MMU_readWord(cpu, addr);
 				if (m32 != *mem32) {
 					sprintf(txt, "  %08X", *mem32);
-					dTools_display_clear_char(&dsp, 12+12*j, i, 12);
-					dTools_display_draw_text(&dsp, 12+6*j, i, txt);
+					dTools_display_clear_char(&dsp, 12+3*j, i, 12);
+					dTools_display_draw_text(&dsp, 12+3*j, i, txt);
 				}
 			}
 		}
