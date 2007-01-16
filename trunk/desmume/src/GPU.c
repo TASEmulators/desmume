@@ -591,7 +591,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 				))
 		{
 			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_INCNT.windows.win0_en && (1<<bgnum);
+			*draw = gpu->WINDOW_INCNT.windows.win0_en & (1<<bgnum);
 			*effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable ;
 			return TRUE ;
 		}
@@ -604,7 +604,7 @@ INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL 
 			))
 		{
 			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_INCNT.windows.win1_en && (1<<bgnum);
+			*draw = gpu->WINDOW_INCNT.windows.win1_en & (1<<bgnum);
 			*effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable ;
 			return TRUE ;
 		}
@@ -629,7 +629,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 			))
 		{
 			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_OUTCNT.windows.win0_en && (1<<bgnum);
+			*draw = gpu->WINDOW_OUTCNT.windows.win0_en & (1<<bgnum);
 			*effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
 			return TRUE ;
 		}
@@ -642,7 +642,7 @@ INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL
 			))
 		{
 			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_OUTCNT.windows.win1_en && (1<<bgnum);
+			*draw = gpu->WINDOW_OUTCNT.windows.win1_en & (1<<bgnum);
 			*effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable ;
 			return TRUE ;
 		}
