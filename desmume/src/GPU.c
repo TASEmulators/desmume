@@ -1178,20 +1178,23 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 }
 
 #define nbShow 128
-#define RENDERS_A(a) \
+#define RENDER_BMP(a) \
+/* color = 0 then backdrop */ \
 	if((a)&&(prioTab[sprX]>=prio)) \
 	{ \
 		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,sprX,l); \
 		prioTab[sprX] = prio; \
 	}
-#define RENDERS_B(c) \
+#define RENDER_256(c) \
+/* color = 0 then backdrop */ \
 	if((c)&&(prioTab[sprX]>=prio)) \
 	{ \
 		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),sprX,l); \
 		prioTab[sprX] = prio; \
 	}
-#define RENDERS_C(c,d) \
-	if((c)&&(prioTab[sprX]>=prio)) \
+#define RENDER_16(c,d) \
+/* color = 0 then backdrop */ \
+	if((c)&&(prioTab[sprX d]>=prio)) \
 	{ \
 		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),(sprX d),l); \
 		prioTab[sprX d] = prio; \
@@ -1215,7 +1218,8 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 prio;
 		u8 * src;
 		u8 * pal;
-		u16 j;
+		u16 i,j;
+		int xdir;
 
 		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
 		if (spriteInfo->RotScale & 1) {
@@ -1259,40 +1263,38 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		if (spriteInfo->VFlip)                  /* if Vflip, we start from the other side with the sprite */
 			y = sprSize.y - y -1;
 		
-		
+		if (spriteInfo->HFlip) {
+			// start at the end of the sprite
+			// 256 colors or BMP
+			x = sprSize.x -x - 1;
+			xdir  = -1;
+		} else {
+			x = 0;
+			xdir  = 1;
+		}
+	
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
-			u16 i;
-												/* sprMemory + sprBlock + 16Bytes per line (8pixels a 2 bytes) */
+			/* sprMemory + sprBlock + 16Bytes per line (8pixels a 2 bytes) */
 			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBlock);
 	
-			if (spriteInfo->HFlip)              /* if h-flip */
+	
+			for(i = 0; i < lg; ++i, ++sprX, x+=xdir)
 			{
-				x = sprSize.x -x - 1;           /* start at the end of the sprite */
-				for(i = 0; i < lg; ++i, --x, ++sprX)
-				{
-					u8 c = src[x];              /* color of the sprites pixel */
-					// What's the point in shifting down by 15 when c is 8-bits?
-					// RENDERS_A(c>>15)
-												/* if i understand it correct, and it fixes some sprite problems in chameleon shot */
-												/* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
-												/* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-					RENDERS_A(c) ;              /* FIXME: apply additional alpha */
-				}
-				continue;
+	//			u16 c = T1ReadWord(src, x << 1);
+				u8 c = src[x];              /* color of the sprites pixel */
+				// What's the point in shifting down by 15 when c is 8-bits?
+				// RENDER_BMP(c>>15)
+/* if i understand it correct, and it fixes some sprite problems in chameleon shot */
+/* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
+/* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
+				RENDER_BMP(c) ;              /* FIXME: apply additional alpha */
 			}
-			for(i = 0; i < lg; ++i, ++x, ++sprX)/* otherwise we start from the beginning of the sprite */
-			{
-				u16 c = T1ReadWord(src, x << 1);/* CHECKME: do we need the endian conversation? if yes, change the one above also */
-				// RENDERS_A(c>>15)
-				RENDERS_A(c) ;
-			}
-			continue;                           /* sprite drawing done, do next */
+			continue;
 		}
-		
+			
 		if(spriteInfo->Depth)                   /* 256 colors */
 		{
-			u16 i;
 			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
 			if (gpu->dispCnt.bits.ExOBJPalette_Enable)
@@ -1300,74 +1302,54 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-			if (spriteInfo->HFlip)
-			{
-				x = sprSize.x -x - 1;
-				for(i = 0; i < lg; ++i, --x, ++sprX)
-				{
-					u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-					RENDERS_B(c)
-				}
-				continue;
-			}
-			for(i = 0; i < lg; ++i, ++x, ++sprX)
+			for(i = 0; i < lg; ++i,++sprX, x+= xdir)
 			{
 				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-				RENDERS_B(c)
+				RENDER_256(c)
 			}
 			continue;
 		}
-						/* 16 colors */
+	
+		/* 16 colors */
 		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-			
+		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;	
+
+
+		if (spriteInfo->HFlip) x++;
 		if(x&1)
 		{
-			if (spriteInfo->HFlip)
-			{
-				s32 x1 = ((sprSize.x-x)>>1);
-				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c&0xF),)
-				x1 = ((sprSize.x-x-lg)>>1);
-				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c&0xF),+lg-1)
-			} else {
-				s32 x1 = (x>>1);
-				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c>>4),)
-				x1 = ((x+lg-1)>>1);
-				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c>>4),+lg-1)
-		
-			}
-			++sprX;
-			++x;
+			s32 x1 = (x>>1);
+			u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+			RENDER_16((c>>4),)
+			x1 = ((x+lg-1)>>1);
+			c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+			RENDER_16((c>>4),+lg-1)
 		}
+		if (spriteInfo->HFlip) x--;
+
+		++sprX;
 		lg >>= 1;
 		x >>= 1;
-	
-		if (spriteInfo->HFlip)
-		{
-			u16 i;
-			x = (sprSize.x>>1) - x -1;
-			for(i = 0; i < lg; ++i, --x)
+		// 16 colors
+
+		if (spriteInfo->HFlip) {
+			for(i = 0; i < lg; ++i, x+=xdir)
 			{
 				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDERS_C((c>>4),)
+				RENDER_16((c>>4),)
 				++sprX;
-				RENDERS_C((c&0xF),)
+				RENDER_16((c&0xF),)
 				++sprX;
 			}
-			continue;
-		}
-
-		for(j = 0; j < lg; ++j, ++x)
-		{
-			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];	
-			RENDERS_C((c&0xF),)
-			++sprX;
-			RENDERS_C((c>>4),)
-			++sprX;
+		} else {
+			for(i = 0; i < lg; ++i, x+=xdir)
+			{
+				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				RENDER_16((c&0xF),)
+				++sprX;
+				RENDER_16((c>>4),)
+				++sprX;
+			}
 		}
 	}
 }
@@ -1388,7 +1370,8 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 prio;
 		u8 * src;
 		u8 * pal;
-		u16 j;
+		u16 i, j;
+		int xdir, block;
 	
 		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
 		if (spriteInfo->RotScale & 1) {
@@ -1429,111 +1412,85 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		if (spriteInfo->VFlip) 
 			y = sprSize.y - y -1;
 		
-		
-		if (spriteInfo->Mode == 3)
+		if (spriteInfo->HFlip) {
+			// start at the end of the sprite
+			// 256 colors or BMP
+			x = sprSize.x -x - 1;
+			xdir  = -1;
+		} else {
+			x = 0;
+			xdir  = 1;
+		}
+	
+		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
-			u16 i;
 			src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
 	
-			if (spriteInfo->HFlip)
+	
+			for(i = 0; i < lg; ++i, ++sprX, x+=xdir)
 			{
-				x = sprSize.x -x - 1;
-				for(i = 0; i < lg; ++i, --x, ++sprX)
-				{
-					u8 c = src[x<<1];
-					// What's the point in shifting down by 15 when c is 8-bits?
-					RENDERS_A(c>>15)
-				}
-				continue;
-			}
-			for(i = 0; i < lg; ++i, ++x, ++sprX)
-			{
-				u16 c = T1ReadWord(src, x << 1);
-				RENDERS_A(c>>15)
+	//			u16 c = T1ReadWord(src, x << 1);
+				u8 c = src[x<<1];
+				// What's the point in shifting down by 15 when c is 8-bits?
+				RENDER_BMP(c>>15)
 			}
 			continue;
 		}
-		
-		if(spriteInfo->Depth)
+			
+		if(spriteInfo->Depth)                   /* 256 colors */
 		{
-			u16 i;
 			src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
-		
-			if (spriteInfo->HFlip)
-			{
-				x = sprSize.x -x - 1;
-				for(i = 0; i < lg; ++i, --x, ++sprX)
-				{
-					u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-					RENDERS_B(c)
-				}
-				continue;
-			}
-			for(i = 0; i < lg; ++i, ++x, ++sprX)
+	
+			for(i = 0; i < lg; ++i,++sprX, x+= xdir)
 			{
 				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-				RENDERS_B(c)
+				RENDER_256(c)
 			}
 			continue;
 		}
+	
+		/* 16 colors */
 		src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
-			
+
+		if (spriteInfo->HFlip) x++;
 		if(x&1)
 		{
-			if (spriteInfo->HFlip)
-			{
-				s32 x1 = ((sprSize.x-x)>>1);
-				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c&0xF),)
-				x1 = ((sprSize.x-x-lg)>>1);
-				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c&0xF),+lg-1)
-			} else {
-				s32 x1 = (x>>1);
-				u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c>>4),)
-				x1 = ((x+lg-1)>>1);
-				c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-				RENDERS_C((c>>4),+lg-1)
-		
-			}
-			++sprX;
-			++x;
+			s32 x1 = (x>>1);
+			u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+			RENDER_16((c>>4),)
+			x1 = ((x+lg-1)>>1);
+			c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+			RENDER_16((c>>4),+lg-1)
 		}
+		if (spriteInfo->HFlip) x--;
+
+		++sprX;
 		lg >>= 1;
 		x >>= 1;
-	
-		if (spriteInfo->HFlip)
-		{
-			u16 i;
-			x = (sprSize.x>>1) - x -1;
-			for(i = 0; i < lg; ++i, --x)
+		// 16 colors
+
+		if (spriteInfo->HFlip) {
+			for(i = 0; i < lg; ++i, x+=xdir)
 			{
 				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDERS_C((c>>4),)
+				RENDER_16((c>>4),)
 				++sprX;
-				RENDERS_C((c&0xF),)
+				RENDER_16((c&0xF),)
 				++sprX;
 			}
-			continue;
-		}
-
-		for(j = 0; j < lg; ++j, ++x)
-		{
-			u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];	
-			RENDERS_C((c&0xF),)
-			++sprX;
-			RENDERS_C((c>>4),)
-			++sprX;
+		} else {
+			for(i = 0; i < lg; ++i, x+=xdir)
+			{
+				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				RENDER_16((c&0xF),)
+				++sprX;
+				RENDER_16((c>>4),)
+				++sprX;
+			}
 		}
 	}
-
-
-
-
-
 }
 
 void Screen_Init(void) {
