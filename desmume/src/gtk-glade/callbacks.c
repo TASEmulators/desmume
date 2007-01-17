@@ -182,7 +182,7 @@ void  on_size3x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(3)
 
 
 /* MENU CONFIG ***** ***** ***** ***** */
-gint Keypad_Temp[DESMUME_NB_KEYS];
+u16 Keypad_Temp[NB_KEYS];
 
 void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data) {
 	edit_controls();

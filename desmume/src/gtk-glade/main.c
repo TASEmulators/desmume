@@ -60,68 +60,7 @@ void notify_Tools() {
 
 
 /* ***** ***** CONFIG FILE ***** ***** */
-
-gint Keypad_Config[DESMUME_NB_KEYS];
-
-const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
-  { 1,  // A
-    0,  // B
-    5,  // select
-    8,  // start
-    20, // Right -- Start cheating abit...
-    21, // Left
-    22, // Up
-    23, // Down  -- End of cheating.
-    7,  // R
-    6,  // L
-    4,  // X
-    3,  // Y
-    -1, // DEBUG
-    -1  // BOOST
-  };
-
-const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
-{
-	"KEY_A",
-	"KEY_B",
-	"KEY_SELECT",
-	"KEY_START",
-	"KEY_RIGHT",
-	"KEY_LEFT",
-	"KEY_UP",
-	"KEY_DOWN",
-	"KEY_R",
-	"KEY_L",
-	"KEY_X",
-	"KEY_Y",
-	"KEY_DEBUG",
-	"KEY_BOOST"
-};
-
-const gint Default_Keypad_Config[DESMUME_NB_KEYS] =
-{
-	GDK_b,
-	GDK_a,
-	GDK_BackSpace,
-	GDK_Return,
-	GDK_Right,
-	GDK_Left,
-	GDK_Up,
-	GDK_Down,
-	GDK_KP_Decimal,
-	GDK_KP_0,
-	GDK_x,
-	GDK_y,
-	GDK_p,
-	GDK_o
-};
-
 char * CONFIG_FILE;
-
-void inline Load_DefaultConfig()
-{
-	memcpy(Keypad_Config, Default_Keypad_Config, sizeof(Keypad_Config));
-}
 
 int Read_ConfigFile()
 {
@@ -129,23 +68,36 @@ int Read_ConfigFile()
 	GKeyFile * keyfile = g_key_file_new();
 	GError * error = NULL;
 	
-	Load_DefaultConfig();
+	load_default_config();
 	
 	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
 
 	const char *c;
-		
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
+
+	/* Load keypad keys */
+	for(i = 0; i < NB_KEYS; i++)
 	{
-		tmp = g_key_file_get_integer(keyfile, "KEYS", Ini_Keypad_Values[i], &error);
+		tmp = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
 		if (error != NULL) {
-			g_error_free(error);
-			error = NULL;
+                  g_error_free(error);
+                  error = NULL;
 		} else {
-			Keypad_Config[i] = g_key_file_get_integer(keyfile, "KEYS", Ini_Keypad_Values[i], &error);
+                  keyboard_cfg[i] = tmp;
 		}
 	}
 		
+	/* Load joypad keys */
+	for(i = 0; i < NB_KEYS; i++)
+	{
+		tmp = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
+		if (error != NULL) {
+                  g_error_free(error);
+                  error = NULL;
+		} else {
+                  joypad_cfg[i] = tmp;
+		}
+	}
+
 	g_key_file_free(keyfile);
 		
 	return 0;
@@ -158,9 +110,10 @@ int Write_ConfigFile()
 	
 	keyfile = g_key_file_new();
 	
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
+	for(i = 0; i < NB_KEYS; i++)
 	{
-		g_key_file_set_integer(keyfile, "KEYS", Ini_Keypad_Values[i], Keypad_Config[i]);
+		g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
+		g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
 	}
 	
 	g_file_set_contents(CONFIG_FILE, g_key_file_to_data(keyfile, 0, 0), -1, 0);
@@ -204,7 +157,7 @@ int main(int argc, char *argv[]) {
           }
 	desmume_init();
         /* Initialize joysticks */
-        if(!init_joy(Default_Joypad_Config)) return 1;
+        if(!init_joy()) return 1;
 
 	CONFIG_FILE = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
 	Read_ConfigFile();

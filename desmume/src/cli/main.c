@@ -25,21 +25,22 @@ SoundInterface_struct *SNDCoreList[] = {
   NULL
 };
 
-const u16 Default_Joypad_Config[NB_KEYS] =
-  { 1,  // A
-    0,  // B
-    5,  // select
-    8,  // start
-    20, // Right -- Start cheating abit...
-    21, // Left
-    22, // Up
-    23, // Down  -- End of cheating.
-    7,  // R
-    6,  // L
-    4,  // X
-    3,  // Y
-    -1, // BOOST
-    -1  // DEBUG
+/* Our keyboard config is different because of the directional keys */
+const u16 cli_kb_cfg[NB_KEYS] =
+  { SDLK_c,         // A
+    SDLK_x,         // B
+    SDLK_BACKSPACE, // select
+    SDLK_RETURN,    // start
+    SDLK_RIGHT,     // Right
+    SDLK_LEFT,      // Left
+    SDLK_UP,        // Up
+    SDLK_DOWN,      // Down
+    SDLK_e,         // R
+    SDLK_w,         // L
+    SDLK_d,         // X
+    SDLK_s,         // Y
+    SDLK_p,         // DEBUG
+    SDLK_o          // BOOST
   };
 
 int Draw() {
@@ -92,7 +93,9 @@ int main(int argc, char ** argv) {
   SDL_WM_SetCaption("Desmume SDL", NULL);
 
   /* Initialize joysticks */
-  if(!init_joy(Default_Joypad_Config)) return 1;
+  if(!init_joy()) return 1;
+  /* Load our own keyboard configuration */
+  set_kb_keys(cli_kb_cfg);
 
   surface = SDL_SetVideoMode(256, 384, 32, SDL_SWSURFACE);
 

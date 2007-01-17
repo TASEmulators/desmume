@@ -32,13 +32,34 @@
 
 #include "types.h"
 
-#define NB_KEYS		14
-
 #define ADD_KEY(keypad,key) ( (keypad) |= (key) )
 #define RM_KEY(keypad,key) ( (keypad) &= ~(key) )
 #define KEYMASK_(k)	(1 << k)
 
-u16 joypadCfg[NB_KEYS];
+#define NB_KEYS		14
+#define KEY_NONE		0
+#define KEY_A			1
+#define KEY_B			2
+#define KEY_SELECT		3
+#define KEY_START		4
+#define KEY_RIGHT		5
+#define KEY_LEFT		6
+#define KEY_UP			7
+#define KEY_DOWN		8
+#define KEY_R			9
+#define KEY_L			10
+#define KEY_X			11
+#define KEY_Y			12
+#define KEY_DEBUG		13
+#define KEY_BOOST		14
+
+/* Keypad key names */
+const char *key_names[NB_KEYS];
+/* Current keyboard configuration */
+u16 keyboard_cfg[NB_KEYS];
+/* Current joypad configuration */
+u16 joypad_cfg[NB_KEYS];
+/* Number of detected joypads */
 u16 nbr_joy;
 
 #ifndef GTK_UI
@@ -57,11 +78,16 @@ BOOL sdl_quit;
 void set_mouse_coord(signed long x,signed long y);
 #endif // !GTK_UI
 
-BOOL init_joy(u16 joyCfg[]);
+void load_default_config();
+BOOL init_joy();
 void uninit_joy();
+void set_joy_keys(u16 joyCfg[]);
+void set_kb_keys(u16 kbCfg[]);
 u16 get_set_joy_key(int index);
 void update_keypad(u16 keys);
 u16 get_keypad();
+u16 inline lookup_key (u16 keyval);
+u16 inline lookup_joy_key (u16 keyval);
 u16 process_ctrls_events(u16 oldkeypad);
 
 #endif /* CTRLSSDL_H */

@@ -27,25 +27,6 @@ static GtkActionEntry action_entries[] = {
 
 GtkActionGroup * action_group;
 
-static gint Keypad_Config[DESMUME_NB_KEYS];
-
-const char *Ini_Keypad_Values[DESMUME_NB_KEYS] =
-{
-	"KEY_A",
-	"KEY_B",
-	"KEY_SELECT",
-	"KEY_START",
-	"KEY_RIGHT",
-	"KEY_LEFT",
-	"KEY_UP",
-	"KEY_DOWN",
-	"KEY_R",
-	"KEY_L",
-	"KEY_X",
-	"KEY_Y",
-	"KEY_DEBUG",
-};
-
 char * CONFIG_FILE;
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -55,6 +36,8 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
+u16 Keypad_Temp[NB_KEYS];
+
 int Write_ConfigFile()
 {
 	int i;
@@ -62,9 +45,10 @@ int Write_ConfigFile()
 	
 	keyfile = g_key_file_new();
 	
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
+	for(i = 0; i < NB_KEYS; i++)
 	{
-		g_key_file_set_integer(keyfile, "KEYS", Ini_Keypad_Values[i], Keypad_Config[i]);
+		g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
+		g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
 	}
 	
 // 	if(FirmwareFile[0])
@@ -80,73 +64,46 @@ int Write_ConfigFile()
 	return 0;
 }
 
-void Load_DefaultConfig();
 int Read_ConfigFile()
 {
 	int i, tmp;
 	GKeyFile * keyfile = g_key_file_new();
 	GError * error = NULL;
 	
-	Load_DefaultConfig();
+	load_default_config();
 	
 	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
 
 	const char *c;
-		
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
+	
+	/* Load keyboard keys */
+	for(i = 0; i < NB_KEYS; i++)
 	{
-		tmp = g_key_file_get_integer(keyfile, "KEYS", Ini_Keypad_Values[i], &error);
+		tmp = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
 		if (error != NULL) {
-			g_error_free(error);
-			error = NULL;
+                  g_error_free(error);
+                  error = NULL;
 		} else {
-			Keypad_Config[i] = g_key_file_get_integer(keyfile, "KEYS", Ini_Keypad_Values[i], &error);
+                  keyboard_cfg[i] = tmp;
 		}
 	}
 		
+	/* Load joystick keys */
+	for(i = 0; i < NB_KEYS; i++)
+	{
+		tmp = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
+		if (error != NULL) {
+                  g_error_free(error);
+                  error = NULL;
+		} else {
+                  joypad_cfg[i] = tmp;
+		}
+	}
+
 	g_key_file_free(keyfile);
 		
 	return 0;
 }
-
-const gint Default_Keypad_Config[DESMUME_NB_KEYS] =
-{
-	97, // a
-	98, // b
-	65288, // backspace
-	65293, // enter
-	65363, // directional arrows
-	65361,
-	65362,
-	65364,
-	65454, // numeric .
-	65456, // numeric 0
-	120, // x
-	121, // y
-	112
-};
-
-const u16 Default_Joypad_Config[DESMUME_NB_KEYS] =
-  { 1,  // A
-    0,  // B
-    5,  // select
-    8,  // start
-    20, // Right -- Start cheating abit...
-    21, // Left
-    22, // Up
-    23, // Down  -- End of cheating.
-    7,  // R
-    6,  // L
-    4,  // X
-    3,  // Y
-    -1  // DEBUG
-  };
-
-void Load_DefaultConfig()
-{
-	memcpy(Keypad_Config, Default_Keypad_Config, sizeof(Keypad_Config));
-}
-
 
 /************************ GTK *******************************/
 
@@ -407,24 +364,22 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 	return TRUE;
 }
 
-static u16 Cur_Keypad = 0x00FFF;
+static u16 Cur_Keypad = 0;
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 {
 	int i;
 	u16 Key = 0;
 	
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
-		if(e->keyval == Keypad_Config[i]) break;
+	for(i = 0; i < NB_KEYS; i++)
+		if(e->keyval == keyboard_cfg[i]) break;
 	
-	if(i < DESMUME_NB_KEYS)
+	if(i < NB_KEYS)
 	{
-		Key = DESMUME_KEYMASK_(i);
-		Cur_Keypad &= ~Key;
-		if(desmume_running()) update_keypad(~Cur_Keypad);
+		ADD_KEY( Cur_Keypad, KEYMASK_(i) );
+		if(desmume_running()) update_keypad(Cur_Keypad);
 	}
 	
-	//fprintf(stderr,"P:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);
 	return 1;
 }
 static gint Key_Release(GtkWidget *w, GdkEventKey *e)
@@ -432,38 +387,19 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 	int i;
 	u16 Key = 0;
 	
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
-		if(e->keyval == Keypad_Config[i]) break;
+	for(i = 0; i < NB_KEYS; i++)
+		if(e->keyval == keyboard_cfg[i]) break;
 	
-	if(i < DESMUME_NB_KEYS)
+	if(i < NB_KEYS)
 	{
-		Key = DESMUME_KEYMASK_(i);
-		Cur_Keypad |= Key;
-		if(desmume_running()) update_keypad(~Cur_Keypad);
+		RM_KEY( Cur_Keypad, KEYMASK_(i) );
+		if(desmume_running()) update_keypad(Cur_Keypad);
 	}
 	
-	//fprintf(stderr,"R:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);
 	return 1;
 }
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
-
-const char *Keys_Name[DESMUME_NB_KEYS] =
-{
-	"A",
-	"B",
-	"Select",
-	"Start",
-	"Right",
-	"Left",
-	"Up",
-	"Down",
-	"R",
-	"L",
-	"X",
-	"Y",
-	"Debug"
-};
 
 GtkWidget *mkLabel;
 gint Modify_Key_Chosen = 0;
@@ -476,8 +412,6 @@ void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
 	gtk_label_set(GTK_LABEL(mkLabel), YouPressed);
 }
 
-gint Keypad_Temp[DESMUME_NB_KEYS];
-
 void Modify_Key(GtkWidget* widget, gpointer data)
 {
 	gint Key = GPOINTER_TO_INT(data);
@@ -486,7 +420,7 @@ void Modify_Key(GtkWidget* widget, gpointer data)
 	
 	GtkWidget *mkDialog;
 	
-	sprintf(Title, "Press \"%s\" key ...\n", Keys_Name[Key]);
+	sprintf(Title, "Press \"%s\" key ...\n", key_names[Key]);
 	mkDialog = gtk_dialog_new_with_buttons(Title,
 		GTK_WINDOW(pWindow),
 		GTK_DIALOG_MODAL,
@@ -506,7 +440,7 @@ void Modify_Key(GtkWidget* widget, gpointer data)
 		case GTK_RESPONSE_OK:
 			
 			Keypad_Temp[Key] = Modify_Key_Chosen;
-			sprintf(Key_Label, "%s (%d)", Keys_Name[Key], Keypad_Temp[Key]);
+			sprintf(Key_Label, "%s (%d)", key_names[Key], Keypad_Temp[Key]);
 			gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
 			
 			break;
@@ -527,7 +461,7 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 	GtkWidget *ecDialog;
 	GtkWidget *ecKey;
 	
-	memcpy(&Keypad_Temp, &Keypad_Config, sizeof(Keypad_Config));
+	memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
 	
 	ecDialog = gtk_dialog_new_with_buttons("Edit controls",
 													 GTK_WINDOW(pWindow),
@@ -537,9 +471,9 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 													 NULL);
 	
 	
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
+	for(i = 0; i < NB_KEYS; i++)
 	{
-		sprintf(Key_Label, "%s (%d)", Keys_Name[i], Keypad_Temp[i]);
+		sprintf(Key_Label, "%s (%d)", key_names[i], Keypad_Temp[i]);
 		ecKey = gtk_button_new_with_label(Key_Label);
 		g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);	
@@ -550,7 +484,7 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 	switch (gtk_dialog_run(GTK_DIALOG(ecDialog)))
 	{
 		case GTK_RESPONSE_OK:
-			memcpy(&Keypad_Config, &Keypad_Temp, sizeof(Keypad_Config));
+			memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
 		case GTK_RESPONSE_CANCEL:
 		case GTK_RESPONSE_NONE:
 			break;
@@ -1017,7 +951,7 @@ int main (int argc, char *argv[])
           }
 	desmume_init();
         /* Initialize joysticks */
-        if(!init_joy(Default_Joypad_Config)) return 1;
+        if(!init_joy()) return 1;
 	
  	dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
 	for(i=0; i<dTools_list_size; i++) dTools_running[i]=FALSE;

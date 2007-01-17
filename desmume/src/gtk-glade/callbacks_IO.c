@@ -29,41 +29,23 @@ int BoostFS=20;
 int saveFS;
 
 /* ***** ***** INPUT BUTTONS / KEYBOARD ***** ***** */
-
-
-
-u16 inline lookup_key (guint keyval) {
-	int i;
-	u16 Key = 0;
-	for(i = 0; i < DESMUME_NB_KEYS; i++)
-		if(keyval == Keypad_Config[i]) break;
-	if(i < DESMUME_NB_KEYS)	
-		Key = DESMUME_KEYMASK_(i);
-	//fprintf(stderr,"K:%d(%d)->%X => [%X]\n", e->keyval, e->hardware_keycode, Key, Cur_Keypad);
-	return Key;
-}
-
 gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
 	u16 Key = lookup_key(event->keyval);
-	if (event->keyval == Keypad_Config[DESMUME_KEY_BOOST-1]) {
+	if (event->keyval == keyboard_cfg[KEY_BOOST-1]) {
 		Boost != Boost;
 		saveFS=Frameskip;
 		if (Boost) Frameskip = BoostFS;
 		else Frameskip = saveFS;
 	}
-	else if (Key != 0) {
-		Cur_Keypad |= Key;
-		if(desmume_running()) update_keypad(Cur_Keypad);
-	}
+        ADD_KEY( Cur_Keypad, Key );
+        if(desmume_running()) update_keypad(Cur_Keypad);
 	return 1;
 }
 
 gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
 	u16 Key = lookup_key(event->keyval);
-	if (Key != 0) {
-		Cur_Keypad &= ~Key;
-		if(desmume_running()) update_keypad(Cur_Keypad);
-	}	
+        RM_KEY( Cur_Keypad, Key );
+        if(desmume_running()) update_keypad(Cur_Keypad);
 	return 1;
 }
 
@@ -249,24 +231,16 @@ gboolean  on_wDraw_Sub_motion_notify_event  (GtkWidget *widget, GdkEventMotion  
 
 
 /* ***** ***** KEYBOARD CONFIG / KEY DEFINITION ***** ***** */
-
-
-const char * DESMUME_KEY_NAMES[DESMUME_NB_KEYS]={
-	"A", "B", 
-	"Select", "Start",
-	"Right", "Left", "Up", "Down",
-	"R", "L", "X", "Y", "DEBUG", "Boost"
-};
-gint Keypad_Temp[DESMUME_NB_KEYS];
+u16 Keypad_Temp[NB_KEYS];
 guint temp_Key=0;
 
 void init_labels() {
 	int i;
 	char text[50], bname[20];
 	GtkButton *b;
-	for (i=0; i<DESMUME_NB_KEYS; i++) {
-		sprintf(text,"%s : %s\0\0",DESMUME_KEY_NAMES[i],KEYNAME(Keypad_Config[i]));
-		sprintf(bname,"button_%s\0\0",DESMUME_KEY_NAMES[i]);
+	for (i=0; i<NB_KEYS; i++) {
+		sprintf(text,"%s : %s\0\0",key_names[i],KEYNAME(keyboard_cfg[i]));
+		sprintf(bname,"button_%s\0\0",key_names[i]);
 		b = (GtkButton*)glade_xml_get_widget(xml, bname);
 		gtk_button_set_label(b,text);
 	}
@@ -279,20 +253,20 @@ void init_joy_labels() {
   GtkButton *b;
   for (i=0; i<4; i++) {
     /* Key not configured */
-    if( joypadCfg[i] == (u16)(-1) ) continue;
+    if( joypad_cfg[i] == (u16)(-1) ) continue;
 
-    sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[i],joypadCfg[i]);
-    sprintf(bname,"button_joy_%s\0\0",DESMUME_KEY_NAMES[i]);
+    sprintf(text,"%s : %d\0\0",key_names[i],joypad_cfg[i]);
+    sprintf(bname,"button_joy_%s\0\0",key_names[i]);
     b = (GtkButton*)glade_xml_get_widget(xml, bname);
     gtk_button_set_label(b,text);
   }
   /* Skipping Axis */
-  for (i=8; i<DESMUME_NB_KEYS; i++) {
+  for (i=8; i<NB_KEYS; i++) {
     /* Key not configured */
-    if( joypadCfg[i] == (u16)(-1) ) continue;
+    if( joypad_cfg[i] == (u16)(-1) ) continue;
 
-    sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[i],joypadCfg[i]);
-    sprintf(bname,"button_joy_%s\0\0",DESMUME_KEY_NAMES[i]);
+    sprintf(text,"%s : %d\0\0",key_names[i],joypad_cfg[i]);
+    sprintf(bname,"button_joy_%s\0\0",key_names[i]);
     b = (GtkButton*)glade_xml_get_widget(xml, bname);
     gtk_button_set_label(b,text);
   }
@@ -300,7 +274,7 @@ void init_joy_labels() {
 
 void edit_controls() {
 	GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wKeybConfDlg");
-	memcpy(&Keypad_Temp, &Keypad_Config, sizeof(Keypad_Config));
+	memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
 	/* we change the labels so we know keyb def */
 	init_labels();
 	gtk_widget_show((GtkWidget*)dlg);
@@ -309,7 +283,7 @@ void edit_controls() {
 void  on_wKeybConfDlg_response (GtkDialog *dialog, gint arg1, gpointer user_data) {
 	/* overwrite keyb def if user selected ok */
 	if (arg1 == GTK_RESPONSE_OK)
-		memcpy(&Keypad_Config, &Keypad_Temp, sizeof(Keypad_Config));
+		memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
 	gtk_widget_hide((GtkWidget*)dialog);
 }
 
@@ -334,7 +308,7 @@ void ask(GtkButton*b, int key) {
 	{
 		case GTK_RESPONSE_OK:
 			Keypad_Temp[key]=temp_Key;
-			sprintf(text,"%s : %s\0\0",DESMUME_KEY_NAMES[key],KEYNAME(temp_Key));
+			sprintf(text,"%s : %s\0\0",key_names[key],KEYNAME(temp_Key));
 			gtk_button_set_label(b,text);
 			break;
 		case GTK_RESPONSE_CANCEL:
@@ -344,23 +318,23 @@ void ask(GtkButton*b, int key) {
 	gtk_widget_hide((GtkWidget*)dlg);
 }
 
-void  on_button_Left_clicked    (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Left); }
-void  on_button_Up_clicked      (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Up); }
-void  on_button_Right_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Right); }
-void  on_button_Down_clicked    (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Down); }
+void  on_button_Left_clicked    (GtkButton *b, gpointer user_data) { ask(b,KEY_LEFT); }
+void  on_button_Up_clicked      (GtkButton *b, gpointer user_data) { ask(b,KEY_UP); }
+void  on_button_Right_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_RIGHT); }
+void  on_button_Down_clicked    (GtkButton *b, gpointer user_data) { ask(b,KEY_DOWN); }
 
-void  on_button_L_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_L); }
-void  on_button_R_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_R); }
+void  on_button_L_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_L); }
+void  on_button_R_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_R); }
 
-void  on_button_Y_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Y); }
-void  on_button_X_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_X); }
-void  on_button_A_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_A); }
-void  on_button_B_clicked       (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_B); }
+void  on_button_Y_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_Y); }
+void  on_button_X_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_X); }
+void  on_button_A_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_A); }
+void  on_button_B_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_B); }
 
-void  on_button_Start_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Start); }
-void  on_button_Select_clicked  (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_Select); }
-void  on_button_Debug_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_DEBUG); }
-void  on_button_Boost_clicked   (GtkButton *b, gpointer user_data) { ask(b,DESMUME_KEY_BOOST); }
+void  on_button_Start_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_START); }
+void  on_button_Select_clicked  (GtkButton *b, gpointer user_data) { ask(b,KEY_SELECT); }
+void  on_button_Debug_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_DEBUG); }
+void  on_button_Boost_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_BOOST); }
 
 /* Joystick configuration / Key definition */
 void ask_joy_key(GtkButton*b, int key)
@@ -374,28 +348,28 @@ void ask_joy_key(GtkButton*b, int key)
   /* Need to force event processing. Otherwise, popup won't show up. */
   while ( gtk_events_pending() ) gtk_main_iteration();
   joykey = get_set_joy_key(key);
-  sprintf(text,"%s : %d\0\0",DESMUME_KEY_NAMES[key],joykey);
+  sprintf(text,"%s : %d\0\0",key_names[key],joykey);
   gtk_button_set_label(b,text);
   gtk_widget_hide((GtkWidget*)dlg);
 }
 
 void on_joy_button_A_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_A); }
+{ ask_joy_key(b,KEY_A); }
 void on_joy_button_B_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_B); }
+{ ask_joy_key(b,KEY_B); }
 void on_joy_button_X_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_X); }
+{ ask_joy_key(b,KEY_X); }
 void on_joy_button_Y_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_Y); }
+{ ask_joy_key(b,KEY_Y); }
 void on_joy_button_L_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_L); }
+{ ask_joy_key(b,KEY_L); }
 void on_joy_button_R_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_R); }
+{ ask_joy_key(b,KEY_R); }
 void on_joy_button_Select_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_Select); }
+{ ask_joy_key(b,KEY_SELECT); }
 void on_joy_button_Start_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_Start); }
+{ ask_joy_key(b,KEY_START); }
 void on_joy_button_Boost_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_BOOST); }
+{ ask_joy_key(b,KEY_BOOST); }
 void on_joy_button_Debug_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,DESMUME_KEY_DEBUG); }
+{ ask_joy_key(b,KEY_DEBUG); }
