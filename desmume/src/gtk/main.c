@@ -368,35 +368,18 @@ static u16 Cur_Keypad = 0;
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 {
-	int i;
-	u16 Key = 0;
-	
-	for(i = 0; i < NB_KEYS; i++)
-		if(e->keyval == keyboard_cfg[i]) break;
-	
-	if(i < NB_KEYS)
-	{
-		ADD_KEY( Cur_Keypad, KEYMASK_(i) );
-		if(desmume_running()) update_keypad(Cur_Keypad);
-	}
-	
-	return 1;
+  u16 Key = lookup_key(e->keyval);
+  ADD_KEY( Cur_Keypad, Key );
+  if(desmume_running()) update_keypad(Cur_Keypad);
+  return 1;
 }
+
 static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 {
-	int i;
-	u16 Key = 0;
-	
-	for(i = 0; i < NB_KEYS; i++)
-		if(e->keyval == keyboard_cfg[i]) break;
-	
-	if(i < NB_KEYS)
-	{
-		RM_KEY( Cur_Keypad, KEYMASK_(i) );
-		if(desmume_running()) update_keypad(Cur_Keypad);
-	}
-	
-	return 1;
+  u16 Key = lookup_key(e->keyval);
+  RM_KEY( Cur_Keypad, Key );
+  if(desmume_running()) update_keypad(Cur_Keypad);
+  return 1;
 }
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
