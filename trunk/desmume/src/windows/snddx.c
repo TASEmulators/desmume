@@ -1,4 +1,4 @@
-/*  Copyright (C) 2005-2006 Theo Berkau
+/*  Copyright (C) 2005-2007 Theo Berkau
 
     This file is part of DeSmuME
 
@@ -16,9 +16,6 @@
     along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
-
-
 
 #include <dsound.h>
 #ifdef __MINGW32__
@@ -64,7 +61,6 @@ static LONG soundvolume;
 static int issoundmuted;
 
 //////////////////////////////////////////////////////////////////////////////
-
 
 int SNDDXInit(int buffersize)
 {
@@ -128,7 +124,8 @@ int SNDDXInit(int buffersize)
    if ((ret = IDirectSound8_CreateSoundBuffer(lpDS8, &dsbdesc, &lpDSB2, NULL)) != DS_OK)
    {
       if (ret == DSERR_CONTROLUNAVAIL ||
-          ret == DSERR_INVALIDCALL)
+          ret == DSERR_INVALIDCALL ||
+          ret == E_FAIL)
       {
          // Try using a software buffer instead
          dsbdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_STICKYFOCUS |
@@ -165,7 +162,6 @@ int SNDDXInit(int buffersize)
 
 //////////////////////////////////////////////////////////////////////////////
 
-
 void SNDDXDeInit()
 {
    DWORD status=0;
@@ -196,7 +192,6 @@ void SNDDXDeInit()
 
 //////////////////////////////////////////////////////////////////////////////
 
-
 void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 {
    LPVOID buffer1;
@@ -223,7 +218,6 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
 //////////////////////////////////////////////////////////////////////////////
 
-
 u32 SNDDXGetAudioSpace()
 {
    DWORD playcursor, writecursor;
@@ -245,7 +239,6 @@ u32 SNDDXGetAudioSpace()
 
 //////////////////////////////////////////////////////////////////////////////
 
-
 void SNDDXMuteAudio()
 {
    issoundmuted = 1;
@@ -253,7 +246,6 @@ void SNDDXMuteAudio()
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
 
 void SNDDXUnMuteAudio()
 {
@@ -263,10 +255,9 @@ void SNDDXUnMuteAudio()
 
 //////////////////////////////////////////////////////////////////////////////
 
-
 void SNDDXSetVolume(int volume)
 {
-	if (!lpDSB2) return ;     /* might happen when changing sounddevice on the fly, caused a gpf */
+   if (!lpDSB2) return ;     /* might happen when changing sounddevice on the fly, caused a gpf */
    soundvolume = (((LONG)volume) - 100) * 100;
    if (!issoundmuted)
       IDirectSoundBuffer8_SetVolume (lpDSB2, soundvolume);
