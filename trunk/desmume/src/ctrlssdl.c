@@ -231,32 +231,33 @@ u16 process_ctrls_events(u16 keypad)
     {
       switch (event.type)
 	{
-          /* Joystick axis motion */
+          /* Joystick axis motion 
+             Note: button constants have a 1bit offset. */
         case SDL_JOYAXISMOTION:
           /* Horizontal */
           if (event.jaxis.axis == 0)
             if( event.jaxis.value == 0 )
               {
-                key = KEYMASK_( 4 ) | KEYMASK_( 5 );
+                key = KEYMASK_( KEY_RIGHT-1 ) | KEYMASK_( KEY_LEFT-1 );
                 RM_KEY( keypad, key );
               }
             else
               {
-                if( event.jaxis.value > 0 ) key = KEYMASK_( 4 );
-                else key = KEYMASK_( 5 );
+                if( event.jaxis.value > 0 ) key = KEYMASK_( KEY_RIGHT-1 );
+                else key = KEYMASK_( KEY_LEFT-1 );
                 ADD_KEY( keypad, key );
               }
           /* Vertical */
           else if (event.jaxis.axis == 1)
             if( event.jaxis.value == 0 )
               {
-                key = KEYMASK_( 6 ) | KEYMASK_( 7 );
+                key = KEYMASK_( KEY_UP-1 ) | KEYMASK_( KEY_DOWN-1 );
                 RM_KEY( keypad, key );
               }
             else
               {
-                if( event.jaxis.value > 0 ) key = KEYMASK_( 7 );
-                else key = KEYMASK_( 6 );
+                if( event.jaxis.value > 0 ) key = KEYMASK_( KEY_DOWN-1 );
+                else key = KEYMASK_( KEY_UP-1 );
                 ADD_KEY( keypad, key );
               }
           break;
