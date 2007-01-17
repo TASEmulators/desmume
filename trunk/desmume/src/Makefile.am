@@ -5,7 +5,6 @@ libdesmume_a_SOURCES = \
         arm_instructions.c arm_instructions.h \
         bios.c bios.h cp15.c cp15.h \
         cflash.c cflash.h fs.h \
-	fs-$(desmume_arch).c \
 	debug.c debug.h \
 	Disassembler.c Disassembler.h \
 	FIFO.c FIFO.h \
@@ -17,3 +16,4 @@ libdesmume_a_SOURCES = \
         saves.c saves.h \
         SPU.c SPU.h \
         thumb_instructions.c thumb_instructions.h
+libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)
