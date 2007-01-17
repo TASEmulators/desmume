@@ -22,12 +22,73 @@
 
 #include "ctrlssdl.h"
 
+/* Keypad key names */
+const char *key_names[NB_KEYS] =
+{
+  "A",
+  "B",
+  "Select",
+  "Start",
+  "Right",
+  "Left",
+  "Up",
+  "Down",
+  "R",
+  "L",
+  "X",
+  "Y",
+  "Debug",
+  "Boost"
+};
+
+/* Default joypad configuration */
+const u16 default_joypad_cfg[NB_KEYS] =
+  { 1,  // A
+    0,  // B
+    5,  // select
+    8,  // start
+    -1, // Right -- Start cheating abit...
+    -1, // Left
+    -1, // Up
+    -1, // Down  -- End of cheating.
+    7,  // R
+    6,  // L
+    4,  // X
+    3,  // Y
+    -1, // DEBUG
+    -1  // BOOST
+  };
+
+const u16 default_keyboard_cfg[NB_KEYS] =
+{
+	97, // a
+	98, // b
+	65288, // backspace
+	65293, // enter
+	65363, // directional arrows
+	65361,
+	65362,
+	65364,
+	65454, // numeric .
+	65456, // numeric 0
+	120, // x
+	121, // y
+	112,
+	113
+};
+
+/* Load default joystick and keyboard configurations */
+void load_default_config()
+{
+  memcpy(keyboard_cfg, default_keyboard_cfg, sizeof(keyboard_cfg));
+  memcpy(joypad_cfg, default_joypad_cfg, sizeof(joypad_cfg));
+}
+
 /* Initialize joysticks */
 BOOL init_joy(u16 joyCfg[]) {
   int i;
 
-  /* Joystick configuration */
-  memcpy(joypadCfg, joyCfg, sizeof(joypadCfg));
+  set_joy_keys(default_joypad_cfg);
 
   if(SDL_InitSubSystem(SDL_INIT_JOYSTICK) == -1)
     {
@@ -48,6 +109,20 @@ BOOL init_joy(u16 joyCfg[]) {
       printf("Trackballs: %d\n", SDL_JoystickNumBalls(joy));
       printf("Hats: %d\n\n", SDL_JoystickNumHats(joy));
     }
+
+  return TRUE;
+}
+
+/* Set all buttons at once */
+void set_joy_keys(u16 joyCfg[])
+{
+  memcpy(joypad_cfg, joyCfg, sizeof(joypad_cfg));
+}
+
+/* Set all buttons at once */
+void set_kb_keys(u16 kbCfg[])
+{
+  memcpy(keyboard_cfg, kbCfg, sizeof(keyboard_cfg));
 }
 
 /* Unload joysticks */
@@ -59,11 +134,22 @@ void uninit_joy()
   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
 
-u16 inline lookup_joykey (u16 keyval) {
+/* Return keypad vector with given key set to 1 */
+u16 inline lookup_joy_key (u16 keyval) {
   int i;
   u16 Key = 0;
   for(i = 0; i < NB_KEYS; i++)
-    if(keyval == joypadCfg[i]) break;
+    if(keyval == joypad_cfg[i]) break;
+  if(i < NB_KEYS) Key = KEYMASK_(i);
+  return Key;
+}
+
+/* Return keypad vector with given key set to 1 */
+u16 inline lookup_key (u16 keyval) {
+  int i;
+  u16 Key = 0;
+  for(i = 0; i < NB_KEYS; i++)
+    if(keyval == keyboard_cfg[i]) break;
   if(i < NB_KEYS) Key = KEYMASK_(i);
   return Key;
 }
@@ -72,7 +158,7 @@ u16 inline lookup_joykey (u16 keyval) {
 u16 get_set_joy_key(int index) {
   BOOL done = FALSE;
   SDL_Event event;
-  u16 key = joypadCfg[index];
+  u16 key = joypad_cfg[index];
 
   /* Enable joystick events if needed */
   if( SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE )
@@ -90,7 +176,7 @@ u16 get_set_joy_key(int index) {
         }
     }
   SDL_JoystickEventState(SDL_IGNORE);
-  joypadCfg[index] = key;
+  joypad_cfg[index] = key;
 
   return key;
 }
@@ -151,26 +237,26 @@ u16 process_ctrls_events(u16 keypad)
           if (event.jaxis.axis == 0)
             if( event.jaxis.value == 0 )
               {
-                key = lookup_joykey( 20 ) | lookup_joykey( 21 );
+                key = KEYMASK_( 4 ) | KEYMASK_( 5 );
                 RM_KEY( keypad, key );
               }
             else
               {
-                if( event.jaxis.value > 0 ) key = lookup_joykey( 20 );
-                else key = lookup_joykey( 21 );
+                if( event.jaxis.value > 0 ) key = KEYMASK_( 4 );
+                else key = KEYMASK_( 5 );
                 ADD_KEY( keypad, key );
               }
           /* Vertical */
           else if (event.jaxis.axis == 1)
             if( event.jaxis.value == 0 )
               {
-                key = lookup_joykey( 22 ) | lookup_joykey( 23 );
+                key = KEYMASK_( 6 ) | KEYMASK_( 7 );
                 RM_KEY( keypad, key );
               }
             else
               {
-                if( event.jaxis.value > 0 ) key = lookup_joykey( 23 );
-                else key = lookup_joykey( 22 );
+                if( event.jaxis.value > 0 ) key = KEYMASK_( 7 );
+                else key = KEYMASK_( 6 );
                 ADD_KEY( keypad, key );
               }
           break;
@@ -178,13 +264,13 @@ u16 process_ctrls_events(u16 keypad)
           /* Joystick button pressed */
           /* FIXME: Add support for BOOST */
         case SDL_JOYBUTTONDOWN:
-          key = lookup_joykey( event.jbutton.button );
+          key = lookup_joy_key( event.jbutton.button );
           ADD_KEY( keypad, key );
           break;
 
           /* Joystick button released */
         case SDL_JOYBUTTONUP:
-          key = lookup_joykey(event.jbutton.button);
+          key = lookup_joy_key(event.jbutton.button);
           RM_KEY( keypad, key );
           break;
 
@@ -192,39 +278,13 @@ u16 process_ctrls_events(u16 keypad)
              mouse, keyboard and quit events. */
 #ifndef GTK_UI
         case SDL_KEYDOWN:
-          switch (event.key.keysym.sym)
-            {
-            case SDLK_UP:       ADD_KEY( keypad, 0x40); break;
-            case SDLK_DOWN:	ADD_KEY( keypad, 0x80); break;
-            case SDLK_RIGHT:	ADD_KEY( keypad, 0x10); break;
-            case SDLK_LEFT:	ADD_KEY( keypad, 0x20); break;
-            case SDLK_c:        ADD_KEY( keypad, 0x1); break;
-            case SDLK_x:        ADD_KEY( keypad, 0x2); break;
-            case SDLK_BACKSPACE:ADD_KEY( keypad, 0x4); break;
-            case SDLK_RETURN:	ADD_KEY( keypad, 0x8); break;
-            case SDLK_e:        ADD_KEY( keypad, 0x100); break; // R
-            case SDLK_w:        ADD_KEY( keypad, 0x200); break; // L
-            case SDLK_d:        ADD_KEY( keypad, 0x400); break; // X
-            case SDLK_s:        ADD_KEY( keypad, 0x800); break; // Y
-            }
+          key = lookup_key(event.key.keysym.sym);
+          ADD_KEY( keypad, key );
           break;
 
         case SDL_KEYUP:
-          switch (event.key.keysym.sym)
-            {
-            case SDLK_UP:       RM_KEY( keypad, 0x40); break;
-            case SDLK_DOWN:	RM_KEY( keypad, 0x80); break;
-            case SDLK_RIGHT:	RM_KEY( keypad, 0x10); break;
-            case SDLK_LEFT:	RM_KEY( keypad, 0x20); break;
-            case SDLK_c:        RM_KEY( keypad, 0x1); break;
-            case SDLK_x:        RM_KEY( keypad, 0x2); break;
-            case SDLK_BACKSPACE:RM_KEY( keypad, 0x4); break;
-            case SDLK_RETURN:	RM_KEY( keypad, 0x8); break;
-            case SDLK_e:        RM_KEY( keypad, 0x100); break; // R
-            case SDLK_w:        RM_KEY( keypad, 0x200); break; // L
-            case SDLK_d:        RM_KEY( keypad, 0x400); break; // X
-            case SDLK_s:        RM_KEY( keypad, 0x800); break; // Y
-            }
+          key = lookup_key(event.key.keysym.sym);
+          RM_KEY( keypad, key );
           break;
 
         case SDL_MOUSEBUTTONDOWN:

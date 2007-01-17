@@ -48,8 +48,7 @@
 #include "desmume.h"
 
 uint Frameskip;
-gint Keypad_Config[DESMUME_NB_KEYS];
-gint Keypad_Temp[DESMUME_NB_KEYS];
+u16 Keypad_Temp[NB_KEYS];
 
 /* main.c */
 GtkWidget * pWindow;
