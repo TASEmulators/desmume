@@ -516,51 +516,64 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 INLINE BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	BOOL win0,win1,winOBJ,outwin;
-	BOOL wwin0, wwin1, wout, windows;
+	BOOL wwin0,wwin1,wwobj;
+	BOOL windows;
 
 	// find who owns the BG
 	windows= gpu->dispCnt.bits.Win0_Enable || gpu->dispCnt.bits.Win1_Enable;
-	win0   = gpu->WINDOW_INCNT.windows.win0_en  & (1<<bgnum);
-	win1   = gpu->WINDOW_INCNT.windows.win1_en  & (1<<bgnum);
-	winOBJ = gpu->WINDOW_OUTCNT.windows.win0_en & (1<<bgnum);
-	outwin = gpu->WINDOW_OUTCNT.windows.win1_en & (1<<bgnum);
-	
-	wwin0 = withinRect(	x,y,
-		gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
-		gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
-	wwin1 = withinRect(	x,y,
-		gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
-		gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
-	wout = !(wwin0 || wwin1);
 
-	// it is in win0, do we display ?
-	// highest priority
-	if (win0 && gpu->dispCnt.bits.Win0_Enable) {
-		*draw   = wwin0;
-		*effect = wwin0 && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
-		return TRUE ;
+	if (windows) {
+		// where is the LAYER[bgnum] enabled ?
+		win0   = gpu->WINDOW_INCNT.windows.win0_en  & (1<<bgnum);
+		win1   = gpu->WINDOW_INCNT.windows.win1_en  & (1<<bgnum);
+		winOBJ = gpu->WINDOW_OUTCNT.windows.win0_en & (1<<bgnum);
+		outwin = gpu->WINDOW_OUTCNT.windows.win1_en & (1<<bgnum);
+
+		// is it inside of of the windows ?
+		wwin0 = withinRect(	x,y,
+			gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+			gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
+		wwin1 = withinRect(	x,y,
+			gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+			gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
+		// wwobj = withinOBJWindow(x,y);
+		wwobj = FALSE;
+
+		// init to false
+		*effect = FALSE;
+
+		// high priority
+		if (gpu->dispCnt.bits.Win0_Enable) {
+			// it is to be drawn :
+			// 1- if layer enabled, 2- if inside of rect of win0
+			win0   = win0   &&  wwin0;
+			// if not inside of rect, then outside of windows
+			outwin = outwin && ~wwin0;
+			// if it is inside then look for effect
+			*effect |= (win0 && gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable);
+		}
+		// mid priority
+		if (gpu->dispCnt.bits.Win1_Enable) {
+			win1   = win1   &&  wwin1;
+			outwin = outwin && ~wwin1;
+			*effect |= (win1 && gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable);
+		}
+		// low priority
+		if (gpu->dispCnt.bits.WinOBJ_Enable) {
+			winOBJ = winOBJ &&  wwobj;
+			outwin = outwin && ~wwobj;
+			*effect |= (winOBJ && gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable);
+		}
+		// at this point, if inside any of the windows, outwin = FALSE
+		// meaning that it is not outside of the windows
+		
+		// it is drawn if one of the regions has still the layer
+		*draw = (win0 || win1 || winOBJ || outwin);
+		// don't forget FX if outside of windows
+		*effect |= (outwin && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable);
 	}
-	// it is in win1, do we display ?
-	// mid priority
-	if (win1 && gpu->dispCnt.bits.Win1_Enable) {
-		*draw   = wwin1 && gpu->dispCnt.bits.Win0_Enable;
-		*effect = wwin1 && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
-		return TRUE ;
-	}
 
-	// winOBJ to be fixed
-	// -it goes here-
-	// low priority
-
-	// it is outside of windows, do we display ?
-	// lowest priority
-	if (outwin && windows) {
-		*draw   = wout;
-		*effect = wout;
-		return TRUE ;
-	}
-
-	// now windows or no rule
+	// no windows
 	*draw   = TRUE;
 	*effect = TRUE;
 	return FALSE;
