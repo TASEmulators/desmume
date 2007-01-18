@@ -2171,6 +2171,7 @@ static u32 FASTCALL  OP_MOV_LSL_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      LSL_REG;
+	 if (REG_POS(i,0) == 15) shift_op += 4;
      OP_MOV(2,4);
 }
 
@@ -2186,6 +2187,7 @@ static u32 FASTCALL  OP_MOV_LSR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      LSR_REG;  
+	 if (REG_POS(i,0) == 15) shift_op += 4;
      OP_MOV(2,4);
 }
 
@@ -2237,6 +2239,7 @@ static u32 FASTCALL  OP_MOV_S_LSL_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_LSL_REG;
+	 if (REG_POS(i,0) == 15) shift_op += 4;
      OP_MOV_S(3,5);
 }
 
@@ -2251,6 +2254,7 @@ static u32 FASTCALL  OP_MOV_S_LSR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_LSR_REG;  
+	 if (REG_POS(i,0) == 15) shift_op += 4;
      OP_MOV_S(3,5);           
 }
 
