@@ -504,6 +504,10 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 	BOOL wrapx, wrapy, goodx, goody;
 	wrapx = startX > endX;
 	wrapy = startY > endY;
+	// when the start > end,
+	//	all points between start & end are outside the window,
+	// otherwise
+	//	they are inside 
 	goodx = (wrapx)? ((startX <= x)||(x <= endX)):((startX <= x)&&(x <= endX));
 	goody = (wrapy)? ((startY <= y)||(y <= endY)):((startY <= y)&&(y <= endY));
 	return (goodx && goody);
