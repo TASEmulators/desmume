@@ -510,7 +510,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	
 	if (gpu->sprEnable  && gpu->dispOBJ) {
 		// nothing else to display but sprites...
-		if(!gpu->nbBGActif) {
+		if(0==1 && !gpu->nbBGActif) {
 			gpu->spriteRender(gpu, l, dst, sprPrio);
 			return;
 		}

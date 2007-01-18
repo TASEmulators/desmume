@@ -26,6 +26,32 @@ void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data);
 void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data);
 void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data);
 
+/* MENU SAVES */
+void on_loadstate1_activate (GtkMenuItem *, gpointer );
+void on_loadstate2_activate (GtkMenuItem *, gpointer );
+void on_loadstate3_activate (GtkMenuItem *, gpointer );
+void on_loadstate4_activate (GtkMenuItem *, gpointer );
+void on_loadstate5_activate (GtkMenuItem *, gpointer );
+void on_loadstate6_activate (GtkMenuItem *, gpointer );
+void on_loadstate7_activate (GtkMenuItem *, gpointer );
+void on_loadstate8_activate (GtkMenuItem *, gpointer );
+void on_loadstate9_activate (GtkMenuItem *, gpointer );
+void on_loadstate10_activate(GtkMenuItem *, gpointer );
+
+void on_savestate1_activate (GtkMenuItem *, gpointer );
+void on_savestate2_activate (GtkMenuItem *, gpointer );
+void on_savestate3_activate (GtkMenuItem *, gpointer );
+void on_savestate4_activate (GtkMenuItem *, gpointer );
+void on_savestate5_activate (GtkMenuItem *, gpointer );
+void on_savestate6_activate (GtkMenuItem *, gpointer );
+void on_savestate7_activate (GtkMenuItem *, gpointer );
+void on_savestate8_activate (GtkMenuItem *, gpointer );
+void on_savestate9_activate (GtkMenuItem *, gpointer );
+void on_savestate10_activate(GtkMenuItem *, gpointer );
+
+
+
+
 /* MENU EMULATION */
 void  on_menu_exec_activate    (GtkMenuItem *menuitem, gpointer user_data);
 void  on_menu_pause_activate   (GtkMenuItem *menuitem, gpointer user_data);

@@ -400,6 +400,20 @@ void NDS_UnPause()
    SPU_Pause(0);
 }
 
+void StateSaveSlot(int num)
+{
+	NDS_Pause();
+	savestate_slot
+	NDS_UnPause();
+}
+
+void StateLoadSlot(int num)
+{
+	NDS_Pause();
+	loadstate_slot(num);
+	NDS_UnPause();
+}
+
 BOOL LoadROM(char * filename)
 {
     NDS_Pause();
@@ -528,26 +542,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
     /* The program return-value is 0 - The value that PostQuitMessage() gave */
     return messages.wParam;
-}
-
-void StateSaveSlot(int num)
-{
-   char filename[MAX_PATH];
-   NDS_Pause();
-   strcpy(filename, szRomBaseName);
-   sprintf(filename+strlen(filename), "%d.dst", num);
-   savestate_save(filename);
-   NDS_UnPause();
-}
-
-void StateLoadSlot(int num)
-{
-   char filename[MAX_PATH];
-   NDS_Pause();
-   strcpy(filename, szRomBaseName);
-   sprintf(filename+strlen(filename), "%d.dst", num);
-   savestate_load(filename);
-   NDS_UnPause();
 }
 
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
