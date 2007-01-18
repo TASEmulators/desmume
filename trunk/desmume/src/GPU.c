@@ -502,8 +502,8 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 {
 	BOOL wrapx, wrapy, goodx, goody;
-	wrapx = startX >= endX;
-	wrapy = startY >= endY;
+	wrapx = startX > endX;
+	wrapy = startY > endY;
 	goodx = (wrapx)? ((startX <= x)||(x <= endX)):((startX <= x)&&(x <= endX));
 	goody = (wrapy)? ((startY <= y)||(y <= endY)):((startY <= y)&&(y <= endY));
 	return (goodx && goody);
@@ -530,24 +530,33 @@ INLINE BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw
 	wout = !(wwin0 || wwin1);
 
 	// it is in win0, do we display ?
+	// highest priority
 	if (win0 && gpu->dispCnt.bits.Win0_Enable) {
 		*draw   = wwin0;
 		*effect = wwin0 && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
 		return TRUE ;
 	}
+	// it is in win1, do we display ?
+	// mid priority
 	if (win1 && gpu->dispCnt.bits.Win1_Enable) {
 		*draw   = wwin1 && gpu->dispCnt.bits.Win0_Enable;
 		*effect = wwin1 && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
 		return TRUE ;
 	}
+
+	// winOBJ to be fixed
+	// -it goes here-
+	// low priority
+
+	// it is outside of windows, do we display ?
+	// lowest priority
 	if (outwin && windows) {
 		*draw   = wout;
 		*effect = wout;
 		return TRUE ;
 	}
 
-	// winOBJ to be fixed
-
+	// now windows or no rule
 	*draw   = TRUE;
 	*effect = TRUE;
 	return FALSE;
