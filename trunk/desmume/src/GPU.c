@@ -167,7 +167,7 @@ void GPU_resortBGs(GPU *gpu)
 	}
 	for (i=NB_BG,j=0; i>0; ) {
 		i--;
-		//if (!gpu->LayersEnable[i]) continue;
+		if (!gpu->LayersEnable[i]) continue;
 		prio = gpu->bgCnt[i].bits.Priority;
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
@@ -687,7 +687,6 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	xoff = X;
 	if(!bgCnt.Palette_256)    /* color: 16 palette entries */
 	{
-
 		if (bgCnt.Mosaic_Enable){
 /* test NDS: #2 of 
    http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192 */
@@ -1106,26 +1105,29 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 // spriteRender functions !
 
 #define nbShow 128
+#define RENDER_COND(cond) \
+	if((cond)&&(prioTab[sprX]>=prio)) \
+	{ \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, color,sprX,l); \
+		prioTab[sprX] = prio; \
+	}
 
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-void inline render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, 
+INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u16 color;
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
 		color = src[x];
-		if((color&0x8000)&&(prioTab[sprX]>=prio))
-//		if((color)&&(prioTab[sprX]>=prio))
-		{
-			renderline_setFinalColor(gpu, sprX << 1,4,dst,color,sprX,l);
-			prioTab[sprX] = prio;
-		}
+		//RENDER_COND(color,)
+		// alpha bit = invisible
+		RENDER_COND(color&0x8000)
 	}
 }
 
-void inline render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
+INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u8 palette_entry; u16 color;
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
@@ -1133,28 +1135,46 @@ void inline render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
 		color = pal[palette_entry];
 		// 0 = backdrop
-		if((palette_entry)&&(prioTab[sprX]>=prio))
-		{
-			renderline_setFinalColor(gpu, sprX << 1,4,dst,color,sprX,l);
-			prioTab[sprX] = prio;
-		}
+		RENDER_COND(color&0x8000)
 	}
 }
 
-void inline render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
+INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
-	int i; u8 palette_entry; u16 color;
+	int i; u8 palette, palette_entry; u16 color;
+	x >>= 1;
 
-
+	// lg is ODD !!!
+	if (xdir<0 && lg&1) {
+		palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+		palette_entry = palette >> 4;
+		color = T1ReadWord(pal, palette_entry << 1);
+		RENDER_COND(palette_entry)
+		++sprX;
+		x+=xdir;
+	}
+	// we can do them 2 at a time 
+	for(i = 1; i < lg; i+=2, x+=xdir) {
+		palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+		palette_entry = palette & 0xF;
+		color = T1ReadWord(pal, palette_entry << 1);
+		RENDER_COND(palette_entry)
+		++sprX;
+		palette_entry = palette >> 4;
+		color = T1ReadWord(pal, palette_entry << 1);
+		RENDER_COND(palette_entry)
+		++sprX;
+	}
+	// lg is ODD !!!
+	if (xdir>0 && lg&1) {
+		palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+		palette_entry = palette & 0xF;
+		color = T1ReadWord(pal, palette_entry << 1);
+		RENDER_COND(palette_entry)
+		++sprX;
+	}
 }
 
-#define RENDER_16(c,d) \
-/* color = 0 then backdrop */ \
-	if((c)&&(prioTab[sprX d]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, (sprX d) << 1,4,dst, T1ReadWord(pal, ((c)+(spriteInfo->PaletteIndex<<4)) << 1),(sprX d),l); \
-		prioTab[sprX d] = prio; \
-	}
 
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
@@ -1188,44 +1208,47 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		} ;
 
 	
-		sprX = (spriteInfo->X<<23)>>23;         /* get sprite location and size */
+		// get sprite location and size
+		sprX = (spriteInfo->X<<23)>>23;
 		sprY = spriteInfo->Y;
 		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
-	
+			
 		lg = sprSize.x;
 
 		if(sprY>192)
 			sprY = (s32)((s8)(spriteInfo->Y));
 	
-		/* FIXME: for rot/scale, a list of entries into the sprite should be maintained, that tells us where the first pixel */
-		/* of a screenline starts in the sprite, and how a step to the right in a screenline translates within the sprite */
+/* FIXME: for rot/scale, a list of entries into the sprite should be maintained, that tells us where the first pixel */
+/* of a screenline starts in the sprite, and how a step to the right in a screenline translates within the sprite */
 		if( (spriteInfo->RotScale == 2) ||      /* rotscale == 2 => sprite disabled */
 		    (l<sprY)||(l>=sprY+sprSize.y) ||    /* sprite occupies only lines outside the current drawn line */
 		    (sprX==256) )                       /* sprite is outside our line */
 			continue;                           /* for all these problems, continue with the next sprite */
 	
-		if(sprX<0)                              /* when sprite start is left of the screen */
+		// sprite portion out of the screen (LEFT)
+		if(sprX<0)
 		{
-			if(sprX+sprSize.x<=0) continue;     /* and the end also, continue with the next sprite */
-			lg += sprX;                         /* reduce the points pixels to draw by the amount we are left of screen */
-			x = -sprX;                          /* we start later in the sprite then */
-			sprX = 0;                           /* but at the lines #0 pixel */
-		} else if(sprX+sprSize.x>256)           /* if we would move over the right border */
-			lg = 255 - sprX;                    /* simply limit drawing to the number of pixels left till mostright visible pixel */
+			if(sprX+sprSize.x<0) continue; // fully out of screen
+			lg += sprX;	
+			x = -sprX;
+			sprX = 0;
+		// sprite portion out of the screen (RIGHT)
+		} else if(sprX+sprSize.x >= 256)
+			lg = 256 - sprX;
+
 	
 		y = l - sprY;                           /* get the y line within sprite coords */
 		prio = spriteInfo->Priority;
 	
-		if (spriteInfo->VFlip)                  /* if Vflip, we start from the other side with the sprite */
+		// switch TOP<-->BOTTOM
+		if (spriteInfo->VFlip)
 			y = sprSize.y - y -1;
 		
+		// switch LEFT<-->RIGHT
 		if (spriteInfo->HFlip) {
-			// start at the end of the sprite
-			// 256 colors or BMP
-			x = sprSize.x -x - 1;
+			x = sprSize.x -x -1;
 			xdir  = -1;
 		} else {
-			x = 0;
 			xdir  = 1;
 		}
 	
@@ -1257,45 +1280,12 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	
 		/* 16 colors */
 		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;	
+		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
+		
+		pal += (spriteInfo->PaletteIndex<<4)<<1;
+		render_sprite_16 (gpu, l, dst, src, pal,
+			prioTab, prio, lg, sprX, x, xdir);
 
-
-		if (spriteInfo->HFlip) x++;
-		if(x&1)
-		{
-			s32 x1 = (x>>1);
-			u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-			RENDER_16((c>>4),)
-			x1 = ((x+lg-1)>>1);
-			c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-			RENDER_16((c>>4),+lg-1)
-		}
-		if (spriteInfo->HFlip) x--;
-
-		++sprX;
-		lg >>= 1;
-		x >>= 1;
-		// 16 colors
-
-		if (spriteInfo->HFlip) {
-			for(i = 0; i < lg; ++i, x+=xdir)
-			{
-				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDER_16((c>>4),)
-				++sprX;
-				RENDER_16((c&0xF),)
-				++sprX;
-			}
-		} else {
-			for(i = 0; i < lg; ++i, x+=xdir)
-			{
-				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDER_16((c&0xF),)
-				++sprX;
-				RENDER_16((c>>4),)
-				++sprX;
-			}
-		}
 	}
 }
 
@@ -1342,28 +1332,29 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		    (sprX==256) )
 			continue;
 	
+		// sprite portion out of the screen (LEFT)
 		if(sprX<0)
 		{
-			if(sprX+sprSize.x<=0) continue;
-			lg += sprX;
+			if(sprX+sprSize.x<0) continue; // fully out of screen
+			lg += sprX;	
 			x = -sprX;
 			sprX = 0;
-		} else if(sprX+sprSize.x>256)
-			lg = 255 - sprX;
+		// sprite portion out of the screen (RIGHT)
+		} else if(sprX+sprSize.x >= 256)
+			lg = 256 - sprX;
 	
 		y = l - sprY;
 		prio = spriteInfo->Priority;
 	
-		if (spriteInfo->VFlip) 
+		// switch TOP<-->BOTTOM
+		if (spriteInfo->VFlip)
 			y = sprSize.y - y -1;
 		
+		// switch LEFT<-->RIGHT
 		if (spriteInfo->HFlip) {
-			// start at the end of the sprite
-			// 256 colors or BMP
-			x = sprSize.x -x - 1;
+			x = sprSize.x -x -1;
 			xdir  = -1;
 		} else {
-			x = 0;
 			xdir  = 1;
 		}
 	
@@ -1392,42 +1383,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
 
-		if (spriteInfo->HFlip) x++;
-		if(x&1)
-		{
-			s32 x1 = (x>>1);
-			u8 c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-			RENDER_16((c>>4),)
-			x1 = ((x+lg-1)>>1);
-			c = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
-			RENDER_16((c>>4),+lg-1)
-		}
-		if (spriteInfo->HFlip) x--;
-
-		++sprX;
-		lg >>= 1;
-		x >>= 1;
-		// 16 colors
-
-		if (spriteInfo->HFlip) {
-			for(i = 0; i < lg; ++i, x+=xdir)
-			{
-				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDER_16((c>>4),)
-				++sprX;
-				RENDER_16((c&0xF),)
-				++sprX;
-			}
-		} else {
-			for(i = 0; i < lg; ++i, x+=xdir)
-			{
-				u8 c = src[(x&0x3) + ((x&0xFFFC)<<3)];
-				RENDER_16((c&0xF),)
-				++sprX;
-				RENDER_16((c>>4),)
-				++sprX;
-			}
-		}
+		pal += (spriteInfo->PaletteIndex<<4)<<1;
+		render_sprite_16 (gpu, l, dst, src, pal,
+			prioTab, prio, lg, sprX, x, xdir);
 	}
 }
 
