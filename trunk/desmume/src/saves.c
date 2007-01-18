@@ -29,6 +29,26 @@
 
 #define SAVESTATE_VERSION       010
 
+#ifndef MAX_PATH
+#define MAX_PATH 256
+#endif
+
+void savestate_slot(int num)
+{
+   char filename[MAX_PATH];
+   strcpy(filename, szRomBaseName);
+   sprintf(filename+strlen(filename), "%d.dst", num);
+   savestate_save(filename);
+}
+
+void loadstate_slot(int num)
+{
+   char filename[MAX_PATH];
+   strcpy(filename, szRomBaseName);
+   sprintf(filename+strlen(filename), "%d.dst", num);
+   savestate_load(filename);
+}
+
 u8 sram_read (u32 address) {
 	address = address - SRAM_ADDRESS;
 	

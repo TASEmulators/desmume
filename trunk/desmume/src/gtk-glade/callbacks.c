@@ -127,6 +127,30 @@ void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) {  Wr
 void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk_main_quit(); }
 
 
+/* MENU SAVES ***** ***** ***** ***** */
+
+void on_loadstate1_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(1); }
+void on_loadstate2_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(2); }
+void on_loadstate3_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(3); }
+void on_loadstate4_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(4); }
+void on_loadstate5_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(5); }
+void on_loadstate6_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(6); }
+void on_loadstate7_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(7); }
+void on_loadstate8_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(8); }
+void on_loadstate9_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(9); }
+void on_loadstate10_activate(GtkMenuItem *m, gpointer d) { loadstate_slot(10); }
+
+void on_savestate1_activate (GtkMenuItem *m, gpointer d) { savestate_slot(1); }
+void on_savestate2_activate (GtkMenuItem *m, gpointer d) { savestate_slot(2); }
+void on_savestate3_activate (GtkMenuItem *m, gpointer d) { savestate_slot(3); }
+void on_savestate4_activate (GtkMenuItem *m, gpointer d) { savestate_slot(4); }
+void on_savestate5_activate (GtkMenuItem *m, gpointer d) { savestate_slot(5); }
+void on_savestate6_activate (GtkMenuItem *m, gpointer d) { savestate_slot(6); }
+void on_savestate7_activate (GtkMenuItem *m, gpointer d) { savestate_slot(7); }
+void on_savestate8_activate (GtkMenuItem *m, gpointer d) { savestate_slot(8); }
+void on_savestate9_activate (GtkMenuItem *m, gpointer d) { savestate_slot(9); }
+void on_savestate10_activate(GtkMenuItem *m, gpointer d) { savestate_slot(10); }
+
 
 /* MENU EMULATION ***** ***** ***** ***** */
 void  on_menu_exec_activate   (GtkMenuItem *menuitem, gpointer user_data) { desmume_resume(); }
