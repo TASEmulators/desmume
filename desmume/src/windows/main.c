@@ -403,7 +403,7 @@ void NDS_UnPause()
 void StateSaveSlot(int num)
 {
 	NDS_Pause();
-	savestate_slot
+	savestate_slot(num);
 	NDS_UnPause();
 }
 
