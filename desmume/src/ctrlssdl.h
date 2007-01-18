@@ -35,6 +35,7 @@
 #define ADD_KEY(keypad,key) ( (keypad) |= (key) )
 #define RM_KEY(keypad,key) ( (keypad) &= ~(key) )
 #define KEYMASK_(k)	(1 << k)
+#define JOY_AXIS_(k)    ((k+1) << 8)
 
 #define NB_KEYS		14
 #define KEY_NONE		0
@@ -84,6 +85,7 @@ void uninit_joy();
 void set_joy_keys(u16 joyCfg[]);
 void set_kb_keys(u16 kbCfg[]);
 u16 get_set_joy_key(int index);
+void get_set_joy_axis(int index, int index_opp);
 void update_keypad(u16 keys);
 u16 get_keypad();
 u16 inline lookup_key (u16 keyval);
