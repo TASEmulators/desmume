@@ -500,6 +500,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
 	c |= (c<<16);
 	
+	// init background color & priorities
 	for(i8 = 0; i8< 128; ++i8)
 	{
 		T2WriteLong(dst, i8 << 2, c);
@@ -508,36 +509,27 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
 	}
 	
-	if (gpu->sprEnable  && gpu->dispOBJ) {
-		// nothing else to display but sprites...
-		if(0==1 && !gpu->nbBGActif) {
-			gpu->spriteRender(gpu, l, dst, sprPrio);
-			return;
-		}
-		// we also have backgrounds
-		gpu->spriteRender(gpu, l, spr, sprPrio);
-	}
-	
 	// init pixels priorities
 	for (i=0;i<NB_PRIORITIES;i++) {
 		gpu->itemsForPriority[i].nbPixelsX = 0;
 	}
 
 	// for all the pixels in the line
-	if (gpu->LayersEnable[4])
-	for(i= 0; i<256; i++) {
-		// assign them to the good priority item
-		prio = sprPrio[i];
-
-		// render 1 time, but prio 4 = isn't processed further
-		T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
-		if (prio >=4) continue;
-
-		item = &(gpu->itemsForPriority[prio]);
-		item->PixelsX[item->nbPixelsX]=i;
-		item->nbPixelsX++;
+	if (gpu->LayersEnable[4]) {
+		gpu->spriteRender(gpu, l, spr, sprPrio);
+		for(i= 0; i<256; i++) {
+			// assign them to the good priority item
+			prio = sprPrio[i];
+	
+			// render 1 time, but prio 4 = isn't processed further
+			if (prio >=4) continue;
+			T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
+			
+			item = &(gpu->itemsForPriority[prio]);
+			item->PixelsX[item->nbPixelsX]=i;
+			item->nbPixelsX++;
+		}
 	}
-
 
 	// paint lower priorities fist
 	// then higher priorities on top

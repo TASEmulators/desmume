@@ -501,168 +501,63 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 /* check whether (x,y) is within the rectangle (including wraparounds) */
 INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 {
-		if (startX==endX) endX+=256 ;
-		if (startX > endX) {
-			/* if start > end, the window gets wrapped around */
-			/* check if the current pixel is in that x-wrapped area */
-			if ((x < endX) || (x >= startX))
-			{
-				/* x coord for this window is matched */
-				/* now check for y coord */
-				if (startY > endY)
-				{
-					/* rectangle is wrapped around y */
-					if ((y < endY) || (y >= startY))
-					{
-						/* y coord was mathched too, the point is within! */
-						return TRUE ;
-					} else
-					{
-						/* y coord is outside */
-						return FALSE ;
-					}
-				} else
-				{
-					/* y coord is not wraped, simple rectangle check */
-					if ((y < endY) && (y >= startY))
-					{
-						/* y coord was mathched too, the point is within! */
-						return TRUE ;
-					} else
-					{
-						/* y coord is outside */
-						return FALSE ;
-					}
-				}
-			} else
-			{
-				/* x coord is not matched, so we dont need to check further */
-				return FALSE ;
-			}
-		} else
-		{
-			/* if start >= end, it just describes an rectangle */
-			/* check we are within the limits */
-			if ((x >= startX) && (x < endX))
-			{
-				/* within the x range */
-				/* now check for y coord */
-				if (startY > endY)
-				{
-					/* rectangle is wrapped around y */
-					if ((y < endY) || (y >= startY))
-					{
-						/* y coord was mathched too, the point is within! */
-						return TRUE ;
-					} else
-					{
-						/* y coord is outside */
-						return FALSE ;
-					}
-				} else
-				{
-					/* y coord is not wraped, simple rectangle check */
-					if ((y < endY) && (y >= startY))
-					{
-						/* y coord was mathched too, the point is within! */
-						return TRUE ;
-					} else
-					{
-						/* y coord is outside */
-						return FALSE ;
-					}
-				}
-			} else
-			{
-				/* not within this rectangle */
-				return FALSE ;
-			}
-		}
+	BOOL wrapx, wrapy, goodx, goody;
+	wrapx = startX >= endX;
+	wrapy = startY >= endY;
+	goodx = (wrapx)? ((startX <= x)||(x <= endX)):((startX <= x)&&(x <= endX));
+	goody = (wrapy)? ((startY <= y)||(y <= endY)):((startY <= y)&&(y <= endY));
+	return (goodx && goody);
 }
 
-INLINE BOOL renderline_checkWindowInside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
+INLINE BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
-	/* priority to check the window regions: win0,win1,winobj */
-	if (gpu->dispCnt.bits.Win0_Enable) /* highest priority */
-	{
-		if (withinRect(	x,y,
-			gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
-			gpu->WINDOW_XDIM[0].bits.end,gpu->WINDOW_YDIM[0].bits.end
-				))
-		{
-			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_INCNT.windows.win0_en & (1<<bgnum);
-			*effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable ;
-			return TRUE ;
-		}
-	}
-	if (gpu->dispCnt.bits.Win1_Enable) /* mid priority */
-	{
-		if (withinRect(	x,y,
-			gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
-			gpu->WINDOW_XDIM[1].bits.end,gpu->WINDOW_YDIM[1].bits.end
-			))
-		{
-			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_INCNT.windows.win1_en & (1<<bgnum);
-			*effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable ;
-			return TRUE ;
-		}
-	}
-	if ((gpu->dispCnt.bits.WinOBJ_Enable) && (bgnum==4)) /* low priority, but only applies to OBJ */
-	{
-	}
-	/* we have no rule, so allow everything for now */
-	*draw = TRUE ;
-	*effect = TRUE ;
-	return FALSE ;
-}
+	BOOL win0,win1,winOBJ,outwin;
+	BOOL wwin0, wwin1, wout, windows;
 
-INLINE BOOL renderline_checkWindowOutside(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
-{
-	/* priority to check the window regions: win0,win1,winobj */
-	if (gpu->dispCnt.bits.Win0_Enable)  /* highest priority */
-	{
-		if (!withinRect(	x,y,
-			gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
-			gpu->WINDOW_XDIM[0].bits.end,gpu->WINDOW_YDIM[0].bits.end
-			))
-		{
-			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_OUTCNT.windows.win0_en & (1<<bgnum);
-			*effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
-			return TRUE ;
-		}
+	// find who owns the BG
+	windows= gpu->dispCnt.bits.Win0_Enable || gpu->dispCnt.bits.Win1_Enable;
+	win0   = gpu->WINDOW_INCNT.windows.win0_en  & (1<<bgnum);
+	win1   = gpu->WINDOW_INCNT.windows.win1_en  & (1<<bgnum);
+	winOBJ = gpu->WINDOW_OUTCNT.windows.win0_en & (1<<bgnum);
+	outwin = gpu->WINDOW_OUTCNT.windows.win1_en & (1<<bgnum);
+	
+	wwin0 = withinRect(	x,y,
+		gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+		gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
+	wwin1 = withinRect(	x,y,
+		gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+		gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
+	wout = !(wwin0 || wwin1);
+
+	// it is in win0, do we display ?
+	if (win0 && gpu->dispCnt.bits.Win0_Enable) {
+		*draw   = wwin0;
+		*effect = wwin0 && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
+		return TRUE ;
 	}
-	if (gpu->dispCnt.bits.Win1_Enable)  /* mid priority */
-	{
-		if (!withinRect(	x,y,
-			gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
-			gpu->WINDOW_XDIM[1].bits.end,gpu->WINDOW_YDIM[1].bits.end
-			))
-		{
-			/* is drawing explicit set for this bg in this rectangle ? */
-			*draw = gpu->WINDOW_OUTCNT.windows.win1_en & (1<<bgnum);
-			*effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable ;
-			return TRUE ;
-		}
+	if (win1 && gpu->dispCnt.bits.Win1_Enable) {
+		*draw   = wwin1 && gpu->dispCnt.bits.Win0_Enable;
+		*effect = wwin1 && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable ;
+		return TRUE ;
 	}
-	if ((gpu->dispCnt.bits.WinOBJ_Enable) && (bgnum==4)) /* low priority, but only applies to OBJ */
-	{
+	if (outwin && windows) {
+		*draw   = wout;
+		*effect = wout;
+		return TRUE ;
 	}
-	/* we have no rule, so allow everything for now */
-	*draw = TRUE ;
-	*effect = TRUE ;
-	return FALSE ;
+
+	// winOBJ to be fixed
+
+	*draw   = TRUE;
+	*effect = TRUE;
+	return FALSE;
 }
 
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
 	BOOL windowDraw = TRUE, windowEffect = TRUE ;
 	/* window priority: insides, if no rule, check outside */
-	if (renderline_checkWindowInside(gpu,bgnum,x,y,&windowDraw,&windowEffect)==FALSE)
-	{
-		renderline_checkWindowOutside(gpu,bgnum,x,y,&windowDraw,&windowEffect) ;
-	}
+	renderline_checkWindows(gpu,bgnum,x,y,&windowDraw,&windowEffect);
+
 	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect==TRUE))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
@@ -1177,21 +1072,56 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
           extRotBG2(gpu, num, DST + i*gpu->BGSize[num][0], i, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
 }
 
+
+
+
+
+
+// spriteRender functions !
+
 #define nbShow 128
-#define RENDER_BMP(a) \
-/* color = 0 then backdrop */ \
-	if((a)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, c,sprX,l); \
-		prioTab[sprX] = prio; \
+
+/* if i understand it correct, and it fixes some sprite problems in chameleon shot */
+/* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
+/* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
+void inline render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, 
+	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
+	int i; u16 color;
+	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
+	{
+		color = src[x];
+		if((color&0x8000)&&(prioTab[sprX]>=prio))
+//		if((color)&&(prioTab[sprX]>=prio))
+		{
+			renderline_setFinalColor(gpu, sprX << 1,4,dst,color,sprX,l);
+			prioTab[sprX] = prio;
+		}
 	}
-#define RENDER_256(c) \
-/* color = 0 then backdrop */ \
-	if((c)&&(prioTab[sprX]>=prio)) \
-	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord(pal, (c) << 1),sprX,l); \
-		prioTab[sprX] = prio; \
+}
+
+void inline render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
+	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
+	int i; u8 palette_entry; u16 color;
+	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
+	{
+		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
+		color = pal[palette_entry];
+		// 0 = backdrop
+		if((palette_entry)&&(prioTab[sprX]>=prio))
+		{
+			renderline_setFinalColor(gpu, sprX << 1,4,dst,color,sprX,l);
+			prioTab[sprX] = prio;
+		}
 	}
+}
+
+void inline render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
+	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
+	int i; u8 palette_entry; u16 color;
+
+
+}
+
 #define RENDER_16(c,d) \
 /* color = 0 then backdrop */ \
 	if((c)&&(prioTab[sprX d]>=prio)) \
@@ -1277,19 +1207,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		{
 			/* sprMemory + sprBlock + 16Bytes per line (8pixels a 2 bytes) */
 			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBlock);
-	
-	
-			for(i = 0; i < lg; ++i, ++sprX, x+=xdir)
-			{
-	//			u16 c = T1ReadWord(src, x << 1);
-				u8 c = src[x];              /* color of the sprites pixel */
-				// What's the point in shifting down by 15 when c is 8-bits?
-				// RENDER_BMP(c>>15)
-/* if i understand it correct, and it fixes some sprite problems in chameleon shot */
-/* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
-/* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-				RENDER_BMP(c) ;              /* FIXME: apply additional alpha */
-			}
+
+			render_sprite_BMP (gpu, l, dst, src,
+				prioTab, prio, lg, sprX, x, xdir);
+
 			continue;
 		}
 			
@@ -1302,11 +1223,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-			for(i = 0; i < lg; ++i,++sprX, x+= xdir)
-			{
-				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-				RENDER_256(c)
-			}
+			render_sprite_256 (gpu, l, dst, src, pal,
+				prioTab, prio, lg, sprX, x, xdir);
+
 			continue;
 		}
 	
@@ -1426,14 +1345,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		{
 			src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
 	
-	
-			for(i = 0; i < lg; ++i, ++sprX, x+=xdir)
-			{
-	//			u16 c = T1ReadWord(src, x << 1);
-				u8 c = src[x<<1];
-				// What's the point in shifting down by 15 when c is 8-bits?
-				RENDER_BMP(c>>15)
-			}
+			render_sprite_BMP (gpu, l, dst, src,
+				prioTab, prio, lg, sprX, x, xdir);
+
 			continue;
 		}
 			
@@ -1442,11 +1356,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-			for(i = 0; i < lg; ++i,++sprX, x+= xdir)
-			{
-				u8 c = src[(x&0x7) + ((x&0xFFF8)<<3)];
-				RENDER_256(c)
-			}
+			render_sprite_256 (gpu, l, dst, src, pal,
+				prioTab, prio, lg, sprX, x, xdir);
+
 			continue;
 		}
 	
