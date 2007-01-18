@@ -251,20 +251,8 @@ void init_joy_labels() {
   int i;
   char text[50], bname[30];
   GtkButton *b;
-  for (i=0; i<4; i++) {
-    /* Key not configured */
-    if( joypad_cfg[i] == (u16)(-1) ) continue;
-
-    sprintf(text,"%s : %d\0\0",key_names[i],joypad_cfg[i]);
-    sprintf(bname,"button_joy_%s\0\0",key_names[i]);
-    b = (GtkButton*)glade_xml_get_widget(xml, bname);
-    gtk_button_set_label(b,text);
-  }
-  /* Skipping Axis */
-  for (i=8; i<NB_KEYS; i++) {
-    /* Key not configured */
-    if( joypad_cfg[i] == (u16)(-1) ) continue;
-
+  for (i=0; i<NB_KEYS; i++) {
+    if( joypad_cfg[i] == (u16)(-1) ) continue; /* Key not configured */
     sprintf(text,"%s : %d\0\0",key_names[i],joypad_cfg[i]);
     sprintf(bname,"button_joy_%s\0\0",key_names[i]);
     b = (GtkButton*)glade_xml_get_widget(xml, bname);
@@ -342,8 +330,9 @@ void ask_joy_key(GtkButton*b, int key)
   char text[50];
   u16 joykey;
 
+  GtkWidget * dlg = (GtkWidget*)glade_xml_get_widget(xml, "wJoyDlg");
+
   key--; /* remove 1 to get index */
-  GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wJoyDlg");
   gtk_widget_show_now(dlg);
   /* Need to force event processing. Otherwise, popup won't show up. */
   while ( gtk_events_pending() ) gtk_main_iteration();
@@ -353,23 +342,61 @@ void ask_joy_key(GtkButton*b, int key)
   gtk_widget_hide((GtkWidget*)dlg);
 }
 
-void on_joy_button_A_clicked (GtkButton *b, gpointer user_data)
+/* Joystick configuration / Key definition */
+void ask_joy_axis(GtkButton*b, u8 key, u8 opposite_key)
+{
+  char text[50];
+  char opposite_button[50];
+  u16 joykey;
+  GtkWidget * dlg;
+  GtkWidget * bo;
+
+  key--; /* remove 1 to get index */
+  opposite_key--;
+
+  sprintf(opposite_button,"button_joy_%s\0\0",key_names[opposite_key]);
+  dlg = (GtkWidget*)glade_xml_get_widget(xml, "wJoyDlg");
+  bo = (GtkWidget*)glade_xml_get_widget(xml, opposite_button);
+
+  gtk_widget_show(dlg);
+  /* Need to force event processing. Otherwise, popup won't show up. */
+  while ( gtk_events_pending() ) gtk_main_iteration();
+  get_set_joy_axis(key, opposite_key);
+
+  sprintf(text,"%s : %d\0\0",key_names[key],joypad_cfg[key]);
+  gtk_button_set_label(b,text);
+
+  sprintf(text,"%s : %d\0\0",key_names[opposite_key],joypad_cfg[opposite_key]);
+  gtk_button_set_label(bo,text);
+
+  gtk_widget_hide((GtkWidget*)dlg);
+}
+
+void on_button_joy_Left_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_axis(b,KEY_LEFT,KEY_RIGHT); }
+void on_button_joy_Up_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_axis(b,KEY_UP,KEY_DOWN); }
+void on_button_joy_Right_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_axis(b,KEY_RIGHT,KEY_LEFT); }
+void on_button_joy_Down_clicked (GtkButton *b, gpointer user_data)
+{ ask_joy_axis(b,KEY_DOWN,KEY_UP); }
+void on_button_joy_A_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_A); }
-void on_joy_button_B_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_B_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_B); }
-void on_joy_button_X_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_X_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_X); }
-void on_joy_button_Y_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_Y_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_Y); }
-void on_joy_button_L_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_L_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_L); }
-void on_joy_button_R_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_R_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_R); }
-void on_joy_button_Select_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_Select_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_SELECT); }
-void on_joy_button_Start_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_Start_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_START); }
-void on_joy_button_Boost_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_Boost_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_BOOST); }
-void on_joy_button_Debug_clicked (GtkButton *b, gpointer user_data)
+void on_button_joy_Debug_clicked (GtkButton *b, gpointer user_data)
 { ask_joy_key(b,KEY_DEBUG); }

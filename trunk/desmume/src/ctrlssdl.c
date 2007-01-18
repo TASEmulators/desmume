@@ -25,20 +25,10 @@
 /* Keypad key names */
 const char *key_names[NB_KEYS] =
 {
-  "A",
-  "B",
-  "Select",
-  "Start",
-  "Right",
-  "Left",
-  "Up",
-  "Down",
-  "R",
-  "L",
-  "X",
-  "Y",
-  "Debug",
-  "Boost"
+  "A", "B", "Select", "Start",
+  "Right", "Left", "Up", "Down",
+  "R", "L", "X", "Y",
+  "Debug", "Boost"
 };
 
 /* Default joypad configuration */
@@ -47,10 +37,10 @@ const u16 default_joypad_cfg[NB_KEYS] =
     0,  // B
     5,  // select
     8,  // start
-    -1, // Right -- Start cheating abit...
-    -1, // Left
-    -1, // Up
-    -1, // Down  -- End of cheating.
+    256, // Right -- Start cheating abit...
+    256, // Left
+    512, // Up
+    512, // Down  -- End of cheating.
     7,  // R
     6,  // L
     4,  // X
@@ -61,20 +51,20 @@ const u16 default_joypad_cfg[NB_KEYS] =
 
 const u16 default_keyboard_cfg[NB_KEYS] =
 {
-	97, // a
-	98, // b
-	65288, // backspace
-	65293, // enter
-	65363, // directional arrows
-	65361,
-	65362,
-	65364,
-	65454, // numeric .
-	65456, // numeric 0
-	120, // x
-	121, // y
-	112,
-	113
+  97, // a
+  98, // b
+  65288, // backspace
+  65293, // enter
+  65363, // directional arrows
+  65361,
+  65362,
+  65364,
+  65454, // numeric .
+  65456, // numeric 0
+  120, // x
+  121, // y
+  112,
+  113
 };
 
 /* Load default joystick and keyboard configurations */
@@ -154,6 +144,34 @@ u16 inline lookup_key (u16 keyval) {
   return Key;
 }
 
+/* Empty SDL Events' queue */
+void clear_events()
+{
+  SDL_Event event;
+  /* IMPORTANT: Reenable joystick events iif needed. */
+  if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
+    SDL_JoystickEventState(SDL_ENABLE);
+
+#ifndef GTK_UI
+  sdl_quit = FALSE;
+#endif
+
+  /* There's an event waiting to be processed? */
+  while (SDL_PollEvent(&event))
+    {
+#ifndef GTK_UI
+      switch (event.type)
+        {
+        case SDL_QUIT:
+          sdl_quit = TRUE;
+          break;
+        }
+#endif // !GTK_UI
+    }
+
+  return;
+}
+
 /* Get and set a new joystick key */
 u16 get_set_joy_key(int index) {
   BOOL done = FALSE;
@@ -175,10 +193,45 @@ u16 get_set_joy_key(int index) {
           break;
         }
     }
-  SDL_JoystickEventState(SDL_IGNORE);
+
+  if( SDL_JoystickEventState(SDL_QUERY) == SDL_ENABLE )
+    SDL_JoystickEventState(SDL_IGNORE);
   joypad_cfg[index] = key;
 
   return key;
+}
+
+/* Get and set a new joystick axis */
+void get_set_joy_axis(int index, int index_o) {
+  BOOL done = FALSE;
+  SDL_Event event;
+  u16 key = joypad_cfg[index];
+
+  /* Clear events */
+  clear_events();
+  /* Enable joystick events if needed */
+  if( SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE )
+    SDL_JoystickEventState(SDL_ENABLE);
+
+  while(SDL_WaitEvent(&event) && !done)
+    {
+      switch(event.type)
+        {
+        case SDL_JOYAXISMOTION:
+          /* Discriminate small movements */
+          if( (event.jaxis.value >> 5) != 0 )
+            {
+              key = JOY_AXIS_(event.jaxis.axis);
+              done = TRUE;
+            }
+          break;
+        }
+    }
+  if( SDL_JoystickEventState(SDL_QUERY) == SDL_ENABLE )
+    SDL_JoystickEventState(SDL_IGNORE);
+  /* Update configuration */
+  joypad_cfg[index]   = key;
+  joypad_cfg[index_o] = joypad_cfg[index];
 }
 
 #ifndef GTK_UI
@@ -215,7 +268,6 @@ u16 get_keypad()
 u16 process_ctrls_events(u16 keypad)
 {
   u16 key;
-
   SDL_Event event;
 
   /* IMPORTANT: Reenable joystick events iif needed. */
@@ -234,32 +286,35 @@ u16 process_ctrls_events(u16 keypad)
           /* Joystick axis motion 
              Note: button constants have a 1bit offset. */
         case SDL_JOYAXISMOTION:
-          /* Horizontal */
-          if (event.jaxis.axis == 0)
-            if( event.jaxis.value == 0 )
-              {
-                key = KEYMASK_( KEY_RIGHT-1 ) | KEYMASK_( KEY_LEFT-1 );
-                RM_KEY( keypad, key );
-              }
-            else
-              {
-                if( event.jaxis.value > 0 ) key = KEYMASK_( KEY_RIGHT-1 );
-                else key = KEYMASK_( KEY_LEFT-1 );
+          key = lookup_joy_key( JOY_AXIS_(event.jaxis.axis) );
+          if( key != 0 )
+            {
+              if( event.jaxis.value == 0 )
+                {
+                  switch(key)
+                    {
+                    case KEYMASK_( KEY_RIGHT-1 ):
+                      key |= KEYMASK_( KEY_LEFT-1 );
+                      break;
+                    case KEYMASK_( KEY_UP-1 ):
+                      key |= KEYMASK_( KEY_DOWN-1 );
+                      break;
+                    default:
+                      printf("Unknown joystick state!\n");
+                      break;
+                    }
+                  RM_KEY( keypad, key );
+                }
+              else if( (event.jaxis.value > 0) && 
+                       (key == KEYMASK_( KEY_UP-1 )) )
+                key = KEYMASK_( KEY_DOWN-1 );
+              else if( (event.jaxis.value < 0) && 
+                       (key == KEYMASK_( KEY_RIGHT-1 )) )
+                key = KEYMASK_( KEY_LEFT-1 );
+              
+              if( (event.jaxis.value >> 5) != 0 )
                 ADD_KEY( keypad, key );
-              }
-          /* Vertical */
-          else if (event.jaxis.axis == 1)
-            if( event.jaxis.value == 0 )
-              {
-                key = KEYMASK_( KEY_UP-1 ) | KEYMASK_( KEY_DOWN-1 );
-                RM_KEY( keypad, key );
-              }
-            else
-              {
-                if( event.jaxis.value > 0 ) key = KEYMASK_( KEY_DOWN-1 );
-                else key = KEYMASK_( KEY_UP-1 );
-                ADD_KEY( keypad, key );
-              }
+            }
           break;
 
           /* Joystick button pressed */
@@ -312,6 +367,7 @@ u16 process_ctrls_events(u16 keypad)
           break;
         }
     }
+
   return keypad;
 }
 

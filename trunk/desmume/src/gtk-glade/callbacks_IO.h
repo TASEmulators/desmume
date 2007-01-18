@@ -65,13 +65,17 @@ void  on_button_Debug_clicked   (GtkButton *button, gpointer user_data);
 void  on_button_Boost_clicked   (GtkButton *button, gpointer user_data);
 
 /* Joystick configuration / Key definition */
-void on_joy_button_Y_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_X_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_A_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_B_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_Select_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_L_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_R_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_Debug_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_Start_clicked (GtkButton *button, gpointer user_data);
-void on_joy_button_Boost_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Left_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Up_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Right_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Down_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Y_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_X_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_A_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_B_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Select_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_L_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_R_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Debug_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Start_clicked (GtkButton *button, gpointer user_data);
+void on_button_joy_Boost_clicked (GtkButton *button, gpointer user_data);
