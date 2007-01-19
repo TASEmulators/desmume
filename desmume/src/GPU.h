@@ -340,7 +340,7 @@ struct _GPU
 	MASTER_BRIGHT masterBright;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
-	u8 sprWin[192][256];
+	u8 sprWin[192*2][256];
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
@@ -524,8 +524,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			prio = sprPrio[i];
 	
 			// render 1 time, but prio 4 = isn't processed further
-			if (prio >=4) continue;
 			T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
+			if (prio >=4) continue;
 			
 			item = &(gpu->itemsForPriority[prio]);
 			item->PixelsX[item->nbPixelsX]=i;
