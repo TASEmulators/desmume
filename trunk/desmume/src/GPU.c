@@ -137,26 +137,24 @@ void GPU_resortBGs(GPU *gpu)
 	itemsForPriority_t * item;
 
 	if (cnt->Win0_Enable || cnt->Win1_Enable || cnt->WinOBJ_Enable) {
-		WinBG  = gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val;
-		WinBG |= (WinBG >> 8);
+		if (cnt->Win0_Enable)   WinBG  |= gpu->WINDOW_INCNT.bytes.low;
+		if (cnt->Win1_Enable)   WinBG  |= gpu->WINDOW_INCNT.bytes.high;
+		if (cnt->WinOBJ_Enable) WinBG  |= gpu->WINDOW_OUTCNT.bytes.high;
+		WinBG |= gpu->WINDOW_OUTCNT.bytes.low;
+	} else {
+		WinBG = 0x1F;
 	}
 
-/*
-	if (cnt->Win0_Enable || cnt->Win1_Enable) {
-		if (cnt->Win0_Enable)
-			WinBG |= (gpu->WINDOW_INCNT.val & 0xFF);
-		if (cnt->Win1_Enable)
-			WinBG |= (gpu->WINDOW_INCNT.val >> 8);
-		WinBG |= (gpu->WINDOW_OUTCNT.val & 0xFF);
-		WinBG |= (gpu->WINDOW_OUTCNT.val >> 8);
-	}
-*/
+	for (i=0; i<192; i++)
+		memset(gpu->sprWin[i],0, 256);
+#define OP ||
 	// Let's prepare the field for WINDOWS implementation
-	gpu->LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable || (WinBG & 0x1))&& !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
-	gpu->LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable || (WinBG & 0x2));
-	gpu->LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable || (WinBG & 0x4));
-	gpu->LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable || (WinBG & 0x8));
-	gpu->LayersEnable[4] = gpu->dispOBJ && (cnt->OBJ_Enable || (WinBG & 0x10));
+	gpu->LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable OP (WinBG & 0x1)) && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
+	gpu->LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable OP (WinBG & 0x2));
+	gpu->LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable OP (WinBG & 0x4));
+	gpu->LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable OP (WinBG & 0x8));
+	// sprite doesn't need obj window to be displayed !
+	gpu->LayersEnable[4] = gpu->dispOBJ &&   cnt->OBJ_Enable;
 
 	// KISS ! lower priority first, if same then lower num
 	
@@ -167,7 +165,7 @@ void GPU_resortBGs(GPU *gpu)
 	}
 	for (i=NB_BG,j=0; i>0; ) {
 		i--;
-//		if (!gpu->LayersEnable[i]) continue;
+		if (!gpu->LayersEnable[i]) continue;
 		prio = gpu->bgCnt[i].bits.Priority;
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
@@ -533,11 +531,11 @@ BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 	wwobj = gpu->sprWin[y][x];
 
 	if (windows) {
-		wwout = !(wwin0||wwin1||wwobj);
 		wwin0 = wwin0 && gpu->dispCnt.bits.Win0_Enable;
 		wwin1 = wwin1 && gpu->dispCnt.bits.Win1_Enable;
 		wwobj = wwobj && gpu->dispCnt.bits.WinOBJ_Enable;
-
+		wwout = !(wwin0||wwin1||wwobj);
+/*
 	// HOW THE HELL THIS DOES NOT WORK !!!
 
 		win0   = (gpu->WINDOW_INCNT.bytes.low   & (1<<bgnum))&&1;
@@ -546,12 +544,12 @@ BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 		winOBJ = (gpu->WINDOW_OUTCNT.bytes.high & (1<<bgnum))&&1;
 
 	// CHECK THE FOLLOWING, SAME MEANING BUT IT WORKS
-/*
+*/
 		win0   = (gpu->WINDOW_INCNT.bytes.low  >> bgnum)&1;
 		win1   = (gpu->WINDOW_INCNT.bytes.high >> bgnum)&1;
 		outwin = (gpu->WINDOW_OUTCNT.bytes.low >> bgnum)&1;
 		winOBJ = (gpu->WINDOW_OUTCNT.bytes.high>> bgnum)&1;
-*/
+
 		// it is in win0, do we display ?
 		// high priority
 		if (wwin0) {
@@ -1151,13 +1149,11 @@ INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u8 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u8 palette, palette_entry; u16 color;
-
 #define BLOCK(op) \
 	palette_entry = palette op; \
 	color = T1ReadWord(pal, palette_entry << 1); \
 	RENDER_COND(palette_entry>0) \
 	++sprX;
-
 #if 0
 
 	if (xdir<0) x++;
@@ -1206,14 +1202,14 @@ INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u8 * pal,
 			BLOCK(>> 4)
 			x+=xdir;
 		}
-		for(i = 0; i < lg; i+=2, x+=xdir)
+		for(i = 1; i < lg; i+=2, x+=xdir)
 		{
 			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
 			BLOCK(>> 4)
 			BLOCK(& 0xF)
 		}
 	} else {
-		for(i = 0; i < lg; i+=2, x+=xdir)
+		for(i = 1; i < lg; i+=2, x+=xdir)
 		{
 			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
 			BLOCK(& 0xF)
@@ -1238,7 +1234,7 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 
 #define BLOCK(op) \
 	palette_entry = palette op; \
-	gpu->sprWin[l][sprX] = (palette_entry)?1:0;
+	gpu->sprWin[l][sprX] = (palette_entry>0)?1:0; \
 	++sprX;
 
 		x >>= 1;
@@ -1249,14 +1245,14 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 				BLOCK(>> 4)
 				x+=xdir;
 			}
-			for(i = 0; i < lg; i+=2, x+=xdir)
+			for(i = 1; i < lg; i+=2, x+=xdir)
 			{
 				palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
 				BLOCK(>> 4)
 				BLOCK(& 0xF)
 			}
 		} else {
-			for(i = 0; i < lg; i+=2, x+=xdir)
+			for(i = 1; i < lg; i+=2, x+=xdir)
 			{
 				palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
 				BLOCK(& 0xF)
