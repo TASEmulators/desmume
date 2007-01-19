@@ -340,6 +340,7 @@ struct _GPU
 	MASTER_BRIGHT masterBright;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
+	u8 sprWin[192][256];
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
@@ -507,6 +508,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		T2WriteLong(spr, i8 << 2, c);
 		// we init the sprites with priority 4 (if they keep it = unprocessed)
 		T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
+		T1WriteWord(gpu->sprWin[l], i8 << 1, 0);
 	}
 	
 	// init pixels priorities

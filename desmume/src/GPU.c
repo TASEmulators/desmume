@@ -136,7 +136,7 @@ void GPU_resortBGs(GPU *gpu)
 	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
 	itemsForPriority_t * item;
 
-	if (cnt->Win0_Enable || cnt->Win1_Enable) {
+	if (cnt->Win0_Enable || cnt->Win1_Enable || cnt->WinOBJ_Enable) {
 		WinBG  = gpu->WINDOW_INCNT.val | gpu->WINDOW_OUTCNT.val;
 		WinBG |= (WinBG >> 8);
 	}
@@ -167,7 +167,7 @@ void GPU_resortBGs(GPU *gpu)
 	}
 	for (i=NB_BG,j=0; i>0; ) {
 		i--;
-		if (!gpu->LayersEnable[i]) continue;
+//		if (!gpu->LayersEnable[i]) continue;
 		prio = gpu->bgCnt[i].bits.Priority;
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
@@ -513,67 +513,75 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 	return (goodx && goody);
 }
 
-INLINE BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
+
+BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	BOOL win0,win1,winOBJ,outwin;
-	BOOL wwin0,wwin1,wwobj;
-	BOOL windows;
+	BOOL wwin0, wwin1, wwobj, wwout, windows;
 
 	// find who owns the BG
-	windows= gpu->dispCnt.bits.Win0_Enable || gpu->dispCnt.bits.Win1_Enable;
+	windows=   gpu->dispCnt.bits.Win0_Enable 
+		|| gpu->dispCnt.bits.Win1_Enable
+		|| gpu->dispCnt.bits.WinOBJ_Enable;
+
+	wwin0 = withinRect(	x,y,
+		gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+		gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
+	wwin1 = withinRect(	x,y,
+		gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+		gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
+	wwobj = gpu->sprWin[y][x];
 
 	if (windows) {
-		// where is the LAYER[bgnum] enabled ?
-		win0   = gpu->WINDOW_INCNT.windows.win0_en  & (1<<bgnum);
-		win1   = gpu->WINDOW_INCNT.windows.win1_en  & (1<<bgnum);
-		winOBJ = gpu->WINDOW_OUTCNT.windows.win0_en & (1<<bgnum);
-		outwin = gpu->WINDOW_OUTCNT.windows.win1_en & (1<<bgnum);
+		wwout = !(wwin0||wwin1||wwobj);
+		wwin0 = wwin0 && gpu->dispCnt.bits.Win0_Enable;
+		wwin1 = wwin1 && gpu->dispCnt.bits.Win1_Enable;
+		wwobj = wwobj && gpu->dispCnt.bits.WinOBJ_Enable;
 
-		// is it inside of of the windows ?
-		wwin0 = withinRect(	x,y,
-			gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
-			gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
-		wwin1 = withinRect(	x,y,
-			gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
-			gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
-		// wwobj = withinOBJWindow(x,y);
-		wwobj = FALSE;
+	// HOW THE HELL THIS DOES NOT WORK !!!
 
-		// init to false
-		*effect = FALSE;
+		win0   = (gpu->WINDOW_INCNT.bytes.low   & (1<<bgnum))&&1;
+		win1   = (gpu->WINDOW_INCNT.bytes.high  & (1<<bgnum))&&1;
+		outwin = (gpu->WINDOW_OUTCNT.bytes.low  & (1<<bgnum))&&1;
+		winOBJ = (gpu->WINDOW_OUTCNT.bytes.high & (1<<bgnum))&&1;
 
+	// CHECK THE FOLLOWING, SAME MEANING BUT IT WORKS
+/*
+		win0   = (gpu->WINDOW_INCNT.bytes.low  >> bgnum)&1;
+		win1   = (gpu->WINDOW_INCNT.bytes.high >> bgnum)&1;
+		outwin = (gpu->WINDOW_OUTCNT.bytes.low >> bgnum)&1;
+		winOBJ = (gpu->WINDOW_OUTCNT.bytes.high>> bgnum)&1;
+*/
+		// it is in win0, do we display ?
 		// high priority
-		if (gpu->dispCnt.bits.Win0_Enable) {
-			// it is to be drawn :
-			// 1- if layer enabled, 2- if inside of rect of win0
-			win0   = win0   &&  wwin0;
-			// if not inside of rect, then outside of windows
-			outwin = outwin && ~wwin0;
-			// if it is inside then look for effect
-			*effect |= (win0 && gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable);
+		if (wwin0) {
+			*draw   = win0 ;
+			*effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable&&1;
+			return TRUE;
 		}
+		// it is in win1, do we display ?
 		// mid priority
-		if (gpu->dispCnt.bits.Win1_Enable) {
-			win1   = win1   &&  wwin1;
-			outwin = outwin && ~wwin1;
-			*effect |= (win1 && gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable);
+		if (wwin1) {
+			*draw   = win1;
+			*effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable&&1;
+			return TRUE;
 		}
+		// it is in winOBJ, do we display ?
 		// low priority
-		if (gpu->dispCnt.bits.WinOBJ_Enable) {
-			winOBJ = winOBJ &&  wwobj;
-			outwin = outwin && ~wwobj;
-			*effect |= (winOBJ && gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable);
+		if (wwobj) {
+			*draw   = winOBJ;
+			*effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable&&1;
+			return TRUE;
 		}
-		// at this point, if inside any of the windows, outwin = FALSE
-		// meaning that it is not outside of the windows
-		
-		// it is drawn if one of the regions has still the layer
-		*draw = (win0 || win1 || winOBJ || outwin);
-		// don't forget FX if outside of windows
-		*effect |= (outwin && gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable);
+		// it is outside of windows, do we display ?
+		// fallback
+		if (wwout) {
+			*draw   = outwin;
+			*effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable&&1;
+			return TRUE;
+		}
 	}
-
-	// no windows
+	// now windows or no rule
 	*draw   = TRUE;
 	*effect = TRUE;
 	return FALSE;
@@ -1105,11 +1113,12 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 // spriteRender functions !
 
 #define nbShow 128
-#define RENDER_COND(cond) \
-	if((cond)&&(prioTab[sprX]>=prio)) \
+#define RENDER_COND(cond) RENDER_COND_OFFSET(cond,)
+#define RENDER_COND_OFFSET(cond,offset) \
+	if((cond)&&(prioTab[sprX offset]>=prio)) \
 	{ \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, color,sprX,l); \
-		prioTab[sprX] = prio; \
+		renderline_setFinalColor(gpu, (sprX offset) << 1,4,dst, color,(sprX offset),l); \
+		prioTab[sprX offset] = prio; \
 	}
 
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
@@ -1139,43 +1148,128 @@ INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 	}
 }
 
-INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
+INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u8 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u8 palette, palette_entry; u16 color;
-	x >>= 1;
 
-	// lg is ODD !!!
-	if (xdir<0 && lg&1) {
-		palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+#define BLOCK(op) \
+	palette_entry = palette op; \
+	color = T1ReadWord(pal, palette_entry << 1); \
+	RENDER_COND(palette_entry>0) \
+	++sprX;
+
+#if 0
+
+	if (xdir<0) x++;
+	if(x&1)
+	{
+		s32 x1 = (x>>1);
+		palette = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
+		BLOCK(>> 4)
+		x1 = ((x+lg-1)>>1);
+		palette = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
 		palette_entry = palette >> 4;
 		color = T1ReadWord(pal, palette_entry << 1);
-		RENDER_COND(palette_entry)
-		++sprX;
-		x+=xdir;
-	}
-	// we can do them 2 at a time 
-	for(i = 1; i < lg; i+=2, x+=xdir) {
-		palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
-		palette_entry = palette & 0xF;
-		color = T1ReadWord(pal, palette_entry << 1);
-		RENDER_COND(palette_entry)
-		++sprX;
-		palette_entry = palette >> 4;
-		color = T1ReadWord(pal, palette_entry << 1);
-		RENDER_COND(palette_entry)
+		RENDER_COND_OFFSET(palette_entry>0,+lg-1)
 		++sprX;
 	}
-	// lg is ODD !!!
-	if (xdir>0 && lg&1) {
-		palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
-		palette_entry = palette & 0xF;
-		color = T1ReadWord(pal, palette_entry << 1);
-		RENDER_COND(palette_entry)
-		++sprX;
+	if (xdir<0) x--;
+
+	++sprX;
+	lg >>= 1;
+	x >>= 1;
+	// 16 colors
+
+	if (xdir<0) {
+		for(i = 0; i < lg; ++i, x+=xdir)
+		{
+			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			BLOCK(>> 4)
+			BLOCK(& 0xF)
+		}
+	} else {
+		for(i = 0; i < lg; ++i, x+=xdir)
+		{
+			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			BLOCK(& 0xF)
+			BLOCK(>> 4)
+		}
 	}
+
+#else
+	x >>= 1;
+	sprX++;
+
+	if (xdir<0) {
+		if (lg&1) {
+			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			BLOCK(>> 4)
+			x+=xdir;
+		}
+		for(i = 0; i < lg; i+=2, x+=xdir)
+		{
+			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			BLOCK(>> 4)
+			BLOCK(& 0xF)
+		}
+	} else {
+		for(i = 0; i < lg; i+=2, x+=xdir)
+		{
+			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			BLOCK(& 0xF)
+			BLOCK(>> 4)
+		}
+		if (lg&1) {
+			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+			BLOCK(& 0xF)
+		}
+	}
+#endif
+#undef BLOCK
 }
 
+INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
+	int col256, int lg, int sprX, int x, int xdir) {
+	int i; u8 palette, palette_entry;
+	if (col256) {
+		for(i = 0; i < lg; i++, sprX++,x+=xdir)
+			gpu->sprWin[l][sprX] = (src[x])?1:0;
+	} else {
 
+#define BLOCK(op) \
+	palette_entry = palette op; \
+	gpu->sprWin[l][sprX] = (palette_entry)?1:0;
+	++sprX;
+
+		x >>= 1;
+		sprX++;	
+		if (xdir<0) {
+			if (lg&1) {
+				palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				BLOCK(>> 4)
+				x+=xdir;
+			}
+			for(i = 0; i < lg; i+=2, x+=xdir)
+			{
+				palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				BLOCK(>> 4)
+				BLOCK(& 0xF)
+			}
+		} else {
+			for(i = 0; i < lg; i+=2, x+=xdir)
+			{
+				palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				BLOCK(& 0xF)
+				BLOCK(>> 4)
+			}
+			if (lg&1) {
+				palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
+				BLOCK(& 0xF)
+			}
+		}
+#undef BLOCK
+	}
+}
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
@@ -1252,6 +1346,17 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			xdir  = 1;
 		}
 	
+#if 1	
+		if (spriteInfo->Mode == 2) {
+			if (spriteInfo->Depth)
+				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+			else
+				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+			render_sprite_Win (gpu, l, src,
+				spriteInfo->Depth, lg, sprX, x, xdir);
+			continue;
+		}
+#endif
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
 			/* sprMemory + sprBlock + 16Bytes per line (8pixels a 2 bytes) */
@@ -1357,7 +1462,17 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		} else {
 			xdir  = 1;
 		}
-	
+#if 1
+		if (spriteInfo->Mode == 2) {
+			if (spriteInfo->Depth)
+				src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
+			else
+				src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
+			render_sprite_Win (gpu, l, src,
+				spriteInfo->Depth, lg, sprX, x, xdir);
+			continue;
+		}
+#endif
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
 			src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
