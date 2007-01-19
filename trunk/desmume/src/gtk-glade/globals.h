@@ -45,6 +45,7 @@
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../types.h"
+#include "../saves.h"
 #include "desmume.h"
 
 uint Frameskip;

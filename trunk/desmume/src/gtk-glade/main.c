@@ -122,10 +122,71 @@ int Write_ConfigFile()
 	return 0;
 }
 
+/* ******** Savestate menu items handling ******** */
 
+void set_menuitem_label(GtkWidget * w, char * text )
+{
+  GtkLabel * child;
 
+  if ( GTK_BIN(w)->child )
+    {
+      child = GTK_BIN(w)->child;
+      gtk_label_set_text(child, text);
+    }
+}
 
+void clear_savestate_menu(char * cb_name, u8 num)
+{
+  GtkWidget * w;
+  char cb[40];
+  char text[40];
 
+  sprintf( cb, "%s%d", cb_name, num);
+  sprintf( text, "State %d (empty)", num);
+  w = glade_xml_get_widget(xml, cb);
+  set_menuitem_label( w, text );
+  gtk_check_menu_item_set_active((GtkCheckMenuItem*)w, FALSE);
+}
+
+void update_savestate_menu(char * cb_name, u8 num)
+{
+  GtkWidget * w;
+  char cb[40];
+
+  sprintf( cb, "%s%d", cb_name, num);
+  w = glade_xml_get_widget(xml, cb);
+  set_menuitem_label( w, savestates[num-1].date );
+  /* FIXME: Setting the menu item active makes DeSmuME go crazy!? */
+/*   gtk_check_menu_item_set_active((GtkCheckMenuItem*)w, TRUE); */
+}
+
+void update_savestates_menu()
+{
+  char cb[15];
+  u8 i;
+  GtkWidget * w;
+
+  for( i = 1; i <= NB_STATES; i++ )
+    {
+      if( savestates[i-1].exists == TRUE )
+        {
+          update_savestate_menu("loadstate", i);
+          update_savestate_menu("savestate", i);
+        }
+      else
+        {
+          clear_savestate_menu("loadstate", i);
+          clear_savestate_menu("savestate", i);
+        }
+    }
+}
+
+void update_savestate(u8 num)
+{
+  savestate_slot(num);
+  update_savestate_menu("savestate", num);
+  update_savestate_menu("loadstate", num);
+}
 
 /* ***** ***** MAIN ***** ***** */
 

@@ -413,7 +413,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">0</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <signal name="activate" handler="on_fs0_activate" last_modification_time="Tue, 02 Jan 2007 14:35:13 GMT"/>
 			    </widget>
 			  </child>
@@ -511,7 +511,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">9</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">True</property>
+			      <property name="active">False</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs9_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -535,7 +535,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">1x</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <signal name="activate" handler="on_size1x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
@@ -556,7 +556,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">3x</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">True</property>
+			      <property name="active">False</property>
 			      <property name="group">size1x</property>
 			      <signal name="activate" handler="on_size3x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>

@@ -26,6 +26,8 @@
 #include "saves.h"
 #include "MMU.h"
 #include "NDSSystem.h"
+#include <sys/stat.h>
+#include <time.h>
 
 #define SAVESTATE_VERSION       010
 
@@ -33,12 +35,58 @@
 #define MAX_PATH 256
 #endif
 
+/* Format time and convert to string */
+char * format_time(time_t cal_time)
+{
+  struct tm *time_struct;
+  static char string[30];
+
+  time_struct=localtime(&cal_time);
+  strftime(string, sizeof string, "%Y-%m-%d %H:%M", time_struct);
+
+  return(string);
+}
+
+void clear_savestates()
+{
+  u8 i;
+  for( i = 0; i < NB_STATES; i++ )
+    savestates[i].exists = FALSE;
+}
+
+/* Scan for existing savestates and update struct */
+void scan_savestates()
+{
+  struct stat sbuf;
+  char filename[MAX_PATH];
+  u8 i;
+
+  clear_savestates();
+
+  for( i = 1; i <= NB_STATES; i++ )
+    {
+      strcpy(filename, szRomBaseName);
+      sprintf(filename+strlen(filename), "%d.dst", i);
+      if( stat(filename,&sbuf) == -1 ) continue;
+      savestates[i-1].exists = TRUE;
+      strcpy(savestates[i-1].date, format_time(sbuf.st_mtime));
+    }
+
+  return 1;
+}
+
 void savestate_slot(int num)
 {
+   struct stat sbuf;
    char filename[MAX_PATH];
+
    strcpy(filename, szRomBaseName);
    sprintf(filename+strlen(filename), "%d.dst", num);
    savestate_save(filename);
+
+   savestates[num-1].exists = TRUE;
+   if( stat(filename,&sbuf) == -1 ) return;
+   strcpy(savestates[num-1].date, format_time(sbuf.st_mtime));
 }
 
 void loadstate_slot(int num)
