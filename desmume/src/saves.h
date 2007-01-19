@@ -26,20 +26,30 @@ extern "C" {
 
 #include "types.h"
 
-	#define SRAM_ADDRESS	0x0A000000
-	#define SRAM_SIZE		0x10000
+#define SRAM_ADDRESS	0x0A000000
+#define SRAM_SIZE		0x10000
+#define NB_STATES       10
 
-        u8 sram_read (u32 address);
-        void sram_write (u32 address, u8 value);
-        int sram_load (const char *file_name);
-        int sram_save (const char *file_name);
-	
-        int savestate_load (const char *file_name);
-        int savestate_save (const char *file_name);
+typedef struct 
+{
+  BOOL exists;
+  char date[40];
+} savestates_t;
 
+savestates_t savestates[NB_STATES];
 
-	void savestate_slot(int num);
-	void loadstate_slot(int num);
+void clear_savestates();
+void scan_savestates();
+u8 sram_read (u32 address);
+void sram_write (u32 address, u8 value);
+int sram_load (const char *file_name);
+int sram_save (const char *file_name);
+
+int savestate_load (const char *file_name);
+int savestate_save (const char *file_name);
+
+void savestate_slot(int num);
+void loadstate_slot(int num);
 
 #ifdef __cplusplus
 }

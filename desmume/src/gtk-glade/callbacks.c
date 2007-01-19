@@ -28,7 +28,14 @@ gboolean ScreenGap=FALSE;
 
 /* inline & protos */
 
+inline void SET_SENSITIVE(gchar *w, gboolean b) {
+	gtk_widget_set_sensitive(
+		glade_xml_get_widget(xml, w), TRUE);
+}
+
 void enable_rom_features() {
+	scan_savestates();
+	update_savestates_menu();
 	SET_SENSITIVE("menu_exec", TRUE);
 	SET_SENSITIVE("menu_pause", TRUE);
 	SET_SENSITIVE("menu_reset", TRUE);
@@ -54,12 +61,6 @@ void MAINWINDOW_RESIZE() {
 
 	gtk_window_resize ((GtkWindow*)pWindow,1,1);
 }
-
-void inline SET_SENSITIVE(gchar *w, gboolean b) {
-	gtk_widget_set_sensitive(
-		glade_xml_get_widget(xml, w), TRUE);
-}
-
 
 /* MENU FILE ***** ***** ***** ***** */
 void inline ADD_FILTER(GtkWidget * filech, const char * pattern, const char * name) {
@@ -128,7 +129,6 @@ void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk
 
 
 /* MENU SAVES ***** ***** ***** ***** */
-
 void on_loadstate1_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(1); }
 void on_loadstate2_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(2); }
 void on_loadstate3_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(3); }
@@ -140,16 +140,16 @@ void on_loadstate8_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(8); }
 void on_loadstate9_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(9); }
 void on_loadstate10_activate(GtkMenuItem *m, gpointer d) { loadstate_slot(10); }
 
-void on_savestate1_activate (GtkMenuItem *m, gpointer d) { savestate_slot(1); }
-void on_savestate2_activate (GtkMenuItem *m, gpointer d) { savestate_slot(2); }
-void on_savestate3_activate (GtkMenuItem *m, gpointer d) { savestate_slot(3); }
-void on_savestate4_activate (GtkMenuItem *m, gpointer d) { savestate_slot(4); }
-void on_savestate5_activate (GtkMenuItem *m, gpointer d) { savestate_slot(5); }
-void on_savestate6_activate (GtkMenuItem *m, gpointer d) { savestate_slot(6); }
-void on_savestate7_activate (GtkMenuItem *m, gpointer d) { savestate_slot(7); }
-void on_savestate8_activate (GtkMenuItem *m, gpointer d) { savestate_slot(8); }
-void on_savestate9_activate (GtkMenuItem *m, gpointer d) { savestate_slot(9); }
-void on_savestate10_activate(GtkMenuItem *m, gpointer d) { savestate_slot(10); }
+void on_savestate1_activate (GtkMenuItem *m, gpointer d) { update_savestate(1); }
+void on_savestate2_activate (GtkMenuItem *m, gpointer d) { update_savestate(2); }
+void on_savestate3_activate (GtkMenuItem *m, gpointer d) { update_savestate(3); }
+void on_savestate4_activate (GtkMenuItem *m, gpointer d) { update_savestate(4); }
+void on_savestate5_activate (GtkMenuItem *m, gpointer d) { update_savestate(5); }
+void on_savestate6_activate (GtkMenuItem *m, gpointer d) { update_savestate(6); }
+void on_savestate7_activate (GtkMenuItem *m, gpointer d) { update_savestate(7); }
+void on_savestate8_activate (GtkMenuItem *m, gpointer d) { update_savestate(8); }
+void on_savestate9_activate (GtkMenuItem *m, gpointer d) { update_savestate(9); }
+void on_savestate10_activate(GtkMenuItem *m, gpointer d) { update_savestate(10); }
 
 
 /* MENU EMULATION ***** ***** ***** ***** */

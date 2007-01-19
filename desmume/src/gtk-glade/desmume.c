@@ -50,8 +50,10 @@ void desmume_free()
 
 int desmume_open(const char *filename)
 {
-        int i = NDS_LoadROM(filename, MC_TYPE_AUTODETECT, 1);
-	return i;
+  int i;
+  clear_savestates();
+  i = NDS_LoadROM(filename, MC_TYPE_AUTODETECT, 1);
+  return i;
 }
 
 void desmume_pause()
@@ -61,12 +63,10 @@ void desmume_pause()
 
 void desmume_resume()
 {
+  execute = TRUE;
 
-	execute = TRUE;
-	if(!regMainLoop)
-	{
-		g_idle_add_full(EMULOOP_PRIO, &EmuLoop, NULL, NULL); regMainLoop = TRUE;
-	}
+  if(!regMainLoop)
+    g_idle_add_full(EMULOOP_PRIO, &EmuLoop, NULL, NULL); regMainLoop = TRUE;
 }
 
 void desmume_reset()

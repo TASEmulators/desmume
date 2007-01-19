@@ -4,7 +4,7 @@ desmume_glade_SOURCES =  \
 	globals.h keyval_names.c main.c printscreen.c \
 	dTools/callbacks_1_ioregs.c dTools/callbacks_2_memview.c \
 	dTools/callbacks_3_palview.c dTools/callbacks_dtools.h \
-	../sndsdl.h ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c
+	../sndsdl.h ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c 
 desmume_glade_LDADD = ../libdesmume.a $(SDL_LIBS) $(LIBGLADE_LIBS)
 desmume_glade_CFLAGS = $(SDL_CFLAGS) $(LIBGLADE_CFLAGS)
 desmume_glade_LDFLAGS = -rdynamic
