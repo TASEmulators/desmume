@@ -183,9 +183,11 @@ void update_savestates_menu()
 
 void update_savestate(u8 num)
 {
+  desmume_pause();
   savestate_slot(num);
   update_savestate_menu("savestate", num);
   update_savestate_menu("loadstate", num);
+  desmume_resume();
 }
 
 /* ***** ***** MAIN ***** ***** */
