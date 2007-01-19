@@ -366,10 +366,12 @@ struct _GPU
 	
 	u8 dispMode;
 	u8 vramBlock;
-	
-	u8 nbBGActif;
+
+	// these two are going to be deleted (use itemsForPriority instead...)
 	u8 BGIndex[4];
 	u8 ordre[4];
+	
+	
 	BOOL dispBG[4];
 	BOOL dispOBJ;
 	

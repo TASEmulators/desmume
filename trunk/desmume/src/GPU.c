@@ -131,33 +131,21 @@ void GPU_DeInit(GPU * gpu)
 
 void GPU_resortBGs(GPU *gpu)
 {
-	u16 WinBG=0;
 	u8 i, j, prio;
 	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
 	itemsForPriority_t * item;
 
-	if (cnt->Win0_Enable || cnt->Win1_Enable || cnt->WinOBJ_Enable) {
-		if (cnt->Win0_Enable)   WinBG  |= gpu->WINDOW_INCNT.bytes.low;
-		if (cnt->Win1_Enable)   WinBG  |= gpu->WINDOW_INCNT.bytes.high;
-		if (cnt->WinOBJ_Enable) WinBG  |= gpu->WINDOW_OUTCNT.bytes.high;
-		WinBG |= gpu->WINDOW_OUTCNT.bytes.low;
-	} else {
-		WinBG = 0x1F;
-	}
-
 	for (i=0; i<192; i++)
 		memset(gpu->sprWin[i],0, 256);
-#define OP ||
-	// Let's prepare the field for WINDOWS implementation
-	gpu->LayersEnable[0] = gpu->dispBG[0] && (cnt->BG0_Enable OP (WinBG & 0x1)) && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
-	gpu->LayersEnable[1] = gpu->dispBG[1] && (cnt->BG1_Enable OP (WinBG & 0x2));
-	gpu->LayersEnable[2] = gpu->dispBG[2] && (cnt->BG2_Enable OP (WinBG & 0x4));
-	gpu->LayersEnable[3] = gpu->dispBG[3] && (cnt->BG3_Enable OP (WinBG & 0x8));
-	// sprite doesn't need obj window to be displayed !
+
+	// we don't need to check for windows here...
+	gpu->LayersEnable[0] = gpu->dispBG[0] && cnt->BG0_Enable && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
+	gpu->LayersEnable[1] = gpu->dispBG[1] && cnt->BG1_Enable;
+	gpu->LayersEnable[2] = gpu->dispBG[2] && cnt->BG2_Enable;
+	gpu->LayersEnable[3] = gpu->dispBG[3] && cnt->BG3_Enable;
 	gpu->LayersEnable[4] = gpu->dispOBJ &&   cnt->OBJ_Enable;
 
 	// KISS ! lower priority first, if same then lower num
-	
 	for (i=0;i<NB_PRIORITIES;i++) {
 		item = &(gpu->itemsForPriority[i]);
 		item->nbBGs=0;
@@ -172,7 +160,6 @@ void GPU_resortBGs(GPU *gpu)
 		item->nbBGs++;
 		j++;
 	}
-	gpu->nbBGActif = j;
 	
 #if 0
 //debug
@@ -221,7 +208,6 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			return;
 	}
 
-	gpu->nbBGActif = 0;
         if(cnt->OBJ_Tile_1D)
 	{
 		/* 1-d sprite mapping */
@@ -255,17 +241,6 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	GPU_setBGProp(gpu, 0, T1ReadWord(ARM9Mem.ARM9_REG, gpu->core * ADDRESS_STEP_4KB + 8));
 	
 	GPU_resortBGs(gpu);
-
-	/* FIXME: this debug won't work, obviously ... */
-#ifdef DEBUG_TRI
-	log::ajouter("------------------");
-	for(u8 i = 0; i < gpu->nbBGActif; ++i)
-	{
-		sprintf(logbuf, "bg %d prio %d", gpu->ordre[i], gpu->bgCnt[gpu->ordre[i]].bits.Priority);
-		log::ajouter(logbuf);
-	}
-	log::ajouter("_________________");
-#endif
 }
 
 /* this is writing in BGxCNT */
