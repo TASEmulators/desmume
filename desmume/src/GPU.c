@@ -1141,8 +1141,8 @@ INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 	{
 		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
 		color = pal[palette_entry];
-		// 0 = backdrop
-		RENDER_COND(color&0x8000)
+		// palette entry = 0 means backdrop
+		RENDER_COND(palette_entry>0)
 	}
 }
 
@@ -1378,7 +1378,6 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 			continue;
 		}
-	
 		/* 16 colors */
 		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
 		pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400;
