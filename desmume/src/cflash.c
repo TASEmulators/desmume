@@ -19,12 +19,12 @@
 	
 */
 
+#include <string.h>
 #include "fs.h"
 #include "cflash.h"
 #include "NDSSystem.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 
 #define SECPERFAT	128
@@ -193,7 +193,8 @@ void list_files(char *fpath) {
 	maxLevel++;
 	fileLevel = maxLevel;
 
-	strncpy(DirSpec, fpath, strlen(fpath)+1);
+	strncpy(DirSpec, fpath, 255+1);		/* if we use strncpy, we use it correct to limit it by the internal, not input size */
+	DirSpec[255] = 0 ; /* hard limit the string here */
 
 	hFind = FsReadFirst(DirSpec, &entry);
 
@@ -210,8 +211,11 @@ void list_files(char *fpath) {
 			if (numFiles==MAXFILES-1) break;
 
 			if ((entry.flags & FS_IS_DIR) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) {
-				sprintf(SubDir, "%s%c%s", fpath, FS_SEPARATOR, fname);
-				list_files(SubDir);
+				if (strlen(fname)+strlen(fpath)+2 < 256)
+				{
+					sprintf(SubDir, "%s%c%s", fpath, FS_SEPARATOR, fname);
+					list_files(SubDir);
+				}
 			}
 		}
     
