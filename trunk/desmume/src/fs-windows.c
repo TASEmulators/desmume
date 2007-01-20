@@ -31,6 +31,7 @@ void * FsReadFirst(const char * p, FsEntry * entry) {
 	HANDLE hFind;
 	HANDLE * ret;
 	char path[1024];
+	if (strlen(p)+3 >sizeof(path)) return NULL ;
 
 	sprintf(path, "%s\\*", p);
 
@@ -38,8 +39,10 @@ void * FsReadFirst(const char * p, FsEntry * entry) {
 	if (hFind == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	strcpy(entry->cFileName, FindFileData.cFileName);
-	strcpy(entry->cAlternateFileName, FindFileData.cAlternateFileName);
+	strncpy(entry->cFileName, FindFileData.cFileName,256);
+	entry->cFileName[255] = 0 ;
+	strncpy(entry->cAlternateFileName, FindFileData.cAlternateFileName,14);
+	entry->cAlternateFileName[14] = 0 ;
 	entry->flags = 0;
 	if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		entry->flags = FS_IS_DIR;
@@ -57,8 +60,10 @@ int FsReadNext(void * search, FsEntry * entry) {
 
 	ret = FindNextFile(*h, &FindFileData);
 
-	strcpy(entry->cFileName, FindFileData.cFileName);
-	strcpy(entry->cAlternateFileName, FindFileData.cAlternateFileName);
+	strncpy(entry->cFileName, FindFileData.cFileName,256);
+	entry->cFileName[255] = 0 ;
+	strncpy(entry->cAlternateFileName, FindFileData.cAlternateFileName,14);
+	entry->cAlternateFileName[14] = 0 ;
 	entry->flags = 0;
 	if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		entry->flags = FS_IS_DIR;
