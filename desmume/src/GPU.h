@@ -670,7 +670,7 @@ typedef struct
    int (*Init)(); // Initializes stuff related to core
    void (*DeInit)(); // Deinitializes stuff related to core
    void (*Resize)(int width, int height, BOOL fullscreen); // Resizes window or fullscreen
-   void (*OnScreenText)(char *string, ..); // For handling save state messages, etc. 
+   void (*OnScreenText)(char *string, ...); // For handling save state messages, etc. 
 } GraphicsInterface_struct;
 
 void GPU_setVideoProp(GPU *, u32 p);
