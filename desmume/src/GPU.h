@@ -3,6 +3,7 @@
     yopyop156.ifrance.com
 
     Copyright (C) 2006-2007 Theo Berkau
+	Copyright (C) 2007 shash
 
     This file is part of DeSmuME
 

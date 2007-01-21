@@ -2,6 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+	Copyright (C) 2007 shash
+
     This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
