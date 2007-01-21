@@ -156,8 +156,9 @@ void update_savestate_menu(char * cb_name, u8 num)
   sprintf( cb, "%s%d", cb_name, num);
   w = glade_xml_get_widget(xml, cb);
   set_menuitem_label( w, savestates[num-1].date );
-  /* FIXME: Setting the menu item active makes DeSmuME go crazy!? */
-/*   gtk_check_menu_item_set_active((GtkCheckMenuItem*)w, TRUE); */
+  /* FIXME: Uncommenting the following makes DeSmuME go crazy.
+     It triggers the callback (update_savestate) on activate. */
+/*   gtk_check_menu_item_set_active((GtkCheckMenuItem*)w, TRUE);  */
 }
 
 void update_savestates_menu()
@@ -183,6 +184,7 @@ void update_savestates_menu()
 
 void update_savestate(u8 num)
 {
+  printf("Update savestate!\n");
   desmume_pause();
   savestate_slot(num);
   update_savestate_menu("savestate", num);
