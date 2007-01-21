@@ -4,12 +4,15 @@
   - Added region access right checks.
   - Enabled LDC/STC instructions.
   - Fixed powersave (cp15) IRQ wait.
+  - Fixed MOV instructions
  gpu:
   - Added special color effects.
   - Added windowing feature.
   - Fixed transparent direct color backgrounds.
   - Fixed disabled sprites showing.
   - Fixed 8/32 bit access to gpu registers.
+  - Fixed missing backgrounds
+  - Support for master brightness
  wifi:
   - Added RF chip interface.
   - Added BB chip interface.
