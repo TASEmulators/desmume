@@ -2,7 +2,7 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright (C) 2006 Theo Berkau
+    Copyright (C) 2006-2007 Theo Berkau
 
     This file is part of DeSmuME
 
@@ -658,7 +658,21 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			break;
 	 }
 }
- 
+
+#define GFXCORE_DEFAULT         -1
+#define GFXCORE_DUMMY           0
+
+typedef struct
+{
+   int id; // ID number for core(see above defines)
+   const char *Name; // Name of core
+   int flags; // What features the core supports(full screen, etc.)
+   int (*Init)(); // Initializes stuff related to core
+   void (*DeInit)(); // Deinitializes stuff related to core
+   void (*Resize)(int width, int height, BOOL fullscreen); // Resizes window or fullscreen
+   void (*OnScreenText)(char *string, ..); // For handling save state messages, etc. 
+} GraphicsInterface_struct;
+
 void GPU_setVideoProp(GPU *, u32 p);
 void GPU_setBGProp(GPU *, u16 num, u16 p);
 void GPU_scrollX(GPU *, u8 num, u16 v);
