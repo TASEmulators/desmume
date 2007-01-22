@@ -220,26 +220,29 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         if(cnt->OBJ_Tile_1D)
 	{
 		/* 1-d sprite mapping */
-		/* TODO: better comment (and understanding btw 8S) */
-                gpu->sprBlock = 5 + cnt->OBJ_Tile_1D_Bound ;
+		// boundary :
+		// core A : 32k, 64k, 128k, 256k
+		// core B : 32k, 64k, 128k, 128k
+                gpu->sprBoundary = 5 + cnt->OBJ_Tile_1D_Bound ;
                 if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3))
 		{
-			gpu->sprBlock = 7;
+			gpu->sprBoundary = 7;
 		}
 		gpu->spriteRender = sprite1D;
 	} else {
 		/* 2d sprite mapping */
-		gpu->sprBlock = 5;
+		// boundary : 32k
+		gpu->sprBoundary = 5;
 		gpu->spriteRender = sprite2D;
 	}
      
         if(cnt->OBJ_BMP_1D_Bound && (gpu->core == GPU_MAIN))
 	{
-		gpu->sprBMPBlock = 8;
+		gpu->sprBMPBoundary = 8;
 	}
 	else
 	{
-		gpu->sprBMPBlock = 7;
+		gpu->sprBMPBoundary = 7;
 	}
 
 	gpu->sprEnable = cnt->OBJ_Enable;
@@ -807,43 +810,38 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 	}
 	if(!gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: no extended palette */
 	{
-		yoff = ((YBG&7)<<3);
-		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
-		for(x = 0; x < LG;)
+		u8 * mapinfo;
+		u16 mapinfovalue;
+		u8 *line;
+		u16 xfin;
+		tmp = ((xoff&(lg-1))>>3);
+		mapinfo = map + (tmp & 31) * 2;
+		mapinfovalue;
+
+		if(tmp > 31) mapinfo += 32*32*2;
+
+		mapinfovalue = T1ReadWord(mapinfo, 0);
+
+		line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
+		xfin = x + (8 - (xoff&7));
+		if (xfin > LG)
+			xfin = LG;
+		
+		if((mapinfovalue)& 0x400)
 		{
-			u8 * mapinfo;
-			u16 mapinfovalue;
-			u8 *line;
-			u16 xfin;
-			tmp = ((xoff&(lg-1))>>3);
-			mapinfo = map + (tmp & 31) * 2;
-			mapinfovalue;
-
-			if(tmp > 31) mapinfo += 32*32*2;
-
-			mapinfovalue = T1ReadWord(mapinfo, 0);
-
-			line = (u8 * )tile + ((mapinfovalue&0x3FF)*0x40) + (((mapinfovalue)& 0x800 ? (7*8)-yoff : yoff));
-			xfin = x + (8 - (xoff&7));
-			if (xfin > LG)
-				xfin = LG;
-			
-			if((mapinfovalue)& 0x400)
+			line += (7 - (xoff&7));
+			for(; x < xfin; )
 			{
-				line += (7 - (xoff&7));
-				for(; x < xfin; )
-				{
-					RENDERL((*line),0)
-					line--;
-				}
-			} else
+				RENDERL((*line),0)
+				line--;
+			}
+		} else
+		{
+			line += (xoff&7);
+			for(; x < xfin; )
 			{
-				line += (xoff&7);
-				for(; x < xfin; )
-				{
-					RENDERL((*line),0)
-					line++;
-				}
+				RENDERL((*line),0)
+				line++;
 			}
 		}
 		return;
@@ -896,143 +894,136 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 #undef RENDERL
 }
 
-INLINE void rotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
-{
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 
-     s32 x = X + (s32)PB*(s32)H;
-     s32 y = Y + (s32)PD*(s32)H;
+// scale rot
 
+void rot_tiled_8bit_entry(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+	u8 palette_entry;
+	u16 tileindex, x, y, color;
 
-     s32 dx = (s32)PA;
-     s32 dy = (s32)PC;
+	tileindex = map[(auxX + auxY * lg)>>3];
+	x = (auxX&7); y = (auxY&7);
 
-     s32 auxX;
-     s32 auxY;
-
-     s32 lg = gpu->BGSize[num][0];
-     s32 ht = gpu->BGSize[num][1];
-     s32 lgmap = (lg>>3);
-
-     u8 * map = gpu->BG_map_ram[num];
-     u8 * tile = (u8 *)gpu->BG_tile_ram[num];
-     u8 * dst = DST;
-     u8 mapinfo;
-     u8 coul;
-     u8 * pal;
-     u32 i;
-
-     if((!tile)||(!map)) return;
-
-     pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-     for(i = 0; i < LG; ++i)
-     {
-          auxX = x>>8;
-          auxY = y>>8;
-
-          if(bgCnt.PaletteSet_Wrap)
-          {
-               auxX &= (lg-1);
-               auxY &= (ht-1);
-          }
-
-          if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
-          {
-               mapinfo = map[(auxX>>3) + ((auxY>>3) * lgmap)];
-               coul = tile[mapinfo*64 + ((auxY&7)<<3) + (auxX&7)];
-               if(coul)
-		    		renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, coul << 1),i,X);
-          }
-          dst += 2;
-          x += dx;
-          y += dy;
-     }
+	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
+	color = T1ReadWord(pal, palette_entry << 1);
+	if (palette_entry)
+		renderline_setFinalColor(gpu,0,num,dst, color,auxX,auxY);
 }
 
-INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
+void rot_tiled_16bit_entry(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+	u8 palette_entry, palette_set;
+	u16 tileindex, x, y, color;
+	
+	if (!tile) return;
+	tileindex = T1ReadWord(map, ((auxX + auxY * lg)>>3) << 1);
+	palette_set = tileindex >> 12;
+	tileindex &= 0x3FF;
+	x = (palette_set & 1) ? 7 - (auxX&7) : (auxX&7);
+	y = (palette_set & 2) ? 7 - (auxY&7) : (auxY&7);
+
+	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
+	color = T1ReadWord(pal, (palette_entry + (palette_set<<8)) << 1);
+	if (palette_entry)
+		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
+}
+
+void rot_256_map(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+	u8 palette_entry;
+	u16 tileindex, color;
+
+	palette_entry = map[auxX + auxY * lg];
+	color = T1ReadWord(pal, palette_entry << 1);
+	if(palette_entry)
+		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
+
+}
+
+void rot_BMP_map(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+	u16 color;
+
+	color = T1ReadWord(map, (auxX + auxY * lg) << 1);
+	if (color&0x8000)
+		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
+
+}
+
+typedef void (*rot_fun)(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal);
+
+INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
+{
+	ROTOCOORD x, y;
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
+
+	s32 dx = (s32)PA;
+	s32 dy = (s32)PC;
+	s32 lg = gpu->BGSize[num][0];
+	s32 ht = gpu->BGSize[num][1];
+	u32 i, auxX, auxY;
+	
+	if (!map) return;
+	x.val = X + (s32)PB*(s32)H;
+	y.val = Y + (s32)PD*(s32)H;
+
+	for(i = 0; i < LG; ++i)
+	{
+		auxX = x.bits.Integer;
+		auxY = y.bits.Integer;
+	
+		if(bgCnt.PaletteSet_Wrap)
+		{
+			// wrap
+			auxX = auxX & (lg-1);
+			auxY = auxY & (ht-1);
+		}
+	
+		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
+			fun(gpu, num, auxX, auxY, lg, dst, map, tile, pal);
+		dst += 2;
+		x.val += dx;
+		y.val += dy;
+	}
+}
+
+INLINE void rotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG) {
+	u8 * map = gpu->BG_map_ram[num];
+	u8 * tile = (u8 *)gpu->BG_tile_ram[num];
+	u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+//	printf("rot mode\n");
+	apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_tiled_8bit_entry, map, tile, pal);
+}
+
+INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
 	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 	
-	s32 x = X + (s32)PB*(s32)H;
-	s32 y = Y + (s32)PD*(s32)H;
-	
-	s32 dx = PA;
-	s32 dy = PC;
-	
-	s32 auxX;
-	s32 auxY;
-	
-	s16 lg = gpu->BGSize[num][0];
-	s16 ht = gpu->BGSize[num][1];
-	u16 lgmap = (lg>>3);
-	
-	u8 * tile = (u8 *)gpu->BG_tile_ram[num];
-	u8 * dst = DST;
-	u8 * map;
-	u16 mapinfo, i;
-	u8 coul;
+	u8 *map, *tile, *pal;
 	u8 affineModeSelection ;
 
 	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
 	affineModeSelection = (bgCnt.Palette_256 << 1) | (bgCnt.CharacBase_Block & 1) ;
+//	printf("extrot mode %d\n", affineModeSelection);
 	switch(affineModeSelection)
 	{
-		case 0 :
-		case 1 :
-		{
-		u8 * pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
-		if(!pal) return;
-
-#define LOOP(c) \
-	for(i = 0; i < LG; ++i) { \
-		auxX = x>>8; auxY = y>>8; \
-		if(bgCnt.PaletteSet_Wrap) { \
-			auxX &= (lg-1); auxY &= (ht-1); \
-		} \
-		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht)) c \
-		dst += 2; x += dx; y += dy; \
-	} 
+	case 0 :
+	case 1 :
+		// 16  bit bgmap entries
 		map = gpu->BG_map_ram[num];
-		LOOP(
-		{
-			u16 x1;
-			u16 y1;
-			mapinfo = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * lgmap) << 1);
-
-			x1 = (mapinfo & 0x400) ? 7 - (auxX&7) : (auxX&7);
-			y1 = (mapinfo & 0x800) ? 7 - (auxY&7) : (auxY&7);
-			coul = tile[(mapinfo&0x3FF)*64 + x1 + (y1<<3)];
-			if(coul)
-			renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, (coul + (mapinfo>>12)*0x100) << 1),i,H);
-		})
-	
-		}
+		tile = gpu->BG_tile_ram[num];
+		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_tiled_16bit_entry, map, tile, pal);
 		return;
 	case 2 :
-		{
-		u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-		u8 * map = gpu->BG_bmp_ram[num];
-		LOOP(
-		{
-			mapinfo = map[auxX + auxY * lg];
-			if(mapinfo)
-				renderline_setFinalColor(gpu,0,num,dst, T1ReadWord(pal, mapinfo << 1),i,H);
-		})
-		}
+		// 256 colors 
+		map = gpu->BG_bmp_ram[num];
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_256_map, map, NULL, pal);
 		return;
-	case 3 : /* direct color bitmap */
-		{
-		u8 * map = gpu->BG_bmp_ram[num];
-		LOOP(
-		{
-			mapinfo = T1ReadWord(map, (auxX + auxY * lg) << 1);
-			if ((mapinfo) && (mapinfo & 0x8000))
-				renderline_setFinalColor(gpu,0,num,dst, mapinfo,i,H);
-		})
-		}
+	case 3 :
+		// direct colors / BMP
+		map = gpu->BG_bmp_ram[num];
+		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_BMP_map, map, NULL, NULL);
 		return;
-#undef LOOP
-     }
+	}
 }
 
 void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
@@ -1112,7 +1103,6 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src,
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
 		color = src[x];
-		//RENDER_COND(color,)
 		// alpha bit = invisible
 		RENDER_COND(color&0x8000)
 	}
@@ -1254,7 +1244,7 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
-	u8 block = gpu->sprBlock;
+	u8 block = gpu->sprBoundary;
 	u16 i;
 	
 	for(i = 0; i<nbShow; ++i, --spriteInfo)     /* check all sprites */
@@ -1268,20 +1258,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u8 prio;
 		u8 * src;
 		u8 * pal;
-		u16 i,j;
+		u16 i,j , rotScaleIndex;
 		int xdir;
 
 		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
-		if (spriteInfo->RotScale & 1) {
-			/* if we need to do rotscale, gather its parameters */
-			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
-			rotScaleA = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x06,0) ;
-			rotScaleB = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x0E,0) ;
-			rotScaleC = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x16,0) ;
-			rotScaleD = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x1E,0) ;
-		} ;
 
-	
 		// get sprite location and size
 		sprX = (spriteInfo->X<<23)>>23;
 		sprY = spriteInfo->Y;
@@ -1326,6 +1307,17 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			xdir  = 1;
 		}
 	
+		if (spriteInfo->RotScale & 1) {
+			// index from 0 to 31
+			rotScaleIndex = spriteInfo->RotScalIndex + (spriteInfo->HFlip<<1) + (spriteInfo->VFlip << 2);
+			/* if we need to do rotscale, gather its parameters */
+			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
+			rotScaleA = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x06),0) ;
+			rotScaleB = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x0E),0) ;
+			rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
+			rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
+		}
+
 #if 1	
 		if (spriteInfo->Mode == 2) {
 			if (spriteInfo->Depth)
@@ -1339,10 +1331,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 #endif
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
-			/* sprMemory + sprBlock + 16Bytes per line (8pixels a 2 bytes) */
-			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBlock);
+			/* sprMemory + sprBoundary + 16Bytes per line (8pixels a 2 bytes) */
+			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary);
 
-			render_sprite_BMP (gpu, l, dst, src,
+			render_sprite_BMP (gpu, l, dst, (u16*)src,
 				prioTab, prio, lg, sprX, x, xdir);
 
 			continue;
@@ -1357,7 +1349,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			else
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-			render_sprite_256 (gpu, l, dst, src, pal,
+			render_sprite_256 (gpu, l, dst, src, (u16*)pal,
 				prioTab, prio, lg, sprX, x, xdir);
 
 			continue;
@@ -1392,15 +1384,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		u16 i, j;
 		int xdir, block;
 	
-		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
-		if (spriteInfo->RotScale & 1) {
-			/* if we need to do rotscale, gather its parameters */
-			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
-			rotScaleA = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x06,0) ;
-			rotScaleB = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x0E,0) ;
-			rotScaleC = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x16,0) ;
-			rotScaleD = T1ReadWord(gpu->oam + spriteInfo->RotScalIndex*0x20 + 0x1E,0) ;
-		} ;
+		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD, rotScaleIndex ;
 
 		sprX = (spriteInfo->X<<23)>>23;
 		sprY = spriteInfo->Y;
@@ -1430,6 +1414,18 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		y = l - sprY;
 		prio = spriteInfo->Priority;
 	
+		if (spriteInfo->RotScale & 1) {
+			// index from 0 to 31
+			rotScaleIndex = spriteInfo->RotScalIndex + (spriteInfo->HFlip<<1) + (spriteInfo->VFlip << 2);
+			/* if we need to do rotscale, gather its parameters */
+			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
+			rotScaleA = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x06),0) ;
+			rotScaleB = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x0E),0) ;
+			rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
+			rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
+		}
+
+
 		// switch TOP<-->BOTTOM
 		if (spriteInfo->VFlip)
 			y = sprSize.y - y -1;
@@ -1454,9 +1450,12 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 #endif
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
-			src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
+			if (gpu->dispCnt.bits.OBJ_BMP_2D_dim) // 256*256
+				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1);
+			else // 128 * 512
+				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
 	
-			render_sprite_BMP (gpu, l, dst, src,
+			render_sprite_BMP (gpu, l, dst, (u16*)src,
 				prioTab, prio, lg, sprX, x, xdir);
 
 			continue;
@@ -1467,7 +1466,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
 			pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400;
 	
-			render_sprite_256 (gpu, l, dst, src, pal,
+			render_sprite_256 (gpu, l, dst, src, (u16*)pal,
 				prioTab, prio, lg, sprX, x, xdir);
 
 			continue;
