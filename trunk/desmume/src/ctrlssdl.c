@@ -201,6 +201,20 @@ u16 get_set_joy_key(int index) {
   return key;
 }
 
+/* Reset corresponding key and its twin axis key */
+u16 get_joy_axis_twin(u16 key)
+{
+  switch(key)
+    {
+    case KEYMASK_( KEY_RIGHT-1 ):
+      return KEYMASK_( KEY_LEFT-1 );
+    case KEYMASK_( KEY_UP-1 ):
+      return KEYMASK_( KEY_DOWN-1 );
+    default:
+      return 0;
+    }
+}
+
 /* Get and set a new joystick axis */
 void get_set_joy_axis(int index, int index_o) {
   BOOL done = FALSE;
@@ -287,34 +301,24 @@ u16 process_ctrls_events(u16 keypad)
              Note: button constants have a 1bit offset. */
         case SDL_JOYAXISMOTION:
           key = lookup_joy_key( JOY_AXIS_(event.jaxis.axis) );
-          if( key != 0 )
-            {
-              if( event.jaxis.value == 0 )
-                {
-                  switch(key)
-                    {
-                    case KEYMASK_( KEY_RIGHT-1 ):
-                      key |= KEYMASK_( KEY_LEFT-1 );
-                      break;
-                    case KEYMASK_( KEY_UP-1 ):
-                      key |= KEYMASK_( KEY_DOWN-1 );
-                      break;
-                    default:
-                      printf("Unknown joystick state!\n");
-                      break;
-                    }
-                  RM_KEY( keypad, key );
-                }
-              else if( (event.jaxis.value > 0) && 
-                       (key == KEYMASK_( KEY_UP-1 )) )
-                key = KEYMASK_( KEY_DOWN-1 );
-              else if( (event.jaxis.value < 0) && 
-                       (key == KEYMASK_( KEY_RIGHT-1 )) )
-                key = KEYMASK_( KEY_LEFT-1 );
+          if( key == 0 ) break;           /* Not an axis of interest? */
+
+          /* Axis is back to initial position */
+          if( event.jaxis.value == 0 )
+            RM_KEY( keypad, key | get_joy_axis_twin(key) );
+          /* Key should have been down but its currently set to up? */
+          else if( (event.jaxis.value > 0) && 
+                   (key == KEYMASK_( KEY_UP-1 )) )
+            key = KEYMASK_( KEY_DOWN-1 );
+          /* Key should have been left but its currently set to right? */
+          else if( (event.jaxis.value < 0) && 
+                   (key == KEYMASK_( KEY_RIGHT-1 )) )
+            key = KEYMASK_( KEY_LEFT-1 );
               
-              if( (event.jaxis.value >> 5) != 0 )
-                ADD_KEY( keypad, key );
-            }
+          /* Remove some sensitivity before checking if different than zero... 
+             Fixes some badly behaving joypads [like one of mine]. */
+          if( (event.jaxis.value >> 5) != 0 )
+            ADD_KEY( keypad, key );
           break;
 
           /* Joystick button pressed */
