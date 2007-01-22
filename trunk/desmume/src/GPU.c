@@ -672,6 +672,8 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 	u8 * pal;
 	u16 yoff;
 	u16 x;
+	u8 line_dir = 1;
+	u8 pt_xor = 0;
 
 	if(tmp>31) 
 	{
@@ -695,6 +697,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 			pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 			for(x = 0; x < LG;)
 			{
+				u8 pt = 0, save = 0;
 				u8 * mapinfo;
 				u16 mapinfovalue;
 				u8 *line;
@@ -713,60 +716,36 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 		if (c) renderline_setFinalColor(gpu,0,num,dst,T1ReadWord(pal, ((c) + ((mapinfovalue>>12)&0xF) * m) << 1),x,Y) ; \
 		dst += 2; x++; xoff++;
 
-
 				if((mapinfovalue) & 0x400)
 				{
-					u8 pt = 0 ;
-					u8 save = 0;
-
 					line += 3 - ((xoff&7)>>1);
-					for(; x < xfin; ) {
-// XXX
-						if ((pt % mw) == 0) {           /* only update the color we draw every mw pixels */
-							if (pt & 1) {
-								save = (*line) & 0xF ;
-							} else {
-								save = (*line) >> 4 ;
-							}
-						}
-						RENDERL(save,0x10)
-						pt++ ;
-						if (!(pt % mw)) {               /* next pixel next possible color update */
-							if (pt & 1) {
-								save = (*line) & 0xF ;
-							} else {
-								save = (*line) >> 4 ;
-							}
-						}
-						RENDERL(save,0x10)
-						line--; pt++ ;
-					}
+					line_dir = -1;
+					pt_xor = 0;
 				} else {
-					u8 pt = 0 ;
-					u8 save = 0;
 					line += ((xoff&7)>>1);
-
-					for(; x < xfin; ) {
+					line_dir = 1;
+					pt_xor = 1;
+				}
 // XXX
-						if (!(pt % mw)) {               /* only update the color we draw every n mw pixels */
-							if (!(pt & 1)) {
-								save = (*line) & 0xF ;
-							} else {
-								save = (*line) >> 4 ;
-							}
+				for(; x < xfin; ) {
+					if (!(pt % mw)) {               /* only update the color we draw every n mw pixels */
+						if ((pt & 1)^pt_xor) {
+							save = (*line) & 0xF ;
+						} else {
+							save = (*line) >> 4 ;
 						}
-						RENDERL(save,0x10)
-						pt++ ;
-						if (!(pt % mw)) {               /* next pixel next possible color update */
-							if (!(pt & 1)) {
-								save = (*line) & 0xF ;
-							} else {
-								save = (*line) >> 4 ;
-							}
-						}
-						RENDERL(save,0x10)
-						line++; pt++ ;
 					}
+					RENDERL(save,0x10)
+					pt++ ;
+					if (!(pt % mw)) {               /* next pixel next possible color update */
+						if ((pt & 1)^pt_xor) {
+							save = (*line) & 0xF ;
+						} else {
+							save = (*line) >> 4 ;
+						}
+					}
+					RENDERL(save,0x10)
+					line+=line_dir; pt++ ;
 				}
 			}
 		} else {                /* no mosaic mode */
@@ -792,19 +771,19 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 				if((mapinfovalue) & 0x400)
 				{
 					line += 3 - ((xoff&7)>>1);
+					line_dir = -1; 
 					for(; x < xfin; ) {
-// XXX
 						RENDERL(((*line)>>4),0x10)
 						RENDERL(((*line)&0xF),0x10)
-						line--;
+						line += line_dir;
 					}
 				} else {
 					line += ((xoff&7)>>1);
+					line_dir = 1; 
 					for(; x < xfin; ) {
-// XXX
 						RENDERL(((*line)&0xF),0x10)
 						RENDERL(((*line)>>4),0x10)
-						line++;
+						line += line_dir;
 					}
 				}
 			}
@@ -833,19 +812,15 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 		if((mapinfovalue)& 0x400)
 		{
 			line += (7 - (xoff&7));
-			for(; x < xfin; )
-			{
-				RENDERL((*line),0)
-				line--;
-			}
-		} else
-		{
+			line_dir = -1;
+		} else {
 			line += (xoff&7);
-			for(; x < xfin; )
-			{
-				RENDERL((*line),0)
-				line++;
-			}
+			line_dir = 1;
+		}
+		for(; x < xfin; )
+		{
+			RENDERL((*line),0)
+			line += line_dir;
 		}
 		return;
 	}
@@ -877,21 +852,15 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 Y
 		if((mapinfovalue)& 0x400)
 		{
 			line += (7 - (xoff&7));
-			for(; x < xfin;)
-			{
-				/* this is was adapted */
-				RENDERL((*line),0x100)
-				line--;
-			}
-		} else
-		{
+			line_dir = -1;
+		} else {
 			line += (xoff&7);
-			for(; x < xfin; )
-			{
-				/* this is was adapted */
-				RENDERL((*line),0x100)
-				line++;
-			}
+			line_dir = 1;
+		}
+		for(; x < xfin; )
+		{
+			RENDERL((*line),0x100)
+			line += line_dir;
 		}
 	}
 #undef RENDERL
