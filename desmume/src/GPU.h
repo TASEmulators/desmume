@@ -59,6 +59,19 @@ extern "C" {
 #define ADDRESS_STEP_64kB       0x10000
 
 
+struct _ROTOCOORD
+{
+/* 0*/	unsigned Fraction:8;
+/* 8*/	unsigned Integer:19;
+/*27*/	unsigned Sign:1;
+/*28*/	unsigned :4;
+};
+typedef union 
+{
+	struct _ROTOCOORD bits;
+	u32 val;
+} ROTOCOORD;
+
 /*
 	this structure is for display control,
 	it holds flags for general display
@@ -106,6 +119,30 @@ typedef union
 } DISPCNT;
 #define BGxENABLED(cnt,num)	((num<8)? ((cnt.val>>8) & num):0)
 
+// source:
+// http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
+struct _DISPCAPCNT
+{
+/* 0*/	unsigned BlendFactor_A:5;	// 0..16 = Blending Factor for Source A
+/* 5*/	unsigned :3;			//
+/* 8*/	unsigned BlendFactor_B:5;	// 0..16 = Blending Factor for Source B
+/*13*/	unsigned :3;			//
+/*16*/	unsigned VRAM_Write_Block:2;	// 0..3 = VRAM A..D
+/*18*/	unsigned VRAM_Write_Offset:2;	// n x 0x08000
+/*20*/	unsigned Capture_Size:2;	// 0=128x128, 1=256x64, 2=256x128, 3=256x192 dots
+/*22*/	unsigned :2;			//
+/*24*/	unsigned Source_A:1;		// 0=Graphics Screen BG+3D+OBJ, 1=3D Screen
+/*25*/	unsigned Source_B:1;		// 0=VRAM, 1=Main Memory Display FIFO
+/*26*/	unsigned VRAM_Read_Offset:2;	// n x 0x08000
+/*28*/	unsigned :1;			//
+/*29*/	unsigned Capture_Source:2;	// 0=Source A, 1=Source B, 2/3=Sources A+B blended
+/*31*/	unsigned Capture_Enable:1;	// 0=Disable/Ready, 1=Enable/Busy
+};
+typedef union 
+{
+	struct _DISPCAPCNT bits;
+	u32 val;
+} DISPCAPCNT;
 
 
 /*
@@ -179,6 +216,7 @@ struct _BGxCNT
 					// bmp     : 128x128 256x256 512x256 512x512
 					// large   : 512x1024 1024x512 - -
 };
+
 
 typedef union 
 {
@@ -337,6 +375,7 @@ typedef struct _GPU GPU;
 struct _GPU
 {
 	DISPCNT dispCnt;
+	DISPCAPCNT dispCapCnt;
 	BGxCNT  bgCnt[4];
 	MASTER_BRIGHT masterBright;
 	BOOL LayersEnable[5];
@@ -378,8 +417,8 @@ struct _GPU
 	
 	OAM * oam;
 	u8 * sprMem;
-	u8 sprBlock;
-	u8 sprBMPBlock;
+	u8 sprBoundary;
+	u8 sprBMPBoundary;
 	u8 sprBMPMode;
 	u32 sprEnable ;
 	
@@ -428,8 +467,13 @@ void Screen_DeInit(void);
 
 extern MMU_struct MMU;
 
+static INLINE void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) {
+	gpu->dispCapCnt.val = val;
+}
+
 static INLINE void GPU_ligne(Screen * screen, u16 l)
 {
+	struct _DISPCAPCNT * capcnt;
 	GPU * gpu = screen->gpu;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
@@ -555,6 +599,98 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		}
 	}
 
+// FIXME !!!
+/* capture */
+capcnt = &gpu->dispCapCnt.bits;
+if (0 & capcnt->Capture_Enable)
+{
+	u16 * srcA, * srcB, *vram;
+	u32 c; u8 vram_bank;
+	COLOR color, colA, colB;
+	u16 ilast= 128;
+	if (capcnt->Capture_Size) ilast = 256;
+
+	vram = (u16*)(ARM9Mem.ARM9_ABG
+		+ MMU.vram_mode[capcnt->VRAM_Write_Block] * 0x20000
+		+ capcnt->VRAM_Write_Offset * 0x08000);
+
+	// I dunno yet how to do for 3D
+	if (!capcnt->Source_A)
+		srcA = (u16*)dst;
+
+	if (!capcnt->Source_B) {
+		vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+		if (MMU.vram_mode[vram_bank] & 4) {
+			srcB = (u16*)(ARM9Mem.ARM9_LCD 
+				+ (MMU.vram_mode[vram_bank] & 3) * 0x20000
+				+ capcnt->VRAM_Read_Offset * 0x08000);
+		} else {
+			srcB = (u16*)(ARM9Mem.ARM9_ABG 
+				+ MMU.vram_mode[vram_bank] * 0x20000
+				+ capcnt->VRAM_Read_Offset * 0x08000);
+		}
+	}
+
+	printf("capture source %d\n",capcnt->Capture_Source);
+
+	switch(capcnt->Capture_Source) {
+	case 0: // only source A
+		if (!capcnt->Source_A) {
+			srcA = (u16*)dst;
+			for (i=0; i<ilast; i++) {
+				vram[i] = srcA[i];
+			}
+		}
+		break;
+	case 1: // only source B
+		if (capcnt->Source_B) {
+			for (i=0; i<ilast;) {
+				c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
+				vram[i] = c&0xFFFF; i++;
+				vram[i] = c>>16; i++;
+			}
+		} else {
+			for (i=0; i<ilast; i++) {
+				vram[i] = srcB[i];
+			}
+		}
+		break;
+	default: // blend A + B
+		if (capcnt->Source_B) {
+			for (i=0; i<ilast;) {
+				c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
+				colA.val = c&0xFFFF;
+				colB.val = srcB[i];
+#define FORMULA(field)	\
+	color.bits.field = ((colA.bits.field * colA.bits.alpha * capcnt->BlendFactor_A) + (colB.bits.field * colB.bits.alpha * capcnt->BlendFactor_B)) / 16;
+				FORMULA(red)
+				FORMULA(green)
+				FORMULA(blue)
+				vram[i] = color.val;
+				i++;
+				colA.val = c >> 16;
+				colB.val = srcB[i];
+				FORMULA(red)
+				FORMULA(green)
+				FORMULA(blue)
+				vram[i] = color.val;
+				i++;
+			}
+		} else {
+			for (i=0; i<ilast; i++) {
+				colA.val = srcA[i];
+				colB.val = srcB[i];
+				FORMULA(red)
+				FORMULA(green)
+				FORMULA(blue)
+				vram[i] = color.val;
+			}
+#undef FORMULA
+		}
+		break;
+	}
+}
+/* end of capture */
 
 // Apply final brightness adjust (MASTER_BRIGHT)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
