@@ -645,16 +645,16 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 } ;
 
 /* render a text background to the combined pixelbuffer */
-INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
+INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
 	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
-	u16 tmp    = ((Y&(ht-1))>>3);
+	u16 tmp    = ((YBG&(ht-1))>>3);
 	u8 * map   = gpu->BG_map_ram[num] + (tmp&31) * 64;
 	u8 *dst    = DST;
 	u8 *tile;
-	u16 xoff   = X;
+	u16 xoff   = XBG;
 	u8 * pal;
 	u16 yoff;
 	u16 x;
@@ -666,7 +666,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	
 	tile = (u8*) gpu->BG_tile_ram[num];
 	if((!tile) || (!gpu->BG_map_ram[num])) return; 	/* no tiles or no map*/
-	xoff = X;
+	xoff = XBG;
 	if(!bgCnt.Palette_256)    /* color: 16 palette entries */
 	{
 		if (bgCnt.Mosaic_Enable){
@@ -675,9 +675,9 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 
 			u8 mw = (gpu->MOSAIC & 0xF) +1 ;            /* horizontal granularity of the mosaic */
 			u8 mh = ((gpu->MOSAIC>>4) & 0xF) +1 ;       /* vertical granularity of the mosaic */
-			Y = (Y / mh) * mh ;                         /* align y by vertical granularity */
+			YBG = (YBG / mh) * mh ;                         /* align y by vertical granularity */
 
-			yoff = ((Y&7)<<2);
+			yoff = ((YBG&7)<<2);
 			pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 			for(x = 0; x < LG;)
 			{
@@ -757,7 +757,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 			}
 		} else {                /* no mosaic mode */
 
-			yoff = ((Y&7)<<2);
+			yoff = ((YBG&7)<<2);
 			pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 			for(x = 0; x < LG;)
 			{
@@ -799,7 +799,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	}
 	if(!gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: no extended palette */
 	{
-		yoff = ((Y&7)<<3);
+		yoff = ((YBG&7)<<3);
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 		for(x = 0; x < LG;)
 		{
@@ -844,7 +844,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * DST, u16 X, u16 Y, u16 LG)
 	pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 	if(!pal) return;
 
-	yoff = ((Y&7)<<3);
+	yoff = ((YBG&7)<<3);
 
 	for(x = 0; x < LG;)
 	{
@@ -1029,7 +1029,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * DST, u16 H, s32 X, s32 Y, s16 PA, 
 
 void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
-	renderline_textBG(gpu, num, DST, gpu->BGSX[num], l + gpu->BGSY[num], 256);
+	renderline_textBG(gpu, num, DST, l, gpu->BGSX[num], l + gpu->BGSY[num], 256);
 }
 
 void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
@@ -1061,7 +1061,7 @@ void textBG(GPU * gpu, u8 num, u8 * DST)
 	u32 i;
 	for(i = 0; i < gpu->BGSize[num][1]; ++i)
 	{
-		renderline_textBG(gpu, num, DST + i*gpu->BGSize[num][0], 0, i, gpu->BGSize[num][0]);
+		renderline_textBG(gpu, num, DST + i*gpu->BGSize[num][0], i, 0, i, gpu->BGSize[num][0]);
 	}
 }
 
@@ -1130,7 +1130,7 @@ INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u8 * pal,
 	color = T1ReadWord(pal, palette_entry << 1); \
 	RENDER_COND(palette_entry>0) \
 	++sprX;
-#if 0
+#if 1
 
 	if (xdir<0) x++;
 	if(x&1)
