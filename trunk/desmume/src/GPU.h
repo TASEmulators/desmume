@@ -3,7 +3,7 @@
     yopyop156.ifrance.com
 
     Copyright (C) 2006-2007 Theo Berkau
-	Copyright (C) 2007 shash
+    Copyright (C) 2007 shash
 
     This file is part of DeSmuME
 
@@ -422,7 +422,7 @@ typedef struct {
 extern Screen MainScreen;
 extern Screen SubScreen;
 
-void Screen_Init(void);
+int Screen_Init(int coreid);
 void Screen_Reset(void);
 void Screen_DeInit(void);
 
@@ -663,6 +663,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 #define GFXCORE_DEFAULT         -1
 #define GFXCORE_DUMMY           0
 
+#define GFXCORE_FULLSCREEN      (1 << 0)
+
 typedef struct
 {
    int id; // ID number for core(see above defines)
@@ -673,6 +675,8 @@ typedef struct
    void (*Resize)(int width, int height, BOOL fullscreen); // Resizes window or fullscreen
    void (*OnScreenText)(char *string, ...); // For handling save state messages, etc. 
 } GraphicsInterface_struct;
+
+extern GraphicsInterface_struct GFXDummy;
 
 void GPU_setVideoProp(GPU *, u32 p);
 void GPU_setBGProp(GPU *, u16 num, u16 p);
@@ -713,6 +717,8 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v);
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);
 void GPU_toggleOBJ(GPU *, u8 disp);
+
+int GPU_ChangeGraphicsCore(int coreid);
 
 #ifdef __cplusplus
 }

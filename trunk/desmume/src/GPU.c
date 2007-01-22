@@ -2,8 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright (C) 2006 Theo Berkau
-	Copyright (C) 2007 shash
+    Copyright (C) 2006-2007 Theo Berkau
+    Copyright (C) 2007 shash
 
     This file is part of DeSmuME
 
@@ -84,6 +84,14 @@ void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u8 * DST)=
      {lineText, lineText, lineText, lineText},     //7
 };
 
+static GraphicsInterface_struct *GFXCore=NULL;
+
+// This should eventually be moved to the port specific code
+GraphicsInterface_struct *GFXCoreList[] = {
+&GFXDummy,
+NULL
+};
+
 GPU * GPU_Init(u8 l)
 {
      GPU * g;
@@ -127,7 +135,7 @@ void GPU_Reset(GPU *g, u8 l)
 
 void GPU_DeInit(GPU * gpu)
 {
-     free(gpu);
+   free(gpu);
 }
 
 void GPU_resortBGs(GPU *gpu)
@@ -1475,9 +1483,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	}
 }
 
-void Screen_Init(void) {
-        MainScreen.gpu = GPU_Init(0);
-        SubScreen.gpu = GPU_Init(1);
+int Screen_Init(int coreid) {
+   MainScreen.gpu = GPU_Init(0);
+   SubScreen.gpu = GPU_Init(1);
+
+   return GPU_ChangeGraphicsCore(coreid);
 }
 
 void Screen_Reset(void) {
@@ -1488,4 +1498,80 @@ void Screen_Reset(void) {
 void Screen_DeInit(void) {
         GPU_DeInit(MainScreen.gpu);
         GPU_DeInit(SubScreen.gpu);
+
+        if (GFXCore)
+           GFXCore->DeInit();
+}
+
+// This is for future graphics core switching. This is by no means set in stone
+
+int GPU_ChangeGraphicsCore(int coreid)
+{
+   int i;
+
+   // Make sure the old core is freed
+   if (GFXCore)
+      GFXCore->DeInit();
+
+   // So which core do we want?
+   if (coreid == GFXCORE_DEFAULT)
+      coreid = 0; // Assume we want the first one
+
+   // Go through core list and find the id
+   for (i = 0; GFXCoreList[i] != NULL; i++)
+   {
+      if (GFXCoreList[i]->id == coreid)
+      {
+         // Set to current core
+         GFXCore = GFXCoreList[i];
+         break;
+      }
+   }
+
+   if (GFXCore == NULL)
+   {
+      GFXCore = &GFXDummy;
+      return -1;
+   }
+
+   if (GFXCore->Init() == -1)
+   {
+      // Since it failed, instead of it being fatal, we'll just use the dummy
+      // core instead
+      GFXCore = &GFXDummy;
+   }
+
+   return 0;
+}
+
+int GFXDummyInit();
+void GFXDummyDeInit();
+void GFXDummyResize(int width, int height, BOOL fullscreen);
+void GFXDummyOnScreenText(char *string, ...);
+
+GraphicsInterface_struct GFXDummy = {
+GFXCORE_DUMMY,
+"Dummy Graphics Interface",
+0,
+GFXDummyInit,
+GFXDummyDeInit,
+GFXDummyResize,
+GFXDummyOnScreenText
+};
+
+int GFXDummyInit()
+{
+   return 0;
+}
+
+void GFXDummyDeInit()
+{
+}
+
+void GFXDummyResize(int width, int height, BOOL fullscreen)
+{
+}
+
+void GFXDummyOnScreenText(char *string, ...)
+{
 }
