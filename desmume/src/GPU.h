@@ -852,7 +852,6 @@ void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v);
 
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);
-void GPU_toggleOBJ(GPU *, u8 disp);
 
 int GPU_ChangeGraphicsCore(int coreid);
 

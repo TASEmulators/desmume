@@ -302,19 +302,18 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 
 void GPU_remove(GPU * gpu, u8 num)
 {
-	gpu->dispBG[num] = 0;
+	if (num == 4)	gpu->dispOBJ = 0;
+	else		gpu->dispBG[num] = 0;
 	GPU_resortBGs(gpu);
 }
 
 void GPU_addBack(GPU * gpu, u8 num)
 {
-	gpu->dispBG[num] = 1;
+	if (num == 4)	gpu->dispOBJ = 1;
+	else		gpu->dispBG[num] = 1;
 	GPU_resortBGs(gpu);
 }
 
-void GPU_toggleOBJ(GPU * gpu, u8 disp) {
-	gpu->dispOBJ = disp;
-}
 
 void GPU_scrollX(GPU * gpu, u8 num, u16 v)
 {
@@ -1245,6 +1244,71 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 	}
 }
 
+
+
+// return val means if the sprite is to be drawn or not
+INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l, 
+	size *sprSize, s32 *sprX, s32 *sprY, s32 *x, s32 *y, s32 *lg, int *xdir) {
+
+	*x = 0;
+	// get sprite location and size
+	*sprX = (spriteInfo->X<<23)>>23;
+	*sprY = spriteInfo->Y;
+	*sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
+
+	*lg = sprSize->x;
+	
+	if (*sprY>192)
+		*sprY = (s32)((s8)(spriteInfo->Y));
+	
+// FIXME: for rot/scale, a list of entries into the sprite should be maintained,
+// that tells us where the first pixel of a screenline starts in the sprite,
+// and how a step to the right in a screenline translates within the sprite
+
+	if ((spriteInfo->RotScale == 2) ||		/* rotscale == 2 => sprite disabled */
+		(l<*sprY)||(l>=*sprY+sprSize->y) ||	/* sprite lines outside of screen */
+		(*sprX==256)||(*sprX+sprSize->x<0))	/* sprite pixels outside of line */
+		return FALSE;				/* not to be drawn */
+
+	// sprite portion out of the screen (LEFT)
+	if(*sprX<0)
+	{
+		*lg += *sprX;	
+		*x = -(*sprX);
+		*sprX = 0;
+	// sprite portion out of the screen (RIGHT)
+	} else if (*sprX+sprSize->x >= 256)
+		*lg = 256 - *sprX;
+
+	*y = l - *sprY;                           /* get the y line within sprite coords */
+
+	// switch TOP<-->BOTTOM
+	if (spriteInfo->VFlip)
+		*y = sprSize->y - *y -1;
+	
+	// switch LEFT<-->RIGHT
+	if (spriteInfo->HFlip) {
+		*x = sprSize->x - *x -1;
+		*xdir  = -1;
+	} else {
+		*xdir  = 1;
+	}
+	return TRUE;
+}
+
+INLINE void compute_sprite_rotoscale(GPU * gpu, _OAM_ * spriteInfo, 
+	u16 * rotScaleA, u16 * rotScaleB, u16 * rotScaleC, u16 * rotScaleD) {
+	u16 rotScaleIndex;
+	// index from 0 to 31
+	rotScaleIndex = spriteInfo->RotScalIndex + (spriteInfo->HFlip<<1) + (spriteInfo->VFlip << 2);
+	/* if we need to do rotscale, gather its parameters */
+	/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
+	*rotScaleA = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x06),0) ;
+	*rotScaleB = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x0E),0) ;
+	*rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
+	*rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
+}
+
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
@@ -1253,76 +1317,23 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	
 	for(i = 0; i<nbShow; ++i, --spriteInfo)     /* check all sprites */
 	{
-		s32 sprX;
-		s32 sprY;
-		s32 x = 0;
-		u32 lg;
 		size sprSize;
-		s32 y;
-		u8 prio;
-		u8 * src;
-		u8 * pal;
-		u16 i,j , rotScaleIndex;
+		s32 sprX, sprY, x, y, lg;
 		int xdir;
+		u8 prio, * src, * pal;
+		u16 i,j;
+		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD;
 
-		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD ;
-
-		// get sprite location and size
-		sprX = (spriteInfo->X<<23)>>23;
-		sprY = spriteInfo->Y;
-		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
-			
-		lg = sprSize.x;
-
-		if(sprY>192)
-			sprY = (s32)((s8)(spriteInfo->Y));
-	
-/* FIXME: for rot/scale, a list of entries into the sprite should be maintained, that tells us where the first pixel */
-/* of a screenline starts in the sprite, and how a step to the right in a screenline translates within the sprite */
-		if( (spriteInfo->RotScale == 2) ||      /* rotscale == 2 => sprite disabled */
-		    (l<sprY)||(l>=sprY+sprSize.y) ||    /* sprite occupies only lines outside the current drawn line */
-		    (sprX==256) )                       /* sprite is outside our line */
-			continue;                           /* for all these problems, continue with the next sprite */
-	
-		// sprite portion out of the screen (LEFT)
-		if(sprX<0)
-		{
-			if(sprX+sprSize.x<0) continue; // fully out of screen
-			lg += sprX;	
-			x = -sprX;
-			sprX = 0;
-		// sprite portion out of the screen (RIGHT)
-		} else if(sprX+sprSize.x >= 256)
-			lg = 256 - sprX;
-
-	
-		y = l - sprY;                           /* get the y line within sprite coords */
 		prio = spriteInfo->Priority;
-	
-		// switch TOP<-->BOTTOM
-		if (spriteInfo->VFlip)
-			y = sprSize.y - y -1;
-		
-		// switch LEFT<-->RIGHT
-		if (spriteInfo->HFlip) {
-			x = sprSize.x -x -1;
-			xdir  = -1;
-		} else {
-			xdir  = 1;
-		}
-	
-		if (spriteInfo->RotScale & 1) {
-			// index from 0 to 31
-			rotScaleIndex = spriteInfo->RotScalIndex + (spriteInfo->HFlip<<1) + (spriteInfo->VFlip << 2);
-			/* if we need to do rotscale, gather its parameters */
-			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
-			rotScaleA = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x06),0) ;
-			rotScaleB = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x0E),0) ;
-			rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
-			rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
-		}
 
-#if 1	
+			
+		if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
+			continue;
+
+		if (spriteInfo->RotScale & 1)
+			compute_sprite_rotoscale(gpu, spriteInfo,  
+				&rotScaleA, &rotScaleB, &rotScaleC, &rotScaleD);
+	
 		if (spriteInfo->Mode == 2) {
 			if (spriteInfo->Depth)
 				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
@@ -1332,7 +1343,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				spriteInfo->Depth, lg, sprX, x, xdir);
 			continue;
 		}
-#endif
+
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
 			/* sprMemory + sprBoundary + 16Bytes per line (8pixels a 2 bytes) */
@@ -1376,72 +1387,23 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	
 	for(i = 0; i<nbShow; ++i, --spriteInfo)
 	{
-		s32 sprX;
-		s32 sprY;
-		s32 x = 0;
-		u32 lg;
 		size sprSize;
-		s32 y;
-		u8 prio;
-		u8 * src;
-		u8 * pal;
-		u16 i, j;
-		int xdir, block;
-	
-		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD, rotScaleIndex ;
+		s32 sprX, sprY, x, y, lg;
+		int xdir;
+		u8 prio, * src, * pal;
+		u16 i,j;
+		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD;
+		int block;
 
-		sprX = (spriteInfo->X<<23)>>23;
-		sprY = spriteInfo->Y;
-		sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
-	
-		lg = sprSize.x;
+		prio = spriteInfo->Priority;
 
-		if(sprY>192)
-		sprY = (s32)((s8)(spriteInfo->Y));
-	
-		if( (spriteInfo->RotScale == 2) ||
-		    (l<sprY)||(l>=sprY+sprSize.y) ||
-		    (sprX==256) )
+		if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
 			continue;
 	
-		// sprite portion out of the screen (LEFT)
-		if(sprX<0)
-		{
-			if(sprX+sprSize.x<0) continue; // fully out of screen
-			lg += sprX;	
-			x = -sprX;
-			sprX = 0;
-		// sprite portion out of the screen (RIGHT)
-		} else if(sprX+sprSize.x >= 256)
-			lg = 256 - sprX;
-	
-		y = l - sprY;
-		prio = spriteInfo->Priority;
-	
-		if (spriteInfo->RotScale & 1) {
-			// index from 0 to 31
-			rotScaleIndex = spriteInfo->RotScalIndex + (spriteInfo->HFlip<<1) + (spriteInfo->VFlip << 2);
-			/* if we need to do rotscale, gather its parameters */
-			/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
-			rotScaleA = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x06),0) ;
-			rotScaleB = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x0E),0) ;
-			rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
-			rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
-		}
+		if (spriteInfo->RotScale & 1)
+			compute_sprite_rotoscale(gpu, spriteInfo, 
+				&rotScaleA, &rotScaleB, &rotScaleC, &rotScaleD);
 
-
-		// switch TOP<-->BOTTOM
-		if (spriteInfo->VFlip)
-			y = sprSize.y - y -1;
-		
-		// switch LEFT<-->RIGHT
-		if (spriteInfo->HFlip) {
-			x = sprSize.x -x -1;
-			xdir  = -1;
-		} else {
-			xdir  = 1;
-		}
-#if 1
 		if (spriteInfo->Mode == 2) {
 			if (spriteInfo->Depth)
 				src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
@@ -1451,7 +1413,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				spriteInfo->Depth, lg, sprX, x, xdir);
 			continue;
 		}
-#endif
+
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
 			if (gpu->dispCnt.bits.OBJ_BMP_2D_dim) // 256*256

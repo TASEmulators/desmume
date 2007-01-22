@@ -353,9 +353,7 @@ void change_bgx_layer(int layer, gboolean state, Screen scr) {
 	}
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
-void change_obj_layer(gboolean state, Screen scr) {
-	GPU_toggleOBJ(scr.gpu, state);
-}
+
 
 /* LAYERS MAIN SCREEN ***** ***** ***** ***** */
 void  on_wc_1_BG0_toggled  (GtkToggleButton *togglebutton, gpointer user_data) { 
@@ -367,7 +365,7 @@ void  on_wc_1_BG2_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
 void  on_wc_1_BG3_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
 	change_bgx_layer(3, gtk_toggle_button_get_active(togglebutton), MainScreen); }
 void  on_wc_1_OBJ_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_obj_layer(gtk_toggle_button_get_active(togglebutton), MainScreen); }
+	change_bgx_layer(4, gtk_toggle_button_get_active(togglebutton), MainScreen); }
 
 /* LAYERS SECOND SCREEN ***** ***** ***** ***** */
 void  on_wc_2b_BG0_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
@@ -379,4 +377,4 @@ void  on_wc_2b_BG2_toggled  (GtkToggleButton *togglebutton, gpointer user_data) 
 void  on_wc_2b_BG3_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
 	change_bgx_layer(3, gtk_toggle_button_get_active(togglebutton), SubScreen); }
 void  on_wc_2b_OBJ_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_obj_layer(gtk_toggle_button_get_active(togglebutton), SubScreen); }
+	change_bgx_layer(4, gtk_toggle_button_get_active(togglebutton), SubScreen); }
