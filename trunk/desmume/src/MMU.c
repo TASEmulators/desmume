@@ -1700,12 +1700,14 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, v);
 				}
 				return;
-                        case REG_DISPA_DISPCAPCNT :
+				/*
+                case REG_DISPA_DISPCAPCNT :
 				if(proc == ARMCPU_ARM9)
 				{
 					GPU_set_DISPCAPCNT(MainScreen.gpu,val);
 				}
 				return;
+			*/
                         case REG_DISPB_DISPCNT+2 : 
 				if(proc == ARMCPU_ARM9)
 				{
