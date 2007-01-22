@@ -148,11 +148,15 @@ void GPU_resortBGs(GPU *gpu)
 		memset(gpu->sprWin[i],0, 256);
 
 	// we don't need to check for windows here...
-	gpu->LayersEnable[0] = gpu->dispBG[0] && cnt->BG0_Enable && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)) ;
-	gpu->LayersEnable[1] = gpu->dispBG[1] && cnt->BG1_Enable;
-	gpu->LayersEnable[2] = gpu->dispBG[2] && cnt->BG2_Enable;
-	gpu->LayersEnable[3] = gpu->dispBG[3] && cnt->BG3_Enable;
-	gpu->LayersEnable[4] = gpu->dispOBJ &&   cnt->OBJ_Enable;
+// if we tick boxes, invisible layers become invisible & vice versa
+#define OP ^ !
+// if we untick boxes, layers become invisible
+//#define OP &&
+	gpu->LayersEnable[0] = gpu->dispBG[0] OP(cnt->BG0_Enable && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)));
+	gpu->LayersEnable[1] = gpu->dispBG[1] OP(cnt->BG1_Enable);
+	gpu->LayersEnable[2] = gpu->dispBG[2] OP(cnt->BG2_Enable);
+	gpu->LayersEnable[3] = gpu->dispBG[3] OP(cnt->BG3_Enable);
+	gpu->LayersEnable[4] = gpu->dispOBJ   OP(cnt->OBJ_Enable);
 
 	// KISS ! lower priority first, if same then lower num
 	for (i=0;i<NB_PRIORITIES;i++) {
