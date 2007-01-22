@@ -36,7 +36,8 @@ int NDS_Init(void) {
      nds.VCount = 0;
      nds.lignerendu = FALSE;
 
-     Screen_Init();
+     if (Screen_Init(GFXCORE_DUMMY) != 0)
+        return -1;
      
      armcpu_new(&NDS_ARM7,1);
      armcpu_new(&NDS_ARM9,0);
