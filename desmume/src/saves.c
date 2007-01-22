@@ -1,5 +1,6 @@
 /*  Copyright (C) 2006 Normmatt
     Copyright (C) 2006 Theo Berkau
+    Copyright (C) 2007 Pascal Giard
 
     This file is part of DeSmuME
 
