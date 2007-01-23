@@ -846,7 +846,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 // scale rot
 
-void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
 	
@@ -856,53 +856,50 @@ void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * d
 	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
 	color = T1ReadWord(pal, palette_entry << 1);
 	if (palette_entry)
-		renderline_setFinalColor(gpu,0,num,dst, color,auxX,auxY);
+		renderline_setFinalColor(gpu,0,num,dst, color,i,X);
 }
 
-void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry, palette_set;
 	u16 tileindex, x, y, color;
 	TILEENTRY tileentry;
 
-// lunar bug is in here (or caller)
-	return;
-
 	if (!tile) return;
-	tileentry.val = T1ReadWord(map, ((auxX + auxY * lg)>>3)<<1);
+	tileentry.val = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * (lg>>3))<<1);
 	x = (tileentry.bits.HFlip) ? 7 - (auxX&7) : (auxX&7);
 	y = (tileentry.bits.VFlip) ? 7 - (auxY&7) : (auxY&7);
 
 	palette_entry = tile[(tileentry.bits.TileNum<<6)+(y<<3)+x];
 	color = T1ReadWord(pal, (palette_entry + (tileentry.bits.Palette<<8)) << 1);
 	if (palette_entry>0)
-		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
+		renderline_setFinalColor(gpu,0,num,dst, color, i, H);
 }
 
-void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
 	u16 tileindex, color;
 
-	return;
+//	return;
 
 	palette_entry = map[auxX + auxY * lg];
 	color = T1ReadWord(pal, palette_entry << 1);
 	if(palette_entry)
-		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
+		renderline_setFinalColor(gpu,0,num,dst, color, i, H);
 
 }
 
-void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u16 color;
 
-	return;
+//	return;
 
 	color = T1ReadWord(map, (auxX + auxY * lg) << 1);
 	if (color&0x8000)
-		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
+		renderline_setFinalColor(gpu,0,num,dst, color, i, H);
 
 }
 
-typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal);
+typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal , int i, u16 H);
 
 INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
 {
@@ -935,7 +932,7 @@ INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 
 		}
 	
 		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
-			fun(gpu, num, auxX, auxY, lg, dst, map, tile, pal);
+			fun(gpu, num, auxX, auxY, lg, dst, map, tile, pal, i, H);
 		dst += 2;
 		x.val += dx;
 		y.val += dy;
@@ -967,6 +964,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 		map = gpu->BG_map_ram[num];
 		tile = gpu->BG_tile_ram[num];
 		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+		if (!pal) return;
 
 		// 16  bit bgmap entries
 		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_tiled_16bit_entry, map, tile, pal);
