@@ -78,6 +78,9 @@ BOOL click = FALSE;
 BOOL finished = FALSE;
 BOOL romloaded = FALSE;
 
+BOOL ForceRatio = FALSE;
+float aspectratio;
+
 HMENU menu;
 HANDLE runthread=INVALID_HANDLE_VALUE;
 
@@ -191,7 +194,6 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
          */
         rcWindow.bottom += rcTemp.top;
     }
-
     SetWindowPos(hwnd, NULL, 0, 0, rcWindow.right - rcWindow.left,
                  rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
 
@@ -550,6 +552,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     {
         case WM_CREATE:
              ReadConfig();
+	     RECT fullSize ;
+	     GetWindowRect(hwnd,&fullSize) ;
+	     aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
              return 0;
         case WM_DESTROY:
              NDS_Pause();
@@ -569,6 +574,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
+	case WM_SIZE:
+    		if (ForceRatio) {
+			RECT fullSize ;
+			GetWindowRect(hwnd,&fullSize) ;
+			fullSize.right = (fullSize.bottom - fullSize.top) * aspectratio + fullSize.left;
+    			SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
+                 		fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+		}
+	     return 0;
         case WM_CLOSE:
              NDS_Pause();
              finished = TRUE;
@@ -1335,11 +1349,26 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_CHECKED);
                   return 0;
 				  case IDC_MAGNIFY:
-						ScaleScreen(1.2f) ;   /* 100-> 120% */
+						ScaleScreen(1.25f) ;   /* 100 -> 125% */
 						break ;
 				  case IDC_DEMAGNIFY:
-						ScaleScreen(0.833333f) ;   /* 120 -> 100% (== 100->83.33%) */
+						ScaleScreen(0.8f) ;   /* 125 -> 100% (== 100 -> 80%) */
 						break ;
+		case IDC_FORCERATIO:
+			if (ForceRatio) {
+				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_UNCHECKED);
+				ForceRatio = FALSE;
+			}
+			else {
+				RECT fullSize ;
+				GetWindowRect(hwnd,&fullSize) ;
+				fullSize.right = (fullSize.bottom - fullSize.top) * aspectratio + fullSize.left;
+    				SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
+                 			fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
+				ForceRatio = TRUE;
+			}
+		break;
 
              }
              return 0;
