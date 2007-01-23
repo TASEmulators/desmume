@@ -856,7 +856,7 @@ void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * d
 	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
 	color = T1ReadWord(pal, palette_entry << 1);
 	if (palette_entry)
-		renderline_setFinalColor(gpu,0,num,dst, color,i,X);
+		renderline_setFinalColor(gpu,0,num,dst, color,auxX,auxY);
 }
 
 void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
