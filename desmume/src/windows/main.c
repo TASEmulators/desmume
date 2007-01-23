@@ -551,11 +551,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     switch (message)                  // handle the messages
     {
         case WM_CREATE:
+			{
+			 RECT fullSize;
              ReadConfig();
-	     RECT fullSize ;
-	     GetWindowRect(hwnd,&fullSize) ;
-	     aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
+			 GetWindowRect(hwnd, &fullSize);
+			 aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
              return 0;
+			}
         case WM_DESTROY:
              NDS_Pause();
              finished = TRUE;
