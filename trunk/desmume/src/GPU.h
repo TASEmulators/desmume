@@ -74,14 +74,13 @@ typedef union
 struct _ROTOCOORD
 {
 /* 0*/	unsigned Fraction:8;
-/* 8*/	unsigned Integer:19;
-/*27*/	unsigned Sign:1;
+/* 8*/	  signed Integer:20;
 /*28*/	unsigned :4;
 };
 typedef union 
 {
 	struct _ROTOCOORD bits;
-	u32 val;
+	s32 val;
 } ROTOCOORD;
 
 /*
@@ -566,7 +565,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		T2WriteLong(dst, i8 << 2, c);
 		T2WriteLong(spr, i8 << 2, c);
 		// we init the sprites with priority 4 (if they keep it = unprocessed)
-		T1WriteWord(sprPrio, i8 << 1, (4 << 8) | (4));
+		T1WriteWord(sprPrio, i8 << 1, 0xFFFF);
 		T1WriteWord(gpu->sprWin[l], i8 << 1, 0);
 	}
 	
@@ -583,8 +582,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			prio = sprPrio[i];
 	
 			// render 1 time, but prio 4 = isn't processed further
-			T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
 			if (prio >=4) continue;
+			T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
 			
 			item = &(gpu->itemsForPriority[prio]);
 			item->PixelsX[item->nbPixelsX]=i;
