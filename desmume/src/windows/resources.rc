@@ -59,6 +59,7 @@ MENU_PRINCIPAL MENU
   }
   MENUITEM "&Magnify", IDC_MAGNIFY
   MENUITEM "&DeMagnify", IDC_DEMAGNIFY
+  MENUITEM "&Force Maintain Ratio", IDC_FORCERATIO
  }
  POPUP "&Outils"
  {
@@ -358,6 +359,7 @@ MENU_PRINCIPAL MENU
   }
   MENUITEM "&Magnify", IDC_MAGNIFY
   MENUITEM "&DeMagnify", IDC_DEMAGNIFY
+  MENUITEM "&Force Maintain Ratio", IDC_FORCERATIO
  }
  POPUP "&Config"
  {

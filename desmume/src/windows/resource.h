@@ -226,5 +226,6 @@ void refreshAll();
 #define IDC_ROTATE270           1006
 #define IDC_MAGNIFY             1007
 #define IDC_DEMAGNIFY           1008
+#define IDC_FORCERATIO		1009
 
 #endif
