@@ -68,14 +68,14 @@ struct _TILEENTRY
 typedef union 
 {
 	struct _TILEENTRY bits;
-	u32 val;
+	u16 val;
 } TILEENTRY;
 
 struct _ROTOCOORD
 {
 /* 0*/	unsigned Fraction:8;
-/* 8*/	  signed Integer:20;
-/*28*/	unsigned :4;
+/* 8*/	  signed Integer:24;
+// /*28*/	unsigned :4;
 };
 typedef union 
 {
