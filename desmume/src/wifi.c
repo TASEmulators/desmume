@@ -23,6 +23,125 @@
 
 wifimac_t wifiMac ;
 
+socket_t 	WIFI_Host_OpenChannel(u8 num) ;
+void 		WIFI_Host_CloseChannel(socket_t sock) ;
+void 		WIFI_Host_SendData(socket_t sock, u8 channel, u8 *data, u16 length) ;
+u16			WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength) ;
+BOOL 		WIFI_Host_InitSystem(void) ;
+void 		WIFI_Host_ShutdownSystem(void) ;
+
+/*******************************************************************************
+
+	Firmware info needed for wifi, if no firmware image is available
+	see: http://www.akkit.org/info/dswifi.htm#WifiInit
+
+	written in bytes, to avoid endianess issues
+
+ *******************************************************************************/
+
+u8 FW_Mac[6] 			= { 'D','S','E',0x00,0x00,0x00 } ;
+u8 FW_WIFIInit[32] 		= { 0x02,0x00,  0x17,0x00,  0x26,0x00,  0x18,0x18,
+							0x48,0x00,  0x40,0x48,  0x58,0x00,  0x42,0x00,
+							0x40,0x01,  0x64,0x80,  0xE0,0xE0,  0x43,0x24,
+							0x0E,0x00,  0x32,0x00,  0xF4,0x01,  0x01,0x01 } ;
+u8 FW_BBInit[105] 		= { 0x6D, 0x9E, 0x40, 0x05,
+							0x1B, 0x6C, 0x48, 0x80,
+							0x38, 0x00, 0x35, 0x07,
+							0x00, 0x00, 0x00, 0x00,
+							0x00, 0x00, 0x00, 0x00,
+							0xb0, 0x00, 0x04, 0x01,
+							0xd8, 0xff, 0xff, 0xc7,
+							0xbb, 0x01, 0xb6, 0x7f,
+							0x5a, 0x01, 0x3f, 0x01,
+							0x3f, 0x36, 0x36, 0x00,
+							0x78, 0x28, 0x55, 0x08,
+							0x28, 0x16, 0x00, 0x01,
+							0x0e, 0x20, 0x02, 0x98,
+							0x98, 0x1f, 0x0a, 0x08,
+							0x04, 0x01, 0x00, 0x00,
+							0x00, 0xff, 0xff, 0xfe,
+							0xfe, 0xfe, 0xfe, 0xfc,
+							0xfa, 0xfa, 0xf8, 0xf8,
+							0xf6, 0xa5, 0x12, 0x14,
+							0x12, 0x41, 0x23, 0x03,
+							0x04, 0x70, 0x35, 0x0E,
+							0x16, 0x16, 0x00, 0x00,
+							0x06, 0x01, 0xff, 0xfe,
+							0xff, 0xff, 0x00, 0x0e,
+							0x13, 0x00, 0x00, 0x28,
+							0x1c
+						  } ;
+u8 FW_RFInit[36] 		= { 0x07, 0xC0, 0x00,
+							0x03, 0x9C, 0x12,
+							0x28, 0x17, 0x14,
+							0xba, 0xe8, 0x1a,
+							0x6f, 0x45, 0x1d,
+							0xfa, 0xff, 0x23,
+							0x30, 0x1d, 0x24,
+							0x01, 0x00, 0x28,
+							0x00, 0x00, 0x2c,
+							0x03, 0x9c, 0x06,
+							0x22, 0x00, 0x08,
+							0x6f, 0xff, 0x0d
+						  } ;
+u8 FW_RFChannel[6*14]	= { 0x28, 0x17, 0x14,		/* Channel 1 */
+							0xba, 0xe8, 0x1a,		
+							0x37, 0x17, 0x14,		/* Channel 2 */
+							0x46, 0x17, 0x19,		
+							0x45, 0x17, 0x14,		/* Channel 3 */
+							0xd1, 0x45, 0x1b,		
+							0x54, 0x17, 0x14,		/* Channel 4 */
+							0x5d, 0x74, 0x19,		
+							0x62, 0x17, 0x14,		/* Channel 5 */
+							0xe9, 0xa2, 0x1b,		
+							0x71, 0x17, 0x14,		/* Channel 6 */
+							0x74, 0xd1, 0x19,		
+							0x80, 0x17, 0x14,		/* Channel 7 */
+							0x00, 0x00, 0x18,
+							0x8e, 0x17, 0x14,		/* Channel 8 */
+							0x8c, 0x2e, 0x1a,
+							0x9d, 0x17, 0x14,		/* Channel 9 */
+							0x17, 0x5d, 0x18,
+							0xab, 0x17, 0x14,		/* Channel 10 */
+							0xa3, 0x8b, 0x1a,
+							0xba, 0x17, 0x14,		/* Channel 11 */
+							0x2f, 0xba, 0x18,
+							0xc8, 0x17, 0x14,		/* Channel 12 */
+							0xba, 0xe8, 0x1a,
+							0xd7, 0x17, 0x14,		/* Channel 13 */
+							0x46, 0x17, 0x19,
+							0xfa, 0x17, 0x14,		/* Channel 14 */
+							0x2f, 0xba, 0x18
+						  } ;
+u8 FW_BBChannel[14]		= { 0xb3, 0xb3, 0xb3, 0xb3, 0xb3,	/* channel  1- 6 */
+							0xb4, 0xb4, 0xb4, 0xb4, 0xb4,	/* channel  7-10 */ 
+							0xb5, 0xb5,						/* channel 11-12 */
+							0xb6, 0xb6						/* channel 13-14 */
+						  } ;
+
+u8 FW_WFCProfile[0xC0]  = { 'D','e','S','m','u','m','E',' ','S','o','f','t','A','P',
+							' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ', /* ssid */
+							'D','e','S','m','u','m','E',' ','S','o','f','t','A','P',
+							' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ', /* ssid */
+							'W','E','P','K','E','Y',' ','P','A','R','T',' ','1',' ',' ',' ',
+							'W','E','P','K','E','Y',' ','P','A','R','T',' ','2',' ',' ',' ',
+							'W','E','P','K','E','Y',' ','P','A','R','T',' ','3',' ',' ',' ',
+							'W','E','P','K','E','Y',' ','P','A','R','T',' ','4',' ',' ',' ',
+							127,0,0,1,                          /* IP address */
+							127,0,0,1,                          /* Gateway */
+							127,0,0,1,                          /* DNS 1 */
+							127,0,0,1,                          /* DNS 2 */
+							24,                                 /* subnet/node seperating bit (n*'1' | (32-n)*'0' = subnet mask) */
+							0,0,0,0,0,0,0,
+							0,0,0,0,0,0,0,0,
+							0,0,0,0,0,0,
+							0,                                  /* WEP: disabled */
+							0,                                  /* This entry is: normal (1= AOSS, FF = deleted)*/
+							0,0,0,0,0,0,0,0,
+							'W','F','C',' ','U','S','E','R',' ','I','D',' ',' ',' ',                   /* user id */
+							0,0                                 /* CRC */
+						  } ;
+
 /*******************************************************************************
 
 	RF-Chip
@@ -134,11 +253,28 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 				/* the actual transfer is done on high part write */
 				if (part==1)
 				{
-					/* special purpose register: TEST1, on write, the RF chip resets */
-					if (wifi->rfIOData.bits.address == 13)
+					switch (wifi->rfIOData.bits.address)
 					{
-						WIFI_resetRF(&wifi->RF) ;
-						return ;
+						case 5:		/* write to upper part of the frequency filter */
+						case 6:		/* write to lower part of the frequency filter */
+							{
+								u32 channelFreqN ;
+								rfreg[wifi->rfIOData.bits.address].bits.content = wifi->rfIOData.bits.content ;
+								/* get the complete rfpll.n */
+								channelFreqN = (u32)wifi->RF.RFPLL3.bits.NUM2 + ((u32)wifi->RF.RFPLL2.bits.NUM2) << 18 + ((u32)wifi->RF.RFPLL2.bits.N2) << 24 ;
+								/* frequency setting is out of range */
+								if (channelFreqN<0x00A2E8BA) return ;
+								/* substract base frequency (channel 1) */
+								channelFreqN -= 0x00A2E8BA ;
+								/* every channel is now ~3813000 steps further */
+								WIFI_Host_CloseChannel(wifi->udpSocket) ;
+								WIFI_Host_OpenChannel((wifi->udpSocket,channelFreqN / 3813000)+1) ;
+							}
+							return ;
+						case 13:
+							/* special purpose register: TEST1, on write, the RF chip resets */
+							WIFI_resetRF(&wifi->RF) ;
+							return ;
 					}
 					/* set content of the addressed register */
 					rfreg[wifi->rfIOData.bits.address].bits.content = wifi->rfIOData.bits.content ;
@@ -197,6 +333,46 @@ void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
 
  *******************************************************************************/
 
+void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
+{
+	/* trigger an irq */
+	u16 irqBit = 1 << irq ;
+	if (wifi->IE.val & irqBit)
+	{
+		wifi->IF.val |= irqBit ;
+        NDS_makeARM7Int(24) ;   /* cascade it via arm7 wifi irq */
+	}
+}
+
+void WIFI_Init(wifimac_t *wifi)
+{
+	WIFI_resetRF(&wifi->RF) ;
+	WIFI_Host_InitSystem() ;
+	wifi->udpSocket = WIFI_Host_OpenChannel(1) ;
+}
+
+void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
+{
+	/* abort when RX data queuing is not enabled */
+	if (!(wifi->RXCnt & 0x8000)) return ;
+	/* abort when ringbuffer is full */
+	if (wifi->RXReadCursor == wifi->RXHWWriteCursor) return ;
+	/* write the data to cursor position */
+	wifi->circularBuffer[wifi->RXHWWriteCursor & 0xFFF] ;
+	/* move cursor by one */
+	wifi->RXHWWriteCursor++ ;
+	/* wrap around */
+	wifi->RXHWWriteCursor %= (wifi->RXRangeEnd - wifi->RXRangeBegin) >> 1 ;
+}
+
+void WIFI_TXStart(wifimac_t *wifi,u8 slot)
+{
+	u16 address = (wifi->TXSlot[slot] & 0x7FFF) << 1 ;
+	WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDSTART) ;
+	/* FIXME check and send data */
+	WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDCOMPLETE) ;
+} 
+
 void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 {
 	BOOL action = FALSE ;
@@ -210,7 +386,8 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 	if (((address & 0x00007000) >= 0x00004000) && ((address & 0x00007000) < 0x00006000))
 	{
 		/* access to the circular buffer */
-        wifi->circularBuffer[(address & 0x1FFF) >> 1] = val ;
+		address &= 0x1FFFF ;
+        wifi->circularBuffer[address >> 1] = val ;
 		return ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
@@ -228,23 +405,27 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			wifi->IE.val = val ;
 			break ;
 		case REG_WIFI_IF:
-			wifi->IF.val = val ;
+			wifi->IF.val &= ~val ;		/* clear flagging bits */
 			break ;
 		case REG_WIFI_MAC0:
 		case REG_WIFI_MAC1:
 		case REG_WIFI_MAC2:
-			wifi->mac[(address - REG_WIFI_MAC0) >> 1] = val ;
+			wifi->mac.words[(address - REG_WIFI_MAC0) >> 1] = val ;
 			break ;
 		case REG_WIFI_BSS0:
 		case REG_WIFI_BSS1:
 		case REG_WIFI_BSS2:
-			wifi->bss[(address - REG_WIFI_BSS0) >> 1] = val ;
+			wifi->bss.words[(address - REG_WIFI_BSS0) >> 1] = val ;
 			break ;
-		case REG_WIFI_AID:
+		case REG_WIFI_AID:			/* CHECKME: are those two really the same? */
+		case REG_WIFI_AIDCPY:
 			wifi->aid = val ;
 			break ;
 		case REG_WIFI_RETRYLIMIT:
 			wifi->retryLimit = val ;
+			break ;
+		case REG_WIFI_WEPCNT:
+			wifi->WEP_enable = (val & 0x8000) != 0 ;
 			break ;
 		case REG_WIFI_RXRANGEBEGIN:
 			wifi->RXRangeBegin = val ;
@@ -269,7 +450,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			break ;
 		case REG_WIFI_CIRCBUFWRITE:
 			/* set value into the circ buffer, and move cursor to the next hword on action */
-			wifi->circularBuffer[wifi->CircBufWriteAddress >> 1] = val ;
+			wifi->circularBuffer[(wifi->CircBufWriteAddress >> 1) & 0xFFF] = val ;
 			if (action)
 			{
 				/* move to next hword */
@@ -280,6 +461,37 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 					wifi->CircBufEnd += wifi->CircBufSkip * 2 ;
 				}
 			}
+			break ;
+		case REG_WIFI_CIRCBUFWR_SKIP:
+			wifi->CircBufSkip = val ;
+			break ;
+		case REG_WIFI_BEACONTRANS:
+			wifi->BEACONSlot = val & 0x7FFF ;
+			wifi->BEACON_enable = (val & 0x8000) != 0 ;
+			break ;
+		case REG_WIFI_TXLOC1:
+		case REG_WIFI_TXLOC2:
+		case REG_WIFI_TXLOC3:
+			wifi->TXSlot[address - REG_WIFI_TXLOC1] = val ;
+			break ;
+		case REG_WIFI_TXOPT:
+			if (val == 0xFFFF)
+			{
+				/* reset TX logic */
+				/* CHECKME */
+                wifi->TXSlot[0] = 0 ; wifi->TXSlot[1] = 0 ; wifi->TXSlot[2] = 0 ;
+                wifi->TXOpt = 0 ;
+                wifi->TXCnt = 0 ;
+			} else
+			{
+				wifi->TXOpt = val ;
+			}
+			break ;
+		case REG_WIFI_TXCNT:
+			wifi->TXCnt = val ;
+			if (val & 0x01)	WIFI_TXStart(wifi,0) ;
+			if (val & 0x04)	WIFI_TXStart(wifi,1) ;
+			if (val & 0x08)	WIFI_TXStart(wifi,2) ;
 			break ;
 		case REG_WIFI_RFIOCNT:
 			WIFI_setRF_CNT(wifi,val) ;
@@ -292,6 +504,21 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			break ;
 		case REG_WIFI_RFIODATA2:
 			WIFI_setRF_DATA(wifi,val,1) ;
+			break ;
+		case REG_WIFI_USCOUNTERCNT:
+			wifi->usecEnable = (val & 1)==1 ;
+			break ;
+		case REG_WIFI_USCOMPARECNT:
+			wifi->ucmpEnable = (val & 1)==1 ;
+			break ;
+		case REG_WIFI_BBSIOCNT:
+            WIFI_setBB_CNT(wifi,val) ;
+			break ;
+		case REG_WIFI_BBSIOWRITE:
+            WIFI_setBB_DATA(wifi,val) ;
+			break ;
+		default:
+			val = 0 ;       /* not handled yet */
 			break ;
 	}
 }
@@ -316,6 +543,10 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 	address &= 0x00000FFF ;
 	switch (address)
 	{
+		case REG_WIFI_MODE:
+			return wifi->macMode ;
+		case REG_WIFI_WEP:
+			return wifi->wepMode ;
 		case REG_WIFI_IE:
 			return wifi->IE.val ;
 		case REG_WIFI_IF:
@@ -324,23 +555,24 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return WIFI_getRF_DATA(wifi,0) ;
 		case REG_WIFI_RFIODATA2:
 			return WIFI_getRF_DATA(wifi,1) ;
-
+		case REG_WIFI_RFIOBSY:
+		case REG_WIFI_BBSIOBUSY:
+			return 0 ;	/* we are never busy :p */
+		case REG_WIFI_BBSIOREAD:
+			return WIFI_getBB_DATA(wifi) ;
+		case REG_WIFI_RANDOM:
+			/* FIXME: random generator */
+			return 0 ;
+		default:
+			return 0 ;
 	}
 }
 
-void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
-{
-	/* trigger an irq */
-	u16 irqBit = 1 << irq ;
-	if (wifi->IE.val & irqBit)
-	{
-		wifi->IF.val |= irqBit ;
-        NDS_makeARM7Int(24) ;   /* cascade it via arm7 wifi irq */
-	}
-}
 
 void WIFI_usTrigger(wifimac_t *wifi)
 {
+	u8 dataBuffer[0x2000] ; 
+	u16 rcvSize ;
 	/* a usec (=3F03 cycles) has passed */
 	if (wifi->usecEnable)
 		wifi->usec++ ;
@@ -348,4 +580,105 @@ void WIFI_usTrigger(wifimac_t *wifi)
 	{
 			WIFI_triggerIRQ(wifi,WIFI_IRQ_TIMEBEACON) ;
 	}
+	/* check if data arrived in the meantime */
+	rcvSize = WIFI_Host_RecvData(wifi->udpSocket,dataBuffer,0x2000) ;
+	if (rcvSize)
+	{
+		u16 i ;
+		/* process data, put it into mac memory */
+		WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVSTART) ;
+		for (i=0;i<(rcvSize+1) << 1;i++)
+		{
+			WIFI_RXPutWord(wifi,((u16 *)dataBuffer)[i]) ;
+		}
+		WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVCOMPLETE) ;
+	}
+}
+
+/*******************************************************************************
+
+	Host system operations
+
+ *******************************************************************************/
+
+socket_t WIFI_Host_OpenChannel(u8 num)
+{
+	sockaddr_t address ;
+	/* create a new socket */
+	socket_t channelSocket = socket(AF_INET,SOCK_DGRAM,0) ;
+	/* set the sockets address */
+	memset(&address,0,sizeof(sockaddr_t)) ;
+	address.sa_family = AF_INET ;
+	*(u32 *)&address.sa_data[2] = htonl(0) ; 				/* IP: any */
+	*(u16 *)&address.sa_data[0] = htons(BASEPORT + num-1) ; /* Port */
+	bind(channelSocket,&address,sizeof(sockaddr_t)) ;
+	return channelSocket ;
+}
+
+void WIFI_Host_CloseChannel(socket_t sock)
+{
+	if (sock!=INVALID_SOCKET)
+	{
+#ifdef WIN32
+		closesocket(sock) ;
+#else
+		close(sock) ;
+#endif
+	}
+}
+
+void WIFI_Host_SendData(socket_t sock, u8 channel, u8 *data, u16 length)
+{
+	sockaddr_t address ;
+	/* create the frame to validate data: "DSWIFI" string and a u16 constant of the payload length */
+	u8 *frame = (u8 *)malloc(length + 8) ;
+	sprintf((char *)frame,"DSWIFI") ;
+	*(u16 *)(frame+6) = htons(length) ;
+	memcpy(frame+8,data,length) ;
+	/* target address */
+	memset(&address,0,sizeof(sockaddr_t)) ;
+	address.sa_family = AF_INET ;
+	*(u32 *)&address.sa_data[2] = htonl(0xFFFFFFFF) ; 			/* IP: broadcast */
+	*(u16 *)&address.sa_data[0] = htons(BASEPORT + channel-1) ; /* Port */
+	/* send the data now */
+	sendto(sock,(const char *)frame,length+8,0,&address,sizeof(sockaddr_t)) ;
+	/* clean up frame buffer */
+	free(frame) ;
+}
+
+u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
+{
+	fd_set dataCheck ;
+	struct timeval tv ;
+	FD_ZERO(&dataCheck) ;
+	FD_SET(sock,&dataCheck) ;
+	tv.tv_sec = 0 ;
+	tv.tv_usec = 1 ;
+	/* check if there is data, without blocking */
+	if (select(1,&dataCheck,0,0,&tv))
+	{
+		/* there is data available */
+		return recv(sock,data,maxLength,0) ;
+	}
+	return 0 ;
+}
+
+BOOL WIFI_Host_InitSystem(void)
+{
+	#ifdef WIN32
+	WSADATA wsaData ;
+	WORD version = MAKEWORD(1,1) ;
+	if (WSAStartup(version,&wsaData))
+	{
+		return FALSE ;
+	}
+	#endif
+	return TRUE ;
+}
+
+void WIFI_Host_ShutdownSystem(void)
+{
+	#ifdef WIN32
+	WSACleanup() ;
+	#endif
 }

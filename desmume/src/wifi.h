@@ -28,11 +28,18 @@ extern "C" {
 /* standardize socket interface for linux and windows */
 #ifdef WIN32
 	#include <winsock2.h>
-	#define socket_t SOCKET
+	#define socket_t 	SOCKET
+	#define sockaddr_t  SOCKADDR
 #else
 	#include <sys/socket.h>
-	#define socket_t int
+	#define socket_t 	int
+	#define sockaddr_t  struct sockaddr
 #endif
+#ifndef INVALID_SOCKET
+	#define INVALID_SOCKET  (socket_t)-1
+#endif
+#define BASEPORT        7000    		/* channel 1: 7000 ... channel 13: 7012 */
+										/* FIXME: make it configureable */
 
 #include "types.h"
 
@@ -47,7 +54,9 @@ extern "C" {
 #define     REG_WIFI_BSS1       		0x022
 #define     REG_WIFI_BSS2       		0x024
 #define     REG_WIFI_AID        		0x028
+#define     REG_WIFI_AIDCPY        		0x02A
 #define     REG_WIFI_RETRYLIMIT 		0x02C
+#define		REG_WIFI_WEPCNT				0x032
 #define     REG_WIFI_POWERSTATE 		0x03C
 #define     REG_WIFI_FORCEPS    		0x040
 #define     REG_WIFI_RANDOM     		0x044
@@ -83,6 +92,10 @@ extern "C" {
 #define     REG_WIFI_USCOUNTER1         0x0FA
 #define     REG_WIFI_USCOUNTER2         0x0FC
 #define     REG_WIFI_USCOUNTER3         0x0FE
+#define     REG_WIFI_BBSIOCNT           0x158
+#define     REG_WIFI_BBSIOWRITE         0x15A
+#define     REG_WIFI_BBSIOREAD          0x15C
+#define     REG_WIFI_BBSIOBUSY          0x15E
 #define     REG_WIFI_RFIODATA2  		0x17C
 #define     REG_WIFI_RFIODATA1  		0x17E
 #define     REG_WIFI_RFIOBSY    		0x180
@@ -351,15 +364,29 @@ typedef struct
 	/* modes */
 	u16 macMode ;
 	u16 wepMode ;
+	BOOL WEP_enable ;
 
 	/* sending */
+	u16 TXSlot[3] ;
+	u16 TXCnt ;
+	u16 TXOpt ;
+	u16 BEACONSlot ;
+	BOOL BEACON_enable ;
 
 	/* receiving */
 	u16 RXCnt ;
 
 	/* addressing/handshaking */
-	u8  mac[6] ;
-	u8  bss[6] ;
+	union
+	{
+		u16  words[3] ;
+		u8	 bytes[6] ;
+	} mac ;
+	union
+	{
+		u16  words[3] ;
+		u8	 bytes[6] ;
+	} bss ;
 	u16 aid ;
 	u16 retryLimit ;
 
@@ -391,6 +418,9 @@ typedef struct
 	u16         CircBufEnd ;
 	u16         CircBufSkip ;
 
+	/* others */
+	u16			randomSeed ;
+
 	/* desmume host communication */
 	socket_t    udpSocket ;
 
@@ -414,6 +444,15 @@ u16  WIFI_read16(wifimac_t *wifi,u32 address) ;
 
 /* wifimac timing */
 void WIFI_usTrigger(wifimac_t *wifi) ;
+
+/* wifi data to be stored in firmware, when no firmware image was loaded */
+extern u8 FW_Mac[6];
+extern u8 FW_WIFIInit[32] ;
+extern u8 FW_BBInit[105] ;
+extern u8 FW_RFInit[36] ;
+extern u8 FW_RFChannel[6*14] ;
+extern u8 FW_BBChannel[14] ;
+extern u8 FW_WFCProfile[0xC0] ;
 
 #ifdef __cplusplus
 }
