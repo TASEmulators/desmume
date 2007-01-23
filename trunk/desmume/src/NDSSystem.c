@@ -19,9 +19,9 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <string.h>
 #include "NDSSystem.h"
 #include <stdlib.h>
-#include <string.h>
 
 #include "ROMReader.h"
 
@@ -44,6 +44,8 @@ int NDS_Init(void) {
 
      if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
         return -1;
+
+	 WIFI_Init(&wifiMac) ;
 
      return 0;
 }
@@ -423,6 +425,8 @@ void NDS_Reset(void)
    GPU_Reset(SubScreen.gpu, 1);
    SPU_Reset();
 
+   NDS_CreateDummyFirmware() ;
+
    execute = oldexecute;
 }
 
@@ -513,6 +517,21 @@ int NDS_WriteBMP(const char *filename)
     fclose(file);
 
     return 1;
+}
+
+/* creates an firmware flash image, which contains all needed info to initiate a wifi connection */
+int NDS_CreateDummyFirmware(void)
+{
+	memcpy(MMU.fw.data+0x36,FW_Mac,sizeof(FW_Mac)) ;
+	memcpy(MMU.fw.data+0x44,FW_WIFIInit,sizeof(FW_WIFIInit)) ;
+	MMU.fw.data[0x41] = 18 ; /* bits per RF value */
+	MMU.fw.data[0x42] = 12 ; /* # of RF values to init */
+	memcpy(MMU.fw.data+0x64,FW_BBInit,sizeof(FW_BBInit)) ;
+	memcpy(MMU.fw.data+0xCE,FW_RFInit,sizeof(FW_RFInit)) ;
+	memcpy(MMU.fw.data+0xF2,FW_RFChannel,sizeof(FW_RFChannel)) ;
+	memcpy(MMU.fw.data+0x146,FW_BBChannel,sizeof(FW_BBChannel)) ;
+
+	memcpy(MMU.fw.data+0x03FA40,FW_WFCProfile,sizeof(FW_WFCProfile)) ;
 }
 
 int NDS_LoadFirmware(const char *filename)
