@@ -43,9 +43,9 @@ short sizeTab[4][4][2] =
 {
       {{256,256}, {512, 256}, {256, 512}, {512, 512}},
       {{128,128}, {256, 256}, {512, 512}, {1024, 1024}},
-//      {{128,128}, {256, 256}, {512, 256}, {512, 512}},
+      {{128,128}, {256, 256}, {512, 256}, {512, 512}},
       {{512,1024}, {1024, 512}, {0, 0}, {0, 0}},
-      {{0, 0}, {0, 0}, {0, 0}, {0, 0}}
+//      {{0, 0}, {0, 0}, {0, 0}, {0, 0}}
 };
 
 size sprSizeTab[4][4] = 
@@ -689,7 +689,6 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 	if(!bgCnt.Palette_256)    /* color: 16 palette entries */
 	{
-
 		if (bgCnt.Mosaic_Enable){
 /* test NDS: #2 of 
    http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192 */
@@ -782,7 +781,6 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 		}
 		return;
 	}
-
 	if(!gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: no extended palette */
 	{
 		yoff = ((YBG&7)<<3);
@@ -848,10 +846,10 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 // scale rot
 
-void rot_tiled_8bit_entry(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
-
+	
 	tileindex = map[(auxX + auxY * lg)>>3];
 	x = (auxX&7); y = (auxY&7);
 
@@ -861,26 +859,30 @@ void rot_tiled_8bit_entry(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * d
 		renderline_setFinalColor(gpu,0,num,dst, color,auxX,auxY);
 }
 
-void rot_tiled_16bit_entry(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
 	u8 palette_entry, palette_set;
 	u16 tileindex, x, y, color;
-	
-	if (!tile) return;
-	tileindex = T1ReadWord(map, ((auxX + auxY * lg)>>3) << 1);
-	palette_set = tileindex >> 12;
-	tileindex &= 0x3FF;
-	x = (palette_set & 1) ? 7 - (auxX&7) : (auxX&7);
-	y = (palette_set & 2) ? 7 - (auxY&7) : (auxY&7);
+	TILEENTRY tileentry;
 
-	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
-	color = T1ReadWord(pal, (palette_entry + (palette_set<<8)) << 1);
-	if (palette_entry)
+// lunar bug is in here (or caller)
+	return;
+
+	if (!tile) return;
+	tileentry.val = T1ReadWord(map, ((auxX + auxY * lg)>>3)<<1);
+	x = (tileentry.bits.HFlip) ? 7 - (auxX&7) : (auxX&7);
+	y = (tileentry.bits.VFlip) ? 7 - (auxY&7) : (auxY&7);
+
+	palette_entry = tile[(tileentry.bits.TileNum<<6)+(y<<3)+x];
+	color = T1ReadWord(pal, (palette_entry + (tileentry.bits.Palette<<8)) << 1);
+	if (palette_entry>0)
 		renderline_setFinalColor(gpu,0,num,dst, color, auxX, auxY);
 }
 
-void rot_256_map(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
 	u8 palette_entry;
 	u16 tileindex, color;
+
+	return;
 
 	palette_entry = map[auxX + auxY * lg];
 	color = T1ReadWord(pal, palette_entry << 1);
@@ -889,8 +891,10 @@ void rot_256_map(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * 
 
 }
 
-void rot_BMP_map(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
+void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal) {
 	u16 color;
+
+	return;
 
 	color = T1ReadWord(map, (auxX + auxY * lg) << 1);
 	if (color&0x8000)
@@ -898,7 +902,7 @@ void rot_BMP_map(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * 
 
 }
 
-typedef void (*rot_fun)(GPU * gpu, int num, int auxX, int auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal);
+typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal);
 
 INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
 {
@@ -909,7 +913,8 @@ INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 
 	s32 dy = (s32)PC;
 	s32 lg = gpu->BGSize[num][0];
 	s32 ht = gpu->BGSize[num][1];
-	u32 i, auxX, auxY;
+	u32 i;
+	s32 auxX, auxY;
 	
 	if (!map) return;
 	x.val = X + (s32)PB*(s32)H;
@@ -917,6 +922,8 @@ INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 
 
 	for(i = 0; i < LG; ++i)
 	{
+		//auxX = x.val >> 8;
+		//auxY = y.val >> 8;
 		auxX = x.bits.Integer;
 		auxY = y.bits.Integer;
 	
@@ -957,10 +964,11 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 	{
 	case 0 :
 	case 1 :
-		// 16  bit bgmap entries
 		map = gpu->BG_map_ram[num];
 		tile = gpu->BG_tile_ram[num];
 		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+
+		// 16  bit bgmap entries
 		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_tiled_16bit_entry, map, tile, pal);
 		return;
 	case 2 :
@@ -1062,6 +1070,7 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src,
 INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u8 palette_entry; u16 color;
+
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
 		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
@@ -1074,12 +1083,13 @@ INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u8 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u8 palette, palette_entry; u16 color;
+
 #define BLOCK(op) \
 	palette_entry = palette op; \
 	color = T1ReadWord(pal, palette_entry << 1); \
-	RENDER_COND(palette_entry>0) \
+	RENDER_COND(palette_entry >0) \
 	++sprX;
-#if 1
+#if 0
 
 	if (xdir<0) x++;
 	if(x&1)
@@ -1119,8 +1129,6 @@ INLINE void render_sprite_16 (GPU * gpu, u16 l, u8 * dst, u8 * src, u8 * pal,
 
 #else
 	x >>= 1;
-	sprX++;
-
 	if (xdir<0) {
 		if (lg&1) {
 			palette = src[(x&0x3) + ((x&0xFFFC)<<3)];
