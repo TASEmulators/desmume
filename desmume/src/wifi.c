@@ -580,18 +580,23 @@ void WIFI_usTrigger(wifimac_t *wifi)
 	{
 			WIFI_triggerIRQ(wifi,WIFI_IRQ_TIMEBEACON) ;
 	}
-	/* check if data arrived in the meantime */
-	rcvSize = WIFI_Host_RecvData(wifi->udpSocket,dataBuffer,0x2000) ;
-	if (rcvSize)
+	/* receive check, given a 2 mbit connection, 2 bits per usec can be transfered. /*
+	/* for a packet of 32 Bytes, at least 128 usec passed, we will use the 32 byte accuracy to reduce load */
+	if (!(wifi->RXCheckCounter++ & 0x7F))
 	{
-		u16 i ;
-		/* process data, put it into mac memory */
-		WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVSTART) ;
-		for (i=0;i<(rcvSize+1) << 1;i++)
+		/* check if data arrived in the meantime */
+		rcvSize = WIFI_Host_RecvData(wifi->udpSocket,dataBuffer,0x2000) ;
+		if (rcvSize)
 		{
-			WIFI_RXPutWord(wifi,((u16 *)dataBuffer)[i]) ;
+			u16 i ;
+			/* process data, put it into mac memory */
+			WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVSTART) ;
+			for (i=0;i<(rcvSize+1) << 1;i++)
+			{
+				WIFI_RXPutWord(wifi,((u16 *)dataBuffer)[i]) ;
+			}
+			WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVCOMPLETE) ;
 		}
-		WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVCOMPLETE) ;
 	}
 }
 
@@ -653,7 +658,7 @@ u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
 	FD_ZERO(&dataCheck) ;
 	FD_SET(sock,&dataCheck) ;
 	tv.tv_sec = 0 ;
-	tv.tv_usec = 1 ;
+	tv.tv_usec = 0 ;
 	/* check if there is data, without blocking */
 	if (select(1,&dataCheck,0,0,&tv))
 	{

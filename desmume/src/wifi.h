@@ -375,6 +375,7 @@ typedef struct
 
 	/* receiving */
 	u16 RXCnt ;
+	u16 RXCheckCounter ;
 
 	/* addressing/handshaking */
 	union
