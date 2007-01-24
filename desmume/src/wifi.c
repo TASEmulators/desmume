@@ -658,7 +658,7 @@ u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
 	if (select(1,&dataCheck,0,0,&tv))
 	{
 		/* there is data available */
-		return recv(sock,data,maxLength,0) ;
+		return recv(sock,(char*)data,maxLength,0) ;
 	}
 	return 0 ;
 }
