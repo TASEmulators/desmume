@@ -12,7 +12,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-DVERSION=\"0.5\" _@@_
 CppCompiler=_@@_
-Linker=-ldxguid -ldxerr8 -ldsound_@@_
+Linker=-ldxguid -ldxerr8 -ldsound -lws2_32_@@_
 IsCpp=1
 Icon=DeSmuME.ico
 ExeOutput=
