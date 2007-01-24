@@ -428,6 +428,8 @@ typedef struct
 
 extern wifimac_t wifiMac ;
 
+void WIFI_Init(wifimac_t *wifi);
+
 /* subchip communication IO functions */
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;
 void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part) ;
