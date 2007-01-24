@@ -87,18 +87,21 @@ typedef s16 t16;
 #define inttot16(n)          ((n) << 4)
 #define t16toint(n)          ((n) >> 4)
 #define floattot16(n)        ((t16)((n) * (1 << 4)))
+#define t16ofloat(n)         (((float)(n)) / (float)(1<<4))
 
 typedef s16 v16;
 #define inttov16(n)          ((n) << 12)
 #define f32tov16(n)          (n)
+#define floattov16(n)        ((v16)((n) * (1 << 12)))
 #define v16toint(n)          ((n) >> 12)
-#define floattov16(n)         ((v16)((n) * (1 << 12)))
+#define v16tofloat(n)        (((float)(n)) / (float)(1<<12))
 
 typedef s16 v10;
 #define inttov10(n)          ((n) << 9)
 #define f32tov10(n)          ((v10)(n >> 3))
 #define v10toint(n)          ((n) >> 9)
 #define floattov10(n)        ((v10)((n) * (1 << 9)))
+#define v10tofloat(n)        (((float)(n)) / (float)(1<<9))
 
 /*----------------------*/
 
