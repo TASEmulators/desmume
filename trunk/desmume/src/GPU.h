@@ -391,7 +391,7 @@ struct _GPU
 	MASTER_BRIGHT masterBright;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
-	u8 sprWin[192*2][256];
+	u8 sprWin[256*2][256];
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
@@ -557,16 +557,14 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 
 
 	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
-	c |= (c<<16);
 	
 	// init background color & priorities
-	for(i8 = 0; i8< 128; ++i8)
+	for(i = 0; i< 256; ++i)
 	{
-		T2WriteLong(dst, i8 << 2, c);
-		T2WriteLong(spr, i8 << 2, c);
-		// we init the sprites with priority 4 (if they keep it = unprocessed)
-		T1WriteWord(sprPrio, i8 << 1, 0xFFFF);
-		T1WriteWord(gpu->sprWin[l], i8 << 1, 0);
+		T1WriteWord(dst, i << 1, c);
+		T1WriteWord(spr, i << 1, c);
+		sprPrio[i]=0xFF;
+		gpu->sprWin[l][i]=0;
 	}
 	
 	// init pixels priorities
@@ -583,7 +581,6 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	
 			// render 1 time, but prio 4 = isn't processed further
 			if (prio >=4) continue;
-			T2WriteWord(dst, i << 1, T2ReadWord(spr, i << 1));
 			
 			item = &(gpu->itemsForPriority[prio]);
 			item->PixelsX[item->nbPixelsX]=i;
@@ -613,7 +610,7 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 // FIXME !!!
 /* capture */
 capcnt = &gpu->dispCapCnt.bits;
-if (0 & capcnt->Capture_Enable)
+if (capcnt->Capture_Enable)
 {
 	u16 * srcA, * srcB, *vram;
 	u32 c; u8 vram_bank;
