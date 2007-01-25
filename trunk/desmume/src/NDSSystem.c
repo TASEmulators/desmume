@@ -45,7 +45,9 @@ int NDS_Init(void) {
      if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
         return -1;
 
+#ifdef EXPERIMENTAL_WIFI
 	 WIFI_Init(&wifiMac) ;
+#endif
 
      return 0;
 }
@@ -522,6 +524,8 @@ int NDS_WriteBMP(const char *filename)
 /* creates an firmware flash image, which contains all needed info to initiate a wifi connection */
 int NDS_CreateDummyFirmware(void)
 {
+#ifdef EXPERIMENTAL_WIFI
+
 	memcpy(MMU.fw.data+0x36,FW_Mac,sizeof(FW_Mac)) ;
 	memcpy(MMU.fw.data+0x44,FW_WIFIInit,sizeof(FW_WIFIInit)) ;
 	MMU.fw.data[0x41] = 18 ; /* bits per RF value */
@@ -532,6 +536,7 @@ int NDS_CreateDummyFirmware(void)
 	memcpy(MMU.fw.data+0x146,FW_BBChannel,sizeof(FW_BBChannel)) ;
 
 	memcpy(MMU.fw.data+0x03FA40,FW_WFCProfile,sizeof(FW_WFCProfile)) ;
+#endif
 }
 
 int NDS_LoadFirmware(const char *filename)
