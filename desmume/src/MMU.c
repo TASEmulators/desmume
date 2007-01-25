@@ -1423,40 +1423,40 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
                         case REG_DISPB_BG2PA :
 				if(proc == ARMCPU_ARM9) GPU_setPA(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPB_BG2PB :
 				if(proc == ARMCPU_ARM9) GPU_setPB(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPB_BG2PC :
 				if(proc == ARMCPU_ARM9) GPU_setPC(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPB_BG2PD :
 				if(proc == ARMCPU_ARM9) GPU_setPD(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPA_BG3PA :
 				if(proc == ARMCPU_ARM9) GPU_setPA(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG3PB :
 				if(proc == ARMCPU_ARM9) GPU_setPB(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG3PC :
 				if(proc == ARMCPU_ARM9) GPU_setPC(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG3PD :
 				if(proc == ARMCPU_ARM9) GPU_setPD(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3PA :
 				if(proc == ARMCPU_ARM9) GPU_setPA(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3PB :
 				if(proc == ARMCPU_ARM9) GPU_setPB(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3PC :
 				if(proc == ARMCPU_ARM9) GPU_setPC(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3PD :
 				if(proc == ARMCPU_ARM9) GPU_setPD(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG2XL :
 				if(proc == ARMCPU_ARM9) GPU_setXL(MainScreen.gpu, 2, val);
 				return;
@@ -2033,53 +2033,53 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 #endif
                         case REG_DISPA_BG2PA :
 				if (proc == ARMCPU_ARM9) GPU_setPAPB(MainScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPA_BG2PC :
 				if (proc == ARMCPU_ARM9) GPU_setPCPD(MainScreen.gpu, 2, val);
-				break;
+				return;
 
                         case REG_DISPB_BG2PA :
 				if (proc == ARMCPU_ARM9) GPU_setPAPB(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPB_BG2PC :
 				if (proc == ARMCPU_ARM9) GPU_setPCPD(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPA_BG3PA :
 				if (proc == ARMCPU_ARM9) GPU_setPAPB(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG3PC :
 				if (proc == ARMCPU_ARM9) GPU_setPCPD(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3PA :
 				if (proc == ARMCPU_ARM9) GPU_setPAPB(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3PC :
 				if (proc == ARMCPU_ARM9) GPU_setPCPD(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG2XL :
 				if (proc == ARMCPU_ARM9) GPU_setX(MainScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPA_BG2YL :
 				if (proc == ARMCPU_ARM9) GPU_setY(MainScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPB_BG2XL :
 				if (proc == ARMCPU_ARM9) GPU_setX(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPB_BG2YL :
 				if (proc == ARMCPU_ARM9) GPU_setY(SubScreen.gpu, 2, val);
-				break;
+				return;
                         case REG_DISPA_BG3XL :
 				if (proc == ARMCPU_ARM9) GPU_setX(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG3YL :
 				if (proc == ARMCPU_ARM9) GPU_setY(MainScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3XL :
 				if (proc == ARMCPU_ARM9) GPU_setX(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPB_BG3YL :
 				if (proc == ARMCPU_ARM9) GPU_setY(SubScreen.gpu, 3, val);
-				break;
+				return;
                         case REG_DISPA_BG0HOFS :
 				if (proc == ARMCPU_ARM9) GPU_scrollXY(MainScreen.gpu, 0, val);
 				return;
