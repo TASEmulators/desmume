@@ -17,6 +17,7 @@
     along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#ifdef EXPERIMENTAL_WIFI
 
 #ifndef WIFI_H
 #define WIFI_H
@@ -424,6 +425,7 @@ typedef struct
 
 	/* desmume host communication */
 	socket_t    udpSocket ;
+	u8			channel ;
 
 } wifimac_t ;
 
@@ -462,3 +464,5 @@ extern u8 FW_WFCProfile[0xC0] ;
 #endif
 
 #endif
+
+#endif /* #ifdef EXPERIMENTAL_WIFI */
