@@ -18,6 +18,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifdef EXPERIMENTAL_WIFI
+
 #include "wifi.h"
 #include "armcpu.h"
 
@@ -268,7 +270,8 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 								channelFreqN -= 0x00A2E8BA ;
 								/* every channel is now ~3813000 steps further */
 								WIFI_Host_CloseChannel(wifi->udpSocket) ;
-								WIFI_Host_OpenChannel((wifi->udpSocket,channelFreqN / 3813000)+1) ;
+								wifi->channel = (wifi->udpSocket,channelFreqN / 3813000)+1 ;
+								WIFI_Host_OpenChannel(wifi->channel) ;
 							}
 							return ;
 						case 13:
@@ -367,10 +370,34 @@ void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
 
 void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 {
-	u16 address = (wifi->TXSlot[slot] & 0x7FFF) << 1 ;
-	WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDSTART) ;
-	/* FIXME check and send data */
-	WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDCOMPLETE) ;
+	if (wifi->TXSlot[slot] & 0x8000)	/* is slot enabled? */
+	{
+		u16 txLen ;
+		/* the address has to be somewhere in the circular buffer, so drop the other bits */
+		u16 address = (wifi->TXSlot[slot] & 0x7FFF) ;
+		/* is there even enough space for the header (6 hwords) in the tx buffer? */
+		if (address > 0x1000-6) return ; 
+
+		/* 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx */
+		txLen = ntohs(wifi->circularBuffer[address+5]) ;
+		/* zero length */
+		if (txLen==0) return ;
+		/* unsupported txRate */
+		switch (ntohs(wifi->circularBuffer[address+4]))
+		{
+			case 10: /* 1 mbit */
+			case 20: /* 2 mbit */
+				break ;
+			default: /* other rates */
+				return ;
+		}
+
+		/* FIXME: calculate FCS */
+
+		WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDSTART) ;
+		WIFI_Host_SendData(wifi->udpSocket,wifi->channel,(u8 *)&wifi->circularBuffer[address],txLen) ;
+		WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDCOMPLETE) ;
+	}
 } 
 
 void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
@@ -472,7 +499,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_TXLOC1:
 		case REG_WIFI_TXLOC2:
 		case REG_WIFI_TXLOC3:
-			wifi->TXSlot[address - REG_WIFI_TXLOC1] = val ;
+			wifi->TXSlot[(address - REG_WIFI_TXLOC1) >> 2] = val ;
 			break ;
 		case REG_WIFI_TXOPT:
 			if (val == 0xFFFF)
@@ -563,6 +590,14 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 		case REG_WIFI_RANDOM:
 			/* FIXME: random generator */
 			return 0 ;
+		case REG_WIFI_MAC0:
+		case REG_WIFI_MAC1:
+		case REG_WIFI_MAC2:
+			return wifi->mac.words[(address - REG_WIFI_MAC0) >> 1] ;
+		case REG_WIFI_BSS0:
+		case REG_WIFI_BSS1:
+		case REG_WIFI_BSS2:
+			return wifi->bss.words[(address - REG_WIFI_BSS0) >> 1] ;
 		default:
 			return 0 ;
 	}
@@ -663,7 +698,12 @@ u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
 	if (select(1,&dataCheck,0,0,&tv))
 	{
 		/* there is data available */
-		return recv(sock,(char*)data,maxLength,0) ;
+		u32 receivedBytes = recv(sock,(char*)data,maxLength,0) ;
+		if (receivedBytes < 8) return 0 ;			/* this cant be data for us, the header alone is 8 bytes */
+		if (memcmp(data,"DSWIFI",6)!=0) return 0 ;	/* this isnt data for us, as the tag is not our */
+		if (ntohs(*(u16 *)(data+6))+8 != receivedBytes) return 0 ; /* the datalen+headerlen is not what we received */
+		memmove(data,data+8,receivedBytes-8) ;
+		return receivedBytes-8 ;
 	}
 	return 0 ;
 }
@@ -687,3 +727,5 @@ void WIFI_Host_ShutdownSystem(void)
 	WSACleanup() ;
 	#endif
 }
+
+#endif
