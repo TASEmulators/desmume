@@ -18,6 +18,7 @@
   - Added BB chip interface.
  windows port:
   - Fixed address calculation in disassembler.
+  - Added Force Maintain Ratio option for window stretching
 
 0.3.3 -> 0.5.0
  arm:
