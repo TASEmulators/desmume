@@ -561,13 +561,13 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 		// it is in winOBJ, do we display ?
 		// low priority
 		else if (wwobj) {
-			*draw   = (gpu->WINDOW_OUTCNT.bytes.low >> bgnum)&1;
+			*draw   = (gpu->WINDOW_OUTCNT.bytes.high>> bgnum)&1;
 			*effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable;
 		}
 		// it is outside of windows, do we display ?
 		// fallback
 		else if (!(wwin0||wwin1||wwobj)) {
-			*draw   = (gpu->WINDOW_OUTCNT.bytes.high>> bgnum)&1;
+			*draw   = (gpu->WINDOW_OUTCNT.bytes.low >> bgnum)&1;
 			*effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable;
 		}
 	}
