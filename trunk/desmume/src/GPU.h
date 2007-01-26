@@ -517,30 +517,23 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 			return;
 		case 2: // Display framebuffer
 		{
-		//addition from Normatt
-				/* we only draw one of the VRAM blocks */
-				vram_bank = gpu->dispCnt.bits.VRAM_Block ;
-				
-//				if(!(gpu->lcd)) dest = mdst; else dest = sdst;
-				dest = dst ;
-				{
-					int ii = l * 256 * 2;
-					for (i=0; i<(256 * 2); i+=2)
-					{
-						u8 * vram ;
-						if (MMU.vram_mode[vram_bank] & 4)
-						{
-							vram = ARM9Mem.ARM9_LCD + (MMU.vram_mode[vram_bank] & 3) * 0x20000;
-						} else
-						{
-							vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
-						}
+                        int ii = l * 256 * 2;
+                        u8 * vram;
 
-						T2WriteWord(dest, i, T1ReadWord(vram, ii));
-						ii+=2;
-					}
-					return;
-				}
+                        /* we only draw one of the VRAM blocks */
+                        vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+
+                        // This probably only needs to be calculated once per frame, but at least it's better than before >_<
+                        if (MMU.vram_mode[vram_bank] & 4)
+                           vram = ARM9Mem.ARM9_LCD + (MMU.vram_mode[vram_bank] & 3) * 0x20000;
+                        else
+                           vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
+
+                        for (i=0; i<(256 * 2); i+=2)
+                        {
+                           T2WriteWord(dst, i, T1ReadWord(vram, ii));
+                           ii+=2;
+                        }
 		}
 			return;
 		case 3:
