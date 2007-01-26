@@ -1,6 +1,7 @@
 /* desmume.c - this file is part of DeSmuME
  *
  * Copyright (C) 2006,2007 DeSmuME Team
+ * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

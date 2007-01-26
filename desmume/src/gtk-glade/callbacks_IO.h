@@ -1,6 +1,7 @@
 /* callbacks_IO.h - this file is part of DeSmuME
  *
  * Copyright (C) 2007 Damien Nozay (damdoum)
+ * Copyright (C) 2007 Pascal Giard (evilynux)
  * Author: damdoum at users.sourceforge.net
  *
  * This file is free software; you can redistribute it and/or modify
