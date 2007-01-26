@@ -1575,6 +1575,30 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case REG_DISPB_MASTERBRIGHT:
 				if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (SubScreen.gpu, val);
 				break;
+			case REG_DISPA_WIN0H:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_XDIM(MainScreen.gpu,val,0) ;
+				break ;
+			case REG_DISPA_WIN1H:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_XDIM(MainScreen.gpu,val,1) ;
+				break ;
+			case REG_DISPB_WIN0H:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_XDIM(SubScreen.gpu,val,0) ;
+				break ;
+			case REG_DISPB_WIN1H:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_XDIM(SubScreen.gpu,val,1) ;
+				break ;
+			case REG_DISPA_WIN0V:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_YDIM(MainScreen.gpu,val,0) ;
+				break ;
+			case REG_DISPA_WIN1V:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_YDIM(MainScreen.gpu,val,1) ;
+				break ;
+			case REG_DISPB_WIN0V:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_YDIM(SubScreen.gpu,val,0) ;
+				break ;
+			case REG_DISPB_WIN1V:
+				if(proc == ARMCPU_ARM9) GPU_setWINDOW_YDIM(SubScreen.gpu,val,1) ;
+				break ;
 			case REG_DISPA_WININ:
 				if(proc == ARMCPU_ARM9) GPU_setWINDOW_INCNT(MainScreen.gpu, val) ;
 				break ;
