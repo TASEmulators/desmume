@@ -502,29 +502,40 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 }
 
 
-BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
+//  Now assumes that *draw and *effect are different from 0 when called, so we can avoid
+// setting some values twice
+void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
-	BOOL win0,win1,winOBJ,outwin;
-	BOOL wwin0, wwin1, wwobj, wwout, windows;
+	BOOL wwin0=0, wwin1=0, wwobj=0, windows=0;
 
-	// find who owns the BG
-	windows=   gpu->dispCnt.bits.Win0_Enable 
-		|| gpu->dispCnt.bits.Win1_Enable
-		|| gpu->dispCnt.bits.WinOBJ_Enable;
+	// Check if win0 if enabled, and only check if it is
+	if (gpu->dispCnt.bits.Win0_Enable)
+	{
+		wwin0 = withinRect(	x,y,
+							gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+							gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
+		windows = 1;
+	}
 
-	wwin0 = withinRect(	x,y,
-		gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
-		gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
-	wwin1 = withinRect(	x,y,
-		gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
-		gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
-	wwobj = gpu->sprWin[y][x];
+	// Check if win1 if enabled, and only check if it is
+	if (gpu->dispCnt.bits.Win1_Enable)
+	{
+		wwin1 = withinRect(	x,y,
+							gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+							gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
+		windows = 1;
+	}
+
+	if (gpu->dispCnt.bits.WinOBJ_Enable)
+	{
+		wwobj = gpu->sprWin[y][x];
+		windows = 1;
+	}
 
 	if (windows) {
 		wwin0 = wwin0 && gpu->dispCnt.bits.Win0_Enable;
 		wwin1 = wwin1 && gpu->dispCnt.bits.Win1_Enable;
 		wwobj = wwobj && gpu->dispCnt.bits.WinOBJ_Enable;
-		wwout = !(wwin0||wwin1||wwobj);
 /*
 	// HOW THE HELL THIS DOES NOT WORK !!!
 
@@ -535,44 +546,31 @@ BOOL renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 
 	// CHECK THE FOLLOWING, SAME MEANING BUT IT WORKS
 */
-		win0   = (gpu->WINDOW_INCNT.bytes.low  >> bgnum)&1;
-		win1   = (gpu->WINDOW_INCNT.bytes.high >> bgnum)&1;
-		outwin = (gpu->WINDOW_OUTCNT.bytes.low >> bgnum)&1;
-		winOBJ = (gpu->WINDOW_OUTCNT.bytes.high>> bgnum)&1;
-
 		// it is in win0, do we display ?
 		// high priority
 		if (wwin0) {
-			*draw   = win0 ;
-			*effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable&&1;
-			return TRUE;
+			*draw   = (gpu->WINDOW_INCNT.bytes.low  >> bgnum)&1;
+			*effect = gpu->WINDOW_INCNT.bits.WIN0_Effect_Enable;
 		}
 		// it is in win1, do we display ?
 		// mid priority
-		if (wwin1) {
-			*draw   = win1;
-			*effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable&&1;
-			return TRUE;
+		else if (wwin1) {
+			*draw   = (gpu->WINDOW_INCNT.bytes.high >> bgnum)&1;
+			*effect = gpu->WINDOW_INCNT.bits.WIN1_Effect_Enable;
 		}
 		// it is in winOBJ, do we display ?
 		// low priority
-		if (wwobj) {
-			*draw   = winOBJ;
-			*effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable&&1;
-			return TRUE;
+		else if (wwobj) {
+			*draw   = (gpu->WINDOW_OUTCNT.bytes.low >> bgnum)&1;
+			*effect = gpu->WINDOW_OUTCNT.bits.WIN1_Effect_Enable;
 		}
 		// it is outside of windows, do we display ?
 		// fallback
-		if (wwout) {
-			*draw   = outwin;
-			*effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable&&1;
-			return TRUE;
+		else if (!(wwin0||wwin1||wwobj)) {
+			*draw   = (gpu->WINDOW_OUTCNT.bytes.high>> bgnum)&1;
+			*effect = gpu->WINDOW_OUTCNT.bits.WIN0_Effect_Enable;
 		}
 	}
-	// now windows or no rule
-	*draw   = TRUE;
-	*effect = TRUE;
-	return FALSE;
 }
 
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
@@ -580,7 +578,7 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 	/* window priority: insides, if no rule, check outside */
 	renderline_checkWindows(gpu,bgnum,x,y,&windowDraw,&windowEffect);
 
-	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect==TRUE))   /* the bg to draw has a special color effect */
+	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
 		{
@@ -652,7 +650,7 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 		}
 	} else {
 		/* only draw when effect is enabled on this pixel as source, or drawing itself is enabled */
-		if (((windowEffect==TRUE) && (gpu->BLDCNT & (0x100 << bgnum))) || (windowDraw == TRUE))
+		if (((windowEffect) && (gpu->BLDCNT & (0x100 << bgnum))) || (windowDraw))
 			T2WriteWord(dst, passing, color) ;
 	}
 } ;
