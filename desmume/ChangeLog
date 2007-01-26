@@ -22,7 +22,6 @@
  linux port (cli, gtk and gtk-glade):
   all:
    - Added joystick support.
-  cli and gtk-glade:
    - Fixed X and Y buttons.
   gtk-glade:
    - Added joystick configuration.
