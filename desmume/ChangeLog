@@ -19,6 +19,15 @@
  windows port:
   - Fixed address calculation in disassembler.
   - Added Force Maintain Ratio option for window stretching
+ linux port (cli, gtk and gtk-glade):
+  all:
+   - Added joystick support.
+  cli and gtk-glade:
+   - Fixed X and Y buttons.
+  gtk-glade:
+   - Added joystick configuration.
+   - Improved I/O registers viewer tool.
+   - Added save and load states support.
 
 0.3.3 -> 0.5.0
  arm:
