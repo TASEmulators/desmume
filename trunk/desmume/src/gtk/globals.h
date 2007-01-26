@@ -1,4 +1,4 @@
-/* globals.h - this file is part of $PROJECT_NAME_HERE$
+/* globals.h - this file is part of DeSmuME
  *
  * Copyright (C) 2007 DeSmuME Team
  *
