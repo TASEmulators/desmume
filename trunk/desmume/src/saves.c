@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#define SAVESTATE_VERSION       010
+#define SAVESTATE_VERSION       011
 
 #ifndef MAX_PATH
 #define MAX_PATH 256
@@ -278,8 +278,13 @@ int savestate_load (const char *file_name)    {
         // This should regenerate the graphics power control register
         MMU_write16(ARMCPU_ARM9, 0x04000304, MMU_read16(ARMCPU_ARM9, 0x04000304));
 
+#if SAVESTATE_VERSION > 010
+        gzread (file, MainScreen.gpu, sizeof(GPU));
+        gzread (file, SubScreen.gpu, sizeof(GPU));
+#else
         GPU_setVideoProp(MainScreen.gpu, MMU_read32(ARMCPU_ARM9, 0x04000000));
         GPU_setVideoProp(SubScreen.gpu, MMU_read32(ARMCPU_ARM9, 0x04000000));
+#endif
         gzclose (file);
 
 	return 1;
@@ -395,6 +400,11 @@ int savestate_save (const char *file_name)    {
 
         // Save shared memory
         gzwrite (file, MMU.SWIRAM, 0x8000);
+
+        // Save gpu
+        gzwrite (file, MainScreen.gpu, sizeof(GPU));
+        gzwrite (file, SubScreen.gpu, sizeof(GPU));
+
         gzclose (file);
 
 	return 1;
