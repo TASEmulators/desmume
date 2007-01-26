@@ -556,9 +556,6 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 	}
 
 	if (windows) {
-		wwin0 = wwin0 && gpu->dispCnt.bits.Win0_Enable;
-		wwin1 = wwin1 && gpu->dispCnt.bits.Win1_Enable;
-		wwobj = wwobj && gpu->dispCnt.bits.WinOBJ_Enable;
 /*
 	// HOW THE HELL THIS DOES NOT WORK !!!
 
@@ -600,12 +597,12 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 //			PIXEL RENDERING
 /*****************************************************************************/
 
-INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
+INLINE BOOL renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
 	BOOL windowDraw = TRUE, windowEffect = TRUE ;
 	/* window priority: insides, if no rule, check outside */
 	renderline_checkWindows(gpu,bgnum,x,y,&windowDraw,&windowEffect);
-
-	if ((gpu->BLDCNT & (1 << bgnum)) && (windowEffect))   /* the bg to draw has a special color effect */
+	
+	if (((gpu->BLDCNT>>bgnum)&1) && (windowEffect))   /* the bg to draw has a special color effect */
 	{
 		switch (gpu->BLDCNT & 0xC0) /* type of special color effect */
 		{
@@ -630,12 +627,13 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 					/* when we dont take any fraction from existing pixel, we can just draw */
 						u16 targetR, targetG, targetB;
 						color = T2ReadWord(dst, passing) ;
-					//if (color & 0x8000) {
+						//if (color & 0x8000) {
 						/* the existing pixel is not invisible */
 							targetR = ((color & 0x1F) * targetFraction) >> 4 ;  /* weighted component from color we draw on */
 							targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
 							targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
-							sourceR = min(0x1F,targetR+sourceR) ;                   /* limit combined components to 31 max */
+							/* limit combined components to 31 max */
+							sourceR = min(0x1F,targetR+sourceR) ;
 							sourceG = min(0x1F,targetG+sourceG) ;
 							sourceB = min(0x1F,targetB+sourceB) ;
 						//}
@@ -680,7 +678,8 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 		if (((windowEffect) && (gpu->BLDCNT & (0x100 << bgnum))) || (windowDraw))
 			T2WriteWord(dst, passing, color) ;
 	}
-} ;
+	return windowDraw;
+}
 
 
 /*****************************************************************************/
@@ -1084,8 +1083,9 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 #define RENDER_COND(cond) \
 	if ((cond)&&(prio<=prioTab[sprX])) \
 	{ \
-		prioTab[sprX] = prio; \
-		renderline_setFinalColor(gpu, sprX << 1,4,dst, color, sprX ,l); \
+		/* if we don't draw, do not set prio, or else */ \
+		if (renderline_setFinalColor(gpu, sprX << 1,4,dst, color, sprX ,l)) \
+			prioTab[sprX] = prio; \
 	}
 
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
