@@ -22,6 +22,24 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+// CONTENTS
+//	INITIALIZATION
+//	ENABLING / DISABLING LAYERS
+//	PARAMETERS OF BACKGROUNDS
+//	PARAMETERS OF ROTOSCALE
+//	PARAMETERS OF EFFECTS
+//	PARAMETERS OF WINDOWS
+//	ROUTINES FOR INSIDE / OUTSIDE WINDOW CHECKS
+//	PIXEL RENDERING
+//	BACKGROUND RENDERING -TEXT-
+//	BACKGROUND RENDERING -ROTOSCALE-
+//	BACKGROUND RENDERING -HELPER FUNCTIONS-
+//	SPRITE RENDERING -HELPER FUNCTIONS-
+//	SPRITE RENDERING
+//	SCREEN FUNCTIONS
+//	GRAPHICS CORE
+
+
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -91,6 +109,11 @@ GraphicsInterface_struct *GFXCoreList[] = {
 &GFXDummy,
 NULL
 };
+
+
+/*****************************************************************************/
+//			INITIALIZATION
+/*****************************************************************************/
 
 GPU * GPU_Init(u8 l)
 {
@@ -300,13 +323,16 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 }
 
+/*****************************************************************************/
+//			ENABLING / DISABLING LAYERS
+/*****************************************************************************/
+
 void GPU_remove(GPU * gpu, u8 num)
 {
 	if (num == 4)	gpu->dispOBJ = 0;
 	else		gpu->dispBG[num] = 0;
 	GPU_resortBGs(gpu);
 }
-
 void GPU_addBack(GPU * gpu, u8 num)
 {
 	if (num == 4)	gpu->dispOBJ = 1;
@@ -314,17 +340,18 @@ void GPU_addBack(GPU * gpu, u8 num)
 	GPU_resortBGs(gpu);
 }
 
+/*****************************************************************************/
+//			PARAMETERS OF BACKGROUNDS
+/*****************************************************************************/
 
 void GPU_scrollX(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGSX[num] = v;
 }
-
 void GPU_scrollY(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGSY[num] = v;
 }
-
 void GPU_scrollXY(GPU * gpu, u8 num, u32 v)
 {
 	gpu->BGSX[num] = (v & 0xFFFF);
@@ -335,12 +362,10 @@ void GPU_setX(GPU * gpu, u8 num, u32 v)
 {
 	gpu->BGX[num] = (((s32)(v<<4))>>4);
 }
-
 void GPU_setXH(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGX[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGX[num]&0xFFFF);
 }
-
 void GPU_setXL(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGX[num] = (gpu->BGX[num]&0xFFFF0000) | v;
@@ -350,81 +375,84 @@ void GPU_setY(GPU * gpu, u8 num, u32 v)
 {
 	gpu->BGY[num] = (((s32)(v<<4))>>4);
 }
-
 void GPU_setYH(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGY[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGY[num]&0xFFFF);
 }
-
 void GPU_setYL(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGY[num] = (gpu->BGY[num]&0xFFFF0000) | v;
 }
 
+/*****************************************************************************/
+//			PARAMETERS OF ROTOSCALE
+/*****************************************************************************/
+
 void GPU_setPA(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGPA[num] = (s32)v;
 }
-
 void GPU_setPB(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGPB[num] = (s32)v;
 }
-
 void GPU_setPC(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGPC[num] = (s32)v;
 }
-
 void GPU_setPD(GPU * gpu, u8 num, u16 v)
 {
 	gpu->BGPD[num] = (s32)v;
 }
-
 void GPU_setPAPB(GPU * gpu, u8 num, u32 v)
 {
 	gpu->BGPA[num] = (s16)v;
 	gpu->BGPB[num] = (s16)(v>>16);
 }
-
 void GPU_setPCPD(GPU * gpu, u8 num, u32 v)
 {
 	gpu->BGPC[num] = (s16)v;
 	gpu->BGPD[num] = (s16)(v>>16);
 }
 
+/*****************************************************************************/
+//			PARAMETERS OF EFFECTS
+/*****************************************************************************/
+
 void GPU_setBLDCNT(GPU *gpu, u16 v)
 {
     gpu->BLDCNT = v ;
 }
-
 void GPU_setBLDALPHA(GPU *gpu, u16 v)
 {
 	gpu->BLDALPHA = v ;
 }
-
 void GPU_setBLDY(GPU *gpu, u16 v)
 {
 	gpu->BLDY = v ;
 }
-
 void GPU_setMOSAIC(GPU *gpu, u16 v)
 {
 	gpu->MOSAIC = v ;
 }
+void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
+{
+	gpu->masterBright.val = v;
+}
+
+/*****************************************************************************/
+//			PARAMETERS OF WINDOWS
+/*****************************************************************************/
 
 void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num)
 {
 	gpu->WINDOW_XDIM[num].val = v ;
 }
-
 void GPU_setWINDOW_XDIM_Component(GPU *gpu, u8 v, u8 num)  /* write start/end seperately */
 {
-	if (num & 1)
-	{
+	if (num & 1) {
 		gpu->WINDOW_XDIM[num >> 1].bits.start = v ;
-	} else
-	{
+	} else {
 		gpu->WINDOW_XDIM[num >> 1].bits.end = v ;
 	}
 }
@@ -433,14 +461,11 @@ void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num)
 {
 	gpu->WINDOW_YDIM[num].val = v ;
 }
-
 void GPU_setWINDOW_YDIM_Component(GPU *gpu, u8 v, u8 num)  /* write start/end seperately */
 {
-	if (num & 1)
-	{
+	if (num & 1) {
 		gpu->WINDOW_YDIM[num >> 1].bits.start = v ;
-	} else
-	{
+	} else {
 		gpu->WINDOW_YDIM[num >> 1].bits.end = v ;
 	}
 }
@@ -449,42 +474,40 @@ void GPU_setWINDOW_INCNT(GPU *gpu, u16 v)
 {
 	gpu->WINDOW_INCNT.val = v ;
 }
-
 void GPU_setWINDOW_INCNT_Component(GPU *gpu, u8 v,u8 num)
 {
 	switch (num)
 	{
-		case 0:
-			gpu->WINDOW_INCNT.bytes.low = v ;
-			break ;
-		case 1:
-			gpu->WINDOW_INCNT.bytes.high = v ;
-			break ;
+	case 0:
+		gpu->WINDOW_INCNT.bytes.low = v ;
+		break ;
+	case 1:
+		gpu->WINDOW_INCNT.bytes.high = v ;
+		break ;
 	}
 }
-
 void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v)
 {
 	gpu->WINDOW_OUTCNT.val = v ;
 }
-
 void GPU_setWINDOW_OUTCNT_Component(GPU *gpu, u8 v,u8 num)
 {
 	switch (num)
 	{
-		case 0:
-			gpu->WINDOW_OUTCNT.bytes.low = v ;
-			break ;
-		case 1:
-			gpu->WINDOW_OUTCNT.bytes.high = v ;
-			break ;
+	case 0:
+		gpu->WINDOW_OUTCNT.bytes.low = v ;
+		break ;
+	case 1:
+		gpu->WINDOW_OUTCNT.bytes.high = v ;
+		break ;
 	}
 }
 
-void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
-{
-	gpu->masterBright.val = v;
-}
+
+/*****************************************************************************/
+//		ROUTINES FOR INSIDE / OUTSIDE WINDOW CHECKS
+/*****************************************************************************/
+
 
 /* check whether (x,y) is within the rectangle (including wraparounds) */
 INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
@@ -512,8 +535,8 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 	if (gpu->dispCnt.bits.Win0_Enable)
 	{
 		wwin0 = withinRect(	x,y,
-							gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
-							gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
+			gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
+			gpu->WINDOW_XDIM[0].bits.end,  gpu->WINDOW_YDIM[0].bits.end);
 		windows = 1;
 	}
 
@@ -521,8 +544,8 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 	if (gpu->dispCnt.bits.Win1_Enable)
 	{
 		wwin1 = withinRect(	x,y,
-							gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
-							gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
+			gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
+			gpu->WINDOW_XDIM[1].bits.end,  gpu->WINDOW_YDIM[1].bits.end);
 		windows = 1;
 	}
 
@@ -572,6 +595,10 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 		}
 	}
 }
+
+/*****************************************************************************/
+//			PIXEL RENDERING
+/*****************************************************************************/
 
 INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
 	BOOL windowDraw = TRUE, windowEffect = TRUE ;
@@ -654,6 +681,11 @@ INLINE void renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 			T2WriteWord(dst, passing, color) ;
 	}
 } ;
+
+
+/*****************************************************************************/
+//			BACKGROUND RENDERING -TEXT-
+/*****************************************************************************/
 
 /* render a text background to the combined pixelbuffer */
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
@@ -843,8 +875,9 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 #undef RENDERL
 }
 
-
-// scale rot
+/*****************************************************************************/
+//			BACKGROUND RENDERING -ROTOSCALE-
+/*****************************************************************************/
 
 void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
@@ -983,6 +1016,10 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 	}
 }
 
+/*****************************************************************************/
+//			BACKGROUND RENDERING -HELPER FUNCTIONS-
+/*****************************************************************************/
+
 void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
 	renderline_textBG(gpu, num, DST, l, gpu->BGSX[num], l + gpu->BGSY[num], 256);
@@ -1039,16 +1076,16 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 
 
 
-
-// spriteRender functions !
+/*****************************************************************************/
+//			SPRITE RENDERING -HELPER FUNCTIONS-
+/*****************************************************************************/
 
 #define nbShow 128
-#define RENDER_COND(cond) RENDER_COND_OFFSET(cond,)
-#define RENDER_COND_OFFSET(cond,offset) \
-	if ((cond)&&(prio<=prioTab[sprX offset])) \
+#define RENDER_COND(cond) \
+	if ((cond)&&(prio<=prioTab[sprX])) \
 	{ \
-		prioTab[sprX offset] = prio; \
-		renderline_setFinalColor(gpu, (sprX offset) << 1,4,dst, color, (sprX offset) ,l); \
+		prioTab[sprX] = prio; \
+		renderline_setFinalColor(gpu, sprX << 1,4,dst, color, sprX ,l); \
 	}
 
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
@@ -1068,7 +1105,6 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src,
 INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {
 	int i; u8 palette_entry; u16 color;
-	prio = 0;
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
 		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
@@ -1112,7 +1148,6 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 		}
 	}
 }
-
 
 
 // return val means if the sprite is to be drawn or not
@@ -1178,6 +1213,10 @@ INLINE void compute_sprite_rotoscale(GPU * gpu, _OAM_ * spriteInfo,
 	*rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
 	*rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
 }
+
+/*****************************************************************************/
+//			SPRITE RENDERING
+/*****************************************************************************/
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
@@ -1318,6 +1357,10 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	}
 }
 
+/*****************************************************************************/
+//			SCREEN FUNCTIONS
+/*****************************************************************************/
+
 int Screen_Init(int coreid) {
    MainScreen.gpu = GPU_Init(0);
    SubScreen.gpu = GPU_Init(1);
@@ -1337,6 +1380,10 @@ void Screen_DeInit(void) {
         if (GFXCore)
            GFXCore->DeInit();
 }
+
+/*****************************************************************************/
+//			GRAPHICS CORE
+/*****************************************************************************/
 
 // This is for future graphics core switching. This is by no means set in stone
 

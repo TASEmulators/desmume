@@ -377,7 +377,9 @@ typedef union windowcnt_t
 typedef struct 
 {
 	u8 BGs[NB_BG], nbBGs;
-	u8 PixelsX[256], nbPixelsX;
+	u8 PixelsX[256];
+	// doh ! yoda says : 256 pixels we can have...
+	u16 nbPixelsX;
 } itemsForPriority_t;
 
 
@@ -554,8 +556,8 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 	// init background color & priorities
 	for(i = 0; i< 256; ++i)
 	{
-		T1WriteWord(dst, i << 1, c);
-		T1WriteWord(spr, i << 1, c);
+		T2WriteWord(dst, i << 1, c);
+		T2WriteWord(spr, i << 1, c);
 		sprPrio[i]=0xFF;
 		gpu->sprWin[l][i]=0;
 	}
@@ -571,8 +573,6 @@ static INLINE void GPU_ligne(Screen * screen, u16 l)
 		for(i= 0; i<256; i++) {
 			// assign them to the good priority item
 			prio = sprPrio[i];
-	
-			// render 1 time, but prio 4 = isn't processed further
 			if (prio >=4) continue;
 			
 			item = &(gpu->itemsForPriority[prio]);
