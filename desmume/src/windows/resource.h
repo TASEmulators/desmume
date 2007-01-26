@@ -224,8 +224,12 @@ void refreshAll();
 #define IDC_ROTATE90            1004
 #define IDC_ROTATE180           1005
 #define IDC_ROTATE270           1006
-#define IDC_MAGNIFY             1007
-#define IDC_DEMAGNIFY           1008
+//#define IDC_MAGNIFY             1007
+//#define IDC_DEMAGNIFY           1008
 #define IDC_FORCERATIO		1009
+#define IDC_WINDOW1X		1010
+#define IDC_WINDOW2X		1011
+#define IDC_WINDOW3X		1012
+#define IDC_WINDOW4X		1013
 
 #endif
