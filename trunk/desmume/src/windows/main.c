@@ -80,6 +80,8 @@ BOOL romloaded = FALSE;
 
 BOOL ForceRatio = FALSE;
 float aspectratio;
+int DefaultWidth;
+int DefaultHeight;
 
 HMENU menu;
 HANDLE runthread=INVALID_HANDLE_VALUE;
@@ -201,14 +203,16 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 
 void ScaleScreen(float factor)
 {
-	RECT fullSize,clientSize ;
+/*	RECT fullSize,clientSize ;
 	factor -= 1 ;
 	GetWindowRect(hwnd,&fullSize) ;
 	GetClientRect(hwnd,&clientSize) ;
 	fullSize.right += (clientSize.right - clientSize.left) * factor ;
-	fullSize.bottom += (clientSize.bottom - clientSize.top) * factor ;
-    SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
-                 fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+	fullSize.bottom += (clientSize.bottom - clientSize.top) * factor ; */
+    //SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
+    //             fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+    SetWindowPos(hwnd, NULL, 0, 0, DefaultWidth * factor,
+                 DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
 }
  
 void translateXY(s32 *x, s32*y)
@@ -551,13 +555,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     switch (message)                  // handle the messages
     {
         case WM_CREATE:
-			{
-			 RECT fullSize;
-             ReadConfig();
-			 GetWindowRect(hwnd, &fullSize);
-			 aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
-             return 0;
-			}
+	     {
+	     	RECT fullSize;
+             	ReadConfig();
+	     	GetWindowRect(hwnd, &fullSize);
+	     	DefaultWidth = fullSize.right - fullSize.left;
+			DefaultHeight = fullSize.bottom - fullSize.top;
+	     	aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
+             	return 0;
+	     }
         case WM_DESTROY:
              NDS_Pause();
              finished = TRUE;
@@ -1350,12 +1356,24 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
                        CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_CHECKED);
                   return 0;
-				  case IDC_MAGNIFY:
-						ScaleScreen(1.25f) ;   /* 100 -> 125% */
+				  /*case IDC_MAGNIFY:
+						ScaleScreen(1.25f) ;    //100 -> 125%
 						break ;
 				  case IDC_DEMAGNIFY:
-						ScaleScreen(0.8f) ;   /* 125 -> 100% (== 100 -> 80%) */
-						break ;
+						ScaleScreen(0.8f) ;    //125 -> 100% (== 100 -> 80%)
+						break ; */
+        case IDC_WINDOW1X:
+			ScaleScreen(1);
+			break;
+		case IDC_WINDOW2X:
+			ScaleScreen(2);
+			break;
+		case IDC_WINDOW3X:
+			ScaleScreen(3);
+			break;
+		case IDC_WINDOW4X:
+			ScaleScreen(4);
+			break;
 		case IDC_FORCERATIO:
 			if (ForceRatio) {
 				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_UNCHECKED);
