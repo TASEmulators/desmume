@@ -1,6 +1,9 @@
 #include "ROMReader.h"
 
 #include <stdio.h>
+#ifndef strcasecmp
+#define strcasecmp stricmp
+#endif
 #ifdef HAVE_LIBZZIP
 #include <zzip/zzip.h>
 #endif
@@ -8,14 +11,14 @@
 ROMReader_struct * ROMReaderInit(char ** filename)
 {
 #ifdef HAVE_LIBZ
-	if(!stricmp(".gz", *filename + (strlen(*filename) - 3)))
+	if(!strcasecmp(".gz", *filename + (strlen(*filename) - 3)))
 	{
 		(*filename)[strlen(*filename) - 3] = '\0';
 		return &GZIPROMReader;
 	}
 #endif
 #ifdef HAVE_LIBZZIP
-	if (!stricmp(".zip", *filename + (strlen(*filename) - 4)))
+	if (!strcasecmp(".zip", *filename + (strlen(*filename) - 4)))
 	{
 		(*filename)[strlen(*filename) - 4] = '\0';
 		return &ZIPROMReader;
