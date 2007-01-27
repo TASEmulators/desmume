@@ -1,11 +1,11 @@
 #include "ROMReader.h"
 
 #include <stdio.h>
-#ifndef strcasecmp
-#define strcasecmp stricmp
-#endif
 #ifdef HAVE_LIBZZIP
 #include <zzip/zzip.h>
+#endif
+#ifdef WIN32
+#define strcasecmp stricmp
 #endif
 
 ROMReader_struct * ROMReaderInit(char ** filename)
