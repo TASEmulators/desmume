@@ -613,6 +613,17 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 	   return (unsigned char)cflash_read(adr);
 
+#ifdef EXPERIMENTAL_WIFI
+	/* wifi mac access */
+	if ((proc==ARMCPU_ARM7) && (adr>=0x04800000)&&(adr<0x05000000))
+	{
+		if (adr & 1)
+			return (WIFI_read16(&wifiMac,adr) >> 8) & 0xFF;
+		else
+			return WIFI_read16(&wifiMac,adr) & 0xFF;
+	}
+#endif
+
 	adr &= 0x0FFFFFFF;
 
 	switch(adr)
@@ -753,7 +764,6 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				return MMU.reg_IE[proc];
 			case REG_IF :
 				return MMU.reg_IF[proc];
-				
                         case REG_IPCFIFORECV :
 			{
 				u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
@@ -768,8 +778,8 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				IPCFIFO_CNT_remote |= (MMU.fifos[fifonum].empty) | (MMU.fifos[fifonum].full<<1);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
 				T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
-				if(MMU.fifos[fifonum].empty)
-					MMU.reg_IF[proc] |=  ((IPCFIFO_CNT & (1<<2))<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc] & (1<<17));// 
+				if ((MMU.fifos[fifonum].empty) && (IPCFIFO_CNT & BIT(2)))
+					NDS_makeInt(remote,17) ; /* remote: SEND FIFO EMPTY */
 				return val;
 				}
 			}
@@ -2404,8 +2414,8 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
 					T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
-					MMU.reg_IF[remote] |= ((IPCFIFO_CNT_remote & (1<<10))<<8);// & (MMU.reg_IME[remote] << 18);// & (MMU.reg_IE[remote] & 0x40000);//
-					//execute = FALSE;
+					if (IPCFIFO_CNT_remote & (1<<10))
+						NDS_makeInt(remote,18) ;
 					}
 				}
 				return;
