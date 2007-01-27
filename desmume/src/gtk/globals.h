@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include <SDL/SDL.h>
+#include "SDL.h"
 #include <gtk/gtk.h>
 
 #include "../MMU.h"
