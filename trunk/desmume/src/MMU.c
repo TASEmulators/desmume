@@ -798,8 +798,21 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
            }
         }
 
+	if (adr & 0xFF800000 == 0x04800000)
+	{
+		/* is wifi hardware, dont intermix with regular hardware registers */
+		/* FIXME handle 8 bit writes */
+		return ;
+	}
+
 	switch(adr)
 	{
+        case REG_IPCFIFOCNT :
+        case REG_IPCFIFOCNT+1 :
+        case REG_IPCFIFOCNT+2 :
+        case REG_IPCFIFOCNT+3 :
+			return ;
+
 		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
 		/* TODO: Not all mappings of VRAMs are handled... (especially BG and OBJ modes) */
 		case REG_VRAMCNTA:
@@ -1110,7 +1123,13 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 
 	/* wifi mac access */
 	if ((proc==ARMCPU_ARM7) && (adr>=0x04800000)&&(adr<0x05000000))
+	{
 		WIFI_write16(&wifiMac,adr,val) ;
+		return ;
+	}
+#else
+	if ((proc==ARMCPU_ARM7) && (adr>=0x04800000)&&(adr<0x05000000))
+		return ;
 #endif
 
 	adr &= 0x0FFFFFFF;
@@ -1603,11 +1622,22 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
                         case REG_IPCFIFOCNT :
 				{
+					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
+					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[(proc+1) & 1][0x40], 0x184) ;
+					if ((val & 0x8000) && !(cnt_l & 0x8000))
+					{
+						/* this is the first init, the other side didnt init yet */
+						/* so do a complete init */
+						FIFOInit(MMU.fifos + (IPCFIFO+proc));
+						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184,0x8101) ;
+						/* and then handle it as usual */
+					}
+
 				if(val & 0x4008)
 				{
 					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (val & 0xBFF4) | 1);
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) | 1);
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
+					T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
 					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
 					return;
 				}
@@ -1816,6 +1846,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
               return;
            }
         }
+
+		if (adr & 0xFF800000 == 0x04800000) {
+		/* access to non regular hw registers */
+		/* return to not overwrite valid data */
+			return ;
+		} ;
+
 
 	if((adr>>24)==4)
 	{
@@ -2317,17 +2354,29 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				return;
                         case REG_IPCFIFOCNT :
+							{
+					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
+					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[(proc+1) & 1][0x40], 0x184) ;
+					if ((val & 0x8000) && !(cnt_l & 0x8000))
+					{
+						/* this is the first init, the other side didnt init yet */
+						/* so do a complete init */
+						FIFOInit(MMU.fifos + (IPCFIFO+proc));
+						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184,0x8101) ;
+						/* and then handle it as usual */
+					}
 				if(val & 0x4008)
 				{
 					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (val & 0xBFF4) | 1);
-					T1WriteWord(MMU.MMU_MEM[(proc+1)&1][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[(proc+1)&1][0x40], 0x184) | 256);
-					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc] << 17);// & (MMU.reg_IE[proc] & 0x20000);//
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
+					T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
+					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
 					return;
 				}
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
 				//execute = FALSE;
 				return;
+							}
                         case REG_IPCFIFOSEND :
 				{
 					u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
