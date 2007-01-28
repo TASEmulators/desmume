@@ -208,6 +208,36 @@ u32 armcpu_prefetch(armcpu_t *armcpu)
 	return MMU.MMU_WAIT16[armcpu->proc_ID][(armcpu->instruct_adr>>24)&0xF];
 }
  
+
+static BOOL FASTCALL test_EQ(Status_Reg CPSR) { return ( CPSR.bits.Z); }
+static BOOL FASTCALL test_NE(Status_Reg CPSR) { return (!CPSR.bits.Z); }
+static BOOL FASTCALL test_CS(Status_Reg CPSR) { return ( CPSR.bits.C); }
+static BOOL FASTCALL test_CC(Status_Reg CPSR) { return (!CPSR.bits.C); }
+static BOOL FASTCALL test_MI(Status_Reg CPSR) { return ( CPSR.bits.N); }
+static BOOL FASTCALL test_PL(Status_Reg CPSR) { return (!CPSR.bits.N); }
+static BOOL FASTCALL test_VS(Status_Reg CPSR) { return ( CPSR.bits.V); }
+static BOOL FASTCALL test_VC(Status_Reg CPSR) { return (!CPSR.bits.V); }
+static BOOL FASTCALL test_HI(Status_Reg CPSR) { return (CPSR.bits.C) && (!CPSR.bits.Z); }
+static BOOL FASTCALL test_LS(Status_Reg CPSR) { return (CPSR.bits.Z) || (!CPSR.bits.C); }
+static BOOL FASTCALL test_GE(Status_Reg CPSR) { return (CPSR.bits.N==CPSR.bits.V); }
+static BOOL FASTCALL test_LT(Status_Reg CPSR) { return (CPSR.bits.N!=CPSR.bits.V); }
+static BOOL FASTCALL test_GT(Status_Reg CPSR) { return (!CPSR.bits.Z) && (CPSR.bits.N==CPSR.bits.V); }
+static BOOL FASTCALL test_LE(Status_Reg CPSR) { return ( CPSR.bits.Z) || (CPSR.bits.N!=CPSR.bits.V); }
+static BOOL FASTCALL test_AL(Status_Reg CPSR) { return 1; }
+
+static BOOL (*FASTCALL test_conditions[])(Status_Reg CPSR)= {
+	test_EQ , test_NE ,
+	test_CS , test_CC ,
+	test_MI , test_PL ,
+	test_VS , test_VC ,
+	test_HI , test_LS ,
+	test_GE , test_LT ,
+	test_GT , test_LE ,
+	test_AL
+};
+#define TEST_COND2(cond, CPSR) \
+	(cond<15&&test_conditions[cond](CPSR))
+
 u32 armcpu_exec(armcpu_t *armcpu)
 {
         u32 c = 1;

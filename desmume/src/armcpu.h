@@ -85,6 +85,7 @@ extern "C" {
 					 (((cond)==GT) && (CPSR.bits.Z==0) && (CPSR.bits.N==CPSR.bits.V))||\
 					 (((cond)==LE) && ((CPSR.bits.Z) || (CPSR.bits.N!=CPSR.bits.V))))
 
+
 enum Mode
 {
 	USR = 0x10,
