@@ -807,11 +807,6 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 
 	switch(adr)
 	{
-        case REG_IPCFIFOCNT :
-        case REG_IPCFIFOCNT+1 :
-        case REG_IPCFIFOCNT+2 :
-        case REG_IPCFIFOCNT+3 :
-			return ;
 
 		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
 		/* TODO: Not all mappings of VRAMs are handled... (especially BG and OBJ modes) */
@@ -2392,8 +2387,8 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
 					T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
-					if (IPCFIFO_CNT_remote & (1<<10))
-						NDS_makeInt(remote,18) ;
+					MMU.reg_IF[remote] |= ((IPCFIFO_CNT_remote & (1<<10))<<8);// & (MMU.reg_IME[remote] << 18);// & (MMU.reg_IE[remote] & 0x40000);//
+					//execute = FALSE;
 					}
 				}
 				return;
