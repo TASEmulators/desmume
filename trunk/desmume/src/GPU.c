@@ -1513,7 +1513,7 @@ void calc_bright_colors() {
 #undef FORMULA_LESS
 }
 
-void GPU_ligne(Screen * screen, u16 l)
+void __fastcall GPU_ligne(Screen * screen, u16 l)
 {
 	struct _DISPCAPCNT * capcnt;
 	GPU * gpu = screen->gpu;
@@ -1727,8 +1727,10 @@ void GPU_ligne(Screen * screen, u16 l)
 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
 /* it will most likly take acceleration, while we are stuck here with CPU power */
 
+#ifdef BRIGHT_TABLES
+	/* do you really want to recalculate 2^19 entries of 2 bytes for 256 entries in single line???? */
 	calc_bright_colors();
-
+#endif
 	switch (gpu->masterBright.bits.Mode)
 	{
 		// Disabled
