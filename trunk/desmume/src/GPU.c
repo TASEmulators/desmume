@@ -1477,7 +1477,7 @@ u16 bright_less_colors[16][0x8000];
 BOOL bright_init=FALSE;
 
 // comment this if want to use formulas instead
-#define BRIGHT_TABLES
+// #define BRIGHT_TABLES
 
 void calc_bright_colors() {
 	int base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
