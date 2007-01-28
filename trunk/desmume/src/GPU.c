@@ -38,7 +38,7 @@
 //	SPRITE RENDERING
 //	SCREEN FUNCTIONS
 //	GRAPHICS CORE
-
+//	GPU_ligne
 
 #include <string.h>
 #include <stdlib.h>
@@ -1238,10 +1238,12 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
 			continue;
 
-		if (spriteInfo->RotScale & 1)
+		if (spriteInfo->RotScale & 1) {
 			compute_sprite_rotoscale(gpu, spriteInfo,  
 				&rotScaleA, &rotScaleB, &rotScaleC, &rotScaleD);
-	
+			//continue;
+		}
+
 		if (spriteInfo->Mode == 2) {
 			if (spriteInfo->Depth)
 				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
@@ -1309,9 +1311,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
 			continue;
 	
-		if (spriteInfo->RotScale & 1)
-			compute_sprite_rotoscale(gpu, spriteInfo, 
+		if (spriteInfo->RotScale & 1) {
+			compute_sprite_rotoscale(gpu, spriteInfo,  
 				&rotScaleA, &rotScaleB, &rotScaleC, &rotScaleD);
+			//continue;
+		}
 
 		if (spriteInfo->Mode == 2) {
 			if (spriteInfo->Depth)
@@ -1456,4 +1460,378 @@ void GFXDummyResize(int width, int height, BOOL fullscreen)
 
 void GFXDummyOnScreenText(char *string, ...)
 {
+}
+
+
+/*****************************************************************************/
+//			GPU_ligne
+/*****************************************************************************/
+
+void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) {
+	gpu->dispCapCnt.val = val;
+}
+
+// trade off for speed is 1MB
+u16 bright_more_colors[16][0x8000];
+u16 bright_less_colors[16][0x8000];
+BOOL bright_init=FALSE;
+
+// comment this if want to use formulas instead
+#define BRIGHT_TABLES
+
+void calc_bright_colors() {
+	int base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
+	int factor;
+	u16 red, green, blue;
+	COLOR color_more, color_less, color_ref;
+
+#define FORMULA_MORE(x)   x + ((base-x)*factor)/16
+#define FORMULA_LESS(x)   x - (x*factor)/16
+
+	if (bright_init) return;
+	for (factor=0; factor<16; factor++)
+	for (red  =0; red  <32; red++) {
+		color_ref.bits.red = red;
+		color_more.bits.red = FORMULA_MORE(red);
+		color_less.bits.red = FORMULA_LESS(red);
+		for (green=0; green<32; green++) {
+			color_ref.bits.green = green;
+			color_more.bits.green = FORMULA_MORE(green);
+			color_less.bits.green = FORMULA_LESS(green);
+			for (blue =0; blue <32; blue++) {
+				color_ref.bits.blue = blue;
+				color_more.bits.blue = FORMULA_MORE(blue);
+				color_less.bits.blue = FORMULA_LESS(blue);
+				bright_more_colors[factor][color_ref.bitx.bgr] = color_more.val;
+				bright_less_colors[factor][color_ref.bitx.bgr] = color_less.val;
+			}
+		}
+	}
+	bright_init=TRUE;
+
+#undef FORMULA_MORE
+#undef FORMULA_LESS
+}
+
+void GPU_ligne(Screen * screen, u16 l)
+{
+	struct _DISPCAPCNT * capcnt;
+	GPU * gpu = screen->gpu;
+	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
+	u8 * sdst =  GPU_screen + (SubScreen.offset + l) * 512;
+	itemsForPriority_t * item;
+	u8 spr[512];
+	u8 sprPrio[256];
+	u8 bgprio,prio;
+	int i;
+	int vram_bank;
+	u8 i8;
+	u16 i16;
+	u32 c;
+	u8 n,p;
+	
+	u8 *dest;
+	
+	/* initialize the scanline black */
+	/* not doing this causes invalid colors when all active BGs are prevented to draw at some place */
+	memset(dst,0,256*2) ;
+
+	// This could almost be changed to use function pointers
+	switch (gpu->dispMode)
+	{
+		case 1: // Display BG and OBJ layers
+			break;
+		case 0: // Display Off(Display white)
+			for (i=0; i<256; i++)
+				T2WriteWord(dst, i << 1, 0x7FFF);
+			return;
+		case 2: // Display framebuffer
+		{
+                        int ii = l * 256 * 2;
+                        u8 * vram;
+
+                        /* we only draw one of the VRAM blocks */
+                        vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+
+                        // This probably only needs to be calculated once per frame, but at least it's better than before >_<
+                        if (MMU.vram_mode[vram_bank] & 4)
+                           vram = ARM9Mem.ARM9_LCD + (MMU.vram_mode[vram_bank] & 3) * 0x20000;
+                        else
+                           vram = ARM9Mem.ARM9_ABG + MMU.vram_mode[vram_bank] * 0x20000;
+
+                        for (i=0; i<(256 * 2); i+=2)
+                        {
+                           T2WriteWord(dst, i, T1ReadWord(vram, ii));
+                           ii+=2;
+                        }
+		}
+			return;
+		case 3:
+	// Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels at once format is x555, bit15 unused
+	// Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
+	// (under DISP_MMEM_FIFO)
+			for (i=0; i<256;) {
+				c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
+				T2WriteWord(dst, i << 1, c&0xFFFF); i++;
+				T2WriteWord(dst, i << 1, c>>16); i++;
+			}
+			return;
+	}
+
+
+	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
+	
+	// init background color & priorities
+	for(i = 0; i< 256; ++i)
+	{
+		T2WriteWord(dst, i << 1, c);
+		T2WriteWord(spr, i << 1, c);
+		sprPrio[i]=0xFF;
+		gpu->sprWin[l][i]=0;
+	}
+	
+	// init pixels priorities
+	for (i=0;i<NB_PRIORITIES;i++) {
+		gpu->itemsForPriority[i].nbPixelsX = 0;
+	}
+
+	// for all the pixels in the line
+	if (gpu->LayersEnable[4]) {
+		gpu->spriteRender(gpu, l, spr, sprPrio);
+		for(i= 0; i<256; i++) {
+			// assign them to the good priority item
+			prio = sprPrio[i];
+			if (prio >=4) continue;
+			
+			item = &(gpu->itemsForPriority[prio]);
+			item->PixelsX[item->nbPixelsX]=i;
+			item->nbPixelsX++;
+		}
+	}
+
+	// paint lower priorities fist
+	// then higher priorities on top
+	for(prio=NB_PRIORITIES; prio > 0; )
+	{
+		prio--;
+		item = &(gpu->itemsForPriority[prio]);
+		// render BGs
+		for (i=0; i < item->nbBGs; i++) {
+			i16 = item->BGs[i];
+			if (gpu->LayersEnable[i16])
+			modeRender[gpu->dispCnt.bits.BG_Mode][i16](gpu, i16, l, dst);
+		}
+		// render sprite Pixels
+		for (i=0; i < item->nbPixelsX; i++) {
+			i16=item->PixelsX[i];
+			T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+		}
+	}
+
+// FIXME !!!
+/* capture */
+	capcnt = &gpu->dispCapCnt.bits;
+	if (capcnt->Capture_Enable)
+	{
+		u16 * srcA, * srcB, *vram;
+		u32 c; u8 vram_bank;
+		COLOR color, colA, colB;
+		u16 ilast= 128;
+		if (capcnt->Capture_Size) ilast = 256;
+	
+		vram = (u16*)(ARM9Mem.ARM9_ABG
+			+ MMU.vram_mode[capcnt->VRAM_Write_Block] * 0x20000
+			+ capcnt->VRAM_Write_Offset * 0x08000);
+	
+		// I dunno yet how to do for 3D
+		if (!capcnt->Source_A)
+			srcA = (u16*)dst;
+	
+		if (!capcnt->Source_B) {
+			vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+			if (MMU.vram_mode[vram_bank] & 4) {
+				srcB = (u16*)(ARM9Mem.ARM9_LCD 
+					+ (MMU.vram_mode[vram_bank] & 3) * 0x20000
+					+ capcnt->VRAM_Read_Offset * 0x08000);
+			} else {
+				srcB = (u16*)(ARM9Mem.ARM9_ABG 
+					+ MMU.vram_mode[vram_bank] * 0x20000
+					+ capcnt->VRAM_Read_Offset * 0x08000);
+			}
+		}
+	
+		printf("capture source %d\n",capcnt->Capture_Source);
+	
+		switch(capcnt->Capture_Source) {
+		case 0: // only source A
+			if (!capcnt->Source_A) {
+				srcA = (u16*)dst;
+				for (i=0; i<ilast; i++) {
+					vram[i] = srcA[i];
+				}
+			}
+			break;
+		case 1: // only source B
+			if (capcnt->Source_B) {
+				for (i=0; i<ilast;) {
+					c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
+					vram[i] = c&0xFFFF; i++;
+					vram[i] = c>>16; i++;
+				}
+			} else {
+				for (i=0; i<ilast; i++) {
+					vram[i] = srcB[i];
+				}
+			}
+			break;
+		default: // blend A + B
+			if (capcnt->Source_B) {
+				for (i=0; i<ilast;) {
+					c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
+					colA.val = c&0xFFFF;
+					colB.val = srcB[i];
+	#define FORMULA(field)	\
+		color.bits.field = ((colA.bits.field * colA.bits.alpha * capcnt->BlendFactor_A) + (colB.bits.field * colB.bits.alpha * capcnt->BlendFactor_B)) / 16;
+					FORMULA(red)
+					FORMULA(green)
+					FORMULA(blue)
+					vram[i] = color.val;
+					i++;
+					colA.val = c >> 16;
+					colB.val = srcB[i];
+					FORMULA(red)
+					FORMULA(green)
+					FORMULA(blue)
+					vram[i] = color.val;
+					i++;
+				}
+			} else {
+				for (i=0; i<ilast; i++) {
+					colA.val = srcA[i];
+					colB.val = srcB[i];
+					FORMULA(red)
+					FORMULA(green)
+					FORMULA(blue)
+					vram[i] = color.val;
+				}
+	#undef FORMULA
+			}
+			break;
+		}
+	}
+/* end of capture */
+
+// Apply final brightness adjust (MASTER_BRIGHT)
+//  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
+/* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
+/* it will most likly take acceleration, while we are stuck here with CPU power */
+
+	calc_bright_colors();
+
+	switch (gpu->masterBright.bits.Mode)
+	{
+		// Disabled
+		case 0:
+			break;
+
+		// Bright up
+		case 1:
+		{
+			COLOR dstColor;
+			unsigned int masterBrightFactor = gpu->masterBright.bits.Factor;
+			u16 * colors = bright_more_colors[masterBrightFactor];
+
+			if (gpu->masterBright.bits.FactorEx)
+			{
+				/* the formular would create only white, as (r + (31-r)) = 31 */
+				/* white = enable all bits */
+				memset(dst,0xFF, 256*2 /* sizeof(COLOR) */) ;
+			} else {
+				/* when we wont do anything, we dont need to loop */
+				if (!masterBrightFactor) break ;
+
+				for(i16 = 0; i16 < 256; ++i16)
+				{
+#ifndef BRIGHT_TABLES
+					u8 base ;
+					u8 r,g,b; // get components, 5bit each
+					dstColor.val = T1ReadWord(dst, i16 << 1);
+					r = dstColor.bits.red;
+					g = dstColor.bits.green;
+					b = dstColor.bits.blue;
+					// Bright up and clamp to 5bit <-- automatic
+					base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
+					dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
+					dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
+					dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;
+#else
+					dstColor.val = T1ReadWord(dst, i16 << 1);
+					dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
+#endif
+ 					T2WriteWord (dst, i16 << 1, dstColor.val);
+				}
+			}
+			break;
+		}
+
+		// Bright down
+		case 2:
+		{
+/*
+	NOTE: gbatek (in the reference above) seems to expect 6bit values 
+	per component, but as desmume works with 5bit per component, 
+			we use 31 as top, instead of 63. Testing it on a few games, 
+			using 63 seems to give severe color wraping, and 31 works
+			nicely, so for now we'll just that, until proven wrong.
+
+	i have seen pics of pokemon ranger getting white with 31, with 63 it is nice.
+	it could be pb of alpha or blending or...
+
+	MightyMax> created a test NDS to check how the brightness values work,
+	and 31 seems to be correct. FactorEx is a override for max brighten/darken
+	See: http://mightymax.org/gfx_test_brightness.nds
+	The Pokemon Problem could be a problem with 8/32 bit writes not recognized yet,
+	i'll add that so you can check back.
+
+*/
+			COLOR dstColor;
+			unsigned int    masterBrightFactor = gpu->masterBright.bits.Factor ;
+			u16 * colors = bright_less_colors[masterBrightFactor];
+ 
+			if (gpu->masterBright.bits.FactorEx)
+			{
+				/* the formular would create only black, as (r - r) = 0 */
+				/* black = disable all bits */
+				memset(dst,0, 256*2 /* sizeof(COLOR) */) ;
+			} else
+			{
+				/* when we wont do anything, we dont need to loop */
+				if (!masterBrightFactor) break ;
+ 
+				for(i16 = 0; i16 < 256; ++i16)
+				{
+#ifndef BRIGHT_TABLES
+					u8 r,g,b;
+					r = dstColor.bits.red;
+					g = dstColor.bits.green;
+					b = dstColor.bits.blue;
+					// Bright up and clamp to 5bit <- automatic
+					dstColor.bits.red   = r - (r*masterBrightFactor)/16;
+					dstColor.bits.green = g - (g*masterBrightFactor)/16;
+					dstColor.bits.blue  = b - (b*masterBrightFactor)/16;
+#else
+					dstColor.val = T1ReadWord(dst, i16 << 1);
+					dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
+#endif
+					T2WriteWord (dst, i16 << 1, dstColor.val);
+				}
+			}
+			break;
+		}
+
+		// Reserved
+		case 3:
+			break;
+	 }
 }
