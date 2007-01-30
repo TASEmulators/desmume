@@ -26,8 +26,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
-#include "SDL.h"
+//#include <pthread.h>
+#include <SDL.h>
 #include "MMU.h"
 
 #include "types.h"

@@ -48,7 +48,7 @@
 #include "../saves.h"
 #include "desmume.h"
 
-uint Frameskip;
+int Frameskip;
 u16 Keypad_Temp[NB_KEYS];
 
 /* main.c */

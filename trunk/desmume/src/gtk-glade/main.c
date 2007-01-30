@@ -193,7 +193,7 @@ void update_savestate(u8 num)
 
 
 #ifdef WIN32
-int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nFunsterStil)
+int WinMain ()
 {
 	main(0,NULL);
 }
