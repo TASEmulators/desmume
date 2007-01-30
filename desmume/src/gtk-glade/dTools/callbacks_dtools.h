@@ -22,33 +22,33 @@
 #include "../globals.h"
 
 /* ***** ***** IO REGISTERS ***** ***** */
-void     on_wtools_1_combo_cpu_changed        (GtkComboBox *, gpointer );
-void     on_wtools_1_IOregs_show              (GtkWidget *,   gpointer );
-gboolean on_wtools_1_IOregs_close             (GtkWidget *, ...);
-gboolean on_wtools_1_draw_button_release_event(GtkWidget *, GdkEventButton *, gpointer );
-gboolean on_wtools_1_draw_expose_event        (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
+G_MODULE_EXPORT void     on_wtools_1_combo_cpu_changed        (GtkComboBox *, gpointer );
+G_MODULE_EXPORT void     on_wtools_1_IOregs_show              (GtkWidget *,   gpointer );
+G_MODULE_EXPORT gboolean on_wtools_1_IOregs_close             (GtkWidget *, ...);
+G_MODULE_EXPORT gboolean on_wtools_1_draw_button_release_event(GtkWidget *, GdkEventButton *, gpointer );
+G_MODULE_EXPORT gboolean on_wtools_1_draw_expose_event        (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
 
 /* ***** ***** MEMORY VIEWER ***** ***** */
-void     on_wtools_2_MemView_show             (GtkWidget *,   gpointer );
-gboolean on_wtools_2_MemView_close            (GtkWidget *, ...);
+G_MODULE_EXPORT void     on_wtools_2_MemView_show             (GtkWidget *,   gpointer );
+G_MODULE_EXPORT gboolean on_wtools_2_MemView_close            (GtkWidget *, ...);
 
-void     on_wtools_2_cpu_changed              (GtkComboBox *, gpointer );
-void     on_wtools_2_r8_toggled               (GtkToggleButton *, gpointer );
-void     on_wtools_2_r16_toggled              (GtkToggleButton *, gpointer );
-void     on_wtools_2_r32_toggled              (GtkToggleButton *, gpointer );
-void     on_wtools_2_GotoAddress_activate     (GtkEntry *,  gpointer );
-void     on_wtools_2_GotoAddress_changed      (GtkEntry *,  gpointer );
-void     on_wtools_2_GotoButton_clicked       (GtkButton *, gpointer );
-void     on_wtools_2_scroll_value_changed     (GtkRange *,  gpointer );
-gboolean on_wtools_2_draw_button_release_event(GtkWidget *, GdkEventButton *, gpointer );
-gboolean on_wtools_2_draw_expose_event        (GtkWidget *, GdkEventExpose *, gpointer );
-gboolean on_wtools_2_draw_scroll_event        (GtkWidget *, GdkEventScroll *, gpointer );
+G_MODULE_EXPORT void     on_wtools_2_cpu_changed              (GtkComboBox *, gpointer );
+G_MODULE_EXPORT void     on_wtools_2_r8_toggled               (GtkToggleButton *, gpointer );
+G_MODULE_EXPORT void     on_wtools_2_r16_toggled              (GtkToggleButton *, gpointer );
+G_MODULE_EXPORT void     on_wtools_2_r32_toggled              (GtkToggleButton *, gpointer );
+G_MODULE_EXPORT void     on_wtools_2_GotoAddress_activate     (GtkEntry *,  gpointer );
+G_MODULE_EXPORT void     on_wtools_2_GotoAddress_changed      (GtkEntry *,  gpointer );
+G_MODULE_EXPORT void     on_wtools_2_GotoButton_clicked       (GtkButton *, gpointer );
+G_MODULE_EXPORT void     on_wtools_2_scroll_value_changed     (GtkRange *,  gpointer );
+G_MODULE_EXPORT gboolean on_wtools_2_draw_button_release_event(GtkWidget *, GdkEventButton *, gpointer );
+G_MODULE_EXPORT gboolean on_wtools_2_draw_expose_event        (GtkWidget *, GdkEventExpose *, gpointer );
+G_MODULE_EXPORT gboolean on_wtools_2_draw_scroll_event        (GtkWidget *, GdkEventScroll *, gpointer );
 
 /* ***** ***** PALETTE VIEWER ***** ***** */
-void     on_wtools_3_PalView_show         (GtkWidget *, gpointer );
-gboolean on_wtools_3_PalView_close        (GtkWidget *, ...);
+G_MODULE_EXPORT void     on_wtools_3_PalView_show         (GtkWidget *, gpointer );
+G_MODULE_EXPORT gboolean on_wtools_3_PalView_close        (GtkWidget *, ...);
 
-gboolean on_wtools_3_PalView_delete_event (GtkWidget *, GdkEvent *,       gpointer );
-gboolean on_wtools_3_draw_expose_event    (GtkWidget *, GdkEventExpose *, gpointer );
-void     on_wtools_3_palette_changed      (GtkComboBox *,   gpointer );
-void     on_wtools_3_palnum_value_changed (GtkSpinButton *, gpointer );
+G_MODULE_EXPORT gboolean on_wtools_3_PalView_delete_event (GtkWidget *, GdkEvent *,       gpointer );
+G_MODULE_EXPORT gboolean on_wtools_3_draw_expose_event    (GtkWidget *, GdkEventExpose *, gpointer );
+G_MODULE_EXPORT void     on_wtools_3_palette_changed      (GtkComboBox *,   gpointer );
+G_MODULE_EXPORT void     on_wtools_3_palnum_value_changed (GtkSpinButton *, gpointer );

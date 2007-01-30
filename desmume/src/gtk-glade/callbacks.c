@@ -23,7 +23,7 @@
 #include "callbacks.h"
 
 /* globals */
-uint Frameskip = 0;
+int Frameskip = 0;
 gboolean ScreenRight=FALSE;
 gboolean ScreenGap=FALSE;
 
@@ -123,7 +123,7 @@ void file_open() {
 	}
 	gtk_widget_destroy(pFileSelection);
 }
-
+ 
 void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data) { file_open();}
 void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) {  WriteBMP("./test.bmp",GPU_screen); }
 void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk_main_quit(); }
