@@ -329,8 +329,10 @@ BOOL cflash_build_fat() {
 	// Set up the MBR
 	MBR.bytesPerSector = 512;
 	MBR.numFATs = 1;
-	strcpy((char*)&MBR.OEMName[0],"DESMUM");
-	strcpy((char*)&MBR.fat16.fileSysType[0],"FAT16  ");
+	/* replaced strcpy with strncpy. It doesnt matter here, as the strings are constant */
+	/* but we should extingish all unrestricted strcpy,strcat from the project */
+	strncpy((char*)&MBR.OEMName[0],"DESMUM",8);	
+	strncpy((char*)&MBR.fat16.fileSysType[0],"FAT16  ",8);
 	MBR.reservedSectors = SECRESV;
 	MBR.numSectors = 524288;
 	MBR.numSectorsSmall = 0;
@@ -480,8 +482,8 @@ void resolve_path(int dirent) {
 			if ((dirEntryLink[dirent].parent==dirEntryLink[i].level) &&
 				((dirEntries[i].attrib&ATTRIB_DIR)!=0)) {
 				fatstring_to_asciiz(i,dirname,NULL);
-				strcat(fpath,dirname);
-				strcat(fpath,"\\");
+				strncat(fpath,dirname,256-strlen(fpath));
+				strncat(fpath,"\\",256-strlen(fpath));
 				dirent = i;
 				break;
 			}
@@ -512,13 +514,14 @@ u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 		//CloseHandle(hFile);
 		fclose(hFile);
 
-	strcpy(fpath,sRomPath);
-	strcat(fpath,"\\");
+	/* replaced strcpy/cat with strncpy/strcat to fixed possible buffer overruns */
+	strncpy(fpath,sRomPath,256);
+	strncat(fpath,"\\",256-strlen(fpath));
 	
 	resolve_path(dirent);
 
 	fatstring_to_asciiz(dirent,fname,NULL);
-	strcat(fpath,fname);
+	strncat(fpath,fname,256-strlen(fpath));
 
         hFile = fopen(fpath, "w");
         if (!hFile)
