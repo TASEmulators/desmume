@@ -63,7 +63,7 @@ extern DWORD ds_start;
 #define KEY_SELECT       ds_select
 #define KEY_DEBUG        ds_debug
 
-void GetINIPath(char *inipath)
+void GetINIPath(char *inipath,u16 bufferSize)
 {   
     if (*vPath)
        szPath = vPath;
@@ -77,8 +77,15 @@ void GetINIPath(char *inipath)
        if (++p >= vPath) *p = 0;
        szPath = vPath;
     }
-
-    sprintf(inipath, "%s\\desmume.ini",szPath);
+	if (strlen(szPath) + strlen("\\desmume.ini") < bufferSize)
+	{
+		sprintf(inipath, "%s\\desmume.ini",szPath);
+	} else if (bufferSize> strlen(".\\desmume.ini")) {
+		sprintf(inipath, ".\\desmume.ini",szPath);
+	} else
+	{
+		memset(inipath,0,bufferSize) ;
+	}
 }
 
 void  ReadConfig(void)
@@ -86,7 +93,7 @@ void  ReadConfig(void)
 	FILE *fp;
     int i;
 
-    GetINIPath(IniName);
+    GetINIPath(IniName,MAX_PATH);
 
     i=GetPrivateProfileInt("KEYS","KEY_A",31, IniName);
     KEY_A = i;
@@ -143,7 +150,7 @@ void  WriteConfig(void)
 	FILE *fp;
     int i;
     
-    GetINIPath(IniName);
+    GetINIPath(IniName,MAX_PATH);
 
     WritePrivateProfileInt("KEYS","KEY_A",KEY_A,IniName);
     WritePrivateProfileInt("KEYS","KEY_B",KEY_B,IniName);
