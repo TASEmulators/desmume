@@ -203,16 +203,15 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 
 void ScaleScreen(float factor)
 {
-/*	RECT fullSize,clientSize ;
-	factor -= 1 ;
+	RECT fullSize,clientSize ;
+	int widthTradeOff,heightTradeOff ;
 	GetWindowRect(hwnd,&fullSize) ;
 	GetClientRect(hwnd,&clientSize) ;
-	fullSize.right += (clientSize.right - clientSize.left) * factor ;
-	fullSize.bottom += (clientSize.bottom - clientSize.top) * factor ; */
-    //SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
-    //             fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
-    SetWindowPos(hwnd, NULL, 0, 0, DefaultWidth * factor,
-                 DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
+
+	widthTradeOff = (fullSize.right-fullSize.left) - (clientSize.right-fullSize.left) ;
+	heightTradeOff = (fullSize.bottom-fullSize.top) - (clientSize.bottom-fullSize.top) ;
+	SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor,
+                 heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
 }
  
 void translateXY(s32 *x, s32*y)
@@ -558,7 +557,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	     {
 	     	RECT fullSize;
              	ReadConfig();
-	     	GetWindowRect(hwnd, &fullSize);
+	     	GetClientRect(hwnd, &fullSize);
 	     	DefaultWidth = fullSize.right - fullSize.left;
 			DefaultHeight = fullSize.bottom - fullSize.top;
 	     	aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
@@ -841,14 +840,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 							// needs 0 terminated string, and standard string library, of course,
 							// can't help us with string creation: just put a '|' were a string end
 							// should be, and later transform prior assigning to the OPENFILENAME structure
-							strcpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|");
+							strncpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|",512);
 #ifdef HAVE_LIBZZIP
-							strcat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|");
+							strncat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|",512 - strlen(fileFilter));
 #endif
 #ifdef HAVE_LIBZ
-							strcat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|");
+							strncat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|",512 - strlen(fileFilter));
 #endif
-							strcat (fileFilter, "Any file (*.*)|*.*||");
+							strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
 							
 							filterSize = strlen(fileFilter);
 							for (i = 0; i < filterSize; i++)
