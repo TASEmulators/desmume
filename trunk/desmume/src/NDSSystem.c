@@ -237,11 +237,11 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 
    /* I guess any directory can be used
     * so the current one should be ok */
-   strcpy(szRomPath, ".");
+   strncpy(szRomPath, ".", 512); /* "." is shorter then 512, yet strcpy should be avoided */
    cflash_close();
    cflash_init();
 
-   strcpy(szRomBaseName, filename);
+   strncpy(szRomBaseName, filename,512);
 
    if(type == ROM_DSGBA)
       szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;
@@ -250,9 +250,23 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 
    // Setup Backup Memory
    if(type == ROM_DSGBA)
-      strcpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav");
+	   /* be sure that we dont overwrite anything before stringstart */
+	   if (strlen(noext)>= strlen(DSGBA_EXTENSTION))
+	   {
+		   strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
+	   } else
+	   {
+		   return -1 ;
+	   }
    else
-      strcpy(noext + strlen(noext) - 4, ".sav");
+	   /* be sure that we dont overwrite anything before stringstart */
+	   if (strlen(noext)>=4)
+	   {
+		   strncpy(noext + strlen(noext) - 4, ".sav",5);
+	   } else
+	   {
+		   return -1 ;
+	   }
 
    mc_realloc(&MMU.bupmem, bmtype, bmsize);
    mc_load_file(&MMU.bupmem, noext);
@@ -475,7 +489,7 @@ int NDS_WriteBMP(const char *filename)
     bmpimgheader_struct imageheader;
     FILE *file;
     int i,j,k;
-    u16 * bmp = GPU_screen;
+    u16 * bmp = (u16 *)GPU_screen;
 
     memset(&fileheader, 0, sizeof(fileheader));
     fileheader.size = sizeof(fileheader);
@@ -537,6 +551,7 @@ int NDS_CreateDummyFirmware(void)
 
 	memcpy(MMU.fw.data+0x03FA40,FW_WFCProfile,sizeof(FW_WFCProfile)) ;
 #endif
+	return TRUE ;
 }
 
 int NDS_LoadFirmware(const char *filename)
