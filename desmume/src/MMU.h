@@ -103,6 +103,14 @@ typedef struct {
 
 extern MMU_struct MMU;
 
+
+static void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
+	if (type<0 || type > 5) return;
+	*bmemtype=save_types[type][0];
+	*bmemsize=save_types[type][1];
+	mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
+}
+
 void MMUInit(void);
 void MMUDeInit(void);
 

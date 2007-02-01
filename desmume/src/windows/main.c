@@ -34,6 +34,9 @@
 #include "../MMU.h"
 #include "../armcpu.h"
 #include "../NDSSystem.h"
+#include "../debug.h"
+#include "../saves.h"
+#include "../cflash.h"
 #include "resource.h"
 #include "memView.h"
 #include "disView.h"
@@ -42,10 +45,7 @@
 #include "palView.h"
 #include "tileView.h"
 #include "oamView.h"
-#include "../debug.h"
 #include "mapview.h"
-#include "../saves.h"
-#include "../cflash.h"
 #include "ConfigKeys.h"
 
 #include "snddx.h"
@@ -1211,39 +1211,27 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   
                   case IDC_SAVETYPE1:
                        saver(MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       backupmemorytype = MC_TYPE_AUTODETECT;
-                       backupmemorysize = 1;
-                       mc_realloc(&MMU.bupmem, backupmemorytype,backupmemorysize);
+                       mmu_select_savetype(0,&backupmemorytype,&backupmemorysize);
                   return 0;
                   case IDC_SAVETYPE2:
                        saver(MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       backupmemorytype = MC_TYPE_EEPROM1;
-                       backupmemorysize = MC_SIZE_4KBITS;
-                       mc_realloc(&MMU.bupmem, backupmemorytype,backupmemorysize);
+                       mmu_select_savetype(1,&backupmemorytype,&backupmemorysize);
                   return 0;   
                   case IDC_SAVETYPE3:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       backupmemorytype = MC_TYPE_EEPROM2;
-                       backupmemorysize = MC_SIZE_64KBITS;
-                       mc_realloc(&MMU.bupmem, backupmemorytype,backupmemorysize);
+                       mmu_select_savetype(2,&backupmemorytype,&backupmemorysize);
                   return 0;   
                   case IDC_SAVETYPE4:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED);
-                       backupmemorytype = MC_TYPE_EEPROM2;
-                       backupmemorysize = MC_SIZE_512KBITS;
-                       mc_realloc(&MMU.bupmem, backupmemorytype,backupmemorysize);
+                       mmu_select_savetype(3,&backupmemorytype,&backupmemorysize);
                   return 0;
                   case IDC_SAVETYPE5:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED);
-                       backupmemorytype = MC_TYPE_FRAM;
-                       backupmemorysize = MC_SIZE_256KBITS;
-                       mc_realloc(&MMU.bupmem, backupmemorytype,backupmemorysize);
+                       mmu_select_savetype(4,&backupmemorytype,&backupmemorysize);
                   return 0; 
                   case IDC_SAVETYPE6:
                        saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED);
-                       backupmemorytype = MC_TYPE_FLASH;
-                       backupmemorysize = MC_SIZE_2MBITS;
-                       mc_realloc(&MMU.bupmem, backupmemorytype,backupmemorysize);
+                       mmu_select_savetype(5,&backupmemorytype,&backupmemorysize);
                   return 0; 
                   
                   case IDM_RESET:

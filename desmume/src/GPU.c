@@ -701,6 +701,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	u16 yoff;
 	u16 x      = 0;
 	u16 xfin;
+	u16 palette_size;
 
 	s8 line_dir = 1;
 	u8 pt_xor   = 0;
@@ -812,51 +813,26 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 		}
 		return;
 	}
-	if(!gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: no extended palette */
+
+	palette_size=0; /* color: no extended palette */
+	if(gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: extended palette */
 	{
-		yoff = ((YBG&7)<<3);
-		xfin = 8 - (xoff&7);
-		for(x = 0; x < LG; xfin = min(x+8, LG))
-		{
-			tmp = (xoff & (lg-1))>>3;
-			mapinfo = map + (tmp & 31) * 2;
-			if(tmp > 31) mapinfo += 32*32*2;
-			tileentry.val = T1ReadWord(mapinfo, 0);
-	
-			line = (u8 * )tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff);
-
-			if(tileentry.bits.HFlip)
-			{
-				line += (7 - (xoff&7));
-				line_dir = -1;
-			} else {
-				line += (xoff&7);
-				line_dir = 1;
-			}
-			for(; x < xfin; )
-			{
-				RENDERL((*line),0)
-				line += line_dir;
-			}
-		}
-		return;
+		palette_size=0x100;
+		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
+		if(!pal) return;
 	}
-
-	/* color: extended palette */
-	pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
-	if(!pal) return;
 
 	yoff = ((YBG&7)<<3);
 	xfin = 8 - (xoff&7);
 	for(x = 0; x < LG; xfin = min(x+8, LG))
 	{
-		tmp = ((xoff&(lg-1))>>3);
-		mapinfo = map + (tmp & 0x1F) * 2;
-		if(tmp>31) mapinfo += 32 * 32 * 2;
+		tmp = (xoff & (lg-1))>>3;
+		mapinfo = map + (tmp & 31) * 2;
+		if(tmp > 31) mapinfo += 32*32*2;
 		tileentry.val = T1ReadWord(mapinfo, 0);
 
-		line = (u8 * )tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip)? (7*8)-yoff : yoff);
-		
+		line = (u8 * )tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff);
+
 		if(tileentry.bits.HFlip)
 		{
 			line += (7 - (xoff&7));
@@ -867,7 +843,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 		}
 		for(; x < xfin; )
 		{
-			RENDERL((*line),0x100)
+			RENDERL((*line),palette_size)
 			line += line_dir;
 		}
 	}
@@ -933,19 +909,15 @@ void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * 
 
 typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal , int i, u16 H);
 
-INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
+INLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
 {
 	ROTOCOORD x, y;
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
 
 	s32 dx = (s32)PA;
 	s32 dy = (s32)PC;
-	s32 lg = gpu->BGSize[num][0];
-	s32 ht = gpu->BGSize[num][1];
 	u32 i;
 	s32 auxX, auxY;
 	
-	if (!map) return;
 	x.val = X + (s32)PB*(s32)H;
 	y.val = Y + (s32)PD*(s32)H;
 
@@ -956,20 +928,29 @@ INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 
 		auxX = x.bits.Integer;
 		auxY = y.bits.Integer;
 	
-		if(bgCnt.PaletteSet_Wrap)
+		if(wrap)
 		{
 			// wrap
-			auxX = auxX & (lg-1);
+			auxX = auxX & (wh-1);
 			auxY = auxY & (ht-1);
 		}
 	
-		if ((auxX >= 0) && (auxX < lg) && (auxY >= 0) && (auxY < ht))
-			fun(gpu, num, auxX, auxY, lg, dst, map, tile, pal, i, H);
+		if ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht))
+			fun(gpu, num, auxX, auxY, wh, dst, map, tile, pal, i, H);
 		dst += 2;
 		x.val += dx;
 		y.val += dy;
 	}
 }
+
+INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
+{
+	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
+	s32 wh = gpu->BGSize[num][0];
+	s32 ht = gpu->BGSize[num][1];
+	rot_scale_op(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt.PaletteSet_Wrap, fun, map, tile, pal);	
+}
+
 
 INLINE void rotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG) {
 	u8 * map = gpu->BG_map_ram[num];
@@ -1101,6 +1082,7 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src,
 		RENDER_COND(color&0x8000)
 	}
 }
+
 
 INLINE void render_sprite_256 (GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
 	u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir) {

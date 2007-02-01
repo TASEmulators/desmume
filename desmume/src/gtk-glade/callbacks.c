@@ -152,6 +152,13 @@ void on_savestate8_activate (GtkMenuItem *m, gpointer d) { update_savestate(8); 
 void on_savestate9_activate (GtkMenuItem *m, gpointer d) { update_savestate(9); }
 void on_savestate10_activate(GtkMenuItem *m, gpointer d) { update_savestate(10); }
 
+void on_savetype1_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(1); }
+void on_savetype2_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(2); }
+void on_savetype3_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(3); }
+void on_savetype4_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(4); }
+void on_savetype5_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(5); }
+void on_savetype6_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(6); }
+
 
 /* MENU EMULATION ***** ***** ***** ***** */
 void  on_menu_exec_activate   (GtkMenuItem *menuitem, gpointer user_data) { desmume_resume(); }

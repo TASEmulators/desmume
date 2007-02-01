@@ -146,7 +146,6 @@ void clear_savestate_menu(char * cb_name, u8 num)
   sprintf( text, "State %d (empty)", num);
   w = glade_xml_get_widget(xml, cb);
   set_menuitem_label( w, text );
-  gtk_check_menu_item_set_active((GtkCheckMenuItem*)w, FALSE);
 }
 
 void update_savestate_menu(char * cb_name, u8 num)

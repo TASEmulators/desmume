@@ -10,7 +10,7 @@
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
   <property name="modal">False</property>
-  <property name="resizable">True</property>
+  <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
   <property name="icon">DeSmuME.xpm</property>
   <property name="decorated">True</property>
@@ -98,119 +98,100 @@
 			<widget class="GtkMenu" id="load_state_menu">
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate1">
+			    <widget class="GtkMenuItem" id="loadstate1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 1</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
 			      <signal name="activate" handler="on_loadstate1_activate" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F1" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate2">
+			    <widget class="GtkMenuItem" id="loadstate2">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 2</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate2_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F2" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate3">
+			    <widget class="GtkMenuItem" id="loadstate3">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 3</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate3_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F3" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate4">
+			    <widget class="GtkMenuItem" id="loadstate4">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 4</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate4_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F4" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate5">
+			    <widget class="GtkMenuItem" id="loadstate5">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 5</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate5_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F5" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate6">
+			    <widget class="GtkMenuItem" id="loadstate6">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 6</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate6_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F6" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate7">
+			    <widget class="GtkMenuItem" id="loadstate7">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 7</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate7_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F7" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate8">
+			    <widget class="GtkMenuItem" id="loadstate8">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 8</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate8_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F8" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate9">
+			    <widget class="GtkMenuItem" id="loadstate9">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 9</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate9_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F9" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="loadstate10">
+			    <widget class="GtkMenuItem" id="loadstate10">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 10</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">loadstate1</property>
 			      <signal name="activate" handler="on_loadstate10_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F10" modifiers="0" signal="activate"/>
 			    </widget>
@@ -230,119 +211,100 @@
 			<widget class="GtkMenu" id="save_state_menu">
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate1">
+			    <widget class="GtkMenuItem" id="savestate1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 1</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
 			      <signal name="activate" handler="on_savestate1_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate2">
+			    <widget class="GtkMenuItem" id="savestate2">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 2</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate2_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F2" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate3">
+			    <widget class="GtkMenuItem" id="savestate3">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 3</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate3_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F3" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate4">
+			    <widget class="GtkMenuItem" id="savestate4">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 4</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate4_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F4" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate5">
+			    <widget class="GtkMenuItem" id="savestate5">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 5</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate5_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F5" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate6">
+			    <widget class="GtkMenuItem" id="savestate6">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 6</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate6_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F6" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate7">
+			    <widget class="GtkMenuItem" id="savestate7">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 7</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate7_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F7" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate8">
+			    <widget class="GtkMenuItem" id="savestate8">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 8</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate8_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F8" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate9">
+			    <widget class="GtkMenuItem" id="savestate9">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 9</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate9_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F9" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkRadioMenuItem" id="savestate10">
+			    <widget class="GtkMenuItem" id="savestate10">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 10</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
-			      <property name="group">savestate1</property>
 			      <signal name="activate" handler="on_savestate10_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
 			      <accelerator key="F10" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
@@ -351,6 +313,74 @@
 		      </child>
 		    </widget>
 		  </child>
+
+		  <child>
+		    <widget class="GtkSeparatorMenuItem" id="séparateur1">
+		      <property name="visible">True</property>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="savetype1">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">TYPE: Auto (1B)</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">True</property>
+		      <signal name="activate" handler="on_savetype1_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		    </widget>
+		  </child>
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="savetype2">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">TYPE: EEPROM1 (4KB)</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <property name="group">savetype1</property>
+		      <signal name="activate" handler="on_savetype2_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		    </widget>
+		  </child>
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="savetype3">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">TYPE: EEPROM2 (64KB)</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <property name="group">savetype1</property>
+		      <signal name="activate" handler="on_savetype3_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		    </widget>
+		  </child>
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="savetype4">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">TYPE: EEPROM2 (512KB)</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <property name="group">savetype1</property>
+		      <signal name="activate" handler="on_savetype4_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		    </widget>
+		  </child>
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="savetype5">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">TYPE: FLASH (256KB)</property>
+		      <property name="use_underline">True</property>
+		      <property name="group">savetype1</property>
+		      <property name="active">False</property>
+		      <signal name="activate" handler="on_savetype5_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		    </widget>
+		  </child>
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="savetype6">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">TYPE: FRAM (2MB)</property>
+		      <property name="use_underline">True</property>
+		      <property name="group">savetype1</property>
+		      <property name="active">False</property>
+		      <signal name="activate" handler="on_savetype6_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		    </widget>
+		  </child>
+
+
 		</widget>
 	      </child>
 	    </widget>
@@ -394,7 +424,7 @@
 		      <signal name="activate" handler="on_menu_reset_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image96">
+			<widget class="GtkImage" id="image116">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">1</property>
@@ -431,7 +461,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">0</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <signal name="activate" handler="on_fs0_activate" last_modification_time="Tue, 02 Jan 2007 14:35:13 GMT"/>
 			    </widget>
 			  </child>
@@ -529,7 +559,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">9</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">True</property>
+			      <property name="active">False</property>
 			      <property name="group">fs0</property>
 			      <signal name="activate" handler="on_fs9_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
@@ -553,7 +583,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">1x</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">False</property>
+			      <property name="active">True</property>
 			      <signal name="activate" handler="on_size1x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
@@ -574,7 +604,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">3x</property>
 			      <property name="use_underline">True</property>
-			      <property name="active">True</property>
+			      <property name="active">False</property>
 			      <property name="group">size1x</property>
 			      <signal name="activate" handler="on_size3x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
@@ -605,7 +635,7 @@
 		      <signal name="activate" handler="on_menu_controls_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image97">
+			<widget class="GtkImage" id="image117">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -626,7 +656,7 @@
 		      <signal name="activate" handler="on_menu_joy_controls_activate" last_modification_time="Fri, 12 Jan 2007 22:26:36 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image98">
+			<widget class="GtkImage" id="image118">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -700,7 +730,7 @@
 		      <signal name="activate" handler="on_menu_IO_regs_activate" last_modification_time="Mon, 01 Jan 2007 16:53:11 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image99">
+			<widget class="GtkImage" id="image119">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>
@@ -721,7 +751,7 @@
 		      <signal name="activate" handler="on_menu_memview_activate" last_modification_time="Fri, 12 Jan 2007 15:44:42 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image100">
+			<widget class="GtkImage" id="image120">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>
@@ -742,7 +772,7 @@
 		      <signal name="activate" handler="on_menu_palview_activate" last_modification_time="Sun, 14 Jan 2007 10:34:32 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image101">
+			<widget class="GtkImage" id="image121">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-properties</property>
 			  <property name="icon_size">1</property>
