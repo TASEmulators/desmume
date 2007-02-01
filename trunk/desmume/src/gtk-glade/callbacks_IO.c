@@ -33,10 +33,13 @@ int saveFS;
 gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
 	u16 Key = lookup_key(event->keyval);
 	if (event->keyval == keyboard_cfg[KEY_BOOST-1]) {
-		Boost != Boost;
-		saveFS=Frameskip;
-		if (Boost) Frameskip = BoostFS;
-		else Frameskip = saveFS;
+		Boost = !Boost;
+		if (Boost) {
+			saveFS = Frameskip;
+			Frameskip = BoostFS;
+		} else {
+			Frameskip = saveFS;
+		}
 	}
         ADD_KEY( Cur_Keypad, Key );
         if(desmume_running()) update_keypad(Cur_Keypad);

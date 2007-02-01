@@ -49,6 +49,12 @@ G_MODULE_EXPORT void on_savestate8_activate (GtkMenuItem *, gpointer );
 G_MODULE_EXPORT void on_savestate9_activate (GtkMenuItem *, gpointer );
 G_MODULE_EXPORT void on_savestate10_activate(GtkMenuItem *, gpointer );
 
+G_MODULE_EXPORT void on_savetype1_activate (GtkMenuItem *, gpointer );
+G_MODULE_EXPORT void on_savetype2_activate (GtkMenuItem *, gpointer );
+G_MODULE_EXPORT void on_savetype3_activate (GtkMenuItem *, gpointer );
+G_MODULE_EXPORT void on_savetype4_activate (GtkMenuItem *, gpointer );
+G_MODULE_EXPORT void on_savetype5_activate (GtkMenuItem *, gpointer );
+G_MODULE_EXPORT void on_savetype6_activate (GtkMenuItem *, gpointer );
 
 
 

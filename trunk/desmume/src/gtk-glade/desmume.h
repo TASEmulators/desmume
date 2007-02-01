@@ -26,6 +26,7 @@ extern void desmume_init();
 extern void desmume_free();
 
 extern int desmume_open(const char *filename);
+extern void desmume_savetype(int type);
 extern void desmume_pause();
 extern void desmume_resume();
 extern void desmume_reset();

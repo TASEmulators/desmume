@@ -30,6 +30,8 @@ volatile BOOL execute = FALSE;
 BOOL click = FALSE;
 BOOL fini = FALSE;
 unsigned long glock = 0;
+int savetype=MC_TYPE_AUTODETECT;
+u32 savesize=1;
 
 void desmume_mem_init();
 
@@ -53,21 +55,28 @@ int desmume_open(const char *filename)
 {
   int i;
   clear_savestates();
-  i = NDS_LoadROM(filename, MC_TYPE_AUTODETECT, 1);
+  i = NDS_LoadROM(filename, savetype, savesize);
   return i;
 }
+
+void desmume_savetype(int type) {
+	mmu_select_savetype(type, &savetype, &savesize);
+}
+
 
 void desmume_pause()
 {
 	execute = FALSE;
+	SPU_Pause(1);
 }
 
 void desmume_resume()
 {
-  execute = TRUE;
-
-  if(!regMainLoop)
-    g_idle_add_full(EMULOOP_PRIO, &EmuLoop, NULL, NULL); regMainLoop = TRUE;
+	SPU_Pause(0);
+	execute = TRUE;
+	if(!regMainLoop)
+		g_idle_add_full(EMULOOP_PRIO, &EmuLoop, NULL, NULL);
+	regMainLoop = TRUE;
 }
 
 void desmume_reset()
@@ -100,48 +109,12 @@ void desmume_cycle()
   SPU_Emulate();
 }
 
-/////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
-#if 0
-//#include "dTool.h"
-
-extern const dTool_t *dTools_list[];
-extern const int dTools_list_size;
-
-BOOL *dTools_running;
-
-void Start_dTool(GtkWidget *widget, gpointer data)
-{
-	int tool = GPOINTER_TO_INT(data);
-	
-	if(dTools_running[tool]) return;
-	
-	dTools_list[tool]->open(tool);
-	dTools_running[tool] = TRUE;
-}
-
-void dTool_CloseCallback(int tool)
-{
-	dTools_running[tool] = FALSE;
-}
-
-/////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
-
-
-static inline void _updateDTools()
-{
-	int i;
-	for(i = 0; i < dTools_list_size; i++)
-	{
-		if(dTools_running[i]) { dTools_list[i]->update(); }
-	}
-}
-#endif
-
 
 Uint32 fps, fps_SecStart, fps_FrameCount;
 static void Draw()
 {
 }
+
 gboolean EmuLoop(gpointer data)
 {
 	int i;
@@ -167,7 +140,6 @@ gboolean EmuLoop(gpointer data)
 		
 		Draw();
 		
-	//	_updateDTools();
 		notify_Tools();
 		gtk_widget_queue_draw(pDrawingArea);
 		gtk_widget_queue_draw(pDrawingArea2);
