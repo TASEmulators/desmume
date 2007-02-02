@@ -3400,7 +3400,7 @@ static u32 FASTCALL  OP_BX(armcpu_t *cpu)
      u32 tmp = cpu->R[REG_POS(cpu->instruction, 0)];
      
      cpu->CPSR.bits.T = BIT0(tmp);
-     cpu->R[15] = tmp & 0x0FFFFFFE;
+     cpu->R[15] = tmp & 0xFFFFFFFE;
      cpu->next_instruction = cpu->R[15];
      return 3;
 }
@@ -3411,7 +3411,7 @@ static u32 FASTCALL  OP_BLX_REG(armcpu_t *cpu)
      
      cpu->R[14] = cpu->next_instruction;
      cpu->CPSR.bits.T = BIT0(tmp);
-     cpu->R[15] = tmp & 0x0FFFFFFE;
+     cpu->R[15] = tmp & 0xFFFFFFFE;
      cpu->next_instruction = cpu->R[15];
      return 3;
 }
