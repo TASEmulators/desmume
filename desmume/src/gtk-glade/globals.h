@@ -32,7 +32,7 @@
 //#include <libgen.h>
 #include <unistd.h>
 
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <glade/glade.h>
