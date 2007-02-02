@@ -83,6 +83,7 @@ G_MODULE_EXPORT void  on_size3x_activate (GtkMenuItem *menuitem, gpointer user_d
 
 /* MENU CONFIG */
 G_MODULE_EXPORT void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data);
+G_MODULE_EXPORT void  on_menu_joy_controls_activate (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_audio_on_activate     (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_gapscreen_activate    (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data);
