@@ -79,9 +79,10 @@ BOOL finished = FALSE;
 BOOL romloaded = FALSE;
 
 BOOL ForceRatio = FALSE;
-float aspectratio;
-int DefaultWidth;
-int DefaultHeight;
+float DefaultWidth;
+float DefaultHeight;
+float widthTradeOff;
+float heightTradeOff;
 
 HMENU menu;
 HANDLE runthread=INVALID_HANDLE_VALUE;
@@ -203,15 +204,9 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 
 void ScaleScreen(float factor)
 {
-	RECT fullSize,clientSize ;
-	int widthTradeOff,heightTradeOff ;
-	GetWindowRect(hwnd,&fullSize) ;
-	GetClientRect(hwnd,&clientSize) ;
-
-	widthTradeOff = (fullSize.right-fullSize.left) - (clientSize.right-fullSize.left) ;
-	heightTradeOff = (fullSize.bottom-fullSize.top) - (clientSize.bottom-fullSize.top) ;
 	SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor,
                  heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
+	return;
 }
  
 void translateXY(s32 *x, s32*y)
@@ -555,13 +550,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     {
         case WM_CREATE:
 	     {
-	     	RECT fullSize;
+	     	RECT clientSize, fullSize;
              	ReadConfig();
-	     	GetClientRect(hwnd, &fullSize);
-	     	DefaultWidth = fullSize.right - fullSize.left;
-			DefaultHeight = fullSize.bottom - fullSize.top;
-	     	aspectratio = ((fullSize.right - fullSize.left) * 1.0) / ((fullSize.bottom - fullSize.top) * 1.0);
-             	return 0;
+	     	GetClientRect(hwnd, &clientSize);
+			GetWindowRect(hwnd, &fullSize);
+	     	DefaultWidth = clientSize.right - clientSize.left;
+			DefaultHeight = clientSize.bottom - clientSize.top;
+			widthTradeOff = (fullSize.right - fullSize.left) - (clientSize.right - clientSize.left);
+			heightTradeOff = (fullSize.bottom - fullSize.top) - (clientSize.bottom - clientSize.top);
+            return 0;
 	     }
         case WM_DESTROY:
              NDS_Pause();
@@ -582,12 +579,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
 	case WM_SIZE:
-    		if (ForceRatio) {
-			RECT fullSize ;
-			GetWindowRect(hwnd,&fullSize) ;
-			fullSize.right = (fullSize.bottom - fullSize.top) * aspectratio + fullSize.left;
-    			SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
-                 		fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+    	if (ForceRatio) {
+			RECT fullSize;
+			GetWindowRect(hwnd, &fullSize);
+			ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
 		}
 	     return 0;
         case WM_CLOSE:
@@ -1343,12 +1338,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
                        CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_CHECKED);
                   return 0;
-				  /*case IDC_MAGNIFY:
-						ScaleScreen(1.25f) ;    //100 -> 125%
-						break ;
-				  case IDC_DEMAGNIFY:
-						ScaleScreen(0.8f) ;    //125 -> 100% (== 100 -> 80%)
-						break ; */
         case IDC_WINDOW1X:
 			ScaleScreen(1);
 			break;
@@ -1367,17 +1356,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ForceRatio = FALSE;
 			}
 			else {
-				RECT fullSize ;
-				GetWindowRect(hwnd,&fullSize) ;
-				fullSize.right = (fullSize.bottom - fullSize.top) * aspectratio + fullSize.left;
-    				SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left,
-                 			fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+				RECT fullSize;
+				GetWindowRect(hwnd, &fullSize);
+				ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
 				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
 				ForceRatio = TRUE;
 			}
-		break;
+			break;
 
-             }
+        }
              return 0;
         default:                      /* for messages that we don't deal with */
             return DefWindowProc (hwnd, message, wParam, lParam);
