@@ -1,4 +1,6 @@
 0.5.0 -> 0.6.0
+ general:
+  - Added zipped (based on zziplib) and gzipped (based on zlib) rom support.
  arm:
   - Added relocation interrupt vector.
   - Added region access right checks.

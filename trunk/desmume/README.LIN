@@ -5,9 +5,9 @@
 
 
 1) Compiling instructions...................................13
-2) How to use DeSmuME.......................................36
-3) Contact information......................................50
-4) Disclaimer...............................................69
+2) How to use DeSmuME.......................................43
+3) Contact information......................................57
+4) Disclaimer...............................................76
 
 
 1 Compiling instructions______________________________________
@@ -23,10 +23,17 @@ the above libraries runtime and development packages:
 Once these libraries are installed, you should be ready to
 install DeSmuME.
 
+DeSmuME provides another interface based on libglade, to use
+it, you'll need glade:
+
+  * http://glade.gnome.org/
+
 Uncompress the DeSmuME. source archive, move to the newly
 created directory, type "./configure", then "make",
 it will generate two programs: "desmume" in the "src/gtk"
 directory and "desmume-cli" in the "src/cli" directory.
+If glade is installed on your system, you'll get a third
+binary: "desmume-glade" in the "src/gtk-glade" directory.
 
 You can even type "make install" to install those programs on
 your system (in /usr/local/ by default), then uninstalling is
