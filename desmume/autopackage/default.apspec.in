@@ -32,6 +32,7 @@ require @gtk.org/gtk 2.4
 # Put your installation script here
 installExe bin/desmume
 installExe bin/desmume-cli
+installExe bin/desmume-glade
 
 [Uninstall]
 # Usually just the following line is enough to uninstall everything
