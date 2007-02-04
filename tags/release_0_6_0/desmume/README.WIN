@@ -1,0 +1,152 @@
+                        DeSmuME
+        _________________________________________
+        Copyright (C) 2006 yopyop
+        Copyright (C) 2006-2007 DeSmuME team
+
+
+1) Compiling instructions...................................13
+2) How to use DeSmuME.......................................37
+3) Contact information.....................................116
+4) Disclaimer..............................................135
+
+
+1 Compiling instructions______________________________________
+
+DeSmuME is written in C, so you need a working C compiler(such
+as mingw). Other supported compilers include Visual C++ 2005 and
+dev-cpp.
+
+mingw:
+All you have to do now is go into your mingw shell
+environment, go into the directory where you extracted DeSmuME,
+and type: "./configure". Once that's done(and there was no
+errors), type: "make". It should now take some time to compile so
+go grab yourself a sandwich or beer - whatever suits your fancy
+and it should be done in a few minutes. Now all you have to do is
+type "./src/desmume" in order to run it.
+
+dev-cpp:
+Load the project file DeSmuME.dev in the src/windows directory,
+compile, and you're set.
+
+Visual C++:
+Load the project file DeSmuME.vcproj in the src/windows directory,
+compile, and you're set.
+
+
+2 How to use DeSmuME__________________________________________
+
+Execute "desmume". A new window should pop up. The default
+settings should be fine for most people, but in case you need to
+adjust them, here's a brief explanation:
+
+Under the "Config", there are a number of items:
+
+Save Type:
+Here you can select which type of Backup Memory DeSmuME should
+emulate. By default, Autodetect works fine, but in some cases
+DeSmuME doesn't correctly detect the Backup Memory. In that
+case, you will want to select the correct one.
+
+Control Config:
+Here you can change the default key mappings. For now only the
+keyboard is supported, but in the near future gamepads and
+joysticks will be supported.
+
+Here are the default key mappings(they may be subject to change):
+Up arrow - Up
+Left arrow - Left
+Down arrow - Down
+right arrow - Right
+v - A button
+b - B button
+g - X button
+h - Y button
+c - Left Trigger
+n - Right Trigger
+enter - Start button
+space - Select button
+
+Sound Settings:
+Here you can change the default sound settings. By default
+DeSmuME uses Direct Sound, a buffer size of 2940, and
+volume set to max. But if you want to mute the sound, you can
+set the sound core to none. Or if you want to save the sound
+to a file, you can set the sound core to WAV write. If you find
+the sound is crackling a lot, try increasing the buffer size. On
+the other hand, if you find the sound somewhat delayed or jumpy,
+try decreasing the buffer size.
+
+Frame Skip:
+Here you can adjust the amount of frame draws to skip during
+emulation. Normally the emulator detects whether the emulator
+is running too fast or slow and skips a frame or more if it
+needs to speed things up. However some people don't like the
+results of it, so here you can adjust that.
+
+After all the settings are set to your satisfaction, you can then
+load a ROM image by going into the "File" menu, and choosing
+"Open". Select which file you'd like to open, and the emulator
+will automatically load and start running the selected ROM.
+
+You can save the current emulation state by press shift + one of
+the twelve F keys. To load, just press one of the twelve F keys
+(without shift pressed).
+
+Under the View menu there's also a few additional options you may
+wish to change.
+
+Rotation:
+Here you can adjust which angle of the display. Some programs
+require that you normally turn the DS on its side. You can set it
+up in that manner using this.
+
+Magnify/DeMagnify:
+With these options you can increase or decrease the window size.
+
+Note: You can also adjust the window size by clicking on the edge
+of the window, and dragging the mouse.
+
+Force Maintain Ratio:
+Sometimes when the window size is changed it's doesn't look
+correct on the screen. This option forces the window to maintain
+a correct ratio so it looks correct.
+
+
+3 Contact information_________________________________________
+
+General inquiries should go to:
+E-mail:	guillaume.duhamel@gmail.com
+E-mail: cwx@cyberwarriorx.com
+
+Windows Port-related inquiries should go to:
+E-mail: cwx@cyberwarriorx.com
+
+Web:    http://desmume.sourceforge.net
+
+Please don't ask for roms, bios files or any other copyrighted
+stuff.
+
+If you want to submit a bug report, please run desmume, go into
+the "Help" menu, and click on "Submit a bug report". If you're
+having trouble with it, please feel free to email.
+
+
+4 Disclaimer__________________________________________________
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as 
+published by the Free Software Foundation; either version 2 of 
+the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be
+useful,but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free
+Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+MA  02111-1307  USA
+
+See the GNU General Public License details in COPYING.

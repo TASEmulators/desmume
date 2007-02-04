@@ -1,0 +1,91 @@
+0.5.0 -> 0.6.0
+ general:
+  - Added zipped (based on zziplib) and gzipped (based on zlib) rom support.
+ arm:
+  - Added relocation interrupt vector.
+  - Added region access right checks.
+  - Enabled LDC/STC instructions.
+  - Fixed powersave (cp15) IRQ wait.
+  - Fixed MOV instructions
+ gpu:
+  - Added special color effects.
+  - Added windowing feature.
+  - Fixed transparent direct color backgrounds.
+  - Fixed disabled sprites showing.
+  - Fixed 8/32 bit access to gpu registers.
+  - Fixed missing backgrounds
+  - Support for master brightness
+ wifi:
+  - Added RF chip interface.
+  - Added BB chip interface.
+ windows port:
+  - Fixed address calculation in disassembler.
+  - Added Force Maintain Ratio option for window stretching
+ linux port (cli, gtk and gtk-glade):
+  all:
+   - Added joystick support.
+   - Fixed X and Y buttons.
+  gtk-glade:
+   - Added joystick configuration.
+   - Improved I/O registers viewer tool.
+   - Added save and load states support.
+
+0.3.3 -> 0.5.0
+ arm:
+  - Fixed MSR with immediate value opcode.
+  - Fixed LSR_0 thumb opcode (C flag is correctly set now).
+  - Fixed LDR*/STR* opcodes.
+  - Fixed unaligned memory access on THUMB Core.
+  - Added relocating SWI routines.
+ bios:
+  - Added decompression functions.
+  - Added GetPitchTable function.
+  - Added GetVolumeTable function.
+  - Added GetCRC16 function.
+  - Added experimental SoundBias function.
+  - Added GetSineTable function.
+ cart:
+  - Added CompactFlash/FAT emulation.
+  - Added Get ROM chip ID Cartridge command.
+ gpu:
+  - Added framebuffer emulation.
+  - Fixed a bug in GPU (xfin could be greater than LG causing a segfault).
+  - Added support for Display Mode 0(Display Off).
+  - Added the basic framework for Display Mode 3(Display from Main RAM).
+ spu:
+  - Added sound emulation.
+  - Added sound core system.
+  - Added WAV write core.
+  - Added dummy core.
+  - Added Direct Sound core.
+ linux port:
+  - Added GTK+ GUI.
+  - Added command line interface.
+  - Added stylus and arm9 keypad support in CLI version.
+  - Added FPS display.
+  - Added basic frameskip.
+ windows port:
+  - Fixed a bug when displaying a ROM's information.
+  - Added key configuration.
+  - Removed the debug key.
+  - Added new experimental auto frameskip/frame limit code.
+  - Added sound settings dialog.
+  - Added a few menu options for accessing the website, forums, and for
+    submitting bugs.
+ general:
+  - Rewrote code in C.
+  - Fixed warnings.
+  - Used defines and typedef's to make things more portable and easier to
+    read.
+  - Added autotools stuff.
+  - Changes to logging system.
+  - Added screenshot function.
+  - Translated most french to english.
+  - Added savestate support.
+  - Added firmware reading support(needs work).
+  - Added Backup Memory support with autodetection.
+  - Fixed some endianess issues.
+  - Fixed things so Visual C++ can compile code.
+  - Added bsd support.
+  - Reworked ROM loading so you can load a different rom without any problems.
+  - Finished NDS_Reset. Now the emulation can be reset even while running.
