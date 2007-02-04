@@ -1,3 +1,6 @@
+EXTRA_DIST = DeSmuME.dev DeSmuME.exe.Manifest DeSmuME.ico \
+	 DeSmuME.layout DeSmuME.vcproj Makefile.win \
+	resources.rc yopyop_private.rc
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
         CWindow.c CWindow.h \
