@@ -6,8 +6,8 @@
 
 1) Compiling instructions...................................13
 2) How to use DeSmuME.......................................37
-3) Contact information......................................97
-4) Disclaimer..............................................116
+3) Contact information.....................................116
+4) Disclaimer..............................................135
 
 
 1 Compiling instructions______________________________________
@@ -92,6 +92,25 @@ will automatically load and start running the selected ROM.
 You can save the current emulation state by press shift + one of
 the twelve F keys. To load, just press one of the twelve F keys
 (without shift pressed).
+
+Under the View menu there's also a few additional options you may
+wish to change.
+
+Rotation:
+Here you can adjust which angle of the display. Some programs
+require that you normally turn the DS on its side. You can set it
+up in that manner using this.
+
+Magnify/DeMagnify:
+With these options you can increase or decrease the window size.
+
+Note: You can also adjust the window size by clicking on the edge
+of the window, and dragging the mouse.
+
+Force Maintain Ratio:
+Sometimes when the window size is changed it's doesn't look
+correct on the screen. This option forces the window to maintain
+a correct ratio so it looks correct.
 
 
 3 Contact information_________________________________________
