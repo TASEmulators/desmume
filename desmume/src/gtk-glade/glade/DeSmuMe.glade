@@ -1055,7 +1055,7 @@
 		  <property name="height_request">192</property>
 		  <property name="visible">True</property>
 		  <property name="events">GDK_EXPOSURE_MASK</property>
-		  <signal name="realize" handler="on_wDraw_Main_realize" last_modification_time="Tue, 02 Jan 2007 10:27:08 GMT"/>
+		  <signal name="realize" handler="on_wDraw_Main_realize" after="yes"  last_modification_time="Tue, 02 Jan 2007 10:27:08 GMT"/>
 		  <signal name="expose_event" handler="on_wDraw_Main_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
 		</widget>
 		<packing>
@@ -1219,7 +1219,7 @@
 		  <property name="height_request">192</property>
 		  <property name="visible">True</property>
 		  <property name="events">GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-		  <signal name="realize" handler="on_wDraw_Sub_realize" last_modification_time="Tue, 02 Jan 2007 10:27:45 GMT"/>
+		  <signal name="realize" handler="on_wDraw_Sub_realize" after="yes" last_modification_time="Tue, 02 Jan 2007 10:27:45 GMT"/>
 		  <signal name="expose_event" handler="on_wDraw_Sub_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:52 GMT"/>
 		  <signal name="button_press_event" handler="on_wDraw_Sub_button_press_event" last_modification_time="Tue, 02 Jan 2007 10:28:11 GMT"/>
 		  <signal name="button_release_event" handler="on_wDraw_Sub_button_release_event" last_modification_time="Tue, 02 Jan 2007 10:28:18 GMT"/>

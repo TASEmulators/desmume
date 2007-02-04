@@ -352,7 +352,7 @@ void  on_wgt_Exec_toggled  (GtkToggleToolButton *toggletoolbutton, gpointer user
 
 
 /* LAYERS ***** ***** ***** ***** */
-void change_bgx_layer(int layer, gboolean state, Screen scr) {
+void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
 	//if(!desmume_running()) return;
 	if(state==TRUE) { 
 		if (!scr.gpu->dispBG[layer]) GPU_addBack(scr.gpu, layer);
