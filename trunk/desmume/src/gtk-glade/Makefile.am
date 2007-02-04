@@ -1,4 +1,4 @@
-EXTRA_DIST = DeSmuME.dev
+EXTRA_DIST = DeSmuME.dev glade/DeSmuMe_Dtools.glade glade/DeSmuMe.glade glade/DeSmuME.xpm
 bin_PROGRAMS = desmume-glade
 desmume_glade_SOURCES =  \
 	callbacks.c callbacks.h callbacks_IO.c callbacks_IO.h desmume.c desmume.h \
