@@ -1,4 +1,5 @@
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc
+DIST_SUBDIRS = . cli gtk gtk-glade windows
 SUBDIRS = . $(UI_DIR)
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \

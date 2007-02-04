@@ -3,7 +3,7 @@ desmume_SOURCES = \
         CWindow.c CWindow.h \
         disView.c disView.h ginfo.c ginfo.h \
         IORegView.c IORegView.h \
-        main.cpp mapView.c mapView.h memView.c memView.h \
+        main.c mapView.c mapView.h memView.c memView.h \
         oamView.c oamView.h palView.c palView.h \
         resource.h \
         snddx.c snddx.h \
