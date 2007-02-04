@@ -31,6 +31,7 @@ AC_CHECK_LIB(z, gzopen)
 dnl - Check for zziplib
 AC_CHECK_LIB(zzip, zzip_open)
 
+
 dnl - Check for SDL
 AC_PATH_PROGS(SDLCONFIG, [sdl-config sdl11-config])
 if test ! "x$SDLCONFIG" = "x" ; then
@@ -53,6 +54,15 @@ if test ! "x$HAVE_PKG" = "x" ; then
   AC_SUBST(GTK_CFLAGS)
   AC_SUBST(GTK_LIBS)
 
+  PKG_CHECK_MODULES(GDKGLEXT,
+                    "gtkglext-1.0",
+                    HAVE_GDKGLEXT=yes,
+                    HAVE_GDKGLEXT=no)
+  AC_SUBST(GDKGLEXT_CFLAGS)
+  AC_SUBST(GDKGLEXT_LIBS)
+
+  AC_CHECK_LIB(gdkglext-x11-1.0, gdk_gl_init)
+
   PKG_CHECK_MODULES(LIBGLADE,
                     "libglade-2.0",
                     HAVE_LIBGLADE=yes,
@@ -60,6 +70,7 @@ if test ! "x$HAVE_PKG" = "x" ; then
   AC_SUBST(LIBGLADE_CFLAGS)
   AC_SUBST(LIBGLADE_LIBS)
 fi
+
 
 dnl - Determine which UI's to build
 if test "x$HAVE_SDL" = "xyes"; then
