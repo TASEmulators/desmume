@@ -1,9 +1,10 @@
+EXTRA_DIST = DeSmuME.xpm
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
 	gtk-compat.c gtk-compat.h \
 	desmume.h desmume.c \
-	dToolsList.c \
-	tools/ioregsView.c \
+	dTool.h dToolsList.c \
+	tools/ioregsView.c tools/ioregsView.h \
 	globals.h \
 	../sndsdl.c \
 	../ctrlssdl.h ../ctrlssdl.c \
