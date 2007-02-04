@@ -50,8 +50,8 @@
 ARM9_struct ARM9Mem;
 
 extern BOOL click;
-Screen MainScreen;
-Screen SubScreen;
+NDS_Screen MainScreen;
+NDS_Screen SubScreen;
 
 //#define DEBUG_TRI
 
@@ -1495,7 +1495,7 @@ void calc_bright_colors() {
 #undef FORMULA_LESS
 }
 
-void GPU_ligne(Screen * screen, u16 l)
+void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	struct _DISPCAPCNT * capcnt;
 	GPU * gpu = screen->gpu;

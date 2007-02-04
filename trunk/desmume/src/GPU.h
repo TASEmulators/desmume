@@ -474,10 +474,10 @@ extern void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u8 * DST);
 typedef struct {
 	GPU * gpu;
 	u16 offset;
-} Screen;
+} NDS_Screen;
 
-extern Screen MainScreen;
-extern Screen SubScreen;
+extern NDS_Screen MainScreen;
+extern NDS_Screen SubScreen;
 
 int Screen_Init(int coreid);
 void Screen_Reset(void);
@@ -547,7 +547,7 @@ void GPU_addBack(GPU *, u8 num);
 int GPU_ChangeGraphicsCore(int coreid);
 
 void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) ;
-void GPU_ligne(Screen * screen, u16 l) ;
+void GPU_ligne(NDS_Screen * screen, u16 l) ;
 
 #ifdef __cplusplus
 }
