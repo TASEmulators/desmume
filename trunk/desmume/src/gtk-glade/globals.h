@@ -32,8 +32,17 @@
 //#include <libgen.h>
 #include <unistd.h>
 
-#include <SDL.h>
+//#include <SDL/SDL.h>
+// more portable
+#include "SDL.h"
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+	#include <GL/gl.h>
+	#include <gdk/gdkgl.h>
+	#include <gtk/gtkglwidget.h>
+#endif
+
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
 #include <glade/glade.h>
 

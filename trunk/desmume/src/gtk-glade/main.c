@@ -201,15 +201,17 @@ int WinMain ()
 int main(int argc, char *argv[]) {
 	
 	const char *commandLine_File = NULL;
+	gtk_init(&argc, &argv);
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+	gtk_gl_init(&argc, &argv);
+#endif
 
 	if(argc == 2) commandLine_File = argv[1];
-
 #ifdef DEBUG
         LogStart();
 #endif
 	init_keyvals();
-        
-	gtk_init(&argc, &argv);
+
 	if(SDL_Init(SDL_INIT_VIDEO) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
@@ -229,7 +231,8 @@ int main(int argc, char *argv[]) {
 	pWindow       = glade_xml_get_widget(xml, "wMainW");
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
-	
+
+
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(xml);
 	glade_xml_signal_autoconnect(xml_tools);

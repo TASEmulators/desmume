@@ -33,20 +33,20 @@ static u16 mem[0x100];
 
 static COLOR c;
 static COLOR32 c32;
-static GdkGC * GC;
+static GdkGC * gdkGC;
 
 static inline void paint_col(int x, int y, u16 col) {
 	c.val = col;
 	COLOR_16_32(c,c32)
-	gdk_rgb_gc_set_foreground(GC, c32.val);
-	gdk_draw_rectangle(wPaint->window, GC, TRUE, x, y, 15, 15);
+	gdk_rgb_gc_set_foreground(gdkGC, c32.val);
+	gdk_draw_rectangle(wPaint->window, gdkGC, TRUE, x, y, 15, 15);
 }
 static inline void paint_cross(int x, int y) {
-	gdk_rgb_gc_set_foreground(GC, 0x808080);
-	gdk_draw_rectangle(wPaint->window, GC, TRUE, x, y, 15, 15);
-	gdk_rgb_gc_set_foreground(GC, 0xFF0000);
-	gdk_draw_line(wPaint->window, GC, x+14, y+1, x+1, y+14);
-	gdk_draw_line(wPaint->window, GC, x+1, y+1, x+14, y+14);
+	gdk_rgb_gc_set_foreground(gdkGC, 0x808080);
+	gdk_draw_rectangle(wPaint->window, gdkGC, TRUE, x, y, 15, 15);
+	gdk_rgb_gc_set_foreground(gdkGC, 0xFF0000);
+	gdk_draw_line(wPaint->window, gdkGC, x+14, y+1, x+1, y+14);
+	gdk_draw_line(wPaint->window, gdkGC, x+1, y+1, x+14, y+14);
 }
 
 
@@ -54,7 +54,7 @@ static void wtools_3_update() {
 	int i,x,y,X,Y; 
 	u16 * addr = base_addr[palindex], tmp;
 
-	GC = gdk_gc_new(wPaint->window);
+	gdkGC = gdk_gc_new(wPaint->window);
 	if (addr) {
 		memcpy(mem, addr, 0x100*sizeof(u16));
 		i=0;
@@ -69,7 +69,7 @@ static void wtools_3_update() {
 		for(x=X= 0; x < 16; x++,X+=16)
 		paint_cross(X,Y);
 	}
-	g_object_unref(GC);
+	g_object_unref(gdkGC);
 }
 
 
@@ -77,7 +77,7 @@ static void refresh() {
 	int x,y,X,Y; u16 * addr = base_addr[palindex];
 	COLOR c; COLOR32 c32;
 
-	GC = gdk_gc_new(wPaint->window);
+	gdkGC = gdk_gc_new(wPaint->window);
 	if (addr) {
 		memcpy(mem, addr, 0x100*sizeof(u16));
 		for(y=Y= 0; y < 16; y++,Y+=16)
@@ -88,7 +88,7 @@ static void refresh() {
 		for(x=X= 0; x < 16; x++,X+=16)
 		paint_cross(X,Y);
 	}
-	g_object_unref(GC);
+	g_object_unref(gdkGC);
 }
 
 

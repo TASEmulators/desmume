@@ -7,6 +7,6 @@ desmume_glade_SOURCES =  \
 	dTools/callbacks_3_palview.c dTools/callbacks_dtools.h \
 	dTools/dTools_display.h \
 	../sndsdl.h ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c 
-desmume_glade_LDADD = ../libdesmume.a $(SDL_LIBS) $(LIBGLADE_LIBS)
-desmume_glade_CFLAGS = $(SDL_CFLAGS) $(LIBGLADE_CFLAGS)
+desmume_glade_LDADD = ../libdesmume.a $(SDL_LIBS) $(GDKGLEXT_LIBS) $(LIBGLADE_LIBS)
+desmume_glade_CFLAGS = $(SDL_CFLAGS) $(GDKGLEXT_CFLAGS) $(LIBGLADE_CFLAGS)
 desmume_glade_LDFLAGS = -rdynamic
