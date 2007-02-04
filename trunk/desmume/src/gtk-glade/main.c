@@ -58,6 +58,26 @@ void notify_Tools() {
 	g_list_foreach(tools_to_update, &notify_Tool, NULL);
 }
 
+/* Return the glade directory. */
+gchar * get_ui_file (const char *filename)
+{
+  char *path;
+
+  /* looking in uninstalled dir first */
+  path = g_build_filename (GLADEUI_UNINSTALLED_DIR, filename, NULL);
+  if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
+    return path;
+  g_free (path);
+
+  /* looking in installed dir */
+  path = g_build_filename (DATADIR, filename, NULL);
+  if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
+    return path;
+  g_free (path);
+
+  /* not found */
+  return NULL;
+}
 
 
 /* ***** ***** CONFIG FILE ***** ***** */
@@ -226,8 +246,8 @@ int main(int argc, char *argv[]) {
 	Read_ConfigFile();
 
 	/* load the interface */
-	xml           = glade_xml_new("glade/DeSmuMe.glade", NULL, NULL);
-	xml_tools     = glade_xml_new("glade/DeSmuMe_Dtools.glade", NULL, NULL);
+	xml           = glade_xml_new(get_ui_file("DeSmuMe.glade"), NULL, NULL);
+	xml_tools     = glade_xml_new(get_ui_file("DeSmuMe_Dtools.glade"), NULL, NULL);
 	pWindow       = glade_xml_get_widget(xml, "wMainW");
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
