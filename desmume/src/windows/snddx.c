@@ -125,7 +125,8 @@ int SNDDXInit(int buffersize)
    {
       if (ret == DSERR_CONTROLUNAVAIL ||
           ret == DSERR_INVALIDCALL ||
-          ret == E_FAIL)
+          ret == E_FAIL || 
+          ret == E_NOTIMPL)
       {
          // Try using a software buffer instead
          dsbdesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_STICKYFOCUS |
