@@ -58,19 +58,13 @@ void notify_Tools() {
 	g_list_foreach(tools_to_update, &notify_Tool, NULL);
 }
 
-/* Return the glade directory. */
-gchar * get_ui_file (const char *filename, const char * prog)
+/* Return the glade directory. 
+   Note: See configure.ac for the value of GLADEUI_UNINSTALLED_DIR. */
+gchar * get_ui_file (const char *filename)
 {
-	char *path, *path2;
-	
-	/* EHhhhh ! building dir ?*/
-	path = g_path_get_dirname(prog);
-	path2 = g_build_filename (path, "glade", filename, NULL);
-	g_free (path);
-	if (g_file_test (path2, G_FILE_TEST_IS_REGULAR)) return path2;
-	g_free (path2);
+	char *path;
 
-	/* looking in uninstalled dir first */
+	/* looking in uninstalled (aka building) dir first */
 	path = g_build_filename (GLADEUI_UNINSTALLED_DIR, filename, NULL);
 	if (g_file_test (path, G_FILE_TEST_IS_REGULAR)) return path;
 	g_free (path);
@@ -251,8 +245,8 @@ int main(int argc, char *argv[]) {
 	Read_ConfigFile();
 
 	/* load the interface */
-	xml           = glade_xml_new(get_ui_file("DeSmuMe.glade",argv[0]), NULL, NULL);
-	xml_tools     = glade_xml_new(get_ui_file("DeSmuMe_Dtools.glade",argv[0]), NULL, NULL);
+	xml           = glade_xml_new(get_ui_file("DeSmuMe.glade"), NULL, NULL);
+	xml_tools     = glade_xml_new(get_ui_file("DeSmuMe_Dtools.glade"), NULL, NULL);
 	pWindow       = glade_xml_get_widget(xml, "wMainW");
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");

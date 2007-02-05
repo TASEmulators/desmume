@@ -71,7 +71,7 @@ if test ! "x$HAVE_PKG" = "x" ; then
   AC_SUBST(LIBGLADE_LIBS)
 
   dnl uninstalled glade ui dir
-  AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src",[path to glade ui dir])
+  AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
   AC_SUBST(GLADEUI_UNINSTALLED_DIR)
 fi
 
