@@ -32,10 +32,13 @@ G_MODULE_EXPORT gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEv
 /* OUTPUT UPPER SCREEN  */
 G_MODULE_EXPORT void      on_wDraw_Main_realize       (GtkWidget *widget, gpointer user_data);
 G_MODULE_EXPORT gboolean  on_wDraw_Main_expose_event  (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data);
+G_MODULE_EXPORT gboolean  on_wDraw_Main_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data);
+
 
 /* OUTPUT LOWER SCREEN  */
 G_MODULE_EXPORT void      on_wDraw_Sub_realize        (GtkWidget *widget, gpointer user_data);
 G_MODULE_EXPORT gboolean  on_wDraw_Sub_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data);
+G_MODULE_EXPORT gboolean  on_wDraw_Sub_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data);
 
 /* INPUT STYLUS / MOUSE */
 G_MODULE_EXPORT gboolean  on_wDraw_Sub_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data);

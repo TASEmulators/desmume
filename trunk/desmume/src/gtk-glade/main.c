@@ -252,6 +252,9 @@ int main(int argc, char *argv[]) {
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
 
+	init_GL_capabilities(pDrawingArea);
+	init_GL_capabilities(pDrawingArea2);
+
 
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(xml);
@@ -272,6 +275,9 @@ int main(int argc, char *argv[]) {
 			gtk_widget_destroy(pDialog);
 		}
 	}
+
+	gtk_widget_show(pDrawingArea);
+	gtk_widget_show(pDrawingArea2);
 
 	/* start event loop */
 	gtk_main();

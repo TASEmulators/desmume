@@ -42,7 +42,6 @@
 #endif
 
 #include <gtk/gtk.h>
-#include <gdk/gdkx.h>
 #include <gdk/gdkkeysyms.h>
 #include <glade/glade.h>
 
