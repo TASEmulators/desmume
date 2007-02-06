@@ -12,7 +12,7 @@
 
 1 Compiling instructions______________________________________
 
-Yabause is written in C using the gtk+ and SDL libraries.
+DeSmuME is written in C using the gtk+ and SDL libraries.
 So you need a working C compiler, such as gcc and
 the above libraries runtime and development packages:
 
