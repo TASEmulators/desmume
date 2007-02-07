@@ -35,6 +35,18 @@
 //#include <SDL/SDL.h>
 // more portable
 #include "SDL.h"
+
+// fix gtk-glade on windows with no configure
+#ifndef DATADIR
+#define DATADIR " "
+#endif
+#ifndef GLADEUI_UNINSTALLED_DIR
+#define GLADEUI_UNINSTALLED_DIR "glade/"
+#endif
+
+
+// comment for GL :D
+#undef HAVE_LIBGDKGLEXT_X11_1_0
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 	#include <GL/gl.h>
 	#include <gdk/gdkgl.h>
@@ -55,6 +67,7 @@
 #include "../types.h"
 #include "../saves.h"
 #include "desmume.h"
+#include "gdk_gl.h"
 
 int Frameskip;
 u16 Keypad_Temp[NB_KEYS];

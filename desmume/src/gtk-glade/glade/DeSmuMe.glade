@@ -581,7 +581,7 @@
 			  <child>
 			    <widget class="GtkRadioMenuItem" id="size1x">
 			      <property name="visible">True</property>
-			      <property name="label" translatable="yes">1,0x</property>
+			      <property name="label" translatable="yes">1x</property>
 			      <property name="use_underline">True</property>
 			      <property name="active">True</property>
 			      <signal name="activate" handler="on_size1x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
@@ -597,7 +597,6 @@
 			      <signal name="activate" handler="on_size2x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
-
 			  <child>
 			    <widget class="GtkRadioMenuItem" id="size3x">
 			      <property name="visible">True</property>
@@ -1055,7 +1054,6 @@
 		  <property name="visible">False</property>
 		  <property name="events">GDK_EXPOSURE_MASK | GDK_STRUCTURE_MASK</property>
 		  <signal name="configure_event" handler="on_wDraw_Main_configure_event" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
-		  <signal name="realize" handler="on_wDraw_Main_realize" after="yes"  last_modification_time="Tue, 02 Jan 2007 10:27:08 GMT"/>
 		  <signal name="expose_event" handler="on_wDraw_Main_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
 		</widget>
 		<packing>
@@ -1220,7 +1218,6 @@
 		  <property name="visible">False</property>
 		  <property name="events">GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
 		  <signal name="configure_event" handler="on_wDraw_Sub_configure_event" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
-		  <signal name="realize" handler="on_wDraw_Sub_realize" after="yes" last_modification_time="Tue, 02 Jan 2007 10:27:45 GMT"/>
 		  <signal name="expose_event" handler="on_wDraw_Sub_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:52 GMT"/>
 		  <signal name="button_press_event" handler="on_wDraw_Sub_button_press_event" last_modification_time="Tue, 02 Jan 2007 10:28:11 GMT"/>
 		  <signal name="button_release_event" handler="on_wDraw_Sub_button_release_event" last_modification_time="Tue, 02 Jan 2007 10:28:18 GMT"/>

@@ -22,9 +22,6 @@
 
 #include "globals.h"
 
-void init_GL_capabilities(GtkWidget * widget);
-
-
 /* INPUT BUTTONS / KEYBOARD */
 G_MODULE_EXPORT gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
 G_MODULE_EXPORT gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, gpointer user_data);

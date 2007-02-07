@@ -22,11 +22,9 @@
 
 #include "callbacks_IO.h"
 
-// comment for GL :D
-#undef HAVE_LIBGDKGLEXT_X11_1_0
-
 static u16 Cur_Keypad = 0;
 int ScreenCoeff_Size=1;
+float fScreenCoeff_Size=1.0;
 gboolean ScreenRotate=FALSE;
 gboolean Boost=FALSE;
 int BoostFS=20;
@@ -112,7 +110,6 @@ void decode_screen () {
 			pixel++;
 		}
 	}
-#ifndef HAVE_LIBGDKGLEXT_X11_1_0
 	#define LOOP(a,b,c,d,e,f) \
 		L=W*ScreenCoeff_Size; \
 		BL=L*sizeof(u32); \
@@ -129,14 +126,6 @@ void decode_screen () {
 				rgb32 += L; \
 			} \
 		}
-#else
-	#define LOOP(a,b,c,d,e,f) \
-		for (a; b; c) { \
-			for (d; e; f) { \
-				rgb32 = image[y][x]; rgb32++; \
-			} \
-		}
-#endif
 	/* load pixels in buffer accordingly */
 	if (ScreenRotate) {
 		W=RAW_H; H=RAW_W;
@@ -149,14 +138,19 @@ void decode_screen () {
 }
 
 #ifndef HAVE_LIBGDKGLEXT_X11_1_0
-
 // they are empty if no opengl
-void init_GL_capabilities(GtkWidget * widget) {}
+// else see gdk_gl.c / gdk_gl.h
+BOOL my_gl_Begin (int screen) { return FALSE; }
+void my_gl_End (int screen) {}
+void init_GL_capabilities() {}
 void init_GL(GtkWidget * widget, int screen) {}
-void reshape (GtkWidget * widget) {}
+void reshape (GtkWidget * widget, int screen) {}
 
 gboolean screen (GtkWidget * widget, int off) {
 	int H,W,L;
+	if (off==0)
+		decode_screen();
+
 	if (ScreenRotate) {
 		W=RAW_H; H=RAW_W;
 	} else {
@@ -171,122 +165,6 @@ gboolean screen (GtkWidget * widget, int off) {
 		GDK_RGB_DITHER_NONE,((guchar*)on_screen_image32)+off,L);
 	return TRUE;
 }
-
-#else /* if HAVE_LIBGDKGLEXT_X11_1_0 */
-
-void init_GL_capabilities(GtkWidget * widget) {
-	GdkGLConfig * my_glConfig;
-	my_glConfig = gdk_gl_config_new_by_mode (
-		GDK_GL_MODE_RGB
-		| GDK_GL_MODE_DEPTH 
-		| GDK_GL_MODE_DOUBLE
-	);
-	if (!gtk_widget_set_gl_capability(
-			widget, 
-			my_glConfig, 
-			NULL, 
-			TRUE, 
-			GDK_GL_RGBA_TYPE)) {
-		printf ("gtk_widget_set_gl_capability\n");
-		gtk_main_quit();
-	}
-}
-
-GLuint Textures[1];
-
-void init_GL(GtkWidget * widget, int screen) {
-	GdkGLContext  *my_glContext  = gtk_widget_get_gl_context  (widget);
-	GdkGLDrawable *my_glDrawable = gtk_widget_get_gl_drawable (widget);
-	if (!gdk_gl_drawable_gl_begin(my_glDrawable, my_glContext))
-		return;
-
-	/* Set the background black */
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, &Textures[0]);
-
-/*
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-*/
-	// beautiful quad
-	glBegin(GL_QUADS);
-		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
-		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
-		glColor3ub(0,255,128);  glVertex2d( 0.75, 0.75);
-		glColor3ub(0,0,255);    glVertex2d( 0.75,-0.75);
-	glEnd();
-
-	glFlush ();
-	if (gdk_gl_drawable_is_double_buffered (my_glDrawable))
-		gdk_gl_drawable_swap_buffers (my_glDrawable);
-	gdk_gl_drawable_gl_end(my_glDrawable);
-}
-
-void reshape (GtkWidget * widget) {
-	GdkGLContext  *my_glContext  = gtk_widget_get_gl_context  (widget);
-	GdkGLDrawable *my_glDrawable = gtk_widget_get_gl_drawable (widget);
-	if (!gdk_gl_drawable_gl_begin (my_glDrawable, my_glContext)) return;
-
-	glViewport (0, 0, widget->allocation.width, widget->allocation.height);
-	
-	gdk_gl_drawable_gl_end (my_glDrawable);
-}
-
-gboolean screen (GtkWidget * widget, int screen) {
-	int H,W,off;
-	GdkGLContext  *my_glContext  = gtk_widget_get_gl_context  (widget);
-	GdkGLDrawable *my_glDrawable = gtk_widget_get_gl_drawable (widget);
-	if (!gdk_gl_drawable_gl_begin(my_glDrawable, my_glContext))
-		return TRUE;
-
-	glLoadIdentity();
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-	// colorful quads so that there's something to see in case of pb	
-	glBegin(GL_QUADS);
-		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
-		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
-		glColor3ub(0,255,128);  glVertex2d( 0.75, 0.75);
-		glColor3ub(0,0,255);    glVertex2d( 0.75,-0.75);
-		glColor3ub(255,255,255);
-	glEnd();
-
-	off = (screen)?RAW_OFFSET:0;
-
-	if (ScreenRotate) {
-		glRotatef(90.0, 0.0, 0.0, 1.0);
-	}
- 
-	glBindTexture(GL_TEXTURE_2D, Textures[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, 4,
-		256, 256, 0, GL_RGBA,
-		GL_UNSIGNED_SHORT_1_5_5_5_REV, 
-//		GL_UNSIGNED_SHORT_5_5_5_1, 
-		GPU_screen+off);
-
-	glBegin(GL_QUADS);
-		// texcoords 0.75 means 192, 1 means 256
-		glTexCoord2f(0.0, 0.00); glVertex2d(-1.0, 1.0);
-		glTexCoord2f(0.0, 0.75); glVertex2d(-1.0,-1.0);
-		glTexCoord2f(1.0, 0.75); glVertex2d( 1.0,-1.0);
-		glTexCoord2f(1.0, 0.00); glVertex2d( 1.0, 1.0);
-	glEnd();
-
-	
-	glFlush ();
-	if (gdk_gl_drawable_is_double_buffered (my_glDrawable))
-		gdk_gl_drawable_swap_buffers (my_glDrawable);
-	gdk_gl_drawable_gl_end(my_glDrawable);
-	return TRUE;
-}
-
 #endif /* if HAVE_LIBGDKGLEXT_X11_1_0 */
 
 
@@ -300,9 +178,6 @@ void      on_wDraw_Sub_realize        (GtkWidget *widget, gpointer user_data) {
 }
 
 gboolean  on_wDraw_Main_expose_event  (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
-#ifndef HAVE_LIBGDKGLEXT_X11_1_0
-	decode_screen();
-#endif
 	return screen(widget, 0);
 }
 gboolean  on_wDraw_Sub_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
@@ -310,10 +185,10 @@ gboolean  on_wDraw_Sub_expose_event   (GtkWidget *widget, GdkEventExpose  *event
 }
 
 gboolean  on_wDraw_Main_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
-	reshape(widget); return TRUE;
+	reshape(widget, 0); return TRUE;
 }
 gboolean  on_wDraw_Sub_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
-	reshape(widget); return TRUE;
+	reshape(widget, 1); return TRUE;
 }
 
 
