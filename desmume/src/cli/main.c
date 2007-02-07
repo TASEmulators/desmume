@@ -78,7 +78,7 @@ int Draw() {
 
 int main(int argc, char ** argv) {
   static unsigned short keypad = 0;
-  u32 last_cycle;
+  u32 last_cycle = 0;
 
 #ifdef DEBUG
   LogStart();
