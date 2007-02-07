@@ -23,8 +23,7 @@
 #include "callbacks_IO.h"
 
 static u16 Cur_Keypad = 0;
-int ScreenCoeff_Size=1;
-float fScreenCoeff_Size=1.0;
+float ScreenCoeff_Size[2]={1.0,1.0};
 gboolean ScreenRotate=FALSE;
 gboolean Boost=FALSE;
 int BoostFS=20;
@@ -84,7 +83,8 @@ void init_pix_col_map() {
 u32 on_screen_image32[RAW_W*RAW_H*2*MAX_SIZE*MAX_SIZE];
 
 int inline screen_size() {
-	return RAW_W*RAW_H*2*ScreenCoeff_Size*ScreenCoeff_Size*sizeof(u32);
+	int sz = ScreenCoeff_Size[0];
+	return RAW_W*RAW_H*2*sz*sz*sizeof(u32);
 }
 int inline offset_pixels_lower_screen() {
 	return screen_size()/2;
@@ -111,17 +111,17 @@ void decode_screen () {
 		}
 	}
 	#define LOOP(a,b,c,d,e,f) \
-		L=W*ScreenCoeff_Size; \
+		L=W*ScreenCoeff_Size[0]; \
 		BL=L*sizeof(u32); \
 		for (a; b; c) { \
 			for (d; e; f) { \
 				pix = image[y][x]; \
-				for (m=0; m<ScreenCoeff_Size; m++) { \
+				for (m=0; m<ScreenCoeff_Size[0]; m++) { \
 					*rgb32 = pix; rgb32++; \
 				} \
 			} \
 			/* lines duplicated for scaling height */ \
-			for (m=1; m<ScreenCoeff_Size; m++) { \
+			for (m=1; m<ScreenCoeff_Size[0]; m++) { \
 				memmove(rgb32, rgb32-L, BL); \
 				rgb32 += L; \
 			} \
@@ -156,12 +156,12 @@ gboolean screen (GtkWidget * widget, int off) {
 	} else {
 		H=RAW_H; W=RAW_W;
 	}
-	L=W*ScreenCoeff_Size*sizeof(u32);
+	L=W*ScreenCoeff_Size[0]*sizeof(u32);
 	off*= offset_pixels_lower_screen();
 
 	gdk_draw_rgb_32_image	(widget->window,
 		widget->style->fg_gc[widget->state],0,0, 
-		W*ScreenCoeff_Size, H*ScreenCoeff_Size,
+		W*ScreenCoeff_Size[0], H*ScreenCoeff_Size[0],
 		GDK_RGB_DITHER_NONE,((guchar*)on_screen_image32)+off,L);
 	return TRUE;
 }
@@ -204,8 +204,8 @@ gboolean  on_wDraw_Sub_configure_event(GtkWidget *widget, GdkEventConfigure *eve
 
 void set_touch_pos (int x, int y) {
 	s32 EmuX, EmuY;
-	x /= ScreenCoeff_Size;
-	y /= ScreenCoeff_Size;
+	x /= ScreenCoeff_Size[1];
+	y /= ScreenCoeff_Size[1];
 	EmuX = x; EmuY = y;
 	if (ScreenRotate) { EmuX = 256-y; EmuY = x; }
 	if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
@@ -213,18 +213,39 @@ void set_touch_pos (int x, int y) {
 	NDS_setTouchPos(EmuX, EmuY);
 }
 
+gboolean  on_wDraw_Main_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
+	switch (event->button) {
+	case 1: break;
+	case 3: break;
+	case 2: ScreenCoeff_Size[0]=1.0;
+		resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]); break;
+	}
+	return TRUE;
+}
+
+gboolean  on_wDraw_Main_button_release_event (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
+	return TRUE;
+}
+
 gboolean  on_wDraw_Sub_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
 	GdkModifierType state;
 	gint x,y;
 	
-	if(desmume_running()) 
-	if(event->button == 1) 
-	{
-		click = TRUE;	
-		gdk_window_get_pointer(widget->window, &x, &y, &state);
-		if (state & GDK_BUTTON1_MASK)
-			set_touch_pos(x,y);
-	}	
+	switch (event->button) {
+	case 1: 
+		if(desmume_running()) {
+			click = TRUE;	
+			gdk_window_get_pointer(widget->window, &x, &y, &state);
+			if (state & GDK_BUTTON1_MASK)
+				set_touch_pos(x,y);
+		}
+		break;
+	case 3: break;
+	case 2: 
+		ScreenCoeff_Size[0]=1.0;
+		//ScreenCoeff_Size[1]=1.0; // separate zoom factors
+		resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]); break;
+	}
 	return TRUE;
 }
 
@@ -233,6 +254,35 @@ gboolean  on_wDraw_Sub_button_release_event (GtkWidget *widget, GdkEventButton  
 	click = FALSE;
 	return TRUE;
 }
+
+static void resize_incremental(int i, GdkEventScroll *event) {
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+	float zoom_inc=.125, zoom_min=0.25, zoom_max=5.0;
+#else
+	float zoom_inc=1.0, zoom_min=1.0, zoom_max=3.0;
+#endif
+	switch (event->direction) {
+	case GDK_SCROLL_UP:
+		ScreenCoeff_Size[i]=MIN(ScreenCoeff_Size[i]+zoom_inc,zoom_max); break;
+	case GDK_SCROLL_DOWN:
+		ScreenCoeff_Size[i]=MAX(ScreenCoeff_Size[i]-zoom_inc,zoom_min); break;
+	case GDK_SCROLL_LEFT:
+	case GDK_SCROLL_RIGHT:
+		return;
+	}
+	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
+}
+
+gboolean  on_wDraw_Main_scroll_event (GtkWidget *widget, GdkEvent *event, gpointer user_data) {
+	resize_incremental(0,event);
+}
+gboolean  on_wDraw_Sub_scroll_event  (GtkWidget *widget, GdkEvent *event, gpointer user_data) {
+	// using separate zoom factors is bad for now
+	resize_incremental(0,event);
+//	resize_incremental(1,event);
+}
+
+
 
 gboolean  on_wDraw_Sub_motion_notify_event  (GtkWidget *widget, GdkEventMotion  *event, gpointer user_data) {
 	GdkModifierType state;

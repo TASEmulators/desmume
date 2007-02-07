@@ -47,7 +47,7 @@ void enable_rom_features() {
 void MAINWINDOW_RESIZE() {
 	GtkWidget * spacer1 = glade_xml_get_widget(xml, "misc_sep3");
 	GtkWidget * spacer2 = glade_xml_get_widget(xml, "misc_sep4");
-	int dim = 66 * ScreenCoeff_Size;
+	int dim = 66 * ScreenCoeff_Size[0];
 	
 	/* sees whether we want a gap */
 	if (!ScreenGap) dim = -1;
@@ -195,22 +195,23 @@ void  on_fs9_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 
 
 /* SUBMENU SIZE ***** ***** ***** ***** */
 int H=192, W=256;
-void resize (int Size) {
+void resize (float Size1, float Size2) {
+	// not ready yet to handle different zoom factors
+	Size2 = Size1;
 	/* we want to scale drawing areas by a factor (1x,2x or 3x) */
-	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), W * Size, H * Size);
-	gtk_widget_set_usize (pDrawingArea, W * Size, H * Size);	
-	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea2), W * Size, H * Size);
-	gtk_widget_set_usize (pDrawingArea2, W * Size, H * Size);	
-	ScreenCoeff_Size = Size;
+	gtk_widget_set_size_request (pDrawingArea, W * Size1, H * Size1);	
+	gtk_widget_set_size_request (pDrawingArea2, W * Size2, H * Size2);	
+	ScreenCoeff_Size[0] = Size1;
+	ScreenCoeff_Size[1] = Size2;
 	/* remove artifacts */
 	black_screen();
 	/* pack the window */
 	MAINWINDOW_RESIZE();
 }
 
-void  on_size1x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(1); }
-void  on_size2x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(2); }
-void  on_size3x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(3); }
+void  on_size1x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(1.0,1.0); }
+void  on_size2x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(2.0,2.0); }
+void  on_size3x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(3.0,3.0); }
 
 
 /* MENU CONFIG ***** ***** ***** ***** */
@@ -303,7 +304,7 @@ void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data)
 	} else {
 		W=256; H=192;
 	}
-	resize(ScreenCoeff_Size);
+	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
 }
 
 /* MENU TOOLS ***** ***** ***** ***** */
