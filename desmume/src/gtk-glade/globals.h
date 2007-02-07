@@ -85,9 +85,10 @@ void unregister_Tool(VoidFunPtr fun);
 
 /* callbacks.c */
 void enable_rom_features();
+void resize (float Size1, float Size2);
 
 /* callbacks_IO.c */
-int ScreenCoeff_Size;
+float ScreenCoeff_Size[2];
 gboolean ScreenRotate;
 gboolean ScreenRight;
 gboolean ScreenGap;

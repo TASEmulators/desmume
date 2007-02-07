@@ -329,6 +329,7 @@
 		      <signal name="activate" handler="on_savetype1_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
+
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype2">
 		      <property name="visible">True</property>
@@ -339,6 +340,7 @@
 		      <signal name="activate" handler="on_savetype2_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
+
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype3">
 		      <property name="visible">True</property>
@@ -349,6 +351,7 @@
 		      <signal name="activate" handler="on_savetype3_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
+
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype4">
 		      <property name="visible">True</property>
@@ -359,28 +362,28 @@
 		      <signal name="activate" handler="on_savetype4_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
+
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype5">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">TYPE: FLASH (256KB)</property>
 		      <property name="use_underline">True</property>
-		      <property name="group">savetype1</property>
 		      <property name="active">False</property>
+		      <property name="group">savetype1</property>
 		      <signal name="activate" handler="on_savetype5_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
+
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype6">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">TYPE: FRAM (2MB)</property>
 		      <property name="use_underline">True</property>
-		      <property name="group">savetype1</property>
 		      <property name="active">False</property>
+		      <property name="group">savetype1</property>
 		      <signal name="activate" handler="on_savetype6_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
-
-
 		</widget>
 	      </child>
 	    </widget>
@@ -587,6 +590,7 @@
 			      <signal name="activate" handler="on_size1x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
+
 			  <child>
 			    <widget class="GtkRadioMenuItem" id="size2x">
 			      <property name="visible">True</property>
@@ -597,6 +601,7 @@
 			      <signal name="activate" handler="on_size2x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
+
 			  <child>
 			    <widget class="GtkRadioMenuItem" id="size3x">
 			      <property name="visible">True</property>
@@ -818,7 +823,6 @@
 
       <child>
 	<widget class="GtkToolbar" id="wgToolBar">
-	  <property name="visible">True</property>
 	  <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
 	  <property name="toolbar_style">GTK_TOOLBAR_BOTH</property>
 	  <property name="tooltips">True</property>
@@ -1051,10 +1055,12 @@
 		<widget class="GtkDrawingArea" id="wDraw_Main">
 		  <property name="width_request">256</property>
 		  <property name="height_request">192</property>
-		  <property name="visible">False</property>
-		  <property name="events">GDK_EXPOSURE_MASK | GDK_STRUCTURE_MASK</property>
+		  <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
 		  <signal name="configure_event" handler="on_wDraw_Main_configure_event" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
 		  <signal name="expose_event" handler="on_wDraw_Main_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+		  <signal name="button_release_event" handler="on_wDraw_Main_button_release_event" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+		  <signal name="button_press_event" handler="on_wDraw_Main_button_press_event" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+		  <signal name="scroll_event" handler="on_wDraw_Main_scroll_event" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -1215,13 +1221,13 @@
 		<widget class="GtkDrawingArea" id="wDraw_Sub">
 		  <property name="width_request">256</property>
 		  <property name="height_request">192</property>
-		  <property name="visible">False</property>
 		  <property name="events">GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
 		  <signal name="configure_event" handler="on_wDraw_Sub_configure_event" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
 		  <signal name="expose_event" handler="on_wDraw_Sub_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:52 GMT"/>
 		  <signal name="button_press_event" handler="on_wDraw_Sub_button_press_event" last_modification_time="Tue, 02 Jan 2007 10:28:11 GMT"/>
 		  <signal name="button_release_event" handler="on_wDraw_Sub_button_release_event" last_modification_time="Tue, 02 Jan 2007 10:28:18 GMT"/>
 		  <signal name="motion_notify_event" handler="on_wDraw_Sub_motion_notify_event" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
+		  <signal name="scroll_event" handler="on_wDraw_Sub_scroll_event" last_modification_time="Wed, 07 Feb 2007 19:18:37 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -2171,6 +2177,111 @@
 	  <property name="fill">True</property>
 	</packing>
       </child>
+    </widget>
+  </child>
+</widget>
+
+<widget class="GtkMenu" id="wPopMenu">
+
+  <child>
+    <widget class="GtkImageMenuItem" id="pop_pause">
+      <property name="visible">True</property>
+      <property name="label">gtk-media-pause</property>
+      <property name="use_stock">True</property>
+      <signal name="activate" handler="on_pop_pause_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="pop_rightscreen">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Right Screen</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_pop_rightscreen_activate" last_modification_time="Wed, 07 Feb 2007 17:35:26 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="pop_true_gap">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">True Gap</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_pop_true_gap_activate" last_modification_time="Wed, 07 Feb 2007 17:35:26 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="séparateur2">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="pop_rotate0">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Rotate 0</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_pop_rotate0_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="pop_rotate1">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Rotate 90</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_pop_rotate1_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="pop_rotate2">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Rotate 180</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_pop_rotate2_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="pop_rotate3">
+      <property name="visible">True</property>
+      <property name="label" translatable="yes">Rotate 270</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_pop_rotate3_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="séparateur3">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkImageMenuItem" id="pop_zoom100">
+      <property name="visible">True</property>
+      <property name="label">gtk-zoom-100</property>
+      <property name="use_stock">True</property>
+      <signal name="activate" handler="on_pop_zoom100_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkImageMenuItem" id="pop_zoom_in">
+      <property name="visible">True</property>
+      <property name="label">gtk-zoom-in</property>
+      <property name="use_stock">True</property>
+      <signal name="activate" handler="on_pop_zoom_in_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkImageMenuItem" id="pop_zoom_out">
+      <property name="visible">True</property>
+      <property name="label">gtk-zoom-out</property>
+      <property name="use_stock">True</property>
+      <signal name="activate" handler="on_pop_zoom_out_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
     </widget>
   </child>
 </widget>
