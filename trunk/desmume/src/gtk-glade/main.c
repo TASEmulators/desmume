@@ -223,6 +223,7 @@ int main(int argc, char *argv[]) {
 	gtk_init(&argc, &argv);
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 	gtk_gl_init(&argc, &argv);
+	register_gl_fun(my_gl_Begin,my_gl_End);
 #endif
 
 	if(argc == 2) commandLine_File = argv[1];
@@ -251,13 +252,11 @@ int main(int argc, char *argv[]) {
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
 
-	init_GL_capabilities(pDrawingArea);
-	init_GL_capabilities(pDrawingArea2);
-
-
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(xml);
 	glade_xml_signal_autoconnect(xml_tools);
+
+	init_GL_capabilities();
 
 	/* Vérifie la ligne de commandes */
 	if(commandLine_File) {
