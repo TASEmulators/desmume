@@ -44,6 +44,11 @@ extern "C" {
 #define max(a,b) (((a)>(b))?(a):(b))
 #endif
 
+typedef BOOL (*fun_gl_Begin) (int screen);
+typedef void (*fun_gl_End) (int screen);
+// the GUI should use this function prior to all gl calls
+// if call to beg succeeds opengl draw 
+void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 
 #define GPU_MAIN	0
 #define GPU_SUB		1
