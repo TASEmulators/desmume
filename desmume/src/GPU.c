@@ -869,7 +869,7 @@ void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * d
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
 	
-	tileindex = map[(auxX + auxY * lg)>>3];
+	tileindex = map[(auxX>>3) + (auxY>>3) * (lg>>3)];
 	x = (auxX&7); y = (auxY&7);
 
 	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
