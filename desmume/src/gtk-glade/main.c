@@ -253,8 +253,8 @@ int main(int argc, char *argv[]) {
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
 
 	/* connect the signals in the interface */
-	glade_xml_signal_autoconnect(xml);
-	glade_xml_signal_autoconnect(xml_tools);
+	glade_xml_signal_autoconnect_StringObject(xml);
+	glade_xml_signal_autoconnect_StringObject(xml_tools);
 
 	init_GL_capabilities();
 

@@ -26,6 +26,7 @@
 int Frameskip = 0;
 gboolean ScreenRight=FALSE;
 gboolean ScreenGap=FALSE;
+gboolean ScreenInvert=FALSE;
 
 /* inline & protos */
 
@@ -48,12 +49,13 @@ void MAINWINDOW_RESIZE() {
 	GtkWidget * spacer1 = glade_xml_get_widget(xml, "misc_sep3");
 	GtkWidget * spacer2 = glade_xml_get_widget(xml, "misc_sep4");
 	int dim = 66 * ScreenCoeff_Size[0];
-	
+	BOOL rotate = (ScreenRotate==90.0 || ScreenRotate==270.0 );
+
 	/* sees whether we want a gap */
 	if (!ScreenGap) dim = -1;
-	if (ScreenRight && ScreenRotate) {
+	if (ScreenRight && rotate) {
 		gtk_widget_set_usize(spacer1, dim, -1);
-	} else if (!ScreenRight && !ScreenRotate) {
+	} else if (!ScreenRight && !rotate) {
 		gtk_widget_set_usize(spacer2, -1, dim);
 	} else {
 		gtk_widget_set_usize(spacer1, -1, -1);	
@@ -130,34 +132,18 @@ void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk
 
 
 /* MENU SAVES ***** ***** ***** ***** */
-void on_loadstate1_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(1); }
-void on_loadstate2_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(2); }
-void on_loadstate3_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(3); }
-void on_loadstate4_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(4); }
-void on_loadstate5_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(5); }
-void on_loadstate6_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(6); }
-void on_loadstate7_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(7); }
-void on_loadstate8_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(8); }
-void on_loadstate9_activate (GtkMenuItem *m, gpointer d) { loadstate_slot(9); }
-void on_loadstate10_activate(GtkMenuItem *m, gpointer d) { loadstate_slot(10); }
-
-void on_savestate1_activate (GtkMenuItem *m, gpointer d) { update_savestate(1); }
-void on_savestate2_activate (GtkMenuItem *m, gpointer d) { update_savestate(2); }
-void on_savestate3_activate (GtkMenuItem *m, gpointer d) { update_savestate(3); }
-void on_savestate4_activate (GtkMenuItem *m, gpointer d) { update_savestate(4); }
-void on_savestate5_activate (GtkMenuItem *m, gpointer d) { update_savestate(5); }
-void on_savestate6_activate (GtkMenuItem *m, gpointer d) { update_savestate(6); }
-void on_savestate7_activate (GtkMenuItem *m, gpointer d) { update_savestate(7); }
-void on_savestate8_activate (GtkMenuItem *m, gpointer d) { update_savestate(8); }
-void on_savestate9_activate (GtkMenuItem *m, gpointer d) { update_savestate(9); }
-void on_savestate10_activate(GtkMenuItem *m, gpointer d) { update_savestate(10); }
-
-void on_savetype1_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(1); }
-void on_savetype2_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(2); }
-void on_savetype3_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(3); }
-void on_savetype4_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(4); }
-void on_savetype5_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(5); }
-void on_savetype6_activate (GtkMenuItem *m, gpointer d) { desmume_savetype(6); }
+void on_loadstateXX_activate (GtkMenuItem *m, gpointer d) {
+	int slot = dyn_CAST(int,d);
+	loadstate_slot(slot);
+}
+void on_savestateXX_activate (GtkMenuItem *m, gpointer d) {
+	int slot = dyn_CAST(int,d);
+	update_savestate(slot);
+}
+void on_savetypeXX_activate (GtkMenuItem *m, gpointer d) {
+	int type = dyn_CAST(int,d);
+	desmume_savetype(type);
+}
 
 
 /* MENU EMULATION ***** ***** ***** ***** */
@@ -179,21 +165,32 @@ void  on_menu_layers_activate (GtkMenuItem *menuitem, gpointer user_data) {
 	MAINWINDOW_RESIZE();
 }
 
-
 /* SUBMENU FRAMESKIP ***** ***** ***** ***** */
-void  on_fs0_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 0; }
-void  on_fs1_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 1; }
-void  on_fs2_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 2; }
-void  on_fs3_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 3; }
-void  on_fs4_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 4; }
-void  on_fs5_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 5; }
-void  on_fs6_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 6; }
-void  on_fs7_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 7; }
-void  on_fs8_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 8; }
-void  on_fs9_activate  (GtkMenuItem *menuitem,gpointer user_data) { Frameskip = 9; }
+void  on_fsXX_activate  (GtkMenuItem *menuitem,gpointer user_data) {
+	Frameskip = dyn_CAST(int,user_data);
+//	printf ("setting FS %d %d\n", Frameskip, user_data);
+}
 
 
 /* SUBMENU SIZE ***** ***** ***** ***** */
+void rightscreen(BOOL apply) {
+	GtkBox * sbox = (GtkBox*)glade_xml_get_widget(xml, "whb_Sub");
+	GtkWidget * mbox = glade_xml_get_widget(xml, "whb_Main");
+	GtkWidget * vbox = glade_xml_get_widget(xml, "wvb_Layout");
+	GtkWidget * w    = glade_xml_get_widget(xml, "wvb_2_Sub");
+
+	/* we want to change the layout, lower screen goes right */
+	if (apply) {
+		gtk_box_reorder_child(sbox,w,-1);
+		gtk_widget_reparent((GtkWidget*)sbox,mbox);
+	} else if (!ScreenRight) {
+	/* we want to change the layout, lower screen goes down */
+		gtk_box_reorder_child(sbox,w,0);
+		gtk_widget_reparent((GtkWidget*)sbox,vbox);
+	}
+	/* pack the window */
+	MAINWINDOW_RESIZE();
+}
 int H=192, W=256;
 void resize (float Size1, float Size2) {
 	// not ready yet to handle different zoom factors
@@ -208,10 +205,27 @@ void resize (float Size1, float Size2) {
 	/* pack the window */
 	MAINWINDOW_RESIZE();
 }
+void rotate(float angle) {
+	BOOL rotated;
+	if (angle >= 360.0) angle -= 360.0;
+	ScreenRotate = angle;
+	rotated = (ScreenRotate==90.0 || ScreenRotate==270.0);
+	ScreenInvert = (ScreenRotate >= 180.0);
+	if (rotated) {
+		H=256; W=192;
+	} else {
+		W=256; H=192;
+	}
+	rightscreen(rotated);
+	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
+}
 
-void  on_size1x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(1.0,1.0); }
-void  on_size2x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(2.0,2.0); }
-void  on_size3x_activate (GtkMenuItem *menuitem, gpointer user_data) { resize(3.0,3.0); }
+void  on_sizeXX_activate (GtkMenuItem *menuitem, gpointer user_data) {
+	float f = dyn_CAST(float,user_data);
+//	printf("setting ZOOM %f\n",f);
+	resize(f,f);
+}
+
 
 
 /* MENU CONFIG ***** ***** ***** ***** */
@@ -277,34 +291,14 @@ void  on_menu_gapscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 }
 
 void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
-	GtkBox * sbox = (GtkBox*)glade_xml_get_widget(xml, "whb_Sub");
-	GtkWidget * mbox = glade_xml_get_widget(xml, "whb_Main");
-	GtkWidget * vbox = glade_xml_get_widget(xml, "wvb_Layout");
-	GtkWidget * w    = glade_xml_get_widget(xml, "wvb_2_Sub");
-
 	ScreenRight=gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
-	/* we want to change the layout, lower screen goes left */
-	if (ScreenRight) {
-		gtk_box_reorder_child(sbox,w,-1);
-		gtk_widget_reparent((GtkWidget*)sbox,mbox);
-	} else {
-	/* we want to change the layout, lower screen goes down */
-		gtk_box_reorder_child(sbox,w,0);
-		gtk_widget_reparent((GtkWidget*)sbox,vbox);
-	}
-	/* pack the window */
-	MAINWINDOW_RESIZE();
+	rightscreen(ScreenRight);
 }
 
 void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	/* we want to rotate the screen */
-	ScreenRotate = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
-	if (ScreenRotate) {
-		H=256; W=192;
-	} else {
-		W=256; H=192;
-	}
-	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
+	float angle = dyn_CAST(float,user_data);
+	rotate(angle);
 }
 
 /* MENU TOOLS ***** ***** ***** ***** */
@@ -362,28 +356,11 @@ void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
 	}
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
-
-
-/* LAYERS MAIN SCREEN ***** ***** ***** ***** */
-void  on_wc_1_BG0_toggled  (GtkToggleButton *togglebutton, gpointer user_data) { 
-	change_bgx_layer(0, gtk_toggle_button_get_active(togglebutton), MainScreen); }
-void  on_wc_1_BG1_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(1, gtk_toggle_button_get_active(togglebutton), MainScreen); }
-void  on_wc_1_BG2_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(2, gtk_toggle_button_get_active(togglebutton), MainScreen); }
-void  on_wc_1_BG3_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(3, gtk_toggle_button_get_active(togglebutton), MainScreen); }
-void  on_wc_1_OBJ_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(4, gtk_toggle_button_get_active(togglebutton), MainScreen); }
-
-/* LAYERS SECOND SCREEN ***** ***** ***** ***** */
-void  on_wc_2b_BG0_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(0, gtk_toggle_button_get_active(togglebutton), SubScreen); }
-void  on_wc_2b_BG1_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(1, gtk_toggle_button_get_active(togglebutton), SubScreen); }
-void  on_wc_2b_BG2_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(2, gtk_toggle_button_get_active(togglebutton), SubScreen); }
-void  on_wc_2b_BG3_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(3, gtk_toggle_button_get_active(togglebutton), SubScreen); }
-void  on_wc_2b_OBJ_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	change_bgx_layer(4, gtk_toggle_button_get_active(togglebutton), SubScreen); }
+void  on_wc_1_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
+	int layer = dyn_CAST(int,user_data);
+	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), MainScreen);
+}
+void  on_wc_2_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
+	int layer = dyn_CAST(int,user_data);
+	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), SubScreen);
+}

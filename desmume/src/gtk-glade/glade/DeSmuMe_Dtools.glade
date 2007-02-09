@@ -525,7 +525,7 @@ ARM7 cpu</property>
     </widget>
   </child>
 </widget>
-
+<!--
 <widget class="GtkDialog" id="wtool_4_TexView">
   <property name="visible">True</property>
   <property name="title" translatable="yes">Texture viewer</property>
@@ -594,5 +594,5 @@ ARM7 cpu</property>
     </widget>
   </child>
 </widget>
-
+-->
 </glade-interface>

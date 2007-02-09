@@ -102,7 +102,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 1</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate1_activate" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:1" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F1" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -112,7 +112,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 2</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate2_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:2" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F2" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -122,7 +122,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 3</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate3_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:3" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F3" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -132,7 +132,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 4</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate4_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:4" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F4" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -142,7 +142,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 5</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate5_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:5" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F5" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -152,7 +152,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 6</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate6_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:6" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F6" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -162,7 +162,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 7</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate7_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:7" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F7" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -172,7 +172,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 8</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate8_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:8" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F8" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -182,7 +182,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 9</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate9_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:9" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F9" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -192,7 +192,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 10</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_loadstate10_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_loadstateXX_activate" object="%d:10" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F10" modifiers="0" signal="activate"/>
 			    </widget>
 			  </child>
@@ -215,7 +215,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 1</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate1_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:1" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -225,7 +225,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 2</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate2_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:2" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F2" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -235,7 +235,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 3</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate3_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:3" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F3" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -245,7 +245,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 4</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate4_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:4" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F4" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -255,7 +255,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 5</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate5_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:5" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F5" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -265,7 +265,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 6</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate6_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:6" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F6" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -275,7 +275,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 7</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate7_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:7" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F7" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -285,7 +285,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 8</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate8_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:8" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F8" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -295,7 +295,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 9</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate9_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:9" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F9" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -305,7 +305,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">State 10</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_savestate10_activate" last_modification_time="Thu, 18 Jan 2007 10:10:14 GMT"/>
+			      <signal name="activate" handler="on_savestateXX_activate" object="%d:10" last_modification_time="Sun, 21 Jan 2007 06:23:50 GMT"/>
 			      <accelerator key="F10" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -326,7 +326,7 @@
 		      <property name="label" translatable="yes">TYPE: Auto (1B)</property>
 		      <property name="use_underline">True</property>
 		      <property name="active">True</property>
-		      <signal name="activate" handler="on_savetype1_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		      <signal name="activate" handler="on_savetypeXX_activate" object="%d:0" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
 
@@ -337,7 +337,7 @@
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
-		      <signal name="activate" handler="on_savetype2_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		      <signal name="activate" handler="on_savetypeXX_activate" object="%d:1" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
 
@@ -348,7 +348,7 @@
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
-		      <signal name="activate" handler="on_savetype3_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		      <signal name="activate" handler="on_savetypeXX_activate" object="%d:2" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
 
@@ -359,7 +359,7 @@
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
-		      <signal name="activate" handler="on_savetype4_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		      <signal name="activate" handler="on_savetypeXX_activate" object="%d:3" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
 
@@ -370,7 +370,7 @@
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
-		      <signal name="activate" handler="on_savetype5_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		      <signal name="activate" handler="on_savetypeXX_activate" object="%d:4" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
 
@@ -381,7 +381,7 @@
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
-		      <signal name="activate" handler="on_savetype6_activate" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+		      <signal name="activate" handler="on_savetypeXX_activate" object="%d:5" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -465,7 +465,7 @@
 			      <property name="label" translatable="yes">0</property>
 			      <property name="use_underline">True</property>
 			      <property name="active">True</property>
-			      <signal name="activate" handler="on_fs0_activate" last_modification_time="Tue, 02 Jan 2007 14:35:13 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:0" last_modification_time="Thu, 08 Feb 2007 15:03:50 GMT"/>
 			    </widget>
 			  </child>
 
@@ -476,7 +476,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs1_activate" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:1" last_modification_time="Mon, 01 Jan 2007 16:40:47 GMT"/>
 			    </widget>
 			  </child>
 
@@ -487,7 +487,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs2_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:2" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -498,7 +498,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs3_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:3" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -509,7 +509,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs4_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:4" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -520,7 +520,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs5_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:5" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -531,7 +531,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs6_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:6" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -542,7 +542,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs7_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:7" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -553,7 +553,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs8_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:8" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 
@@ -564,7 +564,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">fs0</property>
-			      <signal name="activate" handler="on_fs9_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
+			      <signal name="activate" handler="on_fsXX_activate" object="%d:9" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
 			    </widget>
 			  </child>
 			</widget>
@@ -587,7 +587,7 @@
 			      <property name="label" translatable="yes">1x</property>
 			      <property name="use_underline">True</property>
 			      <property name="active">True</property>
-			      <signal name="activate" handler="on_size1x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
+			      <signal name="activate" handler="on_sizeXX_activate" object="%f:1.0" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
 
@@ -598,7 +598,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">size1x</property>
-			      <signal name="activate" handler="on_size2x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
+			      <signal name="activate" handler="on_sizeXX_activate" object="%f:2.0" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
 
@@ -609,7 +609,7 @@
 			      <property name="use_underline">True</property>
 			      <property name="active">False</property>
 			      <property name="group">size1x</property>
-			      <signal name="activate" handler="on_size3x_activate" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
+			      <signal name="activate" handler="on_sizeXX_activate" object="%f:3.0" last_modification_time="Mon, 01 Jan 2007 20:14:20 GMT"/>
 			    </widget>
 			  </child>
 			</widget>
@@ -703,12 +703,45 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckMenuItem" id="menu_rotatescreen">
+		    <widget class="GtkRadioMenuItem" id="menu_rotatescreen0">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Rotate Screen</property>
+		      <property name="label" translatable="yes">Rotate Screen 0</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">True</property>
+		      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:0.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="menu_rotatescreen1">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Rotate Screen 90</property>
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
-		      <signal name="activate" handler="on_menu_rotatescreen_activate" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+		      <property name="group">menu_rotatescreen0</property>
+		      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:90.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="menu_rotatescreen2">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Rotate Screen 180</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <property name="group">menu_rotatescreen0</property>
+		      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:180.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkRadioMenuItem" id="menu_rotatescreen3">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">Rotate Screen 270</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <property name="group">menu_rotatescreen0</property>
+		      <signal name="activate" handler="on_menu_rotatescreen_activate" object="%f:270.0" last_modification_time="Sat, 06 Jan 2007 08:36:59 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -955,7 +988,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BG0_toggled" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -975,7 +1008,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BG1_toggled" last_modification_time="Mon, 01 Jan 2007 21:03:55 GMT"/>
+		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -995,7 +1028,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BG2_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:02 GMT"/>
+		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1015,7 +1048,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BG3_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:20 GMT"/>
+		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1035,7 +1068,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_OBJ_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:28 GMT"/>
+		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1055,12 +1088,13 @@
 		<widget class="GtkDrawingArea" id="wDraw_Main">
 		  <property name="width_request">256</property>
 		  <property name="height_request">192</property>
-		  <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
-		  <signal name="configure_event" handler="on_wDraw_Main_configure_event" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
-		  <signal name="expose_event" handler="on_wDraw_Main_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
-		  <signal name="button_release_event" handler="on_wDraw_Main_button_release_event" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
-		  <signal name="button_press_event" handler="on_wDraw_Main_button_press_event" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
-		  <signal name="scroll_event" handler="on_wDraw_Main_scroll_event" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+		  <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+		  <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:0" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
+		  <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+		  <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+		  <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+		  <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+		  <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -1111,7 +1145,7 @@
 		  <property name="spacing">0</property>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="wc_2b_BG0">
+		    <widget class="GtkCheckButton" id="wc_2_BG0">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">BG0</property>
@@ -1121,7 +1155,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2b_BG0_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:34 GMT"/>
+		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1131,7 +1165,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="wc_2b_BG1">
+		    <widget class="GtkCheckButton" id="wc_2_BG1">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">BG1</property>
@@ -1141,7 +1175,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2b_BG1_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:42 GMT"/>
+		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1151,7 +1185,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="wc_2b_BG2">
+		    <widget class="GtkCheckButton" id="wc_2_BG2">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">BG2</property>
@@ -1161,7 +1195,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2b_BG2_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:52 GMT"/>
+		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1171,7 +1205,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="wc_2b_BG3">
+		    <widget class="GtkCheckButton" id="wc_2_BG3">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">BG3</property>
@@ -1181,7 +1215,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2b_BG3_toggled" last_modification_time="Mon, 01 Jan 2007 21:04:59 GMT"/>
+		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1191,7 +1225,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkCheckButton" id="wc_2b_OBJ">
+		    <widget class="GtkCheckButton" id="wc_2_OBJ">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">OBJ</property>
@@ -1201,7 +1235,7 @@
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2b_OBJ_toggled" last_modification_time="Mon, 01 Jan 2007 21:05:06 GMT"/>
+		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1221,13 +1255,13 @@
 		<widget class="GtkDrawingArea" id="wDraw_Sub">
 		  <property name="width_request">256</property>
 		  <property name="height_request">192</property>
-		  <property name="events">GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
-		  <signal name="configure_event" handler="on_wDraw_Sub_configure_event" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
-		  <signal name="expose_event" handler="on_wDraw_Sub_expose_event" last_modification_time="Tue, 02 Jan 2007 10:27:52 GMT"/>
-		  <signal name="button_press_event" handler="on_wDraw_Sub_button_press_event" last_modification_time="Tue, 02 Jan 2007 10:28:11 GMT"/>
-		  <signal name="button_release_event" handler="on_wDraw_Sub_button_release_event" last_modification_time="Tue, 02 Jan 2007 10:28:18 GMT"/>
-		  <signal name="motion_notify_event" handler="on_wDraw_Sub_motion_notify_event" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
-		  <signal name="scroll_event" handler="on_wDraw_Sub_scroll_event" last_modification_time="Wed, 07 Feb 2007 19:18:37 GMT"/>
+		  <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+		  <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:1" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
+		  <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+		  <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+		  <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+		  <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+		  <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -2180,7 +2214,7 @@
     </widget>
   </child>
 </widget>
-
+<!--
 <widget class="GtkMenu" id="wPopMenu">
 
   <child>
@@ -2285,5 +2319,5 @@
     </widget>
   </child>
 </widget>
-
+-->
 </glade-interface>

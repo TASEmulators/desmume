@@ -24,7 +24,7 @@
 
 static u16 Cur_Keypad = 0;
 float ScreenCoeff_Size[2]={1.0,1.0};
-gboolean ScreenRotate=FALSE;
+float ScreenRotate=0.0;
 gboolean Boost=FALSE;
 int BoostFS=20;
 int saveFS;
@@ -56,26 +56,6 @@ gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, g
 
 
 /* ***** ***** SCREEN DRAWING ***** ***** */
-int has_pix_col_map=0;
-u32 pix_col_map[0x8000];
-
-void init_pix_col_map() {
-	/* precalc colors so we get some fps */
-	int a,b,c,A,B,C,rA,rB,rC;
-	if (has_pix_col_map) return;
-	for (a=0; a<0x20; a++) {
-		A=a<<10; rA=A<<9;
-		for (b=0; b<0x20; b++) {
-			B=b<<5; rB=B<<6;
-			for (c=0; c<0x20; c++) {
-				C=c; rC=C<<3;
-				pix_col_map[A|B|C]=rA|rB|rC;
-			}
-		}
-	}
-	has_pix_col_map=1;
-}
-
 #define RAW_W 256
 #define RAW_H 192
 #define RAW_OFFSET 256*192*sizeof(u16)
@@ -93,6 +73,35 @@ int inline offset_pixels_lower_screen() {
 void black_screen () {
 	/* removes artifacts when resizing with scanlines */
 	memset(on_screen_image32,0,screen_size());
+}
+
+#ifndef HAVE_LIBGDKGLEXT_X11_1_0
+// they are empty if no opengl
+// else see gdk_gl.c / gdk_gl.h
+BOOL my_gl_Begin (int screen) { return FALSE; }
+void my_gl_End (int screen) {}
+void init_GL_capabilities() {}
+void init_GL(GtkWidget * widget, int screen) {}
+void reshape (GtkWidget * widget, int screen) {}
+
+int has_pix_col_map=0;
+u32 pix_col_map[0x8000];
+
+void init_pix_col_map() {
+	// precalc factors
+	int a,b,c,A,B,C,rA,rB,rC;
+	if (has_pix_col_map) return;
+	for (a=0; a<0x20; a++) {
+		A=a<<10; rA=A<<9;
+		for (b=0; b<0x20; b++) {
+			B=b<<5; rB=B<<6;
+			for (c=0; c<0x20; c++) {
+				C=c; rC=C<<3;
+				pix_col_map[A|B|C]=rA|rB|rC;
+			}
+		}
+	}
+	has_pix_col_map=1;
 }
 
 void decode_screen () {
@@ -137,15 +146,6 @@ void decode_screen () {
 	}
 }
 
-#ifndef HAVE_LIBGDKGLEXT_X11_1_0
-// they are empty if no opengl
-// else see gdk_gl.c / gdk_gl.h
-BOOL my_gl_Begin (int screen) { return FALSE; }
-void my_gl_End (int screen) {}
-void init_GL_capabilities() {}
-void init_GL(GtkWidget * widget, int screen) {}
-void reshape (GtkWidget * widget, int screen) {}
-
 gboolean screen (GtkWidget * widget, int off) {
 	int H,W,L;
 	if (off==0)
@@ -168,92 +168,21 @@ gboolean screen (GtkWidget * widget, int off) {
 #endif /* if HAVE_LIBGDKGLEXT_X11_1_0 */
 
 
-/* OUTPUT UPPER SCREEN  */
-/* OUTPUT LOWER SCREEN  */
-void      on_wDraw_Main_realize       (GtkWidget *widget, gpointer user_data) {
-	init_GL(widget, 0);
+/* OUTPUT SCREENS  */
+gboolean  on_wDrawScreen_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
+	int scr = dyn_CAST(int,user_data);
+	return screen(widget, scr);
 }
-void      on_wDraw_Sub_realize        (GtkWidget *widget, gpointer user_data) {
-	init_GL(widget, 1);
+gboolean  on_wDrawScreen_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
+	int scr = dyn_CAST(int,user_data);
+	reshape(widget, scr); return TRUE;
 }
-
-gboolean  on_wDraw_Main_expose_event  (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
-	return screen(widget, 0);
-}
-gboolean  on_wDraw_Sub_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
-	return screen(widget, 1);
-}
-
-gboolean  on_wDraw_Main_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
-	reshape(widget, 0); return TRUE;
-}
-gboolean  on_wDraw_Sub_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
-	reshape(widget, 1); return TRUE;
-}
-
-
-
-
-
 
 
 
 
 
 /* ***** ***** INPUT STYLUS / MOUSE ***** ***** */
-
-void set_touch_pos (int x, int y) {
-	s32 EmuX, EmuY;
-	x /= ScreenCoeff_Size[1];
-	y /= ScreenCoeff_Size[1];
-	EmuX = x; EmuY = y;
-	if (ScreenRotate) { EmuX = 256-y; EmuY = x; }
-	if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
-	if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-	NDS_setTouchPos(EmuX, EmuY);
-}
-
-gboolean  on_wDraw_Main_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
-	switch (event->button) {
-	case 1: break;
-	case 3: break;
-	case 2: ScreenCoeff_Size[0]=1.0;
-		resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]); break;
-	}
-	return TRUE;
-}
-
-gboolean  on_wDraw_Main_button_release_event (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
-	return TRUE;
-}
-
-gboolean  on_wDraw_Sub_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
-	GdkModifierType state;
-	gint x,y;
-	
-	switch (event->button) {
-	case 1: 
-		if(desmume_running()) {
-			click = TRUE;	
-			gdk_window_get_pointer(widget->window, &x, &y, &state);
-			if (state & GDK_BUTTON1_MASK)
-				set_touch_pos(x,y);
-		}
-		break;
-	case 3: break;
-	case 2: 
-		ScreenCoeff_Size[0]=1.0;
-		//ScreenCoeff_Size[1]=1.0; // separate zoom factors
-		resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]); break;
-	}
-	return TRUE;
-}
-
-gboolean  on_wDraw_Sub_button_release_event (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
-	if(click) NDS_releasTouch();
-	click = FALSE;
-	return TRUE;
-}
 
 static void resize_incremental(int i, GdkEventScroll *event) {
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
@@ -273,22 +202,63 @@ static void resize_incremental(int i, GdkEventScroll *event) {
 	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
 }
 
-gboolean  on_wDraw_Main_scroll_event (GtkWidget *widget, GdkEvent *event, gpointer user_data) {
-	resize_incremental(0,event);
-}
-gboolean  on_wDraw_Sub_scroll_event  (GtkWidget *widget, GdkEvent *event, gpointer user_data) {
-	// using separate zoom factors is bad for now
-	resize_incremental(0,event);
-//	resize_incremental(1,event);
+gboolean  on_wDrawScreen_scroll_event (GtkWidget *widget, GdkEvent *event, gpointer user_data) {
+	int scr = dyn_CAST(int,user_data);
+	// separate zoom factors not supported yet
+	scr = 0;
+	resize_incremental(scr,event);
 }
 
+void set_touch_pos (int x, int y) {
+	s32 EmuX, EmuY;
+	x /= ScreenCoeff_Size[1];
+	y /= ScreenCoeff_Size[1];
+	EmuX = x; EmuY = y;
+	if (ScreenRotate==90.0 || ScreenRotate==270.0) { EmuX = 256-y; EmuY = x; }
+	if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
+	if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
+	if (ScreenInvert) { 
+		EmuX = 255-EmuX;
+		EmuY = 192-EmuY;
+	}
+	NDS_setTouchPos(EmuX, EmuY);
+}
 
-
-gboolean  on_wDraw_Sub_motion_notify_event  (GtkWidget *widget, GdkEventMotion  *event, gpointer user_data) {
+gboolean  on_wDrawScreen_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
+	int scr = dyn_CAST(int,user_data);
 	GdkModifierType state;
 	gint x,y;
 	
-	if(click)
+	switch (event->button) {
+	case 1: 
+		if (((scr==1) ^ ScreenInvert) && desmume_running()) {
+			click = TRUE;	
+			gdk_window_get_pointer(widget->window, &x, &y, &state);
+			if (state & GDK_BUTTON1_MASK)
+				set_touch_pos(x,y);
+		}
+		break;
+	case 3: break;
+	case 2: rotate(ScreenRotate + 90.0); break;
+	}
+	return TRUE;
+}
+
+gboolean  on_wDrawScreen_button_release_event (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
+	int scr = dyn_CAST(int,user_data);
+	if ((scr==1) ^ ScreenInvert) {
+		if (click) NDS_releasTouch();
+		click = FALSE;
+	}
+	return TRUE;
+}
+
+gboolean  on_wDrawScreen_motion_notify_event  (GtkWidget *widget, GdkEventMotion  *event, gpointer user_data) {
+	int scr = dyn_CAST(int,user_data);
+	GdkModifierType state;
+	gint x,y;
+	
+	if (((scr==1) ^ ScreenInvert) && click)
 	{
 		if(event->is_hint)
 			gdk_window_get_pointer(widget->window, &x, &y, &state);
@@ -297,16 +267,14 @@ gboolean  on_wDraw_Sub_motion_notify_event  (GtkWidget *widget, GdkEventMotion  
 			x= (gint)event->x;
 			y= (gint)event->y;
 			state=(GdkModifierType)event->state;
-		}
-		
+		}		
 	//	fprintf(stderr,"X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
-	
 		if(state & GDK_BUTTON1_MASK)
 			set_touch_pos(x,y);
 	}
-	
 	return TRUE;
 }
+
 
 
 

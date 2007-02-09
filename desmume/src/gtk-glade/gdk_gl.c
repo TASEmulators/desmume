@@ -116,8 +116,11 @@ void reshape (GtkWidget * widget, int screen) {
 
 INLINE void my_gl_Texture2D() {
 	glBindTexture(GL_TEXTURE_2D, Textures[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#define MyFILTER GL_LINEAR
+//#define MyFILTER GL_NEAREST
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MyFILTER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MyFILTER);
+#undef MyFILTER
 }
 
 INLINE void my_gl_ScreenTex() {
@@ -139,23 +142,27 @@ void my_gl_ScreenTexApply(int screen) {
 	glEnd();
 }
 
-gboolean screen (GtkWidget * widget, int screen) {
-	int H,W;
-	if (!my_gl_Begin(screen)) return TRUE;
+gboolean screen (GtkWidget * widget, int viewportscreen) {
+	int H,W,screen;
+	// we take care to draw the right thing the right place
+	// we need to rearrange widgets not to use this trick
+	screen = (ScreenInvert)?1-viewportscreen:viewportscreen;
+//	screen = viewportscreen;
+	if (!my_gl_Begin(viewportscreen)) return TRUE;
 
 	glLoadIdentity();
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	my_gl_DrawBeautifulQuad();
 
 	// rotate
-	if (ScreenRotate) glRotatef(90.0, 0.0, 0.0, 1.0);
+	glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
 
 	// draw screen
 	my_gl_Texture2D();
-	if (screen==0) my_gl_ScreenTex();
+	if (viewportscreen==0) my_gl_ScreenTex();
 	my_gl_ScreenTexApply(screen);
 	
-	my_gl_End(screen);
+	my_gl_End(viewportscreen);
 	return TRUE;
 }
 

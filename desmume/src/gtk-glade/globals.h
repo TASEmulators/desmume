@@ -46,7 +46,7 @@
 
 
 // comment for GL :D
-#undef HAVE_LIBGDKGLEXT_X11_1_0
+//#undef HAVE_LIBGDKGLEXT_X11_1_0
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 	#include <GL/gl.h>
 	#include <gdk/gdkgl.h>
@@ -56,6 +56,9 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <glade/glade.h>
+#include <glade/glade-xml.h>
+
+#define dyn_CAST(type,var) (*((type*)(&var)))
 
 #include "../MMU.h"
 #include "../registers.h"
@@ -68,6 +71,13 @@
 #include "../saves.h"
 #include "desmume.h"
 #include "gdk_gl.h"
+
+// autoconnect with strings as user_data
+
+void
+glade_xml_signal_autoconnect_StringObject (GladeXML *self);
+
+//---
 
 int Frameskip;
 u16 Keypad_Temp[NB_KEYS];
@@ -86,12 +96,14 @@ void unregister_Tool(VoidFunPtr fun);
 /* callbacks.c */
 void enable_rom_features();
 void resize (float Size1, float Size2);
+void rotate(float angle);
+gboolean ScreenInvert;
+gboolean ScreenGap;
+gboolean ScreenRight;
 
 /* callbacks_IO.c */
 float ScreenCoeff_Size[2];
-gboolean ScreenRotate;
-gboolean ScreenRight;
-gboolean ScreenGap;
+float ScreenRotate;
 
 void black_screen ();
 void edit_controls();
