@@ -1807,6 +1807,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 				{
 #ifndef BRIGHT_TABLES
 					u8 r,g,b;
+					dstColor.val = T1ReadWord(dst, i16 << 1);
 					r = dstColor.bits.red;
 					g = dstColor.bits.green;
 					b = dstColor.bits.blue;
