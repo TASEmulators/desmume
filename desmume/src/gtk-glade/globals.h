@@ -44,15 +44,6 @@
 #define GLADEUI_UNINSTALLED_DIR "glade/"
 #endif
 
-
-// comment for GL :D
-//#undef HAVE_LIBGDKGLEXT_X11_1_0
-#ifdef HAVE_LIBGDKGLEXT_X11_1_0
-	#include <GL/gl.h>
-	#include <gdk/gdkgl.h>
-	#include <gtk/gtkglwidget.h>
-#endif
-
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <glade/glade.h>

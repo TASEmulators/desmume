@@ -20,7 +20,16 @@
  */
 
 #include "globals.h"
+// comment for GL :D
+//#undef HAVE_LIBGDKGLEXT_X11_1_0
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+    #include <GL/gl.h>
+    #include <GL/glext.h>
+	#include <gdk/gdkgl.h>
+	#include <gtk/gtkglwidget.h>
+#endif
 
+	
 BOOL my_gl_Begin (int screen);
 void my_gl_End (int screen);
 
