@@ -1,3 +1,23 @@
+/*  Copyright (C) 2006 thoduv
+    Copyright (C) 2006-2007 Theo Berkau
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
 #include <stdlib.h>
 #include "debug.h"
 #include "types.h"
@@ -61,8 +81,8 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 	u8 *buffer;
 	buffer = malloc(size);
 	
-	if(!buffer) { return NULL; }
         mc->data = buffer;
+	if(!buffer) { return NULL; }
         mc->size = size;
         mc->writeable_buffer = TRUE;
 }
@@ -192,6 +212,54 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
       size = mc->size;
    fread (mc->data, 1, size, file);
    mc->fp = file;
+}
+
+int mc_load_duc(memory_chip_t *mc, const char* filename)
+{
+   long size;
+   int type;
+   char id[16];
+   FILE* file = fopen(filename, "rb");
+   if(file == NULL)
+      return 0;
+
+   fseek(file, 0, SEEK_END);
+   size = ftell(file) - 500;
+   fseek(file, 0, SEEK_SET);
+
+   // Make sure we really have the right file
+   fread((void *)id, sizeof(char), 16, file);
+
+   if (memcmp(id, "ARDS000000000001", 16) != 0)
+   {
+      fclose(file);
+      return 0;
+   }
+
+   // Alright, it's time to load the file
+   if (mc->type == MC_TYPE_AUTODETECT)
+   {
+      if (size == MC_SIZE_4KBITS)
+         type = MC_TYPE_EEPROM1;
+      else if (size == MC_SIZE_64KBITS)
+         type = MC_TYPE_EEPROM2;
+      else if (size == MC_SIZE_256KBITS)
+         type = MC_TYPE_FRAM;
+      else if (size == MC_SIZE_512KBITS)
+         type = MC_TYPE_EEPROM2;
+      else if (size >= MC_SIZE_2MBITS)
+         type = MC_TYPE_FLASH;
+      mc_realloc(mc, type, size);
+   }
+
+   if (size > mc->size)
+      size = mc->size;
+   // Skip the rest of the header since we don't need it
+   fseek(file, 500, SEEK_SET);
+   fread (mc->data, 1, size, file);
+   fclose(file);
+
+   return 1;
 }
 
 u8 fw_transfer(memory_chip_t *mc, u8 data)

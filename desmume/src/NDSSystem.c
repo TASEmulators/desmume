@@ -250,23 +250,21 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 
    // Setup Backup Memory
    if(type == ROM_DSGBA)
+   {
 	   /* be sure that we dont overwrite anything before stringstart */
 	   if (strlen(noext)>= strlen(DSGBA_EXTENSTION))
-	   {
-		   strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
-	   } else
-	   {
+                   strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
+           else
 		   return -1 ;
-	   }
+   }
    else
+   {
 	   /* be sure that we dont overwrite anything before stringstart */
 	   if (strlen(noext)>=4)
-	   {
-		   strncpy(noext + strlen(noext) - 4, ".sav",5);
-	   } else
-	   {
+                   strncpy(noext + strlen(noext) - 4, ".sav",5);
+           else
 		   return -1 ;
-	   }
+   }
 
    mc_realloc(&MMU.bupmem, bmtype, bmsize);
    mc_load_file(&MMU.bupmem, noext);
@@ -444,6 +442,17 @@ void NDS_Reset(void)
    NDS_CreateDummyFirmware() ;
 
    execute = oldexecute;
+}
+
+int NDS_ImportSave(const char *filename)
+{
+   if (strlen(filename) < 4)
+      return 0;
+
+   if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
+      return mc_load_duc(&MMU.bupmem, filename);
+
+   return 0;
 }
 
 typedef struct
