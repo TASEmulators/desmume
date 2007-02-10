@@ -59,7 +59,7 @@ LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
 /*  Make the class name into a global variable  */
 char SavName[MAX_PATH] = "";
-char SavName2[MAX_PATH] = "";
+char ImportSavName[MAX_PATH] = "";
 char szClassName[ ] = "DeSmuME";
 int romnum = 0;
 
@@ -506,6 +506,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
        EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
        EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+       EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
        romloaded = TRUE;
        NDS_UnPause();
     }
@@ -515,6 +516,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
        EnableMenuItem(menu, IDM_RESET, MF_GRAYED);
        EnableMenuItem(menu, IDM_GAME_INFO, MF_GRAYED);
+       EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
     }
 
     CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
@@ -613,6 +615,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                      EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
                      EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
                      EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+                     EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
                      romloaded = TRUE;
                      NDS_UnPause();
                   }
@@ -870,6 +873,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
                                EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
                                EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+                               EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
                                romloaded = TRUE;
                                NDS_UnPause();
                             }
@@ -1002,6 +1006,30 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDM_STATE_LOAD_F10:
                      StateLoadSlot(10);
                      return 0;
+                  case IDM_IMPORTBACKUPMEMORY:
+                  {
+                     OPENFILENAME ofn;
+                     NDS_Pause();
+                     ZeroMemory(&ofn, sizeof(ofn));
+                     ofn.lStructSize = sizeof(ofn);
+                     ofn.hwndOwner = hwnd;
+                     ofn.lpstrFilter = "Action Replay DS Save (*.duc)\0*.duc\0\0";
+                     ofn.nFilterIndex = 1;
+                     ofn.lpstrFile =  ImportSavName;
+                     ofn.nMaxFile = MAX_PATH;
+                     ofn.lpstrDefExt = "duc";
+                            
+                     if(!GetOpenFileName(&ofn))
+                     {
+                        NDS_UnPause();
+                        return 0;
+                     }
+
+                     if (!NDS_ImportSave(ImportSavName))
+                        MessageBox(hwnd,"Save was not successfully imported","Error",MB_OK);
+                     NDS_UnPause();
+                     return 0;
+                  }
                   case IDM_SOUNDSETTINGS:
                   {
                       DialogBox(GetModuleHandle(NULL), "SoundSettingsDlg", hwnd, (DLGPROC)SoundSettingsDlgProc);                    
