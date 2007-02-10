@@ -125,6 +125,7 @@ void NDS_releasTouch(void);
 int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize);
 void NDS_FreeROM(void);
 void NDS_Reset(void);
+int NDS_ImportSave(const char *filename);
 
 int NDS_WriteBMP(const char *filename);
 int NDS_LoadFirmware(const char *filename);
