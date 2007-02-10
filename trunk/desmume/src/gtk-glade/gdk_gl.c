@@ -22,6 +22,8 @@
 #include "gdk_gl.h"
 
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
+
+
 GLuint Textures[1];
 GdkGLConfig  *my_glConfig=NULL;
 GdkGLContext *my_glContext=NULL;

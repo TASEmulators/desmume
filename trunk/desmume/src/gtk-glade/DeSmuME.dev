@@ -1,18 +1,18 @@
 [Project]
 FileName=DeSmuME.dev
 Name=DeSmuME
-UnitCount=64
+UnitCount=66
 Type=1
 Ver=1
 ObjFiles=
-Includes=Z:\Dev-Cpp\include\SDL;z:\GTK\INCLUDE;z:\GTK\INCLUDE\GTK-2.0;z:\GTK\INCLUDE\GLIB-2.0;z:\GTK\INCLUDE\PANGO-1.0;z:\GTK\INCLUDE\CAIRO;z:\GTK\INCLUDE\ATK-1.0;z:\GTK\INCLUDE\LIBGLADE-2.0;Z:\GTK\include\libglade-2.0\glade;z:\GTK\INCLUDE\LIBXML2;z:\GTK\LIB\GTK-2.0\INCLUDE;z:\GTK\LIB\GLIB-2.0\INCLUDE;Z:\GTK\include\gtkglext-1.0
-Libs=Z:\Dev-Cpp\lib;z:\GTK\LIB;Z:\GTK\lib\glib-2.0;Z:\GTK\lib\gtk-2.0;Z:\GTK\lib\libglade;Z:\GTK\lib\libglade\2.0;Z:\GTK\lib\gtkglext-1.0
+Includes=D:\Dev-Cpp\include;d:\Dev-Cpp\include\SDL;D:\Dev-Cpp\include\GL;d:\GTK\INCLUDE;d:\GTK\INCLUDE\GTK-2.0;d:\GTK\INCLUDE\GLIB-2.0;d:\GTK\INCLUDE\PANGO-1.0;d:\GTK\INCLUDE\CAIRO;d:\GTK\INCLUDE\ATK-1.0;d:\GTK\INCLUDE\LIBGLADE-2.0;d:\GTK\include\libglade-2.0\glade;d:\GTK\INCLUDE\LIBXML2;d:\GTK\LIB\GTK-2.0\INCLUDE;d:\GTK\LIB\GLIB-2.0\INCLUDE;d:\GTK\include\gtkglext-1.0;D:\GTK\lib\gtkglext-1.0\include
+Libs=d:\Dev-Cpp\lib;d:\GTK\LIB;d:\GTK\lib\glib-2.0;d:\GTK\lib\gtk-2.0;d:\GTK\lib\libglade;d:\GTK\lib\libglade\2.0;d:\GTK\lib\gtkglext-1.0
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DVERSION=\"0.5.0\"_@@_-DHAVE_LIBZ_@@_-mms-bitfields_@@_-rdynamic_@@_-shared_@@__@@_
+Compiler=-DVERSION=\"0.5.0\"_@@_-DHAVE_LIBZ=1_@@_-DHAVE_LIBGDKGLEXT_X11_1_0=1_@@_-mms-bitfields_@@_-rdynamic_@@_-shared_@@__@@_
 CppCompiler=
-Linker=Z:/Dev-Cpp/dll/SDL.dll_@@_Z:/GTK/lib/z.lib_@@_Z:/GTK/lib/atk-1.0.lib_@@_Z:/GTK/lib/cairo.lib_@@_Z:/GTK/lib/gdk_pixbuf-2.0.lib_@@_Z:/GTK/lib/gdk-win32-2.0.lib_@@_Z:/GTK/lib/glade-2.0.lib_@@_Z:/GTK/lib/glib-2.0.lib_@@_Z:/GTK/lib/gmodule-2.0.lib_@@_Z:/GTK/lib/gobject-2.0.lib_@@_Z:/GTK/lib/gtk-win32-2.0.lib_@@_Z:/GTK/lib/pango-1.0.lib_@@_Z:/GTK/lib/pangocairo-1.0.lib_@@_Z:/GTK/lib/pangowin32-1.0.lib_@@_Z:/GTK/lib/xml2.lib_@@_
+Linker=d:/GTK/lib/z.lib_@@_d:/GTK/lib/atk-1.0.lib_@@_d:/GTK/lib/cairo.lib_@@_d:/GTK/lib/gdk_pixbuf-2.0.lib_@@_d:/GTK/lib/gdk-win32-2.0.lib_@@_d:/GTK/lib/glade-2.0.lib_@@_d:/GTK/lib/glib-2.0.lib_@@_d:/GTK/lib/gmodule-2.0.lib_@@_d:/GTK/lib/gobject-2.0.lib_@@_d:/GTK/lib/gtk-win32-2.0.lib_@@_d:/GTK/lib/pango-1.0.lib_@@_d:/GTK/lib/pangocairo-1.0.lib_@@_d:/GTK/lib/pangowin32-1.0.lib_@@_d:/GTK/lib/xml2.lib_@@_D:/Dev-Cpp/dll/SDL.dll_@@_D:/Dev-Cpp/lib/libSDL.dll.a_@@_D:/Dev-Cpp/lib/libopengl32.a_@@_D:/GTK/lib/libgdkglext-win32-1.0.dll.a_@@_D:/GTK/lib/gtkglext-win32-1.0.lib_@@_
 IsCpp=0
 Icon=
 ExeOutput=
@@ -130,16 +130,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit11]
-FileName=..\ARM9.c
-CompileCpp=0
-Folder=DeSmuME
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit12]
 FileName=..\ARM9.h
 CompileCpp=0
 Folder=DeSmuME
@@ -149,7 +139,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit13]
+[Unit12]
 FileName=..\arm_instructions.c
 CompileCpp=0
 Folder=DeSmuME
@@ -159,7 +149,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit14]
+[Unit13]
 FileName=..\arm_instructions.h
 CompileCpp=0
 Folder=DeSmuME
@@ -169,7 +159,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit15]
+[Unit14]
 FileName=..\armcpu.c
 CompileCpp=0
 Folder=DeSmuME
@@ -179,7 +169,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit16]
+[Unit15]
 FileName=..\armcpu.h
 CompileCpp=0
 Folder=DeSmuME
@@ -189,7 +179,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit17]
+[Unit16]
 FileName=..\bios.c
 CompileCpp=0
 Folder=DeSmuME
@@ -199,7 +189,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit18]
+[Unit17]
 FileName=..\bios.h
 CompileCpp=0
 Folder=DeSmuME
@@ -209,7 +199,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit19]
+[Unit18]
 FileName=..\bits.h
 CompileCpp=0
 Folder=DeSmuME
@@ -219,7 +209,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit20]
+[Unit19]
 FileName=..\cflash.c
 CompileCpp=0
 Folder=DeSmuME
@@ -229,7 +219,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit21]
+[Unit20]
 FileName=..\cflash.h
 CompileCpp=0
 Folder=DeSmuME
@@ -239,7 +229,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit22]
+[Unit21]
 FileName=..\config.h
 CompileCpp=0
 Folder=DeSmuME
@@ -249,7 +239,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit23]
+[Unit22]
 FileName=..\cp15.c
 CompileCpp=0
 Folder=DeSmuME
@@ -259,7 +249,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit24]
+[Unit23]
 FileName=..\cp15.h
 CompileCpp=0
 Folder=DeSmuME
@@ -269,7 +259,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit25]
+[Unit24]
 FileName=..\ctrlssdl.c
 CompileCpp=0
 Folder=DeSmuME
@@ -279,7 +269,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit26]
+[Unit25]
 FileName=..\ctrlssdl.h
 CompileCpp=0
 Folder=DeSmuME
@@ -289,7 +279,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit27]
+[Unit26]
 FileName=..\debug.c
 CompileCpp=0
 Folder=DeSmuME
@@ -299,7 +289,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit28]
+[Unit27]
 FileName=..\debug.h
 CompileCpp=0
 Folder=DeSmuME
@@ -309,7 +299,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit29]
+[Unit28]
 FileName=..\Disassembler.c
 CompileCpp=0
 Folder=DeSmuME
@@ -319,7 +309,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit30]
+[Unit29]
 FileName=..\Disassembler.h
 CompileCpp=0
 Folder=DeSmuME
@@ -329,7 +319,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit31]
+[Unit30]
 FileName=..\dscard.h
 CompileCpp=0
 Folder=DeSmuME
@@ -339,7 +329,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit32]
+[Unit31]
 FileName=..\fat.h
 CompileCpp=0
 Folder=DeSmuME
@@ -349,7 +339,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit33]
+[Unit32]
 FileName=..\FIFO.c
 CompileCpp=0
 Folder=DeSmuME
@@ -359,7 +349,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit34]
+[Unit33]
 FileName=..\FIFO.h
 CompileCpp=0
 Folder=DeSmuME
@@ -369,7 +359,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit35]
+[Unit34]
 FileName=..\fs.h
 CompileCpp=0
 Folder=DeSmuME
@@ -379,7 +369,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit36]
+[Unit35]
 FileName=..\fs-windows.c
 CompileCpp=0
 Folder=DeSmuME
@@ -389,7 +379,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit37]
+[Unit36]
 FileName=..\GPU.c
 CompileCpp=0
 Folder=DeSmuME
@@ -399,7 +389,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit38]
+[Unit37]
 FileName=..\GPU.h
 CompileCpp=0
 Folder=DeSmuME
@@ -409,7 +399,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit39]
+[Unit38]
 FileName=..\mc.c
 CompileCpp=0
 Folder=DeSmuME
@@ -419,7 +409,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit40]
+[Unit39]
 FileName=..\mc.h
 CompileCpp=0
 Folder=DeSmuME
@@ -429,7 +419,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit41]
+[Unit40]
 FileName=..\mem.h
 CompileCpp=0
 Folder=DeSmuME
@@ -439,7 +429,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit42]
+[Unit41]
 FileName=..\MMU.c
 CompileCpp=0
 Folder=DeSmuME
@@ -449,7 +439,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit43]
+[Unit42]
 FileName=..\MMU.h
 CompileCpp=0
 Folder=DeSmuME
@@ -459,7 +449,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit44]
+[Unit43]
 FileName=..\NDSSystem.c
 CompileCpp=0
 Folder=DeSmuME
@@ -469,7 +459,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit45]
+[Unit44]
 FileName=..\NDSSystem.h
 CompileCpp=0
 Folder=DeSmuME
@@ -479,7 +469,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit46]
+[Unit45]
 FileName=..\registers.h
 CompileCpp=0
 Folder=DeSmuME
@@ -489,7 +479,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit47]
+[Unit46]
 FileName=..\ROMReader.c
 CompileCpp=0
 Folder=DeSmuME
@@ -499,7 +489,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit48]
+[Unit47]
 FileName=..\ROMReader.h
 CompileCpp=0
 Folder=DeSmuME
@@ -509,7 +499,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit49]
+[Unit48]
 FileName=..\saves.c
 CompileCpp=0
 Folder=DeSmuME
@@ -519,7 +509,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit50]
+[Unit49]
 FileName=..\saves.h
 CompileCpp=0
 Folder=DeSmuME
@@ -529,7 +519,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit51]
+[Unit50]
 FileName=..\sndsdl.c
 CompileCpp=0
 Folder=DeSmuME
@@ -539,7 +529,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit52]
+[Unit51]
 FileName=..\sndsdl.h
 CompileCpp=0
 Folder=DeSmuME
@@ -549,7 +539,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit53]
+[Unit52]
 FileName=..\SPU.c
 CompileCpp=0
 Folder=DeSmuME
@@ -559,7 +549,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit54]
+[Unit53]
 FileName=..\SPU.h
 CompileCpp=0
 Folder=DeSmuME
@@ -569,7 +559,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit55]
+[Unit54]
 FileName=..\thumb_instructions.c
 CompileCpp=0
 Folder=DeSmuME
@@ -579,7 +569,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit56]
+[Unit55]
 FileName=..\thumb_instructions.h
 CompileCpp=0
 Folder=DeSmuME
@@ -589,7 +579,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit57]
+[Unit56]
 FileName=..\types.h
 CompileCpp=0
 Folder=DeSmuME
@@ -599,7 +589,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit58]
+[Unit57]
 FileName=..\wifi.c
 CompileCpp=0
 Folder=DeSmuME
@@ -609,7 +599,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit59]
+[Unit58]
 FileName=..\wifi.h
 CompileCpp=0
 Folder=DeSmuME
@@ -619,7 +609,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit60]
+[Unit59]
 FileName=dTools\callbacks_1_ioregs.c
 CompileCpp=0
 Folder=gtk-glade/dTools
@@ -629,7 +619,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit61]
+[Unit60]
 FileName=dTools\callbacks_2_memview.c
 CompileCpp=0
 Folder=gtk-glade/dTools
@@ -639,7 +629,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit62]
+[Unit61]
 FileName=dTools\callbacks_3_palview.c
 CompileCpp=0
 Folder=gtk-glade/dTools
@@ -649,7 +639,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit63]
+[Unit62]
 FileName=dTools\callbacks_dtools.h
 CompileCpp=0
 Folder=gtk-glade/dTools
@@ -659,10 +649,20 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit64]
+[Unit63]
 FileName=dTools\dTools_display.h
 CompileCpp=0
 Folder=gtk-glade/dTools
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit64]
+FileName=gdk_gl.c
+CompileCpp=0
+Folder=gtk-glade
 Compile=1
 Link=1
 Priority=1000
@@ -686,4 +686,24 @@ OriginalFilename=
 ProductName=
 ProductVersion=
 AutoIncBuildNr=0
+
+[Unit65]
+FileName=gdk_gl.h
+CompileCpp=0
+Folder=gtk-glade
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit66]
+FileName=glade-xml.c
+CompileCpp=0
+Folder=gtk-glade
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
 
