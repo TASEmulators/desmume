@@ -202,7 +202,12 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
       type = ROM_DSGBA;
 
    file = reader->Init(filename);
-	if (!file) return -1 ;
+
+   if (!file)
+   {
+      free(noext);
+      return -1;
+   }
    size = reader->Size(file);
 
    if(type == ROM_DSGBA)
@@ -226,6 +231,7 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
    if ((data = (u8*)malloc(mask + 1)) == NULL)
    {
       reader->DeInit(file);
+      free(noext);
       return -1;
    }
 
@@ -255,7 +261,10 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 	   if (strlen(noext)>= strlen(DSGBA_EXTENSTION))
                    strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
            else
-		   return -1 ;
+           {
+                   free(noext);
+                   return -1;
+           }
    }
    else
    {
@@ -263,7 +272,10 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize)
 	   if (strlen(noext)>=4)
                    strncpy(noext + strlen(noext) - 4, ".sav",5);
            else
-		   return -1 ;
+           {
+                   free(noext);
+                   return -1;
+           }
    }
 
    mc_realloc(&MMU.bupmem, bmtype, bmsize);

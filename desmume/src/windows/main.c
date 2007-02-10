@@ -499,7 +499,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     SPU_SetVolume(sndvolume);
     
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
-    
+
+    // Make sure any quotes from lpszArgument are removed
+    if (lpszArgument[0] == '\"')
+       sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
+
     if(LoadROM(lpszArgument))
     {
        EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
