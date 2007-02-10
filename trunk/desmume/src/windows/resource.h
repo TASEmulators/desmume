@@ -131,6 +131,8 @@ void refreshAll();
 #define IDC_FRAMESKIP8      199
 #define IDC_FRAMESKIP9      200
 
+#define IDM_IMPORTBACKUPMEMORY 201
+
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
 #define IDC_16_BIT          303
