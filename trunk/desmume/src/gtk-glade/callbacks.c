@@ -133,15 +133,15 @@ void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk
 
 /* MENU SAVES ***** ***** ***** ***** */
 void on_loadstateXX_activate (GtkMenuItem *m, gpointer d) {
-	int slot = (int)d;
+	int slot = dyn_CAST(int,d);
 	loadstate_slot(slot);
 }
 void on_savestateXX_activate (GtkMenuItem *m, gpointer d) {
-	int slot = (int)d;
+	int slot = dyn_CAST(int,d);
 	update_savestate(slot);
 }
 void on_savetypeXX_activate (GtkMenuItem *m, gpointer d) {
-	int type = (int)d;
+	int type = dyn_CAST(int,d);
 	desmume_savetype(type);
 }
 
@@ -167,27 +167,58 @@ void  on_menu_layers_activate (GtkMenuItem *menuitem, gpointer user_data) {
 
 /* SUBMENU FRAMESKIP ***** ***** ***** ***** */
 void  on_fsXX_activate  (GtkMenuItem *menuitem,gpointer user_data) {
-	Frameskip = (int)user_data;
+	Frameskip = dyn_CAST(int,user_data);
 //	printf ("setting FS %d %d\n", Frameskip, user_data);
 }
 
 
 /* SUBMENU SIZE ***** ***** ***** ***** */
-void rightscreen(BOOL apply) {
-	GtkBox * sbox = (GtkBox*)glade_xml_get_widget(xml, "whb_Sub");
-	GtkWidget * mbox = glade_xml_get_widget(xml, "whb_Main");
-	GtkWidget * vbox = glade_xml_get_widget(xml, "wvb_Layout");
-	GtkWidget * w    = glade_xml_get_widget(xml, "wvb_2_Sub");
 
-	/* we want to change the layout, lower screen goes right */
+void gtk_table_reattach(GtkTable * table, GtkWidget * w, 
+	guint left_attach, guint right_attach, guint top_attach, guint bottom_attach,
+	GtkAttachOptions xoptions, GtkAttachOptions yoptions,
+	guint xpadding, guint ypadding) {
+	GList *list;
+	for (list = table->children; list; list = list->next)
+	{
+		GtkTableChild *table_child;
+		table_child = list->data;
+		if (table_child->widget == w) {
+			table_child->left_attach = left_attach;
+			table_child->right_attach = right_attach;
+			table_child->top_attach = top_attach;
+			table_child->bottom_attach = bottom_attach;
+			table_child->xexpand  = (xoptions & GTK_EXPAND) != 0;
+			table_child->xshrink  = (xoptions & GTK_SHRINK) != 0;
+			table_child->xfill    = (xoptions & GTK_FILL)   != 0;
+			table_child->xpadding = xpadding;
+			table_child->yexpand  = (yoptions & GTK_EXPAND) != 0;
+			table_child->yshrink  = (yoptions & GTK_SHRINK) != 0;
+			table_child->yfill    = (yoptions & GTK_FILL)   != 0;
+			table_child->ypadding = ypadding;
+			break;
+		}
+	}
+}
+
+void rightscreen(BOOL apply) {
+	GtkWidget *chk  = glade_xml_get_widget(xml, "wvb_2_Sub");
+	GtkTable *table = glade_xml_get_widget(xml, "table_layout");
+
 	if (apply) {
-		gtk_box_reorder_child(sbox,w,-1);
-		gtk_widget_reparent((GtkWidget*)sbox,mbox);
+	/* we want to change the layout, lower screen goes right */
+		gtk_table_reattach(table, pDrawingArea2, 
+			3,4, 0,1, 0,0, 0,0);
+		gtk_table_reattach(table, chk, 
+			4,5, 0,1, 0,0, 0,0);
 	} else if (!ScreenRight) {
 	/* we want to change the layout, lower screen goes down */
-		gtk_box_reorder_child(sbox,w,0);
-		gtk_widget_reparent((GtkWidget*)sbox,vbox);
+		gtk_table_reattach(table, pDrawingArea2,
+			1,2, 2,3, 0,0, 0,0);
+		gtk_table_reattach(table, chk,
+			0,1, 2,3, 0,0, 0,0);
 	}
+
 	/* pack the window */
 	MAINWINDOW_RESIZE();
 }
@@ -220,7 +251,6 @@ void rotate(float angle) {
 	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
 }
 
-/* FIXME: Totally broken for 64bit; dyn_CAST won't work. */
 void  on_sizeXX_activate (GtkMenuItem *menuitem, gpointer user_data) {
 	float f = dyn_CAST(float,user_data);
 //	printf("setting ZOOM %f\n",f);
@@ -296,7 +326,6 @@ void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) 
 	rightscreen(ScreenRight);
 }
 
-/* FIXME: Totally broken for 64bit; dyn_CAST won't work. */
 void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	/* we want to rotate the screen */
 	float angle = dyn_CAST(float,user_data);
@@ -359,10 +388,10 @@ void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
 void  on_wc_1_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	int layer = (int)user_data;
+	int layer = dyn_CAST(int,user_data);
 	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), MainScreen);
 }
 void  on_wc_2_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	int layer = (int)user_data;
+	int layer = dyn_CAST(int,user_data);
 	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), SubScreen);
 }

@@ -63,15 +63,18 @@ autoconnect_foreach_StringObject(const char *signal_handler, GList *signals,
 						GTK_WIDGET(data->signal_object));
 			char format[]="%_\0\0";
 			if (sscanf(data->connect_object,"%%%c:", &format[1])) {
-				float obj;
-				sscanf(data->connect_object+3,format, &obj);
+				// this should solve 64bit problems but now memory gets 
+				// (it should get) deallocated when program is destroyed
+				gpointer argument = g_malloc(sizeof(callback_arg));
+				sscanf(data->connect_object+3,format, argument);
+
 //				printf ("%f \n",obj);
 				if (data->signal_after)
 					g_signal_connect_after(data->signal_object, data->signal_name,
-						func, dyn_CAST(gpointer,obj));
+						func, argument);
 				else
 					g_signal_connect(data->signal_object, data->signal_name,
-						func, dyn_CAST(gpointer,obj));
+						func, argument);
 	
 			} else {
 				GObject *other = g_hash_table_lookup(self->priv->name_hash,
