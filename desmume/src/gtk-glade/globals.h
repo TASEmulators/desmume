@@ -49,7 +49,37 @@
 #include <glade/glade.h>
 #include <glade/glade-xml.h>
 
-#define dyn_CAST(type,var) (*((type*)(&var)))
+
+typedef union _callback_arg{
+	gpointer      my_pointer;
+	gconstpointer my_constpointer;
+	
+	gfloat   my_float;
+	gdouble  my_double;
+	gsize    my_size;
+	gssize   my_ssize;
+	
+	gboolean my_boolean;
+
+	guchar   my_uchar;
+	guint    my_uint;
+	guint8   my_uint8;
+	guint16  my_uint16;
+	guint32  my_uint32;
+	guint64  my_uint64;
+	gushort  my_ushort;
+	gulong   my_ulong;
+
+	gchar    my_char;
+	gint     my_int;
+	gint8    my_int8;
+	gint16   my_int16;
+	gint32   my_int32;
+	gint64   my_int64;
+	gshort   my_short;
+	glong    my_long;	
+} callback_arg;
+#define dyn_CAST(gtype,var) (((callback_arg*)var)->my_##gtype)
 
 #include "../MMU.h"
 #include "../registers.h"

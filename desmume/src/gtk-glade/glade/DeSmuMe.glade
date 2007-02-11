@@ -960,122 +960,76 @@
       </child>
 
       <child>
-	<widget class="GtkVBox" id="wvb_Layout">
+	<widget class="GtkTable" id="table_layout">
 	  <property name="visible">True</property>
+	  <property name="n_rows">3</property>
+	  <property name="n_columns">5</property>
 	  <property name="homogeneous">False</property>
-	  <property name="spacing">0</property>
+	  <property name="row_spacing">0</property>
+	  <property name="column_spacing">0</property>
 
 	  <child>
-	    <widget class="GtkHBox" id="whb_Main">
+	    <widget class="GtkDrawingArea" id="wDraw_Main">
+	      <property name="width_request">256</property>
+	      <property name="height_request">192</property>
+	      <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+	      <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:0" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
+	      <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+	      <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+	      <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+	      <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+	      <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">1</property>
+	      <property name="right_attach">2</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_options"></property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkDrawingArea" id="wDraw_Sub">
+	      <property name="width_request">256</property>
+	      <property name="height_request">192</property>
+	      <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+	      <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:1" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
+	      <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
+	      <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
+	      <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
+	      <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
+	      <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">1</property>
+	      <property name="right_attach">2</property>
+	      <property name="top_attach">2</property>
+	      <property name="bottom_attach">3</property>
+	      <property name="x_options"></property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkVBox" id="wvb_2_Sub">
 	      <property name="visible">True</property>
 	      <property name="homogeneous">False</property>
 	      <property name="spacing">0</property>
 
 	      <child>
-		<widget class="GtkVBox" id="wvb_1_Main">
+		<widget class="GtkCheckButton" id="wc_2_BG0">
 		  <property name="visible">True</property>
-		  <property name="homogeneous">False</property>
-		  <property name="spacing">0</property>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_1_BG0">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG0</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_1_BG1">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG1</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_1_BG2">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG2</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_1_BG3">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG3</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_1_OBJ">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">OBJ</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG0</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -1085,16 +1039,17 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkDrawingArea" id="wDraw_Main">
-		  <property name="width_request">256</property>
-		  <property name="height_request">192</property>
-		  <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
-		  <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:0" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
-		  <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
-		  <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
-		  <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
-		  <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:0" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
-		  <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:0" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
+		<widget class="GtkCheckButton" id="wc_2_BG1">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG1</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -1104,8 +1059,57 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkVSeparator" id="misc_sep3">
+		<widget class="GtkCheckButton" id="wc_2_BG2">
 		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG2</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_2_BG3">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG3</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_2_OBJ">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">OBJ</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
@@ -1115,9 +1119,142 @@
 	      </child>
 	    </widget>
 	    <packing>
-	      <property name="padding">0</property>
-	      <property name="expand">True</property>
-	      <property name="fill">True</property>
+	      <property name="left_attach">0</property>
+	      <property name="right_attach">1</property>
+	      <property name="top_attach">2</property>
+	      <property name="bottom_attach">3</property>
+	      <property name="x_options"></property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkVBox" id="wvb_1_Main">
+	      <property name="visible">True</property>
+	      <property name="homogeneous">False</property>
+	      <property name="spacing">0</property>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_1_BG0">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG0</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_1_BG1">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG1</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_1_BG2">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG2</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_1_BG3">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">BG3</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="wc_1_OBJ">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">OBJ</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">True</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		  <signal name="toggled" handler="on_wc_1_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">0</property>
+	      <property name="right_attach">1</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_options"></property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkVSeparator" id="misc_sep3">
+	      <property name="visible">True</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">2</property>
+	      <property name="right_attach">3</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_options"></property>
+	      <property name="y_options">fill</property>
 	    </packing>
 	  </child>
 
@@ -1126,154 +1263,12 @@
 	      <property name="visible">True</property>
 	    </widget>
 	    <packing>
-	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkHBox" id="whb_Sub">
-	      <property name="visible">True</property>
-	      <property name="homogeneous">False</property>
-	      <property name="spacing">0</property>
-
-	      <child>
-		<widget class="GtkVBox" id="wvb_2_Sub">
-		  <property name="visible">True</property>
-		  <property name="homogeneous">False</property>
-		  <property name="spacing">0</property>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_2_BG0">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG0</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:0" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_2_BG1">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG1</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:1" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_2_BG2">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG2</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:2" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_2_BG3">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">BG3</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:3" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-
-		  <child>
-		    <widget class="GtkCheckButton" id="wc_2_OBJ">
-		      <property name="visible">True</property>
-		      <property name="can_focus">True</property>
-		      <property name="label" translatable="yes">OBJ</property>
-		      <property name="use_underline">True</property>
-		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <property name="focus_on_click">True</property>
-		      <property name="active">True</property>
-		      <property name="inconsistent">False</property>
-		      <property name="draw_indicator">True</property>
-		      <signal name="toggled" handler="on_wc_2_BGXX_toggled" object="%d:4" last_modification_time="Mon, 01 Jan 2007 21:03:49 GMT"/>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">False</property>
-		    </packing>
-		  </child>
-		</widget>
-		<packing>
-		  <property name="padding">0</property>
-		  <property name="expand">False</property>
-		  <property name="fill">False</property>
-		</packing>
-	      </child>
-
-	      <child>
-		<widget class="GtkDrawingArea" id="wDraw_Sub">
-		  <property name="width_request">256</property>
-		  <property name="height_request">192</property>
-		  <property name="events">GDK_EXPOSURE_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
-		  <signal name="configure_event" handler="on_wDrawScreen_configure_event" object="%d:1" last_modification_time="Mon, 05 Feb 2007 00:49:24 GMT"/>
-		  <signal name="expose_event" handler="on_wDrawScreen_expose_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:27:18 GMT"/>
-		  <signal name="button_release_event" handler="on_wDrawScreen_button_release_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:00 GMT"/>
-		  <signal name="button_press_event" handler="on_wDrawScreen_button_press_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 17:32:57 GMT"/>
-		  <signal name="scroll_event" handler="on_wDrawScreen_scroll_event" object="%d:1" last_modification_time="Wed, 07 Feb 2007 19:18:23 GMT"/>
-		  <signal name="motion_notify_event" handler="on_wDrawScreen_motion_notify_event" object="%d:1" last_modification_time="Tue, 02 Jan 2007 10:28:32 GMT"/>
-		</widget>
-		<packing>
-		  <property name="padding">0</property>
-		  <property name="expand">False</property>
-		  <property name="fill">False</property>
-		</packing>
-	      </child>
-	    </widget>
-	    <packing>
-	      <property name="padding">0</property>
-	      <property name="expand">False</property>
-	      <property name="fill">False</property>
+	      <property name="left_attach">1</property>
+	      <property name="right_attach">2</property>
+	      <property name="top_attach">1</property>
+	      <property name="bottom_attach">2</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
 	    </packing>
 	  </child>
 	</widget>
@@ -2214,110 +2209,5 @@
     </widget>
   </child>
 </widget>
-<!--
-<widget class="GtkMenu" id="wPopMenu">
 
-  <child>
-    <widget class="GtkImageMenuItem" id="pop_pause">
-      <property name="visible">True</property>
-      <property name="label">gtk-media-pause</property>
-      <property name="use_stock">True</property>
-      <signal name="activate" handler="on_pop_pause_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="pop_rightscreen">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Right Screen</property>
-      <property name="use_underline">True</property>
-      <signal name="activate" handler="on_pop_rightscreen_activate" last_modification_time="Wed, 07 Feb 2007 17:35:26 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="pop_true_gap">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">True Gap</property>
-      <property name="use_underline">True</property>
-      <signal name="activate" handler="on_pop_true_gap_activate" last_modification_time="Wed, 07 Feb 2007 17:35:26 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkSeparatorMenuItem" id="séparateur2">
-      <property name="visible">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="pop_rotate0">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Rotate 0</property>
-      <property name="use_underline">True</property>
-      <signal name="activate" handler="on_pop_rotate0_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="pop_rotate1">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Rotate 90</property>
-      <property name="use_underline">True</property>
-      <signal name="activate" handler="on_pop_rotate1_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="pop_rotate2">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Rotate 180</property>
-      <property name="use_underline">True</property>
-      <signal name="activate" handler="on_pop_rotate2_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkMenuItem" id="pop_rotate3">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">Rotate 270</property>
-      <property name="use_underline">True</property>
-      <signal name="activate" handler="on_pop_rotate3_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkSeparatorMenuItem" id="séparateur3">
-      <property name="visible">True</property>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkImageMenuItem" id="pop_zoom100">
-      <property name="visible">True</property>
-      <property name="label">gtk-zoom-100</property>
-      <property name="use_stock">True</property>
-      <signal name="activate" handler="on_pop_zoom100_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkImageMenuItem" id="pop_zoom_in">
-      <property name="visible">True</property>
-      <property name="label">gtk-zoom-in</property>
-      <property name="use_stock">True</property>
-      <signal name="activate" handler="on_pop_zoom_in_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-
-  <child>
-    <widget class="GtkImageMenuItem" id="pop_zoom_out">
-      <property name="visible">True</property>
-      <property name="label">gtk-zoom-out</property>
-      <property name="use_stock">True</property>
-      <signal name="activate" handler="on_pop_zoom_out_activate" last_modification_time="Wed, 07 Feb 2007 17:29:36 GMT"/>
-    </widget>
-  </child>
-</widget>
--->
 </glade-interface>

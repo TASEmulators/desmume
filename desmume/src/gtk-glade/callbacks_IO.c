@@ -170,11 +170,11 @@ gboolean screen (GtkWidget * widget, int off) {
 
 /* OUTPUT SCREENS  */
 gboolean  on_wDrawScreen_expose_event   (GtkWidget *widget, GdkEventExpose  *event, gpointer user_data) {
-	int scr = (int)user_data;
+	int scr = dyn_CAST(int,user_data);
 	return screen(widget, scr);
 }
 gboolean  on_wDrawScreen_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
-	int scr = (int)user_data;
+	int scr = dyn_CAST(int,user_data);
 	reshape(widget, scr); return TRUE;
 }
 
@@ -203,7 +203,7 @@ static void resize_incremental(int i, GdkEventScroll *event) {
 }
 
 gboolean  on_wDrawScreen_scroll_event (GtkWidget *widget, GdkEvent *event, gpointer user_data) {
-	int scr = (int)user_data;
+	int scr = dyn_CAST(int,user_data);
 	// separate zoom factors not supported yet
 	scr = 0;
 	resize_incremental(scr,event);
@@ -225,7 +225,7 @@ void set_touch_pos (int x, int y) {
 }
 
 gboolean  on_wDrawScreen_button_press_event   (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
-	int scr = (int)user_data;
+	int scr = dyn_CAST(int,user_data);
 	GdkModifierType state;
 	gint x,y;
 	
@@ -239,13 +239,16 @@ gboolean  on_wDrawScreen_button_press_event   (GtkWidget *widget, GdkEventButton
 		}
 		break;
 	case 3: break;
-	case 2: rotate(ScreenRotate + 90.0); break;
+	case 2: 
+		// filter out 2x / 3x clicks
+		if (event->type==GDK_BUTTON_PRESS)
+			rotate(ScreenRotate + 90.0); break;
 	}
 	return TRUE;
 }
 
 gboolean  on_wDrawScreen_button_release_event (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
-	int scr = (int)user_data;
+	int scr = dyn_CAST(int,user_data);
 	if ((scr==1) ^ ScreenInvert) {
 		if (click) NDS_releasTouch();
 		click = FALSE;
@@ -254,7 +257,7 @@ gboolean  on_wDrawScreen_button_release_event (GtkWidget *widget, GdkEventButton
 }
 
 gboolean  on_wDrawScreen_motion_notify_event  (GtkWidget *widget, GdkEventMotion  *event, gpointer user_data) {
-	int scr = (int)user_data;
+	int scr = dyn_CAST(int,user_data);
 	GdkModifierType state;
 	gint x,y;
 	

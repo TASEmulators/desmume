@@ -39,6 +39,7 @@ INLINE void my_gl_Identity() {
 
 INLINE void my_gl_DrawBeautifulQuad() {
 	// beautiful quad
+	glColor4ub(255,255,255,128);
 	glBegin(GL_QUADS);
 		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
 		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
@@ -53,9 +54,10 @@ BOOL my_gl_Begin (int screen) {
 }
 
 void my_gl_End (int screen) {
-	glFlush ();
 	if (gdk_gl_drawable_is_double_buffered (my_glDrawable[screen]))
 		gdk_gl_drawable_swap_buffers (my_glDrawable[screen]);
+	else
+		glFlush ();
 	gdk_gl_drawable_gl_end(my_glDrawable[screen]);
 }
 
@@ -71,7 +73,7 @@ void init_GL(GtkWidget * widget, int screen) {
 	// realize so that we get a GdkWindow
 	gtk_widget_realize(widget);
 	// make sure we realize
-	gtk_events_pending();
+	while (gtk_events_pending()) gtk_main_iteration();
 
 	my_glDrawable[screen] = gtk_widget_get_gl_drawable(widget);
 	// shared context
@@ -81,10 +83,8 @@ void init_GL(GtkWidget * widget, int screen) {
 		if (!my_gl_Begin(screen)) return;
 	
 		/* Set the background black */
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	
-		my_gl_DrawBeautifulQuad();
 	
 		// generated ONE texture (display)
 		glEnable(GL_TEXTURE_2D);
@@ -112,7 +112,8 @@ void reshape (GtkWidget * widget, int screen) {
 		!my_gl_Begin(screen)) return;
 
 	glViewport (0, 0, widget->allocation.width, widget->allocation.height);
-	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 	my_gl_End(screen);
 }
 
@@ -154,16 +155,18 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 
 	glLoadIdentity();
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+	if (desmume_running()) {
+		// rotate
+		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
+		// draw screen
+		my_gl_Texture2D();
+		if (viewportscreen==0) my_gl_ScreenTex();
+		my_gl_ScreenTexApply(screen);
+	}
+
 	my_gl_DrawBeautifulQuad();
 
-	// rotate
-	glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
-
-	// draw screen
-	my_gl_Texture2D();
-	if (viewportscreen==0) my_gl_ScreenTex();
-	my_gl_ScreenTexApply(screen);
-	
 	my_gl_End(viewportscreen);
 	return TRUE;
 }
