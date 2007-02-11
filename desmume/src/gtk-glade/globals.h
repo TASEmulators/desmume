@@ -105,8 +105,7 @@ u16 Keypad_Temp[NB_KEYS];
 
 /* main.c */
 GtkWidget * pWindow;
-GtkWidget * pDrawingArea;
-GtkWidget * pDrawingArea2;
+GtkWidget * pDrawingArea, * pDrawingArea2, * pDrawingAreaTex;
 GladeXML  * xml, * xml_tools;
 
 typedef void (*VoidFunPtr)();
