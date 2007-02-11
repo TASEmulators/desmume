@@ -133,15 +133,15 @@ void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk
 
 /* MENU SAVES ***** ***** ***** ***** */
 void on_loadstateXX_activate (GtkMenuItem *m, gpointer d) {
-	int slot = dyn_CAST(int,d);
+	int slot = (int)d;
 	loadstate_slot(slot);
 }
 void on_savestateXX_activate (GtkMenuItem *m, gpointer d) {
-	int slot = dyn_CAST(int,d);
+	int slot = (int)d;
 	update_savestate(slot);
 }
 void on_savetypeXX_activate (GtkMenuItem *m, gpointer d) {
-	int type = dyn_CAST(int,d);
+	int type = (int)d;
 	desmume_savetype(type);
 }
 
@@ -167,7 +167,7 @@ void  on_menu_layers_activate (GtkMenuItem *menuitem, gpointer user_data) {
 
 /* SUBMENU FRAMESKIP ***** ***** ***** ***** */
 void  on_fsXX_activate  (GtkMenuItem *menuitem,gpointer user_data) {
-	Frameskip = dyn_CAST(int,user_data);
+	Frameskip = (int)user_data;
 //	printf ("setting FS %d %d\n", Frameskip, user_data);
 }
 
@@ -220,6 +220,7 @@ void rotate(float angle) {
 	resize(ScreenCoeff_Size[0],ScreenCoeff_Size[1]);
 }
 
+/* FIXME: Totally broken for 64bit; dyn_CAST won't work. */
 void  on_sizeXX_activate (GtkMenuItem *menuitem, gpointer user_data) {
 	float f = dyn_CAST(float,user_data);
 //	printf("setting ZOOM %f\n",f);
@@ -295,6 +296,7 @@ void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) 
 	rightscreen(ScreenRight);
 }
 
+/* FIXME: Totally broken for 64bit; dyn_CAST won't work. */
 void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	/* we want to rotate the screen */
 	float angle = dyn_CAST(float,user_data);
@@ -357,10 +359,10 @@ void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
 	//fprintf(stderr,"Changed Layer %s to %d\n",layer,state);
 }
 void  on_wc_1_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	int layer = dyn_CAST(int,user_data);
+	int layer = (int)user_data;
 	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), MainScreen);
 }
 void  on_wc_2_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data) {
-	int layer = dyn_CAST(int,user_data);
+	int layer = (int)user_data;
 	change_bgx_layer(layer, gtk_toggle_button_get_active(togglebutton), SubScreen);
 }
