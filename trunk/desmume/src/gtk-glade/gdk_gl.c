@@ -156,6 +156,8 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	glLoadIdentity();
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+	my_gl_DrawBeautifulQuad();
+
 	if (desmume_running()) {
 		// rotate
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
@@ -165,10 +167,9 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 		my_gl_ScreenTexApply(screen);
 	}
 
-	my_gl_DrawBeautifulQuad();
-
 	my_gl_End(viewportscreen);
 	return TRUE;
 }
 
 #endif /* if HAVE_LIBGDKGLEXT_X11_1_0 */
+
