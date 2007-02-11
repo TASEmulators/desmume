@@ -24,6 +24,7 @@
 
 /* globals */
 int Frameskip = 0;
+gboolean ScreenRightForce=FALSE;
 gboolean ScreenRight=FALSE;
 gboolean ScreenGap=FALSE;
 gboolean ScreenInvert=FALSE;
@@ -48,20 +49,23 @@ void enable_rom_features() {
 void MAINWINDOW_RESIZE() {
 	GtkWidget * spacer1 = glade_xml_get_widget(xml, "misc_sep3");
 	GtkWidget * spacer2 = glade_xml_get_widget(xml, "misc_sep4");
-	int dim = 66 * ScreenCoeff_Size[0];
+	int dim1,dim2;
 	BOOL rotate = (ScreenRotate==90.0 || ScreenRotate==270.0 );
 
-	/* sees whether we want a gap */
-	if (!ScreenGap) dim = -1;
-	if (ScreenRight && rotate) {
-		gtk_widget_set_usize(spacer1, dim, -1);
-	} else if (!ScreenRight && !rotate) {
-		gtk_widget_set_usize(spacer2, -1, dim);
-	} else {
-		gtk_widget_set_usize(spacer1, -1, -1);	
-		gtk_widget_set_usize(spacer2, -1, -1);	
-	}
+	dim1 = dim2 = 66 * ScreenCoeff_Size[0];
 
+	/* sees whether we want a gap */
+	if (!ScreenGap) dim1 = dim2 = -1;
+	if (ScreenRight == rotate) {
+		if (ScreenRight)
+			dim2 = -1;
+		else
+			dim1 = -1;
+	} else {
+		dim1 = dim2 = -1;
+	}
+	gtk_widget_set_usize(spacer1, dim1, -1);
+	gtk_widget_set_usize(spacer2, -1, dim2);
 	gtk_window_resize ((GtkWindow*)pWindow,1,1);
 }
 
@@ -203,21 +207,25 @@ void gtk_table_reattach(GtkTable * table, GtkWidget * w,
 
 void rightscreen(BOOL apply) {
 	GtkWidget *chk  = glade_xml_get_widget(xml, "wvb_2_Sub");
-	GtkTable *table = glade_xml_get_widget(xml, "table_layout");
+	GtkTable *table = (GtkTable *)glade_xml_get_widget(xml, "table_layout");
 
-	if (apply) {
+	ScreenRight = apply || ScreenRightForce;
+	if (ScreenRight) {
 	/* we want to change the layout, lower screen goes right */
 		gtk_table_reattach(table, pDrawingArea2, 
 			3,4, 0,1, 0,0, 0,0);
 		gtk_table_reattach(table, chk, 
 			4,5, 0,1, 0,0, 0,0);
-	} else if (!ScreenRight) {
+	} else {
 	/* we want to change the layout, lower screen goes down */
 		gtk_table_reattach(table, pDrawingArea2,
 			1,2, 2,3, 0,0, 0,0);
 		gtk_table_reattach(table, chk,
 			0,1, 2,3, 0,0, 0,0);
+		ScreenRight = FALSE;
 	}
+	
+	gtk_widget_queue_resize (GTK_WIDGET (table));
 
 	/* pack the window */
 	MAINWINDOW_RESIZE();
@@ -322,8 +330,8 @@ void  on_menu_gapscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 }
 
 void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
-	ScreenRight=gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
-	rightscreen(ScreenRight);
+	ScreenRightForce=gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
+	rightscreen(ScreenRightForce);
 }
 
 void  on_menu_rotatescreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {

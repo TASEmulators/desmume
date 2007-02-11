@@ -24,16 +24,16 @@
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 
 
-GLuint Textures[1];
+GLuint Textures[2];
 GdkGLConfig  *my_glConfig=NULL;
-GdkGLContext *my_glContext=NULL;
+GdkGLContext *my_glContext[3]={NULL,NULL,NULL};
 GdkGLDrawable *my_glDrawable[3]={NULL,NULL,NULL};
 GtkWidget *pDrawingTexArea;
 
 INLINE void my_gl_Identity() {
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
@@ -50,22 +50,22 @@ INLINE void my_gl_DrawBeautifulQuad() {
 }
 
 BOOL my_gl_Begin (int screen) {
-	return gdk_gl_drawable_gl_begin(my_glDrawable[screen], my_glContext);
+	return gdk_gl_drawable_gl_begin(my_glDrawable[screen], my_glContext[screen]);
 }
 
 void my_gl_End (int screen) {
 	if (gdk_gl_drawable_is_double_buffered (my_glDrawable[screen]))
 		gdk_gl_drawable_swap_buffers (my_glDrawable[screen]);
 	else
-		glFlush ();
+		glFlush();
 	gdk_gl_drawable_gl_end(my_glDrawable[screen]);
 }
 
-void init_GL(GtkWidget * widget, int screen) {
+void init_GL(GtkWidget * widget, int screen, int share_num) {
 	// init GL capability
 	if (!gtk_widget_set_gl_capability(
 			widget, my_glConfig, 
-			NULL, TRUE, 
+			&my_glContext[share_num], TRUE, 
 			GDK_GL_RGBA_TYPE)) {
 		printf ("gtk_widget_set_gl_capability\n");
 		exit(1);
@@ -76,22 +76,26 @@ void init_GL(GtkWidget * widget, int screen) {
 	while (gtk_events_pending()) gtk_main_iteration();
 
 	my_glDrawable[screen] = gtk_widget_get_gl_drawable(widget);
-	// shared context
-	if (my_glContext == NULL) {
-		// not initialized !
-		my_glContext = gtk_widget_get_gl_context(widget);
-		if (!my_gl_Begin(screen)) return;
-	
-		/* Set the background black */
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	
-		// generated ONE texture (display)
-		glEnable(GL_TEXTURE_2D);
-		glGenTextures(1, &Textures[0]);
-	
-		my_gl_End(screen);
+	if (screen == share_num) {
+		my_glContext[screen] = gtk_widget_get_gl_context(widget);
+	} else {
+		my_glContext[screen] = my_glContext[share_num];
+		return;
 	}
+	
+	if (!my_gl_Begin(screen)) return;
+	
+	/* Set the background black */
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+	my_gl_DrawBeautifulQuad();
+
+	// generate ONE texture (display)
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(2, Textures);
+
+	my_gl_End(screen);
 	reshape(widget, screen);
 }
 
@@ -102,9 +106,11 @@ void init_GL_capabilities() {
 		| GDK_GL_MODE_DOUBLE
 	);
 	// initialize 1st drawing area
-	init_GL(pDrawingArea,0);
+	init_GL(pDrawingArea,0,0);
 	// initialize 2nd drawing area (sharing context)
-	init_GL(pDrawingArea2,1);
+	init_GL(pDrawingArea2,1,0);
+
+	init_GL(pDrawingAreaTex,2,2);
 }
 
 void reshape (GtkWidget * widget, int screen) {
@@ -145,12 +151,34 @@ void my_gl_ScreenTexApply(int screen) {
 	glEnd();
 }
 
+void other_screen (GtkWidget * widget, int screen) {
+	if (!my_gl_Begin(screen)) return TRUE;
+
+	my_gl_Identity();
+	glClear( GL_COLOR_BUFFER_BIT );
+	
+	glBegin(GL_QUADS);
+		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
+		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
+		glColor3ub(0,255,128);  glVertex2d( 0.75, 0.75);
+		glColor3ub(0,0,255);    glVertex2d( 0.75,-0.75);
+	glEnd();
+	my_gl_End(screen);
+}
+
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int H,W,screen;
+
+	if (viewportscreen > 1) {
+		other_screen(widget,viewportscreen);
+		return TRUE;
+	}
+
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
 	screen = (ScreenInvert)?1-viewportscreen:viewportscreen;
 //	screen = viewportscreen;
+
 	if (!my_gl_Begin(viewportscreen)) return TRUE;
 
 	glLoadIdentity();
@@ -163,13 +191,13 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
 		// draw screen
 		my_gl_Texture2D();
-		if (viewportscreen==0) my_gl_ScreenTex();
+		if (viewportscreen==0) {
+			my_gl_ScreenTex();
+		}
 		my_gl_ScreenTexApply(screen);
 	}
-
 	my_gl_End(viewportscreen);
 	return TRUE;
 }
 
 #endif /* if HAVE_LIBGDKGLEXT_X11_1_0 */
-

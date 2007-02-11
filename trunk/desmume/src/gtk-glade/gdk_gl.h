@@ -34,6 +34,6 @@ BOOL my_gl_Begin (int screen);
 void my_gl_End (int screen);
 
 void init_GL_capabilities();
-void init_GL(GtkWidget * widget, int screen);
+void init_GL(GtkWidget * widget, int screen, int share_num);
 void reshape (GtkWidget * widget, int screen);
 gboolean screen (GtkWidget * widget, int off);
