@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=@VERSION@
+Type=Application
+Name=DeSmuME
+Comment=Nintento DS emulator
+TryExec=desmume
+Exec=desmume
+Icon=DeSmuME.xpm
+Categories=GNOME;GTK;Application;Game;
