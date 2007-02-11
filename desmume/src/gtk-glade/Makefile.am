@@ -1,7 +1,7 @@
 Applicationsdir = $(datadir)/applications
 Applications_DATA = desmume-glade.desktop
 pixmapdir = $(datadir)/pixmaps
-pixmap_DATA = DeSmuME.xpm
+pixmap_DATA = glade/DeSmuME.xpm
 bin_PROGRAMS = desmume-glade
 desmume_glade_SOURCES =  \
 	globals.h glade-xml.c \
