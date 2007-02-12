@@ -467,7 +467,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
-    GetINIPath(IniName);
+    GetINIPath(IniName, MAX_PATH);
 
     NDS_Init();
 
