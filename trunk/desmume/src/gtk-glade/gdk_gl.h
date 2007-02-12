@@ -23,8 +23,8 @@
 // comment for GL :D
 //#undef HAVE_LIBGDKGLEXT_X11_1_0
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
-    #include <GL/gl.h>
-    #include <GL/glext.h>
+	#include <GL/gl.h>
+	#include <GL/glext.h>
 	#include <gdk/gdkgl.h>
 	#include <gtk/gtkglwidget.h>
 #endif
@@ -32,8 +32,12 @@
 	
 BOOL my_gl_Begin (int screen);
 void my_gl_End (int screen);
+void my_gl_Clear(int screen);
 
 void init_GL_capabilities();
 void init_GL(GtkWidget * widget, int screen, int share_num);
+int init_GL_free_s(GtkWidget * widget, int share_num);
+int init_GL_free(GtkWidget * widget);
+
 void reshape (GtkWidget * widget, int screen);
 gboolean screen (GtkWidget * widget, int off);

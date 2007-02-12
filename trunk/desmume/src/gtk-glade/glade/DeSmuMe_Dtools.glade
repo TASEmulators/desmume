@@ -434,8 +434,8 @@ ARM7 cpu</property>
 	  <child>
 	    <widget class="GtkComboBox" id="wtools_3_palette">
 	      <property name="visible">True</property>
-	      <property name="items" translatable="yes"></property>
 	      <property name="add_tearoffs">False</property>
+	      <property name="items" translatable="yes"></property>
 	      <property name="focus_on_click">True</property>
 	      <signal name="changed" handler="on_wtools_3_palette_changed" last_modification_time="Sun, 14 Jan 2007 09:29:39 GMT"/>
 	    </widget>
@@ -525,14 +525,14 @@ ARM7 cpu</property>
     </widget>
   </child>
 </widget>
-<!--
-<widget class="GtkDialog" id="wtool_4_TexView">
-  <property name="visible">True</property>
-  <property name="title" translatable="yes">Texture viewer</property>
+
+<widget class="GtkDialog" id="wtools_4_TileView">
+  <property name="visible">False</property>
+  <property name="title" translatable="yes">Tile viewer</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
-  <property name="resizable">True</property>
+  <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
@@ -542,8 +542,9 @@ ARM7 cpu</property>
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
-  <signal name="close" handler="gtk_widget_hide" last_modification_time="Tue, 06 Feb 2007 12:13:16 GMT"/>
-  <signal name="response" handler="gtk_widget_hide" last_modification_time="Tue, 06 Feb 2007 12:13:24 GMT"/>
+  <signal name="delete_event" handler="on_wtools_4_TileView_close" last_modification_time="Mon, 12 Feb 2007 17:14:14 GMT"/>
+  <signal name="response" handler="on_wtools_4_TileView_close" last_modification_time="Mon, 12 Feb 2007 17:14:28 GMT"/>
+  <signal name="show" handler="on_wtools_4_TileView_show" last_modification_time="Mon, 12 Feb 2007 17:14:37 GMT"/>
 
   <child internal-child="vbox">
     <widget class="GtkVBox" id="dialog-vbox6">
@@ -578,12 +579,185 @@ ARM7 cpu</property>
       </child>
 
       <child>
-	<widget class="GtkDrawingArea" id="wTexDrawArea">
-	  <property name="width_request">256</property>
-	  <property name="height_request">256</property>
-	  <property name="events">GDK_EXPOSURE_MASK</property>
-	  <signal name="configure_event" handler="on_wTexDrawArea_configure_event" last_modification_time="Tue, 06 Feb 2007 12:14:11 GMT"/>
-	  <signal name="expose_event" handler="on_wTexDrawArea_expose_event" last_modification_time="Tue, 06 Feb 2007 12:14:34 GMT"/>
+	<widget class="GtkTable" id="table4">
+	  <property name="visible">True</property>
+	  <property name="n_rows">3</property>
+	  <property name="n_columns">4</property>
+	  <property name="homogeneous">False</property>
+	  <property name="row_spacing">0</property>
+	  <property name="column_spacing">0</property>
+
+	  <child>
+	    <widget class="GtkComboBox" id="wtools_4_palette">
+	      <property name="visible">True</property>
+	      <property name="items" translatable="yes"></property>
+	      <property name="add_tearoffs">False</property>
+	      <property name="focus_on_click">True</property>
+	      <signal name="changed" handler="on_wtools_4_palette_changed" last_modification_time="Mon, 12 Feb 2007 16:57:25 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">0</property>
+	      <property name="right_attach">1</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="y_options">fill</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkDrawingArea" id="wDraw_Tile">
+	      <property name="width_request">256</property>
+	      <property name="height_request">256</property>
+	      <property name="events">GDK_EXPOSURE_MASK | GDK_STRUCTURE_MASK</property>
+	      <signal name="expose_event" handler="on_wDraw_Tex_expose_event" last_modification_time="Mon, 12 Feb 2007 17:45:04 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">0</property>
+	      <property name="right_attach">3</property>
+	      <property name="top_attach">2</property>
+	      <property name="bottom_attach">3</property>
+	      <property name="x_options"></property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkSpinButton" id="wtools_4_palnum">
+	      <property name="visible">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="climb_rate">1</property>
+	      <property name="digits">0</property>
+	      <property name="numeric">False</property>
+	      <property name="update_policy">GTK_UPDATE_ALWAYS</property>
+	      <property name="snap_to_ticks">False</property>
+	      <property name="wrap">False</property>
+	      <property name="adjustment">0 0 15 1 2 1</property>
+	      <signal name="value_changed" handler="on_wtools_4_palnum_value_changed" last_modification_time="Mon, 12 Feb 2007 16:57:35 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">3</property>
+	      <property name="right_attach">4</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkLabel" id="label4">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">  Palette : </property>
+	      <property name="use_underline">False</property>
+	      <property name="use_markup">False</property>
+	      <property name="justify">GTK_JUSTIFY_RIGHT</property>
+	      <property name="wrap">False</property>
+	      <property name="selectable">False</property>
+	      <property name="xalign">0</property>
+	      <property name="yalign">0.5</property>
+	      <property name="xpad">0</property>
+	      <property name="ypad">0</property>
+	      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+	      <property name="width_chars">-1</property>
+	      <property name="single_line_mode">False</property>
+	      <property name="angle">0</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">2</property>
+	      <property name="right_attach">3</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkRadioButton" id="wtools_4_r16">
+	      <property name="visible">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label" translatable="yes">16c</property>
+	      <property name="use_underline">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	      <property name="active">True</property>
+	      <property name="inconsistent">False</property>
+	      <property name="draw_indicator">True</property>
+	      <signal name="toggled" handler="on_wtools_4_rXX_toggled" object="%d:2" last_modification_time="Mon, 12 Feb 2007 16:59:20 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">3</property>
+	      <property name="right_attach">4</property>
+	      <property name="top_attach">1</property>
+	      <property name="bottom_attach">2</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkRadioButton" id="wtools_4_r256">
+	      <property name="visible">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label" translatable="yes">256c</property>
+	      <property name="use_underline">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	      <property name="active">True</property>
+	      <property name="inconsistent">False</property>
+	      <property name="draw_indicator">True</property>
+	      <property name="group">wtools_4_r16</property>
+	      <signal name="toggled" handler="on_wtools_4_rXX_toggled" object="%d:1" last_modification_time="Mon, 12 Feb 2007 16:59:20 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">2</property>
+	      <property name="right_attach">3</property>
+	      <property name="top_attach">1</property>
+	      <property name="bottom_attach">2</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkRadioButton" id="wtools_4_rBMP">
+	      <property name="visible">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label" translatable="yes">BMP</property>
+	      <property name="use_underline">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	      <property name="active">True</property>
+	      <property name="inconsistent">False</property>
+	      <property name="draw_indicator">True</property>
+	      <property name="group">wtools_4_r16</property>
+	      <signal name="toggled" handler="on_wtools_4_rXX_toggled" object="%d:0" last_modification_time="Mon, 12 Feb 2007 16:59:20 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">1</property>
+	      <property name="right_attach">2</property>
+	      <property name="top_attach">1</property>
+	      <property name="bottom_attach">2</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkComboBox" id="wtools_4_memory">
+	      <property name="visible">True</property>
+	      <property name="items" translatable="yes"></property>
+	      <property name="add_tearoffs">False</property>
+	      <property name="focus_on_click">True</property>
+	      <signal name="changed" handler="on_wtools_4_memory_changed" last_modification_time="Mon, 12 Feb 2007 17:06:20 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">0</property>
+	      <property name="right_attach">1</property>
+	      <property name="top_attach">1</property>
+	      <property name="bottom_attach">2</property>
+	      <property name="y_options">fill</property>
+	    </packing>
+	  </child>
 	</widget>
 	<packing>
 	  <property name="padding">0</property>
@@ -594,5 +768,5 @@ ARM7 cpu</property>
     </widget>
   </child>
 </widget>
--->
+
 </glade-interface>

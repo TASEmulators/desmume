@@ -345,15 +345,21 @@ void  on_menu_IO_regs_activate      (GtkMenuItem *menuitem, gpointer user_data) 
 	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_1_IOregs");
 	gtk_widget_show(dlg);
 }
-
 void  on_menu_memview_activate      (GtkMenuItem *menuitem, gpointer user_data) {
 	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_2_MemView");
 	gtk_widget_show(dlg);
 }
-
 void  on_menu_palview_activate      (GtkMenuItem *menuitem, gpointer user_data) {
 	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_3_PalView");
 	gtk_widget_show(dlg);
+}
+void  on_menu_tileview_activate     (GtkMenuItem *menuitem, gpointer user_data) {
+	GtkWidget * dlg = glade_xml_get_widget(xml_tools, "wtools_4_TileView");
+	gtk_widget_show(dlg);
+}
+void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data) {
+	GtkWidget * w = user_data;
+	gtk_widget_show(w);
 }
 
 

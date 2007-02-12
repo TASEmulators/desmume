@@ -48,9 +48,11 @@ G_MODULE_EXPORT void  on_menu_rightscreen_activate  (GtkMenuItem *menuitem, gpoi
 G_MODULE_EXPORT void  on_menu_rotatescreen_activate (GtkMenuItem *menuitem, gpointer user_data);
 
 /* MENU TOOLS */
+G_MODULE_EXPORT void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_IO_regs_activate      (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_memview_activate      (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_palview_activate      (GtkMenuItem *menuitem, gpointer user_data);
+G_MODULE_EXPORT void  on_menu_tileview_activate     (GtkMenuItem *menuitem, gpointer user_data);
 
 /* MENU ? */
 G_MODULE_EXPORT void  on_menu_apropos_activate      (GtkMenuItem *menuitem, gpointer user_data);
