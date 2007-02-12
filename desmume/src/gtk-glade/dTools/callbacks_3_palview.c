@@ -21,6 +21,42 @@
 
 #include "callbacks_dtools.h"
 
+void init_combo_palette(GtkComboBox *combo, u16 ** addresses) {
+	GtkTreeIter iter;
+	GtkListStore* model = gtk_list_store_new(1, G_TYPE_STRING);
+	gtk_combo_box_set_model(combo, model);
+		
+	int i=0;
+
+#define DO(str,addr,r)  \
+	gtk_list_store_append (model, &iter); \
+	gtk_list_store_set (model, &iter, 0, str,-1); \
+	addresses[i]=((u16*)(addr) r); i++;
+
+	DO("Main screen BG  PAL", ARM9Mem.ARM9_VMEM,)
+	DO("Main screen SPR PAL", ARM9Mem.ARM9_VMEM,+0x100)
+	DO("Sub  screen BG  PAL", ARM9Mem.ARM9_VMEM,+0x200)
+	DO("Sub  screen SPR PAL", ARM9Mem.ARM9_VMEM,+0x300)
+	DO("Main screen ExtPAL 0", ARM9Mem.ExtPal[0][0],)
+	DO("Main screen ExtPAL 1", ARM9Mem.ExtPal[0][1],)
+	DO("Main screen ExtPAL 2", ARM9Mem.ExtPal[0][2],)
+	DO("Main screen ExtPAL 3", ARM9Mem.ExtPal[0][3],)
+	DO("Sub  screen ExtPAL 0", ARM9Mem.ExtPal[1][0],)
+	DO("Sub  screen ExtPAL 1", ARM9Mem.ExtPal[1][1],)
+	DO("Sub  screen ExtPAL 2", ARM9Mem.ExtPal[1][2],)
+	DO("Sub  screen ExtPAL 3", ARM9Mem.ExtPal[1][3],)
+	DO("Main screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[0][0],)
+	DO("Main screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[0][1],)
+	DO("Sub  screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[1][0],)
+	DO("Sub  screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[1][1],)
+	DO("Texture PAL 0", ARM9Mem.texPalSlot[0],)
+	DO("Texture PAL 1", ARM9Mem.texPalSlot[1],)
+	DO("Texture PAL 2", ARM9Mem.texPalSlot[2],)
+	DO("Texture PAL 3", ARM9Mem.texPalSlot[3],)
+#undef DO
+	gtk_combo_box_set_active(combo,0);
+}
+
 static u16* base_addr[20];
 static BOOL init=FALSE;
 static int palnum=0;
@@ -91,47 +127,17 @@ static void refresh() {
 	g_object_unref(gdkGC);
 }
 
-
 static void initialize() {
 	GtkComboBox * combo;
-	GtkTreeIter iter, *parent=NULL;
-	GtkListStore* model;
-	int i=0;
 	if (init) return;
 
-	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_3_palette");
-	model = (GtkListStore*)gtk_combo_box_get_model(combo);
 	wPaint= glade_xml_get_widget(xml_tools, "wtools_3_draw");
 	wSpin = (GtkSpinButton*)glade_xml_get_widget(xml_tools, "wtools_3_palnum");
+	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_3_palette");
+	
+	init_combo_palette(combo, base_addr);
 
-#define DO(str,addr,r)  \
-	gtk_list_store_append (model, &iter); \
-	gtk_list_store_set (model, &iter, 0, str,-1); \
-	base_addr[i]=((u16*)(addr) r); i++;
-
-	DO("Main screen BG  PAL", ARM9Mem.ARM9_VMEM,)
-	DO("Main screen SPR PAL", ARM9Mem.ARM9_VMEM,+0x100)
-	DO("Sub  screen BG  PAL", ARM9Mem.ARM9_VMEM,+0x200)
-	DO("Sub  screen SPR PAL", ARM9Mem.ARM9_VMEM,+0x300)
-	DO("Main screen ExtPAL 0", ARM9Mem.ExtPal[0][0],)
-	DO("Main screen ExtPAL 1", ARM9Mem.ExtPal[0][1],)
-	DO("Main screen ExtPAL 2", ARM9Mem.ExtPal[0][2],)
-	DO("Main screen ExtPAL 3", ARM9Mem.ExtPal[0][3],)
-	DO("Sub  screen ExtPAL 0", ARM9Mem.ExtPal[1][0],)
-	DO("Sub  screen ExtPAL 1", ARM9Mem.ExtPal[1][1],)
-	DO("Sub  screen ExtPAL 2", ARM9Mem.ExtPal[1][2],)
-	DO("Sub  screen ExtPAL 3", ARM9Mem.ExtPal[1][3],)
-	DO("Main screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[0][0],)
-	DO("Main screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[0][1],)
-	DO("Sub  screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[1][0],)
-	DO("Sub  screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[1][1],)
-	DO("Texture PAL 0", ARM9Mem.texPalSlot[0],)
-	DO("Texture PAL 1", ARM9Mem.texPalSlot[1],)
-	DO("Texture PAL 2", ARM9Mem.texPalSlot[2],)
-	DO("Texture PAL 3", ARM9Mem.texPalSlot[3],)
-#undef DO
 	init=TRUE;
-	gtk_combo_box_set_active(combo,0);
 }
 
 

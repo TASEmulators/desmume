@@ -23,12 +23,21 @@
 
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 
+#define _DUP8(a) a,a,a,a, a,a,a,a
+#define _DUP4(a) a,a,a,a
+#define _DUP2(a) a,a
 
 GLuint Textures[2];
+// free number we can use in tools 0-1 reserved for screens
+int free_gl_drawable=2;
 GdkGLConfig  *my_glConfig=NULL;
-GdkGLContext *my_glContext[3]={NULL,NULL,NULL};
-GdkGLDrawable *my_glDrawable[3]={NULL,NULL,NULL};
+GdkGLContext *my_glContext[8]={ _DUP8(NULL) };
+GdkGLDrawable *my_glDrawable[8]={ _DUP8(NULL) };
 GtkWidget *pDrawingTexArea;
+
+#undef _DUP8
+#undef _DUP4
+#undef _DUP2
 
 INLINE void my_gl_Identity() {
 	glMatrixMode(GL_PROJECTION);
@@ -61,6 +70,18 @@ void my_gl_End (int screen) {
 	gdk_gl_drawable_gl_end(my_glDrawable[screen]);
 }
 
+void my_gl_Clear(int screen) {
+	if (!my_gl_Begin(screen)) return;
+	
+	/* Set the background black */
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+	my_gl_DrawBeautifulQuad();
+
+	my_gl_End(screen);
+}
+
 void init_GL(GtkWidget * widget, int screen, int share_num) {
 	// init GL capability
 	if (!gtk_widget_set_gl_capability(
@@ -74,8 +95,8 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 	gtk_widget_realize(widget);
 	// make sure we realize
 	while (gtk_events_pending()) gtk_main_iteration();
-
 	my_glDrawable[screen] = gtk_widget_get_gl_drawable(widget);
+
 	if (screen == share_num) {
 		my_glContext[screen] = gtk_widget_get_gl_context(widget);
 	} else {
@@ -83,20 +104,19 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 		return;
 	}
 	
-	if (!my_gl_Begin(screen)) return;
-	
-	/* Set the background black */
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-	my_gl_DrawBeautifulQuad();
-
-	// generate ONE texture (display)
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(2, Textures);
-
-	my_gl_End(screen);
 	reshape(widget, screen);
+}
+
+int init_GL_free_s(GtkWidget * widget, int share_num) {
+	int r = free_gl_drawable; free_gl_drawable++;
+	init_GL(widget, r, share_num);
+	return r;
+}
+
+int init_GL_free(GtkWidget * widget) {
+	int r = free_gl_drawable; free_gl_drawable++;
+	init_GL(widget, r, r);
+	return r;
 }
 
 void init_GL_capabilities() {	
@@ -107,10 +127,17 @@ void init_GL_capabilities() {
 	);
 	// initialize 1st drawing area
 	init_GL(pDrawingArea,0,0);
+	my_gl_Clear(0);
+	
+	if (!my_gl_Begin(0)) return;
+	// generate ONE texture (display)
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(2, Textures);
+	my_gl_End(0);
+
 	// initialize 2nd drawing area (sharing context)
 	init_GL(pDrawingArea2,1,0);
-
-	init_GL(pDrawingAreaTex,2,2);
+	my_gl_Clear(1);
 }
 
 void reshape (GtkWidget * widget, int screen) {
@@ -151,28 +178,8 @@ void my_gl_ScreenTexApply(int screen) {
 	glEnd();
 }
 
-void other_screen (GtkWidget * widget, int screen) {
-	if (!my_gl_Begin(screen)) return TRUE;
-
-	my_gl_Identity();
-	glClear( GL_COLOR_BUFFER_BIT );
-	
-	glBegin(GL_QUADS);
-		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
-		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
-		glColor3ub(0,255,128);  glVertex2d( 0.75, 0.75);
-		glColor3ub(0,0,255);    glVertex2d( 0.75,-0.75);
-	glEnd();
-	my_gl_End(screen);
-}
-
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int H,W,screen;
-
-	if (viewportscreen > 1) {
-		other_screen(widget,viewportscreen);
-		return TRUE;
-	}
 
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick

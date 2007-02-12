@@ -45,10 +45,27 @@ G_MODULE_EXPORT gboolean on_wtools_2_draw_expose_event        (GtkWidget *, GdkE
 G_MODULE_EXPORT gboolean on_wtools_2_draw_scroll_event        (GtkWidget *, GdkEventScroll *, gpointer );
 
 /* ***** ***** PALETTE VIEWER ***** ***** */
+// initialise combo box for all palettes
+void init_combo_palette(GtkComboBox *combo, u16 ** addresses);
+
 G_MODULE_EXPORT void     on_wtools_3_PalView_show         (GtkWidget *, gpointer );
 G_MODULE_EXPORT gboolean on_wtools_3_PalView_close        (GtkWidget *, ...);
-
 G_MODULE_EXPORT gboolean on_wtools_3_PalView_delete_event (GtkWidget *, GdkEvent *,       gpointer );
 G_MODULE_EXPORT gboolean on_wtools_3_draw_expose_event    (GtkWidget *, GdkEventExpose *, gpointer );
 G_MODULE_EXPORT void     on_wtools_3_palette_changed      (GtkComboBox *,   gpointer );
 G_MODULE_EXPORT void     on_wtools_3_palnum_value_changed (GtkSpinButton *, gpointer );
+
+
+/* ***** ***** TILE VIEWER ***** ***** */
+// initialise combo box for all palettes
+void init_combo_memory(GtkComboBox *combo, u8 ** addresses);
+
+G_MODULE_EXPORT void     on_wtools_4_TileView_show         (GtkWidget *, gpointer );
+G_MODULE_EXPORT gboolean on_wtools_4_TileView_close        (GtkWidget *, ...);
+G_MODULE_EXPORT gboolean on_wtools_4_TileView_delete_event (GtkWidget *, GdkEvent *,       gpointer );
+G_MODULE_EXPORT void     on_wtools_4_memory_changed       (GtkComboBox *,   gpointer );
+G_MODULE_EXPORT void     on_wtools_4_palette_changed      (GtkComboBox *,   gpointer );
+G_MODULE_EXPORT void     on_wtools_4_palnum_value_changed (GtkSpinButton *, gpointer );
+G_MODULE_EXPORT void	 on_wtools_4_rXX_toggled          (GtkToggleButton *togglebutton, gpointer user_data);
+
+

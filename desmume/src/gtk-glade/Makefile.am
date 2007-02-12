@@ -8,7 +8,8 @@ desmume_glade_SOURCES =  \
 	callbacks.c callbacks.h callbacks_IO.c callbacks_IO.h desmume.c desmume.h \
 	keyval_names.c main.c printscreen.c gdk_gl.c gdk_gl.h \
 	dTools/callbacks_1_ioregs.c dTools/callbacks_2_memview.c \
-	dTools/callbacks_3_palview.c dTools/callbacks_dtools.h \
+	dTools/callbacks_3_palview.c  dTools/callbacks_4_tileview.c \
+	dTools/callbacks_dtools.h \
 	dTools/dTools_display.h \
 	../sndsdl.h ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c 
 

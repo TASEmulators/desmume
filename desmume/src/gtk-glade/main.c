@@ -26,7 +26,7 @@
 #include "globals.h"
 
 GtkWidget * pWindow;
-GtkWidget * pDrawingArea, * pDrawingArea2, * pDrawingAreaTex;
+GtkWidget * pDrawingArea, * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
 
 SoundInterface_struct *SNDCoreList[] = {
@@ -251,8 +251,6 @@ int main(int argc, char *argv[]) {
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
 
-	pDrawingAreaTex = glade_xml_get_widget(xml, "wDraw_Tex");
-
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect_StringObject(xml);
 	glade_xml_signal_autoconnect_StringObject(xml_tools);
@@ -277,7 +275,6 @@ int main(int argc, char *argv[]) {
 
 	gtk_widget_show(pDrawingArea);
 	gtk_widget_show(pDrawingArea2);
-	//gtk_widget_show(pDrawingAreaTex);
 
 	/* start event loop */
 	gtk_main();
