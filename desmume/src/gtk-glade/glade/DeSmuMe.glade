@@ -841,7 +841,6 @@
 		      </child>
 		    </widget>
 		  </child>
-
 		</widget>
 	      </child>
 	    </widget>
@@ -1409,7 +1408,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Left_clicked" last_modification_time="Tue, 02 Jan 2007 10:52:44 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:6" last_modification_time="Tue, 13 Feb 2007 07:20:42 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -1429,7 +1428,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Up_clicked" last_modification_time="Tue, 02 Jan 2007 10:52:36 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:7" last_modification_time="Tue, 13 Feb 2007 07:18:33 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -1449,7 +1448,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Right_clicked" last_modification_time="Tue, 02 Jan 2007 10:52:59 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:5" last_modification_time="Tue, 13 Feb 2007 07:20:52 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -1469,7 +1468,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Y_clicked" last_modification_time="Tue, 02 Jan 2007 10:53:47 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:12" last_modification_time="Tue, 13 Feb 2007 07:21:14 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -1489,7 +1488,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_X_clicked" last_modification_time="Tue, 02 Jan 2007 10:53:39 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:11" last_modification_time="Tue, 13 Feb 2007 07:21:31 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">5</property>
@@ -1509,7 +1508,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_A_clicked" last_modification_time="Tue, 02 Jan 2007 10:53:54 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:1" last_modification_time="Tue, 13 Feb 2007 07:21:44 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">6</property>
@@ -1529,7 +1528,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Down_clicked" last_modification_time="Tue, 02 Jan 2007 10:52:51 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:8" last_modification_time="Tue, 13 Feb 2007 07:21:03 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -1549,7 +1548,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_B_clicked" last_modification_time="Tue, 02 Jan 2007 10:54:00 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:2" last_modification_time="Tue, 13 Feb 2007 07:21:55 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">5</property>
@@ -1569,7 +1568,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Select_clicked" last_modification_time="Tue, 02 Jan 2007 10:53:17 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:3" last_modification_time="Tue, 13 Feb 2007 07:20:23 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -1589,7 +1588,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_L_clicked" last_modification_time="Tue, 02 Jan 2007 10:52:28 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:10" last_modification_time="Tue, 13 Feb 2007 07:18:58 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -1609,7 +1608,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_R_clicked" last_modification_time="Tue, 02 Jan 2007 10:53:30 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:9" last_modification_time="Tue, 13 Feb 2007 07:20:00 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">5</property>
@@ -1629,7 +1628,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Debug_clicked" last_modification_time="Tue, 02 Jan 2007 11:44:01 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:13" last_modification_time="Tue, 13 Feb 2007 07:19:13 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -1649,7 +1648,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Start_clicked" last_modification_time="Tue, 02 Jan 2007 10:53:09 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:4" last_modification_time="Tue, 13 Feb 2007 07:19:34 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -1669,7 +1668,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_Boost_clicked" last_modification_time="Sat, 06 Jan 2007 13:54:50 GMT"/>
+	      <signal name="clicked" handler="on_button_kb_key_clicked" object="%d:14" last_modification_time="Tue, 13 Feb 2007 07:19:50 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -1885,7 +1884,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Y_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:16 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:12" last_modification_time="Tue, 13 Feb 2007 07:06:20 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -1905,7 +1904,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_X_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:22 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:11" last_modification_time="Tue, 13 Feb 2007 07:06:35 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">5</property>
@@ -1925,7 +1924,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_A_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:40 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:1" last_modification_time="Tue, 13 Feb 2007 07:04:28 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">6</property>
@@ -1945,7 +1944,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_B_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:28 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:2" last_modification_time="Tue, 13 Feb 2007 07:06:02 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">5</property>
@@ -1965,7 +1964,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Select_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:03 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:3" last_modification_time="Tue, 13 Feb 2007 07:07:05 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -1985,7 +1984,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_L_clicked" last_modification_time="Thu, 18 Jan 2007 06:27:09 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:10" last_modification_time="Tue, 13 Feb 2007 07:07:30 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -2005,7 +2004,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_R_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:34 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:9" last_modification_time="Tue, 13 Feb 2007 07:07:18 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">5</property>
@@ -2025,7 +2024,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Debug_clicked" last_modification_time="Thu, 18 Jan 2007 06:27:56 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:13" last_modification_time="Tue, 13 Feb 2007 07:08:11 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
@@ -2045,7 +2044,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Start_clicked" last_modification_time="Thu, 18 Jan 2007 06:28:56 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:4" last_modification_time="Tue, 13 Feb 2007 07:06:52 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">3</property>
@@ -2065,7 +2064,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Boost_clicked" last_modification_time="Thu, 18 Jan 2007 06:29:09 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_key_clicked" object="%d:14" last_modification_time="Tue, 13 Feb 2007 07:08:01 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
@@ -2085,7 +2084,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Up_clicked" last_modification_time="Thu, 18 Jan 2007 05:57:40 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_axis_clicked" object="%d:7" last_modification_time="Tue, 13 Feb 2007 07:13:04 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -2105,7 +2104,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Down_clicked" last_modification_time="Thu, 18 Jan 2007 05:57:46 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_axis_clicked" object="%d:7" last_modification_time="Tue, 13 Feb 2007 07:13:14 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">1</property>
@@ -2125,7 +2124,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Left_clicked" last_modification_time="Thu, 18 Jan 2007 05:57:55 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_axis_clicked" object="%d:5" last_modification_time="Tue, 13 Feb 2007 07:13:29 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>
@@ -2145,7 +2144,7 @@
 	      <property name="use_underline">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_button_joy_Right_clicked" last_modification_time="Thu, 18 Jan 2007 05:57:51 GMT"/>
+	      <signal name="clicked" handler="on_button_joy_axis_clicked" object="%d:5" last_modification_time="Tue, 13 Feb 2007 07:13:42 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">2</property>
