@@ -62,7 +62,10 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 	stat(buffer, &s);
 	if (S_ISDIR(s.st_mode)) {
 		entry->flags = FS_IS_DIR;
-	}
+                entry->fileSize = 0;
+	} else {
+          entry->fileSize = s.st_size;
+        }
 
 	return dir;
 }
@@ -87,6 +90,9 @@ int FsReadNext(void * search, FsEntry * entry) {
 	stat(buffer, &s);
 	if (S_ISDIR(s.st_mode)) {
 		entry->flags = FS_IS_DIR;
+                entry->fileSize = 0;
+	} else {
+          entry->fileSize = s.st_size;
 	}
 
 	return 1;
