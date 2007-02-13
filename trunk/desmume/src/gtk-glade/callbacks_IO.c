@@ -358,24 +358,6 @@ void ask(GtkButton*b, int key) {
 	gtk_widget_hide((GtkWidget*)dlg);
 }
 
-void  on_button_Left_clicked    (GtkButton *b, gpointer user_data) { ask(b,KEY_LEFT); }
-void  on_button_Up_clicked      (GtkButton *b, gpointer user_data) { ask(b,KEY_UP); }
-void  on_button_Right_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_RIGHT); }
-void  on_button_Down_clicked    (GtkButton *b, gpointer user_data) { ask(b,KEY_DOWN); }
-
-void  on_button_L_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_L); }
-void  on_button_R_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_R); }
-
-void  on_button_Y_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_Y); }
-void  on_button_X_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_X); }
-void  on_button_A_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_A); }
-void  on_button_B_clicked       (GtkButton *b, gpointer user_data) { ask(b,KEY_B); }
-
-void  on_button_Start_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_START); }
-void  on_button_Select_clicked  (GtkButton *b, gpointer user_data) { ask(b,KEY_SELECT); }
-void  on_button_Debug_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_DEBUG); }
-void  on_button_Boost_clicked   (GtkButton *b, gpointer user_data) { ask(b,KEY_BOOST); }
-
 /* Joystick configuration / Key definition */
 void ask_joy_key(GtkButton*b, int key)
 {
@@ -424,31 +406,23 @@ void ask_joy_axis(GtkButton*b, u8 key, u8 opposite_key)
   gtk_widget_hide((GtkWidget*)dlg);
 }
 
-void on_button_joy_Left_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_axis(b,KEY_LEFT,KEY_RIGHT); }
-void on_button_joy_Up_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_axis(b,KEY_UP,KEY_DOWN); }
-void on_button_joy_Right_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_axis(b,KEY_RIGHT,KEY_LEFT); }
-void on_button_joy_Down_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_axis(b,KEY_DOWN,KEY_UP); }
-void on_button_joy_A_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_A); }
-void on_button_joy_B_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_B); }
-void on_button_joy_X_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_X); }
-void on_button_joy_Y_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_Y); }
-void on_button_joy_L_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_L); }
-void on_button_joy_R_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_R); }
-void on_button_joy_Select_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_SELECT); }
-void on_button_joy_Start_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_START); }
-void on_button_joy_Boost_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_BOOST); }
-void on_button_joy_Debug_clicked (GtkButton *b, gpointer user_data)
-{ ask_joy_key(b,KEY_DEBUG); }
+/* Bind a keyboard key to a keypad key */
+void  on_button_kb_key_clicked    (GtkButton *b, gpointer user_data)
+{
+  int key = dyn_CAST( int, user_data );
+  ask( b, key );
+}
+
+/* Bind a joystick axis to a keypad directionnal pad */
+void on_button_joy_axis_clicked (GtkButton *b, gpointer user_data)
+{ 
+  int key = dyn_CAST( int, user_data );
+  ask_joy_axis( b, key, key+1 );
+}
+
+/* Bind a joystick button to a keypad key */
+void on_button_joy_key_clicked (GtkButton *b, gpointer user_data)
+{
+  int key = dyn_CAST( int, user_data );
+  ask_joy_key( b, key ); 
+}
