@@ -33,6 +33,7 @@
 BOOL my_gl_Begin (int screen);
 void my_gl_End (int screen);
 void my_gl_Clear(int screen);
+void my_gl_DrawBeautifulQuad();
 
 void init_GL_capabilities();
 void init_GL(GtkWidget * widget, int screen, int share_num);

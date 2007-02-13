@@ -76,8 +76,12 @@ static int colnum=0;
 static void refresh();
 static GtkWidget * wPaint;
 static GtkSpinButton * wSpin;
-static u16 mem[0x100];
+static int gl_context_num=0;
 
+#define TILE_NUM_MAX  1024
+#define TILE_W_SZ     8
+#define TILE_H_SZ     8
+static u16 tiles[TILE_NUM_MAX][TILE_H_SZ*TILE_W_SZ];
 
 static COLOR c;
 static COLOR32 c32;
@@ -89,14 +93,101 @@ static void wtools_4_update() {
 
 }
 
-
 static void refresh() {
+	u16  palette_16[64];
+	u16  palette_256[64];
+	u8  * index16  = mem_addr[memnum];
+	u8  * index256 = mem_addr[memnum];
+	u8  * indexBMP = mem_addr[memnum];
+	u16 * pal;
+	int tile_n, index;
+	guint Textures;
 
+
+	return;
+
+	// this little thing doesnt display properly
+	// quad gets drawn in the wrong place ?
+	if (!my_gl_Begin(gl_context_num)) return;
+	my_gl_Identity();
+
+	glClearColor(0.5,0.5,0.5,1.0);
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	my_gl_DrawBeautifulQuad();
+	my_gl_End(gl_context_num);
+
+	return;
+
+
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, &Textures);
+
+	//proxy
+	glBindTexture(GL_TEXTURE_2D, Textures);
+	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, GL_RGBA,
+		256, 256, 0,
+		GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+
+
+	switch(colnum) {
+	case 0: //BMP
+		for (tile_n=0; tile_n<TILE_NUM_MAX; tile_n++) {
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 
+				(tile_n & 0x1F)<<3, (tile_n >> 5)<<3,
+				8, 8, GL_RGBA, 
+				GL_UNSIGNED_SHORT_1_5_5_5_REV, indexBMP);
+			indexBMP +=64;
+		}
+	break;
+	case 1: //256c
+	if (pal = pal_addr[palindex]) {
+		pal += palnum*256;
+		for (tile_n=0; tile_n<1024; tile_n++) {
+			for (index=0; index<64; index++) {
+				palette_256[index]=pal[*index256];
+				index256++;
+			}
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 
+				(tile_n & 0x1F)<<3, (tile_n >> 5)<<3,
+				8, 8, GL_RGBA, 
+				GL_UNSIGNED_SHORT_1_5_5_5_REV, palette_256);
+		}
+	}
+	break;
+	case 2: //16c
+	if (pal = pal_addr[palindex]) {
+		pal += palnum*16;
+		for (tile_n=0; tile_n<1024; tile_n++) {
+			for (index=0; index<64; index++) {
+				if (index & 1) continue;
+				palette_16[index]  =pal[*index16 & 15];
+				palette_16[index+1]=pal[*index16 >> 4];
+				index16++;
+			}
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 
+				(tile_n & 0x1F)<<3, (tile_n >> 5)<<3,
+				8, 8, GL_RGBA, 
+				GL_UNSIGNED_SHORT_1_5_5_5_REV, palette_16);
+		}
+	}
+	break;
+	}
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0, 0.0); glVertex2d(-1.0, 1.0);
+		glTexCoord2f(0.0, 1.0); glVertex2d(-1.0,-1.0);
+		glTexCoord2f(1.0, 1.0); glVertex2d( 1.0,-1.0);
+		glTexCoord2f(1.0, 0.0); glVertex2d( 1.0, 1.0);
+	glEnd();
+
+	glDeleteTextures(1, &Textures);
+	my_gl_End(gl_context_num);
 }
 
 static void initialize() {
 	GtkComboBox * combo;
 	if (init) return;
+	init=TRUE;
 
 	wPaint= glade_xml_get_widget(xml_tools, "wDraw_Tile");
 	wSpin = (GtkSpinButton*)glade_xml_get_widget(xml_tools, "wtools_4_palnum");
@@ -104,7 +195,9 @@ static void initialize() {
 	init_combo_palette(combo, pal_addr);
 	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_4_memory");
 	init_combo_memory(combo, mem_addr);
-	init=TRUE;
+
+	gl_context_num = init_GL_free(wPaint);
+	gtk_widget_show(wPaint);
 }
 
 
@@ -135,6 +228,10 @@ void     on_wtools_4_memory_changed (GtkComboBox *combo, gpointer user_data) {
 void	 on_wtools_4_rXX_toggled (GtkToggleButton *togglebutton, gpointer user_data) {
 	colnum = dyn_CAST(int,user_data);
 	refresh();
+}
+gboolean on_wDraw_Tile_expose_event       (GtkWidget * w, GdkEventExpose * e, gpointer user_data) {
+	refresh();
+	return TRUE;
 }
 
 

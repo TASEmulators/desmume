@@ -609,7 +609,7 @@ ARM7 cpu</property>
 	      <property name="width_request">256</property>
 	      <property name="height_request">256</property>
 	      <property name="events">GDK_EXPOSURE_MASK | GDK_STRUCTURE_MASK</property>
-	      <signal name="expose_event" handler="on_wDraw_Tex_expose_event" last_modification_time="Mon, 12 Feb 2007 17:45:04 GMT"/>
+	      <signal name="expose_event" handler="on_wDraw_Tile_expose_event" last_modification_time="Mon, 12 Feb 2007 17:45:04 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">0</property>

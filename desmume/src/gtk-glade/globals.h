@@ -112,6 +112,7 @@ typedef void (*VoidFunPtr)();
 void notify_Tools();
 void register_Tool(VoidFunPtr fun);
 void unregister_Tool(VoidFunPtr fun);
+gchar * get_ui_file (const char *filename);
 
 /* callbacks.c */
 void enable_rom_features();

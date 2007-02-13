@@ -145,7 +145,8 @@ gboolean EmuLoop(gpointer data)
 		gtk_widget_queue_draw(pDrawingArea2);
 		return TRUE;
 	}
-
+	gtk_widget_queue_draw(pDrawingArea);
+	gtk_widget_queue_draw(pDrawingArea2);
 	regMainLoop = FALSE;
 	return FALSE;
 }
