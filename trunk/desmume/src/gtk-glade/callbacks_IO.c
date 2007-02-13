@@ -380,17 +380,17 @@ void ask_joy_key(GtkButton*b, int key)
 void ask_joy_axis(GtkButton*b, u8 key, u8 opposite_key)
 {
   char text[50];
-  char opposite_button[50];
+  char current_button[50], opposite_button[50];
   u16 joykey;
   GtkWidget * dlg;
-  GtkWidget * bo;
+  GtkWidget * btn;
 
   key--; /* remove 1 to get index */
   opposite_key--;
 
+  sprintf(current_button,"button_joy_%s\0\0",key_names[key]);
   sprintf(opposite_button,"button_joy_%s\0\0",key_names[opposite_key]);
   dlg = (GtkWidget*)glade_xml_get_widget(xml, "wJoyDlg");
-  bo = (GtkWidget*)glade_xml_get_widget(xml, opposite_button);
 
   gtk_widget_show(dlg);
   /* Need to force event processing. Otherwise, popup won't show up. */
@@ -398,10 +398,12 @@ void ask_joy_axis(GtkButton*b, u8 key, u8 opposite_key)
   get_set_joy_axis(key, opposite_key);
 
   sprintf(text,"%s : %d\0\0",key_names[key],joypad_cfg[key]);
-  gtk_button_set_label(b,text);
+  btn = (GtkWidget*)glade_xml_get_widget(xml, current_button);
+  gtk_button_set_label(btn,text);
 
   sprintf(text,"%s : %d\0\0",key_names[opposite_key],joypad_cfg[opposite_key]);
-  gtk_button_set_label(bo,text);
+  btn = (GtkWidget*)glade_xml_get_widget(xml, opposite_button);
+  gtk_button_set_label(btn,text);
 
   gtk_widget_hide((GtkWidget*)dlg);
 }
