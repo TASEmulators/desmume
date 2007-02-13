@@ -36,6 +36,7 @@ typedef struct {
 	char cFileName[256];
 	char cAlternateFileName[14];
 	u32 flags;
+        u32 fileSize;
 } FsEntry;
 
 void * FsReadFirst(const char * path, FsEntry * entry);

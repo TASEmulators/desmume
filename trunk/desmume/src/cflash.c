@@ -152,8 +152,7 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 					files[numFiles].ext[j] = 0x20;
 			}
 
-			//files[numFiles].fileSize = entry->nFileSizeLow;
-			files[numFiles].fileSize = 0;
+			files[numFiles].fileSize = entry->fileSize;
 
 			if (entry->flags & FS_IS_DIR) {
 				if (strcmp(fname,".")==0)
@@ -523,7 +522,7 @@ u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	fatstring_to_asciiz(dirent,fname,NULL);
 	strncat(fpath,fname,256-strlen(fpath));
 
-        hFile = fopen(fpath, "w");
+        hFile = fopen(fpath, "r");
         if (!hFile)
 		return 0;
 	fread(&freadBuffer, 1, 512, hFile);

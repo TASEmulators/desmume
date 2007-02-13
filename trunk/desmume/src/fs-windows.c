@@ -46,7 +46,10 @@ void * FsReadFirst(const char * p, FsEntry * entry) {
 	entry->flags = 0;
 	if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		entry->flags = FS_IS_DIR;
-	}
+                entry->fileSize = 0;
+	} else {
+          entry->fileSize = FindFileData.nFileSizeLow;
+        }
 
 	ret = (void**)malloc(sizeof(HANDLE));
 	*ret = hFind;
@@ -67,7 +70,10 @@ int FsReadNext(void * search, FsEntry * entry) {
 	entry->flags = 0;
 	if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		entry->flags = FS_IS_DIR;
-	}
+                entry->fileSize = 0;
+	} else {
+          entry->fileSize = FindFileData.nFileSizeLow;
+        }
 
 	return ret;
 }
