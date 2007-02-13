@@ -367,10 +367,12 @@ void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 
 
 /* MENU ? ***** ***** ***** ***** */
+/* About dialog 
+   FIXME: We should add credits here... */
 void  on_menu_apropos_activate      (GtkMenuItem *menuitem, gpointer user_data) {
 	GtkAboutDialog * wAbout = (GtkAboutDialog*)glade_xml_get_widget(xml, "wAboutDlg");
 	gtk_about_dialog_set_version(wAbout, VERSION);
-	gtk_widget_show((GtkWidget*)wAbout);
+	gtk_dialog_run(wAbout);
 }
 
 
