@@ -363,21 +363,38 @@ void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 }
 
 
-
-
-
 /* MENU ? ***** ***** ***** ***** */
-/* About dialog 
-   FIXME: We should add credits here... */
-void  on_menu_apropos_activate      (GtkMenuItem *menuitem, gpointer user_data) {
-	GtkAboutDialog * wAbout = (GtkAboutDialog*)glade_xml_get_widget(xml, "wAboutDlg");
-	gtk_about_dialog_set_version(wAbout, VERSION);
-	gtk_dialog_run(wAbout);
+/* About dialog
+   FIXME: Add proper copyright */
+void  on_menu_apropos_activate (GtkMenuItem *menuitem, gpointer user_data) {
+  const gchar * authors[] = 
+    { "Original author:",
+      "  yopyop (now inactive)",
+      "",
+      "Current team:",
+      "  Allustar",
+      "  amponzi",
+      "  ape",
+      "  delfare",
+      "  Guillaume Duhamel",
+      "  Normmatt",
+      "  Romain Vallet",
+      "  shash",
+      "  Theo Berkau",
+      "  thoduv",
+      "  Tim Seidel (Mighty Max)",
+      "  Damien Nozay (damdoum)",
+      "  Pascal Giard (evilynux)",
+      "",
+      "Contributors:",
+      "  Anthony Molinaro",
+      NULL };
+
+  GtkAboutDialog * wAbout = (GtkAboutDialog*)glade_xml_get_widget(xml, "wAboutDlg");
+  gtk_about_dialog_set_version(wAbout, VERSION);
+  gtk_about_dialog_set_authors(wAbout, authors);
+  gtk_dialog_run(wAbout);
 }
-
-
-
-
 
 
 /* TOOLBAR ***** ***** ***** ***** */
