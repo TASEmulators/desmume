@@ -67,5 +67,5 @@ G_MODULE_EXPORT void     on_wtools_4_memory_changed       (GtkComboBox *,   gpoi
 G_MODULE_EXPORT void     on_wtools_4_palette_changed      (GtkComboBox *,   gpointer );
 G_MODULE_EXPORT void     on_wtools_4_palnum_value_changed (GtkSpinButton *, gpointer );
 G_MODULE_EXPORT void	 on_wtools_4_rXX_toggled          (GtkToggleButton *togglebutton, gpointer user_data);
-
+G_MODULE_EXPORT gboolean on_wDraw_Tile_expose_event       (GtkWidget *, GdkEventExpose *, gpointer );
 

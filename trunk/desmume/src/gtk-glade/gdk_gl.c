@@ -39,16 +39,15 @@ GtkWidget *pDrawingTexArea;
 #undef _DUP4
 #undef _DUP2
 
-INLINE void my_gl_Identity() {
+void my_gl_Identity() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
-INLINE void my_gl_DrawBeautifulQuad() {
+void my_gl_DrawBeautifulQuad() {
 	// beautiful quad
-	glColor4ub(255,255,255,128);
 	glBegin(GL_QUADS);
 		glColor3ub(255,0,0);    glVertex2d(-0.75,-0.75);
 		glColor3ub(128,255,0);  glVertex2d(-0.75, 0.75);
@@ -57,6 +56,13 @@ INLINE void my_gl_DrawBeautifulQuad() {
 	glEnd();
 	glColor3ub(255,255,255);
 }
+
+
+void my_gl_DrawLogo() {
+	
+
+}
+
 
 BOOL my_gl_Begin (int screen) {
 	return gdk_gl_drawable_gl_begin(my_glDrawable[screen], my_glContext[screen]);
@@ -75,6 +81,7 @@ void my_gl_Clear(int screen) {
 	
 	/* Set the background black */
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearDepth(1.0);
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	my_gl_DrawBeautifulQuad();
@@ -86,7 +93,9 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 	// init GL capability
 	if (!gtk_widget_set_gl_capability(
 			widget, my_glConfig, 
-			&my_glContext[share_num], TRUE, 
+			my_glContext[share_num],
+			//NULL,
+			TRUE, 
 			GDK_GL_RGBA_TYPE)) {
 		printf ("gtk_widget_set_gl_capability\n");
 		exit(1);
@@ -94,7 +103,7 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 	// realize so that we get a GdkWindow
 	gtk_widget_realize(widget);
 	// make sure we realize
-	while (gtk_events_pending()) gtk_main_iteration();
+//	while (gtk_events_pending()) gtk_main_iteration();
 	my_glDrawable[screen] = gtk_widget_get_gl_drawable(widget);
 
 	if (screen == share_num) {
@@ -160,7 +169,9 @@ INLINE void my_gl_Texture2D() {
 }
 
 INLINE void my_gl_ScreenTex() {
-	glTexImage2D(GL_TEXTURE_2D, 0, 4,
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+// pause effect
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
 		256, 512, 0, GL_RGBA,
 		GL_UNSIGNED_SHORT_1_5_5_5_REV, 
 //		GL_UNSIGNED_SHORT_5_5_5_1, 
@@ -172,9 +183,9 @@ void my_gl_ScreenTexApply(int screen) {
 	glBegin(GL_QUADS);
 		// texcoords 0.375 means 192, 1 means 256
 		glTexCoord2f(0.0, off+0.000); glVertex2d(-1.0, 1.0);
-		glTexCoord2f(0.0, off+0.375); glVertex2d(-1.0,-1.0);
-		glTexCoord2f(1.0, off+0.375); glVertex2d( 1.0,-1.0);
 		glTexCoord2f(1.0, off+0.000); glVertex2d( 1.0, 1.0);
+		glTexCoord2f(1.0, off+0.375); glVertex2d( 1.0,-1.0);
+		glTexCoord2f(0.0, off+0.375); glVertex2d(-1.0,-1.0);
 	glEnd();
 }
 
@@ -188,12 +199,16 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 
 	if (!my_gl_Begin(viewportscreen)) return TRUE;
 
-	glLoadIdentity();
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+//	glLoadIdentity();
 
-	my_gl_DrawBeautifulQuad();
+	glEnable(GL_TEXTURE_2D);
+//	glEnable(GL_BLEND);
+//	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 	if (desmume_running()) {
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		glColor4ub(255,255,255,255);
 		// rotate
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
 		// draw screen
@@ -201,8 +216,15 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 		if (viewportscreen==0) {
 			my_gl_ScreenTex();
 		}
-		my_gl_ScreenTexApply(screen);
+	} else {
+		// background color black
+		glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		glColor4f(0.5f,0.5f,0.5f,0.5f);
 	}
+	my_gl_ScreenTexApply(screen);
+	glDisable(GL_TEXTURE_2D);
+//	glDisable(GL_BLEND);
 	my_gl_End(viewportscreen);
 	return TRUE;
 }
