@@ -377,7 +377,7 @@ void ask_joy_key(GtkButton*b, int key)
 }
 
 /* Joystick configuration / Key definition */
-void ask_joy_axis(GtkButton*b, u8 key, u8 opposite_key)
+void ask_joy_axis(u8 key, u8 opposite_key)
 {
   char text[50];
   char current_button[50], opposite_button[50];
@@ -419,7 +419,7 @@ void  on_button_kb_key_clicked    (GtkButton *b, gpointer user_data)
 void on_button_joy_axis_clicked (GtkButton *b, gpointer user_data)
 { 
   int key = dyn_CAST( int, user_data );
-  ask_joy_axis( b, key, key+1 );
+  ask_joy_axis( key, key+1 );
 }
 
 /* Bind a joystick button to a keypad key */
