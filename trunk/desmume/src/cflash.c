@@ -522,7 +522,7 @@ u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	fatstring_to_asciiz(dirent,fname,NULL);
 	strncat(fpath,fname,256-strlen(fpath));
 
-        hFile = fopen(fpath, "r");
+        hFile = fopen(fpath, "rb");
         if (!hFile)
 		return 0;
 	fread(&freadBuffer, 1, 512, hFile);
