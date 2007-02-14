@@ -61,6 +61,14 @@ if test ! "x$HAVE_PKG" = "x" ; then
   AC_SUBST(GDKGLEXT_CFLAGS)
   AC_SUBST(GDKGLEXT_LIBS)
 
+  PKG_CHECK_MODULES(GTHREAD,
+                    "gthread-2.0",
+                    HAVE_GTHREAD=yes,
+                    HAVE_GTHREAD=no)
+  AC_SUBST(GTHREAD_CFLAGS)
+  AC_SUBST(GTHREAD_LIBS)
+
+
   AC_CHECK_LIB(gdkglext-x11-1.0, gdk_gl_init)
 
   PKG_CHECK_MODULES(LIBGLADE,
