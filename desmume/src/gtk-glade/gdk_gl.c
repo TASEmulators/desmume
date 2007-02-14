@@ -29,15 +29,35 @@
 
 GLuint Textures[2];
 // free number we can use in tools 0-1 reserved for screens
-int free_gl_drawable=2;
+static int free_gl_drawable=2;
 GdkGLConfig  *my_glConfig=NULL;
-GdkGLContext *my_glContext[8]={ _DUP8(NULL) };
-GdkGLDrawable *my_glDrawable[8]={ _DUP8(NULL) };
+GdkGLContext *my_glContext[8]={_DUP8(NULL)};
+GdkGLDrawable *my_glDrawable[8]={_DUP8(NULL)};
 GtkWidget *pDrawingTexArea;
 
 #undef _DUP8
 #undef _DUP4
 #undef _DUP2
+
+/************************************************/
+/* BEGIN & END                                  */
+/************************************************/
+
+BOOL my_gl_Begin (int screen) {
+	return gdk_gl_drawable_gl_begin(my_glDrawable[screen], my_glContext[screen]);
+}
+
+void my_gl_End (int screen) {
+	if (gdk_gl_drawable_is_double_buffered (my_glDrawable[screen]))
+		gdk_gl_drawable_swap_buffers (my_glDrawable[screen]);
+	else
+		glFlush();
+	gdk_gl_drawable_gl_end(my_glDrawable[screen]);
+}
+
+/************************************************/
+/* OTHER GL COMMANDS                            */
+/************************************************/
 
 void my_gl_Identity() {
 	glMatrixMode(GL_PROJECTION);
@@ -64,18 +84,6 @@ void my_gl_DrawLogo() {
 }
 
 
-BOOL my_gl_Begin (int screen) {
-	return gdk_gl_drawable_gl_begin(my_glDrawable[screen], my_glContext[screen]);
-}
-
-void my_gl_End (int screen) {
-	if (gdk_gl_drawable_is_double_buffered (my_glDrawable[screen]))
-		gdk_gl_drawable_swap_buffers (my_glDrawable[screen]);
-	else
-		glFlush();
-	gdk_gl_drawable_gl_end(my_glDrawable[screen]);
-}
-
 void my_gl_Clear(int screen) {
 	if (!my_gl_Begin(screen)) return;
 	
@@ -89,8 +97,17 @@ void my_gl_Clear(int screen) {
 	my_gl_End(screen);
 }
 
+/************************************************/
+/* INITIALIZATION                               */
+/************************************************/
+
 void init_GL(GtkWidget * widget, int screen, int share_num) {
+	int n;
+//	for (n=gtk_events_pending(); n>0; n--)
+//		gtk_main_iteration();
 	// init GL capability
+	my_glContext[screen]=NULL;
+	my_glDrawable[screen]=NULL;
 	if (!gtk_widget_set_gl_capability(
 			widget, my_glConfig, 
 			my_glContext[share_num],
@@ -103,7 +120,8 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 	// realize so that we get a GdkWindow
 	gtk_widget_realize(widget);
 	// make sure we realize
-//	while (gtk_events_pending()) gtk_main_iteration();
+	gdk_flush();
+
 	my_glDrawable[screen] = gtk_widget_get_gl_drawable(widget);
 
 	if (screen == share_num) {
@@ -118,17 +136,20 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 
 int init_GL_free_s(GtkWidget * widget, int share_num) {
 	int r = free_gl_drawable; free_gl_drawable++;
+	my_glContext[r]=NULL;
 	init_GL(widget, r, share_num);
 	return r;
 }
 
 int init_GL_free(GtkWidget * widget) {
 	int r = free_gl_drawable; free_gl_drawable++;
+	my_glContext[r]=NULL;
 	init_GL(widget, r, r);
 	return r;
 }
 
-void init_GL_capabilities() {	
+void init_GL_capabilities() {
+
 	my_glConfig = gdk_gl_config_new_by_mode (
 		GDK_GL_MODE_RGB
 		| GDK_GL_MODE_DEPTH 
@@ -149,6 +170,10 @@ void init_GL_capabilities() {
 	my_gl_Clear(1);
 }
 
+/************************************************/
+/* RESHAPE                                      */
+/************************************************/
+
 void reshape (GtkWidget * widget, int screen) {
 	if (my_glDrawable[screen] == NULL ||
 		!my_gl_Begin(screen)) return;
@@ -159,7 +184,11 @@ void reshape (GtkWidget * widget, int screen) {
 	my_gl_End(screen);
 }
 
-INLINE void my_gl_Texture2D() {
+/************************************************/
+/* TEXTURING                                    */
+/************************************************/
+
+void my_gl_Texture2D() {
 	glBindTexture(GL_TEXTURE_2D, Textures[0]);
 #define MyFILTER GL_LINEAR
 //#define MyFILTER GL_NEAREST
@@ -168,7 +197,7 @@ INLINE void my_gl_Texture2D() {
 #undef MyFILTER
 }
 
-INLINE void my_gl_ScreenTex() {
+void my_gl_ScreenTex() {
 //	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
 // pause effect
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
@@ -188,6 +217,10 @@ void my_gl_ScreenTexApply(int screen) {
 		glTexCoord2f(0.0, off+0.375); glVertex2d(-1.0,-1.0);
 	glEnd();
 }
+
+/************************************************/
+/* RENDERING                                    */
+/************************************************/
 
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int H,W,screen;

@@ -102,22 +102,17 @@ static void refresh() {
 	u16 * pal;
 	int tile_n, index;
 	guint Textures;
-
-
-	return;
+	if (!init) return;
 
 	// this little thing doesnt display properly
-	// quad gets drawn in the wrong place ?
-	if (!my_gl_Begin(gl_context_num)) return;
-	my_gl_Identity();
+	// nothing drawn...
 
-	glClearColor(0.5,0.5,0.5,1.0);
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	if (!my_gl_Begin(gl_context_num)) return;
 	my_gl_DrawBeautifulQuad();
 	my_gl_End(gl_context_num);
-
 	return;
 
+	if (!my_gl_Begin(gl_context_num)) return;
 
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &Textures);
@@ -187,7 +182,6 @@ static void refresh() {
 static void initialize() {
 	GtkComboBox * combo;
 	if (init) return;
-	init=TRUE;
 
 	wPaint= glade_xml_get_widget(xml_tools, "wDraw_Tile");
 	wSpin = (GtkSpinButton*)glade_xml_get_widget(xml_tools, "wtools_4_palnum");
@@ -198,6 +192,7 @@ static void initialize() {
 
 	gl_context_num = init_GL_free(wPaint);
 	gtk_widget_show(wPaint);
+	init=TRUE;
 }
 
 
@@ -215,19 +210,19 @@ void     on_wtools_4_palette_changed      (GtkComboBox *combo,   gpointer user_d
 	palindex = gtk_combo_box_get_active(combo);
 	gtk_widget_set_sensitive((GtkWidget*)wSpin,(palindex >=4));
 	gtk_spin_button_set_value(wSpin,0);
-	refresh();
+	gtk_widget_queue_draw(wPaint);
 }
 void     on_wtools_4_palnum_value_changed (GtkSpinButton *spin, gpointer user_data) {
 	palnum = gtk_spin_button_get_value_as_int(spin);
-	refresh();
+	gtk_widget_queue_draw(wPaint);
 }
 void     on_wtools_4_memory_changed (GtkComboBox *combo, gpointer user_data) {
 	memnum = gtk_combo_box_get_active(combo);
-	refresh();
+	gtk_widget_queue_draw(wPaint);
 }
 void	 on_wtools_4_rXX_toggled (GtkToggleButton *togglebutton, gpointer user_data) {
 	colnum = dyn_CAST(int,user_data);
-	refresh();
+	gtk_widget_queue_draw(wPaint);
 }
 gboolean on_wDraw_Tile_expose_event       (GtkWidget * w, GdkEventExpose * e, gpointer user_data) {
 	refresh();
