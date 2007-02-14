@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 	const char *commandLine_File = NULL;
 	gtk_init(&argc, &argv);
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
-	g_thread_init(NULL);
+/* 	g_thread_init(NULL); */
 	gtk_gl_init(&argc, &argv);
 	register_gl_fun(my_gl_Begin,my_gl_End);
 #endif
