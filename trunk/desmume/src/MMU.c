@@ -1651,8 +1651,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
                         case REG_TM3CNTH :
 				if(val&0x80)
 				{
-				if(!(val&4)) MMU.timer[proc][((adr-2)>>2)&0x3] = MMU.timerReload[proc][((adr-2)>>2)&0x3];
-				else MMU.timer[proc][((adr-2)>>2)&0x3] = 0;
+				  MMU.timer[proc][((adr-2)>>2)&0x3] = MMU.timerReload[proc][((adr-2)>>2)&0x3];
 				}
 				MMU.timerON[proc][((adr-2)>>2)&0x3] = val & 0x80;
 				switch(val&7)
@@ -2161,8 +2160,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				MMU.timerReload[proc][(adr>>2)&0x3] = (u16)val;
 				if(val&0x800000)
 				{
-					if(!(val&40000)) MMU.timer[proc][(adr>>2)&0x3] = MMU.timerReload[proc][(adr>>2)&0x3];
-					else MMU.timer[proc][(adr>>2)&0x3] = 0;
+					MMU.timer[proc][(adr>>2)&0x3] = MMU.timerReload[proc][(adr>>2)&0x3];
 				}
 				MMU.timerON[proc][(adr>>2)&0x3] = val & 0x800000;
 				switch((val>>16)&7)
@@ -2950,3 +2948,5 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
     MMU_write32(proc,adr,val) ;
 }
 #endif
+
+ 	  	 

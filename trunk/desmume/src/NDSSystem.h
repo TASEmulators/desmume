@@ -418,6 +418,15 @@ int NDS_CreateDummyFirmware(void);
 			        T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
                       }
                  }
+		 /* assume the timers have not expired */
+		 nds.timerOver[0][0] = 0;
+		 nds.timerOver[0][1] = 0;
+		 nds.timerOver[0][2] = 0;
+		 nds.timerOver[0][3] = 0;
+		 nds.timerOver[1][0] = 0;
+		 nds.timerOver[1][1] = 0;
+		 nds.timerOver[1][2] = 0;
+		 nds.timerOver[1][3] = 0;
                  if(MMU.timerON[0][0])
                  {
                       if(MMU.timerRUN[0][0])
@@ -437,7 +446,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x102) & 0x40)
                                                     NDS_makeARM9Int(3);
-                                               MMU.timer[0][0] += MMU.timerReload[0][0];
+                                               MMU.timer[0][0] = MMU.timerReload[0][0];
                                           }
                                      }
                                      break;
@@ -464,6 +473,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
                                                     NDS_makeARM9Int(4);
+					       MMU.timer[0][1] = MMU.timerReload[0][1];
                                           }
                                      }
                                      break;
@@ -478,10 +488,11 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
                                                     NDS_makeARM9Int(4);
-                                               MMU.timer[0][1] += MMU.timerReload[0][1];
+					       MMU.timer[0][1] = MMU.timerReload[0][1];
                                           }
                                      }
                                      break;
+
                            }
                       }
                       else
@@ -505,6 +516,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
                                                     NDS_makeARM9Int(5);
+					       MMU.timer[0][2] = MMU.timerReload[0][2];
                                           }
                                      }
                                      break;
@@ -519,7 +531,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
                                                     NDS_makeARM9Int(5);
-                                               MMU.timer[0][2] += MMU.timerReload[0][2];
+					       MMU.timer[0][2] = MMU.timerReload[0][2];
                                           }
                                      }
                                      break;
@@ -546,6 +558,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
                                                     NDS_makeARM9Int(6);
+					       MMU.timer[0][3] = MMU.timerReload[0][3];
                                           }
                                      }
                                      break;
@@ -560,7 +573,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
                                                     NDS_makeARM9Int(6);
-                                               MMU.timer[0][3] += MMU.timerReload[0][3];
+					       MMU.timer[0][3] = MMU.timerReload[0][3];
                                           }
                                      }
                                      break;
@@ -592,7 +605,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x102) & 0x40)
                                                     NDS_makeARM7Int(3);
-                                               MMU.timer[1][0] += MMU.timerReload[1][0];
+                                               MMU.timer[1][0] = MMU.timerReload[1][0];
                                           }
                                      }
                                      break;
@@ -619,6 +632,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
                                                     NDS_makeARM7Int(4);
+					       MMU.timer[1][1] = MMU.timerReload[1][1];
                                           }
                                      }
                                      break;
@@ -633,7 +647,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
                                                     NDS_makeARM7Int(4);
-                                               MMU.timer[1][1] += MMU.timerReload[1][1];
+					       MMU.timer[1][1] = MMU.timerReload[1][1];
                                           }
                                      }
                                      break;
@@ -660,6 +674,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
                                                     NDS_makeARM7Int(5);
+					       MMU.timer[1][2] = MMU.timerReload[1][2];
                                           }
                                      }
                                      break;
@@ -674,7 +689,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
                                                     NDS_makeARM7Int(5);
-                                               MMU.timer[1][2] += MMU.timerReload[1][2];
+					       MMU.timer[1][2] = MMU.timerReload[1][2];
                                           }
                                      }
                                      break;
@@ -701,6 +716,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
                                                     NDS_makeARM7Int(6);
+					       MMU.timer[1][3] += MMU.timerReload[1][3];
                                           }
                                      }
                                      break;
@@ -715,7 +731,7 @@ int NDS_CreateDummyFirmware(void);
                                           {
 					       if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
                                                     NDS_makeARM7Int(6);
-                                               MMU.timer[1][3] += MMU.timerReload[1][3];
+					       MMU.timer[1][3] += MMU.timerReload[1][3];
                                           }
                                      }
                                      break;
@@ -804,3 +820,5 @@ int NDS_CreateDummyFirmware(void);
 #endif
 
 #endif
+
+ 	  	 
