@@ -1624,6 +1624,8 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 // FIXME !!!
 /* capture */
+#if 0
+// to be done with opengl
 	capcnt = &gpu->dispCapCnt.bits;
 	if (capcnt->Capture_Enable)
 	{
@@ -1713,16 +1715,25 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 		}
 	}
+#endif
 /* end of capture */
+
+#ifndef HAVE_LIBGDKGLEXT_X11_1_0
+// damdoum :
+//   brightness done with opengl
+//   test are ok (gfx_test_brightness)
+//   now, if we are going to support 3D, this becomes dead code
+//   because it is obvious we'll use openGL / mesa3D
+
+#ifdef BRIGHT_TABLES
+	calc_bright_colors();
+#endif
 
 // Apply final brightness adjust (MASTER_BRIGHT)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
 /* it will most likly take acceleration, while we are stuck here with CPU power */
 
-#ifdef BRIGHT_TABLES
-	calc_bright_colors();
-#endif
 	switch (gpu->masterBright.bits.Mode)
 	{
 		// Disabled
@@ -1829,4 +1840,5 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		case 3:
 			break;
 	 }
+#endif
 }
