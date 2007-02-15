@@ -27,12 +27,13 @@
 #include <math.h>
 #include <string.h>
 
+#include "gl_vertex.h"
+
 #include "debug.h"
 #include "NDSSystem.h"
 #include "cflash.h"
 #include "cp15.h"
 #include "wifi.h"
-
 #include "registers.h"
 
 #define ROM_MASK 3
@@ -223,49 +224,49 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
-     int i;
-
-     memset(ARM9Mem.ARM9_ABG, 0, 0x80000);
-     memset(ARM9Mem.ARM9_AOBJ, 0, 0x40000);
-     memset(ARM9Mem.ARM9_BBG, 0, 0x20000);
-     memset(ARM9Mem.ARM9_BOBJ, 0, 0x20000);
-     memset(ARM9Mem.ARM9_DTCM, 0, 0x4000);
-     memset(ARM9Mem.ARM9_ITCM, 0, 0x8000);
-     memset(ARM9Mem.ARM9_LCD, 0, 0xA4000);
-     memset(ARM9Mem.ARM9_OAM, 0, 0x800);
-     memset(ARM9Mem.ARM9_REG, 0, 0x1000000);
-     memset(ARM9Mem.ARM9_VMEM, 0, 0x800);
-     memset(ARM9Mem.ARM9_WRAM, 0, 0x1000000);
-     memset(ARM9Mem.MAIN_MEM, 0, 0x400000);
-     
-     memset(MMU.ARM7_ERAM, 0, 0x10000);
-     memset(MMU.ARM7_REG, 0, 0x10000);
-
-     for(i = 0;i < 16;i++)
-        FIFOInit(MMU.fifos + i);
-
-     MMU.DTCMRegion = 0;
-     MMU.ITCMRegion = 0x00800000;
-        
-     memset(MMU.timer, 0, sizeof(u16) * 2 * 4);
-     memset(MMU.timerMODE, 0, sizeof(s32) * 2 * 4);
-     memset(MMU.timerON, 0, sizeof(u32) * 2 * 4);
-     memset(MMU.timerRUN, 0, sizeof(u32) * 2 * 4);
-     memset(MMU.timerReload, 0, sizeof(u16) * 2 * 4);
-        
-     memset(MMU.reg_IME, 0, sizeof(u32) * 2);
-     memset(MMU.reg_IE, 0, sizeof(u32) * 2);
-     memset(MMU.reg_IF, 0, sizeof(u32) * 2);
-        
-     memset(MMU.DMAStartTime, 0, sizeof(u32) * 2 * 4);
-     memset(MMU.DMACycle, 0, sizeof(s32) * 2 * 4);
-     memset(MMU.DMACrt, 0, sizeof(u32) * 2 * 4);
-     memset(MMU.DMAing, 0, sizeof(BOOL) * 2 * 4);
-		  
-     memset(MMU.dscard, 0, sizeof(nds_dscard) * 2);
-
-     MainScreen.offset = 192;
-     SubScreen.offset = 0;
+	int i;
+	
+	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);
+	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);
+	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);
+	memset(ARM9Mem.ARM9_BOBJ, 0, 0x020000);
+	memset(ARM9Mem.ARM9_DTCM, 0, 0x4000);
+	memset(ARM9Mem.ARM9_ITCM, 0, 0x8000);
+	memset(ARM9Mem.ARM9_LCD,  0, 0x0A4000);
+	memset(ARM9Mem.ARM9_OAM,  0, 0x0800);
+	memset(ARM9Mem.ARM9_REG,  0, 0x01000000);
+	memset(ARM9Mem.ARM9_VMEM, 0, 0x0800);
+	memset(ARM9Mem.ARM9_WRAM, 0, 0x01000000);
+	memset(ARM9Mem.MAIN_MEM,  0, 0x400000);
+	
+	memset(MMU.ARM7_ERAM,     0, 0x010000);
+	memset(MMU.ARM7_REG,      0, 0x010000);
+	
+	for(i = 0;i < 16;i++)
+	FIFOInit(MMU.fifos + i);
+	
+	MMU.DTCMRegion = 0;
+	MMU.ITCMRegion = 0x00800000;
+	
+	memset(MMU.timer,         0, sizeof(u16) * 2 * 4);
+	memset(MMU.timerMODE,     0, sizeof(s32) * 2 * 4);
+	memset(MMU.timerON,       0, sizeof(u32) * 2 * 4);
+	memset(MMU.timerRUN,      0, sizeof(u32) * 2 * 4);
+	memset(MMU.timerReload,   0, sizeof(u16) * 2 * 4);
+	
+	memset(MMU.reg_IME,       0, sizeof(u32) * 2);
+	memset(MMU.reg_IE,        0, sizeof(u32) * 2);
+	memset(MMU.reg_IF,        0, sizeof(u32) * 2);
+	
+	memset(MMU.DMAStartTime,  0, sizeof(u32) * 2 * 4);
+	memset(MMU.DMACycle,      0, sizeof(s32) * 2 * 4);
+	memset(MMU.DMACrt,        0, sizeof(u32) * 2 * 4);
+	memset(MMU.DMAing,        0, sizeof(BOOL) * 2 * 4);
+	
+	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
+	
+	MainScreen.offset = 192;
+	SubScreen.offset  = 0;
 }
 
 /* the VRAM blocks keep their content even when not blended in */
@@ -273,16 +274,16 @@ void MMU_clearMem()
 /* FIXME: VRAM Bank E,F,G,H,I missing */
 void MMU_VRAMWriteBackToLCD(u8 block)
 {
-        u8 *destination;
-        u8 *source;
+	u8 *destination;
+	u8 *source;
 	u32 size ;
-        u8 VRAMBankCnt;
+	u8 VRAMBankCnt;
 	#if 1
 		return ;
 	#endif
-        destination = 0 ;
-        source = 0;
-        VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
+	destination = 0 ;
+	source = 0;
+	VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
 	switch (block)
 	{
 		case 0: // Bank A
@@ -330,33 +331,33 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 			MMU.vScreen = 1;
 			break ;
 		case 1:
-            switch(block){
-              case 0:
-              case 1:
-              case 2:
-              case 3:
-                  /* banks are in use for BG at ABG + ofs * 0x20000 */
-				  source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-                  break ;
-              case 4:
-                  /* bank E is in use at ABG */ 
-                  source = ARM9Mem.ARM9_ABG ;
-                  break;
-              case 5:
-              case 6:
-                  /* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
-                  source = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
-                  break;
-              case 8:
-                  /* bank H is in use at BBG */ 
-                  source = ARM9Mem.ARM9_BBG ;
-                  break ;
-              case 9:
-                  /* bank I is in use at BBG */ 
-                  source = ARM9Mem.ARM9_BBG + 0x8000 ;
-                  break;
-              default: return ;
-            }
+	switch(block){
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		/* banks are in use for BG at ABG + ofs * 0x20000 */
+				source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
+		break ;
+	case 4:
+		/* bank E is in use at ABG */ 
+		source = ARM9Mem.ARM9_ABG ;
+		break;
+	case 5:
+	case 6:
+		/* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
+		source = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
+		break;
+	case 8:
+		/* bank H is in use at BBG */ 
+		source = ARM9Mem.ARM9_BBG ;
+		break ;
+	case 9:
+		/* bank I is in use at BBG */ 
+		source = ARM9Mem.ARM9_BBG + 0x8000 ;
+		break;
+	default: return ;
+	}
 			break ;
 		case 2:
 			if (block < 2)
@@ -366,17 +367,17 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 			} else return ;
 			break ;
 		case 4:
-            switch(block){
-              case 2:
-                  /* bank C is in use at BBG */ 
-                  source = ARM9Mem.ARM9_BBG ;
-                  break ;
-              case 3:
-                  /* bank D is in use at BOBJ */ 
-                  source = ARM9Mem.ARM9_BOBJ ;
-                  break ;
-              default: return ;
-            }
+	switch(block){
+	case 2:
+		/* bank C is in use at BBG */ 
+		source = ARM9Mem.ARM9_BBG ;
+		break ;
+	case 3:
+		/* bank D is in use at BOBJ */ 
+		source = ARM9Mem.ARM9_BOBJ ;
+		break ;
+	default: return ;
+	}
 			break ;
 		default:
 			return ;
@@ -388,15 +389,15 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 
 void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 {
-        u8 *destination;
-        u8 *source;
-        u32 size;
+	u8 *destination;
+	u8 *source;
+	u32 size;
 	#if 1
 		return ;
 	#endif
-        destination = 0;
-        source = 0;
-        size = 0;
+	destination = 0;
+	source = 0;
+	size = 0;
 	switch (block)
 	{
 		case 0: // Bank A
@@ -451,46 +452,46 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 			} else return ;
 			break ;
 		case 2:
-			            switch(block){
-              case 0:
-              case 1:
-              case 2:
-              case 3:
-                  /* banks are in use for BG at ABG + ofs * 0x20000 */
-				  destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-                  break ;
-              case 4:
-                  /* bank E is in use at ABG */ 
-                  destination = ARM9Mem.ARM9_ABG ;
-                  break;
-              case 5:
-              case 6:
-                  /* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
-                  destination = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
-                  break;
-              case 8:
-                  /* bank H is in use at BBG */ 
-                  destination = ARM9Mem.ARM9_BBG ;
-                  break ;
-              case 9:
-                  /* bank I is in use at BBG */ 
-                  destination = ARM9Mem.ARM9_BBG + 0x8000 ;
-                  break;
-              default: return ;
-            }
+				switch(block){
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		/* banks are in use for BG at ABG + ofs * 0x20000 */
+				destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
+		break ;
+	case 4:
+		/* bank E is in use at ABG */ 
+		destination = ARM9Mem.ARM9_ABG ;
+		break;
+	case 5:
+	case 6:
+		/* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
+		destination = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
+		break;
+	case 8:
+		/* bank H is in use at BBG */ 
+		destination = ARM9Mem.ARM9_BBG ;
+		break ;
+	case 9:
+		/* bank I is in use at BBG */ 
+		destination = ARM9Mem.ARM9_BBG + 0x8000 ;
+		break;
+	default: return ;
+	}
 			break ;
 		case 4:
-            switch(block){
-              case 2:
-                  /* bank C is in use at BBG */ 
-                  destination = ARM9Mem.ARM9_BBG ;
-                  break ;
-              case 3:
-                  /* bank D is in use at BOBJ */ 
-                  destination = ARM9Mem.ARM9_BOBJ ;
-                  break ;
-              default: return ;
-            }
+	switch(block){
+	case 2:
+		/* bank C is in use at BBG */ 
+		destination = ARM9Mem.ARM9_BBG ;
+		break ;
+	case 3:
+		/* bank D is in use at BOBJ */ 
+		destination = ARM9Mem.ARM9_BOBJ ;
+		break ;
+	default: return ;
+	}
 			break ;
 		default:
 			return ;
@@ -502,32 +503,32 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 
 void MMU_setRom(u8 * rom, u32 mask)
 {
-    unsigned int i;
-    MMU.CART_ROM = rom;
-    
-    for(i = 0x80; i<0xA0; ++i)
-    {
-	MMU_ARM9_MEM_MAP[i] = rom;
-	MMU_ARM7_MEM_MAP[i] = rom;
-	MMU_ARM9_MEM_MASK[i] = mask;
-	MMU_ARM7_MEM_MASK[i] = mask;
-    }
-    rom_mask = mask;
+	unsigned int i;
+	MMU.CART_ROM = rom;
+	
+	for(i = 0x80; i<0xA0; ++i)
+	{
+		MMU_ARM9_MEM_MAP[i] = rom;
+		MMU_ARM7_MEM_MAP[i] = rom;
+		MMU_ARM9_MEM_MASK[i] = mask;
+		MMU_ARM7_MEM_MASK[i] = mask;
+	}
+	rom_mask = mask;
 }
 
 void MMU_unsetRom()
 {
-    unsigned int i;
-    MMU.CART_ROM=MMU.UNUSED_RAM;
-
-    for(i = 0x80; i<0xA0; ++i)
-    {
-	MMU_ARM9_MEM_MAP[i] = MMU.UNUSED_RAM;
-	MMU_ARM7_MEM_MAP[i] = MMU.UNUSED_RAM;
-	MMU_ARM9_MEM_MASK[i] = ROM_MASK;
-	MMU_ARM7_MEM_MASK[i] = ROM_MASK;
-    }
-    rom_mask = ROM_MASK;
+	unsigned int i;
+	MMU.CART_ROM=MMU.UNUSED_RAM;
+	
+	for(i = 0x80; i<0xA0; ++i)
+	{
+		MMU_ARM9_MEM_MAP[i] = MMU.UNUSED_RAM;
+		MMU_ARM7_MEM_MAP[i] = MMU.UNUSED_RAM;
+		MMU_ARM9_MEM_MASK[i] = ROM_MASK;
+		MMU_ARM7_MEM_MASK[i] = ROM_MASK;
+	}
+	rom_mask = ROM_MASK;
 }
 char txt[80];	
 
@@ -540,7 +541,7 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 	
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
-	   return (unsigned char)cflash_read(adr);
+		return (unsigned char)cflash_read(adr);
 
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
@@ -602,7 +603,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 		/* Adress is an IO register */
 		switch(adr)
 		{
-                        case REG_IPCFIFORECV :               /* TODO (clear): ??? */
+			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
 				execute = FALSE;
 				return 1;
 				
@@ -619,10 +620,10 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 			case REG_IF + 2 :
 				return (u16)(MMU.reg_IF[proc]>>16);
 				
-                        case REG_TM0CNTL :
-                        case REG_TM1CNTL :
-                        case REG_TM2CNTL :
-                        case REG_TM3CNTL :
+			case REG_TM0CNTL :
+			case REG_TM1CNTL :
+			case REG_TM2CNTL :
+			case REG_TM3CNTL :
 				return MMU.timer[proc][(adr&0xF)>>2];
 			
 			case 0x04000630 :
@@ -693,7 +694,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				return MMU.reg_IE[proc];
 			case REG_IF :
 				return MMU.reg_IF[proc];
-                        case REG_IPCFIFORECV :
+			case REG_IPCFIFORECV :
 			{
 				u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 				if(IPCFIFO_CNT&0x8000)
@@ -1853,55 +1854,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 		switch(adr)
 		{
 #ifdef RENDER3D
-			case 0x040004AC :
-			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x4AC, val);
-			if(proc==ARMCPU_ARM9)
-				OGLRender::glTexImage2D(testval, TRUE);
-			//execute = FALSE;
-			return;
-			case 0x040004A8 :
-				if(proc==ARMCPU_ARM9)
-			{
-				OGLRender::glTexImage2D(val, FALSE);
-				//execute = FALSE;
-				testval = val;
-			}
-			return;
-			case 0x04000488 :
-				if(proc==ARMCPU_ARM9)
-			{
-				OGLRender::glTexCoord(val);
-				//execute = FALSE;
-			}
-			return;
-			case 0x0400046C :
-				if(proc==ARMCPU_ARM9)
+			case 0x04000350 :
+				if(proc == ARMCPU_ARM9)
 				{
-					OGLRender::glScale(val);
-				}
-				return;
-			case 0x04000490 :
-				if(proc==ARMCPU_ARM9)
-				{
-					//GPULOG("VERTEX 10 %d\r\n",val);
-				}
-				return;
-			case 0x04000494 :
-				if(proc==ARMCPU_ARM9)
-				{
-					//GPULOG(printf(txt, "VERTEXY %d\r\n",val);
-				}
-				return;
-			case 0x04000498 :
-				if(proc==ARMCPU_ARM9)
-				{
-					//GPULOG("VERTEXZ %d\r\n",val);
-				}
-				return;
-			case 0x0400049C :
-				if(proc==ARMCPU_ARM9)
-				{
-					//GPULOG("VERTEYZ %d\r\n",val);
+					OGLRender::glClearColor(val);
 				}
 				return;
 			case 0x04000400 :
@@ -1910,46 +1866,10 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					OGLRender::glCallList(val);
 				}
 				return;
-			case 0x04000450 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glRestore();
-				}
-				return;
-			case 0x04000580 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glViewPort(val);
-				}
-				return;
-			case 0x04000350 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glClearColor(val);
-				}
-				return;
 			case 0x04000440 :
 				if(proc == ARMCPU_ARM9)
 				{
 					OGLRender::glMatrixMode(val);
-				}
-				return;
-			case 0x04000458 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::ML4x4ajouter(val);
-				}
-				return;
-			case 0x0400044C : 
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glStoreMatrix(val);
-				}
-				return;
-			case 0x0400045C :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::ML4x3ajouter(val);
 				}
 				return;
 			case 0x04000444 :
@@ -1964,10 +1884,34 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					OGLRender::glPopMatrix(val);
 				}
 				return;
-			case 0x04000470 :
+			case 0x0400044C : 
 				if(proc == ARMCPU_ARM9)
 				{
-					OGLRender::addTrans(val);
+					OGLRender::glStoreMatrix(val);
+				}
+				return;
+			case 0x04000450 :
+				if(proc == ARMCPU_ARM9)
+				{
+					OGLRender::glRestore();
+				}
+				return;
+			case 0x04000454 :
+				if(proc == ARMCPU_ARM9)
+				{
+					OGLRender::glLoadIdentity();
+				}
+				return;
+			case 0x04000458 :
+				if(proc == ARMCPU_ARM9)
+				{
+					OGLRender::ML4x4ajouter(val);
+				}
+				return;
+			case 0x0400045C :
+				if(proc == ARMCPU_ARM9)
+				{
+					OGLRender::ML4x3ajouter(val);
 				}
 				return;
 			case 0x04000460 :
@@ -1988,16 +1932,16 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					OGLRender::glMultMatrix3x3(val);
 				}
 				return;
-			case 0x04000500 :
-				if(proc == ARMCPU_ARM9)
+			case 0x0400046C :
+				if(proc==ARMCPU_ARM9)
 				{
-					OGLRender::glBegin(val);
+					OGLRender::glScale(val);
 				}
 				return;
-			case 0x04000504 :
+			case 0x04000470 :
 				if(proc == ARMCPU_ARM9)
 				{
-					OGLRender::glEnd();
+					OGLRender::addTrans(val);
 				}
 				return;
 			case 0x04000480 :
@@ -2006,22 +1950,89 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					OGLRender::glColor3b(val);
 				}
 			return;
+			case 0x04000488 :
+				if(proc==ARMCPU_ARM9)
+			{
+				OGLRender::glTexCoord(val);
+				//execute = FALSE;
+			}
+			return;
+#endif
 			case 0x0400048C :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glVertex3(val);
+				if(proc == ARMCPU_ARM9) {
+					//OGLRender::glVertex3(val);
 				}
 				return;
+			case 0x04000490 :
+				if(proc==ARMCPU_ARM9) {
+					//GPULOG("VERTEX 10 %d\r\n",val);
+					gl_VTX_10(val);
+				}
+				return;
+			case 0x04000494 :
+				if(proc==ARMCPU_ARM9) {
+					//GPULOG(printf(txt, "VERTEXY %d\r\n",val);
+					gl_VTX_XY(val);
+				}
+				return;
+			case 0x04000498 :
+				if(proc==ARMCPU_ARM9) {
+					//GPULOG("VERTEXZ %d\r\n",val);
+					gl_VTX_XZ(val);
+				}
+				return;
+			case 0x0400049C :
+				if(proc==ARMCPU_ARM9) {
+					//GPULOG("VERTEYZ %d\r\n",val);
+					gl_VTX_YZ(val);
+				}
+				return;
+			case 0x040004A0 :
+				if(proc==ARMCPU_ARM9) {
+					gl_VTX_DIFF(val);
+				}
+				return;
+#ifdef RENDER3D
+			case 0x040004A8 :
+				if(proc==ARMCPU_ARM9)
+			{
+				OGLRender::glTexImage2D(val, FALSE);
+				//execute = FALSE;
+				testval = val;
+			}
+			return;
+			case 0x040004AC :
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x4AC, val);
+			if(proc==ARMCPU_ARM9)
+				OGLRender::glTexImage2D(testval, TRUE);
+			//execute = FALSE;
+			return;
+#endif
+			case 0x04000500 :
+				if(proc == ARMCPU_ARM9)
+				{
+//					OGLRender::glBegin(val);
+					gl_VTX_begin(val);
+				}
+				return;
+			case 0x04000504 :
+				if(proc == ARMCPU_ARM9)
+				{
+//					OGLRender::glEnd();
+					gl_VTX_end();
+				}
+				return;
+#ifdef RENDER3D
 			case 0x04000540 :
 				if(proc == ARMCPU_ARM9)
 				{
 					OGLRender::glFlush();
 				}
 				return;
-			case 0x04000454 :
+			case 0x04000580 :
 				if(proc == ARMCPU_ARM9)
 				{
-					OGLRender::glLoadIdentity();
+					OGLRender::glViewPort(val);
 				}
 				return;
 #endif
@@ -2590,22 +2601,22 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 
 	if(src==dst)
 	{
-	 T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
-	 return;
+		T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
+		return;
 	}
 	
 	if((!(MMU.DMACrt[proc][num]&(1<<31)))&&(!(MMU.DMACrt[proc][num]&(1<<25))))
 	{       /* not enabled and not to be repeated */
-	 MMU.DMAStartTime[proc][num] = 0;
-	 MMU.DMACycle[proc][num] = 0;
-	 //MMU.DMAing[proc][num] = FALSE;
-	 return;
+		MMU.DMAStartTime[proc][num] = 0;
+		MMU.DMACycle[proc][num] = 0;
+		//MMU.DMAing[proc][num] = FALSE;
+		return;
 	}
 	
-
+	
 	/* word count */
-    taille = (MMU.DMACrt[proc][num]&0xFFFF);
-
+	taille = (MMU.DMACrt[proc][num]&0xFFFF);
+	
 	// If we are in "Main memory display" mode just copy an entire 
 	// screen (256x192 pixels). 
 	//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
@@ -2615,337 +2626,116 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 		(((MMU.DMACrt[proc][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
 		taille = 256*192/2;
 	
-	if(MMU.DMAStartTime[proc][num] == 5) taille *= 0x80;
+	if(MMU.DMAStartTime[proc][num] == 5)
+		taille *= 0x80;
 	
 	MMU.DMACycle[proc][num] = taille + nds.cycles;
-	
 	MMU.DMAing[proc][num] = TRUE;
 	
-	DMALOG("proc %d, dma %d src %08X dst %08X start %d taille %d repeat %s %08X\r\n", proc, num, src, dst, MMU.DMAStartTime[proc][num], taille, (MMU.DMACrt[proc][num]&(1<<25))?"on":"off",MMU.DMACrt[proc][num]);
+	DMALOG("proc %d, dma %d src %08X dst %08X start %d taille %d repeat %s %08X\r\n",
+		proc, num, src, dst, MMU.DMAStartTime[proc][num], taille,
+		(MMU.DMACrt[proc][num]&(1<<25))?"on":"off",MMU.DMACrt[proc][num]);
 	
-	if(!(MMU.DMACrt[proc][num]&(1<<25))) MMU.DMAStartTime[proc][num] = 0;
+	if(!(MMU.DMACrt[proc][num]&(1<<25)))
+		MMU.DMAStartTime[proc][num] = 0;
 	
-	switch((MMU.DMACrt[proc][num]>>26)&1)
+	// transfer
 	{
-	 case 1 :           /* 32 bit DMA transfers */
-	 switch(((MMU.DMACrt[proc][num]>>21)&0xF))
-	 {
-		  u32 i;
-		 case 0 :       /* dst and src increment */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst += 4;
-			  src += 4;
-		  }
-		  break;		  
-		 case 1 :       /* dst decrement, src increment */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst -= 4;
-			  src += 4;
-		  }
-		  break;
-		 case 2 :       /* dst fixed, src increment */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  src += 4;
-		  }
-		  break;
-		 case 3 :       /*dst increment/reload, src increment */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst += 4;
-			  src += 4;
-		  }
-		  break;
-		 case 4 :       /* dst increment, src decrement */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst += 4;
-			  src -= 4;
-		  }
-		  break;
-		 case 5 :       /* dst decrement, src decrement */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst -= 4;
-			  src -= 4;
-		  }
-		  break;
-		 case 6 :       /* dst fixed, src decrement */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  src -= 4;
-		  }
-		  break;
-		 case 7 :       /* dst increment/reload, src decrement */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst += 4;
-			  src -= 4;
-		  }
-		  break;
-		 case 8 :       /* dst increment, src fixed */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst += 4;
-		  }
-		  break;
-		 case 9 :       /* dst decrement, src fixed */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst -= 4;
-		  }
-		  break;
-		 case 10 :      /* dst fixed, src fixed */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-		  }
-		  break;
-		 case 11 :      /* dst increment/reload, src fixed */
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_writeWord(proc, dst, MMU_readWord(proc, src));
-			  dst += 4;
-		  }
-		  break;
-		 default :      /* reserved */
-			break;
-	 }
-	 break;
-	 case 0 :   /* 16 bit transfers */
-	 switch(((MMU.DMACrt[proc][num]>>21)&0xF))
-	 {
-		  u32 i;
-		 case 0 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst += 2;
-			  src += 2;
-		  }
-		  break;		  
-		 case 1 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst -= 2;
-			  src += 2;
-		  }
-		  break;
-		 case 2 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  src += 2;
-		  }
-		  break;
-		 case 3 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst += 2;
-			  src += 2;
-		  }
-		  break;
-		 case 4 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst += 2;
-			  src -= 2;
-		  }
-		  break;
-		 case 5 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst -= 2;
-			  src -= 2;
-		  }
-		  break;
-		 case 6 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  src -= 2;
-		  }
-		  break;
-		 case 7 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst += 2;
-			  src -= 2;
-		  }
-		  break;
-		 case 8 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst += 2;
-		  }
-		  break;
-		 case 9 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst -= 2;
-		  }
-		  break;
-		 case 10 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-		  }
-		  break;
-		 case 11 :
-		  for(i = 0; i < taille; ++i)
-		  {
-			  MMU_write16(proc, dst, MMU_readHWord(proc, src));
-			  dst += 2;
-		  }
-		  break;
-		 default :
-			break;
-	 }
-	 break;
+		u32 i=0;
+		// 32 bit or 16 bit transfer ?
+		int sz = ((MMU.DMACrt[proc][num]>>26)&1)? 4 : 2; 
+		int dstinc,srcinc;
+		int u=(MMU.DMACrt[proc][num]>>21);
+		switch(u & 0x3) {
+			case 0 :  dstinc =  sz; break;
+			case 1 :  dstinc =   0; break;
+			case 2 :  dstinc = -sz; break;
+			case 3 :  dstinc =  sz; break; //reload
+		}
+		switch(u >> 2) {
+			case 0 :  srcinc =  sz; break;
+			case 1 :  srcinc =   0; break;
+			case 2 :  srcinc = -sz; break;
+			case 3 :  // reserved
+				return;
+		}
+		if ((MMU.DMACrt[proc][num]>>26)&1)
+			for(; i < taille; ++i)
+			{
+				MMU_writeWord(proc, dst, MMU_readWord(proc, src));
+				dst += dstinc;
+				src += srcinc;
+			}
+		else
+			for(; i < taille; ++i)
+			{
+				MMU_write16(proc, dst, MMU_readHWord(proc, src));
+				dst += dstinc;
+				src += srcinc;
+			}
 	}
 }
 
 #ifdef MMU_ENABLE_ACL
+
+INLINE void check_access(u32 adr, u32 access) {
+	/* every other mode: sys */
+	access |= 1;
+	if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10) {
+		/* is user mode access */
+		access ^= 1 ;
+	}
+	if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE) {
+		execute = FALSE ;
+	}
+}
+INLINE void check_access_write(u32 adr) {
+	u32 access = CP15_ACCESS_WRITE;
+	check_access(adr, access)
+}
+
 u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access)
 {
-    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
-    {
-         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
-         {
-             /* is user mode access */
-             access &= ~1 ;
-         } else {
-             /* every other mode: sys */
-             access |= 1 ;
-         }
-         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
-         {
-              execute = FALSE ;
-         }
-    }
-     return MMU_read8(proc,adr) ;
+	/* on arm9 we need to check the MPU regions */
+	if (proc == ARMCPU_ARM9)
+		check_access(u32 adr, u32 access);
+	return MMU_read8(proc,adr);
 }
-
 u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access)
 {
-    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
-    {
-         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
-         {
-             /* is user mode access */
-             access &= ~1 ;
-         } else {
-             /* every other mode: sys */
-             access |= 1 ;
-         }
-         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
-         {
-              execute = FALSE ;
-         }
-    }
-     return MMU_read16(proc,adr) ;
+	/* on arm9 we need to check the MPU regions */
+	if (proc == ARMCPU_ARM9)
+		check_access(u32 adr, u32 access);
+	return MMU_read16(proc,adr);
 }
-
 u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access)
 {
-    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
-    {
-         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
-         {
-             /* is user mode access */
-             access &= ~1 ;
-         } else {
-             /* every other mode: sys */
-             access |= 1 ;
-         }
-         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
-         {
-              execute = FALSE ;
-         }
-    }
-     return MMU_read32(proc,adr) ;
+	/* on arm9 we need to check the MPU regions */
+	if (proc == ARMCPU_ARM9)
+		check_access(u32 adr, u32 access);
+	return MMU_read32(proc,adr);
 }
 
 void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val)
 {
-    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
-    {
-         u32 access = CP15_ACCESS_WRITE ;
-         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
-         {
-             /* is user mode access */
-             access &= ~1 ;
-         } else {
-             /* every other mode: sys */
-             access |= 1 ;
-         }
-         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
-         {
-              execute = FALSE ;
-         }
-    }
-    MMU_write8(proc,adr,val) ;
+	/* check MPU region on ARM9 */
+	if (proc == ARMCPU_ARM9)
+		check_access_write(adr);
+	MMU_write8(proc,adr,val);
 }
-
 void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val)
 {
-    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
-    {
-         u32 access = CP15_ACCESS_WRITE ;
-         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
-         {
-             /* is user mode access */
-             access &= ~1 ;
-         } else {
-             /* every other mode: sys */
-             access |= 1 ;
-         }
-         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
-         {
-              execute = FALSE ;
-         }
-    }
-    MMU_write16(proc,adr,val) ;
+	/* check MPU region on ARM9 */
+	if (proc == ARMCPU_ARM9)
+		check_access_write(adr);
+	MMU_write16(proc,adr,val) ;
 }
-
 void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
 {
-    if (proc == ARMCPU_ARM9)      /* on arm9 we need to check the MPU regions */
-    {
-         u32 access = CP15_ACCESS_WRITE ;
-         if ((NDS_ARM9.CPSR.val & 0x1F) == 0x10)
-         {
-             /* is user mode access */
-             access &= ~1 ;
-         } else {
-             /* every other mode: sys */
-             access |= 1 ;
-         }
-         if (armcp15_isAccessAllowed((armcp15_t *)NDS_ARM9.coproc[15],adr,access)==FALSE)
-         {
-              execute = FALSE ;
-         }
-    }
-    MMU_write32(proc,adr,val) ;
+	/* check MPU region on ARM9 */
+	if (proc == ARMCPU_ARM9)
+		check_access_write(adr);
+	MMU_write32(proc,adr,val) ;
 }
 #endif
 
