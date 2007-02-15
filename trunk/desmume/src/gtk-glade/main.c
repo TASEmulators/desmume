@@ -221,7 +221,8 @@ int main(int argc, char *argv[]) {
 	const char *commandLine_File = NULL;
 	gtk_init(&argc, &argv);
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
-/* 	g_thread_init(NULL); */
+// check if you have GTHREAD when running configure script
+//	g_thread_init(NULL);
 	gtk_gl_init(&argc, &argv);
 	register_gl_fun(my_gl_Begin,my_gl_End);
 #endif
@@ -258,7 +259,7 @@ int main(int argc, char *argv[]) {
 
 	init_GL_capabilities();
 
-	/* Vérifie la ligne de commandes */
+	/* check command line file */
 	if(commandLine_File) {
 		if(desmume_open(commandLine_File) >= 0)	{
 			desmume_resume();
@@ -276,6 +277,8 @@ int main(int argc, char *argv[]) {
 
 	gtk_widget_show(pDrawingArea);
 	gtk_widget_show(pDrawingArea2);
+
+//	on_menu_tileview_activate(NULL,NULL);
 
 	/* start event loop */
 	gtk_main();

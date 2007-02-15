@@ -88,7 +88,7 @@ void my_gl_Clear(int screen) {
 	if (!my_gl_Begin(screen)) return;
 	
 	/* Set the background black */
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClearDepth(1.0);
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -135,23 +135,27 @@ void init_GL(GtkWidget * widget, int screen, int share_num) {
 }
 
 int init_GL_free_s(GtkWidget * widget, int share_num) {
-	int r = free_gl_drawable; free_gl_drawable++;
+	int r = free_gl_drawable;
 	my_glContext[r]=NULL;
+	my_glDrawable[r]=NULL;
 	init_GL(widget, r, share_num);
+	free_gl_drawable++;
 	return r;
 }
 
 int init_GL_free(GtkWidget * widget) {
-	int r = free_gl_drawable; free_gl_drawable++;
+	int r = free_gl_drawable;
 	my_glContext[r]=NULL;
+	my_glDrawable[r]=NULL;
 	init_GL(widget, r, r);
+	free_gl_drawable++;
 	return r;
 }
 
 void init_GL_capabilities() {
 
 	my_glConfig = gdk_gl_config_new_by_mode (
-		GDK_GL_MODE_RGB
+		GDK_GL_MODE_RGBA
 		| GDK_GL_MODE_DEPTH 
 		| GDK_GL_MODE_DOUBLE
 	);
@@ -198,9 +202,9 @@ void my_gl_Texture2D() {
 }
 
 void my_gl_ScreenTex() {
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
 // pause effect
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
 		256, 512, 0, GL_RGBA,
 		GL_UNSIGNED_SHORT_1_5_5_5_REV, 
 //		GL_UNSIGNED_SHORT_5_5_5_1, 
@@ -224,6 +228,9 @@ void my_gl_ScreenTexApply(int screen) {
 
 gboolean screen (GtkWidget * widget, int viewportscreen) {
 	int H,W,screen;
+	GPU * gpu;
+	float bright_color = 0.0f; // blend with black
+	float bright_alpha = 0.0f; // don't blend
 
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
@@ -232,32 +239,62 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 
 	if (!my_gl_Begin(viewportscreen)) return TRUE;
 
-//	glLoadIdentity();
+	glLoadIdentity();
+
+	// clear screen
+	glClearColor(0.0f,0.0f,0.0f,0.0f);
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	glEnable(GL_TEXTURE_2D);
-//	glEnable(GL_BLEND);
-//	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 	if (desmume_running()) {
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		glColor4ub(255,255,255,255);
+
+		// master bright
+		gpu = ((screen)?SubScreen:MainScreen).gpu;
+		switch (gpu->masterBright.bits.Mode)
+		{
+			case 1: // Bright up : blend with white
+				bright_color = 1.0f;
+				// no break;
+			case 2: // Bright down : blend with black
+				bright_alpha = 1.0f; // blending max
+				if (!gpu->masterBright.bits.FactorEx)
+					bright_alpha = gpu->masterBright.bits.Factor / 16.0;
+				break;
+			// Disabled 0, Reserved 3
+			default: break;
+		}
 		// rotate
 		glRotatef(ScreenRotate, 0.0, 0.0, 1.0);
-		// draw screen
+		// create the texture for both display
 		my_gl_Texture2D();
 		if (viewportscreen==0) {
 			my_gl_ScreenTex();
 		}
 	} else {
-		// background color black
-		glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		glColor4f(0.5f,0.5f,0.5f,0.5f);
+		// pause
+		// fake master bright up 50%
+		bright_color = 0.0f;
+		bright_alpha = 0.5f;
 	}
+	// make sure current color is ok
+	glColor4ub(255,255,255,255);
+	// apply part of the texture
 	my_gl_ScreenTexApply(screen);
 	glDisable(GL_TEXTURE_2D);
-//	glDisable(GL_BLEND);
+
+	// master bright (bis)
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(bright_color,bright_color,bright_color,bright_alpha);
+	glBegin(GL_QUADS);
+		glVertex2d(-1.0, 1.0);
+		glVertex2d( 1.0, 1.0);
+		glVertex2d( 1.0,-1.0);
+		glVertex2d(-1.0,-1.0);
+	glEnd();
+	glDisable(GL_BLEND);
+
 	my_gl_End(viewportscreen);
 	return TRUE;
 }

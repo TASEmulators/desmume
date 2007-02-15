@@ -106,19 +106,40 @@ static void refresh() {
 
 	// this little thing doesnt display properly
 	// nothing drawn...
-
+	// seems that is the context is not shared there is a pb switching context
+/*
 	if (!my_gl_Begin(gl_context_num)) return;
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	my_gl_DrawBeautifulQuad();
 	my_gl_End(gl_context_num);
 	return;
 
+*/
 	if (!my_gl_Begin(gl_context_num)) return;
+
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &Textures);
 
 	//proxy
 	glBindTexture(GL_TEXTURE_2D, Textures);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		256, 256, 0,
+		GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, indexBMP);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0, 0.0); glVertex2d(-1.0, 1.0);
+		glTexCoord2f(1.0, 0.0); glVertex2d( 1.0, 1.0);
+		glTexCoord2f(1.0, 1.0); glVertex2d( 1.0,-1.0);
+		glTexCoord2f(0.0, 1.0); glVertex2d(-1.0,-1.0);
+	glEnd();
+
+	glDeleteTextures(1, &Textures);
+
+	my_gl_End(gl_context_num);
+	return;
+
 	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, GL_RGBA,
 		256, 256, 0,
 		GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
@@ -169,10 +190,10 @@ static void refresh() {
 	}
 
 	glBegin(GL_QUADS);
-		glTexCoord2f(0.0, 0.0); glVertex2d(-1.0, 1.0);
-		glTexCoord2f(0.0, 1.0); glVertex2d(-1.0,-1.0);
-		glTexCoord2f(1.0, 1.0); glVertex2d( 1.0,-1.0);
-		glTexCoord2f(1.0, 0.0); glVertex2d( 1.0, 1.0);
+		glTexCoord2f(0.0, 0.0); glVertex2d(-0.5, 0.5);
+		glTexCoord2f(0.0, 1.0); glVertex2d(-0.5,-0.5);
+		glTexCoord2f(1.0, 1.0); glVertex2d( 0.5,-0.5);
+		glTexCoord2f(1.0, 0.0); glVertex2d( 0.5, 0.5);
 	glEnd();
 
 	glDeleteTextures(1, &Textures);
@@ -190,7 +211,7 @@ static void initialize() {
 	combo = (GtkComboBox*)glade_xml_get_widget(xml_tools, "wtools_4_memory");
 	init_combo_memory(combo, mem_addr);
 
-	gl_context_num = init_GL_free(wPaint);
+	gl_context_num = init_GL_free_s(wPaint,0);
 	gtk_widget_show(wPaint);
 	init=TRUE;
 }
