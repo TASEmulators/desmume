@@ -2648,14 +2648,14 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 		int u=(MMU.DMACrt[proc][num]>>21);
 		switch(u & 0x3) {
 			case 0 :  dstinc =  sz; break;
-			case 1 :  dstinc =   0; break;
-			case 2 :  dstinc = -sz; break;
+			case 1 :  dstinc = -sz; break;
+			case 2 :  dstinc =   0; break;
 			case 3 :  dstinc =  sz; break; //reload
 		}
-		switch(u >> 2) {
+		switch((u >> 2)&0x3) {
 			case 0 :  srcinc =  sz; break;
-			case 1 :  srcinc =   0; break;
-			case 2 :  srcinc = -sz; break;
+			case 1 :  srcinc = -sz; break;
+			case 2 :  srcinc =   0; break;
 			case 3 :  // reserved
 				return;
 		}
@@ -2739,4 +2739,3 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
 }
 #endif
 
- 	  	 
