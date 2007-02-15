@@ -11,6 +11,7 @@ libdesmume_a_SOURCES = \
 	Disassembler.c Disassembler.h \
 	dscard.h fat.h FIFO.c FIFO.h \
 	GPU.c GPU.h \
+	gl_vertex.c gl_vertex.h \
         mem.h mc.c mc.h \
 	wifi.c wifi.h \
         MMU.c MMU.h NDSSystem.c NDSSystem.h registers.h \
