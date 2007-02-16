@@ -13,10 +13,14 @@
 #define ATTRIB_LFN 0x0F
 
 #define FILE_FREE 0xE5
+/* Name and extension maximum length */
+#define NAME_LEN 8
+#define EXT_LEN 3
 
 // Boot Sector - must be packed
 #ifdef _MSC_VER
 #pragma pack(push, 1)
+#define DIR_SEP "\\"
 typedef struct
 {
         u8      jmpBoot[3];
@@ -54,8 +58,8 @@ typedef struct
 #pragma pack(push, 1)
 typedef struct
 {
-        u8      name[8];
-        u8      ext[3];
+        u8      name[NAME_LEN];
+        u8      ext[EXT_LEN];
         u8      attrib;
         u8      reserved;
         u8      cTime_ms;
@@ -70,6 +74,7 @@ typedef struct
 }	DIR_ENT;
 #pragma pack(pop)
 #else
+#define DIR_SEP "/"
 typedef struct
 {
 	u8	jmpBoot[3] __PACKED;
@@ -105,8 +110,8 @@ typedef struct
 // Directory entry - must be packed
 typedef struct
 {
-	u8	name[8] __PACKED;
-	u8	ext[3] __PACKED;
+ 	u8	name[NAME_LEN] __PACKED;
+	u8	ext[EXT_LEN] __PACKED;
 	u8	attrib __PACKED;
 	u8	reserved __PACKED;
 	u8	cTime_ms __PACKED;

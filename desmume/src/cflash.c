@@ -72,8 +72,8 @@ int lfn_checksum() {
         u8 chk;
 
 	chk = 0;
-	for (i=0; i < 11; i++) {
-		chk = ((chk & 1) ? 0x80 : 0) + (chk >> 1) + (i < 8 ? files[numFiles].name[i] : files[numFiles].ext[i - 8]);
+	for (i=0; i < (NAME_LEN + EXT_LEN); i++) {
+		chk = ((chk & 1) ? 0x80 : 0) + (chk >> 1) + (i < NAME_LEN ? files[numFiles].name[i] : files[numFiles].ext[i - NAME_LEN]);
 	}
 	return chk;
 }
@@ -96,9 +96,9 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 			if (i<0) i = strlen(fname);
 			for (j=0; j<i; j++)
 				files[numFiles].name[j] = fname[j];
-			for (; j<8; j++)
+			for (; j<NAME_LEN; j++)
 				files[numFiles].name[j] = 0x20;
-			for (j=0; j<3; j++) {
+			for (j=0; j<EXT_LEN; j++) {
 				if ((j+i+1)>=strlen(fname)) break;
 				files[numFiles].ext[j] = fname[j+i+1];
 			}
@@ -142,9 +142,9 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 				if (i<0) i = strlen(fname);
 				for (j=0; j<i; j++)
 					files[numFiles].name[j] = fname[j];
-				for (; j<8; j++)
+				for (; j<NAME_LEN; j++)
 					files[numFiles].name[j] = 0x20;
-				for (j=0; j<3; j++) {
+				for (j=0; j<EXT_LEN; j++) {
 					if ((j+i+1)>=strlen(fname)) break;
 					files[numFiles].ext[j] = fname[j+i+1];
 				}
@@ -169,8 +169,8 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 			numFiles++;
 		} else if (fileLevel > 0) {
 			fileLink[fileLevel].filesInDir += 1;
-			strncpy((char*)&files[numFiles].name[0],"..      ",8);
-			strncpy((char*)&files[numFiles].ext[0],"   ",3);
+			strncpy((char*)&files[numFiles].name[0],"..      ",NAME_LEN);
+			strncpy((char*)&files[numFiles].ext[0],"   ",EXT_LEN);
 			fileLink[numFiles].parent = fileLevel;	
 			files[numFiles].attrib = 0x10;
 			numFiles++;
@@ -295,9 +295,9 @@ BOOL cflash_build_fat() {
 				dirEntries[k++] = files[j];
 				if ((files[j].attrib & ATTRIB_LFN)==0) {
 					if (files[j].attrib & ATTRIB_DIR) {
-						if (strncmp((char*)&files[j].name[0],".       ",8)==0) {
+						if (strncmp((char*)&files[j].name[0],".       ",NAME_LEN)==0) {
 							dirEntries[k-1].startCluster = dirEntryLink[k-1].level; 
-						} else if (strncmp((char*)&files[j].name[0],"..      ",8)==0) {
+						} else if (strncmp((char*)&files[j].name[0],"..      ",NAME_LEN)==0) {
 							dirEntries[k-1].startCluster = dirEntryLink[k-1].parent; 
 						} else {
 							clust++;
@@ -455,13 +455,13 @@ void fatstring_to_asciiz(int dirent,char *out,DIR_ENT *d) {
 	else
 		pd = d;
 
-	for (i=0; i<8; i++) {
+	for (i=0; i<NAME_LEN; i++) {
 		if (pd->name[i] == ' ') break;
 		out[i] = pd->name[i];
 	}
 	if ((pd->attrib & 0x10)==0) {
 		out[i++] = '.';
-		for (j=0; j<3; j++) {
+		for (j=0; j<EXT_LEN; j++) {
 			if (pd->ext[j] == ' ') break;
 			out[i++] = pd->ext[j];
 		}
@@ -482,7 +482,7 @@ void resolve_path(int dirent) {
 				((dirEntries[i].attrib&ATTRIB_DIR)!=0)) {
 				fatstring_to_asciiz(i,dirname,NULL);
 				strncat(fpath,dirname,256-strlen(fpath));
-				strncat(fpath,"\\",256-strlen(fpath));
+				strncat(fpath,DIR_SEP,256-strlen(fpath));
 				dirent = i;
 				break;
 			}
@@ -493,7 +493,7 @@ void resolve_path(int dirent) {
 
 /* Read from a file using a 512 byte buffer */
 u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
-	char fname[32];
+	char fname[2*NAME_LEN+EXT_LEN];
 	int i,j;
 
 	offset += cluster*512*SECPERCLUS;
@@ -515,7 +515,7 @@ u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 
 	/* replaced strcpy/cat with strncpy/strcat to fixed possible buffer overruns */
 	strncpy(fpath,sRomPath,256);
-	strncat(fpath,"\\",256-strlen(fpath));
+	strncat(fpath,DIR_SEP,256-strlen(fpath));
 	
 	resolve_path(dirent);
 
@@ -523,8 +523,9 @@ u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	strncat(fpath,fname,256-strlen(fpath));
 
         hFile = fopen(fpath, "rb");
-        if (!hFile)
-		return 0;
+        if (!hFile) return 0;
+        bufferStart = offset;
+        fseek(hFile, offset, SEEK_SET);
 	fread(&freadBuffer, 1, 512, hFile);
 
 	bufferStart = offset;
