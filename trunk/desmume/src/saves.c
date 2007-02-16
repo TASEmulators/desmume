@@ -282,9 +282,9 @@ int savestate_load (const char *file_name)    {
         MMU_write16(ARMCPU_ARM9, 0x04000304, MMU_read16(ARMCPU_ARM9, 0x04000304));
 
 	// This should regenerate the graphics configuration
-        for (i = REG_DISPA_DISPCNT; i<=REG_DISPA_MASTERBRIGHT; i+=2)
+        for (i = REG_BASE_DISPA; i<=REG_BASE_DISPA + 0x7F; i+=2)
 		MMU_write16(ARMCPU_ARM9, i, MMU_read16(ARMCPU_ARM9, i));
-        for (i = REG_DISPB_DISPCNT; i<=REG_DISPB_MASTERBRIGHT; i+=2)
+        for (i = REG_BASE_DISPB; i<=REG_BASE_DISPB + 0x7F; i+=2)
 		MMU_write16(ARMCPU_ARM9, i, MMU_read16(ARMCPU_ARM9, i));
 
         gzclose (file);
