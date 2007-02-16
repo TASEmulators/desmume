@@ -3751,7 +3751,7 @@ typedef union {
 
 
 void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
-	u32 adr_u8_1 = adr & 0xFFFFFFFC;
+	u32 adr_u8_1 = adr & 0x0FFFFFFE;
 	u32 adr_u8_2 = adr_u8_1 + 1;
 	u32 adr_u8_3 = adr_u8_1 + 2;
 	u32 adr_u8_4 = adr_u8_1 + 3;
@@ -3768,8 +3768,20 @@ void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
 #define val_u8_3   val_union.bytes.byte3
 #define val_u8_4   val_union.bytes.byte4
 
+	if ((proc == ARMCPU_ARM9) && (adr & ~0x3FFF) == MMU.DTCMRegion)
+	{
+		/* Writes data in DTCM (ARM9 only) */
+		switch (nbbytes) {
+		case 1: ARM9Mem.ARM9_DTCM[adr&0x3FFF] = val; break;
+		case 2: T1WriteWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val); break;
+		case 4: T1WriteLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val); break;
+		}
+		return ;
+	}
+
 	// CFlash writing, Mic
-	if ((adr>=0x08800000)&&(adr<0x09900000)) {
+//	if ((adr>=0x08800000)&&(adr<0x09900000)) {
+	if ((adr>=0x09000000)&&(adr<0x09900000)) {
 		cflash_write(adr,val);
 		return;
 	}
@@ -3784,9 +3796,18 @@ void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
 
 	if (proc == ARMCPU_ARM7) {
 		// This is bad, remove it
-		if ((adr>=0x04000400)&&(adr<0x0400051D))
-		{
-			SPU_WriteByte(adr, val);
+		if ((adr>=0x04000400)&&(adr<0x0400051D)) {
+			switch (nbbytes) {
+			case 1:
+				SPU_WriteByte(adr, val);
+				break;
+			case 2:
+				SPU_WriteWord(adr, val);
+				break;
+			case 4:
+				SPU_WriteLong(adr, val);
+				break;
+			}
 			return;
 		}
 	
@@ -3801,19 +3822,8 @@ void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
 #else
 			return;
 #endif
-	} else 
-	
-	if (/*(proc == ARMCPU_ARM9) &&*/ (adr & ~0x3FFF) == MMU.DTCMRegion)
-	{
-		/* Writes data in DTCM (ARM9 only) */
-		switch (nbbytes) {
-		case 1: ARM9Mem.ARM9_DTCM[adr&0x3FFF] = val; break;
-		case 2: T1WriteWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val); break;
-		case 4: T1WriteLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val); break;
-		}
-		return ;
 	}
-
+	
 	adr &= 0x0FFFFFFF;
 
 
@@ -3832,9 +3842,7 @@ void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
 	val_union.word = T1ReadLong(MMU.MMU_MEM[proc][MEM_REGION],
 		adr_u32&MMU.MMU_MASK[proc][MEM_REGION]);
 
-
-	// which region
-	switch (adr & REG_REGION_MASK) {
+	switch (adr_u32 & REG_REGION_MASK) {
 	case REG_BASE_DISPx:
 		//if (proc == ARMCPU_ARM9) 
 		{
