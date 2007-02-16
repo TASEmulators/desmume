@@ -746,3 +746,23 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+
+[Unit71]
+FileName=..\gl_vertex.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit72]
+FileName=..\gl_vertex.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
