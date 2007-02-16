@@ -37,12 +37,12 @@
 #include "registers.h"
 
 
-void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes);
 void FASTCALL MMU_write8_old(u32 proc, u32 adr, u8 val);
 void FASTCALL MMU_write16_old(u32 proc, u32 adr, u16 val);
 void FASTCALL MMU_write32_old(u32 proc, u32 adr, u32 val);
 
-#define USE_OLD 1
+
+#define USE_OLD 0
 #if USE_OLD
 void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val) {
 	MMU_write8_old(proc, adr, val);
@@ -189,6 +189,10 @@ u32 MMU_ARM7_WAIT16[16]={
 u32 MMU_ARM7_WAIT32[16]={
 	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
 };
+
+
+
+
 
 void MMU_Init(void) {
 	int i;
@@ -801,6 +805,9 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 	/* Returns data from memory */
 	return T1ReadLong(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]);
 }
+
+u16 partie = 1;
+u32 testval = 0;
 	
 void FASTCALL MMU_write8_old(u32 proc, u32 adr, u8 val)
 {
@@ -1127,7 +1134,6 @@ void FASTCALL MMU_write8_old(u32 proc, u32 adr, u8 val)
 	MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]]=val;
 }
 
-u16 partie = 1;
 
 void FASTCALL MMU_write16_old(u32 proc, u32 adr, u16 val)
 {
@@ -1844,7 +1850,6 @@ void FASTCALL MMU_write16_old(u32 proc, u32 adr, u16 val)
 	T1WriteWord(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
 } 
 
-u32 testval = 0;
 
 void FASTCALL MMU_write32_old(u32 proc, u32 adr, u32 val)
 {
@@ -2768,6 +2773,8 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
 	MMU_write32(proc,adr,val) ;
 }
 
+
+#endif
 
 
 
@@ -3742,6 +3749,7 @@ typedef union {
 } u32_union;
 #endif
 
+
 void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
 	u32 adr_u8_1 = adr & 0xFFFFFFFC;
 	u32 adr_u8_2 = adr_u8_1 + 1;
@@ -3933,7 +3941,4 @@ void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
 		break;
 	}
 }
-
-
-#endif
 
