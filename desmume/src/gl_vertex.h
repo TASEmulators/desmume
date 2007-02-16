@@ -53,7 +53,7 @@ void gl_VTX_begin(u32 val);
 void gl_VTX_end();
 //see 4000504h - Cmd 41h - END_VTXS - End of Vertex List (W)
 
-void gl_VTX_16 (u32 xxyy, u32 zz__);
+void gl_VTX_16 (u32 val);
 //see 400048Ch - Cmd 23h - VTX_16 - Set Vertex XYZ Coordinates (W)
 void gl_VTX_10 (u32 xyz);
 //see 4000490h - Cmd 24h - VTX_10 - Set Vertex XYZ Coordinates (W)

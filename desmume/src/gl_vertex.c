@@ -25,8 +25,8 @@
 
 static u16 vx=0,vy=0,vz=0;
 
-//#define print(a) printf a
-#define print(a)
+#define print(a) printf a
+//#define print(a)
 
 INLINE void gl_VTX_one() {
 	float vfx,vfy,vfz;
@@ -62,17 +62,28 @@ void gl_VTX_end() {
 	print(("VTX_end.\n"));
 }
 
-
-void gl_VTX_16 (u32 xxyy, u32 zz__) {
+void gl_VTX_16 (u32 val) {
 //see 400048Ch - Cmd 23h - VTX_16 - Set Vertex XYZ Coordinates (W)
-	_VTX_16 xy, z_;
-	xy.val = xxyy;
-	z_.val = zz__;
-	vx = xy.bits.low ;
-	vy = xy.bits.high;
-	vz = z_.bits.low ;
-	gl_VTX_one();
+	_VTX_16 vval;
+	static int vtx_16_nbparams = 0;
+
+	vval.val = val;
+	switch(vtx_16_nbparams) {
+	case 0:
+		vx = vval.bits.low ;
+		vy = vval.bits.high;
+		vtx_16_nbparams++;
+		break;
+	case 1:
+		vz = vval.bits.low ;
+		gl_VTX_one();
+		vtx_16_nbparams=0;
+		break;
+	default:
+		break;
+	}
 }
+
 void gl_VTX_10 (u32 xyz) {
 //see 4000490h - Cmd 24h - VTX_10 - Set Vertex XYZ Coordinates (W)
 	_VTX_10 vt;

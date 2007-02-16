@@ -249,5 +249,44 @@
 #define REG_DISPA_DISPMMEMFIFO                  0x04000068
 
 
+// 3d commands
+#define cmd_3D_MTX_MODE        0x04000440
+#define cmd_3D_MTX_PUSH        0x04000444
+#define cmd_3D_MTX_POP         0x04000448
+#define cmd_3D_MTX_STORE       0x0400044C
+#define cmd_3D_MTX_RESTORE     0x04000450
+#define cmd_3D_MTX_IDENTITY    0x04000454
+#define cmd_3D_MTX_LOAD_4x4    0x04000458
+#define cmd_3D_MTX_LOAD_4x3    0x0400045C
+#define cmd_3D_MTX_MULT_4x4    0x04000460
+#define cmd_3D_MTX_MULT_4x3    0x04000464
+#define cmd_3D_MTX_MULT_3x3    0x04000468
+#define cmd_3D_MTX_SCALE       0x0400046C
+#define cmd_3D_MTX_TRANS       0x04000470
+#define cmd_3D_COLOR           0x04000480
+#define cmd_3D_NORMA           0x04000484
+#define cmd_3D_TEXCOORD        0x04000488
+#define cmd_3D_VTX_16          0x0400048C
+#define cmd_3D_VTX_10          0x04000490
+#define cmd_3D_VTX_XY          0x04000494
+#define cmd_3D_VTX_XZ          0x04000498
+#define cmd_3D_VTX_YZ          0x0400049C
+#define cmd_3D_VTX_DIFF        0x040004A0
+#define cmd_3D_POLYGON_ATTR    0x040004A4
+#define cmd_3D_TEXIMAGE_PARAM  0x040004A8
+#define cmd_3D_PLTT_BASE       0x040004AC
+#define cmd_3D_DIF_AMB         0x040004C0
+#define cmd_3D_SPE_EMI         0x040004C4
+#define cmd_3D_LIGHT_VECTOR    0x040004C8
+#define cmd_3D_LIGHT_COLOR     0x040004CC
+#define cmd_3D_SHININESS       0x040004D0
+#define cmd_3D_BEGIN_VTXS      0x04000500
+#define cmd_3D_END_VTXS        0x04000504
+#define cmd_3D_SWAP_BUFFERS    0x04000540
+#define cmd_3D_VIEWPORT        0x04000580
+#define cmd_3D_BOX_TEST        0x040005C0
+#define cmd_3D_POS_TEST        0x040005C4
+#define cmd_3D_VEC_TEST        0x040005C8
+
 #endif
 
