@@ -25,38 +25,41 @@
 
 static u16 vx=0,vy=0,vz=0;
 
+//#define print(a) printf a
+#define print(a)
+
 INLINE void gl_VTX_one() {
 	float vfx,vfy,vfz;
 	vfx = vx / 4096.;
 	vfy = vy / 4096.;
 	vfz = vz / 4096.;
-	printf ("\tVTX (x=%.12f,y=%.12f,z=%.12f)\n",vfx,vfy,vfz);
+	print(("\tVTX (x=%.12f,y=%.12f,z=%.12f)\n",vfx,vfy,vfz));
 }
 
 void gl_VTX_begin(u32 val) {
 //see 4000500h - Cmd 40h - BEGIN_VTXS - Start of Vertex List (W)
 	vx=vy=vz=0;
-	printf ("VTX_begin : ");
+	print(("VTX_begin : "));
 	switch(val) {
 	case 0 : // separate triangles (3 vertices for each triangle)
-		printf ("GL_TRIANGLES\n");
+		print(("GL_TRIANGLES\n"));
 		break;
 	case 1 : // separate quads (4 vertices for each triangle)
-		printf ("GL_QUADS\n");
+		print(("GL_QUADS\n"));
 		break;
 	// strips : 1st triangle or quad defined by all vertices
 	//          next ones share a segment (so 2 vertices less)
 	case 2 : // triangle strips (1st : 3, next : 1)
-		printf ("GL_TRIANGLE_STRIP\n");
+		print(("GL_TRIANGLE_STRIP\n"));
 		break;
 	case 3 : // quad strips (1st : 4, next : 2)
-		printf ("GL_QUAD_STRIP\n");
+		print(("GL_QUAD_STRIP\n"));
 		break;
 	}
 }
 void gl_VTX_end() {
 //see 4000504h - Cmd 41h - END_VTXS - End of Vertex List (W)
-	printf ("VTX_end.\n");
+	print(("VTX_end.\n"));
 }
 
 

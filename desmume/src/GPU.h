@@ -512,20 +512,21 @@ extern GraphicsInterface_struct GFXDummy;
 
 void GPU_setVideoProp(GPU *, u32 p);
 void GPU_setBGProp(GPU *, u16 num, u16 p);
+
 void GPU_scrollX(GPU *, u8 num, u16 v);
 void GPU_scrollY(GPU *, u8 num, u16 v);
-void GPU_scrollXY(GPU *, u8 num, u32 v);
-
-void GPU_setX(GPU *, u8 num, u32 v);
 void GPU_setXH(GPU *, u8 num, u16 v);
 void GPU_setXL(GPU *, u8 num, u16 v);
-void GPU_setY(GPU *, u8 num, u32 v);
 void GPU_setYH(GPU *, u8 num, u16 v);
 void GPU_setYL(GPU *, u8 num, u16 v);
 void GPU_setPA(GPU *, u8 num, u16 v);
 void GPU_setPB(GPU *, u8 num, u16 v);
 void GPU_setPC(GPU *, u8 num, u16 v);
 void GPU_setPD(GPU *, u8 num, u16 v);
+
+void GPU_scrollXY(GPU *, u8 num, u32 v);
+void GPU_setX(GPU *, u8 num, u32 v);
+void GPU_setY(GPU *, u8 num, u32 v);
 void GPU_setPAPB(GPU *, u8 num, u32 v);
 void GPU_setPCPD(GPU *, u8 num, u32 v);
        
