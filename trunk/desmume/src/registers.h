@@ -13,54 +13,48 @@
 #define REG_BASE_OTHER                          0x04000300
 #define REG_BASE_RCVPORTS                       0x04100000
 
-#define REG_DISPB                               0x00001000
-// core A and B specific
-#define REG_DISPx_DISPCNT                       0x04000000
-#define REG_DISPx_VCOUNT                        0x04000006
-#define REG_DISPx_BG0CNT                        0x04000008
-#define REG_DISPx_BG1CNT                        0x0400000A
-#define REG_DISPx_BG2CNT                        0x0400000C
-#define REG_DISPx_BG3CNT                        0x0400000E
-#define REG_DISPx_BG0HOFS                       0x04000010
-#define REG_DISPx_BG0VOFS                       0x04000012
-#define REG_DISPx_BG1HOFS                       0x04000014
-#define REG_DISPx_BG1VOFS                       0x04000016
-#define REG_DISPx_BG2HOFS                       0x04000018
-#define REG_DISPx_BG2VOFS                       0x0400001A
-#define REG_DISPx_BG3HOFS                       0x0400001C
-#define REG_DISPx_BG3VOFS                       0x0400001E
-#define REG_DISPx_BG2PA                         0x04000020
-#define REG_DISPx_BG2PB                         0x04000022
-#define REG_DISPx_BG2PC                         0x04000024
-#define REG_DISPx_BG2PD                         0x04000026
-#define REG_DISPx_BG2XL                         0x04000028
-#define REG_DISPx_BG2XH                         0x0400002A
-#define REG_DISPx_BG2YL                         0x0400002C
-#define REG_DISPx_BG2YH                         0x0400002E
-#define REG_DISPx_BG3PA                         0x04000030
-#define REG_DISPx_BG3PB                         0x04000032
-#define REG_DISPx_BG3PC                         0x04000034
-#define REG_DISPx_BG3PD                         0x04000036
-#define REG_DISPx_BG3XL                         0x04000038
-#define REG_DISPx_BG3XH                         0x0400003A
-#define REG_DISPx_BG3YL                         0x0400003C
-#define REG_DISPx_BG3YH                         0x0400003E
-#define REG_DISPx_WIN0H                         0x04000040
-#define REG_DISPx_WIN1H                         0x04000042
-#define REG_DISPx_WIN0V                         0x04000044
-#define REG_DISPx_WIN1V                         0x04000046
-#define REG_DISPx_WININ                         0x04000048
-#define REG_DISPx_WINOUT                        0x0400004A
-#define REG_DISPx_MOSAIC                        0x0400004C
-#define REG_DISPx_BLDCNT                        0x04000050
-#define REG_DISPx_BLDALPHA                      0x04000052
-#define REG_DISPx_BLDY                          0x04000054
-#define REG_DISPx_MASTERBRIGHT                  0x0400006C
-// core A specific
-#define REG_DISPA_DISPSTAT                      0x04000004
-#define REG_DISPA_DISP3DCNT                     0x04000060
-#define REG_DISPA_DISPCAPCNT                    0x04000064
-#define REG_DISPA_DISPMMEMFIFO                  0x04000068
+// Display Engine A
+#define REG_DISPA_DISPCNT                       0x04000000
+#define REG_DISPA_VCOUNT                        0x04000006
+#define REG_DISPA_BG0CNT                        0x04000008
+#define REG_DISPA_BG1CNT                        0x0400000A
+#define REG_DISPA_BG2CNT                        0x0400000C
+#define REG_DISPA_BG3CNT                        0x0400000E
+#define REG_DISPA_BG0HOFS                       0x04000010
+#define REG_DISPA_BG0VOFS                       0x04000012
+#define REG_DISPA_BG1HOFS                       0x04000014
+#define REG_DISPA_BG1VOFS                       0x04000016
+#define REG_DISPA_BG2HOFS                       0x04000018
+#define REG_DISPA_BG2VOFS                       0x0400001A
+#define REG_DISPA_BG3HOFS                       0x0400001C
+#define REG_DISPA_BG3VOFS                       0x0400001E
+#define REG_DISPA_BG2PA                         0x04000020
+#define REG_DISPA_BG2PB                         0x04000022
+#define REG_DISPA_BG2PC                         0x04000024
+#define REG_DISPA_BG2PD                         0x04000026
+#define REG_DISPA_BG2XL                         0x04000028
+#define REG_DISPA_BG2XH                         0x0400002A
+#define REG_DISPA_BG2YL                         0x0400002C
+#define REG_DISPA_BG2YH                         0x0400002E
+#define REG_DISPA_BG3PA                         0x04000030
+#define REG_DISPA_BG3PB                         0x04000032
+#define REG_DISPA_BG3PC                         0x04000034
+#define REG_DISPA_BG3PD                         0x04000036
+#define REG_DISPA_BG3XL                         0x04000038
+#define REG_DISPA_BG3XH                         0x0400003A
+#define REG_DISPA_BG3YL                         0x0400003C
+#define REG_DISPA_BG3YH                         0x0400003E
+#define REG_DISPA_WIN0H                         0x04000040
+#define REG_DISPA_WIN1H                         0x04000042
+#define REG_DISPA_WIN0V                         0x04000044
+#define REG_DISPA_WIN1V                         0x04000046
+#define REG_DISPA_WININ                         0x04000048
+#define REG_DISPA_WINOUT                        0x0400004A
+#define REG_DISPA_MOSAIC                        0x0400004C
+#define REG_DISPA_BLDCNT                        0x04000050
+#define REG_DISPA_BLDALPHA                      0x04000052
+#define REG_DISPA_BLDY                          0x04000054
+#define REG_DISPA_MASTERBRIGHT                  0x0400006C
 
 // DMA
 #define REG_DMA0SAD                             0x040000B0
@@ -156,8 +150,104 @@
 #define REG_POWCNT2                             0x04000304
 #define REG_BIOSPROT                            0x04000308
 
+#define REG_DISPB_DISPCNT                       0x04001000
+#define REG_DISPB_BG0CNT                        0x04001008
+#define REG_DISPB_BG1CNT                        0x0400100A
+#define REG_DISPB_BG2CNT                        0x0400100C
+#define REG_DISPB_BG3CNT                        0x0400100E
+#define REG_DISPB_BG0HOFS                       0x04001010
+#define REG_DISPB_BG0VOFS                       0x04001012
+#define REG_DISPB_BG1HOFS                       0x04001014
+#define REG_DISPB_BG1VOFS                       0x04001016
+#define REG_DISPB_BG2HOFS                       0x04001018
+#define REG_DISPB_BG2VOFS                       0x0400101A
+#define REG_DISPB_BG3HOFS                       0x0400101C
+#define REG_DISPB_BG3VOFS                       0x0400101E
+#define REG_DISPB_BG2PA                         0x04001020
+#define REG_DISPB_BG2PB                         0x04001022
+#define REG_DISPB_BG2PC                         0x04001024
+#define REG_DISPB_BG2PD                         0x04001026
+#define REG_DISPB_BG2XL                         0x04001028
+#define REG_DISPB_BG2XH                         0x0400102A
+#define REG_DISPB_BG2YL                         0x0400102C
+#define REG_DISPB_BG2YH                         0x0400102E
+#define REG_DISPB_BG3PA                         0x04001030
+#define REG_DISPB_BG3PB                         0x04001032
+#define REG_DISPB_BG3PC                         0x04001034
+#define REG_DISPB_BG3PD                         0x04001036
+#define REG_DISPB_BG3XL                         0x04001038
+#define REG_DISPB_BG3XH                         0x0400103A
+#define REG_DISPB_BG3YL                         0x0400103C
+#define REG_DISPB_BG3YH                         0x0400103E
+#define REG_DISPB_WIN0H                         0x04001040
+#define REG_DISPB_WIN1H                         0x04001042
+#define REG_DISPB_WIN0V                         0x04001044
+#define REG_DISPB_WIN1V                         0x04001046
+#define REG_DISPB_WININ                         0x04001048
+#define REG_DISPB_WINOUT                        0x0400104A
+#define REG_DISPB_MOSAIC                        0x0400104C
+#define REG_DISPB_BLDCNT                        0x04001050
+#define REG_DISPB_BLDALPHA                      0x04001052
+#define REG_DISPB_BLDY                          0x04001054
+#define REG_DISPB_MASTERBRIGHT                  0x0400106C
+
 // Receive ports
 #define REG_IPCFIFORECV                         0x04100000
 #define REG_GCDATAIN                            0x04100010
 
+
+
+
+
+#define REG_DISPB                               0x00001000
+// core A and B specific
+#define REG_DISPx_DISPCNT                       0x04000000
+#define REG_DISPx_VCOUNT                        0x04000006
+#define REG_DISPx_BG0CNT                        0x04000008
+#define REG_DISPx_BG1CNT                        0x0400000A
+#define REG_DISPx_BG2CNT                        0x0400000C
+#define REG_DISPx_BG3CNT                        0x0400000E
+#define REG_DISPx_BG0HOFS                       0x04000010
+#define REG_DISPx_BG0VOFS                       0x04000012
+#define REG_DISPx_BG1HOFS                       0x04000014
+#define REG_DISPx_BG1VOFS                       0x04000016
+#define REG_DISPx_BG2HOFS                       0x04000018
+#define REG_DISPx_BG2VOFS                       0x0400001A
+#define REG_DISPx_BG3HOFS                       0x0400001C
+#define REG_DISPx_BG3VOFS                       0x0400001E
+#define REG_DISPx_BG2PA                         0x04000020
+#define REG_DISPx_BG2PB                         0x04000022
+#define REG_DISPx_BG2PC                         0x04000024
+#define REG_DISPx_BG2PD                         0x04000026
+#define REG_DISPx_BG2XL                         0x04000028
+#define REG_DISPx_BG2XH                         0x0400002A
+#define REG_DISPx_BG2YL                         0x0400002C
+#define REG_DISPx_BG2YH                         0x0400002E
+#define REG_DISPx_BG3PA                         0x04000030
+#define REG_DISPx_BG3PB                         0x04000032
+#define REG_DISPx_BG3PC                         0x04000034
+#define REG_DISPx_BG3PD                         0x04000036
+#define REG_DISPx_BG3XL                         0x04000038
+#define REG_DISPx_BG3XH                         0x0400003A
+#define REG_DISPx_BG3YL                         0x0400003C
+#define REG_DISPx_BG3YH                         0x0400003E
+#define REG_DISPx_WIN0H                         0x04000040
+#define REG_DISPx_WIN1H                         0x04000042
+#define REG_DISPx_WIN0V                         0x04000044
+#define REG_DISPx_WIN1V                         0x04000046
+#define REG_DISPx_WININ                         0x04000048
+#define REG_DISPx_WINOUT                        0x0400004A
+#define REG_DISPx_MOSAIC                        0x0400004C
+#define REG_DISPx_BLDCNT                        0x04000050
+#define REG_DISPx_BLDALPHA                      0x04000052
+#define REG_DISPx_BLDY                          0x04000054
+#define REG_DISPx_MASTERBRIGHT                  0x0400006C
+// core A specific
+#define REG_DISPA_DISPSTAT                      0x04000004
+#define REG_DISPA_DISP3DCNT                     0x04000060
+#define REG_DISPA_DISPCAPCNT                    0x04000064
+#define REG_DISPA_DISPMMEMFIFO                  0x04000068
+
+
 #endif
+
