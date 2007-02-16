@@ -306,7 +306,7 @@ void MMU_clearMem()
 /* the VRAM blocks keep their content even when not blended in */
 /* to ensure that we write the content back to the LCD ram */
 /* FIXME: VRAM Bank E,F,G,H,I missing */
-void MMU_VRAMWriteBackToLCD(u8 block)
+void MMU_VRAMWriteBackToLCD(u32 block)
 {
 	u8 *destination;
 	u8 *source;
@@ -315,6 +315,7 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	#if 1
 		return ;
 	#endif
+	block = (u8)block;
 	destination = 0 ;
 	source = 0;
 	VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
@@ -3626,103 +3627,108 @@ INLINE void MMU_write32_REG_3D(u32 adr, u32 val) {
 	case 0x04000400 :
 		OGLRender::glCallList(val);
 		return;
-	case 0x04000440 :
+	case cmd_3D_MTX_MODE :
 		OGLRender::glMatrixMode(val);
 		return;
-	case 0x04000444 :
+	case cmd_3D_MTX_PUSH :
 		OGLRender::glPushMatrix();
 		return;
-	case 0x04000448 :
+	case cmd_3D_MTX_POP :
 		OGLRender::glPopMatrix(val);
 		return;
-	case 0x0400044C :
+	case cmd_3D_MTX_STORE :
 		OGLRender::glStoreMatrix(val);
 		return;
-	case 0x04000450 :
+	case cmd_3D_MTX_RESTORE :
 		OGLRender::glRestore();
 		return;
-	case 0x04000454 :
+	case cmd_3D_MTX_IDENTITY :
 		OGLRender::glLoadIdentity();
 		return;
-	case 0x04000458 :
+	case cmd_3D_MTX_LOAD_4x4 :
 		OGLRender::ML4x4ajouter(val);
 		return;
-	case 0x0400045C :
+	case cmd_3D_MTX_LOAD_4x3 :
 		OGLRender::ML4x3ajouter(val);
 		return;
-	case 0x04000460 :
+	case cmd_3D_MTX_MULT_4x4 :
 		OGLRender::glMultMatrix4x4(val);
 		return;
-	case 0x04000464 :
+	case cmd_3D_MTX_MULT_4x3 :
 		OGLRender::glMultMatrix4x3(val);
 		return;
-	case 0x04000468 :
+	case cmd_3D_MTX_MULT_3x3 :
 		OGLRender::glMultMatrix3x3(val);
 		return;
-	case 0x0400046C :
+	case cmd_3D_MTX_SCALE :
 		OGLRender::glScale(val);
 		return;
-	case 0x04000470 :
+	case cmd_3D_MTX_TRANS :
 		OGLRender::addTrans(val);
 		return;
-	case 0x04000480 :
+	case cmd_3D_COLOR :
 		OGLRender::glColor3b(val);
 		return;
-	case 0x04000488 :
+	case cmd_3D_NORMA :
 		OGLRender::glTexCoord(val);
 		//execute = FALSE;
 		return;
 #endif
-	case 0x0400048C :
+	case cmd_3D_VTX_16 :
 		//OGLRender::glVertex3(val);
+		gl_VTX_16(val);
 		return;
-	case 0x04000490 :
+	case cmd_3D_VTX_10 :
 		//GPULOG("VERTEX 10 %d\r\n",val);
 		gl_VTX_10(val);
 		return;
-	case 0x04000494 :
+	case cmd_3D_VTX_XY :
 		//GPULOG(printf(txt, "VERTEXY %d\r\n",val);
 		gl_VTX_XY(val);
 		return;
-	case 0x04000498 :
+	case cmd_3D_VTX_XZ :
 		//GPULOG("VERTEXZ %d\r\n",val);
 		gl_VTX_XZ(val);
 		return;
-	case 0x0400049C :
+	case cmd_3D_VTX_YZ :
 		//GPULOG("VERTEYZ %d\r\n",val);
 		gl_VTX_YZ(val);
 		return;
-	case 0x040004A0 :
+	case cmd_3D_VTX_DIFF :
 		gl_VTX_DIFF(val);
 		return;
 #ifdef RENDER3D
-	case 0x040004A8 :
+	case cmd_3D_TEXIMAGE_PARAM :
 		OGLRender::glTexImage2D(val, FALSE);
 		//execute = FALSE;
 		testval = val;
 		return;
-	case 0x040004AC :
+	case cmd_3D_PLTT_BASE :
 		OGLRender::glTexImage2D(testval, TRUE);
 		//execute = FALSE;
 		return;
 #endif
-	case 0x04000500 :
+	case cmd_3D_BEGIN_VTXS :
 		// OGLRender::glBegin(val);
 		gl_VTX_begin(val);
 		return;
-	case 0x04000504 :
+	case cmd_3D_END_VTXS :
 		// OGLRender::glEnd();
 		gl_VTX_end();
 		return;
 #ifdef RENDER3D
-	case 0x04000540 :
+	case cmd_3D_SWAP_BUFFERS :
 		OGLRender::glFlush();
 		return;
-	case 0x04000580 :
+	case cmd_3D_VIEWPORT :
 		OGLRender::glViewPort(val);
 		return;
 #endif
 	}
+/*
+	if (adr > 0x4000300 && adr < 0x4000700)
+		printf("command %08x\n", adr);
+*/
 }
 
 
