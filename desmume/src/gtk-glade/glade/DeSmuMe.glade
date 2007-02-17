@@ -8,7 +8,7 @@
   <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK</property>
   <property name="title" translatable="yes">DeSmuMe</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
-  <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
+  <property name="window_position">GTK_WIN_POS_CENTER</property>
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
@@ -1317,14 +1317,38 @@
 
 <widget class="GtkAboutDialog" id="wAboutDlg">
   <property name="destroy_with_parent">False</property>
+  <property name="window_position">GTK_WIN_POS_MOUSE</property>
   <property name="name" translatable="yes">DeSmuME</property>
+  <property name="version" translatable="no">0.6.1</property>
   <property name="comments" translatable="yes">Nintendo DS emulator based on work by Yopyop</property>
   <property name="wrap_license">False</property>
   <property name="website">http://desmume.sf.net</property>
   <property name="website_label" translatable="yes">http://desmume.sf.net</property>
-  <property name="authors"></property>
+  <property name="authors">Original author:
+  yopyop (now inactive)
+
+Current team:
+  Allustar
+  amponzi
+  ape
+  delfare
+  Guillaume Duhamel
+  Normmatt
+  Romain Vallet
+  shash
+  Theo Berkau
+  thoduv
+  Tim Seidel (Mighty Max)
+  Damien Nozay (damdoum)
+  Pascal Giard (evilynux)
+
+Contributors:
+  Anthony Molinaro</property>
   <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
   <property name="logo">DeSmuME.xpm</property>
+  <signal name="close" handler="gtk_widget_hide" last_modification_time="Sat, 17 Feb 2007 18:13:08 GMT"/>
+  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Sat, 17 Feb 2007 18:13:22 GMT"/>
+  <signal name="response" handler="gtk_widget_hide" last_modification_time="Sat, 17 Feb 2007 18:14:22 GMT"/>
 </widget>
 
 <widget class="GtkDialog" id="wKeybConfDlg">
