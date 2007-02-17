@@ -36,6 +36,36 @@
 #include "wifi.h"
 #include "registers.h"
 
+
+void FASTCALL MMU_write8_old(u32 proc, u32 adr, u8 val);
+void FASTCALL MMU_write16_old(u32 proc, u32 adr, u16 val);
+void FASTCALL MMU_write32_old(u32 proc, u32 adr, u32 val);
+
+
+#define USE_OLD 1
+#if USE_OLD
+void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val) {
+	MMU_write8_old(proc, adr, val);
+}
+void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val) {
+	MMU_write16_old(proc, adr, val);
+}
+void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val) {
+	MMU_write32_old(proc, adr, val);
+}
+#else
+void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val) {
+	MMU_writeXX(proc, adr, val,1);
+}
+void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val) {
+	MMU_writeXX(proc, adr, val, 2);
+}
+void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val) {
+	MMU_writeXX(proc, adr, val, 4);
+}
+#endif
+
+
 #define ROM_MASK 3
 
 //#define LOG_CARD
@@ -160,6 +190,10 @@ u32 MMU_ARM7_WAIT32[16]={
 	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
 };
 
+
+
+
+
 void MMU_Init(void) {
 	int i;
 
@@ -272,7 +306,7 @@ void MMU_clearMem()
 /* the VRAM blocks keep their content even when not blended in */
 /* to ensure that we write the content back to the LCD ram */
 /* FIXME: VRAM Bank E,F,G,H,I missing */
-void MMU_VRAMWriteBackToLCD(u8 block)
+void MMU_VRAMWriteBackToLCD(u32 block)
 {
 	u8 *destination;
 	u8 *source;
@@ -281,6 +315,7 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	#if 1
 		return ;
 	#endif
+	block = (u8)block;
 	destination = 0 ;
 	source = 0;
 	VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
@@ -771,8 +806,11 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 	/* Returns data from memory */
 	return T1ReadLong(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]);
 }
+
+u16 partie = 1;
+u32 testval = 0;
 	
-void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
+void FASTCALL MMU_write8_old(u32 proc, u32 adr, u8 val)
 {
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
 	{
@@ -1097,9 +1135,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 	MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]]=val;
 }
 
-u16 partie = 1;
 
-void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
+void FASTCALL MMU_write16_old(u32 proc, u32 adr, u16 val)
 {
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
 	{
@@ -1814,9 +1851,8 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 	T1WriteWord(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
 } 
 
-u32 testval = 0;
 
-void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
+void FASTCALL MMU_write32_old(u32 proc, u32 adr, u32 val)
 {
 	if((proc==ARMCPU_ARM9)&((adr&(~0x3FFF))==MMU.DTCMRegion))
 	{
@@ -2737,5 +2773,1200 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
 		check_access_write(adr);
 	MMU_write32(proc,adr,val) ;
 }
+
+
 #endif
+
+
+
+
+
+#if 0
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+/***********************************************************************/
+#endif
+
+
+
+
+
+INLINE void MMU_write8_REG_VRAMCNT(u32 adr, u8 val) {
+	// nbbytes = 1
+	int slot;
+	switch(adr) {
+	case REG_VRAMCNTA:
+	case REG_VRAMCNTB:
+	case REG_VRAMCNTC:
+	case REG_VRAMCNTD:
+		MMU_VRAMWriteBackToLCD(0) ;
+		MMU_VRAMWriteBackToLCD(1) ;
+		MMU_VRAMWriteBackToLCD(2) ;
+		MMU_VRAMWriteBackToLCD(3) ;
+		switch(val & 0x1F)
+		{
+		case 1 :
+			MMU.vram_mode[adr-REG_VRAMCNTA] = 0; // BG-VRAM
+			//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*0); // BG-VRAM
+			break;
+		case 1 | (1 << 3) :
+				MMU.vram_mode[adr-REG_VRAMCNTA] = 1; // BG-VRAM
+			//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*1); // BG-VRAM
+			break;
+		case 1 | (2 << 3) :
+				MMU.vram_mode[adr-REG_VRAMCNTA] = 2; // BG-VRAM
+			//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*2); // BG-VRAM
+			break;
+		case 1 | (3 << 3) :
+				MMU.vram_mode[adr-REG_VRAMCNTA] = 3; // BG-VRAM
+			//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*3); // BG-VRAM
+			break;
+		case 0: /* mapped to lcd */
+			MMU.vram_mode[adr-REG_VRAMCNTA] = 4 | (adr-REG_VRAMCNTA) ;
+			break ;
+		}
+		MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
+		break;
+	case REG_VRAMCNTE :
+		MMU_VRAMWriteBackToLCD(REG_VRAMCNTE) ;
+		if((val & 7) == 5)
+		{
+			ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
+			ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x82000;
+			ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x84000;
+			ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
+		}
+		else if((val & 7) == 3)
+		{
+			ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD + 0x80000;
+			ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD + 0x82000;
+			ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD + 0x84000;
+			ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD + 0x86000;
+		}
+		else if((val & 7) == 4)
+		{
+			ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
+			ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x82000;
+			ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x84000;
+			ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
+		}
+	
+		MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTE,val) ;
+		break;
+	
+	case REG_VRAMCNTF :
+		slot = (val>>3)&0x3;
+		switch(val & 0x7)
+		{
+		case 4 :
+			ARM9Mem.ExtPal[0][slot] = ARM9Mem.ARM9_LCD + 0x90000;
+			ARM9Mem.ExtPal[0][slot+1] = ARM9Mem.ARM9_LCD + 0x92000;
+			break;
+		case 3 :
+			ARM9Mem.texPalSlot[slot] = ARM9Mem.ARM9_LCD + 0x90000;
+			break;
+		case 5 :
+			ARM9Mem.ObjExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x90000;
+			ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x92000;
+			break;
+		}
+		break;
+	case REG_VRAMCNTG :
+		slot = (val>>3)&0x3;
+		switch(val & 0x7)
+		{
+		case 4 :
+			ARM9Mem.ExtPal[0][slot] = ARM9Mem.ARM9_LCD + 0x94000;
+			ARM9Mem.ExtPal[0][slot+1] = ARM9Mem.ARM9_LCD + 0x96000;
+			break;
+		case 3 :
+			ARM9Mem.texPalSlot[slot] = ARM9Mem.ARM9_LCD + 0x94000;
+			break;
+		case 5 :
+			ARM9Mem.ObjExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x94000;
+			ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x96000;
+			break;
+		}
+		break;
+	
+	case REG_VRAMCNTH  :
+		MMU_VRAMWriteBackToLCD(REG_VRAMCNTH) ;
+		
+		if((val & 7) == 2)
+		{
+			ARM9Mem.ExtPal[1][0] = ARM9Mem.ARM9_LCD + 0x98000;
+			ARM9Mem.ExtPal[1][1] = ARM9Mem.ARM9_LCD + 0x9A000;
+			ARM9Mem.ExtPal[1][2] = ARM9Mem.ARM9_LCD + 0x9C000;
+			ARM9Mem.ExtPal[1][3] = ARM9Mem.ARM9_LCD + 0x9E000;
+		}
+		
+		MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTH,val) ;
+		break;
+	
+	case REG_VRAMCNTI  :
+		MMU_VRAMWriteBackToLCD(REG_VRAMCNTI) ;
+		
+		if((val & 7) == 3)
+		{
+			ARM9Mem.ObjExtPal[1][0] = ARM9Mem.ARM9_LCD + 0xA0000;
+			ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD + 0xA2000;
+		}
+		
+		MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTI,val) ;
+		break;
+	}
+}
+
+INLINE void MMU_write16_REG_DISPx(u32 adr, u16 val) {
+
+	GPU * gpu;
+	if (adr & REG_DISPB)
+		gpu = SubScreen.gpu;
+	else
+		gpu = MainScreen.gpu;
+
+
+	switch(adr & ~REG_DISPB) {
+
+	case REG_DISPx_BG0CNT :
+		//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
+		GPU_setBGProp(gpu, 0, val);
+		break;
+	case REG_DISPx_BG1CNT :
+		//GPULOG("MAIN BG1 SETPROP 16B %08X\r\n", val);
+		GPU_setBGProp(gpu, 1, val);
+		break;
+	case REG_DISPx_BG2CNT :
+		//GPULOG("MAIN BG2 SETPROP 16B %08X\r\n", val);
+		GPU_setBGProp(gpu, 2, val);
+		break;
+	case REG_DISPx_BG3CNT :
+		//GPULOG("MAIN BG3 SETPROP 16B %08X\r\n", val);
+		GPU_setBGProp(gpu, 3, val);
+		break;
+	case REG_DISPx_BG0HOFS :
+		GPU_scrollX(gpu, 0, val);
+		break;
+	case REG_DISPx_BG0VOFS :
+		GPU_scrollY(gpu, 0, val);
+		break;
+	case REG_DISPx_BG1HOFS :
+		GPU_scrollX(gpu, 1, val);
+		break;
+	case REG_DISPx_BG1VOFS :
+		GPU_scrollY(gpu, 1, val);
+		break;
+	case REG_DISPx_BG2HOFS :
+		GPU_scrollX(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2VOFS :
+		GPU_scrollY(gpu, 2, val);
+		break;
+	case REG_DISPx_BG3HOFS :
+		GPU_scrollX(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3VOFS :
+		GPU_scrollY(gpu, 3, val);
+		break;
+	case REG_DISPx_BG2PA :
+		GPU_setPA(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2PB :
+		GPU_setPB(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2PC :
+		GPU_setPC(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2PD :
+		GPU_setPD(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2XL :
+		GPU_setXL(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2XH :
+		GPU_setXH(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2YL :
+		GPU_setYL(gpu, 2, val);
+		break;
+	case REG_DISPx_BG2YH :
+		GPU_setYH(gpu, 2, val);
+		break;
+	case REG_DISPx_BG3PA :
+		GPU_setPA(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3PB :
+		GPU_setPB(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3PC :
+		GPU_setPC(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3PD :
+		GPU_setPD(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3XL :
+		GPU_setXL(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3XH :
+		GPU_setXH(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3YL :
+		GPU_setYL(gpu, 3, val);
+		break;
+	case REG_DISPx_BG3YH :
+		GPU_setYH(gpu, 3, val);
+		break;
+	case REG_DISPx_WIN0H:
+		GPU_setWINDOW_XDIM(gpu,val,0);
+		break;
+	case REG_DISPx_WIN1H:
+		GPU_setWINDOW_XDIM(gpu,val,1);
+		break;
+	case REG_DISPx_WIN0V:
+		GPU_setWINDOW_YDIM(gpu,val,0);
+		break;
+	case REG_DISPx_WIN1V:
+		GPU_setWINDOW_YDIM(gpu,val,1);
+		break;
+	case REG_DISPx_WININ:
+		GPU_setWINDOW_INCNT(gpu, val);
+		break;
+	case REG_DISPx_WINOUT:
+		GPU_setWINDOW_OUTCNT(gpu, val);
+		break;
+	case REG_DISPx_MOSAIC:
+		GPU_setMOSAIC(gpu,val);
+		break;
+	case REG_DISPx_BLDCNT:
+		GPU_setBLDCNT(gpu,val);
+		break;
+	case REG_DISPx_BLDALPHA:
+		GPU_setBLDALPHA(gpu,val);
+		break;
+	case REG_DISPx_BLDY:
+		GPU_setBLDY(gpu,val);
+		break;
+	case REG_DISPx_MASTERBRIGHT:
+		GPU_setMASTER_BRIGHT(gpu, val);
+		break;
+#ifdef RENDER3D
+	case REG_DISPx_DISP3DCNT:
+		OGLRender::glControl(val);
+		break;
+#endif
+
+	}
+}
+
+
+INLINE void MMU_write32_REG_DISPx(u32 adr_u32, u32 val_u32) {
+
+	GPU * gpu;
+	if (adr_u32 & REG_DISPB)
+		gpu = SubScreen.gpu;
+	else
+		gpu = MainScreen.gpu;
+
+	switch(adr_u32) {
+	case REG_DISPx_DISPCNT :
+	case (REG_DISPB | REG_DISPx_DISPCNT) :
+		//execute = FALSE;
+		GPU_setVideoProp(gpu, val_u32);
+		break;
+	case REG_DISPA_DISPCAPCNT :
+		GPU_set_DISPCAPCNT(gpu,val_u32);
+		break;
+	case REG_DISPA_DISPMMEMFIFO:
+		// NOTE: right now, the capture unit is not taken into account,
+		//       I don't know is it should be handled here or
+
+		FIFOAdd(MMU.fifos + MAIN_MEMORY_DISP_FIFO, val_u32);
+		break;
+	}
+}
+
+
+INLINE void MMU_write32_REG_ROMIPC(u32 proc, u32 adr_u32, u32 val_u32) {
+	// address should be word aligned
+	switch(adr_u32) {
+	case REG_IPCSYNC :
+		{
+			//execute=FALSE;
+			u32 remote = proc^1;
+			u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[remote][0x40], 0x180);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, (val_u32&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
+			T1WriteLong(MMU.MMU_MEM[remote][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val_u32>>8)&0xF));
+			MMU.reg_IF[remote] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val_u32 & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));//
+		}
+		break;
+	case REG_IPCFIFOCNT :
+		{
+			u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
+			u32 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184) ;
+			if ((val_u32 & 0x8000) && !(cnt_l & 0x8000))
+			{
+				/* this is the first init, the other side didnt init yet */
+				/* so do a complete init */
+				FIFOInit(MMU.fifos + (IPCFIFO+proc));
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184,0x8101) ;
+				/* and then handle it as usual */
+			}
+			if(val_u32 & 0x4008)
+			{
+				FIFOInit(MMU.fifos + (IPCFIFO+(proc^1)));
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val_u32 & 0x8404) | 1);
+				T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
+				MMU.reg_IF[proc] |= ((val_u32 & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
+				break;
+			}
+			T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val_u32 & 0xBFF4);
+			//execute = FALSE;
+		}
+		break;
+	case REG_IPCFIFOSEND :
+		{
+			u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
+			if(IPCFIFO_CNT&0x8000)
+			{
+				//if(val_u32==43) execute = FALSE;
+				u32 remote = proc^1;
+				u32 fifonum = IPCFIFO+remote;
+				u16 IPCFIFO_CNT_remote;
+				FIFOAdd(MMU.fifos + fifonum, val_u32);
+				IPCFIFO_CNT = (IPCFIFO_CNT & 0xFFFC) | (MMU.fifos[fifonum].full<<1);
+				IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
+				IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
+				T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
+				MMU.reg_IF[remote] |= ((IPCFIFO_CNT_remote & (1<<10))<<8);// & (MMU.reg_IME[remote] << 18);// & (MMU.reg_IE[remote] & 0x40000);//
+				//execute = FALSE;
+			}
+		}
+		break;
+	case REG_GCROMCTRL :
+		{
+			int i;
+	
+			if (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT) == 0xB7) {
+				MMU.dscard[proc].adress = (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+4));
+				MMU.dscard[proc].transfer_count = 0x80;// * ((val_u32>>24)&7));
+	
+			} else if (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT) == 0xB8) {
+				// Get ROM chip ID
+				val_u32 |= 0x800000; // Data-Word Status
+				T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val_u32);
+				MMU.dscard[proc].adress = 0;
+	
+			} else {
+				LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT));
+			}
+	
+			//CARDLOG("%08X : %08X %08X\r\n", adr, val_u32, adresse[proc]);
+			val_u32 |= 0x00800000;
+	
+			if(MMU.dscard[proc].adress == 0)
+			{
+				val_u32 &= ~0x80000000;
+				T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val_u32);
+				return;
+			}
+	
+			T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val_u32);
+	
+			/* launch DMA if start flag was set to "DS Cart" */
+			if(proc == ARMCPU_ARM7) i = 2;
+			else i = 5;
+	
+			/* dma0/1 on arm7 can't start on ds cart event */
+			if(proc == ARMCPU_ARM9 && MMU.DMAStartTime[proc][0] == i) {
+				MMU_doDMA(proc, 0);
+				
+			} else if(proc == ARMCPU_ARM9 && MMU.DMAStartTime[proc][1] == i) {
+				MMU_doDMA(proc, 1);
+				
+			} else if(MMU.DMAStartTime[proc][2] == i) {
+				MMU_doDMA(proc, 2);
+				
+			} else if(MMU.DMAStartTime[proc][3] == i) {
+				MMU_doDMA(proc, 3);
+				
+			}
+		}
+		break;
+	}
+}
+
+
+INLINE void MMU_write16_REG_SPI(u32 proc, u32 adr_u16, u16 val_u16) {
+	// address should be hword aligned
+	switch(adr_u16) {
+	case REG_AUXSPICNT:
+		T1WriteWord(MMU.MMU_MEM[proc][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val_u16);
+		AUX_SPI_CNT = val_u16;
+	
+		if (val_u16 == 0)
+			mc_reset_com(&MMU.bupmem);     /* reset backup memory device communication */
+		return;
+	case REG_AUXSPIDATA:
+		if(val_u16!=0)
+		{
+			AUX_SPI_CMD = val_u16 & 0xFF;
+		}
+	
+		T1WriteWord(MMU.MMU_MEM[proc][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val_u16));
+		return;
+	case REG_SPICNT :
+		if(proc == ARMCPU_ARM7)
+		{
+			SPI_CNT = val_u16;
+		
+			//MMU.fw.com == 0; /* reset fw device communication */
+		
+			mc_reset_com(&MMU.fw);     /* reset fw device communication */
+		}
+	
+		T1WriteWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val_u16);
+		return;
+
+	case REG_SPIDATA :
+		if(proc==ARMCPU_ARM7)
+		{
+			u16 spicnt;
+		
+			if(val_u16!=0)
+			{
+				SPI_CMD = val_u16;
+			}
+		
+			spicnt = T1ReadWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
+		
+			switch((spicnt >> 8) & 0x3)
+			{
+			case 0 :
+				break;
+		
+			case 1 : /* firmware memory device */
+				if(spicnt & 0x3 != 0)      /* check SPI baudrate (must be 4mhz) */
+				{
+					T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
+					break;
+				}
+				T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, val_u16));
+				return;
+		
+			case 2 :
+				switch(SPI_CMD & 0x70)
+				{
+				case 0x00 :
+					val_u16 = 0;
+					break;
+				case 0x10 :
+					//execute = FALSE;
+					if(SPI_CNT&(1<<11))
+					{
+						if(partie)
+						{
+							val_u16 = ((nds.touchY<<3)&0x7FF);
+							partie = 0;
+							//execute = FALSE;
+							break;
+						}
+						val_u16 = (nds.touchY>>5);
+						partie = 1;
+						break;
+					}
+					val_u16 = ((nds.touchY<<3)&0x7FF);
+					partie = 1;
+					break;
+				case 0x20 :
+					val_u16 = 0;
+					break;
+				case 0x30 :
+					val_u16 = 0;
+					break;
+				case 0x40 :
+					val_u16 = 0;
+					break;
+				case 0x50 :
+					if(spicnt & 0x800)
+					{
+						if(partie)
+						{
+						val_u16 = ((nds.touchX<<3)&0x7FF);
+						partie = 0;
+						break;
+						}
+						val_u16 = (nds.touchX>>5);
+						partie = 1;
+						break;
+					}
+					val_u16 = ((nds.touchX<<3)&0x7FF);
+					partie = 1;
+					break;
+				case 0x60 :
+					val_u16 = 0;
+					break;
+				case 0x70 :
+					val_u16 = 0;
+					break;
+				}
+				break;
+		
+			case 3 :
+				/* NOTICE: Device 3 of SPI is reserved (unused and unusable) */
+				break;
+			}
+		}
+		T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, val_u16);
+		return;
+	}
+}
+
+
+INLINE void MMU_write32_REG_DMA(u32 proc, u32 adr, u32 val) {
+	switch(adr) {
+	case REG_DMA0CNTL :
+		//LOG("32 bit dma0 %04X\r\n", val);
+		DMASrc[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB0);
+		DMADst[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB4);
+		MMU.DMAStartTime[proc][0] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
+		MMU.DMACrt[proc][0] = val;
+		T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8, val);
+		if( MMU.DMAStartTime[proc][0] == 0)		// Start Immediately
+		MMU_doDMA(proc, 0);
+#ifdef LOG_DMA2
+		else
+		{
+			LOG("proc %d, dma %d src %08X dst %08X start taille %d %d\r\n", proc, 0, DMASrc[proc][0], DMADst[proc][0], 0, ((MMU.DMACrt[proc][0]>>27)&7));
+		}
+#endif
+		//execute = FALSE;
+		break;
+	case REG_DMA1CNTL :
+		//LOG("32 bit dma1 %04X\r\n", val);
+		DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xBC);
+		DMADst[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC0);
+		MMU.DMAStartTime[proc][1] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
+		MMU.DMACrt[proc][1] = val;
+		T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xC4, val);
+		if(MMU.DMAStartTime[proc][1] == 0)		// Start Immediately
+		MMU_doDMA(proc, 1);
+#ifdef LOG_DMA2
+		else
+		{
+			LOG("proc %d, dma %d src %08X dst %08X start taille %d %d\r\n", proc, 1, DMASrc[proc][1], DMADst[proc][1], 0, ((MMU.DMACrt[proc][1]>>27)&7));
+		}
+#endif
+		break;
+	case REG_DMA2CNTL :
+		//LOG("32 bit dma2 %04X\r\n", val);
+		DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC8);
+		DMADst[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xCC);
+		MMU.DMAStartTime[proc][2] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
+		MMU.DMACrt[proc][2] = val;
+		T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xD0, val);
+		if(MMU.DMAStartTime[proc][2] == 0)		// Start Immediately
+		MMU_doDMA(proc, 2);
+#ifdef LOG_DMA2
+		else
+		{
+			LOG("proc %d, dma %d src %08X dst %08X start taille %d %d\r\n", proc, 2, DMASrc[proc][2], DMADst[proc][2], 0, ((MMU.DMACrt[proc][2]>>27)&7));
+		}
+#endif
+		break;
+	case REG_DMA3CNTL :
+		//LOG("32 bit dma3 %04X\r\n", val);
+		DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD4);
+		DMADst[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD8);
+		MMU.DMAStartTime[proc][3] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
+		MMU.DMACrt[proc][3] = val;
+		T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xDC, val);
+		if(	MMU.DMAStartTime[proc][3] == 0)		// Start Immediately
+		MMU_doDMA(proc, 3);
+#ifdef LOG_DMA2
+		else
+		{
+			LOG("proc %d, dma %d src %08X dst %08X start taille %d %d\r\n", proc, 3, DMASrc[proc][3], DMADst[proc][3], 0, ((MMU.DMACrt[proc][3]>>27)&7));
+		}
+#endif
+		break;
+	}
+}
+
+INLINE void MMU_write32_REG_MATH(u32 proc, u32 adr, u32 val) {
+	switch(adr) {
+	case REG_DIVDENOM :
+		{
+			u16 cnt;
+			s64 num = 0;
+			s64 den = 1;
+			s64 res;
+			s64 mod;
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x298, val);
+			cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
+			switch(cnt&3)
+			{
+			case 0:
+				{
+				num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
+				den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+				}
+				break;
+			case 1:
+				{
+				num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
+				den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+				}
+				break;
+			case 2:
+				{
+				return;
+				}
+				break;
+			default:
+				break;
+			}
+			if(den==0)
+			{
+				res = 0;
+				mod = 0;
+				cnt |= 0x4000;
+				cnt &= 0x7FFF;
+			}
+			else
+			{
+				res = num / den;
+				mod = num % den;
+				cnt &= 0x3FFF;
+			}
+			DIVLOG("BOUT1 %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num,
+				(u32)(den>>32), (u32)den,
+				(u32)(res>>32), (u32)res);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
+		}
+		break;
+	case REG_DIVDENOM+4 :
+		{
+			u16 cnt;
+			s64 num = 0;
+			s64 den = 1;
+			s64 res;
+			s64 mod;
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x29C, val);
+			cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
+			switch(cnt&3)
+			{
+			case 0:
+				{
+				return;
+				}
+				break;
+			case 1:
+				{
+				return;
+				}
+				break;
+			case 2:
+				{
+				num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
+				den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
+				}
+				break;
+			default:
+				break;
+			}
+			if(den==0)
+			{
+				res = 0;
+				mod = 0;
+				cnt |= 0x4000;
+				cnt &= 0x7FFF;
+			}
+			else
+			{
+				res = num / den;
+				mod = num % den;
+				cnt &= 0x3FFF;
+			}
+			DIVLOG("BOUT2 %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num,
+				(u32)(den>>32), (u32)den,
+				(u32)(res>>32), (u32)res);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
+		}
+		break;
+	case REG_SQRTPARAM :
+		{
+			u16 cnt;
+			u64 v = 1;
+			//execute = FALSE;
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B8, val);
+			cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
+			switch(cnt&1)
+			{
+			case 0:
+				v = (u64) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B8);
+				break;
+			case 1:
+				return;
+			}
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt(v));
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
+			SQRTLOG("BOUT1 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v,
+				T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
+		}
+		break;
+	case REG_SQRTPARAM+4 :
+		{
+			u16 cnt;
+			u64 v = 1;
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2BC, val);
+			cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
+			switch(cnt&1)
+			{
+			case 0:
+				return;
+				//break;
+			case 1:
+				v = T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x2B8);
+				break;
+			}
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt(v));
+			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
+			SQRTLOG("BOUT2 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v,
+				T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
+		}
+		break;
+	}
+}
+
+
+INLINE void MMU_write16_REG_TIMERS(u32 proc, u32 adr, u16 val) {
+	switch(adr) {
+	case REG_TM0CNTL :
+	case REG_TM1CNTL :
+	case REG_TM2CNTL :
+	case REG_TM3CNTL :
+		MMU.timerReload[proc][(adr>>2)&3] = val;
+		return;
+	case REG_TM0CNTH :
+	case REG_TM1CNTH :
+	case REG_TM2CNTH :
+	case REG_TM3CNTH :
+		if(val&0x80)
+		{
+			MMU.timer[proc][((adr-2)>>2)&0x3] = MMU.timerReload[proc][((adr-2)>>2)&0x3];
+		}
+		MMU.timerON[proc][((adr-2)>>2)&0x3] = val & 0x80;
+		switch(val&7)
+		{
+		case 0 :
+			MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 0+1;//proc;
+			break;
+		case 1 :
+			MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 6+1;//proc; 
+			break;
+		case 2 :
+			MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 8+1;//proc;
+			break;
+		case 3 :
+			MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 10+1;//proc;
+			break;
+		default :
+			MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 0xFFFF;
+			break;
+		}
+		if(!(val & 0x80))
+		MMU.timerRUN[proc][((adr-2)>>2)&0x3] = FALSE;
+		T1WriteWord(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
+		return;
+	}
+}
+
+INLINE void MMU_write16_REG_3D(u32 adr, u16 val) {
+	switch(adr) {
+#ifdef RENDER3D
+	case 0x04000610 :
+		LOG("CUT DEPTH %08X\r\n", val);
+		break;
+	case 0x04000340 :
+		OGLRender::glAlphaFunc(val);
+		break;
+	case 0x04000354 :
+		OGLRender::glClearDepth(val);
+		break;
+#endif
+	}
+}
+
+INLINE void MMU_write32_REG_3D(u32 adr, u32 val) {
+	switch(adr) {
+#ifdef RENDER3D
+	case 0x04000350 :
+		OGLRender::glClearColor(val);
+		return;
+	case 0x04000400 :
+		OGLRender::glCallList(val);
+		return;
+#endif
+	case cmd_3D_MTX_MODE :
+		//OGLRender::glMatrixMode(val);
+		gl_MTX_MODE(val);
+		return;
+#ifdef RENDER3D
+	case cmd_3D_MTX_PUSH :
+		OGLRender::glPushMatrix();
+		return;
+	case cmd_3D_MTX_POP :
+		OGLRender::glPopMatrix(val);
+		return;
+	case cmd_3D_MTX_STORE :
+		OGLRender::glStoreMatrix(val);
+		return;
+	case cmd_3D_MTX_RESTORE :
+		OGLRender::glRestore();
+		return;
+#endif
+	case cmd_3D_MTX_IDENTITY :
+		//OGLRender::glLoadIdentity();
+		gl_MTX_IDENTITY();
+		return;
+	case cmd_3D_MTX_LOAD_4x4 :
+		//OGLRender::ML4x4ajouter(val);
+		gl_MTX_LOAD_4x4(val);
+		return;
+	case cmd_3D_MTX_LOAD_4x3 :
+		//OGLRender::ML4x3ajouter(val);
+		gl_MTX_LOAD_3x3(val);
+		return;
+	case cmd_3D_MTX_MULT_4x4 :
+		//OGLRender::glMultMatrix4x4(val);
+		gl_MTX_MULT_4x4(val);
+		return;
+	case cmd_3D_MTX_MULT_4x3 :
+		//OGLRender::glMultMatrix4x3(val);
+		gl_MTX_MULT_4x3(val);
+		return;
+	case cmd_3D_MTX_MULT_3x3 :
+		//OGLRender::glMultMatrix3x3(val);
+		gl_MTX_MULT_3x3(val);
+		return;
+#ifdef RENDER3D
+	case cmd_3D_MTX_SCALE :
+		OGLRender::glScale(val);
+		return;
+	case cmd_3D_MTX_TRANS :
+		OGLRender::addTrans(val);
+		return;
+	case cmd_3D_COLOR :
+		OGLRender::glColor3b(val);
+		return;
+	case cmd_3D_NORMA :
+		OGLRender::glTexCoord(val);
+		//execute = FALSE;
+		return;
+#endif
+    case cmd_3D_TEXCOORD :
+        gl_TEXCOORD(val);
+        return;
+	case cmd_3D_VTX_16 :
+		//OGLRender::glVertex3(val);
+		gl_VTX_16(val);
+		return;
+	case cmd_3D_VTX_10 :
+		//GPULOG("VERTEX 10 %d\r\n",val);
+		gl_VTX_10(val);
+		return;
+	case cmd_3D_VTX_XY :
+		//GPULOG(printf(txt, "VERTEXY %d\r\n",val);
+		gl_VTX_XY(val);
+		return;
+	case cmd_3D_VTX_XZ :
+		//GPULOG("VERTEXZ %d\r\n",val);
+		gl_VTX_XZ(val);
+		return;
+	case cmd_3D_VTX_YZ :
+		//GPULOG("VERTEYZ %d\r\n",val);
+		gl_VTX_YZ(val);
+		return;
+	case cmd_3D_VTX_DIFF :
+		gl_VTX_DIFF(val);
+		return;
+#ifdef RENDER3D
+	case cmd_3D_TEXIMAGE_PARAM :
+		OGLRender::glTexImage2D(val, FALSE);
+		//execute = FALSE;
+		testval = val;
+		return;
+	case cmd_3D_PLTT_BASE :
+		OGLRender::glTexImage2D(testval, TRUE);
+		//execute = FALSE;
+		return;
+#endif
+	case cmd_3D_BEGIN_VTXS :
+		// OGLRender::glBegin(val);
+		gl_VTX_begin(val);
+		return;
+	case cmd_3D_END_VTXS :
+		// OGLRender::glEnd();
+		gl_VTX_end();
+		return;
+#ifdef RENDER3D
+	case cmd_3D_SWAP_BUFFERS :
+		OGLRender::glFlush();
+		return;
+	case cmd_3D_VIEWPORT :
+		OGLRender::glViewPort(val);
+		return;
+#endif
+	}
+
+	if (adr > 0x4000300 && adr < 0x4000700)
+		printf("command %08x\n", adr);
+
+}
+
+
+// FIXME : but the good symbol name here
+#ifdef YOUR_ENDIAN_DEFINE
+typedef union {
+	struct {
+	u8 byte4; u8 byte3; u8 byte2; u8 byte1;
+	} bytes;
+	struct {
+	u16 hword2; u16 hword1;
+	} hwords;
+	u32 word;
+} u32_union;
+#else
+typedef union {
+	struct {
+	u8 byte1; u8 byte2; u8 byte3; u8 byte4;
+	} bytes;
+	struct {
+	u16 hword1; u16 hword2;
+	} hwords;
+	u32 word;
+} u32_union;
+#endif
+
+
+void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes) {
+	u32 adr_u8_1 = adr & 0x0FFFFFFE;
+	u32 adr_u8_2 = adr_u8_1 + 1;
+	u32 adr_u8_3 = adr_u8_1 + 2;
+	u32 adr_u8_4 = adr_u8_1 + 3;
+#define MEM_REGION ((adr >> 20)&0xFF)
+#define	adr_u32   adr_u8_1
+#define	adr_u16_1 adr_u8_1
+#define	adr_u16_2 adr_u8_3
+	u32_union val_union;
+#define val_u32    val_union.word
+#define val_u16_1  val_union.hwords.hword1
+#define val_u16_2  val_union.hwords.hword2
+#define val_u8_1   val_union.bytes.byte1
+#define val_u8_2   val_union.bytes.byte2
+#define val_u8_3   val_union.bytes.byte3
+#define val_u8_4   val_union.bytes.byte4
+
+	if ((proc == ARMCPU_ARM9) && (adr & ~0x3FFF) == MMU.DTCMRegion)
+	{
+		/* Writes data in DTCM (ARM9 only) */
+		switch (nbbytes) {
+		case 1: ARM9Mem.ARM9_DTCM[adr&0x3FFF] = val; break;
+		case 2: T1WriteWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val); break;
+		case 4: T1WriteLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val); break;
+		}
+		return ;
+	}
+
+	// CFlash writing, Mic
+//	if ((adr>=0x08800000)&&(adr<0x09900000)) {
+	if ((adr>=0x09000000)&&(adr<0x09900000)) {
+		cflash_write(adr,val);
+		return;
+	}
+	
+#ifdef LOG_CARD
+	if ((adr>=0x040001A0)&&(adr>=0x040001AF)) {
+		/* TODO (clear): ??? */
+		LOG("%08X : %02X\r\n", adr, val);
+		return;
+	}
+#endif
+
+	if (proc == ARMCPU_ARM7) {
+		// This is bad, remove it
+		if ((adr>=0x04000400)&&(adr<0x0400051D)) {
+			switch (nbbytes) {
+			case 1:
+				SPU_WriteByte(adr, val);
+				break;
+			case 2:
+				SPU_WriteWord(adr, val);
+				break;
+			case 4:
+				SPU_WriteLong(adr, val);
+				break;
+			}
+			return;
+		}
+	
+		/* wifi mac access */
+		if ((adr>=0x04800000)&&(adr<0x05000000))
+#ifdef EXPERIMENTAL_WIFI
+		if (nbbytes == 2) // u16 data
+		{
+			WIFI_write16(&wifiMac,adr,val) ;
+			return;
+		}
+#else
+			return;
+#endif
+	}
+	
+	adr &= 0x0FFFFFFF;
+
+
+	// write data 1st so we can read coherent data
+	switch (nbbytes) {
+	case 1:
+		MMU.MMU_MEM[proc][MEM_REGION][adr&MMU.MMU_MASK[proc][MEM_REGION]]=val;
+		break;
+	case 2:
+		T1WriteWord(MMU.MMU_MEM[proc][MEM_REGION],adr&MMU.MMU_MASK[proc][MEM_REGION],val);
+		break;
+	case 4:
+		T1WriteLong(MMU.MMU_MEM[proc][MEM_REGION],adr&MMU.MMU_MASK[proc][MEM_REGION],val);
+		break;
+	}
+	val_union.word = T1ReadLong(MMU.MMU_MEM[proc][MEM_REGION],
+		adr_u32&MMU.MMU_MASK[proc][MEM_REGION]);
+
+	switch (adr_u32 & REG_REGION_MASK) {
+	case REG_BASE_DISPx:
+		//if (proc == ARMCPU_ARM9) 
+		{
+			switch (nbbytes) {
+			case 4:
+			case 3:
+				MMU_write16_REG_DISPx(adr_u16_2, val_u16_2);
+			case 2:
+			case 1:
+				MMU_write32_REG_DISPx(adr_u32, val_u32);
+				MMU_write16_REG_DISPx(adr_u16_1, val_u16_1);
+				break;
+			}
+		}
+		break;
+	case REG_BASE_DMA:
+		MMU_write32_REG_DMA(proc, adr_u32, val_u32);
+		break;
+	case REG_BASE_SIORTCTIMERS:
+		MMU_write16_REG_TIMERS(proc, adr_u16_2, val_u16_2);
+		MMU_write16_REG_TIMERS(proc, adr_u16_1, val_u16_1);
+		break;
+	case REG_BASE_ROMIPC:
+		switch (nbbytes) {
+		case 4:
+		case 3:
+			MMU_write16_REG_SPI(proc, adr_u16_2, val_u16_2); //SPI
+		case 2:
+		case 1:
+			MMU_write32_REG_ROMIPC(proc, adr_u32, val_u32); //ROM IPC
+			MMU_write16_REG_SPI(proc, adr_u16_1, val_u16_1); //SPI
+			break;
+		}
+		break;
+	case REG_BASE_MEMIRQ:
+
+		switch(adr_u32)
+		{	
+		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
+		/* TODO: Not all mappings of VRAMs are handled... (especially BG and OBJ modes) */
+		case REG_VRAMCNTA: case REG_VRAMCNTB:
+		case REG_VRAMCNTC: case REG_VRAMCNTD:
+		case REG_VRAMCNTE: case REG_VRAMCNTF:
+		case REG_VRAMCNTG: case REG_VRAMCNTH:
+		case REG_VRAMCNTI:
+			if (proc == ARMCPU_ARM9) {
+				MMU_write8_REG_VRAMCNT(adr_u8_4, val_u8_4);
+				MMU_write8_REG_VRAMCNT(adr_u8_3, val_u8_3);
+				MMU_write8_REG_VRAMCNT(adr_u8_2, val_u8_2);
+				MMU_write8_REG_VRAMCNT(adr_u8_1, val_u8_1);
+			}
+			break;
+		case REG_IME :
+			MMU.reg_IME[proc] = val_u32 & 1;
+			break;
+		case REG_IE:
+			MMU.reg_IE[proc] = val_u32;
+			break;
+		case REG_IF :
+			MMU.reg_IF[proc] &= (~val_u32);
+			break;
+		}
+		break;
+	case REG_BASE_MATH:
+		MMU_write32_REG_MATH(proc, adr_u32, val_u32);
+		break;
+	case REG_BASE_RCVPORTS:
+		break;
+	case REG_BASE_OTHER:
+	default:
+		switch(adr) {
+		case REG_POWCNT1 :
+			if(proc == ARMCPU_ARM9)
+			{
+				if(val & (1<<15)) {
+					LOG("Main core on top\n");
+					MainScreen.offset = 0;
+					SubScreen.offset = 192;
+					//nds.swapScreen();
+				} else {
+					LOG("Main core on bottom (%04X)\n", val);
+					MainScreen.offset = 192;
+					SubScreen.offset = 0;
+				}
+			}
+			break;
+		default :
+			if(proc == ARMCPU_ARM9)
+			{
+				switch (nbbytes) {
+				case 4:
+				case 3:
+					MMU_write16_REG_3D(adr_u16_2, val_u16_2);
+				case 2:
+				case 1:
+					MMU_write16_REG_3D(adr_u16_1, val_u16_1);
+					MMU_write32_REG_3D(adr_u32, val_u32);
+					break;
+				}
+				
+			}
+			break;
+		}
+		break;
+	}
+}
 
