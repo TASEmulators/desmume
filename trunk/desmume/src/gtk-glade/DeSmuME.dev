@@ -1,7 +1,7 @@
 [Project]
 FileName=DeSmuME.dev
 Name=DeSmuME
-UnitCount=68
+UnitCount=69
 Type=1
 Ver=1
 ObjFiles=
@@ -726,3 +726,14 @@ Link=1
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
+
+[Unit69]
+FileName=dTools\callbacks_4_tileview.c
+CompileCpp=0
+Folder=gtk-glade/dTools
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
