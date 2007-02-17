@@ -24,20 +24,28 @@
 #include <stdio.h>
 #include "types.h"
 
+#define MTX_MODE_PROJECTION 0
+#define MTX_MODE_POSITION   1
+#define MTX_MODE_POS_VECTOR 2
+#define MTX_MODE_TEXTURE    3
+#define BEGIN_GL_TRIANGLES       0
+#define BEGIN_GL_QUADS           1
+#define BEGIN_GL_TRIANGLE_STRIP  2
+#define BEGIN_GL_QUAD_STRIP      3
+		
 typedef union {
 	u32 val;
-	struct {
-	unsigned primitive:2;
-	unsigned :30;
-	} bits;
-} _VTX_BEGIN_cmd ;
+	float fval;
+} _MTX_val ;
 typedef union {
 	u32 val;
-	struct { // 12 bit fractionnal
+	struct { 
+        // 12 bit fractionnal for _VTX_16 
+        // 11 bit fractionnal for _TEXCOORD 
 	signed low:16;
 	signed high:16;
 	} bits;
-} _VTX_16 ;
+} _VTX_16, _TEXCOORD ;
 typedef union {
 	u32 val;
 	struct { // 6 bit fractionnal
@@ -47,6 +55,14 @@ typedef union {
 	signed :2;
 	} bits;
 } _VTX_10 ;
+
+
+void gl_MTX_IDENTITY ();
+void gl_MTX_LOAD_4x4 (u32 val);
+void gl_MTX_LOAD_4x3 (u32 val);
+void gl_MTX_LOAD_3x3 (u32 val);
+
+void gl_TEXCOORD(u32 val);
 
 void gl_VTX_begin(u32 val);
 //see 4000500h - Cmd 40h - BEGIN_VTXS - Start of Vertex List (W)
