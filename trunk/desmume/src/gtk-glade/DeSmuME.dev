@@ -10,7 +10,7 @@ Libs=d:\Dev-Cpp\lib;d:\GTK\LIB;d:\GTK\lib\glib-2.0;d:\GTK\lib\gtk-2.0;d:\GTK\lib
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DVERSION=\"0.5.0\"_@@_-DHAVE_LIBZ=1_@@_-DHAVE_LIBGDKGLEXT_X11_1_0=1_@@_-mms-bitfields_@@_-rdynamic_@@_-shared_@@__@@_
+Compiler=-DHAVE_LIBZ=1_@@_-DHAVE_LIBGDKGLEXT_X11_1_0=1_@@_-mms-bitfields_@@_-rdynamic_@@_-shared_@@__@@_
 CppCompiler=
 Linker=d:/GTK/lib/z.lib_@@_d:/GTK/lib/atk-1.0.lib_@@_d:/GTK/lib/cairo.lib_@@_d:/GTK/lib/gdk_pixbuf-2.0.lib_@@_d:/GTK/lib/gdk-win32-2.0.lib_@@_d:/GTK/lib/glade-2.0.lib_@@_d:/GTK/lib/glib-2.0.lib_@@_d:/GTK/lib/gmodule-2.0.lib_@@_d:/GTK/lib/gobject-2.0.lib_@@_d:/GTK/lib/gtk-win32-2.0.lib_@@_d:/GTK/lib/pango-1.0.lib_@@_d:/GTK/lib/pangocairo-1.0.lib_@@_d:/GTK/lib/pangowin32-1.0.lib_@@_d:/GTK/lib/xml2.lib_@@_D:/Dev-Cpp/dll/SDL.dll_@@_D:/Dev-Cpp/lib/libSDL.dll.a_@@_D:/Dev-Cpp/lib/libopengl32.a_@@_D:/GTK/lib/libgdkglext-win32-1.0.dll.a_@@_D:/GTK/lib/gtkglext-win32-1.0.lib_@@_
 IsCpp=0
