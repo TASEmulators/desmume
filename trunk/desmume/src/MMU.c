@@ -849,7 +849,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 case REG_VRAMCNTE :
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTE) ;
+                MMU_VRAMWriteBackToLCD((u8)REG_VRAMCNTE) ;
                                 if((val & 7) == 5)
 				{
 					ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
@@ -962,7 +962,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 case REG_VRAMCNTH  :
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTH) ;
+                MMU_VRAMWriteBackToLCD((u8)REG_VRAMCNTH) ;
                 
                                 if((val & 7) == 2)
 				{
@@ -979,7 +979,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 case REG_VRAMCNTI  :
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD(REG_VRAMCNTI) ;
+                MMU_VRAMWriteBackToLCD((u8)REG_VRAMCNTI) ;
                 
                                 if((val & 7) == 3)
 				{
@@ -1063,16 +1063,16 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					if(proc == ARMCPU_ARM9) GPU_setWINDOW_OUTCNT_Component(SubScreen.gpu,val,1) ;
 					break ;
 				case REG_DISPA_MASTERBRIGHT:
-					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (MainScreen.gpu, (val & 0xFF) | (T1ReadWord((u16 *)REG_DISPA_MASTERBRIGHT,0) & 0xFF00));
+					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (MainScreen.gpu, (val & 0xFF) | (T1ReadWord((u8 *)REG_DISPA_MASTERBRIGHT,0) & 0xFF00));
 					break;
 				case REG_DISPA_MASTERBRIGHT+1:
-					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (MainScreen.gpu, (val & 0xFF00) | (T1ReadWord((u16 *)REG_DISPA_MASTERBRIGHT,0) & 0xFF));
+					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (MainScreen.gpu, (val & 0xFF00) | (T1ReadWord((u8 *)REG_DISPA_MASTERBRIGHT,0) & 0xFF));
 					break;
 				case REG_DISPB_MASTERBRIGHT:
-					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (SubScreen.gpu, (val & 0xFF) | (T1ReadWord((u16 *)REG_DISPB_MASTERBRIGHT,0) & 0xFF00));
+					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (SubScreen.gpu, (val & 0xFF) | (T1ReadWord((u8 *)REG_DISPB_MASTERBRIGHT,0) & 0xFF00));
 					break;
 				case REG_DISPB_MASTERBRIGHT+1:
-					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (SubScreen.gpu, (val & 0xFF00) | (T1ReadWord((u16 *)REG_DISPB_MASTERBRIGHT,0) & 0xFF));
+					if(proc == ARMCPU_ARM9) GPU_setMASTER_BRIGHT (SubScreen.gpu, (val & 0xFF00) | (T1ReadWord((u8 *)REG_DISPB_MASTERBRIGHT,0) & 0xFF));
 					break;
 
 #ifdef LOG_CARD
