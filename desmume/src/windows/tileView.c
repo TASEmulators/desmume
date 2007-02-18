@@ -475,6 +475,7 @@ BOOL CALLBACK TileView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                         case IDC_MEM_SELECT :
                              switch(HIWORD(wParam))
                              {
+                                  case CBN_SELCHANGE :
                                   case CBN_CLOSEUP :
                                        {
                                             u32 sel = SendMessage(GetDlgItem(hwnd, IDC_MEM_SELECT), CB_GETCURSEL, 0, 0);
@@ -527,6 +528,7 @@ BOOL CALLBACK TileView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                         case IDC_PAL_SELECT :
                              switch(HIWORD(wParam))
                              {
+                                  case CBN_SELCHANGE :
                                   case CBN_CLOSEUP :
                                        {
                                             u32 sel = SendMessage(GetDlgItem(hwnd, IDC_PAL_SELECT), CB_GETCURSEL, 0, 0);

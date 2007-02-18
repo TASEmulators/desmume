@@ -27,7 +27,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT PalView_OnPaint(u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPARAM lParam)
+LRESULT PalView_OnPaint(const u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
         HDC          hdc;
         PAINTSTRUCT  ps;
@@ -156,6 +156,7 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                         case IDC_PAL_SELECT :
                              switch(HIWORD(wParam))
                              {
+                                  case CBN_SELCHANGE :
                                   case CBN_CLOSEUP :
                                        {
                                             u32 sel = SendMessage(GetDlgItem(hwnd, IDC_PAL_SELECT), CB_GETCURSEL, 0, 0);
