@@ -241,14 +241,16 @@ int NDS_CreateDummyFirmware(void);
                  {
                       if(!nds.lignerendu)
                       {
+						  T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
+						  T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
+                          NDS_ARM9HBlankInt();
+                          NDS_ARM7HBlankInt();
+
                          if(nds.VCount<192)
                            {
                                 GPU_ligne(&MainScreen, nds.VCount);
                                 GPU_ligne(&SubScreen, nds.VCount);
-				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
-				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
-                                NDS_ARM9HBlankInt();
-                                NDS_ARM7HBlankInt();
+				
                                 if(MMU.DMAStartTime[0][0] == 2)
                                      MMU_doDMA(0, 0);
                                 if(MMU.DMAStartTime[0][1] == 2)
@@ -322,7 +324,7 @@ int NDS_CreateDummyFirmware(void);
 						   }
                                 
                            nds.lignerendu = FALSE;
-                           if(nds.VCount==193)
+                           if(nds.VCount==192)
                            {
 				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
 				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
