@@ -26,6 +26,9 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
+#define FPS_LIMITER_FRAME_PERIOD 20
+static SDL_sem *fps_limiter_semaphore;
+
 /************************ CONFIG FILE *****************************/
 
 // extern char FirmwareFile[256];
@@ -886,7 +889,7 @@ gboolean EmuLoop(gpointer data)
 	
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
-		
+	  static int limiter_frame_counter = 0;
 		fps_FrameCount += Frameskip + 1;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000)
@@ -907,12 +910,42 @@ gboolean EmuLoop(gpointer data)
 		
 		_updateDTools();
 		gtk_widget_queue_draw(pDrawingArea);
+
+		limiter_frame_counter += 1;
+		if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+		  limiter_frame_counter = 0;
+
+		  /* wait for the timer to expire */
+		  SDL_SemWait( fps_limiter_semaphore);
+		}
+
 		
 		return TRUE;
 	}
 	
 	regMainLoop = FALSE;
 	return FALSE;
+}
+
+
+/** 
+ * A SDL timer callback function. Signals the supplied SDL semaphore
+ * if its value is small.
+ * 
+ * @param interval The interval since the last call (in ms)
+ * @param param The pointer to the semaphore.
+ * 
+ * @return The interval to the next call (required by SDL)
+ */
+static u32 fps_limiter_fn(u32 interval, void *param) {
+  SDL_sem *sdl_semaphore = (SDL_sem *)param;
+
+  /* signal the semaphore if it is getting low */
+  if ( SDL_SemValue( sdl_semaphore) < 4) {
+    SDL_SemPost( sdl_semaphore);
+  }
+
+  return interval;
 }
 
 
@@ -932,6 +965,7 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 int main (int argc, char *argv[])
 {
 	int i;
+	SDL_TimerID limiter_timer;
 	
 	const char *commandLine_File = NULL;
 	GtkWidget *pVBox;
@@ -947,7 +981,7 @@ int main (int argc, char *argv[])
 #endif
 
 	gtk_init(&argc, &argv);
-	if(SDL_Init(SDL_INIT_VIDEO) == -1)
+	if(SDL_Init(SDL_INIT_TIMER) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
                     SDL_GetError());
@@ -1182,6 +1216,18 @@ int main (int argc, char *argv[])
 	gtk_widget_show_all(pWindow);
 	
 	//LoadFirmware("fw.bin");
+
+	/* create the semaphore used for fps limiting */
+	fps_limiter_semaphore = SDL_CreateSemaphore( 1);
+
+	/* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
+	limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
+	if ( limiter_timer == NULL) {
+	  fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
+		   SDL_GetError());
+	  return 1;
+	}
+
 	
 	/* Vérifie la ligne de commandes */
 	if(commandLine_File)
@@ -1210,6 +1256,10 @@ int main (int argc, char *argv[])
 	gtk_main();
 	
 	desmume_free();
+
+	/* tidy up the FPS limiter timer and semaphore */
+	SDL_RemoveTimer( limiter_timer);
+	SDL_DestroySemaphore( fps_limiter_semaphore);
 
 #ifdef DEBUG
         LogStop();
