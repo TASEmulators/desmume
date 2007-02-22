@@ -154,16 +154,20 @@ void GPU_Reset(GPU *g, u8 l)
   MMU.vram_mode[3] = 7 ;
 
    g->spriteRender = sprite1D;
-     
+
    if(g->core == GPU_SUB)
    {
       g->oam = (OAM *)(ARM9Mem.ARM9_OAM + ADDRESS_STEP_1KB);
       g->sprMem = ARM9Mem.ARM9_BOBJ;
+	// GPU core B
+      g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[REG_DISPB]);
    }
    else
    {
       g->oam = (OAM *)(ARM9Mem.ARM9_OAM);
       g->sprMem = ARM9Mem.ARM9_AOBJ;
+	// GPU core A
+      g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[0]);
    }
 }
 
@@ -175,7 +179,7 @@ void GPU_DeInit(GPU * gpu)
 void GPU_resortBGs(GPU *gpu)
 {
 	int i, j, prio;
-	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
+	struct _DISPCNT * cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	itemsForPriority_t * item;
 
 	for (i=0; i<256; i++)
@@ -186,7 +190,7 @@ void GPU_resortBGs(GPU *gpu)
 #define OP ^ !
 // if we untick boxes, layers become invisible
 //#define OP &&
-	gpu->LayersEnable[0] = gpu->dispBG[0] OP(cnt->BG0_Enable && !(gpu->dispCnt.bits.BG0_3D && (gpu->core==0)));
+	gpu->LayersEnable[0] = gpu->dispBG[0] OP(cnt->BG0_Enable && !(cnt->BG0_3D && (gpu->core==0)));
 	gpu->LayersEnable[1] = gpu->dispBG[1] OP(cnt->BG1_Enable);
 	gpu->LayersEnable[2] = gpu->dispBG[2] OP(cnt->BG2_Enable);
 	gpu->LayersEnable[3] = gpu->dispBG[3] OP(cnt->BG3_Enable);
@@ -201,7 +205,7 @@ void GPU_resortBGs(GPU *gpu)
 	for (i=NB_BG,j=0; i>0; ) {
 		i--;
 		if (!gpu->LayersEnable[i]) continue;
-		prio = gpu->bgCnt[i].bits.Priority;
+		prio = gpu->dispx_st->dispx_BGxCNT[i].bits.Priority;
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
 		item->nbBGs++;
@@ -232,9 +236,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 {
         BOOL LayersEnable[5];
         u16 WinBG=0;
-	struct _DISPCNT * cnt = &gpu->dispCnt.bits;
+	struct _DISPCNT * cnt;
+	cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+//	cnt = &gpu->dispCnt.bits;
 
-	gpu->dispCnt.val = p;
+	gpu->dispx_st->dispx_DISPCNT.val = p;
 
 //  gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
     gpu->dispMode = cnt->DisplayMode & ((gpu->core)?1:3);
@@ -297,9 +303,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 /* FIXME: all DEBUG_TRI are broken */
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
-	struct _BGxCNT * cnt = &(gpu->bgCnt[num].bits), *cnt2;
+	struct _BGxCNT * cnt = &(gpu->dispx_st->dispx_BGxCNT[num].bits), *cnt2;
+	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	int mode;
-	gpu->bgCnt[num].val = p;
+	
+	gpu->dispx_st->dispx_BGxCNT[num].val = p;
 	
 	GPU_resortBGs(gpu);
 	
@@ -308,9 +316,9 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 		gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_BBG);
 		gpu->BG_map_ram[num]  = ARM9Mem.ARM9_BBG;
 	} else {
-                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  gpu->dispCnt.bits.CharacBase_Block * ADDRESS_STEP_64kB ;
+                gpu->BG_tile_ram[num] = ((u8 *)ARM9Mem.ARM9_ABG) +  dispCnt->CharacBase_Block * ADDRESS_STEP_64kB ;
                 gpu->BG_bmp_ram[num]  = ((u8 *)ARM9Mem.ARM9_ABG);
-                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  gpu->dispCnt.bits.ScreenBase_Block * ADDRESS_STEP_64kB;
+                gpu->BG_map_ram[num]  = ARM9Mem.ARM9_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64kB;
 	}
 
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
@@ -329,7 +337,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 			break;
 	}
 
-	mode = mode2type[gpu->dispCnt.bits.BG_Mode][num];
+	mode = mode2type[dispCnt->BG_Mode][num];
 	gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
 	gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 }
@@ -448,7 +456,7 @@ void GPU_setMOSAIC(GPU *gpu, u16 v)
 }
 void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
 {
-	gpu->masterBright.val = v;
+//	gpu->masterBright.val = v;
 }
 
 /*****************************************************************************/
@@ -540,10 +548,11 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 // setting some values twice
 void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
+	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	BOOL wwin0=0, wwin1=0, wwobj=0, windows=0;
 
 	// Check if win0 if enabled, and only check if it is
-	if (gpu->dispCnt.bits.Win0_Enable)
+	if (dispCnt->Win0_Enable)
 	{
 		wwin0 = withinRect(	x,y,
 			gpu->WINDOW_XDIM[0].bits.start,gpu->WINDOW_YDIM[0].bits.start,
@@ -552,7 +561,7 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 	}
 
 	// Check if win1 if enabled, and only check if it is
-	if (gpu->dispCnt.bits.Win1_Enable)
+	if (dispCnt->Win1_Enable)
 	{
 		wwin1 = withinRect(	x,y,
 			gpu->WINDOW_XDIM[1].bits.start,gpu->WINDOW_YDIM[1].bits.start,
@@ -560,7 +569,7 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 		windows = 1;
 	}
 
-	if (gpu->dispCnt.bits.WinOBJ_Enable)
+	if (dispCnt->WinOBJ_Enable)
 	{
 		wwobj = gpu->sprWin[y][x];
 		windows = 1;
@@ -700,7 +709,8 @@ INLINE BOOL renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 /* render a text background to the combined pixelbuffer */
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
+	struct _BGxCNT bgCnt = gpu->dispx_st->dispx_BGxCNT[num].bits;
+	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
 	u16 tmp    = ((YBG&(ht-1))>>3);
@@ -826,7 +836,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	}
 
 	palette_size=0; /* color: no extended palette */
-	if(gpu->dispCnt.bits.ExBGxPalette_Enable)  /* color: extended palette */
+	if(dispCnt->ExBGxPalette_Enable)  /* color: extended palette */
 	{
 		palette_size=0x100;
 		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
@@ -956,7 +966,7 @@ INLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 P
 
 INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
 {
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
+	struct _BGxCNT bgCnt = gpu->dispx_st->dispx_BGxCNT[num].bits;
 	s32 wh = gpu->BGSize[num][0];
 	s32 ht = gpu->BGSize[num][1];
 	rot_scale_op(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt.PaletteSet_Wrap, fun, map, tile, pal);	
@@ -973,7 +983,7 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16
 
 INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->bgCnt[num].bits;
+	struct _BGxCNT bgCnt = gpu->dispx_st->dispx_BGxCNT[num].bits;
 	
 	u8 *map, *tile, *pal;
 	u8 affineModeSelection ;
@@ -1213,6 +1223,7 @@ INLINE void compute_sprite_rotoscale(GPU * gpu, _OAM_ * spriteInfo,
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
+	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
 	u8 block = gpu->sprBoundary;
 	u16 i;
@@ -1262,7 +1273,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		{
 			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
 	
-			if (gpu->dispCnt.bits.ExOBJPalette_Enable)
+			if (dispCnt->ExOBJPalette_Enable)
 				pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
 			else
 				pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
@@ -1285,6 +1296,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
+	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
 	u16 i;
 	
@@ -1322,7 +1334,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 		{
-			if (gpu->dispCnt.bits.OBJ_BMP_2D_dim) // 256*256
+			if (dispCnt->OBJ_BMP_2D_dim) // 256*256
 				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1);
 			else // 128 * 512
 				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
@@ -1508,8 +1520,10 @@ void calc_bright_colors() {
 
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
-	struct _DISPCAPCNT * capcnt;
 	GPU * gpu = screen->gpu;
+	struct _DISPCAPCNT * capcnt;
+	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _MASTER_BRIGHT * mBright;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
 	u8 * sdst =  GPU_screen + (SubScreen.offset + l) * 512;
@@ -1545,7 +1559,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
                         u8 * vram;
 
                         /* we only draw one of the VRAM blocks */
-                        vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+                        vram_bank = dispCnt->VRAM_Block ;
 
                         // This probably only needs to be calculated once per frame, but at least it's better than before >_<
                         if (MMU.vram_mode[vram_bank] & 4)
@@ -1613,7 +1627,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		for (i=0; i < item->nbBGs; i++) {
 			i16 = item->BGs[i];
 			if (gpu->LayersEnable[i16])
-			modeRender[gpu->dispCnt.bits.BG_Mode][i16](gpu, i16, l, dst);
+			modeRender[dispCnt->BG_Mode][i16](gpu, i16, l, dst);
 		}
 		// render sprite Pixels
 		for (i=0; i < item->nbPixelsX; i++) {
@@ -1733,8 +1747,8 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
 /* it will most likly take acceleration, while we are stuck here with CPU power */
-
-	switch (gpu->masterBright.bits.Mode)
+	mBright = &gpu->dispx_st->dispx_MASTERBRIGHT.bits;
+	switch (mBright->Mode)
 	{
 		// Disabled
 		case 0:
@@ -1744,10 +1758,10 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		case 1:
 		{
 			COLOR dstColor;
-			unsigned int masterBrightFactor = gpu->masterBright.bits.Factor;
+			unsigned int masterBrightFactor = mBright->Factor;
 			u16 * colors = bright_more_colors[masterBrightFactor];
 
-			if (gpu->masterBright.bits.FactorEx)
+			if (mBright.FactorEx)
 			{
 				/* the formular would create only white, as (r + (31-r)) = 31 */
 				/* white = enable all bits */
@@ -1801,10 +1815,10 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 */
 			COLOR dstColor;
-			unsigned int    masterBrightFactor = gpu->masterBright.bits.Factor ;
+			unsigned int    masterBrightFactor = mBright->Factor ;
 			u16 * colors = bright_less_colors[masterBrightFactor];
  
-			if (gpu->masterBright.bits.FactorEx)
+			if (mBright->FactorEx)
 			{
 				/* the formular would create only black, as (r - r) = 0 */
 				/* black = disable all bits */
