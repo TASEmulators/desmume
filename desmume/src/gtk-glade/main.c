@@ -54,7 +54,7 @@ void notify_Tool (VoidFunPtr fun, gpointer func_data) {
 }
 
 void notify_Tools() {
-	g_list_foreach(tools_to_update, &notify_Tool, NULL);
+	g_list_foreach(tools_to_update, (GFunc)notify_Tool, NULL);
 }
 
 /* Return the glade directory. 
@@ -149,7 +149,7 @@ void set_menuitem_label(GtkWidget * w, char * text )
 
   if ( GTK_BIN(w)->child )
     {
-      child = GTK_BIN(w)->child;
+      child = (GtkLabel*)GTK_BIN(w)->child;
       gtk_label_set_text(child, text);
     }
 }

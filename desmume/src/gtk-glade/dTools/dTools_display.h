@@ -99,7 +99,7 @@ static void inline dTools_display_select_attr(dTools_dsp * dsp, int index) {
 	pango_layout_set_attributes(dsp->playout, dsp->curr_attr);
 }
 
-static void inline dTools_display_draw_text(dTools_dsp * dsp, int x, int y, char * txt) {
+static void inline dTools_display_draw_text(dTools_dsp * dsp, int x, int y, const char * txt) {
 	pango_layout_set_text(dsp->playout, txt, -1);
 	gdk_draw_layout(dsp->draw, dsp->gc_fg, 
 		x * dsp->char_w + dsp->padding, 
