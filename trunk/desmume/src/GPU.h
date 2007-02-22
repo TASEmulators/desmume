@@ -263,14 +263,8 @@ typedef struct _reg_dispx {
     DISPCNT dispx_DISPCNT;            // 0x0400x000
     u16 dispA_DISPSTAT;               // 0x04000004 
     u16 dispx_VCOUNT;                 // 0x0400x006
-    BGxCNT dispx_BG0CNT;              // 0x0400x008
-    BGxCNT dispx_BG1CNT;              // 0x0400x00A
-    BGxCNT dispx_BG2CNT;              // 0x0400x00C
-    BGxCNT dispx_BG3CNT;              // 0x0400x00E
-    BGxOFS dispx_BG0OFS;              // 0x0400x010
-    BGxOFS dispx_BG1OFS;              // 0x0400x014
-    BGxOFS dispx_BG2OFS;              // 0x0400x018
-    BGxOFS dispx_BG3OFS;              // 0x0400x01C
+    BGxCNT dispx_BGxCNT[4];           // 0x0400x008
+    BGxOFS dispx_BGxOFS[4];           // 0x0400x010
     BGxPARMS dispx_BG2PARMS;          // 0x0400x020
     BGxPARMS dispx_BG3PARMS;          // 0x0400x030
     WINCNT dispx_WINCNT;              // 0x0400x040
@@ -523,10 +517,14 @@ typedef struct _GPU GPU;
 
 struct _GPU
 {
-	DISPCNT dispCnt;
+	// some structs are becoming redundant
+	// some functions too (no need to recopy some vars as it is done by MMU)
+	REG_DISPx * dispx_st;
+		
+//	DISPCNT dispCnt;
 	DISPCAPCNT dispCapCnt;
-	BGxCNT  bgCnt[4];
-	MASTER_BRIGHT masterBright;
+//	BGxCNT  bgCnt[4];
+//	MASTER_BRIGHT masterBright;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
 	u8 sprWin[256*2][256];
@@ -556,11 +554,6 @@ struct _GPU
 	u8 dispMode;
 	u8 vramBlock;
 
-	// these two are going to be deleted (use itemsForPriority instead...)
-	u8 BGIndex[4];
-	u8 ordre[4];
-	
-	
 	BOOL dispBG[4];
 	BOOL dispOBJ;
 	
@@ -641,6 +634,8 @@ void GPU_setBGProp(GPU *, u16 num, u16 p);
 
 void GPU_scrollX(GPU *, u8 num, u16 v);
 void GPU_scrollY(GPU *, u8 num, u16 v);
+
+// no more useful if using REG_DISPx
 void GPU_setXH(GPU *, u8 num, u16 v);
 void GPU_setXL(GPU *, u8 num, u16 v);
 void GPU_setYH(GPU *, u8 num, u16 v);
@@ -651,6 +646,7 @@ void GPU_setPC(GPU *, u8 num, u16 v);
 void GPU_setPD(GPU *, u8 num, u16 v);
 
 void GPU_scrollXY(GPU *, u8 num, u32 v);
+// no more useful if using REG_DISPx
 void GPU_setX(GPU *, u8 num, u32 v);
 void GPU_setY(GPU *, u8 num, u32 v);
 void GPU_setPAPB(GPU *, u8 num, u32 v);

@@ -231,6 +231,7 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	GPU * gpu;
 	float bright_color = 0.0f; // blend with black
 	float bright_alpha = 0.0f; // don't blend
+	struct _MASTER_BRIGHT * mBright;
 
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
@@ -251,15 +252,16 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 
 		// master bright
 		gpu = ((screen)?SubScreen:MainScreen).gpu;
-		switch (gpu->masterBright.bits.Mode)
+		mBright = &gpu->dispx_st->dispx_MASTERBRIGHT.bits;
+		switch (mBright->Mode)
 		{
 			case 1: // Bright up : blend with white
 				bright_color = 1.0f;
 				// no break;
 			case 2: // Bright down : blend with black
 				bright_alpha = 1.0f; // blending max
-				if (!gpu->masterBright.bits.FactorEx)
-					bright_alpha = gpu->masterBright.bits.Factor / 16.0;
+				if (!mBright->FactorEx)
+					bright_alpha = mBright->Factor / 16.0;
 				break;
 			// Disabled 0, Reserved 3
 			default: break;
