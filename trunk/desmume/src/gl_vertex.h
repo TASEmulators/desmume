@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include "types.h"
+#include "registers.h"
 
 #define MTX_MODE_PROJECTION 0
 #define MTX_MODE_POSITION   1
@@ -56,11 +57,14 @@ typedef union {
 	} bits;
 } _VTX_10 ;
 
-
+void gl_MTX_MODE (u32 val);
 void gl_MTX_IDENTITY ();
 void gl_MTX_LOAD_4x4 (u32 val);
 void gl_MTX_LOAD_4x3 (u32 val);
 void gl_MTX_LOAD_3x3 (u32 val);
+void gl_MTX_MULT_4x4 (u32 val);
+void gl_MTX_MULT_4x3 (u32 val);
+void gl_MTX_MULT_3x3 (u32 val);
 
 void gl_TEXCOORD(u32 val);
 
@@ -83,3 +87,70 @@ void gl_VTX_YZ (u32 yz);
 
 void gl_VTX_DIFF (u32 diff);
 //see 40004A0h - Cmd 28h - VTX_DIFF - Set Relative Vertex Coordinates (W)
+
+
+#define GL_CMD_NAME(n)	\
+	case n : printf("cmd " #n "\n"); break;
+
+INLINE static void gl_print_cmd(u32 adr) {
+	switch (adr) {
+		GL_CMD_NAME(eng_3D_RDLINES_COUNT   )
+		GL_CMD_NAME(eng_3D_EDGE_COLOR      )
+		GL_CMD_NAME(eng_3D_ALPHA_TEST_REF  )
+		GL_CMD_NAME(eng_3D_CLEAR_COLOR     )
+		GL_CMD_NAME(eng_3D_CLEAR_DEPTH     )
+		GL_CMD_NAME(eng_3D_CLRIMAGE_OFFSET )
+		GL_CMD_NAME(eng_3D_FOG_COLOR       )
+		GL_CMD_NAME(eng_3D_FOG_OFFSET      )
+		GL_CMD_NAME(eng_3D_FOG_TABLE       )
+		GL_CMD_NAME(eng_3D_TOON_TABLE      )
+		GL_CMD_NAME(eng_3D_GXFIFO          )
+		
+		GL_CMD_NAME(cmd_3D_MTX_MODE        )
+		GL_CMD_NAME(cmd_3D_MTX_PUSH        )
+		GL_CMD_NAME(cmd_3D_MTX_POP         )
+		GL_CMD_NAME(cmd_3D_MTX_STORE       )
+		GL_CMD_NAME(cmd_3D_MTX_RESTORE     )
+		GL_CMD_NAME(cmd_3D_MTX_IDENTITY    )
+		GL_CMD_NAME(cmd_3D_MTX_LOAD_4x4    )
+		GL_CMD_NAME(cmd_3D_MTX_LOAD_4x3    )
+		GL_CMD_NAME(cmd_3D_MTX_MULT_4x4    )
+		GL_CMD_NAME(cmd_3D_MTX_MULT_4x3    )
+		GL_CMD_NAME(cmd_3D_MTX_MULT_3x3    )
+		GL_CMD_NAME(cmd_3D_MTX_SCALE       )
+		GL_CMD_NAME(cmd_3D_MTX_TRANS       )
+		GL_CMD_NAME(cmd_3D_COLOR           )
+		GL_CMD_NAME(cmd_3D_NORMA           )
+		GL_CMD_NAME(cmd_3D_TEXCOORD        )
+		GL_CMD_NAME(cmd_3D_VTX_16          )
+		GL_CMD_NAME(cmd_3D_VTX_10          )
+		GL_CMD_NAME(cmd_3D_VTX_XY          )
+		GL_CMD_NAME(cmd_3D_VTX_XZ          )
+		GL_CMD_NAME(cmd_3D_VTX_YZ          )
+		GL_CMD_NAME(cmd_3D_VTX_DIFF        )
+		GL_CMD_NAME(cmd_3D_POLYGON_ATTR    )
+		GL_CMD_NAME(cmd_3D_TEXIMAGE_PARAM  )
+		GL_CMD_NAME(cmd_3D_PLTT_BASE       )
+		GL_CMD_NAME(cmd_3D_DIF_AMB         )
+		GL_CMD_NAME(cmd_3D_SPE_EMI         )
+		GL_CMD_NAME(cmd_3D_LIGHT_VECTOR    )
+		GL_CMD_NAME(cmd_3D_LIGHT_COLOR     )
+		GL_CMD_NAME(cmd_3D_SHININESS       )
+		GL_CMD_NAME(cmd_3D_BEGIN_VTXS      )
+		GL_CMD_NAME(cmd_3D_END_VTXS        )
+		GL_CMD_NAME(cmd_3D_SWAP_BUFFERS    )
+		GL_CMD_NAME(cmd_3D_VIEWPORT        )
+		GL_CMD_NAME(cmd_3D_BOX_TEST        )
+		GL_CMD_NAME(cmd_3D_POS_TEST        )
+		GL_CMD_NAME(cmd_3D_VEC_TEST        )
+		
+		GL_CMD_NAME(eng_3D_GXSTAT          )
+		GL_CMD_NAME(eng_3D_RAM_COUNT       )
+		GL_CMD_NAME(eng_3D_DISP_1DOT_DEPTH )
+		GL_CMD_NAME(eng_3D_POS_RESULT      )
+		GL_CMD_NAME(eng_3D_VEC_RESULT      )
+		GL_CMD_NAME(eng_3D_CLIPMTX_RESULT  )
+		GL_CMD_NAME(eng_3D_VECMTX_RESULT   )
+		default: break;
+	}
+}

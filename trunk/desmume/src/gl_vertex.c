@@ -62,9 +62,9 @@ Table shows Port Address, Command ID, Number of Parameters, and Clock Cycles.
   
 */
 
+#define print(a) printf a
+//#define print(a)
 
-//#define print(a) printf a
-#define print(a)
 
 int mtx_mode=0;
 
