@@ -126,12 +126,12 @@ void file_open() {
 			break;
 		default:
 			break;
-	}
+	} 
 	gtk_widget_destroy(pFileSelection);
 }
  
 void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data) { file_open();}
-void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) {  WriteBMP("./test.bmp",GPU_screen); }
+void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) {  WriteBMP("./test.bmp",(u16*)GPU_screen); }
 void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk_main_quit(); }
 
 
@@ -293,8 +293,8 @@ user_data)
         text = "Can't configure joystick while the game is running!";
 
       dlg = (GtkDialog*)glade_xml_get_widget(xml, "wMainW");
-      msgbox =
-        gtk_message_dialog_new(dlg, 
+      msgbox = (GtkDialog*)
+        gtk_message_dialog_new((GtkWindow*)dlg, 
                                GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
                                GTK_MESSAGE_INFO,
                                GTK_BUTTONS_CLOSE,
@@ -367,7 +367,7 @@ void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 /* About dialog
    FIXME: Add proper copyright */
 void  on_menu_apropos_activate (GtkMenuItem *menuitem, gpointer user_data) {
-  GtkAboutDialog * wAbout = (GtkAboutDialog*)glade_xml_get_widget(xml, "wAboutDlg");
+  GtkWidget * wAbout = glade_xml_get_widget(xml, "wAboutDlg");
   gtk_widget_show(wAbout);
 }
 
