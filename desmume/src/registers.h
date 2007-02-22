@@ -249,6 +249,18 @@
 #define REG_DISPA_DISPMMEMFIFO                  0x04000068
 
 
+#define eng_3D_RDLINES_COUNT   0x04000320
+#define eng_3D_EDGE_COLOR      0x04000330
+#define eng_3D_ALPHA_TEST_REF  0x04000340
+#define eng_3D_CLEAR_COLOR     0x04000350
+#define eng_3D_CLEAR_DEPTH     0x04000354
+#define eng_3D_CLRIMAGE_OFFSET 0x04000356
+#define eng_3D_FOG_COLOR       0x04000358
+#define eng_3D_FOG_OFFSET      0x0400035C
+#define eng_3D_FOG_TABLE       0x04000360
+#define eng_3D_TOON_TABLE      0x04000380
+#define eng_3D_GXFIFO          0x04000400
+
 // 3d commands
 #define cmd_3D_MTX_MODE        0x04000440
 #define cmd_3D_MTX_PUSH        0x04000444
@@ -287,5 +299,14 @@
 #define cmd_3D_BOX_TEST        0x040005C0
 #define cmd_3D_POS_TEST        0x040005C4
 #define cmd_3D_VEC_TEST        0x040005C8
+
+#define eng_3D_GXSTAT          0x04000600
+#define eng_3D_RAM_COUNT       0x04000604
+#define eng_3D_DISP_1DOT_DEPTH 0x04000610
+#define eng_3D_POS_RESULT      0x04000620
+#define eng_3D_VEC_RESULT      0x04000630
+#define eng_3D_CLIPMTX_RESULT  0x04000640
+#define eng_3D_VECMTX_RESULT   0x04000680
+  
 
 #endif

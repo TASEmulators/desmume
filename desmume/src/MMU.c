@@ -1853,189 +1853,86 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 	{
 		switch(adr)
 		{
-#ifdef RENDER3D
-			case 0x04000350 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glClearColor(val);
-				}
+
+			case cmd_3D_MTX_MODE        /* 0x04000440 */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_MODE(val);
 				return;
-			case 0x04000400 :
-				if(proc==ARMCPU_ARM9)
-				{
-					OGLRender::glCallList(val);
-				}
+			case cmd_3D_MTX_PUSH        /* 0x04000444 */ :
+			case cmd_3D_MTX_POP         /* 0x04000448 */ :
+			case cmd_3D_MTX_STORE       /* 0x0400044C */ :
+			case cmd_3D_MTX_RESTORE     /* 0x04000450 */ :
+				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case 0x04000440 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glMatrixMode(val);
-				}
+			case cmd_3D_MTX_IDENTITY    /* 0x04000454 */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_IDENTITY();
 				return;
-			case 0x04000444 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glPushMatrix();
-				}
+			case cmd_3D_MTX_LOAD_4x4    /* 0x04000458 */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_LOAD_4x4(val);
 				return;
-			case 0x04000448 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glPopMatrix(val);
-				}
+			case cmd_3D_MTX_LOAD_4x3    /* 0x0400045C */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_LOAD_4x3(val);
 				return;
-			case 0x0400044C : 
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glStoreMatrix(val);
-				}
+			case cmd_3D_MTX_MULT_4x4    /* 0x04000460 */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_MULT_4x4(val);
 				return;
-			case 0x04000450 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glRestore();
-				}
+			case cmd_3D_MTX_MULT_4x3    /* 0x04000464 */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_MULT_4x3(val);
 				return;
-			case 0x04000454 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glLoadIdentity();
-				}
+			case cmd_3D_MTX_MULT_3x3    /* 0x04000468 */ :
+				if (proc == ARMCPU_ARM9) gl_MTX_MULT_3x3(val);
 				return;
-			case 0x04000458 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::ML4x4ajouter(val);
-				}
+			case cmd_3D_MTX_SCALE       /* 0x0400046C */ :
+			case cmd_3D_MTX_TRANS       /* 0x04000470 */ :
+			case cmd_3D_COLOR           /* 0x04000480 */ :
+			case cmd_3D_NORMA           /* 0x04000484 */ :
+				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case 0x0400045C :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::ML4x3ajouter(val);
-				}
+			case cmd_3D_TEXCOORD        /* 0x04000488 */ :
+				if (proc == ARMCPU_ARM9) gl_TEXCOORD(val);
 				return;
-			case 0x04000460 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glMultMatrix4x4(val);
-				}
+			case cmd_3D_VTX_16          /* 0x0400048C */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_16(val);
 				return;
-			case 0x04000464 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glMultMatrix4x3(val);
-				}
+			case cmd_3D_VTX_10          /* 0x04000490 */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_10(val);
 				return;
-			case 0x04000468 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glMultMatrix3x3(val);
-				}
+			case cmd_3D_VTX_XY          /* 0x04000494 */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_XY(val);
 				return;
-			case 0x0400046C :
-				if(proc==ARMCPU_ARM9)
-				{
-					OGLRender::glScale(val);
-				}
+			case cmd_3D_VTX_XZ          /* 0x04000498 */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_XZ(val);
 				return;
-			case 0x04000470 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::addTrans(val);
-				}
+			case cmd_3D_VTX_YZ          /* 0x0400049C */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_YZ(val);
 				return;
-			case 0x04000480 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glColor3b(val);
-				}
-			return;
-			case 0x04000488 :
-				if(proc==ARMCPU_ARM9)
-			{
-				OGLRender::glTexCoord(val);
-				//execute = FALSE;
-			}
-			return;
-#endif
-			case 0x0400048C :
-				if(proc == ARMCPU_ARM9) {
-					//OGLRender::glVertex3(val);
-				}
+			case cmd_3D_VTX_DIFF        /* 0x040004A0 */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_DIFF(val);
 				return;
-			case 0x04000490 :
-				if(proc==ARMCPU_ARM9) {
-					//GPULOG("VERTEX 10 %d\r\n",val);
-					gl_VTX_10(val);
-				}
+			case cmd_3D_POLYGON_ATTR    /* 0x040004A4 */ :
+			case cmd_3D_TEXIMAGE_PARAM  /* 0x040004A8 */ :
+			case cmd_3D_PLTT_BASE       /* 0x040004AC */ :
+			case cmd_3D_DIF_AMB         /* 0x040004C0 */ :
+			case cmd_3D_SPE_EMI         /* 0x040004C4 */ :
+			case cmd_3D_LIGHT_VECTOR    /* 0x040004C8 */ :
+			case cmd_3D_LIGHT_COLOR     /* 0x040004CC */ :
+			case cmd_3D_SHININESS       /* 0x040004D0 */ :
+				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case 0x04000494 :
-				if(proc==ARMCPU_ARM9) {
-					//GPULOG(printf(txt, "VERTEXY %d\r\n",val);
-					gl_VTX_XY(val);
-				}
+			case cmd_3D_BEGIN_VTXS      /* 0x04000500 */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_begin(val);
 				return;
-			case 0x04000498 :
-				if(proc==ARMCPU_ARM9) {
-					//GPULOG("VERTEXZ %d\r\n",val);
-					gl_VTX_XZ(val);
-				}
+			case cmd_3D_END_VTXS        /* 0x04000504 */ :
+				if (proc == ARMCPU_ARM9) gl_VTX_end();
 				return;
-			case 0x0400049C :
-				if(proc==ARMCPU_ARM9) {
-					//GPULOG("VERTEYZ %d\r\n",val);
-					gl_VTX_YZ(val);
-				}
+			case cmd_3D_SWAP_BUFFERS    /* 0x04000540 */ :
+			case cmd_3D_VIEWPORT        /* 0x04000580 */ :
+			case cmd_3D_BOX_TEST        /* 0x040005C0 */ :
+			case cmd_3D_POS_TEST        /* 0x040005C4 */ :
+			case cmd_3D_VEC_TEST        /* 0x040005C8 */ :
+				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case 0x040004A0 :
-				if(proc==ARMCPU_ARM9) {
-					gl_VTX_DIFF(val);
-				}
-				return;
-#ifdef RENDER3D
-			case 0x040004A8 :
-				if(proc==ARMCPU_ARM9)
-			{
-				OGLRender::glTexImage2D(val, FALSE);
-				//execute = FALSE;
-				testval = val;
-			}
-			return;
-			case 0x040004AC :
-			T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x4AC, val);
-			if(proc==ARMCPU_ARM9)
-				OGLRender::glTexImage2D(testval, TRUE);
-			//execute = FALSE;
-			return;
-#endif
-			case 0x04000500 :
-				if(proc == ARMCPU_ARM9)
-				{
-//					OGLRender::glBegin(val);
-					gl_VTX_begin(val);
-				}
-				return;
-			case 0x04000504 :
-				if(proc == ARMCPU_ARM9)
-				{
-//					OGLRender::glEnd();
-					gl_VTX_end();
-				}
-				return;
-#ifdef RENDER3D
-			case 0x04000540 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glFlush();
-				}
-				return;
-			case 0x04000580 :
-				if(proc == ARMCPU_ARM9)
-				{
-					OGLRender::glViewPort(val);
-				}
-				return;
-#endif
+
+
                         case REG_DISPA_BG2PA :
 				if (proc == ARMCPU_ARM9) GPU_setPAPB(MainScreen.gpu, 2, val);
 				return;
