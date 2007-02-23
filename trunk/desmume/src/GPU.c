@@ -636,7 +636,8 @@ INLINE BOOL renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 
 					u16 sourceFraction = (gpu->BLDALPHA & 0x1F),
 						sourceR, sourceG, sourceB,targetFraction;
-					if (!sourceFraction) return ;
+					if (!sourceFraction) 
+						return 0;
 					/* no fraction of this BG to be showed, so don't do anything */
 					sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
 					/* weighted component from color to draw */
@@ -1761,7 +1762,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			unsigned int masterBrightFactor = mBright->Factor;
 			u16 * colors = bright_more_colors[masterBrightFactor];
 
-			if (mBright.FactorEx)
+			if (mBright->FactorEx)
 			{
 				/* the formular would create only white, as (r + (31-r)) = 31 */
 				/* white = enable all bits */
