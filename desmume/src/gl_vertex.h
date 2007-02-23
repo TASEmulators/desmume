@@ -25,6 +25,9 @@
 #include "types.h"
 #include "registers.h"
 
+#define CHECK_3D_ATTEMPT attempted_3D_op=TRUE;
+BOOL attempted_3D_op;
+
 #define MTX_MODE_PROJECTION 0
 #define MTX_MODE_POSITION   1
 #define MTX_MODE_POS_VECTOR 2
@@ -93,6 +96,7 @@ void gl_VTX_DIFF (u32 diff);
 	case n : printf("cmd " #n "\n"); break;
 
 INLINE static void gl_print_cmd(u32 adr) {
+CHECK_3D_ATTEMPT
 	switch (adr) {
 		GL_CMD_NAME(eng_3D_RDLINES_COUNT   )
 		GL_CMD_NAME(eng_3D_EDGE_COLOR      )

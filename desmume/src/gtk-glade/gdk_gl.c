@@ -232,6 +232,13 @@ gboolean screen (GtkWidget * widget, int viewportscreen) {
 	float bright_color = 0.0f; // blend with black
 	float bright_alpha = 0.0f; // don't blend
 	struct _MASTER_BRIGHT * mBright;
+	static BOOL noticed_3D=FALSE;
+
+		if (!noticed_3D && attempted_3D_op) {
+			GtkWidget * dlg = glade_xml_get_widget(xml, "w3Dop");
+			gtk_widget_show(dlg);
+			noticed_3D=TRUE;
+		}
 
 	// we take care to draw the right thing the right place
 	// we need to rearrange widgets not to use this trick
