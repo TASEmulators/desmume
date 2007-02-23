@@ -43,44 +43,44 @@ extern "C" {
 
 struct _DISPCNT
 {
-/*0*/    unsigned BG_Mode:3;         // A+B:
-/*3*/    unsigned BG0_3D:1;          // A  : 0=2D,         1=3D
-/*4*/    unsigned OBJ_Tile_1D:1;     // A+B: 0=2D (32KB),  1=1D (32..256KB)
-/*5*/    unsigned OBJ_BMP_2D_dim:1;  // A+B: 0=128x512,    1=256x256 pixels
-/*6*/    unsigned OBJ_BMP_mapping:1; // A+B: 0=2D (128KB), 1=1D (128..256KB)
+/* 0*/  u8 BG_Mode:3;         // A+B:
+/* 3*/  u8 BG0_3D:1;          // A  : 0=2D,         1=3D
+/* 4*/  u8 OBJ_Tile_1D:1;     // A+B: 0=2D (32KB),  1=1D (32..256KB)
+/* 5*/  u8 OBJ_BMP_2D_dim:1;  // A+B: 0=128x512,    1=256x256 pixels
+/* 6*/  u8 OBJ_BMP_mapping:1; // A+B: 0=2D (128KB), 1=1D (128..256KB)
 
                                     // 7-15 same as GBA
-/*7*/    unsigned ForceBlank:1;      // A+B: 
-/*8*/    unsigned BG0_Enable:1;        // A+B: 0=disable, 1=Enable
-/*9*/   unsigned BG1_Enable:1;      // A+B: 0=disable, 1=Enable
-/*10*/  unsigned BG2_Enable:1;      // A+B: 0=disable, 1=Enable
-/*11*/  unsigned BG3_Enable:1;      // A+B: 0=disable, 1=Enable
-/*12*/  unsigned OBJ_Enable:1;      // A+B: 0=disable, 1=Enable
-/*13*/  unsigned Win0_Enable:1;     // A+B: 0=disable, 1=Enable
-/*14*/  unsigned Win1_Enable:1;     // A+B: 0=disable, 1=Enable
-/*15*/  unsigned WinOBJ_Enable:1;   // A+B: 0=disable, 1=Enable
+/* 7*/  u8 ForceBlank:1;      // A+B: 
+/* 8*/  u8 BG0_Enable:1;        // A+B: 0=disable, 1=Enable
+/* 9*/  u8 BG1_Enable:1;      // A+B: 0=disable, 1=Enable
+/*10*/  u8 BG2_Enable:1;      // A+B: 0=disable, 1=Enable
+/*11*/  u8 BG3_Enable:1;      // A+B: 0=disable, 1=Enable
+/*12*/  u8 OBJ_Enable:1;      // A+B: 0=disable, 1=Enable
+/*13*/  u8 Win0_Enable:1;     // A+B: 0=disable, 1=Enable
+/*14*/  u8 Win1_Enable:1;     // A+B: 0=disable, 1=Enable
+/*15*/  u8 WinOBJ_Enable:1;   // A+B: 0=disable, 1=Enable
 
-/*16*/  unsigned DisplayMode:2;     // A+B: coreA(0..3) coreB(0..1) GBA(Green Swap)
+/*16*/  u8 DisplayMode:2;     // A+B: coreA(0..3) coreB(0..1) GBA(Green Swap)
                                     // 0=off (white screen)
                                     // 1=on (normal BG & OBJ layers)
                                     // 2=VRAM display (coreA only)
                                     // 3=RAM display (coreA only, DMA transfers)
                     
-/*18*/  unsigned VRAM_Block:2;            // A  : VRAM block (0..3=A..D)
-/*20*/  unsigned OBJ_Tile_1D_Bound:2;     // A+B: 
-/*22*/  unsigned OBJ_BMP_1D_Bound:1;      // A  : 
-/*23*/  unsigned OBJ_HBlank_process:1;    // A+B: OBJ processed during HBlank (GBA bit5)
-/*24*/  unsigned CharacBase_Block:3;      // A  : Character Base (64K step)
-/*27*/  unsigned ScreenBase_Block:3;      // A  : Screen Base (64K step)
-/*30*/  unsigned ExBGxPalette_Enable:1;   // A+B: 0=disable, 1=Enable BG extended Palette
-/*31*/  unsigned ExOBJPalette_Enable:1;   // A+B: 0=disable, 1=Enable OBJ extended Palette
-};
+/*18*/  u8 VRAM_Block:2;            // A  : VRAM block (0..3=A..D)
+/*20*/  u8 OBJ_Tile_1D_Bound:2;     // A+B: 
+/*22*/  u8 OBJ_BMP_1D_Bound:1;      // A  : 
+/*23*/  u8 OBJ_HBlank_process:1;    // A+B: OBJ processed during HBlank (GBA bit5)
+/*24*/  u8 CharacBase_Block:3;      // A  : Character Base (64K step)
+/*27*/  u8 ScreenBase_Block:3;      // A  : Screen Base (64K step)
+/*30*/  u8 ExBGxPalette_Enable:1;   // A+B: 0=disable, 1=Enable BG extended Palette
+/*31*/  u8 ExOBJPalette_Enable:1;   // A+B: 0=disable, 1=Enable OBJ extended Palette
+}; 
 
 typedef union 
 {
     struct _DISPCNT bits;
     u32 val;
-} DISPCNT;
+} DISPCNT; 
 #define BGxENABLED(cnt,num)    ((num<8)? ((cnt.val>>8) & num):0)
 
 
@@ -95,27 +95,27 @@ typedef union
 
 struct _BGxCNT 
 {
-/* 0*/ unsigned Priority:2;            // 0..3=high..low
-/* 2*/ unsigned CharacBase_Block:4;    // individual character base offset (n*16KB)
-/* 6*/ unsigned Mosaic_Enable:1;       // 0=disable, 1=Enable mosaic
-/* 7*/ unsigned Palette_256:1;         // 0=16x16, 1=1*256 palette
-/* 8*/ unsigned ScreenBase_Block:5;    // individual screen base offset (text n*2KB, BMP n*16KB)
-/*13*/ unsigned PaletteSet_Wrap:1;     // BG0 extended palette set 0=set0, 1=set2
+/* 0*/ u8 Priority:2;            // 0..3=high..low
+/* 2*/ u8 CharacBase_Block:4;    // individual character base offset (n*16KB)
+/* 6*/ u8 Mosaic_Enable:1;       // 0=disable, 1=Enable mosaic
+/* 7*/ u8 Palette_256:1;         // 0=16x16, 1=1*256 palette
+/* 8*/ u8 ScreenBase_Block:5;    // individual screen base offset (text n*2KB, BMP n*16KB)
+/*13*/ u8 PaletteSet_Wrap:1;     // BG0 extended palette set 0=set0, 1=set2
                                        // BG1 extended palette set 0=set1, 1=set3
                                        // BG2 overflow area wraparound 0=off, 1=wrap
                                        // BG3 overflow area wraparound 0=off, 1=wrap
-/*14*/ unsigned ScreenSize:2;          // text    : 256x256 512x256 256x512 512x512
+/*14*/ u8 ScreenSize:2;          // text    : 256x256 512x256 256x512 512x512
                                        // x/rot/s : 128x128 256x256 512x512 1024x1024
                                        // bmp     : 128x128 256x256 512x256 512x512
                                        // large   : 512x1024 1024x512 - -
-};
+}; 
 
 
 typedef union 
 {
     struct _BGxCNT bits;
     u16 val;
-} BGxCNT;
+} BGxCNT; 
 
 /*******************************************************************************
     this structure is for background offset
@@ -124,7 +124,7 @@ typedef union
 typedef struct {
     u16 BGxHOFS;
     u16 BGxVOFS;
-} BGxOFS;
+} BGxOFS; 
 
 /*******************************************************************************
     this structure is for rotoscale parameters
@@ -137,7 +137,7 @@ typedef struct {
     u16 BGxPD;
     u32 BGxX;
     u32 BGxY;
-} BGxPARMS;
+} BGxPARMS; 
 
 
 /*******************************************************************************
@@ -151,7 +151,7 @@ typedef struct {
     u16 WIN1V;
     u16 WININ;
     u16 WINOUT;
-} WINCNT;
+} WINCNT; 
 
 /*******************************************************************************
     this structure is for miscellanous settings
@@ -168,7 +168,7 @@ typedef struct {
     u16 unused4;
     u16 unused5;
     u16 unused6;
-} MISCCNT;
+} MISCCNT; 
 
 
 /*******************************************************************************
@@ -177,26 +177,26 @@ typedef struct {
 
 struct _DISP3DCNT
 {
-/* 0*/ unsigned EnableTexMapping:1;    //
-/* 1*/ unsigned PolygonShading:1;      // 0=Toon Shading, 1=Highlight Shading
-/* 2*/ unsigned EnableAlphaTest:1;     // see ALPHA_TEST_REF
-/* 3*/ unsigned EnableAlphaBlending:1; // see various Alpha values
-/* 4*/ unsigned EnableAntiAliasing:1;  //
-/* 5*/ unsigned EnableEdgeMarking:1;   // see EDGE_COLOR
-/* 6*/ unsigned FogOnlyAlpha:1;        // 0=Alpha and Color, 1=Only Alpha (see FOG_COLOR)
-/* 7*/ unsigned EnableFog:1;           // Fog Master Enable 
-/* 8*/ unsigned FogShiftSHR:4;         // 0..10 SHR-Divider (see FOG_OFFSET)
-/*12*/ unsigned AckColorBufferUnderflow:1; // Color Buffer RDLINES Underflow (0=None, 1=Underflow/Acknowledge)
-/*13*/ unsigned AckVertexRAMOverflow:1;    // Polygon/Vertex RAM Overflow    (0=None, 1=Overflow/Acknowledge)
-/*14*/ unsigned RearPlaneMode:1;       // 0=Blank, 1=Bitmap
-/*15*/ unsigned :17;
-};
+/* 0*/ u8 EnableTexMapping:1;    //
+/* 1*/ u8 PolygonShading:1;      // 0=Toon Shading, 1=Highlight Shading
+/* 2*/ u8 EnableAlphaTest:1;     // see ALPHA_TEST_REF
+/* 3*/ u8 EnableAlphaBlending:1; // see various Alpha values
+/* 4*/ u8 EnableAntiAliasing:1;  //
+/* 5*/ u8 EnableEdgeMarking:1;   // see EDGE_COLOR
+/* 6*/ u8 FogOnlyAlpha:1;        // 0=Alpha and Color, 1=Only Alpha (see FOG_COLOR)
+/* 7*/ u8 EnableFog:1;           // Fog Master Enable 
+/* 8*/ u8 FogShiftSHR:4;         // 0..10 SHR-Divider (see FOG_OFFSET)
+/*12*/ u8 AckColorBufferUnderflow:1; // Color Buffer RDLINES Underflow (0=None, 1=Underflow/Acknowledge)
+/*13*/ u8 AckVertexRAMOverflow:1;    // Polygon/Vertex RAM Overflow    (0=None, 1=Overflow/Acknowledge)
+/*14*/ u8 RearPlaneMode:1;       // 0=Blank, 1=Bitmap
+/*15*/ u8 :17;
+}; 
 
 typedef union 
 {
     struct _DISP3DCNT bits;
     u32 val;
-} DISP3DCNT;
+} DISP3DCNT; 
 
 /*******************************************************************************
     this structure is for capture control (core A only)
@@ -207,27 +207,27 @@ typedef union
 
 struct _DISPCAPCNT
 {
-/* 0*/ unsigned BlendFactor_A:5;     // 0..16 = Blending Factor for Source A
-/* 5*/ unsigned :3;                  //
-/* 8*/ unsigned BlendFactor_B:5;     // 0..16 = Blending Factor for Source B
-/*13*/ unsigned :3;                  //
-/*16*/ unsigned VRAM_Write_Block:2;  // 0..3 = VRAM A..D
-/*18*/ unsigned VRAM_Write_Offset:2; // n x 0x08000
-/*20*/ unsigned Capture_Size:2;      // 0=128x128, 1=256x64, 2=256x128, 3=256x192 dots
-/*22*/ unsigned :2;                  //
-/*24*/ unsigned Source_A:1;          // 0=Graphics Screen BG+3D+OBJ, 1=3D Screen
-/*25*/ unsigned Source_B:1;          // 0=VRAM, 1=Main Memory Display FIFO
-/*26*/ unsigned VRAM_Read_Offset:2;  // n x 0x08000
-/*28*/ unsigned :1;                  //
-/*29*/ unsigned Capture_Source:2;    // 0=Source A, 1=Source B, 2/3=Sources A+B blended
-/*31*/ unsigned Capture_Enable:1;    // 0=Disable/Ready, 1=Enable/Busy
-};
+/* 0*/ u8 BlendFactor_A:5;     // 0..16 = Blending Factor for Source A
+/* 5*/ u8 :3;                  //
+/* 8*/ u8 BlendFactor_B:5;     // 0..16 = Blending Factor for Source B
+/*13*/ u8 :3;                  //
+/*16*/ u8 VRAM_Write_Block:2;  // 0..3 = VRAM A..D
+/*18*/ u8 VRAM_Write_Offset:2; // n x 0x08000
+/*20*/ u8 Capture_Size:2;      // 0=128x128, 1=256x64, 2=256x128, 3=256x192 dots
+/*22*/ u8 :2;                  //
+/*24*/ u8 Source_A:1;          // 0=Graphics Screen BG+3D+OBJ, 1=3D Screen
+/*25*/ u8 Source_B:1;          // 0=VRAM, 1=Main Memory Display FIFO
+/*26*/ u8 VRAM_Read_Offset:2;  // n x 0x08000
+/*28*/ u8 :1;                  //
+/*29*/ u8 Capture_Source:2;    // 0=Source A, 1=Source B, 2/3=Sources A+B blended
+/*31*/ u8 Capture_Enable:1;    // 0=Disable/Ready, 1=Enable/Busy
+}; 
 
 typedef union 
 {
     struct _DISPCAPCNT bits;
     u32 val;
-} DISPCAPCNT;
+} DISPCAPCNT; 
 
 
 
@@ -241,17 +241,17 @@ typedef union
 
 struct _MASTER_BRIGHT
 {
-/* 0*/ unsigned Factor:4;   // combine with (Factor / 16) of white/black
-/* 4*/ unsigned FactorEx:1; // if true use white or black
-/* 5*/ unsigned :9;
-/*14*/ unsigned Mode:2;     // 0=off, 1=Lighten, 2=Darken, 3=?
-};
-
+/* 0*/ u8 Factor:4;   // combine with (Factor / 16) of white/black
+/* 4*/ u8 FactorEx:1; // if true use white or black
+/* 5*/ u8 :9;
+/*14*/ u8 Mode:2;     // 0=off, 1=Lighten, 2=Darken, 3=?
+}; 
+ 
 typedef union 
 {
     struct _MASTER_BRIGHT bits;
     u16 val;
-} MASTER_BRIGHT;
+} MASTER_BRIGHT; 
 
 /*******************************************************************************
     this structure holds everything and should be mapped to
@@ -273,9 +273,26 @@ typedef struct _reg_dispx {
     DISPCAPCNT dispA_DISPCAPCNT;      // 0x04000064
     u32 dispA_DISPMMEMFIFO;           // 0x04000068
     MASTER_BRIGHT dispx_MASTERBRIGHT; // 0x0400x06C
-} REG_DISPx;
+} REG_DISPx ; 
 
-
+// normally should have same addresses 
+static void REG_DISPx_pack_test(GPU * gpu)
+{
+	REG_DISPx * r = gpu->dispx_st;
+	printf ("%08x %02x\n",  r, (long)(&r->dispx_DISPCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISPSTAT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_VCOUNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BGxCNT[0]) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BGxOFS[0]) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BG2PARMS) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BG3PARMS) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_WINCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_MISC) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISP3DCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_MASTERBRIGHT) - (long)r);
+}
 
 
 

@@ -205,7 +205,7 @@ void GPU_resortBGs(GPU *gpu)
 	for (i=NB_BG,j=0; i>0; ) {
 		i--;
 		if (!gpu->LayersEnable[i]) continue;
-		prio = gpu->dispx_st->dispx_BGxCNT[i].bits.Priority;
+		prio = (gpu->dispx_st)->dispx_BGxCNT[i].bits.Priority;
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
 		item->nbBGs++;
@@ -237,10 +237,10 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         BOOL LayersEnable[5];
         u16 WinBG=0;
 	struct _DISPCNT * cnt;
-	cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	cnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 //	cnt = &gpu->dispCnt.bits;
 
-	gpu->dispx_st->dispx_DISPCNT.val = p;
+	(gpu->dispx_st)->dispx_DISPCNT.val = p;
 
 //  gpu->dispMode = DISPCNT_DISPLAY_MODE(p,gpu->lcd) ;
     gpu->dispMode = cnt->DisplayMode & ((gpu->core)?1:3);
@@ -303,11 +303,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 /* FIXME: all DEBUG_TRI are broken */
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
-	struct _BGxCNT * cnt = &(gpu->dispx_st->dispx_BGxCNT[num].bits), *cnt2;
-	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _BGxCNT * cnt = &((gpu->dispx_st)->dispx_BGxCNT[num].bits), *cnt2;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	int mode;
 	
-	gpu->dispx_st->dispx_BGxCNT[num].val = p;
+	(gpu->dispx_st)->dispx_BGxCNT[num].val = p;
 	
 	GPU_resortBGs(gpu);
 	
@@ -354,6 +354,23 @@ void GPU_remove(GPU * gpu, u8 num)
 }
 void GPU_addBack(GPU * gpu, u8 num)
 {
+	REG_DISPx * r = gpu->dispx_st;
+	printf ("%08x %08x\n",  r, (long)(&r->dispx_DISPCNT) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispA_DISPSTAT) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_VCOUNT) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[0]) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[1]) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[2]) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[3]) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BGxOFS[0]) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BG2PARMS) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_BG3PARMS) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_WINCNT) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_MISC) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispA_DISP3DCNT) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
+	printf ("\t%08x\n", (long)(&r->dispx_MASTERBRIGHT) - (long)r);
 	if (num == 4)	gpu->dispOBJ = 1;
 	else		gpu->dispBG[num] = 1;
 	GPU_resortBGs(gpu);
@@ -548,7 +565,7 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 // setting some values twice
 void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
-	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	BOOL wwin0=0, wwin1=0, wwobj=0, windows=0;
 
 	// Check if win0 if enabled, and only check if it is
@@ -710,8 +727,8 @@ INLINE BOOL renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 /* render a text background to the combined pixelbuffer */
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->dispx_st->dispx_BGxCNT[num].bits;
-	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
 	u16 tmp    = ((YBG&(ht-1))>>3);
@@ -732,7 +749,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 	if(tmp>31) 
 	{
-		map+= ADDRESS_STEP_512B << bgCnt.ScreenSize ;
+		map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
 	}
 	
 	tile = (u8*) gpu->BG_tile_ram[num];
@@ -740,9 +757,9 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	xoff = XBG;
 	pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
 
-	if(!bgCnt.Palette_256)    /* color: 16 palette entries */
+	if(!bgCnt->Palette_256)    /* color: 16 palette entries */
 	{
-		if (bgCnt.Mosaic_Enable){
+		if (bgCnt->Mosaic_Enable){
 /* test NDS: #2 of 
    http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192 */
 
@@ -967,10 +984,10 @@ INLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 P
 
 INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, rot_fun fun, u8 * map, u8 * tile, u8 * pal)
 {
-	struct _BGxCNT bgCnt = gpu->dispx_st->dispx_BGxCNT[num].bits;
+	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	s32 wh = gpu->BGSize[num][0];
 	s32 ht = gpu->BGSize[num][1];
-	rot_scale_op(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt.PaletteSet_Wrap, fun, map, tile, pal);	
+	rot_scale_op(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt->PaletteSet_Wrap, fun, map, tile, pal);	
 }
 
 
@@ -984,13 +1001,13 @@ INLINE void rotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16
 
 INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
-	struct _BGxCNT bgCnt = gpu->dispx_st->dispx_BGxCNT[num].bits;
+	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	
 	u8 *map, *tile, *pal;
 	u8 affineModeSelection ;
 
 	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
-	affineModeSelection = (bgCnt.Palette_256 << 1) | (bgCnt.CharacBase_Block & 1) ;
+	affineModeSelection = (bgCnt->Palette_256 << 1) | (bgCnt->CharacBase_Block & 1) ;
 //	printf("extrot mode %d\n", affineModeSelection);
 	switch(affineModeSelection)
 	{
@@ -1028,26 +1045,38 @@ void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
 }
 
 void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
-{
+{	
+	BGxPARMS * parms;
+	if (num==2) {
+		parms = &(gpu->dispx_st)->dispx_BG2PARMS;
+	} else {
+		parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
+	}
      rotBG2(gpu, num, DST, l,
-              gpu->BGX[num],
-              gpu->BGY[num],
-              gpu->BGPA[num],
-              gpu->BGPB[num],
-              gpu->BGPC[num],
-              gpu->BGPD[num],
+              parms->BGxX,
+              parms->BGxY,
+              parms->BGxPA,
+              parms->BGxPB,
+              parms->BGxPC,
+              parms->BGxPD,
               256);
 }
 
 void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
+	BGxPARMS * parms;
+	if (num==2) {
+		parms = &(gpu->dispx_st)->dispx_BG2PARMS;
+	} else {
+		parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
+	}
      extRotBG2(gpu, num, DST, l,
-              gpu->BGX[num],
-              gpu->BGY[num],
-              gpu->BGPA[num],
-              gpu->BGPB[num],
-              gpu->BGPC[num],
-              gpu->BGPD[num],
+              parms->BGxX,
+              parms->BGxY,
+              parms->BGxPA,
+              parms->BGxPB,
+              parms->BGxPC,
+              parms->BGxPD,
               256);
 }
 
@@ -1224,7 +1253,7 @@ INLINE void compute_sprite_rotoscale(GPU * gpu, _OAM_ * spriteInfo,
 
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
-	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
 	u8 block = gpu->sprBoundary;
 	u16 i;
@@ -1297,7 +1326,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 {
-	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
 	u16 i;
 	
@@ -1523,7 +1552,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	struct _DISPCAPCNT * capcnt;
-	struct _DISPCNT * dispCnt = &gpu->dispx_st->dispx_DISPCNT.bits;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	struct _MASTER_BRIGHT * mBright;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
@@ -1748,7 +1777,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
 /* it will most likly take acceleration, while we are stuck here with CPU power */
-	mBright = &gpu->dispx_st->dispx_MASTERBRIGHT.bits;
+	mBright = &(gpu->dispx_st)->dispx_MASTERBRIGHT.bits;
 	switch (mBright->Mode)
 	{
 		// Disabled
