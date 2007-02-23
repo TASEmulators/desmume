@@ -124,21 +124,23 @@ void on_wtools_2_r32_toggled           (GtkToggleButton *togglebutton, gpointer 
 
 /* which address */
 #define RANGE_MIN   0
-#define RANGE_MAX   0x100000000
-#define ADDR_MASK   0xFFFFFFF0
-#define STEP_ONE_LINE 0x10
-#define STEP_ONE_PAGE 0x100
-#define STEP_x10_PAGE 0x1000
+#define RANGE_MAX   0x10000000
+#define ADDR_MASK   0xFFFFFFF
+#define STEP_ONE_LINE 0x1
+#define STEP_ONE_PAGE 0x10
+#define STEP_x10_PAGE 0x100
 
 static void scroll_address(u32 addr) {
-	address = addr & ADDR_MASK;
+	address = (addr & ADDR_MASK);
 	refresh();
 }
 static void change_address(u32 addr) {
+	addr /= 0x10;
 	gtk_range_set_value(wRange, addr);
 }
-static void add_to_address(u32 inc) {
-	change_address(address+inc);
+static void add_to_address(s32 inc) {
+	u32 addr = (address+inc) & ADDR_MASK;
+	gtk_range_set_value(wRange, addr);
 }
 
 void on_wtools_2_GotoAddress_activate  (GtkEntry *entry, gpointer user_data) {
@@ -240,8 +242,9 @@ static void refresh() {
 	
 	if (!init) return;
 
+	addr=address * 0x10;
 	for (i=0; i<0x100; i++) 
-		mem[i] = MMU_readByte(cpu, address+i);
+		mem[i] = MMU_readByte(cpu, addr+i);
 
 	dTools_display_clear(&dsp);
 	switch(packmode) {
@@ -252,7 +255,6 @@ static void refresh() {
 
 
 // draw memory content here
-	addr=address;
 	for (i=0; i<0x10; i++) {
 		ptxt = txt;
 		sprintf(ptxt, "%04X:%04X | ", (addr>>16)&0xFFFF, addr&0xFFFF); ptxt+=12;

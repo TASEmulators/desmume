@@ -82,7 +82,7 @@ void set_mouse_coord(signed long x,signed long y);
 void load_default_config();
 BOOL init_joy();
 void uninit_joy();
-void set_joy_keys(u16 joyCfg[]);
+void set_joy_keys(const u16 joyCfg[]);
 void set_kb_keys(u16 kbCfg[]);
 u16 get_set_joy_key(int index);
 void get_set_joy_axis(int index, int index_opp);
