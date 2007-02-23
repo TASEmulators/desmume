@@ -90,6 +90,7 @@ typedef union _callback_arg{
 #include "../ctrlssdl.h"
 #include "../types.h"
 #include "../saves.h"
+#include "../gl_vertex.h"
 #include "desmume.h"
 #include "gdk_gl.h"
 

@@ -121,7 +121,6 @@ gboolean EmuLoop(gpointer data)
 	
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
-		
 		fps_FrameCount += Frameskip + 1;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000)

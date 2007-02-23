@@ -65,10 +65,12 @@ Table shows Port Address, Command ID, Number of Parameters, and Clock Cycles.
 #define print(a) printf a
 //#define print(a)
 
+BOOL attempted_3D_op=FALSE;
 
 int mtx_mode=0;
 
 void gl_MTX_MODE (u32 val) {
+CHECK_3D_ATTEMPT
     mtx_mode = val;
     switch(val) {
     case MTX_MODE_PROJECTION:
@@ -134,6 +136,7 @@ void gl_MTX_mult(float* m) {
 }
 
 void gl_MTX_IDENTITY () {
+CHECK_3D_ATTEMPT
    	print(("MTX_IDENTITY\n"));
     gl_MTX_load(mUnit);
 }
@@ -141,6 +144,7 @@ void gl_MTX_IDENTITY () {
 void gl_MTX_LOAD_4x4 (u32 val) {
 	static int mtx_nbparams = 0;
 	_MTX_val mval;
+CHECK_3D_ATTEMPT
     mval.val = val;
 	switch(mtx_nbparams) {
 	case  0: case  1: case  2: case  3:
@@ -163,6 +167,7 @@ void gl_MTX_LOAD_4x4 (u32 val) {
 void gl_MTX_MULT_4x4 (u32 val) {
 	static int mtx_nbparams = 0;
 	_MTX_val mval;
+CHECK_3D_ATTEMPT
     mval.val = val;
 	switch(mtx_nbparams) {
 	case  0: case  1: case  2: case  3:
@@ -187,6 +192,7 @@ void gl_MTX_MULT_4x4 (u32 val) {
 void gl_MTX_LOAD_4x3 (u32 val) {
 	static int mtx_nbparams = 0;
 	_MTX_val mval;
+CHECK_3D_ATTEMPT
     mval.val = val;
 	switch(mtx_nbparams) {
     case  3: case  7: case 11:
@@ -211,6 +217,7 @@ void gl_MTX_LOAD_4x3 (u32 val) {
 void gl_MTX_MULT_4x3 (u32 val) {
 	static int mtx_nbparams = 0;
 	_MTX_val mval;
+CHECK_3D_ATTEMPT
     mval.val = val;
 	switch(mtx_nbparams) {
     case  3: case  7: case 11:
@@ -236,6 +243,7 @@ void gl_MTX_MULT_4x3 (u32 val) {
 void gl_MTX_LOAD_3x3 (u32 val) {
 	static int mtx_nbparams = 0;
 	_MTX_val mval;
+CHECK_3D_ATTEMPT
     mval.val = val;
 	switch(mtx_nbparams) {
     case  3: case  7: case 11:
@@ -259,6 +267,7 @@ void gl_MTX_LOAD_3x3 (u32 val) {
 void gl_MTX_MULT_3x3 (u32 val) {
 	static int mtx_nbparams = 0;
 	_MTX_val mval;
+CHECK_3D_ATTEMPT
     mval.val = val;
 	switch(mtx_nbparams) {
     case  3: case  7: case 11:
@@ -286,6 +295,7 @@ void gl_MTX_MULT_3x3 (u32 val) {
 void gl_TEXCOORD(u32 val) {
     _TEXCOORD tx;
     float s,t;
+CHECK_3D_ATTEMPT
 	tx.val = val;
 	s = tx.bits.low  / 2048.;
 	t = tx.bits.high / 2048.;
@@ -301,6 +311,7 @@ static s16 vx=0,vy=0,vz=0;
 
 INLINE void gl_VTX_one() {
 	float vfx,vfy,vfz;
+CHECK_3D_ATTEMPT
 	vfx = vx / 4096.;
 	vfy = vy / 4096.;
 	vfz = vz / 4096.;
@@ -309,6 +320,7 @@ INLINE void gl_VTX_one() {
 
 void gl_VTX_begin(u32 val) {
 //see 4000500h - Cmd 40h - BEGIN_VTXS - Start of Vertex List (W)
+CHECK_3D_ATTEMPT
 	vx=vy=vz=0;
 	print(("VTX_begin : "));
 	switch(val) {
@@ -332,6 +344,7 @@ void gl_VTX_begin(u32 val) {
 }
 void gl_VTX_end() {
 //see 4000504h - Cmd 41h - END_VTXS - End of Vertex List (W)
+CHECK_3D_ATTEMPT
 	print(("VTX_end.\n"));
 }
 
@@ -340,6 +353,7 @@ void gl_VTX_16 (u32 val) {
 	_VTX_16 vval;
 	static int vtx_16_nbparams = 0;
 
+CHECK_3D_ATTEMPT
 	vval.val = val;
 	switch(vtx_16_nbparams) {
 	case 0:
@@ -360,6 +374,7 @@ void gl_VTX_16 (u32 val) {
 void gl_VTX_10 (u32 xyz) {
 //see 4000490h - Cmd 24h - VTX_10 - Set Vertex XYZ Coordinates (W)
 	_VTX_10 vt;
+CHECK_3D_ATTEMPT
 	vt.val = xyz;
 	vx = vt.bits.low  << 6;
 	vy = vt.bits.mid  << 6;
@@ -371,6 +386,7 @@ void gl_VTX_10 (u32 xyz) {
 void gl_VTX_XY (u32 xy) {
 //see 4000494h - Cmd 25h - VTX_XY - Set Vertex XY Coordinates (W)
 	_VTX_16 vt;
+CHECK_3D_ATTEMPT
 	vt.val = xy;
 	vx = vt.bits.low ;
 	vy = vt.bits.high;
@@ -379,6 +395,7 @@ void gl_VTX_XY (u32 xy) {
 void gl_VTX_XZ (u32 xz) {
 //see 4000498h - Cmd 26h - VTX_XZ - Set Vertex XZ Coordinates (W)
 	_VTX_16 vt;
+CHECK_3D_ATTEMPT
 	vt.val = xz;
 	vx = vt.bits.low ;
 	vz = vt.bits.high;
@@ -387,6 +404,7 @@ void gl_VTX_XZ (u32 xz) {
 void gl_VTX_YZ (u32 yz) {
 //see 400049Ch - Cmd 27h - VTX_YZ - Set Vertex YZ Coordinates (W)
 	_VTX_16 vt;
+CHECK_3D_ATTEMPT
 	vt.val = yz;
 	vy = vt.bits.low ;
 	vz = vt.bits.high;
@@ -397,6 +415,7 @@ void gl_VTX_YZ (u32 yz) {
 void gl_VTX_DIFF (u32 diff) {
 //see 40004A0h - Cmd 28h - VTX_DIFF - Set Relative Vertex Coordinates (W)
 	_VTX_10 vt;
+CHECK_3D_ATTEMPT
 	vt.val = diff;
 	vx += vt.bits.low  << 3;
 	vy += vt.bits.mid  << 3;
