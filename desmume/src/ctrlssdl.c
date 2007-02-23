@@ -104,7 +104,7 @@ BOOL init_joy(u16 joyCfg[]) {
 }
 
 /* Set all buttons at once */
-void set_joy_keys(u16 joyCfg[])
+void set_joy_keys(const u16 joyCfg[])
 {
   memcpy(joypad_cfg, joyCfg, sizeof(joypad_cfg));
 }

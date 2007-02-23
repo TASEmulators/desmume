@@ -141,20 +141,65 @@ typedef struct {
 
 
 /*******************************************************************************
-    this structure is for windows parameters
+	these structures are for window description,
+	windows are square regions and can "subclass"
+	background layers or object layers (i.e window controls the layers)
+
+	screen
+	|
+	+-- Window0/Window1/OBJwindow/OutOfWindows
+		|
+		+-- BG0/BG1/BG2/BG3/OBJ
 *******************************************************************************/
 
+typedef union {
+	struct	{
+		u8 end:8;
+		u8 start:8;
+	} bits ;
+	u16 val;
+} WINxDIM;
+
 typedef struct {
-    u16 WIN0H;
-    u16 WIN1H;
-    u16 WIN0V;
-    u16 WIN1V;
-    u16 WININ;
-    u16 WINOUT;
+/* 0*/  u8 WINx_BG0_Enable:1;
+/* 1*/  u8 WINx_BG1_Enable:1;
+/* 2*/  u8 WINx_BG2_Enable:1;
+/* 3*/  u8 WINx_BG3_Enable:1;
+/* 4*/  u8 WINx_OBJ_Enable:1;
+/* 5*/  u8 WINx_Effect_Enable:1;
+/* 6*/  u8 :2;
+} WINxBIT;
+
+typedef union {
+	struct {
+		WINxBIT win0;
+		WINxBIT win1;
+	} bits;
+	struct {
+		u8 win0_en:5;
+		u8 :3;
+		u8 win1_en:5;
+		u8 :3;
+	} packed_bits;
+	struct {
+		u8 low;
+		u8 high;
+	} bytes;
+	u16 val ;
+} WINxCNT ;
+
+typedef struct {
+    WINxDIM WIN0H;
+    WINxDIM WIN1H;
+    WINxDIM WIN0V;
+    WINxDIM WIN1V;
+    WINxCNT WININ;
+    WINxCNT WINOUT;
 } WINCNT; 
 
 /*******************************************************************************
     this structure is for miscellanous settings
+    //TODO: needs further description
 *******************************************************************************/
 
 typedef struct {
@@ -438,62 +483,6 @@ typedef struct
 } size;
 
 
-/*
-	these structures are for window description,
-	windows are square regions and can "subclass"
-	background layers or object layers (i.e window controls the layers)
-
-	screen
-	|
-	+-- Window0/Window1/OBJwindow/OutOfWindows
-		|
-		+-- BG0/BG1/BG2/BG3/OBJ
-*/
-
-typedef union windowdim_t
-{
-	struct
-	{
-/* 0*/	unsigned end:8;
-/* 8*/	unsigned start:8;
-	} bits ;
-	unsigned short val ;
-} windowdim_t ;
-
-typedef union windowcnt_t
-{
-	struct
-	{
-/* 0*/  unsigned WIN0_BG0_Enable:1;
-/* 1*/  unsigned WIN0_BG1_Enable:1;
-/* 2*/  unsigned WIN0_BG2_Enable:1;
-/* 3*/  unsigned WIN0_BG3_Enable:1;
-/* 4*/  unsigned WIN0_OBJ_Enable:1;
-/* 5*/  unsigned WIN0_Effect_Enable:1;
-/* 6*/  unsigned :2;
-/* 8*/  unsigned WIN1_BG0_Enable:1;
-/* 9*/  unsigned WIN1_BG1_Enable:1;
-/*10*/  unsigned WIN1_BG2_Enable:1;
-/*11*/  unsigned WIN1_BG3_Enable:1;
-/*12*/  unsigned WIN1_OBJ_Enable:1;
-/*13*/  unsigned WIN1_Effect_Enable:1;
-/*14*/  unsigned :2;
-	} bits ;
-	struct
-	{
-		unsigned char low ;
-		unsigned char high ;
-	} bytes ;
-	struct
-	{
-		unsigned win0_en:5;
-		unsigned :3;
-		unsigned win1_en:5;
-		unsigned :3;
-	} windows ;
-	unsigned short val ;
-} windowcnt_t ;
-
 
 
 /*
@@ -534,8 +523,6 @@ struct _GPU
 			
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
-	u16 BGSX[4];
-	u16 BGSY[4];
 		
 	u8 lcd;
 	u8 core;
@@ -553,16 +540,6 @@ struct _GPU
 	u8 sprBMPMode;
 	u32 sprEnable ;
 	
-	u16 BLDCNT ;
-	u16 BLDALPHA ;
-	u16 BLDY ;
-	u16 MOSAIC ;
-
-	windowdim_t WINDOW_XDIM[2] ;
-	windowdim_t WINDOW_YDIM[2] ;
-	windowcnt_t WINDOW_INCNT ;
-	windowcnt_t WINDOW_OUTCNT ;
-
 	void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 
@@ -642,24 +619,10 @@ extern GraphicsInterface_struct GFXDummy;
 void GPU_setVideoProp(GPU *, u32 p);
 void GPU_setBGProp(GPU *, u16 num, u16 p);
 
-void GPU_scrollX(GPU *, u8 num, u16 v);
-void GPU_scrollY(GPU *, u8 num, u16 v);
-void GPU_scrollXY(GPU *, u8 num, u32 v);
-	   
 void GPU_setBLDCNT(GPU *gpu, u16 v) ;
 void GPU_setBLDALPHA(GPU *gpu, u16 v) ;
 void GPU_setBLDY(GPU *gpu, u16 v) ;
 void GPU_setMOSAIC(GPU *gpu, u16 v) ;
-
-void GPU_setWINDOW_XDIM(GPU *gpu, u16 v, u8 num) ;
-void GPU_setWINDOW_YDIM(GPU *gpu, u16 v, u8 num) ;
-void GPU_setWINDOW_XDIM_Component(GPU *gpu, u8 v, u8 num) ;
-void GPU_setWINDOW_YDIM_Component(GPU *gpu, u8 v, u8 num) ;
-
-void GPU_setWINDOW_INCNT(GPU *gpu, u16 v) ;
-void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v) ;
-void GPU_setWINDOW_INCNT_Component(GPU *gpu, u8 v,u8 num) ;
-void GPU_setWINDOW_OUTCNT_Component(GPU *gpu, u8 v,u8 num) ;
 
 
 void GPU_remove(GPU *, u8 num);
