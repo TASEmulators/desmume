@@ -131,12 +131,12 @@ typedef struct {
 *******************************************************************************/
 
 typedef struct {
-    u16 BGxPA;
-    u16 BGxPB;
-    u16 BGxPC;
-    u16 BGxPD;
-    u32 BGxX;
-    u32 BGxY;
+    s16 BGxPA;
+    s16 BGxPB;
+    s16 BGxPC;
+    s16 BGxPD;
+    s32 BGxX;
+    s32 BGxY;
 } BGxPARMS; 
 
 
@@ -189,7 +189,8 @@ struct _DISP3DCNT
 /*12*/ u8 AckColorBufferUnderflow:1; // Color Buffer RDLINES Underflow (0=None, 1=Underflow/Acknowledge)
 /*13*/ u8 AckVertexRAMOverflow:1;    // Polygon/Vertex RAM Overflow    (0=None, 1=Overflow/Acknowledge)
 /*14*/ u8 RearPlaneMode:1;       // 0=Blank, 1=Bitmap
-/*15*/ u8 :17;
+/*15*/ u8 :1;
+/*16*/ u16 :16;
 }; 
 
 typedef union 
@@ -243,7 +244,8 @@ struct _MASTER_BRIGHT
 {
 /* 0*/ u8 Factor:4;   // combine with (Factor / 16) of white/black
 /* 4*/ u8 FactorEx:1; // if true use white or black
-/* 5*/ u8 :9;
+/* 5*/ u8 :3;
+/* 8*/ u8 :5;
 /*14*/ u8 Mode:2;     // 0=off, 1=Lighten, 2=Darken, 3=?
 }; 
  
@@ -274,26 +276,6 @@ typedef struct _reg_dispx {
     u32 dispA_DISPMMEMFIFO;           // 0x04000068
     MASTER_BRIGHT dispx_MASTERBRIGHT; // 0x0400x06C
 } REG_DISPx ; 
-
-// normally should have same addresses 
-static void REG_DISPx_pack_test(GPU * gpu)
-{
-	REG_DISPx * r = gpu->dispx_st;
-	printf ("%08x %02x\n",  r, (long)(&r->dispx_DISPCNT) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispA_DISPSTAT) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_VCOUNT) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_BGxCNT[0]) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_BGxOFS[0]) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_BG2PARMS) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_BG3PARMS) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_WINCNT) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_MISC) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispA_DISP3DCNT) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_MASTERBRIGHT) - (long)r);
-}
-
 
 
 
@@ -538,10 +520,7 @@ struct _GPU
 	// some functions too (no need to recopy some vars as it is done by MMU)
 	REG_DISPx * dispx_st;
 		
-//	DISPCNT dispCnt;
 	DISPCAPCNT dispCapCnt;
-//	BGxCNT  bgCnt[4];
-//	MASTER_BRIGHT masterBright;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
 	u8 sprWin[256*2][256];
@@ -557,14 +536,7 @@ struct _GPU
 	u32 BGSize[4][2];
 	u16 BGSX[4];
 	u16 BGSY[4];
-	
-	s32 BGX[4];
-	s32 BGY[4];
-	s16 BGPA[4];
-	s16 BGPB[4];
-	s16 BGPC[4];
-	s16 BGPD[4];
-	
+		
 	u8 lcd;
 	u8 core;
 	
@@ -593,6 +565,27 @@ struct _GPU
 
 	void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
+
+// normally should have same addresses 
+static void REG_DISPx_pack_test(GPU * gpu)
+{
+	REG_DISPx * r = gpu->dispx_st;
+	printf ("%08x %02x\n",  r, (long)(&r->dispx_DISPCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISPSTAT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_VCOUNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BGxCNT[0]) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BGxOFS[0]) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BG2PARMS) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_BG3PARMS) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_WINCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_MISC) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISP3DCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
+	printf ("\t%02x\n", (long)(&r->dispx_MASTERBRIGHT) - (long)r);
+	printf ("\t%04x\n", r->dispx_MASTERBRIGHT);
+}
+
 
 extern u8 GPU_screen[4*256*192];
 
@@ -651,23 +644,7 @@ void GPU_setBGProp(GPU *, u16 num, u16 p);
 
 void GPU_scrollX(GPU *, u8 num, u16 v);
 void GPU_scrollY(GPU *, u8 num, u16 v);
-
-// no more useful if using REG_DISPx
-void GPU_setXH(GPU *, u8 num, u16 v);
-void GPU_setXL(GPU *, u8 num, u16 v);
-void GPU_setYH(GPU *, u8 num, u16 v);
-void GPU_setYL(GPU *, u8 num, u16 v);
-void GPU_setPA(GPU *, u8 num, u16 v);
-void GPU_setPB(GPU *, u8 num, u16 v);
-void GPU_setPC(GPU *, u8 num, u16 v);
-void GPU_setPD(GPU *, u8 num, u16 v);
-
 void GPU_scrollXY(GPU *, u8 num, u32 v);
-// no more useful if using REG_DISPx
-void GPU_setX(GPU *, u8 num, u32 v);
-void GPU_setY(GPU *, u8 num, u32 v);
-void GPU_setPAPB(GPU *, u8 num, u32 v);
-void GPU_setPCPD(GPU *, u8 num, u32 v);
 	   
 void GPU_setBLDCNT(GPU *gpu, u16 v) ;
 void GPU_setBLDALPHA(GPU *gpu, u16 v) ;
@@ -684,7 +661,6 @@ void GPU_setWINDOW_OUTCNT(GPU *gpu, u16 v) ;
 void GPU_setWINDOW_INCNT_Component(GPU *gpu, u8 v,u8 num) ;
 void GPU_setWINDOW_OUTCNT_Component(GPU *gpu, u8 v,u8 num) ;
 
-void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v);
 
 void GPU_remove(GPU *, u8 num);
 void GPU_addBack(GPU *, u8 num);

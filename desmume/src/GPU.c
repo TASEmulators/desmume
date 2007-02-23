@@ -238,7 +238,6 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
         u16 WinBG=0;
 	struct _DISPCNT * cnt;
 	cnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-//	cnt = &gpu->dispCnt.bits;
 
 	(gpu->dispx_st)->dispx_DISPCNT.val = p;
 
@@ -354,6 +353,7 @@ void GPU_remove(GPU * gpu, u8 num)
 }
 void GPU_addBack(GPU * gpu, u8 num)
 {
+	REG_DISPx_pack_test(gpu);
 	if (num == 4)	gpu->dispOBJ = 1;
 	else		gpu->dispBG[num] = 1;
 	GPU_resortBGs(gpu);
@@ -377,63 +377,6 @@ void GPU_scrollXY(GPU * gpu, u8 num, u32 v)
 	gpu->BGSY[num] = (v >> 16);
 }
 
-void GPU_setX(GPU * gpu, u8 num, u32 v)
-{
-	gpu->BGX[num] = (((s32)(v<<4))>>4);
-}
-void GPU_setXH(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGX[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGX[num]&0xFFFF);
-}
-void GPU_setXL(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGX[num] = (gpu->BGX[num]&0xFFFF0000) | v;
-}
-
-void GPU_setY(GPU * gpu, u8 num, u32 v)
-{
-	gpu->BGY[num] = (((s32)(v<<4))>>4);
-}
-void GPU_setYH(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGY[num] = (((s32)((s16)(v<<4)))<<12) | (gpu->BGY[num]&0xFFFF);
-}
-void GPU_setYL(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGY[num] = (gpu->BGY[num]&0xFFFF0000) | v;
-}
-
-/*****************************************************************************/
-//			PARAMETERS OF ROTOSCALE
-/*****************************************************************************/
-
-void GPU_setPA(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGPA[num] = (s32)v;
-}
-void GPU_setPB(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGPB[num] = (s32)v;
-}
-void GPU_setPC(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGPC[num] = (s32)v;
-}
-void GPU_setPD(GPU * gpu, u8 num, u16 v)
-{
-	gpu->BGPD[num] = (s32)v;
-}
-void GPU_setPAPB(GPU * gpu, u8 num, u32 v)
-{
-	gpu->BGPA[num] = (s16)v;
-	gpu->BGPB[num] = (s16)(v>>16);
-}
-void GPU_setPCPD(GPU * gpu, u8 num, u32 v)
-{
-	gpu->BGPC[num] = (s16)v;
-	gpu->BGPD[num] = (s16)(v>>16);
-}
-
 /*****************************************************************************/
 //			PARAMETERS OF EFFECTS
 /*****************************************************************************/
@@ -453,10 +396,6 @@ void GPU_setBLDY(GPU *gpu, u16 v)
 void GPU_setMOSAIC(GPU *gpu, u16 v)
 {
 	gpu->MOSAIC = v ;
-}
-void GPU_setMASTER_BRIGHT (GPU *gpu, u16 v)
-{
-//	gpu->masterBright.val = v;
 }
 
 /*****************************************************************************/
@@ -1498,7 +1437,7 @@ BOOL bright_init=FALSE;
 // #define BRIGHT_TABLES
 
 void calc_bright_colors() {
-	int base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
+	int base = 31 ;
 	int factor;
 	u16 red, green, blue;
 	COLOR color_more, color_less, color_ref;
@@ -1671,7 +1610,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			srcA = (u16*)dst;
 	
 		if (!capcnt->Source_B) {
-			vram_bank = gpu->dispCnt.bits.VRAM_Block ;
+			vram_bank = dispCnt->VRAM_Block ;
 			if (MMU.vram_mode[vram_bank] & 4) {
 				srcB = (u16*)(ARM9Mem.ARM9_LCD 
 					+ (MMU.vram_mode[vram_bank] & 3) * 0x20000
@@ -1793,7 +1732,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 					g = dstColor.bits.green;
 					b = dstColor.bits.blue;
 					// Bright up and clamp to 5bit <-- automatic
-					base = /*gpu->masterBright.bits.FactorEx? 63:*/ 31 ;
+					base = 31 ;
 					dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
 					dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
 					dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;

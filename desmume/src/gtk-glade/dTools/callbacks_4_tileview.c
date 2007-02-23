@@ -24,7 +24,7 @@
 void init_combo_memory(GtkComboBox *combo, u8 ** addresses) {
 	GtkTreeIter iter;
 	GtkListStore* model = gtk_list_store_new(1, G_TYPE_STRING);
-	gtk_combo_box_set_model(combo, model);
+	gtk_combo_box_set_model(combo, (GtkTreeModel*)model);
 	int i=0;
 
 #define DO(str,addr,r)  \
@@ -261,6 +261,7 @@ void other_screen (GtkWidget * widget, int screen) {
 	glClear( GL_COLOR_BUFFER_BIT );
 	
 	GPU * gpu = &SubScreen;
+	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + 127);// + 127;
 	u16 i; int mode;
 	u8 prioTab[256];
@@ -315,7 +316,7 @@ void other_screen (GtkWidget * widget, int screen) {
 		{
 			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary);
 
-			if (gpu->dispCnt.bits.OBJ_BMP_2D_dim) // 256*256
+			if (dispCnt->OBJ_BMP_2D_dim) // 256*256
 				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8) << 1);
 			else // 128 * 512
 				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8) << 1);
@@ -323,7 +324,7 @@ void other_screen (GtkWidget * widget, int screen) {
 		}
 
 
-        if(gpu->dispCnt.bits.OBJ_Tile_1D)
+        if(dispCnt->OBJ_Tile_1D)
 
 		if (spriteInfo->Depth) {
 			//256 colors
@@ -343,14 +344,13 @@ void other_screen (GtkWidget * widget, int screen) {
 		pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 #endif			
 	}
-	struct _DISPCNT * dispcnt = &(gpu->dispCnt.bits);
 
 	int boundary = 32;
-	if (dispcnt->OBJ_Tile_1D)
-		boundary <<= dispcnt->OBJ_Tile_1D_Bound;
+	if (dispCnt->OBJ_Tile_1D)
+		boundary <<= dispCnt->OBJ_Tile_1D_Bound;
 
 	int bmpboundary = 128;
-	bmpboundary <<= (dispcnt->OBJ_BMP_mapping & dispcnt->OBJ_BMP_1D_Bound);
+	bmpboundary <<= (dispCnt->OBJ_BMP_mapping & dispCnt->OBJ_BMP_1D_Bound);
 
 	guint Textures[3];
 	glGenTextures(3, Textures);

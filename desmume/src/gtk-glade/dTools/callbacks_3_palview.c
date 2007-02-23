@@ -24,7 +24,7 @@
 void init_combo_palette(GtkComboBox *combo, u16 ** addresses) {
 	GtkTreeIter iter;
 	GtkListStore* model = gtk_list_store_new(1, G_TYPE_STRING);
-	gtk_combo_box_set_model(combo, model);
+	gtk_combo_box_set_model(combo, (GtkTreeModel*)model);
 		
 	int i=0;
 

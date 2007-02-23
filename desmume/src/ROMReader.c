@@ -100,7 +100,7 @@ ROMReader_struct GZIPROMReader =
 
 void * GZIPROMReaderInit(const char * filename)
 {
-	return gzopen(filename, "rb");
+	return (void*)gzopen(filename, "rb");
 }
 
 void GZIPROMReaderDeInit(void * file)
