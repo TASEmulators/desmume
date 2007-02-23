@@ -206,7 +206,7 @@ gboolean  on_wDrawScreen_scroll_event (GtkWidget *widget, GdkEvent *event, gpoin
 	int scr = dyn_CAST(int,user_data);
 	// separate zoom factors not supported yet
 	scr = 0;
-	resize_incremental(scr,event);
+	resize_incremental(scr,(GdkEventScroll*)event);
 }
 
 void set_touch_pos (int x, int y) {
@@ -383,7 +383,7 @@ void ask_joy_axis(u8 key, u8 opposite_key)
   char current_button[50], opposite_button[50];
   u16 joykey;
   GtkWidget * dlg;
-  GtkWidget * btn;
+  GtkButton * btn;
 
   key--; /* remove 1 to get index */
   opposite_key--;
@@ -398,11 +398,11 @@ void ask_joy_axis(u8 key, u8 opposite_key)
   get_set_joy_axis(key, opposite_key);
 
   sprintf(text,"%s : %d\0\0",key_names[key],joypad_cfg[key]);
-  btn = (GtkWidget*)glade_xml_get_widget(xml, current_button);
+  btn = (GtkButton*)glade_xml_get_widget(xml, current_button);
   gtk_button_set_label(btn,text);
 
   sprintf(text,"%s : %d\0\0",key_names[opposite_key],joypad_cfg[opposite_key]);
-  btn = (GtkWidget*)glade_xml_get_widget(xml, opposite_button);
+  btn = (GtkButton*)glade_xml_get_widget(xml, opposite_button);
   gtk_button_set_label(btn,text);
 
   gtk_widget_hide((GtkWidget*)dlg);
