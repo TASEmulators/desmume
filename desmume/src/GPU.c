@@ -354,23 +354,6 @@ void GPU_remove(GPU * gpu, u8 num)
 }
 void GPU_addBack(GPU * gpu, u8 num)
 {
-	REG_DISPx * r = gpu->dispx_st;
-	printf ("%08x %08x\n",  r, (long)(&r->dispx_DISPCNT) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispA_DISPSTAT) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_VCOUNT) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[0]) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[1]) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[2]) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BGxCNT[3]) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BGxOFS[0]) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BG2PARMS) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_BG3PARMS) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_WINCNT) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_MISC) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispA_DISP3DCNT) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
-	printf ("\t%08x\n", (long)(&r->dispx_MASTERBRIGHT) - (long)r);
 	if (num == 4)	gpu->dispOBJ = 1;
 	else		gpu->dispBG[num] = 1;
 	GPU_resortBGs(gpu);
