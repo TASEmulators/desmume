@@ -26,6 +26,7 @@ gboolean EmuLoop(gpointer data);
 static BOOL regMainLoop = FALSE;
 
 
+static BOOL noticed_3D=FALSE;
 volatile BOOL execute = FALSE;
 BOOL click = FALSE;
 BOOL fini = FALSE;
@@ -54,6 +55,7 @@ void desmume_free()
 int desmume_open(const char *filename)
 {
   int i;
+  noticed_3D=attempted_3D_op=FALSE;
   clear_savestates();
   i = NDS_LoadROM(filename, savetype, savesize);
   return i;
@@ -81,6 +83,7 @@ void desmume_resume()
 
 void desmume_reset()
 {
+	noticed_3D=attempted_3D_op=FALSE;
 	NDS_Reset();
 	desmume_resume();
 }
@@ -118,7 +121,12 @@ static void Draw()
 gboolean EmuLoop(gpointer data)
 {
 	int i;
-	
+	if (!noticed_3D && attempted_3D_op) {
+		GtkWidget * dlg = glade_xml_get_widget(xml, "w3Dop");
+		gtk_widget_show(dlg);
+		noticed_3D=TRUE;
+	}
+		
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
 		fps_FrameCount += Frameskip + 1;
