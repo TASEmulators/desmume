@@ -38,6 +38,7 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         BITMAPV4HEADER bmi;
         u16 lg;
         u16 ht;
+       	BGxPARMS * parms;
 
         //CreateBitmapIndirect(&bmi);
         memset(&bmi, 0, sizeof(bmi));
@@ -100,7 +101,12 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         sprintf(text, "%d x %d",  (int)MainScreen.gpu->BGSize[win->map][0], (int)MainScreen.gpu->BGSize[win->map][1]);
         SetWindowText(GetDlgItem(hwnd, IDC_MSIZE), text);
         
-        sprintf(text, "%d x %d", MainScreen.gpu->BGPC[win->map], MainScreen.gpu->BGPD[win->map]);
+		if (win->map==2) {
+			parms = &(MainScreen.gpu->dispx_st)->dispx_BG2PARMS;
+		} else {
+			parms = &(MainScreen.gpu->dispx_st)->dispx_BG3PARMS;		
+		}
+        sprintf(text, "%d x %d", parms->BGxPC, parms->BGxPD);
         SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), text);
         
         if(win->lcd)
