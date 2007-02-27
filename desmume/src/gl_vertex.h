@@ -36,7 +36,14 @@ BOOL attempted_3D_op;
 #define BEGIN_GL_QUADS           1
 #define BEGIN_GL_TRIANGLE_STRIP  2
 #define BEGIN_GL_QUAD_STRIP      3
-		
+
+#define TEXCOORD_to_float(t) (((float)(t)) / 2048.)
+#define u32_to_float(t)      (((float)(t)) / 4096.)
+#define s16_to_float(t)      (((float)(t)) / 4096.)
+#define VTX16_to_s16(t)      (t)
+#define VTX10_to_s16(t)      (t << 6)
+#define VTXDIFF_to_s16(t)    (t << 3)
+
 typedef union {
 	u32 val;
 	float fval;
@@ -97,6 +104,7 @@ void gl_VTX_DIFF (u32 diff);
 
 INLINE static void gl_print_cmd(u32 adr) {
 CHECK_3D_ATTEMPT
+#if 0
 	switch (adr) {
 		GL_CMD_NAME(eng_3D_RDLINES_COUNT   )
 		GL_CMD_NAME(eng_3D_EDGE_COLOR      )
@@ -157,4 +165,5 @@ CHECK_3D_ATTEMPT
 		GL_CMD_NAME(eng_3D_VECMTX_RESULT   )
 		default: break;
 	}
+#endif
 }
