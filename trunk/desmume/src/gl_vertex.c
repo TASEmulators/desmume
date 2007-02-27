@@ -24,6 +24,7 @@
 #include "gl_vertex.h"
 
 
+
 /*
     credits goes to :
     http://nocash.emubase.de/gbatek.htm#ds3dvideo
@@ -62,8 +63,8 @@ Table shows Port Address, Command ID, Number of Parameters, and Clock Cycles.
   
 */
 
-#define print(a) printf a
-//#define print(a)
+//#define print(a) printf a
+#define print(a)
 
 BOOL attempted_3D_op=FALSE;
 
@@ -71,93 +72,101 @@ int mtx_mode=0;
 
 void gl_MTX_MODE (u32 val) {
 CHECK_3D_ATTEMPT
-    mtx_mode = val;
-    switch(val) {
-    case MTX_MODE_PROJECTION:
-        print(("MTX MODE PROJECTION\n"));
-        break;
-    case MTX_MODE_POSITION:
-        print(("MTX MODE POSITION\n"));
-        break;
-    case MTX_MODE_POS_VECTOR:
-        print(("MTX MODE POSITION & VECTOR\n"));
-        break;
-    case MTX_MODE_TEXTURE:
-        print(("MTX MODE TEXTURE\n"));
-        break;
-    }
+	mtx_mode = val;
+	switch(val) {
+	case MTX_MODE_PROJECTION:
+		print(("MTX MODE PROJECTION\n"));
+		break;
+	case MTX_MODE_POSITION:
+		print(("MTX MODE POSITION\n"));
+		break;
+	case MTX_MODE_POS_VECTOR:
+		print(("MTX MODE POSITION & VECTOR\n"));
+		break;
+	case MTX_MODE_TEXTURE:
+		print(("MTX MODE TEXTURE\n"));
+		break;
+	}
 }
 
 
 /******************************************************************/
 //      MTX_LOAD* - cmd 15h-1Ah
 /******************************************************************/
-#define MMM 0.0
-static float mCurrent[16];
-static float mUnit[16]= 
-    {1.0, 0.0, 0.0, 0.0,
-     0.0, 1.0, 0.0, 0.0,
-     0.0, 0.0, 1.0, 0.0,
-     0.0, 0.0, 0.0, 1.0};
-static float m4x4[16]= 
+#define MMM 0
+#define M_0 0
+#define M_1 (1<<12)
+static u32 mCurrent[16]=
+    {M_1, M_0, M_0, M_0,
+     M_0, M_1, M_0, M_0,
+     M_0, M_0, M_1, M_0,
+     M_0, M_0, M_0, M_1};
+static u32 mUnit[16]= 
+    {M_1, M_0, M_0, M_0,
+     M_0, M_1, M_0, M_0,
+     M_0, M_0, M_1, M_0,
+     M_0, M_0, M_0, M_1};
+static u32 m4x4[16]= 
     {MMM, MMM, MMM, MMM,
      MMM, MMM, MMM, MMM,
      MMM, MMM, MMM, MMM,
      MMM, MMM, MMM, MMM};
-static float m4x3[16]= 
-    {MMM, MMM, MMM, 0.0,
-     MMM, MMM, MMM, 0.0,
-     MMM, MMM, MMM, 0.0,
-     MMM, MMM, MMM, 1.0};
-static float m3x3[16]= 
-    {MMM, MMM, MMM, 0.0,
-     MMM, MMM, MMM, 0.0,
-     MMM, MMM, MMM, 0.0,
-     0.0, 0.0, 0.0, 1.0};
+static u32 m4x3[16]= 
+    {MMM, MMM, MMM, M_0,
+     MMM, MMM, MMM, M_0,
+     MMM, MMM, MMM, M_0,
+     MMM, MMM, MMM, M_1};
+static u32 m3x3[16]= 
+    {MMM, MMM, MMM, M_0,
+     MMM, MMM, MMM, M_0,
+     MMM, MMM, MMM, M_0,
+     M_0, M_0, M_0, M_1};
      
-void gl_MTX_show(float*m) {
+void gl_MTX_show(u32 * m32) {
+	float m[16];
+	int i;
+	for (i=0;i<16;i++)
+		m[i]=u32_to_float(m32[i]);
 	print(("\t[[%+.5f %+.5f %+.5f %+.5f]\n", m[0] ,m[1] ,m[2] ,m[3]));
 	print(("\t [%+.5f %+.5f %+.5f %+.5f]\n", m[4] ,m[5] ,m[6] ,m[7]));
 	print(("\t [%+.5f %+.5f %+.5f %+.5f]\n", m[8] ,m[9] ,m[10],m[11]));
-	print(("\t [%+.5f %+.5f %+.5f %+.5f]]\n",m[12],m[13],m[14],m[15]));        
+	print(("\t [%+.5f %+.5f %+.5f %+.5f]]\n",m[12],m[13],m[14],m[15]));
 }
 
-void gl_MTX_load(float* m) {
-    int i;
-    for (i=0;i<16;i++)
-        mCurrent[i]=m[i];
-    gl_MTX_show(mCurrent);
+void gl_MTX_load(u32* m) {
+	int i;
+	for (i=0;i<16;i++)
+		mCurrent[i]=m[i];
+	gl_MTX_show(mCurrent);
 }
-void gl_MTX_mult(float* m) {
-    int i;
-    for (i=0;i<16;i++)
-        mCurrent[i]*=m[i];
-    gl_MTX_show(mCurrent);
+void gl_MTX_mult(u32* m) {
+	int i;
+	for (i=0;i<16;i++)
+		mCurrent[i] = (mCurrent[i]>>6)*(m[i]>>6);
+	gl_MTX_show(mCurrent);
 }
 
 void gl_MTX_IDENTITY () {
 CHECK_3D_ATTEMPT
-   	print(("MTX_IDENTITY\n"));
-    gl_MTX_load(mUnit);
+	print(("MTX_IDENTITY\n"));
+	gl_MTX_load(mUnit);
 }
 
 void gl_MTX_LOAD_4x4 (u32 val) {
 	static int mtx_nbparams = 0;
-	_MTX_val mval;
 CHECK_3D_ATTEMPT
-    mval.val = val;
 	switch(mtx_nbparams) {
 	case  0: case  1: case  2: case  3:
 	case  4: case  5: case  6: case  7:
-    case  8: case  9: case 10: case 11:
-    case 12: case 13: case 14:
-		m4x4[mtx_nbparams]=mval.fval;
+	case  8: case  9: case 10: case 11:
+	case 12: case 13: case 14:
+		m4x4[mtx_nbparams]=val;
 		mtx_nbparams++;
 		break;
 	case 15:
-		m4x4[mtx_nbparams]=mval.fval;
+		m4x4[mtx_nbparams]=val;
 		mtx_nbparams=0;
-    	print(("MTX_LOAD_4x4\n"));
+	print(("MTX_LOAD_4x4\n"));
 		gl_MTX_load(m4x4);
 		break;
 	default:
@@ -166,21 +175,19 @@ CHECK_3D_ATTEMPT
 }
 void gl_MTX_MULT_4x4 (u32 val) {
 	static int mtx_nbparams = 0;
-	_MTX_val mval;
 CHECK_3D_ATTEMPT
-    mval.val = val;
 	switch(mtx_nbparams) {
 	case  0: case  1: case  2: case  3:
 	case  4: case  5: case  6: case  7:
-    case  8: case  9: case 10: case 11:
-    case 12: case 13: case 14:
-		m4x4[mtx_nbparams]=mval.fval;
+	case  8: case  9: case 10: case 11:
+	case 12: case 13: case 14:
+		m4x4[mtx_nbparams]=val;
 		mtx_nbparams++;
 		break;
 	case 15:
-		m4x4[mtx_nbparams]=mval.fval;
+		m4x4[mtx_nbparams]=val;
 		mtx_nbparams=0;
-    	print(("MTX_MULT_4x4\n"));
+		print(("MTX_MULT_4x4\n"));
 		gl_MTX_mult(m4x4);
 		break;
 	default:
@@ -191,23 +198,21 @@ CHECK_3D_ATTEMPT
 
 void gl_MTX_LOAD_4x3 (u32 val) {
 	static int mtx_nbparams = 0;
-	_MTX_val mval;
 CHECK_3D_ATTEMPT
-    mval.val = val;
 	switch(mtx_nbparams) {
-    case  3: case  7: case 11:
-        mtx_nbparams++;
+	case  3: case  7: case 11:
+		mtx_nbparams++;
 	case  0: case  1: case  2:
 	case  4: case  5: case  6:
-    case  8: case  9: case 10:
-    case 12: case 13:
-		m4x3[mtx_nbparams]=mval.fval;
+	case  8: case  9: case 10:
+	case 12: case 13:
+		m4x3[mtx_nbparams]=val;
 		mtx_nbparams++;
 		break;
 	case 14:
-		m4x3[mtx_nbparams]=mval.fval;
+		m4x3[mtx_nbparams]=val;
 		mtx_nbparams=0;
-    	print(("MTX_LOAD_4x3\n"));
+		print(("MTX_LOAD_4x3\n"));
 		gl_MTX_load(m4x3);
 		break;
 	default:
@@ -216,23 +221,21 @@ CHECK_3D_ATTEMPT
 }
 void gl_MTX_MULT_4x3 (u32 val) {
 	static int mtx_nbparams = 0;
-	_MTX_val mval;
 CHECK_3D_ATTEMPT
-    mval.val = val;
 	switch(mtx_nbparams) {
-    case  3: case  7: case 11:
-        mtx_nbparams++;
+	case  3: case  7: case 11:
+		mtx_nbparams++;
 	case  0: case  1: case  2:
 	case  4: case  5: case  6:
-    case  8: case  9: case 10:
-    case 12: case 13:
-		m4x3[mtx_nbparams]=mval.fval;
+	case  8: case  9: case 10:
+	case 12: case 13:
+		m4x3[mtx_nbparams]=val;
 		mtx_nbparams++;
 		break;
 	case 14:
-		m4x3[mtx_nbparams]=mval.fval;
+		m4x3[mtx_nbparams]=val;
 		mtx_nbparams=0;
-    	print(("MTX_MULT_4x3\n"));
+		print(("MTX_MULT_4x3\n"));
 		gl_MTX_mult(m4x3);
 		break;
 	default:
@@ -242,22 +245,20 @@ CHECK_3D_ATTEMPT
 
 void gl_MTX_LOAD_3x3 (u32 val) {
 	static int mtx_nbparams = 0;
-	_MTX_val mval;
 CHECK_3D_ATTEMPT
-    mval.val = val;
 	switch(mtx_nbparams) {
-    case  3: case  7: case 11:
-        mtx_nbparams++;
+	case  3: case  7: case 11:
+		mtx_nbparams++;
 	case  0: case  1: case  2:
 	case  4: case  5: case  6:
-    case  8: case  9:
-		m3x3[mtx_nbparams]=mval.fval;
+	case  8: case  9:
+		m3x3[mtx_nbparams]=val;
 		mtx_nbparams++;
 		break;
 	case 10:
-		m3x3[mtx_nbparams]=mval.fval;
+		m3x3[mtx_nbparams]=val;
 		mtx_nbparams=0;
-    	print(("MTX_LOAD_3x3\n"));
+		print(("MTX_LOAD_3x3\n"));
 		gl_MTX_load(m3x3);
 		break;
 	default:
@@ -266,22 +267,20 @@ CHECK_3D_ATTEMPT
 }
 void gl_MTX_MULT_3x3 (u32 val) {
 	static int mtx_nbparams = 0;
-	_MTX_val mval;
 CHECK_3D_ATTEMPT
-    mval.val = val;
 	switch(mtx_nbparams) {
-    case  3: case  7: case 11:
-        mtx_nbparams++;
+	case  3: case  7: case 11:
+        	mtx_nbparams++;
 	case  0: case  1: case  2:
 	case  4: case  5: case  6:
-    case  8: case  9:
-		m3x3[mtx_nbparams]=mval.fval;
+	case  8: case  9:
+		m3x3[mtx_nbparams]=val;
 		mtx_nbparams++;
 		break;
 	case 10:
-		m3x3[mtx_nbparams]=mval.fval;
+		m3x3[mtx_nbparams]=val;
 		mtx_nbparams=0;
-    	print(("MTX_MULT_3x3\n"));
+		print(("MTX_MULT_3x3\n"));
 		gl_MTX_mult(m3x3);
 		break;
 	default:
@@ -293,12 +292,12 @@ CHECK_3D_ATTEMPT
 /******************************************************************/
 
 void gl_TEXCOORD(u32 val) {
-    _TEXCOORD tx;
-    float s,t;
+	_TEXCOORD tx;
+	float s,t;
 CHECK_3D_ATTEMPT
 	tx.val = val;
-	s = tx.bits.low  / 2048.;
-	t = tx.bits.high / 2048.;
+	s = TEXCOORD_to_float(tx.bits.low);
+	t = TEXCOORD_to_float(tx.bits.high);
 	print(("\tTEX [%+.5f %+.5f]\n",s,t));
 }
 
@@ -312,9 +311,9 @@ static s16 vx=0,vy=0,vz=0;
 INLINE void gl_VTX_one() {
 	float vfx,vfy,vfz;
 CHECK_3D_ATTEMPT
-	vfx = vx / 4096.;
-	vfy = vy / 4096.;
-	vfz = vz / 4096.;
+	vfx = s16_to_float(vx);
+	vfy = s16_to_float(vy);
+	vfz = s16_to_float(vz);
 	print(("\tVTX [%+.5f %+.5f %+.5f]\n",vfx,vfy,vfz));
 }
 
@@ -339,7 +338,7 @@ CHECK_3D_ATTEMPT
 		print(("GL_QUAD_STRIP\n"));
 		break;
 	default :
-        print(("unknown %d\n",val));
+		print(("unknown %d\n",val));
 	}
 }
 void gl_VTX_end() {
@@ -376,9 +375,9 @@ void gl_VTX_10 (u32 xyz) {
 	_VTX_10 vt;
 CHECK_3D_ATTEMPT
 	vt.val = xyz;
-	vx = vt.bits.low  << 6;
-	vy = vt.bits.mid  << 6;
-	vz = vt.bits.high << 6;
+	vx = VTX10_to_s16(vt.bits.low);
+	vy = VTX10_to_s16(vt.bits.mid);
+	vz = VTX10_to_s16(vt.bits.high);
 	gl_VTX_one();
 }
 
@@ -388,8 +387,8 @@ void gl_VTX_XY (u32 xy) {
 	_VTX_16 vt;
 CHECK_3D_ATTEMPT
 	vt.val = xy;
-	vx = vt.bits.low ;
-	vy = vt.bits.high;
+	vx = VTX16_to_s16(vt.bits.low);
+	vy = VTX16_to_s16(vt.bits.high);
 	gl_VTX_one();
 }
 void gl_VTX_XZ (u32 xz) {
@@ -397,8 +396,8 @@ void gl_VTX_XZ (u32 xz) {
 	_VTX_16 vt;
 CHECK_3D_ATTEMPT
 	vt.val = xz;
-	vx = vt.bits.low ;
-	vz = vt.bits.high;
+	vx = VTX16_to_s16(vt.bits.low);
+	vz = VTX16_to_s16(vt.bits.high);
 	gl_VTX_one();
 }
 void gl_VTX_YZ (u32 yz) {
@@ -406,8 +405,8 @@ void gl_VTX_YZ (u32 yz) {
 	_VTX_16 vt;
 CHECK_3D_ATTEMPT
 	vt.val = yz;
-	vy = vt.bits.low ;
-	vz = vt.bits.high;
+	vy = VTX16_to_s16(vt.bits.low);
+	vz = VTX16_to_s16(vt.bits.high);
 	gl_VTX_one();
 }
 
@@ -417,8 +416,8 @@ void gl_VTX_DIFF (u32 diff) {
 	_VTX_10 vt;
 CHECK_3D_ATTEMPT
 	vt.val = diff;
-	vx += vt.bits.low  << 3;
-	vy += vt.bits.mid  << 3;
-	vz += vt.bits.high << 3;
+	vx += VTXDIFF_to_s16(vt.bits.low);
+	vy += VTXDIFF_to_s16(vt.bits.mid);
+	vz += VTXDIFF_to_s16(vt.bits.high);
 	gl_VTX_one();
 }
