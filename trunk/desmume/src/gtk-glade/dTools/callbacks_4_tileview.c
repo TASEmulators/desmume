@@ -93,16 +93,19 @@ static void wtools_4_update() {
 
 }
 
+typedef u16 tileBMP[8*8];
+
 static void refresh() {
 	u16  palette_16[64];
 	u16  palette_256[64];
-	u8  * index16  = mem_addr[memnum];
-	u8  * index256 = mem_addr[memnum];
-	u8  * indexBMP = mem_addr[memnum];
+	u8  * index16, * index256, * indexBMP;
 	u16 * pal;
 	int tile_n, index;
+	int i,j;
 	guint Textures;
 	if (!init) return;
+
+	index16 = index256 = indexBMP = mem_addr[memnum];
 
 	// this little thing doesnt display properly
 	// nothing drawn...
@@ -118,7 +121,7 @@ static void refresh() {
 	if (!my_gl_Begin(gl_context_num)) return;
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
+#if 1
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &Textures);
 
@@ -197,6 +200,65 @@ static void refresh() {
 	glEnd();
 
 	glDeleteTextures(1, &Textures);
+#else
+	glDisable(GL_LIGHTING);
+	glDisable(GL_BLEND);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glColor4ub(255,255,255,255);
+	switch(colnum) {
+	case 0: //BMP
+	{
+		tileBMP tiles * = indexBMP;
+
+		for (tile_n=0; tile_n<1024; tile_n++) {
+			i = (tile_n & 0x1F) << 4;
+			j = (tile_n >> 5) << 12;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16; j+=512;
+			memcpy(bmp + j + i, indexBMP, 16); indexBMP += 16;
+		}
+		glRasterPos2i(0,0);
+		glDrawPixels(256,256,GL_RGBA,GL_UNSIGNED_SHORT_1_5_5_5_REV, bmp);
+	}
+	break;
+	case 1: //256c
+	if (pal = pal_addr[palindex]) {
+		pal += palnum*256;
+		for (tile_n=0; tile_n<1024; tile_n++) {
+			for (index=0; index<64; index++) {
+				palette_256[index]=pal[*index256];
+				index256++;
+			}
+			glRasterPos2i((tile_n & 0x1F)<<3, (tile_n >> 5)<<3);
+			glDrawPixels(8,8,GL_RGBA,GL_UNSIGNED_SHORT_1_5_5_5_REV, palette_256);
+		}
+	}
+	break;
+	case 2: //16c
+	if (pal = pal_addr[palindex]) {
+		pal += palnum*16;
+		for (tile_n=0; tile_n<1024; tile_n++) {
+			for (index=0; index<64; index++) {
+				if (index & 1) continue;
+				palette_16[index]  =pal[*index16 & 15];
+				palette_16[index+1]=pal[*index16 >> 4];
+				index16++;
+			}
+			glRasterPos2i((tile_n & 0x1F)<<3, (tile_n >> 5)<<3);
+			glDrawPixels(8,8,GL_RGBA,GL_UNSIGNED_SHORT_1_5_5_5_REV, palette_16);
+		}
+	}
+	break;
+	}
+#endif
 	my_gl_End(gl_context_num);
 }
 
@@ -212,6 +274,7 @@ static void initialize() {
 	init_combo_memory(combo, mem_addr);
 
 	gl_context_num = init_GL_free_s(wPaint,0);
+	reshape(wPaint, gl_context_num);
 	gtk_widget_show(wPaint);
 	init=TRUE;
 }
