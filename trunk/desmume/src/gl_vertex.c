@@ -135,26 +135,26 @@ void gl_MTX_show(u32 * m32) {
 
 void gl_MTX_load(u32* m) {
 	int i;
+CHECK_3D_ATTEMPT
 	for (i=0;i<16;i++)
 		mCurrent[i]=m[i];
 	gl_MTX_show(mCurrent);
 }
 void gl_MTX_mult(u32* m) {
 	int i;
+CHECK_3D_ATTEMPT
 	for (i=0;i<16;i++)
 		mCurrent[i] = (mCurrent[i]>>6)*(m[i]>>6);
 	gl_MTX_show(mCurrent);
 }
 
 void gl_MTX_IDENTITY () {
-CHECK_3D_ATTEMPT
 	print(("MTX_IDENTITY\n"));
 	gl_MTX_load(mUnit);
 }
 
 void gl_MTX_LOAD_4x4 (u32 val) {
 	static int mtx_nbparams = 0;
-CHECK_3D_ATTEMPT
 	switch(mtx_nbparams) {
 	case  0: case  1: case  2: case  3:
 	case  4: case  5: case  6: case  7:
@@ -175,7 +175,6 @@ CHECK_3D_ATTEMPT
 }
 void gl_MTX_MULT_4x4 (u32 val) {
 	static int mtx_nbparams = 0;
-CHECK_3D_ATTEMPT
 	switch(mtx_nbparams) {
 	case  0: case  1: case  2: case  3:
 	case  4: case  5: case  6: case  7:
@@ -198,7 +197,6 @@ CHECK_3D_ATTEMPT
 
 void gl_MTX_LOAD_4x3 (u32 val) {
 	static int mtx_nbparams = 0;
-CHECK_3D_ATTEMPT
 	switch(mtx_nbparams) {
 	case  3: case  7: case 11:
 		mtx_nbparams++;
@@ -221,7 +219,6 @@ CHECK_3D_ATTEMPT
 }
 void gl_MTX_MULT_4x3 (u32 val) {
 	static int mtx_nbparams = 0;
-CHECK_3D_ATTEMPT
 	switch(mtx_nbparams) {
 	case  3: case  7: case 11:
 		mtx_nbparams++;
@@ -245,7 +242,6 @@ CHECK_3D_ATTEMPT
 
 void gl_MTX_LOAD_3x3 (u32 val) {
 	static int mtx_nbparams = 0;
-CHECK_3D_ATTEMPT
 	switch(mtx_nbparams) {
 	case  3: case  7: case 11:
 		mtx_nbparams++;
@@ -267,7 +263,6 @@ CHECK_3D_ATTEMPT
 }
 void gl_MTX_MULT_3x3 (u32 val) {
 	static int mtx_nbparams = 0;
-CHECK_3D_ATTEMPT
 	switch(mtx_nbparams) {
 	case  3: case  7: case 11:
         	mtx_nbparams++;
@@ -351,8 +346,6 @@ void gl_VTX_16 (u32 val) {
 //see 400048Ch - Cmd 23h - VTX_16 - Set Vertex XYZ Coordinates (W)
 	_VTX_16 vval;
 	static int vtx_16_nbparams = 0;
-
-CHECK_3D_ATTEMPT
 	vval.val = val;
 	switch(vtx_16_nbparams) {
 	case 0:
@@ -373,7 +366,6 @@ CHECK_3D_ATTEMPT
 void gl_VTX_10 (u32 xyz) {
 //see 4000490h - Cmd 24h - VTX_10 - Set Vertex XYZ Coordinates (W)
 	_VTX_10 vt;
-CHECK_3D_ATTEMPT
 	vt.val = xyz;
 	vx = VTX10_to_s16(vt.bits.low);
 	vy = VTX10_to_s16(vt.bits.mid);
@@ -385,7 +377,6 @@ CHECK_3D_ATTEMPT
 void gl_VTX_XY (u32 xy) {
 //see 4000494h - Cmd 25h - VTX_XY - Set Vertex XY Coordinates (W)
 	_VTX_16 vt;
-CHECK_3D_ATTEMPT
 	vt.val = xy;
 	vx = VTX16_to_s16(vt.bits.low);
 	vy = VTX16_to_s16(vt.bits.high);
@@ -394,7 +385,6 @@ CHECK_3D_ATTEMPT
 void gl_VTX_XZ (u32 xz) {
 //see 4000498h - Cmd 26h - VTX_XZ - Set Vertex XZ Coordinates (W)
 	_VTX_16 vt;
-CHECK_3D_ATTEMPT
 	vt.val = xz;
 	vx = VTX16_to_s16(vt.bits.low);
 	vz = VTX16_to_s16(vt.bits.high);
@@ -403,7 +393,6 @@ CHECK_3D_ATTEMPT
 void gl_VTX_YZ (u32 yz) {
 //see 400049Ch - Cmd 27h - VTX_YZ - Set Vertex YZ Coordinates (W)
 	_VTX_16 vt;
-CHECK_3D_ATTEMPT
 	vt.val = yz;
 	vy = VTX16_to_s16(vt.bits.low);
 	vz = VTX16_to_s16(vt.bits.high);
@@ -414,7 +403,6 @@ CHECK_3D_ATTEMPT
 void gl_VTX_DIFF (u32 diff) {
 //see 40004A0h - Cmd 28h - VTX_DIFF - Set Relative Vertex Coordinates (W)
 	_VTX_10 vt;
-CHECK_3D_ATTEMPT
 	vt.val = diff;
 	vx += VTXDIFF_to_s16(vt.bits.low);
 	vy += VTXDIFF_to_s16(vt.bits.mid);
