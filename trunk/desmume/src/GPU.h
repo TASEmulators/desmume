@@ -571,7 +571,7 @@ GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
 void GPU_DeInit(GPU *);
 
-void textBG(GPU * gpu, u8 num, u8 * DST);
+void textBG(const GPU * gpu, u8 num, u8 * DST);		//Draw text based background
 void rotBG(GPU * gpu, u8 num, u8 * DST);
 void extRotBG(GPU * gpu, u8 num, u8 * DST);
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);

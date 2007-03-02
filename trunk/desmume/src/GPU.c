@@ -383,7 +383,7 @@ INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 
 //  Now assumes that *draw and *effect are different from 0 when called, so we can avoid
 // setting some values twice
-void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
+void renderline_checkWindows(const GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL *effect)
 {
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	WINCNT * wcnt = &gpu->dispx_st->dispx_WINCNT;
@@ -446,7 +446,7 @@ void renderline_checkWindows(GPU *gpu, u8 bgnum, u16 x, u16 y, BOOL *draw, BOOL 
 //			PIXEL RENDERING
 /*****************************************************************************/
 
-INLINE BOOL renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 color,u16 x, u16 y) {
+INLINE BOOL renderline_setFinalColor(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y) {
 	BOOL windowDraw = TRUE, windowEffect = TRUE ;
 	MISCCNT * msccnt = &gpu->dispx_st->dispx_MISC;
 	/* window priority: insides, if no rule, check outside */
@@ -538,7 +538,7 @@ INLINE BOOL renderline_setFinalColor(GPU *gpu,u32 passing,u8 bgnum,u8 *dst,u16 c
 /*****************************************************************************/
 
 /* render a text background to the combined pixelbuffer */
-INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
+INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
 	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
@@ -895,12 +895,12 @@ void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
               256);
 }
 
-void textBG(GPU * gpu, u8 num, u8 * DST)
+void textBG(const GPU * gpu, u8 num, u8 * DST)
 {
 	u32 i;
 	for(i = 0; i < gpu->BGSize[num][1]; ++i)
 	{
-		renderline_textBG(gpu, num, DST + i*gpu->BGSize[num][0], i, 0, i, gpu->BGSize[num][0]);
+		renderline_textBG(gpu, num, DST + i*gpu->BGSize[num][0]*2, i, 0, i, gpu->BGSize[num][0]);
 	}
 }
 
@@ -908,14 +908,14 @@ void rotBG(GPU * gpu, u8 num, u8 * DST)
 {
      u32 i;
      for(i = 0; i < gpu->BGSize[num][1]; ++i)
-          rotBG2(gpu, num, DST + i*gpu->BGSize[num][0], i, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
+          rotBG2(gpu, num, DST + i*gpu->BGSize[num][0]*2, i, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
 }
 
 void extRotBG(GPU * gpu, u8 num, u8 * DST)
 {
      u32 i;
      for(i = 0; i < gpu->BGSize[num][1]; ++i)
-          extRotBG2(gpu, num, DST + i*gpu->BGSize[num][0], i, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
+          extRotBG2(gpu, num, DST + i*gpu->BGSize[num][0]*2, i, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
 }
 
 
