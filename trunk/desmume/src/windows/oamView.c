@@ -217,7 +217,7 @@ LRESULT OamView_OnPaint(oamview_struct *win, WPARAM wParam, LPARAM lParam)
         
         for(i = 0; i < 192; ++i)
         {
-             win->gpu->spriteRender(win->gpu, i, bitmap + i*256, prio + i*256);
+             win->gpu->spriteRender(win->gpu, i, (u8*)(bitmap + i*256), prio + i*256);
         }
         
         SetDIBitsToDevice(hdc, 180, 4, 256, 192, 0, 0, 0, 192, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);

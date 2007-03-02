@@ -71,9 +71,11 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         if(!(bgcnt&(1<<7)))
              sprintf(text, "normale 16");
         else
+		{
              if(!(dispcnt&(1<<30)))
                   sprintf(text, "normale 256");
              else
+			 {
                   switch(win->map)
                   {
                        case 0 :
@@ -86,6 +88,8 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
                             sprintf(text, "extended slot %d", MainScreen.gpu->BGExtPalSlot[win->map]);
                             break;
                   }
+			 }
+		}
         SetWindowText(GetDlgItem(hwnd, IDC_PAL), text);
         
         sprintf(text, "%d", (int)(bgcnt&3));
@@ -109,14 +113,92 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         sprintf(text, "%d x %d", parms->BGxPC, parms->BGxPD);
         SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), text);
         
+		memset(win->bitmap, 0, sizeof(win->bitmap));
         if(win->lcd)
-             textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-             //rotBG(SubScreen.gpu, win->map, win->bitmap);
-             //extRotBG(SubScreen.gpu, win->map, win->bitmap);
+		{
+			 switch(dispcnt & 7)
+			 {
+				case 0:
+					textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
+					break;
+				case 1:
+					if (win->map < 3)
+						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						rotBG(SubScreen.gpu, win->map, win->bitmap);
+					break;
+				case 2:
+					if (win->map < 2)
+						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						rotBG(SubScreen.gpu, win->map, win->bitmap);
+					break;
+				case 3:
+					if (win->map < 3)
+						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						extRotBG(SubScreen.gpu, win->map, win->bitmap);
+					break;
+				case 4:
+					if (win->map < 2)
+						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
+					else if (win->map < 3)
+						rotBG(SubScreen.gpu, win->map, win->bitmap);
+					else
+						extRotBG(SubScreen.gpu, win->map, win->bitmap);
+					break;
+				case 5:
+					if (win->map < 2)
+						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						extRotBG(SubScreen.gpu, win->map, win->bitmap);
+					break;
+			 }
+		}
         else
-             textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+		{
+			 switch(dispcnt & 7)
+			 {
+				case 0:
+					textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+					break;
+				case 1:
+					if (win->map < 3)
+						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						rotBG(MainScreen.gpu, win->map, win->bitmap);
+					break;
+				case 2:
+					if (win->map < 2)
+						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						rotBG(MainScreen.gpu, win->map, win->bitmap);
+					break;
+				case 3:
+					if (win->map < 3)
+						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						extRotBG(MainScreen.gpu, win->map, win->bitmap);
+					break;
+				case 4:
+					if (win->map < 2)
+						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+					else if (win->map < 3)
+						rotBG(MainScreen.gpu, win->map, win->bitmap);
+					else
+						extRotBG(MainScreen.gpu, win->map, win->bitmap);
+					break;
+				case 5:
+					if (win->map < 2)
+						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
+					else
+						extRotBG(MainScreen.gpu, win->map, win->bitmap);
+					break;
+			 }
+//             textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
              //rotBG(MainScreen.gpu, win->map, win->bitmap);
              //extRotBG(MainScreen.gpu, win->map, win->bitmap);
+		}
         
         SetDIBitsToDevice(hdc, 200, 4, lg, ht, 0, 0, 0, ht, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
         //SetDIBitsToDevice(hdc, 200, 4, 256, 192, 0, 0, 0, 192, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
@@ -166,6 +248,7 @@ BOOL CALLBACK MapView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                         case IDC_BG_SELECT :
                              switch(HIWORD(wParam))
                              {
+                                  case CBN_SELCHANGE :
                                   case CBN_CLOSEUP :
                                        {
                                             u32 sel= SendMessage(GetDlgItem(hwnd, IDC_BG_SELECT), CB_GETCURSEL, 0, 0);
