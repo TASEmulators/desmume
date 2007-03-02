@@ -1049,18 +1049,6 @@ INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 	return TRUE;
 }
 
-INLINE void compute_sprite_rotoscale(GPU * gpu, _OAM_ * spriteInfo, 
-	u16 * rotScaleA, u16 * rotScaleB, u16 * rotScaleC, u16 * rotScaleD) {
-	u16 rotScaleIndex;
-	// index from 0 to 31
-	rotScaleIndex = spriteInfo->RotScalIndex + (spriteInfo->HFlip<<1) + (spriteInfo->VFlip << 2);
-	/* if we need to do rotscale, gather its parameters */
-	/* http://nocash.emubase.de/gbatek.htm#lcdobjoamrotationscalingparameters */
-	*rotScaleA = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x06),0) ;
-	*rotScaleB = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x0E),0) ;
-	*rotScaleC = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x16),0) ;
-	*rotScaleD = T1ReadWord((u8*)(gpu->oam + rotScaleIndex*0x20 + 0x1E),0) ;
-}
 
 /*****************************************************************************/
 //			SPRITE RENDERING
@@ -1079,63 +1067,232 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		s32 sprX, sprY, x, y, lg;
 		int xdir;
 		u8 prio, * src;
-		u16 * pal;
 		u16 i,j;
-		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD;
 
 		prio = spriteInfo->Priority;
-		if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
-			continue;
 
-		if (spriteInfo->RotScale & 1) {
-			compute_sprite_rotoscale(gpu, spriteInfo,  
-				&rotScaleA, &rotScaleB, &rotScaleC, &rotScaleD);
-			//continue;
-		}
-
-		if (spriteInfo->Mode == 2) {
-			if (spriteInfo->Depth)
-				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
-			else
-				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-			render_sprite_Win (gpu, l, src,
-				spriteInfo->Depth, lg, sprX, x, xdir);
-			continue;
-		}
-
-		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
+		if (spriteInfo->RotScale & 1) 
 		{
-			/* sprMemory + sprBoundary + 16Bytes per line (8pixels a 2 bytes) */
-			src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary);
+			s32		fieldX, fieldY, auxX, auxY, realX, realY, offset;
+			u8		blockparameter, *pal;
+			s16		dx, dmx, dy, dmy;
+			u16		colour;
 
-			render_sprite_BMP (gpu, l, dst, (u16*)src,
-				prioTab, prio, lg, sprX, x, xdir);
+			// Get sprite positions and size
+			sprX = (spriteInfo->X<<23)>>23;
+			sprY = spriteInfo->Y;
+			sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
 
-			continue;
-		}
+			lg = sprSize.x;
 			
-		if(spriteInfo->Depth)                   /* 256 colors */
-		{
-			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
-	
-			if (dispCnt->ExOBJPalette_Enable)
-				pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
+			if (sprY>=192)
+				sprY = (s32)((s8)(spriteInfo->Y));
+
+			// Copy sprite size, to check change it if needed
+			fieldX = sprSize.x;
+			fieldY = sprSize.y;
+
+			// If we are using double size mode, double our control vars
+			if (spriteInfo->RotScale & 2)
+			{
+				fieldX <<= 1;
+				fieldY <<= 1;
+				lg <<= 1;
+			}
+
+			// Check if sprite enabled
+			if ((l   <sprY) || (l >= sprY+fieldY) ||
+				(sprX==256) || (sprX+fieldX<=0))
+				continue;
+
+			y = l - sprY;
+
+			// Get which four parameter block is assigned to this sprite
+			blockparameter = (spriteInfo->RotScalIndex + (spriteInfo->HFlip<< 3) + (spriteInfo->VFlip << 4))*4;
+
+			// Get rotation/scale parameters
+			dx  = (s16)(gpu->oam + blockparameter+0)->attr3;
+			dmx = (s16)(gpu->oam + blockparameter+1)->attr3;
+			dy  = (s16)(gpu->oam + blockparameter+2)->attr3;
+			dmy = (s16)(gpu->oam + blockparameter+3)->attr3;
+
+			// Calculate fixed poitn 8.8 start offsets
+			realX = ((sprSize.x) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + y * dmx;
+			realY = ((sprSize.y) << 7) - (fieldX >> 1)*dy - (fieldY>>1)*dmy + y * dmy;
+
+			if(sprX<0)
+			{
+				// If sprite is not in the window
+				if(sprX+sprSize.x<=0)
+					continue;
+
+				// Otherwise, is partially visible
+				lg += sprX;
+				realX -= sprX*dx;
+				realY -= sprX*dy;
+				sprX = 0;
+			}
 			else
-				pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
-	
-			render_sprite_256 (gpu, l, dst, src, pal,
-				prioTab, prio, lg, sprX, x, xdir);
+			{
+				if(sprX+sprSize.x>256)
+					lg = 255 - sprX;
+			}
 
-			continue;
+			// If we are using 1 palette of 256 colours
+			if(spriteInfo->Depth)
+			{
+				src = gpu->sprMem + (spriteInfo->TileIndex << block);
+
+				// If extended palettes are set, use them
+				if (dispCnt->ExOBJPalette_Enable)
+					pal = (ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
+				else
+					pal = (ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
+
+				for(i = 0; i < lg; ++i, ++sprX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX>>8);
+					auxY = (realY>>8);
+
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					{
+						offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.x*8) + ((auxY&0x7)*8);
+						colour = src[offset];
+
+						if (colour && (prioTab[sprX]>=prio))
+						{ 
+							if (renderline_setFinalColor(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ,l))
+								prioTab[sprX] = prio;
+						}
+					}
+
+					//  Add the rotation/scale coeficients, here the rotation/scaling
+					// is performed
+					realX += dx;
+					realY += dy;
+				}
+
+				continue;
+			}
+			// Rotozoomed direct color
+			else if(spriteInfo->Mode == 3)
+			{
+				src = gpu->sprMem + (spriteInfo->TileIndex)*32;
+
+				for(i = 0; i < lg; ++i, ++sprX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX>>8);
+					auxY = (realY>>8);
+
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					{
+						offset = (auxX) + (auxY<<5);
+						colour = T1ReadWord (src, offset<<1);
+
+						if((colour&0x8000) && (prioTab[sprX]>=prio))
+						{
+							if (renderline_setFinalColor(gpu, sprX << 1, 4, dst, colour, sprX ,l))
+								prioTab[sprX] = prio;
+						}
+					}
+
+					//  Add the rotation/scale coeficients, here the rotation/scaling
+					// is performed
+					realX += dx;
+					realY += dy;
+				}
+
+				continue;
+			}
+			// Rotozoomed 16/16 palette
+			else
+			{
+				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
+				src = gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary);
+
+				for(i = 0; i < lg; ++i, ++sprX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX>>8);
+					auxY = (realY>>8);
+
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					{
+						offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.x)*4 + ((auxY&0x7)*4);
+						colour = src[offset];
+
+						// Get 4bits value from the readed 8bits
+						if (auxX&1)	colour >>= 4;
+						else		colour &= 0xF;
+
+						if(colour && (prioTab[sprX]>=prio))
+						{
+							if (renderline_setFinalColor(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ,l))
+								prioTab[sprX] = prio;
+						}
+					}
+
+					//  Add the rotation/scale coeficients, here the rotation/scaling
+					// is performed
+					realX += dx;
+					realY += dy;
+				}  
+
+				continue;
+			}
 		}
-		/* 16 colors */
-		src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
-		pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
-		
-		pal += (spriteInfo->PaletteIndex<<4);
-		render_sprite_16 (gpu, l, dst, src, pal,
-			prioTab, prio, lg, sprX, x, xdir);
+		else
+		{
+			u16 * pal;
 
+			if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
+				continue;
+
+			if (spriteInfo->Mode == 2) {
+				if (spriteInfo->Depth)
+					src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+				else
+					src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+				render_sprite_Win (gpu, l, src,
+					spriteInfo->Depth, lg, sprX, x, xdir);
+				continue;
+			}
+
+			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
+			{
+				/* sprMemory + sprBoundary + 16Bytes per line (8pixels a 2 bytes) */
+				src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary);
+
+				render_sprite_BMP (gpu, l, dst, (u16*)src,
+					prioTab, prio, lg, sprX, x, xdir);
+
+				continue;
+			}
+				
+			if(spriteInfo->Depth)                   /* 256 colors */
+			{
+				src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8);
+		
+				if (dispCnt->ExOBJPalette_Enable)
+					pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
+				else
+					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
+		
+				render_sprite_256 (gpu, l, dst, src, pal,
+					prioTab, prio, lg, sprX, x, xdir);
+
+				continue;
+			}
+			/* 16 colors */
+			src = gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4);
+			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
+			
+			pal += (spriteInfo->PaletteIndex<<4);
+			render_sprite_16 (gpu, l, dst, src, pal,
+				prioTab, prio, lg, sprX, x, xdir);
+		}
 	}
 }
 
@@ -1151,63 +1308,231 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		s32 sprX, sprY, x, y, lg;
 		int xdir;
 		u8 prio, * src;
-		u16 * pal;
+		//u16 * pal;
 		u16 i,j;
-		u16 rotScaleA,rotScaleB,rotScaleC,rotScaleD;
-		int block;
 
 		prio = spriteInfo->Priority;
-
-		if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
-			continue;
 	
-		if (spriteInfo->RotScale & 1) {
-			compute_sprite_rotoscale(gpu, spriteInfo,  
-				&rotScaleA, &rotScaleB, &rotScaleC, &rotScaleD);
-			//continue;
-		}
-
-		if (spriteInfo->Mode == 2) {
-			if (spriteInfo->Depth)
-				src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-			else
-				src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-			render_sprite_Win (gpu, l, src,
-				spriteInfo->Depth, lg, sprX, x, xdir);
-			continue;
-		}
-
-		if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
+		if (spriteInfo->RotScale & 1) 
 		{
-			if (dispCnt->OBJ_BMP_2D_dim) // 256*256
-				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1);
-			else // 128 * 512
-				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
-	
-			render_sprite_BMP (gpu, l, dst, (u16*)src,
-				prioTab, prio, lg, sprX, x, xdir);
+			s32		fieldX, fieldY, auxX, auxY, realX, realY, offset;
+			u8		blockparameter, *pal;
+			s16		dx, dmx, dy, dmy;
+			u16		colour;
 
-			continue;
-		}
+			// Get sprite positions and size
+			sprX = (spriteInfo->X<<23)>>23;
+			sprY = spriteInfo->Y;
+			sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
+
+			lg = sprSize.x;
 			
-		if(spriteInfo->Depth)                   /* 256 colors */
-		{
-			src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
-			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
-	
-			render_sprite_256 (gpu, l, dst, src, pal,
-				prioTab, prio, lg, sprX, x, xdir);
+			if (sprY>=192)
+				sprY = (s32)((s8)(spriteInfo->Y));
 
-			continue;
+			// Copy sprite size, to check change it if needed
+			fieldX = sprSize.x;
+			fieldY = sprSize.y;
+
+			// If we are using double size mode, double our control vars
+			if (spriteInfo->RotScale & 2)
+			{
+				fieldX <<= 1;
+				fieldY <<= 1;
+				lg <<= 1;
+			}
+
+			// Check if sprite enabled
+			if ((l   <sprY) || (l >= sprY+fieldY) ||
+				(sprX==256) || (sprX+fieldX<=0))
+				continue;
+
+			y = l - sprY;
+
+			// Get which four parameter block is assigned to this sprite
+			blockparameter = (spriteInfo->RotScalIndex + (spriteInfo->HFlip<< 3) + (spriteInfo->VFlip << 4))*4;
+
+			// Get rotation/scale parameters
+			dx  = (s16)(gpu->oam + blockparameter+0)->attr3;
+			dmx = (s16)(gpu->oam + blockparameter+1)->attr3;
+			dy  = (s16)(gpu->oam + blockparameter+2)->attr3;
+			dmy = (s16)(gpu->oam + blockparameter+3)->attr3;
+
+			// Calculate fixed poitn 8.8 start offsets
+			realX = ((sprSize.x) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + y * dmx;
+			realY = ((sprSize.y) << 7) - (fieldX >> 1)*dy - (fieldY>>1)*dmy + y * dmy;
+
+			if(sprX<0)
+			{
+				// If sprite is not in the window
+				if(sprX+sprSize.x<=0)
+					continue;
+
+				// Otherwise, is partially visible
+				lg += sprX;
+				realX -= sprX*dx;
+				realY -= sprX*dy;
+				sprX = 0;
+			}
+			else
+			{
+				if(sprX+sprSize.x>256)
+					lg = 255 - sprX;
+			}
+
+			// If we are using 1 palette of 256 colours
+			if(spriteInfo->Depth)
+			{
+				src = gpu->sprMem + ((spriteInfo->TileIndex) << 5);
+
+				// If extended palettes are set, use them
+				if (dispCnt->ExOBJPalette_Enable)
+					pal = (ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
+				else
+					pal = (ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
+			
+				for(i = 0; i < lg; ++i, ++sprX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX>>8);
+					auxY = (realY>>8);
+
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					{
+						offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8);
+						colour = src[offset];
+
+						if (colour && (prioTab[sprX]>=prio))
+						{ 
+							if (renderline_setFinalColor(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ,l))
+								prioTab[sprX] = prio;
+						}
+					}
+
+					//  Add the rotation/scale coeficients, here the rotation/scaling
+					// is performed
+					realX += dx;
+					realY += dy;
+				}
+
+				continue;
+			}
+			// Rotozoomed direct color
+			else if(spriteInfo->Mode == 3)
+			{
+				src = gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16;
+
+				for(i = 0; i < lg; ++i, ++sprX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX>>8);
+					auxY = (realY>>8);
+
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					{
+						offset = auxX + (auxY<<8);
+						colour = T1ReadWord(src, offset<<1);
+
+						if((colour&0x8000) && (prioTab[sprX]>=prio))
+						{
+							if (renderline_setFinalColor(gpu, sprX << 1, 4, dst, colour, sprX ,l))
+								prioTab[sprX] = prio;
+						}
+					}
+
+					//  Add the rotation/scale coeficients, here the rotation/scaling
+					// is performed
+					realX += dx;
+					realY += dy;
+				}
+
+				continue;
+			}
+			// Rotozoomed 16/16 palette
+			else
+			{
+				src = gpu->sprMem + (spriteInfo->TileIndex<<5);
+				pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
+				
+				for(i = 0; i < lg; ++i, ++sprX)
+				{
+					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
+					auxX = (realX>>8);
+					auxY = (realY>>8);
+
+					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
+					{
+						offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*4);
+						colour = src[offset];
+
+						if (auxX&1)	colour >>= 4;
+						else		colour &= 0xF;
+
+						if(colour && (prioTab[sprX]>=prio))
+						{
+							if (renderline_setFinalColor(gpu, sprX << 1,4,dst, T1ReadWord (pal, colour<<1), sprX ,l))
+								prioTab[sprX] = prio;
+						}
+					}
+
+					//  Add the rotation/scale coeficients, here the rotation/scaling
+					// is performed
+					realX += dx;
+					realY += dy;
+				}  
+
+				continue;
+			}
 		}
-	
-		/* 16 colors */
-		src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
-		pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
+		else
+		{
+			u16 *pal;
 
-		pal += (spriteInfo->PaletteIndex<<4);
-		render_sprite_16 (gpu, l, dst, src, pal,
-			prioTab, prio, lg, sprX, x, xdir);
+			if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
+				continue;
+
+			if (spriteInfo->Mode == 2) {
+				if (spriteInfo->Depth)
+					src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
+				else
+					src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
+				render_sprite_Win (gpu, l, src,
+					spriteInfo->Depth, lg, sprX, x, xdir);
+				continue;
+			}
+
+			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
+			{
+				if (dispCnt->OBJ_BMP_2D_dim) // 256*256
+					src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1);
+				else // 128 * 512
+					src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
+		
+				render_sprite_BMP (gpu, l, dst, (u16*)src,
+					prioTab, prio, lg, sprX, x, xdir);
+
+				continue;
+			}
+				
+			if(spriteInfo->Depth)                   /* 256 colors */
+			{
+				src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8);
+				pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
+		
+				render_sprite_256 (gpu, l, dst, src, pal,
+					prioTab, prio, lg, sprX, x, xdir);
+
+				continue;
+			}
+		
+			/* 16 colors */
+			src = gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4);
+			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
+
+			pal += (spriteInfo->PaletteIndex<<4);
+			render_sprite_16 (gpu, l, dst, src, pal,
+				prioTab, prio, lg, sprX, x, xdir);
+		}
 	}
 }
 
