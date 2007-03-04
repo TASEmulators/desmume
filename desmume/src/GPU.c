@@ -1123,7 +1123,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if(sprX<0)
 			{
 				// If sprite is not in the window
-				if(sprX+sprSize.x<=0)
+				if(sprX + fieldX <= 0)
 					continue;
 
 				// Otherwise, is partially visible
@@ -1134,7 +1134,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			}
 			else
 			{
-				if(sprX+sprSize.x>256)
+				if(sprX+fieldX>256)
 					lg = 255 - sprX;
 			}
 
@@ -1238,7 +1238,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 					// is performed
 					realX += dx;
 					realY += dy;
-				}  
+				}
 
 				continue;
 			}
@@ -1365,7 +1365,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if(sprX<0)
 			{
 				// If sprite is not in the window
-				if(sprX+sprSize.x<=0)
+				if(sprX + fieldX <= 0)
 					continue;
 
 				// Otherwise, is partially visible
@@ -1376,7 +1376,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			}
 			else
 			{
-				if(sprX+sprSize.x>256)
+				if(sprX+fieldX>256)
 					lg = 255 - sprX;
 			}
 
