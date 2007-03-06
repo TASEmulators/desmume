@@ -125,33 +125,33 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 					if (win->map < 3)
 						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						rotBG(SubScreen.gpu, win->map, win->bitmap);
+						rotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 2:
 					if (win->map < 2)
 						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						rotBG(SubScreen.gpu, win->map, win->bitmap);
+						rotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 3:
 					if (win->map < 3)
 						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						extRotBG(SubScreen.gpu, win->map, win->bitmap);
+						extRotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 4:
 					if (win->map < 2)
 						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					else if (win->map < 3)
-						rotBG(SubScreen.gpu, win->map, win->bitmap);
+						rotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						extRotBG(SubScreen.gpu, win->map, win->bitmap);
+						extRotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 5:
 					if (win->map < 2)
 						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						extRotBG(SubScreen.gpu, win->map, win->bitmap);
+						extRotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 			 }
 		}
@@ -166,38 +166,35 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 					if (win->map < 3)
 						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						rotBG(MainScreen.gpu, win->map, win->bitmap);
+						rotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 2:
 					if (win->map < 2)
 						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						rotBG(MainScreen.gpu, win->map, win->bitmap);
+						rotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 3:
 					if (win->map < 3)
 						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						extRotBG(MainScreen.gpu, win->map, win->bitmap);
+						extRotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 4:
 					if (win->map < 2)
 						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					else if (win->map < 3)
-						rotBG(MainScreen.gpu, win->map, win->bitmap);
+						rotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						extRotBG(MainScreen.gpu, win->map, win->bitmap);
+						extRotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 				case 5:
 					if (win->map < 2)
 						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					else
-						extRotBG(MainScreen.gpu, win->map, win->bitmap);
+						extRotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
 					break;
 			 }
-//             textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-             //rotBG(MainScreen.gpu, win->map, win->bitmap);
-             //extRotBG(MainScreen.gpu, win->map, win->bitmap);
 		}
         
         SetDIBitsToDevice(hdc, 200, 4, lg, ht, 0, 0, 0, ht, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
