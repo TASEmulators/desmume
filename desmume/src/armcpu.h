@@ -182,9 +182,12 @@ extern armcpu_t NDS_ARM9;
 
 static INLINE void NDS_makeARM9Int(u32 num)
 {
+        /* flag the interrupt request source */
+        MMU.reg_IF[0] |= (1<<num);
+
+        /* generate the interrupt if enabled */
 	if ((MMU.reg_IE[0] & (1 << num)) && MMU.reg_IME[0])
 	{
-		MMU.reg_IF[0] |= (1<<num);
 		NDS_ARM9.wIRQ = TRUE;
 		NDS_ARM9.waitIRQ = FALSE;
 	}
@@ -192,9 +195,12 @@ static INLINE void NDS_makeARM9Int(u32 num)
        
 static INLINE void NDS_makeARM7Int(u32 num)
 {
+        /* flag the interrupt request source */
+	MMU.reg_IF[1] |= (1<<num);
+
+        /* generate the interrupt if enabled */
 	if ((MMU.reg_IE[1] & (1 << num)) && MMU.reg_IME[1])
 	{
-		MMU.reg_IF[1] |= (1<<num);
 		NDS_ARM7.wIRQ = TRUE;
 		NDS_ARM7.waitIRQ = FALSE;
 	}
