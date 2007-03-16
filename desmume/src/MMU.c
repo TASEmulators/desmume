@@ -1271,10 +1271,20 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				if(proc == ARMCPU_ARM9) GPU_setBGProp(SubScreen.gpu, 3, val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x100E, val);
 				return;
-			case REG_IME :
-				MMU.reg_IME[proc] = val&1;
-				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x208, val);
+                        case REG_IME : {
+			        u32 old_val = MMU.reg_IME[proc];
+				u32 new_val = val & 1;
+				MMU.reg_IME[proc] = new_val;
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x208, val);
+				if ( new_val && old_val != new_val) {
+				  /* raise an interrupt request to the CPU if needed */
+				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
+				    NDS_ARM7.wIRQ = TRUE;
+				    NDS_ARM7.waitIRQ = FALSE;
+				  }
+				}
 				return;
+			}
 			case REG_VRAMCNTA:
 				MMU_write8(proc,adr,val & 0xFF) ;
 				MMU_write8(proc,adr+1,val >> 8) ;
@@ -1297,6 +1307,13 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 
 			case REG_IE :
 				MMU.reg_IE[proc] = (MMU.reg_IE[proc]&0xFFFF0000) | val;
+				if ( MMU.reg_IME[proc]) {
+				  /* raise an interrupt request to the CPU if needed */
+				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
+				    NDS_ARM7.wIRQ = TRUE;
+				    NDS_ARM7.waitIRQ = FALSE;
+				  }
+				}
 				return;
 			case REG_IE + 2 :
 				execute = FALSE;
@@ -1661,13 +1678,30 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				MMU_write8(proc,adr,val & 0xFF) ;
 				return ;
 
-			case REG_IME :
-				MMU.reg_IME[proc] = val & 1;
+                        case REG_IME : {
+			        u32 old_val = MMU.reg_IME[proc];
+				u32 new_val = val & 1;
+				MMU.reg_IME[proc] = new_val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x208, val);
+				if ( new_val && old_val != new_val) {
+				  /* raise an interrupt request to the CPU if needed */
+				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
+				    NDS_ARM7.wIRQ = TRUE;
+				    NDS_ARM7.waitIRQ = FALSE;
+				  }
+				}
 				return;
+			}
 				
 			case REG_IE :
 				MMU.reg_IE[proc] = val;
+				if ( MMU.reg_IME[proc]) {
+				  /* raise an interrupt request to the CPU if needed */
+				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
+				    NDS_ARM7.wIRQ = TRUE;
+				    NDS_ARM7.waitIRQ = FALSE;
+				  }
+				}
 				return;
 			
 			case REG_IF :
