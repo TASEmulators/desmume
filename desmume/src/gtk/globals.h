@@ -45,6 +45,7 @@
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../types.h"
+#include "../render3D.h"
 #include "desmume.h"
 
 #endif /* GLOBALS_H */
