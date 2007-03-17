@@ -46,6 +46,7 @@
 #include "MMU.h"
 #include "GPU.h"
 #include "debug.h"
+#include "render3D.h"
 
 ARM9_struct ARM9Mem;
 
@@ -190,7 +191,7 @@ void GPU_resortBGs(GPU *gpu)
 #define OP ^ !
 // if we untick boxes, layers become invisible
 //#define OP &&
-	gpu->LayersEnable[0] = gpu->dispBG[0] OP(cnt->BG0_Enable && !(cnt->BG0_3D && (gpu->core==0)));
+	gpu->LayersEnable[0] = gpu->dispBG[0] OP(cnt->BG0_Enable/* && !(cnt->BG0_3D && (gpu->core==0))*/);
 	gpu->LayersEnable[1] = gpu->dispBG[1] OP(cnt->BG1_Enable);
 	gpu->LayersEnable[2] = gpu->dispBG[2] OP(cnt->BG2_Enable);
 	gpu->LayersEnable[3] = gpu->dispBG[3] OP(cnt->BG3_Enable);
@@ -1794,10 +1795,20 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		prio--;
 		item = &(gpu->itemsForPriority[prio]);
 		// render BGs
-		for (i=0; i < item->nbBGs; i++) {
+		for (i=0; i < item->nbBGs; i++) 
+		{
 			i16 = item->BGs[i];
-			if (gpu->LayersEnable[i16])
-			modeRender[dispCnt->BG_Mode][i16](gpu, i16, l, dst);
+
+			// If BG0, core A, and 3D is enabled, ask the gpu3D plugin for data
+			if (i16 == 0 && dispCnt->BG0_3D && gpu->core == 0)
+			{
+				gpu3D->NDS_3D_GetLine (l, (u16*)dst);
+			}
+			else
+			{
+				if (gpu->LayersEnable[i16])
+					modeRender[dispCnt->BG_Mode][i16](gpu, i16, l, dst);
+			}
 		}
 		// render sprite Pixels
 		for (i=0; i < item->nbPixelsX; i++) {
