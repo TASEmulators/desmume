@@ -16,6 +16,7 @@ libdesmume_a_SOURCES = \
 	wifi.c wifi.h \
         MMU.c MMU.h NDSSystem.c NDSSystem.h registers.h \
 	ROMReader.c ROMReader.h \
+	render3D.c render3D.h \
         saves.c saves.h \
         SPU.c SPU.h \
         thumb_instructions.c thumb_instructions.h types.h
