@@ -1,0 +1,97 @@
+/*  
+	Copyright (C) 2006-2007 shash
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+#ifndef GPU_3D
+#define GPU_3D
+
+#define C_DECL __cdecl
+
+/*
+enum DRIVER_3D
+{
+	DRIVER_NULL = 0,
+	DRIVER_OPENGL
+};
+*/
+
+typedef struct GPU3DInterface
+{
+	char (C_DECL*  NDS_3D_Init)					(void);
+	void (C_DECL*  NDS_3D_ViewPort)				(unsigned long v);
+	void (C_DECL*  NDS_3D_ClearColor)			(unsigned long v);
+	void (C_DECL*  NDS_3D_FogColor)				(unsigned long v);
+	void (C_DECL*  NDS_3D_FogOffset)			(unsigned long v);
+	void (C_DECL*  NDS_3D_ClearDepth)			(unsigned long v);
+	void (C_DECL*  NDS_3D_MatrixMode)			(unsigned long v);
+	void (C_DECL*  NDS_3D_LoadIdentity)			(void);
+	void (C_DECL*  NDS_3D_LoadMatrix4x4)		(signed long v);
+	void (C_DECL*  NDS_3D_LoadMatrix4x3)		(signed long v);
+	void (C_DECL*  NDS_3D_StoreMatrix)			(unsigned long v);
+	void (C_DECL*  NDS_3D_RestoreMatrix)		(unsigned long v);
+	void (C_DECL*  NDS_3D_PushMatrix)			(void);
+	void (C_DECL*  NDS_3D_PopMatrix)			(signed long i);
+	void (C_DECL*  NDS_3D_Translate)			(signed long v);
+	void (C_DECL*  NDS_3D_Scale)				(signed long v);
+	void (C_DECL*  NDS_3D_MultMatrix3x3)		(signed long v);
+	void (C_DECL*  NDS_3D_MultMatrix4x3)		(signed long v);
+	void (C_DECL*  NDS_3D_MultMatrix4x4)		(signed long v);
+	void (C_DECL*  NDS_3D_Begin)				(unsigned long v);
+	void (C_DECL*  NDS_3D_End)					(void);
+	void (C_DECL*  NDS_3D_Color3b)				(unsigned long v);
+	void (C_DECL*  NDS_3D_Vertex16b)			(unsigned int v);
+	void (C_DECL*  NDS_3D_Vertex10b)			(unsigned long v);
+	void (C_DECL*  NDS_3D_Vertex3_cord)			(unsigned int one, unsigned int two, unsigned int v);
+	void (C_DECL*  NDS_3D_Vertex_rel)			(unsigned long v);
+	void (C_DECL*  NDS_3D_SwapScreen)			(unsigned int screen);
+	int  (C_DECL*  NDS_3D_GetNumPolys)			(void); // THIS IS A HACK :D
+	int  (C_DECL*  NDS_3D_GetNumVertex)			(void);
+	void (C_DECL*  NDS_3D_Flush)				(unsigned long v);
+	void (C_DECL*  NDS_3D_PolygonAttrib)		(unsigned long val);
+	void (C_DECL*  NDS_3D_Material0)			(unsigned long val);
+	void (C_DECL*  NDS_3D_Material1)			(unsigned long val);
+	void (C_DECL*  NDS_3D_Shininess)			(unsigned long val);
+	void (C_DECL*  NDS_3D_TexImage)				(unsigned long val);
+	void (C_DECL*  NDS_3D_TexPalette)			(unsigned long val);
+	void (C_DECL*  NDS_3D_TexCoord)				(unsigned long val);
+	void (C_DECL*  NDS_3D_LightDirection)		(unsigned long v);
+	void (C_DECL*  NDS_3D_LightColor)			(unsigned long v);
+	void (C_DECL*  NDS_3D_AlphaFunc)			(unsigned long v);
+	void (C_DECL*  NDS_3D_Control)				(unsigned long v);
+	void (C_DECL*  NDS_3D_Normal)				(unsigned long v);
+	void (C_DECL*  NDS_3D_CallList)				(unsigned long v);
+
+	long (C_DECL*  NDS_3D_GetClipMatrix)		(unsigned int index);
+	long (C_DECL*  NDS_3D_GetDirectionalMatrix)	(unsigned int index);
+	void (C_DECL*  NDS_3D_GetLine)				(int line, unsigned short * DST);
+} GPU3DInterface;
+
+// gpu 3D core list, per port
+extern GPU3DInterface *core3DList[];
+
+// Default null plugin
+#define GPU3D_NULL 0
+extern GPU3DInterface gpu3DNull;
+
+// Extern pointer
+extern GPU3DInterface *gpu3D;
+
+void NDS_3D_SetDriver (int core3DIndex);
+
+#endif
