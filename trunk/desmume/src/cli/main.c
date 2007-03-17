@@ -33,6 +33,7 @@
 #include "../debug.h"
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
+#include "../render3D.h"
 
 volatile BOOL execute = FALSE;
 
@@ -44,6 +45,11 @@ SoundInterface_struct *SNDCoreList[] = {
   &SNDSDL,
   NULL
 };
+
+GPU3DInterface *core3DList[] = {
+&gpu3DNull
+};
+
 
 /* Our keyboard config is different because of the directional keys */
 const u16 cli_kb_cfg[NB_KEYS] =
