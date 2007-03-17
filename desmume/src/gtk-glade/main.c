@@ -36,6 +36,11 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
+GPU3DInterface *core3DList[] = {
+&gpu3DNull
+};
+
+
 /* ***** ***** TOOLS ***** ***** */
 
 GList * tools_to_update = NULL;

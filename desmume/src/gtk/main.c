@@ -60,6 +60,11 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
+GPU3DInterface *core3DList[] = {
+&gpu3DNull
+};
+
+
 u16 Keypad_Temp[NB_KEYS];
 
 int Write_ConfigFile()
