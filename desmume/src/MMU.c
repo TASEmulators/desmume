@@ -27,7 +27,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "gl_vertex.h"
+//#include "gl_vertex.h"
 
 #include "debug.h"
 #include "NDSSystem.h"
@@ -35,6 +35,7 @@
 #include "cp15.h"
 #include "wifi.h"
 #include "registers.h"
+#include "render3D.h"
 
 #define ROM_MASK 3
 
@@ -603,6 +604,11 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 		/* Adress is an IO register */
 		switch(adr)
 		{
+			case 0x04000604:
+				return (gpu3D->NDS_3D_GetNumPolys()&2047);
+			case 0x04000606:
+				return (gpu3D->NDS_3D_GetNumVertex()&8191);
+
 			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
 				execute = FALSE;
 				return 1;
@@ -683,10 +689,61 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 		/* Adress is an IO register */
 		switch(adr)
 		{
-			#ifdef RENDER3D
-			case 0x04000600 :
-				return ((OGLRender::nbpush[0]&1)<<13) | ((OGLRender::nbpush[2]&0x1F)<<8);
-			#endif
+			// This is hacked due to the only current 3D core
+			case 0x04000600:
+            {
+                u32 fifonum = IPCFIFO+proc;
+
+				u32 gxstat =	(MMU.fifos[fifonum].empty<<26) | 
+								(1<<25) | 
+								(MMU.fifos[fifonum].full<<24) | 
+								/*((NDS_nbpush[0]&1)<<13) | ((NDS_nbpush[2]&0x1F)<<8) |*/ 
+								2;
+
+				LOG ("GXSTAT: 0x%X", gxstat);
+
+				return	gxstat;
+            }
+
+			case 0x04000640:
+			case 0x04000644:
+			case 0x04000648:
+			case 0x0400064C:
+			case 0x04000650:
+			case 0x04000654:
+			case 0x04000658:
+			case 0x0400065C:
+			case 0x04000660:
+			case 0x04000664:
+			case 0x04000668:
+			case 0x0400066C:
+			case 0x04000670:
+			case 0x04000674:
+			case 0x04000678:
+			case 0x0400067C:
+			{
+				//LOG("4000640h..67Fh - CLIPMTX_RESULT - Read Current Clip Coordinates Matrix (R)");
+				return gpu3D->NDS_3D_GetClipMatrix ((adr-0x04000640)/4);
+			}
+			case 0x04000680:
+			case 0x04000684:
+			case 0x04000688:
+			case 0x0400068C:
+			case 0x04000690:
+			case 0x04000694:
+			case 0x04000698:
+			case 0x0400069C:
+			case 0x040006A0:
+			{
+				//LOG("4000680h..6A3h - VECMTX_RESULT - Read Current Directional Vector Matrix (R)");
+				return gpu3D->NDS_3D_GetDirectionalMatrix ((adr-0x04000680)/4);
+			}
+
+			case 0x4000604:
+			{
+				return (gpu3D->NDS_3D_GetNumPolys()&2047) & ((gpu3D->NDS_3D_GetNumVertex()&8191) << 16);
+				//LOG ("read32 - RAM_COUNT -> 0x%X", ((u32 *)(MMU.MMU_MEM[proc][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>2]);
+			}
 			
 			case REG_IME :
 				return MMU.reg_IME[proc];
@@ -722,7 +779,8 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				u32 val = T1ReadWord(MMU.MMU_MEM[proc][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[proc][(adr&0xF)>>2] | (val<<16);
 			}	
-			case 0x04000640 :	/* TODO (clear): again, ??? */
+			/*
+			case 0x04000640 :	// TODO (clear): again, ??? 
 				LOG("read proj\r\n");
 			return 0;
 			case 0x04000680 :
@@ -731,7 +789,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			case 0x04000620 :
 				LOG("point res\r\n");
 			return 0;
-			
+			*/
                         case REG_GCDATAIN:
 			{
                                 u32 val;
@@ -1061,30 +1119,42 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 		/* Adress is an IO register */
 		switch(adr)
 		{
-			#ifdef RENDER3D
-			case 0x04000610 :
+			case 0x0400035C:
+			{
+				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x35C>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					LOG("CUT DEPTH %08X\r\n", val);
+					gpu3D->NDS_3D_FogOffset (val);
 				}
 				return;
-			case 0x04000340 :
+			}
+			case 0x04000340:
+			{
+				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x340>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					OGLRender::glAlphaFunc(val);
+					gpu3D->NDS_3D_AlphaFunc(val);
 				}
 				return;
-                        case REG_DISPA_DISP3DCNT :
+			}
+			case 0x04000060:
+			{
+				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x060>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					OGLRender::glControl(val);
+					gpu3D->NDS_3D_Control(val);
 				}
 				return;
-			case 0x04000354 :
+			}
+			case 0x04000354:
+			{
+				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x354>>1] = val;
 				if(proc == ARMCPU_ARM9)
-					OGLRender::glClearDepth(val);
+				{
+					gpu3D->NDS_3D_ClearDepth(val);
+				}
 				return;
-			#endif
+			}
 			
                         case REG_POWCNT1 :
 				if(proc == ARMCPU_ARM9)
@@ -1574,87 +1644,488 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 
 	if((adr>>24)==4)
 	{
+		if (adr >= 0x04000400 && adr < 0x04000440)
+		{
+			// Geometry commands (aka Dislay Lists) - Parameters:X
+			((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x400>>2] = val;
+			if(proc==ARMCPU_ARM9)
+			{
+				gpu3D->NDS_3D_CallList(val);
+			}
+		}
+		else
 		switch(adr)
 		{
+			// Alpha test reference value - Parameters:1
+			case 0x04000340:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x340>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_AlphaFunc(val);
+				}
+				return;
+			}
+			// Clear background color setup - Parameters:2
+			case 0x04000350:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x350>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_ClearColor(val);
+				}
+				return;
+			}
+			// Clear background depth setup - Parameters:2
+			case 0x04000354:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x354>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_ClearDepth(val);
+				}
+				return;
+			}
+			// Fog Color - Parameters:4b
+			case 0x04000358:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x358>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_FogColor(val);
+				}
+				return;
+			}
+			case 0x0400035C:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x35C>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_FogOffset(val);
+				}
+				return;
+			}
+			// Matrix mode - Parameters:1
+			case 0x04000440:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x440>>2] = val;
 
-			case cmd_3D_MTX_MODE        /* 0x04000440 */ :
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_MatrixMode(val);
+				}
+				return;
+			}
+			// Push matrix - Parameters:0
+			case 0x04000444:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x444>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_PushMatrix();
+				}
+				return;
+			}
+			// Pop matrix/es - Parameters:1
+			case 0x04000448:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x448>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_PopMatrix(val);
+				}
+				return;
+			}
+			// Store matrix in the stack - Parameters:1
+			case 0x0400044C:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x44C>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_StoreMatrix(val);
+				}
+				return;
+			}
+			// Restore matrix from the stack - Parameters:1
+			case 0x04000450:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x450>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_RestoreMatrix(val);
+				}
+				return;
+			}
+			// Load Identity matrix - Parameters:0
+			case 0x04000454:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x454>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_LoadIdentity();
+				}
+				return;
+			}
+			// Load 4x4 matrix - Parameters:16
+			case 0x04000458:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x458>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_LoadMatrix4x4(val);
+				}
+				return;
+			}
+			// Load 4x3 matrix - Parameters:12
+			case 0x0400045C:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x45C>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_LoadMatrix4x3(val);
+				}
+				return;
+			}
+			// Multiply 4x4 matrix - Parameters:16
+			case 0x04000460:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x460>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_MultMatrix4x4(val);
+				}
+				return;
+			}
+			// Multiply 4x4 matrix - Parameters:12
+			case 0x04000464:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x464>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_MultMatrix4x3(val);
+				}
+				return;
+			}
+			// Multiply 3x3 matrix - Parameters:9
+			case 0x04000468 :
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x468>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_MultMatrix3x3(val);
+				}
+				return;
+			}
+			// Multiply current matrix by scaling matrix - Parameters:3
+			case 0x0400046C:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x46C>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Scale(val);
+				}
+				return;
+			}
+			// Multiply current matrix by translation matrix - Parameters:3
+			case 0x04000470:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x470>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Translate(val);
+				}
+				return;
+			}
+			// Set vertex color - Parameters:1
+			case 0x04000480:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x480>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Color3b(val);
+				}
+				return;
+			}
+			// Set vertex normal - Parameters:1
+			case 0x04000484:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x484>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Normal(val);
+				}
+				return;
+			}
+			// Set vertex texture coordinate - Parameters:1
+			case 0x04000488:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x488>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_TexCoord(val);
+				}
+				return;
+			}
+			// Set vertex position 16b/coordinate - Parameters:2
+			case 0x0400048C:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x48C>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Vertex16b(val);
+				}
+				return;
+			}
+			// Set vertex position 10b/coordinate - Parameters:1
+			case 0x04000490:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x490>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Vertex10b(val);
+				}
+				return;
+			}
+			// Set vertex XY position - Parameters:1
+			case 0x04000494:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x494>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+                    gpu3D->NDS_3D_Vertex3_cord(0,1,val);
+				}
+				return;
+			}
+			// Set vertex XZ position - Parameters:1
+			case 0x04000498:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x498>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+                    gpu3D->NDS_3D_Vertex3_cord(0,2,val);
+				}
+				return;
+			}
+			// Set vertex YZ position - Parameters:1
+			case 0x0400049C:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x49C>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+                    gpu3D->NDS_3D_Vertex3_cord(1,2,val);
+				}
+				return;
+			}
+			// Set vertex difference position (offset from the last vertex) - Parameters:1
+			case 0x040004A0:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4A0>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+                    gpu3D->NDS_3D_Vertex_rel (val);
+				}
+				return;
+			}
+			// Set polygon attributes - Parameters:1
+			case 0x040004A4:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4A4>>2] = val;
+                if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_PolygonAttrib(val);
+				}
+				return;
+			}
+			// Set texture parameteres - Parameters:1
+			case 0x040004A8:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4A8>>2] = val;
+				if(proc==ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_TexImage(val);
+				}
+				return;
+			}
+			// Set palette base address - Parameters:1
+			case 0x040004AC:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4AC>>2] = val&0x1FFF;
+				if(proc==ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_TexPalette(val&0x1FFFF);
+				}
+				return;
+			}
+			// Set material diffuse/ambient parameters - Parameters:1
+			case 0x040004C0:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C0>>2] = val;
+                if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Material0 (val);
+				}
+				return;
+			}
+			// Set material reflection/emission parameters - Parameters:1
+			case 0x040004C4:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C4>>2] = val;
+                if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Material1 (val);
+				}
+				return;
+			}
+			// Light direction vector - Parameters:1
+			case 0x040004C8:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C8>>2] = val;
+                if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_LightDirection (val);
+				}
+				return;
+			}
+			// Light color - Parameters:1
+			case 0x040004CC:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4CC>>2] = val;
+                if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_LightColor(val);
+				}
+				return;
+			}
+			// Material Shininess - Parameters:32
+			case 0x040004D0:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4D0>>2] = val;
+                if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Shininess(val);
+				}
+				return;
+			}
+			// Begin vertex list - Parameters:1
+			case 0x04000500:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x500>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Begin(val);
+				}
+				return;
+			}
+			// End vertex list - Parameters:0
+			case 0x04000504:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x504>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_End();
+				}
+				return;
+			}
+			// Swap rendering engine buffers - Parameters:1
+			case 0x04000540:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x540>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_Flush(val);
+				}
+				return;
+			}
+			// Set viewport coordinates - Parameters:1
+			case 0x04000580:
+			{
+				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x580>>2] = val;
+				if(proc == ARMCPU_ARM9)
+				{
+					gpu3D->NDS_3D_ViewPort(val);
+				}
+				return;
+			}
+/*
+ // Commented out, as this doesn't use the plug-in system, neither works
+			case cmd_3D_MTX_MODE        // 0x04000440 :
 				if (proc == ARMCPU_ARM9) gl_MTX_MODE(val);
 				return;
-			case cmd_3D_MTX_PUSH        /* 0x04000444 */ :
-			case cmd_3D_MTX_POP         /* 0x04000448 */ :
-			case cmd_3D_MTX_STORE       /* 0x0400044C */ :
-			case cmd_3D_MTX_RESTORE     /* 0x04000450 */ :
+			case cmd_3D_MTX_PUSH        // 0x04000444  :
+			case cmd_3D_MTX_POP         // 0x04000448  :
+			case cmd_3D_MTX_STORE       // 0x0400044C  :
+			case cmd_3D_MTX_RESTORE     // 0x04000450  :
 				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case cmd_3D_MTX_IDENTITY    /* 0x04000454 */ :
+			case cmd_3D_MTX_IDENTITY    // 0x04000454  :
 				if (proc == ARMCPU_ARM9) gl_MTX_IDENTITY();
 				return;
-			case cmd_3D_MTX_LOAD_4x4    /* 0x04000458 */ :
+			case cmd_3D_MTX_LOAD_4x4    // 0x04000458  :
 				if (proc == ARMCPU_ARM9) gl_MTX_LOAD_4x4(val);
 				return;
-			case cmd_3D_MTX_LOAD_4x3    /* 0x0400045C */ :
+			case cmd_3D_MTX_LOAD_4x3    // 0x0400045C  :
 				if (proc == ARMCPU_ARM9) gl_MTX_LOAD_4x3(val);
 				return;
-			case cmd_3D_MTX_MULT_4x4    /* 0x04000460 */ :
+			case cmd_3D_MTX_MULT_4x4    // 0x04000460  :
 				if (proc == ARMCPU_ARM9) gl_MTX_MULT_4x4(val);
 				return;
-			case cmd_3D_MTX_MULT_4x3    /* 0x04000464 */ :
+			case cmd_3D_MTX_MULT_4x3    // 0x04000464  :
 				if (proc == ARMCPU_ARM9) gl_MTX_MULT_4x3(val);
 				return;
-			case cmd_3D_MTX_MULT_3x3    /* 0x04000468 */ :
+			case cmd_3D_MTX_MULT_3x3    // 0x04000468  :
 				if (proc == ARMCPU_ARM9) gl_MTX_MULT_3x3(val);
 				return;
-			case cmd_3D_MTX_SCALE       /* 0x0400046C */ :
-			case cmd_3D_MTX_TRANS       /* 0x04000470 */ :
-			case cmd_3D_COLOR           /* 0x04000480 */ :
-			case cmd_3D_NORMA           /* 0x04000484 */ :
+			case cmd_3D_MTX_SCALE       // 0x0400046C  :
+			case cmd_3D_MTX_TRANS       // 0x04000470  :
+			case cmd_3D_COLOR           // 0x04000480  :
+			case cmd_3D_NORMA           // 0x04000484  :
 				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case cmd_3D_TEXCOORD        /* 0x04000488 */ :
+			case cmd_3D_TEXCOORD        // 0x04000488  :
 				if (proc == ARMCPU_ARM9) gl_TEXCOORD(val);
 				return;
-			case cmd_3D_VTX_16          /* 0x0400048C */ :
+			case cmd_3D_VTX_16          // 0x0400048C  :
 				if (proc == ARMCPU_ARM9) gl_VTX_16(val);
 				return;
-			case cmd_3D_VTX_10          /* 0x04000490 */ :
+			case cmd_3D_VTX_10          // 0x04000490  :
 				if (proc == ARMCPU_ARM9) gl_VTX_10(val);
 				return;
-			case cmd_3D_VTX_XY          /* 0x04000494 */ :
+			case cmd_3D_VTX_XY          // 0x04000494  :
 				if (proc == ARMCPU_ARM9) gl_VTX_XY(val);
 				return;
-			case cmd_3D_VTX_XZ          /* 0x04000498 */ :
+			case cmd_3D_VTX_XZ          // 0x04000498  :
 				if (proc == ARMCPU_ARM9) gl_VTX_XZ(val);
 				return;
-			case cmd_3D_VTX_YZ          /* 0x0400049C */ :
+			case cmd_3D_VTX_YZ          // 0x0400049C  :
 				if (proc == ARMCPU_ARM9) gl_VTX_YZ(val);
 				return;
-			case cmd_3D_VTX_DIFF        /* 0x040004A0 */ :
+			case cmd_3D_VTX_DIFF        // 0x040004A0  :
 				if (proc == ARMCPU_ARM9) gl_VTX_DIFF(val);
 				return;
-			case cmd_3D_POLYGON_ATTR    /* 0x040004A4 */ :
-			case cmd_3D_TEXIMAGE_PARAM  /* 0x040004A8 */ :
-			case cmd_3D_PLTT_BASE       /* 0x040004AC */ :
-			case cmd_3D_DIF_AMB         /* 0x040004C0 */ :
-			case cmd_3D_SPE_EMI         /* 0x040004C4 */ :
-			case cmd_3D_LIGHT_VECTOR    /* 0x040004C8 */ :
-			case cmd_3D_LIGHT_COLOR     /* 0x040004CC */ :
-			case cmd_3D_SHININESS       /* 0x040004D0 */ :
+			case cmd_3D_POLYGON_ATTR    // 0x040004A4  :
+			case cmd_3D_TEXIMAGE_PARAM  // 0x040004A8  :
+			case cmd_3D_PLTT_BASE       // 0x040004AC  :
+			case cmd_3D_DIF_AMB         // 0x040004C0  :
+			case cmd_3D_SPE_EMI         // 0x040004C4  :
+			case cmd_3D_LIGHT_VECTOR    // 0x040004C8  :
+			case cmd_3D_LIGHT_COLOR     // 0x040004CC  :
+			case cmd_3D_SHININESS       // 0x040004D0  :
 				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-			case cmd_3D_BEGIN_VTXS      /* 0x04000500 */ :
+			case cmd_3D_BEGIN_VTXS      // 0x04000500  :
 				if (proc == ARMCPU_ARM9) gl_VTX_begin(val);
 				return;
-			case cmd_3D_END_VTXS        /* 0x04000504 */ :
+			case cmd_3D_END_VTXS        // 0x04000504  :
 				if (proc == ARMCPU_ARM9) gl_VTX_end();
 				return;
-			case cmd_3D_SWAP_BUFFERS    /* 0x04000540 */ :
-			case cmd_3D_VIEWPORT        /* 0x04000580 */ :
-			case cmd_3D_BOX_TEST        /* 0x040005C0 */ :
-			case cmd_3D_POS_TEST        /* 0x040005C4 */ :
-			case cmd_3D_VEC_TEST        /* 0x040005C8 */ :
+			case cmd_3D_SWAP_BUFFERS    // 0x04000540  :
+			case cmd_3D_VIEWPORT        // 0x04000580  :
+			case cmd_3D_BOX_TEST        // 0x040005C0  :
+			case cmd_3D_POS_TEST        // 0x040005C4  :
+			case cmd_3D_VEC_TEST        // 0x040005C8  :
 				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
 				return;
-
+*/
                         case REG_DISPA_DISPCNT :
 								if(proc == ARMCPU_ARM9) GPU_setVideoProp(MainScreen.gpu, val);
 				
