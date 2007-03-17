@@ -47,6 +47,7 @@
 #include "oamView.h"
 #include "mapview.h"
 #include "ConfigKeys.h"
+#include "OGLRender.h"
 
 #include "snddx.h"
 
@@ -99,6 +100,11 @@ SoundInterface_struct *SNDCoreList[] = {
 &SNDFile,
 &SNDDIRECTX,
 NULL
+};
+
+GPU3DInterface *core3DList[] = {
+&gpu3DNull,
+&gpu3Dgl,
 };
 
 int autoframeskipenab=1;
@@ -278,9 +284,14 @@ DWORD WINAPI run( LPVOID lpParameter)
      rotationbmi.bV4Width = 256;
      rotationbmi.bV4Height = -192;
 
-     #ifdef RENDER3D
-     OGLRender::init(&hdc);
-     #endif
+     NDS_3D_SetDriver (GPU3D_OPENGL);
+
+	if (!gpu3D->NDS_3D_Init ())
+	{
+		MessageBox(hwnd,"Unable to initialize openGL","Error",MB_OK);
+		return -1;
+    }
+
      QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
      QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
      OneFrameTime = freq / 60;
@@ -495,7 +506,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        return messages.wParam;
     }
 
-    sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
+	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
     SPU_SetVolume(sndvolume);
     
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
