@@ -594,12 +594,6 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 
 				line = (u8*)tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip)? (7*4)-yoff:yoff);
 
-
-	#define RENDERL(c,m) \
-		color = T1ReadWord(pal, ((c) + (tileentry.bits.Palette* m)) << 1); \
-		if (c) renderline_setFinalColor(gpu,0,num,dst,color,x,Y) ; \
-		dst += 2; x++; xoff++;
-		
 				if(tileentry.bits.HFlip)
 				{
 					line += 3 - ((xoff&7)>>1);
@@ -619,7 +613,14 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 							save = (*line) >> 4 ;
 						}
 					}
-					RENDERL(save,0x10)
+					
+					color = T1ReadWord(pal, ((save) + (tileentry.bits.Palette*16)) << 1);
+					if (save) 
+						renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+					dst += 2; 
+					x++; 
+					xoff++;
+
 					pt++ ;
 					if (!(pt % mw)) {               /* next pixel next possible color update */
 						if ((pt & 1)^pt_xor) {
@@ -628,7 +629,14 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 							save = (*line) >> 4 ;
 						}
 					}
-					RENDERL(save,0x10)
+
+					color = T1ReadWord(pal, ((save) + (tileentry.bits.Palette*16)) << 1);
+					if (save) 
+						renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+					dst += 2; 
+					x++; 
+					xoff++;
+
 					line+=line_dir; pt++ ;
 				}
 			}
@@ -649,17 +657,40 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 					//x=xfin; continue;
 					line += (3 - ((xoff&7)>>1));
 					line_dir = -1;
-					for(; x < xfin; ) {
-						RENDERL(((*line)>>4),0x10)
-						RENDERL(((*line)&0xF),0x10)
+					for(; x < xfin; ) 
+					{						
+						//RENDERL(((*line)>>4),0x10)
+						//RENDERL(((*line)&0xF),0x10)
+
+						color = T1ReadWord(pal, (((*line)>>4) + (tileentry.bits.Palette*16)) << 1);
+						if ((*line)>>4) 
+							renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+						dst += 2; x++; xoff++;
+
+						color = T1ReadWord(pal, (((*line)&0xF) + (tileentry.bits.Palette*16)) << 1);
+						if ((*line)&0xF) 
+							renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+						dst += 2; x++; xoff++;
+
+
 						line += line_dir;
 					}
 				} else {
 					line += ((xoff&7)>>1);
 					line_dir = 1; 
 					for(; x < xfin; ) {
-						RENDERL(((*line)&0xF),0x10)
-						RENDERL(((*line)>>4),0x10)
+						//RENDERL(((*line)&0xF),0x10)
+						//RENDERL(((*line)>>4),0x10)
+						color = T1ReadWord(pal, (((*line)&0xF) + (tileentry.bits.Palette*16)) << 1);
+						if ((*line)&0xF) 
+							renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+						dst += 2; x++; xoff++;
+
+						color = T1ReadWord(pal, (((*line)>>4) + (tileentry.bits.Palette*16)) << 1);
+						if ((*line)>>4) 
+							renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+						dst += 2; x++; xoff++;
+
 						line += line_dir;
 					}
 				}
@@ -697,11 +728,14 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 		}
 		for(; x < xfin; )
 		{
-			RENDERL((*line),palette_size)
+			color = T1ReadWord(pal, ((*line) + (tileentry.bits.Palette*palette_size)) << 1);
+			if (*line) 
+				renderline_setFinalColor(gpu,0,num,dst,color,x,Y);
+			dst += 2; x++; xoff++;
+
 			line += line_dir;
 		}
 	}
-#undef RENDERL
 }
 
 /*****************************************************************************/
