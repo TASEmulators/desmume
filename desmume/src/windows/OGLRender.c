@@ -1891,3 +1891,4 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 							NDS_glGetClipMatrix,
 							NDS_glGetDirectionalMatrix,
 							NDS_glGetLine};
+							

@@ -5,11 +5,11 @@
 #define YOPYOP_PRIVATE_H
 
 /* VERSION DEFINITIONS */
-#define VER_STRING	"0.0.0.1"
+#define VER_STRING	"0.0.7.0"
 #define VER_MAJOR	0
 #define VER_MINOR	0
-#define VER_RELEASE	0
-#define VER_BUILD	1
+#define VER_RELEASE	7
+#define VER_BUILD	0
 #define COMPANY_NAME	"yopyop"
 #define FILE_VERSION	""
 #define FILE_DESCRIPTION	"NDS(tm) emulator"
