@@ -111,7 +111,21 @@ typedef struct
        u16 touchY;
 } NDSSystem;
 
+typedef struct
+{
+       u8 favColor;
+       u8 bMonth;
+       u8 bDay;
+       char nickName[10];
+       u8 nickLen;
+       char message[26];
+       u8 msgLen;
+       u8 language;
+       
+} NDSFirmware;
+
 extern NDSSystem nds;
+extern NDSFirmware firmware;
 
 int NDSInit(void);
 void NDSDeInit(void);
