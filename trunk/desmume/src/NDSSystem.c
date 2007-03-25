@@ -26,6 +26,7 @@
 #include "ROMReader.h"
 
 NDSSystem nds;
+NDSFirmware firmware;
 
 int NDS_Init(void) {
      nds.ARM9Cycle = 0;
@@ -44,6 +45,15 @@ int NDS_Init(void) {
 
      if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
         return -1;
+        
+     sprintf(firmware.nickName,"yopyop");
+     firmware.nickLen = strlen(firmware.nickName);
+     sprintf(firmware.message,"Hi,it/s me!");
+     firmware.msgLen = strlen(firmware.message);
+     firmware.bDay = 15;
+     firmware.bMonth = 7;
+     firmware.favColor = 10;
+     firmware.language = 2;
 
 #ifdef EXPERIMENTAL_WIFI
 	 WIFI_Init(&wifiMac) ;
@@ -365,32 +375,19 @@ void NDS_Reset(void)
 //     logcount = 0;
    
    MMU_writeByte(0, 0x023FFC80, 1);
-   MMU_writeByte(0, 0x023FFC82, 10);
-   MMU_writeByte(0, 0x023FFC83, 7);
-   MMU_writeByte(0, 0x023FFC84, 15);
+   MMU_writeByte(0, 0x023FFC82, firmware.favColor);
+   MMU_writeByte(0, 0x023FFC83, firmware.bMonth);
+   MMU_writeByte(0, 0x023FFC84, firmware.bDay);
      
-   MMU_writeHWord(0, 0x023FFC86, 'y');
-   MMU_writeHWord(0, 0x023FFC88, 'o');
-   MMU_writeHWord(0, 0x023FFC8A, 'p');
-   MMU_writeHWord(0, 0x023FFC8C, 'y');
-   MMU_writeHWord(0, 0x023FFC8E, 'o');
-   MMU_writeHWord(0, 0x023FFC90, 'p');
-   MMU_writeHWord(0, 0x023FFC9A, 6);
+   for(i=0; i<firmware.nickLen; i++) 
+      MMU_writeHWord(0, 0x023FFC86+(2*i), firmware.nickName[i]);
+   MMU_writeHWord(0, 0x023FFC9A, firmware.nickLen);
      
-   MMU_writeHWord(0, 0x023FFC9C, 'H');
-   MMU_writeHWord(0, 0x023FFC9E, 'i');
-   MMU_writeHWord(0, 0x023FFCA0, ',');
-   MMU_writeHWord(0, 0x023FFCA2, 'i');
-   MMU_writeHWord(0, 0x023FFCA4, 't');
-   MMU_writeHWord(0, 0x023FFCA6, '\'');
-   MMU_writeHWord(0, 0x023FFCA8, 's');
-   MMU_writeHWord(0, 0x023FFCAA, ' ');
-   MMU_writeHWord(0, 0x023FFCAC, 'm');
-   MMU_writeHWord(0, 0x023FFCAE, 'e');
-   MMU_writeHWord(0, 0x023FFCB0, '!');
-   MMU_writeHWord(0, 0x023FFCD0, 11);
+   for(i=0; i<firmware.msgLen; i++) 
+      MMU_writeHWord(0, 0x023FFC9C+(2*i), firmware.message[i]);
+   MMU_writeHWord(0, 0x023FFCD0, firmware.msgLen);
 
-   MMU_writeHWord(0, 0x023FFCE4, 2);
+   MMU_writeHWord(0, 0x023FFCE4, firmware.language); //Language 1=English 2=French
           
    MMU_writeWord(0, 0x027FFE40, header->FNameTblOff);
    MMU_writeWord(0, 0x027FFE44, header->FNameTblSize);
@@ -560,7 +557,6 @@ int NDS_WriteBMP(const char *filename)
 int NDS_CreateDummyFirmware(void)
 {
 #ifdef EXPERIMENTAL_WIFI
-
 	memcpy(MMU.fw.data+0x36,FW_Mac,sizeof(FW_Mac)) ;
 	memcpy(MMU.fw.data+0x44,FW_WIFIInit,sizeof(FW_WIFIInit)) ;
 	MMU.fw.data[0x41] = 18 ; /* bits per RF value */
