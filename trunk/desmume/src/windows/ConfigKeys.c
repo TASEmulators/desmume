@@ -95,46 +95,46 @@ void  ReadConfig(void)
 
     GetINIPath(IniName,MAX_PATH);
 
-    i=GetPrivateProfileInt("KEYS","KEY_A",31, IniName);
+    i=GetPrivateProfileInt("Keys","Key_A",31, IniName);
     KEY_A = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_B",11, IniName);
+    i=GetPrivateProfileInt("Keys","Key_B",11, IniName);
     KEY_B = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_SELECT",36, IniName);
+    i=GetPrivateProfileInt("Keys","Key_SELECT",36, IniName);
     KEY_SELECT = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_START",13, IniName);
+    i=GetPrivateProfileInt("Keys","Key_START",13, IniName);
     if(i==13)
     KEY_START = 47;
     else
     KEY_START = i;
         
-    i=GetPrivateProfileInt("KEYS","KEY_RIGHT",40, IniName);
+    i=GetPrivateProfileInt("Keys","Key_RIGHT",40, IniName);
     KEY_RIGHT = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_LEFT",39, IniName);
+    i=GetPrivateProfileInt("Keys","Key_LEFT",39, IniName);
     KEY_LEFT = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_UP",37, IniName);
+    i=GetPrivateProfileInt("Keys","Key_UP",37, IniName);
     KEY_UP = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_DOWN",38, IniName);
+    i=GetPrivateProfileInt("Keys","Key_DOWN",38, IniName);
     KEY_DOWN = i;  
     
-    i=GetPrivateProfileInt("KEYS","KEY_R",23, IniName);
+    i=GetPrivateProfileInt("Keys","Key_R",23, IniName);
     KEY_R = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_L",12, IniName);
+    i=GetPrivateProfileInt("Keys","Key_L",12, IniName);
     KEY_L = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_X",16, IniName);
+    i=GetPrivateProfileInt("Keys","Key_X",16, IniName);
     KEY_X = i;
     
-    i=GetPrivateProfileInt("KEYS","KEY_Y",17, IniName);
+    i=GetPrivateProfileInt("Keys","Key_Y",17, IniName);
     KEY_Y = i;
 
-    /*i=GetPrivateProfileInt("KEYS","KEY_DEBUG",13, IniName);
+    /*i=GetPrivateProfileInt("Keys","Key_DEBUG",13, IniName);
     KEY_DEBUG = i;*/
 }
 
@@ -152,24 +152,24 @@ void  WriteConfig(void)
     
     GetINIPath(IniName,MAX_PATH);
 
-    WritePrivateProfileInt("KEYS","KEY_A",KEY_A,IniName);
-    WritePrivateProfileInt("KEYS","KEY_B",KEY_B,IniName);
-    WritePrivateProfileInt("KEYS","KEY_SELECT",KEY_SELECT,IniName);
+    WritePrivateProfileInt("Keys","Key_A",KEY_A,IniName);
+    WritePrivateProfileInt("Keys","Key_B",KEY_B,IniName);
+    WritePrivateProfileInt("Keys","Key_SELECT",KEY_SELECT,IniName);
     
     if(KEY_START==47)
-    WritePrivateProfileInt("KEYS","KEY_START",13,IniName);
+    WritePrivateProfileInt("Keys","Key_START",13,IniName);
     else
-    WritePrivateProfileInt("KEYS","KEY_START",KEY_START,IniName);
+    WritePrivateProfileInt("Keys","Key_START",KEY_START,IniName);
     
-    WritePrivateProfileInt("KEYS","KEY_RIGHT",KEY_RIGHT,IniName);
-    WritePrivateProfileInt("KEYS","KEY_LEFT",KEY_LEFT,IniName);
-    WritePrivateProfileInt("KEYS","KEY_UP",KEY_UP,IniName);
-    WritePrivateProfileInt("KEYS","KEY_DOWN",KEY_DOWN,IniName);
-    WritePrivateProfileInt("KEYS","KEY_R",KEY_R,IniName);
-    WritePrivateProfileInt("KEYS","KEY_L",KEY_L,IniName);
-    WritePrivateProfileInt("KEYS","KEY_X",KEY_X,IniName);
-    WritePrivateProfileInt("KEYS","KEY_Y",KEY_Y,IniName);
-    /*WritePrivateProfileInt("KEYS","KEY_DEBUG",KEY_DEBUG,IniName);*/
+    WritePrivateProfileInt("Keys","Key_RIGHT",KEY_RIGHT,IniName);
+    WritePrivateProfileInt("Keys","Key_LEFT",KEY_LEFT,IniName);
+    WritePrivateProfileInt("Keys","Key_UP",KEY_UP,IniName);
+    WritePrivateProfileInt("Keys","Key_DOWN",KEY_DOWN,IniName);
+    WritePrivateProfileInt("Keys","Key_R",KEY_R,IniName);
+    WritePrivateProfileInt("Keys","Key_L",KEY_L,IniName);
+    WritePrivateProfileInt("Keys","Key_X",KEY_X,IniName);
+    WritePrivateProfileInt("Keys","Key_Y",KEY_Y,IniName);
+    /*WritePrivateProfileInt("Keys","Key_DEBUG",KEY_DEBUG,IniName);*/
 }
 
 void dsDefaultKeys(void)

@@ -48,12 +48,9 @@
 #include "mapview.h"
 #include "ConfigKeys.h"
 #include "OGLRender.h"
+#include "../render3D.h"
 
 #include "snddx.h"
-
-#ifdef RENDER3D
-     #include "OGLRender.h"
-#endif
 
 /*  Declare Windows procedure  */
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
@@ -284,7 +281,8 @@ DWORD WINAPI run( LPVOID lpParameter)
      rotationbmi.bV4Width = 256;
      rotationbmi.bV4Height = -192;
 
-     NDS_3D_SetDriver (GPU3D_OPENGL);
+     //NDS_3D_SetDriver (GPU3D_OPENGL);
+     NDS_3D_SetDriver (GPU3D_NULL);
 
 	if (!gpu3D->NDS_3D_Init ())
 	{
@@ -508,6 +506,16 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
     SPU_SetVolume(sndvolume);
+    
+    memset(&firmware,0,sizeof(firmware));
+    firmware.favColor = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
+    firmware.bMonth = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
+    firmware.bDay = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
+    GetPrivateProfileString("Firmware","nickName", "yopyop", firmware.nickName, 10, IniName);
+    firmware.nickLen = strlen(firmware.nickName);
+    GetPrivateProfileString("Firmware","Message", "Hi,it/s me!", firmware.message, 26, IniName);
+    firmware.msgLen = strlen(firmware.message);
+    firmware.language = GetPrivateProfileInt("Firmware","Language", 2, IniName);
     
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
 
