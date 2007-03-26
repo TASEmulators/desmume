@@ -281,8 +281,7 @@ DWORD WINAPI run( LPVOID lpParameter)
      rotationbmi.bV4Width = 256;
      rotationbmi.bV4Height = -192;
 
-     //NDS_3D_SetDriver (GPU3D_OPENGL);
-     NDS_3D_SetDriver (GPU3D_NULL);
+     NDS_3D_SetDriver (GPU3D_OPENGL);
 
 	if (!gpu3D->NDS_3D_Init ())
 	{
