@@ -28,6 +28,7 @@ extern "C" {
 
 #define FS_IS_DIR 1
 
+#define FS_ERR_UNKNOWN -1
 #define FS_ERR_NO_MORE_FILES 1
 
 extern const char FS_SEPARATOR;

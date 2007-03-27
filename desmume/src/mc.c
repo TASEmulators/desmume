@@ -80,11 +80,13 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 {
 	u8 *buffer;
 	buffer = malloc(size);
-	
-        mc->data = buffer;
+
+	mc->data = buffer;
 	if(!buffer) { return NULL; }
-        mc->size = size;
-        mc->writeable_buffer = TRUE;
+	mc->size = size;
+	mc->writeable_buffer = TRUE;
+
+	return buffer;
 }
 
 void mc_free(memory_chip_t *mc)
