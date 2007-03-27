@@ -85,4 +85,6 @@ void FsClose(void * search) {
 int FsError(void) {
 	if (GetLastError() == ERROR_NO_MORE_FILES)
 		return FS_ERR_NO_MORE_FILES;
+
+	return FS_ERR_UNKNOWN;
 }
