@@ -382,7 +382,7 @@ DWORD WINAPI run( LPVOID lpParameter)
                else
                {
                   if (framestoskip < 1)
-                     framestoskip = frameskiprate + 1;
+                     framestoskip += frameskiprate;
                }
 
                CWindow_RefreshALL();
@@ -500,7 +500,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     if (SPU_ChangeSoundCore(sndcoretype, sndbuffersize) != 0)
     {
        MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
-       return messages.wParam;
+       return -1;
     }
 
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
