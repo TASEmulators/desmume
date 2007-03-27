@@ -1,7 +1,7 @@
 [Project]
 FileName=DeSmuME.dev
 Name=DeSmuME
-UnitCount=77
+UnitCount=79
 Type=0
 Ver=1
 ObjFiles=
@@ -27,7 +27,7 @@ CustomMakefile=
 IncludeVersionInfo=1
 SupportXPThemes=1
 CompilerSet=0
-CompilerSettings=0000000001001001000100
+CompilerSettings=0000000001001000000100
 
 [Unit1]
 FileName=..\ROMReader.c
@@ -808,6 +808,26 @@ BuildCmd=
 
 [Unit77]
 FileName=..\render3D.h
+CompileCpp=0
+Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit78]
+FileName=FirmConfig.c
+CompileCpp=0
+Folder=DeSmuME
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit79]
+FileName=FirmConfig.h
 CompileCpp=0
 Folder=DeSmuME
 Compile=1

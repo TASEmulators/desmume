@@ -23,7 +23,7 @@
 #define RESOURCE_H
 
 #if 0
-#include "../NDSSystem.hpp"
+#include "../NDSSystem.h"
 
 extern NDSSystem nds;
 extern BOOL execute;
@@ -233,5 +233,10 @@ void refreshAll();
 #define IDC_WINDOW2X		1011
 #define IDC_WINDOW3X		1012
 #define IDC_WINDOW4X		1013
+
+#define IDM_FIRMSETTINGS    1100
+#define IDD_FIRMSETTINGS    1101
+#define IDC_EDIT1           1102
+#define IDC_EDIT2           1103
 
 #endif
