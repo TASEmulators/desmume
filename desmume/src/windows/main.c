@@ -47,6 +47,7 @@
 #include "oamView.h"
 #include "mapview.h"
 #include "ConfigKeys.h"
+#include "FirmConfig.h"
 #include "OGLRender.h"
 #include "../render3D.h"
 
@@ -1288,6 +1289,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
                             if (CWindow_Init2(&ConfigView, hAppInst, HWND_DESKTOP, "Configure Controls", IDD_CONFIG, ConfigView_Proc) == 0)
                                CWindow_Show(&ConfigView);
+
+                       }
+                  return 0;
+                  case IDM_FIRMSETTINGS:
+                       {
+                            cwindow_struct FirmConfig;
+
+                            if (CWindow_Init2(&FirmConfig, hAppInst, HWND_DESKTOP, "Configure Controls", IDD_FIRMSETTINGS, FirmConfig_Proc) == 0)
+                               CWindow_Show(&FirmConfig);
 
                        }
                   return 0;
