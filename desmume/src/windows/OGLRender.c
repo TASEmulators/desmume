@@ -32,8 +32,8 @@
 #include "OGLRender.h"
 
 
-#define fix2float(v)    (((float)((signed long)(v))) / (float)(1<<12))
-#define fix10_2float(v) (((float)((signed long)(v))) / (float)(1<<9))
+#define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
+#define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 static unsigned char  GPU_screen3D[256*256*4]={0};
 // Accelerationg tables
