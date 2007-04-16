@@ -26,42 +26,42 @@ BOOL click = FALSE;
 BOOL fini = FALSE;
 unsigned long glock = 0;
 
-void desmume_mem_init();
-
 u8 *desmume_rom_data = NULL;
 u32 desmume_last_cycle;
 
-void desmume_init()
+void desmume_init( int disable_sound)
 {
 	NDS_Init();
-        SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+        if ( !disable_sound) {
+          SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+        }
 	execute = FALSE;
 }
 
-void desmume_free()
+void desmume_free( void)
 {
 	execute = FALSE;
 	NDS_DeInit();
 }
 
-void desmume_pause()
+void desmume_pause( void)
 {
 	execute = FALSE;
 }
-void desmume_resume()
+void desmume_resume( void)
 {
 	execute = TRUE;
 }
-void desmume_toggle()
+void desmume_toggle( void)
 {
 	execute = (execute) ? FALSE : TRUE;
 }
-BOOL desmume_running()
+BOOL desmume_running( void)
 {
 	return execute;
 }
 
-void desmume_cycle()
+void desmume_cycle( void)
 {
   u16 keypad;
   /* Joystick events */

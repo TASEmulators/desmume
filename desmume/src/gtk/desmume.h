@@ -24,15 +24,15 @@
 
 #include "globals.h"
 
-extern void desmume_init();
-extern void desmume_free();
+extern void desmume_init( int disable_sound);
+extern void desmume_free( void);
 
-extern void desmume_pause();
-extern void desmume_resume();
-extern void desmume_toggle();
-extern BOOL desmume_running();
+extern void desmume_pause( void);
+extern void desmume_resume( void);
+extern void desmume_toggle( void);
+extern BOOL desmume_running( void);
 
-extern void desmume_cycle();
+extern void desmume_cycle( void);
 
 #endif /*__DESMUME_H__*/
 
