@@ -54,12 +54,12 @@ if test ! "x$HAVE_PKG" = "x" ; then
   AC_SUBST(GTK_CFLAGS)
   AC_SUBST(GTK_LIBS)
 
-  PKG_CHECK_MODULES(GDKGLEXT,
+  PKG_CHECK_MODULES(GTKGLEXT,
                     "gtkglext-1.0",
-                    HAVE_GDKGLEXT=yes,
-                    HAVE_GDKGLEXT=no)
-  AC_SUBST(GDKGLEXT_CFLAGS)
-  AC_SUBST(GDKGLEXT_LIBS)
+                    HAVE_GTKGLEXT=yes,
+                    HAVE_GTKGLEXT=no)
+  AC_SUBST(GTKGLEXT_CFLAGS)
+  AC_SUBST(GTKGLEXT_LIBS)
 
   PKG_CHECK_MODULES(GTHREAD,
                     "gthread-2.0",
@@ -83,6 +83,10 @@ if test ! "x$HAVE_PKG" = "x" ; then
   AC_SUBST(GLADEUI_UNINSTALLED_DIR)
 fi
 
+dnl - If the gtkGLext package is available define the corresponding C macro
+if test "x$HAVE_GTKGLEXT" = "xyes"; then
+   AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
+fi
 
 dnl - Determine which UI's to build
 if test "x$HAVE_SDL" = "xyes"; then
