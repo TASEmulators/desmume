@@ -15,6 +15,6 @@ desmume_SOURCES = \
 	../sndsdl.c \
 	../ctrlssdl.h ../ctrlssdl.c \
 	 main.c
-desmume_LDADD = ../libdesmume.a $(SDL_LIBS) $(GTK_LIBS)
-desmume_CFLAGS = $(SDL_CFLAGS) $(GTK_CFLAGS)
+desmume_LDADD = ../libdesmume.a $(SDL_LIBS) $(GTK_LIBS) $(GTKGLEXT_LIBS)
+desmume_CFLAGS = $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTKGLEXT_CFLAGS)
 #desmume_LDFLAGS = -rdynamic
