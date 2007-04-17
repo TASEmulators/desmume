@@ -1,7 +1,7 @@
 0.6.0 -> 0.X.X
  gpu:
-  - Added support for sprite rotation/scaling
-  - Added support for the 3D core (openGL and null plugins)
+  - Added support for sprite rotation/scaling [shash]
+  - Added support for the 3D core (openGL and null plugins) [shash]
 
 0.5.0 -> 0.6.0
  general:
