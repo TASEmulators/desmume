@@ -44,6 +44,10 @@ else
   HAVE_SDL="no"
 fi
 
+dnl - Check for the OpenGL includes
+AC_CHECK_HEADERS([GL/gl.h])
+AC_CHECK_HEADERS([GL/glu.h])
+
 dnl - Check for GTK and/or libglade
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 if test ! "x$HAVE_PKG" = "x" ; then
