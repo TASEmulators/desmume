@@ -19,5 +19,7 @@ libdesmume_a_SOURCES = \
 	render3D.c render3D.h \
         saves.c saves.h \
         SPU.c SPU.h \
+	matrix.c matrix.h \
+	opengl_collector_3Demu.c opengl_collector_3Demu.h \
         thumb_instructions.c thumb_instructions.h types.h
 libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)
