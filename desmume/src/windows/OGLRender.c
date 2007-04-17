@@ -100,35 +100,26 @@ static unsigned int lastTextureFormat=0, lastTexturePalette=0;
 
 // This was used to disable/enable certain stuff, as some is partially broken
 //extern char disableBlending, disableLighting, wireframeMode, disableTexturing;
-extern u32 nbframe;
-extern HDC  hdc;
+extern u32		nbframe;
+extern HWND		hwnd;
 
 char NDS_glInit(void)
 {
 	HDC						oglDC = NULL;
-	HDC *					tmpDC = NULL;
-	HBITMAP 				oglBMP = NULL;
 	HGLRC					hRC = NULL;
 	int						pixelFormat, i;
 	PIXELFORMATDESCRIPTOR	pfd;
-	HBITMAP					hBmp;
-	BITMAP					bmpInfo;
 
-	tmpDC = &hdc;
-	oglDC = CreateCompatibleDC(hdc);
-	oglBMP = CreateCompatibleBitmap(hdc, 256, 192);
-	SelectObject(oglDC, oglBMP);
-
-	hBmp=(HBITMAP)GetCurrentObject(oglDC,OBJ_BITMAP);
-	GetObject(hBmp, sizeof(BITMAP), (LPSTR)&bmpInfo);
+	oglDC = GetDC (hwnd);
 
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
-	pfd.dwFlags =  PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL;// | PFD_DOUBLEBUFFER;
+	pfd.dwFlags =  PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cColorBits = (BYTE)bmpInfo.bmBitsPixel;
-	pfd.cDepthBits = 32;
+	pfd.cColorBits = 32;
+	pfd.cDepthBits = 24;
+	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE ;
 
 	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
@@ -866,8 +857,8 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 		invTexWidth  = 1.f/((float)sizeX*(1<<4));//+ 1;
 		invTexHeight = 1.f/((float)sizeY*(1<<4));//+ 1;
 		
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 
 		// S Coordinate options
 		if (!BIT16(format))
@@ -1181,11 +1172,11 @@ void NDS_glMaterial0 (unsigned long val)
 	int		diffuse[4] = {	(val&0x1F) << 26,
 							((val>>5)&0x1F) << 26,
 							((val>>10)&0x1F) << 26,
-							0xffffffff },
+							0x7fffffff },
 			ambient[4] = {	((val>>16)&0x1F) << 26,
 							((val>>21)&0x1F) << 26,
 							((val>>26)&0x1F) << 26,
-							0xffffffff };
+							0x7fffffff };
 
 	if (BIT15(val))
 	{
@@ -1216,11 +1207,11 @@ void NDS_glMaterial1 (unsigned long val)
 	int		specular[4] = {	(val&0x1F) << 26,
 							((val>>5)&0x1F) << 26,
 							((val>>10)&0x1F) << 26,
-							0xffffffff },
+							0x7fffffff },
 			emission[4] = {	((val>>16)&0x1F) << 26,
 							((val>>21)&0x1F) << 26,
 							((val>>26)&0x1F) << 26,
-							0xffffffff };
+							0x7fffffff };
 
 //	if (disableLighting)
 //		return;
@@ -1255,8 +1246,8 @@ void NDS_glTexPalette(unsigned long val)
 
 void NDS_glTexCoord(unsigned long val)
 {
-	t = val>>16;
-	s = val&0xFFFF;
+	t = (s16)(val>>16);
+	s = (s16)(val&0xFFFF);
 
 	if (texCoordinateTransform == 1)
 	{			
@@ -1323,7 +1314,7 @@ void NDS_glLightColor (unsigned long v)
 	int lightColor[4] = {	((v)    &0x1F)<<26, 
 							((v>> 5)&0x1F)<<26, 
 							((v>>10)&0x1F)<<26, 
-							0xffffffff};
+							0x7fffffff};
 
 	if (beginCalled)
 	{
