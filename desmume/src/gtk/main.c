@@ -1398,22 +1398,14 @@ static u32 fps_limiter_fn(u32 interval, void *param) {
   return interval;
 }
 
-
-/////////////////////////////// MAIN ///////////////////////////////
-
-#ifdef WIN32
-int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nFunsterStil)
-{
-	main(0,NULL);
-}
-#endif
-
 static void dui_set_accel_group(gpointer action, gpointer group) {
         gtk_action_set_accel_group(action, group);
 }
 
-int main (int argc, char *argv[])
-{
+/////////////////////////////// MAIN ///////////////////////////////
+
+static int
+common_gtk_main( struct configured_features *my_config) {
 	int i;
 	SDL_TimerID limiter_timer;
 	
@@ -1426,19 +1418,12 @@ int main (int argc, char *argv[])
         GdkGLConfig *glconfig;
         GdkGLContext *glcontext;
 #endif
-        struct configured_features my_config;
 
-        init_configured_features( &my_config);
-       
 #ifdef DEBUG
         LogStart();
 #endif
 
-	gtk_init(&argc, &argv);
-
 #ifdef GTKGLEXT_AVAILABLE
-        gtk_gl_init( &argc, &argv);
-
         /* Try double-buffered visual */
         glconfig = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGB    |
                                               GDK_GL_MODE_DEPTH  |
@@ -1458,10 +1443,6 @@ int main (int argc, char *argv[])
           }
 #endif
         
-        if ( !fill_configured_features( &my_config, argc, argv)) {
-          exit(0);
-        }
-
 	if(SDL_Init(SDL_INIT_TIMER) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
@@ -1469,7 +1450,7 @@ int main (int argc, char *argv[])
             return 1;
           }
 
-	desmume_init( my_config.disable_sound);
+	desmume_init( my_config->disable_sound);
         /* Initialize joysticks */
         if(!init_joy()) return 1;
 	
@@ -1483,7 +1464,7 @@ int main (int argc, char *argv[])
 	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-        if ( my_config.screen.opengl) {
+        if ( my_config->screen.opengl) {
           gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
         }
         else {
@@ -1572,7 +1553,7 @@ int main (int argc, char *argv[])
 		gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
 			
 // TODO: Un jour, peut être... ><
-                if ( !my_config.screen.opengl) {
+                if ( !my_config->screen.opengl) {
                   mSize = gtk_menu_new();
                   pMenuItem = gtk_menu_item_new_with_label("Size");
                   gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mSize);
@@ -1677,7 +1658,7 @@ int main (int argc, char *argv[])
 
 	/* CrÃ©ation de l'endroit pour l'affichage des Ã©crans */
 #ifdef GTKGLEXT_AVAILABLE
-        if ( my_config.screen.opengl) {
+        if ( my_config->screen.opengl) {
           /*
            * Create the top screen render area
            */
@@ -1695,7 +1676,7 @@ int main (int argc, char *argv[])
           gtk_widget_set_events( top_screen_widget, GDK_EXPOSURE_MASK);
           g_signal_connect( G_OBJECT(top_screen_widget), "expose_event",
                             G_CALLBACK(top_screen_expose_fn),
-                            &my_config.screen.soft_colour) ;
+                            &my_config->screen.soft_colour) ;
           g_signal_connect( G_OBJECT(top_screen_widget), "configure_event",
                             G_CALLBACK(common_configure_fn), NULL ) ;
 	
@@ -1728,11 +1709,11 @@ int main (int argc, char *argv[])
           g_signal_connect( G_OBJECT(bottom_screen_widget), "configure_event",
                             G_CALLBACK(common_configure_fn), NULL ) ;
           g_signal_connect(G_OBJECT(bottom_screen_widget), "button_press_event",
-                           G_CALLBACK(Stylus_Press), &my_config.screen.opengl);
+                           G_CALLBACK(Stylus_Press), &my_config->screen.opengl);
           g_signal_connect(G_OBJECT(bottom_screen_widget), "button_release_event",
                            G_CALLBACK(Stylus_Release), NULL);
           g_signal_connect(G_OBJECT(bottom_screen_widget), "motion_notify_event",
-                           G_CALLBACK(Stylus_Move), &my_config.screen.opengl);
+                           G_CALLBACK(Stylus_Move), &my_config->screen.opengl);
 
           gtk_box_pack_start(GTK_BOX(pVBox), bottom_screen_widget, TRUE, TRUE, 0);
 
@@ -1753,11 +1734,11 @@ int main (int argc, char *argv[])
                                   GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
             
             g_signal_connect(G_OBJECT(pDrawingArea), "button_press_event",
-                             G_CALLBACK(Stylus_Press), &my_config.screen.opengl);
+                             G_CALLBACK(Stylus_Press), &my_config->screen.opengl);
             g_signal_connect(G_OBJECT(pDrawingArea), "button_release_event",
                              G_CALLBACK(Stylus_Release), NULL);
             g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
-                             G_CALLBACK(Stylus_Move), &my_config.screen.opengl);
+                             G_CALLBACK(Stylus_Move), &my_config->screen.opengl);
 	
 	
             g_signal_connect( G_OBJECT(pDrawingArea), "realize",
@@ -1797,9 +1778,9 @@ int main (int argc, char *argv[])
 
 	
 	/* Vérifie la ligne de commandes */
-	if( my_config.nds_file != NULL)
+	if( my_config->nds_file != NULL)
 	{
-		if(Open( my_config.nds_file) >= 0)
+		if(Open( my_config->nds_file) >= 0)
 		{
 			Launch();
 		}
@@ -1809,7 +1790,7 @@ int main (int argc, char *argv[])
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_INFO,
 					GTK_BUTTONS_OK,
-					"Unable to load :\n%s", my_config.nds_file);
+					"Unable to load :\n%s", my_config->nds_file);
 			gtk_dialog_run(GTK_DIALOG(pDialog));
 			gtk_widget_destroy(pDialog);
 		}
@@ -1840,3 +1821,42 @@ int main (int argc, char *argv[])
 	
 	return EXIT_SUCCESS;
 }
+
+
+int
+main (int argc, char *argv[]) {
+  struct configured_features my_config;
+
+  init_configured_features( &my_config);
+        
+  gtk_init(&argc, &argv);
+
+#ifdef GTKGLEXT_AVAILABLE
+  gtk_gl_init( &argc, &argv);
+#endif
+
+  if ( !fill_configured_features( &my_config, argc, argv)) {
+    exit(0);
+  }
+
+  return common_gtk_main( &my_config);
+}
+
+#ifdef WIN32
+int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgument, int nFunsterStil)
+{
+  int argc = 0;
+  char *argv[] = NULL;
+
+  /*
+   * FIXME:
+   * Emulate the argc and argv main parameters. Could do this using
+   * CommandLineToArgvW and then convert the wide chars to thin chars.
+   * Or parse the wide chars directly and call common_gtk_main with a
+   * filled configuration structure.
+   */
+  main( argc, argv);
+}
+#endif
+
+
