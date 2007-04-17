@@ -27,11 +27,16 @@
 #include "globals.h"
 #include "../debug.h"
 
+#ifdef GTKGLEXT_AVAILABLE
+#include "../opengl_collector_3Demu.h"
+#include "gdk_3Demu.h"
+#endif
+
 #include "DeSmuME.xpm"
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-#define FPS_LIMITER_FRAME_PERIOD 20
+#define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
 
 /************************ CONFIG FILE *****************************/
@@ -66,7 +71,11 @@ NULL
 };
 
 GPU3DInterface *core3DList[] = {
-&gpu3DNull
+  &gpu3DNull
+#ifdef GTKGLEXT_AVAILABLE
+  ,
+  &gpu3D_opengl_collector
+#endif
 };
 
 
@@ -79,14 +88,18 @@ struct screen_render_config {
 struct configured_features {
   struct screen_render_config screen;
   int disable_sound;
+  int disable_3d;
   const char *nds_file;
 };
 
 static void
 init_configured_features( struct configured_features *config) {
   config->disable_sound = 0;
+
   config->screen.opengl = 0;
   config->screen.soft_colour = 0;
+
+  config->disable_3d = 0;
 
   config->nds_file = NULL;
 }
@@ -100,11 +113,15 @@ fill_configured_features( struct configured_features *config,
 
   for ( i = 1; i < argc && good_args; i++) {
     if ( strcmp( argv[i], "--help") == 0) {
-      printf( "USAGE: %s <nds-file>\n", argv[0]);
+      printf( "USAGE: %s [OPTIONS] [nds-file]\n", argv[0]);
       printf( "OPTIONS:\n");
 #ifdef GTKGLEXT_AVAILABLE
-      printf( "   --opengl-2d         Enables using openGl for screen rendering\n");
-      printf( "      --soft-convert   Use software colour conversion during openGL rendering\n");
+      printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
+      printf( "    --soft-convert     Use software colour conversion during OpenGL\n");
+      printf( "                       screen rendering. May produce better or worse\n");
+      printf( "                       frame rates depending on hardware.\n");
+      printf( "\n");
+      printf( "   --disable-3d        Disables the 3D emulation\n");
       printf( "\n");
 #endif
       printf( "   --disable-sound     Disables the sound emulation\n");
@@ -121,6 +138,9 @@ fill_configured_features( struct configured_features *config,
     }
     else if ( strcmp( argv[i], "--soft-convert") == 0) {
       config->screen.soft_colour = 1;
+    }
+    else if ( strcmp( argv[i], "--disable-3d") == 0) {
+      config->disable_3d = 1;
     }
 #endif
     else {
@@ -1686,6 +1706,9 @@ common_gtk_main( struct configured_features *my_config) {
           gtk_widget_realize ( top_screen_widget);
           glcontext = gtk_widget_get_gl_context( top_screen_widget);
 
+          /*g_print("Window is direct? %d\n",
+            gdk_gl_context_is_direct( glcontext));*/
+
           /*
            *create the bottom screen drawing area.
            */
@@ -1775,6 +1798,38 @@ common_gtk_main( struct configured_features *my_config) {
 		   SDL_GetError());
 	  return 1;
 	}
+
+        /*
+         * Set the 3D emulation to use
+         */
+        {
+          int use_null_3d = my_config->disable_3d;
+
+#ifdef GTKGLEXT_AVAILABLE
+          if ( !use_null_3d) {
+            /* setup the gdk 3D emulation */
+            if ( init_opengl_gdk_3Demu()) {
+              NDS_3D_SetDriver ( 1);
+
+              if (!gpu3D->NDS_3D_Init ()) {
+                fprintf( stderr, "Failed to initialise openGL 3D emulation; "
+                         "removing 3D support\n");
+                use_null_3d = 1;
+              }
+            }
+            else {
+              fprintf( stderr, "Failed to setup openGL 3D emulation; "
+                       "removing 3D support\n");
+              use_null_3d = 1;
+            }
+          }
+#endif
+
+          if ( use_null_3d) {
+            NDS_3D_SetDriver ( 0);
+            gpu3D->NDS_3D_Init();
+          }
+        }
 
 	
 	/* Vérifie la ligne de commandes */
