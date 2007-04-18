@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.2 2007-04-18 03:41:42 evilynux Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.3 2007-04-18 11:02:12 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -1242,28 +1242,29 @@ init_openGL( void) {
 
 
 static char
-gtk_nullFunc1(void) {
+nullFunc1_3Dgl_collect(void) {
   return 1;
 }
 
 static void
-gtk_nullFunc2(void) {
+nullFunc2_3Dgl_collect(void) {
 }
 static void
-gtk_nullFunc3(unsigned long v) {
+nullFunc3_3Dgl_collect(unsigned long v) {
 }
-static void gtk_nullFunc4(signed long v){}
-static void gtk_nullFunc5(unsigned int v){}
-static void gtk_nullFunc6(unsigned int one, unsigned int two, unsigned int v){}
-static int  gtk_nullFunc7(void) {return 0;}
-static long gtk_nullFunc8(unsigned int index){ return 0; }
-static void gtk_nullFunc9(int line, unsigned short * DST) { };
+static void nullFunc4_3Dgl_collect(signed long v){}
+static void nullFunc5_3Dgl_collect(unsigned int v){}
+static void nullFunc6_3Dgl_collect(unsigned int one,
+                                   unsigned int two, unsigned int v){}
+static int  nullFunc7_3Dgl_collect(void) {return 0;}
+static long nullFunc8_3Dgl_collect(unsigned int index){ return 0; }
+static void nullFunc9_3Dgl_collect(int line, unsigned short * DST) { };
 
 
 static int num_primitives[4];
 
 static char
-gtk_3D_init( void) {
+init_3Dgl_collect( void) {
   int i;
 
   LOG("Initialising 3D renderer for OpenGL Collector\n");
@@ -1487,7 +1488,7 @@ gtk_3D_init( void) {
 
 
 static void
-gtk_3D_Flush( unsigned long val) {
+Flush_3Dgl_collect( unsigned long val) {
   int i;
   int new_render_state = GET_NEXT_RENDER_STATE_INDEX(current_render_state);
   struct render_state *state = &render_states[current_render_state];
@@ -1504,13 +1505,13 @@ gtk_3D_Flush( unsigned long val) {
 }
 
 static void
-gtk_3D_SwapScreen( unsigned int screen) {
+SwapScreen_3Dgl_collect( unsigned int screen) {
   LOG("NEVER USED? SwapScreen %d\n", screen);
 }
 
 
 static void
-gtk_3D_call_list(unsigned long v) {
+call_list_3Dgl_collect(unsigned long v) {
   static u32 call_list_command = 0;
   static u32 total_num_parms = 0;
   static u32 current_parm = 0;
@@ -1542,7 +1543,7 @@ gtk_3D_call_list(unsigned long v) {
       LOG_CALL_LIST("Cmd %02x complete:\n", cmd);
 
       if ( cmd == SWAP_BUFFERS_CMD) {
-        gtk_3D_Flush( parms[0]);
+        Flush_3Dgl_collect( parms[0]);
       }
       else {
         /* put the command and parms on the list */
@@ -1565,46 +1566,46 @@ gtk_3D_call_list(unsigned long v) {
 }
 
 static void
-gtk_3D_viewport(unsigned long v) {
+viewport_3Dgl_collect(unsigned long v) {
   //LOG("Viewport\n");
   ADD_RENDER_PARM_CMD( VIEWPORT_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_Begin(unsigned long v) {
+Begin_3Dgl_collect(unsigned long v) {
   //LOG("Begin\n");
   ADD_RENDER_PARM_CMD( BEGIN_VTXS_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_End( void) {
+End_3Dgl_collect( void) {
   //LOG("END\n");
   ADD_RENDER_PARM_CMD( END_VTXS_CMD);
 }
 
 
 static void
-gtk_3D_fog_colour(unsigned long v) {
+fog_colour_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( FOG_COLOUR_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_fog_offset(unsigned long v) {
+fog_offset_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( FOG_OFFSET_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_clear_depth(unsigned long v) {
+clear_depth_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( CLEAR_DEPTH_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_clear_colour(unsigned long v) {
+clear_colour_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( CLEAR_COLOUR_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
@@ -1612,7 +1613,7 @@ gtk_3D_clear_colour(unsigned long v) {
 
 
 static void
-gtk_3D_Vertex16b( unsigned int v) {
+Vertex16b_3Dgl_collect( unsigned int v) {
   static int vertex16_count = 0;
   static u32 parm1;
 
@@ -1629,37 +1630,37 @@ gtk_3D_Vertex16b( unsigned int v) {
 }
 
 static void
-gtk_3D_Vertex10b(unsigned long v) {
+Vertex10b_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( VTX_10_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_Vertex3_cord(unsigned int one, unsigned int two, unsigned int v) {
+Vertex3_cord_3Dgl_collect(unsigned int one, unsigned int two, unsigned int v) {
   LOG("NOT USED?: glVertex3_cord\n");
 }
 
 static void
-gtk_3D_Vertex_rel(unsigned long v) {
+Vertex_rel_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( VTX_DIFF_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 
 static void
-gtk_3D_matrix_mode(unsigned long v) {
+matrix_mode_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( MTX_MODE_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_load_identity_matrix(void) {
+load_identity_matrix_3Dgl_collect(void) {
   ADD_RENDER_PARM_CMD( MTX_IDENTITY_CMD);
 }
 
 
 static void
-gtk_3D_load_4x4_matrix(signed long v) {
+load_4x4_matrix_3Dgl_collect(signed long v) {
   static int count_4x4 = 0;
   static u32 parms[15];
 
@@ -1681,7 +1682,7 @@ gtk_3D_load_4x4_matrix(signed long v) {
 }
 
 static void
-gtk_3D_load_4x3_matrix(signed long v) {
+load_4x3_matrix_3Dgl_collect(signed long v) {
   static int count_4x3 = 0;
   static u32 parms[11];
 
@@ -1704,7 +1705,7 @@ gtk_3D_load_4x3_matrix(signed long v) {
 
 
 static void
-gtk_3D_multi_matrix_4x4(signed long v) {
+multi_matrix_4x4_3Dgl_collect(signed long v) {
   static int count_4x4 = 0;
   static u32 parms[15];
 
@@ -1726,7 +1727,7 @@ gtk_3D_multi_matrix_4x4(signed long v) {
 }
 
 static void
-gtk_3D_multi_matrix_4x3(signed long v) {
+multi_matrix_4x3_3Dgl_collect(signed long v) {
   static int count_4x3 = 0;
   static u32 parms[11];
 
@@ -1748,7 +1749,7 @@ gtk_3D_multi_matrix_4x3(signed long v) {
 }
 
 static void
-gtk_3D_multi_matrix_3x3(signed long v) {
+multi_matrix_3x3_3Dgl_collect(signed long v) {
   static int count_3x3 = 0;
   static u32 parms[8];
 
@@ -1773,30 +1774,30 @@ gtk_3D_multi_matrix_3x3(signed long v) {
 
 
 static void
-gtk_3D_store_matrix(unsigned long v) {
+store_matrix_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( MTX_STORE_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_restore_matrix(unsigned long v) {
+restore_matrix_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( MTX_RESTORE_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_push_matrix( void) {
+push_matrix_3Dgl_collect( void) {
   ADD_RENDER_PARM_CMD( MTX_PUSH_CMD);
 }
 
 static void
-gtk_3D_pop_matrix(signed long v) {
+pop_matrix_3Dgl_collect(signed long v) {
   ADD_RENDER_PARM_CMD( MTX_POP_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_translate(signed long v) {
+translate_3Dgl_collect(signed long v) {
   static int count_trans = 0;
   static u32 parms[2];
 
@@ -1818,7 +1819,7 @@ gtk_3D_translate(signed long v) {
 }
 
 static void
-gtk_3D_scale(signed long v) {
+scale_3Dgl_collect(signed long v) {
   static int count_scale = 0;
   static u32 parms[2];
 
@@ -1840,37 +1841,37 @@ gtk_3D_scale(signed long v) {
 }
 
 static void
-gtk_3D_PolyAttr(unsigned long v) {
+PolyAttr_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( POLYGON_ATTR_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_TextImage(unsigned long v) {
+TextImage_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( TEXIMAGE_PARAM_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_Colour(unsigned long v) {
+Colour_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( COLOR_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_material0(unsigned long v) {
+material0_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( DIF_AMB_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_material1(unsigned long v) {
+material1_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( SPE_EMI_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_shininess(unsigned long v) {
+shininess_3Dgl_collect(unsigned long v) {
   static int count_shine = 0;
   static u32 parms[31];
 
@@ -1892,76 +1893,76 @@ gtk_3D_shininess(unsigned long v) {
 }
 
 static void
-gtk_3D_texture_palette(unsigned long v) {
+texture_palette_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( PLTT_BASE_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_texture_coord(unsigned long v) {
+texture_coord_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( TEXCOORD_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_light_direction(unsigned long v) {
+light_direction_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( LIGHT_VECTOR_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_light_colour(unsigned long v) {
+light_colour_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( LIGHT_COLOR_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_normal(unsigned long v) {
+normal_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( NORMAL_CMD);
   ADD_RENDER_PARM_CMD( v);
 }
 
 static void
-gtk_3D_control(unsigned long v) {
+control_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( CONTROL_CMD);
   ADD_RENDER_PARM_CMD( v);  
 }
 
 static void
-gtk_3D_alpha_function(unsigned long v) {
+alpha_function_3Dgl_collect(unsigned long v) {
   ADD_RENDER_PARM_CMD( ALPHA_FUNCTION_CMD);
   ADD_RENDER_PARM_CMD( v);  
 }
 
 static int
-gtk_3D_get_num_polygons( void) {
+get_num_polygons_3Dgl_collect( void) {
   LOG_ERROR("I cannot do get_num_polygons\n");
 
   return 0;
 }
 static int
-gtk_3D_get_num_vertices( void) {
+get_num_vertices_3Dgl_collect( void) {
   LOG_ERROR("I cannot do get_num_vertices\n");
 
   return 0;
 }
 
 static long
-gtk_3D_get_clip_matrix(unsigned int index) {
+get_clip_matrix_3Dgl_collect(unsigned int index) {
   LOG_ERROR("I cannot do get_clip_matrix %d\n", index);
 
   return 0;
 }
 
 static long
-gtk_3D_get_direction_matrix(unsigned int index) {
+get_direction_matrix_3Dgl_collect(unsigned int index) {
   LOG_ERROR("I cannot do get_direction_matrix %d\n", index);
 
   return 0;
 }
 
 static void
-gtk_3D_get_line(int line, unsigned short *dst) {
+get_line_3Dgl_collect(int line, unsigned short *dst) {
   int i;
   u8 *screen3D = (u8 *)&GPU_screen3D[(192-(line%192))*256*4];
 
@@ -1993,135 +1994,135 @@ gtk_3D_get_line(int line, unsigned short *dst) {
 
 GPU3DInterface gpu3D_opengl_collector = {
   /* the Init function */
-  gtk_3D_init,
+  init_3Dgl_collect,
 
   /* Viewport */
-  gtk_3D_viewport,
+  viewport_3Dgl_collect,
 
   /* Clear colour */
-  gtk_3D_clear_colour,
+  clear_colour_3Dgl_collect,
 
   /* Fog colour */
-  gtk_3D_fog_colour,
+  fog_colour_3Dgl_collect,
 
   /* Fog offset */
-  gtk_3D_fog_offset,
+  fog_offset_3Dgl_collect,
 
   /* Clear Depth */
-  gtk_3D_clear_depth,
+  clear_depth_3Dgl_collect,
 
   /* Matrix Mode */
-  gtk_3D_matrix_mode,
+  matrix_mode_3Dgl_collect,
 
   /* Load Identity */
-  gtk_3D_load_identity_matrix,
+  load_identity_matrix_3Dgl_collect,
 
   /* Load 4x4 Matrix */
-  gtk_3D_load_4x4_matrix,
+  load_4x4_matrix_3Dgl_collect,
 
   /* Load 4x3 Matrix */
-  gtk_3D_load_4x3_matrix,
+  load_4x3_matrix_3Dgl_collect,
 
   /* Store Matrix */
-  gtk_3D_store_matrix,
+  store_matrix_3Dgl_collect,
 
   /* Restore Matrix */
-  gtk_3D_restore_matrix,
+  restore_matrix_3Dgl_collect,
 
   /* Push Matrix */
-  gtk_3D_push_matrix,
+  push_matrix_3Dgl_collect,
 
   /* Pop Matrix */
-  gtk_3D_pop_matrix,
+  pop_matrix_3Dgl_collect,
 
   /* Translate */
-  gtk_3D_translate,
+  translate_3Dgl_collect,
 
   /* Scale */
-  gtk_3D_scale,
+  scale_3Dgl_collect,
 
   /* Multiply Matrix 3x3 */
-  gtk_3D_multi_matrix_3x3,
+  multi_matrix_3x3_3Dgl_collect,
 
   /* Multiply Matrix 4x3 */
-  gtk_3D_multi_matrix_4x3,
+  multi_matrix_4x3_3Dgl_collect,
 
   /* Multiply Matrix 4x4 */
-  gtk_3D_multi_matrix_4x4,
+  multi_matrix_4x4_3Dgl_collect,
 
   /* Begin primitive */
-  gtk_3D_Begin,
+  Begin_3Dgl_collect,
   /* End primitive */
-  gtk_3D_End,
+  End_3Dgl_collect,
 
   /* Colour */
-  gtk_3D_Colour,
+  Colour_3Dgl_collect,
 
   /* Vertex */
-  gtk_3D_Vertex16b,
-  gtk_3D_Vertex10b,
-  gtk_3D_Vertex3_cord,
-  gtk_3D_Vertex_rel,
+  Vertex16b_3Dgl_collect,
+  Vertex10b_3Dgl_collect,
+  Vertex3_cord_3Dgl_collect,
+  Vertex_rel_3Dgl_collect,
 
   /* Swap Screen */
-  gtk_3D_SwapScreen,
+  SwapScreen_3Dgl_collect,
 
   /* Get Number of polygons */
-  gtk_3D_get_num_polygons,
+  get_num_polygons_3Dgl_collect,
 
   /* Get number of vertices */
-  gtk_3D_get_num_vertices,
+  get_num_vertices_3Dgl_collect,
 
   /* Flush */
-  gtk_3D_Flush,
+  Flush_3Dgl_collect,
 
   /* poly attribute */
-  gtk_3D_PolyAttr,
+  PolyAttr_3Dgl_collect,
 
   /* Material 0 */
-  gtk_3D_material0,
+  material0_3Dgl_collect,
 
   /* Material 1 */
-  gtk_3D_material1,
+  material1_3Dgl_collect,
 
   /* Shininess */
-  gtk_3D_shininess,
+  shininess_3Dgl_collect,
 
   /* Texture attributes */
-  gtk_3D_TextImage,
+  TextImage_3Dgl_collect,
 
   /* Texture palette */
-  gtk_3D_texture_palette,
+  texture_palette_3Dgl_collect,
 
   /* Texture coordinate */
-  gtk_3D_texture_coord,
+  texture_coord_3Dgl_collect,
 
   /* Light direction */
-  gtk_3D_light_direction,
+  light_direction_3Dgl_collect,
 
   /* Light colour */
-  gtk_3D_light_colour,
+  light_colour_3Dgl_collect,
 
   /* Alpha function */
-  gtk_3D_alpha_function,
+  alpha_function_3Dgl_collect,
 
   /* Control */
-  gtk_3D_control,
+  control_3Dgl_collect,
 
   /* normal */
-  gtk_3D_normal,
+  normal_3Dgl_collect,
 
   /* Call list */
-  gtk_3D_call_list,
+  call_list_3Dgl_collect,
 
   /* Get clip matrix */
-  gtk_3D_get_clip_matrix,
+  get_clip_matrix_3Dgl_collect,
 
   /* Get direction matrix */
-  gtk_3D_get_direction_matrix,
+  get_direction_matrix_3Dgl_collect,
 
   /* get line */
-  gtk_3D_get_line
+  get_line_3Dgl_collect
 };
 
 
