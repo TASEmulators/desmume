@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.1 2007-04-17 16:47:11 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.2 2007-04-18 03:41:42 evilynux Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -780,8 +780,8 @@ process_texcoord( struct render_state *state,
                         const u32 *parms) {
   LOG("texture coord %08x\n", parms[0]);
 
-  t_texture_coord = parms[0] >> 16;
-  s_texture_coord = parms[0] & 0xFFFF;
+  t_texture_coord = (s16)(parms[0] >> 16);
+  s_texture_coord = (s16)(parms[0] & 0xFFFF);
 
   if ( texCoordinateTransform == 1)
     {
