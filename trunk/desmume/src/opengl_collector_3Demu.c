@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.3 2007-04-18 11:02:12 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.4 2007-04-18 13:37:33 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -1536,32 +1536,34 @@ call_list_3Dgl_collect(unsigned long v) {
   }
 
   if ( current_parm == total_num_parms) {
-    u32 cmd = call_list_command & 0xff;
-    if ( cmd != 0) {
-      int i;
+    do {
+      u32 cmd = call_list_command & 0xff;
+      if ( cmd != 0) {
+        int i;
 
-      LOG_CALL_LIST("Cmd %02x complete:\n", cmd);
+        LOG_CALL_LIST("Cmd %02x complete:\n", cmd);
 
-      if ( cmd == SWAP_BUFFERS_CMD) {
-        Flush_3Dgl_collect( parms[0]);
-      }
-      else {
-        /* put the command and parms on the list */
-        ADD_RENDER_PARM_CMD( cmd);
+        if ( cmd == SWAP_BUFFERS_CMD) {
+          Flush_3Dgl_collect( parms[0]);
+        }
+        else {
+          /* put the command and parms on the list */
+          ADD_RENDER_PARM_CMD( cmd);
 
-        for ( i = 0; i < total_num_parms; i++) {
-          ADD_RENDER_PARM_CMD( parms[i]);
-          LOG_CALL_LIST("parm %08x\n", parms[i]);
+          for ( i = 0; i < total_num_parms; i++) {
+            ADD_RENDER_PARM_CMD( parms[i]);
+            LOG_CALL_LIST("parm %08x\n", parms[i]);
+          }
         }
       }
-    }
-    call_list_command >>=8;
+      call_list_command >>=8;
 
-    total_num_parms = cmd_processors[call_list_command & 0xff].num_parms;
-    current_parm = 0;
+      total_num_parms = cmd_processors[call_list_command & 0xff].num_parms;
+      current_parm = 0;
 
-    LOG_CALL_LIST("Next cmd %02x parms %d\n", call_list_command & 0xff,
-                  total_num_parms);
+      LOG_CALL_LIST("Next cmd %02x parms %d\n", call_list_command & 0xff,
+                    total_num_parms);
+    } while ( call_list_command && total_num_parms == 0);
   }
 }
 
