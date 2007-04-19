@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.4 2007-04-18 13:37:33 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.5 2007-04-19 18:21:07 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -739,7 +739,7 @@ process_viewport( struct render_state *state,
 static void
 process_polygon_attr( struct render_state *state,
                       const u32 *parms) {
-  LOG("FIXME: polygon attr\n");
+  LOG("FIXME: polygon attr %08x\n", parms[0]);
 }
 
 static void
@@ -821,7 +821,7 @@ process_mtx_mode( struct render_state *state,
 static void
 process_mtx_identity( struct render_state *state,
                       const u32 *parms) {
-  LOG("Load identity\n");
+  LOG("Load identity (%d)\n", current_matrix_mode);
 
   MatrixIdentity (mtxCurrent[current_matrix_mode]);
 
@@ -861,7 +861,7 @@ process_mtx_pop( struct render_state *state,
 static void
 process_mtx_store( struct render_state *state,
                    const u32 *parms) {
-  LOG("Matrix store\n");
+  LOG("Matrix store (%d)\n", parms[0]);
 
   MatrixStackLoadMatrix (&mtxStack[current_matrix_mode],
                          parms[0] & 31,
@@ -984,8 +984,11 @@ process_mtx_trans( struct render_state *state,
     MatrixTranslate (mtxCurrent[1], trans);
 
 
-  if ( current_matrix_mode == 2)
+
+  if ( current_matrix_mode == 2) {
+    LOG_MATRIX( mtxCurrent[1]);
     glLoadMatrixf( mtxCurrent[1]);
+  }
   else if ( current_matrix_mode < 3)
     glLoadMatrixf( mtxCurrent[current_matrix_mode]);
 }
@@ -1051,10 +1054,10 @@ process_mtx_mult_3x3( struct render_state *state,
 static void
 process_colour( struct render_state *state,
                 const u32 *parms) {
-  s8 red = (parms[0] & 0x1f) << 3;
-  s8 green = ((parms[0] >> 5) & 0x1f) << 3;
-  s8 blue = ((parms[0] >> 10) & 0x1f) << 3;
-  LOG("colour %d,%d,%d\n", red, green, blue);
+  u8 red = (parms[0] & 0x1f) << 3;
+  u8 green = ((parms[0] >> 5) & 0x1f) << 3;
+  u8 blue = ((parms[0] >> 10) & 0x1f) << 3;
+  LOG("colour %d,%d,%d (%08x)\n", red, green, blue, parms[0]);
   glColor3ub( red, green, blue);
 }
 
@@ -1073,7 +1076,7 @@ process_vtx_16( struct render_state *state,
       setup_mode23_tex_coord( x, y, z);
     } 
 
-  glVertex3f( x, y, x);
+  glVertex3f( x, y, z);
 }
 
 static void
