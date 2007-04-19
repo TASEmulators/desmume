@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.5 2007-04-19 18:21:07 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.6 2007-04-19 19:41:10 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -1093,7 +1093,7 @@ process_vtx_10( struct render_state *state,
       setup_mode23_tex_coord( x, y, z);
     } 
 
-  glVertex3f( x, y, x);
+  glVertex3f( x, y, z);
 }
 
 
