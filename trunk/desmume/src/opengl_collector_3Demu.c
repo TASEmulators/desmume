@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.6 2007-04-19 19:41:10 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.7 2007-04-20 12:41:13 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -91,6 +91,16 @@ LOG( "%f, %f, %f, %f\n", matrix[12], matrix[13], matrix[14], matrix[15])
 
 #define USE_BGR_ORDER 1
 
+/* Define this if you want to perform the glReadPixel call
+ * immediately after the render completion.
+ * If undefined the glReadPixel is performed in get_line_3Dgl_collect
+ * when called for line 0.
+ *
+ * Reading the pixels immediately may cause change of frame during display.
+ * Not reading the pixels immediately may mean that a frame is displayed early.
+ */
+//#define READ_PIXELS_IMMEDIATELY 1
+
 static int
 not_set( void) {
   LOG_ERROR( "platform code not setup\n");
@@ -101,9 +111,15 @@ static void
 nothingness( void) {
 }
 
+static void
+flush_only( void) {
+  glFlush();
+}
+
 int (*begin_opengl_ogl_collector_platform)( void) = not_set;
 void (*end_opengl_ogl_collector_platform)( void) = nothingness;
 int (*initialise_ogl_collector_platform)( void) = not_set;
+void (*complete_render_ogl_collector_platform)( void) = flush_only;
 
 
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
@@ -112,6 +128,11 @@ int (*initialise_ogl_collector_platform)( void) = not_set;
 
 
 static u8  GPU_screen3D[256*256*4]={0};
+
+#ifndef READ_PIXELS_IMMEDIATELY
+/** flag indicating if the 3D emulation has produced a new render */
+static int new_render_available = 0;
+#endif
 
 /*
  * The matrices
@@ -131,6 +152,8 @@ static float invTexWidth  = 1.f;
 static float invTexHeight = 1.f;
 static int texCoordinateTransform = 0;
 static int t_texture_coord = 0, s_texture_coord = 0;
+static GLint colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
+static float cur_vertex[3] = {0.0f, 0.0f, 0.0f};
 
 
 enum command_type {
@@ -198,6 +221,7 @@ static float float16table[65536];
 static float float10Table[1024];
 static float float10RelTable[1024];
 static float normalTable[1024];
+static int numVertex = 0;
 
 #define NUM_RENDER_STATES 2
 int current_render_state;
@@ -668,19 +692,30 @@ SetupTexture (unsigned int format, unsigned int palette) {
 
 
 static void
-setup_mode23_tex_coord( float x, float y, float z) {
+setup_mode23_tex_coord( float *vertex) {
   float *textureMatrix = mtxCurrent[3]; 
-  int s2 =	(int)((	x * textureMatrix[0] +  
-                        y * textureMatrix[4] +  
-                        z * textureMatrix[8]) + s_texture_coord);
-  int t2 =	(int)((	x * textureMatrix[1] +  
-                        y * textureMatrix[5] +  
-                        z * textureMatrix[9]) + t_texture_coord); 
+  int s2 =	(int)((	vertex[0] * textureMatrix[0] +  
+                        vertex[1] * textureMatrix[4] +  
+                        vertex[2] * textureMatrix[8]) + s_texture_coord);
+  int t2 =	(int)((	vertex[0] * textureMatrix[1] +  
+                        vertex[1] * textureMatrix[5] +  
+                        vertex[2] * textureMatrix[9]) + t_texture_coord); 
 
   glTexCoord2i( s2, t2);
 }
 
 
+static INLINE void
+setup_vertex( float *vertex) {
+  LOG("vertex %f,%f,%f\n", vertex[0], vertex[1], vertex[2]);
+
+  if (texCoordinateTransform == 3)
+    { 
+      setup_mode23_tex_coord( vertex);
+    } 
+
+  glVertex3fv( vertex);
+}
 
 
 static void
@@ -691,6 +726,9 @@ process_begin_vtxs( struct render_state *state,
   LOG("Begin: %s\n", primitive_type_names[prim_type]);
 
   /* setup the texture */
+#if 0
+  glDisable (GL_TEXTURE_2D);
+#else
   if ( disp_3D_control & 0x1) {
     if (textureFormat  != lastTextureFormat ||
         texturePalette != lastTexturePalette)
@@ -705,6 +743,7 @@ process_begin_vtxs( struct render_state *state,
   else {
     glDisable (GL_TEXTURE_2D);
   }
+#endif
 
   switch (prim_type) {
   case 0:
@@ -732,14 +771,103 @@ process_end_vtxs( struct render_state *state,
 static void
 process_viewport( struct render_state *state,
                   const u32 *parms) {
-  LOG("FIXME: Viewport %d,%d,%d,%d\n", parms[0] & 0xff, (parms[0] >> 8) & 0xff,
+  LOG("Viewport %d,%d,%d,%d\n", parms[0] & 0xff, (parms[0] >> 8) & 0xff,
       (parms[0] >> 16) & 0xff, (parms[0] >> 24) & 0xff);
+  glViewport( (parms[0]&0xFF), ((parms[0]>>8)&0xFF),
+              ((parms[0]>>16)&0xFF), (parms[0]>>24));
+
 }
 
 static void
 process_polygon_attr( struct render_state *state,
                       const u32 *parms) {
-  LOG("FIXME: polygon attr %08x\n", parms[0]);
+  static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
+  static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
+  static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
+  u32 light_mask = parms[0] & 0xf;
+  u32 cullingMask;
+  u32 colorAlpha;
+
+  LOG("polygon attr %08x\n", parms[0]);
+
+  /*
+   * lighting
+   */
+  if ( light_mask) {
+    if ( light_mask & 1) {
+      LOG("enabling light 0\n");
+      glEnable (GL_LIGHT0);
+    }
+    else {
+      LOG("disabling light 0\n");
+      glDisable(GL_LIGHT0);
+    }
+    if ( light_mask & 2) {
+      LOG("enabling light 1\n");
+      glEnable (GL_LIGHT1);
+    }
+    else {
+      LOG("disabling light 1\n");
+      glDisable(GL_LIGHT1);
+    }
+    if ( light_mask & 4) {
+      LOG("enabling light 2\n");
+      glEnable (GL_LIGHT2);
+    }
+    else {
+      LOG("disabling light 2\n");
+      glDisable(GL_LIGHT2);
+    }
+    if ( light_mask & 8) {
+      LOG("enabling light 3\n");
+      glEnable (GL_LIGHT3);
+    }
+    else {
+      LOG("disabling light 3\n");
+      glDisable(GL_LIGHT3);
+    }
+
+    glEnable (GL_LIGHTING);
+    //glEnable (GL_COLOR_MATERIAL);
+  }
+  else {
+    LOG( "Disabling lighting\n");
+    glDisable (GL_LIGHTING);
+  }
+
+  /*
+   * texture environment
+   */
+  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[(parms[0]&0x30)>>4]);
+
+  /*
+   * depth function
+   */
+  glDepthFunc( depthFunc[BIT14(parms[0])]);
+
+  /*
+   * Cull face
+   */
+  cullingMask = (parms[0] & 0xC0);
+  if (cullingMask != 0xC0) {
+    glEnable(GL_CULL_FACE);
+    glCullFace(map3d_cull[cullingMask>>6]);
+  } 
+  else {
+    glDisable(GL_CULL_FACE);
+  }
+
+  /*
+   * Alpha value, actually not well handled, 0 should be wireframe
+   */
+  colorAlpha = ((parms[0]>>16)&0x1F)<<26;
+  if ( colorAlpha != 0) {
+    colorRGB[3] = colorAlpha;
+    glColor4iv (colorRGB);
+  }
+
+
+
 }
 
 static void
@@ -753,7 +881,7 @@ process_normal( struct render_state *state,
 
   if (texCoordinateTransform == 2)
     {
-      setup_mode23_tex_coord( normal[0], normal[1], normal[2]);
+      setup_mode23_tex_coord( normal);
     }
 
   glNormal3fv(normal);
@@ -774,6 +902,89 @@ process_pltt_base( struct render_state *state,
 
   texturePalette = parms[0];
 }
+
+
+static void
+process_dif_amb( struct render_state *state,
+                 const u32 *parms) {
+  GLint diffuse[4] = {
+    (parms[0] & 0x1F) << 26,
+    ((parms[0] >> 5) & 0x1F) << 26,
+    ((parms[0] >> 10) & 0x1F) << 26,
+    0x7fffffff };
+  GLint ambient[4] = {
+    ((parms[0] >> 16) & 0x1F) << 26,
+    ((parms[0] >> 21) & 0x1F) << 26,
+    ((parms[0] >> 26) & 0x1F) << 26,
+    0x7fffffff };
+
+  LOG("dif amb %08x\n", parms[0]);
+
+
+  if (BIT15(parms[0])) {
+    colorRGB[0] = diffuse[0];
+    colorRGB[1] = diffuse[1];
+    colorRGB[2] = diffuse[2];
+  }
+
+  glMaterialiv (GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+  glMaterialiv (GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+}
+
+
+static void
+process_spe_emi( struct render_state *state,
+                 const u32 *parms) {
+  GLint specular[4] = {
+    (parms[0]&0x1F) << 26,
+    ((parms[0]>>5)&0x1F) << 26,
+    ((parms[0]>>10)&0x1F) << 26,
+    0x7fffffff };
+  GLint emission[4] = {
+    ((parms[0]>>16)&0x1F) << 26,
+    ((parms[0]>>21)&0x1F) << 26,
+    ((parms[0]>>26)&0x1F) << 26,
+    0x7fffffff };
+
+  LOG("spe emi %08x\n", parms[0]);
+
+  glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+  glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, emission);
+}
+
+static void
+process_light_vector( struct render_state *state,
+                      const u32 *parms) {
+  float lightDirection[4] = {0};
+  lightDirection[0] = -normalTable[parms[0]&1023];
+  lightDirection[1] = -normalTable[(parms[0]>>10)&1023];
+  lightDirection[2] = -normalTable[(parms[0]>>20)&1023];
+
+  LOG("Light vector %f,%f,%f,%f (%08x)\n",
+      lightDirection[0], lightDirection[1],
+      lightDirection[2], lightDirection[3],
+      parms[0]);
+
+  glLightfv(GL_LIGHT0 + (parms[0]>>30), GL_POSITION, lightDirection);
+}
+
+static void
+process_light_color( struct render_state *state,
+                     const u32 *parms) {
+  GLint lightColor[4] = {
+    ((parms[0]) & 0x1F)<<26, 
+    ((parms[0]>> 5)&0x1F)<<26, 
+    ((parms[0]>>10)&0x1F)<<26, 
+    0x7fffffff};
+
+  LOG("Light color %08x\n", parms[0]);
+
+  glLightiv (GL_LIGHT0 + (parms[0]>>30), GL_AMBIENT, lightColor);
+  glLightiv (GL_LIGHT0 + (parms[0]>>30), GL_DIFFUSE, lightColor);
+  glLightiv (GL_LIGHT0 + (parms[0]>>30), GL_SPECULAR, lightColor);
+
+}
+
 
 static void
 process_texcoord( struct render_state *state,
@@ -828,8 +1039,8 @@ process_mtx_identity( struct render_state *state,
   if (current_matrix_mode == 2)
     MatrixIdentity (mtxCurrent[1]);
 
-
-  glLoadIdentity();
+  if ( current_matrix_mode < 3)
+    glLoadIdentity();
 }
 
 static void
@@ -1054,46 +1265,76 @@ process_mtx_mult_3x3( struct render_state *state,
 static void
 process_colour( struct render_state *state,
                 const u32 *parms) {
-  u8 red = (parms[0] & 0x1f) << 3;
-  u8 green = ((parms[0] >> 5) & 0x1f) << 3;
-  u8 blue = ((parms[0] >> 10) & 0x1f) << 3;
-  LOG("colour %d,%d,%d (%08x)\n", red, green, blue, parms[0]);
-  glColor3ub( red, green, blue);
+  colorRGB[0] = (parms[0] & 0x1f) << 26;
+  colorRGB[1] = ((parms[0] >> 5) & 0x1f) << 26;
+  colorRGB[2] = ((parms[0] >> 10) & 0x1f) << 26;
+  LOG("colour %08x,%08x,%08x (%08x)\n",
+      colorRGB[0], colorRGB[1], colorRGB[2],
+      parms[0]);
+  glColor4iv( colorRGB);
 }
 
 static void
 process_vtx_16( struct render_state *state,
                 const u32 *parms) {
-  float x = float16table[parms[0] & 0xFFFF];
-  float y = float16table[parms[0] >> 16];
-  float z = float16table[parms[1] & 0xFFFF];
+  cur_vertex[0] = float16table[parms[0] & 0xFFFF];
+  cur_vertex[1] = float16table[parms[0] >> 16];
+  cur_vertex[2] = float16table[parms[1] & 0xFFFF];
   LOG("vtx16 %08x %08x\n", parms[0], parms[1]);
 
-  LOG("vtx16 %f,%f,%f\n", x, y, z);
-
-  if (texCoordinateTransform == 3)
-    { 
-      setup_mode23_tex_coord( x, y, z);
-    } 
-
-  glVertex3f( x, y, z);
+  setup_vertex( cur_vertex);
 }
 
 static void
 process_vtx_10( struct render_state *state,
                 const u32 *parms) {
-  float x = float10Table[(parms[0]) & 0x3ff];
-  float y = float10Table[(parms[0] >> 10) & 0x3ff];
-  float z = float10Table[(parms[0] >> 20) & 0x3ff];
+  cur_vertex[0] = float10Table[(parms[0]) & 0x3ff];
+  cur_vertex[1] = float10Table[(parms[0] >> 10) & 0x3ff];
+  cur_vertex[2] = float10Table[(parms[0] >> 20) & 0x3ff];
   LOG("vtx10 %08x\n", parms[0]);
 
-  LOG("vtx10 %f,%f,%f\n", x, y, z);
-  if (texCoordinateTransform == 3)
-    { 
-      setup_mode23_tex_coord( x, y, z);
-    } 
+  setup_vertex( cur_vertex);
+}
 
-  glVertex3f( x, y, z);
+static void
+process_vtx_xy( struct render_state *state,
+                const u32 *parms) {
+  cur_vertex[0] = float16table[(parms[0]) & 0xffff];
+  cur_vertex[1] = float16table[(parms[0] >> 16) & 0xffff];
+  LOG("vtx xy %08x\n", parms[0]);
+
+  setup_vertex( cur_vertex);
+}
+
+static void
+process_vtx_xz( struct render_state *state,
+                const u32 *parms) {
+  cur_vertex[0] = float16table[(parms[0]) & 0xffff];
+  cur_vertex[2] = float16table[(parms[0] >> 16) & 0xffff];
+  LOG("vtx xz %08x\n", parms[0]);
+
+  setup_vertex( cur_vertex);
+}
+
+static void
+process_vtx_yz( struct render_state *state,
+                const u32 *parms) {
+  cur_vertex[1] = float16table[(parms[0]) & 0xffff];
+  cur_vertex[2] = float16table[(parms[0] >> 16) & 0xffff];
+  LOG("vtx yz %08x\n", parms[0]);
+
+  setup_vertex( cur_vertex);
+}
+
+static void
+process_vtx_diff( struct render_state *state,
+                  const u32 *parms) {
+  cur_vertex[0] += float10RelTable[(parms[0]) & 0x3ff];
+  cur_vertex[1] += float10RelTable[(parms[0] >> 10) & 0x3ff];
+  cur_vertex[2] += float10RelTable[(parms[0] >> 20) & 0x3ff];
+  LOG("vtx10 %08x\n", parms[0]);
+
+  setup_vertex( cur_vertex);
 }
 
 
@@ -1191,7 +1432,7 @@ draw_3D_area( void) {
     }
   }
 
-  glFlush ();
+  complete_render_ogl_collector_platform();
 
   if ((errCode = glGetError()) != GL_NO_ERROR) {
     const GLubyte *errString;
@@ -1200,6 +1441,7 @@ draw_3D_area( void) {
     LOG_ERROR( "openGL error during 3D emulation: %s\n", errString);
   }
 
+#ifdef READ_PIXELS_IMMEDIATELY
 #ifdef USE_BGR_ORDER
   glReadPixels(0,0,256,192,GL_BGRA,GL_UNSIGNED_BYTE,GPU_screen3D);
 #else
@@ -1212,6 +1454,10 @@ draw_3D_area( void) {
     errString = gluErrorString(errCode);
     LOG_ERROR( "openGL error during glReadPixels: %s\n", errString);
   }
+#else
+  new_render_available = 1;
+#endif
+
 
   LOG("End of render\n------------------------------------\n");
 
@@ -1377,15 +1623,19 @@ init_3Dgl_collect( void) {
       cmd_processors[i].num_parms = 1;
       break;
     case VTX_XY_CMD:
+      cmd_processors[i].processor_fn = process_vtx_xy;
       cmd_processors[i].num_parms = 1;
       break;
     case VTX_XZ_CMD:
+      cmd_processors[i].processor_fn = process_vtx_xz;
       cmd_processors[i].num_parms = 1;
       break;
     case VTX_YZ_CMD:
+      cmd_processors[i].processor_fn = process_vtx_yz;
       cmd_processors[i].num_parms = 1;
       break;
     case VTX_DIFF_CMD:
+      cmd_processors[i].processor_fn = process_vtx_diff;
       cmd_processors[i].num_parms = 1;
       break;
     case POLYGON_ATTR_CMD:
@@ -1401,15 +1651,19 @@ init_3Dgl_collect( void) {
       cmd_processors[i].num_parms = 1;
       break;
     case DIF_AMB_CMD:
+      cmd_processors[i].processor_fn = process_dif_amb;
       cmd_processors[i].num_parms = 1;
       break;
     case SPE_EMI_CMD:
+      cmd_processors[i].processor_fn = process_spe_emi;
       cmd_processors[i].num_parms = 1;
       break;
     case LIGHT_VECTOR_CMD:
+      cmd_processors[i].processor_fn = process_light_vector;
       cmd_processors[i].num_parms = 1;
       break;
     case LIGHT_COLOR_CMD:
+      cmd_processors[i].processor_fn = process_light_color;
       cmd_processors[i].num_parms = 1;
       break;
     case SHININESS_CMD:
@@ -1504,6 +1758,7 @@ Flush_3Dgl_collect( unsigned long val) {
   draw_3D_area();
   new_state->write_index = 0;
 
+  numVertex = 0;
   //LOG("End of render\n");
 }
 
@@ -1642,7 +1897,18 @@ Vertex10b_3Dgl_collect(unsigned long v) {
 
 static void
 Vertex3_cord_3Dgl_collect(unsigned int one, unsigned int two, unsigned int v) {
-  LOG("NOT USED?: glVertex3_cord\n");
+  if ( one == 0) {
+    if ( two == 1) {
+      ADD_RENDER_PARM_CMD( VTX_XY_CMD);
+    }
+    else {
+      ADD_RENDER_PARM_CMD( VTX_XZ_CMD);
+    }
+  }
+  else {
+    ADD_RENDER_PARM_CMD( VTX_YZ_CMD);
+  }
+  ADD_RENDER_PARM_CMD( v);
 }
 
 static void
@@ -1941,35 +2207,65 @@ alpha_function_3Dgl_collect(unsigned long v) {
 
 static int
 get_num_polygons_3Dgl_collect( void) {
-  LOG_ERROR("I cannot do get_num_polygons\n");
+  /* FIXME: this is a hack */
+  LOG("Hacky get_num_polygons %d\n", numVertex/3);
 
-  return 0;
+  return numVertex/3;
 }
 static int
 get_num_vertices_3Dgl_collect( void) {
-  LOG_ERROR("I cannot do get_num_vertices\n");
+  LOG("get_num_vertices %d\n", numVertex);
 
-  return 0;
+  return numVertex;
 }
 
 static long
 get_clip_matrix_3Dgl_collect(unsigned int index) {
-  LOG_ERROR("I cannot do get_clip_matrix %d\n", index);
+  float val = MatrixGetMultipliedIndex (index, mtxCurrent[0], mtxCurrent[1]);
+  LOG("get_clip_matrix %d\n", index);
 
-  return 0;
+  val *= (1<<12);
+
+  return (signed long)val;
 }
 
 static long
 get_direction_matrix_3Dgl_collect(unsigned int index) {
-  LOG_ERROR("I cannot do get_direction_matrix %d\n", index);
+  LOG("get_direction_matrix %d\n", index);
+  index += (index/3);
 
-  return 0;
+  return (signed long)(mtxCurrent[2][(index)*(1<<12)]);
 }
 
 static void
 get_line_3Dgl_collect(int line, unsigned short *dst) {
   int i;
   u8 *screen3D = (u8 *)&GPU_screen3D[(192-(line%192))*256*4];
+
+#ifndef READ_PIXELS_IMMEDIATELY
+  if ( line == 0) {
+    if ( new_render_available) {
+      new_render_available = 0;
+      if ( !begin_opengl_ogl_collector_platform()) {
+        LOG_ERROR( "platform failed for begin opengl for get_line\n");
+        for(i = 0; i < 256; i++)
+          {
+            dst[i] = 0x0;
+          }
+        return;
+      }
+
+#ifdef USE_BGR_ORDER
+      glReadPixels(0,0,256,192,GL_BGRA,GL_UNSIGNED_BYTE,GPU_screen3D);
+#else
+      glReadPixels(0,0,256,192,GL_RGBA,GL_UNSIGNED_BYTE,GPU_screen3D);
+#endif
+
+      end_opengl_ogl_collector_platform();
+    }
+  }
+#endif
+
 
   for(i = 0; i < 256; i++)
     {
