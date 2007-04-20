@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.7 2007-04-20 12:41:13 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.8 2007-04-20 16:44:38 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -77,8 +77,8 @@ fprintf( stdout, fmt, ##__VA_ARGS__)
 #endif
 
 #if 0
-#define LOG_ERROR( fmt, ...) fprintf( stderr, "OpenGL Collector error: "); \
-fprintf( stderr, fmt, ##__VA_ARGS__)
+#define LOG_ERROR( fmt, ...) fprintf( stdout, "OpenGL Collector error: "); \
+fprintf( stdout, fmt, ##__VA_ARGS__)
 #else
 #define LOG_ERROR( fmt, ...)
 #endif
@@ -90,6 +90,9 @@ LOG( "%f, %f, %f, %f\n", matrix[8], matrix[9], matrix[10], matrix[11]); \
 LOG( "%f, %f, %f, %f\n", matrix[12], matrix[13], matrix[14], matrix[15])
 
 #define USE_BGR_ORDER 1
+
+/** the largest number of parameters used by any command */
+#define MAX_NUMBER_OF_PARMS 32
 
 /* Define this if you want to perform the glReadPixel call
  * immediately after the render completion.
@@ -154,6 +157,12 @@ static int texCoordinateTransform = 0;
 static int t_texture_coord = 0, s_texture_coord = 0;
 static GLint colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
 static float cur_vertex[3] = {0.0f, 0.0f, 0.0f};
+
+/** flag set when a primitive is being defined */
+static int inside_primitive = 0;
+/** the type of primitive being defined */
+static GLenum current_primitive_type;
+
 
 
 enum command_type {
@@ -745,17 +754,22 @@ process_begin_vtxs( struct render_state *state,
   }
 #endif
 
+  inside_primitive = 1;
   switch (prim_type) {
   case 0:
+    current_primitive_type = GL_TRIANGLES;
     glBegin( GL_TRIANGLES);
     break;
   case 1:
+    current_primitive_type = GL_QUADS;
     glBegin( GL_QUADS);
     break;
   case 2:
+    current_primitive_type = GL_TRIANGLE_STRIP;
     glBegin( GL_TRIANGLE_STRIP);
     break;
   case 3:
+    current_primitive_type = GL_QUAD_STRIP;
     glBegin( GL_QUAD_STRIP);
     break;
   }
@@ -765,7 +779,13 @@ static void
 process_end_vtxs( struct render_state *state,
                   const u32 *parms) {
   LOG("End\n");
-  glEnd();
+  if ( inside_primitive) {
+    glEnd();
+  }
+  else {
+    LOG("End whilst not inside primitive\n");
+  }
+  inside_primitive = 0;
 }
 
 static void
@@ -1230,6 +1250,62 @@ process_mtx_scale( struct render_state *state,
 }
 
 static void
+process_mtx_mult_4x4( struct render_state *state,
+                      const u32 *parms) {
+  static float mult_matrix[16];
+  int i;
+  LOG("Mult 4x4 (%d):\n", current_matrix_mode);
+
+  for ( i = 0; i < 16; i++) {
+    mult_matrix[i] = parms[i];
+  }
+
+  MatrixMultiply (mtxCurrent[current_matrix_mode], mult_matrix);
+
+  if (current_matrix_mode == 2)
+    MatrixMultiply (mtxCurrent[1], mult_matrix);
+
+  if ( current_matrix_mode == 2)
+    glLoadMatrixf( mtxCurrent[1]);
+  else if ( current_matrix_mode < 3)
+    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+}
+
+static void
+process_mtx_mult_4x3( struct render_state *state,
+                      const u32 *parms) {
+  static float mult_matrix[16];
+
+  LOG("Mult 4x3 (%d):\n", current_matrix_mode);
+
+  mult_matrix[3] = mult_matrix[7] =
+    mult_matrix[11] = 0.0f;
+  mult_matrix[15] = 1.0f;
+  mult_matrix[0] = fix2float(parms[0]);
+  mult_matrix[1] = fix2float(parms[1]);
+  mult_matrix[2] = fix2float(parms[2]);
+  mult_matrix[4] = fix2float(parms[3]);
+  mult_matrix[5] = fix2float(parms[4]);
+  mult_matrix[6] = fix2float(parms[5]);
+  mult_matrix[8] = fix2float(parms[6]);
+  mult_matrix[9] = fix2float(parms[7]);
+  mult_matrix[10] = fix2float(parms[8]);
+  mult_matrix[12] = fix2float(parms[9]);
+  mult_matrix[13] = fix2float(parms[10]);
+  mult_matrix[14] = fix2float(parms[11]);
+  
+  MatrixMultiply (mtxCurrent[current_matrix_mode], mult_matrix);
+
+  if (current_matrix_mode == 2)
+    MatrixMultiply (mtxCurrent[1], mult_matrix);
+
+  if ( current_matrix_mode == 2)
+    glLoadMatrixf( mtxCurrent[1]);
+  else if ( current_matrix_mode < 3)
+    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+}
+
+static void
 process_mtx_mult_3x3( struct render_state *state,
                       const u32 *parms) {
   static float mult_matrix[16];
@@ -1585,9 +1661,11 @@ init_3Dgl_collect( void) {
       cmd_processors[i].num_parms = 12;
       break;
     case MTX_MULT_4x4_CMD:
+      cmd_processors[i].processor_fn = process_mtx_mult_4x4;
       cmd_processors[i].num_parms = 16;
       break;
     case MTX_MULT_4x3_CMD:
+      cmd_processors[i].processor_fn = process_mtx_mult_4x3;
       cmd_processors[i].num_parms = 12;
       break;
     case MTX_MULT_3x3_CMD:
@@ -1773,9 +1851,10 @@ call_list_3Dgl_collect(unsigned long v) {
   static u32 call_list_command = 0;
   static u32 total_num_parms = 0;
   static u32 current_parm = 0;
-  static u32 parms[15];
+  static u32 parms[MAX_NUMBER_OF_PARMS];
 
-  LOG_CALL_LIST("call list - %08x\n", v);
+  LOG_CALL_LIST("call list - %08x (%08x cur %d tot %d)\n", v,
+                call_list_command, current_parm, total_num_parms);
 
   if ( call_list_command == 0) {
     /* new call list command coming in */
@@ -1796,6 +1875,7 @@ call_list_3Dgl_collect(unsigned long v) {
   if ( current_parm == total_num_parms) {
     do {
       u32 cmd = call_list_command & 0xff;
+      LOG_CALL_LIST("Current command is %02x\n", cmd);
       if ( cmd != 0) {
         int i;
 
