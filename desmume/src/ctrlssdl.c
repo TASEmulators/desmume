@@ -118,9 +118,10 @@ void set_kb_keys(u16 kbCfg[])
 /* Unload joysticks */
 void uninit_joy()
 {
-  /* FIXME: Should we Close all joysticks? 
-  SDL_JoystickClose( ... );
-  */
+  int i;
+  printf("Disabling joystick support.\n");
+  for (i = 0; i < SDL_NumJoysticks(); i++)
+    SDL_JoystickClose(i);
   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 }
 
