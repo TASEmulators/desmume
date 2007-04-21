@@ -1462,8 +1462,9 @@ common_gtk_main( struct configured_features *my_config) {
             }
           }
 #endif
-        
-	if(SDL_Init(SDL_INIT_TIMER) == -1)
+        /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
+           Perhaps it needs a "window" to catch events...? */
+	if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
                     SDL_GetError());
