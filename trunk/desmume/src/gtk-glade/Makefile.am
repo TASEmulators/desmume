@@ -11,6 +11,7 @@ desmume_glade_SOURCES =  \
 	dTools/callbacks_3_palview.c  dTools/callbacks_4_tileview.c \
 	dTools/callbacks_dtools.h \
 	dTools/dTools_display.h \
+	gdk_3Demu.c gdk_3Demu.h \
 	../sndsdl.h ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c 
 
 gladedir = $(datadir)/desmume/glade
