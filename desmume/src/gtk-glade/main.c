@@ -25,6 +25,11 @@
 #include "dTools/callbacks_dtools.h"
 #include "globals.h"
 
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+#include "../opengl_collector_3Demu.h"
+#include "gdk_3Demu.h"
+#endif
+
 GtkWidget * pWindow;
 GtkWidget * pDrawingArea, * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
@@ -38,6 +43,10 @@ NULL
 
 GPU3DInterface *core3DList[] = {
 &gpu3DNull
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+  ,
+  &gpu3D_opengl_collector
+#endif
 };
 
 
@@ -213,7 +222,6 @@ void update_savestate(u8 num)
 
 /* ***** ***** MAIN ***** ***** */
 
-
 #ifdef WIN32
 int WinMain ()
 {
@@ -225,6 +233,7 @@ int main(int argc, char *argv[]) {
 	
 	const char *commandLine_File = NULL;
 	gtk_init(&argc, &argv);
+
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 // check if you have GTHREAD when running configure script
 //	g_thread_init(NULL);
@@ -280,8 +289,24 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	gtk_widget_show(pDrawingArea);
-	gtk_widget_show(pDrawingArea2);
+        gtk_widget_show(pDrawingArea);
+        gtk_widget_show(pDrawingArea2);
+
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+        /* setup the gdk 3D emulation */
+        if ( init_opengl_gdk_3Demu()) {
+          NDS_3D_SetDriver(1);
+
+          if (!gpu3D->NDS_3D_Init()) {
+            fprintf( stderr, "Failed to initialise openGL 3D emulation; "
+                     "removing 3D support\n");
+          }
+        }
+        else {
+          fprintf( stderr, "Failed to setup openGL 3D emulation; "
+                   "removing 3D support\n");
+        }
+#endif
 
 //	on_menu_tileview_activate(NULL,NULL);
 

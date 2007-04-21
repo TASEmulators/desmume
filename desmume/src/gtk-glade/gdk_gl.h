@@ -39,6 +39,12 @@ void init_GL_capabilities();
 void init_GL(GtkWidget * widget, int screen, int share_num);
 int init_GL_free_s(GtkWidget * widget, int share_num);
 int init_GL_free(GtkWidget * widget);
-
+#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+static void gtk_init_main_gl_area(GtkWidget *, gpointer);
+static void gtk_init_sub_gl_area(GtkWidget *, gpointer);
+static int top_screen_expose_fn(GtkWidget *, GdkEventExpose *, gpointer);
+static int bottom_screen_expose_fn(GtkWidget *, GdkEventExpose *, gpointer);
+static gboolean common_configure_fn( GtkWidget *, GdkEventConfigure *);
+#endif
 void reshape (GtkWidget * widget, int screen);
 gboolean screen (GtkWidget * widget, int off);
