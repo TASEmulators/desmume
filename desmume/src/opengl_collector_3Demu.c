@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.8 2007-04-20 16:44:38 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.9 2007-04-21 16:47:53 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -91,6 +91,24 @@ LOG( "%f, %f, %f, %f\n", matrix[12], matrix[13], matrix[14], matrix[15])
 
 #define USE_BGR_ORDER 1
 
+/**
+ * Define this to use software vertex transformation.
+ * The NDS can handle commands to change the modelview matrix during
+ * primitive definitions (between the begin and end). OpenGL does
+ * not like this.
+ * When this is defined the Modelview matrix will be left as the
+ * identity matrix and vertices are transformed before being passed
+ * to OpenGL.
+ */
+#define USE_SOFTWARE_VERTEX_TRANSFORM 1
+
+/**
+ * Define this to enable Alpha Blending emulation.
+ * How the NDS renders transulcent polygons (order) is not fully understood
+ * so some polygon may not be rendered or rendered incorrectly.
+ */
+#define ENABLE_ALPHA_BLENDING 1
+
 /** the largest number of parameters used by any command */
 #define MAX_NUMBER_OF_PARMS 32
 
@@ -157,6 +175,11 @@ static int texCoordinateTransform = 0;
 static int t_texture_coord = 0, s_texture_coord = 0;
 static GLint colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
 static float cur_vertex[3] = {0.0f, 0.0f, 0.0f};
+
+static u32 alpha_function = 0;
+
+/** the current polygon attribute */
+static u32 current_polygon_attr = 0;
 
 /** flag set when a primitive is being defined */
 static int inside_primitive = 0;
@@ -286,6 +309,15 @@ set_gl_matrix_mode( int mode) {
 }
 
 static void
+loadMatrix( float *matrix) {
+#ifdef USE_SOFTWARE_VERTEX_TRANSFORM
+  if ( current_matrix_mode == 0)
+#endif
+    glLoadMatrixf( matrix);
+}
+
+
+static void
 SetupTexture (unsigned int format, unsigned int palette) {
   if(format == 0) // || disableTexturing)
     {
@@ -303,7 +335,7 @@ SetupTexture (unsigned int format, unsigned int palette) {
       unsigned short param2 = (unsigned short)((format>>16)&0xF);
       unsigned int imageSize = sizeX*sizeY;
       unsigned int paletteSize = 0;
-      unsigned int palZeroTransparent = (1-((format>>29)&1))*255; // shash: CONVERT THIS TO A TABLE :)
+      unsigned int palZeroTransparent = BIT29(format) ? 0 : 255;
       unsigned int x=0, y=0;
 
       if (mode == 0)
@@ -375,6 +407,10 @@ SetupTexture (unsigned int format, unsigned int palette) {
                   dst[1] = (unsigned char)((c & 0x3E0)>>2);
                   dst[2] = (unsigned char)((c & 0x7C00)>>7);
                   dst[3] = ((alpha<<2)+(alpha>>1))<<3;
+                  if ( dst[3] != 0) {
+                    /* full range alpha */
+                    dst[3] |= 0x7;
+                  }
                 }
 
               break;
@@ -577,6 +613,10 @@ SetupTexture (unsigned int format, unsigned int palette) {
                   dst[1] = (unsigned char)((c & 0x3E0)>>2);
                   dst[2] = (unsigned char)((c & 0x7C00)>>7);
                   dst[3] = (adr[x]&0xF8);
+                  if ( dst[3] != 0) {
+                    /* full range alpha */
+                    dst[3] |= 0x7;
+                  }
                   dst += 4;
                 }
               break;
@@ -683,17 +723,26 @@ SetupTexture (unsigned int format, unsigned int palette) {
       // S Coordinate options
       if (!BIT16(format))
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-      else
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+      else {
+        if ( BIT18(format)) {
+          glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_MIRRORED_REPEAT);
+        }
+        else {
+          glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+        }
+      }
 
       // T Coordinate options
       if (!BIT17(format))
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
-      else
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-
-      //flipS = BIT18(format);
-      //flipT = BIT19(format);
+      else {
+        if ( BIT19(format)) {
+          glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_MIRRORED_REPEAT);
+        }
+        else {
+          glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+        }
+      }
 
       texCoordinateTransform = (format>>30);
     }
@@ -716,15 +765,168 @@ setup_mode23_tex_coord( float *vertex) {
 
 static INLINE void
 setup_vertex( float *vertex) {
+#ifdef USE_SOFTWARE_VERTEX_TRANSFORM
+  float pre_transformed_vertex[4];
+  float transformed_vertex[4];
+  float *model_matrix = mtxCurrent[1];
+#endif
+
   LOG("vertex %f,%f,%f\n", vertex[0], vertex[1], vertex[2]);
 
   if (texCoordinateTransform == 3)
-    { 
+    {
       setup_mode23_tex_coord( vertex);
-    } 
+    }
 
+#ifdef USE_SOFTWARE_VERTEX_TRANSFORM
+  /*
+   * Transform the vertex
+   */
+  pre_transformed_vertex[0] = vertex[0];
+  pre_transformed_vertex[1] = vertex[1];
+  pre_transformed_vertex[2] = vertex[2];
+  pre_transformed_vertex[3] = 1.0f;
+  transformed_vertex[0] =
+    pre_transformed_vertex[0] * model_matrix[0] +
+    pre_transformed_vertex[1] * model_matrix[4] +
+    pre_transformed_vertex[2] * model_matrix[8] +
+    pre_transformed_vertex[3] * model_matrix[12];
+  transformed_vertex[1] =
+    pre_transformed_vertex[0] * model_matrix[1] +
+    pre_transformed_vertex[1] * model_matrix[5] +
+    pre_transformed_vertex[2] * model_matrix[9] +
+    pre_transformed_vertex[3] * model_matrix[13];
+  transformed_vertex[2] =
+    pre_transformed_vertex[0] * model_matrix[2] +
+    pre_transformed_vertex[1] * model_matrix[6] +
+    pre_transformed_vertex[2] * model_matrix[10] +
+    pre_transformed_vertex[3] * model_matrix[14];
+  transformed_vertex[3] =
+    pre_transformed_vertex[0] * model_matrix[3] +
+    pre_transformed_vertex[1] * model_matrix[7] +
+    pre_transformed_vertex[2] * model_matrix[11] +
+    pre_transformed_vertex[3] * model_matrix[15];
+
+  glVertex4fv( transformed_vertex);
+#else
   glVertex3fv( vertex);
+#endif
 }
+
+
+static INLINE void
+handle_polygon_attribute( u32 attr, u32 control) {
+  static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
+  static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
+  static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
+  u32 light_mask = attr & 0xf;
+  u32 cullingMask;
+  GLint colorAlpha;
+
+  /*
+   * lighting
+   * (should be done at the normal?)
+   */
+  if ( light_mask) {
+    if ( light_mask & 1) {
+      LOG("enabling light 0\n");
+      glEnable (GL_LIGHT0);
+    }
+    else {
+      LOG("disabling light 0\n");
+      glDisable(GL_LIGHT0);
+    }
+    if ( light_mask & 2) {
+      LOG("enabling light 1\n");
+      glEnable (GL_LIGHT1);
+    }
+    else {
+      LOG("disabling light 1\n");
+      glDisable(GL_LIGHT1);
+    }
+    if ( light_mask & 4) {
+      LOG("enabling light 2\n");
+      glEnable (GL_LIGHT2);
+    }
+    else {
+      LOG("disabling light 2\n");
+      glDisable(GL_LIGHT2);
+    }
+    if ( light_mask & 8) {
+      LOG("enabling light 3\n");
+      glEnable (GL_LIGHT3);
+    }
+    else {
+      LOG("disabling light 3\n");
+      glDisable(GL_LIGHT3);
+    }
+
+    glEnable (GL_LIGHTING);
+    //glEnable (GL_COLOR_MATERIAL);
+  }
+  else {
+    LOG( "Disabling lighting\n");
+    glDisable (GL_LIGHTING);
+  }
+
+  /*
+   * texture environment
+   */
+  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[(attr & 0x30)>>4]);
+
+  /*
+   * depth function
+   */
+  glDepthFunc( depthFunc[BIT14(attr)]);
+
+  /*
+   * Cull face
+   */
+  cullingMask = (attr & 0xC0);
+  if (cullingMask != 0xC0) {
+    glEnable(GL_CULL_FACE);
+    glCullFace(map3d_cull[cullingMask>>6]);
+  } 
+  else {
+    glDisable(GL_CULL_FACE);
+  }
+
+  /*
+   * Alpha value, actually not well handled, 0 should be wireframe
+   *
+   * FIXME: How are translucent polygons rendered?
+   * some use of polygon ID?
+   */
+  glDepthMask( GL_TRUE);
+  colorAlpha = (attr>>16) & 0x1F;
+  if ( colorAlpha != 0) {
+    colorAlpha = (colorAlpha << 26) | 0x3ffffff;
+#if 0
+    if ( colorAlpha != 0x7fffffff) {
+      if ( !BIT11( attr)) {
+        glDepthMask( GL_FALSE);
+      }
+    }
+#endif
+    colorRGB[3] = colorAlpha;
+    glColor4iv (colorRGB);
+  }
+
+
+  /*
+   * Alpha blending
+   */
+#ifdef ENABLE_ALPHA_BLENDING
+  if ( BIT3(control)) {
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND);
+  }
+  else {
+    glDisable( GL_BLEND);
+  }
+#endif
+}
+
 
 
 static void
@@ -733,6 +935,29 @@ process_begin_vtxs( struct render_state *state,
   u32 prim_type = parms[0] & 0x3;
 
   LOG("Begin: %s\n", primitive_type_names[prim_type]);
+
+  /* FIXME: ignoring shadow polygons for now */
+  if ( ((current_polygon_attr >> 4) & 0x3) == 3) {
+    return;
+  }
+
+  if( disp_3D_control & (1<<2))
+    {
+      LOG("Alpha test enabled\n");
+      glEnable(GL_ALPHA_TEST);
+      glAlphaFunc (GL_GREATER, (alpha_function&31)/31.f);
+    }
+  else
+    {
+      glDisable(GL_ALPHA_TEST);
+    }
+
+
+  /*
+   * Setup for the current polygon attribute
+   */
+  handle_polygon_attribute( current_polygon_attr, disp_3D_control);
+
 
   /* setup the texture */
 #if 0
@@ -794,100 +1019,19 @@ process_viewport( struct render_state *state,
   LOG("Viewport %d,%d,%d,%d\n", parms[0] & 0xff, (parms[0] >> 8) & 0xff,
       (parms[0] >> 16) & 0xff, (parms[0] >> 24) & 0xff);
   glViewport( (parms[0]&0xFF), ((parms[0]>>8)&0xFF),
-              ((parms[0]>>16)&0xFF), (parms[0]>>24));
+              ((parms[0]>>16)&0xFF) + 1, (parms[0]>>24) + 1);
 
 }
 
 static void
 process_polygon_attr( struct render_state *state,
                       const u32 *parms) {
-  static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
-  static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
-  static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
-  u32 light_mask = parms[0] & 0xf;
-  u32 cullingMask;
-  u32 colorAlpha;
-
   LOG("polygon attr %08x\n", parms[0]);
 
   /*
-   * lighting
+   * Save this until the next begin
    */
-  if ( light_mask) {
-    if ( light_mask & 1) {
-      LOG("enabling light 0\n");
-      glEnable (GL_LIGHT0);
-    }
-    else {
-      LOG("disabling light 0\n");
-      glDisable(GL_LIGHT0);
-    }
-    if ( light_mask & 2) {
-      LOG("enabling light 1\n");
-      glEnable (GL_LIGHT1);
-    }
-    else {
-      LOG("disabling light 1\n");
-      glDisable(GL_LIGHT1);
-    }
-    if ( light_mask & 4) {
-      LOG("enabling light 2\n");
-      glEnable (GL_LIGHT2);
-    }
-    else {
-      LOG("disabling light 2\n");
-      glDisable(GL_LIGHT2);
-    }
-    if ( light_mask & 8) {
-      LOG("enabling light 3\n");
-      glEnable (GL_LIGHT3);
-    }
-    else {
-      LOG("disabling light 3\n");
-      glDisable(GL_LIGHT3);
-    }
-
-    glEnable (GL_LIGHTING);
-    //glEnable (GL_COLOR_MATERIAL);
-  }
-  else {
-    LOG( "Disabling lighting\n");
-    glDisable (GL_LIGHTING);
-  }
-
-  /*
-   * texture environment
-   */
-  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[(parms[0]&0x30)>>4]);
-
-  /*
-   * depth function
-   */
-  glDepthFunc( depthFunc[BIT14(parms[0])]);
-
-  /*
-   * Cull face
-   */
-  cullingMask = (parms[0] & 0xC0);
-  if (cullingMask != 0xC0) {
-    glEnable(GL_CULL_FACE);
-    glCullFace(map3d_cull[cullingMask>>6]);
-  } 
-  else {
-    glDisable(GL_CULL_FACE);
-  }
-
-  /*
-   * Alpha value, actually not well handled, 0 should be wireframe
-   */
-  colorAlpha = ((parms[0]>>16)&0x1F)<<26;
-  if ( colorAlpha != 0) {
-    colorRGB[3] = colorAlpha;
-    glColor4iv (colorRGB);
-  }
-
-
-
+  current_polygon_attr = parms[0];
 }
 
 static void
@@ -940,6 +1084,20 @@ process_dif_amb( struct render_state *state,
 
   LOG("dif amb %08x\n", parms[0]);
 
+  if ( diffuse[0] != 0)
+    diffuse[0] |= 0x3ffffff;
+  if ( diffuse[1] != 0)
+    diffuse[1] |= 0x3ffffff;
+  if ( diffuse[2] != 0)
+    diffuse[2] |= 0x3ffffff;
+
+  if ( ambient[0] != 0)
+    ambient[0] |= 0x3ffffff;
+  if ( ambient[1] != 0)
+    ambient[1] |= 0x3ffffff;
+  if ( ambient[2] != 0)
+    ambient[2] |= 0x3ffffff;
+
 
   if (BIT15(parms[0])) {
     colorRGB[0] = diffuse[0];
@@ -965,6 +1123,21 @@ process_spe_emi( struct render_state *state,
     ((parms[0]>>21)&0x1F) << 26,
     ((parms[0]>>26)&0x1F) << 26,
     0x7fffffff };
+
+  if ( specular[0] != 0)
+    specular[0] |= 0x3ffffff;
+  if ( specular[1] != 0)
+    specular[1] |= 0x3ffffff;
+  if ( specular[2] != 0)
+    specular[2] |= 0x3ffffff;
+
+  if ( emission[0] != 0)
+    emission[0] |= 0x3ffffff;
+  if ( emission[1] != 0)
+    emission[1] |= 0x3ffffff;
+  if ( emission[2] != 0)
+    emission[2] |= 0x3ffffff;
+
 
   LOG("spe emi %08x\n", parms[0]);
 
@@ -1086,7 +1259,7 @@ process_mtx_pop( struct render_state *state,
   }
 
   if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1112,7 +1285,7 @@ process_mtx_restore( struct render_state *state,
   }
 
   if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1146,7 +1319,7 @@ process_mtx_load_4x4( struct render_state *state,
       mtxCurrent[current_matrix_mode][14], mtxCurrent[current_matrix_mode][15]);
 
   if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1193,7 +1366,7 @@ process_mtx_load_4x3( struct render_state *state,
       mtxCurrent[current_matrix_mode][14], mtxCurrent[current_matrix_mode][15]);
 
   if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 
@@ -1218,10 +1391,10 @@ process_mtx_trans( struct render_state *state,
 
   if ( current_matrix_mode == 2) {
     LOG_MATRIX( mtxCurrent[1]);
-    glLoadMatrixf( mtxCurrent[1]);
+    loadMatrix( mtxCurrent[1]);
   }
   else if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1244,9 +1417,9 @@ process_mtx_scale( struct render_state *state,
   LOG("scale %f,%f,%f\n", scale[0], scale[1], scale[2]);
 
   if ( current_matrix_mode == 2)
-    glLoadMatrixf( mtxCurrent[1]);
+    loadMatrix( mtxCurrent[1]);
   else if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1266,9 +1439,9 @@ process_mtx_mult_4x4( struct render_state *state,
     MatrixMultiply (mtxCurrent[1], mult_matrix);
 
   if ( current_matrix_mode == 2)
-    glLoadMatrixf( mtxCurrent[1]);
+    loadMatrix( mtxCurrent[1]);
   else if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1300,9 +1473,9 @@ process_mtx_mult_4x3( struct render_state *state,
     MatrixMultiply (mtxCurrent[1], mult_matrix);
 
   if ( current_matrix_mode == 2)
-    glLoadMatrixf( mtxCurrent[1]);
+    loadMatrix( mtxCurrent[1]);
   else if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1333,9 +1506,9 @@ process_mtx_mult_3x3( struct render_state *state,
     MatrixMultiply (mtxCurrent[1], mult_matrix);
 
   if ( current_matrix_mode == 2)
-    glLoadMatrixf( mtxCurrent[1]);
+    loadMatrix( mtxCurrent[1]);
   else if ( current_matrix_mode < 3)
-    glLoadMatrixf( mtxCurrent[current_matrix_mode]);
+    loadMatrix( mtxCurrent[current_matrix_mode]);
 }
 
 static void
@@ -1344,6 +1517,14 @@ process_colour( struct render_state *state,
   colorRGB[0] = (parms[0] & 0x1f) << 26;
   colorRGB[1] = ((parms[0] >> 5) & 0x1f) << 26;
   colorRGB[2] = ((parms[0] >> 10) & 0x1f) << 26;
+
+  if ( colorRGB[0] != 0)
+    colorRGB[0] |= 0x3ffffff;
+  if ( colorRGB[1] != 0)
+    colorRGB[1] |= 0x3ffffff;
+  if ( colorRGB[2] != 0)
+    colorRGB[2] |= 0x3ffffff;
+
   LOG("colour %08x,%08x,%08x (%08x)\n",
       colorRGB[0], colorRGB[1], colorRGB[2],
       parms[0]);
@@ -1444,7 +1625,10 @@ static void
 process_alpha_function( struct render_state *state,
                         const u32 *parms) {
   LOG("Alpha function %08x\n", parms[0]);
-  glAlphaFunc (GL_GREATER, (parms[0]&31)/31.f);
+  /*
+   * Save for later
+   */
+  alpha_function = parms[0];
 }
 
 static void
