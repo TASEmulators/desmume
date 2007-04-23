@@ -1,7 +1,13 @@
 0.6.0 -> 0.X.X
+ general:
+  - Added support for *.duc files [cyberwarriorx]
  gpu:
   - Added support for sprite rotation/scaling [shash]
-  - Added support for the 3D core (openGL and null plugins) [shash]
+  - Added support for the 3D core (openGL and null plugins) [shash] 
+ windows port:
+  - A bunch of fixes [Dmitry Krutskih]
+  - Fixed a bug in sound that was causing it to still not work for some
+    people [cyberwarriorx]
 
 0.5.0 -> 0.6.0
  general:
