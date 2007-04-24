@@ -235,15 +235,6 @@ void NDS_glMatrixMode(unsigned long v)
 		glEnd();
 	}
 
-	/*
-	if (matmode[mode] == GL_TEXTURE)
-	{
-		glGetFloatv(GL_TEXTURE_MATRIX, textureMatrix);
-
-		glLoadIdentity ();
-	}
-	*/
-
 	mode = (short)(v&3);
 
 	if (beginCalled)
@@ -276,11 +267,6 @@ void NDS_glLoadIdentity (void)
 
 	if (mode == 2)
 		MatrixIdentity (mtxCurrent[1]);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glLoadMatrix4x4(signed long v)
@@ -295,11 +281,6 @@ void NDS_glLoadMatrix4x4(signed long v)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
 
 	ML4x4ind = 0;
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glLoadMatrix4x3(signed long v)
@@ -316,11 +297,6 @@ void NDS_glLoadMatrix4x3(signed long v)
 
 	if (mode == 2)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glStoreMatrix(unsigned long v)
@@ -330,18 +306,10 @@ void NDS_glStoreMatrix(unsigned long v)
 
 void NDS_glRestoreMatrix(unsigned long v)
 {
-	//LOG ("glRestoreMatrix - param:%d - mode:%d", v, mode);
-
 	MatrixCopy (mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], v&31));
-/*
-	if (mode == 2)
-		mtxCurrent[1].Set (mtxCurrent[2].Get());
 
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
-*/
+	if (mode == 2)
+		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
 }
 
 void NDS_glPushMatrix (void)
@@ -355,11 +323,6 @@ void NDS_glPopMatrix(signed long i)
 
 	if (mode == 2)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glTranslate(signed long v)
@@ -377,11 +340,6 @@ void NDS_glTranslate(signed long v)
 
 	if (mode == 2)
 		MatrixTranslate (mtxCurrent[1], trans);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glScale(signed long v)
@@ -399,11 +357,6 @@ void NDS_glScale(signed long v)
 
 	if (mode == 2)
 		MatrixScale (mtxCurrent[1], scale);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glMultMatrix3x3(signed long v)
@@ -424,11 +377,6 @@ void NDS_glMultMatrix3x3(signed long v)
 		MatrixMultiply (mtxCurrent[1], mtxTemporal);
 
 	MatrixIdentity (mtxTemporal);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glMultMatrix4x3(signed long v)
@@ -448,11 +396,6 @@ void NDS_glMultMatrix4x3(signed long v)
 		MatrixMultiply (mtxCurrent[1], mtxTemporal);
 
 	MatrixIdentity (mtxTemporal);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 void NDS_glMultMatrix4x4(signed long v)
@@ -469,11 +412,6 @@ void NDS_glMultMatrix4x4(signed long v)
 		MatrixMultiply (mtxCurrent[1], mtxTemporal);
 
 	MatrixIdentity (mtxTemporal);
-
-	if (beginCalled)
-	{
-		SetMatrix ();
-	}
 }
 
 static __inline void SetupTexture (unsigned int format, unsigned int palette)
@@ -546,9 +484,8 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 			}
 		}
 
-		//if (!textureCache.IsCached((u8*)pal, paletteSize, adr, imageSize, mode, palZeroTransparent))
 		{
-			unsigned char * dst = texMAP;// + sizeX*sizeY*3;
+			unsigned char * dst = texMAP, *src = NULL;
 
 			switch(mode)
 			{
@@ -642,111 +579,144 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 					unsigned int * map = ((unsigned int *)adr), i = 0;
 					unsigned int * dst = (unsigned int *)texMAP;
 
-					for (y = 0; y < (sizeY/4); y ++)
-					{
-						for (x = 0; x < (sizeX/4); x ++, i++)
+						/* FIXME: the texture slots do not have to follow the VRAM bank layout */
+				if ( (format & 0xc000) == 0x8000) {
+					/* texel are in slot 2 */
+					slot1 = (unsigned short*)((unsigned char *)(ARM9Mem.ARM9_LCD + ((format&0x3FFF)<<2) + 0x30000));
+				}
+				else {
+					slot1 = (unsigned short*)((unsigned char *)(ARM9Mem.ARM9_LCD +((format&0x3FFF)<<2) + 0x20000));
+				}
+
+				for (y = 0; y < (sizeY/4); y ++)
+				{
+					for (x = 0; x < (sizeX/4); x ++, i++)
 						{
-							u32 currBlock	= map[i], sy;
-							u16 pal1		= slot1[i];
-							u16 pal1offset	= (pal1 & 0x3FFF)<<1;
-							u8  mode		= pal1>>14;
+						u32 currBlock	= map[i], sy;
+						u16 pal1		= slot1[i];
+						u16 pal1offset	= (pal1 & 0x3FFF)<<1;
+						u8  mode		= pal1>>14;
 
-							for (sy = 0; sy < 4; sy++)
+						for (sy = 0; sy < 4; sy++)
 							{
-								// Texture offset
-								u32 xAbs = (x<<2);
-								u32 yAbs = ((y<<2) + sy);
-								u32 currentPos = xAbs + yAbs*sizeX;
+							// Texture offset
+							u32 xAbs = (x<<2);
+							u32 yAbs = ((y<<2) + sy);
+							u32 currentPos = xAbs + yAbs*sizeX;
 
-								// Palette							
-								u8  currRow		= (u8)((currBlock >> (sy*8)) & 0xFF);
-		#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
-		#define RGB32(r,g,b,a) (((a)<<24) | ((r)<<16) | ((g)<<8) | (b))
+							// Palette							
+							u8  currRow		= (u8)((currBlock >> (sy*8)) & 0xFF);
+	#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
+	#define RGB32(r,g,b,a) (((a)<<24) | ((r)<<16) | ((g)<<8) | (b))
 
-								switch (mode)
+							switch (mode)
 								{
-									case 0:
-									{
-										u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-										u16 col1 = pal[pal1offset+((currRow>>2)&3)];
-										u16 col2 = pal[pal1offset+((currRow>>4)&3)];
-										u16 col3 = pal[pal1offset+((currRow>>6)&3)];
+								case 0:
+								{
+									int i;
 
-										dst[currentPos+0] = RGB16TO32(col0, 255);
-										dst[currentPos+1] = RGB16TO32(col1, 255);
-										dst[currentPos+2] = RGB16TO32(col2, 255);
-										dst[currentPos+3] = RGB16TO32(col3, 128);
+									for ( i = 0; i < 4; i++) {
+									int texel = (currRow >> (2 * i)) & 3;
 
-										break;
+									if ( texel == 3) {
+										dst[currentPos+i] = RGB16TO32(0x7fff, 0);
 									}
-									case 1:
-									{
-										u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-										u16 col1 = pal[pal1offset+((currRow>>2)&3)];
-										u16 col3 = pal[pal1offset+((currRow>>6)&3)];
-
-										u32 col0R = ((col0 & 0x7C00)>>7);
-										u32 col0G = ((col0 & 0x3E0 )>>2);
-										u32 col0B = ((col0 & 0x1F  )<<3);
-										u32 col0A = ((pal1offset+((currRow>>0)&1)) == 0) ? palZeroTransparent : 255;
-
-										u32 col1R = ((col1 & 0x7C00)>>7);
-										u32 col1G = ((col1 & 0x3E0 )>>2);
-										u32 col1B = ((col1 & 0x1F  )<<3);
-										u32	col1A = ((pal1offset+((currRow>>2)&1)) == 0) ? palZeroTransparent : 255;
-
-										dst[currentPos+0] = RGB16TO32(col0, 255);
-										dst[currentPos+1] = RGB16TO32(col1, 255);
-										dst[currentPos+2] = RGB32(	(col0R+col1R)>>1, 
-																	(col0G+col1G)>>1, 
-																	(col0B+col1B)>>1, 
-																	(col0A+col1A)>>1);
-										dst[currentPos+3] = RGB16TO32(col3, 128);
-										
-										break;
+									else {
+										u16 colour = pal[pal1offset+texel];
+										dst[currentPos+i] = RGB16TO32( colour, 255);
 									}
-									case 2:
-									{
-										u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-										u16 col1 = pal[pal1offset+((currRow>>2)&3)];
-										u16 col2 = pal[pal1offset+((currRow>>4)&3)];
-										u16 col3 = pal[pal1offset+((currRow>>6)&3)];
-
-										dst[currentPos+0] = RGB16TO32(col0, 255);
-										dst[currentPos+1] = RGB16TO32(col1, 255);
-										dst[currentPos+2] = RGB16TO32(col2, 255);
-										dst[currentPos+3] = RGB16TO32(col3, 255);
-
-										break;
 									}
-									case 3:
-									{					
-										u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-										u16 col1 = pal[pal1offset+((currRow>>2)&3)];
+									break;
+								}
+								case 1:
+								{
+									u16 colours[3];
+									int i;
 
-										u32 col0R = ((col0 & 0x7C00)>>7);
-										u32 col0G = ((col0 & 0x3E0 )>>2);
-										u32 col0B = ((col0 & 0x1F  )<<3);
-										u32 col0A = ((pal1offset+((currRow>>0)&1)) == 0) ? palZeroTransparent : 255;
+									colours[0] = pal[pal1offset + 0];
+									colours[1] = pal[pal1offset + 1];
+									colours[2] =
+									/* RED */
+									(((colours[0] & 0x1f) +
+										(colours[1] & 0x1f)) >> 1) |
+									/* GREEN */
+									(((colours[0] & (0x1f << 5)) +
+										(colours[1] & (0x1f << 5))) >> 1) |
+									/* BLUE */
+									(((colours[0] & (0x1f << 10)) +
+										(colours[1] & (0x1f << 10))) >> 1);
 
-										u32 col1R = ((col1 & 0x7C00)>>7);
-										u32 col1G = ((col1 & 0x3E0 )>>2);
-										u32 col1B = ((col1 & 0x1F  )<<3);
-										u32	col1A = ((pal1offset+((currRow>>2)&1)) == 0) ? palZeroTransparent : 255;
+									for ( i = 0; i < 4; i++) {
+									int texel = (currRow >> (2 * i)) & 3;
 
-										dst[currentPos+0] = RGB32(col0R, col0G, col0B, col0A);
-										dst[currentPos+1] = RGB32(col1R, col1G, col1B, col1A);
-										dst[currentPos+2] = RGB32(	(col0R*5+col1R*3)>>3, 
-																	(col0G*5+col1G*3)>>3, 
-																	(col0B*5+col1B*3)>>3, 
-																	(col0A*5+col1A*3)>>3);
-
-										dst[currentPos+3] = RGB32(	(col0R*3+col1R*5)>>3, 
-																	(col0G*3+col1G*5)>>3, 
-																	(col0B*3+col1B*5)>>3, 
-																	(col0A*3+col1A*5)>>3);
-										break;
+									if ( texel == 3) {
+										dst[currentPos+i] = RGB16TO32(0, 0);
 									}
+									else {
+										dst[currentPos+i] = RGB16TO32( colours[texel], 255);
+									}
+									}
+									break;
+								}
+								case 2:
+								{
+									u16 col0 = pal[pal1offset+((currRow>>0)&3)];
+									u16 col1 = pal[pal1offset+((currRow>>2)&3)];
+									u16 col2 = pal[pal1offset+((currRow>>4)&3)];
+									u16 col3 = pal[pal1offset+((currRow>>6)&3)];
+
+									dst[currentPos+0] = RGB16TO32(col0, 255);
+									dst[currentPos+1] = RGB16TO32(col1, 255);
+									dst[currentPos+2] = RGB16TO32(col2, 255);
+									dst[currentPos+3] = RGB16TO32(col3, 255);
+
+									break;
+								}
+								case 3:
+								{
+									u16 colours[4];
+									int i;
+									u32 red0, red1;
+									u32 green0, green1;
+									u32 blue0, blue1;
+
+									colours[0] = pal[pal1offset + 0];
+									colours[1] = pal[pal1offset + 1];
+
+									red0 = colours[0] & 0x1f;
+									green0 = (colours[0] & (0x1f << 5)) >> 5;
+									blue0 = (colours[0] & (0x1f << 10)) >> 10;
+
+									red1 = colours[1] & 0x1f;
+									green1 = (colours[1] & (0x1f << 5)) >> 5;
+									blue1 = (colours[1] & (0x1f << 10)) >> 10;
+
+									/* (colour0 * 5 + colour1 * 3) / 8 */
+									colours[2] =
+									/* red */
+									((red0 * 5 + red1 * 3) >> 3) |
+									/* green */
+									(((green0 * 5 + green1 * 3) >> 3) << 5) |
+									/* blue */
+									(((blue0 * 5 + blue1 * 3) >> 3) << 10);
+
+									/* (colour0 * 3 + colour1 * 5) / 8 */
+									colours[3] =
+									/* red */
+									((red0 * 3 + red1 * 5) >> 3) |
+									/* green */
+									(((green0 * 3 + green1 * 5) >> 3) << 5) |
+									/* blue */
+									(((blue0 * 3 + blue1 * 5) >> 3) << 10);
+
+
+									for ( i = 0; i < 4; i++) {
+									int texel = (currRow >> (2 * i)) & 3;
+
+									dst[currentPos+i] = RGB16TO32(colours[texel], 255);
+									}
+									break;
+								}
 								}
 							}
 						}
@@ -783,16 +753,14 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 				break;
 			}
 
-			glBindTexture(GL_TEXTURE_2D, oglTextureID);
-			glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
-			//textureCache.SetTexture ( texMAP, sizeX, sizeY, (u8*)pal, paletteSize, adr, imageSize, mode, palZeroTransparent);
+			glBindTexture(GL_TEXTURE_2D, oglTextureID);	
 
-	/*
+			
 			switch ((format>>18)&3)
 			{
 				case 0:
 				{
-					textureCache.SetTexture ( texMAP, sizeX, sizeY, (u8*)pal, paletteSize, adr, imageSize, mode);
+					glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 					break;
 				}
 
@@ -800,30 +768,30 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 				{
 					u32 *src = (u32*)texMAP, *dst = (u32*)texMAP2;
 
-					for (int y = 0; y < sizeY; y++)
+					for (y = 0; y < sizeY; y++)
 					{
-						for (int x = 0; x < sizeX; x++)
+						for (x = 0; x < sizeX; x++)
 						{
 							dst[y*sizeX*2 + x] = dst[y*sizeX*2 + (sizeX*2-x-1)] = src[y*sizeX + x];
 						}
 					}
 
 					sizeX <<= 1;
-					textureCache.SetTexture ( texMAP2, sizeX, sizeY, (u8*)pal, paletteSize, adr, imageSize, mode);
+					glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texMAP2);
 					break;
 				}
 
 				case 2:
 				{
-					u32 *src = (u32*)texMAP;
+					u32 *src = (u32*)texMAP, *dst = (u32*)texMAP2;
 
-					for (int y = 0; y < sizeY; y++)
+					for (y = 0; y < sizeY; y++)
 					{
 						memcpy (&src[(sizeY*2-y-1)*sizeX], &src[y*sizeX], sizeX*4);
 					}
 
 					sizeY <<= 1;
-					textureCache.SetTexture ( texMAP, sizeX, sizeY, (u8*)pal, paletteSize, adr, imageSize, mode);
+					glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 					break;
 				}
 
@@ -831,9 +799,9 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 				{
 					u32 *src = (u32*)texMAP, *dst = (u32*)texMAP2;
 
-					for (int y = 0; y < sizeY; y++)
+					for (y = 0; y < sizeY; y++)
 					{
-						for (int x = 0; x < sizeX; x++)
+						for (x = 0; x < sizeX; x++)
 						{
 							dst[y*sizeX*2 + x] = dst[y*sizeX*2 + (sizeX*2-x-1)] = src[y*sizeX + x];
 						}
@@ -841,17 +809,16 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 
 					sizeX <<= 1;
 
-					for (int y = 0; y < sizeY; y++)
+					for (y = 0; y < sizeY; y++)
 					{
 						memcpy (&dst[(sizeY*2-y-1)*sizeX], &dst[y*sizeX], sizeX*4);
 					}
 
 					sizeY <<= 1;
-					textureCache.SetTexture ( texMAP2, sizeX, sizeY, (u8*)pal, paletteSize, adr, imageSize, mode);
+					glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texMAP2);
 					break;
 				}
 			}
-	*/
 		}
 
 		invTexWidth  = 1.f/((float)sizeX*(1<<4));//+ 1;
@@ -960,9 +927,8 @@ void NDS_glBegin(unsigned long v)
 	glMatrixMode (GL_PROJECTION);
 	glLoadMatrixf(mtxCurrent[0]);
 
-	// COMPTE, AMPARO, QUE SI POSO AQUI UN 2, es trenca tot
 	glMatrixMode (GL_MODELVIEW);
-	glLoadMatrixf(mtxCurrent[1]);
+	glLoadIdentity();
 
 	beginCalled = 1;
 	vtxFormat = polyType[v&3];
@@ -990,6 +956,8 @@ void NDS_glColor3b(unsigned long v)
 
 static __inline void  SetVertex()
 {
+	float coordTransformed[3] = { coord[0], coord[1], coord[2] };
+
 	if (texCoordinateTransform == 3) 
 	{ 
 		float *textureMatrix = mtxCurrent[3]; 
@@ -1003,7 +971,10 @@ static __inline void  SetVertex()
 		SetTextureCoordinate (s2, t2); 
 	} 
 
-	glVertex3fv (coord); 
+	MatrixMultVec (mtxCurrent[1], coordTransformed);
+
+	glVertex3fv (coordTransformed); 
+	//glVertex3fv (coord); 
 	numVertex++;
 }
 
@@ -1185,9 +1156,6 @@ void NDS_glMaterial0 (unsigned long val)
 		colorRGB[2] = diffuse[2];
 	}
 
-//	if (disableLighting)
-//		return;
-
 	if (beginCalled)
 	{
 		glEnd();
@@ -1212,9 +1180,6 @@ void NDS_glMaterial1 (unsigned long val)
 							((val>>21)&0x1F) << 26,
 							((val>>26)&0x1F) << 26,
 							0x7fffffff };
-
-//	if (disableLighting)
-//		return;
 
 	if (beginCalled)
 	{
@@ -1411,6 +1376,8 @@ void NDS_glNormal(unsigned long v)
 
 		SetTextureCoordinate (s2, t2);
 	}
+
+	MatrixMultVec (mtxCurrent[2], normal);
 
 	glNormal3fv(normal);
 }
