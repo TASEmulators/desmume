@@ -30,7 +30,7 @@ void MatrixInit  (float *matrix)
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-void MatrixMultVec (float *matrix, float *vecPtr)
+void MatrixMultVec4x4 (float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
 	float y = vecPtr[1];
@@ -39,6 +39,17 @@ void MatrixMultVec (float *matrix, float *vecPtr)
 	vecPtr[0] = x * matrix[0] + y * matrix[4] + z * matrix[ 8] + matrix[12];
 	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9] + matrix[13];
 	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10] + matrix[14];
+}
+
+void MatrixMultVec3x3 (float *matrix, float *vecPtr)
+{
+	float x = vecPtr[0];
+	float y = vecPtr[1];
+	float z = vecPtr[2];
+
+	vecPtr[0] = x * matrix[0] + y * matrix[4] + z * matrix[ 8];
+	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9];
+	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10];
 }
 
 void MatrixIdentity	(float *matrix)

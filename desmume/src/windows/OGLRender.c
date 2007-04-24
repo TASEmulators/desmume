@@ -971,7 +971,7 @@ static __inline void  SetVertex()
 		SetTextureCoordinate (s2, t2); 
 	} 
 
-	MatrixMultVec (mtxCurrent[1], coordTransformed);
+	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
 	glVertex3fv (coordTransformed); 
 	//glVertex3fv (coord); 
@@ -1377,7 +1377,7 @@ void NDS_glNormal(unsigned long v)
 		SetTextureCoordinate (s2, t2);
 	}
 
-	MatrixMultVec (mtxCurrent[2], normal);
+	MatrixMultVec3x3 (mtxCurrent[2], normal);
 
 	glNormal3fv(normal);
 }

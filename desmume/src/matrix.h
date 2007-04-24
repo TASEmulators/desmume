@@ -29,7 +29,8 @@ typedef struct MatrixStack
 } MatrixStack;
 
 void	MatrixInit				(float *matrix);
-void	MatrixMultVec			(float *matrix, float *vecPtr);
+void	MatrixMultVec3x3		(float *matrix, float *vecPtr);
+void	MatrixMultVec4x4		(float *matrix, float *vecPtr);
 void	MatrixIdentity			(float *matrix);
 void	MatrixMultiply			(float *matrix, float *rightMatrix);
 float	MatrixGetMultipliedIndex(int index, float *matrix, float *rightMatrix);
