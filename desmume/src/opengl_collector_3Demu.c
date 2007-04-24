@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.9 2007-04-21 16:47:53 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.10 2007-04-24 16:20:28 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -62,11 +62,21 @@
 
 #include "opengl_collector_3Demu.h"
 
+#define LOG_ALWAYS( fmt, ...) fprintf( stdout, "OpenGL Collector: "); \
+fprintf( stdout, fmt, ##__VA_ARGS__)
+
 #if 0
 #define LOG( fmt, ...) fprintf( stdout, "OpenGL Collector: "); \
 fprintf( stdout, fmt, ##__VA_ARGS__)
 #else
 #define LOG( fmt, ...)
+#endif
+
+#if 0
+#define LOG_TEXTURE( fmt, ...) fprintf( stdout, "OpenGL Collector texture: "); \
+fprintf( stdout, fmt, ##__VA_ARGS__)
+#else
+#define LOG_TEXTURE( fmt, ...)
 #endif
 
 #if 0
@@ -83,11 +93,15 @@ fprintf( stdout, fmt, ##__VA_ARGS__)
 #define LOG_ERROR( fmt, ...)
 #endif
 
+#if 0
 #define LOG_MATRIX( matrix) \
-LOG( "%f, %f, %f, %f\n", matrix[0], matrix[1], matrix[2], matrix[3]); \
-LOG( "%f, %f, %f, %f\n", matrix[4], matrix[5], matrix[6], matrix[7]); \
-LOG( "%f, %f, %f, %f\n", matrix[8], matrix[9], matrix[10], matrix[11]); \
-LOG( "%f, %f, %f, %f\n", matrix[12], matrix[13], matrix[14], matrix[15])
+LOG_ALWAYS( "%f, %f, %f, %f\n", matrix[0], matrix[1], matrix[2], matrix[3]); \
+LOG_ALWAYS( "%f, %f, %f, %f\n", matrix[4], matrix[5], matrix[6], matrix[7]); \
+LOG_ALWAYS( "%f, %f, %f, %f\n", matrix[8], matrix[9], matrix[10], matrix[11]); \
+LOG_ALWAYS( "%f, %f, %f, %f\n", matrix[12], matrix[13], matrix[14], matrix[15])
+#else
+#define LOG_MATRIX( matrix)
+#endif
 
 #define USE_BGR_ORDER 1
 
@@ -317,12 +331,13 @@ loadMatrix( float *matrix) {
 }
 
 
-static void
+static int
 SetupTexture (unsigned int format, unsigned int palette) {
+  int alpha_texture = 0;
   if(format == 0) // || disableTexturing)
     {
       LOG("Texture format is zero\n");
-      return;
+      return 0;
     }
   else
     {
@@ -330,6 +345,9 @@ SetupTexture (unsigned int format, unsigned int palette) {
       unsigned int sizeX = (1<<(((format>>20)&0x7)+3));
       unsigned int sizeY = (1<<(((format>>23)&0x7)+3));
       unsigned int mode = (unsigned short)((format>>26)&0x7);
+      /* FIXME: The texture slots do not have to follow the VRAM bank layout.
+       *        Need support in MMU.c or similar.
+       */
       unsigned char * adr = (unsigned char *)(ARM9Mem.ARM9_LCD + ((format&0xFFFF)<<3));
       unsigned short param = (unsigned short)((format>>30)&0xF);
       unsigned short param2 = (unsigned short)((format>>16)&0xF);
@@ -337,6 +355,12 @@ SetupTexture (unsigned int format, unsigned int palette) {
       unsigned int paletteSize = 0;
       unsigned int palZeroTransparent = BIT29(format) ? 0 : 255;
       unsigned int x=0, y=0;
+
+      if ( BIT29(format) && mode != 0) {
+        alpha_texture = 1;
+      }
+
+      LOG_TEXTURE("Texture %08x: size %d by %d\n", format, sizeX, sizeY);
 
       if (mode == 0)
         glDisable (GL_TEXTURE_2D);
@@ -347,6 +371,7 @@ SetupTexture (unsigned int format, unsigned int palette) {
         {
         case 1:
           {
+            alpha_texture = 1;
             paletteSize = 256;
             pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
             break;
@@ -373,18 +398,21 @@ SetupTexture (unsigned int format, unsigned int palette) {
           }
         case 5:
           {
+            alpha_texture = 1;
             paletteSize = 0;
             pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
             break;
           }
         case 6:
           {
+            alpha_texture = 1;
             paletteSize = 256;
             pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
             break;
           }
         case 7:
           {
+            alpha_texture = 1;
             paletteSize = 0;
             break;
           }
@@ -394,7 +422,7 @@ SetupTexture (unsigned int format, unsigned int palette) {
       {
         unsigned char * dst = texMAP;// + sizeX*sizeY*3;
 
-        LOG("Setting up texture mode %d\n", mode);
+        LOG_TEXTURE("Setting up texture mode %d\n", mode);
 
         switch(mode)
           {
@@ -475,6 +503,7 @@ SetupTexture (unsigned int format, unsigned int palette) {
               for(x = 0; x < imageSize; ++x)
                 {
                   unsigned short c = pal[adr[x]];
+                  LOG_TEXTURE("mode 4: x %d colour %04x index %d\n", x, c, adr[x]);
                   dst[0] = (unsigned char)((c & 0x1F)<<3);
                   dst[1] = (unsigned char)((c & 0x3E0)>>2);
                   dst[2] = (unsigned char)((c & 0x7C00)>>7);
@@ -488,9 +517,26 @@ SetupTexture (unsigned int format, unsigned int palette) {
             {
               // UNOPTIMIZED
               unsigned short * pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-              unsigned short * slot1 = (unsigned short*)((unsigned char *)(ARM9Mem.ARM9_LCD + ((format&0xFFFF)<<3)/2 + 0x20000));
+              unsigned short * slot1;
               unsigned int * map = ((unsigned int *)adr), i = 0;
               unsigned int * dst = (unsigned int *)texMAP;
+
+              /* FIXME: the texture slots do not have to follow the VRAM bank layout */
+              if ( (format & 0xc000) == 0x8000) {
+                /* texel are in slot 2 */
+                slot1 = (unsigned short*)
+                  ((unsigned char *)(ARM9Mem.ARM9_LCD +
+                                     ((format&0x3FFF)<<2) + 0x30000));
+                LOG_TEXTURE("slot 2 compressed \n");
+              }
+              else {
+                slot1 = (unsigned short*)
+                  ((unsigned char *)(ARM9Mem.ARM9_LCD +
+                                     ((format&0x3FFF)<<2) + 0x20000));
+                LOG_TEXTURE("slot 0 compressed\n");
+              }
+
+              LOG_TEXTURE("Compressed texture\n");
 
               for (y = 0; y < (sizeY/4); y ++)
                 {
@@ -517,42 +563,49 @@ SetupTexture (unsigned int format, unsigned int palette) {
                             {
                             case 0:
                               {
-                                u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-                                u16 col1 = pal[pal1offset+((currRow>>2)&3)];
-                                u16 col2 = pal[pal1offset+((currRow>>4)&3)];
-                                u16 col3 = pal[pal1offset+((currRow>>6)&3)];
+                                int i;
 
-                                dst[currentPos+0] = RGB16TO32(col0, 255);
-                                dst[currentPos+1] = RGB16TO32(col1, 255);
-                                dst[currentPos+2] = RGB16TO32(col2, 255);
-                                dst[currentPos+3] = RGB16TO32(col3, 128);
+                                for ( i = 0; i < 4; i++) {
+                                  int texel = (currRow >> (2 * i)) & 3;
 
+                                  if ( texel == 3) {
+                                    dst[currentPos+i] = RGB16TO32(0x7fff, 0);
+                                  }
+                                  else {
+                                    u16 colour = pal[pal1offset+texel];
+                                    dst[currentPos+i] = RGB16TO32( colour, 255);
+                                  }
+                                }
                                 break;
                               }
                             case 1:
                               {
-                                u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-                                u16 col1 = pal[pal1offset+((currRow>>2)&3)];
-                                u16 col3 = pal[pal1offset+((currRow>>6)&3)];
+                                u16 colours[3];
+                                int i;
 
-                                u32 col0R = ((col0 & 0x7C00)>>7);
-                                u32 col0G = ((col0 & 0x3E0 )>>2);
-                                u32 col0B = ((col0 & 0x1F  )<<3);
-                                u32 col0A = ((pal1offset+((currRow>>0)&1)) == 0) ? palZeroTransparent : 255;
+                                colours[0] = pal[pal1offset + 0];
+                                colours[1] = pal[pal1offset + 1];
+                                colours[2] =
+                                  /* RED */
+                                  (((colours[0] & 0x1f) +
+                                    (colours[1] & 0x1f)) >> 1) |
+                                  /* GREEN */
+                                  (((colours[0] & (0x1f << 5)) +
+                                    (colours[1] & (0x1f << 5))) >> 1) |
+                                  /* BLUE */
+                                  (((colours[0] & (0x1f << 10)) +
+                                    (colours[1] & (0x1f << 10))) >> 1);
 
-                                u32 col1R = ((col1 & 0x7C00)>>7);
-                                u32 col1G = ((col1 & 0x3E0 )>>2);
-                                u32 col1B = ((col1 & 0x1F  )<<3);
-                                u32	col1A = ((pal1offset+((currRow>>2)&1)) == 0) ? palZeroTransparent : 255;
+                                for ( i = 0; i < 4; i++) {
+                                  int texel = (currRow >> (2 * i)) & 3;
 
-                                dst[currentPos+0] = RGB16TO32(col0, 255);
-                                dst[currentPos+1] = RGB16TO32(col1, 255);
-                                dst[currentPos+2] = RGB32(	(col0R+col1R)>>1, 
-                                                                (col0G+col1G)>>1, 
-                                                                (col0B+col1B)>>1, 
-                                                                (col0A+col1A)>>1);
-                                dst[currentPos+3] = RGB16TO32(col3, 128);
-										
+                                  if ( texel == 3) {
+                                    dst[currentPos+i] = RGB16TO32(0, 0);
+                                  }
+                                  else {
+                                    dst[currentPos+i] = RGB16TO32( colours[texel], 255);
+                                  }
+                                }
                                 break;
                               }
                             case 2:
@@ -570,31 +623,48 @@ SetupTexture (unsigned int format, unsigned int palette) {
                                 break;
                               }
                             case 3:
-                              {					
-                                u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-                                u16 col1 = pal[pal1offset+((currRow>>2)&3)];
+                              {
+                                u16 colours[4];
+                                int i;
+                                u32 red0, red1;
+                                u32 green0, green1;
+                                u32 blue0, blue1;
 
-                                u32 col0R = ((col0 & 0x7C00)>>7);
-                                u32 col0G = ((col0 & 0x3E0 )>>2);
-                                u32 col0B = ((col0 & 0x1F  )<<3);
-                                u32 col0A = ((pal1offset+((currRow>>0)&1)) == 0) ? palZeroTransparent : 255;
+                                colours[0] = pal[pal1offset + 0];
+                                colours[1] = pal[pal1offset + 1];
 
-                                u32 col1R = ((col1 & 0x7C00)>>7);
-                                u32 col1G = ((col1 & 0x3E0 )>>2);
-                                u32 col1B = ((col1 & 0x1F  )<<3);
-                                u32	col1A = ((pal1offset+((currRow>>2)&1)) == 0) ? palZeroTransparent : 255;
+                                red0 = colours[0] & 0x1f;
+                                green0 = (colours[0] & (0x1f << 5)) >> 5;
+                                blue0 = (colours[0] & (0x1f << 10)) >> 10;
 
-                                dst[currentPos+0] = RGB32(col0R, col0G, col0B, col0A);
-                                dst[currentPos+1] = RGB32(col1R, col1G, col1B, col1A);
-                                dst[currentPos+2] = RGB32(	(col0R*5+col1R*3)>>3, 
-                                                                (col0G*5+col1G*3)>>3, 
-                                                                (col0B*5+col1B*3)>>3, 
-                                                                (col0A*5+col1A*3)>>3);
+                                red1 = colours[1] & 0x1f;
+                                green1 = (colours[1] & (0x1f << 5)) >> 5;
+                                blue1 = (colours[1] & (0x1f << 10)) >> 10;
 
-                                dst[currentPos+3] = RGB32(	(col0R*3+col1R*5)>>3, 
-                                                                (col0G*3+col1G*5)>>3, 
-                                                                (col0B*3+col1B*5)>>3, 
-                                                                (col0A*3+col1A*5)>>3);
+                                /* (colour0 * 5 + colour1 * 3) / 8 */
+                                colours[2] =
+                                  /* red */
+                                  ((red0 * 5 + red1 * 3) >> 3) |
+                                  /* green */
+                                  (((green0 * 5 + green1 * 3) >> 3) << 5) |
+                                  /* blue */
+                                  (((blue0 * 5 + blue1 * 3) >> 3) << 10);
+
+                                /* (colour0 * 3 + colour1 * 5) / 8 */
+                                colours[3] =
+                                  /* red */
+                                  ((red0 * 3 + red1 * 5) >> 3) |
+                                  /* green */
+                                  (((green0 * 3 + green1 * 5) >> 3) << 5) |
+                                  /* blue */
+                                  (((blue0 * 3 + blue1 * 5) >> 3) << 10);
+
+
+                                for ( i = 0; i < 4; i++) {
+                                  int texel = (currRow >> (2 * i)) & 3;
+
+                                  dst[currentPos+i] = RGB16TO32(colours[texel], 255);
+                                }
                                 break;
                               }
                             }
@@ -746,6 +816,8 @@ SetupTexture (unsigned int format, unsigned int palette) {
 
       texCoordinateTransform = (format>>30);
     }
+
+  return alpha_texture;
 }
 
 
@@ -757,7 +829,11 @@ setup_mode23_tex_coord( float *vertex) {
                         vertex[2] * textureMatrix[8]) + s_texture_coord);
   int t2 =	(int)((	vertex[0] * textureMatrix[1] +  
                         vertex[1] * textureMatrix[5] +  
-                        vertex[2] * textureMatrix[9]) + t_texture_coord); 
+                        vertex[2] * textureMatrix[9]) + t_texture_coord);
+
+  LOG_TEXTURE("mode23 texcoord %d,%d -> %d,%d\n",
+              s_texture_coord, t_texture_coord,
+              s2, t2);
 
   glTexCoord2i( s2, t2);
 }
@@ -967,8 +1043,15 @@ process_begin_vtxs( struct render_state *state,
     if (textureFormat  != lastTextureFormat ||
         texturePalette != lastTexturePalette)
       {
+        int alpha_texture;
         LOG("Setting up texture %08x\n", textureFormat);
-        SetupTexture (textureFormat, texturePalette);
+        alpha_texture = SetupTexture (textureFormat, texturePalette);
+
+        /* FIXME: this is a hack to get some transparent textures to work */
+        if ( alpha_texture) {
+          glEnable(GL_ALPHA_TEST);
+          glAlphaFunc(GL_GREATER, 0.0f);
+        }
       
         lastTextureFormat = textureFormat;
         lastTexturePalette = texturePalette;
@@ -1199,14 +1282,15 @@ process_texcoord( struct render_state *state,
                      (1.f/16.f) * textureMatrix[9] +
                      (1.f/16.f) * textureMatrix[13]);
 
-      LOG("texture coord (pre-trans) s=%d t=%d\n", s_texture_coord, t_texture_coord);
+      LOG_TEXTURE("texture coord (pre-trans) s=%d t=%d\n",
+                  s_texture_coord, t_texture_coord);
       LOG_MATRIX( textureMatrix);
-      LOG("texture coord (trans) s=%d t=%d\n", s2, t2);
+      LOG_TEXTURE("texture coord (trans) s=%d t=%d\n", s2, t2);
       glTexCoord2i (s2, t2);
     }
   else
     {
-      LOG("texture coord s=%d t=%d\n", s_texture_coord, t_texture_coord);
+      LOG_TEXTURE("texture coord s=%d t=%d\n", s_texture_coord, t_texture_coord);
       glTexCoord2i (s_texture_coord,t_texture_coord);
     }
 }
@@ -1430,8 +1514,10 @@ process_mtx_mult_4x4( struct render_state *state,
   LOG("Mult 4x4 (%d):\n", current_matrix_mode);
 
   for ( i = 0; i < 16; i++) {
-    mult_matrix[i] = parms[i];
+    mult_matrix[i] = fix2float(parms[i]);
   }
+
+  LOG_MATRIX( mult_matrix);
 
   MatrixMultiply (mtxCurrent[current_matrix_mode], mult_matrix);
 
@@ -1466,7 +1552,9 @@ process_mtx_mult_4x3( struct render_state *state,
   mult_matrix[12] = fix2float(parms[9]);
   mult_matrix[13] = fix2float(parms[10]);
   mult_matrix[14] = fix2float(parms[11]);
-  
+
+  LOG_MATRIX( mult_matrix);
+
   MatrixMultiply (mtxCurrent[current_matrix_mode], mult_matrix);
 
   if (current_matrix_mode == 2)
@@ -1499,6 +1587,8 @@ process_mtx_mult_3x3( struct render_state *state,
   mult_matrix[8] = fix2float(parms[6]);
   mult_matrix[9] = fix2float(parms[7]);
   mult_matrix[10] = fix2float(parms[8]);
+
+  LOG_MATRIX( mult_matrix);
   
   MatrixMultiply (mtxCurrent[current_matrix_mode], mult_matrix);
 
