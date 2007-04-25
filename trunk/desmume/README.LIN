@@ -48,6 +48,28 @@ Type "desmume" in a shell, a window should appear, then open
 a rom file using the "open" button, next use the "run" button
 to start emulation.
 
+There are a number of options that can be passed on to desmume
+from the command line:
+
+USAGE: desmume [OPTIONS] [nds-file]
+OPTIONS:
+   --opengl-2d         Enables using OpenGL for screen rendering
+    --soft-convert     Use software colour conversion during OpenGL
+                       screen rendering. May produce better or worse
+                       frame rates depending on hardware.
+
+   --disable-3d        Disables the 3D emulation
+
+   --disable-sound     Disables the sound emulation
+
+   --help              Display this message
+
+
+NOTE:
+You may get improved performance by also passing the argument
+--gdk-gl-force-indirect. This has been seen to improve things for
+Nvidia based graphics cards under Linux.
+
 
 2.2 CLI version_______________________________________________
 
