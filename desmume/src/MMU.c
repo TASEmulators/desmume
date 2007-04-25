@@ -199,6 +199,7 @@ void MMU_Init(void) {
         mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
         mc_alloc(&MMU.bupmem, 1);
         MMU.bupmem.fp = NULL;
+
 } 
 
 void MMU_DeInit(void) {
@@ -239,6 +240,8 @@ void MMU_clearMem()
 	memset(ARM9Mem.ARM9_VMEM, 0, 0x0800);
 	memset(ARM9Mem.ARM9_WRAM, 0, 0x01000000);
 	memset(ARM9Mem.MAIN_MEM,  0, 0x400000);
+
+	memset(ARM9Mem.blank_memory,  0, 0x020000);
 	
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
@@ -268,6 +271,19 @@ void MMU_clearMem()
 	
 	MainScreen.offset = 192;
 	SubScreen.offset  = 0;
+
+        /* setup the texture slot pointers */
+#if 0
+        ARM9Mem.textureSlotAddr[0] = ARM9Mem.blank_memory;
+        ARM9Mem.textureSlotAddr[1] = ARM9Mem.blank_memory;
+        ARM9Mem.textureSlotAddr[2] = ARM9Mem.blank_memory;
+        ARM9Mem.textureSlotAddr[3] = ARM9Mem.blank_memory;
+#else
+        ARM9Mem.textureSlotAddr[0] = &ARM9Mem.ARM9_LCD[0x20000 * 0];
+        ARM9Mem.textureSlotAddr[1] = &ARM9Mem.ARM9_LCD[0x20000 * 1];
+        ARM9Mem.textureSlotAddr[2] = &ARM9Mem.ARM9_LCD[0x20000 * 2];
+        ARM9Mem.textureSlotAddr[3] = &ARM9Mem.ARM9_LCD[0x20000 * 3];
+#endif
 }
 
 /* the VRAM blocks keep their content even when not blended in */
@@ -901,6 +917,22 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                     MMU.vram_mode[adr-REG_VRAMCNTA] = 4 | (adr-REG_VRAMCNTA) ;
 					break ;
 				}
+                                /*
+                                 * FIXME: simply texture slot handling
+                                 * This is a first stab and is not correct. It does
+                                 * not handle a VRAM texture slot becoming
+                                 * unconfigured.
+                                 * Revisit all of VRAM control handling for future
+                                 * release?
+                                 */
+                                if ( val & 0x80) {
+                                  if ( (val & 0x7) == 3) {
+                                    int slot_index = (val >> 3) & 0x3;
+
+                                    ARM9Mem.textureSlotAddr[slot_index] =
+                                      &ARM9Mem.ARM9_LCD[0x20000 * (adr - REG_VRAMCNTA)];
+                                  }
+                                }
                 MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
 			}
 			break;
