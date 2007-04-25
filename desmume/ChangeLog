@@ -8,6 +8,12 @@
   - A bunch of fixes [Dmitry Krutskih]
   - Fixed a bug in sound that was causing it to still not work for some
     people [cyberwarriorx]
+ gtk:
+  - Added 3D emulation
+  - Added command line options.
+  - Added option to use OpenGL to render window (allows resizing).
+ gtk-glade:
+  - Added 3D emulation
 
 0.5.0 -> 0.6.0
  general:
