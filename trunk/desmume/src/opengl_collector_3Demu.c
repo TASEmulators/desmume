@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.10 2007-04-24 16:20:28 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.11 2007-04-25 16:38:48 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -345,16 +345,23 @@ SetupTexture (unsigned int format, unsigned int palette) {
       unsigned int sizeX = (1<<(((format>>20)&0x7)+3));
       unsigned int sizeY = (1<<(((format>>23)&0x7)+3));
       unsigned int mode = (unsigned short)((format>>26)&0x7);
-      /* FIXME: The texture slots do not have to follow the VRAM bank layout.
-       *        Need support in MMU.c or similar.
-       */
-      unsigned char * adr = (unsigned char *)(ARM9Mem.ARM9_LCD + ((format&0xFFFF)<<3));
-      unsigned short param = (unsigned short)((format>>30)&0xF);
-      unsigned short param2 = (unsigned short)((format>>16)&0xF);
+      const unsigned char * adr;
+      //unsigned short param = (unsigned short)((format>>30)&0xF);
+      //unsigned short param2 = (unsigned short)((format>>16)&0xF);
       unsigned int imageSize = sizeX*sizeY;
       unsigned int paletteSize = 0;
       unsigned int palZeroTransparent = BIT29(format) ? 0 : 255;
       unsigned int x=0, y=0;
+      u32 bytes_in_slot;
+      u32 orig_bytes_in_slot;
+      int current_slot = (format >> 14) & 3;
+
+      /* Get the address within the texture slot */
+      adr = ARM9Mem.textureSlotAddr[current_slot];
+      adr += (format&0x3FFF) << 3;
+
+      bytes_in_slot = 0x20000 - ((format & 0x3fff) << 3);
+      orig_bytes_in_slot = bytes_in_slot;
 
       if ( BIT29(format) && mode != 0) {
         alpha_texture = 1;
@@ -439,6 +446,16 @@ SetupTexture (unsigned int format, unsigned int palette) {
                     /* full range alpha */
                     dst[3] |= 0x7;
                   }
+
+                  /* transverse to the next texture slot if needs be */
+                  bytes_in_slot -= 1;
+                  if ( bytes_in_slot == 0) {
+                    current_slot += 1;
+                    adr = ARM9Mem.textureSlotAddr[current_slot];
+                    adr -= orig_bytes_in_slot;
+                    bytes_in_slot = 0x20000;
+                    orig_bytes_in_slot = bytes_in_slot;
+                  }
                 }
 
               break;
@@ -474,6 +491,16 @@ SetupTexture (unsigned int format, unsigned int palette) {
                   dst[2] = ((c & 0x7C00)>>7);
                   dst[3] = (((adr[x]>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
                   dst += 4;
+
+                  /* transverse to the next texture slot if needs be */
+                  bytes_in_slot -= 1;
+                  if ( bytes_in_slot == 0) {
+                    current_slot += 1;
+                    adr = ARM9Mem.textureSlotAddr[current_slot];
+                    adr -= orig_bytes_in_slot;
+                    bytes_in_slot = 0x20000;
+                    orig_bytes_in_slot = bytes_in_slot;
+                  }
                 }
             }
             break;
@@ -494,6 +521,16 @@ SetupTexture (unsigned int format, unsigned int palette) {
                   dst[2] = ((c & 0x7C00)>>7);
                   dst[3] = (((adr[x]>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
                   dst += 4;
+
+                  /* transverse to the next texture slot if needs be */
+                  bytes_in_slot -= 1;
+                  if ( bytes_in_slot == 0) {
+                    current_slot += 1;
+                    adr = ARM9Mem.textureSlotAddr[current_slot];
+                    adr -= orig_bytes_in_slot;
+                    bytes_in_slot = 0x20000;
+                    orig_bytes_in_slot = bytes_in_slot;
+                  }
                 }
             }
             break;
@@ -503,41 +540,50 @@ SetupTexture (unsigned int format, unsigned int palette) {
               for(x = 0; x < imageSize; ++x)
                 {
                   unsigned short c = pal[adr[x]];
-                  LOG_TEXTURE("mode 4: x %d colour %04x index %d\n", x, c, adr[x]);
+                  //LOG_TEXTURE("mode 4: x %d colour %04x index %d\n", x, c, adr[x]);
                   dst[0] = (unsigned char)((c & 0x1F)<<3);
                   dst[1] = (unsigned char)((c & 0x3E0)>>2);
                   dst[2] = (unsigned char)((c & 0x7C00)>>7);
                   dst[3] = (adr[x] == 0) ? palZeroTransparent : 255;//(c>>15)*255;
                   dst += 4;
+
+                  /* transverse to the next texture slot if needs be */
+                  bytes_in_slot -= 1;
+                  if ( bytes_in_slot == 0) {
+                    current_slot += 1;
+                    adr = ARM9Mem.textureSlotAddr[current_slot];
+                    adr -= orig_bytes_in_slot;
+                    bytes_in_slot = 0x20000;
+                    orig_bytes_in_slot = bytes_in_slot;
+                  }
                 }
             }
             break;
 
           case 5:
             {
-              // UNOPTIMIZED
-              unsigned short * pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-              unsigned short * slot1;
-              unsigned int * map = ((unsigned int *)adr), i = 0;
+              unsigned short * pal =
+                (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+              const unsigned short * slot1;
+              const unsigned int * map = (const unsigned int *)adr;
+              unsigned int i = 0;
               unsigned int * dst = (unsigned int *)texMAP;
 
-              /* FIXME: the texture slots do not have to follow the VRAM bank layout */
               if ( (format & 0xc000) == 0x8000) {
                 /* texel are in slot 2 */
-                slot1 = (unsigned short*)
-                  ((unsigned char *)(ARM9Mem.ARM9_LCD +
-                                     ((format&0x3FFF)<<2) + 0x30000));
-                LOG_TEXTURE("slot 2 compressed \n");
+                slot1 =
+                  (const unsigned short*)
+                  &ARM9Mem.textureSlotAddr[1][((format&0x3FFF)<<2) + 0x10000];
+                //LOG_TEXTURE("slot 2 compressed \n");
               }
               else {
-                slot1 = (unsigned short*)
-                  ((unsigned char *)(ARM9Mem.ARM9_LCD +
-                                     ((format&0x3FFF)<<2) + 0x20000));
-                LOG_TEXTURE("slot 0 compressed\n");
+                slot1 =
+                  (const unsigned short*)
+                  &ARM9Mem.textureSlotAddr[1][((format&0x3FFF)<<2) + 0x00000];
+                //LOG_TEXTURE("slot 0 compressed\n");
               }
 
-              LOG_TEXTURE("Compressed texture\n");
-
+              //LOG_TEXTURE("Compressed texture\n");
               for (y = 0; y < (sizeY/4); y ++)
                 {
                   for (x = 0; x < (sizeX/4); x ++, i++)
@@ -546,6 +592,89 @@ SetupTexture (unsigned int format, unsigned int palette) {
                       u16 pal1		= slot1[i];
                       u16 pal1offset	= (pal1 & 0x3FFF)<<1;
                       u8  mode		= pal1>>14;
+                      u32 colours[4];
+
+                      /*
+                       * Setup the colours:
+                       * In all modes the first two colours are read from
+                       * the palette.
+                       */
+#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | \
+                             ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
+                      colours[0] = RGB16TO32( pal[pal1offset + 0], 255);
+                      colours[1] = RGB16TO32( pal[pal1offset + 1], 255);
+
+                      switch ( mode) {
+                      case 0:
+                        /* colour 2 is read from the palette
+                         * colour 3 is transparent
+                         */
+                        colours[2] = RGB16TO32( pal[pal1offset+2], 255);
+                        colours[3] = RGB16TO32( 0x7fff, 0);
+                        break;
+
+                      case 1:
+                        /* colour 2 is half colour 0 + half colour 1
+                         * colour 3 is transparent
+                         */
+                        colours[2] =
+                          /* RED */
+                          (((colours[0] & 0xff) +
+                            (colours[1] & 0xff)) >> 1) |
+                          /* GREEN */
+                          (((colours[0] & (0xff << 8)) +
+                            (colours[1] & (0xff << 8))) >> 1) |
+                          /* BLUE */
+                          (((colours[0] & (0xff << 16)) +
+                            (colours[1] & (0xff << 16))) >> 1) | (0xff << 24);
+                        colours[3] = RGB16TO32( 0x7fff, 0);
+                        break;
+
+                      case 2:
+                        /* colour 2 is read from the palette
+                         * colour 3 is read from the palette
+                         */
+                        colours[2] = RGB16TO32( pal[pal1offset+2], 255);
+                        colours[3] = RGB16TO32( pal[pal1offset+3], 255);
+                        break;
+
+                      case 3: {
+                        /* colour 2 is (colour0 * 5 + colour1 * 3) / 8
+                         * colour 3 is (colour1 * 5 + colour0 * 3) / 8
+                         */
+                        u32 red0, red1;
+                        u32 green0, green1;
+                        u32 blue0, blue1;
+                        u16 colour2, colour3;
+
+                        red0 = colours[0] & 0xff;
+                        green0 = (colours[0] >> 8) & 0xff;
+                        blue0 = (colours[0] >> 16) & 0xff;
+
+                        red1 = colours[1] & 0xff;
+                        green1 = (colours[1] >> 8) & 0xff;
+                        blue1 = (colours[1] >> 16) & 0xff;
+
+                        colour2 =
+                          /* red */
+                          ((red0 * 5 + red1 * 3) >> 6) |
+                          /* green */
+                          (((green0 * 5 + green1 * 3) >> 6) << 5) |
+                          /* blue */
+                          (((blue0 * 5 + blue1 * 3) >> 6) << 10);
+                        colour3 =
+                          /* red */
+                          ((red1 * 5 + red0 * 3) >> 6) |
+                          /* green */
+                          (((green1 * 5 + green0 * 3) >> 6) << 5) |
+                          /* blue */
+                          (((blue1 * 5 + blue0 * 3) >> 6) << 10);
+
+                        colours[2] = RGB16TO32( colour2, 255);
+                        colours[3] = RGB16TO32( colour3, 255);
+                        break;
+                      }
+                      }
 
                       for (sy = 0; sy < 4; sy++)
                         {
@@ -556,122 +685,25 @@ SetupTexture (unsigned int format, unsigned int palette) {
 
                           // Palette							
                           u8  currRow		= (u8)((currBlock >> (sy*8)) & 0xFF);
-#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
-#define RGB32(r,g,b,a) (((a)<<24) | ((r)<<16) | ((g)<<8) | (b))
 
-                          switch (mode)
-                            {
-                            case 0:
-                              {
-                                int i;
-
-                                for ( i = 0; i < 4; i++) {
-                                  int texel = (currRow >> (2 * i)) & 3;
-
-                                  if ( texel == 3) {
-                                    dst[currentPos+i] = RGB16TO32(0x7fff, 0);
-                                  }
-                                  else {
-                                    u16 colour = pal[pal1offset+texel];
-                                    dst[currentPos+i] = RGB16TO32( colour, 255);
-                                  }
-                                }
-                                break;
-                              }
-                            case 1:
-                              {
-                                u16 colours[3];
-                                int i;
-
-                                colours[0] = pal[pal1offset + 0];
-                                colours[1] = pal[pal1offset + 1];
-                                colours[2] =
-                                  /* RED */
-                                  (((colours[0] & 0x1f) +
-                                    (colours[1] & 0x1f)) >> 1) |
-                                  /* GREEN */
-                                  (((colours[0] & (0x1f << 5)) +
-                                    (colours[1] & (0x1f << 5))) >> 1) |
-                                  /* BLUE */
-                                  (((colours[0] & (0x1f << 10)) +
-                                    (colours[1] & (0x1f << 10))) >> 1);
-
-                                for ( i = 0; i < 4; i++) {
-                                  int texel = (currRow >> (2 * i)) & 3;
-
-                                  if ( texel == 3) {
-                                    dst[currentPos+i] = RGB16TO32(0, 0);
-                                  }
-                                  else {
-                                    dst[currentPos+i] = RGB16TO32( colours[texel], 255);
-                                  }
-                                }
-                                break;
-                              }
-                            case 2:
-                              {
-                                u16 col0 = pal[pal1offset+((currRow>>0)&3)];
-                                u16 col1 = pal[pal1offset+((currRow>>2)&3)];
-                                u16 col2 = pal[pal1offset+((currRow>>4)&3)];
-                                u16 col3 = pal[pal1offset+((currRow>>6)&3)];
-
-                                dst[currentPos+0] = RGB16TO32(col0, 255);
-                                dst[currentPos+1] = RGB16TO32(col1, 255);
-                                dst[currentPos+2] = RGB16TO32(col2, 255);
-                                dst[currentPos+3] = RGB16TO32(col3, 255);
-
-                                break;
-                              }
-                            case 3:
-                              {
-                                u16 colours[4];
-                                int i;
-                                u32 red0, red1;
-                                u32 green0, green1;
-                                u32 blue0, blue1;
-
-                                colours[0] = pal[pal1offset + 0];
-                                colours[1] = pal[pal1offset + 1];
-
-                                red0 = colours[0] & 0x1f;
-                                green0 = (colours[0] & (0x1f << 5)) >> 5;
-                                blue0 = (colours[0] & (0x1f << 10)) >> 10;
-
-                                red1 = colours[1] & 0x1f;
-                                green1 = (colours[1] & (0x1f << 5)) >> 5;
-                                blue1 = (colours[1] & (0x1f << 10)) >> 10;
-
-                                /* (colour0 * 5 + colour1 * 3) / 8 */
-                                colours[2] =
-                                  /* red */
-                                  ((red0 * 5 + red1 * 3) >> 3) |
-                                  /* green */
-                                  (((green0 * 5 + green1 * 3) >> 3) << 5) |
-                                  /* blue */
-                                  (((blue0 * 5 + blue1 * 3) >> 3) << 10);
-
-                                /* (colour0 * 3 + colour1 * 5) / 8 */
-                                colours[3] =
-                                  /* red */
-                                  ((red0 * 3 + red1 * 5) >> 3) |
-                                  /* green */
-                                  (((green0 * 3 + green1 * 5) >> 3) << 5) |
-                                  /* blue */
-                                  (((blue0 * 3 + blue1 * 5) >> 3) << 10);
-
-
-                                for ( i = 0; i < 4; i++) {
-                                  int texel = (currRow >> (2 * i)) & 3;
-
-                                  dst[currentPos+i] = RGB16TO32(colours[texel], 255);
-                                }
-                                break;
-                              }
-                            }
+                          dst[currentPos+0] = colours[(currRow >> (2 * 0)) & 3];
+                          dst[currentPos+1] = colours[(currRow >> (2 * 1)) & 3];
+                          dst[currentPos+2] = colours[(currRow >> (2 * 2)) & 3];
+                          dst[currentPos+3] = colours[(currRow >> (2 * 3)) & 3];
                         }
+
+                      /* transverse to the next texture slot if needs be */
+                      bytes_in_slot -= 4;
+                      if ( bytes_in_slot == 0) {
+                        current_slot += 1;
+                        map =
+                          (const unsigned int *)ARM9Mem.textureSlotAddr[current_slot];
+                        map -= orig_bytes_in_slot >> 2;
+                        bytes_in_slot = 0x20000;
+                        orig_bytes_in_slot = bytes_in_slot;
+                      }
                     }
                 }
-					
               break;
             }
           case 6:
@@ -688,12 +720,22 @@ SetupTexture (unsigned int format, unsigned int palette) {
                     dst[3] |= 0x7;
                   }
                   dst += 4;
+
+                  /* transverse to the next texture slot if needs be */
+                  bytes_in_slot -= 1;
+                  if ( bytes_in_slot == 0) {
+                    current_slot += 1;
+                    adr = ARM9Mem.textureSlotAddr[current_slot];
+                    adr -= orig_bytes_in_slot;
+                    bytes_in_slot = 0x20000;
+                    orig_bytes_in_slot = bytes_in_slot;
+                  }
                 }
               break;
             }
           case 7:
             {
-              unsigned short * map = ((unsigned short *)adr);
+              const unsigned short * map = ((const unsigned short *)adr);
               for(x = 0; x < imageSize; ++x)
                 {
                   unsigned short c = map[x];
@@ -702,6 +744,16 @@ SetupTexture (unsigned int format, unsigned int palette) {
                   dst[2] = ((c & 0x7C00)>>7);
                   dst[3] = (c>>15)*255;
                   dst += 4;
+
+                  /* transverse to the next texture slot if needs be */
+                  bytes_in_slot -= 2;
+                  if ( bytes_in_slot == 0) {
+                    current_slot += 1;
+                    map = (const unsigned short *)ARM9Mem.textureSlotAddr[current_slot];
+                    map -= orig_bytes_in_slot >> 1;
+                    bytes_in_slot = 0x20000;
+                    orig_bytes_in_slot = bytes_in_slot;
+                  }
                 }
             }
             break;
@@ -831,9 +883,9 @@ setup_mode23_tex_coord( float *vertex) {
                         vertex[1] * textureMatrix[5] +  
                         vertex[2] * textureMatrix[9]) + t_texture_coord);
 
-  LOG_TEXTURE("mode23 texcoord %d,%d -> %d,%d\n",
+  /*LOG_TEXTURE("mode23 texcoord %d,%d -> %d,%d\n",
               s_texture_coord, t_texture_coord,
-              s2, t2);
+              s2, t2);*/
 
   glTexCoord2i( s2, t2);
 }
@@ -842,9 +894,7 @@ setup_mode23_tex_coord( float *vertex) {
 static INLINE void
 setup_vertex( float *vertex) {
 #ifdef USE_SOFTWARE_VERTEX_TRANSFORM
-  float pre_transformed_vertex[4];
   float transformed_vertex[4];
-  float *model_matrix = mtxCurrent[1];
 #endif
 
   LOG("vertex %f,%f,%f\n", vertex[0], vertex[1], vertex[2]);
@@ -858,30 +908,11 @@ setup_vertex( float *vertex) {
   /*
    * Transform the vertex
    */
-  pre_transformed_vertex[0] = vertex[0];
-  pre_transformed_vertex[1] = vertex[1];
-  pre_transformed_vertex[2] = vertex[2];
-  pre_transformed_vertex[3] = 1.0f;
-  transformed_vertex[0] =
-    pre_transformed_vertex[0] * model_matrix[0] +
-    pre_transformed_vertex[1] * model_matrix[4] +
-    pre_transformed_vertex[2] * model_matrix[8] +
-    pre_transformed_vertex[3] * model_matrix[12];
-  transformed_vertex[1] =
-    pre_transformed_vertex[0] * model_matrix[1] +
-    pre_transformed_vertex[1] * model_matrix[5] +
-    pre_transformed_vertex[2] * model_matrix[9] +
-    pre_transformed_vertex[3] * model_matrix[13];
-  transformed_vertex[2] =
-    pre_transformed_vertex[0] * model_matrix[2] +
-    pre_transformed_vertex[1] * model_matrix[6] +
-    pre_transformed_vertex[2] * model_matrix[10] +
-    pre_transformed_vertex[3] * model_matrix[14];
-  transformed_vertex[3] =
-    pre_transformed_vertex[0] * model_matrix[3] +
-    pre_transformed_vertex[1] * model_matrix[7] +
-    pre_transformed_vertex[2] * model_matrix[11] +
-    pre_transformed_vertex[3] * model_matrix[15];
+  transformed_vertex[0] = vertex[0];
+  transformed_vertex[1] = vertex[1];
+  transformed_vertex[2] = vertex[2];
+  transformed_vertex[3] = 1.0f;
+  MatrixMultVec4x4( mtxCurrent[1], transformed_vertex);
 
   glVertex4fv( transformed_vertex);
 #else
@@ -898,6 +929,12 @@ handle_polygon_attribute( u32 attr, u32 control) {
   u32 light_mask = attr & 0xf;
   u32 cullingMask;
   GLint colorAlpha;
+
+  //LOG_ALWAYS("poly attr %08x control %08x\n", attr, control);
+  /*LOG_ALWAYS("id %d alpha %d mode %d\n",
+             (attr >> 24) & 0x3f,
+             (attr >> 16) & 0x1f,
+             (attr >> 4) & 0x3);*/
 
   /*
    * lighting
@@ -1009,13 +1046,16 @@ static void
 process_begin_vtxs( struct render_state *state,
                     const u32 *parms) {
   u32 prim_type = parms[0] & 0x3;
+  static int alpha_texture = 0;
 
   LOG("Begin: %s\n", primitive_type_names[prim_type]);
 
+#if 1
   /* FIXME: ignoring shadow polygons for now */
   if ( ((current_polygon_attr >> 4) & 0x3) == 3) {
     return;
   }
+#endif
 
   if( disp_3D_control & (1<<2))
     {
@@ -1043,19 +1083,21 @@ process_begin_vtxs( struct render_state *state,
     if (textureFormat  != lastTextureFormat ||
         texturePalette != lastTexturePalette)
       {
-        int alpha_texture;
         LOG("Setting up texture %08x\n", textureFormat);
         alpha_texture = SetupTexture (textureFormat, texturePalette);
 
-        /* FIXME: this is a hack to get some transparent textures to work */
-        if ( alpha_texture) {
-          glEnable(GL_ALPHA_TEST);
-          glAlphaFunc(GL_GREATER, 0.0f);
-        }
-      
         lastTextureFormat = textureFormat;
         lastTexturePalette = texturePalette;
       }
+
+#if 1
+    /* FIXME: this is a hack to get some transparent textures to work */
+    if ( alpha_texture) {
+      glEnable(GL_ALPHA_TEST);
+      glAlphaFunc(GL_GREATER, 0.0f);
+    }
+#endif
+      
   }
   else {
     glDisable (GL_TEXTURE_2D);
@@ -1122,14 +1164,19 @@ process_normal( struct render_state *state,
                 const u32 *parms) {
   LOG("Normal %08x\n", parms[0]);
 
-  float normal[3] = { normalTable[parms[0] &1023],
-                      normalTable[(parms[0]>>10)&1023],
-                      normalTable[(parms[0]>>20)&1023]};
+  float normal[3] = {
+    normalTable[parms[0] &1023],
+    normalTable[(parms[0]>>10)&1023],
+    normalTable[(parms[0]>>20)&1023]
+  };
 
   if (texCoordinateTransform == 2)
     {
       setup_mode23_tex_coord( normal);
     }
+
+  /* transform the vector */
+  MatrixMultVec3x3( mtxCurrent[2], normal);
 
   glNormal3fv(normal);
 }
@@ -1231,7 +1278,7 @@ process_spe_emi( struct render_state *state,
 static void
 process_light_vector( struct render_state *state,
                       const u32 *parms) {
-  float lightDirection[4] = {0};
+  float lightDirection[3];
   lightDirection[0] = -normalTable[parms[0]&1023];
   lightDirection[1] = -normalTable[(parms[0]>>10)&1023];
   lightDirection[2] = -normalTable[(parms[0]>>20)&1023];
@@ -1240,6 +1287,8 @@ process_light_vector( struct render_state *state,
       lightDirection[0], lightDirection[1],
       lightDirection[2], lightDirection[3],
       parms[0]);
+
+  MatrixMultVec3x3( mtxCurrent[2], lightDirection);
 
   glLightfv(GL_LIGHT0 + (parms[0]>>30), GL_POSITION, lightDirection);
 }
@@ -1282,15 +1331,15 @@ process_texcoord( struct render_state *state,
                      (1.f/16.f) * textureMatrix[9] +
                      (1.f/16.f) * textureMatrix[13]);
 
-      LOG_TEXTURE("texture coord (pre-trans) s=%d t=%d\n",
+      /*LOG_TEXTURE("texture coord (pre-trans) s=%d t=%d\n",
                   s_texture_coord, t_texture_coord);
       LOG_MATRIX( textureMatrix);
-      LOG_TEXTURE("texture coord (trans) s=%d t=%d\n", s2, t2);
+      LOG_TEXTURE("texture coord (trans) s=%d t=%d\n", s2, t2);*/
       glTexCoord2i (s2, t2);
     }
   else
     {
-      LOG_TEXTURE("texture coord s=%d t=%d\n", s_texture_coord, t_texture_coord);
+      /*LOG_TEXTURE("texture coord s=%d t=%d\n", s_texture_coord, t_texture_coord);*/
       glTexCoord2i (s_texture_coord,t_texture_coord);
     }
 }
@@ -1493,10 +1542,12 @@ process_mtx_scale( struct render_state *state,
   scale[1] = fix2float(parms[1]);
   scale[2] = fix2float(parms[2]);
 
-  MatrixScale (mtxCurrent[current_matrix_mode], scale);
-
-  if (current_matrix_mode == 2)
+  if (current_matrix_mode == 2) {
+    /* the Vector/Light matrix does not get scaled */
     MatrixScale (mtxCurrent[1], scale);
+  }
+  else
+    MatrixScale (mtxCurrent[current_matrix_mode], scale);
 
   LOG("scale %f,%f,%f\n", scale[0], scale[1], scale[2]);
 
@@ -2098,9 +2149,8 @@ init_3Dgl_collect( void) {
 
 static void
 Flush_3Dgl_collect( unsigned long val) {
-  int i;
   int new_render_state = GET_NEXT_RENDER_STATE_INDEX(current_render_state);
-  struct render_state *state = &render_states[current_render_state];
+  //struct render_state *state = &render_states[current_render_state];
   struct render_state *new_state = &render_states[new_render_state];
 
   LOG("Flush %lu %d %d\n", val,
@@ -2151,7 +2201,7 @@ call_list_3Dgl_collect(unsigned long v) {
       u32 cmd = call_list_command & 0xff;
       LOG_CALL_LIST("Current command is %02x\n", cmd);
       if ( cmd != 0) {
-        int i;
+        unsigned int i;
 
         LOG_CALL_LIST("Cmd %02x complete:\n", cmd);
 
