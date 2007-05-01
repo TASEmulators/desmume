@@ -251,7 +251,7 @@ static u32 FASTCALL  OP_UND(armcpu_t *cpu)
           SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -407,7 +407,7 @@ static u32 FASTCALL  OP_AND_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -562,7 +562,7 @@ static u32 FASTCALL  OP_EOR_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -731,7 +731,7 @@ static u32 FASTCALL  OP_SUB_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -967,7 +967,7 @@ static u32 FASTCALL  OP_ADD_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -1139,7 +1139,7 @@ static u32 FASTCALL  OP_ADC_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -1312,7 +1312,7 @@ static u32 FASTCALL  OP_SBC_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -1485,7 +1485,7 @@ static u32 FASTCALL  OP_RSC_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
           }\
@@ -1965,7 +1965,7 @@ static u32 FASTCALL  OP_ORR_S_LSL_IMM(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 4;
      }
@@ -1985,7 +1985,7 @@ static u32 FASTCALL  OP_ORR_S_LSL_REG(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 5;
      }
@@ -2005,7 +2005,7 @@ static u32 FASTCALL  OP_ORR_S_LSR_IMM(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 4;
      }
@@ -2025,7 +2025,7 @@ static u32 FASTCALL  OP_ORR_S_LSR_REG(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 5;
      }
@@ -2045,7 +2045,7 @@ static u32 FASTCALL  OP_ORR_S_ASR_IMM(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 4;
      }
@@ -2065,7 +2065,7 @@ static u32 FASTCALL  OP_ORR_S_ASR_REG(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 5;
      }
@@ -2085,7 +2085,7 @@ static u32 FASTCALL  OP_ORR_S_ROR_IMM(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 4;
      }
@@ -2105,7 +2105,7 @@ static u32 FASTCALL  OP_ORR_S_ROR_REG(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 5;
      }
@@ -2125,7 +2125,7 @@ static u32 FASTCALL  OP_ORR_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
           cpu->next_instruction = cpu->R[15];
           return 4;
      }
@@ -2151,7 +2151,7 @@ static u32 FASTCALL  OP_ORR_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -2309,7 +2309,7 @@ static u32 FASTCALL  OP_MOV_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -2463,7 +2463,7 @@ static u32 FASTCALL  OP_BIC_S_IMM_VAL(armcpu_t *cpu)
           Status_Reg SPSR = cpu->SPSR;\
           armcpu_switchMode(cpu, SPSR.bits.mode);\
           cpu->CPSR=SPSR;\
-          cpu->R[15] &= (0X0FFFFFFC|(((u32)SPSR.bits.T)<<1));\
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));\
           cpu->next_instruction = cpu->R[15];\
           return b;\
      }\
@@ -3508,7 +3508,7 @@ static u32 FASTCALL  OP_QADD(armcpu_t *cpu)
 	cpu->R[REG_POS(i,12)]=res;
 	if(REG_POS(i,12)==15)
 	{
-         cpu->R[15] &= 0X0FFFFFFC;
+         cpu->R[15] &= 0XFFFFFFFC;
 	     cpu->next_instruction = cpu->R[15];
 	     return 3;
     }
@@ -3530,7 +3530,7 @@ static u32 FASTCALL  OP_QSUB(armcpu_t *cpu)
 	cpu->R[REG_POS(i,12)]=res;
 	if(REG_POS(i,12)==15)
 	{
-         cpu->R[15] &= 0X0FFFFFFC;
+         cpu->R[15] &= 0XFFFFFFFC;
 	     cpu->next_instruction = cpu->R[15];
 	     return 3;
     }
@@ -3561,7 +3561,7 @@ static u32 FASTCALL  OP_QDADD(armcpu_t *cpu)
 	cpu->R[REG_POS(i,12)]=res;
 	if(REG_POS(i,12)==15)
 	{
-         cpu->R[15] &= 0X0FFFFFFC;
+         cpu->R[15] &= 0XFFFFFFFC;
 	     cpu->next_instruction = cpu->R[15];
 	     return 3;
     }
@@ -3592,7 +3592,7 @@ static u32 FASTCALL  OP_QDSUB(armcpu_t *cpu)
 	cpu->R[REG_POS(i,12)]=res;
 	if(REG_POS(i,12)==15)
 	{
-         cpu->R[15] &= 0X0FFFFFFC;
+         cpu->R[15] &= 0XFFFFFFFC;
 	     cpu->next_instruction = cpu->R[15];
 	     return 3;
     }
@@ -3835,7 +3835,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -3856,7 +3856,7 @@ static u32 FASTCALL  OP_LDR_M_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -3882,7 +3882,7 @@ static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -3908,7 +3908,7 @@ static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -3934,7 +3934,7 @@ static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -3960,7 +3960,7 @@ static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -3986,7 +3986,7 @@ static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -4012,7 +4012,7 @@ static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -4038,7 +4038,7 @@ static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -4064,7 +4064,7 @@ static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           return 5 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -4087,7 +4087,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4111,7 +4111,7 @@ static u32 FASTCALL  OP_LDR_M_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4140,7 +4140,7 @@ static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4169,7 +4169,7 @@ static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4198,7 +4198,7 @@ static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4227,7 +4227,7 @@ static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4256,7 +4256,7 @@ static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4285,7 +4285,7 @@ static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4314,7 +4314,7 @@ static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4343,7 +4343,7 @@ static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr;
@@ -4367,7 +4367,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
@@ -4393,7 +4393,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND2(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
@@ -4422,7 +4422,7 @@ static u32 FASTCALL  OP_LDR_M_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
@@ -4450,7 +4450,7 @@ static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
@@ -4478,7 +4478,7 @@ static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
@@ -4506,7 +4506,7 @@ static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
@@ -4534,7 +4534,7 @@ static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
@@ -4562,7 +4562,7 @@ static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
@@ -4590,7 +4590,7 @@ static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
@@ -4618,7 +4618,7 @@ static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr + shift_op;
@@ -4646,7 +4646,7 @@ static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      if(REG_POS(i,12)==15)
      {
-          cpu->R[15] = val & (0X0FFFFFFC | (((u32)cpu->LDTBit)<<1));
+          cpu->R[15] = val & (0XFFFFFFFC | (((u32)cpu->LDTBit)<<1));
           cpu->CPSR.bits.T = BIT0(val) & cpu->LDTBit;
 	      cpu->next_instruction = cpu->R[15];
           cpu->R[REG_POS(i,16)] = adr - shift_op;
@@ -6443,7 +6443,7 @@ static u32 FASTCALL  OP_LDMIA(armcpu_t *cpu)
      if(BIT15(i))
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           //start += 4;
 	      cpu->next_instruction = registres[15];
@@ -6484,7 +6484,7 @@ static u32 FASTCALL  OP_LDMIB(armcpu_t *cpu)
           start += 4;
           c += waitState[(start>>24)&0xF];
           tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
           c += 2 + (c==0);
@@ -6505,7 +6505,7 @@ static u32 FASTCALL  OP_LDMDA(armcpu_t *cpu)
      if(BIT15(i))
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           c += waitState[(start>>24)&0xF];
           start -= 4;
@@ -6545,7 +6545,7 @@ static u32 FASTCALL  OP_LDMDB(armcpu_t *cpu)
           u32 tmp;
           start -= 4;
           tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
           c += waitState[(start>>24)&0xF];
@@ -6604,7 +6604,7 @@ static u32 FASTCALL  OP_LDMIA_W(armcpu_t *cpu)
      if(BIT15(i))
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           c += waitState[(start>>24)&0xF];
           start += 4;
@@ -6658,7 +6658,7 @@ static u32 FASTCALL  OP_LDMIB_W(armcpu_t *cpu)
           start += 4;
           c += waitState[(start>>24)&0xF];
           tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
           c += 2 + (c==0);
@@ -6692,7 +6692,7 @@ static u32 FASTCALL  OP_LDMDA_W(armcpu_t *cpu)
      if(BIT15(i))
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           c += waitState[(start>>24)&0xF];
           start -= 4;
@@ -6739,7 +6739,7 @@ static u32 FASTCALL  OP_LDMDB_W(armcpu_t *cpu)
           u32 tmp;
           start -= 4;
           tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
           c += waitState[(start>>24)&0xF];
@@ -6806,7 +6806,7 @@ static u32 FASTCALL  OP_LDMIA2(armcpu_t *cpu)
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
           Status_Reg SPSR;
-          cpu->R[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          cpu->R[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
@@ -6863,7 +6863,7 @@ static u32 FASTCALL  OP_LDMIB2(armcpu_t *cpu)
           Status_Reg SPSR;
           start += 4;
           tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
@@ -6901,7 +6901,7 @@ static u32 FASTCALL  OP_LDMDA2(armcpu_t *cpu)
      if(BIT15(i))
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
           c += waitState[(start>>24)&0xF];
           start -= 4;
@@ -6963,7 +6963,7 @@ static u32 FASTCALL  OP_LDMDB2(armcpu_t *cpu)
           u32 tmp;
           start -= 4;
           tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
 	      cpu->next_instruction = registres[15];
           c += waitState[(start>>24)&0xF];
@@ -7046,7 +7046,7 @@ static u32 FASTCALL  OP_LDMIA2_W(armcpu_t *cpu)
 
      registres[REG_POS(i,16)] = start + 4;
      tmp = MMU_readWord(cpu->proc_ID, start);
-     registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+     registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
      SPSR = cpu->SPSR;
      armcpu_switchMode(cpu, SPSR.bits.mode);
      cpu->CPSR=SPSR;
@@ -7104,7 +7104,7 @@ static u32 FASTCALL  OP_LDMIB2_W(armcpu_t *cpu)
 
      registres[REG_POS(i,16)] = start + 4;
      tmp = MMU_readWord(cpu->proc_ID, start + 4);
-     registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+     registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
      cpu->CPSR = cpu->SPSR;
      cpu->next_instruction = registres[15];
      SPSR = cpu->SPSR;
@@ -7139,7 +7139,7 @@ static u32 FASTCALL  OP_LDMDA2_W(armcpu_t *cpu)
      if(BIT15(i))
      {
           u32 tmp = MMU_readWord(cpu->proc_ID, start);
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           c += waitState[(start>>24)&0xF];
           start -= 4;
           cpu->next_instruction = registres[15];
@@ -7202,7 +7202,7 @@ static u32 FASTCALL  OP_LDMDB2_W(armcpu_t *cpu)
           start -= 4;
           tmp = MMU_readWord(cpu->proc_ID, start);
           c += waitState[(start>>24)&0xF];
-          registres[15] = tmp & (0X0FFFFFFC | (BIT0(tmp)<<1));
+          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
           cpu->next_instruction = registres[15];
      }
@@ -7622,6 +7622,95 @@ static u32 FASTCALL  OP_STMDB2_W(armcpu_t *cpu)
      armcpu_switchMode(cpu, oldmode);
      return c + 1;
 }
+
+/*
+ *
+ * The Enhanced DSP Extension LDRD and STRD instructions.
+ *
+ */
+static u32 FASTCALL
+OP_LDRD_STRD_POST_INDEX( armcpu_t *cpu) {
+  u32 i = cpu->instruction;
+  u32 Rd_num = REG_POS( i, 12);
+  u32 addr = cpu->R[REG_POS(i,16)];
+  u32 index;
+
+  /* I bit - immediate or register */
+  if ( BIT22(i))
+    index = IMM_OFF;
+  else
+    index = cpu->R[REG_POS(i,0)];
+
+  /* U bit - add or subtract */
+  if ( BIT23(i))
+    cpu->R[REG_POS(i,16)] += index;
+  else
+    cpu->R[REG_POS(i,16)] -= index;
+
+  if ( !(Rd_num & 0x1)) {
+    /* Store/Load */
+    if ( BIT5(i)) {
+      MMU_writeWordACL(cpu->proc_ID, addr, cpu->R[Rd_num]);
+      MMU_writeWordACL(cpu->proc_ID, addr + 4, cpu->R[Rd_num + 1]);
+    }
+    else {
+      cpu->R[Rd_num] =
+        MMU_readWordACL(cpu->proc_ID, addr, CP15_ACCESS_READ);
+      cpu->R[Rd_num + 1] =
+        MMU_readWordACL(cpu->proc_ID, addr + 4, CP15_ACCESS_READ);
+    }
+  }
+
+  return 3 + (MMU.MMU_WAIT32[cpu->proc_ID][(addr>>24)&0xF] * 2);
+}
+
+static u32 FASTCALL
+OP_LDRD_STRD_OFFSET_PRE_INDEX( armcpu_t *cpu) {
+  u32 i = cpu->instruction;
+  u32 Rd_num = REG_POS( i, 12);
+  u32 addr = cpu->R[REG_POS(i,16)];
+  u32 index;
+
+  /* I bit - immediate or register */
+  if ( BIT22(i))
+    index = IMM_OFF;
+  else
+    index = cpu->R[REG_POS(i,0)];
+
+  /* U bit - add or subtract */
+  if ( BIT23(i)) {
+    addr += index;
+
+    /* W bit - writeback */
+    if ( BIT21(i))
+      cpu->R[REG_POS(i,16)] = addr;
+  }
+  else {
+    addr -= index;
+
+    /* W bit - writeback */
+    if ( BIT21(i))
+      cpu->R[REG_POS(i,16)] = addr;
+  }
+
+  if ( !(Rd_num & 0x1)) {
+    /* Store/Load */
+    if ( BIT5(i)) {
+      MMU_writeWordACL(cpu->proc_ID, addr, cpu->R[Rd_num]);
+      MMU_writeWordACL(cpu->proc_ID, addr + 4, cpu->R[Rd_num + 1]);
+    }
+    else {
+      cpu->R[Rd_num] =
+        MMU_readWordACL(cpu->proc_ID, addr, CP15_ACCESS_READ);
+      cpu->R[Rd_num + 1] =
+        MMU_readWordACL(cpu->proc_ID, addr + 4, CP15_ACCESS_READ);
+    }
+  }
+
+  return 3 + (MMU.MMU_WAIT32[cpu->proc_ID][(addr>>24)&0xF] * 2);
+}
+
+
 
 //---------------------STC----------------------------------
 
