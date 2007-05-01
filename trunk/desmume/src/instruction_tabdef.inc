@@ -34,9 +34,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_AND_LSR_IMM,    // OOO OOOO O 1010
      OP_STRH_POS_INDE_M_REG_OFF, // 000 0000 0 1011
      OP_AND_ASR_IMM,    // 000 0000 0 1100
-     OP_UND,            // 000 0000 0 1101
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0000 0 1101
      OP_AND_ROR_IMM,    // 000 0000 0 1110
-     OP_UND,            // 000 0000 0 1111
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0000 0 1111
      
      OP_AND_S_LSL_IMM,  // 000 0000 1 0000
      OP_AND_S_LSL_REG,  // 000 0000 1 0001
@@ -106,9 +108,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_SUB_LSR_IMM,    // OOO OO1O O 1010
      OP_STRH_POS_INDE_M_IMM_OFF, // 000 0010 0 1011
      OP_SUB_ASR_IMM,    // 000 0010 0 1100
-     OP_UND,            // 000 0010 0 1101
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0010 0 1101
      OP_SUB_ROR_IMM,    // 000 0010 0 1110
-     OP_UND,            // 000 0010 0 1111
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0010 0 1111
      
      OP_SUB_S_LSL_IMM,  // 000 0010 1 0000
      OP_SUB_S_LSL_REG,  // 000 0010 1 0001
@@ -178,9 +182,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_ADD_LSR_IMM,    // OOO O10O O 1010
      OP_STRH_POS_INDE_P_REG_OFF, // 000 0100 0 1011
      OP_ADD_ASR_IMM,    // 000 0100 0 1100
-     OP_UND,            // 000 0100 0 1101
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0100 0 1101
      OP_ADD_ROR_IMM,    // 000 0100 0 1110
-     OP_UND,            // 000 0100 0 1111
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0100 0 1111
      
      OP_ADD_S_LSL_IMM,  // 000 0100 1 0000
      OP_ADD_S_LSL_REG,  // 000 0100 1 0001
@@ -250,9 +256,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_SBC_LSR_IMM,    // OOO O11O O 1010
      OP_STRH_POS_INDE_P_IMM_OFF, // 000 0110 0 1011
      OP_SBC_ASR_IMM,    // 000 0110 0 1100
-     OP_UND,            // 000 0110 0 1101
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0110 0 1101
      OP_SBC_ROR_IMM,    // 000 0110 0 1110
-     OP_UND,            // 000 0110 0 1111
+     OP_LDRD_STRD_POST_INDEX,
+                        // 000 0110 0 1111
      
      OP_SBC_S_LSL_IMM,  // 000 0110 1 0000
      OP_SBC_S_LSL_REG,  // 000 0110 1 0001
@@ -322,9 +330,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_SMLA_T_B,       // 000 1000 0 1010
      OP_STRH_M_REG_OFF, // 000 1000 0 1011
      OP_SMLA_B_T,       // 000 1000 0 1100
-     OP_UND,            // 000 1000 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1000 0 1101
      OP_SMLA_T_T,       // 000 1000 0 1110
-     OP_UND,            // 000 1000 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1000 0 1111
 
      OP_TST_LSL_IMM,    // 000 1000 1 0000
      OP_TST_LSL_REG,    // 000 1000 1 0001
@@ -358,9 +368,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_SMULW_B,          // 000 1001 0 1010
      OP_STRH_PRE_INDE_M_REG_OFF,  // 000 1001 0 1011
      OP_SMLAW_T,      // 000 1001 0 1100
-     OP_UND,  // 000 1001 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1001 0 1101
      OP_SMULW_T,  // 000 1001 0 1110
-     OP_UND,  // 000 1001 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1001 0 1111
      
      OP_TEQ_LSL_IMM,    // 000 1001 1 0000
      OP_TEQ_LSL_REG,    // 000 1001 1 0001
@@ -394,9 +406,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_SMLAL_T_B,      // 000 1010 0 1010
      OP_STRH_M_IMM_OFF, // 000 1010 0 1011
      OP_SMLAL_B_T,      // 000 1010 0 1100
-     OP_UND,            // 000 1010 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1010 0 1101
      OP_SMLAL_T_T,      // 000 1010 0 1110
-     OP_UND,            // 000 1010 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1010 0 1111
      
      OP_CMP_LSL_IMM,    // 000 1010 1 0000
      OP_CMP_LSL_REG,    // 000 1010 1 0001
@@ -430,9 +444,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_SMUL_T_B,       // 000 1011 0 1010
      OP_STRH_PRE_INDE_M_IMM_OFF,  // 000 1011 0 1011
      OP_SMUL_B_T,       // 000 1011 0 1100
-     OP_UND,            // 000 1011 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1011 0 1101
      OP_SMUL_T_T,       // 000 1011 0 1110
-     OP_UND,            // 000 1011 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1011 0 1111
 
      OP_CMN_LSL_IMM,    // 000 1011 1 0000
      OP_CMN_LSL_REG,    // 000 1011 1 0001
@@ -466,9 +482,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_ORR_LSR_IMM,    // OOO 110O O 1010
      OP_STRH_P_REG_OFF, // 000 1100 0 1011
      OP_ORR_ASR_IMM,    // 000 1100 0 1100
-     OP_UND,            // 000 1100 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1100 0 1101
      OP_ORR_ROR_IMM,    // 000 1100 0 1110
-     OP_UND,            // 000 1100 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1100 0 1111
      
      OP_ORR_S_LSL_IMM,  // 000 1100 1 0000
      OP_ORR_S_LSL_REG,  // 000 1100 1 0001
@@ -502,9 +520,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_MOV_LSR_IMM,    // OOO 1101 O 1010
      OP_STRH_PRE_INDE_P_REG_OFF, // 000 1101 0 1011
      OP_MOV_ASR_IMM,    // 000 1101 0 1100
-     OP_UND,            // 000 1101 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1101 0 1101
      OP_MOV_ROR_IMM,    // 000 1101 0 1110
-     OP_UND,            // 000 1101 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1101 0 1111
      
      OP_MOV_S_LSL_IMM,  // 000 1101 1 0000
      OP_MOV_S_LSL_REG,  // 000 1101 1 0001
@@ -538,9 +558,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_BIC_LSR_IMM,    // OOO 111O O 1010
      OP_STRH_P_IMM_OFF, // 000 1110 0 1011
      OP_BIC_ASR_IMM,    // 000 1110 0 1100
-     OP_UND,            // 000 1110 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1110 0 1101
      OP_BIC_ROR_IMM,    // 000 1110 0 1110
-     OP_UND,            // 000 1110 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1110 0 1111
      
      OP_BIC_S_LSL_IMM,  // 000 1110 1 0000
      OP_BIC_S_LSL_REG,  // 000 1110 1 0001
@@ -574,9 +596,11 @@ TYPE_RETOUR (*CALLTYPE NOM_TAB[4096])(PARAMETRES)={
      OP_MVN_LSR_IMM,    // OOO 1111 O 1010
      OP_STRH_PRE_INDE_P_IMM_OFF, // 000 1111 0 1011
      OP_MVN_ASR_IMM,    // 000 1111 0 1100
-     OP_UND,            // 000 1111 0 1101
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1111 0 1101
      OP_MVN_ROR_IMM,    // 000 1111 0 1110
-     OP_UND,            // 000 1111 0 1111
+     OP_LDRD_STRD_OFFSET_PRE_INDEX,
+                        // 000 1111 0 1111
      
      OP_MVN_S_LSL_IMM,  // 000 1111 1 0000
      OP_MVN_S_LSL_REG,  // 000 1111 1 0001
