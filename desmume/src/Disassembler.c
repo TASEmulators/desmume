@@ -3192,6 +3192,79 @@ static char * OP_LDC_OPTION(u32 adr, u32 i, char * txt)
      return txt;
 }
 
+
+/*
+ *
+ * The Enhanced DSP Extension LDRD and STRD instructions.
+ *
+ */
+static char *
+OP_LDRD_STRD_POST_INDEX(u32 adr, u32 i, char * txt) {
+  const char *direction =
+    BIT5(i) ? "STR" : "LDR";
+  /* U bit - set = add, clear = sub */
+  char sign = BIT23(i) ? '+' : '-';
+  int txt_index = 0;
+
+  txt_index += sprintf( &txt[txt_index], "%s%sD R%d, [R%d], ",
+                        direction, Condition[CONDITION(i)],
+                        (int)REG_POS(i, 12),
+                        (int)REG_POS(i, 16));
+
+  /* I bit - set = immediate,  clear = reg */
+  if ( BIT22(i)) {
+    sprintf( &txt[txt_index], "#%c%d",
+             sign, (int)(((i>>4) & 0xF0) | (i&0xF)) );
+  }
+  else {
+    sprintf( &txt[txt_index], "%cR%d",
+             sign, (int)REG_POS(i, 0));
+  }
+  return txt;
+}
+static char *
+OP_LDRD_STRD_OFFSET_PRE_INDEX(u32 adr, u32 i, char * txt) {
+  const char *direction =
+    BIT5(i) ? "STR" : "LDR";
+  /* U bit - set = add, clear = sub */
+  char sign = BIT23(i) ? '+' : '-';
+  int txt_index = 0;
+
+  txt_index += sprintf( &txt[txt_index], "%s%sD R%d, [R%d, ",
+                        direction, Condition[CONDITION(i)],
+                        (int)REG_POS(i, 12),
+                        (int)REG_POS(i, 16));
+
+  /* I bit - set = immediate,  clear = reg */
+  if ( BIT22(i)) {
+    if ( BIT21(i)) {
+      /* pre-index */
+      sprintf( &txt[txt_index], "#%c%d]!",
+             sign, (int)(((i>>4)&0xF0)|(i&0xF)));
+    }
+    else {
+      /* offset */
+      sprintf( &txt[txt_index], "#%c%d]",
+             sign, (int)(((i>>4)&0xF0)|(i&0xF)));
+    }
+  }
+  else {
+    if ( BIT21(i)) {
+      /* pre-index */
+      sprintf( &txt[txt_index], "%c%d]!",
+             sign, (int)REG_POS(i, 0));
+    }
+    else {
+      /* offset */
+      sprintf( &txt[txt_index], "%c%d]",
+             sign, (int)REG_POS(i, 0));
+    }
+  }
+
+  return txt;
+}
+
+
 //----------------MCR-----------------------
 
 static char * OP_MCR(u32 adr, u32 i, char * txt)
