@@ -1187,6 +1187,17 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				}
 				return;
 			}
+
+			case REG_DISPA_MASTERBRIGHT:
+			{
+				GPU_setMasterBrightness (MainScreen.gpu, val);
+				break;
+			}
+			case REG_DISPB_MASTERBRIGHT:
+			{
+				GPU_setMasterBrightness (SubScreen.gpu, val);
+				break;
+			}
 			
                         case REG_POWCNT1 :
 				if(proc == ARMCPU_ARM9)
