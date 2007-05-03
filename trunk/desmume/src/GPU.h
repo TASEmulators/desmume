@@ -276,30 +276,6 @@ typedef union
 } DISPCAPCNT; 
 
 
-
-/*******************************************************************************
-    this structure is to represent global FX
-    applied to each pixel (each color of x555 is expanded to 6 bits)
-
-    Lighten : New = Old + (63-Old) * Factor/16
-    Darken  : New = Old - Old      * Factor/16
-*******************************************************************************/
-
-struct _MASTER_BRIGHT
-{
-/* 0*/ u8 Factor:4;   // combine with (Factor / 16) of white/black
-/* 4*/ u8 FactorEx:1; // if true use white or black
-/* 5*/ u8 :3;
-/* 8*/ u8 :5;
-/*14*/ u8 Mode:2;     // 0=off, 1=Lighten, 2=Darken, 3=?
-}; 
- 
-typedef union 
-{
-    struct _MASTER_BRIGHT bits;
-    u16 val;
-} MASTER_BRIGHT; 
-
 /*******************************************************************************
     this structure holds everything and should be mapped to
     * core A : 0x04000000
@@ -319,7 +295,6 @@ typedef struct _reg_dispx {
     DISP3DCNT dispA_DISP3DCNT;        // 0x04000060
     DISPCAPCNT dispA_DISPCAPCNT;      // 0x04000064
     u32 dispA_DISPMMEMFIFO;           // 0x04000068
-    MASTER_BRIGHT dispx_MASTERBRIGHT; // 0x0400x06C
 } REG_DISPx ; 
 
 
@@ -538,7 +513,10 @@ struct _GPU
 	u8 sprBoundary;
 	u8 sprBMPBoundary;
 	u8 sprBMPMode;
-	u32 sprEnable ;
+	u32 sprEnable;
+
+	u8	MasterBrightMode;
+	u32 MasterBrightFactor;
 	
 	void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
@@ -559,8 +537,6 @@ static void REG_DISPx_pack_test(GPU * gpu)
 	printf ("\t%02x\n", (long)(&r->dispA_DISP3DCNT) - (long)r);
 	printf ("\t%02x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
 	printf ("\t%02x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
-	printf ("\t%02x\n", (long)(&r->dispx_MASTERBRIGHT) - (long)r);
-	printf ("\t%04x\n", r->dispx_MASTERBRIGHT);
 }
 
 
@@ -632,6 +608,7 @@ int GPU_ChangeGraphicsCore(int coreid);
 
 void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) ;
 void GPU_ligne(NDS_Screen * screen, u16 l) ;
+void GPU_setMasterBrightness (GPU *gpu, u16 val);
 
 #ifdef __cplusplus
 }

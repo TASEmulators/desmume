@@ -229,8 +229,14 @@ void GPU_resortBGs(GPU *gpu)
 #endif
 }
 
+void GPU_setMasterBrightness (GPU *gpu, u16 val)
+{
+	u8 temp = (val&31);
 
-
+	gpu->MasterBrightFactor = (temp > 16 ? 16 : temp);
+	gpu->MasterBrightMode	= (val>>14);
+}
+    
 
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
@@ -1962,8 +1968,8 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 /* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
 /* it will most likly take acceleration, while we are stuck here with CPU power */
-	mBright = &(gpu->dispx_st)->dispx_MASTERBRIGHT.bits;
-	switch (mBright->Mode)
+	
+	switch (gpu->MasterBrightMode)
 	{
 		// Disabled
 		case 0:
@@ -1973,38 +1979,31 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		case 1:
 		{
 			COLOR dstColor;
-			unsigned int masterBrightFactor = mBright->Factor;
+			unsigned int masterBrightFactor = gpu->MasterBrightFactor;
 			u16 * colors = bright_more_colors[masterBrightFactor];
 
-			if (mBright->FactorEx)
-			{
-				/* the formular would create only white, as (r + (31-r)) = 31 */
-				/* white = enable all bits */
-				memset(dst,0xFF, 256*2 /* sizeof(COLOR) */) ;
-			} else {
-				/* when we wont do anything, we dont need to loop */
-				if (!masterBrightFactor) break ;
+			/* when we wont do anything, we dont need to loop */
+			if (!masterBrightFactor) break ;
 
-				for(i16 = 0; i16 < 256; ++i16)
-				{
+			for(i16 = 0; i16 < 256; ++i16)
+			{
 #ifndef BRIGHT_TABLES
-					u8 base ;
-					u8 r,g,b; // get components, 5bit each
-					dstColor.val = T1ReadWord(dst, i16 << 1);
-					r = dstColor.bits.red;
-					g = dstColor.bits.green;
-					b = dstColor.bits.blue;
-					// Bright up and clamp to 5bit <-- automatic
-					base = 31 ;
-					dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
-					dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
-					dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;
+				u8 base ;
+				u8 r,g,b; // get components, 5bit each
+				dstColor.val = T1ReadWord(dst, i16 << 1);
+				r = dstColor.bits.red;
+				g = dstColor.bits.green;
+				b = dstColor.bits.blue;
+				// Bright up and clamp to 5bit <-- automatic
+				base = 31 ;
+				dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
+				dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
+				dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;
 #else
-					dstColor.val = T1ReadWord(dst, i16 << 1);
-					dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
+				dstColor.val = T1ReadWord(dst, i16 << 1);
+				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
 #endif
- 					T2WriteWord (dst, i16 << 1, dstColor.val);
-				}
+ 				T2WriteWord (dst, i16 << 1, dstColor.val);
 			}
 			break;
 		}
@@ -2030,37 +2029,29 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 */
 			COLOR dstColor;
-			unsigned int    masterBrightFactor = mBright->Factor ;
+			unsigned int    masterBrightFactor = gpu->MasterBrightFactor;
 			u16 * colors = bright_less_colors[masterBrightFactor];
  
-			if (mBright->FactorEx)
-			{
-				/* the formular would create only black, as (r - r) = 0 */
-				/* black = disable all bits */
-				memset(dst,0, 256*2 /* sizeof(COLOR) */) ;
-			} else
-			{
-				/* when we wont do anything, we dont need to loop */
-				if (!masterBrightFactor) break ;
+			/* when we wont do anything, we dont need to loop */
+			if (!masterBrightFactor) break;
  
-				for(i16 = 0; i16 < 256; ++i16)
-				{
+			for(i16 = 0; i16 < 256; ++i16)
+			{
 #ifndef BRIGHT_TABLES
-					u8 r,g,b;
-					dstColor.val = T1ReadWord(dst, i16 << 1);
-					r = dstColor.bits.red;
-					g = dstColor.bits.green;
-					b = dstColor.bits.blue;
-					// Bright up and clamp to 5bit <- automatic
-					dstColor.bits.red   = r - (r*masterBrightFactor)/16;
-					dstColor.bits.green = g - (g*masterBrightFactor)/16;
-					dstColor.bits.blue  = b - (b*masterBrightFactor)/16;
+				u8 r,g,b;
+				dstColor.val = T1ReadWord(dst, i16 << 1);
+				r = dstColor.bits.red;
+				g = dstColor.bits.green;
+				b = dstColor.bits.blue;
+				// Bright up and clamp to 5bit <- automatic
+				dstColor.bits.red   = r - (r*masterBrightFactor)/16;
+				dstColor.bits.green = g - (g*masterBrightFactor)/16;
+				dstColor.bits.blue  = b - (b*masterBrightFactor)/16;
 #else
-					dstColor.val = T1ReadWord(dst, i16 << 1);
-					dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
+				dstColor.val = T1ReadWord(dst, i16 << 1);
+				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
 #endif
-					T2WriteWord (dst, i16 << 1, dstColor.val);
-				}
+				T2WriteWord (dst, i16 << 1, dstColor.val);
 			}
 			break;
 		}
