@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.11 2007-04-25 16:38:48 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.12 2007-05-06 18:18:26 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -1278,10 +1278,11 @@ process_spe_emi( struct render_state *state,
 static void
 process_light_vector( struct render_state *state,
                       const u32 *parms) {
-  float lightDirection[3];
+  float lightDirection[4];
   lightDirection[0] = -normalTable[parms[0]&1023];
   lightDirection[1] = -normalTable[(parms[0]>>10)&1023];
   lightDirection[2] = -normalTable[(parms[0]>>20)&1023];
+  lightDirection[3] = 0.0f;
 
   LOG("Light vector %f,%f,%f,%f (%08x)\n",
       lightDirection[0], lightDirection[1],
@@ -1542,12 +1543,12 @@ process_mtx_scale( struct render_state *state,
   scale[1] = fix2float(parms[1]);
   scale[2] = fix2float(parms[2]);
 
+  MatrixScale (mtxCurrent[current_matrix_mode], scale);
+
   if (current_matrix_mode == 2) {
-    /* the Vector/Light matrix does not get scaled */
     MatrixScale (mtxCurrent[1], scale);
   }
-  else
-    MatrixScale (mtxCurrent[current_matrix_mode], scale);
+
 
   LOG("scale %f,%f,%f\n", scale[0], scale[1], scale[2]);
 
