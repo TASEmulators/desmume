@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.13 2007-05-07 21:25:32 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.14 2007-05-07 22:58:12 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -2000,6 +2000,16 @@ draw_3D_area( void) {
       }
       i += cmd_processors[cmd].num_parms;
     }
+  }
+
+  /*
+   * Complete any primitive that may be left unended
+   */
+  if ( inside_primitive) {
+    LOG( "implicit primitive end at end\n");
+    glEnd();
+
+    inside_primitive = 0;
   }
 
   complete_render_ogl_collector_platform();
