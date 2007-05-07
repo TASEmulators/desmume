@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.12 2007-05-06 18:18:26 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.13 2007-05-07 21:25:32 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -191,6 +191,17 @@ static GLint colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
 static float cur_vertex[3] = {0.0f, 0.0f, 0.0f};
 
 static u32 alpha_function = 0;
+
+static float lightDirection[4][4];
+static int light_direction_valid = 0;
+static GLint lightColor[4][4];
+static int light_colour_valid = 0;
+
+static u32 current_depth24b = 0;
+static int depth24b_valid = 0;
+static u32 current_clear_colour = 0;
+static int clear_colour_valid = 0;
+
 
 /** the current polygon attribute */
 static u32 current_polygon_attr = 0;
@@ -918,6 +929,8 @@ setup_vertex( float *vertex) {
 #else
   glVertex3fv( vertex);
 #endif
+
+  numVertex += 1;
 }
 
 
@@ -1049,6 +1062,48 @@ process_begin_vtxs( struct render_state *state,
   static int alpha_texture = 0;
 
   LOG("Begin: %s\n", primitive_type_names[prim_type]);
+
+  if ( inside_primitive) {
+    LOG( "implicit primitive end\n");
+    glEnd();
+  }
+
+  if ( depth24b_valid) {
+    glClearDepth( current_depth24b / ((float)(1<<24)));
+    depth24b_valid = 0;
+  }
+
+  if ( clear_colour_valid) {
+    glClearColor( ((float)( current_clear_colour & 0x1F))/31.0f,
+                  ((float)(( current_clear_colour >> 5)&0x1F))/31.0f, 
+                  ((float)(( current_clear_colour >> 10)&0x1F))/31.0f, 
+                  ((float)(( current_clear_colour >> 16)&0x1F))/31.0f);
+    clear_colour_valid = 0;
+  }
+
+  if ( light_colour_valid) {
+    int light;
+
+    for ( light = 0; light < 4; light++) {
+      if ( light_colour_valid & (1 << light)) {
+        glLightiv (GL_LIGHT0 + light, GL_AMBIENT, lightColor[light]);
+        glLightiv (GL_LIGHT0 + light, GL_DIFFUSE, lightColor[light]);
+        glLightiv (GL_LIGHT0 + light, GL_SPECULAR, lightColor[light]);
+      }
+    }
+    light_colour_valid = 0;
+  }
+
+  if ( light_direction_valid) {
+    int light;
+
+    for ( light = 0; light < 4; light++) {
+      if ( light_direction_valid & (1 << light)) {
+        glLightfv(GL_LIGHT0 + light, GL_POSITION, lightDirection[light]);
+      }
+    }
+    light_direction_valid = 0;
+  }
 
 #if 1
   /* FIXME: ignoring shadow polygons for now */
@@ -1278,37 +1333,66 @@ process_spe_emi( struct render_state *state,
 static void
 process_light_vector( struct render_state *state,
                       const u32 *parms) {
-  float lightDirection[4];
-  lightDirection[0] = -normalTable[parms[0]&1023];
-  lightDirection[1] = -normalTable[(parms[0]>>10)&1023];
-  lightDirection[2] = -normalTable[(parms[0]>>20)&1023];
-  lightDirection[3] = 0.0f;
+  int light = parms[0] >> 30;
+  lightDirection[light][0] = -normalTable[parms[0]&1023];
+  lightDirection[light][1] = -normalTable[(parms[0]>>10)&1023];
+  lightDirection[light][2] = -normalTable[(parms[0]>>20)&1023];
+  lightDirection[light][3] = 0.0f;
 
   LOG("Light vector %f,%f,%f,%f (%08x)\n",
-      lightDirection[0], lightDirection[1],
-      lightDirection[2], lightDirection[3],
+      lightDirection[light][0], lightDirection[light][1],
+      lightDirection[light][2], lightDirection[light][3],
       parms[0]);
 
-  MatrixMultVec3x3( mtxCurrent[2], lightDirection);
+  MatrixMultVec3x3( mtxCurrent[2], lightDirection[light]);
 
-  glLightfv(GL_LIGHT0 + (parms[0]>>30), GL_POSITION, lightDirection);
+  /*
+   * FIXME:
+   * Delay until the next normal command.
+   * Can this change inside a primative?
+   */
+  if ( inside_primitive) {
+    //LOG_ALWAYS( "Light vector change whilst inside primative\n");
+    /*
+     * Save until the 'begin' command
+     */
+    light_direction_valid |= 1 << light;
+  }
+  else {
+    glLightfv(GL_LIGHT0 + light, GL_POSITION, lightDirection[light]);
+    light_direction_valid &= ~(1 << light);
+  }
 }
 
 static void
 process_light_color( struct render_state *state,
                      const u32 *parms) {
-  GLint lightColor[4] = {
-    ((parms[0]) & 0x1F)<<26, 
-    ((parms[0]>> 5)&0x1F)<<26, 
-    ((parms[0]>>10)&0x1F)<<26, 
-    0x7fffffff};
+  int light = parms[0] >> 30;
+  lightColor[light][0] = ((parms[0]) & 0x1F)<<26;
+  lightColor[light][1] = ((parms[0]>> 5)&0x1F)<<26;
+  lightColor[light][2] = ((parms[0]>> 10)&0x1F)<<26;
+  lightColor[light][3] = 0x7fffffff;
 
   LOG("Light color %08x\n", parms[0]);
 
-  glLightiv (GL_LIGHT0 + (parms[0]>>30), GL_AMBIENT, lightColor);
-  glLightiv (GL_LIGHT0 + (parms[0]>>30), GL_DIFFUSE, lightColor);
-  glLightiv (GL_LIGHT0 + (parms[0]>>30), GL_SPECULAR, lightColor);
-
+  /*
+   * FIXME:
+   * Delay until the next normal command.
+   * Can this change inside a primative?
+   */
+  if ( inside_primitive) {
+    //LOG_ALWAYS( "Light colour change whilst inside primative\n");
+    /*
+     * Save until the 'begin' command
+     */
+    light_colour_valid |= 1 << light;
+  }
+  else {
+    glLightiv (GL_LIGHT0 + light, GL_AMBIENT, lightColor[light]);
+    glLightiv (GL_LIGHT0 + light, GL_DIFFUSE, lightColor[light]);
+    glLightiv (GL_LIGHT0 + light, GL_SPECULAR, lightColor[light]);
+    light_colour_valid &= ~(1 << light);
+  }
 }
 
 
@@ -1375,8 +1459,22 @@ process_mtx_push( struct render_state *state,
                   const u32 *parms) {
   LOG("Matrix push\n");
 
+  if ( current_matrix_mode == 2) {
+    /* copy the stack position and size from the Model matrix stack
+     * as they are shared and may have been updated whilst Model
+     * Matrix mode was selected. */
+    mtxStack[2].position = mtxStack[1].position;
+    mtxStack[2].size = mtxStack[1].size;
+  }
+
   MatrixStackPushMatrix (&mtxStack[current_matrix_mode],
                          mtxCurrent[current_matrix_mode]);
+
+  if ( current_matrix_mode == 2) {
+    /* push the model matrix as well */
+    MatrixStackPushMatrix ( &mtxStack[1],
+                            mtxCurrent[1]);
+  }
 }
 
 static void
@@ -1385,15 +1483,28 @@ process_mtx_pop( struct render_state *state,
   s32 index = parms[0];
   LOG("Matrix pop\n");
 
-  MatrixCopy (mtxCurrent[current_matrix_mode],
-              MatrixStackPopMatrix (&mtxStack[current_matrix_mode], index));
-
-  if (current_matrix_mode == 2) {
-    MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
+  if ( current_matrix_mode == 2) {
+    /* copy the stack position and size from the Model matrix stack
+     * as they are shared and may have been updated whilst Model
+     * Matrix mode was selected. */
+    mtxStack[2].position = mtxStack[1].position;
+    mtxStack[2].size = mtxStack[1].size;
   }
 
-  if ( current_matrix_mode < 3)
-    loadMatrix( mtxCurrent[current_matrix_mode]);
+  MatrixCopy ( mtxCurrent[current_matrix_mode],
+               MatrixStackPopMatrix (&mtxStack[current_matrix_mode], index));
+
+  if (current_matrix_mode == 2) {
+    MatrixCopy ( mtxCurrent[1],
+                 MatrixStackPopMatrix( &mtxStack[1], index));
+  }
+
+  if ( current_matrix_mode < 3) {
+    if ( current_matrix_mode == 2)
+      loadMatrix( mtxCurrent[1]);
+    else
+      loadMatrix( mtxCurrent[current_matrix_mode]);
+  }
 }
 
 static void
@@ -1401,9 +1512,24 @@ process_mtx_store( struct render_state *state,
                    const u32 *parms) {
   LOG("Matrix store (%d)\n", parms[0]);
 
+  if ( current_matrix_mode == 2) {
+    /* copy the stack position and size from the Model matrix stack
+     * as they are shared and may have been updated whilst Model
+     * Matrix mode was selected. */
+    mtxStack[2].position = mtxStack[1].position;
+    mtxStack[2].size = mtxStack[1].size;
+  }
+
   MatrixStackLoadMatrix (&mtxStack[current_matrix_mode],
                          parms[0] & 31,
                          mtxCurrent[current_matrix_mode]);
+
+  if ( current_matrix_mode == 2) {
+    /* store the model matrix as well */
+    MatrixStackLoadMatrix (&mtxStack[1],
+                           parms[0] & 31,
+                           mtxCurrent[1]);
+  }
 }
 
 static void
@@ -1411,15 +1537,30 @@ process_mtx_restore( struct render_state *state,
                    const u32 *parms) {
   LOG("Matrix restore\n");
 
+  if ( current_matrix_mode == 2) {
+    /* copy the stack position and size from the Model matrix stack
+     * as they are shared and may have been updated whilst Model
+     * Matrix mode was selected. */
+    mtxStack[2].position = mtxStack[1].position;
+    mtxStack[2].size = mtxStack[1].size;
+  }
+
   MatrixCopy (mtxCurrent[current_matrix_mode],
               MatrixStackGetPos(&mtxStack[current_matrix_mode], parms[0]&31));
 
   if (current_matrix_mode == 2) {
-    MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
+    MatrixCopy (mtxCurrent[1],
+                MatrixStackGetPos(&mtxStack[1], parms[0]&31));
   }
 
-  if ( current_matrix_mode < 3)
-    loadMatrix( mtxCurrent[current_matrix_mode]);
+  if ( current_matrix_mode < 3) {
+    if ( current_matrix_mode == 2) {
+      loadMatrix( mtxCurrent[1]);
+    }
+    else {
+      loadMatrix( mtxCurrent[current_matrix_mode]);
+    }
+  }
 }
 
 static void
@@ -1521,8 +1662,6 @@ process_mtx_trans( struct render_state *state,
   if (current_matrix_mode == 2)
     MatrixTranslate (mtxCurrent[1], trans);
 
-
-
   if ( current_matrix_mode == 2) {
     LOG_MATRIX( mtxCurrent[1]);
     loadMatrix( mtxCurrent[1]);
@@ -1543,12 +1682,12 @@ process_mtx_scale( struct render_state *state,
   scale[1] = fix2float(parms[1]);
   scale[2] = fix2float(parms[2]);
 
-  MatrixScale (mtxCurrent[current_matrix_mode], scale);
-
   if (current_matrix_mode == 2) {
+    /* scaling does not happen against the drirection matrix */
     MatrixScale (mtxCurrent[1], scale);
   }
-
+  else
+    MatrixScale (mtxCurrent[current_matrix_mode], scale);
 
   LOG("scale %f,%f,%f\n", scale[0], scale[1], scale[2]);
 
@@ -1741,26 +1880,12 @@ static void
 process_control( struct render_state *state,
                  const u32 *parms) {
   LOG("Control set to %08x\n", parms[0]);
+
+  /*
+   * Save for later.
+   * all control is handled at a 'begin' command
+   */
   disp_3D_control = parms[0];
-
-  if( disp_3D_control & 1)
-    {
-      glEnable (GL_TEXTURE_2D);
-    }
-  else
-    {
-      glDisable (GL_TEXTURE_2D);
-    }
-
-  if( disp_3D_control & (1<<2))
-    {
-      glEnable(GL_ALPHA_TEST);
-    }
-  else
-    {
-      glDisable(GL_ALPHA_TEST);
-    }
-
 }
 
 static void
@@ -1776,13 +1901,23 @@ process_alpha_function( struct render_state *state,
 static void
 process_clear_depth( struct render_state *state,
                      const u32 *parms) {
-  u32 depth24b;
+  //u32 depth24b;
   u32 v = parms[0] & 0x7FFFF;
   LOG("Clear depth %08x\n", parms[0]);
 
-  depth24b = (v * 0x200)+((v+1)/0x8000);
+  /*
+   * Save for later.
+   * handled at a 'begin' command
+   */
+  current_depth24b = (v * 0x200)+((v+1)/0x8000);
 
-  glClearDepth(depth24b / ((float)(1<<24)));
+  if ( inside_primitive) {
+    depth24b_valid = 1;
+  }
+  else {
+    depth24b_valid = 0;
+    glClearDepth( current_depth24b / ((float)(1<<24)));
+  }
 }
 
 static void
@@ -1791,11 +1926,22 @@ process_clear_colour( struct render_state *state,
   u32 v = parms[0];
   LOG("Clear colour %08x\n", v);
 
-  glClearColor(	((float)(v&0x1F))/31.0f,
-                ((float)((v>>5)&0x1F))/31.0f, 
-                ((float)((v>>10)&0x1F))/31.0f, 
-                ((float)((v>>16)&0x1F))/31.0f);
+  /*
+   * Save for later.
+   * handled at a 'begin' command
+   */
+  current_clear_colour = v;
 
+  if ( inside_primitive) {
+    clear_colour_valid = 1;
+  }
+  else {
+    glClearColor( ((float)( current_clear_colour & 0x1F))/31.0f,
+                  ((float)(( current_clear_colour >> 5)&0x1F))/31.0f, 
+                  ((float)(( current_clear_colour >> 10)&0x1F))/31.0f, 
+                  ((float)(( current_clear_colour >> 16)&0x1F))/31.0f);
+    clear_colour_valid = 0;
+  }
 }
 
 
@@ -1815,9 +1961,31 @@ draw_3D_area( void) {
     return;
   }
 
+#ifndef READ_PIXELS_IMMEDIATELY
+  /*
+   * If there is a render which has not had its pixels read yet
+   * then read them now.
+   */
+  if ( new_render_available) {
+      new_render_available = 0;
+
+#ifdef USE_BGR_ORDER
+      glReadPixels(0,0,256,192,GL_BGRA,GL_UNSIGNED_BYTE,GPU_screen3D);
+#else
+      glReadPixels(0,0,256,192,GL_RGBA,GL_UNSIGNED_BYTE,GPU_screen3D);
+#endif
+  }
+#endif
+
+
   LOG("\n------------------------------------\n");
   LOG("Start of render\n");
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+  /*if ( state->write_index > 10000) {
+    LOG_ALWAYS( "3d write index %d\n", state->write_index);
+    }*/
 
   for ( i = 0; i < state->write_index; i++) {
     u32 cmd = state->cmds[i];
