@@ -1,4 +1,4 @@
-0.6.0 -> 0.X.X
+0.6.0 -> 0.7.0
  general:
   - Added support for *.duc files [cyberwarriorx]
  gpu:
