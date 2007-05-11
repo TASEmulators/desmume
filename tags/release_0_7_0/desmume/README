@@ -1,0 +1,68 @@
+                        DeSmuME
+        _________________________________________
+        Copyright (C) 2006 yopyop
+        Copyright (C) 2006-2007 DeSmuME team
+
+
+1) Introduction.............................................13
+2) Staff/Thanks.............................................36
+3) Contact information......................................72
+4) Disclaimer...............................................82
+
+
+1 Introduction________________________________________________
+
+DeSmuME is a Nintendo DS emulator under GNU GPL.
+
+DeSmuME can boot homebrew and games, some of which are
+playable.
+
+For installation/how to use informations, check the ports
+specific README files:
+
+  * README.LIN for the linux port
+  * README.WIN for the windows port
+
+
+2 Staff/Thanks________________________________________________
+
+See the AUTHORS file for team members list.
+
+Thanks to:
+
+  * yopyop (original author of DeSMUME),
+    for releasing the source code of this great emulator.
+
+  * Martin Korth (author of GBATEK),
+    for his well-written Gameboy Advance and Nintendo DS
+    documentation.
+
+
+3 Contact information_________________________________________
+
+E-mail:	guillaume.duhamel@gmail.com
+Web:    http://desmume.sourceforge.net
+IRC:    irc://irc.freenode.net/desmume
+
+Please don't ask for roms, bios files or any other
+copyrighted stuff.
+
+
+4 Disclaimer__________________________________________________
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as 
+published by the Free Software Foundation; either version 2 of 
+the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be
+useful,but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free
+Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+MA  02111-1307  USA
+
+See the GNU General Public License details in COPYING.
