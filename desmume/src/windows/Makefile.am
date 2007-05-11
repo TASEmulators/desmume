@@ -11,7 +11,9 @@ desmume_SOURCES = \
         resource.h \
         snddx.c snddx.h \
         tileView.c tileView.h yopyop_private.h \
-        ConfigKeys.c ConfigKeys.h
+        ConfigKeys.c ConfigKeys.h \
+	FirmConfig.c FirmConfig.h \
+	OGLRender.c OGLRender.h
 desmume_LDADD = ../libdesmume.a yopyop_private.o
 yopyop_private.o: yopyop_private.rc resources.rc resource.h
 	windres yopyop_private.rc -o yopyop_private.o
