@@ -5,16 +5,30 @@
 
 
 1) Compiling instructions...................................13
-2) How to use DeSmuME.......................................37
-3) Contact information.....................................116
-4) Disclaimer..............................................135
+2) How to use DeSmuME.......................................51
+3) Contact information.....................................130
+4) Disclaimer..............................................149
 
 
 1 Compiling instructions______________________________________
 
-DeSmuME is written in C, so you need a working C compiler(such
-as mingw). Other supported compilers include Visual C++ 2005 and
+DeSmuME is written in C, using the DirectX 8.0, OpenGL, zlib,
+zziplib libraries, so you need a working C compiler(such as
+mingw). Other supported compilers include Visual C++ 2005 and
 dev-cpp.
+
+  * You can find DirectX headers and libraries(for mingw) at
+    http://alleg.sourceforge.net/wip.html as the file
+    "dx80_mgw.zip". The actual runtime libraries(or
+    headers/libraries for MSVC) can be gotten from
+    http://www.microsoft.com/DirectX
+
+  * OpenGL should be included with your compiler, if it isn't,
+    check on your compiler's website for links.
+
+  * zlib can be found at http://www.zlib.net
+
+  * zziplib can be found at http://zziplib.sourceforge.net
 
 mingw:
 All you have to do now is go into your mingw shell
