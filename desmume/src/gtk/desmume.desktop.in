@@ -2,7 +2,7 @@
 Encoding=UTF-8
 Version=@VERSION@
 Type=Application
-Name=DeSmuME
+Name=DeSmuME (Gtk)
 Comment=Nintento DS emulator
 TryExec=desmume
 Exec=desmume
