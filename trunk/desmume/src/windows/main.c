@@ -1036,7 +1036,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                      ZeroMemory(&ofn, sizeof(ofn));
                      ofn.lStructSize = sizeof(ofn);
                      ofn.hwndOwner = hwnd;
-                     ofn.lpstrFilter = "Action Replay DS Save (*.duc)\0*.duc\0\0";
+                     ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0DS-Xtreme Save (*.sav)\0*.sav\0\0";
                      ofn.nFilterIndex = 1;
                      ofn.lpstrFile =  ImportSavName;
                      ofn.nMaxFile = MAX_PATH;
@@ -1345,7 +1345,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
                   case IDM_FORUM:
-                       ShellExecute(NULL, "open", "http://sourceforge.net/forum/?group_id=164579", NULL, NULL, SW_SHOWNORMAL);
+                       ShellExecute(NULL, "open", "http://forums.desmume.org/index.php", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
                   case IDM_SUBMITBUGREPORT:
                        ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
