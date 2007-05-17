@@ -615,7 +615,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 
 	adr &= 0x0FFFFFFF;
 
-	if((adr>>24)==4)
+	if(adr&0x04000000)
 	{
 		/* Adress is an IO register */
 		switch(adr)
@@ -882,6 +882,119 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 
 	switch(adr)
 	{
+		case REG_DISPA_WIN0H: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_H1 (MainScreen.gpu, val);
+			break ; 	 
+		case REG_DISPA_WIN0H+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_H0 (MainScreen.gpu, val);
+			break ; 	 
+		case REG_DISPA_WIN1H: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_H1 (MainScreen.gpu,val);
+			break ; 	 
+		case REG_DISPA_WIN1H+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_H0 (MainScreen.gpu,val);
+			break ; 	 
+
+		case REG_DISPB_WIN0H: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_H1(SubScreen.gpu,val);
+			break ; 	 
+		case REG_DISPB_WIN0H+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_H0(SubScreen.gpu,val);
+			break ; 	 
+		case REG_DISPB_WIN1H: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_H1(SubScreen.gpu,val);
+			break ; 	 
+		case REG_DISPB_WIN1H+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_H0(SubScreen.gpu,val);
+			break ;
+
+		case REG_DISPA_WIN0V: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_V1(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPA_WIN0V+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_V0(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPA_WIN1V: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_V1(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPA_WIN1V+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_V0(MainScreen.gpu,val) ; 	 
+			break ; 	 
+
+		case REG_DISPB_WIN0V: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_V1(SubScreen.gpu,val) ;
+			break ; 	 
+		case REG_DISPB_WIN0V+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_V0(SubScreen.gpu,val) ;
+			break ; 	 
+		case REG_DISPB_WIN1V: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_V1(SubScreen.gpu,val) ;
+			break ; 	 
+		case REG_DISPB_WIN1V+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWIN1_V0(SubScreen.gpu,val) ;
+			break ;
+
+		case REG_DISPA_WININ: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWININ0(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPA_WININ+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWININ1(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPA_WINOUT: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWINOUT(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPA_WINOUT+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWINOBJ(MainScreen.gpu,val);
+			break ; 	 
+
+		case REG_DISPB_WININ: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWININ0(SubScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPB_WININ+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWININ1(SubScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPB_WINOUT: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWINOUT(SubScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPB_WINOUT+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setWINOBJ(SubScreen.gpu,val) ; 	 
+			break ;
+
+
+		case REG_DISPA_BLDCNT:
+			if(proc == ARMCPU_ARM9) GPU_setBLDCNT_HIGH(MainScreen.gpu,val);
+			break;
+		case REG_DISPA_BLDCNT+1:
+			if(proc == ARMCPU_ARM9) GPU_setBLDCNT_LOW (MainScreen.gpu,val);
+			break;
+
+		case REG_DISPB_BLDCNT: 	 
+			if(proc == ARMCPU_ARM9) GPU_setBLDCNT_HIGH (SubScreen.gpu,val);
+			break;
+		case REG_DISPB_BLDCNT+1: 	 
+			if(proc == ARMCPU_ARM9) GPU_setBLDCNT_LOW (SubScreen.gpu,val);
+			break;
+
+		case REG_DISPA_BLDALPHA: 	 
+			if(proc == ARMCPU_ARM9) GPU_setBLDALPHA_EVB(MainScreen.gpu,val) ; 	 
+			break;
+		case REG_DISPA_BLDALPHA+1:
+			if(proc == ARMCPU_ARM9) GPU_setBLDALPHA_EVA(MainScreen.gpu,val) ; 	 
+			break;
+
+		case REG_DISPB_BLDALPHA:
+			if(proc == ARMCPU_ARM9) GPU_setBLDALPHA_EVB(SubScreen.gpu,val) ; 	 
+			break;
+		case REG_DISPB_BLDALPHA+1:
+			if(proc == ARMCPU_ARM9) GPU_setBLDALPHA_EVA(SubScreen.gpu,val);
+			break;
+
+		case REG_DISPA_BLDY: 	 
+			if(proc == ARMCPU_ARM9) GPU_setBLDY_EVY(MainScreen.gpu,val) ; 	 
+			break ; 	 
+		case REG_DISPB_BLDY: 	 
+			if(proc == ARMCPU_ARM9) GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
+			break;
 
 		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
 		/* TODO: Not all mappings of VRAMs are handled... (especially BG and OBJ modes) */
@@ -1188,18 +1301,78 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
 			}
 
+			case REG_DISPA_BLDCNT: 	 
+				if(proc == ARMCPU_ARM9) GPU_setBLDCNT(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_BLDCNT: 	 
+				if(proc == ARMCPU_ARM9) GPU_setBLDCNT(SubScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPA_BLDALPHA: 	 
+				if(proc == ARMCPU_ARM9) GPU_setBLDALPHA(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_BLDALPHA: 	 
+				if(proc == ARMCPU_ARM9) GPU_setBLDALPHA(SubScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPA_BLDY: 	 
+				if(proc == ARMCPU_ARM9) GPU_setBLDY_EVY(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_BLDY: 	 
+				if(proc == ARMCPU_ARM9) GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
+				break;
 			case REG_DISPA_MASTERBRIGHT:
-			{
 				GPU_setMasterBrightness (MainScreen.gpu, val);
 				break;
-			}
+				/*
+			case REG_DISPA_MOSAIC: 	 
+				if(proc == ARMCPU_ARM9) GPU_setMOSAIC(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_MOSAIC: 	 
+				if(proc == ARMCPU_ARM9) GPU_setMOSAIC(SubScreen.gpu,val) ; 	 
+				break ;
+				*/
+
+			case REG_DISPA_WIN0H: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN0_H (MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPA_WIN1H: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN1_H(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_WIN0H: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN0_H(SubScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_WIN1H: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN1_H(SubScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPA_WIN0V: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN0_V(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPA_WIN1V: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN1_V(MainScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_WIN0V: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN0_V(SubScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPB_WIN1V: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWIN1_V(SubScreen.gpu,val) ; 	 
+				break ; 	 
+			case REG_DISPA_WININ: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWININ(MainScreen.gpu, val) ; 	 
+				break ; 	 
+			case REG_DISPA_WINOUT: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWINOUT16(MainScreen.gpu, val) ; 	 
+				break ; 	 
+			case REG_DISPB_WININ: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWININ(SubScreen.gpu, val) ; 	 
+				break ; 	 
+			case REG_DISPB_WINOUT: 	 
+				if(proc == ARMCPU_ARM9) GPU_setWINOUT16(SubScreen.gpu, val) ; 	 
+				break ;
+
 			case REG_DISPB_MASTERBRIGHT:
-			{
 				GPU_setMasterBrightness (SubScreen.gpu, val);
 				break;
-			}
 			
-                        case REG_POWCNT1 :
+            case REG_POWCNT1 :
 				if(proc == ARMCPU_ARM9)
 				{
 					if(val & (1<<15))
@@ -1650,7 +1823,6 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 	T1WriteWord(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
 } 
 
-u32 testval = 0;
 
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 {
@@ -2088,6 +2260,44 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					gpu3D->NDS_3D_ViewPort(val);
 				}
 				return;
+			}
+
+			case REG_DISPA_WININ: 	 
+			{
+	            if(proc == ARMCPU_ARM9) 	 
+	            { 	 
+	                    GPU_setWININ	(MainScreen.gpu, val & 0xFFFF) ; 	 
+	                    GPU_setWINOUT16	(MainScreen.gpu, (val >> 16) & 0xFFFF) ; 	 
+	            } 	 
+	            break;
+			}
+			case REG_DISPB_WININ:
+			{
+	            if(proc == ARMCPU_ARM9) 	 
+	            { 	 
+	                    GPU_setWININ	(SubScreen.gpu, val & 0xFFFF) ; 	 
+	                    GPU_setWINOUT16	(SubScreen.gpu, (val >> 16) & 0xFFFF) ; 	 
+	            } 	 
+	            break;
+			}
+
+			case REG_DISPA_BLDCNT:
+			{
+				if (proc == ARMCPU_ARM9) 	 
+				{ 	 
+					GPU_setBLDCNT   (MainScreen.gpu,val&0xffff);
+					GPU_setBLDALPHA (MainScreen.gpu,val>>16);
+				}
+				break;
+			}
+			case REG_DISPB_BLDCNT:
+			{
+				if (proc == ARMCPU_ARM9) 	 
+				{ 	 
+					GPU_setBLDCNT   (SubScreen.gpu,val&0xffff);
+					GPU_setBLDALPHA (SubScreen.gpu,val>>16);
+				}
+				break;
 			}
 /*
  // Commented out, as this doesn't use the plug-in system, neither works

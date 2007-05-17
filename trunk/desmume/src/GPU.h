@@ -187,7 +187,7 @@ typedef union {
 	} bytes;
 	u16 val ;
 } WINxCNT ;
-
+/*
 typedef struct {
     WINxDIM WIN0H;
     WINxDIM WIN1H;
@@ -196,6 +196,7 @@ typedef struct {
     WINxCNT WININ;
     WINxCNT WINOUT;
 } WINCNT; 
+*/
 
 /*******************************************************************************
     this structure is for miscellanous settings
@@ -205,14 +206,16 @@ typedef struct {
 typedef struct {
     u16 MOSAIC;
     u16 unused1;
-    u16 BLDCNT;
-    u16 BLDALPHA;
-    u16 BLDY;
-    u16 unused2;
-    u16 unused3;
-    u16 unused4;
+    u16 unused2;//BLDCNT;
+    u16 unused3;//BLDALPHA;
+    u16 unused4;//BLDY;
     u16 unused5;
+	/*
     u16 unused6;
+    u16 unused7;
+    u16 unused8;
+    u16 unused9;
+	*/
 } MISCCNT; 
 
 
@@ -290,7 +293,7 @@ typedef struct _reg_dispx {
     BGxOFS dispx_BGxOFS[4];           // 0x0400x010
     BGxPARMS dispx_BG2PARMS;          // 0x0400x020
     BGxPARMS dispx_BG3PARMS;          // 0x0400x030
-    WINCNT dispx_WINCNT;              // 0x0400x040
+    u8			filler[12];           // 0x0400x040
     MISCCNT dispx_MISC;               // 0x0400x04C
     DISP3DCNT dispA_DISP3DCNT;        // 0x04000060
     DISPCAPCNT dispA_DISPCAPCNT;      // 0x04000064
@@ -487,7 +490,7 @@ struct _GPU
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
-	u8 sprWin[256*2][256];
+	u8 sprWin[256][256];
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
@@ -515,12 +518,42 @@ struct _GPU
 	u8 sprBMPMode;
 	u32 sprEnable;
 
+	u8 WIN0H0;
+	u8 WIN0H1;
+	u8 WIN0V0;
+	u8 WIN0V1;
+
+	u8 WIN1H0;
+	u8 WIN1H1;
+	u8 WIN1V0;
+	u8 WIN1V1;
+
+	u8 WININ0;
+	u8 WININ0_SPECIAL;
+	u8 WININ1;
+	u8 WININ1_SPECIAL;
+
+	u8 WINOUT;
+	u8 WINOUT_SPECIAL;
+	u8 WINOBJ;
+	u8 WINOBJ_SPECIAL;
+
+	u8 WIN0_ENABLED;
+	u8 WIN1_ENABLED;
+	u8 WINOBJ_ENABLED;
+
+	u16 BLDCNT;
+	u8	BLDALPHA_EVA;
+	u8	BLDALPHA_EVB;
+	u8	BLDY_EVY;
+
 	u8	MasterBrightMode;
 	u32 MasterBrightFactor;
-	
-	void (*spriteRender)(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
-};
 
+	BOOL (*setFinalColor)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+	void (*spriteRender) (GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
+};
+/*
 // normally should have same addresses 
 static void REG_DISPx_pack_test(GPU * gpu)
 {
@@ -538,7 +571,7 @@ static void REG_DISPx_pack_test(GPU * gpu)
 	printf ("\t%02x\n", (long)(&r->dispA_DISPCAPCNT) - (long)r);
 	printf ("\t%02x\n", (long)(&r->dispA_DISPMMEMFIFO) - (long)r);
 }
-
+*/
 
 extern u8 GPU_screen[4*256*192];
 
@@ -609,6 +642,40 @@ int GPU_ChangeGraphicsCore(int coreid);
 void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) ;
 void GPU_ligne(NDS_Screen * screen, u16 l) ;
 void GPU_setMasterBrightness (GPU *gpu, u16 val);
+
+void GPU_setWIN0_H	(GPU *gpu, u16 val);
+void GPU_setWIN0_H0 (GPU *gpu, u8 val);
+void GPU_setWIN0_H1 (GPU *gpu, u8 val);
+
+void GPU_setWIN0_V	(GPU *gpu, u16 val);
+void GPU_setWIN0_V0 (GPU *gpu, u8 val);
+void GPU_setWIN0_V1 (GPU *gpu, u8 val);
+
+void GPU_setWIN1_H	(GPU *gpu, u16 val);
+void GPU_setWIN1_H0 (GPU *gpu, u8 val);
+void GPU_setWIN1_H1 (GPU *gpu, u8 val);
+
+void GPU_setWIN1_V	(GPU *gpu, u16 val);
+void GPU_setWIN1_V0 (GPU *gpu, u8 val);
+void GPU_setWIN1_V1 (GPU *gpu, u8 val);
+
+void GPU_setWININ  (GPU *gpu, u16 val);
+void GPU_setWININ0 (GPU *gpu, u8 val);
+void GPU_setWININ1 (GPU *gpu, u8 val);
+
+void GPU_setWINOUT16(GPU *gpu, u16 val);
+void GPU_setWINOUT	(GPU *gpu, u8 val);
+void GPU_setWINOBJ	(GPU *gpu, u8 val);
+
+void GPU_setBLDCNT_LOW	(GPU *gpu, u8 val);
+void GPU_setBLDCNT_HIGH (GPU *gpu, u8 val);
+void GPU_setBLDCNT		(GPU *gpu, u16 val);
+
+void GPU_setBLDALPHA	(GPU *gpu, u16 val);
+void GPU_setBLDALPHA_EVA(GPU *gpu, u8 val);
+void GPU_setBLDALPHA_EVB(GPU *gpu, u8 val);
+
+void GPU_setBLDY_EVY	(GPU *gpu, u8 val);
 
 #ifdef __cplusplus
 }
