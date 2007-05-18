@@ -135,6 +135,7 @@ void refreshAll();
 
 #define IDC_LANGENGLISH        210
 #define IDC_LANGFRENCH         211
+#define IDC_LANGDANISH         212
 
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302

@@ -439,12 +439,17 @@ void SetLanguage(int langid)
    {
       case 1:
          // French
-         SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_DEFAULT),
+         SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH),
+                         SORT_DEFAULT));          
+         break;
+      case 2:
+         // Danish
+         SetThreadLocale(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT),
                          SORT_DEFAULT));          
          break;
       case 0:
          // English
-         SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+         SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                          SORT_DEFAULT));
          break;
       default: break;
@@ -1402,6 +1407,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDC_LANGFRENCH:
                      SaveLanguage(1);
                      ChangeLanguage(1);
+                     CheckLanguage(LOWORD(wParam));
+                  return 0;
+                  case IDC_LANGDANISH:
+                     SaveLanguage(1);
+                     ChangeLanguage(2);
                      CheckLanguage(LOWORD(wParam));
                   return 0;
                   case IDM_WEBSITE:
