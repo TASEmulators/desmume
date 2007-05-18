@@ -133,6 +133,9 @@ void refreshAll();
 
 #define IDM_IMPORTBACKUPMEMORY 201
 
+#define IDC_LANGENGLISH        210
+#define IDC_LANGFRENCH         211
+
 #define IDD_MEM_VIEWER      301
 #define IDC_8_BIT           302
 #define IDC_16_BIT          303

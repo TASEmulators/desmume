@@ -433,6 +433,53 @@ BOOL LoadROM(char * filename)
     return FALSE;
 }
 
+void SetLanguage(int langid)
+{
+   switch(langid)
+   {
+      case 1:
+         // French
+         SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_DEFAULT),
+                         SORT_DEFAULT));          
+         break;
+      case 0:
+         // English
+         SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
+                         SORT_DEFAULT));
+         break;
+      default: break;
+         break;
+   }
+}
+
+void SaveLanguage(int langid)
+{
+   char text[80];
+
+   sprintf(text, "%d", langid);
+   WritePrivateProfileString("General", "Language", text, IniName);
+}
+
+void CheckLanguage(UINT id)
+{
+   int i;
+   for (i = IDC_LANGENGLISH; i < IDC_LANGFRENCH+1; i++)
+      CheckMenuItem(menu, i, MF_BYCOMMAND | MF_UNCHECKED);
+
+   CheckMenuItem(menu, id, MF_BYCOMMAND | MF_CHECKED);
+}
+
+void ChangeLanguage(int id)
+{
+   HMENU newmenu;
+
+   SetLanguage(id);
+   newmenu = LoadMenu(hAppInst, "MENU_PRINCIPAL");
+   SetMenu(hwnd, newmenu);
+   DestroyMenu(menu);
+   menu = newmenu;   
+}
+
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
                     LPSTR lpszArgument,
@@ -446,6 +493,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     hAppInst=hThisInstance;
 
     InitializeCriticalSection(&section);
+
+    GetINIPath(IniName, MAX_PATH);
+    GetPrivateProfileString("General", "Language", "-1", text, 80, IniName);
+    SetLanguage(atoi(text));
+
     sprintf(text, "DeSmuME v%s", VERSION);
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
@@ -476,9 +528,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
-    GetINIPath(IniName, MAX_PATH);
-
     NDS_Init();
+
+    GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
+    CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
     GetPrivateProfileString("Video", "FrameSkip", "AUTO", text, 80, IniName);
 
@@ -1340,6 +1393,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        CheckMenuItem(menu, IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
                        CheckMenuItem(menu, LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
                   }
+                  return 0;
+                  case IDC_LANGENGLISH:
+                     SaveLanguage(0);
+                     ChangeLanguage(0);
+                     CheckLanguage(LOWORD(wParam));
+                  return 0;
+                  case IDC_LANGFRENCH:
+                     SaveLanguage(1);
+                     ChangeLanguage(1);
+                     CheckLanguage(LOWORD(wParam));
                   return 0;
                   case IDM_WEBSITE:
                        ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
