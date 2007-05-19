@@ -1,3 +1,7 @@
+0.7.0 -> 0.X.X
+ gpu:
+  - Major speedup to the 2D core [shash]
+
 0.6.0 -> 0.7.0
  general:
   - Added support for *.duc files [cyberwarriorx]
