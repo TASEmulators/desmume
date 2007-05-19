@@ -41,6 +41,18 @@ GLuint screen_texture[1];
 #undef _DUP4
 #undef _DUP2
 
+/* FIXME: Purpose of this code?  */
+BOOL _fun_gl_Begin (int screen) { return FALSE; }
+void _fun_gl_End (int screen) { }
+
+fun_gl_Begin Open_GL_beg = _fun_gl_Begin;
+fun_gl_End   Open_GL_end = _fun_gl_End;
+
+void register_gl_fun(fun_gl_Begin beg,fun_gl_End end) {
+	Open_GL_beg = beg;
+	Open_GL_end = end;
+}
+
 /************************************************/
 /* BEGIN & END                                  */
 /************************************************/

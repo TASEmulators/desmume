@@ -39,6 +39,7 @@ void init_GL_capabilities();
 void init_GL(GtkWidget * widget, int screen, int share_num);
 int init_GL_free_s(GtkWidget * widget, int share_num);
 int init_GL_free(GtkWidget * widget);
+void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 #ifdef HAVE_LIBGDKGLEXT_X11_1_0
 static void gtk_init_main_gl_area(GtkWidget *, gpointer);
 static void gtk_init_sub_gl_area(GtkWidget *, gpointer);

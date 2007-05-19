@@ -111,19 +111,6 @@ GraphicsInterface_struct *GFXCoreList[] = {
 NULL
 };
 
-/*
-BOOL _fun_gl_Begin (int screen) { return FALSE; }
-void _fun_gl_End (int screen) { }
-
-fun_gl_Begin Open_GL_beg = _fun_gl_Begin;
-fun_gl_End   Open_GL_end = _fun_gl_End;
-
-void register_gl_fun(fun_gl_Begin beg,fun_gl_End end) {
-	Open_GL_beg = beg;
-	Open_GL_end = end;
-}
-*/
-
 //static BOOL setFinalColorDirect				(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
 static BOOL setFinalColorSpecialNone		(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
 static BOOL setFinalColorSpecialBlend		(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
