@@ -1,3 +1,8 @@
 Makefile
-config.log
-config.status
+Makefile.in
+config.*
+aclocal.m4
+autom4te.cache
+build-tree
+configure
+*.tar.gz*
