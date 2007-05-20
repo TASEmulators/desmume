@@ -2032,7 +2032,7 @@ void calc_bright_colors() {
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
-//	struct _DISPCAPCNT * capcnt;
+	struct _DISPCAPCNT * capcnt;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	struct _MASTER_BRIGHT * mBright;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
@@ -2043,6 +2043,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	u8 sprPrio[256];
 	u8 prio;
 	int i;
+	int ix;
 	int vram_bank;
 	u16 i16;
 	u32 c;
@@ -2150,6 +2151,94 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		for (i=0; i < item->nbPixelsX; i++) {
 			i16=item->PixelsX[i];
 			T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+		}
+	}
+	
+	/* DISPCAP */
+	/* TODO: Capture source B and A+B */
+	if(gpu->core == GPU_MAIN)	/* capture only for main gpu */
+	{
+		capcnt = &gpu->dispCapCnt.bits;
+		if (capcnt->Capture_Enable)	
+		{
+			int capx, capy;
+			u8 *capDst;
+			
+			/* find the dimensions of the capture */
+			switch(capcnt->Capture_Size)	/* TODO: it could be done only once, when writting to dispcap register  */
+			{
+				case 0:
+					capx = 128;
+					capy = 128;
+					break;
+				case 1:
+					capx = 256;
+					capy = 64;
+					break;
+				case 2:
+					capx = 256;
+					capy = 128;
+				case 3:
+					capx = 256;
+					capy = 192;
+					break;
+			}
+			
+			if(l < capy)	/* check if our line is in cature area */
+			{
+				/* calculate VRAM destination address */
+				capDst = (ARM9Mem.ARM9_LCD 
+						+ (capcnt->VRAM_Write_Block * 0x20000) 
+						+ ((dispCnt->BG_Mode != 2) ? (capcnt->VRAM_Write_Offset * 0x8000) : 0)
+						+ l * capx * 2);	/* read offset ignored in VRAM display mode*/
+				
+// 				LOG("Capture line %d (%X) [dst: %X]...\n", l, gpu->dispCapCnt.val, capDst - ARM9Mem.ARM9_LCD);
+				
+				switch(capcnt->Capture_Source)
+				{
+					case 0:	/* source A only */
+						if(capcnt->Source_A == 1)	/* capture 3D only */
+						{
+							u16 cap3DLine[256];	/* temp buffer for 3D line reading */
+							gpu3D->NDS_3D_GetLine (l, cap3DLine);	/*FIXME: not sure it's good, since I hadn't seen how 3D works in desmume */
+							for(i = 0; i < capx; i++) T1WriteWord(capDst, i, cap3DLine[i]);	/* copy this line to buffer */
+						}
+						else	/* capture all screen (BG + OBJ + 3D) */
+						{
+							for(i = 0; i < capx; i++) T1WriteWord(capDst, i, T2ReadWord(dst, i));	/* plain copy from screen to buffer */
+						}
+					
+						break;
+					case 1: /* source B only */
+						if(capcnt->Source_B == 1)	/* capture from display FIFO */
+						{
+							/* TODO ... */
+						}
+						else	/* capture from VRAM */
+						{
+							/* calculate vram source address */
+							u8 *capSrc = (ARM9Mem.ARM9_LCD 
+									+ (dispCnt->VRAM_Block * 0x20000)
+									+ ((dispCnt->BG_Mode != 2) ? (capcnt->VRAM_Write_Offset * 0x8000) : 0)
+									+ l * capx * 2);	/* write offset ignored in VRAM display mode*/
+								
+							for(i = 0; i < capx; i++) T1WriteWord(capDst, i, T2ReadWord(capSrc, i));	/* plain copy from source to dest */
+						}
+					
+						break;
+					case 2: /* source A + B (using blending) */
+					case 3:
+					
+						/* TODO... (the above code will need modifications in order to avoid redudance) */
+						GPULOG("Unhandled capture source: %d\n", capcnt->Capture_Source);	/* TODO */
+				}
+				
+				if(l + 1 == capy)		/* if it was the last line, we're done !*/
+				{
+					capcnt->Capture_Enable = 0;	/* done, now capture is disabled */
+					T1WriteLong(ARM9Mem.ARM9_REG, 0x64, gpu->dispCapCnt.val);
+				}
+			}
 		}
 	}
 
