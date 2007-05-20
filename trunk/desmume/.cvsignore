@@ -6,3 +6,7 @@ autom4te.cache
 build-tree
 configure
 *.tar.gz*
+depcomp
+install-sh
+missing
+mkinstalldirs
