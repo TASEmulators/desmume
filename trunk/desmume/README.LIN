@@ -28,17 +28,27 @@ it, you'll need glade:
 
   * http://glade.gnome.org/
 
-Uncompress the DeSmuME. source archive, move to the newly
-created directory, type "./configure", then "make",
-it will generate two programs: "desmume" in the "src/gtk"
-directory and "desmume-cli" in the "src/cli" directory.
+1.1 From a release archive____________________________________
+
+Uncompress the DeSmuME archive, move to the newly created 
+directory, type "./configure", then "make".
+It will generate three programs:
+1) "desmume" in the "src/gtk" directory;
+2) "desmume-cli" in the "src/cli" directory.
 If glade is installed on your system, you'll get a third
-binary: "desmume-glade" in the "src/gtk-glade" directory.
+binary:
+3) "desmume-glade" in the "src/gtk-glade" directory.
 
 You can even type "make install" to install those programs on
 your system (in /usr/local/ by default), then uninstalling is
 done by typing "make uninstall".
 
+1.2 From a CVS copy___________________________________________
+
+Move to the toplevel directory (the one that contains the
+configure.ac file). Type "autoreconf -i" to generate the
+configure script and needed Makefiles. Then you can follow the
+same procedure as in 1.1 .
 
 2 How to use DeSmuME__________________________________________
 
