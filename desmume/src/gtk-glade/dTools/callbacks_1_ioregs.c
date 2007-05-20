@@ -33,7 +33,7 @@ static void update_regs_fast();
 static void update_regs();
 
 /* Register name list */
-#define NBR_IO_REGS 6
+#define NBR_IO_REGS 7
 
 typedef struct
 {
@@ -49,7 +49,8 @@ const reg_name_addr Reg_Names_Addr[NBR_IO_REGS] =
     { "REG_IME", REG_IME, TRUE },
     { "REG_IE", REG_IE, FALSE },
     { "REG_IF", REG_IF, FALSE },
-    { "REG_POWCNT1", REG_POWCNT1, TRUE }
+    { "REG_POWCNT1", REG_POWCNT1, TRUE },
+	 { "REG_DISPCAPCNT", REG_DISPA_DISPCAPCNT, FALSE }
   };
 
 /* update */
