@@ -1,4 +1,5 @@
 .deps
 Makefile
+Makefile.in
 desmume-glade
 desmume-glade.desktop
