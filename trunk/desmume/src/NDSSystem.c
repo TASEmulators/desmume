@@ -20,13 +20,41 @@
 */
 
 #include <string.h>
-#include "NDSSystem.h"
 #include <stdlib.h>
+
+#include "NDSSystem.h"
+#include "MMU.h"
+#include "cflash.h"
 
 #include "ROMReader.h"
 
 NDSSystem nds;
 NDSFirmware firmware;
+
+static u32
+calc_CRC16( u32 start, u8 *data, int count) {
+  int i,j;
+  u32 crc = start & 0xffff;
+  static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+  for(i = 0; i < count; i++)
+  {
+    crc = crc ^ data[i];
+
+    for(j = 0; j < 8; j++) {
+      int do_bit = 0;
+
+      if ( crc & 0x1)
+        do_bit = 1;
+
+      crc = crc >> 1;
+
+      if ( do_bit) {
+        crc = crc ^ (val[j] << (7-j));
+      }
+    }
+  }
+  return crc;
+}
 
 int NDS_Init(void) {
      nds.ARM9Cycle = 0;
@@ -305,7 +333,7 @@ void NDS_FreeROM(void)
    MMU.bupmem.fp = NULL;
 }
 
-void NDS_Reset(void)
+void NDS_Reset( void)
 {
    BOOL oldexecute=execute;
    int i;
@@ -553,9 +581,126 @@ int NDS_WriteBMP(const char *filename)
     return 1;
 }
 
+static
+void create_user_data( u8 *data, int count) {
+  memset( data, 0, 0x100);
+
+  /* version */
+  data[0x00] = 5;
+  data[0x01] = 0;
+
+  /* colour */
+  data[0x02] = 7;
+
+  /* birthday month and day */
+  data[0x03] = 6;
+  data[0x04] = 23;
+
+  /* nickname and length */
+  data[0x06] = 'y';
+  data[0x08] = 'o';
+  data[0x0a] = 'p';
+  data[0x0c] = 'y';
+  data[0x0e] = 'o';
+  data[0x10] = 'p';
+
+  data[0x1a] = 6;
+
+  /* Message */
+  data[0x1c] = 'D';
+  data[0x1e] = 'e';
+  data[0x20] = 'S';
+  data[0x22] = 'm';
+  data[0x24] = 'u';
+  data[0x26] = 'M';
+  data[0x28] = 'E';
+  data[0x2a] = ' ';
+  data[0x2c] = 'm';
+  data[0x2e] = 'a';
+  data[0x30] = 'k';
+  data[0x32] = 'e';
+  data[0x34] = 's';
+  data[0x36] = ' ';
+  data[0x38] = 'y';
+  data[0x3a] = 'o';
+  data[0x3c] = 'u';
+  data[0x3e] = ' ';
+  data[0x40] = 'h';
+  data[0x42] = 'a';
+  data[0x44] = 'p';
+  data[0x46] = 'p';
+  data[0x48] = 'y';
+  data[0x4a] = '!';
+
+  data[0x50] = 24;
+
+  /*
+   * touch screen calibration
+   */
+  /* ADC position 1, x y */
+  data[0x58] = 0x00;
+  data[0x59] = 0x02;
+  data[0x5a] = 0x00;
+  data[0x5b] = 0x02;
+
+  /* screen pos 1, x y */
+  data[0x5c] = 0x20;
+  data[0x5d] = 0x20;
+
+  /* ADC position 2, x y */
+  data[0x5e] = 0x00;
+  data[0x5f] = 0x0e;
+  data[0x60] = 0x00;
+  data[0x61] = 0x08;
+
+  /* screen pos 2, x y */
+  data[0x62] = 0xe0;
+  data[0x63] = 0x80;
+
+  /* language and flags */
+  data[0x64] = 0x01;
+  data[0x65] = 0xfc;
+
+  /* update count and crc */
+  data[0x70] = count & 0xff;
+  data[0x71] = (count >> 8) & 0xff;
+
+  u32 crc = calc_CRC16( 0xffff, data, 0x70);
+  data[0x72] = crc & 0xff;
+  data[0x73] = (crc >> 8) & 0xff;
+
+  memset( &data[0x74], 0xff, 0x100 - 0x74);
+}
+
 /* creates an firmware flash image, which contains all needed info to initiate a wifi connection */
 int NDS_CreateDummyFirmware(void)
 {
+  /*
+   * Create the firmware header
+   */
+  memset( MMU.fw.data, 0, 0x200);
+
+  /* firmware identifier */
+  MMU.fw.data[0x8] = 'M';
+  MMU.fw.data[0x8 + 1] = 'A';
+  MMU.fw.data[0x8 + 2] = 'C';
+  MMU.fw.data[0x8 + 3] = 'P';
+
+  /* DS type (phat) */
+  MMU.fw.data[0x1d] = 0xff;
+
+  /* User Settings offset 0x3fe00 / 8 */
+  MMU.fw.data[0x20] = 0xc0;
+  MMU.fw.data[0x21] = 0x7f;
+
+
+  /*
+   * User settings (at 0x3FE00 and 0x3FE00)
+   */
+  create_user_data( &MMU.fw.data[ 0x3FE00], 0);
+  create_user_data( &MMU.fw.data[ 0x3FF00], 1);
+  
+  
 #ifdef EXPERIMENTAL_WIFI
 	memcpy(MMU.fw.data+0x36,FW_Mac,sizeof(FW_Mac)) ;
 	memcpy(MMU.fw.data+0x44,FW_WIFIInit,sizeof(FW_WIFIInit)) ;
