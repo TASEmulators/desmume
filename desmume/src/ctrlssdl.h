@@ -34,8 +34,8 @@
 
 #define ADD_KEY(keypad,key) ( (keypad) |= (key) )
 #define RM_KEY(keypad,key) ( (keypad) &= ~(key) )
-#define KEYMASK_(k)	(1 << k)
-#define JOY_AXIS_(k)    ((k+1) << 8)
+#define KEYMASK_(k)	(1 << (k))
+#define JOY_AXIS_(k)    (((k)+1) << 8)
 
 #define NB_KEYS		14
 #define KEY_NONE		0
@@ -74,22 +74,26 @@ struct mouse_status
 
 struct mouse_status mouse;
 
-BOOL sdl_quit;
-
 void set_mouse_coord(signed long x,signed long y);
 #endif // !GTK_UI
 
-void load_default_config();
-BOOL init_joy();
-void uninit_joy();
+void load_default_config( void);
+BOOL init_joy( void);
+void uninit_joy( void);
 void set_joy_keys(const u16 joyCfg[]);
 void set_kb_keys(u16 kbCfg[]);
 u16 get_set_joy_key(int index);
 void get_set_joy_axis(int index, int index_opp);
 void update_keypad(u16 keys);
-u16 get_keypad();
-u16 inline lookup_key (u16 keyval);
-u16 inline lookup_joy_key (u16 keyval);
-u16 process_ctrls_events(u16 oldkeypad);
+u16 get_keypad( void);
+u16 lookup_key (u16 keyval);
+u16 lookup_joy_key (u16 keyval);
+int
+process_ctrls_events( u16 *keypad,
+                      void (*external_videoResizeFn)( u16 width, u16 height),
+                      float nds_screen_size_ratio);
+
+void
+process_joystick_events( u16 *keypad);
 
 #endif /* CTRLSSDL_H */
