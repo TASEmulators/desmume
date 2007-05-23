@@ -22,6 +22,7 @@
 #include "cp15.h"
 #include <math.h>
 #include "MMU.h"
+#include "SPU.h"
 #include "debug.h"
 
 extern BOOL execute;
@@ -878,7 +879,7 @@ u32 Diff8bitUnFilterWram(armcpu_t* cpu)
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
-     ((source + ((header >> 8) & 0x1fffff) & 0xe000000) == 0))
+     (( (source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0))
     return 0;  
 
   len = header >> 8;
@@ -963,18 +964,29 @@ u32 getVolumeTab(armcpu_t* cpu)
 
 u32 getCRC16(armcpu_t* cpu)
 {
-  int i,j;
-  u32 crc;
+  unsigned int i,j;
   
-  u16 start = cpu->R[0];
-  u16 datap = cpu->R[1];
+  u32 crc = cpu->R[0];
+  u32 datap = cpu->R[1];
   u32 size = cpu->R[2];
   
   static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
-  for(i=datap; i<(datap+size); i++)
+  for(i = 0; i < size; i++)
   {
-    crc=crc ^ MMU_readHWord(cpu->proc_ID,datap+i);
-    for(j=0; j<7; j++) crc=crc >> 1; if(crc) crc=crc ^ (val[j] << (7-j));
+    crc = crc ^ MMU_readByte( cpu->proc_ID, datap + i);
+
+    for(j = 0; j < 8; j++) {
+      int do_bit = 0;
+
+      if ( crc & 0x1)
+        do_bit = 1;
+
+      crc = crc >> 1;
+
+      if ( do_bit) {
+        crc = crc ^ (val[j] << (7-j));
+      }
+    }
   }
   cpu->R[0] = crc;
   return 1;
