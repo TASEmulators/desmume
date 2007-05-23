@@ -1,6 +1,10 @@
 0.7.0 -> 0.X.X
  gpu:
   - Major speedup to the 2D core [shash]
+ cli:
+  - Added command line options.
+  - Added FPS limiter
+  - Added option to use OpenGl to render window (allows resizing).
 
 0.6.0 -> 0.7.0
  general:
