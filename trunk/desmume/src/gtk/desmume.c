@@ -68,7 +68,7 @@ void desmume_cycle( void)
   /* Retrieve old value: can use joysticks w/ another device (from our side) */
   keypad = get_keypad();
   /* Look for queued events */
-  keypad = process_ctrls_events(keypad);
+  process_joystick_events( &keypad);
   /* Update keypad value */
   update_keypad(keypad);
 
