@@ -571,26 +571,7 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 	}
 #endif
 
-	adr &= 0x0FFFFFFF;
-
-	switch(adr)
-	{
-		case 0x027FFCDC :
-			return 0x20;
-		case 0x027FFCDD :
-			return 0x20;
-		case 0x027FFCE2 :
-		 //execute = FALSE;
-			return 0xE0;
-		case 0x027FFCE3 :
-			return 0x80;
-                /*case REG_POSTFLG :
-			return 1;
-                case REG_IME :
-			execute = FALSE;*/
-		default :
-		    return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
-	}
+        return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
 }
 
 
@@ -652,31 +633,8 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 				LOG("vect res\r\n");	/* TODO (clear): ??? */
 				//execute = FALSE;
 				return 0;
-			//case 0x27FFFAA :
-			//case 0x27FFFAC :
-			/*case 0x2330F84 :
-				if(click) execute = FALSE;*/
-			//case 0x27FF018 : execute = FALSE;
                         case REG_POSTFLG :
 				return 1;
-			default :
-				break;
-		}
-	}
-	else
-	{
-		/* TODO (clear): i don't known what are these 'registers', perhaps reset vectors ... */
-		switch(adr)
-		{
-			case 0x027FFCD8 :
-				return (0x20<<4);
-			case 0x027FFCDA :
-				return (0x20<<4);
-			case 0x027FFCDE : 
-				return (0xE0<<4);
-			case 0x027FFCE0 :
-			//execute = FALSE;
-				return (0x80<<4);
 			default :
 				break;
 		}
@@ -1412,11 +1370,23 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 			case REG_SPICNT :
 				if(proc == ARMCPU_ARM7)
 				{
-					SPI_CNT = val;
+                                  int reset_firmware = 1;
+
+                                  if ( ((SPI_CNT >> 8) & 0x3) == 1) {
+                                    if ( ((val >> 8) & 0x3) == 1) {
+                                      if ( BIT11(SPI_CNT)) {
+                                        /* select held */
+                                        reset_firmware = 0;
+                                      }
+                                    }
+                                  }
 					
                                         //MMU.fw.com == 0; /* reset fw device communication */
-					
-                                        mc_reset_com(&MMU.fw);     /* reset fw device communication */
+                                    if ( reset_firmware) {
+                                      /* reset fw device communication */
+                                      mc_reset_com(&MMU.fw);
+                                    }
+                                    SPI_CNT = val;
                                 }
 				
 				T1WriteWord(MMU.MMU_MEM[proc][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
@@ -1446,6 +1416,7 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 								break;
 							}
 							T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, val));
+
 							return;
 							
                                                 case 2 :
