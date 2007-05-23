@@ -23,6 +23,18 @@
 #include <string.h>
 #include <libgen.h>
 
+/*
+ * FIXME: Not sure how to detect OpenGL in a platform portable way.
+ */
+#ifdef HAVE_GL_GL_H
+#define INCLUDE_OPENGL_2D 1
+#endif
+
+#ifdef INCLUDE_OPENGL_2D
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
+
 #ifndef CLI_UI
 #define CLI_UI
 #endif
@@ -37,7 +49,21 @@
 
 volatile BOOL execute = FALSE;
 
-SDL_Surface * surface;
+static float nds_screen_size_ratio = 1.0f;
+
+#define DISPLAY_FPS 1
+
+#ifdef DISPLAY_FPS
+#define NUM_FRAMES_TO_TIME 60
+#endif
+
+
+#define FPS_LIMITER_FRAME_PERIOD 8
+
+static SDL_Surface * surface;
+
+/* Flags to pass to SDL_SetVideoMode */
+static int sdl_videoFlags = 0;
 
 SoundInterface_struct *SNDCoreList[] = {
   &SNDDummy,
@@ -69,37 +95,377 @@ const u16 cli_kb_cfg[NB_KEYS] =
     SDLK_o          // BOOST
   };
 
-int Draw() {
+
+
+struct my_config {
+  int disable_sound;
+
+#ifdef INCLUDE_OPENGL_2D
+  int opengl_2d;
+  int soft_colour_convert;
+#endif
+
+  const char *nds_file;
+
+  
+};
+
+static void
+init_config( struct my_config *config) {
+  config->disable_sound = 0;
+
+  config->nds_file = NULL;
+
+#ifdef INCLUDE_OPENGL_2D
+  config->opengl_2d = 0;
+  config->soft_colour_convert = 0;
+#endif
+}
+
+
+static int
+fill_config( struct my_config *config,
+             int argc, char ** argv) {
+  int good_args = 1;
+  int print_usage = 0;
+  int i;
+
+  for ( i = 1; i < argc && good_args; i++) {
+    if ( strcmp( argv[i], "--help") == 0) {
+      printf( "USAGE: %s <nds-file>\n", argv[0]);
+      printf( "OPTIONS:\n");
+      printf( "   --disable-sound         Disables the sound emulation\n");
+#ifdef INCLUDE_OPENGL_2D
+      printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
+      printf( "    --soft-convert     Use software colour conversion during OpenGL\n");
+      printf( "                       screen rendering. May produce better or worse\n");
+      printf( "                       frame rates depending on hardware.\n");
+#endif
+      printf( "\n");
+      printf( "   --help                  Display this message\n");
+      good_args = 0;
+    }
+    else if ( strcmp( argv[i], "--disable-sound") == 0) {
+      config->disable_sound = 1;
+    }
+#ifdef INCLUDE_OPENGL_2D
+    else if ( strcmp( argv[i], "--opengl-2d") == 0) {
+      config->opengl_2d = 1;
+    }
+    else if ( strcmp( argv[i], "--soft-convert") == 0) {
+      config->soft_colour_convert = 1;
+    }
+#endif
+    else {
+      if ( config->nds_file == NULL) {
+        config->nds_file = argv[i];
+      }
+      else {
+        fprintf( stderr, "NDS file (\"%s\") already set\n", config->nds_file);
+        good_args = 0;
+      }
+    }
+  }
+
+  if ( good_args) {
+    if ( config->nds_file == NULL) {
+      print_usage = 1;
+      good_args = 0;
+    }
+  }
+
+  if ( print_usage) {
+    fprintf( stderr, "USAGE: %s <nds-file>\n", argv[0]);
+  }
+
+  return good_args;
+}
+
+
+/** 
+ * A SDL timer callback function. Signals the supplied SDL semaphore
+ * if its value is small.
+ * 
+ * @param interval The interval since the last call (in ms)
+ * @param param The pointer to the semaphore.
+ * 
+ * @return The interval to the next call (required by SDL)
+ */
+static Uint32
+fps_limiter_fn( Uint32 interval, void *param) {
+  SDL_sem *sdl_semaphore = (SDL_sem *)param;
+
+  /* signal the semaphore if it is getting low */
+  if ( SDL_SemValue( sdl_semaphore) < 4) {
+    SDL_SemPost( sdl_semaphore);
+  }
+
+  return interval;
+}
+
+
+#ifdef INCLUDE_OPENGL_2D
+/* initialization openGL function */
+static int
+initGL( GLuint *screen_texture) {
+  GLenum errCode;
+  int init_good = 1;
+  int i;
+  u16 blank_texture[256 * 512];
+
+  for ( i = 0; i < 256 * 512; i++) {
+    blank_texture[i] = 0x001f;
+  }
+
+
+  /* Enable Texture Mapping */
+  glEnable( GL_TEXTURE_2D );
+
+  /* Set the background black */
+  glClearColor( 0.0f, 0.0f, 0.0f, 0.5f );
+
+  /* Depth buffer setup */
+  glClearDepth( 1.0f );
+
+  /* Enables Depth Testing */
+  glEnable( GL_DEPTH_TEST );
+
+  /* The Type Of Depth Test To Do */
+  glDepthFunc( GL_LEQUAL );
+
+  /* Create The Texture */
+  glGenTextures( 1, &screen_texture[0]);
+
+  glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
+
+  /* Generate The Texture */
+  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
+                0, GL_RGBA,
+                GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                blank_texture);
+
+  /* Linear Filtering */
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+  if ((errCode = glGetError()) != GL_NO_ERROR) {
+    const GLubyte *errString;
+
+    errString = gluErrorString(errCode);
+    fprintf( stderr, "Failed to init GL: %s\n", errString);
+
+    init_good = 0;
+  }
+
+  return init_good;
+}
+
+static void
+resizeWindow( u16 width, u16 height) {
+  int comp_width = 3 * width;
+  int comp_height = 2 * height;
+  int use_width = 1;
+  GLenum errCode;
+
+  /* Height / width ration */
+  GLfloat ratio;
+
+  if ( comp_width > comp_height) {
+    use_width = 0;
+  }
+ 
+  /* Protect against a divide by zero */
+  if ( height == 0 )
+    height = 1;
+  if ( width == 0)
+    width = 1;
+
+  ratio = ( GLfloat )width / ( GLfloat )height;
+
+  /* Setup our viewport. */
+  glViewport( 0, 0, ( GLint )width, ( GLint )height );
+
+  /*
+   * change to the projection matrix and set
+   * our viewing volume.
+   */
+  glMatrixMode( GL_PROJECTION );
+  glLoadIdentity( );
+
+  {
+    double left;
+    double right;
+    double bottom;
+    double top;
+    double other_dimen;
+
+    if ( use_width) {
+      left = 0.0;
+      right = 256.0;
+
+      nds_screen_size_ratio = 256.0 / (double)width;
+
+      other_dimen = (double)width * 3.0 / 2.0;
+
+      top = 0.0;
+      bottom = 384.0 * ((double)height / other_dimen);
+    }
+    else {
+      top = 0.0;
+      bottom = 384.0;
+
+      nds_screen_size_ratio = 384.0 / (double)height;
+
+      other_dimen = (double)height * 2.0 / 3.0;
+
+      left = 0.0;
+      right = 256.0 * ((double)width / other_dimen);
+    }
+
+    /*
+    printf("%d,%d\n", width, height);
+    printf("l %lf, r %lf, t %lf, b %lf, other dimen %lf\n",
+           left, right, top, bottom, other_dimen);
+    */
+
+    /* get the area (0,0) to (256,384) into the middle of the viewport */
+    gluOrtho2D( left, right, bottom, top);
+  }
+
+  /* Make sure we're chaning the model view and not the projection */
+  glMatrixMode( GL_MODELVIEW );
+
+  /* Reset The View */
+  glLoadIdentity( );
+
+  if ((errCode = glGetError()) != GL_NO_ERROR) {
+    const GLubyte *errString;
+
+    errString = gluErrorString(errCode);
+    fprintf( stderr, "GL resize failed: %s\n", errString);
+  }
+
+  surface = SDL_SetVideoMode( width, height, 32,
+                              sdl_videoFlags );
+}
+
+
+static void
+opengl_Draw( GLuint *texture, int software_convert) {
+  GLenum errCode;
+
+  /* Clear The Screen And The Depth Buffer */
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+  /* Move Into The Screen 5 Units */
+  glLoadIdentity( );
+
+  /* Select screen Texture */
+  glBindTexture( GL_TEXTURE_2D, texture[0]);
+  if ( software_convert) {
+    int i;
+    u8 converted[256 * 384 * 3];
+
+    for ( i = 0; i < (256 * 384); i++) {
+      converted[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+      converted[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+      converted[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+    }
+
+    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
+                     GL_RGB,
+                     GL_UNSIGNED_BYTE,
+                     converted);
+  }
+  else {
+    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
+                     GL_RGBA,
+                     GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                     &GPU_screen);
+  }
+
+  if ((errCode = glGetError()) != GL_NO_ERROR) {
+    const GLubyte *errString;
+
+    errString = gluErrorString(errCode);
+    fprintf( stderr, "GL subimage failed: %s\n", errString);
+  }
+
+
+  /* Draw the screen as a textured quad */
+  glBegin( GL_QUADS);
+  glTexCoord2f( 0.0f, 0.0f ); glVertex3f( 0.0f,  0.0f, 0.0f );
+  glTexCoord2f( 1.0f, 0.0f ); glVertex3f( 256.0f,  0.0f,  0.0f );
+  glTexCoord2f( 1.0f, 0.75f ); glVertex3f( 256.0f,  384.0f,  0.0f );
+  glTexCoord2f( 0.0f, 0.75f ); glVertex3f(  0.0f,  384.0f, 0.0f );
+  glEnd( );
+
+  if ((errCode = glGetError()) != GL_NO_ERROR) {
+    const GLubyte *errString;
+
+    errString = gluErrorString(errCode);
+    fprintf( stderr, "GL draw failed: %s\n", errString);
+  }
+
+  /* Draw it to the screen */
+  SDL_GL_SwapBuffers( );
+}
+#endif
+
+static void
+Draw( void) {
   SDL_Surface *rawImage;
 	
   rawImage = SDL_CreateRGBSurfaceFrom((void*)&GPU_screen, 256, 384, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
-  if(rawImage == NULL) return 1;
+  if(rawImage == NULL) return;
 	
   SDL_BlitSurface(rawImage, 0, surface, 0);
   SDL_UpdateRect(surface, 0, 0, 0, 0);
   
   SDL_FreeSurface(rawImage);
-  return 1;
+  return;
 }
 
 int main(int argc, char ** argv) {
   static unsigned short keypad = 0;
+  struct my_config my_config;
   u32 last_cycle = 0;
+  int limiter_frame_counter = 0;
+  SDL_sem *fps_limiter_semaphore;
+  SDL_TimerID limiter_timer;
+  int sdl_quit = 0;
+
+#ifdef DISPLAY_FPS
+  u32 fps_timing = 0;
+  u32 fps_frame_counter = 0;
+  u32 fps_previous_time = 0;
+  u32 fps_temp_time;
+#endif
+
+#ifdef INCLUDE_OPENGL_2D
+  GLuint screen_texture[1];
+#endif
+  /* this holds some info about our display */
+  const SDL_VideoInfo *videoInfo;
+
+  init_config( &my_config);
+
+  if ( !fill_config( &my_config, argc, argv)) {
+    exit(1);
+  }
 
 #ifdef DEBUG
   LogStart();
 #endif
   NDS_Init();
-  SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 
-  if (argc < 2) {
-    fprintf(stderr, "usage: %s filename\n", argv[0]);
-    return 1;
+  if ( !my_config.disable_sound) {
+    SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
   }
 
-  if (NDS_LoadROM(argv[1], MC_TYPE_AUTODETECT, 1) < 0) {
-    fprintf(stderr, "error while loading %s\n", argv[1]);
-    return 2;
+  if ( NDS_LoadROM( my_config.nds_file, MC_TYPE_AUTODETECT, 1) < 0) {
+    fprintf(stderr, "error while loading %s\n", my_config.nds_file);
+    exit(-1);
   }
 
   /*      // This has to get fixed yet
@@ -110,7 +476,7 @@ int main(int argc, char ** argv) {
   
   execute = TRUE;
 
-  if(SDL_Init(SDL_INIT_VIDEO) == -1)
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1)
     {
       fprintf(stderr, "Error trying to initialize SDL: %s\n",
               SDL_GetError());
@@ -118,16 +484,98 @@ int main(int argc, char ** argv) {
     }
   SDL_WM_SetCaption("Desmume SDL", NULL);
 
+  /* Fetch the video info */
+  videoInfo = SDL_GetVideoInfo( );
+  if ( !videoInfo ) {
+    fprintf( stderr, "Video query failed: %s\n", SDL_GetError( ) );
+    exit( -1);
+  }
+
+  /* This checks if hardware blits can be done */
+  if ( videoInfo->blit_hw )
+    sdl_videoFlags |= SDL_HWACCEL;
+
+#ifdef INCLUDE_OPENGL_2D
+  if ( my_config.opengl_2d) {
+    /* the flags to pass to SDL_SetVideoMode */
+    sdl_videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
+    sdl_videoFlags |= SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
+    sdl_videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
+    sdl_videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
+
+
+    /* This checks to see if surfaces can be stored in memory */
+    if ( videoInfo->hw_available )
+      sdl_videoFlags |= SDL_HWSURFACE;
+    else
+      sdl_videoFlags |= SDL_SWSURFACE;
+
+
+    /* Sets up OpenGL double buffering */
+    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+
+    surface = SDL_SetVideoMode( 256, 192 * 2, 32,
+                                sdl_videoFlags );
+
+    /* Verify there is a surface */
+    if ( !surface ) {
+      fprintf( stderr, "Video mode set failed: %s\n", SDL_GetError( ) );
+      exit( -1);
+    }
+    
+
+    /* initialize OpenGL */
+    if ( !initGL( screen_texture)) {
+      fprintf( stderr, "Failed to init GL, fall back to software render\n");
+
+      my_config.opengl_2d = 0;
+    }
+  }
+
+  if ( !my_config.opengl_2d) {
+#endif
+    sdl_videoFlags |= SDL_SWSURFACE;
+    surface = SDL_SetVideoMode(256, 384, 32, sdl_videoFlags);
+
+    if ( !surface ) {
+      fprintf( stderr, "Video mode set failed: %s\n", SDL_GetError( ) );
+      exit( -1);
+    }
+#ifdef INCLUDE_OPENGL_2D
+  }
+
+  /* set the initial window size */
+  if ( my_config.opengl_2d) {
+    resizeWindow( 256, 192*2);
+  }
+#endif
+
   /* Initialize joysticks */
   if(!init_joy()) return 1;
   /* Load our own keyboard configuration */
   set_kb_keys(cli_kb_cfg);
 
-  surface = SDL_SetVideoMode(256, 384, 32, SDL_SWSURFACE);
+  /* create the semaphore used for fps limiting */
+  fps_limiter_semaphore = SDL_CreateSemaphore( 1);
+
+  /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
+  limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
+                                fps_limiter_fn, fps_limiter_semaphore);
+  if ( limiter_timer == NULL) {
+    fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
+             SDL_GetError());
+    return 1;
+  }
+
+
 
   while(!sdl_quit) {
     /* Look for queued events and update keypad status */
-    keypad = process_ctrls_events(keypad);
+#ifdef INCLUDE_OPENGL_2D
+    sdl_quit = process_ctrls_events( &keypad, resizeWindow, nds_screen_size_ratio);
+#else
+    sdl_quit = process_ctrls_events( &keypad, NULL, nds_screen_size_ratio);
+#endif
     /* Update mouse position and click */
     if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
     if(mouse.click)
@@ -139,11 +587,52 @@ int main(int argc, char ** argv) {
     update_keypad(keypad);     /* Update keypad */
     last_cycle = NDS_exec((560190 << 1) - last_cycle, FALSE);
     SPU_Emulate();
-    Draw();
+
+#ifdef INCLUDE_OPENGL_2D
+    if ( my_config.opengl_2d) {
+      opengl_Draw( screen_texture, my_config.soft_colour_convert);
+    }
+    else
+#endif
+      Draw();
+
+    limiter_frame_counter += 1;
+    if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+      limiter_frame_counter = 0;
+
+      /* wait for the timer to expire */
+      SDL_SemWait( fps_limiter_semaphore);
+    }
+
+#ifdef DISPLAY_FPS
+    fps_frame_counter += 1;
+    fps_temp_time = SDL_GetTicks();
+    fps_timing += fps_temp_time - fps_previous_time;
+    fps_previous_time = fps_temp_time;
+
+    if ( fps_frame_counter == NUM_FRAMES_TO_TIME) {
+      char win_title[100];
+      float fps = (float)fps_timing;
+      fps /= NUM_FRAMES_TO_TIME * 1000.f;
+      fps = 1.0f / fps;
+
+      //printf("fps %f\n", fps);
+      fps_frame_counter = 0;
+      fps_timing = 0;
+
+      sprintf( win_title, "%f Desmume", fps);
+
+      SDL_WM_SetCaption( win_title, NULL);
+    }
+#endif
   }
 
   /* Unload joystick */
   uninit_joy();
+
+  /* tidy up the FPS limiter timer and semaphore */
+  SDL_RemoveTimer( limiter_timer);
+  SDL_DestroySemaphore( fps_limiter_semaphore);
 
   SDL_Quit();
   NDS_DeInit();
