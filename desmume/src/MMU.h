@@ -111,13 +111,13 @@ static void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
 	mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }
 
-void MMUInit(void);
-void MMUDeInit(void);
+void MMU_Init(void);
+void MMU_DeInit(void);
 
-void MMU_clearMem();
+void MMU_clearMem( void);
 
 void MMU_setRom(u8 * rom, u32 mask);
-void MMU_unsetRom();
+void MMU_unsetRom( void);
 
 #define MMU_readByte		MMU_read8
 #define MMU_readHWord	    MMU_read16
