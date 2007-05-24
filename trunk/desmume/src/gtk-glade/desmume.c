@@ -129,6 +129,7 @@ gboolean EmuLoop(gpointer data)
 		
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
+	  static int limiter_frame_counter = 0;
 		fps_FrameCount += Frameskip + 1;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000)
@@ -150,6 +151,17 @@ gboolean EmuLoop(gpointer data)
 		notify_Tools();
 		gtk_widget_queue_draw(pDrawingArea);
 		gtk_widget_queue_draw(pDrawingArea2);
+
+                if ( !glade_fps_limiter_disabled) {
+                  limiter_frame_counter += 1;
+                  if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+                    limiter_frame_counter = 0;
+
+                    /* wait for the timer to expire */
+                    SDL_SemWait( glade_fps_limiter_semaphore);
+                  }
+                }
+
 		return TRUE;
 	}
 	gtk_widget_queue_draw(pDrawingArea);
