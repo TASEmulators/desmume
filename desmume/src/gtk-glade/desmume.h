@@ -22,6 +22,11 @@
 
 #include "globals.h"
 
+
+#define FPS_LIMITER_FRAME_PERIOD 5
+extern SDL_sem *glade_fps_limiter_semaphore;
+extern int glade_fps_limiter_disabled;
+
 extern void desmume_init();
 extern void desmume_free();
 
