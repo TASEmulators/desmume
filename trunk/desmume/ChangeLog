@@ -1,6 +1,9 @@
 0.7.0 -> 0.X.X
  gpu:
   - Major speedup to the 2D core [shash]
+ gtk-glade:
+  - Added command line options.
+  - Added FPS limiter
  cli:
   - Added command line options.
   - Added FPS limiter
