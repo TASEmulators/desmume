@@ -14,8 +14,8 @@ case $target in
 esac
 AC_SUBST(desmume_arch)
 
-dnl -- make sure we have a C++ compiler
-AC_PROG_CXX
+dnl -- make sure we have a C compiler
+AC_PROG_CC
 
 dnl -- use ranlib for libraries
 AC_PROG_RANLIB
