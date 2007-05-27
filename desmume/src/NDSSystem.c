@@ -583,6 +583,8 @@ int NDS_WriteBMP(const char *filename)
 
 static
 void create_user_data( u8 *data, int count) {
+  u32 crc;
+
   memset( data, 0, 0x100);
 
   /* version */
@@ -665,7 +667,7 @@ void create_user_data( u8 *data, int count) {
   data[0x70] = count & 0xff;
   data[0x71] = (count >> 8) & 0xff;
 
-  u32 crc = calc_CRC16( 0xffff, data, 0x70);
+  crc = calc_CRC16( 0xffff, data, 0x70);
   data[0x72] = crc & 0xff;
   data[0x73] = (crc >> 8) & 0xff;
 
