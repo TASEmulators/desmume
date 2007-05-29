@@ -2639,14 +2639,15 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					}
 				}
 				return;
-                        case REG_DMA0CNTL :
+			case REG_DMA0CNTL :
 				//LOG("32 bit dma0 %04X\r\n", val);
 				DMASrc[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB0);
 				DMADst[proc][0] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB4);
 				MMU.DMAStartTime[proc][0] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][0] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8, val);
-				if( MMU.DMAStartTime[proc][0] == 0)		// Start Immediately
+				if( MMU.DMAStartTime[proc][0] == 0 ||
+					MMU.DMAStartTime[proc][0] == 7)		// Start Immediately
 					MMU_doDMA(proc, 0);
 				#ifdef LOG_DMA2
 				else
@@ -2656,14 +2657,15 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				#endif
 				//execute = FALSE;
 				return;
-                                case REG_DMA1CNTL :
+			case REG_DMA1CNTL:
 				//LOG("32 bit dma1 %04X\r\n", val);
 				DMASrc[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xBC);
 				DMADst[proc][1] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC0);
 				MMU.DMAStartTime[proc][1] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][1] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xC4, val);
-				if(MMU.DMAStartTime[proc][1] == 0)		// Start Immediately
+				if(MMU.DMAStartTime[proc][1] == 0 ||
+					MMU.DMAStartTime[proc][1] == 7)		// Start Immediately
 					MMU_doDMA(proc, 1);
 				#ifdef LOG_DMA2
 				else
@@ -2672,14 +2674,15 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				#endif
 				return;
-                        case REG_DMA2CNTL :
+			case REG_DMA2CNTL :
 				//LOG("32 bit dma2 %04X\r\n", val);
 				DMASrc[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xC8);
 				DMADst[proc][2] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xCC);
 				MMU.DMAStartTime[proc][2] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][2] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xD0, val);
-				if(MMU.DMAStartTime[proc][2] == 0)		// Start Immediately
+				if(MMU.DMAStartTime[proc][2] == 0 ||
+					MMU.DMAStartTime[proc][2] == 7)		// Start Immediately
 					MMU_doDMA(proc, 2);
 				#ifdef LOG_DMA2
 				else
@@ -2688,14 +2691,15 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				#endif
 				return;
-				case 0x040000DC :
+			case 0x040000DC :
 				//LOG("32 bit dma3 %04X\r\n", val);
 				DMASrc[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD4);
 				DMADst[proc][3] = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xD8);
 				MMU.DMAStartTime[proc][3] = (proc ? (val>>28) & 0x3 : (val>>27) & 0x7);
 				MMU.DMACrt[proc][3] = val;
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xDC, val);
-				if(	MMU.DMAStartTime[proc][3] == 0)		// Start Immediately
+				if(	MMU.DMAStartTime[proc][3] == 0 ||
+					MMU.DMAStartTime[proc][3] == 7)		// Start Immediately
 					MMU_doDMA(proc, 3);
 				#ifdef LOG_DMA2
 				else
