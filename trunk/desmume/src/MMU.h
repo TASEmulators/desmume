@@ -104,6 +104,32 @@ typedef struct {
 extern MMU_struct MMU;
 
 
+struct armcpu_memory_iface {
+  /** the 32 bit instruction prefetch */
+  u32 FASTCALL (*prefetch32)( void *data, u32 adr);
+
+  /** the 16 bit instruction prefetch */
+  u16 FASTCALL (*prefetch16)( void *data, u32 adr);
+
+  /** read 8 bit data value */
+  u8 FASTCALL (*read8)( void *data, u32 adr);
+  /** read 16 bit data value */
+  u16 FASTCALL (*read16)( void *data, u32 adr);
+  /** read 32 bit data value */
+  u32 FASTCALL (*read32)( void *data, u32 adr);
+
+  /** write 8 bit data value */
+  void FASTCALL (*write8)( void *data, u32 adr, u8 val);
+  /** write 16 bit data value */
+  void FASTCALL (*write16)( void *data, u32 adr, u16 val);
+  /** write 32 bit data value */
+  void FASTCALL (*write32)( void *data, u32 adr, u32 val);
+
+  void *data;
+};
+
+
+
 static void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
 	if (type<0 || type > 5) return;
 	*bmemtype=save_types[type][0];
@@ -163,6 +189,15 @@ void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes);
 #endif
  
 void FASTCALL MMU_doDMA(u32 proc, u32 num);
+
+
+/*
+ * The base ARM memory interfaces
+ */
+extern struct armcpu_memory_iface arm9_base_memory_iface;
+extern struct armcpu_memory_iface arm7_base_memory_iface;
+extern struct armcpu_memory_iface arm9_direct_memory_iface;	
+
 
 #ifdef __cplusplus
 }
