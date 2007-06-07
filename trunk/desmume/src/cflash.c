@@ -19,13 +19,89 @@
 	
 */
 
-#include <string.h>
-#include "fs.h"
-#include "cflash.h"
-#include "NDSSystem.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef WIN32
+#include <io.h>
+#define OPEN_MODE _O_RDWR | _O_BINARY
+
+#define OPEN_FN _open
+#define CLOSE_FN _close
+#define LSEEK_FN _lseek
+#define WRITE_FN _write
+#define READ_FN _read
+#else
+#define OPEN_MODE O_RDWR
+
+#define OPEN_FN open
+#define CLOSE_FN close
+#define LSEEK_FN lseek
+#define WRITE_FN write
+#define READ_FN read
+#endif
+
+#include "types.h"
+#include "fs.h"
+#include "MMU.h"
+#include "cflash.h"
+#include "NDSSystem.h"
+
+#ifdef WIN32
+#include <stdarg.h>
+#include <windows.h>
+static void
+debug_output( const char *fmt, ...) {
+  char debug_string[2048];
+  va_list ap;
+  va_start( ap, fmt);
+
+  vsprintf( debug_string, fmt, ap);
+  OutputDebugStringA( debug_string);
+
+  va_end( ap);
+}
+#endif
+
+#if 0
+#ifdef WIN32
+#define LOCAL_LOG debug_output
+#else
+#define LOCAL_LOG( fmt, ...) printf("CFLASH: ");printf( fmt, ##__VA_ARGS__)
+#endif
+#else
+#define LOCAL_LOG( fmt, ...)
+#endif
+
+static int use_disk_image_file = 0;
+
+/* Set up addresses for GBAMP */
+#define CF_REG_DATA 0x9000000
+#define CF_REG_ERR 0x9020000
+#define CF_REG_SEC 0x9040000
+#define CF_REG_LBA1 0x9060000
+#define CF_REG_LBA2 0x9080000
+#define CF_REG_LBA3 0x90A0000
+#define CF_REG_LBA4 0x90C0000
+#define CF_REG_CMD 0x90E0000
+#define CF_REG_STS 0x98C0000
+
+// CF Card commands
+#define CF_CMD_LBA 0xE0
+#define CF_CMD_READ 0x20
+#define CF_CMD_WRITE 0x30
+
+
+static int disk_image = -1;
+static u32 file_size;
+
+static u16 cf_reg_sts, cf_reg_lba1, cf_reg_lba2,
+  cf_reg_lba3, cf_reg_lba4, cf_reg_cmd;
+static u32 currLBA;
 
 #define SECPERFAT	128
 #define SECPERCLUS	16
@@ -37,37 +113,29 @@
 #define DIRENTSPERCLUS ((BYTESPERCLUS)/32)
 
 
-u16                          cf_reg_data,cf_reg_err,cf_reg_sec,cf_reg_lba1,cf_reg_lba2,
-							cf_reg_lba3,cf_reg_lba4,cf_reg_cmd,cf_reg_sts;
-unsigned int				CF_REG_DATA,CF_REG_ERR,CF_REG_SEC,CF_REG_LBA1,CF_REG_LBA2,
-							CF_REG_LBA3,CF_REG_LBA4,CF_REG_CMD,CF_REG_STS;
+static BOOT_RECORD MBR;
+static DIR_ENT *files,*dirEntries,**dirEntryPtr;
+static FILE_INFO *fileLink,*dirEntryLink;
+static u32 filesysFAT,filesysRootDir,filesysData;
+static u16 FAT16[SECPERFAT*256];
+static u16 numExtraEntries[SECPERFAT*256];
+static DIR_ENT *extraDirEntries[SECPERFAT*256];
+static int numFiles,maxLevel,dirNum,numRootFiles;
+static int *dirEntriesInCluster, clusterNum, firstDirEntCluster,
+  lastDirEntCluster, lastFileDataCluster;
+static char *sRomPath;
+static int activeDirEnt=-1;
+static u32 bufferStart;
+static u32 fileStartLBA,fileEndLBA;
+static u16 freadBuffer[256];
+static u32 dwBytesRead;
+static FILE * hFile;
+static char fpath[255+1];
+static BOOL cflashDeviceEnabled = FALSE;
+static char buffer[256];
+static u32 dummy;
 
-BOOT_RECORD					MBR;
-DIR_ENT						*files,*dirEntries,**dirEntryPtr;
-FILE_INFO					*fileLink,*dirEntryLink;
-u32						currLBA;
-u32						filesysFAT,filesysRootDir,filesysData;
-u16							FAT16[SECPERFAT*256];
-u16							numExtraEntries[SECPERFAT*256];
-DIR_ENT						*extraDirEntries[SECPERFAT*256];
-int							numFiles,maxLevel,dirNum,numRootFiles;
-int							*dirEntriesInCluster,clusterNum,
-							firstDirEntCluster,lastDirEntCluster,
-							lastFileDataCluster;
-char						*sRomPath;
-int							activeDirEnt=-1;
-u32						bufferStart;
-u32						fileStartLBA,fileEndLBA;
-u16                                             freadBuffer[256];
-u32						dwBytesRead;
-FILE *						hFile;
-char						fpath[255+1];
-BOOL                                            cflashDeviceEnabled = FALSE;
-char                        buffer[256];
-u32               dummy;
-
-
-int lfn_checksum() {
+static int lfn_checksum( void) {
 	int i;
         u8 chk;
 
@@ -79,11 +147,11 @@ int lfn_checksum() {
 }
 
 
-const int lfnPos[13] = {1,3,5,7,9,14,16,18,20,22,24,28,30};
+static const int lfnPos[13] = {1,3,5,7,9,14,16,18,20,22,24,28,30};
 
 
 /* Add a DIR_ENT for the files */
-void add_file(char *fname, FsEntry * entry, int fileLevel) {
+static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 	int i,j,k,n;
         u8 chk;
 	char *p;
@@ -180,7 +248,7 @@ void add_file(char *fname, FsEntry * entry, int fileLevel) {
 
 
 /* List all files and subdirectories recursively */
-void list_files(char *fpath) {
+static void list_files(char *fpath) {
 	void * hFind;
 	FsEntry entry;
 	char			DirSpec[255 + 1],SubDir[255+1];
@@ -236,7 +304,7 @@ void list_files(char *fpath) {
 
 
 /* Set up the MBR, FAT and DIR_ENTs */
-BOOL cflash_build_fat() {
+static BOOL cflash_build_fat( void) {
 	int i,j,k,l,
 		clust,baseCluster,numClusters,
 		clusterNum2,rootCluster;
@@ -404,49 +472,58 @@ BOOL cflash_build_fat() {
 }
 
 
+BOOL
+cflash_init( const char *disk_image_filename) {
+  BOOL init_good = FALSE;
 
+  if ( disk_image_filename != NULL) {
+    LOCAL_LOG("Using CFlash disk image file %s\n", disk_image_filename);
+    use_disk_image_file = 1;
+    disk_image = OPEN_FN( disk_image_filename, OPEN_MODE);
 
-BOOL cflash_init() {
-        cflashDeviceEnabled = FALSE;
-	currLBA = 0;
-	
-	/* Set up addresses for M3CF */
-	/*CF_REG_DATA = 0x8800000;
-	CF_REG_ERR	= 0x8820000;
-	CF_REG_SEC	= 0x8840000;
-	CF_REG_LBA1	= 0x8860000;
-	CF_REG_LBA2	= 0x8880000;
-	CF_REG_LBA3	= 0x88A0000;
-	CF_REG_LBA4	= 0x88C0000;
-	CF_REG_CMD	= 0x88E0000;
-	CF_REG_STS	= 0x80C0000;*/
+    if ( disk_image != -1) {
+      file_size = LSEEK_FN( disk_image, 0, SEEK_END);
+      LSEEK_FN( disk_image, 0, SEEK_SET);
 
-	/* Set up addresses for GBAMP */
-	CF_REG_DATA = 0x9000000;
-	CF_REG_ERR	= 0x9020000;
-	CF_REG_SEC	= 0x9040000;
-	CF_REG_LBA1	= 0x9060000;
-	CF_REG_LBA2	= 0x9080000;
-	CF_REG_LBA3	= 0x90A0000;
-	CF_REG_LBA4	= 0x90C0000;
-	CF_REG_CMD	= 0x90E0000;
-	CF_REG_STS	= 0x98C0000;
+      LOCAL_LOG( "Disk image size = %d (%d sectors)\n",
+                 file_size, file_size / 512);
+      init_good = TRUE;
+    }
+    else {
+      LOCAL_LOG("Failed to open file %s: \"%s\"\n",
+                disk_image_filename,
+                strerror( errno));
+    }
+  }
+  else {
+    cflashDeviceEnabled = FALSE;
+    currLBA = 0;
     	
-	if (activeDirEnt != -1)
-		fclose(hFile);
-	activeDirEnt = -1;
-	fileStartLBA = fileEndLBA = 0xFFFFFFFF;
-	if (!cflash_build_fat())
-                return FALSE;
-	cf_reg_sts = 0x58;	// READY
+    if (activeDirEnt != -1)
+      fclose(hFile);
+    activeDirEnt = -1;
+    fileStartLBA = fileEndLBA = 0xFFFFFFFF;
+    if (!cflash_build_fat())
+      return FALSE;
+    cf_reg_sts = 0x58;	// READY
 
-        cflashDeviceEnabled = TRUE;
-        return TRUE;
+    cflashDeviceEnabled = TRUE;
+    init_good = TRUE;
+  }
+
+  // READY
+  cf_reg_sts = 0x58;
+
+  currLBA = 0;
+  cf_reg_lba1 = cf_reg_lba2 =
+    cf_reg_lba3 = cf_reg_lba4 = 0;
+
+  return init_good;
 }
 
 
 /* Convert a space-padded 8.3 filename into an asciiz string */
-void fatstring_to_asciiz(int dirent,char *out,DIR_ENT *d) {
+static void fatstring_to_asciiz(int dirent,char *out,DIR_ENT *d) {
 	int i,j;
 	DIR_ENT *pd;
 
@@ -472,7 +549,7 @@ void fatstring_to_asciiz(int dirent,char *out,DIR_ENT *d) {
 
 
 /* Resolve the path of a files by working backwards through the directory entries */
-void resolve_path(int dirent) {
+static void resolve_path(int dirent) {
 	int i;
 	char dirname[128];
 
@@ -491,8 +568,9 @@ void resolve_path(int dirent) {
 }
 
 
+
 /* Read from a file using a 512 byte buffer */
-u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
+static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	char fname[2*NAME_LEN+EXT_LEN];
 	int i,j;
 
@@ -536,147 +614,238 @@ u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	return freadBuffer[(offset-bufferStart)>>1];
 }
 
-/* Read from one of the CF device registers */
-unsigned int cflash_read(unsigned int address) {
+unsigned int
+cflash_read(unsigned int address) {
+  unsigned int ret_value = 0;
+#define BUFFERED_BLOCK_SIZE 512
+  static u8 block_buffer[BUFFERED_BLOCK_SIZE];
+  static s32 buffered_start_index = -1;
+
+  switch ( address) {
+  case CF_REG_STS:
+    ret_value = cf_reg_sts;
+    break;
+
+  case CF_REG_DATA:
+    if (cf_reg_cmd == CF_CMD_READ) {
+      if ( use_disk_image_file) {
+        if ( disk_image != -1) {
+          u8 data[2];
+#if 1
+          if ( currLBA < buffered_start_index ||
+               currLBA >= (buffered_start_index + BUFFERED_BLOCK_SIZE)) {
+            size_t read_bytes = 0;
+            LSEEK_FN( disk_image, currLBA, SEEK_SET);
+
+            while ( read_bytes < BUFFERED_BLOCK_SIZE) {
+              size_t cur_read =
+                READ_FN( disk_image, &block_buffer[read_bytes],
+                         BUFFERED_BLOCK_SIZE - read_bytes);
+
+              if ( cur_read == -1) {
+                break;
+              }
+              read_bytes += cur_read;
+            }
+
+            LOCAL_LOG( "Read %d bytes\n", read_bytes);
+
+            buffered_start_index = currLBA;
+          }
+          data[0] = block_buffer[currLBA - buffered_start_index];
+          data[1] = block_buffer[currLBA + 1 - buffered_start_index];
+#else
+          lseek( disk_image, currLBA, SEEK_SET);
+          read( disk_image, data, 2);
+
+#endif
+          ret_value = data[1] << 8 |
+            data[0];
+        }
+        currLBA += 2;
+      }
+      else {
 	unsigned char *p;
-        u16 s;
 	int i;
 	u32 cluster,cluster2,cluster3,fileLBA;
+        cluster = (currLBA / (512 * SECPERCLUS));
+        cluster2 = (((currLBA/512) - filesysData) / SECPERCLUS) + 2;
 
-	if (address == CF_REG_STS) {
-		s = cf_reg_sts;
-		return s; 
+        // Reading from the MBR 
+        if (currLBA < 512) {
+          p = (unsigned char*)&MBR;
+          ret_value = T1ReadWord(p, currLBA);
 
-	} else if (address == CF_REG_DATA) {
-		cluster = (currLBA / (512 * SECPERCLUS));
-		cluster2 = (((currLBA/512) - filesysData) / SECPERCLUS) + 2;
+          // Reading the FAT 
+        } else if ((currLBA >= filesysFAT*512) && (currLBA < filesysRootDir*512)) {
+          p = (unsigned char*)&FAT16[0];
+          ret_value = T1ReadWord(p, currLBA - filesysFAT * 512);
 
-		if (cf_reg_cmd == 0x20) {
-			// Reading from the MBR 
-			if (currLBA < 512) {
-				p = (unsigned char*)&MBR;
-                                s = T1ReadWord(p, currLBA);
+          // Reading directory entries 
+        } else if ((currLBA >= filesysRootDir*512) &&
+                   (cluster <= lastDirEntCluster)) {
+          cluster3 = ((currLBA - (SECRESV * 512)) / (512 * SECPERCLUS));
+          i = (currLBA-(((cluster3-(filesysRootDir/SECPERCLUS))*SECPERCLUS+filesysRootDir)*512)); //(currLBA - cluster*BYTESPERCLUS);
+          if (i < (dirEntriesInCluster[cluster3]*32)) {
 
-			// Reading the FAT 
-			} else if ((currLBA >= filesysFAT*512) && (currLBA < filesysRootDir*512)) {
-				p = (unsigned char*)&FAT16[0];
-                                s = T1ReadWord(p, currLBA - filesysFAT * 512);
+            p = (unsigned char*)dirEntryPtr[cluster3];
+            ret_value = T1ReadWord(p, i);
+          } else {
+            i /= 32;
+            i -= dirEntriesInCluster[cluster3];
+            if ((i>=0)&&(i<numExtraEntries[cluster3])) {
+              p = (unsigned char*)extraDirEntries[cluster3];
+              ret_value = T1ReadWord(p, i * 32 + (currLBA & 0x1F));
+            } else if ((currLBA&0x1F)==0) {
+              ret_value = FILE_FREE;
+            } else {
+              ret_value = 0;
+            }
+          }
+          // Reading file data 
+        } else if ((cluster2 > lastDirEntCluster) && (cluster2 <= lastFileDataCluster)) { //else if ((cluster>lastDirEntCluster)&&(cluster<=lastFileDataCluster)) {
+          fileLBA = currLBA - (filesysData-32)*512;	// 32 = # sectors used for the root entries
 
-			// Reading directory entries 
-			} else if ((currLBA >= filesysRootDir*512) &&
-				       (cluster <= lastDirEntCluster)) {
-				cluster3 = ((currLBA - (SECRESV * 512)) / (512 * SECPERCLUS));
-				i = (currLBA-(((cluster3-(filesysRootDir/SECPERCLUS))*SECPERCLUS+filesysRootDir)*512)); //(currLBA - cluster*BYTESPERCLUS);
-				if (i < (dirEntriesInCluster[cluster3]*32)) {
+          // Check if the read is from the currently opened file 
+          if ((fileLBA >= fileStartLBA) && (fileLBA < fileEndLBA)) {
+            cluster = (fileLBA / (512 * SECPERCLUS));
+            ret_value = fread_buffered(activeDirEnt,cluster-dirEntries[activeDirEnt].startCluster,(fileLBA-fileStartLBA)&(BYTESPERCLUS-1)); 
+          } else {
+            for (i=0; i<numFiles; i++) {
+              if ((fileLBA>=(dirEntries[i].startCluster*512*SECPERCLUS)) &&
+                  (fileLBA <(dirEntries[i].startCluster*512*SECPERCLUS)+dirEntries[i].fileSize) &&
+                  ((dirEntries[i].attrib & (ATTRIB_DIR|ATTRIB_LFN))==0)) {
+                cluster = (fileLBA / (512 * SECPERCLUS));
+                ret_value = fread_buffered(i,cluster-dirEntries[i].startCluster,fileLBA&(BYTESPERCLUS-1));
+                break;
+              }
+            }
+          }
+        } 
+        currLBA += 2;
+      }
+    }
+    break;
 
-					p = (unsigned char*)dirEntryPtr[cluster3];
-                                	s = T1ReadWord(p, i);
-				} else {
-					i /= 32;
-					i -= dirEntriesInCluster[cluster3];
-					if ((i>=0)&&(i<numExtraEntries[cluster3])) {
-						p = (unsigned char*)extraDirEntries[cluster3];
-                                		s = T1ReadWord(p, i * 32 + (currLBA & 0x1F));
-					} else if ((currLBA&0x1F)==0) {
-						s = FILE_FREE;
-					} else {
-						s = 0;
-					}
-				}
-			// Reading file data 
-			} else if ((cluster2 > lastDirEntCluster) && (cluster2 <= lastFileDataCluster)) { //else if ((cluster>lastDirEntCluster)&&(cluster<=lastFileDataCluster)) {
-				fileLBA = currLBA - (filesysData-32)*512;	// 32 = # sectors used for the root entries
+  case CF_REG_CMD:
+    break;
 
-				// Check if the read is from the currently opened file 
-				if ((fileLBA >= fileStartLBA) && (fileLBA < fileEndLBA)) {
-					cluster = (fileLBA / (512 * SECPERCLUS));
-					s = fread_buffered(activeDirEnt,cluster-dirEntries[activeDirEnt].startCluster,(fileLBA-fileStartLBA)&(BYTESPERCLUS-1)); 
-				} else {
-					for (i=0; i<numFiles; i++) {
-						if ((fileLBA>=(dirEntries[i].startCluster*512*SECPERCLUS)) &&
-							(fileLBA <(dirEntries[i].startCluster*512*SECPERCLUS)+dirEntries[i].fileSize) &&
-							((dirEntries[i].attrib & (ATTRIB_DIR|ATTRIB_LFN))==0)) {
-							cluster = (fileLBA / (512 * SECPERCLUS));
-							s = fread_buffered(i,cluster-dirEntries[i].startCluster,fileLBA&(BYTESPERCLUS-1));
-							break;
-						}
-					}
-				}
-			} 
-			currLBA += 2;
-			return s;
-		}
+  case CF_REG_LBA1:
+    ret_value = cf_reg_lba1;
+    break;
+  }
 
-	} else if (address == CF_REG_CMD) {
-		s = 0;
-		return 0;
-
-	} else if (address == CF_REG_LBA1) {
-		s = cf_reg_lba1;
-		return s; 
-	}
-        return 0;
+  return ret_value;
 }
 
+void
+cflash_write(unsigned int address,unsigned int data) {
+  static u8 sector_data[512];
+  static u32 sector_write_index = 0;
 
+  switch ( address) {
+  case CF_REG_STS:
+    cf_reg_sts = data&0xFFFF;
+    break;
 
+  case CF_REG_DATA:
+    if ( use_disk_image_file) {
+      if (cf_reg_cmd == CF_CMD_WRITE) {
+        sector_data[sector_write_index] = (data >> 0) & 0xff;
+        sector_data[sector_write_index + 1] = (data >> 8) & 0xff;
 
-/* Write to one of the CF device registers */
-void cflash_write(unsigned int address,unsigned int data) {
-	u32 cluster,cluster2,cluster3,fileLBA;
-	int i,j,k,l;
-	unsigned char *p;
-        u16 s;
-	DIR_ENT *d;
+        sector_write_index += 2;
 
-	if (address==CF_REG_STS) {
-		cf_reg_sts = data&0xFFFF;
+        if ( sector_write_index == 512) {
+          LOCAL_LOG( "Write sector to %d\n", currLBA);
 
-	} else if (address==CF_REG_DATA) {
+          if ( currLBA + 512 < file_size) {
+            size_t written = 0;
+            int i;
 
-	} else if (address==CF_REG_CMD) {
-		cf_reg_cmd = data&0xFF;
-		cf_reg_sts = 0x58;	// READY
-	
-	} else if (address==CF_REG_LBA1) {
-		cf_reg_lba1 = data&0xFF;
-		currLBA = (currLBA&0xFFFFFF00)|cf_reg_lba1;
-	
-	} else if (address==CF_REG_LBA2) {
-		cf_reg_lba2 = data&0xFF;
-		currLBA = (currLBA&0xFFFF00FF)|(cf_reg_lba2<<8);
-	
-	} else if (address==CF_REG_LBA3) {
-		cf_reg_lba3 = data&0xFF;
-		currLBA = (currLBA&0xFF00FFFF)|(cf_reg_lba3<<16);
-	
-	} else if (address==CF_REG_LBA4) {
-		cf_reg_lba4 = data&0xFF;
-		currLBA = (currLBA&0x00FFFFFF)|((cf_reg_lba4&0x0F)<<24);
-		currLBA *= 512;
-	}
+            if ( disk_image != -1) {
+              LSEEK_FN( disk_image, currLBA, SEEK_SET);
+              
+              while( written < 512) {
+                size_t cur_write =
+                  WRITE_FN( disk_image, &sector_data[written], 512 - written);
+                written += cur_write;
+
+                if ( cur_write == -1) {
+                  break;
+                }
+              }
+            }
+
+            LOCAL_LOG("Wrote %u bytes\n", written);
+          }
+          currLBA += 512;
+          sector_write_index = 0;
+        }
+      }
+    }
+    break;
+
+  case CF_REG_CMD:
+    cf_reg_cmd = data&0xFF;
+    cf_reg_sts = 0x58;	// READY
+    break;
+
+  case CF_REG_LBA1:
+    cf_reg_lba1 = data&0xFF;
+    currLBA = (currLBA&0xFFFFFF00)| cf_reg_lba1;
+    break;
+
+  case CF_REG_LBA2:
+    cf_reg_lba2 = data&0xFF;
+    currLBA = (currLBA&0xFFFF00FF)|(cf_reg_lba2<<8);
+    break;
+
+  case CF_REG_LBA3:
+    cf_reg_lba3 = data&0xFF;
+    currLBA = (currLBA&0xFF00FFFF)|(cf_reg_lba3<<16);
+    break;
+
+  case CF_REG_LBA4:
+    cf_reg_lba4 = data&0xFF;
+
+    if ( (cf_reg_lba4 & 0xf0) == CF_CMD_LBA) {
+      currLBA = (currLBA&0x00FFFFFF)|((cf_reg_lba4&0x0F)<<24);
+      currLBA *= 512;
+      sector_write_index = 0;
+    }
+    break;
+  }  
 }
 
+void
+cflash_close( void) {
+  if ( use_disk_image_file) {
+    if ( disk_image != -1) {
+      CLOSE_FN( disk_image);
+      disk_image = -1;
+    }
+  }
+  else {
+    int i;
 
+    if (cflashDeviceEnabled) {
+      cflashDeviceEnabled = FALSE;
 
-void cflash_close() {
-	int i;
+      for (i=0; i<MAXFILES; i++) {
+        if (extraDirEntries[i] != NULL)
+          free(extraDirEntries[i]);
+      }
 
-	if (cflashDeviceEnabled) {
-                cflashDeviceEnabled = FALSE;
+      if (dirEntries != NULL)
+        free(dirEntries);
 
-		for (i=0; i<MAXFILES; i++) {
-			if (extraDirEntries[i] != NULL)
-				free(extraDirEntries[i]);
-		}
+      if (dirEntryLink != NULL)
+        free(dirEntryLink);
 
-		if (dirEntries != NULL)
-			free(dirEntries);
-
-		if (dirEntryLink != NULL)
-			free(dirEntryLink);
-
-		if (activeDirEnt != -1)
-			fclose(hFile);
-	}
+      if (activeDirEnt != -1)
+        fclose(hFile);
+    }
+  }
 }
+
