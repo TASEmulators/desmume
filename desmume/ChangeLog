@@ -1,4 +1,4 @@
-0.7.0 -> 0.X.X
+0.7.0 -> 0.7.1
  general:
   - Added GDB debugger stub [masscat]
   - Added new/different GBAMP CFlash image reader/writer [masscat]
