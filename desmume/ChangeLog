@@ -1,18 +1,20 @@
 0.7.0 -> 0.X.X
  general:
-  - Added GDB debugger stub
-  - Added new/different GBAMP CFlash image reader/writer
+  - Added GDB debugger stub [masscat]
+  - Added new/different GBAMP CFlash image reader/writer [masscat]
  gpu:
   - Major speedup to the 2D core [shash]
  gtk-glade:
-  - Added command line options.
-  - Added FPS limiter
+  - Added command line options. [masscat]
+  - Added FPS limiter [masscat]
  cli:
-  - Added command line options.
-  - Added FPS limiter
-  - Added option to use OpenGl to render window (allows resizing).
+  - Added command line options. [masscat]
+  - Added FPS limiter [masscat]
+  - Added option to use OpenGl to render window (allows resizing). [masscat]
  windows port:
-  - Added command line options.
+  - Added command line options. [masscat]
+  - Added multiple language support [cyberwarriorx]
+  - Added Danish language translation [thomas-2007]
 
 0.6.0 -> 0.7.0
  general:
