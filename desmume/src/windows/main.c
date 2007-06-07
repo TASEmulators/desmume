@@ -643,8 +643,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
-    NDS_Init();
-
 	if ( my_config.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
 			&arm9_memio, &arm9_direct_memory_iface);
