@@ -27,6 +27,8 @@
 #include "globals.h"
 #include "../debug.h"
 
+#include "../gdbstub.h"
+
 #ifdef GTKGLEXT_AVAILABLE
 #include "../opengl_collector_3Demu.h"
 #include "gdk_3Demu.h"
@@ -36,8 +38,23 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
+
+#define ENABLE_MEMORY_PROFILING 1
+
+#ifdef ENABLE_MEMORY_PROFILING
+#include <gdk/gdkkeysyms.h>
+
+void
+print_memory_profiling( void);
+#endif
+
+static const char *bad_glob_cflash_disk_image_file;
+
+
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
+static int gtk_fps_limiter_disabled = 0;
+
 
 /************************ CONFIG FILE *****************************/
 
@@ -87,13 +104,23 @@ struct screen_render_config {
 
 struct configured_features {
   struct screen_render_config screen;
+
   int disable_sound;
   int disable_3d;
+  int disable_limiter;
+
+  u16 arm9_gdb_port;
+  u16 arm7_gdb_port;
+
   const char *nds_file;
+  const char *cflash_disk_image_file;
 };
 
 static void
 init_configured_features( struct configured_features *config) {
+  config->arm9_gdb_port = 0;
+  config->arm7_gdb_port = 0;
+
   config->disable_sound = 0;
 
   config->screen.opengl = 0;
@@ -101,7 +128,11 @@ init_configured_features( struct configured_features *config) {
 
   config->disable_3d = 0;
 
+  config->disable_limiter = 0;
+
   config->nds_file = NULL;
+
+  config->cflash_disk_image_file = NULL;
 }
 
 static int
@@ -125,6 +156,14 @@ fill_configured_features( struct configured_features *config,
       printf( "\n");
 #endif
       printf( "   --disable-sound     Disables the sound emulation\n");
+      printf( "   --disable-limiter   Disables the 60 fps limiter\n");
+      printf( "\n");
+      printf( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
+      printf( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
+      //printf( "   --sticky            Enable sticky keys and stylus\n");
+      printf( "\n");
+      printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
+      printf( "                       Enable disk image GBAMP compact flash emulation\n");
       printf( "\n");
       printf( "   --help              Display this message\n");
       good_args = 0;
@@ -143,6 +182,43 @@ fill_configured_features( struct configured_features *config,
       config->disable_3d = 1;
     }
 #endif
+    else if ( strcmp( argv[i], "--disable-limiter") == 0) {
+      config->disable_limiter = 1;
+    }
+    else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
+      char *end_char;
+      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+
+      if ( port_num > 0 && port_num < 65536) {
+        config->arm9_gdb_port = port_num;
+      }
+      else {
+        fprintf( stderr, "ARM9 GDB stub port must be in the range 1 to 65535\n");
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--arm7gdb=", 10) == 0) {
+      char *end_char;
+      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+
+      if ( port_num > 0 && port_num < 65536) {
+        config->arm7_gdb_port = port_num;
+      }
+      else {
+        fprintf( stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--cflash=", 9) == 0) {
+      if ( config->cflash_disk_image_file == NULL) {
+        config->cflash_disk_image_file = &argv[i][9];
+      }
+      else {
+        fprintf( stderr, "CFlash disk image file (\"%s\") already set\n",
+                 config->cflash_disk_image_file);
+        good_args = 0;
+      }
+    }
     else {
       if ( config->nds_file == NULL) {
         config->nds_file = argv[i];
@@ -167,6 +243,29 @@ fill_configured_features( struct configured_features *config,
 
   return good_args;
 }
+
+
+/*
+ * The thread handling functions needed by the GDB stub code.
+ */
+void *
+createThread_gdb( void (*thread_function)( void *data),
+                  void *thread_data) {
+  GThread *new_thread = g_thread_create( (GThreadFunc)thread_function,
+                                         thread_data,
+                                         TRUE,
+                                         NULL);
+
+  return new_thread;
+}
+
+void
+joinThread_gdb( void *thread_handle) {
+  g_thread_join( thread_handle);
+}
+
+
+
 
 u16 Keypad_Temp[NB_KEYS];
 
@@ -286,9 +385,10 @@ void About(GtkWidget* widget, gpointer data)
 	g_object_unref(pixbuf);
 }
 
-static int Open(const char *filename)
+static int Open(const char *filename, const char *cflash_disk_image)
 {
-        int i = NDS_LoadROM(filename, MC_TYPE_AUTODETECT, 1);
+        int i = NDS_LoadROM( filename, MC_TYPE_AUTODETECT, 1,
+                             cflash_disk_image);
 	return i;
 }
 
@@ -366,7 +466,7 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 		case GTK_RESPONSE_OK:
 			/* Recuperation du chemin */
 			sChemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-			if(Open((const char*)sChemin) < 0)
+			if(Open((const char*)sChemin, bad_glob_cflash_disk_image_file) < 0)
 			{
 				GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
 						GTK_DIALOG_MODAL,
@@ -865,6 +965,12 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
   u16 Key = lookup_key(e->keyval);
   ADD_KEY( Cur_Keypad, Key );
   if(desmume_running()) update_keypad(Cur_Keypad);
+
+#ifdef ENABLE_MEMORY_PROFILING
+  if ( e->keyval == GDK_Tab) {
+    print_memory_profiling();
+  }
+#endif
   return 1;
 }
 
@@ -1381,12 +1487,14 @@ gboolean EmuLoop(gpointer data)
 		_updateDTools();
 		gtk_widget_queue_draw( nds_screen_widget);
 
-		limiter_frame_counter += 1;
-		if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
-		  limiter_frame_counter = 0;
+                if ( !gtk_fps_limiter_disabled) {
+                  limiter_frame_counter += 1;
+                  if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+                    limiter_frame_counter = 0;
 
-		  /* wait for the timer to expire */
-		  SDL_SemWait( fps_limiter_semaphore);
+                    /* wait for the timer to expire */
+                    SDL_SemWait( fps_limiter_semaphore);
+                  }
 		}
 
 		
@@ -1438,10 +1546,42 @@ common_gtk_main( struct configured_features *my_config) {
         GdkGLConfig *glconfig;
         GdkGLContext *glcontext;
 #endif
+        gdbstub_handle_t arm9_gdb_stub;
+        gdbstub_handle_t arm7_gdb_stub;
+        struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+        struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+        struct armcpu_ctrl_iface *arm9_ctrl_iface;
+        struct armcpu_ctrl_iface *arm7_ctrl_iface;
+
+        bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
 
 #ifdef DEBUG
         LogStart();
 #endif
+
+        if ( my_config->arm9_gdb_port != 0) {
+          arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
+                                          &arm9_memio,
+                                          &arm9_base_memory_iface);
+
+          if ( arm9_gdb_stub == NULL) {
+            fprintf( stderr, "Failed to create ARM9 gdbstub on port %d\n",
+                     my_config->arm9_gdb_port);
+            exit( -1);
+          }
+        }
+        if ( my_config->arm7_gdb_port != 0) {
+          arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
+                                          &arm7_memio,
+                                          &arm7_base_memory_iface);
+
+          if ( arm7_gdb_stub == NULL) {
+            fprintf( stderr, "Failed to create ARM7 gdbstub on port %d\n",
+                     my_config->arm7_gdb_port);
+            exit( -1);
+          }
+        }
+
 
 #ifdef GTKGLEXT_AVAILABLE
         /* Try double-buffered visual */
@@ -1470,8 +1610,23 @@ common_gtk_main( struct configured_features *my_config) {
                     SDL_GetError());
             return 1;
           }
+	desmume_init( arm9_memio, &arm9_ctrl_iface,
+                      arm7_memio, &arm7_ctrl_iface,
+                      my_config->disable_sound);
 
-	desmume_init( my_config->disable_sound);
+
+        /*
+         * Activate the GDB stubs
+         * This has to come after the NDS_Init (called in desmume_init)
+         * where the cpus are set up.
+         */
+        if ( my_config->arm9_gdb_port != 0) {
+          activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+        }
+        if ( my_config->arm7_gdb_port != 0) {
+          activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+        }
+
         /* Initialize joysticks */
         if(!init_joy()) return 1;
 	
@@ -1789,15 +1944,18 @@ common_gtk_main( struct configured_features *my_config) {
 	
 	//LoadFirmware("fw.bin");
 
-	/* create the semaphore used for fps limiting */
-	fps_limiter_semaphore = SDL_CreateSemaphore( 1);
+        gtk_fps_limiter_disabled = my_config->disable_limiter;
+        if ( !gtk_fps_limiter_disabled) {
+          /* create the semaphore used for fps limiting */
+          fps_limiter_semaphore = SDL_CreateSemaphore( 1);
 
-	/* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
-	limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
-	if ( limiter_timer == NULL) {
-	  fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
-		   SDL_GetError());
-	  return 1;
+          /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
+          limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
+          if ( limiter_timer == NULL) {
+            fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
+                     SDL_GetError());
+            return 1;
+          }
 	}
 
         /*
@@ -1836,7 +1994,7 @@ common_gtk_main( struct configured_features *my_config) {
 	/* Vérifie la ligne de commandes */
 	if( my_config->nds_file != NULL)
 	{
-		if(Open( my_config->nds_file) >= 0)
+		if(Open( my_config->nds_file, bad_glob_cflash_disk_image_file) >= 0)
 		{
 			Launch();
 		}
@@ -1861,9 +2019,11 @@ common_gtk_main( struct configured_features *my_config) {
 	
 	desmume_free();
 
-	/* tidy up the FPS limiter timer and semaphore */
-	SDL_RemoveTimer( limiter_timer);
-	SDL_DestroySemaphore( fps_limiter_semaphore);
+        if ( !gtk_fps_limiter_disabled) {
+          /* tidy up the FPS limiter timer and semaphore */
+          SDL_RemoveTimer( limiter_timer);
+          SDL_DestroySemaphore( fps_limiter_semaphore);
+        }
 
 #ifdef DEBUG
         LogStop();
@@ -1872,8 +2032,15 @@ common_gtk_main( struct configured_features *my_config) {
         uninit_joy();
 
 	SDL_Quit();
-	
+
 	Write_ConfigFile();
+
+        if ( my_config->arm9_gdb_port != 0) {
+          destroyStub_gdb( arm9_gdb_stub);
+        }
+        if ( my_config->arm7_gdb_port != 0) {
+          destroyStub_gdb( arm7_gdb_stub);
+        }
 	
 	return EXIT_SUCCESS;
 }
@@ -1884,7 +2051,10 @@ main (int argc, char *argv[]) {
   struct configured_features my_config;
 
   init_configured_features( &my_config);
-        
+
+  if (!g_thread_supported())
+    g_thread_init( NULL);
+
   gtk_init(&argc, &argv);
 
 #ifdef GTKGLEXT_AVAILABLE

@@ -39,9 +39,13 @@ void desmume_mem_init();
 u8 *desmume_rom_data = NULL;
 u32 desmume_last_cycle;
 
-void desmume_init()
+void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
+                   struct armcpu_ctrl_iface **arm9_ctrl_iface,
+                   struct armcpu_memory_iface *arm7_mem_if,
+                   struct armcpu_ctrl_iface **arm7_ctrl_iface)
 {
-	NDS_Init();
+	NDS_Init( arm9_mem_if, arm9_ctrl_iface,
+                  arm7_mem_if, arm7_ctrl_iface);
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 	execute = FALSE;
 }
@@ -57,7 +61,7 @@ int desmume_open(const char *filename)
   int i;
   noticed_3D=attempted_3D_op=FALSE;
   clear_savestates();
-  i = NDS_LoadROM(filename, savetype, savesize);
+  i = NDS_LoadROM(filename, savetype, savesize, NULL);
   return i;
 }
 

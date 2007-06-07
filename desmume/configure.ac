@@ -160,6 +160,7 @@ AC_CONFIG_FILES([Makefile
                  src/gtk-glade/Makefile
                  src/gtk-glade/desmume-glade.desktop
                  src/windows/Makefile
+		 src/gdbstub/Makefile
 		 autopackage/default.apspec
 		 debian/rules
 		 debian/changelog

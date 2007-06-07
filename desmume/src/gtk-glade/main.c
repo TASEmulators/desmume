@@ -24,6 +24,7 @@
 #include "callbacks_IO.h"
 #include "dTools/callbacks_dtools.h"
 #include "globals.h"
+#include "../gdbstub.h"
 
 #ifdef GTKGLEXT_AVAILABLE
 #include <gtk/gtkgl.h>
@@ -67,11 +68,18 @@ struct configured_features {
   int software_colour_convert;
   int disable_3d;
   int disable_limiter;
+
+  u16 arm9_gdb_port;
+  u16 arm7_gdb_port;
+
   const char *nds_file;
 };
 
 static void
 init_configured_features( struct configured_features *config) {
+  config->arm9_gdb_port = 0;
+  config->arm7_gdb_port = 0;
+
   config->software_colour_convert = 0;
 
   config->disable_3d = 0;
@@ -102,6 +110,10 @@ fill_configured_features( struct configured_features *config,
 #endif
       g_print( "   --disable-limiter   Disables the 60 fps limiter\n");
       g_print( "\n");
+      g_print( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
+      g_print( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
+      //g_print( "   --sticky            Enable sticky keys and stylus\n");
+      g_print( "\n");
       g_print( "   --help              Display this message\n");
       good_args = 0;
     }
@@ -113,6 +125,30 @@ fill_configured_features( struct configured_features *config,
       config->disable_3d = 1;
     }
 #endif
+    else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
+      char *end_char;
+      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+
+      if ( port_num > 0 && port_num < 65536) {
+        config->arm9_gdb_port = port_num;
+      }
+      else {
+        g_print( "ARM9 GDB stub port must be in the range 1 to 65535\n");
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--arm7gdb=", 10) == 0) {
+      char *end_char;
+      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+
+      if ( port_num > 0 && port_num < 65536) {
+        config->arm7_gdb_port = port_num;
+      }
+      else {
+        g_print( "ARM7 GDB stub port must be in the range 1 to 65535\n");
+        good_args = 0;
+      }
+    }
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
     }
@@ -314,6 +350,27 @@ void update_savestate(u8 num)
 }
 
 
+/*
+ * The thread handling functions needed by the GDB stub code.
+ */
+void *
+createThread_gdb( void (*thread_function)( void *data),
+                  void *thread_data) {
+  GThread *new_thread = g_thread_create( (GThreadFunc)thread_function,
+                                         thread_data,
+                                         TRUE,
+                                         NULL);
+
+  return new_thread;
+}
+
+void
+joinThread_gdb( void *thread_handle) {
+  g_thread_join( thread_handle);
+}
+
+
+
 /** 
  * A SDL timer callback function. Signals the supplied SDL semaphore
  * if its value is small.
@@ -340,7 +397,12 @@ glade_fps_limiter_fn( Uint32 interval, void *param) {
 static int
 common_gtk_glade_main( struct configured_features *my_config) {
 	SDL_TimerID limiter_timer;
-
+        gdbstub_handle_t arm9_gdb_stub;
+        gdbstub_handle_t arm7_gdb_stub;
+        struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+        struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+        struct armcpu_ctrl_iface *arm9_ctrl_iface;
+        struct armcpu_ctrl_iface *arm7_ctrl_iface;
 
 #ifdef GTKGLEXT_AVAILABLE
 // check if you have GTHREAD when running configure script
@@ -353,6 +415,30 @@ common_gtk_glade_main( struct configured_features *my_config) {
 #endif
 	init_keyvals();
 
+        if ( my_config->arm9_gdb_port != 0) {
+          arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
+                                          &arm9_memio,
+                                          &arm9_base_memory_iface);
+
+          if ( arm9_gdb_stub == NULL) {
+            g_print( "Failed to create ARM9 gdbstub on port %d\n",
+                     my_config->arm9_gdb_port);
+            return -1;
+          }
+        }
+        if ( my_config->arm7_gdb_port != 0) {
+          arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
+                                          &arm7_memio,
+                                          &arm7_base_memory_iface);
+
+          if ( arm7_gdb_stub == NULL) {
+            g_print( "Failed to create ARM7 gdbstub on port %d\n",
+                     my_config->arm7_gdb_port);
+            return -1;
+          }
+        }
+
+
 	if(SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
           {
             fprintf(stderr, "Error trying to initialize SDL: %s\n",
@@ -360,8 +446,21 @@ common_gtk_glade_main( struct configured_features *my_config) {
             return 1;
           }
 
+	desmume_init( arm9_memio, &arm9_ctrl_iface,
+                      arm7_memio, &arm7_ctrl_iface);
 
-	desmume_init();
+        /*
+         * Activate the GDB stubs
+         * This has to come after the NDS_Init (called in desmume_init)
+         * where the cpus are set up.
+         */
+        if ( my_config->arm9_gdb_port != 0) {
+          activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+        }
+        if ( my_config->arm7_gdb_port != 0) {
+          activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+        }
+
         /* Initialize joysticks */
         if(!init_joy()) return 1;
 
@@ -475,7 +574,10 @@ int main(int argc, char *argv[]) {
   struct configured_features my_config;
 
   init_configured_features( &my_config);
-        
+
+  if (!g_thread_supported())
+    g_thread_init( NULL);
+
   gtk_init(&argc, &argv);
 
 #ifdef GTKGLEXT_AVAILABLE

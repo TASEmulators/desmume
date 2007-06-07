@@ -19,6 +19,7 @@
  * Boston, MA 02111-1307, USA.
  */
 #include "SDL.h"
+#include "SDL_thread.h"
 #include <stdlib.h>
 #include <string.h>
 #include <libgen.h>
@@ -46,6 +47,7 @@
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../render3D.h"
+#include "../gdbstub.h"
 
 volatile BOOL execute = FALSE;
 
@@ -95,26 +97,34 @@ const u16 cli_kb_cfg[NB_KEYS] =
     SDLK_o          // BOOST
   };
 
-
-
 struct my_config {
+  u16 arm9_gdb_port;
+  u16 arm7_gdb_port;
+
   int disable_sound;
 
 #ifdef INCLUDE_OPENGL_2D
   int opengl_2d;
   int soft_colour_convert;
 #endif
+  int disable_limiter;
 
   const char *nds_file;
-
-  
+  const char *cflash_disk_image_file;
 };
 
 static void
 init_config( struct my_config *config) {
+  config->arm9_gdb_port = 0;
+  config->arm7_gdb_port = 0;
+
   config->disable_sound = 0;
 
+  config->disable_limiter = 0;
+
   config->nds_file = NULL;
+
+  config->cflash_disk_image_file = NULL;
 
 #ifdef INCLUDE_OPENGL_2D
   config->opengl_2d = 0;
@@ -135,12 +145,20 @@ fill_config( struct my_config *config,
       printf( "USAGE: %s <nds-file>\n", argv[0]);
       printf( "OPTIONS:\n");
       printf( "   --disable-sound         Disables the sound emulation\n");
+      printf( "   --disable-limiter   Disables the 60 fps limiter\n");
 #ifdef INCLUDE_OPENGL_2D
       printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
       printf( "    --soft-convert     Use software colour conversion during OpenGL\n");
       printf( "                       screen rendering. May produce better or worse\n");
       printf( "                       frame rates depending on hardware.\n");
 #endif
+      printf( "\n");
+      printf( "   --arm9gdb=PORT_NUM      Enable the ARM9 GDB stub on the given port\n");
+      printf( "   --arm7gdb=PORT_NUM      Enable the ARM7 GDB stub on the given port\n");
+      //printf( "   --sticky                Enable sticky keys and stylus\n");
+      printf( "\n");
+      printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
+      printf( "                       Enable disk image GBAMP compact flash emulation\n");
       printf( "\n");
       printf( "   --help                  Display this message\n");
       good_args = 0;
@@ -156,6 +174,43 @@ fill_config( struct my_config *config,
       config->soft_colour_convert = 1;
     }
 #endif
+    else if ( strcmp( argv[i], "--disable-limiter") == 0) {
+      config->disable_limiter = 1;
+    }
+    else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
+      char *end_char;
+      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+
+      if ( port_num > 0 && port_num < 65536) {
+        config->arm9_gdb_port = port_num;
+      }
+      else {
+        fprintf( stderr, "ARM9 GDB stub port must be in the range 1 to 65535\n");
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--arm7gdb=", 10) == 0) {
+      char *end_char;
+      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+
+      if ( port_num > 0 && port_num < 65536) {
+        config->arm7_gdb_port = port_num;
+      }
+      else {
+        fprintf( stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--cflash=", 9) == 0) {
+      if ( config->cflash_disk_image_file == NULL) {
+        config->cflash_disk_image_file = &argv[i][9];
+      }
+      else {
+        fprintf( stderr, "CFlash disk image file (\"%s\") already set\n",
+                 config->cflash_disk_image_file);
+        good_args = 0;
+      }
+    }
     else {
       if ( config->nds_file == NULL) {
         config->nds_file = argv[i];
@@ -180,6 +235,26 @@ fill_config( struct my_config *config,
 
   return good_args;
 }
+
+
+/*
+ * The thread handling functions needed by the GDB stub code.
+ */
+void *
+createThread_gdb( void (*thread_function)( void *data),
+                  void *thread_data) {
+  SDL_Thread *new_thread = SDL_CreateThread( (int (*)(void *data))thread_function,
+                                             thread_data);
+
+  return new_thread;
+}
+
+void
+joinThread_gdb( void *thread_handle) {
+  int ignore;
+  SDL_WaitThread( thread_handle, &ignore);
+}
+
 
 
 /** 
@@ -420,16 +495,25 @@ Draw( void) {
   if(rawImage == NULL) return;
 	
   SDL_BlitSurface(rawImage, 0, surface, 0);
+
   SDL_UpdateRect(surface, 0, 0, 0, 0);
   
   SDL_FreeSurface(rawImage);
   return;
 }
 
+
 int main(int argc, char ** argv) {
   static unsigned short keypad = 0;
   struct my_config my_config;
   u32 last_cycle = 0;
+  gdbstub_handle_t arm9_gdb_stub;
+  gdbstub_handle_t arm7_gdb_stub;
+  struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+  struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+  struct armcpu_ctrl_iface *arm9_ctrl_iface;
+  struct armcpu_ctrl_iface *arm7_ctrl_iface;
+
   int limiter_frame_counter = 0;
   SDL_sem *fps_limiter_semaphore;
   SDL_TimerID limiter_timer;
@@ -454,18 +538,53 @@ int main(int argc, char ** argv) {
     exit(1);
   }
 
+  if ( my_config.arm9_gdb_port != 0) {
+    arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
+                                    &arm9_memio,
+                                    &arm9_direct_memory_iface);
+
+    if ( arm9_gdb_stub == NULL) {
+      fprintf( stderr, "Failed to create ARM9 gdbstub on port %d\n",
+               my_config.arm9_gdb_port);
+      exit( 1);
+    }
+  }
+  if ( my_config.arm7_gdb_port != 0) {
+    arm7_gdb_stub = createStub_gdb( my_config.arm7_gdb_port,
+                                    &arm7_memio,
+                                    &arm7_base_memory_iface);
+
+    if ( arm7_gdb_stub == NULL) {
+      fprintf( stderr, "Failed to create ARM7 gdbstub on port %d\n",
+               my_config.arm7_gdb_port);
+      exit( 1);
+    }
+  }
+
 #ifdef DEBUG
   LogStart();
 #endif
-  NDS_Init();
+  NDS_Init( arm9_memio, &arm9_ctrl_iface,
+            arm7_memio, &arm7_ctrl_iface);
 
   if ( !my_config.disable_sound) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
   }
 
-  if ( NDS_LoadROM( my_config.nds_file, MC_TYPE_AUTODETECT, 1) < 0) {
+  if (NDS_LoadROM( my_config.nds_file, MC_TYPE_AUTODETECT, 1, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
     exit(-1);
+  }
+
+  /*
+   * Activate the GDB stubs
+   * This has to come after the NDS_Init where the cpus are set up.
+   */
+  if ( my_config.arm9_gdb_port != 0) {
+    activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+  }
+  if ( my_config.arm7_gdb_port != 0) {
+    activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
   }
 
   /*      // This has to get fixed yet
@@ -555,16 +674,18 @@ int main(int argc, char ** argv) {
   /* Load our own keyboard configuration */
   set_kb_keys(cli_kb_cfg);
 
-  /* create the semaphore used for fps limiting */
-  fps_limiter_semaphore = SDL_CreateSemaphore( 1);
+  if ( !my_config.disable_limiter) {
+    /* create the semaphore used for fps limiting */
+    fps_limiter_semaphore = SDL_CreateSemaphore( 1);
 
-  /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
-  limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
-                                fps_limiter_fn, fps_limiter_semaphore);
-  if ( limiter_timer == NULL) {
-    fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
-             SDL_GetError());
-    return 1;
+    /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
+    limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
+                                  fps_limiter_fn, fps_limiter_semaphore);
+    if ( limiter_timer == NULL) {
+      fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
+               SDL_GetError());
+      return 1;
+    }
   }
 
 
@@ -596,12 +717,14 @@ int main(int argc, char ** argv) {
 #endif
       Draw();
 
-    limiter_frame_counter += 1;
-    if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
-      limiter_frame_counter = 0;
+    if ( !my_config.disable_limiter) {
+      limiter_frame_counter += 1;
+      if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+        limiter_frame_counter = 0;
 
-      /* wait for the timer to expire */
-      SDL_SemWait( fps_limiter_semaphore);
+        /* wait for the timer to expire */
+        SDL_SemWait( fps_limiter_semaphore);
+      }
     }
 
 #ifdef DISPLAY_FPS
@@ -620,22 +743,34 @@ int main(int argc, char ** argv) {
       fps_frame_counter = 0;
       fps_timing = 0;
 
-      sprintf( win_title, "%f Desmume", fps);
+      sprintf( win_title, "Desmume %f", fps);
 
       SDL_WM_SetCaption( win_title, NULL);
     }
 #endif
   }
 
+
+
   /* Unload joystick */
   uninit_joy();
 
-  /* tidy up the FPS limiter timer and semaphore */
-  SDL_RemoveTimer( limiter_timer);
-  SDL_DestroySemaphore( fps_limiter_semaphore);
+  if ( !my_config.disable_limiter) {
+    /* tidy up the FPS limiter timer and semaphore */
+    SDL_RemoveTimer( limiter_timer);
+    SDL_DestroySemaphore( fps_limiter_semaphore);
+  }
 
   SDL_Quit();
   NDS_DeInit();
+
+  if ( my_config.arm9_gdb_port != 0) {
+    destroyStub_gdb( arm9_gdb_stub);
+  }
+  if ( my_config.arm7_gdb_port != 0) {
+    destroyStub_gdb( arm7_gdb_stub);
+  }
+
 #ifdef DEBUG
   LogStop();
 #endif
