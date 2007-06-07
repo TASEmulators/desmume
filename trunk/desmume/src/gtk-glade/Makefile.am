@@ -17,7 +17,7 @@ desmume_glade_SOURCES =  \
 gladedir = $(datadir)/desmume/glade
 glade_DATA = glade/DeSmuMe_Dtools.glade glade/DeSmuMe.glade glade/DeSmuME.xpm
 
-desmume_glade_LDADD = ../libdesmume.a $(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) $(GTHREAD_LIBS)
+desmume_glade_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a $(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) $(GTHREAD_LIBS)
 desmume_glade_CFLAGS = $(SDL_CFLAGS) $(GTKGLEXT_CFLAGS) $(LIBGLADE_CFLAGS) $(GTHREAD_CFLAGS) -DDATADIR=\"$(gladedir)/\"
 desmume_glade_LDFLAGS = -rdynamic
 

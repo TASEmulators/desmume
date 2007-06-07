@@ -50,8 +50,13 @@
 #include "FirmConfig.h"
 #include "OGLRender.h"
 #include "../render3D.h"
+#include "../gdbstub.h"
 
 #include "snddx.h"
+
+/* The compact flash disk image file */
+static const char *bad_glob_cflash_disk_image_file;
+static char cflash_filename_buffer[512];
 
 /*  Declare Windows procedure  */
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
@@ -112,7 +117,79 @@ static u32 backupmemorysize=1;
 
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam);
-                                      
+
+struct configured_features {
+  u16 arm9_gdb_port;
+  u16 arm7_gdb_port;
+
+  const char *cflash_disk_image_file;
+};
+
+static void
+init_configured_features( struct configured_features *config) {
+  config->arm9_gdb_port = 0;
+  config->arm7_gdb_port = 0;
+
+  config->cflash_disk_image_file = NULL;
+}
+
+
+static int
+fill_configured_features( struct configured_features *config, LPSTR lpszArgument) {
+	int good_args = 0;
+	LPTSTR cmd_line;
+	LPWSTR *argv;
+	int argc;
+
+	argv = CommandLineToArgvW( GetCommandLineW(), &argc);
+
+	if ( argv != NULL) {
+		int i;
+		good_args = 1;
+		for ( i = 1; i < argc && good_args; i++) {
+			if ( wcsncmp( argv[i], L"--arm9gdb=", 10) == 0) {
+				wchar_t *end_char;
+				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
+
+				if ( port_num > 0 && port_num < 65536) {
+					config->arm9_gdb_port = port_num;
+				}
+				else {
+			        MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
+					good_args = 0;
+				}
+			}
+			else if ( wcsncmp( argv[i], L"--arm7gdb=", 10) == 0) {
+				wchar_t *end_char;
+				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
+
+				if ( port_num > 0 && port_num < 65536) {
+					config->arm7_gdb_port = port_num;
+				}
+				else {
+                                  MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
+					good_args = 0;
+				}
+			}
+			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) {
+				if ( config->cflash_disk_image_file == NULL) {
+					size_t convert_count = wcstombs( &cflash_filename_buffer[0], &argv[i][9], 512);
+					if ( convert_count > 0) {
+						config->cflash_disk_image_file = cflash_filename_buffer;
+					}
+				}
+				else {
+			        MessageBox(NULL,"CFlash disk image file already set","Error",MB_OK);
+					good_args = 0;
+				}
+			}
+		}
+		LocalFree( argv);
+	}
+
+	return good_args;
+}
+
 // Rotation definitions
 u8    GPU_screenrotated[4*256*192];
 short GPU_rotation      = 0;
@@ -423,15 +500,33 @@ void StateLoadSlot(int num)
 	NDS_UnPause();
 }
 
-BOOL LoadROM(char * filename)
+BOOL LoadROM(char * filename, const char *cflash_disk_image)
 {
     NDS_Pause();
 
-    if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize) > 0)
+    if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
        return TRUE;
 
     return FALSE;
 }
+
+/*
+ * The thread handling functions needed by the GDB stub code.
+ */
+void *
+createThread_gdb( void (*thread_function)( void *data),
+				 void *thread_data) {
+	void *new_thread = CreateThread( NULL, 0,
+		(LPTHREAD_START_ROUTINE)thread_function, thread_data,
+		0, NULL);
+
+	return new_thread;
+}
+
+void
+joinThread_gdb( void *thread_handle) {
+}
+
 
 void SetLanguage(int langid)
 {
@@ -491,7 +586,15 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
                     int nFunsterStil)
 
 {
-    MSG messages;            /* Here messages to the application are saved */
+	gdbstub_handle_t arm9_gdb_stub;
+	gdbstub_handle_t arm7_gdb_stub;
+	struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+	struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+	struct armcpu_ctrl_iface *arm9_ctrl_iface;
+	struct armcpu_ctrl_iface *arm7_ctrl_iface;
+	struct configured_features my_config;
+
+	MSG messages;            /* Here messages to the application are saved */
     char text[80];
     cwindow_struct MainWindow;
     HACCEL hAccel;
@@ -504,6 +607,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     SetLanguage(atoi(text));
 
     sprintf(text, "DeSmuME v%s", VERSION);
+
+	init_configured_features( &my_config);
+	if ( !fill_configured_features( &my_config, lpszArgument)) {
+        MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
+        return 0;
+	}
+	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
@@ -534,6 +644,41 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
     NDS_Init();
+
+	if ( my_config.arm9_gdb_port != 0) {
+		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
+			&arm9_memio, &arm9_direct_memory_iface);
+
+		if ( arm9_gdb_stub == NULL) {
+	       MessageBox(hwnd,"Failed to create ARM9 gdbstub","Error",MB_OK);
+		   return -1;
+		}
+	}
+	if ( my_config.arm7_gdb_port != 0) {
+		arm7_gdb_stub = createStub_gdb( my_config.arm7_gdb_port,
+                                    &arm7_memio,
+                                    &arm7_base_memory_iface);
+
+		if ( arm7_gdb_stub == NULL) {
+	       MessageBox(hwnd,"Failed to create ARM7 gdbstub","Error",MB_OK);
+		   return -1;
+		}
+	}
+
+
+    NDS_Init( arm9_memio, &arm9_ctrl_iface,
+		arm7_memio, &arm7_ctrl_iface);
+
+  /*
+   * Activate the GDB stubs
+   * This has to come after the NDS_Init where the cpus are set up.
+   */
+  if ( my_config.arm9_gdb_port != 0) {
+    activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+  }
+  if ( my_config.arm7_gdb_port != 0) {
+    activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+  }
 
     GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
     CheckLanguage(IDC_LANGENGLISH+atoi(text));
@@ -581,7 +726,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     if (lpszArgument[0] == '\"')
        sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
 
-    if(LoadROM(lpszArgument))
+    if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
     {
        EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
        EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
@@ -690,7 +835,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   char filename[MAX_PATH] = "";
                   DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
                   DragFinish((HDROP)wParam);
-                  if(LoadROM(filename))
+                  if(LoadROM(filename, bad_glob_cflash_disk_image_file))
                   {
                      EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                      EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
@@ -948,7 +1093,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             
                             LOG("%s\r\n", filename);
 
-                            if(LoadROM(filename))
+                            if(LoadROM(filename, bad_glob_cflash_disk_image_file))
                             {
                                EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
                                EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);

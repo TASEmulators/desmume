@@ -29,9 +29,14 @@ unsigned long glock = 0;
 u8 *desmume_rom_data = NULL;
 u32 desmume_last_cycle;
 
-void desmume_init( int disable_sound)
+void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
+                   struct armcpu_ctrl_iface **arm9_ctrl_iface,
+                   struct armcpu_memory_iface *arm7_mem_if,
+                   struct armcpu_ctrl_iface **arm7_ctrl_iface,
+                   int disable_sound)
 {
-	NDS_Init();
+	NDS_Init( arm9_mem_if, arm9_ctrl_iface,
+                  arm7_mem_if, arm7_ctrl_iface);
         if ( !disable_sound) {
           SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
         }

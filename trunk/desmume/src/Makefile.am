@@ -1,6 +1,6 @@
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.c fs-windows.c
-DIST_SUBDIRS = . cli gtk gtk-glade windows
-SUBDIRS = . $(UI_DIR)
+DIST_SUBDIRS = . gdbstub cli gtk gtk-glade windows
+SUBDIRS = . gdbstub $(UI_DIR)
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
         armcpu.c armcpu.h ARM9.h \
@@ -19,6 +19,7 @@ libdesmume_a_SOURCES = \
 	render3D.c render3D.h \
         saves.c saves.h \
         SPU.c SPU.h \
+	gdbstub.h \
 	matrix.c matrix.h \
 	opengl_collector_3Demu.c opengl_collector_3Demu.h \
         thumb_instructions.c thumb_instructions.h types.h

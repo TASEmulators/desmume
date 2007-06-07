@@ -22,22 +22,24 @@
 
 #include "globals.h"
 
-
 #define FPS_LIMITER_FRAME_PERIOD 5
 extern SDL_sem *glade_fps_limiter_semaphore;
 extern int glade_fps_limiter_disabled;
 
-extern void desmume_init();
-extern void desmume_free();
+extern void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
+                          struct armcpu_ctrl_iface **arm9_ctrl_iface,
+                          struct armcpu_memory_iface *arm7_mem_if,
+                          struct armcpu_ctrl_iface **arm7_ctrl_iface);
+extern void desmume_free( void);
 
 extern int desmume_open(const char *filename);
 extern void desmume_savetype(int type);
-extern void desmume_pause();
-extern void desmume_resume();
-extern void desmume_reset();
-extern void desmume_toggle();
-extern BOOL desmume_running();
+extern void desmume_pause( void);
+extern void desmume_resume( void);
+extern void desmume_reset( void);
+extern void desmume_toggle( void);
+extern BOOL desmume_running( void);
 
-extern void desmume_cycle();
+extern void desmume_cycle( void);
 #endif /*__DESMUME_H__*/
 
