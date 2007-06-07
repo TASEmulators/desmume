@@ -135,6 +135,35 @@ typedef union
 } Status_Reg;
 #endif
 
+/**
+ * The control interface to a CPU
+ */
+struct armcpu_ctrl_iface {
+  /** stall the processor */
+  void (*stall)( void *instance);
+
+  /** unstall the processor */
+  void (*unstall)( void *instance);
+
+  /** read a register value */
+  u32 (*read_reg)( void *instance, u32 reg_num);
+
+  /** set a register value */
+  void (*set_reg)( void *instance, u32 reg_num, u32 value);
+
+  /** install the post execute function */
+  void (*install_post_ex_fn)( void *instance,
+                              void (*fn)( void *, u32 adr, int thumb),
+                              void *fn_data);
+
+  /** remove the post execute function */
+  void (*remove_post_ex_fn)( void *instance);
+
+  /** the private data passed to all interface functions */
+  void *data;
+};
+
+
 typedef void* armcp_t;
 
 typedef struct armcpu_t
@@ -164,18 +193,38 @@ typedef struct armcpu_t
 	BOOL wIRQ;
 	BOOL wirq;
 
-
         u32 (* *swi_tab)(struct armcpu_t * cpu);
-	
+
+  /** there is a pending irq for the cpu */
+  int irq_flag;
+
+  /** the post executed function (if installed) */
+  void (*post_ex_fn)( void *, u32 adr, int thumb);
+
+  /** data for the post executed function */
+  void *post_ex_fn_data;
+
+  /** flag indicating if the processor is stalled */
+  int stalled;
+
+  /** the memory interface */
+  struct armcpu_memory_iface *mem_if;
+
+  /** the ctrl interface */
+  struct armcpu_ctrl_iface ctrl_iface;
 } armcpu_t;
-	
-int armcpu_new(armcpu_t *armcpu, u32 id);
+
+
+int armcpu_new( armcpu_t *armcpu, u32 id, struct armcpu_memory_iface *mem_if,
+                struct armcpu_ctrl_iface **ctrl_iface_ret);
 void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
-u32 armcpu_prefetch(armcpu_t *armcpu);
+//u32 armcpu_prefetch(armcpu_t *armcpu);
 u32 armcpu_exec(armcpu_t *armcpu);
-BOOL armcpu_irqExeption(armcpu_t *armcpu);
-BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
+//BOOL armcpu_irqExeption(armcpu_t *armcpu);
+//BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
+BOOL
+armcpu_flagIrq( armcpu_t *armcpu);
 
 extern armcpu_t NDS_ARM7;
 extern armcpu_t NDS_ARM9;

@@ -29,10 +29,10 @@
 //#define ASM_CORE
 //#define C_CORE
 
-s8 CFlag;
-s8 ZFlag;
-s8 NFlag;
-s8 OFlag;
+//s8 CFlag;
+//s8 ZFlag;
+//s8 NFlag;
+//s8 OFlag;
 
 #define LSL_IMM shift_op = cpu->R[REG_POS(i,0)]<<((i>>7)&0x1F);
 
@@ -2790,9 +2790,9 @@ static u32 FASTCALL  OP_SWP(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     u32 tmp = ROR(MMU_readWord(cpu->proc_ID, adr), ((cpu->R[REG_POS(i,16)]&3)<<3));
+     u32 tmp = ROR(cpu->mem_if->read32(cpu->mem_if->data, adr), ((cpu->R[REG_POS(i,16)]&3)<<3));
      
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,0)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,0)]);
      cpu->R[REG_POS(i,12)] = tmp;
      
      return 4 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF]*2;
@@ -2802,8 +2802,8 @@ static u32 FASTCALL  OP_SWPB(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     u8 tmp = MMU_readByte(cpu->proc_ID, adr);
-     MMU_writeByte(cpu->proc_ID, adr, (u8)(cpu->R[REG_POS(i,0)]&0xFF));
+     u8 tmp = cpu->mem_if->read8(cpu->mem_if->data, adr);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)(cpu->R[REG_POS(i,0)]&0xFF));
      cpu->R[REG_POS(i,12)] = tmp;
 
      return 4 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF]*2;
@@ -2815,7 +2815,7 @@ static u32 FASTCALL  OP_LDRH_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2824,7 +2824,7 @@ static u32 FASTCALL  OP_LDRH_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
     return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2833,7 +2833,7 @@ static u32 FASTCALL  OP_LDRH_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2842,7 +2842,7 @@ static u32 FASTCALL  OP_LDRH_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2852,7 +2852,7 @@ static u32 FASTCALL  OP_LDRH_PRE_INDE_P_IMM_OFF(armcpu_t *cpu)
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
 	 cpu->R[REG_POS(i,16)] = adr;
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2862,7 +2862,7 @@ static u32 FASTCALL  OP_LDRH_PRE_INDE_M_IMM_OFF(armcpu_t *cpu)
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
 	 cpu->R[REG_POS(i,16)] = adr;
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -2873,7 +2873,7 @@ static u32 FASTCALL  OP_LDRH_PRE_INDE_P_REG_OFF(armcpu_t *cpu)
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
 	 cpu->R[REG_POS(i,16)] = adr;
-     cpu->R[REG_POS(i,12)] =(u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] =(u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2883,7 +2883,7 @@ static u32 FASTCALL  OP_LDRH_PRE_INDE_M_REG_OFF(armcpu_t *cpu)
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
 	 cpu->R[REG_POS(i,16)] = adr;
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2892,7 +2892,7 @@ static u32 FASTCALL  OP_LDRH_POS_INDE_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -2902,7 +2902,7 @@ static u32 FASTCALL  OP_LDRH_POS_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -2912,7 +2912,7 @@ static u32 FASTCALL  OP_LDRH_POS_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -2922,7 +2922,7 @@ static u32 FASTCALL  OP_LDRH_POS_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (u32)MMU_readHWordACL(cpu->proc_ID, adr,CP15_ACCESS_READ);
+     cpu->R[REG_POS(i,12)] = (u32)cpu->mem_if->read16(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -2934,7 +2934,7 @@ static u32 FASTCALL  OP_STRH_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2943,7 +2943,7 @@ static u32 FASTCALL  OP_STRH_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2952,7 +2952,7 @@ static u32 FASTCALL  OP_STRH_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2961,7 +2961,7 @@ static u32 FASTCALL  OP_STRH_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2971,7 +2971,7 @@ static u32 FASTCALL  OP_STRH_PRE_INDE_P_IMM_OFF(armcpu_t *cpu)
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
 	 cpu->R[REG_POS(i,16)] = adr;
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
 
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -2980,7 +2980,7 @@ static u32 FASTCALL  OP_STRH_PRE_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -2990,7 +2990,7 @@ static u32 FASTCALL  OP_STRH_PRE_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3000,7 +3000,7 @@ static u32 FASTCALL  OP_STRH_PRE_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3010,7 +3010,7 @@ static u32 FASTCALL  OP_STRH_POS_INDE_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3020,7 +3020,7 @@ static u32 FASTCALL  OP_STRH_POS_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3030,7 +3030,7 @@ static u32 FASTCALL  OP_STRH_POS_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3040,7 +3040,7 @@ static u32 FASTCALL  OP_STRH_POS_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeHWordACL(cpu->proc_ID, adr, (u16)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write16(cpu->mem_if->data, adr, (u16)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3052,7 +3052,7 @@ static u32 FASTCALL  OP_LDRSH_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3061,7 +3061,7 @@ static u32 FASTCALL  OP_LDRSH_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3070,7 +3070,7 @@ static u32 FASTCALL  OP_LDRSH_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3079,7 +3079,7 @@ static u32 FASTCALL  OP_LDRSH_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3088,7 +3088,7 @@ static u32 FASTCALL  OP_LDRSH_PRE_INDE_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3098,7 +3098,7 @@ static u32 FASTCALL  OP_LDRSH_PRE_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3108,7 +3108,7 @@ static u32 FASTCALL  OP_LDRSH_PRE_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3118,7 +3118,7 @@ static u32 FASTCALL  OP_LDRSH_PRE_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3128,7 +3128,7 @@ static u32 FASTCALL  OP_LDRSH_POS_INDE_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3138,7 +3138,7 @@ static u32 FASTCALL  OP_LDRSH_POS_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3148,7 +3148,7 @@ static u32 FASTCALL  OP_LDRSH_POS_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3158,7 +3158,7 @@ static u32 FASTCALL  OP_LDRSH_POS_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s16)MMU_readHWord(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s16)cpu->mem_if->read16(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3170,7 +3170,7 @@ static u32 FASTCALL  OP_LDRSB_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3179,7 +3179,7 @@ static u32 FASTCALL  OP_LDRSB_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3188,7 +3188,7 @@ static u32 FASTCALL  OP_LDRSB_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3197,7 +3197,7 @@ static u32 FASTCALL  OP_LDRSB_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -3206,7 +3206,7 @@ static u32 FASTCALL  OP_LDRSB_PRE_INDE_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3216,7 +3216,7 @@ static u32 FASTCALL  OP_LDRSB_PRE_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF;
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3226,7 +3226,7 @@ static u32 FASTCALL  OP_LDRSB_PRE_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3236,7 +3236,7 @@ static u32 FASTCALL  OP_LDRSB_PRE_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - cpu->R[REG_POS(i,0)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] = adr;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3246,7 +3246,7 @@ static u32 FASTCALL  OP_LDRSB_POS_INDE_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += IMM_OFF;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3256,7 +3256,7 @@ static u32 FASTCALL  OP_LDRSB_POS_INDE_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= IMM_OFF;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3266,7 +3266,7 @@ static u32 FASTCALL  OP_LDRSB_POS_INDE_P_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] += cpu->R[REG_POS(i,0)];
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3276,7 +3276,7 @@ static u32 FASTCALL  OP_LDRSB_POS_INDE_M_REG_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     cpu->R[REG_POS(i,12)] = (s32)((s8)MMU_readByte(cpu->proc_ID, adr));
+     cpu->R[REG_POS(i,12)] = (s32)((s8)cpu->mem_if->read8(cpu->mem_if->data, adr));
      cpu->R[REG_POS(i,16)] -= cpu->R[REG_POS(i,0)];
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -3828,7 +3828,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -3849,7 +3849,7 @@ static u32 FASTCALL  OP_LDR_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -3875,7 +3875,7 @@ static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -3901,7 +3901,7 @@ static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -3927,7 +3927,7 @@ static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -3953,7 +3953,7 @@ static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -3979,7 +3979,7 @@ static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4005,7 +4005,7 @@ static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4031,7 +4031,7 @@ static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4057,7 +4057,7 @@ static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4080,7 +4080,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4104,7 +4104,7 @@ static u32 FASTCALL  OP_LDR_M_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4133,7 +4133,7 @@ static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4162,7 +4162,7 @@ static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4191,7 +4191,7 @@ static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4220,7 +4220,7 @@ static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4249,7 +4249,7 @@ static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4278,7 +4278,7 @@ static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4307,7 +4307,7 @@ static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4336,7 +4336,7 @@ static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4360,7 +4360,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4386,7 +4386,7 @@ static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND2(armcpu_t *cpu)
      u32 i = cpu->instruction;
      
      u32 adr = cpu->R[REG_POS(i,16)];
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      u32 old;
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4415,7 +4415,7 @@ static u32 FASTCALL  OP_LDR_M_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     u32 val = MMU_readWord(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4443,7 +4443,7 @@ static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4471,7 +4471,7 @@ static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4499,7 +4499,7 @@ static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4527,7 +4527,7 @@ static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4555,7 +4555,7 @@ static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4583,7 +4583,7 @@ static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4611,7 +4611,7 @@ static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4639,7 +4639,7 @@ static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readWord(cpu->proc_ID, adr);
+     val = cpu->mem_if->read32(cpu->mem_if->data, adr);
      
      if(adr&3)
          val = ROR(val, 8*(adr&3));
@@ -4665,7 +4665,7 @@ static u32 FASTCALL  OP_LDRB_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     u32 val = MMU_readByte(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4675,7 +4675,7 @@ static u32 FASTCALL  OP_LDRB_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     u32 val = MMU_readByte(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4689,7 +4689,7 @@ static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4703,7 +4703,7 @@ static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4717,7 +4717,7 @@ static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4731,7 +4731,7 @@ static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4745,7 +4745,7 @@ static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4759,7 +4759,7 @@ static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4773,7 +4773,7 @@ static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      
      return 3 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -4787,7 +4787,7 @@ static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr;
      
@@ -4798,7 +4798,7 @@ static u32 FASTCALL  OP_LDRB_P_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     u32 val = MMU_readByte(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
@@ -4811,7 +4811,7 @@ static u32 FASTCALL  OP_LDRB_M_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     u32 val = MMU_readByte(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
@@ -4827,7 +4827,7 @@ static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 
 	 cpu->R[REG_POS(i,16)] = adr;
      cpu->R[REG_POS(i,12)] = val;
@@ -4844,7 +4844,7 @@ static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
@@ -4860,7 +4860,7 @@ static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
@@ -4875,7 +4875,7 @@ static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
@@ -4890,7 +4890,7 @@ static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
@@ -4905,7 +4905,7 @@ static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
@@ -4920,7 +4920,7 @@ static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
@@ -4935,7 +4935,7 @@ static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,16)] = adr;
 	 cpu->R[REG_POS(i,12)] = val;
      
@@ -4946,7 +4946,7 @@ static u32 FASTCALL  OP_LDRB_P_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     u32 val = MMU_readByte(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -4957,7 +4957,7 @@ static u32 FASTCALL  OP_LDRB_M_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     u32 val = MMU_readByte(cpu->proc_ID, adr);
+     u32 val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -4972,7 +4972,7 @@ static u32 FASTCALL  OP_LDRB_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -4987,7 +4987,7 @@ static u32 FASTCALL  OP_LDRB_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5002,7 +5002,7 @@ static u32 FASTCALL  OP_LDRB_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5017,7 +5017,7 @@ static u32 FASTCALL  OP_LDRB_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5032,7 +5032,7 @@ static u32 FASTCALL  OP_LDRB_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5047,7 +5047,7 @@ static u32 FASTCALL  OP_LDRB_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5062,7 +5062,7 @@ static u32 FASTCALL  OP_LDRB_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr + shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5077,7 +5077,7 @@ static u32 FASTCALL  OP_LDRB_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
 	 cpu->R[REG_POS(i,16)] = adr - shift_op;
      cpu->R[REG_POS(i,12)] = val;     
      
@@ -5090,7 +5090,7 @@ static u32 FASTCALL  OP_STR_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
 
 //	 execute = false;
      
@@ -5101,7 +5101,7 @@ static u32 FASTCALL  OP_STR_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5113,7 +5113,7 @@ static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5125,7 +5125,7 @@ static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5137,7 +5137,7 @@ static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5149,7 +5149,7 @@ static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5161,7 +5161,7 @@ static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5173,7 +5173,7 @@ static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5185,7 +5185,7 @@ static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5197,7 +5197,7 @@ static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5207,7 +5207,7 @@ static u32 FASTCALL  OP_STR_P_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5217,7 +5217,7 @@ static u32 FASTCALL  OP_STR_M_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5230,7 +5230,7 @@ static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5243,7 +5243,7 @@ static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5256,7 +5256,7 @@ static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5269,7 +5269,7 @@ static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5282,7 +5282,7 @@ static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5295,7 +5295,7 @@ static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5308,7 +5308,7 @@ static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5321,7 +5321,7 @@ static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5331,7 +5331,7 @@ static u32 FASTCALL  OP_STR_P_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5341,7 +5341,7 @@ static u32 FASTCALL  OP_STR_M_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5354,7 +5354,7 @@ static u32 FASTCALL  OP_STR_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5367,7 +5367,7 @@ static u32 FASTCALL  OP_STR_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5380,7 +5380,7 @@ static u32 FASTCALL  OP_STR_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5393,7 +5393,7 @@ static u32 FASTCALL  OP_STR_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5406,7 +5406,7 @@ static u32 FASTCALL  OP_STR_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5419,7 +5419,7 @@ static u32 FASTCALL  OP_STR_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5432,7 +5432,7 @@ static u32 FASTCALL  OP_STR_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5445,7 +5445,7 @@ static u32 FASTCALL  OP_STR_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeWord(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT32[cpu->proc_ID][(adr>>24)&0xF];
@@ -5457,7 +5457,7 @@ static u32 FASTCALL  OP_STRB_P_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5466,7 +5466,7 @@ static u32 FASTCALL  OP_STRB_M_IMM_OFF(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5478,7 +5478,7 @@ static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5490,7 +5490,7 @@ static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5502,7 +5502,7 @@ static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5514,7 +5514,7 @@ static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5526,7 +5526,7 @@ static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5538,7 +5538,7 @@ static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5550,7 +5550,7 @@ static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5562,7 +5562,7 @@ static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
 }
@@ -5571,7 +5571,7 @@ static u32 FASTCALL  OP_STRB_P_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
-     MMU_writeByte(cpu->proc_ID, adr, cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5581,7 +5581,7 @@ static u32 FASTCALL  OP_STRB_M_IMM_OFF_PREIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5594,7 +5594,7 @@ static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5607,7 +5607,7 @@ static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5620,7 +5620,7 @@ static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5633,7 +5633,7 @@ static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5646,7 +5646,7 @@ static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5659,7 +5659,7 @@ static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5672,7 +5672,7 @@ static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] + shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5685,7 +5685,7 @@ static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_PREIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)] - shift_op;
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5695,7 +5695,7 @@ static u32 FASTCALL  OP_STRB_P_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5705,7 +5705,7 @@ static u32 FASTCALL  OP_STRB_M_IMM_OFF_POSTIND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      u32 adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5718,7 +5718,7 @@ static u32 FASTCALL  OP_STRB_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5731,7 +5731,7 @@ static u32 FASTCALL  OP_STRB_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5744,7 +5744,7 @@ static u32 FASTCALL  OP_STRB_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5757,7 +5757,7 @@ static u32 FASTCALL  OP_STRB_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5770,7 +5770,7 @@ static u32 FASTCALL  OP_STRB_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5783,7 +5783,7 @@ static u32 FASTCALL  OP_STRB_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5796,7 +5796,7 @@ static u32 FASTCALL  OP_STRB_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5809,7 +5809,7 @@ static u32 FASTCALL  OP_STRB_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      u32 shift_op;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      return 2 + MMU.MMU_WAIT16[cpu->proc_ID][(adr>>24)&0xF];
@@ -5830,7 +5830,7 @@ static u32 FASTCALL  OP_LDRBT_P_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
@@ -5854,7 +5854,7 @@ static u32 FASTCALL  OP_LDRBT_M_IMM_OFF_POSTIND(armcpu_t *cpu)
      
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      
@@ -5879,7 +5879,7 @@ static u32 FASTCALL  OP_LDRBT_P_REG_OFF_POSTIND(armcpu_t *cpu)
 
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr + cpu->R[REG_POS(i,0)];
      
@@ -5905,7 +5905,7 @@ static u32 FASTCALL  OP_LDRBT_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
@@ -5932,7 +5932,7 @@ static u32 FASTCALL  OP_LDRBT_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
@@ -5959,7 +5959,7 @@ static u32 FASTCALL  OP_LDRBT_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
@@ -5986,7 +5986,7 @@ static u32 FASTCALL  OP_LDRBT_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
@@ -6013,7 +6013,7 @@ static u32 FASTCALL  OP_LDRBT_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
@@ -6040,7 +6040,7 @@ static u32 FASTCALL  OP_LDRBT_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
@@ -6067,7 +6067,7 @@ static u32 FASTCALL  OP_LDRBT_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
@@ -6094,7 +6094,7 @@ static u32 FASTCALL  OP_LDRBT_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     val = MMU_readByte(cpu->proc_ID, adr);
+     val = cpu->mem_if->read8(cpu->mem_if->data, adr);
      cpu->R[REG_POS(i,12)] = val;
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
@@ -6119,7 +6119,7 @@ static u32 FASTCALL  OP_STRBT_P_IMM_OFF_POSTIND(armcpu_t *cpu)
 
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + IMM_OFF_12;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6141,7 +6141,7 @@ static u32 FASTCALL  OP_STRBT_M_IMM_OFF_POSTIND(armcpu_t *cpu)
 
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - IMM_OFF_12;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6163,7 +6163,7 @@ static u32 FASTCALL  OP_STRBT_P_REG_OFF_POSTIND(armcpu_t *cpu)
 
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + cpu->R[REG_POS(i,0)];
      
      armcpu_switchMode(cpu, oldmode);
@@ -6185,7 +6185,7 @@ static u32 FASTCALL  OP_STRBT_M_REG_OFF_POSTIND(armcpu_t *cpu)
 
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - cpu->R[REG_POS(i,0)];
      
      armcpu_switchMode(cpu, oldmode);
@@ -6209,7 +6209,7 @@ static u32 FASTCALL  OP_STRBT_P_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6233,7 +6233,7 @@ static u32 FASTCALL  OP_STRBT_M_LSL_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSL_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6257,7 +6257,7 @@ static u32 FASTCALL  OP_STRBT_P_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6281,7 +6281,7 @@ static u32 FASTCALL  OP_STRBT_M_LSR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      LSR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6305,7 +6305,7 @@ static u32 FASTCALL  OP_STRBT_P_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6329,7 +6329,7 @@ static u32 FASTCALL  OP_STRBT_M_ASR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ASR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6353,7 +6353,7 @@ static u32 FASTCALL  OP_STRBT_P_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr + shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6377,7 +6377,7 @@ static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
      i = cpu->instruction;
      ROR_IMM; 
      adr = cpu->R[REG_POS(i,16)];
-     MMU_writeByte(cpu->proc_ID, adr, (u8)cpu->R[REG_POS(i,12)]);
+     cpu->mem_if->write8(cpu->mem_if->data, adr, (u8)cpu->R[REG_POS(i,12)]);
      cpu->R[REG_POS(i,16)] = adr - shift_op;
      
      armcpu_switchMode(cpu, oldmode);
@@ -6389,7 +6389,7 @@ static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
 
 #define OP_L_IA(reg, adr)  if(BIT##reg(i))\
      {\
-          registres[reg] = MMU_readWord(cpu->proc_ID, start);\
+          registres[reg] = cpu->mem_if->read32(cpu->mem_if->data, start);\
           c += waitState[(start>>24)&0xF];\
           adr += 4;\
      }
@@ -6397,13 +6397,13 @@ static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
 #define OP_L_IB(reg, adr)  if(BIT##reg(i))\
      {\
           adr += 4;\
-          registres[reg] = MMU_readWord(cpu->proc_ID, start);\
+          registres[reg] = cpu->mem_if->read32(cpu->mem_if->data, start);\
           c += waitState[(start>>24)&0xF];\
      }
 
 #define OP_L_DA(reg, adr)  if(BIT##reg(i))\
      {\
-          registres[reg] = MMU_readWord(cpu->proc_ID, start);\
+          registres[reg] = cpu->mem_if->read32(cpu->mem_if->data, start);\
           c += waitState[(start>>24)&0xF];\
           adr -= 4;\
      }
@@ -6411,7 +6411,7 @@ static u32 FASTCALL  OP_STRBT_M_ROR_IMM_OFF_POSTIND(armcpu_t *cpu)
 #define OP_L_DB(reg, adr)  if(BIT##reg(i))\
      {\
           adr -= 4;\
-          registres[reg] = MMU_readWord(cpu->proc_ID, start);\
+          registres[reg] = cpu->mem_if->read32(cpu->mem_if->data, start);\
           c += waitState[(start>>24)&0xF];\
      }
 
@@ -6442,7 +6442,7 @@ static u32 FASTCALL  OP_LDMIA(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           //start += 4;
@@ -6483,7 +6483,7 @@ static u32 FASTCALL  OP_LDMIB(armcpu_t *cpu)
           u32 tmp;
           start += 4;
           c += waitState[(start>>24)&0xF];
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
@@ -6504,7 +6504,7 @@ static u32 FASTCALL  OP_LDMDA(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           c += waitState[(start>>24)&0xF];
@@ -6544,7 +6544,7 @@ static u32 FASTCALL  OP_LDMDB(armcpu_t *cpu)
      {
           u32 tmp;
           start -= 4;
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
@@ -6603,7 +6603,7 @@ static u32 FASTCALL  OP_LDMIA_W(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           c += waitState[(start>>24)&0xF];
@@ -6657,7 +6657,7 @@ static u32 FASTCALL  OP_LDMIB_W(armcpu_t *cpu)
           u32 tmp;
           start += 4;
           c += waitState[(start>>24)&0xF];
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
@@ -6691,7 +6691,7 @@ static u32 FASTCALL  OP_LDMDA_W(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
           c += waitState[(start>>24)&0xF];
@@ -6738,7 +6738,7 @@ static u32 FASTCALL  OP_LDMDB_W(armcpu_t *cpu)
      {
           u32 tmp;
           start -= 4;
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR.bits.T = BIT0(tmp);
 	      cpu->next_instruction = registres[15];
@@ -6804,7 +6804,7 @@ static u32 FASTCALL  OP_LDMIA2(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           Status_Reg SPSR;
           cpu->R[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           SPSR = cpu->SPSR;
@@ -6862,7 +6862,7 @@ static u32 FASTCALL  OP_LDMIB2(armcpu_t *cpu)
           u32 tmp;
           Status_Reg SPSR;
           start += 4;
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           SPSR = cpu->SPSR;
           armcpu_switchMode(cpu, SPSR.bits.mode);
@@ -6900,7 +6900,7 @@ static u32 FASTCALL  OP_LDMDA2(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
           c += waitState[(start>>24)&0xF];
@@ -6962,7 +6962,7 @@ static u32 FASTCALL  OP_LDMDB2(armcpu_t *cpu)
      {
           u32 tmp;
           start -= 4;
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
 	      cpu->next_instruction = registres[15];
@@ -7045,7 +7045,7 @@ static u32 FASTCALL  OP_LDMIA2_W(armcpu_t *cpu)
      }
 
      registres[REG_POS(i,16)] = start + 4;
-     tmp = MMU_readWord(cpu->proc_ID, start);
+     tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
      registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
      SPSR = cpu->SPSR;
      armcpu_switchMode(cpu, SPSR.bits.mode);
@@ -7103,7 +7103,7 @@ static u32 FASTCALL  OP_LDMIB2_W(armcpu_t *cpu)
      }
 
      registres[REG_POS(i,16)] = start + 4;
-     tmp = MMU_readWord(cpu->proc_ID, start + 4);
+     tmp = cpu->mem_if->read32(cpu->mem_if->data, start + 4);
      registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
      cpu->CPSR = cpu->SPSR;
      cpu->next_instruction = registres[15];
@@ -7138,7 +7138,7 @@ static u32 FASTCALL  OP_LDMDA2_W(armcpu_t *cpu)
      
      if(BIT15(i))
      {
-          u32 tmp = MMU_readWord(cpu->proc_ID, start);
+          u32 tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           c += waitState[(start>>24)&0xF];
           start -= 4;
@@ -7200,7 +7200,7 @@ static u32 FASTCALL  OP_LDMDB2_W(armcpu_t *cpu)
      {
           u32 tmp;
           start -= 4;
-          tmp = MMU_readWord(cpu->proc_ID, start);
+          tmp = cpu->mem_if->read32(cpu->mem_if->data, start);
           c += waitState[(start>>24)&0xF];
           registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
           cpu->CPSR = cpu->SPSR;
@@ -7248,7 +7248,7 @@ static u32 FASTCALL  OP_STMIA(armcpu_t *cpu)
      {
           if(BIT_N(i, b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start += 4;
           }
@@ -7266,7 +7266,7 @@ static u32 FASTCALL  OP_STMIB(armcpu_t *cpu)
           if(BIT_N(i, b))
           {
                start += 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }
@@ -7282,7 +7282,7 @@ static u32 FASTCALL  OP_STMDA(armcpu_t *cpu)
      {
           if(BIT_N(i, 15-b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start -= 4;
           }
@@ -7300,7 +7300,7 @@ static u32 FASTCALL  OP_STMDB(armcpu_t *cpu)
           if(BIT_N(i, 15-b))
           {
                start -= 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }     
@@ -7316,7 +7316,7 @@ static u32 FASTCALL  OP_STMIA_W(armcpu_t *cpu)
      {
           if(BIT_N(i, b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start += 4;
           }
@@ -7336,7 +7336,7 @@ static u32 FASTCALL  OP_STMIB_W(armcpu_t *cpu)
           if(BIT_N(i, b))
           {
                start += 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }
@@ -7353,7 +7353,7 @@ static u32 FASTCALL  OP_STMDA_W(armcpu_t *cpu)
      {
           if(BIT_N(i, 15-b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start -= 4;
           }
@@ -7373,7 +7373,7 @@ static u32 FASTCALL  OP_STMDB_W(armcpu_t *cpu)
           if(BIT_N(i, 15-b))
           {
                start -= 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }     
@@ -7402,7 +7402,7 @@ static u32 FASTCALL  OP_STMIA2(armcpu_t *cpu)
      {
           if(BIT_N(i, b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start += 4;
           }
@@ -7433,7 +7433,7 @@ static u32 FASTCALL  OP_STMIB2(armcpu_t *cpu)
           if(BIT_N(i, b))
           {
                start += 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }
@@ -7462,7 +7462,7 @@ static u32 FASTCALL  OP_STMDA2(armcpu_t *cpu)
      {
           if(BIT_N(i, 15-b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start -= 4;
           }
@@ -7490,7 +7490,7 @@ static u32 FASTCALL  OP_STMDB2(armcpu_t *cpu)
           if(BIT_N(i, 15-b))
           {
                start -= 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }     
@@ -7519,7 +7519,7 @@ static u32 FASTCALL  OP_STMIA2_W(armcpu_t *cpu)
      {
           if(BIT_N(i, b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start += 4;
           }
@@ -7549,7 +7549,7 @@ static u32 FASTCALL  OP_STMIB2_W(armcpu_t *cpu)
           if(BIT_N(i, b))
           {
                start += 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }
@@ -7578,7 +7578,7 @@ static u32 FASTCALL  OP_STMDA2_W(armcpu_t *cpu)
      {
           if(BIT_N(i, 15-b))
           {
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
                start -= 4;
           }
@@ -7612,7 +7612,7 @@ static u32 FASTCALL  OP_STMDB2_W(armcpu_t *cpu)
           if(BIT_N(i, 15-b))
           {
                start -= 4;
-               MMU_writeWord(cpu->proc_ID, start, cpu->R[15-b]);
+               cpu->mem_if->write32(cpu->mem_if->data, start, cpu->R[15-b]);
                c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
           }
      }     
@@ -7650,14 +7650,12 @@ OP_LDRD_STRD_POST_INDEX( armcpu_t *cpu) {
   if ( !(Rd_num & 0x1)) {
     /* Store/Load */
     if ( BIT5(i)) {
-      MMU_writeWordACL(cpu->proc_ID, addr, cpu->R[Rd_num]);
-      MMU_writeWordACL(cpu->proc_ID, addr + 4, cpu->R[Rd_num + 1]);
+      cpu->mem_if->write32(cpu->mem_if->data, addr, cpu->R[Rd_num]);
+      cpu->mem_if->write32(cpu->mem_if->data, addr + 4, cpu->R[Rd_num + 1]);
     }
     else {
-      cpu->R[Rd_num] =
-        MMU_readWordACL(cpu->proc_ID, addr, CP15_ACCESS_READ);
-      cpu->R[Rd_num + 1] =
-        MMU_readWordACL(cpu->proc_ID, addr + 4, CP15_ACCESS_READ);
+      cpu->R[Rd_num] = cpu->mem_if->read32(cpu->mem_if->data, addr);
+      cpu->R[Rd_num + 1] = cpu->mem_if->read32(cpu->mem_if->data, addr + 4);
     }
   }
 
@@ -7696,14 +7694,12 @@ OP_LDRD_STRD_OFFSET_PRE_INDEX( armcpu_t *cpu) {
   if ( !(Rd_num & 0x1)) {
     /* Store/Load */
     if ( BIT5(i)) {
-      MMU_writeWordACL(cpu->proc_ID, addr, cpu->R[Rd_num]);
-      MMU_writeWordACL(cpu->proc_ID, addr + 4, cpu->R[Rd_num + 1]);
+      cpu->mem_if->write32(cpu->mem_if->data, addr, cpu->R[Rd_num]);
+      cpu->mem_if->write32(cpu->mem_if->data, addr + 4, cpu->R[Rd_num + 1]);
     }
     else {
-      cpu->R[Rd_num] =
-        MMU_readWordACL(cpu->proc_ID, addr, CP15_ACCESS_READ);
-      cpu->R[Rd_num + 1] =
-        MMU_readWordACL(cpu->proc_ID, addr + 4, CP15_ACCESS_READ);
+      cpu->R[Rd_num] = cpu->mem_if->read32(cpu->mem_if->data, addr);
+      cpu->R[Rd_num + 1] = cpu->mem_if->read32(cpu->mem_if->data, addr + 4);
     }
   }
 
