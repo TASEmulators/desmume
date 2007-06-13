@@ -285,7 +285,7 @@ void set_mouse_coord(signed long x,signed long y)
 void update_keypad(u16 keys)
 {
   ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = ~keys & 0x3FF;
-  ((u16 *)MMU.ARM7_REG)[0x130>>1] = ~(keys >> 10) & 0x3;
+  ((u16 *)MMU.ARM7_REG)[0x130>>1] = ~keys & 0x3FF;
   /* Update X and Y buttons */
   MMU.ARM7_REG[0x136] = ( ~( keys >> 10) & 0x3 ) | (MMU.ARM7_REG[0x136] & ~0x3);
 }
@@ -294,7 +294,7 @@ void update_keypad(u16 keys)
 u16 get_keypad( void)
 {
   u16 keypad;
-  keypad = ~((u16 *)MMU.ARM7_REG)[0x130>>1];
+  keypad = ~MMU.ARM7_REG[0x136];
   keypad = (keypad & 0x3) << 10;
   keypad |= ~((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x3FF;
   return keypad;
