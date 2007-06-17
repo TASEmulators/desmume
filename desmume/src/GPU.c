@@ -273,7 +273,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	struct _DISPCNT * cnt;
 	cnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 
-	(gpu->dispx_st)->dispx_DISPCNT.val = p;
+	T1WriteLong(&(gpu->dispx_st)->dispx_DISPCNT.val, 0, p);
 
 	gpu->WIN0_ENABLED	= cnt->Win0_Enable;
 	gpu->WIN1_ENABLED	= cnt->Win1_Enable;
@@ -345,7 +345,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	int mode;
 	
-	(gpu->dispx_st)->dispx_BGxCNT[num].val = p;
+	T1WriteWord(&(gpu->dispx_st)->dispx_BGxCNT[num].val, 0, p);
 	
 	GPU_resortBGs(gpu);
 	
@@ -850,7 +850,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 	u16 x      = 0;
 	u16 xfin;
 	u16 palette_size;
-	u16 mosaic = gpu->dispx_st->dispx_MISC.MOSAIC;
+	u16 mosaic = T1ReadWord(&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
 
 	s8 line_dir = 1;
 	u8 pt_xor   = 0;
@@ -1190,7 +1190,7 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 void lineText(GPU * gpu, u8 num, u16 l, u8 * DST)
 {
 	BGxOFS * ofs = &gpu->dispx_st->dispx_BGxOFS[num];
-	renderline_textBG(gpu, num, DST, l, ofs->BGxHOFS, l + ofs->BGxVOFS, 256);
+	renderline_textBG(gpu, num, DST, l, T1ReadWord(&ofs->BGxHOFS, 0), l + T1ReadWord(&ofs->BGxVOFS, 0), 256);
 }
 
 void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
