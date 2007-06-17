@@ -41,6 +41,40 @@ extern "C" {
     it holds flags for general display
 *******************************************************************************/
 
+#ifdef WORDS_BIGENDIAN
+struct _DISPCNT
+{
+/* 7*/  u8 ForceBlank:1;      // A+B: 
+/* 6*/  u8 OBJ_BMP_mapping:1; // A+B: 0=2D (128KB), 1=1D (128..256KB)
+/* 5*/  u8 OBJ_BMP_2D_dim:1;  // A+B: 0=128x512,    1=256x256 pixels
+/* 4*/  u8 OBJ_Tile_1D:1;     // A+B: 0=2D (32KB),  1=1D (32..256KB)
+/* 3*/  u8 BG0_3D:1;          // A  : 0=2D,         1=3D
+/* 0*/  u8 BG_Mode:3;         // A+B:
+/*15*/  u8 WinOBJ_Enable:1;   // A+B: 0=disable, 1=Enable
+/*14*/  u8 Win1_Enable:1;     // A+B: 0=disable, 1=Enable
+/*13*/  u8 Win0_Enable:1;     // A+B: 0=disable, 1=Enable
+/*12*/  u8 OBJ_Enable:1;      // A+B: 0=disable, 1=Enable
+/*11*/  u8 BG3_Enable:1;      // A+B: 0=disable, 1=Enable
+/*10*/  u8 BG2_Enable:1;      // A+B: 0=disable, 1=Enable
+/* 9*/  u8 BG1_Enable:1;      // A+B: 0=disable, 1=Enable
+/* 8*/  u8 BG0_Enable:1;        // A+B: 0=disable, 1=Enable
+/*23*/  u8 OBJ_HBlank_process:1;    // A+B: OBJ processed during HBlank (GBA bit5)
+/*22*/  u8 OBJ_BMP_1D_Bound:1;      // A  : 
+/*20*/  u8 OBJ_Tile_1D_Bound:2;     // A+B: 
+/*18*/  u8 VRAM_Block:2;            // A  : VRAM block (0..3=A..D)
+
+/*16*/  u8 DisplayMode:2;     // A+B: coreA(0..3) coreB(0..1) GBA(Green Swap)
+                                    // 0=off (white screen)
+                                    // 1=on (normal BG & OBJ layers)
+                                    // 2=VRAM display (coreA only)
+                                    // 3=RAM display (coreA only, DMA transfers)
+
+/*31*/  u8 ExOBJPalette_Enable:1;   // A+B: 0=disable, 1=Enable OBJ extended Palette
+/*30*/  u8 ExBGxPalette_Enable:1;   // A+B: 0=disable, 1=Enable BG extended Palette
+/*27*/  u8 ScreenBase_Block:3;      // A  : Screen Base (64K step)
+/*24*/  u8 CharacBase_Block:3;      // A  : Character Base (64K step)
+}; 
+#else
 struct _DISPCNT
 {
 /* 0*/  u8 BG_Mode:3;         // A+B:
@@ -75,6 +109,7 @@ struct _DISPCNT
 /*30*/  u8 ExBGxPalette_Enable:1;   // A+B: 0=disable, 1=Enable BG extended Palette
 /*31*/  u8 ExOBJPalette_Enable:1;   // A+B: 0=disable, 1=Enable OBJ extended Palette
 }; 
+#endif
 
 typedef union 
 {
@@ -93,6 +128,24 @@ typedef union
     some flags indicate special drawing mode, size, FX
 *******************************************************************************/
 
+#ifdef WORDS_BIGENDIAN
+struct _BGxCNT 
+{
+/* 7*/ u8 Palette_256:1;         // 0=16x16, 1=1*256 palette
+/* 6*/ u8 Mosaic_Enable:1;       // 0=disable, 1=Enable mosaic
+/* 2*/ u8 CharacBase_Block:4;    // individual character base offset (n*16KB)
+/* 0*/ u8 Priority:2;            // 0..3=high..low
+/*14*/ u8 ScreenSize:2;          // text    : 256x256 512x256 256x512 512x512
+                                       // x/rot/s : 128x128 256x256 512x512 1024x1024
+                                       // bmp     : 128x128 256x256 512x256 512x512
+                                       // large   : 512x1024 1024x512 - -
+/*13*/ u8 PaletteSet_Wrap:1;     // BG0 extended palette set 0=set0, 1=set2
+                                       // BG1 extended palette set 0=set1, 1=set3
+                                       // BG2 overflow area wraparound 0=off, 1=wrap
+                                       // BG3 overflow area wraparound 0=off, 1=wrap
+/* 8*/ u8 ScreenBase_Block:5;    // individual screen base offset (text n*2KB, BMP n*16KB)
+}; 
+#else
 struct _BGxCNT 
 {
 /* 0*/ u8 Priority:2;            // 0..3=high..low
@@ -109,6 +162,7 @@ struct _BGxCNT
                                        // bmp     : 128x128 256x256 512x256 512x512
                                        // large   : 512x1024 1024x512 - -
 }; 
+#endif
 
 
 typedef union 
@@ -160,6 +214,17 @@ typedef union {
 	u16 val;
 } WINxDIM;
 
+#ifdef WORDS_BIGENDIAN
+typedef struct {
+/* 6*/  u8 :2;
+/* 5*/  u8 WINx_Effect_Enable:1;
+/* 4*/  u8 WINx_OBJ_Enable:1;
+/* 3*/  u8 WINx_BG3_Enable:1;
+/* 2*/  u8 WINx_BG2_Enable:1;
+/* 1*/  u8 WINx_BG1_Enable:1;
+/* 0*/  u8 WINx_BG0_Enable:1;
+} WINxBIT;
+#else
 typedef struct {
 /* 0*/  u8 WINx_BG0_Enable:1;
 /* 1*/  u8 WINx_BG1_Enable:1;
@@ -169,7 +234,27 @@ typedef struct {
 /* 5*/  u8 WINx_Effect_Enable:1;
 /* 6*/  u8 :2;
 } WINxBIT;
+#endif
 
+#ifdef WORDS_BIGENDIAN
+typedef union {
+	struct {
+		WINxBIT win0;
+		WINxBIT win1;
+	} bits;
+	struct {
+		u8 :3;
+		u8 win0_en:5;
+		u8 :3;
+		u8 win1_en:5;
+	} packed_bits;
+	struct {
+		u8 low;
+		u8 high;
+	} bytes;
+	u16 val ;
+} WINxCNT ;
+#else
 typedef union {
 	struct {
 		WINxBIT win0;
@@ -187,6 +272,8 @@ typedef union {
 	} bytes;
 	u16 val ;
 } WINxCNT ;
+#endif
+
 /*
 typedef struct {
     WINxDIM WIN0H;
@@ -334,6 +421,15 @@ void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 #define ADDRESS_STEP_32KB	   0x08000
 #define ADDRESS_STEP_64kB	   0x10000
 
+#ifdef WORDS_BIGENDIAN
+struct _TILEENTRY
+{
+/*14*/	unsigned Palette:4;
+/*13*/	unsigned VFlip:1;	// VERTICAL FLIP (top<-->bottom)
+/*12*/	unsigned HFlip:1;	// HORIZONTAL FLIP (left<-->right)
+/* 0*/	unsigned TileNum:10;
+};
+#else
 struct _TILEENTRY
 {
 /* 0*/	unsigned TileNum:10;
@@ -341,6 +437,7 @@ struct _TILEENTRY
 /*13*/	unsigned VFlip:1;	// VERTICAL FLIP (top<-->bottom)
 /*14*/	unsigned Palette:4;
 };
+#endif
 typedef union 
 {
 	struct _TILEENTRY bits;
