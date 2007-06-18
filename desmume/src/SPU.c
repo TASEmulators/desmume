@@ -26,6 +26,7 @@
 #include "ARM9.h"
 #include "MMU.h"
 #include "SPU.h"
+#include "mem.h"
 
 #include "armcpu.h"
 
@@ -36,11 +37,6 @@ extern SoundInterface_struct *SNDCoreList[];
 
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
-
-#define ARM7_REG_8(a) (MMU.ARM7_REG[a])
-
-#define ARM7_REG_16(a) (((u16 *)(MMU.ARM7_REG+addr))[0])
-#define ARM7_REG_32(a) (((u32 *)(MMU.ARM7_REG+addr))[0])
 
 int indextbl[8] =
 {
@@ -175,7 +171,8 @@ void SPU_Reset(void)
 
    // Reset Registers
    for (i = 0x400; i < 0x51D; i++)
-      ARM7_REG_8(i) = 0;
+      T1WriteByte(MMU.ARM7_REG, i, 0);
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -202,8 +199,8 @@ void SPU_KeyOn(int channel)
    channel_struct *chan = &SPU->chan[channel];
 
    chan->sampinc = (16777216 / (0x10000 - (double)chan->timer)) / 44100;
-
-//   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, ARM7_REG_8(0x501));
+            
+//   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
    switch(chan->format)
    {
       case 0: // 8-bit
@@ -251,42 +248,42 @@ u8 SPU_ReadByte(u32 addr)
       {
          case 0x0:
 //            LOG("Sound Channel %d Volume read\n", (addr >> 4) & 0xF);            
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x1:
          {
 //            LOG("Sound Channel %d Data Shift/Hold read\n",(addr >> 4) & 0xF);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          }
          case 0x2:
 //            LOG("Sound Channel %d Panning read\n",(addr >> 4) & 0xF);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x3:
-//            LOG("Sound Channel %d Wave Duty/Repeat/Format/Start read: %02X\n", (addr >> 4) & 0xF, ARM7_REG_8(addr));
-            return ARM7_REG_8(addr);
+//            LOG("Sound Channel %d Wave Duty/Repeat/Format/Start read: %02X\n", (addr >> 4) & 0xF, T1ReadByte(MMU.ARM7_REG, addr));
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x4:
          case 0x5:
          case 0x6:
          case 0x7:
 //            LOG("Sound Channel %d Data Source Register read: %08X\n",(addr >> 4) & 0xF, addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x8:
 //            LOG("Sound Channel Timer(Low byte) read: %08X\n", addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x9:
 //            LOG("Sound Channel Timer(High byte) read: %08X\n", addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0xA:
 //            LOG("Sound Channel Loop Start(Low byte) read: %08X\n", addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0xB:
 //            LOG("Sound Channel Loop Start(High byte) read: %08X\n", addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0xC:
          case 0xD:
          case 0xE:
          case 0xF:
 //            LOG("Sound Channel %d Length Register read: %08X\n",(addr >> 4) & 0xF, addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          default: break;
       }
    }
@@ -297,22 +294,22 @@ u8 SPU_ReadByte(u32 addr)
          case 0x000:
          case 0x001:
 //            LOG("Sound Control Register read: %08X\n", addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x004:
          case 0x005:
 //            LOG("Sound Bias Register read: %08X\n", addr);
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x008:
 //            LOG("Sound Capture 0 Control Register read\n");
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x009:
 //            LOG("Sound Capture 1 Control Register read\n");
-            return ARM7_REG_8(addr);
+            return T1ReadByte(MMU.ARM7_REG, addr);
          default: break;
       }
    }
 
-   return ARM7_REG_8(addr);
+   return T1ReadByte(MMU.ARM7_REG, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -327,27 +324,27 @@ u16 SPU_ReadWord(u32 addr)
       {
          case 0x0:
 //            LOG("Sound Channel %d Volume/data shift/hold word read\n", (addr >> 4) & 0xF);
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          case 0x2:
          {
             channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF]; 
 //            LOG("Sound Channel %d Panning/Wave Duty/Repeat Mode/Format/Start word read\n", (addr >> 4) & 0xF);
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          }
          case 0x4:
          case 0x6:
 //            LOG("Sound Channel %d Data Source Register word read: %08X\n",(addr >> 4) & 0xF, addr);
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          case 0x8:
 //            LOG("Sound Channel %d Timer Register word read\n", (addr >> 4) & 0xF);
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          case 0xA:
 //            LOG("Sound Channel %d Loop start Register word read\n", (addr >> 4) & 0xF);
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          case 0xC:
          case 0xE:
 //            LOG("Sound Channel %d Length Register word read: %08X\n",(addr >> 4) & 0xF, addr);
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          default: break;
       }
    }
@@ -357,18 +354,18 @@ u16 SPU_ReadWord(u32 addr)
       {
          case 0x000:
 //            LOG("Sound Control Register word read\n");
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          case 0x004:
 //            LOG("Sound Bias Register word read\n");
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          case 0x008:
 //            LOG("Sound Capture 0/1 Control Register word read\n");
-            return ARM7_REG_16(addr);
+            return T1ReadWord(MMU.ARM7_REG, addr);
          default: break;
       }
    }
 
-   return ARM7_REG_16(addr);
+   return T1ReadWord(MMU.ARM7_REG, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -383,18 +380,18 @@ u32 SPU_ReadLong(u32 addr)
       {
          case 0x0:
 //            LOG("Sound Channel %d Control Register long read\n", (addr >> 4) & 0xF);            
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          case 0x4:
 //            LOG("Sound Channel %d Data Source Register long read\n");
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          case 0x8:
 //            LOG("Sound Channel %d Timer/Loop Start Register long read\n", (addr >> 4) & 0xF);
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          case 0xC:
 //            LOG("Sound Channel %d Length Register long read\n", (addr >> 4) & 0xF);
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          default:
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
       }
    }
    else
@@ -403,19 +400,19 @@ u32 SPU_ReadLong(u32 addr)
       {
          case 0x000:
 //            LOG("Sound Control Register long read\n");
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          case 0x004:
 //            LOG("Sound Bias Register long read\n");
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          case 0x008:
 //            LOG("Sound Capture 0/1 Control Register long read: %08X\n");
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
          default:
-            return ARM7_REG_32(addr);
+            return T1ReadLong(MMU.ARM7_REG, addr);
       }
    }
 
-   return ARM7_REG_32(addr);
+   return T1ReadLong(MMU.ARM7_REG, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -431,7 +428,7 @@ void SPU_WriteByte(u32 addr, u8 val)
          case 0x0:
             SPU->chan[(addr >> 4) & 0xF].vol = val & 0x7F;
 //            LOG("Sound Channel %d Volume write: %02X\n", (addr >> 4) & 0xF, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x1:
          {
@@ -442,13 +439,13 @@ void SPU_WriteByte(u32 addr, u8 val)
             if (chan->datashift == 3)
                chan->datashift = 4;
             chan->hold = (val >> 7) & 0x1;
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0x2:
 //            LOG("Sound Channel %d Panning write: %02X\n",(addr >> 4) & 0xF, val);
             SPU->chan[(addr >> 4) & 0xF].pan = val & 0x7F;
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x3:
          {
@@ -462,7 +459,7 @@ void SPU_WriteByte(u32 addr, u8 val)
 
             if (SPU->chan[(addr >> 4) & 0xF].status)
                SPU_KeyOn((addr >> 4) & 0xF);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0x4:
@@ -470,34 +467,34 @@ void SPU_WriteByte(u32 addr, u8 val)
          case 0x6:
          case 0x7:
 //            LOG("Sound Channel %d Data Source Register write: %08X %02X\n",(addr >> 4) & 0xF, addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x8:
 //            LOG("Sound Channel Timer(Low byte) write: %08X - %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x9:
 //            LOG("Sound Channel Timer(High byte) write: %08X - %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0xA:
 //            LOG("Sound Channel Loop Start(Low byte) write: %08X - %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0xB:
 //            LOG("Sound Channel Loop Start(High byte) write: %08X - %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0xC:
          case 0xD:
          case 0xE:
          case 0xF:
 //            LOG("Sound Channel %d Length Register write: %08X %02X\n",(addr >> 4) & 0xF, addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          default:
             LOG("Unsupported Sound Register byte write: %08X %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             break;
       }
    }
@@ -508,26 +505,26 @@ void SPU_WriteByte(u32 addr, u8 val)
          case 0x000:
          case 0x001:
 //            LOG("Sound Control Register write: %08X %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x004:
          case 0x005:
 //            LOG("Sound Bias Register write: %08X %02X\n", addr, val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x008:
 //            LOG("Sound Capture 0 Control Register write: %02X\n", val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          case 0x009:
 //            LOG("Sound Capture 1 Control Register write: %02X\n", val);
-            ARM7_REG_8(addr) = val;
+            T1WriteByte(MMU.ARM7_REG, addr, val);
             return;
          default: break;
       }
    }
 
-   ARM7_REG_8(addr) = val;
+   T1WriteByte(MMU.ARM7_REG, addr, val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -549,7 +546,7 @@ void SPU_WriteWord(u32 addr, u16 val)
             if (chan->datashift == 3)
                chan->datashift = 4;
             chan->hold = (val >> 15) & 0x1;
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0x2:
@@ -565,13 +562,13 @@ void SPU_WriteWord(u32 addr, u16 val)
             if (chan->status)
                SPU_KeyOn((addr >> 4) & 0xF);
 
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0x4:
          case 0x6:
 //            LOG("Sound Channel %d Data Source Register write: %08X %04X\n",(addr >> 4) & 0xF, addr, val);
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          case 0x8:
          {
@@ -579,22 +576,22 @@ void SPU_WriteWord(u32 addr, u16 val)
 //            LOG("Sound Channel %d Timer Register write: %04X\n", (addr >> 4) & 0xF, val);
             chan->timer = val & 0xFFFF;
             chan->sampinc = (16777216 / (0x10000 - (double)chan->timer)) / 44100;
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0xA:
 //            LOG("Sound Channel %d Loop start Register write: %04X\n", (addr >> 4) & 0xF, val);
             SPU->chan[(addr >> 4) & 0xF].loopstart = val;
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          case 0xC:
          case 0xE:
 //            LOG("Sound Channel %d Length Register write: %08X %04X\n",(addr >> 4) & 0xF, addr, val);
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          default:
 //            LOG("Unsupported Sound Register word write: %08X %02X\n", addr, val);
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             break;
       }
    }
@@ -604,21 +601,21 @@ void SPU_WriteWord(u32 addr, u16 val)
       {
          case 0x000:
 //            LOG("Sound Control Register write: %04X\n", val);
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          case 0x004:
 //            LOG("Sound Bias Register write: %04X\n", val);
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          case 0x008:
 //            LOG("Sound Capture 0/1 Control Register write: %04X\n", val);
-            ARM7_REG_16(addr) = val;
+            T1WriteWord(MMU.ARM7_REG, addr, val);
             return;
          default: break;
       }
    }
 
-   ARM7_REG_16(addr) = val;
+   T1WriteWord(MMU.ARM7_REG, addr, val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -647,13 +644,13 @@ void SPU_WriteLong(u32 addr, u32 val)
             chan->status = (val >> 31) & 0x1;
             if (SPU->chan[(addr >> 4) & 0xF].status)
                SPU_KeyOn((addr >> 4) & 0xF);
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0x4:
 //            LOG("Sound Channel %d Data Source Register long write: %08X\n", (addr >> 4) & 0xF, val);
             SPU->chan[(addr >> 4) & 0xF].addr = val & 0x7FFFFFF;
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          case 0x8:
          {
@@ -663,13 +660,13 @@ void SPU_WriteLong(u32 addr, u32 val)
             chan->timer = val & 0xFFFF;
             chan->loopstart = val >> 16;
             chan->sampinc = (16777216 / (0x10000 - (double)chan->timer)) / 44100;
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          }
          case 0xC:
 //            LOG("Sound Channel %d Length Register long write: %08X\n", (addr >> 4) & 0xF, val);
             SPU->chan[(addr >> 4) & 0xF].length = val & 0x3FFFFF;
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          default: break;
       }
@@ -680,21 +677,21 @@ void SPU_WriteLong(u32 addr, u32 val)
       {
          case 0x000:
 //            LOG("Sound Control Register write: %08X\n", val);
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          case 0x004:
 //            LOG("Sound Bias Register write: %08X\n", val);
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          case 0x008:
 //            LOG("Sound Capture 0/1 Control Register write: %08X\n", val);
-            ARM7_REG_32(addr) = val;
+            T1WriteLong(MMU.ARM7_REG, addr, val);
             return;
          default: break;
       }
    }
 
-   ARM7_REG_32(addr) = val;
+   T1WriteLong(MMU.ARM7_REG, addr, val);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -812,6 +809,7 @@ static INLINE void TestForLoop(channel_struct *chan)
       else
       {
          chan->status = CHANSTAT_STOPPED;
+
          MMU.ARM7_REG[0x403 + ((((u32)chan-(u32)SPU->chan) / sizeof(channel_struct)) * 0x10)] &= 0x7F;
          SPU->bufpos = SPU->buflength;
       }
@@ -1097,11 +1095,12 @@ void SPU_MixAudio(int length)
 
    memset(SPU->sndbuf, 0, length*4*2);
 
+
    // If Master Enable isn't set, don't output audio
-   if (!(MMU.ARM7_REG[0x501] & 0x80))
+   if (!(T1ReadByte(MMU.ARM7_REG, 0x501) & 0x80))
       return;
 
-   vol = MMU.ARM7_REG[0x500] & 0x7F;
+   vol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
 
    for(chan = &(SPU->chan[0]); chan < &(SPU->chan[16]); chan++)
    {
