@@ -1,3 +1,7 @@
+0.7.1 -> ?????
+ general:
+  - Added support for setting NDS firmware language value. [masscat]
+
 0.7.0 -> 0.7.1
  general:
   - Added GDB debugger stub [masscat]
