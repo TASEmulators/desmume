@@ -30,11 +30,13 @@
 #include "cflash.h"
 #include "ROMReader.h"
 
+/* the count of bytes copied from the firmware into memory */
+#define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
+
 NDSSystem nds;
-NDSFirmware firmware;
 
 static u32
-calc_CRC16( u32 start, u8 *data, int count) {
+calc_CRC16( u32 start, const u8 *data, int count) {
   int i,j;
   u32 crc = start & 0xffff;
   static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
@@ -58,6 +60,82 @@ calc_CRC16( u32 start, u8 *data, int count) {
   return crc;
 }
 
+static int
+copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data) {
+  /*
+   * Determine which of the two user settings in the firmware is the current
+   * and valid one and then copy this into the destination buffer.
+   *
+   * The current setting will have a greater count.
+   * Settings are only valid if its CRC16 is correct.
+   */
+  int user1_valid = 0;
+  int user2_valid = 0;
+  u32 user_settings_offset;
+  u32 fw_crc;
+  u32 crc;
+  int copy_good = 0;
+
+  user_settings_offset = fw_data[0x20];
+  user_settings_offset |= fw_data[0x21] << 8;
+  user_settings_offset <<= 3;
+
+  if ( user_settings_offset <= 0x3FE00) {
+    s32 copy_settings_offset = -1;
+
+    crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset],
+                      NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
+    fw_crc = fw_data[user_settings_offset + 0x72];
+    fw_crc |= fw_data[user_settings_offset + 0x73] << 8;
+    if ( crc == fw_crc) {
+      user1_valid = 1;
+    }
+
+    crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset + 0x100],
+                      NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
+    fw_crc = fw_data[user_settings_offset + 0x100 + 0x72];
+    fw_crc |= fw_data[user_settings_offset + 0x100 + 0x73] << 8;
+    if ( crc == fw_crc) {
+      user2_valid = 1;
+    }
+
+    if ( user1_valid) {
+      if ( user2_valid) {
+        u16 count1, count2;
+
+        count1 = fw_data[user_settings_offset + 0x70];
+        count1 |= fw_data[user_settings_offset + 0x71] << 8;
+
+        count2 = fw_data[user_settings_offset + 0x100 + 0x70];
+        count2 |= fw_data[user_settings_offset + 0x100 + 0x71] << 8;
+
+        if ( count2 > count1) {
+          copy_settings_offset = user_settings_offset + 0x100;
+        }
+        else {
+          copy_settings_offset = user_settings_offset;
+        }
+      }
+      else {
+        copy_settings_offset = user_settings_offset;
+      }
+    }
+    else if ( user2_valid) {
+      /* copy the second user settings */
+      copy_settings_offset = user_settings_offset + 0x100;
+    }
+
+    if ( copy_settings_offset > 0) {
+      memcpy( dest_buffer, &fw_data[copy_settings_offset],
+              NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
+      copy_good = 1;
+    }
+  }
+
+  return copy_good;
+}
+
+
 int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
               struct armcpu_ctrl_iface **arm9_ctrl_iface,
               struct armcpu_memory_iface *arm7_mem_if,
@@ -78,15 +156,6 @@ int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
 
      if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
         return -1;
-        
-     sprintf(firmware.nickName,"yopyop");
-     firmware.nickLen = strlen(firmware.nickName);
-     sprintf(firmware.message,"Hi,it/s me!");
-     firmware.msgLen = strlen(firmware.message);
-     firmware.bDay = 15;
-     firmware.bMonth = 7;
-     firmware.favColor = 10;
-     firmware.language = 2;
 
 #ifdef EXPERIMENTAL_WIFI
 	 WIFI_Init(&wifiMac) ;
@@ -339,6 +408,8 @@ void NDS_FreeROM(void)
    MMU.bupmem.fp = NULL;
 }
 
+                         
+
 void NDS_Reset( void)
 {
    BOOL oldexecute=execute;
@@ -392,36 +463,20 @@ void NDS_Reset( void)
    MMU_writeHWord(1, 0x04000130, 0x3FF);
    MMU_writeByte(1, 0x04000136, 0x43);
 
-   MMU_writeByte(0, 0x027FFCDC, 0x20);
-   MMU_writeByte(0, 0x027FFCDD, 0x20);
-   MMU_writeByte(0, 0x027FFCE2, 0xE0);
-   MMU_writeByte(0, 0x027FFCE3, 0x80);
-     
-   MMU_writeHWord(0, 0x027FFCD8, 0x20<<4);
-   MMU_writeHWord(0, 0x027FFCDA, 0x20<<4);
-   MMU_writeHWord(0, 0x027FFCDE, 0xE0<<4);
-   MMU_writeHWord(0, 0x027FFCE0, 0x80<<4);
+   /*
+    * Setup a copy of the firmware user settings in memory.
+    * (this is what the DS firmware would do).
+    */
+   {
+     u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
+     int fw_index;
 
-   MMU_writeWord(0, 0x027FFE40, 0xE188);
-   MMU_writeWord(0, 0x027FFE44, 0x9);
-   MMU_writeWord(0, 0x027FFE48, 0xE194);
-   MMU_writeWord(0, 0x027FFE4C, 0x0);
-//     logcount = 0;
-   
-   MMU_writeByte(0, 0x023FFC80, 1);
-   MMU_writeByte(0, 0x023FFC82, firmware.favColor);
-   MMU_writeByte(0, 0x023FFC83, firmware.bMonth);
-   MMU_writeByte(0, 0x023FFC84, firmware.bDay);
-     
-   for(i=0; i<firmware.nickLen; i++) 
-      MMU_writeHWord(0, 0x023FFC86+(2*i), firmware.nickName[i]);
-   MMU_writeHWord(0, 0x023FFC9A, firmware.nickLen);
-     
-   for(i=0; i<firmware.msgLen; i++) 
-      MMU_writeHWord(0, 0x023FFC9C+(2*i), firmware.message[i]);
-   MMU_writeHWord(0, 0x023FFCD0, firmware.msgLen);
-
-   MMU_writeHWord(0, 0x023FFCE4, firmware.language); //Language 1=English 2=French
+     if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
+       for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++) {
+         MMU_writeByte( 0, 0x027FFC80 + fw_index, temp_buffer[fw_index]);
+       }
+     }
+   }
           
    MMU_writeWord(0, 0x027FFE40, header->FNameTblOff);
    MMU_writeWord(0, 0x027FFE44, header->FNameTblSize);
@@ -458,16 +513,16 @@ void NDS_Reset( void)
      MMU_writeWord(1, 0x34, 0xE25EF004);
     
      //ARM9 BIOS IRQ HANDLER
-     MMU_writeWord(0, 0xFFF0018, 0xEA000000);
-     MMU_writeWord(0, 0xFFF0020, 0xE92D500F);
-     MMU_writeWord(0, 0xFFF0024, 0xEE190F11);
-     MMU_writeWord(0, 0xFFF0028, 0xE1A00620);
-     MMU_writeWord(0, 0xFFF002C, 0xE1A00600);
-     MMU_writeWord(0, 0xFFF0030, 0xE2800C40);
-     MMU_writeWord(0, 0xFFF0034, 0xE28FE000);
-     MMU_writeWord(0, 0xFFF0038, 0xE510F004);
-     MMU_writeWord(0, 0xFFF003C, 0xE8BD500F);
-     MMU_writeWord(0, 0xFFF0040, 0xE25EF004);
+     MMU_writeWord(0, 0xFFFF0018, 0xEA000000);
+     MMU_writeWord(0, 0xFFFF0020, 0xE92D500F);
+     MMU_writeWord(0, 0xFFFF0024, 0xEE190F11);
+     MMU_writeWord(0, 0xFFFF0028, 0xE1A00620);
+     MMU_writeWord(0, 0xFFFF002C, 0xE1A00600);
+     MMU_writeWord(0, 0xFFFF0030, 0xE2800C40);
+     MMU_writeWord(0, 0xFFFF0034, 0xE28FE000);
+     MMU_writeWord(0, 0xFFFF0038, 0xE510F004);
+     MMU_writeWord(0, 0xFFFF003C, 0xE8BD500F);
+     MMU_writeWord(0, 0xFFFF0040, 0xE25EF004);
         
      MMU_writeWord(0, 0x0000004, 0xE3A0010E);
      MMU_writeWord(0, 0x0000008, 0xE3A01020);
@@ -481,8 +536,6 @@ void NDS_Reset( void)
    GPU_Reset(MainScreen.gpu, 0);
    GPU_Reset(SubScreen.gpu, 1);
    SPU_Reset();
-
-   NDS_CreateDummyFirmware() ;
 
    execute = oldexecute;
 }
@@ -587,9 +640,12 @@ int NDS_WriteBMP(const char *filename)
     return 1;
 }
 
-static
-void create_user_data( u8 *data, int count) {
+static void
+fill_user_data_area( struct NDS_fw_config_data *user_settings,
+                     u8 *data, int count) {
   u32 crc;
+  int i;
+  u8 *ts_cal_data_area;
 
   memset( data, 0, 0x100);
 
@@ -598,75 +654,46 @@ void create_user_data( u8 *data, int count) {
   data[0x01] = 0;
 
   /* colour */
-  data[0x02] = 7;
+  data[0x02] = user_settings->fav_colour;
 
   /* birthday month and day */
-  data[0x03] = 6;
-  data[0x04] = 23;
+  data[0x03] = user_settings->birth_month;
+  data[0x04] = user_settings->birth_day;
 
   /* nickname and length */
-  data[0x06] = 'y';
-  data[0x08] = 'o';
-  data[0x0a] = 'p';
-  data[0x0c] = 'y';
-  data[0x0e] = 'o';
-  data[0x10] = 'p';
+  for ( i = 0; i < MAX_FW_NICKNAME_LENGTH; i++) {
+    data[0x06 + (i * 2)] = user_settings->nickname[i] & 0xff;
+    data[0x06 + (i * 2) + 1] = (user_settings->nickname[i] >> 8) & 0xff;
+  }
 
-  data[0x1a] = 6;
+  data[0x1a] = user_settings->nickname_len;
 
   /* Message */
-  data[0x1c] = 'D';
-  data[0x1e] = 'e';
-  data[0x20] = 'S';
-  data[0x22] = 'm';
-  data[0x24] = 'u';
-  data[0x26] = 'M';
-  data[0x28] = 'E';
-  data[0x2a] = ' ';
-  data[0x2c] = 'm';
-  data[0x2e] = 'a';
-  data[0x30] = 'k';
-  data[0x32] = 'e';
-  data[0x34] = 's';
-  data[0x36] = ' ';
-  data[0x38] = 'y';
-  data[0x3a] = 'o';
-  data[0x3c] = 'u';
-  data[0x3e] = ' ';
-  data[0x40] = 'h';
-  data[0x42] = 'a';
-  data[0x44] = 'p';
-  data[0x46] = 'p';
-  data[0x48] = 'y';
-  data[0x4a] = '!';
+  for ( i = 0; i < MAX_FW_MESSAGE_LENGTH; i++) {
+    data[0x1c + (i * 2)] = user_settings->message[i] & 0xff;
+    data[0x1c + (i * 2) + 1] = (user_settings->message[i] >> 8) & 0xff;
+  }
 
-  data[0x50] = 24;
+  data[0x50] = user_settings->message_len;
 
   /*
    * touch screen calibration
    */
-  /* ADC position 1, x y */
-  data[0x58] = 0x00;
-  data[0x59] = 0x02;
-  data[0x5a] = 0x00;
-  data[0x5b] = 0x02;
+  ts_cal_data_area = &data[0x58];
+  for ( i = 0; i < 2; i++) {
+    /* ADC x y */
+    *ts_cal_data_area++ = user_settings->touch_cal[i].adc_x & 0xff;
+    *ts_cal_data_area++ = (user_settings->touch_cal[i].adc_x >> 8) & 0xff;
+    *ts_cal_data_area++ = user_settings->touch_cal[i].adc_y & 0xff;
+    *ts_cal_data_area++ = (user_settings->touch_cal[i].adc_y >> 8) & 0xff;
 
-  /* screen pos 1, x y */
-  data[0x5c] = 0x20;
-  data[0x5d] = 0x20;
-
-  /* ADC position 2, x y */
-  data[0x5e] = 0x00;
-  data[0x5f] = 0x0e;
-  data[0x60] = 0x00;
-  data[0x61] = 0x08;
-
-  /* screen pos 2, x y */
-  data[0x62] = 0xe0;
-  data[0x63] = 0x80;
+    /* screen x y */
+    *ts_cal_data_area++ = user_settings->touch_cal[i].screen_x;
+    *ts_cal_data_area++ = user_settings->touch_cal[i].screen_y;
+  }
 
   /* language and flags */
-  data[0x64] = 0x01;
+  data[0x64] = user_settings->language;
   data[0x65] = 0xfc;
 
   /* update count and crc */
@@ -681,7 +708,7 @@ void create_user_data( u8 *data, int count) {
 }
 
 /* creates an firmware flash image, which contains all needed info to initiate a wifi connection */
-int NDS_CreateDummyFirmware(void)
+int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 {
   /*
    * Create the firmware header
@@ -694,8 +721,11 @@ int NDS_CreateDummyFirmware(void)
   MMU.fw.data[0x8 + 2] = 'C';
   MMU.fw.data[0x8 + 3] = 'P';
 
-  /* DS type (phat) */
-  MMU.fw.data[0x1d] = 0xff;
+  /* DS type */
+  if ( user_settings->ds_type == NDS_FW_DS_TYPE_LITE)
+    MMU.fw.data[0x1d] = 0x20;
+  else
+    MMU.fw.data[0x1d] = 0xff;
 
   /* User Settings offset 0x3fe00 / 8 */
   MMU.fw.data[0x20] = 0xc0;
@@ -705,8 +735,8 @@ int NDS_CreateDummyFirmware(void)
   /*
    * User settings (at 0x3FE00 and 0x3FE00)
    */
-  create_user_data( &MMU.fw.data[ 0x3FE00], 0);
-  create_user_data( &MMU.fw.data[ 0x3FF00], 1);
+  fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
+  fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
   
   
 #ifdef EXPERIMENTAL_WIFI
@@ -722,6 +752,48 @@ int NDS_CreateDummyFirmware(void)
 	memcpy(MMU.fw.data+0x03FA40,FW_WFCProfile,sizeof(FW_WFCProfile)) ;
 #endif
 	return TRUE ;
+}
+
+void
+NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
+  const char *default_nickname = "yopyop";
+  const char *default_message = "DeSmuME makes you happy!";
+  int i;
+  int str_length;
+
+  memset( fw_config, 0, sizeof( struct NDS_fw_config_data));
+  fw_config->ds_type = NDS_FW_DS_TYPE_FAT;
+
+  fw_config->fav_colour = 7;
+
+  fw_config->birth_day = 23;
+  fw_config->birth_month = 6;
+
+  str_length = strlen( default_nickname);
+  for ( i = 0; i < str_length; i++) {
+    fw_config->nickname[i] = default_nickname[i];
+  }
+  fw_config->nickname_len = str_length;
+
+  str_length = strlen( default_message);
+  for ( i = 0; i < str_length; i++) {
+    fw_config->message[i] = default_message[i];
+  }
+  fw_config->message_len = str_length;
+
+  /* default to English */
+  fw_config->language = 1;
+
+  /* default touchscreen calibration */
+  fw_config->touch_cal[0].adc_x = 0x200;
+  fw_config->touch_cal[0].adc_y = 0x200;
+  fw_config->touch_cal[0].screen_x = 0x20;
+  fw_config->touch_cal[0].screen_y = 0x20;
+
+  fw_config->touch_cal[1].adc_x = 0xe00;
+  fw_config->touch_cal[1].adc_y = 0x800;
+  fw_config->touch_cal[1].screen_x = 0xe0;
+  fw_config->touch_cal[1].screen_y = 0x80;
 }
 
 int NDS_LoadFirmware(const char *filename)

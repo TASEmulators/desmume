@@ -21,7 +21,7 @@
 #ifndef FIRMCONFIG_H
 #define FIRMCONFIG_H
 
-void ReadFirmConfig(void);
+extern struct NDS_fw_config_data win_fw_config;
 
 BOOL CALLBACK FirmConfig_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
 
