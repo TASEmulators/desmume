@@ -109,6 +109,8 @@ struct my_config {
 #endif
   int disable_limiter;
 
+  int firmware_language;
+
   const char *nds_file;
   const char *cflash_disk_image_file;
 };
@@ -130,6 +132,9 @@ init_config( struct my_config *config) {
   config->opengl_2d = 0;
   config->soft_colour_convert = 0;
 #endif
+
+  /* use the default language */
+  config->firmware_language = -1;
 }
 
 
@@ -152,6 +157,14 @@ fill_config( struct my_config *config,
       printf( "                       screen rendering. May produce better or worse\n");
       printf( "                       frame rates depending on hardware.\n");
 #endif
+      printf( "\n");
+      printf( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
+      printf( "                         0 = Japanese\n");
+      printf( "                         1 = English\n");
+      printf( "                         2 = French\n");
+      printf( "                         3 = German\n");
+      printf( "                         4 = Italian\n");
+      printf( "                         5 = Spanish\n");
       printf( "\n");
       printf( "   --arm9gdb=PORT_NUM      Enable the ARM9 GDB stub on the given port\n");
       printf( "   --arm7gdb=PORT_NUM      Enable the ARM7 GDB stub on the given port\n");
@@ -176,6 +189,18 @@ fill_config( struct my_config *config,
 #endif
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
+    }
+    else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
+      char *end_char;
+      int lang = strtoul( &argv[i][9], &end_char, 10);
+
+      if ( lang >= 0 && lang <= 5) {
+        config->firmware_language = lang;
+      }
+      else {
+        fprintf( stderr, "Firmware language must be set to a value from 0 to 5.\n");
+        good_args = 0;
+      }
     }
     else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
       char *end_char;
@@ -532,10 +557,21 @@ int main(int argc, char ** argv) {
   /* this holds some info about our display */
   const SDL_VideoInfo *videoInfo;
 
+  /* the firmware settings */
+  struct NDS_fw_config_data fw_config;
+
+  /* default the firmware settings, they may get changed later */
+  NDS_FillDefaultFirmwareConfigData( &fw_config);
+
   init_config( &my_config);
 
   if ( !fill_config( &my_config, argc, argv)) {
     exit(1);
+  }
+
+  /* use any language set on the command line */
+  if ( my_config.firmware_language != -1) {
+    fw_config.language = my_config.firmware_language;
   }
 
   if ( my_config.arm9_gdb_port != 0) {
@@ -566,6 +602,9 @@ int main(int argc, char ** argv) {
 #endif
   NDS_Init( arm9_memio, &arm9_ctrl_iface,
             arm7_memio, &arm7_ctrl_iface);
+
+  /* Create the dummy firmware */
+  NDS_CreateDummyFirmware( &fw_config);
 
   if ( !my_config.disable_sound) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);

@@ -35,8 +35,22 @@
 extern "C" {
 #endif
 
+
 extern volatile BOOL execute;
 extern BOOL click;
+
+/*
+ * The firmware language values
+ */
+#define NDS_FW_LANG_JAP 0
+#define NDS_FW_LANG_ENG 1
+#define NDS_FW_LANG_FRE 2
+#define NDS_FW_LANG_GER 3
+#define NDS_FW_LANG_ITA 4
+#define NDS_FW_LANG_SPA 5
+#define NDS_FW_LANG_CHI 6
+#define NDS_FW_LANG_RES 7
+
 
 //#define LOG_ARM9
 //#define LOG_ARM7
@@ -111,27 +125,54 @@ typedef struct
        u16 touchY;
 } NDSSystem;
 
-typedef struct
-{
-       u8 favColor;
-       u8 bMonth;
-       u8 bDay;
-       char nickName[10];
-       u8 nickLen;
-       char message[26];
-       u8 msgLen;
-       u8 language;
-       
-} NDSFirmware;
+/** /brief A touchscreen calibration point.
+ */
+struct NDS_fw_touchscreen_cal {
+  u16 adc_x;
+  u16 adc_y;
+
+  u8 screen_x;
+  u8 screen_y;
+};
+
+/** /brief The type of DS
+ */
+enum nds_fw_ds_type {
+  NDS_FW_DS_TYPE_FAT,
+  NDS_FW_DS_TYPE_LITE
+};
+
+#define MAX_FW_NICKNAME_LENGTH 10
+#define MAX_FW_MESSAGE_LENGTH 26
+
+struct NDS_fw_config_data {
+  enum nds_fw_ds_type ds_type;
+
+  u8 fav_colour;
+  u8 birth_month;
+  u8 birth_day;
+
+  u16 nickname[MAX_FW_NICKNAME_LENGTH];
+  u8 nickname_len;
+
+  u16 message[MAX_FW_MESSAGE_LENGTH];
+  u8 message_len;
+
+  u8 language;
+
+  /* touchscreen calibration */
+  struct NDS_fw_touchscreen_cal touch_cal[2];
+};
 
 extern NDSSystem nds;
-extern NDSFirmware firmware;
 
 int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
               struct armcpu_ctrl_iface **arm9_ctrl_iface,
               struct armcpu_memory_iface *arm7_mem_if,
               struct armcpu_ctrl_iface **arm7_ctrl_iface);
 void NDS_DeInit(void);
+void
+NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config);
 
 BOOL NDS_SetROM(u8 * rom, u32 mask);
 NDS_header * NDS_getROMHeader(void);
@@ -147,7 +188,7 @@ int NDS_ImportSave(const char *filename);
 
 int NDS_WriteBMP(const char *filename);
 int NDS_LoadFirmware(const char *filename);
-int NDS_CreateDummyFirmware(void);
+int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
 u32
 NDS_exec(s32 nb, BOOL force);
 

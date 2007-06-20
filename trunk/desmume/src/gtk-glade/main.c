@@ -72,6 +72,8 @@ struct configured_features {
   u16 arm9_gdb_port;
   u16 arm7_gdb_port;
 
+  int firmware_language;
+
   const char *nds_file;
 };
 
@@ -87,6 +89,9 @@ init_configured_features( struct configured_features *config) {
   config->disable_limiter = 0;
 
   config->nds_file = NULL;
+
+  /* use the default language */
+  config->firmware_language = -1;
 }
 
 static int
@@ -110,6 +115,14 @@ fill_configured_features( struct configured_features *config,
 #endif
       g_print( "   --disable-limiter   Disables the 60 fps limiter\n");
       g_print( "\n");
+      g_print( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
+      g_print( "                         0 = Japanese\n");
+      g_print( "                         1 = English\n");
+      g_print( "                         2 = French\n");
+      g_print( "                         3 = German\n");
+      g_print( "                         4 = Italian\n");
+      g_print( "                         5 = Spanish\n");
+      g_print( "\n");
       g_print( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
       g_print( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
       //g_print( "   --sticky            Enable sticky keys and stylus\n");
@@ -125,6 +138,18 @@ fill_configured_features( struct configured_features *config,
       config->disable_3d = 1;
     }
 #endif
+    else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
+      char *end_char;
+      int lang = strtoul( &argv[i][9], &end_char, 10);
+
+      if ( lang >= 0 && lang <= 5) {
+        config->firmware_language = lang;
+      }
+      else {
+        g_print( stderr, "Firmware language must be set to a value from 0 to 5.\n");
+        good_args = 0;
+      }
+    }
     else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
       char *end_char;
       unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
@@ -403,6 +428,16 @@ common_gtk_glade_main( struct configured_features *my_config) {
         struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
         struct armcpu_ctrl_iface *arm9_ctrl_iface;
         struct armcpu_ctrl_iface *arm7_ctrl_iface;
+        /* the firmware settings */
+        struct NDS_fw_config_data fw_config;
+
+        /* default the firmware settings, they may get changed later */
+        NDS_FillDefaultFirmwareConfigData( &fw_config);
+
+        /* use any language set on the command line */
+        if ( my_config->firmware_language != -1) {
+          fw_config.language = my_config->firmware_language;
+        }
 
 #ifdef GTKGLEXT_AVAILABLE
 // check if you have GTHREAD when running configure script
@@ -448,6 +483,10 @@ common_gtk_glade_main( struct configured_features *my_config) {
 
 	desmume_init( arm9_memio, &arm9_ctrl_iface,
                       arm7_memio, &arm7_ctrl_iface);
+
+
+        /* Create the dummy firmware */
+        NDS_CreateDummyFirmware( &fw_config);
 
         /*
          * Activate the GDB stubs

@@ -112,6 +112,8 @@ struct configured_features {
   u16 arm9_gdb_port;
   u16 arm7_gdb_port;
 
+  int firmware_language;
+
   const char *nds_file;
   const char *cflash_disk_image_file;
 };
@@ -133,6 +135,9 @@ init_configured_features( struct configured_features *config) {
   config->nds_file = NULL;
 
   config->cflash_disk_image_file = NULL;
+
+  /* use the default language */
+  config->firmware_language = -1;
 }
 
 static int
@@ -157,6 +162,14 @@ fill_configured_features( struct configured_features *config,
 #endif
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
+      printf( "\n");
+      printf( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
+      printf( "                         0 = Japanese\n");
+      printf( "                         1 = English\n");
+      printf( "                         2 = French\n");
+      printf( "                         3 = German\n");
+      printf( "                         4 = Italian\n");
+      printf( "                         5 = Spanish\n");
       printf( "\n");
       printf( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
       printf( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
@@ -184,6 +197,18 @@ fill_configured_features( struct configured_features *config,
 #endif
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
+    }
+    else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
+      char *end_char;
+      int lang = strtoul( &argv[i][9], &end_char, 10);
+
+      if ( lang >= 0 && lang <= 5) {
+        config->firmware_language = lang;
+      }
+      else {
+        fprintf( stderr, "Firmware language must be set to a value from 0 to 5.\n");
+        good_args = 0;
+      }
     }
     else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
       char *end_char;
@@ -1553,6 +1578,17 @@ common_gtk_main( struct configured_features *my_config) {
         struct armcpu_ctrl_iface *arm9_ctrl_iface;
         struct armcpu_ctrl_iface *arm7_ctrl_iface;
 
+        /* the firmware settings */
+        struct NDS_fw_config_data fw_config;
+
+        /* default the firmware settings, they may get changed later */
+        NDS_FillDefaultFirmwareConfigData( &fw_config);
+
+        /* use any language set on the command line */
+        if ( my_config->firmware_language != -1) {
+          fw_config.language = my_config->firmware_language;
+        }
+
         bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
 
 #ifdef DEBUG
@@ -1626,6 +1662,9 @@ common_gtk_main( struct configured_features *my_config) {
         if ( my_config->arm7_gdb_port != 0) {
           activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
         }
+
+        /* Create the dummy firmware */
+        NDS_CreateDummyFirmware( &fw_config);
 
         /* Initialize joysticks */
         if(!init_joy()) return 1;

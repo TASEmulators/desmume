@@ -115,6 +115,10 @@ int frameskiprate=0;
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
 
+/* the firmware settings */
+struct NDS_fw_config_data win_fw_config;
+
+
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam);
 
@@ -600,6 +604,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     HACCEL hAccel;
     hAppInst=hThisInstance;
 
+	/* default the firmware settings, they may get changed later */
+	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
+
     InitializeCriticalSection(&section);
 
     GetINIPath(IniName, MAX_PATH);
@@ -667,6 +674,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     NDS_Init( arm9_memio, &arm9_ctrl_iface,
 		arm7_memio, &arm7_ctrl_iface);
 
+
   /*
    * Activate the GDB stubs
    * This has to come after the NDS_Init where the cpus are set up.
@@ -707,17 +715,42 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
     SPU_SetVolume(sndvolume);
-    
-    memset(&firmware,0,sizeof(firmware));
-    firmware.favColor = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
-    firmware.bMonth = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
-    firmware.bDay = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
-    GetPrivateProfileString("Firmware","nickName", "yopyop", firmware.nickName, 10, IniName);
-    firmware.nickLen = strlen(firmware.nickName);
-    GetPrivateProfileString("Firmware","Message", "Hi,it/s me!", firmware.message, 26, IniName);
-    firmware.msgLen = strlen(firmware.message);
-    firmware.language = GetPrivateProfileInt("Firmware","Language", 2, IniName);
-    
+
+	/* Read the firmware settings from the init file */
+    win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
+    win_fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
+    win_fw_config.birth_day = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
+    win_fw_config.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
+
+	{
+		/*
+		 * Read in the nickname and message.
+		 * Convert the strings into Unicode UTF-16 characters.
+		 */
+		char temp_str[27];
+		int char_index;
+	    GetPrivateProfileString("Firmware","nickName", "yopyop", temp_str, 11, IniName);
+		win_fw_config.nickname_len = strlen( temp_str);
+
+		if ( win_fw_config.nickname_len == 0) {
+			strcpy( temp_str, "yopyop");
+			win_fw_config.nickname_len = strlen( temp_str);
+		}
+
+		for ( char_index = 0; char_index < win_fw_config.nickname_len; char_index++) {
+			win_fw_config.nickname[char_index] = temp_str[char_index];
+		}
+
+		GetPrivateProfileString("Firmware","Message", "DeSmuME makes you happy!", temp_str, 27, IniName);
+	    win_fw_config.message_len = strlen( temp_str);
+		for ( char_index = 0; char_index < win_fw_config.message_len; char_index++) {
+			win_fw_config.message[char_index] = temp_str[char_index];
+		}
+	}
+
+	/* Create the dummy firmware */
+	NDS_CreateDummyFirmware( &win_fw_config);
+
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
 
     // Make sure any quotes from lpszArgument are removed
@@ -1497,7 +1530,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        {
                             cwindow_struct FirmConfig;
 
-                            if (CWindow_Init2(&FirmConfig, hAppInst, HWND_DESKTOP, "Configure Controls", IDD_FIRMSETTINGS, FirmConfig_Proc) == 0)
+                            if (CWindow_Init2(&FirmConfig, hAppInst, HWND_DESKTOP,
+									"Configure Controls", IDD_FIRMSETTINGS, FirmConfig_Proc) == 0)
                                CWindow_Show(&FirmConfig);
 
                        }
