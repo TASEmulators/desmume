@@ -14,6 +14,6 @@ desmume_SOURCES = \
         ConfigKeys.c ConfigKeys.h \
 	FirmConfig.c FirmConfig.h \
 	OGLRender.c OGLRender.h
-desmume_LDADD = ../libdesmume.a yopyop_private.o
+desmume_LDADD = ../libdesmume.a yopyop_private.o ../gdbstub/libgdbstub.a
 yopyop_private.o: yopyop_private.rc resources.rc resource.h
 	windres yopyop_private.rc -o yopyop_private.o
