@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.14 2007-05-07 22:58:12 masscat Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.15 2007-06-25 03:16:50 cyberwarriorx Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -47,6 +47,7 @@
 
 #ifdef HAVE_GL_GL_H
 #ifdef HAVE_GL_GLU_H
+#ifndef __MINGW32__
 
 #include <stdio.h>
 
@@ -3011,5 +3012,6 @@ GPU3DInterface gpu3D_opengl_collector = {
 
 
 
+#endif /* End of __MINGW32__ */
 #endif /* End of HAVE_GL_GLU_H */
 #endif /* End of HAVE_GL_GL_H */
