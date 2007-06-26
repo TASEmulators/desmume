@@ -168,7 +168,5 @@ AC_CONFIG_FILES([Makefile
                  src/windows/Makefile
 		 src/gdbstub/Makefile
 		 autopackage/default.apspec
-		 debian/rules
-		 debian/changelog
 ])
 AC_OUTPUT
