@@ -1,4 +1,4 @@
-/* $Id: opengl_collector_3Demu.c,v 1.15 2007-06-25 03:16:50 cyberwarriorx Exp $
+/* $Id: opengl_collector_3Demu.c,v 1.16 2007-06-27 14:48:07 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques, shash
@@ -164,6 +164,8 @@ void (*complete_render_ogl_collector_platform)( void) = flush_only;
 
 
 static u8  GPU_screen3D[256*256*4]={0};
+
+static u8 stencil_buffer[256*192];
 
 #ifndef READ_PIXELS_IMMEDIATELY
 /** flag indicating if the 3D emulation has produced a new render */
@@ -349,6 +351,7 @@ SetupTexture (unsigned int format, unsigned int palette) {
   if(format == 0) // || disableTexturing)
     {
       LOG("Texture format is zero\n");
+      glDisable (GL_TEXTURE_2D);
       return 0;
     }
   else
@@ -845,8 +848,8 @@ SetupTexture (unsigned int format, unsigned int palette) {
       invTexWidth  = 1.f/((float)sizeX*(1<<4));//+ 1;
       invTexHeight = 1.f/((float)sizeY*(1<<4));//+ 1;
 		
-      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
       glMatrixMode (GL_TEXTURE);
       glLoadIdentity ();
@@ -1903,14 +1906,14 @@ static void
 process_clear_depth( struct render_state *state,
                      const u32 *parms) {
   //u32 depth24b;
-  u32 v = parms[0] & 0x7FFFF;
+  u32 v = parms[0] & 0x7FFF;
   LOG("Clear depth %08x\n", parms[0]);
 
   /*
    * Save for later.
    * handled at a 'begin' command
    */
-  current_depth24b = (v * 0x200)+((v+1)/0x8000);
+  current_depth24b = (v * 0x200) + ( (v+1) & 0x8000 ? 0x1ff : 0);
 
   if ( inside_primitive) {
     depth24b_valid = 1;
@@ -1981,8 +1984,7 @@ draw_3D_area( void) {
 
   LOG("\n------------------------------------\n");
   LOG("Start of render\n");
-  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   /*if ( state->write_index > 10000) {
     LOG_ALWAYS( "3d write index %d\n", state->write_index);
@@ -2061,6 +2063,12 @@ init_openGL( void) {
   /* Enables Depth Testing */
   glEnable( GL_DEPTH_TEST );
   glEnable(GL_TEXTURE_2D);
+
+  glEnable( GL_STENCIL_TEST);
+
+  // Always Passes, 1 Bit Plane, 1 As Mask
+  glStencilFunc( GL_ALWAYS, 1, 1);
+  glStencilOp( GL_KEEP, GL_REPLACE, GL_REPLACE);
 
   glGenTextures (1, &oglTextureID);
 
@@ -2337,6 +2345,7 @@ Flush_3Dgl_collect( unsigned long val) {
       state->write_index, render_states[new_render_state].write_index);
 
   current_render_state = new_render_state;
+
   draw_3D_area();
   new_state->write_index = 0;
 
@@ -2821,10 +2830,17 @@ get_direction_matrix_3Dgl_collect(unsigned int index) {
   return (signed long)(mtxCurrent[2][(index)*(1<<12)]);
 }
 
+
+//#define BITMAP_STENCIL 1
 static void
 get_line_3Dgl_collect(int line, unsigned short *dst) {
   int i;
   u8 *screen3D = (u8 *)&GPU_screen3D[(192-(line%192))*256*4];
+#ifdef BITMAP_STENCIL
+  u8 *line_stencil = (u8 *)&stencil_buffer[(192-(line%192))*(256>>3)];
+#else
+  u8 *line_stencil = (u8 *)&stencil_buffer[(192-(line%192))*256];
+#endif
 
 #ifndef READ_PIXELS_IMMEDIATELY
   if ( line == 0) {
@@ -2832,10 +2848,6 @@ get_line_3Dgl_collect(int line, unsigned short *dst) {
       new_render_available = 0;
       if ( !begin_opengl_ogl_collector_platform()) {
         LOG_ERROR( "platform failed for begin opengl for get_line\n");
-        for(i = 0; i < 256; i++)
-          {
-            dst[i] = 0x0;
-          }
         return;
       }
 
@@ -2845,35 +2857,149 @@ get_line_3Dgl_collect(int line, unsigned short *dst) {
       glReadPixels(0,0,256,192,GL_RGBA,GL_UNSIGNED_BYTE,GPU_screen3D);
 #endif
 
+#ifdef BITMAP_STENCIL
+      glReadPixels(0,0, 256,192, GL_STENCIL_INDEX, GL_BITMAP, stencil_buffer);
+#else
+      glReadPixels(0,0, 256,192, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, stencil_buffer);
+#endif
+
       end_opengl_ogl_collector_platform();
     }
   }
 #endif
 
 
+#ifdef BITMAP_STENCIL
+  for(i = 0; i < 256; i += 8)
+    {
+      u8 bitmap = *line_stencil++;
+
+      if ( bitmap) {
+        if ( bitmap & 0x80) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x40) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x20) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x10) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x08) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x04) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x02) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+        if ( bitmap & 0x01) {
+#ifdef USE_BGR_ORDER
+          u32 r = screen3D[0], g = screen3D[1], b = screen3D[2], a = screen3D[3];
+#else
+          u32 r = screen3D[2], g = screen3D[1], b = screen3D[0], a = screen3D[3];
+#endif
+          r = (r*(a+1)) >> 8; g = (g*(a+1)) >> 8; b = (b*(a+1)) >> 8;
+          *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+        }
+        dst += 1;
+        screen3D += 4;
+      }
+      else {
+        screen3D += 4 * 8;
+        dst += 8;
+      }
+    }
+#else
   for(i = 0; i < 256; i++)
     {
+      if ( line_stencil[i]) {
 #ifdef USE_BGR_ORDER
-      u32	r = screen3D[i*4+0],
-        g = screen3D[i*4+1],
-        b = screen3D[i*4+2],
-        a = screen3D[i*4+3];
+        u32 r = screen3D[0],
+          g = screen3D[1],
+          b = screen3D[2],
+          a = screen3D[3];
 #else
-      u32	r = screen3D[i*4+2],
-        g = screen3D[i*4+1],
-        b = screen3D[i*4+0],
-        a = screen3D[i*4+3];
+        u32 r = screen3D[2],
+          g = screen3D[1],
+          b = screen3D[0],
+          a = screen3D[3];
+#endif
+#if 0
+        r = (r*a)/255;
+        g = (g*a)/255;
+        b = (b*a)/255;
+#else
+        r = (r*(a+1)) >> 8;
+        g = (g*(a+1)) >> 8;
+        b = (b*(a+1)) >> 8;
 #endif
 
-      r = (r*a)/255;
-      g = (g*a)/255;
-      b = (b*a)/255;
-
-      if (r != 0 || g != 0 || b != 0)
-        {
-          dst[i] = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
-        }
+        *dst = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
+      }
+      dst += 1;
+      screen3D += 4;
     }
+#endif
 }
 
 
