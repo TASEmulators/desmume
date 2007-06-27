@@ -24,6 +24,11 @@
 #include <string.h>
 #include <libgen.h>
 
+
+#ifndef VERSION
+#define VERSION "Unknown version"
+#endif
+
 /*
  * FIXME: Not sure how to detect OpenGL in a platform portable way.
  */
@@ -174,6 +179,11 @@ fill_config( struct my_config *config,
       printf( "                       Enable disk image GBAMP compact flash emulation\n");
       printf( "\n");
       printf( "   --help                  Display this message\n");
+      printf( "   --version               Display the version\n");
+      good_args = 0;
+    }
+    else if ( strcmp( argv[i], "--version") == 0) {
+      printf( "%s\n", VERSION);
       good_args = 0;
     }
     else if ( strcmp( argv[i], "--disable-sound") == 0) {
