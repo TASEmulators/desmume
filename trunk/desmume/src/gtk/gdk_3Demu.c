@@ -1,4 +1,4 @@
-/* $Id: gdk_3Demu.c,v 1.2 2007-04-24 16:22:11 masscat Exp $
+/* $Id: gdk_3Demu.c,v 1.3 2007-06-27 14:44:40 masscat Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques
@@ -157,6 +157,7 @@ init_opengl_gdk_3Demu( void) {
 
   glconfig = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGBA   |
                                         GDK_GL_MODE_DEPTH  |
+                                        GDK_GL_MODE_STENCIL |
                                         GDK_GL_MODE_SINGLE);
   if (glconfig == NULL)
     {
