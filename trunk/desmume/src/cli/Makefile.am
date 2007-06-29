@@ -1,4 +1,8 @@
+include $(top_srcdir)/src/desmume.mk
+
+AM_CFLAGS += $(SDL_CFLAGS)
+AM_LDFLAGS += -lGL -lglut
+
 bin_PROGRAMS = desmume-cli
 desmume_cli_SOURCES = main.c ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c
 desmume_cli_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a $(SDL_LIBS)
-desmume_cli_CFLAGS = $(SDL_CFLAGS)

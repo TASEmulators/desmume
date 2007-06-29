@@ -1,3 +1,5 @@
+include $(top_srcdir)/src/desmume.mk
+
 EXTRA_DIST = DeSmuME.dev DeSmuME.exe.Manifest DeSmuME.ico \
 	 DeSmuME.layout DeSmuME.vcproj Makefile.win \
 	resources.rc yopyop_private.rc
