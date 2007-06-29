@@ -2,7 +2,6 @@ dnl --- Package name is first argument to AC_INIT
 dnl --- Release version is second argument to AC_INIT
 
 AC_INIT(desmume, [0.7.1])
-AM_INIT_AUTOMAKE
 
 dnl -- find target architecture for some os specific libraries
 AC_CANONICAL_TARGET
@@ -14,6 +13,8 @@ case $target in
 esac
 AC_SUBST(desmume_arch)
 
+AM_INIT_AUTOMAKE
+
 dnl -- make sure we have a C compiler
 AC_PROG_CC
 
@@ -24,13 +25,13 @@ dnl -- check for endianess
 AC_C_BIGENDIAN
 
 dnl --- Other prerequisites ---
+m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen)
 
 dnl - Check for zziplib
 AC_CHECK_LIB(zzip, zzip_open)
-
 
 dnl - Check for SDL
 AC_PATH_PROGS(SDLCONFIG, [sdl-config sdl11-config])
@@ -52,7 +53,7 @@ case $target in
   *linux* | *bsd*)
     dnl - Check for GTK and/or libglade
     AC_CHECK_TOOL(HAVE_PKG, pkg-config)
-    AC_PROVIDE_IFELSE([PKG_CHECK_MODULES)], [
+    AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
       if test ! "x$HAVE_PKG" = "x" ; then
         PKG_CHECK_MODULES(GTK,
                           "gtk+-2.0",
@@ -89,6 +90,8 @@ case $target in
         AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
         AC_SUBST(GLADEUI_UNINSTALLED_DIR)
       fi
+    ],[
+        echo "WARNING: pkg-config is not available therefore gtk and gtk-glade UIs are not available either."
     ])
 
     dnl - If the gtkGLext package is available define the corresponding C macro
