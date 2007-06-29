@@ -1,3 +1,7 @@
+include $(top_srcdir)/src/desmume.mk
+
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTHREAD_CFLAGS)
+
 Applicationsdir = $(datadir)/applications
 Applications_DATA = desmume.desktop
 pixmapdir = $(datadir)/pixmaps
@@ -18,5 +22,3 @@ desmume_SOURCES = \
 	 main.c
 desmume_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a \
 	$(SDL_LIBS) $(GTK_LIBS) $(GTKGLEXT_LIBS) $(GTHREAD_LIBS)
-desmume_CFLAGS = $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTHREAD_CFLAGS)
-#desmume_LDFLAGS = -rdynamic
