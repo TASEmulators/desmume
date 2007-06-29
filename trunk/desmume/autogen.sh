@@ -1,4 +1,2 @@
 #!/bin/sh
-aclocal
-automake -a -c --gnu
-autoconf 
+autoreconf --install --force --verbose
