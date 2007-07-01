@@ -117,9 +117,15 @@ if test "x$HAVE_SDL" = "xyes"; then
 fi
 
 case $target in
+  *linux*)
+    LIBS="$LIBS -lGL"
+    ;;
   *mingw*)
     LIBS="$LIBS -ldxguid -ldxerr8 -ldsound -lopengl32 -lws2_32 -mwindows"
     UI_DIR="windows"
+    ;;
+  *darwin*)
+    LIBS="$LIBS -framework OpenGL"
     ;;
 esac
 
