@@ -117,7 +117,7 @@ if test "x$HAVE_SDL" = "xyes"; then
 fi
 
 case $target in
-  *linux*)
+  *linux* | *bsd*)
     LIBS="$LIBS -lGL"
     ;;
   *mingw*)
