@@ -118,7 +118,7 @@ fi
 
 case $target in
   *linux* | *bsd*)
-    LIBS="$LIBS -lGL"
+    LIBS="$LIBS -lGL -lGLU"
     ;;
   *mingw*)
     LIBS="$LIBS -ldxguid -ldxerr8 -ldsound -lopengl32 -lws2_32 -mwindows"
