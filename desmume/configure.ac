@@ -50,7 +50,7 @@ AC_CHECK_HEADERS([GL/gl.h])
 AC_CHECK_HEADERS([GL/glu.h])
 
 case $target in
-  *linux* | *bsd*)
+  *linux* | *bsd* | *darwin*)
     dnl - Check for GTK and/or libglade
     AC_CHECK_TOOL(HAVE_PKG, pkg-config)
     AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
@@ -116,6 +116,7 @@ if test "x$HAVE_SDL" = "xyes"; then
   fi
 fi
 
+dnl Set compiler library flags per target.
 case $target in
   *linux* | *bsd*)
     LIBS="$LIBS -lGL -lGLU"
