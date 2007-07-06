@@ -49,57 +49,53 @@ dnl - Check for the OpenGL includes
 AC_CHECK_HEADERS([GL/gl.h])
 AC_CHECK_HEADERS([GL/glu.h])
 
-case $target in
-  *linux* | *bsd* | *darwin*)
-    dnl - Check for GTK and/or libglade
-    AC_CHECK_TOOL(HAVE_PKG, pkg-config)
-    AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
-      if test ! "x$HAVE_PKG" = "x" ; then
-        PKG_CHECK_MODULES(GTK,
-                          "gtk+-2.0",
-                          HAVE_GTK=yes,
-                          HAVE_GTK=no)
-        AC_SUBST(GTK_CFLAGS)
-        AC_SUBST(GTK_LIBS)
+dnl - Check for GTK and/or libglade
+AC_CHECK_TOOL(HAVE_PKG, pkg-config)
+AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
+  if test ! "x$HAVE_PKG" = "x" ; then
+    PKG_CHECK_MODULES(GTK,
+                      "gtk+-2.0",
+                      HAVE_GTK=yes,
+                      HAVE_GTK=no)
+    AC_SUBST(GTK_CFLAGS)
+    AC_SUBST(GTK_LIBS)
 
-        PKG_CHECK_MODULES(GTKGLEXT,
-                          "gtkglext-1.0",
-                          HAVE_GTKGLEXT=yes,
-                          HAVE_GTKGLEXT=no)
-        AC_SUBST(GTKGLEXT_CFLAGS)
-        AC_SUBST(GTKGLEXT_LIBS)
+    PKG_CHECK_MODULES(GTKGLEXT,
+                      "gtkglext-1.0",
+                      HAVE_GTKGLEXT=yes,
+                      HAVE_GTKGLEXT=no)
+    AC_SUBST(GTKGLEXT_CFLAGS)
+    AC_SUBST(GTKGLEXT_LIBS)
 
-        PKG_CHECK_MODULES(GTHREAD,
-                          "gthread-2.0",
-                          HAVE_GTHREAD=yes,
-                          HAVE_GTHREAD=no)
-        AC_SUBST(GTHREAD_CFLAGS)
-        AC_SUBST(GTHREAD_LIBS)
+    PKG_CHECK_MODULES(GTHREAD,
+                      "gthread-2.0",
+                      HAVE_GTHREAD=yes,
+                      HAVE_GTHREAD=no)
+    AC_SUBST(GTHREAD_CFLAGS)
+    AC_SUBST(GTHREAD_LIBS)
 
 
-        AC_CHECK_LIB(gdkglext-x11-1.0, gdk_gl_init)
+    AC_CHECK_LIB(gdkglext-x11-1.0, gdk_gl_init)
 
-        PKG_CHECK_MODULES(LIBGLADE,
-                          "libglade-2.0",
-                          HAVE_LIBGLADE=yes,
-                          HAVE_LIBGLADE=no)
-        AC_SUBST(LIBGLADE_CFLAGS)
-        AC_SUBST(LIBGLADE_LIBS)
-    
-        dnl uninstalled glade ui dir
-        AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
-        AC_SUBST(GLADEUI_UNINSTALLED_DIR)
-      fi
-    ],[
-        echo "WARNING: pkg-config is not available therefore gtk and gtk-glade UIs are not available either."
-    ])
+    PKG_CHECK_MODULES(LIBGLADE,
+                      "libglade-2.0",
+                      HAVE_LIBGLADE=yes,
+                      HAVE_LIBGLADE=no)
+    AC_SUBST(LIBGLADE_CFLAGS)
+    AC_SUBST(LIBGLADE_LIBS)
 
-    dnl - If the gtkGLext package is available define the corresponding C macro
-    if test "x$HAVE_GTKGLEXT" = "xyes"; then
-       AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
-    fi
-    ;;
-esac
+    dnl uninstalled glade ui dir
+    AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
+    AC_SUBST(GLADEUI_UNINSTALLED_DIR)
+  fi
+],[
+    echo "WARNING: pkg-config is not available therefore gtk and gtk-glade UIs are not available either."
+])
+
+dnl - If the gtkGLext package is available define the corresponding C macro
+if test "x$HAVE_GTKGLEXT" = "xyes"; then
+   AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
+fi
 
 dnl - Determine which UI's to build
 if test "x$HAVE_SDL" = "xyes"; then
