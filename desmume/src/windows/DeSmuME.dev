@@ -10,7 +10,7 @@ Libs=
 PrivateResource=yopyop_private.rc
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DVERSION=\"0.7.1\" _@@_
+Compiler=-DVERSION=\"0.7.2\" _@@_
 CppCompiler=_@@_
 Linker=-ldxguid_@@_-ldxerr8_@@_-ldsound_@@_-lws2_32_@@_-lglu32_@@_-lopengl32_@@_
 IsCpp=0
