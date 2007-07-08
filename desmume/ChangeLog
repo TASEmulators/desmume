@@ -1,6 +1,14 @@
-0.7.1 -> ?????
+0.7.1 -> 0.7.2
+ spu:
+  - big endian fixes. [cyberwarriorx]
+ gpu:
+  - big endian fixes. [marcus_c]
+ gtk-glade:
+  - opengl improvements. [masscat]
  general:
   - Added support for setting NDS firmware language value. [masscat]
+  - Function added for setting firmware language. [masscat]
+  - Mac/msys compilation fixes. [cyberwarriorx]
 
 0.7.0 -> 0.7.1
  general:
