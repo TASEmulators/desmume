@@ -9,7 +9,7 @@
   - Added support for setting NDS firmware language value. [masscat]
   - Function added for setting firmware language. [masscat]
   - Mac/msys compilation fixes. [cyberwarriorx]
-  - Fix compilation when pkg-config macros are not availalbe [evilynux]
+  - Fix compilation when pkg-config macros are not available [evilynux]
 
 0.7.0 -> 0.7.1
  general:
