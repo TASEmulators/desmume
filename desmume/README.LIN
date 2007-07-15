@@ -46,8 +46,8 @@ done by typing "make uninstall".
 1.2 From a CVS copy___________________________________________
 
 Move to the toplevel directory (the one that contains the
-configure.ac file). Type "autoreconf -i" to generate the
-configure script and needed Makefiles. Then you can follow the
+configure.ac file). Type "./autogen.sh" to generate the
+configure/install scripts and needed Makefiles. Then you can follow the
 same procedure as in 1.1 .
 
 2 How to use DeSmuME__________________________________________
