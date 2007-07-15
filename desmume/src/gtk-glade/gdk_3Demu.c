@@ -1,4 +1,4 @@
-/* $Id: gdk_3Demu.c,v 1.3 2007-06-27 14:44:40 masscat Exp $
+/* $Id: gdk_3Demu.c,v 1.4 2007-07-15 21:50:30 evilynux Exp $
  */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques
@@ -22,6 +22,10 @@
 #ifdef GTKGLEXT_AVAILABLE
 
 #include <gdk/gdkgl.h>
+
+// Localization
+#include <libintl.h>
+#define _(String) gettext (String)
 
 #include "../types.h"
 #include "../render3D.h"
@@ -57,7 +61,7 @@ print_gl_config_attrib (GdkGLConfig *glconfig,
         g_print ("%d\n", value);
     }
   else
-    g_print ("*** Cannot get %s attribute value\n", attrib_str);
+    g_print (_("*** Cannot get %s attribute value\n"), attrib_str);
 }
 
 
@@ -151,7 +155,7 @@ init_opengl_gdk_3Demu( void) {
   target_pixmap = gdk_pixmap_new ( NULL, 256, 192, 24);
 
   if ( target_pixmap == NULL) {
-      g_print ("*** Failed to create pixmap.\n");
+      g_print (_("*** Failed to create pixmap.\n"));
       return 0;
   }
 
@@ -161,7 +165,7 @@ init_opengl_gdk_3Demu( void) {
                                         GDK_GL_MODE_SINGLE);
   if (glconfig == NULL)
     {
-      g_print ("*** No appropriate OpenGL-capable visual found.\n");
+      g_print (_("*** No appropriate OpenGL-capable visual found.\n"));
       return 0;
     }
 
@@ -174,7 +178,7 @@ init_opengl_gdk_3Demu( void) {
                                                               NULL));
 
   if ( gldrawable == NULL) {
-    g_print ("Failed to create the GdkGLPixmap\n");
+    g_print (_("Failed to create the GdkGLPixmap\n"));
     return 0;
   }
 
@@ -184,7 +188,7 @@ init_opengl_gdk_3Demu( void) {
                                   GDK_GL_RGBA_TYPE);
   if (glcontext == NULL)
     {
-      g_print ("Connot create the OpenGL rendering context\n");
+      g_print (_("Connot create the OpenGL rendering context\n"));
       return 0;
     }
 

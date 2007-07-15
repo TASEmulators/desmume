@@ -32,6 +32,10 @@
 //#include <libgen.h>
 #include <unistd.h>
 
+// Localization
+#include <libintl.h>
+#define _(String) gettext (String)
+
 //#include <SDL/SDL.h>
 // more portable
 #include "SDL.h"
