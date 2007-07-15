@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-07-15 03:00-0400\n"
-"PO-Revision-Date: 2007-07-15 03:17-0400\n"
+"POT-Creation-Date: 2007-07-15 18:10-0400\n"
+"PO-Revision-Date: 2007-07-15 18:27-0400\n"
 "Last-Translator: Pascal Giard <evilynux@gmail.com>\n"
 "Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -85,64 +85,31 @@ msgid "OPTIONS:\n"
 msgstr "OPTIONS:\n"
 
 #: ../src/gtk-glade/main.c:109
-msgid "   --soft-convert      Use software colour conversion during OpenGL\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:110
-msgid "                       screen rendering. May produce better or worse\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:111
-msgid "                       frame rates depending on hardware.\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:113
-msgid "   --disable-3d        Disables the 3D emulation\n"
+msgid ""
+"   --soft-convert      Use software colour conversion during OpenGL\n"
+"                       screen rendering. May produce better or worse\n"
+"                       frame rates depending on hardware.\n"
+"   \n"
+"   --disable-3d        Disables the 3D emulation\n"
+"\n"
 msgstr ""
 
 #: ../src/gtk-glade/main.c:116
-msgid "   --disable-limiter   Disables the 60 fps limiter\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:118
 msgid ""
+"   --disable-limiter   Disables the 60 fps limiter\n"
+"   \n"
 "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:119
-msgid "                         0 = Japanese\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:120
-msgid "                         1 = English\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:121
-msgid "                         2 = French\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:122
-msgid "                         3 = German\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:123
-msgid "                         4 = Italian\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:124
-msgid "                         5 = Spanish\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:126
-msgid "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:127
-msgid "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n"
-msgstr ""
-
-#: ../src/gtk-glade/main.c:130
-msgid "   --help              Display this message\n"
+"                         0 = Japanese\n"
+"                         1 = English\n"
+"                         2 = French\n"
+"                         3 = German\n"
+"                         4 = Italian\n"
+"                         5 = Spanish\n"
+"\n"
+"   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n"
+"   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n"
+"   \n"
+"   --help              Display this message\n"
 msgstr ""
 
 #: ../src/gtk-glade/main.c:149
@@ -170,7 +137,7 @@ msgstr "UTILISATION: %s [OPTIONS] [fichier-nds]\n"
 #: ../src/gtk-glade/main.c:199
 #, c-format
 msgid "USAGE: %s --help    - for help\n"
-msgstr ""
+msgstr "UTILISATION: %s --help   - pour l'aide\n"
 
 #: ../src/gtk-glade/main.c:332
 #, c-format
