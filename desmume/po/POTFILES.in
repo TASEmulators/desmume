@@ -1,3 +1,4 @@
+[encoding: UTF-8]
 src/gtk-glade/callbacks.c
 src/gtk-glade/gdk_3Demu.c
 src/gtk-glade/glade-xml.c
