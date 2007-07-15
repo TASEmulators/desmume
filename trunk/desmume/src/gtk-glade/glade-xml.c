@@ -110,7 +110,7 @@ autoconnect_foreach_StringObject(const char *signal_handler, GList *signals,
 
 	if (!g_module_symbol(allsymbols, signal_handler, (gpointer)&func))
 
-	g_warning("could not find signal handler '%s'.", signal_handler);
+	g_warning(_("could not find signal handler '%s'."), signal_handler);
 
 	else
 

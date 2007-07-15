@@ -88,7 +88,7 @@ void file_open() {
 	pParent = GTK_WIDGET(pWindow);
 	
 	/* Creating the selection window */
-	pFileSelection = gtk_file_chooser_dialog_new("Open...",
+	pFileSelection = gtk_file_chooser_dialog_new(_("Open..."),
 			GTK_WINDOW(pParent),
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -97,9 +97,9 @@ void file_open() {
 	/* On limite les actions a cette fenetre */
 	gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
-	ADD_FILTER(pFileSelection, "*.nds", "Nds binary (.nds)");
-	ADD_FILTER(pFileSelection, "*.ds.gba", "Nds binary with loader (.ds.gba)");
-	ADD_FILTER(pFileSelection, "*", "All files");
+	ADD_FILTER(pFileSelection, "*.nds", _("Nds binary (.nds)"));
+	ADD_FILTER(pFileSelection, "*.ds.gba", _("Nds binary with loader (.ds.gba)"));
+	ADD_FILTER(pFileSelection, "*", _("All files"));
 	//ADD_FILTER(pFileSelection, "*.zip", "Nds zipped binary");
 	
 	/* Affichage fenetre*/
@@ -114,7 +114,7 @@ void file_open() {
 						GTK_DIALOG_MODAL,
 						GTK_MESSAGE_ERROR,
 						GTK_BUTTONS_OK,
-						"Unable to load :\n%s", sChemin);
+						_("Unable to load :\n%s"), sChemin);
 				gtk_dialog_run(GTK_DIALOG(pDialog));
 				gtk_widget_destroy(pDialog);
 			} else {
@@ -288,9 +288,9 @@ user_data)
   if( (nbr_joy < 1) || desmume_running() )
     {
       if( nbr_joy < 1 )
-        text = "You don't have any joystick!";
+        text = _("You don't have any joystick!");
       else
-        text = "Can't configure joystick while the game is running!";
+        text = _("Can't configure joystick while the game is running!");
 
       dlg = (GtkDialog*)glade_xml_get_widget(xml, "wMainW");
       msgbox = (GtkDialog*)

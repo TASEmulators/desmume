@@ -24,6 +24,14 @@ AC_PROG_RANLIB
 dnl -- check for endianess
 AC_C_BIGENDIAN
 
+dnl -- localization
+GETTEXT_PACKAGE=desmume
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
+AC_SUBST(GETTEXT_PACKAGE)
+ALL_LINGUAS="fr"
+AM_GLIB_GNU_GETTEXT
+AC_PROG_INTLTOOL
+
 dnl --- Other prerequisites ---
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 
@@ -165,6 +173,7 @@ AC_SUBST(USE_MAINTAINER_MODE)
 
 dnl --- Finally, output all the makefiles
 AC_CONFIG_FILES([Makefile
+                 po/Makefile.in
                  src/Makefile
                  src/cli/Makefile
                  src/gtk/Makefile

@@ -103,31 +103,31 @@ fill_configured_features( struct configured_features *config,
 
   for ( i = 1; i < argc && good_args; i++) {
     if ( strcmp( argv[i], "--help") == 0) {
-      g_print( "USAGE: %s [OPTIONS] [nds-file]\n", argv[0]);
-      g_print( "OPTIONS:\n");
+      g_print( _("USAGE: %s [OPTIONS] [nds-file]\n"), argv[0]);
+      g_print( _("OPTIONS:\n"));
 #ifdef GTKGLEXT_AVAILABLE
-      g_print( "   --soft-convert      Use software colour conversion during OpenGL\n");
-      g_print( "                       screen rendering. May produce better or worse\n");
-      g_print( "                       frame rates depending on hardware.\n");
+      g_print( _("   --soft-convert      Use software colour conversion during OpenGL\n"));
+      g_print( _("                       screen rendering. May produce better or worse\n"));
+      g_print( _("                       frame rates depending on hardware.\n"));
       g_print( "\n");
-      g_print( "   --disable-3d        Disables the 3D emulation\n");
+      g_print( _("   --disable-3d        Disables the 3D emulation\n"));
       g_print( "\n");
 #endif
-      g_print( "   --disable-limiter   Disables the 60 fps limiter\n");
+      g_print( _("   --disable-limiter   Disables the 60 fps limiter\n"));
       g_print( "\n");
-      g_print( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
-      g_print( "                         0 = Japanese\n");
-      g_print( "                         1 = English\n");
-      g_print( "                         2 = French\n");
-      g_print( "                         3 = German\n");
-      g_print( "                         4 = Italian\n");
-      g_print( "                         5 = Spanish\n");
+      g_print( _("   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n"));
+      g_print( _("                         0 = Japanese\n"));
+      g_print( _("                         1 = English\n"));
+      g_print( _("                         2 = French\n"));
+      g_print( _("                         3 = German\n"));
+      g_print( _("                         4 = Italian\n"));
+      g_print( _("                         5 = Spanish\n"));
       g_print( "\n");
-      g_print( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
-      g_print( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
+      g_print( _("   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n"));
+      g_print( _("   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n"));
       //g_print( "   --sticky            Enable sticky keys and stylus\n");
       g_print( "\n");
-      g_print( "   --help              Display this message\n");
+      g_print( _("   --help              Display this message\n"));
       good_args = 0;
     }
 #ifdef GTKGLEXT_AVAILABLE
@@ -146,7 +146,7 @@ fill_configured_features( struct configured_features *config,
         config->firmware_language = lang;
       }
       else {
-        g_print( stderr, "Firmware language must be set to a value from 0 to 5.\n");
+        g_print( stderr, _("Firmware language must be set to a value from 0 to 5.\n"));
         good_args = 0;
       }
     }
@@ -158,7 +158,7 @@ fill_configured_features( struct configured_features *config,
         config->arm9_gdb_port = port_num;
       }
       else {
-        g_print( "ARM9 GDB stub port must be in the range 1 to 65535\n");
+        g_print( _("ARM9 GDB stub port must be in the range 1 to 65535\n"));
         good_args = 0;
       }
     }
@@ -170,7 +170,7 @@ fill_configured_features( struct configured_features *config,
         config->arm7_gdb_port = port_num;
       }
       else {
-        g_print( "ARM7 GDB stub port must be in the range 1 to 65535\n");
+        g_print( _("ARM7 GDB stub port must be in the range 1 to 65535\n"));
         good_args = 0;
       }
     }
@@ -182,7 +182,7 @@ fill_configured_features( struct configured_features *config,
         config->nds_file = argv[i];
       }
       else {
-        g_print( "NDS file (\"%s\") already set\n", config->nds_file);
+        g_print( _("NDS file (\"%s\") already set\n"), config->nds_file);
         good_args = 0;
       }
     }
@@ -195,8 +195,8 @@ fill_configured_features( struct configured_features *config,
   }
 
   if ( print_usage) {
-    g_print( "USAGE: %s [options] [nds-file]\n", argv[0]);
-    g_print( "USAGE: %s --help    - for help\n", argv[0]);
+    g_print( _("USAGE: %s [options] [nds-file]\n"), argv[0]);
+    g_print( _("USAGE: %s --help    - for help\n"), argv[0]);
   }
 
   return good_args;
@@ -329,7 +329,7 @@ void clear_savestate_menu(char * cb_name, u8 num)
   char text[40];
 
   sprintf( cb, "%s%d", cb_name, num);
-  sprintf( text, "State %d (empty)", num);
+  sprintf( text, _("State %d (empty)"), num);
   w = glade_xml_get_widget(xml, cb);
   set_menuitem_label( w, text );
 }
@@ -456,7 +456,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
                                           &arm9_base_memory_iface);
 
           if ( arm9_gdb_stub == NULL) {
-            g_print( "Failed to create ARM9 gdbstub on port %d\n",
+            g_print( _("Failed to create ARM9 gdbstub on port %d\n"),
                      my_config->arm9_gdb_port);
             return -1;
           }
@@ -467,7 +467,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
                                           &arm7_base_memory_iface);
 
           if ( arm7_gdb_stub == NULL) {
-            g_print( "Failed to create ARM7 gdbstub on port %d\n",
+            g_print( _("Failed to create ARM7 gdbstub on port %d\n"),
                      my_config->arm7_gdb_port);
             return -1;
           }
@@ -476,7 +476,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 
 	if(SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
           {
-            fprintf(stderr, "Error trying to initialize SDL: %s\n",
+            fprintf(stderr, _("Error trying to initialize SDL: %s\n"),
                     SDL_GetError());
             return 1;
           }
@@ -529,7 +529,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_INFO,
 					GTK_BUTTONS_OK,
-					"Unable to load :\n%s", my_config->nds_file);
+					_("Unable to load :\n%s"), my_config->nds_file);
 			gtk_dialog_run(GTK_DIALOG(pDialog));
 			gtk_widget_destroy(pDialog);
 		}
@@ -548,14 +548,14 @@ common_gtk_glade_main( struct configured_features *my_config) {
               NDS_3D_SetDriver(1);
 
               if (!gpu3D->NDS_3D_Init()) {
-                fprintf( stderr, "Failed to initialise openGL 3D emulation; "
-                         "removing 3D support\n");
+                fprintf( stderr, _("Failed to initialise openGL 3D emulation; "
+                         "removing 3D support\n"));
                 use_null_3d = 1;
               }
             }
             else {
-              fprintf( stderr, "Failed to setup openGL 3D emulation; "
-                       "removing 3D support\n");
+              fprintf( stderr, _("Failed to setup openGL 3D emulation; "
+                       "removing 3D support\n"));
               use_null_3d = 1;
             }
           }
@@ -581,7 +581,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
                                         glade_fps_limiter_fn,
                                         glade_fps_limiter_semaphore);
           if ( limiter_timer == NULL) {
-            fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
+            fprintf( stderr, _("Error trying to start FPS limiter timer: %s\n"),
                      SDL_GetError());
             SDL_DestroySemaphore( glade_fps_limiter_semaphore);
             glade_fps_limiter_disabled = 1;
@@ -613,6 +613,11 @@ int main(int argc, char *argv[]) {
   struct configured_features my_config;
 
   init_configured_features( &my_config);
+
+  // Localization
+  bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
+  bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+  textdomain (GETTEXT_PACKAGE);
 
   if (!g_thread_supported())
     g_thread_init( NULL);
