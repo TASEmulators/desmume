@@ -106,28 +106,28 @@ fill_configured_features( struct configured_features *config,
       g_print( _("USAGE: %s [OPTIONS] [nds-file]\n"), argv[0]);
       g_print( _("OPTIONS:\n"));
 #ifdef GTKGLEXT_AVAILABLE
-      g_print( _("   --soft-convert      Use software colour conversion during OpenGL\n"));
-      g_print( _("                       screen rendering. May produce better or worse\n"));
-      g_print( _("                       frame rates depending on hardware.\n"));
-      g_print( "\n");
-      g_print( _("   --disable-3d        Disables the 3D emulation\n"));
-      g_print( "\n");
+      g_print( _("\
+   --soft-convert      Use software colour conversion during OpenGL\n\
+                       screen rendering. May produce better or worse\n\
+                       frame rates depending on hardware.\n\
+   \n\
+   --disable-3d        Disables the 3D emulation\n\n"));
 #endif
-      g_print( _("   --disable-limiter   Disables the 60 fps limiter\n"));
-      g_print( "\n");
-      g_print( _("   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n"));
-      g_print( _("                         0 = Japanese\n"));
-      g_print( _("                         1 = English\n"));
-      g_print( _("                         2 = French\n"));
-      g_print( _("                         3 = German\n"));
-      g_print( _("                         4 = Italian\n"));
-      g_print( _("                         5 = Spanish\n"));
-      g_print( "\n");
-      g_print( _("   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n"));
-      g_print( _("   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n"));
-      //g_print( "   --sticky            Enable sticky keys and stylus\n");
-      g_print( "\n");
-      g_print( _("   --help              Display this message\n"));
+      g_print( _("\
+   --disable-limiter   Disables the 60 fps limiter\n\
+   \n\
+   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n\
+                         0 = Japanese\n\
+                         1 = English\n\
+                         2 = French\n\
+                         3 = German\n\
+                         4 = Italian\n\
+                         5 = Spanish\n\n\
+   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n\
+   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n\
+   \n\
+   --help              Display this message\n"));
+      //g_print("   --sticky            Enable sticky keys and stylus\n");
       good_args = 0;
     }
 #ifdef GTKGLEXT_AVAILABLE
