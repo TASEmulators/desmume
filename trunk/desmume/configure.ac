@@ -123,6 +123,7 @@ if test "x$HAVE_SDL" = "xyes"; then
     PO_DIR="po"
     PO_FILES="intltool-extract intltool-merge intltool-update"
     PO_FILES_IN="intltool-extract.in intltool-merge.in intltool-update.in"
+    PO_MAKEFILE="po/Makefile.in"
   fi
 fi
 
@@ -181,7 +182,7 @@ AC_SUBST(USE_MAINTAINER_MODE)
 
 dnl --- Finally, output all the makefiles
 AC_CONFIG_FILES([Makefile
-                 po/Makefile.in
+                 ${PO_MAKEFILE}
                  src/Makefile
                  src/cli/Makefile
                  src/gtk/Makefile
