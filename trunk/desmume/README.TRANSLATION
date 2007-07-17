@@ -1,0 +1,95 @@
+__________________________ Localization of DeSmuME _____________________________
+
+Users and translators:
+1) Supported UIs
+2) Starting a new translation (gtk-glade)
+3) Editors
+4) Contact Us
+
+Developpers:
+5) Creating translation friendly strings (gtk-glade)
+6) Updating the template (gtk-glade)
+
+1 Supported UIs ________________________________________________________________
+
+Although there are 4 UIs, only 2 currently support localization:
+windows and gtk-glade.
+
+1.1 Windows UI ________________________________________________________________
+
+*** Please insert a quick intro here ***
+
+1.2 gtk-glade UI _______________________________________________________________
+
+Localization is done with gettext. gettext uses po files.
+The po files are located in the po/ folder.
+Note that there is one po file per language.
+
+To use the available translations, set up your environment properly.
+e.g. under GNU/Linux you can verify that the value of your LANG variable.
+
+
+2 Starting a new translation (gtk-glade) _______________________________________
+
+Grab a copy of po/desmume.pot and rename it.
+You can simple use the two letter iso code of the language as the filename
+e.g. fr.po
+or you can specify the country code as well
+e.g. fr_CA.po
+
+Open the newly created file with an editor: see Editors below.
+Translate the strings. A partial translation (e.g. 25%+) is better than nothing.
+Send us your translation by getting in touch with us: see Contact Us below.
+
+
+3 Editors ______________________________________________________________________
+
+You can use plain text editors but there are many po file editors.
+Here are some recommanded po editors, in no particular order.
+
+GNU/Linux:
+- gtranslator: http://gtranslator.sourceforge.net/
+- KBabel: http://kbabel.kde.org/
+
+OSX:
+- LocFactory Editor: http://www.triplespin.com/en/products/locfactoryeditor.html
+
+All platforms:
+- poEdit: http://www.poedit.net/
+- OmegaT: http://www.omegat.org/omegat/omegat.html
+- GNUEmacs/XEmacs/AquaEmacs with po-mode
+- Vim with PO ftplugin
+- Eclipse with gted
+
+
+4 Contact Us ___________________________________________________________________
+
+As there isn't much translations so far, we're still asking you to get in touch
+via the forum located at http://forums.desmume.org/ .
+
+You can upload your translation files to your favorite sharing site and paste
+the link in a post under General.
+
+
+5 Creating translation friendly strings (gtk-glade) ____________________________
+
+5.1 In the code
+
+Make sure libintl.h is included and that _() is defined.
+e.g. see src/gtk-glade/globals.h
+Add the filename to po/POTFILES.in if it's not there already.
+
+Where you would use "my text", use _("my text").
+For long strings, for translators' sanity, please do something like:
+
+printf( _(" This is a\n
+ very long text\n") );
+
+5.2 Glade interface
+
+You have nothing special to do aside from adding the filename to po/POTFILES.in.
+
+
+6 Updating the template (gtk-glade) ____________________________________________
+
+To update po/desmume.pot, move to the po/ folder and execute "make update-po".
