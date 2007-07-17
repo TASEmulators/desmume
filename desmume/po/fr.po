@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-07-15 18:10-0400\n"
+"POT-Creation-Date: 2007-07-17 01:38-0400\n"
 "PO-Revision-Date: 2007-07-17 01:34-0400\n"
 "Last-Translator: Pascal Giard <evilynux@gmail.com>\n"
 "Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
@@ -447,19 +447,19 @@ msgid "TYPE: Auto (1B)"
 msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:69
-msgid "TYPE: EEPROM1 (4KB)"
+msgid "TYPE: EEPROM1 (4kB)"
 msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:70
-msgid "TYPE: EEPROM2 (512KB)"
+msgid "TYPE: EEPROM2 (512kB)"
 msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:71
-msgid "TYPE: EEPROM2 (64KB)"
+msgid "TYPE: EEPROM2 (64kB)"
 msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:72
-msgid "TYPE: FLASH (256KB)"
+msgid "TYPE: FLASH (256kB)"
 msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:73
