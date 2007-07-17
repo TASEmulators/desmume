@@ -4,7 +4,14 @@
 # what's wrong, i'm commenting the call to intltoolize and adding the
 # corresponding files to CVS.
 
-echo "Running intltoolize"
-intltoolize --copy --force --automake
+if test ! "x$(which intltoolize)" = "x"; then
+  echo "Running intltoolize"
+  intltoolize --copy --force --automake
+else
+  if test ! "x$(which gintltoolize)" = "x"; then
+    echo "Running gintltoolize"
+    gintltoolize --copy --force --automake
+  fi
+fi
 
 autoreconf --install --force --verbose
