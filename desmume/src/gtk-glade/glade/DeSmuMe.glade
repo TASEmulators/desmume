@@ -333,7 +333,7 @@
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype2">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">TYPE: EEPROM1 (4KB)</property>
+		      <property name="label" translatable="yes">TYPE: EEPROM1 (4kB)</property>
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
@@ -344,7 +344,7 @@
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype3">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">TYPE: EEPROM2 (64KB)</property>
+		      <property name="label" translatable="yes">TYPE: EEPROM2 (64kB)</property>
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
@@ -355,7 +355,7 @@
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype4">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">TYPE: EEPROM2 (512KB)</property>
+		      <property name="label" translatable="yes">TYPE: EEPROM2 (512kB)</property>
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
@@ -366,7 +366,7 @@
 		  <child>
 		    <widget class="GtkRadioMenuItem" id="savetype5">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">TYPE: FLASH (256KB)</property>
+		      <property name="label" translatable="yes">TYPE: FLASH (256kB)</property>
 		      <property name="use_underline">True</property>
 		      <property name="active">False</property>
 		      <property name="group">savetype1</property>
