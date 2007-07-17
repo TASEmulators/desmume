@@ -4,7 +4,7 @@
 # what's wrong, i'm commenting the call to intltoolize and adding the
 # corresponding files to CVS.
 
-#echo "Running intltoolize"
-#intltoolize --copy --force --automake
+echo "Running intltoolize"
+intltoolize --copy --force --automake
 
 autoreconf --install --force --verbose
