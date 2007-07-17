@@ -1,7 +1,5 @@
 include $(top_srcdir)/src/desmume.mk
 
-localedir = $(datadir)/locale
-
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTKGLEXT_CFLAGS) $(LIBGLADE_CFLAGS) \
 		$(GTHREAD_CFLAGS) -DDATADIR=\"$(gladedir)/\" \
 		-DLOCALEDIR=\"$(localedir)\"
