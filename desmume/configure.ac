@@ -24,14 +24,6 @@ AC_PROG_RANLIB
 dnl -- check for endianess
 AC_C_BIGENDIAN
 
-dnl -- localization
-GETTEXT_PACKAGE=desmume
-AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
-AC_SUBST(GETTEXT_PACKAGE)
-ALL_LINGUAS="fr"
-AM_GLIB_GNU_GETTEXT
-AC_PROG_INTLTOOL
-
 dnl --- Other prerequisites ---
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 
@@ -59,7 +51,7 @@ AC_CHECK_HEADERS([GL/glu.h])
 
 dnl - Check for GTK and/or libglade
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
-AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
+AC_PROVIDE_IFELSE([PKG_PROG_aPKG_CONFIG], [
   if test ! "x$HAVE_PKG" = "x" ; then
     PKG_CHECK_MODULES(GTK,
                       "gtk+-2.0",
@@ -105,7 +97,8 @@ if test "x$HAVE_GTKGLEXT" = "xyes"; then
    AC_DEFINE([GTKGLEXT_AVAILABLE], [1])
 fi
 
-dnl - Determine which UI's to build
+dnl - Determine which UIs to build and if po/ should be included
+PO_DIR=""
 if test "x$HAVE_SDL" = "xyes"; then
   # SDL adds just a cli
   UI_DIR="cli $UI_DIR"
@@ -117,6 +110,15 @@ if test "x$HAVE_SDL" = "xyes"; then
   if test "x$HAVE_LIBGLADE" = "xyes"; then
     # libglade requires SDL too
     UI_DIR="gtk-glade $UI_DIR"
+
+    dnl -- localization for gtk-glade UI
+    GETTEXT_PACKAGE=desmume
+    AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
+    AC_SUBST(GETTEXT_PACKAGE)
+    ALL_LINGUAS="fr"
+    AM_GLIB_GNU_GETTEXT
+    AC_PROG_INTLTOOL
+    PO_DIR="po"
   fi
 fi
 
@@ -135,7 +137,7 @@ case $target in
 esac
 
 AC_SUBST(UI_DIR)
-
+AC_SUBST(PO_DIR)
 
 dnl - Compiler warnings
 
