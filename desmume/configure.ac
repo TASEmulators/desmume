@@ -99,6 +99,8 @@ fi
 
 dnl - Determine which UIs to build and if po/ should be included
 PO_DIR=""
+PO_FILES=""
+PO_FILES_IN=""
 if test "x$HAVE_SDL" = "xyes"; then
   # SDL adds just a cli
   UI_DIR="cli $UI_DIR"
@@ -119,6 +121,8 @@ if test "x$HAVE_SDL" = "xyes"; then
     AM_GLIB_GNU_GETTEXT
     AC_PROG_INTLTOOL
     PO_DIR="po"
+    PO_FILES="intltool-extract intltool-merge intltool-update"
+    PO_FILES_IN="intltool-extract.in intltool-merge.in intltool-update.in"
   fi
 fi
 
@@ -138,6 +142,8 @@ esac
 
 AC_SUBST(UI_DIR)
 AC_SUBST(PO_DIR)
+AC_SUBST(PO_FILES)
+AC_SUBST(PO_FILES_IN)
 
 dnl - Compiler warnings
 
