@@ -1,6 +1,6 @@
 0.7.2 -> ???
  gtk-glade:
-  - full localization using gettext. [evilynux]
+  - full localization using intltool/gettext. [evilynux]
 	
 0.7.1 -> 0.7.2
  spu:
