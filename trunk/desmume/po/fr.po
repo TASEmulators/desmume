@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2007-07-15 18:10-0400\n"
-"PO-Revision-Date: 2007-07-17 01:13-0400\n"
+"PO-Revision-Date: 2007-07-17 01:34-0400\n"
 "Last-Translator: Pascal Giard <evilynux@gmail.com>\n"
 "Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -396,7 +396,7 @@ msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:56
 msgid "Size"
-msgstr ""
+msgstr "Taille"
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:57
 msgid "Start : "
@@ -500,7 +500,7 @@ msgstr ""
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:82
 msgid "_Emulation"
-msgstr "_Émulation"
+msgstr "_Émul."
 
 #: ../src/gtk-glade/glade/DeSmuMe.glade.h:83
 msgid "_File"
