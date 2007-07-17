@@ -1,4 +1,5 @@
 desmume
 desmume.substvars
+desmume.*.debhelper
 files
 stamp-*
