@@ -10,7 +10,7 @@ depcomp
 install-sh
 missing
 mkinstalldirs
-intltool-extract
-intltool-merge
-intltool-update
+intltool-extract*
+intltool-merge*
+intltool-update*
 .emacs*
