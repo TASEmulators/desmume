@@ -2,7 +2,7 @@ __________________________ Localization of DeSmuME _____________________________
 
 Users and translators:
 1) Supported UIs
-2) Starting a new translation (gtk-glade)
+2) Starting a new translation
 3) Editors
 4) Contact Us
 
@@ -15,11 +15,9 @@ Developpers:
 Although there are 4 UIs, only 2 currently support localization:
 windows and gtk-glade.
 
-1.1 Windows UI ________________________________________________________________
+To translate DeSmuME, see "Starting a new translation" below.
 
-*** Please insert a quick intro here ***
-
-1.2 gtk-glade UI _______________________________________________________________
+1.1 gtk-glade UI _______________________________________________________________
 
 Localization is done with gettext. gettext uses po files.
 The po files are located in the po/ folder.
@@ -28,8 +26,14 @@ Note that there is one po file per language.
 To use the available translations, set up your environment properly.
 e.g. under GNU/Linux you can verify that the value of your LANG variable.
 
+1.2 Windows UI ________________________________________________________________
 
-2 Starting a new translation (gtk-glade) _______________________________________
+Localization is located in one single file: src/windows/resources.rc .
+
+
+2 Starting a new translation ___________________________________________________
+
+2.1 gtk-glade UI
 
 Grab a copy of po/desmume.pot and rename it.
 You can simple use the two letter iso code of the language as the filename
@@ -37,9 +41,16 @@ e.g. fr.po
 or you can specify the country code as well
 e.g. fr_CA.po
 
-Open the newly created file with an editor: see Editors below.
-Translate the strings. A partial translation (e.g. 25%+) is better than nothing.
-Send us your translation by getting in touch with us: see Contact Us below.
+Open the newly created file with an editor: see "Editors" below.
+Translate the strings.
+Send us your translation by getting in touch with us: see "Contact Us" below.
+
+2.2 Windows UI
+
+Grab a copy of src/windows/resources.rc .
+Create a section for your language by looking at another language e.g. french.
+Translate the strings.
+Send us your translation by getting in touch with us: see "Contact Us" below.
 
 
 3 Editors ______________________________________________________________________
