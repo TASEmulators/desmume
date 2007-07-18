@@ -10,6 +10,7 @@ Developpers:
 5) Creating translation friendly strings (gtk-glade)
 6) Updating the template (gtk-glade)
 
+
 1 Supported UIs ________________________________________________________________
 
 Although there are 4 UIs, only 2 currently support localization:
@@ -33,7 +34,7 @@ To translate DeSmuME, see "Starting a new translation" below.
 
 2 Starting a new translation ___________________________________________________
 
-  2.1 gtk-glade UI
+  2.1 gtk-glade UI _____________________________________________________________
 
   Grab a copy of po/desmume.pot and rename it.
   You can use the two letter iso code of the language as the filename
@@ -45,7 +46,7 @@ To translate DeSmuME, see "Starting a new translation" below.
   Translate the strings.
   Send us your translation by getting in touch with us: see "Contact Us" below.
 
-  2.2 Windows UI
+  2.2 Windows UI _______________________________________________________________
 
   Grab a copy of src/windows/resources.rc .
   Create a section for your language by looking at another language e.g. french.
@@ -58,17 +59,17 @@ To translate DeSmuME, see "Starting a new translation" below.
 You can use plain text editors but there are many po file editors.
 Here are some recommanded po editors, in no particular order.
 
-  3.1 GNU/Linux
+  3.1 GNU/Linux ________________________________________________________________
 
   - gtranslator: http://gtranslator.sourceforge.net/
   - KBabel: http://kbabel.kde.org/
 
-  3.2 OSX
+  3.2 OSX ______________________________________________________________________
 
   - LocFactory Editor:
     http://www.triplespin.com/en/products/locfactoryeditor.html
 
-  3.3 All platforms
+  3.3 All platforms ____________________________________________________________
 
   - poEdit: http://www.poedit.net/
   - OmegaT: http://www.omegat.org/omegat/omegat.html
@@ -88,7 +89,7 @@ the link in a post under General.
 
 5 Creating translation friendly strings (gtk-glade) ____________________________
 
-  5.1 In the code
+  5.1 In the code ______________________________________________________________
 
   Make sure libintl.h is included and that _() is defined.
   e.g. see src/gtk-glade/globals.h
@@ -100,7 +101,7 @@ the link in a post under General.
   printf( _(" This is a\n\
  very long text\n") );
 
-  5.2 Glade interface
+  5.2 Glade interface __________________________________________________________
 
   You have nothing special to do aside from adding the filename to 
   po/POTFILES.in.
