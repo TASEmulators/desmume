@@ -1,7 +1,9 @@
 0.7.2 -> ???
  gtk-glade:
-  - full localization using intltool/gettext. [evilynux]
-	
+  - Full localization using intltool/gettext. [evilynux]
+ general:
+  - Added a README.TRANSLATION documenting the localization process. [evilynux]
+
 0.7.1 -> 0.7.2
  spu:
   - big endian fixes. [cyberwarriorx]
