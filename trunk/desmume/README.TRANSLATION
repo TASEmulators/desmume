@@ -36,7 +36,7 @@ Localization is located in one single file: src/windows/resources.rc .
 2.1 gtk-glade UI
 
 Grab a copy of po/desmume.pot and rename it.
-You can simple use the two letter iso code of the language as the filename
+You can use the two letter iso code of the language as the filename
 e.g. fr.po
 or you can specify the country code as well
 e.g. fr_CA.po
@@ -75,7 +75,7 @@ All platforms:
 
 4 Contact Us ___________________________________________________________________
 
-As there isn't much translations so far, we're still asking you to get in touch
+As there isn't many translations so far, we're still asking you to get in touch
 via the forum located at http://forums.desmume.org/ .
 
 You can upload your translation files to your favorite sharing site and paste
@@ -88,12 +88,12 @@ the link in a post under General.
 
 Make sure libintl.h is included and that _() is defined.
 e.g. see src/gtk-glade/globals.h
-Add the filename to po/POTFILES.in if it's not there already.
+Add the filename to po/POTFILES.in if it's not already there.
 
 Where you would use "my text", use _("my text").
 For long strings, for translators' sanity, please do something like:
 
-printf( _(" This is a\n
+printf( _(" This is a\n\
  very long text\n") );
 
 5.2 Glade interface
