@@ -612,12 +612,12 @@ common_gtk_glade_main( struct configured_features *my_config) {
 int main(int argc, char *argv[]) {
   struct configured_features my_config;
 
-  init_configured_features( &my_config);
-
   // Localization
   bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
   bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
   textdomain (GETTEXT_PACKAGE);
+
+  init_configured_features( &my_config);
 
   if (!g_thread_supported())
     g_thread_init( NULL);
