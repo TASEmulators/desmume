@@ -17,40 +17,40 @@ windows and gtk-glade.
 
 To translate DeSmuME, see "Starting a new translation" below.
 
-1.1 gtk-glade UI _______________________________________________________________
+  1.1 gtk-glade UI _____________________________________________________________
 
-Localization is done with gettext. gettext uses po files.
-The po files are located in the po/ folder.
-Note that there is one po file per language.
+  Localization is done with gettext. gettext uses po files.
+  The po files are located in the po/ folder.
+  Note that there is one po file per language.
 
-To use the available translations, set up your environment properly.
-e.g. under GNU/Linux you can verify that the value of your LANG variable.
+  To use the available translations, set up your environment properly.
+  e.g. under GNU/Linux you can verify that the value of your LANG variable.
 
-1.2 Windows UI ________________________________________________________________
+  1.2 Windows UI ______________________________________________________________
 
-Localization is located in one single file: src/windows/resources.rc .
+  Localization is located in one single file: src/windows/resources.rc .
 
 
 2 Starting a new translation ___________________________________________________
 
-2.1 gtk-glade UI
+  2.1 gtk-glade UI
 
-Grab a copy of po/desmume.pot and rename it.
-You can use the two letter iso code of the language as the filename
-e.g. fr.po
-or you can specify the country code as well
-e.g. fr_CA.po
+  Grab a copy of po/desmume.pot and rename it.
+  You can use the two letter iso code of the language as the filename
+  e.g. fr.po
+  or you can specify the country code as well
+  e.g. fr_CA.po
 
-Open the newly created file with an editor: see "Editors" below.
-Translate the strings.
-Send us your translation by getting in touch with us: see "Contact Us" below.
+  Open the newly created file with an editor: see "Editors" below.
+  Translate the strings.
+  Send us your translation by getting in touch with us: see "Contact Us" below.
 
-2.2 Windows UI
+  2.2 Windows UI
 
-Grab a copy of src/windows/resources.rc .
-Create a section for your language by looking at another language e.g. french.
-Translate the strings.
-Send us your translation by getting in touch with us: see "Contact Us" below.
+  Grab a copy of src/windows/resources.rc .
+  Create a section for your language by looking at another language e.g. french.
+  Translate the strings.
+  Send us your translation by getting in touch with us: see "Contact Us" below.
 
 
 3 Editors ______________________________________________________________________
@@ -58,19 +58,23 @@ Send us your translation by getting in touch with us: see "Contact Us" below.
 You can use plain text editors but there are many po file editors.
 Here are some recommanded po editors, in no particular order.
 
-GNU/Linux:
-- gtranslator: http://gtranslator.sourceforge.net/
-- KBabel: http://kbabel.kde.org/
+  3.1 GNU/Linux
 
-OSX:
-- LocFactory Editor: http://www.triplespin.com/en/products/locfactoryeditor.html
+  - gtranslator: http://gtranslator.sourceforge.net/
+  - KBabel: http://kbabel.kde.org/
 
-All platforms:
-- poEdit: http://www.poedit.net/
-- OmegaT: http://www.omegat.org/omegat/omegat.html
-- GNUEmacs/XEmacs/AquaEmacs with po-mode
-- Vim with PO ftplugin
-- Eclipse with gted
+  3.2 OSX
+
+  - LocFactory Editor:
+    http://www.triplespin.com/en/products/locfactoryeditor.html
+
+  3.3 All platforms
+
+  - poEdit: http://www.poedit.net/
+  - OmegaT: http://www.omegat.org/omegat/omegat.html
+  - GNUEmacs/XEmacs/AquaEmacs with po-mode
+  - Vim with PO ftplugin
+  - Eclipse with gted
 
 
 4 Contact Us ___________________________________________________________________
@@ -84,21 +88,22 @@ the link in a post under General.
 
 5 Creating translation friendly strings (gtk-glade) ____________________________
 
-5.1 In the code
+  5.1 In the code
 
-Make sure libintl.h is included and that _() is defined.
-e.g. see src/gtk-glade/globals.h
-Add the filename to po/POTFILES.in if it's not already there.
+  Make sure libintl.h is included and that _() is defined.
+  e.g. see src/gtk-glade/globals.h
+  Add the filename to po/POTFILES.in if it's not already there.
 
-Where you would use "my text", use _("my text").
-For long strings, for translators' sanity, please do something like:
+  Where you would use "my text", use _("my text").
+  For long strings, for translators' sanity, please do something like:
 
-printf( _(" This is a\n\
+  printf( _(" This is a\n\
  very long text\n") );
 
-5.2 Glade interface
+  5.2 Glade interface
 
-You have nothing special to do aside from adding the filename to po/POTFILES.in.
+  You have nothing special to do aside from adding the filename to 
+  po/POTFILES.in.
 
 
 6 Updating the template (gtk-glade) ____________________________________________
