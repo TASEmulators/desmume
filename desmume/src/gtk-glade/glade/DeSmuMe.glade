@@ -6,7 +6,7 @@
 <widget class="GtkWindow" id="wMainW">
   <property name="visible">True</property>
   <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK</property>
-  <property name="title" translatable="yes">DeSmuMe</property>
+  <property name="title" translatable="yes">DeSmuME</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER</property>
   <property name="modal">False</property>
