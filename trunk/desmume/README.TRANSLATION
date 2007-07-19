@@ -127,3 +127,5 @@ To update po/desmume.pot, move to the po/ folder and execute "make update-po".
   Update the src/windows/resource.rc .
   Add the new language to to the list in src/windows/resource.h .
   Rebuild.
+
+$Id: README.TRANSLATION,v 1.7 2007-07-19 06:50:57 evilynux Exp $
