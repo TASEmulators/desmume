@@ -9,6 +9,7 @@ Users and translators:
 Developpers:
 5) Creating translation friendly strings (gtk-glade)
 6) Updating the template (gtk-glade)
+7) Integrating new translations
 
 
 1 Supported UIs ________________________________________________________________
@@ -110,3 +111,19 @@ the link in a post under General.
 6 Updating the template (gtk-glade) ____________________________________________
 
 To update po/desmume.pot, move to the po/ folder and execute "make update-po".
+
+
+7 Integrating new translations
+
+  7.1 gtk-glade UI _____________________________________________________________
+
+  Add the new po file to po/ .
+  Add the new language to ALL_LINGUAS in configure.ac .
+  Regenerated the build files (./autogen.sh) and rebuild (./configure && make).
+  You can also add the language to po/LINGUAS (it's a convention? it has no effect).
+
+  7.2 Windows UI _______________________________________________________________
+
+  Update the src/windows/resource.rc .
+  Add the new language to to the list in src/windows/resource.h .
+  Rebuild.
