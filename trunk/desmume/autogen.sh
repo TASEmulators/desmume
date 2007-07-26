@@ -1,8 +1,5 @@
 #!/bin/sh
-# There's an annoying bug in /usr/share/intltool/Makefile.in.in requiring
-# me to modify it after a call to intltoolize. Since i can't seem to figure
-# what's wrong, i'm commenting the call to intltoolize and adding the
-# corresponding files to CVS.
+# intltoolize is optionnal as it's only required for the gtk-glade UI.
 
 if test ! "x$(which intltoolize)" = "x"; then
   echo "Running intltoolize"
