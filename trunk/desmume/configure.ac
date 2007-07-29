@@ -25,7 +25,10 @@ dnl -- check for endianess
 AC_C_BIGENDIAN
 
 dnl --- Other prerequisites ---
+dnl - Check for pkg-config macros
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
+dnl - Check for intltool/gettext macros
+m4_ifdef([IT_PROG_INTLTOOL],[IT_PROG_INTLTOOL])
 
 dnl - Check for zlib
 AC_CHECK_LIB(z, gzopen)
@@ -110,20 +113,23 @@ if test "x$HAVE_SDL" = "xyes"; then
   fi
 
   if test "x$HAVE_LIBGLADE" = "xyes"; then
-    # libglade requires SDL too
-    UI_DIR="gtk-glade $UI_DIR"
+    AC_PROVIDE_IFELSE([IT_PROG_INTLTOOL],[
+      # libglade requires SDL too
+      UI_DIR="gtk-glade $UI_DIR"
 
-    dnl -- localization for gtk-glade UI
-    GETTEXT_PACKAGE=desmume
-    AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
-    AC_SUBST(GETTEXT_PACKAGE)
-    ALL_LINGUAS="fr"
-    AM_GLIB_GNU_GETTEXT
-    AC_PROG_INTLTOOL
-    PO_DIR="po"
-    PO_FILES="intltool-extract intltool-merge intltool-update"
-    PO_FILES_IN="intltool-extract.in intltool-merge.in intltool-update.in"
-    PO_MAKEFILE="po/Makefile.in"
+      dnl -- localization for gtk-glade UI
+      GETTEXT_PACKAGE=desmume
+      AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Define to the gettext package name])
+      AC_SUBST(GETTEXT_PACKAGE)
+      ALL_LINGUAS="fr"
+      AM_GLIB_GNU_GETTEXT
+      PO_DIR="po"
+      PO_FILES="intltool-extract intltool-merge intltool-update"
+      PO_FILES_IN="intltool-extract.in intltool-merge.in intltool-update.in"
+      PO_MAKEFILE="po/Makefile.in"
+    ],[
+      echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed. The gtk-glade UI requires intltool and gettext."
+    ])
   fi
 fi
 
