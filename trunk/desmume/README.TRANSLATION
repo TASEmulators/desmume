@@ -32,8 +32,7 @@ To translate DeSmuME, see "Starting a new translation" below.
 
   Localization is located in one single file: src/windows/resources.rc .
 
-  1.3 Mac OS X (Cocoa) UI
---------------------------------------------------------------
+  1.3 Mac OS X (Cocoa) UI _____________________________________________________
 
   Localization is located within the application bundle (in Finder right click on DeSmuME and select "Show Package Contents"). Within the Contents/Resources folder there is a folder for each localization.
 
@@ -58,8 +57,7 @@ To translate DeSmuME, see "Starting a new translation" below.
   Translate the strings.
   Send us your translation by getting in touch with us: see "Contact Us" below.
 
-  2.3 Max OS X UI
---------------------------------------------------------------
+  2.3 Max OS X (Cocoa) UI ______________________________________________________________
 
   Copy one of the localization folders mentioned in section one, and paste it into the same folder.
   Rename the part before ".lproj" to the language of the translation.
@@ -139,4 +137,18 @@ To update po/desmume.pot, move to the po/ folder and execute "make update-po".
   Add the new language to to the list in src/windows/resource.h .
   Rebuild.
 
-$Id: README.TRANSLATION,v 1.8 2007-08-11 19:23:44 gecko_reverse Exp $
+  7.3 Max OS X (Cocoa) UI ______________________________________________________________
+
+  After following the steps in 2.3, your translation is ready to go. You can set the DeSmuME
+  language one of three ways:
+
+  1) Set the system language (System Preferences -> International).
+
+  2) Right click on DeSmuME in Finder, select Get Info and disable the other translations.
+
+  3) From a command line, run the following line after replacing LANG with the language of choice:
+
+     DeSmuME.app/Contents/MacOS/DeSmuME -AppleLanguages '<array><string>LANG</string></array>'
+    
+
+  All of these methods require a restart of DeSmuME.
