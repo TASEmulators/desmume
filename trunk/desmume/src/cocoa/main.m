@@ -64,6 +64,11 @@ NSMenu *menu;
 - (void)about;
 - (void)preferences;
 
+//help menu
+- (void)launchWebsite;
+- (void)launchForums;
+- (void)bugReport;
+
 @end
 
 @interface NSApplication(delegate)
@@ -501,9 +506,14 @@ a way to get the time of a save that's not a string / human formatted...
 	help = [[NSMenu alloc] initWithTitle:localizedString(@"Help", nil)];
 	[menu setSubmenu:help forItem:help_item];
 
-	[help addItemWithTitle:@"Website" action:nil keyEquivalent: @""];
-	[help addItemWithTitle:@"Forums" action:nil keyEquivalent: @""];
-	[help addItemWithTitle:@"Submit A Bug Report" action:nil keyEquivalent: @""];
+	temp = [help addItemWithTitle:@"Website" action:@selector(launchWebsite) keyEquivalent: @""];
+	[temp setTarget:NSApp];
+
+	temp = [help addItemWithTitle:@"Forums" action:@selector(launchForums) keyEquivalent: @""];
+	[temp setTarget:NSApp];
+
+	temp = [help addItemWithTitle:@"Submit A Bug Report" action:@selector(bugReport) keyEquivalent: @""];
+	[temp setTarget:NSApp];
 
 	[NSApp setMainMenu: menu];
 
