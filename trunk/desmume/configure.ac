@@ -1,7 +1,7 @@
 dnl --- Package name is first argument to AC_INIT
 dnl --- Release version is second argument to AC_INIT
 
-AC_INIT(desmume, [0.7.2])
+AC_INIT(desmume, [0.7.3])
 
 dnl -- find target architecture for some os specific libraries
 AC_CANONICAL_TARGET
@@ -191,6 +191,7 @@ AC_CONFIG_FILES([Makefile
                  ${PO_MAKEFILE}
                  src/Makefile
                  src/cli/Makefile
+                 src/cocoa/Makefile
                  src/gtk/Makefile
                  src/gtk/desmume.desktop
                  src/gtk-glade/Makefile
