@@ -14,7 +14,7 @@ Developpers:
 
 1 Supported UIs ________________________________________________________________
 
-Although there are 4 UIs, only 2 currently support localization:
+Although there are 4 UIs, only 3 currently support localization:
 windows and gtk-glade.
 
 To translate DeSmuME, see "Starting a new translation" below.
@@ -32,6 +32,10 @@ To translate DeSmuME, see "Starting a new translation" below.
 
   Localization is located in one single file: src/windows/resources.rc .
 
+  1.3 Mac OS X (Cocoa) UI
+--------------------------------------------------------------
+
+  Localization is located within the application bundle (in Finder right click on DeSmuME and select "Show Package Contents"). Within the Contents/Resources folder there is a folder for each localization.
 
 2 Starting a new translation ___________________________________________________
 
@@ -54,6 +58,13 @@ To translate DeSmuME, see "Starting a new translation" below.
   Translate the strings.
   Send us your translation by getting in touch with us: see "Contact Us" below.
 
+  2.3 Max OS X UI
+--------------------------------------------------------------
+
+  Copy one of the localization folders mentioned in section one, and paste it into the same folder.
+  Rename the part before ".lproj" to the language of the translation.
+  Within your newly created folder edit "Localizable.strings".
+  Send us your translation by getting in touch with us: see "Contact Us" below.
 
 3 Editors ______________________________________________________________________
 
@@ -128,4 +139,4 @@ To update po/desmume.pot, move to the po/ folder and execute "make update-po".
   Add the new language to to the list in src/windows/resource.h .
   Rebuild.
 
-$Id: README.TRANSLATION,v 1.7 2007-07-19 06:50:57 evilynux Exp $
+$Id: README.TRANSLATION,v 1.8 2007-08-11 19:23:44 gecko_reverse Exp $

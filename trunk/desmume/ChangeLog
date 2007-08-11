@@ -3,6 +3,8 @@
   - Full localization using intltool/gettext. [evilynux]
  general:
   - Added a README.TRANSLATION documenting the localization process. [evilynux]
+ MacOS X:
+  - Initial version of the Mac interface added. [Jeff B]
 
 0.7.1 -> 0.7.2
  spu:

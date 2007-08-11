@@ -30,6 +30,7 @@
 #include "mem.h"
 #include "registers.h"
 #include "FIFO.h"
+#include "MMU.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +45,7 @@ extern "C" {
 #ifdef WORDS_BIGENDIAN
 struct _DISPCNT
 {
-/* 7*/  u8 ForceBlank:1;      // A+B: 
+/* 7*/  u8 ForceBlank:1;      // A+B:
 /* 6*/  u8 OBJ_BMP_mapping:1; // A+B: 0=2D (128KB), 1=1D (128..256KB)
 /* 5*/  u8 OBJ_BMP_2D_dim:1;  // A+B: 0=128x512,    1=256x256 pixels
 /* 4*/  u8 OBJ_Tile_1D:1;     // A+B: 0=2D (32KB),  1=1D (32..256KB)
@@ -59,8 +60,8 @@ struct _DISPCNT
 /* 9*/  u8 BG1_Enable:1;      // A+B: 0=disable, 1=Enable
 /* 8*/  u8 BG0_Enable:1;        // A+B: 0=disable, 1=Enable
 /*23*/  u8 OBJ_HBlank_process:1;    // A+B: OBJ processed during HBlank (GBA bit5)
-/*22*/  u8 OBJ_BMP_1D_Bound:1;      // A  : 
-/*20*/  u8 OBJ_Tile_1D_Bound:2;     // A+B: 
+/*22*/  u8 OBJ_BMP_1D_Bound:1;      // A  :
+/*20*/  u8 OBJ_Tile_1D_Bound:2;     // A+B:
 /*18*/  u8 VRAM_Block:2;            // A  : VRAM block (0..3=A..D)
 
 /*16*/  u8 DisplayMode:2;     // A+B: coreA(0..3) coreB(0..1) GBA(Green Swap)
@@ -73,7 +74,7 @@ struct _DISPCNT
 /*30*/  u8 ExBGxPalette_Enable:1;   // A+B: 0=disable, 1=Enable BG extended Palette
 /*27*/  u8 ScreenBase_Block:3;      // A  : Screen Base (64K step)
 /*24*/  u8 CharacBase_Block:3;      // A  : Character Base (64K step)
-}; 
+};
 #else
 struct _DISPCNT
 {
@@ -84,7 +85,7 @@ struct _DISPCNT
 /* 6*/  u8 OBJ_BMP_mapping:1; // A+B: 0=2D (128KB), 1=1D (128..256KB)
 
                                     // 7-15 same as GBA
-/* 7*/  u8 ForceBlank:1;      // A+B: 
+/* 7*/  u8 ForceBlank:1;      // A+B:
 /* 8*/  u8 BG0_Enable:1;        // A+B: 0=disable, 1=Enable
 /* 9*/  u8 BG1_Enable:1;      // A+B: 0=disable, 1=Enable
 /*10*/  u8 BG2_Enable:1;      // A+B: 0=disable, 1=Enable
@@ -99,23 +100,23 @@ struct _DISPCNT
                                     // 1=on (normal BG & OBJ layers)
                                     // 2=VRAM display (coreA only)
                                     // 3=RAM display (coreA only, DMA transfers)
-                    
+
 /*18*/  u8 VRAM_Block:2;            // A  : VRAM block (0..3=A..D)
-/*20*/  u8 OBJ_Tile_1D_Bound:2;     // A+B: 
-/*22*/  u8 OBJ_BMP_1D_Bound:1;      // A  : 
+/*20*/  u8 OBJ_Tile_1D_Bound:2;     // A+B:
+/*22*/  u8 OBJ_BMP_1D_Bound:1;      // A  :
 /*23*/  u8 OBJ_HBlank_process:1;    // A+B: OBJ processed during HBlank (GBA bit5)
 /*24*/  u8 CharacBase_Block:3;      // A  : Character Base (64K step)
 /*27*/  u8 ScreenBase_Block:3;      // A  : Screen Base (64K step)
 /*30*/  u8 ExBGxPalette_Enable:1;   // A+B: 0=disable, 1=Enable BG extended Palette
 /*31*/  u8 ExOBJPalette_Enable:1;   // A+B: 0=disable, 1=Enable OBJ extended Palette
-}; 
+};
 #endif
 
-typedef union 
+typedef union
 {
     struct _DISPCNT bits;
     u32 val;
-} DISPCNT; 
+} DISPCNT;
 #define BGxENABLED(cnt,num)    ((num<8)? ((cnt.val>>8) & num):0)
 
 
@@ -129,7 +130,7 @@ typedef union
 *******************************************************************************/
 
 #ifdef WORDS_BIGENDIAN
-struct _BGxCNT 
+struct _BGxCNT
 {
 /* 7*/ u8 Palette_256:1;         // 0=16x16, 1=1*256 palette
 /* 6*/ u8 Mosaic_Enable:1;       // 0=disable, 1=Enable mosaic
@@ -144,9 +145,9 @@ struct _BGxCNT
                                        // BG2 overflow area wraparound 0=off, 1=wrap
                                        // BG3 overflow area wraparound 0=off, 1=wrap
 /* 8*/ u8 ScreenBase_Block:5;    // individual screen base offset (text n*2KB, BMP n*16KB)
-}; 
+};
 #else
-struct _BGxCNT 
+struct _BGxCNT
 {
 /* 0*/ u8 Priority:2;            // 0..3=high..low
 /* 2*/ u8 CharacBase_Block:4;    // individual character base offset (n*16KB)
@@ -161,15 +162,15 @@ struct _BGxCNT
                                        // x/rot/s : 128x128 256x256 512x512 1024x1024
                                        // bmp     : 128x128 256x256 512x256 512x512
                                        // large   : 512x1024 1024x512 - -
-}; 
+};
 #endif
 
 
-typedef union 
+typedef union
 {
     struct _BGxCNT bits;
     u16 val;
-} BGxCNT; 
+} BGxCNT;
 
 /*******************************************************************************
     this structure is for background offset
@@ -178,7 +179,7 @@ typedef union
 typedef struct {
     u16 BGxHOFS;
     u16 BGxVOFS;
-} BGxOFS; 
+} BGxOFS;
 
 /*******************************************************************************
     this structure is for rotoscale parameters
@@ -191,7 +192,7 @@ typedef struct {
     s16 BGxPD;
     s32 BGxX;
     s32 BGxY;
-} BGxPARMS; 
+} BGxPARMS;
 
 
 /*******************************************************************************
@@ -282,7 +283,7 @@ typedef struct {
     WINxDIM WIN1V;
     WINxCNT WININ;
     WINxCNT WINOUT;
-} WINCNT; 
+} WINCNT;
 */
 
 /*******************************************************************************
@@ -303,7 +304,7 @@ typedef struct {
     u16 unused8;
     u16 unused9;
 	*/
-} MISCCNT; 
+} MISCCNT;
 
 
 /*******************************************************************************
@@ -319,20 +320,20 @@ struct _DISP3DCNT
 /* 4*/ u8 EnableAntiAliasing:1;  //
 /* 5*/ u8 EnableEdgeMarking:1;   // see EDGE_COLOR
 /* 6*/ u8 FogOnlyAlpha:1;        // 0=Alpha and Color, 1=Only Alpha (see FOG_COLOR)
-/* 7*/ u8 EnableFog:1;           // Fog Master Enable 
+/* 7*/ u8 EnableFog:1;           // Fog Master Enable
 /* 8*/ u8 FogShiftSHR:4;         // 0..10 SHR-Divider (see FOG_OFFSET)
 /*12*/ u8 AckColorBufferUnderflow:1; // Color Buffer RDLINES Underflow (0=None, 1=Underflow/Acknowledge)
 /*13*/ u8 AckVertexRAMOverflow:1;    // Polygon/Vertex RAM Overflow    (0=None, 1=Overflow/Acknowledge)
 /*14*/ u8 RearPlaneMode:1;       // 0=Blank, 1=Bitmap
 /*15*/ u8 :1;
 /*16*/ u16 :16;
-}; 
+};
 
-typedef union 
+typedef union
 {
     struct _DISP3DCNT bits;
     u32 val;
-} DISP3DCNT; 
+} DISP3DCNT;
 
 /*******************************************************************************
     this structure is for capture control (core A only)
@@ -357,13 +358,13 @@ struct _DISPCAPCNT
 /*28*/ u8 :1;                  //
 /*29*/ u8 Capture_Source:2;    // 0=Source A, 1=Source B, 2/3=Sources A+B blended
 /*31*/ u8 Capture_Enable:1;    // 0=Disable/Ready, 1=Enable/Busy
-}; 
+};
 
-typedef union 
+typedef union
 {
     struct _DISPCAPCNT bits;
     u32 val;
-} DISPCAPCNT; 
+} DISPCAPCNT;
 
 
 /*******************************************************************************
@@ -374,7 +375,7 @@ typedef union
 
 typedef struct _reg_dispx {
     DISPCNT dispx_DISPCNT;            // 0x0400x000
-    u16 dispA_DISPSTAT;               // 0x04000004 
+    u16 dispA_DISPSTAT;               // 0x04000004
     u16 dispx_VCOUNT;                 // 0x0400x006
     BGxCNT dispx_BGxCNT[4];           // 0x0400x008
     BGxOFS dispx_BGxOFS[4];           // 0x0400x010
@@ -385,7 +386,7 @@ typedef struct _reg_dispx {
     DISP3DCNT dispA_DISP3DCNT;        // 0x04000060
     DISPCAPCNT dispA_DISPCAPCNT;      // 0x04000064
     u32 dispA_DISPMMEMFIFO;           // 0x04000068
-} REG_DISPx ; 
+} REG_DISPx ;
 
 
 
@@ -405,7 +406,7 @@ typedef struct _reg_dispx {
 typedef BOOL (*fun_gl_Begin) (int screen);
 typedef void (*fun_gl_End) (int screen);
 // the GUI should use this function prior to all gl calls
-// if call to beg succeeds opengl draw 
+// if call to beg succeeds opengl draw
 void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 
 #define GPU_MAIN	0
@@ -438,7 +439,7 @@ struct _TILEENTRY
 /*14*/	unsigned Palette:4;
 };
 #endif
-typedef union 
+typedef union
 {
 	struct _TILEENTRY bits;
 	u16 val;
@@ -450,7 +451,7 @@ struct _ROTOCOORD
 /* 8*/	  signed Integer:24;
 // /*28*/	unsigned :4;
 };
-typedef union 
+typedef union
 {
 	struct _ROTOCOORD bits;
 	s32 val;
@@ -475,7 +476,7 @@ struct _COLORx { // abgr x555
 	unsigned alpha:1;	// sometimes it is unused (pad)
 };
 
-typedef union 
+typedef union
 {
 	struct _COLOR bits;
 	struct _COLORx bitx;
@@ -493,7 +494,7 @@ struct _COLOR32 { // ARGB
 	unsigned alpha:1;	// sometimes it is unused (pad)
 };
 
-typedef union 
+typedef union
 {
 	struct _COLOR32 bits;
 	u32 val;
@@ -529,7 +530,7 @@ typedef struct
 /*14*/	unsigned Shape:2;	// (00: Square, 01: Wide, 10: Tall, 11: Illegal)
 // attr1
 /* 0*/	signed   X:9;
-/* 9*/	unsigned RotScalIndex:3; // Rot/scale matrix index 
+/* 9*/	unsigned RotScalIndex:3; // Rot/scale matrix index
 /*12*/	unsigned HFlip:1;
 /*13*/	unsigned VFlip:1;
 /*14*/	unsigned Size:2;
@@ -567,7 +568,7 @@ typedef struct
 
 #define NB_PRIORITIES	4
 #define NB_BG		4
-typedef struct 
+typedef struct
 {
 	u8 BGs[NB_BG], nbBGs;
 	u8 PixelsX[256];
@@ -583,7 +584,7 @@ struct _GPU
 	// some structs are becoming redundant
 	// some functions too (no need to recopy some vars as it is done by MMU)
 	REG_DISPx * dispx_st;
-		
+
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
@@ -591,23 +592,23 @@ struct _GPU
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
-		 
+
 	u8 *(BG_bmp_ram[4]);
 	u8 *(BG_tile_ram[4]);
 	u8 *(BG_map_ram[4]);
-			
+
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
-		
+
 	u8 lcd;
 	u8 core;
-	
+
 	u8 dispMode;
 	u8 vramBlock;
 
 	BOOL dispBG[4];
 	BOOL dispOBJ;
-	
+
 	OAM * oam;
 	u8 * sprMem;
 	u8 sprBoundary;
@@ -651,7 +652,7 @@ struct _GPU
 	void (*spriteRender) (GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 /*
-// normally should have same addresses 
+// normally should have same addresses
 static void REG_DISPx_pack_test(GPU * gpu)
 {
 	REG_DISPx * r = gpu->dispx_st;
@@ -717,7 +718,7 @@ typedef struct
    int (*Init)(); // Initializes stuff related to core
    void (*DeInit)(); // Deinitializes stuff related to core
    void (*Resize)(int width, int height, BOOL fullscreen); // Resizes window or fullscreen
-   void (*OnScreenText)(char *string, ...); // For handling save state messages, etc. 
+   void (*OnScreenText)(char *string, ...); // For handling save state messages, etc.
 } GraphicsInterface_struct;
 
 extern GraphicsInterface_struct GFXDummy;

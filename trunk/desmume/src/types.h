@@ -105,7 +105,13 @@ typedef s16 v10;
 
 /*----------------------*/
 
+#ifndef OBJ_C
 typedef int BOOL;
+#else
+//apple defines BOOL so this is to avoid conflicts
+typedef int desmume_BOOL;
+#define BOOL desmume_BOOL
+#endif
 
 #ifndef TRUE
 #define TRUE 1

@@ -1,4 +1,4 @@
-/*  
+/*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
 
@@ -19,6 +19,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#ifndef DESMUME_COCOA
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <gl\gl.h>
@@ -29,6 +31,19 @@
 #include "..\MMU.h"
 #include "..\bits.h"
 #include "..\matrix.h"
+
+#else
+
+
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#include "../debug.h"
+#include "../MMU.h"
+#include "../bits.h"
+#include "../matrix.h"
+
+#endif
+
 #include "OGLRender.h"
 
 
@@ -99,13 +114,17 @@ static unsigned int vtxFormat;
 static unsigned int textureFormat=0, texturePalette=0;
 static unsigned int lastTextureFormat=0, lastTexturePalette=0;
 
+#ifndef DESMUME_COCOA
 extern HWND		hwnd;
+#endif
 
 char NDS_glInit(void)
 {
+	int i;
+#ifndef DESMUME_COCOA
 	HDC						oglDC = NULL;
 	HGLRC					hRC = NULL;
-	int						pixelFormat, i;
+	int						pixelFormat;
 	PIXELFORMATDESCRIPTOR	pfd;
 
 	oglDC = GetDC (hwnd);
@@ -121,18 +140,19 @@ char NDS_glInit(void)
 	pfd.iLayerType = PFD_MAIN_PLANE ;
 
 	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
-	if (pixelFormat == 0) 
+	if (pixelFormat == 0)
 		return 0;
 
-	if(!SetPixelFormat(oglDC, pixelFormat, &pfd)) 
+	if(!SetPixelFormat(oglDC, pixelFormat, &pfd))
 		return 0;
 
 	hRC = wglCreateContext(oglDC);
-	if (!hRC) 
+	if (!hRC)
 		return 0;
 
 	if(!wglMakeCurrent(oglDC, hRC))
 		return 0;
+#endif
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
@@ -194,8 +214,8 @@ void NDS_glViewPort(unsigned long v)
 void NDS_glClearColor(unsigned long v)
 {
 	glClearColor(	((float)(v&0x1F))/31.0f,
-					((float)((v>>5)&0x1F))/31.0f, 
-					((float)((v>>10)&0x1F))/31.0f, 
+					((float)((v>>5)&0x1F))/31.0f,
+					((float)((v>>10)&0x1F))/31.0f,
 					((float)((v>>16)&0x1F))/31.0f);
 }
 
@@ -346,7 +366,7 @@ void NDS_glScale(signed long v)
 
 	++scaleind;
 
-	if(scaleind<3) 
+	if(scaleind<3)
 		return;
 
 	scaleind = 0;
@@ -600,7 +620,7 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 						u32 yAbs = ((y<<2) + sy);
 						u32 currentPos = xAbs + yAbs*sizeX;
 
-						// Palette							
+						// Palette
 						u8  currRow		= (u8)((currBlock >> (sy*8)) & 0xFF);
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
 #define RGB32(r,g,b,a) (((a)<<24) | ((r)<<16) | ((g)<<8) | (b))
@@ -717,7 +737,7 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 						}
 					}
 				}
-				
+
 				break;
 			}
 			case 6:
@@ -749,9 +769,9 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 			break;
 		}
 
-		glBindTexture(GL_TEXTURE_2D, oglTextureID);	
+		glBindTexture(GL_TEXTURE_2D, oglTextureID);
 
-		
+
 		switch ((format>>18)&3)
 		{
 			case 0:
@@ -818,7 +838,7 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 
 		invTexWidth  = 1.f/((float)sizeX*(1<<4));
 		invTexHeight = 1.f/((float)sizeY*(1<<4));
-		
+
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 
@@ -877,7 +897,7 @@ void NDS_glBegin(unsigned long v)
 	{
 		glEnable(GL_CULL_FACE);
 		glCullFace(map3d_cull[cullingMask>>6]);
-	} 
+	}
 	else
 	{
 		glDisable(GL_CULL_FACE);
@@ -900,7 +920,7 @@ void NDS_glBegin(unsigned long v)
 	else
 	{
 		glPolygonMode (GL_FRONT, GL_LINE);
-		glPolygonMode (GL_BACK, GL_LINE);		
+		glPolygonMode (GL_BACK, GL_LINE);
 	}
 
 	if (textureFormat  != lastTextureFormat ||
@@ -948,21 +968,21 @@ static __inline void  SetVertex()
 {
 	float coordTransformed[3] = { coord[0], coord[1], coord[2] };
 
-	if (texCoordinateTransform == 3) 
+	if (texCoordinateTransform == 3)
 	{
-		int s2 =	(int)((	coord[0]*mtxCurrent[3][0] +  
-							coord[1]*mtxCurrent[3][4] +  
+		int s2 =	(int)((	coord[0]*mtxCurrent[3][0] +
+							coord[1]*mtxCurrent[3][4] +
 							coord[2]*mtxCurrent[3][8]) + s);
-		int t2 =	(int)((	coord[0]*mtxCurrent[3][1] +  
-							coord[1]*mtxCurrent[3][5] +  
-							coord[2]*mtxCurrent[3][9]) + t); 
+		int t2 =	(int)((	coord[0]*mtxCurrent[3][1] +
+							coord[1]*mtxCurrent[3][5] +
+							coord[2]*mtxCurrent[3][9]) + t);
 
-		glTexCoord2i (s2, t2); 
-	} 
+		glTexCoord2i (s2, t2);
+	}
 
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
-	glVertex3fv (coordTransformed); 
+	glVertex3fv (coordTransformed);
 
 	numVertex++;
 }
@@ -972,7 +992,7 @@ void NDS_glVertex16b(unsigned int v)
 	if(coordind==0)
 	{
 		coord[0]		= float16table[v&0xFFFF];
-		coord[1]		= float16table[v>>16];		
+		coord[1]		= float16table[v>>16];
 
 		++coordind;
 		return;
@@ -997,7 +1017,7 @@ void NDS_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 {
 	coord[one]		= float16table[v&0xffff];
 	coord[two]		= float16table[v>>16];
-	
+
 	SetVertex ();
 }
 
@@ -1184,9 +1204,9 @@ void NDS_glTexCoord(unsigned long val)
 
 	if (texCoordinateTransform == 1)
 	{
-		int s2 =(int)(	s*			mtxCurrent[3][0] + t*			mtxCurrent[3][4] + 
+		int s2 =(int)(	s*			mtxCurrent[3][0] + t*			mtxCurrent[3][4] +
 						(1.f/16.f)* mtxCurrent[3][8] + (1.f/16.f)*	mtxCurrent[3][12]);
-		int t2 =(int)(	s*			mtxCurrent[3][1] + t*			mtxCurrent[3][5] + 
+		int t2 =(int)(	s*			mtxCurrent[3][1] + t*			mtxCurrent[3][5] +
 						(1.f/16.f)* mtxCurrent[3][9] + (1.f/16.f)*	mtxCurrent[3][13]);
 
 		glTexCoord2i (s2, t2);
@@ -1243,9 +1263,9 @@ void NDS_glLightDirection (unsigned long v)
 
 void NDS_glLightColor (unsigned long v)
 {
-	int lightColor[4] = {	((v)    &0x1F)<<26, 
-							((v>> 5)&0x1F)<<26, 
-							((v>>10)&0x1F)<<26, 
+	int lightColor[4] = {	((v)    &0x1F)<<26,
+							((v>> 5)&0x1F)<<26,
+							((v>>10)&0x1F)<<26,
 							0x7fffffff};
 
 	if (beginCalled)
@@ -1335,9 +1355,9 @@ void NDS_glNormal(unsigned long v)
 
 	if (texCoordinateTransform == 2)
 	{
-		int s2 =(int)(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] + 
+		int s2 =(int)(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
 						 normal[2] *mtxCurrent[3][8]) + s);
-		int t2 =(int)(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] + 
+		int t2 =(int)(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
 						 normal[2] *mtxCurrent[3][9]) + t);
 
 		glTexCoord2i (s2, t2);
@@ -1394,7 +1414,7 @@ void NDS_glCallList(unsigned long v)
 
 			case 0x41:
 			{
-				NDS_glEnd();                      
+				NDS_glEnd();
 				--clInd;
 				clCmd>>=8;
 				continue;
@@ -1429,7 +1449,7 @@ void NDS_glCallList(unsigned long v)
 			NDS_glPopMatrix(v);
 			--clInd;
 			clCmd>>=8;
-			break; 
+			break;
 		}
 
 		case 0x13:
@@ -1438,7 +1458,7 @@ void NDS_glCallList(unsigned long v)
 			NDS_glStoreMatrix(v);
 			--clInd;
 			clCmd>>=8;
-			break; 
+			break;
 		}
 
 		case 0x14:
@@ -1583,7 +1603,7 @@ void NDS_glCallList(unsigned long v)
 			if(clInd2==2)
 			{
 				--clInd;
-				clCmd>>=8; 
+				clCmd>>=8;
 				clInd2 = 0;
 			}
 			break;
@@ -1610,7 +1630,7 @@ void NDS_glCallList(unsigned long v)
 		case 0x26:// GFX_VERTEX_XZ
 		{
 			((unsigned long *)ARM9Mem.ARM9_REG)[0x498>>2] = v;
-			NDS_glVertex3_cord(0,2,v);							
+			NDS_glVertex3_cord(0,2,v);
 			--clInd;
 			clCmd>>=8;
 			break;
@@ -1619,7 +1639,7 @@ void NDS_glCallList(unsigned long v)
 		case 0x27:// GFX_VERTEX_YZ
 		{
 			((unsigned long *)ARM9Mem.ARM9_REG)[0x49C>>2] = v;
-			NDS_glVertex3_cord(1,2,v);							
+			NDS_glVertex3_cord(1,2,v);
 			--clInd;
 			clCmd>>=8;
 			break;
@@ -1669,7 +1689,7 @@ void NDS_glCallList(unsigned long v)
 			clCmd>>=8;
 			break;
 		}
-		
+
 		case 0x31: // GFX_SPECULAR_EMISSION
 		{
 			((unsigned long *)ARM9Mem.ARM9_REG)[0x4C4>>2] = v;
@@ -1711,7 +1731,7 @@ void NDS_glCallList(unsigned long v)
 			break;
 		}
 
-		case 0x40 : 
+		case 0x40 :
 		{
 			((unsigned long *)ARM9Mem.ARM9_REG)[0x500>>2] = v;
 			NDS_glBegin(v);
@@ -1761,7 +1781,7 @@ void NDS_glCallList(unsigned long v)
 	}
 	if((clCmd&0xFF)==0x41)
 	{
-		glEnd();                      
+		glEnd();
 		--clInd;
 		clCmd>>=8;
 	}
@@ -1811,8 +1831,8 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 							NDS_glControl,
 							NDS_glNormal,
 							NDS_glCallList,
-							  
+
 							NDS_glGetClipMatrix,
 							NDS_glGetDirectionalMatrix,
 							NDS_glGetLine};
-							
+
