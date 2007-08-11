@@ -37,6 +37,21 @@ NSPopUpButton *language_selection;
 
 @implementation NSApplication(custom_extensions)
 
+- (void)launchWebsite
+{
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://desmume.sourceforge.net"]];
+}
+
+- (void)launchForums
+{
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://forums.desmume.org/index.php"]];
+}
+
+- (void)bugReport
+{
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291"]];
+}
+
 - (void)about
 {
 	bool was_paused = paused;
