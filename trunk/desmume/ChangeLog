@@ -1,4 +1,4 @@
-0.7.2 -> ???
+0.7.2 -> 0.7.3
  gtk-glade:
   - Full localization using intltool/gettext. [evilynux]
  general:
