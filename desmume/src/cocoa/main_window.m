@@ -1178,24 +1178,25 @@ NSSize min_size;
 {
 	NSPoint location = [event locationInWindow];
 
+	//If the click was to the left or under the opengl view, exit
+	if((location.x < WINDOW_BORDER_PADDING) || (location.y < WINDOW_BORDER_PADDING))
+		return;
+	location.x -= WINDOW_BORDER_PADDING;
+	location.y -= WINDOW_BORDER_PADDING;
+
+	//If the click was top or right of the view...
+	if(location.x >= x_size)return;
+	if(location.y >= y_size)return;
+
 	if(rotation == ROTATION_0 || rotation == ROTATION_180)
 	{
 		if(rotation == ROTATION_180)
 		{
-			location.x = (x_size + WINDOW_BORDER_PADDING) - location.x;
-			location.y = (y_size + WINDOW_BORDER_PADDING) - location.y;
-		}
-
-		//If the click was to the left or under the opengl view, exit
-		if((location.x < WINDOW_BORDER_PADDING) || (location.y < WINDOW_BORDER_PADDING))
-			return;
-
-		//If the click was top or right of the view...
-		location.x -= WINDOW_BORDER_PADDING;
-		location.y -= WINDOW_BORDER_PADDING;
-		if(location.x >= x_size)return;
-		if(location.y >= (y_size / 2))return;
-
+			if(location.y < y_size / 2)return;
+			location.x = x_size - location.x;
+			location.y = y_size - location.y;
+		} else
+			if(location.y >= y_size / 2)return;
 
 		//scale the coordinates
 		location.x *= ((float)DS_SCREEN_WIDTH) / ((float)x_size);
@@ -1206,8 +1207,27 @@ NSSize min_size;
 
 	} else
 	{
-		location.x = 0;
-		location.y = 0;
+
+		if(rotation == ROTATION_270)
+		{
+			if(location.x < x_size / 2)return;
+			location.x = x_size - location.x;
+
+		} else
+		{
+			if(location.x >= x_size / 2)return;
+			location.y = y_size - location.y;
+		}
+
+		location.x *= ((float)DS_SCREEN_HEIGHT_COMBINED) / ((float)x_size);
+		location.y *= ((float)DS_SCREEN_WIDTH) / ((float)y_size);
+
+		//invert the y
+		location.x = DS_SCREEN_HEIGHT - location.x - 1;
+
+		float temp = location.x;
+		location.x = location.y;
+		location.y = temp;
 	}
 //[self setTitle:[NSString localizedStringWithFormat:@"%u %u", (unsigned int)location.x, (unsigned int)location.y]];
 
