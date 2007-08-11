@@ -1,7 +1,7 @@
 include $(top_srcdir)/src/desmume.mk
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.c fs-windows.c
-DIST_SUBDIRS = . gdbstub cli gtk gtk-glade windows
+DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade windows
 SUBDIRS = . gdbstub $(UI_DIR)
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
