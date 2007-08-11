@@ -1,0 +1,147 @@
+0.7.2 -> 0.7.3
+ gtk-glade:
+  - Full localization using intltool/gettext. [evilynux]
+ general:
+  - Added a README.TRANSLATION documenting the localization process. [evilynux]
+ MacOS X:
+  - Initial version of the Mac interface added. [Jeff B]
+
+0.7.1 -> 0.7.2
+ spu:
+  - big endian fixes. [cyberwarriorx]
+ gpu:
+  - big endian fixes. [marcus_c]
+ gtk-glade:
+  - opengl improvements. [masscat]
+ general:
+  - Added support for setting NDS firmware language value. [masscat]
+  - Function added for setting firmware language. [masscat]
+  - Mac/msys compilation fixes. [cyberwarriorx]
+  - Fix compilation when pkg-config macros are not available [evilynux]
+
+0.7.0 -> 0.7.1
+ general:
+  - Added GDB debugger stub [masscat]
+  - Added new/different GBAMP CFlash image reader/writer [masscat]
+ gpu:
+  - Major speedup to the 2D core [shash]
+ gtk-glade:
+  - Added command line options. [masscat]
+  - Added FPS limiter [masscat]
+ cli:
+  - Added command line options. [masscat]
+  - Added FPS limiter [masscat]
+  - Added option to use OpenGl to render window (allows resizing). [masscat]
+ windows port:
+  - Added command line options. [masscat]
+  - Added multiple language support [cyberwarriorx]
+  - Added Danish language translation [thomas-2007]
+
+0.6.0 -> 0.7.0
+ general:
+  - Added support for *.duc files [cyberwarriorx]
+ gpu:
+  - Added support for sprite rotation/scaling [shash]
+  - Added support for the 3D core (openGL and null plugins) [shash] 
+ windows port:
+  - A bunch of fixes [Dmitry Krutskih]
+  - Fixed a bug in sound that was causing it to still not work for some
+    people [cyberwarriorx]
+ gtk:
+  - Added 3D emulation
+  - Added command line options.
+  - Added option to use OpenGL to render window (allows resizing).
+ gtk-glade:
+  - Added 3D emulation
+
+0.5.0 -> 0.6.0
+ general:
+  - Added zipped (based on zziplib) and gzipped (based on zlib) rom support.
+ arm:
+  - Added relocation interrupt vector.
+  - Added region access right checks.
+  - Enabled LDC/STC instructions.
+  - Fixed powersave (cp15) IRQ wait.
+  - Fixed MOV instructions
+ gpu:
+  - Added special color effects.
+  - Added windowing feature.
+  - Fixed transparent direct color backgrounds.
+  - Fixed disabled sprites showing.
+  - Fixed 8/32 bit access to gpu registers.
+  - Fixed missing backgrounds
+  - Support for master brightness
+ wifi:
+  - Added RF chip interface.
+  - Added BB chip interface.
+ windows port:
+  - Fixed address calculation in disassembler.
+  - Added Force Maintain Ratio option for window stretching
+ linux port (cli, gtk and gtk-glade):
+  all:
+   - Added joystick support.
+   - Fixed X and Y buttons.
+  gtk-glade:
+   - Added joystick configuration.
+   - Improved I/O registers viewer tool.
+   - Added save and load states support.
+
+0.3.3 -> 0.5.0
+ arm:
+  - Fixed MSR with immediate value opcode.
+  - Fixed LSR_0 thumb opcode (C flag is correctly set now).
+  - Fixed LDR*/STR* opcodes.
+  - Fixed unaligned memory access on THUMB Core.
+  - Added relocating SWI routines.
+ bios:
+  - Added decompression functions.
+  - Added GetPitchTable function.
+  - Added GetVolumeTable function.
+  - Added GetCRC16 function.
+  - Added experimental SoundBias function.
+  - Added GetSineTable function.
+ cart:
+  - Added CompactFlash/FAT emulation.
+  - Added Get ROM chip ID Cartridge command.
+ gpu:
+  - Added framebuffer emulation.
+  - Fixed a bug in GPU (xfin could be greater than LG causing a segfault).
+  - Added support for Display Mode 0(Display Off).
+  - Added the basic framework for Display Mode 3(Display from Main RAM).
+ spu:
+  - Added sound emulation.
+  - Added sound core system.
+  - Added WAV write core.
+  - Added dummy core.
+  - Added Direct Sound core.
+ linux port:
+  - Added GTK+ GUI.
+  - Added command line interface.
+  - Added stylus and arm9 keypad support in CLI version.
+  - Added FPS display.
+  - Added basic frameskip.
+ windows port:
+  - Fixed a bug when displaying a ROM's information.
+  - Added key configuration.
+  - Removed the debug key.
+  - Added new experimental auto frameskip/frame limit code.
+  - Added sound settings dialog.
+  - Added a few menu options for accessing the website, forums, and for
+    submitting bugs.
+ general:
+  - Rewrote code in C.
+  - Fixed warnings.
+  - Used defines and typedef's to make things more portable and easier to
+    read.
+  - Added autotools stuff.
+  - Changes to logging system.
+  - Added screenshot function.
+  - Translated most french to english.
+  - Added savestate support.
+  - Added firmware reading support(needs work).
+  - Added Backup Memory support with autodetection.
+  - Fixed some endianess issues.
+  - Fixed things so Visual C++ can compile code.
+  - Added bsd support.
+  - Reworked ROM loading so you can load a different rom without any problems.
+  - Finished NDS_Reset. Now the emulation can be reset even while running.
