@@ -37,6 +37,13 @@
 #define DS_SCREEN_X_RATIO (256.0 / (192.0 * 2.0))
 #define DS_SCREEN_Y_RATIO ((192.0 * 2.0) / 256.0)
 
+//Port Specific constants ---------------------------------------------------------------------
+
+#define ROTATION_0   0
+#define ROTATION_90  1
+#define ROTATION_180 2
+#define ROTATION_270 3
+
 //Cocoa Util------------------------------------------------------------------------------------
 //These are just useful little functions to help with stuff
 //defined in cocoa_util.m
@@ -135,6 +142,7 @@ extern NintendoDS *NDS;
 @class VideoOutputWindow;
 extern VideoOutputWindow *main_window;
 
+void setAppDefaults(); //this is defined in preferences.m and should be called at app launch
 //--------------------------------------------------------------------------------------------------
 
 extern volatile int /*desmume_BOOL*/ execute;

@@ -29,6 +29,9 @@
 //creation
 - (id)init;
 
+//Firmware control
+- (void)setPlayerName:(NSString*)player_name;
+
 //ROM control
 - (void)pickROM;
 - (BOOL)loadROM:(NSString*)filename;

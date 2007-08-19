@@ -99,6 +99,11 @@
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
+		<Unit filename="screenshot.h" />
+		<Unit filename="screenshot.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="../config.h" />
 		<Unit filename="../cp15.c">
 			<Option compilerVar="CC" />

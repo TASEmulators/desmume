@@ -21,6 +21,7 @@
 #import "globals.h"
 #import "nds_control.h"
 #import "main_window.h"
+#import "preferences.h"
 
 //DeSmuME general includes
 #define OBJ_C
@@ -79,6 +80,8 @@ volatile u8 frame_skip = 0; //this is one more than the acutal frame skip, a val
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
 
+struct NDS_fw_config_data firmware;
+
 NSString *current_file;
 
 @implementation NintendoDS
@@ -93,30 +96,26 @@ NSString *current_file;
 	NDS_Init( arm9_memio, &arm9_ctrl_iface,
 		arm7_memio, &arm7_ctrl_iface);
 
-typedef struct {
-  enum nds_fw_ds_type ds_type;
-
-  u8 fav_colour;
-  u8 birth_month;
-  u8 birth_day;
-
-  u16 nickname[MAX_FW_NICKNAME_LENGTH];
-  u8 nickname_len;
-
-  u16 message[MAX_FW_MESSAGE_LENGTH];
-  u8 message_len;
-
-  u8 language;
-
-  /* touchscreen calibration */
-  struct NDS_fw_touchscreen_cal touch_cal[2];
-} NDS_fw_config_data;
-
-	NDS_fw_config_data firmware;
 	NDS_FillDefaultFirmwareConfigData(&firmware);
+[self setPlayerName:@"Joe"];
 	NDS_CreateDummyFirmware(&firmware);
 
+
 	return self;
+}
+
+- (void)setPlayerName:(NSString*)player_name
+{
+	//first we convert to UTF-16 which the DS uses to store the nickname
+	NSData *string_chars = [player_name dataUsingEncoding:NSUnicodeStringEncoding];
+
+	//copy the bytes
+	firmware.nickname_len = MIN([string_chars length],MAX_FW_NICKNAME_LENGTH);
+	[string_chars getBytes:firmware.nickname length:firmware.nickname_len];
+	firmware.nickname[firmware.nickname_len / 2] = 0;
+
+	//set the firmware
+	//NDS_CreateDummyFirmware(&firmware);
 }
 
 - (void)pickROM
@@ -145,13 +144,16 @@ typedef struct {
 	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, "/Users/gecko/AAAA.sav") > 0)
 	{
 		//if it didn't work give an error and dont unpause
-		messageDialog(@"Error", @"Could not open file");
+		messageDialog(localizedString(@"Error", nil), @"Could not open file");
 
 		//continue playing if load didn't work
 		if(!was_paused)[self execute];
 
 		return FALSE;
 	}
+
+	//add the rom to the recent documents list
+	[[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:filename]];
 
 	//set current file var
 	current_file = filename;
@@ -191,8 +193,11 @@ typedef struct {
 	//layers apparently get reset on rom load?
 	//[set topBG2_item fixme
 
-	//if it worked, unpause (start)
-	[self execute];
+	//if it worked, check the execute upon load option
+	if([[NSUserDefaults standardUserDefaults] boolForKey:PREF_EXECUTE_UPON_LOAD])
+		[self execute];
+	else
+		[main_window clearScreenWhite];
 
 	return true;
 }
@@ -233,7 +238,7 @@ typedef struct {
 	{
 		[self closeROM];
 
-		[main_window clearScreen];
+		[main_window clearScreenBlack];
 	}
 	else if(!was_paused)[NDS execute];
 }
@@ -395,8 +400,26 @@ typedef struct {
 }
 
 - (void)saveStateAs
-{
-	messageDialog(@"LOAD",@"DDSA");
+{//dst
+	BOOL was_paused = paused;
+	[NDS pause];
+
+	NSSavePanel *panel = [NSSavePanel savePanel];
+
+	[panel setTitle:localizedString(@"Save State to File...", nil)];
+	[panel setAllowedFileTypes:[NSArray arrayWithObjects:@"dst",nil]];
+
+	if([panel runModal] == NSOKButton)
+	{
+
+		NSString *filename = [panel filename];
+
+		if(filename)
+			savestate_save([filename cStringUsingEncoding:NSASCIIStringEncoding]);
+
+	}
+
+	if(!was_paused)[NDS execute];
 }
 
 - (void)loadStateFrom

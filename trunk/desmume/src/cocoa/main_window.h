@@ -34,8 +34,9 @@
 //this is the only method involving cocoa that should be called from the run() function
 - (void)updateScreen;
 
-//makes the screen white
-- (void)clearScreen;
+//
+- (void)clearScreenWhite; //for when a rom is loaded but stopped
+- (void)clearScreenBlack; //for when the emulator is not loaded
 
 //resets the min size internalls (when rotation changes), shouldn't be used from outside
 - (void)resetMinSize:(bool)resize;
@@ -74,6 +75,11 @@
 - (void)toggleSubBackground2;
 - (void)toggleSubBackground3;
 
+//screenshots
+- (void)screenShotToFile;
+- (void)screenShotToWindow;
+- (const unsigned char *)getBuffer;//pause before calling
+
 //keyboard input
 - (void)keyDown:(NSEvent*)event;
 - (void)keyUp:(NSEvent*)event;
@@ -82,6 +88,7 @@
 - (void)mouseDown:(NSEvent*)event;
 - (void)mouseDragged:(NSEvent*)event;
 - (void)mouseUp:(NSEvent*)event;
+
 @end
 
 #endif //MAIN_WINDOW_H
