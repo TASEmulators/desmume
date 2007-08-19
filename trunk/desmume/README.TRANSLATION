@@ -19,6 +19,9 @@ windows and gtk-glade.
 
 To translate DeSmuME, see "Starting a new translation" below.
 
+If you have created a new translation, or improved an existing one, please
+send us your translation by getting in touch with us: see "Contact Us" below.
+
   1.1 gtk-glade UI _____________________________________________________________
 
   Localization is done with gettext. gettext uses po files.
@@ -34,7 +37,9 @@ To translate DeSmuME, see "Starting a new translation" below.
 
   1.3 Mac OS X (Cocoa) UI _____________________________________________________
 
-  Localization is located within the application bundle (in Finder right click on DeSmuME and select "Show Package Contents"). Within the Contents/Resources folder there is a folder for each localization.
+  Localization is located within the application bundle (in Finder right click
+  on DeSmuME and select "Show Package Contents"). Within the Contents/Resources
+  folder there is a folder for each localization.
 
 2 Starting a new translation ___________________________________________________
 
@@ -48,21 +53,28 @@ To translate DeSmuME, see "Starting a new translation" below.
 
   Open the newly created file with an editor: see "Editors" below.
   Translate the strings.
-  Send us your translation by getting in touch with us: see "Contact Us" below.
 
   2.2 Windows UI _______________________________________________________________
 
   Grab a copy of src/windows/resources.rc .
   Create a section for your language by looking at another language e.g. french.
   Translate the strings.
-  Send us your translation by getting in touch with us: see "Contact Us" below.
 
-  2.3 Max OS X (Cocoa) UI ______________________________________________________________
+  2.3 Max OS X (Cocoa) UI ______________________________________________________
 
-  Copy one of the localization folders mentioned in section one, and paste it into the same folder.
+  Copy and paste one of the localization folders mentioned in 1.3.
   Rename the part before ".lproj" to the language of the translation.
   Within your newly created folder edit "Localizable.strings".
-  Send us your translation by getting in touch with us: see "Contact Us" below.
+
+  The strings file should stay in UTF-16 encoding (UTF-8 or others may work,
+  but UTF-16 is preferred).
+
+  If your strings file has an error, no translated strings will show in DeSmuME.
+  
+  Debugging the string file:
+  If you have Mac OS X developer tools installed, from the console you can type
+  "plutil FILE", replacing FILE with the name and path of the string file, and
+  it will tell you if there are any errors (and where).
 
 3 Editors ______________________________________________________________________
 
@@ -139,16 +151,15 @@ To update po/desmume.pot, move to the po/ folder and execute "make update-po".
 
   7.3 Max OS X (Cocoa) UI ______________________________________________________________
 
-  After following the steps in 2.3, your translation is ready to go. You can set the DeSmuME
-  language one of three ways:
+  After following the steps in 2.3, your translation is ready to go.
+  You can set the DeSmuME language one of three ways:
 
   1) Set the system language (System Preferences -> International).
 
   2) Right click on DeSmuME in Finder, select Get Info and disable the other translations.
 
-  3) From a command line, run the following line after replacing LANG with the language of choice:
+  3) From a command line, run the following line after replacing LANG with the language:
 
      DeSmuME.app/Contents/MacOS/DeSmuME -AppleLanguages '<array><string>LANG</string></array>'
-    
 
   All of these methods require a restart of DeSmuME.
