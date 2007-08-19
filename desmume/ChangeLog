@@ -1,3 +1,15 @@
+0.7.3 -> ??
+ Cocoa:
+ - Save State As function now works. [Jeff B]
+ - Recent Items menu now works. [Jeff B]
+ - Opening NDS files from Finder now works. [Jeff B]
+ - Added screenshot to file feature (bmp, jpg, gif, png, tiff). [Jeff B]
+ - Added screenshot to separate window feature. [Jeff B]
+ - Added the preferences window. [Jeff B]
+ - Added option to disable execution upon loading. [Jeff B]
+ - Many more strings are translatable now [Jeff B]
+ - Default screen color now black (better represents being "off" and easier on eyes at night) [Jeff B]
+
 0.7.2 -> 0.7.3
  gtk-glade:
   - Full localization using intltool/gettext. [evilynux]
