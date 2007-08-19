@@ -42,9 +42,7 @@ FIXME: Apple+Q during open dialog = badness
 FIXME: Live resize needs to work without pausing emulator
 FIXME: Hardware acceleration for openglrender.c ??
 FIXME: When cross-platform (core) components end emulation due to error - pause should be called (set the menu checkmark)
-FIXME: Multi-threaded version needs to do some sleep()-ing when not running game
 FIXME: Some bug where states get messed up and hitting execute does nothing......
-FIXME: single threaded version requires an additional event to quit (after you tell the program to exit you gotta click or press something)
 FIXME: .nds.gba extensions don't work in open panels
 FIXME: Traveling windows when constantly resizing with hotkey
 */
@@ -74,10 +72,13 @@ NSMenu *menu;
 @interface NSApplication(delegate)
 
 //delegate methods
-- (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename;
-- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames;
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification;
-- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender;
+- (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename;
+- (void)application:(NSApplication*)sender openFiles:(NSArray*)filenames;
+- (void)applicationWillFinishLaunching:(NSNotification*)aNotification;
+- (void)applicationDidFinishLaunching:(NSNotification*)aNotification;
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender;
+
+
 
 @end
 
@@ -186,8 +187,8 @@ void CreateMenu()
 	[application_menu addItem: [NSMenuItem separatorItem]];
 
 	//Add the preferences menu
-	//temp = [application_menu addItemWithTitle:@"Preferences..." action:@selector(preferences) keyEquivalent:@","];
-	//[temp setTarget:NSApp];
+	temp = [application_menu addItemWithTitle:@"Preferences..." action:@selector(preferences) keyEquivalent:@","];
+	[temp setTarget:NSApp];
 
 	//
 	[application_menu addItem: [NSMenuItem separatorItem]];
@@ -240,13 +241,29 @@ void CreateMenu()
 	[temp setTarget:NDS];
 
 	//recent items menu
+	/* Thanks to Jeff Johnson and the Lap Cat Software Blog for their information on the Open Recent menu in Cocoa*/
+	/* http://lapcatsoftware.com/blog/ */
+
 	temp = [file addItemWithTitle:@"Open Recent" action:nil keyEquivalent:@""];
 
-	NSMenu *recent_menu = [[NSMenu alloc] initWithTitle:@""];
+	NSMenu *recent_menu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
+	[recent_menu performSelector:@selector(_setMenuName:) withObject:@"NSRecentDocumentsMenu"];
 	[temp setSubmenu:recent_menu];
 
-	[recent_menu addItemWithTitle:@"Blar" action:nil keyEquivalent:@""];
+	NSArray *recent_documents = [[NSDocumentController sharedDocumentController] recentDocumentURLs];
+	int i;
+	for(i = 0; i < [recent_documents count]; i++)
+	{
+	//	[recent_menu addItemWithTitle:[[recent_documents objectAtIndex:i] absoluteString] action:nil keyEquivalent:@""];
+	}
+/*
+	[recent_menu addItem:[NSMenuItem separatorItem]];
 
+	temp = [recent_menu addItemWithTitle:@"Clear" action:@selector(clearRecentDocuments:) keyEquivalent:@""];
+	if(i == 0)[temp setEnabled:NO];
+	else [temp setEnabled:YES];
+	[temp setTarget:[NSDocumentController sharedDocumentController]];
+*/
 	[file addItem:[NSMenuItem separatorItem]];
 
 	rom_info_item = [file addItemWithTitle:@"ROM Info..." action:@selector(showRomInfo) keyEquivalent:@""];
@@ -277,7 +294,6 @@ void CreateMenu()
 	[load_state_menu setAutoenablesItems:NO];
 	[temp setSubmenu:load_state_menu];
 
-	int i;
 	for(i = 0; i < SAVE_SLOTS; i++)
 	{
 		saveSlot_item[i] = [save_state_menu addItemWithTitle:@"Slot %d" withInt:i action:@selector(saveToSlot:) keyEquivalent:@""];
@@ -379,12 +395,11 @@ a way to get the time of a save that's not a string / human formatted...
 	[frame_skip_item[0] setTarget:NDS];
 	[frame_skip_item[0] setEnabled:YES];
 
-	int i2;
-	for(i2 = 1; i2 < MAX_FRAME_SKIP; i2++)
+	for(i = 1; i < MAX_FRAME_SKIP; i++)
 	{
-		frame_skip_item[i2] = [frame_skip_menu addItemWithTitle:@"%d" withInt:i2 action:@selector(setFrameSkip:) keyEquivalent:@""];
-		[frame_skip_item[i2] setTarget:NDS];
-		[frame_skip_item[i2] setEnabled:YES];
+		frame_skip_item[i] = [frame_skip_menu addItemWithTitle:@"%d" withInt:i action:@selector(setFrameSkip:) keyEquivalent:@""];
+		[frame_skip_item[i] setTarget:NDS];
+		[frame_skip_item[i] setEnabled:YES];
 	}
 
 	//Create the screens menu
@@ -418,7 +433,7 @@ a way to get the time of a save that's not a string / human formatted...
 	[constrain_item setState:NSOnState];
 	[constrain_item setTarget:main_window];
 
-	min_size_item = [view addItemWithTitle: @"No smaller than DS" action:@selector(toggleMinSize) keyEquivalent:@""];
+	min_size_item = [view addItemWithTitle: @"No Smaller Than DS" action:@selector(toggleMinSize) keyEquivalent:@""];
 	[min_size_item setState:NSOnState];
 	[min_size_item setTarget:main_window];
 
@@ -429,19 +444,19 @@ a way to get the time of a save that's not a string / human formatted...
 	NSMenu *rotation_menu = [[NSMenu alloc] initWithTitle:@"Rotation"];
 	[temp setSubmenu: rotation_menu];
 
-	rotation0_item = [rotation_menu addItemWithTitle:@"0" action:@selector(setRotation0) keyEquivalent:@""];
+	rotation0_item = [rotation_menu addItemWithTitle:@"Rotation 0" action:@selector(setRotation0) keyEquivalent:@""];
 	[rotation0_item setState:NSOnState];
 	[rotation0_item setTarget:main_window];
 
-	rotation90_item = [rotation_menu addItemWithTitle:@"90" action:@selector(setRotation90) keyEquivalent:@""];
+	rotation90_item = [rotation_menu addItemWithTitle:@"Rotation 90" action:@selector(setRotation90) keyEquivalent:@""];
 	[rotation90_item setState:NSOffState];
 	[rotation90_item setTarget:main_window];
 
-	rotation180_item = [rotation_menu addItemWithTitle:@"180" action:@selector(setRotation180) keyEquivalent:@""];
+	rotation180_item = [rotation_menu addItemWithTitle:@"Rotation 180" action:@selector(setRotation180) keyEquivalent:@""];
 	[rotation180_item setState:NSOffState];
 	[rotation180_item setTarget:main_window];
 
-	rotation270_item = [rotation_menu addItemWithTitle:@"270" action:@selector(setRotation270) keyEquivalent:@""];
+	rotation270_item = [rotation_menu addItemWithTitle:@"Rotation 270" action:@selector(setRotation270) keyEquivalent:@""];
 	[rotation270_item setState:NSOffState];
 	[rotation270_item setTarget:main_window];
 
@@ -485,6 +500,15 @@ a way to get the time of a save that's not a string / human formatted...
 	[subBG3_item setState:NSOnState];
 	[subBG3_item setTarget:main_window];
 
+	[view addItem:[NSMenuItem separatorItem]];
+
+	allows_resize_item = [view addItemWithTitle:@"Screenshot to File" action:@selector(screenShotToFile) keyEquivalent:@""];
+	[allows_resize_item setTarget:main_window];
+
+	allows_resize_item = [view addItemWithTitle:@"Screenshot to Window" action:@selector(screenShotToWindow) keyEquivalent:@""];
+	[allows_resize_item setTarget:main_window];
+
+
 	//Create the window menu
 /*
 	window = [[NSMenu alloc] initWithTitle:localizedString(@"Window", nil)];
@@ -506,13 +530,13 @@ a way to get the time of a save that's not a string / human formatted...
 	help = [[NSMenu alloc] initWithTitle:localizedString(@"Help", nil)];
 	[menu setSubmenu:help forItem:help_item];
 
-	temp = [help addItemWithTitle:@"Website" action:@selector(launchWebsite) keyEquivalent: @""];
+	temp = [help addItemWithTitle:@"Go to Website" action:@selector(launchWebsite) keyEquivalent: @""];
 	[temp setTarget:NSApp];
 
-	temp = [help addItemWithTitle:@"Forums" action:@selector(launchForums) keyEquivalent: @""];
+	temp = [help addItemWithTitle:@"Go to Forums" action:@selector(launchForums) keyEquivalent: @""];
 	[temp setTarget:NSApp];
 
-	temp = [help addItemWithTitle:@"Submit A Bug Report" action:@selector(bugReport) keyEquivalent: @""];
+	temp = [help addItemWithTitle:@"Submit a Bug Report" action:@selector(bugReport) keyEquivalent: @""];
 	[temp setTarget:NSApp];
 
 	[NSApp setMainMenu: menu];
@@ -545,37 +569,61 @@ int main(int argc, char *argv[])
 //gdb stuff--------------------------------------------------------------------------------
 //don't know and don't care
 
-void *
-createThread_gdb( void (*thread_function)( void *data),
-				 void *thread_data) {
-return NULL;
+void *createThread_gdb(void (*thread_function)(void *data), void *thread_data)
+{
+	return NULL;
 }
 
-void
-joinThread_gdb( void *thread_handle) {
+void joinThread_gdb(void *thread_handle)
+{
 }
 
 //Implementations-------------------------------------------------------------------------
 
 @implementation NSApplication(delegate)
 
-- (BOOL)application:(NSApplication *)theApplication openFile:(NSString *)filename
+- (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
 {
+	//verify everything
+	if(sender != NSApp)return NO;
+	if(!filename)return NO;
+	if([filename length] == 0)return NO;
+
 	if([NDS loadROM:filename])
 		return YES;
 
 	return NO;
 }
 
-- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
+- (void)application:(NSApplication*)sender openFiles:(NSArray*)filenames
 {
-	//messageDialog(@"Openfiles",@"");
+	//verify everything
+	if(sender != NSApp)goto fail;
+	if(!filenames)goto fail;
+	if([filenames count] == 0)goto fail;
+	NSString *filename = [filenames lastObject];
+	if(!filename)goto fail;
+	if([filename length] == 0)goto fail;
+
+	if([NDS loadROM:filename])
+	{
+		[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+		return;
+	}
+
+fail:
+	[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+
 }
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
+- (void)applicationWillFinishLaunching:(NSNotification *)aNotification
 {
+	//Set default values for all preferences
+	//(this wont override saved preferences as
+	//they work in different preference domains)
+	setAppDefaults();
 
-	//More app Init ------------------------------------------------------------------------------
+	//App Init ------------------------------------------------------------------------------
 
 	//Bring the application to the front
 	[NSApp activateIgnoringOtherApps:TRUE];
@@ -586,21 +634,19 @@ joinThread_gdb( void *thread_handle) {
 	//create the video output window (the only window that opens with the app)
 	main_window = [[VideoOutputWindow alloc] init];
 
-	//start with a blank screen
-	[main_window clearScreen];
-
 	//create the menus
 	CreateMenu();
 
 	//init opengl 3d ness
 	NDS_3D_SetDriver (GPU3D_OPENGL);
 	if(!gpu3D->NDS_3D_Init())
-		messageDialog(@"Error", @"Unable to initialize OpenGL components");
+		messageDialog(localizedString(@"Error", nil), @"Unable to initialize OpenGL components");
+}
 
-	//[NDS LoadROM:@"/Users/gecko/nds/0004 - Feel the Magic - XY-XX (U) (Trashman).nds"];
-	//^ above line breaks everything!?
+- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
+{
 
-	//Main program loop ----------------------------------------------------------------------------
+	//Start the main program loop ----------------------------------------------------------------------------
 
 #ifdef MULTITHREADED
 
@@ -627,4 +673,5 @@ joinThread_gdb( void *thread_handle) {
 	//AskForQuit takes care of quitting, dont need cocoa to do it for us
 	return NSTerminateCancel;
 }
+
 @end

@@ -24,6 +24,7 @@
 #import "globals.h"
 #import "main_window.h"
 #import "nds_control.h"
+#import "screenshot.h"
 
 //DeSmuME general includes
 #define OBJ_C
@@ -106,10 +107,6 @@ unsigned short save_slot_10 = 109; //F10
 NSOpenGLContext *gpu_context;
 
 //rotation
-#define ROTATION_0   0
-#define ROTATION_90  1
-#define ROTATION_180 2
-#define ROTATION_270 3
 u8 rotation = ROTATION_0;
 
 //extern unsigned char GPU_screen3D[256*256*4];
@@ -151,7 +148,7 @@ NSSize min_size;
 
 	if(self==nil)
 	{
-		messageDialog(@"Error", @"Could not init frame for OpenGL display");
+		messageDialog(localizedString(@"Error", nil), @"Could not init frame for OpenGL display");
 		return nil;
 	}
 
@@ -172,14 +169,14 @@ NSSize min_size;
 	NSOpenGLPixelFormat* pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 	if(pixel_format == nil)
 	{
-		messageDialog(@"Error", @"Couldn't create OpenGL pixel format for video output");
+		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for video output");
 		return self;
 	}
 
 	context = [[NSOpenGLContext alloc] initWithFormat:pixel_format shareContext:nil];
 	if(context == nil)
 	{
-		messageDialog(@"Error", @"Couldn't create OpenGL context for video output");
+		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL context for video output");
 		return self;
 	}
 
@@ -202,14 +199,14 @@ NSSize min_size;
 	NSOpenGLPixelFormat* pixel_format2 = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs2];
 	if(pixel_format2 == nil)
 	{
-		messageDialog(@"Error", @"Couldn't create OpenGL pixel format for GPU");
+		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for GPU");
 		return self;
 	}
 
 	gpu_context = [[NSOpenGLContext alloc] initWithFormat:pixel_format2 shareContext:nil];
 	if(gpu_context == nil)
 	{
-		messageDialog(@"Error", @"Couldn't create OpenGL context for GPU");
+		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL context for GPU");
 		return self;
 	}
 
@@ -346,7 +343,7 @@ NSSize min_size;
 
 	backing:NSBackingStoreBuffered defer:NO screen:nil];
 
-	[self setTitle:@"DeSmuME Emulator"];
+	[self setTitle:localizedString(@"DeSmuME Emulator", nil)];
 
 	//set minimum window size (to the starting size, pixel-for-pixel to DS)
 	//this re-gets the window rect to include the title bar size
@@ -373,7 +370,7 @@ NSSize min_size;
 	rect.size.width = DS_SCREEN_WIDTH;
 	rect.size.height = DS_SCREEN_HEIGHT_COMBINED;
 	if((video_output_view = [[VideoOutputView alloc] initWithFrame:rect]) == nil)
-		messageDialog(@"Error", @"Couldn't create OpenGL view to display screens");
+		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL view to display screens");
 	else
 	{
 		[[self contentView] addSubview:video_output_view];
@@ -382,6 +379,9 @@ NSSize min_size;
 
 	//Show the window
 	[[[NSWindowController alloc] initWithWindow:self] showWindow:nil];
+
+	//start with a blank screen
+	[self clearScreenBlack];
 
 	return self;
 }
@@ -410,10 +410,18 @@ NSSize min_size;
 	[video_output_view draw];
 }
 
-- (void)clearScreen
+- (void)clearScreenWhite
 {
 	//fill our buffer with pure white
 	memset(&correction_buffer, 255, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
+
+	[video_output_view draw];
+}
+
+- (void)clearScreenBlack
+{
+	//fill our buffer with pure white
+	memset(&correction_buffer, 0, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
 
 	[video_output_view draw];
 }
@@ -450,8 +458,6 @@ NSSize min_size;
 
 - (void)toggleMinSize
 {
-	static bool state = false;
-
 	if([min_size_item state] == NSOnState)
 	{
 		[min_size_item setState:NSOffState];
@@ -879,6 +885,31 @@ NSSize min_size;
 		GPU_addBack(MainScreen.gpu, 3);
 		[subBG3_item setState:NSOnState];
 	}
+}
+
+- (void)screenShotToFile
+{
+	BOOL was_paused = paused;
+	[NDS pause];
+
+	[[Screenshot alloc] initWithBuffer:correction_buffer rotation:rotation saveOnly:YES];
+
+	if(!was_paused)[NDS execute];
+}
+
+- (void)screenShotToWindow
+{
+	BOOL was_paused = paused;
+	[NDS pause];
+
+	[[Screenshot alloc] initWithBuffer:correction_buffer rotation:rotation saveOnly:NO];
+
+	if(!was_paused)[NDS execute];
+}
+
+- (const u8*)getBuffer
+{
+	return (const u8*)correction_buffer;
 }
 
 - (void)keyDown:(NSEvent*)event
