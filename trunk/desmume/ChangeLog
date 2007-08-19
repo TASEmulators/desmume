@@ -7,7 +7,7 @@
  - Added screenshot to separate window feature. [Jeff B]
  - Added the preferences window. [Jeff B]
  - Added option to disable execution upon loading. [Jeff B]
- - Many more strings are translatable now [Jeff B]
+ - Many more strings are translatable now. [Jeff B]
  - Default screen color now black (better represents being "off" and easier on eyes at night) [Jeff B]
 
 0.7.2 -> 0.7.3
