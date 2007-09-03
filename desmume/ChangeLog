@@ -9,6 +9,8 @@
  - Added option to disable execution upon loading. [Jeff B]
  - Many more strings are translatable now. [Jeff B]
  - Default screen color now black (better represents being "off" and easier on eyes at night) [Jeff B]
+ general:
+ - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
 
 0.7.2 -> 0.7.3
  gtk-glade:
