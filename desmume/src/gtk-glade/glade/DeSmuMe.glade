@@ -1320,8 +1320,8 @@
   <property name="name" translatable="yes">DeSmuME</property>
   <property name="comments" translatable="yes">Nintendo DS emulator based on work by Yopyop</property>
   <property name="wrap_license">False</property>
-  <property name="website">http://desmume.sf.net</property>
-  <property name="website_label" translatable="yes">http://desmume.sf.net</property>
+  <property name="website">http://desmume.org</property>
+  <property name="website_label" translatable="yes">http://desmume.org</property>
   <property name="authors">Original author:
   yopyop (now inactive)
 
