@@ -402,7 +402,7 @@ void About(GtkWidget* widget, gpointer data)
 	gtk_show_about_dialog(GTK_WINDOW(pWindow),
 			"name", "DeSmuME",
 			"version", VERSION,
-			"website", "http://desmume.sf.net",
+			"website", "http://desmume.org",
 			"logo", pixbuf,
 			"comments", "Nintendo DS emulator based on work by Yopyop",
 			NULL);

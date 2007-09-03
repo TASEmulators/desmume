@@ -368,6 +368,7 @@ void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data) 
    FIXME: Add proper copyright */
 void  on_menu_apropos_activate (GtkMenuItem *menuitem, gpointer user_data) {
   GtkWidget * wAbout = glade_xml_get_widget(xml, "wAboutDlg");
+  gtk_about_dialog_set_version((GtkAboutDialog *)wAbout, VERSION);
   gtk_widget_show(wAbout);
 }
 
