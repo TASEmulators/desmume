@@ -7,4 +7,4 @@ Comment=Nintento DS emulator
 TryExec=desmume-glade
 Exec=desmume-glade
 Icon=DeSmuME.xpm
-Categories=GNOME;GTK;Application;Game;
+Categories=GNOME;GTK;Game;Emulator
