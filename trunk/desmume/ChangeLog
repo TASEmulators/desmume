@@ -15,8 +15,10 @@
  - Added DeSmuME version in about dialog. [evilynux]
  - Updated website url in about dialog. [evilynux]
  - Added Brazilian Portuguese translation by Dreampeppers99. [evilynux]
+ - Better desktop menu entry following FreeDesktop specifications. [evilynux]
  gtk:
  - Updated website url in about dialog. [evilynux]
+ - Better desktop menu entry following FreeDesktop specifications. [evilynux]
 	
 0.7.2 -> 0.7.3
  gtk-glade:
