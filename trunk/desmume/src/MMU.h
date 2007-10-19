@@ -145,13 +145,10 @@ void MMU_clearMem( void);
 void MMU_setRom(u8 * rom, u32 mask);
 void MMU_unsetRom( void);
 
-#define MMU_readByte		MMU_read8
-#define MMU_readHWord	    MMU_read16
-#define MMU_readWord		MMU_read32
-#define MMU_readByteACL		MMU_read8_acl
-#define MMU_readHWordACL	MMU_read16_acl
-#define MMU_readWordACL		MMU_read32_acl
 
+/**
+ * Memory reading
+ */
 u8 FASTCALL MMU_read8(u32 proc, u32 adr);
 u16 FASTCALL MMU_read16(u32 proc, u32 adr);
 u32 FASTCALL MMU_read32(u32 proc, u32 adr);
@@ -166,17 +163,12 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr);
 	#define MMU_read32_acl(proc,adr,access)  MMU_read32(proc,adr)
 #endif
 
-#define MMU_writeByte	MMU_write8
-#define MMU_writeHWord	MMU_write16
-#define MMU_writeWord	MMU_write32
-#define MMU_writeByteACL	MMU_write8_acl
-#define MMU_writeHWordACL	MMU_write16_acl
-#define MMU_writeWordACL	MMU_write32_acl
- 
+/**
+ * Memory writing
+ */
 void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val);
 void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val);
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val);
-void FASTCALL MMU_writeXX(u32 proc, u32 adr, u32 val, u8 nbbytes);
 
 #ifdef MMU_ENABLE_ACL
 	void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val);

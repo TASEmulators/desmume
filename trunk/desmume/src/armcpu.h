@@ -195,6 +195,7 @@ typedef struct armcpu_t
 
         u32 (* *swi_tab)(struct armcpu_t * cpu);
 
+#ifdef GDB_STUB
   /** there is a pending irq for the cpu */
   int irq_flag;
 
@@ -204,6 +205,7 @@ typedef struct armcpu_t
   /** data for the post executed function */
   void *post_ex_fn_data;
 
+
   /** flag indicating if the processor is stalled */
   int stalled;
 
@@ -212,14 +214,18 @@ typedef struct armcpu_t
 
   /** the ctrl interface */
   struct armcpu_ctrl_iface ctrl_iface;
+#endif
 } armcpu_t;
 
-
+#ifdef GDB_STUB
 int armcpu_new( armcpu_t *armcpu, u32 id, struct armcpu_memory_iface *mem_if,
                 struct armcpu_ctrl_iface **ctrl_iface_ret);
+#else
+int armcpu_new( armcpu_t *armcpu, u32 id);
+#endif
 void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
-//u32 armcpu_prefetch(armcpu_t *armcpu);
+u32 armcpu_prefetch(armcpu_t *armcpu);
 u32 armcpu_exec(armcpu_t *armcpu);
 //BOOL armcpu_irqExeption(armcpu_t *armcpu);
 //BOOL armcpu_prefetchExeption(armcpu_t *armcpu);

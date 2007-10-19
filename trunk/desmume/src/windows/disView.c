@@ -91,7 +91,7 @@ LRESULT DesViewBox_OnPaint(CDesView * win, WPARAM wParam, LPARAM lParam)
         
              for(u32 i = 0; i < nbligne; ++i)
              {
-                  u32 ins = MMU_readWord(win->cpu->proc_ID, adr);
+                  u32 ins = MMU_read32(win->cpu->proc_ID, adr);
                   des_arm_instructions_set[INDEX(ins)](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %08X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
                   DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
@@ -118,7 +118,7 @@ LRESULT DesViewBox_OnPaint(CDesView * win, WPARAM wParam, LPARAM lParam)
         
              for(u32 i = 0; i < nbligne; ++i)
              {
-                  u32 ins = MMU_readHWord(win->cpu->proc_ID, adr);
+                  u32 ins = MMU_read16(win->cpu->proc_ID, adr);
                   des_thumb_instructions_set[ins>>6](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %04X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
                   DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
@@ -448,7 +448,7 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         
              for(i = 0; i < nbligne; ++i)
              {
-                  u32 ins = MMU_readWord(win->cpu->proc_ID, adr);
+                  u32 ins = MMU_read32(win->cpu->proc_ID, adr);
                   des_arm_instructions_set[INDEX(ins)](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %08X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
                   DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);
@@ -482,7 +482,7 @@ LRESULT DisViewBox_OnPaint(disview_struct *win, WPARAM wParam, LPARAM lParam)
         
              for(i = 0; i < nbligne; ++i)
              {
-                  u32 ins = MMU_readHWord(win->cpu->proc_ID, adr);
+                  u32 ins = MMU_read16(win->cpu->proc_ID, adr);
                   des_thumb_instructions_set[ins>>6](adr, ins, txt);
                   sprintf(text, "%04X:%04X  %04X  %s", (int)(adr>>16), (int)(adr&0xFFFF), (int)ins, txt);
                   DrawText(mem_dc, text, -1, &rect, DT_TOP | DT_LEFT | DT_NOPREFIX);

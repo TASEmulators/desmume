@@ -97,7 +97,7 @@ LRESULT MemViewBox_OnPaint(CMemView * win, WPARAM wParam, LPARAM lParam)
                 if(win->representation == 0)
                      for(j=0; j<16; ++j)
                      {
-                          sprintf(text, "%02X", MMU_readByte(win->cpu, adr+j));
+                          sprintf(text, "%02X", MMU_read8(win->cpu, adr+j));
                           DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                           r.left+=3*fontsize.cx;
                      }
@@ -105,14 +105,14 @@ LRESULT MemViewBox_OnPaint(CMemView * win, WPARAM wParam, LPARAM lParam)
                      if(win->representation == 1)
                           for(j=0; j<16; j+=2)
                           {
-                               sprintf(text, "%04X", MMU_readHWord(win->cpu, adr+j));
+                               sprintf(text, "%04X", MMU_read16(win->cpu, adr+j));
                                DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                                r.left+=5*fontsize.cx;
                           }
                      else
                           for(j=0; j<16; j+=4)
                           {
-                               sprintf(text, "%08X", (int)MMU_readWord(win->cpu, adr+j));
+                               sprintf(text, "%08X", (int)MMU_read32(win->cpu, adr+j));
                                DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                                r.left+=9*fontsize.cx;
                           }                     
@@ -121,7 +121,7 @@ LRESULT MemViewBox_OnPaint(CMemView * win, WPARAM wParam, LPARAM lParam)
                  
                 for(j=0; j<16; ++j)
                 {
-                        u8 c = MMU_readByte(win->cpu, adr+j);
+                        u8 c = MMU_read8(win->cpu, adr+j);
                         if(c >= 32 && c <= 127) {
                              text[j] = (char)c;
                         }
@@ -347,7 +347,7 @@ LRESULT MemViewBox_OnPaint(memview_struct * win, WPARAM wParam, LPARAM lParam)
                 if(win->representation == 0)
                      for(j=0; j<16; ++j)
                      {
-                          sprintf(text, "%02X", MMU_readByte(win->cpu, adr+j));
+                          sprintf(text, "%02X", MMU_read8(win->cpu, adr+j));
                           DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                           r.left+=3*fontsize.cx;
                      }
@@ -355,14 +355,14 @@ LRESULT MemViewBox_OnPaint(memview_struct * win, WPARAM wParam, LPARAM lParam)
                      if(win->representation == 1)
                           for(j=0; j<16; j+=2)
                           {
-                               sprintf(text, "%04X", MMU_readHWord(win->cpu, adr+j));
+                               sprintf(text, "%04X", MMU_read16(win->cpu, adr+j));
                                DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                                r.left+=5*fontsize.cx;
                           }
                      else
                           for(j=0; j<16; j+=4)
                           {
-                               sprintf(text, "%08X", (int)MMU_readWord(win->cpu, adr+j));
+                               sprintf(text, "%08X", (int)MMU_read32(win->cpu, adr+j));
                                DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
                                r.left+=9*fontsize.cx;
                           }                     
@@ -371,7 +371,7 @@ LRESULT MemViewBox_OnPaint(memview_struct * win, WPARAM wParam, LPARAM lParam)
                  
                 for(j=0; j<16; ++j)
                 {
-                        u8 c = MMU_readByte(win->cpu, adr+j);
+                        u8 c = MMU_read8(win->cpu, adr+j);
                         if(c >= 32 && c <= 127) {
                              text[j] = (char)c;
                         }

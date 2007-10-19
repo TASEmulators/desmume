@@ -590,13 +590,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
                     int nFunsterStil)
 
 {
+#ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
 	gdbstub_handle_t arm7_gdb_stub;
 	struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
 	struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
 	struct armcpu_ctrl_iface *arm9_ctrl_iface;
 	struct armcpu_ctrl_iface *arm7_ctrl_iface;
+#endif
+
 	struct configured_features my_config;
+
 
 	MSG messages;            /* Here messages to the application are saved */
     char text[80];
@@ -650,6 +654,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
+#ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
 			&arm9_memio, &arm9_direct_memory_iface);
@@ -670,22 +675,25 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		}
 	}
 
-
     NDS_Init( arm9_memio, &arm9_ctrl_iface,
 		arm7_memio, &arm7_ctrl_iface);
+#else
+	NDS_Init ();
+#endif
 
 
   /*
    * Activate the GDB stubs
    * This has to come after the NDS_Init where the cpus are set up.
    */
-  if ( my_config.arm9_gdb_port != 0) {
-    activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
-  }
-  if ( my_config.arm7_gdb_port != 0) {
-    activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
-  }
-
+#ifdef GDB_STUB
+	if ( my_config.arm9_gdb_port != 0) {
+		activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+	}
+	if ( my_config.arm7_gdb_port != 0) {
+		activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+	}
+#endif
     GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
     CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
