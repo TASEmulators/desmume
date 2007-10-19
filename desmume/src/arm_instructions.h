@@ -25,7 +25,7 @@
 #include "types.h"
 #include "armcpu.h"
 
-extern u32 (*FASTCALL arm_instructions_set[4096])(armcpu_t * cpu);
+extern u32 (FASTCALL* arm_instructions_set[4096])(armcpu_t * cpu);
  
 #endif
 

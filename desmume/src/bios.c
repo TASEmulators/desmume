@@ -219,7 +219,7 @@ u32 intrWaitARM(armcpu_t * cpu)
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = MMU_readWord(cpu->proc_ID, intrFlagAdr);
+     intr = MMU_read32(cpu->proc_ID, intrFlagAdr);
      intrFlag = cpu->R[1] & intr;
      
      if(intrFlag)
@@ -227,7 +227,7 @@ u32 intrWaitARM(armcpu_t * cpu)
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
-          MMU_writeWord(cpu->proc_ID, intrFlagAdr, intr);
+          MMU_write32(cpu->proc_ID, intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
@@ -253,7 +253,7 @@ u32 waitVBlankARM(armcpu_t * cpu)
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = MMU_readWord(cpu->proc_ID, intrFlagAdr);
+     intr = MMU_read32(cpu->proc_ID, intrFlagAdr);
      intrFlag = 1 & intr;
      
      if(intrFlag)
@@ -261,7 +261,7 @@ u32 waitVBlankARM(armcpu_t * cpu)
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
-          MMU_writeWord(cpu->proc_ID, intrFlagAdr, intr);
+          MMU_write32(cpu->proc_ID, intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
@@ -329,7 +329,7 @@ u32 copy(armcpu_t* cpu)
                          cnt &= 0x1FFFFF;
                          while(cnt)
                          {
-                              MMU_writeHWord(cpu->proc_ID, dst, MMU_readHWord(cpu->proc_ID, src));
+                              MMU_write16(cpu->proc_ID, dst, MMU_read16(cpu->proc_ID, src));
                               cnt--;
                               dst+=2;
                               src+=2;
@@ -337,11 +337,11 @@ u32 copy(armcpu_t* cpu)
                          break;
                     case 1:
                          {
-                              u32 val = MMU_readHWord(cpu->proc_ID, src);
+                              u32 val = MMU_read16(cpu->proc_ID, src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
-                                   MMU_writeHWord(cpu->proc_ID, dst, val);
+                                   MMU_write16(cpu->proc_ID, dst, val);
                                    cnt--;
                                    dst+=2;
                               }
@@ -358,7 +358,7 @@ u32 copy(armcpu_t* cpu)
                          cnt &= 0x1FFFFF;
                          while(cnt)
                          {
-                              MMU_writeWord(cpu->proc_ID, dst, MMU_readWord(cpu->proc_ID, src));
+                              MMU_write32(cpu->proc_ID, dst, MMU_read32(cpu->proc_ID, src));
                               cnt--;
                               dst+=4;
                               src+=4;
@@ -366,11 +366,11 @@ u32 copy(armcpu_t* cpu)
                          break;
                     case 1:
                          {
-                              u32 val = MMU_readWord(cpu->proc_ID, src);
+                              u32 val = MMU_read32(cpu->proc_ID, src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
-                                   MMU_writeWord(cpu->proc_ID, dst, val);
+                                   MMU_write32(cpu->proc_ID, dst, val);
                                    cnt--;
                                    dst+=4;
                               }
@@ -394,7 +394,7 @@ u32 fastCopy(armcpu_t* cpu)
                cnt &= 0x1FFFFF;
                while(cnt)
                {
-                    MMU_writeWord(cpu->proc_ID, dst, MMU_readWord(cpu->proc_ID, src));
+                    MMU_write32(cpu->proc_ID, dst, MMU_read32(cpu->proc_ID, src));
                     cnt--;
                     dst+=4;
                     src+=4;
@@ -402,11 +402,11 @@ u32 fastCopy(armcpu_t* cpu)
                break;
           case 1:
                {
-                    u32 val = MMU_readWord(cpu->proc_ID, src);
+                    u32 val = MMU_read32(cpu->proc_ID, src);
                     cnt &= 0x1FFFFF;
                     while(cnt)
                     {
-                         MMU_writeWord(cpu->proc_ID, dst, val);
+                         MMU_write32(cpu->proc_ID, dst, val);
                          cnt--;
                          dst+=4;
                     }
@@ -425,7 +425,7 @@ u32 LZ77UnCompVram(armcpu_t* cpu)
   int len;
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
-  u32 header = MMU_readWord(cpu->proc_ID, source);
+  u32 header = MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -439,7 +439,7 @@ u32 LZ77UnCompVram(armcpu_t* cpu)
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = MMU_readByte(cpu->proc_ID, source++);
+    u8 d = MMU_read8(cpu->proc_ID, source++);
 
     if(d) {
       for(i1 = 0; i1 < 8; i1++) {
@@ -447,18 +447,18 @@ u32 LZ77UnCompVram(armcpu_t* cpu)
           int length;
           int offset;
           u32 windowOffset;
-          u16 data = MMU_readByte(cpu->proc_ID, source++) << 8;
-          data |= MMU_readByte(cpu->proc_ID, source++);
+          u16 data = MMU_read8(cpu->proc_ID, source++) << 8;
+          data |= MMU_read8(cpu->proc_ID, source++);
           length = (data >> 12) + 3;
           offset = (data & 0x0FFF);
           windowOffset = dest + byteCount - offset - 1;
           for(i2 = 0; i2 < length; i2++) {
-            writeValue |= (MMU_readByte(cpu->proc_ID, windowOffset++) << byteShift);
+            writeValue |= (MMU_read8(cpu->proc_ID, windowOffset++) << byteShift);
             byteShift += 8;
             byteCount++;
 
             if(byteCount == 2) {
-              MMU_writeHWord(cpu->proc_ID, dest, writeValue);
+              MMU_write16(cpu->proc_ID, dest, writeValue);
               dest += 2;
               byteCount = 0;
               byteShift = 0;
@@ -469,11 +469,11 @@ u32 LZ77UnCompVram(armcpu_t* cpu)
               return 0;
           }
         } else {
-          writeValue |= (MMU_readByte(cpu->proc_ID, source++) << byteShift);
+          writeValue |= (MMU_read8(cpu->proc_ID, source++) << byteShift);
           byteShift += 8;
           byteCount++;
           if(byteCount == 2) {
-            MMU_writeHWord(cpu->proc_ID, dest, writeValue);
+            MMU_write16(cpu->proc_ID, dest, writeValue);
             dest += 2;
             byteCount = 0;
             byteShift = 0;
@@ -487,11 +487,11 @@ u32 LZ77UnCompVram(armcpu_t* cpu)
       }
     } else {
       for(i1 = 0; i1 < 8; i1++) {
-        writeValue |= (MMU_readByte(cpu->proc_ID, source++) << byteShift);
+        writeValue |= (MMU_read8(cpu->proc_ID, source++) << byteShift);
         byteShift += 8;
         byteCount++;
         if(byteCount == 2) {
-          MMU_writeHWord(cpu->proc_ID, dest, writeValue);
+          MMU_write16(cpu->proc_ID, dest, writeValue);
           dest += 2;      
           byteShift = 0;
           byteCount = 0;
@@ -513,7 +513,7 @@ u32 LZ77UnCompWram(armcpu_t* cpu)
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = MMU_readWord(cpu->proc_ID, source);
+  u32 header = MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -523,7 +523,7 @@ u32 LZ77UnCompWram(armcpu_t* cpu)
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = MMU_readByte(cpu->proc_ID, source++);
+    u8 d = MMU_read8(cpu->proc_ID, source++);
 
     if(d) {
       for(i1 = 0; i1 < 8; i1++) {
@@ -531,19 +531,19 @@ u32 LZ77UnCompWram(armcpu_t* cpu)
           int length;
           int offset;
           u32 windowOffset;
-          u16 data = MMU_readByte(cpu->proc_ID, source++) << 8;
-          data |= MMU_readByte(cpu->proc_ID, source++);
+          u16 data = MMU_read8(cpu->proc_ID, source++) << 8;
+          data |= MMU_read8(cpu->proc_ID, source++);
           length = (data >> 12) + 3;
           offset = (data & 0x0FFF);
           windowOffset = dest - offset - 1;
           for(i2 = 0; i2 < length; i2++) {
-            MMU_writeByte(cpu->proc_ID, dest++, MMU_readByte(cpu->proc_ID, windowOffset++));
+            MMU_write8(cpu->proc_ID, dest++, MMU_read8(cpu->proc_ID, windowOffset++));
             len--;
             if(len == 0)
               return 0;
           }
         } else {
-          MMU_writeByte(cpu->proc_ID, dest++, MMU_readByte(cpu->proc_ID, source++));
+          MMU_write8(cpu->proc_ID, dest++, MMU_read8(cpu->proc_ID, source++));
           len--;
           if(len == 0)
             return 0;
@@ -552,7 +552,7 @@ u32 LZ77UnCompWram(armcpu_t* cpu)
       }
     } else {
       for(i1 = 0; i1 < 8; i1++) {
-        MMU_writeByte(cpu->proc_ID, dest++, MMU_readByte(cpu->proc_ID, source++));
+        MMU_write8(cpu->proc_ID, dest++, MMU_read8(cpu->proc_ID, source++));
         len--;
         if(len == 0)
           return 0;
@@ -572,7 +572,7 @@ u32 RLUnCompVram(armcpu_t* cpu)
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = MMU_readWord(cpu->proc_ID, source);
+  u32 header = MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -585,10 +585,10 @@ u32 RLUnCompVram(armcpu_t* cpu)
   writeValue = 0;
 
   while(len > 0) {
-    u8 d = MMU_readByte(cpu->proc_ID, source++);
+    u8 d = MMU_read8(cpu->proc_ID, source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = MMU_readByte(cpu->proc_ID, source++);
+      u8 data = MMU_read8(cpu->proc_ID, source++);
       l += 3;
       for(i = 0;i < l; i++) {
         writeValue |= (data << byteShift);
@@ -596,7 +596,7 @@ u32 RLUnCompVram(armcpu_t* cpu)
         byteCount++;
 
         if(byteCount == 2) {
-          MMU_writeHWord(cpu->proc_ID, dest, writeValue);
+          MMU_write16(cpu->proc_ID, dest, writeValue);
           dest += 2;
           byteCount = 0;
           byteShift = 0;
@@ -609,11 +609,11 @@ u32 RLUnCompVram(armcpu_t* cpu)
     } else {
       l++;
       for(i = 0; i < l; i++) {
-        writeValue |= (MMU_readByte(cpu->proc_ID, source++) << byteShift);
+        writeValue |= (MMU_read8(cpu->proc_ID, source++) << byteShift);
         byteShift += 8;
         byteCount++;
         if(byteCount == 2) {
-          MMU_writeHWord(cpu->proc_ID, dest, writeValue);
+          MMU_write16(cpu->proc_ID, dest, writeValue);
           dest += 2;
           byteCount = 0;
           byteShift = 0;
@@ -635,7 +635,7 @@ u32 RLUnCompWram(armcpu_t* cpu)
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = MMU_readWord(cpu->proc_ID, source);
+  u32 header = MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -645,13 +645,13 @@ u32 RLUnCompWram(armcpu_t* cpu)
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = MMU_readByte(cpu->proc_ID, source++);
+    u8 d = MMU_read8(cpu->proc_ID, source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = MMU_readByte(cpu->proc_ID, source++);
+      u8 data = MMU_read8(cpu->proc_ID, source++);
       l += 3;
       for(i = 0;i < l; i++) {
-        MMU_writeByte(cpu->proc_ID, dest++, data);
+        MMU_write8(cpu->proc_ID, dest++, data);
         len--;
         if(len == 0)
           return 0;
@@ -659,7 +659,7 @@ u32 RLUnCompWram(armcpu_t* cpu)
     } else {
       l++;
       for(i = 0; i < l; i++) {
-        MMU_writeByte(cpu->proc_ID, dest++,  MMU_readByte(cpu->proc_ID, source++));
+        MMU_write8(cpu->proc_ID, dest++,  MMU_read8(cpu->proc_ID, source++));
         len--;
         if(len == 0)
           return 0;
@@ -680,14 +680,14 @@ u32 UnCompHuffman(armcpu_t* cpu)
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = MMU_readByte(cpu->proc_ID, source);
+  header = MMU_read8(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
     return 0;  
   
-  treeSize = MMU_readByte(cpu->proc_ID, source++);
+  treeSize = MMU_read8(cpu->proc_ID, source++);
 
   treeStart = source;
 
@@ -696,11 +696,11 @@ u32 UnCompHuffman(armcpu_t* cpu)
   len = header >> 8;
 
   mask = 0x80000000;
-  data = MMU_readByte(cpu->proc_ID, source);
+  data = MMU_read8(cpu->proc_ID, source);
   source += 4;
 
   pos = 0;
-  rootNode = MMU_readByte(cpu->proc_ID, treeStart);
+  rootNode = MMU_read8(cpu->proc_ID, treeStart);
   currentNode = rootNode;
   writeData = 0;
   byteShift = 0;
@@ -719,12 +719,12 @@ u32 UnCompHuffman(armcpu_t* cpu)
         // right
         if(currentNode & 0x40)
           writeData = 1;
-        currentNode = MMU_readByte(cpu->proc_ID, treeStart+pos+1);
+        currentNode = MMU_read8(cpu->proc_ID, treeStart+pos+1);
       } else {
         // left
         if(currentNode & 0x80)
           writeData = 1;
-        currentNode = MMU_readByte(cpu->proc_ID, treeStart+pos);
+        currentNode = MMU_read8(cpu->proc_ID, treeStart+pos);
       }
       
       if(writeData) {
@@ -739,7 +739,7 @@ u32 UnCompHuffman(armcpu_t* cpu)
         if(byteCount == 4) {
           byteCount = 0;
           byteShift = 0;
-          MMU_writeByte(cpu->proc_ID, dest, writeValue);
+          MMU_write8(cpu->proc_ID, dest, writeValue);
           writeValue = 0;
           dest += 4;
           len -= 4;
@@ -748,7 +748,7 @@ u32 UnCompHuffman(armcpu_t* cpu)
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = MMU_readByte(cpu->proc_ID, source);
+        data = MMU_read8(cpu->proc_ID, source);
         source += 4;
       }
     }
@@ -766,12 +766,12 @@ u32 UnCompHuffman(armcpu_t* cpu)
         // right
         if(currentNode & 0x40)
           writeData = 1;
-        currentNode = MMU_readByte(cpu->proc_ID, treeStart+pos+1);
+        currentNode = MMU_read8(cpu->proc_ID, treeStart+pos+1);
       } else {
         // left
         if(currentNode & 0x80)
           writeData = 1;
-        currentNode = MMU_readByte(cpu->proc_ID, treeStart+pos);
+        currentNode = MMU_read8(cpu->proc_ID, treeStart+pos);
       }
       
       if(writeData) {
@@ -792,7 +792,7 @@ u32 UnCompHuffman(armcpu_t* cpu)
           if(byteCount == 4) {
             byteCount = 0;
             byteShift = 0;
-            MMU_writeByte(cpu->proc_ID, dest, writeValue);
+            MMU_write8(cpu->proc_ID, dest, writeValue);
             dest += 4;
             writeValue = 0;
             len -= 4;
@@ -805,7 +805,7 @@ u32 UnCompHuffman(armcpu_t* cpu)
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = MMU_readByte(cpu->proc_ID, source);
+        data = MMU_read8(cpu->proc_ID, source);
         source += 4;
       }
     }    
@@ -823,15 +823,15 @@ u32 BitUnPack(armcpu_t* cpu)
   dest = cpu->R[1];
   header = cpu->R[2];
   
-  len = MMU_readHWord(cpu->proc_ID, header);
+  len = MMU_read16(cpu->proc_ID, header);
   // check address
-  bits = MMU_readByte(cpu->proc_ID, header+2);
+  bits = MMU_read8(cpu->proc_ID, header+2);
   revbits = 8 - bits; 
   // u32 value = 0;
-  base = MMU_readByte(cpu->proc_ID, header+4);
+  base = MMU_read8(cpu->proc_ID, header+4);
   addBase = (base & 0x80000000) ? 1 : 0;
   base &= 0x7fffffff;
-  dataSize = MMU_readByte(cpu->proc_ID, header+3);
+  dataSize = MMU_read8(cpu->proc_ID, header+3);
 
   data = 0; 
   bitwritecount = 0; 
@@ -840,7 +840,7 @@ u32 BitUnPack(armcpu_t* cpu)
     if(len < 0)
       break;
     mask = 0xff >> revbits; 
-    b = MMU_readByte(cpu->proc_ID, source); 
+    b = MMU_read8(cpu->proc_ID, source); 
     source++;
     bitcount = 0;
     while(1) {
@@ -854,7 +854,7 @@ u32 BitUnPack(armcpu_t* cpu)
       data |= temp << bitwritecount;
       bitwritecount += dataSize;
       if(bitwritecount >= 32) {
-        MMU_writeByte(cpu->proc_ID, dest, data);
+        MMU_write8(cpu->proc_ID, dest, data);
         dest += 4;
         data = 0;
         bitwritecount = 0;
@@ -875,7 +875,7 @@ u32 Diff8bitUnFilterWram(armcpu_t* cpu)
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = MMU_readByte(cpu->proc_ID, source);
+  header = MMU_read8(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -884,14 +884,14 @@ u32 Diff8bitUnFilterWram(armcpu_t* cpu)
 
   len = header >> 8;
 
-  data = MMU_readByte(cpu->proc_ID, source++);
-  MMU_writeByte(cpu->proc_ID, dest++, data);
+  data = MMU_read8(cpu->proc_ID, source++);
+  MMU_write8(cpu->proc_ID, dest++, data);
   len--;
   
   while(len > 0) {
-    diff = MMU_readByte(cpu->proc_ID, source++);
+    diff = MMU_read8(cpu->proc_ID, source++);
     data += diff;
-    MMU_writeByte(cpu->proc_ID, dest++, data);
+    MMU_write8(cpu->proc_ID, dest++, data);
     len--;
   }
   return 1;
@@ -906,7 +906,7 @@ u32 Diff16bitUnFilter(armcpu_t* cpu)
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = MMU_readByte(cpu->proc_ID, source);
+  header = MMU_read8(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -915,17 +915,17 @@ u32 Diff16bitUnFilter(armcpu_t* cpu)
   
   len = header >> 8;
 
-  data = MMU_readHWord(cpu->proc_ID, source);
+  data = MMU_read16(cpu->proc_ID, source);
   source += 2;
-  MMU_writeHWord(cpu->proc_ID, dest, data);
+  MMU_write16(cpu->proc_ID, dest, data);
   dest += 2;
   len -= 2;
   
   while(len >= 2) {
-    u16 diff = MMU_readHWord(cpu->proc_ID, source);
+    u16 diff = MMU_read16(cpu->proc_ID, source);
     source += 2;
     data += diff;
-    MMU_writeHWord(cpu->proc_ID, dest, data);
+    MMU_write16(cpu->proc_ID, dest, data);
     dest += 2;
     len -= 2;
   }
@@ -940,7 +940,7 @@ u32 bios_sqrt(armcpu_t* cpu)
 
 u32 setHaltCR(armcpu_t* cpu)
 { 
-     MMU_writeByte(cpu->proc_ID, 0x4000300+cpu->proc_ID, cpu->R[0]);
+     MMU_write8(cpu->proc_ID, 0x4000300+cpu->proc_ID, cpu->R[0]);
      return 1;
 }
 
@@ -973,7 +973,7 @@ u32 getCRC16(armcpu_t* cpu)
   static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
   for(i = 0; i < size; i++)
   {
-    crc = crc ^ MMU_readByte( cpu->proc_ID, datap + i);
+    crc = crc ^ MMU_read8( cpu->proc_ID, datap + i);
 
     for(j = 0; j < 8; j++) {
       int do_bit = 0;

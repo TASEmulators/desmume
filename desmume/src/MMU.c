@@ -2918,14 +2918,14 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 		if ((MMU.DMACrt[proc][num]>>26)&1)
 			for(; i < taille; ++i)
 			{
-				MMU_writeWord(proc, dst, MMU_readWord(proc, src));
+				MMU_write32(proc, dst, MMU_read32(proc, src));
 				dst += dstinc;
 				src += srcinc;
 			}
 		else
 			for(; i < taille; ++i)
 			{
-				MMU_write16(proc, dst, MMU_readHWord(proc, src));
+				MMU_write16(proc, dst, MMU_read16(proc, src));
 				dst += dstinc;
 				src += srcinc;
 			}
