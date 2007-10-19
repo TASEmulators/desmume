@@ -50,7 +50,8 @@
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-static unsigned char  GPU_screen3D[256*256*4]={0};
+static unsigned char  GPU_screen3D		[256*256*3]={0};
+static unsigned char  GPU_screen3DMask	[256*256]={0};
 
 // Acceleration tables
 static float*		float16table = NULL;
@@ -101,6 +102,7 @@ static float invTexWidth  = 1.f;
 static float invTexHeight = 1.f;
 static float fogColor[4] = {0.f};
 static float fogOffset = 0.f;
+static float alphaTestRef = 0.01f;
 
 static unsigned long clCmd = 0;
 static unsigned long clInd = 0;
@@ -121,6 +123,7 @@ extern HWND		hwnd;
 char NDS_glInit(void)
 {
 	int i;
+
 #ifndef DESMUME_COCOA
 	HDC						oglDC = NULL;
 	HGLRC					hRC = NULL;
@@ -156,9 +159,13 @@ char NDS_glInit(void)
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_ALPHA_TEST);
+	glEnable(GL_STENCIL_TEST);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glColor3f (1.f, 1.f, 1.f);
+	glAlphaFunc		(GL_GREATER, 0.01f);
+	glStencilOp		(GL_KEEP, GL_KEEP, GL_INCR);
+	glClearColor	(0.0f, 0.0f, 0.0f, 0.0f);
+	glColor3f		(1.f, 1.f, 1.f);
 
 	glGenTextures (1, &oglTextureID);
 
@@ -208,7 +215,7 @@ char NDS_glInit(void)
 
 void NDS_glViewPort(unsigned long v)
 {
-	glViewport( (v&0xFF), ((v>>8)&0xFF), ((v>>16)&0xFF), (v>>24));
+	glViewport( (v&0xFF), ((v>>8)&0xFF), ((v>>16)&0xFF)+1, (v>>24)+1);
 }
 
 void NDS_glClearColor(unsigned long v)
@@ -970,14 +977,14 @@ static __inline void  SetVertex()
 
 	if (texCoordinateTransform == 3)
 	{
-		int s2 =	(int)((	coord[0]*mtxCurrent[3][0] +
-							coord[1]*mtxCurrent[3][4] +
-							coord[2]*mtxCurrent[3][8]) + s);
-		int t2 =	(int)((	coord[0]*mtxCurrent[3][1] +
-							coord[1]*mtxCurrent[3][5] +
-							coord[2]*mtxCurrent[3][9]) + t);
+		float s2 =((coord[0]*mtxCurrent[3][0] +
+					coord[1]*mtxCurrent[3][4] +
+					coord[2]*mtxCurrent[3][8]) + s);
+		float t2 =((coord[0]*mtxCurrent[3][1] +
+					coord[1]*mtxCurrent[3][5] +
+					coord[2]*mtxCurrent[3][9]) + t);
 
-		glTexCoord2i (s2, t2);
+		glTexCoord2f (s2, t2);
 	}
 
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
@@ -1050,20 +1057,16 @@ int NDS_glGetNumVertex (void)
 void NDS_glGetLine (int line, unsigned short * dst)
 {
 	int i;
-	u8 *screen3D = (u8 *)&GPU_screen3D[(192-(line%192))*256*4];
+	u8	*screen3D		= (u8 *)&GPU_screen3D		[(192-(line%192))*256*3],
+		*screen3DMask	= (u8 *)&GPU_screen3DMask	[(192-(line%192))*256];
 
 	for(i = 0; i < 256; i++)
 	{
-		u32	r = screen3D[i*4+0],
-			g = screen3D[i*4+1],
-			b = screen3D[i*4+2],
-			a = screen3D[i*4+3];
+		u32	r = screen3D[i*3+0],
+			g = screen3D[i*3+1],
+			b = screen3D[i*3+2];
 
-		r = (r*a)/255;
-		g = (g*a)/255;
-		b = (b*a)/255;
-
-		if (r != 0 || g != 0 || b != 0)
+		if (screen3DMask[i] > 0)
 		{
 			dst[i] = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
 		}
@@ -1082,7 +1085,8 @@ void NDS_glFlush(unsigned long v)
 	clInd = 0;
 
 	glFlush();
-	glReadPixels(0,0,256,192,GL_BGRA,GL_UNSIGNED_BYTE,GPU_screen3D);
+	glReadPixels(0,0,256,192,GL_BGR,			GL_UNSIGNED_BYTE,GPU_screen3D);
+	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,	GL_UNSIGNED_BYTE,GPU_screen3DMask);
 
 	numVertex = 0;
 
@@ -1091,7 +1095,7 @@ void NDS_glFlush(unsigned long v)
 	glPolygonMode	(GL_FRONT, GL_FILL);
 
 	glDepthMask		(GL_TRUE);
-	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 void NDS_glPolygonAttrib (unsigned long val)
@@ -1204,16 +1208,16 @@ void NDS_glTexCoord(unsigned long val)
 
 	if (texCoordinateTransform == 1)
 	{
-		int s2 =(int)(	s*			mtxCurrent[3][0] + t*			mtxCurrent[3][4] +
-						(1.f/16.f)* mtxCurrent[3][8] + (1.f/16.f)*	mtxCurrent[3][12]);
-		int t2 =(int)(	s*			mtxCurrent[3][1] + t*			mtxCurrent[3][5] +
-						(1.f/16.f)* mtxCurrent[3][9] + (1.f/16.f)*	mtxCurrent[3][13]);
+		float s2 =(	s*			mtxCurrent[3][0] + t*			mtxCurrent[3][4] +
+					(1.f/16.f)* mtxCurrent[3][8] + (1.f/16.f)*	mtxCurrent[3][12]);
+		float t2 =(	s*			mtxCurrent[3][1] + t*			mtxCurrent[3][5] +
+					(1.f/16.f)* mtxCurrent[3][9] + (1.f/16.f)*	mtxCurrent[3][13]);
 
-		glTexCoord2i (s2, t2);
+		glTexCoord2f (s2, t2);
 	}
 	else
 	{
-		glTexCoord2i (s, t);
+		glTexCoord2f (s, t);
 	}
 }
 
@@ -1285,7 +1289,7 @@ void NDS_glLightColor (unsigned long v)
 
 void NDS_glAlphaFunc(unsigned long v)
 {
-	glAlphaFunc (GL_GREATER, (v&31)/31.f);
+	alphaTestRef = (v&31)/31.f;
 }
 
 void NDS_glControl(unsigned long v)
@@ -1301,49 +1305,11 @@ void NDS_glControl(unsigned long v)
 
 	if(v&(1<<2))
 	{
-		glEnable(GL_ALPHA_TEST);
+		glAlphaFunc (GL_GREATER, 0.01f);
 	}
 	else
 	{
-		glDisable(GL_ALPHA_TEST);
-	}
-
-/*
-	// Seems to broke hell a lot of stuff
-	if(v&(1<<3))// && !disableBlending)
-	{
-		/*
-		if (alphaDepthWrite)
-		{
-			glDepthMask (GL_TRUE);
-		}
-		else
-		{
-			glDepthMask (GL_FALSE);
-			//glDisable	(GL_DEPTH_TEST);
-		}
-		*-/
-
-		glBlendFunc	(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		//glBlendFunc	(GL_ONE, GL_ONE);
-		//glBlendFunc	(GL_SRC_ALPHA, GL_ONE);
-		glEnable		(GL_BLEND);
-	}
-	else
-	{
-		glDepthMask (GL_TRUE);
-		glDisable(GL_BLEND);
-	}
-*/
-	if(v&(1<<7))
-	{
-		int fog = 1;
-	}
-
-
-	if(v&(1<<4))
-	{
-		glHint (GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+		glAlphaFunc (GL_GREATER, alphaTestRef);
 	}
 }
 
@@ -1355,12 +1321,12 @@ void NDS_glNormal(unsigned long v)
 
 	if (texCoordinateTransform == 2)
 	{
-		int s2 =(int)(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
-						 normal[2] *mtxCurrent[3][8]) + s);
-		int t2 =(int)(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
-						 normal[2] *mtxCurrent[3][9]) + t);
+		float s2 =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
+					 normal[2] *mtxCurrent[3][8]) + s);
+		float t2 =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
+					 normal[2] *mtxCurrent[3][9]) + t);
 
-		glTexCoord2i (s2, t2);
+		glTexCoord2f (s2, t2);
 	}
 
 	MatrixMultVec3x3 (mtxCurrent[2], normal);
