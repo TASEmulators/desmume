@@ -17,6 +17,7 @@
     along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+#define DIRECTINPUT_VERSION 0x0800
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,8 +25,10 @@
 #include <mmsystem.h>
 #include <COMMDLG.H>
 #include <string.h>
+#include <dinput.h>
 
 #include "CWindow.h"
+#include "ConfigKeys.h"
 
 #include "../debug.h"
 #include "resource.h"
@@ -82,6 +85,12 @@ extern DWORD ds_start;
 #define KEY_START        ds_start
 #define KEY_SELECT       ds_select
 #define KEY_DEBUG        ds_debug
+
+/* DirectInput stuff */
+int						g_bDInput=0;
+char					g_cDIBuf[256];
+LPDIRECTINPUT8			g_pDI;
+LPDIRECTINPUTDEVICE8	g_pKeyboard;
 
 void GetINIPath(char *inipath,u16 bufferSize)
 {   
@@ -291,3 +300,65 @@ BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 }
 
 
+//================================================================================================
+//================================================================================================
+//================================================================================================
+//================================================================================================
+//================================================================================================
+HRESULT Input_Init(HWND hwnd)
+{
+	HRESULT hr;
+
+	ReadConfig();
+	
+	hr=DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,&IID_IDirectInput8,(void**)&g_pDI,NULL); 
+	if(FAILED(hr)) return -1;
+	hr=IDirectInput_CreateDevice(g_pDI,&GUID_SysKeyboard, &g_pKeyboard, NULL);
+	if(FAILED(hr)) { Input_DeInit(); return (hr); }
+	hr=IDirectInputDevice_SetDataFormat(g_pKeyboard,&c_dfDIKeyboard);
+	if(FAILED(hr)) { Input_DeInit(); return (hr); }
+	hr=IDirectInputDevice_SetCooperativeLevel(g_pKeyboard,hwnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE); 
+	if(FAILED(hr)) { Input_DeInit(); return (hr); }
+	
+	//hr=IDirectInputDevice_Acquire(g_pKeyboard);
+	//while(hr==DIERR_INPUTLOST) hr=IDirectInputDevice_Acquire(g_pKeyboard);
+	//if(FAILED(hr)) { Input_DeInit(); return (hr); }
+	//if(FAILED(hr)) { Input_DeInit(); return (hr); }
+	//if(FAILED(hr)) { Input_DeInit(); return (hr); }
+
+	return 0;
+}
+
+HRESULT Input_DeInit (void)
+{
+	if (g_pDI)
+	{
+		HRESULT hr;
+		if (g_pKeyboard) 
+		{
+			hr=IDirectInputDevice_Unacquire(g_pKeyboard);
+#ifdef DEBUG
+			if (FAILED(hr)) LOG("DINPUT: error keyboard unacquire (0x%08X)\n",hr);
+#endif
+			hr=IDirectInputDevice_Release(g_pKeyboard);
+#ifdef DEBUG
+			if (FAILED(hr)) LOG("DINPUT: error keyboard release (0x%08X)\n",hr);
+#endif
+		}
+		hr=IDirectInput_Release(g_pDI);
+	}
+	return S_OK;
+}
+
+void Input_Process()
+{
+	HRESULT hr;
+	if(!g_pKeyboard) return;
+	memset(g_cDIBuf,0,sizeof(g_cDIBuf));
+    hr=IDirectInputDevice_GetDeviceState(g_pKeyboard,sizeof(g_cDIBuf),g_cDIBuf);
+	if (FAILED(hr)) 
+	{
+		hr=IDirectInputDevice_Acquire(g_pKeyboard);
+		while(hr==DIERR_INPUTLOST) hr=IDirectInputDevice_Acquire(g_pKeyboard);
+	}
+}

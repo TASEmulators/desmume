@@ -92,6 +92,11 @@ HMENU menu;
 HANDLE runthread=INVALID_HANDLE_VALUE;
 
 const DWORD tabkey[48]={0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x4f,0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5a,VK_SPACE,VK_UP,VK_DOWN,VK_LEFT,VK_RIGHT,VK_TAB,VK_SHIFT,VK_DELETE,VK_INSERT,VK_HOME,VK_END,0x0d};
+const DWORD DI_tabkey[48] = {DIK_0,DIK_1,DIK_2,DIK_3,DIK_4,DIK_5,DIK_6,DIK_7,DIK_8,DIK_9,DIK_A,DIK_B,DIK_C,
+							DIK_D,DIK_E,DIK_F,DIK_G,DIK_H,DIK_I,DIK_J,DIK_K,DIK_L,DIK_M,DIK_N,DIK_O,DIK_P,
+							DIK_Q,DIK_R,DIK_S,DIK_T,DIK_U,DIK_V,DIK_W,DIK_X,DIK_Y,DIK_Z,DIK_SPACE,DIK_UP,
+							DIK_DOWN,DIK_LEFT,DIK_RIGHT,DIK_TAB,DIK_LSHIFT,DIK_DELETE,DIK_INSERT,DIK_HOME,
+							DIK_END,DIK_RETURN};
 DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_start,ds_debug;
 static char IniName[MAX_PATH];
 int sndcoretype=SNDCORE_DIRECTX;
@@ -319,6 +324,45 @@ void translateXY(s32 *x, s32*y)
      
  // END Rotation definitions
 
+void Input_Post()
+{
+	HRESULT hr;
+	WORD keys[13][4]={{ds_a,0xFFFE,0x01,0},{ds_b,0xFFFD,0x02,0},{ds_select,0xFFFB,0x04,0},{ds_start,0xFFF7,0x08,0},
+					{ds_right,0xFFEF,0x10,0},{ds_left,0xFFDF,0x20,0},{ds_up,0xFFBF,0x40,0},{ds_down,0xFF7F,0x80,0},
+					{ds_r,0xFEFF,0x100,0},{ds_l,0xFDFF,0x200,0},
+					{ds_x,0xFFFE,0x01,6},{ds_y,0xFFFD,0x02,6},{ds_debug,0xFFFB,0x04,6}};
+	int i;
+	
+	for (i=0; i<13; i++)
+	{
+		if (g_cDIBuf[DI_tabkey[keys[i][0]]]&0x80)
+		{
+			if (keys[i][3]==0)
+			{
+				((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= keys[i][1];
+				((u16 *)MMU.ARM7_REG)[0x130>>1] &= keys[i][1];
+			}
+			else
+			{
+				((u16 *)MMU.ARM7_REG)[0x136>>1] &= keys[i][1];
+			}
+		}
+		else
+		{
+			if (keys[i][3]==0)
+			{
+				((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= keys[i][2];
+				((u16 *)MMU.ARM7_REG)[0x130>>1] |= keys[i][2];
+			}
+			else
+			{
+				((u16 *)MMU.ARM7_REG)[0x136>>1] |= keys[i][2];
+			}
+		}
+	}
+
+}
+
 DWORD WINAPI run( LPVOID lpParameter)
 {
      char txt[80];
@@ -381,6 +425,11 @@ DWORD WINAPI run( LPVOID lpParameter)
           {
                cycles = NDS_exec((560190<<1)-cycles,FALSE);
                SPU_Emulate();
+			   if (g_bDInput==1) 
+			   {
+				   Input_Process();
+				   Input_Post();
+			   }
 
                if (!skipnextframe)
                {
@@ -628,6 +677,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
+#ifdef DEBUG
+    LogStart();
+#endif
+
     if (CWindow_Init(&MainWindow, hThisInstance, szClassName, text,
                      WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
                      256, 384, WindowProcedure) != 0)
@@ -650,10 +703,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     InitTileViewBox();
     InitOAMViewBox();
     
-#ifdef DEBUG
-    LogStart();
-#endif
-
 #ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
@@ -803,7 +852,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
           DispatchMessage(&messages);
        }  
     }
-    
+	{
+	HRESULT hr=Input_DeInit();
+#ifdef DEBUG 
+	if(FAILED(hr)) LOG("DirectInput deinit failed (0x%08X)\n",hr);
+	else LOG("DirectInput deinit\n");
+#endif
+	}
 #ifdef DEBUG
     LogStop();
 #endif
@@ -818,7 +873,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case WM_CREATE:
 	     {
 	     	RECT clientSize, fullSize;
-             	ReadConfig();
+             	HRESULT hr=Input_Init(hwnd); //ReadConfig();
+				if (!FAILED(hr)) g_bDInput=1;
+#ifdef DEBUG
+				if(FAILED(hr)) LOG("DirectInput init failed (0x%08x)\n",hr);
+				else LOG("DirectInput init\n");
+#endif
 	     	GetClientRect(hwnd, &clientSize);
 			GetWindowRect(hwnd, &fullSize);
 	     	DefaultWidth = clientSize.right - clientSize.left;
@@ -828,6 +888,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             return 0;
 	     }
         case WM_DESTROY:
+			{
              NDS_Pause();
              finished = TRUE;
 
@@ -845,6 +906,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
+			}
 	case WM_SIZE:
     	if (ForceRatio) {
 			RECT fullSize;
@@ -853,6 +915,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		}
 	     return 0;
         case WM_CLOSE:
+			{
              NDS_Pause();
              finished = TRUE;
 
@@ -869,6 +932,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              NDS_DeInit();
              PostMessage(hwnd, WM_QUIT, 0, 0);
              return 0;
+			}
         case WM_DROPFILES:
              {
                   char filename[MAX_PATH] = "";
@@ -887,127 +951,139 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              }
              return 0;
         case WM_KEYDOWN:
-             //if(wParam=='1'){PostMessage(hwnd, WM_DESTROY, 0, 0);return 0;}
-             
-             if(wParam==tabkey[ds_a]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFE;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFE;
-             return 0; }
-             if(wParam==tabkey[ds_b]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFD;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFD;
-             return 0; }
-             if(wParam==tabkey[ds_select]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFB;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFB;
-             return 0; }
-             if(wParam==tabkey[ds_start]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFF7;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFF7;
-             return 0; }
-             if(wParam==tabkey[ds_right]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFEF;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFEF;
-             return 0; }
-             if(wParam==tabkey[ds_left]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFDF;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFDF;
-             return 0; }
-             if(wParam==tabkey[ds_up]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFBF;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFBF;
-             return 0; }
-             if(wParam==tabkey[ds_down]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFF7F;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFF7F;
-             return 0; }
-             if(wParam==tabkey[ds_r]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFEFF;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFEFF;
-             return 0; }
-             if(wParam==tabkey[ds_l]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFDFF;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFDFF;
-             return 0; }
-             if(wParam==tabkey[ds_x]){
-             ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFE;
-             return 0; }
-             if(wParam==tabkey[ds_y]){
-             ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFD;
-             return 0; }
-             if(wParam==tabkey[ds_debug]){
-             ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFB;
-             return 0; }
-             return 0;
-                  /*case 0x1E :
-                       MMU.ARM7_REG[0x136] &= 0xFE;
-                       break;
-                  case 0x1F :
-                       MMU.ARM7_REG[0x136] &= 0xFD;
-                       break;
-                  case 0x21 :
-                       NDS_ARM9.wIRQ = TRUE;
-                       break; */
+			{
+				if (g_bDInput==0)
+				{
+					 //if(wParam=='1'){PostMessage(hwnd, WM_DESTROY, 0, 0);return 0;}
+		             
+					 if(wParam==tabkey[ds_a]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFE;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFE;
+					 return 0; }
+					 if(wParam==tabkey[ds_b]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFD;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFD;
+					 return 0; }
+					 if(wParam==tabkey[ds_select]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFB;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFB;
+					 return 0; }
+					 if(wParam==tabkey[ds_start]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFF7;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFF7;
+					 return 0; }
+					 if(wParam==tabkey[ds_right]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFEF;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFEF;
+					 return 0; }
+					 if(wParam==tabkey[ds_left]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFDF;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFDF;
+					 return 0; }
+					 if(wParam==tabkey[ds_up]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFBF;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFBF;
+					 return 0; }
+					 if(wParam==tabkey[ds_down]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFF7F;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFF7F;
+					 return 0; }
+					 if(wParam==tabkey[ds_r]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFEFF;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFEFF;
+					 return 0; }
+					 if(wParam==tabkey[ds_l]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFDFF;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFDFF;
+					 return 0; }
+					 if(wParam==tabkey[ds_x]){
+					 ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFE;
+					 return 0; }
+					 if(wParam==tabkey[ds_y]){
+					 ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFD;
+					 return 0; }
+					 if(wParam==tabkey[ds_debug]){
+					 ((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFB;
+					 return 0; }
+					 return 0;
+						  /*case 0x1E :
+							   MMU.ARM7_REG[0x136] &= 0xFE;
+							   break;
+						  case 0x1F :
+							   MMU.ARM7_REG[0x136] &= 0xFD;
+							   break;
+						  case 0x21 :
+							   NDS_ARM9.wIRQ = TRUE;
+							   break; */
+				}
+				else break;
+			}
         case WM_KEYUP:
-             if(wParam==tabkey[ds_a]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x1;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x1;
-             return 0; }
-             if(wParam==tabkey[ds_b]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x2;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x2;
-             return 0; }
-             if(wParam==tabkey[ds_select]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x4;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x4;
-             return 0; }
-             if(wParam==tabkey[ds_start]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x8;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x8;
-             return 0; }
-             if(wParam==tabkey[ds_right]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x10;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x10;
-             return 0; }
-             if(wParam==tabkey[ds_left]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x20;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x20;
-             return 0; }
-             if(wParam==tabkey[ds_up]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x40;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x40;
-             return 0; }
-             if(wParam==tabkey[ds_down]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x80;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x80;
-             return 0; }
-             if(wParam==tabkey[ds_r]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x100;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x100;
-             return 0; }
-             if(wParam==tabkey[ds_l]){
-             ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x200;
-             ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x200;
-             return 0; }
-             if(wParam==tabkey[ds_x]){
-             ((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x1;
-             return 0; }
-             if(wParam==tabkey[ds_y]){
-             ((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x2;
-             return 0; }
-             if(wParam==tabkey[ds_debug]){
-             ((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x4;
-             return 0; }
-             break;
-                       
-                  /*case 0x1E :
-                       MMU.ARM7_REG[0x136] |= 1;
-                       break;
-                  case 0x1F :
-                       MMU.ARM7_REG[0x136] |= 2;
-                       break;*/
-                  /*case 0x21 :
-                       MMU.REG_IME[0] = 1;*/
+			{
+				if (g_bDInput==0)
+				{
+					 if(wParam==tabkey[ds_a]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x1;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x1;
+					 return 0; }
+					 if(wParam==tabkey[ds_b]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x2;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x2;
+					 return 0; }
+					 if(wParam==tabkey[ds_select]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x4;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x4;
+					 return 0; }
+					 if(wParam==tabkey[ds_start]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x8;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x8;
+					 return 0; }
+					 if(wParam==tabkey[ds_right]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x10;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x10;
+					 return 0; }
+					 if(wParam==tabkey[ds_left]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x20;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x20;
+					 return 0; }
+					 if(wParam==tabkey[ds_up]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x40;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x40;
+					 return 0; }
+					 if(wParam==tabkey[ds_down]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x80;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x80;
+					 return 0; }
+					 if(wParam==tabkey[ds_r]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x100;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x100;
+					 return 0; }
+					 if(wParam==tabkey[ds_l]){
+					 ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x200;
+					 ((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x200;
+					 return 0; }
+					 if(wParam==tabkey[ds_x]){
+					 ((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x1;
+					 return 0; }
+					 if(wParam==tabkey[ds_y]){
+					 ((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x2;
+					 return 0; }
+					 if(wParam==tabkey[ds_debug]){
+					 ((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x4;
+					 return 0; }
+					 break;
+		                       
+						  /*case 0x1E :
+							   MMU.ARM7_REG[0x136] |= 1;
+							   break;
+						  case 0x1F :
+							   MMU.ARM7_REG[0x136] |= 2;
+							   break;*/
+						  /*case 0x21 :
+							   MMU.REG_IME[0] = 1;*/
+				}
+				else return 0;
+			}
         case WM_MOUSEMOVE:
              {
                   if (wParam & MK_LBUTTON)
