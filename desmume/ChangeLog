@@ -11,6 +11,8 @@
  - Default screen color now black (better represents being "off" and easier on eyes at night) [Jeff B]
  general:
  - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
+ - Fixed a crash bug with 2D background corrupting memory [shash]
+ - Flag check optimization [carlo_bramini]
  gtk-glade:
  - Added DeSmuME version in about dialog. [evilynux]
  - Updated website url in about dialog. [evilynux]
@@ -19,6 +21,8 @@
  gtk:
  - Updated website url in about dialog. [evilynux]
  - Better desktop menu entry following FreeDesktop specifications. [evilynux]
+ windows port:
+ - Direct Input control interface [CrazyMax]
 	
 0.7.2 -> 0.7.3
  gtk-glade:
