@@ -97,6 +97,8 @@ int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * ti
 
 int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, DLGPROC wP)
 {
+	HMENU hSystemMenu;
+
     cwindow_struct *win2=(cwindow_struct *)win;
 
     win2->autoup = FALSE;
@@ -106,6 +108,14 @@ int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID,
     win2->prev = NULL;
     win2->next = NULL;
     win2->Refresh = &CWindow_Refresh;
+
+	// Append the "Auto Update" to the System Menu
+	hSystemMenu = GetSystemMenu(win2->hwnd, FALSE);
+	if(hSystemMenu != 0)
+	{
+		AppendMenu(hSystemMenu, MF_MENUBREAK, 0, NULL);
+		AppendMenu(hSystemMenu, MF_ENABLED|MF_STRING, IDC_AUTO_UPDATE, "Auto Update");
+	}
 
     return 0;
 }
@@ -133,6 +143,26 @@ void CWindow_Refresh(void *win)
 
 //////////////////////////////////////////////////////////////////////////////
 
+void CWindow_UpdateAutoUpdateItem(cwindow_struct *win, int check)
+{
+	HMENU hSystemMenu;
+	
+	// Update the "auto update" menu item
+	hSystemMenu = GetSystemMenu(win->hwnd, FALSE);
+	if(hSystemMenu != 0)
+	{
+		const int checkState[] =
+		{
+			MF_UNCHECKED,
+			MF_CHECKED
+		};
+
+		CheckMenuItem(hSystemMenu, IDC_AUTO_UPDATE, checkState[check]);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 void CWindow_AddToRefreshList(void *win)
 {
     cwindow_struct *win2=(cwindow_struct *)win;
@@ -144,6 +174,8 @@ void CWindow_AddToRefreshList(void *win)
        updatewindowlist->prev = win;
     updatewindowlist = (cwindow_struct *)win;
     LeaveCriticalSection(&section);
+
+	CWindow_UpdateAutoUpdateItem(win, TRUE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -167,7 +199,30 @@ void CWindow_RemoveFromRefreshList(void *win)
     win2->next = NULL;
     win2->prev = NULL;
     LeaveCriticalSection(&section);
+
+	CWindow_UpdateAutoUpdateItem(win, FALSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+int CWindow_ToggleAutoUpdate(void *win)
+{
+    cwindow_struct *win2=(cwindow_struct *)win;
+
+	// remove window from refresh list
+	if(win2->autoup)
+		CWindow_RemoveFromRefreshList(win);
+
+	// toggle autoup variable
+	win2->autoup = !win2->autoup;
+
+	// add window to refresg list if autoupdate is desired
+	if(win2->autoup)
+		CWindow_AddToRefreshList(win);
+
+	// checks or unchecks the auto update item in the system menu
+	CWindow_UpdateAutoUpdateItem(win, win2->autoup);
+
+	return win2->autoup;
+}
 

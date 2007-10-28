@@ -84,6 +84,40 @@ typedef struct GPU3DInterface
 	long (CALL_CONVENTION*  NDS_3D_GetClipMatrix)		(unsigned int index);
 	long (CALL_CONVENTION*  NDS_3D_GetDirectionalMatrix)	(unsigned int index);
 	void (CALL_CONVENTION*  NDS_3D_GetLine)				(int line, unsigned short * DST);
+
+	//////////////////////////////////////////////////////////////////////////////
+	// NDS_3D_GetMatrix
+	//
+	// mode:	0 = projection
+	//			1 = coordinate
+	//			2 = direction
+	//			3 = texture
+	//
+	// index:	the matrix stack index or -1 for current
+	//
+	// dest:	pointer to the destination float[16] buffer
+	//////////////////////////////////////////////////////////////////////////////
+	void (CALL_CONVENTION*  NDS_3D_GetMatrix)			(unsigned int mode, unsigned int index, float* dest);
+
+	//////////////////////////////////////////////////////////////////////////////
+	// NDS_glGetLightDirection
+	//
+	// index:	light index
+	//
+	// dest:	pointer to the destination variable
+	//////////////////////////////////////////////////////////////////////////////
+	void (CALL_CONVENTION*  NDS_glGetLightDirection)	(unsigned int index, unsigned int* dest);
+
+	//////////////////////////////////////////////////////////////////////////////
+	// NDS_glGetLightColor
+	//
+	// index:	light index
+	//
+	// dest:	pointer to the destination variable
+	//////////////////////////////////////////////////////////////////////////////
+	void (CALL_CONVENTION*  NDS_glGetLightColor)	(unsigned int index, unsigned int* dest);
+
+
 } GPU3DInterface;
 
 // gpu 3D core list, per port

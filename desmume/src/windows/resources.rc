@@ -58,7 +58,7 @@ END
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Danés resources
+// Danish resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DAN)
 #ifdef _WIN32
@@ -534,12 +534,123 @@ BEGIN
                     WS_GROUP
 END
 
-#endif    // Danés resources
+#endif    // Danish resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Inglés (Estados Unidos) resources
+// German (Germany) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
+#ifdef _WIN32
+LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_LIGHT_VIEWER DIALOGEX 0, 0, 197, 89
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Light Viewer"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,140,68,50,14
+    GROUPBOX        "Light0",IDC_LIGHT_VIWER_LIGHT0_GROUP,7,7,90,27
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT0VECTOR_EDIT,58,16,35,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT0COLOR_EDIT,33,16,23,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    CONTROL         "",IDC_LIGHT_VIEWER_LIGHT0COLOR_COLORCTRL,
+                    "DeSmuME_ColorCtrl",WS_TABSTOP,11,16,19,14
+    GROUPBOX        "Light1",IDC_LIGHT_VIWER_LIGHT1_GROUP,100,7,90,27
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT1VECTOR_EDIT,151,16,35,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT1COLOR_EDIT,126,16,23,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    CONTROL         "",IDC_LIGHT_VIEWER_LIGHT1COLOR_COLORCTRL,
+                    "DeSmuME_ColorCtrl",WS_TABSTOP,104,16,19,14
+    GROUPBOX        "Light2",IDC_LIGHT_VIWER_LIGHT2_GROUP,7,33,90,27
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT2VECTOR_EDIT,58,43,35,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT2COLOR_EDIT,33,43,23,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    CONTROL         "",IDC_LIGHT_VIEWER_LIGHT2COLOR_COLORCTRL,
+                    "DeSmuME_ColorCtrl",WS_TABSTOP,11,43,19,14
+    GROUPBOX        "Light3",IDC_LIGHT_VIWER_LIGHT3_GROUP,100,33,90,27
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT3VECTOR_EDIT,151,43,35,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    EDITTEXT        IDC_LIGHT_VIEWER_LIGHT3COLOR_EDIT,126,43,23,14,
+                    ES_AUTOHSCROLL | ES_READONLY | WS_GROUP
+    CONTROL         "",IDC_LIGHT_VIEWER_LIGHT3COLOR_COLORCTRL,
+                    "DeSmuME_ColorCtrl",WS_TABSTOP,104,43,19,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IconDeSmuME             ICON                    "DeSmuME.ico"
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resrc1.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""resource.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_LIGHT_VIEWER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 190
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 82
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // German (Germany) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
@@ -663,6 +774,8 @@ BEGIN
         MENUITEM "View &Tiles",                 IDM_TILE
         MENUITEM "View M&aps",                  IDM_MAP
         MENUITEM "View &OAM",                   IDM_OAM
+        MENUITEM "View Matrices",               IDM_MATRIX_VIEWER
+        MENUITEM "View Lights",                 IDM_LIGHT_VIEWER
         MENUITEM SEPARATOR
         POPUP "&View &Layers"
         BEGIN
@@ -691,48 +804,48 @@ END
 // Dialog
 //
 
-IDD_CONFIG DIALOGEX 0, 0, 125, 227
+IDD_CONFIG DIALOG  0, 0, 125, 227
 STYLE DS_SETFONT | DS_MODALFRAME | DS_SETFOREGROUND | WS_POPUP | WS_CAPTION
 CAPTION "Configure Keys"
-FONT 8, "MS Sans Serif", 0, 0, 0x0
+FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK",IDC_FERMER,67,208,50,14
     PUSHBUTTON      "Default",IDC_BUTTON1,7,208,50,14
-    COMBOBOX        IDC_COMBO1,46,13,59,93,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO1,46,13,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Up:",IDC_STATIC,17,14,27,10
-    COMBOBOX        IDC_COMBO4,46,29,59,76,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO4,46,29,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Down:",IDC_STATIC,17,31,28,9
-    COMBOBOX        IDC_COMBO2,46,45,59,92,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO2,46,45,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Left:",IDC_STATIC,17,47,28,9
-    COMBOBOX        IDC_COMBO3,46,61,59,76,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO3,46,61,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Right:",IDC_STATIC,17,63,28,9
-    COMBOBOX        IDC_COMBO7,46,77,59,76,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO7,46,77,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "A:",IDC_STATIC,18,78,28,9
-    COMBOBOX        IDC_COMBO8,46,92,59,95,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO8,46,92,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "B:",IDC_STATIC,17,94,28,9
-    COMBOBOX        IDC_COMBO10,46,108,59,83,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO10,46,108,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "L:",IDC_STATIC,17,110,28,9
-    COMBOBOX        IDC_COMBO11,46,124,59,101,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO11,46,124,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "R:",IDC_STATIC,17,126,28,9
-    COMBOBOX        IDC_COMBO6,46,140,59,99,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO6,46,140,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "X:",IDC_STATIC,17,142,28,9
-    COMBOBOX        IDC_COMBO5,46,156,59,108,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO5,46,156,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Y:",IDC_STATIC,17,158,28,9
     GROUPBOX        "",IDC_STATIC,7,3,111,203
-    COMBOBOX        IDC_COMBO9,46,172,59,119,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO9,46,172,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Start:",IDC_STATIC,17,174,28,9
-    COMBOBOX        IDC_COMBO12,46,188,59,104,CBS_DROPDOWNLIST | WS_VSCROLL | 
+    COMBOBOX        IDC_COMBO12,46,188,59,14,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
     LTEXT           "Select:",IDC_STATIC,17,190,28,9
 END
@@ -1015,12 +1128,175 @@ BEGIN
                     WS_GROUP
 END
 
-#endif    // Inglés (Estados Unidos) resources
+IDD_MATRIX_VIEWER DIALOGEX 0, 0, 364, 177
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Matrix Viewer"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,307,156,50,14
+    GROUPBOX        "Projection",IDC_MATRIX_VIEWER_PROJ_GROUP,7,86,173,65
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_11_EDIT,11,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_21_EDIT,11,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_31_EDIT,11,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_41_EDIT,11,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_12_EDIT,52,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_22_EDIT,52,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_32_EDIT,52,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_42_EDIT,52,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_13_EDIT,94,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_23_EDIT,94,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_33_EDIT,94,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_43_EDIT,94,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_14_EDIT,136,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_24_EDIT,136,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_34_EDIT,136,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_PROJ_44_EDIT,136,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    GROUPBOX        "Position",IDC_MATRIX_VIEWER_COORD_GROUP,7,7,173,80
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_11_EDIT,11,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_21_EDIT,11,28,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_31_EDIT,11,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_41_EDIT,11,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_12_EDIT,52,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_22_EDIT,52,28,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_32_EDIT,52,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_42_EDIT,52,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_13_EDIT,94,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_23_EDIT,94,28,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_33_EDIT,94,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_43_EDIT,94,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_14_EDIT,136,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_24_EDIT,136,28,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_34_EDIT,136,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_COORD_44_EDIT,136,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    COMBOBOX        IDC_MATRIX_VIEWER_COORD_COMBO,136,70,40,88,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Direction",IDC_MATRIX_VIEWER_DIR_GROUP,184,7,173,80
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_11_EDIT,188,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_21_EDIT,188,29,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_31_EDIT,188,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_41_EDIT,188,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_12_EDIT,228,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_22_EDIT,228,29,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_32_EDIT,228,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_42_EDIT,228,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_13_EDIT,270,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_23_EDIT,270,29,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_33_EDIT,270,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_43_EDIT,270,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_14_EDIT,312,15,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_24_EDIT,312,29,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_34_EDIT,312,42,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_DIR_44_EDIT,312,55,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    COMBOBOX        IDC_MATRIX_VIEWER_DIR_COMBO,312,71,40,88,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Texture",IDC_MATRIX_VIEWER_TEX_GROUP,184,86,173,65
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_11_EDIT,187,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_21_EDIT,187,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_31_EDIT,187,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_41_EDIT,187,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_12_EDIT,228,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_22_EDIT,228,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_32_EDIT,228,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_42_EDIT,228,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_13_EDIT,270,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_23_EDIT,270,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_33_EDIT,270,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_43_EDIT,270,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_14_EDIT,312,95,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_24_EDIT,312,108,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_34_EDIT,312,122,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_MATRIX_VIEWER_TEX_44_EDIT,312,135,40,12,
+                    ES_AUTOHSCROLL | ES_READONLY
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_MATRIX_VIEWER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 357
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 170
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Francés (Francia) resources
+// French (France) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
 #ifdef _WIN32
@@ -1397,57 +1673,7 @@ BEGIN
     PUSHBUTTON      "&Fermer",IDC_FERMER,50,134,50,14
 END
 
-#endif    // Francés (Francia) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Español resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESN)
-#ifdef _WIN32
-LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
-#pragma code_page(1252)
-#endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IconDeSmuME             ICON                    "DeSmuME.ico"
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE 
-BEGIN
-    "resrc1.h\0"
-END
-
-2 TEXTINCLUDE 
-BEGIN
-    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""windows.h""\r\n"
-    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""resource.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-#endif    // Español resources
+#endif    // French (France) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

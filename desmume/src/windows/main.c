@@ -21,8 +21,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-//#define RENDER3D
-
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <shellapi.h>
@@ -46,11 +44,14 @@
 #include "tileView.h"
 #include "oamView.h"
 #include "mapview.h"
+#include "matrixview.h"
+#include "lightview.h"
 #include "ConfigKeys.h"
 #include "FirmConfig.h"
 #include "OGLRender.h"
 #include "../render3D.h"
 #include "../gdbstub.h"
+#include "colorctrl.h"
 
 #include "snddx.h"
 
@@ -633,6 +634,11 @@ void ChangeLanguage(int id)
    menu = newmenu;   
 }
 
+void InitCustomControls()
+{
+	ColorCtrl_Register();
+}
+
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
                     LPSTR lpszArgument,
@@ -656,6 +662,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     cwindow_struct MainWindow;
     HACCEL hAccel;
     hAppInst=hThisInstance;
+
+	InitCustomControls();
 
 	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
@@ -1449,7 +1457,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_OAM:
                        {
-                            oamview_struct *OamView;
+						   oamview_struct *OamView;
 
                             if ((OamView = OamView_Init(hAppInst, HWND_DESKTOP)) != NULL)
                             {
@@ -1458,7 +1466,30 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             }
                        }
                   return 0;
-                  case IDM_MBG0 : 
+
+				  case IDM_MATRIX_VIEWER:
+                       {
+                            matrixview_struct *MatrixView;
+
+                            if ((MatrixView = MatrixView_Init(hAppInst, HWND_DESKTOP)) != NULL)
+                            {
+                               CWindow_Show(MatrixView);
+                            }
+                       }
+                  return 0;
+
+				  case IDM_LIGHT_VIEWER:
+                       {
+                            lightview_struct *LightView;
+
+                            if ((LightView = LightView_Init(hAppInst, HWND_DESKTOP)) != NULL)
+                            {
+                               CWindow_Show(LightView);
+                            }
+                       }
+                  return 0;
+
+				  case IDM_MBG0 : 
                        if(MainScreen.gpu->dispBG[0])
                        {
                             GPU_remove(MainScreen.gpu, 0);
@@ -1870,4 +1901,5 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 
    return FALSE;
 }
+
 
