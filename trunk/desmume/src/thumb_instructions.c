@@ -868,7 +868,7 @@ static u32 FASTCALL OP_LDMIA_THUMB(armcpu_t *cpu)
 static u32 FASTCALL OP_B_COND(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
-     if(!TEST_COND((i>>8)&0xF, cpu->CPSR))
+     if(!TEST_COND((i>>8)&0xF, 0, cpu->CPSR))
           return 1;
      
      cpu->R[15] += ((s32)((s8)(i&0xFF)))<<1;

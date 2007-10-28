@@ -69,6 +69,7 @@ extern "C" {
 #define LE	0xD
 #define AL	0xE	
 
+/*
 #define TEST_COND(cond, CPSR)	(((cond)==AL) ||\
 					 (((cond)==EQ) && ( CPSR.bits.Z))||\
 					 (((cond)==NE) && (!CPSR.bits.Z))||\
@@ -84,6 +85,11 @@ extern "C" {
 					 (((cond)==LT) && (CPSR.bits.N!=CPSR.bits.V))||\
 					 (((cond)==GT) && (CPSR.bits.Z==0) && (CPSR.bits.N==CPSR.bits.V))||\
 					 (((cond)==LE) && ((CPSR.bits.Z) || (CPSR.bits.N!=CPSR.bits.V))))
+*/
+
+extern const unsigned char arm_cond_table[16*16];
+
+#define TEST_COND(cond, inst, CPSR)   ((arm_cond_table[((CPSR.val >> 24) & 0xf0)+(cond)] >> (inst)) & 1)
 
 
 enum Mode
