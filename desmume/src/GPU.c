@@ -952,24 +952,10 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 				
 				if(tileentry.bits.HFlip)
 				{
-					u8 currLine;
-					
 					line += (3 - ((xoff&7)>>1));
-					
-					if((!(7 - (xoff & 7)) & 1))
-					{
-						currLine = *line;
-						if (currLine&0xF) 
-						{
-							color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-							gpu->setFinalColor(gpu,0,num,dst,color,x,Y);
-						}
-						dst += 2; x++; xoff++;
-						line--;
-					}
 					for(; x < xfin; line --) 
 					{	
-						currLine = *line;
+						u8 currLine = *line;
 
 						if (currLine>>4) 
 						{
@@ -986,24 +972,10 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 						dst += 2; x++; xoff++;
 					}
 				} else {
-					u8 currLine;
-					
 					line += ((xoff&7)>>1);
-					
-					if(xoff & 1)
-					{
-						currLine = *line;
-						if (currLine>>4) 
-						{
-							color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-							gpu->setFinalColor(gpu,0,num,dst,color,x,Y);
-						}
-						dst += 2; x++; xoff++;
-						line++;
-					}
 					for(; x < xfin; line ++) 
 					{
-						currLine = *line;
+						u8 currLine = *line;
 
 						if (currLine&0xF) 
 						{
