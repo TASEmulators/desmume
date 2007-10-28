@@ -116,6 +116,14 @@ static unsigned int vtxFormat;
 static unsigned int textureFormat=0, texturePalette=0;
 static unsigned int lastTextureFormat=0, lastTexturePalette=0;
 
+typedef struct
+{
+	unsigned int color;		// Color in hardware format
+	unsigned int direction;	// Direction in hardware format
+} LightInformation;
+
+LightInformation g_lightInfo[4] = { 0 };
+
 #ifndef DESMUME_COCOA
 extern HWND		hwnd;
 #endif
@@ -1247,22 +1255,28 @@ signed long NDS_glGetDirectionalMatrix (unsigned int index)
 
 void NDS_glLightDirection (unsigned long v)
 {
-	float lightDirection[4] = {0};
-	lightDirection[0] = -normalTable[v&1023];
-	lightDirection[1] = -normalTable[(v>>10)&1023];
-	lightDirection[2] = -normalTable[(v>>20)&1023];
+	int		index = v>>30;
+	float	direction[4];
 
 	if (beginCalled)
-	{
 		glEnd();
-	}
 
-	glLightfv		(GL_LIGHT0 + (v>>30), GL_POSITION, lightDirection);
+	// Convert format into floating point value
+	// and pass it to OpenGL
+	direction[0] = -normalTable[v&1023];
+	direction[1] = -normalTable[(v>>10)&1023];
+	direction[2] = -normalTable[(v>>20)&1023];
+	direction[3] = 0;
+
+//	glLightf (GL_LIGHT0 + index, GL_CONSTANT_ATTENUATION, 0);
+
+	glLightfv(GL_LIGHT0 + index, GL_POSITION, direction);
 
 	if (beginCalled)
-	{
 		glBegin (vtxFormat);
-	}
+
+	// Keep information for GetLightDirection function
+	g_lightInfo[index].direction = v;
 }
 
 void NDS_glLightColor (unsigned long v)
@@ -1271,20 +1285,19 @@ void NDS_glLightColor (unsigned long v)
 							((v>> 5)&0x1F)<<26,
 							((v>>10)&0x1F)<<26,
 							0x7fffffff};
+	int index = v>>30;
 
 	if (beginCalled)
-	{
 		glEnd();
-	}
 
-	glLightiv (GL_LIGHT0 + (v>>30), GL_AMBIENT, lightColor);
-	glLightiv (GL_LIGHT0 + (v>>30), GL_DIFFUSE, lightColor);
-	glLightiv (GL_LIGHT0 + (v>>30), GL_SPECULAR, lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_AMBIENT_AND_DIFFUSE, lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_SPECULAR, lightColor);
 
 	if (beginCalled)
-	{
 		glBegin (vtxFormat);
-	}
+
+	// Keep color information for NDS_glGetColor
+	g_lightInfo[index].color = v;
 }
 
 void NDS_glAlphaFunc(unsigned long v)
@@ -1753,6 +1766,28 @@ void NDS_glCallList(unsigned long v)
 	}
 }
 
+void NDS_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
+{
+	int n;
+
+	if(index == -1)
+	{
+		MatrixCopy(dest, mtxCurrent[mode]);
+		return;
+	}
+	
+	MatrixCopy(dest, MatrixStackGetPos(&mtxStack[mode], index));
+}
+
+void NDS_glGetLightDirection(unsigned int index, unsigned int* dest)
+{
+	*dest = g_lightInfo[index].direction;
+}
+
+void NDS_glGetLightColor(unsigned int index, unsigned int* dest)
+{
+	*dest = g_lightInfo[index].color;
+}
 
 GPU3DInterface gpu3Dgl = {	NDS_glInit,
 							NDS_glViewPort,
@@ -1800,5 +1835,10 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 
 							NDS_glGetClipMatrix,
 							NDS_glGetDirectionalMatrix,
-							NDS_glGetLine};
+							NDS_glGetLine,
+
+							NDS_glGetMatrix,
+							NDS_glGetLightDirection,
+							NDS_glGetLightColor
+};
 

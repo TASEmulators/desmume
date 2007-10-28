@@ -45,6 +45,7 @@ void CWindow_Hide(void *win);
 void CWindow_Refresh(void *win);
 void CWindow_AddToRefreshList(void *win);
 void CWindow_RemoveFromRefreshList(void *win);
+int CWindow_ToggleAutoUpdate(void *win);
 
 extern cwindow_struct *updatewindowlist;
 
