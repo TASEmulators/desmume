@@ -21,6 +21,9 @@
 #ifndef CONFIGKEYS_H
 #define CONFIGKEYS_H
 
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h>
+
 extern unsigned long keytab[12];
 extern const DWORD tabkey[48];
 extern DWORD ds_up;
@@ -37,8 +40,16 @@ extern DWORD ds_select;
 extern DWORD ds_start;
 extern DWORD ds_debug;
 
+extern int					g_bDInput;
+extern char					g_cDIBuf[256];
+extern LPDIRECTINPUT8		g_pDI;
+extern LPDIRECTINPUTDEVICE8	g_pKeyboard;
+
 void GetINIPath(char *initpath,u16 bufferSize);
-void  ReadConfig(void);
+void  ReadConfig		(void);
+HRESULT Input_Init		(HWND hwnd);
+HRESULT Input_DeInit	(void);
+void Input_Process		(void);
 
 BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
 
