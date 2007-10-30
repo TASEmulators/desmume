@@ -24,7 +24,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <gl\gl.h>
-#include <gl\glext.h>
 #include <math.h>
 #include <stdlib.h>
 #include "..\debug.h"
@@ -1093,7 +1092,7 @@ void NDS_glFlush(unsigned long v)
 	clInd = 0;
 
 	glFlush();
-	glReadPixels(0,0,256,192,GL_BGR,			GL_UNSIGNED_BYTE,GPU_screen3D);
+	glReadPixels(0,0,256,192,GL_BGR_EXT,		GL_UNSIGNED_BYTE,GPU_screen3D);
 	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,	GL_UNSIGNED_BYTE,GPU_screen3DMask);
 
 	numVertex = 0;
