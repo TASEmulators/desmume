@@ -648,7 +648,8 @@ struct _GPU
 	u8	MasterBrightMode;
 	u32 MasterBrightFactor;
 
-	BOOL (*setFinalColor)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+	BOOL (*setFinalColorSpr)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+	BOOL (*setFinalColorBck)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
 	void (*spriteRender) (GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 /*
