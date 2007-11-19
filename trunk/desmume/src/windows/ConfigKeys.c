@@ -37,9 +37,11 @@ char IniName[MAX_PATH];
 char                    vPath[MAX_PATH],*szPath,currDir[MAX_PATH];
 u32 keytab[12];
 
-const char tabkeytext[48][8] = {"0","1","2","3","4","5","6","7","8","9","A","B","C",
+const char tabkeytext[52][14] = {"0","1","2","3","4","5","6","7","8","9","A","B","C",
 "D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X",
-"Y","Z","SPACE","UP","DOWN","LEFT","RIGHT","TAB","SHIFT","DEL","INSERT","HOME","END","ENTER"};
+"Y","Z","SPACE","UP","DOWN","LEFT","RIGHT","TAB","SHIFT","DEL","INSERT","HOME","END","ENTER",
+"Joystick UP","Joystick DOWN","Joystick LEFT","Joystick RIGHT"};
+const char DI_tabkeytext[50][20];
 
 DWORD dds_up=37;
 DWORD dds_down=38;
@@ -87,10 +89,11 @@ extern DWORD ds_start;
 #define KEY_DEBUG        ds_debug
 
 /* DirectInput stuff */
-int						g_bDInput=0;
-char					g_cDIBuf[256];
+char					g_cDIBuf[512];
 LPDIRECTINPUT8			g_pDI;
 LPDIRECTINPUTDEVICE8	g_pKeyboard;
+LPDIRECTINPUTDEVICE8	g_pJoystick;
+DIDEVCAPS				g_DIJoycap;
 
 void GetINIPath(char *inipath,u16 bufferSize)
 {   
@@ -240,7 +243,23 @@ BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 	{
 		case WM_INITDIALOG:
                 ReadConfig();
-				for(i=0;i<48;i++)for(j=0;j<12;j++)SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&tabkeytext[i]);
+				if (g_pKeyboard)
+					for(i=0;i<48;i++)
+						for(j=0;j<12;j++)
+							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&tabkeytext[i]);
+				if (g_pJoystick)
+				{
+					for(i=0;i<4;i++)
+						for(j=0;j<12;j++)
+							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&tabkeytext[i+48]);
+					for(i=0;i<g_DIJoycap.dwButtons;i++)
+						for(j=0;j<12;j++)
+						{
+							char buf[30];
+							sprintf(buf,"Joystick B%i",i+1);
+							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&buf);
+						}
+				}
 				SendDlgItemMessage(dialog,IDC_COMBO1,CB_SETCURSEL,KEY_UP,0);
 				SendDlgItemMessage(dialog,IDC_COMBO2,CB_SETCURSEL,KEY_LEFT,0);
 				SendDlgItemMessage(dialog,IDC_COMBO3,CB_SETCURSEL,KEY_RIGHT,0);
@@ -305,47 +324,107 @@ BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 //================================================================================================
 //================================================================================================
 //================================================================================================
+BOOL CALLBACK JoyObjects(const DIDEVICEOBJECTINSTANCE* pdidoi,VOID* pContext)
+{
+	if( pdidoi->dwType & DIDFT_AXIS )
+    {
+        DIPROPRANGE diprg; 
+        diprg.diph.dwSize       = sizeof(DIPROPRANGE); 
+        diprg.diph.dwHeaderSize = sizeof(DIPROPHEADER); 
+        diprg.diph.dwHow        = DIPH_BYID; 
+        diprg.diph.dwObj        = pdidoi->dwType;
+        diprg.lMin              = -3; 
+        diprg.lMax              = 3; 
+   
+        if( FAILED(IDirectInputDevice8_SetProperty(g_pJoystick,DIPROP_RANGE,&diprg.diph))) 
+            return DIENUM_STOP;
+    }
+	return DIENUM_CONTINUE;
+}
 HRESULT Input_Init(HWND hwnd)
 {
 	HRESULT hr;
+	int	res;
 
 	ReadConfig();
-	
-	hr=DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,&IID_IDirectInput8,(void**)&g_pDI,NULL); 
-	if(FAILED(hr)) return -1;
-	hr=IDirectInput_CreateDevice(g_pDI,&GUID_SysKeyboard, &g_pKeyboard, NULL);
-	if(FAILED(hr)) { Input_DeInit(); return (hr); }
-	hr=IDirectInputDevice_SetDataFormat(g_pKeyboard,&c_dfDIKeyboard);
-	if(FAILED(hr)) { Input_DeInit(); return (hr); }
-	hr=IDirectInputDevice_SetCooperativeLevel(g_pKeyboard,hwnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE); 
-	if(FAILED(hr)) { Input_DeInit(); return (hr); }
-	
-	//hr=IDirectInputDevice_Acquire(g_pKeyboard);
-	//while(hr==DIERR_INPUTLOST) hr=IDirectInputDevice_Acquire(g_pKeyboard);
-	//if(FAILED(hr)) { Input_DeInit(); return (hr); }
-	//if(FAILED(hr)) { Input_DeInit(); return (hr); }
-	//if(FAILED(hr)) { Input_DeInit(); return (hr); }
+	g_pKeyboard=NULL; g_pJoystick=NULL;
 
-	return 0;
+	if(!FAILED(DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,&IID_IDirectInput8,(void**)&g_pDI,NULL)))
+	{
+		//******************* Keyboard
+		res=0;
+		if (FAILED(IDirectInput8_CreateDevice(g_pDI,&GUID_SysKeyboard,&g_pKeyboard,NULL))) res=-1;
+		else
+			if (FAILED(IDirectInputDevice8_SetDataFormat(g_pKeyboard,&c_dfDIKeyboard))) res=-1;
+			else
+				if (FAILED(IDirectInputDevice8_SetCooperativeLevel(g_pKeyboard,hwnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE))) res=-1;
+		if (res!=0)
+		{
+			if(g_pKeyboard) IDirectInputDevice8_Release(g_pKeyboard);
+			g_pKeyboard=NULL;
+		}
+
+		//******************** Joystick
+		res=0;
+		if(FAILED(IDirectInput8_CreateDevice(g_pDI,&GUID_Joystick,&g_pJoystick,NULL))) res=-1;
+		else
+			if(FAILED(IDirectInputDevice8_SetDataFormat(g_pJoystick,&c_dfDIJoystick2))) res=-1;
+			else
+				if(FAILED(IDirectInputDevice8_SetCooperativeLevel(g_pJoystick,hwnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE))) res=-1;
+		if (res!=0)
+		{
+			if(g_pJoystick) IDirectInputDevice8_Release(g_pJoystick);
+			g_pJoystick=NULL;
+		}
+		else
+		{
+			IDirectInputDevice8_EnumObjects(g_pJoystick,JoyObjects,(VOID*)hwnd,DIDFT_ALL);
+			memset(&g_DIJoycap,0,sizeof(DIDEVCAPS));
+			g_DIJoycap.dwSize=sizeof(DIDEVCAPS);
+			IDirectInputDevice8_GetCapabilities(g_pJoystick,&g_DIJoycap);
+		}
+	}
+	else return E_FAIL;
+
+	if ((g_pKeyboard==NULL)&&(g_pJoystick==NULL))
+	{
+		Input_DeInit();
+		return E_FAIL;
+	}
+	return S_OK;
 }
 
-HRESULT Input_DeInit (void)
+HRESULT Input_DeInit()
 {
 	if (g_pDI)
 	{
 		HRESULT hr;
 		if (g_pKeyboard) 
 		{
-			hr=IDirectInputDevice_Unacquire(g_pKeyboard);
+			hr=IDirectInputDevice8_Unacquire(g_pKeyboard);
 #ifdef DEBUG
 			if (FAILED(hr)) LOG("DINPUT: error keyboard unacquire (0x%08X)\n",hr);
 #endif
-			hr=IDirectInputDevice_Release(g_pKeyboard);
+			hr=IDirectInputDevice8_Release(g_pKeyboard);
 #ifdef DEBUG
 			if (FAILED(hr)) LOG("DINPUT: error keyboard release (0x%08X)\n",hr);
 #endif
+			g_pKeyboard=NULL;
 		}
-		hr=IDirectInput_Release(g_pDI);
+		if (g_pJoystick) 
+		{
+			hr=IDirectInputDevice8_Unacquire(g_pJoystick);
+#ifdef DEBUG
+			if (FAILED(hr)) LOG("DINPUT: error joystick unacquire (0x%08X)\n",hr);
+#endif
+			hr=IDirectInputDevice8_Release(g_pJoystick);
+#ifdef DEBUG
+			if (FAILED(hr)) LOG("DINPUT: error joystick release (0x%08X)\n",hr);
+#endif
+			g_pJoystick=NULL;
+		}
+		IDirectInput8_Release(g_pDI);
+		g_pDI=NULL;
 	}
 	return S_OK;
 }
@@ -353,12 +432,42 @@ HRESULT Input_DeInit (void)
 void Input_Process()
 {
 	HRESULT hr;
-	if(!g_pKeyboard) return;
+	DIJOYSTATE2 JoyStatus;
+
+	long source,psource;
+
 	memset(g_cDIBuf,0,sizeof(g_cDIBuf));
-    hr=IDirectInputDevice_GetDeviceState(g_pKeyboard,sizeof(g_cDIBuf),g_cDIBuf);
-	if (FAILED(hr)) 
+	if(g_pKeyboard) 
 	{
-		hr=IDirectInputDevice_Acquire(g_pKeyboard);
-		while(hr==DIERR_INPUTLOST) hr=IDirectInputDevice_Acquire(g_pKeyboard);
+		hr=IDirectInputDevice8_GetDeviceState(g_pKeyboard,256,g_cDIBuf);
+		if (FAILED(hr)) IDirectInputDevice8_Acquire(g_pKeyboard);
+	}
+
+	if(g_pJoystick)
+	{
+		hr=IDirectInputDevice8_Poll(g_pJoystick);
+		if (FAILED(hr))	IDirectInputDevice8_Acquire(g_pJoystick);
+		else
+		{
+			hr=IDirectInputDevice8_GetDeviceState(g_pJoystick,sizeof(JoyStatus),&JoyStatus);
+			if (FAILED(hr)) hr=IDirectInputDevice8_Acquire(g_pJoystick);
+			else
+			{
+				if (JoyStatus.lX<-1) g_cDIBuf[258]=-128;
+				if (JoyStatus.lX>1) g_cDIBuf[259]=-128;
+				if (JoyStatus.lY<-1) g_cDIBuf[256]=-128;
+				if (JoyStatus.lY>1) g_cDIBuf[257]=-128;
+
+				if (JoyStatus.rgdwPOV[0]==0) g_cDIBuf[256]=-128;
+				if (JoyStatus.rgdwPOV[0]==4500) { g_cDIBuf[256]=-128; g_cDIBuf[259]=-128;}
+				if (JoyStatus.rgdwPOV[0]==9000) g_cDIBuf[259]=-128;
+				if (JoyStatus.rgdwPOV[0]==13500) { g_cDIBuf[259]=-128; g_cDIBuf[257]=-128;}
+				if (JoyStatus.rgdwPOV[0]==18000) g_cDIBuf[257]=-128;
+				if (JoyStatus.rgdwPOV[0]==22500) { g_cDIBuf[257]=-128; g_cDIBuf[258]=-128;}
+				if (JoyStatus.rgdwPOV[0]==27000) g_cDIBuf[258]=-128;
+				if (JoyStatus.rgdwPOV[0]==31500) { g_cDIBuf[258]=-128; g_cDIBuf[256]=-128;}
+				memcpy(g_cDIBuf+260,JoyStatus.rgbButtons,sizeof(JoyStatus.rgbButtons));			
+			}
+		}
 	}
 }

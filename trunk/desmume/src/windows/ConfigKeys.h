@@ -40,10 +40,10 @@ extern DWORD ds_select;
 extern DWORD ds_start;
 extern DWORD ds_debug;
 
-extern int					g_bDInput;
-extern char					g_cDIBuf[256];
+extern char					g_cDIBuf[512];
 extern LPDIRECTINPUT8		g_pDI;
 extern LPDIRECTINPUTDEVICE8	g_pKeyboard;
+extern LPDIRECTINPUTDEVICE8	g_pJoystick;
 
 void GetINIPath(char *initpath,u16 bufferSize);
 void  ReadConfig		(void);
