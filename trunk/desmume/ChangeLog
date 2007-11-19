@@ -22,7 +22,7 @@
  - Updated website url in about dialog. [evilynux]
  - Better desktop menu entry following FreeDesktop specifications. [evilynux]
  windows port:
- - Direct Input control interface [CrazyMax]
+ - DirectInput control interface with joystick support [CrazyMax aka mtabachenko]
  - Matrix and Light viewer [Acid Burn]
 	
 0.7.2 -> 0.7.3
