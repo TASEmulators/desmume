@@ -3,29 +3,75 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="DeSmuME Cocoa" />
+		<Option platforms="Mac;" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
+		<Option show_notes="0">
+			<notes>
+				<![CDATA[DeSmuME
+
+Cocoa Port
+
+DeSmuME is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+DeSmuME is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with DeSmuME; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
+			</notes>
+		</Option>
 		<Build>
-			<Target title="Cocoa">
+			<Target title="Cocoa X86">
 				<Option platforms="Mac;" />
 				<Option output="DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
 				<Option object_output="obj/Release/" />
-				<Option type="0" />
+				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-march=pentium-m" />
+					<Add option="-arch i386" />
 					<Add option="-DDESMUME_COCOA" />
 				</Compiler>
 				<Linker>
 					<Add option="-framework Cocoa" />
 					<Add option="-framework OpenGL" />
+					<Add option="-framework CoreAudio" />
+					<Add option="-framework AudioUnit" />
+					<Add option="-framework AudioToolbox" />
+				</Linker>
+			</Target>
+			<Target title="Cocoa PPC">
+				<Option platforms="Mac;" />
+				<Option output="DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DDESMUME_COCOA" />
+					<Add option="-DWORDS_BIGENDIAN" />
+				</Compiler>
+				<Linker>
+					<Add option="-framework Cocoa" />
+					<Add option="-framework OpenGL" />
+					<Add option="-framework CoreAudio" />
+					<Add option="-framework AudioUnit" />
+					<Add option="-framework AudioToolbox" />
 				</Linker>
 			</Target>
 		</Build>
+		<VirtualTargets>
+			<Add alias="Cocoa Universal" targets="Cocoa X86;Cocoa PPC;" />
+		</VirtualTargets>
 		<Compiler>
 			<Add option="-fexpensive-optimizations" />
 			<Add option="-O3" />
-			<Add option="-Wall" />
 		</Compiler>
 		<Linker>
 			<Add option="-s" />
@@ -101,6 +147,11 @@
 		</Unit>
 		<Unit filename="screenshot.h" />
 		<Unit filename="screenshot.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="sndOSX.h" />
+		<Unit filename="sndOSX.m">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>

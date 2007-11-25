@@ -19,6 +19,11 @@
 
 #import "globals.h"
 
+void setTitle(int i)
+{
+	[main_window setTitle:[NSString stringWithFormat:@"%d", i]];
+}
+
 ////////////////////////////////////////////////////////////////
 //Menu Item implementation--------------------------------------
 ////////////////////////////////////////////////////////////////
@@ -73,7 +78,7 @@ NSString* openDialog(NSArray *file_types)
 	[panel setCanChooseFiles:YES];
 	[panel setAllowsMultipleSelection:NO];
 
-	if([panel runModalForDirectory:@"/Users/gecko/nds" file:nil types:file_types] == NSOKButton)
+	if([panel runModalForDirectory:nil file:nil types:file_types] == NSOKButton)
 	{
 		//a file was selected
 
