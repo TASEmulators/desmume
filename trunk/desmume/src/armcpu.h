@@ -36,7 +36,7 @@ extern "C" {
 #define CODE(i)     (((i)>>25)&0X7)
 #define OPCODE(i)   (((i)>>21)&0xF)
 #define SIGNEBIT(i) BIT_N(i,20)
- 
+
 #define INSTRUCTION_INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
 #define ROR(i, j)   ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j))))
@@ -67,7 +67,7 @@ extern "C" {
 #define LT	0xB
 #define GT	0xC
 #define LE	0xD
-#define AL	0xE	
+#define AL	0xE
 
 /*
 #define TEST_COND(cond, CPSR)	(((cond)==AL) ||\
@@ -104,13 +104,13 @@ enum Mode
 };
 
 #ifdef WORDS_BIGENDIAN
-typedef union 
+typedef union
 {
-	struct 
+	struct
 	{
 		u32 N : 1,
-		Z : 1, 
-		C : 1, 
+		Z : 1,
+		C : 1,
 		V : 1,
 		Q : 1,
 		RAZ : 19,
@@ -122,9 +122,9 @@ typedef union
         u32 val;
 } Status_Reg;
 #else
-typedef union 
+typedef union
 {
-	struct 
+	struct
 	{
                 u32 mode : 5,
 		T : 1,
@@ -133,8 +133,8 @@ typedef union
 		RAZ : 19,
 		Q : 1,
 		V : 1,
-		C : 1, 
-		Z : 1, 
+		C : 1,
+		Z : 1,
 		N : 1;
 	} bits;
         u32 val;
@@ -178,11 +178,11 @@ typedef struct armcpu_t
         u32 instruction; //4
         u32 instruct_adr; //8
         u32 next_instruction; //12
-       
+
         u32 R[16]; //16
 	Status_Reg CPSR;  //80
 	Status_Reg SPSR;
-       
+
         u32 R13_usr, R14_usr;
         u32 R13_svc, R14_svc;
         u32 R13_abt, R14_abt;
@@ -190,9 +190,9 @@ typedef struct armcpu_t
         u32 R13_irq, R14_irq;
         u32 R8_fiq, R9_fiq, R10_fiq, R11_fiq, R12_fiq, R13_fiq, R14_fiq;
 	Status_Reg SPSR_svc, SPSR_abt, SPSR_und, SPSR_irq, SPSR_fiq;
-	
+
 	armcp_t *coproc[16];
-	       
+
         u32 intVector;
         u8 LDTBit;  //1 : ARMv5 style 0 : non ARMv5
 	BOOL waitIRQ;
@@ -231,7 +231,7 @@ int armcpu_new( armcpu_t *armcpu, u32 id);
 #endif
 void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
-u32 armcpu_prefetch(armcpu_t *armcpu);
+static u32 armcpu_prefetch(armcpu_t *armcpu);
 u32 armcpu_exec(armcpu_t *armcpu);
 //BOOL armcpu_irqExeption(armcpu_t *armcpu);
 //BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
@@ -253,7 +253,7 @@ static INLINE void NDS_makeARM9Int(u32 num)
 		NDS_ARM9.waitIRQ = FALSE;
 	}
 }
-       
+
 static INLINE void NDS_makeARM7Int(u32 num)
 {
         /* flag the interrupt request source */
@@ -285,4 +285,4 @@ static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
 }
 #endif
 
-#endif 
+#endif
