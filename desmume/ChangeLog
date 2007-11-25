@@ -9,6 +9,7 @@
  - Added option to disable execution upon loading. [Jeff B]
  - Many more strings are translatable now. [Jeff B]
  - Default screen color now black (better represents being "off" and easier on eyes at night) [Jeff B]
+ - Added sound [Jeff B]
  general:
  - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
  - Fixed a crash bug with 2D background corrupting memory [shash]

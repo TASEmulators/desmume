@@ -38,7 +38,7 @@
 	NSPopUpButton *format_button;
 }
 
-- (id)initWithBuffer:(u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only;
+- (id)initWithBuffer:(const u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only;
 @end
 
 #endif

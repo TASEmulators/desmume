@@ -25,6 +25,7 @@
 
 //DeSmuME general includes
 #define OBJ_C
+#include "sndOSX.h"
 #include "../NDSSystem.h"
 #include "../saves.h"
 #undef BOOL
@@ -33,7 +34,17 @@
 //times one million for microseconds per frame
 #define DS_MICROSECONDS_PER_FRAME (1.0 / 59.8) * 1000000.0
 
-//fixme bug when hitting apple+Q during the open dialog
+SoundInterface_struct *SNDCoreList[] = {
+&SNDDummy,
+&SNDFile,
+&SNDOSX,
+NULL
+};
+
+@interface SoundSavePanel : NSSavePanel
+{
+}
+@end
 
 @interface TableHelper : NSObject
 {
@@ -75,6 +86,9 @@ NSMenuItem *rom_info_item;
 NSMenuItem *frame_skip_auto_item;
 NSMenuItem *frame_skip_item[MAX_FRAME_SKIP];
 
+NSMenuItem *volume_item[10];
+NSMenuItem *mute_item;
+
 volatile u8 frame_skip = 0; //this is one more than the acutal frame skip, a value of 0 signifies auto frame skip
 
 static int backupmemorytype=MC_TYPE_AUTODETECT;
@@ -93,15 +107,25 @@ NSString *current_file;
 	struct armcpu_ctrl_iface *arm7_ctrl_iface;
 	//struct configured_features my_config;
 
-	NDS_Init( arm9_memio, &arm9_ctrl_iface,
-		arm7_memio, &arm7_ctrl_iface);
+	NDS_Init(/*arm9_memio, &arm9_ctrl_iface, arm7_memio, &arm7_ctrl_iface*/);
 
 	NDS_FillDefaultFirmwareConfigData(&firmware);
-[self setPlayerName:@"Joe"];
+[self setPlayerName:@"Joe"]; //fixme
 	NDS_CreateDummyFirmware(&firmware);
 
+	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
+	{
+		messageDialog(localizedString(@"Error", nil), @"Unable to initialize sound core");
+	}
+
+	SPU_SetVolume(100);
 
 	return self;
+}
+
+- (id)destroy
+{
+	NDS_DeInit();
 }
 
 - (void)setPlayerName:(NSString*)player_name
@@ -141,7 +165,7 @@ NSString *current_file;
 	[self pause];
 
 	//load the rom
-	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, "/Users/gecko/AAAA.sav") > 0)
+	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, "temp.sav") > 0)
 	{
 		//if it didn't work give an error and dont unpause
 		messageDialog(localizedString(@"Error", nil), @"Could not open file");
@@ -326,7 +350,6 @@ NSString *current_file;
 	bool was_running = false; //initialized here to avoid a warning
 
 	unsigned long long frame_start_time, frame_end_time;
-	unsigned long long microseconds_per_frame;
 
 	int frames_to_skip = 0;
 
@@ -354,6 +377,8 @@ NSString *current_file;
 			Microseconds((struct UnsignedWide*)&frame_start_time);
 
 			cycles = NDS_exec((560190<<1)-cycles, FALSE);
+			SPU_Emulate();
+
 
 			if(frames_to_skip != 0)
 				frames_to_skip--;
@@ -539,8 +564,80 @@ NSString *current_file;
 	if(!was_paused)[self execute];
 }
 
+- (void)setVolume:(id)sender
+{
+	int i;
+	for(i = 0; i < 10; i++)
+	{
+		if(sender == volume_item[i])
+		{
+			[volume_item[i] setState:NSOnState];
+			SNDOSXSetVolume((i+1)*10);
+		} else
+			[volume_item[i] setState:NSOffState];
+	}
+}
+
+- (void)toggleMuting
+{
+	if([mute_item state] == NSOffState)
+	{
+		[mute_item setState:NSOnState];
+		SNDOSXMuteAudio();
+	} else
+	{
+		[mute_item setState:NSOffState];
+
+		//find and restore volume
+		int i;
+		for(i = 0; i < 10; i++)
+			if([volume_item[i] state] == NSOnState)
+				SNDOSXSetVolume((i+1)*10);
+	}
+}
+
+- (void)chooseSoundOutputFile
+{
+	NSSavePanel *panel = [NSSavePanel savePanel];
+
+	//fixme localize
+	[panel setTitle:@"Record Audio to File..."];
+
+/*
+	[panel beginSheetForDirectory:@"" file:@"DeSmuMEaudio.wav" modalForWindow:main_window modalDelegate:self
+	didEndSelector:nil contextInfo:nil];
+*/
+	//[panel setMessage:@"Please choose an audio file to record sound output to"];
+	//[panel setNameFieldLabel:@"BAL"];
+	[panel runModal];
+
+	//[NSApp runModalforWindow:panel];
+
+	if(!SNDOSXOpenFile([panel filename]))
+	{
+		messageDialog(localizedString(@"Error", nil), @"Couldn't create sound recording output file");
+		return;
+	}
+
+	SNDOSXStartRecording();
+
+}
+
+- (void)startRecording
+{
+	SNDOSXStartRecording();
+}
+
+- (void)pauseRecording
+{
+	SNDOSXStopRecording();
+}
+
 @end
-#define ROM_INFO_ROWS 9
+
+//Rom info helper stuff -------------------------------------------------------------
+
+#define ROM_INFO_ROWS 8
 #define ROM_INFO_WIDTH 400
 @implementation TableHelper
 - (id)initWithWindow:(NSWindow*)window
@@ -549,7 +646,7 @@ NSString *current_file;
 
 	type_column = [[NSTableColumn alloc] initWithIdentifier:@""];
 	[type_column setEditable:NO];
-	[value_column setResizable:YES];
+	[type_column setResizable:YES];
 	[[type_column headerCell] setStringValue:@"Attribute"];
 	[type_column setMinWidth: 1];
 
@@ -618,33 +715,30 @@ if([table headerView] == nil)messageDialogBlank();
 	if(aTableColumn == type_column)
 	{
 		if(rowIndex == 0)
-			return localizedString(@"File on Disc", @" ROM Info ");
+			return localizedString(@"File", @" ROM Info ");
 
 		if(rowIndex == 1)
-			return localizedString(@"ROM Title", @" ROM Info ");
+			return localizedString(@"Title", @" ROM Info ");
 
 		if(rowIndex == 2)
-			return localizedString(@"Maker Code", @" ROM Info ");
+			return localizedString(@"Maker", @" ROM Info ");
 
 		if(rowIndex == 3)
-			return localizedString(@"Unit Code", @" ROM Info ");
+			return localizedString(@"Size", @" ROM Info ");
 
 		if(rowIndex == 4)
-			return localizedString(@"Card Size", @" ROM Info ");
+			return localizedString(@"ARM9 Size", @" ROM Info ");
 
 		if(rowIndex == 5)
-			return localizedString(@"Flags", @" ROM Info ");
+			return localizedString(@"ARM7 Size", @" ROM Info ");
 
 		if(rowIndex == 6)
-			return localizedString(@"Size of ARM9 Binary", @" ROM Info ");
+			return localizedString(@"Data Size", @" ROM Info ");
 
 		if(rowIndex == 7)
-			return localizedString(@"Size of ARM7 Size", @" ROM Info ");
-
-		if(rowIndex == 8)
-			return localizedString(@"Size of Data", @" ROM Info ");
+			return localizedString(@"Icon", @" ROM Info ");
 	} else
-	{
+	{//units?
 		if(rowIndex == 0)return current_file;
 
 		if(rowIndex == 1)
@@ -652,45 +746,35 @@ if([table headerView] == nil)messageDialogBlank();
 
 		if(rowIndex == 2)
 		{
+			if(header->makerCode == 12592)
+				return NSSTRc("Nintendo");
+
 			return [NSString localizedStringWithFormat:@"%u", header->makerCode];
 		}
 
 		if(rowIndex == 3)
 		{
-			return [NSString localizedStringWithFormat:@"%u", header->unitCode];
-		}
-
-		if(rowIndex == 4)
-		{//fixe: should show units?
 			return [NSString localizedStringWithFormat:@"%u", header->cardSize];
 		}
 
-		if(rowIndex == 5)
-		{//always seems to be empty?
-			return [NSString localizedStringWithFormat:@"%u%u%u%u%u%u%u%u",
-			((header->flags) & 0x01) >> 0,
-			((header->flags) & 0x02) >> 1,
-			((header->flags) & 0x04) >> 2,
-			((header->flags) & 0x08) >> 3,
-			((header->flags) & 0x10) >> 4,
-			((header->flags) & 0x20) >> 5,
-			((header->flags) & 0x40) >> 6,
-			((header->flags) & 0x80) >> 7];
-		}
-
-		if(rowIndex == 6)
-		{//fixe: should show units?
+		if(rowIndex == 4)
+		{
 			return [NSString localizedStringWithFormat:@"%u", header->ARM9binSize];
 		}
 
-		if(rowIndex == 7)
-		{//fixe: should show units?
+		if(rowIndex == 5)
+		{
 			return [NSString localizedStringWithFormat:@"%u", header->ARM7binSize];
 		}
 
-		if(rowIndex == 8)
-		{//fixe: should show units?
+		if(rowIndex == 6)
+		{
 			return [NSString localizedStringWithFormat:@"%u", header->ARM7binSize + header->ARM7src];
+		}
+
+		if(rowIndex == 7)
+		{
+			return @"NOT FINISHED";
 		}
 
 	}

@@ -30,7 +30,6 @@ Based on work by yopyop and the DeSmuME team!
 
 //DeSmuME general includes
 #define OBJ_C
-#include "../SPU.h"
 #include "../render3D.h"
 #include "../GPU.h"
 #include "../Windows/OGLRender.h"
@@ -44,7 +43,8 @@ FIXME: Hardware acceleration for openglrender.c ??
 FIXME: When cross-platform (core) components end emulation due to error - pause should be called (set the menu checkmark)
 FIXME: Some bug where states get messed up and hitting execute does nothing......
 FIXME: .nds.gba extensions don't work in open panels
-FIXME: Traveling windows when constantly resizing with hotkey
+FIXME: Traveling windows when constantly resizing
+FIXME: Show version number somewhere in the program
 */
 
 //Globals----------------------------------------------------------------------------------------
@@ -94,13 +94,6 @@ volatile desmume_BOOL execute = FALSE;
 volatile BOOL finished = FALSE;
 volatile BOOL paused = TRUE;
 
-SoundInterface_struct *SNDCoreList[] = {
-&SNDDummy,
-//&SNDFile,
-//&SNDDIRECTX,
-NULL
-};
-
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3Dgl
@@ -114,7 +107,7 @@ NintendoDS *NDS;
 void Quit()
 {
 	//stop emulation if it's going
-	[NDS pause];
+	[NDS destroy];
 
 	//
 	finished = true;
@@ -142,7 +135,7 @@ NSEvent *current_event;
 //if wait is true then it will sit around waiting for an
 //event for a short period of time taking up very little CPU
 //(use when game is not running)
-inline void clearEvents(bool wait)
+void clearEvents(bool wait)
 {
 	//wait for the next event
 	while((current_event = [NSApp nextEventMatchingMask:0 untilDate:wait?[NSDate dateWithTimeIntervalSinceNow:.2]:nil inMode:NSDefaultRunLoopMode dequeue:YES]))
@@ -162,6 +155,7 @@ void CreateMenu()
 	NSMenu* file;
 	NSMenu* emulation;
 	NSMenu* view;
+	NSMenu* sound_menu;
 	//NSMenu* window;
 	NSMenu* help;
 
@@ -229,6 +223,7 @@ void CreateMenu()
 	NSMenuItem *file_item = [menu addItemWithTitle:@"File" action:action keyEquivalent:@""];
 	NSMenuItem *emulation_item = [menu addItemWithTitle:@"Emulation" action:action keyEquivalent:@""];
 	NSMenuItem *view_item = [menu addItemWithTitle:@"View" action:action keyEquivalent:@""];
+	NSMenuItem *sound_item = [menu addItemWithTitle:@"Sound" action:action keyEquivalent:@""];
 	//NSMenuItem *window_item = [menu addItemWithTitle:@"Window" action:action keyEquivalent:@""];
 	NSMenuItem *help_item = [menu addItemWithTitle:@"Help" action:action keyEquivalent:@""];
 
@@ -508,7 +503,40 @@ a way to get the time of a save that's not a string / human formatted...
 	allows_resize_item = [view addItemWithTitle:@"Screenshot to Window" action:@selector(screenShotToWindow) keyEquivalent:@""];
 	[allows_resize_item setTarget:main_window];
 
+	//Create the sound menu
+	sound_menu = [[NSMenu alloc] initWithTitle:localizedString(@"Sound", nil)];
+	[menu setSubmenu:sound_menu forItem:sound_item];
 
+	temp = [sound_menu addItemWithTitle:@"Volume" action:nil keyEquivalent:@""];
+	[temp setTarget:NSApp];
+
+	NSMenu *volume_menu = [[NSMenu alloc] initWithTitle:localizedString(@"Volume", nil)];
+	[sound_menu setSubmenu:volume_menu forItem:temp];
+
+	for(i = 0; i < 10; i++)
+	{
+		volume_item[i] = [volume_menu addItemWithTitle:@"Volume %d" withInt:(i+1)*10 action:@selector(setVolume:) keyEquivalent:@""];
+		[volume_item[i] setTarget:NDS];
+		if(i == 9)
+			[volume_item[i] setState:NSOnState]; //check 100% volume since it's defaults
+	}
+
+	[sound_menu addItem:[NSMenuItem separatorItem]];
+
+	mute_item = [sound_menu addItemWithTitle:@"Mute" action:@selector(toggleMuting) keyEquivalent:@""];
+	[mute_item setTarget:NDS];
+/*
+	[sound_menu addItem:[NSMenuItem separatorItem]];
+
+	temp = [sound_menu addItemWithTitle:@"Record to File..." action:@selector(chooseSoundOutputFile) keyEquivalent: @"r"];
+	[temp setTarget:NDS];
+
+	temp = [sound_menu addItemWithTitle:@"Pause Recording" action:@selector(startRecording) keyEquivalent: @""];
+	[temp setTarget:NDS];
+
+	temp = [sound_menu addItemWithTitle:@"Save Recording" action:@selector(pauseRecording) keyEquivalent: @""];
+	[temp setTarget:NDS];
+*/
 	//Create the window menu
 /*
 	window = [[NSMenu alloc] initWithTitle:localizedString(@"Window", nil)];

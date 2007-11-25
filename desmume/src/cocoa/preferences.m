@@ -40,7 +40,6 @@ NSDictionary *preferences_font_attribs;
 
 NSTabViewItem *interface_pane_tab;
 NSTabViewItem *firmware_pane_tab;
-NSTabViewItem *plugins_pane_tab;
 
 NSText *language_selection_text;
 NSPopUpButton *language_selection;
@@ -377,23 +376,11 @@ void setAppDefaults()
 		[tab_view addTabViewItem:firmware_pane_tab];
 
 		NSDictionary *firmware_options = [NSDictionary dictionaryWithObjectsAndKeys:
-		[NSArray arrayWithObjects:@"Text", [NSData dataWithBytes:&@selector(playerName:) length:sizeof(SEL)], nil], PREF_FIRMWARE_PLAYER_NAME,
-		[NSArray arrayWithObjects:@"Array", [NSData dataWithBytes:&@selector(nonexisant:) length:sizeof(SEL)], @"Danish",@"English",@"French",nil], PREF_FIRMWARE_LANGUAGE,
+		//[NSAsrray arrayWithObjects:@"Text", [NSData dataWithBytes:&@selector(playerName:) length:sizeof(SEL)], nil], PREF_FIRMWARE_PLAYER_NAME,
+		//[NSArray arrayWithObjects:@"Array", [NSData dataWithBytes:&@selector(nonexisant:) length:sizeof(SEL)], @"Japanese",@"English",@"French",@"German",@"Italian",@"Spanish",nil], PREF_FIRMWARE_LANGUAGE,
 		nil];
 
 		NSView *firmware_view = createPreferencesView(firmware_pane_tab, firmware_options, delegate);
-
-		//Create the "Plugins" pane
-		plugins_pane_tab = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[plugins_pane_tab setLabel:localizedString(@"Plugins", nil)];
-		[tab_view addTabViewItem:plugins_pane_tab];
-
-		NSDictionary *plugin_options = [NSDictionary dictionaryWithObjectsAndKeys:
-		[NSArray arrayWithObjects:@"Array", [NSData dataWithBytes:&@selector(nonexisant:) length:sizeof(SEL)], @"OpenGL 3D",nil], PREF_3D_PLUGIN,
-		[NSArray arrayWithObjects:@"Array", [NSData dataWithBytes:&@selector(nonexisant:) length:sizeof(SEL)], @"None",nil], PREF_SOUND_PLUGIN,
-		nil];
-
-		NSView *plugins_view = createPreferencesView(plugins_pane_tab, plugin_options, delegate);
 
 	}
 

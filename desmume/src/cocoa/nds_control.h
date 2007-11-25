@@ -24,10 +24,14 @@
 
 //This class manages emulation
 //dont instanciate more than once!
-@interface NintendoDS : NSObject {}
+@interface NintendoDS : NSObject
+{
+	BOOL muted;
+}
 
-//creation
+//
 - (id)init;
+- (id)destroy;
 
 //Firmware control
 - (void)setPlayerName:(NSString*)player_name;
@@ -56,6 +60,14 @@
 
 //
 - (void)showRomInfo;
+
+//sound
+- (void)setVolume:(id)sender;
+- (void)toggleMuting;
+- (void)chooseSoundOutputFile;
+- (void)startRecording;
+- (void)pauseRecording;
+
 @end
 
 

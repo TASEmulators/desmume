@@ -114,6 +114,10 @@ extern NSMenuItem *reset_item;
 extern NSMenuItem *save_state_as_item;
 extern NSMenuItem *load_state_from_item;
 
+//sound (defined/managed in nds_control.m)
+extern NSMenuItem *volume_item[10];
+extern NSMenuItem *mute_item;
+
 #define SAVE_SLOTS 10 //this should never be more than NB_SAVES in saves.h
 extern NSMenuItem *saveSlot_item[SAVE_SLOTS];
 extern NSMenuItem *loadSlot_item[SAVE_SLOTS];
@@ -143,6 +147,9 @@ extern NintendoDS *NDS;
 extern VideoOutputWindow *main_window;
 
 void setAppDefaults(); //this is defined in preferences.m and should be called at app launch
+
+void clearEvents(bool wait);
+
 //--------------------------------------------------------------------------------------------------
 
 extern volatile int /*desmume_BOOL*/ execute;
