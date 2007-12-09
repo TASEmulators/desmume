@@ -610,8 +610,12 @@ int main(int argc, char ** argv) {
 #ifdef DEBUG
   LogStart();
 #endif
+#ifdef GDB_STUB
   NDS_Init( arm9_memio, &arm9_ctrl_iface,
             arm7_memio, &arm7_ctrl_iface);
+#else
+        NDS_Init();
+#endif
 
   /* Create the dummy firmware */
   NDS_CreateDummyFirmware( &fw_config);
