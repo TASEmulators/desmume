@@ -62,7 +62,7 @@ static void wtools_2_update() {
 	case Bit8:
 		for (i=0; i<0x10; i++) {
 			for (j=0; j<16; j++, addr++,mem8++) { 
-				m8 = *mem8; *mem8 = MMU_readByte(cpu, addr);
+				m8 = *mem8; *mem8 = MMU_read8(cpu, addr);
 				if (m8 != *mem8) {
 					sprintf(txt, "%02X", *mem8);
 					dTools_display_clear_char(&dsp, 12+3*j, i, 3);
@@ -74,7 +74,7 @@ static void wtools_2_update() {
 	case Bit16:
 		for (i=0; i<0x10; i++) {
 			for (j=0; j<16; j+=2, addr+=2,mem16++) { 
-				m16 = *mem16; *mem16 = MMU_readHWord(cpu, addr);
+				m16 = *mem16; *mem16 = MMU_read16(cpu, addr);
 				if (m16 != *mem16) {
 					sprintf(txt, " %04X", *mem16);
 					dTools_display_clear_char(&dsp, 12+3*j, i, 6);
@@ -86,7 +86,7 @@ static void wtools_2_update() {
 	case Bit32:
 		for (i=0; i<0x10; i++) {
 			for (j=0; j<16; j+=4, addr+=4,mem32++) { 
-				m32 = *mem32; *mem32 = MMU_readWord(cpu, addr);
+				m32 = *mem32; *mem32 = MMU_read32(cpu, addr);
 				if (m32 != *mem32) {
 					sprintf(txt, "  %08X", *mem32);
 					dTools_display_clear_char(&dsp, 12+3*j, i, 12);
@@ -244,7 +244,7 @@ static void refresh() {
 
 	addr=address * 0x10;
 	for (i=0; i<0x100; i++) 
-		mem[i] = MMU_readByte(cpu, addr+i);
+		mem[i] = MMU_read8(cpu, addr+i);
 
 	dTools_display_clear(&dsp);
 	switch(packmode) {
