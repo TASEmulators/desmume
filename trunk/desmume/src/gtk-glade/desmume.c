@@ -44,8 +44,12 @@ void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
                    struct armcpu_memory_iface *arm7_mem_if,
                    struct armcpu_ctrl_iface **arm7_ctrl_iface)
 {
+#ifdef GDB_STUB
 	NDS_Init( arm9_mem_if, arm9_ctrl_iface,
                   arm7_mem_if, arm7_ctrl_iface);
+#else
+        NDS_Init();
+#endif
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
 	execute = FALSE;
 }
