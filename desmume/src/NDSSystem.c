@@ -505,8 +505,8 @@ void NDS_Reset( void)
 
    MMU_write32(0, 0x027FFF9C, 0x027FFF90); // ?????? besoin d'avoir la vrai valeur sur ds
      
-   MainScreen.offset = 192;
-   SubScreen.offset = 0;
+   MainScreen.offset = 0;
+   SubScreen.offset = 192;
      
    //MMU_write32(0, 0x02007FFC, 0xE92D4030);
 
