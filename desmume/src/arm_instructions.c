@@ -6586,16 +6586,10 @@ static u32 FASTCALL  OP_LDMIA_W(armcpu_t *cpu)
 {
      u32 i = cpu->instruction, c = 0, count;
      u32 start = cpu->R[REG_POS(i,16)];
-	 u32 bitList = i&0xFFFF;
+	 u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
      
      u32 * registres = cpu->R;
      u32 * waitState = MMU.MMU_WAIT32[cpu->proc_ID];
-
-	 for (count = 1; count < 65536; count <<= 1)
-	 {
-		 if (count&bitList)
-			cpu->R[REG_POS(i,16)] += 4;
-	 }
      
      OP_L_IA(0, start);
      OP_L_IA(1, start);
@@ -6622,13 +6616,13 @@ static u32 FASTCALL  OP_LDMIA_W(armcpu_t *cpu)
           start += 4;
 	      cpu->next_instruction = registres[15];
      }
-     
-	 /*
-	 if (!BIT24(i))
-	 {
+
+	if(i & (1 << REG_POS(i,16))) {
+		if(i & bitList)
+			cpu->R[REG_POS(i,16)] = start;
+	}
+	else
 		cpu->R[REG_POS(i,16)] = start;
-	 }
-	 */
 
      return c + 2;
 }
@@ -6637,18 +6631,12 @@ static u32 FASTCALL  OP_LDMIB_W(armcpu_t *cpu)
 {
      u32 i = cpu->instruction, c = 0, count;
      u32 start = cpu->R[REG_POS(i,16)];
-	 u32 bitList = i&0xFFFF;
+	 u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
      
      u32 * registres = cpu->R;
      u32 * waitState = MMU.MMU_WAIT32[cpu->proc_ID];
 
-	 for (count = 1; count < 65536; count <<= 1)
-	 {
-		 if (count&bitList)
-			cpu->R[REG_POS(i,16)] += 4;
-	 }
-     
-     OP_L_IB(0, start);
+	 OP_L_IB(0, start);
      OP_L_IB(1, start);
      OP_L_IB(2, start);
      OP_L_IB(3, start);
@@ -6676,105 +6664,104 @@ static u32 FASTCALL  OP_LDMIB_W(armcpu_t *cpu)
           c += 2 + (c==0);
      }
 
-	 /*
-	 if (!BIT24(i))
-	 {
-		 cpu->R[REG_POS(i,16)] = start;
-	 }
-	 */
+	if(i & (1 << REG_POS(i,16))) {
+		if(i & bitList)
+			cpu->R[REG_POS(i,16)] = start;
+	}
+	else
+		cpu->R[REG_POS(i,16)] = start;
      
      return c + 2;
 }
 
 static u32 FASTCALL  OP_LDMDA_W(armcpu_t *cpu)
 {
-     u32 i = cpu->instruction, c = 0, count;
-     u32 start = cpu->R[REG_POS(i,16)];
-     
-     u32 * registres = cpu->R;
-     u32 * waitState = MMU.MMU_WAIT32[cpu->proc_ID];
+	u32 i = cpu->instruction, c = 0, count;
+	u32 start = cpu->R[REG_POS(i,16)];
+	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
 
-	 u32 bitList = i&0xFFFF;
-	 for (count = 1; count < 65536; count <<= 1)
-	 {
-		 if (count&bitList)
-			cpu->R[REG_POS(i,16)] -= 4;
-	 }
-     
-     if(BIT15(i))
-     {
-          u32 tmp = READ32(cpu->mem_if->data, start);
-          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
-          cpu->CPSR.bits.T = BIT0(tmp);
-          c += waitState[(start>>24)&0xF];
-          start -= 4;
-	      cpu->next_instruction = registres[15];
-     }
+	u32 * registres = cpu->R;
+	u32 * waitState = MMU.MMU_WAIT32[cpu->proc_ID];
 
-     OP_L_DA(14, start);
-     OP_L_DA(13, start);
-     OP_L_DA(12, start);
-     OP_L_DA(11, start);
-     OP_L_DA(10, start);
-     OP_L_DA(9, start);
-     OP_L_DA(8, start);
-     OP_L_DA(7, start);
-     OP_L_DA(6, start);
-     OP_L_DA(5, start);
-     OP_L_DA(4, start);
-     OP_L_DA(3, start);
-     OP_L_DA(2, start);
-     OP_L_DA(1, start);
-     OP_L_DA(0, start);
-     
-     //cpu->R[REG_POS(i,16)] = start;
-     return c + 2;
+	if(BIT15(i))
+	{
+		u32 tmp = READ32(cpu->mem_if->data, start);
+		registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
+		cpu->CPSR.bits.T = BIT0(tmp);
+		c += waitState[(start>>24)&0xF];
+		start -= 4;
+		cpu->next_instruction = registres[15];
+	}
+
+	OP_L_DA(14, start);
+	OP_L_DA(13, start);
+	OP_L_DA(12, start);
+	OP_L_DA(11, start);
+	OP_L_DA(10, start);
+	OP_L_DA(9, start);
+	OP_L_DA(8, start);
+	OP_L_DA(7, start);
+	OP_L_DA(6, start);
+	OP_L_DA(5, start);
+	OP_L_DA(4, start);
+	OP_L_DA(3, start);
+	OP_L_DA(2, start);
+	OP_L_DA(1, start);
+	OP_L_DA(0, start);
+
+	if(i & (1 << REG_POS(i,16))) {
+		if(i & bitList)
+			cpu->R[REG_POS(i,16)] = start;
+	}
+	else
+		cpu->R[REG_POS(i,16)] = start;
+	
+	return c + 2;
 }
 
 static u32 FASTCALL  OP_LDMDB_W(armcpu_t *cpu)
 {
-     u32 i = cpu->instruction, c = 0, count;
-     u32 start = cpu->R[REG_POS(i,16)];
-     
-     u32 * registres = cpu->R;
-     u32 * waitState = MMU.MMU_WAIT32[cpu->proc_ID];
+	u32 i = cpu->instruction, c = 0, count;
+	u32 start = cpu->R[REG_POS(i,16)];
+	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
+	u32 * registres = cpu->R;
+	u32 * waitState = MMU.MMU_WAIT32[cpu->proc_ID];
 
-	 u32 bitList = i&0xFFFF;
-	 for (count = 1; count < 65536; count <<= 1)
-	 {
-		 if (count&bitList)
-			cpu->R[REG_POS(i,16)] -= 4;
-	 }
-     
-     if(BIT15(i))
-     {
-          u32 tmp;
-          start -= 4;
-          tmp = READ32(cpu->mem_if->data, start);
-          registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
-          cpu->CPSR.bits.T = BIT0(tmp);
-	      cpu->next_instruction = registres[15];
-          c += waitState[(start>>24)&0xF];
-     }
+	if(BIT15(i))
+	{
+		u32 tmp;
+		start -= 4;
+		tmp = READ32(cpu->mem_if->data, start);
+		registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
+		cpu->CPSR.bits.T = BIT0(tmp);
+		cpu->next_instruction = registres[15];
+		c += waitState[(start>>24)&0xF];
+	}
 
-     OP_L_DB(14, start);
-     OP_L_DB(13, start);
-     OP_L_DB(12, start);
-     OP_L_DB(11, start);
-     OP_L_DB(10, start);
-     OP_L_DB(9, start);
-     OP_L_DB(8, start);
-     OP_L_DB(7, start);
-     OP_L_DB(6, start);
-     OP_L_DB(5, start);
-     OP_L_DB(4, start);
-     OP_L_DB(3, start);
-     OP_L_DB(2, start);
-     OP_L_DB(1, start);
-     OP_L_DB(0, start);
-     
-//     cpu->R[REG_POS(i,16)] = start;
-     return c + 2;
+	OP_L_DB(14, start);
+	OP_L_DB(13, start);
+	OP_L_DB(12, start);
+	OP_L_DB(11, start);
+	OP_L_DB(10, start);
+	OP_L_DB(9, start);
+	OP_L_DB(8, start);
+	OP_L_DB(7, start);
+	OP_L_DB(6, start);
+	OP_L_DB(5, start);
+	OP_L_DB(4, start);
+	OP_L_DB(3, start);
+	OP_L_DB(2, start);
+	OP_L_DB(1, start);
+	OP_L_DB(0, start);
+
+	if(i & (1 << REG_POS(i,16))) {
+		if(i & bitList)
+			cpu->R[REG_POS(i,16)] = start;
+	}
+	else
+		cpu->R[REG_POS(i,16)] = start;
+
+	return c + 2;
 }
 
 static u32 FASTCALL  OP_LDMIA2(armcpu_t *cpu)

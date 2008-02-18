@@ -46,7 +46,7 @@ static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
    return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
            mem[addr + 1] << 8 | mem[addr]);
 #else
-   return *((u32 *) (mem + addr));
+   return *((u32 *)mem + (addr>>2));
 #endif
 }
 
