@@ -486,24 +486,13 @@ void NDS_Reset( void)
        }
      }
    }
-          
-   MMU_write32(0, 0x027FFE40, header->FNameTblOff);
-   MMU_write32(0, 0x027FFE44, header->FNameTblSize);
-   MMU_write32(0, 0x027FFE48, header->FATOff);
-   MMU_write32(0, 0x027FFE4C, header->FATSize);
-     
-   MMU_write32(0, 0x027FFE50, header->ARM9OverlayOff);
-   MMU_write32(0, 0x027FFE54, header->ARM9OverlaySize);
-   MMU_write32(0, 0x027FFE58, header->ARM7OverlayOff);
-   MMU_write32(0, 0x027FFE5C, header->ARM7OverlaySize);
-     
-   MMU_write32(0, 0x027FFE60, header->unknown2a);
-   MMU_write32(0, 0x027FFE64, header->unknown2b);  //merci EACKiX
 
-   MMU_write32(0, 0x027FFE70, header->ARM9unk);
-   MMU_write32(0, 0x027FFE74, header->ARM7unk);
-
-   MMU_write32(0, 0x027FFF9C, 0x027FFF90); // ?????? besoin d'avoir la vrai valeur sur ds
+	// Copy the whole header to Main RAM 0x27FFE00 on startup.
+	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
+	for (i = 0; i < ((0x170+0x90)/4); i++)
+	{
+		MMU_write32 (0, 0x027FFE00+i*4, ((u32*)MMU.CART_ROM)[i]);
+	}
      
    MainScreen.offset = 0;
    SubScreen.offset = 192;
