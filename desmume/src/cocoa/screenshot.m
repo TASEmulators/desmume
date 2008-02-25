@@ -65,7 +65,7 @@
 	rect.origin.x = 230;
 	rect.origin.y = 200;
 
-	[panel setTitle:localizedString(@"Save Screenshot to File", nil)];
+	[panel setTitle:NSLocalizedString(@"Save Screenshot to File", nil)];
 	//[panel setAllowedFileTypes:[NSArray arrayWithObjects:@"bmp",@"gif",nil]];
 
 	if(!format_selection)
@@ -80,7 +80,7 @@
 		[format_text setMinSize:NSMakeSize(1,1)];
 		[format_text setHorizontallyResizable:YES];
 		[format_text setVerticallyResizable:YES];
-		[format_text setString:localizedString(@"Select Image Format: ", nil)];
+		[format_text setString:NSLocalizedString(@"Select Image Format: ", nil)];
 		[format_text sizeToFit];
 
 		//center vertically
@@ -89,12 +89,12 @@
 		[format_text setFrame:temp];
 
 		format_button = [[NSPopUpButton alloc] initWithFrame:NSMakeRect([format_text frame].size.width,0,200,26) pullsDown:NO];
-		[format_button addItemWithTitle:localizedString(@"Pick by Extension", nil)];
-		[format_button addItemWithTitle:localizedString(@"BMP", nil)];
-		[format_button addItemWithTitle:localizedString(@"GIF", nil)];
-		[format_button addItemWithTitle:localizedString(@"JPG", nil)];
-		[format_button addItemWithTitle:localizedString(@"PNG", nil)];
-		[format_button addItemWithTitle:localizedString(@"TIFF", nil)];
+		[format_button addItemWithTitle:NSLocalizedString(@"Pick by Extension", nil)];
+		[format_button addItemWithTitle:NSLocalizedString(@"BMP", nil)];
+		[format_button addItemWithTitle:NSLocalizedString(@"GIF", nil)];
+		[format_button addItemWithTitle:NSLocalizedString(@"JPG", nil)];
+		[format_button addItemWithTitle:NSLocalizedString(@"PNG", nil)];
+		[format_button addItemWithTitle:NSLocalizedString(@"TIFF", nil)];
 		//[format_button setAction:@selector(??)];
 		//[format_button setTarget:self];
 
@@ -214,7 +214,7 @@
 
 @implementation Screenshot
 
-- (id)initWithBuffer:(u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only
+- (id)initWithBuffer:(volatile const u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only
 {
 	self = [super init];
 
@@ -249,7 +249,7 @@
 
 	if(!image_rep)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Could not create NSBitmapImageRep for screenshot");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Could not create NSBitmapImageRep for screenshot");
 		return nil;
 	}
 
@@ -268,6 +268,7 @@
 	if(save_only)
 	{
 		[self saveButtonPressed];
+
 	} else
 	{
 
@@ -276,7 +277,7 @@
 
 		if(!image)
 		{
-			messageDialog(localizedString(@"Error", nil), @"Could not create NSImage for screenshot window");
+			messageDialog(NSLocalizedString(@"Error", nil), @"Could not create NSImage for screenshot window");
 			return nil;
 		}
 
@@ -288,7 +289,7 @@
 
 		if(!image_view)
 		{
-			messageDialog(localizedString(@"Error", nil), @"Could not create NSImageView for screenshot window");
+			messageDialog(NSLocalizedString(@"Error", nil), @"Could not create NSImageView for screenshot window");
 			return nil;
 		}
 
@@ -300,12 +301,12 @@
 
 		if(!save_button)
 		{
-			messageDialog(localizedString(@"Error", nil), @"Could not create save button for screenshot window");
+			messageDialog(NSLocalizedString(@"Error", nil), @"Could not create save button for screenshot window");
 			return nil;
 		}
 
 		[save_button setBezelStyle:NSRoundedBezelStyle];
-		[save_button setTitle:localizedString(@"Save Screenshot", nil)];
+		[save_button setTitle:NSLocalizedString(@"Save Screenshot", nil)];
 		[save_button setAction:@selector(saveButtonPressed)];
 		[save_button setTarget:self];
 
@@ -314,12 +315,12 @@
 
 		if(!update_button)
 		{
-			messageDialog(localizedString(@"Error", nil), @"Could not create update button for screenshot window");
+			messageDialog(NSLocalizedString(@"Error", nil), @"Could not create update button for screenshot window");
 			return nil;
 		}
 
 		[update_button setBezelStyle:NSRoundedBezelStyle];
-		[update_button setTitle:localizedString(@"Update Screenshot", nil)];
+		[update_button setTitle:NSLocalizedString(@"Update Screenshot", nil)];
 		[update_button setAction:@selector(updateButtonPressed)];
 		[update_button setTarget:self];
 
@@ -329,7 +330,7 @@
 		NSTitledWindowMask|NSClosableWindowMask|NSResizableWindowMask backing:NSBackingStoreBuffered defer:NO screen:nil];
 
 		//set the window title
-		[window setTitle:localizedString(@"DeSmuME Screenshot", nil)];
+		[window setTitle:NSLocalizedString(@"DeSmuME Screenshot", nil)];
 
 		//set the window delegate
 		[window setDelegate:self];
@@ -343,10 +344,29 @@
 		[self windowDidResize:nil];
 
 		//show the window
-		[[[NSWindowController alloc] initWithWindow:window] showWindow:nil];
+		controller = [[NSWindowController alloc] initWithWindow:window];
+		[controller showWindow:nil];
 	}
 
 	return self;
+}
+
+- (void)dealloc
+{
+	[image_rep release];
+	[window release];
+	[controller release];
+
+/*
+	NSImage *image;
+	NSImageView *image_view;
+	NSButton *save_button;
+	NSButton *update_button;
+	NSBitmapImageRep *image_rep;
+	NSView *format_selection;
+	NSPopUpButton *format_button;
+*/
+	[super dealloc];
 }
 
 @end

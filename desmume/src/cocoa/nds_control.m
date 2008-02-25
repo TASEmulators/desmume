@@ -89,7 +89,7 @@ NSMenuItem *frame_skip_item[MAX_FRAME_SKIP];
 NSMenuItem *volume_item[10];
 NSMenuItem *mute_item;
 
-volatile u8 frame_skip = 0; //this is one more than the acutal frame skip, a value of 0 signifies auto frame skip
+volatile u8 frame_skip = 0; //this is one more than the actual frame skip, a value of 0 signifies auto frame skip
 
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
@@ -115,7 +115,7 @@ NSString *current_file;
 
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Unable to initialize sound core");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize sound core");
 	}
 
 	SPU_SetVolume(100);
@@ -147,7 +147,7 @@ NSString *current_file;
 	BOOL was_paused = paused;
 	[self pause];
 
-	NSString *temp = openDialog([NSArray arrayWithObjects:@"NDS", @"ds.GBA", nil]);
+	NSString *temp = openDialog([NSArray arrayWithObjects:@"NDS", @"DS.GBA", nil]);
 
 	if(temp)
 	{
@@ -168,7 +168,7 @@ NSString *current_file;
 	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, "temp.sav") > 0)
 	{
 		//if it didn't work give an error and dont unpause
-		messageDialog(localizedString(@"Error", nil), @"Could not open file");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Could not open file");
 
 		//continue playing if load didn't work
 		if(!was_paused)[self execute];
@@ -258,7 +258,7 @@ NSString *current_file;
 	bool was_paused = paused;
 	[NDS pause];
 
-	if(messageDialogYN(localizedString(@"DeSmuME Emulator", nil), localizedString(@"Are you sure you want to close the ROM?", nil)))
+	if(messageDialogYN(NSLocalizedString(@"DeSmuME Emulator", nil), NSLocalizedString(@"Are you sure you want to close the ROM?", nil)))
 	{
 		[self closeROM];
 
@@ -431,7 +431,7 @@ NSString *current_file;
 
 	NSSavePanel *panel = [NSSavePanel savePanel];
 
-	[panel setTitle:localizedString(@"Save State to File...", nil)];
+	[panel setTitle:NSLocalizedString(@"Save State to File...", nil)];
 	[panel setAllowedFileTypes:[NSArray arrayWithObjects:@"dst",nil]];
 
 	if([panel runModal] == NSOKButton)
@@ -507,8 +507,8 @@ NSString *current_file;
 	BOOL was_paused = paused;
 	[NDS pause];
 
-	if(messageDialogYN(localizedString(@"DeSmuME Emulator", nil),
-	localizedString(@"Are you sure you want to clear all save slots?", nil)))
+	if(messageDialogYN(NSLocalizedString(@"DeSmuME Emulator", nil),
+	NSLocalizedString(@"Are you sure you want to clear all save slots?", nil)))
 	{
 
 
@@ -544,7 +544,7 @@ NSString *current_file;
 	NSTitledWindowMask|NSClosableWindowMask|NSResizableWindowMask backing:NSBackingStoreBuffered defer:NO screen:nil];
 
 	//set the window title
-	[rom_info_window setTitle:localizedString(@"ROM Info", nil)];
+	[rom_info_window setTitle:NSLocalizedString(@"ROM Info", nil)];
 
 	//create an NSTableView to display the stuff
 	TableHelper *helper = [[TableHelper alloc] initWithWindow:rom_info_window];
@@ -615,7 +615,7 @@ NSString *current_file;
 
 	if(!SNDOSXOpenFile([panel filename]))
 	{
-		messageDialog(localizedString(@"Error", nil), @"Couldn't create sound recording output file");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create sound recording output file");
 		return;
 	}
 
@@ -637,7 +637,7 @@ NSString *current_file;
 
 //Rom info helper stuff -------------------------------------------------------------
 
-#define ROM_INFO_ROWS 8
+#define ROM_INFO_ROWS 7
 #define ROM_INFO_WIDTH 400
 @implementation TableHelper
 - (id)initWithWindow:(NSWindow*)window
@@ -646,13 +646,13 @@ NSString *current_file;
 
 	type_column = [[NSTableColumn alloc] initWithIdentifier:@""];
 	[type_column setEditable:NO];
-	[type_column setResizable:YES];
+	[type_column setResizingMask:NSTableColumnUserResizingMask];
 	[[type_column headerCell] setStringValue:@"Attribute"];
 	[type_column setMinWidth: 1];
 
 	value_column = [[NSTableColumn alloc] initWithIdentifier:@""];
 	[value_column setEditable:NO];
-	[value_column setResizable:YES];
+	[value_column setResizingMask:NSTableColumnUserResizingMask];
 	[[value_column headerCell] setStringValue:@"Value"];
 	[value_column setMinWidth: 1];
 
@@ -688,6 +688,10 @@ if([table headerView] == nil)messageDialogBlank();
 	[value_column setWidth:ROM_INFO_WIDTH - [type_column width]];
 
 	//
+	//[table setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
+	//[[window contentView] setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
+	//[[window contentView] setAutoresizesSubviews:YES];
+	//[[window contentView] addSubview:table];
 	[window setContentView:table];
 
 	//grab the header to read data from
@@ -695,6 +699,7 @@ if([table headerView] == nil)messageDialogBlank();
 
 	return self;
 }
+
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView;
 {
 	return ROM_INFO_ROWS;
@@ -715,28 +720,26 @@ if([table headerView] == nil)messageDialogBlank();
 	if(aTableColumn == type_column)
 	{
 		if(rowIndex == 0)
-			return localizedString(@"File", @" ROM Info ");
+			return NSLocalizedString(@"ROM File", nil);
 
 		if(rowIndex == 1)
-			return localizedString(@"Title", @" ROM Info ");
+			return NSLocalizedString(@"ROM Title", nil);
 
 		if(rowIndex == 2)
-			return localizedString(@"Maker", @" ROM Info ");
+			return NSLocalizedString(@"ROM Maker", nil);
 
 		if(rowIndex == 3)
-			return localizedString(@"Size", @" ROM Info ");
+			return NSLocalizedString(@"ROM Size", nil);
 
 		if(rowIndex == 4)
-			return localizedString(@"ARM9 Size", @" ROM Info ");
+			return NSLocalizedString(@"ARM9 Size", nil);
 
 		if(rowIndex == 5)
-			return localizedString(@"ARM7 Size", @" ROM Info ");
+			return NSLocalizedString(@"ARM7 Size", nil);
 
 		if(rowIndex == 6)
-			return localizedString(@"Data Size", @" ROM Info ");
+			return NSLocalizedString(@"Data Size", nil);
 
-		if(rowIndex == 7)
-			return localizedString(@"Icon", @" ROM Info ");
 	} else
 	{//units?
 		if(rowIndex == 0)return current_file;
@@ -770,11 +773,6 @@ if([table headerView] == nil)messageDialogBlank();
 		if(rowIndex == 6)
 		{
 			return [NSString localizedStringWithFormat:@"%u", header->ARM7binSize + header->ARM7src];
-		}
-
-		if(rowIndex == 7)
-		{
-			return @"NOT FINISHED";
 		}
 
 	}

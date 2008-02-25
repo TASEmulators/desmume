@@ -44,32 +44,18 @@ FIXME: When cross-platform (core) components end emulation due to error - pause 
 FIXME: Some bug where states get messed up and hitting execute does nothing......
 FIXME: .nds.gba extensions don't work in open panels
 FIXME: Traveling windows when constantly resizing
-FIXME: Show version number somewhere in the program
 */
 
 //Globals----------------------------------------------------------------------------------------
 
 NSMenu *menu;
 
+NSAutoreleasePool *autorelease;
+
 //Interfaces--------------------------------------------------------------------------------------
 
-@interface NSApplication(custom)
-
-//this prototype was removed from the mac os headers
-- (void)setAppleMenu:(NSMenu*)menu;
-
-//here we extend NSApplication
-- (void)about;
-- (void)preferences;
-
-//help menu
-- (void)launchWebsite;
-- (void)launchForums;
-- (void)bugReport;
-
-@end
-
-@interface NSApplication(delegate)
+@interface AppDelegate : NSObject
+{}
 
 //delegate methods
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename;
@@ -77,9 +63,7 @@ NSMenu *menu;
 - (void)applicationWillFinishLaunching:(NSNotification*)aNotification;
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification;
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender;
-
-
-
+- (void)applicationWillTerminate:(NSNotification*)aNotification;
 @end
 
 //Global access gui constructs
@@ -104,19 +88,7 @@ GPU3DInterface *core3DList[] = {
 
 NintendoDS *NDS;
 
-void Quit()
-{
-	//stop emulation if it's going
-	[NDS destroy];
-
-	//
-	finished = true;
-
-	//
-	[NSApp stop:NSApp];
-}
-
-void AskForQuit()
+bool AskForQuit()
 {
 	BOOL was_paused = paused;
 
@@ -124,10 +96,13 @@ void AskForQuit()
 	[NDS pause];
 
 	//ask the user if quitting is acceptable
-	if(messageDialogYN(localizedString(@"DeSmuME Emulator", nil), localizedString(@"Are you sure you want to quit?", nil)))
-		Quit();
+	if(messageDialogYN(NSLocalizedString(@"DeSmuME Emulator", nil), NSLocalizedString(@"Are you sure you want to quit?", nil)))
+		return true;
 	else
+	{
 		if(!was_paused)[NDS execute]; //unpaused if we weren't paused before
+		return false;
+	}
 }
 
 NSEvent *current_event;
@@ -148,6 +123,8 @@ void clearEvents(bool wait)
 //call after objects (ie NDS main_window) are inited
 void CreateMenu()
 {
+	int i;
+
 	NSMenuItem *temp;
 
 	NSMenu* application_menu;
@@ -161,107 +138,43 @@ void CreateMenu()
 
 	NSMenu* frame_skip_menu;
 
-	SEL action = nil;//@selector(method:);
+	menu = [NSApp mainMenu];
 
-	//Create the outermost menu that contains all the others
-	menu = [[NSMenu alloc] initWithTitle:@"DeSmuME"];
-
-	//Create the "DeSmuME" (application) menu
-	application_menu = [[NSMenu alloc] initWithTitle:@"DeSmuME"];
-
-	//Create the sevices menu
-	services_menu = [[NSMenu alloc] initWithTitle:@"Services"];
-	[NSApp setServicesMenu:services_menu];
-
-	//Add the about menu
-	temp = [application_menu addItemWithTitle:@"About DeSmuME" action:@selector(about) keyEquivalent:@""];
-	[temp setTarget:NSApp];
-
-	//
-	[application_menu addItem: [NSMenuItem separatorItem]];
-
-	//Add the preferences menu
-	temp = [application_menu addItemWithTitle:@"Preferences..." action:@selector(preferences) keyEquivalent:@","];
-	[temp setTarget:NSApp];
-
-	//
-	[application_menu addItem: [NSMenuItem separatorItem]];
-
-	//add the services menu to the application menu (after preferences)
-	temp = [application_menu addItemWithTitle:@"Services" action:nil keyEquivalent:@""];
-	[temp setSubmenu:services_menu];
-
-	//
-	[application_menu addItem: [NSMenuItem separatorItem]];
-
-	//standard hide option
-	temp = [application_menu addItemWithTitle:@"Hide DeSmuME" action:@selector(hide:) keyEquivalent:@""];
-	[temp setTarget:NSApp];
-
-	//standard hide others option
-	temp = [application_menu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@""];
-	[temp setTarget:NSApp];
-
-	//standard show all option
-	temp = [application_menu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
-	[temp setTarget:NSApp];
-
-	//
-	[application_menu addItem: [NSMenuItem separatorItem]];
-
-	//standard quit option
-	temp = [application_menu addItemWithTitle:@"Quit DeSmuME" action:@selector(terminate:) keyEquivalent:@"q"];
-	[temp setTarget: NSApp];
-
-	//finally call setAppleMenu to have all our stuff working
-	[NSApp setAppleMenu:application_menu];
-
-	temp = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
-	[temp setSubmenu:application_menu];
-	[temp release];
-
-	NSMenuItem *file_item = [menu addItemWithTitle:@"File" action:action keyEquivalent:@""];
-	NSMenuItem *emulation_item = [menu addItemWithTitle:@"Emulation" action:action keyEquivalent:@""];
-	NSMenuItem *view_item = [menu addItemWithTitle:@"View" action:action keyEquivalent:@""];
-	NSMenuItem *sound_item = [menu addItemWithTitle:@"Sound" action:action keyEquivalent:@""];
-	//NSMenuItem *window_item = [menu addItemWithTitle:@"Window" action:action keyEquivalent:@""];
-	NSMenuItem *help_item = [menu addItemWithTitle:@"Help" action:action keyEquivalent:@""];
+	NSMenuItem *file_item = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
+	NSMenuItem *emulation_item = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
+	NSMenuItem *view_item = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
+	NSMenuItem *sound_item = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
+	//NSMenuItem *window_item = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
+	NSMenuItem *help_item = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
 
 	//Create the File Menu
-	file = [[NSMenu alloc] initWithTitle:@"File"];
+	file = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", nil)];
 	[file setAutoenablesItems:NO];
 	[menu setSubmenu:file forItem:file_item];
 
-	temp = [file addItemWithTitle:@"Open ROM..." action:@selector(pickROM) keyEquivalent:@"o"];
+	temp = [file addItemWithTitle:NSLocalizedString(@"Open ROM...", nil) action:@selector(pickROM) keyEquivalent:@"o"];
 	[temp setTarget:NDS];
 
 	//recent items menu
 	/* Thanks to Jeff Johnson and the Lap Cat Software Blog for their information on the Open Recent menu in Cocoa*/
 	/* http://lapcatsoftware.com/blog/ */
 
-	temp = [file addItemWithTitle:@"Open Recent" action:nil keyEquivalent:@""];
+	temp = [file addItemWithTitle:NSLocalizedString(@"Open Recent", nil) action:nil keyEquivalent:@""];
 
-	NSMenu *recent_menu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
+	//All the recent documents menu stuff is managed by Cocoa
+
+	NSMenu *recent_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Open Recent", nil)];
 	[recent_menu performSelector:@selector(_setMenuName:) withObject:@"NSRecentDocumentsMenu"];
 	[temp setSubmenu:recent_menu];
 
-	NSArray *recent_documents = [[NSDocumentController sharedDocumentController] recentDocumentURLs];
-	int i;
-	for(i = 0; i < [recent_documents count]; i++)
-	{
-	//	[recent_menu addItemWithTitle:[[recent_documents objectAtIndex:i] absoluteString] action:nil keyEquivalent:@""];
-	}
-/*
-	[recent_menu addItem:[NSMenuItem separatorItem]];
-
-	temp = [recent_menu addItemWithTitle:@"Clear" action:@selector(clearRecentDocuments:) keyEquivalent:@""];
-	if(i == 0)[temp setEnabled:NO];
-	else [temp setEnabled:YES];
+	temp = [recent_menu addItemWithTitle:@"Clear Menu" action:@selector(clearRecentDocuments:) keyEquivalent:@""];
 	[temp setTarget:[NSDocumentController sharedDocumentController]];
-*/
+
+	[recent_menu release];
+
 	[file addItem:[NSMenuItem separatorItem]];
 
-	rom_info_item = [file addItemWithTitle:@"ROM Info..." action:@selector(showRomInfo) keyEquivalent:@""];
+	rom_info_item = [file addItemWithTitle:NSLocalizedString(@"ROM Info...", nil) action:@selector(showRomInfo) keyEquivalent:@""];
 	[rom_info_item setEnabled:NO];
 	[rom_info_item setTarget:NDS];
 
@@ -269,33 +182,33 @@ void CreateMenu()
 
 	[file addItem:[NSMenuItem separatorItem]];
 
-	save_state_as_item = [file addItemWithTitle:@"Save State As..." action:@selector(saveStateAs) keyEquivalent:@""];
+	save_state_as_item = [file addItemWithTitle:NSLocalizedString(@"Save State As...", nil) action:@selector(saveStateAs) keyEquivalent:@""];
 	[save_state_as_item setEnabled:NO];
 	[save_state_as_item setTarget:NDS];
 
-	load_state_from_item = [file addItemWithTitle:@"Load State From..." action:@selector(loadStateFrom) keyEquivalent:@""];
+	load_state_from_item = [file addItemWithTitle:NSLocalizedString(@"Load State From...", nil) action:@selector(loadStateFrom) keyEquivalent:@""];
 	[load_state_from_item setEnabled:NO];
 	[load_state_from_item setTarget:NDS];
 
 	[file addItem:[NSMenuItem separatorItem]];
 
-	temp = [file addItemWithTitle:@"Save State" action:@selector(saveTo:) keyEquivalent:@""];
-	NSMenu *save_state_menu = [[NSMenu alloc] initWithTitle:@"Save State"];
+	temp = [file addItemWithTitle:NSLocalizedString(@"Save State", nil) action:@selector(saveTo:) keyEquivalent:@""];
+	NSMenu *save_state_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Save State", nil)];
 	[save_state_menu setAutoenablesItems:NO];
 	[temp setSubmenu:save_state_menu];
 
-	temp = [file addItemWithTitle:@"Load State" action:nil keyEquivalent:@""];
-	NSMenu *load_state_menu = [[NSMenu alloc] initWithTitle:@"Load State"];
+	temp = [file addItemWithTitle:NSLocalizedString(@"Load State", nil) action:nil keyEquivalent:@""];
+	NSMenu *load_state_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Load State", nil)];
 	[load_state_menu setAutoenablesItems:NO];
 	[temp setSubmenu:load_state_menu];
 
 	for(i = 0; i < SAVE_SLOTS; i++)
 	{
-		saveSlot_item[i] = [save_state_menu addItemWithTitle:@"Slot %d" withInt:i action:@selector(saveToSlot:) keyEquivalent:@""];
+		saveSlot_item[i] = [save_state_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Slot %d", nil), i] action:@selector(saveToSlot:) keyEquivalent:@""];
 		[saveSlot_item[i] setEnabled:NO];
 		[saveSlot_item[i] setTarget:NDS];
 
-		loadSlot_item[i] = [load_state_menu addItemWithTitle:@"Slot %d" withInt:i action:@selector(loadFromSlot:) keyEquivalent:@""];
+		loadSlot_item[i] = [load_state_menu addItemWithTitle:[saveSlot_item[i] title] action:@selector(loadFromSlot:) keyEquivalent:@""];
 		[loadSlot_item[i] setEnabled:NO];
 		[loadSlot_item[i] setTarget:NDS];
 	}
@@ -317,14 +230,14 @@ a way to get the time of a save that's not string/human formatted...
 
 	[save_state_menu addItem:[NSMenuItem separatorItem]];
 
-	clear_all_saves_item = [save_state_menu addItemWithTitle:@"Clear All" action:@selector(askAndClearStates) keyEquivalent:@""];
+	clear_all_saves_item = [save_state_menu addItemWithTitle:@"Clear Menu" action:@selector(askAndClearStates) keyEquivalent:@""];
 	[clear_all_saves_item setEnabled:NO];
 	[clear_all_saves_item setTarget:NDS];
 */
 /*
 	[save_state_menu addItem:[NSMenuItem separatorItem]];
 
-	temp = [save_state_menu addItemWithTitle:@"View States" action:nil keyEquivalent:@""];
+	temp = [save_state_menu addItemWithTitle:NSLocalizedString(@"View States", nil) action:nil keyEquivalent:@""];
 	[temp setEnabled:NO];
 	[temp setTarget:NDS];
 */
@@ -352,178 +265,191 @@ a way to get the time of a save that's not a string / human formatted...
 
 	[file addItem:[NSMenuItem separatorItem]];
 
-	close_rom_item = [file addItemWithTitle:@"Close ROM" action:@selector(askAndCloseROM) keyEquivalent:@"w"];
+	close_rom_item = [file addItemWithTitle:NSLocalizedString(@"Close ROM", nil) action:@selector(askAndCloseROM) keyEquivalent:@"w"];
 	[close_rom_item setEnabled:NO];
 	[close_rom_item setTarget:NDS];
 
+	[file release];
+
 	//Create the Emulation Menu
-	emulation = [[NSMenu alloc] initWithTitle:localizedString(@"Emulation", nil)];
+	emulation = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Emulation", nil)];
 	[emulation setAutoenablesItems:NO];
 	[menu setSubmenu:emulation forItem:emulation_item];
 
-	execute_item = [emulation addItemWithTitle:@"Execute" action:@selector(execute) keyEquivalent:@""];
+	execute_item = [emulation addItemWithTitle:NSLocalizedString(@"Execute", nil) action:@selector(execute) keyEquivalent:@""];
 	[execute_item setTarget:NDS];
 	[execute_item setEnabled:NO];
 
-	pause_item = [emulation addItemWithTitle:@"Pause" action:@selector(pause) keyEquivalent:@""];
+	pause_item = [emulation addItemWithTitle:NSLocalizedString(@"Pause", nil) action:@selector(pause) keyEquivalent:@""];
 	[pause_item setTarget:NDS];
 	[pause_item setEnabled:NO];
 
-	reset_item = [emulation addItemWithTitle:@"Reset" action:@selector(reset) keyEquivalent:@""];
+	reset_item = [emulation addItemWithTitle:NSLocalizedString(@"Reset", nil) action:@selector(reset) keyEquivalent:@""];
 	[reset_item setTarget:NDS];
 	[reset_item setEnabled:NO];
 
 	[emulation addItem:[NSMenuItem separatorItem]];
 
-	temp = [emulation addItemWithTitle:@"Frame Skip" action:nil keyEquivalent:@""];
-	frame_skip_menu = [[NSMenu alloc] initWithTitle:localizedString(@"Frame Skip", nil)];
+	temp = [emulation addItemWithTitle:NSLocalizedString(@"Frame Skip", nil) action:nil keyEquivalent:@""];
+	frame_skip_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Frame Skip", nil)];
 	[temp setSubmenu:frame_skip_menu];
 
-	frame_skip_auto_item = [frame_skip_menu addItemWithTitle:@"Auto" action:@selector(setFrameSkip:) keyEquivalent:@""];
+	frame_skip_auto_item = [frame_skip_menu addItemWithTitle:NSLocalizedString(@"Auto", nil) action:@selector(setFrameSkip:) keyEquivalent:@""];
 	[frame_skip_auto_item setTarget:NDS];
 	[frame_skip_auto_item setState:NSOnState];
 	[frame_skip_auto_item setEnabled:YES];
 
 	[frame_skip_menu addItem:[NSMenuItem separatorItem]];
 
-	frame_skip_item[0] = [frame_skip_menu addItemWithTitle:@"Off" action:@selector(setFrameSkip:) keyEquivalent:@""];
+	frame_skip_item[0] = [frame_skip_menu addItemWithTitle:NSLocalizedString(@"Off", nil) action:@selector(setFrameSkip:) keyEquivalent:@""];
 	[frame_skip_item[0] setTarget:NDS];
 	[frame_skip_item[0] setEnabled:YES];
 
 	for(i = 1; i < MAX_FRAME_SKIP; i++)
 	{
-		frame_skip_item[i] = [frame_skip_menu addItemWithTitle:@"%d" withInt:i action:@selector(setFrameSkip:) keyEquivalent:@""];
+		frame_skip_item[i] = [frame_skip_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Skip %d", nil), i] action:@selector(setFrameSkip:) keyEquivalent:@""];
 		[frame_skip_item[i] setTarget:NDS];
 		[frame_skip_item[i] setEnabled:YES];
 	}
 
+	[frame_skip_menu release];
+
+	[emulation release];
+
 	//Create the screens menu
-	view = [[NSMenu alloc] initWithTitle:localizedString(@"View", nil)];
+	view = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"View", nil)];
 	[menu setSubmenu:view forItem:view_item];
 
-	resize1x = [view addItemWithTitle:@"Size 1x" action:@selector(resizeScreen1x) keyEquivalent:@"1"];
+	resize1x = [view addItemWithTitle:NSLocalizedString(@"Size 1x", nil) action:@selector(resizeScreen1x) keyEquivalent:@"1"];
 	[resize1x setState:NSOnState];
 	[resize1x setTarget:main_window];
 
-	resize2x = [view addItemWithTitle:@"Size 2x" action:@selector(resizeScreen2x) keyEquivalent:@"2"];
+	resize2x = [view addItemWithTitle:NSLocalizedString(@"Size 2x", nil) action:@selector(resizeScreen2x) keyEquivalent:@"2"];
 	[resize2x setTarget:main_window];
 
-	resize3x = [view addItemWithTitle:@"Size 3x" action:@selector(resizeScreen3x) keyEquivalent:@"3"];
+	resize3x = [view addItemWithTitle:NSLocalizedString(@"Size 3x", nil) action:@selector(resizeScreen3x) keyEquivalent:@"3"];
 	[resize3x setTarget:main_window];
 
-	resize4x = [view addItemWithTitle:@"Size 4x" action:@selector(resizeScreen4x) keyEquivalent:@"4"];
+	resize4x = [view addItemWithTitle:NSLocalizedString(@"Size 4x", nil) action:@selector(resizeScreen4x) keyEquivalent:@"4"];
 	[resize4x setTarget:main_window];
+
+	[view addItem:[NSMenuItem separatorItem]];
 /*
-	[view addItem:[NSMenuItem separatorItem]];
+	[view addItemWithTitle:NSLocalizedString(@"Full Screen", nil) action:nil keyEquivalent:@"f"];
 
-	[view addItemWithTitle:@"Full Screen" action:nil keyEquivalent:@"f"];
+	[view addItem:[NSMenuItem separatorItem]];
 */
-	[view addItem:[NSMenuItem separatorItem]];
-
-	allows_resize_item = [view addItemWithTitle:@"Allow Resize" action:@selector(toggleAllowsResize) keyEquivalent:@""];
+	allows_resize_item = [view addItemWithTitle:NSLocalizedString(@"Allow Resize", nil) action:@selector(toggleAllowsResize) keyEquivalent:@""];
 	[allows_resize_item setState:NSOnState];
 	[allows_resize_item setTarget:main_window];
 
-	constrain_item = [view addItemWithTitle:@"Constrain Proportions" action:@selector(toggleConstrainProportions) keyEquivalent:@""];
+	constrain_item = [view addItemWithTitle:NSLocalizedString(@"Constrain Proportions", nil) action:@selector(toggleConstrainProportions) keyEquivalent:@""];
 	[constrain_item setState:NSOnState];
 	[constrain_item setTarget:main_window];
 
-	min_size_item = [view addItemWithTitle: @"No Smaller Than DS" action:@selector(toggleMinSize) keyEquivalent:@""];
+	min_size_item = [view addItemWithTitle:NSLocalizedString(@"No Smaller Than DS", nil) action:@selector(toggleMinSize) keyEquivalent:@""];
 	[min_size_item setState:NSOnState];
 	[min_size_item setTarget:main_window];
 
 	[view addItem:[NSMenuItem separatorItem]];
 
-	temp = [view addItemWithTitle: @"Rotation" action:nil keyEquivalent:@""];
-
-	NSMenu *rotation_menu = [[NSMenu alloc] initWithTitle:@"Rotation"];
+	temp = [view addItemWithTitle:NSLocalizedString(@"Rotation", nil) action:nil keyEquivalent:@""];
+	NSMenu *rotation_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Rotation", nil)];
 	[temp setSubmenu: rotation_menu];
 
-	rotation0_item = [rotation_menu addItemWithTitle:@"Rotation 0" action:@selector(setRotation0) keyEquivalent:@""];
+	rotation0_item = [rotation_menu addItemWithTitle:NSLocalizedString(@"Rotation 0", nil) action:@selector(setRotation0) keyEquivalent:@""];
 	[rotation0_item setState:NSOnState];
 	[rotation0_item setTarget:main_window];
 
-	rotation90_item = [rotation_menu addItemWithTitle:@"Rotation 90" action:@selector(setRotation90) keyEquivalent:@""];
+	rotation90_item = [rotation_menu addItemWithTitle:NSLocalizedString(@"Rotation 90", nil) action:@selector(setRotation90) keyEquivalent:@""];
 	[rotation90_item setState:NSOffState];
 	[rotation90_item setTarget:main_window];
 
-	rotation180_item = [rotation_menu addItemWithTitle:@"Rotation 180" action:@selector(setRotation180) keyEquivalent:@""];
+	rotation180_item = [rotation_menu addItemWithTitle:NSLocalizedString(@"Rotation 180", nil) action:@selector(setRotation180) keyEquivalent:@""];
 	[rotation180_item setState:NSOffState];
 	[rotation180_item setTarget:main_window];
 
-	rotation270_item = [rotation_menu addItemWithTitle:@"Rotation 270" action:@selector(setRotation270) keyEquivalent:@""];
+	rotation270_item = [rotation_menu addItemWithTitle:NSLocalizedString(@"Rotation 270", nil) action:@selector(setRotation270) keyEquivalent:@""];
 	[rotation270_item setState:NSOffState];
 	[rotation270_item setTarget:main_window];
 
+	[rotation_menu release];
+
 	[view addItem:[NSMenuItem separatorItem]];
 
-	temp = [view addItemWithTitle:@"Layers" action:nil keyEquivalent:@""];
-	NSMenu *layer_menu = [[NSMenu alloc] initWithTitle:@"Layers"];
+	temp = [view addItemWithTitle:NSLocalizedString(@"Layers", nil) action:nil keyEquivalent:@""];
+	NSMenu *layer_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Layers", nil)];
 	[temp setSubmenu: layer_menu];
 
-	topBG0_item = [layer_menu addItemWithTitle:@"Top BG0" action:@selector(toggleTopBackground0) keyEquivalent:@""];
+	topBG0_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG0", nil) action:@selector(toggleTopBackground0) keyEquivalent:@""];
 	[topBG0_item setState:NSOnState];
 	[topBG0_item setTarget:main_window];
 
-	topBG1_item = [layer_menu addItemWithTitle:@"Top BG1" action:@selector(toggleTopBackground1) keyEquivalent:@""];
+	topBG1_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG1", nil) action:@selector(toggleTopBackground1) keyEquivalent:@""];
 	[topBG1_item setState:NSOnState];
 	[topBG1_item setTarget:main_window];
 
-	topBG2_item = [layer_menu addItemWithTitle:@"Top BG2" action:@selector(toggleTopBackground2) keyEquivalent:@""];
+	topBG2_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG2", nil) action:@selector(toggleTopBackground2) keyEquivalent:@""];
 	[topBG2_item setState:NSOnState];
 	[topBG2_item setTarget:main_window];
 
-	topBG3_item = [layer_menu addItemWithTitle:@"Top BG3" action:@selector(toggleTopBackground3) keyEquivalent:@""];
+	topBG3_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Top BG3", nil) action:@selector(toggleTopBackground3) keyEquivalent:@""];
 	[topBG3_item setState:NSOnState];
 	[topBG3_item setTarget:main_window];
 
 	[layer_menu addItem:[NSMenuItem separatorItem]];
 
-	subBG0_item = [layer_menu addItemWithTitle:@"Sub BG0" action:@selector(toggleSubBackground0) keyEquivalent:@""];
+	subBG0_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG0", nil) action:@selector(toggleSubBackground0) keyEquivalent:@""];
 	[subBG0_item setState:NSOnState];
 	[subBG0_item setTarget:main_window];
 
-	subBG1_item = [layer_menu addItemWithTitle:@"Sub BG1" action:@selector(toggleSubBackground1) keyEquivalent:@""];
+	subBG1_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG1", nil) action:@selector(toggleSubBackground1) keyEquivalent:@""];
 	[subBG1_item setState:NSOnState];
 	[subBG1_item setTarget:main_window];
 
-	subBG2_item = [layer_menu addItemWithTitle:@"Sub BG2" action:@selector(toggleSubBackground2) keyEquivalent:@""];
+	subBG2_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG2", nil) action:@selector(toggleSubBackground2) keyEquivalent:@""];
 	[subBG2_item setState:NSOnState];
 	[subBG2_item setTarget:main_window];
 
-	subBG3_item = [layer_menu addItemWithTitle:@"Sub BG3" action:@selector(toggleSubBackground3) keyEquivalent:@""];
+	subBG3_item = [layer_menu addItemWithTitle:NSLocalizedString(@"Sub BG3", nil) action:@selector(toggleSubBackground3) keyEquivalent:@""];
 	[subBG3_item setState:NSOnState];
 	[subBG3_item setTarget:main_window];
 
+	[layer_menu release];
+
 	[view addItem:[NSMenuItem separatorItem]];
 
-	allows_resize_item = [view addItemWithTitle:@"Screenshot to File" action:@selector(screenShotToFile) keyEquivalent:@""];
+	allows_resize_item = [view addItemWithTitle:NSLocalizedString(@"Screenshot to File", nil) action:@selector(screenShotToFile) keyEquivalent:@""];
 	[allows_resize_item setTarget:main_window];
 
-	allows_resize_item = [view addItemWithTitle:@"Screenshot to Window" action:@selector(screenShotToWindow) keyEquivalent:@""];
+	allows_resize_item = [view addItemWithTitle:NSLocalizedString(@"Screenshot to Window", nil) action:@selector(screenShotToWindow) keyEquivalent:@""];
 	[allows_resize_item setTarget:main_window];
+
+	[view release];
 
 	//Create the sound menu
-	sound_menu = [[NSMenu alloc] initWithTitle:localizedString(@"Sound", nil)];
+	sound_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Sound", nil)];
 	[menu setSubmenu:sound_menu forItem:sound_item];
 
-	temp = [sound_menu addItemWithTitle:@"Volume" action:nil keyEquivalent:@""];
-	[temp setTarget:NSApp];
+	temp = [sound_menu addItemWithTitle:NSLocalizedString(@"Volume", nil) action:nil keyEquivalent:@""];
+	[temp setTarget:[NSApp delegate]];
 
-	NSMenu *volume_menu = [[NSMenu alloc] initWithTitle:localizedString(@"Volume", nil)];
+	NSMenu *volume_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Volume", nil)];
 	[sound_menu setSubmenu:volume_menu forItem:temp];
 
 	for(i = 0; i < 10; i++)
 	{
-		volume_item[i] = [volume_menu addItemWithTitle:@"Volume %d" withInt:(i+1)*10 action:@selector(setVolume:) keyEquivalent:@""];
+		volume_item[i] = [volume_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Volume %d", nil), (i+1)*10] action:@selector(setVolume:) keyEquivalent:@""];
 		[volume_item[i] setTarget:NDS];
 		if(i == 9)
 			[volume_item[i] setState:NSOnState]; //check 100% volume since it's defaults
 	}
 
+	[volume_menu release];
+
 	[sound_menu addItem:[NSMenuItem separatorItem]];
 
-	mute_item = [sound_menu addItemWithTitle:@"Mute" action:@selector(toggleMuting) keyEquivalent:@""];
+	mute_item = [sound_menu addItemWithTitle:NSLocalizedString(@"Mute", nil) action:@selector(toggleMuting) keyEquivalent:@""];
 	[mute_item setTarget:NDS];
 /*
 	[sound_menu addItem:[NSMenuItem separatorItem]];
@@ -537,9 +463,12 @@ a way to get the time of a save that's not a string / human formatted...
 	temp = [sound_menu addItemWithTitle:@"Save Recording" action:@selector(pauseRecording) keyEquivalent: @""];
 	[temp setTarget:NDS];
 */
+
+	[sound_menu release];
+
 	//Create the window menu
 /*
-	window = [[NSMenu alloc] initWithTitle:localizedString(@"Window", nil)];
+	window = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Window", nil)];
 	[menu setSubmenu:window forItem:window_item];
 
 	[window addItemWithTitle:@"Minimize" action:nil keyEquivalent:@""];
@@ -552,46 +481,38 @@ a way to get the time of a save that's not a string / human formatted...
 	//[window addItemWithTitle:@"Debugger" action:nil keyEquivalent:@""];
 	//[window addItem:[NSMenuItem separatorItem]];
 	//[window addItemWithTitle:@"(screenshots)" action:nil keyEquivalent:@""];
+
+	//[window release];
 */
 
 	//Create the help menu
-	help = [[NSMenu alloc] initWithTitle:localizedString(@"Help", nil)];
+	help = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Help", nil)];
 	[menu setSubmenu:help forItem:help_item];
 
-	temp = [help addItemWithTitle:@"Go to Website" action:@selector(launchWebsite) keyEquivalent: @""];
+	temp = [help addItemWithTitle:NSLocalizedString(@"Go to Website", nil) action:@selector(launchWebsite) keyEquivalent: @""];
 	[temp setTarget:NSApp];
 
-	temp = [help addItemWithTitle:@"Go to Forums" action:@selector(launchForums) keyEquivalent: @""];
+	temp = [help addItemWithTitle:NSLocalizedString(@"Go to Forums", nil) action:@selector(launchForums) keyEquivalent: @""];
 	[temp setTarget:NSApp];
 
-	temp = [help addItemWithTitle:@"Submit a Bug Report" action:@selector(bugReport) keyEquivalent: @""];
+	temp = [help addItemWithTitle:NSLocalizedString(@"Submit a Bug Report", nil) action:@selector(bugReport) keyEquivalent: @""];
 	[temp setTarget:NSApp];
 
-	[NSApp setMainMenu: menu];
-
-	[menu update];
+	[help release];
 }
 
 //Main Function--------------------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 {
-
 	srand(time(NULL));
 
-	//Application Init Stuff----------------------------------------------------------------------
+	autorelease = [[NSAutoreleasePool alloc] init];
 
-	//Get the application instance (global variable called NSApp)
 	[NSApplication sharedApplication];
+	[NSApp setDelegate:[[AppDelegate alloc] init]];
 
-	//Set the application delegate
-	[NSApp setDelegate:NSApp];
-
-	[NSApp run];
-
-	//Program Exit ---------------------------------------------------------------------------------------
-
-	return 0;
+	return NSApplicationMain(argc,  (const char **) argv);
 }
 
 //gdb stuff--------------------------------------------------------------------------------
@@ -608,7 +529,7 @@ void joinThread_gdb(void *thread_handle)
 
 //Implementations-------------------------------------------------------------------------
 
-@implementation NSApplication(delegate)
+@implementation AppDelegate
 
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
 {
@@ -641,7 +562,6 @@ void joinThread_gdb(void *thread_handle)
 
 fail:
 	[sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
-
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification *)aNotification
@@ -650,8 +570,6 @@ fail:
 	//(this wont override saved preferences as
 	//they work in different preference domains)
 	setAppDefaults();
-
-	//App Init ------------------------------------------------------------------------------
 
 	//Bring the application to the front
 	[NSApp activateIgnoringOtherApps:TRUE];
@@ -664,17 +582,14 @@ fail:
 
 	//create the menus
 	CreateMenu();
-
-	//init opengl 3d ness
-	NDS_3D_SetDriver (GPU3D_OPENGL);
-	if(!gpu3D->NDS_3D_Init())
-		messageDialog(localizedString(@"Error", nil), @"Unable to initialize OpenGL components");
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-
-	//Start the main program loop ----------------------------------------------------------------------------
+	//init opengl 3d ness
+	NDS_3D_SetDriver (GPU3D_OPENGL);
+	if(!gpu3D->NDS_3D_Init())
+		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
 
 #ifdef MULTITHREADED
 
@@ -682,24 +597,35 @@ fail:
 	[NSApplication detachDrawingThread:@selector(run) toTarget:NDS withObject:nil];
 
 #else
-
 	[NDS run];
 
 	//it seems we need an event before it will quit
-	//(probably has something to do with calling run from applicationDidFinishLaunching?)
+	//(probably applicationWillTersminatehas something to do with calling run from applicationDidFinishLaunching?)
 	[NSEvent startPeriodicEventsAfterDelay:0 withPeriod:1];
 
 #endif
-
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
-	//Ask user if he wants to quit
-	AskForQuit();
+	//Ask user if he/she wants to quit
+	if(AskForQuit())
+		return NSTerminateNow;
+	else
+		return NSTerminateCancel;
+}
 
-	//AskForQuit takes care of quitting, dont need cocoa to do it for us
-	return NSTerminateCancel;
+- (void)applicationWillTerminate:(NSNotification*)aNotification
+{
+	//Quit
+	[NDS destroy];
+	finished = true;
+
+	//Free memory
+	[main_window release];
+	[NSApp setServicesMenu:nil];
+	[NSApp setMainMenu:nil];
+	[menu release];
 }
 
 @end

@@ -56,7 +56,7 @@ NSDictionary *desmume_defaults;
 - (void)windowWillClose:(NSNotification*)aNotification
 {
 	//[preferences_window saveFrameUsingName:@"DeSmuME Preferences Window"];
-	[preferences_window setFrameAutosaveName:@"DeSmuME Preferences Window"];
+	//[preferences_window setFrameAutosaveName:@"DeSmuME Preferences Window"];
 
 	[NSApp stopModal];
 
@@ -92,10 +92,6 @@ NSDictionary *desmume_defaults;
 	[[NSUserDefaults standardUserDefaults] setObject:value forKey:PREF_NUM_RECENT_ITEMS];
 }*/
 
-- (void)languageChange:(id)sender
-{
-
-}
 @end
 
 ////////////////////////////////////////////////////
@@ -117,12 +113,12 @@ NSDictionary *desmume_defaults;
 	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291"]];
 }
 
-- (void)about
+- (void)orderFrontStandardAboutPanel:(id)sender
 {
 	bool was_paused = paused;
 	[NDS pause];
 
-	NSRunAlertPanel(localizedString(@"About DeSmuME", nil),
+	NSRunAlertPanel([sender title],
 	@"DeSmuME is an open source Nintendo DS emulator.\n\nBased off of YopYop's original work, and continued by the DeSmuME team.\n\
 \nhttp://www.desmume.org\n\n\n\
 This program is free software; you can redistribute it and/or \
@@ -163,7 +159,7 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 	{
 		object = [object_enumerator nextObject];
 
-		key = localizedString(key_raw, nil);
+		key = NSLocalizedString(key_raw, nil);
 
 		NSString *current_setting = [[NSUserDefaults standardUserDefaults] objectForKey:key_raw];
 
@@ -182,8 +178,8 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 			[button setAction:action];
 			[button setTarget:delegate];
 
-			[button addItemWithTitle:localizedString(@"Yes",nil)];
-			[button addItemWithTitle:localizedString(@"No",nil)];
+			[button addItemWithTitle:NSLocalizedString(@"Yes",nil)];
+			[button addItemWithTitle:NSLocalizedString(@"No",nil)];
 
 			[button selectItemAtIndex:([[NSUserDefaults standardUserDefaults] boolForKey:PREF_EXECUTE_UPON_LOAD] == YES) ? 0 : 1];
 
@@ -207,7 +203,7 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 			for(i = 2; i < [object count]; i++)
 			{
 				//add the item to the popup buttons list
-				[button addItemWithTitle:localizedString([object objectAtIndex:i],nil)];
+				[button addItemWithTitle:NSLocalizedString([object objectAtIndex:i],nil)];
 
 				//if this is the currently selected or default item
 				if([current_setting compare:[object objectAtIndex:i]] == NSOrderedSame)
@@ -224,7 +220,7 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 				current_setting = [desmume_defaults objectForKey:key_raw];
 
 				//show an error
-				messageDialog(localizedString(@"Error",nil), [NSString stringWithFormat:localizedString(@"%@ setting corrupt, resetting to default (%@)",nil),key, localizedString(current_setting, nil)]);
+				messageDialog(NSLocalizedString(@"Error",nil), [NSString stringWithFormat:NSLocalizedString(@"%@ setting corrupt, resetting to default (%@)",nil),key, NSLocalizedString(current_setting, nil)]);
 
 				//set the setting to default
 				[[NSUserDefaults standardUserDefaults] setObject:current_setting forKey:key_raw];
@@ -279,7 +275,6 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 
 void setAppDefaults()
 {
-
 	desmume_defaults = [NSDictionary dictionaryWithObjectsAndKeys:
 
 	//Interface defaults
@@ -288,10 +283,6 @@ void setAppDefaults()
 	//Firmware defaults
 	@"DeSmuME User", PREF_FIRMWARE_PLAYER_NAME,
 	@"English", PREF_FIRMWARE_LANGUAGE,
-
-	//Plugin defaults
-	@"OpenGL 3D", PREF_3D_PLUGIN,
-	@"None", PREF_SOUND_PLUGIN,
 
 	nil];
 	[desmume_defaults retain];
@@ -308,7 +299,11 @@ void setAppDefaults()
 
 }
 
-- (void)preferences
+//this is a hack - in the nib we connect preferences to this function name,
+//since it's there, and then here we override whatever it's actually supposed to do
+//and replace it with the preference panel.
+//Incase you were wondering, I actually have no idea what I'm doing.
+- (void)orderFrontDataLinkPanel:(id)sender //<- Preferences Display Function
 {
 
 	bool was_paused = paused;
@@ -345,7 +340,7 @@ void setAppDefaults()
 		NSTitledWindowMask|NSClosableWindowMask backing:NSBackingStoreBuffered defer:NO screen:nil];
 
 		//set the window title
-		[preferences_window setTitle:localizedString(@"DeSmuME Preferences", nil)];
+		[preferences_window setTitle:NSLocalizedString(@"DeSmuME Preferences", nil)];
 
 		//set the window delegate
 		[preferences_window setDelegate:delegate];
@@ -360,19 +355,20 @@ void setAppDefaults()
 
 		//Create the "Interface" pane
 		interface_pane_tab = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[interface_pane_tab setLabel:localizedString(@"Interface", nil)];
+		[interface_pane_tab setLabel:NSLocalizedString(@"Interface", nil)];
 		[tab_view addTabViewItem:interface_pane_tab];
 
 		//Create interface view
 		NSDictionary *interface_options = [NSDictionary dictionaryWithObjectsAndKeys:
-		[NSArray arrayWithObjects:@"Bool", [NSData dataWithBytes:&@selector(executeUponLoad:) length:sizeof(SEL)], @"Yes",@"No",nil], PREF_EXECUTE_UPON_LOAD,
-		nil];
+
+		[NSArray arrayWithObjects:@"Bool", [NSData dataWithBytes:&@selector(executeUponLoad:) length:sizeof(SEL)], @"Yes", @"No",nil]
+		, PREF_EXECUTE_UPON_LOAD, nil];
 
 		NSView *interface_view = createPreferencesView(interface_pane_tab, interface_options, delegate);
-
+/*
 		//Create the firmware pane
 		firmware_pane_tab = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[firmware_pane_tab setLabel:localizedString(@"DS Firmware", nil)];
+		[firmware_pane_tab setLabel:NSLocalizedString(@"DS Firmware", nil)];
 		[tab_view addTabViewItem:firmware_pane_tab];
 
 		NSDictionary *firmware_options = [NSDictionary dictionaryWithObjectsAndKeys:
@@ -381,7 +377,7 @@ void setAppDefaults()
 		nil];
 
 		NSView *firmware_view = createPreferencesView(firmware_pane_tab, firmware_options, delegate);
-
+*/
 	}
 
 	//make the window controller
@@ -389,13 +385,12 @@ void setAppDefaults()
 	[wc setShouldCascadeWindows:NO];
 
 	//tell it to store/retrieve window frame from/to previous/later sessions
-	[preferences_window setFrameUsingName:@"DeSmuME Preferences Window" force:YES];
+	//[preferences_window setFrameUsingName:@"DeSmuME Preferences Window" force:YES];
 	//[preferences_window setFrameAutosaveName:@"DeSmuME Preferences Window"];
-//messageDialog([preferences_window frameAutosaveName],@"");
+	//messageDialog([preferences_window frameAutosaveName],@"");
 
 	//show the window
 	[wc showWindow:nil];
-
 
 
 	[NSApp runModalForWindow:preferences_window];
