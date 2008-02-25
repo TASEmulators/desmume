@@ -46,10 +46,6 @@ unsigned short title_bar_height;
 volatile u8 correction_buffer[DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2 /*bits per pixel*/];
 volatile u8 temp_buffer[DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2 /*bits per pixel*/];
 
-//this is th opengl view where we will display the video output
-@class VideoOutputView;
-VideoOutputView *video_output_view;
-
 //fast access to size of openglview (not size of window)
 volatile unsigned short x_size = DS_SCREEN_WIDTH;
 volatile unsigned short y_size = DS_SCREEN_HEIGHT_COMBINED;
@@ -107,7 +103,6 @@ unsigned short save_slot_10 = 109; //F10
 NSOpenGLContext *gpu_context;
 
 //rotation
-u8 rotation = ROTATION_0;
 
 //extern unsigned char GPU_screen3D[256*256*4];
 
@@ -117,25 +112,25 @@ u8 gpu_buff[256 * 256 * 4];
 //min sizes (window size, not ds screen size)
 NSSize min_size;
 
-//Window delegate class ---------------------------------------------------------
-
-@interface WindowDelegate : NSObject {}
-- (void)windowDidResize:(NSNotification *)aNotification;
-- (BOOL)windowShouldClose:(id)sender;
-- (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)proposedFrameSize;
-@end
+////////////////////////////////////////////////////////////////////////////////////////
+//Video output view -------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////
 
 @interface VideoOutputView : NSView
 {
+	@public
+	u8 rotation;
+
 	@private
 	NSOpenGLContext* context;
 	NSOpenGLPixelFormat* format;
 }
 - (id)initWithFrame:(NSRect)frame;
+- (void)dealloc;
 - (void)draw;
 - (void)drawRect:(NSRect)bounds;
 - (void)setFrame:(NSRect)rect;
-- (BOOL) isOpaque;
+- (BOOL)isOpaque;
 @end
 
 @implementation VideoOutputView
@@ -148,7 +143,7 @@ NSSize min_size;
 
 	if(self==nil)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Could not init frame for OpenGL display");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Could not init frame for OpenGL display");
 		return nil;
 	}
 
@@ -169,14 +164,14 @@ NSSize min_size;
 	NSOpenGLPixelFormat* pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 	if(pixel_format == nil)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for video output");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for video output");
 		return self;
 	}
 
 	context = [[NSOpenGLContext alloc] initWithFormat:pixel_format shareContext:nil];
 	if(context == nil)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL context for video output");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for video output");
 		return self;
 	}
 
@@ -199,14 +194,14 @@ NSSize min_size;
 	NSOpenGLPixelFormat* pixel_format2 = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs2];
 	if(pixel_format2 == nil)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for GPU");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for GPU");
 		return self;
 	}
 
 	gpu_context = [[NSOpenGLContext alloc] initWithFormat:pixel_format2 shareContext:nil];
 	if(gpu_context == nil)
 	{
-		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL context for GPU");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for GPU");
 		return self;
 	}
 
@@ -218,6 +213,17 @@ NSSize min_size;
 
 	//
 	return self;
+}
+
+- (void)dealloc
+{
+	if(context)
+		[context release];
+
+	if(format)
+		[format release];
+
+	[super dealloc];
 }
 
 - (void) draw
@@ -322,6 +328,12 @@ NSSize min_size;
 //Video output window class ----------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////
 
+@interface VideoOutputWindow (delegate)
+- (void)windowDidResize:(NSNotification*)aNotification;
+- (BOOL)windowShouldClose:(id)sender;
+- (NSSize)windowWillResize:(NSWindow*)sender toSize:(NSSize)proposedFrameSize;
+@end
+
 @implementation VideoOutputWindow
 
 - (id)init
@@ -343,7 +355,7 @@ NSSize min_size;
 
 	backing:NSBackingStoreBuffered defer:NO screen:nil];
 
-	[self setTitle:localizedString(@"DeSmuME Emulator", nil)];
+	[self setTitle:NSLocalizedString(@"DeSmuME Emulator", nil)];
 
 	//set minimum window size (to the starting size, pixel-for-pixel to DS)
 	//this re-gets the window rect to include the title bar size
@@ -361,8 +373,8 @@ NSSize min_size;
 	//set title_bar_height
 	title_bar_height = [super frame].size.height - rect.size.height;
 
-	//Set the window delegate
-	[self setDelegate:[[WindowDelegate alloc] init]];
+	//Set the window delegate to itself
+	[self setDelegate:self];
 
 	//Create the image view where we will display video output
 	rect.origin.x = WINDOW_BORDER_PADDING;
@@ -370,27 +382,56 @@ NSSize min_size;
 	rect.size.width = DS_SCREEN_WIDTH;
 	rect.size.height = DS_SCREEN_HEIGHT_COMBINED;
 	if((video_output_view = [[VideoOutputView alloc] initWithFrame:rect]) == nil)
-		messageDialog(localizedString(@"Error", nil), @"Couldn't create OpenGL view to display screens");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL view to display screens");
 	else
 	{
 		[[self contentView] addSubview:video_output_view];
-
 	}
 
 	//Show the window
-	[[[NSWindowController alloc] initWithWindow:self] showWindow:nil];
+	[controller = [[NSWindowController alloc] initWithWindow:self] showWindow:nil];
 
-	//start with a blank screen
+	//Start with a blank screen
 	[self clearScreenBlack];
 
 	return self;
+}
+
+- (void)dealloc
+{
+	[video_output_view release];
+
+	[self retain]; //see the comment in init after we initialize the window controller
+	[controller release];
+
+	[resize1x release];
+	[resize2x release];
+	[resize3x release];
+	[resize4x release];
+	[allows_resize_item release];
+	[constrain_item release];
+	[min_size_item release];
+	[rotation0_item release];
+	[rotation90_item release];
+	[rotation180_item release];
+	[rotation270_item release];
+	[topBG0_item release];
+	[topBG1_item release];
+	[topBG2_item release];
+	[topBG3_item release];
+	[subBG0_item release];
+	[subBG1_item release];
+	[subBG2_item release];
+	[subBG3_item release];
+
+	[super dealloc];
 }
 
 - (void)updateScreen
 {
 	//here we copy gpu_screen to our own buffer
 
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 		memcpy(&correction_buffer, &GPU_screen, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
 	else
 	{
@@ -428,7 +469,7 @@ NSSize min_size;
 
 - (void)resetMinSize:(bool)resize
 {
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 	{
 		min_size.width = DS_SCREEN_WIDTH + WINDOW_BORDER_PADDING * 2;
 		min_size.height = DS_SCREEN_HEIGHT_COMBINED + WINDOW_BORDER_PADDING + title_bar_height;
@@ -502,7 +543,7 @@ NSSize min_size;
 - (void)resizeScreen1x
 {
 
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH, DS_SCREEN_HEIGHT_COMBINED)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED, DS_SCREEN_WIDTH)];
@@ -511,7 +552,7 @@ NSSize min_size;
 - (void)resizeScreen2x
 {
 
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH * 2, DS_SCREEN_HEIGHT_COMBINED * 2)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED * 2, DS_SCREEN_WIDTH * 2)];
@@ -519,7 +560,7 @@ NSSize min_size;
 
 - (void)resizeScreen3x
 {
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH * 3, DS_SCREEN_HEIGHT_COMBINED * 3)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED * 3, DS_SCREEN_WIDTH * 3)];
@@ -527,7 +568,7 @@ NSSize min_size;
 
 - (void)resizeScreen4x
 {
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH * 4, DS_SCREEN_HEIGHT_COMBINED * 4)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED * 4, DS_SCREEN_WIDTH * 4)];
@@ -594,11 +635,11 @@ NSSize min_size;
 
 - (void)setRotation0
 {
-	if(rotation == ROTATION_0)return;
+	if(video_output_view->rotation == ROTATION_0)return;
 
-	if(rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_180)
 	{
-		rotation = ROTATION_0;
+		video_output_view->rotation = ROTATION_0;
 
 		[video_output_view setFrame:[video_output_view frame]];
 		[self updateScreen];
@@ -606,7 +647,7 @@ NSSize min_size;
 	} else
 	{
 		//set the global rotation state
-		rotation = ROTATION_0;
+		video_output_view->rotation = ROTATION_0;
 
 		//fix the buffer
 		memcpy(&temp_buffer, &correction_buffer, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
@@ -639,12 +680,12 @@ NSSize min_size;
 
 - (void)setRotation90
 {
-	if(rotation == ROTATION_90)return;
+	if(video_output_view->rotation == ROTATION_90)return;
 
-	if(rotation == ROTATION_270)
+	if(video_output_view->rotation == ROTATION_270)
 	{
 
-		rotation = ROTATION_90;
+		video_output_view->rotation = ROTATION_90;
 
 		[video_output_view setFrame:[video_output_view frame]];
 		[self updateScreen];
@@ -652,7 +693,7 @@ NSSize min_size;
 	} else
 	{
 		//set the global rotation state
-		rotation = ROTATION_90;
+		video_output_view->rotation = ROTATION_90;
 
 		//fix the buffer
 		memcpy(&temp_buffer, &correction_buffer, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
@@ -685,11 +726,11 @@ NSSize min_size;
 
 - (void)setRotation180
 {
-	if(rotation == ROTATION_180)return;
+	if(video_output_view->rotation == ROTATION_180)return;
 
-	if(rotation == ROTATION_0)
+	if(video_output_view->rotation == ROTATION_0)
 	{
-		rotation = ROTATION_180;
+		video_output_view->rotation = ROTATION_180;
 
 		[video_output_view setFrame:[video_output_view frame]];
 		[self updateScreen];
@@ -697,7 +738,7 @@ NSSize min_size;
 	} else
 	{
 		//set the global rotation state
-		rotation = ROTATION_180;
+		video_output_view->rotation = ROTATION_180;
 
 		//fix the buffer
 		memcpy(&temp_buffer, &correction_buffer, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
@@ -731,11 +772,11 @@ NSSize min_size;
 
 - (void)setRotation270
 {
-	if(rotation == ROTATION_270)return;
+	if(video_output_view->rotation == ROTATION_270)return;
 
-	if(rotation == ROTATION_90)
+	if(video_output_view->rotation == ROTATION_90)
 	{
-		rotation = ROTATION_270;
+		video_output_view->rotation = ROTATION_270;
 
 		[video_output_view setFrame:[video_output_view frame]];
 		[self updateScreen];
@@ -744,7 +785,7 @@ NSSize min_size;
 	{
 
 		//set the global rotation state
-		rotation = ROTATION_270;
+		video_output_view->rotation = ROTATION_270;
 
 		//fix the buffer
 		memcpy(&temp_buffer, &correction_buffer, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT_COMBINED * 2);
@@ -892,7 +933,7 @@ NSSize min_size;
 	BOOL was_paused = paused;
 	[NDS pause];
 
-	[[Screenshot alloc] initWithBuffer:correction_buffer rotation:rotation saveOnly:YES];
+	[[Screenshot alloc] initWithBuffer:correction_buffer rotation:video_output_view->rotation saveOnly:YES];
 
 	if(!was_paused)[NDS execute];
 }
@@ -902,7 +943,7 @@ NSSize min_size;
 	BOOL was_paused = paused;
 	[NDS pause];
 
-	[[Screenshot alloc] initWithBuffer:correction_buffer rotation:rotation saveOnly:NO];
+	[[Screenshot alloc] initWithBuffer:correction_buffer rotation:video_output_view->rotation saveOnly:NO];
 
 	if(!was_paused)[NDS execute];
 }
@@ -1219,9 +1260,9 @@ NSSize min_size;
 	if(location.x >= x_size)return;
 	if(location.y >= y_size)return;
 
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
+	if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 	{
-		if(rotation == ROTATION_180)
+		if(video_output_view->rotation == ROTATION_180)
 		{
 			if(location.y < y_size / 2)return;
 			location.x = x_size - location.x;
@@ -1239,7 +1280,7 @@ NSSize min_size;
 	} else
 	{
 
-		if(rotation == ROTATION_270)
+		if(video_output_view->rotation == ROTATION_270)
 		{
 			if(location.x < x_size / 2)return;
 			location.x = x_size - location.x;
@@ -1260,7 +1301,6 @@ NSSize min_size;
 		location.x = location.y;
 		location.y = temp;
 	}
-//[self setTitle:[NSString localizedStringWithFormat:@"%u %u", (unsigned int)location.x, (unsigned int)location.y]];
 
 	NDS_setTouchPos((unsigned short)location.x, (unsigned short)location.y);
 }
@@ -1280,7 +1320,7 @@ NSSize min_size;
 
 //Window Delegate -----------------------------------------------------------------------
 
-@implementation WindowDelegate
+@implementation VideoOutputWindow (delegate)
 - (BOOL)windowShouldClose:(id)sender
 {
 	[sender hide];
@@ -1318,7 +1358,7 @@ NSSize min_size;
 		unsigned short x_constrained;
 		unsigned short y_constrained;
 
-		if(rotation == ROTATION_0 || rotation == ROTATION_180)
+		if(video_output_view->rotation == ROTATION_0 || video_output_view->rotation == ROTATION_180)
 		{
 			//this is a simple algorithm to constrain to the smallest axis
 

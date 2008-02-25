@@ -28,6 +28,7 @@
 
 @interface Screenshot : NSObject
 {
+	NSWindowController *controller;
 	NSWindow *window;
 	NSImage *image;
 	NSImageView *image_view;
@@ -38,7 +39,8 @@
 	NSPopUpButton *format_button;
 }
 
-- (id)initWithBuffer:(const u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only;
+- (id)initWithBuffer:(volatile const u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only;
+- (void)dealloc;
 @end
 
 #endif

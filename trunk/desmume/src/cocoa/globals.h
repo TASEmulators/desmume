@@ -17,7 +17,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-//fixme headers conform to desmume?
 #ifndef GLOBALS_H_INCLUDED
 #define GLOBALS_H_INCLUDED
 
@@ -49,29 +48,12 @@
 //defined in cocoa_util.m
 
 //c string to NSString
-#define NSSTRc(x) ([[NSString alloc] initWithCString:(x) encoding:NSASCIIStringEncoding])
-
-//these class extensions do the localstring lookup so we dont have to type it over and over again
-/*
-@interface NSMenuItem (localization)
-- (id)initWithTitle:(NSString *)not_localized_name action:(SEL)action keyEquivalent:(NSString*)key;
-@end
-*/
-@interface NSMenu (localization)
-- (id <NSMenuItem>)addItemWithTitle:(NSString *)aString action:(SEL)aSelector keyEquivalent:(NSString *)keyEquiv;
-- (id <NSMenuItem>)addItemWithTitle:(NSString *)aString withInt:(int)number action:(SEL)aSelector keyEquivalent:(NSString *)keyEquiv;
-@end
-
-//dialogs
+#define NSSTRc(x) ([[NSString alloc] initWithCString:(x) encoding:NSASCIIStringEncoding])//dialogs
 
 void messageDialogBlank();
 void messageDialog(NSString *title, NSString *text);
 BOOL messageDialogYN(NSString *title, NSString *text);
 NSString* openDialog(NSArray *file_types);
-
-//
-
-NSString* localizedString(NSString *stuff, NSString *comment);
 
 //Menus -------------------------------------------------------------------------------------------
 //These are all the menu items that need checkmarks
@@ -156,5 +138,12 @@ extern volatile int /*desmume_BOOL*/ execute;
 
 extern volatile BOOL finished;
 extern volatile BOOL paused;
+
+//--------------------------------------------------------------------------------------------------
+
+#ifndef __OBJC2__
+typedef int NSInteger;
+typedef unsigned NSUInteger;
+#endif
 
 #endif // GLOBALS_H_INCLUDED

@@ -19,35 +19,6 @@
 
 #import "globals.h"
 
-void setTitle(int i)
-{
-	[main_window setTitle:[NSString stringWithFormat:@"%d", i]];
-}
-
-////////////////////////////////////////////////////////////////
-//Menu Item implementation--------------------------------------
-////////////////////////////////////////////////////////////////
-
-@implementation NSMenu (localization)
-
-- (id <NSMenuItem>)addItemWithTitle:(NSString *)aString action:(SEL)aSelector keyEquivalent:(NSString *)keyEquiv
-{
-	NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:localizedString(aString, nil)  action:aSelector keyEquivalent:keyEquiv];
-	[self addItem:item];
-
-	return item;
-}
-
-- (id <NSMenuItem>)addItemWithTitle:(NSString *)aString withInt:(int)number action:(SEL)aSelector keyEquivalent:(NSString *)keyEquiv
-{
-	NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:localizedString(aString, nil),number] action:aSelector keyEquivalent:keyEquiv];
-	[self addItem:item];
-
-	return item;
-}
-
-@end
-
 ////////////////////////////////////////////////////////////////
 //Dialog Boxes-------------------------------------------------
 ////////////////////////////////////////////////////////////////
@@ -91,11 +62,3 @@ NSString* openDialog(NSArray *file_types)
 	return NULL;
 }
 
-////////////////////////////////////////////////////////////////
-//Language Stuff-----------------------------------------------
-////////////////////////////////////////////////////////////////
-
-NSString *localizedString(NSString *string, NSString *comment)
-{
-	return NSLocalizedString(string,nil);
-}

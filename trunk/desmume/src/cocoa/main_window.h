@@ -22,13 +22,23 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class VideoOutputView;
+//this is used internally by VideoOutputWindow
+
+
 //This interface is to create and manaage the window
 //that displays DS video output and takes keyboard/mouse input
 //do not instanciate more than one of these
-@interface VideoOutputWindow : NSWindow {}
+@interface VideoOutputWindow : NSWindow
+{
+	@private
+	NSWindowController *controller;
+	VideoOutputView *video_output_view;
+}
 
 //initialization
 - (id)init;
+- (void)dealloc;
 
 //call this function to read the screen from the emulator and update the window
 //this is the only method involving cocoa that should be called from the run() function
