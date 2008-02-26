@@ -72,7 +72,12 @@ typedef signed long long s64;
 
 typedef u8  uint8;
 typedef u16 uint16;
+
+#ifndef OBJ_C
 typedef u32 uint32;
+#else
+#define uint32 u32 //uint32 is defined in Leopard somewhere, avoid conflicts
+#endif
 
 /*---------- GPU3D fixed-points types -----------*/
 
@@ -108,7 +113,7 @@ typedef s16 v10;
 #ifndef OBJ_C
 typedef int BOOL;
 #else
-//apple defines BOOL so this is to avoid conflicts
+//apple also defines BOOL
 typedef int desmume_BOOL;
 #define BOOL desmume_BOOL
 #endif
