@@ -1364,12 +1364,14 @@ void NDS_glCallList(unsigned long v)
 		{
 			case 0x0:
 			{
-				--clInd;
+				if (clInd > 0)
+				{
+					--clInd;
+					clCmd >>= 8;
+					continue;
+				}
 
-				if (!clInd)
-					break;
-
-				continue;
+				break;				
 			}
 
 			case 0x11 :
