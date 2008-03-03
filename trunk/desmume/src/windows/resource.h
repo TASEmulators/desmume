@@ -243,6 +243,9 @@ void refreshAll();
 #define IDC_EDIT1           1102
 #define IDC_EDIT2           1103
 
+#define IDD_ABOUT_BOX          1301
+#define IDM_ABOUT              40003
+#define IDC_AUTHORS_LIST	   1302
 
 // ============================================================================
 // Matrix Viewer ID's (1200 to 1299)
