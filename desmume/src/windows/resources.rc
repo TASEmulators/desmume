@@ -1,5 +1,7 @@
 // Microsoft Visual C++ generated resource script.
 //
+#include "resrc1.h"
+
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -56,7 +58,7 @@ END
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Danish resources
+// Danés resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DAN)
 #ifdef _WIN32
@@ -532,12 +534,12 @@ BEGIN
                     WS_GROUP
 END
 
-#endif    // Danish resources
+#endif    // Danés resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// German (Germany) resources
+// Alemán (Alemania) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
 #ifdef _WIN32
@@ -643,12 +645,12 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // German (Germany) resources
+#endif    // Alemán (Alemania) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// Inglés (Estados Unidos) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
@@ -793,6 +795,7 @@ BEGIN
         MENUITEM "&Website",                    IDM_WEBSITE
         MENUITEM "&Forums",                     IDM_FORUM
         MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
+        MENUITEM "&About",                      IDM_ABOUT
     END
 END
 
@@ -1270,6 +1273,16 @@ BEGIN
                     ES_AUTOHSCROLL | ES_READONLY
 END
 
+IDD_ABOUT_BOX DIALOGEX 0, 0, 126, 246
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "About desmume..."
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Aceptar",IDC_FERMER,38,225,50,14
+    CTEXT           "",IDC_AUTHORS_LIST,7,7,112,216,0,WS_EX_CLIENTEDGE
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1286,15 +1299,23 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 170
     END
+
+    IDD_ABOUT_BOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 119
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 239
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (U.S.) resources
+#endif    // Inglés (Estados Unidos) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// French (France) resources
+// Francés (Francia) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
 #ifdef _WIN32
@@ -1671,7 +1692,7 @@ BEGIN
     PUSHBUTTON      "&Fermer",IDC_FERMER,50,134,50,14
 END
 
-#endif    // French (France) resources
+#endif    // Francés (Francia) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

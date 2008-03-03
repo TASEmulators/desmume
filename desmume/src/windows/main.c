@@ -48,6 +48,7 @@
 #include "lightview.h"
 #include "ConfigKeys.h"
 #include "FirmConfig.h"
+#include "AboutBox.h"
 #include "OGLRender.h"
 #include "../render3D.h"
 #include "../gdbstub.h"
@@ -1575,6 +1576,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDM_FORUM:
                        ShellExecute(NULL, "open", "http://forums.desmume.org/index.php", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
+
+				  case IDM_ABOUT:
+				  {
+					  cwindow_struct aboutBox;
+
+					  if (CWindow_Init2(&aboutBox, hAppInst, HWND_DESKTOP, "About desmume...", IDD_ABOUT_BOX, AboutBox_Proc) == 0)
+							CWindow_Show(&aboutBox);
+
+					  break;
+				  }
                   case IDM_SUBMITBUGREPORT:
                        ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
