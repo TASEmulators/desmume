@@ -491,7 +491,7 @@ void NDS_Reset( void)
 	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
 	for (i = 0; i < ((0x170+0x90)/4); i++)
 	{
-		MMU_write32 (0, 0x027FFE00+i*4, ((u32*)MMU.CART_ROM)[i]);
+		MMU_write32 (0, 0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
      
    MainScreen.offset = 0;
