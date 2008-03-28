@@ -141,6 +141,7 @@ void mc_reset_com(memory_chip_t *mc)
       }
       else
       {
+		  /*
          // Assume it's a Flash non-page write 
          LOG("Flash detected(guessed). autodetectsize = %d\n", mc->autodetectsize);
          addr = (mc->autodetectbuf[0] << 16) |
@@ -148,6 +149,11 @@ void mc_reset_com(memory_chip_t *mc)
                      mc->autodetectbuf[2];
          mc->type = MC_TYPE_FLASH;
          mc->size = MC_SIZE_2MBITS;
+		 */
+	 // 64 Kbit EEPROM
+         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
+         mc->type = MC_TYPE_EEPROM2;
+         mc->size = MC_SIZE_64KBITS;
       }
 
       size = mc->autodetectsize;
