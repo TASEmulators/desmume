@@ -41,8 +41,8 @@ BOOL LightView_OnClose(lightview_struct* win)
 {
 	win->window.autoup = FALSE;
 	CWindow_RemoveFromRefreshList(win);
-	LightView_Deinit(win);
 	EndDialog(win->window.hwnd, 0);
+	LightView_Deinit(win);
 
 	return TRUE;
 }

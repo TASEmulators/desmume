@@ -74,8 +74,8 @@ BOOL MatrixView_OnClose(matrixview_struct* win)
 {
 	win->window.autoup = FALSE;
 	CWindow_RemoveFromRefreshList(win);
-	MatrixView_Deinit(win);
 	EndDialog(win->window.hwnd, 0);
+	MatrixView_Deinit(win);
 
 	return TRUE;
 }
@@ -238,7 +238,7 @@ matrixview_struct *MatrixView_Init(HINSTANCE hInst, HWND parent)
    if ((MatrixView = (matrixview_struct *)malloc(sizeof(matrixview_struct))) == NULL)
       return NULL;
 
-   if (CWindow_Init2(MatrixView, hInst, parent, "Matrix viewer", IDD_MATRIX_VIEWER, MatrixView_Proc) != 0)
+   if (CWindow_Init2(&MatrixView->window, hInst, parent, "Matrix viewer", IDD_MATRIX_VIEWER, MatrixView_Proc) != 0)
    {
       free(MatrixView);
       return NULL;
