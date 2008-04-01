@@ -17,58 +17,184 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef NDS_CONTROL_H_INCLUDED
-#define NDS_CONTROL_H_INCLUDED
+#import "globals.h"
 
-#include <Cocoa/Cocoa.h>
+#define MAX_SLOTS 10
+#define MAX_FRAME_SKIP 10
 
-//This class manages emulation
-//dont instanciate more than once!
+#define DS_SCREEN_WIDTH 256
+#define DS_SCREEN_HEIGHT 192
+#define DS_BPP 2 //bytes per pixel
+#define DS_SCREEN_X_RATIO (256.0 / (192.0 * 2.0))
+#define DS_SCREEN_Y_RATIO ((192.0 * 2.0) / 256.0)
+
+@class ScreenState;
+
+//This class is a compelte objective-c wrapper for
+//the core emulation features, other objective-c code inherit
+//upon or instanciate this to add interfaces for these features
+//Please only instanciate once.
 @interface NintendoDS : NSObject
 {
-	BOOL muted;
+	@private
+
+	NSOpenGLContext* context; //context where the 3d gets renderered to
+	NSOpenGLPixelFormat* pixel_format; //pixel format for opengl 3d renderer
+	NSThread *gui_thread;
+	SEL display_func; //the function id that gets called when the screen is ready to update
+	id display_object; //the object that the above function is called on
+	SEL error_func;
+	id error_object;
+	
+	NSLock *sound_lock;
+	
+	ScreenState * volatile current_screen;
+	NSLock *video_update_lock;
+
+	volatile bool finish; //set to true to make the other thread finish
+	volatile bool finished; //set to true by the other thread after it finishes
+	volatile bool run; //set to control execution in other thread
+	volatile bool paused; //sey by other thread to let us know if its executing
+	
+	bool muted;
+	int volume;
+
+	volatile int frame_skip;
+
+	NSString *current_file;
+
+	unsigned char gpu_buff[256 * 256 * 5]; //this is where the 3D rendering of the NDS is stored
 }
 
-//
+//Instanciating, setup, and deconstruction
 - (id)init;
-- (id)destroy;
+- (void)setVideoUpdateCallback:(SEL)callback withObject:(id)object; //this callback should take one ScreenState(below) parameter
+- (void)setErrorCallback:(SEL)callback withObject:(id)object;
+- (void)dealloc;
 
 //Firmware control
 - (void)setPlayerName:(NSString*)player_name;
 
 //ROM control
-- (void)pickROM;
 - (BOOL)loadROM:(NSString*)filename;
+- (BOOL)ROMLoaded;
 - (void)closeROM;
-- (void)askAndCloseROM;
+
+//ROM Info
+- (NSImage*)ROMIcon;
+- (NSString*)ROMFile;
+- (NSString*)ROMTitle;
+- (NSInteger)ROMMaker;
+- (NSInteger)ROMSize;
+- (NSInteger)ROMARM9Size;
+- (NSInteger)ROMARM7Size;
+- (NSInteger)ROMDataSize;
 
 //execution control
+- (BOOL)executing;
 - (void)execute;
+- (BOOL)paused;
 - (void)pause;
 - (void)reset;
-- (void)setFrameSkip:(id)sender;
+- (void)setFrameSkip:(int)frameskip; //negative is auto, 0 is off, more than 0 is the amount of frames to skip before showing a frame
+- (int)frameSkip; //defaults to -1
 
-//run function (should be called at the start of the program)
-- (void)run;
+//touch screen
+- (void)touch:(NSPoint)point;
+- (void)releaseTouch;
+
+//button input
+- (void)pressStart;
+- (void)liftStart;
+- (BOOL)start;
+- (void)pressSelect;
+- (void)liftSelect;
+- (BOOL)select;
+- (void)pressLeft;
+- (void)liftLeft;
+- (BOOL)left;
+- (void)pressRight;
+- (void)liftRight;
+- (BOOL)right;
+- (void)pressUp;
+- (void)liftUp;
+- (BOOL)up;
+- (void)pressDown;
+- (void)liftDown;
+- (BOOL)down;
+- (void)pressA;
+- (void)liftA;
+- (BOOL)A;
+- (void)pressB;
+- (void)liftB;
+- (BOOL)B;
+- (void)pressX;
+- (void)liftX;
+- (BOOL)X;
+- (void)pressY;
+- (void)liftY;
+- (BOOL)Y;
+- (void)pressL;
+- (void)liftL;
+- (BOOL)L;
+- (void)pressR;
+- (void)liftR;
+- (BOOL)R;
 
 //save states
-- (void)saveStateAs;
-- (void)loadStateFrom;
-- (void)saveToSlot:(id)sender;
-- (void)loadFromSlot:(id)sender;
-//- (void)askAndClearStates;
+- (BOOL)saveState:(NSString*)file;
+- (BOOL)loadState:(NSString*)file;
+- (BOOL)saveStateToSlot:(int)slot; //0 to MAX_SLOTS-1, anything else is ignored
+- (BOOL)loadStateFromSlot:(int)slot;
+- (BOOL)saveStateExists:(int)slot;
 
-//
-- (void)showRomInfo;
+//layers
+- (void)toggleTopBackground0;
+- (BOOL)showingTopBackground0;
+- (void)toggleTopBackground1;
+- (BOOL)showingTopBackground1;
+- (void)toggleTopBackground2;
+- (BOOL)showingTopBackground2;
+- (void)toggleTopBackground3;
+- (BOOL)showingTopBackground3;
+- (void)toggleSubBackground0;
+- (BOOL)showingSubBackground0;
+- (void)toggleSubBackground1;
+- (BOOL)showingSubBackground1;
+- (void)toggleSubBackground2;
+- (BOOL)showingSubBackground2;
+- (void)toggleSubBackground3;
+- (BOOL)showingSubBackground3;
 
-//sound
-- (void)setVolume:(id)sender;
-- (void)toggleMuting;
-- (void)chooseSoundOutputFile;
-- (void)startRecording;
-- (void)pauseRecording;
-
+//Sound
+- (void)setVolume:(int)volume; //clamped: 0 to 100
+- (int)volume;
+- (void)enableMute;
+- (void)disableMute;
+- (void)toggleMute;
+- (BOOL)muted;
 @end
 
+enum ScreenRotation { ROTATION_0, ROTATION_90, ROTATION_180, ROTATION_270 };
 
-#endif // NDS_CONTROL_H_INCLUDED
+//This class is used to return screen data at the end of a frame
+//we wrap it in a obj-c class so it can be passed to a selector
+//and so we get retain/release niftyness
+@interface ScreenState : NSObject
+{
+	enum ScreenRotation rotation;
+	unsigned char color_data[DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2 * DS_BPP];
+}
+- (id)init;
+- (id)initWithScreenState:(ScreenState*)state;
+- (NSInteger)width;
+- (NSInteger)height;
+- (NSSize)size;
+- (void)fillWithWhite;
+- (void)fillWithBlack;
+- (NSBitmapImageRep*)imageRep;
+- (void)setRotation:(enum ScreenRotation)rotation;
+- (enum ScreenRotation)rotation;
+- (void)setColorData:(const unsigned char*)data;
+- (const unsigned char*)colorData;
+@end

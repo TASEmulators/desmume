@@ -38,6 +38,12 @@
 #endif
 #endif
 
+#ifdef DESMUME_COCOA
+#ifdef __BIG_ENDIAN__
+#define WORDS_BIGENDIAN
+#endif
+#endif
+
 #if defined(__LP64__)
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -130,7 +136,7 @@ typedef int desmume_BOOL;
 #define PACKED __attribute__((packed))
 #endif
 
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 # define LOCAL_BE
 #else
 # define LOCAL_LE

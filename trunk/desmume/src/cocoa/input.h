@@ -19,21 +19,28 @@
 
 #import <Cocoa/Cocoa.h>
 
-//cocoa utils
-#define NSSTRc(x) ([[NSString alloc] initWithCString:(x) encoding:NSASCIIStringEncoding])
+/* The main window class instanciates an input object,
+and places it after the window in the responder chain, so
+any events not handled by a the window get sent here.
+*/
 
-void messageDialogBlank();
-void messageDialog(NSString *title, NSString *text);
-BOOL messageDialogYN(NSString *title, NSString *text);
-NSString* openDialog(NSArray *file_types);
+@class VideoOutputWindow;
 
+@interface InputHandler : NSResponder
+{
+	@private
+	VideoOutputWindow *my_ds;
+}
 //
-#if __LP64__ || NS_BUILD_32_LIKE_64
-typedef long NSInteger;
-typedef unsigned long NSUInteger;
-#else
-typedef int NSInteger;
-typedef unsigned int NSUInteger;
-#endif
+- (id)initWithWindow:(VideoOutputWindow*)nds;
+- (void)dealloc;
 
-typedef float CGFloat;
+//keyboard input
+- (void)keyDown:(NSEvent*)event;
+- (void)keyUp:(NSEvent*)event;
+
+//mouse input
+- (void)mouseDown:(NSEvent*)event;
+- (void)mouseDragged:(NSEvent*)event;
+- (void)mouseUp:(NSEvent*)event;
+@end
