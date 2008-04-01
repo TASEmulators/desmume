@@ -222,15 +222,27 @@ char NDS_glInit(void)
 
 void NDS_glViewPort(unsigned long v)
 {
+	if(beginCalled)
+		glEnd();
+
 	glViewport( (v&0xFF), ((v>>8)&0xFF), ((v>>16)&0xFF)+1, (v>>24)+1);
+
+	if(beginCalled)
+		glBegin(vtxFormat);
 }
 
 void NDS_glClearColor(unsigned long v)
 {
+	if(beginCalled)
+		glEnd();
+
 	glClearColor(	((float)(v&0x1F))/31.0f,
 					((float)((v>>5)&0x1F))/31.0f,
 					((float)((v>>10)&0x1F))/31.0f,
 					((float)((v>>16)&0x1F))/31.0f);
+
+	if(beginCalled)
+		glBegin(vtxFormat);
 }
 
 void NDS_glFogColor(unsigned long v)
@@ -248,17 +260,29 @@ void NDS_glFogOffset (unsigned long v)
 
 void NDS_glClDepth()
 {
+	if(beginCalled)
+		glEnd();
+
 	glClear(GL_DEPTH_BUFFER_BIT);
+
+	if(beginCalled)
+		glBegin(vtxFormat);
 }
 
 void NDS_glClearDepth(unsigned long v)
 {
+	if(beginCalled)
+		glEnd();
+
 	u32 depth24b;
 
 	v		&= 0x7FFFF;
 	depth24b = (v*0x200)+((v+1)/0x8000);
 
 	glClearDepth(depth24b / ((float)(1<<24)));
+
+	if(beginCalled)
+		glBegin(vtxFormat);
 }
 
 void NDS_glMatrixMode(unsigned long v)
@@ -280,17 +304,21 @@ void SetMatrix (void)
 {
 	if (mode < 2)
 	{
-		glEnd();
+		if (beginCalled)
+			glEnd();
 		glMatrixMode (matrixMode[mode]);
 		glLoadMatrixf(mtxCurrent[mode]);
 		glBegin (vtxFormat);
+		beginCalled = 1;
 	}
 	else if (mode == 2)
 	{
-		glEnd();
+		if (beginCalled)
+			glEnd();
 		glMatrixMode (matrixMode[1]);
 		glLoadMatrixf(mtxCurrent[1]);
 		glBegin (vtxFormat);
+		beginCalled = 1;
 	}
 }
 
@@ -1289,7 +1317,8 @@ void NDS_glLightColor (unsigned long v)
 	if (beginCalled)
 		glEnd();
 
-	glLightiv(GL_LIGHT0 + index, GL_AMBIENT_AND_DIFFUSE, lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_AMBIENT, lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_DIFFUSE, lightColor);
 	glLightiv(GL_LIGHT0 + index, GL_SPECULAR, lightColor);
 
 	if (beginCalled)
@@ -1306,6 +1335,9 @@ void NDS_glAlphaFunc(unsigned long v)
 
 void NDS_glControl(unsigned long v)
 {
+	if(beginCalled)
+		glEnd();
+
 	if(v&1)
 	{
 		glEnable (GL_TEXTURE_2D);
@@ -1323,6 +1355,9 @@ void NDS_glControl(unsigned long v)
 	{
 		glAlphaFunc (GL_GREATER, alphaTestRef);
 	}
+
+	if(beginCalled)
+		glBegin(vtxFormat);
 }
 
 void NDS_glNormal(unsigned long v)
@@ -1371,7 +1406,7 @@ void NDS_glCallList(unsigned long v)
 					continue;
 				}
 
-				break;				
+				break;
 			}
 
 			case 0x11 :
@@ -1761,7 +1796,11 @@ void NDS_glCallList(unsigned long v)
 	}
 	if((clCmd&0xFF)==0x41)
 	{
-		glEnd();
+		if(beginCalled)
+		{
+			glEnd();
+			beginCalled = 0;
+		}
 		--clInd;
 		clCmd>>=8;
 	}
@@ -1776,7 +1815,7 @@ void NDS_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
 		MatrixCopy(dest, mtxCurrent[mode]);
 		return;
 	}
-	
+
 	MatrixCopy(dest, MatrixStackGetPos(&mtxStack[mode], index));
 }
 
