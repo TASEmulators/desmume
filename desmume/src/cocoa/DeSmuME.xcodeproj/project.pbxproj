@@ -1,0 +1,514 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
+		7277B6E30D9E045700D283BD /* English.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6DF0D9E045700D283BD /* English.nib */; };
+		7277B6E40D9E045700D283BD /* English.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E00D9E045700D283BD /* English.strings */; };
+		7277B6E50D9E045700D283BD /* Japanese.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E10D9E045700D283BD /* Japanese.nib */; };
+		7277B6E60D9E045700D283BD /* Japanese.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E20D9E045700D283BD /* Japanese.strings */; };
+		7277B8EB0D9F25F700D283BD /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
+		729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
+		729BEC710D9D55DB00ED561B /* input.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.m */; };
+		729BEC730D9D55DB00ED561B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.m */; };
+		729BEC740D9D55DB00ED561B /* main_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC620D9D55DB00ED561B /* main_window.m */; };
+		729BEC750D9D55DB00ED561B /* nds_control.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC640D9D55DB00ED561B /* nds_control.m */; };
+		729BEC760D9D55DB00ED561B /* preferences.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC660D9D55DB00ED561B /* preferences.m */; };
+		729BEC770D9D55DB00ED561B /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC680D9D55DB00ED561B /* rom_info.m */; };
+		729BEC780D9D55DB00ED561B /* screenshot.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6A0D9D55DB00ED561B /* screenshot.m */; };
+		729BEC790D9D55DB00ED561B /* sndOSX.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6C0D9D55DB00ED561B /* sndOSX.m */; };
+		729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6E0D9D55DB00ED561B /* video_output_view.m */; };
+		729BECCC0D9D57AF00ED561B /* arm_instructions.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC9B0D9D57AF00ED561B /* arm_instructions.c */; };
+		729BECCD0D9D57AF00ED561B /* armcpu.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC9D0D9D57AF00ED561B /* armcpu.c */; };
+		729BECCE0D9D57AF00ED561B /* bios.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC9F0D9D57AF00ED561B /* bios.c */; };
+		729BECCF0D9D57AF00ED561B /* cflash.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA20D9D57AF00ED561B /* cflash.c */; };
+		729BECD00D9D57AF00ED561B /* cp15.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA50D9D57AF00ED561B /* cp15.c */; };
+		729BECD10D9D57AF00ED561B /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA70D9D57AF00ED561B /* debug.c */; };
+		729BECD20D9D57AF00ED561B /* Disassembler.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA90D9D57AF00ED561B /* Disassembler.c */; };
+		729BECD30D9D57AF00ED561B /* FIFO.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECAD0D9D57AF00ED561B /* FIFO.c */; };
+		729BECD40D9D57AF00ED561B /* fs-linux.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECAF0D9D57AF00ED561B /* fs-linux.c */; };
+		729BECD50D9D57AF00ED561B /* gl_vertex.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB10D9D57AF00ED561B /* gl_vertex.c */; };
+		729BECD60D9D57AF00ED561B /* GPU.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB30D9D57AF00ED561B /* GPU.c */; };
+		729BECD70D9D57AF00ED561B /* matrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB50D9D57AF00ED561B /* matrix.c */; };
+		729BECD80D9D57AF00ED561B /* mc.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB70D9D57AF00ED561B /* mc.c */; };
+		729BECD90D9D57AF00ED561B /* MMU.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECBA0D9D57AF00ED561B /* MMU.c */; };
+		729BECDA0D9D57AF00ED561B /* NDSSystem.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECBC0D9D57AF00ED561B /* NDSSystem.c */; };
+		729BECDB0D9D57AF00ED561B /* render3D.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECBF0D9D57AF00ED561B /* render3D.c */; };
+		729BECDC0D9D57AF00ED561B /* ROMReader.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC10D9D57AF00ED561B /* ROMReader.c */; };
+		729BECDD0D9D57AF00ED561B /* saves.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC30D9D57AF00ED561B /* saves.c */; };
+		729BECDE0D9D57AF00ED561B /* SPU.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC50D9D57AF00ED561B /* SPU.c */; };
+		729BECDF0D9D57AF00ED561B /* thumb_instructions.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC70D9D57AF00ED561B /* thumb_instructions.c */; };
+		729BECE00D9D57AF00ED561B /* wifi.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECCA0D9D57AF00ED561B /* wifi.c */; };
+		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
+		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
+		729BECFA0D9D589E00ED561B /* OGLRender.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECF80D9D589E00ED561B /* OGLRender.c */; };
+		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = DeSmuME.icns; sourceTree = "<group>"; };
+		7277B6DF0D9E045700D283BD /* English.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = English.nib; sourceTree = "<group>"; };
+		7277B6E00D9E045700D283BD /* English.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = English.strings; sourceTree = "<group>"; };
+		7277B6E10D9E045700D283BD /* Japanese.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = Japanese.nib; sourceTree = "<group>"; };
+		7277B6E20D9E045700D283BD /* Japanese.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = Japanese.strings; sourceTree = "<group>"; };
+		7277B8EA0D9F25F700D283BD /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
+		729BEC5A0D9D55DB00ED561B /* cocoa_util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_util.m; sourceTree = SOURCE_ROOT; };
+		729BEC5C0D9D55DB00ED561B /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = SOURCE_ROOT; };
+		729BEC5D0D9D55DB00ED561B /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = SOURCE_ROOT; };
+		729BEC5E0D9D55DB00ED561B /* input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = input.m; sourceTree = SOURCE_ROOT; };
+		729BEC600D9D55DB00ED561B /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = SOURCE_ROOT; };
+		729BEC610D9D55DB00ED561B /* main_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main_window.h; sourceTree = SOURCE_ROOT; };
+		729BEC620D9D55DB00ED561B /* main_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main_window.m; sourceTree = SOURCE_ROOT; };
+		729BEC630D9D55DB00ED561B /* nds_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nds_control.h; sourceTree = SOURCE_ROOT; };
+		729BEC640D9D55DB00ED561B /* nds_control.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = nds_control.m; sourceTree = SOURCE_ROOT; };
+		729BEC650D9D55DB00ED561B /* preferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = preferences.h; sourceTree = SOURCE_ROOT; };
+		729BEC660D9D55DB00ED561B /* preferences.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = preferences.m; sourceTree = SOURCE_ROOT; };
+		729BEC670D9D55DB00ED561B /* rom_info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rom_info.h; sourceTree = SOURCE_ROOT; };
+		729BEC680D9D55DB00ED561B /* rom_info.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = rom_info.m; sourceTree = SOURCE_ROOT; };
+		729BEC690D9D55DB00ED561B /* screenshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screenshot.h; sourceTree = SOURCE_ROOT; };
+		729BEC6A0D9D55DB00ED561B /* screenshot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screenshot.m; sourceTree = SOURCE_ROOT; };
+		729BEC6B0D9D55DB00ED561B /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = SOURCE_ROOT; };
+		729BEC6C0D9D55DB00ED561B /* sndOSX.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = sndOSX.m; sourceTree = SOURCE_ROOT; };
+		729BEC6D0D9D55DB00ED561B /* video_output_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_output_view.h; sourceTree = SOURCE_ROOT; };
+		729BEC6E0D9D55DB00ED561B /* video_output_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = video_output_view.m; sourceTree = SOURCE_ROOT; };
+		729BEC9A0D9D57AF00ED561B /* ARM9.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ARM9.h; path = ../ARM9.h; sourceTree = SOURCE_ROOT; };
+		729BEC9B0D9D57AF00ED561B /* arm_instructions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arm_instructions.c; path = ../arm_instructions.c; sourceTree = SOURCE_ROOT; };
+		729BEC9C0D9D57AF00ED561B /* arm_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_instructions.h; path = ../arm_instructions.h; sourceTree = SOURCE_ROOT; };
+		729BEC9D0D9D57AF00ED561B /* armcpu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = armcpu.c; path = ../armcpu.c; sourceTree = SOURCE_ROOT; };
+		729BEC9E0D9D57AF00ED561B /* armcpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = armcpu.h; path = ../armcpu.h; sourceTree = SOURCE_ROOT; };
+		729BEC9F0D9D57AF00ED561B /* bios.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bios.c; path = ../bios.c; sourceTree = SOURCE_ROOT; };
+		729BECA00D9D57AF00ED561B /* bios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bios.h; path = ../bios.h; sourceTree = SOURCE_ROOT; };
+		729BECA10D9D57AF00ED561B /* bits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bits.h; path = ../bits.h; sourceTree = SOURCE_ROOT; };
+		729BECA20D9D57AF00ED561B /* cflash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cflash.c; path = ../cflash.c; sourceTree = SOURCE_ROOT; };
+		729BECA30D9D57AF00ED561B /* cflash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cflash.h; path = ../cflash.h; sourceTree = SOURCE_ROOT; };
+		729BECA40D9D57AF00ED561B /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ../config.h; sourceTree = SOURCE_ROOT; };
+		729BECA50D9D57AF00ED561B /* cp15.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cp15.c; path = ../cp15.c; sourceTree = SOURCE_ROOT; };
+		729BECA60D9D57AF00ED561B /* cp15.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cp15.h; path = ../cp15.h; sourceTree = SOURCE_ROOT; };
+		729BECA70D9D57AF00ED561B /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = debug.c; path = ../debug.c; sourceTree = SOURCE_ROOT; };
+		729BECA80D9D57AF00ED561B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = ../debug.h; sourceTree = SOURCE_ROOT; };
+		729BECA90D9D57AF00ED561B /* Disassembler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Disassembler.c; path = ../Disassembler.c; sourceTree = SOURCE_ROOT; };
+		729BECAA0D9D57AF00ED561B /* Disassembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Disassembler.h; path = ../Disassembler.h; sourceTree = SOURCE_ROOT; };
+		729BECAB0D9D57AF00ED561B /* dscard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dscard.h; path = ../dscard.h; sourceTree = SOURCE_ROOT; };
+		729BECAC0D9D57AF00ED561B /* fat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fat.h; path = ../fat.h; sourceTree = SOURCE_ROOT; };
+		729BECAD0D9D57AF00ED561B /* FIFO.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = FIFO.c; path = ../FIFO.c; sourceTree = SOURCE_ROOT; };
+		729BECAE0D9D57AF00ED561B /* FIFO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FIFO.h; path = ../FIFO.h; sourceTree = SOURCE_ROOT; };
+		729BECAF0D9D57AF00ED561B /* fs-linux.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "fs-linux.c"; path = "../fs-linux.c"; sourceTree = SOURCE_ROOT; };
+		729BECB00D9D57AF00ED561B /* fs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fs.h; path = ../fs.h; sourceTree = SOURCE_ROOT; };
+		729BECB10D9D57AF00ED561B /* gl_vertex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = gl_vertex.c; path = ../gl_vertex.c; sourceTree = SOURCE_ROOT; };
+		729BECB20D9D57AF00ED561B /* gl_vertex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gl_vertex.h; path = ../gl_vertex.h; sourceTree = SOURCE_ROOT; };
+		729BECB30D9D57AF00ED561B /* GPU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = GPU.c; path = ../GPU.c; sourceTree = SOURCE_ROOT; };
+		729BECB40D9D57AF00ED561B /* GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPU.h; path = ../GPU.h; sourceTree = SOURCE_ROOT; };
+		729BECB50D9D57AF00ED561B /* matrix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = matrix.c; path = ../matrix.c; sourceTree = SOURCE_ROOT; };
+		729BECB60D9D57AF00ED561B /* matrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = matrix.h; path = ../matrix.h; sourceTree = SOURCE_ROOT; };
+		729BECB70D9D57AF00ED561B /* mc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mc.c; path = ../mc.c; sourceTree = SOURCE_ROOT; };
+		729BECB80D9D57AF00ED561B /* mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mc.h; path = ../mc.h; sourceTree = SOURCE_ROOT; };
+		729BECB90D9D57AF00ED561B /* mem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mem.h; path = ../mem.h; sourceTree = SOURCE_ROOT; };
+		729BECBA0D9D57AF00ED561B /* MMU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = MMU.c; path = ../MMU.c; sourceTree = SOURCE_ROOT; };
+		729BECBB0D9D57AF00ED561B /* MMU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MMU.h; path = ../MMU.h; sourceTree = SOURCE_ROOT; };
+		729BECBC0D9D57AF00ED561B /* NDSSystem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = NDSSystem.c; path = ../NDSSystem.c; sourceTree = SOURCE_ROOT; };
+		729BECBD0D9D57AF00ED561B /* NDSSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NDSSystem.h; path = ../NDSSystem.h; sourceTree = SOURCE_ROOT; };
+		729BECBE0D9D57AF00ED561B /* registers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = registers.h; path = ../registers.h; sourceTree = SOURCE_ROOT; };
+		729BECBF0D9D57AF00ED561B /* render3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render3D.c; path = ../render3D.c; sourceTree = SOURCE_ROOT; };
+		729BECC00D9D57AF00ED561B /* render3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render3D.h; path = ../render3D.h; sourceTree = SOURCE_ROOT; };
+		729BECC10D9D57AF00ED561B /* ROMReader.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ROMReader.c; path = ../ROMReader.c; sourceTree = SOURCE_ROOT; };
+		729BECC20D9D57AF00ED561B /* ROMReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ROMReader.h; path = ../ROMReader.h; sourceTree = SOURCE_ROOT; };
+		729BECC30D9D57AF00ED561B /* saves.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = saves.c; path = ../saves.c; sourceTree = SOURCE_ROOT; };
+		729BECC40D9D57AF00ED561B /* saves.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = saves.h; path = ../saves.h; sourceTree = SOURCE_ROOT; };
+		729BECC50D9D57AF00ED561B /* SPU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = SPU.c; path = ../SPU.c; sourceTree = SOURCE_ROOT; };
+		729BECC60D9D57AF00ED561B /* SPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPU.h; path = ../SPU.h; sourceTree = SOURCE_ROOT; };
+		729BECC70D9D57AF00ED561B /* thumb_instructions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = thumb_instructions.c; path = ../thumb_instructions.c; sourceTree = SOURCE_ROOT; };
+		729BECC80D9D57AF00ED561B /* thumb_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thumb_instructions.h; path = ../thumb_instructions.h; sourceTree = SOURCE_ROOT; };
+		729BECC90D9D57AF00ED561B /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = types.h; path = ../types.h; sourceTree = SOURCE_ROOT; };
+		729BECCA0D9D57AF00ED561B /* wifi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = wifi.c; path = ../wifi.c; sourceTree = SOURCE_ROOT; };
+		729BECCB0D9D57AF00ED561B /* wifi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = wifi.h; path = ../wifi.h; sourceTree = SOURCE_ROOT; };
+		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
+		729BECF80D9D589E00ED561B /* OGLRender.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = OGLRender.c; path = ../windows/OGLRender.c; sourceTree = SOURCE_ROOT; };
+		729BECF90D9D589E00ED561B /* OGLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender.h; path = ../windows/OGLRender.h; sourceTree = SOURCE_ROOT; };
+		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = SOURCE_ROOT; };
+		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = SOURCE_ROOT; };
+		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D11072E0486CEB800E47090 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */,
+				729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				7277B8EA0D9F25F700D283BD /* about.m */,
+				729BEC5C0D9D55DB00ED561B /* globals.h */,
+				729BEC600D9D55DB00ED561B /* main.m */,
+				729BEC5A0D9D55DB00ED561B /* cocoa_util.m */,
+				729BEC5D0D9D55DB00ED561B /* input.h */,
+				729BEC5E0D9D55DB00ED561B /* input.m */,
+				729BEC610D9D55DB00ED561B /* main_window.h */,
+				729BEC620D9D55DB00ED561B /* main_window.m */,
+				729BEC630D9D55DB00ED561B /* nds_control.h */,
+				729BEC640D9D55DB00ED561B /* nds_control.m */,
+				729BEC650D9D55DB00ED561B /* preferences.h */,
+				729BEC660D9D55DB00ED561B /* preferences.m */,
+				729BEC670D9D55DB00ED561B /* rom_info.h */,
+				729BEC680D9D55DB00ED561B /* rom_info.m */,
+				729BEC690D9D55DB00ED561B /* screenshot.h */,
+				729BEC6A0D9D55DB00ED561B /* screenshot.m */,
+				729BEC6B0D9D55DB00ED561B /* sndOSX.h */,
+				729BEC6C0D9D55DB00ED561B /* sndOSX.m */,
+				729BEC6E0D9D55DB00ED561B /* video_output_view.m */,
+				729BEC6D0D9D55DB00ED561B /* video_output_view.h */,
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+			);
+			name = "Linked Frameworks";
+			sourceTree = "<group>";
+		};
+		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D1107320486CEB800E47090 /* DeSmuME.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* DeSmuME */ = {
+			isa = PBXGroup;
+			children = (
+				72C000010D9D59E60046B7EA /* Info.plist */,
+				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
+				729BECEF0D9D581900ED561B /* AudioUnit.framework */,
+				729BECE60D9D57F600ED561B /* OpenGL.framework */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = DeSmuME;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				729BECF80D9D589E00ED561B /* OGLRender.c */,
+				729BECF90D9D589E00ED561B /* OGLRender.h */,
+				729BEC9A0D9D57AF00ED561B /* ARM9.h */,
+				729BEC9B0D9D57AF00ED561B /* arm_instructions.c */,
+				729BEC9C0D9D57AF00ED561B /* arm_instructions.h */,
+				729BEC9D0D9D57AF00ED561B /* armcpu.c */,
+				729BEC9E0D9D57AF00ED561B /* armcpu.h */,
+				729BEC9F0D9D57AF00ED561B /* bios.c */,
+				729BECA00D9D57AF00ED561B /* bios.h */,
+				729BECA10D9D57AF00ED561B /* bits.h */,
+				729BECA20D9D57AF00ED561B /* cflash.c */,
+				729BECA30D9D57AF00ED561B /* cflash.h */,
+				729BECA40D9D57AF00ED561B /* config.h */,
+				729BECA50D9D57AF00ED561B /* cp15.c */,
+				729BECA60D9D57AF00ED561B /* cp15.h */,
+				729BECA70D9D57AF00ED561B /* debug.c */,
+				729BECA80D9D57AF00ED561B /* debug.h */,
+				729BECA90D9D57AF00ED561B /* Disassembler.c */,
+				729BECAA0D9D57AF00ED561B /* Disassembler.h */,
+				729BECAB0D9D57AF00ED561B /* dscard.h */,
+				729BECAC0D9D57AF00ED561B /* fat.h */,
+				729BECAD0D9D57AF00ED561B /* FIFO.c */,
+				729BECAE0D9D57AF00ED561B /* FIFO.h */,
+				729BECAF0D9D57AF00ED561B /* fs-linux.c */,
+				729BECB00D9D57AF00ED561B /* fs.h */,
+				729BECB10D9D57AF00ED561B /* gl_vertex.c */,
+				729BECB20D9D57AF00ED561B /* gl_vertex.h */,
+				729BECB30D9D57AF00ED561B /* GPU.c */,
+				729BECB40D9D57AF00ED561B /* GPU.h */,
+				729BECB50D9D57AF00ED561B /* matrix.c */,
+				729BECB60D9D57AF00ED561B /* matrix.h */,
+				729BECB70D9D57AF00ED561B /* mc.c */,
+				729BECB80D9D57AF00ED561B /* mc.h */,
+				729BECB90D9D57AF00ED561B /* mem.h */,
+				729BECBA0D9D57AF00ED561B /* MMU.c */,
+				729BECBB0D9D57AF00ED561B /* MMU.h */,
+				729BECBC0D9D57AF00ED561B /* NDSSystem.c */,
+				729BECBD0D9D57AF00ED561B /* NDSSystem.h */,
+				729BECBE0D9D57AF00ED561B /* registers.h */,
+				729BECBF0D9D57AF00ED561B /* render3D.c */,
+				729BECC00D9D57AF00ED561B /* render3D.h */,
+				729BECC10D9D57AF00ED561B /* ROMReader.c */,
+				729BECC20D9D57AF00ED561B /* ROMReader.h */,
+				729BECC30D9D57AF00ED561B /* saves.c */,
+				729BECC40D9D57AF00ED561B /* saves.h */,
+				729BECC50D9D57AF00ED561B /* SPU.c */,
+				729BECC60D9D57AF00ED561B /* SPU.h */,
+				729BECC70D9D57AF00ED561B /* thumb_instructions.c */,
+				729BECC80D9D57AF00ED561B /* thumb_instructions.h */,
+				729BECC90D9D57AF00ED561B /* types.h */,
+				729BECCA0D9D57AF00ED561B /* wifi.c */,
+				729BECCB0D9D57AF00ED561B /* wifi.h */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7277B6DF0D9E045700D283BD /* English.nib */,
+				7277B6E00D9E045700D283BD /* English.strings */,
+				7277B6E10D9E045700D283BD /* Japanese.nib */,
+				7277B6E20D9E045700D283BD /* Japanese.strings */,
+				7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
+				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D1107260486CEB800E47090 /* DeSmuME */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME" */;
+			buildPhases = (
+				8D1107290486CEB800E47090 /* Resources */,
+				8D11072C0486CEB800E47090 /* Sources */,
+				8D11072E0486CEB800E47090 /* Frameworks */,
+				72C000600D9D61BF0046B7EA /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DeSmuME;
+			productInstallPath = "$(HOME)/Applications";
+			productName = DeSmuME;
+			productReference = 8D1107320486CEB800E47090 /* DeSmuME.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME" */;
+			compatibilityVersion = "Xcode 3.1";
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+				TestLocale,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* DeSmuME */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D1107260486CEB800E47090 /* DeSmuME */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D1107290486CEB800E47090 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */,
+				7277B6E30D9E045700D283BD /* English.nib in Resources */,
+				7277B6E40D9E045700D283BD /* English.strings in Resources */,
+				7277B6E50D9E045700D283BD /* Japanese.nib in Resources */,
+				7277B6E60D9E045700D283BD /* Japanese.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		72C000600D9D61BF0046B7EA /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\nmkdir English.lproj\nmv English.nib English.lproj/MainMenu.nib\nmv English.strings English.lproj/Localizable.strings\nmkdir Japanese.lproj\nmv Japanese.nib Japanese.lproj/MainMenu.nib\nmv Japanese.strings Japanese.lproj/Localizable.strings";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D11072C0486CEB800E47090 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */,
+				729BEC710D9D55DB00ED561B /* input.m in Sources */,
+				729BEC730D9D55DB00ED561B /* main.m in Sources */,
+				729BEC740D9D55DB00ED561B /* main_window.m in Sources */,
+				729BEC750D9D55DB00ED561B /* nds_control.m in Sources */,
+				729BEC760D9D55DB00ED561B /* preferences.m in Sources */,
+				729BEC770D9D55DB00ED561B /* rom_info.m in Sources */,
+				729BEC780D9D55DB00ED561B /* screenshot.m in Sources */,
+				729BEC790D9D55DB00ED561B /* sndOSX.m in Sources */,
+				729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */,
+				729BECCC0D9D57AF00ED561B /* arm_instructions.c in Sources */,
+				729BECCD0D9D57AF00ED561B /* armcpu.c in Sources */,
+				729BECCE0D9D57AF00ED561B /* bios.c in Sources */,
+				729BECCF0D9D57AF00ED561B /* cflash.c in Sources */,
+				729BECD00D9D57AF00ED561B /* cp15.c in Sources */,
+				729BECD10D9D57AF00ED561B /* debug.c in Sources */,
+				729BECD20D9D57AF00ED561B /* Disassembler.c in Sources */,
+				729BECD30D9D57AF00ED561B /* FIFO.c in Sources */,
+				729BECD40D9D57AF00ED561B /* fs-linux.c in Sources */,
+				729BECD50D9D57AF00ED561B /* gl_vertex.c in Sources */,
+				729BECD60D9D57AF00ED561B /* GPU.c in Sources */,
+				729BECD70D9D57AF00ED561B /* matrix.c in Sources */,
+				729BECD80D9D57AF00ED561B /* mc.c in Sources */,
+				729BECD90D9D57AF00ED561B /* MMU.c in Sources */,
+				729BECDA0D9D57AF00ED561B /* NDSSystem.c in Sources */,
+				729BECDB0D9D57AF00ED561B /* render3D.c in Sources */,
+				729BECDC0D9D57AF00ED561B /* ROMReader.c in Sources */,
+				729BECDD0D9D57AF00ED561B /* saves.c in Sources */,
+				729BECDE0D9D57AF00ED561B /* SPU.c in Sources */,
+				729BECDF0D9D57AF00ED561B /* thumb_instructions.c in Sources */,
+				729BECE00D9D57AF00ED561B /* wifi.c in Sources */,
+				729BECFA0D9D589E00ED561B /* OGLRender.c in Sources */,
+				7277B8EB0D9F25F700D283BD /* about.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C01FCF4B08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_AUTO_VECTORIZATION = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "";
+				GCC_STRICT_ALIASING = YES;
+				GCC_UNROLL_LOOPS = YES;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = DeSmuME;
+			};
+			name = Debug;
+		};
+		C01FCF4C08A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_AUTO_VECTORIZATION = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "";
+				GCC_STRICT_ALIASING = YES;
+				GCC_UNROLL_LOOPS = YES;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				PRODUCT_NAME = DeSmuME;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = DESMUME_COCOA;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.4;
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				GCC_PREPROCESSOR_DEFINITIONS = DESMUME_COCOA;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				PREBINDING = NO;
+				SDKROOT = macosx10.4;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4B08A954540054247B /* Debug */,
+				C01FCF4C08A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "DeSmuME" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

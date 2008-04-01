@@ -17,30 +17,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef SCREENSHOT_H
-#define SCREENSHOT_H
-
 #import <Cocoa/Cocoa.h>
 
-#define OBJ_C
-#include "../types.h"
-#undef BOOL
+@class ScreenState;
 
-@interface Screenshot : NSObject
-{
-	NSWindowController *controller;
-	NSWindow *window;
-	NSImage *image;
-	NSImageView *image_view;
-	NSButton *save_button;
-	NSButton *update_button;
-	NSBitmapImageRep *image_rep;
-	NSView *format_selection;
-	NSPopUpButton *format_button;
-}
-
-- (id)initWithBuffer:(volatile const u8*)buffer rotation:(u8)rotation saveOnly:(BOOL)save_only;
-- (void)dealloc;
+@interface Screenshot : NSObject {}
++ (void)saveScreenshotAs:(const ScreenState*)screen;
 @end
-
-#endif

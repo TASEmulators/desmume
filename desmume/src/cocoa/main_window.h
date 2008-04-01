@@ -17,39 +17,52 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef MAIN_WINDOW_H
-#define MAIN_WINDOW_H
-
 #import <Cocoa/Cocoa.h>
 
-@class VideoOutputView;
-//this is used internally by VideoOutputWindow
+#import "nds_control.h"
 
+@class VideoOutputView;
+@class InputHandler;
+//this is used internally by VideoOutputWindow
 
 //This interface is to create and manaage the window
 //that displays DS video output and takes keyboard/mouse input
 //do not instanciate more than one of these
-@interface VideoOutputWindow : NSWindow
+@interface VideoOutputWindow : NintendoDS
 {
 	@private
+	NSWindow *window;
 	NSWindowController *controller;
 	VideoOutputView *video_output_view;
+	NSTextField *status_view;
+	InputHandler *input;
+	float status_bar_height;
+
+	bool no_smaller_than_ds;
+	bool keep_proportions;
 }
 
 //initialization
 - (id)init;
 - (void)dealloc;
 
-//call this function to read the screen from the emulator and update the window
-//this is the only method involving cocoa that should be called from the run() function
-- (void)updateScreen;
+//overloaded from NintendoDS class
+- (BOOL)loadROM:(NSString*)filename;
+- (void)execute;
+- (void)pause;
+- (void)reset;
+- (void)setFrameSkip:(int)frameskip;
+- (void)closeROM;
 
-//
-- (void)clearScreenWhite; //for when a rom is loaded but stopped
-- (void)clearScreenBlack; //for when the emulator is not loaded
+//save features overloaded from nds class
+- (BOOL)saveState:(NSString*)file;
+- (BOOL)loadState:(NSString*)file;
+- (BOOL)saveStateToSlot:(int)slot; //0 to MAX_SLOTS-1, anything else is ignored
+- (BOOL)loadStateFromSlot:(int)slot;
 
-//resets the min size internalls (when rotation changes), shouldn't be used from outside
-- (void)resetMinSize:(bool)resize;
+//save functions for the program menu to callback to
+- (BOOL)saveStateAs;
+- (BOOL)loadStateFrom;
 
 //toggles between allowing tiny sizes and only being as small as DS
 - (void)toggleMinSize;
@@ -58,16 +71,18 @@
 //this is screen size not window size
 - (void)resizeScreen:(NSSize)size;
 
-
 //like resizeScreen but does a size in relation to DS pixels
 - (void)resizeScreen1x;
 - (void)resizeScreen2x;
 - (void)resizeScreen3x;
 - (void)resizeScreen4x;
 
+//converts window coords to DS coords
+- (NSPoint)windowPointToDSCoords:(NSPoint)location;
+
 //
-- (void)toggleAllowsResize;
 - (void)toggleConstrainProportions;
+- (void)toggleStatusBar;
 
 //rotation
 - (void)setRotation0;
@@ -86,19 +101,9 @@
 - (void)toggleSubBackground3;
 
 //screenshots
-- (void)screenShotToFile;
-- (void)screenShotToWindow;
-- (const unsigned char *)getBuffer;//pause before calling
+- (void)saveScreenshot;
 
-//keyboard input
-- (void)keyDown:(NSEvent*)event;
-- (void)keyUp:(NSEvent*)event;
-
-//mouse input
-- (void)mouseDown:(NSEvent*)event;
-- (void)mouseDragged:(NSEvent*)event;
-- (void)mouseUp:(NSEvent*)event;
+//delegate
+- (void)windowDidBecomeMain:(NSNotification*)notification;
 
 @end
-
-#endif //MAIN_WINDOW_H

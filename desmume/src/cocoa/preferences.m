@@ -17,19 +17,21 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#import "globals.h"
 #import "preferences.h"
-#import "nds_control.h"
+#include "globals.h"
 
 /* Preference settings are stored using NSUserDefaults
-which should put them in a propert list in /Users/username/Library/Preferences
+which should put them in a property list in /Users/username/Library/Preferences
 
 For the keys we use the same strings you see in the preference menu
-such as "Language" to keep things simple, of course the unlocalized version
+such as "Execute Upon Load" to keep things simple, of course the unlocalized version
 of the strings are used so that when you change language it will still
 finds the settings from before. Also theres no guarantee that localized
 strings will be unique.
 */
+
+
+#define PREF_EXECUTE_UPON_LOAD @"Execute Upon Load"
 
 ///////////////////////////////
 
@@ -65,8 +67,8 @@ NSDictionary *desmume_defaults;
 
 - (void)textDidChange:(NSNotification*)notification
 {
-	NSText *text_field = [notification object];
-	NSString *text = [text_field string];
+	//NSText *text_field = [notification object];
+	//NSString *text = [text_field string];
 
 
 }
@@ -97,51 +99,6 @@ NSDictionary *desmume_defaults;
 ////////////////////////////////////////////////////
 
 @implementation NSApplication(custom_extensions)
-
-- (void)launchWebsite
-{
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://desmume.sourceforge.net"]];
-}
-
-- (void)launchForums
-{
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://forums.desmume.org/index.php"]];
-}
-
-- (void)bugReport
-{
-	[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291"]];
-}
-
-- (void)orderFrontStandardAboutPanel:(id)sender
-{
-	bool was_paused = paused;
-	[NDS pause];
-
-	NSRunAlertPanel([sender title],
-	@"DeSmuME is an open source Nintendo DS emulator.\n\nBased off of YopYop's original work, and continued by the DeSmuME team.\n\
-\nhttp://www.desmume.org\n\n\n\
-This program is free software; you can redistribute it and/or \
-modify it under the terms of the GNU General Public License as \
-published by the Free Software Foundation; either version 2 of \
-the License, or (at your option) any later version. \
-\n\n\
-This program is distributed in the hope that it will be \
-useful,but WITHOUT ANY WARRANTY; without even the implied \
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR \
-PURPOSE.  See the GNU General Public License for more details. \
-\n\n\
-You should have received a copy of the GNU General Public \
-License along with this program; if not, write to the Free \
-Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, \
-MA  02111-1307  USA\
-\n\n\
-See the GNU General Public License details in COPYING.", nil/*OK*/, nil, nil);
-
-	if(!was_paused)[NDS execute];
-}
-
-///////////////////////////////////////////////////
 
 NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id delegate)
 {
@@ -281,8 +238,8 @@ void setAppDefaults()
 	@"Yes", PREF_EXECUTE_UPON_LOAD,
 
 	//Firmware defaults
-	@"DeSmuME User", PREF_FIRMWARE_PLAYER_NAME,
-	@"English", PREF_FIRMWARE_LANGUAGE,
+	//@"DeSmuME User", PREF_FIRMWARE_PLAYER_NAME,
+	//@"English", PREF_FIRMWARE_LANGUAGE,
 
 	nil];
 	[desmume_defaults retain];
@@ -306,8 +263,8 @@ void setAppDefaults()
 - (void)orderFrontDataLinkPanel:(id)sender //<- Preferences Display Function
 {
 
-	bool was_paused = paused;
-	[NDS pause];
+	//bool was_paused = paused;
+	//[NDS pause]; fixme
 
 	if(!preferences_window)
 	{
@@ -316,9 +273,6 @@ void setAppDefaults()
 
 		//get the applications main bundle
 		NSBundle* app_bundle = [NSBundle mainBundle];
-
-		//grab the list of languages
-		NSArray *languages = [app_bundle localizations];
 
 		//get a font for displaying text
 		preferences_font = [NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSRegularControlSize]];
@@ -364,7 +318,7 @@ void setAppDefaults()
 		[NSArray arrayWithObjects:@"Bool", [NSData dataWithBytes:&@selector(executeUponLoad:) length:sizeof(SEL)], @"Yes", @"No",nil]
 		, PREF_EXECUTE_UPON_LOAD, nil];
 
-		NSView *interface_view = createPreferencesView(interface_pane_tab, interface_options, delegate);
+		/*NSView *interface_view = */createPreferencesView(interface_pane_tab, interface_options, delegate);
 /*
 		//Create the firmware pane
 		firmware_pane_tab = [[NSTabViewItem alloc] initWithIdentifier:nil];
@@ -395,6 +349,6 @@ void setAppDefaults()
 
 	[NSApp runModalForWindow:preferences_window];
 
-	if(!was_paused)[NDS execute];
+	//if(!was_paused)[NDS execute]; fixme
 }
 @end

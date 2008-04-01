@@ -17,4 +17,16 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-void setAppDefaults(); //this is defined in preferences.m and should be called at app launch
+#import <Cocoa/Cocoa.h>
+
+@class NintendoDS;
+
+//there is only one ROM Info window, so we have only class functions here
+
+@interface ROMInfo : NSObject
+{
+}
++ (void)showROMInfo:(NintendoDS*)DS;
++ (void)changeDS:(NintendoDS*)DS;
++ (void)closeROMInfo;
+@end

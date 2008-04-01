@@ -17,23 +17,26 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#import <Cocoa/Cocoa.h>
+#import "nds_control.h"
 
-//cocoa utils
-#define NSSTRc(x) ([[NSString alloc] initWithCString:(x) encoding:NSASCIIStringEncoding])
+@interface VideoOutputView : NSView
+{
+	enum ScreenRotation rotation;
+	NSOpenGLContext* context;
+	NSOpenGLPixelFormat* format;
+	NintendoDS *DS;
+	ScreenState *screen_buffer;
+}
+- (id)initWithFrame:(NSRect)frame withDS:(NintendoDS*)ds;
+- (void)dealloc;
+- (void)setRotation:(enum ScreenRotation)rotation;
+- (enum ScreenRotation)rotation;
+- (void)drawRect:(NSRect)bounds;
+- (void)setFrame:(NSRect)rect;
+- (BOOL)isOpaque;
+- (void)clearScreenBlack;
+- (void)clearScreenWhite;
+- (void)updateScreen:(ScreenState*)screen;
+- (const ScreenState*)screenState;
+@end
 
-void messageDialogBlank();
-void messageDialog(NSString *title, NSString *text);
-BOOL messageDialogYN(NSString *title, NSString *text);
-NSString* openDialog(NSArray *file_types);
-
-//
-#if __LP64__ || NS_BUILD_32_LIKE_64
-typedef long NSInteger;
-typedef unsigned long NSUInteger;
-#else
-typedef int NSInteger;
-typedef unsigned int NSUInteger;
-#endif
-
-typedef float CGFloat;

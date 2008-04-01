@@ -110,7 +110,7 @@ OSStatus soundMixer(
 
 	//record to file
 	if(file_open)
-		ExtAudioFileWrite(outfile, inNumberFrames, ioData);
+		;//ExtAudioFileWrite(outfile, inNumberFrames, ioData);
 
 	in_mix = false;
 	return noErr;
@@ -252,7 +252,7 @@ void SNDOSXDeInit()
 
 int SNDOSXReset()
 {
-	if(sound_data == NULL)return;
+	if(sound_data == NULL)return 0;
 
 	memset(sound_data, 0, sound_buffer_size);
 
@@ -445,13 +445,15 @@ bool SNDOSXOpenFile(void *fname)
 	audio_format.mBytesPerFrame = 4;
 	audio_format.mChannelsPerFrame = 2;
 	audio_format.mBitsPerChannel = 16;
-
+/*
 	if(ExtAudioFileCreateNew(&ref, (CFStringRef)[[filename pathComponents] lastObject], kAudioFileWAVEType, &audio_format, NULL, &outfile) != noErr)
 		return false;
 
 	file_open = true;
 
 	return true;
+*/
+return false;
 }
 
 void SNDOSXStartRecording()
@@ -476,7 +478,7 @@ void SNDOSXCloseFile()
 		//so we dont close the file while writing to it
 		while(in_mix);
 
-		ExtAudioFileDispose(outfile);
+		//ExtAudioFileDispose(outfile);
 	}
 }
 

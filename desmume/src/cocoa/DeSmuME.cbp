@@ -11,6 +11,8 @@
 			<notes>
 				<![CDATA[DeSmuME
 
+Note that when building DeSmuME with this Code::Blocks project, compatibility may be worse than when building with the XCode project.
+
 Cocoa Port
 
 DeSmuME is free software; you can redistribute it and/or modify
@@ -39,7 +41,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 				<Compiler>
 					<Add option="-march=pentium-m" />
 					<Add option="-msse2" />
-					<Add option="-DDESMUME_COCOA" />
 				</Compiler>
 				<ExtraCommands>
 					<Add after="cp DeSmuME.app/Contents/MacOS/DeSmuME DeSmuME.app/Contents/MacOS/DeSmuME_x86" />
@@ -54,8 +55,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-arch ppc" />
-					<Add option="-DDESMUME_COCOA" />
-					<Add option="-DWORDS_BIGENDIAN" />
 				</Compiler>
 				<Linker>
 					<Add option="-arch ppc" />
@@ -71,15 +70,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Compiler>
 			<Add option="-fexpensive-optimizations" />
 			<Add option="-O3" />
-			<Add option="-DDETECT_LEAKS" />
+			<Add option="-g" />
+			<Add option="-DDESMUME_COCOA" />
 		</Compiler>
 		<Linker>
-			<Add option="-s" />
 			<Add option="-framework Cocoa" />
 			<Add option="-framework OpenGL" />
-			<Add option="-framework CoreAudio" />
 			<Add option="-framework AudioUnit" />
-			<Add option="-framework AudioToolbox" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="./makeapp.sh" />
@@ -133,11 +130,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../cflash.h" />
 		<Unit filename="English.strings" />
 		<Unit filename="Japanese.strings" />
+		<Unit filename="about.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="cocoa_util.m">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
 		<Unit filename="globals.h" />
+		<Unit filename="input.h" />
+		<Unit filename="input.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="main.m">
 			<Option compile="1" />
 			<Option link="1" />
@@ -152,7 +158,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
+		<Unit filename="preferences.h" />
 		<Unit filename="preferences.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="rom_info.h" />
+		<Unit filename="rom_info.m">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
@@ -163,6 +175,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		</Unit>
 		<Unit filename="sndOSX.h" />
 		<Unit filename="sndOSX.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="video_output_view.h" />
+		<Unit filename="video_output_view.m">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
