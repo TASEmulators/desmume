@@ -174,7 +174,7 @@ void CreateMenu(AppDelegate *delegate)
 
 	[file addItem:[NSMenuItem separatorItem]];
 
-	temp = [file addItemWithTitle:NSLocalizedString(@"Save State", nil) action:@selector(saveTo:) keyEquivalent:@""];
+	temp = [file addItemWithTitle:NSLocalizedString(@"Save State", nil) action:nil keyEquivalent:@""];
 	NSMenu *save_state_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Save State", nil)];
 	[temp setSubmenu:save_state_menu];
 
@@ -185,11 +185,9 @@ void CreateMenu(AppDelegate *delegate)
 	for(i = 0; i < SAVE_SLOTS; i++)
 	{
 		saveSlot_item[i] = [save_state_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Slot %d", nil), i] action:@selector(saveToSlot:) keyEquivalent:@""];
-		[saveSlot_item[i] setEnabled:NO];
-
 		loadSlot_item[i] = [load_state_menu addItemWithTitle:[saveSlot_item[i] title] action:@selector(loadFromSlot:) keyEquivalent:@""];
-		[loadSlot_item[i] setEnabled:NO];
 	}
+
 //fixme changed save state item function names
 /* To be implemented when saves.h provides
 a way to get the time of a save that's not string/human formatted...
@@ -225,6 +223,10 @@ a way to get the time of a save that's not a string / human formatted...
 
 	temp = [load_state_menu addItemWithTitle:@"View States" action:nil keyEquivalent:@""];
 */
+
+	[save_state_menu release];
+	[load_state_menu release];
+	
 #else
 	for(i = 0; i < SAVE_SLOTS; i++)
 	{

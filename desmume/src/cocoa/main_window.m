@@ -1275,7 +1275,6 @@ NSMenuItem *screenshot_to_file_item;
 		[volume_item[i] setTarget:self];
 	}
 
-
 	//Update the ROM Info window
 	if([self ROMLoaded] == YES)
 		[ROMInfo changeDS:self];
@@ -1288,13 +1287,14 @@ NSMenuItem *screenshot_to_file_item;
 	//This function is called automaticlly by Cocoa
 	//when it needs to know if a menu item should be greyed out
 
+	int i;
+
 	if([self ROMLoaded] == NO)
 	{ //if no rom is loaded, various options are disables
 		if(item == close_rom_item)return NO;
 		if(item == rom_info_item)return NO;
 		if(item == save_state_as_item)return NO;
 		if(item == load_state_from_item)return NO;
-		int i;
 		for(i = 0; i < MAX_SLOTS; i++)
 		{
 			if(item == saveSlot_item[i])return NO;
@@ -1307,6 +1307,13 @@ NSMenuItem *screenshot_to_file_item;
 
 		if(item == screenshot_to_file_item)return NO;
 	}
+	
+	else
+	
+	for(i = 0; i < MAX_SLOTS; i++)
+		if(item == loadSlot_item[i])
+			if([self saveStateExists:i]==NO)return NO;
+
 
 	return YES;
 }

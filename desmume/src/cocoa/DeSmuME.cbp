@@ -70,13 +70,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Compiler>
 			<Add option="-fexpensive-optimizations" />
 			<Add option="-O3" />
-			<Add option="-g" />
 			<Add option="-DDESMUME_COCOA" />
+			<Add option="-DHAVE_LIBZ" />
 		</Compiler>
 		<Linker>
 			<Add option="-framework Cocoa" />
 			<Add option="-framework OpenGL" />
 			<Add option="-framework AudioUnit" />
+			<Add option="-lz" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="./makeapp.sh" />
