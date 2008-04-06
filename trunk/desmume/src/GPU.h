@@ -466,10 +466,17 @@ typedef union
 */
 
 struct _COLOR { // abgr x555
-	unsigned red:5;
-	unsigned green:5;
+#ifdef WORDS_BIGENDIAN
+	unsigned alpha:1;    // sometimes it is unused (pad)
 	unsigned blue:5;
-	unsigned alpha:1;	// sometimes it is unused (pad)
+	unsigned green:5;
+	unsigned red:5;
+#else
+     unsigned red:5;
+     unsigned green:5;
+     unsigned blue:5;
+     unsigned alpha:1;    // sometimes it is unused (pad)
+#endif
 };
 struct _COLORx { // abgr x555
 	unsigned bgr:15;
@@ -521,6 +528,27 @@ ref: http://www.bottledlight.com/ds/index.php/Video/Sprites
 
 typedef struct
 {
+#ifdef WORDS_BIGENDIAN
+// attr0
+/* 0*/    unsigned Y:8;
+/*14*/    unsigned Shape:2;    // (00: Square, 01: Wide, 10: Tall, 11: Illegal)
+/*13*/    unsigned Depth:1;    // (0: 16, 1: 256)
+/*12*/    unsigned Mosaic:1;   // (1: Enabled)
+/*10*/    unsigned Mode:2;     // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
+/* 8*/    unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
+// attr1
+/* 0*/    signed   X:9;
+/*14*/    unsigned Size:2;
+/*13*/    unsigned VFlip:1;
+/*12*/    unsigned HFlip:1;
+/* 9*/    unsigned RotScalIndex:3; // Rot/scale matrix index
+// attr2
+/* 0*/    unsigned TileIndex:10;
+/*12*/    unsigned PaletteIndex:4;
+/*10*/    unsigned Priority:2;
+// attr3
+unsigned attr3:16;    
+#else
 // attr0
 /* 0*/	unsigned Y:8;
 /* 8*/	unsigned RotScale:2; // (00: Normal, 01: Rot/scale, 10: Disabled, 11: Double-size rot/scale)
@@ -540,6 +568,7 @@ typedef struct
 /*12*/	unsigned PaletteIndex:4;
 // attr3
 	unsigned attr3:16;
+#endif
 } _OAM_;
 
 typedef struct

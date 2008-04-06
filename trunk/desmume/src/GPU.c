@@ -1272,7 +1272,7 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * prioT
 	int i; u16 color;
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
-		color = src[x];
+		color = LE_TO_LOCAL_16(src[x]);
 
 		// alpha bit = invisible
 		if ((color&0x8000)&&(prio<=prioTab[sprX]))
@@ -1301,7 +1301,7 @@ INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 	{
 		palette_entry = src[(x&0x7) + ((x&0xFFF8)<<3)];
-		color = pal[palette_entry];
+		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
 		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
@@ -1337,7 +1337,7 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		palette = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
 		if (x & 1) palette_entry = palette >> 4;
 		else       palette_entry = palette & 0xF;
-		color = pal[palette_entry];
+		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
 		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
@@ -1436,13 +1436,26 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	u8 block = gpu->sprBoundary;
 	u16 i;
 	
-	for(i = 0; i<nbShow; ++i, --spriteInfo)     /* check all sprites */
+	//for(i = 0; i<nbShow; ++i, --spriteInfo)     /* check all sprites */
+#ifdef WORDS_BIGENDIAN
+	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
+	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
+#endif
+
+	for(i = 0; i<nbShow; ++i, --spriteInfo
+#ifdef WORDS_BIGENDIAN    
+	,*(((u16*)(spriteInfo+1))+1) = (*(((u16*)(spriteInfo+1))+1) << 1) | *(((u16*)(spriteInfo+1))+1) >> 15
+	,*(((u16*)(spriteInfo+1))+2) = (*(((u16*)(spriteInfo+1))+2) << 2) | *(((u16*)(spriteInfo+1))+2) >> 14
+	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
+	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
+#endif
+	)     /* check all sprites */
 	{
 		size sprSize;
 		s32 sprX, sprY, x, y, lg;
 		int xdir;
 		u8 prio, * src;
-		u16 i,j;
+		u16 i;
 
 		// Check if sprite is disabled before everything
 		if (spriteInfo->RotScale == 2)
@@ -1671,6 +1684,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			render_sprite_16 (gpu, l, dst, src, pal, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 		}
 	}
+
+#ifdef WORDS_BIGENDIAN
+	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) << 1) | *(((u16*)spriteInfo)+1) >> 15;
+	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
+#endif
 }
 
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
@@ -1679,7 +1697,19 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
 	u16 i;
 	
-	for(i = 0; i<nbShow; ++i, --spriteInfo)
+#ifdef WORDS_BIGENDIAN
+	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
+	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
+#endif
+
+	for(i = 0; i<nbShow; ++i, --spriteInfo
+#ifdef WORDS_BIGENDIAN    
+	,*(((u16*)(spriteInfo+1))+1) = (*(((u16*)(spriteInfo+1))+1) << 1) | *(((u16*)(spriteInfo+1))+1) >> 15
+	,*(((u16*)(spriteInfo+1))+2) = (*(((u16*)(spriteInfo+1))+2) << 2) | *(((u16*)(spriteInfo+1))+2) >> 14
+	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
+	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
+#endif
+	)     /* check all sprites */
 	{
 		size sprSize;
 		s32 sprX, sprY, x, y, lg;
@@ -1915,6 +1945,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 		}
 	}
+
+#ifdef WORDS_BIGENDIAN
+	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) << 1) | *(((u16*)spriteInfo)+1) >> 15;
+	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
+#endif
 }
 
 /*****************************************************************************/
@@ -2415,7 +2450,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 #ifndef BRIGHT_TABLES
 				u8 base ;
 				u8 r,g,b; // get components, 5bit each
-				dstColor.val = T1ReadWord(dst, i16 << 1);
+				dstColor.val = *((u16 *) (dst + (i16 << 1)));
 				r = dstColor.bits.red;
 				g = dstColor.bits.green;
 				b = dstColor.bits.blue;
@@ -2428,7 +2463,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 				dstColor.val = T1ReadWord(dst, i16 << 1);
 				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
 #endif
- 				T2WriteWord (dst, i16 << 1, dstColor.val);
+				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
 			}
 			break;
 		}
@@ -2464,7 +2499,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			{
 #ifndef BRIGHT_TABLES
 				u8 r,g,b;
-				dstColor.val = T1ReadWord(dst, i16 << 1);
+				dstColor.val = *((u16 *) (dst + (i16 << 1)));
 				r = dstColor.bits.red;
 				g = dstColor.bits.green;
 				b = dstColor.bits.blue;
@@ -2476,7 +2511,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 				dstColor.val = T1ReadWord(dst, i16 << 1);
 				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
 #endif
-				T2WriteWord (dst, i16 << 1, dstColor.val);
+				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
 			}
 			break;
 		}
