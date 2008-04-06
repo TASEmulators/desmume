@@ -6,8 +6,8 @@
 
 1) Compiling instructions...................................13
 2) How to use DeSmuME.......................................31
-3) Contact information......................................67
-4) Disclaimer...............................................84
+3) Contact information......................................76
+4) Disclaimer...............................................93
 
 
 1 Compiling instructions______________________________________
@@ -45,7 +45,7 @@ Linux and Windows versions.
 
 Click the lower screen for DS touch-screen input.
 
-Here are the default key mappings(they may be subject to change):
+Here are the default key mappings(may be subject to change):
 up arrow - Up
 left arrow - Left
 down arrow - Down
@@ -59,10 +59,19 @@ n - Right Trigger
 enter - Start button
 space - Select button
 
-Shift + F1 (through F10) will save the state with the corresponding number.
-F1 (through F10) will load the state with the corresponding number.
+Shift + F1 (through F10) will save the state with the
+corresponding number. F1 (through F10) will load the state
+with the corresponding number.
 
-NOTE: These key bindings may not be correct on foreign keyboards.
+NOTE: These key bindings may not be correct on foreign
+keyboards.
+
+To set up a FAT disk image (for homebrew apps) you can use the 
+"Emulation > Set FAT Image File" option in the menu.  You can
+also set this from the command line by launching DeSmuME
+inside its app bundle:
+
+DeSmuME.app/Contents/MacOS/DeSmuME -FlashFile /path/to/file.img
 
 3 Contact information_________________________________________
 
@@ -77,9 +86,9 @@ Web:    http://desmume.sourceforge.net
 Please don't ask for roms, bios files or any other copyrighted
 stuff.
 
-If you want to submit a bug report, please run desmume, go into
-the "Help" menu, and click on "Submit a bug report". If you're
-having trouble with it, please feel free to email.
+If you want to submit a bug report, please run desmume, go
+into the "Help" menu, and click on "Submit a bug report". If
+you're having trouble with it, please feel free to email.
 
 4 Disclaimer__________________________________________________
 

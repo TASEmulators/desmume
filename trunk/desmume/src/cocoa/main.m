@@ -24,6 +24,7 @@ Based on work by yopyop and the DeSmuME team!
 */
 
 #import "main_window.h"
+#import "preferences.h"
 
 /*
 FIXME: Hardware acceleration for openglrender.c ??
@@ -267,6 +268,10 @@ a way to get the time of a save that's not a string / human formatted...
 
 	[frame_skip_menu release];
 
+	[emulation addItem:[NSMenuItem separatorItem]];
+	
+	temp = [emulation addItemWithTitle:NSLocalizedString(@"Set FAT Image File...", nil) action:@selector(pickFlash) keyEquivalent:@""];
+	
 	[emulation release];
 
 	//Create the screens menu
@@ -432,11 +437,31 @@ void joinThread_gdb(void *thread_handle)
 	[panel setCanChooseFiles:YES];
 	[panel setAllowsMultipleSelection:NO];
 
+	[panel setTitle:NSLocalizedString(@"Open ROM...", nil)];
+
 	if([panel runModalForDirectory:nil file:nil types:[NSArray arrayWithObjects:@"NDS", @"DS.GBA", nil]] == NSOKButton)
 	{
 		NSString* selected_file = [[panel filenames] lastObject]; //hopefully also the first object
 
 		[self application:NSApp openFile:selected_file];
+	}
+}
+
+- (void)pickFlash
+{
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+ 
+	[panel setCanChooseDirectories:NO];
+	[panel setCanChooseFiles:YES];
+	[panel setAllowsMultipleSelection:NO];
+
+	[panel setTitle:NSLocalizedString(@"Set FAT Image File...", nil)];
+
+	if([panel runModalForDirectory:nil file:nil types:[NSArray arrayWithObjects:@"FAT", @"IMG", nil]] == NSOKButton)
+	{
+		NSString* selected_file = [[panel filenames] lastObject];
+
+		[main_window setFlashFile:selected_file];
 	}
 }
 

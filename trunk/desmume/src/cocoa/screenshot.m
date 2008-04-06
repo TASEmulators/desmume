@@ -179,7 +179,7 @@
 		//tell cocoa save the file
 		NSBitmapImageRep *image = [screen imageRep];
 		if(image == nil)
-			messageDialog(NSLocalizedString(@"Error", nil), "Couldn't create the screenshot image");
+			messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create the screenshot image");
 		else
 			[[image representationUsingType:type properties:[NSDictionary dictionary]]
 			writeToFile:[panel filename] atomically:NO];

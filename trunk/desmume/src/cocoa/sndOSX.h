@@ -26,7 +26,13 @@ extern SoundInterface_struct SNDOSX;
 
 //Beyond this point are sound interface extensions specific to the mac port
 
-//recording to file
+
+int SNDOSXReset();
+void SNDOSXMuteAudio();
+void SNDOSXUnMuteAudio();
+void SNDOSXSetVolume(int volume);
+
+//Recording
 bool SNDOSXOpenFile(void *fname);  //opens a file for recording (if filename is the currently opened one, it will restart the file), fname is an NSString
 void SNDOSXStartRecording();      //begins recording to the currently open file if there is an open file
 void SNDOSXStopRecording();       //pauses recording (you can continue recording later)

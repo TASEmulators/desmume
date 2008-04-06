@@ -241,7 +241,11 @@ void setAppDefaults()
 	//@"DeSmuME User", PREF_FIRMWARE_PLAYER_NAME,
 	//@"English", PREF_FIRMWARE_LANGUAGE,
 
+	//Flash file default
+	@"", PREF_FLASH_FILE,
+
 	nil];
+
 	[desmume_defaults retain];
 
 	//window size defaults
@@ -253,7 +257,6 @@ void setAppDefaults()
 	//[NSData dataWithBytes:&temp length:sizeof(NSRect)], @"DeSmuME Preferences Window", nil];
 
 	[[NSUserDefaults standardUserDefaults] registerDefaults:desmume_defaults];
-
 }
 
 //this is a hack - in the nib we connect preferences to this function name,
@@ -272,7 +275,7 @@ void setAppDefaults()
 		//----------------------------------------------------------------------------------------------
 
 		//get the applications main bundle
-		NSBundle* app_bundle = [NSBundle mainBundle];
+		//NSBundle* app_bundle = [NSBundle mainBundle];
 
 		//get a font for displaying text
 		preferences_font = [NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSRegularControlSize]];

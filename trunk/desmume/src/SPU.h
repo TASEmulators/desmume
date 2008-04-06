@@ -88,6 +88,7 @@ void SPU_KeyOn(int channel);
 void SPU_WriteByte(u32 addr, u8 val);
 void SPU_WriteWord(u32 addr, u16 val);
 void SPU_WriteLong(u32 addr, u32 val);
+u32 SPU_ReadLong(u32 addr);
 void SPU_Emulate(void);
 
 #endif

@@ -233,7 +233,7 @@ void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
 static u32 armcpu_prefetch(armcpu_t *armcpu);
 u32 armcpu_exec(armcpu_t *armcpu);
-//BOOL armcpu_irqExeption(armcpu_t *armcpu);
+BOOL armcpu_irqExeption(armcpu_t *armcpu);
 //BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
 BOOL
 armcpu_flagIrq( armcpu_t *armcpu);
