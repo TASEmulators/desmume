@@ -14,6 +14,7 @@
  - Added an optional status bar (resize handle no longer overlaps screen). [Jeff B]
  - New ROM Info and About DeSmuME windows have been added. [Jeff B]
  - Fixed several bugs in window resizing. [Jeff B]
+ - Added FAT image support for homebrew games (thanks to TypeError). [Jeff B]
  general:
  - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
  - Fixed a crash bug with 2D background corrupting memory [shash]

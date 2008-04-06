@@ -18,10 +18,12 @@
 */
 
 #import "nds_control.h"
+#import <OpenGL/OpenGL.h>
 
 //DeSmuME general includes
 #define OBJ_C
 #include "sndOSX.h"
+#include "preferences.h"
 #include "../NDSSystem.h"
 #include "../saves.h"
 #include "../render3D.h"
@@ -70,8 +72,20 @@ struct NDS_fw_config_data firmware;
 	frame_skip = -1; //default to auto frame skip
 	gui_thread = [NSThread currentThread];
 	current_file = nil;
+	flash_file = nil;
 	sound_lock = [[NSLock alloc] init];
 	current_screen = nil;
+	
+	//Set the flash file if it's in the prefs/cmd line.  It will be nil if it isn't.
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	flash_file = [[defaults stringForKey:PREF_FLASH_FILE] retain];
+	if ([flash_file length] > 0) {
+		NSLog(@"Using flash file: \"%@\"\n", flash_file);
+	} else {
+		[flash_file release];
+		flash_file = nil;
+		NSLog(@"No flash file given\n");
+	}
 	
 	//check if we can sen messages on other threads, which we will use for video update
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
@@ -181,6 +195,7 @@ struct NDS_fw_config_data firmware;
 	[context release];
 	[pixel_format release];
 	[current_file release];
+	[flash_file release];
 	[sound_lock release];
 
 	NDS_DeInit();
@@ -208,8 +223,15 @@ struct NDS_fw_config_data firmware;
 	BOOL was_paused = [self paused];
 	[self pause];
 
+	//get the flash file
+	const char *flash;
+	if (flash_file != nil)
+		flash = [flash_file UTF8String];
+	else
+		flash = NULL;
+	
 	//load the rom
-	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, "temp.sav") > 0)
+	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, flash) > 0)
 	{
 		//if it didn't work give an error and dont unpause
 		messageDialog(NSLocalizedString(@"Error", nil), @"Could not open file");
@@ -217,7 +239,7 @@ struct NDS_fw_config_data firmware;
 		//continue playing if load didn't work
 		if(was_paused == NO)[self execute];
 
-		return FALSE;
+		return NO;
 	}
 
 	//clear screen data
@@ -235,7 +257,7 @@ struct NDS_fw_config_data firmware;
 	//emulation core somehow
 	execute = true;
 
-	return true;
+	return YES;
 }
 
 - (BOOL)ROMLoaded
@@ -371,6 +393,18 @@ struct NDS_fw_config_data firmware;
 - (NSInteger)ROMDataSize
 {
 	return NDS_getROMHeader()->ARM7binSize + NDS_getROMHeader()->ARM7src;
+}
+
+- (NSString*)flashFile
+{
+	return flash_file;
+}
+
+- (void)setFlashFile:(NSString*)filename
+{
+	if (flash_file)
+		[flash_file release];
+	flash_file = [filename retain];
 }
 
 - (BOOL)executing

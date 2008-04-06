@@ -17,4 +17,6 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#define PREF_FLASH_FILE @"FlashFile"
+
 void setAppDefaults(); //this is defined in preferences.m and should be called at app launch

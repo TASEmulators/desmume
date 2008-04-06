@@ -36,6 +36,7 @@
 #define WRITE_FN _write
 #define READ_FN _read
 #else
+#include <unistd.h>
 #define OPEN_MODE O_RDWR
 
 #define OPEN_FN open
@@ -67,7 +68,7 @@ debug_output( const char *fmt, ...) {
 }
 #endif
 
-#if 0
+#if 1
 #ifdef WIN32
 #define LOCAL_LOG debug_output
 #else
@@ -483,12 +484,16 @@ cflash_init( const char *disk_image_filename) {
 
     if ( disk_image != -1) {
       file_size = LSEEK_FN( disk_image, 0, SEEK_END);
-      LSEEK_FN( disk_image, 0, SEEK_SET);
+	    if (0 && file_size == -1) {
+			LOCAL_LOG( "Error when seeking to end of disk image" );
+        } else {
+			LSEEK_FN( disk_image, 0, SEEK_SET);
 
-      LOCAL_LOG( "Disk image size = %d (%d sectors)\n",
+			LOCAL_LOG( "Disk image size = %d (%d sectors)\n",
                  file_size, file_size / 512);
-      init_good = TRUE;
-    }
+			init_good = TRUE;
+		}
+	}
     else {
       LOCAL_LOG("Failed to open file %s: \"%s\"\n",
                 disk_image_filename,
@@ -643,6 +648,7 @@ cflash_read(unsigned int address) {
                          BUFFERED_BLOCK_SIZE - read_bytes);
 
               if ( cur_read == -1) {
+				LOCAL_LOG( "Error during read: %s\n", strerror(errno) );
                 break;
               }
               read_bytes += cur_read;

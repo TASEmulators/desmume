@@ -19,6 +19,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "debug.h"
 #include "types.h"
 #include "mc.h"

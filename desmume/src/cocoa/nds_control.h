@@ -62,6 +62,7 @@
 	volatile int frame_skip;
 
 	NSString *current_file;
+	NSString *flash_file;
 
 	unsigned char gpu_buff[256 * 256 * 5]; //this is where the 3D rendering of the NDS is stored
 }
@@ -89,6 +90,10 @@
 - (NSInteger)ROMARM9Size;
 - (NSInteger)ROMARM7Size;
 - (NSInteger)ROMDataSize;
+
+//Flash memory
+- (NSString*)flashFile;
+- (void)setFlashFile:(NSString*)filename;
 
 //execution control
 - (BOOL)executing;

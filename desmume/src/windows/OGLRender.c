@@ -19,20 +19,21 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #ifndef DESMUME_COCOA
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <gl\gl.h>
-#include <math.h>
-#include <stdlib.h>
 #include "..\debug.h"
 #include "..\MMU.h"
 #include "..\bits.h"
 #include "..\matrix.h"
 
 #else
-
 
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -174,7 +175,7 @@ char NDS_glInit(void)
 	glClearColor	(0.0f, 0.0f, 0.0f, 0.0f);
 	glColor3f		(1.f, 1.f, 1.f);
 
-	glGenTextures (1, &oglTextureID);
+	glGenTextures (1, (GLuint*)&oglTextureID);
 
 	glViewport(0, 0, 256, 192);
 
@@ -485,13 +486,14 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 		unsigned int sizeY = (1<<(((format>>23)&0x7)+3));
 		unsigned int mode = (unsigned short)((format>>26)&0x7);
 		unsigned char * adr = (unsigned char *)(ARM9Mem.ARM9_LCD + ((format&0xFFFF)<<3));
-		unsigned short param = (unsigned short)((format>>30)&0xF);
-		unsigned short param2 = (unsigned short)((format>>16)&0xF);
+		//unsigned short param = (unsigned short)((format>>30)&0xF);
+		//unsigned short param2 = (unsigned short)((format>>16)&0xF);
 		unsigned int imageSize = sizeX*sizeY;
 		unsigned int paletteSize = 0;
 		unsigned int palZeroTransparent = (1-((format>>29)&1))*255; // shash: CONVERT THIS TO A TABLE :)
 		unsigned int x=0, y=0;
-		unsigned char * dst = texMAP, *src = NULL;
+		unsigned char * dst = texMAP;
+		//unsigned char *src = NULL;
 
 		if (mode == 0)
 			glDisable (GL_TEXTURE_2D);
@@ -841,7 +843,7 @@ static __inline void SetupTexture (unsigned int format, unsigned int palette)
 
 			case 2:
 			{
-				u32 *src = (u32*)texMAP, *dst = (u32*)texMAP2;
+				u32 *src = (u32*)texMAP;//, *dst = (u32*)texMAP2;
 
 				for (y = 0; y < sizeY; y++)
 				{
@@ -957,7 +959,7 @@ void NDS_glBegin(unsigned long v)
 		*/
 
 		colorRGB[3] = colorAlpha;
-		glColor4iv (colorRGB);
+		glColor4iv ((GLint*)colorRGB);
 	}
 	else
 	{
@@ -1003,7 +1005,7 @@ void NDS_glColor3b(unsigned long v)
 	colorRGB[0] =  (v&0x1F) << 26;
 	colorRGB[1] = ((v>>5)&0x1F) << 26;
 	colorRGB[2] = ((v>>10)&0x1F) << 26;
-	glColor4iv (colorRGB);
+	glColor4iv ((GLint*)colorRGB);
 }
 
 static __inline void  SetVertex()
@@ -1135,7 +1137,7 @@ void NDS_glFlush(unsigned long v)
 
 void NDS_glPolygonAttrib (unsigned long val)
 {
-	u32 polygonID = (val>>24)&63;
+	//u32 polygonID = (val>>24)&63;
 
 	// Light enable/disable
 	lightMask = (val&0xF);
@@ -1188,8 +1190,8 @@ void NDS_glMaterial0 (unsigned long val)
 		glEnd();
 	}
 
-	glMaterialiv (GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
-	glMaterialiv (GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+	glMaterialiv (GL_FRONT_AND_BACK, GL_AMBIENT, (GLint*)ambient);
+	glMaterialiv (GL_FRONT_AND_BACK, GL_DIFFUSE, (GLint*)diffuse);
 
 	if (beginCalled)
 	{
@@ -1213,8 +1215,8 @@ void NDS_glMaterial1 (unsigned long val)
 		glEnd();
 	}
 
-	glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, emission);
+	glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, (GLint*)specular);
+	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, (GLint*)emission);
 
 	if (beginCalled)
 	{
@@ -1317,9 +1319,9 @@ void NDS_glLightColor (unsigned long v)
 	if (beginCalled)
 		glEnd();
 
-	glLightiv(GL_LIGHT0 + index, GL_AMBIENT, lightColor);
-	glLightiv(GL_LIGHT0 + index, GL_DIFFUSE, lightColor);
-	glLightiv(GL_LIGHT0 + index, GL_SPECULAR, lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_AMBIENT, (GLint*)lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_DIFFUSE, (GLint*)lightColor);
+	glLightiv(GL_LIGHT0 + index, GL_SPECULAR, (GLint*)lightColor);
 
 	if (beginCalled)
 		glBegin (vtxFormat);
@@ -1383,7 +1385,7 @@ void NDS_glNormal(unsigned long v)
 
 void NDS_glCallList(unsigned long v)
 {
-	static unsigned long oldval = 0, shit = 0;
+	//static unsigned long oldval = 0, shit = 0;
 
 	if(!clInd)
 	{
@@ -1808,7 +1810,7 @@ void NDS_glCallList(unsigned long v)
 
 void NDS_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
 {
-	int n;
+	//int n;
 
 	if(index == -1)
 	{
