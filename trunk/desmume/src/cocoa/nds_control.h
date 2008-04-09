@@ -46,6 +46,7 @@
 	SEL error_func;
 	id error_object;
 	
+	NSLock *execution_lock;
 	NSLock *sound_lock;
 	
 	ScreenState * volatile current_screen;

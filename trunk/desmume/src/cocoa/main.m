@@ -184,8 +184,11 @@ void CreateMenu(AppDelegate *delegate)
 
 	for(i = 0; i < SAVE_SLOTS; i++)
 	{
-		saveSlot_item[i] = [save_state_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Slot %d", nil), i] action:@selector(saveToSlot:) keyEquivalent:@""];
-		loadSlot_item[i] = [load_state_menu addItemWithTitle:[saveSlot_item[i] title] action:@selector(loadFromSlot:) keyEquivalent:@""];
+		saveSlot_item[i] = [save_state_menu addItemWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Slot %d", nil), i+1] action:@selector(saveToSlot:) keyEquivalent:[NSString stringWithFormat:@"%d",  i<9?i+1:0]];
+		[saveSlot_item[i] setKeyEquivalentModifierMask:NSShiftKeyMask];
+
+		loadSlot_item[i] = [load_state_menu addItemWithTitle:[saveSlot_item[i] title] action:@selector(loadFromSlot:) keyEquivalent:[NSString stringWithFormat:@"%d", i<9?i+1:0]];
+		[loadSlot_item[i] setKeyEquivalentModifierMask:0];
 	}
 
 //fixme changed save state item function names

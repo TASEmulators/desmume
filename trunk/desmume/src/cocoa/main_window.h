@@ -77,7 +77,7 @@
 - (void)resizeScreen3x;
 - (void)resizeScreen4x;
 
-//converts window coords to DS coords
+//converts window coords to DS coords (returns -1, -1 if invalid)
 - (NSPoint)windowPointToDSCoords:(NSPoint)location;
 
 //

@@ -15,6 +15,8 @@
  - New ROM Info and About DeSmuME windows have been added. [Jeff B]
  - Fixed several bugs in window resizing. [Jeff B]
  - Added FAT image support for homebrew games (thanks to TypeError). [Jeff B]
+ - Key config can be changed on the command line. Save/load hotkeys changed (so expose doesn't override). [Jeff B]
+ - Key bindings may work better on non-US keyboards now (needs testing). [Jeff B]
  general:
  - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
  - Fixed a crash bug with 2D background corrupting memory [shash]

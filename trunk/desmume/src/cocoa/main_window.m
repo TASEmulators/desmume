@@ -392,6 +392,7 @@ NSMenuItem *screenshot_to_file_item;
 - (BOOL)loadStateFrom
 {
 	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setTitle:NSLocalizedString(@"Load State From...", nil)];
 	[panel setCanChooseFiles:YES];
 	[panel setCanChooseDirectories:NO];
 	[panel setAllowsMultipleSelection:NO];
@@ -533,31 +534,30 @@ NSMenuItem *screenshot_to_file_item;
 
 - (NSPoint)windowPointToDSCoords:(NSPoint)location
 {
-//FIXME way to return that point is outside of the window?
 	NSSize temp = [[window contentView] frame].size;
 	CGFloat x_size = temp.width - WINDOW_BORDER_PADDING*2;
 	CGFloat y_size = temp.height - status_bar_height;
 
 	//If the click was to the left or under the opengl view, exit
 	if((location.x < WINDOW_BORDER_PADDING) || (location.y < status_bar_height))
-		return NSMakePoint(0,0);
+		return NSMakePoint(-1, -1);
 		
 	location.x -= WINDOW_BORDER_PADDING;
 	location.y -= status_bar_height;
 
 	//If the click was top or right of the view...
-	if(location.x >= x_size)return NSMakePoint(0,0);
-	if(location.y >= y_size)return NSMakePoint(0,0);
+	if(location.x >= x_size)return NSMakePoint(-1, -1);
+	if(location.y >= y_size)return NSMakePoint(-1, -1);
 
 	if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
 	{
 		if([video_output_view rotation] == ROTATION_180)
 		{
-			if(location.y < y_size / 2)return NSMakePoint(0,0);
+			if(location.y < y_size / 2)return NSMakePoint(-1, -1);
 			location.x = x_size - location.x;
 			location.y = y_size - location.y;
 		} else
-			if(location.y >= y_size / 2)return NSMakePoint(0,0);
+			if(location.y >= y_size / 2)return NSMakePoint(-1, -1);
 
 		//scale the coordinates
 		location.x *= ((float)DS_SCREEN_WIDTH) / ((float)x_size);
@@ -571,12 +571,12 @@ NSMenuItem *screenshot_to_file_item;
 
 		if([video_output_view rotation] == ROTATION_270)
 		{
-			if(location.x < x_size / 2)return NSMakePoint(0,0);
+			if(location.x < x_size / 2)return NSMakePoint(-1, -1);
 			location.x = x_size - location.x;
 
 		} else
 		{
-			if(location.x >= x_size / 2)return NSMakePoint(0,0);
+			if(location.x >= x_size / 2)return NSMakePoint(-1, -1);
 			location.y = y_size - location.y;
 		}
 
