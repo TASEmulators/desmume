@@ -6,8 +6,8 @@
 
 1) Compiling instructions...................................13
 2) How to use DeSmuME.......................................31
-3) Contact information......................................76
-4) Disclaimer...............................................93
+3) Contact information......................................78
+4) Disclaimer...............................................95
 
 
 1 Compiling instructions______________________________________
@@ -59,12 +59,14 @@ n - Right Trigger
 enter - Start button
 space - Select button
 
-Shift + F1 (through F10) will save the state with the
-corresponding number. F1 (through F10) will load the state
-with the corresponding number.
+Keys can be customized with command line:
+DeSmuME.app/Contents/MacOS/DeSmuME -KeyA v -KeyB b ...
 
-NOTE: These key bindings may not be correct on foreign
-keyboards.
+KeyA, KeyB, KeyX, KeyY, KeyL, KeyR, KeyUp, KeyDown
+KeyLeft, KeyRight, KeyStart, and KeySelect are all accepted.
+
+States can be saved with shift + number keys.
+States can be loaded with the number keys.
 
 To set up a FAT disk image (for homebrew apps) you can use the 
 "Emulation > Set FAT Image File" option in the menu.  You can

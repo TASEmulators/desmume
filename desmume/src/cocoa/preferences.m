@@ -230,6 +230,12 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 	return view;
 }
 
+unsigned char utf8_return = 0x0D;
+unsigned char utf8_right[3] = { 0xEF, 0x9C, 0x83 };
+unsigned char utf8_up[3] = { 0xEF, 0x9C, 0x80 };
+unsigned char utf8_down[3] = { 0xEF, 0x9C, 0x81 };
+unsigned char utf8_left[3] = { 0xEF, 0x9C, 0x82 };
+
 void setAppDefaults()
 {
 	desmume_defaults = [NSDictionary dictionaryWithObjectsAndKeys:
@@ -243,7 +249,20 @@ void setAppDefaults()
 
 	//Flash file default
 	@"", PREF_FLASH_FILE,
-
+	
+	//Key defaults
+	@"v", PREF_KEY_A,
+	@"b", PREF_KEY_B,
+	@"g", PREF_KEY_X,
+	@"h", PREF_KEY_Y,
+	@"c", PREF_KEY_L,
+	@"n", PREF_KEY_R,
+	@" ", PREF_KEY_SELECT,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_up length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_UP,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_down length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_DOWN,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_left length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_LEFT,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_right length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_RIGHT,
+	[[[NSString alloc] initWithBytesNoCopy:&utf8_return length:1 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_START,
 	nil];
 
 	[desmume_defaults retain];

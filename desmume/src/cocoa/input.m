@@ -19,34 +19,7 @@
 
 #import "input.h"
 #import "main_window.h"
-
-//Default key config (based on the windows version)
-unsigned short ds_up     = 126; //up arrow
-unsigned short ds_down   = 125; //down arrow
-unsigned short ds_left   = 123; //left arrow
-unsigned short ds_right  = 124; //right arrrow
-unsigned short ds_a      = 9  ; //v
-unsigned short ds_b      = 11 ; //b
-unsigned short ds_x      = 5  ; //g
-unsigned short ds_y      = 4  ; //h
-unsigned short ds_l      = 8  ; //c
-unsigned short ds_r      = 45 ; //n
-unsigned short ds_select = 49 ; //space bar
-unsigned short ds_start  = 36 ; //enter
-
-//
-unsigned short save_slot_1  = 122; //F1
-unsigned short save_slot_2  = 120; //F2
-unsigned short save_slot_3  =  99; //F3
-unsigned short save_slot_4  = 118; //F4
-unsigned short save_slot_5  =  96; //F5
-unsigned short save_slot_6  =  97; //F6
-unsigned short save_slot_7  =  98; //F7
-unsigned short save_slot_8  = 100; //F8
-unsigned short save_slot_9  = 101; //F9
-unsigned short save_slot_10 = 109; //F10
-//unsigned short save_slot_11 = 103; //F11
-//unsigned short save_slot_12 = 111; //F12
+#import "preferences.h"
 
 @implementation InputHandler
 
@@ -70,125 +43,47 @@ unsigned short save_slot_10 = 109; //F10
 - (void)keyDown:(NSEvent*)event
 {
 	if([event isARepeat])return;
+	
+	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
+	NSString *chars = [event characters];
 
-	unsigned short keycode = [event keyCode];
-
-	if(keycode == ds_a)[my_ds pressA];
-	else if(keycode == ds_b)[my_ds pressB];
-	else if(keycode == ds_select)[my_ds pressSelect];
-	else if(keycode == ds_start)[my_ds pressStart];
-	else if(keycode == ds_right)[my_ds pressRight];
-	else if(keycode == ds_left)[my_ds pressLeft];
-	else if(keycode == ds_up)[my_ds pressUp];
-	else if(keycode == ds_down)[my_ds pressDown];
-	else if(keycode == ds_r)[my_ds pressR];
-	else if(keycode == ds_l)[my_ds pressL];
-	else if(keycode == ds_x)[my_ds pressX];
-	else if(keycode == ds_y)[my_ds pressY];
+	     if([chars rangeOfString:[settings stringForKey:PREF_KEY_A     ]].location!=NSNotFound)[my_ds pressA];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_B     ]].location!=NSNotFound)[my_ds pressB];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_SELECT]].location!=NSNotFound)[my_ds pressSelect];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_START ]].location!=NSNotFound)[my_ds pressStart];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_RIGHT ]].location!=NSNotFound)[my_ds pressRight];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_LEFT  ]].location!=NSNotFound)[my_ds pressLeft];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_UP    ]].location!=NSNotFound)[my_ds pressUp];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_DOWN  ]].location!=NSNotFound)[my_ds pressDown];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_R     ]].location!=NSNotFound)[my_ds pressR];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_L     ]].location!=NSNotFound)[my_ds pressL];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_X     ]].location!=NSNotFound)[my_ds pressX];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_Y     ]].location!=NSNotFound)[my_ds pressY];
 }
 
 - (void)keyUp:(NSEvent*)event
 {
-	unsigned short keycode = [event keyCode];
+	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
+	NSString *chars = [event characters];
 
-	if(keycode == ds_a)[my_ds liftA];
-	else if(keycode == ds_b)[my_ds liftB];
-	else if(keycode == ds_select)[my_ds liftSelect];
-	else if(keycode == ds_start)[my_ds liftStart];
-	else if(keycode == ds_right)[my_ds liftRight];
-	else if(keycode == ds_left)[my_ds liftLeft];
-	else if(keycode == ds_up)[my_ds liftUp];
-	else if(keycode == ds_down)[my_ds liftDown];
-	else if(keycode == ds_r)[my_ds liftR];
-	else if(keycode == ds_l)[my_ds liftL];
-	else if(keycode == ds_x)[my_ds liftX];
-	else if(keycode == ds_y)[my_ds liftY];
-/*
-	else if(keycode == save_slot_1)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(1);
-		else
-			loadstate_slot(1);
-	}
-
-	else if(keycode == save_slot_2)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(2);
-		else
-			loadstate_slot(2);
-	}
-
-	else if(keycode == save_slot_3)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(3);
-		else
-			loadstate_slot(3);
-	}
-
-	else if(keycode == save_slot_4)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(4);
-		else
-			loadstate_slot(4);
-	}
-
-	else if(keycode == save_slot_5)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(5);
-		else
-			loadstate_slot(5);
-	}
-
-	else if(keycode == save_slot_6)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(6);
-		else
-			loadstate_slot(6);
-	}
-
-	else if(keycode == save_slot_7)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(7);
-		else
-			loadstate_slot(7);
-	}
-
-	else if(keycode == save_slot_8)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(8);
-		else
-			loadstate_slot(8);
-	}
-
-	else if(keycode == save_slot_9)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(9);
-		else
-			loadstate_slot(9);
-	}
-
-	else if(keycode == save_slot_10)
-	{
-		if([event modifierFlags] & NSShiftKeyMask)
-			savestate_slot(10);
-		else
-			loadstate_slot(10);
-	}
-*/
+	     if([chars rangeOfString:[settings stringForKey:PREF_KEY_A     ]].location!=NSNotFound)[my_ds liftA];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_B     ]].location!=NSNotFound)[my_ds liftB];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_SELECT]].location!=NSNotFound)[my_ds liftSelect];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_START ]].location!=NSNotFound)[my_ds liftStart];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_RIGHT ]].location!=NSNotFound)[my_ds liftRight];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_LEFT  ]].location!=NSNotFound)[my_ds liftLeft];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_UP    ]].location!=NSNotFound)[my_ds liftUp];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_DOWN  ]].location!=NSNotFound)[my_ds liftDown];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_R     ]].location!=NSNotFound)[my_ds liftR];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_L     ]].location!=NSNotFound)[my_ds liftL];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_X     ]].location!=NSNotFound)[my_ds liftX];
+	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_Y     ]].location!=NSNotFound)[my_ds liftY];
 }
 
 - (void)mouseDown:(NSEvent*)event
 {
-	[my_ds touch:[my_ds windowPointToDSCoords:[event locationInWindow]]];
+	NSPoint temp = [my_ds windowPointToDSCoords:[event locationInWindow]];
+	if(temp.x >= 0 && temp.y>=0)[my_ds touch:temp];
 }
 
 - (void)mouseDragged:(NSEvent*)event

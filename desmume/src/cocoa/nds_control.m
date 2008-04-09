@@ -73,6 +73,7 @@ struct NDS_fw_config_data firmware;
 	gui_thread = [NSThread currentThread];
 	current_file = nil;
 	flash_file = nil;
+	execution_lock = [[NSLock alloc] init];
 	sound_lock = [[NSLock alloc] init];
 	current_screen = nil;
 	
@@ -197,6 +198,7 @@ struct NDS_fw_config_data firmware;
 	[current_file release];
 	[flash_file release];
 	[sound_lock release];
+	[execution_lock release];
 
 	NDS_DeInit();
 
@@ -432,22 +434,15 @@ struct NDS_fw_config_data firmware;
 
 - (void)reset
 {
-	//stop execution
-	BOOL old_run = run;
-	run = false;
-	while (!paused)
-	{
+	[execution_lock lock];
 
-	}
+	NDS_Reset();
+
+	[execution_lock unlock];
 
 	//set the execute variable incase
 	//of a previous emulation error
 	execute = true;
-
-	NDS_Reset();
-
-	//resume execution
-	run = old_run;
 }
 
 - (void)setFrameSkip:(int)frameskip
@@ -697,28 +692,26 @@ struct NDS_fw_config_data firmware;
 
 - (BOOL)saveState:(NSString*)file
 {
-	bool was_executing = !paused;
-	[self pause];
+	[execution_lock lock];
 
 	BOOL result = NO;
 	if(savestate_save([file cStringUsingEncoding:NSASCIIStringEncoding]))
 		result = YES;
 
-	if(was_executing)[self execute];
+	[execution_lock unlock];
 
 	return result;
 }
 
 - (BOOL)loadState:(NSString*)file
 {
-	bool was_executing = !paused;
-	[self pause];
+	[execution_lock lock];
 
 	BOOL result = NO;
 	if(savestate_load([file cStringUsingEncoding:NSASCIIStringEncoding]))
 		result = YES;
 
-	if(was_executing)[self execute];
+	[execution_lock unlock];
 
 	return result;
 }
@@ -728,15 +721,14 @@ struct NDS_fw_config_data firmware;
 	if(slot >= MAX_SLOTS)return NO;
 	if(slot < 0)return NO;
 
-	bool was_executing = !paused;
-	[self pause];
+	[execution_lock lock];
 
 	BOOL result = NO;
 
 	savestate_slot(slot + 1);//no execption handling?
 	result = YES;
 
-	if(was_executing)[self execute];
+	[execution_lock unlock];
 
 	return result;
 }
@@ -746,15 +738,14 @@ struct NDS_fw_config_data firmware;
 	if(slot >= MAX_SLOTS)return NO;
 	if(slot < 0)return NO;
 
-	bool was_executing = !paused;
-	[self pause];
-
 	BOOL result = NO;
+
+	[execution_lock lock];
 
 	loadstate_slot(slot + 1); //no exection handling?
 	result = YES;
 
-	if(was_executing)[self execute];
+	[execution_lock unlock];
 
 	return result;
 }
@@ -983,11 +974,15 @@ struct NDS_fw_config_data firmware;
 
 			Microseconds((struct UnsignedWide*)&frame_start_time);
 
+			[execution_lock lock];
+			
 			cycles = NDS_exec((560190<<1)-cycles, FALSE);
 
 			[sound_lock lock];
 			SPU_Emulate();
 			[sound_lock unlock];
+			
+			[execution_lock unlock];
 
 			if(frames_to_skip > 0)
 				frames_to_skip--;
@@ -1004,6 +999,7 @@ struct NDS_fw_config_data firmware;
 					//how much longer the frame took than it should have, then set it to skip
 					//that many frames.
 					frames_to_skip = ((double)(frame_end_time - frame_start_time)) / ((double)DS_MICROSECONDS_PER_FRAME);
+					if(frames_to_skip > 10)frames_to_skip = 10;
 
 				} else
 				{

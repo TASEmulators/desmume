@@ -636,7 +636,7 @@ cflash_read(unsigned int address) {
       if ( use_disk_image_file) {
         if ( disk_image != -1) {
           u8 data[2];
-#if 1
+#if 0
           if ( currLBA < buffered_start_index ||
                currLBA >= (buffered_start_index + BUFFERED_BLOCK_SIZE)) {
             size_t read_bytes = 0;
