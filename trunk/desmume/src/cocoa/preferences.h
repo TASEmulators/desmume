@@ -17,6 +17,7 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#define PREF_EXECUTE_UPON_LOAD @"Execute Upon Load"
 #define PREF_FLASH_FILE @"FlashFile"
 #define PREF_KEY_A @"KeyA"
 #define PREF_KEY_B @"KeyB"
