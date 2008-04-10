@@ -30,23 +30,66 @@ finds the settings from before. Also theres no guarantee that localized
 strings will be unique.
 */
 
-
-#define PREF_EXECUTE_UPON_LOAD @"Execute Upon Load"
+#define INTERFACE_INTERNAL_NAME @"Interface"
+#define CONTROLS_INTERNAL_NAME @"Controls"
+#define FIRMWARE_INTERNAL_NAME @"Firmware"
 
 ///////////////////////////////
-
-NSWindow *preferences_window = NULL;
 
 NSFont *preferences_font;
 NSDictionary *preferences_font_attribs;
 
-NSTabViewItem *interface_pane_tab;
-NSTabViewItem *firmware_pane_tab;
-
-NSText *language_selection_text;
-NSPopUpButton *language_selection;
-
 NSDictionary *desmume_defaults;
+
+///////////////////////////////
+
+unsigned char utf8_return = 0x0D;
+unsigned char utf8_right[3] = { 0xEF, 0x9C, 0x83 };
+unsigned char utf8_up[3] = { 0xEF, 0x9C, 0x80 };
+unsigned char utf8_down[3] = { 0xEF, 0x9C, 0x81 };
+unsigned char utf8_left[3] = { 0xEF, 0x9C, 0x82 };
+
+void setAppDefaults()
+{
+	desmume_defaults = [NSDictionary dictionaryWithObjectsAndKeys:
+
+	//Interface defaults
+	@"Yes", PREF_EXECUTE_UPON_LOAD,
+
+	//Firmware defaults
+	//@"DeSmuME User", PREF_FIRMWARE_PLAYER_NAME,
+	//@"English", PREF_FIRMWARE_LANGUAGE,
+
+	//Flash file default
+	@"", PREF_FLASH_FILE,
+	
+	//Key defaults
+	@"v", PREF_KEY_A,
+	@"b", PREF_KEY_B,
+	@"g", PREF_KEY_X,
+	@"h", PREF_KEY_Y,
+	@"c", PREF_KEY_L,
+	@"n", PREF_KEY_R,
+	@" ", PREF_KEY_SELECT,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_up length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_UP,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_down length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_DOWN,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_left length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_LEFT,
+	[[[NSString alloc] initWithBytesNoCopy:utf8_right length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_RIGHT,
+	[[[NSString alloc] initWithBytesNoCopy:&utf8_return length:1 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_START,
+	nil];
+
+	[desmume_defaults retain];
+
+	//window size defaults
+	NSRect temp;
+	temp.origin.x = 600;
+	temp.origin.y = 600;
+	temp.size.width = 500;
+	temp.size.height = 600;
+	//[NSData dataWithBytes:&temp length:sizeof(NSRect)], @"DeSmuME Preferences Window", nil];
+
+	[[NSUserDefaults standardUserDefaults] registerDefaults:desmume_defaults];
+}
 
 ///////////////////////////////
 
@@ -57,9 +100,6 @@ NSDictionary *desmume_defaults;
 @implementation PreferencesDelegate
 - (void)windowWillClose:(NSNotification*)aNotification
 {
-	//[preferences_window saveFrameUsingName:@"DeSmuME Preferences Window"];
-	//[preferences_window setFrameAutosaveName:@"DeSmuME Preferences Window"];
-
 	[NSApp stopModal];
 
 	[[NSUserDefaults standardUserDefaults] synchronize];
@@ -70,7 +110,6 @@ NSDictionary *desmume_defaults;
 	//NSText *text_field = [notification object];
 	//NSString *text = [text_field string];
 
-
 }
 
 - (void)executeUponLoad:(id)sender
@@ -79,39 +118,144 @@ NSDictionary *desmume_defaults;
 
 	[[NSUserDefaults standardUserDefaults] setBool:value forKey:PREF_EXECUTE_UPON_LOAD];
 }
-/*
-- (void)numRecentItems:(id)sender
+@end
+
+////////////////////////////////////////////////////
+
+@interface ToolbarDelegate : NSObject
 {
-	NSString *value = @"invalid";
+	NSTabView *tab_view;
+	NSToolbarItem *interface;
+	NSToolbarItem *controls;
+	NSToolbarItem *ds_firmware;
+}
+- (id)initWithTabView:(NSTabView*)tabview;
+- (void)dealloc;
+- (NSToolbarItem*)toolbar:(NSToolbar*)toolbar itemForItemIdentifier:(NSString*)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag;
+- (NSArray*)toolbarAllowedItemIdentifiers:(NSToolbar*)toolbar;
+- (NSArray*)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar;
+- (NSArray*)toolbarSelectableItemIdentifiers:(NSToolbar*)toolbar;
+@end
 
-	if([sender indexOfSelectedItem] == 0)
-		value = @"5";
-	if([sender indexOfSelectedItem] == 1)
-		value = @"10";
-	if([sender indexOfSelectedItem] == 2)
-		value = @"15";
+@implementation ToolbarDelegate
+- (id)init
+{
+	//make sure we go through through the designated init function
+	[self doesNotRecognizeSelector:_cmd];
+	return nil;
+}
 
-	[[NSUserDefaults standardUserDefaults] setObject:value forKey:PREF_NUM_RECENT_ITEMS];
-}*/
+- (id)initWithTabView:(NSTabView*)tabview
+{
+	self = [super init];
+	if(self == nil)return nil;
+	
+	tab_view = tabview;
+	[tab_view retain];
+	
+	interface = controls = ds_firmware = nil;
+	
+	return self;
+}
+
+- (void)dealloc
+{
+	[interface release];
+	[controls release];
+	[ds_firmware release];
+	[tab_view release];
+	[super dealloc];
+}
+
+- (NSToolbarItem*)toolbar:(NSToolbar*)toolbar itemForItemIdentifier:(NSString*)itemIdentifier willBeInsertedIntoToolbar:(BOOL)flag
+{
+	NSToolbarItem *result;
+	
+	if([itemIdentifier compare:INTERFACE_INTERNAL_NAME] == NSOrderedSame)
+	{
+	
+		if(interface == nil)
+		{
+			interface = [[NSToolbarItem alloc] initWithItemIdentifier:INTERFACE_INTERNAL_NAME];
+			[interface  setImage:[NSApp applicationIconImage]];
+			[interface setLabel:NSLocalizedString(@"Interface", nil)];
+			[interface setTarget:self];
+			[interface setAction:@selector(toolbarItemClicked:)];
+		}
+		
+		result = interface;
+	} else if([itemIdentifier compare:CONTROLS_INTERNAL_NAME] == NSOrderedSame)
+	{
+
+		if(controls == nil)
+		{
+			controls = [[NSToolbarItem alloc] initWithItemIdentifier:CONTROLS_INTERNAL_NAME];
+			[controls  setImage:[NSApp applicationIconImage]];
+			[controls setLabel:NSLocalizedString(@"Controls", nil)];
+			[controls setTarget:self];
+			[controls setAction:@selector(toolbarItemClicked:)];
+		}
+		
+		result = controls;
+	} else if([itemIdentifier compare:FIRMWARE_INTERNAL_NAME] == NSOrderedSame)
+	{
+
+		if(ds_firmware == nil)
+		{
+			ds_firmware = [[NSToolbarItem alloc] initWithItemIdentifier:FIRMWARE_INTERNAL_NAME];
+			[ds_firmware  setImage:[NSApp applicationIconImage]];
+			[ds_firmware setLabel:NSLocalizedString(@"DS Firmware", nil)];
+			[ds_firmware setTarget:self];
+			[ds_firmware setAction:@selector(toolbarItemClicked:)];
+		}
+		
+		result = ds_firmware;
+	}
+	
+	else result = nil;
+	
+	return result;
+}
+
+- (NSArray*)toolbarAllowedItemIdentifiers:(NSToolbar*)toolbar
+{
+	return [NSArray arrayWithObjects:INTERFACE_INTERNAL_NAME, CONTROLS_INTERNAL_NAME, FIRMWARE_INTERNAL_NAME, nil];
+}
+
+- (NSArray*)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar
+{
+	return [NSArray arrayWithObjects:INTERFACE_INTERNAL_NAME, /*CONTROLS_INTERNAL_NAME, FIRMWARE_INTERNAL_NAME, */nil];
+}
+
+- (NSArray*)toolbarSelectableItemIdentifiers:(NSToolbar*)toolbar
+{
+	return [NSArray arrayWithObjects:INTERFACE_INTERNAL_NAME, CONTROLS_INTERNAL_NAME, FIRMWARE_INTERNAL_NAME, nil];
+}
+
+- (void)toolbarItemClicked:(id)sender
+{
+	[tab_view selectTabViewItemWithIdentifier:[sender itemIdentifier]];
+}
 
 @end
 
 ////////////////////////////////////////////////////
+
 
 @implementation NSApplication(custom_extensions)
 
 NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id delegate)
 {
 	//create the view
-	NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0,0,400-10,300-10)];
+	NSView *view = [[NSView alloc] initWithFrame:[[tab tabView] contentRect]];
 	[tab setView:view];
 
 	//loop through each option in the options list
 	NSEnumerator *key_enumerator = [options keyEnumerator];
 	NSEnumerator *object_enumerator = [options objectEnumerator];
 	id key, key_raw, object;
-	NSRect text_rect = NSMakeRect(0, 230, 255, 29);
-	NSRect button_rect = NSMakeRect(230, 230, 130, 26);
+	NSRect text_rect = NSMakeRect(0, [view frame].size.height, 255, 29);
+	NSRect button_rect = NSMakeRect(230, [view frame].size.height, 130, 26);
 	while ((key_raw = [key_enumerator nextObject]))
 	{
 		object = [object_enumerator nextObject];
@@ -226,56 +370,9 @@ NSView *createPreferencesView(NSTabViewItem *tab, NSDictionary *options, id dele
 
 	//set the view
 	[tab setView:view];
+	[view release];
 
 	return view;
-}
-
-unsigned char utf8_return = 0x0D;
-unsigned char utf8_right[3] = { 0xEF, 0x9C, 0x83 };
-unsigned char utf8_up[3] = { 0xEF, 0x9C, 0x80 };
-unsigned char utf8_down[3] = { 0xEF, 0x9C, 0x81 };
-unsigned char utf8_left[3] = { 0xEF, 0x9C, 0x82 };
-
-void setAppDefaults()
-{
-	desmume_defaults = [NSDictionary dictionaryWithObjectsAndKeys:
-
-	//Interface defaults
-	@"Yes", PREF_EXECUTE_UPON_LOAD,
-
-	//Firmware defaults
-	//@"DeSmuME User", PREF_FIRMWARE_PLAYER_NAME,
-	//@"English", PREF_FIRMWARE_LANGUAGE,
-
-	//Flash file default
-	@"", PREF_FLASH_FILE,
-	
-	//Key defaults
-	@"v", PREF_KEY_A,
-	@"b", PREF_KEY_B,
-	@"g", PREF_KEY_X,
-	@"h", PREF_KEY_Y,
-	@"c", PREF_KEY_L,
-	@"n", PREF_KEY_R,
-	@" ", PREF_KEY_SELECT,
-	[[[NSString alloc] initWithBytesNoCopy:utf8_up length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_UP,
-	[[[NSString alloc] initWithBytesNoCopy:utf8_down length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_DOWN,
-	[[[NSString alloc] initWithBytesNoCopy:utf8_left length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_LEFT,
-	[[[NSString alloc] initWithBytesNoCopy:utf8_right length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_RIGHT,
-	[[[NSString alloc] initWithBytesNoCopy:&utf8_return length:1 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease], PREF_KEY_START,
-	nil];
-
-	[desmume_defaults retain];
-
-	//window size defaults
-	NSRect temp;
-	temp.origin.x = 600;
-	temp.origin.y = 600;
-	temp.size.width = 500;
-	temp.size.height = 600;
-	//[NSData dataWithBytes:&temp length:sizeof(NSRect)], @"DeSmuME Preferences Window", nil];
-
-	[[NSUserDefaults standardUserDefaults] registerDefaults:desmume_defaults];
 }
 
 //this is a hack - in the nib we connect preferences to this function name,
@@ -284,93 +381,86 @@ void setAppDefaults()
 //Incase you were wondering, I actually have no idea what I'm doing.
 - (void)orderFrontDataLinkPanel:(id)sender //<- Preferences Display Function
 {
+	//----------------------------------------------------------------------------------------------
 
-	//bool was_paused = paused;
-	//[NDS pause]; fixme
+	//get the applications main bundle
+	//NSBundle* app_bundle = [NSBundle mainBundle];
 
-	if(!preferences_window)
-	{
+	//get a font for displaying text
+	preferences_font = [NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSRegularControlSize]];
 
-		//----------------------------------------------------------------------------------------------
+	preferences_font_attribs = [NSDictionary dictionaryWithObjectsAndKeys:preferences_font, NSFontAttributeName, nil];
 
-		//get the applications main bundle
-		//NSBundle* app_bundle = [NSBundle mainBundle];
+	//create our delegate
+	PreferencesDelegate *delegate = [[PreferencesDelegate alloc] init];
 
-		//get a font for displaying text
-		preferences_font = [NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:NSRegularControlSize]];
+	//Create the window ------------------------------------------------------------------------------
 
-		preferences_font_attribs = [NSDictionary dictionaryWithObjectsAndKeys:preferences_font, NSFontAttributeName, nil];
+	//create a preferences window
+	NSRect rect;
+	rect.size.width = 365;
+	rect.size.height = 300;
+	rect.origin.x = 200;
+	rect.origin.y = 200;
+	NSWindow *preferences_window = [[NSWindow alloc] initWithContentRect:rect styleMask:
+	NSTitledWindowMask|NSClosableWindowMask backing:NSBackingStoreBuffered defer:NO screen:nil];
+	[preferences_window setTitle:NSLocalizedString(@"DeSmuME Preferences", nil)];
+	[preferences_window setDelegate:delegate];
+	[preferences_window setFrameAutosaveName:@"DeSmuME Preferences Window"];
 
-		//create our delegate
-		PreferencesDelegate *delegate = [[PreferencesDelegate alloc] init];
+	//create a tab view
+	NSTabView *tab_view = [[NSTabView alloc] initWithFrame:NSMakeRect(0,0,1,1)];
+	[tab_view setTabViewType:NSNoTabsNoBorder];
+	[preferences_window setContentView:tab_view];
 
-		//Create the window ------------------------------------------------------------------------------
+	//Create the "Interface" pane
+	NSTabViewItem *interface_tab = [[NSTabViewItem alloc] initWithIdentifier:INTERFACE_INTERNAL_NAME];
+	[tab_view addTabViewItem:interface_tab];
+	
+	//Create interface view
+	NSDictionary *interface_options = [NSDictionary dictionaryWithObjectsAndKeys:
 
-		//create a preferences window
-		NSRect rect;
-		rect.size.width = 400;
-		rect.size.height = 300;
-		rect.origin.x = 200;
-		rect.origin.y = 200;
-		preferences_window = [[NSWindow alloc] initWithContentRect:rect styleMask:
-		NSTitledWindowMask|NSClosableWindowMask backing:NSBackingStoreBuffered defer:NO screen:nil];
+	[NSArray arrayWithObjects:@"Bool", [NSData dataWithBytes:&@selector(executeUponLoad:) length:sizeof(SEL)], @"Yes", @"No",nil]
+	, PREF_EXECUTE_UPON_LOAD, nil];
 
-		//set the window title
-		[preferences_window setTitle:NSLocalizedString(@"DeSmuME Preferences", nil)];
+	createPreferencesView(interface_tab, interface_options, delegate);
 
-		//set the window delegate
-		[preferences_window setDelegate:delegate];
+	[interface_tab release];
 
-		//create a tab view
-		rect.size.width = 400 - 10;
-		rect.size.height = 300 - 10;
-		rect.origin.x = 5;
-		rect.origin.y = 5;
-		NSTabView *tab_view = [[NSTabView alloc] initWithFrame:rect];
-		[[preferences_window contentView] addSubview:tab_view];
+	//Create the "Controls" pane
+	NSTabViewItem *controls_tab = [[NSTabViewItem alloc] initWithIdentifier:CONTROLS_INTERNAL_NAME];
+	[tab_view addTabViewItem:controls_tab];
+	[controls_tab release];
+	
+	//Create the "DS Firmware" pane
+	NSTabViewItem *ds_firmware_tab = [[NSTabViewItem alloc] initWithIdentifier:FIRMWARE_INTERNAL_NAME];
+	[tab_view addTabViewItem:ds_firmware_tab];
+	[ds_firmware_tab release];
+	
+	//create the toolbar
+	NSToolbar *toolbar =[[NSToolbar alloc] initWithIdentifier:@"DeSmuMe Preferences"];
 
-		//Create the "Interface" pane
-		interface_pane_tab = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[interface_pane_tab setLabel:NSLocalizedString(@"Interface", nil)];
-		[tab_view addTabViewItem:interface_pane_tab];
+	ToolbarDelegate *toolbar_delegate = [[ToolbarDelegate alloc] initWithTabView:tab_view];
+	[toolbar setDelegate:toolbar_delegate];
+	
+	[toolbar setSelectedItemIdentifier:INTERFACE_INTERNAL_NAME];
 
-		//Create interface view
-		NSDictionary *interface_options = [NSDictionary dictionaryWithObjectsAndKeys:
-
-		[NSArray arrayWithObjects:@"Bool", [NSData dataWithBytes:&@selector(executeUponLoad:) length:sizeof(SEL)], @"Yes", @"No",nil]
-		, PREF_EXECUTE_UPON_LOAD, nil];
-
-		/*NSView *interface_view = */createPreferencesView(interface_pane_tab, interface_options, delegate);
-/*
-		//Create the firmware pane
-		firmware_pane_tab = [[NSTabViewItem alloc] initWithIdentifier:nil];
-		[firmware_pane_tab setLabel:NSLocalizedString(@"DS Firmware", nil)];
-		[tab_view addTabViewItem:firmware_pane_tab];
-
-		NSDictionary *firmware_options = [NSDictionary dictionaryWithObjectsAndKeys:
-		//[NSAsrray arrayWithObjects:@"Text", [NSData dataWithBytes:&@selector(playerName:) length:sizeof(SEL)], nil], PREF_FIRMWARE_PLAYER_NAME,
-		//[NSArray arrayWithObjects:@"Array", [NSData dataWithBytes:&@selector(nonexisant:) length:sizeof(SEL)], @"Japanese",@"English",@"French",@"German",@"Italian",@"Spanish",nil], PREF_FIRMWARE_LANGUAGE,
-		nil];
-
-		NSView *firmware_view = createPreferencesView(firmware_pane_tab, firmware_options, delegate);
-*/
-	}
-
-	//make the window controller
-	NSWindowController *wc = [[NSWindowController alloc] initWithWindow:preferences_window];
-	[wc setShouldCascadeWindows:NO];
-
-	//tell it to store/retrieve window frame from/to previous/later sessions
-	//[preferences_window setFrameUsingName:@"DeSmuME Preferences Window" force:YES];
-	//[preferences_window setFrameAutosaveName:@"DeSmuME Preferences Window"];
-	//messageDialog([preferences_window frameAutosaveName],@"");
+	[preferences_window setToolbar:toolbar];
+	[toolbar release];
+	
+	[tab_view release];
 
 	//show the window
+	NSWindowController *wc = [[NSWindowController alloc] initWithWindow:preferences_window];
+	[wc setShouldCascadeWindows:NO];
 	[wc showWindow:nil];
+	[wc release];
 
-
+	//run the preferences
 	[NSApp runModalForWindow:preferences_window];
 
-	//if(!was_paused)[NDS execute]; fixme
+	//
+	[toolbar_delegate release];
+	[preferences_window release];
 }
 @end

@@ -26,6 +26,7 @@
 #import "video_output_view.h"
 #import "input.h"
 #import "rom_info.h"
+#import "preferences.h"
 
 //How much padding to put around the video output
 #define WINDOW_BORDER_PADDING 5
@@ -201,7 +202,7 @@ NSMenuItem *screenshot_to_file_item;
 	} else
 	{
 		//if it worked, check the execute upon load option
-		if([[NSUserDefaults standardUserDefaults] boolForKey:@"Execute Upon Load"])
+		if([[NSUserDefaults standardUserDefaults] boolForKey:PREF_EXECUTE_UPON_LOAD])
 			[self execute];
 		else
 		{
