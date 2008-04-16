@@ -272,10 +272,10 @@ void NDS_glClDepth()
 
 void NDS_glClearDepth(unsigned long v)
 {
+	u32 depth24b;
+
 	if(beginCalled)
 		glEnd();
-
-	u32 depth24b;
 
 	v		&= 0x7FFFF;
 	depth24b = (v*0x200)+((v+1)/0x8000);
