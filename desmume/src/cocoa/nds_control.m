@@ -66,7 +66,7 @@ struct NDS_fw_config_data firmware;
 	//
 	self = [super init];
 	if(self == nil)return nil;
-	
+
 	display_object = nil;
 	error_object = nil;
 	frame_skip = -1; //default to auto frame skip
@@ -76,7 +76,7 @@ struct NDS_fw_config_data firmware;
 	execution_lock = [[NSLock alloc] init];
 	sound_lock = [[NSLock alloc] init];
 	current_screen = nil;
-	
+
 	//Set the flash file if it's in the prefs/cmd line.  It will be nil if it isn't.
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	flash_file = [[defaults stringForKey:PREF_FLASH_FILE] retain];
@@ -87,7 +87,7 @@ struct NDS_fw_config_data firmware;
 		flash_file = nil;
 		NSLog(@"No flash file given\n");
 	}
-	
+
 	//check if we can sen messages on other threads, which we will use for video update
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
 
@@ -141,7 +141,7 @@ struct NDS_fw_config_data firmware;
 		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize sound core");
 	else
 		SPU_SetVolume(100);
-	
+
 	volume = 100;
 	muted = false;
 
@@ -151,7 +151,7 @@ struct NDS_fw_config_data firmware;
 	run = false;
 	paused = false;
 	[NSThread detachNewThreadSelector:@selector(run:) toTarget:self withObject:context];
-	
+
 	//Start a timer to update the screen
 	if(timer_based)
 	{
@@ -231,7 +231,7 @@ struct NDS_fw_config_data firmware;
 		flash = [flash_file UTF8String];
 	else
 		flash = NULL;
-	
+
 	//load the rom
 	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, flash) > 0)
 	{
@@ -250,7 +250,7 @@ struct NDS_fw_config_data firmware;
 		[current_screen release];
 		current_screen = nil;
 	}
-	
+
 	//set local vars
 	current_file = filename;
 	[current_file retain];
@@ -270,7 +270,7 @@ struct NDS_fw_config_data firmware;
 - (void)closeROM
 {
 	[self pause];
-	
+
 	if(current_screen != nil)
 	{
 		[current_screen release];
@@ -468,224 +468,392 @@ struct NDS_fw_config_data firmware;
 
 - (void)pressStart
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFF7;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFF7;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xF7FF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xF7FF;
+#endif
 }
 
 - (void)liftStart
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x8;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x8;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0008;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0008;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0800;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0800;
+#endif
 }
 
 - (BOOL)start
 {
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x8) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0008) == 0)
+#else
+	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0800) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressSelect
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFB;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFB;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFBFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFBFF;
+#endif
 }
 
 - (void)liftSelect
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x4;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x4;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0004;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0004;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0400;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0400;
+#endif
 }
 
 - (BOOL)select
 {
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x4) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0004) == 0)
+#else
+	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0400) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressLeft
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFDF;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFDF;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xDFFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xDFFF;
+#endif
 }
 
 - (void)liftLeft
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x20;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x20;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0020;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0020;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x2000;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x2000;
+#endif
 }
 
 - (BOOL)left
 {
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x20) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0020) == 0)
+#else
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x2000) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressRight
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFEF;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFEF;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xEFFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xEFFF;
+#endif
 }
 
 - (void)liftRight
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x10;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x10;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0010;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0010;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x1000;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x1000;
+#endif
 }
 
 - (BOOL)right
 {
-	if((((u16*)ARM9Mem.ARM9_REG)[0x130>>1] & 0x10) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16*)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0010) == 0)
+#else
+	if((((u16*)ARM9Mem.ARM9_REG)[0x130>>1] & 0x1000) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressUp
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFBF;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFBF;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xBFFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xBFFF;
+#endif
 }
 
 - (void)liftUp
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x40;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x40;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0040;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0040;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x4000;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x4000;
+#endif
 }
 
 - (BOOL)up
 {
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x40) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0040) == 0)
+#else
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x4000) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressDown
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFF7F;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFF7F;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0x7FFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0x7FFF;
+#endif
 }
 
 - (void)liftDown
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x80;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x80;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0080;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0080;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x8000;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x8000;
+#endif
 }
 
 - (BOOL)down
 {
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x80) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0080) == 0)
+#else
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x8000) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressA
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFE;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFE;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFEFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFEFF;
+#endif
 }
 
 - (void)liftA
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x1;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x1;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0001;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0001;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0100;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0100;
+#endif
 }
 
 - (BOOL)A
 {
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x1) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0001) == 0)
+#else
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0100) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressB
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFD;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFD;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFDFF;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFDFF;
+#endif
 }
 
 - (void)liftB
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x2;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x2;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0002;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0002;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0200;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0200;
+#endif
 }
 
 - (BOOL)B
 {
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x2) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0002) == 0)
+#else
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0200) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressX
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFE;
+#else
+	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFEFF;
+#endif
 }
 
 - (void)liftX
 {
-	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x1;
+#ifndef __BIG_ENDIAN__
+	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0001;
+#else
+	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0100;
+#endif
 }
 
 - (BOOL)X
 {
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x1) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0001) == 0)
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0001) == 0)
+#else
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0100) == 0)
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0100) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressY
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFFFD;
+#else
+	((u16 *)MMU.ARM7_REG)[0x136>>1] &= 0xFDFF;
+#endif
 }
 
 - (void)liftY
 {
-	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x2;
+#ifndef __BIG_ENDIAN__
+	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0002;
+#else
+	((u16 *)MMU.ARM7_REG)[0x136>>1] |= 0x0200;
+#endif
 }
 
 - (BOOL)Y
 {
-	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x2) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0002) == 0)
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0002) == 0)
+#else
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0200) == 0)
+	if((((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0200) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressL
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFDFF;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFDFF;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFD;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFD;
+#endif
 }
 
 - (void)liftL
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x200;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x200;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0200;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0200;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0002;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0002;
+#endif
 }
 
 - (BOOL)L
 {
-	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x200) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0200) == 0)
+#else
+	if((((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x0002) == 0)
+#endif
 		return YES;
 	return NO;
 }
 
 - (void)pressR
 {
+#ifndef __BIG_ENDIAN__
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFEFF;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFEFF;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] &= 0xFFFE;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] &= 0xFFFE;
+#endif
 }
 
 - (void)liftR
 {
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x100;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x100;
+#ifndef __BIG_ENDIAN__
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0100;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0100;
+#else
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] |= 0x0001;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] |= 0x0001;
+#endif
 }
 
 - (BOOL)R
 {
-	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x100) == 0)
+#ifndef __BIG_ENDIAN__
+	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0100) == 0)
+#else
+	if((((u16 *)MMU.ARM7_REG)[0x130>>1] & 0x0001) == 0)
+#endif
 		return YES;
 	return NO;
 }
@@ -933,19 +1101,19 @@ struct NDS_fw_config_data firmware;
 - (void)videoUpdateTimerHelper
 {
 	if(!run)return;
-	
+
 	[video_update_lock lock];
 	ScreenState *screen = current_screen;
 	[screen retain];
 	current_screen = nil;
 	[video_update_lock unlock];
-	
+
 	if(screen != nil)
 	{
 		[display_object performSelector:display_func withObject:screen];
 		[screen release];
 	}
-	
+
 }
 
 - (void)run:(NSOpenGLContext*)gl_context
@@ -955,7 +1123,7 @@ struct NDS_fw_config_data firmware;
 	[gl_context retain];
 	[gl_context makeCurrentContext];
 	CGLLockContext([gl_context CGLContextObj]);
-	
+
 	u32 cycles = 0;
 
 	unsigned long long frame_start_time, frame_end_time;
@@ -970,18 +1138,19 @@ struct NDS_fw_config_data firmware;
 		//run the emulator
 		while(run)
 		{
+
 			paused = false;
 
 			Microseconds((struct UnsignedWide*)&frame_start_time);
 
 			[execution_lock lock];
-			
+
 			cycles = NDS_exec((560190<<1)-cycles, FALSE);
 
 			[sound_lock lock];
 			SPU_Emulate();
 			[sound_lock unlock];
-			
+
 			[execution_lock unlock];
 
 			if(frames_to_skip > 0)
@@ -1043,7 +1212,7 @@ struct NDS_fw_config_data firmware;
 			}
 */
 		}
-		
+
 		//when emulation is paused, return CPU time to the OS
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
 	}
