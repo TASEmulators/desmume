@@ -5,7 +5,7 @@ AM_CPPFLAGS += $(SDL_CFLAGS) $(GTKGLEXT_CFLAGS) $(LIBGLADE_CFLAGS) \
 		-DLOCALEDIR=\"$(localedir)\"
 AM_LDFLAGS += -rdynamic $(INTLLIBS)
 
-EXTRA_DIST = DeSmuME.dev $(glade_DATA)
+EXTRA_DIST = DeSmuME.dev $(glade_DATA) desmume-glade.desktop
 
 Applicationsdir = $(datadir)/applications
 Applications_DATA = desmume-glade.desktop
