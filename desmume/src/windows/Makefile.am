@@ -15,7 +15,11 @@ desmume_SOURCES = \
         tileView.c tileView.h yopyop_private.h \
         ConfigKeys.c ConfigKeys.h \
 	FirmConfig.c FirmConfig.h \
-	OGLRender.c OGLRender.h
+	OGLRender.c OGLRender.h \
+	AboutBox.c AboutBox.h \
+	colorconv.h colorctrl.c colorctrl.h \
+	lightView.c lightView.h \
+	matrixView.c matrixView.h
 desmume_LDADD = ../libdesmume.a yopyop_private.o ../gdbstub/libgdbstub.a
 yopyop_private.o: yopyop_private.rc resources.rc resource.h
 	windres yopyop_private.rc -o yopyop_private.o
