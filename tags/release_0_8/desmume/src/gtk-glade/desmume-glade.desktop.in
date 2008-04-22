@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=@VERSION@
+Type=Application
+Name=DeSmuME (Gtk-Glade)
+Comment=Nintento DS emulator
+TryExec=desmume-glade
+Exec=desmume-glade
+Icon=DeSmuME.xpm
+Categories=GNOME;GTK;Game;Emulator
