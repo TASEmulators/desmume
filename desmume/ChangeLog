@@ -24,6 +24,9 @@
  - Key config can be changed on the command line. Save/load hotkeys changed (so expose doesn't override). [Jeff B]
  - Key bindings may work better on non-US keyboards now (needs testing). [Jeff B]
  general:
+ - Encapsulate GDB debug stub to avoid certain problems [shash]
+ - Fixed CPU LD*/ST* bugs [shash]
+ - Fixed New SMB mini-games freeze [shash]
  - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
  - Fixed a crash bug with 2D background corrupting memory [shash]
  - Flag check optimization [carlo_bramini]
@@ -37,6 +40,7 @@
  - Updated website url in about dialog. [evilynux]
  - Better desktop menu entry following FreeDesktop specifications. [evilynux]
  windows port:
+ - Added an "about" box [shash]
  - DirectInput control interface with joystick support [CrazyMax aka mtabachenko]
  - Matrix and Light viewer [Acid Burn]
 	
