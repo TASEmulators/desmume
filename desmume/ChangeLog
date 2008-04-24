@@ -1,3 +1,9 @@
+0.8 -> ?
+ Mac OS X:
+ - Fixed: Filenames and paths with unicode characters now work. [Jeff]
+ - Fixed: Load state from file button works again. [Jeff]
+ - Save State panel now pauses emulation while the file selection box is open. [Jeff]
+  
 0.7.3 -> 0.8
  Cocoa:
  - Save State As function now works. [Jeff B]
