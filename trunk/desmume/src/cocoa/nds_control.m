@@ -233,7 +233,7 @@ struct NDS_fw_config_data firmware;
 		flash = NULL;
 
 	//load the rom
-	if(!NDS_LoadROM([filename cStringUsingEncoding:NSASCIIStringEncoding], backupmemorytype, backupmemorysize, flash) > 0)
+	if(!NDS_LoadROM([filename cStringUsingEncoding:NSUTF8StringEncoding], backupmemorytype, backupmemorysize, flash) > 0)
 	{
 		//if it didn't work give an error and dont unpause
 		messageDialog(NSLocalizedString(@"Error", nil), @"Could not open file");
@@ -369,7 +369,7 @@ struct NDS_fw_config_data firmware;
 
 - (NSString*)ROMTitle
 {
-	return NSSTRc(NDS_getROMHeader()->gameTile);
+	return [[NSString alloc] initWithCString:(NDS_getROMHeader()->gameTile) encoding:NSUTF8StringEncoding];
 }
 
 - (NSInteger)ROMMaker
@@ -863,7 +863,7 @@ struct NDS_fw_config_data firmware;
 	[execution_lock lock];
 
 	BOOL result = NO;
-	if(savestate_save([file cStringUsingEncoding:NSASCIIStringEncoding]))
+	if(savestate_save([file cStringUsingEncoding:NSUTF8StringEncoding]))
 		result = YES;
 
 	[execution_lock unlock];
@@ -876,7 +876,7 @@ struct NDS_fw_config_data firmware;
 	[execution_lock lock];
 
 	BOOL result = NO;
-	if(savestate_load([file cStringUsingEncoding:NSASCIIStringEncoding]))
+	if(savestate_load([file cStringUsingEncoding:NSUTF8StringEncoding]))
 		result = YES;
 
 	[execution_lock unlock];

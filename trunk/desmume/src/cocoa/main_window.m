@@ -380,13 +380,25 @@ NSMenuItem *screenshot_to_file_item;
 
 - (BOOL)saveStateAs
 {
+    //pause emulation so it doesnt save the state after
+	BOOL was_executing = [self executing];
+	[self pause];
+	
+	//file select
 	NSSavePanel *panel = [NSSavePanel savePanel];
 	[panel setTitle:NSLocalizedString(@"Save State...", nil)];
 	[panel setRequiredFileType:@"DST"];
 
+	//save it
 	if([panel runModal] == NSFileHandlingPanelOKButton)
+	{
+		if(was_executing == YES)[self execute];
 		return [self saveState:[panel filename]];
-
+	}
+	
+	//unpause emulation if needed
+	if(was_executing == YES)[self execute];
+	
 	return NO;
 }
 
@@ -399,7 +411,7 @@ NSMenuItem *screenshot_to_file_item;
 	[panel setAllowsMultipleSelection:NO];
 
 	if([panel runModalForTypes:[NSArray arrayWithObject:@"DST"]] == NSFileHandlingPanelOKButton)
-		return [self saveState:[panel filename]];
+		return [self loadState:[panel filename]];
 
 	return NO;
 }

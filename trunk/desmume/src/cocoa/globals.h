@@ -19,9 +19,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-//cocoa utils
-#define NSSTRc(x) ([[NSString alloc] initWithCString:(x) encoding:NSASCIIStringEncoding])
-
 void messageDialogBlank();
 void messageDialog(NSString *title, NSString *text);
 BOOL messageDialogYN(NSString *title, NSString *text);
