@@ -27,7 +27,6 @@ Based on work by yopyop and the DeSmuME team!
 #import "preferences.h"
 
 /*
-FIXME: Hardware acceleration for openglrender.c ??
 FIXME: When cross-platform (core) components end emulation due to error - pause should be called (set the menu checkmark)
 FIXME: .nds.gba support?
 */
@@ -191,7 +190,6 @@ void CreateMenu(AppDelegate *delegate)
 		[loadSlot_item[i] setKeyEquivalentModifierMask:0];
 	}
 
-//fixme changed save state item function names
 /* To be implemented when saves.h provides
 a way to get the time of a save that's not string/human formatted...
 

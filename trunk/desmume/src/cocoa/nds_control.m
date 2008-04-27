@@ -19,6 +19,7 @@
 
 #import "nds_control.h"
 #import <OpenGL/OpenGL.h>
+#import <OpenGL/gl.h>
 
 //DeSmuME general includes
 #define OBJ_C
@@ -88,7 +89,8 @@ struct NDS_fw_config_data firmware;
 		NSLog(@"No flash file given\n");
 	}
 
-	//check if we can sen messages on other threads, which we will use for video update
+	//check if we can send messages on other threads, which we will use for video update
+	//this is for compatibility for tiger and earlier
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
 
 	//Firmware setup
@@ -99,13 +101,10 @@ struct NDS_fw_config_data firmware;
 	NDS_CreateDummyFirmware(&firmware);
 
 	//3D Init
+	bool gl_ready = false;
 
-	//Create the pixel format for our gpu
 	NSOpenGLPixelFormatAttribute attrs[] =
 	{
-		//NSOpenGLPFAAccelerated,
-		//NSOpenGLPFANoRecovery,
-		//NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFAColorSize, 24,
 		NSOpenGLPFAAlphaSize, 8,
 		NSOpenGLPFADepthSize, 24,
@@ -114,28 +113,67 @@ struct NDS_fw_config_data firmware;
 		0
 	};
 
-	pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-	if(pixel_format == nil)
+	if((pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs]) == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for GPU");
-		return self;
-	}
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for 3D rendering");
+		context = nil;
 
-	context = [[NSOpenGLContext alloc] initWithFormat:pixel_format shareContext:nil];
-	if(context == nil)
+	} else if((context = [[NSOpenGLContext alloc] initWithFormat:pixel_format shareContext:nil]) == nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for GPU");
-		return self;
+		[pixel_format release];
+		pixel_format = nil;
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for 3D rendering");
+	} else
+	{
+		[context makeCurrentContext];
+		
+		//check extensions
+		BOOL supports_pixel_buffers = NO;
+		const char *extension_list = (const char*)glGetString(GL_EXTENSIONS);
+		if(extension_list)
+		{
+			NSArray *extensions = [[NSString stringWithCString:extension_list encoding:NSASCIIStringEncoding] componentsSeparatedByString:@" "];
+			supports_pixel_buffers = [extensions containsObject:@"GL_APPLE_pixel_buffer"];
+		}
+
+		//attempt to use a pixel-buffer for hopefully hardware accelerated offscreen drawing
+		if(supports_pixel_buffers == YES)
+		{ 
+			NSOpenGLPixelBuffer *pixel_buffer = [[NSOpenGLPixelBuffer alloc]
+			initWithTextureTarget:GL_TEXTURE_2D
+			textureInternalFormat:GL_RGBA
+			textureMaxMipMapLevel:0
+			pixelsWide:DS_SCREEN_WIDTH
+			pixelsHigh:DS_SCREEN_HEIGHT*2];
+			
+			if(pixel_buffer == nil)
+			{
+				GLenum error = glGetError();
+				messageDialog(NSLocalizedString(@"Error", nil),
+				[NSString stringWithFormat:@"Error setting up rgba pixel buffer for 3D rendering (glerror: %d)", error]);
+			} else
+			{
+				[context setPixelBuffer:pixel_buffer cubeMapFace:0 mipMapLevel:0 currentVirtualScreen:0];
+				[pixel_buffer release];
+				gl_ready = true;
+			}
+		}
+	
+		//if pixel buffers didn't work out, try simple offscreen renderings (probably software accelerated)
+		if(!gl_ready)
+		{
+			[context setOffScreen:(void*)&gpu_buff width:DS_SCREEN_WIDTH height:DS_SCREEN_HEIGHT rowbytes:DS_SCREEN_WIDTH*5];		
+			gl_ready = true;
+		}
 	}
-
-	//offscreen rendering
-	[context setOffScreen:(void*)&gpu_buff width:DS_SCREEN_WIDTH height:DS_SCREEN_HEIGHT rowbytes:DS_SCREEN_WIDTH * 5];
-	[context makeCurrentContext];
-
-	NDS_3D_SetDriver(GPU3D_OPENGL);
-	if(!gpu3D->NDS_3D_Init())
-		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
-
+	
+	if(gl_ready)
+	{
+		NDS_3D_SetDriver(GPU3D_OPENGL);
+		if(!gpu3D->NDS_3D_Init())
+			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
+	}
+	
 	//Sound Init
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
 		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize sound core");
