@@ -452,7 +452,7 @@ DWORD WINAPI run( LPVOID lpParameter)
                   if(curticks >= fpsticks + freq)
                   {
                      fps = fpsframecount;
-                     sprintf(txt,"DeSmuME %d", fps);
+					 sprintf(txt,"DeSmuME v%s (%d)", VERSION, fps);
                      SetWindowText(hwnd, txt);
                      fpsframecount = 0;
                      QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
@@ -769,6 +769,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        frameskiprate=atoi(text);
        CheckMenuItem(menu, frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
     }
+
+#ifdef BETA_VERSION
+	EnableMenuItem (menu, IDM_SUBMITBUGREPORT, MF_GRAYED);
+#endif
 
     sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
     sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
@@ -1573,6 +1577,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDM_WEBSITE:
                        ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
+
                   case IDM_FORUM:
                        ShellExecute(NULL, "open", "http://forums.desmume.org/index.php", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
@@ -1586,9 +1591,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 					  break;
 				  }
+
+#ifndef BETA_VERSION
                   case IDM_SUBMITBUGREPORT:
                        ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
                   return 0;
+#endif
+
                   case IDC_ROTATE0:
                        GPU_rotation = 0;
                        GPU_width    = 256;

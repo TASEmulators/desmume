@@ -1,9 +1,18 @@
 0.8 -> ?
- Mac OS X:
+ General/Core:
+ - Added "high-level" check for DMAs and Timer for minor (really minor) speed up [shash]
+ - Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
+ - Really minor memory access speed up (mainly added for clarity) [shash]
+ - Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
+ - Changed how depth initial values are calculated (fixes SM64DS skybox) [shash] 
+ Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
  - Save State panel now pauses emulation while the file selection box is open. [Jeff]
-  
+ Windows port:
+ - Removed the bug report link with a define, to avoid reports from betas/external builds [shash]
+ - Added the version on window bar to recognize versions from screenshots [shash]
+ 
 0.7.3 -> 0.8
  Cocoa:
  - Save State As function now works. [Jeff B]

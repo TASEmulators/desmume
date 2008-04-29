@@ -97,7 +97,9 @@ typedef struct {
         memory_chip_t fw;
         memory_chip_t bupmem;
 		  
-        nds_dscard dscard[2];
+        nds_dscard	dscard[2];
+		u32			CheckTimers;
+		u32			CheckDMAs;
 		  
 } MMU_struct;
 
