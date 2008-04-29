@@ -24,26 +24,18 @@
 #include <string.h>
 
 #ifndef DESMUME_COCOA
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <gl\gl.h>
-#include "..\debug.h"
-#include "..\MMU.h"
-#include "..\bits.h"
-#include "..\matrix.h"
-
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
+	#include <gl/gl.h>
 #else
+	#include <OpenGL/gl.h>
+	#include <OpenGL/glext.h>
+#endif
 
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
 #include "../debug.h"
 #include "../MMU.h"
 #include "../bits.h"
 #include "../matrix.h"
-
-#endif
-
 #include "OGLRender.h"
 
 
@@ -51,7 +43,7 @@
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 static unsigned char  GPU_screen3D		[256*256*3]={0};
-static unsigned char  GPU_screen3DMask	[256*256]={0};
+static float		  GPU_screen3Ddepth	[256*256]={0};
 
 // Acceleration tables
 static float*		float16table = NULL;
@@ -104,6 +96,7 @@ static float fogColor[4] = {0.f};
 static float fogOffset = 0.f;
 static float alphaTestRef = 0.01f;
 
+static float	alphaTestBase = 0.1f;
 static unsigned long clCmd = 0;
 static unsigned long clInd = 0;
 static unsigned long clInd2 = 0;
@@ -115,6 +108,11 @@ static char beginCalled = 0;
 static unsigned int vtxFormat;
 static unsigned int textureFormat=0, texturePalette=0;
 static unsigned int lastTextureFormat=0, lastTexturePalette=0;
+
+static int			diffuse[4] = {0}, 
+					ambient[4] = {0}, 
+					specular[4] = {0}, 
+					emission[4] = {0};
 
 typedef struct
 {
@@ -165,15 +163,15 @@ char NDS_glInit(void)
 		return 0;
 #endif
 
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_ALPHA_TEST);
-	glEnable(GL_STENCIL_TEST);
-
-	glAlphaFunc		(GL_GREATER, 0.01f);
-	glStencilOp		(GL_KEEP, GL_KEEP, GL_INCR);
-	glClearColor	(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor	(0.f, 0.f, 0.f, 1.f);
 	glColor3f		(1.f, 1.f, 1.f);
+
+	glEnable		(GL_NORMALIZE);
+	glEnable		(GL_DEPTH_TEST);
+	glEnable		(GL_TEXTURE_2D);
+
+	glAlphaFunc		(GL_GREATER, 0.1f);
+	glEnable		(GL_ALPHA_TEST);
 
 	glGenTextures (1, (GLuint*)&oglTextureID);
 
@@ -219,6 +217,20 @@ char NDS_glInit(void)
 	MatrixInit (mtxTemporal);
 
 	return 1;
+}
+
+void SetMaterialAlpha (int alphaValue)
+{
+	diffuse[3]	= alphaValue;
+	ambient[3]	= alphaValue;
+	specular[3] = alphaValue;
+	emission[3] = alphaValue;
+
+	glMaterialiv (GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+	glMaterialiv (GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+
+	glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, emission);
 }
 
 void NDS_glViewPort(unsigned long v)
@@ -280,7 +292,8 @@ void NDS_glClearDepth(unsigned long v)
 	v		&= 0x7FFFF;
 	depth24b = (v*0x200)+((v+1)/0x8000);
 
-	glClearDepth(depth24b / ((float)(1<<24)));
+	// Using 23 instead of 24 fixes SM 64 DS
+	glClearDepth(depth24b / ((float)(1<<23)));
 
 	if(beginCalled)
 		glBegin(vtxFormat);
@@ -952,14 +965,16 @@ void NDS_glBegin(unsigned long v)
 	{
 		glPolygonMode (GL_FRONT, GL_FILL);
 		glPolygonMode (GL_BACK, GL_FILL);
-		/*
-		colorRGB[0] = 1.f;
-		colorRGB[1] = 1.f;
-		colorRGB[2] = 1.f;
-		*/
 
-		colorRGB[3] = colorAlpha;
-		glColor4iv ((GLint*)colorRGB);
+		if (lightMask)
+		{
+			SetMaterialAlpha (colorAlpha);
+		}
+		else
+		{
+			colorRGB[3] = colorAlpha;
+			glColor4iv ((GLint*)colorRGB);
+		}		
 	}
 	else
 	{
@@ -1093,18 +1108,18 @@ int NDS_glGetNumVertex (void)
 
 void NDS_glGetLine (int line, unsigned short * dst)
 {
-	int i;
-	u8	*screen3D		= (u8 *)&GPU_screen3D		[(192-(line%192))*256*3],
-		*screen3DMask	= (u8 *)&GPU_screen3DMask	[(192-(line%192))*256];
+	int		i;
+	u8		*screen3D		= (u8 *)&GPU_screen3D	[(192-(line%192))*256*3];
+	float	*screen3Ddepth	= &GPU_screen3Ddepth	[(192-(line%192))*256];
 
 	for(i = 0; i < 256; i++)
 	{
-		u32	r = screen3D[i*3+0],
-			g = screen3D[i*3+1],
-			b = screen3D[i*3+2];
-
-		if (screen3DMask[i] > 0)
+		if (screen3Ddepth[i] < 1.f)
 		{
+			u32	r = screen3D[i*3+0],
+				g = screen3D[i*3+1],
+				b = screen3D[i*3+2];
+
 			dst[i] = (((r>>3)<<10) | ((g>>3)<<5) | (b>>3));
 		}
 	}
@@ -1122,8 +1137,8 @@ void NDS_glFlush(unsigned long v)
 	clInd = 0;
 
 	glFlush();
-	glReadPixels(0,0,256,192,GL_BGR_EXT,		GL_UNSIGNED_BYTE,GPU_screen3D);
-	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,	GL_UNSIGNED_BYTE,GPU_screen3DMask);
+	glReadPixels(0,0,256,192,GL_DEPTH_COMPONENT,	GL_FLOAT,			GPU_screen3Ddepth);
+	glReadPixels(0,0,256,192,GL_BGR_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
 
 	numVertex = 0;
 
@@ -1137,8 +1152,6 @@ void NDS_glFlush(unsigned long v)
 
 void NDS_glPolygonAttrib (unsigned long val)
 {
-	//u32 polygonID = (val>>24)&63;
-
 	// Light enable/disable
 	lightMask = (val&0xF);
 
@@ -1169,14 +1182,15 @@ void NDS_glPolygonAttrib (unsigned long val)
 */
 void NDS_glMaterial0 (unsigned long val)
 {
-	int		diffuse[4] = {	(val&0x1F) << 26,
-							((val>>5)&0x1F) << 26,
-							((val>>10)&0x1F) << 26,
-							0x7fffffff },
-			ambient[4] = {	((val>>16)&0x1F) << 26,
-							((val>>21)&0x1F) << 26,
-							((val>>26)&0x1F) << 26,
-							0x7fffffff };
+	diffuse[0] = ((val&0x1F) << 26) | 0x03FFFFFF;
+	diffuse[1] = (((val>>5)&0x1F) << 26) | 0x03FFFFFF;
+	diffuse[2] = (((val>>10)&0x1F) << 26) | 0x03FFFFFF;
+	diffuse[3] = 0x7fffffff;
+
+	ambient[0] = (((val>>16)&0x1F) << 26) | 0x03FFFFFF;
+	ambient[1] = (((val>>21)&0x1F) << 26) | 0x03FFFFFF;
+	ambient[2] = (((val>>26)&0x1F) << 26) | 0x03FFFFFF;
+	ambient[3] = 0x7fffffff;
 
 	if (BIT15(val))
 	{
@@ -1201,14 +1215,15 @@ void NDS_glMaterial0 (unsigned long val)
 
 void NDS_glMaterial1 (unsigned long val)
 {
-	int		specular[4] = {	(val&0x1F) << 26,
-							((val>>5)&0x1F) << 26,
-							((val>>10)&0x1F) << 26,
-							0x7fffffff },
-			emission[4] = {	((val>>16)&0x1F) << 26,
-							((val>>21)&0x1F) << 26,
-							((val>>26)&0x1F) << 26,
-							0x7fffffff };
+	specular[0] = 	((val&0x1F) << 26) | 0x03FFFFFF;
+	specular[1] = 	(((val>>5)&0x1F) << 26) | 0x03FFFFFF;
+	specular[2] = 	(((val>>10)&0x1F) << 26) | 0x03FFFFFF;
+	specular[3] = 	0x7fffffff;
+
+	emission[0] = 	(((val>>16)&0x1F) << 26) | 0x03FFFFFF;
+	emission[1] = 	(((val>>21)&0x1F) << 26) | 0x03FFFFFF;
+	emission[2] = 	(((val>>26)&0x1F) << 26) | 0x03FFFFFF;
+	emission[3] = 	0x7fffffff;
 
 	if (beginCalled)
 	{
@@ -1351,11 +1366,26 @@ void NDS_glControl(unsigned long v)
 
 	if(v&(1<<2))
 	{
-		glAlphaFunc (GL_GREATER, 0.01f);
+		glAlphaFunc	(GL_GREATER, alphaTestBase);
 	}
 	else
 	{
-		glAlphaFunc (GL_GREATER, alphaTestRef);
+		glAlphaFunc	(GL_GREATER, 0.1f);
+	}
+
+	if(v&(1<<3))
+	{
+		glBlendFunc		(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable		(GL_BLEND);
+	}
+	else
+	{
+		glDisable		(GL_BLEND);
+	}
+
+	if (v&(1<<14))
+	{
+		LOG ("Enabled BITMAP background mode");
 	}
 
 	if(beginCalled)

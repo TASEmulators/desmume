@@ -36,7 +36,7 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 	{
 		case WM_INITDIALOG: 
 		{
-			SetDlgItemText(dialog, IDC_AUTHORS_LIST, "Original author\n---------------\nyopyop\n\nCurrent team\n------------\nAllustar\namponzi\nape\ndelfare\nGuillaume Duhamel\nNormmatt\nRomain Vallet\nshash\nTheo Berkau\nthoduv\nTim Seidel (Mighty Max)\nDamien Nozay (damdoum)\nPascal Giard (evilynux)\nBen Jaques (masscat)\nJeff Bland\n\nContributors\n------------\nAnthony Molinaro\nsnkmad");
+			SetDlgItemText(dialog, IDC_AUTHORS_LIST, "Original author\n---------------\nyopyop\n\nCurrent team\n------------\nAllustar\namponzi\nape\ndelfare\nGuillaume Duhamel\nNormmatt\nRomain Vallet\nBernat Muñoz (shash)\nTheo Berkau\nthoduv\nTim Seidel (Mighty Max)\nDamien Nozay (damdoum)\nPascal Giard (evilynux)\nBen Jaques (masscat)\nJeff Bland\n\nContributors\n------------\nAnthony Molinaro\nsnkmad");
 			break;
 		}
 	

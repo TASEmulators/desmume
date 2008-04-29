@@ -823,62 +823,74 @@ int NDS_LoadFirmware(const char *filename)
 u32
 NDS_exec(s32 nb, BOOL force)
 {
+	int i, j;
+
   nb += nds.cycles;//(nds.cycles>>26)<<26;
             
   for(; (nb >= nds.cycles) && ((force)||(execute)); )
     {
-      if(nds.ARM9Cycle<=nds.cycles)
-        {
+		for (j = 0; j < 4 && (!force); j++)
+		{
+			if(nds.ARM9Cycle<=nds.cycles)
+			{
 #ifdef LOG_ARM9
-          if(logcount==3){
-            if(NDS_ARM9.CPSR.bits.T)
-              des_thumb_instructions_set[(NDS_ARM9.instruction)>>6](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, logbuf);
-            else
-              des_arm_instructions_set[INDEX(NDS_ARM9.instruction)](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, logbuf);
-            sprintf(logbuf, "%s\t%08X\n\t R00: %08X, R01: %08X, R02: %08X, R03: %08X, R04: %08X, R05: %08X, R06: %08X, R07: %08X,\n\t R08: %08X, R09: %08X, R10: %08X, R11: %08X, R12: %08X, R13: %08X, R14: %08X, R15: %08X,\n\t CPSR: %08X , SPSR: %08X",
-                    logbuf, NDS_ARM9.instruction, NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
-                    NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15],
-                    NDS_ARM9.CPSR, NDS_ARM9.SPSR);  
-            LOG(logbuf);
-          }
+				if(logcount==3){
+					if(NDS_ARM9.CPSR.bits.T)
+						des_thumb_instructions_set[(NDS_ARM9.instruction)>>6](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, logbuf);
+					else
+						des_arm_instructions_set[INDEX(NDS_ARM9.instruction)](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, logbuf);
+					sprintf(logbuf, "%s\t%08X\n\t R00: %08X, R01: %08X, R02: %08X, R03: %08X, R04: %08X, R05: %08X, R06: %08X, R07: %08X,\n\t R08: %08X, R09: %08X, R10: %08X, R11: %08X, R12: %08X, R13: %08X, R14: %08X, R15: %08X,\n\t CPSR: %08X , SPSR: %08X",
+						logbuf, NDS_ARM9.instruction, NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
+						NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15],
+						NDS_ARM9.CPSR, NDS_ARM9.SPSR);  
+					LOG(logbuf);
+				}
 #endif
-          if(NDS_ARM9.waitIRQ)
-            nds.ARM9Cycle += 100;
-          else
-            //nds.ARM9Cycle += NDS_ARM9.exec();
-            nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
-        }
+				for (i = 0; i < 4 && (!force); i++)
+				{
+					if(NDS_ARM9.waitIRQ)
+						nds.ARM9Cycle += 100;
+					else
+						//nds.ARM9Cycle += NDS_ARM9.exec();
+						nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
+				}
+			}
 
 #ifdef EXPERIMENTAL_WIFI
 
-      if((nds.ARM7Cycle % 0x3F03) == 0)
-        {
-          /* 3F03 arm7 cyles = ~1usec */
-          WIFI_usTrigger(&wifiMac) ;
-        }
+			if((nds.ARM7Cycle % 0x3F03) == 0)
+			{
+				/* 3F03 arm7 cyles = ~1usec */
+				WIFI_usTrigger(&wifiMac) ;
+			}
 #endif
-      if(nds.ARM7Cycle<=nds.cycles)
-        {
+			if(nds.ARM7Cycle<=nds.cycles)
+			{
 #ifdef LOG_ARM7
-          if(logcount==1){
-            if(NDS_ARM7.CPSR.bits.T)
-              des_thumb_instructions_set[(NDS_ARM7.instruction)>>6](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, logbuf);
-            else
-              des_arm_instructions_set[INDEX(NDS_ARM7.instruction)](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, logbuf);
-            sprintf(logbuf, "%s\n\t R00: %08X, R01: %08X, R02: %08X, R03: %08X, R04: %08X, R05: %08X, R06: %08X, R07: %08X,\n\t R08: %08X, R09: %08X, R10: %08X, R11: %08X, R12: %08X, R13: %08X, R14: %08X, R15: %08X,\n\t CPSR: %08X , SPSR: %08X",
-                    logbuf, NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
-                    NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15],
-                    NDS_ARM7.CPSR, NDS_ARM7.SPSR);  
-            LOG(logbuf);
-          }
+				if(logcount==1){
+					if(NDS_ARM7.CPSR.bits.T)
+						des_thumb_instructions_set[(NDS_ARM7.instruction)>>6](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, logbuf);
+					else
+						des_arm_instructions_set[INDEX(NDS_ARM7.instruction)](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, logbuf);
+					sprintf(logbuf, "%s\n\t R00: %08X, R01: %08X, R02: %08X, R03: %08X, R04: %08X, R05: %08X, R06: %08X, R07: %08X,\n\t R08: %08X, R09: %08X, R10: %08X, R11: %08X, R12: %08X, R13: %08X, R14: %08X, R15: %08X,\n\t CPSR: %08X , SPSR: %08X",
+						logbuf, NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
+						NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15],
+						NDS_ARM7.CPSR, NDS_ARM7.SPSR);  
+					LOG(logbuf);
+				}
 #endif
-          if(NDS_ARM7.waitIRQ)
-            nds.ARM7Cycle += 100;
-          else
-            //nds.ARM7Cycle += (NDS_ARM7.exec()<<1);
-            nds.ARM7Cycle += (armcpu_exec(&NDS_ARM7)<<1);
-        }
-      nds.cycles = (nds.ARM9Cycle<nds.ARM7Cycle)?nds.ARM9Cycle : nds.ARM7Cycle;
+				for (i = 0; i < 4 && (!force); i++)
+				{
+					if(NDS_ARM7.waitIRQ)
+						nds.ARM7Cycle += 100;
+					else
+						//nds.ARM7Cycle += (NDS_ARM7.exec()<<1);
+						nds.ARM7Cycle += (armcpu_exec(&NDS_ARM7)<<1);
+				}
+			}
+		}
+
+		nds.cycles = (nds.ARM9Cycle<nds.ARM7Cycle)?nds.ARM9Cycle : nds.ARM7Cycle;
                  
       //debug();
                  
@@ -1006,39 +1018,32 @@ NDS_exec(s32 nb, BOOL force)
                     nds.ARM9Cycle -= (560190<<1);
                     nds.ARM7Cycle -= (560190<<1);
                     nb -= (560190<<1);
-                    if(MMU.timerON[0][0])
-                      nds.timerCycle[0][0] -= (560190<<1);
-                    if(MMU.timerON[0][1])
-                      nds.timerCycle[0][1] -= (560190<<1);
-                    if(MMU.timerON[0][2])
-                      nds.timerCycle[0][2] -= (560190<<1);
-                    if(MMU.timerON[0][3])
-                      nds.timerCycle[0][3] -= (560190<<1);
-                                     
-                    if(MMU.timerON[1][0])
-                      nds.timerCycle[1][0] -= (560190<<1);
-                    if(MMU.timerON[1][1])
-                      nds.timerCycle[1][1] -= (560190<<1);
-                    if(MMU.timerON[1][2])
-                      nds.timerCycle[1][2] -= (560190<<1);
-                    if(MMU.timerON[1][3])
-                      nds.timerCycle[1][3] -= (560190<<1);
-                    if(MMU.DMAing[0][0])
-                      MMU.DMACycle[0][0] -= (560190<<1);
-                    if(MMU.DMAing[0][1])
-                      MMU.DMACycle[0][1] -= (560190<<1);
-                    if(MMU.DMAing[0][2])
-                      MMU.DMACycle[0][2] -= (560190<<1);
-                    if(MMU.DMAing[0][3])
-                      MMU.DMACycle[0][3] -= (560190<<1);
-                    if(MMU.DMAing[1][0])
-                      MMU.DMACycle[1][0] -= (560190<<1);
-                    if(MMU.DMAing[1][1])
-                      MMU.DMACycle[1][1] -= (560190<<1);
-                    if(MMU.DMAing[1][2])
-                      MMU.DMACycle[1][2] -= (560190<<1);
-                    if(MMU.DMAing[1][3])
-                      MMU.DMACycle[1][3] -= (560190<<1);
+
+					if (MMU.CheckTimers)
+					{
+						if(MMU.timerON[0][0])	nds.timerCycle[0][0] -= (560190<<1);
+						if(MMU.timerON[0][1])	nds.timerCycle[0][1] -= (560190<<1);
+						if(MMU.timerON[0][2])	nds.timerCycle[0][2] -= (560190<<1);
+						if(MMU.timerON[0][3])	nds.timerCycle[0][3] -= (560190<<1);
+	                                     
+						if(MMU.timerON[1][0])	nds.timerCycle[1][0] -= (560190<<1);
+						if(MMU.timerON[1][1])	nds.timerCycle[1][1] -= (560190<<1);
+						if(MMU.timerON[1][2])	nds.timerCycle[1][2] -= (560190<<1);
+						if(MMU.timerON[1][3])	nds.timerCycle[1][3] -= (560190<<1);
+					}
+
+					if (MMU.CheckDMAs)
+					{
+						if(MMU.DMAing[0][0])	MMU.DMACycle[0][0] -= (560190<<1);
+						if(MMU.DMAing[0][1])	MMU.DMACycle[0][1] -= (560190<<1);
+						if(MMU.DMAing[0][2])	MMU.DMACycle[0][2] -= (560190<<1);
+						if(MMU.DMAing[0][3])	MMU.DMACycle[0][3] -= (560190<<1);
+
+						if(MMU.DMAing[1][0])	MMU.DMACycle[1][0] -= (560190<<1);
+						if(MMU.DMAing[1][1])	MMU.DMACycle[1][1] -= (560190<<1);
+						if(MMU.DMAing[1][2])	MMU.DMACycle[1][2] -= (560190<<1);
+						if(MMU.DMAing[1][3])	MMU.DMACycle[1][3] -= (560190<<1);
+					}
                   }
                                 
               T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
@@ -1065,387 +1070,403 @@ NDS_exec(s32 nb, BOOL force)
                 T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
             }
         }
-      /* assume the timers have not expired */
-      nds.timerOver[0][0] = 0;
-      nds.timerOver[0][1] = 0;
-      nds.timerOver[0][2] = 0;
-      nds.timerOver[0][3] = 0;
-      nds.timerOver[1][0] = 0;
-      nds.timerOver[1][1] = 0;
-      nds.timerOver[1][2] = 0;
-      nds.timerOver[1][3] = 0;
-      if(MMU.timerON[0][0])
-        {
-          if(MMU.timerRUN[0][0])
-            {
-              switch(MMU.timerMODE[0][0])
-                {
-                case 0xFFFF :
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[0][0])>>MMU.timerMODE[0][0];
-                    nds.old = MMU.timer[0][0];
-                    MMU.timer[0][0] += nds.diff;
-                    nds.timerCycle[0][0] += (nds.diff << MMU.timerMODE[0][0]);
-                    nds.timerOver[0][0] = nds.old>MMU.timer[0][0];
-                    if(nds.timerOver[0][0])
-                      {
-                        if(T1ReadWord(ARM9Mem.ARM9_REG, 0x102) & 0x40)
-                          NDS_makeARM9Int(3);
-                        MMU.timer[0][0] = MMU.timerReload[0][0];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[0][0] = TRUE;
-              nds.timerCycle[0][0] = nds.cycles;
-            }
-        }
-      if(MMU.timerON[0][1])
-        {
-          if(MMU.timerRUN[0][1])
-            {
-              switch(MMU.timerMODE[0][1])
-                {
-                case 0xFFFF :
-                  if(nds.timerOver[0][0])
-                    {
-                      ++(MMU.timer[0][1]);
-                      nds.timerOver[0][1] = !MMU.timer[0][1];
-                      if (nds.timerOver[0][1])
-                        {
-                          if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
-                            NDS_makeARM9Int(4);
-                          MMU.timer[0][1] = MMU.timerReload[0][1];
-                        }
-                    }
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[0][1])>>MMU.timerMODE[0][1];
-                    nds.old = MMU.timer[0][1];
-                    MMU.timer[0][1] += nds.diff;
-                    nds.timerCycle[0][1] += nds.diff << MMU.timerMODE[0][1];
-                    nds.timerOver[0][1] = nds.old>MMU.timer[0][1];
-                    if(nds.timerOver[0][1])
-                      {
-                        if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
-                          NDS_makeARM9Int(4);
-                        MMU.timer[0][1] = MMU.timerReload[0][1];
-                      }
-                  }
-                  break;
 
-                }
-            }
-          else
-            {
-              MMU.timerRUN[0][1] = TRUE;
-              nds.timerCycle[0][1] = nds.cycles;
-            }
-        }
-      if(MMU.timerON[0][2])
-        {
-          if(MMU.timerRUN[0][2])
-            {
-              switch(MMU.timerMODE[0][2])
-                {
-                case 0xFFFF :
-                  if(nds.timerOver[0][1])
-                    {
-                      ++(MMU.timer[0][2]);
-                      nds.timerOver[0][2] = !MMU.timer[0][2];
-                      if (nds.timerOver[0][2])
-                        {
-                          if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
-                            NDS_makeARM9Int(5);
-                          MMU.timer[0][2] = MMU.timerReload[0][2];
-                        }
-                    }
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[0][2])>>MMU.timerMODE[0][2];
-                    nds.old = MMU.timer[0][2];
-                    MMU.timer[0][2] += nds.diff;
-                    nds.timerCycle[0][2] += nds.diff << MMU.timerMODE[0][2];
-                    nds.timerOver[0][2] = nds.old>MMU.timer[0][2];
-                    if(nds.timerOver[0][2])
-                      {
-                        if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
-                          NDS_makeARM9Int(5);
-                        MMU.timer[0][2] = MMU.timerReload[0][2];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[0][2] = TRUE;
-              nds.timerCycle[0][2] = nds.cycles;
-            }
-        }
-      if(MMU.timerON[0][3])
-        {
-          if(MMU.timerRUN[0][3])
-            {
-              switch(MMU.timerMODE[0][3])
-                {
-                case 0xFFFF :
-                  if(nds.timerOver[0][2])
-                    {
-                      ++(MMU.timer[0][3]);
-                      nds.timerOver[0][3] = !MMU.timer[0][3];
-                      if (nds.timerOver[0][3])
-                        {
-                          if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
-                            NDS_makeARM9Int(6);
-                          MMU.timer[0][3] = MMU.timerReload[0][3];
-                        }
-                    }
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[0][3])>>MMU.timerMODE[0][3];
-                    nds.old = MMU.timer[0][3];
-                    MMU.timer[0][3] += nds.diff;
-                    nds.timerCycle[0][3] += nds.diff << MMU.timerMODE[0][3];
-                    nds.timerOver[0][3] = nds.old>MMU.timer[0][3];
-                    if(nds.timerOver[0][3])
-                      {
-                        if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
-                          NDS_makeARM9Int(6);
-                        MMU.timer[0][3] = MMU.timerReload[0][3];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[0][3] = TRUE;
-              nds.timerCycle[0][3] = nds.cycles;
-            }
-        }
-          
-      if(MMU.timerON[1][0])
-        {
-          if(MMU.timerRUN[1][0])
-            {
-              switch(MMU.timerMODE[1][0])
-                {
-                case 0xFFFF :
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[1][0])>>MMU.timerMODE[1][0];
-                    nds.old = MMU.timer[1][0];
-                    MMU.timer[1][0] += nds.diff;
-                    nds.timerCycle[1][0] += nds.diff << MMU.timerMODE[1][0];
-                    nds.timerOver[1][0] = nds.old>MMU.timer[1][0];
-                    if(nds.timerOver[1][0])
-                      {
-                        if(T1ReadWord(MMU.ARM7_REG, 0x102) & 0x40)
-                          NDS_makeARM7Int(3);
-                        MMU.timer[1][0] = MMU.timerReload[1][0];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[1][0] = TRUE;
-              nds.timerCycle[1][0] = nds.cycles;
-            }
-        }
-      if(MMU.timerON[1][1])
-        {
-          if(MMU.timerRUN[1][1])
-            {
-              switch(MMU.timerMODE[1][1])
-                {
-                case 0xFFFF :
-                  if(nds.timerOver[1][0])
-                    {
-                      ++(MMU.timer[1][1]);
-                      nds.timerOver[1][1] = !MMU.timer[1][1];
-                      if (nds.timerOver[1][1])
-                        {
-                          if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
-                            NDS_makeARM7Int(4);
-                          MMU.timer[1][1] = MMU.timerReload[1][1];
-                        }
-                    }
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[1][1])>>MMU.timerMODE[1][1];
-                    nds.old = MMU.timer[1][1];
-                    MMU.timer[1][1] += nds.diff;
-                    nds.timerCycle[1][1] += nds.diff << MMU.timerMODE[1][1];
-                    nds.timerOver[1][1] = nds.old>MMU.timer[1][1];
-                    if(nds.timerOver[1][1])
-                      {
-                        if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
-                          NDS_makeARM7Int(4);
-                        MMU.timer[1][1] = MMU.timerReload[1][1];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[1][1] = TRUE;
-              nds.timerCycle[1][1] = nds.cycles;
-            }
-        }
-      if(MMU.timerON[1][2])
-        {
-          if(MMU.timerRUN[1][2])
-            {
-              switch(MMU.timerMODE[1][2])
-                {
-                case 0xFFFF :
-                  if(nds.timerOver[1][1])
-                    {
-                      ++(MMU.timer[1][2]);
-                      nds.timerOver[1][2] = !MMU.timer[1][2];
-                      if (nds.timerOver[1][2])
-                        {
-                          if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
-                            NDS_makeARM7Int(5);
-                          MMU.timer[1][2] = MMU.timerReload[1][2];
-                        }
-                    }
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[1][2])>>MMU.timerMODE[1][2];
-                    nds.old = MMU.timer[1][2];
-                    MMU.timer[1][2] += nds.diff;
-                    nds.timerCycle[1][2] += nds.diff << MMU.timerMODE[1][2];
-                    nds.timerOver[1][2] = nds.old>MMU.timer[1][2];
-                    if(nds.timerOver[1][2])
-                      {
-                        if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
-                          NDS_makeARM7Int(5);
-                        MMU.timer[1][2] = MMU.timerReload[1][2];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[1][2] = TRUE;
-              nds.timerCycle[1][2] = nds.cycles;
-            }
-        }
-      if(MMU.timerON[1][3])
-        {
-          if(MMU.timerRUN[1][3])
-            {
-              switch(MMU.timerMODE[1][3])
-                {
-                case 0xFFFF :
-                  if(nds.timerOver[1][2])
-                    {
-                      ++(MMU.timer[1][3]);
-                      nds.timerOver[1][3] = !MMU.timer[1][3];
-                      if (nds.timerOver[1][3])
-                        {
-                          if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
-                            NDS_makeARM7Int(6);
-                          MMU.timer[1][3] += MMU.timerReload[1][3];
-                        }
-                    }
-                  break;
-                default :
-                  {
-                    nds.diff = (nds.cycles - nds.timerCycle[1][3])>>MMU.timerMODE[1][3];
-                    nds.old = MMU.timer[1][3];
-                    MMU.timer[1][3] += nds.diff;
-                    nds.timerCycle[1][3] += nds.diff << MMU.timerMODE[1][3];
-                    nds.timerOver[1][3] = nds.old>MMU.timer[1][3];
-                    if(nds.timerOver[1][3])
-                      {
-                        if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
-                          NDS_makeARM7Int(6);
-                        MMU.timer[1][3] += MMU.timerReload[1][3];
-                      }
-                  }
-                  break;
-                }
-            }
-          else
-            {
-              MMU.timerRUN[1][3] = TRUE;
-              nds.timerCycle[1][3] = nds.cycles;
-            }
-        }
+		if (MMU.CheckTimers)
+		{
+			/* assume the timers have not expired */
+			nds.timerOver[0][0] = 0;
+			nds.timerOver[0][1] = 0;
+			nds.timerOver[0][2] = 0;
+			nds.timerOver[0][3] = 0;
+			nds.timerOver[1][0] = 0;
+			nds.timerOver[1][1] = 0;
+			nds.timerOver[1][2] = 0;
+			nds.timerOver[1][3] = 0;
+			if(MMU.timerON[0][0])
+			{
+				if(MMU.timerRUN[0][0])
+				{
+					switch(MMU.timerMODE[0][0])
+					{
+					case 0xFFFF :
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[0][0])>>MMU.timerMODE[0][0];
+							nds.old = MMU.timer[0][0];
+							MMU.timer[0][0] += nds.diff;
+							nds.timerCycle[0][0] += (nds.diff << MMU.timerMODE[0][0]);
+							nds.timerOver[0][0] = nds.old>MMU.timer[0][0];
+							if(nds.timerOver[0][0])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x102) & 0x40)
+									NDS_makeARM9Int(3);
+								MMU.timer[0][0] = MMU.timerReload[0][0];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[0][0] = TRUE;
+					nds.timerCycle[0][0] = nds.cycles;
+				}
+			}
+			if(MMU.timerON[0][1])
+			{
+				if(MMU.timerRUN[0][1])
+				{
+					switch(MMU.timerMODE[0][1])
+					{
+					case 0xFFFF :
+						if(nds.timerOver[0][0])
+						{
+							++(MMU.timer[0][1]);
+							nds.timerOver[0][1] = !MMU.timer[0][1];
+							if (nds.timerOver[0][1])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
+									NDS_makeARM9Int(4);
+								MMU.timer[0][1] = MMU.timerReload[0][1];
+							}
+						}
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[0][1])>>MMU.timerMODE[0][1];
+							nds.old = MMU.timer[0][1];
+							MMU.timer[0][1] += nds.diff;
+							nds.timerCycle[0][1] += nds.diff << MMU.timerMODE[0][1];
+							nds.timerOver[0][1] = nds.old>MMU.timer[0][1];
+							if(nds.timerOver[0][1])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x106) & 0x40)
+									NDS_makeARM9Int(4);
+								MMU.timer[0][1] = MMU.timerReload[0][1];
+							}
+						}
+						break;
+
+					}
+				}
+				else
+				{
+					MMU.timerRUN[0][1] = TRUE;
+					nds.timerCycle[0][1] = nds.cycles;
+				}
+			}
+			if(MMU.timerON[0][2])
+			{
+				if(MMU.timerRUN[0][2])
+				{
+					switch(MMU.timerMODE[0][2])
+					{
+					case 0xFFFF :
+						if(nds.timerOver[0][1])
+						{
+							++(MMU.timer[0][2]);
+							nds.timerOver[0][2] = !MMU.timer[0][2];
+							if (nds.timerOver[0][2])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
+									NDS_makeARM9Int(5);
+								MMU.timer[0][2] = MMU.timerReload[0][2];
+							}
+						}
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[0][2])>>MMU.timerMODE[0][2];
+							nds.old = MMU.timer[0][2];
+							MMU.timer[0][2] += nds.diff;
+							nds.timerCycle[0][2] += nds.diff << MMU.timerMODE[0][2];
+							nds.timerOver[0][2] = nds.old>MMU.timer[0][2];
+							if(nds.timerOver[0][2])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10A) & 0x40)
+									NDS_makeARM9Int(5);
+								MMU.timer[0][2] = MMU.timerReload[0][2];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[0][2] = TRUE;
+					nds.timerCycle[0][2] = nds.cycles;
+				}
+			}
+			if(MMU.timerON[0][3])
+			{
+				if(MMU.timerRUN[0][3])
+				{
+					switch(MMU.timerMODE[0][3])
+					{
+					case 0xFFFF :
+						if(nds.timerOver[0][2])
+						{
+							++(MMU.timer[0][3]);
+							nds.timerOver[0][3] = !MMU.timer[0][3];
+							if (nds.timerOver[0][3])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
+									NDS_makeARM9Int(6);
+								MMU.timer[0][3] = MMU.timerReload[0][3];
+							}
+						}
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[0][3])>>MMU.timerMODE[0][3];
+							nds.old = MMU.timer[0][3];
+							MMU.timer[0][3] += nds.diff;
+							nds.timerCycle[0][3] += nds.diff << MMU.timerMODE[0][3];
+							nds.timerOver[0][3] = nds.old>MMU.timer[0][3];
+							if(nds.timerOver[0][3])
+							{
+								if(T1ReadWord(ARM9Mem.ARM9_REG, 0x10E) & 0x40)
+									NDS_makeARM9Int(6);
+								MMU.timer[0][3] = MMU.timerReload[0][3];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[0][3] = TRUE;
+					nds.timerCycle[0][3] = nds.cycles;
+				}
+			}
+
+			if(MMU.timerON[1][0])
+			{
+				if(MMU.timerRUN[1][0])
+				{
+					switch(MMU.timerMODE[1][0])
+					{
+					case 0xFFFF :
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[1][0])>>MMU.timerMODE[1][0];
+							nds.old = MMU.timer[1][0];
+							MMU.timer[1][0] += nds.diff;
+							nds.timerCycle[1][0] += nds.diff << MMU.timerMODE[1][0];
+							nds.timerOver[1][0] = nds.old>MMU.timer[1][0];
+							if(nds.timerOver[1][0])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x102) & 0x40)
+									NDS_makeARM7Int(3);
+								MMU.timer[1][0] = MMU.timerReload[1][0];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[1][0] = TRUE;
+					nds.timerCycle[1][0] = nds.cycles;
+				}
+			}
+			if(MMU.timerON[1][1])
+			{
+				if(MMU.timerRUN[1][1])
+				{
+					switch(MMU.timerMODE[1][1])
+					{
+					case 0xFFFF :
+						if(nds.timerOver[1][0])
+						{
+							++(MMU.timer[1][1]);
+							nds.timerOver[1][1] = !MMU.timer[1][1];
+							if (nds.timerOver[1][1])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
+									NDS_makeARM7Int(4);
+								MMU.timer[1][1] = MMU.timerReload[1][1];
+							}
+						}
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[1][1])>>MMU.timerMODE[1][1];
+							nds.old = MMU.timer[1][1];
+							MMU.timer[1][1] += nds.diff;
+							nds.timerCycle[1][1] += nds.diff << MMU.timerMODE[1][1];
+							nds.timerOver[1][1] = nds.old>MMU.timer[1][1];
+							if(nds.timerOver[1][1])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x106) & 0x40)
+									NDS_makeARM7Int(4);
+								MMU.timer[1][1] = MMU.timerReload[1][1];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[1][1] = TRUE;
+					nds.timerCycle[1][1] = nds.cycles;
+				}
+			}
+			if(MMU.timerON[1][2])
+			{
+				if(MMU.timerRUN[1][2])
+				{
+					switch(MMU.timerMODE[1][2])
+					{
+					case 0xFFFF :
+						if(nds.timerOver[1][1])
+						{
+							++(MMU.timer[1][2]);
+							nds.timerOver[1][2] = !MMU.timer[1][2];
+							if (nds.timerOver[1][2])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
+									NDS_makeARM7Int(5);
+								MMU.timer[1][2] = MMU.timerReload[1][2];
+							}
+						}
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[1][2])>>MMU.timerMODE[1][2];
+							nds.old = MMU.timer[1][2];
+							MMU.timer[1][2] += nds.diff;
+							nds.timerCycle[1][2] += nds.diff << MMU.timerMODE[1][2];
+							nds.timerOver[1][2] = nds.old>MMU.timer[1][2];
+							if(nds.timerOver[1][2])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x10A) & 0x40)
+									NDS_makeARM7Int(5);
+								MMU.timer[1][2] = MMU.timerReload[1][2];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[1][2] = TRUE;
+					nds.timerCycle[1][2] = nds.cycles;
+				}
+			}
+			if(MMU.timerON[1][3])
+			{
+				if(MMU.timerRUN[1][3])
+				{
+					switch(MMU.timerMODE[1][3])
+					{
+					case 0xFFFF :
+						if(nds.timerOver[1][2])
+						{
+							++(MMU.timer[1][3]);
+							nds.timerOver[1][3] = !MMU.timer[1][3];
+							if (nds.timerOver[1][3])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
+									NDS_makeARM7Int(6);
+								MMU.timer[1][3] += MMU.timerReload[1][3];
+							}
+						}
+						break;
+					default :
+						{
+							nds.diff = (nds.cycles - nds.timerCycle[1][3])>>MMU.timerMODE[1][3];
+							nds.old = MMU.timer[1][3];
+							MMU.timer[1][3] += nds.diff;
+							nds.timerCycle[1][3] += nds.diff << MMU.timerMODE[1][3];
+							nds.timerOver[1][3] = nds.old>MMU.timer[1][3];
+							if(nds.timerOver[1][3])
+							{
+								if(T1ReadWord(MMU.ARM7_REG, 0x10E) & 0x40)
+									NDS_makeARM7Int(6);
+								MMU.timer[1][3] += MMU.timerReload[1][3];
+							}
+						}
+						break;
+					}
+				}
+				else
+				{
+					MMU.timerRUN[1][3] = TRUE;
+					nds.timerCycle[1][3] = nds.cycles;
+				}
+			}
+		}
+
+		if (MMU.CheckDMAs)
+		{
                  
-      if((MMU.DMAing[0][0])&&(MMU.DMACycle[0][0]<=nds.cycles))
-        {
-          T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[0][0])&(1<<30)) NDS_makeARM9Int(8);
-          MMU.DMAing[0][0] = FALSE;
-        }
-                 
-      if((MMU.DMAing[0][1])&&(MMU.DMACycle[0][1]<=nds.cycles))
-        {
-          T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[0][1])&(1<<30)) NDS_makeARM9Int(9);
-          MMU.DMAing[0][1] = FALSE;
-        }
-                 
-      if((MMU.DMAing[0][2])&&(MMU.DMACycle[0][2]<=nds.cycles))
-        {
-          T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[0][2])&(1<<30)) NDS_makeARM9Int(10);
-          MMU.DMAing[0][2] = FALSE;
-        }
-                 
-      if((MMU.DMAing[0][3])&&(MMU.DMACycle[0][3]<=nds.cycles))
-        {
-          T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[0][3])&(1<<30)) NDS_makeARM9Int(11);
-          MMU.DMAing[0][3] = FALSE;
-        }
-                 
-      if((MMU.DMAing[1][0])&&(MMU.DMACycle[1][0]<=nds.cycles))
-        {
-          T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*0), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[1][0])&(1<<30)) NDS_makeARM7Int(8);
-          MMU.DMAing[1][0] = FALSE;
-        }
-                 
-      if((MMU.DMAing[1][1])&&(MMU.DMACycle[1][1]<=nds.cycles))
-        {
-          T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*1), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[1][1])&(1<<30)) NDS_makeARM7Int(9);
-          MMU.DMAing[1][1] = FALSE;
-        }
-                 
-      if((MMU.DMAing[1][2])&&(MMU.DMACycle[1][2]<=nds.cycles))
-        {
-          T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*2), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[1][2])&(1<<30)) NDS_makeARM7Int(10);
-          MMU.DMAing[1][2] = FALSE;
-        }
-                 
-      if((MMU.DMAing[1][3])&&(MMU.DMACycle[1][3]<=nds.cycles))
-        {
-          T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*3), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
-          if((MMU.DMACrt[1][3])&(1<<30)) NDS_makeARM7Int(11);
-          MMU.DMAing[1][3] = FALSE;
-        }
+			if((MMU.DMAing[0][0])&&(MMU.DMACycle[0][0]<=nds.cycles))
+			{
+				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[0][0])&(1<<30)) NDS_makeARM9Int(8);
+				MMU.DMAing[0][0] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(0+(0<<2)));
+			}
+		                
+			if((MMU.DMAing[0][1])&&(MMU.DMACycle[0][1]<=nds.cycles))
+			{
+				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[0][1])&(1<<30)) NDS_makeARM9Int(9);
+				MMU.DMAing[0][1] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(1+(0<<2)));
+			}
+		                
+			if((MMU.DMAing[0][2])&&(MMU.DMACycle[0][2]<=nds.cycles))
+			{
+				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[0][2])&(1<<30)) NDS_makeARM9Int(10);
+				MMU.DMAing[0][2] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(2+(0<<2)));
+			}
+		                
+			if((MMU.DMAing[0][3])&&(MMU.DMACycle[0][3]<=nds.cycles))
+			{
+				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[0][3])&(1<<30)) NDS_makeARM9Int(11);
+				MMU.DMAing[0][3] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(3+(0<<2)));
+			}
+		                
+			if((MMU.DMAing[1][0])&&(MMU.DMACycle[1][0]<=nds.cycles))
+			{
+				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*0), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[1][0])&(1<<30)) NDS_makeARM7Int(8);
+				MMU.DMAing[1][0] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(0+(1<<2)));
+			}
+		                
+			if((MMU.DMAing[1][1])&&(MMU.DMACycle[1][1]<=nds.cycles))
+			{
+				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*1), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[1][1])&(1<<30)) NDS_makeARM7Int(9);
+				MMU.DMAing[1][1] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(1+(1<<2)));
+			}
+		                
+			if((MMU.DMAing[1][2])&&(MMU.DMACycle[1][2]<=nds.cycles))
+			{
+				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*2), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[1][2])&(1<<30)) NDS_makeARM7Int(10);
+				MMU.DMAing[1][2] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(2+(1<<2)));
+			}
+		                
+			if((MMU.DMAing[1][3])&&(MMU.DMACycle[1][3]<=nds.cycles))
+			{
+				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*3), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
+				if((MMU.DMACrt[1][3])&(1<<30)) NDS_makeARM7Int(11);
+				MMU.DMAing[1][3] = FALSE;
+				MMU.CheckDMAs &= ~(1<<(3+(1<<2)));
+			}
+		}
         
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 		{

@@ -582,7 +582,7 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 	}
 #endif
 
-        return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
+    return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
 }
 
 
@@ -838,15 +838,15 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 
 	adr &= 0x0FFFFFFF;
 
-        // This is bad, remove it
-        if(proc == ARMCPU_ARM7)
+    // This is bad, remove it
+    if(proc == ARMCPU_ARM7)
+    {
+        if ((adr>=0x04000400)&&(adr<0x0400051D))
         {
-           if ((adr>=0x04000400)&&(adr<0x0400051D))
-           {
-              SPU_WriteByte(adr, val);
-              return;
-           }
+            SPU_WriteByte(adr, val);
+            return;
         }
+    }
 
 	if (adr & 0xFF800000 == 0x04800000)
 	{
@@ -1188,7 +1188,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 			break;
 	}
 	
-	MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]]=val;
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	MMU.MMU_MEM[proc][adr>>20][adr&MMU.MMU_MASK[proc][adr>>20]]=val;
 }
 
 u16 partie = 1;
@@ -1639,44 +1640,55 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) | (val & 0xBFF4));
 				}
 				return;
-                        case REG_TM0CNTL :
-                        case REG_TM1CNTL :
-                        case REG_TM2CNTL :
-                        case REG_TM3CNTL :
+            case REG_TM0CNTL :
+            case REG_TM1CNTL :
+            case REG_TM2CNTL :
+            case REG_TM3CNTL :
 				MMU.timerReload[proc][(adr>>2)&3] = val;
 				return;
-                        case REG_TM0CNTH :
-                        case REG_TM1CNTH :
-                        case REG_TM2CNTH :
-                        case REG_TM3CNTH :
+			case REG_TM0CNTH :
+			case REG_TM1CNTH :
+			case REG_TM2CNTH :
+			case REG_TM3CNTH :
+			{
+				int timerIndex	= ((adr-2)>>2)&0x3;
+				int mask		= ((val&0x80)>>7) << (timerIndex+(proc<<2));
+				MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
+
 				if(val&0x80)
 				{
-				  MMU.timer[proc][((adr-2)>>2)&0x3] = MMU.timerReload[proc][((adr-2)>>2)&0x3];
+					MMU.timer[proc][timerIndex] = MMU.timerReload[proc][((adr-2)>>2)&0x3];
 				}
-				MMU.timerON[proc][((adr-2)>>2)&0x3] = val & 0x80;
+
+				MMU.timerON[proc][((adr-2)>>2)&0x3] = val & 0x80;			
+
 				switch(val&7)
 				{
-				case 0 :
-					MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 0+1;//proc;
-					break;
-				case 1 :
-					MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 6+1;//proc; 
-					break;
-				case 2 :
-					MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 8+1;//proc;
-					break;
-				case 3 :
-					MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 10+1;//proc;
-					break;
-				default :
-					MMU.timerMODE[proc][((adr-2)>>2)&0x3] = 0xFFFF;
-					break;
+					case 0 :
+						MMU.timerMODE[proc][timerIndex] = 0+1;//proc;
+						break;
+					case 1 :
+						MMU.timerMODE[proc][timerIndex] = 6+1;//proc; 
+						break;
+					case 2 :
+						MMU.timerMODE[proc][timerIndex] = 8+1;//proc;
+						break;
+					case 3 :
+						MMU.timerMODE[proc][timerIndex] = 10+1;//proc;
+						break;
+					default :
+						MMU.timerMODE[proc][timerIndex] = 0xFFFF;
+						break;
 				}
+
 				if(!(val & 0x80))
-				MMU.timerRUN[proc][((adr-2)>>2)&0x3] = FALSE;
+					MMU.timerRUN[proc][timerIndex] = FALSE;
+
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
-                        case REG_DISPA_DISPCNT+2 : 
+			}
+
+			case REG_DISPA_DISPCNT+2 : 
 				{
 				//execute = FALSE;
 				u32 v = (T1ReadLong(MMU.MMU_MEM[proc][0x40], 0) & 0xFFFF) | ((u32) val << 16);
@@ -1806,11 +1818,13 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				return;
                         //case REG_AUXSPICNT : execute = FALSE;
 			default :
-				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val); 
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr&MMU.MMU_MASK[proc][adr>>20], val); 
 				return;
 		}
 	}
-	T1WriteWord(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
+
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	T1WriteWord(MMU.MMU_MEM[proc][adr>>20], adr&MMU.MMU_MASK[proc][adr>>20], val);
 } 
 
 
@@ -1832,22 +1846,21 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 
 	adr &= 0x0FFFFFFF;
 
-        // This is bad, remove it
-        if(proc == ARMCPU_ARM7)
+    // This is bad, remove it
+    if(proc == ARMCPU_ARM7)
+    {
+        if ((adr>=0x04000400)&&(adr<0x0400051D))
         {
-           if ((adr>=0x04000400)&&(adr<0x0400051D))
-           {
-              SPU_WriteLong(adr, val);
-              return;
-           }
+            SPU_WriteLong(adr, val);
+            return;
         }
+    }
 
-		if (adr & 0xFF800000 == 0x04800000) {
-		/* access to non regular hw registers */
-		/* return to not overwrite valid data */
-			return ;
-		} ;
-
+	if (adr & 0xFF800000 == 0x04800000) {
+	/* access to non regular hw registers */
+	/* return to not overwrite valid data */
+		return ;
+	}
 
 	if((adr>>24)==4)
 	{
@@ -2291,88 +2304,8 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				}
 				break;
 			}
-/*
- // Commented out, as this doesn't use the plug-in system, neither works
-			case cmd_3D_MTX_MODE        // 0x04000440 :
-				if (proc == ARMCPU_ARM9) gl_MTX_MODE(val);
-				return;
-			case cmd_3D_MTX_PUSH        // 0x04000444  :
-			case cmd_3D_MTX_POP         // 0x04000448  :
-			case cmd_3D_MTX_STORE       // 0x0400044C  :
-			case cmd_3D_MTX_RESTORE     // 0x04000450  :
-				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
-				return;
-			case cmd_3D_MTX_IDENTITY    // 0x04000454  :
-				if (proc == ARMCPU_ARM9) gl_MTX_IDENTITY();
-				return;
-			case cmd_3D_MTX_LOAD_4x4    // 0x04000458  :
-				if (proc == ARMCPU_ARM9) gl_MTX_LOAD_4x4(val);
-				return;
-			case cmd_3D_MTX_LOAD_4x3    // 0x0400045C  :
-				if (proc == ARMCPU_ARM9) gl_MTX_LOAD_4x3(val);
-				return;
-			case cmd_3D_MTX_MULT_4x4    // 0x04000460  :
-				if (proc == ARMCPU_ARM9) gl_MTX_MULT_4x4(val);
-				return;
-			case cmd_3D_MTX_MULT_4x3    // 0x04000464  :
-				if (proc == ARMCPU_ARM9) gl_MTX_MULT_4x3(val);
-				return;
-			case cmd_3D_MTX_MULT_3x3    // 0x04000468  :
-				if (proc == ARMCPU_ARM9) gl_MTX_MULT_3x3(val);
-				return;
-			case cmd_3D_MTX_SCALE       // 0x0400046C  :
-			case cmd_3D_MTX_TRANS       // 0x04000470  :
-			case cmd_3D_COLOR           // 0x04000480  :
-			case cmd_3D_NORMA           // 0x04000484  :
-				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
-				return;
-			case cmd_3D_TEXCOORD        // 0x04000488  :
-				if (proc == ARMCPU_ARM9) gl_TEXCOORD(val);
-				return;
-			case cmd_3D_VTX_16          // 0x0400048C  :
-				if (proc == ARMCPU_ARM9) gl_VTX_16(val);
-				return;
-			case cmd_3D_VTX_10          // 0x04000490  :
-				if (proc == ARMCPU_ARM9) gl_VTX_10(val);
-				return;
-			case cmd_3D_VTX_XY          // 0x04000494  :
-				if (proc == ARMCPU_ARM9) gl_VTX_XY(val);
-				return;
-			case cmd_3D_VTX_XZ          // 0x04000498  :
-				if (proc == ARMCPU_ARM9) gl_VTX_XZ(val);
-				return;
-			case cmd_3D_VTX_YZ          // 0x0400049C  :
-				if (proc == ARMCPU_ARM9) gl_VTX_YZ(val);
-				return;
-			case cmd_3D_VTX_DIFF        // 0x040004A0  :
-				if (proc == ARMCPU_ARM9) gl_VTX_DIFF(val);
-				return;
-			case cmd_3D_POLYGON_ATTR    // 0x040004A4  :
-			case cmd_3D_TEXIMAGE_PARAM  // 0x040004A8  :
-			case cmd_3D_PLTT_BASE       // 0x040004AC  :
-			case cmd_3D_DIF_AMB         // 0x040004C0  :
-			case cmd_3D_SPE_EMI         // 0x040004C4  :
-			case cmd_3D_LIGHT_VECTOR    // 0x040004C8  :
-			case cmd_3D_LIGHT_COLOR     // 0x040004CC  :
-			case cmd_3D_SHININESS       // 0x040004D0  :
-				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
-				return;
-			case cmd_3D_BEGIN_VTXS      // 0x04000500  :
-				if (proc == ARMCPU_ARM9) gl_VTX_begin(val);
-				return;
-			case cmd_3D_END_VTXS        // 0x04000504  :
-				if (proc == ARMCPU_ARM9) gl_VTX_end();
-				return;
-			case cmd_3D_SWAP_BUFFERS    // 0x04000540  :
-			case cmd_3D_VIEWPORT        // 0x04000580  :
-			case cmd_3D_BOX_TEST        // 0x040005C0  :
-			case cmd_3D_POS_TEST        // 0x040005C4  :
-			case cmd_3D_VEC_TEST        // 0x040005C8  :
-				if (proc == ARMCPU_ARM9) gl_print_cmd(adr);
-				return;
-*/
-                        case REG_DISPA_DISPCNT :
-								if(proc == ARMCPU_ARM9) GPU_setVideoProp(MainScreen.gpu, val);
+			case REG_DISPA_DISPCNT :
+				if(proc == ARMCPU_ARM9) GPU_setVideoProp(MainScreen.gpu, val);
 				
 				//GPULOG("MAIN INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0, val);
@@ -2423,41 +2356,48 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			case REG_IF :
 				MMU.reg_IF[proc] &= (~val); 
 				return;
-                        case REG_TM0CNTL :
-                        case REG_TM1CNTL :
-                        case REG_TM2CNTL :
-                        case REG_TM3CNTL :
-				MMU.timerReload[proc][(adr>>2)&0x3] = (u16)val;
+
+            case REG_TM0CNTL:
+            case REG_TM1CNTL:
+            case REG_TM2CNTL:
+            case REG_TM3CNTL:
+			{
+				int timerIndex = (adr>>2)&0x3;
+				int mask = ((val & 0x800000)>>(16+7)) << (timerIndex+(proc<<2));
+				MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
+
+				MMU.timerReload[proc][timerIndex] = (u16)val;
 				if(val&0x800000)
 				{
-					MMU.timer[proc][(adr>>2)&0x3] = MMU.timerReload[proc][(adr>>2)&0x3];
+					MMU.timer[proc][timerIndex] = MMU.timerReload[proc][(adr>>2)&0x3];
 				}
-				MMU.timerON[proc][(adr>>2)&0x3] = val & 0x800000;
+				MMU.timerON[proc][timerIndex] = val & 0x800000;
 				switch((val>>16)&7)
 				{
 					case 0 :
-					MMU.timerMODE[proc][(adr>>2)&0x3] = 0+1;//proc;
+					MMU.timerMODE[proc][timerIndex] = 0+1;//proc;
 					break;
 					case 1 :
-					MMU.timerMODE[proc][(adr>>2)&0x3] = 6+1;//proc;
+					MMU.timerMODE[proc][timerIndex] = 6+1;//proc;
 					break;
 					case 2 :
-					MMU.timerMODE[proc][(adr>>2)&0x3] = 8+1;//proc;
+					MMU.timerMODE[proc][timerIndex] = 8+1;//proc;
 					break;
 					case 3 :
-					MMU.timerMODE[proc][(adr>>2)&0x3] = 10+1;//proc;
+					MMU.timerMODE[proc][timerIndex] = 10+1;//proc;
 					break;
 					default :
-					MMU.timerMODE[proc][(adr>>2)&0x3] = 0xFFFF;
+					MMU.timerMODE[proc][timerIndex] = 0xFFFF;
 					break;
 				}
 				if(!(val & 0x800000))
 				{
-					MMU.timerRUN[proc][(adr>>2)&0x3] = FALSE;
+					MMU.timerRUN[proc][timerIndex] = FALSE;
 				}
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
-                        case REG_DIVDENOM :
+			}
+            case REG_DIVDENOM :
 				{
                                         u16 cnt;
 					s64 num = 0;
@@ -2841,11 +2781,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;
 			//case 0x21FDFB0 :  if(val==0) execute = FALSE;
 			default :
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
+				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & MMU.MMU_MASK[proc][adr>>20], val);
 				return;
 		}
 	}
-	T1WriteLong(MMU.MMU_MEM[proc][(adr>>20)&0xFF], adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF], val);
+
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
+	T1WriteLong(MMU.MMU_MEM[proc][adr>>20], adr&MMU.MMU_MASK[proc][adr>>20], val);
 }
 
 
@@ -2887,6 +2829,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	
 	MMU.DMACycle[proc][num] = taille + nds.cycles;
 	MMU.DMAing[proc][num] = TRUE;
+	MMU.CheckDMAs |= (1<<(num+(proc<<2)));
 	
 	DMALOG("proc %d, dma %d src %08X dst %08X start %d taille %d repeat %s %08X\r\n",
 		proc, num, src, dst, MMU.DMAStartTime[proc][num], taille,
