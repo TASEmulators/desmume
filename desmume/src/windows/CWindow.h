@@ -24,7 +24,11 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "../types.h"
+#include "types.h"
+
+#ifdef _x64
+	#define DWL_USER DWLP_USER
+#endif
 
 extern CRITICAL_SECTION section;
 
