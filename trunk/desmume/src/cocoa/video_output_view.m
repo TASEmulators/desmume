@@ -24,7 +24,7 @@
 
 @implementation VideoOutputView
 
-- (id)initWithFrame:(NSRect)frame withDS:(NintendoDS*)ds
+- (id)initWithFrame:(NSRect)frame
 {
 	//Initialize the view------------------------------------------------------------------
 
@@ -32,7 +32,7 @@
 
 	if(self==nil)
 	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Could not init frame for OpenGL display");
+		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create a view for video output");
 		return nil;
 	}
 
@@ -48,14 +48,8 @@
 		//constantly as emulation is going on, so this just means that there will be no display before emulation starts
 	}
 
-	//fill with black
+	//fill with black to represent initial off state
 	else [screen_buffer fillWithBlack];
-
-	//DS Related ------------------------------------------------------------------------------
-
-	//currenty we dont actually need access to the DS object
-	//DS = ds;
-	//[DS retain];
 
 	//Initialize the OpenGL context for displaying the screen -----------------------------------
 
@@ -74,16 +68,20 @@
 	NSOpenGLPixelFormat* pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
 	if(pixel_format == nil)
 	{
-		context = nil;
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for video output");
+		context = nil;
+		[super dealloc];
+		return nil;
 	} else
 	{
 
 		context = [[NSOpenGLContext alloc] initWithFormat:pixel_format shareContext:nil];
+		[pixel_format release];
 		if(context == nil)
 		{
 			messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for video output");
-			return self;
+			[super dealloc];
+			return nil;
 		}
 	}
 
@@ -95,9 +93,7 @@
 
 - (void)dealloc
 {
-	//[DS release];
 	[context release];
-	[format release];
 	[screen_buffer release];
 
 	[super dealloc];
@@ -105,6 +101,8 @@
 
 - (void)setRotation:(enum ScreenRotation)rot
 {
+	if(rot == rotation)return;
+	
 	//note that we use an optimization -
 	//rotation 180 is stored as rotation 0
 	//and rotation 270 us stored as rotation 90
@@ -117,6 +115,9 @@
 	else return; //invalid rotation value passed to this function
 
 	rotation = rot;
+	
+	[self setFrame:[self frame]]; //reset gl state to reflect new orientation
+	[self setNeedsDisplay:YES];
 }
 
 - (enum ScreenRotation)rotation
@@ -127,7 +128,6 @@
 - (void)drawRect:(NSRect)bounds
 {
 	if(screen_buffer == nil)return; //simply dont draw anything if we dont have a screen data object allocated
-	if(context == nil)return; //
 
 	[context makeCurrentContext];
 
@@ -146,12 +146,9 @@
 
 - (void)setFrame:(NSRect)rect
 {
-	if(context == nil)return;
-
 	[super setFrame:rect];
 
 	[context update];
-
 	[context makeCurrentContext];
 
 	//set the viewport (so the raster pos will be correct)

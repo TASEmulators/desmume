@@ -912,12 +912,18 @@ struct NDS_fw_config_data firmware;
 - (BOOL)loadState:(NSString*)file
 {
 	[execution_lock lock];
-
+	
+	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
+	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
+	[context makeCurrentContext];
+		
 	BOOL result = NO;
 	if(savestate_load([file cStringUsingEncoding:NSUTF8StringEncoding]))
 		result = YES;
 
 	[execution_lock unlock];
+
+	[prev_context makeCurrentContext];
 
 	return result;
 }
@@ -947,11 +953,17 @@ struct NDS_fw_config_data firmware;
 	BOOL result = NO;
 
 	[execution_lock lock];
+	
+	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
+	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
+	[context makeCurrentContext];	
 
 	loadstate_slot(slot + 1); //no exection handling?
 	result = YES;
 
 	[execution_lock unlock];
+
+	[prev_context makeCurrentContext];
 
 	return result;
 }

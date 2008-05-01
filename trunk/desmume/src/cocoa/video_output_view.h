@@ -23,11 +23,9 @@
 {
 	enum ScreenRotation rotation;
 	NSOpenGLContext* context;
-	NSOpenGLPixelFormat* format;
-	NintendoDS *DS;
 	ScreenState *screen_buffer;
 }
-- (id)initWithFrame:(NSRect)frame withDS:(NintendoDS*)ds;
+- (id)initWithFrame:(NSRect)frame;
 - (void)dealloc;
 - (void)setRotation:(enum ScreenRotation)rotation;
 - (enum ScreenRotation)rotation;
