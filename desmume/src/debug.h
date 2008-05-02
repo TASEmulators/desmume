@@ -20,6 +20,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <windows.h>
 #include "types.h"
 #include <stdio.h>
 
@@ -49,6 +50,18 @@ extern Debug * MainLog;
 
 void LogStart(void);
 void LogStop(void);
+
+#ifdef WIN32
+#ifdef BETA_VERSION
+extern void OpenConsole();
+extern void CloseConsole();
+extern void printlog(LPCTSTR *fmt, ...);
+#else
+#define OpenConsole()
+#define CloseConsole()
+#define printlog(...)
+#endif
+#endif
 
 #ifdef DEBUG
 #define LOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)

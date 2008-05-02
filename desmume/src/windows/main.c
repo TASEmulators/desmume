@@ -532,6 +532,7 @@ void NDS_Pause()
    execute = FALSE;
    SPU_Pause(1);
    while (!paused) {}
+   printlog("Paused\n");
 }
 
 void NDS_UnPause()
@@ -539,6 +540,7 @@ void NDS_UnPause()
    paused = FALSE;
    execute = TRUE;
    SPU_Pause(0);
+   printlog("Unpaused\n");
 }
 
 void StateSaveSlot(int num)
@@ -546,6 +548,7 @@ void StateSaveSlot(int num)
 	NDS_Pause();
 	savestate_slot(num);
 	NDS_UnPause();
+	printlog("Saved %i state\n",num);
 }
 
 void StateLoadSlot(int num)
@@ -553,11 +556,13 @@ void StateLoadSlot(int num)
 	NDS_Pause();
 	loadstate_slot(num);
 	NDS_UnPause();
+	printlog("Loaded %i state\n",num);
 }
 
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 {
     NDS_Pause();
+	if (strcmp(filename,"")!=0) printlog("Loading ROM: %s\n",filename);
 
     if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
        return TRUE;
@@ -654,7 +659,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	struct armcpu_ctrl_iface *arm9_ctrl_iface;
 	struct armcpu_ctrl_iface *arm7_ctrl_iface;
 #endif
-
 	struct configured_features my_config;
 
 
@@ -665,6 +669,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     hAppInst=hThisInstance;
 
 	InitCustomControls();
+
+	OpenConsole();			// Init debug console
+	printlog("DeSmuME v%s starting...\n\n",VERSION);
 
 	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
@@ -711,7 +718,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     InitDesViewBox();
     InitTileViewBox();
     InitOAMViewBox();
-    
+    printlog("Init NDS\n");
 #ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
@@ -773,7 +780,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef BETA_VERSION
 	EnableMenuItem (menu, IDM_SUBMITBUGREPORT, MF_GRAYED);
 #endif
-
+	printlog("Init sound core\n");
     sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
     sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
 
@@ -875,6 +882,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef DEBUG
     LogStop();
 #endif
+	CloseConsole();
     /* The program return-value is 0 - The value that PostQuitMessage() gave */
     return messages.wParam;
 }
