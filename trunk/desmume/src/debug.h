@@ -20,7 +20,9 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include "types.h"
 #include <stdio.h>
 
