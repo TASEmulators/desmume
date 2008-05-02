@@ -165,6 +165,7 @@ void LogStop(void) {
 
 ///////////////////////////////////////////////////////////////// Console
 #ifdef WIN32
+#ifdef BETA_VERSION
 void OpenConsole() 
 {
 	COORD csize;
@@ -212,4 +213,5 @@ void printlog(char *fmt, ...) {
 	ptr=msg; len=strlen(msg);
 	WriteConsole(hConsole,ptr, (DWORD)len, &tmp, 0);
 }
+#endif
 #endif
