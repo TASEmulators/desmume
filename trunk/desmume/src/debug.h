@@ -53,9 +53,9 @@ void LogStop(void);
 
 #ifdef WIN32
 #ifdef BETA_VERSION
-extern void OpenConsole();
-extern void CloseConsole();
-extern void printlog(LPCTSTR *fmt, ...);
+void OpenConsole();
+void CloseConsole();
+void printlog(LPCTSTR *fmt, ...);
 #else
 #define OpenConsole()
 #define CloseConsole()
