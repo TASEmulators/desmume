@@ -53,6 +53,7 @@
 #include "../render3D.h"
 #include "../gdbstub.h"
 #include "colorctrl.h"
+#include "console.h"
 
 #include "snddx.h"
 
@@ -671,7 +672,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	InitCustomControls();
 
 	OpenConsole();			// Init debug console
-	printlog("DeSmuME v%s starting...\n\n",VERSION);
 
 	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
@@ -1693,20 +1693,18 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam)
 {
    static timerid=0;
-
    switch (uMsg)
    {
       case WM_INITDIALOG:
       {
          int i;
          char tempstr[MAX_PATH];
-
          // Setup Sound Core Combo box
          SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_RESETCONTENT, 0, 0);
-         SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (long)"None");
+         SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)"None");
 
-         for (i = 1; SNDCoreList[i] != NULL; i++)
-            SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (long)SNDCoreList[i]->Name);
+		 for (i = 1; SNDCoreList[i] != NULL; i++)
+            SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)SNDCoreList[i]->Name);
 
          // Set Selected Sound Core
          for (i = 0; SNDCoreList[i] != NULL; i++)
