@@ -114,11 +114,11 @@ NSMenuItem *screenshot_to_file_item;
 }
 
 - (id)init
-{//fixme non leaky exception handling
+{
 	//Create the NDS
 	self = [super init];
 
-	if(self == nil)return nil;
+	if(self == nil)return nil; //superclass will display it's own error messages if needed
 
 	//
 	NSRect rect;
@@ -139,6 +139,14 @@ NSMenuItem *screenshot_to_file_item;
 	backing:NSBackingStoreBuffered defer:NO screen:nil])==nil)
 	{
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create window");
+
+		//release the superclass (this will probably call our own destructor, so set nil members)
+		controller = nil;
+		video_output_view = nil;
+		status_view = nil;
+		input = nil;
+		[super release];		
+		
 		return nil;
 	}
 	[window setTitle:NSLocalizedString(@"DeSmuME Emulator", nil)];
@@ -148,7 +156,8 @@ NSMenuItem *screenshot_to_file_item;
 	rect.origin.y = status_bar_height;
 	rect.size.width = DS_SCREEN_WIDTH;
 	rect.size.height = DS_SCREEN_HEIGHT_COMBINED;
-	video_output_view = [[VideoOutputView alloc] initWithFrame:rect]; //no nil check - will do it's own error messages
+	//video_output_view = [[VideoOutputView alloc] initWithFrame:rect]; //no nil check - will do it's own error messages
+	video_output_view = nil;
 	[video_output_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable]; //view will automatically resize with the window
 
 	[[window contentView] addSubview:video_output_view];
@@ -167,7 +176,7 @@ NSMenuItem *screenshot_to_file_item;
 	[window setDelegate:self]; //we do this after making the ouput/statusbar incase some delegate method gets called suddenly
 	[controller = [[NSWindowController alloc] initWithWindow:window] showWindow:nil];
 	
-	//Create the input manager
+	//Create the input manager and insert it into the cocoa responder chain
 	input = [[InputHandler alloc] initWithWindow:(id)self];
 	NSResponder *temp = [window nextResponder];
 	[window setNextResponder:input];
@@ -178,11 +187,11 @@ NSMenuItem *screenshot_to_file_item;
 
 - (void)dealloc
 {
+	[controller release];
+	[window release];
 	[video_output_view release];
 	[status_view release];
-
-	[self retain]; //see the comment in init after we initialize the window controller
-	[controller release];
+	[input release];
 
 	[super dealloc];
 }

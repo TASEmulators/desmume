@@ -472,14 +472,26 @@ struct NDS_fw_config_data firmware;
 
 - (void)reset
 {
-	[execution_lock lock];
-
+	//note that the execution_lock method would probably be a little better
+	
+	//but the NDS_Reset() function sets execution to false for some reason
+	//we treat execution == false as an emulation error
+	//pausing allows the other thread to not think theres an emulation error
+	
+	//[execution_lock lock];
+	bool old_run = run;
+	if(old_run)
+	{
+	   run = false;
+		while(!paused){}
+	}
+	
 	NDS_Reset();
 
-	[execution_lock unlock];
-
-	//set the execute variable incase
-	//of a previous emulation error
+	//[execution_lock unlock];
+	run = old_run;
+	
+	//if there was a previous emulation error, clear it, since we reset
 	execute = true;
 }
 
@@ -1186,7 +1198,7 @@ struct NDS_fw_config_data firmware;
 		if(!run)paused = true;
 
 		//run the emulator
-		while(run)
+		while(run && execute) //run controls when the emulator runs, execute prevents it from continuing execution if there are errors
 		{
 
 			paused = false;
@@ -1198,7 +1210,9 @@ struct NDS_fw_config_data firmware;
 			cycles = NDS_exec((560190<<1)-cycles, FALSE);
 
 			[sound_lock lock];
-			SPU_Emulate();
+			int x;
+			for(x = 0; x <= frames_to_skip; x++)
+				SPU_Emulate();
 			[sound_lock unlock];
 
 			[execution_lock unlock];
@@ -1227,40 +1241,39 @@ struct NDS_fw_config_data firmware;
 
 				}
 
-				//update the screen
-				ScreenState *new_screen_data = [[ScreenState alloc] init];
-				[new_screen_data setColorData:GPU_screen];
-				if(timer_based)
+				//update the screen (and limit frame rate of video output)
+				static long long last_video_update = 0;
+				if(frame_end_time - last_video_update > 10000)
 				{
-					[video_update_lock lock];
-					[current_screen release];
-					current_screen = new_screen_data;
-					[video_update_lock unlock];
-				} else
-				{
-					//this will generate a warning when compiling on tiger or earlier, but it should
-					//be ok since the purpose of the if statement is to check if this will work
-					[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
-					[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
+					last_video_update = frame_end_time;
+				
+					ScreenState *new_screen_data = [[ScreenState alloc] init];
+					[new_screen_data setColorData:GPU_screen];
+					
+					if(timer_based)
+					{ //for tiger compatibility
+						[video_update_lock lock];
+						[current_screen release];
+						current_screen = new_screen_data;
+						[video_update_lock unlock];
+					} else
+					{ //for leopard and later
+						
+						//this will generate a warning when compiling on tiger or earlier, but it should
+						//be ok since the purpose of the if statement is to check if this will work
+						[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
+						[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
+					}
 				}
 
 			}
-/* FIXME
+
 			//execute is set to false sometimes by the emulation core
-			//when there is an error, if this happens notify the other
-			//thread that emulation has stopped.
+			//when there is an error, if this happens notify the other thread that emulation has stopped.
 			if(!execute)
-			{
-				run = false; //stop executing
-				execute = true; //reset the var, so if someone tries to execute again, we get the error again
+				if(!timer_based) //wont display an error on tiger or earlier
+					[error_object performSelector:error_func onThread:gui_thread withObject:nil waitUntilDone:YES];
 
-				[self performSelector:@selector(pause) onThread:gui_thread withObject:nil
-				waitUntilDone:NO modes:[NSArray arrayWithObject:NSDefaultRunLoopMode]];
-
-				[error_object performSelector:error_func onThread:gui_thread withObject:nil
-				waitUntilDone:NO modes:[NSArray arrayWithObject:NSDefaultRunLoopMode]];
-			}
-*/
 		}
 
 		//when emulation is paused, return CPU time to the OS
