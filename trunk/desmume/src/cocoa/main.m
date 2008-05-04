@@ -27,7 +27,6 @@ Based on work by yopyop and the DeSmuME team!
 #import "preferences.h"
 
 /*
-FIXME: When cross-platform (core) components end emulation due to error - pause should be called (set the menu checkmark)
 FIXME: .nds.gba support?
 */
 
