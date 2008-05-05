@@ -81,8 +81,6 @@ NSMenuItem *subBG2_item;
 NSMenuItem *subBG3_item;
 NSMenuItem *screenshot_to_file_item;
 
-//fixme: if video_output_view does not load properly, loading a game, then loading a save state doesn't work
-
 @implementation VideoOutputWindow
 
 - (void)setStatusText:(NSString*)value
@@ -156,8 +154,7 @@ NSMenuItem *screenshot_to_file_item;
 	rect.origin.y = status_bar_height;
 	rect.size.width = DS_SCREEN_WIDTH;
 	rect.size.height = DS_SCREEN_HEIGHT_COMBINED;
-	//video_output_view = [[VideoOutputView alloc] initWithFrame:rect]; //no nil check - will do it's own error messages
-	video_output_view = nil;
+	video_output_view = [[VideoOutputView alloc] initWithFrame:rect]; //no nil check - will do it's own error messages
 	[video_output_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable]; //view will automatically resize with the window
 
 	[[window contentView] addSubview:video_output_view];
@@ -231,14 +228,15 @@ NSMenuItem *screenshot_to_file_item;
 		int i;
 		for(i = 0; i < MAX_SLOTS; i++)
 			if([self saveStateExists:i] == YES)
-				[saveSlot_item[i] setState:NSOnState];
+				if([saveSlot_item[i] target] == self)[saveSlot_item[i] setState:NSOnState];
 			else
-				[saveSlot_item[i] setState:NSOffState];
+				if([saveSlot_item[i] target] == self)[saveSlot_item[i] setState:NSOffState];
+	
 	} else
 	{
 		int i;
 		for(i = 0; i < MAX_SLOTS; i++)
-			[saveSlot_item[i] setState:NSOffState];
+			if([saveSlot_item[i] target] == self)[saveSlot_item[i] setState:NSOffState];
 	}
 
 	return result;
@@ -1152,8 +1150,9 @@ NSMenuItem *screenshot_to_file_item;
 		[loadSlot_item[i] setTarget:self];
 
 		if([self saveStateExists:i] == YES)
+		{
 			[saveSlot_item[i] setState:NSOnState];
-		else
+		} else
 			[saveSlot_item[i] setState:NSOffState];
 	}
 
@@ -1359,6 +1358,7 @@ NSMenuItem *screenshot_to_file_item;
 		if(item == rotation90_item)return NO;
 		if(item == rotation180_item)return NO;
 		if(item == rotation270_item)return NO;
+		if(item == screenshot_to_file_item)return NO;
 	}
 
 	return YES;
