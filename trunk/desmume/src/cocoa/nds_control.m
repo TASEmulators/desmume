@@ -101,6 +101,9 @@ struct NDS_fw_config_data firmware;
 	NDS_CreateDummyFirmware(&firmware);
 
 	//3D Init
+	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
+	[prev_context retain];
+
 	bool gl_ready = false;
 
 	NSOpenGLPixelFormatAttribute attrs[] =
@@ -167,12 +170,21 @@ struct NDS_fw_config_data firmware;
 		}
 	}
 	
-	if(gl_ready)
+	if(context)
 	{
+		[context makeCurrentContext];
+		
 		NDS_3D_SetDriver(GPU3D_OPENGL);
 		if(!gpu3D->NDS_3D_Init())
 			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
 	}
+	
+	if(prev_context != nil) //make sure the old context is restored, and make sure our new context is not set in this thread (since the other thread will need it)
+	{ 
+		[prev_context makeCurrentContext];
+		[prev_context release];
+	} else
+		[NSOpenGLContext clearCurrentContext];
 	
 	//Sound Init
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
@@ -927,6 +939,7 @@ struct NDS_fw_config_data firmware;
 	
 	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
+	[prev_context retain];
 	[context makeCurrentContext];
 		
 	BOOL result = NO;
@@ -935,8 +948,13 @@ struct NDS_fw_config_data firmware;
 
 	[execution_lock unlock];
 
-	[prev_context makeCurrentContext];
-
+	if(prev_context != nil)
+	{
+		[prev_context makeCurrentContext];
+		[prev_context release];
+	} else
+		[NSOpenGLContext clearCurrentContext];
+	
 	return result;
 }
 
@@ -963,11 +981,11 @@ struct NDS_fw_config_data firmware;
 	if(slot < 0)return NO;
 
 	BOOL result = NO;
-
 	[execution_lock lock];
 	
 	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
+	[prev_context retain];
 	[context makeCurrentContext];	
 
 	loadstate_slot(slot + 1); //no exection handling?
@@ -975,8 +993,13 @@ struct NDS_fw_config_data firmware;
 
 	[execution_lock unlock];
 
-	[prev_context makeCurrentContext];
-
+	if(prev_context != nil)
+	{
+		[prev_context makeCurrentContext];
+		[prev_context release];
+	} else
+		[NSOpenGLContext clearCurrentContext];
+	
 	return result;
 }
 
