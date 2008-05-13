@@ -1,20 +1,20 @@
 /*  Copyright (C) 2007 Jeff Bland
 
-	This file is part of DeSmuME
+    This file is part of DeSmuME
 
-	DeSmuME is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-	DeSmuME is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with DeSmuME; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #import "input.h"
@@ -23,14 +23,26 @@
 
 @implementation InputHandler
 
++ (NSView*)createPreferencesView:(NSRect)size
+{
+	return nil; //to be implemented someday
+}
+
 //
+- (id)init
+{
+	//make sure we go through through the designated init function
+	[self doesNotRecognizeSelector:_cmd];
+	return nil;
+}
+
 - (id)initWithWindow:(VideoOutputWindow*)nds
 {
 	self = [super init];
-
+	
 	my_ds = nds;
 	[my_ds retain];
-
+	
 	return self;
 }
 
@@ -46,8 +58,8 @@
 	
 	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
 	NSString *chars = [event characters];
-
-	     if([chars rangeOfString:[settings stringForKey:PREF_KEY_A     ]].location!=NSNotFound)[my_ds pressA];
+	
+	if([chars rangeOfString:[settings stringForKey:PREF_KEY_A     ]].location!=NSNotFound)[my_ds pressA];
 	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_B     ]].location!=NSNotFound)[my_ds pressB];
 	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_SELECT]].location!=NSNotFound)[my_ds pressSelect];
 	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_START ]].location!=NSNotFound)[my_ds pressStart];
@@ -65,8 +77,8 @@
 {
 	NSUserDefaults *settings = [NSUserDefaults standardUserDefaults];
 	NSString *chars = [event characters];
-
-	     if([chars rangeOfString:[settings stringForKey:PREF_KEY_A     ]].location!=NSNotFound)[my_ds liftA];
+	
+	if([chars rangeOfString:[settings stringForKey:PREF_KEY_A     ]].location!=NSNotFound)[my_ds liftA];
 	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_B     ]].location!=NSNotFound)[my_ds liftB];
 	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_SELECT]].location!=NSNotFound)[my_ds liftSelect];
 	else if([chars rangeOfString:[settings stringForKey:PREF_KEY_START ]].location!=NSNotFound)[my_ds liftStart];
