@@ -522,6 +522,23 @@ fail:
 
 	//create the video output window (the only window that opens with the app)
 	main_window = [[VideoOutputWindow alloc] init];
+	
+	//check if it should load something by default
+	if([[[NSUserDefaults standardUserDefaults] stringForKey:PREF_AFTER_LAUNCHED] compare:PREF_AFTER_LAUNCHED_OPTION_LAST_ROM]==NSOrderedSame)
+	{
+		NSArray *recent_documents = [[NSDocumentController sharedDocumentController] recentDocumentURLs];
+		
+		if([recent_documents count] > 0)
+		{
+			//we have to convert from a URL to file path. in the future, URL's ought to be used since they are more capable/robust...
+			
+			NSString *file = [[recent_documents objectAtIndex:0] absoluteString]; //gets it in url form
+			file = [file stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding]; //convert escaped characters in url
+			file = [file substringFromIndex:16]; //gets rid of "File://localhost" url component (there should be a much better way to do this....)
+			
+			[main_window loadROM:file];
+		}
+	}
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender

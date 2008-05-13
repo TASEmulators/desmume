@@ -18,7 +18,13 @@
 */
 
 #define PREF_EXECUTE_UPON_LOAD @"Execute Upon Load"
+
+#define PREF_AFTER_LAUNCHED @"When Launching, Load"
+#define PREF_AFTER_LAUNCHED_OPTION_NOTHING @"Load Nothing"
+#define PREF_AFTER_LAUNCHED_OPTION_LAST_ROM @"Load Last ROM"
+
 #define PREF_FLASH_FILE @"FlashFile"
+
 #define PREF_KEY_A @"KeyA"
 #define PREF_KEY_B @"KeyB"
 #define PREF_KEY_X @"KeyX"

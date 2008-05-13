@@ -20,18 +20,21 @@
 #import <Cocoa/Cocoa.h>
 
 /* The main window class instanciates an input object,
-and places it after the window in the responder chain, so
-any events not handled by a the window get sent here.
-*/
+ and places it after the window in the responder chain, so
+ any events not handled by a the window get sent here.
+ */
 
 @class VideoOutputWindow;
 
 @interface InputHandler : NSResponder
 {
-	@private
+@private
 	VideoOutputWindow *my_ds;
 }
-//
+//preferences
++ (NSView*)createPreferencesView:(NSRect)size;
+
+//creation/deletion
 - (id)initWithWindow:(VideoOutputWindow*)nds;
 - (void)dealloc;
 
