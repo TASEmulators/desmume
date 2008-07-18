@@ -11,6 +11,7 @@
  - Save State panel now pauses emulation while the file selection box is open. [Jeff]
  - Fixed: Frozen video output (and/or messed 3d emulation) after loading a state. [Jeff]
  - Added option to load the most recent file upon launching the program. [Jeff]
+ - Added French translation (thanks to Pierre Rudloff). [Jeff]
  Windows port:
  - Removed the bug report link with a define, to avoid reports from betas/external builds [shash]
  - Added the version on window bar to recognize versions from screenshots [shash]

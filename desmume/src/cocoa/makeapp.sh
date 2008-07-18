@@ -28,3 +28,8 @@ cp English.strings DeSmuME.app/Contents/Resources/English.lproj/Localizable.stri
 mkdir -p DeSmuME.app/Contents/Resources/Japanese.lproj
 cp -R Japanese.nib DeSmuME.app/Contents/Resources/Japanese.lproj/MainMenu.nib
 cp Japanese.strings DeSmuME.app/Contents/Resources/Japanese.lproj/Localizable.strings
+
+#French
+mkdir -p DeSmuME.app/Contents/Resources/French.lproj
+cp -R French.nib DeSmuME.app/Contents/Resources/French.lproj/MainMenu.nib
+cp French.strings DeSmuME.app/Contents/Resources/French.lproj/Localizable.strings
