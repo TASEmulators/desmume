@@ -23,20 +23,20 @@
 #define PREF_AFTER_LAUNCHED_OPTION_NOTHING @"Load Nothing"
 #define PREF_AFTER_LAUNCHED_OPTION_LAST_ROM @"Load Last ROM"
 
-#define PREF_FLASH_FILE @"FlashFile"
+#define PREF_FLASH_FILE @"Flash File"
 
-#define PREF_KEY_A @"KeyA"
-#define PREF_KEY_B @"KeyB"
-#define PREF_KEY_X @"KeyX"
-#define PREF_KEY_Y @"KeyY"
-#define PREF_KEY_L @"KeyL"
-#define PREF_KEY_R @"KeyR"
-#define PREF_KEY_UP  @"KeyUp"
-#define PREF_KEY_DOWN @"KeyDown"
-#define PREF_KEY_LEFT @"KeyLeft"
-#define PREF_KEY_RIGHT @"KeyRight"
-#define PREF_KEY_START @"KeyStart"
-#define PREF_KEY_SELECT @"KeySelect"
+#define PREF_KEY_A @"Key A"
+#define PREF_KEY_B @"Key B"
+#define PREF_KEY_X @"Key X"
+#define PREF_KEY_Y @"Key Y"
+#define PREF_KEY_L @"Key L"
+#define PREF_KEY_R @"Key R"
+#define PREF_KEY_UP  @"Key Up"
+#define PREF_KEY_DOWN @"Key Down"
+#define PREF_KEY_LEFT @"Key Left"
+#define PREF_KEY_RIGHT @"Key Right"
+#define PREF_KEY_START @"Key Start"
+#define PREF_KEY_SELECT @"Key Select"
 
 
 void setAppDefaults(); //this is defined in preferences.m and should be called at app launch

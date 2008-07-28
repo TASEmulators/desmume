@@ -245,11 +245,11 @@ a way to get the time of a save that's not a string / human formatted...
 	emulation = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Emulation", nil)];
 	[menu setSubmenu:emulation forItem:emulation_item];
 
-	execute_item = [emulation addItemWithTitle:NSLocalizedString(@"Execute", nil) action:@selector(execute) keyEquivalent:@""];
+	execute_item = [emulation addItemWithTitle:NSLocalizedString(@"Execute", nil) action:@selector(execute) keyEquivalent:@"e"];
 
-	pause_item = [emulation addItemWithTitle:NSLocalizedString(@"Pause", nil) action:@selector(pause) keyEquivalent:@""];
+	pause_item = [emulation addItemWithTitle:NSLocalizedString(@"Pause", nil) action:@selector(pause) keyEquivalent:@"p"];
 
-	reset_item = [emulation addItemWithTitle:NSLocalizedString(@"Reset", nil) action:@selector(reset) keyEquivalent:@""];
+	reset_item = [emulation addItemWithTitle:NSLocalizedString(@"Reset", nil) action:@selector(reset) keyEquivalent:@"r"];
 
 	[emulation addItem:[NSMenuItem separatorItem]];
 

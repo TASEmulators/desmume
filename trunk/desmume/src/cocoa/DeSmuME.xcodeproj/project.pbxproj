@@ -211,8 +211,6 @@
 		29B97314FDCFA39411CA2CEA /* DeSmuME */ = {
 			isa = PBXGroup;
 			children = (
-				726D68AA0E310B1800800002 /* French.nib */,
-				726D68AB0E310B1800800002 /* French.strings */,
 				72C000010D9D59E60046B7EA /* Info.plist */,
 				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
 				729BECEF0D9D581900ED561B /* AudioUnit.framework */,
@@ -288,6 +286,8 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				726D68AA0E310B1800800002 /* French.nib */,
+				726D68AB0E310B1800800002 /* French.strings */,
 				7277B6DF0D9E045700D283BD /* English.nib */,
 				7277B6E00D9E045700D283BD /* English.strings */,
 				7277B6E10D9E045700D283BD /* Japanese.nib */,
