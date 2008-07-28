@@ -44,6 +44,8 @@ NSDictionary *preferences_font_attribs;
 
 NSDictionary *desmume_defaults;
 
+NSDictionary *keyboardMap;	// TODO: name it something else
+
 ///////////////////////////////
 
 unsigned char utf8_return = 0x0D;
@@ -96,6 +98,33 @@ void setAppDefaults()
 	[[NSUserDefaults standardUserDefaults] registerDefaults:desmume_defaults];
 }
 
+
+void setKeyboardMap()
+{
+	// Create a dictionary mapping the keyboard
+	
+	NSArray *keys = [NSArray arrayWithObjects:
+		@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", 
+		@"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L",
+		@"M", @"N",	@"O", @"P", @"Q", @"R", @"S", @"T", @"V", @"W", @"X", @"Y", @"Z", 
+		@"[UP]", @"[DOWN]", @"[LEFT]", @"[RIGHT]", @"[SPACE]", @"[RETURN]", nil];
+							
+	NSArray *objects = [NSArray arrayWithObjects:
+		@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9",
+		@"a", @"b", @"c", @"d", @"e", @"f", @"g", @"h", @"i", @"j", @"k", @"l",
+		@"m", @"n",	@"o", @"p", @"q", @"r", @"s", @"t", @"v", @"w", @"x", @"y", @"z",
+		[[[NSString alloc] initWithBytesNoCopy:utf8_up length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
+		[[[NSString alloc] initWithBytesNoCopy:utf8_down length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
+		[[[NSString alloc] initWithBytesNoCopy:utf8_left length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
+		[[[NSString alloc] initWithBytesNoCopy:utf8_right length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
+		@" ",
+		[[[NSString alloc] initWithBytesNoCopy:&utf8_return length:1 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
+		nil];
+
+	
+	keyboardMap = [NSDictionary dictionaryWithObjects:objects forKeys:keys];
+}
+
 ///////////////////////////////
 
 @interface PreferencesDelegate : NSObject {}
@@ -130,6 +159,79 @@ void setAppDefaults()
 	else
 		[[NSUserDefaults standardUserDefaults] setObject:PREF_AFTER_LAUNCHED_OPTION_LAST_ROM forKey:PREF_AFTER_LAUNCHED];
 }
+
+- (void)bindingForKeyA:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_A];
+}
+
+- (void)bindingForKeyB:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_B];
+}
+
+- (void)bindingForKeyX:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_X];
+}
+
+- (void)bindingForKeyY:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_Y];
+}
+
+- (void)bindingForKeyL:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_L];
+}
+
+- (void)bindingForKeyR:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_R];
+}
+
+- (void)bindingForKeyUp:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_UP];
+}
+
+- (void)bindingForKeyDown:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_DOWN];
+}
+
+- (void)bindingForKeyLeft:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_LEFT];
+}
+
+- (void)bindingForKeyRight:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_RIGHT];
+}
+
+- (void)bindingForKeyStart:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_START];
+}
+
+- (void)bindingForKeySelect:(id)sender
+{
+	NSString* key = [sender titleOfSelectedItem];	
+	[[NSUserDefaults standardUserDefaults] setValue:[keyboardMap valueForKey:key] forKey:PREF_KEY_SELECT];
+}
+
 @end
 
 ////////////////////////////////////////////////////
@@ -251,7 +353,7 @@ void setAppDefaults()
 
 - (NSArray*)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar
 {
-	return [NSArray arrayWithObjects:INTERFACE_INTERNAL_NAME, /*CONTROLS_INTERNAL_NAME, FIRMWARE_INTERNAL_NAME, */nil];
+	return [NSArray arrayWithObjects:INTERFACE_INTERNAL_NAME, CONTROLS_INTERNAL_NAME, /*FIRMWARE_INTERNAL_NAME, */nil];
 }
 
 - (NSArray*)toolbarSelectableItemIdentifiers:(NSToolbar*)toolbar
@@ -326,7 +428,10 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 	
 	//loop through each option in the options list
 	//this is done backwards since we build the view upwards
-	NSArray *keys = [options allKeys];
+	
+//	NSArray *keys = [options allKeys];
+NSArray* keys = [[options allKeys] sortedArrayUsingSelector:@selector(localizedCompare:)];	
+	
 	NSEnumerator *key_enumerator = [keys reverseObjectEnumerator];
 	id key, key_raw, object;
 	NSRect text_rect = NSMakeRect(5, 5, 220, 29);
@@ -407,7 +512,8 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 			
 			[view addSubview:button];
 			
-		} else if ([[object objectAtIndex:0] caseInsensitiveCompare:@"Text"] == NSOrderedSame)
+		}
+		else if ([[object objectAtIndex:0] caseInsensitiveCompare:@"Text"] == NSOrderedSame)
 		{
 			
 			//if this preference is a text field
@@ -425,6 +531,37 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 			[text setDelegate:delegate];
 			[view addSubview:text];
 			
+		}
+		else if([[object objectAtIndex:0] compare:@"Dictionary"] == NSOrderedSame)
+		{
+			//Create the button for this option
+			NSPopUpButton *button = [[NSPopUpButton alloc] initWithFrame:button_rect pullsDown:NO];
+
+			//button callback
+			SEL action;
+			[[object objectAtIndex:1] getBytes:&action];
+			[button setAction:action];
+			[button setTarget:delegate];
+			
+			NSDictionary* keymap = [object objectAtIndex:2];			
+			
+			// Sort elements by name
+			NSArray* keys = [[keymap allKeys] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+
+			int i;
+
+			for(i = 0; i < [keys count]; i++)
+			{
+				//add the item to the popup buttons list
+				NSString* key = [keys objectAtIndex:i];
+				[button addItemWithTitle:NSLocalizedString(key,nil)];
+				
+				if ( [current_setting compare:[keymap valueForKey:key] ] == NSOrderedSame ) {
+					[button selectItemAtIndex:i];
+				}
+			}
+				
+			[view addSubview:button];
 		}
 		
 		//Create text for this option
@@ -497,8 +634,33 @@ NSView *createPreferencesView(NSString *helpinfo, NSDictionary *options, id dele
 	
 	NSView *interface_view = createPreferencesView(@"Use the popup buttons on the right to change settings", interface_options, delegate);
 	
-	//Create the controls view (to be implemented in the future)
-	NSView *controls_view = nil;
+	
+	//Create the controls view
+
+	setKeyboardMap();
+	
+	NSDictionary *controls_options = [NSDictionary dictionaryWithObjectsAndKeys: 
+
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyA:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_A,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyB:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_B,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyX:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_X,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyY:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_Y,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyL:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_L,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyR:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_R,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyUp:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_UP,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyDown:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_DOWN,				
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyLeft:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_LEFT,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyRight:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_RIGHT,				
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyStart:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_START,
+		[NSMutableArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeySelect:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_SELECT,				
+		
+		nil];
+	
+	NSView *controls_view = createPreferencesView(@"Use the popup buttons on the right to change settings", controls_options, delegate);
+
+
+
+
 	
 	//create the preferences window
 	NSWindow *preferences_window = [[NSWindow alloc] initWithContentRect:[interface_view frame] styleMask:
