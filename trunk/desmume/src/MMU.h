@@ -71,7 +71,8 @@ typedef struct {
         
         u8 ARM9_RW_MODE;
         
-        FIFO fifos[16];
+        FIFO	fifos[16];
+		GFXFIFO	gfxfifo;
 
         u32 * MMU_WAIT16[2];
         u32 * MMU_WAIT32[2];

@@ -174,6 +174,7 @@ void MMU_Init(void) {
 	int i;
 
 	LOG("MMU init\n");
+	printlog("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
 
@@ -191,6 +192,7 @@ void MMU_Init(void) {
 	MMU.MMU_MASK[1] = MMU_ARM7_MEM_MASK;
 
 	MMU.ITCMRegion = 0x00800000;
+	//MMU.ITCMRegion = 0x00000000;
 
 	MMU.MMU_WAIT16[0] = MMU_ARM9_WAIT16;
 	MMU.MMU_WAIT16[1] = MMU_ARM7_WAIT16;
@@ -199,6 +201,8 @@ void MMU_Init(void) {
 
 	for(i = 0;i < 16;i++)
 		FIFOInit(MMU.fifos + i);
+	memset(&MMU.gfxfifo, 0, sizeof(GFXFIFO));
+	MMU.gfxfifo.empty=TRUE; MMU.gfxfifo.half=TRUE;
 	
         mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
         mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -260,6 +264,7 @@ void MMU_clearMem()
 	
 	MMU.DTCMRegion = 0;
 	MMU.ITCMRegion = 0x00800000;
+	//MMU.ITCMRegion = 0x00000000;
 	
 	memset(MMU.timer,         0, sizeof(u16) * 2 * 4);
 	memset(MMU.timerMODE,     0, sizeof(s32) * 2 * 4);
@@ -566,7 +571,13 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 		return ARM9Mem.ARM9_DTCM[adr&0x3FFF];
 	}
 #endif
-	
+
+	if(proc==ARMCPU_ARM9 && adr<0x02000000)
+	{
+		//printlog("MMU ITCM (08) Read %08X: %08X\n", adr, T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF));
+		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
+	}
+
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
@@ -596,6 +607,11 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 		return T1ReadWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
 	}
 #endif
+	if(proc==ARMCPU_ARM9 && adr<0x02000000)
+	{
+		//printlog("MMU ITCM (16) Read %08X: %08X\n", adr, T1ReadWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF));
+		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF);	
+	}
 	
 	// CFlash reading, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
@@ -666,6 +682,12 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 		return T1ReadLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
 	}
 #endif
+
+	if(proc==ARMCPU_ARM9 && adr<0x02000000) 
+	{
+		//printlog("MMU ITCM (32) Read %08X: %08X\n", adr, T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF));
+		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
+	}
 	
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
@@ -681,15 +703,21 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			// This is hacked due to the only current 3D core
 			case 0x04000600:
             {
+				/*
                 u32 fifonum = IPCFIFO+proc;
 
 				u32 gxstat =	(MMU.fifos[fifonum].empty<<26) | 
 								(1<<25) | 
 								(MMU.fifos[fifonum].full<<24) | 
 								/*((NDS_nbpush[0]&1)<<13) | ((NDS_nbpush[2]&0x1F)<<8) |*/ 
-								2;
+				//				2;
+				u32 gxstat =(2|(MMU.gfxfifo.hits_count<<16)|
+							(MMU.gfxfifo.full<<24)|
+							(MMU.gfxfifo.empty<<25)|
+							(MMU.gfxfifo.half<<26)|
+							(MMU.gfxfifo.irq<<30));
 
-				LOG ("GXSTAT: 0x%X", gxstat);
+				//printlog("GXSTAT: 0x%X\n", gxstat);
 
 				return	gxstat;
             }
@@ -818,6 +846,8 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 	/* Returns data from memory */
 	return T1ReadLong(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]);
 }
+
+#define OFS(i)	((i>>3)&3)
 	
 void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 {
@@ -829,7 +859,11 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		return ;
 	}
 #endif
-	
+	if(proc==ARMCPU_ARM9 && adr<0x02000000)
+	{
+		//printlog("MMU ITCM (08) Write %08X: %08X\n", adr, val);
+		return T1WriteByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+	}
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
 		cflash_write(adr,val);
@@ -979,40 +1013,66 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		case REG_VRAMCNTD:
 			if(proc == ARMCPU_ARM9)
 			{
+				
+
                 MMU_VRAMWriteBackToLCD(0) ;
                 MMU_VRAMWriteBackToLCD(1) ;
                 MMU_VRAMWriteBackToLCD(2) ;
                 MMU_VRAMWriteBackToLCD(3) ;
+				if (!(val&0x80))
+				{
+					u8 tmp=T1ReadByte(ARM9Mem.ARM9_REG, 0x240);
+					switch(tmp & 7)
+					{
+						case 0:
+							memset(ARM9Mem.ARM9_LCD,0,0x20000);
+							break;
+						case 1:
+							memset(ARM9Mem.ARM9_ABG+(0x20000*OFS(tmp)),0,0x20000);
+							break;
+						case 2:
+							memset(ARM9Mem.ARM9_AOBJ+(0x20000*(OFS(tmp)&1)),0,0x20000);
+							//memset(ARM9Mem.ARM9_ABG+0x40000,0,0x20000);
+							break;
+						case 3:
+							memset(ARM9Mem.textureSlotAddr[OFS(tmp)], 0, 0x20000);
+							break;
+					}
+				} else
 				switch(val & 0x1F)
 				{
 				case 1 :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 0; // BG-VRAM
+					memset(ARM9Mem.ARM9_ABG,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*0); // BG-VRAM
 					break;
 				case 1 | (1 << 3) :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 1; // BG-VRAM
+					memset(ARM9Mem.ARM9_ABG+0x20000,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*1); // BG-VRAM
 					break;
 				case 1 | (2 << 3) :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 2; // BG-VRAM
+					memset(ARM9Mem.ARM9_ABG+0x40000,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*2); // BG-VRAM
 					break;
 				case 1 | (3 << 3) :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 3; // BG-VRAM
+					memset(ARM9Mem.ARM9_ABG+0x60000,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*3); // BG-VRAM
 					break;
-				case 0: /* mapped to lcd */
+				case 0: // mapped to lcd
                     MMU.vram_mode[adr-REG_VRAMCNTA] = 4 | (adr-REG_VRAMCNTA) ;
 					break ;
 				}
-                                /*
-                                 * FIXME: simply texture slot handling
-                                 * This is a first stab and is not correct. It does
-                                 * not handle a VRAM texture slot becoming
-                                 * unconfigured.
-                                 * Revisit all of VRAM control handling for future
-                                 * release?
-                                 */
+                                //
+                                // FIXME: simply texture slot handling
+                                // This is a first stab and is not correct. It does
+                                // not handle a VRAM texture slot becoming
+                                // unconfigured.
+                                // Revisit all of VRAM control handling for future
+                                // release?
+                                //
                                 if ( val & 0x80) {
                                   if ( (val & 0x7) == 3) {
                                     int slot_index = (val >> 3) & 0x3;
@@ -1024,6 +1084,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
 			}
 			break;
+
                 case REG_VRAMCNTE :
 			if(proc == ARMCPU_ARM9)
 			{
@@ -1204,7 +1265,12 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 		return;
 	}
 #endif
-	
+	if(proc==ARMCPU_ARM9 && adr<0x02000000)
+	{
+		//printlog("MMU ITCM (16) Write %08X: %08X\n", adr, val);
+		return T1WriteWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+	}
+
 	// CFlash writing, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
 	{
@@ -1837,6 +1903,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 		return ;
 	}
 #endif
+	if(proc==ARMCPU_ARM9 && adr<0x02000000)
+	{
+		//printlog("MMU ITCM (32) Write %08X: %08X\n", adr, val);
+		return T1WriteLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+	}
 	
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
@@ -2267,6 +2338,11 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				return;
 			}
 
+			case 0x04000600:
+			{
+				MMU.gfxfifo.irq=(val>>30)&3;
+				return;
+			}
 			case REG_DISPA_WININ: 	 
 			{
 	            if(proc == ARMCPU_ARM9) 	 

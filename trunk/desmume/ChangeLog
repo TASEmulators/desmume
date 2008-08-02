@@ -5,6 +5,9 @@
  - Really minor memory access speed up (mainly added for clarity) [shash]
  - Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
  - Changed how depth initial values are calculated (fixes SM64DS skybox) [shash] 
+ - Added SSE2 version for matrix [CrazyMax]
+ - Some fixes in core (New SMB don't freeze now) [CrazyMax]
+ - Some optimizations in code [CrazyMax]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
@@ -17,6 +20,8 @@
  Windows port:
  - Removed the bug report link with a define, to avoid reports from betas/external builds [shash]
  - Added the version on window bar to recognize versions from screenshots [shash]
+ - Changed graphics render core to DirectDraw (work fastest) [CrazyMax]
+ - Some fixes in 3D core OGL (fixed textures) [CrazyMax]
  
 0.7.3 -> 0.8
  Cocoa:

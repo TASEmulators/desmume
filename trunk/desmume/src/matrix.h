@@ -21,14 +21,40 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#ifdef SSE2
+	#include <xmmintrin.h>
+	#include <emmintrin.h>
+	//typedef __declspec(align(16)) float gMatrix[4][4];
+	//typedef float gMatrix[4][4];
+	typedef float gMatrix[16];
+#endif
+
 typedef struct MatrixStack
 {
+#ifdef SSE2
+	//gMatrix *matrix;
 	float	*matrix;
+#else
+	float	*matrix;
+#endif
 	int		position;
 	int		size;
 } MatrixStack;
 
-void	MatrixInit				(float *matrix);
+#ifdef SSE2
+void	__fastcall MatrixInit				(float *matrix);
+extern void	__fastcall MatrixMultVec3x3		(const gMatrix matrix, const gMatrix vecPtr);
+extern void	__fastcall MatrixMultVec4x4		(const gMatrix matrix, const gMatrix vecPtr);
+void	__fastcall MatrixIdentity			(float *matrix);
+extern void	__fastcall MatrixMultiply		(const gMatrix matrix, const gMatrix rightMatrix);
+float	__fastcall MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
+void	__fastcall MatrixSet				(float *matrix, int x, int y, float value);
+void	__fastcall MatrixCopy				(const gMatrix matrixDST, const gMatrix matrixSRC);
+extern void __fastcall MatrixTranslate		(const gMatrix matrix, const gMatrix ptr);
+extern void	__fastcall MatrixScale			(const gMatrix matrix, const gMatrix ptr);
+void	__fastcall MatrixScale				(const gMatrix matrix, const gMatrix ptr);
+#else
+void	__fastcall MatrixInit				(float *matrix);
 void	MatrixMultVec3x3		(float *matrix, float *vecPtr);
 void	MatrixMultVec4x4		(float *matrix, float *vecPtr);
 void	MatrixIdentity			(float *matrix);
@@ -38,6 +64,7 @@ void	MatrixSet				(float *matrix, int x, int y, float value);
 void	MatrixCopy				(float *matrixDST, float *matrixSRC);
 void	MatrixTranslate			(float *matrix, float *ptr);
 void	MatrixScale				(float *matrix, float *ptr);
+#endif
 
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
