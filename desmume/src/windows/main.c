@@ -57,6 +57,15 @@
 
 #include "snddx.h"
 
+#include <ddraw.h>
+//===================== Init DirectDraw
+LPDIRECTDRAW7			lpDDraw;
+LPDIRECTDRAWSURFACE7	lpPrimarySurface;
+LPDIRECTDRAWSURFACE7	lpBackSurface;
+DDSURFACEDESC2			ddsd;
+LPDIRECTDRAWCLIPPER		lpDDClipPrimary;
+LPDIRECTDRAWCLIPPER		lpDDClipBack;
+
 /* The compact flash disk image file */
 static const char *bad_glob_cflash_disk_image_file;
 static char cflash_filename_buffer[512];
@@ -75,6 +84,7 @@ DWORD threadID;
 HWND hwnd;
 HDC  hdc;
 HINSTANCE hAppInst;  
+RECT	MainWindowRect;
 
 volatile BOOL execute = FALSE;
 volatile BOOL paused = TRUE;
@@ -202,65 +212,12 @@ fill_configured_features( struct configured_features *config, LPSTR lpszArgument
 }
 
 // Rotation definitions
-u8    GPU_screenrotated[4*256*192];
 short GPU_rotation      = 0;
 DWORD GPU_width         = 256;
 DWORD GPU_height        = 192*2;
 DWORD rotationstartscan = 192;
 DWORD rotationscanlines = 192*2;
 
-void GPU_rotate(BITMAPV4HEADER *bmi)
-{
-     u16 *src, *dst;
-     int i,j, spos, dpos, desp;
-     src = (u16*)GPU_screen;
-     dst = (u16*)GPU_screenrotated;
- 
-     switch(GPU_rotation)
-     {
-        case 90:
-                   desp=0;
-                   for(i=0;i<256;i++)
-                   {
-                            dpos = 192*2*i;
-                            spos = 256*(192*2-1) + desp;
-                            while(spos > 0)
-                            {
-                               dst[dpos++] = src[spos];
-                               spos-=256;
-                            }
-                            desp++;
-                   }
-                   bmi->bV4Width = 192*2;
-                   bmi->bV4Height = -256;
-                   break;
-        case 270:
-                   desp=255;
-                   for(i=0;i<256;i++)
-                   {
-                            dpos = 192*2*i;
-                            spos = desp;
-                            while(spos < 256*192*2)
-                            {
-                               dst[dpos++] = src[spos];
-                               spos+=256;
-                            }
-                            desp--;
-                   }
-                   bmi->bV4Width = 192*2;
-                   bmi->bV4Height = -256;
-                   break;
-        case 180:
-                 for(i=0; i < 256*192*2; i++)
-                          dst[(256*192*2)-i] = src[i];
-                 bmi->bV4Width = 256;
-                 bmi->bV4Height = -2*192;
-                 break;
-        default:
-                memcpy(&GPU_screenrotated[0], &GPU_screen[0], sizeof(u8)*4*256*192);
-     }
-}
-  
 void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msdn.com/oldnewthing/archive/2003/09/11/54885.aspx
 {
     HMENU hmenu = GetMenu(hwnd);
@@ -292,6 +249,22 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
     SetWindowPos(hwnd, NULL, 0, 0, rcWindow.right - rcWindow.left,
                  rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
 
+	if (lpBackSurface!=NULL)
+	{
+		IDirectDrawSurface7_Release(lpBackSurface);
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize          = sizeof(ddsd);
+		ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+		ddsd.dwWidth         = cx;
+		ddsd.dwHeight        = cy;
+		
+		if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK)
+		{
+			MessageBox(hwnd,"Unable to change DirectDraw surface (back)","Error",MB_OK);
+			return -1;
+		}
+	}
 }
 
 void ScaleScreen(float factor)
@@ -372,8 +345,6 @@ void Input_Post()
 DWORD WINAPI run( LPVOID lpParameter)
 {
      char txt[80];
-     BITMAPV4HEADER bmi;
-     BITMAPV4HEADER rotationbmi;
      u32 cycles = 0;
      int wait=0;
      u64 freq;
@@ -390,31 +361,64 @@ DWORD WINAPI run( LPVOID lpParameter)
      int fpsframecount=0;
      u64 fpsticks=0;
 
-     //CreateBitmapIndirect(&bmi);
-     memset(&bmi, 0, sizeof(bmi));
-     bmi.bV4Size = sizeof(bmi);
-     bmi.bV4Planes = 1;
-     bmi.bV4BitCount = 16;
-     bmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
-     bmi.bV4RedMask = 0x001F;
-     bmi.bV4GreenMask = 0x03E0;
-     bmi.bV4BlueMask = 0x7C00;
-     bmi.bV4Width = 256;
-     bmi.bV4Height = -192*2;
-     
-     memset(&rotationbmi, 0, sizeof(rotationbmi));
-     rotationbmi.bV4Size = sizeof(rotationbmi);
-     rotationbmi.bV4Planes = 1;
-     rotationbmi.bV4BitCount = 16;
-     rotationbmi.bV4V4Compression = BI_RGB|BI_BITFIELDS;
-     rotationbmi.bV4RedMask = 0x001F;
-     rotationbmi.bV4GreenMask = 0x03E0;
-     rotationbmi.bV4BlueMask = 0x7C00;
-     rotationbmi.bV4Width = 256;
-     rotationbmi.bV4Height = -192;
+	 DDCAPS	hw_caps, sw_caps;
 
-     NDS_3D_SetDriver (GPU3D_OPENGL);
+	if (DirectDrawCreateEx(NULL, &lpDDraw, &IID_IDirectDraw7, NULL) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to initialize DirectDraw","Error",MB_OK);
+		return -1;
+    }
 
+	if (IDirectDraw7_SetCooperativeLevel(lpDDraw,hwnd, DDSCL_NORMAL) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to set DirectDraw Cooperative Level","Error",MB_OK);
+		return -1;
+    }
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	ddsd.dwFlags = DDSD_CAPS;
+
+	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpPrimarySurface, NULL) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to create DirectDraw surface (primary)","Error",MB_OK);
+		return -1;
+    }
+	
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize          = sizeof(ddsd);
+	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+	ddsd.dwWidth         = 256;
+	ddsd.dwHeight        = 384;
+	
+	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to create DirectDraw surface (back)","Error",MB_OK);
+		return -1;
+    }
+
+	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to create DirectDraw clipper (Primary)","Error",MB_OK);
+		return -1;
+	}
+
+	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, hwnd) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to set clipper for main window (Primary)","Error",MB_OK);
+		return -1;
+	}
+
+	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK)
+	{
+		MessageBox(hwnd,"Unable to set clipper (Primary)","Error",MB_OK);
+		return -1;
+	}
+
+    NDS_3D_SetDriver (GPU3D_OPENGL);
+	 
 	if (!gpu3D->NDS_3D_Init ())
 	{
 		MessageBox(hwnd,"Unable to initialize openGL","Error",MB_OK);
@@ -436,18 +440,87 @@ DWORD WINAPI run( LPVOID lpParameter)
 
                if (!skipnextframe)
                {
-                  if (GPU_rotation == 0)
-				  {
-					RECT r ;
-					GetClientRect(hwnd,&r) ;
-                  	StretchDIBits (hdc, 0, 0, r.right-r.left, r.bottom-r.top, 0, 0, 256, 192*2, GPU_screen, (BITMAPINFO*)&bmi, DIB_RGB_COLORS,SRCCOPY);
-                  } else
-                  {
-                    RECT r ;
-                    GPU_rotate(&rotationbmi);
-                    GetClientRect(hwnd,&r) ;
-                    StretchDIBits(hdc, 0, 0, r.right-r.left, r.bottom-r.top, 0, 0, GPU_width, rotationscanlines, GPU_screenrotated, (BITMAPINFO*)&rotationbmi, DIB_RGB_COLORS,SRCCOPY);
-                  }
+					memset(&ddsd, 0, sizeof(ddsd));
+					ddsd.dwSize = sizeof(ddsd);
+					ddsd.dwFlags=DDSD_ALL;
+					
+					if (IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL) == DD_OK)
+					{
+						char* buffer = (char*)ddsd.lpSurface;
+						
+						int i, j, sz=256*sizeof(u32);
+						if (ddsd.ddpfPixelFormat.dwRGBBitCount>16)
+						{
+							u16 *tmpGPU_Screen_src=(u16*)GPU_screen;
+							u32	tmpGPU_screen[98304];
+							for(i=0; i<98304; i++)
+							tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
+												(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
+												(((tmpGPU_Screen_src[i])&0x1F)<<19);
+							switch (GPU_rotation)
+							{
+								case 0:
+								{
+									for (i = 0; i < 98304; i+=256)  //384*256
+									{
+										memcpy(buffer,tmpGPU_screen+i,sz);
+										buffer += ddsd.lPitch;
+									}
+									break;
+								}
+								case 90:
+								{
+									u32 start;
+									memset(buffer,0,384*ddsd.lPitch);
+									for (j=0; j<256; j++)
+									{
+										start=98304+j;
+										for (i=0; i<384; i++)
+										{
+											start-=256;
+											((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
+										}
+										buffer += ddsd.lPitch;
+									}
+									break;
+								}
+								case 180:
+								{
+									u32 start=98300;
+									for (j=0; j<384; j++)
+									{
+										for (i=0; i<256; i++, --start)
+											((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
+										buffer += ddsd.lPitch;
+									}
+									break;
+								}
+								case 270:
+								{
+									u32 start;
+									memset(buffer,0,384*ddsd.lPitch);
+									for (j=0; j<256; j++)
+									{
+										start=256-j;
+										for (i=0; i<384; i++)
+										{
+											((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
+											start+=256;
+										}
+										buffer += ddsd.lPitch;
+									}
+									break;
+								}
+							}
+						}
+						else
+							printlog("16bit depth color not supported");
+
+						
+						IDirectDrawSurface7_Unlock(lpBackSurface,ddsd.lpSurface);
+						IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0);
+					}
+
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
                   if(curticks >= fpsticks + freq)
@@ -525,6 +598,9 @@ DWORD WINAPI run( LPVOID lpParameter)
           paused = TRUE;
           Sleep(500);
      }
+	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
+	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
+    if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
      return 1;
 }
 
@@ -887,10 +963,44 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     return messages.wParam;
 }
 
+void GetRect(HWND hwnd)
+{
+	POINT ptClient;
+	RECT rc;
+
+	GetClientRect(hwnd,&rc);
+	ptClient.x=rc.left;
+	ptClient.y=rc.top;
+	ClientToScreen(hwnd,&ptClient);
+	MainWindowRect.left=ptClient.x;
+	MainWindowRect.top=ptClient.y;
+	ptClient.x=rc.right;
+	ptClient.y=rc.bottom;
+	ClientToScreen(hwnd,&ptClient);
+	MainWindowRect.right=ptClient.x;
+	MainWindowRect.bottom=ptClient.y;
+}
+
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
+	static int tmp_execute;
     switch (message)                  // handle the messages
     {
+		/*case WM_ENTERMENULOOP:
+			{
+				if (execute)
+				{
+					NDS_Pause();
+					tmp_execute=2;
+				} else tmp_execute=-1;
+				return 0;
+			}
+		case WM_EXITMENULOOP:
+			{
+				if (tmp_execute==2) NDS_UnPause();
+				return 0;
+			}*/
+
         case WM_CREATE:
 	     {
 	     	RECT clientSize, fullSize;
@@ -927,13 +1037,17 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              PostQuitMessage (0);       // send a WM_QUIT to the message queue 
              return 0;
 			}
-	case WM_SIZE:
-    	if (ForceRatio) {
-			RECT fullSize;
-			GetWindowRect(hwnd, &fullSize);
-			ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
-		}
-	     return 0;
+		case WM_MOVE:
+				GetRect(hwnd);
+				return 0;
+		case WM_SIZE:
+    			if (ForceRatio) {
+					RECT fullSize;
+					GetWindowRect(hwnd, &fullSize);
+					ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
+				}
+				GetRect(hwnd);
+				return 0;
         case WM_CLOSE:
 			{
              NDS_Pause();

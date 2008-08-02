@@ -23,13 +23,37 @@
 #include <stdlib.h>
 #include "matrix.h"
 
-void MatrixInit  (float *matrix)
+void __fastcall MatrixInit  (float *matrix)
 {
 	memset (matrix, 0, sizeof(float)*16);
-
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
+#ifdef SSE2
+void __fastcall MatrixIdentity	(float *matrix) //============== TODO
+{
+	memset (matrix, 0, sizeof(float)*16);
+	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
+}
+
+float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
+{
+	int iMod = index%4, iDiv = (index>>2)<<2;
+
+	return	(matrix[iMod  ]*rightMatrix[iDiv  ])+(matrix[iMod+ 4]*rightMatrix[iDiv+1])+
+			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
+}
+
+void __fastcall MatrixSet (float *matrix, int x, int y, float value)	// TODO
+{
+	matrix [x+(y<<2)] = value;
+}
+
+void __fastcall MatrixCopy (float *matrixDST, float *matrixSRC)
+{
+	memcpy (matrixDST, matrixSRC, sizeof(float)*16);
+}
+#else
 void MatrixMultVec4x4 (float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
@@ -85,45 +109,6 @@ void MatrixMultiply (float *matrix, float *rightMatrix)
 
 	memcpy (matrix, tmpMatrix, sizeof(float)*16);
 }
-/*
-void MatrixMulti (float* right)
-{
-	float tmpMatrix[16];
-
-	tmpMatrix[0]  = (matrix[0]*right[0])+(matrix[4]*right[1])+(matrix[8]*right[2])+(matrix[12]*right[3]);
-	tmpMatrix[1]  = (matrix[1]*right[0])+(matrix[5]*right[1])+(matrix[9]*right[2])+(matrix[13]*right[3]);
-	tmpMatrix[2]  = (matrix[2]*right[0])+(matrix[6]*right[1])+(matrix[10]*right[2])+(matrix[14]*right[3]);
-	tmpMatrix[3]  = (matrix[3]*right[0])+(matrix[7]*right[1])+(matrix[11]*right[2])+(matrix[15]*right[3]);
-
-	tmpMatrix[4]  = (matrix[0]*right[4])+(matrix[4]*right[5])+(matrix[8]*right[6])+(matrix[12]*right[7]);
-	tmpMatrix[5]  = (matrix[1]*right[4])+(matrix[5]*right[5])+(matrix[9]*right[6])+(matrix[13]*right[7]);
-	tmpMatrix[6]  = (matrix[2]*right[4])+(matrix[6]*right[5])+(matrix[10]*right[6])+(matrix[14]*right[7]);
-	tmpMatrix[7]  = (matrix[3]*right[4])+(matrix[7]*right[5])+(matrix[11]*right[6])+(matrix[15]*right[7]);
-
-	tmpMatrix[8]  = (matrix[0]*right[8])+(matrix[4]*right[9])+(matrix[8]*right[10])+(matrix[12]*right[11]);
-	tmpMatrix[9]  = (matrix[1]*right[8])+(matrix[5]*right[9])+(matrix[9]*right[10])+(matrix[13]*right[11]);
-	tmpMatrix[10] = (matrix[2]*right[8])+(matrix[6]*right[9])+(matrix[10]*right[10])+(matrix[14]*right[11]);
-	tmpMatrix[11] = (matrix[3]*right[8])+(matrix[7]*right[9])+(matrix[11]*right[10])+(matrix[15]*right[11]);
-
-	tmpMatrix[12] = (matrix[0]*right[12])+(matrix[4]*right[13])+(matrix[8]*right[14])+(matrix[12]*right[15]);
-	tmpMatrix[13] = (matrix[1]*right[12])+(matrix[5]*right[13])+(matrix[9]*right[14])+(matrix[13]*right[15]);
-	tmpMatrix[14] = (matrix[2]*right[12])+(matrix[6]*right[13])+(matrix[10]*right[14])+(matrix[14]*right[15]);
-	tmpMatrix[15] = (matrix[3]*right[12])+(matrix[7]*right[13])+(matrix[11]*right[14])+(matrix[15]*right[15]);
-
-	memcpy (matrix, tmpMatrix, sizeof(float)*16);
-}
-
-
-float*	Matrix::Get		(void)
-{
-	return matrix;
-}
-
-float MatrixGet (float *matrix, int index)
-{
-	return matrix[index];
-}
-*/
 
 float MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
 {
@@ -137,12 +122,7 @@ void MatrixSet (float *matrix, int x, int y, float value)
 {
 	matrix [x+(y<<2)] = value;
 }
-/*
-void	Matrix::Set		(int pos, float value)
-{
-	matrix [pos] = value;
-}
-*/
+
 void MatrixCopy (float *matrixDST, float *matrixSRC)
 {
 	memcpy (matrixDST, matrixSRC, sizeof(float)*16);
@@ -173,16 +153,7 @@ void MatrixScale (float *matrix, float *ptr)
 	matrix[10] *= ptr[2];
 	matrix[11] *= ptr[2];
 }
-/*
-void	Matrix::Set	(float a11, float a21, float a31, float a41,
-					 float a12, float a22, float a32, float a42,
-					 float a13, float a23, float a33, float a43,
-					 float a14, float a24, float a34, float a44)
-{
-}
-*/
-
-
+#endif
 //-----------------------------------------
 
 void MatrixStackInit (MatrixStack *stack)

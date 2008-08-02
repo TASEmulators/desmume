@@ -1467,6 +1467,14 @@ NDS_exec(s32 nb, BOOL force)
 				MMU.CheckDMAs &= ~(1<<(3+(1<<2)));
 			}
 		}
+
+		if(MMU.reg_IE[0]&(1<<21))
+		{
+			if(MMU.gfxfifo.irq==0) return nds.cycles;
+			if(MMU.gfxfifo.irq==3) return nds.cycles;
+			if(MMU.gfxfifo.irq==1 && MMU.gfxfifo.half) NDS_makeARM9Int(21);
+			if(MMU.gfxfifo.irq==2 && MMU.gfxfifo.empty) NDS_makeARM9Int(21);
+		}
         
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 		{

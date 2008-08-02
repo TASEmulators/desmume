@@ -44,6 +44,18 @@ void FIFOInit(FIFO * fifo);
 void FIFOAdd(FIFO * fifo, u32 v);
 u32 FIFOValue(FIFO * fifo);
 
+//================== 3D GFX FIFO
+typedef struct{
+	u32 hits[640];
+	u32 hits_count;
+	u32 empty;
+	u32	half;
+	u32	full;
+	u32 begin;
+	u32 end;
+	u32 irq;
+} GFXFIFO;
+
 #ifdef __cplusplus
 }
 #endif
