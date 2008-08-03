@@ -663,7 +663,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\matrix_sse2-x64.asm"
+				RelativePath="..\matrix_sse2-x64.asm"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -726,7 +726,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\matrix_sse2-x86.asm"
+				RelativePath="..\matrix_sse2-x86.asm"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
