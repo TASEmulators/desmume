@@ -59,12 +59,12 @@
 
 #include <ddraw.h>
 //===================== Init DirectDraw
-LPDIRECTDRAW7			lpDDraw;
-LPDIRECTDRAWSURFACE7	lpPrimarySurface;
-LPDIRECTDRAWSURFACE7	lpBackSurface;
+LPDIRECTDRAW7			lpDDraw=NULL;
+LPDIRECTDRAWSURFACE7	lpPrimarySurface=NULL;
+LPDIRECTDRAWSURFACE7	lpBackSurface=NULL;
 DDSURFACEDESC2			ddsd;
-LPDIRECTDRAWCLIPPER		lpDDClipPrimary;
-LPDIRECTDRAWCLIPPER		lpDDClipBack;
+LPDIRECTDRAWCLIPPER		lpDDClipPrimary=NULL;
+LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 
 /* The compact flash disk image file */
 static const char *bad_glob_cflash_disk_image_file;
@@ -259,11 +259,7 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 		ddsd.dwWidth         = cx;
 		ddsd.dwHeight        = cy;
 		
-		if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK)
-		{
-			MessageBox(hwnd,"Unable to change DirectDraw surface (back)","Error",MB_OK);
-			return -1;
-		}
+		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
 	}
 }
 
@@ -342,6 +338,35 @@ void Input_Post()
 	}
 }
 
+int CreateDDrawBuffers()
+{
+	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
+	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
+	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	ddsd.dwFlags = DDSD_CAPS;
+	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpPrimarySurface, NULL) != DD_OK) return -1;
+	
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize          = sizeof(ddsd);
+	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+	//MainWindowRect.right
+	ddsd.dwWidth         = 256;
+	ddsd.dwHeight        = 384;
+	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
+
+	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
+
+	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, hwnd) != DD_OK) return -4;
+	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
+
+	return 1;
+}
+
 DWORD WINAPI run( LPVOID lpParameter)
 {
      char txt[80];
@@ -360,6 +385,7 @@ DWORD WINAPI run( LPVOID lpParameter)
      int fps=0;
      int fpsframecount=0;
      u64 fpsticks=0;
+	 int	res;
 
 	 DDCAPS	hw_caps, sw_caps;
 
@@ -375,47 +401,11 @@ DWORD WINAPI run( LPVOID lpParameter)
 		return -1;
     }
 
-	memset(&ddsd, 0, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-	ddsd.dwFlags = DDSD_CAPS;
-
-	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpPrimarySurface, NULL) != DD_OK)
+	if (CreateDDrawBuffers()<1)
 	{
-		MessageBox(hwnd,"Unable to create DirectDraw surface (primary)","Error",MB_OK);
+		MessageBox(hwnd,"Unable to set DirectDraw buffers","Error",MB_OK);
 		return -1;
     }
-	
-	memset(&ddsd, 0, sizeof(ddsd));
-	ddsd.dwSize          = sizeof(ddsd);
-	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
-	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
-	ddsd.dwWidth         = 256;
-	ddsd.dwHeight        = 384;
-	
-	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK)
-	{
-		MessageBox(hwnd,"Unable to create DirectDraw surface (back)","Error",MB_OK);
-		return -1;
-    }
-
-	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK)
-	{
-		MessageBox(hwnd,"Unable to create DirectDraw clipper (Primary)","Error",MB_OK);
-		return -1;
-	}
-
-	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, hwnd) != DD_OK)
-	{
-		MessageBox(hwnd,"Unable to set clipper for main window (Primary)","Error",MB_OK);
-		return -1;
-	}
-
-	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK)
-	{
-		MessageBox(hwnd,"Unable to set clipper (Primary)","Error",MB_OK);
-		return -1;
-	}
 
     NDS_3D_SetDriver (GPU3D_OPENGL);
 	 
@@ -440,11 +430,13 @@ DWORD WINAPI run( LPVOID lpParameter)
 
                if (!skipnextframe)
                {
+					int res;
 					memset(&ddsd, 0, sizeof(ddsd));
 					ddsd.dwSize = sizeof(ddsd);
 					ddsd.dwFlags=DDSD_ALL;
+					res=IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL);
 					
-					if (IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL) == DD_OK)
+					if (res == DD_OK)
 					{
 						char* buffer = (char*)ddsd.lpSurface;
 						
@@ -514,19 +506,32 @@ DWORD WINAPI run( LPVOID lpParameter)
 							}
 						}
 						else
-							printlog("16bit depth color not supported");
-
-						
+							 printlog("16bit depth color not supported");
 						IDirectDrawSurface7_Unlock(lpBackSurface,ddsd.lpSurface);
-						IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0);
+
+						if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
+						{
+							printlog("DirectDraw buffers is lost\n");
+							if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
+								IDirectDrawSurface7_Restore(lpBackSurface);
+						}
+					}
+					else
+					{
+						if (res==DDERR_SURFACELOST)
+						{
+							printlog("DirectDraw buffers is lost\n");
+							if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
+								IDirectDrawSurface7_Restore(lpBackSurface);
+						}
 					}
 
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-                  if(curticks >= fpsticks + freq)
+                  if(curticks >= fpsticks + freq) // TODO: print fps on screen in DDraw
                   {
                      fps = fpsframecount;
-					 sprintf(txt,"DeSmuME v%s (%d)", VERSION, fps);
+					 sprintf(txt,"(%d) DeSmuME v%s", fps, VERSION);
                      SetWindowText(hwnd, txt);
                      fpsframecount = 0;
                      QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
@@ -591,15 +596,13 @@ DWORD WINAPI run( LPVOID lpParameter)
                   if (framestoskip < 1)
                      framestoskip += frameskiprate;
                }
-
-               CWindow_RefreshALL();
-               Sleep(0);
           }
           paused = TRUE;
           Sleep(500);
      }
 	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
 	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
+	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
     if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
      return 1;
 }
