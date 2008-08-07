@@ -19,7 +19,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-void messageDialogBlank();
 void messageDialog(NSString *title, NSString *text);
 BOOL messageDialogYN(NSString *title, NSString *text);
 NSString* openDialog(NSArray *file_types);

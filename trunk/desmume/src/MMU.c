@@ -174,7 +174,7 @@ void MMU_Init(void) {
 	int i;
 
 	LOG("MMU init\n");
-	printlog("MMU init\n");
+	//printlog("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
 

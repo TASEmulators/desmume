@@ -21,6 +21,8 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include "types.h"
+
 #ifdef SSE2
 	#include <xmmintrin.h>
 	#include <emmintrin.h>
@@ -42,19 +44,19 @@ typedef struct MatrixStack
 } MatrixStack;
 
 #ifdef SSE2
-void	__fastcall MatrixInit				(float *matrix);
-extern void	__fastcall MatrixMultVec3x3		(const gMatrix matrix, const gMatrix vecPtr);
-extern void	__fastcall MatrixMultVec4x4		(const gMatrix matrix, const gMatrix vecPtr);
-void	__fastcall MatrixIdentity			(float *matrix);
-extern void	__fastcall MatrixMultiply		(const gMatrix matrix, const gMatrix rightMatrix);
-float	__fastcall MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
-void	__fastcall MatrixSet				(float *matrix, int x, int y, float value);
-void	__fastcall MatrixCopy				(const gMatrix matrixDST, const gMatrix matrixSRC);
-extern void __fastcall MatrixTranslate		(const gMatrix matrix, const gMatrix ptr);
-extern void	__fastcall MatrixScale			(const gMatrix matrix, const gMatrix ptr);
-void	__fastcall MatrixScale				(const gMatrix matrix, const gMatrix ptr);
+void	FASTCALL MatrixInit				(float *matrix);
+extern void	FASTCALL MatrixMultVec3x3		(const gMatrix matrix, const gMatrix vecPtr);
+extern void	FASTCALL MatrixMultVec4x4		(const gMatrix matrix, const gMatrix vecPtr);
+void	FASTCALL MatrixIdentity			(float *matrix);
+extern void	FASTCALL MatrixMultiply		(const gMatrix matrix, const gMatrix rightMatrix);
+float	FASTCALL MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
+void	FASTCALL MatrixSet				(float *matrix, int x, int y, float value);
+void	FASTCALL MatrixCopy				(const gMatrix matrixDST, const gMatrix matrixSRC);
+extern void FASTCALL MatrixTranslate		(const gMatrix matrix, const gMatrix ptr);
+extern void	FASTCALL MatrixScale			(const gMatrix matrix, const gMatrix ptr);
+void	FASTCALL MatrixScale				(const gMatrix matrix, const gMatrix ptr);
 #else
-void	__fastcall MatrixInit				(float *matrix);
+void	FASTCALL MatrixInit				(float *matrix);
 void	MatrixMultVec3x3		(float *matrix, float *vecPtr);
 void	MatrixMultVec4x4		(float *matrix, float *vecPtr);
 void	MatrixIdentity			(float *matrix);

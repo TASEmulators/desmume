@@ -24,11 +24,6 @@
 //Dialog Boxes-------------------------------------------------
 ////////////////////////////////////////////////////////////////
 
-void messageDialogBlank()
-{
-	NSRunAlertPanel(@"Click OK", @" ", nil/*OK*/, nil, nil);
-}
-
 void messageDialog(NSString *title, NSString *text)
 {
 	NSRunAlertPanel(title, text, nil/*OK*/, nil, nil);
@@ -36,7 +31,7 @@ void messageDialog(NSString *title, NSString *text)
 
 BOOL messageDialogYN(NSString *title, NSString *text)
 {
-	return NSRunAlertPanel(title, text, @"Yes", @"No", nil) != 0;
+	return NSRunAlertPanel(title, text, NSLocalizedString(@"Yes", nil), NSLocalizedString(@"No", nil), nil) != 0;
 }
 
 //does an open dialog to choose an NDS file
