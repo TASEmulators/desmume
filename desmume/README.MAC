@@ -6,8 +6,8 @@
 
 1) Compiling instructions...................................13
 2) How to use DeSmuME.......................................31
-3) Contact information......................................78
-4) Disclaimer...............................................95
+3) Contact information......................................73
+4) Disclaimer...............................................90
 
 
 1 Compiling instructions______________________________________
@@ -45,7 +45,8 @@ Linux and Windows versions.
 
 Click the lower screen for DS touch-screen input.
 
-Here are the default key mappings(may be subject to change):
+Key mappings can be changed or viewed from the preferences
+panel. Here are the defaults (may be subject to change):
 up arrow - Up
 left arrow - Left
 down arrow - Down
@@ -58,12 +59,6 @@ c - Left Trigger
 n - Right Trigger
 enter - Start button
 space - Select button
-
-Keys can be customized with command line:
-DeSmuME.app/Contents/MacOS/DeSmuME -KeyA v -KeyB b ...
-
-KeyA, KeyB, KeyX, KeyY, KeyL, KeyR, KeyUp, KeyDown
-KeyLeft, KeyRight, KeyStart, and KeySelect are all accepted.
 
 States can be saved with shift + number keys.
 States can be loaded with the number keys.

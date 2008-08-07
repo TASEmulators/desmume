@@ -137,8 +137,8 @@
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		729BECF80D9D589E00ED561B /* OGLRender.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = OGLRender.c; path = ../windows/OGLRender.c; sourceTree = SOURCE_ROOT; };
 		729BECF90D9D589E00ED561B /* OGLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender.h; path = ../windows/OGLRender.h; sourceTree = SOURCE_ROOT; };
-		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = SOURCE_ROOT; };
-		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = SOURCE_ROOT; };
+		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -156,7 +156,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		080E96DDFE201D6D7F000001 /* Classes */ = {
+		080E96DDFE201D6D7F000001 /* Cocoa Port */ = {
 			isa = PBXGroup;
 			children = (
 				7277B8EA0D9F25F700D283BD /* about.m */,
@@ -180,7 +180,7 @@
 				729BEC6E0D9D55DB00ED561B /* video_output_view.m */,
 				729BEC6D0D9D55DB00ED561B /* video_output_view.h */,
 			);
-			name = Classes;
+			name = "Cocoa Port";
 			sourceTree = "<group>";
 		};
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
@@ -211,12 +211,10 @@
 		29B97314FDCFA39411CA2CEA /* DeSmuME */ = {
 			isa = PBXGroup;
 			children = (
-				72C000010D9D59E60046B7EA /* Info.plist */,
-				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
 				729BECEF0D9D581900ED561B /* AudioUnit.framework */,
 				729BECE60D9D57F600ED561B /* OpenGL.framework */,
-				080E96DDFE201D6D7F000001 /* Classes */,
-				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				080E96DDFE201D6D7F000001 /* Cocoa Port */,
+				29B97315FDCFA39411CA2CEA /* Core */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
@@ -224,7 +222,7 @@
 			name = DeSmuME;
 			sourceTree = "<group>";
 		};
-		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
 				729BECF80D9D589E00ED561B /* OGLRender.c */,
@@ -280,12 +278,14 @@
 				729BECCA0D9D57AF00ED561B /* wifi.c */,
 				729BECCB0D9D57AF00ED561B /* wifi.h */,
 			);
-			name = "Other Sources";
+			name = Core;
 			sourceTree = "<group>";
 		};
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				72C000010D9D59E60046B7EA /* Info.plist */,
+				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
 				726D68AA0E310B1800800002 /* French.nib */,
 				726D68AB0E310B1800800002 /* French.strings */,
 				7277B6DF0D9E045700D283BD /* English.nib */,

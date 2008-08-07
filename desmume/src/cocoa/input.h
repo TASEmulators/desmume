@@ -32,7 +32,8 @@
 	VideoOutputWindow *my_ds;
 }
 //preferences
-+ (NSView*)createPreferencesView:(NSRect)size;
++ (NSView*)createPreferencesView:(float)width;
++ (NSDictionary*)appDefaults;
 
 //creation/deletion
 - (id)initWithWindow:(VideoOutputWindow*)nds;

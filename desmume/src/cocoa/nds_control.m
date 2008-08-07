@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#import "nds_control.h"
+#import "nds_control.h"=
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
 
@@ -82,11 +82,11 @@ struct NDS_fw_config_data firmware;
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	flash_file = [[defaults stringForKey:PREF_FLASH_FILE] retain];
 	if ([flash_file length] > 0) {
-		NSLog(@"Using flash file: \"%@\"\n", flash_file);
+		//NSLog(@"Using flash file: \"%@\"\n", flash_file);
 	} else {
 		[flash_file release];
 		flash_file = nil;
-		NSLog(@"No flash file given\n");
+		//NSLog(@"No flash file given\n");
 	}
 
 	//check if we can send messages on other threads, which we will use for video update
@@ -129,7 +129,7 @@ struct NDS_fw_config_data firmware;
 	} else
 	{
 		[context makeCurrentContext];
-		
+
 		//check extensions
 		BOOL supports_pixel_buffers = NO;
 		const char *extension_list = (const char*)glGetString(GL_EXTENSIONS);
@@ -141,14 +141,14 @@ struct NDS_fw_config_data firmware;
 
 		//attempt to use a pixel-buffer for hopefully hardware accelerated offscreen drawing
 		if(supports_pixel_buffers == YES)
-		{ 
+		{
 			NSOpenGLPixelBuffer *pixel_buffer = [[NSOpenGLPixelBuffer alloc]
 			initWithTextureTarget:GL_TEXTURE_2D
 			textureInternalFormat:GL_RGBA
 			textureMaxMipMapLevel:0
 			pixelsWide:DS_SCREEN_WIDTH
 			pixelsHigh:DS_SCREEN_HEIGHT*2];
-			
+
 			if(pixel_buffer == nil)
 			{
 				GLenum error = glGetError();
@@ -161,31 +161,31 @@ struct NDS_fw_config_data firmware;
 				gl_ready = true;
 			}
 		}
-	
+
 		//if pixel buffers didn't work out, try simple offscreen renderings (probably software accelerated)
 		if(!gl_ready)
 		{
-			[context setOffScreen:(void*)&gpu_buff width:DS_SCREEN_WIDTH height:DS_SCREEN_HEIGHT rowbytes:DS_SCREEN_WIDTH*5];		
+			[context setOffScreen:(void*)&gpu_buff width:DS_SCREEN_WIDTH height:DS_SCREEN_HEIGHT rowbytes:DS_SCREEN_WIDTH*5];
 			gl_ready = true;
 		}
 	}
-	
+
 	if(context)
 	{
 		[context makeCurrentContext];
-		
+
 		NDS_3D_SetDriver(GPU3D_OPENGL);
 		if(!gpu3D->NDS_3D_Init())
 			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
 	}
-	
+
 	if(prev_context != nil) //make sure the old context is restored, and make sure our new context is not set in this thread (since the other thread will need it)
-	{ 
+	{
 		[prev_context makeCurrentContext];
 		[prev_context release];
 	} else
 		[NSOpenGLContext clearCurrentContext];
-	
+
 	//Sound Init
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
 		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize sound core");
@@ -485,11 +485,11 @@ struct NDS_fw_config_data firmware;
 - (void)reset
 {
 	//note that the execution_lock method would probably be a little better
-	
+
 	//but the NDS_Reset() function sets execution to false for some reason
 	//we treat execution == false as an emulation error
 	//pausing allows the other thread to not think theres an emulation error
-	
+
 	//[execution_lock lock];
 	bool old_run = run;
 	if(old_run)
@@ -497,12 +497,12 @@ struct NDS_fw_config_data firmware;
 	   run = false;
 		while(!paused){}
 	}
-	
+
 	NDS_Reset();
 
 	//[execution_lock unlock];
 	run = old_run;
-	
+
 	//if there was a previous emulation error, clear it, since we reset
 	execute = true;
 }
@@ -936,12 +936,12 @@ struct NDS_fw_config_data firmware;
 - (BOOL)loadState:(NSString*)file
 {
 	[execution_lock lock];
-	
+
 	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
 	[prev_context retain];
 	[context makeCurrentContext];
-		
+
 	BOOL result = NO;
 	if(savestate_load([file cStringUsingEncoding:NSUTF8StringEncoding]))
 		result = YES;
@@ -954,7 +954,7 @@ struct NDS_fw_config_data firmware;
 		[prev_context release];
 	} else
 		[NSOpenGLContext clearCurrentContext];
-	
+
 	return result;
 }
 
@@ -982,11 +982,11 @@ struct NDS_fw_config_data firmware;
 
 	BOOL result = NO;
 	[execution_lock lock];
-	
+
 	//Set the GPU context (if it exists) incase the core needs to load anything into opengl during state load
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
 	[prev_context retain];
-	[context makeCurrentContext];	
+	[context makeCurrentContext];
 
 	loadstate_slot(slot + 1); //no exection handling?
 	result = YES;
@@ -999,7 +999,7 @@ struct NDS_fw_config_data firmware;
 		[prev_context release];
 	} else
 		[NSOpenGLContext clearCurrentContext];
-	
+
 	return result;
 }
 
@@ -1269,10 +1269,10 @@ struct NDS_fw_config_data firmware;
 				if(frame_end_time - last_video_update > 10000)
 				{
 					last_video_update = frame_end_time;
-				
+
 					ScreenState *new_screen_data = [[ScreenState alloc] init];
 					[new_screen_data setColorData:GPU_screen];
-					
+
 					if(timer_based)
 					{ //for tiger compatibility
 						[video_update_lock lock];
@@ -1281,7 +1281,7 @@ struct NDS_fw_config_data firmware;
 						[video_update_lock unlock];
 					} else
 					{ //for leopard and later
-						
+
 						//this will generate a warning when compiling on tiger or earlier, but it should
 						//be ok since the purpose of the if statement is to check if this will work
 						[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];

@@ -23,20 +23,20 @@
 #include <stdlib.h>
 #include "matrix.h"
 
-void __fastcall MatrixInit  (float *matrix)
+void FASTCALL MatrixInit  (float *matrix)
 {
 	memset (matrix, 0, sizeof(float)*16);
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
 #ifdef SSE2
-void __fastcall MatrixIdentity	(float *matrix) //============== TODO
+void FASTCALL MatrixIdentity	(float *matrix) //============== TODO
 {
 	memset (matrix, 0, sizeof(float)*16);
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
+float FASTCALL MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
 {
 	int iMod = index%4, iDiv = (index>>2)<<2;
 
@@ -44,12 +44,12 @@ float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *righ
 			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
 }
 
-void __fastcall MatrixSet (float *matrix, int x, int y, float value)	// TODO
+void FASTCALL MatrixSet (float *matrix, int x, int y, float value)	// TODO
 {
 	matrix [x+(y<<2)] = value;
 }
 
-void __fastcall MatrixCopy (float *matrixDST, float *matrixSRC)
+void FASTCALL MatrixCopy (float *matrixDST, float *matrixSRC)
 {
 	memcpy (matrixDST, matrixSRC, sizeof(float)*16);
 }

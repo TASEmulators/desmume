@@ -22,6 +22,7 @@
 */
 
 #include "FIFO.h"
+#include <string.h>
 
 void FIFOInit(FIFO * fifo)
 {

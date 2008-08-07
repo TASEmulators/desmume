@@ -43,43 +43,42 @@
 #define DS_SCREEN_Y_RATIO ((192.0 * 2.0) / 256.0)
 
 //
-NSMenuItem *close_rom_item;
-NSMenuItem *execute_item;
-NSMenuItem *pause_item;
-NSMenuItem *reset_item;
-NSMenuItem *save_state_as_item;
-NSMenuItem *load_state_from_item;
-NSMenuItem *saveSlot_item[MAX_SLOTS];
-NSMenuItem *loadSlot_item[MAX_SLOTS];
-//NSMenuItem *clear_all_saves_item;
-NSMenuItem *rom_info_item;
-NSMenuItem *frame_skip_auto_item;
-NSMenuItem *frame_skip_item[MAX_FRAME_SKIP];
+NSMenuItem *close_rom_item = nil;
+NSMenuItem *execute_item = nil;
+NSMenuItem *pause_item = nil;
+NSMenuItem *reset_item = nil;
+NSMenuItem *save_state_as_item = nil;
+NSMenuItem *load_state_from_item = nil;
+NSMenuItem *saveSlot_item[MAX_SLOTS] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil }; //make sure this corresponds to the amount in max slots
+NSMenuItem *loadSlot_item[MAX_SLOTS] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
+NSMenuItem *rom_info_item = nil;
+NSMenuItem *frame_skip_auto_item = nil;
+NSMenuItem *frame_skip_item[MAX_FRAME_SKIP] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
 
-NSMenuItem *volume_item[10];
-NSMenuItem *mute_item;
+NSMenuItem *volume_item[10] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
+NSMenuItem *mute_item = nil;
 
 //screen menu items
-NSMenuItem *resize1x;
-NSMenuItem *resize2x;
-NSMenuItem *resize3x;
-NSMenuItem *resize4x;
-NSMenuItem *constrain_item;
-NSMenuItem *min_size_item;
-NSMenuItem *toggle_status_bar_item;
-NSMenuItem *rotation0_item;
-NSMenuItem *rotation90_item;
-NSMenuItem *rotation180_item;
-NSMenuItem *rotation270_item;
-NSMenuItem *topBG0_item;
-NSMenuItem *topBG1_item;
-NSMenuItem *topBG2_item;
-NSMenuItem *topBG3_item;
-NSMenuItem *subBG0_item;
-NSMenuItem *subBG1_item;
-NSMenuItem *subBG2_item;
-NSMenuItem *subBG3_item;
-NSMenuItem *screenshot_to_file_item;
+NSMenuItem *resize1x = nil;
+NSMenuItem *resize2x = nil;
+NSMenuItem *resize3x = nil;
+NSMenuItem *resize4x = nil;
+NSMenuItem *constrain_item = nil;
+NSMenuItem *min_size_item = nil;
+NSMenuItem *toggle_status_bar_item = nil;
+NSMenuItem *rotation0_item = nil;
+NSMenuItem *rotation90_item = nil;
+NSMenuItem *rotation180_item = nil;
+NSMenuItem *rotation270_item = nil;
+NSMenuItem *topBG0_item = nil;
+NSMenuItem *topBG1_item = nil;
+NSMenuItem *topBG2_item = nil;
+NSMenuItem *topBG3_item = nil;
+NSMenuItem *subBG0_item = nil;
+NSMenuItem *subBG1_item = nil;
+NSMenuItem *subBG2_item = nil;
+NSMenuItem *subBG3_item = nil;
+NSMenuItem *screenshot_to_file_item = nil;
 
 @implementation VideoOutputWindow
 
