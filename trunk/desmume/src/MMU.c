@@ -309,12 +309,12 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	u8 *source;
 	u32 size ;
 	u8 VRAMBankCnt;
-	#if 1
-		return ;
-	#endif
+
 	destination = 0 ;
 	source = 0;
-	VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block) ;
+	VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block);
+	if(!(VRAMBankCnt&0x80))return;
+
 	switch (block)
 	{
 		case 0: // Bank A
@@ -359,56 +359,70 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	switch (VRAMBankCnt & 7) {
 		case 0:
 			/* vram is allready stored at LCD, we dont need to write it back */
-			MMU.vScreen = 1;
 			break ;
 		case 1:
-	switch(block){
-	case 0:
-	case 1:
-	case 2:
-	case 3:
-		/* banks are in use for BG at ABG + ofs * 0x20000 */
-				source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-		break ;
-	case 4:
-		/* bank E is in use at ABG */ 
-		source = ARM9Mem.ARM9_ABG ;
-		break;
-	case 5:
-	case 6:
-		/* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
-		source = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
-		break;
-	case 8:
-		/* bank H is in use at BBG */ 
-		source = ARM9Mem.ARM9_BBG ;
-		break ;
-	case 9:
-		/* bank I is in use at BBG */ 
-		source = ARM9Mem.ARM9_BBG + 0x8000 ;
-		break;
-	default: return ;
-	}
+			switch(block){
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+					/* banks are in use for BG at ABG + ofs * 0x20000 */
+					source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
+					break ;
+				case 4:
+					/* bank E is in use at ABG */ 
+					source = ARM9Mem.ARM9_ABG ;
+					break;
+				case 5:
+				case 6:
+					/* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
+					source = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
+					break;
+				case 8:
+					/* bank H is in use at BBG */ 
+					source = ARM9Mem.ARM9_BBG ;
+					break ;
+				case 9:
+					/* bank I is in use at BBG */ 
+					source = ARM9Mem.ARM9_BBG + 0x8000 ;
+					break;
+				default: return ;
+			}
 			break ;
 		case 2:
-			if (block < 2)
+			switch(block)
 			{
-				/* banks A,B are in use for OBJ at AOBJ + ofs * 0x20000 */
-				source = ARM9Mem.ARM9_AOBJ + ((VRAMBankCnt >> 3) & 1) * 0x20000 ;
-			} else return ;
+				case 0:
+				case 1:
+					// banks A,B are in use for OBJ at AOBJ + ofs * 0x20000
+					source=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&1)*0x20000);
+					break;
+				case 4:
+					source=ARM9Mem.ARM9_AOBJ;
+					break;
+				case 5:
+				case 6:
+					source=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
+					break;
+				case 9:
+				//	source=ARM9Mem.ARM9_BOBJ;
+					break;
+			}
 			break ;
+		case 3: break;
 		case 4:
-	switch(block){
-	case 2:
-		/* bank C is in use at BBG */ 
-		source = ARM9Mem.ARM9_BBG ;
-		break ;
-	case 3:
-		/* bank D is in use at BOBJ */ 
-		source = ARM9Mem.ARM9_BOBJ ;
-		break ;
-	default: return ;
-	}
+			switch(block)
+			{
+				case 2:
+					/* bank C is in use at BBG */ 
+					source = ARM9Mem.ARM9_BBG ;
+					break ;
+				case 3:
+					/* bank D is in use at BOBJ */ 
+					source = ARM9Mem.ARM9_BOBJ ;
+					break ;
+				default: return ;
+			}
 			break ;
 		default:
 			return ;
@@ -423,9 +437,8 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 	u8 *destination;
 	u8 *source;
 	u32 size;
-	#if 1
-		return ;
-	#endif
+
+	if(!(VRAMBankCnt&0x80))return;
 	destination = 0;
 	source = 0;
 	size = 0;
@@ -470,59 +483,66 @@ void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 		default:
 			return ;
 	}
-	switch (VRAMBankCnt & 7) {
-		case 0:
-			/* vram is allready stored at LCD, we dont need to write it back */
-			MMU.vScreen = 1;
+switch (VRAMBankCnt & 7) {
+		case 0:	// vram is allready stored at LCD, we dont need to write it back
 			break ;
 		case 1:
-			if (block < 4)
-			{
-				/* banks are in use for BG at ABG + ofs * 0x20000 */
-				destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-			} else return ;
+			switch(block){
+				case 0:
+				case 1:
+				case 2:
+				case 3:	// banks are in use for BG at ABG + ofs * 0x20000
+					destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
+					break ;
+				case 4:	// bank E is in use at ABG 
+					destination = ARM9Mem.ARM9_ABG ;
+					break;
+				case 5:
+				case 6:	// banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)
+					destination = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 4) & 1) * 0x10000) ;
+					break;
+				case 7:
+				case 8:	// bank H is in use at BBG
+					destination = ARM9Mem.ARM9_BBG ;
+					break ;
+				case 9:	// bank I is in use at BBG
+					//destination = ARM9Mem.ARM9_BBG + 0x8000 ;
+					break;
+				default: return ;
+				}
 			break ;
 		case 2:
-				switch(block){
-	case 0:
-	case 1:
-	case 2:
-	case 3:
-		/* banks are in use for BG at ABG + ofs * 0x20000 */
-				destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-		break ;
-	case 4:
-		/* bank E is in use at ABG */ 
-		destination = ARM9Mem.ARM9_ABG ;
-		break;
-	case 5:
-	case 6:
-		/* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
-		destination = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
-		break;
-	case 8:
-		/* bank H is in use at BBG */ 
-		destination = ARM9Mem.ARM9_BBG ;
-		break ;
-	case 9:
-		/* bank I is in use at BBG */ 
-		destination = ARM9Mem.ARM9_BBG + 0x8000 ;
-		break;
-	default: return ;
-	}
-			break ;
+			switch(block)
+			{
+				case 0:
+				case 1:
+					destination=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&3)*0x20000);
+					break;
+				case 4:
+					destination=ARM9Mem.ARM9_AOBJ;
+					break;
+				case 5:
+				case 6:
+					destination=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
+					break;
+				case 9:
+				//	destination=ARM9Mem.ARM9_BOBJ;
+					break;
+			}
+
+			break;
+		case 3: break;
 		case 4:
-	switch(block){
-	case 2:
-		/* bank C is in use at BBG */ 
-		destination = ARM9Mem.ARM9_BBG ;
-		break ;
-	case 3:
-		/* bank D is in use at BOBJ */ 
-		destination = ARM9Mem.ARM9_BOBJ ;
-		break ;
-	default: return ;
-	}
+				switch(block){
+				case 2:	// bank C is in use at BBG
+					destination = ARM9Mem.ARM9_BBG ;
+					break ;
+				case 3:
+					// bank D is in use at BOBJ 
+					destination = ARM9Mem.ARM9_BOBJ ;
+					break ;
+				default: return ;
+				}
 			break ;
 		default:
 			return ;
@@ -703,22 +723,11 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 			// This is hacked due to the only current 3D core
 			case 0x04000600:
             {
-				/*
-                u32 fifonum = IPCFIFO+proc;
-
-				u32 gxstat =	(MMU.fifos[fifonum].empty<<26) | 
-								(1<<25) | 
-								(MMU.fifos[fifonum].full<<24) | 
-								/*((NDS_nbpush[0]&1)<<13) | ((NDS_nbpush[2]&0x1F)<<8) |*/ 
-				//				2;
 				u32 gxstat =(2|(MMU.gfxfifo.hits_count<<16)|
 							(MMU.gfxfifo.full<<24)|
 							(MMU.gfxfifo.empty<<25)|
 							(MMU.gfxfifo.half<<26)|
 							(MMU.gfxfifo.irq<<30));
-
-				//printlog("GXSTAT: 0x%X\n", gxstat);
-
 				return	gxstat;
             }
 
@@ -862,7 +871,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 	if(proc==ARMCPU_ARM9 && adr<0x02000000)
 	{
 		//printlog("MMU ITCM (08) Write %08X: %08X\n", adr, val);
-		return T1WriteByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		T1WriteByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		return ;
 	}
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
@@ -892,7 +902,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 	switch(adr)
 	{
 		case REG_DISPA_WIN0H: 	 
-			if(proc == ARMCPU_ARM9) GPU_setWIN0_H1 (MainScreen.gpu, val);
+			if(proc == ARMCPU_ARM9) GPU_setWIN0_H1(MainScreen.gpu, val);
 			break ; 	 
 		case REG_DISPA_WIN0H+1: 	 
 			if(proc == ARMCPU_ARM9) GPU_setWIN0_H0 (MainScreen.gpu, val);
@@ -1013,52 +1023,27 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		case REG_VRAMCNTD:
 			if(proc == ARMCPU_ARM9)
 			{
-				
-
-                MMU_VRAMWriteBackToLCD(0) ;
-                MMU_VRAMWriteBackToLCD(1) ;
-                MMU_VRAMWriteBackToLCD(2) ;
-                MMU_VRAMWriteBackToLCD(3) ;
-				if (!(val&0x80))
-				{
-					u8 tmp=T1ReadByte(ARM9Mem.ARM9_REG, 0x240);
-					switch(tmp & 7)
-					{
-						case 0:
-							memset(ARM9Mem.ARM9_LCD,0,0x20000);
-							break;
-						case 1:
-							memset(ARM9Mem.ARM9_ABG+(0x20000*OFS(tmp)),0,0x20000);
-							break;
-						case 2:
-							memset(ARM9Mem.ARM9_AOBJ+(0x20000*(OFS(tmp)&1)),0,0x20000);
-							//memset(ARM9Mem.ARM9_ABG+0x40000,0,0x20000);
-							break;
-						case 3:
-							memset(ARM9Mem.textureSlotAddr[OFS(tmp)], 0, 0x20000);
-							break;
-					}
-				} else
+				MMU_VRAMWriteBackToLCD(adr-REG_VRAMCNTA) ;
 				switch(val & 0x1F)
 				{
 				case 1 :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 0; // BG-VRAM
-					memset(ARM9Mem.ARM9_ABG,0,0x20000);
+					//memset(ARM9Mem.ARM9_ABG,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*0); // BG-VRAM
 					break;
 				case 1 | (1 << 3) :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 1; // BG-VRAM
-					memset(ARM9Mem.ARM9_ABG+0x20000,0,0x20000);
+					//memset(ARM9Mem.ARM9_ABG+0x20000,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*1); // BG-VRAM
 					break;
 				case 1 | (2 << 3) :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 2; // BG-VRAM
-					memset(ARM9Mem.ARM9_ABG+0x40000,0,0x20000);
+					//memset(ARM9Mem.ARM9_ABG+0x40000,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*2); // BG-VRAM
 					break;
 				case 1 | (3 << 3) :
 					MMU.vram_mode[adr-REG_VRAMCNTA] = 3; // BG-VRAM
-					memset(ARM9Mem.ARM9_ABG+0x60000,0,0x20000);
+					//memset(ARM9Mem.ARM9_ABG+0x60000,0,0x20000);
 					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*3); // BG-VRAM
 					break;
 				case 0: // mapped to lcd
@@ -1088,7 +1073,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
                 case REG_VRAMCNTE :
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD((u8)REG_VRAMCNTE) ;
+                MMU_VRAMWriteBackToLCD(4);
                                 if((val & 7) == 5)
 				{
 					ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
@@ -1111,13 +1096,14 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
 				}
 				
-				MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTE,val) ;
+				MMU_VRAMReloadFromLCD(4,val) ;
 			}
 			break;
 		
                 case REG_VRAMCNTF :
 			if(proc == ARMCPU_ARM9)
 			{
+				MMU_VRAMWriteBackToLCD(5);
 				switch(val & 0x1F)
 				{
                                         case 4 :
@@ -1154,11 +1140,13 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 						ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x92000;
 						break;
 				}
+				MMU_VRAMReloadFromLCD(5,val);
 		 	}
 			break;
                 case REG_VRAMCNTG :
 			if(proc == ARMCPU_ARM9)
 			{
+				MMU_VRAMWriteBackToLCD(6);
 		 		switch(val & 0x1F)
 				{
                                         case 4 :
@@ -1195,13 +1183,14 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 						ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x96000;
 						break;
 				}
+				MMU_VRAMReloadFromLCD(6,val);
 			}
 			break;
 			
                 case REG_VRAMCNTH  :
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD((u8)REG_VRAMCNTH) ;
+                MMU_VRAMWriteBackToLCD(7);
                 
                                 if((val & 7) == 2)
 				{
@@ -1211,14 +1200,14 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					ARM9Mem.ExtPal[1][3] = ARM9Mem.ARM9_LCD + 0x9E000;
 				}
 				
-				MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTH,val) ;
+				MMU_VRAMReloadFromLCD(7,val);
 			}
 			break;
 			
                 case REG_VRAMCNTI  :
 			if(proc == ARMCPU_ARM9)
 			{
-                MMU_VRAMWriteBackToLCD((u8)REG_VRAMCNTI) ;
+                MMU_VRAMWriteBackToLCD(8);
                 
                                 if((val & 7) == 3)
 				{
@@ -1226,7 +1215,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 					ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD + 0xA2000;
 				}
 				
-				MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTI,val) ;
+				MMU_VRAMReloadFromLCD(8,val);
 			}
 			break;
 
@@ -1268,7 +1257,8 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 	if(proc==ARMCPU_ARM9 && adr<0x02000000)
 	{
 		//printlog("MMU ITCM (16) Write %08X: %08X\n", adr, val);
-		return T1WriteWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		T1WriteWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		return ;
 	}
 
 	// CFlash writing, Mic
@@ -1622,8 +1612,16 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				if ( new_val && old_val != new_val) {
 				  /* raise an interrupt request to the CPU if needed */
 				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
-				    NDS_ARM7.wIRQ = TRUE;
-				    NDS_ARM7.waitIRQ = FALSE;
+						if (proc==ARMCPU_ARM7)
+						{
+							NDS_ARM7.wIRQ = TRUE;
+							NDS_ARM7.waitIRQ = FALSE;
+						}
+						else
+						{
+							NDS_ARM9.wIRQ = TRUE;
+							NDS_ARM9.waitIRQ = FALSE;
+						}
 				  }
 				}
 				return;
@@ -1653,8 +1651,16 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				if ( MMU.reg_IME[proc]) {
 				  /* raise an interrupt request to the CPU if needed */
 				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
-				    NDS_ARM7.wIRQ = TRUE;
-				    NDS_ARM7.waitIRQ = FALSE;
+						if (proc==ARMCPU_ARM7)
+						{
+							NDS_ARM7.wIRQ = TRUE;
+							NDS_ARM7.waitIRQ = FALSE;
+						}
+						else
+						{
+							NDS_ARM9.wIRQ = TRUE;
+							NDS_ARM9.waitIRQ = FALSE;
+						}
 				  }
 				}
 				return;
@@ -1906,7 +1912,8 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 	if(proc==ARMCPU_ARM9 && adr<0x02000000)
 	{
 		//printlog("MMU ITCM (32) Write %08X: %08X\n", adr, val);
-		return T1WriteLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		T1WriteLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
+		return ;
 	}
 	
 	// CFlash writing, Mic
@@ -2362,6 +2369,43 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 	            break;
 			}
 
+						case REG_DISPA_WIN0H:
+			{
+				if(proc==ARMCPU_ARM9)
+				{
+					GPU_setWIN0_H(MainScreen.gpu, val&0xFFFF);
+					GPU_setWIN1_H(MainScreen.gpu, val>>16);
+				}
+				break;
+			}
+			case REG_DISPA_WIN0V:
+			{
+				if(proc==ARMCPU_ARM9)
+				{
+					GPU_setWIN0_V(MainScreen.gpu, val&0xFFFF);
+					GPU_setWIN1_V(MainScreen.gpu, val>>16);
+				}
+				break;
+			}
+			case REG_DISPB_WIN0H:
+			{
+				if(proc==ARMCPU_ARM9)
+				{
+					GPU_setWIN0_H(SubScreen.gpu, val&0xFFFF);
+					GPU_setWIN1_H(SubScreen.gpu, val>>16);
+				}
+				break;
+			}
+			case REG_DISPB_WIN0V:
+			{
+				if(proc==ARMCPU_ARM9)
+				{
+					GPU_setWIN0_V(SubScreen.gpu, val&0xFFFF);
+					GPU_setWIN1_V(SubScreen.gpu, val>>16);
+				}
+				break;
+			}
+
 			case REG_DISPA_BLDCNT:
 			{
 				if (proc == ARMCPU_ARM9) 	 
@@ -2411,8 +2455,16 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				if ( new_val && old_val != new_val) {
 				  /* raise an interrupt request to the CPU if needed */
 				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
-				    NDS_ARM7.wIRQ = TRUE;
-				    NDS_ARM7.waitIRQ = FALSE;
+						if (proc==ARMCPU_ARM7)
+						{
+							NDS_ARM7.wIRQ = TRUE;
+							NDS_ARM7.waitIRQ = FALSE;
+						}
+						else
+						{
+							NDS_ARM9.wIRQ = TRUE;
+							NDS_ARM9.waitIRQ = FALSE;
+						}
 				  }
 				}
 				return;
@@ -2423,8 +2475,16 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				if ( MMU.reg_IME[proc]) {
 				  /* raise an interrupt request to the CPU if needed */
 				  if ( MMU.reg_IE[proc] & MMU.reg_IF[proc]) {
-				    NDS_ARM7.wIRQ = TRUE;
-				    NDS_ARM7.waitIRQ = FALSE;
+						if (proc==ARMCPU_ARM7)
+						{
+							NDS_ARM7.wIRQ = TRUE;
+							NDS_ARM7.waitIRQ = FALSE;
+						}
+						else
+						{
+							NDS_ARM9.wIRQ = TRUE;
+							NDS_ARM9.waitIRQ = FALSE;
+						}
 				  }
 				}
 				return;
@@ -2898,7 +2958,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 	if ((MMU.DMAStartTime[proc][num]==4) &&		// Must be in main memory display mode
 		(taille==4) &&							// Word must be 4
 		(((MMU.DMACrt[proc][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
-		taille = 256*192/2;
+		taille = 24576; //256*192/2;
 	
 	if(MMU.DMAStartTime[proc][num] == 5)
 		taille *= 0x80;

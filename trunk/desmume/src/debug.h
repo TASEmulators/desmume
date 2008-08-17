@@ -53,7 +53,7 @@ void LogStop(void);
 #ifdef DEBUG
 #define LOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#if defined(WIN32) && defined(BETAVERSION) && defined(OLD_LOG)
+#if defined(WIN32) && defined(BETA_VERSION) && defined(OLD_LOG)
 #define LOG(...) printlog(__VA_ARGS__)
 #else
 #define LOG(...)

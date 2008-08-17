@@ -771,39 +771,49 @@ void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) ;
 void GPU_ligne(NDS_Screen * screen, u16 l) ;
 void GPU_setMasterBrightness (GPU *gpu, u16 val);
 
-void GPU_setWIN0_H	(GPU *gpu, u16 val);
-void GPU_setWIN0_H0 (GPU *gpu, u8 val);
-void GPU_setWIN0_H1 (GPU *gpu, u8 val);
+#define GPU_setWIN0_H(gpu, val) {gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF;}
+#define GPU_setWIN0_H0(gpu, val) gpu->WIN0H0 = val
+#define GPU_setWIN0_H1(gpu, val) gpu->WIN0H1 = val
 
-void GPU_setWIN0_V	(GPU *gpu, u16 val);
-void GPU_setWIN0_V0 (GPU *gpu, u8 val);
-void GPU_setWIN0_V1 (GPU *gpu, u8 val);
+#define GPU_setWIN0_V(gpu, val) {gpu->WIN0V0 = val >> 8; gpu->WIN0V1 = val&0xFF;}
+#define GPU_setWIN0_V0(gpu, val) gpu->WIN0V0 = val
+#define GPU_setWIN0_V1(gpu, val) gpu->WIN0V1 = val
 
-void GPU_setWIN1_H	(GPU *gpu, u16 val);
-void GPU_setWIN1_H0 (GPU *gpu, u8 val);
-void GPU_setWIN1_H1 (GPU *gpu, u8 val);
+#define GPU_setWIN1_H(gpu, val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;}
+#define GPU_setWIN1_H0(gpu, val) gpu->WIN1H0 = val
+#define GPU_setWIN1_H1(gpu, val) gpu->WIN1H1 = val
 
-void GPU_setWIN1_V	(GPU *gpu, u16 val);
-void GPU_setWIN1_V0 (GPU *gpu, u8 val);
-void GPU_setWIN1_V1 (GPU *gpu, u8 val);
+#define GPU_setWIN1_V(gpu, val) {gpu->WIN1V0 = val >> 8; gpu->WIN1V1 = val&0xFF;}
+#define GPU_setWIN1_V0(gpu, val) gpu->WIN1V0 = val
+#define GPU_setWIN1_V1(gpu, val) gpu->WIN1V1 = val
 
-void GPU_setWININ  (GPU *gpu, u16 val);
-void GPU_setWININ0 (GPU *gpu, u8 val);
-void GPU_setWININ1 (GPU *gpu, u8 val);
+#define GPU_setWININ(gpu, val) {gpu->WININ0=val&0x1F;\
+								gpu->WININ0_SPECIAL=(val>>5)&1;\
+								gpu->WININ1=(val>>8)&0x1F;\
+								gpu->WININ1_SPECIAL=(val>>13)&1;\
+								}
+#define GPU_setWININ0(gpu, val) {gpu->WININ0 = val&0x1F; gpu->WININ0_SPECIAL = (val>>5)&1;}
+#define GPU_setWININ1(gpu, val) {gpu->WININ1 = val&0x1F; gpu->WININ1_SPECIAL = (val>>5)&1;}
 
-void GPU_setWINOUT16(GPU *gpu, u16 val);
-void GPU_setWINOUT	(GPU *gpu, u8 val);
-void GPU_setWINOBJ	(GPU *gpu, u8 val);
+#define GPU_setWINOUT16(gpu, val) { gpu->WINOUT=val&0x1F;\
+									gpu->WINOUT_SPECIAL=(val>>5)&1;\
+									gpu->WINOBJ=(val>>8)&0x1F;\
+									gpu->WINOBJ_SPECIAL=(val>>13)&1;\
+									}
+#define GPU_setWINOUT(gpu, val) {gpu->WINOUT = val&0x1F; gpu->WINOUT_SPECIAL = (val>>5)&1;}
+#define GPU_setWINOBJ(gpu, val) {gpu->WINOBJ = val&0x1F; gpu->WINOBJ_SPECIAL = (val>>5)&1;}
 
-void GPU_setBLDCNT_LOW	(GPU *gpu, u8 val);
-void GPU_setBLDCNT_HIGH (GPU *gpu, u8 val);
-void GPU_setBLDCNT		(GPU *gpu, u16 val);
+// Blending
+#define GPU_setBLDCNT_LOW(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF00) | val; SetupFinalPixelBlitter (gpu);}
+#define GPU_setBLDCNT_HIGH(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF) | (val<<8); SetupFinalPixelBlitter (gpu);}
+#define GPU_setBLDCNT(gpu, val) {gpu->BLDCNT = val; SetupFinalPixelBlitter (gpu);}
 
-void GPU_setBLDALPHA	(GPU *gpu, u16 val);
-void GPU_setBLDALPHA_EVA(GPU *gpu, u8 val);
-void GPU_setBLDALPHA_EVB(GPU *gpu, u8 val);
+#define GPU_setBLDALPHA(gpu, val) {gpu->BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);\
+									gpu->BLDALPHA_EVB = (val>>8&0x1f) > 16 ? 16 : (val>>8&0x1f);}
+#define GPU_setBLDALPHA_EVA(gpu, val) {gpu->BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);}
+#define GPU_setBLDALPHA_EVB(gpu, val) {gpu->BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);}
 
-void GPU_setBLDY_EVY	(GPU *gpu, u8 val);
+#define GPU_setBLDY_EVY(gpu, val) {gpu->BLDY_EVY = (val&0x1f) > 16 ? 16 : (val&0x1f);}
 
 #ifdef __cplusplus
 }

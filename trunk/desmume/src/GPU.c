@@ -383,138 +383,6 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 }
 
-void GPU_setWIN0_H0 (GPU *gpu, u8 val)
-{
-    gpu->WIN0H0 = val;
-}
-void GPU_setWIN0_H1 (GPU *gpu, u8 val)
-{
-	gpu->WIN0H1 = val;
-}
-void GPU_setWIN0_V0 (GPU *gpu, u8 val)
-{
-	gpu->WIN0V0 = val;
-}
-void GPU_setWIN0_V1 (GPU *gpu, u8 val)
-{
-	gpu->WIN0V1 = val;
-}
-
-void GPU_setWIN1_H0 (GPU *gpu, u8 val)
-{
-    gpu->WIN1H0 = val;
-}
-void GPU_setWIN1_H1 (GPU *gpu, u8 val)
-{
-	gpu->WIN1H1 = val;
-}
-void GPU_setWIN1_V0 (GPU *gpu, u8 val)
-{
-	gpu->WIN1V0;
-}
-void GPU_setWIN1_V1 (GPU *gpu, u8 val)
-{
-	gpu->WIN1V1 = val;
-}
-
-void GPU_setWININ0 (GPU *gpu, u8 val)
-{
-	gpu->WININ0 = val&0x1F;
-	gpu->WININ0_SPECIAL = (val>>5)&1;
-}
-void GPU_setWININ1 (GPU *gpu, u8 val)
-{
-	gpu->WININ1 = val&0x1F;
-	gpu->WININ1_SPECIAL = (val>>5)&1;
-}
-
-void GPU_setWINOUT (GPU *gpu, u8 val)
-{
-	gpu->WINOUT = val&0x1F;
-	gpu->WINOUT_SPECIAL = (val>>5)&1;
-}
-
-void GPU_setWINOBJ (GPU *gpu, u8 val)
-{
-	gpu->WINOBJ = val&0x1F;
-	gpu->WINOBJ_SPECIAL = (val>>5)&1;
-}
-
-void GPU_setWIN0_H	(GPU *gpu, u16 val)
-{
-	gpu->WIN0H0 = val >> 8;
-	gpu->WIN0H1 = val&0xFF;
-}
-void GPU_setWIN0_V	(GPU *gpu, u16 val)
-{
-	gpu->WIN0V0 = val >> 8;
-	gpu->WIN0V1 = val&0xFF;
-}
-void GPU_setWIN1_H	(GPU *gpu, u16 val)
-{
-	gpu->WIN1H0 = val >> 8;
-	gpu->WIN1H1 = val&0xFF;
-}
-void GPU_setWIN1_V	(GPU *gpu, u16 val)
-{
-	gpu->WIN1V0 = val >> 8;
-	gpu->WIN1V1 = val&0xFF;
-}
-void GPU_setWININ  (GPU *gpu, u16 val)
-{
-	gpu->WININ0			= val&0x1F;
-	gpu->WININ0_SPECIAL = (val>>5)&1;
-
-	val >>= 8;
-	gpu->WININ1			= val&0x1F;
-	gpu->WININ1_SPECIAL = (val>>5)&1;
-}
-void GPU_setWINOUT16(GPU *gpu, u16 val)
-{
-	gpu->WINOUT			= val&0x1F;
-	gpu->WINOUT_SPECIAL = (val>>5)&1;
-
-	val >>= 8;
-	gpu->WINOBJ			= val&0x1F;
-	gpu->WINOBJ_SPECIAL = (val>>5)&1;
-}
-
-// Blending
-void GPU_setBLDCNT_LOW (GPU *gpu, u8 val)
-{
-	gpu->BLDCNT = (gpu->BLDCNT&0xFF00) | val;
-	SetupFinalPixelBlitter (gpu);
-}
-void GPU_setBLDCNT_HIGH (GPU *gpu, u8 val)
-{
-	gpu->BLDCNT = (gpu->BLDCNT&0xFF) | (val<<8);
-	SetupFinalPixelBlitter (gpu);
-}
-void GPU_setBLDCNT (GPU *gpu, u16 val)
-{
-	gpu->BLDCNT = val;
-	SetupFinalPixelBlitter (gpu);
-}
-void GPU_setBLDALPHA (GPU *gpu, u16 val)
-{
-	gpu->BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);
-
-	val >>= 8;
-	gpu->BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);	
-}
-void GPU_setBLDALPHA_EVA (GPU *gpu, u8 val)
-{
-	gpu->BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);
-}
-void GPU_setBLDALPHA_EVB (GPU *gpu, u8 val)
-{
-	gpu->BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);
-}
-void GPU_setBLDY_EVY (GPU *gpu, u8 val)
-{
-	gpu->BLDY_EVY = (val&0x1f) > 16 ? 16 : (val&0x1f);
-}
-
 /*****************************************************************************/
 //			ENABLING / DISABLING LAYERS
 /*****************************************************************************/
@@ -619,6 +487,7 @@ static BOOL setFinalColorSpecialBlend (const GPU *gpu, u32 passing, u8 bgnum, u8
 	if ((gpu->BLDCNT >> bgnum)&1 && gpu->BLDALPHA_EVA)
 	{
 		u16 sourceFraction = gpu->BLDALPHA_EVA, sourceR, sourceG, sourceB,targetFraction;
+		if (!sourceFraction) return 0;
 
 		// no fraction of this BG to be showed, so don't do anything
 		sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
@@ -1655,9 +1524,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
-				/* sprMemory + sprBoundary + 16Bytes per line (8pixels a 2 bytes) */
-				src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary);
-
+					/* sprMemory + sprBoundary + 16Bytes per line (8pixels a 2 bytes) */
+					//src = (gpu->sprMem) + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary);
+				// FIXME:this no correct, but work ???
+				src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
 				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
 
 				continue;
@@ -1915,12 +1785,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
 				if (dispCnt->OBJ_BMP_2D_dim) // 256*256
-					src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1);
-				else // 128 * 512
 					src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1);
+				else // 128 * 512
+					src = (gpu->sprMem) + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1);
 		
-				render_sprite_BMP (gpu, l, dst, (u16*)src,
-					prioTab, prio, lg, sprX, x, xdir);
+				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
 
 				continue;
 			}
@@ -2265,7 +2134,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 				capDst = (ARM9Mem.ARM9_LCD 
 						+ (capcnt->VRAM_Write_Block * 0x20000) 
 						+ ((dispCnt->BG_Mode != 2) ? (capcnt->VRAM_Write_Offset * 0x8000) : 0)
-						+ l * capx * 2);	/* read offset ignored in VRAM display mode*/
+						+ l * (capx<<1));	/* read offset ignored in VRAM display mode*/
 				
 // 				LOG("Capture line %d (%X) [dst: %X]...\n", l, gpu->dispCapCnt.val, capDst - ARM9Mem.ARM9_LCD);
 				
@@ -2276,11 +2145,11 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 						{
 							u16 cap3DLine[256];	/* temp buffer for 3D line reading */
 							gpu3D->NDS_3D_GetLine (l, cap3DLine);	/*FIXME: not sure it's good, since I hadn't seen how 3D works in desmume */
-							for(i = 0; i < capx; i++) T1WriteWord(capDst, i, cap3DLine[i]);	/* copy this line to buffer */
+							for(i = 0; i < (capx<<1); i++) T1WriteWord(capDst, i, cap3DLine[i]);	/* copy this line to buffer */
 						}
 						else	/* capture all screen (BG + OBJ + 3D) */
 						{
-							for(i = 0; i < capx; i++) T1WriteWord(capDst, i, T2ReadWord(dst, i));	/* plain copy from screen to buffer */
+							for(i = 0; i < (capx<<1); i++) T1WriteWord(capDst, i, T2ReadWord(dst, i));	/* plain copy from screen to buffer */
 						}
 					
 						break;
@@ -2297,7 +2166,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 									+ ((dispCnt->BG_Mode != 2) ? (capcnt->VRAM_Write_Offset * 0x8000) : 0)
 									+ l * capx * 2);	/* write offset ignored in VRAM display mode*/
 								
-							for(i = 0; i < capx; i++) T1WriteWord(capDst, i, T2ReadWord(capSrc, i));	/* plain copy from source to dest */
+							for(i = 0; i < (capx<<1); i++) T1WriteWord(capDst, i, T2ReadWord(capSrc, i));	/* plain copy from source to dest */
 						}
 					
 						break;

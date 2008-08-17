@@ -829,7 +829,7 @@ NDS_exec(s32 nb, BOOL force)
             
   for(; (nb >= nds.cycles) && ((force)||(execute)); )
     {
-		for (j = 0; j < 4 && (!force); j++)
+		for (j = 0; j < 4 && (!force) && (execute); j++)
 		{
 			if(nds.ARM9Cycle<=nds.cycles)
 			{
@@ -846,7 +846,7 @@ NDS_exec(s32 nb, BOOL force)
 					LOG(logbuf);
 				}
 #endif
-				for (i = 0; i < 4 && (!force); i++)
+				for (i = 0; i < 4 && (!force) && (execute); i++)
 				{
 					if(NDS_ARM9.waitIRQ)
 						nds.ARM9Cycle += 100;
@@ -879,7 +879,7 @@ NDS_exec(s32 nb, BOOL force)
 					LOG(logbuf);
 				}
 #endif
-				for (i = 0; i < 4 && (!force); i++)
+				for (i = 0; i < 4 && (!force) && (execute); i++)
 				{
 					if(NDS_ARM7.waitIRQ)
 						nds.ARM7Cycle += 100;
