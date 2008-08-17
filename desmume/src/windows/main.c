@@ -46,7 +46,6 @@
 #include "mapview.h"
 #include "matrixview.h"
 #include "lightview.h"
-#include "textureview.h"
 #include "ConfigKeys.h"
 #include "FirmConfig.h"
 #include "AboutBox.h"
@@ -1390,14 +1389,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
                             if ((PalView = PalView_Init(hAppInst, HWND_DESKTOP)) != NULL)
                                CWindow_Show(PalView);
-                       }
-                  return 0;
-				  case IDM_TEX:
-                       {
-                            texview_struct *TexView;
-
-                            if ((TexView = TexView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                               CWindow_Show(TexView);
                        }
                   return 0;
                   case IDM_TILE:
