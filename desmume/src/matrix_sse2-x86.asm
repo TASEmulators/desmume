@@ -25,9 +25,6 @@
 	.code
 	
 @MatrixMultVec4x4@8 PROC PUBLIC
-		push	ebp
-		mov	ebp, esp
-
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -46,16 +43,10 @@
 		addps	xmm4, xmm6
 		addps	xmm4, xmm3
 		movaps	XMMWORD PTR [edx], xmm4
-		mov		esp, ebp
-		pop		ebp
 		ret		0
 @MatrixMultVec4x4@8 ENDP
 
-PUBLIC	@MatrixMultVec3x3@8
-@MatrixMultVec3x3@8 PROC
-		push	ebp
-		mov		ebp, esp
-
+@MatrixMultVec3x3@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -72,18 +63,10 @@ PUBLIC	@MatrixMultVec3x3@8
 		addps	xmm4, xmm5
 		addps	xmm4, xmm6
 		movaps	XMMWORD PTR [edx], xmm4
-		mov		esp, ebp
-		pop		ebp
 		ret		0
 @MatrixMultVec3x3@8 ENDP
 
-
-PUBLIC	@MatrixMultiply@8
-@MatrixMultiply@8 PROC
-;		mov 	eax, DWORD PTR[esp+4]
-		push	ebp
-		mov	ebp, esp
-
+@MatrixMultiply@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -152,16 +135,10 @@ PUBLIC	@MatrixMultiply@8
 		addps	xmm4,xmm6
 		addps	xmm4,xmm7
 		movaps	XMMWORD PTR [ecx+48],xmm4
-		mov		esp, ebp
-		pop		ebp
 		ret		0
 @MatrixMultiply@8 ENDP
 
-PUBLIC	@MatrixTranslate@8
-@MatrixTranslate@8 PROC
-		push	ebp
-		mov	ebp, esp
-
+@MatrixTranslate@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -180,16 +157,10 @@ PUBLIC	@MatrixTranslate@8
 		addps	xmm4, xmm6
 		addps	xmm4, xmm3
 		movaps	XMMWORD PTR [ecx+48], xmm4
-		mov		esp, ebp
-		pop		ebp
 		ret		0
 @MatrixTranslate@8 ENDP
 
-PUBLIC @MatrixScale@8
-@MatrixScale@8 PROC
-		push	ebp
-		mov	ebp, esp
-		
+@MatrixScale@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -205,9 +176,6 @@ PUBLIC @MatrixScale@8
 		movaps	XMMWORD PTR [ecx],xmm4
 		movaps	XMMWORD PTR [ecx+16],xmm5
 		movaps	XMMWORD PTR [ecx+32],xmm6
-	
-		mov		esp, ebp
-		pop		ebp
 		ret		0
 @MatrixScale@8 ENDP
 

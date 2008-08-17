@@ -46,6 +46,7 @@
 #include "mapview.h"
 #include "matrixview.h"
 #include "lightview.h"
+#include "textureview.h"
 #include "ConfigKeys.h"
 #include "FirmConfig.h"
 #include "AboutBox.h"
@@ -95,7 +96,7 @@ BOOL click = FALSE;
 BOOL finished = FALSE;
 BOOL romloaded = FALSE;
 
-BOOL ForceRatio = FALSE;
+BOOL ForceRatio = TRUE;
 float DefaultWidth;
 float DefaultHeight;
 float widthTradeOff;
@@ -787,6 +788,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     hwnd = MainWindow.hwnd;
     menu = LoadMenu(hThisInstance, "MENU_PRINCIPAL");
     SetMenu(hwnd, menu);
+	CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
     hdc = GetDC(hwnd);
     DragAcceptFiles(hwnd, TRUE);
     
@@ -1388,6 +1390,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
                             if ((PalView = PalView_Init(hAppInst, HWND_DESKTOP)) != NULL)
                                CWindow_Show(PalView);
+                       }
+                  return 0;
+				  case IDM_TEX:
+                       {
+                            texview_struct *TexView;
+
+                            if ((TexView = TexView_Init(hAppInst, HWND_DESKTOP)) != NULL)
+                               CWindow_Show(TexView);
                        }
                   return 0;
                   case IDM_TILE:
