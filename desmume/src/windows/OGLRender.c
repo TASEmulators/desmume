@@ -905,8 +905,6 @@ void NDS_glBegin(unsigned long v)
 		glLoadIdentity ();
 		glScaled (invTexWidth, invTexHeight, 1.0f);
 	}
-	else
-		glDisable(GL_TEXTURE_2D);
 
 	glMatrixMode (GL_PROJECTION);
 	glLoadMatrixf(mtxCurrent[0]);
