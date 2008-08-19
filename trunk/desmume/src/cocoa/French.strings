@@ -3,6 +3,8 @@
 
 /* General */
 "DeSmuME Emulator" = "DeSmuME Emulator";
+//"OK" = ?;
+//"Cancel" = ?;
 
 /* Menu Headers */
 "File" = "Fichier";
@@ -31,6 +33,17 @@
 "Auto" = "Automatique";
 "Off" = "Off";
 "Skip %d" = "%d";
+//"Speed Limit" = ?;
+//"25% Speed Limit" = ?;
+//"50% Speed Limit" = ?;
+//"75% Speed Limit" = ?;
+//"100% Speed Limit" = ?;
+//"200% Speed Limit" = ?;
+//"No Speed Limit" = ?;
+//"Custom Speed Limit" = ?;
+//"Custom Speed Limit Window" = ?;
+//"Set Max Speed:" = ?;
+"Speed %d%%" = "%d%%";
 "Set FAT Image File..." = "Définir le fichier d'image FAT...";
 
 /* View Menu */

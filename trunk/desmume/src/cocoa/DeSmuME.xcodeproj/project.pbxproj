@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.m */; };
 		726D68AC0E310B1800800002 /* French.nib in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AA0E310B1800800002 /* French.nib */; };
 		726D68AD0E310B1800800002 /* French.strings in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AB0E310B1800800002 /* French.strings */; };
 		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
@@ -56,6 +57,8 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		723395580E596E9100999693 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = speed_limit_selection_window.h; path = dialogs/speed_limit_selection_window.h; sourceTree = "<group>"; };
+		723395590E596E9100999693 /* speed_limit_selection_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = speed_limit_selection_window.m; path = dialogs/speed_limit_selection_window.m; sourceTree = "<group>"; };
 		726D68AA0E310B1800800002 /* French.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = French.nib; sourceTree = "<group>"; };
 		726D68AB0E310B1800800002 /* French.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = French.strings; sourceTree = "<group>"; };
 		7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = DeSmuME.icns; sourceTree = "<group>"; };
@@ -159,6 +162,8 @@
 		080E96DDFE201D6D7F000001 /* Cocoa Port */ = {
 			isa = PBXGroup;
 			children = (
+				723395580E596E9100999693 /* speed_limit_selection_window.h */,
+				723395590E596E9100999693 /* speed_limit_selection_window.m */,
 				7277B8EA0D9F25F700D283BD /* about.m */,
 				729BEC5C0D9D55DB00ED561B /* globals.h */,
 				729BEC600D9D55DB00ED561B /* main.m */,
@@ -423,6 +428,7 @@
 				729BECE00D9D57AF00ED561B /* wifi.c in Sources */,
 				729BECFA0D9D589E00ED561B /* OGLRender.c in Sources */,
 				7277B8EB0D9F25F700D283BD /* about.m in Sources */,
+				7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

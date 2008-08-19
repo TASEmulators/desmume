@@ -38,6 +38,7 @@ bool timer_based;
 
 //ds screens are 59.8 frames per sec, so 1/59.8 seconds per frame
 //times one million for microseconds per frame
+#define DS_SECONDS_PER_FRAME (1.0 / 59.8)
 #define DS_MICROSECONDS_PER_FRAME (1.0 / 59.8) * 1000000.0
 
 //accessed from other files
@@ -71,6 +72,7 @@ struct NDS_fw_config_data firmware;
 	display_object = nil;
 	error_object = nil;
 	frame_skip = -1; //default to auto frame skip
+	speed_limit = 100; //default to max speed = normal speed
 	gui_thread = [NSThread currentThread];
 	current_file = nil;
 	flash_file = nil;
@@ -516,6 +518,19 @@ struct NDS_fw_config_data firmware;
 - (int)frameSkip
 {
 	return frame_skip;
+}
+
+- (void)setSpeedLimit:(int)speedLimit
+{
+	if(speedLimit < 0)return;
+	if(speedLimit > 1000)return;
+
+	speed_limit = speedLimit;
+}
+
+- (int)speedLimit
+{
+	return speed_limit;
 }
 
 - (void)touch:(NSPoint)point
@@ -1211,8 +1226,8 @@ struct NDS_fw_config_data firmware;
 
 	u32 cycles = 0;
 
+	NSDate *frame_end_date;
 	unsigned long long frame_start_time, frame_end_time;
-
 	int frames_to_skip = 0;
 
 	//program main loop
@@ -1226,6 +1241,9 @@ struct NDS_fw_config_data firmware;
 
 			paused = false;
 
+			int speed_limit_this_frame = speed_limit; //dont let speed limit change midframe
+			if(speed_limit_this_frame)frame_end_date = [[NSDate alloc] initWithTimeIntervalSinceNow: DS_SECONDS_PER_FRAME / ((float)speed_limit_this_frame / 100.0)];
+			
 			Microseconds((struct UnsignedWide*)&frame_start_time);
 
 			[execution_lock lock];
@@ -1240,13 +1258,21 @@ struct NDS_fw_config_data firmware;
 
 			[execution_lock unlock];
 
+			Microseconds((struct UnsignedWide*)&frame_end_time);
+			
+			//speed limit
+			if(speed_limit_this_frame)
+			{
+				[NSThread sleepUntilDate:frame_end_date];
+				[frame_end_date release];
+			}
+			
 			if(frames_to_skip > 0)
 				frames_to_skip--;
 
 			else
 			{
 
-				Microseconds((struct UnsignedWide*)&frame_end_time);
 
 				if(frame_skip < 0)
 				{ //automatic

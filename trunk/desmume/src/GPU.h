@@ -804,6 +804,7 @@ void GPU_setMasterBrightness (GPU *gpu, u16 val);
 #define GPU_setWINOBJ(gpu, val) {gpu->WINOBJ = val&0x1F; gpu->WINOBJ_SPECIAL = (val>>5)&1;}
 
 // Blending
+void SetupFinalPixelBlitter (GPU *gpu);
 #define GPU_setBLDCNT_LOW(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF00) | val; SetupFinalPixelBlitter (gpu);}
 #define GPU_setBLDCNT_HIGH(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF) | (val<<8); SetupFinalPixelBlitter (gpu);}
 #define GPU_setBLDCNT(gpu, val) {gpu->BLDCNT = val; SetupFinalPixelBlitter (gpu);}

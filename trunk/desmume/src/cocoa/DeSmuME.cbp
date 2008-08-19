@@ -72,6 +72,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Add option="-O3" />
 			<Add option="-DDESMUME_COCOA" />
 			<Add option="-DHAVE_LIBZ" />
+			<Add directory="dialogs" />
+			<Add directory="../cocoa" />
 		</Compiler>
 		<Linker>
 			<Add option="-framework Cocoa" />
@@ -136,6 +138,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cocoa_util.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="dialogs/speed_limit_selection_window.h" />
+		<Unit filename="dialogs/speed_limit_selection_window.m">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>

@@ -61,6 +61,7 @@
 	int volume;
 
 	volatile int frame_skip;
+	volatile int speed_limit;
 
 	NSString *current_file;
 	NSString *flash_file;
@@ -104,6 +105,8 @@
 - (void)reset;
 - (void)setFrameSkip:(int)frameskip; //negative is auto, 0 is off, more than 0 is the amount of frames to skip before showing a frame
 - (int)frameSkip; //defaults to -1
+- (void)setSpeedLimit:(int)percent; //0 is off, 1-1000 is the pertance speed it runs at, anything else does nothing
+- (int)speedLimit;
 
 //touch screen
 - (void)touch:(NSPoint)point;

@@ -29,6 +29,7 @@
 	#include <gl/gl.h>
 	#include <gl/glext.h>
 #else
+    #define __forceinline
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #endif
