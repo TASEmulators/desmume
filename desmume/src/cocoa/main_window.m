@@ -27,6 +27,7 @@
 #import "input.h"
 #import "rom_info.h"
 #import "preferences.h"
+#import "speed_limit_selection_window.h"
 
 //How much padding to put around the video output
 #define WINDOW_BORDER_PADDING 5
@@ -54,6 +55,13 @@ NSMenuItem *loadSlot_item[MAX_SLOTS] = { nil, nil, nil, nil, nil, nil, nil, nil,
 NSMenuItem *rom_info_item = nil;
 NSMenuItem *frame_skip_auto_item = nil;
 NSMenuItem *frame_skip_item[MAX_FRAME_SKIP] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
+NSMenuItem *speed_limit_25_item = nil;
+NSMenuItem *speed_limit_50_item = nil;
+NSMenuItem *speed_limit_75_item = nil;
+NSMenuItem *speed_limit_100_item = nil;
+NSMenuItem *speed_limit_200_item = nil;
+NSMenuItem *speed_limit_none_item = nil;
+NSMenuItem *speed_limit_custom_item = nil;
 
 NSMenuItem *volume_item[10] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
 NSMenuItem *mute_item = nil;
@@ -321,6 +329,69 @@ NSMenuItem *screenshot_to_file_item = nil;
 			[self setFrameSkip:i];
 			return;
 		}
+}
+
+- (void)setSpeedLimit:(int)speedLimit
+{
+	[super setSpeedLimit:speedLimit];
+	
+	//Set the correct menu states
+	speedLimit = [super speedLimit];
+	int standard_size = 0;
+	
+	if([speed_limit_25_item target] == self)
+		if(speedLimit == 25){ [speed_limit_25_item setState:NSOnState]; standard_size=1; }
+		else [speed_limit_25_item setState:NSOffState];
+
+	if([speed_limit_50_item target] == self)
+		if(speedLimit == 50){ [speed_limit_50_item setState:NSOnState]; standard_size=1; }
+		else [speed_limit_50_item setState:NSOffState];
+
+	if([speed_limit_75_item target] == self)
+		if(speedLimit == 75){ [speed_limit_75_item setState:NSOnState]; standard_size=1; }
+		else [speed_limit_75_item setState:NSOffState];
+
+	if([speed_limit_100_item target] == self)
+		if(speedLimit == 100){ [speed_limit_100_item setState:NSOnState]; standard_size=1; }
+		else [speed_limit_100_item setState:NSOffState];
+
+	if([speed_limit_200_item target] == self)
+		if(speedLimit == 200){ [speed_limit_200_item setState:NSOnState]; standard_size=1; }
+		else [speed_limit_200_item setState:NSOffState];
+
+	if([speed_limit_none_item target] == self)
+		if(speedLimit == 0){ [speed_limit_none_item setState:NSOnState]; standard_size=1; }
+		else [speed_limit_none_item setState:NSOffState];
+
+	if([speed_limit_custom_item target] == self)
+		if(!standard_size)[speed_limit_custom_item setState:NSOnState];
+		else [speed_limit_custom_item setState:NSOffState];
+
+}
+
+- (void)setSpeedLimitFromMenuItem:(id)sender
+{
+	if(sender == speed_limit_25_item  )[self setSpeedLimit:  25];
+	if(sender == speed_limit_50_item  )[self setSpeedLimit:  50];
+	if(sender == speed_limit_75_item  )[self setSpeedLimit:  75];
+	if(sender == speed_limit_100_item )[self setSpeedLimit: 100];
+	if(sender == speed_limit_200_item )[self setSpeedLimit: 200];
+	if(sender == speed_limit_none_item)[self setSpeedLimit:   0];
+
+	if(sender == speed_limit_custom_item)
+	{
+		//create
+		SpeedLimitSelectionWindow *s_window = [[SpeedLimitSelectionWindow alloc] initWithDS:self];
+
+		//show & run
+		NSWindowController *window_controller = [[NSWindowController alloc] initWithWindow:s_window];
+		[window_controller showWindow:nil];
+		[s_window runModal];
+
+		//release
+		[s_window release];
+		[window_controller release];
+	}
 }
 
 - (void)closeROM
@@ -1191,6 +1262,15 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[frame_skip_auto_item setState:NSOnState];
 	else
 		[frame_skip_auto_item setState:NSOffState];
+
+	[speed_limit_25_item setTarget:self];
+	[speed_limit_50_item setTarget:self];
+	[speed_limit_75_item setTarget:self];
+	[speed_limit_100_item setTarget:self];
+	[speed_limit_200_item setTarget:self];
+	[speed_limit_none_item setTarget:self];
+	[speed_limit_custom_item setTarget:self];
+	[self setSpeedLimit:[self speedLimit]]; //this will set the checks correctly
 
 	//VIEW menu
 

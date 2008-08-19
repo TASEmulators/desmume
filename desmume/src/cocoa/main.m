@@ -66,6 +66,17 @@ extern NSMenuItem *execute_item;
 extern NSMenuItem *pause_item;
 extern NSMenuItem *reset_item;
 
+extern NSMenuItem *frame_skip_auto_item;
+extern NSMenuItem *frame_skip_item[];
+
+extern NSMenuItem *speed_limit_25_item;
+extern NSMenuItem *speed_limit_50_item;
+extern NSMenuItem *speed_limit_75_item;
+extern NSMenuItem *speed_limit_100_item;
+extern NSMenuItem *speed_limit_200_item;
+extern NSMenuItem *speed_limit_none_item;
+extern NSMenuItem *speed_limit_custom_item;
+
 extern NSMenuItem *save_state_as_item;
 extern NSMenuItem *load_state_from_item;
 
@@ -76,9 +87,6 @@ extern NSMenuItem *mute_item;
 #define SAVE_SLOTS 10 //this should never be more than NB_SAVES in saves.h
 extern NSMenuItem *saveSlot_item[];
 extern NSMenuItem *loadSlot_item[];
-
-extern NSMenuItem *frame_skip_auto_item;
-extern NSMenuItem *frame_skip_item[];
 
 //extern NSMenuItem *clear_all_saves_item; waiting for more functionality from saves.h
 
@@ -240,6 +248,37 @@ void CreateMenu(AppDelegate *delegate)
 
 			[frame_skip_menu release];
 		}
+
+		//Speed limit menu
+		
+		temp = [emulation_menu addItemWithTitle:NSLocalizedString(@"Speed Limit", nil) action:nil keyEquivalent:@""];
+		
+		NSMenu *speed_limit_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Speed Limit", nil)];
+		if(speed_limit_menu != nil)
+		{
+			[temp setSubmenu:speed_limit_menu];
+
+			speed_limit_25_item = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"25% Speed Limit", nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+			speed_limit_50_item = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"50% Speed Limit", nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+			speed_limit_75_item = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"75% Speed Limit", nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+			
+			[speed_limit_menu addItem:[NSMenuItem separatorItem]];
+
+			speed_limit_100_item = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"100% Speed Limit", nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+
+			[speed_limit_menu addItem:[NSMenuItem separatorItem]];
+
+			speed_limit_200_item  = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"200% Speed Limit", nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+			speed_limit_none_item = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"No Speed Limit"  , nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+
+			[speed_limit_menu addItem:[NSMenuItem separatorItem]];
+
+			speed_limit_custom_item = [speed_limit_menu addItemWithTitle:NSLocalizedString(@"Custom Speed Limit", nil) action:@selector(setSpeedLimitFromMenuItem:) keyEquivalent:@""];
+
+			[speed_limit_menu release];
+		}
+		
+		//
 
 		[emulation_menu addItem:[NSMenuItem separatorItem]];
 	
