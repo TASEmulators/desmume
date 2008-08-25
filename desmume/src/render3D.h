@@ -38,6 +38,8 @@ enum DRIVER_3D
 typedef struct GPU3DInterface
 {
 	char (CALL_CONVENTION*  NDS_3D_Init)					(void);
+	void (CALL_CONVENTION*  NDS_3D_Reset)					(void);
+	void (CALL_CONVENTION*  NDS_3D_Close)					(void);
 	void (CALL_CONVENTION*  NDS_3D_ViewPort)				(unsigned long v);
 	void (CALL_CONVENTION*  NDS_3D_ClearColor)			(unsigned long v);
 	void (CALL_CONVENTION*  NDS_3D_FogColor)				(unsigned long v);
@@ -116,6 +118,12 @@ typedef struct GPU3DInterface
 	// dest:	pointer to the destination variable
 	//////////////////////////////////////////////////////////////////////////////
 	void (CALL_CONVENTION*  NDS_glGetLightColor)	(unsigned int index, unsigned int* dest);
+	
+	void (CALL_CONVENTION*  NDS_3D_BoxTest)				(unsigned long v);
+	void (CALL_CONVENTION*  NDS_3D_PosTest)				(unsigned long v);
+	void (CALL_CONVENTION*  NDS_3D_VecTest)				(unsigned long v);
+	long (CALL_CONVENTION*  NDS_3D_GetPosRes)			(unsigned int index);
+	long (CALL_CONVENTION*  NDS_3D_GetVecRes)			(unsigned int index);
 
 
 } GPU3DInterface;

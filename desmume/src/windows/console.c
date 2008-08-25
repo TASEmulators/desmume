@@ -51,6 +51,8 @@ void OpenConsole()
 	srect.Bottom = srect.Top + 64;
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &srect);
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleCP(GetACP());
+	SetConsoleOutputCP(GetACP());
 	printlog("DeSmuME v%s BETA\n",VERSION);
 	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
 }
@@ -62,22 +64,17 @@ void CloseConsole() {
 	hConsole = NULL;
 }
 
-void printlog(char *fmt, ...) {
+void printlog(char *fmt, ...) 
+{
 	va_list list;
-	char msg[512],msg2[522];
-	wchar_t msg3[522];
-	char *ptr;
+	char msg[512];
 	DWORD tmp;
-	int len, s;
-	int i, j;
 
-	LPWSTR ret;
+	memset(msg,0,512);
 
 	va_start(list,fmt);
-	_vsnprintf(msg,511,fmt,list);
-	msg[511] = '\0';
+		_vsnprintf(msg,511,fmt,list);
 	va_end(list);
-	ptr=msg; len=strlen(msg);
-	WriteConsole(hConsole,ptr, (DWORD)len, &tmp, 0);
+	WriteConsole(hConsole,msg, (DWORD)strlen(msg), &tmp, 0);
 }
 #endif
