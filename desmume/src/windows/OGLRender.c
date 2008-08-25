@@ -406,28 +406,51 @@ void NDS_glLoadMatrix4x3(signed long v)
 
 void NDS_glStoreMatrix(unsigned long v)
 {
-	MatrixStackLoadMatrix (&mtxStack[mode], v&31, mtxCurrent[mode]);
+	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
+	short mymode = (mode==1?2:mode);
+
+	//for the projection matrix, the provided value is supposed to be reset to zero
+	if(mymode==0) 
+		v = 0;
+	
+	MatrixStackLoadMatrix (&mtxStack[mymode], v&31, mtxCurrent[mymode]);
+	if(mymode==2)
+		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
 }
 
 void NDS_glRestoreMatrix(unsigned long v)
 {
-	MatrixCopy (mtxCurrent[mode], MatrixStackGetPos(&mtxStack[mode], v&31));
+	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
+	short mymode = (mode==1?2:mode);
 
-	if (mode == 2)
-		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
+	//for the projection matrix, the provided value is supposed to be reset to zero
+	if(mymode==0)
+		v = 0;
+
+	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v&31));
+	if (mymode == 2)
+		MatrixCopy (mtxCurrent[1], MatrixStackGetPos(&mtxStack[1], v&31));
 }
 
 void NDS_glPushMatrix (void)
 {
-	MatrixStackPushMatrix (&mtxStack[mode], mtxCurrent[mode]);
+	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
+	short mymode = (mode==1?2:mode);
+
+	MatrixStackPushMatrix (&mtxStack[mymode], mtxCurrent[mymode]);
+	if(mymode==2)
+		MatrixStackPushMatrix (&mtxStack[1], mtxCurrent[1]);
 }
 
 void NDS_glPopMatrix(signed long i)
 {
+	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
+	short mymode = (mode==1?2:mode);
+
 	MatrixCopy (mtxCurrent[mode], MatrixStackPopMatrix (&mtxStack[mode], i));
 
-	if (mode == 2)
-		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
+	if (mymode == 2)
+		MatrixCopy (mtxCurrent[1], MatrixStackPopMatrix (&mtxStack[1], i));
 }
 
 void NDS_glTranslate(signed long v)
@@ -449,6 +472,8 @@ void NDS_glTranslate(signed long v)
 
 void NDS_glScale(signed long v)
 {
+	short mymode = (mode==2?1:mode);
+	
 	scale[scaleind] = fix2float(v);
 
 	++scaleind;
@@ -458,10 +483,13 @@ void NDS_glScale(signed long v)
 
 	scaleind = 0;
 
-	MatrixScale (mtxCurrent[mode], scale);
+	MatrixScale (mtxCurrent[mymode], scale);
 
-	if (mode == 2)
-		MatrixScale (mtxCurrent[1], scale);
+	//note: pos-vector mode should not cause both matrices to scale.
+	//the whole purpose is to keep the vector matrix orthogonal
+	//so, I am leaving this commented out as an example of what not to do.
+	//if (mode == 2)
+	//	MatrixScale (mtxCurrent[1], scale);
 }
 
 void NDS_glMultMatrix3x3(signed long v)
@@ -778,7 +806,17 @@ __forceinline void SetupTexture (unsigned int format, unsigned int palette)
 							}
 						}
 					}
-				}
+				}	
+
+			//zero debug - dump tex4x4 to verify contents
+			//{
+			//	static int ctr = 0;
+			//	char fname[100];
+			//	FILE* outf;
+			//	sprintf(fname,"d:\\dump\\%d.bmp", ctr);
+			//	ctr++;
+			//	NDS_WriteBMP_32bppBuffer(sizeX,sizeY,texMAP,fname);
+			//}
 
 			break;
 		}
@@ -954,6 +992,9 @@ static __inline void  SetVertex()
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
 	glVertex3fv (coordTransformed);
+	
+	//zero - helpful in making sure vertex colors or lighting arent broken
+	//glColor3ub(rand()&255,rand()&255,rand()&255);
 
 	numVertex++;
 }
@@ -1372,7 +1413,7 @@ void NDS_glCallList(unsigned long v)
 				NDS_glLoadIdentity();
 				--clInd;
 				clCmd>>=8;
-				break;
+				continue;
 			}
 
 			case 0x41:
