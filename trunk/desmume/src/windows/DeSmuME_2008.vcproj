@@ -398,7 +398,7 @@
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION"
 				ExceptionHandling="0"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="2"
 				WarningLevel="1"
 				DebugInformationFormat="3"
 				CallingConvention="0"
@@ -986,11 +986,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\OGLRender.h"
+				>
+			</File>
+			<File
 				RelativePath=".\palView.h"
 				>
 			</File>
 			<File
 				RelativePath="..\registers.h"
+				>
+			</File>
+			<File
+				RelativePath="..\render3D.h"
 				>
 			</File>
 			<File

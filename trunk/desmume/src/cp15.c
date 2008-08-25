@@ -248,16 +248,19 @@ INLINE BOOL armcp15_isAccessAllowed(armcp15_t *armcp15,u32 address,u32 access)
 
 BOOL armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2)
 {
+		LOG("Unsupported CP15 operation : DataProcess\n");
    return FALSE;
 }
 
 BOOL armcp15_load(armcp15_t *armcp15, u8 CRd, u8 adr)
 {
+	LOG("Unsupported CP15 operation : Load\n");
    return FALSE;
 }
 
 BOOL armcp15_store(armcp15_t *armcp15, u8 CRd, u8 adr)
 {
+	LOG("Unsupported CP15 operation : Store\n");
    return FALSE;
 }
 
@@ -398,6 +401,7 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 			}
 		return FALSE;
 		default :
+			LOG("Unsupported CP15 operation : MRC\n");
 			return FALSE;
 	}
 }
@@ -478,6 +482,7 @@ BOOL armcp15_moveARM2CP(armcp15_t *armcp15, u32 val, u8 CRn, u8 CRm, u8 opcode1,
 			return TRUE;
 		}
 		return FALSE;
+		case 5 :
 		if((opcode1==0) && (CRm==0))
 		{
 			switch(opcode2)

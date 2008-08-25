@@ -191,8 +191,8 @@ void MMU_Init(void) {
 	MMU.MMU_MASK[0]= MMU_ARM9_MEM_MASK;
 	MMU.MMU_MASK[1] = MMU_ARM7_MEM_MASK;
 
-	MMU.ITCMRegion = 0x00800000;
-	//MMU.ITCMRegion = 0x00000000;
+	MMU.DTCMRegion = 0x027C0000;
+	MMU.ITCMRegion = 0x00000000;
 
 	MMU.MMU_WAIT16[0] = MMU_ARM9_WAIT16;
 	MMU.MMU_WAIT16[1] = MMU_ARM7_WAIT16;
@@ -202,7 +202,7 @@ void MMU_Init(void) {
 	for(i = 0;i < 16;i++)
 		FIFOInit(MMU.fifos + i);
 	memset(&MMU.gfxfifo, 0, sizeof(GFXFIFO));
-	MMU.gfxfifo.empty=TRUE; MMU.gfxfifo.half=TRUE;
+	MMU.gfxfifo.empty=MMU.gfxfifo.half=TRUE;
 	
         mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
         mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -261,10 +261,11 @@ void MMU_clearMem()
 	
 	for(i = 0;i < 16;i++)
 	FIFOInit(MMU.fifos + i);
+	memset(&MMU.gfxfifo, 0, sizeof(GFXFIFO));
+	MMU.gfxfifo.empty=MMU.gfxfifo.half=TRUE;
 	
-	MMU.DTCMRegion = 0;
-	MMU.ITCMRegion = 0x00800000;
-	//MMU.ITCMRegion = 0x00000000;
+	MMU.DTCMRegion = 0x027C0000;
+	MMU.ITCMRegion = 0x00000000;
 	
 	memset(MMU.timer,         0, sizeof(u16) * 2 * 4);
 	memset(MMU.timerMODE,     0, sizeof(s32) * 2 * 4);
@@ -283,8 +284,8 @@ void MMU_clearMem()
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 	
-	MainScreen.offset = 192;
-	SubScreen.offset  = 0;
+	MainScreen.offset = 0;
+	SubScreen.offset  = 192;
 
         /* setup the texture slot pointers */
 #if 0
@@ -503,12 +504,12 @@ switch (VRAMBankCnt & 7) {
 					break;
 				case 7:
 				case 8:	// bank H is in use at BBG
-					destination = ARM9Mem.ARM9_BBG ;
+					//destination = ARM9Mem.ARM9_BBG ;
 					break ;
 				case 9:	// bank I is in use at BBG
 					//destination = ARM9Mem.ARM9_BBG + 0x8000 ;
 					break;
-				default: return ;
+				//default: return ;
 				}
 			break ;
 		case 2:
@@ -531,7 +532,7 @@ switch (VRAMBankCnt & 7) {
 			}
 
 			break;
-		case 3: break;
+		//case 3: break;
 		case 4:
 				switch(block){
 				case 2:	// bank C is in use at BBG
@@ -656,6 +657,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 				return (gpu3D->NDS_3D_GetNumVertex()&8191);
 
 			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
+				printlog("Stopped IPCFIFORECV\n");
 				execute = FALSE;
 				return 1;
 				
@@ -679,7 +681,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 				return MMU.timer[proc][(adr&0xF)>>2];
 			
 			case 0x04000630 :
-				LOG("vect res\r\n");	/* TODO (clear): ??? */
+				//LOG("vect res\r\n");	/* TODO (clear): ??? */
 				//execute = FALSE;
 				return 0;
                         case REG_POSTFLG :
@@ -816,35 +818,29 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 				LOG("point res\r\n");
 			return 0;
 			*/
-                        case REG_GCDATAIN:
+            case REG_GCDATAIN:
 			{
-                                u32 val;
+                    u32 val=0;
 
-                                if(!MMU.dscard[proc].adress) return 0;
-				
-                                val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
+                    if(MMU.dscard[proc].adress)
+						val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
 
-				MMU.dscard[proc].adress += 4;	/* increment adress */
-				
-				MMU.dscard[proc].transfer_count--;	/* update transfer counter */
-				if(MMU.dscard[proc].transfer_count) /* if transfer is not ended */
-				{
-					return val;	/* return data */
-				}
-				else	/* transfer is done */
-                                {                                                       
-                                        T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, T1ReadLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff) & ~(0x00800000 | 0x80000000));
-					/* = 0x7f7fffff */
-					
-					/* if needed, throw irq for the end of transfer */
-                                        if(T1ReadWord(MMU.MMU_MEM[proc][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff) & 0x4000)
-					{
-                                                if(proc == ARMCPU_ARM7) NDS_makeARM7Int(19); 
-                                                else NDS_makeARM9Int(19);
+					MMU.dscard[proc].adress += 4;	/* increment adress */
+	
+					MMU.dscard[proc].transfer_count--;	/* update transfer counter */
+					if(MMU.dscard[proc].transfer_count) /* if transfer is not ended */
+						return val;	/* return data */
+					else	/* transfer is done */
+                    {                                                       
+						T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, T1ReadLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff) & ~(0x00800000 | 0x80000000));
+							/* = 0x7f7fffff */
+		
+							/* if needed, throw irq for the end of transfer */
+						if(T1ReadWord(MMU.MMU_MEM[proc][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff) & 0x4000)
+							NDS_makeInt(proc,19);
+		
+						return val;
 					}
-					
-					return val;
-				}
 			}
 
 			default :
@@ -1422,8 +1418,9 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x304, val);
 				}
-				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x304, val);
+				
 				return;
 
                         case REG_AUXSPICNT:
@@ -1665,16 +1662,16 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 				}
 				return;
 			case REG_IE + 2 :
-				execute = FALSE;
+				//execute = FALSE;
 				MMU.reg_IE[proc] = (MMU.reg_IE[proc]&0xFFFF) | (((u32)val)<<16);
 				return;
 				
 			case REG_IF :
-				execute = FALSE;
+				//execute = FALSE;
 				MMU.reg_IF[proc] &= (~((u32)val)); 
 				return;
 			case REG_IF + 2 :
-				execute = FALSE;
+				//execute = FALSE;
 				MMU.reg_IF[proc] &= (~(((u32)val)<<16));
 				return;
 				

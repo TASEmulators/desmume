@@ -24,6 +24,8 @@
  - Added the version on window bar to recognize versions from screenshots [shash]
  - Changed graphics render core to DirectDraw (work fastest) [CrazyMax]
  - Some fixes in 3D core OGL (fixed textures) [CrazyMax]
+ - Added texture caching (speedup 3D core) [CrazyMax]
+ - Fixes clear depth (ex. Castlevania now don't flipping) [NHerve]
  
 0.7.3 -> 0.8
  Cocoa:
