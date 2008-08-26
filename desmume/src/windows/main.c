@@ -102,6 +102,7 @@ float widthTradeOff;
 float heightTradeOff;
 
 HMENU menu;
+HANDLE runthread_ready=INVALID_HANDLE_VALUE;
 HANDLE runthread=INVALID_HANDLE_VALUE;
 
 const DWORD DI_tabkey[48] = {DIK_0,DIK_1,DIK_2,DIK_3,DIK_4,DIK_5,DIK_6,DIK_7,DIK_8,DIK_9,DIK_A,DIK_B,DIK_C,
@@ -418,6 +419,8 @@ DWORD WINAPI run( LPVOID lpParameter)
      QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
      QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
      OneFrameTime = freq / 60;
+
+	 SetEvent(runthread_ready);
 
      while(!finished)
      {
@@ -908,7 +911,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	/* Create the dummy firmware */
 	NDS_CreateDummyFirmware( &win_fw_config);
 
+	runthread_ready = CreateEvent(NULL,TRUE,FALSE,0);
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
+
+	//wait for the run thread to signal that it is initialized and ready to run
+	WaitForSingleObject(runthread_ready,INFINITE);
+	
 
     // Make sure any quotes from lpszArgument are removed
     if (lpszArgument[0] == '\"')
