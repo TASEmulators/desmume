@@ -86,6 +86,7 @@ static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
 static short mode = 0;
 
 static int colorAlpha=0;
+static unsigned int polyID=0;
 static unsigned int depthFuncMode=0;
 static unsigned int lightMask=0;
 static unsigned int envMode=0;
@@ -983,12 +984,14 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 	//============================================================================================
+
+	texcache_count=i;
+	
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[texcache[i].texenv]);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
-	texcache_count=i;
 }
 
 __forceinline void NDS_glBegin(unsigned long v)
@@ -1072,6 +1075,33 @@ __forceinline void NDS_glBegin(unsigned long v)
 	//3. draw something opaque in the middle ground
 	if(textureMode ==1 || textureMode == 6)
 		enableDepthWrite = alphaDepthWrite;
+
+	//handle shadow polys
+	if(envMode == 3)
+	{
+		glEnable(GL_STENCIL_TEST);
+		if(polyID == 0) {
+			//when the polyID is zero, we are writing the shadow mask.
+			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
+			//do not write color or depth information.
+			glStencilFunc(GL_ALWAYS,1,1);
+			glStencilOp(GL_KEEP,GL_REPLACE,GL_KEEP);
+			glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
+			enableDepthWrite = 1;
+		} else {
+			//when the polyid is nonzero, we are drawing the shadow poly.
+			//only draw the shadow poly where the stencilbuf==1.
+			//I am not sure whether to update the depth buffer here--so I chose not to.
+			glStencilFunc(GL_EQUAL,1,1);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
+			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+			enableDepthWrite = 0;
+		}
+	} else {
+		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+	}
+
 
 	glDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 
@@ -1258,6 +1288,9 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 	// Alpha value, actually not well handled, 0 should be wireframe
 	colorAlpha = ((val>>16)&0x1F)<<26;
 	//printlog("PolygonID=%i;\n",val>>24);
+
+	// polyID
+	polyID = (val>>24)&0x1F;
 }
 
 /*
