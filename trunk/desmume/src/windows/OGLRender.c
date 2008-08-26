@@ -172,6 +172,18 @@ int CheckHardwareSupport(HDC hdc)
 }
 #endif
 
+__forceinline void NDS_3D_Reset()
+{
+	int i;
+
+	memset(&texcache,0,sizeof(texcache));
+	texcache_count=0;
+	for (i = 0; i < MAX_TEXTURE; i++)
+		texcache[i].id=oglTempTextureID[i];
+	texcache_start=0;
+	texcache_stop=MAX_TEXTURE<<1;
+}
+
 char NDS_glInit(void)
 {
 	int i;
@@ -267,19 +279,9 @@ char NDS_glInit(void)
 	MatrixInit (mtxCurrent[3]);
 	MatrixInit (mtxTemporal);
 
+	NDS_3D_Reset();
+
 	return 1;
-}
-
-__forceinline void NDS_3D_Reset()
-{
-	int i;
-
-	memset(&texcache,0,sizeof(texcache));
-	texcache_count=0;
-	for (i = 0; i < MAX_TEXTURE; i++)
-		texcache[i].id=oglTempTextureID[i];
-	texcache_start=0;
-	texcache_stop=MAX_TEXTURE<<1;
 }
 
 __forceinline void NDS_3D_Close()
@@ -673,12 +675,14 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	u64 txt_slot_current;
 	unsigned char * adr;
 
+	textureMode = (unsigned short)((format>>26)&0x07);
+
 	if (format==0)
 	{
 		texcache_count=-1;
 		return;
 	}
-	if ((format>>26)&0x07==0)
+	if (textureMode==0)
 	{
 		texcache_count=-1;
 		return;
@@ -717,7 +721,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	}
 
 	glBindTexture(GL_TEXTURE_2D, texcache[i].id);
-	texcache[i].mode=(format>>26)&0x07;
+	texcache[i].mode=textureMode;
 	texcache[i].pal=texpal;
 	texcache[i].sizeX=sizeX;
 	texcache[i].sizeY=sizeY;
@@ -737,11 +741,9 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
 	txt_slot_size=(txt_slot_current_size=0x020000-((format & 0x3FFF)<<3));
 
-	textureMode = (unsigned short)((format>>26)&0x7);
-
 		switch (texcache[i].mode)
 		{
-			case 1:
+			case 1: //a3i5
 			{
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				for(x = 0; x < imageSize; x++, dst += 4)
@@ -755,7 +757,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				}
 				break;
 			}
-			case 2:
+			case 2: //i2
 			{
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<3));
 				for(x = 0; x < imageSize>>2; ++x)
@@ -791,7 +793,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				}
 				break;
 			}
-			case 3:
+			case 3: //i4
 				{
 					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 					for(x = 0; x < (imageSize>>1); x++)
@@ -813,7 +815,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 					}
 					break;
 				}
-			case 4:
+			case 4: //i8
 				{
 					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 					for(x = 0; x < imageSize; ++x)
@@ -828,7 +830,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 					}
 				}
 				break;
-			case 5:
+			case 5: //4x4
 			{
 				unsigned short * pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				unsigned short * slot1;
@@ -935,7 +937,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 
 				break;
 			}
-			case 6:
+			case 6: //a5i3
 			{
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				for(x = 0; x < imageSize; x++)
@@ -950,7 +952,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				}
 				break;
 			}
-			case 7:
+			case 7: //16bpp
 			{
 				unsigned short * map = ((unsigned short *)adr);
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
