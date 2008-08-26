@@ -82,6 +82,18 @@ static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BAC
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
 
+//is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
+static const int material_5bit_to_31bit[] = {
+	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6, 
+	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE, 
+	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6, 
+	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE, 
+	0x42108421, 0x46318C63, 0x4A5294A5, 0x4E739CE7,
+	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF, 
+	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7, 
+	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
+};
+
 static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
 static short mode = 0;
 
@@ -1027,7 +1039,7 @@ __forceinline void NDS_glBegin(unsigned long v)
 		glDisable(GL_CULL_FACE);
 
 	// Alpha value, actually not well handled, 0 should be wireframe
-	if (colorAlpha > 0.0f)
+	if (colorAlpha > 0)
 	{
 		glPolygonMode (GL_FRONT, GL_FILL);
 		glPolygonMode (GL_BACK, GL_FILL);
@@ -1043,7 +1055,7 @@ __forceinline void NDS_glBegin(unsigned long v)
 		}
 
 		//non-31 alpha polys are translucent
-		if(colorAlpha != 0x7C000000)
+		if(colorAlpha != 0x7FFFFFFF)
 			enableDepthWrite = alphaDepthWrite;
 	}
 	else
@@ -1284,14 +1296,8 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 	cullingMask = (val&0xC0);
 
 	// Alpha value, actually not well handled, 0 should be wireframe
-	colorAlpha = ((val>>16)&0x1F)<<26;
+	colorAlpha = material_5bit_to_31bit[((val>>16)&0x1F)];
 	
-	//zero - this is sort of a crazy idea but we need to cover the whole range of alpha values
-	//colorAlpha = ((val>>16)&0x1F)<<26;
-	//colorAlpha |= (((unsigned int)colorAlpha)>>5);
-	//colorAlpha |= (((unsigned int)colorAlpha)>>10);
-	//colorAlpha |= (((unsigned int)colorAlpha)>>20);
-
 	// polyID
 	polyID = (val>>24)&0x1F;
 }
@@ -1307,14 +1313,14 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 */
 __forceinline void NDS_glMaterial0 (unsigned long val)
 {
-	diffuse[0] = ((val&0x1F) << 26) | 0x03FFFFFF;
-	diffuse[1] = (((val>>5)&0x1F) << 26) | 0x03FFFFFF;
-	diffuse[2] = (((val>>10)&0x1F) << 26) | 0x03FFFFFF;
+	diffuse[0] = material_5bit_to_31bit[(val)&0x1F];
+	diffuse[1] = material_5bit_to_31bit[(val>>5)&0x1F];
+	diffuse[2] = material_5bit_to_31bit[(val>>10)&0x1F];
 	diffuse[3] = 0x7fffffff;
 
-	ambient[0] = (((val>>16)&0x1F) << 26) | 0x03FFFFFF;
-	ambient[1] = (((val>>21)&0x1F) << 26) | 0x03FFFFFF;
-	ambient[2] = (((val>>26)&0x1F) << 26) | 0x03FFFFFF;
+	ambient[0] = material_5bit_to_31bit[(val>>16)&0x1F];
+	ambient[1] = material_5bit_to_31bit[(val>>21)&0x1F];
+	ambient[2] = material_5bit_to_31bit[(val>>26)&0x1F];
 	ambient[3] = 0x7fffffff;
 
 	if (BIT15(val))
@@ -1340,15 +1346,15 @@ __forceinline void NDS_glMaterial0 (unsigned long val)
 
 __forceinline void NDS_glMaterial1 (unsigned long val)
 {
-	specular[0] = 	((val&0x1F) << 26) | 0x03FFFFFF;
-	specular[1] = 	(((val>>5)&0x1F) << 26) | 0x03FFFFFF;
-	specular[2] = 	(((val>>10)&0x1F) << 26) | 0x03FFFFFF;
-	specular[3] = 	0x7fffffff;
+	specular[0] = material_5bit_to_31bit[(val)&0x1F];
+	specular[1] = material_5bit_to_31bit[(val>>5)&0x1F];
+	specular[2] = material_5bit_to_31bit[(val>>10)&0x1F];
+	specular[3] = 0x7fffffff;
 
-	emission[0] = 	(((val>>16)&0x1F) << 26) | 0x03FFFFFF;
-	emission[1] = 	(((val>>21)&0x1F) << 26) | 0x03FFFFFF;
-	emission[2] = 	(((val>>26)&0x1F) << 26) | 0x03FFFFFF;
-	emission[3] = 	0x7fffffff;
+	emission[0] = material_5bit_to_31bit[(val>>16)&0x1F];
+	emission[1] = material_5bit_to_31bit[(val>>21)&0x1F];
+	emission[2] = material_5bit_to_31bit[(val>>26)&0x1F];
+	emission[3] = 0x7fffffff;
 
 	if (beginCalled)
 	{
