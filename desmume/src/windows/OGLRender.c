@@ -280,8 +280,6 @@ char NDS_glInit(void)
 	MatrixInit (mtxCurrent[3]);
 	MatrixInit (mtxTemporal);
 
-	NDS_3D_Reset();
-
 	return 1;
 }
 
@@ -1287,7 +1285,12 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 
 	// Alpha value, actually not well handled, 0 should be wireframe
 	colorAlpha = ((val>>16)&0x1F)<<26;
-	//printlog("PolygonID=%i;\n",val>>24);
+	
+	//zero - this is sort of a crazy idea but we need to cover the whole range of alpha values
+	//colorAlpha = ((val>>16)&0x1F)<<26;
+	//colorAlpha |= (((unsigned int)colorAlpha)>>5);
+	//colorAlpha |= (((unsigned int)colorAlpha)>>10);
+	//colorAlpha |= (((unsigned int)colorAlpha)>>20);
 
 	// polyID
 	polyID = (val>>24)&0x1F;
