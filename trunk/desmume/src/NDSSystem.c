@@ -181,6 +181,7 @@ void NDS_DeInit(void) {
      SPU_DeInit();
      Screen_DeInit();
      MMU_DeInit();
+	 NDS_3D_Close();
 }
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
@@ -533,6 +534,7 @@ void NDS_Reset( void)
 
    GPU_Reset(MainScreen.gpu, 0);
    GPU_Reset(SubScreen.gpu, 1);
+   NDS_3D_Reset();
    SPU_Reset();
 
    execute = oldexecute;
@@ -585,40 +587,6 @@ typedef struct
     u32 imgoffset __PACKED;
 } bmpfileheader_struct;
 #endif
-
-int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename)
-{
-	 bmpfileheader_struct fileheader;
-    bmpimgheader_struct imageheader;
-    FILE *file;
-    int i,j,k;
-    u16 * bmp = (u16 *)GPU_screen;
-
-    memset(&fileheader, 0, sizeof(fileheader));
-    fileheader.size = sizeof(fileheader);
-    fileheader.id = 'B' | ('M' << 8);
-    fileheader.imgoffset = sizeof(fileheader)+sizeof(imageheader);
-    
-    memset(&imageheader, 0, sizeof(imageheader));
-    imageheader.size = sizeof(imageheader);
-    imageheader.width = width;
-    imageheader.height = height;
-    imageheader.planes = 1;
-    imageheader.bpp = 32;
-    imageheader.cmptype = 0; // None
-    imageheader.imgsize = imageheader.width * imageheader.height * 4;
-    
-    if ((file = fopen(filename,"wb")) == NULL)
-       return 0;
-
-    fwrite(&fileheader, 1, sizeof(fileheader), file);
-    fwrite(&imageheader, 1, sizeof(imageheader), file);
-
-	fwrite(buf,1,imageheader.imgsize,file);
-    fclose(file);
-
-    return 1;
-}
 
 int NDS_WriteBMP(const char *filename)
 {
