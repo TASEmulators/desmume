@@ -29,7 +29,7 @@
 	#include <gl/gl.h>
 	#include <gl/glext.h>
 #else
-    #define __forceinline
+	#define __forceinline
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #endif
@@ -90,10 +90,7 @@ static unsigned int depthFuncMode=0;
 static unsigned int lightMask=0;
 static unsigned int envMode=0;
 static unsigned int cullingMask=0;
-static unsigned int oglTextureID=0;
-static unsigned char texMAP[1024*2048*4], texMAP2[2048*2048*4];
-static float invTexWidth  = 1.f;
-static float invTexHeight = 1.f;
+static unsigned char texMAP[1024*2048*4]; 
 static float fogColor[4] = {0.f};
 static float fogOffset = 0.f;
 static float alphaTestRef = 0.01f;
@@ -105,20 +102,46 @@ static unsigned long clInd2 = 0;
 static int alphaDepthWrite = 0;
 static int colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
 static int texCoordinateTransform = 0;
-static int t=0, s=0;
+static int _t=0, _s=0;
 static char beginCalled = 0;
 static unsigned int vtxFormat;
+static unsigned int old_vtxFormat;
 static unsigned int textureFormat=0, texturePalette=0;
-static unsigned int lastTextureFormat=0, lastTexturePalette=0;
 static unsigned int textureMode=0;
-static u32 sizeX = 1; 
-static u32 sizeY = 1;
-static u8 currentIDtexture=0;
 
 static int			diffuse[4] = {0}, 
 					ambient[4] = {0}, 
 					specular[4] = {0}, 
 					emission[4] = {0};
+
+//================================================= Textures
+#define MAX_TEXTURE 500
+typedef struct
+{
+	GLenum				id;
+	unsigned int		frm;
+	unsigned int		mode;
+	unsigned int		numcolors;
+	unsigned int		pal;
+	unsigned int		sizeX;
+	unsigned int		sizeY;
+	int					coord;
+	unsigned int		texenv;
+	float				invSizeX;
+	float				invSizeY;
+	unsigned char		texture[128*1024]; // 128Kb texture slot
+
+} TextureCache;
+
+TextureCache	texcache[MAX_TEXTURE+1];
+u32				texcache_count;
+
+u32				texcache_start;
+u32				texcache_stop;
+//u32				texcache_last;
+
+GLenum			oglTempTextureID[MAX_TEXTURE];
+//=================================================
 
 typedef struct
 {
@@ -192,9 +215,6 @@ char NDS_glInit(void)
 		else 
 			printlog("OpenGL mode: uknown\n");
 #endif
-
-	currentIDtexture=0;
-
 	glClearColor	(0.f, 0.f, 0.f, 1.f);
 	glColor3f		(1.f, 1.f, 1.f);
 
@@ -205,10 +225,9 @@ char NDS_glInit(void)
 	glAlphaFunc		(GL_GREATER, 0.1f);
 	glEnable		(GL_ALPHA_TEST);
 
-	glGenTextures (1, (GLuint*)&oglTextureID);
+	glGenTextures (MAX_TEXTURE, &oglTempTextureID[0]);
 
 	glViewport(0, 0, 256, 192);
-
 	if (glGetError() != GL_NO_ERROR)
 		return 0;
 
@@ -251,7 +270,23 @@ char NDS_glInit(void)
 	return 1;
 }
 
-void SetMaterialAlpha (int alphaValue)
+__forceinline void NDS_3D_Reset()
+{
+	int i;
+
+	memset(&texcache,0,sizeof(texcache));
+	texcache_count=0;
+	for (i = 0; i < MAX_TEXTURE; i++)
+		texcache[i].id=oglTempTextureID[i];
+	texcache_start=0;
+	texcache_stop=MAX_TEXTURE<<1;
+}
+
+__forceinline void NDS_3D_Close()
+{
+}
+
+__forceinline void SetMaterialAlpha (int alphaValue)
 {
 	diffuse[3]	= alphaValue;
 	ambient[3]	= alphaValue;
@@ -265,18 +300,18 @@ void SetMaterialAlpha (int alphaValue)
 	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, emission);
 }
 
-void NDS_glViewPort(unsigned long v)
+__forceinline void NDS_glViewPort(unsigned long v)
 {
 	if(beginCalled)
 		glEnd();
 
-	glViewport( (v&0xFF), ((v>>8)&0xFF), ((v>>16)&0xFF)+1, (v>>24)+1);
+	glViewport( (v&0xFF), ((v>>8)&0xFF), ((v>>16)&0xFF), ((v>>24)&0xFF));
 
 	if(beginCalled)
 		glBegin(vtxFormat);
 }
 
-void NDS_glClearColor(unsigned long v)
+__forceinline void NDS_glClearColor(unsigned long v)
 {
 	if(beginCalled)
 		glEnd();
@@ -290,7 +325,7 @@ void NDS_glClearColor(unsigned long v)
 		glBegin(vtxFormat);
 }
 
-void NDS_glFogColor(unsigned long v)
+__forceinline void NDS_glFogColor(unsigned long v)
 {
 	fogColor[0] = ((float)((v    )&0x1F))/31.0f;
 	fogColor[1] = ((float)((v>> 5)&0x1F))/31.0f;
@@ -298,12 +333,12 @@ void NDS_glFogColor(unsigned long v)
 	fogColor[3] = ((float)((v>>16)&0x1F))/31.0f;
 }
 
-void NDS_glFogOffset (unsigned long v)
+__forceinline void NDS_glFogOffset (unsigned long v)
 {
 	fogOffset = (float)(v&0xffff);
 }
 
-void NDS_glClDepth()
+__forceinline void NDS_glClDepth()
 {
 	if(beginCalled)
 		glEnd();
@@ -314,7 +349,7 @@ void NDS_glClDepth()
 		glBegin(vtxFormat);
 }
 
-void NDS_glClearDepth(unsigned long v)
+__forceinline void NDS_glClearDepth(unsigned long v)
 {
 	u32 depth24b;
 
@@ -322,16 +357,15 @@ void NDS_glClearDepth(unsigned long v)
 		glEnd();
 
 	v		&= 0x7FFFF;
-	depth24b = (v*0x200)+((v+1)/0x8000);
-
-	// Using 23 instead of 24 fixes SM 64 DS
-	glClearDepth(depth24b / ((float)(1<<23)));
+	// Thanks for NHerve
+	depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
+	glClearDepth(depth24b / ((float)(1<<24)));
 
 	if(beginCalled)
 		glBegin(vtxFormat);
 }
 
-void NDS_glMatrixMode(unsigned long v)
+__forceinline void NDS_glMatrixMode(unsigned long v)
 {
 	if (beginCalled)
 	{
@@ -346,7 +380,7 @@ void NDS_glMatrixMode(unsigned long v)
 	}
 }
 
-void SetMatrix (void)
+__forceinline void SetMatrix (void)
 {
 	if (mode < 2)
 	{
@@ -368,7 +402,7 @@ void SetMatrix (void)
 	}
 }
 
-void NDS_glLoadIdentity (void)
+__forceinline void NDS_glLoadIdentity (void)
 {
 	MatrixIdentity (mtxCurrent[mode]);
 
@@ -376,7 +410,7 @@ void NDS_glLoadIdentity (void)
 		MatrixIdentity (mtxCurrent[1]);
 }
 
-void NDS_glLoadMatrix4x4(signed long v)
+__forceinline void NDS_glLoadMatrix4x4(signed long v)
 {
 	mtxCurrent[mode][ML4x4ind] = fix2float(v);
 
@@ -389,7 +423,7 @@ void NDS_glLoadMatrix4x4(signed long v)
 	ML4x4ind = 0;
 }
 
-void NDS_glLoadMatrix4x3(signed long v)
+__forceinline void NDS_glLoadMatrix4x3(signed long v)
 {
 	mtxCurrent[mode][(ML4x3_l<<2)+ML4x3_c] = fix2float(v);
 
@@ -405,7 +439,7 @@ void NDS_glLoadMatrix4x3(signed long v)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
 }
 
-void NDS_glStoreMatrix(unsigned long v)
+__forceinline void NDS_glStoreMatrix(unsigned long v)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -419,7 +453,7 @@ void NDS_glStoreMatrix(unsigned long v)
 		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
 }
 
-void NDS_glRestoreMatrix(unsigned long v)
+__forceinline void NDS_glRestoreMatrix(unsigned long v)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -433,9 +467,9 @@ void NDS_glRestoreMatrix(unsigned long v)
 		MatrixCopy (mtxCurrent[1], MatrixStackGetPos(&mtxStack[1], v&31));
 }
 
-void NDS_glPushMatrix (void)
+__forceinline void NDS_glPushMatrix (void)
 {
-	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
+		//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
 	MatrixStackPushMatrix (&mtxStack[mymode], mtxCurrent[mymode]);
@@ -443,7 +477,7 @@ void NDS_glPushMatrix (void)
 		MatrixStackPushMatrix (&mtxStack[1], mtxCurrent[1]);
 }
 
-void NDS_glPopMatrix(signed long i)
+__forceinline void NDS_glPopMatrix(signed long i)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -454,7 +488,7 @@ void NDS_glPopMatrix(signed long i)
 		MatrixCopy (mtxCurrent[1], MatrixStackPopMatrix (&mtxStack[1], i));
 }
 
-void NDS_glTranslate(signed long v)
+__forceinline void NDS_glTranslate(signed long v)
 {
 	trans[transind] = fix2float(v);
 
@@ -471,7 +505,7 @@ void NDS_glTranslate(signed long v)
 		MatrixTranslate (mtxCurrent[1], trans);
 }
 
-void NDS_glScale(signed long v)
+__forceinline void NDS_glScale(signed long v)
 {
 	short mymode = (mode==2?1:mode);
 	
@@ -493,7 +527,7 @@ void NDS_glScale(signed long v)
 	//	MatrixScale (mtxCurrent[1], scale);
 }
 
-void NDS_glMultMatrix3x3(signed long v)
+__forceinline void NDS_glMultMatrix3x3(signed long v)
 {
 	mtxTemporal[(MM3x3_l<<2)+MM3x3_c] = fix2float(v);
 
@@ -513,7 +547,7 @@ void NDS_glMultMatrix3x3(signed long v)
 	MatrixIdentity (mtxTemporal);
 }
 
-void NDS_glMultMatrix4x3(signed long v)
+__forceinline void NDS_glMultMatrix4x3(signed long v)
 {
 	mtxTemporal[(MM4x3_l<<2)+MM4x3_c] = fix2float(v);
 
@@ -532,7 +566,7 @@ void NDS_glMultMatrix4x3(signed long v)
 	MatrixIdentity (mtxTemporal);
 }
 
-void NDS_glMultMatrix4x4(signed long v)
+__forceinline void NDS_glMultMatrix4x4(signed long v)
 {
 	mtxTemporal[MM4x4ind] = fix2float(v);
 
@@ -566,259 +600,327 @@ void NDS_glMultMatrix4x4(signed long v)
 						txt_slot_size=txt_slot_current_size=0x020000;\
 					}
 
-//#define CHECKSLOT	;
 
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
 
-__forceinline void SetupTexture (unsigned int format, unsigned int palette)
+__forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 {
-	unsigned short *pal = NULL;
-	unsigned int imageSize = sizeX*sizeY;
-	unsigned int paletteSize = 0;
-	unsigned int palZeroTransparent = (1-((format>>29)&1))*255; // shash: CONVERT THIS TO A TABLE :)
-	unsigned int x=0, y=0;
-	unsigned char * dst = texMAP;
-	u64 txt_slot_current_size=0x020000-((format & 0x3FFF)<<3);
-	u64 txt_slot_size=128*1024; //zero 8/25/08 - this was total garbage before I got here. this is at least reasonable..
-	u64 txt_slot_current=(format>>14)&3;
-	unsigned char * adr = (unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
-	//printlog("Format: %04X\n",(format >> 14 & 3));
-	//printlog("Texture %08X: width=%d, height=%d\n", format, sizeX, sizeY);
-	
-	//printlog("Texture slot: %02X\n",(format >> 14 & 3));
-	//printlog("Texture slot offset: %02X\n",(format&0x3FFF)<<3);
+	size_t blockCnt = count / 64;
+	size_t remainder = count % 64;
 
-	textureMode = (unsigned short)((format>>26)&0x7);
-	
-	switch(textureMode)
+	__asm
 	{
-		case 1: //a3i5
+		mov esi, [src] 
+		mov edi, [dest] 
+		mov ecx, [blockCnt]
+
+		test ecx, ecx
+		jz copy_remainder
+
+	copyloop:
+		//prefetchnta [esi]
+		mov eax, [esi]
+		
+		movq mm0, qword ptr [esi]
+		movq mm1, qword ptr [esi+8]
+		movq mm2, qword ptr [esi+16]
+		movq mm3, qword ptr [esi+24]
+		movq mm4, qword ptr [esi+32]
+		movq mm5, qword ptr [esi+40]
+		movq mm6, qword ptr [esi+48]
+		movq mm7, qword ptr [esi+56]
+		movntq qword ptr [edi], mm0
+		movntq qword ptr [edi+8], mm1
+		movntq qword ptr [edi+16], mm2
+		movntq qword ptr [edi+24], mm3
+		movntq qword ptr [edi+32], mm4
+		movntq qword ptr [edi+40], mm5
+		movntq qword ptr [edi+48], mm6
+		movntq qword ptr [edi+56], mm7
+
+		add edi, 64
+		add	esi, 64
+		dec ecx
+		jnz copyloop
+
+		sfence
+		emms
+
+	copy_remainder:
+
+		mov ecx, remainder
+		rep movsb
+	}
+
+	return dest;
+}
+//================================================================================
+__forceinline void setTexture(unsigned int format, unsigned int texpal)
+{
+	int palSize[7]={32,4,16,256,0,8,32768};
+	int i=0;
+	unsigned int x=0, y=0;
+	unsigned int palZeroTransparent;
+	
+	unsigned short *pal = NULL;
+	unsigned char *dst = texMAP;
+	unsigned int sizeX=(8 << ((format>>20)&0x07));
+	unsigned int sizeY=(8 << ((format>>23)&0x07));
+	unsigned int imageSize = sizeX*sizeY;
+
+	u64 txt_slot_current_size;
+	u64 txt_slot_size;
+	u64 txt_slot_current;
+	unsigned char * adr;
+
+	if (format==0)
+	{
+		texcache_count=-1;
+		return;
+	}
+	if ((format>>26)&0x07==0)
+	{
+		texcache_count=-1;
+		return;
+	}
+
+	txt_slot_current=(format>>14)&0x03;
+	adr=(unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
+	
+	i=texcache_start;
+	while (TRUE)
+	{
+		if (texcache_stop==i) break;
+		if (texcache[i].frm==0) break;
+		if ((texcache[i].frm==format)&&(texcache[i].pal==texpal))
 		{
-			paletteSize = 256;
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-			break;
+			if (!memcmp(adr,texcache[i].texture,imageSize))
+			{
+				texcache_count=i;
+				glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+				return;
+			}
 		}
-		case 2: //i2
+		i++;
+		if (i>MAX_TEXTURE) 
 		{
-			paletteSize = 4;
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<3));
-			imageSize >>= 2;
-			break;
-		}
-		case 3: //i4
-		{
-			paletteSize = 16;
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-			imageSize >>= 1;
-			break;
-		}
-		case 4: //i8
-		{
-			paletteSize = 256;
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-			break;
-		}
-		case 5: //4x4
-		{
-			paletteSize = 0;
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-			break;
-		}
-		case 6: //a5i3
-		{
-			paletteSize = 256;
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-			break;
-		}
-		case 7: //16bpp
-		{
-			paletteSize = 0;
-			break;
+			texcache_stop=texcache_start;
+			texcache[texcache_stop].frm=0;
+			texcache_start++;
+			if (texcache_start>MAX_TEXTURE) 
+			{
+				texcache_start=0;
+				texcache_stop=MAX_TEXTURE<<1;
+			}
+			i=0;
 		}
 	}
+
+	glBindTexture(GL_TEXTURE_2D, texcache[i].id);
+	texcache[i].mode=(format>>26)&0x07;
+	texcache[i].pal=texpal;
+	texcache[i].sizeX=sizeX;
+	texcache[i].sizeY=sizeY;
+	texcache[i].coord=(format>>30);
+	texcache[i].invSizeX=1.0f/((float)sizeX*(1<<4));
+	texcache[i].invSizeY=1.0f/((float)sizeY*(1<<4));
+	texcache[i].texenv=envMode;
+	//memcpy(texcache[i].texture,adr,imageSize);			//======================= copy
+	memcpy_fast(texcache[i].texture,adr,imageSize);			//======================= copy
+	texcache[i].numcolors=palSize[texcache[i].mode];
+
+	texcache[i].frm=format;
+
+	//printlog("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
 	
-	//printlog("Texture mode %02i: x=%04d, colors=%04X, index=%04d\n",mode,x,pal[adr[x]],adr[x]);
-	switch(textureMode)
-	{
-		case 1:
+	//============================================================================ Texture render
+	palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
+	txt_slot_size=(txt_slot_current_size=0x020000-((format & 0x3FFF)<<3));
+
+	textureMode = (unsigned short)((format>>26)&0x7);
+
+		switch (texcache[i].mode)
 		{
-			for(x = 0; x < imageSize; x++, dst += 4)
+			case 1:
 			{
-				unsigned short c = pal[adr[x]&31], alpha = (adr[x]>>5);
-				dst[0] = (unsigned char)((c & 0x1F)<<3);
-				dst[1] = (unsigned char)((c & 0x3E0)>>2);
-				dst[2] = (unsigned char)((c & 0x7C00)>>7);
-				dst[3] = ((alpha<<2)+(alpha>>1))<<3;
-				CHECKSLOT;
+				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+				for(x = 0; x < imageSize; x++, dst += 4)
+				{
+					unsigned short c = pal[adr[x]&31], alpha = (adr[x]>>5);
+					dst[0] = (unsigned char)((c & 0x1F)<<3);
+					dst[1] = (unsigned char)((c & 0x3E0)>>2);
+					dst[2] = (unsigned char)((c & 0x7C00)>>7);
+					dst[3] = ((alpha<<2)+(alpha>>1))<<3;
+					CHECKSLOT;
+				}
+				break;
 			}
-			break;
-		}
-		case 2:
-		{
-			for(x = 0; x < imageSize; ++x)
+			case 2:
 			{
-				unsigned short c = pal[(adr[x])&0x3];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = ((adr[x]&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
+				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<3));
+				for(x = 0; x < imageSize>>2; ++x)
+				{
+					unsigned short c = pal[(adr[x])&0x3];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = ((adr[x]&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst += 4;
 
-				c = pal[((adr[x])>>2)&0x3];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
+					c = pal[((adr[x])>>2)&0x3];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = (((adr[x]>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst += 4;
 
-				c = pal[((adr[x])>>4)&0x3];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
+					c = pal[((adr[x])>>4)&0x3];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = (((adr[x]>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst += 4;
 
-				c = pal[(adr[x])>>6];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-				CHECKSLOT;
+					c = pal[(adr[x])>>6];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = (((adr[x]>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst += 4;
+					CHECKSLOT;
+				}
+				break;
 			}
-			break;
-		}
-		
-		case 3:
-		{
-			for(x = 0; x < imageSize; x++)
-			{
-				unsigned short c = pal[adr[x]&0xF];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x])&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-
-				c = pal[((adr[x])>>4)];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-				CHECKSLOT;
-			}
-			break;
-		}
-
-		case 4:
-		{
-			//printlog("texture mode 4");
-			for(x = 0; x < imageSize; ++x)
-			{
-				unsigned short c = pal[adr[x]];
-				dst[0] = (unsigned char)((c & 0x1F)<<3);
-				dst[1] = (unsigned char)((c & 0x3E0)>>2);
-				dst[2] = (unsigned char)((c & 0x7C00)>>7);
-				dst[3] = (adr[x] == 0) ? palZeroTransparent : 255;
-				dst += 4;
-				CHECKSLOT;
-			}
-			break;
-		}
-
-		case 5:
-		{
-			unsigned short * pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-			unsigned short * slot1;
-			unsigned int * map = (unsigned int *)adr;
-			unsigned i = 0;
-			unsigned int * dst = (unsigned int *)texMAP;
-			if ( (format & 0xc000) == 0x8000)
-				// texel are in slot 2
-				slot1=(const unsigned short*)&ARM9Mem.textureSlotAddr[1][((format&0x3FFF)<<2)+0x010000];
-			else 
-				slot1=(const unsigned short*)&ARM9Mem.textureSlotAddr[1][(format&0x3FFF)<<2];
-
-			for (y = 0; y < (sizeY>>2); y ++)
-			{
-				u32 tmpPos[4]={(y<<2)*sizeX,((y<<2)+1)*sizeX,((y<<2)+2)*sizeX,((y<<2)+3)*sizeX};
-				for (x = 0; x < (sizeX>>2); x ++, i++)
+			case 3:
+				{
+					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+					for(x = 0; x < (imageSize>>1); x++)
 					{
-					u32 currBlock	= map[i], sy;
-					u16 pal1		= slot1[i];
-					u16 pal1offset	= (pal1 & 0x3FFF)<<1;
-					u8  mode		= pal1>>14;
-					u32 tmp_col[4];
+						unsigned short c = pal[adr[x]&0xF];
+						dst[0] = ((c & 0x1F)<<3);
+						dst[1] = ((c & 0x3E0)>>2);
+						dst[2] = ((c & 0x7C00)>>7);
+						dst[3] = (((adr[x])&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+						dst += 4;
 
-					tmp_col[0]=RGB16TO32(pal[pal1offset],255);
-					tmp_col[1]=RGB16TO32(pal[pal1offset+1],255);
-
-					switch (mode) 
+						c = pal[((adr[x])>>4)];
+						dst[0] = ((c & 0x1F)<<3);
+						dst[1] = ((c & 0x3E0)>>2);
+						dst[2] = ((c & 0x7C00)>>7);
+						dst[3] = (((adr[x]>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+						dst += 4;
+						CHECKSLOT;
+					}
+					break;
+				}
+			case 4:
+				{
+					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+					for(x = 0; x < imageSize; ++x)
 					{
-						case 0:
-							tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
-							tmp_col[3]=RGB16TO32(0x7FFF,0);
-							break;
-						case 1:
-							tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
-											(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
-												(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
-													(0xff<<24);
-							tmp_col[3]=RGB16TO32(0x7FFF,0);
-							break;
-						case 2:
-							tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
-							tmp_col[3]=RGB16TO32(pal[pal1offset+3],255);
-							break;
-						case 3: 
+						unsigned short c = pal[adr[x]];
+						dst[0] = (unsigned char)((c & 0x1F)<<3);
+						dst[1] = (unsigned char)((c & 0x3E0)>>2);
+						dst[2] = (unsigned char)((c & 0x7C00)>>7);
+						dst[3] = (adr[x] == 0) ? palZeroTransparent : 255;
+						dst += 4;
+						CHECKSLOT;
+					}
+				}
+				break;
+			case 5:
+			{
+				unsigned short * pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+				unsigned short * slot1;
+				unsigned int * map = (unsigned int *)adr;
+				unsigned d = 0;
+				unsigned int * dst = (unsigned int *)texMAP;
+				if ( (texcache[i].frm & 0xc000) == 0x8000)
+					// texel are in slot 2
+					slot1=(const unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
+				else 
+					slot1=(const unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
+
+				for (y = 0; y < (texcache[i].sizeY>>2); y ++)
+				{
+					u32 tmpPos[4]={(y<<2)*texcache[i].sizeX,((y<<2)+1)*texcache[i].sizeX,
+												((y<<2)+2)*texcache[i].sizeX,((y<<2)+3)*texcache[i].sizeX};
+					for (x = 0; x < (texcache[i].sizeX>>2); x ++, d++)
 						{
-							u32 red1, red2;
-							u32 green1, green2;
-							u32 blue1, blue2;
-							u16 tmp1, tmp2;
+						u32 currBlock	= map[d], sy;
+						u16 pal1		= slot1[d];
+						u16 pal1offset	= (pal1 & 0x3FFF)<<1;
+						u8  mode		= pal1>>14;
+						u32 tmp_col[4];
 
-							red1=tmp_col[0]&0xff;
-							green1=(tmp_col[0]>>8)&0xff;
-							blue1=(tmp_col[0]>>16)&0xff;
-							red2=tmp_col[1]&0xff;
-							green2=(tmp_col[1]>>8)&0xff;
-							blue2=(tmp_col[1]>>16)&0xff;
+						tmp_col[0]=RGB16TO32(pal[pal1offset],255);
+						tmp_col[1]=RGB16TO32(pal[pal1offset+1],255);
 
-							tmp1=((red1*5+red2*3)>>6)|
-										(((green1*5+green2*3)>>6)<<5)|
-											(((blue1*5+blue2*3)>>6)<<10);
-							tmp2=((red2*5+red1*3)>>6)|
-										(((green2*5+green1*3)>>6)<<5)|
-										  (((blue2*5+blue1*3)>>6)<<10);
-
-							tmp_col[2]=RGB16TO32(tmp1,255);
-							tmp_col[3]=RGB16TO32(tmp2,255);
-							break;
-						}
-					  }
-						for (sy = 0; sy < 4; sy++)
+						switch (mode) 
 						{
-							// Texture offset
-							u32 currentPos = (x<<2) + tmpPos[sy];
-							u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
-
-							dst[currentPos] = tmp_col[currRow&3];
-							dst[currentPos+1] = tmp_col[(currRow>>2)&3];
-							dst[currentPos+2] = tmp_col[(currRow>>4)&3];
-							dst[currentPos+3] = tmp_col[(currRow>>6)&3];
-							//=====================================
-							txt_slot_current_size-=4;;
-							if (txt_slot_current_size<=0)
+							case 0:
+								tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
+								tmp_col[3]=RGB16TO32(0x7FFF,0);
+								break;
+							case 1:
+								tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
+												(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
+													(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
+														(0xff<<24);
+								tmp_col[3]=RGB16TO32(0x7FFF,0);
+								break;
+							case 2:
+								tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
+								tmp_col[3]=RGB16TO32(pal[pal1offset+3],255);
+								break;
+							case 3: 
 							{
-								txt_slot_current++;
-								*map=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];
-								//map-=txt_slot_size>>2; //zero 8/25/08 - I dont understand this. it broke my game.
-								txt_slot_size=txt_slot_current_size=0x020000;
+								u32 red1, red2;
+								u32 green1, green2;
+								u32 blue1, blue2;
+								u16 tmp1, tmp2;
+
+								red1=tmp_col[0]&0xff;
+								green1=(tmp_col[0]>>8)&0xff;
+								blue1=(tmp_col[0]>>16)&0xff;
+								red2=tmp_col[1]&0xff;
+								green2=(tmp_col[1]>>8)&0xff;
+								blue2=(tmp_col[1]>>16)&0xff;
+
+								tmp1=((red1*5+red2*3)>>6)|
+											(((green1*5+green2*3)>>6)<<5)|
+												(((blue1*5+blue2*3)>>6)<<10);
+								tmp2=((red2*5+red1*3)>>6)|
+											(((green2*5+green1*3)>>6)<<5)|
+											  (((blue2*5+blue1*3)>>6)<<10);
+
+								tmp_col[2]=RGB16TO32(tmp1,255);
+								tmp_col[3]=RGB16TO32(tmp2,255);
+								break;
+							}
+						  }
+							for (sy = 0; sy < 4; sy++)
+							{
+								// Texture offset
+								u32 currentPos = (x<<2) + tmpPos[sy];
+								u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
+
+								dst[currentPos] = tmp_col[currRow&3];
+								dst[currentPos+1] = tmp_col[(currRow>>2)&3];
+								dst[currentPos+2] = tmp_col[(currRow>>4)&3];
+								dst[currentPos+3] = tmp_col[(currRow>>6)&3];
+								
+								txt_slot_current_size-=4;;
+								if (txt_slot_current_size<=0)
+								{
+									txt_slot_current++;
+									*map=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];
+									//map-=txt_slot_size>>2; //zero 8/25/08 - I dont understand this. it broke my game.
+									txt_slot_size=txt_slot_current_size=0x020000;
+								}
 							}
 						}
 					}
-				}	
 
 			//zero debug - dump tex4x4 to verify contents
 		/*	{
@@ -831,57 +933,67 @@ __forceinline void SetupTexture (unsigned int format, unsigned int palette)
 				NDS_WriteBMP_32bppBuffer(sizeX,sizeY,texMAP,fname);
 			}*/
 
-			break;
-		}
-		case 6: //a5i3
-		{
-			unsigned int * dst = (unsigned int *)texMAP;
-			for(x = 0; x < imageSize; x++)
-			{
-				unsigned short c = pal[adr[x]&0x07];
-				/* *dst = A8R8G8B8TOARGB32(128,((c & 0x1F)<<3),((c & 0x3E0)>>2),((c & 0x7C00)>>7));
-				dst++;*/
-				/**dst = A8R8G8B8TOARGB32(128,255,128,128);
-				dst++;
-				*/
-				dst[0] = (unsigned char)((c & 0x1F)<<3);
-				dst[1] = (unsigned char)((c & 0x3E0)>>2);
-				dst[2] = (unsigned char)((c & 0x7C00)>>7);
-				dst[3] = (adr[x]&0xF8);
-				dst += 4;
-				CHECKSLOT;
+				break;
 			}
-			break;
-		}
-		case 7:
-		{
-			unsigned short * map = ((unsigned short *)adr);
-			for(x = 0; x < imageSize; ++x)
+			case 6:
 			{
-				unsigned short c = map[x];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (c>>15)*255;
-				
-				dst += 4;
-				txt_slot_current_size-=2;;
-				if (txt_slot_current_size<=0)
+				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+				for(x = 0; x < imageSize; x++)
 				{
-					txt_slot_current++;
-					*map=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];
-					map-=txt_slot_size>>1;
-					txt_slot_size=txt_slot_current_size=0x020000;
+					unsigned short c = pal[adr[x]&0x07];
+					dst[0] = (unsigned char)((c & 0x1F)<<3);
+					dst[1] = (unsigned char)((c & 0x3E0)>>2);
+					dst[2] = (unsigned char)((c & 0x7C00)>>7);
+					dst[3] = (adr[x]&0xF8);
+					dst += 4;
+					CHECKSLOT;
 				}
+				break;
 			}
-			break;
-		}
+			case 7:
+			{
+				unsigned short * map = ((unsigned short *)adr);
+				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+				
+				for(x = 0; x < imageSize; ++x)
+				{
+					unsigned short c = map[x];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = (c>>15)*255;
+					
+					dst += 4;
+					txt_slot_current_size-=2;;
+					if (txt_slot_current_size<=0)
+					{
+						txt_slot_current++;
+						*map=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];
+						map-=txt_slot_size>>1;
+						txt_slot_size=txt_slot_current_size=0x020000;
+					}
+				}
+				break;
+			}
 	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+						texcache[i].sizeX, texcache[i].sizeY, 0, 
+							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
+	//============================================================================================
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[texcache[i].texenv]);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+	texcache_count=i;
 }
 
-void NDS_glBegin(unsigned long v)
+__forceinline void NDS_glBegin(unsigned long v)
 {
 	int enableDepthWrite = 1;
+
+	u32 tmp=0;
 
 	if (beginCalled)
 	{
@@ -892,10 +1004,10 @@ void NDS_glBegin(unsigned long v)
 	if (lightMask)
 	{
 		glEnable (GL_LIGHTING);
-		(lightMask&1)?glEnable (GL_LIGHT0):glDisable(GL_LIGHT0);
-		(lightMask&2)?glEnable (GL_LIGHT1):glDisable(GL_LIGHT1);
-		(lightMask&4)?glEnable (GL_LIGHT2):glDisable(GL_LIGHT2);
-		(lightMask&8)?glEnable (GL_LIGHT3):glDisable(GL_LIGHT3);
+		(lightMask&0x01)?glEnable (GL_LIGHT0):glDisable(GL_LIGHT0);
+		(lightMask&0x02)?glEnable (GL_LIGHT1):glDisable(GL_LIGHT1);
+		(lightMask&0x04)?glEnable (GL_LIGHT2):glDisable(GL_LIGHT2);
+		(lightMask&0x08)?glEnable (GL_LIGHT3):glDisable(GL_LIGHT3);
 	}
 	else
 		glDisable (GL_LIGHTING);
@@ -925,7 +1037,7 @@ void NDS_glBegin(unsigned long v)
 		{
 			colorRGB[3] = colorAlpha;
 			glColor4iv ((GLint*)colorRGB);
-		}		
+		}
 
 		//non-31 alpha polys are translucent
 		if(colorAlpha != 0x7C000000)
@@ -938,36 +1050,15 @@ void NDS_glBegin(unsigned long v)
 	}
 
 	// texture environment
-	//printlog("textureFormat=%i\n",((textureFormat>>26)&0x07));
-	if (((textureFormat>>26)&0x07)!=0)
+	setTexture(textureFormat, texturePalette);
+	//=================
+	if (texcache_count!=-1)
 	{
-		glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, envMode);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, oglTextureID);
-		
-		if (textureFormat  != lastTextureFormat ||	texturePalette != lastTexturePalette)
-		{
-			sizeX = (1<<(((textureFormat>>20)&0x7)+3));
-			sizeY = (1<<(((textureFormat>>23)&0x7)+3));
-			SetupTexture (textureFormat, texturePalette);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-			// S Coordinate options
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(textureFormat) ? (BIT18(textureFormat)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
-			// T Coordinate options
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(textureFormat) ? (BIT18(textureFormat)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+		texCoordinateTransform = texcache[texcache_count].coord;
 
-			lastTextureFormat = textureFormat;
-			lastTexturePalette = texturePalette;
-
-			texCoordinateTransform = (textureFormat>>30);
-			invTexWidth  = 1.0f/((float)sizeX*(1<<4));
-			invTexHeight = 1.0f/((float)sizeY*(1<<4));
-		}
 		glMatrixMode (GL_TEXTURE);
 		glLoadIdentity ();
-		glScaled (invTexWidth, invTexHeight, 1.0f);
+		glScaled (texcache[texcache_count].invSizeX, texcache[texcache_count].invSizeY, 1.0f);
 	}
 
 	//a5i3 or a3i5 textures are translucent
@@ -982,18 +1073,18 @@ void NDS_glBegin(unsigned long v)
 
 	glDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 
-	glMatrixMode (GL_PROJECTION);
+	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixf(mtxCurrent[0]);
-
-	glMatrixMode (GL_MODELVIEW);
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+
 	beginCalled = 1;
-	vtxFormat = polyType[v&3];
+	vtxFormat = polyType[v&0x03];
 	glBegin(vtxFormat);
 }
 
-void NDS_glEnd (void)
+__forceinline void NDS_glEnd (void)
 {
 	if (beginCalled)
 	{
@@ -1002,7 +1093,7 @@ void NDS_glEnd (void)
 	}
 }
 
-void NDS_glColor3b(unsigned long v)
+__forceinline void NDS_glColor3b(unsigned long v)
 {
 	colorRGB[0] =  (v&0x1F) << 26;
 	colorRGB[1] = ((v>>5)&0x1F) << 26;
@@ -1010,7 +1101,7 @@ void NDS_glColor3b(unsigned long v)
 	glColor4iv ((GLint*)colorRGB);
 }
 
-static __inline void  SetVertex()
+static __forceinline void  SetVertex()
 {
 	__declspec(align(16)) float coordTransformed[3] = { coord[0], coord[1], coord[2] };
 
@@ -1018,25 +1109,26 @@ static __inline void  SetVertex()
 	{
 		float s2 =((coord[0]*mtxCurrent[3][0] +
 					coord[1]*mtxCurrent[3][4] +
-					coord[2]*mtxCurrent[3][8]) + s);
+					coord[2]*mtxCurrent[3][8]) + _s);
 		float t2 =((coord[0]*mtxCurrent[3][1] +
 					coord[1]*mtxCurrent[3][5] +
-					coord[2]*mtxCurrent[3][9]) + t);
+					coord[2]*mtxCurrent[3][9]) + _t);
 
 		glTexCoord2f (s2, t2);
+		//return;
 	}
 
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
 	glVertex3fv (coordTransformed);
-	
+
 	//zero - helpful in making sure vertex colors or lighting arent broken
 	//glColor3ub(rand()&255,rand()&255,rand()&255);
 
 	numVertex++;
 }
 
-void NDS_glVertex16b(unsigned int v)
+__forceinline void NDS_glVertex16b(unsigned int v)
 {
 	if(coordind==0)
 	{
@@ -1053,7 +1145,7 @@ void NDS_glVertex16b(unsigned int v)
 	SetVertex ();
 }
 
-void NDS_glVertex10b(unsigned long v)
+__forceinline void NDS_glVertex10b(unsigned long v)
 {
 	coord[0]		= float10Table[v&1023];
 	coord[1]		= float10Table[(v>>10)&1023];
@@ -1062,7 +1154,7 @@ void NDS_glVertex10b(unsigned long v)
 	SetVertex ();
 }
 
-void NDS_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
+__forceinline void NDS_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 {
 	coord[one]		= float16table[v&0xffff];
 	coord[two]		= float16table[v>>16];
@@ -1070,7 +1162,7 @@ void NDS_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 	SetVertex ();
 }
 
-void NDS_glVertex_rel(unsigned long v)
+__forceinline void NDS_glVertex_rel(unsigned long v)
 {
 	coord[0]		+= float10RelTable[v&1023];
 	coord[1]		+= float10RelTable[(v>>10)&1023];
@@ -1080,25 +1172,25 @@ void NDS_glVertex_rel(unsigned long v)
 }
 
 // Ignored for now
-void NDS_glSwapScreen(unsigned int screen)
+__forceinline void NDS_glSwapScreen(unsigned int screen)
 {
 }
 
 
 // THIS IS A HACK :D
-int NDS_glGetNumPolys (void)
+__forceinline int NDS_glGetNumPolys (void)
 {
 	return numVertex/3;
 }
 
-int NDS_glGetNumVertex (void)
+__forceinline int NDS_glGetNumVertex (void)
 {
 	return numVertex;
 }
 
-void NDS_glGetLine (int line, unsigned short * dst)
+__forceinline void NDS_glGetLine (int line, unsigned short * dst)
 {
-	int		i;
+	int		i, t;
 	u8		*screen3D		= (u8 *)&GPU_screen3D	[(192-(line%192))*768];
 	float	*screen3Ddepth	= &GPU_screen3Ddepth	[(192-(line%192))*256];
 	u32		r,g,b;
@@ -1117,7 +1209,7 @@ void NDS_glGetLine (int line, unsigned short * dst)
 	}
 }
 
-void NDS_glFlush(unsigned long v)
+__forceinline void NDS_glFlush(unsigned long v)
 {
 	if (beginCalled)
 	{
@@ -1142,13 +1234,15 @@ void NDS_glFlush(unsigned long v)
 	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
-void NDS_glPolygonAttrib (unsigned long val)
+__forceinline void NDS_glPolygonAttrib (unsigned long val)
 {
+
 	// Light enable/disable
 	lightMask = (val&0xF);
 
 	// texture environment
-    envMode = texEnv[(val&0x30)>>4];
+    //envMode = texEnv[(val&0x30)>>4];
+	envMode = (val&0x30)>>4;
 
 	// overwrite depth on alpha pass
 	alphaDepthWrite = BIT11(val);
@@ -1161,6 +1255,7 @@ void NDS_glPolygonAttrib (unsigned long val)
 
 	// Alpha value, actually not well handled, 0 should be wireframe
 	colorAlpha = ((val>>16)&0x1F)<<26;
+	//printlog("PolygonID=%i;\n",val>>24);
 }
 
 /*
@@ -1172,7 +1267,7 @@ void NDS_glPolygonAttrib (unsigned long val)
 	21-25 Ambient Reflection Green
 	26-30 Ambient Reflection Blue
 */
-void NDS_glMaterial0 (unsigned long val)
+__forceinline void NDS_glMaterial0 (unsigned long val)
 {
 	diffuse[0] = ((val&0x1F) << 26) | 0x03FFFFFF;
 	diffuse[1] = (((val>>5)&0x1F) << 26) | 0x03FFFFFF;
@@ -1205,7 +1300,7 @@ void NDS_glMaterial0 (unsigned long val)
 	}
 }
 
-void NDS_glMaterial1 (unsigned long val)
+__forceinline void NDS_glMaterial1 (unsigned long val)
 {
 	specular[0] = 	((val&0x1F) << 26) | 0x03FFFFFF;
 	specular[1] = 	(((val>>5)&0x1F) << 26) | 0x03FFFFFF;
@@ -1231,42 +1326,41 @@ void NDS_glMaterial1 (unsigned long val)
 	}
 }
 
-void NDS_glShininess (unsigned long val)
+__forceinline void NDS_glShininess (unsigned long val)
 {
+	//printlog("Shininess=%i\n",val);
 }
 
-void NDS_glTexImage(unsigned long val)
+__forceinline void NDS_glTexImage(unsigned long val)
 {
 	textureFormat = val;
 }
 
-void NDS_glTexPalette(unsigned long val)
+__forceinline void NDS_glTexPalette(unsigned long val)
 {
 	texturePalette = val;
 }
 
-void NDS_glTexCoord(unsigned long val)
+__forceinline void NDS_glTexCoord(unsigned long val)
 {
-	t = (s16)(val>>16);
-	s = (s16)(val&0xFFFF);
+	_t = (s16)(val>>16);
+	_s = (s16)(val&0xFFFF);
 
 	if (texCoordinateTransform == 1)
 	{
 		float s2, t2;
-		s2 =s*mtxCurrent[3][0] + t*mtxCurrent[3][4] +
+		s2 =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
 				0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
-		t2 =s*mtxCurrent[3][1] + t*	mtxCurrent[3][5] +
+		t2 =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
 				0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
 
 		glTexCoord2f (s2, t2);
+		return;
 	}
-	else
-	{
-		glTexCoord2f (s, t);
-	}
+	glTexCoord2f (_s, _t);
 }
 
-signed long NDS_glGetClipMatrix (unsigned int index)
+__forceinline signed long NDS_glGetClipMatrix (unsigned int index)
 {
 	float val = MatrixGetMultipliedIndex (index, mtxCurrent[0], mtxCurrent[1]);
 
@@ -1275,7 +1369,7 @@ signed long NDS_glGetClipMatrix (unsigned int index)
 	return (signed long)val;
 }
 
-signed long NDS_glGetDirectionalMatrix (unsigned int index)
+__forceinline signed long NDS_glGetDirectionalMatrix (unsigned int index)
 {
 	index += (index/3);
 
@@ -1290,7 +1384,7 @@ signed long NDS_glGetDirectionalMatrix (unsigned int index)
 	30-31 Light Number                     (0..3)
 */
 
-void NDS_glLightDirection (unsigned long v)
+__forceinline void NDS_glLightDirection (unsigned long v)
 {
 	int		index = v>>30;
 	float	direction[4];
@@ -1316,7 +1410,7 @@ void NDS_glLightDirection (unsigned long v)
 	g_lightInfo[index].direction = v;
 }
 
-void NDS_glLightColor (unsigned long v)
+__forceinline void NDS_glLightColor (unsigned long v)
 {
 	int lightColor[4] = {	((v)    &0x1F)<<26,
 							((v>> 5)&0x1F)<<26,
@@ -1338,12 +1432,12 @@ void NDS_glLightColor (unsigned long v)
 	g_lightInfo[index].color = v;
 }
 
-void NDS_glAlphaFunc(unsigned long v)
+__forceinline void NDS_glAlphaFunc(unsigned long v)
 {
 	alphaTestRef = (v&31)/31.f;
 }
 
-void NDS_glControl(unsigned long v)
+__forceinline void NDS_glControl(unsigned long v)
 {
 	if(beginCalled)
 		glEnd();
@@ -1378,14 +1472,14 @@ void NDS_glControl(unsigned long v)
 
 	if (v&(1<<14))
 	{
-		LOG ("Enabled BITMAP background mode");
+		printlog("Enabled BITMAP background mode\n");
 	}
 
 	if(beginCalled)
 		glBegin(vtxFormat);
 }
 
-void NDS_glNormal(unsigned long v)
+__forceinline void NDS_glNormal(unsigned long v)
 {
 
 	__declspec(align(16)) float normal[3] = { normalTable[v&1023],
@@ -1395,9 +1489,9 @@ void NDS_glNormal(unsigned long v)
 	if (texCoordinateTransform == 2)
 	{
 		float s2 =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
-					 normal[2] *mtxCurrent[3][8]) + s);
+					 normal[2] *mtxCurrent[3][8]) + _s);
 		float t2 =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
-					 normal[2] *mtxCurrent[3][9]) + t);
+					 normal[2] *mtxCurrent[3][9]) + _t);
 
 		glTexCoord2f (s2, t2);
 	}
@@ -1407,7 +1501,32 @@ void NDS_glNormal(unsigned long v)
 	glNormal3fv(normal);
 }
 
-void NDS_glCallList(unsigned long v)
+__forceinline void NDS_glBoxTest(unsigned long v)
+{
+}
+
+__forceinline void NDS_glPosTest(unsigned long v)
+{
+}
+
+__forceinline void NDS_glVecTest(unsigned long v)
+{
+	//printlog("NDS_glVecTest\n");
+}
+
+__forceinline long NDS_glGetPosRes(unsigned int index)
+{
+	//printlog("NDS_glGetPosRes\n");
+	return 0;
+}
+
+__forceinline long NDS_glGetVecRes(unsigned int index)
+{
+	//printlog("NDS_glGetVecRes\n");
+	return 0;
+}
+
+__forceinline void NDS_glCallList(unsigned long v)
 {
 	//static unsigned long oldval = 0, shit = 0;
 
@@ -1417,7 +1536,6 @@ void NDS_glCallList(unsigned long v)
 		clCmd = v;
 		return;
 	}
-
 
 	for (;;)
 	{
@@ -1431,7 +1549,6 @@ void NDS_glCallList(unsigned long v)
 					clCmd >>= 8;
 					continue;
 				}
-
 				break;
 			}
 
@@ -1774,6 +1891,7 @@ void NDS_glCallList(unsigned long v)
 
 		case 0x40 :
 		{
+			//old_vtxFormat=((unsigned long *)ARM9Mem.ARM9_REG)[0x500>>2];
 			((unsigned long *)ARM9Mem.ARM9_REG)[0x500>>2] = v;
 			NDS_glBegin(v);
 			--clInd;
@@ -1814,7 +1932,7 @@ void NDS_glCallList(unsigned long v)
 */
 		default:
 		{
-			LOG ("Unknown 3D command %02X", clCmd&0xFF);
+			LOG ("Unknown 3D command %02X\n", clCmd&0xFF);
 			--clInd;
 			clCmd>>=8;
 			break;
@@ -1832,7 +1950,7 @@ void NDS_glCallList(unsigned long v)
 	}
 }
 
-void NDS_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
+__forceinline void NDS_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
 {
 	//int n;
 
@@ -1845,17 +1963,20 @@ void NDS_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
 	MatrixCopy(dest, MatrixStackGetPos(&mtxStack[mode], index));
 }
 
-void NDS_glGetLightDirection(unsigned int index, unsigned int* dest)
+__forceinline void NDS_glGetLightDirection(unsigned int index, unsigned int* dest)
 {
 	*dest = g_lightInfo[index].direction;
 }
 
-void NDS_glGetLightColor(unsigned int index, unsigned int* dest)
+__forceinline void NDS_glGetLightColor(unsigned int index, unsigned int* dest)
 {
 	*dest = g_lightInfo[index].color;
 }
 
 GPU3DInterface gpu3Dgl = {	NDS_glInit,
+							NDS_3D_Reset,
+							NDS_3D_Close,
+
 							NDS_glViewPort,
 							NDS_glClearColor,
 							NDS_glFogColor,
@@ -1905,6 +2026,12 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 
 							NDS_glGetMatrix,
 							NDS_glGetLightDirection,
-							NDS_glGetLightColor
+							NDS_glGetLightColor,
+
+							NDS_glBoxTest,
+							NDS_glPosTest,
+							NDS_glVecTest,
+							NDS_glGetPosRes,
+							NDS_glGetVecRes
 };
 
