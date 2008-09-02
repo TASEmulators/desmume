@@ -19,8 +19,9 @@
 
 /*
 This file is part of the Cocoa (Mac OS X) port of DeSmuME emulator
-By Jeff Bland (reversegecko@gmail.com)
+By Jeff Bland
 Based on work by yopyop and the DeSmuME team!
+Mac related questions can go to osx@desmume.org
 */
 
 #import "main_window.h"

@@ -1248,20 +1248,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[pause_item setState:NSOffState];
 	}
 
-	for(i = 0; i < MAX_FRAME_SKIP; i++)
-	{
-		[frame_skip_item[i] setTarget:self];
-		if([self frameSkip] == i)
-			[frame_skip_item[i] setState:NSOnState];
-		else
-			[frame_skip_item[i] setState:NSOffState];
-	}
-	[frame_skip_auto_item setTarget:self];
-
-	if([self frameSkip] < 0)
-		[frame_skip_auto_item setState:NSOnState];
-	else
-		[frame_skip_auto_item setState:NSOffState];
+	for(i = 0; i < MAX_FRAME_SKIP; i++)[frame_skip_item[i] setTarget:self];
+	[self setFrameSkip:[self frameSkip]]; //set the menu checkmarks correctly
 
 	[speed_limit_25_item setTarget:self];
 	[speed_limit_50_item setTarget:self];
@@ -1397,13 +1385,13 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 - (BOOL)validateMenuItem:(NSMenuItem*)item
 {
-	//This function is called automaticlly by Cocoa
+	//This function is called automatically by Cocoa
 	//when it needs to know if a menu item should be greyed out
 
 	int i;
 
 	if([self ROMLoaded] == NO)
-	{ //if no rom is loaded, various options are disables
+	{ //if no rom is loaded, various options are disabled
 		if(item == close_rom_item)return NO;
 		if(item == rom_info_item)return NO;
 		if(item == save_state_as_item)return NO;
