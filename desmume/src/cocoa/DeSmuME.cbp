@@ -70,6 +70,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Compiler>
 			<Add option="-fexpensive-optimizations" />
 			<Add option="-O3" />
+			<Add option="-fpascal-strings -fasm-blocks" />
 			<Add option="-DDESMUME_COCOA" />
 			<Add option="-DHAVE_LIBZ" />
 			<Add directory="dialogs" />

@@ -162,8 +162,7 @@
 		080E96DDFE201D6D7F000001 /* Cocoa Port */ = {
 			isa = PBXGroup;
 			children = (
-				723395580E596E9100999693 /* speed_limit_selection_window.h */,
-				723395590E596E9100999693 /* speed_limit_selection_window.m */,
+				72D219C40E6B4DDF00439B28 /* Dialogs */,
 				7277B8EA0D9F25F700D283BD /* about.m */,
 				729BEC5C0D9D55DB00ED561B /* globals.h */,
 				729BEC600D9D55DB00ED561B /* main.m */,
@@ -309,6 +308,15 @@
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		72D219C40E6B4DDF00439B28 /* Dialogs */ = {
+			isa = PBXGroup;
+			children = (
+				723395580E596E9100999693 /* speed_limit_selection_window.h */,
+				723395590E596E9100999693 /* speed_limit_selection_window.m */,
+			);
+			name = Dialogs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -497,8 +505,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
-				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					HAVE_LIBZ,
 					DESMUME_COCOA,
@@ -506,6 +513,7 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
 				OTHER_LDFLAGS = "-lz";
 				PREBINDING = NO;
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;

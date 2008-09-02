@@ -19,6 +19,7 @@
  - Added keyboard shortcuts for Execute, Pause and Reset command (thanks to Julio Gorgé). [Jeff]
  - Default key mappings are no longer case sensitive. [Jeff]
  - Added ability to limit speed. [Jeff]
+ - Fixed: Video output should work on software-only 3D renderers. [Jeff]
  Windows port:
  - Removed the bug report link with a define, to avoid reports from betas/external builds [shash]
  - Added the version on window bar to recognize versions from screenshots [shash]

@@ -56,12 +56,9 @@
 	//Create the pixel format for our video output view
 	NSOpenGLPixelFormatAttribute attrs[] =
 	{
-		NSOpenGLPFAAccelerated,
-		NSOpenGLPFANoRecovery,
-		NSOpenGLPFAColorSize, 16,
-		NSOpenGLPFAAlphaSize, 0,
-		NSOpenGLPFADepthSize, 0,
-		NSOpenGLPFAWindow,
+		//NSOpenGLPFAFullScreen,
+		NSOpenGLPFAWindow, //need a renderer that can draw to a window
+		//NSOpenGLPFARendererID, some_number, //this picks a particular renderer, for testing
 		0
 	};
 
@@ -70,7 +67,7 @@
 	{
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL pixel format for video output");
 		context = nil;
-		[super dealloc];
+		[self release];
 		return nil;
 	} else
 	{
@@ -80,7 +77,7 @@
 		if(context == nil)
 		{
 			messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create OpenGL context for video output");
-			[super dealloc];
+			[self release];
 			return nil;
 		}
 	}

@@ -42,6 +42,7 @@
 
 #ifdef DESMUME_COCOA
 #define __declspec(ignore)
+#define printlog(ignore)
 #ifdef __BIG_ENDIAN__
 #define WORDS_BIGENDIAN
 #endif
