@@ -81,7 +81,7 @@ void load_default_config( void);
 BOOL init_joy( void);
 void uninit_joy( void);
 void set_joy_keys(const u16 joyCfg[]);
-void set_kb_keys(u16 kbCfg[]);
+void set_kb_keys(const u16 kbCfg[]);
 u16 get_set_joy_key(int index);
 void get_set_joy_axis(int index, int index_opp);
 void update_keypad(u16 keys);

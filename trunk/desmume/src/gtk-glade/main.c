@@ -146,7 +146,7 @@ fill_configured_features( struct configured_features *config,
         config->firmware_language = lang;
       }
       else {
-        g_print( stderr, _("Firmware language must be set to a value from 0 to 5.\n"));
+        g_printerr( _("Firmware language must be set to a value from 0 to 5.\n"));
         good_args = 0;
       }
     }

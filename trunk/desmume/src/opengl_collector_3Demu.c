@@ -3007,6 +3007,12 @@ GPU3DInterface gpu3D_opengl_collector = {
   /* the Init function */
   init_3Dgl_collect,
 
+  /* Reset */
+  nullFunc2_3Dgl_collect,
+
+  /* Close */
+  nullFunc2_3Dgl_collect,
+
   /* Viewport */
   viewport_3Dgl_collect,
 

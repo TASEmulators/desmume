@@ -87,9 +87,9 @@ GPU3DInterface gpu3DNull = {
 						NDS_nullFunc11,	// NDS_glGetLightDirection
 						NDS_nullFunc11,	// NDS_glGetLightColor
 						
-						NDS_nullFunc8,	// NDS_3D_BoxTest
-						NDS_nullFunc8,	// NDS_3D_PosTest
-						NDS_nullFunc9,	// NDS_3D_VecTest
+						NDS_nullFunc3,	// NDS_3D_BoxTest
+						NDS_nullFunc3,	// NDS_3D_PosTest
+						NDS_nullFunc3,	// NDS_3D_VecTest
 
 						NDS_nullFunc8,	// NDS_3D_GetPosRes
 						NDS_nullFunc8	// NDS_3D_GetVecRes

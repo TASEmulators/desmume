@@ -657,7 +657,7 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 				return (gpu3D->NDS_3D_GetNumVertex()&8191);
 
 			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
-				printlog("Stopped IPCFIFORECV\n");
+				//printlog("Stopped IPCFIFORECV\n");
 				execute = FALSE;
 				return 1;
 				
