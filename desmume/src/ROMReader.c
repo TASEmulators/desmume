@@ -173,14 +173,14 @@ ROMReader_struct ZIPROMReader =
 
 void * ZIPROMReaderInit(const char * filename)
 {
-	ZZIP_DIRENT * dir = zzip_opendir(filename);
-	dir = zzip_readdir(dir);
+	ZZIP_DIR * dir = zzip_opendir(filename);
+	ZZIP_DIRENT * dirent = zzip_readdir(dir);
 	if (dir != NULL)
 	{
 		char tmp1[1024];
 		char tmp2[1024];
 		strncpy(tmp1, filename, strlen(filename) - 4);
-		sprintf(tmp2, "%s/%s", tmp1, dir->d_name);
+		sprintf(tmp2, "%s/%s", tmp1, dirent->d_name);
 		return zzip_fopen(tmp2, "rb");
 	}
 	return NULL;

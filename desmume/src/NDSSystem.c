@@ -30,6 +30,7 @@
 #include "MMU.h"
 #include "cflash.h"
 #include "ROMReader.h"
+#include "render3D.h"
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70

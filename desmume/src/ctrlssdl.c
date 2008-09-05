@@ -123,7 +123,7 @@ void set_joy_keys(const u16 joyCfg[])
 }
 
 /* Set all buttons at once */
-void set_kb_keys(u16 kbCfg[])
+void set_kb_keys(const u16 kbCfg[])
 {
   memcpy(keyboard_cfg, kbCfg, sizeof(keyboard_cfg));
 }

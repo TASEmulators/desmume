@@ -1263,7 +1263,7 @@ return 1;
 
 static void Printscreen()
 {
-	WriteBMP("./test.bmp",GPU_screen);
+	WriteBMP("./test.bmp",(u16 *)GPU_screen);
 }
 
 /////////////////////////////// DS CONFIGURATION //////////////////////////////////
@@ -1540,7 +1540,7 @@ gboolean EmuLoop(gpointer data)
  * 
  * @return The interval to the next call (required by SDL)
  */
-static u32 fps_limiter_fn(u32 interval, void *param) {
+static Uint32 fps_limiter_fn(Uint32 interval, void *param) {
   SDL_sem *sdl_semaphore = (SDL_sem *)param;
 
   /* signal the semaphore if it is getting low */
