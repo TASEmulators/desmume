@@ -31,6 +31,7 @@ long NDS_nullFunc8		(unsigned int index){ return 0; }
 void NDS_nullFunc9		(int line, unsigned short * DST) { };
 void NDS_nullFunc10		(unsigned int mode, unsigned int index, float* dest) {}; // NDS_3D_GetMatrix
 void NDS_nullFunc11		(unsigned int index, unsigned int* dest) {}; // NDS_glGetLightDirection
+void NDS_nullFunc12		(void* v) {}
 
 GPU3DInterface gpu3DNull = { 
 						NDS_nullFunc1,	// NDS_3D_Init
@@ -92,7 +93,9 @@ GPU3DInterface gpu3DNull = {
 						NDS_nullFunc3,	// NDS_3D_VecTest
 
 						NDS_nullFunc8,	// NDS_3D_GetPosRes
-						NDS_nullFunc8	// NDS_3D_GetVecRes
+						NDS_nullFunc8,	// NDS_3D_GetVecRes
+
+						NDS_nullFunc12	// NDS_3D_UpdateToonTable
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;

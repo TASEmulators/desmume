@@ -125,6 +125,8 @@ typedef struct GPU3DInterface
 	long (CALL_CONVENTION*  NDS_3D_GetPosRes)			(unsigned int index);
 	long (CALL_CONVENTION*  NDS_3D_GetVecRes)			(unsigned int index);
 
+	void	(CALL_CONVENTION*  NDS_3D_UpdateToonTable)	(void* toonTable);
+
 
 } GPU3DInterface;
 

@@ -37,6 +37,7 @@
  - Convert alpha and material values from [0,31] ranges to opengl ranges in a more precise way [zeromus]
  - Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
  - Add many of NHerve's improvements into OGLRender because I was trying to fix all the 3d issues. [zeromus]
+ - Toon shading infrastructure and a demo implementation [zeromus]
  
 0.7.3 -> 0.8
  Cocoa:

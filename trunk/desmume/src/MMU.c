@@ -1291,8 +1291,14 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 
 	if((adr >> 24) == 4)
 	{
+		if(adr >= 0x04000380 && adr <= 0x040003BE)
+		{
+			//toon table
+			((u16 *)(MMU.MMU_MEM[proc][0x40]))[(adr-0x04000000)>>1] = val;
+			gpu3D->NDS_3D_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
+		}
 		/* Adress is an IO register */
-		switch(adr)
+		else switch(adr)
 		{
 			case 0x0400035C:
 			{
@@ -1948,8 +1954,13 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 				gpu3D->NDS_3D_CallList(val);
 			}
 		}
-		else
-		switch(adr)
+		else if(adr >= 0x04000380 && adr <= 0x040003BC)
+		{
+			//toon table
+			((u32 *)(MMU.MMU_MEM[proc][0x40]))[(adr-0x04000000)>>2] = val;
+			gpu3D->NDS_3D_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
+		}
+		else switch(adr)
 		{
 			// Alpha test reference value - Parameters:1
 			case 0x04000340:

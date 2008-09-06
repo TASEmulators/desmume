@@ -1,3 +1,5 @@
+//zeromus todo - software calculate whole lighting model
+
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
@@ -98,6 +100,17 @@ static const int material_5bit_to_31bit[] = {
 	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
 };
 
+static const u8 material_5bit_to_8bit[] = {
+	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39, 
+	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B, 
+	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD, 
+	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
+};
+
+#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
+//make a table out of this:
+#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
+
 static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
 static short mode = 0;
 
@@ -158,6 +171,8 @@ u32				texcache_stop;
 //u32				texcache_last;
 
 GLenum			oglTempTextureID[MAX_TEXTURE];
+GLenum			oglToonTableTextureID;
+u32 toonShader, toonProgram;
 //=================================================
 
 typedef struct
@@ -200,6 +215,28 @@ __forceinline void NDS_3D_Reset()
 	texcache_start=0;
 	texcache_stop=MAX_TEXTURE<<1;
 }
+
+static void NDS_3D_UpdateToonTable(void* toonTable) {
+	u16* u16toonTable = (u16*)toonTable;
+	u32 rgbToonTable[32];
+	int i;
+	for(i=0;i<32;i++)
+		rgbToonTable[i] = RGB15TO32(u16toonTable[i],255);
+
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbToonTable);
+}
+
+#define OGLEXT(x,y) x y;
+#define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
+
+OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
+OGLEXT(PFNGLGETSHADERSOURCEPROC,glShaderSource)
+OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
+OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
+OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
+OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
+OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
+OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
 
 char NDS_glInit(void)
 {
@@ -251,7 +288,7 @@ char NDS_glInit(void)
 	glEnable		(GL_DEPTH_TEST);
 	glEnable		(GL_TEXTURE_2D);
 
-	glAlphaFunc		(GL_GREATER, 0.1f);
+	glAlphaFunc		(GL_GREATER, 0);
 	glEnable		(GL_ALPHA_TEST);
 
 	glGenTextures (MAX_TEXTURE, &oglTempTextureID[0]);
@@ -295,6 +332,53 @@ char NDS_glInit(void)
 	MatrixInit (mtxCurrent[2]);
 	MatrixInit (mtxCurrent[3]);
 	MatrixInit (mtxTemporal);
+
+	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
+	INITOGLEXT(PFNGLGETSHADERSOURCEPROC,glShaderSource)
+	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
+	INITOGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
+	INITOGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
+	INITOGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
+	INITOGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
+	INITOGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+
+	if(glCreateShader && glShaderSource && glCompileShader && glCreateProgram && glAttachShader && glLinkProgram && glUseProgram && glGetShaderInfoLog)
+	{
+		{
+			glGenTextures (MAX_TEXTURE, &oglToonTableTextureID);
+			glBindTexture(GL_TEXTURE_1D,oglToonTableTextureID);
+			glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
+			//do we need to init the toon table?
+		}
+		{
+			char buf[10000];
+			const char* toonShaderSource[] = {
+				"uniform sampler2D tex2; \
+				uniform sampler1D tex1; \
+				void main() {\
+					gl_FragColor = gl_Color; \
+					gl_FragColor = texture1D(tex1,gl_FragColor.r/32*31); \
+					gl_FragColor *= texture2D(tex2,gl_TexCoord[0].st); \
+				}\
+				"};
+
+				//TODO - this should modulate or add depending on whether we are in highlight or toon mode
+
+			toonShader = glCreateShader(GL_FRAGMENT_SHADER); 
+			toonProgram = glCreateProgram();
+
+			glShaderSource(toonShader, 1, toonShaderSource, 0);
+			glCompileShader(toonShader);
+			glGetShaderInfoLog(toonShader,10000,0,buf);
+
+			glAttachShader(toonProgram,toonShader);
+			glLinkProgram(toonProgram);
+
+			toonShader = 0;		
+		}
+	}
 
 	return 1;
 }
@@ -635,7 +719,9 @@ __forceinline void NDS_glMultMatrix4x4(signed long v)
 					}
 
 
-#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
+
+
+//todo - make all color conversions go through a properly spread table!!
 
 __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 {
@@ -734,6 +820,9 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 			{
 				texcache_count=i;
 				glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+				if(i==30) {
+					int zzz=9;
+				}
 				return;
 			}
 		}
@@ -987,17 +1076,16 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 			case 7: //16bpp
 			{
 				unsigned short * map = ((unsigned short *)adr);
+				unsigned int * dst = (unsigned int *)texMAP;
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				
 				for(x = 0; x < imageSize; ++x)
 				{
 					unsigned short c = map[x];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (c>>15)*255;
+					int alpha = ((c&0x8000)?255:0);
+					*dst = RGB15TO32(c,alpha);
 					
-					dst += 4;
+					dst++;
 					txt_slot_current_size-=2;;
 					if (txt_slot_current_size<=0)
 					{
@@ -1076,7 +1164,6 @@ __forceinline void NDS_glBegin(unsigned long v)
 		else
 		{
 			colorRGB[3] = colorAlpha;
-			glColor4iv ((GLint*)colorRGB);
 		}
 
 		//non-31 alpha polys are translucent
@@ -1137,6 +1224,10 @@ __forceinline void NDS_glBegin(unsigned long v)
 		glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 	}
 
+	//handle toon rendering
+	if(envMode == 2) {
+		glUseProgram(toonProgram);
+	} else glUseProgram(0);
 
 	glDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 
@@ -1162,10 +1253,9 @@ __forceinline void NDS_glEnd (void)
 
 __forceinline void NDS_glColor3b(unsigned long v)
 {
-	colorRGB[0] =  (v&0x1F) << 26;
-	colorRGB[1] = ((v>>5)&0x1F) << 26;
-	colorRGB[2] = ((v>>10)&0x1F) << 26;
-	glColor4iv ((GLint*)colorRGB);
+	colorRGB[0] =  material_5bit_to_31bit[(v&0x1F)];
+	colorRGB[1] = material_5bit_to_31bit[((v>>5)&0x1F)];
+	colorRGB[2] = material_5bit_to_31bit[((v>>10)&0x1F)];
 }
 
 static __forceinline void  SetVertex()
@@ -1187,6 +1277,7 @@ static __forceinline void  SetVertex()
 
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
+	glColor4iv ((GLint*)colorRGB);
 	glVertex3fv (coordTransformed);
 
 	//count the polys and verts
@@ -1381,6 +1472,7 @@ __forceinline void NDS_glMaterial0 (unsigned long val)
 		colorRGB[0] = diffuse[0];
 		colorRGB[1] = diffuse[1];
 		colorRGB[2] = diffuse[2];
+		colorRGB[3] = diffuse[3];
 	}
 
 	if (beginCalled)
@@ -1596,6 +1688,26 @@ __forceinline void NDS_glNormal(unsigned long v)
 	MatrixMultVec3x3 (mtxCurrent[2], normal);
 
 	glNormal3fv(normal);
+
+	//HACK:
+	//calling normal() causes the vertex color to get updated.
+	//in this case, if no lights are enabled, then the vertex color is merely set to the emission
+	//ideally we would execute ALL lighting calculations here instead of just this one case.
+	if(!lightMask) {
+		colorRGB[0] = emission[0];
+		colorRGB[1] = emission[1];
+		colorRGB[2] = emission[2];
+		if(emission[0] == material_5bit_to_31bit[18]) {
+			int zzz=9;
+		}
+		else if(emission[0] == material_5bit_to_31bit[26]) {
+			int zzz=9;
+		} else {
+			int zzz=9;
+		}
+	}
+
+
 }
 
 __forceinline void NDS_glBoxTest(unsigned long v)
@@ -2129,7 +2241,8 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 							NDS_glPosTest,
 							NDS_glVecTest,
 							NDS_glGetPosRes,
-							NDS_glGetVecRes
+							NDS_glGetVecRes,
+							NDS_3D_UpdateToonTable
 };
 
 
