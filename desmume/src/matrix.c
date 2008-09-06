@@ -59,10 +59,12 @@ void MatrixMultVec4x4 (float *matrix, float *vecPtr)
 	float x = vecPtr[0];
 	float y = vecPtr[1];
 	float z = vecPtr[2];
+	float w = vecPtr[3];
 
-	vecPtr[0] = x * matrix[0] + y * matrix[4] + z * matrix[ 8] + matrix[12];
-	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9] + matrix[13];
-	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10] + matrix[14];
+	vecPtr[0] = x * matrix[0] + y * matrix[4] + z * matrix[ 8] + w * matrix[12];
+	vecPtr[1] = x * matrix[1] + y * matrix[5] + z * matrix[ 9] + w * matrix[13];
+	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10] + w * matrix[14];
+	vecPtr[3] = x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15];
 }
 
 void MatrixMultVec3x3 (float *matrix, float *vecPtr)
@@ -121,6 +123,31 @@ float MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
 void MatrixSet (float *matrix, int x, int y, float value)
 {
 	matrix [x+(y<<2)] = value;
+}
+
+void MatrixTranspose(float *matrix)
+{
+	float temp;
+#define swap(A,B) temp = matrix[A];matrix[A] = matrix[B]; matrix[B] = temp;
+	swap(1,4);
+	swap(2,8);
+	swap(3,0xC);
+	swap(6,9);
+	swap(7,0xD);
+	swap(0xB,0xE);
+#undef swap
+
+/*
+0 1 2 3
+4 5 6 7
+8 9 A B
+C D E F
+
+0 4 8 C
+1 5 9 D
+2 6 A E
+3 7 B F
+*/
 }
 
 void MatrixCopy (float *matrixDST, float *matrixSRC)

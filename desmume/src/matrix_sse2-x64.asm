@@ -33,12 +33,14 @@ MatrixMultVec4x4 PROC PUBLIC
 		shufps	xmm4, xmm4, 00000000b
 		shufps	xmm5, xmm5, 01010101b
 		shufps	xmm6, xmm6, 10101010b
+		shufps	xmm7, xmm7, 11111111b
 		mulps	xmm4, xmm0
 		mulps	xmm5, xmm1
 		mulps	xmm6, xmm2
+		mulps	xmm7, xmm3
 		addps	xmm4, xmm5
 		addps	xmm4, xmm6
-		addps	xmm4, xmm3
+		addps	xmm4, xmm7
 		movaps	XMMWORD PTR [rdx], xmm4
 		ret		0
 MatrixMultVec4x4 ENDP

@@ -46,13 +46,17 @@
 
 static unsigned char  GPU_screen3D		[256*256*3]={0};
 static float		  GPU_screen3Ddepth	[256*256]={0};
+static unsigned char  GPU_screenAlpha[256*256]={0};
 
 // Acceleration tables
 static float*		float16table = NULL;
 static float*		float10Table = NULL;
 static float*		float10RelTable = NULL;
 static float*		normalTable = NULL;
+
 static int			numVertex = 0;
+static int			vertexCounter = 0;
+static int			numPolys = 0;
 
 // Matrix stack handling
 static __declspec(align(16)) MatrixStack	mtxStack[4];
@@ -318,7 +322,9 @@ __forceinline void NDS_glViewPort(unsigned long v)
 	if(beginCalled)
 		glEnd();
 
-	glViewport( (v&0xFF), ((v>>8)&0xFF), ((v>>16)&0xFF), ((v>>24)&0xFF));
+	//zero: NHerve messed with this in mod2 and mod3, but im still not sure its perfect. need to research this.
+	glViewport( (v&0xFF), ((v>>8)&0xFF), (((v>>16)&0xFF)+1)-(v&0xFF), ((v>>24)+1)-((v>>8)&0xFF));
+
 
 	if(beginCalled)
 		glBegin(vtxFormat);
@@ -448,6 +454,10 @@ __forceinline void NDS_glLoadMatrix4x3(signed long v)
 	if(ML4x3_l<4) return;
 	ML4x3_l = 0;
 
+	//fill in the unusued matrix values
+	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0;
+	mtxCurrent[mode][15] = 1;
+
 	if (mode == 2)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
 }
@@ -552,11 +562,17 @@ __forceinline void NDS_glMultMatrix3x3(signed long v)
 	if(MM3x3_l<3) return;
 	MM3x3_l = 0;
 
+	//fill in the unusued matrix values
+	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
+	mtxTemporal[15] = 1;
+	mtxTemporal[12] = mtxTemporal[13] = mtxTemporal[14] = 0;
+
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
 	if (mode == 2)
 		MatrixMultiply (mtxCurrent[1], mtxTemporal);
 
+	//does this really need to be done?
 	MatrixIdentity (mtxTemporal);
 }
 
@@ -572,10 +588,15 @@ __forceinline void NDS_glMultMatrix4x3(signed long v)
 	if(MM4x3_l<4) return;
 	MM4x3_l = 0;
 
+	//fill in the unusued matrix values
+	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
+	mtxTemporal[15] = 1;
+
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 	if (mode == 2)
 		MatrixMultiply (mtxCurrent[1], mtxTemporal);
 
+	//does this really need to be done?
 	MatrixIdentity (mtxTemporal);
 }
 
@@ -1019,13 +1040,17 @@ __forceinline void NDS_glBegin(unsigned long v)
 	if (lightMask)
 	{
 		glEnable (GL_LIGHTING);
+		//glEnable(GL_COLOR_MATERIAL); //NHerve added this in mod2 but it doesnt do any good unless it gets setup
 		(lightMask&0x01)?glEnable (GL_LIGHT0):glDisable(GL_LIGHT0);
 		(lightMask&0x02)?glEnable (GL_LIGHT1):glDisable(GL_LIGHT1);
 		(lightMask&0x04)?glEnable (GL_LIGHT2):glDisable(GL_LIGHT2);
 		(lightMask&0x08)?glEnable (GL_LIGHT3):glDisable(GL_LIGHT3);
 	}
 	else
+	{
 		glDisable (GL_LIGHTING);
+		//glDisable(GL_COLOR_MATERIAL); //NHerve added this in mod2 but it doesnt do any good unless it gets setup
+	}
 
 	glDepthFunc (depthFuncMode);
 
@@ -1120,7 +1145,7 @@ __forceinline void NDS_glBegin(unsigned long v)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-
+	vertexCounter = 0;
 	beginCalled = 1;
 	vtxFormat = polyType[v&0x03];
 	glBegin(vtxFormat);
@@ -1145,7 +1170,7 @@ __forceinline void NDS_glColor3b(unsigned long v)
 
 static __forceinline void  SetVertex()
 {
-	__declspec(align(16)) float coordTransformed[3] = { coord[0], coord[1], coord[2] };
+	__declspec(align(16)) float coordTransformed[4] = { coord[0], coord[1], coord[2], 1 };
 
 	if (texCoordinateTransform == 3)
 	{
@@ -1164,10 +1189,31 @@ static __forceinline void  SetVertex()
 
 	glVertex3fv (coordTransformed);
 
+	//count the polys and verts
+	vertexCounter++;
+	numVertex++;
+	switch(vtxFormat) {
+		case GL_TRIANGLES:
+			if(vertexCounter%3 == 0)
+				numPolys++;
+			break;
+		case GL_QUADS:
+			if((vertexCounter&3) == 0)
+				numPolys++;
+			break;
+		case GL_TRIANGLE_STRIP:
+			if(vertexCounter>=3)
+				numPolys++;
+			break;
+		case GL_QUAD_STRIP:
+			if(vertexCounter==4)
+				numPolys++;
+			else if((vertexCounter&1)==0)
+				numPolys++;
+	}
+
 	//zero - helpful in making sure vertex colors or lighting arent broken
 	//glColor3ub(rand()&255,rand()&255,rand()&255);
-
-	numVertex++;
 }
 
 __forceinline void NDS_glVertex16b(unsigned int v)
@@ -1219,10 +1265,9 @@ __forceinline void NDS_glSwapScreen(unsigned int screen)
 }
 
 
-// THIS IS A HACK :D
 __forceinline int NDS_glGetNumPolys (void)
 {
-	return numVertex/3;
+	return numPolys;
 }
 
 __forceinline int NDS_glGetNumVertex (void)
@@ -1230,12 +1275,15 @@ __forceinline int NDS_glGetNumVertex (void)
 	return numVertex;
 }
 
+//NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
 __forceinline void NDS_glGetLine (int line, unsigned short * dst)
 {
 	int		i, t;
 	u8		*screen3D		= (u8 *)&GPU_screen3D	[(192-(line%192))*768];
 	float	*screen3Ddepth	= &GPU_screen3Ddepth	[(192-(line%192))*256];
-	u32		r,g,b;
+	u8  *screenAlpha = (u8*)&GPU_screenAlpha[(191-(line%192))*256];
+
+	u32		r,g,b,a;
 
 	for(i = 0, t=0; i < 256; i++)
 	{
@@ -1245,8 +1293,10 @@ __forceinline void NDS_glGetLine (int line, unsigned short * dst)
 			r = screen3D[t];
 			g = screen3D[t+1];
 			b = screen3D[t+2];
+			a  = screenAlpha[i];
 
-			dst[i] = ((r>>3)<<10) | ((g>>3)<<5) | (b>>3);
+			if(a)
+				dst[i] = ((r>>3)<<10) | ((g>>3)<<5) | (b>>3);
 		}
 	}
 }
@@ -1265,8 +1315,11 @@ __forceinline void NDS_glFlush(unsigned long v)
 	glFlush();
 	glReadPixels(0,0,256,192,GL_DEPTH_COMPONENT,	GL_FLOAT,			GPU_screen3Ddepth);
 	glReadPixels(0,0,256,192,GL_BGR_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	glReadPixels(0,0,256,192,GL_ALPHA,				GL_UNSIGNED_BYTE,	GPU_screenAlpha);
 
 	numVertex = 0;
+	numPolys = 0;
+	vertexCounter = 0;
 
 	// Set back some secure render states
 	glPolygonMode	(GL_BACK,  GL_FILL);
@@ -1592,7 +1645,7 @@ __forceinline void NDS_glCallList(unsigned long v)
 					--clInd;
 					clCmd >>= 8;
 					continue;
-				}
+				} 
 				break;
 			}
 
@@ -2078,4 +2131,5 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 							NDS_glGetPosRes,
 							NDS_glGetVecRes
 };
+
 
