@@ -28,11 +28,15 @@
  - Added texture caching (speedup 3D core) [CrazyMax]
  - Fixes clear depth (ex. Castlevania now don't flipping) [NHerve]
  - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
- - Make GPU matrix mult and load commands clear out unused rows and cols to identity correctly; 
-   carry w=1 from vertex() through pipeline (this will be necessary for software 3d rendering) [zeromus]
+ - Make GPU matrix mult and load commands clear out unused rows and cols to identity correctly [zeromus]
+ - carry w=1 from vertex() through pipeline (this will be necessary for software 3d rendering) [zeromus]
  - Track polycount better. still worthless: at the very least, it doesnt account for clipping and culling [zeromus]
  - Fix errors in matrix operations regarding projection mode and pos-vector mode [zeromus]
  - Fix error in command unpacking which caused some display lists to totally blow up [zeromus]
+ - Render shadow volumes [zeromus]
+ - Convert alpha and material values from [0,31] ranges to opengl ranges in a more precise way [zeromus]
+ - Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
+ - Add many of NHerve's improvements into OGLRender because I was trying to fix all the 3d issues. [zeromus]
  
 0.7.3 -> 0.8
  Cocoa:
