@@ -67,6 +67,8 @@ void	MatrixTranslate			(float *matrix, float *ptr);
 void	MatrixScale				(float *matrix, float *ptr);
 #endif
 
+void MatrixTranspose(float *matrix);
+
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
 void	MatrixStackSetStackPosition (MatrixStack *stack, int pos);
