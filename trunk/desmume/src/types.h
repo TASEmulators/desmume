@@ -138,6 +138,8 @@ typedef int desmume_BOOL;
 
 #ifdef __GNUC__
 #define PACKED __attribute__((packed))
+#else
+#define PACKED
 #endif
 
 #ifdef WORDS_BIGENDIAN
@@ -170,6 +172,10 @@ typedef enum
 	ARM7 = 1
 } cpu_id_t;
 
+#ifdef __GNUC__
 #define __PACKED __attribute__((__packed__))
+#else
+#define __PACKED
+#endif
 
 #endif
