@@ -1023,16 +1023,6 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 						}
 					}
 
-			//zero debug - dump tex4x4 to verify contents
-		/*	{
-				int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
-				static int ctr = 0;
-				char fname[100];
-				FILE* outf;
-				sprintf(fname,"c:\\dump\\%d.bmp", ctr);
-				ctr++;
-				NDS_WriteBMP_32bppBuffer(sizeX,sizeY,texMAP,fname);
-			}*/
 
 				break;
 			}
@@ -1076,6 +1066,18 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				break;
 			}
 	}
+
+	////zero debug - dump tex to verify contents
+	//{
+	//	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
+	//	static int ctr = 0;
+	//	char fname[100];
+	//	FILE* outf;
+	//	sprintf(fname,"c:\\dump\\%d.bmp", ctr);
+	//	ctr++;
+	//	NDS_WriteBMP_32bppBuffer(sizeX,sizeY,texMAP,fname);
+	//}
+
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
@@ -1213,14 +1215,12 @@ static __forceinline void  SetVertex()
 
 	if (texCoordinateTransform == 3)
 	{
-		float s2 =((coord[0]*mtxCurrent[3][0] +
+		last_s =((coord[0]*mtxCurrent[3][0] +
 					coord[1]*mtxCurrent[3][4] +
 					coord[2]*mtxCurrent[3][8]) + _s);
-		float t2 =((coord[0]*mtxCurrent[3][1] +
+		last_t =((coord[0]*mtxCurrent[3][1] +
 					coord[1]*mtxCurrent[3][5] +
 					coord[2]*mtxCurrent[3][9]) + _t);
-
-		glTexCoord2f (last_s=s2, last_t=t2);
 	}
 
 	//refuse to do anything if we have too many verts or polys
@@ -1589,6 +1589,7 @@ __forceinline void NDS_glShininess (unsigned long val)
 __forceinline void NDS_glTexImage(unsigned long val)
 {
 	textureFormat = val;
+	texCoordinateTransform = (val>>30);
 }
 
 __forceinline void NDS_glTexPalette(unsigned long val)
@@ -1603,16 +1604,16 @@ __forceinline void NDS_glTexCoord(unsigned long val)
 
 	if (texCoordinateTransform == 1)
 	{
-		float s2, t2;
-		s2 =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
+		last_s =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
 				0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
-		t2 =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
+		last_t =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
 				0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
-
-		glTexCoord2f (last_s=s2, last_t=t2);
-		return;
 	}
-	glTexCoord2f (last_s=_s, last_t=_t);
+	else
+	{
+		last_s=_s;
+		last_t=_t;
+	}
 }
 
 __forceinline signed long NDS_glGetClipMatrix (unsigned int index)
@@ -1720,12 +1721,10 @@ __forceinline void NDS_glNormal(unsigned long v)
 	
 	if (texCoordinateTransform == 2)
 	{
-		float s2 =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
+		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
 					 normal[2] *mtxCurrent[3][8]) + _s);
-		float t2 =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
+		last_t =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
 					 normal[2] *mtxCurrent[3][9]) + _t);
-
-		glTexCoord2f (last_s=s2, last_t=t2);
 	}
 
 	//use the current normal transform matrix
