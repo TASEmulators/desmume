@@ -19,6 +19,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+//todo - why doesnt mario run behind the floor at the beginning of nsmb? is it using a depth clear buffer?
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,10 +55,6 @@ static float*		float16table = NULL;
 static float*		float10Table = NULL;
 static float*		float10RelTable = NULL;
 static float*		normalTable = NULL;
-
-static int			numVertex = 0;
-static int			vertexCounter = 0;
-static int			numPolys = 0;
 
 // Matrix stack handling
 static __declspec(align(16)) MatrixStack	mtxStack[4];
@@ -112,6 +110,9 @@ static const u8 material_5bit_to_8bit[] = {
 static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
 static short mode = 0;
 
+//raw ds format poly attributes
+static u32 polyAttr=0,textureFormat=0, texturePalette=0;
+
 static int colorAlpha=0;
 static unsigned int polyID=0;
 static unsigned int depthFuncMode=0;
@@ -131,10 +132,10 @@ static int alphaDepthWrite = 0;
 static int colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
 static int texCoordinateTransform = 0;
 static int _t=0, _s=0;
-static char beginCalled = 0;
+static float last_t, last_s;
 static unsigned int vtxFormat;
 static unsigned int old_vtxFormat;
-static unsigned int textureFormat=0, texturePalette=0;
+
 static unsigned int textureMode=0;
 
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
@@ -142,6 +143,53 @@ static int			diffuse[4] = {0},
 					ambient[4] = {0}, 
 					specular[4] = {0}, 
 					emission[4] = {0};
+
+typedef struct _POLY {
+	int type; //tri or quad
+	int vertIndexes[4]; //up to four verts can be referenced by this poly
+	u32 polyAttr, texParam, texPalette; //the hardware rendering params
+	float projMatrix[16];
+} POLY;
+
+#define POLYLIST_SIZE 6000
+//#define POLYLIST_SIZE 2048
+typedef struct _POLYLIST {
+	int count;
+	POLY list[POLYLIST_SIZE];
+} POLYLIST;
+POLYLIST polylists[2];
+POLYLIST* polylist = &polylists[0];
+
+typedef struct _VERT {
+	float coord[4];
+	float texcoord[2];
+	int color[4];
+	u32 depth;
+} VERT;
+
+#define VERTLIST_SIZE 30000
+//#define VERTLIST_SIZE 10000
+typedef struct _VERTLIST {
+	int count;
+	VERT list[VERTLIST_SIZE];
+} VERTLIST;
+VERTLIST vertlists[2];
+VERTLIST* vertlist = &vertlists[0];
+
+int listTwiddle = 1;
+int triStripToggle;
+
+//list-building state
+VERTLIST tempVertList;
+
+static void twiddleLists() {
+	listTwiddle++;
+	listTwiddle &= 1;
+	polylist = &polylists[listTwiddle];
+	vertlist = &vertlists[listTwiddle];
+	polylist->count = 0;
+	vertlist->count = 0;
+}
 
 //================================================= Textures
 #define MAX_TEXTURE 500
@@ -296,6 +344,8 @@ char NDS_glInit(void)
 	if (glGetError() != GL_NO_ERROR)
 		return 0;
 
+	twiddleLists();
+
 	// Precalculate some tables, to avoid pushing data to the FPU and back for conversion
 	float16table = (float*) malloc (sizeof(float)*65536);
 	for (i = 0; i < 65536; i++)
@@ -388,29 +438,16 @@ __forceinline void NDS_3D_Close()
 
 __forceinline void NDS_glViewPort(unsigned long v)
 {
-	if(beginCalled)
-		glEnd();
-
 	//zero: NHerve messed with this in mod2 and mod3, but im still not sure its perfect. need to research this.
 	glViewport( (v&0xFF), ((v>>8)&0xFF), (((v>>16)&0xFF)+1)-(v&0xFF), ((v>>24)+1)-((v>>8)&0xFF));
-
-
-	if(beginCalled)
-		glBegin(vtxFormat);
 }
 
 __forceinline void NDS_glClearColor(unsigned long v)
 {
-	if(beginCalled)
-		glEnd();
-
 	glClearColor(	((float)(v&0x1F))/31.0f,
 					((float)((v>>5)&0x1F))/31.0f,
 					((float)((v>>10)&0x1F))/31.0f,
 					((float)((v>>16)&0x1F))/31.0f);
-
-	if(beginCalled)
-		glBegin(vtxFormat);
 }
 
 __forceinline void NDS_glFogColor(unsigned long v)
@@ -428,66 +465,22 @@ __forceinline void NDS_glFogOffset (unsigned long v)
 
 __forceinline void NDS_glClDepth()
 {
-	if(beginCalled)
-		glEnd();
-
 	glClear(GL_DEPTH_BUFFER_BIT);
-
-	if(beginCalled)
-		glBegin(vtxFormat);
 }
 
 __forceinline void NDS_glClearDepth(unsigned long v)
 {
 	u32 depth24b;
 
-	if(beginCalled)
-		glEnd();
-
 	v		&= 0x7FFFF;
 	// Thanks for NHerve
 	depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
 	glClearDepth(depth24b / ((float)(1<<24)));
-
-	if(beginCalled)
-		glBegin(vtxFormat);
 }
 
 __forceinline void NDS_glMatrixMode(unsigned long v)
 {
-	if (beginCalled)
-	{
-		glEnd();
-	}
-
 	mode = (short)(v&3);
-
-	if (beginCalled)
-	{
-		glBegin (vtxFormat);
-	}
-}
-
-__forceinline void SetMatrix (void)
-{
-	if (mode < 2)
-	{
-		if (beginCalled)
-			glEnd();
-		glMatrixMode (matrixMode[mode]);
-		glLoadMatrixf(mtxCurrent[mode]);
-		glBegin (vtxFormat);
-		beginCalled = 1;
-	}
-	else if (mode == 2)
-	{
-		if (beginCalled)
-			glEnd();
-		glMatrixMode (matrixMode[1]);
-		glLoadMatrixf(mtxCurrent[1]);
-		glBegin (vtxFormat);
-		beginCalled = 1;
-	}
 }
 
 __forceinline void NDS_glLoadIdentity (void)
@@ -561,7 +554,7 @@ __forceinline void NDS_glRestoreMatrix(unsigned long v)
 
 __forceinline void NDS_glPushMatrix (void)
 {
-		//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
+	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
 	MatrixStackPushMatrix (&mtxStack[mymode], mtxCurrent[mymode]);
@@ -1100,14 +1093,17 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 
 __forceinline void NDS_glBegin(unsigned long v)
 {
-	int enableDepthWrite = 1;
+	vtxFormat = polyType[v&0x03];
+	triStripToggle = 0;
+	tempVertList.count = 0;
+}
 
+static void BeginRenderPoly()
+{
+	int enableDepthWrite = 1;
 	u32 tmp=0;
 
-	if (beginCalled)
-	{
-		glEnd();
-	}
+	tempVertList.count = 0;
 
 	glDepthFunc (depthFuncMode);
 
@@ -1193,24 +1189,14 @@ __forceinline void NDS_glBegin(unsigned long v)
 
 	glDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(mtxCurrent[0]);
+	//just to be sure
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
-	vertexCounter = 0;
-	beginCalled = 1;
-	vtxFormat = polyType[v&0x03];
-	glBegin(vtxFormat);
 }
 
 __forceinline void NDS_glEnd (void)
 {
-	if (beginCalled)
-	{
-		glEnd();
-		beginCalled = 0;
-	}
+	tempVertList.count = 0;
 }
 
 __forceinline void NDS_glColor3b(unsigned long v)
@@ -1220,6 +1206,7 @@ __forceinline void NDS_glColor3b(unsigned long v)
 	colorRGB[2] = material_5bit_to_31bit[((v>>10)&0x1F)];
 }
 
+//Submit a vertex to the GE
 static __forceinline void  SetVertex()
 {
 	__declspec(align(16)) float coordTransformed[4] = { coord[0], coord[1], coord[2], 1 };
@@ -1233,36 +1220,113 @@ static __forceinline void  SetVertex()
 					coord[1]*mtxCurrent[3][5] +
 					coord[2]*mtxCurrent[3][9]) + _t);
 
-		glTexCoord2f (s2, t2);
+		glTexCoord2f (last_s=s2, last_t=t2);
 	}
 
+	//refuse to do anything if we have too many verts or polys
+	if(vertlist->count >= VERTLIST_SIZE)
+		return;
+	if(polylist->count >= POLYLIST_SIZE)
+		return;
+
+	//apply modelview matrix
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
-	glColor4iv ((GLint*)colorRGB);
-	glVertex3fv (coordTransformed);
+	//deferred rendering:
 
-	//count the polys and verts
-	vertexCounter++;
-	numVertex++;
-	switch(vtxFormat) {
-		case GL_TRIANGLES:
-			if(vertexCounter%3 == 0)
-				numPolys++;
-			break;
-		case GL_QUADS:
-			if((vertexCounter&3) == 0)
-				numPolys++;
-			break;
-		case GL_TRIANGLE_STRIP:
-			if(vertexCounter>=3)
-				numPolys++;
-			break;
-		case GL_QUAD_STRIP:
-			if(vertexCounter==4)
-				numPolys++;
-			else if((vertexCounter&1)==0)
-				numPolys++;
+	//todo - we havent got the whole pipeline working yet, so lets save the projection matrix and let opengl do it
+	////apply projection matrix
+	//MatrixMultVec4x4 (mtxCurrent[0], coordTransformed);
+
+	////perspective division
+	//coordTransformed[0] = (coordTransformed[0] + coordTransformed[3]) / 2 / coordTransformed[3];
+	//coordTransformed[1] = (coordTransformed[1] + coordTransformed[3]) / 2 / coordTransformed[3];
+	//coordTransformed[2] = (coordTransformed[2] + coordTransformed[3]) / 2 / coordTransformed[3];
+	//coordTransformed[3] = 1;
+
+	//TODO - culling should be done here.
+	//TODO - viewport transform
+
+
+	//record the vertex
+	tempVertList.list[tempVertList.count].texcoord[0] = last_s;
+	tempVertList.list[tempVertList.count].texcoord[1] = last_t;
+	tempVertList.list[tempVertList.count].coord[0] = coordTransformed[0];
+	tempVertList.list[tempVertList.count].coord[1] = coordTransformed[1];
+	tempVertList.list[tempVertList.count].coord[2] = coordTransformed[2];
+	tempVertList.list[tempVertList.count].coord[3] = coordTransformed[3];
+	tempVertList.list[tempVertList.count].color[0] = colorRGB[0];
+	tempVertList.list[tempVertList.count].color[1] = colorRGB[1];
+	tempVertList.list[tempVertList.count].color[2] = colorRGB[2];
+	tempVertList.list[tempVertList.count].color[3] = colorRGB[3];
+	tempVertList.list[tempVertList.count].depth = 0x7FFF * coordTransformed[2];
+	tempVertList.count++;
+
+	//possibly complete a polygon
+	{
+		#define SUBMITVERTEX(i,n) vertlist->list[polylist->list[polylist->count].vertIndexes[i] = vertlist->count++] = tempVertList.list[n];
+		int completed=0;
+		switch(vtxFormat) {
+			case GL_TRIANGLES:
+				if(tempVertList.count!=3)
+					break;
+				completed = 1;
+				SUBMITVERTEX(0,0);
+				SUBMITVERTEX(1,1);
+				SUBMITVERTEX(2,2);
+				polylist->list[polylist->count].type = 3;
+				tempVertList.count = 0;
+				break;
+			case GL_QUADS:
+				if(tempVertList.count!=4)
+					break;
+				completed = 1;
+				SUBMITVERTEX(0,0);
+				SUBMITVERTEX(1,1);
+				SUBMITVERTEX(2,2);
+				SUBMITVERTEX(3,3);
+				polylist->list[polylist->count].type = 4;
+				tempVertList.count = 0;
+				break;
+			case GL_TRIANGLE_STRIP:
+				if(tempVertList.count!=3)
+					break;
+				completed = 1;
+				SUBMITVERTEX(0,0);
+				SUBMITVERTEX(1,1);
+				SUBMITVERTEX(2,2);
+				polylist->list[polylist->count].type = 3;
+				if(triStripToggle)
+					tempVertList.list[1] = tempVertList.list[2];
+				else
+					tempVertList.list[0] = tempVertList.list[2];
+				triStripToggle ^= 1;
+				tempVertList.count = 2;
+				break;
+			case GL_QUAD_STRIP:
+				if(tempVertList.count!=4)
+					break;
+				completed = 1;
+				SUBMITVERTEX(0,0);
+				SUBMITVERTEX(1,1);
+				SUBMITVERTEX(2,3);
+				SUBMITVERTEX(3,2);
+				polylist->list[polylist->count].type = 4;
+				tempVertList.list[0] = tempVertList.list[2];
+				tempVertList.list[1] = tempVertList.list[3];
+				tempVertList.count = 2;
+				break;
+		}
+
+		if(completed) {
+			MatrixCopy(polylist->list[polylist->count].projMatrix,mtxCurrent[0]);
+			polylist->list[polylist->count].polyAttr = polyAttr;
+			polylist->list[polylist->count].texParam = textureFormat;
+			polylist->list[polylist->count].texPalette = texturePalette;
+			polylist->count++;
+		}
 	}
+
 }
 
 __forceinline void NDS_glVertex16b(unsigned int v)
@@ -1316,12 +1380,14 @@ __forceinline void NDS_glSwapScreen(unsigned int screen)
 
 __forceinline int NDS_glGetNumPolys (void)
 {
-	return numPolys;
+	//so is this in the currently-displayed or currently-built list?
+	return 0;
 }
 
 __forceinline int NDS_glGetNumVertex (void)
 {
-	return numVertex;
+	//so is this in the currently-displayed or currently-built list?
+	return 0;
 }
 
 //NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
@@ -1350,37 +1416,8 @@ __forceinline void NDS_glGetLine (int line, unsigned short * dst)
 	}
 }
 
-__forceinline void NDS_glFlush(unsigned long v)
+static void InstallPolygonAttrib(unsigned long val)
 {
-	if (beginCalled)
-	{
-		glEnd();
-		beginCalled = 0;
-	}
-
-	clCmd = 0;
-	clInd = 0;
-
-	glFlush();
-	glReadPixels(0,0,256,192,GL_DEPTH_COMPONENT,	GL_FLOAT,			GPU_screen3Ddepth);
-	glReadPixels(0,0,256,192,GL_BGR_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
-	glReadPixels(0,0,256,192,GL_ALPHA,				GL_UNSIGNED_BYTE,	GPU_screenAlpha);
-
-	numVertex = 0;
-	numPolys = 0;
-	vertexCounter = 0;
-
-	// Set back some secure render states
-	glPolygonMode	(GL_BACK,  GL_FILL);
-	glPolygonMode	(GL_FRONT, GL_FILL);
-
-	glDepthMask		(GL_TRUE);
-	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-}
-
-__forceinline void NDS_glPolygonAttrib (unsigned long val)
-{
-
 	// Light enable/disable
 	lightMask = (val&0xF);
 
@@ -1402,6 +1439,98 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 	
 	// polyID
 	polyID = (val>>24)&0x1F;
+}
+
+__forceinline void NDS_glPolygonAttrib (unsigned long val)
+{
+	polyAttr = val;
+	InstallPolygonAttrib(polyAttr);
+}
+
+__forceinline void NDS_glFlush(unsigned long v)
+{
+	u32 wbuffer = v&1;
+	u32 sortmode = (v>>1)&1;
+
+	// Set back some secure render states
+	glPolygonMode	(GL_BACK,  GL_FILL);
+	glPolygonMode	(GL_FRONT, GL_FILL);
+
+	glDepthMask		(GL_TRUE);
+	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	//render display list
+	//TODO - properly doublebuffer the display lists
+	{
+		int i;
+		for(i=0;i<polylist->count;i++) {
+			POLY *poly = &polylist->list[i];
+			int type = poly->type;
+			int j;
+			InstallPolygonAttrib(poly->polyAttr);
+			textureFormat = poly->texParam;
+			texturePalette = poly->texPalette;
+			BeginRenderPoly();
+			
+			//since we havent got the whole pipeline working yet, lets use opengl for the projection
+			glMatrixMode(GL_PROJECTION);
+			glLoadMatrixf(poly->projMatrix);
+
+			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
+			for(j=0;j<type;j++) {
+				VERT* vert = &vertlist->list[poly->vertIndexes[j]];
+				float tempCoord[4];
+				Vector4Copy(tempCoord,vert->coord);
+				
+				//we havent got the whole pipeline working yet, so we cant do this
+				////convert from ds device coords to opengl
+				//tempCoord[0] *= 2;
+				//tempCoord[1] *= 2;
+				//tempCoord[0] -= 1;
+				//tempCoord[1] -= 1;
+
+				//todo - edge flag?
+				glTexCoord2fv(vert->texcoord);
+				glColor4iv(vert->color);
+				glVertex3fv(tempCoord);
+			}
+			glEnd();
+		}
+	}
+
+	twiddleLists();
+
+	//reset gpu state
+	clCmd = 0;
+	clInd = 0;
+
+	//capture rendering results
+	glFlush();
+	glReadPixels(0,0,256,192,GL_DEPTH_COMPONENT,	GL_FLOAT,			GPU_screen3Ddepth);
+	glReadPixels(0,0,256,192,GL_BGR_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	glReadPixels(0,0,256,192,GL_ALPHA,				GL_UNSIGNED_BYTE,	GPU_screenAlpha);
+
+	//debug: view depth buffer via color buffer for debugging
+	{
+		//int ctr=0;
+		//for(ctr=0;ctr<256*192;ctr++) {
+		//	float zval = GPU_screen3Ddepth[ctr];
+		//	u8* colorPtr = GPU_screen3D+ctr*3;
+		//	if(zval<0) {
+		//		colorPtr[0] = 255;
+		//		colorPtr[1] = 0;
+		//		colorPtr[2] = 0;
+		//	} else if(zval>1) {
+		//		colorPtr[0] = 0;
+		//		colorPtr[1] = 0;
+		//		colorPtr[2] = 255;
+		//	} else {
+		//		colorPtr[0] = colorPtr[1] = colorPtr[2] = zval*255;
+		//		//printlog("%f %f %d\n",zval, zval*255,colorPtr[0]);
+		//	}
+
+		//}
+	}
 }
 
 /*
@@ -1450,9 +1579,6 @@ __forceinline void NDS_glMaterial1 (unsigned long val)
 	emission[1] = material_5bit_to_31bit[(val>>21)&0x1F];
 	emission[2] = material_5bit_to_31bit[(val>>26)&0x1F];
 	emission[3] = 0x7fffffff;
-
-	glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, (GLint*)specular);
-	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, (GLint*)emission);
 }
 
 __forceinline void NDS_glShininess (unsigned long val)
@@ -1483,10 +1609,10 @@ __forceinline void NDS_glTexCoord(unsigned long val)
 		t2 =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
 				0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
 
-		glTexCoord2f (s2, t2);
+		glTexCoord2f (last_s=s2, last_t=t2);
 		return;
 	}
-	glTexCoord2f (_s, _t);
+	glTexCoord2f (last_s=_s, last_t=_t);
 }
 
 __forceinline signed long NDS_glGetClipMatrix (unsigned int index)
@@ -1524,7 +1650,7 @@ __forceinline void NDS_glLightDirection (unsigned long v)
 	g_lightInfo[index].floatDirection[2] = -normalTable[(v>>20)&1023];
 	g_lightInfo[index].floatDirection[3] = 0;
 
-	// Keep information for GetLightDirection function
+	// Keep information for fightDirection function
 	g_lightInfo[index].direction = v;
 }
 
@@ -1546,9 +1672,6 @@ __forceinline void NDS_glAlphaFunc(unsigned long v)
 
 __forceinline void NDS_glControl(unsigned long v)
 {
-	if(beginCalled)
-		glEnd();
-
 	if(v&1)
 	{
 		glEnable (GL_TEXTURE_2D);
@@ -1581,9 +1704,6 @@ __forceinline void NDS_glControl(unsigned long v)
 	{
 		printlog("Enabled BITMAP background mode\n");
 	}
-
-	if(beginCalled)
-		glBegin(vtxFormat);
 }
 
 __forceinline void NDS_glNormal(unsigned long v)
@@ -1605,7 +1725,7 @@ __forceinline void NDS_glNormal(unsigned long v)
 		float t2 =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
 					 normal[2] *mtxCurrent[3][9]) + _t);
 
-		glTexCoord2f (s2, t2);
+		glTexCoord2f (last_s=s2, last_t=t2);
 	}
 
 	//use the current normal transform matrix
@@ -2133,11 +2253,6 @@ __forceinline void NDS_glCallList(unsigned long v)
 	}
 	if((clCmd&0xFF)==0x41)
 	{
-		if(beginCalled)
-		{
-			glEnd();
-			beginCalled = 0;
-		}
 		--clInd;
 		clCmd>>=8;
 	}
@@ -2230,3 +2345,6 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 };
 
 
+//http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
+//talks about the state required to process verts in quadlists etc. helpful ideas.
+//consider building a little state structure that looks exactly like this describes

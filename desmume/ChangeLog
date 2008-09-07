@@ -8,6 +8,8 @@
  - Added SSE2 version for matrix [CrazyMax]
  - Some fixes in core (New SMB don't freeze now) [CrazyMax]
  - Some optimizations in code [CrazyMax]
+ - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
+ - Add many matrix and vector functions to matrix.c [zeromus]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
@@ -27,8 +29,7 @@
  - Some fixes in 3D core OGL (fixed textures) [CrazyMax]
  - Added texture caching (speedup 3D core) [CrazyMax]
  - Fixes clear depth (ex. Castlevania now don't flipping) [NHerve]
- - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
- - Make GPU matrix mult and load commands clear out unused rows and cols to identity correctly [zeromus]
+ - Make GE matrix mult and load commands clear out unused rows and cols to identity correctly [zeromus]
  - carry w=1 from vertex() through pipeline (this will be necessary for software 3d rendering) [zeromus]
  - Track polycount better. still worthless: at the very least, it doesnt account for clipping and culling [zeromus]
  - Fix errors in matrix operations regarding projection mode and pos-vector mode [zeromus]
@@ -39,6 +40,8 @@
  - Add many of NHerve's improvements into OGLRender because I was trying to fix all the 3d issues. [zeromus]
  - Toon shading infrastructure and a demo implementation [zeromus]
  - Implement lighting model in software instead of using opengl; improves (potential?) compatibility [zeromus]
+ - Defer rendering until after flush. This was a necessary architectural change, as it permits savestate
+   for the display list, and allows us eventually to separate the GE emulation from the rendering [zeromus]
    
  
 0.7.3 -> 0.8
