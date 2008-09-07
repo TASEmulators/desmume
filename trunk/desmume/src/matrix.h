@@ -85,4 +85,6 @@ void Vector3Scale(float *dst, float scale);
 void Vector3Copy(float *dst, float *src);
 void Vector3Normalize(float *dst);
 
+void Vector4Copy(float *dst, float *src);
+
 #endif
