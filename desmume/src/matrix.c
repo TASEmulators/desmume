@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "matrix.h"
 
 void MatrixInit  (float *matrix)
@@ -252,4 +253,43 @@ float * MatrixStackGet (MatrixStack *stack)
 void MatrixStackLoadMatrix (MatrixStack *stack, int pos, float *ptr)
 {
 	MatrixCopy (&stack->matrix[pos*16], ptr);
+}
+
+float Vector3Dot(float *a, float *b) 
+{
+	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+float Vector3Length(float *a)
+{
+	float lengthSquared = Vector3Dot(a,a);
+	float length = sqrt(lengthSquared);
+	return length;
+}
+
+void Vector3Add(float *dst, float *src)
+{
+	dst[0] += src[0];
+	dst[1] += src[1];
+	dst[2] += src[2];
+}
+
+void Vector3Scale(float *dst, float scale)
+{
+	dst[0] *= scale;
+	dst[1] *= scale;
+	dst[2] *= scale;
+}
+
+void Vector3Copy(float *dst, float *src)
+{
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+}
+
+void Vector3Normalize(float *dst)
+{
+	float length = Vector3Length(dst);
+	Vector3Scale(dst,1.0f/length);
 }

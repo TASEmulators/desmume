@@ -1,5 +1,3 @@
-//zeromus todo - software calculate whole lighting model
-
 /*
 	Copyright (C) 2006 yopyop
 	Copyright (C) 2006-2007 shash
@@ -139,6 +137,7 @@ static unsigned int old_vtxFormat;
 static unsigned int textureFormat=0, texturePalette=0;
 static unsigned int textureMode=0;
 
+static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
 static int			diffuse[4] = {0}, 
 					ambient[4] = {0}, 
 					specular[4] = {0}, 
@@ -179,6 +178,7 @@ typedef struct
 {
 	unsigned int color;		// Color in hardware format
 	unsigned int direction;	// Direction in hardware format
+	float floatDirection[4];
 } LightInformation;
 
 LightInformation g_lightInfo[4] = { 0 };
@@ -282,7 +282,6 @@ char NDS_glInit(void)
 			printlog("OpenGL mode: uknown\n");
 #endif
 	glClearColor	(0.f, 0.f, 0.f, 1.f);
-	glColor3f		(1.f, 1.f, 1.f);
 
 	glEnable		(GL_NORMALIZE);
 	glEnable		(GL_DEPTH_TEST);
@@ -319,7 +318,7 @@ char NDS_glInit(void)
 	normalTable = (float*) malloc (sizeof(float)*1024);
 	for (i = 0; i < 1024; i++)
 	{
-		normalTable[i] = ((signed short)(i<<6)) / (float)(1<<16);
+		normalTable[i] = ((signed short)(i<<6)) / (float)(1<<15);
 	}
 
 	MatrixStackSetMaxSize(&mtxStack[0], 1);		// Projection stack
@@ -385,20 +384,6 @@ char NDS_glInit(void)
 
 __forceinline void NDS_3D_Close()
 {
-}
-
-__forceinline void SetMaterialAlpha (int alphaValue)
-{
-	diffuse[3]	= alphaValue;
-	ambient[3]	= alphaValue;
-	specular[3] = alphaValue;
-	emission[3] = alphaValue;
-
-	glMaterialiv (GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
-	glMaterialiv (GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-
-	glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, emission);
 }
 
 __forceinline void NDS_glViewPort(unsigned long v)
@@ -1124,22 +1109,6 @@ __forceinline void NDS_glBegin(unsigned long v)
 		glEnd();
 	}
 
-	// Light enable/disable
-	if (lightMask)
-	{
-		glEnable (GL_LIGHTING);
-		//glEnable(GL_COLOR_MATERIAL); //NHerve added this in mod2 but it doesnt do any good unless it gets setup
-		(lightMask&0x01)?glEnable (GL_LIGHT0):glDisable(GL_LIGHT0);
-		(lightMask&0x02)?glEnable (GL_LIGHT1):glDisable(GL_LIGHT1);
-		(lightMask&0x04)?glEnable (GL_LIGHT2):glDisable(GL_LIGHT2);
-		(lightMask&0x08)?glEnable (GL_LIGHT3):glDisable(GL_LIGHT3);
-	}
-	else
-	{
-		glDisable (GL_LIGHTING);
-		//glDisable(GL_COLOR_MATERIAL); //NHerve added this in mod2 but it doesnt do any good unless it gets setup
-	}
-
 	glDepthFunc (depthFuncMode);
 
 	// Cull face
@@ -1156,15 +1125,6 @@ __forceinline void NDS_glBegin(unsigned long v)
 	{
 		glPolygonMode (GL_FRONT, GL_FILL);
 		glPolygonMode (GL_BACK, GL_FILL);
-
-		if (lightMask)
-		{
-			SetMaterialAlpha (colorAlpha);
-		}
-		else
-		{
-			colorRGB[3] = colorAlpha;
-		}
 
 		//non-31 alpha polys are translucent
 		if(colorAlpha != 0x7FFFFFFF)
@@ -1225,9 +1185,11 @@ __forceinline void NDS_glBegin(unsigned long v)
 	}
 
 	//handle toon rendering
-	if(envMode == 2) {
-		glUseProgram(toonProgram);
-	} else glUseProgram(0);
+	if(glUseProgram) {
+		if(envMode == 2) {
+			glUseProgram(toonProgram);
+		} else glUseProgram(0);
+	}
 
 	glDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 
@@ -1253,7 +1215,7 @@ __forceinline void NDS_glEnd (void)
 
 __forceinline void NDS_glColor3b(unsigned long v)
 {
-	colorRGB[0] =  material_5bit_to_31bit[(v&0x1F)];
+	colorRGB[0] = material_5bit_to_31bit[(v&0x1F)];
 	colorRGB[1] = material_5bit_to_31bit[((v>>5)&0x1F)];
 	colorRGB[2] = material_5bit_to_31bit[((v>>10)&0x1F)];
 }
@@ -1272,7 +1234,6 @@ static __forceinline void  SetVertex()
 					coord[2]*mtxCurrent[3][9]) + _t);
 
 		glTexCoord2f (s2, t2);
-		//return;
 	}
 
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
@@ -1302,9 +1263,6 @@ static __forceinline void  SetVertex()
 			else if((vertexCounter&1)==0)
 				numPolys++;
 	}
-
-	//zero - helpful in making sure vertex colors or lighting arent broken
-	//glColor3ub(rand()&255,rand()&255,rand()&255);
 }
 
 __forceinline void NDS_glVertex16b(unsigned int v)
@@ -1440,7 +1398,7 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 	cullingMask = (val&0xC0);
 
 	// Alpha value, actually not well handled, 0 should be wireframe
-	colorAlpha = material_5bit_to_31bit[((val>>16)&0x1F)];
+	colorRGB[3] = colorAlpha = material_5bit_to_31bit[((val>>16)&0x1F)];
 	
 	// polyID
 	polyID = (val>>24)&0x1F;
@@ -1457,6 +1415,9 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 */
 __forceinline void NDS_glMaterial0 (unsigned long val)
 {
+	dsDiffuse = val&0xFFFF;
+	dsAmbient = val>>16;
+
 	diffuse[0] = material_5bit_to_31bit[(val)&0x1F];
 	diffuse[1] = material_5bit_to_31bit[(val>>5)&0x1F];
 	diffuse[2] = material_5bit_to_31bit[(val>>10)&0x1F];
@@ -1472,25 +1433,14 @@ __forceinline void NDS_glMaterial0 (unsigned long val)
 		colorRGB[0] = diffuse[0];
 		colorRGB[1] = diffuse[1];
 		colorRGB[2] = diffuse[2];
-		colorRGB[3] = diffuse[3];
-	}
-
-	if (beginCalled)
-	{
-		glEnd();
-	}
-
-	glMaterialiv (GL_FRONT_AND_BACK, GL_AMBIENT, (GLint*)ambient);
-	glMaterialiv (GL_FRONT_AND_BACK, GL_DIFFUSE, (GLint*)diffuse);
-
-	if (beginCalled)
-	{
-		glBegin (vtxFormat);
 	}
 }
 
 __forceinline void NDS_glMaterial1 (unsigned long val)
 {
+	dsSpecular = val&0xFFFF;
+	dsEmission = val>>16;
+
 	specular[0] = material_5bit_to_31bit[(val)&0x1F];
 	specular[1] = material_5bit_to_31bit[(val>>5)&0x1F];
 	specular[2] = material_5bit_to_31bit[(val>>10)&0x1F];
@@ -1501,18 +1451,8 @@ __forceinline void NDS_glMaterial1 (unsigned long val)
 	emission[2] = material_5bit_to_31bit[(val>>26)&0x1F];
 	emission[3] = 0x7fffffff;
 
-	if (beginCalled)
-	{
-		glEnd();
-	}
-
 	glMaterialiv (GL_FRONT_AND_BACK, GL_SPECULAR, (GLint*)specular);
 	glMaterialiv (GL_FRONT_AND_BACK, GL_EMISSION, (GLint*)emission);
-
-	if (beginCalled)
-	{
-		glBegin (vtxFormat);
-	}
 }
 
 __forceinline void NDS_glShininess (unsigned long val)
@@ -1578,22 +1518,11 @@ __forceinline void NDS_glLightDirection (unsigned long v)
 	int		index = v>>30;
 	float	direction[4];
 
-	if (beginCalled)
-		glEnd();
-
 	// Convert format into floating point value
-	// and pass it to OpenGL
-	direction[0] = -normalTable[v&1023];
-	direction[1] = -normalTable[(v>>10)&1023];
-	direction[2] = -normalTable[(v>>20)&1023];
-	direction[3] = 0;
-
-//	glLightf (GL_LIGHT0 + index, GL_CONSTANT_ATTENUATION, 0);
-
-	glLightfv(GL_LIGHT0 + index, GL_POSITION, direction);
-
-	if (beginCalled)
-		glBegin (vtxFormat);
+	g_lightInfo[index].floatDirection[0] = -normalTable[v&1023];
+	g_lightInfo[index].floatDirection[1] = -normalTable[(v>>10)&1023];
+	g_lightInfo[index].floatDirection[2] = -normalTable[(v>>20)&1023];
+	g_lightInfo[index].floatDirection[3] = 0;
 
 	// Keep information for GetLightDirection function
 	g_lightInfo[index].direction = v;
@@ -1607,17 +1536,6 @@ __forceinline void NDS_glLightColor (unsigned long v)
 							0x7fffffff};
 	int index = v>>30;
 
-	if (beginCalled)
-		glEnd();
-
-	glLightiv(GL_LIGHT0 + index, GL_AMBIENT, (GLint*)lightColor);
-	glLightiv(GL_LIGHT0 + index, GL_DIFFUSE, (GLint*)lightColor);
-	glLightiv(GL_LIGHT0 + index, GL_SPECULAR, (GLint*)lightColor);
-
-	if (beginCalled)
-		glBegin (vtxFormat);
-
-	// Keep color information for NDS_glGetColor
 	g_lightInfo[index].color = v;
 }
 
@@ -1670,11 +1588,16 @@ __forceinline void NDS_glControl(unsigned long v)
 
 __forceinline void NDS_glNormal(unsigned long v)
 {
-
+	int i,c;
 	__declspec(align(16)) float normal[3] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
 						normalTable[(v>>20)&1023]};
 
+	//find the line of sight vector
+	//TODO - only do this when the projection matrix changes
+	__declspec(align(16)) float lineOfSight[4] = { 0, 0, -1, 0 };
+	MatrixMultVec4x4 (mtxCurrent[0], lineOfSight);
+	
 	if (texCoordinateTransform == 2)
 	{
 		float s2 =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
@@ -1685,29 +1608,90 @@ __forceinline void NDS_glNormal(unsigned long v)
 		glTexCoord2f (s2, t2);
 	}
 
+	//use the current normal transform matrix
 	MatrixMultVec3x3 (mtxCurrent[2], normal);
 
-	glNormal3fv(normal);
+	//apply lighting model
+	{
+		u8 diffuse[3] = { 
+			(dsDiffuse)&0x1F,
+			(dsDiffuse>>5)&0x1F,
+			(dsDiffuse>>10)&0x1F };
 
-	//HACK:
-	//calling normal() causes the vertex color to get updated.
-	//in this case, if no lights are enabled, then the vertex color is merely set to the emission
-	//ideally we would execute ALL lighting calculations here instead of just this one case.
-	if(!lightMask) {
-		colorRGB[0] = emission[0];
-		colorRGB[1] = emission[1];
-		colorRGB[2] = emission[2];
-		if(emission[0] == material_5bit_to_31bit[18]) {
-			int zzz=9;
+		u8 ambient[3] = { 
+			(dsAmbient)&0x1F,
+			(dsAmbient>>5)&0x1F,
+			(dsAmbient>>10)&0x1F };
+
+		u8 emission[3] = { 
+			(dsEmission)&0x1F,
+			(dsEmission>>5)&0x1F,
+			(dsEmission>>10)&0x1F };
+
+		u8 specular[3] = { 
+			(dsSpecular)&0x1F,
+			(dsSpecular>>5)&0x1F,
+			(dsSpecular>>10)&0x1F };
+
+		int vertexColor[3] = { emission[0], emission[1], emission[2] };
+
+		//do we need to normalize lineOfSight?
+		Vector3Normalize(lineOfSight);
+
+		for(i=0;i<4;i++) {
+			if(!((lightMask>>i)&1))
+				continue;
+
+			{
+				u8 lightColor[3] = { 
+					(g_lightInfo[i].color)&0x1F,
+					(g_lightInfo[i].color>>5)&0x1F,
+					(g_lightInfo[i].color>>10)&0x1F };
+
+				float dot = Vector3Dot(g_lightInfo[i].floatDirection,normal);
+				float diffuseComponent = max(0,dot);
+				float specularComponent;
+				
+				//a specular formula which I couldnt get working
+				//float halfAngle[3] = {
+				//	(lineOfSight[0] + g_lightInfo[i].floatDirection[0])/2,
+				//	(lineOfSight[1] + g_lightInfo[i].floatDirection[1])/2,
+				//	(lineOfSight[2] + g_lightInfo[i].floatDirection[2])/2};
+				//float halfAngleLength = sqrt(halfAngle[0]*halfAngle[0]+halfAngle[1]*halfAngle[1]+halfAngle[2]*halfAngle[2]);
+				//float halfAngleNormalized[3] = {
+				//	halfAngle[0]/halfAngleLength,
+				//	halfAngle[1]/halfAngleLength,
+				//	halfAngle[2]/halfAngleLength
+				//};
+				//
+				//float specularAngle = -Vector3Dot(halfAngleNormalized,normal);
+				//specularComponent = max(0,cos(specularAngle));
+				
+				//a specular formula which seems to work
+				float temp[4];
+				float diff = Vector3Dot(normal,g_lightInfo[i].floatDirection);
+				Vector3Copy(temp,normal);
+				Vector3Scale(temp,-2*diff);
+				Vector3Add(temp,g_lightInfo[i].floatDirection);
+				Vector3Scale(temp,-1);
+				specularComponent = max(0,Vector3Dot(lineOfSight,temp));
+				
+				//if the game isnt producing unit normals, then we can accidentally out of range components. so lets saturate them here
+				//so we can at least keep for crashing. we're not sure what the hardware does in this case, but the game shouldnt be doing this.
+				specularComponent = max(0,min(1,specularComponent));
+				diffuseComponent = max(0,min(1,diffuseComponent));
+
+				for(c=0;c<3;c++) {
+					vertexColor[c] += (diffuseComponent*lightColor[c]*diffuse[c])/31;
+					vertexColor[c] += (specularComponent*lightColor[c]*specular[c])/31;
+					vertexColor[c] += ((float)lightColor[c]*ambient[c])/31;
+				}
+			}
 		}
-		else if(emission[0] == material_5bit_to_31bit[26]) {
-			int zzz=9;
-		} else {
-			int zzz=9;
-		}
+
+		for(c=0;c<3;c++)
+			colorRGB[c] = material_5bit_to_31bit[min(31,vertexColor[c])];
 	}
-
-
 }
 
 __forceinline void NDS_glBoxTest(unsigned long v)

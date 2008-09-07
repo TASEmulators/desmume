@@ -38,6 +38,8 @@
  - Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
  - Add many of NHerve's improvements into OGLRender because I was trying to fix all the 3d issues. [zeromus]
  - Toon shading infrastructure and a demo implementation [zeromus]
+ - Implement lighting model in software instead of using opengl; improves (potential?) compatibility [zeromus]
+   
  
 0.7.3 -> 0.8
  Cocoa:
