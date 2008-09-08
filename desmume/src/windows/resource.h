@@ -283,14 +283,14 @@
 #define IDC_LIGHT_VIEWER_LIGHT3COLOR_EDIT 1333
 #define IDC_LIGHT_VIEWER_LIGHT3VECTOR_EDIT 1334
 #define IDM_ABOUT                       40003
-#define IDC_STATIC                      -1
+#define ACCEL_P                         40004
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        101
-#define _APS_NEXT_COMMAND_VALUE         40003
+#define _APS_NEXT_COMMAND_VALUE         40005
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
