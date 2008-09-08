@@ -116,7 +116,6 @@ int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
 int sndvolume=100;
 
-extern "C" {
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
@@ -128,7 +127,6 @@ GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3Dgl,
 };
-}
 
 int autoframeskipenab=1;
 int frameskiprate=0;
@@ -659,7 +657,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 /*
  * The thread handling functions needed by the GDB stub code.
  */
-void *
+extern "C" void *
 createThread_gdb( void (*thread_function)( void *data),
 				 void *thread_data) {
 	void *new_thread = CreateThread( NULL, 0,
@@ -669,7 +667,7 @@ createThread_gdb( void (*thread_function)( void *data),
 	return new_thread;
 }
 
-void
+extern "C" void
 joinThread_gdb( void *thread_handle) {
 }
 

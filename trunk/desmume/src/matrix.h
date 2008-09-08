@@ -23,9 +23,7 @@
 
 #include "types.h"
 
-#ifdef __cplusplus 
 extern "C" {
-#endif
 
 #ifdef SSE2
 	#include <xmmintrin.h>
@@ -48,51 +46,36 @@ typedef struct MatrixStack
 } MatrixStack;
 
 void	MatrixInit				(float *matrix);
-#ifdef SSE2
-extern void	__fastcall MatrixMultVec3x3		(const gMatrix matrix, const gMatrix vecPtr);
-extern void	__fastcall MatrixMultVec4x4		(const gMatrix matrix, const gMatrix vecPtr);
-void	__fastcall MatrixIdentity			(float *matrix);
-extern void	__fastcall MatrixMultiply		(const gMatrix matrix, const gMatrix rightMatrix);
+
+void	__fastcall MatrixMultVec3x3		(const float * matrix, float * vecPtr);
+void	__fastcall MatrixMultVec4x4		(const float * matrix, float * vecPtr);
+void	__fastcall MatrixMultiply		(float * matrix, const float * rightMatrix);
+void	__fastcall MatrixTranslate		(float *matrix, const float *ptr);
+void	__fastcall MatrixScale			(float * matrix, const float * ptr);
 float	__fastcall MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
 void	__fastcall MatrixSet				(float *matrix, int x, int y, float value);
-void	__fastcall MatrixCopy				(const gMatrix matrixDST, const gMatrix matrixSRC);
-extern void __fastcall MatrixTranslate		(float *matrix, float *ptr);
-extern void	__fastcall MatrixScale			(const gMatrix matrix, const gMatrix ptr);
-void	__fastcall MatrixScale				(const gMatrix matrix, const gMatrix ptr);
-#else
-void	MatrixMultVec3x3		(float *matrix, float *vecPtr);
-void	MatrixMultVec4x4		(float *matrix, float *vecPtr);
-void	MatrixIdentity			(float *matrix);
-void	MatrixMultiply			(float *matrix, float *rightMatrix);
-float	MatrixGetMultipliedIndex(int index, float *matrix, float *rightMatrix);
-void	MatrixSet				(float *matrix, int x, int y, float value);
-void	MatrixCopy				(float *matrixDST, float *matrixSRC);
-void	MatrixTranslate			(float *matrix, float *ptr);
-void	MatrixScale				(float *matrix, float *ptr);
-#endif
+void	__fastcall MatrixCopy				(float * matrixDST, const float * matrixSRC);
+void	__fastcall MatrixIdentity			(float *matrix);
 
-void MatrixTranspose(float *matrix);
-
+void	MatrixTranspose				(float *matrix);
 void	MatrixStackInit				(MatrixStack *stack);
 void	MatrixStackSetMaxSize		(MatrixStack *stack, int size);
 void	MatrixStackSetStackPosition (MatrixStack *stack, int pos);
-void	MatrixStackPushMatrix		(MatrixStack *stack, float *ptr);
+void	MatrixStackPushMatrix		(MatrixStack *stack, const float *ptr);
 float*	MatrixStackPopMatrix		(MatrixStack *stack, int size);
 float*	MatrixStackGetPos			(MatrixStack *stack, int pos);
 float*	MatrixStackGet				(MatrixStack *stack);
-void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, float *ptr);
+void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const float *ptr);
 
-float Vector3Dot(float *a, float *b);
-float Vector3Length(float *a);
-void Vector3Add(float *dst, float *src);
-void Vector3Scale(float *dst, float scale);
-void Vector3Copy(float *dst, float *src);
+float Vector3Dot(const float *a, const float *b);
+float Vector3Length(const float *a);
+void Vector3Add(float *dst, const float *src);
+void Vector3Scale(float *dst, const float scale);
+void Vector3Copy(float *dst, const float *src);
 void Vector3Normalize(float *dst);
 
-void Vector4Copy(float *dst, float *src);
+void Vector4Copy(float *dst, const float *src);
 
-#ifdef __cplusplus 
-}
-#endif
+} //extern "C"
 
 #endif

@@ -26,10 +26,6 @@
 
 #include "types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct
 {
        u32 data[0x8000];
@@ -55,9 +51,5 @@ typedef struct{
 	u32 end;
 	u32 irq;
 } GFXFIFO;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

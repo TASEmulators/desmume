@@ -24,16 +24,8 @@
 
 #include "types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern char * (* des_arm_instructions_set[4096])(u32 adr, u32 i, char * txt);
 extern char * (* des_thumb_instructions_set[1024])(u32 adr, u32 i, char * txt);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

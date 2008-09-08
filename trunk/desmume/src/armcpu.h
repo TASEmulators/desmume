@@ -26,10 +26,6 @@
 #include "bits.h"
 #include "MMU.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
 
@@ -279,10 +275,5 @@ static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
 			break ;
 	}
 }
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

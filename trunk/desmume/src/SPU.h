@@ -22,10 +22,6 @@
 
 #include "types.h"
 
-#ifdef __cplusplus 
-extern "C" {
-#endif
-
 #define SNDCORE_DEFAULT         -1
 #define SNDCORE_DUMMY           0
 #define SNDCORE_FILEWRITE       1
@@ -94,9 +90,5 @@ void SPU_WriteWord(u32 addr, u16 val);
 void SPU_WriteLong(u32 addr, u32 val);
 u32 SPU_ReadLong(u32 addr);
 void SPU_Emulate(void);
-
-#ifdef __cplusplus 
-}
-#endif
 
 #endif

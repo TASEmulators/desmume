@@ -23,10 +23,6 @@
 #include "types.h"
 #include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef enum { DEBUG_STRING, DEBUG_STREAM , DEBUG_STDOUT, DEBUG_STDERR } DebugOutType;
 
 typedef struct {
@@ -88,10 +84,6 @@ void LogStop(void);
 #define DMALOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define DMALOG(...)
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif
