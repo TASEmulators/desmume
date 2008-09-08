@@ -42,6 +42,7 @@
  - Implement lighting model in software instead of using opengl; improves (potential?) compatibility [zeromus]
  - Defer rendering until after flush. This was a necessary architectural change, as it permits savestate
    for the display list, and allows us eventually to separate the GE emulation from the rendering [zeromus]
+ - Fix the 2d/3d compositing well enough for NSMB to fix bugs, but it is still bad [zeromus]
    
  
 0.7.3 -> 0.8

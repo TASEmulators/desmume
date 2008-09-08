@@ -19,7 +19,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-//todo - why doesnt mario run behind the floor at the beginning of nsmb? is it using a depth clear buffer?
+//problem - alpha-on-alpha texture rendering might work but the dest alpha buffer isnt tracked correctly
+//due to zeromus not having any idea how to set dest alpha blending in opengl.
+//so, it doesnt composite to 2d correctly.
+//(re: new super mario brothers renders the stormclouds at the beginning)
 
 #include <math.h>
 #include <stdlib.h>
@@ -46,9 +49,8 @@
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-static unsigned char  GPU_screen3D		[256*256*3]={0};
-static float		  GPU_screen3Ddepth	[256*256]={0};
-static unsigned char  GPU_screenAlpha[256*256]={0};
+static unsigned char  GPU_screen3D		[256*256*4]={0};
+static unsigned char  GPU_screenStencil[256*256]={0};
 
 // Acceleration tables
 static float*		float16table = NULL;
@@ -101,6 +103,10 @@ static const u8 material_5bit_to_8bit[] = {
 	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B, 
 	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD, 
 	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
+};
+
+static const u8 material_3bit_to_8bit[] = {
+	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
 };
 
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
@@ -305,8 +311,9 @@ char NDS_glInit(void)
 	pfd.nVersion = 1;
 	pfd.dwFlags =  PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cColorBits = 32;
+	pfd.cColorBits = 24;
 	pfd.cDepthBits = 24;
+	pfd.cAlphaBits = 8;
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE ;
 
@@ -752,6 +759,28 @@ __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 
 	return dest;
 }
+
+static void DebugDumpTexture(int which)
+{
+	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
+	static int ctr = 0;
+	char fname[100];
+	FILE* outf;
+	sprintf(fname,"c:\\dump\\%d.bmp", ctr);
+	ctr++;
+
+	glBindTexture(GL_TEXTURE_2D,texcache[which].id);
+	  glGetTexImage( GL_TEXTURE_2D ,
+			      0,
+			    GL_RGBA,
+			      GL_UNSIGNED_BYTE,
+			      texMAP);
+
+	NDS_WriteBMP_32bppBuffer(texcache[which].sizeX,texcache[which].sizeY,texMAP,fname);
+	
+
+}
+
 //================================================================================
 __forceinline void setTexture(unsigned int format, unsigned int texpal)
 {
@@ -798,9 +827,6 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 			{
 				texcache_count=i;
 				glBindTexture(GL_TEXTURE_2D,texcache[i].id);
-				if(i==30) {
-					int zzz=9;
-				}
 				return;
 			}
 		}
@@ -834,6 +860,10 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 
 	texcache[i].frm=format;
 
+	if(i==62 || textureMode==1) {
+		int zzz=9;
+	}
+
 	//printlog("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
 	
 	//============================================================================ Texture render
@@ -847,11 +877,14 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				for(x = 0; x < imageSize; x++, dst += 4)
 				{
-					unsigned short c = pal[adr[x]&31], alpha = (adr[x]>>5);
+					unsigned short c = pal[adr[x]&31], alpha = adr[x]>>5;
 					dst[0] = (unsigned char)((c & 0x1F)<<3);
 					dst[1] = (unsigned char)((c & 0x3E0)>>2);
 					dst[2] = (unsigned char)((c & 0x7C00)>>7);
-					dst[3] = ((alpha<<2)+(alpha>>1))<<3;
+					dst[0] = material_3bit_to_8bit[alpha];
+					dst[1] = material_3bit_to_8bit[alpha];
+					dst[2] = material_3bit_to_8bit[alpha];
+					dst[3] = material_3bit_to_8bit[alpha];
 					CHECKSLOT;
 				}
 				break;
@@ -1031,12 +1064,13 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				for(x = 0; x < imageSize; x++)
 				{
-					unsigned short c = pal[adr[x]&0x07];
+					unsigned short c = pal[adr[x]&0x07], alpha = (adr[x]>>3);
 					dst[0] = (unsigned char)((c & 0x1F)<<3);
 					dst[1] = (unsigned char)((c & 0x3E0)>>2);
 					dst[2] = (unsigned char)((c & 0x7C00)>>7);
-					dst[3] = (adr[x]&0xF8);
+					dst[3] = material_5bit_to_8bit[alpha];
 					dst += 4;
+
 					CHECKSLOT;
 				}
 				break;
@@ -1067,21 +1101,13 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 			}
 	}
 
-	////zero debug - dump tex to verify contents
-	//{
-	//	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
-	//	static int ctr = 0;
-	//	char fname[100];
-	//	FILE* outf;
-	//	sprintf(fname,"c:\\dump\\%d.bmp", ctr);
-	//	ctr++;
-	//	NDS_WriteBMP_32bppBuffer(sizeX,sizeY,texMAP,fname);
-	//}
-
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
+
+	DebugDumpTexture(i);
+
 	//============================================================================================
 
 	texcache_count=i;
@@ -1164,7 +1190,7 @@ static void BeginRenderPoly()
 			//when the polyID is zero, we are writing the shadow mask.
 			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
 			//do not write color or depth information.
-			glStencilFunc(GL_ALWAYS,1,1);
+			glStencilFunc(GL_ALWAYS,2,255);
 			glStencilOp(GL_KEEP,GL_REPLACE,GL_KEEP);
 			glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 			enableDepthWrite = 1;
@@ -1172,13 +1198,15 @@ static void BeginRenderPoly()
 			//when the polyid is nonzero, we are drawing the shadow poly.
 			//only draw the shadow poly where the stencilbuf==1.
 			//I am not sure whether to update the depth buffer here--so I chose not to.
-			glStencilFunc(GL_EQUAL,1,1);
+			glStencilFunc(GL_EQUAL,2,255);
 			glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 			enableDepthWrite = 0;
 		}
 	} else {
-		glDisable(GL_STENCIL_TEST);
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS,1,255);
+		glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
 		glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 	}
 
@@ -1391,28 +1419,56 @@ __forceinline int NDS_glGetNumVertex (void)
 }
 
 //NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
+//zeromus post-mod3: fix even better
 __forceinline void NDS_glGetLine (int line, unsigned short * dst)
 {
 	int		i, t;
-	u8		*screen3D		= (u8 *)&GPU_screen3D	[(192-(line%192))*768];
-	float	*screen3Ddepth	= &GPU_screen3Ddepth	[(192-(line%192))*256];
-	u8  *screenAlpha = (u8*)&GPU_screenAlpha[(191-(line%192))*256];
+	u8	*screen3D		= (u8 *)&GPU_screen3D	[(191-(line%192))*1024];
+	u8  *screenStencil = (u8*)&GPU_screenStencil[(191-(line%192))*256];
 
-	u32		r,g,b,a;
+	//the renderer clears the stencil to 0
+	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
+	//(it also sets it to 2 under some circumstances when rendering shadow volumes)
+	//so, we COULD use a zero stencil value to indicate that nothing should get composited.
+	//in fact, we are going to do that to fix some problems. 
+	//but beware that it i figure it might could CAUSE some problems
+
+	//this alpha compositing blending logic isnt thought through at all
+	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
+
+	u32		a,r,g,b,stencil,oldcolor,oldr,oldg,oldb;
 
 	for(i = 0, t=0; i < 256; i++)
 	{
-		if (screen3Ddepth[i] < 1.f)
-		{
-			t=i*3;
-			r = screen3D[t];
-			g = screen3D[t+1];
-			b = screen3D[t+2];
-			a  = screenAlpha[i];
+		stencil = screenStencil[i];
 
-			if(a)
-				dst[i] = ((r>>3)<<10) | ((g>>3)<<5) | (b>>3);
+		//you would use this if you wanted to use the stencil buffer to make decisions here
+		if(!stencil) continue;
+
+		t=i*4;
+		r = screen3D[t+0];
+		g = screen3D[t+1];
+		b = screen3D[t+2];
+		a = screen3D[t+3];
+
+		if(a != 0xFF && a != 0) {
+			int zzz=9;
 		}
+
+		oldcolor = RGB15TO32(dst[i],0);
+		oldr = oldcolor&0xFF;
+		oldg = (oldcolor>>8)&0xFF;
+		oldb = (oldcolor>>16)&0xFF;
+
+		r = (r*a + oldr*(255-a)) / 255;
+		g = (g*a + oldg*(255-a)) / 255;
+		b = (b*a + oldb*(255-a)) / 255;
+
+		r=min(255,r);
+		g=min(255,g);
+		b=min(255,b);
+
+		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3);
 	}
 }
 
@@ -1506,9 +1562,8 @@ __forceinline void NDS_glFlush(unsigned long v)
 
 	//capture rendering results
 	glFlush();
-	glReadPixels(0,0,256,192,GL_DEPTH_COMPONENT,	GL_FLOAT,			GPU_screen3Ddepth);
-	glReadPixels(0,0,256,192,GL_BGR_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
-	glReadPixels(0,0,256,192,GL_ALPHA,				GL_UNSIGNED_BYTE,	GPU_screenAlpha);
+	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
 
 	//debug: view depth buffer via color buffer for debugging
 	{
@@ -1684,11 +1739,11 @@ __forceinline void NDS_glControl(unsigned long v)
 
 	if(v&(1<<2))
 	{
-		glAlphaFunc	(GL_GREATER, alphaTestBase);
+		//glAlphaFunc	(GL_GREATER, alphaTestBase);
 	}
 	else
 	{
-		glAlphaFunc	(GL_GREATER, 0.1f);
+		//glAlphaFunc	(GL_GREATER, 0.1f);
 	}
 
 	if(v&(1<<3))

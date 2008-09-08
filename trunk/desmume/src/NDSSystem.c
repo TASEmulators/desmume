@@ -642,6 +642,41 @@ int NDS_WriteBMP(const char *filename)
     return 1;
 }
 
+int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename)
+{
+	 bmpfileheader_struct fileheader;
+    bmpimgheader_struct imageheader;
+    FILE *file;
+    int i,j,k;
+    u16 * bmp = (u16 *)GPU_screen;
+
+    memset(&fileheader, 0, sizeof(fileheader));
+    fileheader.size = sizeof(fileheader);
+    fileheader.id = 'B' | ('M' << 8);
+    fileheader.imgoffset = sizeof(fileheader)+sizeof(imageheader);
+    
+    memset(&imageheader, 0, sizeof(imageheader));
+    imageheader.size = sizeof(imageheader);
+    imageheader.width = width;
+    imageheader.height = height;
+    imageheader.planes = 1;
+    imageheader.bpp = 32;
+    imageheader.cmptype = 0; // None
+    imageheader.imgsize = imageheader.width * imageheader.height * 4;
+    
+    if ((file = fopen(filename,"wb")) == NULL)
+       return 0;
+
+    fwrite(&fileheader, 1, sizeof(fileheader), file);
+    fwrite(&imageheader, 1, sizeof(imageheader), file);
+
+	fwrite(buf,1,imageheader.imgsize,file);
+    fclose(file);
+
+    return 1;
+}
+
+
 static void
 fill_user_data_area( struct NDS_fw_config_data *user_settings,
                      u8 *data, int count) {
