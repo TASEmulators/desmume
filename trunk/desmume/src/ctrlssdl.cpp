@@ -22,6 +22,11 @@
 
 #include "ctrlssdl.h"
 
+const char *key_names[NB_KEYS];
+u16 keyboard_cfg[NB_KEYS];
+u16 joypad_cfg[NB_KEYS];
+u16 nbr_joy;
+
 static SDL_Joystick **open_joysticks = NULL;
 
 /* Keypad key names */
