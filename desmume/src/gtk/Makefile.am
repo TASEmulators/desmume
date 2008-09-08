@@ -11,14 +11,14 @@ EXTRA_DIST = DeSmuME.xpm dev-cpp/desmume.dev dev-cpp/desmume.layout \
 	 dev-cpp/semaphore.h desmume.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
-	gtk-compat.c gtk-compat.h \
-	desmume.h desmume.c \
-	dTool.h dToolsList.c \
-	tools/ioregsView.c tools/ioregsView.h \
+	gtk-compat.cpp gtk-compat.h \
+	desmume.h desmume.cpp \
+	dTool.h dToolsList.cpp \
+	tools/ioregsView.cpp tools/ioregsView.h \
 	globals.h \
-	../sndsdl.c \
-	../ctrlssdl.h ../ctrlssdl.c \
-	gdk_3Demu.c gdk_3Demu.h \
-	 main.c
+	../sndsdl.cpp \
+	../ctrlssdl.h ../ctrlssdl.cpp \
+	gdk_3Demu.cpp gdk_3Demu.h \
+	 main.cpp
 desmume_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a \
 	$(SDL_LIBS) $(GTK_LIBS) $(GTKGLEXT_LIBS) $(GTHREAD_LIBS)

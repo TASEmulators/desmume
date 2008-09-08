@@ -286,7 +286,7 @@ createThread_gdb( void (*thread_function)( void *data),
 
 void
 joinThread_gdb( void *thread_handle) {
-  g_thread_join( thread_handle);
+  g_thread_join( (GThread *)thread_handle);
 }
 
 
@@ -1552,7 +1552,7 @@ static Uint32 fps_limiter_fn(Uint32 interval, void *param) {
 }
 
 static void dui_set_accel_group(gpointer action, gpointer group) {
-        gtk_action_set_accel_group(action, group);
+        gtk_action_set_accel_group((GtkAction *)action, (GtkAccelGroup *)group);
 }
 
 /////////////////////////////// MAIN ///////////////////////////////
@@ -1621,17 +1621,17 @@ common_gtk_main( struct configured_features *my_config) {
 
 #ifdef GTKGLEXT_AVAILABLE
         /* Try double-buffered visual */
-        glconfig = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGB    |
+        glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB    |
                                               GDK_GL_MODE_DEPTH  |
-                                              GDK_GL_MODE_DOUBLE);
+                                              GDK_GL_MODE_DOUBLE));
         if (glconfig == NULL)
           {
             g_print ("*** Cannot find the double-buffered visual.\n");
             g_print ("*** Trying single-buffered visual.\n");
 
             /* Try single-buffered visual */
-            glconfig = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGB   |
-                                                  GDK_GL_MODE_DEPTH);
+            glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB   |
+                                                  GDK_GL_MODE_DEPTH));
             if (glconfig == NULL) {
               g_print ("*** No appropriate OpenGL-capable visual found.\n");
               exit (1);
