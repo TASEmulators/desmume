@@ -132,6 +132,7 @@ GPU3DInterface *core3DList[] = {
 
 int autoframeskipenab=1;
 int frameskiprate=0;
+int emu_paused = 0;
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
 
@@ -1589,15 +1590,19 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             CheckMenuItem(menu, IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
-                  case IDM_EXEC:
-                       EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
-                       EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                       NDS_UnPause();
-                  return 0;
-                  case IDM_PAUSE:
-                       EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
-                       EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
-                       NDS_Pause();
+                  //case IDM_EXEC:
+                  //     EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
+                  //     EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+                  //     NDS_UnPause();
+				  // 	return 0;
+				  case ACCEL_P:
+				  case IDM_PAUSE:
+					  if (emu_paused) NDS_UnPause();
+					  else NDS_Pause();
+					  emu_paused ^= 1;
+					  CheckMenuItem(menu, IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+					  //	EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
+					  //  EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
                   return 0;
                   
                   #define saver(one,two,three,four,five, six) \
