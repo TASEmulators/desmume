@@ -1536,9 +1536,9 @@ __forceinline void NDS_glFlush(unsigned long v)
 			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
 			for(j=0;j<type;j++) {
 				VERT* vert = &vertlist->list[poly->vertIndexes[j]];
-				float tempCoord[4];
-				Vector4Copy(tempCoord,vert->coord);
 				
+				//float tempCoord[4];
+				//Vector4Copy(tempCoord,vert->coord);
 				//we havent got the whole pipeline working yet, so we cant do this
 				////convert from ds device coords to opengl
 				//tempCoord[0] *= 2;
@@ -1549,7 +1549,8 @@ __forceinline void NDS_glFlush(unsigned long v)
 				//todo - edge flag?
 				glTexCoord2fv(vert->texcoord);
 				glColor4iv(vert->color);
-				glVertex3fv(tempCoord);
+				//glVertex3fv(tempCoord);
+				glVertex3fv(vert->coord);
 			}
 			glEnd();
 		}

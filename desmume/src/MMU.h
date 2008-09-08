@@ -30,10 +30,6 @@
 #include "ARM9.h"
 #include "mc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern char szRomPath[512];
 extern char szRomBaseName[512];
 
@@ -192,10 +188,5 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num);
 extern struct armcpu_memory_iface arm9_base_memory_iface;
 extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

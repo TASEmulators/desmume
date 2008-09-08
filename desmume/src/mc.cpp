@@ -80,7 +80,7 @@ void mc_init(memory_chip_t *mc, int type)
 u8 *mc_alloc(memory_chip_t *mc, u32 size)
 {
 	u8 *buffer;
-	buffer = malloc(size);
+	buffer = new u8[size];
 
 	mc->data = buffer;
 	if(!buffer) { return NULL; }
@@ -92,8 +92,8 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 
 void mc_free(memory_chip_t *mc)
 {
-        if(mc->data) free(mc->data);
-        mc_init(mc, 0);
+    if(mc->data) delete[] mc->data;
+    mc_init(mc, 0);
 }
 
 void mc_reset_com(memory_chip_t *mc)

@@ -332,6 +332,7 @@ static BOOL cflash_build_fat( void) {
 		numExtraEntries[i] = 0;
 	}
 
+	//COMMENT OUT THIS LINE TO STOP THE IRRITATING FILESYSTEM SCANNING BEHAVIOR
 	list_files(sRomPath);
 
 	k            = 0;

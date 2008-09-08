@@ -21,10 +21,6 @@
 #ifndef __FW_H__
 #define __FW_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include "types.h"
 
@@ -85,10 +81,6 @@ void mc_free(memory_chip_t *mc);    /* delete mc memory */
 void mc_reset_com(memory_chip_t *mc);       /* reset communication with mc */
 u8 fw_transfer(memory_chip_t *mc, u8 data); /* transfer to, then receive data from firmware */
 u8 bm_transfer(memory_chip_t *mc, u8 data); /* transfer to, then receive data from backup memory */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /*__FW_H__*/
 

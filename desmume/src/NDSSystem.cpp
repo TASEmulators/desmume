@@ -195,7 +195,7 @@ BOOL NDS_SetROM(u8 * rom, u32 mask)
 
 NDS_header * NDS_getROMHeader(void)
 {
-	NDS_header * header = malloc(sizeof(NDS_header));
+	NDS_header * header = new NDS_header();
 
 	memcpy(header->gameTile, MMU.CART_ROM, 12);
 	memcpy(header->gameCode, MMU.CART_ROM + 12, 4);
@@ -306,7 +306,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
    char * p;
    
    ROMReader_struct * reader;
-   FILE * file;
+   void* file;
    u32 size, mask;
    u8 *data;
    char * noext;
@@ -532,7 +532,7 @@ void NDS_Reset( void)
      MMU_write32(0, 0x0000010, 0xE3B02020);
 //     MMU_write32(0, 0x0000010, 0xE2100202);
 
-   free(header);
+   delete header;
 
    GPU_Reset(MainScreen.gpu, 0);
    GPU_Reset(SubScreen.gpu, 1);

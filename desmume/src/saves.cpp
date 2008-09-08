@@ -30,6 +30,8 @@
 #include <sys/stat.h>
 #include <time.h>
 
+savestates_t savestates[NB_STATES];
+
 #define SAVESTATE_VERSION       010
 
 #ifndef MAX_PATH

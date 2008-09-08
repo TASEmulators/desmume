@@ -546,19 +546,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\arm_instructions.c"
+				RelativePath="..\arm_instructions.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\armcpu.c"
+				RelativePath="..\armcpu.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\bios.c"
+				RelativePath="..\bios.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\cflash.c"
+				RelativePath="..\cflash.cpp"
 				>
 			</File>
 			<File
@@ -574,7 +574,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\cp15.c"
+				RelativePath="..\cp15.cpp"
 				>
 			</File>
 			<File
@@ -582,11 +582,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\debug.c"
+				RelativePath="..\debug.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\Disassembler.c"
+				RelativePath="..\Disassembler.cpp"
 				>
 			</File>
 			<File
@@ -594,7 +594,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\FIFO.c"
+				RelativePath="..\FIFO.cpp"
 				>
 			</File>
 			<File
@@ -602,7 +602,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\fs-windows.c"
+				RelativePath="..\fs-windows.cpp"
 				>
 			</File>
 			<File
@@ -614,7 +614,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\GPU.c"
+				RelativePath="..\GPU.cpp"
 				>
 			</File>
 			<File
@@ -630,14 +630,6 @@
 				>
 				<FileConfiguration
 					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release (SSE2)|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -666,7 +658,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\matrix.c"
+				RelativePath="..\matrix.cpp"
 				>
 			</File>
 			<File
@@ -773,7 +765,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\mc.c"
+				RelativePath="..\mc.cpp"
 				>
 			</File>
 			<File
@@ -781,11 +773,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\MMU.c"
+				RelativePath="..\MMU.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\NDSSystem.c"
+				RelativePath="..\NDSSystem.cpp"
 				>
 			</File>
 			<File
@@ -801,15 +793,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\render3D.c"
+				RelativePath="..\render3D.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\ROMReader.c"
+				RelativePath="..\ROMReader.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\saves.c"
+				RelativePath="..\saves.cpp"
 				>
 			</File>
 			<File
@@ -817,11 +809,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\SPU.c"
+				RelativePath="..\SPU.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\thumb_instructions.c"
+				RelativePath="..\thumb_instructions.cpp"
 				>
 			</File>
 			<File
@@ -829,7 +821,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\wifi.c"
+				RelativePath="..\wifi.cpp"
 				>
 			</File>
 		</Filter>

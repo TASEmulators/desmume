@@ -23,9 +23,6 @@
 #ifdef HAVE_LIBZZIP
 #include <zzip/zzip.h>
 #endif
-#ifdef WIN32
-#define strcasecmp stricmp
-#endif
 
 ROMReader_struct * ROMReaderInit(char ** filename)
 {
@@ -71,7 +68,7 @@ void * STDROMReaderInit(const char * filename)
 void STDROMReaderDeInit(void * file)
 {
 	if (!file) return ;
-	fclose(file);
+	fclose((FILE*)file);
 }
 
 u32 STDROMReaderSize(void * file)
@@ -80,9 +77,9 @@ u32 STDROMReaderSize(void * file)
 
 	if (!file) return 0 ;
 
-	fseek(file, 0, SEEK_END);
-	size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	fseek((FILE*)file, 0, SEEK_END);
+	size = ftell((FILE*)file);
+	fseek((FILE*)file, 0, SEEK_SET);
 
 	return size;
 }
@@ -90,13 +87,13 @@ u32 STDROMReaderSize(void * file)
 int STDROMReaderSeek(void * file, int offset, int whence)
 {
 	if (!file) return 0 ;
-	return fseek(file, offset, whence);
+	return fseek((FILE*)file, offset, whence);
 }
 
 int STDROMReaderRead(void * file, void * buffer, u32 size)
 {
 	if (!file) return 0 ;
-	return fread(buffer, 1, size, file);
+	return fread(buffer, 1, size, (FILE*)file);
 }
 
 #ifdef HAVE_LIBZ
@@ -188,7 +185,7 @@ void * ZIPROMReaderInit(const char * filename)
 
 void ZIPROMReaderDeInit(void * file)
 {
-	zzip_close(file);
+	zzip_close((ZZIP_FILE*)file);
 }
 
 u32 ZIPROMReaderSize(void * file)
@@ -197,20 +194,20 @@ u32 ZIPROMReaderSize(void * file)
 	u32 tmp;
 	u32 size = 0;
 
-	zzip_seek(file, 0, SEEK_END);
-	size = zzip_tell(file);
-	zzip_seek(file, 0, SEEK_SET);
+	zzip_seek((ZZIP_FILE*)file, 0, SEEK_END);
+	size = zzip_tell((ZZIP_FILE*)file);
+	zzip_seek((ZZIP_FILE*)file, 0, SEEK_SET);
 
 	return size;
 }
 
 int ZIPROMReaderSeek(void * file, int offset, int whence)
 {
-	return zzip_seek(file, offset, whence);
+	return zzip_seek((ZZIP_FILE*)file, offset, whence);
 }
 
 int ZIPROMReaderRead(void * file, void * buffer, u32 size)
 {
-	return zzip_read(file, buffer, size);
+	return zzip_read((ZZIP_FILE*)file, buffer, size);
 }
 #endif

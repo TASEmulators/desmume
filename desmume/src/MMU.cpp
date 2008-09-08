@@ -2663,7 +2663,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 					case 1:
 						return;
 					}
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt(v));
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt((double)v));
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
 					SQRTLOG("BOUT1 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v, 
 										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
@@ -2684,7 +2684,7 @@ void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 						v = T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x2B8);
 						break;
 					}
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt(v));
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt((double)v));
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
 					SQRTLOG("BOUT2 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v, 
 										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));

@@ -87,10 +87,10 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
       SNDCore->DeInit();
 
    // Allocate memory for sound buffer
-   if ((SPU->sndbuf = malloc(buffersize * 4 * 2)) == NULL)
+   if ((SPU->sndbuf = new s32[buffersize * 2]) == NULL)
       return -1;
 
-   if ((SPU->outbuf = malloc(buffersize * 2 * 2)) == NULL)
+   if ((SPU->outbuf = new s16[buffersize * 2]) == NULL)
       return -1;
 
    memset(SPU->sndbuf, 0, buffersize * 4 * 2);
@@ -180,10 +180,10 @@ void SPU_Reset(void)
 void SPU_DeInit(void)
 {
    if (SPU->sndbuf)
-      free(SPU->sndbuf);
+      delete[] SPU->sndbuf;
 
    if (SPU->outbuf)
-      free(SPU->outbuf);
+      delete[] SPU->outbuf;
 
    if (SNDCore)
       SNDCore->DeInit();
@@ -204,13 +204,13 @@ void SPU_KeyOn(int channel)
    switch(chan->format)
    {
       case 0: // 8-bit
-         chan->buf8 = &MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
+         chan->buf8 = (s8*)&MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
          chan->loopstart = chan->loopstart << 2;
          chan->length = (chan->length << 2) + chan->loopstart;
          chan->sampcnt = 0;
          break;
       case 1: // 16-bit
-         chan->buf16 = (u16 *)&MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
+         chan->buf16 = (s16 *)&MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
          chan->loopstart = chan->loopstart << 1;
          chan->length = (chan->length << 1) + chan->loopstart;
          chan->sampcnt = 0;
@@ -219,7 +219,7 @@ void SPU_KeyOn(int channel)
       {
          u32 temp;
 
-         chan->buf8 = &MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
+         chan->buf8 = (s8*)&MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
          chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
          chan->index = chan->buf8[2] & 0x7F;
          chan->lastsampcnt = 7;

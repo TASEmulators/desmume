@@ -22,10 +22,16 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+//zero 9/8/08 - fixed a bug
+//SIGNED_UNDERFLOW(a, (!cpu->CPSR.bits.C), tmp) 
+//was being called. but SIGNED_UNDERFLOW expects values in bit31. replaced with
+//SIGNED_UNDERFLOW(a, (cpu->CPSR.bits.C?0:0x80000000), tmp) 
+
 #include "cp15.h"
 #include "debug.h"
 #include "MMU.h"
 
+BOOL execute;
 
 // Use this macros for reading/writing, so the GDB stub isn't broken
 #ifdef GDB_STUB
@@ -234,8 +240,6 @@
 #define IMM_OFF (((i>>4)&0xF0)+(i&0xF))
 
 #define IMM_OFF_12 ((i)&0xFFF)
-
-extern BOOL execute;
 
 static u32 FASTCALL  OP_UND(armcpu_t *cpu)
 {
@@ -1331,8 +1335,8 @@ static u32 FASTCALL  OP_SBC_IMM_VAL(armcpu_t *cpu)
      }\
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);\
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);\
-     cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(v, (!cpu->CPSR.bits.C), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]));\
-     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, (!cpu->CPSR.bits.C), tmp) | SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]);\
+	 cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(v, (cpu->CPSR.bits.C?0:0x80000000), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]));\
+     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, (cpu->CPSR.bits.C?0:0x80000000), tmp) | SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]);\
      return a; \
      }
 
@@ -1504,8 +1508,8 @@ static u32 FASTCALL  OP_RSC_IMM_VAL(armcpu_t *cpu)
           }\
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);\
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);\
-     cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(shift_op, (!cpu->CPSR.bits.C), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]));\
-     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(shift_op, (!cpu->CPSR.bits.C), tmp) | SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]);\
+     cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(shift_op, (cpu->CPSR.bits.C?0:0x80000000), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]));\
+     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(shift_op, (cpu->CPSR.bits.C?0:0x80000000), tmp) | SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]);\
      return a; \
      }
 

@@ -21,10 +21,6 @@
 #ifndef _SRAM_H
 #define _SRAM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "types.h"
 
 #define SRAM_ADDRESS	0x0A000000
@@ -37,7 +33,7 @@ typedef struct
   char date[40];
 } savestates_t;
 
-savestates_t savestates[NB_STATES];
+extern savestates_t savestates[NB_STATES];
 
 void clear_savestates();
 void scan_savestates();
@@ -51,9 +47,5 @@ int savestate_save (const char *file_name);
 
 void savestate_slot(int num);
 void loadstate_slot(int num);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

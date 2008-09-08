@@ -22,10 +22,6 @@
 #ifndef WIFI_H
 #define WIFI_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* standardize socket interface for linux and windows */
 #ifdef WIN32
 	#include <winsock2.h>
@@ -458,10 +454,6 @@ extern u8 FW_RFInit[36] ;
 extern u8 FW_RFChannel[6*14] ;
 extern u8 FW_BBChannel[14] ;
 extern u8 FW_WFCProfile[0xC0] ;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

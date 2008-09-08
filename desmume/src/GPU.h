@@ -32,10 +32,6 @@
 #include "FIFO.h"
 #include "MMU.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /*******************************************************************************
     this structure is for display control,
@@ -815,10 +811,6 @@ void SetupFinalPixelBlitter (GPU *gpu);
 #define GPU_setBLDALPHA_EVB(gpu, val) {gpu->BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);}
 
 #define GPU_setBLDY_EVY(gpu, val) {gpu->BLDY_EVY = (val&0x1f) > 16 ? 16 : (val&0x1f);}
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

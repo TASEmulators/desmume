@@ -31,11 +31,6 @@
 #include "mem.h"
 #include "wifi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 extern volatile BOOL execute;
 extern BOOL click;
 
@@ -242,10 +237,6 @@ NDS_exec(s32 nb, BOOL force);
        }
 
 	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
- 
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

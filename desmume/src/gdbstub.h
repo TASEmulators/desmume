@@ -27,9 +27,6 @@ typedef void *gdbstub_handle_t;
 /*
  * The function interface
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 gdbstub_handle_t
 createStub_gdb( u16 port,
@@ -44,20 +41,21 @@ activateStub_gdb( gdbstub_handle_t stub,
                   struct armcpu_ctrl_iface *cpu_ctrl);
 
 
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
   /*
    * An implementation of the following functions is required
    * for the GDB stub to function.
    */
-void *
+EXTERNC void *
 createThread_gdb( void (*thread_function)( void *data),
                   void *thread_data);
 
-void
+EXTERNC void
 joinThread_gdb( void *thread_handle);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* End of _GDBSTUB_H_ */

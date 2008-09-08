@@ -24,38 +24,16 @@
 #include <math.h>
 #include "matrix.h"
 
+extern "C" {
+
 void MatrixInit  (float *matrix)
 {
 	memset (matrix, 0, sizeof(float)*16);
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-#ifdef SSE2
-void __fastcall MatrixIdentity	(float *matrix) //============== TODO
-{
-	memset (matrix, 0, sizeof(float)*16);
-	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
-}
-
-float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
-{
-	int iMod = index%4, iDiv = (index>>2)<<2;
-
-	return	(matrix[iMod  ]*rightMatrix[iDiv  ])+(matrix[iMod+ 4]*rightMatrix[iDiv+1])+
-			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
-}
-
-void __fastcall MatrixSet (float *matrix, int x, int y, float value)	// TODO
-{
-	matrix [x+(y<<2)] = value;
-}
-
-void __fastcall MatrixCopy (float *matrixDST, float *matrixSRC)
-{
-	memcpy (matrixDST, matrixSRC, sizeof(float)*16);
-}
-#else
-void MatrixMultVec4x4 (float *matrix, float *vecPtr)
+#ifndef SSE2
+void __fastcall MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
 	float y = vecPtr[1];
@@ -68,7 +46,7 @@ void MatrixMultVec4x4 (float *matrix, float *vecPtr)
 	vecPtr[3] = x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15];
 }
 
-void MatrixMultVec3x3 (float *matrix, float *vecPtr)
+void __fastcall MatrixMultVec3x3 (const float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
 	float y = vecPtr[1];
@@ -79,14 +57,7 @@ void MatrixMultVec3x3 (float *matrix, float *vecPtr)
 	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10];
 }
 
-void MatrixIdentity	(float *matrix)
-{
-	memset (matrix, 0, sizeof(float)*16);
-
-	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
-}
-
-void MatrixMultiply (float *matrix, float *rightMatrix)
+void __fastcall MatrixMultiply (float *matrix, const float *rightMatrix)
 {
 	float tmpMatrix[16];
 
@@ -113,50 +84,7 @@ void MatrixMultiply (float *matrix, float *rightMatrix)
 	memcpy (matrix, tmpMatrix, sizeof(float)*16);
 }
 
-float MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
-{
-	int iMod = index%4, iDiv = (index>>2)<<2;
-
-	return	(matrix[iMod  ]*rightMatrix[iDiv  ])+(matrix[iMod+ 4]*rightMatrix[iDiv+1])+
-			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
-}
-
-void MatrixSet (float *matrix, int x, int y, float value)
-{
-	matrix [x+(y<<2)] = value;
-}
-
-void MatrixTranspose(float *matrix)
-{
-	float temp;
-#define swap(A,B) temp = matrix[A];matrix[A] = matrix[B]; matrix[B] = temp;
-	swap(1,4);
-	swap(2,8);
-	swap(3,0xC);
-	swap(6,9);
-	swap(7,0xD);
-	swap(0xB,0xE);
-#undef swap
-
-/*
-0 1 2 3
-4 5 6 7
-8 9 A B
-C D E F
-
-0 4 8 C
-1 5 9 D
-2 6 A E
-3 7 B F
-*/
-}
-
-void MatrixCopy (float *matrixDST, float *matrixSRC)
-{
-	memcpy (matrixDST, matrixSRC, sizeof(float)*16);
-}
-
-void MatrixTranslate	(float *matrix, float *ptr)
+void __fastcall MatrixTranslate	(float *matrix, const float *ptr)
 {
 	matrix[12] += (matrix[0]*ptr[0])+(matrix[4]*ptr[1])+(matrix[ 8]*ptr[2]);
 	matrix[13] += (matrix[1]*ptr[0])+(matrix[5]*ptr[1])+(matrix[ 9]*ptr[2]);
@@ -164,7 +92,7 @@ void MatrixTranslate	(float *matrix, float *ptr)
 	matrix[15] += (matrix[3]*ptr[0])+(matrix[7]*ptr[1])+(matrix[11]*ptr[2]);
 }
 
-void MatrixScale (float *matrix, float *ptr)
+void __fastcall MatrixScale (float *matrix, const float *ptr)
 {
 	matrix[0]  *= ptr[0];
 	matrix[1]  *= ptr[0];
@@ -181,8 +109,45 @@ void MatrixScale (float *matrix, float *ptr)
 	matrix[10] *= ptr[2];
 	matrix[11] *= ptr[2];
 }
-#endif
+#endif //switched c/asm functions
 //-----------------------------------------
+
+void MatrixTranspose(float *matrix)
+{
+	float temp;
+#define swap(A,B) temp = matrix[A];matrix[A] = matrix[B]; matrix[B] = temp;
+	swap(1,4);
+	swap(2,8);
+	swap(3,0xC);
+	swap(6,9);
+	swap(7,0xD);
+	swap(0xB,0xE);
+#undef swap
+}
+
+void __fastcall MatrixIdentity	(float *matrix) //============== TODO
+{
+	memset (matrix, 0, sizeof(float)*16);
+	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
+}
+
+float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
+{
+	int iMod = index%4, iDiv = (index>>2)<<2;
+
+	return	(matrix[iMod  ]*rightMatrix[iDiv  ])+(matrix[iMod+ 4]*rightMatrix[iDiv+1])+
+			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
+}
+
+void __fastcall MatrixSet (float *matrix, int x, int y, float value)	// TODO
+{
+	matrix [x+(y<<2)] = value;
+}
+
+void __fastcall MatrixCopy (float* matrixDST, const float* matrixSRC)
+{
+	memcpy ((void*)matrixDST, matrixSRC, sizeof(float)*16);
+}
 
 void MatrixStackInit (MatrixStack *stack)
 {
@@ -226,7 +191,7 @@ void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 		stack->position = stack->size;
 }
 
-void MatrixStackPushMatrix (MatrixStack *stack, float *ptr)
+void MatrixStackPushMatrix (MatrixStack *stack, const float *ptr)
 {
 	MatrixCopy (&stack->matrix[stack->position*16], ptr);
 
@@ -250,38 +215,38 @@ float * MatrixStackGet (MatrixStack *stack)
 	return &stack->matrix[stack->position*16];
 }
 
-void MatrixStackLoadMatrix (MatrixStack *stack, int pos, float *ptr)
+void MatrixStackLoadMatrix (MatrixStack *stack, int pos, const float *ptr)
 {
 	MatrixCopy (&stack->matrix[pos*16], ptr);
 }
 
-float Vector3Dot(float *a, float *b) 
+float Vector3Dot(const float *a, const float *b) 
 {
 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-float Vector3Length(float *a)
+float Vector3Length(const float *a)
 {
 	float lengthSquared = Vector3Dot(a,a);
 	float length = sqrt(lengthSquared);
 	return length;
 }
 
-void Vector3Add(float *dst, float *src)
+void Vector3Add(float *dst, const float *src)
 {
 	dst[0] += src[0];
 	dst[1] += src[1];
 	dst[2] += src[2];
 }
 
-void Vector3Scale(float *dst, float scale)
+void Vector3Scale(float *dst, const float scale)
 {
 	dst[0] *= scale;
 	dst[1] *= scale;
 	dst[2] *= scale;
 }
 
-void Vector3Copy(float *dst, float *src)
+void Vector3Copy(float *dst, const float *src)
 {
 	dst[0] = src[0];
 	dst[1] = src[1];
@@ -294,10 +259,12 @@ void Vector3Normalize(float *dst)
 	Vector3Scale(dst,1.0f/length);
 }
 
-void Vector4Copy(float *dst, float *src)
+void Vector4Copy(float *dst, const float *src)
 {
 	dst[0] = src[0];
 	dst[1] = src[1];
 	dst[2] = src[2];
 	dst[3] = src[3];
 }
+
+} //extern "C"

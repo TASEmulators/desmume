@@ -22,10 +22,6 @@
 
 #include "types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define FS_IS_DIR 1
 
 #define FS_ERR_UNKNOWN -1
@@ -44,9 +40,5 @@ void * FsReadFirst(const char * path, FsEntry * entry);
 int FsReadNext(void * search, FsEntry * entry);
 void FsClose(void * search);
 int FsError(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -8,10 +8,6 @@
 
 #include "fat.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct {
 	int level,parent,filesInDir;
 } FILE_INFO;
@@ -24,9 +20,5 @@ unsigned int cflash_read(unsigned int address);
 void cflash_write(unsigned int address,unsigned int data);
 
 void cflash_close( void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
