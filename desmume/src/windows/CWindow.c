@@ -47,8 +47,10 @@ int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * ti
     wincl.cbSize = sizeof (WNDCLASSEX);
 
     // Use default icon and mouse-pointer
-    wincl.hIcon = LoadIcon (hInst, MAKEINTRESOURCE(IconDeSmuME));//IDI_APPLICATION);
-    wincl.hIconSm = LoadIcon (hInst, MAKEINTRESOURCE(IconDeSmuME));//IDI_APPLICATION);
+    //wincl.hIcon = LoadIcon (hInst, MAKEINTRESOURCE(IconDeSmuME));//IDI_APPLICATION);
+    //wincl.hIconSm = LoadIcon (hInst, MAKEINTRESOURCE(IconDeSmuME));//IDI_APPLICATION);
+	wincl.hIcon = LoadIcon (hInst, IDI_APPLICATION);
+    wincl.hIconSm = LoadIcon (hInst, IDI_APPLICATION);
     wincl.hCursor = LoadCursor (NULL, IDC_ARROW);
     wincl.lpszMenuName = NULL;                 // No menu
     wincl.cbClsExtra = 0;                      // No extra bytes after the window class
