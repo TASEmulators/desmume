@@ -116,6 +116,7 @@ int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
 int sndvolume=100;
 
+extern "C" {
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
@@ -127,6 +128,7 @@ GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3Dgl,
 };
+}
 
 int autoframeskipenab=1;
 int frameskiprate=0;
@@ -390,7 +392,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 
 	 DDCAPS	hw_caps, sw_caps;
 
-	if (DirectDrawCreateEx(NULL, &lpDDraw, &IID_IDirectDraw7, NULL) != DD_OK)
+	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
 	{
 		MessageBox(hwnd,"Unable to initialize DirectDraw","Error",MB_OK);
 		return -1;
@@ -510,7 +512,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 						}
 						else
 							 printlog("16bit depth color not supported");
-						IDirectDrawSurface7_Unlock(lpBackSurface,ddsd.lpSurface);
+						IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
 
 						if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
 						{
@@ -1411,7 +1413,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        {
                             cwindow_struct *IoregView;
 
-                            if ((IoregView = malloc(sizeof(cwindow_struct))) == NULL)
+                            if ((IoregView = (cwindow_struct*)malloc(sizeof(cwindow_struct))) == NULL)
                                return 0;
 
                             if (CWindow_Init2(IoregView, hAppInst, HWND_DESKTOP, "IO REG VIEW", IDD_IO_REG, IoregView_Proc) == 0)
@@ -1818,7 +1820,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam)
 {
-   static timerid=0;
+   static int timerid=0;
    switch (uMsg)
    {
       case WM_INITDIALOG:

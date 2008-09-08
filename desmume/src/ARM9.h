@@ -3,6 +3,10 @@
 
 #include "types.h"
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 typedef struct {
         //ARM9 mem
         u8 ARM9_ITCM[0x8000];
@@ -29,5 +33,9 @@ typedef struct {
 } ARM9_struct;
 
 extern ARM9_struct ARM9Mem;
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif

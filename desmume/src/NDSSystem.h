@@ -240,7 +240,8 @@ NDS_exec(s32 nb, BOOL force);
 	       MainScreen.offset = SubScreen.offset;
 	       SubScreen.offset = tmp;
        }
- 
+
+	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
  
 #ifdef __cplusplus
 }

@@ -177,7 +177,7 @@ void CWindow_AddToRefreshList(void *win)
     updatewindowlist = (cwindow_struct *)win;
     LeaveCriticalSection(&section);
 
-	CWindow_UpdateAutoUpdateItem(win, TRUE);
+	CWindow_UpdateAutoUpdateItem((cwindow_struct*)win, TRUE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -202,7 +202,7 @@ void CWindow_RemoveFromRefreshList(void *win)
     win2->prev = NULL;
     LeaveCriticalSection(&section);
 
-	CWindow_UpdateAutoUpdateItem(win, FALSE);
+	CWindow_UpdateAutoUpdateItem((cwindow_struct*)win, FALSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@ int CWindow_ToggleAutoUpdate(void *win)
 		CWindow_AddToRefreshList(win);
 
 	// checks or unchecks the auto update item in the system menu
-	CWindow_UpdateAutoUpdateItem(win, win2->autoup);
+	CWindow_UpdateAutoUpdateItem((cwindow_struct*)win, win2->autoup);
 
 	return win2->autoup;
 }

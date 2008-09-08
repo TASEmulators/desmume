@@ -28,7 +28,7 @@
 #ifdef BETA_VERSION
 void OpenConsole();
 void CloseConsole();
-void printlog(LPCTSTR *fmt, ...);
+void printlog(const char *fmt, ...);
 #else
 #define OpenConsole()
 #define CloseConsole()

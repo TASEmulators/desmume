@@ -23,6 +23,10 @@
 
 #include "types.h"
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 #ifdef SSE2
 	#include <xmmintrin.h>
 	#include <emmintrin.h>
@@ -86,5 +90,9 @@ void Vector3Copy(float *dst, float *src);
 void Vector3Normalize(float *dst);
 
 void Vector4Copy(float *dst, float *src);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif

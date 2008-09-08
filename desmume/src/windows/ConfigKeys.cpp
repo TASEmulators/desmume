@@ -33,15 +33,13 @@
 #include "../debug.h"
 #include "resource.h"
 
-char IniName[MAX_PATH];
+static char IniName[MAX_PATH];
 char                    vPath[MAX_PATH],*szPath,currDir[MAX_PATH];
-u32 keytab[12];
 
-const char tabkeytext[52][14] = {"0","1","2","3","4","5","6","7","8","9","A","B","C",
+const char *tabkeytext[52] = {"0","1","2","3","4","5","6","7","8","9","A","B","C",
 "D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X",
 "Y","Z","SPACE","UP","DOWN","LEFT","RIGHT","TAB","SHIFT","DEL","INSERT","HOME","END","ENTER",
 "Joystick UP","Joystick DOWN","Joystick LEFT","Joystick RIGHT"};
-const char DI_tabkeytext[50][20];
 
 DWORD dds_up=37;
 DWORD dds_down=38;
@@ -349,11 +347,11 @@ HRESULT Input_Init(HWND hwnd)
 	ReadConfig();
 	g_pKeyboard=NULL; g_pJoystick=NULL;
 
-	if(!FAILED(DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,&IID_IDirectInput8,(void**)&g_pDI,NULL)))
+	if(!FAILED(DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,IID_IDirectInput8,(void**)&g_pDI,NULL)))
 	{
 		//******************* Keyboard
 		res=0;
-		if (FAILED(IDirectInput8_CreateDevice(g_pDI,&GUID_SysKeyboard,&g_pKeyboard,NULL))) res=-1;
+		if (FAILED(IDirectInput8_CreateDevice(g_pDI,GUID_SysKeyboard,&g_pKeyboard,NULL))) res=-1;
 		else
 			if (FAILED(IDirectInputDevice8_SetDataFormat(g_pKeyboard,&c_dfDIKeyboard))) res=-1;
 			else
@@ -366,7 +364,7 @@ HRESULT Input_Init(HWND hwnd)
 
 		//******************** Joystick
 		res=0;
-		if(FAILED(IDirectInput8_CreateDevice(g_pDI,&GUID_Joystick,&g_pJoystick,NULL))) res=-1;
+		if(FAILED(IDirectInput8_CreateDevice(g_pDI,GUID_Joystick,&g_pJoystick,NULL))) res=-1;
 		else
 			if(FAILED(IDirectInputDevice8_SetDataFormat(g_pJoystick,&c_dfDIJoystick2))) res=-1;
 			else

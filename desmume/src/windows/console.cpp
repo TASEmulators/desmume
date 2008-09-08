@@ -28,7 +28,7 @@
 #ifdef BETA_VERSION
 #define BUFFER_SIZE 100
 HANDLE hConsole;
-void printlog(char *fmt, ...);
+void printlog(const char *fmt, ...);
 
 void OpenConsole() 
 {
@@ -64,7 +64,7 @@ void CloseConsole() {
 	hConsole = NULL;
 }
 
-void printlog(char *fmt, ...) 
+void printlog(const char *fmt, ...)
 {
 	va_list list;
 	char msg[512];
