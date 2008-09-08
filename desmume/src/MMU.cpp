@@ -3490,18 +3490,6 @@ arm7_write32(void *data, u32 adr, u32 val) {
  * the base memory interfaces
  */
 struct armcpu_memory_iface arm9_base_memory_iface = {
-#ifdef __GNUC__
-  .prefetch32 = arm9_prefetch32,
-  .prefetch16 = arm9_prefetch16,
-
-  .read8 = arm9_read8,
-  .read16 = arm9_read16,
-  .read32 = arm9_read32,
-
-  .write8 = arm9_write8,
-  .write16 = arm9_write16,
-  .write32 = arm9_write32
-#else
   arm9_prefetch32,
   arm9_prefetch16,
 
@@ -3512,22 +3500,9 @@ struct armcpu_memory_iface arm9_base_memory_iface = {
   arm9_write8,
   arm9_write16,
   arm9_write32
-#endif
 };
 
 struct armcpu_memory_iface arm7_base_memory_iface = {
-#ifdef __GNUC__
-  .prefetch32 = arm7_prefetch32,
-  .prefetch16 = arm7_prefetch16,
-
-  .read8 = arm7_read8,
-  .read16 = arm7_read16,
-  .read32 = arm7_read32,
-
-  .write8 = arm7_write8,
-  .write16 = arm7_write16,
-  .write32 = arm7_write32
-#else
   arm7_prefetch32,
   arm7_prefetch16,
 
@@ -3538,7 +3513,6 @@ struct armcpu_memory_iface arm7_base_memory_iface = {
   arm7_write8,
   arm7_write16,
   arm7_write32
-#endif
 };
 
 /*
@@ -3547,19 +3521,6 @@ struct armcpu_memory_iface arm7_base_memory_iface = {
  * memory.
  */
 struct armcpu_memory_iface arm9_direct_memory_iface = {
-#ifdef __GNUC__
-  /* the prefetch is not used */
-  .prefetch32 = NULL,
-  .prefetch16 = NULL,
-
-  .read8 = arm9_read8,
-  .read16 = arm9_read16,
-  .read32 = arm9_read32,
-
-  .write8 = arm9_write8,
-  .write16 = arm9_write16,
-  .write32 = arm9_write32
-#else
   NULL,
   NULL,
 
@@ -3570,5 +3531,4 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
   arm9_write8,
   arm9_write16,
   arm9_write32
-#endif
 };

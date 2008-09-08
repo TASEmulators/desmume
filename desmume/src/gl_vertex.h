@@ -26,7 +26,7 @@
 #include "registers.h"
 
 #define CHECK_3D_ATTEMPT attempted_3D_op=TRUE;
-BOOL attempted_3D_op;
+extern BOOL attempted_3D_op;
 
 #define MTX_MODE_PROJECTION 0
 #define MTX_MODE_POSITION   1

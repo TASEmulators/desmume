@@ -18,8 +18,8 @@
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-#include "SDL.h"
-#include "SDL_thread.h"
+#include <SDL/SDL.h>
+#include <SDL/SDL_thread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <libgen.h>
@@ -287,7 +287,7 @@ createThread_gdb( void (*thread_function)( void *data),
 void
 joinThread_gdb( void *thread_handle) {
   int ignore;
-  SDL_WaitThread( thread_handle, &ignore);
+  SDL_WaitThread( (SDL_Thread*)thread_handle, &ignore);
 }
 
 

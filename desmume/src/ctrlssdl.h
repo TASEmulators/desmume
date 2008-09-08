@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 //#include <pthread.h>
-#include <SDL.h>
+#include <SDL/SDL.h>
 #include "MMU.h"
 
 #include "types.h"
@@ -55,13 +55,13 @@
 #define KEY_BOOST		14
 
 /* Keypad key names */
-const char *key_names[NB_KEYS];
+extern const char *key_names[NB_KEYS];
 /* Current keyboard configuration */
-u16 keyboard_cfg[NB_KEYS];
+extern u16 keyboard_cfg[NB_KEYS];
 /* Current joypad configuration */
-u16 joypad_cfg[NB_KEYS];
+extern u16 joypad_cfg[NB_KEYS];
 /* Number of detected joypads */
-u16 nbr_joy;
+extern u16 nbr_joy;
 
 #ifndef GTK_UI
 struct mouse_status
@@ -72,7 +72,7 @@ struct mouse_status
   BOOL down;
 };
 
-struct mouse_status mouse;
+extern mouse_status mouse;
 
 void set_mouse_coord(signed long x,signed long y);
 #endif // !GTK_UI

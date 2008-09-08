@@ -48,7 +48,7 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 	if (!e)
 		return NULL;
 
-	dir = malloc(sizeof(FsLinuxDir));
+	dir = (FsLinuxDir*)malloc(sizeof(FsLinuxDir));
 	dir->dir = tmp;
 
 	strcpy(entry->cFileName, e->d_name);
@@ -72,7 +72,7 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 }
 
 int FsReadNext(void * search, FsEntry * entry) {
-	FsLinuxDir * dir = search;
+	FsLinuxDir * dir = (FsLinuxDir*)search;
 	struct dirent * e;
 	struct stat s;
 	char buffer[1024];
