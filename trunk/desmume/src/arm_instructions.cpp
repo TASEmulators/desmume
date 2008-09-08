@@ -1335,8 +1335,8 @@ static u32 FASTCALL  OP_SBC_IMM_VAL(armcpu_t *cpu)
      }\
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);\
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);\
-	 cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(v, (cpu->CPSR.bits.C?0:0x80000000), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]));\
-     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, (cpu->CPSR.bits.C?0:0x80000000), tmp) | SIGNED_UNDERFLOW(tmp, shift_op, cpu->R[REG_POS(i,12)]);\
+     cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(v, shift_op, cpu->R[REG_POS(i,12)]);\
+     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, shift_op, cpu->R[REG_POS(i,12)]);\
      return a; \
      }
 
@@ -1508,8 +1508,8 @@ static u32 FASTCALL  OP_RSC_IMM_VAL(armcpu_t *cpu)
           }\
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);\
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);\
-     cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(shift_op, (cpu->CPSR.bits.C?0:0x80000000), tmp)) & (!UNSIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]));\
-     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(shift_op, (cpu->CPSR.bits.C?0:0x80000000), tmp) | SIGNED_UNDERFLOW(tmp, v, cpu->R[REG_POS(i,12)]);\
+	 cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(v, shift_op, cpu->R[REG_POS(i,12)]);\
+     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(v, shift_op, cpu->R[REG_POS(i,12)]);\
      return a; \
      }
 
@@ -1972,184 +1972,85 @@ static u32 FASTCALL  OP_ORR_IMM_VAL(armcpu_t *cpu)
      OP_ORR(1, 3);
 }
 
+#define OP_ORRS(a,b) \
+     { \
+     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op; \
+     if(REG_POS(i,12)==15) \
+     { \
+          Status_Reg SPSR = cpu->SPSR; \
+          armcpu_switchMode(cpu, SPSR.bits.mode); \
+          cpu->CPSR=SPSR; \
+          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1)); \
+          cpu->next_instruction = cpu->R[15]; \
+          return b; \
+     } \
+     cpu->CPSR.bits.C = c; \
+     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]); \
+     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0); \
+     return a; \
+     }
+
 static u32 FASTCALL  OP_ORR_S_LSL_IMM(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_LSL_IMM;
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 4;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 2;
+     OP_ORRS(2,4);
 }
 
 static u32 FASTCALL  OP_ORR_S_LSL_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_LSL_REG;
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 5;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 3;
+     OP_ORRS(3,5);
 }
 
 static u32 FASTCALL  OP_ORR_S_LSR_IMM(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_LSR_IMM;            
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 4;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 2;
+     OP_ORRS(2,4);
 }
 
 static u32 FASTCALL  OP_ORR_S_LSR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_LSR_REG;             
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 5;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 3;
+     OP_ORRS(3,5);
 }
 
 static u32 FASTCALL  OP_ORR_S_ASR_IMM(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_ASR_IMM;
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 4;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 2;
+     OP_ORRS(2,4);
 }
 
 static u32 FASTCALL  OP_ORR_S_ASR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_ASR_REG;                     
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 5;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 3;
+     OP_ORRS(3,5);
 }
 
 static u32 FASTCALL  OP_ORR_S_ROR_IMM(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_ROR_IMM;
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 4;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 2;
+     OP_ORRS(2,4);
 }
 
 static u32 FASTCALL  OP_ORR_S_ROR_REG(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_ROR_REG;
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 5;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 3;
+     OP_ORRS(3,5);
 }
 
 static u32 FASTCALL  OP_ORR_S_IMM_VAL(armcpu_t *cpu)
 {
      u32 i = cpu->instruction;
      S_IMM_VALUE;
-     cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] | shift_op;
-     if(REG_POS(i,12)==15)
-     {
-          Status_Reg SPSR = cpu->SPSR;
-          armcpu_switchMode(cpu, SPSR.bits.mode);
-          cpu->CPSR=SPSR;
-          cpu->R[15] &= (0XFFFFFFFC|(((u32)SPSR.bits.T)<<1));
-          cpu->next_instruction = cpu->R[15];
-          return 4;
-     }
-     cpu->CPSR.bits.C = c;
-     cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);
-     cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);
-     return 2;
+     OP_ORRS(2,4);
 }
 
 //------------------MOV-------------------
