@@ -542,7 +542,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\AboutBox.c"
+				RelativePath=".\AboutBox.cpp"
 				>
 			</File>
 			<File
@@ -562,15 +562,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\colorctrl.c"
+				RelativePath=".\colorctrl.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\ConfigKeys.c"
+				RelativePath=".\ConfigKeys.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\console.c"
+				RelativePath=".\console.cpp"
 				>
 			</File>
 			<File
@@ -578,7 +578,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CWindow.c"
+				RelativePath=".\CWindow.cpp"
 				>
 			</File>
 			<File
@@ -590,7 +590,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\disView.c"
+				RelativePath=".\disView.cpp"
 				>
 			</File>
 			<File
@@ -598,7 +598,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\FirmConfig.c"
+				RelativePath=".\FirmConfig.cpp"
 				>
 			</File>
 			<File
@@ -610,7 +610,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ginfo.c"
+				RelativePath=".\ginfo.cpp"
 				>
 			</File>
 			<File
@@ -618,15 +618,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\IORegView.c"
+				RelativePath=".\IORegView.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\lightView.c"
+				RelativePath=".\lightView.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\main.c"
+				RelativePath=".\main.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -662,7 +662,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\mapView.c"
+				RelativePath=".\mapView.cpp"
 				>
 			</File>
 			<File
@@ -769,7 +769,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\matrixView.c"
+				RelativePath=".\matrixView.cpp"
 				>
 			</File>
 			<File
@@ -777,7 +777,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\memView.c"
+				RelativePath=".\memView.cpp"
 				>
 			</File>
 			<File
@@ -789,15 +789,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\oamView.c"
+				RelativePath=".\oamView.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\OGLRender.c"
+				RelativePath=".\OGLRender.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\palView.c"
+				RelativePath=".\palView.cpp"
 				>
 			</File>
 			<File
@@ -813,7 +813,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\snddx.c"
+				RelativePath=".\snddx.cpp"
 				>
 			</File>
 			<File
@@ -825,7 +825,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\tileView.c"
+				RelativePath=".\tileView.cpp"
 				>
 			</File>
 			<File
