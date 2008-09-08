@@ -80,7 +80,7 @@ LRESULT CALLBACK ColorCtrl_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 LRESULT ColorCtrl_OnNCCreate(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	// Allocate a new CustCtrl structure for this window.
-	ColorCtrl* pCtrl = malloc(sizeof(ColorCtrl));
+	ColorCtrl* pCtrl = (ColorCtrl*)malloc(sizeof(ColorCtrl));
 
 	// Failed to allocate, stop window creation.
 	if(pCtrl == NULL) 

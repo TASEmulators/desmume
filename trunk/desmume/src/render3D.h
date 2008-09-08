@@ -27,6 +27,10 @@
 #define CALL_CONVENTION
 #endif
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
 /*
 enum DRIVER_3D
 {
@@ -141,5 +145,9 @@ extern GPU3DInterface gpu3DNull;
 extern GPU3DInterface *gpu3D;
 
 void NDS_3D_SetDriver (int core3DIndex);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif

@@ -33,16 +33,19 @@
 	#include <windows.h>
 	#include <gl/gl.h>
 	#include <gl/glext.h>
+	#include "console.h"
 #else
 	#define __forceinline
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #endif
 
+#include "../types.h"
 #include "../debug.h"
 #include "../MMU.h"
 #include "../bits.h"
 #include "../matrix.h"
+#include "../NDSSystem.h"
 #include "OGLRender.h"
 
 
@@ -284,7 +287,9 @@ static void NDS_3D_UpdateToonTable(void* toonTable) {
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
 
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
-OGLEXT(PFNGLGETSHADERSOURCEPROC,glShaderSource)
+//zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
+typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, GLchar **source, GLsizei *length);
+OGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
 OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
 OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
@@ -390,7 +395,7 @@ char NDS_glInit(void)
 	MatrixInit (mtxTemporal);
 
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
-	INITOGLEXT(PFNGLGETSHADERSOURCEPROC,glShaderSource)
+	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
 	INITOGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
 	INITOGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
@@ -401,7 +406,7 @@ char NDS_glInit(void)
 	if(glCreateShader && glShaderSource && glCompileShader && glCreateProgram && glAttachShader && glLinkProgram && glUseProgram && glGetShaderInfoLog)
 	{
 		{
-			glGenTextures (MAX_TEXTURE, &oglToonTableTextureID);
+			glGenTextures (1, &oglToonTableTextureID);
 			glBindTexture(GL_TEXTURE_1D,oglToonTableTextureID);
 			glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -410,8 +415,8 @@ char NDS_glInit(void)
 		}
 		{
 			char buf[10000];
-			const char* toonShaderSource[] = {
-				"uniform sampler2D tex2; \
+			const char* toonShaderSource[] = {"\
+				uniform sampler2D tex2; \
 				uniform sampler1D tex1; \
 				void main() {\
 					gl_FragColor = gl_Color; \
@@ -424,8 +429,7 @@ char NDS_glInit(void)
 
 			toonShader = glCreateShader(GL_FRAGMENT_SHADER); 
 			toonProgram = glCreateProgram();
-
-			glShaderSource(toonShader, 1, toonShaderSource, 0);
+			glShaderSource(toonShader, 1, (GLchar**)toonShaderSource, 0);
 			glCompileShader(toonShader);
 			glGetShaderInfoLog(toonShader,10000,0,buf);
 
@@ -695,16 +699,14 @@ __forceinline void NDS_glMultMatrix4x4(signed long v)
 //						txt_slot_size=txt_slot_current_size=0x020000;\
 //					}
 
+//zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
 #define CHECKSLOT txt_slot_current_size--;\
 					if (txt_slot_current_size<=0)\
 					{\
 						txt_slot_current++;\
-						*adr=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];\
+						adr=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];\
 						txt_slot_size=txt_slot_current_size=0x020000;\
 					}
-
-
-
 
 //todo - make all color conversions go through a properly spread table!!
 
@@ -762,7 +764,6 @@ __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 
 static void DebugDumpTexture(int which)
 {
-	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
 	static int ctr = 0;
 	char fname[100];
 	FILE* outf;
@@ -777,8 +778,6 @@ static void DebugDumpTexture(int which)
 			      texMAP);
 
 	NDS_WriteBMP_32bppBuffer(texcache[which].sizeX,texcache[which].sizeY,texMAP,fname);
-	
-
 }
 
 //================================================================================
@@ -971,9 +970,9 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				unsigned int * dst = (unsigned int *)texMAP;
 				if ( (texcache[i].frm & 0xc000) == 0x8000)
 					// texel are in slot 2
-					slot1=(const unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
+					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
 				else 
-					slot1=(const unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
+					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
 
 				for (y = 0; y < (texcache[i].sizeY>>2); y ++)
 				{
@@ -1048,7 +1047,8 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 								if (txt_slot_current_size<=0)
 								{
 									txt_slot_current++;
-									*map=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];
+									//zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
+									map=(unsigned int*)ARM9Mem.textureSlotAddr[txt_slot_current];
 									//map-=txt_slot_size>>2; //zero 8/25/08 - I dont understand this. it broke my game.
 									txt_slot_size=txt_slot_current_size=0x020000;
 								}
@@ -1092,7 +1092,8 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 					if (txt_slot_current_size<=0)
 					{
 						txt_slot_current++;
-						*map=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];
+						//zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
+						map=(unsigned short *)ARM9Mem.textureSlotAddr[txt_slot_current];
 						map-=txt_slot_size>>1;
 						txt_slot_size=txt_slot_current_size=0x020000;
 					}

@@ -34,8 +34,7 @@
 #include "../debug.h"
 #include "../NDSSystem.h"
 
-char IniName[MAX_PATH];
-u32 keytab[12];
+static char IniName[MAX_PATH];
 
 static char nickname_buffer[11];
 static char message_buffer[27];

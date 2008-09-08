@@ -24,7 +24,6 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
-extern unsigned long keytab[12];
 extern const DWORD tabkey[48];
 extern DWORD ds_up;
 extern DWORD ds_down;
@@ -52,5 +51,6 @@ HRESULT Input_DeInit	(void);
 void Input_Process		(void);
 
 BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
+void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
 
 #endif

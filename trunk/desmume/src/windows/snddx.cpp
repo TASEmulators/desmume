@@ -17,6 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <stdio.h>
 #include <dsound.h>
 #ifdef __MINGW32__
 // I have to do this because for some reason because the dxerr8.h header is fubared
