@@ -145,7 +145,7 @@
 				WarningLevel="1"
 				DebugInformationFormat="3"
 				CallingConvention="0"
-				CompileAs="1"
+				CompileAs="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -229,7 +229,7 @@
 				WarningLevel="1"
 				DebugInformationFormat="3"
 				CallingConvention="0"
-				CompileAs="1"
+				CompileAs="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -633,7 +633,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="1"
+						CompileAs="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -641,7 +641,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						CompileAs="1"
+						CompileAs="0"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
