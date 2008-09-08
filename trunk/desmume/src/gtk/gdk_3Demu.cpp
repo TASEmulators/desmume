@@ -155,10 +155,10 @@ init_opengl_gdk_3Demu( void) {
       return 0;
   }
 
-  glconfig = gdk_gl_config_new_by_mode (GDK_GL_MODE_RGBA   |
+  glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGBA   |
                                         GDK_GL_MODE_DEPTH  |
                                         GDK_GL_MODE_STENCIL |
-                                        GDK_GL_MODE_SINGLE);
+                                        GDK_GL_MODE_SINGLE));
   if (glconfig == NULL)
     {
       g_print ("*** No appropriate OpenGL-capable visual found.\n");
