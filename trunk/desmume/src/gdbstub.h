@@ -22,30 +22,29 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
+#endif
+
 typedef void *gdbstub_handle_t;
 
 /*
  * The function interface
  */
 
-gdbstub_handle_t
+EXTERNC gdbstub_handle_t
 createStub_gdb( u16 port,
                 struct armcpu_memory_iface **cpu_memio,
                 struct armcpu_memory_iface *direct_memio);
 
-void
+EXTERNC void
 destroyStub_gdb( gdbstub_handle_t stub);
 
-void
+EXTERNC void
 activateStub_gdb( gdbstub_handle_t stub,
                   struct armcpu_ctrl_iface *cpu_ctrl);
-
-
-#ifdef __cplusplus
-#define EXTERNC extern "C"
-#else
-#define EXTERNC
-#endif
 
   /*
    * An implementation of the following functions is required
@@ -59,3 +58,4 @@ EXTERNC void
 joinThread_gdb( void *thread_handle);
 
 #endif /* End of _GDBSTUB_H_ */
+
