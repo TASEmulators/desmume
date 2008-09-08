@@ -18,6 +18,9 @@ AM_INIT_AUTOMAKE
 dnl -- make sure we have a C compiler
 AC_PROG_CC
 
+dnl -- make sure we have a c++ compiler
+AC_PROG_CXX
+
 dnl -- use ranlib for libraries
 AC_PROG_RANLIB
 

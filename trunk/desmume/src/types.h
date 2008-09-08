@@ -27,6 +27,8 @@
 #define FASTCALL __attribute__((fastcall))
 #elif defined (__i386__)
 #define FASTCALL __attribute__((regparm(3)))
+#elif defined _MSC_VER
+#define FASTCALL __fastcall
 #else
 #define FASTCALL
 #endif

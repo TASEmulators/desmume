@@ -95,7 +95,7 @@ BOOL init_joy( void) {
 
   if ( nbr_joy > 0) {
     open_joysticks =
-      calloc( sizeof ( SDL_Joystick *), nbr_joy);
+      (SDL_Joystick**)calloc( sizeof ( SDL_Joystick *), nbr_joy);
 
     if ( open_joysticks != NULL) {
       for (i = 0; i < nbr_joy; i++)

@@ -35,7 +35,7 @@
 
 #define REG_NUM(i, n) (((i)>>n)&0x7)
 
-extern BOOL execute;
+extern volatile BOOL execute;
 
 // Use this macros for reading/writing, so the GDB stub isn't broken
 #ifdef GDB_STUB

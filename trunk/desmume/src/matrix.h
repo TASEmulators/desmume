@@ -47,15 +47,15 @@ typedef struct MatrixStack
 
 void	MatrixInit				(float *matrix);
 
-void	__fastcall MatrixMultVec3x3		(const float * matrix, float * vecPtr);
-void	__fastcall MatrixMultVec4x4		(const float * matrix, float * vecPtr);
-void	__fastcall MatrixMultiply		(float * matrix, const float * rightMatrix);
-void	__fastcall MatrixTranslate		(float *matrix, const float *ptr);
-void	__fastcall MatrixScale			(float * matrix, const float * ptr);
-float	__fastcall MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
-void	__fastcall MatrixSet				(float *matrix, int x, int y, float value);
-void	__fastcall MatrixCopy				(float * matrixDST, const float * matrixSRC);
-void	__fastcall MatrixIdentity			(float *matrix);
+void	FASTCALL MatrixMultVec3x3		(const float * matrix, float * vecPtr);
+void	FASTCALL MatrixMultVec4x4		(const float * matrix, float * vecPtr);
+void	FASTCALL MatrixMultiply		(float * matrix, const float * rightMatrix);
+void	FASTCALL MatrixTranslate		(float *matrix, const float *ptr);
+void	FASTCALL MatrixScale			(float * matrix, const float * ptr);
+float	FASTCALL MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
+void	FASTCALL MatrixSet				(float *matrix, int x, int y, float value);
+void	FASTCALL MatrixCopy				(float * matrixDST, const float * matrixSRC);
+void	FASTCALL MatrixIdentity			(float *matrix);
 
 void	MatrixTranspose				(float *matrix);
 void	MatrixStackInit				(MatrixStack *stack);

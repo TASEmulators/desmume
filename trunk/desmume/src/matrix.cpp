@@ -33,7 +33,7 @@ void MatrixInit  (float *matrix)
 }
 
 #ifndef SSE2
-void __fastcall MatrixMultVec4x4 (const float *matrix, float *vecPtr)
+void FASTCALL MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
 	float y = vecPtr[1];
@@ -46,7 +46,7 @@ void __fastcall MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 	vecPtr[3] = x * matrix[3] + y * matrix[7] + z * matrix[11] + w * matrix[15];
 }
 
-void __fastcall MatrixMultVec3x3 (const float *matrix, float *vecPtr)
+void FASTCALL MatrixMultVec3x3 (const float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
 	float y = vecPtr[1];
@@ -57,7 +57,7 @@ void __fastcall MatrixMultVec3x3 (const float *matrix, float *vecPtr)
 	vecPtr[2] = x * matrix[2] + y * matrix[6] + z * matrix[10];
 }
 
-void __fastcall MatrixMultiply (float *matrix, const float *rightMatrix)
+void FASTCALL MatrixMultiply (float *matrix, const float *rightMatrix)
 {
 	float tmpMatrix[16];
 
@@ -84,7 +84,7 @@ void __fastcall MatrixMultiply (float *matrix, const float *rightMatrix)
 	memcpy (matrix, tmpMatrix, sizeof(float)*16);
 }
 
-void __fastcall MatrixTranslate	(float *matrix, const float *ptr)
+void FASTCALL MatrixTranslate	(float *matrix, const float *ptr)
 {
 	matrix[12] += (matrix[0]*ptr[0])+(matrix[4]*ptr[1])+(matrix[ 8]*ptr[2]);
 	matrix[13] += (matrix[1]*ptr[0])+(matrix[5]*ptr[1])+(matrix[ 9]*ptr[2]);
@@ -92,7 +92,7 @@ void __fastcall MatrixTranslate	(float *matrix, const float *ptr)
 	matrix[15] += (matrix[3]*ptr[0])+(matrix[7]*ptr[1])+(matrix[11]*ptr[2]);
 }
 
-void __fastcall MatrixScale (float *matrix, const float *ptr)
+void FASTCALL MatrixScale (float *matrix, const float *ptr)
 {
 	matrix[0]  *= ptr[0];
 	matrix[1]  *= ptr[0];
@@ -125,13 +125,13 @@ void MatrixTranspose(float *matrix)
 #undef swap
 }
 
-void __fastcall MatrixIdentity	(float *matrix) //============== TODO
+void FASTCALL MatrixIdentity	(float *matrix) //============== TODO
 {
 	memset (matrix, 0, sizeof(float)*16);
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
+float FASTCALL MatrixGetMultipliedIndex (int index, float *matrix, float *rightMatrix)
 {
 	int iMod = index%4, iDiv = (index>>2)<<2;
 
@@ -139,12 +139,12 @@ float __fastcall MatrixGetMultipliedIndex (int index, float *matrix, float *righ
 			(matrix[iMod+8]*rightMatrix[iDiv+2])+(matrix[iMod+12]*rightMatrix[iDiv+3]);
 }
 
-void __fastcall MatrixSet (float *matrix, int x, int y, float value)	// TODO
+void FASTCALL MatrixSet (float *matrix, int x, int y, float value)	// TODO
 {
 	matrix [x+(y<<2)] = value;
 }
 
-void __fastcall MatrixCopy (float* matrixDST, const float* matrixSRC)
+void FASTCALL MatrixCopy (float* matrixDST, const float* matrixSRC)
 {
 	memcpy ((void*)matrixDST, matrixSRC, sizeof(float)*16);
 }
@@ -268,3 +268,4 @@ void Vector4Copy(float *dst, const float *src)
 }
 
 } //extern "C"
+
