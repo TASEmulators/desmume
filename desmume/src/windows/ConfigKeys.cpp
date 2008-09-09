@@ -244,18 +244,18 @@ BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 				if (g_pKeyboard)
 					for(i=0;i<48;i++)
 						for(j=0;j<12;j++)
-							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&tabkeytext[i]);
+							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)tabkeytext[i]);
 				if (g_pJoystick)
 				{
 					for(i=0;i<4;i++)
 						for(j=0;j<12;j++)
-							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&tabkeytext[i+48]);
+							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)tabkeytext[i+48]);
 					for(i=0;i<g_DIJoycap.dwButtons;i++)
 						for(j=0;j<12;j++)
 						{
 							char buf[30];
 							sprintf(buf,"Joystick B%i",i+1);
-							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)&buf);
+							SendDlgItemMessage(dialog,key_combos[j],CB_ADDSTRING,0,(LPARAM)buf);
 						}
 				}
 				SendDlgItemMessage(dialog,IDC_COMBO1,CB_SETCURSEL,KEY_UP,0);

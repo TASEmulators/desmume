@@ -816,6 +816,8 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	adr=(unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
 	
 	i=texcache_start;
+	
+	if(false)
 	while (TRUE)
 	{
 		if (texcache_stop==i) break;
@@ -974,6 +976,8 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				else 
 					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
 
+				bool dead = false;
+
 				for (y = 0; y < (texcache[i].sizeY>>2); y ++)
 				{
 					u32 tmpPos[4]={(y<<2)*texcache[i].sizeX,((y<<2)+1)*texcache[i].sizeX,
@@ -1042,14 +1046,21 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 								dst[currentPos+1] = tmp_col[(currRow>>2)&3];
 								dst[currentPos+2] = tmp_col[(currRow>>4)&3];
 								dst[currentPos+3] = tmp_col[(currRow>>6)&3];
+
+								if(dead) {
+									dst[currentPos] = 0;
+									dst[currentPos+1] = 0;
+									dst[currentPos+2] = 0;
+									dst[currentPos+3] = 0;
+								}
 								
 								txt_slot_current_size-=4;;
 								if (txt_slot_current_size<=0)
 								{
+									//dead = true;
 									txt_slot_current++;
-									//zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
 									map=(unsigned int*)ARM9Mem.textureSlotAddr[txt_slot_current];
-									//map-=txt_slot_size>>2; //zero 8/25/08 - I dont understand this. it broke my game.
+									map-=txt_slot_size>>2; //this is weird, but necessary since we use map[d] above
 									txt_slot_size=txt_slot_current_size=0x020000;
 								}
 							}
@@ -1092,7 +1103,6 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 					if (txt_slot_current_size<=0)
 					{
 						txt_slot_current++;
-						//zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
 						map=(unsigned short *)ARM9Mem.textureSlotAddr[txt_slot_current];
 						map-=txt_slot_size>>1;
 						txt_slot_size=txt_slot_current_size=0x020000;
@@ -1106,8 +1116,6 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
-
-	DebugDumpTexture(i);
 
 	//============================================================================================
 

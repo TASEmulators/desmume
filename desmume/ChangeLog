@@ -5,11 +5,12 @@
  - Really minor memory access speed up (mainly added for clarity) [shash]
  - Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
  - Changed how depth initial values are calculated (fixes SM64DS skybox) [shash] 
- - Added SSE2 version for matrix [CrazyMax]
+ - Added SSE2 version for some matrix routines [CrazyMax]
  - Some fixes in core (New SMB don't freeze now) [CrazyMax]
  - Some optimizations in code [CrazyMax]
  - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
  - Add many matrix and vector functions to matrix.c [zeromus]
+ - Convert to c++!
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
@@ -25,7 +26,7 @@
  Windows port:
  - Removed the bug report link with a define, to avoid reports from betas/external builds [shash]
  - Added the version on window bar to recognize versions from screenshots [shash]
- - Changed graphics render core to DirectDraw (work fastest) [CrazyMax]
+ - Changed graphics render core to DirectDraw (work faster) [CrazyMax]
  - Some fixes in 3D core OGL (fixed textures) [CrazyMax]
  - Added texture caching (speedup 3D core) [CrazyMax]
  - Fixes clear depth (ex. Castlevania now don't flipping) [NHerve]
@@ -35,7 +36,7 @@
  - Fix errors in matrix operations regarding projection mode and pos-vector mode [zeromus]
  - Fix error in command unpacking which caused some display lists to totally blow up [zeromus]
  - Render shadow volumes [zeromus]
- - Convert alpha and material values from [0,31] ranges to opengl ranges in a more precise way [zeromus]
+ - Convert alpha and material values from [0,31], [0,7] etc ranges to opengl [0,maxint] ranges in a more precise way [zeromus]
  - Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
  - Add many of NHerve's improvements into OGLRender because I was trying to fix all the 3d issues. [zeromus]
  - Toon shading infrastructure and a demo implementation [zeromus]
@@ -43,7 +44,7 @@
  - Defer rendering until after flush. This was a necessary architectural change, as it permits savestate
    for the display list, and allows us eventually to separate the GE emulation from the rendering [zeromus]
  - Fix the 2d/3d compositing well enough for NSMB to fix bugs, but it is still bad [zeromus]
-   
+    
  
 0.7.3 -> 0.8
  Cocoa:
