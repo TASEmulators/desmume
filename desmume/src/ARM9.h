@@ -23,7 +23,7 @@ typedef struct {
         u8 * ObjExtPal[2][2];
         u8 * texPalSlot[4];
 
-  const u8 *textureSlotAddr[4];
+		u8 *textureSlotAddr[4];
 
   u8 *blank_memory[0x20000];
 } ARM9_struct;

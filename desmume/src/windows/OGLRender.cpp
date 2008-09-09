@@ -48,12 +48,15 @@
 #include "../NDSSystem.h"
 #include "OGLRender.h"
 
+#ifndef CTASSERT
+#define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
+#endif
 
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
-static unsigned char  GPU_screen3D		[256*256*4]={0};
-static unsigned char  GPU_screenStencil[256*256]={0};
+static __declspec(align(16)) unsigned char  GPU_screen3D		[256*256*4]={0};
+static __declspec(align(16)) unsigned char  GPU_screenStencil[256*256]={0};
 
 // Acceleration tables
 static float*		float16table = NULL;
@@ -88,6 +91,8 @@ static const unsigned short polyType[4] = {GL_TRIANGLES, GL_QUADS, GL_TRIANGLE_S
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
+
+static bool needRefreshFramebuffer = false;
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
 static const int material_5bit_to_31bit[] = {
@@ -133,7 +138,7 @@ static float fogColor[4] = {0.f};
 static float fogOffset = 0.f;
 static float alphaTestRef = 0.01f;
 
-static float	alphaTestBase = 0.1f;
+static float	alphaTestBase = 0;
 static unsigned long clCmd = 0;
 static unsigned long clInd = 0;
 static unsigned long clInd2 = 0;
@@ -200,10 +205,97 @@ static void twiddleLists() {
 	vertlist->count = 0;
 }
 
+//------------------------------------------------------------
+
+
+#define OGLEXT(x,y) x y;
+#define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
+
+OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
+//zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
+typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, GLchar **source, GLsizei *length);
+OGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
+OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
+OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
+OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
+OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
+OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
+OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+
+//opengl state caching:
+//This is of dubious performance assistance, but it is easy to take out so I am leaving it for now.
+//every function that is xgl* can be replaced with gl* if we decide to rip this out or if anyone else
+//doesnt feel like sticking with it (or if it causes trouble)
+
+void xglDepthFunc(GLenum func) {
+	static GLenum oldfunc = -1;
+	if(oldfunc == func) return;
+	glDepthFunc(oldfunc=func);
+}
+
+void xglPolygonMode(GLenum face,GLenum mode) {
+	static GLenum oldmodes[2] = {-1,-1};
+	switch(face) {
+		case GL_FRONT: if(oldmodes[0]==mode) return; else glPolygonMode(GL_FRONT,oldmodes[0]=mode); return;
+		case GL_BACK: if(oldmodes[1]==mode) return; else glPolygonMode(GL_BACK,oldmodes[1]=mode); return;
+		case GL_FRONT_AND_BACK: if(oldmodes[0]==mode && oldmodes[1]==mode) return; else glPolygonMode(GL_FRONT_AND_BACK,oldmodes[0]=oldmodes[1]=mode);
+	}
+}
+
+void xglUseProgram(GLuint program) {
+	if(!glUseProgram) return;
+	static GLuint oldprogram = -1;
+	if(oldprogram==program) return;
+	glUseProgram(oldprogram=program);
+}
+
+void xglDepthMask (GLboolean flag) {
+	static GLboolean oldflag = -1;
+	if(oldflag==flag) return;
+	glDepthMask(oldflag=flag);
+}
+
+struct GLCaps {
+	u8 caps[0x100];
+	GLCaps() {
+		memset(caps,0xFF,sizeof(caps));
+	}
+};
+static GLCaps glcaps;
+
+void _xglEnable(GLenum cap) {
+	cap -= 0x0B00;
+	if(glcaps.caps[cap] == 0xFF || glcaps.caps[cap] == 0) {
+		glEnable(cap+0x0B00);
+		glcaps.caps[cap] = 1;
+	}
+}
+
+void _xglDisable(GLenum cap) {
+	cap -= 0x0B00;
+	if(glcaps.caps[cap]) {
+		glDisable(cap+0x0B00);
+		glcaps.caps[cap] = 0;
+	}
+}
+
+#define xglEnable(cap) { \
+	CTASSERT((cap-0x0B00)<0x100); \
+	_xglEnable(cap); }
+
+#define xglDisable(cap) {\
+	CTASSERT((cap-0x0B00)<0x100); \
+	_xglDisable(cap); }
+
+
 //================================================= Textures
 #define MAX_TEXTURE 500
-typedef struct
+struct TextureCache
 {
+	TextureCache()
+		: suspectedInvalid(true)
+	{}
+
 	GLenum				id;
 	unsigned int		frm;
 	unsigned int		mode;
@@ -217,7 +309,10 @@ typedef struct
 	float				invSizeY;
 	unsigned char		texture[128*1024]; // 128Kb texture slot
 
-} TextureCache;
+	//set if this texture is suspected be invalid due to a vram reconfigure
+	bool				suspectedInvalid;
+
+} ;
 
 TextureCache	texcache[MAX_TEXTURE+1];
 u32				texcache_count;
@@ -283,20 +378,6 @@ static void NDS_3D_UpdateToonTable(void* toonTable) {
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbToonTable);
 }
 
-#define OGLEXT(x,y) x y;
-#define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
-
-OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
-//zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
-typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, GLchar **source, GLsizei *length);
-OGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
-OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
-OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
-OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
-OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
-OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
-OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
-
 char NDS_glInit(void)
 {
 	int i;
@@ -343,12 +424,14 @@ char NDS_glInit(void)
 #endif
 	glClearColor	(0.f, 0.f, 0.f, 1.f);
 
-	glEnable		(GL_NORMALIZE);
-	glEnable		(GL_DEPTH_TEST);
+	glPixelStorei(GL_PACK_ALIGNMENT,8);
+
+	xglEnable		(GL_NORMALIZE);
+	xglEnable		(GL_DEPTH_TEST);
 	glEnable		(GL_TEXTURE_2D);
 
 	glAlphaFunc		(GL_GREATER, 0);
-	glEnable		(GL_ALPHA_TEST);
+	xglEnable		(GL_ALPHA_TEST);
 
 	glGenTextures (MAX_TEXTURE, &oglTempTextureID[0]);
 
@@ -710,6 +793,22 @@ __forceinline void NDS_glMultMatrix4x4(signed long v)
 
 //todo - make all color conversions go through a properly spread table!!
 
+//I think this is slower than the regular memcmp.. doesnt make sense to me, but my
+//asm optimization knowlege is 15 years old..
+__forceinline int memcmp_slow(const void* src, const void* dst, u32 count) {
+	int retval;
+	__asm {
+		mov [retval], 0;
+		mov ecx, [count];
+		shr ecx, 2;
+		mov esi, [src];
+		mov edi, [dst];
+		repe cmpsd;
+		setc byte ptr [retval];
+	}
+	return retval;
+}
+
 __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 {
 	size_t blockCnt = count / 64;
@@ -781,6 +880,7 @@ static void DebugDumpTexture(int which)
 }
 
 //================================================================================
+static int lastTexture = -1;
 __forceinline void setTexture(unsigned int format, unsigned int texpal)
 {
 	int palSize[7]={32,4,16,256,0,8,32768};
@@ -817,17 +917,27 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	
 	i=texcache_start;
 	
-	if(false)
+	//if(false)
 	while (TRUE)
 	{
 		if (texcache_stop==i) break;
 		if (texcache[i].frm==0) break;
 		if ((texcache[i].frm==format)&&(texcache[i].pal==texpal))
 		{
-			if (!memcmp(adr,texcache[i].texture,imageSize))
+			//TODO - we need to compare the palette also.
+			//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
+			if (!texcache[i].suspectedInvalid || !memcmp(adr,texcache[i].texture,min(imageSize,sizeof(texcache[i].texture))))
 			{
+				texcache[i].suspectedInvalid = false;
 				texcache_count=i;
-				glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+				if(i != lastTexture)
+				{
+					lastTexture = i;
+					glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+					glMatrixMode (GL_TEXTURE);
+					glLoadIdentity ();
+					glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
+				}
 				return;
 			}
 		}
@@ -846,7 +956,10 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 		}
 	}
 
+	lastTexture = i;
 	glBindTexture(GL_TEXTURE_2D, texcache[i].id);
+
+	texcache[i].suspectedInvalid = false;
 	texcache[i].mode=textureMode;
 	texcache[i].pal=texpal;
 	texcache[i].sizeX=sizeX;
@@ -856,10 +969,14 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].invSizeY=1.0f/((float)sizeY*(1<<4));
 	texcache[i].texenv=envMode;
 	//memcpy(texcache[i].texture,adr,imageSize);			//======================= copy
-	memcpy_fast(texcache[i].texture,adr,imageSize);			//======================= copy
+	memcpy_fast(texcache[i].texture,adr,min(imageSize,sizeof(texcache[i].texture)));			//======================= copy
 	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;
+
+	glMatrixMode (GL_TEXTURE);
+	glLoadIdentity ();
+	glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
 
 	if(i==62 || textureMode==1) {
 		int zzz=9;
@@ -1135,29 +1252,32 @@ __forceinline void NDS_glBegin(unsigned long v)
 	tempVertList.count = 0;
 }
 
+//controls states:
+//glStencilFunc
+//glStencilOp
+//glColorMask
+static u32 stencilStateSet = -1;
+
 static void BeginRenderPoly()
 {
 	int enableDepthWrite = 1;
 	u32 tmp=0;
 
-	tempVertList.count = 0;
-
-	glDepthFunc (depthFuncMode);
+	xglDepthFunc (depthFuncMode);
 
 	// Cull face
 	if (cullingMask != 0xC0)
 	{
-		glEnable(GL_CULL_FACE);
+		xglEnable(GL_CULL_FACE);
 		glCullFace(map3d_cull[cullingMask>>6]);
 	}
 	else
-		glDisable(GL_CULL_FACE);
+		xglDisable(GL_CULL_FACE);
 
 	// Alpha value, actually not well handled, 0 should be wireframe
 	if (colorAlpha > 0)
 	{
-		glPolygonMode (GL_FRONT, GL_FILL);
-		glPolygonMode (GL_BACK, GL_FILL);
+		xglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 
 		//non-31 alpha polys are translucent
 		if(colorAlpha != 0x7FFFFFFF)
@@ -1165,21 +1285,10 @@ static void BeginRenderPoly()
 	}
 	else
 	{
-		glPolygonMode (GL_FRONT, GL_LINE);
-		glPolygonMode (GL_BACK, GL_LINE);
+		xglPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-	// texture environment
 	setTexture(textureFormat, texturePalette);
-	//=================
-	if (texcache_count!=-1)
-	{
-		texCoordinateTransform = texcache[texcache_count].coord;
-
-		glMatrixMode (GL_TEXTURE);
-		glLoadIdentity ();
-		glScaled (texcache[texcache_count].invSizeX, texcache[texcache_count].invSizeY, 1.0f);
-	}
 
 	//a5i3 or a3i5 textures are translucent
 	alphaDepthWrite = 0; //zero - as a hack, we are never going to write depth buffer for alpha values
@@ -1194,43 +1303,48 @@ static void BeginRenderPoly()
 	//handle shadow polys
 	if(envMode == 3)
 	{
-		glEnable(GL_STENCIL_TEST);
+		xglEnable(GL_STENCIL_TEST);
 		if(polyID == 0) {
-			//when the polyID is zero, we are writing the shadow mask.
-			//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
-			//do not write color or depth information.
-			glStencilFunc(GL_ALWAYS,2,255);
-			glStencilOp(GL_KEEP,GL_REPLACE,GL_KEEP);
-			glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 			enableDepthWrite = 1;
+			if(stencilStateSet!=0) {
+				stencilStateSet = 0;
+				//when the polyID is zero, we are writing the shadow mask.
+				//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
+				//do not write color or depth information.
+				glStencilFunc(GL_ALWAYS,2,255);
+				glStencilOp(GL_KEEP,GL_REPLACE,GL_KEEP);
+				glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
+			}
 		} else {
-			//when the polyid is nonzero, we are drawing the shadow poly.
-			//only draw the shadow poly where the stencilbuf==1.
-			//I am not sure whether to update the depth buffer here--so I chose not to.
-			glStencilFunc(GL_EQUAL,2,255);
-			glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 			enableDepthWrite = 0;
+			if(stencilStateSet!=1) {
+				stencilStateSet = 1;
+				//when the polyid is nonzero, we are drawing the shadow poly.
+				//only draw the shadow poly where the stencilbuf==1.
+				//I am not sure whether to update the depth buffer here--so I chose not to.
+				glStencilFunc(GL_EQUAL,2,255);
+				glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
+				glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+			}
 		}
 	} else {
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_ALWAYS,1,255);
-		glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
-		glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+		xglEnable(GL_STENCIL_TEST);
+		if(stencilStateSet!=2) {
+			stencilStateSet=2;
+			glStencilFunc(GL_ALWAYS,1,255);
+			glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
+			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+		}
 	}
 
 	//handle toon rendering
 	if(glUseProgram) {
 		if(envMode == 2) {
-			glUseProgram(toonProgram);
-		} else glUseProgram(0);
+			xglUseProgram(toonProgram);
+		} else xglUseProgram(0);
 	}
 
-	glDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
-
-	//just to be sure
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	xglDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 }
 
 __forceinline void NDS_glEnd (void)
@@ -1427,60 +1541,6 @@ __forceinline int NDS_glGetNumVertex (void)
 	return 0;
 }
 
-//NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
-//zeromus post-mod3: fix even better
-__forceinline void NDS_glGetLine (int line, unsigned short * dst)
-{
-	int		i, t;
-	u8	*screen3D		= (u8 *)&GPU_screen3D	[(191-(line%192))*1024];
-	u8  *screenStencil = (u8*)&GPU_screenStencil[(191-(line%192))*256];
-
-	//the renderer clears the stencil to 0
-	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
-	//(it also sets it to 2 under some circumstances when rendering shadow volumes)
-	//so, we COULD use a zero stencil value to indicate that nothing should get composited.
-	//in fact, we are going to do that to fix some problems. 
-	//but beware that it i figure it might could CAUSE some problems
-
-	//this alpha compositing blending logic isnt thought through at all
-	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
-
-	u32		a,r,g,b,stencil,oldcolor,oldr,oldg,oldb;
-
-	for(i = 0, t=0; i < 256; i++)
-	{
-		stencil = screenStencil[i];
-
-		//you would use this if you wanted to use the stencil buffer to make decisions here
-		if(!stencil) continue;
-
-		t=i*4;
-		r = screen3D[t+0];
-		g = screen3D[t+1];
-		b = screen3D[t+2];
-		a = screen3D[t+3];
-
-		if(a != 0xFF && a != 0) {
-			int zzz=9;
-		}
-
-		oldcolor = RGB15TO32(dst[i],0);
-		oldr = oldcolor&0xFF;
-		oldg = (oldcolor>>8)&0xFF;
-		oldb = (oldcolor>>16)&0xFF;
-
-		r = (r*a + oldr*(255-a)) / 255;
-		g = (g*a + oldg*(255-a)) / 255;
-		b = (b*a + oldb*(255-a)) / 255;
-
-		r=min(255,r);
-		g=min(255,g);
-		b=min(255,b);
-
-		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3);
-	}
-}
-
 static void InstallPolygonAttrib(unsigned long val)
 {
 	// Light enable/disable
@@ -1510,92 +1570,6 @@ __forceinline void NDS_glPolygonAttrib (unsigned long val)
 {
 	polyAttr = val;
 	InstallPolygonAttrib(polyAttr);
-}
-
-__forceinline void NDS_glFlush(unsigned long v)
-{
-	u32 wbuffer = v&1;
-	u32 sortmode = (v>>1)&1;
-
-	// Set back some secure render states
-	glPolygonMode	(GL_BACK,  GL_FILL);
-	glPolygonMode	(GL_FRONT, GL_FILL);
-
-	glDepthMask		(GL_TRUE);
-	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	//render display list
-	//TODO - properly doublebuffer the display lists
-	{
-		int i;
-		for(i=0;i<polylist->count;i++) {
-			POLY *poly = &polylist->list[i];
-			int type = poly->type;
-			int j;
-			InstallPolygonAttrib(poly->polyAttr);
-			textureFormat = poly->texParam;
-			texturePalette = poly->texPalette;
-			BeginRenderPoly();
-			
-			//since we havent got the whole pipeline working yet, lets use opengl for the projection
-			glMatrixMode(GL_PROJECTION);
-			glLoadMatrixf(poly->projMatrix);
-
-			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
-			for(j=0;j<type;j++) {
-				VERT* vert = &vertlist->list[poly->vertIndexes[j]];
-				
-				//float tempCoord[4];
-				//Vector4Copy(tempCoord,vert->coord);
-				//we havent got the whole pipeline working yet, so we cant do this
-				////convert from ds device coords to opengl
-				//tempCoord[0] *= 2;
-				//tempCoord[1] *= 2;
-				//tempCoord[0] -= 1;
-				//tempCoord[1] -= 1;
-
-				//todo - edge flag?
-				glTexCoord2fv(vert->texcoord);
-				glColor4iv(vert->color);
-				//glVertex3fv(tempCoord);
-				glVertex3fv(vert->coord);
-			}
-			glEnd();
-		}
-	}
-
-	twiddleLists();
-
-	//reset gpu state
-	clCmd = 0;
-	clInd = 0;
-
-	//capture rendering results
-	glFlush();
-	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);	
-	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
-
-	//debug: view depth buffer via color buffer for debugging
-	{
-		//int ctr=0;
-		//for(ctr=0;ctr<256*192;ctr++) {
-		//	float zval = GPU_screen3Ddepth[ctr];
-		//	u8* colorPtr = GPU_screen3D+ctr*3;
-		//	if(zval<0) {
-		//		colorPtr[0] = 255;
-		//		colorPtr[1] = 0;
-		//		colorPtr[2] = 0;
-		//	} else if(zval>1) {
-		//		colorPtr[0] = 0;
-		//		colorPtr[1] = 0;
-		//		colorPtr[2] = 255;
-		//	} else {
-		//		colorPtr[0] = colorPtr[1] = colorPtr[2] = zval*255;
-		//		//printlog("%f %f %d\n",zval, zval*255,colorPtr[0]);
-		//	}
-
-		//}
-	}
 }
 
 /*
@@ -1734,6 +1708,7 @@ __forceinline void NDS_glLightColor (unsigned long v)
 __forceinline void NDS_glAlphaFunc(unsigned long v)
 {
 	alphaTestRef = (v&31)/31.f;
+	glAlphaFunc	(GL_GREATER, alphaTestBase);
 }
 
 __forceinline void NDS_glControl(unsigned long v)
@@ -1749,11 +1724,11 @@ __forceinline void NDS_glControl(unsigned long v)
 
 	if(v&(1<<2))
 	{
-		//glAlphaFunc	(GL_GREATER, alphaTestBase);
+		glAlphaFunc	(GL_GREATER, alphaTestBase);
 	}
 	else
 	{
-		//glAlphaFunc	(GL_GREATER, 0.1f);
+		glAlphaFunc	(GL_GREATER, 0);
 	}
 
 	if(v&(1<<3))
@@ -1875,6 +1850,181 @@ __forceinline void NDS_glNormal(unsigned long v)
 
 		for(c=0;c<3;c++)
 			colorRGB[c] = material_5bit_to_31bit[min(31,vertexColor[c])];
+	}
+}
+
+static bool flushPending = false;
+static u32 flush_wbuffer;
+static u32 flush_sortmode;
+
+void NDS_glFlush(unsigned long v)
+{
+	flushPending = true;
+	flush_wbuffer = v&1;
+	flush_sortmode = (v>>1)&1;
+}
+
+void GL_Draw()
+{
+	xglDepthMask		(GL_TRUE);
+	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	//render display list
+	//TODO - properly doublebuffer the display lists
+	{
+
+		u32 lastTextureFormat, lastTexturePalette, lastPolyAttr;
+
+		for(int i=0;i<polylist->count;i++) {
+			POLY *poly = &polylist->list[i];
+			int type = poly->type;
+
+			//a very macro-level state caching approach:
+			//these are the only things which control the GPU rendering state.
+			if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
+			{
+				InstallPolygonAttrib(lastPolyAttr=poly->polyAttr);
+				lastTextureFormat = textureFormat = poly->texParam;
+				lastTexturePalette = texturePalette = poly->texPalette;
+				BeginRenderPoly();
+			}
+			
+			//since we havent got the whole pipeline working yet, lets use opengl for the projection
+			glMatrixMode(GL_PROJECTION);
+			glLoadMatrixf(poly->projMatrix);
+
+			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
+			for(int j=0;j<type;j++) {
+				VERT* vert = &vertlist->list[poly->vertIndexes[j]];
+				
+				//float tempCoord[4];
+				//Vector4Copy(tempCoord,vert->coord);
+				//we havent got the whole pipeline working yet, so we cant do this
+				////convert from ds device coords to opengl
+				//tempCoord[0] *= 2;
+				//tempCoord[1] *= 2;
+				//tempCoord[0] -= 1;
+				//tempCoord[1] -= 1;
+
+				//todo - edge flag?
+				glTexCoord2fv(vert->texcoord);
+				glColor4iv(vert->color);
+				//glVertex3fv(tempCoord);
+				glVertex3fv(vert->coord);
+			}
+			glEnd();
+		}
+	}
+
+	//since we just redrew, we need to refresh the framebuffers
+	needRefreshFramebuffer = true;
+
+	twiddleLists();
+
+	//reset GE state
+	clCmd = 0;
+	clInd = 0;
+}
+
+void NDS_3D_VBlankSignal()
+{
+	//the 3d buffers are swapped when a vblank begins.
+	//so, if we have a redraw pending, now is a safe time to do it
+	if(!flushPending) return;
+	flushPending = false;
+	GL_Draw();
+}
+
+void NDS_3D_VramReconfigureSignal()
+{
+	//well, this is a very blunt instrument.
+	//lets just flag all the textures as invalid.
+	for(int i=0;i<MAX_TEXTURE+1;i++)
+		texcache[i].suspectedInvalid = true;
+}
+
+void GL_ReadFramebuffer()
+{
+	glFinish();
+	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
+
+//debug: view depth buffer via color buffer for debugging
+	//int ctr=0;
+	//for(ctr=0;ctr<256*192;ctr++) {
+	//	float zval = GPU_screen3Ddepth[ctr];
+	//	u8* colorPtr = GPU_screen3D+ctr*3;
+	//	if(zval<0) {
+	//		colorPtr[0] = 255;
+	//		colorPtr[1] = 0;
+	//		colorPtr[2] = 0;
+	//	} else if(zval>1) {
+	//		colorPtr[0] = 0;
+	//		colorPtr[1] = 0;
+	//		colorPtr[2] = 255;
+	//	} else {
+	//		colorPtr[0] = colorPtr[1] = colorPtr[2] = zval*255;
+	//		//printlog("%f %f %d\n",zval, zval*255,colorPtr[0]);
+	//	}
+
+	//}
+}
+
+//NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
+//zeromus post-mod3: fix even better
+__forceinline void NDS_glGetLine (int line, unsigned short * dst)
+{
+	if(needRefreshFramebuffer) {
+		needRefreshFramebuffer = false;
+		GL_ReadFramebuffer();
+	}
+	int		i, t;
+	u8	*screen3D		= (u8 *)&GPU_screen3D	[(191-(line%192))*1024];
+	u8  *screenStencil = (u8*)&GPU_screenStencil[(191-(line%192))*256];
+
+	//the renderer clears the stencil to 0
+	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
+	//(it also sets it to 2 under some circumstances when rendering shadow volumes)
+	//so, we COULD use a zero stencil value to indicate that nothing should get composited.
+	//in fact, we are going to do that to fix some problems. 
+	//but beware that it i figure it might could CAUSE some problems
+
+	//this alpha compositing blending logic isnt thought through at all
+	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
+
+	u32		a,r,g,b,stencil,oldcolor,oldr,oldg,oldb;
+
+	for(i = 0, t=0; i < 256; i++)
+	{
+		stencil = screenStencil[i];
+
+		//you would use this if you wanted to use the stencil buffer to make decisions here
+		if(!stencil) continue;
+
+		t=i*4;
+		r = screen3D[t+0];
+		g = screen3D[t+1];
+		b = screen3D[t+2];
+		a = screen3D[t+3];
+
+		if(a != 0xFF && a != 0) {
+			int zzz=9;
+		}
+
+		oldcolor = RGB15TO32(dst[i],0);
+		oldr = oldcolor&0xFF;
+		oldg = (oldcolor>>8)&0xFF;
+		oldb = (oldcolor>>16)&0xFF;
+
+		r = (r*a + oldr*(255-a)) / 255;
+		g = (g*a + oldg*(255-a)) / 255;
+		b = (b*a + oldb*(255-a)) / 255;
+
+		r=min(255,r);
+		g=min(255,g);
+		b=min(255,b);
+
+		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3);
 	}
 }
 
@@ -2405,7 +2555,9 @@ GPU3DInterface gpu3Dgl = {	NDS_glInit,
 							NDS_glVecTest,
 							NDS_glGetPosRes,
 							NDS_glGetVecRes,
-							NDS_3D_UpdateToonTable
+							NDS_3D_UpdateToonTable,
+							NDS_3D_VBlankSignal,
+							NDS_3D_VramReconfigureSignal,
 };
 
 

@@ -1022,6 +1022,8 @@ NDS_exec(s32 nb, BOOL force)
               nds.lignerendu = FALSE;
               if(nds.VCount==192)
                 {
+					gpu3D->NDS_3D_VBlankSignal();
+
                   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
                   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
                   NDS_ARM9VBlankInt();
