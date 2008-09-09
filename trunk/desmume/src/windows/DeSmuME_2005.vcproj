@@ -111,6 +111,7 @@
 			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -135,16 +136,19 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION"
+				StringPooling="true"
 				ExceptionHandling="0"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
 				WarningLevel="1"
 				DebugInformationFormat="3"
-				CallingConvention="0"
+				CallingConvention="1"
 				CompileAs="0"
 			/>
 			<Tool
@@ -195,6 +199,7 @@
 			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -219,16 +224,19 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION"
+				StringPooling="true"
 				ExceptionHandling="0"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
 				WarningLevel="1"
 				DebugInformationFormat="3"
-				CallingConvention="0"
+				CallingConvention="1"
 				CompileAs="0"
 			/>
 			<Tool
@@ -807,10 +815,26 @@
 			<File
 				RelativePath="..\ROMReader.cpp"
 				>
+				<FileConfiguration
+					Name="Release (SSE2)|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\saves.cpp"
 				>
+				<FileConfiguration
+					Name="Release (SSE2)|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CallingConvention="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\snddx.cpp"
@@ -832,6 +856,10 @@
 				RelativePath="..\wifi.cpp"
 				>
 			</File>
+			<Filter
+				Name="windows"
+				>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"

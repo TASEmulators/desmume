@@ -1,5 +1,7 @@
 #ifndef _ZZIP__MSVC_H
 #define _ZZIP__MSVC_H 1
+
+#define _zzip_calltype __cdecl
  
 /* zzip/_msvc.h. Generated automatically at end of configure. */
 /* config.h.in.  Generated from configure.ac by autoheader.  */

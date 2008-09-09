@@ -21,11 +21,8 @@
 #ifndef GPU_3D
 #define GPU_3D
 
-#ifdef _MSC_VER
-#define CALL_CONVENTION __cdecl
-#else
+//not using this right now
 #define CALL_CONVENTION
-#endif
 
 /*
 enum DRIVER_3D
@@ -125,7 +122,9 @@ typedef struct GPU3DInterface
 	long (CALL_CONVENTION*  NDS_3D_GetPosRes)			(unsigned int index);
 	long (CALL_CONVENTION*  NDS_3D_GetVecRes)			(unsigned int index);
 
-	void	(CALL_CONVENTION*  NDS_3D_UpdateToonTable)	(void* toonTable);
+	void (CALL_CONVENTION*  NDS_3D_UpdateToonTable)	(void* toonTable);
+	void (CALL_CONVENTION*  NDS_3D_VBlankSignal)	();
+	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
 
 
 } GPU3DInterface;

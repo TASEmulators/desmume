@@ -1060,6 +1060,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 
                                     ARM9Mem.textureSlotAddr[slot_index] =
                                       &ARM9Mem.ARM9_LCD[0x20000 * (adr - REG_VRAMCNTA)];
+									
+									gpu3D->NDS_3D_VramReconfigureSignal();
                                   }
                                 }
                 MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
