@@ -95,7 +95,10 @@ GPU3DInterface gpu3DNull = {
 						NDS_nullFunc8,	// NDS_3D_GetPosRes
 						NDS_nullFunc8,	// NDS_3D_GetVecRes
 
-						NDS_nullFunc12	// NDS_3D_UpdateToonTable
+						NDS_nullFunc12,	// NDS_3D_UpdateToonTable
+
+						NDS_nullFunc2,	// NDS_3D_VBlankSignal
+						NDS_nullFunc2	// NDS_3D_VramReconfigureSignal
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;
