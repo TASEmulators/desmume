@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="DeSmuME_VS2005"
+	Name="DeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
 	TargetFrameworkVersion="131072"
@@ -24,7 +24,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			>
@@ -108,7 +108,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			>
@@ -194,7 +194,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			WholeProgramOptimization="1"
@@ -248,7 +248,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -281,7 +281,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			>
@@ -332,7 +332,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -366,7 +366,7 @@
 		<Configuration
 			Name="Release (SSE2)|Win32"
 			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			WholeProgramOptimization="1"
@@ -391,6 +391,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="2"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
@@ -420,7 +421,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -453,7 +454,7 @@
 		<Configuration
 			Name="Release (SSE2)|x64"
 			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			>
@@ -504,7 +505,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
