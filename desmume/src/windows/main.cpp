@@ -1593,7 +1593,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   //     EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
                   //     NDS_UnPause();
 				  // 	return 0;
-				  case ACCEL_P:
+				  case ACCEL_SPACEBAR:
 				  case IDM_PAUSE:
 					  if (emu_paused) NDS_UnPause();
 					  else NDS_Pause();
