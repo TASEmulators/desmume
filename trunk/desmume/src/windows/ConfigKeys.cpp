@@ -273,6 +273,11 @@ BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 				//SendDlgItemMessage(dialog,IDC_COMBO13,CB_SETCURSEL,KEY_DEBUG,0);
 				break;
 	
+		case WM_CLOSE:
+		case WM_QUIT:
+			EndDialog(dialog,0);
+			return 1;
+			break;
 		case WM_COMMAND:
 				if((HIWORD(wparam)==BN_CLICKED)&&(((int)LOWORD(wparam))==IDC_BUTTON1))
 				{
