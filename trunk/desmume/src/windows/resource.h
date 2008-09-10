@@ -284,6 +284,7 @@
 #define IDC_LIGHT_VIEWER_LIGHT3VECTOR_EDIT 1334
 #define IDM_ABOUT                       40003
 #define ACCEL_P                         40004
+#define ACCEL_SPACEBAR                  40004
 
 // Next default values for new objects
 // 
