@@ -1171,7 +1171,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					  ReleaseCapture();
 				NDS_releasTouch();
              return 0;
-        case WM_COMMAND:
+		case WM_COMMAND:
              switch(LOWORD(wParam))
              {
                   case IDM_OPEN:
