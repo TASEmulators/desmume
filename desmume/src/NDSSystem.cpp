@@ -891,7 +891,8 @@ NDS_exec(s32 nb, BOOL force)
 						nds.ARM9Cycle += 100;
 					else
 						//nds.ARM9Cycle += NDS_ARM9.exec();
-						nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
+						//nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
+						nds.ARM9Cycle += armcpu_exec<0>();
 				}
 			}
 
@@ -924,7 +925,8 @@ NDS_exec(s32 nb, BOOL force)
 						nds.ARM7Cycle += 100;
 					else
 						//nds.ARM7Cycle += (NDS_ARM7.exec()<<1);
-						nds.ARM7Cycle += (armcpu_exec(&NDS_ARM7)<<1);
+						//nds.ARM7Cycle += (armcpu_exec(&NDS_ARM7)<<1);
+						nds.ARM7Cycle += (armcpu_exec<1>()<<1);
 				}
 			}
 		}
