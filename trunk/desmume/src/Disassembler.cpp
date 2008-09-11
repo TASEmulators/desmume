@@ -3759,6 +3759,7 @@ static char * OP_BL_THUMB(u32 adr, u32 i, char * txt)
 #define CALLTYPE     
 #define NOM_TAB     des_arm_instructions_set
 #define NOM_THUMB_TAB     des_thumb_instructions_set
+#define TABDECL(x) x
 
 #include "instruction_tabdef.inc"
 #include "thumb_tabdef.inc"

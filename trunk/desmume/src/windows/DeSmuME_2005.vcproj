@@ -614,7 +614,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\gdbstub\gdbstub.c"
+				RelativePath="..\gdbstub\gdbstub.cpp"
 				>
 			</File>
 			<File

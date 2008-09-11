@@ -28,6 +28,7 @@
 
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
+#define ARMPROC (PROCNUM?NDS_ARM7:NDS_ARM9)
 
 #define CODE(i)     (((i)>>25)&0X7)
 #define OPCODE(i)   (((i)>>21)&0xF)
@@ -227,8 +228,10 @@ int armcpu_new( armcpu_t *armcpu, u32 id);
 #endif
 void armcpu_init(armcpu_t *armcpu, u32 adr);
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
-static u32 armcpu_prefetch(armcpu_t *armcpu);
-u32 armcpu_exec(armcpu_t *armcpu);
+
+
+template<int PROCNUM> u32 armcpu_exec();
+
 BOOL armcpu_irqExeption(armcpu_t *armcpu);
 //BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
 BOOL
@@ -275,5 +278,9 @@ static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
 			break ;
 	}
 }
+
+//stores the currently executing arm cpu.
+//we poke values in here instead of passing them around constantly.
+extern armcpu_t *armcpu_curr;
 
 #endif

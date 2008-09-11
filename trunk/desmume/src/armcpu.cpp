@@ -26,6 +26,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+template<u32> static u32 armcpu_prefetch();
+
+inline u32 armcpu_prefetch(armcpu_t *armcpu) { 
+	if(armcpu->proc_ID==0) return armcpu_prefetch<0>();
+	else return armcpu_prefetch<1>();
+}
+
 const unsigned char arm_cond_table[16*16] = {
     /* N=0, Z=0, C=0, V=0 */
     0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,
@@ -351,9 +358,11 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 	return oldmode;
 }
 
+template<u32 PROCNUM>
 static u32
-armcpu_prefetch(armcpu_t *armcpu)
+armcpu_prefetch()
 {
+	armcpu_t* armcpu = &ARMPROC;
 	u32 temp_instruction;
 
 	if(armcpu->CPSR.bits.T == 0)
@@ -370,14 +379,14 @@ armcpu_prefetch(armcpu_t *armcpu)
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		armcpu->instruction = MMU_read32_acl(armcpu->proc_ID, armcpu->next_instruction,CP15_ACCESS_EXECUTE);
+		armcpu->instruction = MMU_read32_acl(PROCNUM, armcpu->next_instruction,CP15_ACCESS_EXECUTE);
 
 		armcpu->instruct_adr = armcpu->next_instruction;
 		armcpu->next_instruction += 4;
 		armcpu->R[15] = armcpu->next_instruction + 4;
 #endif
           
-        return MMU.MMU_WAIT32[armcpu->proc_ID][(armcpu->instruct_adr>>24)&0xF];
+        return MMU.MMU_WAIT32[PROCNUM][(armcpu->instruct_adr>>24)&0xF];
 	}
 
 #ifdef GDB_STUB
@@ -392,16 +401,15 @@ armcpu_prefetch(armcpu_t *armcpu)
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	armcpu->instruction = MMU_read16_acl(armcpu->proc_ID, armcpu->next_instruction,CP15_ACCESS_EXECUTE);
+	armcpu->instruction = MMU_read16_acl(PROCNUM, armcpu->next_instruction,CP15_ACCESS_EXECUTE);
 
 	armcpu->instruct_adr = armcpu->next_instruction;
 	armcpu->next_instruction += 2;
 	armcpu->R[15] = armcpu->next_instruction + 2;
 #endif
 
-	return MMU.MMU_WAIT16[armcpu->proc_ID][(armcpu->instruct_adr>>24)&0xF];
+	return MMU.MMU_WAIT16[PROCNUM][(armcpu->instruct_adr>>24)&0xF];
 }
- 
 
 static BOOL FASTCALL test_EQ(Status_Reg CPSR) { return ( CPSR.bits.Z); }
 static BOOL FASTCALL test_NE(Status_Reg CPSR) { return (!CPSR.bits.Z); }
@@ -525,7 +533,8 @@ armcpu_flagIrq( armcpu_t *armcpu) {
 }
 
 
-u32 armcpu_exec(armcpu_t *armcpu)
+template<int PROCNUM>
+u32 armcpu_exec()
 {
         u32 c = 1;
 
@@ -545,12 +554,16 @@ u32 armcpu_exec(armcpu_t *armcpu)
         }
 #endif
 
-	if(armcpu->CPSR.bits.T == 0)
+	if(ARMPROC.CPSR.bits.T == 0)
 	{
 /*        if((TEST_COND(CONDITION(armcpu->instruction), armcpu->CPSR)) || ((CONDITION(armcpu->instruction)==0xF)&&(CODE(armcpu->instruction)==0x5)))*/
-        if((TEST_COND(CONDITION(armcpu->instruction), CODE(armcpu->instruction), armcpu->CPSR)))
+        if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
 		{
-			c += arm_instructions_set[INSTRUCTION_INDEX(armcpu->instruction)](armcpu);
+			if(PROCNUM==0)
+				c += arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+			else
+				c += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+			
 		}
 #ifdef GDB_STUB
         if ( armcpu->post_ex_fn != NULL) {
@@ -559,12 +572,15 @@ u32 armcpu_exec(armcpu_t *armcpu)
                                 armcpu->instruct_adr, 0);
         }
 #else
-		c += armcpu_prefetch(armcpu);
+		c += armcpu_prefetch<PROCNUM>();
 #endif
 		return c;
 	}
 
-	c += thumb_instructions_set[armcpu->instruction>>6](armcpu);
+	if(PROCNUM==0)
+		c += thumb_instructions_set_0[ARMPROC.instruction>>6]();
+	else
+		c += thumb_instructions_set_1[ARMPROC.instruction>>6]();
 
 #ifdef GDB_STUB
     if ( armcpu->post_ex_fn != NULL) {
@@ -572,8 +588,11 @@ u32 armcpu_exec(armcpu_t *armcpu)
         armcpu->post_ex_fn( armcpu->post_ex_fn_data, armcpu->instruct_adr, 1);
     }
 #else
-	c += armcpu_prefetch(armcpu);
+	c += armcpu_prefetch<PROCNUM>();
 #endif
 	return c;
 }
 
+//these templates needed to be instantiated manually
+template u32 armcpu_exec<0>();
+template u32 armcpu_exec<1>();

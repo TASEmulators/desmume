@@ -50,6 +50,7 @@
  - Tweak optimization flags and change entire source code to use fastcall [zeromus]
  - Add opengl state caching. This is of dubious performance assistance, but it is easy to take out so I am leaving it for now. [zeromus]
  - Add MMU->GPU signal for when vram mappings change, which allows it to assume textures are unchanged unless vram has changed [zeromus]
+ - Added a bunch of crazy templates to the cpu and mmu which speed up a the emu little by optimizing variable accesses [zeromus]
     
  
 0.7.3 -> 0.8

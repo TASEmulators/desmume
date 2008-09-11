@@ -584,7 +584,8 @@ void MMU_unsetRom()
 }
 char txt[80];	
 
-u8 FASTCALL MMU_read8(u32 proc, u32 adr)
+template<u32 proc>
+u8 FASTCALL _MMU_read8(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((proc==ARMCPU_ARM9)&((adr&(~0x3FFF))==MMU.DTCMRegion))
@@ -617,9 +618,8 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
     return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
 }
 
-
-
-u16 FASTCALL MMU_read16(u32 proc, u32 adr)
+template<u32 proc>
+u16 FASTCALL _MMU_read16(u32 adr)
 {    
 #ifdef INTERNAL_DTCM_READ
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
@@ -694,8 +694,9 @@ u16 FASTCALL MMU_read16(u32 proc, u32 adr)
 	/* Returns data from memory */
 	return T1ReadWord(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]); 
 }
-	 
-u32 FASTCALL MMU_read32(u32 proc, u32 adr)
+
+template<u32 proc>
+u32 FASTCALL _MMU_read32(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
@@ -714,7 +715,6 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 	   return (unsigned long)cflash_read(adr);
-		
 	adr &= 0x0FFFFFFF;
 
 	if((adr >> 24) == 4)
@@ -848,13 +848,15 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 		}
 	}
 	
-	/* Returns data from memory */
-	return T1ReadLong(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]);
+	//Returns data from memory
+	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
+	return T1ReadLong(MMU.MMU_MEM[proc][(adr >> 20)], adr & MMU.MMU_MASK[proc][(adr >> 20)]);
 }
 
 #define OFS(i)	((i>>3)&3)
 	
-void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
+template<u32 proc>
+void FASTCALL _MMU_write8(u32 adr, u8 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
@@ -1242,7 +1244,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 
 u16 partie = 1;
 
-void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
+template<u32 proc>
+void FASTCALL _MMU_write16(u32 adr, u16 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((proc == ARMCPU_ARM9) && ((adr & ~0x3FFF) == MMU.DTCMRegion))
@@ -1905,7 +1908,8 @@ void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 } 
 
 
-void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
+template<u32 proc>
+void FASTCALL _MMU_write32(u32 adr, u32 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((proc==ARMCPU_ARM9)&((adr&(~0x3FFF))==MMU.DTCMRegion))
@@ -3534,3 +3538,40 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
   arm9_write16,
   arm9_write32
 };
+
+
+u32 FASTCALL MMU_read32(u32 proc, u32 adr) 
+{
+	if(proc==0) return _MMU_read32<0ul>(adr);
+	else return _MMU_read32<1ul>(adr);
+}
+
+u16 FASTCALL MMU_read16(u32 proc, u32 adr) 
+{
+	if(proc==0) return _MMU_read16<0ul>(adr);
+	else return _MMU_read16<1ul>(adr);
+}
+
+u8 FASTCALL MMU_read8(u32 proc, u32 adr) 
+{
+	if(proc==0) return _MMU_read8<0ul>(adr);
+	else return _MMU_read8<1ul>(adr);
+}
+
+void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
+{
+	if(proc==0) _MMU_write32<0ul>(adr,val);
+	else _MMU_write32<1ul>(adr,val);
+}
+
+void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
+{
+	if(proc==0) _MMU_write16<0ul>(adr,val);
+	else _MMU_write16<1ul>(adr,val);
+}
+
+void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
+{
+	if(proc==0) _MMU_write8<0ul>(adr,val);
+	else _MMU_write8<1ul>(adr,val);
+}
