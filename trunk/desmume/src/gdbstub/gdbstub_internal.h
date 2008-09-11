@@ -115,10 +115,10 @@ struct gdb_stub_state {
    * The emulator should only run the corresponding ARM if this is set to
    * RUNNING_EMU_GDB_STATE.
    */
-  enum { STOPPED_EMU_GDB_STATE, STOPPING_EMU_GDB_STATE, RUNNING_EMU_GDB_STATE} emu_stub_state;
+  enum EMU_STUB_STATE { STOPPED_EMU_GDB_STATE, STOPPING_EMU_GDB_STATE, RUNNING_EMU_GDB_STATE} emu_stub_state;
 
   /** the state of the stub as set by the stub control thread */
-  enum { STOPPED_GDB_STATE, RUNNING_GDB_STATE,
+  enum CTL_STUB_STATE { STOPPED_GDB_STATE, RUNNING_GDB_STATE,
 	 STEPPING_GDB_STATE, START_RUN_GDB_STATE} ctl_stub_state;
 
   struct packet_reader_gdb rx_packet;

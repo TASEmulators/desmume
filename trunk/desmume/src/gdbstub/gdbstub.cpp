@@ -143,7 +143,7 @@ causeQuit_gdb( struct gdb_stub_state *stub) {
   uint8_t command = QUIT_STUB_MESSAGE;
 
 #ifdef WIN32
-  send( stub->ctl_pipe[1], &command, 1, 0);
+  send( stub->ctl_pipe[1], (char*)&command, 1, 0);
 #else
   write( stub->ctl_pipe[1], &command, 1);
 #endif
@@ -154,7 +154,7 @@ indicateCPUStop_gdb( struct gdb_stub_state *stub) {
   uint8_t command = CPU_STOPPED_STUB_MESSAGE;
 
 #ifdef WIN32
-  send( stub->ctl_pipe[1], &command, 1, 0);
+  send( stub->ctl_pipe[1], (char*)&command, 1, 0);
 #else
   write( stub->ctl_pipe[1], &command, 1);
 #endif
@@ -311,7 +311,7 @@ readPacket_gdb( SOCKET_TYPE sock, struct packet_reader_gdb *packet) {
 
   /* update the state */
 
-  while ( (sock_res = recv( sock, &cur_byte, 1, 0)) == 1) {
+  while ( (sock_res = recv( sock, (char*)&cur_byte, 1, 0)) == 1) {
     switch ( packet->state) {
     case IDLE_READ_STATE:
       /* wait for the '$' start of packet character
@@ -428,10 +428,10 @@ putpacket ( SOCKET_TYPE sock, struct debug_out_packet *out_packet, uint32_t size
   do {
     int reply_found = 0;
 
-    send( sock, &out_packet->start_ptr[-1], count, 0);
+    send( sock, (char*)&out_packet->start_ptr[-1], count, 0);
 
     do {
-      int read_res = recv( sock, &reply_ch, 1, 0);
+      int read_res = recv( sock, (char*)&reply_ch, 1, 0);
 
       if ( read_res == 0) {
 	return -1;
@@ -545,8 +545,8 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
     break;
 
   case 'c':
-    stub->emu_stub_state = RUNNING_EMU_GDB_STATE;
-    stub->ctl_stub_state = START_RUN_GDB_STATE;
+	stub->emu_stub_state = gdb_stub_state::RUNNING_EMU_GDB_STATE;
+    stub->ctl_stub_state = gdb_stub_state::START_RUN_GDB_STATE;
     stub->main_stop_flag = 0;
     send_reply = 0;
     /* remove the cpu stall */
@@ -567,8 +567,8 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
                                         stub);
 
 
-    stub->emu_stub_state = RUNNING_EMU_GDB_STATE;
-    stub->ctl_stub_state = START_RUN_GDB_STATE;
+    stub->emu_stub_state = gdb_stub_state::RUNNING_EMU_GDB_STATE;
+    stub->ctl_stub_state = gdb_stub_state::START_RUN_GDB_STATE;
     stub->main_stop_flag = 0;
     send_reply = 0;
 
@@ -1007,21 +1007,21 @@ execute_gdb( void *data, uint32_t instr_addr, int thumb) {
       execute = 0;
     }
     else {
-      if ( gdb_state->ctl_stub_state == STOPPED_GDB_STATE ||
-	   gdb_state->emu_stub_state != RUNNING_EMU_GDB_STATE) {
+      if ( gdb_state->ctl_stub_state == gdb_stub_state::STOPPED_GDB_STATE ||
+	   gdb_state->emu_stub_state != gdb_stub_state::RUNNING_EMU_GDB_STATE) {
 	execute = 0;
       }
       else {
 	/* see if there is a breakpoint at this instruction */
 	if ( gdb_state->instr_breakpoints != NULL) {
-	  if ( gdb_state->ctl_stub_state != STEPPING_GDB_STATE &&
-	       gdb_state->ctl_stub_state != START_RUN_GDB_STATE) {
+	  if ( gdb_state->ctl_stub_state != gdb_stub_state::STEPPING_GDB_STATE &&
+	       gdb_state->ctl_stub_state != gdb_stub_state::START_RUN_GDB_STATE) {
 	    struct breakpoint_gdb *bpoint = gdb_state->instr_breakpoints;
 
 	    while ( bpoint != NULL && execute) {
 	      if ( bpoint->addr == instr_addr) {
 		DEBUG_LOG("Breakpoint hit at %08x\n", instr_addr);
-		gdb_state->emu_stub_state = STOPPING_EMU_GDB_STATE;
+		gdb_state->emu_stub_state = gdb_stub_state::STOPPING_EMU_GDB_STATE;
 		gdb_state->stop_type = STOP_BREAKPOINT;
 		execute = 0;
 	      }
@@ -1030,8 +1030,8 @@ execute_gdb( void *data, uint32_t instr_addr, int thumb) {
 	  }
 	}
 
-	if ( execute && gdb_state->ctl_stub_state == START_RUN_GDB_STATE) {
-	  gdb_state->ctl_stub_state = RUNNING_GDB_STATE;
+	if ( execute && gdb_state->ctl_stub_state == gdb_stub_state::START_RUN_GDB_STATE) {
+		gdb_state->ctl_stub_state = gdb_stub_state::RUNNING_GDB_STATE;
 	}
       }
     }
@@ -1070,22 +1070,22 @@ listenerThread_gdb( void *data) {
 
         //DEBUG_LOG("Control message\n");
 #ifdef WIN32
-	recv( state->ctl_pipe[0], &ctl_command, 1, 0);
+	recv( state->ctl_pipe[0], (char*)&ctl_command, 1, 0);
 #else
-	read( state->ctl_pipe[0], &ctl_command, 1);
+	read( state->ctl_pipe[0], (char*)&ctl_command, 1);
 #endif
 
 	switch ( ctl_command) {
 
 	case CPU_STOPPED_STUB_MESSAGE:
 	  if ( state->active &&
-	       state->ctl_stub_state != STOPPED_GDB_STATE) {
+		  state->ctl_stub_state != gdb_stub_state::STOPPED_GDB_STATE) {
 	    struct debug_out_packet *out_packet = getOutPacket();
 	    uint8_t *ptr = out_packet->start_ptr;
             uint32_t send_size;
 
 	    /* mark the stub as stopped and send the stop packet */
-            state->ctl_stub_state = STOPPED_GDB_STATE;
+			state->ctl_stub_state = gdb_stub_state::STOPPED_GDB_STATE;
 	    state->main_stop_flag = 1;
 
             send_size = make_stop_packet( ptr, state->stop_type, state->stop_address);
@@ -1198,7 +1198,7 @@ listenerThread_gdb( void *data) {
 
             case READ_BREAK: {
               /* break the running of the cpu */
-              if ( state->ctl_stub_state != STOPPED_GDB_STATE) {
+				if ( state->ctl_stub_state != gdb_stub_state::STOPPED_GDB_STATE) {
                 /* this will cause the emulation to break the execution */
                 DEBUG_LOG( "Breaking execution\n");
 
@@ -1217,7 +1217,7 @@ listenerThread_gdb( void *data) {
               int close_socket = 0;
               struct packet_reader_gdb *packet = &state->rx_packet;
 
-              if ( state->ctl_stub_state != STOPPED_GDB_STATE) {
+              if ( state->ctl_stub_state != gdb_stub_state::STOPPED_GDB_STATE) {
                 /* not ready to process packet yet, send a bad reply */
                 reply = '-';
               }
@@ -1232,7 +1232,7 @@ listenerThread_gdb( void *data) {
                 }
               }
 
-              write_res = send( gdb_sock, &reply, 1, 0);
+              write_res = send( gdb_sock, (char*)&reply, 1, 0);
               
               if ( write_res != 1) {
                 close_socket = 1;
@@ -1483,7 +1483,7 @@ gdbstub_handle_t
 createStub_gdb( uint16_t port,
                 struct armcpu_memory_iface **cpu_memio,
                 struct armcpu_memory_iface *direct_memio) {
-  struct gdb_stub_state *stub = malloc( sizeof (struct gdb_stub_state));
+  struct gdb_stub_state *stub = (gdb_stub_state*)malloc( sizeof (struct gdb_stub_state));
   gdbstub_handle_t handle = NULL;
   int i;
   int res = 0;
@@ -1591,8 +1591,8 @@ createStub_gdb( uint16_t port,
 #endif
   else {
     stub->active = 1;
-    stub->emu_stub_state = RUNNING_EMU_GDB_STATE;
-    stub->ctl_stub_state = STOPPED_GDB_STATE;
+	stub->emu_stub_state = gdb_stub_state::RUNNING_EMU_GDB_STATE;
+	stub->ctl_stub_state = gdb_stub_state::STOPPED_GDB_STATE;
     stub->rx_packet.state = IDLE_READ_STATE;
 
     stub->main_stop_flag = 1;
