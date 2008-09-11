@@ -48,6 +48,7 @@ BEGIN
     VK_F7,          IDM_STATE_SAVE_F7,      VIRTKEY, SHIFT, NOINVERT
     VK_F8,          IDM_STATE_SAVE_F8,      VIRTKEY, SHIFT, NOINVERT
     VK_F9,          IDM_STATE_SAVE_F9,      VIRTKEY, SHIFT, NOINVERT
+    "N",            ACCEL_N,                VIRTKEY, NOINVERT
 END
 
 #endif    // Neutral resources
