@@ -134,6 +134,8 @@ BEGIN
             MENUITEM "4x",                          IDC_WINDOW4X
         END
         MENUITEM "&Bevar Højde og Bredde",      IDC_FORCERATIO
+        MENUITEM SEPARATOR
+        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
     END
     POPUP "&Konfigure"
     BEGIN
@@ -1219,6 +1221,8 @@ BEGIN
             MENUITEM "4x",                          IDC_WINDOW4X
         END
         MENUITEM "&Force Maintain Ratio",       IDC_FORCERATIO
+        MENUITEM SEPARATOR
+        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
     END
     POPUP "&Config"
     BEGIN
