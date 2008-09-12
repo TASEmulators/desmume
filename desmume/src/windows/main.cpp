@@ -133,6 +133,9 @@ int frameskiprate=0;
 int emu_paused = 0;
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
+unsigned int frameCounter=0;
+bool frameAdvance = false;
+bool frameCounterDisplay = false;
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -600,6 +603,14 @@ DWORD WINAPI run( LPVOID lpParameter)
                   if (framestoskip < 1)
                      framestoskip += frameskiprate;
                }
+			   if (frameAdvance)
+			   {
+					frameAdvance = false;
+				    execute = FALSE;
+					SPU_Pause(1);
+			   }
+			   frameCounter++;
+			   if (frameCounterDisplay) printlog("%d\n",frameCounter); //Will be replaced by a function that draws is directly on the screen
           }
           paused = TRUE;
           Sleep(500);
@@ -1588,21 +1599,27 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             CheckMenuItem(menu, IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
-                  //case IDM_EXEC:
-                  //     EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
-                  //     EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                  //     NDS_UnPause();
-				  // 	return 0;
+                  
 				  case ACCEL_SPACEBAR:
 				  case IDM_PAUSE:
 					  if (emu_paused) NDS_UnPause();
 					  else NDS_Pause();
 					  emu_paused ^= 1;
 					  CheckMenuItem(menu, IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
-					  //	EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
-					  //  EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
-                  return 0;
-                  
+				  return 0;
+				  
+				  case ACCEL_N: //Frame Advance
+					  frameAdvance = true;
+					  execute = TRUE;
+					  emu_paused = 1;
+					  CheckMenuItem(menu, IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+				  return 0;
+
+				  case ID_VIEW_FRAMECOUNTER:
+					  frameCounterDisplay ^= 1;
+					  CheckMenuItem(menu, ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
+				  return 0;
+
                   #define saver(one,two,three,four,five, six) \
                   CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | one); \
                   CheckMenuItem(menu, IDC_SAVETYPE2, MF_BYCOMMAND | two); \
@@ -1638,6 +1655,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   
                   case IDM_RESET:
                        NDS_Reset();
+					   frameCounter=0;
                   return 0;
                   case IDM_CONFIG:
                        {
