@@ -618,6 +618,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\gfx3d.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ginfo.cpp"
 				>
 			</File>
@@ -960,6 +964,10 @@
 			</File>
 			<File
 				RelativePath="..\gdbstub\gdbstub_internal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx3d.h"
 				>
 			</File>
 			<File

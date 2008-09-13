@@ -50,6 +50,7 @@
 #include "FirmConfig.h"
 #include "AboutBox.h"
 #include "OGLRender.h"
+#include "../gfx3d.h"
 #include "../render3D.h"
 #include "../gdbstub.h"
 #include "colorctrl.h"
@@ -418,7 +419,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 		return -1;
     }
 
-    NDS_3D_SetDriver (GPU3D_OPENGL);
+    //NDS_3D_SetDriver (GPU3D_OPENGL);
 	 
 	if (!gpu3D->NDS_3D_Init ())
 	{

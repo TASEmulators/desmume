@@ -30,7 +30,7 @@
 #include "MMU.h"
 #include "cflash.h"
 #include "ROMReader.h"
-#include "render3D.h"
+#include "gfx3d.h"
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -158,6 +158,8 @@ int NDS_Init( void) {
 
      if (Screen_Init(GFXCORE_DUMMY) != 0)
         return -1;
+
+	 gfx3d_init();
      
  #ifdef GDB_STUB
      armcpu_new(&NDS_ARM7,1, arm7_mem_if, arm7_ctrl_iface);
@@ -1027,7 +1029,7 @@ NDS_exec(s32 nb, BOOL force)
               nds.lignerendu = FALSE;
               if(nds.VCount==192)
                 {
-					gpu3D->NDS_3D_VBlankSignal();
+					gfx3d_VBlankSignal();
 
                   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
                   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);

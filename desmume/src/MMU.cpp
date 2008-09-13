@@ -36,6 +36,7 @@
 #include "wifi.h"
 #include "registers.h"
 #include "render3D.h"
+#include "gfx3d.h"
 
 #define ROM_MASK 3
 
@@ -652,9 +653,9 @@ u16 FASTCALL _MMU_read16(u32 adr)
 		switch(adr)
 		{
 			case 0x04000604:
-				return (gpu3D->NDS_3D_GetNumPolys()&2047);
+				return (gfx3d_GetNumPolys()&2047);
 			case 0x04000606:
-				return (gpu3D->NDS_3D_GetNumVertex()&8191);
+				return (gfx3d_GetNumVertex()&8191);
 
 			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
 				//printlog("Stopped IPCFIFORECV\n");
@@ -751,7 +752,7 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			case 0x0400067C:
 			{
 				//LOG("4000640h..67Fh - CLIPMTX_RESULT - Read Current Clip Coordinates Matrix (R)");
-				return gpu3D->NDS_3D_GetClipMatrix ((adr-0x04000640)/4);
+				return gfx3d_GetClipMatrix ((adr-0x04000640)/4);
 			}
 			case 0x04000680:
 			case 0x04000684:
@@ -764,12 +765,12 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			case 0x040006A0:
 			{
 				//LOG("4000680h..6A3h - VECMTX_RESULT - Read Current Directional Vector Matrix (R)");
-				return gpu3D->NDS_3D_GetDirectionalMatrix ((adr-0x04000680)/4);
+				return gfx3d_GetDirectionalMatrix ((adr-0x04000680)/4);
 			}
 
 			case 0x4000604:
 			{
-				return (gpu3D->NDS_3D_GetNumPolys()&2047) & ((gpu3D->NDS_3D_GetNumVertex()&8191) << 16);
+				return (gfx3d_GetNumPolys()&2047) & ((gfx3d_GetNumVertex()&8191) << 16);
 				//LOG ("read32 - RAM_COUNT -> 0x%X", ((u32 *)(MMU.MMU_MEM[proc][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF])>>2]);
 			}
 			
@@ -1300,7 +1301,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 		{
 			//toon table
 			((u16 *)(MMU.MMU_MEM[proc][0x40]))[(adr-0x04000000)>>1] = val;
-			gpu3D->NDS_3D_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
+			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
 		}
 		/* Adress is an IO register */
 		else switch(adr)
@@ -1310,7 +1311,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x35C>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_FogOffset (val);
+					gfx3d_glFogOffset (val);
 				}
 				return;
 			}
@@ -1319,7 +1320,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x340>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_AlphaFunc(val);
+					gfx3d_glAlphaFunc(val);
 				}
 				return;
 			}
@@ -1328,7 +1329,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x060>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Control(val);
+					gfx3d_Control(val);
 				}
 				return;
 			}
@@ -1337,7 +1338,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				((u16 *)(MMU.MMU_MEM[proc][0x40]))[0x354>>1] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_ClearDepth(val);
+					gfx3d_glClearDepth(val);
 				}
 				return;
 			}
@@ -1957,14 +1958,14 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 			((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x400>>2] = val;
 			if(proc==ARMCPU_ARM9)
 			{
-				gpu3D->NDS_3D_CallList(val);
+				gfx3d_glCallList(val);
 			}
 		}
 		else if(adr >= 0x04000380 && adr <= 0x040003BC)
 		{
 			//toon table
 			((u32 *)(MMU.MMU_MEM[proc][0x40]))[(adr-0x04000000)>>2] = val;
-			gpu3D->NDS_3D_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
+			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
 		}
 		else switch(adr)
 		{
@@ -1974,7 +1975,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x340>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_AlphaFunc(val);
+					gfx3d_glAlphaFunc(val);
 				}
 				return;
 			}
@@ -1984,7 +1985,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x350>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_ClearColor(val);
+					gfx3d_glClearColor(val);
 				}
 				return;
 			}
@@ -1994,7 +1995,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x354>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_ClearDepth(val);
+					gfx3d_glClearDepth(val);
 				}
 				return;
 			}
@@ -2004,7 +2005,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x358>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_FogColor(val);
+					gfx3d_glFogColor(val);
 				}
 				return;
 			}
@@ -2013,7 +2014,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x35C>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_FogOffset(val);
+					gfx3d_glFogOffset(val);
 				}
 				return;
 			}
@@ -2024,7 +2025,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_MatrixMode(val);
+					gfx3d_glMatrixMode(val);
 				}
 				return;
 			}
@@ -2034,7 +2035,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x444>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_PushMatrix();
+					gfx3d_glPushMatrix();
 				}
 				return;
 			}
@@ -2044,7 +2045,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x448>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_PopMatrix(val);
+					gfx3d_glPopMatrix(val);
 				}
 				return;
 			}
@@ -2054,7 +2055,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x44C>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_StoreMatrix(val);
+					gfx3d_glStoreMatrix(val);
 				}
 				return;
 			}
@@ -2064,7 +2065,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x450>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_RestoreMatrix(val);
+					gfx3d_glRestoreMatrix(val);
 				}
 				return;
 			}
@@ -2074,7 +2075,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x454>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_LoadIdentity();
+					gfx3d_glLoadIdentity();
 				}
 				return;
 			}
@@ -2084,7 +2085,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x458>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_LoadMatrix4x4(val);
+					gfx3d_glLoadMatrix4x4(val);
 				}
 				return;
 			}
@@ -2094,7 +2095,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x45C>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_LoadMatrix4x3(val);
+					gfx3d_glLoadMatrix4x3(val);
 				}
 				return;
 			}
@@ -2104,7 +2105,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x460>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_MultMatrix4x4(val);
+					gfx3d_glLoadMatrix4x4(val);
 				}
 				return;
 			}
@@ -2114,7 +2115,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x464>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_MultMatrix4x3(val);
+					gfx3d_glMultMatrix4x3(val);
 				}
 				return;
 			}
@@ -2124,7 +2125,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x468>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_MultMatrix3x3(val);
+					gfx3d_glMultMatrix3x3(val);
 				}
 				return;
 			}
@@ -2134,7 +2135,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x46C>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Scale(val);
+					gfx3d_glScale(val);
 				}
 				return;
 			}
@@ -2144,7 +2145,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x470>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Translate(val);
+					gfx3d_glTranslate(val);
 				}
 				return;
 			}
@@ -2154,7 +2155,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x480>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Color3b(val);
+					gfx3d_glColor3b(val);
 				}
 				return;
 			}
@@ -2164,7 +2165,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x484>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Normal(val);
+					gfx3d_glNormal(val);
 				}
 				return;
 			}
@@ -2174,7 +2175,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x488>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_TexCoord(val);
+					gfx3d_glTexCoord(val);
 				}
 				return;
 			}
@@ -2184,7 +2185,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x48C>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Vertex16b(val);
+					gfx3d_glVertex16b(val);
 				}
 				return;
 			}
@@ -2194,7 +2195,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x490>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Vertex10b(val);
+					gfx3d_glVertex10b(val);
 				}
 				return;
 			}
@@ -2204,7 +2205,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x494>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-                    gpu3D->NDS_3D_Vertex3_cord(0,1,val);
+                    gfx3d_glVertex3_cord(0,1,val);
 				}
 				return;
 			}
@@ -2214,7 +2215,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x498>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-                    gpu3D->NDS_3D_Vertex3_cord(0,2,val);
+                    gfx3d_glVertex3_cord(0,2,val);
 				}
 				return;
 			}
@@ -2224,7 +2225,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x49C>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-                    gpu3D->NDS_3D_Vertex3_cord(1,2,val);
+                    gfx3d_glVertex3_cord(1,2,val);
 				}
 				return;
 			}
@@ -2234,7 +2235,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4A0>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-                    gpu3D->NDS_3D_Vertex_rel (val);
+                    gfx3d_glVertex_rel (val);
 				}
 				return;
 			}
@@ -2244,7 +2245,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4A4>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_PolygonAttrib(val);
+					gfx3d_glPolygonAttrib(val);
 				}
 				return;
 			}
@@ -2254,7 +2255,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4A8>>2] = val;
 				if(proc==ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_TexImage(val);
+					gfx3d_glTexImage(val);
 				}
 				return;
 			}
@@ -2264,7 +2265,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4AC>>2] = val&0x1FFF;
 				if(proc==ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_TexPalette(val&0x1FFFF);
+					gfx3d_glTexPalette(val&0x1FFFF);
 				}
 				return;
 			}
@@ -2274,7 +2275,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C0>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Material0 (val);
+					gfx3d_glMaterial0 (val);
 				}
 				return;
 			}
@@ -2284,7 +2285,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C4>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Material1 (val);
+					gfx3d_glMaterial1 (val);
 				}
 				return;
 			}
@@ -2294,7 +2295,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C8>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_LightDirection (val);
+					gfx3d_glLightColor (val);
 				}
 				return;
 			}
@@ -2304,7 +2305,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4CC>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_LightColor(val);
+					gfx3d_glLightColor(val);
 				}
 				return;
 			}
@@ -2314,7 +2315,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4D0>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Shininess(val);
+					gfx3d_glShininess(val);
 				}
 				return;
 			}
@@ -2324,7 +2325,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x500>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Begin(val);
+					gfx3d_glBegin(val);
 				}
 				return;
 			}
@@ -2334,7 +2335,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x504>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_End();
+					gfx3d_glEnd();
 				}
 				return;
 			}
@@ -2344,7 +2345,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x540>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_Flush(val);
+					gfx3d_glFlush(val);
 				}
 				return;
 			}
@@ -2354,7 +2355,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x580>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gpu3D->NDS_3D_ViewPort(val);
+					gfx3d_glViewPort(val);
 				}
 				return;
 			}
