@@ -7,6 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		722764620E78E18100AEDC8B /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644A0E78E18100AEDC8B /* arm_instructions.cpp */; };
+		722764630E78E18100AEDC8B /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644B0E78E18100AEDC8B /* armcpu.cpp */; };
+		722764640E78E18100AEDC8B /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644C0E78E18100AEDC8B /* bios.cpp */; };
+		722764650E78E18100AEDC8B /* cflash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644D0E78E18100AEDC8B /* cflash.cpp */; };
+		722764660E78E18100AEDC8B /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644E0E78E18100AEDC8B /* cp15.cpp */; };
+		722764670E78E18100AEDC8B /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644F0E78E18100AEDC8B /* debug.cpp */; };
+		722764680E78E18100AEDC8B /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764500E78E18100AEDC8B /* Disassembler.cpp */; };
+		722764690E78E18100AEDC8B /* FIFO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764510E78E18100AEDC8B /* FIFO.cpp */; };
+		7227646A0E78E18100AEDC8B /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764520E78E18100AEDC8B /* fs-linux.cpp */; };
+		7227646C0E78E18100AEDC8B /* gl_vertex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764550E78E18100AEDC8B /* gl_vertex.cpp */; };
+		7227646D0E78E18100AEDC8B /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764560E78E18100AEDC8B /* GPU.cpp */; };
+		7227646E0E78E18100AEDC8B /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764570E78E18100AEDC8B /* matrix.cpp */; };
+		7227646F0E78E18100AEDC8B /* mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764580E78E18100AEDC8B /* mc.cpp */; };
+		722764700E78E18100AEDC8B /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764590E78E18100AEDC8B /* MMU.cpp */; };
+		722764710E78E18100AEDC8B /* NDSSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645A0E78E18100AEDC8B /* NDSSystem.cpp */; };
+		722764720E78E18100AEDC8B /* render3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645B0E78E18100AEDC8B /* render3D.cpp */; };
+		722764730E78E18100AEDC8B /* ROMReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645C0E78E18100AEDC8B /* ROMReader.cpp */; };
+		722764740E78E18100AEDC8B /* saves.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645D0E78E18100AEDC8B /* saves.cpp */; };
+		722764760E78E18100AEDC8B /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645F0E78E18100AEDC8B /* SPU.cpp */; };
+		722764770E78E18100AEDC8B /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764600E78E18100AEDC8B /* thumb_instructions.cpp */; };
+		722764780E78E18100AEDC8B /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764610E78E18100AEDC8B /* wifi.cpp */; };
 		7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.m */; };
 		726D68AC0E310B1800800002 /* French.nib in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AA0E310B1800800002 /* French.nib */; };
 		726D68AD0E310B1800800002 /* French.strings in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AB0E310B1800800002 /* French.strings */; };
@@ -16,40 +37,19 @@
 		7277B6E50D9E045700D283BD /* Japanese.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E10D9E045700D283BD /* Japanese.nib */; };
 		7277B6E60D9E045700D283BD /* Japanese.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E20D9E045700D283BD /* Japanese.strings */; };
 		7277B8EB0D9F25F700D283BD /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
+		7286BEA20E7C1EAF00C9F662 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7286BEA10E7C1EAF00C9F662 /* OGLRender.cpp */; };
 		729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
 		729BEC710D9D55DB00ED561B /* input.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.m */; };
 		729BEC730D9D55DB00ED561B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.m */; };
 		729BEC740D9D55DB00ED561B /* main_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC620D9D55DB00ED561B /* main_window.m */; };
-		729BEC750D9D55DB00ED561B /* nds_control.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC640D9D55DB00ED561B /* nds_control.m */; };
+		729BEC750D9D55DB00ED561B /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC640D9D55DB00ED561B /* nds_control.mm */; };
 		729BEC760D9D55DB00ED561B /* preferences.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC660D9D55DB00ED561B /* preferences.m */; };
 		729BEC770D9D55DB00ED561B /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC680D9D55DB00ED561B /* rom_info.m */; };
 		729BEC780D9D55DB00ED561B /* screenshot.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6A0D9D55DB00ED561B /* screenshot.m */; };
 		729BEC790D9D55DB00ED561B /* sndOSX.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6C0D9D55DB00ED561B /* sndOSX.m */; };
 		729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6E0D9D55DB00ED561B /* video_output_view.m */; };
-		729BECCC0D9D57AF00ED561B /* arm_instructions.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC9B0D9D57AF00ED561B /* arm_instructions.c */; };
-		729BECCD0D9D57AF00ED561B /* armcpu.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC9D0D9D57AF00ED561B /* armcpu.c */; };
-		729BECCE0D9D57AF00ED561B /* bios.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC9F0D9D57AF00ED561B /* bios.c */; };
-		729BECCF0D9D57AF00ED561B /* cflash.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA20D9D57AF00ED561B /* cflash.c */; };
-		729BECD00D9D57AF00ED561B /* cp15.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA50D9D57AF00ED561B /* cp15.c */; };
-		729BECD10D9D57AF00ED561B /* debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA70D9D57AF00ED561B /* debug.c */; };
-		729BECD20D9D57AF00ED561B /* Disassembler.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECA90D9D57AF00ED561B /* Disassembler.c */; };
-		729BECD30D9D57AF00ED561B /* FIFO.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECAD0D9D57AF00ED561B /* FIFO.c */; };
-		729BECD40D9D57AF00ED561B /* fs-linux.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECAF0D9D57AF00ED561B /* fs-linux.c */; };
-		729BECD50D9D57AF00ED561B /* gl_vertex.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB10D9D57AF00ED561B /* gl_vertex.c */; };
-		729BECD60D9D57AF00ED561B /* GPU.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB30D9D57AF00ED561B /* GPU.c */; };
-		729BECD70D9D57AF00ED561B /* matrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB50D9D57AF00ED561B /* matrix.c */; };
-		729BECD80D9D57AF00ED561B /* mc.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECB70D9D57AF00ED561B /* mc.c */; };
-		729BECD90D9D57AF00ED561B /* MMU.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECBA0D9D57AF00ED561B /* MMU.c */; };
-		729BECDA0D9D57AF00ED561B /* NDSSystem.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECBC0D9D57AF00ED561B /* NDSSystem.c */; };
-		729BECDB0D9D57AF00ED561B /* render3D.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECBF0D9D57AF00ED561B /* render3D.c */; };
-		729BECDC0D9D57AF00ED561B /* ROMReader.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC10D9D57AF00ED561B /* ROMReader.c */; };
-		729BECDD0D9D57AF00ED561B /* saves.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC30D9D57AF00ED561B /* saves.c */; };
-		729BECDE0D9D57AF00ED561B /* SPU.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC50D9D57AF00ED561B /* SPU.c */; };
-		729BECDF0D9D57AF00ED561B /* thumb_instructions.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECC70D9D57AF00ED561B /* thumb_instructions.c */; };
-		729BECE00D9D57AF00ED561B /* wifi.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECCA0D9D57AF00ED561B /* wifi.c */; };
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
-		729BECFA0D9D589E00ED561B /* OGLRender.c in Sources */ = {isa = PBXBuildFile; fileRef = 729BECF80D9D589E00ED561B /* OGLRender.c */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 /* End PBXBuildFile section */
 
@@ -57,6 +57,28 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		7227644A0E78E18100AEDC8B /* arm_instructions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_instructions.cpp; path = ../arm_instructions.cpp; sourceTree = SOURCE_ROOT; };
+		7227644B0E78E18100AEDC8B /* armcpu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = armcpu.cpp; path = ../armcpu.cpp; sourceTree = SOURCE_ROOT; };
+		7227644C0E78E18100AEDC8B /* bios.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bios.cpp; path = ../bios.cpp; sourceTree = SOURCE_ROOT; };
+		7227644D0E78E18100AEDC8B /* cflash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cflash.cpp; path = ../cflash.cpp; sourceTree = SOURCE_ROOT; };
+		7227644E0E78E18100AEDC8B /* cp15.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cp15.cpp; path = ../cp15.cpp; sourceTree = SOURCE_ROOT; };
+		7227644F0E78E18100AEDC8B /* debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cpp; path = ../debug.cpp; sourceTree = SOURCE_ROOT; };
+		722764500E78E18100AEDC8B /* Disassembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Disassembler.cpp; path = ../Disassembler.cpp; sourceTree = SOURCE_ROOT; };
+		722764510E78E18100AEDC8B /* FIFO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FIFO.cpp; path = ../FIFO.cpp; sourceTree = SOURCE_ROOT; };
+		722764520E78E18100AEDC8B /* fs-linux.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "fs-linux.cpp"; path = "../fs-linux.cpp"; sourceTree = SOURCE_ROOT; };
+		722764540E78E18100AEDC8B /* gdbstub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gdbstub.h; path = ../gdbstub.h; sourceTree = SOURCE_ROOT; };
+		722764550E78E18100AEDC8B /* gl_vertex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gl_vertex.cpp; path = ../gl_vertex.cpp; sourceTree = SOURCE_ROOT; };
+		722764560E78E18100AEDC8B /* GPU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GPU.cpp; path = ../GPU.cpp; sourceTree = SOURCE_ROOT; };
+		722764570E78E18100AEDC8B /* matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix.cpp; path = ../matrix.cpp; sourceTree = SOURCE_ROOT; };
+		722764580E78E18100AEDC8B /* mc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mc.cpp; path = ../mc.cpp; sourceTree = SOURCE_ROOT; };
+		722764590E78E18100AEDC8B /* MMU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MMU.cpp; path = ../MMU.cpp; sourceTree = SOURCE_ROOT; };
+		7227645A0E78E18100AEDC8B /* NDSSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NDSSystem.cpp; path = ../NDSSystem.cpp; sourceTree = SOURCE_ROOT; };
+		7227645B0E78E18100AEDC8B /* render3D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = render3D.cpp; path = ../render3D.cpp; sourceTree = SOURCE_ROOT; };
+		7227645C0E78E18100AEDC8B /* ROMReader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ROMReader.cpp; path = ../ROMReader.cpp; sourceTree = SOURCE_ROOT; };
+		7227645D0E78E18100AEDC8B /* saves.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = saves.cpp; path = ../saves.cpp; sourceTree = SOURCE_ROOT; };
+		7227645F0E78E18100AEDC8B /* SPU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SPU.cpp; path = ../SPU.cpp; sourceTree = SOURCE_ROOT; };
+		722764600E78E18100AEDC8B /* thumb_instructions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = thumb_instructions.cpp; path = ../thumb_instructions.cpp; sourceTree = SOURCE_ROOT; };
+		722764610E78E18100AEDC8B /* wifi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wifi.cpp; path = ../wifi.cpp; sourceTree = SOURCE_ROOT; };
 		723395580E596E9100999693 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = speed_limit_selection_window.h; path = dialogs/speed_limit_selection_window.h; sourceTree = "<group>"; };
 		723395590E596E9100999693 /* speed_limit_selection_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = speed_limit_selection_window.m; path = dialogs/speed_limit_selection_window.m; sourceTree = "<group>"; };
 		726D68AA0E310B1800800002 /* French.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = French.nib; sourceTree = "<group>"; };
@@ -67,6 +89,7 @@
 		7277B6E10D9E045700D283BD /* Japanese.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = Japanese.nib; sourceTree = "<group>"; };
 		7277B6E20D9E045700D283BD /* Japanese.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = Japanese.strings; sourceTree = "<group>"; };
 		7277B8EA0D9F25F700D283BD /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
+		7286BEA10E7C1EAF00C9F662 /* OGLRender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OGLRender.cpp; path = ../windows/OGLRender.cpp; sourceTree = SOURCE_ROOT; };
 		729BEC5A0D9D55DB00ED561B /* cocoa_util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_util.m; sourceTree = SOURCE_ROOT; };
 		729BEC5C0D9D55DB00ED561B /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = SOURCE_ROOT; };
 		729BEC5D0D9D55DB00ED561B /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = SOURCE_ROOT; };
@@ -75,7 +98,7 @@
 		729BEC610D9D55DB00ED561B /* main_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main_window.h; sourceTree = SOURCE_ROOT; };
 		729BEC620D9D55DB00ED561B /* main_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main_window.m; sourceTree = SOURCE_ROOT; };
 		729BEC630D9D55DB00ED561B /* nds_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nds_control.h; sourceTree = SOURCE_ROOT; };
-		729BEC640D9D55DB00ED561B /* nds_control.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = nds_control.m; sourceTree = SOURCE_ROOT; };
+		729BEC640D9D55DB00ED561B /* nds_control.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = nds_control.mm; sourceTree = "<group>"; };
 		729BEC650D9D55DB00ED561B /* preferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = preferences.h; sourceTree = SOURCE_ROOT; };
 		729BEC660D9D55DB00ED561B /* preferences.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = preferences.m; sourceTree = SOURCE_ROOT; };
 		729BEC670D9D55DB00ED561B /* rom_info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rom_info.h; sourceTree = SOURCE_ROOT; };
@@ -87,58 +110,36 @@
 		729BEC6D0D9D55DB00ED561B /* video_output_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_output_view.h; sourceTree = SOURCE_ROOT; };
 		729BEC6E0D9D55DB00ED561B /* video_output_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = video_output_view.m; sourceTree = SOURCE_ROOT; };
 		729BEC9A0D9D57AF00ED561B /* ARM9.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ARM9.h; path = ../ARM9.h; sourceTree = SOURCE_ROOT; };
-		729BEC9B0D9D57AF00ED561B /* arm_instructions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = arm_instructions.c; path = ../arm_instructions.c; sourceTree = SOURCE_ROOT; };
 		729BEC9C0D9D57AF00ED561B /* arm_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_instructions.h; path = ../arm_instructions.h; sourceTree = SOURCE_ROOT; };
-		729BEC9D0D9D57AF00ED561B /* armcpu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = armcpu.c; path = ../armcpu.c; sourceTree = SOURCE_ROOT; };
 		729BEC9E0D9D57AF00ED561B /* armcpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = armcpu.h; path = ../armcpu.h; sourceTree = SOURCE_ROOT; };
-		729BEC9F0D9D57AF00ED561B /* bios.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bios.c; path = ../bios.c; sourceTree = SOURCE_ROOT; };
 		729BECA00D9D57AF00ED561B /* bios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bios.h; path = ../bios.h; sourceTree = SOURCE_ROOT; };
 		729BECA10D9D57AF00ED561B /* bits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bits.h; path = ../bits.h; sourceTree = SOURCE_ROOT; };
-		729BECA20D9D57AF00ED561B /* cflash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cflash.c; path = ../cflash.c; sourceTree = SOURCE_ROOT; };
 		729BECA30D9D57AF00ED561B /* cflash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cflash.h; path = ../cflash.h; sourceTree = SOURCE_ROOT; };
 		729BECA40D9D57AF00ED561B /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ../config.h; sourceTree = SOURCE_ROOT; };
-		729BECA50D9D57AF00ED561B /* cp15.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cp15.c; path = ../cp15.c; sourceTree = SOURCE_ROOT; };
 		729BECA60D9D57AF00ED561B /* cp15.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cp15.h; path = ../cp15.h; sourceTree = SOURCE_ROOT; };
-		729BECA70D9D57AF00ED561B /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = debug.c; path = ../debug.c; sourceTree = SOURCE_ROOT; };
 		729BECA80D9D57AF00ED561B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = ../debug.h; sourceTree = SOURCE_ROOT; };
-		729BECA90D9D57AF00ED561B /* Disassembler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Disassembler.c; path = ../Disassembler.c; sourceTree = SOURCE_ROOT; };
 		729BECAA0D9D57AF00ED561B /* Disassembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Disassembler.h; path = ../Disassembler.h; sourceTree = SOURCE_ROOT; };
 		729BECAB0D9D57AF00ED561B /* dscard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dscard.h; path = ../dscard.h; sourceTree = SOURCE_ROOT; };
 		729BECAC0D9D57AF00ED561B /* fat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fat.h; path = ../fat.h; sourceTree = SOURCE_ROOT; };
-		729BECAD0D9D57AF00ED561B /* FIFO.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = FIFO.c; path = ../FIFO.c; sourceTree = SOURCE_ROOT; };
 		729BECAE0D9D57AF00ED561B /* FIFO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FIFO.h; path = ../FIFO.h; sourceTree = SOURCE_ROOT; };
-		729BECAF0D9D57AF00ED561B /* fs-linux.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "fs-linux.c"; path = "../fs-linux.c"; sourceTree = SOURCE_ROOT; };
 		729BECB00D9D57AF00ED561B /* fs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fs.h; path = ../fs.h; sourceTree = SOURCE_ROOT; };
-		729BECB10D9D57AF00ED561B /* gl_vertex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = gl_vertex.c; path = ../gl_vertex.c; sourceTree = SOURCE_ROOT; };
 		729BECB20D9D57AF00ED561B /* gl_vertex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gl_vertex.h; path = ../gl_vertex.h; sourceTree = SOURCE_ROOT; };
-		729BECB30D9D57AF00ED561B /* GPU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = GPU.c; path = ../GPU.c; sourceTree = SOURCE_ROOT; };
 		729BECB40D9D57AF00ED561B /* GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPU.h; path = ../GPU.h; sourceTree = SOURCE_ROOT; };
-		729BECB50D9D57AF00ED561B /* matrix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = matrix.c; path = ../matrix.c; sourceTree = SOURCE_ROOT; };
 		729BECB60D9D57AF00ED561B /* matrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = matrix.h; path = ../matrix.h; sourceTree = SOURCE_ROOT; };
-		729BECB70D9D57AF00ED561B /* mc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mc.c; path = ../mc.c; sourceTree = SOURCE_ROOT; };
 		729BECB80D9D57AF00ED561B /* mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mc.h; path = ../mc.h; sourceTree = SOURCE_ROOT; };
 		729BECB90D9D57AF00ED561B /* mem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mem.h; path = ../mem.h; sourceTree = SOURCE_ROOT; };
-		729BECBA0D9D57AF00ED561B /* MMU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = MMU.c; path = ../MMU.c; sourceTree = SOURCE_ROOT; };
 		729BECBB0D9D57AF00ED561B /* MMU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MMU.h; path = ../MMU.h; sourceTree = SOURCE_ROOT; };
-		729BECBC0D9D57AF00ED561B /* NDSSystem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = NDSSystem.c; path = ../NDSSystem.c; sourceTree = SOURCE_ROOT; };
 		729BECBD0D9D57AF00ED561B /* NDSSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NDSSystem.h; path = ../NDSSystem.h; sourceTree = SOURCE_ROOT; };
 		729BECBE0D9D57AF00ED561B /* registers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = registers.h; path = ../registers.h; sourceTree = SOURCE_ROOT; };
-		729BECBF0D9D57AF00ED561B /* render3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render3D.c; path = ../render3D.c; sourceTree = SOURCE_ROOT; };
 		729BECC00D9D57AF00ED561B /* render3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render3D.h; path = ../render3D.h; sourceTree = SOURCE_ROOT; };
-		729BECC10D9D57AF00ED561B /* ROMReader.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ROMReader.c; path = ../ROMReader.c; sourceTree = SOURCE_ROOT; };
 		729BECC20D9D57AF00ED561B /* ROMReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ROMReader.h; path = ../ROMReader.h; sourceTree = SOURCE_ROOT; };
-		729BECC30D9D57AF00ED561B /* saves.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = saves.c; path = ../saves.c; sourceTree = SOURCE_ROOT; };
 		729BECC40D9D57AF00ED561B /* saves.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = saves.h; path = ../saves.h; sourceTree = SOURCE_ROOT; };
-		729BECC50D9D57AF00ED561B /* SPU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = SPU.c; path = ../SPU.c; sourceTree = SOURCE_ROOT; };
 		729BECC60D9D57AF00ED561B /* SPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPU.h; path = ../SPU.h; sourceTree = SOURCE_ROOT; };
-		729BECC70D9D57AF00ED561B /* thumb_instructions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = thumb_instructions.c; path = ../thumb_instructions.c; sourceTree = SOURCE_ROOT; };
 		729BECC80D9D57AF00ED561B /* thumb_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thumb_instructions.h; path = ../thumb_instructions.h; sourceTree = SOURCE_ROOT; };
 		729BECC90D9D57AF00ED561B /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = types.h; path = ../types.h; sourceTree = SOURCE_ROOT; };
-		729BECCA0D9D57AF00ED561B /* wifi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = wifi.c; path = ../wifi.c; sourceTree = SOURCE_ROOT; };
 		729BECCB0D9D57AF00ED561B /* wifi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = wifi.h; path = ../wifi.h; sourceTree = SOURCE_ROOT; };
 		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
-		729BECF80D9D589E00ED561B /* OGLRender.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = OGLRender.c; path = ../windows/OGLRender.c; sourceTree = SOURCE_ROOT; };
 		729BECF90D9D589E00ED561B /* OGLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender.h; path = ../windows/OGLRender.h; sourceTree = SOURCE_ROOT; };
 		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
@@ -172,7 +173,8 @@
 				729BEC610D9D55DB00ED561B /* main_window.h */,
 				729BEC620D9D55DB00ED561B /* main_window.m */,
 				729BEC630D9D55DB00ED561B /* nds_control.h */,
-				729BEC640D9D55DB00ED561B /* nds_control.m */,
+				729BEC640D9D55DB00ED561B /* nds_control.mm */,
+				7286BEA10E7C1EAF00C9F662 /* OGLRender.cpp */,
 				729BEC650D9D55DB00ED561B /* preferences.h */,
 				729BEC660D9D55DB00ED561B /* preferences.m */,
 				729BEC670D9D55DB00ED561B /* rom_info.h */,
@@ -229,57 +231,57 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				729BECF80D9D589E00ED561B /* OGLRender.c */,
+				7227644A0E78E18100AEDC8B /* arm_instructions.cpp */,
+				7227644B0E78E18100AEDC8B /* armcpu.cpp */,
+				7227644C0E78E18100AEDC8B /* bios.cpp */,
+				7227644D0E78E18100AEDC8B /* cflash.cpp */,
+				7227644E0E78E18100AEDC8B /* cp15.cpp */,
+				7227644F0E78E18100AEDC8B /* debug.cpp */,
+				722764500E78E18100AEDC8B /* Disassembler.cpp */,
+				722764510E78E18100AEDC8B /* FIFO.cpp */,
+				722764520E78E18100AEDC8B /* fs-linux.cpp */,
+				722764540E78E18100AEDC8B /* gdbstub.h */,
+				722764550E78E18100AEDC8B /* gl_vertex.cpp */,
+				722764560E78E18100AEDC8B /* GPU.cpp */,
+				722764570E78E18100AEDC8B /* matrix.cpp */,
+				722764580E78E18100AEDC8B /* mc.cpp */,
+				722764590E78E18100AEDC8B /* MMU.cpp */,
+				7227645A0E78E18100AEDC8B /* NDSSystem.cpp */,
+				7227645B0E78E18100AEDC8B /* render3D.cpp */,
+				7227645C0E78E18100AEDC8B /* ROMReader.cpp */,
+				7227645D0E78E18100AEDC8B /* saves.cpp */,
+				7227645F0E78E18100AEDC8B /* SPU.cpp */,
+				722764600E78E18100AEDC8B /* thumb_instructions.cpp */,
+				722764610E78E18100AEDC8B /* wifi.cpp */,
 				729BECF90D9D589E00ED561B /* OGLRender.h */,
 				729BEC9A0D9D57AF00ED561B /* ARM9.h */,
-				729BEC9B0D9D57AF00ED561B /* arm_instructions.c */,
 				729BEC9C0D9D57AF00ED561B /* arm_instructions.h */,
-				729BEC9D0D9D57AF00ED561B /* armcpu.c */,
 				729BEC9E0D9D57AF00ED561B /* armcpu.h */,
-				729BEC9F0D9D57AF00ED561B /* bios.c */,
 				729BECA00D9D57AF00ED561B /* bios.h */,
 				729BECA10D9D57AF00ED561B /* bits.h */,
-				729BECA20D9D57AF00ED561B /* cflash.c */,
 				729BECA30D9D57AF00ED561B /* cflash.h */,
 				729BECA40D9D57AF00ED561B /* config.h */,
-				729BECA50D9D57AF00ED561B /* cp15.c */,
 				729BECA60D9D57AF00ED561B /* cp15.h */,
-				729BECA70D9D57AF00ED561B /* debug.c */,
 				729BECA80D9D57AF00ED561B /* debug.h */,
-				729BECA90D9D57AF00ED561B /* Disassembler.c */,
 				729BECAA0D9D57AF00ED561B /* Disassembler.h */,
 				729BECAB0D9D57AF00ED561B /* dscard.h */,
 				729BECAC0D9D57AF00ED561B /* fat.h */,
-				729BECAD0D9D57AF00ED561B /* FIFO.c */,
 				729BECAE0D9D57AF00ED561B /* FIFO.h */,
-				729BECAF0D9D57AF00ED561B /* fs-linux.c */,
 				729BECB00D9D57AF00ED561B /* fs.h */,
-				729BECB10D9D57AF00ED561B /* gl_vertex.c */,
 				729BECB20D9D57AF00ED561B /* gl_vertex.h */,
-				729BECB30D9D57AF00ED561B /* GPU.c */,
 				729BECB40D9D57AF00ED561B /* GPU.h */,
-				729BECB50D9D57AF00ED561B /* matrix.c */,
 				729BECB60D9D57AF00ED561B /* matrix.h */,
-				729BECB70D9D57AF00ED561B /* mc.c */,
 				729BECB80D9D57AF00ED561B /* mc.h */,
 				729BECB90D9D57AF00ED561B /* mem.h */,
-				729BECBA0D9D57AF00ED561B /* MMU.c */,
 				729BECBB0D9D57AF00ED561B /* MMU.h */,
-				729BECBC0D9D57AF00ED561B /* NDSSystem.c */,
 				729BECBD0D9D57AF00ED561B /* NDSSystem.h */,
 				729BECBE0D9D57AF00ED561B /* registers.h */,
-				729BECBF0D9D57AF00ED561B /* render3D.c */,
 				729BECC00D9D57AF00ED561B /* render3D.h */,
-				729BECC10D9D57AF00ED561B /* ROMReader.c */,
 				729BECC20D9D57AF00ED561B /* ROMReader.h */,
-				729BECC30D9D57AF00ED561B /* saves.c */,
 				729BECC40D9D57AF00ED561B /* saves.h */,
-				729BECC50D9D57AF00ED561B /* SPU.c */,
 				729BECC60D9D57AF00ED561B /* SPU.h */,
-				729BECC70D9D57AF00ED561B /* thumb_instructions.c */,
 				729BECC80D9D57AF00ED561B /* thumb_instructions.h */,
 				729BECC90D9D57AF00ED561B /* types.h */,
-				729BECCA0D9D57AF00ED561B /* wifi.c */,
 				729BECCB0D9D57AF00ED561B /* wifi.h */,
 			);
 			name = Core;
@@ -407,36 +409,36 @@
 				729BEC710D9D55DB00ED561B /* input.m in Sources */,
 				729BEC730D9D55DB00ED561B /* main.m in Sources */,
 				729BEC740D9D55DB00ED561B /* main_window.m in Sources */,
-				729BEC750D9D55DB00ED561B /* nds_control.m in Sources */,
+				729BEC750D9D55DB00ED561B /* nds_control.mm in Sources */,
 				729BEC760D9D55DB00ED561B /* preferences.m in Sources */,
 				729BEC770D9D55DB00ED561B /* rom_info.m in Sources */,
 				729BEC780D9D55DB00ED561B /* screenshot.m in Sources */,
 				729BEC790D9D55DB00ED561B /* sndOSX.m in Sources */,
 				729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */,
-				729BECCC0D9D57AF00ED561B /* arm_instructions.c in Sources */,
-				729BECCD0D9D57AF00ED561B /* armcpu.c in Sources */,
-				729BECCE0D9D57AF00ED561B /* bios.c in Sources */,
-				729BECCF0D9D57AF00ED561B /* cflash.c in Sources */,
-				729BECD00D9D57AF00ED561B /* cp15.c in Sources */,
-				729BECD10D9D57AF00ED561B /* debug.c in Sources */,
-				729BECD20D9D57AF00ED561B /* Disassembler.c in Sources */,
-				729BECD30D9D57AF00ED561B /* FIFO.c in Sources */,
-				729BECD40D9D57AF00ED561B /* fs-linux.c in Sources */,
-				729BECD50D9D57AF00ED561B /* gl_vertex.c in Sources */,
-				729BECD60D9D57AF00ED561B /* GPU.c in Sources */,
-				729BECD70D9D57AF00ED561B /* matrix.c in Sources */,
-				729BECD80D9D57AF00ED561B /* mc.c in Sources */,
-				729BECD90D9D57AF00ED561B /* MMU.c in Sources */,
-				729BECDA0D9D57AF00ED561B /* NDSSystem.c in Sources */,
-				729BECDB0D9D57AF00ED561B /* render3D.c in Sources */,
-				729BECDC0D9D57AF00ED561B /* ROMReader.c in Sources */,
-				729BECDD0D9D57AF00ED561B /* saves.c in Sources */,
-				729BECDE0D9D57AF00ED561B /* SPU.c in Sources */,
-				729BECDF0D9D57AF00ED561B /* thumb_instructions.c in Sources */,
-				729BECE00D9D57AF00ED561B /* wifi.c in Sources */,
-				729BECFA0D9D589E00ED561B /* OGLRender.c in Sources */,
 				7277B8EB0D9F25F700D283BD /* about.m in Sources */,
 				7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */,
+				722764620E78E18100AEDC8B /* arm_instructions.cpp in Sources */,
+				722764630E78E18100AEDC8B /* armcpu.cpp in Sources */,
+				722764640E78E18100AEDC8B /* bios.cpp in Sources */,
+				722764650E78E18100AEDC8B /* cflash.cpp in Sources */,
+				722764660E78E18100AEDC8B /* cp15.cpp in Sources */,
+				722764670E78E18100AEDC8B /* debug.cpp in Sources */,
+				722764680E78E18100AEDC8B /* Disassembler.cpp in Sources */,
+				722764690E78E18100AEDC8B /* FIFO.cpp in Sources */,
+				7227646A0E78E18100AEDC8B /* fs-linux.cpp in Sources */,
+				7227646C0E78E18100AEDC8B /* gl_vertex.cpp in Sources */,
+				7227646D0E78E18100AEDC8B /* GPU.cpp in Sources */,
+				7227646E0E78E18100AEDC8B /* matrix.cpp in Sources */,
+				7227646F0E78E18100AEDC8B /* mc.cpp in Sources */,
+				722764700E78E18100AEDC8B /* MMU.cpp in Sources */,
+				722764710E78E18100AEDC8B /* NDSSystem.cpp in Sources */,
+				722764720E78E18100AEDC8B /* render3D.cpp in Sources */,
+				722764730E78E18100AEDC8B /* ROMReader.cpp in Sources */,
+				722764740E78E18100AEDC8B /* saves.cpp in Sources */,
+				722764760E78E18100AEDC8B /* SPU.cpp in Sources */,
+				722764770E78E18100AEDC8B /* thumb_instructions.cpp in Sources */,
+				722764780E78E18100AEDC8B /* wifi.cpp in Sources */,
+				7286BEA20E7C1EAF00C9F662 /* OGLRender.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -488,6 +490,7 @@
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					DESMUME_OBJ_C,
 					HAVE_LIBZ,
 					DESMUME_COCOA,
 				);
@@ -507,6 +510,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					DESMUME_OBJ_C,
 					HAVE_LIBZ,
 					DESMUME_COCOA,
 				);

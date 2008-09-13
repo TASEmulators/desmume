@@ -23,7 +23,7 @@
 #ifndef FASTCALL
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
-#elif defined (DESMUME_COCOA)
+#elif defined (DESMUME_OBJ_C)
 #define FASTCALL __attribute__((fastcall))
 #elif defined (__i386__)
 #define FASTCALL __attribute__((regparm(3)))
@@ -42,7 +42,7 @@
 #endif
 #endif
 
-#ifdef DESMUME_COCOA
+#ifdef DESMUME_OBJ_C
 #define __declspec(ignore)
 #define printlog(ignore)
 #ifdef __BIG_ENDIAN__
