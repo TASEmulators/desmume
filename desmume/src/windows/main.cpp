@@ -136,6 +136,7 @@ static u32 backupmemorysize=1;
 unsigned int frameCounter=0;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
+unsigned short windowSize = 1;
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -272,6 +273,11 @@ void ScaleScreen(float factor)
 {
 	SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor,
                  heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
+	if (windowSize != factor)
+	{
+		windowSize = factor;
+		WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+	}
 	return;
 }
  
@@ -1010,7 +1016,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	static int tmp_execute;
     switch (message)                  // handle the messages
     {
-		/*case WM_ENTERMENULOOP:
+		case WM_ENTERMENULOOP:
 			{
 				if (execute)
 				{
@@ -1023,12 +1029,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			{
 				if (tmp_execute==2) NDS_UnPause();
 				return 0;
-			}*/
+			}
 
         case WM_CREATE:
 	     {
-	     	RECT clientSize, fullSize;
-             	HRESULT hr=Input_Init(hwnd);
+	     	windowSize = GetPrivateProfileInt("Video","Window Size", 1, IniName);
+			RECT clientSize, fullSize;
+            HRESULT hr=Input_Init(hwnd);
 #ifdef DEBUG
 				if(FAILED(hr)) LOG("DirectInput init failed (0x%08x)\n",hr);
 				else LOG("DirectInput init\n");
@@ -1039,7 +1046,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			DefaultHeight = clientSize.bottom - clientSize.top;
 			widthTradeOff = (fullSize.right - fullSize.left) - (clientSize.right - clientSize.left);
 			heightTradeOff = (fullSize.bottom - fullSize.top) - (clientSize.bottom - clientSize.top);
-            return 0;
+            ScaleScreen(windowSize);
+			return 0;
+			
 	     }
         case WM_DESTROY:
 			{
@@ -1068,7 +1077,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     			if (ForceRatio) {
 					RECT fullSize;
 					GetWindowRect(hwnd, &fullSize);
-					ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
+					ScaleScreen(windowSize);
+					//ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
 				}
 				GetRect(hwnd);
 				return 0;
