@@ -21,6 +21,8 @@
 
 #include "globals.h"
 
+extern "C" {
+
 /* MENU FILE */
 G_MODULE_EXPORT void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data);
@@ -68,3 +70,5 @@ G_MODULE_EXPORT void  on_wgt_Quit_clicked  (GtkToolButton *toolbutton, gpointer 
 /* LAYERS TOGGLE */
 G_MODULE_EXPORT void  on_wc_1_BGXX_toggled  (GtkToggleButton *togglebutton, gpointer user_data);
 G_MODULE_EXPORT void  on_wc_2_BGXX_toggled (GtkToggleButton *togglebutton, gpointer user_data);
+
+}

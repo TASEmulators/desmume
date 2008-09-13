@@ -66,7 +66,8 @@ static void wtools_1_update () {
 static u32 mem[NBR_IO_REGS];
 
 static void update_regs_fast(){
-	char text[10], *mask;
+	char text[10];
+	const char * mask;
 	int i; u32 w, m;
 	for( i = 0; i < NBR_IO_REGS; i++ )
 	{	
@@ -91,7 +92,8 @@ static void update_regs_fast(){
 
 static void update_regs()
 {
-	char text[80], *mask;
+	char text[80];
+	const char * mask;
 	int len, i;
 
 	if (init==FALSE) {

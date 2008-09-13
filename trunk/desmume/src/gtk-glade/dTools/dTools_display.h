@@ -92,7 +92,7 @@ static void inline dTools_display_clear_char(dTools_dsp * dsp, int x, int y, int
 
 static void inline dTools_display_select_attr(dTools_dsp * dsp, int index) {
 	PangoAttrList *attr = NULL;
-	attr = g_list_nth_data(dsp->attr_list, index);
+	attr = (PangoAttrList*) g_list_nth_data(dsp->attr_list, index);
 	if (attr != NULL) {
 		dsp->curr_attr = attr;
 	}

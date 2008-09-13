@@ -16,16 +16,16 @@ glade_DATA = glade/DeSmuMe_Dtools.glade glade/DeSmuMe.glade glade/DeSmuME.xpm
 
 bin_PROGRAMS = desmume-glade
 desmume_glade_SOURCES =  \
-	globals.h glade-xml.c \
-	callbacks.c callbacks.h callbacks_IO.c callbacks_IO.h \
-	desmume.c desmume.h \
-	keyval_names.c main.c printscreen.c gdk_gl.c gdk_gl.h \
-	dTools/callbacks_1_ioregs.c dTools/callbacks_2_memview.c \
-	dTools/callbacks_3_palview.c  dTools/callbacks_4_tileview.c \
+	globals.h glade-xml.cpp \
+	callbacks.cpp callbacks.h callbacks_IO.cpp callbacks_IO.h \
+	desmume.cpp desmume.h \
+	keyval_names.cpp main.cpp printscreen.cpp gdk_gl.cpp gdk_gl.h \
+	dTools/callbacks_1_ioregs.cpp dTools/callbacks_2_memview.cpp \
+	dTools/callbacks_3_palview.cpp  dTools/callbacks_4_tileview.cpp \
 	dTools/callbacks_dtools.h \
 	dTools/dTools_display.h \
-	gdk_3Demu.c gdk_3Demu.h \
-	../sndsdl.h ../sndsdl.c ../ctrlssdl.h ../ctrlssdl.c 
+	gdk_3Demu.cpp gdk_3Demu.h \
+	../sndsdl.h ../sndsdl.cpp ../ctrlssdl.h ../ctrlssdl.cpp
 
 desmume_glade_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a \
 			$(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) \

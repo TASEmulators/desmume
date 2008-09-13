@@ -22,6 +22,8 @@
 
 #include "globals.h"
 
+extern "C" {
+
 /* INPUT BUTTONS / KEYBOARD */
 G_MODULE_EXPORT gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
 G_MODULE_EXPORT gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, gpointer user_data);
@@ -45,3 +47,5 @@ G_MODULE_EXPORT void  on_button_kb_key_clicked    (GtkButton *button, gpointer u
 /* Joystick configuration / Key definition */
 G_MODULE_EXPORT void on_button_joy_axis_clicked (GtkButton *button, gpointer user_data);
 G_MODULE_EXPORT void on_button_joy_key_clicked (GtkButton *button, gpointer user_data);
+
+}

@@ -108,7 +108,7 @@ autoconnect_foreach_StringObject(const char *signal_handler, GList *signals,
 
 	
 
-	if (!g_module_symbol(allsymbols, signal_handler, (gpointer)&func))
+	if (!g_module_symbol(allsymbols, signal_handler, (void **)&func))
 
 	g_warning(_("could not find signal handler '%s'."), signal_handler);
 
@@ -116,7 +116,7 @@ autoconnect_foreach_StringObject(const char *signal_handler, GList *signals,
 
 	for (; signals != NULL; signals = signals->next) {
 
-		GladeSignalData *data = signals->data;
+		GladeSignalData *data = (GladeSignalData *) signals->data;
 
 		if (data->connect_object) {
 
@@ -156,15 +156,15 @@ autoconnect_foreach_StringObject(const char *signal_handler, GList *signals,
 
 			} else {
 
-				GObject *other = g_hash_table_lookup(self->priv->name_hash,
+				GObject *other = (GObject *) g_hash_table_lookup(self->priv->name_hash,
 
 							data->connect_object);
 
 				g_signal_connect_object(data->signal_object, data->signal_name,
 
-					func, other, (data->signal_after ? G_CONNECT_AFTER : 0)
+					func, other, (GConnectFlags) ((data->signal_after ? G_CONNECT_AFTER : 0)
 
-					| G_CONNECT_SWAPPED);
+					| G_CONNECT_SWAPPED));
 
 			}
 
@@ -242,7 +242,7 @@ glade_xml_signal_autoconnect_StringObject (GladeXML *self)
 
     /* get a handle on the main executable -- use this to find symbols */
 
-    allsymbols = g_module_open(NULL, 0);
+    allsymbols = g_module_open(NULL, (GModuleFlags) 0);
 
     priv = (nopriv_GladeXMLPrivate *)self->priv;
 

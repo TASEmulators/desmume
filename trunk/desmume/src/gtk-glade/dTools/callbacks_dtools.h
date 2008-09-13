@@ -19,7 +19,12 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifndef __CALLBACKS_DTOOLS_H__
+#define __CALLBACKS_DTOOLS_H__
+
 #include "../globals.h"
+
+extern "C" {
 
 /* ***** ***** IO REGISTERS ***** ***** */
 G_MODULE_EXPORT void     on_wtools_1_combo_cpu_changed        (GtkComboBox *, gpointer );
@@ -69,3 +74,6 @@ G_MODULE_EXPORT void     on_wtools_4_palnum_value_changed (GtkSpinButton *, gpoi
 G_MODULE_EXPORT void	 on_wtools_4_rXX_toggled          (GtkToggleButton *togglebutton, gpointer user_data);
 G_MODULE_EXPORT gboolean on_wDraw_Tile_expose_event       (GtkWidget *, GdkEventExpose *, gpointer );
 
+}
+
+#endif
