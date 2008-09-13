@@ -105,19 +105,25 @@ extern void debug();
 
 typedef struct
 {
-       s32 ARM9Cycle;
-       s32 ARM7Cycle;
-       s32 cycles;
-       s32 timerCycle[2][4];
-       BOOL timerOver[2][4];
-       s32 nextHBlank;
-       u32 VCount;
-       u32 old;
-       s32 diff;
-       BOOL lignerendu;
-       
-       u16 touchX;
-       u16 touchY;
+	s32 ARM9Cycle;
+	s32 ARM7Cycle;
+	s32 cycles;
+	s32 timerCycle[2][4];
+	BOOL timerOver[2][4];
+	s32 nextHBlank;
+	u32 VCount;
+	u32 old;
+	s32 diff;
+	BOOL lignerendu;
+
+	u16 touchX;
+	u16 touchY;
+
+	s32 idleCycles;
+	s32 runCycleCollector[16];
+	s32 idleFrameCounter;
+
+
 } NDSSystem;
 
 /** /brief A touchscreen calibration point.

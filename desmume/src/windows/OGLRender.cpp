@@ -27,6 +27,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #ifndef DESMUME_COCOA
 	#define WIN32_LEAN_AND_MEAN
@@ -57,12 +58,6 @@
 
 static __declspec(align(16)) unsigned char  GPU_screen3D		[256*256*4]={0};
 static __declspec(align(16)) unsigned char  GPU_screenStencil[256*256]={0};
-
-// Acceleration tables
-static float*		float16table = NULL;
-static float*		float10Table = NULL;
-static float*		float10RelTable = NULL;
-static float*		normalTable = NULL;
 
 // Matrix stack handling
 static __declspec(align(16)) MatrixStack	mtxStack[4];
@@ -113,13 +108,51 @@ static const u8 material_5bit_to_8bit[] = {
 	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
 };
 
+
 static const u8 material_3bit_to_8bit[] = {
 	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
 };
 
+// Acceleration tables
+static float float16table[65536];
+static float float10Table[1024];
+static float float10RelTable[1024];
+static float normalTable[1024];
+static u32 color_15bit_to_24bit[32768];
+
+
+//produce a 32bpp color from a DS RGB16
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
-//make a table out of this:
-#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
+
+
+//produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
+#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col] )
+
+//produce a 32bpp color from a ds RGB15 plus an 8bit alpha, not using a table (but using other tables)
+#define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
+
+
+void makeTables() {
+
+	//produce the color bits of a 32bpp color from a DS RGB15 using bit logic (internal use only)
+	#define RGB15TO24_BITLOGIC(col) ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
+
+	for(int i=0;i<32768;i++)
+		color_15bit_to_24bit[i] = RGB15TO24_BITLOGIC((u16)i);
+
+	for (int i = 0; i < 65536; i++)
+		float16table[i] = fix2float((signed short)i);
+
+	for (int i = 0; i < 1024; i++)
+		float10Table[i] = ((signed short)(i<<6)) / (float)(1<<12);
+
+	for (int i = 0; i < 1024; i++)
+		float10RelTable[i] = ((signed short)(i<<6)) / (float)(1<<18);
+
+	for (int i = 0; i < 1024; i++)
+		normalTable[i] = ((signed short)(i<<6)) / (float)(1<<15);
+}
+
 
 static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
 static short mode = 0;
@@ -442,29 +475,7 @@ char NDS_glInit(void)
 	twiddleLists();
 
 	// Precalculate some tables, to avoid pushing data to the FPU and back for conversion
-	float16table = (float*) malloc (sizeof(float)*65536);
-	for (i = 0; i < 65536; i++)
-	{
-		float16table[i] = fix2float((signed short)i);
-	}
-
-	float10RelTable = (float*) malloc (sizeof(float)*1024);
-	for (i = 0; i < 1024; i++)
-	{
-		float10RelTable[i] = ((signed short)(i<<6)) / (float)(1<<18);
-	}
-
-	float10Table = (float*) malloc (sizeof(float)*1024);
-	for (i = 0; i < 1024; i++)
-	{
-		float10Table[i] = ((signed short)(i<<6)) / (float)(1<<12);
-	}
-
-	normalTable = (float*) malloc (sizeof(float)*1024);
-	for (i = 0; i < 1024; i++)
-	{
-		normalTable[i] = ((signed short)(i<<6)) / (float)(1<<15);
-	}
+	makeTables();
 
 	MatrixStackSetMaxSize(&mtxStack[0], 1);		// Projection stack
 	MatrixStackSetMaxSize(&mtxStack[1], 31);	// Coordinate stack
@@ -881,7 +892,7 @@ static void DebugDumpTexture(int which)
 
 //================================================================================
 static int lastTexture = -1;
-__forceinline void setTexture(unsigned int format, unsigned int texpal)
+void setTexture(unsigned int format, unsigned int texpal)
 {
 	int palSize[7]={32,4,16,256,0,8,32768};
 	int i=0;
@@ -977,10 +988,6 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 	glMatrixMode (GL_TEXTURE);
 	glLoadIdentity ();
 	glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
-
-	if(i==62 || textureMode==1) {
-		int zzz=9;
-	}
 
 	//printlog("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
 	
@@ -1213,7 +1220,7 @@ __forceinline void setTexture(unsigned int format, unsigned int texpal)
 				{
 					unsigned short c = map[x];
 					int alpha = ((c&0x8000)?255:0);
-					*dst = RGB15TO32(c,alpha);
+					*dst = RGB15TO32(c&0x7FFF,alpha);
 					
 					dst++;
 					txt_slot_current_size-=2;;
@@ -1643,10 +1650,16 @@ __forceinline void NDS_glTexCoord(unsigned long val)
 
 	if (texCoordinateTransform == 1)
 	{
+		//last_s =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
+		//		0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
+		//last_t =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
+		//		0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
+
+		//zero 9/11/08 - I dunno... I think it needs to be like this to make things look right
 		last_s =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
-				0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
+				mtxCurrent[3][8] + mtxCurrent[3][12];
 		last_t =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
-				0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
+				mtxCurrent[3][9] + mtxCurrent[3][13];
 	}
 	else
 	{
@@ -1972,15 +1985,17 @@ void GL_ReadFramebuffer()
 
 //NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
 //zeromus post-mod3: fix even better
-__forceinline void NDS_glGetLine (int line, unsigned short * dst)
+static void NDS_glGetLine (int line, u16* dst)
 {
+	assert(line<192 && line>=0);
+
 	if(needRefreshFramebuffer) {
 		needRefreshFramebuffer = false;
 		GL_ReadFramebuffer();
 	}
-	int		i, t;
-	u8	*screen3D		= (u8 *)&GPU_screen3D	[(191-(line%192))*1024];
-	u8  *screenStencil = (u8*)&GPU_screenStencil[(191-(line%192))*256];
+	
+	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
+	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
 
 	//the renderer clears the stencil to 0
 	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
@@ -1992,33 +2007,27 @@ __forceinline void NDS_glGetLine (int line, unsigned short * dst)
 	//this alpha compositing blending logic isnt thought through at all
 	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
 
-	u32		a,r,g,b,stencil,oldcolor,oldr,oldg,oldb;
-
-	for(i = 0, t=0; i < 256; i++)
+	for(int i = 0; i < 256; i++)
 	{
-		stencil = screenStencil[i];
+		u32 stencil = screenStencil[i];
 
 		//you would use this if you wanted to use the stencil buffer to make decisions here
 		if(!stencil) continue;
 
-		t=i*4;
-		r = screen3D[t+0];
-		g = screen3D[t+1];
-		b = screen3D[t+2];
-		a = screen3D[t+3];
+		int t=i<<2;
+		u32 r = screen3D[t+0];
+		u32 g = screen3D[t+1];
+		u32 b = screen3D[t+2];
+		u32 a = screen3D[t+3];
 
-		if(a != 0xFF && a != 0) {
-			int zzz=9;
-		}
+		u32 oldcolor = RGB15TO32(dst[i],0);
+		u32 oldr = oldcolor&0xFF;
+		u32 oldg = (oldcolor>>8)&0xFF;
+		u32 oldb = (oldcolor>>16)&0xFF;
 
-		oldcolor = RGB15TO32(dst[i],0);
-		oldr = oldcolor&0xFF;
-		oldg = (oldcolor>>8)&0xFF;
-		oldb = (oldcolor>>16)&0xFF;
-
-		r = (r*a + oldr*(255-a)) / 255;
-		g = (g*a + oldg*(255-a)) / 255;
-		b = (b*a + oldb*(255-a)) / 255;
+		r = (r*a + oldr*(255-a)) >> 8;
+		g = (g*a + oldg*(255-a)) >> 8;
+		b = (b*a + oldb*(255-a)) >> 8;
 
 		r=min(255,r);
 		g=min(255,g);

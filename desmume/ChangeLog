@@ -51,6 +51,8 @@
  - Add opengl state caching. This is of dubious performance assistance, but it is easy to take out so I am leaving it for now. [zeromus]
  - Add MMU->GPU signal for when vram mappings change, which allows it to assume textures are unchanged unless vram has changed [zeromus]
  - Added a bunch of crazy templates to the cpu and mmu which speed up a the emu little by optimizing variable accesses [zeromus]
+ - Add an arm8 cpu load average calculator [zeromus]
+ ? Fix a bug in texture transformation mode 1 [zeromus]
     
  
 0.7.3 -> 0.8
