@@ -23,6 +23,6 @@ libdesmume_a_SOURCES = \
         SPU.cpp SPU.h \
 	gdbstub.h \
 	matrix.cpp matrix.h \
-	opengl_collector_3Demu.cpp opengl_collector_3Demu.h \
+	gfx3d.cpp gfx3d.h \
         thumb_instructions.cpp thumb_instructions.h types.h
 libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)

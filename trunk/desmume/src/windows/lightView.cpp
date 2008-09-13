@@ -22,7 +22,7 @@
 #include "lightView.h"
 #include "resource.h"
 #include "matrix.h"
-#include "render3d.h"
+#include "gfx3d.h"
 #include "armcpu.h"
 #include "colorctrl.h"
 #include "colorconv.h"
@@ -74,9 +74,9 @@ void LightView_OnPaintLight(lightview_struct* win, int index)
 	ColorCtrl*		colorCtrl;
 	char			buffer[128];
 
-	// Get necessary information from render module
-	gpu3D->NDS_glGetLightColor(index, &color);
-	gpu3D->NDS_glGetLightDirection(index, &direction);
+	// Get necessary information from gfx3d module
+	gfx3d_glGetLightColor(index, &color);
+	gfx3d_glGetLightDirection(index, &direction);
 
 	// Print Light Direction
 	sprintf(buffer, "%.8x", direction);

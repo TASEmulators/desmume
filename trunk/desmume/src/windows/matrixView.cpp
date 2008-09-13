@@ -22,8 +22,8 @@
 #include "matrixView.h"
 #include "resource.h"
 #include "matrix.h"
-#include "render3d.h"
 #include "armcpu.h"
+#include "gfx3d.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ void MatrixView_OnPaintPositionMatrix(matrixview_struct* win)
 
 	stackIndex = SendMessage(hStackCombo, CB_GETCURSEL, 0, 0) - 1;
 
-	gpu3D->NDS_3D_GetMatrix(1, stackIndex, matrix);
+	gfx3d_glGetMatrix(1, stackIndex, matrix);
 	MatrixView_SetMatrix(win, idcGroup, matrix);
 }
 
@@ -122,7 +122,7 @@ void MatrixView_OnPaintDirectionMatrix(matrixview_struct* win)
 
 	stackIndex = SendMessage(hStackCombo, CB_GETCURSEL, 0, 0) - 1;
 
-	gpu3D->NDS_3D_GetMatrix(2, stackIndex, matrix);
+	gfx3d_glGetMatrix(2, stackIndex, matrix);
 	MatrixView_SetMatrix(win, idcGroup, matrix);
 }
 
@@ -141,7 +141,7 @@ void MatrixView_OnPaintProjectionMatrix(matrixview_struct* win)
 
 	float mat[16];
 
-	gpu3D->NDS_3D_GetMatrix(0, -1, mat);
+	gfx3d_glGetMatrix(0, -1, mat);
 	MatrixView_SetMatrix(win, idcGroup, mat);
 }
 
@@ -160,7 +160,7 @@ void MatrixView_OnPaintTextureMatrix(matrixview_struct* win)
 
 	float mat[16];
 
-	gpu3D->NDS_3D_GetMatrix(3, -1, mat);
+	gfx3d_glGetMatrix(3, -1, mat);
 	MatrixView_SetMatrix(win, idcGroup, mat);
 }
 

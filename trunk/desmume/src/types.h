@@ -20,6 +20,14 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#ifdef _MSC_VER
+#define ALIGN(X) __declspec(align(X))
+#elif __GNUC__
+#define ALIGN(X) __attribute__ ((aligned (X)))
+#else
+#define ALIGN(X)
+#endif
+
 #ifndef FASTCALL
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
