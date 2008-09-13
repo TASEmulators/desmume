@@ -541,14 +541,24 @@ DWORD WINAPI run( LPVOID lpParameter)
 
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-                  if(curticks >= fpsticks + freq) // TODO: print fps on screen in DDraw
+				  bool oneSecond = curticks >= fpsticks + freq;
+                  if(oneSecond) // TODO: print fps on screen in DDraw
                   {
                      fps = fpsframecount;
-					 sprintf(txt,"(%d) DeSmuME v%s", fps, VERSION);
-                     SetWindowText(hwnd, txt);
                      fpsframecount = 0;
                      QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
                   }
+
+				  if(nds.idleFrameCounter==0 || oneSecond) 
+				  {
+					  //calculate a 16 frame arm9 load average
+					 int load = 0;
+					 for(int i=0;i<16;i++)
+						 load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
+					 load = min(100,max(0,(int)(load*100/1120380)));
+					 sprintf(txt,"(%02d|%02d%%) DeSmuME v%s", fps, load, VERSION);
+					 SetWindowText(hwnd, txt);
+				  }
 
                   framesskipped = 0;
 

@@ -149,6 +149,8 @@ int NDS_Init( void) {
      nds.ARM9Cycle = 0;
      nds.ARM7Cycle = 0;
      nds.cycles = 0;
+	 nds.idleFrameCounter = 0;
+	 memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
      MMU_Init();
      nds.nextHBlank = 3168;
      nds.VCount = 0;
@@ -887,9 +889,10 @@ NDS_exec(s32 nb, BOOL force)
 #endif
 				for (i = 0; i < 4 && (!force) && (execute); i++)
 				{
-					if(NDS_ARM9.waitIRQ)
+					if(NDS_ARM9.waitIRQ) {
 						nds.ARM9Cycle += 100;
-					else
+						nds.idleCycles += 100;
+					} else
 						//nds.ARM9Cycle += NDS_ARM9.exec();
 						//nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
 						nds.ARM9Cycle += armcpu_exec<0>();
@@ -1030,6 +1033,11 @@ NDS_exec(s32 nb, BOOL force)
                   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
                   NDS_ARM9VBlankInt();
                   NDS_ARM7VBlankInt();
+				  nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
+				  nds.idleFrameCounter++;
+				  nds.idleFrameCounter &= 15;
+				  nds.idleCycles = 0;
+
                                 
                   if(MMU.DMAStartTime[0][0] == 1)
                     MMU_doDMA(0, 0);
