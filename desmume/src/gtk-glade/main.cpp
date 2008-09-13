@@ -25,6 +25,7 @@
 #include "dTools/callbacks_dtools.h"
 #include "globals.h"
 #include "../gdbstub.h"
+#include "keyval_names.h"
 
 #ifdef GTKGLEXT_AVAILABLE
 #include <gtk/gtkgl.h>
@@ -37,7 +38,6 @@
  */
 SDL_sem *glade_fps_limiter_semaphore;
 int glade_fps_limiter_disabled = 0;
-
 
 GtkWidget * pWindow;
 GtkWidget * pDrawingArea, * pDrawingArea2;
@@ -210,11 +210,11 @@ GList * tools_to_update = NULL;
 
 // register tool
 void register_Tool(VoidFunPtr fun) {
-	tools_to_update = g_list_append(tools_to_update, fun);
+	tools_to_update = g_list_append(tools_to_update, (void *) fun);
 }
 void unregister_Tool(VoidFunPtr fun) {
 	if (tools_to_update == NULL) return;
-	tools_to_update = g_list_remove(tools_to_update, fun);
+	tools_to_update = g_list_remove(tools_to_update, (void *) fun);
 }
 
 void notify_Tool (VoidFunPtr fun, gpointer func_data) {
@@ -309,71 +309,6 @@ int Write_ConfigFile()
 	return 0;
 }
 
-/* ******** Savestate menu items handling ******** */
-
-void set_menuitem_label(GtkWidget * w, char * text )
-{
-  GtkLabel * child;
-
-  if ( GTK_BIN(w)->child )
-    {
-      child = (GtkLabel*)GTK_BIN(w)->child;
-      gtk_label_set_text(child, text);
-    }
-}
-
-void clear_savestate_menu(char * cb_name, u8 num)
-{
-  GtkWidget * w;
-  char cb[40];
-  char text[40];
-
-  sprintf( cb, "%s%d", cb_name, num);
-  sprintf( text, _("State %d (empty)"), num);
-  w = glade_xml_get_widget(xml, cb);
-  set_menuitem_label( w, text );
-}
-
-void update_savestate_menu(char * cb_name, u8 num)
-{
-  GtkWidget * w;
-  char cb[40];
-
-  sprintf( cb, "%s%d", cb_name, num);
-  w = glade_xml_get_widget(xml, cb);
-  set_menuitem_label( w, savestates[num-1].date );
-}
-
-void update_savestates_menu()
-{
-  char cb[15];
-  u8 i;
-  GtkWidget * w;
-
-  for( i = 1; i <= NB_STATES; i++ )
-    {
-      if( savestates[i-1].exists == TRUE )
-        {
-          update_savestate_menu("loadstate", i);
-          update_savestate_menu("savestate", i);
-        }
-      else
-        {
-          clear_savestate_menu("loadstate", i);
-          clear_savestate_menu("savestate", i);
-        }
-    }
-}
-
-void update_savestate(u8 num)
-{
-  desmume_pause();
-  savestate_slot(num);
-  update_savestate_menu("savestate", num);
-  update_savestate_menu("loadstate", num);
-  desmume_resume();
-}
-
 
 /*
  * The thread handling functions needed by the GDB stub code.
@@ -391,7 +326,7 @@ createThread_gdb( void (*thread_function)( void *data),
 
 void
 joinThread_gdb( void *thread_handle) {
-  g_thread_join( thread_handle);
+  g_thread_join((GThread *) thread_handle);
 }
 
 

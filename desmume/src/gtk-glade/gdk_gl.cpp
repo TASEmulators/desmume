@@ -175,9 +175,9 @@ void init_GL_capabilities(  int use_software_convert) {
 
   uint16_t blank_texture[256 * 512];
 	my_glConfig = gdk_gl_config_new_by_mode (
-		GDK_GL_MODE_RGBA
+		(GdkGLConfigMode) (GDK_GL_MODE_RGBA
 		| GDK_GL_MODE_DEPTH 
-		| GDK_GL_MODE_DOUBLE
+		| GDK_GL_MODE_DOUBLE)
 	);
 
         gtk_glade_use_software_colour_convert = use_software_convert;

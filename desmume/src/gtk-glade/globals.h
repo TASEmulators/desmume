@@ -106,13 +106,12 @@ glade_xml_signal_autoconnect_StringObject (GladeXML *self);
 
 //---
 
-int Frameskip;
-u16 Keypad_Temp[NB_KEYS];
+extern int Frameskip;
 
 /* main.c */
-GtkWidget * pWindow;
-GtkWidget * pDrawingArea, * pDrawingArea2;
-GladeXML  * xml, * xml_tools;
+extern GtkWidget * pWindow;
+extern GtkWidget * pDrawingArea, * pDrawingArea2;
+extern GladeXML  * xml, * xml_tools;
 
 typedef void (*VoidFunPtr)();
 void notify_Tools();
@@ -124,13 +123,11 @@ gchar * get_ui_file (const char *filename);
 void enable_rom_features();
 void resize (float Size1, float Size2);
 void rotate(float angle);
-gboolean ScreenInvert;
-gboolean ScreenGap;
-gboolean ScreenRight;
+extern gboolean ScreenInvert;
 
 /* callbacks_IO.c */
-float ScreenCoeff_Size[2];
-float ScreenRotate;
+extern float ScreenCoeff_Size[2];
+extern float ScreenRotate;
 
 void black_screen ();
 void edit_controls();
@@ -140,8 +137,7 @@ void init_joy_labels();
 int WriteBMP(const char *filename,u16 *bmp);
 
 /* keyvalnames.c   -see <gdk/gdkkeysyms.h>- */
-char * KEYVAL_NAMES[0x10000];
-char * KEYNAME(int k);
+const char * KEYNAME(int k);
 void init_keyvals();
 
 #endif /* __GLOBALS_H__ */

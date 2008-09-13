@@ -29,6 +29,71 @@ gboolean ScreenRight=FALSE;
 gboolean ScreenGap=FALSE;
 gboolean ScreenInvert=FALSE;
 
+/* ******** Savestate menu items handling ******** */
+
+void set_menuitem_label(GtkWidget * w, char * text )
+{
+  GtkLabel * child;
+
+  if ( GTK_BIN(w)->child )
+    {
+      child = (GtkLabel*)GTK_BIN(w)->child;
+      gtk_label_set_text(child, text);
+    }
+}
+
+void clear_savestate_menu(char * cb_name, u8 num)
+{
+  GtkWidget * w;
+  char cb[40];
+  char text[40];
+
+  sprintf( cb, "%s%d", cb_name, num);
+  sprintf( text, _("State %d (empty)"), num);
+  w = glade_xml_get_widget(xml, cb);
+  set_menuitem_label( w, text );
+}
+
+void update_savestate_menu(char * cb_name, u8 num)
+{
+  GtkWidget * w;
+  char cb[40];
+
+  sprintf( cb, "%s%d", cb_name, num);
+  w = glade_xml_get_widget(xml, cb);
+  set_menuitem_label( w, savestates[num-1].date );
+}
+
+void update_savestates_menu()
+{
+  char cb[15];
+  u8 i;
+  GtkWidget * w;
+
+  for( i = 1; i <= NB_STATES; i++ )
+    {
+      if( savestates[i-1].exists == TRUE )
+        {
+          update_savestate_menu("loadstate", i);
+          update_savestate_menu("savestate", i);
+        }
+      else
+        {
+          clear_savestate_menu("loadstate", i);
+          clear_savestate_menu("savestate", i);
+        }
+    }
+}
+
+void update_savestate(u8 num)
+{
+  desmume_pause();
+  savestate_slot(num);
+  update_savestate_menu("savestate", num);
+  update_savestate_menu("loadstate", num);
+  desmume_resume();
+}
+
 /* inline & protos */
 
 inline void SET_SENSITIVE(gchar *w, gboolean b) {
@@ -186,7 +251,7 @@ void gtk_table_reattach(GtkTable * table, GtkWidget * w,
 	for (list = table->children; list; list = list->next)
 	{
 		GtkTableChild *table_child;
-		table_child = list->data;
+		table_child = (GtkTableChild *) list->data;
 		if (table_child->widget == w) {
 			table_child->left_attach = left_attach;
 			table_child->right_attach = right_attach;
@@ -213,15 +278,15 @@ void rightscreen(BOOL apply) {
 	if (ScreenRight) {
 	/* we want to change the layout, lower screen goes right */
 		gtk_table_reattach(table, pDrawingArea2, 
-			3,4, 0,1, 0,0, 0,0);
+			3,4, 0,1, (GtkAttachOptions) 0, (GtkAttachOptions) 0, 0,0);
 		gtk_table_reattach(table, chk, 
-			4,5, 0,1, 0,0, 0,0);
+			4,5, 0,1, (GtkAttachOptions) 0, (GtkAttachOptions) 0, 0,0);
 	} else {
 	/* we want to change the layout, lower screen goes down */
 		gtk_table_reattach(table, pDrawingArea2,
-			1,2, 2,3, 0,0, 0,0);
+			1,2, 2,3, (GtkAttachOptions) 0, (GtkAttachOptions) 0, 0,0);
 		gtk_table_reattach(table, chk,
-			0,1, 2,3, 0,0, 0,0);
+			0,1, 2,3, (GtkAttachOptions) 0, (GtkAttachOptions) 0, 0,0);
 		ScreenRight = FALSE;
 	}
 	
@@ -268,7 +333,6 @@ void  on_sizeXX_activate (GtkMenuItem *menuitem, gpointer user_data) {
 
 
 /* MENU CONFIG ***** ***** ***** ***** */
-u16 Keypad_Temp[NB_KEYS];
 
 void  on_menu_controls_activate     (GtkMenuItem *menuitem, gpointer user_data) {
 	edit_controls();
@@ -295,7 +359,7 @@ user_data)
       dlg = (GtkDialog*)glade_xml_get_widget(xml, "wMainW");
       msgbox = (GtkDialog*)
         gtk_message_dialog_new((GtkWindow*)dlg, 
-                               GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
+                               (GtkDialogFlags) (GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT),
                                GTK_MESSAGE_INFO,
                                GTK_BUTTONS_CLOSE,
                                text
@@ -358,7 +422,7 @@ void  on_menu_tileview_activate     (GtkMenuItem *menuitem, gpointer user_data) 
 	gtk_widget_show(dlg);
 }
 void  on_menu_wtoolsXX_activate     (GtkMenuItem *menuitem, gpointer user_data) {
-	GtkWidget * w = user_data;
+	GtkWidget * w = (GtkWidget *) user_data;
 	gtk_widget_show(w);
 }
 
