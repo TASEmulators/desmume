@@ -17,14 +17,15 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#import "nds_control.h"=
+#import "nds_control.h"
+#import "preferences.h"
+#import "sndOSX.h"
+
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
 
 //DeSmuME general includes
 #define OBJ_C
-#include "sndOSX.h"
-#include "preferences.h"
 #include "../NDSSystem.h"
 #include "../saves.h"
 #include "../render3D.h"
@@ -110,12 +111,12 @@ struct NDS_fw_config_data firmware;
 
 	NSOpenGLPixelFormatAttribute attrs[] =
 	{
-		NSOpenGLPFAColorSize, 24,
-		NSOpenGLPFAAlphaSize, 8,
-		NSOpenGLPFADepthSize, 24,
-		NSOpenGLPFAStencilSize, 8,
+		NSOpenGLPFAColorSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAAlphaSize, (NSOpenGLPixelFormatAttribute)8,
+		NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)24,
+		NSOpenGLPFAStencilSize, (NSOpenGLPixelFormatAttribute)8,
 		NSOpenGLPFAOffScreen,
-		0
+		(NSOpenGLPixelFormatAttribute)0
 	};
 
 	if((pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs]) == nil)
@@ -1181,8 +1182,6 @@ struct NDS_fw_config_data firmware;
 //it's controlled by the run and finish varaiables of the instance
 //and its status can be determined with the paused and finished variables
 
-@class NSOpenGLContext;
-
 - (void)videoUpdateHelper:(ScreenState*)screen_data
 {
 	//we check if the emulation is running before we update the screen
@@ -1222,7 +1221,7 @@ struct NDS_fw_config_data firmware;
 
 	[gl_context retain];
 	[gl_context makeCurrentContext];
-	CGLLockContext([gl_context CGLContextObj]);
+	CGLLockContext((CGLContextObj)[gl_context CGLContextObj]);
 
 	u32 cycles = 0;
 
@@ -1329,7 +1328,7 @@ struct NDS_fw_config_data firmware;
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
 	}
 
-	CGLUnlockContext([gl_context CGLContextObj]);
+	CGLUnlockContext((CGLContextObj)[gl_context CGLContextObj]);
 	[gl_context release];
 	[autorelease release];
 

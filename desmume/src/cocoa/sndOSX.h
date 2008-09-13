@@ -17,7 +17,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#define OBJ_C
 #include "../SPU.h"
+#undef OBJ_C
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #define SNDCORE_OSX 58325 //hopefully this is unique number
 
@@ -37,3 +44,7 @@ bool SNDOSXOpenFile(void *fname);  //opens a file for recording (if filename is 
 void SNDOSXStartRecording();      //begins recording to the currently open file if there is an open file
 void SNDOSXStopRecording();       //pauses recording (you can continue recording later)
 void SNDOSXCloseFile();           //closes the file, making sure it's saved
+
+#ifdef __cplusplus
+}
+#endif

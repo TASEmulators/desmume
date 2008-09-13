@@ -29,7 +29,7 @@
 #include <string.h>
 #include <assert.h>
 
-#ifndef DESMUME_COCOA
+#ifndef DESMUME_OBJ_C
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#include <gl/gl.h>
@@ -91,20 +91,20 @@ static bool needRefreshFramebuffer = false;
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
 static const int material_5bit_to_31bit[] = {
-	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6, 
-	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE, 
-	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6, 
-	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE, 
+	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6,
+	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE,
+	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6,
+	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE,
 	0x42108421, 0x46318C63, 0x4A5294A5, 0x4E739CE7,
-	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF, 
-	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7, 
+	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF,
+	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7,
 	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
 };
 
 static const u8 material_5bit_to_8bit[] = {
-	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39, 
-	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B, 
-	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD, 
+	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39,
+	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
+	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
 	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
 };
 
@@ -166,7 +166,7 @@ static unsigned int depthFuncMode=0;
 static unsigned int lightMask=0;
 static unsigned int envMode=0;
 static unsigned int cullingMask=0;
-static unsigned char texMAP[1024*2048*4]; 
+static unsigned char texMAP[1024*2048*4];
 static float fogColor[4] = {0.f};
 static float fogOffset = 0.f;
 static float alphaTestRef = 0.01f;
@@ -186,9 +186,9 @@ static unsigned int old_vtxFormat;
 static unsigned int textureMode=0;
 
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
-static int			diffuse[4] = {0}, 
-					ambient[4] = {0}, 
-					specular[4] = {0}, 
+static int			diffuse[4] = {0},
+					ambient[4] = {0},
+					specular[4] = {0},
 					emission[4] = {0};
 
 typedef struct _POLY {
@@ -240,6 +240,7 @@ static void twiddleLists() {
 
 //------------------------------------------------------------
 
+#ifndef DESMUME_OBJ_C
 
 #define OGLEXT(x,y) x y;
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
@@ -254,6 +255,12 @@ OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
 OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
 OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+
+#else
+
+#define INITOGLEXT(x,y)
+
+#endif
 
 //opengl state caching:
 //This is of dubious performance assistance, but it is easy to take out so I am leaving it for now.
@@ -368,7 +375,7 @@ typedef struct
 
 LightInformation g_lightInfo[4] = { 0 };
 
-#ifndef DESMUME_COCOA
+#ifndef DESMUME_OBJ_C
 extern HWND		hwnd;
 
 int CheckHardwareSupport(HDC hdc)
@@ -415,7 +422,7 @@ char NDS_glInit(void)
 {
 	int i;
 
-#ifndef DESMUME_COCOA
+#ifndef DESMUME_OBJ_C
 	HDC						oglDC = NULL;
 	HGLRC					hRC = NULL;
 	int						pixelFormat;
@@ -450,9 +457,9 @@ char NDS_glInit(void)
 	if(!wglMakeCurrent(oglDC, hRC))
 		return 0;
 	res=CheckHardwareSupport(oglDC);
-	if (res>=0&&res<=2) 
-			printlog("OpenGL mode: %s\n",opengl_modes[res]); 
-		else 
+	if (res>=0&&res<=2)
+			printlog("OpenGL mode: %s\n",opengl_modes[res]);
+		else
 			printlog("OpenGL mode: uknown\n");
 #endif
 	glClearColor	(0.f, 0.f, 0.f, 1.f);
@@ -521,16 +528,16 @@ char NDS_glInit(void)
 
 				//TODO - this should modulate or add depending on whether we are in highlight or toon mode
 
-			toonShader = glCreateShader(GL_FRAGMENT_SHADER); 
+			toonShader = glCreateShader(GL_FRAGMENT_SHADER);
 			toonProgram = glCreateProgram();
-			glShaderSource(toonShader, 1, (GLchar**)toonShaderSource, 0);
+			glShaderSource(toonShader, 1, (const GLchar**)toonShaderSource, 0);
 			glCompileShader(toonShader);
 			glGetShaderInfoLog(toonShader,10000,0,buf);
 
 			glAttachShader(toonProgram,toonShader);
 			glLinkProgram(toonProgram);
 
-			toonShader = 0;		
+			toonShader = 0;
 		}
 	}
 
@@ -635,9 +642,9 @@ __forceinline void NDS_glStoreMatrix(unsigned long v)
 	short mymode = (mode==1?2:mode);
 
 	//for the projection matrix, the provided value is supposed to be reset to zero
-	if(mymode==0) 
+	if(mymode==0)
 		v = 0;
-	
+
 	MatrixStackLoadMatrix (&mtxStack[mymode], v&31, mtxCurrent[mymode]);
 	if(mymode==2)
 		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
@@ -698,7 +705,7 @@ __forceinline void NDS_glTranslate(signed long v)
 __forceinline void NDS_glScale(signed long v)
 {
 	short mymode = (mode==2?1:mode);
-	
+
 	scale[scaleind] = fix2float(v);
 
 	++scaleind;
@@ -806,6 +813,8 @@ __forceinline void NDS_glMultMatrix4x4(signed long v)
 
 //I think this is slower than the regular memcmp.. doesnt make sense to me, but my
 //asm optimization knowlege is 15 years old..
+
+#ifndef WORDS_BIGENDIAN
 __forceinline int memcmp_slow(const void* src, const void* dst, u32 count) {
 	int retval;
 	__asm {
@@ -827,8 +836,8 @@ __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 
 	__asm
 	{
-		mov esi, [src] 
-		mov edi, [dest] 
+		mov esi, [src]
+		mov edi, [dest]
 		mov ecx, [blockCnt]
 
 		test ecx, ecx
@@ -837,7 +846,7 @@ __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 	copyloop:
 		//prefetchnta [esi]
 		mov eax, [esi]
-		
+
 		movq mm0, qword ptr [esi]
 		movq mm1, qword ptr [esi+8]
 		movq mm2, qword ptr [esi+16]
@@ -871,6 +880,9 @@ __forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
 
 	return dest;
 }
+#else
+#define memcpy_fast(d,s,c) memcpy(d,s,c)
+#endif
 
 static void DebugDumpTexture(int which)
 {
@@ -898,7 +910,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 	int i=0;
 	unsigned int x=0, y=0;
 	unsigned int palZeroTransparent;
-	
+
 	unsigned short *pal = NULL;
 	unsigned char *dst = texMAP;
 	unsigned int sizeX=(8 << ((format>>20)&0x07));
@@ -925,9 +937,9 @@ void setTexture(unsigned int format, unsigned int texpal)
 
 	txt_slot_current=(format>>14)&0x03;
 	adr=(unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
-	
+
 	i=texcache_start;
-	
+
 	//if(false)
 	while (TRUE)
 	{
@@ -953,12 +965,12 @@ void setTexture(unsigned int format, unsigned int texpal)
 			}
 		}
 		i++;
-		if (i>MAX_TEXTURE) 
+		if (i>MAX_TEXTURE)
 		{
 			texcache_stop=texcache_start;
 			texcache[texcache_stop].frm=0;
 			texcache_start++;
-			if (texcache_start>MAX_TEXTURE) 
+			if (texcache_start>MAX_TEXTURE)
 			{
 				texcache_start=0;
 				texcache_stop=MAX_TEXTURE<<1;
@@ -990,7 +1002,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 	glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
 
 	//printlog("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
-	
+
 	//============================================================================ Texture render
 	palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
 	txt_slot_size=(txt_slot_current_size=0x020000-((format & 0x3FFF)<<3));
@@ -1097,7 +1109,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 				if ( (texcache[i].frm & 0xc000) == 0x8000)
 					// texel are in slot 2
 					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
-				else 
+				else
 					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
 
 				bool dead = false;
@@ -1117,7 +1129,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 						tmp_col[0]=RGB16TO32(pal[pal1offset],255);
 						tmp_col[1]=RGB16TO32(pal[pal1offset+1],255);
 
-						switch (mode) 
+						switch (mode)
 						{
 							case 0:
 								tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
@@ -1134,7 +1146,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 								tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
 								tmp_col[3]=RGB16TO32(pal[pal1offset+3],255);
 								break;
-							case 3: 
+							case 3:
 							{
 								u32 red1, red2;
 								u32 green1, green2;
@@ -1177,7 +1189,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 									dst[currentPos+2] = 0;
 									dst[currentPos+3] = 0;
 								}
-								
+
 								txt_slot_current_size-=4;;
 								if (txt_slot_current_size<=0)
 								{
@@ -1215,13 +1227,13 @@ void setTexture(unsigned int format, unsigned int texpal)
 				unsigned short * map = ((unsigned short *)adr);
 				unsigned int * dst = (unsigned int *)texMAP;
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-				
+
 				for(x = 0; x < imageSize; ++x)
 				{
 					unsigned short c = map[x];
 					int alpha = ((c&0x8000)?255:0);
 					*dst = RGB15TO32(c&0x7FFF,alpha);
-					
+
 					dst++;
 					txt_slot_current_size-=2;;
 					if (txt_slot_current_size<=0)
@@ -1237,14 +1249,14 @@ void setTexture(unsigned int format, unsigned int texpal)
 	}
 
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
-						texcache[i].sizeX, texcache[i].sizeY, 0, 
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+						texcache[i].sizeX, texcache[i].sizeY, 0,
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
 	//============================================================================================
 
 	texcache_count=i;
-	
+
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[texcache[i].texenv]);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1568,7 +1580,7 @@ static void InstallPolygonAttrib(unsigned long val)
 
 	// Alpha value, actually not well handled, 0 should be wireframe
 	colorRGB[3] = colorAlpha = material_5bit_to_31bit[((val>>16)&0x1F)];
-	
+
 	// polyID
 	polyID = (val>>24)&0x1F;
 }
@@ -1771,7 +1783,7 @@ __forceinline void NDS_glNormal(unsigned long v)
 	//TODO - only do this when the projection matrix changes
 	__declspec(align(16)) float lineOfSight[4] = { 0, 0, -1, 0 };
 	MatrixMultVec4x4 (mtxCurrent[0], lineOfSight);
-	
+
 	if (texCoordinateTransform == 2)
 	{
 		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
@@ -1785,22 +1797,22 @@ __forceinline void NDS_glNormal(unsigned long v)
 
 	//apply lighting model
 	{
-		u8 diffuse[3] = { 
+		u8 diffuse[3] = {
 			(dsDiffuse)&0x1F,
 			(dsDiffuse>>5)&0x1F,
 			(dsDiffuse>>10)&0x1F };
 
-		u8 ambient[3] = { 
+		u8 ambient[3] = {
 			(dsAmbient)&0x1F,
 			(dsAmbient>>5)&0x1F,
 			(dsAmbient>>10)&0x1F };
 
-		u8 emission[3] = { 
+		u8 emission[3] = {
 			(dsEmission)&0x1F,
 			(dsEmission>>5)&0x1F,
 			(dsEmission>>10)&0x1F };
 
-		u8 specular[3] = { 
+		u8 specular[3] = {
 			(dsSpecular)&0x1F,
 			(dsSpecular>>5)&0x1F,
 			(dsSpecular>>10)&0x1F };
@@ -1815,7 +1827,7 @@ __forceinline void NDS_glNormal(unsigned long v)
 				continue;
 
 			{
-				u8 lightColor[3] = { 
+				u8 lightColor[3] = {
 					(g_lightInfo[i].color)&0x1F,
 					(g_lightInfo[i].color>>5)&0x1F,
 					(g_lightInfo[i].color>>10)&0x1F };
@@ -1823,7 +1835,7 @@ __forceinline void NDS_glNormal(unsigned long v)
 				float dot = Vector3Dot(g_lightInfo[i].floatDirection,normal);
 				float diffuseComponent = max(0,dot);
 				float specularComponent;
-				
+
 				//a specular formula which I couldnt get working
 				//float halfAngle[3] = {
 				//	(lineOfSight[0] + g_lightInfo[i].floatDirection[0])/2,
@@ -1838,7 +1850,7 @@ __forceinline void NDS_glNormal(unsigned long v)
 				//
 				//float specularAngle = -Vector3Dot(halfAngleNormalized,normal);
 				//specularComponent = max(0,cos(specularAngle));
-				
+
 				//a specular formula which seems to work
 				float temp[4];
 				float diff = Vector3Dot(normal,g_lightInfo[i].floatDirection);
@@ -1847,7 +1859,7 @@ __forceinline void NDS_glNormal(unsigned long v)
 				Vector3Add(temp,g_lightInfo[i].floatDirection);
 				Vector3Scale(temp,-1);
 				specularComponent = max(0,Vector3Dot(lineOfSight,temp));
-				
+
 				//if the game isnt producing unit normals, then we can accidentally out of range components. so lets saturate them here
 				//so we can at least keep for crashing. we're not sure what the hardware does in this case, but the game shouldnt be doing this.
 				specularComponent = max(0,min(1,specularComponent));
@@ -1901,7 +1913,7 @@ void GL_Draw()
 				lastTexturePalette = texturePalette = poly->texPalette;
 				BeginRenderPoly();
 			}
-			
+
 			//since we havent got the whole pipeline working yet, lets use opengl for the projection
 			glMatrixMode(GL_PROJECTION);
 			glLoadMatrixf(poly->projMatrix);
@@ -1909,7 +1921,7 @@ void GL_Draw()
 			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
 			for(int j=0;j<type;j++) {
 				VERT* vert = &vertlist->list[poly->vertIndexes[j]];
-				
+
 				//float tempCoord[4];
 				//Vector4Copy(tempCoord,vert->coord);
 				//we havent got the whole pipeline working yet, so we cant do this
@@ -1921,7 +1933,7 @@ void GL_Draw()
 
 				//todo - edge flag?
 				glTexCoord2fv(vert->texcoord);
-				glColor4iv(vert->color);
+				glColor4iv((GLint*)vert->color);
 				//glVertex3fv(tempCoord);
 				glVertex3fv(vert->coord);
 			}
@@ -1959,7 +1971,7 @@ void NDS_3D_VramReconfigureSignal()
 void GL_ReadFramebuffer()
 {
 	glFinish();
-	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);
 	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
 
 //debug: view depth buffer via color buffer for debugging
@@ -1993,7 +2005,7 @@ static void NDS_glGetLine (int line, u16* dst)
 		needRefreshFramebuffer = false;
 		GL_ReadFramebuffer();
 	}
-	
+
 	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
 	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
 
@@ -2001,7 +2013,7 @@ static void NDS_glGetLine (int line, u16* dst)
 	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
 	//(it also sets it to 2 under some circumstances when rendering shadow volumes)
 	//so, we COULD use a zero stencil value to indicate that nothing should get composited.
-	//in fact, we are going to do that to fix some problems. 
+	//in fact, we are going to do that to fix some problems.
 	//but beware that it i figure it might could CAUSE some problems
 
 	//this alpha compositing blending logic isnt thought through at all
@@ -2084,7 +2096,7 @@ __forceinline void NDS_glCallList(unsigned long v)
 					--clInd;
 					clCmd >>= 8;
 					continue;
-				} 
+				}
 				break;
 			}
 

@@ -41,6 +41,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 				<Compiler>
 					<Add option="-march=pentium-m" />
 					<Add option="-msse2" />
+					<Add option="-DDESMUME_COCOA" />
+					<Add option="-DHAVE_LIBZ" />
 				</Compiler>
 				<ExtraCommands>
 					<Add after="cp DeSmuME.app/Contents/MacOS/DeSmuME DeSmuME.app/Contents/MacOS/DeSmuME_x86" />
@@ -55,6 +57,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-arch ppc" />
+					<Add option="-DDESMUME_COCOA" />
+					<Add option="-DHAVE_LIBZ" />
 				</Compiler>
 				<Linker>
 					<Add option="-arch ppc" />
@@ -71,8 +75,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Add option="-fexpensive-optimizations" />
 			<Add option="-O3" />
 			<Add option="-fpascal-strings -fasm-blocks" />
-			<Add option="-DDESMUME_COCOA" />
-			<Add option="-DHAVE_LIBZ" />
+			<Add option="-DDESMUME_OBJ_C" />
 			<Add directory="dialogs" />
 			<Add directory="../cocoa" />
 		</Compiler>
@@ -87,50 +90,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Mode after="always" />
 		</ExtraCommands>
 		<Unit filename="../ARM9.h" />
-		<Unit filename="../Disassembler.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="../Disassembler.h" />
-		<Unit filename="../FIFO.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../FIFO.cpp" />
 		<Unit filename="../FIFO.h" />
-		<Unit filename="../GPU.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../GPU.cpp" />
 		<Unit filename="../GPU.h" />
-		<Unit filename="../MMU.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../MMU.cpp" />
 		<Unit filename="../MMU.h" />
-		<Unit filename="../NDSSystem.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../NDSSystem.cpp" />
 		<Unit filename="../NDSSystem.h" />
-		<Unit filename="../ROMReader.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../ROMReader.cpp" />
 		<Unit filename="../ROMReader.h" />
-		<Unit filename="../SPU.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../SPU.cpp" />
 		<Unit filename="../SPU.h" />
-		<Unit filename="../arm_instructions.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../arm_instructions.cpp" />
 		<Unit filename="../arm_instructions.h" />
-		<Unit filename="../armcpu.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../armcpu.cpp" />
 		<Unit filename="../armcpu.h" />
-		<Unit filename="../bios.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../bios.cpp" />
 		<Unit filename="../bios.h" />
 		<Unit filename="../bits.h" />
-		<Unit filename="../cflash.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../cflash.cpp" />
 		<Unit filename="../cflash.h" />
 		<Unit filename="English.strings" />
 		<Unit filename="Japanese.strings" />
@@ -163,7 +142,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option link="1" />
 		</Unit>
 		<Unit filename="nds_control.h" />
-		<Unit filename="nds_control.m">
+		<Unit filename="nds_control.mm">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
@@ -193,71 +172,36 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option link="1" />
 		</Unit>
 		<Unit filename="../config.h" />
-		<Unit filename="../cp15.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../cp15.cpp" />
 		<Unit filename="../cp15.h" />
-		<Unit filename="../debug.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../debug.cpp" />
 		<Unit filename="../debug.h" />
 		<Unit filename="../dscard.h" />
 		<Unit filename="../fat.h" />
-		<Unit filename="../fs-linux.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../fs-linux.cpp" />
 		<Unit filename="../fs.h" />
 		<Unit filename="../gdbstub.h" />
-		<Unit filename="../gl_vertex.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../gl_vertex.cpp" />
 		<Unit filename="../gl_vertex.h" />
-		<Unit filename="../matrix.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../matrix.cpp" />
 		<Unit filename="../matrix.h" />
-		<Unit filename="../mc.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../mc.cpp" />
 		<Unit filename="../mc.h" />
 		<Unit filename="../mem.h" />
-		<Unit filename="../opengl_collector_3Demu.c">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="../opengl_collector_3Demu.h" />
 		<Unit filename="../registers.h" />
-		<Unit filename="../render3D.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../render3D.cpp" />
 		<Unit filename="../render3D.h" />
-		<Unit filename="../saves.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../saves.cpp" />
 		<Unit filename="../saves.h" />
-		<Unit filename="../thumb_instructions.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../thumb_instructions.cpp" />
 		<Unit filename="../thumb_instructions.h" />
 		<Unit filename="../types.h" />
-		<Unit filename="../wifi.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../wifi.cpp" />
 		<Unit filename="../wifi.h" />
-		<Unit filename="../windows/OGLRender.c">
-			<Option compilerVar="CC" />
-		</Unit>
+		<Unit filename="../windows/OGLRender.cpp" />
 		<Unit filename="../windows/OGLRender.h" />
-		<Unit filename="../windows/ginfo.c">
-			<Option compilerVar="CC" />
-			<Option compile="0" />
-			<Option link="0" />
-		</Unit>
 		<Unit filename="../windows/ginfo.h" />
-		<Unit filename="../windows/main.c">
-			<Option compilerVar="CC" />
-			<Option compile="0" />
-			<Option link="0" />
-		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />

@@ -19,6 +19,11 @@
 
 #import <Cocoa/Cocoa.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 void messageDialog(NSString *title, NSString *text);
 BOOL messageDialogYN(NSString *title, NSString *text);
 NSString* openDialog(NSArray *file_types);
@@ -33,3 +38,7 @@ typedef unsigned int NSUInteger;
 #endif
 
 typedef float CGFloat;
+
+#ifdef __cplusplus
+}
+#endif
