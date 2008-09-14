@@ -221,6 +221,7 @@ void SPU_KeyOn(int channel)
 
          chan->buf8 = (s8*)&MMU.MMU_MEM[1][(chan->addr>>20)&0xFF][(chan->addr & MMU.MMU_MASK[1][(chan->addr >> 20) & 0xFF])];
          chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
+		 chan->pcm16b_last = 0;
          chan->index = chan->buf8[2] & 0x7F;
          chan->lastsampcnt = 7;
          chan->sampcnt = 8;
@@ -694,18 +695,46 @@ void SPU_WriteLong(u32 addr, u32 val)
    T1WriteLong(MMU.ARM7_REG, addr, val);
 }
 
+static s32 Interpolate(s32 a, s32 b, double ratio)
+{
+	ratio = ratio - (int)ratio;
+	return (1-ratio)*a + ratio*b;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 static INLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 {
+#ifdef SPU_INTERPOLATE
+	int loc = (int)chan->sampcnt;
+	s32 a = (s32)chan->buf8[loc] << 8;
+	if(loc<chan->length-1) {
+		double ratio = chan->sampcnt-loc;
+		s32 b = (s32)chan->buf8[loc+1] << 8;
+		a = (1-ratio)*a + ratio*b;
+	}
+   *data = a;
+#else
    *data = (s32)chan->buf8[(int)chan->sampcnt] << 8;
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 static INLINE void Fetch16BitData(channel_struct *chan, s32 *data)
 {
-   *data = (s32)chan->buf16[(int)chan->sampcnt];
+#ifdef SPU_INTERPOLATE
+	int loc = (int)chan->sampcnt;
+	s32 a = (s32)chan->buf16[loc];
+	if(loc<chan->length-1) {
+		double ratio = chan->sampcnt-loc;
+		s32 b = (s32)chan->buf16[loc+1];
+		a = (1-ratio)*a + ratio*b;
+	}
+   *data = a;
+#else
+	*data = (s32)chan->buf16[(int)chan->sampcnt];
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -731,7 +760,11 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
    if (chan->lastsampcnt == (int)chan->sampcnt)
    {
       // No sense decoding, just return the last sample
-      *data = (s32)chan->pcm16b;
+#ifdef SPU_INTERPOLATE
+      *data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
+#else
+	   *data = (s32)chan->pcm16b;
+#endif
       return;
    }
 
@@ -746,12 +779,20 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
       if (data4bit & 0x8)
          diff = -diff;
 
+#ifdef SPU_INTERPOLATE
+	  chan->pcm16b_last = chan->pcm16b;
+#endif
       chan->pcm16b = (s16)MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
       chan->index = MinMax(chan->index+indextbl[data4bit & 0x7], 0, 88);
    }
 
    chan->lastsampcnt = chan->sampcnt;
-   *data = (s32)chan->pcm16b;
+
+#ifdef SPU_INTERPOLATE
+      *data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
+#else
+	   *data = (s32)chan->pcm16b;
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////

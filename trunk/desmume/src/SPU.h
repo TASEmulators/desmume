@@ -62,7 +62,7 @@ typedef struct
    double sampinc;
    // ADPCM specific
    int lastsampcnt;
-   s16 pcm16b;
+   s16 pcm16b, pcm16b_last;
    int index;
 } channel_struct;
 

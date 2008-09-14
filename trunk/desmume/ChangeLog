@@ -13,6 +13,7 @@
  - Convert to c++!
  - Added gfx3d module which emulates the whole GE as part of the core emu. Moved the windows/cocoa OGLRender to the 
    emu core and replace ogl_collector. Now every platform shares the same 3d code. [zeromus]
+ - Add in some crude interpolation in the SPU (conditionally compiled) so that I can bear to listen to it. [zeromus]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
