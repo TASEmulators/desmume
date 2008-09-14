@@ -1411,6 +1411,22 @@ void gfx3d_glFlush(unsigned long v)
 	gfx3d.polylist = polylist;
 	gfx3d.vertlist = vertlist;
 
+	//we need to sort the poly list with alpha polys last
+	//first, look for alpha polys
+	int polycount = polylist->count;
+	int ctr=0;
+	for(int i=0;i<polycount;i++) {
+		POLY &poly = polylist->list[i];
+		if(!poly.isTranslucent())
+			gfx3d.indexlist[ctr++] = i;
+	}
+	//then look for translucent polys
+	for(int i=0;i<polycount;i++) {
+		POLY &poly = polylist->list[i];
+		if(poly.isTranslucent())
+			gfx3d.indexlist[ctr++] = i;
+	}
+
 	//switch to the new lists
 	twiddleLists();
 }
@@ -1421,6 +1437,7 @@ void gfx3d_VBlankSignal()
 	//so, if we have a redraw pending, now is a safe time to do it
 	if(!flushPending) return;
 	flushPending = false;
+
 	gpu3D->NDS_3D_Render();
 }
 
