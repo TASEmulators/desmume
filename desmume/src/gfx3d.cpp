@@ -187,9 +187,16 @@ static void makeTables() {
 
 void gfx3d_init()
 {
-	twiddleLists();
-
 	makeTables();
+	gfx3d_reset();
+}
+
+void gfx3d_reset()
+{
+	gfx3d = GFX3D();
+
+	listTwiddle = 1;
+	twiddleLists();
 
 	MatrixStackSetMaxSize(&mtxStack[0], 1);		// Projection stack
 	MatrixStackSetMaxSize(&mtxStack[1], 31);	// Coordinate stack
@@ -1426,16 +1433,16 @@ void gfx3d_Control(unsigned long v)
 	else gfx3d.shading = GFX3D::TOON;
 	
 	if((v>>2)&1) gfx3d.enableAlphaTest = true;
-	gfx3d.enableAlphaTest = false;
+	else gfx3d.enableAlphaTest = false;
 
 	if((v>>3)&1) gfx3d.enableAlphaBlending = true;
-	gfx3d.enableAlphaBlending = false;
+	else gfx3d.enableAlphaBlending = false;
 
 	if((v>>4)&1) gfx3d.enableAntialiasing = true;
-	gfx3d.enableAntialiasing = false;
+	else gfx3d.enableAntialiasing = false;
 
 	if((v>>5)&1) gfx3d.enableEdgeMarking = true;
-	gfx3d.enableEdgeMarking = false;
+	else gfx3d.enableEdgeMarking = false;
 
 	//other junk
 
