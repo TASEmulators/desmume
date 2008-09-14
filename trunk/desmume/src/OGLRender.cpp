@@ -93,14 +93,16 @@ static unsigned int textureMode=0;
 
 //raw ds format poly attributes, installed from the display list
 static u32 polyAttr=0,textureFormat=0, texturePalette=0;
-//derived values extracted from polyattr
+
+//derived values extracted from polyattr etc
 static bool wireframe=false, alpha31=false;
 static unsigned int polyID=0;
 static unsigned int depthFuncMode=0;
 static unsigned int envMode=0;
 static unsigned int cullingMask=0;
-static int alphaDepthWrite = 0;
+static bool alphaDepthWrite;
 static unsigned int lightMask=0;
+static bool isTranslucent;
 
 //------------------------------------------------------------
 
@@ -119,6 +121,7 @@ OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
 OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
 OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 
 #else
 
@@ -263,8 +266,6 @@ static char Init(void)
 	if(!BEGINGL())
 		return 0;
 
-	glClearColor	(0.f, 0.f, 0.f, 1.f);
-
 	glPixelStorei(GL_PACK_ALIGNMENT,8);
 
 	xglEnable		(GL_NORMALIZE);
@@ -280,6 +281,8 @@ static char Init(void)
 	if (glGetError() != GL_NO_ERROR)
 		return 0;
 
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	#ifdef _WIN32
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
@@ -289,6 +292,13 @@ static char Init(void)
 	INITOGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 	INITOGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
 	INITOGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
+
+	//we want to use alpha destination blending so we can track the last-rendered alpha value
+	if(glBlendFuncSeparateEXT)
+	{
+		glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+	}
 
 	if(glCreateShader && glShaderSource && glCompileShader && glCreateProgram && glAttachShader && glLinkProgram && glUseProgram && glGetShaderInfoLog)
 	{
@@ -327,6 +337,14 @@ static char Init(void)
 		}
 	}
 	#endif
+
+#ifdef _WIN32
+	if(!glBlendFuncSeparateEXT)
+#endif
+	glClearColor(0, 0, 0, 1);
+#ifdef _WIN32
+	else glClearColor(0, 0, 0, 0);
+#endif
 
 	ENDGL();
 
@@ -808,7 +826,7 @@ static u32 stencilStateSet = -1;
 
 static void BeginRenderPoly()
 {
-	int enableDepthWrite = 1;
+	bool enableDepthWrite = true;
 	u32 tmp=0;
 
 	xglDepthFunc (depthFuncMode);
@@ -825,10 +843,6 @@ static void BeginRenderPoly()
 	if (!wireframe)
 	{
 		xglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-
-		//non-31 alpha polys are translucent
-		if(!alpha31)
-			enableDepthWrite = alphaDepthWrite;
 	}
 	else
 	{
@@ -837,22 +851,17 @@ static void BeginRenderPoly()
 
 	setTexture(textureFormat, texturePalette);
 
-	//a5i3 or a3i5 textures are translucent
-	alphaDepthWrite = 0; //zero - as a hack, we are never going to write depth buffer for alpha values
-	//this is the best we can do right now until we can sort and display translucent polys last like we're supposed to
-	//(here is a sample case which illustrates the problem)
-	//1. draw something opaque in the distance
-	//2. draw something translucent in the foreground
-	//3. draw something opaque in the middle ground
-	if(textureMode ==1 || textureMode == 6)
+	alphaDepthWrite = false;
+	if(isTranslucent)
 		enableDepthWrite = alphaDepthWrite;
+	enableDepthWrite = false;
 
 	//handle shadow polys
 	if(envMode == 3)
 	{
 		xglEnable(GL_STENCIL_TEST);
 		if(polyID == 0) {
-			enableDepthWrite = 1;
+			enableDepthWrite = true;
 			if(stencilStateSet!=0) {
 				stencilStateSet = 0;
 				//when the polyID is zero, we are writing the shadow mask.
@@ -863,7 +872,7 @@ static void BeginRenderPoly()
 				glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 			}
 		} else {
-			enableDepthWrite = 0;
+			enableDepthWrite = false;
 			if(stencilStateSet!=1) {
 				stencilStateSet = 1;
 				//when the polyid is nonzero, we are drawing the shadow poly.
@@ -907,7 +916,7 @@ static void InstallPolygonAttrib(unsigned long val)
 	envMode = (val&0x30)>>4;
 
 	// overwrite depth on alpha pass
-	alphaDepthWrite = BIT11(val);
+	alphaDepthWrite = BIT11(val)!=0;
 
 	// depth test function
 	depthFuncMode = depthFunc[BIT14(val)];
@@ -934,8 +943,8 @@ static void Control()
 	else
 		glAlphaFunc	(GL_GREATER, 0);
 
-	if(gfx3d.enableAlphaBlending) {
-		glBlendFunc		(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if(gfx3d.enableAlphaBlending)
+	{
 		glEnable		(GL_BLEND);
 	}
 	else
@@ -961,13 +970,14 @@ static void Render()
 		u32 lastTextureFormat, lastTexturePalette, lastPolyAttr;
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
-			POLY *poly = &gfx3d.polylist->list[i];
+			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
 			int type = poly->type;
 
 			//a very macro-level state caching approach:
 			//these are the only things which control the GPU rendering state.
 			if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
 			{
+				isTranslucent = poly->isTranslucent();
 				InstallPolygonAttrib(lastPolyAttr=poly->polyAttr);
 				lastTextureFormat = textureFormat = poly->texParam;
 				lastTexturePalette = texturePalette = poly->texPalette;
@@ -1093,6 +1103,11 @@ static void GetLine (int line, u16* dst)
 		r=min(255,r);
 		g=min(255,g);
 		b=min(255,b);
+
+		//debug: display alpha channel
+		//u32 r = screen3D[t+3];
+		//u32 g = screen3D[t+3];
+		//u32 b = screen3D[t+3];
 
 		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3);
 	}

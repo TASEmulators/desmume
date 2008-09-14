@@ -31,6 +31,20 @@ struct POLY {
 	int vertIndexes[4]; //up to four verts can be referenced by this poly
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
 	float projMatrix[16];
+
+	bool isTranslucent()
+	{
+		//alpha != 31 -> translucent
+		if((polyAttr&0x001F0000) != 0x001F0000) 
+			return true;
+		int texFormat = (texParam>>26)&7;
+
+		//a5i3 or a3i5 -> translucent
+		if(texFormat==1 || texFormat==6) 
+			return true;
+		
+		return false;
+	}
 };
 
 #define POLYLIST_SIZE 6000
@@ -76,6 +90,7 @@ struct GFX3D
 
 	POLYLIST* polylist;
 	VERTLIST* vertlist;
+	int indexlist[POLYLIST_SIZE];
 
 	bool wbuffer, sortmode;
 
