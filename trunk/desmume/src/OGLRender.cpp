@@ -851,10 +851,8 @@ static void BeginRenderPoly()
 
 	setTexture(textureFormat, texturePalette);
 
-	alphaDepthWrite = false;
 	if(isTranslucent)
 		enableDepthWrite = alphaDepthWrite;
-	enableDepthWrite = false;
 
 	//handle shadow polys
 	if(envMode == 3)
