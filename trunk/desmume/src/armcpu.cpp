@@ -539,17 +539,17 @@ u32 armcpu_exec()
         u32 c = 1;
 
 #ifdef GDB_STUB
-        if ( armcpu->stalled)
+        if (ARMPROC.stalled)
           return STALLED_CYCLE_COUNT;
 
         /* check for interrupts */
-        if ( armcpu->irq_flag) {
-          armcpu_irqExeption( armcpu);
+        if ( ARMPROC.irq_flag) {
+          armcpu_irqExeption( &ARMPROC);
         }
 
-        c = armcpu_prefetch(armcpu);
+        c = armcpu_prefetch(&ARMPROC);
 
-        if ( armcpu->stalled) {
+        if ( ARMPROC.stalled) {
           return c;
         }
 #endif
@@ -566,10 +566,10 @@ u32 armcpu_exec()
 			
 		}
 #ifdef GDB_STUB
-        if ( armcpu->post_ex_fn != NULL) {
+        if ( ARMPROC.post_ex_fn != NULL) {
             /* call the external post execute function */
-            armcpu->post_ex_fn( armcpu->post_ex_fn_data,
-                                armcpu->instruct_adr, 0);
+            ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data,
+                                ARMPROC.instruct_adr, 0);
         }
 #else
 		c += armcpu_prefetch<PROCNUM>();
@@ -583,9 +583,9 @@ u32 armcpu_exec()
 		c += thumb_instructions_set_1[ARMPROC.instruction>>6]();
 
 #ifdef GDB_STUB
-    if ( armcpu->post_ex_fn != NULL) {
+    if ( ARMPROC.post_ex_fn != NULL) {
         /* call the external post execute function */
-        armcpu->post_ex_fn( armcpu->post_ex_fn_data, armcpu->instruct_adr, 1);
+        ARMPROC.post_ex_fn( ARMPROC.post_ex_fn_data, ARMPROC.instruct_adr, 1);
     }
 #else
 	c += armcpu_prefetch<PROCNUM>();

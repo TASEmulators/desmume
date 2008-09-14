@@ -29,41 +29,55 @@
 #include <string.h>
 #include <assert.h>
 
-#ifndef DESMUME_OBJ_C
+bool (*oglrender_init)() = 0;
+bool (*oglrender_beginOpenGL)() = 0;
+void (*oglrender_endOpenGL)() = 0;
+
+bool BEGINGL() {
+	if(oglrender_beginOpenGL) 
+		return oglrender_beginOpenGL();
+	else return true;
+}
+
+void ENDGL() {
+	if(oglrender_endOpenGL) 
+		oglrender_endOpenGL();
+}
+
+#ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
-	#include <gl/gl.h>
-	#include <gl/glext.h>
-	#include "console.h"
-#else
-	#define __forceinline
+	#include <GL/gl.h>
+	#include <GL/glext.h>
+#elif DESMUME_OBJ_C
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
+#else
+	#include <GL/gl.h>
+	#include <GL/glext.h>
 #endif
 
-#include "../types.h"
-#include "../debug.h"
-#include "../MMU.h"
-#include "../bits.h"
-#include "../matrix.h"
-#include "../NDSSystem.h"
+#include "types.h"
+#include "debug.h"
+#include "MMU.h"
+#include "bits.h"
+#include "matrix.h"
+#include "NDSSystem.h"
 #include "OGLRender.h"
-#include "../gfx3d.h"
+#include "gfx3d.h"
 
 #ifndef CTASSERT
 #define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
 #endif
 
-static __declspec(align(16)) unsigned char  GPU_screen3D		[256*256*4]={0};
-static __declspec(align(16)) unsigned char  GPU_screenStencil[256*256]={0};
+static ALIGN(16) unsigned char  GPU_screen3D		[256*256*4]={0};
+static ALIGN(16) unsigned char  GPU_screenStencil[256*256]={0};
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
 
 static bool needRefreshFramebuffer = false;
-
-
 
 
 static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
@@ -89,9 +103,9 @@ static unsigned int lightMask=0;
 
 //------------------------------------------------------------
 
-#ifndef DESMUME_OBJ_C
+#ifdef _WIN32
 
-#define OGLEXT(x,y) x y;
+#define OGLEXT(x,y) x y = 0;
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
 
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
@@ -107,7 +121,7 @@ OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
 
 #else
 
-#define INITOGLEXT(x,y)
+#define INITOGLEXT(x,y) y = 0;
 
 #endif
 
@@ -133,10 +147,15 @@ void xglPolygonMode(GLenum face,GLenum mode) {
 }
 
 void xglUseProgram(GLuint program) {
+#ifdef _WIN32
 	if(!glUseProgram) return;
 	static GLuint oldprogram = -1;
 	if(oldprogram==program) return;
 	glUseProgram(oldprogram=program);
+#else
+	(void)program;
+	return;
+#endif
 }
 
 void xglDepthMask (GLboolean flag) {
@@ -216,28 +235,6 @@ u32 toonShader, toonProgram;
 //=================================================
 
 
-
-#ifndef DESMUME_OBJ_C
-extern HWND		hwnd;
-
-int CheckHardwareSupport(HDC hdc)
-{
-   int PixelFormat = GetPixelFormat(hdc);
-   PIXELFORMATDESCRIPTOR pfd;
-
-   DescribePixelFormat(hdc,PixelFormat,sizeof(PIXELFORMATDESCRIPTOR),&pfd);
-   if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
-      return 0; // Software acceleration OpenGL
-
-   else if ((pfd.dwFlags & PFD_GENERIC_FORMAT) && (pfd.dwFlags & PFD_GENERIC_ACCELERATED))
-      return 1; // Half hardware acceleration OpenGL (MCD driver)
-
-   else if ( !(pfd.dwFlags & PFD_GENERIC_FORMAT) && !(pfd.dwFlags & PFD_GENERIC_ACCELERATED))
-      return 2; // Full hardware acceleration OpenGL
-   return -1; // check error
-}
-#endif
-
 static void Reset()
 {
 	int i;
@@ -252,48 +249,14 @@ static void Reset()
 
 static char Init(void)
 {
-	int i;
-
-#ifndef DESMUME_OBJ_C
-	HDC						oglDC = NULL;
-	HGLRC					hRC = NULL;
-	int						pixelFormat;
-	PIXELFORMATDESCRIPTOR	pfd;
-	int						res;
-	char					*opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
-
-	oglDC = GetDC (hwnd);
-
-	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
-	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	pfd.nVersion = 1;
-	pfd.dwFlags =  PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cColorBits = 24;
-	pfd.cDepthBits = 24;
-	pfd.cAlphaBits = 8;
-	pfd.cStencilBits = 8;
-	pfd.iLayerType = PFD_MAIN_PLANE ;
-
-	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
-	if (pixelFormat == 0)
+	if(!oglrender_init)
+		return 0;
+	if(!oglrender_init())
 		return 0;
 
-	if(!SetPixelFormat(oglDC, pixelFormat, &pfd))
+	if(!BEGINGL())
 		return 0;
 
-	hRC = wglCreateContext(oglDC);
-	if (!hRC)
-		return 0;
-
-	if(!wglMakeCurrent(oglDC, hRC))
-		return 0;
-	res=CheckHardwareSupport(oglDC);
-	if (res>=0&&res<=2) 
-			printlog("OpenGL mode: %s\n",opengl_modes[res]); 
-		else 
-			printlog("OpenGL mode: uknown\n");
-#endif
 	glClearColor	(0.f, 0.f, 0.f, 1.f);
 
 	glPixelStorei(GL_PACK_ALIGNMENT,8);
@@ -311,6 +274,7 @@ static char Init(void)
 	if (glGetError() != GL_NO_ERROR)
 		return 0;
 
+	#ifdef _WIN32
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
@@ -356,6 +320,9 @@ static char Init(void)
 			toonShader = 0;		
 		}
 	}
+	#endif
+
+	ENDGL();
 
 	return 1;
 }
@@ -389,8 +356,8 @@ void Close()
 //I think this is slower than the regular memcmp.. doesnt make sense to me, but my
 //asm optimization knowlege is 15 years old..
 
-#ifndef WORDS_BIGENDIAN
-__forceinline int memcmp_slow(const void* src, const void* dst, u32 count) {
+#ifdef _MSC_VER
+int memcmp_slow(const void* src, const void* dst, u32 count) {
 	int retval;
 	__asm {
 		mov [retval], 0;
@@ -404,7 +371,7 @@ __forceinline int memcmp_slow(const void* src, const void* dst, u32 count) {
 	return retval;
 }
 
-__forceinline void* memcpy_fast(void* dest, const void* src, size_t count)
+void* memcpy_fast(void* dest, const void* src, size_t count)
 {
 	size_t blockCnt = count / 64;
 	size_t remainder = count % 64;
@@ -925,11 +892,13 @@ static void BeginRenderPoly()
 	}
 
 	//handle toon rendering
+	#ifdef _WIN32
 	if(glUseProgram) {
 		if(envMode == 2) {
 			xglUseProgram(toonProgram);
 		} else xglUseProgram(0);
 	}
+	#endif
 
 	xglDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 }
@@ -984,6 +953,8 @@ static void Control()
 
 static void Render()
 {
+	if(!BEGINGL()) return;
+
 	Control();
 
 	xglDepthMask		(GL_TRUE);
@@ -1038,6 +1009,8 @@ static void Render()
 
 	//since we just redrew, we need to refresh the framebuffers
 	needRefreshFramebuffer = true;
+
+	ENDGL();
 }
 
 static void VramReconfigureSignal()
@@ -1050,9 +1023,11 @@ static void VramReconfigureSignal()
 
 void GL_ReadFramebuffer()
 {
+	if(!BEGINGL()) return; 
 	glFinish();
 	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);	
 	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
+	ENDGL();
 
 //debug: view depth buffer via color buffer for debugging
 	//int ctr=0;
@@ -1143,6 +1118,4 @@ GPU3DInterface gpu3Dgl = {
 };
 
 
-//http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
-//talks about the state required to process verts in quadlists etc. helpful ideas.
-//consider building a little state structure that looks exactly like this describes
+

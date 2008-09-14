@@ -30,7 +30,7 @@
 #include "../gdbstub.h"
 
 #ifdef GTKGLEXT_AVAILABLE
-#include "../opengl_collector_3Demu.h"
+#include "../OGLRender.h"
 #include "gdk_3Demu.h"
 #endif
 
@@ -91,7 +91,7 @@ GPU3DInterface *core3DList[] = {
   &gpu3DNull
 #ifdef GTKGLEXT_AVAILABLE
   ,
-  &gpu3D_opengl_collector
+  &gpu3Dgl
 #endif
 };
 
@@ -2123,5 +2123,4 @@ int WinMain (HINSTANCE hThisInstance, HINSTANCE hPrevInstance, LPSTR lpszArgumen
   main( argc, argv);
 }
 #endif
-
 
