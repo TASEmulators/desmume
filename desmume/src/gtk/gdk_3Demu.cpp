@@ -25,7 +25,7 @@
 
 #include "../types.h"
 #include "../render3D.h"
-#include "../opengl_collector_3Demu.h"
+#include "../OGLRender.h"
 #include "gdk_3Demu.h"
 
 /*
@@ -122,8 +122,8 @@ examine_gl_config_attrib (GdkGLConfig *glconfig)
 }
 
 
-static int
-begin_opengl_region_gdk_3d( void) {
+static bool
+_oglrender_beginOpenGL( void) {
 
   if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
     return 0;
@@ -133,14 +133,14 @@ begin_opengl_region_gdk_3d( void) {
 }
 
 static void
-end_opengl_region_gdk_3d( void) {
+_oglrender_endOpenGL( void) {
   gdk_gl_drawable_gl_end (gldrawable);
 }
 
-static int
-initialise_gdk_3d( void) {
+static bool
+_oglrender_init( void) {
   /* this does nothing */
-  return 1;
+  return true;
 }
 
 int
@@ -188,9 +188,10 @@ init_opengl_gdk_3Demu( void) {
       return 0;
     }
 
-  begin_opengl_ogl_collector_platform = begin_opengl_region_gdk_3d;
-  end_opengl_ogl_collector_platform = end_opengl_region_gdk_3d;
-  initialise_ogl_collector_platform = initialise_gdk_3d;
+  
+	oglrender_init = _oglrender_init;
+	oglrender_beginOpenGL = _oglrender_beginOpenGL;
+	oglrender_endOpenGL = _oglrender_endOpenGL;
 
 
   return 1;

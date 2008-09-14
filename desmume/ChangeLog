@@ -11,9 +11,8 @@
  - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
  - Add many matrix and vector functions to matrix.c [zeromus]
  - Convert to c++!
- - Added gfx3d module which emulates the whole GE as part of the core emu. 
-   This is step 1 of making every platform share the same 3d code.
-   Step 2 will be to bring down the windows/cocoa OGLRenderer and make it act as the ogl_collector did. [zeromus]
+ - Added gfx3d module which emulates the whole GE as part of the core emu. Moved the windows/cocoa OGLRender to the 
+   emu core and replace ogl_collector. Now every platform shares the same 3d code. [zeromus]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]

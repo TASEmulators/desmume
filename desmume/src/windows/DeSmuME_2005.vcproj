@@ -140,7 +140,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;GDB_STUB"
 				StringPooling="true"
 				ExceptionHandling="0"
 				BufferSecurityCheck="false"
@@ -228,7 +228,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;GDB_STUB"
 				StringPooling="true"
 				ExceptionHandling="0"
 				BufferSecurityCheck="false"
@@ -805,7 +805,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\OGLRender.cpp"
+				RelativePath=".\ogl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\OGLRender.cpp"
 				>
 			</File>
 			<File
@@ -1024,6 +1028,10 @@
 			</File>
 			<File
 				RelativePath=".\oamView.h"
+				>
+			</File>
+			<File
+				RelativePath="..\OGLRender.h"
 				>
 			</File>
 			<File

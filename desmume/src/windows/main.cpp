@@ -60,6 +60,10 @@
 #include "snddx.h"
 
 #include <ddraw.h>
+
+#define GPU3D_NULL 0
+#define GPU3D_OPENGL 1
+
 //===================== Init DirectDraw
 LPDIRECTDRAW7			lpDDraw=NULL;
 LPDIRECTDRAWSURFACE7	lpPrimarySurface=NULL;
@@ -764,6 +768,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	struct armcpu_ctrl_iface *arm7_ctrl_iface;
 #endif
 	struct configured_features my_config;
+
+	extern bool windows_opengl_init();
+	oglrender_init = windows_opengl_init;
 
 
 	MSG messages;            /* Here messages to the application are saved */

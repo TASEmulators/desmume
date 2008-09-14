@@ -1470,3 +1470,7 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 	*dest = g_lightInfo[index].color;
 }
 
+
+//http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
+//talks about the state required to process verts in quadlists etc. helpful ideas.
+//consider building a little state structure that looks exactly like this describes
