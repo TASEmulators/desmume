@@ -20,6 +20,10 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#ifdef _WIN32
+#define strcasecmp(x,y) stricmp(x,y)
+#endif
+
 #ifdef _MSC_VER
 #define ALIGN(X) __declspec(align(X))
 #elif __GNUC__
