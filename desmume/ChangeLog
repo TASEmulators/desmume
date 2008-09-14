@@ -11,6 +11,9 @@
  - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
  - Add many matrix and vector functions to matrix.c [zeromus]
  - Convert to c++!
+ - Added gfx3d module which emulates the whole GE as part of the core emu. 
+   This is step 1 of making every platform share the same 3d code.
+   Step 2 will be to bring down the windows/cocoa OGLRenderer and make it act as the ogl_collector did. [zeromus]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
@@ -53,9 +56,7 @@
  - Added a bunch of crazy templates to the cpu and mmu which speed up a the emu little by optimizing variable accesses [zeromus]
  - Add an arm8 cpu load average calculator [zeromus]
  ? Fix a bug in texture transformation mode 1 [zeromus]
- - Added gfx3d module which emulates the whole GE as part of the core emu. 
-   This is step 1 of making every platform share the same 3d code.
-   Step 2 will be to bring down the windows/cocoa OGLRenderer and make it act as the ogl_collector did. [zeromus]
+ - Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
     
  
 0.7.3 -> 0.8

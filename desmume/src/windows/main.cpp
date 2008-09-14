@@ -55,6 +55,7 @@
 #include "../gdbstub.h"
 #include "colorctrl.h"
 #include "console.h"
+#include "throttle.h"
 
 #include "snddx.h"
 
@@ -401,6 +402,8 @@ DWORD WINAPI run( LPVOID lpParameter)
 
 	 DDCAPS	hw_caps, sw_caps;
 
+	 InitSpeedThrottle();
+
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
 	{
 		MessageBox(hwnd,"Unable to initialize DirectDraw","Error",MB_OK);
@@ -419,7 +422,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 		return -1;
     }
 
-    //NDS_3D_SetDriver (GPU3D_OPENGL);
+    NDS_3D_SetDriver (GPU3D_OPENGL);
 	 
 	if (!gpu3D->NDS_3D_Init ())
 	{
@@ -577,8 +580,12 @@ DWORD WINAPI run( LPVOID lpParameter)
 
                   framesskipped++;
                }
-
-               if (autoframeskipenab)
+				
+			   while(SpeedThrottle())
+			   {
+			   }
+               
+			   if (autoframeskipenab)
                {
                   framecount++;
 
@@ -591,26 +598,11 @@ DWORD WINAPI run( LPVOID lpParameter)
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
                   diffticks = curticks-lastticks;
 
-                  if ((onesecondticks+diffticks) > (OneFrameTime * (u64)framecount) &&
-                      framesskipped < 9)
-                  {                     
-                     // Skip the next frame
-                     skipnextframe = 1;
- 
-                     // How many frames should we skip?
-                     framestoskip = 1;
-                  }
-                  else if ((onesecondticks+diffticks) < (OneFrameTime * (u64)framecount))
-                  {
-                     // Check to see if we need to limit speed at all
-                     for (;;)
-                     {
-                        QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-                        diffticks = curticks-lastticks;
-                        if ((onesecondticks+diffticks) >= (OneFrameTime * (u64)framecount))
-                           break;
-                     }
-                  }
+				  if(ThrottleIsBehind() && framesskipped < 9)
+				  {
+					  skipnextframe = 1;
+					  framestoskip = 1;
+				  }
 
                   onesecondticks += diffticks;
                   lastticks = curticks;
