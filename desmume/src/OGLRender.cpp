@@ -428,11 +428,9 @@ void* memcpy_fast(void* dest, const void* src, size_t count)
 
 static void DebugDumpTexture(int which)
 {
-	static int ctr = 0;
 	char fname[100];
 	FILE* outf;
-	sprintf(fname,"c:\\dump\\%d.bmp", ctr);
-	ctr++;
+	sprintf(fname,"c:\\dump\\%d.bmp", which);
 
 	glBindTexture(GL_TEXTURE_2D,texcache[which].id);
 	  glGetTexImage( GL_TEXTURE_2D ,
@@ -559,9 +557,6 @@ void setTexture(unsigned int format, unsigned int texpal)
 					dst[0] = (unsigned char)((c & 0x1F)<<3);
 					dst[1] = (unsigned char)((c & 0x3E0)>>2);
 					dst[2] = (unsigned char)((c & 0x7C00)>>7);
-					dst[0] = material_3bit_to_8bit[alpha];
-					dst[1] = material_3bit_to_8bit[alpha];
-					dst[2] = material_3bit_to_8bit[alpha];
 					dst[3] = material_3bit_to_8bit[alpha];
 					CHECKSLOT;
 				}
@@ -794,11 +789,12 @@ void setTexture(unsigned int format, unsigned int texpal)
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
+	//DebugDumpTexture(i);
+
 	//============================================================================================
 
 	texcache_count=i;
 	
-	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[texcache[i].texenv]);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
@@ -882,6 +878,7 @@ static void BeginRenderPoly()
 			}
 		}
 	} else {
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[envMode]);
 		xglEnable(GL_STENCIL_TEST);
 		if(stencilStateSet!=2) {
 			stencilStateSet=2;
@@ -909,7 +906,6 @@ static void InstallPolygonAttrib(unsigned long val)
 	lightMask = (val&0xF);
 
 	// texture environment
-    //envMode = texEnv[(val&0x30)>>4];
 	envMode = (val&0x30)>>4;
 
 	// overwrite depth on alpha pass
