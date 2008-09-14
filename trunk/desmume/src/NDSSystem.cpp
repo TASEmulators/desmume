@@ -540,6 +540,7 @@ void NDS_Reset( void)
 
    GPU_Reset(MainScreen.gpu, 0);
    GPU_Reset(SubScreen.gpu, 1);
+   gfx3d_reset();
    gpu3D->NDS_3D_Reset();
    SPU_Reset();
 

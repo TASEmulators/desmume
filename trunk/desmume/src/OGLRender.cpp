@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <debug.h>
 
 bool (*oglrender_init)() = 0;
 bool (*oglrender_beginOpenGL)() = 0;
@@ -239,12 +240,17 @@ static void Reset()
 {
 	int i;
 
+	//reset the texture cache
 	memset(&texcache,0,sizeof(texcache));
 	texcache_count=0;
 	for (i = 0; i < MAX_TEXTURE; i++)
 		texcache[i].id=oglTempTextureID[i];
 	texcache_start=0;
 	texcache_stop=MAX_TEXTURE<<1;
+
+	//clear the framebuffers
+	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
+	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 }
 
 static char Init(void)
@@ -780,7 +786,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
-	//DebugDumpTexture(i);
+	DebugDumpTexture(i);
 
 	//============================================================================================
 
@@ -869,7 +875,6 @@ static void BeginRenderPoly()
 			}
 		}
 	} else {
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[envMode]);
 		xglEnable(GL_STENCIL_TEST);
 		if(stencilStateSet!=2) {
 			stencilStateSet=2;
@@ -878,6 +883,8 @@ static void BeginRenderPoly()
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 		}
 	}
+
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[envMode]);
 
 	//handle toon rendering
 	#ifdef _WIN32

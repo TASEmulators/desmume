@@ -23,6 +23,9 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <io.h>
+
 
 ///////////////////////////////////////////////////////////////// Console
 #ifdef BETA_VERSION
@@ -55,6 +58,12 @@ void OpenConsole()
 	SetConsoleOutputCP(GetACP());
 	printlog("DeSmuME v%s BETA\n",VERSION);
 	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
+
+	//redirect stdio
+	long lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+	FILE *fp = _fdopen( hConHandle, "w" );
+	*stdout = *fp;
 }
 
 void CloseConsole() {

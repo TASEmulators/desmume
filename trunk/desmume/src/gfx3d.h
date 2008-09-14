@@ -24,6 +24,7 @@
 #include "types.h"
 
 void gfx3d_init();
+void gfx3d_reset();
 
 struct POLY {
 	int type; //tri or quad
