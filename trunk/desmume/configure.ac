@@ -196,9 +196,7 @@ AC_CONFIG_FILES([Makefile
                  src/cli/Makefile
                  src/cocoa/Makefile
                  src/gtk/Makefile
-                 src/gtk/desmume.desktop
                  src/gtk-glade/Makefile
-                 src/gtk-glade/desmume-glade.desktop
                  src/windows/Makefile
 		 src/gdbstub/Makefile
 		 autopackage/default.apspec
