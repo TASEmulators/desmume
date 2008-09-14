@@ -213,18 +213,19 @@ void gfx3d_reset()
 void gfx3d_glViewPort(unsigned long v)
 {
 	//zero: NHerve messed with this in mod2 and mod3, but im still not sure its perfect. need to research this.
-	//glViewport( (v&0xFF), ((v>>8)&0xFF), (((v>>16)&0xFF)+1)-(v&0xFF), ((v>>24)+1)-((v>>8)&0xFF));
-	//TODO
+	gfx3d.viewport.x = (v&0xFF);
+	gfx3d.viewport.y = (v&0xFF);
+	gfx3d.viewport.width = (((v>>16)&0xFF)+1)-(v&0xFF);
+	gfx3d.viewport.height = ((v>>24)+1)-((v>>8)&0xFF);
 }
 
 
 void gfx3d_glClearColor(unsigned long v)
 {
-	//glClearColor(	((float)(v&0x1F))/31.0f,
-	//				((float)((v>>5)&0x1F))/31.0f,
-	//				((float)((v>>10)&0x1F))/31.0f,
-	//				((float)((v>>16)&0x1F))/31.0f);
-	//TODO
+	gfx3d.clearColor[0] = ((float)(v&0x1F))/31.0f;
+	gfx3d.clearColor[1] = ((float)((v>>5)&0x1F))/31.0f;
+	gfx3d.clearColor[2] = ((float)((v>>10)&0x1F))/31.0f;
+	gfx3d.clearColor[3] = ((float)((v>>16)&0x1F))/31.0f;
 }
 
 void gfx3d_glFogColor(unsigned long v)
@@ -242,15 +243,13 @@ void gfx3d_glFogOffset (unsigned long v)
 
 void gfx3d_glClearDepth(unsigned long v)
 {
-	//u32 depth24b;
+	u32 depth24b;
 
-	//v		&= 0x7FFFF;
-	//
-	//// Thanks for NHerve
-	//depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
-	//glClearDepth(depth24b / ((float)(1<<24)));
-
-	//TODO
+	v		&= 0x7FFFF;
+	
+	//Thanks to NHerve
+	depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
+	gfx3d.clearDepth = depth24b / ((float)(1<<24));
 }
 
 void gfx3d_glMatrixMode(unsigned long v)
@@ -741,13 +740,9 @@ void gfx3d_glShininess (unsigned long val)
 void gfx3d_UpdateToonTable(void* toonTable)
 {
 	u16* u16toonTable = (u16*)toonTable;
-	u32 rgbToonTable[32];
 	int i;
 	for(i=0;i<32;i++)
-		rgbToonTable[i] = RGB15TO32(u16toonTable[i],255);
-
-	//glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbToonTable);
-	//TODO
+		gfx3d.rgbToonTable[i] = RGB15TO32(u16toonTable[i],255);
 }
 
 

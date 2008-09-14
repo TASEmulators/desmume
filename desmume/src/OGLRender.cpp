@@ -77,18 +77,12 @@ static ALIGN(16) unsigned char  GPU_screenStencil[256*256]={0};
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
-
 static bool needRefreshFramebuffer = false;
-
-
 static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
-
-
 static unsigned char texMAP[1024*2048*4]; 
-
-
-
 static unsigned int textureMode=0;
+
+float clearAlpha;
 
 
 //raw ds format poly attributes, installed from the display list
@@ -341,9 +335,9 @@ static char Init(void)
 #ifdef _WIN32
 	if(!glBlendFuncSeparateEXT)
 #endif
-	glClearColor(0, 0, 0, 1);
+		clearAlpha = 1;
 #ifdef _WIN32
-	else glClearColor(0, 0, 0, 0);
+	else clearAlpha = 0;
 #endif
 
 	ENDGL();
@@ -958,8 +952,17 @@ static void Render()
 
 	Control();
 
-	xglDepthMask		(GL_TRUE);
-	glClear			(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx3d.rgbToonTable);
+
+	xglDepthMask(GL_TRUE);
+
+	glViewport(gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
+	
+	//we're not using the alpha clear color right now
+	glClearColor(gfx3d.clearColor[0],gfx3d.clearColor[1],gfx3d.clearColor[2], clearAlpha);
+	glClearDepth(gfx3d.clearDepth);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
 
 	//render display list
 	//TODO - properly doublebuffer the display lists

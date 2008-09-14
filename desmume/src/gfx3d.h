@@ -81,7 +81,10 @@ struct GFX3D
 		, polylist(0)
 		, vertlist(0)
 		, alphaTestRef(0)
-	{}
+		, clearDepth(1)
+	{
+		clearColor[0] = clearColor[1] = clearColor[2] = clearColor[3] = 0;
+	}
 	bool enableTexturing, enableAlphaTest, enableAlphaBlending, enableAntialiasing, enableEdgeMarking;
 
 	enum {
@@ -95,6 +98,18 @@ struct GFX3D
 	bool wbuffer, sortmode;
 
 	float alphaTestRef;
+
+	struct VIEWPORT {
+		VIEWPORT()
+			: x(0), y(0), width(256), height(256)
+		{}
+		int x, y, width, height;
+	} viewport;
+
+	float clearColor[4];
+	float clearDepth;
+
+	u32 rgbToonTable[32];
 };
 extern GFX3D gfx3d;
 
