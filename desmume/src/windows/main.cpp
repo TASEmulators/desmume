@@ -60,6 +60,8 @@
 #include "snddx.h"
 
 #include <ddraw.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 
 #define GPU3D_NULL 0
 #define GPU3D_OPENGL 1
@@ -426,9 +428,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 		return -1;
     }
 
-    NDS_3D_SetDriver (GPU3D_OPENGL);
-	 
-	if (!gpu3D->NDS_3D_Init ())
+	if (!oglrender_init())
 	{
 		MessageBox(hwnd,"Unable to initialize openGL","Error",MB_OK);
 		return -1;
@@ -753,6 +753,48 @@ void InitCustomControls()
 	ColorCtrl_Register();
 }
 
+bool windows_opengl_init()
+{
+	HDC						oglDC = NULL;
+	HGLRC					hRC = NULL;
+	int						pixelFormat;
+	PIXELFORMATDESCRIPTOR	pfd;
+
+	oglDC = GetDC (hwnd);
+
+	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags =  PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 24;
+	pfd.cDepthBits = 24;
+	pfd.cAlphaBits = 8;
+	pfd.cStencilBits = 8;
+	pfd.iLayerType = PFD_MAIN_PLANE ;
+
+	pixelFormat = ChoosePixelFormat(oglDC, &pfd);
+	if (pixelFormat == 0) return false;
+
+	if(!SetPixelFormat(oglDC, pixelFormat, &pfd)) return false;
+
+	hRC = wglCreateContext(oglDC);
+	if (!hRC) return false;
+
+	if(!wglMakeCurrent(oglDC, hRC))	return false;
+
+	return true;
+}
+
+bool windows_opengl_begin()
+{
+	return false;
+}
+
+void windows_opengl_end()
+{
+}
+
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
                     LPSTR lpszArgument,
@@ -769,8 +811,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 	struct configured_features my_config;
 
-	extern bool windows_opengl_init();
+	//extern bool windows_opengl_init();
 	oglrender_init = windows_opengl_init;
+	oglrender_beginOpenGL = windows_opengl_begin;
+	oglrender_endOpenGL = windows_opengl_end;
 
 
 	MSG messages;            /* Here messages to the application are saved */
@@ -943,7 +987,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
 
 	//wait for the run thread to signal that it is initialized and ready to run
-	WaitForSingleObject(runthread_ready,INFINITE);
+	//WaitForSingleObject(runthread_ready,INFINITE);
 	
 
     // Make sure any quotes from lpszArgument are removed
@@ -1087,8 +1131,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     			if (ForceRatio) {
 					RECT fullSize;
 					GetWindowRect(hwnd, &fullSize);
-					ScaleScreen(windowSize);
-					//ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
+					//ScaleScreen(windowSize);			// why? this is broke free resize
+					ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
 				}
 				GetRect(hwnd);
 				return 0;
