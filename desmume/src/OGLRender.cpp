@@ -451,8 +451,9 @@ void setTexture(unsigned int format, unsigned int texpal)
 	unsigned int x=0, y=0;
 	unsigned int palZeroTransparent;
 	
-	unsigned short *pal = NULL;
+	u16 *pal = NULL;
 	unsigned char *dst = texMAP;
+	u32 *dwdst = (u32*)texMAP;
 	unsigned int sizeX=(8 << ((format>>20)&0x07));
 	unsigned int sizeY=(8 << ((format>>23)&0x07));
 	unsigned int imageSize = sizeX*sizeY;
@@ -460,7 +461,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 	u64 txt_slot_current_size;
 	u64 txt_slot_size;
 	u64 txt_slot_current;
-	unsigned char * adr;
+	u8 *adr;
 
 	textureMode = (unsigned short)((format>>26)&0x07);
 
@@ -553,11 +554,9 @@ void setTexture(unsigned int format, unsigned int texpal)
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				for(x = 0; x < imageSize; x++, dst += 4)
 				{
-					unsigned short c = pal[adr[x]&31], alpha = adr[x]>>5;
-					dst[0] = (unsigned char)((c & 0x1F)<<3);
-					dst[1] = (unsigned char)((c & 0x3E0)>>2);
-					dst[2] = (unsigned char)((c & 0x7C00)>>7);
-					dst[3] = material_3bit_to_8bit[alpha];
+					u16 c = pal[adr[x]&31];
+					u8 alpha = adr[x]>>5;
+					*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
 					CHECKSLOT;
 				}
 				break;
@@ -625,12 +624,8 @@ void setTexture(unsigned int format, unsigned int texpal)
 					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 					for(x = 0; x < imageSize; ++x)
 					{
-						unsigned short c = pal[adr[x]];
-						dst[0] = (unsigned char)((c & 0x1F)<<3);
-						dst[1] = (unsigned char)((c & 0x3E0)>>2);
-						dst[2] = (unsigned char)((c & 0x7C00)>>7);
-						dst[3] = (adr[x] == 0) ? palZeroTransparent : 255;
-						dst += 4;
+						u16 c = pal[adr[x]];
+						*dwdst++ = RGB15TO32(c,(adr[x] == 0) ? palZeroTransparent : 255);
 						CHECKSLOT;
 					}
 				}
@@ -747,13 +742,9 @@ void setTexture(unsigned int format, unsigned int texpal)
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				for(x = 0; x < imageSize; x++)
 				{
-					unsigned short c = pal[adr[x]&0x07], alpha = (adr[x]>>3);
-					dst[0] = (unsigned char)((c & 0x1F)<<3);
-					dst[1] = (unsigned char)((c & 0x3E0)>>2);
-					dst[2] = (unsigned char)((c & 0x7C00)>>7);
-					dst[3] = material_5bit_to_8bit[alpha];
-					dst += 4;
-
+					u16 c = pal[adr[x]&0x07];
+					u8 alpha = (adr[x]>>3);
+					*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
 					CHECKSLOT;
 				}
 				break;
@@ -766,7 +757,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 				
 				for(x = 0; x < imageSize; ++x)
 				{
-					unsigned short c = map[x];
+					u16 c = map[x];
 					int alpha = ((c&0x8000)?255:0);
 					*dst = RGB15TO32(c&0x7FFF,alpha);
 					
