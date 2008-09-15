@@ -48,10 +48,10 @@ extern volatile BOOL execute;
 #else
 	#define READ32(a,b)		MMU_read32(PROCNUM, b)
 	#define WRITE32(a,b,c)	MMU_write32(PROCNUM,b,c)
-	#define READ16(a,b)		MMU_read16(cpu->proc_ID, b)
-	#define WRITE16(a,b,c)	MMU_write16(cpu->proc_ID,b,c)
-	#define READ8(a,b)		MMU_read8(cpu->proc_ID, b)
-	#define WRITE8(a,b,c)	MMU_write8(cpu->proc_ID,b,c)
+	#define READ16(a,b)		MMU_read16(PROCNUM, b)
+	#define WRITE16(a,b,c)	MMU_write16(PROCNUM,b,c)
+	#define READ8(a,b)		MMU_read8(PROCNUM, b)
+	#define WRITE8(a,b,c)	MMU_write8(PROCNUM,b,c)
 #endif
 
 
