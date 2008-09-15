@@ -98,6 +98,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../MMU.h" />
 		<Unit filename="../NDSSystem.cpp" />
 		<Unit filename="../NDSSystem.h" />
+		<Unit filename="../OGLRender.cpp" />
+		<Unit filename="../OGLRender.h" />
 		<Unit filename="../ROMReader.cpp" />
 		<Unit filename="../ROMReader.h" />
 		<Unit filename="../SPU.cpp" />
@@ -181,6 +183,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../fs-linux.cpp" />
 		<Unit filename="../fs.h" />
 		<Unit filename="../gdbstub.h" />
+		<Unit filename="../gfx3d.cpp" />
+		<Unit filename="../gfx3d.h" />
 		<Unit filename="../gl_vertex.cpp" />
 		<Unit filename="../gl_vertex.h" />
 		<Unit filename="../matrix.cpp" />
@@ -199,9 +203,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../types.h" />
 		<Unit filename="../wifi.cpp" />
 		<Unit filename="../wifi.h" />
-		<Unit filename="../windows/OGLRender.cpp" />
-		<Unit filename="../windows/OGLRender.h" />
-		<Unit filename="../windows/ginfo.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
