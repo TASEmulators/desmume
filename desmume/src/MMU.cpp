@@ -37,6 +37,7 @@
 #include "registers.h"
 #include "render3D.h"
 #include "gfx3d.h"
+#include "GPU_osd.h"
 
 #define ROM_MASK 3
 
@@ -287,6 +288,8 @@ void MMU_clearMem()
 	
 	MainScreen.offset = 0;
 	SubScreen.offset  = 192;
+	osdA->setOffset(MainScreen.offset);
+	osdB->setOffset(SubScreen.offset);
 
         /* setup the texture slot pointers */
 #if 0
@@ -1430,6 +1433,8 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}
+					osdA->setOffset(MainScreen.offset);
+					osdB->setOffset(SubScreen.offset);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x304, val);
 				}
 				

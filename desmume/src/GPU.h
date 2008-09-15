@@ -31,7 +31,7 @@
 #include "registers.h"
 #include "FIFO.h"
 #include "MMU.h"
-
+#include "GPU_osd.h"
 
 /*******************************************************************************
     this structure is for display control,
