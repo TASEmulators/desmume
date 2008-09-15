@@ -30,7 +30,7 @@
 #include "../saves.h"
 #include "../render3D.h"
 #include "../GPU.h"
-#include "../Windows/OGLRender.h"
+#include "../OGLRender.h"
 #undef BOOL
 
 //this bool controls whether we will use a timer to constantly check for screen updates
@@ -62,6 +62,12 @@ static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
 
 struct NDS_fw_config_data firmware;
+
+bool opengl_init()
+{
+	NSLog(@"OPENGL INIT");
+	return true;
+}
 
 @implementation NintendoDS
 - (id)init;
@@ -177,7 +183,8 @@ struct NDS_fw_config_data firmware;
 	{
 		[context makeCurrentContext];
 
-		NDS_3D_SetDriver(GPU3D_OPENGL);
+		oglrender_init = &opengl_init;
+		NDS_3D_SetDriver(1);
 		if(!gpu3D->NDS_3D_Init())
 			messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize OpenGL components");
 	}

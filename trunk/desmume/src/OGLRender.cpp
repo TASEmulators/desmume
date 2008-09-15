@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <debug.h>
+#include "debug.h"
 
 bool (*oglrender_init)() = 0;
 bool (*oglrender_beginOpenGL)() = 0;

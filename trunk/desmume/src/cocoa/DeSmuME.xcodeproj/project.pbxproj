@@ -29,6 +29,8 @@
 		722764770E78E18100AEDC8B /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764600E78E18100AEDC8B /* thumb_instructions.cpp */; };
 		722764780E78E18100AEDC8B /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764610E78E18100AEDC8B /* wifi.cpp */; };
 		7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.m */; };
+		7248E4620E7E0B0E004DCFFE /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */; };
+		7248E4630E7E0B0E004DCFFE /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */; };
 		726D68AC0E310B1800800002 /* French.nib in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AA0E310B1800800002 /* French.nib */; };
 		726D68AD0E310B1800800002 /* French.strings in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AB0E310B1800800002 /* French.strings */; };
 		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
@@ -37,7 +39,6 @@
 		7277B6E50D9E045700D283BD /* Japanese.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E10D9E045700D283BD /* Japanese.nib */; };
 		7277B6E60D9E045700D283BD /* Japanese.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E20D9E045700D283BD /* Japanese.strings */; };
 		7277B8EB0D9F25F700D283BD /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
-		7286BEA20E7C1EAF00C9F662 /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7286BEA10E7C1EAF00C9F662 /* OGLRender.cpp */; };
 		729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
 		729BEC710D9D55DB00ED561B /* input.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.m */; };
 		729BEC730D9D55DB00ED561B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.m */; };
@@ -81,6 +82,10 @@
 		722764610E78E18100AEDC8B /* wifi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wifi.cpp; path = ../wifi.cpp; sourceTree = SOURCE_ROOT; };
 		723395580E596E9100999693 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = speed_limit_selection_window.h; path = dialogs/speed_limit_selection_window.h; sourceTree = "<group>"; };
 		723395590E596E9100999693 /* speed_limit_selection_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = speed_limit_selection_window.m; path = dialogs/speed_limit_selection_window.m; sourceTree = "<group>"; };
+		7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gfx3d.cpp; path = ../gfx3d.cpp; sourceTree = SOURCE_ROOT; };
+		7248E45F0E7E0B0E004DCFFE /* gfx3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gfx3d.h; path = ../gfx3d.h; sourceTree = SOURCE_ROOT; };
+		7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OGLRender.cpp; path = ../OGLRender.cpp; sourceTree = SOURCE_ROOT; };
+		7248E4610E7E0B0E004DCFFE /* OGLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender.h; path = ../OGLRender.h; sourceTree = SOURCE_ROOT; };
 		726D68AA0E310B1800800002 /* French.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = French.nib; sourceTree = "<group>"; };
 		726D68AB0E310B1800800002 /* French.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = French.strings; sourceTree = "<group>"; };
 		7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = DeSmuME.icns; sourceTree = "<group>"; };
@@ -89,7 +94,6 @@
 		7277B6E10D9E045700D283BD /* Japanese.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = Japanese.nib; sourceTree = "<group>"; };
 		7277B6E20D9E045700D283BD /* Japanese.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = Japanese.strings; sourceTree = "<group>"; };
 		7277B8EA0D9F25F700D283BD /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
-		7286BEA10E7C1EAF00C9F662 /* OGLRender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OGLRender.cpp; path = ../windows/OGLRender.cpp; sourceTree = SOURCE_ROOT; };
 		729BEC5A0D9D55DB00ED561B /* cocoa_util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_util.m; sourceTree = SOURCE_ROOT; };
 		729BEC5C0D9D55DB00ED561B /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = SOURCE_ROOT; };
 		729BEC5D0D9D55DB00ED561B /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = SOURCE_ROOT; };
@@ -140,7 +144,6 @@
 		729BECCB0D9D57AF00ED561B /* wifi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = wifi.h; path = ../wifi.h; sourceTree = SOURCE_ROOT; };
 		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
-		729BECF90D9D589E00ED561B /* OGLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender.h; path = ../windows/OGLRender.h; sourceTree = SOURCE_ROOT; };
 		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -174,7 +177,9 @@
 				729BEC620D9D55DB00ED561B /* main_window.m */,
 				729BEC630D9D55DB00ED561B /* nds_control.h */,
 				729BEC640D9D55DB00ED561B /* nds_control.mm */,
-				7286BEA10E7C1EAF00C9F662 /* OGLRender.cpp */,
+				7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */,
+				7248E45F0E7E0B0E004DCFFE /* gfx3d.h */,
+				7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */,
 				729BEC650D9D55DB00ED561B /* preferences.h */,
 				729BEC660D9D55DB00ED561B /* preferences.m */,
 				729BEC670D9D55DB00ED561B /* rom_info.h */,
@@ -231,6 +236,7 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				7248E4610E7E0B0E004DCFFE /* OGLRender.h */,
 				7227644A0E78E18100AEDC8B /* arm_instructions.cpp */,
 				7227644B0E78E18100AEDC8B /* armcpu.cpp */,
 				7227644C0E78E18100AEDC8B /* bios.cpp */,
@@ -253,7 +259,6 @@
 				7227645F0E78E18100AEDC8B /* SPU.cpp */,
 				722764600E78E18100AEDC8B /* thumb_instructions.cpp */,
 				722764610E78E18100AEDC8B /* wifi.cpp */,
-				729BECF90D9D589E00ED561B /* OGLRender.h */,
 				729BEC9A0D9D57AF00ED561B /* ARM9.h */,
 				729BEC9C0D9D57AF00ED561B /* arm_instructions.h */,
 				729BEC9E0D9D57AF00ED561B /* armcpu.h */,
@@ -438,7 +443,8 @@
 				722764760E78E18100AEDC8B /* SPU.cpp in Sources */,
 				722764770E78E18100AEDC8B /* thumb_instructions.cpp in Sources */,
 				722764780E78E18100AEDC8B /* wifi.cpp in Sources */,
-				7286BEA20E7C1EAF00C9F662 /* OGLRender.cpp in Sources */,
+				7248E4620E7E0B0E004DCFFE /* gfx3d.cpp in Sources */,
+				7248E4630E7E0B0E004DCFFE /* OGLRender.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
