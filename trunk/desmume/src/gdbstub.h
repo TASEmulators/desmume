@@ -1,5 +1,3 @@
-#ifndef _GDBSTUB_H_
-#define _GDBSTUB_H_ 1
 /* $Id: gdbstub.h,v 1.1 2007-06-07 09:43:25 masscat Exp $
  */
 /*  Copyright (C) 2006 Ben Jaques
@@ -22,11 +20,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __cplusplus
-#define EXTERNC extern "C"
-#else
-#define EXTERNC
-#endif
+#ifndef _GDBSTUB_H_
+#define _GDBSTUB_H_ 1
+
+#include "types.h"
 
 typedef void *gdbstub_handle_t;
 
@@ -34,15 +31,15 @@ typedef void *gdbstub_handle_t;
  * The function interface
  */
 
-EXTERNC gdbstub_handle_t
+gdbstub_handle_t
 createStub_gdb( u16 port,
                 struct armcpu_memory_iface **cpu_memio,
                 struct armcpu_memory_iface *direct_memio);
 
-EXTERNC void
+void
 destroyStub_gdb( gdbstub_handle_t stub);
 
-EXTERNC void
+void
 activateStub_gdb( gdbstub_handle_t stub,
                   struct armcpu_ctrl_iface *cpu_ctrl);
 
@@ -50,11 +47,11 @@ activateStub_gdb( gdbstub_handle_t stub,
    * An implementation of the following functions is required
    * for the GDB stub to function.
    */
-EXTERNC void *
-createThread_gdb( void (*thread_function)( void *data),
+void *
+createThread_gdb( void (WINAPI *thread_function)( void *data),
                   void *thread_data);
 
-EXTERNC void
+void
 joinThread_gdb( void *thread_handle);
 
 #endif /* End of _GDBSTUB_H_ */

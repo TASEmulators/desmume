@@ -1041,7 +1041,7 @@ execute_gdb( void *data, uint32_t instr_addr, int thumb) {
 }
 
 static void
-listenerThread_gdb( void *data) {
+WINAPI listenerThread_gdb( void *data) {
   struct gdb_stub_state *state = (struct gdb_stub_state *)data;
   fd_set read_sock_set;
   fd_set main_set;
