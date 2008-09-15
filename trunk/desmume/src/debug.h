@@ -23,6 +23,10 @@
 #include "types.h"
 #include <stdio.h>
 
+#ifdef _WIN32
+#include "windows/console.h"
+#endif
+
 typedef enum { DEBUG_STRING, DEBUG_STREAM , DEBUG_STDOUT, DEBUG_STDERR } DebugOutType;
 
 typedef struct {

@@ -630,6 +630,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\GPU_osd.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\IORegView.cpp"
 				>
 			</File>
@@ -984,6 +988,10 @@
 			</File>
 			<File
 				RelativePath="..\GPU.h"
+				>
+			</File>
+			<File
+				RelativePath="..\GPU_osd.h"
 				>
 			</File>
 			<File

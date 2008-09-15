@@ -564,8 +564,9 @@ DWORD WINAPI run( LPVOID lpParameter)
 					 for(int i=0;i<16;i++)
 						 load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
 					 load = min(100,max(0,(int)(load*100/1120380)));
-					 sprintf(txt,"(%02d|%02d%%) DeSmuME v%s", fps, load, VERSION);
+					 sprintf(txt,"(%02d%%) DeSmuME v%s", load, VERSION);
 					 SetWindowText(hwnd, txt);
+					 osd->addFixed(10, 10, "%02d Fps", fps);
 				  }
 
                   framesskipped = 0;
@@ -623,7 +624,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 					SPU_Pause(1);
 			   }
 			   frameCounter++;
-			   if (frameCounterDisplay) printlog("%d\n",frameCounter); //Will be replaced by a function that draws is directly on the screen
+			   if (frameCounterDisplay) osd->addFixed(200, 30, "%d",frameCounter);
           }
           paused = TRUE;
           Sleep(500);
