@@ -22,6 +22,8 @@
 
 #ifdef _WIN32
 #define strcasecmp(x,y) stricmp(x,y)
+#else
+#define WINAPI
 #endif
 
 #ifdef _MSC_VER

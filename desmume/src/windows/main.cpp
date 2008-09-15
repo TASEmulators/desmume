@@ -681,8 +681,8 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 /*
  * The thread handling functions needed by the GDB stub code.
  */
-extern "C" void *
-createThread_gdb( void (*thread_function)( void *data),
+void *
+createThread_gdb( void (APIENTRY *thread_function)( void *data),
 				 void *thread_data) {
 	void *new_thread = CreateThread( NULL, 0,
 		(LPTHREAD_START_ROUTINE)thread_function, thread_data,
@@ -691,7 +691,7 @@ createThread_gdb( void (*thread_function)( void *data),
 	return new_thread;
 }
 
-extern "C" void
+void
 joinThread_gdb( void *thread_handle) {
 }
 
