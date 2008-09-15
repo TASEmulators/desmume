@@ -22,7 +22,7 @@
 #define CONFIGKEYS_H
 
 #define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
+#include "directx/dinput.h"
 
 extern const DWORD tabkey[48];
 extern DWORD ds_up;
