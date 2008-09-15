@@ -59,7 +59,7 @@
 
 #include "snddx.h"
 
-#include <ddraw.h>
+#include "directx/ddraw.h"
 
 #define GPU3D_NULL 0
 #define GPU3D_OPENGL 1

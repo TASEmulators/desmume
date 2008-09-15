@@ -25,7 +25,7 @@
 #include <mmsystem.h>
 #include <COMMDLG.H>
 #include <string.h>
-#include <dinput.h>
+#include "directx/dinput.h"
 
 #include "CWindow.h"
 #include "ConfigKeys.h"
