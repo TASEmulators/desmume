@@ -49,12 +49,12 @@ extern volatile BOOL execute;
 	#define READ8(a,b)		cpu->mem_if->read8(a,b)
 	#define WRITE8(a,b,c)	cpu->mem_if->write8(a,b,c)
 #else
-	#define READ32(a,b)		MMU_read32(cpu->proc_ID, b)
-	#define WRITE32(a,b,c)	MMU_write32(cpu->proc_ID,b,c)
-	#define READ16(a,b)		MMU_read16(cpu->proc_ID, b)
-	#define WRITE16(a,b,c)	MMU_write16(cpu->proc_ID,b,c)
-	#define READ8(a,b)		MMU_read8(cpu->proc_ID, b)
-	#define WRITE8(a,b,c)	MMU_write8(cpu->proc_ID,b,c)
+	#define READ32(a,b)		MMU_read32(PROCNUM, b)
+	#define WRITE32(a,b,c)	MMU_write32(PROCNUM,b,c)
+	#define READ16(a,b)		MMU_read16(PROCNUM, b)
+	#define WRITE16(a,b,c)	MMU_write16(PROCNUM,b,c)
+	#define READ8(a,b)		MMU_read8(PROCNUM, b)
+	#define WRITE8(a,b,c)	MMU_write8(PROCNUM,b,c)
 #endif
 
 TEMPLATE static  u32 FASTCALL OP_UND_THUMB()
