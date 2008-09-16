@@ -23,6 +23,8 @@
 
 #include "GPU_osd.h"
 #include "mem.h"
+#include <string.h> //mem funcs
+#include <stdarg.h> //va_start, etc
 
 extern u8 GPU_screen[4*256*192];
 
@@ -105,12 +107,17 @@ void OSDCLASS::addFixed(int x, int y, const char *fmt, ...)
 {
 	va_list list;
 	char msg[512];
-	DWORD tmp;
+	//DWORD tmp;
 
 	memset(msg,0,512);
 
 	va_start(list,fmt);
+#ifdef _MSC_VER
 		_vsnprintf(msg,511,fmt,list);
+#else
+		vsnprintf(msg,511,fmt,list);
+#endif
+
 	va_end(list);
 
 	int len=strlen(msg);

@@ -65,7 +65,6 @@ struct NDS_fw_config_data firmware;
 
 bool opengl_init()
 {
-	NSLog(@"OPENGL INIT");
 	return true;
 }
 

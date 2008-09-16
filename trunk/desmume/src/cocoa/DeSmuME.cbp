@@ -76,8 +76,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Add option="-O3" />
 			<Add option="-fpascal-strings -fasm-blocks" />
 			<Add option="-DDESMUME_OBJ_C" />
-			<Add directory="dialogs" />
-			<Add directory="../cocoa" />
 		</Compiler>
 		<Linker>
 			<Add option="-framework Cocoa" />
@@ -94,6 +92,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../FIFO.h" />
 		<Unit filename="../GPU.cpp" />
 		<Unit filename="../GPU.h" />
+		<Unit filename="../GPU_osd.cpp" />
+		<Unit filename="../GPU_osd.h" />
 		<Unit filename="../MMU.cpp" />
 		<Unit filename="../MMU.h" />
 		<Unit filename="../NDSSystem.cpp" />
