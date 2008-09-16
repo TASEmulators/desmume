@@ -97,9 +97,12 @@ task :compile do
 				puts indent*2 + line
 			end
 
-			raise StandardError, filename + ' did not compile!' unless stderr.readlines.each do |err|
+			error = false
+			stderr.readlines.each do |err|
+				error = true if err =~ /:\s*error\s*:/i
 				puts indent*2 + err
-			end.empty?
+			end
+			raise StandardError, "Didn't compile!" if error
 
 		end
 	end
