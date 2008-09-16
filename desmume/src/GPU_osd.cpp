@@ -30,15 +30,26 @@ extern u8 GPU_screen[4*256*192];
 
 #include "font_eng.inc"
 
-OSDCLASS::OSDCLASS(int core)
+OSDCLASS::OSDCLASS(u8 core)
 {
 	int i;
 
 	memset(screen, 0, sizeof(screen));
 	memset(name,0,7);
+	//memset(line, 0, sizeof(line));
+	memset(timer, 0, sizeof(timer));
+	memset(color, 0, sizeof(color));
+
+	old_msg = new char[512];
+	memset(old_msg, 0, 512);
 	
+	current_color = 0x8F;
 	mode=core;
 	offset=0;
+	startline=0;
+	lastline=0;
+
+	needUpdate = false;
 
 	if (core==0) 
 		memcpy(name,"Core A",6);
@@ -58,14 +69,29 @@ OSDCLASS::OSDCLASS(int core)
 OSDCLASS::~OSDCLASS()
 {
 	printlog("OSD_Deinit (%s)\n",name);
+
+	delete old_msg;
 }
 
-void OSDCLASS::setOffset(int ofs)
+void OSDCLASS::setOffset(u16 ofs)
 {
 	offset=ofs;
 }
 
-void INLINE OSDCLASS::printChar(int x, int y, char c)
+void OSDCLASS::clear()
+{
+	memset(screen, 0, sizeof(screen));
+	memset(line, 0, sizeof(line));
+	memset(timer, 0, sizeof(timer));
+	needUpdate=false;
+}
+
+void OSDCLASS::setColor(u16 col)
+{
+	current_color = col;
+}
+
+void INLINE OSDCLASS::printChar(u16 x, u16 y, u8 c)
 {
 	int i, j;
 	int ofs=c*OSD_FONT_HEIGHT;
@@ -85,6 +111,7 @@ void INLINE OSDCLASS::printChar(int x, int y, char c)
 
 void OSDCLASS::update() // don't optimized
 {
+	if (!needUpdate) return;	// don't update if buffer empty (speed up)
 	u8	*dst=GPU_screen;
 	if (mode!=255)
 		dst+=offset*512;
@@ -93,23 +120,22 @@ void OSDCLASS::update() // don't optimized
 	{
 		if (screen[i])
 		{
-			T2WriteWord(dst,(i << 1),0x8F);
+			T2WriteWord(dst,(i << 1), current_color );
 		}
 	}
 }
 
-void OSDCLASS::addLines(const char *fmt, ...)
+void OSDCLASS::addLine(const char *fmt, ...)
 {
 
 }
 
-void OSDCLASS::addFixed(int x, int y, const char *fmt, ...)
+void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 {
 	va_list list;
 	char msg[512];
-	//DWORD tmp;
 
-	memset(msg,0,512);
+//	memset(msg,0,512);
 
 	va_start(list,fmt);
 #ifdef _MSC_VER
@@ -121,9 +147,14 @@ void OSDCLASS::addFixed(int x, int y, const char *fmt, ...)
 	va_end(list);
 
 	int len=strlen(msg);
+	if (strcmp(msg, old_msg) == 0) return;
+
 	for (int i=0; i<len; i++)
 	{
 		printChar(x, y, msg[i]);
 		x+=OSD_FONT_WIDTH+2;
+		old_msg[i]=msg[i];
 	}
+	old_msg[512]=0;
+	needUpdate = true;
 }

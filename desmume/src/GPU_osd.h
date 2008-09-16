@@ -35,18 +35,32 @@ private:
 	u8		screen[256*192*2];
 	u64		offset;
 	u8		mode;
-	//u64		*text_lines[10];
 
-	void printChar(int x, int y, char c);
+	u8		startline;
+	u8		lastline;
+
+	u8		*line[OSD_MAX_LINES];
+	u8		timer[OSD_MAX_LINES];
+	u8		color[OSD_MAX_LINES];
+
+	char	*old_msg;
+
+	u16		current_color;
+
+	bool	needUpdate;
+
+	void printChar(u16 x, u16 y, u8 c);
 public:
 	char	name[7];		// for debuging
-	OSDCLASS(int core);
+	OSDCLASS(u8 core);
 	~OSDCLASS();
 
-	void	setOffset(int ofs);
+	void	setOffset(u16 ofs);
 	void	update();
-	void	addLines(const char *fmt, ...);
-	void	addFixed(int x, int y, const char *fmt, ...);
+	void	clear();
+	void	setColor(u16 col);
+	void	addLine(const char *fmt, ...);
+	void	addFixed(u16 x, u16 y, const char *fmt, ...);
 };
 
 extern OSDCLASS	*osd;
