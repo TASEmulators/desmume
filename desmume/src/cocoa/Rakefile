@@ -1,0 +1,204 @@
+require 'tempfile'
+require "open3"
+
+# General
+
+indent = '  '
+
+# Compile Options
+
+compile = {
+	:command => 'g++',
+	:files   => Dir['*.m'] + Dir['*.mm'] + Dir['dialogs/*.m'] + Dir['dialogs/*.mm'] + ([
+		'MMU', 'SPU', 'cflash',	'fs-linux', 'matrix', 'FIFO', 'NDSSystem', 'arm_instructions', 'cp15', 'mc',
+		'thumb_instructions', 'GPU', 'OGLRender', 'armcpu', 'gfx3d', 'render3D', 'wifi', 'GPU_osd', 'ROMReader',
+		'bios', 'debug', 'gl_vertex', 'saves'].map { |core_file| '../' + core_file + '.cpp' } ),
+	:defines => {
+		:global  => ['DESMUME_OBJ_C'],
+		:cocoa   => ['DESMUME_COCOA', 'HAVE_LIBZ']},
+	:options => {
+		:global  => [
+			'arch i386',
+			'fmessage-length=0',
+			'pascal-strings',
+			'fasm-blocks',
+			'O3',
+			'mfix-and-continue',
+			'funroll-loops',
+			'fstrict-aliasing',
+			'ftree-vectorize',
+			'mmacosx-version-min=10.4',
+			'gdwarf-2'],
+		:obj_cpp => ['fvisibility-inlines-hidden']
+	}
+}
+
+# Link Options
+
+link = {
+	:command     => 'gcc',
+	:files       => Dir['*.o'],
+	:libraries   => { :cocoa => ['z', 'stdc++'] },
+	:frameworks  => { :cocoa => ['Cocoa', 'OpenGL', 'AudioUnit'] },
+	:options     => {}
+}
+
+# Params
+
+def verbose?
+	return false unless ENV.include? 'verbose'
+	return false if ENV['verbose'].downcase == 'false'
+	return true if ENV['verbose'].downcase == 'true'
+	raise StandardError, "verbose must be true or false. Type rake help for help"
+end
+
+def output_file
+	ENV['output_filename'] || 'DeSmuME.app'
+end
+
+def output_executable
+	return @tempfile if @tempfile
+	@tempfile = Tempfile.new('desmume').path
+end
+
+# Compile Step
+
+desc 'Compiles the source files'
+
+task :compile do
+	puts 'Compiling...'
+
+	task_options = []
+	task_options += compile[:options][:global] rescue []
+	task_options += compile[:options][:cocoa ] rescue []
+	task_options += compile[:defines][:global].collect { |d| 'D' + d } rescue []
+	task_options += compile[:defines][:cocoa ].collect { |d| 'D' + d } rescue []
+
+	compile[:files].each do |filename|
+		puts indent + 'Compiling ' + filename
+
+		file_options = []
+		file_options += compile[:options][:obj_c  ] rescue [] if filename =~ /.*\.m$/i
+		file_options += compile[:options][:obj_cpp] rescue [] if filename =~ /.*\.mm$/i
+		file_options += compile[:defines][:obj_c  ].collect { |d| 'D' + d } rescue [] if filename =~ /.*\.m/i
+		file_options += compile[:defines][:obj_cpp].collect { |d| 'D' + d } rescue [] if filename =~ /.*\.mm/i
+
+		command = [compile[:command]]
+		command << filename
+		command << '-c'
+		command += (file_options + task_options).map { |o| '-' + o }
+		command = command.join ' '
+
+		puts indent*2 + command if verbose?
+
+		Open3.popen3(command) do |stdin, stdout, stderr|
+
+			stdout.readlines.each do |line|
+				puts indent*2 + line
+			end
+
+			raise StandardError, filename + ' did not compile!' unless stderr.readlines.each do |err|
+				puts indent*2 + err
+			end.empty?
+
+		end
+	end
+end
+
+# Link Step
+
+desc 'Builds an executable out of the object files'
+
+task :link => :compile do
+	puts 'Linking...'
+
+	command = [link[:command]]
+	command += link[:files]
+	command << '-o'
+	command << output_executable
+	command += link[:options   ][:global].collect { |o| '-'           + o } rescue []
+	command += link[:options   ][:cocoa ].collect { |o| '-'           + o } rescue []
+	command += link[:libraries ][:global].collect { |l| '-l '         + l } rescue []
+	command += link[:libraries ][:cocoa ].collect { |l| '-l '         + l } rescue []
+	command += link[:frameworks][:global].collect { |f| '-framework ' + f } rescue []
+	command += link[:frameworks][:cocoa ].collect { |f| '-framework ' + f } rescue []
+	command = command.join ' '
+
+	puts indent + command if verbose?
+
+	Open3.popen3(command) do |stdin, stdout, stderr|
+
+		stdout.readlines.each do |line|
+			puts indent + line
+		end
+
+		raise StandardError, 'Couldn\'t link!' unless stderr.readlines.each do |err|
+			puts indent + err
+		end.empty?
+
+	end
+end
+
+# Build App
+
+desc 'Builds a Cocoa application bundle out of the linked files'
+
+task :build_cocoa_app => :link do
+	puts 'Building Application Bundle...'
+
+	Dir.mkdir(output_file) rescue Errno::EEXIST
+	Dir.mkdir(output_file + '/Contents') rescue Errno::EEXIST
+	Dir.mkdir(output_file + '/Contents/MacOS/') rescue Errno::EEXIST
+	Dir.mkdir(output_file + '/Contents/Resources/') rescue Errno::EEXIST
+
+	cp 'Info.plist', output_file + '/Contents/Info.plist'
+	cp 'PkgInfo', output_file + '/Contents/PkgInfo'
+	cp 'InfoPlist.strings', output_file + '/Contents/Resources/InfoPlist.strings'
+	cp 'DeSmuME.icns', output_file + '/Contents/Resources/DeSmuME.icns'
+
+	cp output_executable, output_file + '/Contents/MacOS/DeSmuME'
+
+	Dir['*.nib'].each do |nib_file|
+		locale = nib_file[0...-4]
+		locale_dir = output_file + '/Contents/Resources/' + locale +'.lproj'
+		mkdir locale_dir rescue Errno::EEXIST
+		cp_r nib_file, locale_dir + '/MainMenu.nib' rescue Errno::EEXIST
+		cp_r locale + '.strings', locale_dir + '/Localizable.strings'
+	end
+
+	puts 'Built ' + output_file
+end
+
+
+# Default Step
+
+desc 'Makes the executable from scratch'
+
+task :default => :build_cocoa_app do
+	puts 'Finished!'
+end
+
+# Run Task
+
+desc 'Runs the executable if it exists'
+
+task :run do
+	system output_file + '/Contents/MacOS/DeSmuME'
+end
+
+# Help
+
+desc 'Displays helpful information about this Rakefile'
+
+task :help do
+	puts ""
+	puts "Type rake to build the default task, which will make an executable"
+	puts "Otherwise type rake [taskname] to execute a particular task"
+	puts "Use rake -T to see what all the tasks are"
+	puts ""
+	puts "There are several parameters that you can pass:"
+	puts "(but don't put spaces around the equal signs though)"
+	puts "  output_file  =  [filename]     the name of the executable (default is DeSmuME.app)"
+	puts "  verbose      =  [true|false]   print extra information (default is false)"
+	puts ""
+end
