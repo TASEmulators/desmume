@@ -39,6 +39,7 @@
 		7277B6E50D9E045700D283BD /* Japanese.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E10D9E045700D283BD /* Japanese.nib */; };
 		7277B6E60D9E045700D283BD /* Japanese.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E20D9E045700D283BD /* Japanese.strings */; };
 		7277B8EB0D9F25F700D283BD /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
+		728E5E210E7F54CC00608344 /* GPU_osd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */; };
 		729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
 		729BEC710D9D55DB00ED561B /* input.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.m */; };
 		729BEC730D9D55DB00ED561B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.m */; };
@@ -94,6 +95,8 @@
 		7277B6E10D9E045700D283BD /* Japanese.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = Japanese.nib; sourceTree = "<group>"; };
 		7277B6E20D9E045700D283BD /* Japanese.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = Japanese.strings; sourceTree = "<group>"; };
 		7277B8EA0D9F25F700D283BD /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
+		728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GPU_osd.cpp; path = ../GPU_osd.cpp; sourceTree = SOURCE_ROOT; };
+		728E5E200E7F54CC00608344 /* GPU_osd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPU_osd.h; path = ../GPU_osd.h; sourceTree = SOURCE_ROOT; };
 		729BEC5A0D9D55DB00ED561B /* cocoa_util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_util.m; sourceTree = SOURCE_ROOT; };
 		729BEC5C0D9D55DB00ED561B /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = SOURCE_ROOT; };
 		729BEC5D0D9D55DB00ED561B /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = SOURCE_ROOT; };
@@ -177,9 +180,6 @@
 				729BEC620D9D55DB00ED561B /* main_window.m */,
 				729BEC630D9D55DB00ED561B /* nds_control.h */,
 				729BEC640D9D55DB00ED561B /* nds_control.mm */,
-				7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */,
-				7248E45F0E7E0B0E004DCFFE /* gfx3d.h */,
-				7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */,
 				729BEC650D9D55DB00ED561B /* preferences.h */,
 				729BEC660D9D55DB00ED561B /* preferences.m */,
 				729BEC670D9D55DB00ED561B /* rom_info.h */,
@@ -236,6 +236,11 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				728E5E200E7F54CC00608344 /* GPU_osd.h */,
+				7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */,
+				7248E45F0E7E0B0E004DCFFE /* gfx3d.h */,
+				7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */,
+				728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */,
 				7248E4610E7E0B0E004DCFFE /* OGLRender.h */,
 				7227644A0E78E18100AEDC8B /* arm_instructions.cpp */,
 				7227644B0E78E18100AEDC8B /* armcpu.cpp */,
@@ -445,6 +450,7 @@
 				722764780E78E18100AEDC8B /* wifi.cpp in Sources */,
 				7248E4620E7E0B0E004DCFFE /* gfx3d.cpp in Sources */,
 				7248E4630E7E0B0E004DCFFE /* OGLRender.cpp in Sources */,
+				728E5E210E7F54CC00608344 /* GPU_osd.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

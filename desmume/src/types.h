@@ -58,7 +58,7 @@
 
 #ifdef DESMUME_OBJ_C
 #define __declspec(ignore)
-#define printlog(ignore)
+inline void printlog(char *s, ...) {}
 #ifdef __BIG_ENDIAN__
 #define WORDS_BIGENDIAN
 #endif

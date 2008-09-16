@@ -18,7 +18,7 @@
 */
 
 #import <Cocoa/Cocoa.h>
-#import "nds_control.h"
+#import "../nds_control.h"
 
 @interface SpeedLimitSelectionWindow : NSWindow
 {

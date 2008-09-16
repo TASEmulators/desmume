@@ -27,7 +27,7 @@
 #import "input.h"
 #import "rom_info.h"
 #import "preferences.h"
-#import "speed_limit_selection_window.h"
+#import "dialogs/speed_limit_selection_window.h"
 
 //How much padding to put around the video output
 #define WINDOW_BORDER_PADDING 5
