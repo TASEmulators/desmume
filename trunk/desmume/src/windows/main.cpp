@@ -101,6 +101,8 @@ BOOL click = FALSE;
 BOOL finished = FALSE;
 BOOL romloaded = FALSE;
 
+void SetRotate(int rot);
+
 BOOL ForceRatio = TRUE;
 float DefaultWidth;
 float DefaultHeight;
@@ -142,7 +144,7 @@ static u32 backupmemorysize=1;
 unsigned int frameCounter=0;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
-unsigned short windowSize = 1;
+unsigned short windowSize = 0;
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -275,16 +277,153 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 	}
 }
 
-void ScaleScreen(float factor)
+void ResizingLimit(int wParam, RECT *rc)
 {
-	SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor,
-                 heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
-	if (windowSize != factor)
+	u32	width = (rc->right - rc->left);
+	u32	height = (rc->bottom - rc->top);
+
+	u32 minX = 256;
+	u32 minY = 414;
+
+	//printlog("width=%i; height=%i\n", width, height);
+
+	if (GPU_rotation == 90 || GPU_rotation == 270)
 	{
-		windowSize = factor;
-		WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+		minX = 390;
+		minY = 272;
 	}
-	return;
+	switch (wParam)
+	{
+		case WMSZ_LEFT:
+			{
+				if (width<minX) rc->left=rc->left+(width-minX);
+				return;
+			}
+
+		case WMSZ_RIGHT:
+			{
+				if (width<minX) rc->right=rc->left+minX;
+				return;
+			}
+
+		case WMSZ_TOP:
+			{
+				if (height<minY) rc->top=rc->top+(height-minY);
+				return;
+			}
+
+		case WMSZ_BOTTOM:
+			{
+				if (height<minY) rc->bottom=rc->top+minY;
+				return;
+			}
+
+		case WMSZ_TOPLEFT:
+			{
+				if (height<minY) rc->top=rc->top+(height-minY);
+				if (width<minX) rc->left=rc->left+(width-minX);
+				return;
+			}
+		case WMSZ_BOTTOMLEFT:
+			{
+				if (height<minY) rc->bottom=rc->top+minY;
+				if (width<minX) rc->left=rc->left+(width-minX);
+				return;
+			}
+
+		case WMSZ_TOPRIGHT:
+			{
+				if (height<minY) rc->top=rc->top+(height-minY);
+				if (width<minX) rc->right=rc->left+minX;
+				return;
+			}
+
+		case WMSZ_BOTTOMRIGHT:
+			{
+				if (height<minY) rc->bottom=rc->top+minY;
+				if (width<minX) rc->right=rc->left+minX;
+				return;
+			}
+	}
+
+}
+
+void ScallingScreen(HWND hwnd, int wParam, RECT *rc)
+{
+	float	aspect;
+	u32	width;
+	u32	height;
+	u32	width2;
+	u32	height2;
+
+	width = (rc->right - rc->left - widthTradeOff);
+	height = (rc->bottom - rc->top - heightTradeOff);
+
+	if (width ==  height) return;
+
+	if (GPU_rotation == 0 || GPU_rotation == 180)
+	{
+		aspect = DefaultWidth / DefaultHeight;
+	}
+	else
+	{
+		aspect = DefaultHeight / DefaultWidth;
+	}
+
+	switch (wParam)
+	{
+		case WMSZ_LEFT:
+		case WMSZ_RIGHT:
+			{
+				height = (int)(width / aspect);
+				rc->bottom=rc->top+height+heightTradeOff;
+				return;
+			}
+
+		case WMSZ_TOP:
+		case WMSZ_BOTTOM:
+			{
+				width = (int)(height * aspect);
+				rc->right=rc->left+width+widthTradeOff;
+				return;
+			}
+
+		case WMSZ_TOPLEFT:
+			{
+				width = (int)(height * aspect);
+				rc->left=rc->right-width-widthTradeOff;
+				return;
+			}
+		case WMSZ_BOTTOMLEFT:
+			{
+				height = (int)(width / aspect);
+				rc->bottom=rc->top + height + heightTradeOff;
+				return;
+			}
+
+		case WMSZ_TOPRIGHT:
+		case WMSZ_BOTTOMRIGHT:
+			{
+				width = (int)(height * aspect);
+				rc->right=rc->left+width+widthTradeOff;
+				return;
+			}
+	}
+}
+
+void ScaleScreen(HWND hwnd, float factor)
+{
+	if ((GPU_rotation==0)||(GPU_rotation==180))
+	{
+		SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor, 
+				heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
+	}
+	else
+	if ((GPU_rotation==90)||(GPU_rotation==270))
+	{
+		SetWindowPos(hwnd, NULL, 0, 0, heightTradeOff + DefaultHeight * factor, 
+				widthTradeOff + DefaultWidth * factor, SWP_NOMOVE | SWP_NOZORDER);
+	}
 }
  
 void translateXY(s32 *x, s32*y)
@@ -371,9 +510,19 @@ int CreateDDrawBuffers()
 	ddsd.dwSize          = sizeof(ddsd);
 	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
-	//MainWindowRect.right
-	ddsd.dwWidth         = 256;
-	ddsd.dwHeight        = 384;
+
+	if ( (GPU_rotation == 0) || (GPU_rotation == 180) )
+	{
+		ddsd.dwWidth         = 256;
+		ddsd.dwHeight        = 384;
+	}
+	else
+	if ( (GPU_rotation == 90) || (GPU_rotation == 270) )
+	{
+		ddsd.dwWidth         = 384;
+		ddsd.dwHeight        = 256;
+	}
+
 	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
 
 	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
@@ -657,7 +806,6 @@ void StateSaveSlot(int num)
 	NDS_Pause();
 	savestate_slot(num);
 	NDS_UnPause();
-	printlog("Saved %i state\n",num);
 }
 
 void StateLoadSlot(int num)
@@ -665,7 +813,6 @@ void StateLoadSlot(int num)
 	NDS_Pause();
 	loadstate_slot(num);
 	NDS_UnPause();
-	printlog("Loaded %i state\n",num);
 }
 
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
@@ -793,6 +940,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     GetPrivateProfileString("General", "Language", "-1", text, 80, IniName);
     SetLanguage(atoi(text));
 
+	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
+	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
+	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
+
     sprintf(text, "DeSmuME v%s", VERSION);
 
 	init_configured_features( &my_config);
@@ -819,7 +970,22 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     hwnd = MainWindow.hwnd;
     menu = LoadMenu(hThisInstance, "MENU_PRINCIPAL");
     SetMenu(hwnd, menu);
-	CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
+
+	// menu checks
+	CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
+
+	CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+
+	CheckMenuItem(menu, IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+
+	Input_Init(hwnd);
+
     hdc = GetDC(hwnd);
     DragAcceptFiles(hwnd, TRUE);
     
@@ -857,7 +1023,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #else
 	NDS_Init ();
 #endif
-
 
   /*
    * Activate the GDB stubs
@@ -976,8 +1141,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     CheckMenuItem(menu, IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menu, IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
-    
-    CheckMenuItem(menu, IDC_ROTATE0, MF_BYCOMMAND | MF_CHECKED);
 
     while (GetMessage (&messages, NULL, 0, 0))
     {
@@ -1004,7 +1167,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     return messages.wParam;
 }
 
-void GetRect(HWND hwnd)
+void GetWndRect(HWND hwnd)
 {
 	POINT ptClient;
 	RECT rc;
@@ -1022,12 +1185,59 @@ void GetRect(HWND hwnd)
 	MainWindowRect.bottom=ptClient.y;
 }
 
+//========================================================================================
+void SetRotate(int rot)
+{
+	GPU_rotation = rot;
+
+	switch (rot)
+	{
+		case 0:
+			GPU_width    = 256;
+			GPU_height   = 192*2;
+			rotationstartscan = 192;
+			rotationscanlines = 192*2;
+			break;
+
+		case 90:
+			GPU_rotation = 90;
+			GPU_width    = 192*2;
+			GPU_height   = 256;
+			rotationstartscan = 0;
+			rotationscanlines = 256;
+			break;
+
+		case 180:
+			GPU_rotation = 180;
+			GPU_width    = 256;
+			GPU_height   = 192*2;
+			rotationstartscan = 0;
+			rotationscanlines = 192*2;
+			break;
+
+		case 270:
+			GPU_rotation = 270;
+			GPU_width    = 192*2;
+			GPU_height   = 256;
+			rotationstartscan = 0;
+			rotationscanlines = 256;
+			break;
+	}
+  
+	SetWindowClientSize(hwnd, GPU_width, GPU_height);
+	CheckMenuItem(menu, IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
+	CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
+}
+//========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
 	static int tmp_execute;
     switch (message)                  // handle the messages
     {
-		case WM_ENTERMENULOOP:
+		/*case WM_ENTERMENULOOP:		// temporally removed it (freezes)
 			{
 				if (execute)
 				{
@@ -1040,63 +1250,52 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			{
 				if (tmp_execute==2) NDS_UnPause();
 				return 0;
-			}
+			}*/
 
         case WM_CREATE:
 	     {
-	     	windowSize = GetPrivateProfileInt("Video","Window Size", 1, IniName);
 			RECT clientSize, fullSize;
-            HRESULT hr=Input_Init(hwnd);
-#ifdef DEBUG
-				if(FAILED(hr)) LOG("DirectInput init failed (0x%08x)\n",hr);
-				else LOG("DirectInput init\n");
-#endif
 	     	GetClientRect(hwnd, &clientSize);
 			GetWindowRect(hwnd, &fullSize);
 	     	DefaultWidth = clientSize.right - clientSize.left;
 			DefaultHeight = clientSize.bottom - clientSize.top;
 			widthTradeOff = (fullSize.right - fullSize.left) - (clientSize.right - clientSize.left);
 			heightTradeOff = (fullSize.bottom - fullSize.top) - (clientSize.bottom - clientSize.top);
-            ScaleScreen(windowSize);
+
+            if ( (windowSize < 1) || (windowSize > 4) )
+			{
+				int w=GetPrivateProfileInt("Video","Window width", 0, IniName);
+				int h=GetPrivateProfileInt("Video","Window height", 0, IniName);
+				if (w && h)	
+				{
+					RECT fullSize = {0, 0, w, h};
+					ResizingLimit(WMSZ_RIGHT, &fullSize);
+
+					if (ForceRatio)	
+						ScallingScreen(hwnd, WMSZ_RIGHT, &fullSize);
+					SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left, 
+												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+				}
+				else 
+					windowSize=1;
+			}
+			if ( (windowSize > 0) && (windowSize < 5) )	ScaleScreen(hwnd, windowSize);
+			
 			return 0;
 			
 	     }
         case WM_DESTROY:
+		case WM_CLOSE:
 			{
              NDS_Pause();
              finished = TRUE;
 
-             if (runthread != INVALID_HANDLE_VALUE)
-             {
-                if (WaitForSingleObject(runthread,INFINITE) == WAIT_TIMEOUT)
-                {
-                   // Couldn't close thread cleanly
-                   TerminateThread(runthread,0);
-                }
-                CloseHandle(runthread);
-             }
-
-             NDS_DeInit();
-
-             PostQuitMessage (0);       // send a WM_QUIT to the message queue 
-             return 0;
-			}
-		case WM_MOVE:
-				GetRect(hwnd);
-				return 0;
-		case WM_SIZE:
-    			if (ForceRatio) {
-					RECT fullSize;
-					GetWindowRect(hwnd, &fullSize);
-					ScaleScreen(windowSize);
-					//ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
-				}
-				GetRect(hwnd);
-				return 0;
-        case WM_CLOSE:
-			{
-             NDS_Pause();
-             finished = TRUE;
+			 WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+			 if (windowSize==0)
+			 {
+				 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
+				 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
+			 }
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
@@ -1112,6 +1311,26 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              PostMessage(hwnd, WM_QUIT, 0, 0);
              return 0;
 			}
+		case WM_MOVE:
+				GetWndRect(hwnd);
+				return 0;
+		case WM_SIZING:
+			{
+				RECT *rc=(RECT *)lParam;
+
+				windowSize=0;
+				ResizingLimit(wParam, rc);
+				if (ForceRatio)
+					ScallingScreen(hwnd, wParam, rc);
+				//printlog("sizing: width=%i; height=%i\n", rc->right - rc->left, rc->bottom - rc->top);
+			}
+			break;
+		case WM_SIZE:
+    			if (ForceRatio) {
+					if ( windowSize != 0 )	ScaleScreen(hwnd, windowSize);
+				}
+				GetWndRect(hwnd);
+				return 0;
         case WM_DROPFILES:
              {
                   char filename[MAX_PATH] = "";
@@ -1777,76 +1996,75 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 #endif
 
                   case IDC_ROTATE0:
-                       GPU_rotation = 0;
-                       GPU_width    = 256;
-                       GPU_height   = 192*2;
-                       rotationstartscan = 192;
-                       rotationscanlines = 192*2;
-                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
-                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_CHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_UNCHECKED);
-                  return 0;
+						SetRotate(0);
+						return 0;
                   case IDC_ROTATE90:
-                       GPU_rotation = 90;
-                       GPU_width    = 192*2;
-                       GPU_height   = 256;
-                       rotationstartscan = 0;
-                       rotationscanlines = 256;
-                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
-                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_CHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_UNCHECKED);
-                  return 0;
+						SetRotate(90);
+						return 0;
                   case IDC_ROTATE180:
-                       GPU_rotation = 180;
-                       GPU_width    = 256;
-                       GPU_height   = 192*2;
-                       rotationstartscan = 0;
-                       rotationscanlines = 192*2;
-                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
-                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_CHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_UNCHECKED);
-                  return 0;
+						SetRotate(180);
+						return 0;
                   case IDC_ROTATE270:
-                       GPU_rotation = 270;
-                       GPU_width    = 192*2;
-                       GPU_height   = 256;
-                       rotationstartscan = 0;
-                       rotationscanlines = 256;
-                       SetWindowClientSize(hwnd, GPU_width, GPU_height);
-                       CheckMenuItem(menu, IDC_ROTATE0,   MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE90,  MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | MF_CHECKED);
-                  return 0;
+						SetRotate(270);
+						return 0;
+
         case IDC_WINDOW1X:
-			ScaleScreen(1);
+			windowSize=1;
+			ScaleScreen(hwnd, windowSize);
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+
+			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 		case IDC_WINDOW2X:
-			ScaleScreen(2);
+			windowSize=2;
+			ScaleScreen(hwnd, windowSize);
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+
+			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 		case IDC_WINDOW3X:
-			ScaleScreen(3);
+			windowSize=3;
+			ScaleScreen(hwnd, windowSize);
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+
+			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 		case IDC_WINDOW4X:
-			ScaleScreen(4);
+			windowSize=4;
+			ScaleScreen(hwnd, windowSize);
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+
+			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
+
 		case IDC_FORCERATIO:
 			if (ForceRatio) {
 				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_UNCHECKED);
 				ForceRatio = FALSE;
+				WritePrivateProfileInt("Video","Window Force Ratio",0,IniName);
 			}
 			else {
 				RECT fullSize;
 				GetWindowRect(hwnd, &fullSize);
-				ScaleScreen((fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
+				ScallingScreen(hwnd, WMSZ_RIGHT, &fullSize);
+				SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left, 
+												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
+				//ScaleScreen(hwnd, (fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
 				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
 				ForceRatio = TRUE;
+				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
 			}
 			break;
 
