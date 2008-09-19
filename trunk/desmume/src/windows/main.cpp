@@ -22,6 +22,7 @@
 */
 
 #define WIN32_LEAN_AND_MEAN
+#include <algorithm>
 #include <windows.h>
 #include <shellapi.h>
 #include <Winuser.h>
@@ -533,6 +534,107 @@ int CreateDDrawBuffers()
 	return 1;
 }
 
+
+void Display()
+{
+	int res;
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags=DDSD_ALL;
+	res=IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL);
+	
+	if (res == DD_OK)
+	{
+		char* buffer = (char*)ddsd.lpSurface;
+		
+		int i, j, sz=256*sizeof(u32);
+		if (ddsd.ddpfPixelFormat.dwRGBBitCount>16)
+		{
+			u16 *tmpGPU_Screen_src=(u16*)GPU_screen;
+			u32	tmpGPU_screen[98304];
+			for(i=0; i<98304; i++)
+			tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
+								(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
+								(((tmpGPU_Screen_src[i])&0x1F)<<19);
+			switch (GPU_rotation)
+			{
+				case 0:
+				{
+					for (i = 0; i < 98304; i+=256)  //384*256
+					{
+						memcpy(buffer,tmpGPU_screen+i,sz);
+						buffer += ddsd.lPitch;
+					}
+					break;
+				}
+				case 90:
+				{
+					u32 start;
+					memset(buffer,0,384*ddsd.lPitch);
+					for (j=0; j<256; j++)
+					{
+						start=98304+j;
+						for (i=0; i<384; i++)
+						{
+							start-=256;
+							((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
+						}
+						buffer += ddsd.lPitch;
+					}
+					break;
+				}
+				case 180:
+				{
+					u32 start=98300;
+					for (j=0; j<384; j++)
+					{
+						for (i=0; i<256; i++, --start)
+							((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
+						buffer += ddsd.lPitch;
+					}
+					break;
+				}
+				case 270:
+				{
+					u32 start;
+					memset(buffer,0,384*ddsd.lPitch);
+					for (j=0; j<256; j++)
+					{
+						start=256-j;
+						for (i=0; i<384; i++)
+						{
+							((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
+							start+=256;
+						}
+						buffer += ddsd.lPitch;
+					}
+					break;
+				}
+			}
+		}
+		else
+			 printlog("16bit depth color not supported");
+		IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
+
+		if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
+		{
+			printlog("DirectDraw buffers is lost\n");
+			if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
+				IDirectDrawSurface7_Restore(lpBackSurface);
+		}
+	}
+	else
+	{
+		if (res==DDERR_SURFACELOST)
+		{
+			printlog("DirectDraw buffers is lost\n");
+			if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
+				IDirectDrawSurface7_Restore(lpBackSurface);
+		}
+	}
+}
+
+
 DWORD WINAPI run( LPVOID lpParameter)
 {
      char txt[80];
@@ -600,101 +702,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 
                if (!skipnextframe)
                {
-					int res;
-					memset(&ddsd, 0, sizeof(ddsd));
-					ddsd.dwSize = sizeof(ddsd);
-					ddsd.dwFlags=DDSD_ALL;
-					res=IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL);
-					
-					if (res == DD_OK)
-					{
-						char* buffer = (char*)ddsd.lpSurface;
-						
-						int i, j, sz=256*sizeof(u32);
-						if (ddsd.ddpfPixelFormat.dwRGBBitCount>16)
-						{
-							u16 *tmpGPU_Screen_src=(u16*)GPU_screen;
-							u32	tmpGPU_screen[98304];
-							for(i=0; i<98304; i++)
-							tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
-												(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
-												(((tmpGPU_Screen_src[i])&0x1F)<<19);
-							switch (GPU_rotation)
-							{
-								case 0:
-								{
-									for (i = 0; i < 98304; i+=256)  //384*256
-									{
-										memcpy(buffer,tmpGPU_screen+i,sz);
-										buffer += ddsd.lPitch;
-									}
-									break;
-								}
-								case 90:
-								{
-									u32 start;
-									memset(buffer,0,384*ddsd.lPitch);
-									for (j=0; j<256; j++)
-									{
-										start=98304+j;
-										for (i=0; i<384; i++)
-										{
-											start-=256;
-											((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
-										}
-										buffer += ddsd.lPitch;
-									}
-									break;
-								}
-								case 180:
-								{
-									u32 start=98300;
-									for (j=0; j<384; j++)
-									{
-										for (i=0; i<256; i++, --start)
-											((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
-										buffer += ddsd.lPitch;
-									}
-									break;
-								}
-								case 270:
-								{
-									u32 start;
-									memset(buffer,0,384*ddsd.lPitch);
-									for (j=0; j<256; j++)
-									{
-										start=256-j;
-										for (i=0; i<384; i++)
-										{
-											((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
-											start+=256;
-										}
-										buffer += ddsd.lPitch;
-									}
-									break;
-								}
-							}
-						}
-						else
-							 printlog("16bit depth color not supported");
-						IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
-
-						if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
-						{
-							printlog("DirectDraw buffers is lost\n");
-							if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
-								IDirectDrawSurface7_Restore(lpBackSurface);
-						}
-					}
-					else
-					{
-						if (res==DDERR_SURFACELOST)
-						{
-							printlog("DirectDraw buffers is lost\n");
-							if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
-								IDirectDrawSurface7_Restore(lpBackSurface);
-						}
-					}
+				   Display();
 
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
@@ -712,8 +720,8 @@ DWORD WINAPI run( LPVOID lpParameter)
 					 int load = 0;
 					 for(int i=0;i<16;i++)
 						 load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
-					 load = min(100,max(0,(int)(load*100/1120380)));
-					 sprintf(txt,"(%02d%%) DeSmuME v%s", load, VERSION);
+					 load = std::min(100,std::max(0,(int)(load*100/1120380)));
+					 sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
 					 SetWindowText(hwnd, txt);
 					 osd->addFixed(10, 10, "%02d Fps", fps);
 				  }
@@ -810,9 +818,13 @@ void StateSaveSlot(int num)
 
 void StateLoadSlot(int num)
 {
+	BOOL wasPaused = paused;
 	NDS_Pause();
 	loadstate_slot(num);
-	NDS_UnPause();
+	if(!wasPaused)
+		NDS_UnPause();
+	else
+		Display();
 }
 
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
@@ -944,7 +956,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
 
-    sprintf(text, "DeSmuME v%s", VERSION);
+    sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 
 	init_configured_features( &my_config);
 	if ( !fill_configured_features( &my_config, lpszArgument)) {

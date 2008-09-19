@@ -13,8 +13,11 @@ libdesmume_a_SOURCES = \
 	Disassembler.cpp Disassembler.h \
 	dscard.h fat.h FIFO.cpp FIFO.h \
 	GPU.cpp GPU.h \
+	GPU_osd.cpp GPU_osd.h \
 	gl_vertex.cpp gl_vertex.h \
         mem.h mc.cpp mc.h \
+	memorystream.h \
+	readwrite.cpp readwrite.h \
 	wifi.cpp wifi.h \
         MMU.cpp MMU.h NDSSystem.cpp NDSSystem.h registers.h \
 	OGLRender.cpp OGLRender.h \

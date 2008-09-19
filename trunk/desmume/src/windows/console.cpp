@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <io.h>
+#include "types.h"
 
 
 ///////////////////////////////////////////////////////////////// Console
@@ -43,7 +44,7 @@ void OpenConsole()
 	if (hConsole) return;
 	AllocConsole();
 	memset(buf,0,256);
-	sprintf(buf,"DeSmuME v%s OUTPUT", VERSION);
+	sprintf(buf,"%s OUTPUT", DESMUME_NAME_AND_VERSION);
 	SetConsoleTitle(TEXT(buf));
 	csize.X = 60;
 	csize.Y = 800;
@@ -56,7 +57,7 @@ void OpenConsole()
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCP(GetACP());
 	SetConsoleOutputCP(GetACP());
-	printlog("DeSmuME v%s BETA\n",VERSION);
+	printlog("%s\n",DESMUME_NAME_AND_VERSION);
 	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
 
 	//redirect stdio

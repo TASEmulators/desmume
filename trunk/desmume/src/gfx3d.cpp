@@ -22,6 +22,7 @@
 //This handles almost all of the work of 3d rendering, leaving the renderer 
 // plugin responsible only for drawing primitives.
 
+#include <algorithm>
 #include "debug.h"
 #include "gfx3d.h"
 #include "matrix.h"
@@ -29,17 +30,10 @@
 #include "MMU.h"
 #include "render3D.h"
 #include "types.h"
+#include "saves.h"
+#include "readwrite.h"
 
 GFX3D gfx3d;
-
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
-
 
 //tables that are provided to anyone
 u32 color_15bit_to_24bit[32768];
@@ -81,7 +75,7 @@ static float normalTable[1024];
 static ALIGN(16) MatrixStack	mtxStack[4];
 static ALIGN(16) float		mtxCurrent [4][16];
 static ALIGN(16) float		mtxTemporal[16];
-static short mode = 0;
+static u32 mode = 0;
 
 // Indexes for matrix loading/multiplication
 static char ML4x4ind = 0;
@@ -93,7 +87,7 @@ static char MM3x3_c = 0, MM3x3_l = 0;
 // Data for vertex submission
 static ALIGN(16) float	coord[4] = {0.0, 0.0, 0.0, 0.0};
 static char		coordind = 0;
-static unsigned int vtxFormat;
+static u32 vtxFormat;
 
 // Data for basic transforms
 static ALIGN(16) float	trans[4] = {0.0, 0.0, 0.0, 0.0};
@@ -102,44 +96,42 @@ static ALIGN(16) float	scale[4] = {0.0, 0.0, 0.0, 0.0};
 static char		scaleind = 0;
 
 //various other registers
-static float fogColor[4] = {0.f};
-static float fogOffset = 0.f;
-static float alphaTestRef = 0.01f;
-static int colorRGB[4] = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff};
-static int texCoordinateTransform = 0;
 static int _t=0, _s=0;
 static float last_t, last_s;
-static float	alphaTestBase = 0;
-static unsigned long clCmd = 0;
-static unsigned long clInd = 0;
-static unsigned long clInd2 = 0;
-static int alphaDepthWrite = 0;
-static int colorAlpha=0;
-static unsigned int polyID=0;
-static unsigned int depthFuncMode=0;
-static unsigned int envMode=0;
-static unsigned int cullingMask=0;
+static u32 clCmd = 0;
+static u32 clInd = 0;
+static u32 clInd2 = 0;
 
 //raw ds format poly attributes
 static u32 polyAttr=0,textureFormat=0, texturePalette=0;
 
-//------lighting state
-struct LightInformation
-{
-	unsigned int color;		// Color in hardware format
-	unsigned int direction;	// Direction in hardware format
-	float floatDirection[4];
-} ;
+//the current vertex color, 5bit values
+static u8 colorRGB[4] = { 31,31,31,31 };
 
-static LightInformation g_lightInfo[4] = { 0 };
-static unsigned int lightMask=0;
+u32 control = 0;
 
+//light state:
+static u32 lightColor[4] = {0,0,0,0};
+static u32 lightDirection[4] = {0,0,0,0};
+//material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
-static int			diffuse[4] = {0}, 
-					ambient[4] = {0}, 
-					specular[4] = {0}, 
-					emission[4] = {0};
+
+
+//-----------cached things:
+//these dont need to go into the savestate. they can be regenerated from HW registers
+//from polygonattr:
+static unsigned int cullingMask=0;
+static u8 colorAlpha=0;
+static u32 envMode=0;
+static u32 lightMask=0;
+//other things:
+static int texCoordinateTransform = 0;
+static float cacheLightDirection[4][4];
 //------------------
+
+#define RENDER_FRONT_SURFACE 0x80
+#define RENDER_BACK_SURFACE 0X40
+
 
 //-------------poly and vertex lists
 POLYLIST polylists[2];
@@ -230,31 +222,28 @@ void gfx3d_glClearColor(unsigned long v)
 
 void gfx3d_glFogColor(unsigned long v)
 {
-	fogColor[0] = ((float)((v    )&0x1F))/31.0f;
-	fogColor[1] = ((float)((v>> 5)&0x1F))/31.0f;
-	fogColor[2] = ((float)((v>>10)&0x1F))/31.0f;
-	fogColor[3] = ((float)((v>>16)&0x1F))/31.0f;
+	gfx3d.fogColor[0] = ((float)((v    )&0x1F))/31.0f;
+	gfx3d.fogColor[1] = ((float)((v>> 5)&0x1F))/31.0f;
+	gfx3d.fogColor[2] = ((float)((v>>10)&0x1F))/31.0f;
+	gfx3d.fogColor[3] = ((float)((v>>16)&0x1F))/31.0f;
 }
 
 void gfx3d_glFogOffset (unsigned long v)
 {
-	fogOffset = (float)(v&0xffff);
+	gfx3d.fogOffset = (float)(v&0xffff);
 }
 
 void gfx3d_glClearDepth(unsigned long v)
 {
-	u32 depth24b;
-
-	v		&= 0x7FFFF;
-	
 	//Thanks to NHerve
-	depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
+	v &= 0x7FFFF;
+	u32 depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
 	gfx3d.clearDepth = depth24b / ((float)(1<<24));
 }
 
-void gfx3d_glMatrixMode(unsigned long v)
+void gfx3d_glMatrixMode(u32 v)
 {
-	mode = (short)(v&3);
+	mode = (v&3);
 }
 
 
@@ -467,15 +456,16 @@ void gfx3d_glEnd(void)
 
 void gfx3d_glColor3b(unsigned long v)
 {
-	colorRGB[0] = material_5bit_to_31bit[(v&0x1F)];
-	colorRGB[1] = material_5bit_to_31bit[((v>>5)&0x1F)];
-	colorRGB[2] = material_5bit_to_31bit[((v>>10)&0x1F)];
+	colorRGB[0] = (v&0x1F);
+	colorRGB[1] = ((v>>5)&0x1F);
+	colorRGB[2] = ((v>>10)&0x1F);
 }
 
 //Submit a vertex to the GE
 static void SetVertex()
 {
 	ALIGN(16) float coordTransformed[4] = { coord[0], coord[1], coord[2], 1 };
+	ALIGN(16) float coordProjected[4];
 
 	if (texCoordinateTransform == 3)
 	{
@@ -496,8 +486,6 @@ static void SetVertex()
 	//apply modelview matrix
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
-	//deferred rendering:
-
 	//todo - we havent got the whole pipeline working yet, so lets save the projection matrix and let opengl do it
 	////apply projection matrix
 	//MatrixMultVec4x4 (mtxCurrent[0], coordTransformed);
@@ -511,19 +499,19 @@ static void SetVertex()
 	//TODO - culling should be done here.
 	//TODO - viewport transform
 
-
 	//record the vertex
-	tempVertList.list[tempVertList.count].texcoord[0] = last_s;
-	tempVertList.list[tempVertList.count].texcoord[1] = last_t;
-	tempVertList.list[tempVertList.count].coord[0] = coordTransformed[0];
-	tempVertList.list[tempVertList.count].coord[1] = coordTransformed[1];
-	tempVertList.list[tempVertList.count].coord[2] = coordTransformed[2];
-	tempVertList.list[tempVertList.count].coord[3] = coordTransformed[3];
-	tempVertList.list[tempVertList.count].color[0] = colorRGB[0];
-	tempVertList.list[tempVertList.count].color[1] = colorRGB[1];
-	tempVertList.list[tempVertList.count].color[2] = colorRGB[2];
-	tempVertList.list[tempVertList.count].color[3] = colorRGB[3];
-	tempVertList.list[tempVertList.count].depth = 0x7FFF * coordTransformed[2];
+	VERT &vert = tempVertList.list[tempVertList.count];
+	vert.texcoord[0] = last_s;
+	vert.texcoord[1] = last_t;
+	vert.coord[0] = coordTransformed[0];
+	vert.coord[1] = coordTransformed[1];
+	vert.coord[2] = coordTransformed[2];
+	vert.coord[3] = coordTransformed[3];
+	vert.color[0] = colorRGB[0];
+	vert.color[1] = colorRGB[1];
+	vert.color[2] = colorRGB[2];
+	vert.color[3] = colorRGB[3];
+	vert.depth = 0x7FFF * coordTransformed[2];
 	tempVertList.count++;
 
 	//possibly complete a polygon
@@ -653,35 +641,34 @@ int gfx3d_GetNumVertex()
 	return 0;
 }
 
-static void InstallPolygonAttrib(unsigned long val)
+static void gfx3d_glPolygonAttrib_cache()
 {
 	// Light enable/disable
-	lightMask = (val&0xF);
+	lightMask = (polyAttr&0xF);
 
 	// texture environment
-    //envMode = texEnv[(val&0x30)>>4];
-	envMode = (val&0x30)>>4;
+	envMode = (polyAttr&0x30)>>4;
 
 	//// overwrite depth on alpha pass
-	//alphaDepthWrite = BIT11(val);
+	//alphaDepthWrite = BIT11(polyAttr);
 
 	//// depth test function
-	//depthFuncMode = depthFunc[BIT14(val)];
+	//depthFuncMode = depthFunc[BIT14(polyAttr)];
 
 	//// back face culling
-	//cullingMask = (val&0xC0);
+	cullingMask = (polyAttr>>6)&3;
 
 	// Alpha value, actually not well handled, 0 should be wireframe
-	colorRGB[3] = colorAlpha = material_5bit_to_31bit[((val>>16)&0x1F)];
+	colorRGB[3] = colorAlpha = ((polyAttr>>16)&0x1F);
 	
 	//// polyID
-	//polyID = (val>>24)&0x1F;
+	//polyID = (polyAttr>>24)&0x1F;
 }
 
 void gfx3d_glPolygonAttrib (unsigned long val)
 {
 	polyAttr = val;
-	InstallPolygonAttrib(polyAttr);
+	gfx3d_glPolygonAttrib_cache();
 }
 
 /*
@@ -698,21 +685,11 @@ void gfx3d_glMaterial0(unsigned long val)
 	dsDiffuse = val&0xFFFF;
 	dsAmbient = val>>16;
 
-	diffuse[0] = material_5bit_to_31bit[(val)&0x1F];
-	diffuse[1] = material_5bit_to_31bit[(val>>5)&0x1F];
-	diffuse[2] = material_5bit_to_31bit[(val>>10)&0x1F];
-	diffuse[3] = 0x7fffffff;
-
-	ambient[0] = material_5bit_to_31bit[(val>>16)&0x1F];
-	ambient[1] = material_5bit_to_31bit[(val>>21)&0x1F];
-	ambient[2] = material_5bit_to_31bit[(val>>26)&0x1F];
-	ambient[3] = 0x7fffffff;
-
 	if (BIT15(val))
 	{
-		colorRGB[0] = diffuse[0];
-		colorRGB[1] = diffuse[1];
-		colorRGB[2] = diffuse[2];
+		colorRGB[0] = (val)&0x1F;
+		colorRGB[1] = (val>>5)&0x1F;
+		colorRGB[2] = (val>>10)&0x1F;
 	}
 }
 
@@ -720,16 +697,6 @@ void gfx3d_glMaterial1(unsigned long val)
 {
 	dsSpecular = val&0xFFFF;
 	dsEmission = val>>16;
-
-	specular[0] = material_5bit_to_31bit[(val)&0x1F];
-	specular[1] = material_5bit_to_31bit[(val>>5)&0x1F];
-	specular[2] = material_5bit_to_31bit[(val>>10)&0x1F];
-	specular[3] = 0x7fffffff;
-
-	emission[0] = material_5bit_to_31bit[(val>>16)&0x1F];
-	emission[1] = material_5bit_to_31bit[(val>>21)&0x1F];
-	emission[2] = material_5bit_to_31bit[(val>>26)&0x1F];
-	emission[3] = 0x7fffffff;
 }
 
 void gfx3d_glShininess (unsigned long val)
@@ -745,11 +712,14 @@ void gfx3d_UpdateToonTable(void* toonTable)
 		gfx3d.rgbToonTable[i] = RGB15TO32(u16toonTable[i],255);
 }
 
-
+static void gfx3d_glTexImage_cache()
+{
+	texCoordinateTransform = (textureFormat>>30);
+}
 void gfx3d_glTexImage(unsigned long val)
 {
 	textureFormat = val;
-	texCoordinateTransform = (val>>30);
+	gfx3d_glTexImage_cache();
 }
 
 void gfx3d_glTexPalette(unsigned long val)
@@ -837,13 +807,13 @@ void gfx3d_glNormal(unsigned long v)
 				continue;
 
 			{
-				u8 lightColor[3] = { 
-					(g_lightInfo[i].color)&0x1F,
-					(g_lightInfo[i].color>>5)&0x1F,
-					(g_lightInfo[i].color>>10)&0x1F };
+				u8 _lightColor[3] = { 
+					(lightColor[i])&0x1F,
+					(lightColor[i]>>5)&0x1F,
+					(lightColor[i]>>10)&0x1F };
 
-				float dot = Vector3Dot(g_lightInfo[i].floatDirection,normal);
-				float diffuseComponent = max(0,dot);
+				float dot = Vector3Dot(cacheLightDirection[i],normal);
+				float diffuseComponent = std::max(0.f,dot);
 				float specularComponent;
 				
 				//a specular formula which I couldnt get working
@@ -863,28 +833,28 @@ void gfx3d_glNormal(unsigned long v)
 				
 				//a specular formula which seems to work
 				float temp[4];
-				float diff = Vector3Dot(normal,g_lightInfo[i].floatDirection);
+				float diff = Vector3Dot(normal,cacheLightDirection[i]);
 				Vector3Copy(temp,normal);
 				Vector3Scale(temp,-2*diff);
-				Vector3Add(temp,g_lightInfo[i].floatDirection);
+				Vector3Add(temp,cacheLightDirection[i]);
 				Vector3Scale(temp,-1);
-				specularComponent = max(0,Vector3Dot(lineOfSight,temp));
+				specularComponent = std::max(0.f,Vector3Dot(lineOfSight,temp));
 				
 				//if the game isnt producing unit normals, then we can accidentally out of range components. so lets saturate them here
 				//so we can at least keep for crashing. we're not sure what the hardware does in this case, but the game shouldnt be doing this.
-				specularComponent = max(0,min(1,specularComponent));
-				diffuseComponent = max(0,min(1,diffuseComponent));
+				specularComponent = std::max(0.f,std::min(1.f,specularComponent));
+				diffuseComponent = std::max(0.f,std::min(1.f,diffuseComponent));
 
 				for(c=0;c<3;c++) {
-					vertexColor[c] += (diffuseComponent*lightColor[c]*diffuse[c])/31;
-					vertexColor[c] += (specularComponent*lightColor[c]*specular[c])/31;
-					vertexColor[c] += ((float)lightColor[c]*ambient[c])/31;
+					vertexColor[c] += (diffuseComponent*_lightColor[c]*diffuse[c])/31;
+					vertexColor[c] += (specularComponent*_lightColor[c]*specular[c])/31;
+					vertexColor[c] += ((float)_lightColor[c]*ambient[c])/31;
 				}
 			}
 		}
 
 		for(c=0;c<3;c++)
-			colorRGB[c] = material_5bit_to_31bit[min(31,vertexColor[c])];
+			colorRGB[c] = std::min(31,vertexColor[c]);
 	}
 }
 
@@ -905,6 +875,16 @@ signed long gfx3d_GetDirectionalMatrix (unsigned int index)
 	return (signed long)(mtxCurrent[2][(index)*(1<<12)]);
 }
 
+void gfx3d_glLightDirection_cache(int index)
+{
+	u32 v = lightDirection[index];
+
+	// Convert format into floating point value
+	cacheLightDirection[index][0] = -normalTable[v&1023];
+	cacheLightDirection[index][1] = -normalTable[(v>>10)&1023];
+	cacheLightDirection[index][2] = -normalTable[(v>>20)&1023];
+	cacheLightDirection[index][3] = 0;
+}
 
 /*
 	0-9   Directional Vector's X component (1bit sign + 9bit fractional part)
@@ -912,30 +892,18 @@ signed long gfx3d_GetDirectionalMatrix (unsigned int index)
 	20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
 	30-31 Light Number                     (0..3)
 */
-void gfx3d_glLightDirection (unsigned long v)
+void gfx3d_glLightDirection (u32 v)
 {
-	int		index = v>>30;
-	float	direction[4];
+	int index = v>>30;
 
-	// Convert format into floating point value
-	g_lightInfo[index].floatDirection[0] = -normalTable[v&1023];
-	g_lightInfo[index].floatDirection[1] = -normalTable[(v>>10)&1023];
-	g_lightInfo[index].floatDirection[2] = -normalTable[(v>>20)&1023];
-	g_lightInfo[index].floatDirection[3] = 0;
-
-	// Keep information for fightDirection function
-	g_lightInfo[index].direction = v;
+	lightDirection[index] = v;
+	gfx3d_glLightDirection_cache(index);
 }
 
 void gfx3d_glLightColor (unsigned long v)
 {
-	int lightColor[4] = {	((v)    &0x1F)<<26,
-							((v>> 5)&0x1F)<<26,
-							((v>>10)&0x1F)<<26,
-							0x7fffffff};
 	int index = v>>30;
-
-	g_lightInfo[index].color = v;
+	lightColor[index] = v;
 }
 
 void gfx3d_glAlphaFunc(unsigned long v)
@@ -1436,32 +1404,40 @@ void gfx3d_VBlankSignal()
 	gpu3D->NDS_3D_Render();
 }
 
-void gfx3d_Control(unsigned long v)
+void gfx3d_Control_cache()
 {
-	if(v&1) gfx3d.enableTexturing = true;
-	else gfx3d.enableTexturing = false;
+	u32 v = control;
+
+	if(v&1) gfx3d.enableTexturing = TRUE;
+	else gfx3d.enableTexturing = FALSE;
 
 	if((v>>1)&1) gfx3d.shading = GFX3D::HIGHLIGHT;
 	else gfx3d.shading = GFX3D::TOON;
 	
-	if((v>>2)&1) gfx3d.enableAlphaTest = true;
-	else gfx3d.enableAlphaTest = false;
+	if((v>>2)&1) gfx3d.enableAlphaTest = TRUE;
+	else gfx3d.enableAlphaTest = FALSE;
 
-	if((v>>3)&1) gfx3d.enableAlphaBlending = true;
-	else gfx3d.enableAlphaBlending = false;
+	if((v>>3)&1) gfx3d.enableAlphaBlending = TRUE;
+	else gfx3d.enableAlphaBlending = FALSE;
 
-	if((v>>4)&1) gfx3d.enableAntialiasing = true;
-	else gfx3d.enableAntialiasing = false;
+	if((v>>4)&1) gfx3d.enableAntialiasing = TRUE;
+	else gfx3d.enableAntialiasing = FALSE;
 
-	if((v>>5)&1) gfx3d.enableEdgeMarking = true;
-	else gfx3d.enableEdgeMarking = false;
+	if((v>>5)&1) gfx3d.enableEdgeMarking = TRUE;
+	else gfx3d.enableEdgeMarking = FALSE;
 
 	//other junk
-
 	if (v&(1<<14))
 	{
 		LOG("Enabled BITMAP background mode\n");
 	}
+}
+
+void gfx3d_Control(u32 v)
+{
+	control = v;
+	gfx3d_Control_cache();
+
 }
 
 //--------------
@@ -1481,15 +1457,115 @@ void gfx3d_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
 
 void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest)
 {
-	*dest = g_lightInfo[index].direction;
+	*dest = lightDirection[index];
 }
 
 void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 {
-	*dest = g_lightInfo[index].color;
+	*dest = lightColor[index];
 }
 
 
 //http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
 //talks about the state required to process verts in quadlists etc. helpful ideas.
 //consider building a little state structure that looks exactly like this describes
+
+
+
+SFORMAT SF_GFX3D[]={
+	{ &control, 4|SS_RLSB, "GCTL" },
+	{ &polyAttr, 4|SS_RLSB, "GPAT" },
+	{ &textureFormat, 4|SS_RLSB, "GTFM" },
+	{ &texturePalette, 4|SS_RLSB, "GTPA" },
+	{ &mode, 4|SS_RLSB, "GMOD" },
+	{ mtxTemporal, 4|SS_MULT(16), "GMTM" },
+	{ mtxCurrent, 4|SS_MULT(64), "GMCU" },
+	{ &mtxStack[0].position, 4|SS_RLSB, "GM0P" },
+	{ mtxStack[0].matrix, 4|SS_MULT(16), "GM1M" },
+	{ &mtxStack[1].position, 4|SS_RLSB, "GM1P" },
+	{ mtxStack[1].matrix, 4|SS_MULT(16*31), "GM1M" },
+	{ &mtxStack[2].position, 4|SS_RLSB, "GM2P" },
+	{ mtxStack[2].matrix, 4|SS_MULT(16*31), "GM2M" },
+	{ &mtxStack[3].position, 4|SS_RLSB, "GM3P" },
+	{ mtxStack[3].matrix, 4|SS_MULT(16), "GM3M" },
+	{ &ML4x4ind, 1, "ML4I" },
+	{ &ML4x3_c, 1, "ML3C" },
+	{ &ML4x3_l, 1, "ML3L" },
+	{ &MM4x4ind, 1, "MM4I" },
+	{ &MM4x3_c, 1, "MM3C" },
+	{ &MM4x3_l, 1, "MM3L" },
+	{ &MM3x3_c, 1, "MMxC" },
+	{ &MM3x3_l, 1, "MMxL" },
+	{ coord, 4|SS_MULT(4), "GCOR" },
+	{ &coordind, 1, "GCOI" },
+	{ &vtxFormat, 4|SS_RLSB, "GCOI" },
+	{ trans, 4|SS_MULT(4), "GTRN" },
+	{ &transind, 1, "GTRI" },
+	{ scale, 4|SS_MULT(4), "GSCA" },
+	{ &scaleind, 1, "GSCI" },
+	{ &_t, 4|SS_RLSB, "G_T_" },
+	{ &_s, 4|SS_RLSB, "G_S_" },
+	{ &last_t, 4|SS_RLSB, "GL_T" },
+	{ &last_s, 4|SS_RLSB, "GL_S" },
+	{ &clCmd, 4|SS_RLSB, "GLCM" },
+	{ &clInd, 4|SS_RLSB, "GLIN" },
+	{ &clInd2, 4|SS_RLSB, "GLI2" },
+	{ colorRGB, 4, "GCOL" },
+	{ lightColor, 4|SS_MULT(4), "GLCO" },
+	{ lightDirection, 4|SS_MULT(4), "GLDI" },
+	{ &dsDiffuse, 2|SS_RLSB, "GMDI" },
+	{ &dsAmbient, 2|SS_RLSB, "GMAM" },
+	{ &dsSpecular, 2|SS_RLSB, "GMSP" },
+	{ &dsEmission, 2|SS_RLSB, "GMEM" },
+	{ &triStripToggle, 4|SS_RLSB, "GTST" },
+	{ &listTwiddle, 4|SS_RLSB, "GLTW" },
+	{ &gfx3d.enableTexturing, 4|SS_RLSB, "GSET" },
+	{ &gfx3d.enableAlphaTest, 4|SS_RLSB, "GSEA" },
+	{ &gfx3d.enableAlphaBlending, 4|SS_RLSB, "GSEB" },
+	{ &gfx3d.enableAntialiasing, 4|SS_RLSB, "GSEX" },
+	{ &gfx3d.enableEdgeMarking, 4|SS_RLSB, "GSEE" },
+	{ &gfx3d.shading, 4|SS_RLSB, "GSSH" },
+	{ &gfx3d.wbuffer, 4|SS_RLSB, "GSWB" },
+	{ &gfx3d.sortmode, 4|SS_RLSB, "GSSM" },
+	{ &gfx3d.alphaTestRef, 4|SS_RLSB, "GSAR" },
+	{ &gfx3d.viewport.x, 4|SS_RLSB, "GSVX" },
+	{ &gfx3d.viewport.y, 4|SS_RLSB, "GSVY" },
+	{ &gfx3d.viewport.width, 4|SS_RLSB, "GSVW" },
+	{ &gfx3d.viewport.height, 4|SS_RLSB, "GSVH" },
+	{ gfx3d.clearColor, 4|SS_MULT(4), "GSCC" },
+	{ &gfx3d.clearDepth , 4|SS_RLSB, "GSCD" },
+	{ gfx3d.fogColor, 4|SS_MULT(4), "GSFC" },
+	{ &gfx3d.fogOffset, 4|SS_RLSB, "GSFO" },
+	{ gfx3d.rgbToonTable, 4|SS_MULT(32), "GSTT" },
+	{ 0 }
+};
+
+//-------------savestate
+void gfx3d_savestate(std::ostream* os)
+{
+	//dump the render lists
+	//TODO!!!!
+}
+
+bool gfx3d_loadstate(std::istream* is)
+{
+	gfx3d_glPolygonAttrib_cache();
+	gfx3d_glTexImage_cache();
+	gfx3d_Control_cache();
+	gfx3d_glLightDirection_cache(0);
+	gfx3d_glLightDirection_cache(1);
+	gfx3d_glLightDirection_cache(2);
+	gfx3d_glLightDirection_cache(3);
+	
+	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
+	polylist = &polylists[listTwiddle];
+	vertlist = &vertlists[listTwiddle];
+	polylist->count = 0;
+	vertlist->count = 0;
+	gfx3d.polylist = &polylists[listTwiddle^1];
+	gfx3d.vertlist = &vertlists[listTwiddle^1];
+	gfx3d.polylist->count=0;
+	gfx3d.vertlist->count=0;
+
+	return true;
+}

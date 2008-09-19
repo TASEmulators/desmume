@@ -63,12 +63,12 @@ OSDCLASS::OSDCLASS(u8 core)
 	}
 	
 
-	printlog("OSD_Init (%s)\n",name);
+	LOG("OSD_Init (%s)\n",name);
 }
 
 OSDCLASS::~OSDCLASS()
 {
-	printlog("OSD_Deinit (%s)\n",name);
+	LOG("OSD_Deinit (%s)\n",name);
 
 	delete old_msg;
 }
