@@ -90,9 +90,9 @@ struct GFX3D
 	}
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, enableAntialiasing, enableEdgeMarking;
 
-	enum : u32 {
-		 TOON, HIGHLIGHT
-	} shading;
+	static const u32 TOON = 0;
+	static const u32 HIGHLIGHT = 0;
+	u32 shading;
 
 	POLYLIST* polylist;
 	VERTLIST* vertlist;
