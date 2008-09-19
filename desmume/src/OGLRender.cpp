@@ -24,6 +24,7 @@
 //so, it doesnt composite to 2d correctly.
 //(re: new super mario brothers renders the stormclouds at the beginning)
 
+#include <algorithm>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,7 +79,6 @@ static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BAC
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
 static bool needRefreshFramebuffer = false;
-static unsigned short matrixMode[2] = {GL_PROJECTION, GL_MODELVIEW};
 static unsigned char texMAP[1024*2048*4]; 
 static unsigned int textureMode=0;
 
@@ -508,7 +508,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 		{
 			//TODO - we need to compare the palette also.
 			//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
-			if (!texcache[i].suspectedInvalid || !memcmp(adr,texcache[i].texture,min(imageSize,sizeof(texcache[i].texture))))
+			if (!texcache[i].suspectedInvalid || !memcmp(adr,texcache[i].texture,std::min(imageSize,sizeof(texcache[i].texture))))
 			{
 				texcache[i].suspectedInvalid = false;
 				texcache_count=i;
@@ -550,7 +550,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].invSizeX=1.0f/((float)sizeX*(1<<4));
 	texcache[i].invSizeY=1.0f/((float)sizeY*(1<<4));
 	//memcpy(texcache[i].texture,adr,imageSize);			//======================= copy
-	memcpy_fast(texcache[i].texture,adr,min(imageSize,sizeof(texcache[i].texture)));			//======================= copy
+	memcpy_fast(texcache[i].texture,adr,std::min(imageSize,sizeof(texcache[i].texture)));			//======================= copy
 	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;
@@ -798,7 +798,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
-	DebugDumpTexture(i);
+	//DebugDumpTexture(i);
 
 	//============================================================================================
 
@@ -992,6 +992,12 @@ static void Render()
 			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
 			for(int j=0;j<type;j++) {
 				VERT* vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
+				u8 color[4] = {
+					material_5bit_to_8bit[vert->color[0]],
+					material_5bit_to_8bit[vert->color[1]],
+					material_5bit_to_8bit[vert->color[2]],
+					material_5bit_to_8bit[vert->color[3]]
+				};
 				
 				//float tempCoord[4];
 				//Vector4Copy(tempCoord,vert->coord);
@@ -1004,7 +1010,7 @@ static void Render()
 
 				//todo - edge flag?
 				glTexCoord2fv(vert->texcoord);
-				glColor4iv((GLint*)vert->color);
+				glColor4ubv((GLubyte*)color);
 				//glVertex3fv(tempCoord);
 				glVertex3fv(vert->coord);
 			}
@@ -1101,9 +1107,9 @@ static void GetLine (int line, u16* dst)
 		g = (g*a + oldg*(255-a)) >> 8;
 		b = (b*a + oldb*(255-a)) >> 8;
 
-		r=min(255,r);
-		g=min(255,g);
-		b=min(255,b);
+		r=std::min(255ul,r);
+		g=std::min(255ul,g);
+		b=std::min(255ul,b);
 
 		//debug: display alpha channel
 		//u32 r = screen3D[t+3];

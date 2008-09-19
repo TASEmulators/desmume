@@ -22,6 +22,7 @@
 #define _GFX3D_H_
 
 #include "types.h"
+#include <iosfwd>
 
 void gfx3d_init();
 void gfx3d_reset();
@@ -47,7 +48,7 @@ struct POLY {
 	}
 };
 
-#define POLYLIST_SIZE 6000
+#define POLYLIST_SIZE 100000
 //#define POLYLIST_SIZE 2048
 struct POLYLIST {
 	int count;
@@ -57,11 +58,11 @@ struct POLYLIST {
 struct VERT {
 	float coord[4];
 	float texcoord[2];
-	int color[4];
+	u8 color[4];
 	u32 depth;
 };
 
-#define VERTLIST_SIZE 30000
+#define VERTLIST_SIZE 400000
 //#define VERTLIST_SIZE 10000
 struct VERTLIST {
 	int count;
@@ -84,10 +85,12 @@ struct GFX3D
 		, clearDepth(1)
 	{
 		clearColor[0] = clearColor[1] = clearColor[2] = clearColor[3] = 0;
+		fogColor[0] = fogColor[1] = fogColor[2] = fogColor[3] = 0;
+		fogOffset = 0;
 	}
-	bool enableTexturing, enableAlphaTest, enableAlphaBlending, enableAntialiasing, enableEdgeMarking;
+	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, enableAntialiasing, enableEdgeMarking;
 
-	enum {
+	enum : u32 {
 		 TOON, HIGHLIGHT
 	} shading;
 
@@ -95,7 +98,7 @@ struct GFX3D
 	VERTLIST* vertlist;
 	int indexlist[POLYLIST_SIZE];
 
-	bool wbuffer, sortmode;
+	BOOL wbuffer, sortmode;
 
 	float alphaTestRef;
 
@@ -108,6 +111,9 @@ struct GFX3D
 
 	float clearColor[4];
 	float clearDepth;
+	float fogColor[4];
+	float fogOffset;
+
 
 	u32 rgbToonTable[32];
 };
@@ -187,5 +193,9 @@ void gfx3d_glGetMatrix(unsigned int mode, unsigned int index, float* dest);
 void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest);
 void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest);
 
+struct SFORMAT;
+extern SFORMAT SF_GFX3D[];
+void gfx3d_savestate(std::ostream* os);
+bool gfx3d_loadstate(std::istream* is);
 
 #endif

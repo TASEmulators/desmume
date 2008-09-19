@@ -20,6 +20,11 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+#define DESMUME_NAME "DeSmuME"
+#define DESMUME_VERSION_STRING "0.8.0b2-interim"
+#define DESMUME_VERSION_NUMERIC 80002
+#define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " " VERSION
+
 #ifdef _WIN32
 #define strcasecmp(x,y) stricmp(x,y)
 #else
@@ -168,13 +173,17 @@ typedef int desmume_BOOL;
 #ifdef LOCAL_BE	/* local arch is big endian */
 # define LE_TO_LOCAL_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))
 # define LE_TO_LOCAL_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
+# define LE_TO_LOCAL_64(x) ((((x)&0xff)<<56)|(((x)&0xff00)<<40)|(((x)&0xff0000)<<24)|(((x)&0xff000000)<<8)|(((x)>>8)&0xff000000)|(((x)>>24)&0xff00))|(((x)>>40)&0xff00))|(((x)>>56)&0xff))
 # define LOCAL_TO_LE_16(x) ((((x)&0xff)<<8)|(((x)>>8)&0xff))
 # define LOCAL_TO_LE_32(x) ((((x)&0xff)<<24)|(((x)&0xff00)<<8)|(((x)>>8)&0xff00)|(((x)>>24)&0xff))
+# define LOCAL_TO_LE_64(x) ((((x)&0xff)<<56)|(((x)&0xff00)<<40)|(((x)&0xff0000)<<24)|(((x)&0xff000000)<<8)|(((x)>>8)&0xff000000)|(((x)>>24)&0xff00))|(((x)>>40)&0xff00))|(((x)>>56)&0xff))
 #else		/* local arch is little endian */
 # define LE_TO_LOCAL_16(x) (x)
 # define LE_TO_LOCAL_32(x) (x)
+# define LE_TO_LOCAL_64(x) (x)
 # define LOCAL_TO_LE_16(x) (x)
 # define LOCAL_TO_LE_32(x) (x)
+# define LOCAL_TO_LE_64(x) (x)
 #endif
 
 /* kilobytes and megabytes macro */
@@ -193,5 +202,25 @@ typedef enum
 #else
 #define __PACKED
 #endif
+
+///endian-flips count bytes.  count should be even and nonzero.
+inline void FlipByteOrder(u8 *src, u32 count)
+{
+	u8 *start=src;
+	u8 *end=src+count-1;
+
+	if((count&1) || !count)        return;         /* This shouldn't happen. */
+
+	while(count--)
+	{
+		u8 tmp;
+
+		tmp=*end;
+		*end=*start;
+		*start=tmp;
+		end--;
+		start++;
+	}
+}
 
 #endif

@@ -40,9 +40,11 @@
 //	GRAPHICS CORE
 //	GPU_ligne
 
+#include <algorithm>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <iostream>
 #include "MMU.h"
 #include "GPU.h"
 #include "debug.h"
@@ -545,9 +547,9 @@ static BOOL setFinalColorSpecialBlend (const GPU *gpu, u32 passing, u8 bgnum, u8
 				targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
 				targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
 				// limit combined components to 31 max
-				sourceR = min(0x1F,targetR+sourceR) ;
-				sourceG = min(0x1F,targetG+sourceG) ;
-				sourceB = min(0x1F,targetB+sourceB) ;
+				sourceR = std::min(0x1F,targetR+sourceR) ;
+				sourceG = std::min(0x1F,targetG+sourceG) ;
+				sourceB = std::min(0x1F,targetB+sourceB) ;
 			//}
 		}
 		color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
@@ -660,9 +662,9 @@ static BOOL setFinalColorSpecialBlendWnd (const GPU *gpu, u32 passing, u8 bgnum,
 				targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
 				targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
 				// limit combined components to 31 max
-				sourceR = min(0x1F,targetR+sourceR) ;
-				sourceG = min(0x1F,targetG+sourceG) ;
-				sourceB = min(0x1F,targetB+sourceB) ;
+				sourceR = std::min(0x1F,targetR+sourceR) ;
+				sourceG = std::min(0x1F,targetG+sourceG) ;
+				sourceB = std::min(0x1F,targetB+sourceB) ;
 			//}
 		}
 		color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
@@ -789,7 +791,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 			yoff = ((YBG&7)<<2);
 
 			xfin = 8 - (xoff&7);
-			for(x = 0; x < LG; xfin = min(x+8, LG))
+			for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
 			{
 				u8 pt = 0, save = 0;
 				tmp = ((xoff&(lg-1))>>3);
@@ -848,7 +850,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 		} else {                /* no mosaic mode */
 			yoff = ((YBG&7)<<2);
 			xfin = 8 - (xoff&7);
-			for(x = 0; x < LG; xfin = min(x+8, LG))
+			for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
 			{
 				u16 tilePalette = 0;
 				tmp = ((xoff&(lg-1))>>3);
@@ -918,7 +920,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 
 	yoff = ((YBG&7)<<3);
 	xfin = 8 - (xoff&7);
-	for(x = 0; x < LG; xfin = min(x+8, LG))
+	for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
 	{
 		tmp = (xoff & (lg-1))>>3;
 		mapinfo = map + (tmp & 31) * 2;
@@ -2430,4 +2432,15 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 	 }
 #endif
+}
+
+void gpu_savestate(std::ostream* os)
+{
+	os->write((char*)GPU_screen,sizeof(GPU_screen));
+}
+
+bool gpu_loadstate(std::istream* is)
+{
+	is->read((char*)GPU_screen,sizeof(GPU_screen));
+	return !is->fail();
 }

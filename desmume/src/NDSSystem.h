@@ -119,11 +119,13 @@ typedef struct
 	u16 touchX;
 	u16 touchY;
 
+	//this is not essential NDS runtime state.
+	//it was perhaps a mistake to put it here.
+	//it is far less important than the above.
+	//maybe I should move it.
 	s32 idleCycles;
 	s32 runCycleCollector[16];
 	s32 idleFrameCounter;
-
-
 } NDSSystem;
 
 /** /brief A touchscreen calibration point.

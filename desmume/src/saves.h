@@ -33,6 +33,35 @@ typedef struct
   char date[40];
 } savestates_t;
 
+
+struct SFORMAT
+{
+	//a void* to the data or a void** to the data
+	void *v;
+
+	//size, plus flags
+	uint32 s;
+
+	//a string description of the element
+	char *desc;
+};
+
+//X multiple multibyte elements
+#define SS_MULT(X)			(X<<24)
+
+//indicates that the value is a multibyte integer that needs to be put in the correct byte order
+//this is the same as SS_MULT(1)
+#define SS_RLSB            SS_MULT(1)
+
+
+
+//all flags together so that we can mask them out and get the size
+#define SS_FLAGS (SS_INDIRECT|SS_MULT(127))
+
+//extract the multiplier
+#define SS_UNMULT(X)	((X>>24)&0x7F)
+
+
 extern savestates_t savestates[NB_STATES];
 
 void clear_savestates();
@@ -42,8 +71,8 @@ void sram_write (u32 address, u8 value);
 int sram_load (const char *file_name);
 int sram_save (const char *file_name);
 
-int savestate_load (const char *file_name);
-int savestate_save (const char *file_name);
+bool savestate_load (const char *file_name);
+bool savestate_save (const char *file_name);
 
 void savestate_slot(int num);
 void loadstate_slot(int num);

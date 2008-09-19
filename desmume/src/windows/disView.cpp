@@ -19,6 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <algorithm>
 #include <tchar.h>
 #include <stdio.h>
 #include "../MMU.h"
@@ -619,16 +620,16 @@ LRESULT CALLBACK DisViewBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
                              switch LOWORD(wParam)
                              {
                                   case SB_LINEDOWN :
-                                       win->curr_ligne = min(0x3FFFFF7*(1+win->cpu->CPSR.bits.T), win->curr_ligne+1);
+									  win->curr_ligne = std::min<s32>(0x3FFFFF7*(1+win->cpu->CPSR.bits.T), win->curr_ligne+1);
                                        break;
                                   case SB_LINEUP :
-                                       win->curr_ligne = (u32)max(0, (s32)win->curr_ligne-1);
+									  win->curr_ligne = (u32)std::max<s32>(0, (s32)win->curr_ligne-1);
                                        break;
                                   case SB_PAGEDOWN :
-                                       win->curr_ligne = min(0x3FFFFF7*(1+win->cpu->CPSR.bits.T), win->curr_ligne+nbligne);
+                                       win->curr_ligne = std::min<s32>(0x3FFFFF7*(1+win->cpu->CPSR.bits.T), win->curr_ligne+nbligne);
                                        break;
                                   case SB_PAGEUP :
-                                       win->curr_ligne = (u32)max(0, (s32)win->curr_ligne-nbligne);
+                                       win->curr_ligne = (u32)std::max<s32>(0, (s32)win->curr_ligne-nbligne);
                                        break;
                               }
                               

@@ -19,6 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <algorithm>
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -436,16 +437,16 @@ LRESULT CALLBACK MemViewBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
                              switch LOWORD(wParam)
                              {
                                   case SB_LINEDOWN :
-                                       win->curr_ligne = min(0X0FFFFFFFF, win->curr_ligne+1);
+                                       win->curr_ligne = std::min((s32)0x0FFFFFFFF, (s32)win->curr_ligne+1);
                                        break;
                                   case SB_LINEUP :
-                                       win->curr_ligne = (u32)max(0, (s32)win->curr_ligne-1);
+                                       win->curr_ligne = (u32)std::max(0l, (s32)win->curr_ligne-1);
                                        break;
                                   case SB_PAGEDOWN :
-                                       win->curr_ligne = min(0X0FFFFFFFF, win->curr_ligne+nbligne);
+                                       win->curr_ligne = std::min((s32)0x0FFFFFFFF, (s32)win->curr_ligne+nbligne);
                                        break;
                                   case SB_PAGEUP :
-                                       win->curr_ligne = (u32)max(0, (s32)win->curr_ligne-nbligne);
+                                       win->curr_ligne = (u32)std::max(0l, (s32)win->curr_ligne-nbligne);
                                        break;
                               }
                               
