@@ -29,10 +29,7 @@ BOOL messageDialogYN(NSString *title, NSString *text);
 NSString* openDialog(NSArray *file_types);
 
 //
-#if __LP64__ || NS_BUILD_32_LIKE_64
-typedef long NSInteger;
-typedef unsigned long NSUInteger;
-#else
+#if !defined(__LP64__) && !defined(NS_BUILD_32_LIKE_64)
 typedef int NSInteger;
 typedef unsigned int NSUInteger;
 #endif
