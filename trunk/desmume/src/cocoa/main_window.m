@@ -234,10 +234,11 @@ NSMenuItem *screenshot_to_file_item = nil;
 	{
 		int i;
 		for(i = 0; i < MAX_SLOTS; i++)
-			if([self saveStateExists:i] == YES)
-				if([saveSlot_item[i] target] == self)[saveSlot_item[i] setState:NSOnState];
-			else
-				if([saveSlot_item[i] target] == self)[saveSlot_item[i] setState:NSOffState];
+			if([saveSlot_item[i] target] == self)
+				if([self saveStateExists:i] == YES)
+					[saveSlot_item[i] setState:NSOnState];
+				else
+					[saveSlot_item[i] setState:NSOffState];
 	
 	} else
 	{
