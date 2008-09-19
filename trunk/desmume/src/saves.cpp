@@ -314,12 +314,13 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 			return false;
 
 		read32le(&tsize,is);
+		int count = SS_UNMULT(tsize);
+		int size = tsize & ~SS_FLAGS;
+		bool rlsb = (count!=0);
 
 		if((tmp=CheckS(sf,tsize,toa)))
 		{
-			int count = SS_UNMULT(tsize);
-			int size = tsize & ~SS_FLAGS;
-			bool rlsb = (count!=0);
+
 
 			if(count == 0) count=1;
 
@@ -337,7 +338,7 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 			}
 		}
 		else
-			is->seekg(tsize,std::ios::cur);
+			is->seekg(size*count,std::ios::cur);
 	} // while(...)
 	return true;
 }
