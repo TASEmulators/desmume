@@ -1286,8 +1286,6 @@ bool opengl_init()
 
 			else
 			{
-
-
 				if(frame_skip < 0)
 				{ //automatic
 
@@ -1304,30 +1302,23 @@ bool opengl_init()
 
 				}
 
-				//update the screen (and limit frame rate of video output)
-				static long long last_video_update = 0;
-				if(frame_end_time - last_video_update > 10000)
-				{
-					last_video_update = frame_end_time;
+				//update the screen
+				ScreenState *new_screen_data = [[ScreenState alloc] initWithColorData:GPU_screen];
 
-					ScreenState *new_screen_data = [[ScreenState alloc] initWithColorData:GPU_screen];
+				if(timer_based)
+				{ //for tiger compatibility
+					[video_update_lock lock];
+					[current_screen release];
+					current_screen = new_screen_data;
+					[video_update_lock unlock];
+				} else
+				{ //for leopard and later
 
-					if(timer_based)
-					{ //for tiger compatibility
-						[video_update_lock lock];
-						[current_screen release];
-						current_screen = new_screen_data;
-						[video_update_lock unlock];
-					} else
-					{ //for leopard and later
-
-						//this will generate a warning when compiling on tiger or earlier, but it should
-						//be ok since the purpose of the if statement is to check if this will work
-						[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
-						[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
-					}
+					//this will generate a warning when compiling on tiger or earlier, but it should
+					//be ok since the purpose of the if statement is to check if this will work
+					[self performSelector:@selector(videoUpdateHelper:) onThread:gui_thread withObject:new_screen_data waitUntilDone:NO];
+					[new_screen_data release]; //performSelector will auto retain the screen data while the other thread displays
 				}
-
 			}
 
 			//execute is set to false sometimes by the emulation core
