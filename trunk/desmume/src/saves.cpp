@@ -227,7 +227,7 @@ void loadstate_slot(int num)
 
 u8 sram_read (u32 address) {
 	address = address - SRAM_ADDRESS;
-	
+
 	if ( address > SRAM_SIZE )
 		return 0;
 
@@ -241,11 +241,11 @@ void sram_write (u32 address, u8 value) {
 
 	if ( address < SRAM_SIZE )
 		MMU.CART_RAM[address] = value;
-	
+
 }
 
 int sram_load (const char *file_name) {
-	
+
 	FILE *file;
 
 	file = fopen ( file_name, "rb" );
@@ -378,10 +378,10 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 			write32le(sf->s,os);
 
 			for(int i=0;i<count;i++) {
-			
+
 				#ifndef LOCAL_LE
 				if(rlsb)
-					FlipByteOrder(sf->v,sf->s&(~SS_FLAGS));
+					FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
 				#endif
 
 				if(sf->s&SS_INDIRECT)
@@ -392,7 +392,7 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 				//Now restore the original byte order.
 				#ifndef LOCAL_LE
 				if(rlsb)
-					FlipByteOrder(sf->v,sf->s&(~SS_FLAGS));
+					FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
 				#endif
 
 			}

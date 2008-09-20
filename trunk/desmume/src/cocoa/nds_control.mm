@@ -20,9 +20,12 @@
 #import "nds_control.h"
 #import "preferences.h"
 #import "sndOSX.h"
+#import "screen_state.h"
 
+#ifdef HAVE_OPENGL
 #import <OpenGL/OpenGL.h>
 #import <OpenGL/gl.h>
+#endif
 
 //DeSmuME general includes
 #define OBJ_C
@@ -47,7 +50,9 @@ volatile desmume_BOOL execute = true;
 
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
+#ifdef HAVE_OPENGL
 &gpu3Dgl,
+#endif
 NULL
 };
 
@@ -109,6 +114,7 @@ bool opengl_init()
 	NDS_CreateDummyFirmware(&firmware);
 
 	//3D Init
+#ifdef HAVE_OPENGL
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
 	[prev_context retain];
 
@@ -194,6 +200,7 @@ bool opengl_init()
 		[prev_context release];
 	} else
 		[NSOpenGLContext clearCurrentContext];
+#endif
 
 	//Sound Init
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
@@ -1225,9 +1232,11 @@ bool opengl_init()
 {
 	NSAutoreleasePool *autorelease = [[NSAutoreleasePool alloc] init];
 
+#ifdef HAVE_OPENGL
 	[gl_context retain];
 	[gl_context makeCurrentContext];
 	CGLLockContext((CGLContextObj)[gl_context CGLContextObj]);
+#endif
 
 	u32 cycles = 0;
 
@@ -1301,8 +1310,7 @@ bool opengl_init()
 				{
 					last_video_update = frame_end_time;
 
-					ScreenState *new_screen_data = [[ScreenState alloc] init];
-					[new_screen_data setColorData:GPU_screen];
+					ScreenState *new_screen_data = [[ScreenState alloc] initWithColorData:GPU_screen];
 
 					if(timer_based)
 					{ //for tiger compatibility
@@ -1334,200 +1342,15 @@ bool opengl_init()
 		[NSThread sleepUntilDate:[NSDate dateWithTimeIntervalSinceNow:.1]];
 	}
 
+#ifdef HAVE_OPENGL
 	CGLUnlockContext((CGLContextObj)[gl_context CGLContextObj]);
 	[gl_context release];
+#endif
+
 	[autorelease release];
 
 	paused = true;
 	finished = true;
 }
 
-@end
-
-//////////////////////
-// ScreenState
-//////////////////////
-
-@implementation ScreenState
-- (id)init
-{
-	self = [super init];
-	if(self == nil)return nil;
-
-	rotation = ROTATION_0;
-
-	return self;
-}
-
-- (id)initWithScreenState:(ScreenState*)state
-{
-	self = [super init];
-	if(self == nil)return nil;
-
-	rotation = state->rotation;
-	memcpy(color_data, state->color_data, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2 * DS_BPP);
-
-	return self;
-}
-
-- (NSInteger)width
-{
-	if(rotation==ROTATION_90 || rotation==ROTATION_270)
-		return DS_SCREEN_HEIGHT*2;
-	return DS_SCREEN_WIDTH;
-}
-
-- (NSInteger)height
-{
-	if(rotation==ROTATION_90 || rotation==ROTATION_270)
-		return DS_SCREEN_WIDTH;
-	return DS_SCREEN_HEIGHT*2;
-}
-
-- (NSSize)size
-{
-	NSSize result;
-
-	if(rotation==ROTATION_90 || rotation==ROTATION_270)
-	{
-		result.width = DS_SCREEN_HEIGHT*2;
-		result.height = DS_SCREEN_WIDTH;
-	} else
-	{
-		result.width = DS_SCREEN_WIDTH;
-		result.height = DS_SCREEN_HEIGHT*2;
-	}
-
-	return result;
-}
-
-- (void)fillWithWhite
-{
-	memset(color_data, 255, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2 * DS_BPP);
-}
-
-- (void)fillWithBlack
-{
-	memset(color_data, 0, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2 * DS_BPP);
-}
-
-- (NSBitmapImageRep*)imageRep
-{
-	NSInteger width = [self width];
-	NSInteger height = [self height];
-
-	NSBitmapImageRep *image = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-	pixelsWide:width
-	pixelsHigh:height
-	bitsPerSample:8
-	samplesPerPixel:3
-	hasAlpha:NO
-	isPlanar:NO
-	colorSpaceName:NSCalibratedRGBColorSpace
-	bytesPerRow:width * 3
-	bitsPerPixel:24];
-
-	if(image == nil)return nil;
-
-	u8 *bitmap_data = [image bitmapData];
-
-	const u16 *buffer_16 = (u16*)color_data;
-
-	int i;
-	for(i = 0; i < width * height; i++)
-	{ //this loop we go through pixel by pixel and convert from 16bit to 24bit for the NSImage
-		*(bitmap_data++) = (*buffer_16 & 0x001F) <<  3;
-		*(bitmap_data++) = (*buffer_16 & 0x03E0) >> 5 << 3;
-		*(bitmap_data++) = (*buffer_16 & 0x7C00) >> 10 << 3;
-		buffer_16++;
-	}
-
-	[image autorelease];
-
-	return image;
-}
-
-- (void)setRotation:(enum ScreenRotation)rot
-{
-	if(rotation == rot)return;
-
-	//here is where we turn the screen sideways
-	//if you can think of a more clever way to do this than making
-	//a full copy of the screen data, please implement it!
-
-	const int width = [self width], height = [self height];
-
-	if((rotation==ROTATION_0 && rot==ROTATION_90)
-	||(rotation==ROTATION_90 && rot==ROTATION_180)
-	||(rotation==ROTATION_180 && rot==ROTATION_270)
-	||(rotation==ROTATION_270 && rot==ROTATION_0))
-	{ //90 degree clockwise rotation
-		unsigned char temp_buffer[width * height * DS_BPP];
-		memcpy(temp_buffer, color_data, width * height * DS_BPP);
-
-		int x, y;
-		for(x = 0; x< width; x++)
-			for(y = 0; y < height; y++)
-			{
-				color_data[(x * height + (height - y - 1)) * 2] = temp_buffer[(y * width + x) * 2];
-				color_data[(x * height + (height - y - 1)) * 2 + 1] = temp_buffer[(y * width + x) * 2 + 1];
-			}
-
-		rotation = rot;
-	}
-
-	if((rotation==ROTATION_0 && rot==ROTATION_180)
-	||(rotation==ROTATION_90 && rot==ROTATION_270)
-	||(rotation==ROTATION_180 && rot==ROTATION_0)
-	||(rotation==ROTATION_270 && rot==ROTATION_90))
-	{ //180 degree rotation
-		unsigned char temp_buffer[width * height * DS_BPP];
-		memcpy(temp_buffer, color_data, width * height * DS_BPP);
-
-		int x, y;
-		for(x = 0; x < width; x++)
-			for(y = 0; y < height; y++)
-			{
-				color_data[(x * height + y) * 2] = temp_buffer[((width - x - 1) * height + (height - y - 1)) * 2];
-				color_data[(x * height + y) * 2 + 1] = temp_buffer[((width - x - 1) * height + (height - y - 1)) * 2 + 1];
-			}
-
-		rotation = rot;
-	}
-
-	if((rotation==ROTATION_0 && rot==ROTATION_270)
-	||(rotation==ROTATION_90 && rot==ROTATION_0)
-	||(rotation==ROTATION_180 && rot==ROTATION_90)
-	||(rotation==ROTATION_270 && rot==ROTATION_180))
-	{ //-90 degrees
-		unsigned char temp_buffer[width * height * DS_BPP];
-		memcpy(temp_buffer, color_data, width * height * DS_BPP);
-
-		int x, y;
-		for(x = 0; x< width; x++)
-			for(y = 0; y < height; y++)
-			{
-				color_data[((width - x - 1) * height + y) * 2] = temp_buffer[(y * width + x) * 2];
-				color_data[((width - x - 1) * height + y) * 2 + 1] = temp_buffer[(y * width + x) * 2 + 1];
-			}
-
-		rotation = rot;
-	}
-
-}
-
-- (enum ScreenRotation)rotation
-{
-	return rotation;
-}
-
-- (void)setColorData:(const unsigned char*)data
-{
-	memcpy(color_data, data, DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2 * DS_BPP);
-}
-
-- (const unsigned char*)colorData
-{
-	return color_data;
-}
 @end

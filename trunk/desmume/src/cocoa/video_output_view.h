@@ -19,22 +19,32 @@
 
 #import "nds_control.h"
 
-@interface VideoOutputView : NSView
+//This class uses OpenGL for drawing for speed
+//if opengl is not available it uses NSImage
+
+@class ScreenState;
+
+@interface VideoOutputView :
+#ifdef HAVE_OPENGL
+NSView
+#else
+NSImageView
+#endif
 {
-	enum ScreenRotation rotation;
+#ifdef HAVE_OPENGL
 	NSOpenGLContext* context;
+#endif
 	ScreenState *screen_buffer;
 }
+//init
 - (id)initWithFrame:(NSRect)frame;
-- (void)dealloc;
-- (void)setRotation:(enum ScreenRotation)rotation;
-- (enum ScreenRotation)rotation;
-- (void)drawRect:(NSRect)bounds;
-- (void)setFrame:(NSRect)rect;
-- (BOOL)isOpaque;
-- (void)clearScreenBlack;
-- (void)clearScreenWhite;
-- (void)updateScreen:(ScreenState*)screen;
+
+//image to display
+- (void)setScreenState:(ScreenState*)screen;
 - (const ScreenState*)screenState;
+
+//size in pixels of screen display (disreguarding rotation of the view)
+- (float)screenHeight;
+- (float)screenWidth;
 @end
 

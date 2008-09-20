@@ -12,10 +12,10 @@ compile = {
 	:files   => Dir['*.m'] + Dir['*.mm'] + Dir['dialogs/*.m'] + Dir['dialogs/*.mm'] + ([
 		'MMU', 'SPU', 'cflash',	'fs-linux', 'matrix', 'FIFO', 'NDSSystem', 'arm_instructions', 'cp15', 'mc',
 		'thumb_instructions', 'GPU', 'OGLRender', 'armcpu', 'gfx3d', 'render3D', 'wifi', 'GPU_osd', 'ROMReader',
-		'bios', 'debug', 'gl_vertex', 'saves'].map { |core_file| '../' + core_file + '.cpp' } ),
+		'bios', 'debug', 'gl_vertex', 'saves', 'readwrite'].map { |core_file| '../' + core_file + '.cpp' } ),
 	:defines => {
 		:global  => ['DESMUME_OBJ_C'],
-		:cocoa   => ['DESMUME_COCOA', 'HAVE_LIBZ']},
+		:cocoa   => ['DESMUME_COCOA', 'HAVE_LIBZ', 'HAVE_OPENGL']},
 	:options => {
 		:global  => [
 			'arch i386',

@@ -17,12 +17,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#import <Cocoa/Cocoa.h>
-#import <OpenGL/gl.h>
-
 //DeSmuME Cocoa includes
 #import "main_window.h"
 #import "screenshot.h"
+#import "screen_state.h"
 #import "video_output_view.h"
 #import "input.h"
 #import "rom_info.h"
@@ -33,11 +31,6 @@
 #define WINDOW_BORDER_PADDING 5
 
 #define MAX_FRAME_SKIP 10
-
-#define ROTATION_0   0
-#define ROTATION_90  1
-#define ROTATION_180 2
-#define ROTATION_270 3
 
 #define DS_SCREEN_HEIGHT_COMBINED (192*2) /*height of the two screens*/
 #define DS_SCREEN_X_RATIO (256.0 / (192.0 * 2.0))
@@ -173,7 +166,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[self toggleStatusBar];
 	
 	//Add callbacks
-	[self setVideoUpdateCallback:@selector(updateScreen:) withObject:video_output_view];
+	[self setVideoUpdateCallback:@selector(setScreenState:) withObject:video_output_view];
 	[self setErrorCallback:@selector(emulationError) withObject:self];
 	
 	//Show the window
@@ -208,7 +201,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	//Set status var and screen depending on whether the rom could be loaded
 	if(result == NO)
 	{
-		[video_output_view clearScreenBlack]; //black if the rom doesn't load
+		[video_output_view setScreenState:[ScreenState blackScreenState]]; //black if the rom doesn't load
 		[self setStatusText:NSLocalizedString(@"No ROM Loaded", nil)];
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't load ROM");
 	} else
@@ -218,7 +211,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 			[self execute];
 		else
 		{
-			[video_output_view clearScreenWhite]; //white if the rom loaded but is not playing
+			[video_output_view setScreenState:[ScreenState whiteScreenState]]; //white if the rom loaded but is not playing
 			[self setStatusText:NSLocalizedString(@"ROM Loaded", nil)];
 		}
 
@@ -283,7 +276,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	if([self paused])
 	{
 		[self setStatusText:NSLocalizedString(@"Emulation Reset", nil)];
-		[video_output_view clearScreenWhite];
+		[video_output_view setScreenState:[ScreenState whiteScreenState]];
 	}
 }
 
@@ -400,7 +393,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[super closeROM];
 
 	//reset window
-	[video_output_view clearScreenBlack];
+	[video_output_view setScreenState:[ScreenState blackScreenState]];
 	[self setStatusText:NSLocalizedString(@"No ROM Loaded", nil)];
 
 	//reset menu items
@@ -517,25 +510,23 @@ NSMenuItem *screenshot_to_file_item = nil;
 	return [self loadStateFromSlot:i];
 }
 
-- (void)resetMinSize
+- (void)resetMinSize:(BOOL)resize_if_too_small
 {
 	//keep the min size item up to date, just in case
 	if([min_size_item target] == self)
 		[min_size_item setState:no_smaller_than_ds?NSOnState:NSOffState];
 
+	NSSize min_size;
+
 	if(!no_smaller_than_ds)
 	{
-		[window setContentMinSize:NSMakeSize(10, status_bar_height - WINDOW_BORDER_PADDING)];
-		return;
-	}
-
-	NSSize min_size;
-	
-	if(video_output_view == nil)
+		min_size.width = 0;
+		min_size.height = 0;
+	} else if(video_output_view == nil)
 	{
 		min_size.width = DS_SCREEN_WIDTH;
 		min_size.height = 0;
-	} else if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+	} else if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 	{
 		min_size.width = DS_SCREEN_WIDTH;
 		min_size.height = DS_SCREEN_HEIGHT_COMBINED;
@@ -553,21 +544,23 @@ NSMenuItem *screenshot_to_file_item = nil;
 	//set min content size for the window
 	[window setContentMinSize:adjusted_min_size];
 	
-	//resize if too small
-	NSSize temp = [[window contentView] frame].size;
-	if(temp.width < adjusted_min_size.width && temp.height >= adjusted_min_size.height)
-		[self resizeScreen:NSMakeSize(min_size.width, temp.height)];
-	else if(temp.width >= adjusted_min_size.width && temp.height < adjusted_min_size.height)
-		[self resizeScreen:NSMakeSize(temp.width, min_size.height)];
-	else if(temp.width < adjusted_min_size.width && temp.height < adjusted_min_size.height)
-		[self resizeScreen:NSMakeSize(min_size.width, min_size.height)];
+	if(resize_if_too_small)
+	{
+		NSSize temp = [[window contentView] frame].size;
+		if(temp.width < adjusted_min_size.width && temp.height >= adjusted_min_size.height)
+			[self resizeScreen:NSMakeSize(min_size.width, temp.height)];
+		else if(temp.width >= adjusted_min_size.width && temp.height < adjusted_min_size.height)
+			[self resizeScreen:NSMakeSize(temp.width, min_size.height)];
+		else if(temp.width < adjusted_min_size.width && temp.height < adjusted_min_size.height)
+			[self resizeScreen:NSMakeSize(min_size.width, min_size.height)];
+	}
 }
 
 - (void)toggleMinSize
 {
 	no_smaller_than_ds = !no_smaller_than_ds;
 
-	[self resetMinSize];
+	[self resetMinSize:YES];
 }
 
 - (void)resizeScreen:(NSSize)size
@@ -599,7 +592,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	if(video_output_view == nil)return;
 
-	if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+	if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH, DS_SCREEN_HEIGHT_COMBINED)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED, DS_SCREEN_WIDTH)];
@@ -609,7 +602,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	if(video_output_view == nil)return;
 
-	if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+	if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH * 2, DS_SCREEN_HEIGHT_COMBINED * 2)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED * 2, DS_SCREEN_WIDTH * 2)];
@@ -619,7 +612,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	if(video_output_view == nil)return;
 
-	if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+	if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH * 3, DS_SCREEN_HEIGHT_COMBINED * 3)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED * 3, DS_SCREEN_WIDTH * 3)];
@@ -629,7 +622,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	if(video_output_view == nil)return;
 
-	if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+	if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 		[self resizeScreen:NSMakeSize(DS_SCREEN_WIDTH * 4, DS_SCREEN_HEIGHT_COMBINED * 4)];
 	else
 		[self resizeScreen:NSMakeSize(DS_SCREEN_HEIGHT_COMBINED * 4, DS_SCREEN_WIDTH * 4)];
@@ -654,9 +647,9 @@ NSMenuItem *screenshot_to_file_item = nil;
 	if(location.x >= x_size)return NSMakePoint(-1, -1);
 	if(location.y >= y_size)return NSMakePoint(-1, -1);
 
-	if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+	if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 	{
-		if([video_output_view rotation] == ROTATION_180)
+		if([video_output_view boundsRotation] == -180)
 		{
 			if(location.y < y_size / 2)return NSMakePoint(-1, -1);
 			location.x = x_size - location.x;
@@ -674,7 +667,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	} else
 	{
 
-		if([video_output_view rotation] == ROTATION_270)
+		if([video_output_view boundsRotation] == -270)
 		{
 			if(location.x < x_size / 2)return NSMakePoint(-1, -1);
 			location.x = x_size - location.x;
@@ -799,153 +792,57 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[video_output_view setFrame:rect];	
 
 	//set new window min size
-	[self resetMinSize];
+	[self resetMinSize:YES];
 }
 
-- (void)setRotation0
+- (void)setRotation:(float)rotation
 {
-	if(video_output_view == nil)return;
+	float current_rotation = [self rotation];
 
-	if([video_output_view rotation] == ROTATION_0)return;
-
-	if([video_output_view rotation] == ROTATION_180)
-		[video_output_view setRotation:ROTATION_0];
-
-	else
+	if(video_output_view && current_rotation != rotation)
 	{
-		//set the rotation state
-		[video_output_view setRotation:ROTATION_0];
+		NSSize size = [video_output_view frame].size;
 
-		//resize the window/view
-		NSSize video_size = [video_output_view frame].size;
-		float temp = video_size.width;
-		video_size.width = video_size.height;
-		video_size.height = temp;
-		[self resizeScreen:video_size];
+		//rotate view bounds (negative because nsview does it counter-clockwise)
+		[video_output_view setBoundsRotation:-rotation];
+		[video_output_view setNeedsDisplay:YES];
 
-		//fix the min size
-		[self resetMinSize];
+		//if view is to be rotated (not just flipped)
+		if(((current_rotation == 0 || current_rotation == 180) && (rotation == 90 || rotation == 270)) ||
+		((current_rotation == 90 || current_rotation == 270) && (rotation == 0 || rotation == 180)))
+		{
+			//swap x-y sizes
+			float temp = size.width;
+			size.width = size.height;
+			size.height = temp;
+
+			//fit window
+			[self resetMinSize:NO];
+			[self resizeScreen:size];
+		}
 	}
 
 	//set the checkmarks
+	rotation = video_output_view ? [self rotation] : -1; //no checks set if video output is nil
 	if([rotation0_item target] == self)
-		[rotation0_item   setState:NSOnState ];
+		if(rotation == 0)[rotation0_item setState:NSOnState];
+		else [rotation0_item setState:NSOffState];
 	if([rotation90_item target] == self)
-		[rotation90_item  setState:NSOffState];
+		if(rotation == 90)[rotation90_item setState:NSOnState];
+		else [rotation90_item setState:NSOffState];
 	if([rotation180_item target] == self)
-		[rotation180_item setState:NSOffState];
+		if(rotation == 180)[rotation180_item setState:NSOnState];
+		else [rotation180_item setState:NSOffState];
 	if([rotation270_item target] == self)
-		[rotation270_item setState:NSOffState];
+		if(rotation == 270)[rotation270_item setState:NSOnState];
+		else [rotation270_item setState:NSOffState];
 }
 
-- (void)setRotation90
-{
-	if(video_output_view == nil)return;
-
-	if([video_output_view rotation] == ROTATION_90)return;
-
-	if([video_output_view rotation] == ROTATION_270)
-		[video_output_view setRotation:ROTATION_90];
-
-	else
-	{
-		//set the rotation state
-		[video_output_view setRotation:ROTATION_90];
-
-		//resize the window/screen
-		NSSize video_size = [video_output_view frame].size;
-		float temp = video_size.width;
-		video_size.width = video_size.height;
-		video_size.height = temp;
-		[self resizeScreen:video_size];
-
-		//fix min size
-		[self resetMinSize];
-	}
-
-	//set the checkmarks
-	if([rotation0_item target] == self)
-		[rotation0_item   setState:NSOffState];
-	if([rotation90_item target] == self)
-		[rotation90_item  setState:NSOnState ];
-	if([rotation180_item target] == self)
-		[rotation180_item setState:NSOffState];
-	if([rotation270_item target] == self)
-		[rotation270_item setState:NSOffState];
-}
-
-- (void)setRotation180
-{
-	if(video_output_view == nil)return;
-
-	if([video_output_view rotation] == ROTATION_180)return;
-
-	if([video_output_view rotation] == ROTATION_0)
-		[video_output_view setRotation:ROTATION_180];
-
-	else
-	{
-		//set the rotation state
-		[video_output_view setRotation:ROTATION_180];
-
-		//resize the window/view
-		NSSize video_size = [video_output_view frame].size;
-		float temp = video_size.width;
-		video_size.width = video_size.height;
-		video_size.height = temp;
-		[self resizeScreen:video_size];
-
-		//fix the min size
-		[self resetMinSize];
-	}
-
-	//set the checkmarks
-	if([rotation0_item target] == self)
-		[rotation0_item   setState:NSOffState];
-	if([rotation90_item target] == self)
-		[rotation90_item  setState:NSOffState];
-	if([rotation180_item target] == self)
-		[rotation180_item setState:NSOnState ];
-	if([rotation270_item target] == self)
-		[rotation270_item setState:NSOffState];
-}
-
-- (void)setRotation270
-{
-	if(video_output_view == nil)return;
-
-	if([video_output_view rotation] == ROTATION_270)return;
-
-	if([video_output_view rotation] == ROTATION_90)
-		[video_output_view setRotation:ROTATION_270];
-
-	else
-	{
-
-		//set the rotation state
-		[video_output_view setRotation:ROTATION_270];
-
-		//resize the window/screen
-		NSSize video_size = [video_output_view frame].size;
-		float temp = video_size.width;
-		video_size.width = video_size.height;
-		video_size.height = temp;
-		[self resizeScreen:video_size];
-
-		//fix the min size
-		[self resetMinSize];
-	}
-
-	//set the checkmarks
-	if([rotation0_item target] == self)
-		[rotation0_item   setState:NSOffState];
-	if([rotation90_item target] == self)
-		[rotation90_item  setState:NSOffState];
-	if([rotation180_item target] == self)
-		[rotation180_item setState:NSOffState];
-	if([rotation270_item target] == self)
-		[rotation270_item setState:NSOnState];
-}
+- (void)setRotation0   { [self setRotation:  0]; }
+- (void)setRotation90  { [self setRotation: 90]; }
+- (void)setRotation180 { [self setRotation:180]; }
+- (void)setRotation270 { [self setRotation:270]; }
+- (float)rotation { return video_output_view ? -[video_output_view boundsRotation] : 0; }
 
 - (void)toggleTopBackground0
 {
@@ -1070,8 +967,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 #define APPRX_EQL(a, b) ((b >= (a - 1)) && (b <= (a + 1)))
 
 	//take rotation into account
-	CGFloat ds_screen_width = (([video_output_view rotation] == ROTATION_0) || ([video_output_view rotation] == ROTATION_180)) ? DS_SCREEN_WIDTH : DS_SCREEN_HEIGHT_COMBINED;
-	CGFloat ds_screen_height = (([video_output_view rotation] == ROTATION_0) || ([video_output_view rotation] == ROTATION_180)) ? DS_SCREEN_HEIGHT_COMBINED : DS_SCREEN_WIDTH;
+	CGFloat ds_screen_width = (([video_output_view boundsRotation] == 0) || ([video_output_view boundsRotation] == -180)) ? DS_SCREEN_WIDTH : DS_SCREEN_HEIGHT_COMBINED;
+	CGFloat ds_screen_height = (([video_output_view boundsRotation] == 0) || ([video_output_view boundsRotation] == -180)) ? DS_SCREEN_HEIGHT_COMBINED : DS_SCREEN_WIDTH;
 
 	if(APPRX_EQL(size.width, ds_screen_width) && APPRX_EQL(size.height, ds_screen_height))
 	{
@@ -1136,7 +1033,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		//this is a simple algorithm to constrain to the smallest axis
 		NSSize constrained_size;
 
-		if([video_output_view rotation] == ROTATION_0 || [video_output_view rotation] == ROTATION_180)
+		if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
 		{
 			//this is a simple algorithm to constrain to the smallest axis
 
@@ -1323,37 +1220,8 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[subBG3_item setState:NSOnState];
 	else
 		[subBG3_item setState:NSOffState];
-	if(video_output_view == nil)
-	{
-		[rotation0_item   setState:NSOffState ];
-		[rotation90_item  setState:NSOffState];
-		[rotation180_item setState:NSOffState];
-		[rotation270_item setState:NSOffState];		
-	} else if([video_output_view rotation] == ROTATION_0)
-	{
-		[rotation0_item   setState:NSOnState ];
-		[rotation90_item  setState:NSOffState];
-		[rotation180_item setState:NSOffState];
-		[rotation270_item setState:NSOffState];
-	} else if([video_output_view rotation] == ROTATION_90)
-	{
-		[rotation0_item   setState:NSOffState];
-		[rotation90_item  setState:NSOnState ];
-		[rotation180_item setState:NSOffState];
-		[rotation270_item setState:NSOffState];
-	} else if([video_output_view rotation] == ROTATION_180)
-	{
-		[rotation0_item   setState:NSOffState];
-		[rotation90_item  setState:NSOffState];
-		[rotation180_item setState:NSOnState ];
-		[rotation270_item setState:NSOffState];
-	} else if([video_output_view rotation] == ROTATION_270)
-	{
-		[rotation0_item   setState:NSOffState];
-		[rotation90_item  setState:NSOffState];
-		[rotation180_item setState:NSOffState];
-		[rotation270_item setState:NSOnState ];
-	} else messageDialog(NSLocalizedString(@"Error", nil), @"Corrupt rotation variable");
+
+	[self setRotation:[self rotation]];
 
 	//SOUND Menu
 	int volume;

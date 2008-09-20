@@ -508,7 +508,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 		{
 			//TODO - we need to compare the palette also.
 			//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
-			if (!texcache[i].suspectedInvalid || !memcmp(adr,texcache[i].texture,std::min(imageSize,sizeof(texcache[i].texture))))
+			if (!texcache[i].suspectedInvalid || !memcmp(adr,texcache[i].texture,std::min((size_t)imageSize,sizeof(texcache[i].texture))))
 			{
 				texcache[i].suspectedInvalid = false;
 				texcache_count=i;
@@ -550,7 +550,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].invSizeX=1.0f/((float)sizeX*(1<<4));
 	texcache[i].invSizeY=1.0f/((float)sizeY*(1<<4));
 	//memcpy(texcache[i].texture,adr,imageSize);			//======================= copy
-	memcpy_fast(texcache[i].texture,adr,std::min(imageSize,sizeof(texcache[i].texture)));			//======================= copy
+	memcpy_fast(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));			//======================= copy
 	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;
