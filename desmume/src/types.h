@@ -63,7 +63,7 @@
 
 #ifdef DESMUME_OBJ_C
 #define __declspec(ignore)
-inline void printlog(char *s, ...) {}
+inline void printlog(const char *s, ...) {}
 #ifdef __BIG_ENDIAN__
 #define WORDS_BIGENDIAN
 #endif
