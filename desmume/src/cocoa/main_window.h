@@ -85,10 +85,12 @@
 - (void)toggleStatusBar;
 
 //rotation
+- (void)setRotation:(float)rotation;
 - (void)setRotation0;
 - (void)setRotation90;
 - (void)setRotation180;
 - (void)setRotation270;
+- (float)rotation;
 
 //layers
 - (void)toggleTopBackground0;

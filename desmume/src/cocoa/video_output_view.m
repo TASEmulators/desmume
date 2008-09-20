@@ -18,9 +18,22 @@
 */
 
 #import "video_output_view.h"
-#import "nds_control.h" //for screenstate
+#import "screen_state.h"
 
+#define HORIZONTAL(angle) ((angle) == -90 || (angle) == -270)
+#define VERTICAL(angle) ((angle) == 0 || (angle) == -180)
+
+#ifdef HAVE_OPENGL
 #import <OpenGL/gl.h>
+#endif
+
+#ifdef HAVE_OPENGL
+//screenstate extended to hold rotated copies
+@interface ScreenState(extended)
+- (void)rotateTo90;
+- (void)rotateTo0;
+@end
+#endif
 
 @implementation VideoOutputView
 
@@ -35,24 +48,18 @@
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create a view for video output");
 		return nil;
 	}
+	
+	screen_buffer = nil;
 
-	//Init the screen buffer -------------------------------------------------------------
-
-	screen_buffer = [[ScreenState alloc] init];
-
-	if(screen_buffer == nil)
-	{
-		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't initialize screen view data");
-
-		//we dont return in this case because we will hopefully get new screen buffers
-		//constantly as emulation is going on, so this just means that there will be no display before emulation starts
-	}
-
-	//fill with black to represent initial off state
-	else [screen_buffer fillWithBlack];
-
+	//Initialize image view if for displaying the screen ----------------------------------------
+#ifndef HAVE_OPENGL
+	[self setImageFrameStyle: NSImageFrameNone];
+	[self setImageScaling:NSScaleToFit];
+	[self setEditable:NO];
+	[self setEnabled:NO];
+	
 	//Initialize the OpenGL context for displaying the screen -----------------------------------
-
+#else
 	//Create the pixel format for our video output view
 	NSOpenGLPixelFormatAttribute attrs[] =
 	{
@@ -82,126 +89,31 @@
 		}
 	}
 
-	//this will init opengl for drawing
+	//init gl for drawing
 	[self setFrame:frame];
+	[self setBoundsRotation:0];
+#endif
+
+	//init screen buffer
+	[self setScreenState:[ScreenState blackScreenState]];
 
 	return self;
 }
 
 - (void)dealloc
 {
+#ifdef HAVE_OPENGL
 	[context release];
+#endif
 	[screen_buffer release];
 
 	[super dealloc];
 }
 
-- (void)setRotation:(enum ScreenRotation)rot
+- (void)setScreenState:(ScreenState*)screen
 {
-	if(rot == rotation)return;
-	
-	//note that we use an optimization -
-	//rotation 180 is stored as rotation 0
-	//and rotation 270 us stored as rotation 90
-	//and using opengl we flip it (which is hopefully faster than rotating it manually)
+	if(screen_buffer == screen)return;
 
-	if((rot == ROTATION_180) || (rot == ROTATION_0))
-		[screen_buffer setRotation:ROTATION_0];
-	else if((rot == ROTATION_270) || (rot == ROTATION_90))
-		[screen_buffer setRotation:ROTATION_90];
-	else return; //invalid rotation value passed to this function
-
-	rotation = rot;
-	
-	[self setFrame:[self frame]]; //reset gl state to reflect new orientation
-	[self setNeedsDisplay:YES];
-}
-
-- (enum ScreenRotation)rotation
-{
-	return rotation;
-}
-
-- (void)drawRect:(NSRect)bounds
-{
-	if(screen_buffer == nil)return; //simply dont draw anything if we dont have a screen data object allocated
-
-	[context makeCurrentContext];
-
-	if(rotation == ROTATION_0 || rotation == ROTATION_180)
-	{
-		//here we send our corrected video buffer off to OpenGL where it gets pretty much
-		//directly copied to the frame buffer (and converted to the devices color format)
-		glDrawPixels(DS_SCREEN_WIDTH, DS_SCREEN_HEIGHT*2, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, (const GLvoid*)[screen_buffer colorData]);
-	} else
-	{
-		glDrawPixels(DS_SCREEN_HEIGHT*2, DS_SCREEN_WIDTH, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, (const GLvoid*)[screen_buffer colorData]);
-	}
-
-	glFlush();
-}
-
-- (void)setFrame:(NSRect)rect
-{
-	[super setFrame:rect];
-
-	[context update];
-	[context makeCurrentContext];
-
-	//set the viewport (so the raster pos will be correct)
-	glViewport(0, 0, rect.size.width, rect.size.height);
-
-	if(rotation == ROTATION_0)
-	{
-
-		//the raster pos controls where the bitmap where will be placed
-		glRasterPos2f(-1, 1);
-
-		//set the pixel zoom so our bitmap streches to fit our new opengl size
-		glPixelZoom(((float)rect.size.width) / ((float)DS_SCREEN_WIDTH), -((float)rect.size.height) / ((float)DS_SCREEN_HEIGHT*2));
-
-	} else if (rotation == ROTATION_90)
-	{
-
-		//the raster pos controls where the bitmap where will be placed
-		glRasterPos2f(-1, 1);
-
-		//set the pixel zoom so our bitmap streches to fit our new opengl size
-		glPixelZoom(((float)rect.size.width) / ((float)DS_SCREEN_HEIGHT*2), -((float)rect.size.height) / ((float)DS_SCREEN_WIDTH));
-
-	} else if (rotation == ROTATION_180)
-	{
-
-		//the raster pos controls where the bitmap where will be placed
-		glRasterPos2f(1, -1);
-
-		//set the pixel zoom so our bitmap streches to fit our new opengl size
-		glPixelZoom(-((float)rect.size.width) / ((float)DS_SCREEN_WIDTH), ((float)rect.size.height) / ((float)DS_SCREEN_HEIGHT*2));
-
-	} else if (rotation == ROTATION_270)
-	{
-		//the raster pos controls where the bitmap where will be placed
-		glRasterPos2f(1, -1);
-
-		//set the pixel zoom so our bitmap streches to fit our new opengl size
-		glPixelZoom(-((float)rect.size.width) / ((float)DS_SCREEN_HEIGHT*2), ((float)rect.size.height) / ((float)DS_SCREEN_WIDTH));
-
-	}
-
-}
-
-- (BOOL)isOpaque
-{
-	if(screen_buffer)
-		return YES;
-
-	//if there is no screen buffer, then we can't draw anything
-	//so this view is completely transparent
-	return NO;
-}
-
-- (void)updateScreen:(ScreenState*)screen
-{
 	if(screen == nil)
 	{
 		messageDialog(NSLocalizedString(@"Error", nil), @"Recieved invalid screen update");
@@ -212,26 +124,41 @@
 	screen_buffer = screen;
 	[screen_buffer retain]; //retain the new screendata since we will need it if we have to redraw before we recieve another update
 
-	//if the screen needs to be rotated
-	if(rotation == ROTATION_90 || rotation == ROTATION_270)
-		[screen_buffer setRotation:ROTATION_90]; //
+	//rotate the screen
+#ifdef HAVE_OPENGL
+	if(HORIZONTAL([self boundsRotation]))[screen_buffer rotateTo90];
+#endif
 
-	//then video output view draws from that buffer
+	//redraw
+#ifdef HAVE_OPENGL
 	[self display];
+#else
+	[self setImage:[screen_buffer image]];
+#endif
 }
 
-- (void)clearScreenWhite
+- (const ScreenState*)screenState
 {
-	[screen_buffer fillWithWhite];
-	[self display];
+#ifdef HAVE_OPENGL
+	ScreenState *temp = [[ScreenState alloc] initWithScreenState:screen_buffer];
+	if(HORIZONTAL([self boundsRotation]))[temp rotateTo0];
+	return temp;
+#else
+	return screen_buffer;
+#endif
 }
 
-- (void)clearScreenBlack
+- (float)screenWidth
 {
-	[screen_buffer fillWithBlack];
-	[self display];
+	return DS_SCREEN_WIDTH;
 }
 
+- (float)screenHeight
+{
+	return DS_SCREEN_HEIGHT*2;
+}
+
+#ifdef HAVE_OPENGL
 - (void)viewDidMoveToWindow
 {
 	//the setView message doesnt work if the view
@@ -243,23 +170,146 @@
 	else
 		[context clearDrawable];
 }
+#endif
 
-- (const ScreenState*)screenState
+#ifdef HAVE_OPENGL
+- (void)drawRect:(NSRect)bounds
 {
-	ScreenState *result;
+	if(screen_buffer == nil)return; //simply dont draw anything if we dont have a screen data object allocated
 
-	if(rotation == ROTATION_180)
-	{
-		result = [[ScreenState alloc] initWithScreenState:screen_buffer];
-		[result setRotation:ROTATION_180];
-	} else if(rotation == ROTATION_270)
-	{
-		result = [[ScreenState alloc] initWithScreenState:screen_buffer];
-		[result setRotation:ROTATION_270];
-	} else result = screen_buffer;
+	[context makeCurrentContext];
 
-	return result;
+	if([self boundsRotation] == 0 || [self boundsRotation] == -180)
+	{
+		//here we send our corrected video buffer off to OpenGL where it gets pretty much
+		//directly copied to the frame buffer (and converted to the devices color format)
+		glDrawPixels(DS_SCREEN_WIDTH, DS_SCREEN_HEIGHT*2, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, (const GLvoid*)[screen_buffer colorData]);
+	} else
+	{
+		glDrawPixels(DS_SCREEN_HEIGHT*2, DS_SCREEN_WIDTH, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, (const GLvoid*)[screen_buffer colorData]);
+	}
+
+	glFlush();
+}
+#endif
+
+#ifdef HAVE_OPENGL
+- (void)setFrame:(NSRect)rect
+{
+	[super setFrame:rect];
+
+	[context update];
+	[context makeCurrentContext];
+
+	//set the viewport (so the raster pos will be correct)
+	glViewport(0, 0, rect.size.width, rect.size.height);
+
+	float angle = [self boundsRotation];
+	
+	if(angle == 0)
+	{
+		glRasterPos2f(-1, 1);
+		glPixelZoom(((float)rect.size.width) / ((float)DS_SCREEN_WIDTH), -((float)rect.size.height) / ((float)DS_SCREEN_HEIGHT*2));
+	} else if(angle == -90)
+	{
+		glRasterPos2f(-1, 1);
+		glPixelZoom(((float)rect.size.width) / ((float)DS_SCREEN_HEIGHT*2), -((float)rect.size.height) / ((float)DS_SCREEN_WIDTH));
+	} else if (angle == -180)
+	{
+		glRasterPos2f(1, -1);
+		glPixelZoom(-((float)rect.size.width) / ((float)DS_SCREEN_WIDTH), ((float)rect.size.height) / ((float)DS_SCREEN_HEIGHT*2));
+	} else if (angle == -270)
+	{
+		glRasterPos2f(1, -1);
+		glPixelZoom(-((float)rect.size.width) / ((float)DS_SCREEN_HEIGHT*2), ((float)rect.size.height) / ((float)DS_SCREEN_WIDTH));
+	}
+}
+#endif
+
+#ifdef HAVE_OPENGL
+- (BOOL)isOpaque
+{
+	if(screen_buffer)
+		return YES;
+
+	//if there is no screen buffer, then we can't draw anything
+	//so this view is completely transparent
+	return NO;
+}
+#endif
+
+#ifdef HAVE_OPENGL
+- (void)setBoundsRotation:(CGFloat)angle
+{
+	float old_angle = [self boundsRotation];
+	
+	[super setBoundsRotation:angle];
+	
+	[context makeCurrentContext];
+
+	NSSize size = [self frame].size;
+
+	if(angle == 0)
+	{
+		glRasterPos2f(-1, 1);
+		glPixelZoom(((float)size.width) / ((float)DS_SCREEN_WIDTH), -((float)size.height) / ((float)DS_SCREEN_HEIGHT*2));
+	} else if(angle == -90)
+	{
+		glRasterPos2f(-1, 1);
+		glPixelZoom(((float)size.width) / ((float)DS_SCREEN_HEIGHT*2), -((float)size.height) / ((float)DS_SCREEN_WIDTH));
+	} else if (angle == -180)
+	{
+		glRasterPos2f(1, -1);
+		glPixelZoom(-((float)size.width) / ((float)DS_SCREEN_WIDTH), ((float)size.height) / ((float)DS_SCREEN_HEIGHT*2));
+	} else if (angle == -270)
+	{
+		glRasterPos2f(1, -1);
+		glPixelZoom(-((float)size.width) / ((float)DS_SCREEN_HEIGHT*2), ((float)size.height) / ((float)DS_SCREEN_WIDTH));
+	}
+
+	//Rotate the screen buffer
+	if(HORIZONTAL(angle) && VERTICAL(old_angle))
+		[screen_buffer rotateTo90];
+
+	if(VERTICAL(angle) && HORIZONTAL(old_angle))
+		[screen_buffer rotateTo0];		
+}
+#endif
+@end
+
+#ifdef HAVE_OPENGL
+@implementation ScreenState (extended)
+- (void)rotateTo90
+{
+	int width = [ScreenState width], height = [ScreenState height];
+
+	unsigned char temp_buffer[width * height * DS_BPP];
+	memcpy(temp_buffer, color_data, width * height * DS_BPP);
+
+	int x, y;
+	for(x = 0; x< width; x++)
+		for(y = 0; y < height; y++)
+		{
+			color_data[(x * height + (height - y - 1)) * 2] = temp_buffer[(y * width + x) * 2];
+			color_data[(x * height + (height - y - 1)) * 2 + 1] = temp_buffer[(y * width + x) * 2 + 1];
+		}
 }
 
+- (void)rotateTo0
+{
+	int height = [ScreenState width], width = [ScreenState height];
+
+	unsigned char temp_buffer[width * height * DS_BPP];
+	memcpy(temp_buffer, color_data, width * height * DS_BPP);
+
+	int x, y;
+	for(x = 0; x< width; x++)
+		for(y = 0; y < height; y++)
+		{
+			color_data[((width - x - 1) * height + y) * 2] = temp_buffer[(y * width + x) * 2];
+			color_data[((width - x - 1) * height + y) * 2 + 1] = temp_buffer[(y * width + x) * 2 + 1];
+		}
+}
 @end
+#endif
 

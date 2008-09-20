@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 					<Add option="-msse2" />
 					<Add option="-DDESMUME_COCOA" />
 					<Add option="-DHAVE_LIBZ" />
+					<Add option="-DHAVE_OPENGL" />
 				</Compiler>
 				<ExtraCommands>
 					<Add after="cp DeSmuME.app/Contents/MacOS/DeSmuME DeSmuME.app/Contents/MacOS/DeSmuME_x86" />
@@ -59,6 +60,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 					<Add option="-arch ppc" />
 					<Add option="-DDESMUME_COCOA" />
 					<Add option="-DHAVE_LIBZ" />
+					<Add option="-DWORDS_BIGENDIAN" />
+					<Add option="-DHAVE_OPENGL" />
 				</Compiler>
 				<Linker>
 					<Add option="-arch ppc" />
@@ -158,6 +161,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
+		<Unit filename="screen_state.h" />
+		<Unit filename="screen_state.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="screenshot.h" />
 		<Unit filename="screenshot.m">
 			<Option compile="1" />
@@ -193,6 +201,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../mc.h" />
 		<Unit filename="../mem.h" />
 		<Unit filename="../opengl_collector_3Demu.h" />
+		<Unit filename="../readwrite.cpp" />
+		<Unit filename="../readwrite.h" />
 		<Unit filename="../registers.h" />
 		<Unit filename="../render3D.cpp" />
 		<Unit filename="../render3D.h" />

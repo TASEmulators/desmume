@@ -19,16 +19,10 @@
 
 #import "globals.h"
 
+@class ScreenState;
+
 #define MAX_SLOTS 10
 #define MAX_FRAME_SKIP 10
-
-#define DS_SCREEN_WIDTH 256
-#define DS_SCREEN_HEIGHT 192
-#define DS_BPP 2 //bytes per pixel
-#define DS_SCREEN_X_RATIO (256.0 / (192.0 * 2.0))
-#define DS_SCREEN_Y_RATIO ((192.0 * 2.0) / 256.0)
-
-@class ScreenState;
 
 //This class is a compelte objective-c wrapper for
 //the core emulation features, other objective-c code inherit
@@ -182,28 +176,4 @@
 - (void)disableMute;
 - (void)toggleMute;
 - (BOOL)muted;
-@end
-
-enum ScreenRotation { ROTATION_0, ROTATION_90, ROTATION_180, ROTATION_270 };
-
-//This class is used to return screen data at the end of a frame
-//we wrap it in a obj-c class so it can be passed to a selector
-//and so we get retain/release niftyness
-@interface ScreenState : NSObject
-{
-	enum ScreenRotation rotation;
-	unsigned char color_data[DS_SCREEN_WIDTH * DS_SCREEN_HEIGHT*2 * DS_BPP];
-}
-- (id)init;
-- (id)initWithScreenState:(ScreenState*)state;
-- (NSInteger)width;
-- (NSInteger)height;
-- (NSSize)size;
-- (void)fillWithWhite;
-- (void)fillWithBlack;
-- (NSBitmapImageRep*)imageRep;
-- (void)setRotation:(enum ScreenRotation)rotation;
-- (enum ScreenRotation)rotation;
-- (void)setColorData:(const unsigned char*)data;
-- (const unsigned char*)colorData;
 @end
