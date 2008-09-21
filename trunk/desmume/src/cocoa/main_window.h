@@ -35,8 +35,8 @@
 	NSWindowController *controller;
 	VideoOutputView *video_output_view;
 	NSTextField *status_view;
+	NSString *status_bar_text;
 	InputHandler *input;
-	float status_bar_height;
 
 	bool no_smaller_than_ds;
 	bool keep_proportions;

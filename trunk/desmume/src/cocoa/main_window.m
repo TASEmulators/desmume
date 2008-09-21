@@ -83,53 +83,98 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 @implementation VideoOutputWindow
 
+//Private interface ------------------------------------------------------------
+
 - (void)setStatusText:(NSString*)value
 {
-	static NSString *retained_value = nil; //stores the string value incease the status_view is deleted and recreated
+	[status_bar_text release];
+	status_bar_text = value;
+	[status_bar_text retain];
 
-	if(status_view == nil)
+	if(status_view)[status_view setStringValue:status_bar_text];
+}
+
+- (NSString*)statusText
+{
+	if(status_bar_text)return status_bar_text;
+	return @"";
+}
+
+- (float)statusBarHeight
+{
+	if(status_view == nil)return WINDOW_BORDER_PADDING;
+	NSRect frame = [status_view frame];
+	return frame.origin.y + frame.size.height;
+}
+
+- (void)resetMinSize:(BOOL)resize_if_too_small
+{
+	//keep the min size item up to date, just in case
+	if([min_size_item target] == self)
+		[min_size_item setState:no_smaller_than_ds?NSOnState:NSOffState];
+
+	NSSize min_size;
+
+	if(!no_smaller_than_ds)
 	{
-		retained_value = value;
-		[retained_value retain];
+		min_size.width = 0;
+		min_size.height = 0;
+	} else if(video_output_view == nil)
+	{
+		min_size.width = DS_SCREEN_WIDTH;
+		min_size.height = 0;
+	} else if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
+	{
+		min_size.width = DS_SCREEN_WIDTH;
+		min_size.height = DS_SCREEN_HEIGHT_COMBINED;
 	} else
 	{
-		if(value == nil)
-		{
-			if(retained_value != nil)
-			{
-				[status_view setStringValue:retained_value];
-			} else
-				[status_view setStringValue:@""];
-		} else
-		{
-			[status_view setStringValue:value];
+		min_size.width = DS_SCREEN_HEIGHT_COMBINED;
+		min_size.height = DS_SCREEN_WIDTH;
+	}
 
-			[retained_value release];
-			retained_value = value;
-			[retained_value retain];
-		}
+	//
+	NSSize adjusted_min_size = min_size;
+	adjusted_min_size.width += WINDOW_BORDER_PADDING * 2;
+	adjusted_min_size.height += [self statusBarHeight];
+
+	//set min content size for the window
+	[window setContentMinSize:adjusted_min_size];
+
+	if(resize_if_too_small)
+	{
+		NSSize temp = [[window contentView] frame].size;
+		if(temp.width < adjusted_min_size.width && temp.height >= adjusted_min_size.height)
+			[self resizeScreen:NSMakeSize(min_size.width, temp.height)];
+		else if(temp.width >= adjusted_min_size.width && temp.height < adjusted_min_size.height)
+			[self resizeScreen:NSMakeSize(temp.width, min_size.height)];
+		else if(temp.width < adjusted_min_size.width && temp.height < adjusted_min_size.height)
+			[self resizeScreen:NSMakeSize(min_size.width, min_size.height)];
 	}
 }
+
+//Public Interface -----------------------------------------------------------
 
 - (id)init
 {
 	//Create the NDS
 	self = [super init];
-
 	if(self == nil)return nil; //superclass will display it's own error messages if needed
 
-	//
-	NSRect rect;
-
 	//Set vars
+	controller = nil;
+	video_output_view = nil;
+	status_view = nil;
+	status_bar_text = nil;
+	input = nil;
 	no_smaller_than_ds = true;
 	keep_proportions = true;
 
 	//Create the window rect (content rect - title bar not included in size)
+	NSRect rect;
 	rect.size.width = DS_SCREEN_WIDTH + WINDOW_BORDER_PADDING * 2;
-	rect.size.height = DS_SCREEN_HEIGHT_COMBINED + status_bar_height;
-	rect.origin.x = 200;
-	rect.origin.y = 200;
+	rect.size.height = DS_SCREEN_HEIGHT_COMBINED + [self statusBarHeight];
+	rect.origin.x = rect.origin.y = 200;
 
 	//allocate the window
 	if((window = [[NSWindow alloc] initWithContentRect:rect styleMask:
@@ -137,48 +182,44 @@ NSMenuItem *screenshot_to_file_item = nil;
 	backing:NSBackingStoreBuffered defer:NO screen:nil])==nil)
 	{
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create window");
-
-		//release the superclass (this will probably call our own destructor, so set nil members)
-		controller = nil;
-		video_output_view = nil;
-		status_view = nil;
-		input = nil;
-		[super release];		
-		
+		[super release];
 		return nil;
 	}
+
 	[window setTitle:NSLocalizedString(@"DeSmuME Emulator", nil)];
+	[window setShowsResizeIndicator:NO];
 
 	//Create the image view where we will display video output
 	rect.origin.x = WINDOW_BORDER_PADDING;
-	rect.origin.y = status_bar_height;
-	rect.size.width = DS_SCREEN_WIDTH;
-	rect.size.height = DS_SCREEN_HEIGHT_COMBINED;
+	rect.origin.y = [self statusBarHeight];
+	rect.size.width -= WINDOW_BORDER_PADDING*2;
+	rect.size.height -= [self statusBarHeight];
 	video_output_view = [[VideoOutputView alloc] initWithFrame:rect]; //no nil check - will do it's own error messages
 	[video_output_view setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable]; //view will automatically resize with the window
 
 	[[window contentView] addSubview:video_output_view];
-	
+
 	//create the status bar
-	//also sets the window size and minimum window size
-	status_view = nil;
 	[self setStatusText:NSLocalizedString(@"No ROM loaded", nil)];
 	[self toggleStatusBar];
-	
+
+	//set min size
+	[self resetMinSize:YES];
+
 	//Add callbacks
 	[self setVideoUpdateCallback:@selector(setScreenState:) withObject:video_output_view];
 	[self setErrorCallback:@selector(emulationError) withObject:self];
-	
+
 	//Show the window
 	[window setDelegate:self]; //we do this after making the ouput/statusbar incase some delegate method gets called suddenly
 	[controller = [[NSWindowController alloc] initWithWindow:window] showWindow:nil];
-	
+
 	//Create the input manager and insert it into the cocoa responder chain
 	input = [[InputHandler alloc] initWithWindow:(id)self];
 	NSResponder *temp = [window nextResponder];
 	[window setNextResponder:input];
 	[input setNextResponder:temp];
-	
+
 	return self;
 }
 
@@ -188,6 +229,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[window release];
 	[video_output_view release];
 	[status_view release];
+	[status_bar_text release];
 	[input release];
 
 	[super dealloc];
@@ -232,7 +274,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 					[saveSlot_item[i] setState:NSOnState];
 				else
 					[saveSlot_item[i] setState:NSOffState];
-	
+
 	} else
 	{
 		int i;
@@ -328,11 +370,11 @@ NSMenuItem *screenshot_to_file_item = nil;
 - (void)setSpeedLimit:(int)speedLimit
 {
 	[super setSpeedLimit:speedLimit];
-	
+
 	//Set the correct menu states
 	speedLimit = [super speedLimit];
 	int standard_size = 0;
-	
+
 	if([speed_limit_25_item target] == self)
 		if(speedLimit == 25){ [speed_limit_25_item setState:NSOnState]; standard_size=1; }
 		else [speed_limit_25_item setState:NSOffState];
@@ -453,7 +495,7 @@ NSMenuItem *screenshot_to_file_item = nil;
     //pause emulation so it doesnt save the state after
 	BOOL was_executing = [self executing];
 	[self pause];
-	
+
 	//file select
 	NSSavePanel *panel = [NSSavePanel savePanel];
 	[panel setTitle:NSLocalizedString(@"Save State...", nil)];
@@ -465,10 +507,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 		if(was_executing == YES)[self execute];
 		return [self saveState:[panel filename]];
 	}
-	
+
 	//unpause emulation if needed
 	if(was_executing == YES)[self execute];
-	
+
 	return NO;
 }
 
@@ -510,52 +552,6 @@ NSMenuItem *screenshot_to_file_item = nil;
 	return [self loadStateFromSlot:i];
 }
 
-- (void)resetMinSize:(BOOL)resize_if_too_small
-{
-	//keep the min size item up to date, just in case
-	if([min_size_item target] == self)
-		[min_size_item setState:no_smaller_than_ds?NSOnState:NSOffState];
-
-	NSSize min_size;
-
-	if(!no_smaller_than_ds)
-	{
-		min_size.width = 0;
-		min_size.height = 0;
-	} else if(video_output_view == nil)
-	{
-		min_size.width = DS_SCREEN_WIDTH;
-		min_size.height = 0;
-	} else if([video_output_view boundsRotation] == 0 || [video_output_view boundsRotation] == -180)
-	{
-		min_size.width = DS_SCREEN_WIDTH;
-		min_size.height = DS_SCREEN_HEIGHT_COMBINED;
-	} else
-	{
-		min_size.width = DS_SCREEN_HEIGHT_COMBINED;
-		min_size.height = DS_SCREEN_WIDTH;
-	}
-
-	//
-	NSSize adjusted_min_size = min_size;
-	adjusted_min_size.width += WINDOW_BORDER_PADDING * 2;
-	adjusted_min_size.height += status_bar_height;
-	
-	//set min content size for the window
-	[window setContentMinSize:adjusted_min_size];
-	
-	if(resize_if_too_small)
-	{
-		NSSize temp = [[window contentView] frame].size;
-		if(temp.width < adjusted_min_size.width && temp.height >= adjusted_min_size.height)
-			[self resizeScreen:NSMakeSize(min_size.width, temp.height)];
-		else if(temp.width >= adjusted_min_size.width && temp.height < adjusted_min_size.height)
-			[self resizeScreen:NSMakeSize(temp.width, min_size.height)];
-		else if(temp.width < adjusted_min_size.width && temp.height < adjusted_min_size.height)
-			[self resizeScreen:NSMakeSize(min_size.width, min_size.height)];
-	}
-}
-
 - (void)toggleMinSize
 {
 	no_smaller_than_ds = !no_smaller_than_ds;
@@ -567,7 +563,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 {
 	//add the window borders
 	size.width += WINDOW_BORDER_PADDING * 2;
-	size.height += status_bar_height;
+	size.height += [self statusBarHeight];
 
 	//convert size to window frame rather than content frame
 	size = [window frameRectForContentRect:NSMakeRect(0, 0, size.width, size.height)].size;
@@ -634,14 +630,14 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 	NSSize temp = [[window contentView] frame].size;
 	CGFloat x_size = temp.width - WINDOW_BORDER_PADDING*2;
-	CGFloat y_size = temp.height - status_bar_height;
+	CGFloat y_size = temp.height - [self statusBarHeight];
 
 	//If the click was to the left or under the opengl view, exit
-	if((location.x < WINDOW_BORDER_PADDING) || (location.y < status_bar_height))
+	if((location.x < WINDOW_BORDER_PADDING) || (location.y < [self statusBarHeight]))
 		return NSMakePoint(-1, -1);
-		
+
 	location.x -= WINDOW_BORDER_PADDING;
-	location.y -= status_bar_height;
+	location.y -= [self statusBarHeight];
 
 	//If the click was top or right of the view...
 	if(location.x >= x_size)return NSMakePoint(-1, -1);
@@ -702,7 +698,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 	{
         NSSize temp = [[window contentView] frame].size;
         temp.width -= WINDOW_BORDER_PADDING*2;
-        temp.height -= status_bar_height;
+        temp.height -= [self statusBarHeight];
 		[self resizeScreen:temp];
 	}
 
@@ -717,10 +713,10 @@ NSMenuItem *screenshot_to_file_item = nil;
 	if(status_view == nil)
 	{
 		//Create the status view
-		rect.origin.x = WINDOW_BORDER_PADDING;
-		rect.origin.y = 0;
-		rect.size.width = [window frame].size.width - WINDOW_BORDER_PADDING*2; //fixme minus resize handle size to avoid overlap?
-		rect.size.height = 1;
+
+//fixme subtract resize handle size to avoid overlap?
+		rect = NSMakeRect(WINDOW_BORDER_PADDING, 0, [window frame].size.width - WINDOW_BORDER_PADDING*2, 16);
+
 		status_view = [[NSTextField alloc] initWithFrame:rect];
 
 		if(status_view != nil)
@@ -729,27 +725,19 @@ NSMenuItem *screenshot_to_file_item = nil;
 			[status_view setDrawsBackground:NO];
 			[status_view setBordered:NO];
 			[status_view setBezeled:NO];
-			[status_view setDrawsBackground:NO];
 			[status_view setSelectable:NO];
 			[status_view setEditable:NO];
-			[self setStatusText:nil];
-			[status_view sizeToFit];
+			[status_view setStringValue:[self statusText]];
+			[status_view setAutoresizingMask:NSViewWidthSizable];
 			rect = [status_view frame];
 
-			//fixme we need to determine the height of the resize handle
-			//this is a hack since tiger and earlier have a larger resize handle
-			if([NSWindow instancesRespondToSelector:@selector(setPreferredBackingLocation:)] == YES)
-				status_bar_height = rect.size.height + rect.origin.y + 2;
-			else
-				status_bar_height = rect.size.height + rect.origin.y + 6;
-			
 			//add status view to the window
 			[[window contentView] addSubview:status_view];
 
-			//set the check
+			//set the menu checkmark
 			if([toggle_status_bar_item target] == self)
 			[toggle_status_bar_item setState:NSOnState];
-			
+
 			[window setShowsResizeIndicator:YES];
 
 		} else
@@ -764,32 +752,32 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[status_view removeFromSuperview];
 		[status_view release];
 		status_view = nil;
-		status_bar_height = WINDOW_BORDER_PADDING;
-		
-		//unset the check
+
+		//unset the menu checkmark
 		if([toggle_status_bar_item target] == self)
 			[toggle_status_bar_item setState:NSOffState];
-			
+
 		//hide the resize control (so it doesn't overlap our screen)
 		[window setShowsResizeIndicator:NO];
 	}
-	
-	[window setContentMinSize:NSMakeSize(0,0)]; //allow window resize
-	
+
+	//move the video output view up or down to where the status bar is (or isn't)
+	rect = [video_output_view frame];
+	rect.origin.y = [self statusBarHeight];
+	[video_output_view setFrame:rect];
+
 	//resize the window
-	CGFloat new_height = [window frameRectForContentRect:NSMakeRect(0, 0, [[window contentView] frame].size.width, status_bar_height + (video_output_view==nil?0:[video_output_view frame].size.height))].size.height;
+	NSUInteger autoresizing_mask = [video_output_view autoresizingMask];
+	[video_output_view setAutoresizingMask:NSViewNotSizable]; //dont resize the video output when we resize the window\
+
+	CGFloat new_height = [window frameRectForContentRect:NSMakeRect(0, 0, [[window contentView] frame].size.width, [self statusBarHeight] + (video_output_view==nil?0:[video_output_view frame].size.height))].size.height;
+
 	rect = [window frame];
 	rect.origin.y += rect.size.height - new_height;
 	rect.size.height = new_height;
 	[window setFrame:rect display:YES];
-	
-	//move the video output view up or down if needed
-	rect = [[window contentView] frame];
-	rect.origin.x += WINDOW_BORDER_PADDING;
-	rect.origin.y += status_bar_height;
-	rect.size.width -= WINDOW_BORDER_PADDING * 2;
-	rect.size.height -= status_bar_height;
-	[video_output_view setFrame:rect];	
+
+	[video_output_view setAutoresizingMask:autoresizing_mask];
 
 	//set new window min size
 	[self resetMinSize:YES];
@@ -1009,20 +997,13 @@ NSMenuItem *screenshot_to_file_item = nil;
 
     //set the menu items
 	[self resetSizeMenuChecks];
-
-    //horizontally resize the status_view to match the window size
-	NSRect rect = [[window contentView] frame];
-	rect.origin.x += WINDOW_BORDER_PADDING;
-	rect.size.width -= WINDOW_BORDER_PADDING*2;
-	rect.size.height = status_bar_height;
-	[status_view setFrame:rect];
 }
 
 - (NSSize)windowWillResize:(NSWindow*)sender toSize:(NSSize)proposedFrameSize
 {
 	if(video_output_view == nil)
 		//allow x resize if theres no video output, but not y resize
-		return NSMakeSize(proposedFrameSize.width, [window frameRectForContentRect:NSMakeRect(0, 0, proposedFrameSize.width, status_bar_height)].size.height);
+		return NSMakeSize(proposedFrameSize.width, [window frameRectForContentRect:NSMakeRect(0, 0, proposedFrameSize.width, [self statusBarHeight])].size.height);
 
 	//constrain proportions
 	if(keep_proportions)
@@ -1037,21 +1018,21 @@ NSMenuItem *screenshot_to_file_item = nil;
 		{
 			//this is a simple algorithm to constrain to the smallest axis
 
-			constrained_size.width = (content_size.height - status_bar_height) * DS_SCREEN_X_RATIO;
+			constrained_size.width = (content_size.height - [self statusBarHeight]) * DS_SCREEN_X_RATIO;
 			constrained_size.width += WINDOW_BORDER_PADDING*2;
 
 			constrained_size.height = (content_size.width - WINDOW_BORDER_PADDING*2) * DS_SCREEN_Y_RATIO;
-			constrained_size.height += status_bar_height;
+			constrained_size.height += [self statusBarHeight];
 
 		} else
 		{
 			//like above but with opposite ratios
 
-			constrained_size.width = (content_size.height - status_bar_height) * DS_SCREEN_Y_RATIO;
+			constrained_size.width = (content_size.height - [self statusBarHeight]) * DS_SCREEN_Y_RATIO;
 			constrained_size.width += WINDOW_BORDER_PADDING*2;
 
 			constrained_size.height = (content_size.width - WINDOW_BORDER_PADDING*2) * DS_SCREEN_X_RATIO;
-			constrained_size.height += status_bar_height;
+			constrained_size.height += [self statusBarHeight];
 		}
 
 		constrained_size = [window frameRectForContentRect:NSMakeRect(0, 0, constrained_size.width, constrained_size.height)].size;
@@ -1277,12 +1258,12 @@ NSMenuItem *screenshot_to_file_item = nil;
 
 		if(item == screenshot_to_file_item)return NO;
 	}
-	
+
 	else
 		for(i = 0; i < MAX_SLOTS; i++)
 			if(item == loadSlot_item[i])
 				if([self saveStateExists:i]==NO)return NO;
-	
+
 	if(video_output_view == nil)
 	{
 		if(item == resize1x)return NO;
