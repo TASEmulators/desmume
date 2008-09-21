@@ -1134,6 +1134,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[pause_item setState:NSOffState];
 	}
 
+	[frame_skip_auto_item setTarget:self];
 	for(i = 0; i < MAX_FRAME_SKIP; i++)[frame_skip_item[i] setTarget:self];
 	[self setFrameSkip:[self frameSkip]]; //set the menu checkmarks correctly
 

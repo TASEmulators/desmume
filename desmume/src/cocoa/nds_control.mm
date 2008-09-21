@@ -1255,8 +1255,8 @@ bool opengl_init()
 
 	u32 cycles = 0;
 
-	NSDate *frame_end_date;
-	unsigned long long frame_start_time, frame_end_time;
+	NSDate *frame_start_date, *frame_end_date, *ideal_frame_end_date;
+
 	int frames_to_skip = 0;
 
 	//program main loop
@@ -1271,9 +1271,9 @@ bool opengl_init()
 			paused = false;
 
 			int speed_limit_this_frame = speed_limit; //dont let speed limit change midframe
-			if(speed_limit_this_frame)frame_end_date = [[NSDate alloc] initWithTimeIntervalSinceNow: DS_SECONDS_PER_FRAME / ((float)speed_limit_this_frame / 100.0)];
+			if(speed_limit_this_frame)ideal_frame_end_date = [NSDate dateWithTimeIntervalSinceNow: DS_SECONDS_PER_FRAME / ((float)speed_limit_this_frame / 100.0)];
 			
-			Microseconds((struct UnsignedWide*)&frame_start_time);
+			frame_start_date = [NSDate dateWithTimeIntervalSinceNow:0];
 
 			[execution_lock lock];
 
@@ -1287,14 +1287,11 @@ bool opengl_init()
 
 			[execution_lock unlock];
 
-			Microseconds((struct UnsignedWide*)&frame_end_time);
-			
+			frame_end_date = [NSDate dateWithTimeIntervalSinceNow:0];
+
 			//speed limit
 			if(speed_limit_this_frame)
-			{
-				[NSThread sleepUntilDate:frame_end_date];
-				[frame_end_date release];
-			}
+				[NSThread sleepUntilDate:ideal_frame_end_date];
 			
 			if(frames_to_skip > 0)
 				frames_to_skip--;
@@ -1304,10 +1301,9 @@ bool opengl_init()
 				if(frame_skip < 0)
 				{ //automatic
 
-					//i don't know if theres a standard strategy, but here we calculate
-					//how much longer the frame took than it should have, then set it to skip
-					//that many frames.
-					frames_to_skip = ((double)(frame_end_time - frame_start_time)) / ((double)DS_MICROSECONDS_PER_FRAME);
+					//i don't know if theres a standard strategy, but here we calculate how much
+					//longer the frame took than it should have, then set it to skip that many frames.
+					frames_to_skip = [frame_end_date timeIntervalSinceDate:frame_start_date] / (float)DS_SECONDS_PER_FRAME;
 					if(frames_to_skip > 10)frames_to_skip = 10;
 
 				} else
