@@ -48,7 +48,7 @@
 		messageDialog(NSLocalizedString(@"Error", nil), @"Couldn't create a view for video output");
 		return nil;
 	}
-	
+
 	screen_buffer = nil;
 
 	//Initialize image view if for displaying the screen ----------------------------------------
@@ -57,7 +57,7 @@
 	[self setImageScaling:NSScaleToFit];
 	[self setEditable:NO];
 	[self setEnabled:NO];
-	
+
 	//Initialize the OpenGL context for displaying the screen -----------------------------------
 #else
 	//Create the pixel format for our video output view
@@ -160,15 +160,22 @@
 
 #ifdef HAVE_OPENGL
 - (void)viewDidMoveToWindow
-{
-	//the setView message doesnt work if the view
-	//isn't in a window, which is the case in the init func
-	//so we use this callback to bind the context to the window
+{//if the view moves to another window we need to update the drawable object
+
+	if(!context)return;
+
+	//withdraw from recieving updates on previously window, if any
+	[[NSNotificationCenter defaultCenter] removeObserver:context];
 
 	if([self window] != nil)
+	{
 		[context setView:self];
-	else
-		[context clearDrawable];
+
+		//udpate drawable if the window changed
+		[[NSNotificationCenter defaultCenter] addObserver:context selector:@selector(update) name:@"NSWindowDidResizeNotification" object:[self window]];
+
+	} else [context clearDrawable];
+
 }
 #endif
 
@@ -198,14 +205,14 @@
 {
 	[super setFrame:rect];
 
-	[context update];
 	[context makeCurrentContext];
+	[context update];
 
 	//set the viewport (so the raster pos will be correct)
 	glViewport(0, 0, rect.size.width, rect.size.height);
 
 	float angle = [self boundsRotation];
-	
+
 	if(angle == 0)
 	{
 		glRasterPos2f(-1, 1);
@@ -242,9 +249,9 @@
 - (void)setBoundsRotation:(CGFloat)angle
 {
 	float old_angle = [self boundsRotation];
-	
+
 	[super setBoundsRotation:angle];
-	
+
 	[context makeCurrentContext];
 
 	NSSize size = [self frame].size;
@@ -272,9 +279,10 @@
 		[screen_buffer rotateTo90];
 
 	if(VERTICAL(angle) && HORIZONTAL(old_angle))
-		[screen_buffer rotateTo0];		
+		[screen_buffer rotateTo0];
 }
 #endif
+
 @end
 
 #ifdef HAVE_OPENGL
