@@ -470,13 +470,21 @@ bool savestate_save(std::ostream* outstream, int compressionLevel)
 
 	outstream->write((char*)cbuf,comprlen==-1?len:comprlen);
 	if(cbuf != (uint8*)ms.buf()) delete[] cbuf;
+#ifdef HAVE_LIBZ
 	return error == Z_OK;
+#else
+	return true;
+#endif
 }
 
 bool savestate_save (const char *file_name)
 {
 	memorystream ms;
+#ifdef HAVE_LIBZ
 	if(!savestate_save(&ms, Z_DEFAULT_COMPRESSION))
+#else
+	if(!savestate_save(&ms, 0))
+#endif
 		return false;
 	ms.flush();
 	FILE* file = fopen(file_name,"wb");
@@ -569,10 +577,12 @@ bool savestate_load(std::istream* is)
 		is->read(&cbuf[0],comprlen);
 		if(is->fail()) return false;
 
+#ifdef HAVE_LIBZ
 		uLongf uncomprlen = len;
 		int error = uncompress((uint8*)&buf[0],&uncomprlen,(uint8*)&cbuf[0],comprlen);
 		if(error != Z_OK || uncomprlen != len)
 			return false;
+#endif
 	} else {
 		is->read((char*)&buf[0],len);
 	}
