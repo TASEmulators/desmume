@@ -200,7 +200,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../mc.cpp" />
 		<Unit filename="../mc.h" />
 		<Unit filename="../mem.h" />
-		<Unit filename="../opengl_collector_3Demu.h" />
 		<Unit filename="../readwrite.cpp" />
 		<Unit filename="../readwrite.h" />
 		<Unit filename="../registers.h" />
