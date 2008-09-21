@@ -199,7 +199,7 @@ void SPU_KeyOn(int channel)
    channel_struct *chan = &SPU->chan[channel];
 
    chan->sampinc = (16777216 / (0x10000 - (double)chan->timer)) / 44100;
-            
+
 //   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
    switch(chan->format)
    {
@@ -248,7 +248,7 @@ u8 SPU_ReadByte(u32 addr)
       switch (addr & 0xF)
       {
          case 0x0:
-//            LOG("Sound Channel %d Volume read\n", (addr >> 4) & 0xF);            
+//            LOG("Sound Channel %d Volume read\n", (addr >> 4) & 0xF);
             return T1ReadByte(MMU.ARM7_REG, addr);
          case 0x1:
          {
@@ -328,7 +328,7 @@ u16 SPU_ReadWord(u32 addr)
             return T1ReadWord(MMU.ARM7_REG, addr);
          case 0x2:
          {
-            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF]; 
+            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF];
 //            LOG("Sound Channel %d Panning/Wave Duty/Repeat Mode/Format/Start word read\n", (addr >> 4) & 0xF);
             return T1ReadWord(MMU.ARM7_REG, addr);
          }
@@ -380,7 +380,7 @@ u32 SPU_ReadLong(u32 addr)
       switch (addr & 0xF)
       {
          case 0x0:
-//            LOG("Sound Channel %d Control Register long read\n", (addr >> 4) & 0xF);            
+//            LOG("Sound Channel %d Control Register long read\n", (addr >> 4) & 0xF);
             return T1ReadLong(MMU.ARM7_REG, addr);
          case 0x4:
 //            LOG("Sound Channel %d Data Source Register long read\n");
@@ -433,7 +433,7 @@ void SPU_WriteByte(u32 addr, u8 val)
             return;
          case 0x1:
          {
-            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF]; 
+            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF];
 
 //            LOG("Sound Channel %d Data Shift/Hold write: %02X\n",(addr >> 4) & 0xF, val);
             chan->datashift = val & 0x3;
@@ -450,9 +450,9 @@ void SPU_WriteByte(u32 addr, u8 val)
             return;
          case 0x3:
          {
-            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF]; 
+            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF];
 //            LOG("Sound Channel %d Wave Duty/Repeat/Format/Start write: %08X - %02X. ARM7 PC = %08X\n", (addr >> 4) & 0xF, addr, val, NDS_ARM7.instruct_adr);
-                               
+
             chan->waveduty = val & 0x7;
             chan->repeat = (val >> 3) & 0x3;
             chan->format = (val >> 5) & 0x3;
@@ -540,7 +540,7 @@ void SPU_WriteWord(u32 addr, u16 val)
       {
          case 0x0:
          {
-            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF]; 
+            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF];
 //            LOG("Sound Channel %d Volume/data shift/hold write: %04X\n", (addr >> 4) & 0xF, val);
             chan->vol = val & 0x7F;
             chan->datashift = (val >> 8) & 0x3;
@@ -552,7 +552,7 @@ void SPU_WriteWord(u32 addr, u16 val)
          }
          case 0x2:
          {
-            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF]; 
+            channel_struct *chan=&SPU->chan[(addr >> 4) & 0xF];
 //            LOG("Sound Channel %d Panning/Wave Duty/Repeat Mode/Format/Start write: %04X\n", (addr >> 4) & 0xF, val);
 
             chan->pan = val & 0x7F;
@@ -851,7 +851,7 @@ static INLINE void TestForLoop(channel_struct *chan)
       {
          chan->status = CHANSTAT_STOPPED;
 
-         MMU.ARM7_REG[0x403 + ((((u32)chan-(u32)SPU->chan) / sizeof(channel_struct)) * 0x10)] &= 0x7F;
+         MMU.ARM7_REG[0x403 + (((chan-SPU->chan) / sizeof(channel_struct)) * 0x10)] &= 0x7F;
          SPU->bufpos = SPU->buflength;
       }
    }
@@ -876,7 +876,7 @@ static INLINE void TestForLoop2(channel_struct *chan)
       else
       {
          chan->status = CHANSTAT_STOPPED;
-         MMU.ARM7_REG[0x403 + ((((u32)chan-(u32)SPU->chan) / sizeof(channel_struct)) * 0x10)] &= 0x7F;
+         MMU.ARM7_REG[0x403 + (((chan-SPU->chan) / sizeof(channel_struct)) * 0x10)] &= 0x7F;
          SPU->bufpos = SPU->buflength;
       }
    }
