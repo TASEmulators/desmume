@@ -129,6 +129,11 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
    return 0;
 }
 
+SoundInterface_struct *SPU_SoundCore()
+{
+	return SNDCore;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 int SPU_Init(int coreid, int buffersize)
