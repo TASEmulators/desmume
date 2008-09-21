@@ -19,6 +19,7 @@
 
 #import "screenshot.h"
 #import "nds_control.h"
+#import "screen_state.h"
 
 @interface ScreenshotSaveDelegate : NSObject
 {
