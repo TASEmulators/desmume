@@ -19,8 +19,11 @@
 
 #import "nds_control.h"
 #import "preferences.h"
-#import "sndOSX.h"
 #import "screen_state.h"
+
+#ifdef DESMUME_COCOA
+#import "sndOSX.h"
+#endif
 
 #ifdef HAVE_OPENGL
 #import <OpenGL/OpenGL.h>
@@ -59,7 +62,9 @@ NULL
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
+#ifdef DESMUME_COCOA
 &SNDOSX,
+#endif
 NULL
 };
 
@@ -203,13 +208,14 @@ bool opengl_init()
 #endif
 
 	//Sound Init
+	muted = false;
+	volume = 100;
+#ifdef DESMUME_COCOA
 	if(SPU_ChangeSoundCore(SNDCORE_OSX, 735 * 4) != 0)
 		messageDialog(NSLocalizedString(@"Error", nil), @"Unable to initialize sound core");
 	else
-		SPU_SetVolume(100);
-
-	volume = 100;
-	muted = false;
+		SPU_SetVolume(volume);
+#endif
 
 	//Breakoff a new thread that will execute the ds stuff
 	finish = false;
@@ -1144,27 +1150,36 @@ bool opengl_init()
 	return MainScreen.gpu->dispBG[3];
 }
 
+- (BOOL)hasSound
+{
+	SoundInterface_struct *core = SPU_SoundCore();
+	if(!core)return NO;
+	return core != &SNDDummy;
+}
+
 - (void)setVolume:(int)new_volume
 {
 	if(new_volume < 0)new_volume = 0;
 	if(new_volume > 100)new_volume = 100;
 	if(volume == new_volume)return;
+
 	volume = new_volume;
 	[sound_lock lock];
-	SNDOSXSetVolume(volume);
+	SPU_SetVolume(volume);
 	[sound_lock unlock];
-	muted = false;
 }
 
 - (int)volume
 {
-	return volume;
+	if([self hasSound])
+		return volume;
+	return -1;
 }
 
 - (void)enableMute
 {
 	[sound_lock lock];
-	SNDOSXMuteAudio();
+	SPU_SetVolume(0);
 	[sound_lock unlock];
 	muted = true;
 }
@@ -1172,7 +1187,7 @@ bool opengl_init()
 - (void)disableMute
 {
 	[sound_lock lock];
-	SNDOSXUnMuteAudio();
+	SPU_SetVolume(volume);
 	[sound_lock unlock];
 	muted = false;
 }

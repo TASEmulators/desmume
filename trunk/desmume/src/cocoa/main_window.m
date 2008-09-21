@@ -1053,26 +1053,32 @@ NSMenuItem *screenshot_to_file_item = nil;
 - (void)setVolume:(int)volume
 {
 	[super setVolume:volume];
-	[mute_item setState:NSOffState];
+	
+	int i;
+	for(i = 0; i < 10; i++)
+	if([volume_item[i] target] == self)
+		if(volume == (i+1)*10)
+			[volume_item[i] setState:NSOnState];
+		else
+			[volume_item[i] setState:NSOffState];
 }
 
 - (void)setVolumeFromMenu:(id)sender
 {
 	int i;
 	for(i = 0; i < 10; i++)
+	if(sender == volume_item[i])
 	{
-		if(sender == volume_item[i])
-		{
-			[volume_item[i] setState:NSOnState];
-			[self setVolume:(i+1)*10];
-		} else
-			[volume_item[i] setState:NSOffState];
+		[self disableMute]; //unmute if needed
+		[self setVolume:(i+1)*10];
+		break;
 	}
 }
 
 - (void)enableMute
 {
 	[super enableMute];
+
 	if([mute_item target] == self)
 		[mute_item setState:NSOnState];
 }
@@ -1080,6 +1086,7 @@ NSMenuItem *screenshot_to_file_item = nil;
 - (void)disableMute
 {
 	[super disableMute];
+	
 	if([mute_item target] == self)
 		[mute_item setState:NSOffState];
 }
@@ -1276,6 +1283,12 @@ NSMenuItem *screenshot_to_file_item = nil;
 		if(item == rotation180_item)return NO;
 		if(item == rotation270_item)return NO;
 		if(item == screenshot_to_file_item)return NO;
+	}
+	
+	if([self hasSound] == NO)
+	{
+		if(item == mute_item)return NO;
+		for(i = 0; i < 10; i++)if(item == volume_item[i])return NO;
 	}
 
 	return YES;
