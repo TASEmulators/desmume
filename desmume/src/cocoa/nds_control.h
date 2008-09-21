@@ -170,6 +170,7 @@
 - (BOOL)showingSubBackground3;
 
 //Sound
+- (BOOL)hasSound;
 - (void)setVolume:(int)volume; //clamped: 0 to 100
 - (int)volume;
 - (void)enableMute;
