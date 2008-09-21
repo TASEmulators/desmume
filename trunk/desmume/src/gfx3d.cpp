@@ -19,7 +19,7 @@
 */
 
 //This file implements the geometry engine hardware component.
-//This handles almost all of the work of 3d rendering, leaving the renderer 
+//This handles almost all of the work of 3d rendering, leaving the renderer
 // plugin responsible only for drawing primitives.
 
 #include <algorithm>
@@ -40,20 +40,20 @@ u32 color_15bit_to_24bit[32768];
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
 const int material_5bit_to_31bit[] = {
-	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6, 
-	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE, 
-	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6, 
-	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE, 
+	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6,
+	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE,
+	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6,
+	0x318C6318, 0x35AD6B5A, 0x39CE739C, 0x3DEF7BDE,
 	0x42108421, 0x46318C63, 0x4A5294A5, 0x4E739CE7,
-	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF, 
-	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7, 
+	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF,
+	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7,
 	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
 };
 
 const u8 material_5bit_to_8bit[] = {
-	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39, 
-	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B, 
-	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD, 
+	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39,
+	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
+	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
 	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
 };
 
@@ -241,7 +241,7 @@ void gfx3d_glClearDepth(unsigned long v)
 	gfx3d.clearDepth = depth24b / ((float)(1<<24));
 }
 
-void gfx3d_glMatrixMode(u32 v)
+void gfx3d_glMatrixMode(unsigned long v)
 {
 	mode = (v&3);
 }
@@ -294,9 +294,9 @@ void gfx3d_glStoreMatrix(unsigned long v)
 	short mymode = (mode==1?2:mode);
 
 	//for the projection matrix, the provided value is supposed to be reset to zero
-	if(mymode==0) 
+	if(mymode==0)
 		v = 0;
-	
+
 	MatrixStackLoadMatrix (&mtxStack[mymode], v&31, mtxCurrent[mymode]);
 	if(mymode==2)
 		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
@@ -357,7 +357,7 @@ void gfx3d_glTranslate(signed long v)
 void gfx3d_glScale(signed long v)
 {
 	short mymode = (mode==2?1:mode);
-	
+
 	scale[scaleind] = fix2float(v);
 
 	++scaleind;
@@ -660,7 +660,7 @@ static void gfx3d_glPolygonAttrib_cache()
 
 	// Alpha value, actually not well handled, 0 should be wireframe
 	colorRGB[3] = colorAlpha = ((polyAttr>>16)&0x1F);
-	
+
 	//// polyID
 	//polyID = (polyAttr>>24)&0x1F;
 }
@@ -763,7 +763,7 @@ void gfx3d_glNormal(unsigned long v)
 	//TODO - only do this when the projection matrix changes
 	ALIGN(16) float lineOfSight[4] = { 0, 0, -1, 0 };
 	MatrixMultVec4x4 (mtxCurrent[0], lineOfSight);
-	
+
 	if (texCoordinateTransform == 2)
 	{
 		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
@@ -777,22 +777,22 @@ void gfx3d_glNormal(unsigned long v)
 
 	//apply lighting model
 	{
-		u8 diffuse[3] = { 
+		u8 diffuse[3] = {
 			(dsDiffuse)&0x1F,
 			(dsDiffuse>>5)&0x1F,
 			(dsDiffuse>>10)&0x1F };
 
-		u8 ambient[3] = { 
+		u8 ambient[3] = {
 			(dsAmbient)&0x1F,
 			(dsAmbient>>5)&0x1F,
 			(dsAmbient>>10)&0x1F };
 
-		u8 emission[3] = { 
+		u8 emission[3] = {
 			(dsEmission)&0x1F,
 			(dsEmission>>5)&0x1F,
 			(dsEmission>>10)&0x1F };
 
-		u8 specular[3] = { 
+		u8 specular[3] = {
 			(dsSpecular)&0x1F,
 			(dsSpecular>>5)&0x1F,
 			(dsSpecular>>10)&0x1F };
@@ -807,7 +807,7 @@ void gfx3d_glNormal(unsigned long v)
 				continue;
 
 			{
-				u8 _lightColor[3] = { 
+				u8 _lightColor[3] = {
 					(lightColor[i])&0x1F,
 					(lightColor[i]>>5)&0x1F,
 					(lightColor[i]>>10)&0x1F };
@@ -815,7 +815,7 @@ void gfx3d_glNormal(unsigned long v)
 				float dot = Vector3Dot(cacheLightDirection[i],normal);
 				float diffuseComponent = std::max(0.f,dot);
 				float specularComponent;
-				
+
 				//a specular formula which I couldnt get working
 				//float halfAngle[3] = {
 				//	(lineOfSight[0] + g_lightInfo[i].floatDirection[0])/2,
@@ -830,7 +830,7 @@ void gfx3d_glNormal(unsigned long v)
 				//
 				//float specularAngle = -Vector3Dot(halfAngleNormalized,normal);
 				//specularComponent = max(0,cos(specularAngle));
-				
+
 				//a specular formula which seems to work
 				float temp[4];
 				float diff = Vector3Dot(normal,cacheLightDirection[i]);
@@ -839,7 +839,7 @@ void gfx3d_glNormal(unsigned long v)
 				Vector3Add(temp,cacheLightDirection[i]);
 				Vector3Scale(temp,-1);
 				specularComponent = std::max(0.f,Vector3Dot(lineOfSight,temp));
-				
+
 				//if the game isnt producing unit normals, then we can accidentally out of range components. so lets saturate them here
 				//so we can at least keep for crashing. we're not sure what the hardware does in this case, but the game shouldnt be doing this.
 				specularComponent = std::max(0.f,std::min(1.f,specularComponent));
@@ -892,7 +892,7 @@ void gfx3d_glLightDirection_cache(int index)
 	20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
 	30-31 Light Number                     (0..3)
 */
-void gfx3d_glLightDirection (u32 v)
+void gfx3d_glLightDirection (unsigned long v)
 {
 	int index = v>>30;
 
@@ -958,7 +958,7 @@ void gfx3d_glCallList(unsigned long v)
 					--clInd;
 					clCmd >>= 8;
 					continue;
-				} 
+				}
 				break;
 			}
 
@@ -1413,7 +1413,7 @@ void gfx3d_Control_cache()
 
 	if((v>>1)&1) gfx3d.shading = GFX3D::HIGHLIGHT;
 	else gfx3d.shading = GFX3D::TOON;
-	
+
 	if((v>>2)&1) gfx3d.enableAlphaTest = TRUE;
 	else gfx3d.enableAlphaTest = FALSE;
 
@@ -1433,7 +1433,7 @@ void gfx3d_Control_cache()
 	}
 }
 
-void gfx3d_Control(u32 v)
+void gfx3d_Control(unsigned long v)
 {
 	control = v;
 	gfx3d_Control_cache();
@@ -1556,7 +1556,7 @@ bool gfx3d_loadstate(std::istream* is)
 	gfx3d_glLightDirection_cache(1);
 	gfx3d_glLightDirection_cache(2);
 	gfx3d_glLightDirection_cache(3);
-	
+
 	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
