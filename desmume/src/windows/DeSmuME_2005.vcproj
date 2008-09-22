@@ -140,7 +140,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;Release\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;Release\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
 				StringPooling="true"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
