@@ -31,7 +31,7 @@
 #define WINAPI
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define ALIGN(X) __declspec(align(X))
 #elif __GNUC__
 #define ALIGN(X) __attribute__ ((aligned (X)))
@@ -46,7 +46,7 @@
 #define FASTCALL __attribute__((fastcall))
 #elif defined (__i386__)
 #define FASTCALL __attribute__((regparm(3)))
-#elif defined _MSC_VER
+#elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define FASTCALL
 #else
 #define FASTCALL
@@ -54,7 +54,7 @@
 #endif
 
 #ifndef INLINE
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define INLINE _inline
 #else
 #define INLINE inline
@@ -84,7 +84,7 @@ typedef signed long s64;
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 typedef unsigned __int64 u64;
 #else
 typedef unsigned long long u64;
@@ -94,7 +94,7 @@ typedef unsigned long pointer;
 typedef signed char s8;
 typedef signed short s16;
 typedef signed long s32;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 typedef __int64 s64;
 #else
 typedef signed long long s64;

@@ -374,7 +374,7 @@ void Close()
 //I think this is slower than the regular memcmp.. doesnt make sense to me, but my
 //asm optimization knowlege is 15 years old..
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 int memcmp_slow(const void* src, const void* dst, u32 count) {
 	int retval;
 	__asm {

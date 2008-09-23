@@ -25,29 +25,16 @@
 
 extern "C" {
 
-#ifdef SSE2
-	#include <xmmintrin.h>
-	#include <emmintrin.h>
-	//typedef __declspec(align(16)) float gMatrix[4][4];
-	//typedef float gMatrix[4][4];
-	typedef float gMatrix[16];
-#endif
-
 typedef struct MatrixStack
 {
-#ifdef SSE2
-	//gMatrix *matrix;
 	float	*matrix;
-#else
-	float	*matrix;
-#endif
 	int		position;
 	int		size;
 } MatrixStack;
 
 void	MatrixInit				(float *matrix);
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define MATRIXFASTCALL __fastcall
 #else
 #define MATRIXFASTCALL

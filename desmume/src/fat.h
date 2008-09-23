@@ -18,7 +18,7 @@
 #define EXT_LEN 3
 
 // Boot Sector - must be packed
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #pragma pack(push, 1)
 #define DIR_SEP "\\"
 typedef struct

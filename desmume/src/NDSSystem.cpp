@@ -573,7 +573,7 @@ typedef struct
     u32 numimpcol;
 } bmpimgheader_struct;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #pragma pack(push, 1)
 typedef struct
 {
