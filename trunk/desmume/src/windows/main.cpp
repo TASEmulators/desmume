@@ -1904,6 +1904,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					  FpsDisplay ^= 1;
 					  MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
 					  WritePrivateProfileInt("Video", "Display Fps", FpsDisplay, IniName);
+					  osd->clear();
 				  return 0;
 
                   #define saver(one,two,three,four,five, six) \

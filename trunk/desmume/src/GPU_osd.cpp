@@ -95,7 +95,7 @@ void INLINE OSDCLASS::printChar(u16 x, u16 y, u8 c)
 {
 	int i, j;
 	int ofs=c*OSD_FONT_HEIGHT;
-	unsigned char	bits[9]={255, 128, 64, 32, 16, 8, 4, 2, 1};
+	unsigned char	bits[9]={256, 128, 64, 32, 16, 8, 4, 2, 1};
 	u8	*dst=screen;
 	dst+=(y*256)+x;
 
