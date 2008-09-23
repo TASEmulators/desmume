@@ -20,211 +20,196 @@
 */
 
 #include "CWindow.h"
-#include "resource.h"
+#include "debug.h"
 
-CRITICAL_SECTION section;
-cwindow_struct *updatewindowlist = NULL;
-
-//////////////////////////////////////////////////////////////////////////////
-
-int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * title, int style, int sx, int sy, WNDPROC wP)
+WINCLASS::WINCLASS(LPSTR rclass, HINSTANCE hInst)
 {
-    static BOOL first = FALSE;
-    RECT clientaera;
-    cwindow_struct *win2=(cwindow_struct *)win;
+	memset(regclass, 0, sizeof(regclass));
+	memcpy(regclass, rclass, strlen(rclass));
 
-    win2->autoup = FALSE;
-    
-    if(!first)
-    {
-    WNDCLASSEX wincl;        // Data structure for the windowclass
-    
-    // The Window structure
-    wincl.hInstance = hInst;
-    wincl.lpszClassName = cname;
-    wincl.lpfnWndProc = wP;      // This function is called by windows
-    wincl.style = CS_DBLCLKS;                 // Catch double-clicks
-    wincl.cbSize = sizeof (WNDCLASSEX);
-
-    // Use default icon and mouse-pointer
-    //wincl.hIcon = LoadIcon (hInst, MAKEINTRESOURCE(IconDeSmuME));//IDI_APPLICATION);
-    //wincl.hIconSm = LoadIcon (hInst, MAKEINTRESOURCE(IconDeSmuME));//IDI_APPLICATION);
-	wincl.hIcon = LoadIcon (hInst, IDI_APPLICATION);
-    wincl.hIconSm = LoadIcon (hInst, IDI_APPLICATION);
-    wincl.hCursor = LoadCursor (NULL, IDC_ARROW);
-    wincl.lpszMenuName = NULL;                 // No menu
-    wincl.cbClsExtra = 0;                      // No extra bytes after the window class
-    wincl.cbWndExtra = 0;                      // structure or the window instance
-    // Use Windows's default color as the background of the window
-    wincl.hbrBackground = (HBRUSH) COLOR_BACKGROUND;
-
-    // Register the window class, and if it fails quit the program
-    if (!RegisterClassEx (&wincl))
-        return -1;
-    win2->first=NULL;
-    first = TRUE;
-    }
-    
-    clientaera.left = 0;
-    clientaera.top = 0;
-    clientaera.right = sx;
-    clientaera.bottom = sy;
-
-    AdjustWindowRectEx(&clientaera, style, TRUE, 0);
-    
-    // The class is registered, let's create the program
-    win2->hwnd = CreateWindowEx (
-           0,                   // Extended possibilites for variation
-           cname,         // Classname
-           title,       // Title Text
-           style, // default window
-           CW_USEDEFAULT,       // Windows decides the position
-           CW_USEDEFAULT,       // where the window ends up on the screen
-           clientaera.right - clientaera.left,                 // The programs width
-           clientaera.bottom - clientaera.top,                 // and height in pixels
-           HWND_DESKTOP,        // The window is a child-window to desktop
-           NULL,                // No menu
-           hInst,       // Program Instance handler
-           NULL                 // No Window Creation data
-           );
-           
-    win2->prev = NULL;
-    win2->next = NULL;
-    win2->Refresh = &CWindow_Refresh;
-
-    return 0;
+	hwnd = NULL;
+	hmenu = NULL;
+	hInstance = hInst;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, DLGPROC wP)
+WINCLASS::~WINCLASS()
 {
-	HMENU hSystemMenu;
-
-    cwindow_struct *win2=(cwindow_struct *)win;
-
-    win2->autoup = FALSE;
-    win2->hwnd = CreateDialog(hInst, MAKEINTRESOURCE(ID), parent, wP);
-    SetWindowLong(win2->hwnd, DWL_USER, (LONG)win2);
-    SetWindowText(win2->hwnd, title);
-    win2->prev = NULL;
-    win2->next = NULL;
-    win2->Refresh = &CWindow_Refresh;
-
-	// Append the "Auto Update" to the System Menu
-	hSystemMenu = GetSystemMenu(win2->hwnd, FALSE);
-	if(hSystemMenu != 0)
-	{
-		AppendMenu(hSystemMenu, MF_MENUBREAK, 0, NULL);
-		AppendMenu(hSystemMenu, MF_ENABLED|MF_STRING, IDC_AUTO_UPDATE, "Auto Update");
-	}
-
-    return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void CWindow_Show(void *win)
+bool WINCLASS::create(LPSTR caption, int x, int y, int width, int height, int style, HMENU menu)
 {
-    ShowWindow (((cwindow_struct *)win)->hwnd, SW_SHOW);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void CWindow_Hide(void *win)
-{
-    ShowWindow (((cwindow_struct *)win)->hwnd, SW_HIDE);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void CWindow_Refresh(void *win)
-{
-    InvalidateRect(((cwindow_struct *)win)->hwnd, NULL, FALSE);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void CWindow_UpdateAutoUpdateItem(cwindow_struct *win, int check)
-{
-	HMENU hSystemMenu;
+	if (hwnd != NULL) return false;
 	
-	// Update the "auto update" menu item
-	hSystemMenu = GetSystemMenu(win->hwnd, FALSE);
-	if(hSystemMenu != 0)
-	{
-		const int checkState[] =
-		{
-			MF_UNCHECKED,
-			MF_CHECKED
-		};
+	hwnd = CreateWindow(regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
+	
+	if (hwnd != NULL) return true;
+	return false;
+}
 
-		CheckMenuItem(hSystemMenu, IDC_AUTO_UPDATE, checkState[check]);
+bool WINCLASS::createEx(LPSTR caption, int x, int y, int width, int height, int style,  int styleEx, HMENU menu)
+{
+	if (hwnd != NULL) return false;
+
+	hwnd = CreateWindowEx(styleEx, regclass, caption, style, x, y, width, height, NULL, menu, hInstance, NULL);
+	
+	if (hwnd != NULL) return true;
+	return false;
+}
+
+bool WINCLASS::setMenu(HMENU menu)
+{
+	hmenu = menu;
+	return SetMenu(hwnd, hmenu);
+}
+
+DWORD WINCLASS::checkMenu(UINT idd, UINT check)
+{
+	return CheckMenuItem(hmenu, idd, check);
+}
+
+HWND WINCLASS::getHWnd()
+{
+	return hwnd;
+}
+
+void WINCLASS::Show(int mode)
+{
+	ShowWindow(hwnd, mode);
+}
+
+void WINCLASS::Hide()
+{
+	ShowWindow(hwnd, SW_HIDE);
+}
+
+//========================================================= Thread class
+extern DWORD WINAPI ThreadProc(LPVOID lpParameter)
+{
+	THREADCLASS *tmp = (THREADCLASS *)lpParameter;
+	return tmp->ThreadFunc();
+}
+
+THREADCLASS::THREADCLASS()
+{
+	hThread = NULL;
+}
+
+THREADCLASS::~THREADCLASS()
+{
+	closeThread();
+}
+
+void THREADCLASS::closeThread()
+{
+	if (hThread) 
+	{
+		CloseHandle(hThread);
+		hThread = NULL;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void CWindow_AddToRefreshList(void *win)
+bool THREADCLASS::createThread()
 {
-    cwindow_struct *win2=(cwindow_struct *)win;
+	if (hThread) return false;
 
-    EnterCriticalSection(&section);
-    win2->prev = NULL;
-    win2->next = updatewindowlist;
-    if(updatewindowlist)
-       updatewindowlist->prev = win;
-    updatewindowlist = (cwindow_struct *)win;
-    LeaveCriticalSection(&section);
-
-	CWindow_UpdateAutoUpdateItem((cwindow_struct*)win, TRUE);
+	hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ThreadProc, this, 0, &threadID);
+	if (!hThread) return false;
+	//WaitForSingleObject(hThread, INFINITE);
+	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void CWindow_RemoveFromRefreshList(void *win)
+//========================================================= Tools class
+TOOLSCLASS::TOOLSCLASS(HINSTANCE hInst, int IDD, DLGPROC dlgproc)
 {
-    cwindow_struct *win2=(cwindow_struct *)win;
-
-    EnterCriticalSection(&section);
-    if(updatewindowlist == win)
-    {
-       updatewindowlist = (cwindow_struct *)win2->next;
-       if(updatewindowlist) updatewindowlist->prev = NULL;
-    }
-    else
-    if(win2->prev)
-    {
-       ((cwindow_struct *)win2->prev)->next = win2->next;
-       if(win2->next) ((cwindow_struct *)win2->next)->prev = win2->prev;
-    }
-    win2->next = NULL;
-    win2->prev = NULL;
-    LeaveCriticalSection(&section);
-
-	CWindow_UpdateAutoUpdateItem((cwindow_struct*)win, FALSE);
+	this->dlgproc = dlgproc;
+	hwnd = NULL;
+	hInstance = hInst;
+	idd=IDD;
+	memset(class_name, 0, sizeof(class_name));
+	memset(class_name2, 0, sizeof(class_name2));
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-int CWindow_ToggleAutoUpdate(void *win)
+TOOLSCLASS::~TOOLSCLASS()
 {
-    cwindow_struct *win2=(cwindow_struct *)win;
-
-	// remove window from refresh list
-	if(win2->autoup)
-		CWindow_RemoveFromRefreshList(win);
-
-	// toggle autoup variable
-	win2->autoup = !win2->autoup;
-
-	// add window to refresg list if autoupdate is desired
-	if(win2->autoup)
-		CWindow_AddToRefreshList(win);
-
-	// checks or unchecks the auto update item in the system menu
-	CWindow_UpdateAutoUpdateItem((cwindow_struct*)win, win2->autoup);
-
-	return win2->autoup;
+	close();
 }
 
+bool TOOLSCLASS::open()
+{
+	if (!createThread()) return false;
+	return true;
+}
+
+bool TOOLSCLASS::close()
+{
+	return true;
+}
+
+DWORD TOOLSCLASS::ThreadFunc()
+{
+	MSG		messages;
+	printlog("Start thread\n");
+
+	GetLastError();
+	hwnd = CreateDialog(hInstance, MAKEINTRESOURCE(idd), NULL, (DLGPROC) dlgproc);
+
+	if (!hwnd) 
+	{
+		printlog("error creating dialog\n");
+		return (-2);
+	}
+
+	ShowWindow(hwnd, SW_SHOW);
+	UpdateWindow(hwnd);
+	
+	while (GetMessage (&messages, NULL, 0, 0))
+	{
+		TranslateMessage(&messages);
+		DispatchMessage(&messages);
+	}
+
+	unregClass();
+	hwnd = NULL;
+	
+	closeThread();
+	return 0;
+}
+
+void TOOLSCLASS::regClass(LPSTR class_name, WNDPROC wproc, bool SecondReg)
+{
+	WNDCLASSEX	wc;
+
+	wc.cbSize         = sizeof(wc);
+	if (SecondReg)
+		strcpy(this->class_name2, class_name);
+	else
+		strcpy(this->class_name, class_name);
+
+	wc.lpszClassName  = class_name;
+	wc.hInstance      = hInstance;
+	wc.lpfnWndProc    = wproc;
+	wc.hCursor        = LoadCursor (NULL, IDC_ARROW);
+	wc.hIcon          = 0;
+	wc.lpszMenuName   = 0;
+	wc.hbrBackground  = (HBRUSH)GetSysColorBrush(COLOR_BTNFACE);
+	wc.style          = 0;
+	wc.cbClsExtra     = 0;
+	wc.cbWndExtra     = 0;
+	wc.hIconSm        = 0;
+
+	RegisterClassEx(&wc);
+}
+
+void TOOLSCLASS::unregClass()
+{
+	if (class_name[0])
+	{
+		UnregisterClass(class_name, hInstance);
+	}
+	if (class_name2[0])
+	{
+		UnregisterClass(class_name2, hInstance);
+	}
+	memset(class_name, 0, sizeof(class_name));
+	memset(class_name2, 0, sizeof(class_name2));
+}

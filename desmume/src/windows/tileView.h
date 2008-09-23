@@ -22,29 +22,11 @@
 #ifndef TILEVIEW_H
 #define TILEVIEW_H
 
-#include "CWindow.h"
+#include <windows.h>
+#include <stdlib.h>
 
-typedef struct
-{
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-
-   u8 * mem;
-   u16 * pal;
-   s16 palnum;
-   u16 tilenum;
-   u8 coul;
-   u32 x;
-   u32 y;
-} tileview_struct;
-
-
-void InitTileViewBox();
-tileview_struct *TileView_Init(HINSTANCE hInst, HWND parent);
-void TileView_Deinit(tileview_struct *TileView);
+extern LRESULT CALLBACK TileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern LRESULT CALLBACK MiniTileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif

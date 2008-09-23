@@ -55,8 +55,8 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 DEBUG\&quot;;WIN32;BETA_VERSION;SPU_INTERPOLATE"
-				ExceptionHandling="0"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;DEBUG\&quot;;WIN32;BETA_VERSION;SPU_INTERPOLATE"
+				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				DebugInformationFormat="4"
@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib"
+				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -140,8 +140,8 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 x64 DEBUG\&quot;;WIN32;_x64;BETA_VERSION;SPU_INTERPOLATE"
-				ExceptionHandling="0"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 DEBUG\&quot;;WIN32;_x64;BETA_VERSION;SPU_INTERPOLATE"
+				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				DebugInformationFormat="3"
@@ -227,9 +227,9 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
 				StringPooling="true"
-				ExceptionHandling="0"
+				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="2"
 				FloatingPointModel="2"
@@ -249,13 +249,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				Profile="true"
+				Profile="false"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -315,8 +315,8 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 x64 SSE2\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
-				ExceptionHandling="0"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 SSE2\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
+				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				WarningLevel="1"
@@ -369,8 +369,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			WholeProgramOptimization="1"
@@ -405,7 +405,7 @@
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE"
 				StringPooling="true"
-				ExceptionHandling="0"
+				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="2"
 				FloatingPointModel="2"
@@ -425,7 +425,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -458,8 +458,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			>
@@ -491,8 +491,8 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 x64 SSE2\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
-				ExceptionHandling="0"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 SSE2\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
+				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				WarningLevel="1"
@@ -552,289 +552,305 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath=".\AboutBox.cpp"
+			<Filter
+				Name="core"
 				>
-			</File>
-			<File
-				RelativePath="..\arm_instructions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\armcpu.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\bios.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\cflash.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\colorctrl.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ConfigKeys.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\console.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\cp15.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CWindow.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\debug.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Disassembler.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\disView.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\FIFO.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\FirmConfig.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\fs-windows.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\gdbstub\gdbstub.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\gfx3d.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ginfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\GPU.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\GPU_OSD.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\IORegView.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\lightView.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\main.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\mapView.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\matrix.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\matrix_sse2-x64.asm"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
+				<File
+					RelativePath="..\arm_instructions.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\armcpu.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release (SSE2)|Win32"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\bios.cpp"
 					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Assembling..."
-						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-						Outputs="$(IntDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release (SSE2)|x64"
+				</File>
+				<File
+					RelativePath="..\cflash.cpp"
 					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Assembling..."
-						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-						Outputs="$(IntDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\common.cpp"
 					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Assembling..."
-						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-						Outputs="$(IntDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\cp15.cpp"
 					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Assembling..."
-						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-						Outputs="$(IntDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\matrix_sse2-x86.asm"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\debug.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\Disassembler.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release (SSE2)|x64"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\FIFO.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\gfx3d.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					ExcludedFromBuild="true"
+				</File>
+				<File
+					RelativePath="..\gl_vertex.cpp"
 					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\matrixView.cpp"
+				</File>
+				<File
+					RelativePath="..\GPU.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\GPU_OSD.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\matrix.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\matrix_sse2-x64.asm"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release (SSE2)|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Assembling..."
+							CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+							Outputs="$(IntDir)\$(InputName).obj"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release (SSE2)|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Assembling..."
+							CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+							Outputs="$(IntDir)\$(InputName).obj"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Assembling..."
+							CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+							Outputs="$(IntDir)\$(InputName).obj"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Assembling..."
+							CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+							Outputs="$(IntDir)\$(InputName).obj"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\matrix_sse2-x86.asm"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release (SSE2)|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|x64"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\mc.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\MMU.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\NDSSystem.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\OGLRender.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\readwrite.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\render3D.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\ROMReader.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\saves.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\SPU.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\thumb_instructions.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\wifi.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="windows"
 				>
-			</File>
-			<File
-				RelativePath="..\mc.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\memView.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\MMU.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\NDSSystem.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\oamView.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ogl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\OGLRender.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\palView.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\render3D.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\ROMReader.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\saves.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\snddx.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\SPU.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\throttle.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\thumb_instructions.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\tileView.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\wifi.cpp"
-				>
-			</File>
+				<File
+					RelativePath=".\AboutBox.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\colorctrl.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ConfigKeys.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\console.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\CWindow.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\disView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\FirmConfig.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\fs-windows.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ginfo.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\IORegView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\lightView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\main.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\mapView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\matrixView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\memView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\oamView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ogl.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\palView.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\snddx.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\throttle.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\tileView.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -842,225 +858,245 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\AboutBox.h"
+				RelativePath="..\font_eng.inc"
 				>
 			</File>
 			<File
-				RelativePath="..\ARM9.h"
+				RelativePath="..\instruction_tabdef.inc"
 				>
 			</File>
 			<File
-				RelativePath="..\arm_instructions.h"
+				RelativePath="..\thumb_tabdef.inc"
 				>
 			</File>
-			<File
-				RelativePath="..\armcpu.h"
+			<Filter
+				Name="windows"
 				>
-			</File>
-			<File
-				RelativePath="..\bios.h"
+				<File
+					RelativePath=".\AboutBox.h"
+					>
+				</File>
+				<File
+					RelativePath=".\colorconv.h"
+					>
+				</File>
+				<File
+					RelativePath=".\colorctrl.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ConfigKeys.h"
+					>
+				</File>
+				<File
+					RelativePath=".\console.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CWindow.h"
+					>
+				</File>
+				<File
+					RelativePath=".\disView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\FirmConfig.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ginfo.h"
+					>
+				</File>
+				<File
+					RelativePath=".\IORegView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lightView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\mapView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\matrixView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\memView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\oamView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\palView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource.h"
+					>
+				</File>
+				<File
+					RelativePath=".\snddx.h"
+					>
+				</File>
+				<File
+					RelativePath=".\throttle.h"
+					>
+				</File>
+				<File
+					RelativePath=".\tileView.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="core"
 				>
-			</File>
-			<File
-				RelativePath="..\bits.h"
-				>
-			</File>
-			<File
-				RelativePath="..\cflash.h"
-				>
-			</File>
-			<File
-				RelativePath=".\colorconv.h"
-				>
-			</File>
-			<File
-				RelativePath=".\colorctrl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\config.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ConfigKeys.h"
-				>
-			</File>
-			<File
-				RelativePath=".\console.h"
-				>
-			</File>
-			<File
-				RelativePath="..\cp15.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CWindow.h"
-				>
-			</File>
-			<File
-				RelativePath="..\debug.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Disassembler.h"
-				>
-			</File>
-			<File
-				RelativePath=".\disView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\dscard.h"
-				>
-			</File>
-			<File
-				RelativePath="..\fat.h"
-				>
-			</File>
-			<File
-				RelativePath="..\FIFO.h"
-				>
-			</File>
-			<File
-				RelativePath=".\FirmConfig.h"
-				>
-			</File>
-			<File
-				RelativePath="..\fs.h"
-				>
-			</File>
-			<File
-				RelativePath="..\gdbstub.h"
-				>
-			</File>
-			<File
-				RelativePath="..\gdbstub\gdbstub_internal.h"
-				>
-			</File>
-			<File
-				RelativePath="..\gfx3d.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ginfo.h"
-				>
-			</File>
-			<File
-				RelativePath="..\GPU.h"
-				>
-			</File>
-			<File
-				RelativePath="..\GPU_osd.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IORegView.h"
-				>
-			</File>
-			<File
-				RelativePath=".\lightView.h"
-				>
-			</File>
-			<File
-				RelativePath=".\mapView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\matrix.h"
-				>
-			</File>
-			<File
-				RelativePath=".\matrixView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\mc.h"
-				>
-			</File>
-			<File
-				RelativePath="..\mem.h"
-				>
-			</File>
-			<File
-				RelativePath=".\memView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\MMU.h"
-				>
-			</File>
-			<File
-				RelativePath="..\NDSSystem.h"
-				>
-			</File>
-			<File
-				RelativePath=".\oamView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\OGLRender.h"
-				>
-			</File>
-			<File
-				RelativePath=".\palView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\registers.h"
-				>
-			</File>
-			<File
-				RelativePath="..\render3D.h"
-				>
-			</File>
-			<File
-				RelativePath=".\resource.h"
-				>
-			</File>
-			<File
-				RelativePath=".\resrc1.h"
-				>
-			</File>
-			<File
-				RelativePath="..\ROMReader.h"
-				>
-			</File>
-			<File
-				RelativePath="..\saves.h"
-				>
-			</File>
-			<File
-				RelativePath=".\snddx.h"
-				>
-			</File>
-			<File
-				RelativePath="..\SPU.h"
-				>
-			</File>
-			<File
-				RelativePath=".\throttle.h"
-				>
-			</File>
-			<File
-				RelativePath="..\thumb_instructions.h"
-				>
-			</File>
-			<File
-				RelativePath=".\tileView.h"
-				>
-			</File>
-			<File
-				RelativePath="..\types.h"
-				>
-			</File>
-			<File
-				RelativePath="..\wifi.h"
-				>
-			</File>
-			<File
-				RelativePath=".\yopyop_private.h"
-				>
-			</File>
+				<File
+					RelativePath="..\ARM9.h"
+					>
+				</File>
+				<File
+					RelativePath="..\arm_instructions.h"
+					>
+				</File>
+				<File
+					RelativePath="..\armcpu.h"
+					>
+				</File>
+				<File
+					RelativePath="..\bios.h"
+					>
+				</File>
+				<File
+					RelativePath="..\bits.h"
+					>
+				</File>
+				<File
+					RelativePath="..\cflash.h"
+					>
+				</File>
+				<File
+					RelativePath="..\common.h"
+					>
+				</File>
+				<File
+					RelativePath="..\cp15.h"
+					>
+				</File>
+				<File
+					RelativePath="..\debug.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Disassembler.h"
+					>
+				</File>
+				<File
+					RelativePath="..\dscard.h"
+					>
+				</File>
+				<File
+					RelativePath="..\fat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\FIFO.h"
+					>
+				</File>
+				<File
+					RelativePath="..\fs.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gdbstub.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gfx3d.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gl_vertex.h"
+					>
+				</File>
+				<File
+					RelativePath="..\GPU.h"
+					>
+				</File>
+				<File
+					RelativePath="..\GPU_osd.h"
+					>
+				</File>
+				<File
+					RelativePath="..\matrix.h"
+					>
+				</File>
+				<File
+					RelativePath="..\mc.h"
+					>
+				</File>
+				<File
+					RelativePath="..\mem.h"
+					>
+				</File>
+				<File
+					RelativePath="..\memorystream.h"
+					>
+				</File>
+				<File
+					RelativePath="..\MMU.h"
+					>
+				</File>
+				<File
+					RelativePath="..\NDSSystem.h"
+					>
+				</File>
+				<File
+					RelativePath="..\OGLRender.h"
+					>
+				</File>
+				<File
+					RelativePath="..\readwrite.h"
+					>
+				</File>
+				<File
+					RelativePath="..\registers.h"
+					>
+				</File>
+				<File
+					RelativePath="..\render3D.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ROMReader.h"
+					>
+				</File>
+				<File
+					RelativePath="..\saves.h"
+					>
+				</File>
+				<File
+					RelativePath="..\SPU.h"
+					>
+				</File>
+				<File
+					RelativePath="..\thumb_instructions.h"
+					>
+				</File>
+				<File
+					RelativePath="..\types.h"
+					>
+				</File>
+				<File
+					RelativePath="..\wifi.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -1069,6 +1105,10 @@
 			>
 			<File
 				RelativePath=".\DeSmuME.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\NintendoDS(tm)_logo.bmp"
 				>
 			</File>
 			<File

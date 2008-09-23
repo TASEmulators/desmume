@@ -22,48 +22,69 @@
 #ifndef CWINDOW_H
 #define CWINDOW_H
 
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "types.h"
 
-#ifdef _x64
-	#define DWL_USER DWLP_USER
-#endif
-
-extern CRITICAL_SECTION section;
-
-typedef struct
+class WINCLASS
 {
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-} cwindow_struct;
+private:
+	HWND		hwnd;
+	HMENU		hmenu;
+	HINSTANCE	hInstance;
+	char		regclass[256];
+public:
+	WINCLASS(LPSTR rclass, HINSTANCE hInst);
+	~WINCLASS();
 
-int CWindow_Init(void *win, HINSTANCE hInst, const char * cname, const char * title, int style, int sx, int sy, WNDPROC wP);
-int CWindow_Init2(void *win, HINSTANCE hInst, HWND parent, char * title, int ID, DLGPROC wP);
-void CWindow_Show(void *win);
-void CWindow_Hide(void *win);
-void CWindow_Refresh(void *win);
-void CWindow_AddToRefreshList(void *win);
-void CWindow_RemoveFromRefreshList(void *win);
-int CWindow_ToggleAutoUpdate(void *win);
+	bool create(LPSTR caption, int x, int y, int width, int height, int style, 
+					HMENU menu);
+	bool createEx(LPSTR caption, int x, int y, int width, int height, int style, int styleEx,
+					HMENU menu);
 
-extern cwindow_struct *updatewindowlist;
+	bool setMenu(HMENU menu);
+	DWORD checkMenu(UINT idd, UINT check);
 
-static INLINE void CWindow_RefreshALL()
+	void Show(int mode);
+	void Hide();
+
+	HWND getHWnd();
+};
+
+class THREADCLASS
 {
-   cwindow_struct *aux;
-   EnterCriticalSection(&section);
-   aux = updatewindowlist;
-   while(aux)
-   {
-      aux->Refresh(aux);
-      aux = (cwindow_struct *)aux->next;
-   }
-   LeaveCriticalSection(&section);
-}
+	friend DWORD WINAPI ThreadProc(LPVOID lpParameter);
+	HANDLE	hThread;
+
+public:
+	THREADCLASS();
+	virtual ~THREADCLASS();
+	bool createThread();
+	void closeThread();
+
+protected:
+	DWORD		threadID;
+	virtual DWORD ThreadFunc()=NULL;
+};
+
+class TOOLSCLASS : public THREADCLASS
+{
+private:
+	HWND		hwnd;
+	HINSTANCE	hInstance;
+	DLGPROC		dlgproc;
+	int			idd;
+	char		class_name[256];
+	char		class_name2[256];
+
+protected:
+	DWORD	ThreadFunc();
+
+public:
+	TOOLSCLASS(HINSTANCE hInst, int IDD, DLGPROC wndproc);
+	virtual ~TOOLSCLASS();
+	bool open();
+	bool close();
+	void regClass(LPSTR class_name, WNDPROC wproc, bool SecondReg = false);
+	void unregClass();
+};
 
 #endif

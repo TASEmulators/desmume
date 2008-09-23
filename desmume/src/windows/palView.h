@@ -22,25 +22,9 @@
 #ifndef PALVIEW_H
 #define PALVIEW_H
 
-#include "CWindow.h"
+#include <windows.h>
+#include <stdlib.h>
 
-typedef struct
-{
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-
-   u16 *adr;
-   s16 palnum;
-} palview_struct;
-
-//BOOL CALLBACK palView_proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-palview_struct *PalView_Init(HINSTANCE hInst, HWND parent);
-void PalView_Deinit(palview_struct *PalView);
-
-#endif
+extern BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
  
+#endif

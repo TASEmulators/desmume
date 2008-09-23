@@ -3,8 +3,9 @@
 #include <gl/gl.h>
 #include <gl/glext.h>
 #include "console.h"
+#include "CWindow.h"
 
-extern HWND		hwnd;
+extern WINCLASS	*MainWindow;
 
 int CheckHardwareSupport(HDC hdc)
 {
@@ -32,7 +33,7 @@ bool windows_opengl_init()
 	int						res;
 	char					*opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
 
-	oglDC = GetDC (hwnd);
+	oglDC = GetDC (MainWindow->getHWnd());
 
 	memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR));
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);

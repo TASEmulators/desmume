@@ -22,28 +22,12 @@
 #ifndef DISVIEW_H
 #define DISVIEW_H
 
-#include "../NDSSystem.h"
-#include "../armcpu.h"
+#include <windows.h>
 
-#include "CWindow.h"
+extern BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-typedef struct
-{
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-
-   u32 curr_ligne;
-   armcpu_t *cpu;
-   u16 mode;
-} disview_struct;
-
-void InitDesViewBox();
-disview_struct *DisView_Init(HINSTANCE hInst, HWND parent, char *title, armcpu_t *CPU);
-void DisView_Deinit(disview_struct *DisView);
-void DisView_Refresh(disview_struct *DisView);
+extern BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern LRESULT CALLBACK ViewDisasm_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #endif

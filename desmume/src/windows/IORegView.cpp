@@ -19,13 +19,19 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <windows.h>
-#include "CWindow.h"
+#include "ioregview.h"
+#include <commctrl.h>
+#include "debug.h"
 #include "resource.h"
 #include "../MMU.h"
-#include <stdio.h>
 
-//////////////////////////////////////////////////////////////////////////////
+typedef struct
+{
+   u32	autoup_secs;
+   bool autoup;
+} ioregview_struct;
+
+ioregview_struct	*IORegView;
 
 LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
@@ -44,16 +50,16 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         sprintf(text, "%08X", (int)MMU.reg_IME[0]);
         SetWindowText(GetDlgItem(hwnd, IDC_IME), text);
 
-        sprintf(text, "%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]);//((u32 *)ARM9.ARM9_REG)[0x10>>2]);
+        sprintf(text, "%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]);
         SetWindowText(GetDlgItem(hwnd, IDC_DISPCNT), text);
 
-        sprintf(text, "%08X",  ((u16 *)MMU.ARM7_REG)[0x0004>>1]);//MMU.DMACycle[0][1]);//((u16 *)ARM9.ARM9_REG)[0x16>>1]);
+        sprintf(text, "%08X",  ((u16 *)MMU.ARM7_REG)[0x0004>>1]);
         SetWindowText(GetDlgItem(hwnd, IDC_DISPSTAT), text);
 
-        sprintf(text, "%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x180>>2]);//MMU.DMACycle[0][2]);//((u32 *)ARM9.ARM9_REG)[0x001C>>2]);//MMU.fifos[0].data[MMU.fifos[0].begin]);//((u32 *)MMU.ARM7_REG)[0x210>>2]);
+        sprintf(text, "%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x180>>2]);
         SetWindowText(GetDlgItem(hwnd, IDC_IPCSYNC), text);
 
-        sprintf(text, "%08X", (int)((u32 *)MMU.ARM7_REG)[0x180>>2]);//MMU.DMACycle[0][3]);//nds.ARM9.SPSR.bits.I);//((u32 *)MMU.ARM7_REG)[0x184>>2]);
+        sprintf(text, "%08X", (int)((u32 *)MMU.ARM7_REG)[0x180>>2]);
         SetWindowText(GetDlgItem(hwnd, IDC_IPCFIFO), text);
 
         EndPaint(hwnd, &ps);
@@ -61,37 +67,76 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
 BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-     cwindow_struct *win = (cwindow_struct *)GetWindowLong(hwnd, DWL_USER);
      switch (message)
      {
             case WM_INITDIALOG :
+				 IORegView = new ioregview_struct;
+				 memset(IORegView, 0, sizeof(ioregview_struct));
+				 IORegView->autoup_secs = 5;
+				 SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETRANGE, 0, MAKELONG(99, 1));
+				 SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETPOS32, 0, IORegView->autoup_secs);
                  return 1;
             case WM_CLOSE :
-                 CWindow_RemoveFromRefreshList(win);
-                 if (win)
-                    free(win);
-                 EndDialog(hwnd, 0);
+				if(IORegView->autoup)
+				{
+					KillTimer(hwnd, IDT_VIEW_IOREG);
+					IORegView->autoup = false;
+				}
+
+				if (IORegView!=NULL) 
+				{
+					delete IORegView;
+					IORegView = NULL;
+				}
+				 PostQuitMessage(0);
                  return 1;
             case WM_PAINT:
                  Ioreg_OnPaint(hwnd, wParam, lParam);
                  return 1;
+			case WM_TIMER:
+				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+				return 1;
             case WM_COMMAND :
                  switch (LOWORD (wParam))
                  {
                         case IDC_FERMER :
-                             CWindow_RemoveFromRefreshList(win);
-                             if (win)
-                                free(win);
-                             EndDialog(hwnd, 0);
+							 SendMessage(hwnd, WM_CLOSE, 0, 0);
                              return 1;
+						case IDC_AUTO_UPDATE :
+							 if(IORegView->autoup)
+                             {
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
+								 KillTimer(hwnd, IDT_VIEW_IOREG);
+                                  IORegView->autoup = FALSE;
+                                  return 1;
+                             }
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
+                             IORegView->autoup = TRUE;
+							 SetTimer(hwnd, IDT_VIEW_IOREG, IORegView->autoup_secs*1000, (TIMERPROC) NULL);
+							 return 1;
+						case IDC_AUTO_UPDATE_SECS:
+							{
+								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (t != IORegView->autoup_secs)
+								{
+									IORegView->autoup_secs = t;
+									if (IORegView->autoup)
+										SetTimer(hwnd, IDT_VIEW_IOREG, 
+												IORegView->autoup_secs*1000, (TIMERPROC) NULL);
+								}
+							}
+                             return 1;
+						case IDC_REFRESH:
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
                  }
                  return 0;
      }
-     return 0;    
+	 return DefWindowProc(hwnd, message, wParam, lParam);
 }
-
-//////////////////////////////////////////////////////////////////////////////

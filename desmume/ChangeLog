@@ -61,7 +61,8 @@
  ? Fix a bug in texture transformation mode 1 [zeromus]
  - Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
  - Fix resizing, rotate & aspect ration of main window. Add save window position and parameters [CrazyMax]
- 
+ - Rewrite all debug tools (autoupdate work now) [CrazyMax]
+
 0.7.3 -> 0.8
  Cocoa:
  - Save State As function now works. [Jeff B]

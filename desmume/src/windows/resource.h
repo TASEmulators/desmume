@@ -4,15 +4,21 @@
 //
 #define IDM_OPEN                        101
 #define IDM_QUIT                        102
+#define IDB_NINTENDO_DS_LOGO            102
 #define IDC_FERMER                      103
+#define IDD_DESASSEMBLEUR_VIEWER7       103
 #define IDC_STEP                        104
+#define IDD_MEM_VIEWER7                 104
 #define IDC_SETPNUM                     105
+#define IDD_CONFIG                      105
 #define IDC_SCROLLER                    106
+#define IDD_SOUNDSETTINGS               106
 #define IDC_GO                          107
 #define IDC_AUTO_UPDATE                 108
 #define IDM_MEMORY                      109
 #define IDM_DISASSEMBLER                110
 #define IDM_GAME_INFO                   111
+#define IDC_AUTO_UPDATE2                111
 #define IDM_EXEC                        112
 #define IDM_PAUSE                       113
 #define IDM_RESET                       114
@@ -74,7 +80,7 @@
 #define IDC_COMBO13                     172
 #define IDC_BUTTON1                     173
 #define IDM_CONFIG                      180
-#define IDD_CONFIG                      181
+#define IDD_INPUT                       181
 #define IDC_SAVETYPE1                   182
 #define IDC_SAVETYPE2                   183
 #define IDC_SAVETYPE3                   184
@@ -142,8 +148,6 @@
 #define IDC_DISPSTAT                    606
 #define IDC_IPCSYNC                     607
 #define IDC_IPCFIFO                     608
-#define IDD_LOG                         701
-#define IDC_LOG                         702
 #define IDD_PAL                         703
 #define IDD_TILE                        704
 #define IDC_PAL_SELECT                  705
@@ -175,21 +179,36 @@
 #define IDC_PROP1                       909
 #define IDC_OAM_BOX                     910
 #define IDC_SOUNDCORECB                 1000
+#define IDC_EDIT3                       1000
 #define IDC_SOUNDBUFFERET               1001
+#define IDC_EDIT4                       1001
 #define IDC_SLVOLUME                    1002
+#define IDC_EDIT5                       1002
 #define IDC_ROTATE0                     1003
+#define IDC_EDIT6                       1003
 #define IDC_ROTATE90                    1004
+#define IDC_EDIT7                       1004
 #define IDC_ROTATE180                   1005
+#define IDC_EDIT8                       1005
 #define IDC_ROTATE270                   1006
+#define IDC_EDIT9                       1006
+#define IDC_EDIT10                      1007
+#define IDC_EDIT11                      1008
 #define IDC_FORCERATIO                  1009
+#define IDC_EDIT12                      1009
 #define IDC_WINDOW1X                    1010
+#define IDC_EDIT13                      1010
+#define IDC_AUTO_UPDATE_SPIN            1010
 #define IDC_WINDOW2X                    1011
+#define IDC_AUTO_UPDATE_SECS            1011
 #define IDC_WINDOW3X                    1012
+#define IDC_REFRESH                     1012
 #define IDC_WINDOW4X                    1013
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
 #define IDC_EDIT2                       1103
+#define IDC_EDIT14                      1104
 #define IDD_MATRIX_VIEWER               1200
 #define IDM_MATRIX_VIEWER               1200
 #define IDC_MATRIX_VIEWER_COORD_GROUP   1201
@@ -268,7 +287,9 @@
 #define IDC_LIGHT_VIWER_LIGHT0_GROUP    1301
 #define IDC_AUTHORS_LIST                1302
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_COLORCTRL 1302
+#define IDD_DESASSEMBLEUR_VIEWER9       1302
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_EDIT 1303
+#define IDD_MEM_VIEWER9                 1303
 #define IDC_LIGHT_VIEWER_LIGHT0VECTOR_EDIT 1304
 #define IDC_LIGHT_VIWER_LIGHT1_GROUP    1311
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_COLORCTRL 1312
@@ -282,6 +303,17 @@
 #define IDC_LIGHT_VIEWER_LIGHT3COLOR_COLORCTRL 1332
 #define IDC_LIGHT_VIEWER_LIGHT3COLOR_EDIT 1333
 #define IDC_LIGHT_VIEWER_LIGHT3VECTOR_EDIT 1334
+#define IDT_VIEW_DISASM7                10001
+#define IDT_VIEW_DISASM9                10002
+#define IDT_VIEW_MEM7                   10003
+#define IDT_VIEW_MEM9                   10004
+#define IDT_VIEW_IOREG                  10005
+#define IDT_VIEW_PAL                    10006
+#define IDT_VIEW_TILE                   10007
+#define IDT_VIEW_MAP                    10008
+#define IDT_VIEW_OAM                    10009
+#define IDT_VIEW_MATRIX                 10010
+#define IDT_VIEW_LIGHTS                 10011
 #define IDM_ABOUT                       40003
 #define ACCEL_P                         40004
 #define ACCEL_SPACEBAR                  40005
@@ -290,14 +322,17 @@
 #define ID_VIS_DISPLAYFRAMECOUNTER      40008
 #define ID_VIEW_FRAMECOUNTER            40009
 #define ID_VIEW_DISPLAYFRAMECOUNTER40009 40009
+#define ID_VIEW_DISPLAYFPS              40010
+#define ID_VIS_DISPLAYFPS               40011
+#define ID_VIEW_DISPLAYFPS40012         40012
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        101
-#define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1000
-#define _APS_NEXT_SYMED_VALUE           101
+#define _APS_NEXT_RESOURCE_VALUE        107
+#define _APS_NEXT_COMMAND_VALUE         40013
+#define _APS_NEXT_CONTROL_VALUE         1013
+#define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

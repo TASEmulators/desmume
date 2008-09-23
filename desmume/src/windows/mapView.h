@@ -22,23 +22,8 @@
 #ifndef MAPVIEW_H
 #define MAPVIEW_H
 
-#include "CWindow.h"
+#include <windows.h>
 
-typedef struct
-{
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-
-   u16 map;
-   u16 lcd;
-   u16 bitmap[1024*1024];
-} mapview_struct;
-
-mapview_struct *MapView_Init(HINSTANCE hInst, HWND parent);
-void MapView_Deinit(mapview_struct *MapView);
+extern BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif

@@ -30,6 +30,7 @@ const char*  __stdcall DXGetErrorDescription8A(HRESULT hr);
 #endif
 #include "SPU.h"
 #include "snddx.h"
+#include "CWindow.h"
 
 int SNDDXInit(int buffersize);
 void SNDDXDeInit();
@@ -53,7 +54,8 @@ SNDDXSetVolume
 
 LPDIRECTSOUND8 lpDS8;
 LPDIRECTSOUNDBUFFER lpDSB, lpDSB2;
-extern HWND hwnd;
+
+extern WINCLASS	*MainWindow;
 
 static s16 *stereodata16;
 static u32 soundoffset=0;
@@ -77,7 +79,7 @@ int SNDDXInit(int buffersize)
       return -1;
    }
 
-   if ((ret = IDirectSound8_SetCooperativeLevel(lpDS8, hwnd, DSSCL_PRIORITY)) != DS_OK)
+   if ((ret = IDirectSound8_SetCooperativeLevel(lpDS8, MainWindow->getHWnd(), DSSCL_PRIORITY)) != DS_OK)
    {
       sprintf(tempstr, "IDirectSound8_SetCooperativeLevel error: %s - %s", DXGetErrorString8(ret), DXGetErrorDescription8(ret));
       MessageBox (NULL, tempstr, "Error",  MB_OK | MB_ICONINFORMATION);

@@ -19,14 +19,24 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "mapview.h"
-#include "resource.h"
+#include "mapView.h"
+#include <commctrl.h>
 #include "../MMU.h"
 #include "../NDSSystem.h"
+#include "debug.h"
+#include "resource.h"
 
-#include <stdio.h>
+typedef struct
+{
+   u32	autoup_secs;
+   bool autoup;
 
-//////////////////////////////////////////////////////////////////////////////
+   u16 map;
+   u16 lcd;
+   u16 bitmap[1024*1024];
+} mapview_struct;
+
+mapview_struct	*MapView = NULL;
 
 LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
@@ -205,15 +215,19 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-BOOL CALLBACK MapView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-     mapview_struct * win = (mapview_struct *)GetWindowLong(hwnd, DWL_USER);
-     switch (message)
+	switch (message)
      {
             case WM_INITDIALOG :
                  {
+						MapView = new mapview_struct;
+						memset(MapView, 0, sizeof(MapView));
+						MapView->autoup_secs = 5;
+						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETRANGE, 0, MAKELONG(99, 1));
+						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETPOS32, 0, MapView->autoup_secs);
                       HWND combo = GetDlgItem(hwnd, IDC_BG_SELECT);
                       SendMessage(combo, CB_ADDSTRING, 0,(LPARAM)"Main BackGround 0");
                       SendMessage(combo, CB_ADDSTRING, 0,(LPARAM)"Main BackGround 1");
@@ -227,21 +241,62 @@ BOOL CALLBACK MapView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                  }
                  return 1;
             case WM_CLOSE :
-                 CWindow_RemoveFromRefreshList(win);
-                 MapView_Deinit(win);
-                 EndDialog(hwnd, 0);
-                 return 1;
+			{
+				if(MapView->autoup)
+				{
+					KillTimer(hwnd, IDT_VIEW_MAP);
+					MapView->autoup = false;
+				}
+				if (MapView!=NULL) 
+				{
+					delete MapView;
+					MapView = NULL;
+				}
+				//printlog("Close Map view dialog\n");
+				PostQuitMessage(0);
+				return 0;
+			}
             case WM_PAINT:
-                 MapView_OnPaint(win, hwnd, wParam, lParam);
+                 MapView_OnPaint(MapView, hwnd, wParam, lParam);
                  return 1;
+			case WM_TIMER:
+				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+				return 1;
             case WM_COMMAND :
                  switch (LOWORD (wParam))
                  {
                         case IDC_FERMER :
-                             CWindow_RemoveFromRefreshList(win);
-                             MapView_Deinit(win);
-                             EndDialog(hwnd, 0);
+                             SendMessage(hwnd, WM_CLOSE, 0, 0);
                              return 1;
+						case IDC_AUTO_UPDATE :
+							 if(MapView->autoup)
+                             {
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
+								 KillTimer(hwnd, IDT_VIEW_MAP);
+                                  MapView->autoup = FALSE;
+                                  return 1;
+                             }
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
+                             MapView->autoup = TRUE;
+							 SetTimer(hwnd, IDT_VIEW_MAP, MapView->autoup_secs*1000, (TIMERPROC) NULL);
+							 return 1;
+						case IDC_AUTO_UPDATE_SECS:
+							{
+								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (t != MapView->autoup_secs)
+								{
+									MapView->autoup_secs = t;
+									if (MapView->autoup)
+										SetTimer(hwnd, IDT_VIEW_MAP, 
+												MapView->autoup_secs*1000, (TIMERPROC) NULL);
+								}
+							}
+                             return 1;
+						case IDC_REFRESH:
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
                         case IDC_BG_SELECT :
                              switch(HIWORD(wParam))
                              {
@@ -255,54 +310,23 @@ BOOL CALLBACK MapView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                                  case 1 :
                                                  case 2 :
                                                  case 3 :
-                                                      win->map = sel;
-                                                      win->lcd = 0;
+                                                      MapView->map = sel;
+                                                      MapView->lcd = 0;
                                                       break;
                                                  case 4 :
                                                  case 5 :
                                                  case 6 :
                                                  case 7 :
-                                                      win->map = sel-4;
-                                                      win->lcd = 1;
+                                                      MapView->map = sel-4;
+                                                      MapView->lcd = 1;
                                                       break;
                                             }
                                        }
-                             CWindow_Refresh(win);
+                             InvalidateRect(hwnd, NULL, FALSE);
                              return 1;
                              }//switch et case
                  }//switch
                  return 1;
      }
-     return 0;    
+	return DefWindowProc(hwnd, message, wParam, lParam);
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-mapview_struct *MapView_Init(HINSTANCE hInst, HWND parent)
-{
-   mapview_struct *MapView=NULL;
-
-   if ((MapView = (mapview_struct *)malloc(sizeof(mapview_struct))) == NULL)
-      return MapView;
-
-   if (CWindow_Init2(MapView, hInst, parent, "Map viewer", IDD_MAP, MapView_Proc) != 0)
-   {
-      free(MapView);
-      return NULL;
-   }
-
-   MapView->map = 0;
-   MapView->lcd = 0;
-
-   return MapView;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void MapView_Deinit(mapview_struct *MapView)
-{
-   if (MapView)
-      free(MapView);
-}
-
-//////////////////////////////////////////////////////////////////////////////

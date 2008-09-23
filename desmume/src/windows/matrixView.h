@@ -20,15 +20,8 @@
 #ifndef MATRIXVIEW_H
 #define MATRIXVIEW_H
 
-#include "CWindow.h"
+#include <windows.h>
 
-typedef struct
-{
-	cwindow_struct	window;
-} matrixview_struct;
-
-matrixview_struct *MatrixView_Init(HINSTANCE hInst, HWND parent);
-void MatrixView_Deinit(matrixview_struct *MatrixView);
+extern BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif
- 

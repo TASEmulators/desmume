@@ -19,16 +19,26 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <tchar.h>
-#include <stdio.h>
+#include "oamView.h"
+#include <commctrl.h>
+#include "debug.h"
 #include "resource.h"
 #include "../MMU.h"
-#include "oamView.h"
 #include "../GPU.h"
-
 #include "../NDSSystem.h"
 
-extern NDSSystem nds;
+typedef struct
+{
+	u32	autoup_secs;
+	bool autoup;
+
+	s16 num;
+	OAM *oam;
+	GPU *gpu;
+} oamview_struct;
+
+oamview_struct	*OAMView = NULL;
+//extern NDSSystem nds;
 
 const char dimm[4][4][8] = 
 {
@@ -38,35 +48,9 @@ const char dimm[4][4][8] =
      {"64 x 64", "64 x 32", "32 x 64", "- x -"},
 };
 
-//////////////////////////////////////////////////////////////////////////////
-
-LRESULT CALLBACK OAMViewBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-void InitOAMViewBox()
+LRESULT OAMViewBox_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
-     WNDCLASSEX wc;
-     
-     wc.cbSize         = sizeof(wc);
-     wc.lpszClassName  = _T("OAMViewBox");
-     wc.hInstance      = GetModuleHandle(0);
-     wc.lpfnWndProc    = OAMViewBoxWndProc;
-     wc.hCursor        = LoadCursor (NULL, IDC_ARROW);
-     wc.hIcon          = 0;
-     wc.lpszMenuName   = 0;
-     wc.hbrBackground  = (HBRUSH)GetSysColorBrush(COLOR_BTNFACE);
-     wc.style          = 0;
-     wc.cbClsExtra     = 0;
-     wc.cbWndExtra     = sizeof(cwindow_struct *);
-     wc.hIconSm        = 0;
-     
-     RegisterClassEx(&wc);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-LRESULT OAMViewBox_OnPaint(oamview_struct * win, WPARAM wParam, LPARAM lParam)
-{
-        HWND         hwnd = GetDlgItem(win->hwnd, IDC_OAM_BOX);
+        //HWND         hwnd = GetDlgItem(win->hwnd, IDC_OAM_BOX);
         HDC          hdc;
         PAINTSTRUCT  ps;
 //        TCHAR text[80];
@@ -98,34 +82,8 @@ LRESULT OAMViewBox_OnPaint(oamview_struct * win, WPARAM wParam, LPARAM lParam)
         return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-LRESULT CALLBACK OAMViewBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lParam)
 {
-//        oamView * win = (oamView *)GetWindowLong(hwnd, 0);
-        
-        switch(msg)
-        {
-                   case WM_NCCREATE:
-                        return 1;
-                   case WM_NCDESTROY:
-                        return 1;
-                   /*case WM_PAINT:
-                        OAMViewBox_OnPaint(win, wParam, lParam);
-                        return 1;*/
-                   case WM_ERASEBKGND:
-		                return 1;
-                   default:
-                           break;
-        }  
-        return DefWindowProc(hwnd, msg, wParam, lParam);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-LRESULT OamView_OnPaint(oamview_struct *win, WPARAM wParam, LPARAM lParam)
-{
-        HWND         hwnd = win->hwnd;
         HDC          hdc;
         PAINTSTRUCT  ps;
         OAM * oam = &win->oam[win->num];
@@ -227,15 +185,42 @@ LRESULT OamView_OnPaint(oamview_struct *win, WPARAM wParam, LPARAM lParam)
         return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-BOOL CALLBACK OamView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK ViewOAMBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-     oamview_struct *win = (oamview_struct *)GetWindowLong(hwnd, DWL_USER);
-     switch (message)
+	switch(msg)
+	{
+		   case WM_NCCREATE:
+				return 1;
+		   case WM_NCDESTROY:
+				return 1;
+		   case WM_PAINT:
+				OAMViewBox_OnPaint(hwnd, wParam, lParam);
+				return 1;
+		   case WM_ERASEBKGND:
+				return 1;
+		   default:
+				   break;
+	}  
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
      {
             case WM_INITDIALOG :
                  {
+						OAMView = new oamview_struct;
+						memset(OAMView, 0, sizeof(oamview_struct));
+						OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM);
+						OAMView->gpu = MainScreen.gpu;
+
+						OAMView->autoup_secs = 5;
+						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETRANGE, 0, MAKELONG(99, 1));
+						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETPOS32, 0, OAMView->autoup_secs);
+
                       HWND combo = GetDlgItem(hwnd, IDC_SCR_SELECT);
                       SendMessage(combo, CB_ADDSTRING, 0,(LPARAM)"Main screen sprite");
                       SendMessage(combo, CB_ADDSTRING, 0,(LPARAM)"Sub screen sprite");
@@ -243,37 +228,79 @@ BOOL CALLBACK OamView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                  }
                  return 1;
             case WM_CLOSE :
-                 CWindow_RemoveFromRefreshList(win);
-                 OamView_Deinit(win);
-                 EndDialog(hwnd, 0);
-                 return 1;
+			{
+				if(OAMView->autoup)
+				{
+					KillTimer(hwnd, IDT_VIEW_OAM);
+					OAMView->autoup = false;
+				}
+
+				if (OAMView!=NULL) 
+				{
+					delete OAMView;
+					OAMView = NULL;
+				}
+				//printlog("Close OAM viewer dialog\n");
+				PostQuitMessage(0);
+				return 0;
+			}
             case WM_PAINT:
-                 OamView_OnPaint(win, wParam, lParam);
+                 OamView_OnPaint(hwnd, OAMView, wParam, lParam);
                  return 1;
+			case WM_TIMER:
+				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+				return 1;
             case WM_HSCROLL :
                  switch LOWORD(wParam)
                  {
                       case SB_LINERIGHT :
-                           ++(win->num);
-                           if(win->num>127)
-                                win->num = 127;
+                           ++(OAMView->num);
+                           if(OAMView->num>127)
+                                OAMView->num = 127;
                            break;
                       case SB_LINELEFT :
-                           --(win->num);
-                           if(win->num<0)
-                                win->num = 0;
+                           --(OAMView->num);
+                           if(OAMView->num<0)
+                                OAMView->num = 0;
                            break;
                  }
-                 CWindow_Refresh(win);
+                 InvalidateRect(hwnd, NULL, FALSE);
                  return 1;
             case WM_COMMAND :
                  switch (LOWORD (wParam))
                  {
                         case IDC_FERMER :
-                             CWindow_RemoveFromRefreshList(win);
-                             OamView_Deinit(win);
-                             EndDialog(hwnd, 0);
+							SendMessage(hwnd, WM_CLOSE, 0, 0);
                              return 1;
+						case IDC_AUTO_UPDATE :
+							 if(OAMView->autoup)
+                             {
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
+								 KillTimer(hwnd, IDT_VIEW_OAM);
+                                  OAMView->autoup = FALSE;
+                                  return 1;
+                             }
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
+                             OAMView->autoup = TRUE;
+							 SetTimer(hwnd, IDT_VIEW_OAM, OAMView->autoup_secs*1000, (TIMERPROC) NULL);
+							 return 1;
+						case IDC_AUTO_UPDATE_SECS:
+							{
+								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (t != OAMView->autoup_secs)
+								{
+									OAMView->autoup_secs = t;
+									if (OAMView->autoup)
+										SetTimer(hwnd, IDT_VIEW_OAM, 
+												OAMView->autoup_secs*1000, (TIMERPROC) NULL);
+								}
+							}
+                             return 1;
+						case IDC_REFRESH:
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
                         case IDC_SCR_SELECT :
                              switch(HIWORD(wParam))
                              {
@@ -283,56 +310,23 @@ BOOL CALLBACK OamView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                             switch(sel)
                                             {
                                                  case 0 :
-                                                      win->oam = (OAM *)ARM9Mem.ARM9_OAM;
-                                                      win->num = 0;
-                                                      win->gpu = MainScreen.gpu;
+                                                      OAMView->oam = (OAM *)ARM9Mem.ARM9_OAM;
+                                                      OAMView->num = 0;
+                                                      OAMView->gpu = MainScreen.gpu;
                                                       break;
                                                  case 1 :
-                                                      win->oam = (OAM *)(ARM9Mem.ARM9_OAM+0x400);
-                                                      win->num = 0;
-                                                      win->gpu = SubScreen.gpu;
+                                                      OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM+0x400);
+                                                      OAMView->num = 0;
+                                                      OAMView->gpu = SubScreen.gpu;
                                                       break;
                                             }
                                        }
-                                       CWindow_Refresh(win);
+                                       InvalidateRect(hwnd, NULL, FALSE);
                                        return 1;
                             }
                              return 1;
                  }
                  return 0;
      }
-     return 0;    
+	return DefWindowProc(hwnd, message, wParam, lParam);
 }
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-oamview_struct *OamView_Init(HINSTANCE hInst, HWND parent)
-{
-   oamview_struct *OamView=NULL;
-
-   if ((OamView = (oamview_struct *)malloc(sizeof(oamview_struct))) == NULL)
-      return OamView;
-
-   if (CWindow_Init2(OamView, hInst, parent, "OAM Viewer", IDD_OAM, OamView_Proc) != 0)
-   {
-      free(OamView);
-      return NULL;
-   }
-
-   OamView->oam = (OAM *)(ARM9Mem.ARM9_OAM);
-   OamView->num = 0;
-   OamView->gpu = MainScreen.gpu;
-
-   return OamView;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void OamView_Deinit(oamview_struct *OamView)
-{
-   if (OamView)
-      free(OamView);
-}
-
-//////////////////////////////////////////////////////////////////////////////
