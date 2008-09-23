@@ -31,7 +31,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="0"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;DEBUG (Intel)\&quot;;WIN32;BETA_VERSION;SPU_INTERPOLATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;DEBUG (Intel)\&quot;;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
 				ExceptionHandling="1"
 				BufferSecurityCheck="0"
 				EnableEnhancedInstructionSet="0"
@@ -40,7 +40,7 @@
 				CompileAs="0"/>
 			<Tool 
 				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_Intel_debug.exe"
+				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib"
 				GenerateDebugInformation="1"
@@ -86,7 +86,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="0"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 DEBUG (Intel)\&quot;;WIN32;_x64;BETA_VERSION;SPU_INTERPOLATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 DEBUG (Intel)\&quot;;WIN32;_x64;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
 				ExceptionHandling="1"
 				BufferSecurityCheck="0"
 				EnableEnhancedInstructionSet="0"
@@ -159,7 +159,7 @@
 				Parallelization="1"/>
 			<Tool 
 				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_Intel_sse2.exe"
+				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				GenerateDebugInformation="1"
@@ -206,7 +206,7 @@
 				FavorSizeOrSpeed="1"
 				EnableFiberSafeOptimizations="1"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 SSE2 (Intel)\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 SSE2 (Intel)\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
 				ExceptionHandling="1"
 				BufferSecurityCheck="0"
 				EnableEnhancedInstructionSet="0"
@@ -281,7 +281,7 @@
 				Parallelization="1"/>
 			<Tool 
 				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_Intel.exe"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				GenerateDebugInformation="1"
@@ -328,7 +328,7 @@
 				FavorSizeOrSpeed="1"
 				EnableFiberSafeOptimizations="1"
 				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 SSE2 (Intel)\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;x64 SSE2 (Intel)\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
 				ExceptionHandling="1"
 				BufferSecurityCheck="0"
 				EnableEnhancedInstructionSet="0"
@@ -338,7 +338,7 @@
 				CompileAs="0"/>
 			<Tool 
 				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_x64_sse2.exe"
+				OutputFile="$(OutDir)\$(ProjectName)_x64.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib"
 				GenerateDebugInformation="1"
