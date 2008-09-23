@@ -20,15 +20,8 @@
 #ifndef LIGHTVIEW_H
 #define LIGHTVIEW_H
 
-#include "CWindow.h"
+#include <windows.h>
 
-typedef struct
-{
-	cwindow_struct	window;
-} lightview_struct;
-
-lightview_struct *LightView_Init(HINSTANCE hInst, HWND parent);
-void LightView_Deinit(lightview_struct *view);
-
-#endif
+extern BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
  
+#endif

@@ -19,13 +19,22 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <windows.h>
-#include "resource.h"
 #include "palView.h"
+#include <commctrl.h>
+#include "debug.h"
+#include "resource.h"
 #include "../MMU.h"
-#include <stdio.h>
 
-//////////////////////////////////////////////////////////////////////////////
+typedef struct
+{
+	u32	autoup_secs;
+	bool autoup;
+
+	u16 *adr;
+	s16 palnum;
+} palview_struct;
+
+palview_struct	*PalView = NULL;
 
 LRESULT PalView_OnPaint(const u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
@@ -74,17 +83,21 @@ LRESULT PalView_OnPaint(const u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPAR
         return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-     //ATTENTION null Ela creation donc la boite ne doit pas être visible a la création
-     palview_struct *win = (palview_struct *)GetWindowLong(hwnd, DWL_USER);
-
-     switch (message)
+	switch (message)
      {
             case WM_INITDIALOG :
                  {
+					PalView = new palview_struct;
+					memset(PalView, 0, sizeof(palview_struct));
+					PalView->adr = (u16 *)ARM9Mem.ARM9_VMEM;
+					PalView->autoup_secs = 5;
+					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETRANGE, 0, MAKELONG(99, 1));
+					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETPOS32, 0, PalView->autoup_secs);
+
                       HWND combo = GetDlgItem(hwnd, IDC_PAL_SELECT);
                       SendMessage(combo, CB_ADDSTRING, 0,(LPARAM)"Main screen BG PAL");
                       SendMessage(combo, CB_ADDSTRING, 0,(LPARAM)"Sub screen BG PAL");
@@ -112,47 +125,79 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                  }
                  return 1;
             case WM_CLOSE :
-                 CWindow_RemoveFromRefreshList(win);
-                 PalView_Deinit(win);
-                 EndDialog(hwnd, 0);
-                 return 1;
+			{
+				if(PalView->autoup)
+				{
+					KillTimer(hwnd, IDT_VIEW_DISASM7);
+					PalView->autoup = false;
+				}
+
+				if (PalView!=NULL) 
+				{
+					delete PalView;
+					PalView = NULL;
+				}
+				//printlog("Close Palette view dialog\n");
+				PostQuitMessage(0);
+				return 0;
+			}
             case WM_PAINT:
-                 PalView_OnPaint(win->adr, win->palnum, hwnd, wParam, lParam);
+                 PalView_OnPaint(PalView->adr, PalView->palnum, hwnd, wParam, lParam);
                  return 1;
+			case WM_TIMER:
+				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+				return 1;
             case WM_HSCROLL :
                  switch LOWORD(wParam)
                  {
                       case SB_LINERIGHT :
-                           ++(win->palnum);
-                           if(win->palnum>15)
-                                win->palnum = 15;
+                           ++(PalView->palnum);
+                           if(PalView->palnum>15)
+                                PalView->palnum = 15;
                            break;
                       case SB_LINELEFT :
-                           --(win->palnum);
-                           if(win->palnum<0)
-                                win->palnum = 0;
+                           --(PalView->palnum);
+                           if(PalView->palnum<0)
+                                PalView->palnum = 0;
                            break;
                  }
-                 CWindow_Refresh(win);
+				 InvalidateRect(hwnd, NULL, FALSE);
                  return 1;
             case WM_COMMAND :
                  switch (LOWORD (wParam))
                  {
                         case IDC_FERMER :
-                             CWindow_RemoveFromRefreshList(win);
-                             PalView_Deinit(win);
-                             EndDialog(hwnd, 0);
+							 SendMessage(hwnd, WM_CLOSE, 0, 0);
                              return 1;
                         case IDC_AUTO_UPDATE :
-                             if(win->autoup)
+							 if(PalView->autoup)
                              {
-                                  CWindow_RemoveFromRefreshList(win);
-                                  win->autoup = FALSE;
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
+								 KillTimer(hwnd, IDT_VIEW_PAL);
+                                  PalView->autoup = FALSE;
                                   return 1;
                              }
-                             CWindow_AddToRefreshList(win);
-                             win->autoup = TRUE;
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
+                             PalView->autoup = TRUE;
+							 SetTimer(hwnd, IDT_VIEW_PAL, PalView->autoup_secs*1000, (TIMERPROC) NULL);
+							 return 1;
+						case IDC_AUTO_UPDATE_SECS:
+							{
+								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (t != PalView->autoup_secs)
+								{
+									PalView->autoup_secs = t;
+									if (PalView->autoup)
+										SetTimer(hwnd, IDT_VIEW_PAL, 
+												PalView->autoup_secs*1000, (TIMERPROC) NULL);
+								}
+							}
                              return 1;
+						case IDC_REFRESH:
+							InvalidateRect(hwnd, NULL, FALSE);
+							return 1;
                         case IDC_PAL_SELECT :
                              switch(HIWORD(wParam))
                              {
@@ -163,26 +208,26 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                             switch(sel)
                                             {
                                                  case 0 :
-                                                      win->adr = (u16 *)ARM9Mem.ARM9_VMEM;
-                                                      win->palnum = 0;
+                                                      PalView->adr = (u16 *)ARM9Mem.ARM9_VMEM;
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_HIDE);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), FALSE);
                                                       break;
                                                  case 1 :
-                                                      win->adr = ((u16 *)ARM9Mem.ARM9_VMEM) + 0x200;
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)ARM9Mem.ARM9_VMEM) + 0x200;
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_HIDE);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), FALSE);
                                                       break;
                                                  case 2 :
-                                                      win->adr = (u16 *)ARM9Mem.ARM9_VMEM + 0x100;
-                                                      win->palnum = 0;
+                                                      PalView->adr = (u16 *)ARM9Mem.ARM9_VMEM + 0x100;
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_HIDE);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), FALSE);
                                                       break;
                                                  case 3 :
-                                                      win->adr = ((u16 *)ARM9Mem.ARM9_VMEM) + 0x300;
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)ARM9Mem.ARM9_VMEM) + 0x300;
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_HIDE);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), FALSE);
                                                       break;
@@ -190,8 +235,8 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                                  case 5 :
                                                  case 6 :
                                                  case 7 :
-                                                      win->adr = ((u16 *)(ARM9Mem.ExtPal[0][sel-4]));
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)(ARM9Mem.ExtPal[0][sel-4]));
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), TRUE);
                                                       break;
@@ -199,22 +244,22 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                                  case 9 :
                                                  case 10 :
                                                  case 11 :
-                                                      win->adr = ((u16 *)(ARM9Mem.ExtPal[1][sel-8]));
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)(ARM9Mem.ExtPal[1][sel-8]));
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), TRUE);
                                                       break;
                                                  case 12 :
                                                  case 13 :
-                                                      win->adr = ((u16 *)(ARM9Mem.ObjExtPal[0][sel-12]));
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)(ARM9Mem.ObjExtPal[0][sel-12]));
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), TRUE);
                                                       break;
                                                  case 14 :
                                                  case 15 :
-                                                      win->adr = ((u16 *)(ARM9Mem.ObjExtPal[1][sel-14]));
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)(ARM9Mem.ObjExtPal[1][sel-14]));
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), TRUE);
                                                       break;
@@ -222,15 +267,15 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                                                  case 17 :
                                                  case 18 :
                                                  case 19 :
-                                                      win->adr = ((u16 *)(ARM9Mem.texPalSlot[sel-16]));
-                                                      win->palnum = 0;
+                                                      PalView->adr = ((u16 *)(ARM9Mem.texPalSlot[sel-16]));
+                                                      PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), TRUE);
                                                       break;
                                                  default :
                                                          return 1;
                                             }
-                                            CWindow_Refresh(win);
+                                            InvalidateRect(hwnd, NULL, FALSE);
                                             return 1;
                                        }
                              }
@@ -238,36 +283,5 @@ BOOL CALLBACK PalView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                  }
                  return 0;
      }
-     return 0;    
+	return DefWindowProc(hwnd, message, wParam, lParam);
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-palview_struct *PalView_Init(HINSTANCE hInst, HWND parent)
-{
-   palview_struct *PalView=NULL;
-
-   if ((PalView = (palview_struct *)malloc(sizeof(palview_struct))) == NULL)
-      return PalView;
-
-   if (CWindow_Init2(PalView, hInst, parent, "Palette viewer", IDD_PAL, PalView_Proc) != 0)
-   {
-      free(PalView);
-      return NULL;
-   }
-
-   PalView->palnum = 0;
-   PalView->adr = (u16 *)ARM9Mem.ARM9_VMEM;
-
-   return PalView;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void PalView_Deinit(palview_struct *PalView)
-{
-   if (PalView)
-      free(PalView);
-}
-
-//////////////////////////////////////////////////////////////////////////////

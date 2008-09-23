@@ -24,6 +24,8 @@
 #define DIRECTINPUT_VERSION 0x0800
 #include "directx/dinput.h"
 
+#include "common.h"
+
 extern const DWORD tabkey[48];
 extern DWORD ds_up;
 extern DWORD ds_down;
@@ -44,13 +46,13 @@ extern LPDIRECTINPUT8		g_pDI;
 extern LPDIRECTINPUTDEVICE8	g_pKeyboard;
 extern LPDIRECTINPUTDEVICE8	g_pJoystick;
 
-void GetINIPath(char *initpath,u16 bufferSize);
 void  ReadConfig		(void);
 HRESULT Input_Init		(HWND hwnd);
 HRESULT Input_DeInit	(void);
 void Input_Process		(void);
 
-BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
+//BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
+void InputConfig(HWND hwnd);
 void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
 
 #endif

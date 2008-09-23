@@ -58,6 +58,8 @@
 #include "console.h"
 #include "throttle.h"
 
+#include "../common.h"
+
 #include "snddx.h"
 
 #include "directx/ddraw.h"
@@ -88,10 +90,26 @@ int romnum = 0;
 
 DWORD threadID;
 
-HWND hwnd;
-HDC  hdc;
-HINSTANCE hAppInst;  
+WINCLASS	*MainWindow=NULL;
+
+//HWND hwnd;
+//HDC  hdc;
+HINSTANCE hAppInst;
 RECT	MainWindowRect;
+
+//=========================== view tools
+TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
+TOOLSCLASS	*ViewDisasm_ARM9 = NULL;
+TOOLSCLASS	*ViewMem_ARM7 = NULL;
+TOOLSCLASS	*ViewMem_ARM9 = NULL;
+TOOLSCLASS	*ViewRegisters = NULL;
+TOOLSCLASS	*ViewPalette = NULL;
+TOOLSCLASS	*ViewTiles = NULL;
+TOOLSCLASS	*ViewMaps = NULL;
+TOOLSCLASS	*ViewOAM = NULL;
+TOOLSCLASS	*ViewMatrices = NULL;
+TOOLSCLASS	*ViewLights = NULL;
+
 
 volatile BOOL execute = FALSE;
 volatile BOOL paused = TRUE;
@@ -102,7 +120,7 @@ BOOL click = FALSE;
 BOOL finished = FALSE;
 BOOL romloaded = FALSE;
 
-void SetRotate(int rot);
+void SetRotate(HWND hwnd, int rot);
 
 BOOL ForceRatio = TRUE;
 float DefaultWidth;
@@ -120,7 +138,7 @@ const DWORD DI_tabkey[48] = {DIK_0,DIK_1,DIK_2,DIK_3,DIK_4,DIK_5,DIK_6,DIK_7,DIK
 							DIK_DOWN,DIK_LEFT,DIK_RIGHT,DIK_TAB,DIK_LSHIFT,DIK_DELETE,DIK_INSERT,DIK_HOME,
 							DIK_END,DIK_RETURN};
 DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_start,ds_debug;
-static char IniName[MAX_PATH];
+//static char IniName[MAX_PATH];
 int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
 int sndvolume=100;
@@ -145,6 +163,7 @@ static u32 backupmemorysize=1;
 unsigned int frameCounter=0;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
+bool FpsDisplay = false;
 unsigned short windowSize = 0;
 
 /* the firmware settings */
@@ -462,7 +481,7 @@ void Input_Post()
 					{ds_r,0xFEFF,0x100},{ds_l,0xFDFF,0x200},
 					{ds_x,0xFFFE,0x01},{ds_y,0xFFFD,0x02},{ds_debug,0xFFFB,0x04}};
 	int i;
-	
+
 	for (i=0; i<10; i++)
 	{
 		bPressed=FALSE;
@@ -528,7 +547,7 @@ int CreateDDrawBuffers()
 
 	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
 
-	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, hwnd) != DD_OK) return -4;
+	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
 	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
 
 	return 1;
@@ -654,6 +673,7 @@ DWORD WINAPI run( LPVOID lpParameter)
      int fpsframecount=0;
      u64 fpsticks=0;
 	 int	res;
+	 HWND	hwnd = MainWindow->getHWnd();
 
 	 DDCAPS	hw_caps, sw_caps;
 
@@ -723,7 +743,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 					 load = std::min(100,std::max(0,(int)(load*100/1120380)));
 					 sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
 					 SetWindowText(hwnd, txt);
-					 osd->addFixed(10, 10, "%02d Fps", fps);
+					 if (FpsDisplay) osd->addFixed(10, 10, "%02d Fps", fps);
 				  }
 
                   framesskipped = 0;
@@ -892,9 +912,9 @@ void CheckLanguage(UINT id)
 {
    int i;
    for (i = IDC_LANGENGLISH; i < IDC_LANGFRENCH+1; i++)
-      CheckMenuItem(menu, i, MF_BYCOMMAND | MF_UNCHECKED);
+      MainWindow->checkMenu(i, MF_BYCOMMAND | MF_UNCHECKED);
 
-   CheckMenuItem(menu, id, MF_BYCOMMAND | MF_CHECKED);
+   MainWindow->checkMenu(id, MF_BYCOMMAND | MF_CHECKED);
 }
 
 void ChangeLanguage(int id)
@@ -903,15 +923,30 @@ void ChangeLanguage(int id)
 
    SetLanguage(id);
    newmenu = LoadMenu(hAppInst, "MENU_PRINCIPAL");
-   SetMenu(hwnd, newmenu);
+   SetMenu(MainWindow->getHWnd(), newmenu);
    DestroyMenu(menu);
    menu = newmenu;   
 }
 
-void InitCustomControls()
+int RegClass(WNDPROC Proc, LPCTSTR szName)
 {
-	ColorCtrl_Register();
+	WNDCLASS	wc;
+
+	wc.style = CS_DBLCLKS;
+	wc.cbClsExtra = wc.cbWndExtra=0;
+	wc.lpfnWndProc=Proc;
+	wc.hInstance=hAppInst;
+	wc.hIcon=LoadIcon(hAppInst,MAKEINTRESOURCE(IDI_APPLICATION));
+	//wc.hIconSm=LoadIcon(hAppInst,MAKEINTRESOURCE(IDI_APPLICATION));
+	wc.hCursor=LoadCursor(NULL,IDC_ARROW);
+	wc.hbrBackground=(HBRUSH)(COLOR_BACKGROUND);
+	wc.lpszMenuName=(LPCTSTR)NULL;
+	wc.lpszClassName=szName;
+	wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+	return RegisterClass(&wc);
 }
+
 
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
@@ -935,34 +970,47 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	MSG messages;            /* Here messages to the application are saved */
     char text[80];
-    cwindow_struct MainWindow;
     HACCEL hAccel;
     hAppInst=hThisInstance;
-
-	InitCustomControls();
-
-	OpenConsole();			// Init debug console
-
-	/* default the firmware settings, they may get changed later */
-	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
-
-    InitializeCriticalSection(&section);
-
-    GetINIPath(IniName, MAX_PATH);
-    GetPrivateProfileString("General", "Language", "-1", text, 80, IniName);
-    SetLanguage(atoi(text));
-
-	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
-	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
-	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
-
-    sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 
 	init_configured_features( &my_config);
 	if ( !fill_configured_features( &my_config, lpszArgument)) {
         MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
         return 0;
 	}
+	ColorCtrl_Register();
+
+	OpenConsole();			// Init debug console
+
+	if (!RegClass(WindowProcedure, "DeSmuME"))
+	{
+		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
+		exit(-1);
+	}
+	
+	GetINIPath();
+	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
+	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
+	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
+	FpsDisplay = GetPrivateProfileInt("Video","Display Fps", 0, IniName);
+
+	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
+	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
+	if (!MainWindow->create(TITLE, CW_USEDEFAULT, CW_USEDEFAULT, 256, 384, 
+			WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+				NULL))
+	{
+		MessageBox(NULL, "Error creating main window", "DeSmuME", MB_OK);
+		delete MainWindow;
+		exit(-1);
+	}
+
+	/* default the firmware settings, they may get changed later */
+	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
+
+    GetPrivateProfileString("General", "Language", "-1", text, 80, IniName);
+    SetLanguage(atoi(text));
+
 	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
@@ -971,44 +1019,46 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     LogStart();
 #endif
 
-    if (CWindow_Init(&MainWindow, hThisInstance, szClassName, text,
-                     WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-                     256, 384, WindowProcedure) != 0)
-    {
-        MessageBox(NULL,"Unable to create main window","Error",MB_OK);
-        return 0;
-    }
-
-    hwnd = MainWindow.hwnd;
-    menu = LoadMenu(hThisInstance, "MENU_PRINCIPAL");
-    SetMenu(hwnd, menu);
+	if (!MainWindow->setMenu(LoadMenu(hThisInstance, "MENU_PRINCIPAL")))
+	{
+		MessageBox(NULL, "Error creating main menu", "DeSmuME", MB_OK);
+		delete MainWindow;
+		exit(-1);
+	}
 
 	// menu checks
-	CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
 
-	CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
 
-	CheckMenuItem(menu, IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 
-	Input_Init(hwnd);
+	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 
-    hdc = GetDC(hwnd);
-    DragAcceptFiles(hwnd, TRUE);
-    
-    /* Make the window visible on the screen */
-    CWindow_Show(&MainWindow);
+    DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
-    InitMemViewBox();
-    InitDesViewBox();
-    InitTileViewBox();
-    InitOAMViewBox();
-    printlog("Init NDS\n");
+	printlog("Init NDS\n");
+
+	Input_Init(MainWindow->getHWnd());
+
+	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
+	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
+	ViewMem_ARM7 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
+	ViewMem_ARM9 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER9, (DLGPROC) ViewMem_ARM9Proc);
+	ViewRegisters = new TOOLSCLASS(hThisInstance, IDD_IO_REG, (DLGPROC) IoregView_Proc);
+	ViewPalette = new TOOLSCLASS(hThisInstance, IDD_PAL, (DLGPROC) ViewPalProc);
+	ViewTiles = new TOOLSCLASS(hThisInstance, IDD_TILE, (DLGPROC) ViewTilesProc);
+	ViewMaps = new TOOLSCLASS(hThisInstance, IDD_MAP, (DLGPROC) ViewMapsProc);
+	ViewOAM = new TOOLSCLASS(hThisInstance, IDD_OAM, (DLGPROC) ViewOAMProc);
+	ViewMatrices = new TOOLSCLASS(hThisInstance, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
+	ViewLights = new TOOLSCLASS(hThisInstance, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
+   
 #ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
@@ -1048,7 +1098,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
 	}
 #endif
-    GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
+    GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	//================================================== ???
     CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
     GetPrivateProfileString("Video", "FrameSkip", "AUTO", text, 80, IniName);
@@ -1057,13 +1107,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     {
        autoframeskipenab=1;
        frameskiprate=0;
-       CheckMenuItem(menu, IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_CHECKED);
+       MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_CHECKED);
     }
     else
     {
        autoframeskipenab=0;
        frameskiprate=atoi(text);
-       CheckMenuItem(menu, frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
+       MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
     }
 
 #ifdef BETA_VERSION
@@ -1075,7 +1125,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     if (SPU_ChangeSoundCore(sndcoretype, sndbuffersize) != 0)
     {
-       MessageBox(hwnd,"Unable to initialize DirectSound","Error",MB_OK);
+       MessageBox(MainWindow->getHWnd(),"Unable to initialize DirectSound","Error",MB_OK);
        return -1;
     }
 
@@ -1122,7 +1172,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	//wait for the run thread to signal that it is initialized and ready to run
 	WaitForSingleObject(runthread_ready,INFINITE);
-	
 
     // Make sure any quotes from lpszArgument are removed
     if (lpszArgument[0] == '\"')
@@ -1147,16 +1196,18 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
     }
 
-    CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
-    CheckMenuItem(menu, IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
-    CheckMenuItem(menu, IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED);
-    CheckMenuItem(menu, IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
-    CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
-    CheckMenuItem(menu, IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+    MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
+    MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
+    MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED);
+    MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
+    MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
+    MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+
+	MainWindow->Show(SW_NORMAL);
 
     while (GetMessage (&messages, NULL, 0, 0))
     {
-       if (TranslateAccelerator(hwnd, hAccel, &messages) == 0)
+       if (TranslateAccelerator(MainWindow->getHWnd(), hAccel, &messages) == 0)
        {
           // Translate virtual-key messages into character messages
           TranslateMessage(&messages);
@@ -1174,6 +1225,20 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef DEBUG
     LogStop();
 #endif
+	if (ViewLights!=NULL) delete ViewLights;
+	if (ViewMatrices!=NULL) delete ViewMatrices;
+	if (ViewOAM!=NULL) delete ViewOAM;
+	if (ViewMaps!=NULL) delete ViewMaps;
+	if (ViewTiles!=NULL) delete ViewTiles;
+	if (ViewPalette!=NULL) delete ViewPalette;
+	if (ViewRegisters!=NULL) delete ViewRegisters;
+	if (ViewMem_ARM9!=NULL) delete ViewMem_ARM9;
+	if (ViewMem_ARM7!=NULL) delete ViewMem_ARM7;
+	if (ViewDisasm_ARM9!=NULL) delete ViewDisasm_ARM9;
+	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
+
+	delete MainWindow;
+	
 	CloseConsole();
     /* The program return-value is 0 - The value that PostQuitMessage() gave */
     return messages.wParam;
@@ -1198,7 +1263,7 @@ void GetWndRect(HWND hwnd)
 }
 
 //========================================================================================
-void SetRotate(int rot)
+void SetRotate(HWND hwnd, int rot)
 {
 	GPU_rotation = rot;
 
@@ -1237,10 +1302,10 @@ void SetRotate(int rot)
 	}
   
 	SetWindowClientSize(hwnd, GPU_width, GPU_height);
-	CheckMenuItem(menu, IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
-	CheckMenuItem(menu, IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
 }
 //========================================================================================
@@ -1434,9 +1499,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					  ReleaseCapture();
 				NDS_releasTouch();
              return 0;
+
 		case WM_COMMAND:
              switch(LOWORD(wParam))
              {
+				case IDM_QUIT:
+					PostMessage(hwnd, WM_QUIT, 0, 0);
+					return 0;
                   case IDM_OPEN:
                        {
 							int filterSize = 0, i = 0;
@@ -1647,7 +1716,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   }
                   case IDM_SOUNDSETTINGS:
                   {
-                      DialogBox(GetModuleHandle(NULL), "SoundSettingsDlg", hwnd, (DLGPROC)SoundSettingsDlgProc);                    
+						bool tpaused=false;
+						if (execute) 
+						{
+							tpaused=true;
+							NDS_Pause();
+						}
+						DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
+						if (tpaused)
+							NDS_UnPause();
                   }
                   return 0;
                   case IDM_GAME_INFO:
@@ -1655,200 +1732,151 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
                        }
                   return 0;
-                  case IDM_PAL:
-                       {
-                            palview_struct *PalView;
 
-                            if ((PalView = PalView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                               CWindow_Show(PalView);
-                       }
-                  return 0;
+//========================================================= Tools
+                  case IDM_PAL:
+						ViewPalette->open();
+						return 0;
                   case IDM_TILE:
                        {
-                            tileview_struct *TileView;
-
-                            if ((TileView = TileView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                               CWindow_Show(TileView);
+						   ViewTiles->regClass("TileViewBox", TileViewBoxProc);
+						   ViewTiles->regClass("MiniTileViewBox", MiniTileViewBoxProc, true);
+						   if (!ViewTiles->open())
+							   ViewTiles->unregClass();
                        }
                   return 0;
                   case IDM_IOREG:
-                       {
-                            cwindow_struct *IoregView;
-
-                            if ((IoregView = (cwindow_struct*)malloc(sizeof(cwindow_struct))) == NULL)
-                               return 0;
-
-                            if (CWindow_Init2(IoregView, hAppInst, HWND_DESKTOP, "IO REG VIEW", IDD_IO_REG, IoregView_Proc) == 0)
-                            {
-                               CWindow_AddToRefreshList(IoregView);
-                               CWindow_Show(IoregView);
-                            }
-                       }
-                  return 0;
-                  case IDM_QUIT:
-                       PostMessage(hwnd, WM_QUIT, 0, 0);
-                  return 0;
+						ViewRegisters->open();
+						return 0;
                   case IDM_MEMORY:
-                       {
-                            memview_struct *MemView;
-
-                            if ((MemView = MemView_Init(hAppInst, HWND_DESKTOP, "ARM7 memory viewer", 1)) != NULL)
-                               CWindow_Show(MemView);
-
-                            if ((MemView = MemView_Init(hAppInst, HWND_DESKTOP, "ARM9 memory viewer", 0)) != NULL)
-                               CWindow_Show(MemView);
-                       }
-                  return 0;
+						   ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
+						   if (!ViewMem_ARM7->open())
+							   ViewMem_ARM7->unregClass();
+						   ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
+						   if (!ViewMem_ARM9->open())
+							   ViewMem_ARM9->unregClass();
+	                  return 0;
                   case IDM_DISASSEMBLER:
-                       {
-                            disview_struct *DisView;
+					   ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
+					   if (!ViewDisasm_ARM7->open())
+						   ViewDisasm_ARM7->unregClass();
 
-                            if ((DisView = DisView_Init(hAppInst, HWND_DESKTOP, "ARM7 Disassembler", &NDS_ARM7)) != NULL)
-                               CWindow_Show(DisView);
-
-                            if ((DisView = DisView_Init(hAppInst, HWND_DESKTOP, "ARM9 Disassembler", &NDS_ARM9)) != NULL)
-                               CWindow_Show(DisView);
-                        }
-                  return 0;
+					   ViewDisasm_ARM9->regClass("DesViewBox9",ViewDisasm_ARM9BoxProc);
+					   if (!ViewDisasm_ARM9->open())
+						   ViewDisasm_ARM9->unregClass();
+						return 0;
                   case IDM_MAP:
-                       {
-                            mapview_struct *MapView;
-
-                            if ((MapView = MapView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                            {
-                               CWindow_AddToRefreshList(MapView);
-                               CWindow_Show(MapView);
-                            }
-                       }
-                  return 0;
+						ViewMaps->open();
+						return 0;
                   case IDM_OAM:
-                       {
-						   oamview_struct *OamView;
-
-                            if ((OamView = OamView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                            {
-                               CWindow_AddToRefreshList(OamView);
-                               CWindow_Show(OamView);
-                            }
-                       }
-                  return 0;
+						ViewOAM->regClass("OAMViewBox", ViewOAMBoxProc);
+						if (!ViewOAM->open())
+						   ViewOAM->unregClass();
+						return 0;
 
 				  case IDM_MATRIX_VIEWER:
-                       {
-                            matrixview_struct *MatrixView;
-
-                            if ((MatrixView = MatrixView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                            {
-                               CWindow_Show(MatrixView);
-                            }
-                       }
-                  return 0;
+						ViewMatrices->open();
+						return 0;
 
 				  case IDM_LIGHT_VIEWER:
-                       {
-                            lightview_struct *LightView;
-
-                            if ((LightView = LightView_Init(hAppInst, HWND_DESKTOP)) != NULL)
-                            {
-                               CWindow_Show(LightView);
-                            }
-                       }
-                  return 0;
+						ViewLights->open();
+						return 0;
+//========================================================== Tools end
 
 				  case IDM_MBG0 : 
                        if(MainScreen.gpu->dispBG[0])
                        {
                             GPU_remove(MainScreen.gpu, 0);
-                            CheckMenuItem(menu, IDM_MBG0, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(MainScreen.gpu, 0);
-                            CheckMenuItem(menu, IDM_MBG0, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_MBG1 : 
                        if(MainScreen.gpu->dispBG[1])
                        {
                             GPU_remove(MainScreen.gpu, 1);
-                            CheckMenuItem(menu, IDM_MBG1, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(MainScreen.gpu, 1);
-                            CheckMenuItem(menu, IDM_MBG1, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_MBG2 : 
                        if(MainScreen.gpu->dispBG[2])
                        {
                             GPU_remove(MainScreen.gpu, 2);
-                            CheckMenuItem(menu, IDM_MBG2, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(MainScreen.gpu, 2);
-                            CheckMenuItem(menu, IDM_MBG2, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_MBG3 : 
                        if(MainScreen.gpu->dispBG[3])
                        {
                             GPU_remove(MainScreen.gpu, 3);
-                            CheckMenuItem(menu, IDM_MBG3, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(MainScreen.gpu, 3);
-                            CheckMenuItem(menu, IDM_MBG3, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_SBG0 : 
                        if(SubScreen.gpu->dispBG[0])
                        {
                             GPU_remove(SubScreen.gpu, 0);
-                            CheckMenuItem(menu, IDM_SBG0, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(SubScreen.gpu, 0);
-                            CheckMenuItem(menu, IDM_SBG0, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_SBG1 : 
                        if(SubScreen.gpu->dispBG[1])
                        {
                             GPU_remove(SubScreen.gpu, 1);
-                            CheckMenuItem(menu, IDM_SBG1, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(SubScreen.gpu, 1);
-                            CheckMenuItem(menu, IDM_SBG1, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_SBG2 : 
                        if(SubScreen.gpu->dispBG[2])
                        {
                             GPU_remove(SubScreen.gpu, 2);
-                            CheckMenuItem(menu, IDM_SBG2, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(SubScreen.gpu, 2);
-                            CheckMenuItem(menu, IDM_SBG2, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   case IDM_SBG3 : 
                        if(SubScreen.gpu->dispBG[3])
                        {
                             GPU_remove(SubScreen.gpu, 3);
-                            CheckMenuItem(menu, IDM_SBG3, MF_BYCOMMAND | MF_UNCHECKED);
+                            MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_UNCHECKED);
                        }
                        else
                        {
                             GPU_addBack(SubScreen.gpu, 3);
-                            CheckMenuItem(menu, IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
+                            MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
                        }
                        return 0;
                   
@@ -1857,28 +1885,34 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					  if (emu_paused) NDS_UnPause();
 					  else NDS_Pause();
 					  emu_paused ^= 1;
-					  CheckMenuItem(menu, IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+					  MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
 				  return 0;
 				  
 				  case ACCEL_N: //Frame Advance
 					  frameAdvance = true;
 					  execute = TRUE;
 					  emu_paused = 1;
-					  CheckMenuItem(menu, IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+					  MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
 				  return 0;
 
 				  case ID_VIEW_FRAMECOUNTER:
 					  frameCounterDisplay ^= 1;
-					  CheckMenuItem(menu, ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
+					  MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
+				  return 0;
+
+				  case ID_VIEW_DISPLAYFPS:
+					  FpsDisplay ^= 1;
+					  MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
+					  WritePrivateProfileInt("Video", "Display Fps", FpsDisplay, IniName);
 				  return 0;
 
                   #define saver(one,two,three,four,five, six) \
-                  CheckMenuItem(menu, IDC_SAVETYPE1, MF_BYCOMMAND | one); \
-                  CheckMenuItem(menu, IDC_SAVETYPE2, MF_BYCOMMAND | two); \
-                  CheckMenuItem(menu, IDC_SAVETYPE3, MF_BYCOMMAND | three); \
-                  CheckMenuItem(menu, IDC_SAVETYPE4, MF_BYCOMMAND | four); \
-                  CheckMenuItem(menu, IDC_SAVETYPE5, MF_BYCOMMAND | five); \
-                  CheckMenuItem(menu, IDC_SAVETYPE6, MF_BYCOMMAND | six);
+                  MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | one); \
+                  MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | two); \
+                  MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | three); \
+                  MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | four); \
+                  MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | five); \
+                  MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | six);
                   
                   case IDC_SAVETYPE1:
                        saver(MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
@@ -1911,23 +1945,31 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
                   case IDM_CONFIG:
                        {
-                            cwindow_struct ConfigView;
-
-                            if (CWindow_Init2(&ConfigView, hAppInst, HWND_DESKTOP, "Configure Controls", IDD_CONFIG, ConfigView_Proc) == 0)
-                               CWindow_Show(&ConfigView);
-
+							bool tpaused=false;
+							if (execute) 
+							{
+								tpaused=true;
+								NDS_Pause();
+							}
+							InputConfig(hwnd);
+							if (tpaused)
+								NDS_UnPause();
                        }
                   return 0;
                   case IDM_FIRMSETTINGS:
-                       {
-                            cwindow_struct FirmConfig;
-
-                            if (CWindow_Init2(&FirmConfig, hAppInst, HWND_DESKTOP,
-									"Configure Controls", IDD_FIRMSETTINGS, FirmConfig_Proc) == 0)
-                               CWindow_Show(&FirmConfig);
-
-                       }
-                  return 0;
+					  {
+				  		bool tpaused=false;
+						if (execute) 
+						{
+							tpaused=true;
+							NDS_Pause();
+						}
+						DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
+						if (tpaused)
+							NDS_UnPause();
+		
+						return 0;
+					  }
                   case IDC_FRAMESKIPAUTO:
                   case IDC_FRAMESKIP0:
                   case IDC_FRAMESKIP1:
@@ -1954,18 +1996,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                           WritePrivateProfileString("Video", "FrameSkip", text, IniName);
                        }
 
-                       CheckMenuItem(menu, IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP0, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP1, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP2, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP3, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP4, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP5, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP6, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP7, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP8, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
-                       CheckMenuItem(menu, LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP0, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP1, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP2, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP3, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP4, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP5, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP6, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP7, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
+                       MainWindow->checkMenu(LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
                   }
                   return 0;
                   case IDC_LANGENGLISH:
@@ -1992,14 +2034,19 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;
 
 				  case IDM_ABOUT:
-				  {
-					  cwindow_struct aboutBox;
-
-					  if (CWindow_Init2(&aboutBox, hAppInst, HWND_DESKTOP, "About desmume...", IDD_ABOUT_BOX, AboutBox_Proc) == 0)
-							CWindow_Show(&aboutBox);
-
-					  break;
-				  }
+					  {
+				  		bool tpaused=false;
+						if (execute) 
+						{
+							tpaused=true;
+							NDS_Pause();
+						}
+						DialogBox(hAppInst,MAKEINTRESOURCE(IDD_ABOUT_BOX), hwnd, (DLGPROC) AboutBox_Proc);
+						if (tpaused)
+							NDS_UnPause();
+		
+						return 0;
+					  }
 
 #ifndef BETA_VERSION
                   case IDM_SUBMITBUGREPORT:
@@ -2008,16 +2055,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 #endif
 
                   case IDC_ROTATE0:
-						SetRotate(0);
+						SetRotate(hwnd, 0);
 						return 0;
                   case IDC_ROTATE90:
-						SetRotate(90);
+						SetRotate(hwnd, 90);
 						return 0;
                   case IDC_ROTATE180:
-						SetRotate(180);
+						SetRotate(hwnd, 180);
 						return 0;
                   case IDC_ROTATE270:
-						SetRotate(270);
+						SetRotate(hwnd, 270);
 						return 0;
 
         case IDC_WINDOW1X:
@@ -2025,45 +2072,45 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 		case IDC_WINDOW2X:
 			windowSize=2;
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 		case IDC_WINDOW3X:
 			windowSize=3;
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 		case IDC_WINDOW4X:
 			windowSize=4;
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			CheckMenuItem(menu, IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			CheckMenuItem(menu, IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 			break;
 
 		case IDC_FORCERATIO:
 			if (ForceRatio) {
-				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | MF_UNCHECKED);
 				ForceRatio = FALSE;
 				WritePrivateProfileInt("Video","Window Force Ratio",0,IniName);
 			}
@@ -2074,7 +2121,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left, 
 												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
 				//ScaleScreen(hwnd, (fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
-				CheckMenuItem(menu, IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
 				ForceRatio = TRUE;
 				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
 			}
@@ -2147,8 +2194,6 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 
                EndDialog(hDlg, TRUE);
 
-               NDS_Pause();
-
                // Write Sound core type
                sndcoretype = SNDCoreList[SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_GETCURSEL, 0, 0)]->id;
                sprintf(tempstr, "%d", sndcoretype);
@@ -2166,7 +2211,6 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                sprintf(tempstr, "%d", sndvolume);
                WritePrivateProfileString("Sound", "Volume", tempstr, IniName);
                SPU_SetVolume(sndvolume);
-               NDS_UnPause();
 
                return TRUE;
             }

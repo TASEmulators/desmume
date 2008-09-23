@@ -32,9 +32,8 @@
 #include "ConfigKeys.h"
 
 #include "../debug.h"
+#include "../common.h"
 #include "../NDSSystem.h"
-
-static char IniName[MAX_PATH];
 
 static char nickname_buffer[11];
 static char message_buffer[27];
@@ -53,7 +52,6 @@ static void WriteFirmConfig( struct NDS_fw_config_data *fw_config)
 {
 	char temp_str[27];
 	int i;
-    GetINIPath(IniName,MAX_PATH);
 
     WritePrivateProfileInt("Firmware","favColor", fw_config->fav_colour,IniName);
     WritePrivateProfileInt("Firmware","bMonth", fw_config->birth_month,IniName);

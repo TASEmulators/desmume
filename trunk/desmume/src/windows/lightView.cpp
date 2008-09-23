@@ -17,39 +17,23 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <windows.h>
-#include <stdio.h>
 #include "lightView.h"
-#include "resource.h"
-#include "matrix.h"
-#include "gfx3d.h"
-#include "armcpu.h"
+#include "commctrl.h"
 #include "colorctrl.h"
 #include "colorconv.h"
+#include "gfx3d.h"
+#include "resource.h"
+#include "debug.h"
 
-
-//////////////////////////////////////////////////////////////////////////////
-
-BOOL LightView_OnInitDialog(HWND hwnd)
+typedef struct
 {
-	return TRUE;
-}
+	u32	autoup_secs;
+	bool autoup;
+} lightsview_struct;
 
-//////////////////////////////////////////////////////////////////////////////
+lightsview_struct	*LightsView = NULL;
 
-BOOL LightView_OnClose(lightview_struct* win)
-{
-	win->window.autoup = FALSE;
-	CWindow_RemoveFromRefreshList(win);
-	EndDialog(win->window.hwnd, 0);
-	LightView_Deinit(win);
-
-	return TRUE;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void LightView_OnPaintLight(lightview_struct* win, int index)
+void LightView_OnPaintLight(HWND hwnd, int index)
 {
 	const int idcDir[4] =
 	{
@@ -80,102 +64,110 @@ void LightView_OnPaintLight(lightview_struct* win, int index)
 
 	// Print Light Direction
 	sprintf(buffer, "%.8x", direction);
-	SetWindowText(GetDlgItem(win->window.hwnd, idcDir[index]), buffer);
+	SetWindowText(GetDlgItem(hwnd, idcDir[index]), buffer);
 
 	// Print Light Color
 	sprintf(buffer, "%.4x", color);
-	SetWindowText(GetDlgItem(win->window.hwnd, idcColorEdit[index]), buffer);
+	SetWindowText(GetDlgItem(hwnd, idcColorEdit[index]), buffer);
 
 	// Set Light Color in ColorDisplay component
-	ColorCtrl_SetColor(GetDlgItem(win->window.hwnd, idcColorCtrl[index]), ColorConv_B5R5R5ToR8G8B8(color));
+	ColorCtrl_SetColor(GetDlgItem(hwnd, idcColorCtrl[index]), ColorConv_B5R5R5ToR8G8B8(color));
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-BOOL LightView_OnPaint(lightview_struct* win, HWND hwnd, WPARAM wParam, LPARAM lParam)
+BOOL LightView_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
     HDC          hdc;
     PAINTSTRUCT  ps;
 
     hdc = BeginPaint(hwnd, &ps);
     
-	LightView_OnPaintLight(win, 0);
-	LightView_OnPaintLight(win, 1);
-	LightView_OnPaintLight(win, 2);
-	LightView_OnPaintLight(win, 3);
+	LightView_OnPaintLight(hwnd, 0);
+	LightView_OnPaintLight(hwnd, 1);
+	LightView_OnPaintLight(hwnd, 2);
+	LightView_OnPaintLight(hwnd, 3);
 
     EndPaint(hwnd, &ps);
 
     return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-BOOL CALLBACK LightView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-     lightview_struct *win = (lightview_struct *)GetWindowLong(hwnd, DWL_USER);
+	switch (message)
+	{
+		case WM_INITDIALOG:
+				LightsView = new lightsview_struct;
+				memset(LightsView, 0, sizeof(lightsview_struct));
+				LightsView->autoup_secs = 5;
+				SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETRANGE, 0, MAKELONG(99, 1));
+				SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
+									UDM_SETPOS32, 0, LightsView->autoup_secs);
+			 break;
 
-     switch (message)
-     {
-            case WM_INITDIALOG:
-                 LightView_OnInitDialog(hwnd);
-				 break;
+		case WM_CLOSE:
+				if(LightsView->autoup)
+				{
+					KillTimer(hwnd, IDT_VIEW_LIGHTS);
+					LightsView->autoup = false;
+				}
 
-            case WM_CLOSE:
-                 LightView_OnClose(win);
-				 break;
+				if (LightsView!=NULL) 
+				{
+					delete LightsView;
+					LightsView = NULL;
+				}
+			//printlog("Close lights viewer dialog\n");
+			PostQuitMessage(0);
+			break;
 
-            case WM_PAINT:
-                 LightView_OnPaint(win, hwnd, wParam, lParam);
-				 break;
+		case WM_PAINT:
+			 LightView_OnPaint(hwnd, wParam, lParam);
+			 break;
 
-            case WM_COMMAND:
-                 switch (LOWORD (wParam))
-                 {
-                        case IDOK:
-                             CWindow_RemoveFromRefreshList(win);
-                             LightView_Deinit(win);
-                             EndDialog(hwnd, 0);
-                             return 1;
-                 }
-                 return 0;
+		case WM_TIMER:
+				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+				return 1;
 
-			case WM_SYSCOMMAND:
-                 switch (LOWORD (wParam))
-                 {
-                        case IDC_AUTO_UPDATE:
-                             CWindow_ToggleAutoUpdate(win);
-                             return 1;
-                 }
-                 return 0;
-     }
-     return 0;    
+		case WM_COMMAND:
+			 switch (LOWORD (wParam))
+			 {
+					case IDOK:
+						SendMessage(hwnd, WM_CLOSE, 0, 0);
+						 return 1;
+					case IDC_AUTO_UPDATE :
+						 if(LightsView->autoup)
+                         {
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
+							 KillTimer(hwnd, IDT_VIEW_LIGHTS);
+                              LightsView->autoup = FALSE;
+                              return 1;
+                         }
+						 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
+						 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
+                         LightsView->autoup = TRUE;
+						 SetTimer(hwnd, IDT_VIEW_LIGHTS, LightsView->autoup_secs*1000, (TIMERPROC) NULL);
+						 return 1;
+					case IDC_AUTO_UPDATE_SECS:
+						{
+							int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+							if (t != LightsView->autoup_secs)
+							{
+								LightsView->autoup_secs = t;
+								if (LightsView->autoup)
+									SetTimer(hwnd, IDT_VIEW_LIGHTS, 
+											LightsView->autoup_secs*1000, (TIMERPROC) NULL);
+							}
+						}
+                         return 1;
+					case IDC_REFRESH:
+						InvalidateRect(hwnd, NULL, FALSE);
+						return 1;
+			 }
+			 return 0;
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-lightview_struct *LightView_Init(HINSTANCE hInst, HWND parent)
-{
-   lightview_struct *LightView=NULL;
-
-   if ((LightView = (lightview_struct *)malloc(sizeof(lightview_struct))) == NULL)
-      return NULL;
-
-   if (CWindow_Init2(LightView, hInst, parent, "Light Viewer", IDD_LIGHT_VIEWER, LightView_Proc) != 0)
-   {
-      free(LightView);
-      return NULL;
-   }
-
-   return LightView;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void LightView_Deinit(lightview_struct *LightView)
-{
-   if (LightView)
-      free(LightView);
-}
-
-//////////////////////////////////////////////////////////////////////////////

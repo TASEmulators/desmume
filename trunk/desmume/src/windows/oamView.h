@@ -22,25 +22,9 @@
 #ifndef OAMVIEW_H
 #define OAMVIEW_H
 
-#include "CWindow.h"
-#include "../GPU.h"
+#include <windows.h>
 
-typedef struct
-{
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-
-   s16 num;
-   OAM *oam;
-   GPU *gpu;
-} oamview_struct;
-
-extern void InitOAMViewBox();
-oamview_struct *OamView_Init(HINSTANCE hInst, HWND parent);
-void OamView_Deinit(oamview_struct *OamView);
+extern LRESULT CALLBACK ViewOAMBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif

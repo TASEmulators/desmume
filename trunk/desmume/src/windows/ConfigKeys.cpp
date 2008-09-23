@@ -31,10 +31,8 @@
 #include "ConfigKeys.h"
 
 #include "../debug.h"
+#include "../common.h"
 #include "resource.h"
-
-static char IniName[MAX_PATH];
-char                    vPath[MAX_PATH],*szPath,currDir[MAX_PATH];
 
 const char *tabkeytext[52] = {"0","1","2","3","4","5","6","7","8","9","A","B","C",
 "D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X",
@@ -93,37 +91,10 @@ LPDIRECTINPUTDEVICE8	g_pKeyboard;
 LPDIRECTINPUTDEVICE8	g_pJoystick;
 DIDEVCAPS				g_DIJoycap;
 
-void GetINIPath(char *inipath,u16 bufferSize)
-{   
-    if (*vPath)
-       szPath = vPath;
-    else
-    {
-       char *p;
-       ZeroMemory(vPath, sizeof(vPath));
-       GetModuleFileName(NULL, vPath, sizeof(vPath));
-       p = vPath + lstrlen(vPath);
-       while (p >= vPath && *p != '\\') p--;
-       if (++p >= vPath) *p = 0;
-       szPath = vPath;
-    }
-	if (strlen(szPath) + strlen("\\desmume.ini") < bufferSize)
-	{
-		sprintf(inipath, "%s\\desmume.ini",szPath);
-	} else if (bufferSize> strlen(".\\desmume.ini")) {
-		sprintf(inipath, ".\\desmume.ini",szPath);
-	} else
-	{
-		memset(inipath,0,bufferSize) ;
-	}
-}
-
 void  ReadConfig(void)
 {
 	FILE *fp;
     int i;
-
-    GetINIPath(IniName,MAX_PATH);
 
     i=GetPrivateProfileInt("Keys","Key_A",31, IniName);
     KEY_A = i;
@@ -180,8 +151,6 @@ void  WriteConfig(void)
 	FILE *fp;
     int i;
     
-    GetINIPath(IniName,MAX_PATH);
-
     WritePrivateProfileInt("Keys","Key_A",KEY_A,IniName);
     WritePrivateProfileInt("Keys","Key_B",KEY_B,IniName);
     WritePrivateProfileInt("Keys","Key_SELECT",KEY_SELECT,IniName);
@@ -233,6 +202,7 @@ IDC_COMBO10,
 IDC_COMBO11,
 IDC_COMBO12};
 
+#if 1
 BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam)
 {
 	int i,j;
@@ -320,7 +290,7 @@ BOOL CALLBACK ConfigView_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lp
 	}
 	return 0;
 }
-
+#endif
 
 //================================================================================================
 //================================================================================================
@@ -474,3 +444,47 @@ void Input_Process()
 		}
 	}
 }
+
+//============================================================ New config dialog
+//============================================================
+//============================================================
+//============================================================
+//============================================================
+//============================================================
+//============================================================
+//============================================================
+#if 0
+bool CALLBACK InputConfigDlgProc(   HWND hDlg, 
+                              UINT uMessage, 
+                              WPARAM wParam, 
+                              LPARAM lParam)
+{
+	switch (uMessage)
+	{
+		case WM_INITDIALOG:
+			return true;
+
+		case WM_COMMAND:
+			switch(LOWORD(wParam))
+			 {
+			 case IDOK:
+				EndDialog(hDlg, IDOK);
+				break;
+
+			 case IDCANCEL:
+				EndDialog(hDlg, IDOK);
+				break;
+			 }
+		return true;
+	} 
+
+	//return false;
+	return DefWindowProc( hDlg, uMessage, wParam, lParam);
+}
+#endif
+void InputConfig(HWND hwnd)
+{
+	//DialogBox(hAppInst,MAKEINTRESOURCE(IDD_INPUT), hwnd, (DLGPROC) InputConfigDlgProc);
+	DialogBox(hAppInst,MAKEINTRESOURCE(IDD_CONFIG), hwnd, (DLGPROC) ConfigView_Proc);
+}
+

@@ -21,6 +21,6 @@
 #ifndef ABOUTBOX_H
 #define ABOUTBOX_H
 
-BOOL CALLBACK AboutBox_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
+extern BOOL CALLBACK AboutBox_Proc(HWND dialog,UINT komunikat,WPARAM wparam,LPARAM lparam);
 
 #endif

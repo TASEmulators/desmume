@@ -22,36 +22,12 @@
 #ifndef MEM_VIEW_H
 #define MEM_VIEW_H
 
-#include "CWindow.h"
+#include <windows.h>
 
-/*
-class CMemView : public CWindow
-{
-public :
-      CMemView(HINSTANCE hInst, HWND parent, char * titre, u8 CPU);
-      
-      s8 cpu;
-      u32 curr_ligne;
-      u8 representation;
-};
-*/
+extern bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern LRESULT CALLBACK ViewMem_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-typedef struct
-{
-   HWND hwnd;
-   BOOL autoup;      
-   void *prev; 
-   void *next;
-   void *first;
-   void (*Refresh)(void *win);
-
-   s8 cpu;
-   u32 curr_ligne;
-   u8 representation;
-} memview_struct;
-
-void InitMemViewBox();
-memview_struct *MemView_Init(HINSTANCE hInst, HWND parent, char *title, u8 CPU);
-void MemView_Deinit(memview_struct *MemView);
+extern bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern LRESULT CALLBACK ViewMem_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #endif
