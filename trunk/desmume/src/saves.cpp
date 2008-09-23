@@ -573,6 +573,10 @@ bool savestate_load(std::istream* is)
 	std::vector<char> buf(len);
 
 	if(comprlen != 0xFFFFFFFF) {
+#ifndef HAVE_LIBZ
+		//without libz, we can't decompress this savestate
+		return false;
+#endif
 		std::vector<char> cbuf(comprlen);
 		is->read(&cbuf[0],comprlen);
 		if(is->fail()) return false;
