@@ -2942,7 +2942,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 			{
 				// NOTE: right now, the capture unit is not taken into account,
 				//       I don't know is it should be handled here or 
-#ifdef 0
+#if 0
 				FIFOAdd(MMU.fifos + MAIN_MEMORY_DISP_FIFO, val);
 #else
 				//4000068h - NDS9 - DISP_MMEM_FIFO - 32bit - Main Memory Display FIFO (R?/W)

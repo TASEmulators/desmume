@@ -4,7 +4,6 @@
 //
 #define IDM_OPEN                        101
 #define IDM_QUIT                        102
-#define IDB_NINTENDO_DS_LOGO            102
 #define IDC_FERMER                      103
 #define IDD_DESASSEMBLEUR_VIEWER7       103
 #define IDC_STEP                        104

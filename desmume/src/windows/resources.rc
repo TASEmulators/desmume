@@ -17,7 +17,7 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
 #ifdef _WIN32
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-#pragma code_page(1251)
+#pragma code_page(1252)
 #endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
@@ -51,13 +51,6 @@ BEGIN
     "N",            ACCEL_N,                VIRTKEY, NOINVERT
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_NINTENDO_DS_LOGO    BITMAP                  "NintendoDS(tm)_logo.bmp"
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 
