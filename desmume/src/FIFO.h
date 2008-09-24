@@ -28,28 +28,22 @@
 
 typedef struct
 {
-       u32 data[0x8000];
-       u32 begin;
-       u32 end;
-       BOOL full;
-       BOOL empty;
-       BOOL error;
+	bool	error;
+	bool	enable;	
+
+	bool	empty;
+	bool	half;
+	bool	full;
+	u8		irq;
+
+	u8		sendPos;
+	u8		recvPos;
+
+	u32		buf[0x8000];
 } FIFO;
 
-void FIFOInit(FIFO * fifo);
-void FIFOAdd(FIFO * fifo, u32 v);
-u32 FIFOValue(FIFO * fifo);
-
-//================== 3D GFX FIFO
-typedef struct{
-	u32 hits[640];
-	u32 hits_count;
-	u32 empty;
-	u32	half;
-	u32	full;
-	u32 begin;
-	u32 end;
-	u32 irq;
-} GFXFIFO;
+extern void FIFOclear(FIFO * fifo);
+extern void FIFOadd(FIFO * fifo, u32 val);
+extern u32 FIFOget(FIFO * fifo);
 
 #endif
