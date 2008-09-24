@@ -2072,7 +2072,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	// Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels at once format is x555, bit15 unused
 	// Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
 	// (under DISP_MMEM_FIFO)
-#ifdef 0
+#if 0
 			for (i=0; i<256;) {
 				c = FIFOValue(MMU.fifos + MAIN_MEMORY_DISP_FIFO);
 				T2WriteWord(dst, i << 1, c&0xFFFF); i++;

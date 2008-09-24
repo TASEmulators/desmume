@@ -801,7 +801,6 @@ u32 FASTCALL _MMU_read32(u32 adr)
 					NDS_makeInt(proc^1,17) ; /* remote: SEND FIFO EMPTY */
 
 				return val;
-#endif
 			}
 			return 0;
                         case REG_TM0CNTL :
