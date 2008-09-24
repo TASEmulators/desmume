@@ -2727,7 +2727,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				return;
 			case REG_IPCFIFOCNT :
 							{
-#ifdef 0
+#if 0
 					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
 					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[(proc+1) & 1][0x40], 0x184) ;
 					if ((val & 0x8000) && !(cnt_l & 0x8000))
