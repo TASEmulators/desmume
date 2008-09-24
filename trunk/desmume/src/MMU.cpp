@@ -201,10 +201,8 @@ void MMU_Init(void) {
 	MMU.MMU_WAIT32[0] = MMU_ARM9_WAIT32;
 	MMU.MMU_WAIT32[1] = MMU_ARM7_WAIT32;
 
-	for(i = 0;i < 16;i++)
-		FIFOInit(MMU.fifos + i);
-	memset(&MMU.gfxfifo, 0, sizeof(GFXFIFO));
-	MMU.gfxfifo.empty=MMU.gfxfifo.half=TRUE;
+	FIFOclear(MMU.fifos);
+	FIFOclear(MMU.fifos+1);
 	
         mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
         mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -260,10 +258,8 @@ void MMU_clearMem()
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
 	
-	for(i = 0;i < 16;i++)
-	FIFOInit(MMU.fifos + i);
-	memset(&MMU.gfxfifo, 0, sizeof(GFXFIFO));
-	MMU.gfxfifo.empty=MMU.gfxfifo.half=TRUE;
+	FIFOclear(MMU.fifos);
+	FIFOclear(MMU.fifos+1);
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -660,6 +656,7 @@ u16 FASTCALL _MMU_read16(u32 adr)
 				return (gfx3d_GetNumVertex()&8191);
 
 			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
+				printlog("read16: IPCFIFORECV\n");
 				//printlog("Stopped IPCFIFORECV\n");
 				execute = FALSE;
 				return 1;
@@ -673,8 +670,10 @@ u16 FASTCALL _MMU_read16(u32 adr)
 				return (u16)(MMU.reg_IE[proc]>>16);
 				
 			case REG_IF :
+				//printlog("read16 (low): REG_IF\n");
 				return (u16)MMU.reg_IF[proc];
 			case REG_IF + 2 :
+				//printlog("read16 (high): REG_IF\n");
 				return (u16)(MMU.reg_IF[proc]>>16);
 				
 			case REG_TM0CNTL :
@@ -726,13 +725,14 @@ u32 FASTCALL _MMU_read32(u32 adr)
 		switch(adr)
 		{
 			// This is hacked due to the only current 3D core
-			case 0x04000600:
+			case 0x04000600:		// Geometry Engine Status Register (R and R/W)
             {
-				u32 gxstat =(2|(MMU.gfxfifo.hits_count<<16)|
-							(MMU.gfxfifo.full<<24)|
-							(MMU.gfxfifo.empty<<25)|
-							(MMU.gfxfifo.half<<26)|
-							(MMU.gfxfifo.irq<<30));
+				u32 gxstat =	( 2 |
+									(MMU.fifos[proc].full<<24)|
+									(MMU.fifos[proc].half<<25)|
+									(MMU.fifos[proc].empty<<26)|
+									(MMU.fifos[proc].irq<<30)
+								);
 				return	gxstat;
             }
 
@@ -781,25 +781,27 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			case REG_IE :
 				return MMU.reg_IE[proc];
 			case REG_IF :
+				//printlog("read32: REG_IF\n");
 				return MMU.reg_IF[proc];
 			case REG_IPCFIFORECV :
 			{
-				u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
-				if(IPCFIFO_CNT&0x8000)
-				{
-				//execute = FALSE;
-				u32 fifonum = IPCFIFO+proc;
-				u32 val = FIFOValue(MMU.fifos + fifonum);
-				u32 remote = (proc+1) & 1;
-				u16 IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
-				IPCFIFO_CNT |= (MMU.fifos[fifonum].empty<<8) | (MMU.fifos[fifonum].full<<9) | (MMU.fifos[fifonum].error<<14);
-				IPCFIFO_CNT_remote |= (MMU.fifos[fifonum].empty) | (MMU.fifos[fifonum].full<<1);
-				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
-				T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
-				if ((MMU.fifos[fifonum].empty) && (IPCFIFO_CNT & BIT(2)))
-					NDS_makeInt(remote,17) ; /* remote: SEND FIFO EMPTY */
+				u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
+				//printlog("read32: REG_IPCFIFORECV (%X)\n", cnt_l);
+				if (!(cnt_l & 0x8000)) return 0;	// FIFO disabled
+				u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
+				u32 val = FIFOget(MMU.fifos + proc);
+
+				cnt_l |= (MMU.fifos[proc].empty<<8) | (MMU.fifos[proc].full<<9) | (MMU.fifos[proc].error<<14);
+				cnt_r |= (MMU.fifos[proc].empty) | (MMU.fifos[proc].full<<1);
+
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
+				T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
+
+				if ((MMU.fifos[proc].empty) && (cnt_l & BIT(2)))
+					NDS_makeInt(proc^1,17) ; /* remote: SEND FIFO EMPTY */
+
 				return val;
-				}
+#endif
 			}
 			return 0;
                         case REG_TM0CNTL :
@@ -1684,15 +1686,18 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				
 			case REG_IF :
 				//execute = FALSE;
+				//printlog("write16 (low): REG_IF (%X)\n", val);
 				MMU.reg_IF[proc] &= (~((u32)val)); 
 				return;
 			case REG_IF + 2 :
+				//printlog("write16 (high): REG_IF (%X)\n", val);
 				//execute = FALSE;
 				MMU.reg_IF[proc] &= (~(((u32)val)<<16));
 				return;
 				
-                        case REG_IPCSYNC :
+            case REG_IPCSYNC :
 				{
+					//printlog("IPCSYNC\n");
 				u32 remote = (proc+1)&1;
 				u16 IPCSYNC_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x180);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
@@ -1701,28 +1706,34 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				//execute = FALSE;
 				}
 				return;
-                        case REG_IPCFIFOCNT :
+
+			case REG_IPCFIFOCNT :
 				{
 					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
-					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[(proc+1) & 1][0x40], 0x184) ;
+					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184) ;
+
+					//printlog("write16 (%s): REG_IPCFIFOCNT 0x(%08X)\n", proc?"ARM9":"ARM7",REG_IPCFIFOCNT);
+					//printlog(" --- val=%X\n",val);
+
 					if ((val & 0x8000) && !(cnt_l & 0x8000))
 					{
 						/* this is the first init, the other side didnt init yet */
 						/* so do a complete init */
-						FIFOInit(MMU.fifos + (IPCFIFO+proc));
+						FIFOclear(MMU.fifos + proc);
 						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184,0x8101) ;
 						/* and then handle it as usual */
 					}
 
-				if(val & 0x4008)
-				{
-					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-					T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
-					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
-					return;
-				}
-				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) | (val & 0xBFF4));
+					if (val & 0x4008)				// clear FIFO
+					{
+						FIFOclear(&MMU.fifos[proc]);
+						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
+						T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
+						MMU.reg_IF[proc] |= ((val & 4)<<15);
+						//T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val);
+						return;
+					}
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l | (val & 0xBFF4));
 				}
 				return;
             case REG_TM0CNTL :
@@ -2364,9 +2375,12 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				return;
 			}
 
-			case 0x04000600:
+			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
-				MMU.gfxfifo.irq=(val>>30)&3;
+				//printlog("write32: Geometry Engine Status Register (R and R/W)");
+				//printlog("------- val=%X\n\n************\n\n", val);
+
+				MMU.fifos[proc].irq = (val>>30) & 0x03;
 				return;
 			}
 			case REG_DISPA_WININ: 	 
@@ -2509,6 +2523,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				return;
 			
 			case REG_IF :
+				//printlog("write32: REG_IF (%X)\n", val);
 				MMU.reg_IF[proc] &= (~val); 
 				return;
 
@@ -2711,8 +2726,9 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					MMU.reg_IF[remote] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));//
 				}
 				return;
-                        case REG_IPCFIFOCNT :
+			case REG_IPCFIFOCNT :
 							{
+#ifdef 0
 					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
 					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[(proc+1) & 1][0x40], 0x184) ;
 					if ((val & 0x8000) && !(cnt_l & 0x8000))
@@ -2732,27 +2748,25 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					return;
 				}
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
+#else
+				printlog("write32: REG_IPCFIFOCNT\n");
+#endif
 				//execute = FALSE;
 				return;
 							}
-                        case REG_IPCFIFOSEND :
+				case REG_IPCFIFOSEND :
 				{
-					u16 IPCFIFO_CNT = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
-					if(IPCFIFO_CNT&0x8000)
-					{
-					//if(val==43) execute = FALSE;
-					u32 remote = (proc+1)&1;
-					u32 fifonum = IPCFIFO+remote;
-                                        u16 IPCFIFO_CNT_remote;
-					FIFOAdd(MMU.fifos + fifonum, val);
-					IPCFIFO_CNT = (IPCFIFO_CNT & 0xFFFC) | (MMU.fifos[fifonum].full<<1);
-                                        IPCFIFO_CNT_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x184);
-					IPCFIFO_CNT_remote = (IPCFIFO_CNT_remote & 0xFCFF) | (MMU.fifos[fifonum].full<<10);
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, IPCFIFO_CNT);
-					T1WriteWord(MMU.MMU_MEM[remote][0x40], 0x184, IPCFIFO_CNT_remote);
-					MMU.reg_IF[remote] |= ((IPCFIFO_CNT_remote & (1<<10))<<8);// & (MMU.reg_IME[remote] << 18);// & (MMU.reg_IE[remote] & 0x40000);//
-					//execute = FALSE;
-					}
+					u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
+					if (!(cnt_l & 0x8000)) return;		//FIFO disabled
+					u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
+					//printlog("write32 (%s): REG_IPCFIFOSEND (%X-%X) val=%X\n", proc?"ARM9":"ARM7",cnt_l,cnt_r,val);
+					//FIFOadd(MMU.fifos+(proc^1), val);
+					FIFOadd(MMU.fifos+(proc^1), val);
+					cnt_l = (cnt_l & 0xFFFC) | (MMU.fifos[proc^1].full<<1);
+					cnt_r = (cnt_r & 0xFCFF) | (MMU.fifos[proc^1].full<<9);
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
+					T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
+					MMU.reg_IF[proc^1] |= ((cnt_r & (1<<10))<<8);
 				}
 				return;
 			case REG_DMA0CNTL :
@@ -2929,8 +2943,21 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 			{
 				// NOTE: right now, the capture unit is not taken into account,
 				//       I don't know is it should be handled here or 
-			
+#ifdef 0
 				FIFOAdd(MMU.fifos + MAIN_MEMORY_DISP_FIFO, val);
+#else
+				//4000068h - NDS9 - DISP_MMEM_FIFO - 32bit - Main Memory Display FIFO (R?/W)
+				//Intended to send 256x192 pixel 32K color bitmaps by DMA directly
+ 				//- to Screen A             (set DISPCNT to Main Memory Display mode), or
+ 				//- to Display Capture unit (set DISPCAPCNT to Main Memory Source).
+
+				//The FIFO can receive 4 words (8 pixels) at a time, each pixel is a 15bit RGB value (the upper bit, bit15, is unused).
+				//Set DMA to Main Memory mode, 32bit transfer width, word count set to 4, destination address to DISP_MMEM_FIFO, source address must be in Main Memory.
+				//Transfer starts at next frame.
+				//Main Memory Display/Capture is supported for Display Engine A only.
+
+				printlog("write32: REG_DISPA_DISPMMEMFIFO\n");
+#endif
 				break;
 			}
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;

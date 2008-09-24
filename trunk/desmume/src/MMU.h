@@ -39,8 +39,8 @@ extern char szRomBaseName[512];
 /* theses ones for reading in rom data */
 #define ROM_8(m, a)  (((u8*)(m))[(a)])
  
-#define IPCFIFO  0
-#define MAIN_MEMORY_DISP_FIFO 2
+//#define IPCFIFO  0
+//#define MAIN_MEMORY_DISP_FIFO 2
  
 typedef struct {
         //ARM7 mem
@@ -66,9 +66,9 @@ typedef struct {
         u32 * MMU_MASK[2];
         
         u8 ARM9_RW_MODE;
-        
-        FIFO	fifos[16];
-		GFXFIFO	gfxfifo;
+
+		FIFO	fifos[2];	// 0 - ARM9 FIFO
+							// 1 - ARM7 FIFO
 
         u32 * MMU_WAIT16[2];
         u32 * MMU_WAIT32[2];

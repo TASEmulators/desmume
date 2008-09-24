@@ -1526,12 +1526,22 @@ NDS_exec(s32 nb, BOOL force)
 			}
 		}
 
-		if(MMU.reg_IE[0]&(1<<21))
+		/*for (int tt=0; tt<24; tt++)
 		{
-			if(MMU.gfxfifo.irq==0) return nds.cycles;
-			if(MMU.gfxfifo.irq==3) return nds.cycles;
-			if(MMU.gfxfifo.irq==1 && MMU.gfxfifo.half) NDS_makeARM9Int(21);
-			if(MMU.gfxfifo.irq==2 && MMU.gfxfifo.empty) NDS_makeARM9Int(21);
+			if (tt == 0) continue;		//VBlank
+			if (tt == 1) continue;		//HBlank
+			if (tt == 3) continue;
+			if (tt == 12) continue;
+			if (tt == 18) continue;
+			if (MMU.reg_IE[0]&(1<<tt)) printlog("wait IRQ%i\n", tt);
+		}*/
+
+		//if(MMU.reg_IE[0]&(1<<0)) gfx3d_VBlankSignal();
+
+		if(MMU.reg_IE[0]&(1<<21))		// IRQ21
+		{
+			if (MMU.fifos[0].irq==1) NDS_makeARM9Int(21);
+			if (MMU.fifos[0].irq==2) NDS_makeARM9Int(21);
 		}
         
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
