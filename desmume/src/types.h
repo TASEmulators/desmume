@@ -186,7 +186,7 @@ typedef int desmume_BOOL;
 # define LOCAL_TO_LE_64(x) (x)
 #endif
 
-/* kilobytes and megabytes macro */
+// kilobytes and megabytes macro
 #define MB(x) ((x)*1024*1024)
 #define KB(x) ((x)*1024)
 
@@ -222,5 +222,11 @@ inline void FlipByteOrder(u8 *src, u32 count)
 		start++;
 	}
 }
+
+//as a hack until we set up better cross-platform logging, we need to prevent printlog from being define in any platform but windows
+#ifndef _WIN32
+#define printlog(X) ((void)(X))
+#endif
+
 
 #endif
