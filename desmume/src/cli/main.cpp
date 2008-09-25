@@ -760,7 +760,8 @@ int main(int argc, char ** argv) {
 
     update_keypad(keypad);     /* Update keypad */
     last_cycle = NDS_exec((560190 << 1) - last_cycle, FALSE);
-    SPU_Emulate();
+    SPU_Emulate_user();
+	SPU_Emulate_core();
 
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {

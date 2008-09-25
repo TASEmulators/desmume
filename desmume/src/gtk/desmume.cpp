@@ -82,6 +82,7 @@ void desmume_cycle( void)
   update_keypad(keypad);
 
   desmume_last_cycle = NDS_exec((560190 << 1) - desmume_last_cycle, FALSE);
-  SPU_Emulate();
+  SPU_Emulate_user();
+  SPU_Emulate_core();
 }
  

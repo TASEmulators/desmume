@@ -21,9 +21,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#define WIN32_LEAN_AND_MEAN
+#include "windriver.h"
 #include <algorithm>
-#include <windows.h>
 #include <shellapi.h>
 #include <Winuser.h>
 #include <commctrl.h>
@@ -66,6 +65,17 @@
 
 #define GPU3D_NULL 0
 #define GPU3D_OPENGL 1
+
+//------todo move these into a generic driver api
+bool DRV_AviBegin(const char* fname);
+void DRV_AviEnd();
+void DRV_AviSoundUpdate(void* soundData, int soundLen);
+bool DRV_AviIsRecording();
+void DRV_AviVideoUpdate(const u16* buffer);
+//------
+
+CRITICAL_SECTION win_sync;
+volatile int win_sound_samplecounter = 0;
 
 //===================== Init DirectDraw
 LPDIRECTDRAW7			lpDDraw=NULL;
@@ -433,6 +443,7 @@ void ScallingScreen(HWND hwnd, int wParam, RECT *rc)
 
 void ScaleScreen(HWND hwnd, float factor)
 {
+
 	if ((GPU_rotation==0)||(GPU_rotation==180))
 	{
 		SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor, 
@@ -653,6 +664,19 @@ void Display()
 	}
 }
 
+void CheckMessages()
+{
+	MSG msg;
+	while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
+	{
+		if( GetMessage( &msg, 0,  0, 0)>0 )
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+}
+
 
 DWORD WINAPI run( LPVOID lpParameter)
 {
@@ -715,8 +739,19 @@ DWORD WINAPI run( LPVOID lpParameter)
      {
           while(execute)
           {
+			  EnterCriticalSection(&win_sync);
                cycles = NDS_exec((560190<<1)-cycles,FALSE);
-               SPU_Emulate();
+				win_sound_samplecounter = 735;
+			   	LeaveCriticalSection(&win_sync);
+	
+			   SPU_Emulate_core();
+			   //avi writing
+				DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
+			   DRV_AviVideoUpdate((u16*)GPU_screen);
+
+			   //check win32 messages
+			   CheckMessages();
+
 			   Input_Process();
 			   Input_Post();
 
@@ -816,6 +851,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 void NDS_Pause()
 {
    execute = FALSE;
+   paused = TRUE;
    SPU_Pause(1);
    while (!paused) {}
    printlog("Paused\n");
@@ -947,6 +983,12 @@ int RegClass(WNDPROC Proc, LPCTSTR szName)
 	return RegisterClass(&wc);
 }
 
+static void ExitRunLoop()
+{
+	finished = TRUE;
+	execute = FALSE;
+}
+
 
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
@@ -954,6 +996,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
                     int nFunsterStil)
 
 {
+	InitializeCriticalSection(&win_sync);
+
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
 	gdbstub_handle_t arm7_gdb_stub;
@@ -996,7 +1040,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
-	if (!MainWindow->create(TITLE, CW_USEDEFAULT, CW_USEDEFAULT, 256, 384, 
+	RECT clientRect = {0,0,256,384};
+	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+	AdjustWindowRect(&clientRect,dwStyle,TRUE);
+	if (!MainWindow->create(TITLE, CW_USEDEFAULT, CW_USEDEFAULT, clientRect.right-clientRect.left,clientRect.bottom-clientRect.top,
 			WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 				NULL))
 	{
@@ -1167,11 +1214,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	/* Create the dummy firmware */
 	NDS_CreateDummyFirmware( &win_fw_config);
 
-	runthread_ready = CreateEvent(NULL,TRUE,FALSE,0);
-    runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
+	//runthread_ready = CreateEvent(NULL,TRUE,FALSE,0);
+    //runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
 
 	//wait for the run thread to signal that it is initialized and ready to run
-	WaitForSingleObject(runthread_ready,INFINITE);
+	//WaitForSingleObject(runthread_ready,INFINITE);
 
     // Make sure any quotes from lpszArgument are removed
     if (lpszArgument[0] == '\"')
@@ -1204,17 +1251,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->Show(SW_NORMAL);
+	run(0);
+	DRV_AviEnd();
 
-    while (GetMessage (&messages, NULL, 0, 0))
-    {
-       if (TranslateAccelerator(MainWindow->getHWnd(), hAccel, &messages) == 0)
-       {
-          // Translate virtual-key messages into character messages
-          TranslateMessage(&messages);
-          // Send message to WindowProcedure 
-          DispatchMessage(&messages);
-       }  
-    }
+	//------SHUTDOWN
 	{
 	HRESULT hr=Input_DeInit();
 #ifdef DEBUG 
@@ -1240,8 +1280,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	delete MainWindow;
 	
 	CloseConsole();
-    /* The program return-value is 0 - The value that PostQuitMessage() gave */
-    return messages.wParam;
+
+    return 0;
 }
 
 void GetWndRect(HWND hwnd)
@@ -1308,6 +1348,63 @@ void SetRotate(HWND hwnd, int rot)
 	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
 }
+
+static void AviEnd()
+{
+	NDS_Pause();
+	DRV_AviEnd();
+	NDS_UnPause();
+}
+
+//Shows an Open File menu and starts recording an AVI
+static void AviRecordTo()
+{
+	NDS_Pause();
+
+	OPENFILENAME ofn;
+	char szChoice[MAX_PATH] = {0};
+
+	////if we are playing a movie, construct the filename from the current movie.
+	////else construct it from the filename.
+	//if(FCEUMOV_Mode(MOVIEMODE_PLAY|MOVIEMODE_RECORD))
+	//{
+	//	extern char curMovieFilename[];
+	//	strcpy(szChoice, curMovieFilename);
+	//	char* dot = strrchr(szChoice,'.');
+
+	//	if (dot)
+	//	{
+	//		*dot='\0';
+	//	}
+
+	//	strcat(szChoice, ".avi");
+	//}
+	//else
+	//{
+	//	extern char FileBase[];
+	//	sprintf(szChoice, "%s.avi", FileBase);
+	//}
+
+	// avi record file browser
+	memset(&ofn, 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = MainWindow->getHWnd();
+	ofn.lpstrFilter = "AVI Files (*.avi)\0*.avi\0\0";
+	ofn.lpstrFile = szChoice;
+	ofn.lpstrDefExt = "avi";
+	ofn.lpstrTitle = "Save AVI as";
+
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+
+	if(GetSaveFileName(&ofn))
+	{
+		DRV_AviBegin(szChoice);
+	}
+
+	NDS_UnPause();
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -1365,7 +1462,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case WM_CLOSE:
 			{
              NDS_Pause();
-             finished = TRUE;
 
 			 WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			 if (windowSize==0)
@@ -1385,7 +1481,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              }
 
              NDS_DeInit();
-             PostMessage(hwnd, WM_QUIT, 0, 0);
+             ExitRunLoop();;
              return 0;
 			}
 		case WM_MOVE:
@@ -1585,6 +1681,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                           NDS_WriteBMP("./printscreen.bmp");
                        }
                   return 0;
+				  case IDM_FILE_RECORDAVI:
+					  AviRecordTo();
+					  break;
+				case IDM_FILE_STOPAVI:
+						AviEnd();
+						break;
                   case IDM_STATE_LOAD:
                        {
                             OPENFILENAME ofn;

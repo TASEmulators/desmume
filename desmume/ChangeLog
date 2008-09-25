@@ -17,6 +17,8 @@
  - Change savestate code to support loosely bound chunks and more easily other parts of the emu (GE, GPU).
    The savestate format is changed, but from now on it is in principle more resilient (it will continue to break though) [zeromus]
  - Remove 16MB of WRAM at 0x01****** from arm9. Maped to unusued instead. What was this? [zeromus]
+ - Change SPU to run two spus in parallel. SPU_core is the official one. SPU_user produces output.
+   This lets us do inaccurate things with SPU_user which might sound better while being more accurate with SPU_core. [zeromus]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
@@ -62,6 +64,8 @@
  - Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
  - Fix resizing, rotate & aspect ration of main window. Add save window position and parameters [CrazyMax]
  - Rewrite all debug tools (autoupdate work now) [CrazyMax]
+ - Add AVI output [zeromus]
+ - Remove multithreading from user interface after finding several synchronization issues [zeromus]
 
 0.7.3 -> 0.8
  Cocoa:

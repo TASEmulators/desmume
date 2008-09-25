@@ -42,7 +42,7 @@ typedef struct
 extern SoundInterface_struct SNDDummy;
 extern SoundInterface_struct SNDFile;
 
-typedef struct
+struct channel_struct
 {
    u8 vol;
    u8 datashift;
@@ -64,19 +64,26 @@ typedef struct
    int lastsampcnt;
    s16 pcm16b, pcm16b_last;
    int index;
-} channel_struct;
+} ;
 
-typedef struct
+class SPU_struct
 {
+public:
+	SPU_struct(int buffersize);
    u32 bufpos;
    u32 buflength;
    s32 *sndbuf;
    s16 *outbuf;
    u32 bufsize;
-   channel_struct chan[16];
-} SPU_struct;
+   channel_struct channels[16];
 
-extern SPU_struct *SPU;
+   void reset();
+   ~SPU_struct();
+   void KeyOn(int channel);
+   void WriteByte(u32 addr, u8 val);
+   void WriteWord(u32 addr, u16 val);
+   void WriteLong(u32 addr, u32 val);
+};
 
 int SPU_ChangeSoundCore(int coreid, int buffersize);
 SoundInterface_struct *SPU_SoundCore();
@@ -91,6 +98,10 @@ void SPU_WriteByte(u32 addr, u8 val);
 void SPU_WriteWord(u32 addr, u16 val);
 void SPU_WriteLong(u32 addr, u32 val);
 u32 SPU_ReadLong(u32 addr);
-void SPU_Emulate(void);
+void SPU_Emulate_core(void);
+void SPU_Emulate_user(void);
+
+extern SPU_struct *SPU_core;
+extern int spu_core_samples;
 
 #endif

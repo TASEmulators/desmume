@@ -169,7 +169,7 @@ int NDS_Init( void) {
      armcpu_new(&NDS_ARM9,0);
 #endif
 
-     if (SPU_Init(SNDCORE_DUMMY, 735) != 0)
+     if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
         return -1;
 
 #ifdef EXPERIMENTAL_WIFI
