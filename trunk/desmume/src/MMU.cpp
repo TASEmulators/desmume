@@ -791,8 +791,8 @@ u32 FASTCALL _MMU_read32(u32 adr)
 				u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 				u32 val = FIFOget(MMU.fifos + proc);
 
-				cnt_l |= (MMU.fifos[proc].empty<<8) | (MMU.fifos[proc].full<<9) | (MMU.fifos[proc].error<<14);
-				cnt_r |= (MMU.fifos[proc].empty) | (MMU.fifos[proc].full<<1);
+				cnt_l |= (MMU.fifos[proc].empty?0x0100:0) | (MMU.fifos[proc].full?0x0200:0) | (MMU.fifos[proc].error?0x4000:0);
+				cnt_r |= (MMU.fifos[proc].empty?0x0001:0) | (MMU.fifos[proc].full?0x0002:0);
 
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 				T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
@@ -2761,8 +2761,8 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					//printlog("write32 (%s): REG_IPCFIFOSEND (%X-%X) val=%X\n", proc?"ARM9":"ARM7",cnt_l,cnt_r,val);
 					//FIFOadd(MMU.fifos+(proc^1), val);
 					FIFOadd(MMU.fifos+(proc^1), val);
-					cnt_l = (cnt_l & 0xFFFC) | (MMU.fifos[proc^1].full<<1);
-					cnt_r = (cnt_r & 0xFCFF) | (MMU.fifos[proc^1].full<<9);
+					cnt_l = (cnt_l & 0xFFFC) | (MMU.fifos[proc^1].full?0x0002:0);
+					cnt_r = (cnt_r & 0xFCFF) | (MMU.fifos[proc^1].full?0x0200:0);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 					T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
 					MMU.reg_IF[proc^1] |= ((cnt_r & (1<<10))<<8);
