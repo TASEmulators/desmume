@@ -65,6 +65,23 @@ static int issoundmuted;
 
 //////////////////////////////////////////////////////////////////////////////
 
+static volatile bool terminate;
+static volatile bool terminated;
+
+extern CRITICAL_SECTION win_sync;
+extern volatile int win_sound_samplecounter;
+
+DWORD WINAPI SNDDXThread( LPVOID lpParameter)
+{
+	for(;;) {
+		if(terminate) break;
+		SPU_Emulate_user();
+		Sleep(10);
+	}
+	terminated = true;
+	return 0;
+}
+
 int SNDDXInit(int buffersize)
 {
    DSBUFFERDESC dsbdesc;
@@ -161,6 +178,10 @@ int SNDDXInit(int buffersize)
    soundvolume = DSBVOLUME_MAX;
    issoundmuted = 0;
 
+   terminate = false;
+	terminated = false;
+   CreateThread(0,0,SNDDXThread,0,0,0);
+
    return 0;
 }
 
@@ -169,6 +190,11 @@ int SNDDXInit(int buffersize)
 void SNDDXDeInit()
 {
    DWORD status=0;
+   
+   terminate = true;
+   while(!terminated) {
+	   Sleep(1);
+   }
 
    if (lpDSB2)
    {
@@ -203,6 +229,11 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
    DWORD buffer1_size, buffer2_size;
    DWORD status;
 
+   EnterCriticalSection(&win_sync);
+   int samplecounter = win_sound_samplecounter -= num_samples;
+   LeaveCriticalSection(&win_sync);
+	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
+
    IDirectSoundBuffer8_GetStatus(lpDSB2, &status);
 
    if (status & DSBSTATUS_BUFFERLOST)
@@ -210,9 +241,17 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
 
    IDirectSoundBuffer8_Lock(lpDSB2, soundoffset, num_samples * sizeof(s16) * 2, &buffer1, &buffer1_size, &buffer2, &buffer2_size, 0);
 
-   memcpy(buffer1, buffer, buffer1_size);
-   if (buffer2)
-      memcpy(buffer2, ((u8 *)buffer)+buffer1_size, buffer2_size);
+   if(silence) {
+	   memset(buffer1, 0, buffer1_size);
+	   if(buffer2)
+		   memset(buffer2, 0, buffer2_size);
+   }
+   else
+   {
+	   memcpy(buffer1, buffer, buffer1_size);
+		if (buffer2)
+		  memcpy(buffer2, ((u8 *)buffer)+buffer1_size, buffer2_size);
+   }
 
    soundoffset += buffer1_size + buffer2_size;
    soundoffset %= soundbufsize;

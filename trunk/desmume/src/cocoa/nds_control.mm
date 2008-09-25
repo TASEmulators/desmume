@@ -1282,7 +1282,10 @@ bool opengl_init()
 			[sound_lock lock];
 			int x;
 			for(x = 0; x <= frames_to_skip; x++)
-				SPU_Emulate();
+			{
+				SPU_Emulate_user();
+				SPU_Emulate_core();
+			}
 			[sound_lock unlock];
 
 			[execution_lock unlock];

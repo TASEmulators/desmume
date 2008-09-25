@@ -324,13 +324,17 @@
 #define ID_VIEW_DISPLAYFPS              40010
 #define ID_VIS_DISPLAYFPS               40011
 #define ID_VIEW_DISPLAYFPS40012         40012
+#define ID_FILE_RECORDAVI               40013
+#define ID_FILE_STOPAVI                 40014
+#define IDM_FILE_RECORDAVI              40015
+#define IDM_FILE_STOPAVI                40016
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
-#define _APS_NEXT_COMMAND_VALUE         40013
+#define _APS_NEXT_COMMAND_VALUE         40017
 #define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           112
 #endif

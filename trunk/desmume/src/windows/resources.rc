@@ -706,6 +706,9 @@ BEGIN
         MENUITEM "Save Screenshot &As",         IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
+        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
+        MENUITEM "Stop AVI",                    IDM_FILE_STOPAVI
+        MENUITEM SEPARATOR
         MENUITEM "&Quit",                       IDM_QUIT
     END
     POPUP "&Emulation"
