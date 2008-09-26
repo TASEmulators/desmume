@@ -133,7 +133,7 @@ static float cacheLightDirection[4][4];
 #define RENDER_BACK_SURFACE 0X40
 
 
-//-------------poly and vertex lists
+//-------------poly and vertex lists and such things
 POLYLIST polylists[2];
 POLYLIST* polylist = &polylists[0];
 VERTLIST vertlists[2];
@@ -154,6 +154,9 @@ static void twiddleLists() {
 	vertlist->count = 0;
 }
 
+static BOOL flushPending = FALSE;
+static u32 flush_wbuffer;
+static u32 flush_sortmode;
 //------------------------------------------------------------
 
 static void makeTables() {
@@ -187,6 +190,7 @@ void gfx3d_reset()
 {
 	gfx3d = GFX3D();
 
+	flushPending = FALSE;
 	listTwiddle = 1;
 	twiddleLists();
 
@@ -1355,14 +1359,9 @@ void gfx3d_glCallList(unsigned long v)
 	}
 }
 
-
-static bool flushPending = false;
-static u32 flush_wbuffer;
-static u32 flush_sortmode;
-
 void gfx3d_glFlush(unsigned long v)
 {
-	flushPending = true;
+	flushPending = TRUE;
 	gfx3d.wbuffer = (v&1)!=0;
 	gfx3d.sortmode = ((v>>1)&1)!=0;
 
@@ -1399,7 +1398,7 @@ void gfx3d_VBlankSignal()
 	//the 3d buffers are swapped when a vblank begins.
 	//so, if we have a redraw pending, now is a safe time to do it
 	if(!flushPending) return;
-	flushPending = false;
+	flushPending = FALSE;
 
 	gpu3D->NDS_3D_Render();
 }
@@ -1519,6 +1518,7 @@ SFORMAT SF_GFX3D[]={
 	{ &dsEmission, 2|SS_RLSB, "GMEM" },
 	{ &triStripToggle, 4|SS_RLSB, "GTST" },
 	{ &listTwiddle, 4|SS_RLSB, "GLTW" },
+	{ &flushPending, 4|SS_RLSB, "GFLP" },
 	{ &gfx3d.enableTexturing, 4|SS_RLSB, "GSET" },
 	{ &gfx3d.enableAlphaTest, 4|SS_RLSB, "GSEA" },
 	{ &gfx3d.enableAlphaBlending, 4|SS_RLSB, "GSEB" },

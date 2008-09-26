@@ -128,7 +128,12 @@ SFORMAT SF_MEM[]={
 	{ ARM9Mem.ARM9_ITCM, 0x8000, "ITCM" },
 	{ ARM9Mem.ARM9_DTCM, 0x4000, "DTCM" },
 	{ ARM9Mem.MAIN_MEM, 0x400000, "WRAM" },
-	{ ARM9Mem.ARM9_REG, 0x10000, "9REG" },
+
+	//NOTE - this is not as large as the allocated memory.
+	//the memory is overlarge due to the way our memory map system is setup
+	//but there are actually no more registers than this
+	{ ARM9Mem.ARM9_REG, 0x2000, "9REG" }, 
+
 	{ ARM9Mem.ARM9_VMEM, 0x800, "VMEM" },
 	{ ARM9Mem.ARM9_OAM, 0x800, "OAMS" },
 	{ ARM9Mem.ARM9_ABG, 0x80000, "ABGM" },
@@ -504,6 +509,7 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,3,SF_MEM);
 	savestate_WriteChunk(os,4,SF_NDS);
 	savestate_WriteChunk(os,5,gpu_savestate);
+	savestate_WriteChunk(os,7,spu_savestate);
 	savestate_WriteChunk(os,60,SF_GFX3D);
 	savestate_WriteChunk(os,61,gfx3d_savestate);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
@@ -526,6 +532,7 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 			case 3: if(!ReadStateChunk(is,SF_MEM,size)) ret=false; break;
 			case 4: if(!ReadStateChunk(is,SF_NDS,size)) ret=false; break;
 			case 5: if(!gpu_loadstate(is)) ret=false; break;
+			case 7: if(!spu_loadstate(is)) ret=false; break;
 			case 60: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
 			case 61: if(!gfx3d_loadstate(is)) ret=false; break;
 			default:
@@ -590,6 +597,18 @@ bool savestate_load(std::istream* is)
 	} else {
 		is->read((char*)&buf[0],len);
 	}
+
+	//GO!! READ THE SAVESTATE
+	//THERE IS NO GOING BACK NOW
+	//reset the emulator first to clean out the host's state
+	//NDS_Reset();
+	//************* OH NO **********************
+	//we arent saving something we need to!
+	//maybe MMU state or maybe FIFO
+	//I will have to look into this soon
+
+	//hack
+	SPU_Reset();
 
 	memorystream mstemp(&buf);
 	bool x = ReadStateChunks(&mstemp,(s32)len);

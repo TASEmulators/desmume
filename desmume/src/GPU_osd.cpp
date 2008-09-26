@@ -70,7 +70,7 @@ OSDCLASS::~OSDCLASS()
 {
 	LOG("OSD_Deinit (%s)\n",name);
 
-	delete old_msg;
+	delete[] old_msg;
 }
 
 void OSDCLASS::setOffset(u16 ofs)
@@ -155,6 +155,6 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 		x+=OSD_FONT_WIDTH+2;
 		old_msg[i]=msg[i];
 	}
-	old_msg[512]=0;
+	old_msg[511]=0;
 	needUpdate = true;
 }

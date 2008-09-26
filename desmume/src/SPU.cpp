@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "MMU.h"
 #include "SPU.h"
 #include "mem.h"
-
+#include "readwrite.h"
 #include "armcpu.h"
 
 SPU_struct *SPU_core = 0;
@@ -77,7 +77,7 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 {
 	int i;
 
-	delete SPU_user;
+	delete SPU_user; SPU_user = 0;
 
 	// Make sure the old core is freed
 	if (SNDCore)
@@ -155,11 +155,6 @@ void SPU_SetVolume(int volume)
 //////////////////////////////////////////////////////////////////////////////
 
 
-void SPU_struct::reset()
-{
-	memset((void *)channels, 0, sizeof(channel_struct) * 16);
-}
-
 void SPU_Reset(void)
 {
 	int i;
@@ -167,12 +162,23 @@ void SPU_Reset(void)
 	SPU_core->reset();
 	if(SPU_user) SPU_user->reset();
 
+	if(SNDCore && SPU_user) {
+		SNDCore->DeInit();
+		SNDCore->Init(SPU_user->bufsize*2);
+		//todo - check success?
+	}
+
 	// Reset Registers
 	for (i = 0x400; i < 0x51D; i++)
 		T1WriteByte(MMU.ARM7_REG, i, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void SPU_struct::reset()
+{
+	memset((void *)channels, 0, sizeof(channel_struct) * 16);
+	memset(sndbuf,0,bufsize*2*4);
+	memset(outbuf,0,bufsize*2*2);
+}
 
 SPU_struct::SPU_struct(int buffersize)
 	: bufpos(0)
@@ -181,11 +187,9 @@ SPU_struct::SPU_struct(int buffersize)
 	, outbuf(0)
 	, bufsize(buffersize)
 {
-	reset();
 	sndbuf = new s32[buffersize*2];
 	outbuf = new s16[buffersize*2];
-	memset(sndbuf,0,buffersize*2*4);
-	memset(outbuf,0,buffersize*2*2);
+	reset();
 }
 
 SPU_struct::~SPU_struct()
@@ -1207,6 +1211,9 @@ void SPU_Emulate_core()
 
 void SPU_Emulate_user()
 {
+	if(!SPU_user)
+		return;
+
 	u32 audiosize;
 
 	// Check to see how much free space there is
@@ -1427,3 +1434,76 @@ void SNDFileSetVolume(int volume)
 
 //////////////////////////////////////////////////////////////////////////////
 
+void spu_savestate(std::ostream* os)
+{
+	//version
+	write32le(0,os);
+
+	SPU_struct *spu = SPU_core;
+
+	for(int j=0;j<16;j++) {
+		channel_struct &chan = spu->channels[j];
+		write8le(chan.vol,os);
+		write8le(chan.datashift,os);
+		write8le(chan.hold,os);
+		write8le(chan.pan,os);
+		write8le(chan.waveduty,os);
+		write8le(chan.repeat,os);
+		write8le(chan.format,os);
+		write8le(chan.status,os);
+		write32le(chan.addr,os);
+		write16le(chan.timer,os);
+		write16le(chan.loopstart,os);
+		write32le(chan.length,os);
+		write64le(double_to_u64(chan.sampcnt),os);
+		write64le(double_to_u64(chan.sampinc),os);
+		write32le(chan.lastsampcnt,os);
+		write16le(chan.pcm16b,os);
+		write16le(chan.pcm16b_last,os);
+		write32le(chan.index,os);
+	}
+}
+
+bool spu_loadstate(std::istream* is)
+{
+	//read version
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(version != 0) return false;
+
+	SPU_struct *spu = SPU_core;
+
+	for(int j=0;j<16;j++) {
+		channel_struct &chan = spu->channels[j];
+		read8le(&chan.vol,is);
+		read8le(&chan.datashift,is);
+		read8le(&chan.hold,is);
+		read8le(&chan.pan,is);
+		read8le(&chan.waveduty,is);
+		read8le(&chan.repeat,is);
+		read8le(&chan.format,is);
+		read8le(&chan.status,is);
+		read32le(&chan.addr,is);
+		read16le(&chan.timer,is);
+		read16le(&chan.loopstart,is);
+		read32le(&chan.length,is);
+		u64 temp; 
+		read64le(&temp,is); chan.sampcnt = u64_to_double(temp);
+		read64le(&temp,is); chan.sampinc = u64_to_double(temp);
+		read32le(&chan.lastsampcnt,is);
+		read16le(&chan.pcm16b,is);
+		read16le(&chan.pcm16b_last,is);
+		read32le(&chan.index,is);
+
+		//fixup the pointers which we had are supposed to keep cached
+		chan.buf8 = (s8*)&MMU.MMU_MEM[1][(chan.addr>>20)&0xFF][(chan.addr & MMU.MMU_MASK[1][(chan.addr >> 20) & 0xFF])];
+		chan.buf16 = (s16*)chan.buf8;
+	}
+
+	//copy the core spu (the more accurate) to the user spu
+	if(SPU_user) {
+		memcpy(SPU_core->channels,SPU_user->channels,sizeof(SPU_core->channels));
+	}
+
+	return true;
+}
