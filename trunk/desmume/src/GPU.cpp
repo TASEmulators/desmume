@@ -191,11 +191,7 @@ void GPU_Reset(GPU *g, u8 l)
 		g->sprMem = ARM9Mem.ARM9_BOBJ;
 		// GPU core B
 		g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[REG_DISPB]);
-		if (osdB==NULL) 
-		{
-			delete osdB;
-			osdB=NULL;
-		}
+		delete osdB;
 		osdB = new OSDCLASS(1);
 	}
 	else
@@ -204,40 +200,19 @@ void GPU_Reset(GPU *g, u8 l)
 		g->sprMem = ARM9Mem.ARM9_AOBJ;
 		// GPU core A
 		g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[0]);
-
-		if (osdA==NULL) 
-		{
-			delete osdA;
-			osdA=NULL;
-		}
+		delete osdA;
 		osdA = new OSDCLASS(0);
 	}
 
-	if (osd==NULL)
-		{
-			delete osd;
-			osd=NULL;
-		}
+	delete osd;
 	osd = new OSDCLASS(-1);
 }
 
 void GPU_DeInit(GPU * gpu)
 {
-	if (osd==NULL) 
-	{
-		delete osd;
-		osd=NULL;
-	}
-	if (osdA==NULL) 
-	{
-		delete osdA;
-		osdA=NULL;
-	}
-	if (osdB==NULL) 
-	{
-		delete osdB;
-		osdB=NULL;
-	}
+	delete osd; osd=NULL;
+	delete osdA; osdA=NULL;
+	delete osdB; osdB=NULL;
    free(gpu);
 }
 

@@ -182,7 +182,7 @@ void mc_reset_com(memory_chip_t *mc)
 
 void mc_realloc(memory_chip_t *mc, int type, u32 size)
 {
-        if(mc->data) free(mc->data);
+        if(mc->data) delete[] mc->data;
         mc_init(mc, type);
         mc_alloc(mc, size);     
 }

@@ -100,9 +100,11 @@ int FsReadNext(void * search, FsEntry * entry) {
 }
 
 void FsClose(void * search) {
-	DIR * dir = ((FsLinuxDir *) search)->dir;
+	FsLinuxDir *linuxdir = (FsLinuxDir *) search; 
+	DIR * dir = linuxdir->dir;
 
 	closedir(dir);
+	free(linuxdir->path);
 	free(search);
 }
 

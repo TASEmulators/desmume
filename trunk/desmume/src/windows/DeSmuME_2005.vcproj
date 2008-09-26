@@ -1024,10 +1024,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\NintendoDS(tm)_logo.bmp"
-			>
-		</File>
-		<File
 			RelativePath="..\OGLRender.cpp"
 			>
 		</File>

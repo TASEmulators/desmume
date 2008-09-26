@@ -1,6 +1,27 @@
 #include "readwrite.h"
 #include "types.h"
 
+//well. just for the sake of consistency
+int write8le(u8 b, FILE *fp)
+{
+	return((fwrite(&b,1,1,fp)<1)?0:1);
+}
+
+//well. just for the sake of consistency
+int write8le(u8 b, std::ostream *os)
+{
+	os->write((char*)&b,1);
+	return 1;
+}
+
+//well. just for the sake of consistency
+int read8le(u8 *Bufo, std::istream *is)
+{
+	if(is->read((char*)Bufo,1).gcount() != 1)
+		return 0;
+	return 1;
+}
+
 ///writes a little endian 16bit value to the specified file
 int write16le(u16 b, FILE *fp)
 {
@@ -8,6 +29,17 @@ int write16le(u16 b, FILE *fp)
 	s[0]=b;
 	s[1]=b>>8;
 	return((fwrite(s,1,2,fp)<2)?0:2);
+}
+
+
+///writes a little endian 16bit value to the specified file
+int write16le(u16 b, std::ostream *os)
+{
+	u8 s[2];
+	s[0]=b;
+	s[1]=b>>8;
+	os->write((char*)&s,2);
+	return 2;
 }
 
 ///writes a little endian 32bit value to the specified file
@@ -88,7 +120,6 @@ int read64le(u64 *Bufo, std::istream *is)
 #endif
 	return 1;
 }
-
 
 int read32le(u32 *Bufo, std::istream *is)
 {

@@ -228,5 +228,23 @@ inline void FlipByteOrder(u8 *src, u32 count)
 #define printlog(X) ((void)(X))
 #endif
 
+inline u64 double_to_u64(double d) {
+	union {
+		u64 a;
+		double b;
+	} fuxor;
+	fuxor.b = d;
+	return fuxor.a;
+}
+
+inline double u64_to_double(u64 u) {
+	union {
+		u64 a;
+		double b;
+	} fuxor;
+	fuxor.a = u;
+	return fuxor.b;
+}
+
 
 #endif

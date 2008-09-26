@@ -104,6 +104,7 @@ WINCLASS	*MainWindow=NULL;
 
 //HWND hwnd;
 //HDC  hdc;
+HACCEL hAccel;
 HINSTANCE hAppInst;
 RECT	MainWindowRect;
 
@@ -667,12 +668,16 @@ void Display()
 void CheckMessages()
 {
 	MSG msg;
+	HWND hwnd = MainWindow->getHWnd();
 	while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
 	{
 		if( GetMessage( &msg, 0,  0, 0)>0 )
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if(!TranslateAccelerator(hwnd,hAccel,&msg))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		}
 	}
 }
@@ -748,9 +753,6 @@ DWORD WINAPI run( LPVOID lpParameter)
 			   //avi writing
 				DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
 			   DRV_AviVideoUpdate((u16*)GPU_screen);
-
-			   //check win32 messages
-			   CheckMessages();
 
 			   Input_Process();
 			   Input_Post();
@@ -837,9 +839,13 @@ DWORD WINAPI run( LPVOID lpParameter)
 			   }
 			   frameCounter++;
 			   if (frameCounterDisplay) osd->addFixed(200, 30, "%d",frameCounter);
+
+			   CheckMessages();
           }
-          paused = TRUE;
-          Sleep(500);
+          
+		  paused = TRUE;
+		  CheckMessages();
+          Sleep(100);
      }
 	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
 	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
@@ -1014,7 +1020,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	MSG messages;            /* Here messages to the application are saved */
     char text[80];
-    HACCEL hAccel;
     hAppInst=hThisInstance;
 
 	init_configured_features( &my_config);
@@ -1170,7 +1175,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
     sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
 
-    if (SPU_ChangeSoundCore(sndcoretype, sndbuffersize) != 0)
+	EnterCriticalSection(&win_sync);
+    int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
+	LeaveCriticalSection(&win_sync);
+	if(spu_ret != 0)
     {
        MessageBox(MainWindow->getHWnd(),"Unable to initialize DirectSound","Error",MB_OK);
        return -1;
@@ -2307,7 +2315,9 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                sscanf(tempstr, "%d", &sndbuffersize);
                WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
 
+			   EnterCriticalSection(&win_sync);
                SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
+			   LeaveCriticalSection(&win_sync);
 
                // Write Volume
                sndvolume = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);

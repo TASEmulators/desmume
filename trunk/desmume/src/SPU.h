@@ -21,6 +21,7 @@
 #define SPU_H
 
 #include "types.h"
+#include <iosfwd>
 
 #define SNDCORE_DEFAULT         -1
 #define SNDCORE_DUMMY           0
@@ -103,5 +104,8 @@ void SPU_Emulate_user(void);
 
 extern SPU_struct *SPU_core;
 extern int spu_core_samples;
+
+void spu_savestate(std::ostream* os);
+bool spu_loadstate(std::istream* is);
 
 #endif
