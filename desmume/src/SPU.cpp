@@ -1502,7 +1502,7 @@ bool spu_loadstate(std::istream* is)
 
 	//copy the core spu (the more accurate) to the user spu
 	if(SPU_user) {
-		memcpy(SPU_core->channels,SPU_user->channels,sizeof(SPU_core->channels));
+		memcpy(SPU_user->channels,SPU_core->channels,sizeof(SPU_core->channels));
 	}
 
 	return true;

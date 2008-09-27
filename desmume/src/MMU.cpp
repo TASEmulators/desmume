@@ -647,7 +647,7 @@ u16 FASTCALL _MMU_read16(u32 adr)
 
 	if(adr&0x04000000)
 	{
-		/* Adress is an IO register */
+		/* Address is an IO register */
 		switch(adr)
 		{
 			case 0x04000604:
@@ -721,7 +721,7 @@ u32 FASTCALL _MMU_read32(u32 adr)
 
 	if((adr >> 24) == 4)
 	{
-		/* Adress is an IO register */
+		/* Address is an IO register */
 		switch(adr)
 		{
 			// This is hacked due to the only current 3D core
@@ -826,10 +826,10 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			{
                     u32 val=0;
 
-                    if(MMU.dscard[proc].adress)
-						val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].adress);
+                    if(MMU.dscard[proc].address)
+						val = T1ReadLong(MMU.CART_ROM, MMU.dscard[proc].address);
 
-					MMU.dscard[proc].adress += 4;	/* increment adress */
+					MMU.dscard[proc].address += 4;	/* increment address */
 	
 					MMU.dscard[proc].transfer_count--;	/* update transfer counter */
 					if(MMU.dscard[proc].transfer_count) /* if transfer is not ended */
@@ -1306,7 +1306,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 			((u16 *)(MMU.MMU_MEM[proc][0x40]))[(adr-0x04000000)>>1] = val;
 			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[proc][0x40]))[(0x380)]);
 		}
-		/* Adress is an IO register */
+		/* Address is an IO register */
 		else switch(adr)
 		{
 			case 0x0400035C:
@@ -2843,7 +2843,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 
                                         if(MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT) == 0xB7)
 					{
-                                                MMU.dscard[proc].adress = (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+4));
+                                                MMU.dscard[proc].address = (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT+4));
 						MMU.dscard[proc].transfer_count = 0x80;// * ((val>>24)&7));
 					}
                                         else if (MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT) == 0xB8)
@@ -2851,7 +2851,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
                                                 // Get ROM chip ID
                                                 val |= 0x800000; // Data-Word Status
                                                 T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
-                                                MMU.dscard[proc].adress = 0;
+                                                MMU.dscard[proc].address = 0;
                                         }
 					else
 					{
@@ -2861,7 +2861,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					//CARDLOG("%08X : %08X %08X\r\n", adr, val, adresse[proc]);
                     val |= 0x00800000;
 					
-					if(MMU.dscard[proc].adress == 0)
+					if(MMU.dscard[proc].address == 0)
 					{
                                                 val &= ~0x80000000; 
                                                 T1WriteLong(MMU.MMU_MEM[proc][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);

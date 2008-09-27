@@ -51,119 +51,187 @@ static const char* magic = "DeSmuME SState\0";
 
 
 SFORMAT SF_ARM7[]={
-	{ &NDS_ARM7.instruction, 4|SS_RLSB, "7INS" },
-	{ &NDS_ARM7.instruct_adr, 4|SS_RLSB, "7INA" },
-	{ &NDS_ARM7.next_instruction, 4|SS_RLSB, "7INN" },
-	{ NDS_ARM7.R, 4|SS_MULT(16), "7REG" },
-	{ &NDS_ARM7.CPSR, 4|SS_RLSB, "7CPS" },
-	{ &NDS_ARM7.SPSR, 4|SS_RLSB, "7SPS" },
-	{ &NDS_ARM7.R13_usr, 4|SS_RLSB, "7DUS" },
-	{ &NDS_ARM7.R14_usr, 4|SS_RLSB, "7EUS" },
-	{ &NDS_ARM7.R13_svc, 4|SS_RLSB, "7DSV" },
-	{ &NDS_ARM7.R14_svc, 4|SS_RLSB, "7ESV" },
-	{ &NDS_ARM7.R13_abt, 4|SS_RLSB, "7DAB" },
-	{ &NDS_ARM7.R14_abt, 4|SS_RLSB, "7EAB" },
-	{ &NDS_ARM7.R13_und, 4|SS_RLSB, "7DUN" },
-	{ &NDS_ARM7.R14_und, 4|SS_RLSB, "7EUN" },
-	{ &NDS_ARM7.R13_irq, 4|SS_RLSB, "7DIR" },
-	{ &NDS_ARM7.R14_irq, 4|SS_RLSB, "7EIR" },
-	{ &NDS_ARM7.R8_fiq, 4|SS_RLSB, "78FI" },
-	{ &NDS_ARM7.R9_fiq, 4|SS_RLSB, "79FI" },
-	{ &NDS_ARM7.R10_fiq, 4|SS_RLSB, "7AFI" },
-	{ &NDS_ARM7.R11_fiq, 4|SS_RLSB, "7BFI" },
-	{ &NDS_ARM7.R12_fiq, 4|SS_RLSB, "7CFI" },
-	{ &NDS_ARM7.R13_fiq, 4|SS_RLSB, "7DFI" },
-	{ &NDS_ARM7.R14_fiq, 4|SS_RLSB, "7EFI" },
-	{ &NDS_ARM7.SPSR_svc, 4|SS_RLSB, "7SVC" },
-	{ &NDS_ARM7.SPSR_abt, 4|SS_RLSB, "7ABT" },
-	{ &NDS_ARM7.SPSR_und, 4|SS_RLSB, "7UND" },
-	{ &NDS_ARM7.SPSR_irq, 4|SS_RLSB, "7IRQ" },
-	{ &NDS_ARM7.SPSR_fiq, 4|SS_RLSB, "7FIQ" },
-	{ &NDS_ARM7.intVector, 4|SS_RLSB, "7int" },
-	{ &NDS_ARM7.LDTBit, 1, "7LDT" },
-	{ &NDS_ARM7.waitIRQ, 4|SS_RLSB, "7Wai" },
-	{ &NDS_ARM7.wIRQ, 4|SS_RLSB, "7wIR" },
-	{ &NDS_ARM7.wirq, 4|SS_RLSB, "7wir" },
+	{ "7INS", 4, 1, &NDS_ARM7.instruction },
+	{ "7INA", 4, 1, &NDS_ARM7.instruct_adr },
+	{ "7INN", 4, 1, &NDS_ARM7.next_instruction },
+	{ "7REG", 4,16, NDS_ARM7.R },
+	{ "7CPS", 4, 1, &NDS_ARM7.CPSR },
+	{ "7SPS", 4, 1, &NDS_ARM7.SPSR },
+	{ "7DUS", 4, 1, &NDS_ARM7.R13_usr },
+	{ "7EUS", 4, 1, &NDS_ARM7.R14_usr },
+	{ "7DSV", 4, 1, &NDS_ARM7.R13_svc },
+	{ "7ESV", 4, 1, &NDS_ARM7.R14_svc },
+	{ "7DAB", 4, 1, &NDS_ARM7.R13_abt },
+	{ "7EAB", 4, 1, &NDS_ARM7.R14_abt },
+	{ "7DUN", 4, 1, &NDS_ARM7.R13_und },
+	{ "7EUN", 4, 1, &NDS_ARM7.R14_und },
+	{ "7DIR", 4, 1, &NDS_ARM7.R13_irq },
+	{ "7EIR", 4, 1, &NDS_ARM7.R14_irq },
+	{ "78FI", 4, 1, &NDS_ARM7.R8_fiq },
+	{ "79FI", 4, 1, &NDS_ARM7.R9_fiq },
+	{ "7AFI", 4, 1, &NDS_ARM7.R10_fiq },
+	{ "7BFI", 4, 1, &NDS_ARM7.R11_fiq },
+	{ "7CFI", 4, 1, &NDS_ARM7.R12_fiq },
+	{ "7DFI", 4, 1, &NDS_ARM7.R13_fiq },
+	{ "7EFI", 4, 1, &NDS_ARM7.R14_fiq },
+	{ "7SVC", 4, 1, &NDS_ARM7.SPSR_svc },
+	{ "7ABT", 4, 1, &NDS_ARM7.SPSR_abt },
+	{ "7UND", 4, 1, &NDS_ARM7.SPSR_und },
+	{ "7IRQ", 4, 1, &NDS_ARM7.SPSR_irq },
+	{ "7FIQ", 4, 1, &NDS_ARM7.SPSR_fiq },
+	{ "7int", 4, 1, &NDS_ARM7.intVector },
+	{ "7LDT", 1, 1, &NDS_ARM7.LDTBit },
+	{ "7Wai", 4, 1, &NDS_ARM7.waitIRQ },
+	{ "7wIR", 4, 1, &NDS_ARM7.wIRQ, },
+	{ "7wir", 4, 1, &NDS_ARM7.wirq, },
 	{ 0 }
 };
 
 SFORMAT SF_ARM9[]={
-	{ &NDS_ARM9.instruction, 4|SS_RLSB, "9INS" },
-	{ &NDS_ARM9.instruct_adr, 4|SS_RLSB, "9INA" },
-	{ &NDS_ARM9.next_instruction, 4|SS_RLSB, "9INN" },
-	{ NDS_ARM9.R, 4|SS_MULT(16), "9REG" },
-	{ &NDS_ARM9.CPSR, 4|SS_RLSB, "9CPS" },
-	{ &NDS_ARM9.SPSR, 4|SS_RLSB, "9SPS" },
-	{ &NDS_ARM9.R13_usr, 4|SS_RLSB, "9DUS" },
-	{ &NDS_ARM9.R14_usr, 4|SS_RLSB, "9EUS" },
-	{ &NDS_ARM9.R13_svc, 4|SS_RLSB, "9DSV" },
-	{ &NDS_ARM9.R14_svc, 4|SS_RLSB, "9ESV" },
-	{ &NDS_ARM9.R13_abt, 4|SS_RLSB, "9DAB" },
-	{ &NDS_ARM9.R14_abt, 4|SS_RLSB, "9EAB" },
-	{ &NDS_ARM9.R13_und, 4|SS_RLSB, "9DUN" },
-	{ &NDS_ARM9.R14_und, 4|SS_RLSB, "9EUN" },
-	{ &NDS_ARM9.R13_irq, 4|SS_RLSB, "9DIR" },
-	{ &NDS_ARM9.R14_irq, 4|SS_RLSB, "9EIR" },
-	{ &NDS_ARM9.R8_fiq, 4|SS_RLSB, "98FI" },
-	{ &NDS_ARM9.R9_fiq, 4|SS_RLSB, "99FI" },
-	{ &NDS_ARM9.R10_fiq, 4|SS_RLSB, "9AFI" },
-	{ &NDS_ARM9.R11_fiq, 4|SS_RLSB, "9BFI" },
-	{ &NDS_ARM9.R12_fiq, 4|SS_RLSB, "9CFI" },
-	{ &NDS_ARM9.R13_fiq, 4|SS_RLSB, "9DFI" },
-	{ &NDS_ARM9.R14_fiq, 4|SS_RLSB, "9EFI" },
-	{ &NDS_ARM9.SPSR_svc, 4|SS_RLSB, "9SVC" },
-	{ &NDS_ARM9.SPSR_abt, 4|SS_RLSB, "9ABT" },
-	{ &NDS_ARM9.SPSR_und, 4|SS_RLSB, "9UND" },
-	{ &NDS_ARM9.SPSR_irq, 4|SS_RLSB, "9IRQ" },
-	{ &NDS_ARM9.SPSR_fiq, 4|SS_RLSB, "9FIQ" },
-	{ &NDS_ARM9.intVector, 4|SS_RLSB, "9int" },
-	{ &NDS_ARM9.LDTBit, 1, "9LDT" },
-	{ &NDS_ARM9.waitIRQ, 4|SS_RLSB, "9Wai" },
-	{ &NDS_ARM9.wIRQ, 4|SS_RLSB, "9wIR" },
-	{ &NDS_ARM9.wirq, 4|SS_RLSB, "9wir" },
+	{ "9INS", 4, 1, &NDS_ARM9.instruction},
+	{ "9INA", 4, 1, &NDS_ARM9.instruct_adr},
+	{ "9INN", 4, 1, &NDS_ARM9.next_instruction},
+	{ "9REG", 4,16, NDS_ARM9.R},
+	{ "9CPS", 4, 1, &NDS_ARM9.CPSR},
+	{ "9SPS", 4, 1, &NDS_ARM9.SPSR},
+	{ "9DUS", 4, 1, &NDS_ARM9.R13_usr},
+	{ "9EUS", 4, 1, &NDS_ARM9.R14_usr},
+	{ "9DSV", 4, 1, &NDS_ARM9.R13_svc},
+	{ "9ESV", 4, 1, &NDS_ARM9.R14_svc},
+	{ "9DAB", 4, 1, &NDS_ARM9.R13_abt},
+	{ "9EAB", 4, 1, &NDS_ARM9.R14_abt},
+	{ "9DUN", 4, 1, &NDS_ARM9.R13_und},
+	{ "9EUN", 4, 1, &NDS_ARM9.R14_und},
+	{ "9DIR", 4, 1, &NDS_ARM9.R13_irq},
+	{ "9EIR", 4, 1, &NDS_ARM9.R14_irq},
+	{ "98FI", 4, 1, &NDS_ARM9.R8_fiq},
+	{ "99FI", 4, 1, &NDS_ARM9.R9_fiq},
+	{ "9AFI", 4, 1, &NDS_ARM9.R10_fiq},
+	{ "9BFI", 4, 1, &NDS_ARM9.R11_fiq},
+	{ "9CFI", 4, 1, &NDS_ARM9.R12_fiq},
+	{ "9DFI", 4, 1, &NDS_ARM9.R13_fiq},
+	{ "9EFI", 4, 1, &NDS_ARM9.R14_fiq},
+	{ "9SVC", 4, 1, &NDS_ARM9.SPSR_svc},
+	{ "9ABT", 4, 1, &NDS_ARM9.SPSR_abt},
+	{ "9UND", 4, 1, &NDS_ARM9.SPSR_und},
+	{ "9IRQ", 4, 1, &NDS_ARM9.SPSR_irq},
+	{ "9FIQ", 4, 1, &NDS_ARM9.SPSR_fiq},
+	{ "9int", 4, 1, &NDS_ARM9.intVector},
+	{ "9LDT", 1, 1, &NDS_ARM9.LDTBit},
+	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
+	{ "9wIR", 4, 1, &NDS_ARM9.wIRQ},
+	{ "9wir", 4, 1, &NDS_ARM9.wirq},
 	{ 0 }
 };
 
 SFORMAT SF_MEM[]={
-	{ ARM9Mem.ARM9_ITCM, 0x8000, "ITCM" },
-	{ ARM9Mem.ARM9_DTCM, 0x4000, "DTCM" },
-	{ ARM9Mem.MAIN_MEM, 0x400000, "WRAM" },
+	{ "ITCM", 1, 0x8000,   ARM9Mem.ARM9_ITCM},
+	{ "DTCM", 1, 0x4000,   ARM9Mem.ARM9_DTCM},
+	{ "WRAM", 1, 0x400000, ARM9Mem.MAIN_MEM},
 
 	//NOTE - this is not as large as the allocated memory.
 	//the memory is overlarge due to the way our memory map system is setup
 	//but there are actually no more registers than this
-	{ ARM9Mem.ARM9_REG, 0x2000, "9REG" }, 
+	{ "9REG", 1, 0x2000,   ARM9Mem.ARM9_REG},
 
-	{ ARM9Mem.ARM9_VMEM, 0x800, "VMEM" },
-	{ ARM9Mem.ARM9_OAM, 0x800, "OAMS" },
-	{ ARM9Mem.ARM9_ABG, 0x80000, "ABGM" },
-	{ ARM9Mem.ARM9_BBG, 0x20000, "BBGM" },
-	{ ARM9Mem.ARM9_AOBJ, 0x40000, "AOBJ" },
-	{ ARM9Mem.ARM9_BOBJ, 0x20000, "BOBJ" },
-	{ ARM9Mem.ARM9_LCD, 0xA4000, "LCDM" },
-	{ MMU.ARM7_ERAM, 0x10000, "ERAM" },
-	{ MMU.ARM7_REG, 0x10000, "7REG" },
-	{ MMU.ARM7_WIRAM, 0x10000, "WIRA" },
-	{ MMU.SWIRAM, 0x8000, "SWIR" },
-	{ MMU.CART_RAM, SRAM_SIZE, "SRAM" },
+	{ "VMEM", 1, 0x800,    ARM9Mem.ARM9_VMEM},
+	{ "OAMS", 1, 0x800,    ARM9Mem.ARM9_OAM},
+	{ "ABGM", 1, 0x80000,  ARM9Mem.ARM9_ABG},
+	{ "BBGM", 1, 0x20000,  ARM9Mem.ARM9_BBG},
+	{ "AOBJ", 1, 0x40000,  ARM9Mem.ARM9_AOBJ},
+	{ "BOBJ", 1, 0x20000,  ARM9Mem.ARM9_BOBJ},
+	{ "LCDM", 1, 0xA4000,  ARM9Mem.ARM9_LCD},
 	{ 0 }
 };
 
 SFORMAT SF_NDS[]={
-	{ &nds.ARM9Cycle, 4|SS_RLSB, "_9CY" },
-	{ &nds.ARM7Cycle, 4|SS_RLSB, "_7CY" },
-	{ &nds.cycles, 4|SS_RLSB, "_CYC" },
-	{ nds.timerCycle, 4|SS_MULT(8), "_TCY" },
-	{ nds.timerOver, 4|SS_MULT(8), "_TOV" },
-	{ &nds.nextHBlank, 4|SS_RLSB, "_NHB" },
-	{ &nds.VCount, 4|SS_RLSB, "_VCT" },
-	{ &nds.old, 4|SS_RLSB, "_OLD" },
-	{ &nds.diff, 4|SS_RLSB, "_DIF" },
-	{ &nds.lignerendu, 4|SS_RLSB, "_LIG" },
-	{ &nds.touchX, 2|SS_RLSB, "_TPX" },
-	{ &nds.touchY, 2|SS_RLSB, "_TPY" },
+	{ "_9CY", 4, 1, &nds.ARM9Cycle},
+	{ "_7CY", 4, 1, &nds.ARM7Cycle},
+	{ "_CYC", 4, 1, &nds.cycles},
+	{ "_TCY", 4, 8, nds.timerCycle},
+	{ "_TOV", 4, 8, nds.timerOver},
+	{ "_NHB", 4, 1, &nds.nextHBlank},
+	{ "_VCT", 4, 1, &nds.VCount},
+	{ "_OLD", 4, 1, &nds.old},
+	{ "_DIF", 4, 1, &nds.diff},
+	{ "_LIG", 4, 1, &nds.lignerendu},
+	{ "_TPX", 2, 1, &nds.touchX},
+	{ "_TPY", 2, 1, &nds.touchY},
 	{ 0 }
 };
+
+SFORMAT SF_MMU[]={
+	{ "M7BI", 1, 0x4000,  MMU.ARM7_BIOS},
+	{ "M7ER", 1, 0x10000, MMU.ARM7_ERAM},
+	{ "M7RG", 1, 0x10000, MMU.ARM7_REG},
+	{ "M7WI", 1, 0x10000, MMU.ARM7_WIRAM},
+	{ "MVRM", 1, 9,       MMU.vram_mode},
+	{ "MSWI", 1, 0x8000,  MMU.SWIRAM},
+	{ "MCRA", 1, 0x10000, MMU.CART_RAM},
+	{ "M9RW", 1, 1,       &MMU.ARM9_RW_MODE},
+	{ "MDTC", 4, 1,       &MMU.DTCMRegion},
+	{ "MITC", 4, 1,       &MMU.ITCMRegion},
+	{ "MTIM", 2, 8,       MMU.timer},
+	{ "MTMO", 4, 8,       MMU.timerMODE},
+	{ "MTON", 4, 8,       MMU.timerON},
+	{ "MTRN", 4, 8,       MMU.timerRUN},
+	{ "MTRL", 2, 8,       MMU.timerReload},
+	{ "MIME", 4, 2,       MMU.reg_IME},
+	{ "MIE_", 4, 2,       MMU.reg_IE},
+	{ "MIF_", 4, 2,       MMU.reg_IF},
+	{ "MDST", 4, 8,       MMU.DMAStartTime},
+	{ "MDCY", 4, 8,       MMU.DMACycle},
+	{ "MDCR", 4, 8,       MMU.DMACrt},
+	{ "MDMA", 4, 8,       MMU.DMAing},
+	
+	//begin memory chips
+	//we are skipping the firmware, because we really don't want to save the firmware to the savestate
+	//but, we will need to think about the philosophy of this.
+	//should we perhaps hash the current firmware and save it, so that we can match it against the loader's firmware?
+	{ "BUCO", 1, 1,       &MMU.bupmem.com},
+	{ "BUAD", 4, 1,       &MMU.bupmem.addr},
+	{ "BUAS", 1, 1,       &MMU.bupmem.addr_shift},
+	{ "BUAZ", 1, 1,       &MMU.bupmem.addr_size},
+	{ "BUWE", 4, 1,       &MMU.bupmem.write_enable},
+	//writeable_buffer ???
+	//end memory chips
+
+	{ "MC0A", 4, 1,       &MMU.dscard[0].address},
+	{ "MC0T", 4, 1,       &MMU.dscard[0].transfer_count},
+	{ "MC1A", 4, 1,       &MMU.dscard[1].address},
+	{ "MC1T", 4, 1,       &MMU.dscard[1].transfer_count},
+	{ "MCHT", 4, 1,       &MMU.CheckTimers},
+	{ "MCHD", 4, 1,       &MMU.CheckDMAs},
+	{ 0 }
+};
+
+
+void mmu_savestate(std::ostream* os)
+{
+	//version
+	write32le(0,os);
+
+	write32le(MMU.bupmem.size,os);
+	os->write((char*)MMU.bupmem.data,MMU.bupmem.size);
+}
+
+bool mmu_loadstate(std::istream* is)
+{
+	//read version
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(version != 0) return false;
+
+	u32 bupmem_size;
+	if(read32le(&bupmem_size,is) != 1) return false;
+	if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+
+	is->read((char*)MMU.bupmem.data,bupmem_size);
+	if(is->fail()) return false;
+
+	return true;
+}
+
 
 /* Format time and convert to string */
 char * format_time(time_t cal_time)
@@ -281,27 +349,28 @@ int sram_save (const char *file_name) {
 
 }
 
-static SFORMAT *CheckS(SFORMAT *sf, u32 tsize, char *desc)
+static SFORMAT *CheckS(SFORMAT *sf, u32 size, u32 count, char *desc)
 {
 	while(sf->v)
 	{
-		if(sf->s==~0)		// Link to another SFORMAT structure.
-		{
-			SFORMAT *tmp;
-			if((tmp= CheckS((SFORMAT *)sf->v, tsize, desc) ))
-				return(tmp);
-			sf++;
-			continue;
-		}
+		//NOT SUPPORTED RIGHT NOW
+		//if(sf->size==~0)		// Link to another SFORMAT structure.
+		//{
+		//	SFORMAT *tmp;
+		//	if((tmp= CheckS((SFORMAT *)sf->v, tsize, desc) ))
+		//		return(tmp);
+		//	sf++;
+		//	continue;
+		//}
 		if(!memcmp(desc,sf->desc,4))
 		{
-			if(tsize!=(sf->s))
-				return(0);
-			return(sf);
+			if(sf->size != size || sf->count != count)
+				return 0;
+			return sf;
 		}
 		sf++;
 	}
-	return(0);
+	return 0;
 }
 
 
@@ -312,34 +381,31 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 
 	while(is->tellg()<temp+size)
 	{
-		u32 tsize;
+		u32 size, count;
+		
 		char toa[4];
 		is->read(toa,4);
 		if(is->fail())
 			return false;
 
-		read32le(&tsize,is);
-		int count = SS_UNMULT(tsize);
-		int size = tsize & ~SS_FLAGS;
-		bool rlsb = (count!=0);
+		if(!read32le(&size,is)) return false;
+		if(!read32le(&count,is)) return false;
 
-		if((tmp=CheckS(sf,tsize,toa)))
+		if((tmp=CheckS(sf,size,count,toa)))
 		{
-
-
-			if(count == 0) count=1;
-
-			for(int i=0;i<count;i++) {
-
-				if(tmp->s&SS_INDIRECT)
-					is->read(*(char **)tmp->v,size);
-				else
+			if(size == 1) {
+				//special case: read a huge byte array
+				is->read((char *)tmp->v,count);
+			} else {
+				for(int i=0;i<count;i++)
+				{
 					is->read((char *)tmp->v + i*size,size);
 
-				#ifndef LOCAL_LE
-					if(rlsb)
-						FlipByteOrder((u8*)tmp->v + i*size,size);
-				#endif
+					#ifndef LOCAL_LE
+						if(rlsb)
+							FlipByteOrder((u8*)tmp->v + i*size,size);
+					#endif
+				}
 			}
 		}
 		else
@@ -356,50 +422,49 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 
 	while(sf->v)
 	{
-		if(sf->s==~0)		//Link to another struct
-		{
-			uint32 tmp;
+		//not supported right now
+		//if(sf->size==~0)		//Link to another struct
+		//{
+		//	uint32 tmp;
 
-			if(!(tmp=SubWrite(os,(SFORMAT *)sf->v)))
-				return(0);
-			acc+=tmp;
-			sf++;
-			continue;
-		}
+		//	if(!(tmp=SubWrite(os,(SFORMAT *)sf->v)))
+		//		return(0);
+		//	acc+=tmp;
+		//	sf++;
+		//	continue;
+		//}
 
-		int count = SS_UNMULT(sf->s);
-		int size = sf->s & ~SS_FLAGS;
-		bool rlsb = (count!=0);
+		int count = sf->count;
+		int size = sf->size;
 
-		acc+=8;			//Description + size
-
-		if(count==0) count=1;
+		acc+=12;			//Description + size + count
 
 		acc += count * size;
 
 		if(os)			//Are we writing or calculating the size of this block?
 		{
 			os->write(sf->desc,4);
-			write32le(sf->s,os);
+			write32le(sf->size,os);
+			write32le(sf->count,os);
 
-			for(int i=0;i<count;i++) {
+			if(size == 1) {
+				//special case: write a huge byte array
+				os->write((char *)sf->v,count);
+			} else {
+				for(int i=0;i<count;i++) {
 
-				#ifndef LOCAL_LE
-				if(rlsb)
+					#ifndef LOCAL_LE
 					FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
-				#endif
+					#endif
 
-				if(sf->s&SS_INDIRECT)
-					os->write(*(char **)sf->v,size);
-				else
 					os->write((char*)sf->v + i*size,size);
 
-				//Now restore the original byte order.
-				#ifndef LOCAL_LE
-				if(rlsb)
-					FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
-				#endif
-
+					//Now restore the original byte order.
+					#ifndef LOCAL_LE
+					if(rlsb)
+						FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
+					#endif
+				}
 			}
 		}
 		sf++;
@@ -508,10 +573,12 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,2,SF_ARM7);
 	savestate_WriteChunk(os,3,SF_MEM);
 	savestate_WriteChunk(os,4,SF_NDS);
-	savestate_WriteChunk(os,5,gpu_savestate);
+	savestate_WriteChunk(os,50,SF_MMU);
+	savestate_WriteChunk(os,51,mmu_savestate);
+	savestate_WriteChunk(os,6,gpu_savestate);
 	savestate_WriteChunk(os,7,spu_savestate);
-	savestate_WriteChunk(os,60,SF_GFX3D);
-	savestate_WriteChunk(os,61,gfx3d_savestate);
+	savestate_WriteChunk(os,80,SF_GFX3D);
+	savestate_WriteChunk(os,81,gfx3d_savestate);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
@@ -531,10 +598,12 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 			case 2: if(!ReadStateChunk(is,SF_ARM7,size)) ret=false; break;
 			case 3: if(!ReadStateChunk(is,SF_MEM,size)) ret=false; break;
 			case 4: if(!ReadStateChunk(is,SF_NDS,size)) ret=false; break;
-			case 5: if(!gpu_loadstate(is)) ret=false; break;
+			case 50: if(!ReadStateChunk(is,SF_MMU,size)) ret=false; break;
+			case 51: if(!mmu_loadstate(is)) ret=false; break;
+			case 6: if(!gpu_loadstate(is)) ret=false; break;
 			case 7: if(!spu_loadstate(is)) ret=false; break;
-			case 60: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
-			case 61: if(!gfx3d_loadstate(is)) ret=false; break;
+			case 80: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
+			case 81: if(!gfx3d_loadstate(is)) ret=false; break;
 			default:
 				ret=false;
 				break;

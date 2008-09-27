@@ -36,31 +36,18 @@ typedef struct
 
 struct SFORMAT
 {
-	//a void* to the data or a void** to the data
-	void *v;
-
-	//size, plus flags
-	uint32 s;
-
 	//a string description of the element
 	char *desc;
+
+	//the size of each element
+	u32 size;
+
+	//the number of each element
+	u32 count;
+
+	//a void* to the data or a void** to the data
+	void *v;
 };
-
-//X multiple multibyte elements
-#define SS_MULT(X)			(X<<24)
-
-//indicates that the value is a multibyte integer that needs to be put in the correct byte order
-//this is the same as SS_MULT(1)
-#define SS_RLSB            SS_MULT(1)
-
-
-
-//all flags together so that we can mask them out and get the size
-#define SS_FLAGS (SS_INDIRECT|SS_MULT(127))
-
-//extract the multiplier
-#define SS_UNMULT(X)	((X>>24)&0x7F)
-
 
 extern savestates_t savestates[NB_STATES];
 
