@@ -2011,6 +2011,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	
 	/* initialize the scanline black */
 	/* not doing this causes invalid colors when all active BGs are prevented to draw at some place */
+	//ZERO TODO - shouldnt this be BG palette color 0?
 	memset(dst,0,256*2) ;
 
 	// This could almost be changed to use function pointers

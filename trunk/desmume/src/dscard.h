@@ -23,7 +23,7 @@
 typedef struct
 {
 	
-	u32 adress;
+	u32 address;
 	u32 transfer_count;
 	
 } nds_dscard;
