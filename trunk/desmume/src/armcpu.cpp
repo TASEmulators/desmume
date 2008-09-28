@@ -19,12 +19,14 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 #include "arm_instructions.h"
 #include "thumb_instructions.h"
 #include "cp15.h"
 #include "bios.h"
-#include <stdlib.h>
-#include <stdio.h>
+
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -537,6 +539,8 @@ template<int PROCNUM>
 u32 armcpu_exec()
 {
         u32 c = 1;
+
+		assert(ARMPROC.instruct_adr!=0x00000000);
 
 #ifdef GDB_STUB
         if (ARMPROC.stalled)
