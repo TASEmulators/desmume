@@ -24,7 +24,7 @@
 
 #include "armcpu.h"
 
-typedef struct
+struct armcp15_t
 {
         u32 IDCode;
         u32 cacheType;
@@ -70,7 +70,7 @@ typedef struct
 
 	armcpu_t * cpu;
 
-} armcp15_t;
+};
 
 armcp15_t *armcp15_new(armcpu_t *c);
 BOOL armcp15_dataProcess(armcp15_t *armcp15, u8 CRd, u8 CRn, u8 CRm, u8 opcode1, u8 opcode2);

@@ -28,12 +28,12 @@
 
 typedef struct
 {
-	bool	error;
-	bool	enable;	
+	BOOL	error;
+	BOOL	enable;	
 
-	bool	empty;
-	bool	half;
-	bool	full;
+	BOOL	empty;
+	BOOL	half;
+	BOOL	full;
 	u8		irq;
 
 	u8		sendPos;

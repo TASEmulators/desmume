@@ -24,12 +24,14 @@
 #endif
 #include <stdio.h>
 #include <string.h>
-#include "saves.h"
-#include "MMU.h"
-#include "NDSSystem.h"
 #include <sys/stat.h>
 #include <time.h>
 #include <fstream>
+#include "saves.h"
+#include "MMU.h"
+#include "NDSSystem.h"
+#include "render3D.h"
+#include "cp15.h"
 
 #include "memorystream.h"
 #include "readwrite.h"
@@ -202,6 +204,26 @@ SFORMAT SF_MMU[]={
 	{ "MC1T", 4, 1,       &MMU.dscard[1].transfer_count},
 	{ "MCHT", 4, 1,       &MMU.CheckTimers},
 	{ "MCHD", 4, 1,       &MMU.CheckDMAs},
+
+	//fifos
+	{ "F0ER", 4, 1,       &MMU.fifos[0].error},
+	{ "F0EN", 4, 1,       &MMU.fifos[0].enable},
+	{ "F0EM", 4, 1,       &MMU.fifos[0].empty},
+	{ "F0HA", 4, 1,       &MMU.fifos[0].half},
+	{ "F0FU", 4, 1,       &MMU.fifos[0].full},
+	{ "F0IR", 1, 1,       &MMU.fifos[0].irq},
+	{ "F0SP", 1, 1,       &MMU.fifos[0].sendPos},
+	{ "F0RP", 1, 1,       &MMU.fifos[0].recvPos},
+	{ "F0BU", 1, 0x8000,  &MMU.fifos[0].buf},
+	{ "F1ER", 4, 1,       &MMU.fifos[1].error},
+	{ "F1EN", 4, 1,       &MMU.fifos[1].enable},
+	{ "F1EM", 4, 1,       &MMU.fifos[1].empty},
+	{ "F1HA", 4, 1,       &MMU.fifos[1].half},
+	{ "F1FU", 4, 1,       &MMU.fifos[1].full},
+	{ "F1IR", 1, 1,       &MMU.fifos[1].irq},
+	{ "F1SP", 1, 1,       &MMU.fifos[1].sendPos},
+	{ "F1RP", 1, 1,       &MMU.fifos[1].recvPos},
+	{ "F1BU", 1, 0x8000,  &MMU.fifos[1].buf},
 	{ 0 }
 };
 
@@ -231,6 +253,117 @@ bool mmu_loadstate(std::istream* is)
 
 	return true;
 }
+
+static void cp15_saveone(armcp15_t *cp15, std::ostream* os)
+{
+	write32le(cp15->IDCode,os);
+	write32le(cp15->cacheType,os);
+    write32le(cp15->TCMSize,os);
+    write32le(cp15->ctrl,os);
+    write32le(cp15->DCConfig,os);
+    write32le(cp15->ICConfig,os);
+    write32le(cp15->writeBuffCtrl,os);
+    write32le(cp15->und,os);
+    write32le(cp15->DaccessPerm,os);
+    write32le(cp15->IaccessPerm,os);
+    write32le(cp15->protectBaseSize0,os);
+    write32le(cp15->protectBaseSize1,os);
+    write32le(cp15->protectBaseSize2,os);
+    write32le(cp15->protectBaseSize3,os);
+    write32le(cp15->protectBaseSize4,os);
+    write32le(cp15->protectBaseSize5,os);
+    write32le(cp15->protectBaseSize6,os);
+    write32le(cp15->protectBaseSize7,os);
+    write32le(cp15->cacheOp,os);
+    write32le(cp15->DcacheLock,os);
+    write32le(cp15->IcacheLock,os);
+    write32le(cp15->ITCMRegion,os);
+    write32le(cp15->DTCMRegion,os);
+    write32le(cp15->processID,os);
+    write32le(cp15->RAM_TAG,os);
+    write32le(cp15->testState,os);
+    write32le(cp15->cacheDbg,os);
+    for(int i=0;i<8;i++) write32le(cp15->regionWriteMask_USR[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionWriteMask_SYS[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionReadMask_USR[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionReadMask_SYS[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionExecuteMask_USR[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionExecuteMask_SYS[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionWriteSet_USR[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionWriteSet_SYS[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionReadSet_USR[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionReadSet_SYS[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionExecuteSet_USR[i],os);
+    for(int i=0;i<8;i++) write32le(cp15->regionExecuteSet_SYS[i],os);
+}
+
+void cp15_savestate(std::ostream* os)
+{
+	//version
+	write32le(0,os);
+
+	cp15_saveone((armcp15_t *)NDS_ARM9.coproc[15],os);
+	cp15_saveone((armcp15_t *)NDS_ARM7.coproc[15],os);
+}
+
+static bool cp15_loadone(armcp15_t *cp15, std::istream* is)
+{
+	if(!read32le(&cp15->IDCode,is)) return false;
+	if(!read32le(&cp15->cacheType,is)) return false;
+    if(!read32le(&cp15->TCMSize,is)) return false;
+    if(!read32le(&cp15->ctrl,is)) return false;
+    if(!read32le(&cp15->DCConfig,is)) return false;
+    if(!read32le(&cp15->ICConfig,is)) return false;
+    if(!read32le(&cp15->writeBuffCtrl,is)) return false;
+    if(!read32le(&cp15->und,is)) return false;
+    if(!read32le(&cp15->DaccessPerm,is)) return false;
+    if(!read32le(&cp15->IaccessPerm,is)) return false;
+    if(!read32le(&cp15->protectBaseSize0,is)) return false;
+    if(!read32le(&cp15->protectBaseSize1,is)) return false;
+    if(!read32le(&cp15->protectBaseSize2,is)) return false;
+    if(!read32le(&cp15->protectBaseSize3,is)) return false;
+    if(!read32le(&cp15->protectBaseSize4,is)) return false;
+    if(!read32le(&cp15->protectBaseSize5,is)) return false;
+    if(!read32le(&cp15->protectBaseSize6,is)) return false;
+    if(!read32le(&cp15->protectBaseSize7,is)) return false;
+    if(!read32le(&cp15->cacheOp,is)) return false;
+    if(!read32le(&cp15->DcacheLock,is)) return false;
+    if(!read32le(&cp15->IcacheLock,is)) return false;
+    if(!read32le(&cp15->ITCMRegion,is)) return false;
+    if(!read32le(&cp15->DTCMRegion,is)) return false;
+    if(!read32le(&cp15->processID,is)) return false;
+    if(!read32le(&cp15->RAM_TAG,is)) return false;
+    if(!read32le(&cp15->testState,is)) return false;
+    if(!read32le(&cp15->cacheDbg,is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteMask_USR[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteMask_SYS[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadMask_USR[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadMask_SYS[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteMask_USR[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteMask_SYS[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteSet_USR[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionWriteSet_SYS[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadSet_USR[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadSet_SYS[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteSet_USR[i],is)) return false;
+    for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteSet_SYS[i],is)) return false;
+	
+	return true;
+}
+
+bool cp15_loadstate(std::istream* is)
+{
+	//read version
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(version != 0) return false;
+
+	if(!cp15_loadone((armcp15_t *)NDS_ARM9.coproc[15],is)) return false;
+	if(!cp15_loadone((armcp15_t *)NDS_ARM7.coproc[15],is)) return false;
+
+	return true;
+}
+
 
 
 /* Format time and convert to string */
@@ -571,14 +704,15 @@ bool savestate_save (const char *file_name)
 static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,1,SF_ARM9);
 	savestate_WriteChunk(os,2,SF_ARM7);
-	savestate_WriteChunk(os,3,SF_MEM);
-	savestate_WriteChunk(os,4,SF_NDS);
-	savestate_WriteChunk(os,50,SF_MMU);
-	savestate_WriteChunk(os,51,mmu_savestate);
-	savestate_WriteChunk(os,6,gpu_savestate);
-	savestate_WriteChunk(os,7,spu_savestate);
-	savestate_WriteChunk(os,80,SF_GFX3D);
-	savestate_WriteChunk(os,81,gfx3d_savestate);
+	savestate_WriteChunk(os,3,cp15_savestate);
+	savestate_WriteChunk(os,4,SF_MEM);
+	savestate_WriteChunk(os,5,SF_NDS);
+	savestate_WriteChunk(os,60,SF_MMU);
+	savestate_WriteChunk(os,61,mmu_savestate);
+	savestate_WriteChunk(os,7,gpu_savestate);
+	savestate_WriteChunk(os,8,spu_savestate);
+	savestate_WriteChunk(os,90,SF_GFX3D);
+	savestate_WriteChunk(os,91,gfx3d_savestate);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
@@ -596,14 +730,15 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 		{
 			case 1: if(!ReadStateChunk(is,SF_ARM9,size)) ret=false; break;
 			case 2: if(!ReadStateChunk(is,SF_ARM7,size)) ret=false; break;
-			case 3: if(!ReadStateChunk(is,SF_MEM,size)) ret=false; break;
-			case 4: if(!ReadStateChunk(is,SF_NDS,size)) ret=false; break;
-			case 50: if(!ReadStateChunk(is,SF_MMU,size)) ret=false; break;
-			case 51: if(!mmu_loadstate(is)) ret=false; break;
-			case 6: if(!gpu_loadstate(is)) ret=false; break;
-			case 7: if(!spu_loadstate(is)) ret=false; break;
-			case 80: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
-			case 81: if(!gfx3d_loadstate(is)) ret=false; break;
+			case 3: if(!cp15_loadstate(is)) ret=false; break;
+			case 4: if(!ReadStateChunk(is,SF_MEM,size)) ret=false; break;
+			case 5: if(!ReadStateChunk(is,SF_NDS,size)) ret=false; break;
+			case 60: if(!ReadStateChunk(is,SF_MMU,size)) ret=false; break;
+			case 61: if(!mmu_loadstate(is)) ret=false; break;
+			case 7: if(!gpu_loadstate(is)) ret=false; break;
+			case 8: if(!spu_loadstate(is)) ret=false; break;
+			case 90: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
+			case 91: if(!gfx3d_loadstate(is)) ret=false; break;
 			default:
 				ret=false;
 				break;
@@ -670,14 +805,18 @@ bool savestate_load(std::istream* is)
 	//GO!! READ THE SAVESTATE
 	//THERE IS NO GOING BACK NOW
 	//reset the emulator first to clean out the host's state
-	//NDS_Reset();
-	//************* OH NO **********************
-	//we arent saving something we need to!
-	//maybe MMU state or maybe FIFO
-	//I will have to look into this soon
+	
+	//while the series of resets below should work,
+	//we are testing the robustness of the savestate system with this full reset.
+	//the full reset wipes more things, so we can make sure that they are being restored correctly
+	NDS_Reset();
 
-	//hack
-	SPU_Reset();
+	//GPU_Reset(MainScreen.gpu, 0);
+	//GPU_Reset(SubScreen.gpu, 1);
+	//gfx3d_reset();
+	//gpu3D->NDS_3D_Reset();
+	//SPU_Reset();
+
 
 	memorystream mstemp(&buf);
 	bool x = ReadStateChunks(&mstemp,(s32)len);

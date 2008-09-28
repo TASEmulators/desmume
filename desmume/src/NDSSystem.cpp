@@ -424,19 +424,14 @@ void NDS_FreeROM(void)
    MMU.bupmem.fp = NULL;
 }
 
-                         
-
 void NDS_Reset( void)
 {
-   BOOL oldexecute=execute;
    int i;
    u32 src;
    u32 dst;
    NDS_header * header = NDS_getROMHeader();
 
 	if (!header) return ;
-
-   execute = FALSE;
 
    MMU_clearMem();
 
@@ -459,6 +454,7 @@ void NDS_Reset( void)
       dst += 4;
       src += 4;
    }
+
 
    armcpu_init(&NDS_ARM7, header->ARM7exe);
    armcpu_init(&NDS_ARM9, header->ARM9exe);
@@ -543,8 +539,6 @@ void NDS_Reset( void)
    gfx3d_reset();
    gpu3D->NDS_3D_Reset();
    SPU_Reset();
-
-   execute = oldexecute;
 }
 
 int NDS_ImportSave(const char *filename)
