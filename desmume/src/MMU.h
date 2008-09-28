@@ -60,6 +60,11 @@ typedef struct {
 
 	//Unused ram
 	u8 UNUSED_RAM[4];
+
+	//this is here so that we can trap glitchy emulator code
+	//which is accessing offsets 5,6,7 of unused ram due to unaligned accesses
+	//(also since the emulator doesn't prevent unaligned accesses)
+	u8 MORE_UNUSED_RAM[4];
         
     u8 * * MMU_MEM[2];
     u32 * MMU_MASK[2];
