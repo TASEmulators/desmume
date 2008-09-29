@@ -25,18 +25,19 @@
 #define _COMMON_H_
 
 #include <stdio.h>
+#include "types.h"
 	
 #ifdef WIN32
 #include <windows.h>
 
 #define CLASSNAME "DeSmuME"
-#define TITLE "DeSmuME v"VERSION
 
 extern HINSTANCE hAppInst;
-//char		vPath[MAX_PATH], *szPath, currDir[MAX_PATH];
 
 extern char IniName[MAX_PATH];
 extern void GetINIPath();
 #endif
+
+extern u8 reverseBitsInByte(u8 x);
 	
 #endif

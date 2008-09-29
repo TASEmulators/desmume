@@ -1048,7 +1048,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	RECT clientRect = {0,0,256,384};
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	AdjustWindowRect(&clientRect,dwStyle,TRUE);
-	if (!MainWindow->create(TITLE, CW_USEDEFAULT, CW_USEDEFAULT, clientRect.right-clientRect.left,clientRect.bottom-clientRect.top,
+	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, CW_USEDEFAULT, CW_USEDEFAULT, clientRect.right-clientRect.left,clientRect.bottom-clientRect.top,
 			WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 				NULL))
 	{

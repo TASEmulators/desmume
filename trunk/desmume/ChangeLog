@@ -19,6 +19,7 @@
  - Remove 16MB of WRAM at 0x01****** from arm9. Maped to unusued instead. What was this? [zeromus]
  - Change SPU to run two spus in parallel. SPU_core is the official one. SPU_user produces output.
    This lets us do inaccurate things with SPU_user which might sound better while being more accurate with SPU_core. [zeromus]
+ - Add RTC implementations (not fully) [CrazyMax]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
