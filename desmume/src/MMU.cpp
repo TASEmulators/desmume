@@ -34,6 +34,7 @@
 #include "registers.h"
 #include "render3D.h"
 #include "gfx3d.h"
+#include "rtc.h"
 #include "GPU_osd.h"
 
 #define ROM_MASK 3
@@ -209,6 +210,7 @@ void MMU_Init(void) {
         mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
         mc_alloc(&MMU.bupmem, 1);
         MMU.bupmem.fp = NULL;
+	rtcInit();
 
 } 
 
@@ -295,6 +297,7 @@ void MMU_clearMem()
         ARM9Mem.textureSlotAddr[2] = &ARM9Mem.ARM9_LCD[0x20000 * 2];
         ARM9Mem.textureSlotAddr[3] = &ARM9Mem.ARM9_LCD[0x20000 * 3];
 #endif
+	rtcInit();
 }
 
 /* the VRAM blocks keep their content even when not blended in */
@@ -599,6 +602,9 @@ u8 FASTCALL _MMU_read8(u32 adr)
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
+	
+	if (adr == REG_RTC && proc == ARMCPU_ARM7)
+			return rtcRead();
 
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
@@ -1234,6 +1240,11 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		case 0x040001AF :
                     LOG("%08X : %02X\r\n", adr, val);
 #endif
+		case REG_RTC:
+		{
+			if (proc == ARMCPU_ARM7) rtcWrite(val);
+			break;
+		}
 		
 		default :
 			break;

@@ -747,6 +747,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\rtc.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\saves.cpp"
 					>
 				</File>
@@ -1078,6 +1082,10 @@
 				</File>
 				<File
 					RelativePath="..\ROMReader.h"
+					>
+				</File>
+				<File
+					RelativePath="..\rtc.h"
 					>
 				</File>
 				<File

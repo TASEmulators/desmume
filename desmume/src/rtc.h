@@ -21,50 +21,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "common.h"
+#ifndef _RTC_H_
+#define _RTC_H_
+#include <stdlib.h>
+#include "types.h"
 
-#ifdef WIN32
-
-char IniName[MAX_PATH];
-
-void GetINIPath()
-{   
-	char		vPath[MAX_PATH], *szPath, currDir[MAX_PATH];
-    /*if (*vPath)
-       szPath = vPath;
-    else
-    {*/
-       char *p;
-       ZeroMemory(vPath, sizeof(vPath));
-       GetModuleFileName(NULL, vPath, sizeof(vPath));
-       p = vPath + lstrlen(vPath);
-       while (p >= vPath && *p != '\\') p--;
-       if (++p >= vPath) *p = 0;
-       szPath = vPath;
-    //}
-	if (strlen(szPath) + strlen("\\desmume.ini") < MAX_PATH)
-	{
-		sprintf(IniName, "%s\\desmume.ini",szPath);
-	} else if (MAX_PATH> strlen(".\\desmume.ini")) {
-		sprintf(IniName, ".\\desmume.ini",szPath);
-	} else
-	{
-		memset(IniName,0,MAX_PATH) ;
-	}
-}
-
+extern	void rtcInit();
+extern	u8 rtcRead();
+extern	void rtcWrite(u16 val);
 #endif
-	
-u8 reverseBitsInByte(u8 x)
-{
-	u8 h = 0;
-	u8 i = 0;
-
-	for (i = 0; i < 8; i++)
-	{
-		h = (h << 1) + (x & 1); 
-		x >>= 1; 
-	}
-
-	return h;
-}

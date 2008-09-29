@@ -82,7 +82,7 @@ LRESULT MemViewBox_OnPaint(HWND hwnd, memview_struct * win, WPARAM wParam, LPARA
         r.right = rect.right-3;
         
         adr = win->curr_ligne*0x10;
-		printlog("curr_ligne=%i\n", win->curr_ligne);
+		//printlog("curr_ligne=%i\n", win->curr_ligne);
         
         for(i=0; i<nbligne; ++i)
         {
