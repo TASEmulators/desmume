@@ -24,14 +24,6 @@
 #define _CONSOLE_H_
 #include <windows.h>
 #include <stdio.h>
+#include "debug.h"
 
-#ifdef BETA_VERSION
-void OpenConsole();
-void CloseConsole();
-void printlog(const char *fmt, ...);
-#else
-#define OpenConsole()
-#define CloseConsole()
-#define printlog(...)
-#endif
 #endif

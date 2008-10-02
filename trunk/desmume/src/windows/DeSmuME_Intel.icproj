@@ -5,7 +5,7 @@
 	Name="DeSmuME_Intel"
 	ProjectGUID="{F26376D4-B1A6-4ACC-9B2C-5CB92B9E7B80}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="1511626194"
+	VCNestedProjectCRC32="4086597408"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -42,7 +42,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				GenerateDebugInformation="1"
 				GenerateMapFile="1"
 				RandomizedBaseAddress="1"
@@ -161,7 +161,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -283,7 +283,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -432,6 +432,8 @@
 		<File 
 			RelativePath="..\ROMReader.h"/>
 		<File 
+			RelativePath="..\rtc.h"/>
+		<File 
 			RelativePath="..\saves.h"/>
 		<File 
 			RelativePath="..\SPU.h"/>
@@ -489,8 +491,6 @@
 			RelativePath="..\thumb_tabdef.inc"/>
 		<File 
 			RelativePath=".\DeSmuME.ico"/>
-		<File 
-			RelativePath=".\NintendoDS(tm)_logo.bmp"/>
 		<File 
 			RelativePath=".\resources.rc"/>
 		<File 
@@ -625,6 +625,8 @@
 		<File 
 			RelativePath="..\ROMReader.cpp"/>
 		<File 
+			RelativePath="..\rtc.cpp"/>
+		<File 
 			RelativePath="..\saves.cpp"/>
 		<File 
 			RelativePath="..\SPU.cpp"/>
@@ -634,6 +636,8 @@
 			RelativePath="..\wifi.cpp"/>
 		<File 
 			RelativePath=".\AboutBox.cpp"/>
+		<File 
+			RelativePath=".\aviout.cpp"/>
 		<File 
 			RelativePath=".\colorctrl.cpp"/>
 		<File 

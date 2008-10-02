@@ -27,6 +27,16 @@
 #include "windows/console.h"
 #endif
 
+#if defined(BETA_VERSION) && defined(WIN32)
+void OpenConsole();
+void CloseConsole();
+void printlog(const char *fmt, ...);
+#else
+#define OpenConsole()
+#define CloseConsole()
+#define printlog(...)
+#endif
+
 typedef enum { DEBUG_STRING, DEBUG_STREAM , DEBUG_STDOUT, DEBUG_STDERR } DebugOutType;
 
 typedef struct {
