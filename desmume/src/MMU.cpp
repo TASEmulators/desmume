@@ -39,6 +39,51 @@
 
 #define ROM_MASK 3
 
+//#define	_MMU_DEBUG
+
+#ifdef _MMU_DEBUG
+void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
+{
+	if ((adr>=0x04000000 && adr<=0x04000800)
+		||(adr>=0x04100000 && adr<=0x04100010)
+		||(adr>=0x04800000 && adr<=0x04808000))
+	{
+		if (proc==ARMCPU_ARM9)
+		{
+			if (adr >= 0x4000000 && adr <= 0x400006C) return;		// Display Engine A
+			if (adr >= 0x40000B0 && adr <= 0x4000132) return;		// DMA, Timers and Keypad
+			if (adr >= 0x4000180 && adr <= 0x40001BA) return;		// IPC/ROM
+			if (adr >= 0x4000204 && adr <= 0x4000249) return;		// Memory & IRQ control
+			if (adr >= 0x4000280 && adr <= 0x4000304) return;		// Maths
+			if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
+			if (adr >= 0x4100000 && adr <= 0x4100012) return;		// IPC/ROM
+		}
+		else
+		{
+			if (adr >= 0x4000000 && adr <= 0x4000003) return;		// ????
+			if (adr >= 0x4000004 && adr <= 0x40001C2) return;		// ARM7 I/O Map
+			if (adr >= 0x4000204 && adr <= 0x4000308) return;		// Memory and IRQ Control
+			if (adr >= 0x4000400 && adr <= 0x400051C) return;		// Sound Registers
+			if (adr >= 0x4100000 && adr <= 0x4000010) return;		// IPC/ROM
+			if (adr >= 0x4800000 && adr <= 0x4808000) return;		// WLAN Registers
+		}
+
+		va_list list;
+		char msg[512];
+
+		memset(msg,0,512);
+
+		va_start(list,fmt);
+			_vsnprintf(msg,511,fmt,list);
+		va_end(list);
+
+		printlog("MMU ARM%s 0x%08X: %s\n",proc==ARMCPU_ARM9?"9":"7",adr, msg);
+	}
+}
+#else
+#define	mmu_log_debug(...)
+#endif
+
 /*
  *
  */
@@ -617,6 +662,8 @@ u8 FASTCALL _MMU_read8(u32 adr)
 	}
 #endif
 
+		mmu_log_debug(adr, proc, "read08");
+
     return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
 }
 
@@ -659,7 +706,7 @@ u16 FASTCALL _MMU_read16(u32 adr)
 				return (gfx3d_GetNumVertex()&8191);
 
 			case REG_IPCFIFORECV :               /* TODO (clear): ??? */
-				printlog("read16: IPCFIFORECV\n");
+				printlog("MMU read16: IPCFIFORECV\n");
 				//printlog("Stopped IPCFIFORECV\n");
 				execute = FALSE;
 				return 1;
@@ -673,10 +720,10 @@ u16 FASTCALL _MMU_read16(u32 adr)
 				return (u16)(MMU.reg_IE[proc]>>16);
 				
 			case REG_IF :
-				//printlog("read16 (low): REG_IF\n");
+				//printlog("MMU read16 (low): REG_IF\n");
 				return (u16)MMU.reg_IF[proc];
 			case REG_IF + 2 :
-				//printlog("read16 (high): REG_IF\n");
+				//printlog("MMU read16 (high): REG_IF\n");
 				return (u16)(MMU.reg_IF[proc]>>16);
 				
 			case REG_TM0CNTL :
@@ -692,6 +739,7 @@ u16 FASTCALL _MMU_read16(u32 adr)
                         case REG_POSTFLG :
 				return 1;
 			default :
+				mmu_log_debug(adr, proc, "read16");
 				break;
 		}
 	}
@@ -784,12 +832,12 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			case REG_IE :
 				return MMU.reg_IE[proc];
 			case REG_IF :
-				//printlog("read32: REG_IF\n");
+				//printlog("MMU read32: REG_IF\n");
 				return MMU.reg_IF[proc];
 			case REG_IPCFIFORECV :
 			{
 				u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
-				//printlog("read32: REG_IPCFIFORECV (%X)\n", cnt_l);
+				//printlog("MMU read32: REG_IPCFIFORECV (%X)\n", cnt_l);
 				if (!(cnt_l & 0x8000)) return 0;	// FIFO disabled
 				u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 				u32 val = FIFOget(MMU.fifos + proc);
@@ -851,6 +899,7 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			}
 
 			default :
+				mmu_log_debug(adr, proc, "read32");
 				break;
 		}
 	}
@@ -1247,6 +1296,7 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		}
 		
 		default :
+			mmu_log_debug(adr, proc, "write08: value=0x%X\n", val);
 			break;
 	}
 	
@@ -1693,18 +1743,17 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				
 			case REG_IF :
 				//execute = FALSE;
-				//printlog("write16 (low): REG_IF (%X)\n", val);
+				//printlog("MMU write16 (low): REG_IF (%X)\n", val);
 				MMU.reg_IF[proc] &= (~((u32)val)); 
 				return;
 			case REG_IF + 2 :
-				//printlog("write16 (high): REG_IF (%X)\n", val);
+				//printlog("MMU write16 (high): REG_IF (%X)\n", val);
 				//execute = FALSE;
 				MMU.reg_IF[proc] &= (~(((u32)val)<<16));
 				return;
 				
             case REG_IPCSYNC :
 				{
-					//printlog("IPCSYNC\n");
 				u32 remote = (proc+1)&1;
 				u16 IPCSYNC_remote = T1ReadWord(MMU.MMU_MEM[remote][0x40], 0x180);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
@@ -1719,7 +1768,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
 					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184) ;
 
-					//printlog("write16 (%s): REG_IPCFIFOCNT 0x(%08X)\n", proc?"ARM9":"ARM7",REG_IPCFIFOCNT);
+					//printlog("MMU write16 (%s): REG_IPCFIFOCNT 0x(%08X)\n", proc?"ARM9":"ARM7",REG_IPCFIFOCNT);
 					//printlog(" --- val=%X\n",val);
 
 					if ((val & 0x8000) && !(cnt_l & 0x8000))
@@ -1921,6 +1970,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				return;
                         //case REG_AUXSPICNT : execute = FALSE;
 			default :
+				mmu_log_debug(adr, proc, "write16 value=0x%X\n", val);
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], adr&MMU.MMU_MASK[proc][adr>>20], val); 
 				return;
 		}
@@ -2384,7 +2434,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 
 			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
-				//printlog("write32: Geometry Engine Status Register (R and R/W)");
+				//printlog("MMU write32: Geometry Engine Status Register (R and R/W)");
 				//printlog("------- val=%X\n\n************\n\n", val);
 
 				MMU.fifos[proc].irq = (val>>30) & 0x03;
@@ -2530,7 +2580,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				return;
 			
 			case REG_IF :
-				//printlog("write32: REG_IF (%X)\n", val);
+				//printlog("MMU write32: REG_IF (%X)\n", val);
 				MMU.reg_IF[proc] &= (~val); 
 				return;
 
@@ -2574,6 +2624,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & 0xFFF, val);
 				return;
 			}
+
             case REG_DIVDENOM :
 				{
                                         u16 cnt;
@@ -2726,6 +2777,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
                         case REG_IPCSYNC :
 				{
 					//execute=FALSE;
+					printlog("MMU write 32 IPCSYNC\n");
 					u32 remote = (proc+1)&1;
 					u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[remote][0x40], 0x180);
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
@@ -2756,7 +2808,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				}
 				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
 #else
-				printlog("write32: REG_IPCFIFOCNT\n");
+				printlog("MMU write32: REG_IPCFIFOCNT\n");
 #endif
 				//execute = FALSE;
 				return;
@@ -2766,7 +2818,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 					if (!(cnt_l & 0x8000)) return;		//FIFO disabled
 					u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
-					//printlog("write32 (%s): REG_IPCFIFOSEND (%X-%X) val=%X\n", proc?"ARM9":"ARM7",cnt_l,cnt_r,val);
+					//printlog("MMU write32 (%s): REG_IPCFIFOSEND (%X-%X) val=%X\n", proc?"ARM9":"ARM7",cnt_l,cnt_r,val);
 					//FIFOadd(MMU.fifos+(proc^1), val);
 					FIFOadd(MMU.fifos+(proc^1), val);
 					cnt_l = (cnt_l & 0xFFFC) | (MMU.fifos[proc^1].full?0x0002:0);
@@ -2963,13 +3015,14 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				//Transfer starts at next frame.
 				//Main Memory Display/Capture is supported for Display Engine A only.
 
-				printlog("write32: REG_DISPA_DISPMMEMFIFO\n");
+				printlog("MMU write32: REG_DISPA_DISPMMEMFIFO\n");
 #endif
 				break;
 			}
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;
 			//case 0x21FDFB0 :  if(val==0) execute = FALSE;
 			default :
+				mmu_log_debug(adr, proc, "write32: value=0x%X\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], adr & MMU.MMU_MASK[proc][adr>>20], val);
 				return;
 		}
