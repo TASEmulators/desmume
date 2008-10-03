@@ -27,6 +27,7 @@ int Frameskip = 0;
 gboolean ScreenRightForce=FALSE;
 gboolean ScreenRight=FALSE;
 gboolean ScreenGap=FALSE;
+gboolean ScreenNoGap=FALSE;
 gboolean ScreenInvert=FALSE;
 
 /* ******** Savestate menu items handling ******** */
@@ -121,6 +122,17 @@ void MAINWINDOW_RESIZE() {
 
 	/* sees whether we want a gap */
 	if (!ScreenGap) dim1 = dim2 = -1;
+
+	if (ScreenNoGap) {
+		gtk_widget_hide (spacer1);
+		gtk_widget_hide (spacer2);
+	}
+	else
+	{
+		gtk_widget_show (spacer1);
+		gtk_widget_show (spacer2);
+	}
+
 	if (ScreenRight == rotate) {
 		if (ScreenRight)
 			dim2 = -1;
@@ -388,6 +400,14 @@ void  on_menu_audio_on_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 void  on_menu_gapscreen_activate  (GtkMenuItem *menuitem, gpointer user_data) {
 	/* we want to add a gap between screens */
 	ScreenGap = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
+
+	/* pack the window */
+	MAINWINDOW_RESIZE();
+}
+
+void on_menu_nogap_activate (GtkMenuItem *menuitem, gpointer user_data) {
+	/* we'll make both gaps visibility false */
+	ScreenNoGap = gtk_check_menu_item_get_active((GtkCheckMenuItem*)menuitem);
 
 	/* pack the window */
 	MAINWINDOW_RESIZE();
