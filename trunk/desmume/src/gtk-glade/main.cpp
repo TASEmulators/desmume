@@ -229,7 +229,7 @@ void notify_Tools() {
    Note: See configure.ac for the value of GLADEUI_UNINSTALLED_DIR. */
 gchar * get_ui_file (const char *filename)
 {
-	char *path;
+	gchar *path;
 
 	/* looking in uninstalled (aka building) dir first */
 	path = g_build_filename (GLADEUI_UNINSTALLED_DIR, filename, NULL);
@@ -294,6 +294,7 @@ int Write_ConfigFile()
 {
 	int i;
 	GKeyFile * keyfile;
+	gchar *contents;
 	
 	keyfile = g_key_file_new();
 	
@@ -302,8 +303,11 @@ int Write_ConfigFile()
 		g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
 		g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
 	}
-	
-	g_file_set_contents(CONFIG_FILE, g_key_file_to_data(keyfile, 0, 0), -1, 0);
+
+	contents = g_key_file_to_data(keyfile, 0, 0);
+	g_file_set_contents(CONFIG_FILE, contents, -1, 0);
+	g_free(contents);
+
 	g_key_file_free(keyfile);
 	
 	return 0;
@@ -365,6 +369,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
         struct armcpu_ctrl_iface *arm7_ctrl_iface;
         /* the firmware settings */
         struct NDS_fw_config_data fw_config;
+	gchar *uifile;
 
         /* default the firmware settings, they may get changed later */
         NDS_FillDefaultFirmwareConfigData( &fw_config);
@@ -442,8 +447,12 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	Read_ConfigFile();
 
 	/* load the interface */
-	xml           = glade_xml_new(get_ui_file("DeSmuMe.glade"), NULL, NULL);
-	xml_tools     = glade_xml_new(get_ui_file("DeSmuMe_Dtools.glade"), NULL, NULL);
+	uifile        = get_ui_file("DeSmuMe.glade");
+	xml           = glade_xml_new(uifile, NULL, NULL);
+	g_free (uifile);
+	uifile        = get_ui_file("DeSmuMe_Dtools.glade");
+	xml_tools     = glade_xml_new(uifile, NULL, NULL);
+	g_free (uifile);
 	pWindow       = glade_xml_get_widget(xml, "wMainW");
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
