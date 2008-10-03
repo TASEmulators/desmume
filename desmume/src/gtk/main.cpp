@@ -298,6 +298,7 @@ int Write_ConfigFile()
 {
 	int i;
 	GKeyFile * keyfile;
+	gchar *contents;
 	
 	keyfile = g_key_file_new();
 	
@@ -312,8 +313,10 @@ int Write_ConfigFile()
 // 		ini_add_section(ini, "FIRMWARE");
 // 		ini_add_value(ini, "FIRMWARE", "FILE", FirmwareFile);
 // 	}
-	
-	g_file_set_contents(CONFIG_FILE, g_key_file_to_data(keyfile, 0, 0), -1, 0);
+
+	contents = g_key_file_to_data(keyfile, 0, 0);	
+	g_file_set_contents(CONFIG_FILE, contents, -1, 0);
+	g_free (contents);
 
 	g_key_file_free(keyfile);
 	
