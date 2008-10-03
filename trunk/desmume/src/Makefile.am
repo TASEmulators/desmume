@@ -9,9 +9,11 @@ libdesmume_a_SOURCES = \
         arm_instructions.cpp arm_instructions.h \
         bios.cpp bios.h bits.h cp15.cpp cp15.h \
         cflash.cpp cflash.h config.h fs.h \
+	common.cpp common.h \
 	debug.cpp debug.h \
 	Disassembler.cpp Disassembler.h \
 	dscard.h fat.h FIFO.cpp FIFO.h \
+	GPU_osd.cpp GPU_osd.h \
 	GPU.cpp GPU.h \
 	GPU_osd.cpp GPU_osd.h \
 	gl_vertex.cpp gl_vertex.h \
@@ -23,6 +25,7 @@ libdesmume_a_SOURCES = \
 	OGLRender.cpp OGLRender.h \
 	ROMReader.cpp ROMReader.h \
 	render3D.cpp render3D.h \
+	rtc.cpp rtc.h \
         saves.cpp saves.h \
         SPU.cpp SPU.h \
 	gdbstub.h \
