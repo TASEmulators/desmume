@@ -138,6 +138,8 @@ int SPU_Init(int coreid, int buffersize)
 
 void SPU_Pause(int pause)
 {
+	if (SNDCore == NULL) return;
+
 	if(pause)
 		SNDCore->MuteAudio();
 	else
