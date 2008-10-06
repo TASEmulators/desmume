@@ -53,6 +53,13 @@ void GetINIPath()
 	}
 }
 
+void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file)
+{
+	char temp[256] = "";
+	sprintf(temp, "%d", val);
+	WritePrivateProfileString(appname, keyname, temp, file);
+}
+
 #endif
 	
 u8 reverseBitsInByte(u8 x)

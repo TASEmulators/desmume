@@ -46,7 +46,7 @@
 #include "mapview.h"
 #include "matrixview.h"
 #include "lightview.h"
-#include "ConfigKeys.h"
+#include "inputdx.h"
 #include "FirmConfig.h"
 #include "AboutBox.h"
 #include "OGLRender.h"
@@ -77,13 +77,16 @@ void DRV_AviVideoUpdate(const u16* buffer);
 CRITICAL_SECTION win_sync;
 volatile int win_sound_samplecounter = 0;
 
-//===================== Init DirectDraw
+//===================== DirectDraw vars
 LPDIRECTDRAW7			lpDDraw=NULL;
 LPDIRECTDRAWSURFACE7	lpPrimarySurface=NULL;
 LPDIRECTDRAWSURFACE7	lpBackSurface=NULL;
 DDSURFACEDESC2			ddsd;
 LPDIRECTDRAWCLIPPER		lpDDClipPrimary=NULL;
 LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
+
+//===================== Input vars
+INPUTCLASS				*input = NULL;
 
 /* The compact flash disk image file */
 static const char *bad_glob_cflash_disk_image_file;
@@ -143,12 +146,6 @@ HMENU menu;
 HANDLE runthread_ready=INVALID_HANDLE_VALUE;
 HANDLE runthread=INVALID_HANDLE_VALUE;
 
-const DWORD DI_tabkey[48] = {DIK_0,DIK_1,DIK_2,DIK_3,DIK_4,DIK_5,DIK_6,DIK_7,DIK_8,DIK_9,DIK_A,DIK_B,DIK_C,
-							DIK_D,DIK_E,DIK_F,DIK_G,DIK_H,DIK_I,DIK_J,DIK_K,DIK_L,DIK_M,DIK_N,DIK_O,DIK_P,
-							DIK_Q,DIK_R,DIK_S,DIK_T,DIK_U,DIK_V,DIK_W,DIK_X,DIK_Y,DIK_Z,DIK_SPACE,DIK_UP,
-							DIK_DOWN,DIK_LEFT,DIK_RIGHT,DIK_TAB,DIK_LSHIFT,DIK_DELETE,DIK_INSERT,DIK_HOME,
-							DIK_END,DIK_RETURN};
-DWORD ds_up,ds_down,ds_left,ds_right,ds_a,ds_b,ds_x,ds_y,ds_l,ds_r,ds_select,ds_start,ds_debug;
 //static char IniName[MAX_PATH];
 int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
@@ -483,49 +480,6 @@ void translateXY(s32 *x, s32*y)
      
  // END Rotation definitions
 
-void Input_Post()
-{
-	char txt[255];
-	BOOL bPressed;
-	HRESULT hr;
-	WORD keys[13][3]={{ds_a,0xFFFE,0x01},{ds_b,0xFFFD,0x02},{ds_select,0xFFFB,0x04},{ds_start,0xFFF7,0x08},
-					{ds_right,0xFFEF,0x10},{ds_left,0xFFDF,0x20},{ds_up,0xFFBF,0x40},{ds_down,0xFF7F,0x80},
-					{ds_r,0xFEFF,0x100},{ds_l,0xFDFF,0x200},
-					{ds_x,0xFFFE,0x01},{ds_y,0xFFFD,0x02},{ds_debug,0xFFFB,0x04}};
-	int i;
-
-	for (i=0; i<10; i++)
-	{
-		bPressed=FALSE;
-		if (keys[i][0]<48)
-			if (g_cDIBuf[DI_tabkey[keys[i][0]]]&0x80) bPressed=TRUE;
-		if (keys[i][0]>=48)
-			if (g_cDIBuf[208+keys[i][0]]&0x80) bPressed=TRUE;
-		if (bPressed)
-		{
-				((u16 *)ARM9Mem.ARM9_REG)[0x130>>1]&=keys[i][1];
-				((u16 *)MMU.ARM7_REG)[0x130>>1]&=keys[i][1];
-		}
-		else
-		{
-				((u16 *)ARM9Mem.ARM9_REG)[0x130>>1]|=keys[i][2];
-				((u16 *)MMU.ARM7_REG)[0x130>>1]|=keys[i][2];
-		}
-	}
-	for (i=10; i<13; i++)
-	{
-		bPressed=FALSE;
-		if (keys[i][0]<48)
-			if (g_cDIBuf[DI_tabkey[keys[i][0]]]&0x80) bPressed=TRUE;
-		if (keys[i][0]>=48)
-			if (g_cDIBuf[208+keys[i][0]]&0x80) bPressed=TRUE;
-		if (bPressed)
-				((u16 *)MMU.ARM7_REG)[0x136>>1]&=keys[i][1];
-		else
-				((u16 *)MMU.ARM7_REG)[0x136>>1]|=keys[i][2];
-	}
-}
-
 int CreateDDrawBuffers()
 {
 	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
@@ -754,11 +708,9 @@ DWORD WINAPI run( LPVOID lpParameter)
 				DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
 			   DRV_AviVideoUpdate((u16*)GPU_screen);
 
-			   Input_Process();
-			   Input_Post();
-
                if (!skipnextframe)
                {
+				   input->process();
 				   Display();
 
                   fpsframecount++;
@@ -1097,7 +1049,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	printlog("Init NDS\n");
 
-	Input_Init(MainWindow->getHWnd());
+	input = new INPUTCLASS();
+	if (!input->Init(MainWindow->getHWnd(), &NDS_inputPost))
+	{
+		MessageBox(NULL, "Error DXInput init\n", "DeSmuME", MB_OK);
+		exit(-1);
+	}
+	NDS_inputInit();
 
 	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
@@ -1263,16 +1221,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	DRV_AviEnd();
 
 	//------SHUTDOWN
-	{
-	HRESULT hr=Input_DeInit();
-#ifdef DEBUG 
-	if(FAILED(hr)) LOG("DirectInput deinit failed (0x%08X)\n",hr);
-	else LOG("DirectInput deinit\n");
-#endif
-	}
+
 #ifdef DEBUG
     LogStop();
 #endif
+	if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
 	if (ViewMatrices!=NULL) delete ViewMatrices;
 	if (ViewOAM!=NULL) delete ViewOAM;
