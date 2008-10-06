@@ -178,36 +178,41 @@
 #define IDC_PROP1                       909
 #define IDC_OAM_BOX                     910
 #define IDC_SOUNDCORECB                 1000
-#define IDC_EDIT3                       1000
+#define IDC_EDIT03                      1000
 #define IDC_SOUNDBUFFERET               1001
-#define IDC_EDIT4                       1001
+#define IDC_EDIT01                      1001
 #define IDC_SLVOLUME                    1002
-#define IDC_EDIT5                       1002
+#define IDC_EDIT05                      1002
 #define IDC_ROTATE0                     1003
-#define IDC_EDIT6                       1003
+#define IDC_EDIT08                      1003
 #define IDC_ROTATE90                    1004
-#define IDC_EDIT7                       1004
+#define IDC_EDIT11                      1004
 #define IDC_ROTATE180                   1005
-#define IDC_EDIT8                       1005
+#define IDC_EDIT07                      1005
 #define IDC_ROTATE270                   1006
-#define IDC_EDIT9                       1006
-#define IDC_EDIT10                      1007
-#define IDC_EDIT11                      1008
+#define IDC_EDIT12                      1006
+#define IDC_EDIT06                      1007
+#define IDC_EDIT09                      1008
 #define IDC_FORCERATIO                  1009
-#define IDC_EDIT12                      1009
+#define IDC_EDIT10                      1009
 #define IDC_WINDOW1X                    1010
-#define IDC_EDIT13                      1010
 #define IDC_AUTO_UPDATE_SPIN            1010
+#define IDC_EDIT15                      1010
 #define IDC_WINDOW2X                    1011
 #define IDC_AUTO_UPDATE_SECS            1011
 #define IDC_WINDOW3X                    1012
 #define IDC_REFRESH                     1012
 #define IDC_WINDOW4X                    1013
+#define IDC_EDIT02                      1013
+#define IDC_EDIT04                      1014
+#define ID_CANCEL                       1016
+#define IDSAVE                          1017
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
 #define IDC_EDIT2                       1103
-#define IDC_EDIT14                      1104
+#define IDC_EDIT13                      1104
+#define IDC_EDIT14                      1105
 #define IDD_MATRIX_VIEWER               1200
 #define IDM_MATRIX_VIEWER               1200
 #define IDC_MATRIX_VIEWER_COORD_GROUP   1201
@@ -334,8 +339,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
-#define _APS_NEXT_COMMAND_VALUE         40017
-#define _APS_NEXT_CONTROL_VALUE         1013
+#define _APS_NEXT_COMMAND_VALUE         40018
+#define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif
