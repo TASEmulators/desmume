@@ -334,10 +334,17 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
    if (!file)
    {
+      reader->DeInit(file);
       free(noext);
       return -1;
    }
    size = reader->Size(file);
+
+   if (size < 1) {
+      reader->DeInit(file);
+      free(noext);
+      return -1;
+   }
 
    if(type == ROM_DSGBA)
    {

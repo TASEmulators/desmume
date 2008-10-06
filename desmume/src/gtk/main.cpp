@@ -447,12 +447,13 @@ static void Pause()
 /* Choose a file then load it */
 static void *Open_Select(GtkWidget* widget, gpointer data)
 {
-	Pause();
-	
 	GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
 	GtkWidget *pFileSelection;
 	GtkWidget *pParent;
 	gchar *sChemin;
+
+	if (desmume_running())
+		Pause();
 
 	pParent = GTK_WIDGET(data);
 	
@@ -503,6 +504,9 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 						"Unable to load :\n%s", sChemin);
 				gtk_dialog_run(GTK_DIALOG(pDialog));
 				gtk_widget_destroy(pDialog);
+			} else {
+				gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+				gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
 			}
 			
 			//Launch(NULL, pWindow);
@@ -513,10 +517,6 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 			break;
 	}
 	gtk_widget_destroy(pFileSelection);
-	
-	// FIXME: should be set sensitive only if a file was really loaded
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
 }
 
 static void Close()
@@ -554,9 +554,7 @@ gtk_init_main_gl_area(GtkWidget *widget,
 
   //printf("Doing GL init\n");
 
-  for ( i = 0; i < 256 * 512; i++) {
-    blank_texture[i] = 0x001f;
-  }
+  memset(blank_texture, 0x001f, sizeof(blank_texture));
 
   /* Enable Texture Mapping */
   glEnable( GL_TEXTURE_2D );
@@ -1019,7 +1017,7 @@ void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
 {
 	char YouPressed[128];
 	Modify_Key_Chosen = e->keyval;
-	sprintf(YouPressed, "You pressed : %d\nClick OK to keep this key.", e->keyval);
+	sprintf(YouPressed, "You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
 	gtk_label_set(GTK_LABEL(mkLabel), YouPressed);
 }
 
@@ -1084,7 +1082,7 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 	
 	for(i = 0; i < NB_KEYS; i++)
 	{
-		sprintf(Key_Label, "%s (%d)", key_names[i], Keypad_Temp[i]);
+		sprintf(Key_Label, "%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
 		ecKey = gtk_button_new_with_label(Key_Label);
 		g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);	
