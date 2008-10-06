@@ -67,6 +67,7 @@
  - Rewrite all debug tools (autoupdate work now) [CrazyMax]
  - Add AVI output [zeromus]
  - Remove multithreading from user interface after finding several synchronization issues [zeromus]
+ - Rewrite input core & replace config input dialog [CrazyMax]
 
 0.7.3 -> 0.8
  Cocoa:

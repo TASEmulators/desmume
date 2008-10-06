@@ -783,10 +783,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\ConfigKeys.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\console.cpp"
 					>
 				</File>
@@ -808,6 +804,10 @@
 				</File>
 				<File
 					RelativePath=".\ginfo.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\inputdx.cpp"
 					>
 				</File>
 				<File
@@ -893,10 +893,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\ConfigKeys.h"
-					>
-				</File>
-				<File
 					RelativePath=".\console.h"
 					>
 				</File>
@@ -914,6 +910,10 @@
 				</File>
 				<File
 					RelativePath=".\ginfo.h"
+					>
+				</File>
+				<File
+					RelativePath=".\inputdx.h"
 					>
 				</File>
 				<File

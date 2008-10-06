@@ -21,24 +21,43 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _INPUT_DX_
+#define _INPUT_DX_
 
-#include <stdio.h>
-#include "types.h"
-	
-#ifdef WIN32
+#define DIRECTINPUT_VERSION 0x0800
 #include <windows.h>
+#include "..\types.h"
+#include "directx\dinput.h"
 
-#define CLASSNAME "DeSmuME"
+#define MAXKEYPAD 15
 
-extern HINSTANCE hAppInst;
+typedef void (*INPUTPROC)(BOOL, LPSTR);
 
-extern char IniName[MAX_PATH];
-extern void GetINIPath();
-extern void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
-#endif
-
-extern u8 reverseBitsInByte(u8 x);
+class INPUTCLASS
+{
+private:
+	HWND					hParentWnd;
+	BOOL					paused;
 	
+	char					cDIBuf[512];
+	LPDIRECTINPUT8			pDI;
+	LPDIRECTINPUTDEVICE8	pKeyboard;
+	LPDIRECTINPUTDEVICE8	pJoystick;
+	DIDEVCAPS				DIJoycap;
+
+	INPUTPROC				inputProc;
+
+public:
+	INPUTCLASS();
+	~INPUTCLASS();
+	BOOL	Init(HWND hParentWnd, INPUTPROC inputProc);
+	BOOL	JoystickEnabled();
+	void	process();
+};
+
+// ========== emu input
+extern	void InputConfig(HWND hwnd);
+extern	void NDS_inputInit();
+extern	void NDS_inputPost(BOOL paused, LPSTR buf);
+extern	u16		keyPad[MAXKEYPAD];
 #endif
