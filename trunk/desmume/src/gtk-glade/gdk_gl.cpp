@@ -173,7 +173,7 @@ int init_GL_free(GtkWidget * widget) {
 
 void init_GL_capabilities(  int use_software_convert) {
 
-  uint16_t blank_texture[256 * 512];
+	uint16_t blank_texture[256 * 512];
 	my_glConfig = gdk_gl_config_new_by_mode (
 		(GdkGLConfigMode) (GDK_GL_MODE_RGBA
 		| GDK_GL_MODE_DEPTH 
@@ -191,11 +191,12 @@ void init_GL_capabilities(  int use_software_convert) {
 	glGenTextures(2, Textures);
 
         /* Generate The Texture */
-        glBindTexture( GL_TEXTURE_2D, Textures[0]);
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
-                      0, GL_RGBA,
-                      GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                      blank_texture);
+	glBindTexture( GL_TEXTURE_2D, Textures[0]);
+	memset(blank_texture, 0x001f, sizeof(blank_texture));
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
+		      0, GL_RGBA,
+		      GL_UNSIGNED_SHORT_1_5_5_5_REV,
+		      blank_texture);
 	my_gl_End(0);
 
 	// initialize 2nd drawing area (sharing context)
