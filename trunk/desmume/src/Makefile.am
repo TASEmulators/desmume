@@ -16,7 +16,6 @@ libdesmume_a_SOURCES = \
 	GPU_osd.cpp GPU_osd.h \
 	GPU.cpp GPU.h \
 	GPU_osd.cpp GPU_osd.h \
-	gl_vertex.cpp gl_vertex.h \
         mem.h mc.cpp mc.h \
 	memorystream.h \
 	readwrite.cpp readwrite.h \
