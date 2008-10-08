@@ -781,10 +781,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\colorconv.h"
-			>
-		</File>
-		<File
 			RelativePath="..\common.cpp"
 			>
 		</File>
@@ -1085,6 +1081,18 @@
 		</File>
 		<File
 			RelativePath="..\saves.h"
+			>
+		</File>
+		<File
+			RelativePath="..\softrender.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\softrender.h"
+			>
+		</File>
+		<File
+			RelativePath="..\softrender_config.h"
 			>
 		</File>
 		<File

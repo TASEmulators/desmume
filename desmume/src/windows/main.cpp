@@ -538,9 +538,9 @@ void Display()
 			u16 *tmpGPU_Screen_src=(u16*)GPU_screen;
 			u32	tmpGPU_screen[98304];
 			for(i=0; i<98304; i++)
-			tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
-								(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
-								(((tmpGPU_Screen_src[i])&0x1F)<<19);
+				tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
+									(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
+									(((tmpGPU_Screen_src[i])&0x1F)<<19);
 			switch (GPU_rotation)
 			{
 				case 0:
