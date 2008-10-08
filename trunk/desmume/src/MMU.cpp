@@ -36,6 +36,7 @@
 #include "gfx3d.h"
 #include "rtc.h"
 #include "GPU_osd.h"
+#include "zero_private.h"
 
 #define ROM_MASK 3
 
@@ -3634,14 +3635,14 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
 
 u32 FASTCALL MMU_read32(u32 proc, u32 adr) 
 {
-	assert((adr&3)==0);
+	ASSERT_UNALIGNED((adr&3)==0);
 	if(proc==0) return _MMU_read32<0ul>(adr);
 	else return _MMU_read32<1ul>(adr);
 }
 
 u16 FASTCALL MMU_read16(u32 proc, u32 adr) 
 {
-	assert((adr&1)==0);
+	ASSERT_UNALIGNED((adr&1)==0);
 	if(proc==0) return _MMU_read16<0ul>(adr);
 	else return _MMU_read16<1ul>(adr);
 }
@@ -3654,14 +3655,14 @@ u8 FASTCALL MMU_read8(u32 proc, u32 adr)
 
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val)
 {
-	assert((adr&3)==0);
+	ASSERT_UNALIGNED((adr&3)==0);
 	if(proc==0) _MMU_write32<0ul>(adr,val);
 	else _MMU_write32<1ul>(adr,val);
 }
 
 void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val)
 {
-	assert((adr&1)==0);
+	ASSERT_UNALIGNED((adr&1)==0);
 	if(proc==0) _MMU_write16<0ul>(adr,val);
 	else _MMU_write16<1ul>(adr,val);
 }
