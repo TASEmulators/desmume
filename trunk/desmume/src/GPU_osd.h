@@ -32,7 +32,7 @@
 class OSDCLASS
 {
 private:
-	u8		screen[256*192*2];
+	u16		screen[256*192*2];
 	u64		offset;
 	u8		mode;
 

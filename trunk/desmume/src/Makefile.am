@@ -27,6 +27,7 @@ libdesmume_a_SOURCES = \
 	rtc.cpp rtc.h \
         saves.cpp saves.h \
         SPU.cpp SPU.h \
+	softrender.cpp softrender.h softrender_config.h \
 	gdbstub.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \

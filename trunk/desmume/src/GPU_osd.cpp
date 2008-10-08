@@ -26,7 +26,12 @@
 #include <string.h> //mem funcs
 #include <stdarg.h> //va_start, etc
 
+#include "softrender.h"
+
+using namespace softrender;
+
 extern u8 GPU_screen[4*256*192];
+image screenshell;
 
 #include "font_eng.inc"
 
@@ -61,7 +66,17 @@ OSDCLASS::OSDCLASS(u8 core)
 		memcpy(name,"Main",6);
 		mode=255;
 	}
-	
+
+	screenshell.shell = true;
+	screenshell.data = screen;
+	screenshell.bpp = 15;
+	screenshell.width = 256;
+	screenshell.height = 384;
+	screenshell.pitch = 256;
+	screenshell.cx1 = 0;
+	screenshell.cx2 = 256-1;
+	screenshell.cy1 = 0;
+	screenshell.cy2 = 384-1;
 
 	LOG("OSD_Init (%s)\n",name);
 }
@@ -91,20 +106,20 @@ void OSDCLASS::setColor(u16 col)
 	current_color = col;
 }
 
-void INLINE OSDCLASS::printChar(u16 x, u16 y, u8 c)
+void OSDCLASS::printChar(u16 x, u16 y, u8 c)
 {
 	int i, j;
 	int ofs=c*OSD_FONT_HEIGHT;
 	unsigned char	bits[9]={256, 128, 64, 32, 16, 8, 4, 2, 1};
-	u8	*dst=screen;
+	u16	*dst=screen;
 	dst+=(y*256)+x;
 
 	for (i = 0; i < OSD_FONT_HEIGHT; i++)
 	{
 		for (j = 0; j < OSD_FONT_WIDTH; j++)
-			if (font_eng[ofs] & bits[j]) dst[j]=1;
-			else dst[j]=0;
-		dst+=256;
+			if (font_eng[ofs] & bits[j]) 
+				render51.PutPixel(x+j,y+i,render51.MakeColor(128,0,0),&screenshell);
+			else render51.PutPixel(x+j,y+i,0,&screenshell);
 		ofs++;
 	}
 }
@@ -112,16 +127,14 @@ void INLINE OSDCLASS::printChar(u16 x, u16 y, u8 c)
 void OSDCLASS::update() // don't optimized
 {
 	if (!needUpdate) return;	// don't update if buffer empty (speed up)
-	u8	*dst=GPU_screen;
+	u16	*dst=(u16*)GPU_screen;
 	if (mode!=255)
 		dst+=offset*512;
 
 	for (int i=0; i<256*192; i++)
 	{
-		if (screen[i])
-		{
-			T2WriteWord(dst,(i << 1), current_color );
-		}
+		if(screen[i]&0x8000)
+			T2WriteWord((u8*)dst,(i << 1), screen[i] );
 	}
 }
 
