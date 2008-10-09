@@ -1032,7 +1032,7 @@ NDS_exec(s32 nb, BOOL force)
               if(nds.VCount==192)
                 {
 					gfx3d_VBlankSignal();
-					osdA->update();	//================================= this is don't correct, need swap engine
+					//osdA->update();	//================================= this is don't correct, need swap engine
 
                   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
                   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
@@ -1065,8 +1065,8 @@ NDS_exec(s32 nb, BOOL force)
               else                         
                 if(nds.VCount==263)
                   {
-					osd->update();
-					osdB->update();	//================================= this is don't correct, need swap engine
+					//osd->update();
+					//osdB->update();	//================================= this is don't correct, need swap engine
 
                     nds.nextHBlank = 3168;
                     nds.VCount = 0;

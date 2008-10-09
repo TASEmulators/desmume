@@ -18,6 +18,8 @@
 #include <math.h>
 #include <string.h>
 
+#include "softrender_v3sysfont.h"
+
 namespace softrender {
 
 	//instantiations
@@ -123,6 +125,12 @@ void image::GetClip(int &x1, int &y1, int &x2, int &y2)
 
 
 //generic render methods
+
+//template<typename FONT>
+//void renderbase::print_char(char c, image *dest)
+//{
+//	int height = FONT::height(c);
+//}
 
 void renderbase::Line(int x, int y, int xe, int ye, int color, image *dest)
 {
@@ -516,6 +524,47 @@ void Trender32::Blit(int x, int y, image *src, image *dest)
 		memcpy(d, s, xlen);
 }
 
+void Trender32::TBlit(int x, int y, image *src, image *dest)
+{
+	int *s=(int *)src->data,c,
+		*d=(int *)dest->data;
+	int spitch=src->pitch,
+		dpitch=dest->pitch;
+	int xlen=src->width,
+		ylen=src->height;
+	int cx1=0, cy1=0,
+		cx2=0, cy2=0;
+
+	dest->GetClip(cx1, cy1, cx2, cy2);
+	if (x>cx2 || y>cy2 || x+xlen<cx1 || y+ylen<cy1)
+		return;
+
+	if (x+xlen > cx2) xlen=cx2-x+1;
+	if (y+ylen > cy2) ylen=cy2-y+1;
+	if (x<cx1) {
+		s +=(cx1-x);
+		xlen-=(cx1-x);
+		x  =cx1;
+	}
+	if (y<cy1) {
+		s +=(cy1-y)*spitch;
+		ylen-=(cy1-y);
+		y  =cy1;
+	}
+	d+=y*dpitch+x;
+	for (; ylen; ylen--)
+	{
+		for (x=0; x<xlen; x++)
+		{
+			c=s[x];
+			if (c != transColor) d[x]=c;
+		}
+		s+=spitch;
+		d+=dpitch;
+	}
+}
+
+
 /********************** 16bpp blitter code **********************/
 
 int Trender16::MakeColor(int r, int g, int b)
@@ -621,6 +670,48 @@ void Trender16::Blit(int x, int y, image *src, image *dest)
 	for (xlen *= 2; ylen--; s+=spitch, d+=dpitch)
 		memcpy(d, s, xlen);
 }
+
+void Trender16::TBlit(int x, int y, image *src, image *dest)
+{
+	word *s=(word *)src->data,c,
+		 *d=(word *)dest->data;
+	int spitch=src->pitch,
+		dpitch=dest->pitch;
+	int xlen=src->width,
+		ylen=src->height;
+	int cx1=0, cy1=0,
+		cx2=0, cy2=0;
+
+	dest->GetClip(cx1, cy1, cx2, cy2);
+	if (x>cx2 || y>cy2 || x+xlen<cx1 || y+ylen<cy1)
+		return;
+
+	if (x+xlen > cx2) xlen=cx2-x+1;
+	if (y+ylen > cy2) ylen=cy2-y+1;
+	if (x<cx1) {
+		s +=(cx1-x);
+		xlen-=(cx1-x);
+		x  =cx1;
+	}
+	if (y<cy1) {
+		s +=(cy1-y)*spitch;
+		ylen-=(cy1-y);
+		y  =cy1;
+	}
+	d+=y*dpitch+x;
+	for (; ylen; ylen--)
+	{
+		for (x=0; x<xlen; x++)
+		{
+			c=s[x];
+			if (c != transColor) d[x]=c;
+		}
+		s+=spitch;
+		d+=dpitch;
+	}
+}
+
+
 
 /********************** 15bpp blitter code **********************/
 

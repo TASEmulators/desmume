@@ -711,7 +711,12 @@ DWORD WINAPI run( LPVOID lpParameter)
                if (!skipnextframe)
                {
 				   input->process();
+
+				 if (FpsDisplay) osd->addFixed(10, 10, "%02d Fps", fps);
+				 osd->update();
 				   Display();
+				   osd->clear();
+
 
                   fpsframecount++;
                   QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
@@ -732,7 +737,6 @@ DWORD WINAPI run( LPVOID lpParameter)
 					 load = std::min(100,std::max(0,(int)(load*100/1120380)));
 					 sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
 					 SetWindowText(hwnd, txt);
-					 if (FpsDisplay) osd->addFixed(10, 10, "%02d Fps", fps);
 				  }
 
                   framesskipped = 0;
