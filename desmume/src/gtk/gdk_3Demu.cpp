@@ -188,7 +188,7 @@ init_opengl_gdk_3Demu( void) {
       return 0;
     }
 
-  
+
 	oglrender_init = _oglrender_init;
 	oglrender_beginOpenGL = _oglrender_beginOpenGL;
 	oglrender_endOpenGL = _oglrender_endOpenGL;
