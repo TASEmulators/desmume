@@ -28,12 +28,13 @@
 
 #include "softrender.h"
 
+#include "softrender_v3sysfont.h"
+#include "softrender_desmumefont.h"
+
 using namespace softrender;
 
 extern u8 GPU_screen[4*256*192];
 image screenshell;
-
-#include "font_eng.inc"
 
 OSDCLASS::OSDCLASS(u8 core)
 {
@@ -106,24 +107,6 @@ void OSDCLASS::setColor(u16 col)
 	current_color = col;
 }
 
-void OSDCLASS::printChar(u16 x, u16 y, u8 c)
-{
-	int i, j;
-	int ofs=c*OSD_FONT_HEIGHT;
-	unsigned char	bits[9]={256, 128, 64, 32, 16, 8, 4, 2, 1};
-	u16	*dst=screen;
-	dst+=(y*256)+x;
-
-	for (i = 0; i < OSD_FONT_HEIGHT; i++)
-	{
-		for (j = 0; j < OSD_FONT_WIDTH; j++)
-			if (font_eng[ofs] & bits[j]) 
-				render51.PutPixel(x+j,y+i,render51.MakeColor(128,0,0),&screenshell);
-			else render51.PutPixel(x+j,y+i,0,&screenshell);
-		ofs++;
-	}
-}
-
 void OSDCLASS::update() // don't optimized
 {
 	if (!needUpdate) return;	// don't update if buffer empty (speed up)
@@ -146,15 +129,15 @@ void OSDCLASS::addLine(const char *fmt, ...)
 void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 {
 	va_list list;
-	char msg[512];
+	char msg[1024];
 
-//	memset(msg,0,512);
+//	memset(msg,0,1024);
 
 	va_start(list,fmt);
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-		_vsnprintf(msg,511,fmt,list);
+		_vsnprintf(msg,1023,fmt,list);
 #else
-		vsnprintf(msg,511,fmt,list);
+		vsnprintf(msg,1023,fmt,list);
 #endif
 
 	va_end(list);
@@ -162,12 +145,7 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 	int len=strlen(msg);
 	if (strcmp(msg, old_msg) == 0) return;
 
-	for (int i=0; i<len; i++)
-	{
-		printChar(x, y, msg[i]);
-		x+=OSD_FONT_WIDTH+2;
-		old_msg[i]=msg[i];
-	}
-	old_msg[511]=0;
+	render51.PrintString<DesmumeFont>(1,0,0,render51.MakeColor(128,0,0),msg,&screenshell);
+
 	needUpdate = true;
 }

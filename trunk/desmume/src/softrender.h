@@ -16,6 +16,7 @@
 
 namespace softrender {
 
+
 class image
 {
 public:
@@ -61,6 +62,55 @@ public:
 	//things that werent originally even blitter-specific
 	void GrabRegion(int sx1, int sy1, int sx2, int sy2, int dx, int dy, image *s, image *d);
 	
+private:
+	template<typename FONT>
+	void print_char(int scale, int x, int y, int color, char c, image *dest)
+	{
+		int height = FONT::height();
+		int width = FONT::width(c);
+		for (int yc=0; yc<height; yc++)
+			for (int xc=0; xc<width; xc++)
+			{
+				if(FONT::pixel(c,xc,yc)) {
+					for(int xi=0;xi<scale;xi++)
+						for(int yi=0;yi<scale;yi++)
+							PutPixel((xc*scale+x)+xi,(yc*scale+y)+ yi,color, dest);
+				}
+			}
+	}
+
+public:
+	template<typename FONT>
+	void PrintString(int scale, int x, int y, int color, char *str, image *dest)
+	{
+		int xc = x;
+		int yc = y;
+
+		int height = FONT::height();
+
+		int x1 = x;  // Remember where x where the line should start. -- Overkill 2005-12-28.
+		for (; *str; ++str)
+		{
+			// New lines -- Overkill 2005-12-28.
+			if (*str == '\n' || *str == '\r')
+			{
+				if (*str == '\r')
+				{
+					// Checks for \r\n so they aren't parsed as two seperate line breaks.
+					if (!*++str) return;
+					if (*str != '\n')
+					{
+						*--str;
+					}
+				}
+				xc = x1;
+				yc += height*scale + scale;
+			} else {
+				print_char<FONT>(scale, xc, yc, color, *str, dest);
+				xc += FONT::width(*str)*scale + scale;
+			}
+		}
+	}
 
 
 public:
@@ -72,9 +122,7 @@ public:
 	virtual void   VLine(int x, int y, int ye, int color, image *dest)=0;
 	virtual void   HLine(int x, int y, int xe, int color, image *dest)=0;
 	virtual void   Blit(int x, int y, image *src, image *dest)=0;
-
-	//virtual void   Flip(void);
-	//virtual void   TBlit(int x, int y, image *src, image *dest);
+	virtual void   TBlit(int x, int y, image *src, image *dest)=0;
 	//virtual void   AlphaBlit(int x, int y, image *src, image *alpha, image *dest);
 	//virtual void   AdditiveBlit(int x, int y, image *src, image *dest);
 	//virtual void   TAdditiveBlit(int x, int y, image *src, image *dest);
@@ -118,6 +166,7 @@ public:
 	virtual void   VLine(int x, int y, int ye, int color, image *dest);
 	virtual void   HLine(int x, int y, int xe, int color, image *dest);
 	virtual void   Blit(int x, int y, image *src, image *dest);
+	virtual void   TBlit(int x, int y, image *src, image *dest);
 };
 
 class Trender32: public renderbase
@@ -131,6 +180,7 @@ public:
 	virtual void   VLine(int x, int y, int ye, int color, image *dest);
 	virtual void   HLine(int x, int y, int xe, int color, image *dest);
 	virtual void   Blit(int x, int y, image *src, image *dest);
+	virtual void   TBlit(int x, int y, image *src, image *dest);
 };
 
 
