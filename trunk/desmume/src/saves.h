@@ -37,7 +37,7 @@ typedef struct
 struct SFORMAT
 {
 	//a string description of the element
-	char *desc;
+	const char *desc;
 
 	//the size of each element
 	u32 size;

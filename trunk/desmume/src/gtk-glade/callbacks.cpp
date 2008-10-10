@@ -43,7 +43,7 @@ void set_menuitem_label(GtkWidget * w, char * text )
     }
 }
 
-void clear_savestate_menu(char * cb_name, u8 num)
+void clear_savestate_menu(const char * cb_name, u8 num)
 {
   GtkWidget * w;
   char cb[40];
@@ -55,7 +55,7 @@ void clear_savestate_menu(char * cb_name, u8 num)
   set_menuitem_label( w, text );
 }
 
-void update_savestate_menu(char * cb_name, u8 num)
+void update_savestate_menu(const char * cb_name, u8 num)
 {
   GtkWidget * w;
   char cb[40];
@@ -97,7 +97,7 @@ void update_savestate(u8 num)
 
 /* inline & protos */
 
-inline void SET_SENSITIVE(gchar *w, gboolean b) {
+inline void SET_SENSITIVE(const gchar *w, gboolean b) {
 	gtk_widget_set_sensitive(
 		glade_xml_get_widget(xml, w), TRUE);
 }
