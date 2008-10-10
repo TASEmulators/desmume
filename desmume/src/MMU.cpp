@@ -476,6 +476,10 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	if (!destination) return ;
 	if (!source) return ;
 	memcpy(destination,source,size) ;
+	
+	//zero 10/10/08 - if vram is not mapped, then when it is read from, it should be zero
+	//mimic this by clearing it now.
+	memset(source,0,size) ;
 }
 
 void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
