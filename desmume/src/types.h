@@ -223,10 +223,7 @@ inline void FlipByteOrder(u8 *src, u32 count)
 	}
 }
 
-//as a hack until we set up better cross-platform logging, we need to prevent printlog from being define in any platform but windows
-#ifndef _WIN32
-#define printlog(X) ((void)(X))
-#endif
+
 
 inline u64 double_to_u64(double d) {
 	union {
