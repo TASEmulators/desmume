@@ -127,6 +127,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
+		<Unit filename="dialogs/rom_info.h" />
+		<Unit filename="dialogs/rom_info.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="dialogs/speed_limit_selection_window.h" />
 		<Unit filename="dialogs/speed_limit_selection_window.m">
 			<Option compile="1" />
@@ -157,11 +162,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
-		<Unit filename="rom_info.h" />
-		<Unit filename="rom_info.m">
-			<Option compile="1" />
-			<Option link="1" />
-		</Unit>
 		<Unit filename="screen_state.h" />
 		<Unit filename="screen_state.m">
 			<Option compile="1" />
@@ -184,10 +184,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		</Unit>
 		<Unit filename="../common.cpp" />
 		<Unit filename="../common.h" />
-		<Unit filename="../config.h" />
 		<Unit filename="../cp15.cpp" />
 		<Unit filename="../cp15.h" />
-		<Unit filename="../ctrlssdl.cpp" />
 		<Unit filename="../ctrlssdl.h" />
 		<Unit filename="../debug.cpp" />
 		<Unit filename="../debug.h" />
