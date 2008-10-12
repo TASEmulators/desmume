@@ -42,8 +42,6 @@
 #ifndef FASTCALL
 #ifdef __MINGW32__
 #define FASTCALL __attribute__((fastcall))
-#elif defined (DESMUME_OBJ_C)
-#define FASTCALL __attribute__((fastcall))
 #elif defined (__i386__)
 #define FASTCALL __attribute__((regparm(3)))
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
@@ -58,14 +56,6 @@
 #define INLINE _inline
 #else
 #define INLINE inline
-#endif
-#endif
-
-#ifdef DESMUME_OBJ_C
-#define __declspec(ignore)
-inline void printlog(const char *s, ...) {}
-#ifdef __BIG_ENDIAN__
-#define WORDS_BIGENDIAN
 #endif
 #endif
 
@@ -161,6 +151,10 @@ typedef int desmume_BOOL;
 #define PACKED __attribute__((packed))
 #else
 #define PACKED
+#endif
+
+#ifdef __BIG_ENDIAN__
+#define WORDS_BIGENDIAN
 #endif
 
 #ifdef WORDS_BIGENDIAN

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		721F43D10EA2A18F0037FB33 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43C50EA2A18F0037FB33 /* common.cpp */; };
+		721F43D20EA2A18F0037FB33 /* rtc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43C90EA2A18F0037FB33 /* rtc.cpp */; };
+		721F43D30EA2A18F0037FB33 /* softrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43CB0EA2A18F0037FB33 /* softrender.cpp */; };
+		721F43E50EA2A23F0037FB33 /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = 721F43E40EA2A23F0037FB33 /* sndOSX.mm */; };
 		722764620E78E18100AEDC8B /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644A0E78E18100AEDC8B /* arm_instructions.cpp */; };
 		722764630E78E18100AEDC8B /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644B0E78E18100AEDC8B /* armcpu.cpp */; };
 		722764640E78E18100AEDC8B /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644C0E78E18100AEDC8B /* bios.cpp */; };
@@ -16,7 +20,6 @@
 		722764680E78E18100AEDC8B /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764500E78E18100AEDC8B /* Disassembler.cpp */; };
 		722764690E78E18100AEDC8B /* FIFO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764510E78E18100AEDC8B /* FIFO.cpp */; };
 		7227646A0E78E18100AEDC8B /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764520E78E18100AEDC8B /* fs-linux.cpp */; };
-		7227646C0E78E18100AEDC8B /* gl_vertex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764550E78E18100AEDC8B /* gl_vertex.cpp */; };
 		7227646D0E78E18100AEDC8B /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764560E78E18100AEDC8B /* GPU.cpp */; };
 		7227646E0E78E18100AEDC8B /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764570E78E18100AEDC8B /* matrix.cpp */; };
 		7227646F0E78E18100AEDC8B /* mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764580E78E18100AEDC8B /* mc.cpp */; };
@@ -48,7 +51,6 @@
 		729BEC760D9D55DB00ED561B /* preferences.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC660D9D55DB00ED561B /* preferences.m */; };
 		729BEC770D9D55DB00ED561B /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC680D9D55DB00ED561B /* rom_info.m */; };
 		729BEC780D9D55DB00ED561B /* screenshot.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6A0D9D55DB00ED561B /* screenshot.m */; };
-		729BEC790D9D55DB00ED561B /* sndOSX.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6C0D9D55DB00ED561B /* sndOSX.m */; };
 		729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6E0D9D55DB00ED561B /* video_output_view.m */; };
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
@@ -61,6 +63,19 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		721F43C50EA2A18F0037FB33 /* common.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = common.cpp; path = ../common.cpp; sourceTree = SOURCE_ROOT; };
+		721F43C60EA2A18F0037FB33 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = common.h; path = ../common.h; sourceTree = SOURCE_ROOT; };
+		721F43C70EA2A18F0037FB33 /* memorystream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = memorystream.h; path = ../memorystream.h; sourceTree = SOURCE_ROOT; };
+		721F43C80EA2A18F0037FB33 /* readwrite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = readwrite.h; path = ../readwrite.h; sourceTree = SOURCE_ROOT; };
+		721F43C90EA2A18F0037FB33 /* rtc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rtc.cpp; path = ../rtc.cpp; sourceTree = SOURCE_ROOT; };
+		721F43CA0EA2A18F0037FB33 /* rtc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rtc.h; path = ../rtc.h; sourceTree = SOURCE_ROOT; };
+		721F43CB0EA2A18F0037FB33 /* softrender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = softrender.cpp; path = ../softrender.cpp; sourceTree = SOURCE_ROOT; };
+		721F43CC0EA2A18F0037FB33 /* softrender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender.h; path = ../softrender.h; sourceTree = SOURCE_ROOT; };
+		721F43CD0EA2A18F0037FB33 /* softrender_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender_config.h; path = ../softrender_config.h; sourceTree = SOURCE_ROOT; };
+		721F43CE0EA2A18F0037FB33 /* softrender_desmumefont.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender_desmumefont.h; path = ../softrender_desmumefont.h; sourceTree = SOURCE_ROOT; };
+		721F43CF0EA2A18F0037FB33 /* softrender_v3sysfont.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender_v3sysfont.h; path = ../softrender_v3sysfont.h; sourceTree = SOURCE_ROOT; };
+		721F43D00EA2A18F0037FB33 /* zero_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zero_private.h; path = ../zero_private.h; sourceTree = SOURCE_ROOT; };
+		721F43E40EA2A23F0037FB33 /* sndOSX.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = sndOSX.mm; sourceTree = "<group>"; };
 		7227644A0E78E18100AEDC8B /* arm_instructions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_instructions.cpp; path = ../arm_instructions.cpp; sourceTree = SOURCE_ROOT; };
 		7227644B0E78E18100AEDC8B /* armcpu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = armcpu.cpp; path = ../armcpu.cpp; sourceTree = SOURCE_ROOT; };
 		7227644C0E78E18100AEDC8B /* bios.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bios.cpp; path = ../bios.cpp; sourceTree = SOURCE_ROOT; };
@@ -71,7 +86,6 @@
 		722764510E78E18100AEDC8B /* FIFO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FIFO.cpp; path = ../FIFO.cpp; sourceTree = SOURCE_ROOT; };
 		722764520E78E18100AEDC8B /* fs-linux.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "fs-linux.cpp"; path = "../fs-linux.cpp"; sourceTree = SOURCE_ROOT; };
 		722764540E78E18100AEDC8B /* gdbstub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gdbstub.h; path = ../gdbstub.h; sourceTree = SOURCE_ROOT; };
-		722764550E78E18100AEDC8B /* gl_vertex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gl_vertex.cpp; path = ../gl_vertex.cpp; sourceTree = SOURCE_ROOT; };
 		722764560E78E18100AEDC8B /* GPU.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GPU.cpp; path = ../GPU.cpp; sourceTree = SOURCE_ROOT; };
 		722764570E78E18100AEDC8B /* matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix.cpp; path = ../matrix.cpp; sourceTree = SOURCE_ROOT; };
 		722764580E78E18100AEDC8B /* mc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mc.cpp; path = ../mc.cpp; sourceTree = SOURCE_ROOT; };
@@ -115,7 +129,6 @@
 		729BEC690D9D55DB00ED561B /* screenshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screenshot.h; sourceTree = SOURCE_ROOT; };
 		729BEC6A0D9D55DB00ED561B /* screenshot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screenshot.m; sourceTree = SOURCE_ROOT; };
 		729BEC6B0D9D55DB00ED561B /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = SOURCE_ROOT; };
-		729BEC6C0D9D55DB00ED561B /* sndOSX.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = sndOSX.m; sourceTree = SOURCE_ROOT; };
 		729BEC6D0D9D55DB00ED561B /* video_output_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_output_view.h; sourceTree = SOURCE_ROOT; };
 		729BEC6E0D9D55DB00ED561B /* video_output_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = video_output_view.m; sourceTree = SOURCE_ROOT; };
 		729BEC9A0D9D57AF00ED561B /* ARM9.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ARM9.h; path = ../ARM9.h; sourceTree = SOURCE_ROOT; };
@@ -124,7 +137,6 @@
 		729BECA00D9D57AF00ED561B /* bios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bios.h; path = ../bios.h; sourceTree = SOURCE_ROOT; };
 		729BECA10D9D57AF00ED561B /* bits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bits.h; path = ../bits.h; sourceTree = SOURCE_ROOT; };
 		729BECA30D9D57AF00ED561B /* cflash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cflash.h; path = ../cflash.h; sourceTree = SOURCE_ROOT; };
-		729BECA40D9D57AF00ED561B /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ../config.h; sourceTree = SOURCE_ROOT; };
 		729BECA60D9D57AF00ED561B /* cp15.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cp15.h; path = ../cp15.h; sourceTree = SOURCE_ROOT; };
 		729BECA80D9D57AF00ED561B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = ../debug.h; sourceTree = SOURCE_ROOT; };
 		729BECAA0D9D57AF00ED561B /* Disassembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Disassembler.h; path = ../Disassembler.h; sourceTree = SOURCE_ROOT; };
@@ -132,7 +144,6 @@
 		729BECAC0D9D57AF00ED561B /* fat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fat.h; path = ../fat.h; sourceTree = SOURCE_ROOT; };
 		729BECAE0D9D57AF00ED561B /* FIFO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FIFO.h; path = ../FIFO.h; sourceTree = SOURCE_ROOT; };
 		729BECB00D9D57AF00ED561B /* fs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fs.h; path = ../fs.h; sourceTree = SOURCE_ROOT; };
-		729BECB20D9D57AF00ED561B /* gl_vertex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gl_vertex.h; path = ../gl_vertex.h; sourceTree = SOURCE_ROOT; };
 		729BECB40D9D57AF00ED561B /* GPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPU.h; path = ../GPU.h; sourceTree = SOURCE_ROOT; };
 		729BECB60D9D57AF00ED561B /* matrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = matrix.h; path = ../matrix.h; sourceTree = SOURCE_ROOT; };
 		729BECB80D9D57AF00ED561B /* mc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mc.h; path = ../mc.h; sourceTree = SOURCE_ROOT; };
@@ -194,7 +205,6 @@
 				729BEC690D9D55DB00ED561B /* screenshot.h */,
 				729BEC6A0D9D55DB00ED561B /* screenshot.m */,
 				729BEC6B0D9D55DB00ED561B /* sndOSX.h */,
-				729BEC6C0D9D55DB00ED561B /* sndOSX.m */,
 				729BEC6E0D9D55DB00ED561B /* video_output_view.m */,
 				729BEC6D0D9D55DB00ED561B /* video_output_view.h */,
 			);
@@ -229,6 +239,19 @@
 		29B97314FDCFA39411CA2CEA /* DeSmuME */ = {
 			isa = PBXGroup;
 			children = (
+				721F43E40EA2A23F0037FB33 /* sndOSX.mm */,
+				721F43C50EA2A18F0037FB33 /* common.cpp */,
+				721F43C60EA2A18F0037FB33 /* common.h */,
+				721F43C70EA2A18F0037FB33 /* memorystream.h */,
+				721F43C80EA2A18F0037FB33 /* readwrite.h */,
+				721F43C90EA2A18F0037FB33 /* rtc.cpp */,
+				721F43CA0EA2A18F0037FB33 /* rtc.h */,
+				721F43CB0EA2A18F0037FB33 /* softrender.cpp */,
+				721F43CC0EA2A18F0037FB33 /* softrender.h */,
+				721F43CD0EA2A18F0037FB33 /* softrender_config.h */,
+				721F43CE0EA2A18F0037FB33 /* softrender_desmumefont.h */,
+				721F43CF0EA2A18F0037FB33 /* softrender_v3sysfont.h */,
+				721F43D00EA2A18F0037FB33 /* zero_private.h */,
 				729BECEF0D9D581900ED561B /* AudioUnit.framework */,
 				729BECE60D9D57F600ED561B /* OpenGL.framework */,
 				080E96DDFE201D6D7F000001 /* Cocoa Port */,
@@ -260,7 +283,6 @@
 				722764510E78E18100AEDC8B /* FIFO.cpp */,
 				722764520E78E18100AEDC8B /* fs-linux.cpp */,
 				722764540E78E18100AEDC8B /* gdbstub.h */,
-				722764550E78E18100AEDC8B /* gl_vertex.cpp */,
 				722764560E78E18100AEDC8B /* GPU.cpp */,
 				722764570E78E18100AEDC8B /* matrix.cpp */,
 				722764580E78E18100AEDC8B /* mc.cpp */,
@@ -278,7 +300,6 @@
 				729BECA00D9D57AF00ED561B /* bios.h */,
 				729BECA10D9D57AF00ED561B /* bits.h */,
 				729BECA30D9D57AF00ED561B /* cflash.h */,
-				729BECA40D9D57AF00ED561B /* config.h */,
 				729BECA60D9D57AF00ED561B /* cp15.h */,
 				729BECA80D9D57AF00ED561B /* debug.h */,
 				729BECAA0D9D57AF00ED561B /* Disassembler.h */,
@@ -286,7 +307,6 @@
 				729BECAC0D9D57AF00ED561B /* fat.h */,
 				729BECAE0D9D57AF00ED561B /* FIFO.h */,
 				729BECB00D9D57AF00ED561B /* fs.h */,
-				729BECB20D9D57AF00ED561B /* gl_vertex.h */,
 				729BECB40D9D57AF00ED561B /* GPU.h */,
 				729BECB60D9D57AF00ED561B /* matrix.h */,
 				729BECB80D9D57AF00ED561B /* mc.h */,
@@ -431,7 +451,6 @@
 				729BEC760D9D55DB00ED561B /* preferences.m in Sources */,
 				729BEC770D9D55DB00ED561B /* rom_info.m in Sources */,
 				729BEC780D9D55DB00ED561B /* screenshot.m in Sources */,
-				729BEC790D9D55DB00ED561B /* sndOSX.m in Sources */,
 				729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */,
 				7277B8EB0D9F25F700D283BD /* about.m in Sources */,
 				7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */,
@@ -444,7 +463,6 @@
 				722764680E78E18100AEDC8B /* Disassembler.cpp in Sources */,
 				722764690E78E18100AEDC8B /* FIFO.cpp in Sources */,
 				7227646A0E78E18100AEDC8B /* fs-linux.cpp in Sources */,
-				7227646C0E78E18100AEDC8B /* gl_vertex.cpp in Sources */,
 				7227646D0E78E18100AEDC8B /* GPU.cpp in Sources */,
 				7227646E0E78E18100AEDC8B /* matrix.cpp in Sources */,
 				7227646F0E78E18100AEDC8B /* mc.cpp in Sources */,
@@ -461,6 +479,10 @@
 				728E5E210E7F54CC00608344 /* GPU_osd.cpp in Sources */,
 				72D89DE50E83973A008D9B64 /* screen_state.m in Sources */,
 				72D89E370E845C7E008D9B64 /* readwrite.cpp in Sources */,
+				721F43D10EA2A18F0037FB33 /* common.cpp in Sources */,
+				721F43D20EA2A18F0037FB33 /* rtc.cpp in Sources */,
+				721F43D30EA2A18F0037FB33 /* softrender.cpp in Sources */,
+				721F43E50EA2A23F0037FB33 /* sndOSX.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -512,8 +534,8 @@
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					HAVE_OPENGL,
 					DESMUME_OBJ_C,
+					HAVE_OPENGL,
 					HAVE_LIBZ,
 					DESMUME_COCOA,
 				);
@@ -533,8 +555,8 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					HAVE_OPENGL,
 					DESMUME_OBJ_C,
+					HAVE_OPENGL,
 					HAVE_LIBZ,
 					DESMUME_COCOA,
 				);
