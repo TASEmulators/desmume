@@ -51,7 +51,7 @@ void ENDGL() {
 	#include <windows.h>
 	#include <GL/gl.h>
 	#include <GL/glext.h>
-#elif DESMUME_OBJ_C
+#elif DESMUME_COCOA
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #else

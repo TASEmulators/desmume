@@ -60,7 +60,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 					<Add option="-arch ppc" />
 					<Add option="-DDESMUME_COCOA" />
 					<Add option="-DHAVE_LIBZ" />
-					<Add option="-DWORDS_BIGENDIAN" />
 					<Add option="-DHAVE_OPENGL" />
 				</Compiler>
 				<Linker>
@@ -91,6 +90,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Mode after="always" />
 		</ExtraCommands>
 		<Unit filename="../ARM9.h" />
+		<Unit filename="../Disassembler.cpp" />
+		<Unit filename="../Disassembler.h" />
 		<Unit filename="../FIFO.cpp" />
 		<Unit filename="../FIFO.h" />
 		<Unit filename="../GPU.cpp" />
@@ -172,7 +173,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option link="1" />
 		</Unit>
 		<Unit filename="sndOSX.h" />
-		<Unit filename="sndOSX.m">
+		<Unit filename="sndOSX.mm">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
@@ -181,9 +182,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
+		<Unit filename="../common.cpp" />
+		<Unit filename="../common.h" />
 		<Unit filename="../config.h" />
 		<Unit filename="../cp15.cpp" />
 		<Unit filename="../cp15.h" />
+		<Unit filename="../ctrlssdl.cpp" />
+		<Unit filename="../ctrlssdl.h" />
 		<Unit filename="../debug.cpp" />
 		<Unit filename="../debug.h" />
 		<Unit filename="../dscard.h" />
@@ -193,25 +198,32 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../gdbstub.h" />
 		<Unit filename="../gfx3d.cpp" />
 		<Unit filename="../gfx3d.h" />
-		<Unit filename="../gl_vertex.cpp" />
-		<Unit filename="../gl_vertex.h" />
 		<Unit filename="../matrix.cpp" />
 		<Unit filename="../matrix.h" />
 		<Unit filename="../mc.cpp" />
 		<Unit filename="../mc.h" />
 		<Unit filename="../mem.h" />
+		<Unit filename="../memorystream.h" />
 		<Unit filename="../readwrite.cpp" />
 		<Unit filename="../readwrite.h" />
 		<Unit filename="../registers.h" />
 		<Unit filename="../render3D.cpp" />
 		<Unit filename="../render3D.h" />
+		<Unit filename="../rtc.cpp" />
+		<Unit filename="../rtc.h" />
 		<Unit filename="../saves.cpp" />
 		<Unit filename="../saves.h" />
+		<Unit filename="../softrender.cpp" />
+		<Unit filename="../softrender.h" />
+		<Unit filename="../softrender_config.h" />
+		<Unit filename="../softrender_desmumefont.h" />
+		<Unit filename="../softrender_v3sysfont.h" />
 		<Unit filename="../thumb_instructions.cpp" />
 		<Unit filename="../thumb_instructions.h" />
 		<Unit filename="../types.h" />
 		<Unit filename="../wifi.cpp" />
 		<Unit filename="../wifi.h" />
+		<Unit filename="../zero_private.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
