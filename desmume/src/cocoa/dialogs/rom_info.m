@@ -18,7 +18,7 @@
 */
 
 #import "rom_info.h"
-#import "nds_control.h"
+#import "../nds_control.h"
 
 bool leopard_or_later = false;
 int HUDWindowMask = 1 << 13; //this is NSHUDWindowMask from Leopard, defined here so we can mantain tiger compile compatability
