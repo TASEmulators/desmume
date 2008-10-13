@@ -34,11 +34,11 @@ BOOL my_gl_Begin (int screen);
 void my_gl_End (int screen);
 void my_gl_Clear(int screen);
 void my_gl_DrawBeautifulQuad( void);
+void my_gl_Identity( void);
 
 void init_GL_capabilities( int use_software_convert);
 void init_GL(GtkWidget * widget, int screen, int share_num);
 int init_GL_free_s(GtkWidget * widget, int share_num);
 int init_GL_free(GtkWidget * widget);
-void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 void reshape (GtkWidget * widget, int screen);
 gboolean screen (GtkWidget * widget, int off);

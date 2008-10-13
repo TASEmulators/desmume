@@ -111,7 +111,6 @@ static void wtools_3_update() {
 
 static void refresh() {
 	int x,y,X,Y; u16 * addr = base_addr[palindex];
-	COLOR c; COLOR32 c32;
 
 	gdkGC = gdk_gc_new(wPaint->window);
 	if (addr) {
@@ -154,6 +153,7 @@ gboolean on_wtools_3_PalView_close         (GtkWidget *widget, ...) {
 
 gboolean on_wtools_3_draw_expose_event    (GtkWidget * widget, GdkEventExpose *event, gpointer user_data) {
 	refresh();
+	return TRUE;
 }
 void     on_wtools_3_palette_changed      (GtkComboBox *combo,   gpointer user_data) {
 	palindex = gtk_combo_box_get_active(combo);

@@ -32,7 +32,7 @@ gboolean ScreenInvert=FALSE;
 
 /* ******** Savestate menu items handling ******** */
 
-void set_menuitem_label(GtkWidget * w, char * text )
+static void set_menuitem_label(GtkWidget * w, char * text )
 {
   GtkLabel * child;
 
@@ -43,7 +43,7 @@ void set_menuitem_label(GtkWidget * w, char * text )
     }
 }
 
-void clear_savestate_menu(const char * cb_name, u8 num)
+static void clear_savestate_menu(const char * cb_name, u8 num)
 {
   GtkWidget * w;
   char cb[40];
@@ -55,7 +55,7 @@ void clear_savestate_menu(const char * cb_name, u8 num)
   set_menuitem_label( w, text );
 }
 
-void update_savestate_menu(const char * cb_name, u8 num)
+static void update_savestate_menu(const char * cb_name, u8 num)
 {
   GtkWidget * w;
   char cb[40];
@@ -65,11 +65,9 @@ void update_savestate_menu(const char * cb_name, u8 num)
   set_menuitem_label( w, savestates[num-1].date );
 }
 
-void update_savestates_menu()
+static void update_savestates_menu()
 {
-  char cb[15];
   u8 i;
-  GtkWidget * w;
 
   for( i = 1; i <= NB_STATES; i++ )
     {
@@ -86,7 +84,7 @@ void update_savestates_menu()
     }
 }
 
-void update_savestate(u8 num)
+static void update_savestate(u8 num)
 {
   desmume_pause();
   savestate_slot(num);
@@ -112,7 +110,7 @@ void enable_rom_features() {
 	SET_SENSITIVE("wgt_Reset", TRUE);
 }
 
-void MAINWINDOW_RESIZE() {
+static void MAINWINDOW_RESIZE() {
 	GtkWidget * spacer1 = glade_xml_get_widget(xml, "misc_sep3");
 	GtkWidget * spacer2 = glade_xml_get_widget(xml, "misc_sep4");
 	int dim1,dim2;
@@ -155,7 +153,7 @@ void inline ADD_FILTER(GtkWidget * filech, const char * pattern, const char * na
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filech), pFilter);
 }
 
-void file_open() {
+static void file_open() {
 	desmume_pause();
 	
 	GtkWidget *pFileSelection;
@@ -255,7 +253,7 @@ void  on_fsXX_activate  (GtkMenuItem *menuitem,gpointer user_data) {
 
 /* SUBMENU SIZE ***** ***** ***** ***** */
 
-void gtk_table_reattach(GtkTable * table, GtkWidget * w, 
+static void gtk_table_reattach(GtkTable * table, GtkWidget * w, 
 	guint left_attach, guint right_attach, guint top_attach, guint bottom_attach,
 	GtkAttachOptions xoptions, GtkAttachOptions yoptions,
 	guint xpadding, guint ypadding) {
@@ -282,7 +280,7 @@ void gtk_table_reattach(GtkTable * table, GtkWidget * w,
 	}
 }
 
-void rightscreen(BOOL apply) {
+static void rightscreen(BOOL apply) {
 	GtkWidget *chk  = glade_xml_get_widget(xml, "wvb_2_Sub");
 	GtkTable *table = (GtkTable *)glade_xml_get_widget(xml, "table_layout");
 
@@ -471,7 +469,7 @@ void  on_wgt_Exec_toggled  (GtkToggleToolButton *toggletoolbutton, gpointer user
 
 
 /* LAYERS ***** ***** ***** ***** */
-void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
+static void change_bgx_layer(int layer, gboolean state, NDS_Screen scr) {
 	//if(!desmume_running()) return;
 	if(state==TRUE) { 
 		GPU_addBack(scr.gpu, layer);

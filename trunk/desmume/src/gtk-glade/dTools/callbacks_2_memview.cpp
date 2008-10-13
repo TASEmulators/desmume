@@ -32,7 +32,8 @@ enum SHOW {
 
 static BOOL init=FALSE;
 static enum SHOW packmode=Bit8;
-static u32 address=0, tmpaddr=0, bpl=0; int cpu=0;
+static u32 address=0, tmpaddr=0;
+int cpu=0;
 static char patt[512];
 static u8 mem[0x100];
 static dTools_dsp dsp;
@@ -88,7 +89,7 @@ static void wtools_2_update() {
 			for (j=0; j<16; j+=4, addr+=4,mem32++) { 
 				m32 = *mem32; *mem32 = MMU_read32(cpu, addr);
 				if (m32 != *mem32) {
-					sprintf(txt, "  %08X", *mem32);
+					sprintf(txt, "  %08lX", *mem32);
 					dTools_display_clear_char(&dsp, 12+3*j, i, 12);
 					dTools_display_draw_text(&dsp, 12+3*j, i, txt);
 				}
@@ -102,6 +103,8 @@ gboolean on_wtools_2_draw_button_release_event(GtkWidget *widget, GdkEventButton
 	// clear the red marks :)
 	if (event->button==1)
 		refresh();
+
+	return TRUE;
 }
 
 
@@ -197,7 +200,6 @@ static void initialize() {
 	GtkWidget * combo;
 	GtkWidget * wPaint;
 	GtkAdjustment *adj;
-	int i,j;
 
 	if (init) return;
 	combo = glade_xml_get_widget(xml_tools, "wtools_2_cpu");
@@ -269,7 +271,7 @@ static void refresh() {
 			break;
 		case Bit32:
 			for (j=0; j<16; j+=4,ptxt+=12, mem32++)
-				sprintf(ptxt, "  %08X  ", *mem32);
+				sprintf(ptxt, "  %08lX  ", *mem32);
 			break;
 		}
 		sprintf(ptxt, "| "); ptxt +=2;

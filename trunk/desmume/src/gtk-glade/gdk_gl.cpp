@@ -48,8 +48,8 @@ static int gtk_glade_use_software_colour_convert;
 #undef _DUP2
 
 /* FIXME: Purpose of this code?  */
-BOOL _fun_gl_Begin (int screen) { return FALSE; }
-void _fun_gl_End (int screen) { }
+static BOOL _fun_gl_Begin (int screen) { return FALSE; }
+static void _fun_gl_End (int screen) { }
 
 fun_gl_Begin Open_GL_beg = _fun_gl_Begin;
 fun_gl_End   Open_GL_end = _fun_gl_End;
@@ -97,11 +97,12 @@ void my_gl_DrawBeautifulQuad( void) {
 	glColor3ub(255,255,255);
 }
 
-
-void my_gl_DrawLogo() {
+#if 0 /* not used */
+static void my_gl_DrawLogo() {
 	
 
 }
+#endif
 
 
 void my_gl_Clear(int screen) {
@@ -222,7 +223,7 @@ void reshape (GtkWidget * widget, int screen) {
 /* TEXTURING                                    */
 /************************************************/
 
-void my_gl_Texture2D() {
+static void my_gl_Texture2D() {
 	glBindTexture(GL_TEXTURE_2D, Textures[0]);
 #define MyFILTER GL_LINEAR
 //#define MyFILTER GL_NEAREST
@@ -256,7 +257,7 @@ my_gl_ScreenTex( int software_convert) {
   }
 }
 
-void my_gl_ScreenTexApply(int screen) {
+static void my_gl_ScreenTexApply(int screen) {
 	float off = (screen)?0.375:0;
 	glBegin(GL_QUADS);
 		// texcoords 0.375 means 192, 1 means 256

@@ -96,7 +96,6 @@ typedef union _callback_arg{
 #include "../saves.h"
 #include "../render3D.h"
 #include "desmume.h"
-#include "gdk_gl.h"
 
 // autoconnect with strings as user_data
 

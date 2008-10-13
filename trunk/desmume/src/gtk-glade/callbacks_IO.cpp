@@ -204,9 +204,11 @@ gboolean  on_wDrawScreen_scroll_event (GtkWidget *widget, GdkEvent *event, gpoin
 	// separate zoom factors not supported yet
 	scr = 0;
 	resize_incremental(scr,(GdkEventScroll*)event);
+
+	return TRUE;
 }
 
-void set_touch_pos (int x, int y) {
+static void set_touch_pos (int x, int y) {
 	s32 EmuX, EmuY;
 	x /= ScreenCoeff_Size[1];
 	y /= ScreenCoeff_Size[1];
@@ -283,13 +285,13 @@ gboolean  on_wDrawScreen_motion_notify_event  (GtkWidget *widget, GdkEventMotion
 u16 Keypad_Temp[NB_KEYS];
 guint temp_Key=0;
 
-void init_labels() {
+static void init_labels() {
 	int i;
 	char text[50], bname[20];
 	GtkButton *b;
 	for (i=0; i<NB_KEYS; i++) {
-		sprintf(text,"%s : %s\0\0",key_names[i],KEYNAME(keyboard_cfg[i]));
-		sprintf(bname,"button_%s\0\0",key_names[i]);
+		snprintf(text, 50, "%s : %s", key_names[i],KEYNAME(keyboard_cfg[i]));
+		snprintf(bname, 20, "button_%s", key_names[i]);
 		b = (GtkButton*)glade_xml_get_widget(xml, bname);
 		gtk_button_set_label(b,text);
 	}
@@ -302,8 +304,8 @@ void init_joy_labels() {
   GtkButton *b;
   for (i=0; i<NB_KEYS; i++) {
     if( joypad_cfg[i] == (u16)(-1) ) continue; /* Key not configured */
-    sprintf(text,"%s : %d\0\0",key_names[i],joypad_cfg[i]);
-    sprintf(bname,"button_joy_%s\0\0",key_names[i]);
+    snprintf(text, 50, "%s : %d",key_names[i],joypad_cfg[i]);
+    snprintf(bname, 30, "button_joy_%s",key_names[i]);
     b = (GtkButton*)glade_xml_get_widget(xml, bname);
     gtk_button_set_label(b,text);
   }
@@ -335,7 +337,7 @@ gboolean  on_wKeyDlg_key_press_event (GtkWidget *widget, GdkEventKey *event, gpo
 	return TRUE;
 }
 
-void ask(GtkButton*b, int key) {
+static void ask(GtkButton*b, int key) {
 	char text[50];
 	GtkDialog * dlg = (GtkDialog*)glade_xml_get_widget(xml, "wKeyDlg");
 	key--; /* key = bit position, start with 1 */
@@ -345,7 +347,7 @@ void ask(GtkButton*b, int key) {
 	{
 		case GTK_RESPONSE_OK:
 			Keypad_Temp[key]=temp_Key;
-			sprintf(text,"%s : %s\0\0",key_names[key],KEYNAME(temp_Key));
+			snprintf(text, 50, "%s : %s",key_names[key],KEYNAME(temp_Key));
 			gtk_button_set_label(b,text);
 			break;
 		case GTK_RESPONSE_CANCEL:
@@ -356,7 +358,7 @@ void ask(GtkButton*b, int key) {
 }
 
 /* Joystick configuration / Key definition */
-void ask_joy_key(GtkButton*b, int key)
+static void ask_joy_key(GtkButton*b, int key)
 {
   char text[50];
   u16 joykey;
@@ -368,25 +370,24 @@ void ask_joy_key(GtkButton*b, int key)
   /* Need to force event processing. Otherwise, popup won't show up. */
   while ( gtk_events_pending() ) gtk_main_iteration();
   joykey = get_set_joy_key(key);
-  sprintf(text,"%s : %d\0\0",key_names[key],joykey);
+  snprintf(text, 50, "%s : %d",key_names[key],joykey);
   gtk_button_set_label(b,text);
   gtk_widget_hide((GtkWidget*)dlg);
 }
 
 /* Joystick configuration / Key definition */
-void ask_joy_axis(u8 key, u8 opposite_key)
+static void ask_joy_axis(u8 key, u8 opposite_key)
 {
   char text[50];
   char current_button[50], opposite_button[50];
-  u16 joykey;
   GtkWidget * dlg;
   GtkButton * btn;
 
   key--; /* remove 1 to get index */
   opposite_key--;
 
-  sprintf(current_button,"button_joy_%s\0\0",key_names[key]);
-  sprintf(opposite_button,"button_joy_%s\0\0",key_names[opposite_key]);
+  snprintf(current_button, 50, "button_joy_%s",key_names[key]);
+  snprintf(opposite_button, 50, "button_joy_%s",key_names[opposite_key]);
   dlg = (GtkWidget*)glade_xml_get_widget(xml, "wJoyDlg");
 
   gtk_widget_show(dlg);
@@ -394,11 +395,11 @@ void ask_joy_axis(u8 key, u8 opposite_key)
   while ( gtk_events_pending() ) gtk_main_iteration();
   get_set_joy_axis(key, opposite_key);
 
-  sprintf(text,"%s : %d\0\0",key_names[key],joypad_cfg[key]);
+  snprintf(text, 50, "%s : %d",key_names[key],joypad_cfg[key]);
   btn = (GtkButton*)glade_xml_get_widget(xml, current_button);
   gtk_button_set_label(btn,text);
 
-  sprintf(text,"%s : %d\0\0",key_names[opposite_key],joypad_cfg[opposite_key]);
+  snprintf(text, 50, "%s : %d",key_names[opposite_key],joypad_cfg[opposite_key]);
   btn = (GtkButton*)glade_xml_get_widget(xml, opposite_button);
   gtk_button_set_label(btn,text);
 
