@@ -433,12 +433,12 @@ void NDS_FreeROM(void)
 
 void NDS_Reset( void)
 {
-   int i;
+   unsigned int i;
    u32 src;
    u32 dst;
    NDS_header * header = NDS_getROMHeader();
 
-	if (!header) return ;
+   if (!header) return ;
 
    MMU_clearMem();
 
@@ -601,7 +601,7 @@ int NDS_WriteBMP(const char *filename)
     bmpfileheader_struct fileheader;
     bmpimgheader_struct imageheader;
     FILE *file;
-    int i,j,k;
+    int i,j;
     u16 * bmp = (u16 *)GPU_screen;
 
     memset(&fileheader, 0, sizeof(fileheader));
@@ -653,8 +653,6 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
 	 bmpfileheader_struct fileheader;
     bmpimgheader_struct imageheader;
     FILE *file;
-    int i,j,k;
-    u16 * bmp = (u16 *)GPU_screen;
 
     memset(&fileheader, 0, sizeof(fileheader));
     fileheader.size = sizeof(fileheader);
@@ -842,7 +840,7 @@ NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
 int NDS_LoadFirmware(const char *filename)
 {
     int i;
-    long size;
+    unsigned long size;
     FILE *file;
 	
     if ((file = fopen(filename, "rb")) == NULL)
@@ -1109,7 +1107,7 @@ NDS_exec(s32 nb, BOOL force)
               T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
                            
               vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
-              if((nds.VCount==(vmatch>>8)|((vmatch<<1)&(1<<8))))
+              if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
                 {
                   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 4);
                   if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 32)
@@ -1119,7 +1117,7 @@ NDS_exec(s32 nb, BOOL force)
                 T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFB);
                            
               vmatch = T1ReadWord(MMU.ARM7_REG, 4);
-              if((nds.VCount==(vmatch>>8)|((vmatch<<1)&(1<<8))))
+              if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
                 {
                   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
                   if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
