@@ -21,7 +21,7 @@
 
 #include "globals.h"
 
-extern char * unknown;
+extern const char * unknown;
 extern const char * KEYVAL_NAMES[0x10000];
 void KEYVAL(int k, const char * name);
 

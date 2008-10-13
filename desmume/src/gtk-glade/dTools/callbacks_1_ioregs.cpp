@@ -131,6 +131,7 @@ gboolean on_wtools_1_draw_button_release_event(GtkWidget *widget, GdkEventButton
 	// clear the red marks :)
 	if (event->button==1)
 		update_regs();
+	return TRUE;
 }
 gboolean on_wtools_1_draw_expose_event (GtkWidget *widget, GdkEventExpose *event, gpointer user_data) {
 	update_regs();

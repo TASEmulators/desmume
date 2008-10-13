@@ -21,6 +21,7 @@
  */
 
 #include "globals.h"
+#include "gdk_gl.h"
 
 extern "C" {
 

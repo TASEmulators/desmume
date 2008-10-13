@@ -22,7 +22,7 @@
 #include "keyval_names.h"
 /* see <gdk/gdkkeysyms.h> */
 
-char * unknown="(unknown)";
+const char * unknown="(unknown)";
 const char * KEYVAL_NAMES[0x10000];
 
 const char * KEYNAME(int k) {

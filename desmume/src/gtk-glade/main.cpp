@@ -217,7 +217,7 @@ void unregister_Tool(VoidFunPtr fun) {
 	tools_to_update = g_list_remove(tools_to_update, (void *) fun);
 }
 
-void notify_Tool (VoidFunPtr fun, gpointer func_data) {
+static void notify_Tool (VoidFunPtr fun, gpointer func_data) {
 	fun();
 }
 
@@ -249,7 +249,7 @@ gchar * get_ui_file (const char *filename)
 /* ***** ***** CONFIG FILE ***** ***** */
 char * CONFIG_FILE;
 
-int Read_ConfigFile()
+static int Read_ConfigFile()
 {
 	int i, tmp;
 	GKeyFile * keyfile = g_key_file_new();
@@ -258,8 +258,6 @@ int Read_ConfigFile()
 	load_default_config();
 	
 	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
-
-	const char *c;
 
 	/* Load keypad keys */
 	for(i = 0; i < NB_KEYS; i++)
@@ -290,7 +288,7 @@ int Read_ConfigFile()
 	return 0;
 }
 
-int Write_ConfigFile()
+static int Write_ConfigFile()
 {
 	int i;
 	GKeyFile * keyfile;

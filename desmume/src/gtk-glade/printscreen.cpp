@@ -85,7 +85,7 @@ int WriteBMP(const char *filename,u16 *bmp){
     fwrite( &imageheader.r4, sizeof(imageheader.r4), 1, fichier);
     fwrite( &imageheader.r5, sizeof(imageheader.r5), 1, fichier);
     fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
-    int i,j,k;
+    int i,j;
     for(j=0;j<192*2;j++)for(i=0;i<256;i++){
 	    u8 r,g,b;
 	    u16 pixel = bmp[i+(192*2-j)*256];

@@ -20,6 +20,7 @@
  */
 
 #include "callbacks_dtools.h"
+#include "../gdk_gl.h"
 
 void init_combo_memory(GtkComboBox *combo, u8 ** addresses) {
 	GtkTreeIter iter;
@@ -81,13 +82,6 @@ static int gl_context_num=0;
 #define TILE_NUM_MAX  1024
 #define TILE_W_SZ     8
 #define TILE_H_SZ     8
-static u16 tiles[TILE_NUM_MAX][TILE_H_SZ*TILE_W_SZ];
-
-static COLOR c;
-static COLOR32 c32;
-static GdkGC * gdkGC;
-
-
 
 static void wtools_4_update() {
 
@@ -101,7 +95,6 @@ static void refresh() {
 	u8  * index16, * index256, * indexBMP;
 	u16 * pal;
 	int tile_n, index;
-	int i,j;
 	guint Textures;
 	if (!init) return;
 
@@ -159,7 +152,8 @@ static void refresh() {
 		}
 	break;
 	case 1: //256c
-	if (pal = pal_addr[palindex]) {
+	pal = pal_addr[palindex];
+	if (pal) {
 		pal += palnum*256;
 		for (tile_n=0; tile_n<1024; tile_n++) {
 			for (index=0; index<64; index++) {
@@ -174,7 +168,8 @@ static void refresh() {
 	}
 	break;
 	case 2: //16c
-	if (pal = pal_addr[palindex]) {
+	pal = pal_addr[palindex];
+	if (pal) {
 		pal += palnum*16;
 		for (tile_n=0; tile_n<1024; tile_n++) {
 			for (index=0; index<64; index++) {
