@@ -189,7 +189,7 @@ void gfx3d_VBlankSignal();
 void gfx3d_Control(unsigned long v);
 
 //other misc stuff
-void gfx3d_glGetMatrix(unsigned int mode, unsigned int index, float* dest);
+void gfx3d_glGetMatrix(unsigned int mode, int index, float* dest);
 void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest);
 void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest);
 

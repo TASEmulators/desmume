@@ -78,11 +78,11 @@ static ALIGN(16) float		mtxTemporal[16];
 static u32 mode = 0;
 
 // Indexes for matrix loading/multiplication
-static char ML4x4ind = 0;
-static char ML4x3_c = 0, ML4x3_l = 0;
-static char MM4x4ind = 0;
-static char MM4x3_c = 0, MM4x3_l = 0;
-static char MM3x3_c = 0, MM3x3_l = 0;
+static u8 ML4x4ind = 0;
+static u8 ML4x3_c = 0, ML4x3_l = 0;
+static u8 MM4x4ind = 0;
+static u8 MM4x3_c = 0, MM4x3_l = 0;
+static u8 MM3x3_c = 0, MM3x3_l = 0;
 
 // Data for vertex submission
 static ALIGN(16) float	coord[4] = {0.0, 0.0, 0.0, 0.0};
@@ -91,9 +91,9 @@ static u32 vtxFormat;
 
 // Data for basic transforms
 static ALIGN(16) float	trans[4] = {0.0, 0.0, 0.0, 0.0};
-static char		transind = 0;
+static u8		transind = 0;
 static ALIGN(16) float	scale[4] = {0.0, 0.0, 0.0, 0.0};
-static char		scaleind = 0;
+static u8		scaleind = 0;
 
 //various other registers
 static int _t=0, _s=0;
@@ -155,8 +155,6 @@ static void twiddleLists() {
 }
 
 static BOOL flushPending = FALSE;
-static u32 flush_wbuffer;
-static u32 flush_sortmode;
 //------------------------------------------------------------
 
 static void makeTables() {
@@ -469,8 +467,6 @@ void gfx3d_glColor3b(unsigned long v)
 static void SetVertex()
 {
 	ALIGN(16) float coordTransformed[4] = { coord[0], coord[1], coord[2], 1 };
-	ALIGN(16) float coordProjected[4];
-
 	if (texCoordinateTransform == 3)
 	{
 		last_s =((coord[0]*mtxCurrent[3][0] +
@@ -879,7 +875,7 @@ signed long gfx3d_GetDirectionalMatrix (unsigned int index)
 	return (signed long)(mtxCurrent[2][(index)*(1<<12)]);
 }
 
-void gfx3d_glLightDirection_cache(int index)
+static void gfx3d_glLightDirection_cache(int index)
 {
 	u32 v = lightDirection[index];
 
@@ -1403,7 +1399,7 @@ void gfx3d_VBlankSignal()
 	gpu3D->NDS_3D_Render();
 }
 
-void gfx3d_Control_cache()
+static void gfx3d_Control_cache()
 {
 	u32 v = control;
 
@@ -1441,17 +1437,15 @@ void gfx3d_Control(unsigned long v)
 
 //--------------
 //other misc stuff
-void gfx3d_glGetMatrix(unsigned int mode, unsigned int index, float* dest)
+void gfx3d_glGetMatrix(unsigned int m_mode, int index, float* dest)
 {
-	//int n;
-
 	if(index == -1)
 	{
-		MatrixCopy(dest, mtxCurrent[mode]);
+		MatrixCopy(dest, mtxCurrent[m_mode]);
 		return;
 	}
 
-	MatrixCopy(dest, MatrixStackGetPos(&mtxStack[mode], index));
+	MatrixCopy(dest, MatrixStackGetPos(&mtxStack[m_mode], index));
 }
 
 void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest)
