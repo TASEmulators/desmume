@@ -61,7 +61,7 @@ static int gtk_fps_limiter_disabled = 0;
 // extern char FirmwareFile[256];
 // int LoadFirmware(const char *filename);
 
-static void *Open_Select(GtkWidget* widget, gpointer data);
+static void Open_Select(GtkWidget* widget, gpointer data);
 static void Launch();
 static void Pause();
 static void Printscreen();
@@ -280,7 +280,7 @@ joinThread_gdb( void *thread_handle) {
 
 u16 Keypad_Temp[NB_KEYS];
 
-int Write_ConfigFile()
+static int Write_ConfigFile()
 {
 	int i;
 	GKeyFile * keyfile;
@@ -307,7 +307,7 @@ int Write_ConfigFile()
 	return 0;
 }
 
-int Read_ConfigFile()
+static int Read_ConfigFile()
 {
 	int i, tmp;
 	GKeyFile * keyfile = g_key_file_new();
@@ -316,8 +316,6 @@ int Read_ConfigFile()
 	load_default_config();
 
 	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
-
-	const char *c;
 
 	/* Load keyboard keys */
 	for(i = 0; i < NB_KEYS; i++) {
@@ -352,9 +350,6 @@ uint Frameskip = 0;
 
 //const gint StaCounter[20] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};
 
-static SDL_Surface *SDL_Screenbuf;
-static GdkPixmap *pPixmap;
-
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
 static GtkWidget *pToolbar;
@@ -380,7 +375,7 @@ static gint pStatusBar_Ctx;
 
 gboolean EmuLoop(gpointer data);
 
-void About(GtkWidget* widget, gpointer data)
+static void About(GtkWidget* widget, gpointer data)
 {
 	GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 
@@ -426,7 +421,7 @@ static void Pause()
 }
 
 /* Choose a file then load it */
-static void *Open_Select(GtkWidget* widget, gpointer data)
+static void Open_Select(GtkWidget* widget, gpointer data)
 {
 	GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
 	GtkWidget *pFileSelection;
@@ -498,9 +493,11 @@ static void *Open_Select(GtkWidget* widget, gpointer data)
 	gtk_widget_destroy(pFileSelection);
 }
 
+#if 0 /* not used */
 static void Close()
 {
 }
+#endif
 
 static void Reset()
 {
@@ -519,10 +516,8 @@ gtk_init_main_gl_area(GtkWidget *widget,
                       gpointer   data)
 {
   GLenum errCode;
-  int i;
   GdkGLContext *glcontext;
   GdkGLDrawable *gldrawable;
-  GtkWidget *other_drawing_area = (GtkWidget *)data;
   glcontext = gtk_widget_get_gl_context (widget);
   gldrawable = gtk_widget_get_gl_drawable (widget);
   uint16_t blank_texture[256 * 512];
@@ -684,6 +679,8 @@ top_screen_expose_fn( GtkWidget *widget, GdkEventExpose *event, gpointer data)
   /*** OpenGL END ***/
 
   gtk_widget_queue_draw( bottom_screen_widget);
+
+  return TRUE;
 }
 
 static int
@@ -845,7 +842,7 @@ common_configure_fn( GtkWidget *widget,
 
 
 /* Drawing callback */
-int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
+static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
 	SDL_PixelFormat screenPixFormat;
 	SDL_Surface *rawImage, *screenImage;
@@ -986,7 +983,7 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 GtkWidget *mkLabel;
 gint Modify_Key_Chosen = 0;
 
-void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
+static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
 {
 	char YouPressed[128];
 	Modify_Key_Chosen = e->keyval;
@@ -994,7 +991,7 @@ void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
 	gtk_label_set(GTK_LABEL(mkLabel), YouPressed);
 }
 
-void Modify_Key(GtkWidget* widget, gpointer data)
+static void Modify_Key(GtkWidget* widget, gpointer data)
 {
 	gint Key = GPOINTER_TO_INT(data);
 	char Title[64];
@@ -1035,7 +1032,7 @@ void Modify_Key(GtkWidget* widget, gpointer data)
 
 }
 
-void Edit_Controls(GtkWidget* widget, gpointer data)
+static void Edit_Controls(GtkWidget* widget, gpointer data)
 {
 	char Key_Label[64];
 	int i;
@@ -1075,7 +1072,7 @@ void Edit_Controls(GtkWidget* widget, gpointer data)
 
 #define MAX_SCREENCOEFF 4 
 
-void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
+static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 {
 	int Size = GPOINTER_TO_INT(data);
 
@@ -1088,7 +1085,7 @@ void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 
 /////////////////////////////// LAYER HIDING /////////////////////////////////
 
-void Modify_Layer(GtkWidget* widget, gpointer data)
+static void Modify_Layer(GtkWidget* widget, gpointer data)
 {
 	int i;
 	gchar *Layer = (gchar*)data;
@@ -1162,7 +1159,7 @@ typedef struct
 }BmpFileHeader;
 
 
-int WriteBMP(const char *filename,u16 *bmp)
+static int WriteBMP(const char *filename,u16 *bmp)
 {
     BmpFileHeader  fileheader;
     BmpImageHeader imageheader;
@@ -1204,7 +1201,7 @@ int WriteBMP(const char *filename,u16 *bmp)
     fwrite( &imageheader.r4, sizeof(imageheader.r4), 1, fichier);
     fwrite( &imageheader.r5, sizeof(imageheader.r5), 1, fichier);
     fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
-    int i,j,k;
+    int i,j;
     for(j=0;j<192*2;j++)for(i=0;i<256;i++){
     u8 r,g,b;
     u16 pixel = bmp[i+(192*2-j)*256];
@@ -1397,7 +1394,7 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
 
 #define MAX_FRAMESKIP 10
 
-void Modify_Frameskip(GtkWidget *widget, gpointer data)
+static void Modify_Frameskip(GtkWidget *widget, gpointer data)
 {
 	Frameskip = GPOINTER_TO_INT(data);
 }
@@ -1411,7 +1408,7 @@ extern const int dTools_list_size;
 
 BOOL *dTools_running;
 
-void Start_dTool(GtkWidget *widget, gpointer data)
+static void Start_dTool(GtkWidget *widget, gpointer data)
 {
 	int tool = GPOINTER_TO_INT(data);
 
@@ -1440,7 +1437,7 @@ Uint32 fps, fps_SecStart, fps_FrameCount;
 
 gboolean EmuLoop(gpointer data)
 {
-	int i;
+	unsigned int i;
 
 	if(desmume_running()) {	/* Si on est en train d'executer le programme ... */
 	  static int limiter_frame_counter = 0;
@@ -1518,8 +1515,8 @@ common_gtk_main( struct configured_features *my_config)
 
 	GtkWidget *pVBox;
 	GtkWidget *pMenuBar;
-	GtkWidget *pMenu, *pSubMenu;
-	GtkWidget *pMenuItem, *pSubMenuItem;
+	GtkWidget *pMenu;
+	GtkWidget *pMenuItem;
 	GtkAccelGroup * accel_group;
 #ifdef GTKGLEXT_AVAILABLE
         GdkGLConfig *glconfig;

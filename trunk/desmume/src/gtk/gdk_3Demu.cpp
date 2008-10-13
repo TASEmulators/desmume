@@ -40,6 +40,7 @@ static GdkGLContext *glcontext = NULL;
 static GdkGLDrawable *gldrawable;
 
 
+#if 0 /* not used */
 static void
 print_gl_config_attrib (GdkGLConfig *glconfig,
                         const gchar *attrib_str,
@@ -120,6 +121,7 @@ examine_gl_config_attrib (GdkGLConfig *glconfig)
 
   g_print ("\n");
 }
+#endif
 
 
 static bool
