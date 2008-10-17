@@ -92,7 +92,7 @@ image::image(int xres, int yres)
 
 void image::delete_data()
 {
-	delete[] data;
+	delete[] (char *)data;
 }
 
 image::~image()
