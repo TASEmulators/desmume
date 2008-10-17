@@ -236,8 +236,6 @@ void SPU_struct::KeyOn(int channel)
 		break;
 	case 2: // ADPCM
 		{
-			u32 temp;
-
 			thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 			thischan.pcm16b = (s16)((thischan.buf8[1] << 8) | thischan.buf8[0]);
 			thischan.pcm16b_last = 0;
@@ -254,135 +252,6 @@ void SPU_struct::KeyOn(int channel)
 		}
 	default: break;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-u8 SPU_ReadByte(u32 addr)
-{
-	addr &= 0xFFF;
-
-	if (addr < 0x500)
-	{
-		switch (addr & 0xF)
-		{
-		case 0x0:
-			//            LOG("Sound Channel %d Volume read\n", (addr >> 4) & 0xF);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x1:
-			{
-				//            LOG("Sound Channel %d Data Shift/Hold read\n",(addr >> 4) & 0xF);
-				return T1ReadByte(MMU.ARM7_REG, addr);
-			}
-		case 0x2:
-			//            LOG("Sound Channel %d Panning read\n",(addr >> 4) & 0xF);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x3:
-			//            LOG("Sound Channel %d Wave Duty/Repeat/Format/Start read: %02X\n", (addr >> 4) & 0xF, T1ReadByte(MMU.ARM7_REG, addr));
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x4:
-		case 0x5:
-		case 0x6:
-		case 0x7:
-			//            LOG("Sound Channel %d Data Source Register read: %08X\n",(addr >> 4) & 0xF, addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x8:
-			//            LOG("Sound Channel Timer(Low byte) read: %08X\n", addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x9:
-			//            LOG("Sound Channel Timer(High byte) read: %08X\n", addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0xA:
-			//            LOG("Sound Channel Loop Start(Low byte) read: %08X\n", addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0xB:
-			//            LOG("Sound Channel Loop Start(High byte) read: %08X\n", addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0xC:
-		case 0xD:
-		case 0xE:
-		case 0xF:
-			//            LOG("Sound Channel %d Length Register read: %08X\n",(addr >> 4) & 0xF, addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		default: break;
-		}
-	}
-	else
-	{
-		switch (addr & 0x1F)
-		{
-		case 0x000:
-		case 0x001:
-			//            LOG("Sound Control Register read: %08X\n", addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x004:
-		case 0x005:
-			//            LOG("Sound Bias Register read: %08X\n", addr);
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x008:
-			//            LOG("Sound Capture 0 Control Register read\n");
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		case 0x009:
-			//            LOG("Sound Capture 1 Control Register read\n");
-			return T1ReadByte(MMU.ARM7_REG, addr);
-		default: break;
-		}
-	}
-
-	return T1ReadByte(MMU.ARM7_REG, addr);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-u16 SPU_ReadWord(u32 addr)
-{
-	addr &= 0xFFF;
-
-	if (addr < 0x500)
-	{
-		switch (addr & 0xF)
-		{
-		case 0x0:
-			//            LOG("Sound Channel %d Volume/data shift/hold word read\n", (addr >> 4) & 0xF);
-			break;
-		case 0x2:
-			//            LOG("Sound Channel %d Panning/Wave Duty/Repeat Mode/Format/Start word read\n", (addr >> 4) & 0xF);
-			break;
-		case 0x4:
-		case 0x6:
-			//            LOG("Sound Channel %d Data Source Register word read: %08X\n",(addr >> 4) & 0xF, addr);
-			break;
-		case 0x8:
-			//            LOG("Sound Channel %d Timer Register word read\n", (addr >> 4) & 0xF);
-			break;
-		case 0xA:
-			//            LOG("Sound Channel %d Loop start Register word read\n", (addr >> 4) & 0xF);
-			break;
-		case 0xC:
-		case 0xE:
-			//            LOG("Sound Channel %d Length Register word read: %08X\n",(addr >> 4) & 0xF, addr);
-			break;
-		default: break;
-		}
-	}
-	else
-	{
-		switch (addr & 0x1F)
-		{
-		case 0x000:
-			//            LOG("Sound Control Register word read\n");
-			break;
-		case 0x004:
-			//            LOG("Sound Bias Register word read\n");
-			break;
-		case 0x008:
-			//            LOG("Sound Capture 0/1 Control Register word read\n");
-			break;
-		default: break;
-		}
-	}
-
-	return T1ReadWord(MMU.ARM7_REG, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -708,11 +577,13 @@ void SPU_WriteLong(u32 addr, u32 val)
 	T1WriteLong(MMU.ARM7_REG, addr, val);
 }
 
+#ifdef SPU_INTERPOLATE
 static s32 Interpolate(s32 a, s32 b, double ratio)
 {
 	ratio = ratio - (int)ratio;
 	return (1-ratio)*a + ratio*b;
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -899,13 +770,7 @@ static INLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdateNothing(channel_struct *chan)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -923,7 +788,7 @@ void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdate8L(SPU_struct *SPU, channel_struct *chan)
+static void SPU_ChanUpdate8L(SPU_struct *SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -941,7 +806,7 @@ void SPU_ChanUpdate8L(SPU_struct *SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdate8R(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdate8R(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -959,7 +824,7 @@ void SPU_ChanUpdate8R(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdate16LR(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdate16LR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -977,7 +842,7 @@ void SPU_ChanUpdate16LR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdate16L(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdate16L(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -995,7 +860,7 @@ void SPU_ChanUpdate16L(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdate16R(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdate16R(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1013,7 +878,7 @@ void SPU_ChanUpdate16R(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdateADPCMLR(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdateADPCMLR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1031,7 +896,7 @@ void SPU_ChanUpdateADPCMLR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdateADPCML(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdateADPCML(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1049,7 +914,7 @@ void SPU_ChanUpdateADPCML(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdateADPCMR(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdateADPCMR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1067,7 +932,7 @@ void SPU_ChanUpdateADPCMR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdatePSGLR(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdatePSGLR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1084,7 +949,7 @@ void SPU_ChanUpdatePSGLR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdatePSGL(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdatePSGL(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1101,7 +966,7 @@ void SPU_ChanUpdatePSGL(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_ChanUpdatePSGR(SPU_struct* SPU, channel_struct *chan)
+static void SPU_ChanUpdatePSGR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -1143,11 +1008,10 @@ void (*SPU_ChanUpdate[4][3])(SPU_struct* SPU, channel_struct *chan) = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SPU_MixAudio(SPU_struct *SPU, int length)
+static void SPU_MixAudio(SPU_struct *SPU, int length)
 {
-	channel_struct *chan;
-	u8 vol;
 	int i;
+	u8 vol;
 
 	memset(SPU->sndbuf, 0, length*4*2);
 
@@ -1158,7 +1022,7 @@ void SPU_MixAudio(SPU_struct *SPU, int length)
 
 	vol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
 
-	for(int i=0;i<16;i++)
+	for(i=0;i<16;i++)
 	{
 		channel_struct *chan = &SPU->channels[i];
 	
