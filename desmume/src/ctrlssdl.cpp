@@ -217,7 +217,7 @@ u16 get_set_joy_key(int index) {
 }
 
 /* Reset corresponding key and its twin axis key */
-u16 get_joy_axis_twin(u16 key)
+static u16 get_joy_axis_twin(u16 key)
 {
   switch(key)
     {
