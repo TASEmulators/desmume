@@ -31,17 +31,19 @@
 #include <assert.h>
 #include "debug.h"
 
+//#define DEBUG_DUMP_TEXTURE
+
 bool (*oglrender_init)() = 0;
 bool (*oglrender_beginOpenGL)() = 0;
 void (*oglrender_endOpenGL)() = 0;
 
-bool BEGINGL() {
+static bool BEGINGL() {
 	if(oglrender_beginOpenGL) 
 		return oglrender_beginOpenGL();
 	else return true;
 }
 
-void ENDGL() {
+static void ENDGL() {
 	if(oglrender_endOpenGL) 
 		oglrender_endOpenGL();
 }
@@ -129,13 +131,13 @@ OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 //every function that is xgl* can be replaced with gl* if we decide to rip this out or if anyone else
 //doesnt feel like sticking with it (or if it causes trouble)
 
-void xglDepthFunc(GLenum func) {
+static void xglDepthFunc(GLenum func) {
 	static GLenum oldfunc = -1;
 	if(oldfunc == func) return;
 	glDepthFunc(oldfunc=func);
 }
 
-void xglPolygonMode(GLenum face,GLenum mode) {
+static void xglPolygonMode(GLenum face,GLenum mode) {
 	static GLenum oldmodes[2] = {-1,-1};
 	switch(face) {
 		case GL_FRONT: if(oldmodes[0]==mode) return; else glPolygonMode(GL_FRONT,oldmodes[0]=mode); return;
@@ -144,19 +146,23 @@ void xglPolygonMode(GLenum face,GLenum mode) {
 	}
 }
 
-void xglUseProgram(GLuint program) {
 #ifdef _WIN32
+static void xglUseProgram(GLuint program) {
 	if(!glUseProgram) return;
 	static GLuint oldprogram = -1;
 	if(oldprogram==program) return;
 	glUseProgram(oldprogram=program);
+} 
 #else
+#if 0 /* not used */
+static void xglUseProgram(GLuint program) {
 	(void)program;
 	return;
-#endif
 }
+#endif
+#endif
 
-void xglDepthMask (GLboolean flag) {
+static void xglDepthMask (GLboolean flag) {
 	static GLboolean oldflag = -1;
 	if(oldflag==flag) return;
 	glDepthMask(oldflag=flag);
@@ -170,7 +176,7 @@ struct GLCaps {
 };
 static GLCaps glcaps;
 
-void _xglEnable(GLenum cap) {
+static void _xglEnable(GLenum cap) {
 	cap -= 0x0B00;
 	if(glcaps.caps[cap] == 0xFF || glcaps.caps[cap] == 0) {
 		glEnable(cap+0x0B00);
@@ -178,7 +184,7 @@ void _xglEnable(GLenum cap) {
 	}
 }
 
-void _xglDisable(GLenum cap) {
+static void _xglDisable(GLenum cap) {
 	cap -= 0x0B00;
 	if(glcaps.caps[cap]) {
 		glDisable(cap+0x0B00);
@@ -345,20 +351,9 @@ static char Init(void)
 	return 1;
 }
 
-void Close()
+static void Close()
 {
 }
-
-
-//zero 8/25/08 - i dont like this
-//#define CHECKSLOT txt_slot_current_size--;\
-//					if (txt_slot_current_size<=0)\
-//					{\
-//						txt_slot_current++;\
-//						*adr=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];\
-//						adr-=txt_slot_size;\
-//						txt_slot_size=txt_slot_current_size=0x020000;\
-//					}
 
 //zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
 #define CHECKSLOT txt_slot_current_size--;\
@@ -444,10 +439,11 @@ void* memcpy_fast(void* dest, const void* src, size_t count)
 #define memcpy_fast(d,s,c) memcpy(d,s,c)
 #endif
 
+
+#ifdef DEBUG_DUMP_TEXTURE
 static void DebugDumpTexture(int which)
 {
 	char fname[100];
-	FILE* outf;
 	sprintf(fname,"c:\\dump\\%d.bmp", which);
 
 	glBindTexture(GL_TEXTURE_2D,texcache[which].id);
@@ -459,14 +455,16 @@ static void DebugDumpTexture(int which)
 
 	NDS_WriteBMP_32bppBuffer(texcache[which].sizeX,texcache[which].sizeY,texMAP,fname);
 }
+#else
+#define DebugDumpTexture(which) do { (void)which; } while (0)
+#endif
 
 //================================================================================
 static int lastTexture = -1;
-void setTexture(unsigned int format, unsigned int texpal)
+static void setTexture(unsigned int format, unsigned int texpal)
 {
 	int palSize[7]={32,4,16,256,0,8,32768};
-	int i=0;
-	unsigned int x=0, y=0;
+	unsigned int x=0, y=0, i;
 	unsigned int palZeroTransparent;
 	
 	u16 *pal = NULL;
@@ -512,7 +510,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 			{
 				texcache[i].suspectedInvalid = false;
 				texcache_count=i;
-				if(i != lastTexture)
+				if(lastTexture == -1 || (int)i != lastTexture)
 				{
 					lastTexture = i;
 					glBindTexture(GL_TEXTURE_2D,texcache[i].id);
@@ -798,7 +796,7 @@ void setTexture(unsigned int format, unsigned int texpal)
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
 							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
-	//DebugDumpTexture(i);
+	DebugDumpTexture(i);
 
 	//============================================================================================
 
@@ -821,7 +819,6 @@ static u32 stencilStateSet = -1;
 static void BeginRenderPoly()
 {
 	bool enableDepthWrite = true;
-	u32 tmp=0;
 
 	xglDepthFunc (depthFuncMode);
 
@@ -1032,7 +1029,7 @@ static void VramReconfigureSignal()
 		texcache[i].suspectedInvalid = true;
 }
 
-void GL_ReadFramebuffer()
+static void GL_ReadFramebuffer()
 {
 	if(!BEGINGL()) return; 
 	glFinish();
