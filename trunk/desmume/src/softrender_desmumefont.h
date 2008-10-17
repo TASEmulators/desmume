@@ -32,11 +32,11 @@ namespace softrender {
 
 	class DesmumeFont {
 	public:
-		static const int height() { return OSD_FONT_HEIGHT; }
-		static const int width(char c) { return OSD_FONT_WIDTH; }
-		static const bool valid(char c) { return true; }
+		static int height() { return OSD_FONT_HEIGHT; }
+		static int width(char c) { return OSD_FONT_WIDTH; }
+		static bool valid(char c) { return true; }
 		
-		static const int pixel(char c, int x, int y) { 
+		static int pixel(char c, int x, int y) { 
 
 			static const unsigned char font_eng[256*OSD_FONT_HEIGHT] =
 			{
