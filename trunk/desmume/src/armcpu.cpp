@@ -133,6 +133,7 @@ remove_post_exec_fn( void *instance) {
 }
 #endif
 
+#ifdef GDB_STUB
 static u32
 read_cpu_reg( void *instance, u32 reg_num) {
   armcpu_t *armcpu = (armcpu_t *)instance;
@@ -166,6 +167,7 @@ set_cpu_reg( void *instance, u32 reg_num, u32 value) {
     /* FIXME: setting the CPSR */
   }
 }
+#endif
 
 #ifdef GDB_STUB
 int armcpu_new( armcpu_t *armcpu, u32 id,
@@ -365,7 +367,6 @@ static u32
 armcpu_prefetch()
 {
 	armcpu_t* armcpu = &ARMPROC;
-	u32 temp_instruction;
 
 	if(armcpu->CPSR.bits.T == 0)
 	{
@@ -473,52 +474,6 @@ BOOL armcpu_irqExeption(armcpu_t *armcpu)
 #endif
 
 	return TRUE;
-}
-/*
-static BOOL armcpu_prefetchExeption(armcpu_t *armcpu)
-{
-        Status_Reg tmp;
-	if(armcpu->CPSR.bits.I) return FALSE;
-        tmp = armcpu->CPSR;
-	armcpu_switchMode(armcpu, ABT);
-	armcpu->R[14] = armcpu->next_instruction + 4;
-	armcpu->SPSR = tmp;
-	armcpu->CPSR.bits.T = 0;
-	armcpu->CPSR.bits.I = 1;
-	armcpu->next_instruction = armcpu->intVector + 0xC;
-	armcpu->R[15] = armcpu->next_instruction + 8;
-	armcpu->waitIRQ = 0;
-	return TRUE;
-}
-*/
-
-static BOOL armcpu_prefetchExeption(armcpu_t *armcpu)
-{
-    Status_Reg tmp;
-    if(armcpu->CPSR.bits.I) return FALSE;
-    tmp = armcpu->CPSR;
-    armcpu_switchMode(armcpu, ABT);
-
-#ifdef GDB_STUB
-	 armcpu->R[14] = armcpu->next_instruction + 4;
-#else
-    armcpu->R[14] = armcpu->instruct_adr + 4;
-#endif
-
-    armcpu->SPSR = tmp;
-    armcpu->CPSR.bits.T = 0;
-    armcpu->CPSR.bits.I = 1;
-    armcpu->next_instruction = armcpu->intVector + 0xC;
-	armcpu->waitIRQ = 0;
-
-#ifdef GDB_STUB
-	armcpu->R[15] = armcpu->next_instruction + 8;
-#else
-    armcpu->R[15] = armcpu->next_instruction;
-	armcpu_prefetch(armcpu);
-#endif   
-	
-    return TRUE;
 }
 
 BOOL
