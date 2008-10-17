@@ -55,7 +55,7 @@ static SDL_AudioSpec audiofmt;
 
 //////////////////////////////////////////////////////////////////////////////
 
-void MixAudio(void *userdata, Uint8 *stream, int len) {
+static void MixAudio(void *userdata, Uint8 *stream, int len) {
    int i;
    Uint8 *soundbuf=(Uint8 *)stereodata16;
 
@@ -120,13 +120,6 @@ void SNDSDLDeInit()
 
    if (stereodata16)
       free(stereodata16);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-int SNDSDLReset()
-{
-   return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
