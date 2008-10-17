@@ -216,7 +216,7 @@ void GPU_DeInit(GPU * gpu)
    free(gpu);
 }
 
-void GPU_resortBGs(GPU *gpu)
+static void GPU_resortBGs(GPU *gpu)
 {
 	int i, j, prio;
 	struct _DISPCNT * cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
@@ -288,8 +288,6 @@ void SetupFinalPixelBlitter (GPU *gpu)
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
-    BOOL LayersEnable[5];
-    u16 WinBG=0;
 	struct _DISPCNT * cnt;
 	cnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 
@@ -361,7 +359,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 /* FIXME: all DEBUG_TRI are broken */
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
-	struct _BGxCNT * cnt = &((gpu->dispx_st)->dispx_BGxCNT[num].bits), *cnt2;
+	struct _BGxCNT * cnt = &((gpu->dispx_st)->dispx_BGxCNT[num].bits);
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	int mode;
 	
@@ -928,7 +926,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
 
-void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+static void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
 	
@@ -941,9 +939,9 @@ void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * d
 		gpu->setFinalColorBck(gpu,0,num,dst, color,auxX,auxY);
 }
 
-void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
-	u8 palette_entry, palette_set;
-	u16 tileindex, x, y, color;
+static void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+	u8 palette_entry;
+	u16 x, y, color;
 	TILEENTRY tileentry;
 
 	if (!tile) return;
@@ -957,9 +955,9 @@ void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * 
 		gpu->setFinalColorBck(gpu,0,num,dst, color, i, H);
 }
 
-void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+static void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
-	u16 tileindex, color;
+	u16 color;
 
 //	return;
 
@@ -970,7 +968,7 @@ void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * 
 
 }
 
-void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+static void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u16 color;
 
 //	return;
@@ -1603,7 +1601,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		int xdir;
 		u8 prio, * src;
 		//u16 * pal;
-		u16 i,j;
+		u16 i;
 
 		// Check if sprite is disabled before everything
 		if (spriteInfo->RotScale == 2)
@@ -1956,7 +1954,8 @@ BOOL bright_init=FALSE;
 // comment this if want to use formulas instead
 // #define BRIGHT_TABLES
 
-void calc_bright_colors() {
+#ifdef BRIGHT_TABLES
+static void calc_bright_colors() {
 	int base = 31 ;
 	int factor;
 	u16 red, green, blue;
@@ -1989,22 +1988,19 @@ void calc_bright_colors() {
 #undef FORMULA_MORE
 #undef FORMULA_LESS
 }
+#endif
 
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	struct _DISPCAPCNT * capcnt;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	struct _MASTER_BRIGHT * mBright;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
-	u8 * mdst =  GPU_screen + (MainScreen.offset + l) * 512;
-	u8 * sdst =  GPU_screen + (SubScreen.offset + l) * 512;
 	itemsForPriority_t * item;
 	u8 spr[512];
 	u8 sprPrio[256];
 	u8 prio;
 	int i;
-	int ix;
 	int vram_bank;
 	u16 i16;
 	u32 c;
