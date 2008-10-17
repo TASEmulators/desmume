@@ -284,8 +284,6 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
-	int i;
-	
 	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);
 	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);
 	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);
@@ -349,7 +347,7 @@ void MMU_clearMem()
 /* the VRAM blocks keep their content even when not blended in */
 /* to ensure that we write the content back to the LCD ram */
 /* FIXME: VRAM Bank E,F,G,H,I missing */
-void MMU_VRAMWriteBackToLCD(u8 block)
+static void MMU_VRAMWriteBackToLCD(u8 block)
 {
 	u8 *destination;
 	u8 *source;
@@ -482,7 +480,7 @@ void MMU_VRAMWriteBackToLCD(u8 block)
 	memset(source,0,size) ;
 }
 
-void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
+static void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
 {
 	u8 *destination;
 	u8 *source;
@@ -951,7 +949,7 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
         }
     }
 
-	if (adr & 0xFF800000 == 0x04800000)
+	if ((adr & 0xFF800000) == 0x04800000)
 	{
 		/* is wifi hardware, dont intermix with regular hardware registers */
 		/* FIXME handle 8 bit writes */
@@ -1563,7 +1561,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 							break;
 							
                                                 case 1 : /* firmware memory device */
-                                                        if(spicnt & 0x3 != 0)      /* check SPI baudrate (must be 4mhz) */
+                                                        if((spicnt & 0x3) != 0)      /* check SPI baudrate (must be 4mhz) */
 							{
 								T1WriteWord(MMU.MMU_MEM[proc][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
 								break;
@@ -2021,7 +2019,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
         }
     }
 
-	if (adr & 0xFF800000 == 0x04800000) {
+	if ((adr & 0xFF800000) == 0x04800000) {
 	/* access to non regular hw registers */
 	/* return to not overwrite valid data */
 		return ;
@@ -2904,7 +2902,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				return;
                         case REG_GCROMCTRL :
 				{
-					int i;
+					unsigned int i;
 
                                         if(MEM_8(MMU.MMU_MEM[proc], REG_GCCMDOUT) == 0xB7)
 					{

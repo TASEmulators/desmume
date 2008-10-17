@@ -132,7 +132,6 @@ struct armcpu_memory_iface {
 };
 
 
-
 static void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
 	if (type<0 || type > 5) return;
 	*bmemtype=save_types[type][0];
