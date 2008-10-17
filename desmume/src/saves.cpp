@@ -228,7 +228,7 @@ SFORMAT SF_MMU[]={
 };
 
 
-void mmu_savestate(std::ostream* os)
+static void mmu_savestate(std::ostream* os)
 {
 	//version
 	write32le(0,os);
@@ -237,7 +237,7 @@ void mmu_savestate(std::ostream* os)
 	os->write((char*)MMU.bupmem.data,MMU.bupmem.size);
 }
 
-bool mmu_loadstate(std::istream* is)
+static bool mmu_loadstate(std::istream* is)
 {
 	//read version
 	int version;
@@ -297,7 +297,7 @@ static void cp15_saveone(armcp15_t *cp15, std::ostream* os)
     for(int i=0;i<8;i++) write32le(cp15->regionExecuteSet_SYS[i],os);
 }
 
-void cp15_savestate(std::ostream* os)
+static void cp15_savestate(std::ostream* os)
 {
 	//version
 	write32le(0,os);
@@ -351,7 +351,7 @@ static bool cp15_loadone(armcp15_t *cp15, std::istream* is)
 	return true;
 }
 
-bool cp15_loadstate(std::istream* is)
+static bool cp15_loadstate(std::istream* is)
 {
 	//read version
 	int version;
@@ -367,7 +367,7 @@ bool cp15_loadstate(std::istream* is)
 
 
 /* Format time and convert to string */
-char * format_time(time_t cal_time)
+static char * format_time(time_t cal_time)
 {
   struct tm *time_struct;
   static char string[30];
@@ -530,7 +530,7 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 				//special case: read a huge byte array
 				is->read((char *)tmp->v,count);
 			} else {
-				for(int i=0;i<count;i++)
+				for(unsigned int i=0;i<count;i++)
 				{
 					is->read((char *)tmp->v + i*size,size);
 
@@ -612,7 +612,6 @@ static int savestate_WriteChunk(std::ostream* os, int type, SFORMAT *sf)
 	if(!sf) return 4;
 	int bsize = SubWrite((std::ostream*)0,sf);
 	write32le(bsize,os);
-	FILE* outf;
 
 	if(!SubWrite(os,sf))
 	{
