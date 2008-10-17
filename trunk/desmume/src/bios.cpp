@@ -27,7 +27,7 @@
 
 extern BOOL execute;
 
-static u16 getsinetbl[] = {
+static const u16 getsinetbl[] = {
 0x0000, 0x0324, 0x0648, 0x096A, 0x0C8C, 0x0FAB, 0x12C8, 0x15E2, 
 0x18F9, 0x1C0B, 0x1F1A, 0x2223, 0x2528, 0x2826, 0x2B1F, 0x2E11, 
 0x30FB, 0x33DF, 0x36BA, 0x398C, 0x3C56, 0x3F17, 0x41CE, 0x447A, 
@@ -38,7 +38,7 @@ static u16 getsinetbl[] = {
 0x7D89, 0x7E1D, 0x7E9C, 0x7F09, 0x7F61, 0x7FA6, 0x7FD8, 0x7FF5
 };
 
-static u16 getpitchtbl[] = {
+static const u16 getpitchtbl[] = {
 0x0000, 0x003B, 0x0076, 0x00B2, 0x00ED, 0x0128, 0x0164, 0x019F, 
 0x01DB, 0x0217, 0x0252, 0x028E, 0x02CA, 0x0305, 0x0341, 0x037D, 
 0x03B9, 0x03F5, 0x0431, 0x046E, 0x04AA, 0x04E6, 0x0522, 0x055F, 
@@ -137,7 +137,7 @@ static u16 getpitchtbl[] = {
 0xFC51, 0xFCC7, 0xFD3C, 0xFDB2, 0xFE28, 0xFE9E, 0xFF14, 0xFF8A
 };
 
-static u8 getvoltbl[] = {
+static const u8 getvoltbl[] = {
 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 
 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 
 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 
@@ -186,7 +186,7 @@ static u8 getvoltbl[] = {
 0x7C, 0x7D, 0x7E, 0x7F
 };
 
-u32 bios_nop(armcpu_t * cpu)
+static u32 bios_nop(armcpu_t * cpu)
 {
      if (cpu->proc_ID == ARMCPU_ARM9)
      {
@@ -199,14 +199,14 @@ u32 bios_nop(armcpu_t * cpu)
      return 3;
 }
 
-u32 delayLoop(armcpu_t * cpu)
+static u32 delayLoop(armcpu_t * cpu)
 {
      return cpu->R[0] * 4;
 }
 
 //u32 oldmode[2];
 
-u32 intrWaitARM(armcpu_t * cpu)
+static u32 intrWaitARM(armcpu_t * cpu)
 {
      u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      u32 intr;
@@ -240,7 +240,7 @@ u32 intrWaitARM(armcpu_t * cpu)
      return 1;
 }
 
-u32 waitVBlankARM(armcpu_t * cpu)
+static u32 waitVBlankARM(armcpu_t * cpu)
 {
      u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      u32 intr;
@@ -274,7 +274,7 @@ u32 waitVBlankARM(armcpu_t * cpu)
      return 1;
 }
 
-u32 wait4IRQ(armcpu_t* cpu)
+static u32 wait4IRQ(armcpu_t* cpu)
 {
      //execute= FALSE;
      if(cpu->wirq)
@@ -298,7 +298,7 @@ u32 wait4IRQ(armcpu_t* cpu)
      return 1;
 }
 
-u32 devide(armcpu_t* cpu)
+static u32 devide(armcpu_t* cpu)
 {
      s32 num = (s32)cpu->R[0];
      s32 dnum = (s32)cpu->R[1];
@@ -312,7 +312,7 @@ u32 devide(armcpu_t* cpu)
      return 6;
 }
 
-u32 copy(armcpu_t* cpu)
+static u32 copy(armcpu_t* cpu)
 {
      u32 src = cpu->R[0];
      u32 dst = cpu->R[1];
@@ -382,7 +382,7 @@ u32 copy(armcpu_t* cpu)
      return 1;
 }
 
-u32 fastCopy(armcpu_t* cpu)
+static u32 fastCopy(armcpu_t* cpu)
 {
      u32 src = cpu->R[0] & 0xFFFFFFFC;
      u32 dst = cpu->R[1] & 0xFFFFFFFC;
@@ -416,7 +416,7 @@ u32 fastCopy(armcpu_t* cpu)
      return 1;
 }
 
-u32 LZ77UnCompVram(armcpu_t* cpu)
+static u32 LZ77UnCompVram(armcpu_t* cpu)
 {
   int i1, i2;
   int byteCount;
@@ -506,7 +506,7 @@ u32 LZ77UnCompVram(armcpu_t* cpu)
   return 1;
 }
 
-u32 LZ77UnCompWram(armcpu_t* cpu)
+static u32 LZ77UnCompWram(armcpu_t* cpu)
 {
   int i1, i2;
   int len;
@@ -562,7 +562,7 @@ u32 LZ77UnCompWram(armcpu_t* cpu)
   return 1;
 }
 
-u32 RLUnCompVram(armcpu_t* cpu)
+static u32 RLUnCompVram(armcpu_t* cpu)
 {
   int i;
   int len;
@@ -628,7 +628,7 @@ u32 RLUnCompVram(armcpu_t* cpu)
   return 1;
 }
 
-u32 RLUnCompWram(armcpu_t* cpu)
+static u32 RLUnCompWram(armcpu_t* cpu)
 {
   int i;
   int len;
@@ -669,7 +669,7 @@ u32 RLUnCompWram(armcpu_t* cpu)
   return 1;
 }
 
-u32 UnCompHuffman(armcpu_t* cpu)
+static u32 UnCompHuffman(armcpu_t* cpu)
 {
   u32 source, dest, writeValue, header, treeStart, mask;
   u32 data;
@@ -813,7 +813,7 @@ u32 UnCompHuffman(armcpu_t* cpu)
   return 1;
 }
 
-u32 BitUnPack(armcpu_t* cpu)
+static u32 BitUnPack(armcpu_t* cpu)
 {
   u32 source,dest,header,base,d,temp;
   int len,bits,revbits,dataSize,data,bitwritecount,mask,bitcount,addBase;
@@ -866,7 +866,7 @@ u32 BitUnPack(armcpu_t* cpu)
   return 1;
 }
 
-u32 Diff8bitUnFilterWram(armcpu_t* cpu)
+static u32 Diff8bitUnFilterWram(armcpu_t* cpu)
 {
   u32 source,dest,header;
   u8 data,diff;
@@ -897,7 +897,7 @@ u32 Diff8bitUnFilterWram(armcpu_t* cpu)
   return 1;
 }
 
-u32 Diff16bitUnFilter(armcpu_t* cpu)
+static u32 Diff16bitUnFilter(armcpu_t* cpu)
 {
   u32 source,dest,header;
   u16 data;
@@ -932,37 +932,37 @@ u32 Diff16bitUnFilter(armcpu_t* cpu)
   return 1;
 }
 
-u32 bios_sqrt(armcpu_t* cpu)
+static u32 bios_sqrt(armcpu_t* cpu)
 {
      cpu->R[0] = (u32)sqrt((double)(cpu->R[0]));
      return 1;
 }
 
-u32 setHaltCR(armcpu_t* cpu)
+static u32 setHaltCR(armcpu_t* cpu)
 { 
      MMU_write8(cpu->proc_ID, 0x4000300+cpu->proc_ID, cpu->R[0]);
      return 1;
 }
 
-u32 getSineTab(armcpu_t* cpu)
+static u32 getSineTab(armcpu_t* cpu)
 { 
      cpu->R[0] = getsinetbl[cpu->R[0]];
      return 1;
 }
 
-u32 getPitchTab(armcpu_t* cpu)
+static u32 getPitchTab(armcpu_t* cpu)
 { 
      cpu->R[0] = getpitchtbl[cpu->R[0]];
      return 1;
 }
 
-u32 getVolumeTab(armcpu_t* cpu)
+static u32 getVolumeTab(armcpu_t* cpu)
 { 
      cpu->R[0] = getvoltbl[cpu->R[0]];
      return 1;
 }
 
-u32 getCRC16(armcpu_t* cpu)
+static u32 getCRC16(armcpu_t* cpu)
 {
   unsigned int i,j;
   
@@ -992,7 +992,7 @@ u32 getCRC16(armcpu_t* cpu)
   return 1;
 }
 
-u32 SoundBias(armcpu_t* cpu)
+static u32 SoundBias(armcpu_t* cpu)
 {
      u32 current = SPU_ReadLong(0x4000504);
      if (cpu->R[0] > current)
