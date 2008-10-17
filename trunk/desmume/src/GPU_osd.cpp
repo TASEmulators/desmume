@@ -38,8 +38,6 @@ image screenshell;
 
 OSDCLASS::OSDCLASS(u8 core)
 {
-	int i;
-
 	memset(screen, 0, sizeof(screen));
 	memset(name,0,7);
 	//memset(line, 0, sizeof(line));
@@ -142,7 +140,6 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 
 	va_end(list);
 
-	int len=strlen(msg);
 	if (strcmp(msg, old_msg) == 0) return;
 
 	render51.PrintString<DesmumeFont>(1,0,0,render51.MakeColor(128,0,0),msg,&screenshell);

@@ -247,8 +247,7 @@ extern volatile BOOL execute;
 
 TEMPLATE static u32 FASTCALL  OP_UND()
 {
-	u32 i = cpu->instruction;
-	LOG("Undefined instruction: %08X\n", i);
+	LOG("Undefined instruction: %08X\n", cpu->instruction);
 	execute = FALSE;
 	LOG("Stopped (OP_UND)\n");
 	return 1;
@@ -6505,7 +6504,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB()
 
 TEMPLATE static u32 FASTCALL  OP_LDMIA_W()
 {
-     u32 i = cpu->instruction, c = 0, count;
+     u32 i = cpu->instruction, c = 0;
      u32 start = cpu->R[REG_POS(i,16)];
 	 u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
      
@@ -6550,7 +6549,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA_W()
 
 TEMPLATE static u32 FASTCALL  OP_LDMIB_W()
 {
-     u32 i = cpu->instruction, c = 0, count;
+     u32 i = cpu->instruction, c = 0;
      u32 start = cpu->R[REG_POS(i,16)];
 	 u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
      
@@ -6597,7 +6596,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB_W()
 
 TEMPLATE static u32 FASTCALL  OP_LDMDA_W()
 {
-	u32 i = cpu->instruction, c = 0, count;
+	u32 i = cpu->instruction, c = 0;
 	u32 start = cpu->R[REG_POS(i,16)];
 	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
 
@@ -6642,7 +6641,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA_W()
 
 TEMPLATE static u32 FASTCALL  OP_LDMDB_W()
 {
-	u32 i = cpu->instruction, c = 0, count;
+	u32 i = cpu->instruction, c = 0;
 	u32 start = cpu->R[REG_POS(i,16)];
 	u32 bitList = (~((2 << REG_POS(i,16))-1)) & 0xFFFF;
 	u32 * registres = cpu->R;
@@ -6984,7 +6983,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2_W()
 {
      u32 i = cpu->instruction;
      u32 c = 0;
-          
+
      u32 oldmode;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;

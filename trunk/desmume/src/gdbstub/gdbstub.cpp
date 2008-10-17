@@ -645,7 +645,7 @@ processPacket_gdb( SOCKET_TYPE sock, const uint8_t *packet,
         if ( hexToInt(&rx_ptr, &length)) {
           if ( *rx_ptr++ == ':') {
             uint8_t write_byte;
-            int i;
+            unsigned int i;
             DEBUG_LOG("Memory write of %d bytes to %08x\n",
                       length, addr);
 
@@ -995,49 +995,6 @@ check_breaks_gdb( struct gdb_stub_state *gdb_state,
   }
 
   return found_break;
-}
-
-static int
-execute_gdb( void *data, uint32_t instr_addr, int thumb) {
-  struct gdb_stub_state *gdb_state = (struct gdb_stub_state *)data;
-  int execute = 1;
-
-  if ( gdb_state->active) {
-    if ( gdb_state->main_stop_flag) {
-      execute = 0;
-    }
-    else {
-      if ( gdb_state->ctl_stub_state == gdb_stub_state::STOPPED_GDB_STATE ||
-	   gdb_state->emu_stub_state != gdb_stub_state::RUNNING_EMU_GDB_STATE) {
-	execute = 0;
-      }
-      else {
-	/* see if there is a breakpoint at this instruction */
-	if ( gdb_state->instr_breakpoints != NULL) {
-	  if ( gdb_state->ctl_stub_state != gdb_stub_state::STEPPING_GDB_STATE &&
-	       gdb_state->ctl_stub_state != gdb_stub_state::START_RUN_GDB_STATE) {
-	    struct breakpoint_gdb *bpoint = gdb_state->instr_breakpoints;
-
-	    while ( bpoint != NULL && execute) {
-	      if ( bpoint->addr == instr_addr) {
-		DEBUG_LOG("Breakpoint hit at %08x\n", instr_addr);
-		gdb_state->emu_stub_state = gdb_stub_state::STOPPING_EMU_GDB_STATE;
-		gdb_state->stop_type = STOP_BREAKPOINT;
-		execute = 0;
-	      }
-	      bpoint = bpoint->next;
-	    }
-	  }
-	}
-
-	if ( execute && gdb_state->ctl_stub_state == gdb_stub_state::START_RUN_GDB_STATE) {
-		gdb_state->ctl_stub_state = gdb_stub_state::RUNNING_GDB_STATE;
-	}
-      }
-    }
-  }
-
-  return execute;
 }
 
 static void
@@ -1634,7 +1591,6 @@ createStub_gdb( uint16_t port,
 void
 destroyStub_gdb( gdbstub_handle_t instance) {
   struct gdb_stub_state *stub = (struct gdb_stub_state *)instance;
-  int status;
 
   causeQuit_gdb( stub);
   

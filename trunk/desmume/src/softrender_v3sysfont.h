@@ -7,15 +7,17 @@ namespace softrender {
 
 	class v3sysfont {
 	public:
-		static const int height() { return 7; }
-		static const int width(char c) { return charByte(c,0); }
-		static const int pixel(char c, int x, int y) { return charByte(c,width(c)*y+x+1); }
-		static const bool valid(char c) { return c>=32; }
+		static int height() { return 7; }
+		static int width(char c) { return charByte(c,0); }
+		static int pixel(char c, int x, int y) { return charByte(c,width(c)*y+x+1); }
+		static bool valid(char c) { return c>=32; }
 
-		static const char charByte(char c, int i) {
+		static char charByte(byte c, int i) {
 
-			c -= 32;
-			if (c<0 || c>96) c = 2;
+			if (c < 32 || c > 128)
+				c = 2;
+			else 
+				c -= 32;
 
 			static const char sbA[]=
 			   {4,
