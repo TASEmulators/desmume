@@ -233,9 +233,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode);
 template<int PROCNUM> u32 armcpu_exec();
 
 BOOL armcpu_irqExeption(armcpu_t *armcpu);
-//BOOL armcpu_prefetchExeption(armcpu_t *armcpu);
-BOOL
-armcpu_flagIrq( armcpu_t *armcpu);
+BOOL armcpu_flagIrq( armcpu_t *armcpu);
 
 extern armcpu_t NDS_ARM7;
 extern armcpu_t NDS_ARM9;
