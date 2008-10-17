@@ -98,11 +98,11 @@ static int use_disk_image_file = 0;
 
 
 static int disk_image = -1;
-static u32 file_size;
+static off_t file_size;
 
 static u16 cf_reg_sts, cf_reg_lba1, cf_reg_lba2,
   cf_reg_lba3, cf_reg_lba4, cf_reg_cmd;
-static u32 currLBA;
+static off_t currLBA;
 
 #define SECPERFAT	128
 #define SECPERCLUS	16
@@ -121,7 +121,7 @@ static u32 filesysFAT,filesysRootDir,filesysData;
 static u16 FAT16[SECPERFAT*256];
 static u16 numExtraEntries[SECPERFAT*256];
 static DIR_ENT *extraDirEntries[SECPERFAT*256];
-static int numFiles,maxLevel,dirNum,numRootFiles;
+static int numFiles,maxLevel,numRootFiles;
 static int *dirEntriesInCluster, clusterNum, firstDirEntCluster,
   lastDirEntCluster, lastFileDataCluster;
 static char *sRomPath;
@@ -129,12 +129,9 @@ static int activeDirEnt=-1;
 static u32 bufferStart;
 static u32 fileStartLBA,fileEndLBA;
 static u16 freadBuffer[256];
-static u32 dwBytesRead;
 static FILE * hFile;
 static char fpath[255+1];
 static BOOL cflashDeviceEnabled = FALSE;
-static char buffer[256];
-static u32 dummy;
 
 static int lfn_checksum( void) {
 	int i;
@@ -255,7 +252,6 @@ static void list_files(char *fpath) {
 	char			DirSpec[255 + 1],SubDir[255+1];
 	u32			dwError;
 	char			*fname;
-	int				i,j;
 	int fileLevel;
 
 	maxLevel++;
@@ -307,7 +303,7 @@ static void list_files(char *fpath) {
 /* Set up the MBR, FAT and DIR_ENTs */
 static BOOL cflash_build_fat( void) {
 	int i,j,k,l,
-		clust,baseCluster,numClusters,
+		clust,numClusters,
 		clusterNum2,rootCluster;
 	int fileLevel;
 
@@ -485,12 +481,12 @@ cflash_init( const char *disk_image_filename) {
 
     if ( disk_image != -1) {
       file_size = LSEEK_FN( disk_image, 0, SEEK_END);
-	    if (0 && file_size == -1) {
+        if (0 && file_size == -1) {
 			LOCAL_LOG( "Error when seeking to end of disk image" );
         } else {
 			LSEEK_FN( disk_image, 0, SEEK_SET);
 
-			LOCAL_LOG( "Disk image size = %d (%d sectors)\n",
+			LOCAL_LOG( "Disk image size = %ld (%ld sectors)\n",
                  file_size, file_size / 512);
 			init_good = TRUE;
 		}
@@ -578,7 +574,6 @@ static void resolve_path(int dirent) {
 /* Read from a file using a 512 byte buffer */
 static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	char fname[2*NAME_LEN+EXT_LEN];
-	int i,j;
 
 	offset += cluster*512*SECPERCLUS;
 
@@ -623,9 +618,11 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 unsigned int
 cflash_read(unsigned int address) {
   unsigned int ret_value = 0;
+#if 0 /* used by next if 0 block */
 #define BUFFERED_BLOCK_SIZE 512
   static u8 block_buffer[BUFFERED_BLOCK_SIZE];
   static s32 buffered_start_index = -1;
+#endif
 
   switch ( address) {
   case CF_REG_STS:
@@ -764,17 +761,16 @@ cflash_write(unsigned int address,unsigned int data) {
         sector_write_index += 2;
 
         if ( sector_write_index == 512) {
-          LOCAL_LOG( "Write sector to %d\n", currLBA);
+          LOCAL_LOG( "Write sector to %ld\n", currLBA);
 
           if ( currLBA + 512 < file_size) {
             size_t written = 0;
-            int i;
 
             if ( disk_image != -1) {
               LSEEK_FN( disk_image, currLBA, SEEK_SET);
               
               while( written < 512) {
-                size_t cur_write =
+                ssize_t cur_write =
                   WRITE_FN( disk_image, &sector_data[written], 512 - written);
                 written += cur_write;
 
