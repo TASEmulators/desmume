@@ -191,7 +191,7 @@ void armcp15_setSingleRegionAccess(armcp15_t *armcp15,unsigned long dAccess,unsi
 } ;
 
 /* precalculate region masks/sets from cp15 register */
-void armcp15_maskPrecalc(armcp15_t *armcp15)
+static void armcp15_maskPrecalc(armcp15_t *armcp15)
 {
 	#define precalc(num) {  \
 	u32 mask = 0, set = 0xFFFFFFFF ; /* (x & 0) == 0xFF..FF is allways false (disabled) */  \
@@ -407,7 +407,7 @@ BOOL armcp15_moveCP2ARM(armcp15_t *armcp15, u32 * R, u8 CRn, u8 CRm, u8 opcode1,
 }
 
 
-u32 CP15wait4IRQ(armcpu_t *cpu)
+static u32 CP15wait4IRQ(armcpu_t *cpu)
 {
 	/* on the first call, wirq is not set */
 	if(cpu->wirq)

@@ -615,7 +615,7 @@ void WIFI_usTrigger(wifimac_t *wifi)
 	{
 			WIFI_triggerIRQ(wifi,WIFI_IRQ_TIMEBEACON) ;
 	}
-	/* receive check, given a 2 mbit connection, 2 bits per usec can be transfered. /*
+	/* receive check, given a 2 mbit connection, 2 bits per usec can be transfered. */
 	/* for a packet of 32 Bytes, at least 128 usec passed, we will use the 32 byte accuracy to reduce load */
 	if (!(wifi->RXCheckCounter++ & 0x7F))
 	{
