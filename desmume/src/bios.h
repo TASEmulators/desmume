@@ -26,7 +26,6 @@
 
 extern u32 (* ARM9_swi_tab[32])(armcpu_t * cpu);
 extern u32 (* ARM7_swi_tab[32])(armcpu_t * cpu);
-extern u32 wait4IRQ(armcpu_t * cpu);
 
 #endif
  
