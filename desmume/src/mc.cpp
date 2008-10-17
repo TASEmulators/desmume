@@ -100,7 +100,6 @@ void mc_reset_com(memory_chip_t *mc)
 {
    if (mc->type == MC_TYPE_AUTODETECT && mc->com == BM_CMD_AUTODETECT)
    {
-      u32 i;
       u32 addr, size;
 
       if (mc->autodetectsize == (32768+2))
@@ -190,7 +189,7 @@ void mc_realloc(memory_chip_t *mc, int type, u32 size)
 void mc_load_file(memory_chip_t *mc, const char* filename)
 {
    long size;
-   int type;
+   int type = -1;
    FILE* file = fopen(filename, "rb+");
    if(file == NULL)
    {
@@ -214,7 +213,9 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
          type = MC_TYPE_EEPROM2;
       else if (size >= MC_SIZE_2MBITS)
          type = MC_TYPE_FLASH;
-      mc_realloc(mc, type, size);
+
+      if (type != -1)
+         mc_realloc(mc, type, size);
    }
 
    if (size > mc->size)
@@ -226,7 +227,7 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
 int mc_load_duc(memory_chip_t *mc, const char* filename)
 {
    long size;
-   int type;
+   int type = -1;
    char id[16];
    FILE* file = fopen(filename, "rb");
    if(file == NULL)
@@ -258,7 +259,9 @@ int mc_load_duc(memory_chip_t *mc, const char* filename)
          type = MC_TYPE_EEPROM2;
       else if (size >= MC_SIZE_2MBITS)
          type = MC_TYPE_FLASH;
-      mc_realloc(mc, type, size);
+
+      if (type != -1)
+         mc_realloc(mc, type, size);
    }
 
    if (size > mc->size)
