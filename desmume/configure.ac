@@ -155,6 +155,11 @@ AC_SUBST(PO_DIR)
 AC_SUBST(PO_FILES)
 AC_SUBST(PO_FILES_IN)
 
+dnl - Gdb stub
+AC_ARG_ENABLE(gdb-stub,
+              [AC_HELP_STRING(--enable-gdb-stub, enable gdb stub)],
+              [AC_DEFINE(GDB_STUB)])
+
 dnl - Compiler warnings
 
 # for developer use, enable lots of compile warnings,
@@ -163,7 +168,7 @@ dnl - Compiler warnings
 #
 # NB: must add -Werror after AC_PROG_CC, etc., so do this last
 AC_ARG_ENABLE(hardcore,
-              [  --enable-hardcore      turn on -W -Wall -Werror],
+              [AC_HELP_STRING(--enable-hardcore, turn on -W -Wall -Werror)],
               [case "${enableval}" in
                 yes) ENABLE_HARDCORE=1 ;;
                 no) ENABLE_HARDCORE=0 ;;

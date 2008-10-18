@@ -24,8 +24,11 @@
 #include "callbacks_IO.h"
 #include "dTools/callbacks_dtools.h"
 #include "globals.h"
-#include "../gdbstub.h"
 #include "keyval_names.h"
+
+#ifdef GDB_STUB
+#include "../gdbstub.h"
+#endif
 
 #ifdef GTKGLEXT_AVAILABLE
 #include <gtk/gtkgl.h>
@@ -122,10 +125,13 @@ fill_configured_features( struct configured_features *config,
                          2 = French\n\
                          3 = German\n\
                          4 = Italian\n\
-                         5 = Spanish\n\n\
+                         5 = Spanish\n\n"));
+#ifdef GDB_STUB
+      g_print( _("\
    --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n\
-   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n\
-   \n\
+   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n\n"));
+#endif
+      g_print( _("\
    --help              Display this message\n"));
       //g_print("   --sticky            Enable sticky keys and stylus\n");
       good_args = 0;
@@ -150,6 +156,7 @@ fill_configured_features( struct configured_features *config,
         good_args = 0;
       }
     }
+#ifdef GDB_STUB
     else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
       char *end_char;
       unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
@@ -174,6 +181,7 @@ fill_configured_features( struct configured_features *config,
         good_args = 0;
       }
     }
+#endif
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
     }
@@ -315,6 +323,7 @@ static int Write_ConfigFile()
 /*
  * The thread handling functions needed by the GDB stub code.
  */
+#ifdef GDB_STUB
 void *
 createThread_gdb( void (*thread_function)( void *data),
                   void *thread_data) {
@@ -330,6 +339,7 @@ void
 joinThread_gdb( void *thread_handle) {
   g_thread_join((GThread *) thread_handle);
 }
+#endif
 
 
 
@@ -359,8 +369,10 @@ glade_fps_limiter_fn( Uint32 interval, void *param) {
 static int
 common_gtk_glade_main( struct configured_features *my_config) {
 	SDL_TimerID limiter_timer;
+#ifdef GDB_STUB
         gdbstub_handle_t arm9_gdb_stub;
         gdbstub_handle_t arm7_gdb_stub;
+#endif
         struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
         struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
         struct armcpu_ctrl_iface *arm9_ctrl_iface;
@@ -388,6 +400,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 #endif
 	init_keyvals();
 
+#ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
           arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
                                           &arm9_memio,
@@ -410,7 +423,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
             return -1;
           }
         }
-
+#endif
 
 	if(SDL_Init( SDL_INIT_TIMER | SDL_INIT_VIDEO) == -1)
           {
@@ -431,12 +444,14 @@ common_gtk_glade_main( struct configured_features *my_config) {
          * This has to come after the NDS_Init (called in desmume_init)
          * where the cpus are set up.
          */
+#ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
           activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
         }
         if ( my_config->arm7_gdb_port != 0) {
           activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
         }
+#endif
 
         /* Initialize joysticks */
         if(!init_joy()) return 1;

@@ -27,7 +27,9 @@
 #include "globals.h"
 #include "../debug.h"
 
+#ifdef GDB_STUB
 #include "../gdbstub.h"
+#endif
 
 #ifdef GTKGLEXT_AVAILABLE
 #include "../OGLRender.h"
@@ -173,8 +175,10 @@ fill_configured_features( struct configured_features *config,
       printf( "                         4 = Italian\n");
       printf( "                         5 = Spanish\n");
       printf( "\n");
+#ifdef GDB_STUB
       printf( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
       printf( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
+#endif
       //printf( "   --sticky            Enable sticky keys and stylus\n");
       printf( "\n");
       printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
@@ -204,6 +208,7 @@ fill_configured_features( struct configured_features *config,
         fprintf( stderr, "Firmware language must be set to a value from 0 to 5.\n");
         good_args = 0;
       }
+#ifdef GDB_STUB
     } else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
       char *end_char;
       unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
@@ -224,6 +229,7 @@ fill_configured_features( struct configured_features *config,
         fprintf( stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
         good_args = 0;
       }
+#endif
     } else if ( strncmp( argv[i], "--cflash=", 9) == 0) {
       if ( config->cflash_disk_image_file == NULL) {
         config->cflash_disk_image_file = &argv[i][9];
@@ -260,6 +266,7 @@ fill_configured_features( struct configured_features *config,
 /*
  * The thread handling functions needed by the GDB stub code.
  */
+#ifdef GDB_STUB
 void *
 createThread_gdb( void (*thread_function)( void *data),
                   void *thread_data)
@@ -276,6 +283,7 @@ void
 joinThread_gdb( void *thread_handle) {
   g_thread_join( (GThread *)thread_handle);
 }
+#endif
 
 
 u16 Keypad_Temp[NB_KEYS];
@@ -1522,8 +1530,10 @@ common_gtk_main( struct configured_features *my_config)
         GdkGLConfig *glconfig;
         GdkGLContext *glcontext;
 #endif
+#ifdef GDB_STUB
         gdbstub_handle_t arm9_gdb_stub;
         gdbstub_handle_t arm7_gdb_stub;
+#endif
         struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
         struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
         struct armcpu_ctrl_iface *arm9_ctrl_iface;
@@ -1546,6 +1556,7 @@ common_gtk_main( struct configured_features *my_config)
         LogStart();
 #endif
 
+#ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
           arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
                                           &arm9_memio,
@@ -1568,7 +1579,7 @@ common_gtk_main( struct configured_features *my_config)
             exit( -1);
           }
         }
-
+#endif
 
 #ifdef GTKGLEXT_AVAILABLE
         /* Try double-buffered visual */
@@ -1599,18 +1610,19 @@ common_gtk_main( struct configured_features *my_config)
                       arm7_memio, &arm7_ctrl_iface,
                       my_config->disable_sound);
 
-
         /*
          * Activate the GDB stubs
          * This has to come after the NDS_Init (called in desmume_init)
          * where the cpus are set up.
          */
+#ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
           activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
         }
         if ( my_config->arm7_gdb_port != 0) {
           activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
         }
+#endif
 
         /* Create the dummy firmware */
         NDS_CreateDummyFirmware( &fw_config);
@@ -2016,12 +2028,14 @@ common_gtk_main( struct configured_features *my_config)
 
 	Write_ConfigFile();
 
+#ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
           destroyStub_gdb( arm9_gdb_stub);
         }
         if ( my_config->arm7_gdb_port != 0) {
           destroyStub_gdb( arm7_gdb_stub);
         }
+#endif
 
 	return EXIT_SUCCESS;
 }

@@ -52,7 +52,9 @@
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../render3D.h"
+#ifdef GDB_STUB
 #include "../gdbstub.h"
+#endif
 
 volatile BOOL execute = FALSE;
 
@@ -171,8 +173,10 @@ fill_config( struct my_config *config,
       printf( "                         4 = Italian\n");
       printf( "                         5 = Spanish\n");
       printf( "\n");
+#ifdef GDB_STUB
       printf( "   --arm9gdb=PORT_NUM      Enable the ARM9 GDB stub on the given port\n");
       printf( "   --arm7gdb=PORT_NUM      Enable the ARM7 GDB stub on the given port\n");
+#endif
       //printf( "   --sticky                Enable sticky keys and stylus\n");
       printf( "\n");
       printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
@@ -212,6 +216,7 @@ fill_config( struct my_config *config,
         good_args = 0;
       }
     }
+#ifdef GDB_STUB
     else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
       char *end_char;
       unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
@@ -236,6 +241,7 @@ fill_config( struct my_config *config,
         good_args = 0;
       }
     }
+#endif
     else if ( strncmp( argv[i], "--cflash=", 9) == 0) {
       if ( config->cflash_disk_image_file == NULL) {
         config->cflash_disk_image_file = &argv[i][9];
@@ -271,10 +277,10 @@ fill_config( struct my_config *config,
   return good_args;
 }
 
-
 /*
  * The thread handling functions needed by the GDB stub code.
  */
+#ifdef GDB_STUB
 void *
 createThread_gdb( void (*thread_function)( void *data),
                   void *thread_data) {
@@ -289,6 +295,7 @@ joinThread_gdb( void *thread_handle) {
   int ignore;
   SDL_WaitThread( (SDL_Thread*)thread_handle, &ignore);
 }
+#endif
 
 
 
@@ -542,12 +549,14 @@ int main(int argc, char ** argv) {
   static unsigned short keypad = 0;
   struct my_config my_config;
   u32 last_cycle = 0;
+#ifdef GDB_STUB
   gdbstub_handle_t arm9_gdb_stub;
   gdbstub_handle_t arm7_gdb_stub;
   struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
   struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
   struct armcpu_ctrl_iface *arm9_ctrl_iface;
   struct armcpu_ctrl_iface *arm7_ctrl_iface;
+#endif
 
   int limiter_frame_counter = 0;
   SDL_sem *fps_limiter_semaphore;
@@ -584,6 +593,7 @@ int main(int argc, char ** argv) {
     fw_config.language = my_config.firmware_language;
   }
 
+#ifdef GDB_STUB
   if ( my_config.arm9_gdb_port != 0) {
     arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
                                     &arm9_memio,
@@ -606,6 +616,7 @@ int main(int argc, char ** argv) {
       exit( 1);
     }
   }
+#endif
 
 #ifdef DEBUG
   LogStart();
@@ -633,12 +644,14 @@ int main(int argc, char ** argv) {
    * Activate the GDB stubs
    * This has to come after the NDS_Init where the cpus are set up.
    */
+#ifdef GDB_STUB
   if ( my_config.arm9_gdb_port != 0) {
     activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
   }
   if ( my_config.arm7_gdb_port != 0) {
     activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
   }
+#endif
 
   /*      // This has to get fixed yet
           strcpy(szRomPath, dirname(argv[1]));
@@ -818,12 +831,14 @@ int main(int argc, char ** argv) {
   SDL_Quit();
   NDS_DeInit();
 
+#ifdef GDB_STUB
   if ( my_config.arm9_gdb_port != 0) {
     destroyStub_gdb( arm9_gdb_stub);
   }
   if ( my_config.arm7_gdb_port != 0) {
     destroyStub_gdb( arm7_gdb_stub);
   }
+#endif
 
 #ifdef DEBUG
   LogStop();
