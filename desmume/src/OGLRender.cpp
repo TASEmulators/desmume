@@ -53,12 +53,14 @@ static void ENDGL() {
 	#include <windows.h>
 	#include <GL/gl.h>
 	#include <GL/glext.h>
-#elif DESMUME_COCOA
+#else
+#ifdef DESMUME_COCOA
 	#include <OpenGL/gl.h>
 	#include <OpenGL/glext.h>
 #else
 	#include <GL/gl.h>
 	#include <GL/glext.h>
+#endif
 #endif
 
 #include "types.h"
@@ -88,7 +90,7 @@ float clearAlpha;
 
 
 //raw ds format poly attributes, installed from the display list
-static u32 polyAttr=0,textureFormat=0, texturePalette=0;
+static u32 textureFormat=0, texturePalette=0;
 
 //derived values extracted from polyattr etc
 static bool wireframe=false, alpha31=false;
@@ -440,7 +442,7 @@ void* memcpy_fast(void* dest, const void* src, size_t count)
 #endif
 
 
-#ifdef DEBUG_DUMP_TEXTURE
+#ifdef DEBUG_DUMP_TEXTURE && WIN32
 static void DebugDumpTexture(int which)
 {
 	char fname[100];
