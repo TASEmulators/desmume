@@ -36,8 +36,8 @@ typedef struct
 	BOOL	full;
 	u8		irq;
 
-	u8		sendPos;
-	u8		recvPos;
+	u16		sendPos;
+	u16		recvPos;
 
 	u32		buf[0x8000];
 } FIFO;
