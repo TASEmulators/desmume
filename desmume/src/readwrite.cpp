@@ -134,15 +134,3 @@ int read32le(u32 *Bufo, std::istream *is)
 	return 1;
 }
 
-///reads a little endian 16bit value from the specified file
-int read16le(char *d, FILE *fp)
-{
-#ifdef LOCAL_LE
-	return((fread(d,1,2,fp)<2)?0:2);
-#else
-	int ret;
-	ret=fread(d+1,1,1,fp);
-	ret+=fread(d,1,1,fp);
-	return ret<2?0:2;
-#endif
-}
