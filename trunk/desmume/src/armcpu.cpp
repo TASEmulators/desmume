@@ -367,6 +367,9 @@ static u32
 armcpu_prefetch()
 {
 	armcpu_t* armcpu = &ARMPROC;
+#ifdef GDB_STUB
+	u32 temp_instruction;
+#endif
 
 	if(armcpu->CPSR.bits.T == 0)
 	{
