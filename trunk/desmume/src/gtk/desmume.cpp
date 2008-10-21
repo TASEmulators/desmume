@@ -56,10 +56,12 @@ void desmume_free( void)
 void desmume_pause( void)
 {
 	execute = FALSE;
+	SPU_Pause(1);
 }
 void desmume_resume( void)
 {
 	execute = TRUE;
+	SPU_Pause(0);
 }
 void desmume_toggle( void)
 {
