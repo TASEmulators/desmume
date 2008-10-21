@@ -325,6 +325,7 @@ void renderbase::RectRGrad(int x1, int y1, int x2, int y2, int color1, int color
 	if (y2 < y1) SWAP(y1,y2);
   int w = (x2 - x1) + 1;
   int h = (y2 - y1) + 1;
+  int z;
   if ((w == 0) || (h == 0)) return;
   // lookup table to eliminate the sqrt-per-pixel
   static bool tableInitialized = false;
@@ -349,7 +350,7 @@ void renderbase::RectRGrad(int x1, int y1, int x2, int y2, int color1, int color
   }
   // color lookup table to reduce per-pixel blending computations
   int colorTable[256];
-  for (unsigned i = 0; i < 256; i++) {
+  for (int i = 0; i < 256; i++) {
     unsigned r = r2 + ((r1 - r2) * i / 255);
     unsigned g = g2 + ((g1 - g2) * i / 255);
     unsigned b = b2 + ((b1 - b2) * i / 255);
@@ -371,10 +372,10 @@ void renderbase::RectRGrad(int x1, int y1, int x2, int y2, int color1, int color
       yTable[y] = unsigned((float)abs(y - yOffset) * yMul) & 0xFF;
     }
   }
-  for (unsigned y = 0; y < h; y++) {
-    for (unsigned x = 0; x < w; x++) {
-      unsigned w = pythagorasLookup[yTable[y]].v[xTable[x]];
-      PutPixel(x+x1, y+y1, colorTable[w], dest);
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      z = pythagorasLookup[yTable[y]].v[xTable[x]];
+      PutPixel(x+x1, y+y1, colorTable[z], dest);
     }
   }
   // cleanup locals
@@ -397,8 +398,8 @@ void renderbase::Rect4Grad(int x1, int y1, int x2, int y2, int color1, int color
   if ((w == 0) || (h == 0)) return;
   unsigned wDiv = w-1;
   unsigned hDiv = h-1;
-  for (unsigned y = 0; y < h; y++) {
-    for (unsigned x = 0; x < w; x++) {
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
       // calculate x and y weights
       unsigned aX = x * 255 / wDiv;
       unsigned aY = y * 255 / hDiv;
