@@ -180,7 +180,7 @@ private:
 		setg(buf, buf+rp, buf + length);
 	}
 
-	void expand(size_t upto)
+	void expand(ssize_t upto)
 	{
 		if(!myBuf && !usevec)
 			throw new std::runtime_error("memory_streambuf is not expandable");
@@ -189,7 +189,7 @@ private:
 		if(upto == -1)
 			newcapacity = capacity + capacity/2 + 2;
 		else
-			newcapacity = std::max(upto,capacity);
+			newcapacity = std::max((size_t)upto,capacity);
 
 		if(newcapacity == capacity) return;
 
