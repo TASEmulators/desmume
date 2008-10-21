@@ -579,9 +579,13 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 
 	if (dirent == activeDirEnt) {
 		if ((offset < bufferStart) || (offset >= bufferStart + 512)) {
-			//SetFilePointer(hFile,offset,NULL,FILE_BEGIN);
+			if (!hFile) {
+				LOCAL_LOG("fread_buffered with hFile null with"
+					  "offset %lu and bufferStart %lu\n",
+					  offset, bufferStart);
+				return 0;
+			}
 			fseek(hFile, offset, SEEK_SET);
-			//ReadFile(hFile,&freadBuffer,512,&dwBytesRead,NULL);
 			fread(&freadBuffer, 1, 512, hFile);
 			bufferStart = offset;
 		}
@@ -589,10 +593,8 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 		return freadBuffer[(offset-bufferStart)>>1];
 	}
 	if (activeDirEnt != -1)
-		//CloseHandle(hFile);
 		fclose(hFile);
 
-	/* replaced strcpy/cat with strncpy/strcat to fixed possible buffer overruns */
 	strncpy(fpath,sRomPath,256);
 	strncat(fpath,DIR_SEP,256-strlen(fpath));
 	
@@ -659,9 +661,8 @@ cflash_read(unsigned int address) {
           data[0] = block_buffer[currLBA - buffered_start_index];
           data[1] = block_buffer[currLBA + 1 - buffered_start_index];
 #else
-          lseek( disk_image, currLBA, SEEK_SET);
-          read( disk_image, data, 2);
-
+          LSEEK_FN( disk_image, currLBA, SEEK_SET);
+          READ_FN( disk_image, data, 2);
 #endif
           ret_value = data[1] << 8 |
             data[0];
