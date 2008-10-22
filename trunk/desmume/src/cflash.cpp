@@ -771,7 +771,7 @@ cflash_write(unsigned int address,unsigned int data) {
               LSEEK_FN( disk_image, currLBA, SEEK_SET);
               
               while( written < 512) {
-                ssize_t cur_write =
+                size_t cur_write =
                   WRITE_FN( disk_image, &sector_data[written], 512 - written);
                 written += cur_write;
 
