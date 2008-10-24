@@ -293,6 +293,7 @@ static int Write_ConfigFile()
 	int i;
 	GKeyFile * keyfile;
 	gchar *contents;
+	gboolean ret;
 
 	keyfile = g_key_file_new();
 
@@ -307,7 +308,9 @@ static int Write_ConfigFile()
 // 	}
 
 	contents = g_key_file_to_data(keyfile, 0, 0);	
-	g_file_set_contents(CONFIG_FILE, contents, -1, 0);
+	ret = g_file_set_contents(CONFIG_FILE, contents, -1, NULL);
+	if (!ret)
+		fprintf(stderr, "Failed to write to %s\n", CONFIG_FILE);
 	g_free (contents);
 
 	g_key_file_free(keyfile);
@@ -1190,6 +1193,8 @@ static int WriteBMP(const char *filename,u16 *bmp)
     imageheader.height = 192*2;
 
     FILE *fichier = fopen(filename,"wb");
+    if (!fichier)
+        return 0;
     //fwrite(&fileheader, 1, 14, fichier);
 
     //fwrite(&imageheader, 1, 40, fichier);

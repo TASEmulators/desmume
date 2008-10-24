@@ -23,11 +23,16 @@
 gboolean g_file_set_contents(const gchar * filename, const gchar * contents, gssize len, GError ** error) {
 	FILE * file = fopen(filename, "w");
 
+	if (!file)
+		return FALSE;
+
 	if (len == -1)
 		fprintf(file, "%s", contents);
 	else
 		fwrite(contents, 1, len, file);
 
 	fclose(file);
+
+	return TRUE;
 }
 #endif
