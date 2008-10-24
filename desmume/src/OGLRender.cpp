@@ -442,7 +442,7 @@ void* memcpy_fast(void* dest, const void* src, size_t count)
 #endif
 
 
-#ifdef DEBUG_DUMP_TEXTURE && WIN32
+#if defined (DEBUG_DUMP_TEXTURE) && defined (WIN32)
 static void DebugDumpTexture(int which)
 {
 	char fname[100];
