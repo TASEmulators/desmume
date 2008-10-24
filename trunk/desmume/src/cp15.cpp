@@ -82,7 +82,7 @@ armcp15_t *armcp15_new(armcpu_t * c)
 #define MASKFROMREG(val)    (~((SIZEBINARY(val)-1) | 0x3F))
 #define SETFROMREG(val)     ((val) & MASKFROMREG(val))
 /* sets the precalculated regions to mask,set for the affected accesstypes */
-void armcp15_setSingleRegionAccess(armcp15_t *armcp15,unsigned long dAccess,unsigned long iAccess,unsigned char num, unsigned long mask,unsigned long set) {
+static void armcp15_setSingleRegionAccess(armcp15_t *armcp15,unsigned long dAccess,unsigned long iAccess,unsigned char num, unsigned long mask,unsigned long set) {
 
 	switch (ACCESSTYPE(dAccess,num)) {
 		case 4: /* UNP */
