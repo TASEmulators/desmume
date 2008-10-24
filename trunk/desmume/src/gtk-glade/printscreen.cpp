@@ -66,6 +66,8 @@ int WriteBMP(const char *filename,u16 *bmp){
     imageheader.height = 192*2;
     
     FILE *fichier = fopen(filename,"wb");
+    if (!fichier)
+         return 0;
     //fwrite(&fileheader, 1, 14, fichier);
 
     //fwrite(&imageheader, 1, 40, fichier);
