@@ -2140,9 +2140,14 @@ else
 				case 2:
 					capx = 256;
 					capy = 128;
+					break;
 				case 3:
 					capx = 256;
 					capy = 192;
+					break;
+				default:
+					capx = 0;
+					capy = 0;
 					break;
 			}
 			

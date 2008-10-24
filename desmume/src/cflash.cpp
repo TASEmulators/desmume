@@ -152,7 +152,6 @@ static const int lfnPos[13] = {1,3,5,7,9,14,16,18,20,22,24,28,30};
 static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 	int i,j,k,n;
         u8 chk;
-	char *p;
 
 	if (numFiles < MAXFILES-1) {
 		if (strcmp(fname,"..") != 0) {
@@ -175,6 +174,8 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 
 			// See if LFN entries need to be added
 			if (strlen(entry->cAlternateFileName)>0) {
+				char *p = NULL;
+
 				chk = lfn_checksum();
 				k = (strlen(entry->cFileName)/13) + (((strlen(entry->cFileName)%13)!=0)?1:0);
 				numFiles += k;
@@ -201,7 +202,8 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 					*(p + lfnPos[j]) = entry->cFileName[i];
 					*(p + lfnPos[j]+1) = 0;
 				}
-				p[0] |= 0x40;	// END
+				if (p != NULL)
+					p[0] |= 0x40;	// END
 				for (i=strlen(fname)-1; i>=0; i--)
 					if (fname[i]=='.') break;
 				if ((i==0)&&(strcmp(fname,".")==0)) i = 1;

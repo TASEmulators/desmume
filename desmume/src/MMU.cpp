@@ -3095,12 +3095,16 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			case 1 :  dstinc = -sz; break;
 			case 2 :  dstinc =   0; break;
 			case 3 :  dstinc =  sz; break; //reload
+			default:
+				return;
 		}
 		switch((u >> 2)&0x3) {
 			case 0 :  srcinc =  sz; break;
 			case 1 :  srcinc = -sz; break;
 			case 2 :  srcinc =   0; break;
 			case 3 :  // reserved
+				return;
+			default:
 				return;
 		}
 		if ((MMU.DMACrt[proc][num]>>26)&1)
