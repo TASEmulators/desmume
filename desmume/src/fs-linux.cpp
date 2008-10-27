@@ -45,10 +45,16 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 		return NULL;
 
 	e = readdir(tmp);
-	if (!e)
+	if (!e) {
+		closedir(tmp);
 		return NULL;
+	}
 
 	dir = (FsLinuxDir*)malloc(sizeof(FsLinuxDir));
+	if (!dir) {
+		closedir(tmp);
+		return NULL;
+	}
 	dir->dir = tmp;
 
 	strcpy(entry->cFileName, e->d_name);

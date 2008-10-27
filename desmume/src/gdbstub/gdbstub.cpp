@@ -1440,11 +1440,12 @@ gdbstub_handle_t
 createStub_gdb( uint16_t port,
                 struct armcpu_memory_iface **cpu_memio,
                 struct armcpu_memory_iface *direct_memio) {
-  struct gdb_stub_state *stub = (gdb_stub_state*)malloc( sizeof (struct gdb_stub_state));
+  struct gdb_stub_state *stub;
   gdbstub_handle_t handle = NULL;
   int i;
   int res = 0;
 
+  stub = (gdb_stub_state*)malloc( sizeof (struct gdb_stub_state));
   if ( stub == NULL) {
     return NULL;
   }

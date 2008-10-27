@@ -158,19 +158,14 @@ void MatrixStackInit (MatrixStack *stack)
 
 void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 {
-	int i = 0;
+	int i;
 
 	stack->size = size;
 
-	if (stack->matrix == NULL)
-	{
-		stack->matrix = (float*) malloc (stack->size*16*sizeof(float));
-	}
-	else
-	{
+	if (stack->matrix != NULL) {
 		free (stack->matrix);
-		stack->matrix = (float*) malloc (stack->size*16*sizeof(float));
 	}
+	stack->matrix = (float*) malloc (stack->size*16*sizeof(float));
 
 	for (i = 0; i < stack->size; i++)
 	{

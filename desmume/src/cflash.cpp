@@ -315,9 +315,13 @@ static BOOL cflash_build_fat( void) {
 
 	sRomPath  = szRomPath;   // From MMU.cpp
 	files = (DIR_ENT *) malloc(MAXFILES*sizeof(DIR_ENT));
+	if (files == NULL)
+		return FALSE;
 	fileLink = (FILE_INFO *) malloc(MAXFILES*sizeof(FILE_INFO));
-	if ((files == NULL) || (fileLink == NULL))
+	if (fileLink == NULL) {
+		free(files);
                 return FALSE;
+	}
 
 	for (i=0; i<MAXFILES; i++) {
 		files[i].attrib = 0;
@@ -341,16 +345,30 @@ static BOOL cflash_build_fat( void) {
 
 	// Allocate memory to hold information about the files 
 	dirEntries = (DIR_ENT *) malloc(numFiles*sizeof(DIR_ENT));
-	dirEntryLink = (FILE_INFO *) malloc(numFiles*sizeof(FILE_INFO));
-	dirEntriesInCluster = (int *) malloc(NUMCLUSTERS*sizeof(int));
-	dirEntryPtr = (DIR_ENT **) malloc(NUMCLUSTERS*sizeof(DIR_ENT*));
-	if ((dirEntries==NULL) || (dirEntriesInCluster==NULL) || (dirEntryPtr==NULL))
-                return FALSE;
-
-	for (i=0; i<NUMCLUSTERS; i++) {
-		dirEntriesInCluster[i] = 0;
-		dirEntryPtr[i] = NULL;
+	if (dirEntries==NULL) {
+		return FALSE;
 	}
+	dirEntryLink = (FILE_INFO *) malloc(numFiles*sizeof(FILE_INFO));
+	if (dirEntryLink==NULL) {
+		free(dirEntries);
+		return FALSE;
+	}
+	dirEntriesInCluster = (int *) malloc(NUMCLUSTERS*sizeof(int));
+	if (dirEntriesInCluster==NULL) {
+		free(dirEntries);
+		free(dirEntryLink);
+		return FALSE;
+	}
+	dirEntryPtr = (DIR_ENT **) malloc(NUMCLUSTERS*sizeof(DIR_ENT*));
+	if (dirEntryPtr==NULL) {
+		free(dirEntries);
+		free(dirEntryLink);
+		free(dirEntriesInCluster);
+		return FALSE;
+	}
+
+	memset(dirEntriesInCluster, 0, NUMCLUSTERS*sizeof(int));
+	memset(dirEntryPtr, NULL, NUMCLUSTERS*sizeof(DIR_ENT*));
 
 	// Change the hierarchical layout to a flat one 
 	for (i=0; i<=maxLevel; i++) {
