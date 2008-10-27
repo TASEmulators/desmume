@@ -65,7 +65,7 @@ OSDCLASS	*osd = NULL;
 OSDCLASS	*osdA = NULL;
 OSDCLASS	*osdB = NULL;
 
-short sizeTab[4][4][2] =
+const short sizeTab[4][4][2] =
 {
       {{256,256}, {512, 256}, {256, 512}, {512, 512}},
       {{128,128}, {256, 256}, {512, 512}, {1024, 1024}},
@@ -74,7 +74,7 @@ short sizeTab[4][4][2] =
 //      {{0, 0}, {0, 0}, {0, 0}, {0, 0}}
 };
 
-size sprSizeTab[4][4] = 
+const size sprSizeTab[4][4] = 
 {
      {{8, 8}, {16, 8}, {8, 16}, {8, 8}},
      {{16, 16}, {32, 8}, {8, 32}, {8, 8}},
@@ -82,7 +82,7 @@ size sprSizeTab[4][4] =
      {{64, 64}, {64, 32}, {32, 64}, {8, 8}},
 };
 
-s8 mode2type[8][4] = 
+const s8 mode2type[8][4] = 
 {
       {0, 0, 0, 0},
       {0, 0, 0, 1},
