@@ -69,7 +69,7 @@ static void Pause();
 static void Printscreen();
 static void Reset();
 
-static GtkActionEntry action_entries[] = {
+static const GtkActionEntry action_entries[] = {
 	{ "open",	"gtk-open",		"Open",		"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
 	{ "run",	"gtk-media-play",	"Run",		"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
 	{ "pause",	"gtk-media-pause",	"Pause",	"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },

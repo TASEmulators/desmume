@@ -700,9 +700,9 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST);
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 
-extern short sizeTab[4][4][2];
-extern size sprSizeTab[4][4];
-extern s8 mode2type[8][4];
+extern const short sizeTab[4][4][2];
+extern const size sprSizeTab[4][4];
+extern const s8 mode2type[8][4];
 extern void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u8 * DST);
 
 typedef struct {
