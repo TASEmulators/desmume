@@ -6721,8 +6721,13 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2()
      OP_L_IA(13, start);
      OP_L_IA(14, start);
      
-     if(BIT15(i))
+     if(BIT15(i) == 0)
      {
+         armcpu_switchMode(cpu, oldmode);
+     }
+     else
+     {
+    
           u32 tmp = READ32(cpu->mem_if->data, start);
           Status_Reg SPSR;
           cpu->R[15] = tmp & (0XFFFFFFFC | (BIT0(tmp)<<1));
@@ -6730,12 +6735,8 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2()
           armcpu_switchMode(cpu, SPSR.bits.mode);
           cpu->CPSR=SPSR;
           //start += 4;
-	      cpu->next_instruction = cpu->R[15];
+          cpu->next_instruction = cpu->R[15];
           c += MMU.MMU_WAIT32[cpu->proc_ID][(start>>24)&0xF];
-     }
-     else
-     {
-         armcpu_switchMode(cpu, oldmode);
      }
      return c + 2;
 }
@@ -6778,7 +6779,11 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2()
      OP_L_IB(13, start);
      OP_L_IB(14, start);
      
-     if(BIT15(i))
+     if(BIT15(i) == 0)
+     {
+         armcpu_switchMode(cpu, oldmode);
+     }
+     else 
      {
           u32 tmp;
           Status_Reg SPSR;
@@ -6790,10 +6795,6 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2()
           cpu->CPSR=SPSR;
 	      cpu->next_instruction = registres[15];
           c += waitState[(start>>24)&0xF];
-     }
-     else
-     {
-         armcpu_switchMode(cpu, oldmode);
      }
      return c + 2;
 }
