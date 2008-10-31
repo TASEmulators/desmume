@@ -161,11 +161,11 @@ int NDS_Init( void) {
 
 	 gfx3d_init();
      
- #ifdef GDB_STUB
+#ifdef GDB_STUB
      armcpu_new(&NDS_ARM7,1, arm7_mem_if, arm7_ctrl_iface);
      armcpu_new(&NDS_ARM9,0, arm9_mem_if, arm9_ctrl_iface);
 #else
-	 armcpu_new(&NDS_ARM7,1);
+     armcpu_new(&NDS_ARM7,1);
      armcpu_new(&NDS_ARM9,0);
 #endif
 
