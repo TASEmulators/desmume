@@ -19,6 +19,9 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifndef __GDKGL_H__
+#define __GDKGL_H__
+
 #include "globals.h"
 // comment for GL :D
 //#undef HAVE_LIBGDKGLEXT_X11_1_0
@@ -42,3 +45,5 @@ int init_GL_free_s(GtkWidget * widget, int share_num);
 int init_GL_free(GtkWidget * widget);
 void reshape (GtkWidget * widget, int screen);
 gboolean screen (GtkWidget * widget, int off);
+
+#endif
