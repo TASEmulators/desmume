@@ -35,10 +35,8 @@
 #include <pthread.h>
 
 #include <SDL.h>
-#include <gtk/gtk.h>
 
 #include "../MMU.h"
-//#include "../registers.h"
 #include "../armcpu.h"
 #include "../NDSSystem.h"
 #include "../cflash.h"
@@ -46,6 +44,5 @@
 #include "../ctrlssdl.h"
 #include "../types.h"
 #include "../render3D.h"
-#include "desmume.h"
 
 #endif /* GLOBALS_H */
