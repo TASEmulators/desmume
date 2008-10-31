@@ -96,9 +96,9 @@ BOOL init_joy( void) {
     }
 
   nbr_joy = SDL_NumJoysticks();
-  printf("Nbr of joysticks: %d\n\n", nbr_joy);
 
   if ( nbr_joy > 0) {
+    printf("Found %d joysticks\n", nbr_joy);
     open_joysticks =
       (SDL_Joystick**)calloc( sizeof ( SDL_Joystick *), nbr_joy);
 
@@ -137,7 +137,6 @@ void set_kb_keys(const u16 kbCfg[])
 void uninit_joy( void)
 {
   int i;
-  printf("Disabling joystick support.\n");
 
   if ( open_joysticks != NULL) {
     for (i = 0; i < SDL_NumJoysticks(); i++) {
