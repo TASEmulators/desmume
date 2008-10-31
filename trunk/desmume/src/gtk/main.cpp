@@ -24,7 +24,10 @@
 #include <gtk/gtkgl.h>
 #endif
 
+#include <gtk/gtk.h>
+
 #include "globals.h"
+#include "desmume.h"
 #include "../debug.h"
 
 #ifdef GDB_STUB
@@ -79,8 +82,6 @@ static const GtkActionEntry action_entries[] = {
 };
 
 GtkActionGroup * action_group;
-
-char * CONFIG_FILE;
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
@@ -288,7 +289,7 @@ joinThread_gdb( void *thread_handle) {
 
 u16 Keypad_Temp[NB_KEYS];
 
-static int Write_ConfigFile()
+static int Write_ConfigFile(const gchar *config_file)
 {
 	int i;
 	GKeyFile * keyfile;
@@ -308,9 +309,9 @@ static int Write_ConfigFile()
 // 	}
 
 	contents = g_key_file_to_data(keyfile, 0, 0);	
-	ret = g_file_set_contents(CONFIG_FILE, contents, -1, NULL);
+	ret = g_file_set_contents(config_file, contents, -1, NULL);
 	if (!ret)
-		fprintf(stderr, "Failed to write to %s\n", CONFIG_FILE);
+		fprintf(stderr, "Failed to write to %s\n", config_file);
 	g_free (contents);
 
 	g_key_file_free(keyfile);
@@ -318,7 +319,7 @@ static int Write_ConfigFile()
 	return 0;
 }
 
-static int Read_ConfigFile()
+static int Read_ConfigFile(const gchar *config_file)
 {
 	int i, tmp;
 	GKeyFile * keyfile = g_key_file_new();
@@ -326,7 +327,7 @@ static int Read_ConfigFile()
 
 	load_default_config();
 
-	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
+	g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_NONE, 0);
 
 	/* Load keyboard keys */
 	for(i = 0; i < NB_KEYS; i++) {
@@ -382,7 +383,7 @@ float nds_screen_size_ratio = 1.0f;
 static BOOL regMainLoop = FALSE;
 
 static gint pStatusBar_Ctx;
-#define pStatusBar_Change(t) gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx); gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, t);
+#define pStatusBar_Change(t) gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx); gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, t)
 
 gboolean EmuLoop(gpointer data);
 
@@ -403,9 +404,8 @@ static void About(GtkWidget* widget, gpointer data)
 
 static int Open(const char *filename, const char *cflash_disk_image)
 {
-        int i = NDS_LoadROM( filename, MC_TYPE_AUTODETECT, 1,
+        return NDS_LoadROM( filename, MC_TYPE_AUTODETECT, 1,
                              cflash_disk_image);
-	return i;
 }
 
 static void Launch()
@@ -413,7 +413,8 @@ static void Launch()
 	desmume_resume();
 
 	if(!regMainLoop) {
-		g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL); regMainLoop = TRUE;
+		g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
+		regMainLoop = TRUE;
 	}
 
 	pStatusBar_Change("Running ...");
@@ -996,21 +997,22 @@ gint Modify_Key_Chosen = 0;
 
 static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
 {
-	char YouPressed[128];
+	gchar *YouPressed;
+
 	Modify_Key_Chosen = e->keyval;
-	sprintf(YouPressed, "You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
+	YouPressed = g_strdup_printf("You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
 	gtk_label_set(GTK_LABEL(mkLabel), YouPressed);
+	g_free(YouPressed);
 }
 
 static void Modify_Key(GtkWidget* widget, gpointer data)
 {
 	gint Key = GPOINTER_TO_INT(data);
-	char Title[64];
-	char Key_Label[64];
-
 	GtkWidget *mkDialog;
+	gchar *Key_Label;
+	gchar *Title;
 
-	sprintf(Title, "Press \"%s\" key ...\n", key_names[Key]);
+	Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
 	mkDialog = gtk_dialog_new_with_buttons(Title,
 		GTK_WINDOW(pWindow),
 		GTK_DIALOG_MODAL,
@@ -1021,17 +1023,17 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 	g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), NULL);
 
 	mkLabel = gtk_label_new(Title);
+	g_free(Title);
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), mkLabel,TRUE, FALSE, 0);	
 
 	gtk_widget_show_all(GTK_DIALOG(mkDialog)->vbox);
 
 	switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
 	case GTK_RESPONSE_OK:
-
 		Keypad_Temp[Key] = Modify_Key_Chosen;
-		sprintf(Key_Label, "%s (%d)", key_names[Key], Keypad_Temp[Key]);
+		Key_Label = g_strdup_printf("%s (%d)", key_names[Key], Keypad_Temp[Key]);
 		gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
-
+		g_free(Key_Label);
 		break;
 	case GTK_RESPONSE_CANCEL:
 	case GTK_RESPONSE_NONE:
@@ -1045,10 +1047,10 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 
 static void Edit_Controls(GtkWidget* widget, gpointer data)
 {
-	char Key_Label[64];
-	int i;
 	GtkWidget *ecDialog;
 	GtkWidget *ecKey;
+	gchar *Key_Label;
+	int i;
 
 	memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
 
@@ -1060,8 +1062,9 @@ static void Edit_Controls(GtkWidget* widget, gpointer data)
 						NULL);
 
 	for(i = 0; i < NB_KEYS; i++) {
-		sprintf(Key_Label, "%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
+		Key_Label = g_strdup_printf("%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
 		ecKey = gtk_button_new_with_label(Key_Label);
+		g_free(Key_Label);
 		g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);
 	}
@@ -1451,9 +1454,10 @@ Uint32 fps, fps_SecStart, fps_FrameCount;
 gboolean EmuLoop(gpointer data)
 {
 	unsigned int i;
+	gchar *Title;
 
 	if(desmume_running()) {	/* Si on est en train d'executer le programme ... */
-	  static int limiter_frame_counter = 0;
+		static int limiter_frame_counter = 0;
 		fps_FrameCount += Frameskip + 1;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000) {
@@ -1461,9 +1465,9 @@ gboolean EmuLoop(gpointer data)
 			fps = fps_FrameCount;
 			fps_FrameCount = 0;
 
-			char Title[32];
-			sprintf(Title, "Desmume - %dfps", fps);
+			Title = g_strdup_printf("Desmume - %dfps", fps);
 			gtk_window_set_title(GTK_WINDOW(pWindow), Title);
+			g_free(Title);
 		}
 
 		desmume_cycle();	/* Emule ! */
@@ -1523,6 +1527,7 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 static int
 common_gtk_main( struct configured_features *my_config)
 {
+	gchar * config_file;
 	int i;
 	SDL_TimerID limiter_timer;
 
@@ -1638,8 +1643,8 @@ common_gtk_main( struct configured_features *my_config)
  	dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
 	for(i=0; i<dTools_list_size; i++) dTools_running[i]=FALSE;
 
-	CONFIG_FILE = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
-	Read_ConfigFile();
+	config_file = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
+	Read_ConfigFile(config_file);
 
 	/* Creation de la fenetre */
 	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1699,6 +1704,7 @@ common_gtk_main( struct configured_features *my_config)
 	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
 	GtkWidget *mLayers;
 	GtkWidget *mLayers_Radio[10];
+	gchar *buf;
 
 
 	mEmulation = gtk_menu_new();
@@ -1718,10 +1724,12 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
 
 	for(i = 0; i < MAX_FRAMESKIP; i++) {
-		char frameskipRadio_buf[16];
-		sprintf(frameskipRadio_buf, "%d", i);
-		if(i>0) mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), frameskipRadio_buf);
-		else mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, frameskipRadio_buf);
+		buf = g_strdup_printf("%d", i);
+		if (i>0)
+			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), buf);
+		else
+			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+		g_free(buf);
 		g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
 		gtk_menu_shell_append(GTK_MENU_SHELL(mFrameskip), mFrameskip_Radio[i]);
 	}
@@ -1740,10 +1748,12 @@ common_gtk_main( struct configured_features *my_config)
 		gtk_menu_shell_append(GTK_MENU_SHELL(mGraphics), pMenuItem);
 
 		for(i = 1; i < MAX_SCREENCOEFF; i++) {
-			char sizeRadio_buf[16];
-			sprintf(sizeRadio_buf, "x%d", i);
-			if(i>1) mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), sizeRadio_buf);
-			else mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, sizeRadio_buf);
+			buf = g_strdup_printf("x%d", i);
+			if (i>1)
+				mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
+			else
+				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+			g_free(buf);
 			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GINT_TO_POINTER(i));
 			gtk_menu_shell_append(GTK_MENU_SHELL(mSize), mSize_Radio[i]);
 		}
@@ -2031,7 +2041,7 @@ common_gtk_main( struct configured_features *my_config)
 
 	SDL_Quit();
 
-	Write_ConfigFile();
+	Write_ConfigFile(config_file);
 
 #ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
