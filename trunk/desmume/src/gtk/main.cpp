@@ -99,21 +99,16 @@ GPU3DInterface *core3DList[] = {
 };
 
 
-struct screen_render_config {
+struct configured_features {
   int opengl;
   int soft_colour;
-};
-
-
-struct configured_features {
-  struct screen_render_config screen;
 
   int disable_sound;
   int disable_3d;
   int disable_limiter;
 
-  u16 arm9_gdb_port;
-  u16 arm7_gdb_port;
+  int arm9_gdb_port;
+  int arm7_gdb_port;
 
   int firmware_language;
 
@@ -129,8 +124,8 @@ init_configured_features( struct configured_features *config)
 
   config->disable_sound = 0;
 
-  config->screen.opengl = 0;
-  config->screen.soft_colour = 0;
+  config->opengl = 0;
+  config->soft_colour = 0;
 
   config->disable_3d = 0;
 
@@ -148,119 +143,73 @@ static int
 fill_configured_features( struct configured_features *config,
                           int argc, char ** argv)
 {
-  int good_args = 1;
-  int print_usage = 0;
-  int i;
-
-  for ( i = 1; i < argc && good_args; i++) {
-    if ( strcmp( argv[i], "--help") == 0) {
-      printf( "USAGE: %s [OPTIONS] [nds-file]\n", argv[0]);
-      printf( "OPTIONS:\n");
+  GOptionEntry options[] = {
 #ifdef GTKGLEXT_AVAILABLE
-      printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
-      printf( "    --soft-convert     Use software colour conversion during OpenGL\n");
-      printf( "                       screen rendering. May produce better or worse\n");
-      printf( "                       frame rates depending on hardware.\n");
-      printf( "\n");
-      printf( "   --disable-3d        Disables the 3D emulation\n");
-      printf( "\n");
+    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl, "Enables using OpenGL for screen rendering", NULL},
+    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, "Use software colour conversion during OpenGL screen rendering."
+									    " May produce better or worse frame rates depending on hardware", NULL},
+    { "disable-3d", 0, 0, G_OPTION_ARG_NONE, &config->disable_3d, "Disables the 3D emulation", NULL},
 #endif
-      printf( "   --disable-sound     Disables the sound emulation\n");
-      printf( "   --disable-limiter   Disables the 60 fps limiter\n");
-      printf( "\n");
-      printf( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
-      printf( "                         0 = Japanese\n");
-      printf( "                         1 = English\n");
-      printf( "                         2 = French\n");
-      printf( "                         3 = German\n");
-      printf( "                         4 = Italian\n");
-      printf( "                         5 = Spanish\n");
-      printf( "\n");
+    { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
+    { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
+    { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
+								    "  \t\t\t\t  0 = Japanese\n"
+								    "  \t\t\t\t  1 = English\n"
+								    "  \t\t\t\t  2 = French\n"
+								    "  \t\t\t\t  3 = German\n"
+								    "  \t\t\t\t  4 = Italian\n"
+								    "  \t\t\t\t  5 = Spanish\n"
+								    "LANG"},
 #ifdef GDB_STUB
-      printf( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
-      printf( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
+    { "arm9gdb", 0, 0, G_OPTION_ARG_INT, &config->arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
+    { "arm7gdb", 0, 0, G_OPTION_ARG_INT, &config->arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
 #endif
-      //printf( "   --sticky            Enable sticky keys and stylus\n");
-      printf( "\n");
-      printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
-      printf( "                       Enable disk image GBAMP compact flash emulation\n");
-      printf( "\n");
-      printf( "   --help              Display this message\n");
-      good_args = 0;
-    } else if ( strcmp( argv[i], "--disable-sound") == 0) {
-      config->disable_sound = 1;
-#ifdef GTKGLEXT_AVAILABLE
-    } else if ( strcmp( argv[i], "--opengl-2d") == 0) {
-      config->screen.opengl = 1;
-    } else if ( strcmp( argv[i], "--soft-convert") == 0) {
-      config->screen.soft_colour = 1;
-    } else if ( strcmp( argv[i], "--disable-3d") == 0) {
-      config->disable_3d = 1;
-#endif
-    } else if ( strcmp( argv[i], "--disable-limiter") == 0) {
-      config->disable_limiter = 1;
-    } else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
-      char *end_char;
-      int lang = strtoul( &argv[i][9], &end_char, 10);
+    { "cflash", 0, 0, G_OPTION_ARG_FILENAME, &config->cflash_disk_image_file, "Enable disk image GBAMP compact flash emulation", "PATH_TO_DISK_IMAGE"},
+    { NULL }
+  };
+  GOptionContext *ctx;
+  GError *error = NULL;
 
-      if ( lang >= 0 && lang <= 5) {
-        config->firmware_language = lang;
-      } else {
-        fprintf( stderr, "Firmware language must be set to a value from 0 to 5.\n");
-        good_args = 0;
-      }
+  ctx = g_option_context_new ("");
+  g_option_context_add_main_entries (ctx, options, "options");
+  g_option_context_add_group (ctx, gtk_get_option_group (TRUE));
+  g_option_context_parse (ctx, &argc, &argv, &error);
+  g_option_context_free (ctx);
+
+  if (error) {
+    fprintf (stderr, "Error parsing command line arguments: %s\n", error->message);
+    g_error_free (error);
+    return 0;
+  }
+
+  if (argc == 2)
+    config->nds_file = argv[1];
+  if (argc > 2)
+    goto error;
+
+  if (config->firmware_language < -1 || config->firmware_language > 5) {
+    fprintf(stderr, "Firmware language must be set to a value from 0 to 5.\n");
+    goto error;
+  }
+
 #ifdef GDB_STUB
-    } else if ( strncmp( argv[i], "--arm9gdb=", 10) == 0) {
-      char *end_char;
-      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
+  if (config->arm9_gdb_port < 1 || config->arm9_gdb_port > 65535) {
+    fprintf(stderr, "ARM9 GDB stub port must be in the range 1 to 65535\n");
+    goto error;
+  }
 
-      if ( port_num > 0 && port_num < 65536) {
-        config->arm9_gdb_port = port_num;
-      } else {
-        fprintf( stderr, "ARM9 GDB stub port must be in the range 1 to 65535\n");
-        good_args = 0;
-      }
-    } else if ( strncmp( argv[i], "--arm7gdb=", 10) == 0) {
-      char *end_char;
-      unsigned long port_num = strtoul( &argv[i][10], &end_char, 10);
-
-      if ( port_num > 0 && port_num < 65536) {
-        config->arm7_gdb_port = port_num;
-      } else {
-        fprintf( stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
-        good_args = 0;
-      }
+  if (config->arm7_gdb_port < 1 || config->arm7_gdb_port > 65535) {
+    fprintf(stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
+    goto error;
+  }
 #endif
-    } else if ( strncmp( argv[i], "--cflash=", 9) == 0) {
-      if ( config->cflash_disk_image_file == NULL) {
-        config->cflash_disk_image_file = &argv[i][9];
-      } else {
-        fprintf( stderr, "CFlash disk image file (\"%s\") already set\n",
-                 config->cflash_disk_image_file);
-        good_args = 0;
-      }
-    } else {
-      if ( config->nds_file == NULL) {
-        config->nds_file = argv[i];
-      } else {
-        fprintf( stderr, "NDS file (\"%s\") already set\n", config->nds_file);
-        good_args = 0;
-      }
-    }
-  }
 
-  if ( good_args) {
-    /*
-     * check if the configured features are consistant
-     */
-  }
+  return 1;
 
-  if ( print_usage) {
-    fprintf( stderr, "USAGE: %s [options] [nds-file]\n", argv[0]);
-    fprintf( stderr, "USAGE: %s --help    - for help\n", argv[0]);
-  }
-
-  return good_args;
+error:
+    fprintf(stderr, "USAGE: %s [options] [nds-file]\n", argv[0]);
+    fprintf(stderr, "USAGE: %s --help    - for help\n", argv[0]);
+    return 0;
 }
 
 
@@ -1650,7 +1599,7 @@ common_gtk_main( struct configured_features *my_config)
 	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-        if ( my_config->screen.opengl) {
+        if ( my_config->opengl) {
           gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
         } else {
           gtk_window_set_resizable(GTK_WINDOW (pWindow), FALSE);
@@ -1741,7 +1690,7 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
 
 // TODO: Un jour, peut �tre... ><
-	if ( !my_config->screen.opengl) {
+	if ( !my_config->opengl) {
 		mSize = gtk_menu_new();
 		pMenuItem = gtk_menu_item_new_with_label("Size");
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mSize);
@@ -1847,7 +1796,7 @@ common_gtk_main( struct configured_features *my_config)
 
 	/* Création de l'endroit pour l'affichage des écrans */
 #ifdef GTKGLEXT_AVAILABLE
-        if ( my_config->screen.opengl) {
+        if ( my_config->opengl) {
           /*
            * Create the top screen render area
            */
@@ -1865,7 +1814,7 @@ common_gtk_main( struct configured_features *my_config)
           gtk_widget_set_events( top_screen_widget, GDK_EXPOSURE_MASK);
           g_signal_connect( G_OBJECT(top_screen_widget), "expose_event",
                             G_CALLBACK(top_screen_expose_fn),
-                            &my_config->screen.soft_colour) ;
+                            &my_config->soft_colour) ;
           g_signal_connect( G_OBJECT(top_screen_widget), "configure_event",
                             G_CALLBACK(common_configure_fn), NULL ) ;
 
@@ -1901,11 +1850,11 @@ common_gtk_main( struct configured_features *my_config)
           g_signal_connect( G_OBJECT(bottom_screen_widget), "configure_event",
                             G_CALLBACK(common_configure_fn), NULL ) ;
           g_signal_connect(G_OBJECT(bottom_screen_widget), "button_press_event",
-                           G_CALLBACK(Stylus_Press), &my_config->screen.opengl);
+                           G_CALLBACK(Stylus_Press), &my_config->opengl);
           g_signal_connect(G_OBJECT(bottom_screen_widget), "button_release_event",
                            G_CALLBACK(Stylus_Release), NULL);
           g_signal_connect(G_OBJECT(bottom_screen_widget), "motion_notify_event",
-                           G_CALLBACK(Stylus_Move), &my_config->screen.opengl);
+                           G_CALLBACK(Stylus_Move), &my_config->opengl);
 
           gtk_box_pack_start(GTK_BOX(pVBox), bottom_screen_widget, TRUE, TRUE, 0);
 
@@ -1926,11 +1875,11 @@ common_gtk_main( struct configured_features *my_config)
                                   GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
 
             g_signal_connect(G_OBJECT(pDrawingArea), "button_press_event",
-                             G_CALLBACK(Stylus_Press), &my_config->screen.opengl);
+                             G_CALLBACK(Stylus_Press), &my_config->opengl);
             g_signal_connect(G_OBJECT(pDrawingArea), "button_release_event",
                              G_CALLBACK(Stylus_Release), NULL);
             g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
-                             G_CALLBACK(Stylus_Move), &my_config->screen.opengl);
+                             G_CALLBACK(Stylus_Move), &my_config->opengl);
 
             g_signal_connect( G_OBJECT(pDrawingArea), "realize",
                               G_CALLBACK(Draw), NULL ) ;
