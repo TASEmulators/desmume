@@ -19,9 +19,17 @@
 
 #include "ROMReader.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #ifdef HAVE_LIBZZIP
 #include <zzip/zzip.h>
+#endif
+
+#ifdef WIN32
+#define stat(...) _stat(__VA_ARGS__)
+#define S_IFMT _S_IFMT
+#define S_IFREG _S_IFREG
 #endif
 
 ROMReader_struct * ROMReaderInit(char ** filename)
@@ -62,6 +70,14 @@ ROMReader_struct STDROMReader =
 
 void * STDROMReaderInit(const char * filename)
 {
+	struct stat sb; 
+
+	if (stat(filename, &sb) == -1)
+		return 0;
+
+ 	if ((sb.st_mode & S_IFMT) != S_IFREG)
+		return 0;
+
 	return (void *) fopen(filename, "rb");
 }
 
