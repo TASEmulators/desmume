@@ -1565,7 +1565,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              switch(LOWORD(wParam))
              {
 				case IDM_QUIT:
-					PostMessage(hwnd, WM_QUIT, 0, 0);
+					DestroyWindow(hwnd);
 					return 0;
                   case IDM_OPEN:
                        {
