@@ -1166,24 +1166,25 @@ static int WriteBMP(const char *filename,u16 *bmp)
     fwrite( &imageheader.r4, sizeof(imageheader.r4), 1, fichier);
     fwrite( &imageheader.r5, sizeof(imageheader.r5), 1, fichier);
     fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
-    int i,j;
-    for(j=0;j<192*2;j++)for(i=0;i<256;i++){
-    u8 r,g,b;
-    u16 pixel = bmp[i+(192*2-j)*256];
-    r = pixel>>10;
-    pixel-=r<<10;
-    g = pixel>>5;
-    pixel-=g<<5;
-    b = pixel;
-    r*=255/31;
-    g*=255/31;
-    b*=255/31;
-    fwrite(&r, 1, sizeof(char), fichier); 
-    fwrite(&g, 1, sizeof(char), fichier); 
-    fwrite(&b, 1, sizeof(char), fichier); 
-}
+    for(int j=0; j<192*2; j++) {
+      for(int i=0; i<256; i++) {
+        u8 r,g,b;
+        u16 pixel = bmp[i+(192*2-j)*256];
+        r = pixel>>10;
+        pixel-=r<<10;
+        g = pixel>>5;
+        pixel-=g<<5;
+        b = pixel;
+        r*=255/31;
+        g*=255/31;
+        b*=255/31;
+        fwrite(&r, 1, sizeof(char), fichier); 
+        fwrite(&g, 1, sizeof(char), fichier); 
+        fwrite(&b, 1, sizeof(char), fichier); 
+      }
+    }
     fclose(fichier);
-return 1;
+    return 1;
 }
 
 static void Printscreen()
