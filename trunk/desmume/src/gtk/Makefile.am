@@ -11,7 +11,6 @@ EXTRA_DIST = DeSmuME.xpm dev-cpp/desmume.dev dev-cpp/desmume.layout \
 	 dev-cpp/semaphore.h desmume.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
-	gtk-compat.cpp gtk-compat.h \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
 	tools/ioregsView.cpp tools/ioregsView.h \
