@@ -70,8 +70,11 @@ ROMReader_struct STDROMReader =
 
 void * STDROMReaderInit(const char * filename)
 {
-	struct stat sb; 
-
+#ifdef WIN32
+	struct _stat sb;
+#else
+	struct stat sb;
+#endif
 	if (stat(filename, &sb) == -1)
 		return 0;
 
