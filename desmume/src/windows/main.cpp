@@ -1585,6 +1585,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 							// should be, and later transform prior assigning to the OPENFILENAME structure
 							strncpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|",512);
 #ifdef HAVE_LIBZZIP
+							strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz)|*.nds;*.ds.gba;*.zip;*.gz|",512);
+#endif			
+							
+#ifdef HAVE_LIBZZIP
 							strncat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|",512 - strlen(fileFilter));
 #endif
 #ifdef HAVE_LIBZ
