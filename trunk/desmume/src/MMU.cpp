@@ -37,6 +37,17 @@
 #include "rtc.h"
 #include "GPU_osd.h"
 #include "zero_private.h"
+#include "mc.h"
+
+static const int save_types[6][2] = {
+        {MC_TYPE_AUTODETECT,1},
+        {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
+        {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
+        {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
+        {MC_TYPE_FLASH,MC_SIZE_256KBITS},
+        {MC_TYPE_FRAM,MC_SIZE_2MBITS}
+};
+
 
 #define ROM_MASK 3
 
@@ -3677,4 +3688,11 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 {
 	if(proc==0) _MMU_write8<0ul>(adr,val);
 	else _MMU_write8<1ul>(adr,val);
+}
+
+void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
+        if (type<0 || type > 5) return;
+        *bmemtype=save_types[type][0];
+        *bmemsize=save_types[type][1];
+        mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }
