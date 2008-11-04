@@ -829,9 +829,14 @@ void NDS_UnPause()
 
 void StateSaveSlot(int num)
 {
-	NDS_Pause();
-	savestate_slot(num);
-	NDS_UnPause();
+	if (!paused)
+	{
+		NDS_Pause();
+		savestate_slot(num);
+		NDS_UnPause();
+	}
+	else
+		savestate_slot(num);
 }
 
 void StateLoadSlot(int num)
