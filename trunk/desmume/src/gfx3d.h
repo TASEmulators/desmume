@@ -74,11 +74,11 @@ struct GFX3D
 {
 	GFX3D()
 		: enableTexturing(true)
-		, shading(TOON)
 		, enableAlphaTest(true)
 		, enableAlphaBlending(true)
 		, enableAntialiasing(false)
 		, enableEdgeMarking(false)
+		, shading(TOON)
 		, polylist(0)
 		, vertlist(0)
 		, alphaTestRef(0)
