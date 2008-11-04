@@ -417,6 +417,7 @@ armcpu_prefetch()
 	return MMU.MMU_WAIT16[PROCNUM][(armcpu->instruct_adr>>24)&0xF];
 }
 
+#if 0 /* not used */
 static BOOL FASTCALL test_EQ(Status_Reg CPSR) { return ( CPSR.bits.Z); }
 static BOOL FASTCALL test_NE(Status_Reg CPSR) { return (!CPSR.bits.Z); }
 static BOOL FASTCALL test_CS(Status_Reg CPSR) { return ( CPSR.bits.C); }
@@ -445,6 +446,7 @@ static BOOL (FASTCALL* test_conditions[])(Status_Reg CPSR)= {
 };
 #define TEST_COND2(cond, CPSR) \
 	(cond<15&&test_conditions[cond](CPSR))
+#endif
 
 
 BOOL armcpu_irqExeption(armcpu_t *armcpu)
