@@ -1993,6 +1993,7 @@ common_gtk_main( struct configured_features *my_config)
 	SDL_Quit();
 
 	Write_ConfigFile(config_file);
+	g_free(config_file);
 
 #ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
