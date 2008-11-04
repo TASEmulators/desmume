@@ -636,7 +636,7 @@ static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(st
 
 static void writechunks(std::ostream* os);
 
-bool savestate_save(std::ostream* outstream, int compressionLevel)
+static bool savestate_save(std::ostream* outstream, int compressionLevel)
 {
 	//generate the savestate in memory first
 	memorystream ms;
@@ -765,7 +765,7 @@ static void loadstate()
 	MMU_write16(ARMCPU_ARM9, i, MMU_read16(ARMCPU_ARM9, i));
 }
 
-bool savestate_load(std::istream* is)
+static bool savestate_load(std::istream* is)
 {
 	char header[16];
 	is->read(header,16);
