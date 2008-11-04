@@ -3308,7 +3308,7 @@ static char * OP_BKPT(u32 adr, u32 i, char * txt)
 
 //----------------CDP-----------------------
 
-char *  OP_CDP(u32 adr, u32 i, char * txt)
+static char *  OP_CDP(u32 adr, u32 i, char * txt)
 {
      sprintf(txt, "CDP-------------------------------");
      return txt;

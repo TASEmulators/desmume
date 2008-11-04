@@ -20,9 +20,9 @@
 
 #include "render3D.h"
 
-void NDS_nullFunc1		(void){}
-char NDS_nullFunc2		(void){ return 1; }
-void NDS_nullFunc3		(int,unsigned short*) {}
+static void NDS_nullFunc1		(void){}
+static char NDS_nullFunc2		(void){ return 1; }
+static void NDS_nullFunc3		(int,unsigned short*) {}
 
 GPU3DInterface gpu3DNull = { 
 	NDS_nullFunc2, //NDS_3D_Init
