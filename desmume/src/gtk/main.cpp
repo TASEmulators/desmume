@@ -1374,7 +1374,8 @@ static void Start_dTool(GtkWidget *widget, gpointer data)
 {
 	int tool = GPOINTER_TO_INT(data);
 
-	if(dTools_running[tool]) return;
+	if(dTools_running == NULL || dTools_running[tool])
+		return;
 
 	dTools_list[tool]->open(tool);
 	dTools_running[tool] = TRUE;
@@ -1382,6 +1383,9 @@ static void Start_dTool(GtkWidget *widget, gpointer data)
 
 void dTool_CloseCallback(int tool)
 {
+	if (dTools_running == NULL)
+		return;
+
 	dTools_running[tool] = FALSE;
 }
 
@@ -1389,8 +1393,10 @@ void dTool_CloseCallback(int tool)
 
 static inline void _updateDTools()
 {
-	int i;
-	for(i = 0; i < dTools_list_size; i++) {
+	if (dTools_running == NULL)
+		return;
+
+	for(int i = 0; i < dTools_list_size; i++) {
 		if(dTools_running[i]) { dTools_list[i]->update(); }
 	}
 }
@@ -1587,7 +1593,8 @@ common_gtk_main( struct configured_features *my_config)
         if(!init_joy()) return 1;
 
  	dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
-	for(i=0; i<dTools_list_size; i++) dTools_running[i]=FALSE;
+	if (dTools_running != NULL) 
+	  memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size); 
 
 	config_file = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
 	Read_ConfigFile(config_file);
@@ -1651,7 +1658,6 @@ common_gtk_main( struct configured_features *my_config)
 	GtkWidget *mLayers;
 	GtkWidget *mLayers_Radio[10];
 	gchar *buf;
-
 
 	mEmulation = gtk_menu_new();
 	pMenuItem = gtk_menu_item_new_with_label("Emulation");
@@ -1730,7 +1736,6 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_menu_shell_append(GTK_MENU_SHELL(mConfig), pMenuItem);
 
 #if 0
-
 	GtkWidget *mFirmware;
 
 	mFirmware = gtk_menu_new();
