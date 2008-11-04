@@ -132,12 +132,7 @@ struct armcpu_memory_iface {
 };
 
 
-static void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
-	if (type<0 || type > 5) return;
-	*bmemtype=save_types[type][0];
-	*bmemsize=save_types[type][1];
-	mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
-}
+void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize);
 
 void MMU_Init(void);
 void MMU_DeInit(void);
