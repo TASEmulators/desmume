@@ -57,6 +57,7 @@ AC_CHECK_HEADERS([GL/glu.h])
 
 dnl - Check for GTK and/or libglade
 GLIB_VER=2.8
+GTK_VER=2.6
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
 AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
   if test ! "x$HAVE_PKG" = "x" ; then
@@ -69,9 +70,12 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     fi
 
     PKG_CHECK_MODULES(GTK,
-                      "gtk+-2.0",
+                      gtk+-2.0 >= $GTK_VER,
                       HAVE_GTK=yes,
                       HAVE_GTK=no)
+    if test "$HAVE_GTK" = "no"; then
+      AC_MSG_ERROR([gtk-2.0 >= $GTK_VER is required to build desmume gtk frontend])
+    fi
     AC_SUBST(GTK_CFLAGS)
     AC_SUBST(GTK_LIBS)
 

@@ -1771,11 +1771,7 @@ common_gtk_main( struct configured_features *my_config)
 
 	pMenu = gtk_menu_new();
 
-#if ((GTK_MAJOR_VERSION >= 2) && (GTK_MINOR_VERSION >= 6))
 	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT,NULL);
-#else
-	pMenuItem = gtk_menu_item_new_with_label("About");
-#endif
 	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
