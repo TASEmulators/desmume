@@ -147,6 +147,7 @@ void MMU_clearMem( void);
 void MMU_setRom(u8 * rom, u32 mask);
 void MMU_unsetRom( void);
 
+void print_memory_profiling( void);
 
 /**
  * Memory reading

@@ -43,14 +43,10 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-
 #define ENABLE_MEMORY_PROFILING 1
 
 #ifdef ENABLE_MEMORY_PROFILING
 #include <gdk/gdkkeysyms.h>
-
-void
-print_memory_profiling( void);
 #endif
 
 static const char *bad_glob_cflash_disk_image_file;
