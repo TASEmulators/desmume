@@ -867,6 +867,12 @@ cflash_close( void) {
       if (dirEntryLink != NULL)
         free(dirEntryLink);
 
+      if (dirEntriesInCluster != NULL)
+        free(dirEntriesInCluster);
+
+      if (dirEntryPtr != NULL)
+        free(dirEntryPtr);
+
       if (activeDirEnt != -1)
         fclose(hFile);
     }
