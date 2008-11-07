@@ -173,7 +173,7 @@ fill_configured_features( struct configured_features *config,
   g_option_context_free (ctx);
 
   if (error) {
-    fprintf (stderr, "Error parsing command line arguments: %s\n", error->message);
+    g_printerr("Error parsing command line arguments: %s\n", error->message);
     g_error_free (error);
     return 0;
   }
@@ -184,18 +184,18 @@ fill_configured_features( struct configured_features *config,
     goto error;
 
   if (config->firmware_language < -1 || config->firmware_language > 5) {
-    fprintf(stderr, "Firmware language must be set to a value from 0 to 5.\n");
+    g_printerr("Firmware language must be set to a value from 0 to 5.\n");
     goto error;
   }
 
 #ifdef GDB_STUB
   if (config->arm9_gdb_port < 1 || config->arm9_gdb_port > 65535) {
-    fprintf(stderr, "ARM9 GDB stub port must be in the range 1 to 65535\n");
+    g_printerr("ARM9 GDB stub port must be in the range 1 to 65535\n");
     goto error;
   }
 
   if (config->arm7_gdb_port < 1 || config->arm7_gdb_port > 65535) {
-    fprintf(stderr, "ARM7 GDB stub port must be in the range 1 to 65535\n");
+    g_printerr("ARM7 GDB stub port must be in the range 1 to 65535\n");
     goto error;
   }
 #endif
@@ -203,8 +203,8 @@ fill_configured_features( struct configured_features *config,
   return 1;
 
 error:
-    fprintf(stderr, "USAGE: %s [options] [nds-file]\n", argv[0]);
-    fprintf(stderr, "USAGE: %s --help    - for help\n", argv[0]);
+    g_printerr("USAGE: %s [options] [nds-file]\n", argv[0]);
+    g_printerr("USAGE: %s --help    - for help\n", argv[0]);
     return 0;
 }
 
@@ -256,7 +256,7 @@ static int Write_ConfigFile(const gchar *config_file)
 	contents = g_key_file_to_data(keyfile, 0, 0);	
 	ret = g_file_set_contents(config_file, contents, -1, NULL);
 	if (!ret)
-		fprintf(stderr, "Failed to write to %s\n", config_file);
+		g_printerr("Failed to write to %s\n", config_file);
 	g_free (contents);
 
 	g_key_file_free(keyfile);
@@ -305,8 +305,6 @@ static int Read_ConfigFile(const gchar *config_file)
 
 uint Frameskip = 0;
 
-//const gint StaCounter[20] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};
-
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
 static GtkWidget *pToolbar;
@@ -323,7 +321,6 @@ GLuint screen_texture[1];
 #endif
 
 float nds_screen_size_ratio = 1.0f;
-
 
 static BOOL regMainLoop = FALSE;
 
@@ -483,7 +480,7 @@ gtk_init_main_gl_area(GtkWidget *widget,
   if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
     return;
 
-  //printf("Doing GL init\n");
+  LOG("Doing GL init\n");
 
   memset(blank_texture, 0x001f, sizeof(blank_texture));
 
@@ -512,7 +509,7 @@ gtk_init_main_gl_area(GtkWidget *widget,
     const GLubyte *errString;
 
     errString = gluErrorString(errCode);
-    fprintf( stderr, "Failed to init GL: %s\n", errString);
+    g_printerr("Failed to init GL: %s\n", errString);
   }
 
   gdk_gl_drawable_gl_end (gldrawable);
@@ -546,7 +543,7 @@ gtk_init_sub_gl_area(GtkWidget *widget,
     const GLubyte *errString;
 
     errString = gluErrorString(errCode);
-    fprintf( stderr, "Failed to init GL: %s\n", errString);
+    g_printerr("Failed to init GL: %s\n", errString);
   }
 
   gdk_gl_drawable_gl_end (gldrawable);
@@ -606,7 +603,7 @@ top_screen_expose_fn( GtkWidget *widget, GdkEventExpose *event, gpointer data)
     const GLubyte *errString;
 
     errString = gluErrorString(errCode);
-    fprintf( stderr, "GL subimage failed: %s\n", errString);
+    g_printerr("GL subimage failed: %s\n", errString);
   }
 
 
@@ -623,7 +620,7 @@ top_screen_expose_fn( GtkWidget *widget, GdkEventExpose *event, gpointer data)
     const GLubyte *errString;
 
     errString = gluErrorString(errCode);
-    fprintf( stderr, "GL draw failed: %s\n", errString);
+    g_printerr("GL draw failed: %s\n", errString);
   }
 
   if (gdk_gl_drawable_is_double_buffered (gldrawable))
@@ -646,14 +643,14 @@ bottom_screen_expose_fn(GtkWidget *widget, GdkEventExpose *event, gpointer data)
   GdkGLContext *glcontext = gtk_widget_get_gl_context (widget);
   GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable (widget);
 
-  //g_print("Sub Expose\n");
+  LOG("Sub Expose\n");
 
   /*** OpenGL BEGIN ***/
   if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
-    g_print("begin failed\n");
+    g_printerr("begin failed\n");
     return FALSE;
   }
-  //g_print("begin\n");
+  LOG("begin\n");
 
   GLenum errCode;
 
@@ -681,7 +678,7 @@ bottom_screen_expose_fn(GtkWidget *widget, GdkEventExpose *event, gpointer data)
     const GLubyte *errString;
 
     errString = gluErrorString(errCode);
-    fprintf( stderr, "sub GL draw failed: %s\n", errString);
+    g_printerr("sub GL draw failed: %s\n", errString);
   }
 
   gdk_gl_drawable_gl_end (gldrawable);
@@ -708,7 +705,7 @@ common_configure_fn( GtkWidget *widget,
   /* Height / width ration */
   GLfloat ratio;
 
-  //g_print("wdith %d, height %d\n", event->width, event->height);
+  LOG("wdith %d, height %d\n", event->width, event->height);
 
   /*** OpenGL BEGIN ***/
   if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
@@ -765,11 +762,9 @@ common_configure_fn( GtkWidget *widget,
       right = 256.0 * ((double)event->width / other_dimen);
     }
 
-    /*
-    printf("%d,%d\n", width, height);
-    printf("l %lf, r %lf, t %lf, b %lf, other dimen %lf\n",
+    LOG("%d,%d\n", width, height);
+    LOG("l %lf, r %lf, t %lf, b %lf, other dimen %lf\n",
            left, right, top, bottom, other_dimen);
-    */
 
     /* get the area (0,0) to (256,384) into the middle of the viewport */
     gluOrtho2D( left, right, bottom, top);
@@ -785,7 +780,7 @@ common_configure_fn( GtkWidget *widget,
     const GLubyte *errString;
 
     errString = gluErrorString(errCode);
-    fprintf( stderr, "GL resie failed: %s\n", errString);
+    g_printerr("GL resie failed: %s\n", errString);
   }
 
   gdk_gl_drawable_gl_end (gldrawable);
@@ -856,7 +851,7 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
                 scaled_x = x * nds_screen_size_ratio;
                 scaled_y = y * nds_screen_size_ratio;
 
-	//	fprintf(stderr,"X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
+		LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
 
                 if ( !(*opengl)) {
                   scaled_y -= 192;
@@ -1076,7 +1071,7 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
 			/* TODO: Disable sprites */
 		}
 	}
-	//fprintf(stderr,"Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
+	LOG ("Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
 }
 
 const char *Layers_Menu[10] =
@@ -1525,7 +1520,7 @@ common_gtk_main( struct configured_features *my_config)
                                           &arm9_base_memory_iface);
 
           if ( arm9_gdb_stub == NULL) {
-            fprintf( stderr, "Failed to create ARM9 gdbstub on port %d\n",
+            g_printerr("Failed to create ARM9 gdbstub on port %d\n",
                      my_config->arm9_gdb_port);
             exit( -1);
           }
@@ -1536,7 +1531,7 @@ common_gtk_main( struct configured_features *my_config)
                                           &arm7_base_memory_iface);
 
           if ( arm7_gdb_stub == NULL) {
-            fprintf( stderr, "Failed to create ARM7 gdbstub on port %d\n",
+            g_printerr("Failed to create ARM7 gdbstub on port %d\n",
                      my_config->arm7_gdb_port);
             exit( -1);
           }
@@ -1549,14 +1544,14 @@ common_gtk_main( struct configured_features *my_config)
                                               GDK_GL_MODE_DEPTH  |
                                               GDK_GL_MODE_DOUBLE));
         if (glconfig == NULL) {
-            g_print ("*** Cannot find the double-buffered visual.\n");
-            g_print ("*** Trying single-buffered visual.\n");
+            g_printerr ("*** Cannot find the double-buffered visual.\n");
+            g_printerr ("*** Trying single-buffered visual.\n");
 
             /* Try single-buffered visual */
             glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB   |
                                                   GDK_GL_MODE_DEPTH));
             if (glconfig == NULL) {
-              g_print ("*** No appropriate OpenGL-capable visual found.\n");
+              g_printerr ("*** No appropriate OpenGL-capable visual found.\n");
               exit (1);
             }
         }
@@ -1564,7 +1559,7 @@ common_gtk_main( struct configured_features *my_config)
         /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
            Perhaps it needs a "window" to catch events...? */
 	if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
-            fprintf(stderr, "Error trying to initialize SDL: %s\n",
+            g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
             return 1;
         }
@@ -1822,8 +1817,8 @@ common_gtk_main( struct configured_features *my_config)
           gtk_widget_realize ( top_screen_widget);
           glcontext = gtk_widget_get_gl_context( top_screen_widget);
 
-          /*g_print("Window is direct? %d\n",
-            gdk_gl_context_is_direct( glcontext));*/
+          LOG("Window is direct? %d\n",
+            gdk_gl_context_is_direct( glcontext));
 
           /*
            *create the bottom screen drawing area.
@@ -1911,7 +1906,7 @@ common_gtk_main( struct configured_features *my_config)
           /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
           limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
           if ( limiter_timer == NULL) {
-            fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
+            g_printerr("Error trying to start FPS limiter timer: %s\n",
                      SDL_GetError());
             return 1;
           }
@@ -1930,13 +1925,13 @@ common_gtk_main( struct configured_features *my_config)
               NDS_3D_SetDriver ( 1);
 
               if (!gpu3D->NDS_3D_Init ()) {
-                fprintf( stderr, "Failed to initialise openGL 3D emulation; "
+                g_printerr("Failed to initialise openGL 3D emulation; "
                          "removing 3D support\n");
                 use_null_3d = 1;
               }
             }
             else {
-              fprintf( stderr, "Failed to setup openGL 3D emulation; "
+              g_printerr("Failed to setup openGL 3D emulation; "
                        "removing 3D support\n");
               use_null_3d = 1;
             }
