@@ -19,6 +19,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include "types.h"
+#include "NDSSystem.h"
+#include "SPU.h"
+#include "sndsdl.h"
+#include "ctrlssdl.h"
 #include "desmume.h"
 
 volatile BOOL execute = FALSE;
