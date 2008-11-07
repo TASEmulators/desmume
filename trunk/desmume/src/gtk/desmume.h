@@ -22,8 +22,6 @@
 #ifndef __DESMUME_H__
 #define __DESMUME_H__
 
-#include "globals.h"
-
 extern void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
                           struct armcpu_ctrl_iface **arm9_ctrl_iface,
                           struct armcpu_memory_iface *arm7_mem_if,
