@@ -66,24 +66,6 @@
 #define LE	0xD
 #define AL	0xE
 
-/*
-#define TEST_COND(cond, CPSR)	(((cond)==AL) ||\
-					 (((cond)==EQ) && ( CPSR.bits.Z))||\
-					 (((cond)==NE) && (!CPSR.bits.Z))||\
-					 (((cond)==CS) && ( CPSR.bits.C))||\
-					 (((cond)==CC) && (!CPSR.bits.C))||\
-					 (((cond)==MI) && ( CPSR.bits.N))||\
-					 (((cond)==PL) && (!CPSR.bits.N))||\
-					 (((cond)==VS) && ( CPSR.bits.V))||\
-					 (((cond)==VC) && (!CPSR.bits.V))||\
-					 (((cond)==HI) && (CPSR.bits.C) && (!CPSR.bits.Z))||\
-					 (((cond)==LS) && ((CPSR.bits.Z) || (!CPSR.bits.C)))||\
-					 (((cond)==GE) && (CPSR.bits.N==CPSR.bits.V))||\
-					 (((cond)==LT) && (CPSR.bits.N!=CPSR.bits.V))||\
-					 (((cond)==GT) && (CPSR.bits.Z==0) && (CPSR.bits.N==CPSR.bits.V))||\
-					 (((cond)==LE) && ((CPSR.bits.Z) || (CPSR.bits.N!=CPSR.bits.V))))
-*/
-
 extern const unsigned char arm_cond_table[16*16];
 
 #define TEST_COND(cond, inst, CPSR)   ((arm_cond_table[((CPSR.val >> 24) & 0xf0)+(cond)] >> (inst)) & 1)
