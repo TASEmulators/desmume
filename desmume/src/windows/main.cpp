@@ -657,14 +657,16 @@ void SaveStateMessages(int slotnum, int whichMessage)
 {
 	MessageToDisplay.str("");	//Clear previous message
 	displayMessageCounter = 120;
-	switch (whichMessage)		//Switch statement used so that future case additions can be made
+	switch (whichMessage)
 	{
 		case 0:		//State saved
 			MessageToDisplay << "State " << slotnum << " saved.";
 			break;
-		case 1: 
+		case 1:		//State loaded
 			MessageToDisplay << "State " << slotnum << " loaded.";
 			break;
+		case 2:		//Save slot selected
+			MessageToDisplay << "State " << slotnum << " selected.";
 		default:
 			break;
 	}
@@ -1827,31 +1829,41 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				  //Save slot selection
 				  case ACCEL_0:
 					  lastSaveState = 0;
+					  SaveStateMessages(0,2);					  
 					  return 0;
 				  case ACCEL_1:
 					  lastSaveState = 1;
+					  SaveStateMessages(1,2);
 					  return 0;
 				  case ACCEL_2:
 					  lastSaveState = 2;
+					  SaveStateMessages(2,2);
 					  return 0;
 				  case ACCEL_3:
 					  lastSaveState = 3;
+					  SaveStateMessages(3,2);
 					  return 0;
 				  case ACCEL_4:
 					  lastSaveState = 4;
+					  SaveStateMessages(4,2);
 					  return 0;
 				  case ACCEL_5:
 					  lastSaveState = 5;
+					  SaveStateMessages(5,2);
 				  case ACCEL_6:
 					  lastSaveState = 6;
+					  SaveStateMessages(6,2);
 					  return 0;
 				  case ACCEL_7:
 					  lastSaveState = 7;
+					  SaveStateMessages(7,2);
 				  case ACCEL_8:
 					  lastSaveState = 8;
+					  SaveStateMessages(8,2);
 					  return 0;
 				  case ACCEL_9:
 					  lastSaveState = 9;
+					  SaveStateMessages(9,2);
 					  return 0;		
                   case IDM_IMPORTBACKUPMEMORY:
                   {
