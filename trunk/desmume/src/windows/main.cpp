@@ -28,6 +28,7 @@
 #include <commdlg.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"
@@ -176,8 +177,9 @@ bool frameCounterDisplay = false;
 bool FpsDisplay = false;
 unsigned short windowSize = 0;
 
-unsigned int lastSaveState = 0; //Keeps track of last savestate used for quick save/load functions
-std::string MessageToDisplay = ""; //temp variable to store message that will be displayed via DisplayMessage function
+unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
+std::stringstream MessageToDisplay; //temp variable to store message that will be displayed via DisplayMessage function
+int displayMessageCounter = 0;			//Counter to keep track with how long to display messages on screen
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -641,6 +643,34 @@ void CheckMessages()
 	}
 }
 
+void DisplayMessage()
+{
+	if (displayMessageCounter)
+	{
+		//By using stringstream, it leaves open the possibility to keep a series of message in queue
+		displayMessageCounter--;
+		osd->addFixed(0, 40, "%s",MessageToDisplay.str().c_str());
+	}
+}
+
+void SaveStateMessages(int slotnum, int whichMessage)
+{
+	MessageToDisplay.str("");	//Clear previous message
+	displayMessageCounter = 120;
+	switch (whichMessage)		//Switch statement used so that future case additions can be made
+	{
+		case 0:		//State saved
+			MessageToDisplay << "State " << slotnum << " saved.";
+			break;
+		case 1: 
+			MessageToDisplay << "State " << slotnum << " loaded.";
+			break;
+		default:
+			break;
+	}
+	//DisplayMessage();
+}
+
 DWORD WINAPI run( LPVOID lpParameter)
 {
      char txt[80];
@@ -799,7 +829,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 			   }
 			   frameCounter++;
 			   if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
-
+			   DisplayMessage();
 			   CheckMessages();
           }
           
@@ -836,18 +866,24 @@ void StateSaveSlot(int num)
 	if (!paused)
 	{
 		NDS_Pause();
-		savestate_slot(num);
+		savestate_slot(num);	//Savestate
 		NDS_UnPause();
 	}
 	else
-		savestate_slot(num);
+		savestate_slot(num);	//Savestate
+	
+	lastSaveState = num;		//Set last savestate used
+	SaveStateMessages(num, 0);	//Display state loaded message
 }
 
 void StateLoadSlot(int num)
 {
 	BOOL wasPaused = paused;
 	NDS_Pause();
-	loadstate_slot(num);
+	loadstate_slot(num);		//Loadstate
+	lastSaveState = num;		//Set last savestate used
+	SaveStateMessages(num, 1);	//Display state loaded message
+
 	if(!wasPaused)
 		NDS_UnPause();
 	else
