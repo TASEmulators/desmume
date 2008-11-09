@@ -580,8 +580,8 @@ static void resolve_path(int dirent) {
 			if ((dirEntryLink[dirent].parent==dirEntryLink[i].level) &&
 				((dirEntries[i].attrib&ATTRIB_DIR)!=0)) {
 				fatstring_to_asciiz(i,dirname,NULL);
-				strncat(fpath,dirname,256-strlen(fpath));
-				strncat(fpath,DIR_SEP,256-strlen(fpath));
+				strncat(fpath,dirname,ARRAY_SIZE(fpath)-strlen(fpath));
+				strncat(fpath,DIR_SEP,ARRAY_SIZE(fpath)-strlen(fpath));
 				dirent = i;
 				break;
 			}
@@ -616,12 +616,12 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 		fclose(hFile);
 
 	strncpy(fpath,sRomPath,ARRAY_SIZE(fpath));
-	strncat(fpath,DIR_SEP,256-strlen(fpath));
+	strncat(fpath,DIR_SEP,ARRAY_SIZE(fpath)-strlen(fpath));
 	
 	resolve_path(dirent);
 
 	fatstring_to_asciiz(dirent,fname,NULL);
-	strncat(fpath,fname,256-strlen(fpath));
+	strncat(fpath,fname,ARRAY_SIZE(fpath)-strlen(fpath));
 
         hFile = fopen(fpath, "rb");
         if (!hFile) return 0;
