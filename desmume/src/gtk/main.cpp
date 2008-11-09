@@ -69,12 +69,12 @@ static void Printscreen();
 static void Reset();
 
 static const GtkActionEntry action_entries[] = {
-	{ "open",	"gtk-open",		"Open",		"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
-	{ "run",	"gtk-media-play",	"Run",		"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
-	{ "pause",	"gtk-media-pause",	"Pause",	"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },
-	{ "quit",	"gtk-quit",		"Quit",		"<Ctrl>q",	NULL,	G_CALLBACK(gtk_main_quit) },
-	{ "printscreen",NULL,			"Printscreen",	NULL,		NULL,	G_CALLBACK(Printscreen) },
-	{ "reset",	"gtk-refresh",		"Reset",	NULL,		NULL,	G_CALLBACK(Reset) }
+	{ "open",	"gtk-open",		"Open",			"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
+	{ "run",	"gtk-media-play",	"Run",			"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
+	{ "pause",	"gtk-media-pause",	"Pause",		"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },
+	{ "quit",	"gtk-quit",		"Quit",			"<Ctrl>q",	NULL,	G_CALLBACK(gtk_main_quit) },
+	{ "printscreen","gtk-media-record",	"Take a screenshot",	"<Ctrl>s",	NULL,	G_CALLBACK(Printscreen) },
+	{ "reset",	"gtk-refresh",		"Reset",		NULL,		NULL,	G_CALLBACK(Reset) }
 };
 
 GtkActionGroup * action_group;
@@ -363,6 +363,7 @@ static void Launch()
 
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
 }
 
 static void Pause()
@@ -1089,98 +1090,48 @@ const char *Layers_Menu[10] =
 };
 
 /////////////////////////////// PRINTSCREEN /////////////////////////////////
-// TODO: improve (let choose filename, and use png)
 
-typedef struct
-{
-    u32 header_size;
-    s32 width;
-    s32 height;
-    u16 r1;
-    u16 depth;
-    u32 r2;
-    u32 size;
-    s32 r3,r4;
-    u32 r5,r6;
-}BmpImageHeader;
-
-typedef struct
-{
-    u16 type;
-    u32 size;
-    u16 r1, r2;
-    u32 data_offset;
-}BmpFileHeader;
-
-
-static int WriteBMP(const char *filename,u16 *bmp)
-{
-    BmpFileHeader  fileheader;
-    BmpImageHeader imageheader;
-    fileheader.size = 14;
-    fileheader.type = 0x4D42;
-    fileheader.r1 = 0;
-    fileheader.r2=0;
-    fileheader.data_offset = 14+40;
-
-    imageheader.header_size = 40;
-    imageheader.r1 = 1;
-    imageheader.depth = 24;
-    imageheader.r2 = 0;
-    imageheader.size = 256 * 192*2 * 3;
-    imageheader.r3 = 0;
-    imageheader.r4 = 0;
-    imageheader.r5 = 0;
-    imageheader.r6 = 0;
-    imageheader.width = 256;
-    imageheader.height = 192*2;
-
-    FILE *fichier = fopen(filename,"wb");
-    if (!fichier)
-        return 0;
-    //fwrite(&fileheader, 1, 14, fichier);
-
-    //fwrite(&imageheader, 1, 40, fichier);
-    fwrite( &fileheader.type,  sizeof(fileheader.type),  1, fichier);
-    fwrite( &fileheader.size,  sizeof(fileheader.size),  1, fichier);
-    fwrite( &fileheader.r1,  sizeof(fileheader.r1),  1, fichier);
-    fwrite( &fileheader.r2,  sizeof(fileheader.r2),  1, fichier);
-    fwrite( &fileheader.data_offset,  sizeof(fileheader.data_offset),  1, fichier);
-    fwrite( &imageheader.header_size, sizeof(imageheader.header_size), 1, fichier);
-    fwrite( &imageheader.width, sizeof(imageheader.width), 1, fichier);
-    fwrite( &imageheader.height, sizeof(imageheader.height), 1, fichier);
-    fwrite( &imageheader.r1, sizeof(imageheader.r1), 1, fichier);
-    fwrite( &imageheader.depth, sizeof(imageheader.depth), 1, fichier);
-    fwrite( &imageheader.r2, sizeof(imageheader.r2), 1, fichier);
-    fwrite( &imageheader.size, sizeof(imageheader.size), 1, fichier);
-    fwrite( &imageheader.r3, sizeof(imageheader.r3), 1, fichier);
-    fwrite( &imageheader.r4, sizeof(imageheader.r4), 1, fichier);
-    fwrite( &imageheader.r5, sizeof(imageheader.r5), 1, fichier);
-    fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
-    for(int j=0; j<192*2; j++) {
-      for(int i=0; i<256; i++) {
-        u8 r,g,b;
-        u16 pixel = bmp[i+(192*2-j)*256];
-        r = pixel>>10;
-        pixel-=r<<10;
-        g = pixel>>5;
-        pixel-=g<<5;
-        b = pixel;
-        r*=255/31;
-        g*=255/31;
-        b*=255/31;
-        fwrite(&r, 1, sizeof(char), fichier); 
-        fwrite(&g, 1, sizeof(char), fichier); 
-        fwrite(&b, 1, sizeof(char), fichier); 
-      }
-    }
-    fclose(fichier);
-    return 1;
-}
+#define SCREENS_PIXEL_SIZE 98304
 
 static void Printscreen()
 {
-	WriteBMP("./test.bmp",(u16 *)GPU_screen);
+	GdkPixbuf *screenshot;
+	gchar *filename;
+	GError *error = NULL;
+	u8 *rgb;
+	static int seq = 0;
+
+	rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
+	if (!rgb)
+		return;
+	for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
+		rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+		rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+		rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+	}
+
+	screenshot = gdk_pixbuf_new_from_data(rgb,
+					      GDK_COLORSPACE_RGB,
+					      FALSE,
+					      8,
+					      256,
+					      192*2,
+					      256*3, 
+					      NULL,
+					      NULL);
+
+	filename = g_strdup_printf("./desmume-screenshot-%d.png", seq);
+	gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
+	if (error) {
+		g_error_free (error);
+		g_printerr("Failed to save %s", filename);
+	} else {
+		seq++;
+	}
+
+	free(rgb);
+	g_object_unref(screenshot);
+	g_free(filename);
 }
 
 /////////////////////////////// DS CONFIGURATION //////////////////////////////////
