@@ -1106,9 +1106,9 @@ static void GetLine (int line, u16* dst)
 		g = (g*a + oldg*(255-a)) >> 8;
 		b = (b*a + oldb*(255-a)) >> 8;
 
-		r=std::min(255ul,r);
-		g=std::min(255ul,g);
-		b=std::min(255ul,b);
+		r=std::min((u32)255,r);
+		g=std::min((u32)255,g);
+		b=std::min((u32)255,b);
 
 		//debug: display alpha channel
 		//u32 r = screen3D[t+3];

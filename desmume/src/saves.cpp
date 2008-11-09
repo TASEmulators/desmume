@@ -655,11 +655,15 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	int error = Z_OK;
 	if(compressionLevel != Z_NO_COMPRESSION)
 	{
+		uLongf comprlen2;
 		//worst case compression.
 		//zlib says "0.1% larger than sourceLen plus 12 bytes"
 		comprlen = (len>>9)+12 + len;
 		cbuf = new u8[comprlen];
-		error = compress2(cbuf,&comprlen,(u8*)ms.buf(),len,compressionLevel);
+		/* Workaround to make it compile under linux 64bit */
+		comprlen2 = comprlen;
+		error = compress2(cbuf,&comprlen2,(u8*)ms.buf(),len,compressionLevel);
+		comprlen = (u32)comprlen2;
 	}
 #endif
 
