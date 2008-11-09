@@ -1007,6 +1007,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	FpsDisplay = GetPrivateProfileInt("Video","Display Fps", 0, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", 0, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", 0, IniName);
+	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	RECT clientRect = {0,0,256,384};
@@ -1447,6 +1448,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			 //Save window position
 			 WritePrivateProfileInt("Video", "WindowPosX", MainWindowRect.left, IniName);
 			 WritePrivateProfileInt("Video", "WindowPosY", MainWindowRect.top, IniName);
+			 
+			 //Save frame counter status
+			 WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
