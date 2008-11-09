@@ -462,27 +462,25 @@ void ScaleScreen(HWND hwnd, float factor)
 	}
 }
  
-void translateXY(s32 *x, s32*y)
+void translateXY(s32& x, s32& y)
 {
-  s32 tmp;
-  switch(GPU_rotation)
-  {
-   case 90:
-           tmp = *x;
-           *x = *y;
-           *y = 192*2 -tmp;
-           break;
-   case 180:
-           *x = 256-*x;
-           *y = 192*2-*y;
-           break;
-   case 270:
-            tmp = *x;
-            *x = 255-*y;
-            *y = tmp;
-            break;
- }
- *y-=192;
+	s32 tx=x, ty=y;
+	switch(GPU_rotation)
+	{
+	case 90:
+		x = ty;
+		y = 191-tx;
+		break;
+	case 180:
+		x = 255-tx;
+		y = 383-ty;
+		y -= 192;
+		break;
+	case 270:
+		x = 255-ty;
+		y = (tx-192);
+		break;
+	}
 }
      
  // END Rotation definitions
@@ -562,7 +560,6 @@ void Display()
 				case 90:
 				{
 					u32 start;
-					memset(buffer,0,384*ddsd.lPitch);
 					for (j=0; j<256; j++)
 					{
 						start=98304+j;
@@ -589,7 +586,6 @@ void Display()
 				case 270:
 				{
 					u32 start;
-					memset(buffer,0,384*ddsd.lPitch);
 					for (j=0; j<256; j++)
 					{
 						start=256-j;
@@ -1546,13 +1542,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              }
              return 0;
         case WM_MOUSEMOVE:
+		case WM_LBUTTONDOWN:
                   if (wParam & MK_LBUTTON)
                   {
 					   RECT r ;
                        s32 x = (s32)((s16)LOWORD(lParam));
                        s32 y = (s32)((s16)HIWORD(lParam));
 						GetClientRect(hwnd,&r) ;
-						/* translate from scaling (screen reoltution to 256x384 or 512x192) */
+						// translate from scaling (screen resolution to 256x384 or 512x192) 
 					   switch (GPU_rotation)
 						{
 							case 0:
@@ -1562,13 +1559,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 								break ;
 							case 90:
 							case 270:
-								x = (x*512) / (r.right - r.left) ;
-								y = (y*192) / (r.bottom - r.top) ;
+								x = (x*384) / (r.right - r.left) ;
+								y = (y*256) / (r.bottom - r.top) ;
 								break ;
 						}
-						/* translate for rotation */
+						//translate for rotation
                        if (GPU_rotation != 0)
-                          translateXY(&x,&y);
+                          translateXY(x,y);
                        else 
                           y-=192;
                        if(x<0) x = 0; else if(x>255) x = 255;
@@ -1576,48 +1573,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        NDS_setTouchPos(x, y);
                        return 0;
                   }
-				NDS_releasTouch();
+				NDS_releaseTouch();
              return 0;
-        case WM_LBUTTONDOWN:
-				if(HIWORD(lParam)>=192)
-				{
-						   RECT r ;
-					s32 x = (s32)((s16)LOWORD(lParam));
-					s32 y = (s32)((s16)HIWORD(lParam));
-							GetClientRect(hwnd,&r) ;
-							/* translate from scaling (screen reoltution to 256x384 or 512x192) */
-						   switch (GPU_rotation)
-							{
-								case 0:
-								case 180:
-									x = (x*256) / (r.right - r.left) ;
-									y = (y*384) / (r.bottom - r.top) ;
-									break ;
-								case 90:
-								case 270:
-									x = (x*512) / (r.right - r.left) ;
-									y = (y*192) / (r.bottom - r.top) ;
-									break ;
-							}
-							/* translate for rotation */
-					if (GPU_rotation != 0)
-					   translateXY(&x,&y);
-					else
-					  y-=192;
-					if(y>=0)
-					{
-						 SetCapture(hwnd);
-						 if(x<0) x = 0; else if(x>255) x = 255;
-						 if(y<0) y = 0; else if(y>192) y = 192;
-						 NDS_setTouchPos(x, y);
-						 click = TRUE;
-					}
-				 }
-             return 0;
+       
         case WM_LBUTTONUP:
 				if(click)
 					  ReleaseCapture();
-				NDS_releasTouch();
+				NDS_releaseTouch();
              return 0;
 
 		case WM_COMMAND:

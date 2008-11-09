@@ -186,7 +186,7 @@ BOOL NDS_SetROM(u8 * rom, u32 mask);
 NDS_header * NDS_getROMHeader(void);
  
 void NDS_setTouchPos(u16 x, u16 y);
-void NDS_releasTouch(void);
+void NDS_releaseTouch(void);
 
 int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize,
                  const char *cflash_disk_image_file);
