@@ -189,12 +189,12 @@ fill_configured_features( struct configured_features *config,
   }
 
 #ifdef GDB_STUB
-  if (config->arm9_gdb_port < 1 || config->arm9_gdb_port > 65535) {
+  if (config->arm9_gdb_port != 0 && (config->arm9_gdb_port < 1 || config->arm9_gdb_port > 65535)) {
     g_printerr("ARM9 GDB stub port must be in the range 1 to 65535\n");
     goto error;
   }
 
-  if (config->arm7_gdb_port < 1 || config->arm7_gdb_port > 65535) {
+  if (config->arm7_gdb_port != 0 && (config->arm7_gdb_port < 1 || config->arm7_gdb_port > 65535)) {
     g_printerr("ARM7 GDB stub port must be in the range 1 to 65535\n");
     goto error;
   }
