@@ -142,7 +142,7 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 
 	if (strcmp(msg, old_msg) == 0) return;
 
-	render51.PrintString<DesmumeFont>(1,0,0,render51.MakeColor(128,0,0),msg,&screenshell);
+	render51.PrintString<DesmumeFont>(1,x,y,render51.MakeColor(128,0,0),msg,&screenshell);
 
 	needUpdate = true;
 }
