@@ -1004,7 +1004,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
-	FpsDisplay = GetPrivateProfileInt("Video","Display Fps", 0, IniName);
+	FpsDisplay = GetPrivateProfileInt("Display","Display Fps", 0, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", 0, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", 0, IniName);
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
@@ -1269,6 +1269,8 @@ void GetWndRect(HWND hwnd)
 	ClientToScreen(hwnd,&ptClient);
 	MainWindowRect.left=ptClient.x;
 	MainWindowRect.top=ptClient.y;
+	WndX = ptClient.x;
+	WndY = ptClient.y;
 	ptClient.x=rc.right;
 	ptClient.y=rc.bottom;
 	ClientToScreen(hwnd,&ptClient);
@@ -1446,8 +1448,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			 }
 
 			 //Save window position
-			 WritePrivateProfileInt("Video", "WindowPosX", MainWindowRect.left, IniName);
-			 WritePrivateProfileInt("Video", "WindowPosY", MainWindowRect.top, IniName);
+			 WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
+			 WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
 			 
 			 //Save frame counter status
 			 WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
@@ -1991,7 +1993,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				  case ID_VIEW_DISPLAYFPS:
 					  FpsDisplay ^= 1;
 					  MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
-					  WritePrivateProfileInt("Video", "Display Fps", FpsDisplay, IniName);
+					  WritePrivateProfileInt("Display", "Display Fps", FpsDisplay, IniName);
 					  osd->clear();
 				  return 0;
 
