@@ -654,7 +654,7 @@ int main(int argc, char ** argv) {
 #endif
 
   /*      // This has to get fixed yet
-          strcpy(szRomPath, dirname(argv[1]));
+          strncpy(szRomPath, dirname(argv[1]), ARRAY_SIZE(szRomPath));
           cflash_close();
           cflash_init();
   */

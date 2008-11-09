@@ -1146,7 +1146,7 @@ int LoadFirmware(const char *filename)
 	u32 size;
 	FILE *f;
 
-	strncpy(FirmwareFile, filename, 256);
+	strncpy(FirmwareFile, filename, ARRAY_SIZE(FirmwareFile));
 
 	f = fopen(filename, "rb");
 	if(!f) return -1;

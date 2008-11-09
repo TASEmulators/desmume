@@ -259,7 +259,7 @@ static void list_files(char *fpath) {
 	maxLevel++;
 	fileLevel = maxLevel;
 
-	strncpy(DirSpec, fpath, 255+1);		/* if we use strncpy, we use it correct to limit it by the internal, not input size */
+	strncpy(DirSpec, fpath, ARRAY_SIZE(DirSpec));
 	DirSpec[255] = 0 ; /* hard limit the string here */
 
 	hFind = FsReadFirst(DirSpec, &entry);
@@ -615,7 +615,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	if (activeDirEnt != -1)
 		fclose(hFile);
 
-	strncpy(fpath,sRomPath,256);
+	strncpy(fpath,sRomPath,ARRAY_SIZE(fpath));
 	strncat(fpath,DIR_SEP,256-strlen(fpath));
 	
 	resolve_path(dirent);
