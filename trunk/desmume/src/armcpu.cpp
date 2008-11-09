@@ -520,7 +520,6 @@ u32 armcpu_exec()
 
 	if(ARMPROC.CPSR.bits.T == 0)
 	{
-/*        if((TEST_COND(CONDITION(armcpu->instruction), armcpu->CPSR)) || ((CONDITION(armcpu->instruction)==0xF)&&(CODE(armcpu->instruction)==0x5)))*/
         if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
 		{
 			if(PROCNUM==0)
