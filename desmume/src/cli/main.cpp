@@ -767,7 +767,7 @@ int main(int argc, char ** argv) {
     if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
     if(mouse.click)
       { 
-        NDS_releasTouch();
+        NDS_releaseTouch();
         mouse.click = FALSE;
       }
 

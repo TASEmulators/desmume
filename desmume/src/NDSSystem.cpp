@@ -254,7 +254,7 @@ void NDS_setTouchPos(u16 x, u16 y)
      MMU.ARM7_REG[0x136] &= 0xBF;
 }
 
-void NDS_releasTouch(void)
+void NDS_releaseTouch(void)
 { 
      nds.touchX = 0;
      nds.touchY = 0;

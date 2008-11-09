@@ -249,7 +249,7 @@ gboolean  on_wDrawScreen_button_press_event   (GtkWidget *widget, GdkEventButton
 gboolean  on_wDrawScreen_button_release_event (GtkWidget *widget, GdkEventButton  *event, gpointer user_data) {
 	int scr = dyn_CAST(int,user_data);
 	if ((scr==1) ^ ScreenInvert) {
-		if (click) NDS_releasTouch();
+		if (click) NDS_releaseTouch();
 		click = FALSE;
 	}
 	return TRUE;

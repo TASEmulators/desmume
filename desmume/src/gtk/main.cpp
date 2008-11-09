@@ -902,7 +902,7 @@ static gboolean Stylus_Press(GtkWidget *w, GdkEventButton *e, gpointer data)
 }
 static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
-	if(click) NDS_releasTouch();
+	if(click) NDS_releaseTouch();
 	click = FALSE;
 	return TRUE;
 }
