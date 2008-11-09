@@ -20,7 +20,6 @@
     along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-
 #include "windriver.h"
 #include <algorithm>
 #include <shellapi.h>
@@ -28,6 +27,7 @@
 #include <commctrl.h>
 #include <commdlg.h>
 #include <stdio.h>
+#include <string>
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"
@@ -175,6 +175,9 @@ bool frameAdvance = false;
 bool frameCounterDisplay = false;
 bool FpsDisplay = false;
 unsigned short windowSize = 0;
+
+unsigned int lastSaveState = 0; //Keeps track of last savestate used for quick save/load functions
+std::string MessageToDisplay = ""; //temp variable to store message that will be displayed via DisplayMessage function
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -637,7 +640,6 @@ void CheckMessages()
 		}
 	}
 }
-
 
 DWORD WINAPI run( LPVOID lpParameter)
 {
@@ -1780,6 +1782,41 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDM_STATE_LOAD_F10:
                      StateLoadSlot(10);
                      return 0;
+				  case ACCEL_I:		//Quick Save
+					  StateSaveSlot(lastSaveState);
+					  return 0;
+				  case ACCEL_P:		//Quick Load
+					  StateLoadSlot(lastSaveState);
+					  return 0;
+				  //Save slot selection
+				  case ACCEL_0:
+					  lastSaveState = 0;
+					  return 0;
+				  case ACCEL_1:
+					  lastSaveState = 1;
+					  return 0;
+				  case ACCEL_2:
+					  lastSaveState = 2;
+					  return 0;
+				  case ACCEL_3:
+					  lastSaveState = 3;
+					  return 0;
+				  case ACCEL_4:
+					  lastSaveState = 4;
+					  return 0;
+				  case ACCEL_5:
+					  lastSaveState = 5;
+				  case ACCEL_6:
+					  lastSaveState = 6;
+					  return 0;
+				  case ACCEL_7:
+					  lastSaveState = 7;
+				  case ACCEL_8:
+					  lastSaveState = 8;
+					  return 0;
+				  case ACCEL_9:
+					  lastSaveState = 9;
+					  return 0;		
                   case IDM_IMPORTBACKUPMEMORY:
                   {
                      OPENFILENAME ofn;

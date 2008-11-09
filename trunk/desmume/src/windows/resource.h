@@ -333,13 +333,24 @@
 #define ID_FILE_STOPAVI                 40014
 #define IDM_FILE_RECORDAVI              40015
 #define IDM_FILE_STOPAVI                40016
+#define ACCEL_I                         40018
+#define ACCEL_0                         40020
+#define ACCEL_1                         40021
+#define ACCEL_3                         40023
+#define ACCEL_2                         40024
+#define ACCEL_4                         40025
+#define ACCEL_5                         40026
+#define ACCEL_6                         40027
+#define ACCEL_7                         40028
+#define ACCEL_8                         40029
+#define ACCEL_9                         40030
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
-#define _APS_NEXT_COMMAND_VALUE         40018
+#define _APS_NEXT_COMMAND_VALUE         40032
 #define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
