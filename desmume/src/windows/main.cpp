@@ -714,7 +714,7 @@ DWORD WINAPI run( LPVOID lpParameter)
                {
 				   input->process();
 
-				 if (FpsDisplay) osd->addFixed(10, 10, "%02d Fps", fps);
+				 if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
 				 osd->update();
 				   Display();
 				   osd->clear();
@@ -796,7 +796,7 @@ DWORD WINAPI run( LPVOID lpParameter)
 					SPU_Pause(1);
 			   }
 			   frameCounter++;
-			   if (frameCounterDisplay) osd->addFixed(200, 30, "%d",frameCounter);
+			   if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
 
 			   CheckMessages();
           }
