@@ -379,11 +379,11 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
    /* I guess any directory can be used
     * so the current one should be ok */
-   strncpy(szRomPath, ".", 512); /* "." is shorter then 512, yet strcpy should be avoided */
+   strncpy(szRomPath, ".", ARRAY_SIZE(szRomPath));
    cflash_close();
    cflash_init( cflash_disk_image_file);
 
-   strncpy(szRomBaseName, filename,512);
+   strncpy(szRomBaseName, filename, ARRAY_SIZE(szRomBaseName));
 
    if(type == ROM_DSGBA)
       szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;

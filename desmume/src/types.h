@@ -184,6 +184,8 @@ typedef int desmume_BOOL;
 #define MB(x) ((x)*1024*1024)
 #define KB(x) ((x)*1024)
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 #define CPU_STR(c) ((c==ARM9)?"ARM9":"ARM7")
 typedef enum
 {
