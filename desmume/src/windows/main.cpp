@@ -110,6 +110,8 @@ WINCLASS	*MainWindow=NULL;
 HACCEL hAccel;
 HINSTANCE hAppInst;
 RECT	MainWindowRect;
+int WndX = 0;
+int WndY = 0;
 
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
@@ -288,7 +290,7 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
          */
         rcWindow.bottom += rcTemp.top;
     }
-    SetWindowPos(hwnd, NULL, 0, 0, rcWindow.right - rcWindow.left,
+    SetWindowPos(hwnd, NULL, WndX, WndY, rcWindow.right - rcWindow.left,
                  rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
 
 	if (lpBackSurface!=NULL)
@@ -444,13 +446,13 @@ void ScaleScreen(HWND hwnd, float factor)
 
 	if ((GPU_rotation==0)||(GPU_rotation==180))
 	{
-		SetWindowPos(hwnd, NULL, 0, 0, widthTradeOff + DefaultWidth * factor, 
+		SetWindowPos(hwnd, NULL, WndX, WndY, widthTradeOff + DefaultWidth * factor, 
 				heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
 	}
 	else
 	if ((GPU_rotation==90)||(GPU_rotation==270))
 	{
-		SetWindowPos(hwnd, NULL, 0, 0, heightTradeOff + DefaultHeight * factor, 
+		SetWindowPos(hwnd, NULL, WndX, WndY, heightTradeOff + DefaultHeight * factor, 
 				widthTradeOff + DefaultWidth * factor, SWP_NOMOVE | SWP_NOZORDER);
 	}
 }
@@ -1003,13 +1005,14 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
 	FpsDisplay = GetPrivateProfileInt("Video","Display Fps", 0, IniName);
-
+	WndX = GetPrivateProfileInt("Video","WindowPosX", 0, IniName);
+	WndY = GetPrivateProfileInt("Video","WindowPosY", 0, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	RECT clientRect = {0,0,256,384};
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	AdjustWindowRect(&clientRect,dwStyle,TRUE);
-	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, CW_USEDEFAULT, CW_USEDEFAULT, clientRect.right-clientRect.left,clientRect.bottom-clientRect.top,
+	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, clientRect.right-clientRect.left,clientRect.bottom-clientRect.top,
 			WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 				NULL))
 	{
@@ -1417,7 +1420,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 					if (ForceRatio)	
 						ScallingScreen(hwnd, WMSZ_RIGHT, &fullSize);
-					SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left, 
+					SetWindowPos(hwnd, NULL, WndX, WndY, fullSize.right - fullSize.left, 
 												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
 				}
 				else 
@@ -1432,13 +1435,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case WM_CLOSE:
 			{
              NDS_Pause();
-
+			
+			 //Save window size
 			 WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			 if (windowSize==0)
 			 {
 				 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
 				 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
 			 }
+
+			 //Save window position
+			 WritePrivateProfileInt("Video", "WindowPosX", MainWindowRect.left, IniName);
+			 WritePrivateProfileInt("Video", "WindowPosY", MainWindowRect.top, IniName);
 
              if (runthread != INVALID_HANDLE_VALUE)
              {
@@ -2195,7 +2203,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				RECT fullSize;
 				GetWindowRect(hwnd, &fullSize);
 				ScallingScreen(hwnd, WMSZ_RIGHT, &fullSize);
-				SetWindowPos(hwnd, NULL, 0, 0, fullSize.right - fullSize.left, 
+				SetWindowPos(hwnd, NULL, WndX, WndY, fullSize.right - fullSize.left, 
 												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
 				//ScaleScreen(hwnd, (fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
 				MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
