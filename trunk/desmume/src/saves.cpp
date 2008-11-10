@@ -674,7 +674,7 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	write32le(len,outstream); //uncompressed length
 	write32le(comprlen,outstream); //compressed length (-1 if it is not compressed)
 
-	outstream->write((char*)cbuf,comprlen==-1?len:comprlen);
+	outstream->write((char*)cbuf,comprlen==(u32)-1?len:comprlen);
 	if(cbuf != (uint8*)ms.buf()) delete[] cbuf;
 #ifdef HAVE_LIBZ
 	return error == Z_OK;

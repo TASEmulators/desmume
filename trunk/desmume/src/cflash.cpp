@@ -164,7 +164,7 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 			for (; j<NAME_LEN; j++)
 				files[numFiles].name[j] = 0x20;
 			for (j=0; j<EXT_LEN; j++) {
-				if ((j+i+1)>=strlen(fname)) break;
+				if ((size_t)(j+i+1)>=strlen(fname)) break;
 				files[numFiles].ext[j] = fname[j+i+1];
 			}
 			for (; j<3; j++)
@@ -184,7 +184,7 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 
 				n = 0;
 				j = 13;
-				for (i=0; i<strlen(entry->cFileName); i++) {
+				for (i=0; (size_t)i<strlen(entry->cFileName); i++) {
 					if (j == 13) {
 						n++;
 						p = (char*)&files[numFiles-n].name[0];
@@ -213,7 +213,7 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 				for (; j<NAME_LEN; j++)
 					files[numFiles].name[j] = 0x20;
 				for (j=0; j<EXT_LEN; j++) {
-					if ((j+i+1)>=strlen(fname)) break;
+					if ((size_t)(j+i+1)>=strlen(fname)) break;
 					files[numFiles].ext[j] = fname[j+i+1];
 				}
 				for (; j<3; j++)
@@ -795,7 +795,7 @@ cflash_write(unsigned int address,unsigned int data) {
                   WRITE_FN( disk_image, &sector_data[written], 512 - written);
                 written += cur_write;
 
-                if ( cur_write == -1) {
+                if ( cur_write == (size_t)-1) {
                   break;
                 }
               }
