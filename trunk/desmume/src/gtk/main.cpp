@@ -972,7 +972,7 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 	switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
 	case GTK_RESPONSE_OK:
 		Keypad_Temp[Key] = Modify_Key_Chosen;
-		Key_Label = g_strdup_printf("%s (%d)", key_names[Key], Keypad_Temp[Key]);
+		Key_Label = g_strdup_printf("%s (%s)", key_names[Key], gdk_keyval_name(Keypad_Temp[Key]));
 		gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
 		g_free(Key_Label);
 		break;
