@@ -248,7 +248,7 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 
 
 /* List all files and subdirectories recursively */
-static void list_files(char *fpath) {
+static void list_files(const char *filepath) {
 	void * hFind;
 	FsEntry entry;
 	char			DirSpec[255 + 1],SubDir[255+1];
@@ -259,7 +259,7 @@ static void list_files(char *fpath) {
 	maxLevel++;
 	fileLevel = maxLevel;
 
-	strncpy(DirSpec, fpath, ARRAY_SIZE(DirSpec));
+	strncpy(DirSpec, filepath, ARRAY_SIZE(DirSpec));
 	DirSpec[255] = 0 ; /* hard limit the string here */
 
 	hFind = FsReadFirst(DirSpec, &entry);
@@ -277,9 +277,9 @@ static void list_files(char *fpath) {
 			if (numFiles==MAXFILES-1) break;
 
 			if ((entry.flags & FS_IS_DIR) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) {
-				if (strlen(fname)+strlen(fpath)+2 < 256)
+				if (strlen(fname)+strlen(filepath)+2 < 256)
 				{
-					sprintf(SubDir, "%s%c%s", fpath, FS_SEPARATOR, fname);
+					sprintf(SubDir, "%s%c%s", filepath, FS_SEPARATOR, fname);
 					list_files(SubDir);
 				}
 			}
@@ -313,7 +313,7 @@ static BOOL cflash_build_fat( void) {
 	fileLevel = -1;
 	maxLevel  = -1;
 
-	sRomPath  = szRomPath;   // From MMU.cpp
+	sRomPath = szRomPath;   // From MMU.cpp
 	files = (DIR_ENT *) malloc(MAXFILES*sizeof(DIR_ENT));
 	if (files == NULL)
 		return FALSE;
