@@ -706,7 +706,7 @@ common_configure_fn( GtkWidget *widget,
   /* Height / width ration */
   GLfloat ratio;
 
-  LOG("wdith %d, height %d\n", event->width, event->height);
+  LOG("width %d, height %d\n", event->width, event->height);
 
   /*** OpenGL BEGIN ***/
   if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
@@ -763,7 +763,7 @@ common_configure_fn( GtkWidget *widget,
       right = 256.0 * ((double)event->width / other_dimen);
     }
 
-    LOG("%d,%d\n", width, height);
+    LOG("%d,%d\n", event->width, event->height);
     LOG("l %lf, r %lf, t %lf, b %lf, other dimen %lf\n",
            left, right, top, bottom, other_dimen);
 
