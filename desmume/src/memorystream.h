@@ -264,9 +264,9 @@ public:
 		: std::basic_iostream<char, std::char_traits<char> >(&streambuf)
 	{}
 
-	memorystream(int size)
+	memorystream(int sz)
 		: std::basic_iostream<char, std::char_traits<char> >(&streambuf)
-		, streambuf(size)
+		, streambuf(sz)
 	{}
 
 	memorystream(char* usebuf, int buflength)
