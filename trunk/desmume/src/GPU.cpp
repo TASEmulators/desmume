@@ -1339,7 +1339,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		s32 sprX, sprY, x, y, lg;
 		int xdir;
 		u8 prio, * src;
-		u16 i;
+		u16 j;
 
 		// Check if sprite is disabled before everything
 		if (spriteInfo->RotScale == 2)
@@ -1425,7 +1425,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				else
 					pal = (ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 
-				for(i = 0; i < lg; ++i, ++sprX)
+				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
@@ -1456,7 +1456,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			{
 				src = gpu->sprMem + (spriteInfo->TileIndex)*32;
 
-				for(i = 0; i < lg; ++i, ++sprX)
+				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
@@ -1488,7 +1488,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
 				src = gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary);
 
-				for(i = 0; i < lg; ++i, ++sprX)
+				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
@@ -1601,7 +1601,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		int xdir;
 		u8 prio, * src;
 		//u16 * pal;
-		u16 i;
+		u16 j;
 
 		// Check if sprite is disabled before everything
 		if (spriteInfo->RotScale == 2)
@@ -1687,7 +1687,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				else
 					pal = (ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 			
-				for(i = 0; i < lg; ++i, ++sprX)
+				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
@@ -1718,7 +1718,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			{
 				src = gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16;
 
-				for(i = 0; i < lg; ++i, ++sprX)
+				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
@@ -1750,7 +1750,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				src = gpu->sprMem + (spriteInfo->TileIndex<<5);
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
 				
-				for(i = 0; i < lg; ++i, ++sprX)
+				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
