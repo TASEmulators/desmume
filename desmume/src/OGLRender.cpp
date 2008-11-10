@@ -650,10 +650,10 @@ static void setTexture(unsigned int format, unsigned int texpal)
 				break;
 			case 5: //4x4
 			{
-				unsigned short * pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				unsigned short * slot1;
 				unsigned int * map = (unsigned int *)adr;
-				unsigned d = 0;
+				unsigned int d = 0;
 				unsigned int * dst = (unsigned int *)texMAP;
 				if ( (texcache[i].frm & 0xc000) == 0x8000)
 					// texel are in slot 2
