@@ -250,6 +250,7 @@ void NDS_setTouchPos(u16 x, u16 y)
 {
      nds.touchX = (x <<4);
      nds.touchY = (y <<4);
+	 nds.isTouch = 1;
      
      MMU.ARM7_REG[0x136] &= 0xBF;
 }
@@ -258,6 +259,7 @@ void NDS_releaseTouch(void)
 { 
      nds.touchX = 0;
      nds.touchY = 0;
+	 nds.isTouch = 0;
      
      MMU.ARM7_REG[0x136] |= 0x40;
 }
@@ -477,6 +479,7 @@ void NDS_Reset( void)
    nds.diff = 0;
    nds.lignerendu = FALSE;
    nds.touchX = nds.touchY = 0;
+   nds.isTouch = 0;
 
    MMU_write16(0, 0x04000130, 0x3FF);
    MMU_write16(1, 0x04000130, 0x3FF);
@@ -1570,4 +1573,107 @@ NDS_exec(s32 nb, BOOL force)
     }
   
 	return nds.cycles;
+}
+
+void NDS_setPadFromMovie(u16 pad)
+{
+	#define FIX(b,n) (((pad>>n)&1)!=0)
+	NDS_setPad(
+		FIX(pad,0),
+		FIX(pad,1),
+		FIX(pad,2),
+		FIX(pad,3),
+		FIX(pad,4),
+		FIX(pad,5),
+		FIX(pad,6),
+		FIX(pad,7),
+		FIX(pad,8),
+		FIX(pad,9),
+		FIX(pad,10),
+		FIX(pad,11),
+		FIX(pad,12)
+		);
+	#undef FIX
+}
+
+void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G)
+{
+	
+	//this macro is the opposite of what you would expect
+	#define FIX(b) (b?0:0x80)
+	
+	int r = FIX(R);
+	int l = FIX(L);
+	int d = FIX(D);
+	int u = FIX(U);
+	int t = FIX(T);
+	int s = FIX(S);
+	int b = FIX(B);
+	int a = FIX(A);
+	int y = FIX(Y);
+	int x = FIX(X);
+	int w = FIX(W);
+	int e = FIX(E);
+	int g = FIX(G);
+	
+	u16	pad	= (0 |
+					((a) >> 7) |
+					((b) >> 6) |
+					((s) >> 5) |
+					((t) >> 4) |
+					((r) >> 3) |
+					((l) >> 2) |
+					((u) >> 1) |
+					((d))	   |
+					((r) << 1) |
+					((l) << 2)) ;
+
+	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
+	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
+
+	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x00F0) |
+						((x) >> 7) |
+						((y) >> 6) |
+						((g) >> 4) |
+						0x0034;
+	
+	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
+
+	
+	//put into the format we want for the movie system
+	//RLDUTSBAYXWEG
+	#undef FIX
+	#define FIX(b) (b?1:0)
+
+	r = FIX(R);
+	l = FIX(L);
+	d = FIX(D);
+	u = FIX(U);
+	t = FIX(T);
+	s = FIX(S);
+	b = FIX(B);
+	a = FIX(A);
+	y = FIX(Y);
+	x = FIX(X);
+	w = FIX(W);
+	e = FIX(E);
+	g = FIX(G);
+	
+
+	nds.pad =
+		(FIX(r)<<0)|
+		(FIX(l)<<1)|
+		(FIX(d)<<2)|
+		(FIX(u)<<3)|
+		(FIX(t)<<4)|
+		(FIX(s)<<5)|
+		(FIX(b)<<6)|
+		(FIX(a)<<7)|
+		(FIX(y)<<8)|
+		(FIX(x)<<9)|
+		(FIX(w)<<10)|
+		(FIX(e)<<11)|
+		(FIX(g)<<12);
+	
+	// TODO: low power IRQ
 }

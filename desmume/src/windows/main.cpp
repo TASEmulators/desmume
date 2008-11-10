@@ -78,6 +78,9 @@ void DRV_AviVideoUpdate(const u16* buffer);
 CRITICAL_SECTION win_sync;
 volatile int win_sound_samplecounter = 0;
 
+Lock::Lock() { EnterCriticalSection(&win_sync); }
+Lock::~Lock() { LeaveCriticalSection(&win_sync); }
+
 //===================== DirectDraw vars
 LPDIRECTDRAW7			lpDDraw=NULL;
 LPDIRECTDRAWSURFACE7	lpPrimarySurface=NULL;
@@ -146,8 +149,6 @@ float widthTradeOff;
 float heightTradeOff;
 
 HMENU menu;
-HANDLE runthread_ready=INVALID_HANDLE_VALUE;
-HANDLE runthread=INVALID_HANDLE_VALUE;
 
 //static char IniName[MAX_PATH];
 int sndcoretype=SNDCORE_DIRECTX;
@@ -383,7 +384,7 @@ void ResizingLimit(int wParam, RECT *rc)
 
 }
 
-void ScallingScreen(HWND hwnd, int wParam, RECT *rc)
+void ScaleScreen(HWND hwnd, int wParam, RECT *rc)
 {
 	float	aspect;
 	u32	width;
@@ -669,7 +670,7 @@ void SaveStateMessages(int slotnum, int whichMessage)
 	//DisplayMessage();
 }
 
-DWORD WINAPI run( LPVOID lpParameter)
+DWORD WINAPI run()
 {
      char txt[80];
      u32 cycles = 0;
@@ -723,8 +724,6 @@ DWORD WINAPI run( LPVOID lpParameter)
      QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
      QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
      OneFrameTime = freq / 60;
-
-	 SetEvent(runthread_ready);
 
      while(!finished)
      {
@@ -1017,7 +1016,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	oglrender_init = windows_opengl_init;
 
 
-	MSG messages;            /* Here messages to the application are saved */
     char text[80];
     hAppInst=hThisInstance;
 
@@ -1226,14 +1224,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		}
 	}
 
-	/* Create the dummy firmware */
+	// Create the dummy firmware
 	NDS_CreateDummyFirmware( &win_fw_config);
-
-	//runthread_ready = CreateEvent(NULL,TRUE,FALSE,0);
-    //runthread = CreateThread(NULL, 0, run, NULL, 0, &threadID);
-
-	//wait for the run thread to signal that it is initialized and ready to run
-	//WaitForSingleObject(runthread_ready,INFINITE);
 
     // Make sure any quotes from lpszArgument are removed
     if (lpszArgument[0] == '\"')
@@ -1266,7 +1258,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->Show(SW_NORMAL);
-	run(0);
+	run();
 	DRV_AviEnd();
 
 	//------SHUTDOWN
@@ -1458,7 +1450,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					ResizingLimit(WMSZ_RIGHT, &fullSize);
 
 					if (ForceRatio)	
-						ScallingScreen(hwnd, WMSZ_RIGHT, &fullSize);
+						ScaleScreen(hwnd, WMSZ_RIGHT, &fullSize);
 					SetWindowPos(hwnd, NULL, WndX, WndY, fullSize.right - fullSize.left, 
 												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
 				}
@@ -1490,18 +1482,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			 //Save frame counter status
 			 WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
 
-             if (runthread != INVALID_HANDLE_VALUE)
-             {
-                if (WaitForSingleObject(runthread,INFINITE) == WAIT_TIMEOUT)
-                {
-                   // Couldn't close thread cleanly
-                   TerminateThread(runthread,0);
-                }
-                CloseHandle(runthread);
-             }
-
              NDS_DeInit();
-             ExitRunLoop();;
+             ExitRunLoop();
              return 0;
 			}
 		case WM_MOVE:
@@ -1514,7 +1496,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				windowSize=0;
 				ResizingLimit(wParam, rc);
 				if (ForceRatio)
-					ScallingScreen(hwnd, wParam, rc);
+					ScaleScreen(hwnd, wParam, rc);
 				//printlog("sizing: width=%i; height=%i\n", rc->right - rc->left, rc->bottom - rc->top);
 			}
 			break;
@@ -2255,7 +2237,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			else {
 				RECT fullSize;
 				GetWindowRect(hwnd, &fullSize);
-				ScallingScreen(hwnd, WMSZ_RIGHT, &fullSize);
+				ScaleScreen(hwnd, WMSZ_RIGHT, &fullSize);
 				SetWindowPos(hwnd, NULL, WndX, WndY, fullSize.right - fullSize.left, 
 												fullSize.bottom - fullSize.top, SWP_NOMOVE | SWP_NOZORDER);
 				//ScaleScreen(hwnd, (fullSize.bottom - fullSize.top - heightTradeOff) / DefaultHeight);
@@ -2277,7 +2259,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam)
 {
-   static int timerid=0;
+   static UINT_PTR timerid=0;
    switch (uMsg)
    {
       case WM_INITDIALOG:
@@ -2342,9 +2324,10 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                sscanf(tempstr, "%d", &sndbuffersize);
                WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
 
-			   EnterCriticalSection(&win_sync);
-               SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
-			   LeaveCriticalSection(&win_sync);
+			   {
+				Lock lock;
+				SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
+			   }
 
                // Write Volume
                sndvolume = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);

@@ -29,6 +29,7 @@
 #include "..\MMU.h"
 #include "..\common.h"
 #include "resource.h"
+#include "NDSSystem.h"
 
 // ==================================================== emu input
 // =======================================================================
@@ -173,6 +174,21 @@ const	char	*DIkeysNames[0xEF] =
 	// 0xEE
 };
 const	char	*DIJoyNames[0x04] = { "JUp", "JDown", "JLeft", "JRight" };
+
+#define KEY_A 0
+#define KEY_B 1
+#define KEY_SELECT 2
+#define KEY_START 3
+#define KEY_RIGHT 4
+#define KEY_LEFT 5
+#define KEY_UP 6
+#define KEY_DOWN 7
+#define KEY_R 8
+#define KEY_L 9
+#define KEY_X 10
+#define KEY_Y 11
+#define KEY_DEBUG 12
+
 
 char	*keyPadNames [MAXKEYPAD] = { "A", "B", "SELECT", "START", 
 								"RIGHT", "LEFT", "UP", "DOWN", 
@@ -386,30 +402,21 @@ void NDS_inputPost(BOOL paused, LPSTR buf)
 {
 	if (paused) return;
 
-	u16	pad	= (0 |
-					((~buf[keyPad[0]] & 0x80) >> 7) |
-					((~buf[keyPad[1]] & 0x80) >> 6) |
-					((~buf[keyPad[2]] & 0x80) >> 5) |
-					((~buf[keyPad[3]] & 0x80) >> 4) |
-					((~buf[keyPad[4]] & 0x80) >> 3) |
-					((~buf[keyPad[5]] & 0x80) >> 2) |
-					((~buf[keyPad[6]] & 0x80) >> 1) |
-					((~buf[keyPad[7]] & 0x80))	   |
-					((~buf[keyPad[8]] & 0x80) << 1) |
-					((~buf[keyPad[9]] & 0x80) << 2)) ;
+	bool R = (buf[keyPad[KEY_RIGHT]] & 0x80)!=0;
+	bool L = (buf[keyPad[KEY_LEFT]] & 0x80)!=0;
+	bool D = (buf[keyPad[KEY_DOWN]] & 0x80)!=0;
+	bool U = (buf[keyPad[KEY_UP]] & 0x80)!=0;
+	bool T = (buf[keyPad[KEY_START]] & 0x80)!=0;
+	bool S = (buf[keyPad[KEY_SELECT]] & 0x80)!=0;
+	bool B = (buf[keyPad[KEY_B]] & 0x80)!=0;
+	bool A = (buf[keyPad[KEY_A]] & 0x80)!=0;
+	bool Y = (buf[keyPad[KEY_Y]] & 0x80)!=0;
+	bool X = (buf[keyPad[KEY_X]] & 0x80)!=0;
+	bool W = (buf[keyPad[KEY_L]] & 0x80)!=0;
+	bool E = (buf[keyPad[KEY_R]] & 0x80)!=0;
+	bool G = (buf[keyPad[KEY_DEBUG]] & 0x80)!=0;
 
-	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
-	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
-
-	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x00F0) |
-						((~buf[keyPad[10]] & 0x80) >> 7) |
-						((~buf[keyPad[11]] & 0x80) >> 6) |
-						((~buf[keyPad[12]] & 0x80) >> 4) |
-						0x0034;
-	
-	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
-	
-	// TODO: low power IRQ
+	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G);
 }
 
 // TODO

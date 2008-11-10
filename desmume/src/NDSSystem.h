@@ -118,6 +118,8 @@ typedef struct
 
 	u16 touchX;
 	u16 touchY;
+	BOOL isTouch;
+	u16 pad;
 
 	//this is not essential NDS runtime state.
 	//it was perhaps a mistake to put it here.
@@ -187,6 +189,8 @@ NDS_header * NDS_getROMHeader(void);
  
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
+void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G);
+void NDS_setPadFromMovie(u16 pad);
 
 int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize,
                  const char *cflash_disk_image_file);

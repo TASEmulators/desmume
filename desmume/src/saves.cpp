@@ -159,6 +159,7 @@ SFORMAT SF_NDS[]={
 	{ "_LIG", 4, 1, &nds.lignerendu},
 	{ "_TPX", 2, 1, &nds.touchX},
 	{ "_TPY", 2, 1, &nds.touchY},
+	{ "_TPB", 4, 1, &nds.isTouch},
 	{ 0 }
 };
 
@@ -647,7 +648,7 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	//save the length of the file
 	u32 len = ms.size();
 
-	u32 comprlen = -1;
+	u32 comprlen = 0xFFFFFFFF;
 	u8* cbuf = (u8*)ms.buf();
 
 #ifdef HAVE_LIBZ

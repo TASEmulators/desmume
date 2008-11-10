@@ -58,9 +58,11 @@
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
+				WarningLevel="1"
 				DebugInformationFormat="4"
 				CallingConvention="0"
 				CompileAs="0"
+				DisableSpecificWarnings="4244"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -740,6 +742,46 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="utils"
+			>
+			<File
+				RelativePath="..\utils\ConvertUTF.c"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\ConvertUTF.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\guid.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\guid.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\md5.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\md5.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\valuearray.h"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\xstring.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\utils\xstring.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\ARM9.h"
 			>
@@ -1009,6 +1051,14 @@
 		</File>
 		<File
 			RelativePath="..\MMU.h"
+			>
+		</File>
+		<File
+			RelativePath="..\movie.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\movie.h"
 			>
 		</File>
 		<File
