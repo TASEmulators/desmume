@@ -514,35 +514,35 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 
 	while(is->tellg()<temp+size)
 	{
-		u32 size, count;
+		u32 sz, count;
 		
 		char toa[4];
 		is->read(toa,4);
 		if(is->fail())
 			return false;
 
-		if(!read32le(&size,is)) return false;
+		if(!read32le(&sz,is)) return false;
 		if(!read32le(&count,is)) return false;
 
-		if((tmp=CheckS(sf,size,count,toa)))
+		if((tmp=CheckS(sf,sz,count,toa)))
 		{
-			if(size == 1) {
+			if(sz == 1) {
 				//special case: read a huge byte array
 				is->read((char *)tmp->v,count);
 			} else {
 				for(unsigned int i=0;i<count;i++)
 				{
-					is->read((char *)tmp->v + i*size,size);
+					is->read((char *)tmp->v + i*sz,sz);
 
 					#ifndef LOCAL_LE
 						if(rlsb)
-							FlipByteOrder((u8*)tmp->v + i*size,size);
+							FlipByteOrder((u8*)tmp->v + i*sz,sz);
 					#endif
 				}
 			}
 		}
 		else
-			is->seekg(size*count,std::ios::cur);
+			is->seekg(sz*count,std::ios::cur);
 	} // while(...)
 	return true;
 }
