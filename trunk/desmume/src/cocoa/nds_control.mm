@@ -560,7 +560,7 @@ bool opengl_init()
 
 - (void)releaseTouch
 {
-	NDS_releasTouch();
+	NDS_releaseTouch();
 }
 
 - (void)pressStart
