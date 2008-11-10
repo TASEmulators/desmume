@@ -194,7 +194,7 @@ if test "x[$]ENABLE_HARDCORE" = "x1"; then
     dnl - only valid for C with newer gcc's
     CPPFLAGS="[$]CPPFLAGS -Wmissing-prototypes"
   fi
-  CPPFLAGS="[$]CPPFLAGS -Wall -Wextra -Wpointer-arith -Wcast-align -Wwrite-strings -Wno-unused-parameter -Wmissing-declarations -Wundef -Wmissing-noreturn -Wshadow"
+  CPPFLAGS="[$]CPPFLAGS -Wall -Wextra -Wno-missing-field-initializers -Wpointer-arith -Wcast-align -Wwrite-strings -Wno-unused-parameter -Wmissing-declarations -Wundef -Wmissing-noreturn -Wshadow"
 fi
 
 dnl - Enable debug mode
