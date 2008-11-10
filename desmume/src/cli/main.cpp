@@ -559,8 +559,8 @@ int main(int argc, char ** argv) {
 #endif
 
   int limiter_frame_counter = 0;
-  SDL_sem *fps_limiter_semaphore;
-  SDL_TimerID limiter_timer;
+  SDL_sem *fps_limiter_semaphore = NULL;
+  SDL_TimerID limiter_timer = NULL;
   int sdl_quit = 0;
 
 #ifdef DISPLAY_FPS
@@ -745,11 +745,18 @@ int main(int argc, char ** argv) {
     fps_limiter_semaphore = SDL_CreateSemaphore( 1);
 
     /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
-    limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
+    if ( fps_limiter_semaphore != NULL) {
+      limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
                                   fps_limiter_fn, fps_limiter_semaphore);
+    }
+
     if ( limiter_timer == NULL) {
       fprintf( stderr, "Error trying to start FPS limiter timer: %s\n",
                SDL_GetError());
+      if ( fps_limiter_semaphore != NULL) {
+        SDL_DestroySemaphore( fps_limiter_semaphore);
+        fps_limiter_semaphore = NULL;
+      }
       return 1;
     }
   }
