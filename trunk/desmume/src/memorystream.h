@@ -215,7 +215,7 @@ protected:
 
 	int overflow(int c)
 	{
-		expand(-1);
+		expand((size_t)-1);
 		dosync(c);
 		return 1;
 	}

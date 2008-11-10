@@ -7,4 +7,10 @@
 
 extern WINCLASS	*MainWindow;
 
+class Lock {
+public:
+	Lock();
+	~Lock();
+};
+
 #endif

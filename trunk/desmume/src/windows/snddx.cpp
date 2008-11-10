@@ -31,6 +31,7 @@ const char*  __stdcall DXGetErrorDescription8A(HRESULT hr);
 #include "SPU.h"
 #include "snddx.h"
 #include "CWindow.h"
+#include "windriver.h"
 
 int SNDDXInit(int buffersize);
 void SNDDXDeInit();
@@ -71,11 +72,14 @@ static volatile bool terminated;
 extern CRITICAL_SECTION win_sync;
 extern volatile int win_sound_samplecounter;
 
-DWORD WINAPI SNDDXThread( LPVOID lpParameter)
+DWORD WINAPI SNDDXThread( LPVOID )
 {
 	for(;;) {
 		if(terminate) break;
-		SPU_Emulate_user();
+		{
+			Lock lock;
+			SPU_Emulate_user();
+		}
 		Sleep(10);
 	}
 	terminated = true;
@@ -229,10 +233,13 @@ void SNDDXUpdateAudio(s16 *buffer, u32 num_samples)
    DWORD buffer1_size, buffer2_size;
    DWORD status;
 
-   EnterCriticalSection(&win_sync);
-   int samplecounter = win_sound_samplecounter -= num_samples;
-   LeaveCriticalSection(&win_sync);
-	bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
+   int samplecounter;
+   {
+		Lock lock;
+	   samplecounter = win_sound_samplecounter -= num_samples;
+   }
+	
+   bool silence = (samplecounter<-44100*15/60); //behind by more than a quarter second -> silence
 
    IDirectSoundBuffer8_GetStatus(lpDSB2, &status);
 

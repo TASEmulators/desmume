@@ -26,7 +26,7 @@
 #define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " " VERSION
 
 #ifdef _WIN32
-#define strcasecmp(x,y) stricmp(x,y)
+#define strcasecmp(x,y) _stricmp(x,y)
 #else
 #define WINAPI
 #endif
@@ -237,6 +237,40 @@ inline double u64_to_double(u64 u) {
 	} fuxor;
 	fuxor.a = u;
 	return fuxor.b;
+}
+
+
+///stores a 32bit value into the provided byte array in guaranteed little endian form
+inline void en32lsb(u8 *buf, u32 morp)
+{ 
+	buf[0]=morp;
+	buf[1]=morp>>8;
+	buf[2]=morp>>16;
+	buf[3]=morp>>24;
+} 
+
+inline void en16lsb(u8* buf, u16 morp)
+{
+	buf[0]=morp;
+	buf[1]=morp>>8;
+}
+
+///unpacks a 64bit little endian value from the provided byte array into host byte order
+inline u64 de64lsb(u8 *morp)
+{
+	return morp[0]|(morp[1]<<8)|(morp[2]<<16)|(morp[3]<<24)|((u64)morp[4]<<32)|((u64)morp[5]<<40)|((u64)morp[6]<<48)|((u64)morp[7]<<56);
+}
+
+///unpacks a 32bit little endian value from the provided byte array into host byte order
+inline u32 de32lsb(u8 *morp)
+{
+	return morp[0]|(morp[1]<<8)|(morp[2]<<16)|(morp[3]<<24);
+}
+
+///unpacks a 16bit little endian value from the provided byte array into host byte order
+inline u16 de16lsb(u8 *morp)
+{
+	return morp[0]|(morp[1]<<8);
 }
 
 
