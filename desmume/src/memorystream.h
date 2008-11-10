@@ -186,7 +186,7 @@ private:
 			throw new std::runtime_error("memory_streambuf is not expandable");
 
 		size_t newcapacity;
-		if(upto == -1)
+		if(upto == (size_t)-1)
 			newcapacity = capacity + capacity/2 + 2;
 		else
 			newcapacity = std::max(upto,capacity);
