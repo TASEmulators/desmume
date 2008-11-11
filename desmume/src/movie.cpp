@@ -672,3 +672,24 @@ bool FCEUMOV_PostLoad(void)
 	else
 		return load_successful;
 }
+
+
+bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount)
+{
+	//MovieData md;
+	//if(!LoadFM2(md, fp, INT_MAX, skipFrameCount))
+	//	return false;
+	//
+	//info.movie_version = md.version;
+	//info.poweron = md.savestate.size()==0;
+	//info.pal = md.palFlag;
+	//info.nosynchack = true;
+	//info.num_frames = md.records.size();
+	//info.md5_of_rom_used = md.romChecksum;
+	//info.emu_version_used = md.emuVersion;
+	//info.name_of_rom_used = md.romFilename;
+	//info.rerecord_count = md.rerecordCount;
+	//info.comments = md.comments;
+
+	return true;
+}
