@@ -27,7 +27,7 @@
 #include "cp15.h"
 #include "bios.h"
 #include "debug.h"
-#include "Disassembler.cpp"
+#include "Disassembler.h"
 
 
 template<u32> static u32 armcpu_prefetch();
