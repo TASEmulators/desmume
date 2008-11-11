@@ -26,6 +26,8 @@
 #include "thumb_instructions.h"
 #include "cp15.h"
 #include "bios.h"
+#include "debug.h"
+#include "Disassembler.cpp"
 
 
 template<u32> static u32 armcpu_prefetch();
@@ -522,8 +524,14 @@ u32 armcpu_exec()
 	{
         if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
 		{
-			if(PROCNUM==0)
+			if(PROCNUM==0) {
+#ifdef WANTASMLISTING
+        			char txt[128];
+				des_arm_instructions_set[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruct_adr,ARMPROC.instruction,txt);
+				printf("%X: %X - %s\n", ARMPROC.instruct_adr,ARMPROC.instruction, txt);
+#endif
 				c += arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
+                        }
 			else
 				c += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
 			
