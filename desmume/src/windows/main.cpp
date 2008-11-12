@@ -1570,6 +1570,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				case IDM_QUIT:
 					DestroyWindow(hwnd);
 					return 0;
+				case ACCEL_CTRL_O:
                   case IDM_OPEN:
                        {
 							int filterSize = 0, i = 0;

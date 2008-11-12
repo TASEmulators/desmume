@@ -27,7 +27,19 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 IDR_MAIN_ACCEL ACCELERATORS 
 BEGIN
+    "0",            ACCEL_0,                VIRTKEY, NOINVERT
+    "1",            ACCEL_1,                VIRTKEY, NOINVERT
+    "2",            ACCEL_2,                VIRTKEY, NOINVERT
+    "3",            ACCEL_3,                VIRTKEY, NOINVERT
+    "4",            ACCEL_4,                VIRTKEY, NOINVERT
+    "5",            ACCEL_5,                VIRTKEY, NOINVERT
+    "6",            ACCEL_6,                VIRTKEY, NOINVERT
+    "7",            ACCEL_7,                VIRTKEY, NOINVERT
+    "8",            ACCEL_8,                VIRTKEY, NOINVERT
+    "9",            ACCEL_9,                VIRTKEY, NOINVERT
+    "I",            ACCEL_I,                VIRTKEY, NOINVERT
     "N",            ACCEL_N,                VIRTKEY, NOINVERT
+    "P",            ACCEL_P,                VIRTKEY, NOINVERT
     VK_SPACE,       ACCEL_SPACEBAR,         VIRTKEY, NOINVERT
     VK_F1,          IDM_STATE_LOAD_F1,      VIRTKEY, NOINVERT
     VK_F10,         IDM_STATE_LOAD_F10,     VIRTKEY, NOINVERT
@@ -49,18 +61,7 @@ BEGIN
     VK_F7,          IDM_STATE_SAVE_F7,      VIRTKEY, SHIFT, NOINVERT
     VK_F8,          IDM_STATE_SAVE_F8,      VIRTKEY, SHIFT, NOINVERT
     VK_F9,          IDM_STATE_SAVE_F9,      VIRTKEY, SHIFT, NOINVERT
-    "I",            ACCEL_I,                VIRTKEY, NOINVERT
-    "P",            ACCEL_P,                VIRTKEY, NOINVERT
-    "0",            ACCEL_0,                VIRTKEY, NOINVERT
-    "1",            ACCEL_1,                VIRTKEY, NOINVERT
-    "2",            ACCEL_2,                VIRTKEY, NOINVERT
-    "3",            ACCEL_3,                VIRTKEY, NOINVERT
-    "4",            ACCEL_4,                VIRTKEY, NOINVERT
-    "5",            ACCEL_5,                VIRTKEY, NOINVERT
-    "6",            ACCEL_6,                VIRTKEY, NOINVERT
-    "7",            ACCEL_7,                VIRTKEY, NOINVERT
-    "8",            ACCEL_8,                VIRTKEY, NOINVERT
-    "9",            ACCEL_9,                VIRTKEY, NOINVERT
+    "O",            ACCEL_CTRL_O,           VIRTKEY, CONTROL, NOINVERT
 END
 
 #endif    // Neutral resources
@@ -681,7 +682,7 @@ MENU_PRINCIPAL MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open",                       IDM_OPEN
+        MENUITEM "&Open...\tCtrl O",            IDM_OPEN
         MENUITEM "Rom &Info",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Save State As",               IDM_STATE_SAVE
