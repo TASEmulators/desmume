@@ -344,13 +344,15 @@
 #define ACCEL_7                         40028
 #define ACCEL_8                         40029
 #define ACCEL_9                         40030
+#define ID_ACCELERATOR40032             40032
+#define ACCEL_CTRL_O                    40032
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
-#define _APS_NEXT_COMMAND_VALUE         40032
+#define _APS_NEXT_COMMAND_VALUE         40034
 #define _APS_NEXT_CONTROL_VALUE         1018
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
