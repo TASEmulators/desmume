@@ -86,7 +86,7 @@ MENU_PRINCIPAL MENU
 BEGIN
     POPUP "&Fil"
     BEGIN
-        MENUITEM "&Åbn",                        IDM_OPEN
+        MENUITEM "&Åbn...\tCtrl O",             IDM_OPEN
         MENUITEM "Rom &Info",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Gem Stadie Som",              IDM_STATE_SAVE
@@ -1432,7 +1432,7 @@ MENU_PRINCIPAL MENU
 BEGIN
     POPUP "&Fichier"
     BEGIN
-        MENUITEM "&Ouvrir",                     IDM_OPEN
+        MENUITEM "&Ouvrir...\tCtrl O",          IDM_OPEN
         MENUITEM "&Info rom",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Save State As",               IDM_STATE_SAVE
