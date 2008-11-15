@@ -249,11 +249,11 @@ static void add_file(char *fname, FsEntry * entry, int fileLevel) {
 
 /* List all files and subdirectories recursively */
 static void list_files(const char *filepath) {
-	void * hFind;
+	char DirSpec[255+1], SubDir[255+1];
 	FsEntry entry;
-	char			DirSpec[255 + 1],SubDir[255+1];
-	u32			dwError;
-	char			*fname;
+	void * hFind;
+	char *fname;
+	u32 dwError;
 	int fileLevel;
 
 	maxLevel++;
@@ -263,42 +263,37 @@ static void list_files(const char *filepath) {
 	DirSpec[255] = 0 ; /* hard limit the string here */
 
 	hFind = FsReadFirst(DirSpec, &entry);
-
-	if (hFind == NULL) {
+	if (hFind == NULL)
 		return;
-	} else {
-		fname = (strlen(entry.cAlternateFileName)>0)?entry.cAlternateFileName:entry.cFileName;
+
+	fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
+	add_file(fname, &entry, fileLevel);
+
+	while (FsReadNext(hFind, &entry) != 0) {
+		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
 		add_file(fname, &entry, fileLevel);
 
-		while (FsReadNext(hFind, &entry) != 0) {
-			fname = (strlen(entry.cAlternateFileName)>0)?entry.cAlternateFileName:entry.cFileName;
-			add_file(fname, &entry, fileLevel);
+		if (numFiles==MAXFILES-1)
+			break;
 
-			if (numFiles==MAXFILES-1) break;
-
-			if ((entry.flags & FS_IS_DIR) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) {
-				if (strlen(fname)+strlen(filepath)+2 < 256)
-				{
-					sprintf(SubDir, "%s%c%s", filepath, FS_SEPARATOR, fname);
-					list_files(SubDir);
-				}
+		if ((entry.flags & FS_IS_DIR) && (strcmp(fname, ".")) && (strcmp(fname, ".."))) {
+			if (strlen(fname)+strlen(filepath)+2 < 256) {
+				sprintf(SubDir, "%s%c%s", filepath, FS_SEPARATOR, fname);
+				list_files(SubDir);
 			}
 		}
-    
-		dwError = FsError();
-		FsClose(hFind);
-		if (dwError != FS_ERR_NO_MORE_FILES) {
-			return;
-		}
 	}
+
+	dwError = FsError();
+	FsClose(hFind);
+	if (dwError != FS_ERR_NO_MORE_FILES)
+		return;
+
 	if (numFiles < MAXFILES) {
 		fileLink[numFiles].parent = fileLevel;
 		files[numFiles++].name[0] = 0;
 	}
 }
-
-
-
 
 
 
