@@ -504,6 +504,7 @@ void UpdateRecentRomsMenu()
 
 	//UpdateRecentRoms will always call this
 	//This will be always called by GetRecentRoms on DesMume startup
+	if (RecentRoms.size() == 0) return;
 	
 	//----------------------------------------------------------------------
 	//Get Menu item info
@@ -1035,7 +1036,7 @@ void StateLoadSlot(int num)
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 {
     NDS_Pause();
-	if (strcmp(filename,"")!=0) printlog("Atetmpting to load ROM: %s\n",filename);
+	if (strcmp(filename,"")!=0) printlog("Attempting to load ROM: %s\n",filename);
 
     if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
 	{
