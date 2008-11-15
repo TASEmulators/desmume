@@ -210,7 +210,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
      {
             case WM_INITDIALOG :
                  {
-						OAMView = new oamview_struct;
+						OAMView = new oamview_struct[1];
 						memset(OAMView, 0, sizeof(oamview_struct));
 						OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM);
 						OAMView->gpu = MainScreen.gpu;

@@ -207,6 +207,7 @@
 #define IDC_EDIT04                      1014
 #define ID_CANCEL                       1016
 #define IDSAVE                          1017
+#define IDC_AUTOUPDATE_ASM              1018
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -355,7 +356,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40037
-#define _APS_NEXT_CONTROL_VALUE         1018
+#define _APS_NEXT_CONTROL_VALUE         1019
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

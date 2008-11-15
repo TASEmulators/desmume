@@ -32,6 +32,10 @@
 #include "ROMReader.h"
 #include "gfx3d.h"
 
+#ifdef _WIN32
+#include "./windows/disView.h"
+#endif
+
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
 
@@ -902,6 +906,9 @@ NDS_exec(s32 nb, BOOL force)
 						//nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
 						nds.ARM9Cycle += armcpu_exec<0>();
 				}
+#ifdef _WIN32
+						DisassemblerTools_Refresh(0);
+#endif
 			}
 
 #ifdef EXPERIMENTAL_WIFI
@@ -936,6 +943,9 @@ NDS_exec(s32 nb, BOOL force)
 						//nds.ARM7Cycle += (armcpu_exec(&NDS_ARM7)<<1);
 						nds.ARM7Cycle += (armcpu_exec<1>()<<1);
 				}
+#ifdef _WIN32
+						DisassemblerTools_Refresh(1);
+#endif
 			}
 		}
 

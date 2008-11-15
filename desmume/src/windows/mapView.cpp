@@ -221,7 +221,7 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
      {
             case WM_INITDIALOG :
                  {
-						MapView = new mapview_struct;
+						MapView = new mapview_struct[1];
 						memset(MapView, 0, sizeof(MapView));
 						MapView->autoup_secs = 5;
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),

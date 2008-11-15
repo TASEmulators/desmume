@@ -43,6 +43,8 @@ typedef struct
 disview_struct		*DisView7 = NULL;
 disview_struct		*DisView9 = NULL;
 
+static	HWND DisViewWnd[2] = {NULL, NULL};
+
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
 LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM lParam)
@@ -290,7 +292,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					SetWindowText(hwnd, "ARM7 Disassembler");
 					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_DES), BM_SETCHECK, TRUE, 0);
-					DisView7 = new disview_struct;
+					DisView7 = new disview_struct[1];
 					memset(DisView7, 0, sizeof(disview_struct));
 					DisView7->cpu = &NDS_ARM7;
 					DisView7->autoup_secs = 5;
@@ -298,6 +300,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETPOS32, 0, DisView7->autoup_secs);
+					DisViewWnd[1] = NULL;
 					return 1;
 				}
             case WM_CLOSE :
@@ -312,6 +315,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						delete DisView7;
 						DisView7 = NULL;
 					}
+					DisViewWnd[1] = NULL;
 					//printlog("Close ARM7 disassembler\n");
 					PostQuitMessage(0);
 					return 1;
@@ -359,12 +363,14 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                         case IDC_AUTO_UPDATE :
                              if(DisView7->autoup)
                              {
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), TRUE);
 								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
 								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
 								 KillTimer(hwnd, IDT_VIEW_DISASM7);
                                   DisView7->autoup = FALSE;
                                   return 1;
                              }
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), FALSE);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              DisView7->autoup = TRUE;
@@ -422,7 +428,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 							return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
-								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								u16 t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
 								if (t != DisView7->autoup_secs)
 								{
 									DisView7->autoup_secs = t;
@@ -430,6 +436,18 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 										SetTimer(hwnd, IDT_VIEW_DISASM7, 
 												DisView7->autoup_secs*1000, (TIMERPROC) NULL);
 								}
+							}
+							return 1;
+						case IDC_AUTOUPDATE_ASM:
+							{
+								if (DisViewWnd[1] == NULL)
+								{
+									EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), FALSE);
+									DisViewWnd[1] = GetDlgItem(hwnd, IDC_DES_BOX);
+									return 1;
+								}
+								DisViewWnd[1] = NULL;
+								EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), TRUE);
 							}
 							return 1;
                         return 1;
@@ -510,7 +528,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					SetWindowText(hwnd, "ARM9 Disassembler");
 					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_DES), BM_SETCHECK, TRUE, 0);
-					DisView9 = new disview_struct;
+					DisView9 = new disview_struct[1];
 					memset(DisView9, 0, sizeof(disview_struct));
 					DisView9->cpu = &NDS_ARM9;
 					DisView9->autoup_secs = 5;
@@ -518,6 +536,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETPOS32, 0, DisView9->autoup_secs);
+					DisViewWnd[0] = NULL;
 					return 1;
 				}
             case WM_CLOSE :
@@ -532,7 +551,8 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						delete DisView9;
 						DisView9 = NULL;
 					}
-					printlog("Close ARM9 disassembler\n");
+					DisViewWnd[0] = NULL;
+					//printlog("Close ARM9 disassembler\n");
 					PostQuitMessage(0);
 					return 1;
 				}
@@ -579,12 +599,14 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                         case IDC_AUTO_UPDATE :
                              if(DisView9->autoup)
                              {
+								 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), TRUE);
 								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
 								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
 								 KillTimer(hwnd, IDT_VIEW_DISASM9);
                                   DisView9->autoup = FALSE;
                                   return 1;
                              }
+							 EnableWindow(GetDlgItem(hwnd, IDC_AUTOUPDATE_ASM), FALSE);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              DisView9->autoup = TRUE;
@@ -642,7 +664,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 							return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
-								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								u16 t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
 								if (t != DisView9->autoup_secs)
 								{
 									DisView9->autoup_secs = t;
@@ -652,10 +674,39 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 								}
 							}
 							return 1;
-                        return 1;
+						case IDC_AUTOUPDATE_ASM:
+							{
+								if (DisViewWnd[0] == NULL)
+								{
+									EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), FALSE);
+									DisViewWnd[0] = GetDlgItem(hwnd, IDC_DES_BOX);
+									return 1;
+								}
+								DisViewWnd[0] = NULL;
+								EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE), TRUE);
+							}
+							return 1;
+						return 1;
                  }
                  return 0;
      }
 
 	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
+void DisassemblerTools_Refresh(u8 proc)
+{
+	if (DisViewWnd[proc] == NULL) return;
+	if (proc == 0)
+	{
+		DisView9->autogo=true;
+		InvalidateRect(DisViewWnd[proc], NULL, FALSE);
+		DisView9->autogo=false;
+	}
+	else
+	{
+		DisView7->autogo=true;
+		InvalidateRect(DisViewWnd[proc], NULL, FALSE);
+		DisView7->autogo=false;
+	}
 }

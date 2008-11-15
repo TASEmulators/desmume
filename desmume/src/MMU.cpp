@@ -256,8 +256,8 @@ void MMU_Init(void) {
 	MMU.MMU_WAIT32[0] = MMU_ARM9_WAIT32;
 	MMU.MMU_WAIT32[1] = MMU_ARM7_WAIT32;
 
-	FIFOclear(MMU.fifos);
-	FIFOclear(MMU.fifos+1);
+	FIFOclear(&MMU.fifos[0]);
+	FIFOclear(&MMU.fifos[1]);
 	
         mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
         mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -312,8 +312,8 @@ void MMU_clearMem()
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
 	
-	FIFOclear(MMU.fifos);
-	FIFOclear(MMU.fifos+1);
+	FIFOclear(&MMU.fifos[0]);
+	FIFOclear(&MMU.fifos[1]);
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -854,7 +854,7 @@ u32 FASTCALL _MMU_read32(u32 adr)
 				//printlog("MMU read32: REG_IPCFIFORECV (%X)\n", cnt_l);
 				if (!(cnt_l & 0x8000)) return 0;	// FIFO disabled
 				u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
-				u32 val = FIFOget(MMU.fifos + proc);
+				u32 val = FIFOget(&MMU.fifos[proc]);
 
 				cnt_l |= (MMU.fifos[proc].empty?0x0100:0) | (MMU.fifos[proc].full?0x0200:0) | (MMU.fifos[proc].error?0x4000:0);
 				cnt_r |= (MMU.fifos[proc].empty?0x0001:0) | (MMU.fifos[proc].full?0x0002:0);
@@ -1789,7 +1789,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 					{
 						/* this is the first init, the other side didnt init yet */
 						/* so do a complete init */
-						FIFOclear(MMU.fifos + proc);
+						FIFOclear(&MMU.fifos[proc]);
 						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184,0x8101) ;
 						/* and then handle it as usual */
 					}
@@ -2448,9 +2448,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 
 			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
-				//printlog("MMU write32: Geometry Engine Status Register (R and R/W)");
-				//printlog("------- val=%X\n\n************\n\n", val);
-
+				//printlog("MMU write32: Geometry Engine Status Register (R and R/W)\n");
 				MMU.fifos[proc].irq = (val>>30) & 0x03;
 				return;
 			}
@@ -2834,7 +2832,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 					//printlog("MMU write32 (%s): REG_IPCFIFOSEND (%X-%X) val=%X\n", proc?"ARM9":"ARM7",cnt_l,cnt_r,val);
 					//FIFOadd(MMU.fifos+(proc^1), val);
-					FIFOadd(MMU.fifos+(proc^1), val);
+					FIFOadd(&MMU.fifos[proc^1], val);
 					cnt_l = (cnt_l & 0xFFFC) | (MMU.fifos[proc^1].full?0x0002:0);
 					cnt_r = (cnt_r & 0xFCFF) | (MMU.fifos[proc^1].full?0x0200:0);
 					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);

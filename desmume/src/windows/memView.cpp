@@ -213,7 +213,7 @@ bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 			{
 				SetWindowText(hwnd, "ARM7 memory viewer");
 				SendMessage(GetDlgItem(hwnd, IDC_8_BIT), BM_SETCHECK, TRUE, 0);
-				MemView7 = new memview_struct;
+				MemView7 = new memview_struct[1];
 				memset(MemView7, 0, sizeof(memview_struct));
 				MemView7->cpu = 1;
 				MemView7->autoup_secs = 5;

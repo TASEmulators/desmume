@@ -89,7 +89,7 @@ BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
      {
             case WM_INITDIALOG :
                  {
-					PalView = new palview_struct;
+					PalView = new palview_struct[1];
 					memset(PalView, 0, sizeof(palview_struct));
 					PalView->adr = (u16 *)ARM9Mem.ARM9_VMEM;
 					PalView->autoup_secs = 5;
