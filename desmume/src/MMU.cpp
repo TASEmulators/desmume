@@ -226,6 +226,8 @@ u32 MMU_ARM7_WAIT16[16]={
 u32 MMU_ARM7_WAIT32[16]={
 	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
 };
+	
+static u8	MMU_VRAMcntSaved[10];
 
 void MMU_Init(void) {
 	int i;
@@ -256,6 +258,8 @@ void MMU_Init(void) {
 	MMU.MMU_WAIT32[0] = MMU_ARM9_WAIT32;
 	MMU.MMU_WAIT32[1] = MMU_ARM7_WAIT32;
 
+	memset(MMU_VRAMcntSaved, 0, sizeof(MMU_VRAMcntSaved[0])*10);
+	
 	FIFOclear(&MMU.fifos[0]);
 	FIFOclear(&MMU.fifos[1]);
 	
@@ -312,6 +316,8 @@ void MMU_clearMem()
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
 	
+	memset(MMU_VRAMcntSaved, 0, sizeof(MMU_VRAMcntSaved[0])*10);
+	
 	FIFOclear(&MMU.fifos[0]);
 	FIFOclear(&MMU.fifos[1]);
 	
@@ -353,6 +359,96 @@ void MMU_clearMem()
         ARM9Mem.textureSlotAddr[3] = &ARM9Mem.ARM9_LCD[0x20000 * 3];
 #endif
 	rtcInit();
+}
+
+// temporary implementations for clearing VRAM (garbage on screen)
+// TODO: rewrite VRAM control
+static u8 MMU_checkVRAM(u8 block, u8 val)
+{
+	u32 size = 0;
+	u8 *destination = NULL;
+
+	if ((val & 0x80))
+	{
+		MMU_VRAMcntSaved[block] = val;
+		return 1;
+	}
+
+	if (MMU_VRAMcntSaved[block] == 0) return 2;
+
+	switch (MMU_VRAMcntSaved[block] & 0x07)
+	{
+		case 0:
+			break;
+		case 1:
+			switch (block)
+			{
+				case 0:		// A
+				case 1:		// B
+				case 2:		// C
+				case 3:		// D
+					size = 0x20000 ;
+					destination = ARM9Mem.ARM9_ABG + ((MMU_VRAMcntSaved[block] >> 3) & 3) * 0x20000 ;
+					break;
+				case 4:		// E
+					size = 0x10000;
+					destination = ARM9Mem.ARM9_ABG ;
+					break;
+				case 5:		// F
+				case 6:		// G
+					size = 0x4000;
+					destination = ARM9Mem.ARM9_ABG + 
+									(((MMU_VRAMcntSaved[block] >> 3) & 0x01) * 0x4000) + 
+										(((MMU_VRAMcntSaved[block] >> 4) & 0x1) * 0x10000) ;
+					break;
+				case 8:		// H
+					size = 0x8000;
+					destination = ARM9Mem.ARM9_BBG ;
+					break;
+				case 9:		// I
+					size = 0x4000;
+					destination = ARM9Mem.ARM9_BBG + 0x8000;
+					break ;
+			}
+			break;
+		case 2:
+			switch(block)
+			{
+				case 0:
+				case 1:
+					// banks A,B are in use for OBJ at AOBJ + ofs * 0x20000
+					size = 0x20000;
+					destination = ARM9Mem.ARM9_AOBJ+(((MMU_VRAMcntSaved[block]>>3)&1)*0x20000);
+					break;
+				case 4:		// E
+					size = 0x10000;
+					destination = ARM9Mem.ARM9_AOBJ;
+					break;
+				case 5:
+				case 6:
+					size = 0x4000;
+					destination = ARM9Mem.ARM9_AOBJ+
+									(((MMU_VRAMcntSaved[block]>>3)&1)*0x4000)+
+										(((MMU_VRAMcntSaved[block]>>4)&1)*0x10000);
+					break;
+			}
+			break;
+		case 4:
+			switch(block)
+			{
+				case 2:		// C
+					size = 0x20000;
+					destination = ARM9Mem.ARM9_BBG ;
+					break ;
+				case 3:		// D
+					size = 0x20000;
+					break ;
+			}
+			break;
+	}
+	if (!destination) return 3;
+	memset(destination, 0, size) ;
+	return 0;
 }
 
 /* the VRAM blocks keep their content even when not blended in */
@@ -485,10 +581,6 @@ static void MMU_VRAMWriteBackToLCD(u8 block)
 	if (!destination) return ;
 	if (!source) return ;
 	memcpy(destination,source,size) ;
-	
-	//zero 10/10/08 - if vram is not mapped, then when it is read from, it should be zero
-	//mimic this by clearing it now.
-	memset(source,0,size) ;
 }
 
 static void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
@@ -1091,6 +1183,8 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		case REG_VRAMCNTD:
 			if(proc == ARMCPU_ARM9)
 			{
+				if (MMU_checkVRAM(adr-REG_VRAMCNTA, val) == 1) break;
+
 				MMU_VRAMWriteBackToLCD(adr-REG_VRAMCNTA) ;
 				switch(val & 0x1F)
 				{
