@@ -30,4 +30,6 @@ extern LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wPara
 extern BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewDisasm_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+extern void DisassemblerTools_Refresh(u8 proc);
+
 #endif

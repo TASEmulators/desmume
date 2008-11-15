@@ -72,7 +72,7 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
      switch (message)
      {
             case WM_INITDIALOG :
-				 IORegView = new ioregview_struct;
+				 IORegView = new ioregview_struct[1];
 				 memset(IORegView, 0, sizeof(ioregview_struct));
 				 IORegView->autoup_secs = 5;
 				 SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
