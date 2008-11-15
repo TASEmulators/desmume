@@ -543,7 +543,7 @@ void UpdateRecentRomsMenu()
 		moo.fType = 0;
 		moo.wID = baseid + x;
 		moo.dwTypeData = (LPSTR)tmp.c_str();
-		//printlog("Inserting: %s\n",tmp.c_str());  //Debug
+		printlog("Inserting: %s\n",tmp.c_str());  //Debug
 		InsertMenuItem(recentromsmenu, 0, 1, &moo);
 	}
 	//-----------------------------------------------------------------------
@@ -573,19 +573,19 @@ void UpdateRecentRoms(char* filename)
 		}
 	}
 	//----------------------------------------------------------------
-	RecentRoms.insert(RecentRoms.begin(), newROM);	//Add to the array
-	
 	//If there was a match, remove it
 	if (match)
 		RecentRoms.erase(theMatch);
 	
+	RecentRoms.insert(RecentRoms.begin(), newROM);	//Add to the array
+
 	//If over the max, we have too many, so remove the last entry
 	if (RecentRoms.size() == MAX_RECENT_ROMS)	
 		RecentRoms.pop_back();
 
 	//Debug
-	//for (int x = 0; x < RecentRoms.size(); x++)
-	//	printlog("Recent ROM: %s\n",RecentRoms[x].c_str());
+	for (int x = 0; x < RecentRoms.size(); x++)
+		printlog("Recent ROM: %s\n",RecentRoms[x].c_str());
 
 	UpdateRecentRomsMenu();
 }
@@ -1041,7 +1041,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
     if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
 	{
 		printlog("Loading %s was successful\n",filename);
-		//UpdateRecentRoms(filename);
+		UpdateRecentRoms(filename);
 		return TRUE;		
 	}
 	printlog("Loading %s FAILED.\n",filename);
