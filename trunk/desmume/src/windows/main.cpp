@@ -28,6 +28,7 @@
 #include <commdlg.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
 #include <sstream>
 #include "CWindow.h"
 #include "../MMU.h"
@@ -66,6 +67,17 @@
 
 #define GPU3D_NULL 0
 #define GPU3D_OPENGL 1
+
+using namespace std;
+
+//----Recent ROMs menu globals----------
+vector<string> RecentRoms;					//The list of recent ROM filenames
+const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
+unsigned int baseid = 600;					//Base identifier for the recent ROMs items
+static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
+//--------------------------------------
+
+static HMENU mainMenu; //Holds handle to the main DeSmuME menu
 
 //------todo move these into a generic driver api
 bool DRV_AviBegin(const char* fname);
@@ -178,9 +190,9 @@ bool frameCounterDisplay = false;
 bool FpsDisplay = false;
 unsigned short windowSize = 0;
 
-unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
-std::stringstream MessageToDisplay; //temp variable to store message that will be displayed via DisplayMessage function
-int displayMessageCounter = 0;			//Counter to keep track with how long to display messages on screen
+unsigned int lastSaveState = 0;	//Keeps track of last savestate used for quick save/load functions
+stringstream MessageToDisplay;	//temp variable to store message that will be displayed via DisplayMessage function
+int displayMessageCounter = 0;	//Counter to keep track with how long to display messages on screen
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -482,9 +494,142 @@ void translateXY(s32& x, s32& y)
 		y = (tx-192);
 		break;
 	}
+}  
+// END Rotation definitions
+
+void UpdateRecentRomsMenu()
+{
+	//This function will be called to populate the Recent Menu
+	//The array must be in the proper order ahead of time
+
+	//UpdateRecentRoms will always call this
+	//This will be always called by GetRecentRoms on DesMume startup
+	
+	//----------------------------------------------------------------------
+	//Get Menu item info
+	
+	MENUITEMINFO moo;
+	moo.cbSize = sizeof(moo);
+	moo.fMask = MIIM_SUBMENU | MIIM_STATE;
+
+	GetMenuItemInfo(GetSubMenu(mainMenu, 0), ID_FILE_RECENTROM, FALSE, &moo);
+	moo.hSubMenu = recentromsmenu;
+	moo.fState = RecentRoms[0].c_str() ? MFS_ENABLED : MFS_GRAYED;
+	SetMenuItemInfo(GetSubMenu(mainMenu, 0), ID_FILE_RECENTROM, FALSE, &moo);
+
+	//-----------------------------------------------------------------------
+
+	//-----------------------------------------------------------------------
+	//Clear the current menu items
+	for(int x = 0; x < MAX_RECENT_ROMS; x++)
+	{
+		RemoveMenu(recentromsmenu, baseid + x, MF_BYCOMMAND);
+	}
+	
+	//-----------------------------------------------------------------------
+	//Update the list using RecentRoms vector
+	for(int x = RecentRoms.size()-1; x >= 0; x--)	//Must loop in reverse order since InsertMenuItem will insert as the first on the list
+	{
+		//Let's Limit the Displayed Rom name to 128 characters
+		string tmp = RecentRoms[x];
+		if(tmp.size()>128)
+			tmp = tmp.substr(0,128);
+		
+		moo.cbSize = sizeof(moo);
+		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
+
+		moo.cch = tmp.size();
+		moo.fType = 0;
+		moo.wID = baseid + x;
+		moo.dwTypeData = (LPSTR)tmp.c_str();
+		//printlog("Inserting: %s\n",tmp.c_str());  //Debug
+		InsertMenuItem(recentromsmenu, 0, 1, &moo);
+	}
+	//-----------------------------------------------------------------------
+
+	HWND temp = MainWindow->getHWnd();
+	DrawMenuBar(temp);
 }
-     
- // END Rotation definitions
+
+void UpdateRecentRoms(char* filename)
+{
+	//This function assumes filename is a ROM filename that was successfully loaded
+	
+	string newROM = filename; //Convert to std::string
+	
+	//--------------------------------------------------------------
+	//Check to see if filename is in list
+	vector<string>::iterator x;
+	vector<string>::iterator theMatch;
+	bool match = false;
+	for (x = RecentRoms.begin(); x < RecentRoms.end(); ++x)
+	{
+		if (newROM == *x)
+		{
+			//We have a match
+			match = true;	//Flag that we have a match
+			theMatch = x;	//Hold on to the iterator	(Note: the loop continues, so if for some reason we had a duplicate (which wouldn't happen under normal circumstances, it would pick the last one in the list)
+		}
+	}
+	//----------------------------------------------------------------
+	RecentRoms.insert(RecentRoms.begin(), newROM);	//Add to the array
+	
+	//If there was a match, remove it
+	if (match)
+		RecentRoms.erase(theMatch);
+	
+	//If over the max, we have too many, so remove the last entry
+	if (RecentRoms.size() == MAX_RECENT_ROMS)	
+		RecentRoms.pop_back();
+
+	//Debug
+	//for (int x = 0; x < RecentRoms.size(); x++)
+	//	printlog("Recent ROM: %s\n",RecentRoms[x].c_str());
+
+	UpdateRecentRomsMenu();
+}
+
+void GetRecentRoms()
+{
+	//This function retrieves the recent ROMs stored in the .ini file
+	//Then is populates the RecentRomsMenu array
+	//Then it calls Update RecentRomsMenu() to populate the menu
+	
+	stringstream temp;
+	char tempstr[256];
+	
+	//Loops through all available recent slots
+	for (int x = 0; x < MAX_RECENT_ROMS; x++)
+	{
+		temp.str("");
+		temp << "Recent Rom " << (x+1);
+		
+		GetPrivateProfileString("General",temp.str().c_str(),"", tempstr, 256, IniName);
+		if (tempstr[0])
+			RecentRoms.push_back(tempstr);
+	}
+	UpdateRecentRomsMenu();
+}
+
+void SaveRecentRoms()
+{
+	//This function stores the RecentRomsMenu array to the .ini file
+	
+	stringstream temp;
+	
+	//Loops through all available recent slots
+	for (int x = 0; x < MAX_RECENT_ROMS; x++)
+	{
+		temp.str("");
+		temp << "Recent Rom " << (x+1);
+		if (x < RecentRoms.size())	//If it exists in the array, save it
+			 WritePrivateProfileString("General",temp.str().c_str(),RecentRoms[x].c_str(),IniName);
+		else						//Else, make it empty
+			WritePrivateProfileString("General",temp.str().c_str(), "",IniName);
+	}
+}
+
+
 
 int CreateDDrawBuffers()
 {
@@ -644,7 +789,7 @@ void DisplayMessage()
 {
 	if (displayMessageCounter)
 	{
-		//By using stringstream, it leaves open the possibility to keep a series of message in queue
+		//adelikat - By using stringstream, it leaves open the possibility to keep a series of message in queue
 		displayMessageCounter--;
 		osd->addFixed(0, 40, "%s",MessageToDisplay.str().c_str());
 	}
@@ -890,11 +1035,15 @@ void StateLoadSlot(int num)
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 {
     NDS_Pause();
-	if (strcmp(filename,"")!=0) printlog("Loading ROM: %s\n",filename);
+	if (strcmp(filename,"")!=0) printlog("Atetmpting to load ROM: %s\n",filename);
 
     if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
-       return TRUE;
-
+	{
+		printlog("Loading %s was successful\n",filename);
+		//UpdateRecentRoms(filename);
+		return TRUE;		
+	}
+	printlog("Loading %s FAILED.\n",filename);
     return FALSE;
 }
 
@@ -1069,14 +1218,14 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef DEBUG
     LogStart();
 #endif
-
-	if (!MainWindow->setMenu(LoadMenu(hThisInstance, "MENU_PRINCIPAL")))
+	mainMenu = LoadMenu(hThisInstance, "MENU_PRINCIPAL"); //Load Menu, and store handle
+	if (!MainWindow->setMenu(mainMenu))
 	{
 		MessageBox(NULL, "Error creating main menu", "DeSmuME", MB_OK);
 		delete MainWindow;
 		exit(-1);
 	}
-
+	
 	// menu checks
 	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
 
@@ -1094,6 +1243,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
+	recentromsmenu = CreateMenu(); //Create recent Roms menu
+	GetRecentRoms();			   //Populate the recent roms menu
+	
 	printlog("Init NDS\n");
 
 	input = new INPUTCLASS();
@@ -1409,12 +1561,30 @@ static void AviRecordTo()
 	NDS_UnPause();
 }
 
+void OpenRecentROM(int listNum)
+{
+	if (listNum > MAX_RECENT_ROMS) return; //Just in case
+	char filename[MAX_PATH];
+	strcpy(filename, RecentRoms[listNum].c_str());
+	printlog("Attempting to load %s\n",filename);
+	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+    {
+		EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+        EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
+        EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+        EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+        romloaded = TRUE;
+	}     
+	
+	NDS_UnPause();
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
 	static int tmp_execute;
     switch (message)                  // handle the messages
-    {
+	{
 		/*case WM_ENTERMENULOOP:		// temporally removed it (freezes)
 			{
 				if (execute)
@@ -1459,9 +1629,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			if ( (windowSize > 0) && (windowSize < 5) )	ScaleScreen(hwnd, windowSize);
 			
-			return 0;
 			
-	     }
+
+			return 0;
+		}
         case WM_DESTROY:
 		case WM_CLOSE:
 			{
@@ -1481,7 +1652,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			 
 			 //Save frame counter status
 			 WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
-
+			 SaveRecentRoms();
              NDS_DeInit();
              ExitRunLoop();
              return 0;
@@ -1565,7 +1736,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              return 0;
 
 		case WM_COMMAND:
-             switch(LOWORD(wParam))
+            if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
+			{
+				wParam &= 0xFFFF;
+
+				// A menu item from the recent files menu was clicked.
+				if(wParam >= baseid && wParam <= baseid + MAX_RECENT_ROMS - 1)
+				{
+					int x = wParam - baseid;
+					OpenRecentROM(x);					
+				} 
+			}
+			switch(LOWORD(wParam))
              {
 				case IDM_QUIT:
 					DestroyWindow(hwnd);
@@ -2248,8 +2430,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			break;
 
-        }
-             return 0;
+		}
+		
+            // return 0;
         default:                      /* for messages that we don't deal with */
             return DefWindowProc (hwnd, message, wParam, lParam);
     }
