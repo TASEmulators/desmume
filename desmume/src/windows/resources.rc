@@ -86,11 +86,12 @@ MENU_PRINCIPAL MENU
 BEGIN
     POPUP "&Fil"
     BEGIN
-        MENUITEM "&Åbn...\tCtrl O",             IDM_OPEN
-        MENUITEM "Rom &Info",                   IDM_GAME_INFO
+        MENUITEM "&Åbn ROM...\tCtrl O",         IDM_OPEN
+        MENUITEM "Frisk ROM",                   ID_FILE_RECENTROM
+        MENUITEM "ROM &Info",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
-        MENUITEM "Gem Stadie Som",              IDM_STATE_SAVE
-        MENUITEM "Indlæs Stadie Som",           IDM_STATE_LOAD
+        MENUITEM "Gem Stadie Som...",           IDM_STATE_SAVE
+        MENUITEM "Indlæs Stadie Som...",        IDM_STATE_LOAD
         POPUP "Gem Stadie"
         BEGIN
             MENUITEM "1",                           IDM_STATE_SAVE_F1
@@ -120,10 +121,10 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Importere Backup Hukommelse", IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
-        MENUITEM "Gem Skærmbillede &Som",       IDM_PRINTSCREEN
+        MENUITEM "Gem Skærmbillede &Som...",    IDM_PRINTSCREEN
         MENUITEM "&Hurtigt Skærmbillede",       IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
-        MENUITEM "&Afslut",                     IDM_QUIT
+        MENUITEM "&Afslut\tAlt F4",             IDM_QUIT
     END
     POPUP "&Emulation"
     BEGIN
@@ -682,11 +683,12 @@ MENU_PRINCIPAL MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Open...\tCtrl O",            IDM_OPEN
-        MENUITEM "Rom &Info",                   IDM_GAME_INFO
+        MENUITEM "&Open ROM...\tCtrl O",        IDM_OPEN
+        MENUITEM "&Recent ROM",                 ID_FILE_RECENTROM
+        MENUITEM "ROM &Info",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
-        MENUITEM "Save State As",               IDM_STATE_SAVE
-        MENUITEM "Load State As",               IDM_STATE_LOAD
+        MENUITEM "Save State As...",            IDM_STATE_SAVE
+        MENUITEM "Load State As...",            IDM_STATE_LOAD
         POPUP "Save State"
         BEGIN
             MENUITEM "1",                           IDM_STATE_SAVE_F1
@@ -716,13 +718,13 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory",        IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
-        MENUITEM "Save Screenshot &As",         IDM_PRINTSCREEN
+        MENUITEM "Save Screenshot &As...",      IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
         MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
         MENUITEM "Stop AVI",                    IDM_FILE_STOPAVI
         MENUITEM SEPARATOR
-        MENUITEM "&Quit",                       IDM_QUIT
+        MENUITEM "&Quit\tAlt F4",               IDM_QUIT
     END
     POPUP "&Emulation"
     BEGIN
@@ -1432,11 +1434,12 @@ MENU_PRINCIPAL MENU
 BEGIN
     POPUP "&Fichier"
     BEGIN
-        MENUITEM "&Ouvrir...\tCtrl O",          IDM_OPEN
-        MENUITEM "&Info rom",                   IDM_GAME_INFO
+        MENUITEM "&Ouvrir ROM...\tCtrl O",      IDM_OPEN
+        MENUITEM "Frais ROM",                   ID_FILE_RECENTROM
+        MENUITEM "&Info ROM",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
-        MENUITEM "Save State As",               IDM_STATE_SAVE
-        MENUITEM "Load State As",               IDM_STATE_LOAD
+        MENUITEM "Save State As...",            IDM_STATE_SAVE
+        MENUITEM "Load State As...",            IDM_STATE_LOAD
         POPUP "Save State"
         BEGIN
             MENUITEM "1",                           IDM_STATE_SAVE_F1
@@ -1466,10 +1469,10 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory",        IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
-        MENUITEM "Save Screenshot &As",         IDM_PRINTSCREEN
+        MENUITEM "Save Screenshot &As...",      IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
-        MENUITEM "&Quitter",                    IDM_QUIT
+        MENUITEM "&Quitter\tAlt F4",            IDM_QUIT
     END
     POPUP "&Emulation"
     BEGIN
