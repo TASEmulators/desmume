@@ -1045,7 +1045,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 		return TRUE;		
 	}
 	printlog("Loading %s FAILED.\n",filename);
-    return FALSE;
+	return FALSE;
 }
 
 /*
@@ -1383,25 +1383,27 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     // Make sure any quotes from lpszArgument are removed
     if (lpszArgument[0] == '\"')
        sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
-
-    if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
-    {
-       EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
-       EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-       EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
-       EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
-       EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-       romloaded = TRUE;
-       NDS_UnPause();
-    }
-    else
-    {
-       EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
-       EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
-       EnableMenuItem(menu, IDM_RESET, MF_GRAYED);
-       EnableMenuItem(menu, IDM_GAME_INFO, MF_GRAYED);
-       EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
-    }
+	if (lpszArgument[0])
+	{
+		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
+		{
+		   EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
+		   EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
+		   EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
+		   EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
+		   EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		   romloaded = TRUE;
+		   NDS_UnPause();
+		}
+		else
+		{
+		   EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
+		   EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
+		   EnableMenuItem(menu, IDM_RESET, MF_GRAYED);
+		   EnableMenuItem(menu, IDM_GAME_INFO, MF_GRAYED);
+		   EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
+		}
+	}
 
     MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
     MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
@@ -1739,14 +1741,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case WM_COMMAND:
             if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
 			{
-				wParam &= 0xFFFF;
+				//wParam &= 0xFFFF;
 
 				// A menu item from the recent files menu was clicked.
 				if(wParam >= baseid && wParam <= baseid + MAX_RECENT_ROMS - 1)
 				{
 					int x = wParam - baseid;
 					OpenRecentROM(x);					
-				} 
+				}
+				
 			}
 			switch(LOWORD(wParam))
              {
