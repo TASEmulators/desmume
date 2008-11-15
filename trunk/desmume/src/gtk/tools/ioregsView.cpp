@@ -33,7 +33,7 @@ static reg_t *current_reg[2] = {NULL, NULL};
 
 #define BIT_CHECK(w, n, s) { \
 	char _bit_check_buf[64]; \
-	sprintf(_bit_check_buf, "Bit %d: %s", n,s); \
+	snprintf(_bit_check_buf, ARRAY_SIZE(_bit_check_buf), "Bit %d: %s", n,s); \
 	_wl_[w] = gtk_check_button_new_with_label(_bit_check_buf ); \
 	gtk_box_pack_start(GTK_BOX(mVbox0[c]), _wl_[w], FALSE, FALSE, 0); }
 
@@ -41,7 +41,7 @@ static reg_t *current_reg[2] = {NULL, NULL};
 	_wl_[w] = gtk_hbox_new(FALSE, 0); \
 	gtk_box_pack_start(GTK_BOX(mVbox0[c]), _wl_[w], FALSE, FALSE, 0); } \
 	char _bit_combo_buf[64]; \
-	sprintf(_bit_combo_buf, "Bits %s: %s", n,s); \
+	snprintf(_bit_combo_buf, ARRAY_SIZE(_bit_combo_buf), "Bits %s: %s", n,s); \
 	GtkWidget *__combo_lbl_tmp = gtk_label_new(_bit_combo_buf); \
 	GtkWidget *__combo_tmp = gtk_combo_box_new_text(); \
 	
@@ -92,7 +92,7 @@ static const char *interrupt_strings[25] =
 	"IPC Sync",		// 16
 	"IPC Send FIFO empty",		// 17
 	"IPC Recv FIFO not empty",		// 18
-	"Card Data Transfer Completion (DS-card slot)",		// 29
+	"Card Data Transfer Completion (DS-card slot)",		// 19
 	"Card IREQ_MC (DS-card slot)",		// 20
 	"Geometry (3D) command FIFO",		// 21
 	"Screens unfolding",		// 22
@@ -343,6 +343,7 @@ static void _clearContainer(GtkWidget *widget, gpointer data)
 static void selected_reg(GtkWidget* widget, gpointer data)
 {
 	int c = GPOINTER_TO_INT(data);
+	gchar *regInfosBuffer;
 
 	guint active = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
 		
@@ -353,22 +354,19 @@ static void selected_reg(GtkWidget* widget, gpointer data)
 	
 // 	gtk_box_pack_start(GTK_BOX(mVbox0[c]), mIoRegCombo[c], FALSE, FALSE, 0);
 	
-	char regInfosBuffer[64];
-	
-	if(current_reg[c]->size == BITS_8)
-	{
-		sprintf(regInfosBuffer, "0x%02lX", current_reg[c]->value(c));
-	}
-	else if(current_reg[c]->size == BITS_16)
-	{
-		sprintf(regInfosBuffer, "0x%04lX", current_reg[c]->value(c));
-	}
-	else
-	{
-		sprintf(regInfosBuffer, "0x%08lX", current_reg[c]->value(c));
-	}
+	switch (current_reg[c]->size) {
+	case BITS_8:
+		regInfosBuffer = g_strdup_printf("0x%02lX", current_reg[c]->value(c));
+		break;
+	case BITS_16:
+		regInfosBuffer = g_strdup_printf("0x%04lX", current_reg[c]->value(c));
+		break;
+	default:
+		regInfosBuffer = g_strdup_printf("0x%08lX", current_reg[c]->value(c));
+	}	
 // 	gtk_box_pack_start(GTK_BOX(mVbox0[c]), mRegInfos[c], FALSE, FALSE, 0);
 	gtk_label_set_label(GTK_LABEL(mRegInfos[c]), regInfosBuffer);
+	g_free(regInfosBuffer);
 
 	current_reg[c]->create(c);
 	current_reg[c]->update(c);
@@ -380,8 +378,6 @@ static int DTOOL_ID;
 
 static void close()
 {
-	DTOOL_LOG("Close\n");
-	
 	dTool_CloseCallback(DTOOL_ID);
 }
 
@@ -433,9 +429,10 @@ static void open(int ID)
 		
 		for(i = 0; i < GET_REG_LIST_SIZE(c); i++)
 		{
-			char reg_name_buffer[64];
-			sprintf(reg_name_buffer, "0x%08lX : %s (%s)", GET_REG_LIST(c)[i].adress, GET_REG_LIST(c)[i].name, bits_strings[GET_REG_LIST(c)[i].size]);
+			gchar *reg_name_buffer;
+			reg_name_buffer = g_strdup_printf("0x%08lX : %s (%s)", GET_REG_LIST(c)[i].adress, GET_REG_LIST(c)[i].name, bits_strings[GET_REG_LIST(c)[i].size]);
 			gtk_combo_box_append_text(GTK_COMBO_BOX(mIoRegCombo[c]), reg_name_buffer);
+			g_free(reg_name_buffer);
 		}
 		
 		gtk_combo_box_set_active(GTK_COMBO_BOX(mIoRegCombo[c]), 0);

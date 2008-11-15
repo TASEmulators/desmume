@@ -1,9 +1,6 @@
 #ifndef __DTOOL_H__ 
 #define __DTOOL_H__
 
-#include <stdio.h>
-#define DTOOL_LOG(...) fprintf(stderr, __VA_ARGS__);
-
 #include "../types.h"
 #include "../registers.h"
 
@@ -17,7 +14,6 @@ typedef struct
 	dTool_openFn open;
 	dTool_updateFn update;
 	dTool_closeFn close;
-	
 } dTool_t;
 
 extern void dTool_CloseCallback(int id);
