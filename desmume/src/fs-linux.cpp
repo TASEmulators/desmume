@@ -37,42 +37,38 @@ void * FsReadFirst(const char * path, FsEntry * entry) {
 	FsLinuxDir * dir;
 	struct dirent * e;
 	struct stat s;
-	char buffer[1024];
+	char buffer[512+1]; /* DirSpec[256] + '/' + dirent.d_name[256] */
 	DIR * tmp;
+
+	dir = (FsLinuxDir*)malloc(sizeof(FsLinuxDir));
+	if (!dir)
+		return NULL;
 
 	tmp = opendir(path);
 	if (!tmp)
 		return NULL;
+	dir->dir = tmp;
 
 	e = readdir(tmp);
 	if (!e) {
 		closedir(tmp);
 		return NULL;
 	}
-
-	dir = (FsLinuxDir*)malloc(sizeof(FsLinuxDir));
-	if (!dir) {
-		closedir(tmp);
-		return NULL;
-	}
-	dir->dir = tmp;
-
 	strcpy(entry->cFileName, e->d_name);
 	// there's no 8.3 file names support on linux :)
 	strcpy(entry->cAlternateFileName, "");
 	entry->flags = 0;
 
 	dir->path = strdup(path);
-
 	sprintf(buffer, "%s/%s", dir->path, e->d_name);
 
 	stat(buffer, &s);
 	if (S_ISDIR(s.st_mode)) {
 		entry->flags = FS_IS_DIR;
-                entry->fileSize = 0;
+		entry->fileSize = 0;
 	} else {
-          entry->fileSize = s.st_size;
-        }
+		entry->fileSize = s.st_size;
+	}
 
 	return dir;
 }
