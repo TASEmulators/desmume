@@ -989,19 +989,25 @@ DWORD WINAPI run()
 
 void NDS_Pause()
 {
-   execute = FALSE;
-   paused = TRUE;
-   SPU_Pause(1);
-   while (!paused) {}
-   printlog("Paused\n");
+	if (!paused)
+	{
+		execute = FALSE;
+		paused = TRUE;
+		SPU_Pause(1);
+		while (!paused) {}
+		printlog("Paused\n");
+	}
 }
 
 void NDS_UnPause()
 {
-   paused = FALSE;
-   execute = TRUE;
-   SPU_Pause(0);
-   printlog("Unpaused\n");
+   if (romloaded && paused)
+   {
+		paused = FALSE;
+		execute = TRUE;
+		SPU_Pause(0);
+		printlog("Unpaused\n");
+   }
 }
 
 void StateSaveSlot(int num)
@@ -1693,8 +1699,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                      EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
                      EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
                      romloaded = TRUE;
-                     NDS_UnPause();
                   }
+				  NDS_UnPause();
              }
              return 0;
         case WM_MOUSEMOVE:
