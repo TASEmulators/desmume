@@ -24,6 +24,38 @@
 #include "AboutBox.h"
 #include "resource.h"
 
+#define TEAM	30
+const char	*team[TEAM] = { "Original author",
+							"---------------",
+							"yopyop",
+							"",
+							"Current team",
+							"------------",
+							"Guillaume Duhamel",
+							"Normmatt",
+							"Bernat Muñoz (shash)",
+							"thoduv",
+							"Tim Seidel (Mighty Max)",
+							"Pascal Giard (evilynux)",
+							"Ben Jaques (masscat)",
+							"Jeff Bland",
+							"Andres Delikat",
+							"Riccardo Magliocchetti",
+							"Max Tabachenko (CrazyMax/mtabachenko)",
+							"Zeromus",
+							"",
+							"Contributors",
+							"------------",
+							"Allustar",
+							"amponzi",
+							"Anthony Molinaro",
+							"ape",
+							"Damien Nozay (damdoum)",
+							"delfare",
+							"Romain Vallet",
+							"snkmad",
+							"Theo Berkau"};
+
 
 BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lparam)
 {
@@ -31,7 +63,15 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 	{
 		case WM_INITDIALOG: 
 		{
-			SetDlgItemText(dialog, IDC_AUTHORS_LIST, "Original author\n---------------\nyopyop\n\nCurrent team\n------------\nAllustar\namponzi\nape\ndelfare\nGuillaume Duhamel\nNormmatt\nRomain Vallet\nBernat Muñoz (shash)\nTheo Berkau\nthoduv\nTim Seidel (Mighty Max)\nDamien Nozay (damdoum)\nPascal Giard (evilynux)\nBen Jaques (masscat)\nJeff Bland\nzeromus\nadelikat\n\nContributors\n------------\nAnthony Molinaro\nsnkmad");
+			char buf[2048];
+			memset(buf, 0, sizeof(buf));
+			for (int i = 0; i < TEAM; i++)
+			{
+				strcat(buf,team[i]);
+				strcat(buf,"\n");
+			}
+
+			SetDlgItemText(dialog, IDC_AUTHORS_LIST, buf);
 			break;
 		}
 	
