@@ -654,7 +654,6 @@ static void setTexture(unsigned int format, unsigned int texpal)
 				unsigned short * slot1;
 				unsigned int * map = (unsigned int *)adr;
 				unsigned int d = 0;
-				unsigned int * dst = (unsigned int *)texMAP;
 				if ( (texcache[i].frm & 0xc000) == 0x8000)
 					// texel are in slot 2
 					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
@@ -727,18 +726,15 @@ static void setTexture(unsigned int format, unsigned int texpal)
 								u32 currentPos = (x<<2) + tmpPos[sy];
 								u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
 
-								dst[currentPos] = tmp_col[currRow&3];
-								dst[currentPos+1] = tmp_col[(currRow>>2)&3];
-								dst[currentPos+2] = tmp_col[(currRow>>4)&3];
-								dst[currentPos+3] = tmp_col[(currRow>>6)&3];
+								dwdst[currentPos] = tmp_col[currRow&3];
+								dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
+								dwdst[currentPos+2] = tmp_col[(currRow>>4)&3];
+								dwdst[currentPos+3] = tmp_col[(currRow>>6)&3];
 
 								if(dead) {
-									dst[currentPos] = 0;
-									dst[currentPos+1] = 0;
-									dst[currentPos+2] = 0;
-									dst[currentPos+3] = 0;
+									memset(dwdst, 0, sizeof(dwdst[0]) * 4);
 								}
-								
+
 								txt_slot_current_size-=4;;
 								if (txt_slot_current_size<=0)
 								{
@@ -770,16 +766,14 @@ static void setTexture(unsigned int format, unsigned int texpal)
 			case 7: //16bpp
 			{
 				unsigned short * map = ((unsigned short *)adr);
-				unsigned int * dst = (unsigned int *)texMAP;
 				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
 				
 				for(x = 0; x < imageSize; ++x)
 				{
 					u16 c = map[x];
 					int alpha = ((c&0x8000)?255:0);
-					*dst = RGB15TO32(c&0x7FFF,alpha);
+					*dwdst++ = RGB15TO32(c&0x7FFF,alpha);
 					
-					dst++;
 					txt_slot_current_size-=2;;
 					if (txt_slot_current_size<=0)
 					{
