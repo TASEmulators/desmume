@@ -302,11 +302,19 @@ void debug()
 
 #define DSGBA_EXTENSTION ".ds.gba"
 #define DSGBA_LOADER_SIZE 512
+#define NDS_MAGIC_NUMBER_OFFSET 192
 enum
 {
 	ROM_NDS = 0,
 	ROM_DSGBA
 };
+
+static int NDS_check_ds_rom(u8 * data)
+{
+   const char ds_magic[7] = "\044\377\256Qi\232";
+
+   return memcmp(data+NDS_MAGIC_NUMBER_OFFSET, ds_magic, 6);
+}
 
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
                  const char *cflash_disk_image_file)
@@ -346,18 +354,19 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
    }
    size = reader->Size(file);
 
-   if (size < 1) {
-      reader->DeInit(file);
-      free(noext);
-      return -1;
-   }
-
    if(type == ROM_DSGBA)
    {
       reader->Seek(file, DSGBA_LOADER_SIZE, SEEK_SET);
       size -= DSGBA_LOADER_SIZE;
    }
-	
+
+   /* check that size is at least the size of the header */
+   if (size < 352+160) {
+      reader->DeInit(file);
+      free(noext);
+      return -1;
+   }
+
    mask = size;
    mask |= (mask >>1);
    mask |= (mask >>2);
@@ -381,6 +390,14 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
    reader->DeInit(file);
    MMU_unsetRom();
    NDS_SetROM(data, mask);
+
+   if (NDS_check_ds_rom(data) != 0) {
+      MMU_unsetRom();
+      free(noext);
+      free(data);
+      return -1;
+   }
+
    NDS_Reset();
 
    /* I guess any directory can be used
