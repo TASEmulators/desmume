@@ -45,7 +45,7 @@ static u32
 calc_CRC16( u32 start, const u8 *data, int count) {
   int i,j;
   u32 crc = start & 0xffff;
-  static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+  const u16 val[8] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
   for(i = 0; i < count; i++)
   {
     crc = crc ^ data[i];
