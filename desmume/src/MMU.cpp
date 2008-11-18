@@ -1183,6 +1183,24 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		case REG_VRAMCNTD:
 			if(proc == ARMCPU_ARM9)
 			{
+                //
+                // FIXME: simply texture slot handling
+                // This is a first stab and is not correct. It does
+                // not handle a VRAM texture slot becoming
+                // unconfigured.
+                // Revisit all of VRAM control handling for future
+                // release?
+                //
+                if ( val & 0x80) {
+                  if ( (val & 0x7) == 3) {
+                    int slot_index = (val >> 3) & 0x3;
+
+                    ARM9Mem.textureSlotAddr[slot_index] =
+                      &ARM9Mem.ARM9_LCD[0x20000 * (adr - REG_VRAMCNTA)];
+					
+					gpu3D->NDS_3D_VramReconfigureSignal();
+                  }
+                }
 				if (MMU_checkVRAM(adr-REG_VRAMCNTA, val) == 1) break;
 
 				MMU_VRAMWriteBackToLCD(adr-REG_VRAMCNTA) ;
@@ -1212,24 +1230,6 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
                     MMU.vram_mode[adr-REG_VRAMCNTA] = 4 | (adr-REG_VRAMCNTA) ;
 					break ;
 				}
-                                //
-                                // FIXME: simply texture slot handling
-                                // This is a first stab and is not correct. It does
-                                // not handle a VRAM texture slot becoming
-                                // unconfigured.
-                                // Revisit all of VRAM control handling for future
-                                // release?
-                                //
-                                if ( val & 0x80) {
-                                  if ( (val & 0x7) == 3) {
-                                    int slot_index = (val >> 3) & 0x3;
-
-                                    ARM9Mem.textureSlotAddr[slot_index] =
-                                      &ARM9Mem.ARM9_LCD[0x20000 * (adr - REG_VRAMCNTA)];
-									
-									gpu3D->NDS_3D_VramReconfigureSignal();
-                                  }
-                                }
                 MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
 			}
 			break;
