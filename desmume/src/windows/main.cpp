@@ -2243,7 +2243,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0;   
                   case IDC_SAVETYPE3:
                        clearsaver();
-                       saver(IDC_SAVETYPE2);
+                       saver(IDC_SAVETYPE3);
                        mmu_select_savetype(2,&backupmemorytype,&backupmemorysize);
                   return 0;   
                   case IDC_SAVETYPE4:
