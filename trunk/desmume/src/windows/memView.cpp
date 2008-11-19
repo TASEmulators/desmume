@@ -279,6 +279,10 @@ bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!MemView7) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != MemView7->autoup_secs)
 								{
 									MemView7->autoup_secs = t;
@@ -460,6 +464,10 @@ bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!MemView9) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != MemView9->autoup_secs)
 								{
 									MemView9->autoup_secs = t;

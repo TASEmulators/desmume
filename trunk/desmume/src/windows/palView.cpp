@@ -186,6 +186,10 @@ BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!PalView) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != PalView->autoup_secs)
 								{
 									PalView->autoup_secs = t;

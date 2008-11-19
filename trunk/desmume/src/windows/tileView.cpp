@@ -443,6 +443,10 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!TileView) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != TileView->autoup_secs)
 								{
 									TileView->autoup_secs = t;

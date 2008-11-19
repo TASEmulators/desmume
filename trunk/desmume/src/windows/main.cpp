@@ -2219,37 +2219,52 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					  osd->clear();
 				  return 0;
 
-                  #define saver(one,two,three,four,five, six) \
-                  MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | one); \
-                  MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | two); \
-                  MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | three); \
-                  MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | four); \
-                  MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | five); \
-                  MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | six);
+                  #define clearsaver() \
+                  MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_UNCHECKED); \
+                  MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED); \
+                  MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED); \
+                  MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED); \
+                  MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED); \
+                  MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED); \
+				  MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED); 
+				  
+				  #define saver(one) \
+				  MainWindow->checkMenu(one, MF_BYCOMMAND | MF_CHECKED); 
                   
                   case IDC_SAVETYPE1:
-                       saver(MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
+					   clearsaver();
+                       saver(IDC_SAVETYPE1);
                        mmu_select_savetype(0,&backupmemorytype,&backupmemorysize);
                   return 0;
                   case IDC_SAVETYPE2:
-                       saver(MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                       clearsaver();
+                       saver(IDC_SAVETYPE2);
                        mmu_select_savetype(1,&backupmemorytype,&backupmemorysize);
                   return 0;   
                   case IDC_SAVETYPE3:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                       clearsaver();
+                       saver(IDC_SAVETYPE2);
                        mmu_select_savetype(2,&backupmemorytype,&backupmemorysize);
                   return 0;   
                   case IDC_SAVETYPE4:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED,MF_UNCHECKED);
+                       clearsaver();
+                       saver(IDC_SAVETYPE4);
                        mmu_select_savetype(3,&backupmemorytype,&backupmemorysize);
                   return 0;
                   case IDC_SAVETYPE5:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED,MF_UNCHECKED);
+                       clearsaver();
+                       saver(IDC_SAVETYPE5);
                        mmu_select_savetype(4,&backupmemorytype,&backupmemorysize);
                   return 0; 
                   case IDC_SAVETYPE6:
-                       saver(MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_UNCHECKED,MF_CHECKED);
+                       clearsaver();
+                       saver(IDC_SAVETYPE6);
                        mmu_select_savetype(5,&backupmemorytype,&backupmemorysize);
+                  return 0; 
+				  case IDC_SAVETYPE7:
+                       clearsaver();
+                       saver(IDC_SAVETYPE7);
+                       mmu_select_savetype(6,&backupmemorytype,&backupmemorysize);
                   return 0; 
                   
                   case IDM_RESET:

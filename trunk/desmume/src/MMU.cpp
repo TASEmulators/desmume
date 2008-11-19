@@ -39,13 +39,14 @@
 #include "zero_private.h"
 #include "mc.h"
 
-static const int save_types[6][2] = {
+static const int save_types[7][2] = {
         {MC_TYPE_AUTODETECT,1},
         {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
         {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
         {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
-        {MC_TYPE_FLASH,MC_SIZE_256KBITS},
-        {MC_TYPE_FRAM,MC_SIZE_2MBITS}
+        {MC_TYPE_FRAM,MC_SIZE_256KBITS},
+        {MC_TYPE_FLASH,MC_SIZE_2MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
 };
 
 

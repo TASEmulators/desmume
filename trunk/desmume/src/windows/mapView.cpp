@@ -285,6 +285,10 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!MapView) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != MapView->autoup_secs)
 								{
 									MapView->autoup_secs = t;

@@ -161,6 +161,10 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 					case IDC_AUTO_UPDATE_SECS:
 						{
 							int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+							if (!LightsView) 
+							{
+								SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+							}
 							if (t != LightsView->autoup_secs)
 							{
 								LightsView->autoup_secs = t;

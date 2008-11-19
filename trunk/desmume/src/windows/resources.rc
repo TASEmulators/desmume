@@ -17,7 +17,7 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
 #ifdef _WIN32
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-#pragma code_page(1251)
+#pragma code_page(1252)
 #endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
@@ -764,6 +764,7 @@ BEGIN
             MENUITEM "EEPROM 512kbit",              IDC_SAVETYPE4
             MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
             MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
+            MENUITEM "FLASH 4mbit",                 IDC_SAVETYPE7
         END
         MENUITEM "Control Config",              IDM_CONFIG
         MENUITEM "Sound Settings",              IDM_SOUNDSETTINGS

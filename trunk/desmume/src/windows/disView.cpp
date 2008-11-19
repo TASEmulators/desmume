@@ -429,6 +429,10 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								u16 t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!DisView7) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != DisView7->autoup_secs)
 								{
 									DisView7->autoup_secs = t;
@@ -665,6 +669,10 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								u16 t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!DisView9) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != DisView9->autoup_secs)
 								{
 									DisView9->autoup_secs = t;
