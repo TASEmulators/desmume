@@ -1652,8 +1652,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 					((l) >> 2) |
 					((u) >> 1) |
 					((d))	   |
-					((r) << 1) |
-					((l) << 2)) ;
+					((e) << 1) |
+					((w) << 2)) ;
 
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
