@@ -109,9 +109,18 @@ void mc_reset_com(memory_chip_t *mc)
          mc->type = MC_TYPE_FRAM;
          mc->size = MC_SIZE_256KBITS;
       }
+	  else if (mc->autodetectsize == (512+3))
+      {
+         // Flash 4Mbit
+         addr = (mc->autodetectbuf[0] << 16) |
+                    (mc->autodetectbuf[1] << 8) |
+                     mc->autodetectbuf[2];
+         mc->type = MC_TYPE_FLASH;
+         mc->size = MC_SIZE_4MBITS;
+      }
       else if (mc->autodetectsize == (256+3))
       {
-         // Flash
+         // Flash 2Mbit
          addr = (mc->autodetectbuf[0] << 16) |
                     (mc->autodetectbuf[1] << 8) |
                      mc->autodetectbuf[2];
@@ -213,6 +222,8 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
          type = MC_TYPE_EEPROM2;
       else if (size >= MC_SIZE_2MBITS)
          type = MC_TYPE_FLASH;
+	  else if (size >= MC_SIZE_4MBITS)
+         type = MC_TYPE_FLASH;
 
       if (type != -1)
          mc_realloc(mc, type, size);
@@ -258,6 +269,8 @@ int mc_load_duc(memory_chip_t *mc, const char* filename)
       else if (size == MC_SIZE_512KBITS)
          type = MC_TYPE_EEPROM2;
       else if (size >= MC_SIZE_2MBITS)
+         type = MC_TYPE_FLASH;
+	  else if (size >= MC_SIZE_4MBITS)
          type = MC_TYPE_FLASH;
 
       if (type != -1)

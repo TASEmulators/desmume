@@ -289,6 +289,10 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 						case IDC_AUTO_UPDATE_SECS:
 							{
 								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
+								if (!OAMView) 
+								{
+									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
+								}
 								if (t != OAMView->autoup_secs)
 								{
 									OAMView->autoup_secs = t;
