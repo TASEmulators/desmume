@@ -102,6 +102,8 @@ void mc_reset_com(memory_chip_t *mc)
    {
       u32 addr, size;
 
+	  printlog("autodetectsize = %d\n",mc->autodetectsize);
+
       if (mc->autodetectsize == (32768+2))
       {
          // FRAM
@@ -127,14 +129,14 @@ void mc_reset_com(memory_chip_t *mc)
          mc->type = MC_TYPE_FLASH;
          mc->size = MC_SIZE_2MBITS;
       }
-      else if (mc->autodetectsize == (128+2))
+      else if ((mc->autodetectsize == (128+2)) || (mc->autodetectsize == (64+2)) || (mc->autodetectsize == (40+2)))
       {
          // 512 Kbit EEPROM
          addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
          mc->type = MC_TYPE_EEPROM2;
          mc->size = MC_SIZE_512KBITS;
       }
-      else if (mc->autodetectsize == (32+2))
+      else if ((mc->autodetectsize == (32+2)) || (mc->autodetectsize == (16+2)))
       {
          // 64 Kbit EEPROM
          addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
