@@ -618,9 +618,6 @@ int main(int argc, char ** argv) {
   }
 #endif
 
-#ifdef DEBUG
-  LogStart();
-#endif
 #ifdef GDB_STUB
   NDS_Init( arm9_memio, &arm9_ctrl_iface,
             arm7_memio, &arm7_ctrl_iface);
@@ -845,10 +842,6 @@ int main(int argc, char ** argv) {
   if ( my_config.arm7_gdb_port != 0) {
     destroyStub_gdb( arm7_gdb_stub);
   }
-#endif
-
-#ifdef DEBUG
-  LogStop();
 #endif
 
   return 0;

@@ -102,7 +102,7 @@ void mc_reset_com(memory_chip_t *mc)
    {
       u32 addr, size;
 
-	  printlog("autodetectsize = %d\n",mc->autodetectsize);
+	  LOG("autodetectsize = %d\n",mc->autodetectsize);
 
       if (mc->autodetectsize == (32768+2))
       {

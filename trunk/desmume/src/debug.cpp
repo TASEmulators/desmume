@@ -1,6 +1,6 @@
-/*  Copyright 2005 Guillaume Duhamel
+/*  Copyright (C) 2008 Guillaume Duhamel
 
-    This file is part of DeSmuME.
+    This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,140 +20,77 @@
 #include "debug.h"
 
 #include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
 
-//////////////////////////////////////////////////////////////////////////////
+std::vector<Logger *> Logger::channels;
 
-Debug * DebugInit(const char * n, DebugOutType t, char * s) {
-	Debug * d;
-
-        if ((d = (Debug *) malloc(sizeof(Debug))) == NULL)
-           return NULL;
-
-	d->output_type = t;
-
-        if ((d->name = strdup(n)) == NULL)
-        {
-           free(d);
-           return NULL;
-        }
-
-	switch(t) {
-	case DEBUG_STREAM:
-                d->output.stream = fopen(s, "w");
-		break;
-	case DEBUG_STRING:
-		d->output.string = s;
-		break;
-	case DEBUG_STDOUT:
-		d->output.stream = stdout;
-		break;
-	case DEBUG_STDERR:
-		d->output.stream = stderr;
-		break;
-	}
-
-	return d;
+static void defaultCallback(const Logger& logger, const char * message) {
+	logger.getOutput() << message;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void DebugDeInit(Debug * d) {
-        if (d == NULL)
-           return;
-
-	switch(d->output_type) {
-	case DEBUG_STREAM:
-                if (d->output.stream)
-                   fclose(d->output.stream);
-		break;
-	case DEBUG_STRING:
-	case DEBUG_STDOUT:
-	case DEBUG_STDERR:
-		break;
-	}
-        if (d->name)
-           free(d->name);
-	free(d);
+Logger::Logger() {
+	out = &std::cout;
+	callback = defaultCallback;
+	flags = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void Logger::vprintf(const char * format, va_list l, const char * file, unsigned int line) {
+	char buffer[1024];
+	char * cur = buffer;
 
-void DebugChangeOutput(Debug * d, DebugOutType t, char * s) {
-	if (t != d->output_type) {
-		if (d->output_type == DEBUG_STREAM)
-                {
-                   if (d->output.stream)
-			fclose(d->output.stream);
-                }
-		d->output_type = t;
-	}
-	switch(t) {
-	case DEBUG_STREAM:
-		d->output.stream = fopen(s, "w");
-		break;
-	case DEBUG_STRING:
-		d->output.string = s;
-		break;
-	case DEBUG_STDOUT:
-		d->output.stream = stdout;
-		break;
-	case DEBUG_STDERR:
-		d->output.stream = stderr;
-		break;
+	if (flags & Logger::FILE) cur += sprintf(cur, "%s:", file);
+	if (flags & Logger::LINE) cur += sprintf(cur, "%d:", line);
+	if (flags) cur += sprintf(cur, " ");
+
+	::vsnprintf(cur, 1024, format, l);
+	callback(*this, buffer);
+}
+
+void Logger::setOutput(std::ostream * out) {
+	this->out = out;
+}
+
+void Logger::setCallback(void (*callback)(const Logger& logger, const char * message)) {
+	this->callback = callback;
+}
+
+void Logger::setFlag(unsigned int flag) {
+	this->flags = flag;
+}
+
+void Logger::fixSize(unsigned int channel) {
+	while(channel >= channels.size()) {
+		channels.push_back(new Logger());
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////
+std::ostream& Logger::getOutput() const {
+	return *out;
+}
 
-void DebugPrintf(Debug * d, const char * file, u32 line, const char * format, ...) {
+void Logger::log(unsigned int channel, const char * file, unsigned int line, const char * format, ...) {
+	fixSize(channel);
+
 	va_list l;
-
-        if (d == NULL)
-           return;
-
 	va_start(l, format);
-
-	switch(d->output_type) {
-	case DEBUG_STDOUT:
-	case DEBUG_STDERR:
-	case DEBUG_STREAM:
-                if (d->output.stream == NULL)
-                   break;
-		fprintf(d->output.stream, "%s (%s:%ld): ", d->name, file, line);
-		vfprintf(d->output.stream, format, l);
-		break;
-	case DEBUG_STRING:
-		{
-			int i;
-                        if (d->output.string == NULL)
-                           break;
-
-			i = sprintf(d->output.string, "%s (%s:%ld): ", d->name, file, line);
-			vsprintf(d->output.string + i, format, l);
-		}
-		break;
-	}
-
+	channels[channel]->vprintf(format, l, file, line);
 	va_end(l);
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void Logger::log(unsigned int channel, const char * file, unsigned int line, std::ostream& os) {
+	fixSize(channel);
 
-Debug * MainLog;
-
-//////////////////////////////////////////////////////////////////////////////
-
-void LogStart(void) {
-        MainLog = DebugInit("main", DEBUG_STDERR, NULL);
-//        MainLog = DebugInit("main", DEBUG_STREAM, "stdout.txt");
+	channels[channel]->setOutput(&os);
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void Logger::log(unsigned int channel, const char * file, unsigned int line, unsigned int flag) {
+	fixSize(channel);
 
-void LogStop(void) {
-	DebugDeInit(MainLog);
+	channels[channel]->setFlag(flag);
 }
 
-//////////////////////////////////////////////////////////////////////////////
+void Logger::log(unsigned int channel, const char * file, unsigned int line, void (*callback)(const Logger& logger, const char * message)) {
+	fixSize(channel);
+
+	channels[channel]->setCallback(callback);
+}

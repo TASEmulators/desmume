@@ -1460,10 +1460,6 @@ common_gtk_main( struct configured_features *my_config)
 
         bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
 
-#ifdef DEBUG
-        LogStart();
-#endif
-
 #ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
           arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
@@ -1926,9 +1922,6 @@ common_gtk_main( struct configured_features *my_config)
           SDL_DestroySemaphore( fps_limiter_semaphore);
         }
 
-#ifdef DEBUG
-        LogStop();
-#endif
         /* Unload joystick */
         uninit_joy();
 
