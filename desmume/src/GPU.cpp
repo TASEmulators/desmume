@@ -50,6 +50,7 @@
 #include "debug.h"
 #include "render3D.h"
 #include "GPU_osd.h"
+#include "debug.h"
 
 ARM9_struct ARM9Mem;
 

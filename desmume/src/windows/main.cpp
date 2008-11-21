@@ -1223,9 +1223,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
-#ifdef DEBUG
-    LogStart();
-#endif
 	mainMenu = LoadMenu(hThisInstance, "MENU_PRINCIPAL"); //Load Menu, and store handle
 	if (!MainWindow->setMenu(mainMenu))
 	{

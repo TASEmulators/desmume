@@ -394,10 +394,6 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	//g_thread_init(NULL);
 	register_gl_fun(my_gl_Begin,my_gl_End);
 #endif
-
-#ifdef DEBUG
-        LogStart();
-#endif
 	init_keyvals();
 
 #ifdef GDB_STUB
@@ -555,9 +551,6 @@ common_gtk_glade_main( struct configured_features *my_config) {
           SDL_DestroySemaphore( glade_fps_limiter_semaphore);
         }
 
-#ifdef DEBUG
-        LogStop();
-#endif
         /* Unload joystick */
         uninit_joy();
 

@@ -25,7 +25,7 @@
 #define __GPU_OSD_
 
 #include <stdlib.h>
-#include "debug.h"
+#include "types.h"
 
 #define OSD_MAX_LINES	10
 

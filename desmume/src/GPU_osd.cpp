@@ -25,6 +25,7 @@
 #include "mem.h"
 #include <string.h> //mem funcs
 #include <stdarg.h> //va_start, etc
+#include "debug.h"
 
 #include "softrender.h"
 

@@ -1,6 +1,6 @@
-/*  Copyright 2005-2006 Guillaume Duhamel
+/*  Copyright (C) 2008 Guillaume Duhamel
 
-    This file is part of DeSmuME.
+    This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,87 +17,63 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef DEBUG_H
-#define DEBUG_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
-#include "types.h"
-#include <stdio.h>
+#include <vector>
+#include <iostream>
 
-#ifdef _WIN32
-#include "windows/console.h"
-#endif
+class Logger {
+protected:
+	void (*callback)(const Logger& logger, const char * format);
+	std::ostream * out;
+	unsigned int flags;
 
-#if defined(BETA_VERSION) && defined(WIN32)
-void OpenConsole();
-void CloseConsole();
-void printlog(const char *fmt, ...);
-#else
-#define OpenConsole()
-#define CloseConsole()
-#define printlog(...)
-#endif
+	static std::vector<Logger *> channels;
 
-typedef enum { DEBUG_STRING, DEBUG_STREAM , DEBUG_STDOUT, DEBUG_STDERR } DebugOutType;
+	static void fixSize(unsigned int channel);
+public:
+	Logger();
 
-typedef struct {
-	DebugOutType output_type;
-	union {
-		FILE * stream;
-		char * string;
-	} output;
-	char * name;
-} Debug;
+	void vprintf(const char * format, va_list l, const char * filename, unsigned int line);
+	void setOutput(std::ostream * out);
+	void setCallback(void (*callback)(const Logger& logger, const char * message));
+	void setFlag(unsigned int flag);
 
-Debug * DebugInit(const char *, DebugOutType, char *);
-void DebugDeInit(Debug *);
+	std::ostream& getOutput() const;
 
-void DebugChangeOutput(Debug *, DebugOutType, char *);
+	static const int LINE = 1;
+	static const int FILE = 2;
 
-void DebugPrintf(Debug *, const char *, u32, const char *, ...);
-
-extern Debug * MainLog;
-
-void LogStart(void);
-void LogStop(void);
+	static void log(unsigned int channel, const char * file, unsigned int line, const char * format, ...);
+	static void log(unsigned int channel, const char * file, unsigned int line, std::ostream& os);
+	static void log(unsigned int channel, const char * file, unsigned int line, unsigned int flag);
+	static void log(unsigned int channel, const char * file, unsigned int line, void (*callback)(const Logger& logger, const char * message));
+};
 
 #ifdef DEBUG
-#define LOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
+
+#define LOGC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
+#define LOG(...) LOGC(0, __VA_ARGS__)
+
+#define GPULOG(...) LOGC(1, __VA_ARGS__)
+#define DIVLOG(...) LOGC(2, __VA_ARGS__)
+#define SQRTLOG(...) LOGC(3, __VA_ARGS__)
+#define DMALOG(...) LOGC(3, __VA_ARGS__)
+
 #else
-#if defined(WIN32) && defined(BETA_VERSION) && defined(OLD_LOG)
-#define LOG(...) printlog(__VA_ARGS__)
-#else
+
+#define LOGC(...)
 #define LOG(...)
-#endif
-#endif
 
-#ifdef GPUDEBUG
-#define GPULOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
-#else
 #define GPULOG(...)
-#endif
-
-#ifdef DIVDEBUG
-#define DIVLOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
-#else
 #define DIVLOG(...)
-#endif
-
-#ifdef SQRTDEBUG
-#define SQRTLOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
-#else
 #define SQRTLOG(...)
-#endif
-
-#ifdef CARDDEBUG
-#define CARDLOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
-#else
-#define CARDLOG(...)
-#endif
-
-#ifdef DMADEBUG
-#define DMALOG(...) DebugPrintf(MainLog, __FILE__, __LINE__, __VA_ARGS__)
-#else
 #define DMALOG(...)
+
 #endif
+
+#define INFOC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
+#define INFO(...) INFOC(10, __VA_ARGS__)
 
 #endif
