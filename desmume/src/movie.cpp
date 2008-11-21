@@ -5,10 +5,11 @@
 #include "utils/xstring.h"
 #include "movie.h"
 #include "NDSSystem.h"
+#include "debug.h"
 
 using namespace std;
 
-#define FCEU_PrintError printlog
+#define FCEU_PrintError LOG
 
 #define MOVIE_VERSION 1
 

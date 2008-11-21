@@ -26,4 +26,7 @@
 #include <stdio.h>
 #include "debug.h"
 
+void OpenConsole();
+void CloseConsole();
+
 #endif

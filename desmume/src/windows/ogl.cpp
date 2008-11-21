@@ -62,9 +62,9 @@ bool windows_opengl_init()
 
 	res=CheckHardwareSupport(oglDC);
 	if (res>=0&&res<=2) 
-			printlog("OpenGL mode: %s\n",opengl_modes[res]); 
+			LOG("OpenGL mode: %s\n",opengl_modes[res]); 
 		else 
-			printlog("OpenGL mode: uknown\n");
+			LOG("OpenGL mode: uknown\n");
 
 	return true;
 }

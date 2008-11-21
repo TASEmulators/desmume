@@ -148,14 +148,14 @@ bool TOOLSCLASS::close()
 DWORD TOOLSCLASS::ThreadFunc()
 {
 	MSG		messages;
-	printlog("Start thread\n");
+	LOG("Start thread\n");
 
 	GetLastError();
 	hwnd = CreateDialog(hInstance, MAKEINTRESOURCE(idd), NULL, (DLGPROC) dlgproc);
 
 	if (!hwnd) 
 	{
-		printlog("error creating dialog\n");
+		LOG("error creating dialog\n");
 		return (-2);
 	}
 
