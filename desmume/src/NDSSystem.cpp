@@ -461,7 +461,7 @@ void NDS_Reset( void)
 
    src = header->ARM7src;
    dst = header->ARM7cpy;
-     
+
    for(i = 0; i < (header->ARM7binSize>>2); ++i)
    {
       MMU_write32(1, dst, T1ReadLong(MMU.CART_ROM, src));
@@ -469,10 +469,8 @@ void NDS_Reset( void)
       src += 4;
    }
 
-
    armcpu_init(&NDS_ARM7, header->ARM7exe);
    armcpu_init(&NDS_ARM9, header->ARM9exe);
-     
    nds.ARM9Cycle = 0;
    nds.ARM7Cycle = 0;
    nds.cycles = 0;
@@ -499,53 +497,50 @@ void NDS_Reset( void)
      int fw_index;
 
      if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
-       for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++) {
+       for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
          MMU_write8( 0, 0x027FFC80 + fw_index, temp_buffer[fw_index]);
-       }
      }
    }
 
-	// Copy the whole header to Main RAM 0x27FFE00 on startup.
-	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
-	for (i = 0; i < ((0x170+0x90)/4); i++)
-	{
-		MMU_write32 (0, 0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
-	}
-     
+   // Copy the whole header to Main RAM 0x27FFE00 on startup.
+   //  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
+   for (i = 0; i < ((0x170+0x90)/4); i++) {
+       MMU_write32 (0, 0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+   }
    MainScreen.offset = 0;
    SubScreen.offset = 192;
-     
+ 
    //MMU_write32(0, 0x02007FFC, 0xE92D4030);
 
-     //ARM7 BIOS IRQ HANDLER
-     MMU_write32(1, 0x00, 0xE25EF002);
-     MMU_write32(1, 0x04, 0xEAFFFFFE);
-     MMU_write32(1, 0x18, 0xEA000000);
-     MMU_write32(1, 0x20, 0xE92D500F);
-     MMU_write32(1, 0x24, 0xE3A00301);
-     MMU_write32(1, 0x28, 0xE28FE000);
-     MMU_write32(1, 0x2C, 0xE510F004);
-     MMU_write32(1, 0x30, 0xE8BD500F);
-     MMU_write32(1, 0x34, 0xE25EF004);
-    
-     //ARM9 BIOS IRQ HANDLER
-     MMU_write32(0, 0xFFFF0018, 0xEA000000);
-     MMU_write32(0, 0xFFFF0020, 0xE92D500F);
-     MMU_write32(0, 0xFFFF0024, 0xEE190F11);
-     MMU_write32(0, 0xFFFF0028, 0xE1A00620);
-     MMU_write32(0, 0xFFFF002C, 0xE1A00600);
-     MMU_write32(0, 0xFFFF0030, 0xE2800C40);
-     MMU_write32(0, 0xFFFF0034, 0xE28FE000);
-     MMU_write32(0, 0xFFFF0038, 0xE510F004);
-     MMU_write32(0, 0xFFFF003C, 0xE8BD500F);
-     MMU_write32(0, 0xFFFF0040, 0xE25EF004);
-        
-     MMU_write32(0, 0x0000004, 0xE3A0010E);
-     MMU_write32(0, 0x0000008, 0xE3A01020);
-//     MMU_write32(0, 0x000000C, 0xE1B02110);
-     MMU_write32(0, 0x000000C, 0xE1B02040);
-     MMU_write32(0, 0x0000010, 0xE3B02020);
-//     MMU_write32(0, 0x0000010, 0xE2100202);
+   //ARM7 BIOS IRQ HANDLER
+   MMU_write32(1, 0x00, 0xE25EF002);
+   MMU_write32(1, 0x04, 0xEAFFFFFE);
+   MMU_write32(1, 0x18, 0xEA000000);
+   MMU_write32(1, 0x20, 0xE92D500F);
+   MMU_write32(1, 0x24, 0xE3A00301);
+   MMU_write32(1, 0x28, 0xE28FE000);
+   MMU_write32(1, 0x2C, 0xE510F004);
+   MMU_write32(1, 0x30, 0xE8BD500F);
+   MMU_write32(1, 0x34, 0xE25EF004);
+
+   //ARM9 BIOS IRQ HANDLER
+   MMU_write32(0, 0xFFFF0018, 0xEA000000);
+   MMU_write32(0, 0xFFFF0020, 0xE92D500F);
+   MMU_write32(0, 0xFFFF0024, 0xEE190F11);
+   MMU_write32(0, 0xFFFF0028, 0xE1A00620);
+   MMU_write32(0, 0xFFFF002C, 0xE1A00600);
+   MMU_write32(0, 0xFFFF0030, 0xE2800C40);
+   MMU_write32(0, 0xFFFF0034, 0xE28FE000);
+   MMU_write32(0, 0xFFFF0038, 0xE510F004);
+   MMU_write32(0, 0xFFFF003C, 0xE8BD500F);
+   MMU_write32(0, 0xFFFF0040, 0xE25EF004);
+
+   MMU_write32(0, 0x0000004, 0xE3A0010E);
+   MMU_write32(0, 0x0000008, 0xE3A01020);
+// MMU_write32(0, 0x000000C, 0xE1B02110);
+   MMU_write32(0, 0x000000C, 0xE1B02040);
+   MMU_write32(0, 0x0000010, 0xE3B02020);
+// MMU_write32(0, 0x0000010, 0xE2100202);
 
    delete header;
 
