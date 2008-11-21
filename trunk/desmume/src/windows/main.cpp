@@ -748,12 +748,12 @@ void Display()
 			}
 		}
 		else
-			 printlog("16bit depth color not supported");
+			 LOG("16bit depth color not supported");
 		IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
 
 		if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
 		{
-			printlog("DirectDraw buffers is lost\n");
+			LOG("DirectDraw buffers is lost\n");
 			if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
 				IDirectDrawSurface7_Restore(lpBackSurface);
 		}
@@ -762,7 +762,7 @@ void Display()
 	{
 		if (res==DDERR_SURFACELOST)
 		{
-			printlog("DirectDraw buffers is lost\n");
+			LOG("DirectDraw buffers is lost\n");
 			if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
 				IDirectDrawSurface7_Restore(lpBackSurface);
 		}
@@ -995,7 +995,7 @@ void NDS_Pause()
 		paused = TRUE;
 		SPU_Pause(1);
 		while (!paused) {}
-		printlog("Paused\n");
+		LOG("Paused\n");
 	}
 }
 
@@ -1006,7 +1006,7 @@ void NDS_UnPause()
 		paused = FALSE;
 		execute = TRUE;
 		SPU_Pause(0);
-		printlog("Unpaused\n");
+		LOG("Unpaused\n");
    }
 }
 
@@ -1042,16 +1042,16 @@ void StateLoadSlot(int num)
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 {
     NDS_Pause();
-	if (strcmp(filename,"")!=0) printlog("Attempting to load ROM: %s\n",filename);
+	if (strcmp(filename,"")!=0) LOG("Attempting to load ROM: %s\n",filename);
 
     if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
 	{
-		printlog("Loading %s was successful\n",filename);
+		LOG("Loading %s was successful\n",filename);
 		frameCounter=0;
 		UpdateRecentRoms(filename);
 		return TRUE;		
 	}
-	printlog("Loading %s FAILED.\n",filename);
+	LOG("Loading %s FAILED.\n",filename);
 	return FALSE;
 }
 
@@ -1251,7 +1251,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	recentromsmenu = CreateMenu(); //Create recent Roms menu
 	GetRecentRoms();			   //Populate the recent roms menu
 	
-	printlog("Init NDS\n");
+	LOG("Init NDS\n");
 
 	input = new INPUTCLASS();
 	if (!input->Init(MainWindow->getHWnd(), &NDS_inputPost))
@@ -1333,7 +1333,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef BETA_VERSION
 	EnableMenuItem (menu, IDM_SUBMITBUGREPORT, MF_GRAYED);
 #endif
-	printlog("Init sound core\n");
+	LOG("Init sound core\n");
     sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
     sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
 
@@ -1423,7 +1423,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	//------SHUTDOWN
 
 #ifdef DEBUG
-    LogStop();
+    //LogStop();
 #endif
 	if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
@@ -1573,7 +1573,7 @@ void OpenRecentROM(int listNum)
 	if (listNum > MAX_RECENT_ROMS) return; //Just in case
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
-	printlog("Attempting to load %s\n",filename);
+	LOG("Attempting to load %s\n",filename);
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
     {
 		EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);

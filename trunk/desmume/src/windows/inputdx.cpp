@@ -322,7 +322,7 @@ BOOL CALLBACK InputConfigDlgProc(   HWND hDlg,
 			}
 			
 			if (!inputCfg->Init(hDlg, &InputConfigDIProc))
-				printlog("Input config: Error initialize DirectInput\n");
+				LOG("Input config: Error initialize DirectInput\n");
 			SetTimer(hDlg, IDD_INPUT_TIMER, 100, NULL);
 			return true;
 
@@ -372,7 +372,7 @@ void InputConfig(HWND hwnd)
 		delete inputCfg;
 	}
 	else
-		printlog("Input config: Error create DI class\n");
+		LOG("Input config: Error create DI class\n");
 	inputCfg = NULL;
 }
 // =============================================== end Config input
@@ -514,8 +514,8 @@ BOOL INPUTCLASS::Init(HWND hParentWnd, INPUTPROC inputProc)
 	this->inputProc = inputProc;
 
 #if 1
-	if (pKeyboard != NULL) printlog("DirectX Input: keyboard is initialised\n");
-	if (pJoystick != NULL) printlog("DirectX Input: joystick is initialised\n");
+	if (pKeyboard != NULL) LOG("DirectX Input: keyboard is initialised\n");
+	if (pJoystick != NULL) LOG("DirectX Input: joystick is initialised\n");
 #endif
 	paused = FALSE;
 

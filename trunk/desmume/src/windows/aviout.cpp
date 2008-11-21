@@ -8,11 +8,11 @@
 #include <stdio.h>
 
 void EMU_PrintError(const char* msg) {
-	printlog(msg);
+	LOG(msg);
 }
 
 void EMU_PrintMessage(const char* msg) {
-	printlog(msg);
+	LOG(msg);
 }
 
 bool DRV_AviBegin(const char* fname);
