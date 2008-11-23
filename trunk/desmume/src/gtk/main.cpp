@@ -43,9 +43,7 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-#define ENABLE_MEMORY_PROFILING 1
-
-#ifdef ENABLE_MEMORY_PROFILING
+#ifdef PROFILE_MEMORY_ACCESS
 #include <gdk/gdkkeysyms.h>
 #endif
 
@@ -915,7 +913,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
   ADD_KEY( Cur_Keypad, Key );
   if(desmume_running()) update_keypad(Cur_Keypad);
 
-#ifdef ENABLE_MEMORY_PROFILING
+#ifdef PROFILE_MEMORY_ACCESS
   if ( e->keyval == GDK_Tab) {
     print_memory_profiling();
   }

@@ -100,7 +100,6 @@ void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
 /*
  *
  */
-//#define PROFILE_MEMORY_ACCESS 1
 #define EARLY_MEMORY_ACCESS 1
 
 #define INTERNAL_DTCM_READ 1

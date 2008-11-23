@@ -202,6 +202,11 @@ AC_ARG_ENABLE(debug,
               AC_HELP_STRING(--enable-debug, enable debug information),
               AC_DEFINE(DEBUG))
 
+dnl - Enable memory profiling
+AC_ARG_ENABLE(memory-profiling,
+              AC_HELP_STRING(--enable-memory-profiling, enable memory profiling information),
+              AC_DEFINE(PROFILE_MEMORY_ACCESS))
+
 dnl -- set maintainer mode
 AM_MAINTAINER_MODE
 AC_SUBST(USE_MAINTAINER_MODE)
