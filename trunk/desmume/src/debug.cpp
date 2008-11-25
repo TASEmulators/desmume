@@ -46,12 +46,12 @@ void Logger::vprintf(const char * format, va_list l, const char * file, unsigned
 	callback(*this, buffer);
 }
 
-void Logger::setOutput(std::ostream * out) {
-	this->out = out;
+void Logger::setOutput(std::ostream * o) {
+	out = o;
 }
 
-void Logger::setCallback(void (*callback)(const Logger& logger, const char * message)) {
-	this->callback = callback;
+void Logger::setCallback(void (*cback)(const Logger& logger, const char * message)) {
+	callback = cback;
 }
 
 void Logger::setFlag(unsigned int flag) {

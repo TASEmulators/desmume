@@ -36,8 +36,8 @@ public:
 	Logger();
 
 	void vprintf(const char * format, va_list l, const char * filename, unsigned int line);
-	void setOutput(std::ostream * out);
-	void setCallback(void (*callback)(const Logger& logger, const char * message));
+	void setOutput(std::ostream * o);
+	void setCallback(void (*cback)(const Logger& logger, const char * message));
 	void setFlag(unsigned int flag);
 
 	std::ostream& getOutput() const;
