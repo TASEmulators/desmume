@@ -88,13 +88,13 @@ INLINE void rtcPost(u8 data)
 				rtc.cmd = data;
 				else 
 				{
-					//printlog("RTC ERROR: command not supported\n");
+					//INFO("RTC ERROR: command not supported\n");
 					return;
 				}
 				
 		rtc.stat = (rtc.cmd & 0x01);
 		rtc.cmd = (rtc.cmd & 0x0E)>>1;
-		//printlog("+++++RTC: execute command 0x%02X (%s)\n", rtc.cmd, rtc.stat?"read":"write");
+		//INFO("+++++RTC: execute command 0x%02X (%s)\n", rtc.cmd, rtc.stat?"read":"write");
 		if (!rtc.stat)
 		{
 			rtc.cmdSize = cmdSizes[rtc.cmd];
@@ -108,16 +108,16 @@ INLINE void rtcPost(u8 data)
 			rtc.bitSizeRead = 8;
 			rtc.dataRead1 = 0;
 			rtc.dataRead2 = 0;
-			//printlog("RTC: read %X\n", rtc.cmd);
+			//INFO("RTC: read %X\n", rtc.cmd);
 			switch (rtc.cmd)
 			{
 				case 0:				// status register 1
-					//printlog("RTC: read status 1 (%X) %s\n", rtc.regStatus1, rtc.revBits?"rev":"fwd");
+					//INFO("RTC: read status 1 (%X) %s\n", rtc.regStatus1, rtc.revBits?"rev":"fwd");
 					rtc.dataRead1 = rtc.regStatus1;
 					rtc.regStatus1 &= 0x0F;
 					break;
 				case 1:				// status register 2
-					//printlog("RTC: read status 2 %s\n", rtc.revBits?"rev":"fwd");
+					//INFO("RTC: read status 2 %s\n", rtc.revBits?"rev":"fwd");
 					rtc.dataRead1 = rtc.regStatus2;
 					break;
 				case 2:				// date & time
@@ -147,7 +147,7 @@ INLINE void rtcPost(u8 data)
 					}
 				case 3:				// time
 					{
-						//printlog("RTC: read time\n");
+						//INFO("RTC: read time\n");
 						time_t	tm;
 						time(&tm);
 						struct tm *tm_local= localtime(&tm);
@@ -167,16 +167,16 @@ INLINE void rtcPost(u8 data)
 						break;
 					}
 				case 4:				// freq/alarm 1
-					//printlog("RTC: read freq");
+					//INFO("RTC: read freq");
 					break;
 				case 5:				// alarm 2
-					//printlog("RTC: read alarm 2\n");
+					//INFO("RTC: read alarm 2\n");
 					break;
 				case 6:				// clock adjust
-					//printlog("RTC: read clock adjust\n");
+					//INFO("RTC: read clock adjust\n");
 					break;
 				case 7:				// free register
-					//printlog("RTC: read free register\n");
+					//INFO("RTC: read free register\n");
 					break;
 				default:
 					rtc.bitSizeRead = 0;
@@ -186,39 +186,39 @@ INLINE void rtcPost(u8 data)
 		return;
 	}
 	rtc.cmdSize--;
-	//printlog("RTC: write %X val=%X\n", rtc.cmd, data);
+	//INFO("RTC: write %X val=%X\n", rtc.cmd, data);
 	switch (rtc.cmd)
 	{
 		case 0:				// status1
-			//printlog("RTC: write status 1 (%X)\n", data);
+			//INFO("RTC: write status 1 (%X)\n", data);
 			rtc.regStatus1 = data;
 			if (rtc.regStatus1 & 0x10) 
 			{
-				//printlog("IRQ7\n");
+				//INFO("IRQ7\n");
 				NDS_makeARM7Int(7);
 			}
 			break;
 		case 1:				// status register 2
 			rtc.regStatus2 = data;
-			//printlog("RTC: write status 2 (%X)\n", data);
+			//INFO("RTC: write status 2 (%X)\n", data);
 			break;
 		case 2:				// date & time
-			//printlog("RTC: write date & time (%X)\n", data);
+			//INFO("RTC: write date & time (%X)\n", data);
 			break;
 		case 3:				// time
-			//printlog("RTC: write time (%X)\n", data);
+			//INFO("RTC: write time (%X)\n", data);
 			break;
 		case 4:				// freq/alarm 1
-			//printlog("RTC: write freq (%X)", data);
+			//INFO("RTC: write freq (%X)", data);
 			break;
 		case 5:				// alarm 2
-			//printlog("RTC: write alarm 2 (%X)\n", data);
+			//INFO("RTC: write alarm 2 (%X)\n", data);
 			break;
 		case 6:				// clock adjust
-			//printlog("RTC: write clock adjust (%X)\n", data);
+			//INFO("RTC: write clock adjust (%X)\n", data);
 			break;
 		case 7:				// free register
-			//printlog("RTC: write free register (%X)\n", data);
+			//INFO("RTC: write free register (%X)\n", data);
 			break;
 
 	}
@@ -251,7 +251,7 @@ void rtcWrite(u16 val)
 		rtc.bitPosWrite++;
 		if (rtc.bitPosWrite == 8)
 		{
-			//printlog("RTC: write\n");
+			//INFO("RTC: write\n");
 			rtcPost(rtc.dataWrite);
 			rtc.bitPosWrite = 0;
 			rtc.dataWrite = 0;

@@ -82,7 +82,6 @@ LRESULT MemViewBox_OnPaint(HWND hwnd, memview_struct * win, WPARAM wParam, LPARA
         r.right = rect.right-3;
         
         adr = win->curr_ligne*0x10;
-		//printlog("curr_ligne=%i\n", win->curr_ligne);
         
         for(i=0; i<nbligne; ++i)
         {
@@ -236,7 +235,7 @@ bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 					delete MemView7;
 					MemView7 = NULL;
 				}
-				//printlog("Close ARM7 memory dialog\n");
+				//INFO("Close ARM7 memory dialog\n");
 				PostQuitMessage(0);
 				return 0;
 			}
@@ -421,7 +420,7 @@ bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 					delete MemView9;
 					MemView9 = NULL;
 				}
-				//printlog("Close ARM9 memory dialog\n");
+				//INFO("Close ARM9 memory dialog\n");
 				PostQuitMessage(0);
 				return 0;
 			}

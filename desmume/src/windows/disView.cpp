@@ -316,7 +316,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						DisView7 = NULL;
 					}
 					DisViewWnd[1] = NULL;
-					//printlog("Close ARM7 disassembler\n");
+					//INFO("Close ARM7 disassembler\n");
 					PostQuitMessage(0);
 					return 1;
 				}
@@ -556,7 +556,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 						DisView9 = NULL;
 					}
 					DisViewWnd[0] = NULL;
-					//printlog("Close ARM9 disassembler\n");
+					//INFO("Close ARM9 disassembler\n");
 					PostQuitMessage(0);
 					return 1;
 				}

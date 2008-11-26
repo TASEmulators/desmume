@@ -559,7 +559,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	glLoadIdentity ();
 	glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
 
-	//printlog("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
+	//INFO("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
 	
 	//============================================================================ Texture render
 	palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
@@ -1048,7 +1048,7 @@ static void GL_ReadFramebuffer()
 	//		colorPtr[2] = 255;
 	//	} else {
 	//		colorPtr[0] = colorPtr[1] = colorPtr[2] = zval*255;
-	//		//printlog("%f %f %d\n",zval, zval*255,colorPtr[0]);
+	//		//INFO("%f %f %d\n",zval, zval*255,colorPtr[0]);
 	//	}
 
 	//}

@@ -126,7 +126,7 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 					delete LightsView;
 					LightsView = NULL;
 				}
-			//printlog("Close lights viewer dialog\n");
+			//INFO("Close lights viewer dialog\n");
 			PostQuitMessage(0);
 			break;
 

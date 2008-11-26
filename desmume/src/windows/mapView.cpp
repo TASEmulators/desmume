@@ -252,7 +252,7 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 					delete MapView;
 					MapView = NULL;
 				}
-				//printlog("Close Map view dialog\n");
+				//INFO("Close Map view dialog\n");
 				PostQuitMessage(0);
 				return 0;
 			}

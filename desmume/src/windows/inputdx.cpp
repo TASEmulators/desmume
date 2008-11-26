@@ -539,7 +539,7 @@ void INPUTCLASS::process()
 		hr=IDirectInputDevice8_GetDeviceState(pKeyboard,256,cDIBuf);
 		if (FAILED(hr)) 
 		{
-			//printlog("DInput: keyboard acquire\n");
+			//INFO("DInput: keyboard acquire\n");
 			IDirectInputDevice8_Acquire(pKeyboard);
 		}
 	}

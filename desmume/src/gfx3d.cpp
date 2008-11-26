@@ -701,7 +701,7 @@ void gfx3d_glMaterial1(unsigned long val)
 
 void gfx3d_glShininess (unsigned long val)
 {
-	//printlog("Shininess=%i\n",val);
+	//INFO("Shininess=%i\n",val);
 }
 
 void gfx3d_UpdateToonTable(void* toonTable)
@@ -921,18 +921,18 @@ void gfx3d_glPosTest(unsigned long v)
 
 void gfx3d_glVecTest(unsigned long v)
 {
-	//printlog("NDS_glVecTest\n");
+	//INFO("NDS_glVecTest\n");
 }
 
 void gfx3d_glGetPosRes(unsigned int index)
 {
-	//printlog("NDS_glGetPosRes\n");
+	//INFO("NDS_glGetPosRes\n");
 	//return 0;
 }
 
 void gfx3d_glGetVecRes(unsigned int index)
 {
-	//printlog("NDS_glGetVecRes\n");
+	//INFO("NDS_glGetVecRes\n");
 	//return 0;
 }
 

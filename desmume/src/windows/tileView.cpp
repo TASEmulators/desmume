@@ -398,7 +398,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 					delete TileView;
 					TileView = NULL;
 				}
-				//printlog("Close Tile view dialog\n");
+				//INFO("Close Tile view dialog\n");
 				PostQuitMessage(0);
                  return 1;
 			case WM_TIMER:
