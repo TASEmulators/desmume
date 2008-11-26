@@ -90,7 +90,7 @@ void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
 			_vsnprintf(msg,511,fmt,list);
 		va_end(list);
 
-		LOG("MMU ARM%s 0x%08X: %s\n",proc==ARMCPU_ARM9?"9":"7",adr, msg);
+		INFO("MMU ARM%s 0x%08X: %s\n",proc==ARMCPU_ARM9?"9":"7",adr, msg);
 	}
 }
 #else
@@ -232,7 +232,7 @@ static u8	MMU_VRAMcntSaved[10];
 void MMU_Init(void) {
 	int i;
 
-	LOG("MMU init\n");
+	INFO("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
 
@@ -275,7 +275,7 @@ void MMU_Init(void) {
 } 
 
 void MMU_DeInit(void) {
-	LOG("MMU deinit\n");
+	INFO("MMU deinit\n");
     if (MMU.fw.fp)
        fclose(MMU.fw.fp);
     mc_free(&MMU.fw);      

@@ -240,7 +240,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 					delete OAMView;
 					OAMView = NULL;
 				}
-				//printlog("Close OAM viewer dialog\n");
+				//INFO("Close OAM viewer dialog\n");
 				PostQuitMessage(0);
 				return 0;
 			}

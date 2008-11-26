@@ -1541,7 +1541,7 @@ NDS_exec(s32 nb, BOOL force)
 			if (tt == 3) continue;
 			if (tt == 12) continue;
 			if (tt == 18) continue;
-			if (MMU.reg_IE[0]&(1<<tt)) printlog("wait IRQ%i\n", tt);
+			if (MMU.reg_IE[0]&(1<<tt)) INFO("wait IRQ%i\n", tt);
 		}*/
 
 		//if(MMU.reg_IE[0]&(1<<0)) gfx3d_VBlankSignal();

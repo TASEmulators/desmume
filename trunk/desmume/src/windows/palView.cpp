@@ -137,7 +137,7 @@ BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 					delete PalView;
 					PalView = NULL;
 				}
-				//printlog("Close Palette view dialog\n");
+				//INFO("Close Palette view dialog\n");
 				PostQuitMessage(0);
 				return 0;
 			}

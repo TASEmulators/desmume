@@ -2051,8 +2051,8 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 				T2WriteWord(dst, i << 1, c&0xFFFF); i++;
 				T2WriteWord(dst, i << 1, c>>16); i++;
 			}
-else
-		printlog("FIFO MAIN_MEMORY_DISP_FIFO\n");
+#else
+		INFO("FIFO MAIN_MEMORY_DISP_FIFO\n");
 #endif
 			return;
 	}

@@ -191,7 +191,7 @@ BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 						delete MatrixView;
 						MatrixView = NULL;
 					}
-					//printlog("Close Matrix view dialog\n");
+					//INFO("Close Matrix view dialog\n");
 					PostQuitMessage(0);
 					return 0;
 				}

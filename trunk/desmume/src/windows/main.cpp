@@ -333,7 +333,7 @@ void ResizingLimit(int wParam, RECT *rc)
 	u32 minX = 256;
 	u32 minY = 414;
 
-	//printlog("width=%i; height=%i\n", width, height);
+	//INFO("width=%i; height=%i\n", width, height);
 
 	if (GPU_rotation == 90 || GPU_rotation == 270)
 	{
@@ -543,7 +543,7 @@ void UpdateRecentRomsMenu()
 		moo.fType = 0;
 		moo.wID = baseid + x;
 		moo.dwTypeData = (LPSTR)tmp.c_str();
-		//printlog("Inserting: %s\n",tmp.c_str());  //Debug
+		//INFO("Inserting: %s\n",tmp.c_str());  //Debug
 		InsertMenuItem(recentromsmenu, 0, 1, &moo);
 	}
 	//-----------------------------------------------------------------------
@@ -585,7 +585,7 @@ void UpdateRecentRoms(char* filename)
 
 	//Debug
 	//for (int x = 0; x < RecentRoms.size(); x++)
-	//	printlog("Recent ROM: %s\n",RecentRoms[x].c_str());
+	//	INFO("Recent ROM: %s\n",RecentRoms[x].c_str());
 
 	UpdateRecentRomsMenu();
 }
@@ -995,7 +995,7 @@ void NDS_Pause()
 		paused = TRUE;
 		SPU_Pause(1);
 		while (!paused) {}
-		LOG("Paused\n");
+		INFO("Paused\n");
 	}
 }
 
@@ -1006,7 +1006,7 @@ void NDS_UnPause()
 		paused = FALSE;
 		execute = TRUE;
 		SPU_Pause(0);
-		LOG("Unpaused\n");
+		INFO("Unpaused\n");
    }
 }
 
@@ -1675,7 +1675,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ResizingLimit(wParam, rc);
 				if (ForceRatio)
 					ScaleScreen(hwnd, wParam, rc);
-				//printlog("sizing: width=%i; height=%i\n", rc->right - rc->left, rc->bottom - rc->top);
+				//INFO("sizing: width=%i; height=%i\n", rc->right - rc->left, rc->bottom - rc->top);
 			}
 			break;
 		case WM_SIZE:
