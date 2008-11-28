@@ -27,6 +27,9 @@ desmume_glade_SOURCES =  \
 	gdk_3Demu.cpp gdk_3Demu.h \
 	../sndsdl.h ../sndsdl.cpp ../ctrlssdl.h ../ctrlssdl.cpp
 
-desmume_glade_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a \
+desmume_glade_LDADD = ../libdesmume.a \
 			$(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) \
 			$(GTHREAD_LIBS)
+if HAVE_GDB_STUB
+desmume_glade_LDADD += ../gdbstub/libgdbstub.a
+endif

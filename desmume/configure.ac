@@ -171,7 +171,11 @@ AC_SUBST(PO_FILES_IN)
 dnl - Gdb stub
 AC_ARG_ENABLE(gdb-stub,
               [AC_HELP_STRING(--enable-gdb-stub, enable gdb stub)],
-              [AC_DEFINE(GDB_STUB)])
+              [
+			AC_DEFINE(GDB_STUB)
+			wantgdbstub=yes
+		])
+AM_CONDITIONAL([HAVE_GDB_STUB], [test "${wantgdbstub}" = "yes"])
 
 dnl - Compiler warnings
 

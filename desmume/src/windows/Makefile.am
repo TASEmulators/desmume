@@ -20,6 +20,9 @@ desmume_SOURCES = \
 	colorconv.h colorctrl.c colorctrl.h \
 	lightView.c lightView.h \
 	matrixView.c matrixView.h
-desmume_LDADD = ../libdesmume.a yopyop_private.o ../gdbstub/libgdbstub.a
+desmume_LDADD = ../libdesmume.a yopyop_private.o
+if HAVE_GDB_STUB
+desmume_LDADD += ../gdbstub/libgdbstub.a
+endif
 yopyop_private.o: yopyop_private.rc resources.rc resource.h
 	windres yopyop_private.rc -o yopyop_private.o
