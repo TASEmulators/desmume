@@ -205,6 +205,18 @@ dnl - Enable debug mode
 AC_ARG_ENABLE(debug,
               AC_HELP_STRING(--enable-debug, enable debug information),
               AC_DEFINE(DEBUG))
+AC_ARG_ENABLE(gpu-debug,
+              AC_HELP_STRING(--enable-gpu-debug, enable gpu debug information),
+              AC_DEFINE(GPUDEBUG))
+AC_ARG_ENABLE(div-debug,
+              AC_HELP_STRING(--enable-div-debug, enable div debug information),
+              AC_DEFINE(DIVDEBUG))
+AC_ARG_ENABLE(sqrt-debug,
+              AC_HELP_STRING(--enable-sqrt-debug, enable sqrt debug information),
+              AC_DEFINE(SQRTDEBUG))
+AC_ARG_ENABLE(dma-debug,
+              AC_HELP_STRING(--enable-dma-debug, enable dma debug information),
+              AC_DEFINE(DMADEBUG))
 
 dnl - Enable memory profiling
 AC_ARG_ENABLE(memory-profiling,
