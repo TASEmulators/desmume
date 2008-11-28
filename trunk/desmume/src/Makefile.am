@@ -1,8 +1,12 @@
 include $(top_srcdir)/src/desmume.mk
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp
-DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade windows
+if HAVE_GDB_STUB
 SUBDIRS = . gdbstub $(UI_DIR)
+else
+SUBDIRS = . $(UI_DIR)
+endif
+DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade windows
 noinst_LIBRARIES = libdesmume.a
 libdesmume_a_SOURCES = \
         armcpu.cpp armcpu.h ARM9.h \
@@ -28,8 +32,10 @@ libdesmume_a_SOURCES = \
         saves.cpp saves.h \
         SPU.cpp SPU.h \
 	softrender.cpp softrender.h softrender_config.h \
-	gdbstub.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
         thumb_instructions.cpp thumb_instructions.h types.h
+if HAVE_GDB_STUB
+libdesmume_a_SOURCES += gdbstub.h
+endif
 libdesmume_a_LIBADD = fs-$(desmume_arch).$(OBJEXT)

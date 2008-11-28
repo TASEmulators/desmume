@@ -19,5 +19,8 @@ desmume_SOURCES = \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	gdk_3Demu.cpp gdk_3Demu.h \
 	 main.cpp
-desmume_LDADD = ../libdesmume.a ../gdbstub/libgdbstub.a \
+desmume_LDADD = ../libdesmume.a \
 	$(SDL_LIBS) $(GTK_LIBS) $(GTKGLEXT_LIBS) $(GTHREAD_LIBS)
+if HAVE_GDB_STUB
+desmume_LDADD += ../gdbstub/libgdbstub.a
+endif
