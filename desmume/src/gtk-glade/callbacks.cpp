@@ -372,8 +372,8 @@ user_data)
                                (GtkDialogFlags) (GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT),
                                GTK_MESSAGE_INFO,
                                GTK_BUTTONS_CLOSE,
-                               text
-                               );
+                               "%s",
+                               text);
       g_signal_connect(G_OBJECT(msgbox), "response", G_CALLBACK(gtk_widget_destroy), NULL);
 
       gtk_dialog_run( msgbox );
