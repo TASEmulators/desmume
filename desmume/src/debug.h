@@ -51,26 +51,40 @@ public:
 	static void log(unsigned int channel, const char * file, unsigned int line, void (*callback)(const Logger& logger, const char * message));
 };
 
-#ifdef DEBUG
-
+#if defined(DEBUG) || defined(GPUDEBUG) || defined(DIVDEBUG) || defined(SQRTDEBUG) || defined(DMADEBUG)
 #define LOGC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
-#define LOG(...) LOGC(0, __VA_ARGS__)
-
-#define GPULOG(...) LOGC(1, __VA_ARGS__)
-#define DIVLOG(...) LOGC(2, __VA_ARGS__)
-#define SQRTLOG(...) LOGC(3, __VA_ARGS__)
-#define DMALOG(...) LOGC(3, __VA_ARGS__)
-
 #else
-
 #define LOGC(...)
+#endif
+
+#ifdef DEBUG
+#define LOG(...) LOGC(0, __VA_ARGS__)
+#else
 #define LOG(...)
+#endif
 
+#ifdef GPUDEBUG
+#define GPULOG(...) LOGC(1, __VA_ARGS__)
+#else
 #define GPULOG(...)
-#define DIVLOG(...)
-#define SQRTLOG(...)
-#define DMALOG(...)
+#endif
 
+#ifdef DIVDEBUG
+#define DIVLOG(...) LOGC(2, __VA_ARGS__)
+#else
+#define DIVLOG(...)
+#endif
+
+#ifdef SQRTDEBUG
+#define SQRTLOG(...) LOGC(3, __VA_ARGS__)
+#else
+#define SQRTLOG(...)
+#endif
+
+#ifdef DMADEBUG
+#define DMALOG(...) LOGC(4, __VA_ARGS__)
+#else
+#define DMALOG(...)
 #endif
 
 #define INFOC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
