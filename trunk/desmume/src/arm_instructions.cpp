@@ -6687,7 +6687,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB_W()
 TEMPLATE static u32 FASTCALL  OP_LDMIA2()
 {
      u32 i = cpu->instruction;
-     u32 oldmode;
+     u32 oldmode = 0;
      
      u32 c = 0;
      
@@ -6744,7 +6744,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2()
 TEMPLATE static u32 FASTCALL  OP_LDMIB2()
 {
      u32 i = cpu->instruction;
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 c = 0;
      
      u32 start = cpu->R[REG_POS(i,16)];
@@ -6803,7 +6803,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2()
 {
      u32 i = cpu->instruction;
           
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 c = 0;
      u32 * registres;
      u32 * waitState;
@@ -6866,7 +6866,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2()
 {
      u32 i = cpu->instruction;
           
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 c = 0;
      u32 * registres;
      u32 * waitState;
@@ -6928,7 +6928,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2_W()
      u32 i = cpu->instruction;
      u32 c = 0;
           
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
      u32 * waitState;
@@ -6985,7 +6985,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2_W()
      u32 i = cpu->instruction;
      u32 c = 0;
 
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
      u32 * waitState;
@@ -7044,7 +7044,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2_W()
      u32 i = cpu->instruction;
      u32 c = 0;
           
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
      u32 * waitState;
@@ -7104,7 +7104,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2_W()
      u32 i = cpu->instruction;
      u32 c = 0;
           
-     u32 oldmode;
+     u32 oldmode = 0;
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
      u32 * waitState;

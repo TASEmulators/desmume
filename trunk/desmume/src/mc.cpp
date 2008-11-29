@@ -98,6 +98,8 @@ void mc_free(memory_chip_t *mc)
 
 void mc_reset_com(memory_chip_t *mc)
 {
+   size_t elems_written = 0;
+
    if (mc->type == MC_TYPE_AUTODETECT && mc->com == BM_CMD_AUTODETECT)
    {
       u32 addr, size;
@@ -175,14 +177,14 @@ void mc_reset_com(memory_chip_t *mc)
 
       // Generate file
       if ((mc->fp = fopen(mc->filename, "wb+")) != NULL)
-         fwrite((void *)mc->data, 1, mc->size, mc->fp);
+         elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp);
    }
    else if (mc->com == BM_CMD_WRITELOW)
    {      
       if (mc->fp)
       {
          fseek(mc->fp, 0, SEEK_SET);
-         fwrite((void *)mc->data, 1, mc->size, mc->fp); // fix me
+         elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp); // fix me
       }
       mc->write_enable = FALSE;
    }
@@ -202,6 +204,8 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
    long size;
    int type = -1;
    FILE* file = fopen(filename, "rb+");
+   size_t elems_read;
+
    if(file == NULL)
    {
       mc->filename = strdup(filename);
@@ -231,9 +235,9 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
          mc_realloc(mc, type, size);
    }
 
-   if (size > mc->size)
+   if ((u32)size > mc->size)
       size = mc->size;
-   fread (mc->data, 1, size, file);
+   elems_read = fread (mc->data, 1, size, file);
    mc->fp = file;
 }
 
@@ -243,6 +247,7 @@ int mc_load_duc(memory_chip_t *mc, const char* filename)
    int type = -1;
    char id[16];
    FILE* file = fopen(filename, "rb");
+   size_t elems_read = 0;
    if(file == NULL)
       return 0;
 
@@ -251,7 +256,7 @@ int mc_load_duc(memory_chip_t *mc, const char* filename)
    fseek(file, 0, SEEK_SET);
 
    // Make sure we really have the right file
-   fread((void *)id, sizeof(char), 16, file);
+   elems_read += fread((void *)id, sizeof(char), 16, file);
 
    if (memcmp(id, "ARDS000000000001", 16) != 0)
    {
@@ -279,11 +284,11 @@ int mc_load_duc(memory_chip_t *mc, const char* filename)
          mc_realloc(mc, type, size);
    }
 
-   if (size > mc->size)
+   if ((u32)size > mc->size)
       size = mc->size;
    // Skip the rest of the header since we don't need it
    fseek(file, 500, SEEK_SET);
-   fread (mc->data, 1, size, file);
+   elems_read += fread (mc->data, 1, size, file);
    fclose(file);
 
    return 1;

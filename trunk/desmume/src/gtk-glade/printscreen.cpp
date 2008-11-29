@@ -47,6 +47,8 @@ typedef struct
 int WriteBMP(const char *filename,u16 *bmp){
     BmpFileHeader  fileheader;
     BmpImageHeader imageheader;
+    size_t elems_written = 0;
+
     fileheader.size = 14;
     fileheader.type = 0x4D42;
     fileheader.r1 = 0;
@@ -68,25 +70,23 @@ int WriteBMP(const char *filename,u16 *bmp){
     FILE *fichier = fopen(filename,"wb");
     if (!fichier)
          return 0;
-    //fwrite(&fileheader, 1, 14, fichier);
 
-    //fwrite(&imageheader, 1, 40, fichier);
-    fwrite( &fileheader.type,  sizeof(fileheader.type),  1, fichier);
-    fwrite( &fileheader.size,  sizeof(fileheader.size),  1, fichier);
-    fwrite( &fileheader.r1,  sizeof(fileheader.r1),  1, fichier);
-    fwrite( &fileheader.r2,  sizeof(fileheader.r2),  1, fichier);
-    fwrite( &fileheader.data_offset,  sizeof(fileheader.data_offset),  1, fichier);
-    fwrite( &imageheader.header_size, sizeof(imageheader.header_size), 1, fichier);
-    fwrite( &imageheader.width, sizeof(imageheader.width), 1, fichier);
-    fwrite( &imageheader.height, sizeof(imageheader.height), 1, fichier);
-    fwrite( &imageheader.r1, sizeof(imageheader.r1), 1, fichier);
-    fwrite( &imageheader.depth, sizeof(imageheader.depth), 1, fichier);
-    fwrite( &imageheader.r2, sizeof(imageheader.r2), 1, fichier);
-    fwrite( &imageheader.size, sizeof(imageheader.size), 1, fichier);
-    fwrite( &imageheader.r3, sizeof(imageheader.r3), 1, fichier);
-    fwrite( &imageheader.r4, sizeof(imageheader.r4), 1, fichier);
-    fwrite( &imageheader.r5, sizeof(imageheader.r5), 1, fichier);
-    fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
+    elems_written += fwrite( &fileheader.type,  sizeof(fileheader.type),  1, fichier);
+    elems_written += fwrite( &fileheader.size,  sizeof(fileheader.size),  1, fichier);
+    elems_written += fwrite( &fileheader.r1,  sizeof(fileheader.r1),  1, fichier);
+    elems_written += fwrite( &fileheader.r2,  sizeof(fileheader.r2),  1, fichier);
+    elems_written += fwrite( &fileheader.data_offset,  sizeof(fileheader.data_offset),  1, fichier);
+    elems_written += fwrite( &imageheader.header_size, sizeof(imageheader.header_size), 1, fichier);
+    elems_written += fwrite( &imageheader.width, sizeof(imageheader.width), 1, fichier);
+    elems_written += fwrite( &imageheader.height, sizeof(imageheader.height), 1, fichier);
+    elems_written += fwrite( &imageheader.r1, sizeof(imageheader.r1), 1, fichier);
+    elems_written += fwrite( &imageheader.depth, sizeof(imageheader.depth), 1, fichier);
+    elems_written += fwrite( &imageheader.r2, sizeof(imageheader.r2), 1, fichier);
+    elems_written += fwrite( &imageheader.size, sizeof(imageheader.size), 1, fichier);
+    elems_written += fwrite( &imageheader.r3, sizeof(imageheader.r3), 1, fichier);
+    elems_written += fwrite( &imageheader.r4, sizeof(imageheader.r4), 1, fichier);
+    elems_written += fwrite( &imageheader.r5, sizeof(imageheader.r5), 1, fichier);
+    elems_written += fwrite( &imageheader.r6, sizeof(imageheader.r6), 1, fichier);
     int i,j;
     for(j=0;j<192*2;j++)for(i=0;i<256;i++){
 	    u8 r,g,b;
@@ -99,9 +99,9 @@ int WriteBMP(const char *filename,u16 *bmp){
 	    r*=255/31;
 	    g*=255/31;
 	    b*=255/31;
-	    fwrite(&r, 1, sizeof(char), fichier); 
-	    fwrite(&g, 1, sizeof(char), fichier); 
-	    fwrite(&b, 1, sizeof(char), fichier); 
+	    elems_written += fwrite(&r, 1, sizeof(char), fichier); 
+	    elems_written += fwrite(&g, 1, sizeof(char), fichier); 
+	    elems_written += fwrite(&b, 1, sizeof(char), fichier); 
 	}
     fclose(fichier);
 return 1;

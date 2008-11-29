@@ -1216,6 +1216,7 @@ int SNDFileInit(int buffersize)
 	waveheader_struct waveheader;
 	fmt_struct fmt;
 	chunk_struct data;
+	size_t elems_written = 0;
 
 	if ((spufp = fopen("ndsaudio.wav", "wb")) == NULL)
 		return -1;
@@ -1224,7 +1225,7 @@ int SNDFileInit(int buffersize)
 	memcpy(waveheader.riff.id, "RIFF", 4);
 	waveheader.riff.size = 0; // we'll fix this after the file is closed
 	memcpy(waveheader.rifftype, "WAVE", 4);
-	fwrite((void *)&waveheader, 1, sizeof(waveheader_struct), spufp);
+	elems_written += fwrite((void *)&waveheader, 1, sizeof(waveheader_struct), spufp);
 
 	// fmt chunk
 	memcpy(fmt.chunk.id, "fmt ", 4);
@@ -1235,12 +1236,12 @@ int SNDFileInit(int buffersize)
 	fmt.bitspersample = 16;
 	fmt.blockalign = fmt.bitspersample / 8 * fmt.numchan;
 	fmt.bytespersec = fmt.rate * fmt.blockalign;
-	fwrite((void *)&fmt, 1, sizeof(fmt_struct), spufp);
+	elems_written += fwrite((void *)&fmt, 1, sizeof(fmt_struct), spufp);
 
 	// data chunk
 	memcpy(data.id, "data", 4);
 	data.size = 0; // we'll fix this at the end
-	fwrite((void *)&data, 1, sizeof(chunk_struct), spufp);
+	elems_written += fwrite((void *)&data, 1, sizeof(chunk_struct), spufp);
 
 	return 0;
 }
@@ -1249,6 +1250,7 @@ int SNDFileInit(int buffersize)
 
 void SNDFileDeInit()
 {
+	size_t elems_written;
 	if (spufp)
 	{
 		long length = ftell(spufp);
@@ -1256,11 +1258,11 @@ void SNDFileDeInit()
 		// Let's fix the riff chunk size and the data chunk size
 		fseek(spufp, sizeof(waveheader_struct)-0x8, SEEK_SET);
 		length -= 0x4;
-		fwrite((void *)&length, 1, 4, spufp);
+		elems_written += fwrite((void *)&length, 1, 4, spufp);
 
 		fseek(spufp, sizeof(waveheader_struct)+sizeof(fmt_struct)+0x4, SEEK_SET);
 		length -= sizeof(waveheader_struct)+sizeof(fmt_struct);
-		fwrite((void *)&length, 1, 4, spufp);
+		elems_written += fwrite((void *)&length, 1, 4, spufp);
 		fclose(spufp);
 	}
 }
@@ -1269,8 +1271,9 @@ void SNDFileDeInit()
 
 void SNDFileUpdateAudio(s16 *buffer, u32 num_samples)
 {
+	size_t elems_written;
 	if (spufp)
-		fwrite((void *)buffer, num_samples*2, 2, spufp);
+		elems_written = fwrite((void *)buffer, num_samples*2, 2, spufp);
 }
 
 //////////////////////////////////////////////////////////////////////////////

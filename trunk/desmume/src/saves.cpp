@@ -348,8 +348,8 @@ static bool cp15_loadone(armcp15_t *cp15, std::istream* is)
     for(int i=0;i<8;i++) if(!read32le(&cp15->regionReadSet_SYS[i],is)) return false;
     for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteSet_USR[i],is)) return false;
     for(int i=0;i<8;i++) if(!read32le(&cp15->regionExecuteSet_SYS[i],is)) return false;
-	
-	return true;
+
+    return true;
 }
 
 static bool cp15_loadstate(std::istream* is)
@@ -454,12 +454,13 @@ void sram_write (u32 address, u8 value) {
 int sram_load (const char *file_name) {
 
 	FILE *file;
+	size_t elems_read;
 
 	file = fopen ( file_name, "rb" );
 	if( file == NULL )
 		return 0;
 
-	fread ( MMU.CART_RAM, SRAM_SIZE, 1, file );
+	elems_read = fread ( MMU.CART_RAM, SRAM_SIZE, 1, file );
 
 	fclose ( file );
 
@@ -470,12 +471,13 @@ int sram_load (const char *file_name) {
 int sram_save (const char *file_name) {
 
 	FILE *file;
+	size_t elems_written;
 
 	file = fopen ( file_name, "wb" );
 	if( file == NULL )
 		return 0;
 
-	fwrite ( MMU.CART_RAM, SRAM_SIZE, 1, file );
+	elems_written = fwrite ( MMU.CART_RAM, SRAM_SIZE, 1, file );
 
 	fclose ( file );
 
@@ -687,6 +689,7 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 bool savestate_save (const char *file_name)
 {
 	memorystream ms;
+	size_t elems_written;
 #ifdef HAVE_LIBZ
 	if(!savestate_save(&ms, Z_DEFAULT_COMPRESSION))
 #else
@@ -697,9 +700,9 @@ bool savestate_save (const char *file_name)
 	FILE* file = fopen(file_name,"wb");
 	if(file)
 	{
-		fwrite(ms.buf(),1,ms.size(),file);
+		elems_written = fwrite(ms.buf(),1,ms.size(),file);
 		fclose(file);
-		return true;
+		return (elems_written == ms.size());
 	} else return false;
 }
 
