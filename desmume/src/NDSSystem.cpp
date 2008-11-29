@@ -606,6 +606,7 @@ int NDS_WriteBMP(const char *filename)
     FILE *file;
     int i,j;
     u16 * bmp = (u16 *)GPU_screen;
+    size_t elems_written = 0;
 
     memset(&fileheader, 0, sizeof(fileheader));
     fileheader.size = sizeof(fileheader);
@@ -624,8 +625,8 @@ int NDS_WriteBMP(const char *filename)
     if ((file = fopen(filename,"wb")) == NULL)
        return 0;
 
-    fwrite(&fileheader, 1, sizeof(fileheader), file);
-    fwrite(&imageheader, 1, sizeof(imageheader), file);
+    elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
+    elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
 
     for(j=0;j<192*2;j++)
     {
@@ -641,9 +642,9 @@ int NDS_WriteBMP(const char *filename)
           r*=255/31;
           g*=255/31;
           b*=255/31;
-          fwrite(&r, 1, sizeof(u8), file); 
-          fwrite(&g, 1, sizeof(u8), file); 
-          fwrite(&b, 1, sizeof(u8), file);
+          elems_written += fwrite(&r, 1, sizeof(u8), file); 
+          elems_written += fwrite(&g, 1, sizeof(u8), file); 
+          elems_written += fwrite(&b, 1, sizeof(u8), file);
        }
     }
     fclose(file);
@@ -653,10 +654,10 @@ int NDS_WriteBMP(const char *filename)
 
 int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename)
 {
-	 bmpfileheader_struct fileheader;
+    bmpfileheader_struct fileheader;
     bmpimgheader_struct imageheader;
     FILE *file;
-
+    size_t elems_written = 0;
     memset(&fileheader, 0, sizeof(fileheader));
     fileheader.size = sizeof(fileheader);
     fileheader.id = 'B' | ('M' << 8);
@@ -674,10 +675,10 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
     if ((file = fopen(filename,"wb")) == NULL)
        return 0;
 
-    fwrite(&fileheader, 1, sizeof(fileheader), file);
-    fwrite(&imageheader, 1, sizeof(imageheader), file);
+    elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
+    elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
 
-	fwrite(buf,1,imageheader.imgsize,file);
+    elems_written += fwrite(buf,1,imageheader.imgsize,file);
     fclose(file);
 
     return 1;

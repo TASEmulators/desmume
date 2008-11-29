@@ -589,6 +589,7 @@ static void resolve_path(int dirent) {
 /* Read from a file using a 512 byte buffer */
 static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	char fname[2*NAME_LEN+EXT_LEN];
+	size_t elems_read = 0;
 
 	offset += cluster*512*SECPERCLUS;
 
@@ -601,7 +602,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 				return 0;
 			}
 			fseek(hFile, offset, SEEK_SET);
-			fread(&freadBuffer, 1, 512, hFile);
+			elems_read += fread(&freadBuffer, 1, 512, hFile);
 			bufferStart = offset;
 		}
 
@@ -622,7 +623,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
         if (!hFile) return 0;
         bufferStart = offset;
         fseek(hFile, offset, SEEK_SET);
-	fread(&freadBuffer, 1, 512, hFile);
+	elems_read += fread(&freadBuffer, 1, 512, hFile);
 
 	bufferStart = offset;
 	activeDirEnt = dirent;
@@ -635,6 +636,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 unsigned int
 cflash_read(unsigned int address) {
   unsigned int ret_value = 0;
+  size_t elems_read;
 #if 0 /* used by next if 0 block */
 #define BUFFERED_BLOCK_SIZE 512
   static u8 block_buffer[BUFFERED_BLOCK_SIZE];
@@ -677,7 +679,7 @@ cflash_read(unsigned int address) {
           data[1] = block_buffer[currLBA + 1 - buffered_start_index];
 #else
           LSEEK_FN( disk_image, currLBA, SEEK_SET);
-          READ_FN( disk_image, data, 2);
+          elems_read += READ_FN( disk_image, data, 2);
 #endif
           ret_value = data[1] << 8 |
             data[0];
@@ -697,13 +699,13 @@ cflash_read(unsigned int address) {
           ret_value = T1ReadWord(p, currLBA);
 
           // Reading the FAT 
-        } else if ((currLBA >= filesysFAT*512) && (currLBA < filesysRootDir*512)) {
+        } else if (((u32)currLBA >= filesysFAT*512) && ((u32)currLBA < filesysRootDir*512)) {
           p = (unsigned char*)&FAT16[0];
           ret_value = T1ReadWord(p, currLBA - filesysFAT * 512);
 
           // Reading directory entries 
-        } else if ((currLBA >= filesysRootDir*512) &&
-                   (cluster <= lastDirEntCluster)) {
+        } else if (((u32)currLBA >= filesysRootDir*512) &&
+                   (cluster <= (u32)lastDirEntCluster)) {
           cluster3 = ((currLBA - (SECRESV * 512)) / (512 * SECPERCLUS));
           i = (currLBA-(((cluster3-(filesysRootDir/SECPERCLUS))*SECPERCLUS+filesysRootDir)*512)); //(currLBA - cluster*BYTESPERCLUS);
           if (i < (dirEntriesInCluster[cluster3]*32)) {
@@ -723,7 +725,7 @@ cflash_read(unsigned int address) {
             }
           }
           // Reading file data 
-        } else if ((cluster2 > lastDirEntCluster) && (cluster2 <= lastFileDataCluster)) { //else if ((cluster>lastDirEntCluster)&&(cluster<=lastFileDataCluster)) {
+        } else if ((cluster2 > (u32)lastDirEntCluster) && (cluster2 <= (u32)lastFileDataCluster)) { //else if ((cluster>lastDirEntCluster)&&(cluster<=lastFileDataCluster)) {
           fileLBA = currLBA - (filesysData-32)*512;	// 32 = # sectors used for the root entries
 
           // Check if the read is from the currently opened file 
@@ -732,7 +734,7 @@ cflash_read(unsigned int address) {
             ret_value = fread_buffered(activeDirEnt,cluster-dirEntries[activeDirEnt].startCluster,(fileLBA-fileStartLBA)&(BYTESPERCLUS-1)); 
           } else {
             for (i=0; i<numFiles; i++) {
-              if ((fileLBA>=(dirEntries[i].startCluster*512*SECPERCLUS)) &&
+              if ((fileLBA>=(u32)(dirEntries[i].startCluster*512*SECPERCLUS)) &&
                   (fileLBA <(dirEntries[i].startCluster*512*SECPERCLUS)+dirEntries[i].fileSize) &&
                   ((dirEntries[i].attrib & (ATTRIB_DIR|ATTRIB_LFN))==0)) {
                 cluster = (fileLBA / (512 * SECPERCLUS));
