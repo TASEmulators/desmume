@@ -119,16 +119,6 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit10]
-FileName=printscreen.c
-CompileCpp=0
-Folder=gtk-glade
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit11]
 FileName=..\ARM9.h
 CompileCpp=0
