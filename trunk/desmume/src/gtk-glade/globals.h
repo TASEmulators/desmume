@@ -131,9 +131,6 @@ void black_screen ();
 void edit_controls();
 void init_joy_labels();
 
-/* printscreen.c */
-int WriteBMP(const char *filename,u16 *bmp);
-
 /* keyvalnames.c   -see <gdk/gdkkeysyms.h>- */
 const char * KEYNAME(int k);
 void init_keyvals();

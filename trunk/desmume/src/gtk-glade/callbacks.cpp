@@ -206,8 +206,51 @@ static void file_open() {
 }
  
 void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data) { file_open();}
-void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) {  WriteBMP("./test.bmp",(u16*)GPU_screen); }
 void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk_main_quit(); }
+
+#define SCREENS_PIXEL_SIZE 98304
+
+static void Printscreen()
+{
+        GdkPixbuf *screenshot;
+        gchar *filename;
+        GError *error = NULL;
+        u8 *rgb;
+        static int seq = 0;
+
+        rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
+        if (!rgb)
+                return;
+        for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
+                rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+                rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+                rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+        }
+
+        screenshot = gdk_pixbuf_new_from_data(rgb,
+                                              GDK_COLORSPACE_RGB,
+                                              FALSE,
+                                              8,
+                                              256,
+                                              192*2,
+                                              256*3,
+                                              NULL,
+                                              NULL);
+
+        filename = g_strdup_printf("./desmume-screenshot-%d.png", seq);
+        gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
+        if (error) {
+                g_error_free (error);
+                g_printerr("Failed to save %s", filename);
+        } else {
+                seq++;
+        }
+
+        free(rgb);
+        g_object_unref(screenshot);
+        g_free(filename);
+}
+void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data) { Printscreen(); }
 
 
 /* MENU SAVES ***** ***** ***** ***** */
