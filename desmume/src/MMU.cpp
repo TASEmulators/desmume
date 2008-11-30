@@ -394,7 +394,7 @@ void MMU_clearMem()
 
 	for (int i =0; i < 9; i++)
 	{
-		MMU.LCD_VRAM_ADDR[i] = 0xFFFFFFFF;
+		MMU.LCD_VRAM_ADDR[i] = 0;
 		for (int t = 0; t < 32; t++)
 			MMU.VRAM_MAP[i][t] = 7;
 	}
@@ -412,8 +412,6 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 		u8	engine_offset = (vram_addr >> 14);
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
 		if (block == 7) return NULL;
-		if (!MMU.LCDCenable[block]) return NULL;
-		if (MMU.LCD_VRAM_ADDR[block] == 0xFFFFFFFF) return NULL;
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
 		u8 *tmp_addr = LCDdst[block] + vram_addr;
 		return (tmp_addr);
@@ -433,9 +431,6 @@ static INLINE BOOL MMU_LCDmap(u32 *addr)
 		u8	engine_offset = (vram_addr >> 14);
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
 		if (block == 7) return TRUE;
-		if (!MMU.LCDCenable[block]) return TRUE;
-		if (MMU.LCD_VRAM_ADDR[block] == 0xFFFFFFFF) return TRUE;
-
 		//INFO("VRAM %i: engine=%i (offset=%i), map address = 0x%X, MMU address = 0x%X\n", block, engine, engine_offset, vram_addr, *addr);
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
 		vram_addr += LCDdata[block][0];
@@ -446,9 +441,6 @@ static INLINE BOOL MMU_LCDmap(u32 *addr)
 
 static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
-	if (!(VRAMBankCnt & 0x80)) return;
-	if (!(VRAMBankCnt & 0x07)) return;
-
 	u32	vram_map_addr = 0xFFFFFFFF;
 	BOOL isMapped = FALSE;
 	u8	*LCD_addr = LCDdst[block];
