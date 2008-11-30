@@ -598,10 +598,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gl_vertex.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\GPU.cpp"
 					>
 				</File>
@@ -757,6 +753,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\softrender.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\SPU.cpp"
 					>
 				</File>
@@ -884,10 +884,6 @@
 				>
 				<File
 					RelativePath=".\AboutBox.h"
-					>
-				</File>
-				<File
-					RelativePath=".\colorconv.h"
 					>
 				</File>
 				<File
@@ -1031,10 +1027,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gl_vertex.h"
-					>
-				</File>
-				<File
 					RelativePath="..\GPU.h"
 					>
 				</File>
@@ -1092,6 +1084,14 @@
 				</File>
 				<File
 					RelativePath="..\saves.h"
+					>
+				</File>
+				<File
+					RelativePath="..\softrender.h"
+					>
+				</File>
+				<File
+					RelativePath="..\softrender_config.h"
 					>
 				</File>
 				<File
