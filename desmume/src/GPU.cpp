@@ -2055,8 +2055,6 @@ static void calc_bright_colors() {
 #undef FORMULA_LESS
 }
 #endif
-extern u16 NDS_3D_GetPixel(int line, int offset);
-
 static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
