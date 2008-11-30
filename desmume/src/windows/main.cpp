@@ -333,7 +333,7 @@ void ResizingLimit(int wParam, RECT *rc)
 	u32 minX = 256;
 	u32 minY = 414;
 
-	//INFO("width=%i; height=%i\n", width, height);
+	//LOG("width=%i; height=%i\n", width, height);
 
 	if (GPU_rotation == 90 || GPU_rotation == 270)
 	{
@@ -543,7 +543,7 @@ void UpdateRecentRomsMenu()
 		moo.fType = 0;
 		moo.wID = baseid + x;
 		moo.dwTypeData = (LPSTR)tmp.c_str();
-		//INFO("Inserting: %s\n",tmp.c_str());  //Debug
+		//LOG("Inserting: %s\n",tmp.c_str());  //Debug
 		InsertMenuItem(recentromsmenu, 0, 1, &moo);
 	}
 	//-----------------------------------------------------------------------
@@ -585,7 +585,7 @@ void UpdateRecentRoms(char* filename)
 
 	//Debug
 	//for (int x = 0; x < RecentRoms.size(); x++)
-	//	INFO("Recent ROM: %s\n",RecentRoms[x].c_str());
+	//	LOG("Recent ROM: %s\n",RecentRoms[x].c_str());
 
 	UpdateRecentRomsMenu();
 }
@@ -748,7 +748,7 @@ void Display()
 			}
 		}
 		else
-			 LOG("16bit depth color not supported");
+			 INFO("16bit depth color not supported");
 		IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
 
 		if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
@@ -995,7 +995,7 @@ void NDS_Pause()
 		paused = TRUE;
 		SPU_Pause(1);
 		while (!paused) {}
-		INFO("Paused\n");
+		INFO("Emulation paused\n");
 	}
 }
 
@@ -1006,7 +1006,7 @@ void NDS_UnPause()
 		paused = FALSE;
 		execute = TRUE;
 		SPU_Pause(0);
-		INFO("Unpaused\n");
+		INFO("Emulation unpaused\n");
    }
 }
 
@@ -1042,16 +1042,16 @@ void StateLoadSlot(int num)
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 {
     NDS_Pause();
-	if (strcmp(filename,"")!=0) LOG("Attempting to load ROM: %s\n",filename);
+	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
     if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
 	{
-		LOG("Loading %s was successful\n",filename);
+		INFO("Loading %s was successful\n",filename);
 		frameCounter=0;
 		UpdateRecentRoms(filename);
 		return TRUE;		
 	}
-	LOG("Loading %s FAILED.\n",filename);
+	INFO("Loading %s FAILED.\n",filename);
 	return FALSE;
 }
 
@@ -1573,7 +1573,7 @@ void OpenRecentROM(int listNum)
 	if (listNum > MAX_RECENT_ROMS) return; //Just in case
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
-	LOG("Attempting to load %s\n",filename);
+	//LOG("Attempting to load %s\n",filename);
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
     {
 		EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
@@ -1675,7 +1675,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ResizingLimit(wParam, rc);
 				if (ForceRatio)
 					ScaleScreen(hwnd, wParam, rc);
-				//INFO("sizing: width=%i; height=%i\n", rc->right - rc->left, rc->bottom - rc->top);
+				//LOG("sizing: width=%i; height=%i\n", rc->right - rc->left, rc->bottom - rc->top);
 			}
 			break;
 		case WM_SIZE:
@@ -1808,7 +1808,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                  return 0;
                             }
                             
-                            LOG("%s\r\n", filename);
+                            //LOG("%s\r\n", filename);
 
                             if(LoadROM(filename, bad_glob_cflash_disk_image_file))
                             {

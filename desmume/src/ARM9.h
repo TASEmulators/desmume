@@ -20,7 +20,7 @@ typedef struct {
 
         u8 * ExtPal[2][4];
         u8 * ObjExtPal[2][2];
-        u8 * texPalSlot[4];
+        u8 * texPalSlot[6];
 
 		u8 *textureSlotAddr[4];
 

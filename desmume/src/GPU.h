@@ -341,31 +341,24 @@ typedef union
     source:
     http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
 *******************************************************************************/
-
-struct _DISPCAPCNT
+typedef struct
 {
-/* 0*/ u8 BlendFactor_A:5;     // 0..16 = Blending Factor for Source A
-/* 5*/ u8 :3;                  //
-/* 8*/ u8 BlendFactor_B:5;     // 0..16 = Blending Factor for Source B
-/*13*/ u8 :3;                  //
-/*16*/ u8 VRAM_Write_Block:2;  // 0..3 = VRAM A..D
-/*18*/ u8 VRAM_Write_Offset:2; // n x 0x08000
-/*20*/ u8 Capture_Size:2;      // 0=128x128, 1=256x64, 2=256x128, 3=256x192 dots
-/*22*/ u8 :2;                  //
-/*24*/ u8 Source_A:1;          // 0=Graphics Screen BG+3D+OBJ, 1=3D Screen
-/*25*/ u8 Source_B:1;          // 0=VRAM, 1=Main Memory Display FIFO
-/*26*/ u8 VRAM_Read_Offset:2;  // n x 0x08000
-/*28*/ u8 :1;                  //
-/*29*/ u8 Capture_Source:2;    // 0=Source A, 1=Source B, 2/3=Sources A+B blended
-/*31*/ u8 Capture_Enable:1;    // 0=Disable/Ready, 1=Enable/Busy
-};
-
-typedef union
-{
-    struct _DISPCAPCNT bits;
-    u32 val;
+    u32		val;
+	BOOL	enabled;
+	u8		EVA;
+	u8		EVB;
+	u8		writeBlock;
+	u8		writeOffset;
+	u16		capx;
+	u16		capy;
+	u8		srcA;
+	u8		srcB;
+	u8		readBlock;
+	u8		readOffset;
+	u8		capSrc;
+	u8		*dst;
+	u8		*src;
 } DISPCAPCNT;
-
 
 /*******************************************************************************
     this structure holds everything and should be mapped to
@@ -590,7 +583,10 @@ typedef struct
 	// doh ! yoda says : 256 pixels we can have...
 	u16 nbPixelsX;
 } itemsForPriority_t;
-
+#define ARM9MEM_ABG		0x06000000
+#define ARM9MEM_BBG		0x06200000
+#define ARM9MEM_AOBJ	0x06400000
+#define ARM9MEM_BOBJ	0x06600000
 
 typedef struct _GPU GPU;
 
@@ -608,14 +604,13 @@ struct _GPU
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
 
-	u8 *(BG_bmp_ram[4]);
-	u8 *(BG_tile_ram[4]);
-	u8 *(BG_map_ram[4]);
+	u32 BG_bmp_ram[4];
+	u32 BG_tile_ram[4];
+	u32 BG_map_ram[4];
 
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
 
-	u8 lcd;
 	u8 core;
 
 	u8 dispMode;
@@ -625,7 +620,7 @@ struct _GPU
 	BOOL dispOBJ;
 
 	OAM * oam;
-	u8 * sprMem;
+	u32	sprMem;
 	u8 sprBoundary;
 	u8 sprBMPBoundary;
 	u8 sprBMPMode;
@@ -753,7 +748,7 @@ void GPU_addBack(GPU *, u8 num);
 
 int GPU_ChangeGraphicsCore(int coreid);
 
-void GPU_set_DISPCAPCNT(GPU * gpu, u32 val) ;
+void GPU_set_DISPCAPCNT(u32 val) ;
 void GPU_ligne(NDS_Screen * screen, u16 l) ;
 void GPU_setMasterBrightness (GPU *gpu, u16 val);
 

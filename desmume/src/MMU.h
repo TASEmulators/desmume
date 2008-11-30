@@ -49,7 +49,10 @@ typedef struct {
     u8 ARM7_REG[0x10000];
     u8 ARM7_WIRAM[0x10000];
         
-	u8 vram_mode[9];
+	// VRAM mapping
+	u8	VRAM_MAP[4][32];
+	u32	LCD_VRAM_ADDR[10];
+	u8	LCDCenable[10];
 
     //Shared ram
     u8 SWIRAM[0x8000];
@@ -187,5 +190,7 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num);
 extern struct armcpu_memory_iface arm9_base_memory_iface;
 extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
+
+extern u8 *MMU_RenderMapToLCD(u32 vram_addr);
 
 #endif

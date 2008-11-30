@@ -44,7 +44,7 @@
 
 savestates_t savestates[NB_STATES];
 
-#define SAVESTATE_VERSION       10
+#define SAVESTATE_VERSION       11
 static const char* magic = "DeSmuME SState\0";
 
 #ifndef MAX_PATH
@@ -168,7 +168,9 @@ SFORMAT SF_MMU[]={
 	{ "M7ER", 1, 0x10000, MMU.ARM7_ERAM},
 	{ "M7RG", 1, 0x10000, MMU.ARM7_REG},
 	{ "M7WI", 1, 0x10000, MMU.ARM7_WIRAM},
-	{ "MVRM", 1, 9,       MMU.vram_mode},
+	{ "MVRM", 1, 4,       MMU.VRAM_MAP},
+	{ "MVRM", 4, 9,       MMU.LCD_VRAM_ADDR},
+	{ "MVRM", 1, 9,       MMU.LCDCenable},
 	{ "MSWI", 1, 0x8000,  MMU.SWIRAM},
 	{ "MCRA", 1, 0x10000, MMU.CART_RAM},
 	{ "M9RW", 1, 1,       &MMU.ARM9_RW_MODE},

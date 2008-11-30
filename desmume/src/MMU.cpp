@@ -40,13 +40,13 @@
 #include "mc.h"
 
 static const int save_types[7][2] = {
-	{MC_TYPE_AUTODETECT,1},
-	{MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
-	{MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
-	{MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
-	{MC_TYPE_FRAM,MC_SIZE_256KBITS},
-	{MC_TYPE_FLASH,MC_SIZE_2MBITS},
-	{MC_TYPE_FLASH,MC_SIZE_4MBITS}
+        {MC_TYPE_AUTODETECT,1},
+        {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
+        {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
+        {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
+        {MC_TYPE_FRAM,MC_SIZE_256KBITS},
+        {MC_TYPE_FLASH,MC_SIZE_2MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
 };
 
 
@@ -227,12 +227,24 @@ u32 MMU_ARM7_WAIT32[16]={
 	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
 };
 	
-static u8	MMU_VRAMcntSaved[10];
+// VRAM mapping
+u8		*LCDdst[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+const static u32	LCDdata[10][2]= {
+					{0x6800000, 8},			// Bank A
+					{0x6820000, 8},			// Bank B
+					{0x6840000, 8},			// Bank C
+					{0x6860000, 8},			// Bank D
+					{0x6880000, 4},			// Bank E
+					{0x6890000, 1},			// Bank F
+					{0x6894000, 1},			// Bank G
+					{0, 0},
+					{0x6898000, 2},			// Bank H
+					{0x68A0000, 1}};		// Bank I
 
 void MMU_Init(void) {
 	int i;
 
-	INFO("MMU init\n");
+	LOG("MMU init\n");
 
 	memset(&MMU, 0, sizeof(MMU_struct));
 
@@ -257,25 +269,22 @@ void MMU_Init(void) {
 	MMU.MMU_WAIT32[0] = MMU_ARM9_WAIT32;
 	MMU.MMU_WAIT32[1] = MMU_ARM7_WAIT32;
 
-	memset(MMU_VRAMcntSaved, 0, sizeof(MMU_VRAMcntSaved[0])*10);
-	
 	FIFOclear(&MMU.fifos[0]);
 	FIFOclear(&MMU.fifos[1]);
 	
-        mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
-        mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
-        MMU.fw.fp = NULL;
+	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
+	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
+	MMU.fw.fp = NULL;
 
-        // Init Backup Memory device, this should really be done when the rom is loaded
-        mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
-        mc_alloc(&MMU.bupmem, 1);
-        MMU.bupmem.fp = NULL;
+	// Init Backup Memory device, this should really be done when the rom is loaded
+	mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
+	mc_alloc(&MMU.bupmem, 1);
+	MMU.bupmem.fp = NULL;
 	rtcInit();
-
 } 
 
 void MMU_DeInit(void) {
-	INFO("MMU deinit\n");
+	LOG("MMU deinit\n");
     if (MMU.fw.fp)
        fclose(MMU.fw.fp);
     mc_free(&MMU.fw);      
@@ -298,10 +307,11 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
-	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);
-	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);
-	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);
-	memset(ARM9Mem.ARM9_BOBJ, 0, 0x020000);
+	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);		// TODO: remove this
+	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);		// don't need now
+	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);		//
+	memset(ARM9Mem.ARM9_BOBJ, 0, 0x020000);		// ----------------|
+
 	memset(ARM9Mem.ARM9_DTCM, 0, 0x4000);
 	memset(ARM9Mem.ARM9_ITCM, 0, 0x8000);
 	memset(ARM9Mem.ARM9_LCD,  0, 0x0A4000);
@@ -314,8 +324,6 @@ void MMU_clearMem()
 	
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
-	
-	memset(MMU_VRAMcntSaved, 0, sizeof(MMU_VRAMcntSaved[0])*10);
 	
 	FIFOclear(&MMU.fifos[0]);
 	FIFOclear(&MMU.fifos[1]);
@@ -357,349 +365,237 @@ void MMU_clearMem()
         ARM9Mem.textureSlotAddr[2] = &ARM9Mem.ARM9_LCD[0x20000 * 2];
         ARM9Mem.textureSlotAddr[3] = &ARM9Mem.ARM9_LCD[0x20000 * 3];
 #endif
+
+	LCDdst[0] = ARM9Mem.ARM9_LCD;				// Bank A
+	LCDdst[1] = ARM9Mem.ARM9_LCD + 0x20000;		// Bank B
+	LCDdst[2] = ARM9Mem.ARM9_LCD + 0x40000;		// Bank C
+	LCDdst[3] = ARM9Mem.ARM9_LCD + 0x60000;		// Bank D
+	LCDdst[4] = ARM9Mem.ARM9_LCD + 0x80000;		// Bank E
+	LCDdst[5] = ARM9Mem.ARM9_LCD + 0x90000;		// Bank F
+	LCDdst[6] = ARM9Mem.ARM9_LCD + 0x94000;		// Bank G
+	LCDdst[7] = NULL;
+	LCDdst[8] = ARM9Mem.ARM9_LCD + 0x98000;		// Bank H
+	LCDdst[9] = ARM9Mem.ARM9_LCD + 0xA0000;		// Bank I
+
+	for (int i = 0; i < 4; i++)
+	{
+		ARM9Mem.ExtPal[0][i] = ARM9Mem.ARM9_LCD;
+		ARM9Mem.ExtPal[1][i] = ARM9Mem.ARM9_LCD;
+	}
+	ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.ObjExtPal[0][2] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.ObjExtPal[1][2] = ARM9Mem.ARM9_LCD;
+
+	ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD;
+
+	for (int i =0; i < 9; i++)
+	{
+		MMU.LCD_VRAM_ADDR[i] = 0xFFFFFFFF;
+		for (int t = 0; t < 32; t++)
+			MMU.VRAM_MAP[i][t] = 7;
+	}
 	rtcInit();
 }
 
-// temporary implementations for clearing VRAM (garbage on screen)
-// TODO: rewrite VRAM control
-static u8 MMU_checkVRAM(u8 block, u8 val)
+// VRAM mapping control
+u8 *MMU_RenderMapToLCD(u32 vram_addr)
 {
-	u32 size = 0;
-	u8 *destination = NULL;
-
-	if ((val & 0x80))
+	if ((vram_addr >= 0x6000000) && (vram_addr <= 0x67FFFFF))
 	{
-		MMU_VRAMcntSaved[block] = val;
-		return 1;
+		vram_addr &= 0x0FFFFFF;
+		u8	engine = (vram_addr >> 21);
+		vram_addr &= 0x01FFFFF;
+		u8	engine_offset = (vram_addr >> 14);
+		u8	block = MMU.VRAM_MAP[engine][engine_offset];
+		if (block == 7) return NULL;
+		if (!MMU.LCDCenable[block]) return NULL;
+		if (MMU.LCD_VRAM_ADDR[block] == 0xFFFFFFFF) return NULL;
+		vram_addr -= MMU.LCD_VRAM_ADDR[block];
+		u8 *tmp_addr = LCDdst[block] + vram_addr;
+		return (tmp_addr);
 	}
+	return NULL;
+}
 
-	if (MMU_VRAMcntSaved[block] == 0) return 2;
+static INLINE BOOL MMU_LCDmap(u32 *addr)
+{
+	u32	vram_addr = (u32)*addr;
 
-	switch (MMU_VRAMcntSaved[block] & 0x07)
+	if ((vram_addr >= 0x6000000) && (vram_addr <= 0x67FFFFF))
 	{
-		case 0:
-			break;
+		vram_addr &= 0x0FFFFFF;
+		u8	engine = (vram_addr >> 21);
+		vram_addr &= 0x01FFFFF;
+		u8	engine_offset = (vram_addr >> 14);
+		u8	block = MMU.VRAM_MAP[engine][engine_offset];
+		if (block == 7) return TRUE;
+		if (!MMU.LCDCenable[block]) return TRUE;
+		if (MMU.LCD_VRAM_ADDR[block] == 0xFFFFFFFF) return TRUE;
+
+		//INFO("VRAM %i: engine=%i (offset=%i), map address = 0x%X, MMU address = 0x%X\n", block, engine, engine_offset, vram_addr, *addr);
+		vram_addr -= MMU.LCD_VRAM_ADDR[block];
+		vram_addr += LCDdata[block][0];
+		*addr = vram_addr;
+	}
+	return FALSE;
+}
+
+static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
+{
+	if (!(VRAMBankCnt & 0x80)) return;
+	if (!(VRAMBankCnt & 0x07)) return;
+
+	u32	vram_map_addr = 0xFFFFFFFF;
+	BOOL isMapped = FALSE;
+	u8	*LCD_addr = LCDdst[block];
+	
+	switch (VRAMBankCnt & 0x07)
+	{
 		case 1:
+			switch(block)
+			{
+				case 0:		// A
+				case 1:		// B
+				case 2:		// C
+				case 3:		// D		Engine A, BG
+					vram_map_addr = ((VRAMBankCnt >> 3) & 3) * 0x20000;
+				break ;
+				case 4:		// E		Engine A, BG
+					vram_map_addr = 0x0000000;
+				break;
+				case 5:		// F
+				case 6:		// G		Engine A, BG
+					vram_map_addr = (((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
+				break;
+				case 8:		// H		Engine B, BG
+					vram_map_addr = 0x0200000;
+				break ;
+				case 9:		// I		Engine B, BG
+					vram_map_addr = 0x0208000;
+				break;
+			}
+		break ;
+
+		case 2:
+			switch(block)
+			{
+				case 0:		// A
+				case 1:		// B		Engine A, OBJ
+					vram_map_addr = 0x0400000 + (((VRAMBankCnt>>3)&1)*0x20000);
+				break;
+				case 4:		// E		Engine A, OBJ
+					vram_map_addr = 0x0400000;
+				break;
+				case 5:		// F
+				case 6:		// G		Engine A, OBJ
+					vram_map_addr = 0x0400000 + (((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
+				break;
+				case 8:		// H		Engine B, BG
+					ARM9Mem.ExtPal[1][0] = LCD_addr;
+					ARM9Mem.ExtPal[1][1] = LCD_addr+0x2000;
+					ARM9Mem.ExtPal[1][2] = LCD_addr+0x4000;
+					ARM9Mem.ExtPal[1][3] = LCD_addr+0x6000;
+				break;
+				case 9:		// I		Engine B, OBJ
+					vram_map_addr = 0x0600000;
+				break;
+			}
+		break ;
+
+		case 3:
 			switch (block)
 			{
 				case 0:		// A
 				case 1:		// B
 				case 2:		// C
 				case 3:		// D
-					size = 0x20000 ;
-					destination = ARM9Mem.ARM9_ABG + ((MMU_VRAMcntSaved[block] >> 3) & 3) * 0x20000 ;
-					break;
+					// Textures
+					{
+						int slot_index = (VRAMBankCnt >> 3) & 0x3;
+						ARM9Mem.textureSlotAddr[slot_index] = LCD_addr;
+						gpu3D->NDS_3D_VramReconfigureSignal();
+					}
+				return;
 				case 4:		// E
-					size = 0x10000;
-					destination = ARM9Mem.ARM9_ABG ;
-					break;
+					ARM9Mem.texPalSlot[0] = LCD_addr;
+					ARM9Mem.texPalSlot[1] = LCD_addr+0x2000;
+					ARM9Mem.texPalSlot[2] = LCD_addr+0x4000;
+					ARM9Mem.texPalSlot[3] = LCD_addr+0x6000;
+				break;
 				case 5:		// F
 				case 6:		// G
-					size = 0x4000;
-					destination = ARM9Mem.ARM9_ABG + 
-									(((MMU_VRAMcntSaved[block] >> 3) & 0x01) * 0x4000) + 
-										(((MMU_VRAMcntSaved[block] >> 4) & 0x1) * 0x10000) ;
-					break;
-				case 8:		// H
-					size = 0x8000;
-					destination = ARM9Mem.ARM9_BBG ;
-					break;
-				case 9:		// I
-					size = 0x4000;
-					destination = ARM9Mem.ARM9_BBG + 0x8000;
-					break ;
-			}
-			break;
-		case 2:
-			switch(block)
-			{
-				case 0:
-				case 1:
-					// banks A,B are in use for OBJ at AOBJ + ofs * 0x20000
-					size = 0x20000;
-					destination = ARM9Mem.ARM9_AOBJ+(((MMU_VRAMcntSaved[block]>>3)&1)*0x20000);
-					break;
-				case 4:		// E
-					size = 0x10000;
-					destination = ARM9Mem.ARM9_AOBJ;
-					break;
-				case 5:
-				case 6:
-					size = 0x4000;
-					destination = ARM9Mem.ARM9_AOBJ+
-									(((MMU_VRAMcntSaved[block]>>3)&1)*0x4000)+
-										(((MMU_VRAMcntSaved[block]>>4)&1)*0x10000);
-					break;
-			}
-			break;
-		case 4:
-			switch(block)
-			{
-				case 2:		// C
-					size = 0x20000;
-					destination = ARM9Mem.ARM9_BBG ;
-					break ;
-				case 3:		// D
-					size = 0x20000;
-					break ;
-			}
-			break;
-	}
-	if (!destination) return 3;
-	memset(destination, 0, size) ;
-	return 0;
-}
-
-/* the VRAM blocks keep their content even when not blended in */
-/* to ensure that we write the content back to the LCD ram */
-/* FIXME: VRAM Bank E,F,G,H,I missing */
-static void MMU_VRAMWriteBackToLCD(u8 block)
-{
-	u8 *destination;
-	u8 *source;
-	u32 size ;
-	u8 VRAMBankCnt;
-
-	destination = 0 ;
-	source = 0;
-	VRAMBankCnt = MMU_read8(ARMCPU_ARM9,REG_VRAMCNTA+block);
-	if(!(VRAMBankCnt&0x80))return;
-
-	switch (block)
-	{
-		case 0: // Bank A
-			destination = ARM9Mem.ARM9_LCD ;
-			size = 0x20000 ;
-			break ;
-		case 1: // Bank B
-			destination = ARM9Mem.ARM9_LCD + 0x20000 ;
-			size = 0x20000 ;
-			break ;
-		case 2: // Bank C
-			destination = ARM9Mem.ARM9_LCD + 0x40000 ;
-			size = 0x20000 ;
-			break ;
-		case 3: // Bank D
-			destination = ARM9Mem.ARM9_LCD + 0x60000 ;
-			size = 0x20000 ;
-			break ;
-		case 4: // Bank E
-			destination = ARM9Mem.ARM9_LCD + 0x80000 ;
-			size = 0x10000 ;
-			break ;
-		case 5: // Bank F
-			destination = ARM9Mem.ARM9_LCD + 0x90000 ;
-			size = 0x4000 ;
-			break ;
-		case 6: // Bank G
-			destination = ARM9Mem.ARM9_LCD + 0x94000 ;
-			size = 0x4000 ;
-			break ;
-		case 8: // Bank H
-			destination = ARM9Mem.ARM9_LCD + 0x98000 ;
-			size = 0x8000 ;
-			break ;
-		case 9: // Bank I
-			destination = ARM9Mem.ARM9_LCD + 0xA0000 ;
-			size = 0x4000 ;
-			break ;
-		default:
-			return ;
-	}
-	switch (VRAMBankCnt & 7) {
-		case 0:
-			/* vram is allready stored at LCD, we dont need to write it back */
-			break ;
-		case 1:
-			switch(block){
-				case 0:
-				case 1:
-				case 2:
-				case 3:
-					/* banks are in use for BG at ABG + ofs * 0x20000 */
-					source = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-					break ;
-				case 4:
-					/* bank E is in use at ABG */ 
-					source = ARM9Mem.ARM9_ABG ;
-					break;
-				case 5:
-				case 6:
-					/* banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)*/
-					source = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 2) & 1) * 0x10000) ;
-					break;
-				case 8:
-					/* bank H is in use at BBG */ 
-					source = ARM9Mem.ARM9_BBG ;
-					break ;
-				case 9:
-					/* bank I is in use at BBG */ 
-					source = ARM9Mem.ARM9_BBG + 0x8000 ;
-					break;
-				default: return ;
-			}
-			break ;
-		case 2:
-			switch(block)
-			{
-				case 0:
-				case 1:
-					// banks A,B are in use for OBJ at AOBJ + ofs * 0x20000
-					source=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&1)*0x20000);
-					break;
-				case 4:
-					source=ARM9Mem.ARM9_AOBJ;
-					break;
-				case 5:
-				case 6:
-					source=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
-					break;
-				case 9:
-				//	source=ARM9Mem.ARM9_BOBJ;
-					break;
-			}
-			break ;
-		case 3: break;
-		case 4:
-			switch(block)
-			{
-				case 2:
-					/* bank C is in use at BBG */ 
-					source = ARM9Mem.ARM9_BBG ;
-					break ;
-				case 3:
-					/* bank D is in use at BOBJ */ 
-					source = ARM9Mem.ARM9_BOBJ ;
-					break ;
-				default: return ;
-			}
-			break ;
-		default:
-			return ;
-	}
-	if (!destination) return ;
-	if (!source) return ;
-	memcpy(destination,source,size) ;
-}
-
-static void MMU_VRAMReloadFromLCD(u8 block,u8 VRAMBankCnt)
-{
-	u8 *destination;
-	u8 *source;
-	u32 size;
-
-	if(!(VRAMBankCnt&0x80))return;
-	destination = 0;
-	source = 0;
-	size = 0;
-	switch (block)
-	{
-		case 0: // Bank A
-			source = ARM9Mem.ARM9_LCD ;
-			size = 0x20000 ;
-			break ;
-		case 1: // Bank B
-			source = ARM9Mem.ARM9_LCD + 0x20000 ;
-			size = 0x20000 ;
-			break ;
-		case 2: // Bank C
-			source = ARM9Mem.ARM9_LCD + 0x40000 ;
-			size = 0x20000 ;
-			break ;
-		case 3: // Bank D
-			source = ARM9Mem.ARM9_LCD + 0x60000 ;
-			size = 0x20000 ;
-			break ;
-		case 4: // Bank E
-			source = ARM9Mem.ARM9_LCD + 0x80000 ;
-			size = 0x10000 ;
-			break ;
-		case 5: // Bank F
-			source = ARM9Mem.ARM9_LCD + 0x90000 ;
-			size = 0x4000 ;
-			break ;
-		case 6: // Bank G
-			source = ARM9Mem.ARM9_LCD + 0x94000 ;
-			size = 0x4000 ;
-			break ;
-		case 8: // Bank H
-			source = ARM9Mem.ARM9_LCD + 0x98000 ;
-			size = 0x8000 ;
-			break ;
-		case 9: // Bank I
-			source = ARM9Mem.ARM9_LCD + 0xA0000 ;
-			size = 0x4000 ;
-			break ;
-		default:
-			return ;
-	}
-switch (VRAMBankCnt & 7) {
-		case 0:	// vram is allready stored at LCD, we dont need to write it back
-			break ;
-		case 1:
-			switch(block){
-				case 0:
-				case 1:
-				case 2:
-				case 3:	// banks are in use for BG at ABG + ofs * 0x20000
-					destination = ARM9Mem.ARM9_ABG + ((VRAMBankCnt >> 3) & 3) * 0x20000 ;
-					break ;
-				case 4:	// bank E is in use at ABG 
-					destination = ARM9Mem.ARM9_ABG ;
-					break;
-				case 5:
-				case 6:	// banks are in use for BG at ABG + (0x4000*OFS.0)+(0x10000*OFS.1)
-					destination = ARM9Mem.ARM9_ABG + (((VRAMBankCnt >> 3) & 1) * 0x4000) + (((VRAMBankCnt >> 4) & 1) * 0x10000) ;
-					break;
-				case 7:
-				case 8:	// bank H is in use at BBG
-					//destination = ARM9Mem.ARM9_BBG ;
-					break ;
-				case 9:	// bank I is in use at BBG
-					//destination = ARM9Mem.ARM9_BBG + 0x8000 ;
-					break;
-				//default: return ;
+				{
+					u8 tmp_slot = ((VRAMBankCnt >> 3) & 0x01) + (((VRAMBankCnt >> 4) & 0x01)*4);
+					ARM9Mem.texPalSlot[tmp_slot] = LCD_addr;
 				}
-			break ;
-		case 2:
+				break;
+				case 9:		// I		Engine B, OBJ
+					ARM9Mem.ObjExtPal[1][0] = LCD_addr;
+					ARM9Mem.ObjExtPal[1][1] = LCD_addr+0x2000;
+				break;
+			}
+		break ;
+
+		case 4:
 			switch(block)
 			{
-				case 0:
-				case 1:
-					destination=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&3)*0x20000);
-					break;
-				case 4:
-					destination=ARM9Mem.ARM9_AOBJ;
-					break;
-				case 5:
-				case 6:
-					destination=ARM9Mem.ARM9_AOBJ+(((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
-					break;
-				case 9:
-				//	destination=ARM9Mem.ARM9_BOBJ;
-					break;
+				case 2:		// C		Engine B, BG
+					vram_map_addr = 0x0200000;
+				break ;
+				case 3:		// D		Engine B, OBJ
+					vram_map_addr = 0x0600000;
+				break ;
+				case 4:		// E		Engine A, BG
+					ARM9Mem.ExtPal[0][0] = LCD_addr;
+					ARM9Mem.ExtPal[0][1] = LCD_addr+0x2000;
+					ARM9Mem.ExtPal[0][2] = LCD_addr+0x4000;
+					ARM9Mem.ExtPal[0][3] = LCD_addr+0x6000;
+				break;
+				case 5:		// F
+				case 6:		// G		Engine A, BG
+					u8 tmp_slot = (VRAMBankCnt >> 2) & 0x02;
+					ARM9Mem.ExtPal[0][tmp_slot] = LCD_addr;
+					ARM9Mem.ExtPal[0][tmp_slot+1] = LCD_addr+0x2000;
+				break;
 			}
+		break;
 
-			break;
-		//case 3: break;
-		case 4:
-				switch(block){
-				case 2:	// bank C is in use at BBG
-					destination = ARM9Mem.ARM9_BBG ;
-					break ;
-				case 3:
-					// bank D is in use at BOBJ 
-					destination = ARM9Mem.ARM9_BOBJ ;
-					break ;
-				default: return ;
-				}
-			break ;
-		default:
-			return ;
+		case 5:
+			if ((block == 5) || (block == 6))		// F, G		Engine A, OBJ
+			{
+				ARM9Mem.ObjExtPal[0][0] = LCD_addr;
+				ARM9Mem.ObjExtPal[0][1] = LCD_addr + 0x2000;
+				
+			}
+		break;
 	}
-	if (!destination) return ;
-	if (!source) return ;
-	memcpy(destination,source,size) ;
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int t = 0; t < 32; t++)
+			if (MMU.VRAM_MAP[i][t] == block) 
+				MMU.VRAM_MAP[i][t] = 7;
+	}
+
+	if (vram_map_addr != 0xFFFFFFFF)
+	{
+		u8	engine = (vram_map_addr >> 21);
+		vram_map_addr &= 0x001FFFFF;
+		u8	engine_offset = (vram_map_addr >> 14);
+		MMU.LCD_VRAM_ADDR[block] = vram_map_addr;
+		MMU.LCDCenable[block] = TRUE;
+
+		for (int i = 0; i < LCDdata[block][1]; i++)
+			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
+		
+		//INFO("VRAM %i mapping: engine=%i (offset=%i), address = 0x%X, MST=%i\n", block, engine, engine_offset, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
+		return;
+	}
+	MMU.LCDCenable[block] = FALSE;
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
@@ -766,7 +662,9 @@ u8 FASTCALL _MMU_read8(u32 adr)
 	}
 #endif
 
-		mmu_log_debug(adr, proc, "read08");
+	if (MMU_LCDmap(&adr)) return (0);
+
+	mmu_log_debug(adr, proc, "read08");
 
     return MMU.MMU_MEM[proc][(adr>>20)&0xFF][adr&MMU.MMU_MASK[proc][(adr>>20)&0xFF]];
 }
@@ -797,6 +695,8 @@ u16 FASTCALL _MMU_read16(u32 adr)
 #endif
 
 	adr &= 0x0FFFFFFF;
+
+	if (MMU_LCDmap(&adr)) return (0);
 
 	if(adr&0x04000000)
 	{
@@ -868,6 +768,8 @@ u32 FASTCALL _MMU_read32(u32 adr)
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 	   return (unsigned long)cflash_read(adr);
 	adr &= 0x0FFFFFFF;
+
+	if (MMU_LCDmap(&adr)) return (0);
 
 	if((adr >> 24) == 4)
 	{
@@ -1049,6 +951,8 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		return ;
 	}
 
+	if (MMU_LCDmap(&adr)) return;
+
 	switch(adr)
 	{
 		case REG_DISPA_WIN0H: 	 
@@ -1165,214 +1069,29 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 			if(proc == ARMCPU_ARM9) GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
 			break;
 
-		/* TODO: EEEK ! Controls for VRAMs A, B, C, D are missing ! */
-		/* TODO: Not all mappings of VRAMs are handled... (especially BG and OBJ modes) */
 		case REG_VRAMCNTA:
 		case REG_VRAMCNTB:
 		case REG_VRAMCNTC:
 		case REG_VRAMCNTD:
-			if(proc == ARMCPU_ARM9)
-			{
-                //
-                // FIXME: simply texture slot handling
-                // This is a first stab and is not correct. It does
-                // not handle a VRAM texture slot becoming
-                // unconfigured.
-                // Revisit all of VRAM control handling for future
-                // release?
-                //
-                if ( val & 0x80) {
-                  if ( (val & 0x7) == 3) {
-                    int slot_index = (val >> 3) & 0x3;
-
-                    ARM9Mem.textureSlotAddr[slot_index] =
-                      &ARM9Mem.ARM9_LCD[0x20000 * (adr - REG_VRAMCNTA)];
-					
-					gpu3D->NDS_3D_VramReconfigureSignal();
-                  }
-                }
-				if (MMU_checkVRAM(adr-REG_VRAMCNTA, val) == 1) break;
-
-				MMU_VRAMWriteBackToLCD(adr-REG_VRAMCNTA) ;
-				switch(val & 0x1F)
-				{
-				case 1 :
-					MMU.vram_mode[adr-REG_VRAMCNTA] = 0; // BG-VRAM
-					//memset(ARM9Mem.ARM9_ABG,0,0x20000);
-					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*0); // BG-VRAM
-					break;
-				case 1 | (1 << 3) :
-					MMU.vram_mode[adr-REG_VRAMCNTA] = 1; // BG-VRAM
-					//memset(ARM9Mem.ARM9_ABG+0x20000,0,0x20000);
-					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*1); // BG-VRAM
-					break;
-				case 1 | (2 << 3) :
-					MMU.vram_mode[adr-REG_VRAMCNTA] = 2; // BG-VRAM
-					//memset(ARM9Mem.ARM9_ABG+0x40000,0,0x20000);
-					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*2); // BG-VRAM
-					break;
-				case 1 | (3 << 3) :
-					MMU.vram_mode[adr-REG_VRAMCNTA] = 3; // BG-VRAM
-					//memset(ARM9Mem.ARM9_ABG+0x60000,0,0x20000);
-					//MMU.vram_offset[0] = ARM9Mem.ARM9_ABG+(0x20000*3); // BG-VRAM
-					break;
-				case 0: // mapped to lcd
-                    MMU.vram_mode[adr-REG_VRAMCNTA] = 4 | (adr-REG_VRAMCNTA) ;
-					break ;
-				}
-                MMU_VRAMReloadFromLCD(adr-REG_VRAMCNTA,val) ;
-			}
-			break;
-
-                case REG_VRAMCNTE :
-			if(proc == ARMCPU_ARM9)
-			{
-                MMU_VRAMWriteBackToLCD(4);
-                                if((val & 7) == 5)
-				{
-					ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
-					ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x82000;
-					ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x84000;
-					ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
-				}
-                                else if((val & 7) == 3)
-				{
-					ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD + 0x80000;
-					ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD + 0x82000;
-					ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD + 0x84000;
-					ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD + 0x86000;
-				}
-                                else if((val & 7) == 4)
-				{
-					ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x80000;
-					ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x82000;
-					ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x84000;
-					ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x86000;
-				}
-				
-				MMU_VRAMReloadFromLCD(4,val) ;
-			}
-			break;
-		
-                case REG_VRAMCNTF :
-			if(proc == ARMCPU_ARM9)
-			{
-				MMU_VRAMWriteBackToLCD(5);
-				switch(val & 0x1F)
-				{
-                                        case 4 :
-						ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x90000;
-						ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x92000;
-						break;
-						
-                                        case 4 | (1 << 3) :
-						ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x90000;
-						ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x92000;
-						break;
-						
-                                        case 3 :
-						ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD + 0x90000;
-						break;
-						
-                                        case 3 | (1 << 3) :
-						ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD + 0x90000;
-						break;
-						
-                                        case 3 | (2 << 3) :
-						ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD + 0x90000;
-						break;
-						
-                                        case 3 | (3 << 3) :
-						ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD + 0x90000;
-						break;
-						
-                                        case 5 :
-                                        case 5 | (1 << 3) :
-                                        case 5 | (2 << 3) :
-                                        case 5 | (3 << 3) :
-						ARM9Mem.ObjExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x90000;
-						ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x92000;
-						break;
-				}
-				MMU_VRAMReloadFromLCD(5,val);
-		 	}
-			break;
-                case REG_VRAMCNTG :
-			if(proc == ARMCPU_ARM9)
-			{
-				MMU_VRAMWriteBackToLCD(6);
-		 		switch(val & 0x1F)
-				{
-                                        case 4 :
-						ARM9Mem.ExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x94000;
-						ARM9Mem.ExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x96000;
-						break;
-						
-                                        case 4 | (1 << 3) :
-						ARM9Mem.ExtPal[0][2] = ARM9Mem.ARM9_LCD + 0x94000;
-						ARM9Mem.ExtPal[0][3] = ARM9Mem.ARM9_LCD + 0x96000;
-						break;
-						
-                                        case 3 :
-						ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD + 0x94000;
-						break;
-						
-                                        case 3 | (1 << 3) :
-						ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD + 0x94000;
-						break;
-						
-                                        case 3 | (2 << 3) :
-						ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD + 0x94000;
-						break;
-						
-                                        case 3 | (3 << 3) :
-						ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD + 0x94000;
-						break;
-						
-                                        case 5 :
-                                        case 5 | (1 << 3) :
-                                        case 5 | (2 << 3) :
-                                        case 5 | (3 << 3) :
-						ARM9Mem.ObjExtPal[0][0] = ARM9Mem.ARM9_LCD + 0x94000;
-						ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD + 0x96000;
-						break;
-				}
-				MMU_VRAMReloadFromLCD(6,val);
-			}
-			break;
+		case REG_VRAMCNTE:
+		case REG_VRAMCNTF:
+		case REG_VRAMCNTG:
+		case REG_VRAMCNTH:
+		case REG_VRAMCNTI:
+				if(proc == ARMCPU_ARM9)
+					MMU_VRAMmapControl(adr-REG_VRAMCNTA, val);
+				else
+					INFO("VRAM in Plain ARM7-CPU access\n");
 			
-                case REG_VRAMCNTH  :
-			if(proc == ARMCPU_ARM9)
-			{
-                MMU_VRAMWriteBackToLCD(7);
-                
-                                if((val & 7) == 2)
-				{
-					ARM9Mem.ExtPal[1][0] = ARM9Mem.ARM9_LCD + 0x98000;
-					ARM9Mem.ExtPal[1][1] = ARM9Mem.ARM9_LCD + 0x9A000;
-					ARM9Mem.ExtPal[1][2] = ARM9Mem.ARM9_LCD + 0x9C000;
-					ARM9Mem.ExtPal[1][3] = ARM9Mem.ARM9_LCD + 0x9E000;
-				}
-				
-				MMU_VRAMReloadFromLCD(7,val);
-			}
 			break;
-			
-                case REG_VRAMCNTI  :
-			if(proc == ARMCPU_ARM9)
-			{
-                MMU_VRAMWriteBackToLCD(8);
-                
-                                if((val & 7) == 3)
+		case REG_DISPA_DISPCAPCNT :
+				if(proc == ARMCPU_ARM9)
 				{
-					ARM9Mem.ObjExtPal[1][0] = ARM9Mem.ARM9_LCD + 0xA0000;
-					ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD + 0xA2000;
+					//INFO("MMU write8: REG_DISPA_DISPCAPCNT 0x%X\n", val);
+					GPU_set_DISPCAPCNT(val);
+					T1WriteByte(ARM9Mem.ARM9_REG, 0x64, val);
 				}
-				
-				MMU_VRAMReloadFromLCD(8,val);
-			}
-			break;
-
+				break;
 #ifdef LOG_CARD
 		case 0x040001A0 : /* TODO (clear): ??? */
 		case 0x040001A1 :
@@ -1452,6 +1171,8 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
               return;
            }
         }
+
+	if (MMU_LCDmap(&adr)) return;
 
 	if((adr >> 24) == 4)
 	{
@@ -1590,8 +1311,8 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 					}
 					osdA->setOffset(MainScreen.offset);
 					osdB->setOffset(SubScreen.offset);
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x304, val);
 				}
+				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x304, val);
 				
 				return;
 
@@ -1796,6 +1517,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				return;
 			}
 			case REG_VRAMCNTA:
+
 				MMU_write8(proc,adr,val & 0xFF) ;
 				MMU_write8(proc,adr+1,val >> 8) ;
 				return ;
@@ -1952,9 +1674,22 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
                         case REG_DISPA_DISPCAPCNT :
 				if(proc == ARMCPU_ARM9)
 				{
-					GPU_set_DISPCAPCNT(MainScreen.gpu,val);
+					// TODO
+					//INFO("MMU write16: REG_DISPA_DISPCAPCNT 0x%X\n", val);
+					//GPU_set_DISPCAPCNT(MainScreen.gpu,val);
+					T1WriteWord(ARM9Mem.ARM9_REG, 0x64, val);
 				}
 				return;
+				case REG_DISPA_DISPCAPCNT + 2:
+				if(proc == ARMCPU_ARM9)
+				{
+					// TODO
+					//INFO("MMU write16: REG_DISPA_DISPCAPCNT + 2 0x%X\n", val);
+					//GPU_set_DISPCAPCNT(MainScreen.gpu,val);
+					//T1WriteByte(ARM9Mem.ARM9_REG, 0x64, val);
+				}
+				return;
+
                         case REG_DISPB_DISPCNT+2 : 
 				if(proc == ARMCPU_ARM9)
 				{
@@ -2107,6 +1842,8 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
             return;
         }
     }
+
+	if (MMU_LCDmap(&adr)) return;
 
 	if ((adr & 0xFF800000) == 0x04800000) {
 	/* access to non regular hw registers */
@@ -2874,33 +2611,30 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				}
 				return;
 			case REG_IPCFIFOCNT :
-							{
-#if 0
+				{
 					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184) ;
-					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[(proc+1) & 1][0x40], 0x184) ;
+					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184) ;
 					if ((val & 0x8000) && !(cnt_l & 0x8000))
 					{
 						/* this is the first init, the other side didnt init yet */
 						/* so do a complete init */
-						FIFOInit(MMU.fifos + (IPCFIFO+proc));
+						FIFOclear(&MMU.fifos[proc]);
 						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184,0x8101) ;
 						/* and then handle it as usual */
 					}
-				if(val & 0x4008)
-				{
-					FIFOInit(MMU.fifos + (IPCFIFO+((proc+1)&1)));
-					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-					T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
-					MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
-					return;
-				}
-				T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
-#else
-				LOG("MMU write32: REG_IPCFIFOCNT\n");
-#endif
-				//execute = FALSE;
+					if(val & 0x4008)
+					{
+						FIFOclear(&MMU.fifos[proc^1]);
+						T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
+						T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
+						MMU.reg_IF[proc] |= ((val & 4)<<15);// & (MMU.reg_IME[proc]<<17);// & (MMU.reg_IE[proc]&0x20000);//
+						return;
+					}
+					T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val & 0xBFF4);
+					//execute = FALSE;
 				return;
-							}
+				}
+
 				case REG_IPCFIFOSEND :
 				{
 					u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
@@ -3047,7 +2781,8 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 								case REG_DISPA_DISPCAPCNT :
 				if(proc == ARMCPU_ARM9)
 				{
-					GPU_set_DISPCAPCNT(MainScreen.gpu,val);
+					//INFO("MMU write32: REG_DISPA_DISPCAPCNT 0x%X\n", val);
+					GPU_set_DISPCAPCNT(val);
 					T1WriteLong(ARM9Mem.ARM9_REG, 0x64, val);
 				}
 				return;
@@ -3089,9 +2824,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 			{
 				// NOTE: right now, the capture unit is not taken into account,
 				//       I don't know is it should be handled here or 
-#if 0
-				FIFOAdd(MMU.fifos + MAIN_MEMORY_DISP_FIFO, val);
-#else
+				FIFOadd(&MMU.fifos[proc], val);
 				//4000068h - NDS9 - DISP_MMEM_FIFO - 32bit - Main Memory Display FIFO (R?/W)
 				//Intended to send 256x192 pixel 32K color bitmaps by DMA directly
  				//- to Screen A             (set DISPCNT to Main Memory Display mode), or
@@ -3101,9 +2834,6 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				//Set DMA to Main Memory mode, 32bit transfer width, word count set to 4, destination address to DISP_MMEM_FIFO, source address must be in Main Memory.
 				//Transfer starts at next frame.
 				//Main Memory Display/Capture is supported for Display Engine A only.
-
-				LOG("MMU write32: REG_DISPA_DISPMMEMFIFO\n");
-#endif
 				break;
 			}
 			//case 0x21FDFF0 :  if(val==0) execute = FALSE;

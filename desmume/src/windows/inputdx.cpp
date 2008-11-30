@@ -322,7 +322,7 @@ BOOL CALLBACK InputConfigDlgProc(   HWND hDlg,
 			}
 			
 			if (!inputCfg->Init(hDlg, &InputConfigDIProc))
-				LOG("Input config: Error initialize DirectInput\n");
+				INFO("Input config: Error initialize DirectInput\n");
 			SetTimer(hDlg, IDD_INPUT_TIMER, 100, NULL);
 			return true;
 
@@ -514,8 +514,8 @@ BOOL INPUTCLASS::Init(HWND hParentWnd, INPUTPROC inputProc)
 	this->inputProc = inputProc;
 
 #if 1
-	if (pKeyboard != NULL) LOG("DirectX Input: keyboard is initialised\n");
-	if (pJoystick != NULL) LOG("DirectX Input: joystick is initialised\n");
+	if (pKeyboard != NULL) INFO("DirectX Input: keyboard is initialised\n");
+	if (pJoystick != NULL) INFO("DirectX Input: joystick is initialised\n");
 #endif
 	paused = FALSE;
 
@@ -539,7 +539,7 @@ void INPUTCLASS::process()
 		hr=IDirectInputDevice8_GetDeviceState(pKeyboard,256,cDIBuf);
 		if (FAILED(hr)) 
 		{
-			//INFO("DInput: keyboard acquire\n");
+			//LOG("DInput: keyboard acquire\n");
 			IDirectInputDevice8_Acquire(pKeyboard);
 		}
 	}
