@@ -2213,10 +2213,10 @@ static INLINE void GPU_ligne_DispCapture(u16 l)
 	}
 }
 
-static INLINE void GPU_ligne_Brightness(NDS_Screen * screen, u16 l)
+static INLINE void GPU_ligne_Brightness(u16 l)
 {
-	GPU * gpu = screen->gpu;
-	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+	GPU * gpu = MainScreen.gpu;
+	u8 * dst =  GPU_screen + (MainScreen.offset + l) * 512;
 	u16 i16;
 #ifndef HAVE_LIBGDKGLEXT_X11_1_0
 // damdoum :
@@ -2375,8 +2375,10 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	}
 
 	if (gpu->core == GPU_MAIN) 
+	{
 		GPU_ligne_DispCapture(l);
-	GPU_ligne_Brightness(screen, l);
+		GPU_ligne_Brightness(l);
+	}
 }
 
 void gpu_savestate(std::ostream* os)
