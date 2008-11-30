@@ -1250,7 +1250,7 @@ int SNDFileInit(int buffersize)
 
 void SNDFileDeInit()
 {
-	size_t elems_written;
+	size_t elems_written = 0;
 	if (spufp)
 	{
 		long length = ftell(spufp);

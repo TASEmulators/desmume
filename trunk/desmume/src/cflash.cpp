@@ -1,3 +1,26 @@
+/*  Copyright (C) 2006 yopyop
+    yopyop156@ifrance.com
+    yopyop156.ifrance.com
+
+    Copyright (C) 2006-2008 The DeSmuME Team
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
 /*
         CFLASH.C
 	CompactFlash/FAT emulation routines for DeSmuME
@@ -636,7 +659,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 unsigned int
 cflash_read(unsigned int address) {
   unsigned int ret_value = 0;
-  size_t elems_read;
+  size_t elems_read = 0;
 #if 0 /* used by next if 0 block */
 #define BUFFERED_BLOCK_SIZE 512
   static u8 block_buffer[BUFFERED_BLOCK_SIZE];

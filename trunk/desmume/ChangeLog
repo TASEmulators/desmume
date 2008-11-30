@@ -20,6 +20,7 @@
  - Change SPU to run two spus in parallel. SPU_core is the official one. SPU_user produces output.
    This lets us do inaccurate things with SPU_user which might sound better while being more accurate with SPU_core. [zeromus]
  - Add RTC implementations (not fully) [CrazyMax]
+ - Rewrite VRAM mapping control and render [CrazyMax]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
