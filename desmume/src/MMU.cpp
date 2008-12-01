@@ -55,6 +55,8 @@ static const int save_types[7][2] = {
 //#define	_MMU_DEBUG
 
 #ifdef _MMU_DEBUG
+
+#include <stdarg.h>
 void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
 {
 	if ((adr>=0x04000000 && adr<=0x04000800)
@@ -77,7 +79,7 @@ void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
 			if (adr >= 0x4000004 && adr <= 0x40001C2) return;		// ARM7 I/O Map
 			if (adr >= 0x4000204 && adr <= 0x4000308) return;		// Memory and IRQ Control
 			if (adr >= 0x4000400 && adr <= 0x400051C) return;		// Sound Registers
-			if (adr >= 0x4100000 && adr <= 0x4000010) return;		// IPC/ROM
+			if (adr >= 0x4100000 && adr <= 0x4100010) return;		// IPC/ROM
 			if (adr >= 0x4800000 && adr <= 0x4808000) return;		// WLAN Registers
 		}
 
@@ -413,8 +415,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
 		if (block == 7) return NULL;
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
-		u8 *tmp_addr = LCDdst[block] + vram_addr;
-		return (tmp_addr);
+		return (LCDdst[block] + vram_addr);
 	}
 	return NULL;
 }
@@ -441,8 +442,10 @@ static INLINE BOOL MMU_LCDmap(u32 *addr)
 
 static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
+	if (!(VRAMBankCnt & 0x80)) return;
+	if (!(VRAMBankCnt & 0x07)) return;
+	
 	u32	vram_map_addr = 0xFFFFFFFF;
-	BOOL isMapped = FALSE;
 	u8	*LCD_addr = LCDdst[block];
 	
 	switch (VRAMBankCnt & 0x07)
@@ -511,7 +514,7 @@ static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 						ARM9Mem.textureSlotAddr[slot_index] = LCD_addr;
 						gpu3D->NDS_3D_VramReconfigureSignal();
 					}
-				return;
+				break;
 				case 4:		// E
 					ARM9Mem.texPalSlot[0] = LCD_addr;
 					ARM9Mem.texPalSlot[1] = LCD_addr+0x2000;
