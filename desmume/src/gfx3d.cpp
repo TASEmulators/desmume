@@ -23,6 +23,7 @@
 // plugin responsible only for drawing primitives.
 
 #include <algorithm>
+#include <math.h>
 #include "debug.h"
 #include "gfx3d.h"
 #include "matrix.h"
@@ -115,6 +116,9 @@ static u32 lightColor[4] = {0,0,0,0};
 static u32 lightDirection[4] = {0,0,0,0};
 //material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
+/* Shininess */
+static float shininessTable[128] = {0};
+static int shininessInd = 0;
 
 
 //-----------cached things:
@@ -126,7 +130,8 @@ static u32 envMode=0;
 static u32 lightMask=0;
 //other things:
 static int texCoordinateTransform = 0;
-static float cacheLightDirection[4][4];
+static ALIGN(16) float cacheLightDirection[4][4];
+static ALIGN(16) float cacheHalfVector[4][4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
@@ -701,7 +706,13 @@ void gfx3d_glMaterial1(unsigned long val)
 
 void gfx3d_glShininess (unsigned long val)
 {
-	//INFO("Shininess=%i\n",val);
+	shininessTable[shininessInd++] = ((val & 0xFF) / 256.0f);
+	shininessTable[shininessInd++] = (((val >> 8) & 0xFF) / 256.0f);
+	shininessTable[shininessInd++] = (((val >> 16) & 0xFF) / 256.0f);
+	shininessTable[shininessInd++] = (((val >> 24) & 0xFF) / 256.0f);
+
+	if(shininessInd >= 128)
+		shininessInd = 0;
 }
 
 void gfx3d_UpdateToonTable(void* toonTable)
@@ -752,17 +763,14 @@ void gfx3d_glTexCoord(unsigned long val)
 	}
 }
 
+#define vec3dot(a, b)		(((a[0]) * (b[0])) + ((a[1]) * (b[1])) + ((a[2]) * (b[2])))
+
 void gfx3d_glNormal(unsigned long v)
 {
 	int i,c;
 	ALIGN(16) float normal[3] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
 						normalTable[(v>>20)&1023]};
-
-	//find the line of sight vector
-	//TODO - only do this when the projection matrix changes
-	ALIGN(16) float lineOfSight[4] = { 0, 0, -1, 0 };
-	MatrixMultVec4x4 (mtxCurrent[0], lineOfSight);
 
 	if (texCoordinateTransform == 2)
 	{
@@ -799,9 +807,6 @@ void gfx3d_glNormal(unsigned long v)
 
 		int vertexColor[3] = { emission[0], emission[1], emission[2] };
 
-		//do we need to normalize lineOfSight?
-		Vector3Normalize(lineOfSight);
-
 		for(i=0;i<4;i++) {
 			if(!((lightMask>>i)&1))
 				continue;
@@ -812,43 +817,22 @@ void gfx3d_glNormal(unsigned long v)
 					(lightColor[i]>>5)&0x1F,
 					(lightColor[i]>>10)&0x1F };
 
-				float dot = Vector3Dot(cacheLightDirection[i],normal);
-				float diffuseComponent = std::max(0.f,dot);
-				float specularComponent;
+				/* This formula is the one used by the DS */
+				/* Reference : http://nocash.emubase.de/gbatek.htm#ds3dpolygonlightparameters */
 
-				//a specular formula which I couldnt get working
-				//float halfAngle[3] = {
-				//	(lineOfSight[0] + g_lightInfo[i].floatDirection[0])/2,
-				//	(lineOfSight[1] + g_lightInfo[i].floatDirection[1])/2,
-				//	(lineOfSight[2] + g_lightInfo[i].floatDirection[2])/2};
-				//float halfAngleLength = sqrt(halfAngle[0]*halfAngle[0]+halfAngle[1]*halfAngle[1]+halfAngle[2]*halfAngle[2]);
-				//float halfAngleNormalized[3] = {
-				//	halfAngle[0]/halfAngleLength,
-				//	halfAngle[1]/halfAngleLength,
-				//	halfAngle[2]/halfAngleLength
-				//};
-				//
-				//float specularAngle = -Vector3Dot(halfAngleNormalized,normal);
-				//specularComponent = max(0,cos(specularAngle));
+				float diffuseLevel = std::max(0.0f, -vec3dot(cacheLightDirection[i], normal));
+				float shininessLevel = pow(std::max(0.0f, vec3dot(-cacheHalfVector[i], normal)), 2);
 
-				//a specular formula which seems to work
-				float temp[4];
-				float diff = Vector3Dot(normal,cacheLightDirection[i]);
-				Vector3Copy(temp,normal);
-				Vector3Scale(temp,-2*diff);
-				Vector3Add(temp,cacheLightDirection[i]);
-				Vector3Scale(temp,-1);
-				specularComponent = std::max(0.f,Vector3Dot(lineOfSight,temp));
+				if(dsSpecular & 0x8000)
+				{
+					shininessLevel = shininessTable[(int)(shininessLevel * 128)];	
+				}
 
-				//if the game isnt producing unit normals, then we can accidentally out of range components. so lets saturate them here
-				//so we can at least keep for crashing. we're not sure what the hardware does in this case, but the game shouldnt be doing this.
-				specularComponent = std::max(0.f,std::min(1.f,specularComponent));
-				diffuseComponent = std::max(0.f,std::min(1.f,diffuseComponent));
-
-				for(c=0;c<3;c++) {
-					vertexColor[c] += (diffuseComponent*_lightColor[c]*diffuse[c])/31;
-					vertexColor[c] += (specularComponent*_lightColor[c]*specular[c])/31;
-					vertexColor[c] += ((float)_lightColor[c]*ambient[c])/31;
+				for(c = 0; c < 3; c++)
+				{
+					vertexColor[c] += ((specular[c] * _lightColor[c] * shininessLevel) / 31.0f);
+					vertexColor[c] += ((diffuse[c] * _lightColor[c] * diffuseLevel) / 31.0f);
+					vertexColor[c] += ((ambient[c] * _lightColor[c]) / 31.0f);
 				}
 			}
 		}
@@ -870,9 +854,9 @@ signed long gfx3d_GetClipMatrix (unsigned int index)
 
 signed long gfx3d_GetDirectionalMatrix (unsigned int index)
 {
-	index += (index/3);
+	int _index = (((index / 3) * 4) + (index % 3));
 
-	return (signed long)(mtxCurrent[2][(index)*(1<<12)]);
+	return (signed long)(mtxCurrent[2][_index]*(1<<12));
 }
 
 static void gfx3d_glLightDirection_cache(int index)
@@ -880,10 +864,20 @@ static void gfx3d_glLightDirection_cache(int index)
 	u32 v = lightDirection[index];
 
 	// Convert format into floating point value
-	cacheLightDirection[index][0] = -normalTable[v&1023];
-	cacheLightDirection[index][1] = -normalTable[(v>>10)&1023];
-	cacheLightDirection[index][2] = -normalTable[(v>>20)&1023];
+	cacheLightDirection[index][0] = normalTable[v&1023];
+	cacheLightDirection[index][1] = normalTable[(v>>10)&1023];
+	cacheLightDirection[index][2] = normalTable[(v>>20)&1023];
 	cacheLightDirection[index][3] = 0;
+
+	/* Multiply the vector by the directional matrix */
+	MatrixMultVec3x3(mtxCurrent[2], cacheLightDirection[index]);
+
+	/* Calculate the half vector */
+	float lineOfSight[4] = {0.0f, 0.0f, -1.0f, 0.0f};
+	for(int i = 0; i < 4; i++)
+	{
+		cacheHalfVector[index][i] = ((cacheLightDirection[index][i] + lineOfSight[i]) / 2.0f);
+	}
 }
 
 /*
