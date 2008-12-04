@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="DeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -81,6 +81,184 @@
 				GenerateMapFile="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x86.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release (SSE2)|Win32"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
+				StringPooling="true"
+				ExceptionHandling="1"
+				BufferSecurityCheck="false"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				WarningLevel="1"
+				DebugInformationFormat="3"
+				CallingConvention="1"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
+				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				Profile="false"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				AdditionalManifestFiles="DeSmuME_x86.manifest"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="MASM"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
+				StringPooling="true"
+				ExceptionHandling="1"
+				BufferSecurityCheck="false"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				WarningLevel="1"
+				DebugInformationFormat="3"
+				CallingConvention="1"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
+				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				Profile="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -192,95 +370,6 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release (SSE2)|Win32"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
-				StringPooling="true"
-				ExceptionHandling="1"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="2"
-				FloatingPointModel="2"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="1"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				GenerateDebugInformation="true"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				Profile="false"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x86.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Release (SSE2)|x64"
 			OutputDirectory="$(SolutionDir)\__bins"
 			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
@@ -350,95 +439,6 @@
 			<Tool
 				Name="VCManifestTool"
 				AdditionalManifestFiles="DeSmuME_x64.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2008\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
-				StringPooling="true"
-				ExceptionHandling="1"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="2"
-				FloatingPointModel="2"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="1"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
-				OutputFile="$(OutDir)\$(ProjectName).exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				GenerateDebugInformation="true"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				Profile="true"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x86.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -619,14 +619,6 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Debug|x64"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="MASM"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Release (SSE2)|Win32"
 						ExcludedFromBuild="true"
 						>
@@ -638,7 +630,8 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release (SSE2)|x64"
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -648,8 +641,15 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Release|Win32"
+						Name="Debug|x64"
 						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release (SSE2)|x64"
 						>
 						<Tool
 							Name="VCCustomBuildTool"
@@ -682,6 +682,14 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
+						Name="Release|Win32"
+						ExcludedFromBuild="true"
+						>
+						<Tool
+							Name="MASM"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
 						Name="Debug|x64"
 						ExcludedFromBuild="true"
 						>
@@ -691,14 +699,6 @@
 					</FileConfiguration>
 					<FileConfiguration
 						Name="Release (SSE2)|x64"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="MASM"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
 						ExcludedFromBuild="true"
 						>
 						<Tool
@@ -871,6 +871,10 @@
 			</File>
 			<File
 				RelativePath="..\instruction_tabdef.inc"
+				>
+			</File>
+			<File
+				RelativePath="..\shaders.h"
 				>
 			</File>
 			<File
