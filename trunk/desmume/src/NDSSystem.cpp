@@ -41,6 +41,8 @@
 
 NDSSystem nds;
 
+extern u32 gxIRQ;
+
 static u32
 calc_CRC16( u32 start, const u8 *data, int count) {
   int i,j;
@@ -1549,8 +1551,10 @@ NDS_exec(s32 nb, BOOL force)
 
 		if(MMU.reg_IE[0]&(1<<21))		// IRQ21
 		{
-			if (MMU.fifos[0].irq==1) NDS_makeARM9Int(21);
-			if (MMU.fifos[0].irq==2) NDS_makeARM9Int(21);
+		//	if (MMU.fifos[0].irq==1) NDS_makeARM9Int(21);
+		//	if (MMU.fifos[0].irq==2) NDS_makeARM9Int(21);
+			if (gxIRQ == 1) NDS_makeARM9Int(21);
+			if (gxIRQ == 2) NDS_makeARM9Int(21);
 		}
         
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))

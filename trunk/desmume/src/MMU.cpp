@@ -228,6 +228,8 @@ u32 MMU_ARM7_WAIT16[16]={
 u32 MMU_ARM7_WAIT32[16]={
 	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
 };
+
+u32 gxIRQ = 0;
 	
 // VRAM mapping
 u8		*LCDdst[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
@@ -774,12 +776,14 @@ u32 FASTCALL _MMU_read32(u32 adr)
 			// This is hacked due to the only current 3D core
 			case 0x04000600:		// Geometry Engine Status Register (R and R/W)
             {
-				u32 gxstat =	( 2 |
+			/*	u32 gxstat =	( 2 |
 									(MMU.fifos[proc].full<<24)|
 									(MMU.fifos[proc].half<<25)|
 									(MMU.fifos[proc].empty<<26)|
 									(MMU.fifos[proc].irq<<30)
-								);
+								);*/
+				u32 gxstat = (2 | (3 << 25) | (gxIRQ << 30));
+
 				return	gxstat;
             }
 
@@ -2258,7 +2262,8 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 
 			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
-				MMU.fifos[proc].irq = (val>>30) & 0x03;
+				//MMU.fifos[proc].irq = (val>>30) & 0x03;
+				gxIRQ = ((val >> 30) & 0x3);
 				return;
 			}
 			case REG_DISPA_WININ: 	 
