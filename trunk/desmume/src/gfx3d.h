@@ -91,7 +91,7 @@ struct GFX3D
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, enableAntialiasing, enableEdgeMarking;
 
 	static const u32 TOON = 0;
-	static const u32 HIGHLIGHT = 0;
+	static const u32 HIGHLIGHT = 1;
 	u32 shading;
 
 	POLYLIST* polylist;
