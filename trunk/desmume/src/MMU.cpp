@@ -2001,11 +2001,11 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x460>>2] = val;
 				if(proc == ARMCPU_ARM9)
 				{
-					gfx3d_glLoadMatrix4x4(val);
+					gfx3d_glMultMatrix4x4(val);
 				}
 				return;
 			}
-			// Multiply 4x4 matrix - Parameters:12
+			// Multiply 4x3 matrix - Parameters:12
 			case 0x04000464:
 			{
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x464>>2] = val;
@@ -2191,7 +2191,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[proc][0x40]))[0x4C8>>2] = val;
                 if(proc == ARMCPU_ARM9)
 				{
-					gfx3d_glLightColor (val);
+					gfx3d_glLightDirection(val);
 				}
 				return;
 			}
