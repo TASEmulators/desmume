@@ -72,6 +72,8 @@ static void ENDGL() {
 #include "OGLRender.h"
 #include "gfx3d.h"
 
+#include "shaders.h"
+
 #ifndef CTASSERT
 #define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
 #endif
@@ -97,6 +99,7 @@ static bool wireframe=false, alpha31=false;
 static unsigned int polyID=0;
 static unsigned int depthFuncMode=0;
 static unsigned int envMode=0;
+static unsigned int lastEnvMode=0;
 static unsigned int cullingMask=0;
 static bool alphaDepthWrite;
 static unsigned int lightMask=0;
@@ -104,10 +107,13 @@ static bool isTranslucent;
 
 //------------------------------------------------------------
 
-#ifdef _WIN32
-
 #define OGLEXT(x,y) x y = 0;
+
+#ifdef _WIN32
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
+#else
+#define INITOGLEXT(x,y) y = (x)glXGetProcAddress(#y);
+#endif
 
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 //zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
@@ -118,14 +124,16 @@ OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
 OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
 OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
+OGLEXT(PFNGLGETSHADERIVPROC,glGetShaderiv)
 OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+OGLEXT(PFNGLDELETESHADERPROC,glDeleteShader)
+OGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
+OGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
+OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
 OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
-
-#else
-
-#define INITOGLEXT(x,y) y = 0;
-
-#endif
+OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
+OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 
 
 //opengl state caching:
@@ -148,6 +156,7 @@ static void xglPolygonMode(GLenum face,GLenum mode) {
 	}
 }
 
+#if 0
 #ifdef _WIN32
 static void xglUseProgram(GLuint program) {
 	if(!glUseProgram) return;
@@ -161,6 +170,7 @@ static void xglUseProgram(GLuint program) {
 	(void)program;
 	return;
 }
+#endif
 #endif
 #endif
 
@@ -237,7 +247,104 @@ u32				texcache_stop;
 
 GLenum			oglTempTextureID[MAX_TEXTURE];
 GLenum			oglToonTableTextureID;
-u32 toonShader, toonProgram;
+
+#define NOSHADERS(i)					{ hasShaders = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(failed shader init at step %i)\n", i); return; }
+
+#define SHADER_COMPCHECK(s)				{ \
+	GLint status = GL_TRUE; \
+	glGetShaderiv(s, GL_COMPILE_STATUS, &status); \
+	if(status != GL_TRUE) \
+	{ \
+		GLint logSize; \
+		GLchar *log; \
+		glGetShaderiv(s, GL_INFO_LOG_LENGTH, &logSize); \
+		log = new GLchar[logSize]; \
+		glGetShaderInfoLog(s, logSize, &logSize, log); \
+		INFO("SEVERE : FAILED TO COMPILE GL SHADER : %s\n", log); \
+		delete log; \
+		if(s)glDeleteShader(s); \
+		NOSHADERS(3); \
+	} \
+}
+
+#define PROGRAM_COMPCHECK(p, s1, s2)	{ \
+	GLint status = GL_TRUE; \
+	glGetProgramiv(p, GL_LINK_STATUS, &status); \
+	if(status != GL_TRUE) \
+	{ \
+		GLint logSize; \
+		GLchar *log; \
+		glGetProgramiv(p, GL_INFO_LOG_LENGTH, &logSize); \
+		log = new GLchar[logSize]; \
+		glGetProgramInfoLog(p, logSize, &logSize, log); \
+		INFO("SEVERE : FAILED TO LINK GL SHADER PROGRAM : %s\n", log); \
+		delete log; \
+		if(s1)glDeleteShader(s1); \
+		if(s2)glDeleteShader(s2); \
+		NOSHADERS(5); \
+	} \
+}
+
+bool hasShaders = false;
+
+/* Vertex shader */
+GLuint vertexShaderID;
+/* Fragment shader */
+GLuint fragmentShaderID;
+/* Shader program */
+GLuint shaderProgram;
+
+static GLuint hasTexLoc;
+static GLuint texBlendLoc;
+
+/* Shaders init */
+
+void createShaders()
+{
+	hasShaders = true;
+
+	if (!glCreateShader ||
+		!glShaderSource ||
+		!glCompileShader ||
+		!glCreateProgram ||
+		!glAttachShader ||
+		!glLinkProgram ||
+		!glUseProgram ||
+		!glGetShaderInfoLog)
+		NOSHADERS(1);
+
+	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+	if(!vertexShaderID)
+		NOSHADERS(2);
+
+	glShaderSource(vertexShaderID, 1, (GLchar**)&vertexShader, NULL);
+	glCompileShader(vertexShaderID);
+	SHADER_COMPCHECK(vertexShaderID);
+
+	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	if(!fragmentShaderID)
+		NOSHADERS(2);
+
+	glShaderSource(fragmentShaderID, 1, (GLchar**)&fragmentShader, NULL);
+	glCompileShader(fragmentShaderID);
+	SHADER_COMPCHECK(fragmentShaderID);
+
+	shaderProgram = glCreateProgram();
+	if(!shaderProgram)
+		NOSHADERS(4);
+
+	glAttachShader(shaderProgram, vertexShaderID);
+	glAttachShader(shaderProgram, fragmentShaderID);
+
+	glLinkProgram(shaderProgram);
+	PROGRAM_COMPCHECK(shaderProgram, vertexShaderID, fragmentShaderID);
+
+	glValidateProgram(shaderProgram);
+	glUseProgram(shaderProgram);
+
+	INFO("Successfully created OpenGL shaders.\n");
+}
+
 //=================================================
 
 
@@ -260,6 +367,8 @@ static void Reset()
 
 static char Init(void)
 {
+	GLuint loc;
+
 	if(!oglrender_init)
 		return 0;
 	if(!oglrender_init())
@@ -272,6 +381,7 @@ static char Init(void)
 
 	xglEnable		(GL_NORMALIZE);
 	xglEnable		(GL_DEPTH_TEST);
+	glEnable		(GL_TEXTURE_1D);
 	glEnable		(GL_TEXTURE_2D);
 
 	glAlphaFunc		(GL_GREATER, 0);
@@ -285,7 +395,6 @@ static char Init(void)
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	#ifdef _WIN32
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
@@ -293,8 +402,33 @@ static char Init(void)
 	INITOGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
 	INITOGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 	INITOGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
+	INITOGLEXT(PFNGLGETSHADERIVPROC,glGetShaderiv)
 	INITOGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
+	INITOGLEXT(PFNGLDELETESHADERPROC,glDeleteShader)
+	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
+	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
+	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
+	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
+	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
+
+	/* Create the shaders */
+	createShaders();
+	
+	/* Assign the texture units : 0 for main textures, 1 for toon table */
+	/* Also init the locations for some variables in the shaders */
+	if(hasShaders)
+	{
+		loc = glGetUniformLocation(shaderProgram, "tex2d");
+		glUniform1i(loc, 0);
+
+		loc = glGetUniformLocation(shaderProgram, "toonTable");
+		glUniform1i(loc, 1);
+
+		hasTexLoc = glGetUniformLocation(shaderProgram, "hasTexture");
+		texBlendLoc = glGetUniformLocation(shaderProgram, "texBlending");
+	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
 	if(glBlendFuncSeparateEXT)
@@ -302,51 +436,17 @@ static char Init(void)
 		glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
 	}
 
-	if(glCreateShader && glShaderSource && glCompileShader && glCreateProgram && glAttachShader && glLinkProgram && glUseProgram && glGetShaderInfoLog)
-	{
-		{
-			glGenTextures (1, &oglToonTableTextureID);
-			glBindTexture(GL_TEXTURE_1D,oglToonTableTextureID);
-			glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
-			//do we need to init the toon table?
-		}
-		{
-			char buf[10000];
-			const char* toonShaderSource[] = {"\
-				uniform sampler2D tex2; \
-				uniform sampler1D tex1; \
-				void main() {\
-					gl_FragColor = gl_Color; \
-					gl_FragColor = texture1D(tex1,gl_FragColor.r/32*31); \
-					gl_FragColor *= texture2D(tex2,gl_TexCoord[0].st); \
-				}\
-				"};
+	glGenTextures (1, &oglToonTableTextureID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
+	glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
 
-				//TODO - this should modulate or add depending on whether we are in highlight or toon mode
-
-			toonShader = glCreateShader(GL_FRAGMENT_SHADER); 
-			toonProgram = glCreateProgram();
-			glShaderSource(toonShader, 1, (GLchar**)toonShaderSource, 0);
-			glCompileShader(toonShader);
-			glGetShaderInfoLog(toonShader,10000,0,buf);
-
-			glAttachShader(toonProgram,toonShader);
-			glLinkProgram(toonProgram);
-
-			toonShader = 0;		
-		}
-	}
-	#endif
-
-#ifdef _WIN32
 	if(!glBlendFuncSeparateEXT)
-#endif
 		clearAlpha = 1;
-#ifdef _WIN32
-	else clearAlpha = 0;
-#endif
+	else 
+		clearAlpha = 0;
 
 	ENDGL();
 
@@ -463,6 +563,7 @@ static void DebugDumpTexture(int which)
 
 //================================================================================
 static int lastTexture = -1;
+static bool hasTexture = false;
 static void setTexture(unsigned int format, unsigned int texpal)
 {
 	int palSize[7]={32,4,16,256,0,8,32768};
@@ -486,12 +587,20 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	if (format==0)
 	{
 		texcache_count=-1;
+		if(hasShaders && hasTexture) { glUniform1i(hasTexLoc, 0); hasTexture = false; }
 		return;
 	}
 	if (textureMode==0)
 	{
 		texcache_count=-1;
+		if(hasShaders && hasTexture) { glUniform1i(hasTexLoc, 0); hasTexture = false; }
 		return;
+	}
+
+	if(hasShaders)
+	{
+		if(!hasTexture) { glUniform1i(hasTexLoc, 1); hasTexture = true; }
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	txt_slot_current=(format>>14)&0x03;
@@ -801,7 +910,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[i].frm) ? (BIT19(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
 }
 
 
@@ -880,14 +989,16 @@ static void BeginRenderPoly()
 
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texEnv[envMode]);
 
-	//handle toon rendering
-	#ifdef _WIN32
-	if(glUseProgram) {
-		if(envMode == 2) {
-			xglUseProgram(toonProgram);
-		} else xglUseProgram(0);
+	if(hasShaders)
+	{
+		if(envMode != lastEnvMode)
+		{
+			lastEnvMode = envMode;
+
+			int _envModes[4] = {0, 1, (2 + gfx3d.shading), 0};
+			glUniform1i(texBlendLoc, _envModes[envMode]);
+		}
 	}
-	#endif
 
 	xglDepthMask(enableDepthWrite?GL_TRUE:GL_FALSE);
 }
@@ -945,7 +1056,12 @@ static void Render()
 
 	Control();
 
-	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx3d.rgbToonTable);
+	if(hasShaders)
+	{
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
+		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx3d.rgbToonTable);
+	}
 
 	xglDepthMask(GL_TRUE);
 
