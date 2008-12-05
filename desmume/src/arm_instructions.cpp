@@ -253,6 +253,29 @@ TEMPLATE static u32 FASTCALL  OP_UND()
 	return 1;
 }
  
+#define TRAPUNDEF() \
+ 	u32 i = cpu->instruction;								\
+ 	u32 a = cpu->instruct_adr;								\
+												\
+ 	LOG("Undefined instruction: %#08X PC = %#08X\n", i, a);					\
+ 												\
+ 	if (((cpu->intVector != 0) ^ (cpu->proc_ID == ARMCPU_ARM9))){				\
+ 		Status_Reg tmp = cpu->CPSR;							\
+ 		armcpu_switchMode(cpu, UND);            /* enter und mode */			\
+ 		cpu->R[14] = cpu->R[15] - 4;            /* jump to und Vector */		\
+ 		cpu->SPSR = tmp;                        /* save old CPSR as new SPSR */		\
+ 		cpu->CPSR.bits.T = 0;                   /* handle as ARM32 code */		\
+ 		cpu->CPSR.bits.I = cpu->SPSR.bits.I;    /* keep int disable flag */		\
+ 		cpu->R[15] = cpu->intVector + 0x04;						\
+ 		cpu->next_instruction = cpu->R[15];						\
+ 		return 4;									\
+ 	}											\
+ 	else											\
+ 	{											\
+ 		execute = FALSE;								\
+ 		return 4;									\
+ 	}											\
+
 //-----------------------AND------------------------------------
 
 #define OP_AND(a, b)      cpu->R[REG_POS(i,12)] = cpu->R[REG_POS(i,16)] & shift_op;\
@@ -7639,119 +7662,80 @@ OP_LDRD_STRD_OFFSET_PRE_INDEX( ) {
 
 
 //---------------------STC----------------------------------
+/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
 
 TEMPLATE static u32 FASTCALL  OP_STC_P_IMM_OFF()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_M_IMM_OFF()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_P_PREIND()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_M_PREIND()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_P_POSTIND()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_M_POSTIND()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_STC_OPTION()
 {
-     {
-		/* the NDS has no coproc that responses to a STC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 //---------------------LDC----------------------------------
+/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
 
 TEMPLATE static u32 FASTCALL  OP_LDC_P_IMM_OFF()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_M_IMM_OFF()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_P_PREIND()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_M_PREIND()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_P_POSTIND()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_M_POSTIND()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
-          return 2;
-     }
+          TRAPUNDEF();
 }
 
 TEMPLATE static u32 FASTCALL  OP_LDC_OPTION()
 {
-     {
-		/* the NDS has no coproc that responses to a LDC, no feedback is given to the arm */
+          TRAPUNDEF();
           return 2;
-     }
 }
 
 //----------------MCR-----------------------
@@ -7767,9 +7751,9 @@ TEMPLATE static u32 FASTCALL  OP_MCR()
 		  LOG("Stopped (OP_MCR)\n");
           return 2;
      }
-     
-	  armcp15_moveARM2CP((armcp15_t*)cpu->coproc[cpnum], cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
-			  //cpu->coproc[cpnum]->moveARM2CP(cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
+
+     armcp15_moveARM2CP((armcp15_t*)cpu->coproc[cpnum], cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
+     //cpu->coproc[cpnum]->moveARM2CP(cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
      return 2;
 }
 
@@ -7787,7 +7771,7 @@ TEMPLATE static u32 FASTCALL  OP_MRC()
           return 2;
      }
      
-	  armcp15_moveCP2ARM((armcp15_t*)cpu->coproc[cpnum], &cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
+     armcp15_moveCP2ARM((armcp15_t*)cpu->coproc[cpnum], &cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
      //cpu->coproc[cpnum]->moveCP2ARM(&cpu->R[REG_POS(i, 12)], REG_POS(i, 16), REG_POS(i, 0), (i>>21)&7, (i>>5)&7);
      return 4;
 }
@@ -7820,18 +7804,16 @@ TEMPLATE static u32 FASTCALL  OP_SWI()
 //----------------BKPT-------------------------
 TEMPLATE static u32 FASTCALL OP_BKPT()
 {
-     execute = FALSE;
-	 LOG("Stopped (OP_BKPT)\n");
-     return 4;
+	LOG("Stopped (OP_BKPT)\n");
+	TRAPUNDEF();
 }
 
 //----------------CDP-----------------------
 
 TEMPLATE static u32 FASTCALL  OP_CDP()
 {
-     execute = FALSE;
-	 LOG("Stopped (OP_CDP)\n");
-     return 4;
+	LOG("Stopped (OP_CDP)\n");
+	TRAPUNDEF();
 }
 
 #define TYPE_RETOUR u32
