@@ -112,7 +112,8 @@ static bool isTranslucent;
 #ifdef _WIN32
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
 #else
-#define INITOGLEXT(x,y) y = (x)glXGetProcAddress(#y);
+#include <GL/glx.h>
+#define INITOGLEXT(x,y) y = (x)glXGetProcAddress((const GLubyte *) #y);
 #endif
 
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
@@ -133,7 +134,9 @@ OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
 OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+#ifdef _WIN32
 OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
+#endif
 
 
 //opengl state caching:
@@ -411,7 +414,9 @@ static char Init(void)
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+#ifdef _WIN32
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
+#endif
 
 	/* Create the shaders */
 	createShaders();
