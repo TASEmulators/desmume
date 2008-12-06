@@ -111,11 +111,12 @@ static bool isTranslucent;
 
 #ifdef _WIN32
 #define INITOGLEXT(x,y) y = (x)wglGetProcAddress(#y);
-#else
+#elif !defined(DESMUME_COCOA)
 #include <GL/glx.h>
 #define INITOGLEXT(x,y) y = (x)glXGetProcAddress((const GLubyte *) #y);
 #endif
 
+#ifndef DESMUME_COCOA
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 //zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
 typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, GLchar **source, GLsizei *length);
@@ -134,6 +135,7 @@ OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
 OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+#endif
 #ifdef _WIN32
 OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
@@ -306,21 +308,21 @@ void createShaders()
 {
 	hasShaders = true;
 
-	if (!glCreateShader ||
-		!glShaderSource ||
-		!glCompileShader ||
-		!glCreateProgram ||
-		!glAttachShader ||
-		!glLinkProgram ||
-		!glUseProgram ||
-		!glGetShaderInfoLog)
+	if (glCreateShader == NULL ||  //use ==NULL instead of !func to avoid always true warnings for some systems
+		glShaderSource == NULL ||
+		glCompileShader == NULL ||
+		glCreateProgram == NULL ||
+		glAttachShader == NULL ||
+		glLinkProgram == NULL ||
+		glUseProgram == NULL ||
+		glGetShaderInfoLog == NULL)
 		NOSHADERS(1);
 
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	if(!vertexShaderID)
 		NOSHADERS(2);
 
-	glShaderSource(vertexShaderID, 1, (GLchar**)&vertexShader, NULL);
+	glShaderSource(vertexShaderID, 1, (const GLchar**)&vertexShader, NULL);
 	glCompileShader(vertexShaderID);
 	SHADER_COMPCHECK(vertexShaderID);
 
@@ -328,7 +330,7 @@ void createShaders()
 	if(!fragmentShaderID)
 		NOSHADERS(2);
 
-	glShaderSource(fragmentShaderID, 1, (GLchar**)&fragmentShader, NULL);
+	glShaderSource(fragmentShaderID, 1, (const GLchar**)&fragmentShader, NULL);
 	glCompileShader(fragmentShaderID);
 	SHADER_COMPCHECK(fragmentShaderID);
 
@@ -398,6 +400,7 @@ static char Init(void)
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#ifndef DESMUME_COCOA
 	INITOGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 	INITOGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
@@ -414,6 +417,7 @@ static char Init(void)
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+#endif
 #ifdef _WIN32
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
@@ -436,7 +440,7 @@ static char Init(void)
 	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
-	if(glBlendFuncSeparateEXT)
+	if(glBlendFuncSeparateEXT != NULL)
 	{
 		glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
 	}
@@ -448,7 +452,7 @@ static char Init(void)
 	glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
 
-	if(!glBlendFuncSeparateEXT)
+	if(glBlendFuncSeparateEXT == NULL)
 		clearAlpha = 1;
 	else 
 		clearAlpha = 0;
