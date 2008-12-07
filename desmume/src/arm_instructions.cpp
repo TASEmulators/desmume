@@ -254,10 +254,7 @@ TEMPLATE static u32 FASTCALL  OP_UND()
 }
  
 #define TRAPUNDEF() \
- 	u32 i = cpu->instruction;								\
- 	u32 a = cpu->instruct_adr;								\
-												\
- 	LOG("Undefined instruction: %#08X PC = %#08X\n", i, a);					\
+ 	LOG("Undefined instruction: %#08X PC = %#08X\n", cpu->instruction, cpu->instruct_adr);	\
  												\
  	if (((cpu->intVector != 0) ^ (cpu->proc_ID == ARMCPU_ARM9))){				\
  		Status_Reg tmp = cpu->CPSR;							\
