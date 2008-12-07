@@ -304,7 +304,7 @@ static GLuint texBlendLoc;
 
 /* Shaders init */
 
-void createShaders()
+static void createShaders()
 {
 	hasShaders = true;
 
