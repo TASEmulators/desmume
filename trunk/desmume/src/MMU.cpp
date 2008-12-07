@@ -586,7 +586,7 @@ static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		MMU.LCD_VRAM_ADDR[block] = vram_map_addr;
 		MMU.LCDCenable[block] = TRUE;
 
-		for (uint i = 0; i < LCDdata[block][1]; i++)
+		for (unsigned int i = 0; i < LCDdata[block][1]; i++)
 			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
 		
 		//INFO("VRAM %i mapping: engine=%i (offset=%i), address = 0x%X, MST=%i\n", block, engine, engine_offset, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
