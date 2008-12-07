@@ -39,18 +39,18 @@ extern volatile BOOL execute;
 
 // Use this macros for reading/writing, so the GDB stub isn't broken
 #ifdef GDB_STUB
-	#define READ32(a,b)		cpu->mem_if->read32(a,b & 0xFFFFFFFC)
-	#define WRITE32(a,b,c)	cpu->mem_if->write32(a,b & 0xFFFFFFFC,c)
-	#define READ16(a,b)		cpu->mem_if->read16(a,b & 0xFFFFFFFE)
-	#define WRITE16(a,b,c)	cpu->mem_if->write16(a,b & 0xFFFFFFFE,c)
-	#define READ8(a,b)		cpu->mem_if->read8(a,b)
+	#define READ32(a,b)	cpu->mem_if->read32(a,(b) & 0xFFFFFFFC)
+	#define WRITE32(a,b,c)	cpu->mem_if->write32(a,(b) & 0xFFFFFFFC,c)
+	#define READ16(a,b)	cpu->mem_if->read16(a,(b) & 0xFFFFFFFE)
+	#define WRITE16(a,b,c)	cpu->mem_if->write16(a,(b) & 0xFFFFFFFE,c)
+	#define READ8(a,b)	cpu->mem_if->read8(a,b)
 	#define WRITE8(a,b,c)	cpu->mem_if->write8(a,b,c)
 #else
-	#define READ32(a,b)		MMU_read32(PROCNUM, b & 0xFFFFFFFC)
-	#define WRITE32(a,b,c)	MMU_write32(PROCNUM,b & 0xFFFFFFFC,c)
-	#define READ16(a,b)		MMU_read16(PROCNUM, b & 0xFFFFFFFE)
-	#define WRITE16(a,b,c)	MMU_write16(PROCNUM,b & 0xFFFFFFFE,c)
-	#define READ8(a,b)		MMU_read8(PROCNUM, b)
+	#define READ32(a,b)	MMU_read32(PROCNUM,(b) & 0xFFFFFFFC)
+	#define WRITE32(a,b,c)	MMU_write32(PROCNUM,(b) & 0xFFFFFFFC,c)
+	#define READ16(a,b)	MMU_read16(PROCNUM,(b) & 0xFFFFFFFE)
+	#define WRITE16(a,b,c)	MMU_write16(PROCNUM,(b) & 0xFFFFFFFE,c)
+	#define READ8(a,b)	MMU_read8(PROCNUM, b)
 	#define WRITE8(a,b,c)	MMU_write8(PROCNUM,b,c)
 #endif
 
