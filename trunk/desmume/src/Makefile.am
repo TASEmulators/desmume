@@ -12,7 +12,7 @@ libdesmume_a_SOURCES = \
         armcpu.cpp armcpu.h ARM9.h \
         arm_instructions.cpp arm_instructions.h \
         bios.cpp bios.h bits.h cp15.cpp cp15.h \
-        cflash.cpp cflash.h config.h fs.h \
+        cflash.cpp cflash.h fs.h \
 	common.cpp common.h \
 	debug.cpp debug.h \
 	Disassembler.cpp Disassembler.h \
