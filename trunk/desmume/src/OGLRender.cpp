@@ -119,7 +119,7 @@ static bool isTranslucent;
 #ifndef DESMUME_COCOA
 OGLEXT(PFNGLCREATESHADERPROC,glCreateShader)
 //zero: i dont understand this at all. my glext.h has the wrong thing declared here... so I have to do it myself
-typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, GLchar **source, GLsizei *length);
+typedef void (APIENTRYP X_PFNGLGETSHADERSOURCEPROC) (GLuint shader, GLsizei bufSize, const GLchar **source, GLsizei *length);
 OGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
 OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
