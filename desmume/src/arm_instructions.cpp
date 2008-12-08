@@ -1185,8 +1185,8 @@ TEMPLATE static u32 FASTCALL  OP_ADC_IMM_VAL()
      }\
      cpu->CPSR.bits.N = BIT31(cpu->R[REG_POS(i,12)]);\
      cpu->CPSR.bits.Z = (cpu->R[REG_POS(i,12)]==0);\
-     cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(shift_op, cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(v, tmp, cpu->R[REG_POS(i,12)]);\
-     cpu->CPSR.bits.V = SIGNED_OVERFLOW(shift_op, cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(v, tmp, cpu->R[REG_POS(i,12)]);\
+     cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(shift_op, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(v, tmp, cpu->R[REG_POS(i,12)]);\
+     cpu->CPSR.bits.V = SIGNED_OVERFLOW(shift_op, (u32) cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(v, tmp, cpu->R[REG_POS(i,12)]);\
      return a; \
      }
      
