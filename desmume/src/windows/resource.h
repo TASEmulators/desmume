@@ -166,7 +166,7 @@
 #define IDC_SCR                         806
 #define IDC_MSIZE                       807
 #define IDC_SCROLL                      808
-#define IDC_PRIO2                       809
+#define IDC_SCR2                        810
 #define IDD_OAM                         900
 #define IDC_SCR_SELECT                  901
 #define IDC_TILE                        902

@@ -1072,19 +1072,20 @@ BEGIN
     LTEXT           "Screen base :",IDC_STATIC,3,71,45,8
     LTEXT           "Size :",IDC_STATIC,3,81,45,8
     LTEXT           "Scroll :",IDC_STATIC,3,91,45,8
-    LTEXT           "",IDC_MODE,48,20,85,8
-    LTEXT           "",IDC_PAL,48,30,85,8
-    LTEXT           "",IDC_PRIO,48,40,85,8
-    LTEXT           "",IDC_VISIBLE,48,50,62,8
-    LTEXT           "",IDC_SCR,48,60,85,8
-    LTEXT           "",IDC_MSIZE,48,70,85,8
-    LTEXT           "",IDC_SCROLL,48,80,85,8
+    LTEXT           "Mode",IDC_MODE,45,22,85,8
+    LTEXT           "Palette",IDC_PAL,48,30,85,8
+    LTEXT           "Priority",IDC_PRIO,48,40,85,8
+    LTEXT           "Visible",IDC_VISIBLE,47,49,62,8
+    LTEXT           "SCR",IDC_SCR,51,72,76,8
+    LTEXT           "Size",IDC_MSIZE,29,82,50,8
+    LTEXT           "Scroll",IDC_SCROLL,30,91,85,8
     PUSHBUTTON      "&Close",IDC_FERMER,4,300,50,14
     CONTROL         "&Auto-update",IDC_AUTO_UPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,102,54,14
     EDITTEXT        IDC_AUTO_UPDATE_SECS,59,103,12,14,ES_AUTOHSCROLL | ES_READONLY | WS_DISABLED
     CONTROL         "",IDC_AUTO_UPDATE_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_AUTOBUDDY | UDS_ARROWKEYS | WS_DISABLED,71,103,11,14
     LTEXT           "secs",IDC_STATIC,83,106,16,8
     LTEXT           "Visible :",IDC_STATIC,4,50,38,8
+    LTEXT           "CHAR",IDC_CHAR,47,63,85,8
 END
 
 IDD_OAM DIALOGEX 0, 0, 300, 200
