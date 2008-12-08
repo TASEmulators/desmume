@@ -19,12 +19,12 @@ const char *fragmentShader = {"\
 	\n\
 	vec4 float_to_6bit(in vec4 color) \n\
 	{ \n\
-		vec4 ret = color * 31;\n\
+		vec4 ret = color * vec4(31.0,31.0,31.0,31.0);\n\
 		\n\
-		if(ret.r > 0) ret.r = (ret.r * 2) + 1; \n\
-		if(ret.g > 0) ret.g = (ret.g * 2) + 1; \n\
-		if(ret.b > 0) ret.b = (ret.b * 2) + 1; \n\
-		if(ret.a > 0) ret.a = (ret.a * 2) + 1; \n\
+		if(ret.r > 0.0) ret.r = (ret.r * 2.0) + 1.0; \n\
+		if(ret.g > 0.0) ret.g = (ret.g * 2.0) + 1.0; \n\
+		if(ret.b > 0.0) ret.b = (ret.b * 2.0) + 1.0; \n\
+		if(ret.a > 0.0) ret.a = (ret.a * 2.0) + 1.0; \n\
 		\n\
 		return ret; \n\
 	} \n\
@@ -43,7 +43,7 @@ const char *fragmentShader = {"\
 		\n\
 		if(texBlending == 0) \n\
 		{ \n\
-			fragColor = ((texColor + 1) * (vtxColor + 1) - 1) / 64; \n\
+			fragColor = ((texColor + 1.0) * (vtxColor + 1.0) - 1.0) / 64.0; \n\
 		} \n\
 		else if(texBlending == 1) \n\
 		{ \n\
@@ -57,22 +57,22 @@ const char *fragmentShader = {"\
 			} \n\
 			else \n\
 			{ \n\
-				fragColor.rgb = ((texColor.rgb * texColor.a) + (vtxColor.rgb * (63.0 - texColor.a))) / 64; \n\
+				fragColor.rgb = ((texColor.rgb * texColor.a) + (vtxColor.rgb * (63.0 - texColor.a))) / 64.0; \n\
 			} \n\
 			\n\
 			fragColor.a = vtxColor.a; \n\
 		} \n\
 		else if(texBlending == 2) \n\
 		{ \n\
-			fragColor.rgb = ((texColor.rgb + 1) * (toonColor + 1) - 1) / 64; \n\
-			fragColor.a = ((texColor.a + 1) * (vtxColor.a + 1) - 1) / 64; \n\
+			fragColor.rgb = ((texColor.rgb + 1.0) * (toonColor + 1.0) - 1.0) / 64.0; \n\
+			fragColor.a = ((texColor.a + 1.0) * (vtxColor.a + 1.0) - 1.0) / 64.0; \n\
 		} \n\
 		else if(texBlending == 3) \n\
 		{ \n\
-			fragColor.rgb = min((((texColor.rgb + 1) * (toonColor + 1) - 1) / 64) + toonColor, 63.0); \n\
-			fragColor.a = ((texColor.a + 1) * (vtxColor.a + 1) - 1) / 64; \n\
+			fragColor.rgb = min((((texColor.rgb + 1.0) * (toonColor + 1.0) - 1.0) / 64.0) + toonColor, 63.0); \n\
+			fragColor.a = ((texColor.a + 1.0) * (vtxColor.a + 1.0) - 1.0) / 64.0; \n\
 		} \n\
 		\n\
-		gl_FragColor = ((fragColor - 1) / 2) / 31; \n\
+		gl_FragColor = ((fragColor - 1.0) / 2.0) / 31.0; \n\
 	} \n\
 "};
