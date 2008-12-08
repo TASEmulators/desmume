@@ -356,7 +356,7 @@ BOOL CALLBACK InputConfigDlgProc(   HWND hDlg,
 			return true;
 	} 
 
-	return DefWindowProc( hDlg, uMessage, wParam, lParam);
+	return false;
 }
 
 void InputConfig(HWND hwnd)
