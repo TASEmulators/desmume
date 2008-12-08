@@ -1272,12 +1272,12 @@ bool opengl_init()
 
 			int speed_limit_this_frame = speed_limit; //dont let speed limit change midframe
 			if(speed_limit_this_frame)ideal_frame_end_date = [NSDate dateWithTimeIntervalSinceNow: DS_SECONDS_PER_FRAME / ((float)speed_limit_this_frame / 100.0)];
-			
+
 			frame_start_date = [NSDate dateWithTimeIntervalSinceNow:0];
 
 			[execution_lock lock];
 
-			cycles = NDS_exec((560190<<1)-cycles, FALSE);
+			cycles = NDS_exec<FALSE>((560190<<1)-cycles);
 
 			[sound_lock lock];
 			int x;
@@ -1295,7 +1295,7 @@ bool opengl_init()
 			//speed limit
 			if(speed_limit_this_frame)
 				[NSThread sleepUntilDate:ideal_frame_end_date];
-			
+
 			if(frames_to_skip > 0)
 				frames_to_skip--;
 
