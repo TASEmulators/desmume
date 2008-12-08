@@ -408,6 +408,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 		u8	engine = (vram_addr >> 21);
 		vram_addr &= 0x01FFFFF;
 		u8	engine_offset = (vram_addr >> 14);
+		if (engine_offset > 31) return NULL;
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
 		if (block == 7) return NULL;
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
@@ -452,11 +453,13 @@ static FORCEINLINE u32 MMU_LCDmap(u8 proc, u32 addr)
 		addr -= MMU.LCD_VRAM_ADDR[block];
 		addr += LCDdata[block][0];
 
+#if 0
 		if ((addr < 0x6800000) || (addr> 0x68A3FFF)) // FIXME: this is hack
 		{
-			//LOG("Address is out range 0x%X in block %i\n", addr, block);
+			LOG("Address is out range 0x%X in block %i\n", addr, block);
 			addr = save_addr;
 		}
+#endif
 	}
 	return (addr);
 }
