@@ -32,9 +32,11 @@ libdesmume_a_SOURCES = \
         saves.cpp saves.h \
         SPU.cpp SPU.h \
 	softrender.cpp softrender.h softrender_config.h \
+	softrender_v3sysfont.h softrender_desmumefont.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
-        thumb_instructions.cpp thumb_instructions.h types.h
+        thumb_instructions.cpp thumb_instructions.h types.h \
+	zero_private.h shaders.h
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
