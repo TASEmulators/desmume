@@ -799,10 +799,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\fs-windows.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\ginfo.cpp"
 					>
 				</File>
@@ -1014,6 +1010,10 @@
 				</File>
 				<File
 					RelativePath="..\FIFO.h"
+					>
+				</File>
+				<File
+					RelativePath="..\fs-windows.cpp"
 					>
 				</File>
 				<File
