@@ -37,10 +37,10 @@
 GFX3D gfx3d;
 
 //tables that are provided to anyone
-u32 color_15bit_to_24bit[32768];
+CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
-const int material_5bit_to_31bit[] = {
+CACHE_ALIGN const int material_5bit_to_31bit[] = {
 	0x00000000, 0x04210842, 0x08421084, 0x0C6318C6,
 	0x10842108, 0x14A5294A, 0x18C6318C, 0x1CE739CE,
 	0x21084210, 0x25294A52, 0x294A5294, 0x2D6B5AD6,
@@ -51,15 +51,14 @@ const int material_5bit_to_31bit[] = {
 	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
 };
 
-const u8 material_5bit_to_8bit[] = {
+CACHE_ALIGN const u8 material_5bit_to_8bit[] = {
 	0x00, 0x08, 0x10, 0x18, 0x21, 0x29, 0x31, 0x39,
 	0x42, 0x4A, 0x52, 0x5A, 0x63, 0x6B, 0x73, 0x7B,
 	0x84, 0x8C, 0x94, 0x9C, 0xA5, 0xAD, 0xB5, 0xBD,
 	0xC6, 0xCE, 0xD6, 0xDE, 0xE7, 0xEF, 0xF7, 0xFF
 };
 
-
-const u8 material_3bit_to_8bit[] = {
+CACHE_ALIGN const u8 material_3bit_to_8bit[] = {
 	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
 };
 
@@ -73,28 +72,28 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Matrix stack handling
-static ALIGN(16) MatrixStack	mtxStack[4];
-static ALIGN(16) float		mtxCurrent [4][16];
-static ALIGN(16) float		mtxTemporal[16];
+static CACHE_ALIGN MatrixStack	mtxStack[4];
+static CACHE_ALIGN float		mtxCurrent [4][16];
+static CACHE_ALIGN float		mtxTemporal[16];
 static u32 mode = 0;
 
 // Indexes for matrix loading/multiplication
-static u8 ML4x4ind = 0;
-static u8 ML4x3_c = 0, ML4x3_l = 0;
-static u8 MM4x4ind = 0;
-static u8 MM4x3_c = 0, MM4x3_l = 0;
-static u8 MM3x3_c = 0, MM3x3_l = 0;
+static int ML4x4ind = 0;
+static int ML4x3_c = 0, ML4x3_l = 0;
+static int MM4x4ind = 0;
+static int MM4x3_c = 0, MM4x3_l = 0;
+static int MM3x3_c = 0, MM3x3_l = 0;
 
 // Data for vertex submission
-static ALIGN(16) float	coord[4] = {0.0, 0.0, 0.0, 0.0};
+static CACHE_ALIGN float	coord[4] = {0.0, 0.0, 0.0, 0.0};
 static char		coordind = 0;
 static u32 vtxFormat;
 
 // Data for basic transforms
-static ALIGN(16) float	trans[4] = {0.0, 0.0, 0.0, 0.0};
-static u8		transind = 0;
-static ALIGN(16) float	scale[4] = {0.0, 0.0, 0.0, 0.0};
-static u8		scaleind = 0;
+static CACHE_ALIGN float	trans[4] = {0.0, 0.0, 0.0, 0.0};
+static int		transind = 0;
+static CACHE_ALIGN float	scale[4] = {0.0, 0.0, 0.0, 0.0};
+static int		scaleind = 0;
 
 //various other registers
 static int _t=0, _s=0;
@@ -107,7 +106,7 @@ static u32 clInd2 = 0;
 static u32 polyAttr=0,textureFormat=0, texturePalette=0;
 
 //the current vertex color, 5bit values
-static u8 colorRGB[4] = { 31,31,31,31 };
+static int colorRGB[4] = { 31,31,31,31 };
 
 u32 control = 0;
 
@@ -130,8 +129,8 @@ static u32 envMode=0;
 static u32 lightMask=0;
 //other things:
 static int texCoordinateTransform = 0;
-static ALIGN(16) float cacheLightDirection[4][4];
-static ALIGN(16) float cacheHalfVector[4][4];
+static CACHE_ALIGN float cacheLightDirection[4][4];
+static CACHE_ALIGN float cacheHalfVector[4][4];
 //------------------
 
 #define RENDER_FRONT_SURFACE 0x80
@@ -160,6 +159,7 @@ static void twiddleLists() {
 }
 
 static BOOL flushPending = FALSE;
+static BOOL drawPending = FALSE;
 //------------------------------------------------------------
 
 static void makeTables() {
@@ -1389,7 +1389,13 @@ void gfx3d_VBlankSignal()
 	//so, if we have a redraw pending, now is a safe time to do it
 	if(!flushPending) return;
 	flushPending = FALSE;
+	drawPending = TRUE;
+}
 
+void gfx3d_VBlankEndSignal()
+{
+	if(!drawPending) return;
+	drawPending = FALSE;
 	gpu3D->NDS_3D_Render();
 }
 
@@ -1507,6 +1513,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GTST", 4, 1, &triStripToggle},
 	{ "GLTW", 4, 1, &listTwiddle},
 	{ "GFLP", 4, 1, &flushPending},
+	{ "GDRP", 4, 1, &drawPending},
 	{ "GSET", 4, 1, &gfx3d.enableTexturing},
 	{ "GSEA", 4, 1, &gfx3d.enableAlphaTest},
 	{ "GSEB", 4, 1, &gfx3d.enableAlphaBlending},

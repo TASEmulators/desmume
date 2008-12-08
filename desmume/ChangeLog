@@ -1,4 +1,5 @@
-0.8 -> ?
+0.8 -> 0.9
+ There have been so many changes that this list can hardly be considered complete.
  General/Core:
  - Added "high-level" check for DMAs and Timer for minor (really minor) speed up [shash]
  - Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
@@ -9,18 +10,21 @@
  - Some fixes in core (New SMB don't freeze now) [CrazyMax]
  - Some optimizations in code [CrazyMax]
  - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
- - Add many matrix and vector functions to matrix.c [zeromus]
+ - Add many matrix and vector functions to matrix.cpp [zeromus]
  - Convert to c++!
  - Added gfx3d module which emulates the whole GE as part of the core emu. Moved the windows/cocoa OGLRender to the 
    emu core and replace ogl_collector. Now every platform shares the same 3d code. [zeromus]
  - Add in some crude interpolation in the SPU (conditionally compiled) so that I can bear to listen to it. [zeromus]
+ - Experiment: always one silent SPU core at 44.1khz synched with emu for more precision.
+   The audible core runs with the host, causing music to slow down but not tear or pitch bend. [zeromus]
  - Change savestate code to support loosely bound chunks and more easily other parts of the emu (GE, GPU).
    The savestate format is changed, but from now on it is in principle more resilient (it will continue to break though) [zeromus]
- - Remove 16MB of WRAM at 0x01****** from arm9. Maped to unusued instead. What was this? [zeromus]
+ - Remove 16MB of WRAM at 0x01****** from arm9. Maped to unused instead. What was this? [zeromus]
  - Change SPU to run two spus in parallel. SPU_core is the official one. SPU_user produces output.
    This lets us do inaccurate things with SPU_user which might sound better while being more accurate with SPU_core. [zeromus]
  - Add RTC implementations (not fully) [CrazyMax]
  - Rewrite VRAM mapping control and render (old save states broken) [CrazyMax]
+ - Add a GUI hud system; start adding some HUD elements
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
@@ -54,14 +58,12 @@
  - Defer rendering until after flush. This was a necessary architectural change, as it permits savestate
    for the display list, and allows us eventually to separate the GE emulation from the rendering [zeromus]
  - Fix the 2d/3d compositing well enough for NSMB to fix bugs, but it is still bad [zeromus]
- - Reorganize 3d code to defer rendering to vblank. eliminates tearing, and maybe some texturing artifacts.
-   also possibly helps performance a bit by letting the hardware pipeline work some more before blocking for
-   framebuffer read. [zeromus]
+ - Reorganize 3d code to defer rendering to after vblank. eliminates tearing, and maybe some texturing artifacts. [zeromus]
  - Tweak optimization flags and change entire source code to use fastcall [zeromus]
  - Add opengl state caching. This is of dubious performance assistance, but it is easy to take out so I am leaving it for now. [zeromus]
  - Add MMU->GPU signal for when vram mappings change, which allows it to assume textures are unchanged unless vram has changed [zeromus]
  - Added a bunch of crazy templates to the cpu and mmu which speed up a the emu little by optimizing variable accesses [zeromus]
- - Add an arm9 cpu load average calculator [zeromus]
+ - Add an arm9 cpu load average calculator similar to no$ [zeromus]
  ? Fix a bug in texture transformation mode 1 [zeromus]
  - Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
  - Fix resizing, rotate & aspect ration of main window. Add save window position and parameters [CrazyMax]

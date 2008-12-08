@@ -876,7 +876,7 @@ DWORD WINAPI run()
           while(execute)
           {
 			  EnterCriticalSection(&win_sync);
-               cycles = NDS_exec((560190<<1)-cycles,FALSE);
+               cycles = NDS_exec((560190<<1)-cycles);
 				win_sound_samplecounter = 735;
 			   	LeaveCriticalSection(&win_sync);
 	
@@ -1149,7 +1149,6 @@ static void ExitRunLoop()
 	finished = TRUE;
 	execute = FALSE;
 }
-
 
 int WINAPI WinMain (HINSTANCE hThisInstance,
                     HINSTANCE hPrevInstance,
@@ -2032,14 +2031,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 							tpaused=true;
 							NDS_Pause();
 						}
-						DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
+						DialogBox(hAppInst, MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
 						if (tpaused)
 							NDS_UnPause();
                   }
                   return 0;
                   case IDM_GAME_INFO:
                        {
-                            CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
+                            CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
                        }
                   return 0;
 

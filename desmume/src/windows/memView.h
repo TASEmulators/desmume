@@ -24,10 +24,10 @@
 
 #include <windows.h>
 
-extern bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewMem_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-extern bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+extern BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewMem_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 #endif

@@ -280,11 +280,15 @@ LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 		case WM_ERASEBKGND:
 			return 1;
 	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return FALSE;
 }
 
 BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	//bail out early if the dialog isnt initialized
+	if(!DisView7 && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
      {
             case WM_INITDIALOG :
@@ -292,7 +296,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					SetWindowText(hwnd, "ARM7 Disassembler");
 					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_DES), BM_SETCHECK, TRUE, 0);
-					DisView7 = new disview_struct[1];
+					DisView7 = new disview_struct;
 					memset(DisView7, 0, sizeof(disview_struct));
 					DisView7->cpu = &NDS_ARM7;
 					DisView7->autoup_secs = 5;
@@ -380,7 +384,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              {
                                   int ndstep;
                                   ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
-                                  NDS_exec(ndstep, TRUE);
+                                  NDS_exec<TRUE>(ndstep);
                              }
                              return 1;
                         case IDC_GO :
@@ -459,7 +463,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                  return 0;
      }
 
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }
 
 // =================================================== ARM9
@@ -520,11 +524,15 @@ LRESULT CALLBACK ViewDisasm_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 		case WM_ERASEBKGND:
 			return 1;
 	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return FALSE;
 }
 
 BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	//bail out early if the dialog isnt initialized
+	if(!DisView9 && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
      {
             case WM_INITDIALOG :
@@ -532,7 +540,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					SetWindowText(hwnd, "ARM9 Disassembler");
 					SetDlgItemInt(hwnd, IDC_SETPNUM, 1, FALSE);
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_DES), BM_SETCHECK, TRUE, 0);
-					DisView9 = new disview_struct[1];
+					DisView9 = new disview_struct;
 					memset(DisView9, 0, sizeof(disview_struct));
 					DisView9->cpu = &NDS_ARM9;
 					DisView9->autoup_secs = 5;
@@ -620,7 +628,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              {
                                   int ndstep;
                                   ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
-                                  NDS_exec(ndstep, TRUE);
+                                  NDS_exec<TRUE>(ndstep);
                              }
                              return 1;
                         case IDC_GO :
@@ -699,7 +707,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                  return 0;
      }
 
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }
 
 void DisassemblerTools_Refresh(u8 proc)

@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include "NDSSystem.h"
 #include "render3D.h"
@@ -869,16 +870,26 @@ int NDS_LoadFirmware(const char *filename)
 }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
-u32
-NDS_exec(s32 nb, BOOL force)
+
+
+template<bool FORCE>
+u32 NDS_exec(s32 nb)
 {
 	int i, j;
 
   nb += nds.cycles;//(nds.cycles>>26)<<26;
+
+  //increase this to execute more instructions in each batch (reducing overhead)
+  //the value of 4 seems to optimize speed.. do lower values increase precision? 
+  const int INSTRUCTIONS_PER_BATCH = 4;
+
+  //decreasing this should increase precision at the cost of speed
+  //the traditional value was somewhere between 100 and 400 depending on circumstances
+  const int CYCLES_TO_WAIT_FOR_IRQ = 400;
             
-  for(; (nb >= nds.cycles) && ((force)||(execute)); )
+  for(; (nb >= nds.cycles) && ((FORCE)||(execute)); )
     {
-		for (j = 0; j < 4 && (!force) && (execute); j++)
+		for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
 		{
 			if(nds.ARM9Cycle<=nds.cycles)
 			{
@@ -895,18 +906,17 @@ NDS_exec(s32 nb, BOOL force)
 					LOG(logbuf);
 				}
 #endif
-				for (i = 0; i < 4 && (!force) && (execute); i++)
+				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
 					if(NDS_ARM9.waitIRQ) {
-						nds.ARM9Cycle += 100;
-						nds.idleCycles += 100;
+						nds.ARM9Cycle += CYCLES_TO_WAIT_FOR_IRQ;
+						nds.idleCycles += CYCLES_TO_WAIT_FOR_IRQ;
+						break; //it is rather pointless to do this more than once
 					} else
-						//nds.ARM9Cycle += NDS_ARM9.exec();
-						//nds.ARM9Cycle += armcpu_exec(&NDS_ARM9);
-						nds.ARM9Cycle += armcpu_exec<0>();
+						nds.ARM9Cycle += armcpu_exec<ARMCPU_ARM9>();
 				}
 #ifdef _WIN32
-						DisassemblerTools_Refresh(0);
+				DisassemblerTools_Refresh(ARMCPU_ARM9);
 #endif
 			}
 
@@ -933,26 +943,27 @@ NDS_exec(s32 nb, BOOL force)
 					LOG(logbuf);
 				}
 #endif
-				for (i = 0; i < 4 && (!force) && (execute); i++)
+				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
 					if(NDS_ARM7.waitIRQ)
-						nds.ARM7Cycle += 100;
+					{
+						nds.ARM7Cycle += CYCLES_TO_WAIT_FOR_IRQ;
+						break; //it is rather pointless to do this more than once
+					}
 					else
-						//nds.ARM7Cycle += (NDS_ARM7.exec()<<1);
-						//nds.ARM7Cycle += (armcpu_exec(&NDS_ARM7)<<1);
-						nds.ARM7Cycle += (armcpu_exec<1>()<<1);
+						nds.ARM7Cycle += (armcpu_exec<ARMCPU_ARM7>()<<1);
 				}
 #ifdef _WIN32
-						DisassemblerTools_Refresh(1);
+				DisassemblerTools_Refresh(ARMCPU_ARM7);
 #endif
 			}
 		}
 
-		nds.cycles = (nds.ARM9Cycle<nds.ARM7Cycle)?nds.ARM9Cycle : nds.ARM7Cycle;
+		nds.cycles = std::min(nds.ARM9Cycle,nds.ARM7Cycle);
                  
       //debug();
-                 
-      if(nds.cycles>=nds.nextHBlank)
+
+		if(nds.cycles>=nds.nextHBlank)
         {
           if(!nds.lignerendu)
             {
@@ -1041,8 +1052,8 @@ NDS_exec(s32 nb, BOOL force)
               nds.lignerendu = FALSE;
               if(nds.VCount==192)
                 {
-					gfx3d_VBlankSignal();
 					//osdA->update();	//================================= this is don't correct, need swap engine
+					gfx3d_VBlankSignal();
 
                   T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
                   T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
@@ -1072,8 +1083,10 @@ NDS_exec(s32 nb, BOOL force)
                   if(MMU.DMAStartTime[1][3] == 1)
                     MMU_doDMA(1, 3);
                 }
-              else                         
-                if(nds.VCount==263)
+			  else if(nds.VCount==214) {
+				gfx3d_VBlankEndSignal();
+			  }
+                else if(nds.VCount==263)
                   {
 					//osd->update();
 					//osdB->update();	//================================= this is don't correct, need swap engine
@@ -1086,7 +1099,7 @@ NDS_exec(s32 nb, BOOL force)
                     nds.cycles -= (560190<<1);
                     nds.ARM9Cycle -= (560190<<1);
                     nds.ARM7Cycle -= (560190<<1);
-                    nb -= (560190<<1);
+					nb -= (560190<<1);
 
 					if (MMU.CheckTimers)
 					{
@@ -1581,6 +1594,9 @@ NDS_exec(s32 nb, BOOL force)
 			}
 		}
 
+
+                 
+      
     }
   
 	return nds.cycles;
@@ -1688,3 +1704,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	
 	// TODO: low power IRQ
 }
+
+//these templates needed to be instantiated manually
+template u32 NDS_exec<FALSE>(s32 nb);
+template u32 NDS_exec<TRUE>(s32 nb);

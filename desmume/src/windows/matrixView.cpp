@@ -149,7 +149,7 @@ BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
      {
             case WM_INITDIALOG:
 				{
-					MatrixView = new matrixview_struct[1];
+					MatrixView = new matrixview_struct;
 					memset(MatrixView, 0, sizeof(matrixview_struct));
 					MatrixView->autoup_secs = 5;
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -252,5 +252,5 @@ BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                  return 0;
      }
 
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return false;
 }

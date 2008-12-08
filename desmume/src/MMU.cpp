@@ -123,111 +123,113 @@ char szRomBaseName[512];
 
 MMU_struct MMU;
 
-u8 * MMU_ARM9_MEM_MAP[256]={
-/* 0X*/	DUP16(ARM9Mem.ARM9_ITCM), 
-/* 1X*/	//DUP16(ARM9Mem.ARM9_ITCM)
-/* 1X*/	DUP16(MMU.UNUSED_RAM), 
-/* 2X*/	DUP16(ARM9Mem.MAIN_MEM),
-/* 3X*/	DUP16(MMU.SWIRAM),
-/* 4X*/	DUP16(ARM9Mem.ARM9_REG),
-/* 5X*/	DUP16(ARM9Mem.ARM9_VMEM),
-/* 6X*/	DUP2(ARM9Mem.ARM9_ABG), 
-		DUP2(ARM9Mem.ARM9_BBG),
-		DUP2(ARM9Mem.ARM9_AOBJ),
-		DUP2(ARM9Mem.ARM9_BOBJ),
-		DUP8(ARM9Mem.ARM9_LCD),
-/* 7X*/	DUP16(ARM9Mem.ARM9_OAM),
-/* 8X*/	DUP16(NULL),
-/* 9X*/	DUP16(NULL),
-/* AX*/	DUP16(MMU.CART_RAM),
-/* BX*/	DUP16(MMU.UNUSED_RAM),
-/* CX*/	DUP16(MMU.UNUSED_RAM),
-/* DX*/	DUP16(MMU.UNUSED_RAM),
-/* EX*/	DUP16(MMU.UNUSED_RAM),
-/* FX*/	DUP16(ARM9Mem.ARM9_BIOS)
-};
-	   
-u32 MMU_ARM9_MEM_MASK[256]={
-/* 0X*/	DUP16(0x00007FFF), 
-/* 1X*/	//DUP16(0x00007FFF)
-/* 1X*/	DUP16(0x00000003), 
-/* 2X*/	DUP16(0x003FFFFF),
-/* 3X*/	DUP16(0x00007FFF),
-/* 4X*/	DUP16(0x00FFFFFF),
-/* 5X*/	DUP16(0x000007FF),
-/* 6X*/	DUP2(0x0007FFFF), 
-		DUP2(0x0001FFFF),
-		DUP2(0x0003FFFF),
-		DUP2(0x0001FFFF),
-		DUP8(0x000FFFFF),
-/* 7X*/	DUP16(0x000007FF),
-/* 8X*/	DUP16(ROM_MASK),
-/* 9X*/	DUP16(ROM_MASK),
-/* AX*/	DUP16(0x0000FFFF),
-/* BX*/	DUP16(0x00000003),
-/* CX*/	DUP16(0x00000003),
-/* DX*/	DUP16(0x00000003),
-/* EX*/	DUP16(0x00000003),
-/* FX*/	DUP16(0x00007FFF)
-};
-
-u8 * MMU_ARM7_MEM_MAP[256]={
-/* 0X*/	DUP16(MMU.ARM7_BIOS), 
-/* 1X*/	DUP16(MMU.UNUSED_RAM), 
-/* 2X*/	DUP16(ARM9Mem.MAIN_MEM),
-/* 3X*/	DUP8(MMU.SWIRAM),
-		DUP8(MMU.ARM7_ERAM),
-/* 4X*/	DUP8(MMU.ARM7_REG),
-		DUP8(MMU.ARM7_WIRAM),
-/* 5X*/	DUP16(MMU.UNUSED_RAM),
-/* 6X*/	DUP16(ARM9Mem.ARM9_ABG), 
-/* 7X*/	DUP16(MMU.UNUSED_RAM),
-/* 8X*/	DUP16(NULL),
-/* 9X*/	DUP16(NULL),
-/* AX*/	DUP16(MMU.CART_RAM),
-/* BX*/	DUP16(MMU.UNUSED_RAM),
-/* CX*/	DUP16(MMU.UNUSED_RAM),
-/* DX*/	DUP16(MMU.UNUSED_RAM),
-/* EX*/	DUP16(MMU.UNUSED_RAM),
-/* FX*/	DUP16(MMU.UNUSED_RAM)
+u8 * MMU_struct::MMU_MEM[2][256] = {
+	//arm9
+	{
+		/* 0X*/	DUP16(ARM9Mem.ARM9_ITCM), 
+		/* 1X*/	//DUP16(ARM9Mem.ARM9_ITCM)
+		/* 1X*/	DUP16(MMU.UNUSED_RAM), 
+		/* 2X*/	DUP16(ARM9Mem.MAIN_MEM),
+		/* 3X*/	DUP16(MMU.SWIRAM),
+		/* 4X*/	DUP16(ARM9Mem.ARM9_REG),
+		/* 5X*/	DUP16(ARM9Mem.ARM9_VMEM),
+		/* 6X*/	DUP2(ARM9Mem.ARM9_ABG), 
+				DUP2(ARM9Mem.ARM9_BBG),
+				DUP2(ARM9Mem.ARM9_AOBJ),
+				DUP2(ARM9Mem.ARM9_BOBJ),
+				DUP8(ARM9Mem.ARM9_LCD),
+		/* 7X*/	DUP16(ARM9Mem.ARM9_OAM),
+		/* 8X*/	DUP16(NULL),
+		/* 9X*/	DUP16(NULL),
+		/* AX*/	DUP16(MMU.CART_RAM),
+		/* BX*/	DUP16(MMU.UNUSED_RAM),
+		/* CX*/	DUP16(MMU.UNUSED_RAM),
+		/* DX*/	DUP16(MMU.UNUSED_RAM),
+		/* EX*/	DUP16(MMU.UNUSED_RAM),
+		/* FX*/	DUP16(ARM9Mem.ARM9_BIOS)
+	},
+	//arm7
+	{
+		/* 0X*/	DUP16(MMU.ARM7_BIOS), 
+		/* 1X*/	DUP16(MMU.UNUSED_RAM), 
+		/* 2X*/	DUP16(ARM9Mem.MAIN_MEM),
+		/* 3X*/	DUP8(MMU.SWIRAM),
+				DUP8(MMU.ARM7_ERAM),
+		/* 4X*/	DUP8(MMU.ARM7_REG),
+				DUP8(MMU.ARM7_WIRAM),
+		/* 5X*/	DUP16(MMU.UNUSED_RAM),
+		/* 6X*/	DUP16(ARM9Mem.ARM9_ABG), 
+		/* 7X*/	DUP16(MMU.UNUSED_RAM),
+		/* 8X*/	DUP16(NULL),
+		/* 9X*/	DUP16(NULL),
+		/* AX*/	DUP16(MMU.CART_RAM),
+		/* BX*/	DUP16(MMU.UNUSED_RAM),
+		/* CX*/	DUP16(MMU.UNUSED_RAM),
+		/* DX*/	DUP16(MMU.UNUSED_RAM),
+		/* EX*/	DUP16(MMU.UNUSED_RAM),
+		/* FX*/	DUP16(MMU.UNUSED_RAM)
+		}
 };
 
-u32 MMU_ARM7_MEM_MASK[256]={
-/* 0X*/	DUP16(0x00003FFF), 
-/* 1X*/	DUP16(0x00000003),
-/* 2X*/	DUP16(0x003FFFFF),
-/* 3X*/	DUP8(0x00007FFF),
-		DUP8(0x0000FFFF),
-/* 4X*/	DUP8(0x00FFFFFF),
-		DUP8(0x0000FFFF),
-/* 5X*/	DUP16(0x00000003),
-/* 6X*/	DUP16(0x0003FFFF), 
-/* 7X*/	DUP16(0x00000003),
-/* 8X*/	DUP16(ROM_MASK),
-/* 9X*/	DUP16(ROM_MASK),
-/* AX*/	DUP16(0x0000FFFF),
-/* BX*/	DUP16(0x00000003),
-/* CX*/	DUP16(0x00000003),
-/* DX*/	DUP16(0x00000003),
-/* EX*/	DUP16(0x00000003),
-/* FX*/	DUP16(0x00000003)
+u32 MMU_struct::MMU_MASK[2][256] = {
+	//arm9
+	{
+		/* 0X*/	DUP16(0x00007FFF), 
+		/* 1X*/	//DUP16(0x00007FFF)
+		/* 1X*/	DUP16(0x00000003), 
+		/* 2X*/	DUP16(0x003FFFFF),
+		/* 3X*/	DUP16(0x00007FFF),
+		/* 4X*/	DUP16(0x00FFFFFF),
+		/* 5X*/	DUP16(0x000007FF),
+		/* 6X*/	DUP2(0x0007FFFF), 
+				DUP2(0x0001FFFF),
+				DUP2(0x0003FFFF),
+				DUP2(0x0001FFFF),
+				DUP8(0x000FFFFF),
+		/* 7X*/	DUP16(0x000007FF),
+		/* 8X*/	DUP16(ROM_MASK),
+		/* 9X*/	DUP16(ROM_MASK),
+		/* AX*/	DUP16(0x0000FFFF),
+		/* BX*/	DUP16(0x00000003),
+		/* CX*/	DUP16(0x00000003),
+		/* DX*/	DUP16(0x00000003),
+		/* EX*/	DUP16(0x00000003),
+		/* FX*/	DUP16(0x00007FFF)
+	},
+	//arm7
+	{
+		/* 0X*/	DUP16(0x00003FFF), 
+		/* 1X*/	DUP16(0x00000003),
+		/* 2X*/	DUP16(0x003FFFFF),
+		/* 3X*/	DUP8(0x00007FFF),
+				DUP8(0x0000FFFF),
+		/* 4X*/	DUP8(0x00FFFFFF),
+				DUP8(0x0000FFFF),
+		/* 5X*/	DUP16(0x00000003),
+		/* 6X*/	DUP16(0x0003FFFF), 
+		/* 7X*/	DUP16(0x00000003),
+		/* 8X*/	DUP16(ROM_MASK),
+		/* 9X*/	DUP16(ROM_MASK),
+		/* AX*/	DUP16(0x0000FFFF),
+		/* BX*/	DUP16(0x00000003),
+		/* CX*/	DUP16(0x00000003),
+		/* DX*/	DUP16(0x00000003),
+		/* EX*/	DUP16(0x00000003),
+		/* FX*/	DUP16(0x00000003)
+		}
 };
 
-u32 MMU_ARM9_WAIT16[16]={
-	1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1,
+
+TWaitState MMU_struct::MMU_WAIT16[2][16] = {
+	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm9
+	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm7
 };
 
-u32 MMU_ARM9_WAIT32[16]={
-	1, 1, 1, 1, 1, 2, 2, 1, 8, 8, 5, 1, 1, 1, 1, 1,
+TWaitState MMU_struct::MMU_WAIT32[2][16] = {
+	{ 1, 1, 1, 1, 1, 2, 2, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm9
+	{ 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm7
 };
 
-u32 MMU_ARM7_WAIT16[16]={
-	1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1,
-};
-
-u32 MMU_ARM7_WAIT32[16]={
-	1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1,
-};
 
 u32 gxIRQ = 0;
 	
@@ -256,22 +258,13 @@ void MMU_Init(void) {
 
         for(i = 0x80; i<0xA0; ++i)
         {
-           MMU_ARM9_MEM_MAP[i] = MMU.CART_ROM;
-           MMU_ARM7_MEM_MAP[i] = MMU.CART_ROM;
+			MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
+			MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
         }
 
-	MMU.MMU_MEM[0] = MMU_ARM9_MEM_MAP;
-	MMU.MMU_MEM[1] = MMU_ARM7_MEM_MAP;
-	MMU.MMU_MASK[0]= MMU_ARM9_MEM_MASK;
-	MMU.MMU_MASK[1] = MMU_ARM7_MEM_MASK;
 
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
-
-	MMU.MMU_WAIT16[0] = MMU_ARM9_WAIT16;
-	MMU.MMU_WAIT16[1] = MMU_ARM7_WAIT16;
-	MMU.MMU_WAIT32[0] = MMU_ARM9_WAIT32;
-	MMU.MMU_WAIT32[1] = MMU_ARM7_WAIT32;
 
 	FIFOclear(&MMU.fifos[0]);
 	FIFOclear(&MMU.fifos[1]);
@@ -422,10 +415,9 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	return NULL;
 }
 
-static INLINE BOOL MMU_LCDmap(u32 *addr)
+static FORCEINLINE bool MMU_LCDmap(u32 &addr)
 {
-	u32	vram_addr = (u32)*addr;
-
+	u32 vram_addr = addr;
 	if ((vram_addr >= 0x6000000) && (vram_addr <= 0x67FFFFF))
 	{
 		vram_addr &= 0x0FFFFFF;
@@ -433,16 +425,16 @@ static INLINE BOOL MMU_LCDmap(u32 *addr)
 		vram_addr &= 0x01FFFFF;
 		u8	engine_offset = (vram_addr >> 14);
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
-		if (block == 7) return TRUE;
+		if (block == 7) return true;
 		//INFO("VRAM %i: engine=%i (offset=%i), map address = 0x%X, MMU address = 0x%X\n", block, engine, engine_offset, vram_addr, *addr);
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
 		vram_addr += LCDdata[block][0];
-		*addr = vram_addr;
+		addr = vram_addr;
 	}
-	return FALSE;
+	return false;
 }
 
-static INLINE void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
+static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
 	if (!(VRAMBankCnt & 0x80)) return;
 	if (!(VRAMBankCnt & 0x07)) return;
@@ -602,10 +594,10 @@ void MMU_setRom(u8 * rom, u32 mask)
 	
 	for(i = 0x80; i<0xA0; ++i)
 	{
-		MMU_ARM9_MEM_MAP[i] = rom;
-		MMU_ARM7_MEM_MAP[i] = rom;
-		MMU_ARM9_MEM_MASK[i] = mask;
-		MMU_ARM7_MEM_MASK[i] = mask;
+		MMU_struct::MMU_MEM[0][i] = rom;
+		MMU_struct::MMU_MEM[1][i] = rom;
+		MMU_struct::MMU_MASK[0][i] = mask;
+		MMU_struct::MMU_MASK[1][i] = mask;
 	}
 	rom_mask = mask;
 }
@@ -617,10 +609,10 @@ void MMU_unsetRom()
 	
 	for(i = 0x80; i<0xA0; ++i)
 	{
-		MMU_ARM9_MEM_MAP[i] = MMU.UNUSED_RAM;
-		MMU_ARM7_MEM_MAP[i] = MMU.UNUSED_RAM;
-		MMU_ARM9_MEM_MASK[i] = ROM_MASK;
-		MMU_ARM7_MEM_MASK[i] = ROM_MASK;
+		MMU_struct::MMU_MEM[0][i] = MMU.UNUSED_RAM;
+		MMU_struct::MMU_MEM[1][i] = MMU.UNUSED_RAM;
+		MMU_struct::MMU_MASK[0][i] = ROM_MASK;
+		MMU_struct::MMU_MASK[1][i] = ROM_MASK;
 	}
 	rom_mask = ROM_MASK;
 }
@@ -659,7 +651,7 @@ u8 FASTCALL _MMU_read8(u32 adr)
 	}
 #endif
 
-	if (MMU_LCDmap(&adr)) return (0);
+	if (MMU_LCDmap(adr)) return (0);
 
 	mmu_log_debug(adr, proc, "read08");
 
@@ -693,7 +685,7 @@ u16 FASTCALL _MMU_read16(u32 adr)
 
 	adr &= 0x0FFFFFFF;
 
-	if (MMU_LCDmap(&adr)) return (0);
+	if (MMU_LCDmap(adr)) return (0);
 
 	if(adr&0x04000000)
 	{
@@ -766,7 +758,7 @@ u32 FASTCALL _MMU_read32(u32 adr)
 	   return (unsigned long)cflash_read(adr);
 	adr &= 0x0FFFFFFF;
 
-	if (MMU_LCDmap(&adr)) return (0);
+	if (MMU_LCDmap(adr)) return (0);
 
 	if((adr >> 24) == 4)
 	{
@@ -950,7 +942,7 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		return ;
 	}
 
-	if (MMU_LCDmap(&adr)) return;
+	if (MMU_LCDmap(adr)) return;
 
 	switch(adr)
 	{
@@ -1171,7 +1163,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
            }
         }
 
-	if (MMU_LCDmap(&adr)) return;
+	if (MMU_LCDmap(adr)) return;
 
 	if((adr >> 24) == 4)
 	{
@@ -1842,7 +1834,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
         }
     }
 
-	if (MMU_LCDmap(&adr)) return;
+	if (MMU_LCDmap(adr)) return;
 
 	if ((adr & 0xFF800000) == 0x04800000) {
 	/* access to non regular hw registers */

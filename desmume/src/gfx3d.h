@@ -130,10 +130,10 @@ extern GFX3D gfx3d;
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, not using a table (but using other tables)
 #define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
 
-extern u32 color_15bit_to_24bit[32768];
-extern const int material_5bit_to_31bit[32];
-extern const u8 material_5bit_to_8bit[32];
-extern const u8 material_3bit_to_8bit[8];
+extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
+extern CACHE_ALIGN const int material_5bit_to_31bit[32];
+extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
+extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 
 //GE commands:
 void gfx3d_glViewPort(unsigned long v);
@@ -186,6 +186,7 @@ void gfx3d_glGetVecRes(unsigned int index);
 void gfx3d_glCallList(unsigned long v);
 void gfx3d_glFlush(unsigned long v);
 void gfx3d_VBlankSignal();
+void gfx3d_VBlankEndSignal();
 void gfx3d_Control(unsigned long v);
 
 //other misc stuff

@@ -79,11 +79,11 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         SetWindowText(GetDlgItem(hwnd, IDC_MODE), text);
         
         if(!(bgcnt&(1<<7)))
-             sprintf(text, "normale 16");
+             sprintf(text, "normal 16");
         else
 		{
              if(!(dispcnt&(1<<30)))
-                  sprintf(text, "normale 256");
+                  sprintf(text, "normal 256");
              else
 			 {
                   switch(win->map)
@@ -104,6 +104,12 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         
         sprintf(text, "%d", (int)(bgcnt&3));
         SetWindowText(GetDlgItem(hwnd, IDC_PRIO), text);
+
+		
+		if((dispcnt>>8>>win->map)&1)
+			SetWindowText(GetDlgItem(hwnd, IDC_VISIBLE), "true");
+		else
+			SetWindowText(GetDlgItem(hwnd, IDC_VISIBLE), "false");
         
         sprintf(text, "0x%08X", (int)(0x6000000 + ((bgcnt>>2)&0xF)*0x4000 + win->lcd*0x200000 +((dispcnt>>24)&7)*0x10000));
         SetWindowText(GetDlgItem(hwnd, IDC_CHAR), text);
@@ -217,11 +223,15 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
 
 BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	//bail out early if the dialog isnt initialized
+	if(!MapView && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
      {
             case WM_INITDIALOG :
                  {
-						MapView = new mapview_struct[1];
+						MapView = new mapview_struct;
 						memset(MapView, 0, sizeof(MapView));
 						MapView->autoup_secs = 5;
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -332,5 +342,5 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                  }//switch
                  return 1;
      }
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return false;
 }

@@ -200,19 +200,22 @@ LRESULT CALLBACK ViewMem_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     return 1;
     }
 
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return FALSE;
 }
 
-bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	
+	//bail out early if the dialog isnt initialized
+	if(!MemView7 && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
 	{
 		case WM_INITDIALOG :
 			{
 				SetWindowText(hwnd, "ARM7 memory viewer");
 				SendMessage(GetDlgItem(hwnd, IDC_8_BIT), BM_SETCHECK, TRUE, 0);
-				MemView7 = new memview_struct[1];
+				MemView7 = new memview_struct;
 				memset(MemView7, 0, sizeof(memview_struct));
 				MemView7->cpu = 1;
 				MemView7->autoup_secs = 5;
@@ -324,7 +327,7 @@ bool CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                              return 1;
                  }
 	}
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }
 
 //=================================================== ARM9
@@ -385,12 +388,15 @@ LRESULT CALLBACK ViewMem_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                     return 1;
     }
 
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return FALSE;
 }
 
-bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	
+	//bail out early if the dialog isnt initialized
+	if(!MemView9 && message != WM_INITDIALOG)
+		return false;	
+
 	switch (message)
 	{
 		case WM_INITDIALOG :
@@ -405,7 +411,7 @@ bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETPOS32, 0, MemView9->autoup_secs);
-				return 0;
+				return 1;
 			}
 		case WM_CLOSE:
 			{
@@ -509,5 +515,5 @@ bool CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                              return 1;
                  }
 	}
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }

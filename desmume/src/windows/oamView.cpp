@@ -206,11 +206,15 @@ LRESULT CALLBACK ViewOAMBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	//bail out early if the dialog isnt initialized
+	if(!OAMView && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
      {
             case WM_INITDIALOG :
                  {
-						OAMView = new oamview_struct[1];
+						OAMView = new oamview_struct;
 						memset(OAMView, 0, sizeof(oamview_struct));
 						OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM);
 						OAMView->gpu = MainScreen.gpu;
@@ -332,5 +336,5 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                  }
                  return 0;
      }
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }

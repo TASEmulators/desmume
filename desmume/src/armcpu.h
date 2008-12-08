@@ -30,25 +30,29 @@
 #define ARMCPU_ARM9 0
 #define ARMPROC (PROCNUM?NDS_ARM7:NDS_ARM9)
 
-#define CODE(i)     (((i)>>25)&0X7)
+#define CODE(i)     (((i)>>25)&0x7)
 #define OPCODE(i)   (((i)>>21)&0xF)
 #define SIGNEBIT(i) BIT_N(i,20)
 
 #define INSTRUCTION_INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
-#define ROR(i, j)   ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j))))
+inline u32 ROR(u32 i, u32 j)   { return ((((u32)(i))>>(j)) | (((u32)(i))<<(32-(j)))); }
 
-#define UNSIGNED_OVERFLOW(a,b,c) ((BIT31(a)&BIT31(b)) | \
-								  ((BIT31(a)|BIT31(b))&BIT31(~c)))
+template<typename T>
+inline T UNSIGNED_OVERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(b)) | 
+												  ((BIT31(a)|BIT31(b))&BIT31(~c))); }
 
-#define UNSIGNED_UNDERFLOW(a,b,c) ((BIT31(~a)&BIT31(b)) | \
-								  ((BIT31(~a)|BIT31(b))&BIT31(c)))
+template<typename T>
+inline T UNSIGNED_UNDERFLOW(T a,T b,T c) { return ((BIT31(~a)&BIT31(b)) | 
+													((BIT31(~a)|BIT31(b))&BIT31(c))); }
 
-#define SIGNED_OVERFLOW(a,b,c) ((BIT31(a)&BIT31(b)&BIT31(~c))|\
-								(BIT31(~a)&BIT31(~(b))&BIT31(c)))
+template<typename T>
+inline T SIGNED_OVERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(b)&BIT31(~c))|
+										  (BIT31(~a)&BIT31(~(b))&BIT31(c))); }
 
-#define SIGNED_UNDERFLOW(a,b,c) ((BIT31(a)&BIT31(~(b))&BIT31(~c))|\
-								(BIT31(~a)&BIT31(b)&BIT31(c)))
+template<typename T>
+inline T SIGNED_UNDERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(~(b))&BIT31(~c))|
+										  (BIT31(~a)&BIT31(b)&BIT31(c))); }
 
 #define EQ	0x0
 #define NE	0x1
@@ -258,9 +262,5 @@ static INLINE void NDS_makeInt(u8 proc_ID,u32 num)
 			break ;
 	}
 }
-
-//stores the currently executing arm cpu.
-//we poke values in here instead of passing them around constantly.
-extern armcpu_t *armcpu_curr;
 
 #endif
