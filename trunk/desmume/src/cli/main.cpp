@@ -776,7 +776,7 @@ int main(int argc, char ** argv) {
       }
 
     update_keypad(keypad);     /* Update keypad */
-    last_cycle = NDS_exec((560190 << 1) - last_cycle, FALSE);
+    last_cycle = NDS_exec<false>((560190 << 1) - last_cycle);
     SPU_Emulate_user();
 	SPU_Emulate_core();
 

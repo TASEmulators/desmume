@@ -355,8 +355,8 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG()
      cpu->CPSR.bits.N = BIT31(res);
      cpu->CPSR.bits.Z = res == 0;
      
-     cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(b, cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res);
-     cpu->CPSR.bits.V = SIGNED_OVERFLOW(b, cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(tmp, a, res);
+     cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res);
+     cpu->CPSR.bits.V = SIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(tmp, a, res);
      
      return 3;
 }
