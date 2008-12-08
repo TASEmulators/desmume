@@ -445,12 +445,15 @@ static char Init(void)
 		glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
 	}
 
-	glGenTextures (1, &oglToonTableTextureID);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
-	glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
+	if(hasShaders)
+	{
+		glGenTextures (1, &oglToonTableTextureID);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
+		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
+	}
 
 	if(glBlendFuncSeparateEXT == NULL)
 		clearAlpha = 1;
@@ -665,8 +668,8 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].sizeX=sizeX;
 	texcache[i].sizeY=sizeY;
 	texcache[i].coord=(format>>30);
-	texcache[i].invSizeX=1.0f/((float)sizeX*(1<<4));
-	texcache[i].invSizeY=1.0f/((float)sizeY*(1<<4));
+	texcache[i].invSizeX=1.0f/((float)(sizeX*(1<<4)));
+	texcache[i].invSizeY=1.0f/((float)(sizeY*(1<<4)));
 	//memcpy(texcache[i].texture,adr,imageSize);			//======================= copy
 	memcpy_fast(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));			//======================= copy
 	texcache[i].numcolors=palSize[texcache[i].mode];
