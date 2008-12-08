@@ -19,7 +19,7 @@ desmume_glade_SOURCES =  \
 	globals.h glade-xml.cpp \
 	callbacks.cpp callbacks.h callbacks_IO.cpp callbacks_IO.h \
 	desmume.cpp desmume.h \
-	keyval_names.cpp main.cpp gdk_gl.cpp gdk_gl.h \
+	keyval_names.cpp keyval_names.h main.cpp gdk_gl.cpp gdk_gl.h \
 	dTools/callbacks_1_ioregs.cpp dTools/callbacks_2_memview.cpp \
 	dTools/callbacks_3_palview.cpp  dTools/callbacks_4_tileview.cpp \
 	dTools/callbacks_dtools.h \
