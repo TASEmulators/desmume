@@ -42,7 +42,7 @@ void * FsReadFirst(const char * p, FsEntry * entry) {
 	strncpy(entry->cFileName, FindFileData.cFileName,256);
 	entry->cFileName[255] = 0 ;
 	strncpy(entry->cAlternateFileName, FindFileData.cAlternateFileName,14);
-	entry->cAlternateFileName[14] = 0 ;
+	entry->cAlternateFileName[13] = 0 ;
 	entry->flags = 0;
 	if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		entry->flags = FS_IS_DIR;
@@ -66,7 +66,7 @@ int FsReadNext(void * search, FsEntry * entry) {
 	strncpy(entry->cFileName, FindFileData.cFileName,256);
 	entry->cFileName[255] = 0 ;
 	strncpy(entry->cAlternateFileName, FindFileData.cAlternateFileName,14);
-	entry->cAlternateFileName[14] = 0 ;
+	entry->cAlternateFileName[13] = 0 ;
 	entry->flags = 0;
 	if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		entry->flags = FS_IS_DIR;

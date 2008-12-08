@@ -677,6 +677,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	glLoadIdentity ();
 	glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
 
+
 	//INFO("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
 	
 	//============================================================================ Texture render

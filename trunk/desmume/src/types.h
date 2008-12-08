@@ -21,8 +21,8 @@
 #define TYPES_HPP
 
 #define DESMUME_NAME "DeSmuME"
-#define DESMUME_VERSION_STRING "0.8.0b2-interim"
-#define DESMUME_VERSION_NUMERIC 80002
+#define DESMUME_VERSION_STRING "0.9-interim"
+#define DESMUME_VERSION_NUMERIC 90000
 #define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " " VERSION
 
 #ifdef _WIN32
@@ -38,6 +38,8 @@
 #else
 #define ALIGN(X)
 #endif
+
+#define CACHE_ALIGN ALIGN(32)
 
 #ifndef FASTCALL
 #ifdef __MINGW32__
@@ -56,6 +58,14 @@
 #define INLINE _inline
 #else
 #define INLINE inline
+#endif
+#endif
+
+#ifndef FORCEINLINE
+#if defined(_MSC_VER)
+#define FORCEINLINE __forceinline
+#else
+#define FORCEINLINE INLINE
 #endif
 #endif
 

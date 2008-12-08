@@ -166,6 +166,7 @@
 #define IDC_SCR                         806
 #define IDC_MSIZE                       807
 #define IDC_SCROLL                      808
+#define IDC_PRIO2                       809
 #define IDD_OAM                         900
 #define IDC_SCR_SELECT                  901
 #define IDC_TILE                        902
@@ -208,6 +209,7 @@
 #define ID_CANCEL                       1016
 #define IDSAVE                          1017
 #define IDC_AUTOUPDATE_ASM              1018
+#define IDC_VISIBLE                     1019
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -357,7 +359,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40038
-#define _APS_NEXT_CONTROL_VALUE         1019
+#define _APS_NEXT_CONTROL_VALUE         1020
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

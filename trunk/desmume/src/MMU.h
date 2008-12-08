@@ -42,7 +42,9 @@ extern char szRomBaseName[512];
 //#define IPCFIFO  0
 //#define MAIN_MEMORY_DISP_FIFO 2
  
-typedef struct {
+typedef const u32 TWaitState;
+
+struct MMU_struct {
     //ARM7 mem
     u8 ARM7_BIOS[0x4000];
     u8 ARM7_ERAM[0x10000];
@@ -69,16 +71,16 @@ typedef struct {
 	//(also since the emulator doesn't prevent unaligned accesses)
 	u8 MORE_UNUSED_RAM[4];
         
-    u8 * * MMU_MEM[2];
-    u32 * MMU_MASK[2];
+    static u8 * MMU_MEM[2][256];
+    static u32 MMU_MASK[2][256];
     
     u8 ARM9_RW_MODE;
 
 	FIFO	fifos[2];	// 0 - ARM9 FIFO
 						// 1 - ARM7 FIFO
 
-    u32 * MMU_WAIT16[2];
-    u32 * MMU_WAIT32[2];
+    static TWaitState MMU_WAIT16[2][16];
+    static TWaitState MMU_WAIT32[2][16];
 
     u32 DTCMRegion;
     u32 ITCMRegion;
@@ -105,7 +107,7 @@ typedef struct {
 	u32			CheckTimers;
 	u32			CheckDMAs;
 		  
-} MMU_struct;
+};
 
 extern MMU_struct MMU;
 

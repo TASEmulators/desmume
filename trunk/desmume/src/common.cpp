@@ -46,7 +46,7 @@ void GetINIPath()
 	{
 		sprintf(IniName, "%s\\desmume.ini",szPath);
 	} else if (MAX_PATH> strlen(".\\desmume.ini")) {
-		sprintf(IniName, ".\\desmume.ini",szPath);
+		sprintf(IniName, ".\\desmume.ini");
 	} else
 	{
 		memset(IniName,0,MAX_PATH) ;

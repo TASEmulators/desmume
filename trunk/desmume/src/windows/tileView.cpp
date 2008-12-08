@@ -314,6 +314,10 @@ LRESULT CALLBACK MiniTileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
 BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	//bail out early if the dialog isnt initialized
+	if(!TileView && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
      {
             case WM_INITDIALOG :
@@ -628,5 +632,5 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                  }
                  return 0;
      }
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }

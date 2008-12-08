@@ -85,11 +85,15 @@ LRESULT PalView_OnPaint(const u16 * adr, u16 num, HWND hwnd, WPARAM wParam, LPAR
 
 BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	//bail out early if the dialog isnt initialized
+	if(!PalView && message != WM_INITDIALOG)
+		return false;
+
 	switch (message)
      {
             case WM_INITDIALOG :
                  {
-					PalView = new palview_struct[1];
+					PalView = new palview_struct;
 					memset(PalView, 0, sizeof(palview_struct));
 					PalView->adr = (u16 *)ARM9Mem.ARM9_VMEM;
 					PalView->autoup_secs = 5;
@@ -287,5 +291,5 @@ BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                  }
                  return 0;
      }
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	 return false;
 }

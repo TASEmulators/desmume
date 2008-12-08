@@ -105,7 +105,7 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 	switch (message)
 	{
 		case WM_INITDIALOG:
-				LightsView = new lightsview_struct[1];
+				LightsView = new lightsview_struct;
 				memset(LightsView, 0, sizeof(lightsview_struct));
 				LightsView->autoup_secs = 5;
 				SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -180,5 +180,5 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 			 }
 			 return 0;
 	}
-	return DefWindowProc(hwnd, message, wParam, lParam);
+	return FALSE;
 }

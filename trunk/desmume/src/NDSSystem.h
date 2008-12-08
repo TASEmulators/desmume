@@ -201,8 +201,11 @@ int NDS_ImportSave(const char *filename);
 int NDS_WriteBMP(const char *filename);
 int NDS_LoadFirmware(const char *filename);
 int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
-u32
-NDS_exec(s32 nb, BOOL force);
+
+template<bool FORCE>
+u32 NDS_exec(s32 nb);
+
+inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
 
        static INLINE void NDS_ARM9HBlankInt(void)
        {
