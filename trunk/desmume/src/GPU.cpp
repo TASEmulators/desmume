@@ -52,6 +52,19 @@
 #include "GPU_osd.h"
 #include "debug.h"
 
+//#define CHECKSPRITES
+
+#ifdef CHECKSPRITES
+#define CHECK_SPRITE(type) \
+if (!src) {\
+	INFO("Sprite%s in mode %i %s\n", type==1?"1D":"2D", spriteInfo->Mode, (spriteInfo->RotScale & 1)?"(Rotoscaled)":"");\
+continue;\
+};
+#else
+#define CHECK_SPRITE(type) if (!src) { continue; };
+#endif
+
+
 ARM9_struct ARM9Mem;
 
 extern BOOL click;
@@ -303,7 +316,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 			break;
 		case 2: // Display framebuffer
 	//              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
-			//gpu->vramBlock = cnt->VRAM_Block;
+			gpu->vramBlock = cnt->VRAM_Block;
 			return;
 		case 3: // Display from Main RAM
 			// nothing to be done here
@@ -743,7 +756,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 	u8 * mapinfo;
 	TILEENTRY tileentry;
 
-	map = MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp&31) * 64);
+	map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp&31) * 64);
 	if (!map) return;
 
 	if(tmp>31) 
@@ -1062,12 +1075,14 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 	case 2 :
 		// 256 colors 
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
+		if (!map) return;
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_256_map, map, NULL, pal);
 		return;
 	case 3 :
 		// direct colors / BMP
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
+		if (!map) return;
 		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_BMP_map, map, NULL, NULL);
 		return;
 	}
@@ -1307,7 +1322,6 @@ INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 	return TRUE;
 }
 
-
 /*****************************************************************************/
 //			SPRITE RENDERING
 /*****************************************************************************/
@@ -1417,7 +1431,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if(spriteInfo->Depth)
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex << block));
-				if (!src) continue;
+				CHECK_SPRITE(1);
 
 				// If extended palettes are set, use them
 				if (dispCnt->ExOBJPalette_Enable)
@@ -1455,7 +1469,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			else if(spriteInfo->Mode == 3)
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex)*32);
-				if (!src) continue;
+				CHECK_SPRITE(1);
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1488,7 +1502,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			{
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary));
-				if (!src) continue;
+				CHECK_SPRITE(1);
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1534,7 +1548,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 				else
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
-				if (!src) continue;
+				CHECK_SPRITE(1);
 
 				render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 				continue;
@@ -1543,11 +1557,12 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
 				// TODO: fix it for sprite1D
-				if (spriteInfo->Depth)
+				/*if (spriteInfo->Depth)
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
 				else
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-				if (!src) continue;
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));*/
+				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary));
+				CHECK_SPRITE(1);
 
 				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
 				continue;
@@ -1556,7 +1571,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if(spriteInfo->Depth)                   /* 256 colors */
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
-				if (!src) continue;
+				CHECK_SPRITE(1);
 		
 				if (dispCnt->ExOBJPalette_Enable)
 					pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
@@ -1569,7 +1584,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			}
 			/* 16 colors */
 			src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
-			if (!src) continue;
+			CHECK_SPRITE(1);
 			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
 			
 			pal += (spriteInfo->PaletteIndex<<4);
@@ -1687,7 +1702,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if(spriteInfo->Depth)
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex) << 5));
-				if (!src) continue;
+				CHECK_SPRITE(2);
 
 				// If extended palettes are set, use them
 				if (dispCnt->ExOBJPalette_Enable)
@@ -1725,7 +1740,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			else if(spriteInfo->Mode == 3)
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
-				if (!src) continue;
+				CHECK_SPRITE(2);
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -1757,7 +1772,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			else
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<5));
-				if (!src) continue;
+				CHECK_SPRITE(2);
 				pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
 				
 				for(j = 0; j < lg; ++j, ++sprX)
@@ -1802,7 +1817,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
 				else
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
-				if (!src) continue;
+				CHECK_SPRITE(2);
 
 				render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 				continue;
@@ -1814,7 +1829,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
 				else // 256*256
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-				if (!src) continue;
+				CHECK_SPRITE(2);
 
 				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
 
@@ -1824,7 +1839,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if(spriteInfo->Depth)                   /* 256 colors */
 			{
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
-				if (!src) continue;
+				CHECK_SPRITE(2);
 				pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
 				render_sprite_256 (gpu, l, dst, src, pal,
@@ -1835,7 +1850,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		
 			/* 16 colors */
 			src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
-			if (!src) continue;
+			CHECK_SPRITE(2);
 			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
 
 			pal += (spriteInfo->PaletteIndex<<4);
@@ -2364,7 +2379,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 #if 1
 			for (int i=0; i<256;)
 			{
-				u32 c = FIFOget(&MMU.fifos[0]);		// TODO: this is incorrect
+				u32 c = FIFOget(&MMU.fifos[gpu->core]);		// TODO: this is incorrect
 				T2WriteWord(dst, i << 1, c&0xFFFF); i++;
 				T2WriteWord(dst, i << 1, c>>16); i++;
 			}

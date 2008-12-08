@@ -234,6 +234,7 @@ TWaitState MMU_struct::MMU_WAIT32[2][16] = {
 u32 gxIRQ = 0;
 	
 // VRAM mapping
+static u8	last_engine_offset[4] = {0x00, 0x00, 0x00, 0x00};
 u8		*LCDdst[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 const static u32	LCDdata[10][2]= {
 					{0x6800000, 8},			// Bank A
@@ -415,23 +416,49 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	return NULL;
 }
 
-static FORCEINLINE bool MMU_LCDmap(u32 &addr)
+static FORCEINLINE u32 MMU_LCDmap(u8 proc, u32 addr)
 {
-	u32 vram_addr = addr;
-	if ((vram_addr >= 0x6000000) && (vram_addr <= 0x67FFFFF))
+	if (proc == ARMCPU_ARM7) return addr;
+	
+	if ((addr >= 0x6000000) && (addr <= 0x67FFFFF))
 	{
-		vram_addr &= 0x0FFFFFF;
-		u8	engine = (vram_addr >> 21);
-		vram_addr &= 0x01FFFFF;
-		u8	engine_offset = (vram_addr >> 14);
+		u32	save_addr = addr;
+
+		addr &= 0x0FFFFFF;
+		u8	engine = (addr >> 21);
+		addr &= 0x01FFFFF;
+		u8	engine_offset = (addr >> 14);
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
-		if (block == 7) return true;
-		//INFO("VRAM %i: engine=%i (offset=%i), map address = 0x%X, MMU address = 0x%X\n", block, engine, engine_offset, vram_addr, *addr);
-		vram_addr -= MMU.LCD_VRAM_ADDR[block];
-		vram_addr += LCDdata[block][0];
-		addr = vram_addr;
+		
+		if (block == 7) // corrections VRAM mapping 
+		{
+			block = MMU.VRAM_MAP[engine][last_engine_offset[engine]];
+
+			//LOG("Engine offset = %i/%i in block %i (size %i, offs %i): \n", 
+				//engine_offset, last_engine_offset[engine], block, 
+				//LCDdata[block][1], engine_offset+LCDdata[block][1]);
+
+			for (int i = 0; i < LCDdata[block][1]; i++)
+			{
+				if (MMU.VRAM_MAP[engine][engine_offset + i] != 7)
+						LOG("\nVRAM already mapping %i\n", i);
+				MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
+			}
+		}
+		//LOG("VRAM %i: engine=%i (offset=%i), map address = 0x%X, MMU address = 0x%X\n", block, engine, engine_offset, vram_addr, *addr);
+		last_engine_offset[engine] = engine_offset;
+
+		//u32 tmp02 = addr;
+		addr -= MMU.LCD_VRAM_ADDR[block];
+		addr += LCDdata[block][0];
+
+		if ((addr < 0x6800000) || (addr> 0x68A3FFF)) // FIXME: this is hack
+		{
+			//LOG("Address is out range 0x%X in block %i\n", addr, block);
+			addr = save_addr;
+		}
 	}
-	return false;
+	return (addr);
 }
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
@@ -651,7 +678,7 @@ u8 FASTCALL _MMU_read8(u32 adr)
 	}
 #endif
 
-	if (MMU_LCDmap(adr)) return (0);
+	adr = MMU_LCDmap(proc, adr);
 
 	mmu_log_debug(adr, proc, "read08");
 
@@ -685,7 +712,7 @@ u16 FASTCALL _MMU_read16(u32 adr)
 
 	adr &= 0x0FFFFFFF;
 
-	if (MMU_LCDmap(adr)) return (0);
+	adr = MMU_LCDmap(proc, adr);
 
 	if(adr&0x04000000)
 	{
@@ -758,7 +785,7 @@ u32 FASTCALL _MMU_read32(u32 adr)
 	   return (unsigned long)cflash_read(adr);
 	adr &= 0x0FFFFFFF;
 
-	if (MMU_LCDmap(adr)) return (0);
+	adr = MMU_LCDmap(proc, adr);
 
 	if((adr >> 24) == 4)
 	{
@@ -942,7 +969,7 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 		return ;
 	}
 
-	if (MMU_LCDmap(adr)) return;
+	adr = MMU_LCDmap(proc, adr);
 
 	switch(adr)
 	{
@@ -1163,7 +1190,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
            }
         }
 
-	if (MMU_LCDmap(adr)) return;
+	adr = MMU_LCDmap(proc, adr);
 
 	if((adr >> 24) == 4)
 	{
@@ -1834,7 +1861,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
         }
     }
 
-	if (MMU_LCDmap(adr)) return;
+	adr = MMU_LCDmap(proc, adr);
 
 	if ((adr & 0xFF800000) == 0x04800000) {
 	/* access to non regular hw registers */
