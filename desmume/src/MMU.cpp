@@ -416,22 +416,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 		vram_addr &= 0x01FFFFF;
 		u8	engine_offset = (vram_addr >> 14);
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
-		if (block == 7) 
-		{
-			switch (engine)
-			{
-				case 0:		// Engine ABG
-					return (ARM9Mem.ARM9_ABG + vram_addr);
-				case 1:		// Engine BBG
-					return (ARM9Mem.ARM9_BBG + vram_addr);
-				case 2:		// Engine AOBJ
-					return (ARM9Mem.ARM9_AOBJ + vram_addr);
-				case 3:		// Engine BOBJ
-					return (ARM9Mem.ARM9_BOBJ + vram_addr);
-			}
-			LOG("render: VRAM not mapped to LCD\n");
-			return NULL;
-		}
+		if (block == 7) return (EngineAddr[engine] + vram_addr);
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
 		return (LCDdst[block] + vram_addr);
 	}
@@ -462,6 +447,13 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
 	if (!(VRAMBankCnt & 0x80)) return;
 	if (!(VRAMBankCnt & 0x07)) return;
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int t = 0; t < 32; t++)
+			if (MMU.VRAM_MAP[i][t] == block) 
+				MMU.VRAM_MAP[i][t] = 7;
+	}
 	
 	u32	vram_map_addr = 0xFFFFFFFF;
 	u8	*LCD_addr = LCDdst[block];
@@ -584,13 +576,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				ARM9Mem.ObjExtPal[0][1] = LCD_addr + 0x2000;
 			}
 		break;
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		for (int t = 0; t < 32; t++)
-			if (MMU.VRAM_MAP[i][t] == block) 
-				MMU.VRAM_MAP[i][t] = 7;
 	}
 
 	if (vram_map_addr != 0xFFFFFFFF)
