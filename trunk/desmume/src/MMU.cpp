@@ -52,6 +52,8 @@ static const int save_types[7][2] = {
 
 #define ROM_MASK 3
 
+//#define CHECK_VRAM
+
 //#define	_MMU_DEBUG
 
 #ifdef _MMU_DEBUG
@@ -234,8 +236,8 @@ TWaitState MMU_struct::MMU_WAIT32[2][16] = {
 u32 gxIRQ = 0;
 	
 // VRAM mapping
-static u8	last_engine_offset[4] = {0x00, 0x00, 0x00, 0x00};
 u8		*LCDdst[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+u8		*EngineAddr[4] = { NULL, NULL, NULL, NULL };
 const static u32	LCDdata[10][2]= {
 					{0x6800000, 8},			// Bank A
 					{0x6820000, 8},			// Bank B
@@ -305,10 +307,10 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
-	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);		// TODO: remove this
-	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);		// don't need now
-	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);		//
-	memset(ARM9Mem.ARM9_BOBJ, 0, 0x020000);		// ----------------|
+	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);
+	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);
+	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);
+	memset(ARM9Mem.ARM9_BOBJ, 0, 0x020000);
 
 	memset(ARM9Mem.ARM9_DTCM, 0, 0x4000);
 	memset(ARM9Mem.ARM9_ITCM, 0, 0x8000);
@@ -375,6 +377,11 @@ void MMU_clearMem()
 	LCDdst[8] = ARM9Mem.ARM9_LCD + 0x98000;		// Bank H
 	LCDdst[9] = ARM9Mem.ARM9_LCD + 0xA0000;		// Bank I
 
+	EngineAddr[0] = ARM9Mem.ARM9_ABG;			// Engine ABG
+	EngineAddr[1] = ARM9Mem.ARM9_BBG;			// Engine BBG
+	EngineAddr[2] = ARM9Mem.ARM9_AOBJ;			// Engine BOBJ
+	EngineAddr[3] = ARM9Mem.ARM9_BOBJ;			// Engine BOBJ
+
 	for (int i = 0; i < 4; i++)
 	{
 		ARM9Mem.ExtPal[0][i] = ARM9Mem.ARM9_LCD;
@@ -408,9 +415,23 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 		u8	engine = (vram_addr >> 21);
 		vram_addr &= 0x01FFFFF;
 		u8	engine_offset = (vram_addr >> 14);
-		if (engine_offset > 31) return NULL;
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
-		if (block == 7) return NULL;
+		if (block == 7) 
+		{
+			switch (engine)
+			{
+				case 0:		// Engine ABG
+					return (ARM9Mem.ARM9_ABG + vram_addr);
+				case 1:		// Engine BBG
+					return (ARM9Mem.ARM9_BBG + vram_addr);
+				case 2:		// Engine AOBJ
+					return (ARM9Mem.ARM9_AOBJ + vram_addr);
+				case 3:		// Engine BOBJ
+					return (ARM9Mem.ARM9_BOBJ + vram_addr);
+			}
+			LOG("render: VRAM not mapped to LCD\n");
+			return NULL;
+		}
 		vram_addr -= MMU.LCD_VRAM_ADDR[block];
 		return (LCDdst[block] + vram_addr);
 	}
@@ -430,36 +451,9 @@ static FORCEINLINE u32 MMU_LCDmap(u8 proc, u32 addr)
 		addr &= 0x01FFFFF;
 		u8	engine_offset = (addr >> 14);
 		u8	block = MMU.VRAM_MAP[engine][engine_offset];
-		
-		if (block == 7) // corrections VRAM mapping 
-		{
-			block = MMU.VRAM_MAP[engine][last_engine_offset[engine]];
-
-			//LOG("Engine offset = %i/%i in block %i (size %i, offs %i): \n", 
-				//engine_offset, last_engine_offset[engine], block, 
-				//LCDdata[block][1], engine_offset+LCDdata[block][1]);
-
-			for (int i = 0; i < LCDdata[block][1]; i++)
-			{
-				if (MMU.VRAM_MAP[engine][engine_offset + i] != 7)
-						LOG("\nVRAM already mapping %i\n", i);
-				MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
-			}
-		}
-		//LOG("VRAM %i: engine=%i (offset=%i), map address = 0x%X, MMU address = 0x%X\n", block, engine, engine_offset, vram_addr, *addr);
-		last_engine_offset[engine] = engine_offset;
-
-		//u32 tmp02 = addr;
+		if (block == 7) return save_addr;		// not mapped to LCD
 		addr -= MMU.LCD_VRAM_ADDR[block];
 		addr += LCDdata[block][0];
-
-#if 0
-		if ((addr < 0x6800000) || (addr> 0x68A3FFF)) // FIXME: this is hack
-		{
-			LOG("Address is out range 0x%X in block %i\n", addr, block);
-			addr = save_addr;
-		}
-#endif
 	}
 	return (addr);
 }
@@ -588,7 +582,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 			{
 				ARM9Mem.ObjExtPal[0][0] = LCD_addr;
 				ARM9Mem.ObjExtPal[0][1] = LCD_addr + 0x2000;
-				
 			}
 		break;
 	}
@@ -608,12 +601,14 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		MMU.LCD_VRAM_ADDR[block] = vram_map_addr;
 		MMU.LCDCenable[block] = TRUE;
 
-		for (unsigned int i = 0; i < LCDdata[block][1]; i++)
+		for (unsigned int i = 0; i <= LCDdata[block][1]; i++)
 			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
 		
-		//INFO("VRAM %i mapping: engine=%i (offset=%i), address = 0x%X, MST=%i\n", block, engine, engine_offset, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
+		//LOG("VRAM %i mapping: engine=%i (offset=%i, size=%i), address = 0x%X, MST=%i\n", 
+		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
 		return;
 	}
+
 	MMU.LCDCenable[block] = FALSE;
 }
 
@@ -1090,8 +1085,19 @@ void FASTCALL _MMU_write8(u32 adr, u8 val)
 			if(proc == ARMCPU_ARM9) GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
 			break;
 
+#ifdef CHECKVRAM
+		case 0x4000247:		// block 7
+			INFO("------- MMU write 08: writing in VRAM block 7 0x%X (stat=0x%X)\n", val,
+					T1ReadByte(MMU.MMU_MEM[proc][0x40], 0x241));
+			break;
+#endif
 		case REG_VRAMCNTA:
 		case REG_VRAMCNTB:
+#ifdef CHECKVRAM
+			if(proc == ARMCPU_ARM7)
+			INFO("******* MMU write 08: writing in VRAM block B 0x%X (stat=0x%X)\n", val,
+					T1ReadByte(MMU.MMU_MEM[proc][0x40], 0x241));
+#endif
 		case REG_VRAMCNTC:
 		case REG_VRAMCNTD:
 		case REG_VRAMCNTE:
@@ -1537,6 +1543,22 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 				}
 				return;
 			}
+#ifdef CHECKVRAM
+			case 0x4000247:		// block 7
+				INFO("-------- MMU write 16: writing in VRAM block 7 0x%X\n", val);
+				break;
+			case REG_VRAMCNTA:
+			case REG_VRAMCNTB:
+			case REG_VRAMCNTC:
+			case REG_VRAMCNTD:
+			case REG_VRAMCNTE:
+			case REG_VRAMCNTF:
+			case REG_VRAMCNTG:
+			case REG_VRAMCNTH:
+			case REG_VRAMCNTI:
+				INFO("MMU write 16: VRAM block %i 0x%X\n", adr-REG_VRAMCNTA, val);
+				break;
+#else
 			case REG_VRAMCNTA:
 
 				MMU_write8(proc,adr,val & 0xFF) ;
@@ -1557,7 +1579,7 @@ void FASTCALL _MMU_write16(u32 adr, u16 val)
 			case REG_VRAMCNTI:
 				MMU_write8(proc,adr,val & 0xFF) ;
 				return ;
-
+#endif
 			case REG_IE :
 				MMU.reg_IE[proc] = (MMU.reg_IE[proc]&0xFFFF0000) | val;
 				if ( MMU.reg_IME[proc]) {
@@ -2374,6 +2396,23 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				//GPULOG("SUB INIT 32B %08X\r\n", val);
 				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x1000, val);
 				return;
+#ifdef CHECKVRAM
+			case 0x4000247:		// block 7
+				INFO("------- MMU write 32: writing in VRAM block 7 0x%X (stat=0x%X)\n", val,
+					T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x241));
+				break;
+			case REG_VRAMCNTA:
+			case REG_VRAMCNTB:
+			case REG_VRAMCNTC:
+			case REG_VRAMCNTD:
+			case REG_VRAMCNTE:
+			case REG_VRAMCNTF:
+			case REG_VRAMCNTG:
+			case REG_VRAMCNTH:
+			case REG_VRAMCNTI:
+				INFO("MMU write 32: VRAM block %i 0x%X\n", adr-REG_VRAMCNTA, val);
+				break;
+#else
 			case REG_VRAMCNTA:
 			case REG_VRAMCNTE:
 				MMU_write8(proc,adr,val & 0xFF) ;
@@ -2384,6 +2423,7 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 			case REG_VRAMCNTI:
 				MMU_write8(proc,adr,val & 0xFF) ;
 				return ;
+#endif
 
                         case REG_IME : {
 			        u32 old_val = MMU.reg_IME[proc];
