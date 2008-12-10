@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "debug.h"
 #include "ARM9.h"
@@ -224,14 +225,14 @@ void SPU_struct::KeyOn(int channel)
 	{
 	case 0: // 8-bit
 		thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
-		thischan.loopstart = thischan.loopstart << 2;
-		thischan.length = (thischan.length << 2) + thischan.loopstart;
+	//	thischan.loopstart = thischan.loopstart << 2;
+	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
 		thischan.sampcnt = 0;
 		break;
 	case 1: // 16-bit
 		thischan.buf16 = (s16 *)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
-		thischan.loopstart = thischan.loopstart << 1;
-		thischan.length = (thischan.length << 1) + thischan.loopstart;
+	//	thischan.loopstart = thischan.loopstart << 1;
+	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
 		thischan.sampcnt = 0;
 		break;
 	case 2: // ADPCM
@@ -242,8 +243,8 @@ void SPU_struct::KeyOn(int channel)
 			thischan.index = thischan.buf8[2] & 0x7F;
 			thischan.lastsampcnt = 7;
 			thischan.sampcnt = 8;
-			thischan.loopstart = thischan.loopstart << 3;
-			thischan.length = (thischan.length << 3) + thischan.loopstart;
+		//	thischan.loopstart = thischan.loopstart << 3;
+		//	thischan.length = (thischan.length << 3) + thischan.loopstart;
 			break;
 		}
 	case 3: // PSG
@@ -581,7 +582,8 @@ void SPU_WriteLong(u32 addr, u32 val)
 static s32 Interpolate(s32 a, s32 b, double ratio)
 {
 	ratio = ratio - (int)ratio;
-	return (1-ratio)*a + ratio*b;
+	double ratio2 = ((1.0f - cos(ratio * 3.14f)) / 2.0f);
+	return (((1-ratio2)*a) + (ratio2*b));
 }
 #endif
 
@@ -724,13 +726,15 @@ static INLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 
 static INLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
 {
+	int shift = (chan->format == 0 ? 2 : 1);
+
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (double)chan->length)
+	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << shift))
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
-			chan->sampcnt = (double)chan->loopstart; // Is this correct?
+			chan->sampcnt = (double)(chan->loopstart << shift); // Is this correct?
 		else
 		{
 			chan->status = CHANSTAT_STOPPED;
@@ -748,12 +752,12 @@ static INLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 {
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (double)chan->length)
+	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << 3))
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
-			chan->sampcnt = (double)chan->loopstart; // Is this correct?
+			chan->sampcnt = (double)(chan->loopstart << 3); // Is this correct?
 			chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
 			chan->index = chan->buf8[2] & 0x7F;
 			chan->lastsampcnt = 7;
