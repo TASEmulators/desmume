@@ -2530,8 +2530,8 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 					}
 					if(den==0)
 					{
-						res = 0;
-						mod = 0;
+						res = ((num < 0) ? 1 : -1);
+						mod = num;
 						cnt |= 0x4000;
 						cnt &= 0x7FFF;
 					}
@@ -2583,8 +2583,8 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 				}
 				if(den==0)
 				{
-					res = 0;
-					mod = 0;
+					res = ((num < 0) ? 1 : -1);
+					mod = num;
 					cnt |= 0x4000;
 					cnt &= 0x7FFF;
 				}
