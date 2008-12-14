@@ -2088,7 +2088,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		{
 			// Geometry commands (aka Dislay Lists) - Parameters:X
 			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x400>>2] = val;
-			gfx3d_glCallList(val);
+			gfx3d_glCallList(0xFFFFFFFF, val);
 			return;
 		}
 		if(adr >= 0x04000380 && adr <= 0x040003BC)
