@@ -2,6 +2,7 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+	Copyright (C) 2007 shash
 	Copyright (C) 2007-2008 DeSmuME team
 
     This file is part of DeSmuME
