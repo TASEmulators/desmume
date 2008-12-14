@@ -830,9 +830,9 @@ void gfx3d_glNormal(unsigned long v)
 
 				for(c = 0; c < 3; c++)
 				{
-					vertexColor[c] += ((specular[c] * _lightColor[c] * shininessLevel) / 31.0f);
-					vertexColor[c] += ((diffuse[c] * _lightColor[c] * diffuseLevel) / 31.0f);
-					vertexColor[c] += ((ambient[c] * _lightColor[c]) / 31.0f);
+					vertexColor[c] += (((specular[c] * _lightColor[c] * shininessLevel)
+						+ (diffuse[c] * _lightColor[c] * diffuseLevel)
+						+ (ambient[c] * _lightColor[c])) / 31.0f);
 				}
 			}
 		}
