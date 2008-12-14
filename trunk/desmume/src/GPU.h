@@ -615,6 +615,9 @@ struct _GPU
 
 	u8 dispMode;
 	u8 vramBlock;
+	u8 *VRAMaddr;
+
+	//FIFO	fifo;
 
 	BOOL dispBG[4];
 	BOOL dispOBJ;

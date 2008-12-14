@@ -2,7 +2,7 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-	Copyright (C) 2007 shash
+	Copyright (C) 2007-2008 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -76,10 +76,10 @@ struct MMU_struct {
     
     u8 ARM9_RW_MODE;
 
-	FIFO	fifos[2];	// 0 - ARM9 FIFO
-						// 1 - ARM7 FIFO
+	IPC_FIFO	ipc_fifo[2];	// 0 - ARM9 FIFO
+								// 1 - ARM7 FIFO*/
 
-    static TWaitState MMU_WAIT16[2][16];
+	static TWaitState MMU_WAIT16[2][16];
     static TWaitState MMU_WAIT32[2][16];
 
     u32 DTCMRegion;
