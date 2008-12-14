@@ -298,7 +298,7 @@ static u32 wait4IRQ(armcpu_t* cpu)
      return 1;
 }
 
-static u32 devide(armcpu_t* cpu)
+static u32 divide(armcpu_t* cpu)
 {
      s32 num = (s32)cpu->R[0];
      s32 dnum = (s32)cpu->R[1];
@@ -1012,7 +1012,7 @@ u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
          wait4IRQ,             // 0x06
          bios_nop,             // 0x07
          bios_nop,             // 0x08
-         devide,               // 0x09
+         divide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
          fastCopy,             // 0x0C
@@ -1047,7 +1047,7 @@ u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
          wait4IRQ,             // 0x06
          wait4IRQ,             // 0x07
          SoundBias,            // 0x08
-         devide,               // 0x09
+         divide,               // 0x09
          bios_nop,             // 0x0A
          copy,                 // 0x0B
          fastCopy,             // 0x0C

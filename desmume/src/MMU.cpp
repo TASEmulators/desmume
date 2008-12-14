@@ -39,6 +39,39 @@
 #include "zero_private.h"
 #include "mc.h"
 
+//http://home.utah.edu/~nahaj/factoring/isqrt.c.html
+u64 isqrt (u64 x) {
+  u64   squaredbit, remainder, root;
+
+   if (x<1) return 0;
+  
+   /* Load the binary constant 01 00 00 ... 00, where the number
+    * of zero bits to the right of the single one bit
+    * is even, and the one bit is as far left as is consistant
+    * with that condition.)
+    */
+   squaredbit  = (u64) ((((u64) ~0LL) >> 1) & 
+                        ~(((u64) ~0LL) >> 2));
+   /* This portable load replaces the loop that used to be 
+    * here, and was donated by  legalize@xmission.com 
+    */
+
+   /* Form bits of the answer. */
+   remainder = x;  root = 0;
+   while (squaredbit > 0) {
+     if (remainder >= (squaredbit | root)) {
+         remainder -= (squaredbit | root);
+         root >>= 1; root |= squaredbit;
+     } else {
+         root >>= 1;
+     }
+     squaredbit >>= 2; 
+   }
+
+   return root;
+}
+
+
 static const int save_types[7][2] = {
         {MC_TYPE_AUTODETECT,1},
         {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
@@ -746,6 +779,75 @@ u16 FASTCALL _MMU_read16(u32 adr)
 	/* Returns data from memory */
 	return T1ReadWord(MMU.MMU_MEM[proc][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[proc][(adr >> 20) & 0xFF]); 
 }
+
+template<u32 proc>
+void execsqrt() {
+	u32 ret;
+	u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
+	switch(cnt&1)
+	{
+	case 0: {
+		u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B8);
+		ret = isqrt(v);
+		break;
+		}
+	case 1: {
+		u64 v = T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x2B8);
+		ret = isqrt(v);
+		break;
+		}
+	}
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, ret);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
+}
+
+template<u32 proc>
+void execdiv() {
+	u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
+	s64 num,den;
+	s64 res,mod;
+	switch(cnt&3)
+	{
+	case 0:
+		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
+		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+	break;
+	case 3: //gbatek says this is same as mode 1
+	case 1:
+		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
+		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+	break;
+	case 2:
+		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
+		den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
+		break;
+	}
+
+	if(den==0)
+	{
+		res = ((num < 0) ? 1 : -1);
+		mod = num;
+		cnt |= 0x4000;
+		cnt &= 0x7FFF;
+	}
+	else
+	{
+		res = num / den;
+		mod = num % den;
+		cnt &= 0x3FFF;
+	}
+
+	DIVLOG("DIV %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num, 
+							(u32)(den>>32), (u32)den, 
+							(u32)(res>>32), (u32)res);
+
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
+}
+
 
 template<u32 proc>
 u32 FASTCALL _MMU_read32(u32 adr)
@@ -2499,154 +2601,30 @@ void FASTCALL _MMU_write32(u32 adr, u32 val)
 
             case REG_DIVDENOM :
 				{
-                                        u16 cnt;
-					s64 num = 0;
-					s64 den = 1;
-					s64 res;
-					s64 mod;
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x298, val);
-                                        cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
-					switch(cnt&3)
-					{
-					case 0:
-					{
-						num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
-						den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-					}
-					break;
-					case 1:
-					{
-						num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
-						den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-					}
-					break;
-					case 2:
-					{
-						return;
-					}
-					break;
-					default: 
-						break;
-					}
-					if(den==0)
-					{
-						res = ((num < 0) ? 1 : -1);
-						mod = num;
-						cnt |= 0x4000;
-						cnt &= 0x7FFF;
-					}
-					else
-					{
-						res = num / den;
-						mod = num % den;
-						cnt &= 0x3FFF;
-					}
-					DIVLOG("BOUT1 %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num, 
-											(u32)(den>>32), (u32)den, 
-											(u32)(res>>32), (u32)res);
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
-				}
-				return;
-                        case REG_DIVDENOM+4 :
-			{
-                                u16 cnt;
-				s64 num = 0;
-				s64 den = 1;
-				s64 res;
-				s64 mod;
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x29C, val);
-                                cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
-				switch(cnt&3)
-				{
-				case 0:
-				{
+					execdiv<proc>();
 					return;
 				}
-				break;
-				case 1:
+			case REG_DIVDENOM+4 :
 				{
+					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x29C, val);
+					execdiv<proc>();
 					return;
 				}
-				break;
-				case 2:
+
+				case REG_SQRTPARAM :
 				{
-					num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
-					den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
-				}
-				break;
-				default: 
-					break;
-				}
-				if(den==0)
-				{
-					res = ((num < 0) ? 1 : -1);
-					mod = num;
-					cnt |= 0x4000;
-					cnt &= 0x7FFF;
-				}
-				else
-				{
-					res = num / den;
-					mod = num % den;
-					cnt &= 0x3FFF;
-				}
-				DIVLOG("BOUT2 %08X%08X / %08X%08X = %08X%08X\r\n", (u32)(num>>32), (u32)num, 
-										(u32)(den>>32), (u32)den, 
-										(u32)(res>>32), (u32)res);
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
-				T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
-			}
-			return;
-                        case REG_SQRTPARAM :
-				{
-                                        u16 cnt;
-					u64 v = 1;
-					//execute = FALSE;
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B8, val);
-                                        cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
-					switch(cnt&1)
-					{
-					case 0:
-						v = (u64) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B8);
-						break;
-					case 1:
-						return;
-					}
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt((double)v));
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
-					SQRTLOG("BOUT1 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v, 
-										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
+					execsqrt<proc>();
+					return;
 				}
-				return;
-                        case REG_SQRTPARAM+4 :
+				case REG_SQRTPARAM+4 :
 				{
-                                        u16 cnt;
-					u64 v = 1;
 					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2BC, val);
-                                        cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
-					switch(cnt&1)
-					{
-					case 0:
-						return;
-						//break;
-					case 1:
-						v = T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x2B8);
-						break;
-					}
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, (u32) sqrt((double)v));
-					T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
-					SQRTLOG("BOUT2 sqrt(%08X%08X) = %08X\r\n", (u32)(v>>32), (u32)v, 
-										T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B4));
+					execsqrt<proc>();
+					return;
 				}
-				return;
-                        case REG_IPCSYNC :
+				case REG_IPCSYNC :
 				{
 					//execute=FALSE;
 					LOG("MMU write 32 IPCSYNC\n");
