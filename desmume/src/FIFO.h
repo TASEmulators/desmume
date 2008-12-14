@@ -28,22 +28,40 @@
 
 typedef struct
 {
-	BOOL	error;
-	BOOL	enable;	
+	u32		buf[16];		// 16 words
+	u8		size;			// tail
 
 	BOOL	empty;
-	BOOL	half;
 	BOOL	full;
-	u8		irq;
+	BOOL	error;
+} IPC_FIFO;
 
-	u16		sendPos;
-	u16		recvPos;
+typedef struct
+{
+	u32		buf[16];		// 16 words
+	u8		size;			// tail
 
-	u32		buf[0x8000];
-} FIFO;
+	BOOL	empty;
+	BOOL	full;
+	BOOL	error;
+} GFX_FIFO;
 
-extern void FIFOclear(FIFO * fifo);
-extern void FIFOadd(FIFO * fifo, u32 val);
-extern u32 FIFOget(FIFO * fifo);
+typedef struct
+{
+	u32		buf[16];		// 16 words
+	u8		size;			// tail
+
+	BOOL	empty;
+	BOOL	full;
+	BOOL	error;
+} DISP_FIFO;
+
+extern void IPC_FIFOclear(IPC_FIFO * fifo);
+extern void IPC_FIFOadd(IPC_FIFO * fifo, u32 val);
+extern u32 IPC_FIFOget(IPC_FIFO * fifo);
+
+//extern void GFX_FIFOclear(GFX_FIFO * fifo);
+//extern void GFX_FIFOadd(GFX_FIFO * fifo, u32 val);
+//extern u32 GFX_FIFOget(GFX_FIFO * fifo);
 
 #endif

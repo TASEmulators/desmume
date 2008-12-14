@@ -214,6 +214,7 @@ void GPU_Reset(GPU *g, u8 l)
 
 	delete osd;
 	osd = new OSDCLASS(-1);
+	//DISP_FIFOclear(&g->disp_fifo);
 }
 
 void GPU_DeInit(GPU * gpu)
@@ -317,6 +318,7 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		case 2: // Display framebuffer
 	//              gpu->vramBlock = DISPCNT_VRAMBLOCK(p) ;
 			gpu->vramBlock = cnt->VRAM_Block;
+			gpu->VRAMaddr = (u8 *)ARM9Mem.ARM9_LCD + (cnt->VRAM_Block * 0x20000);
 			return;
 		case 3: // Display from Main RAM
 			// nothing to be done here
@@ -758,11 +760,9 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 
 	map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp&31) * 64);
 	if (!map) return;
-
+	
 	if(tmp>31) 
-	{
 		map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
-	}
 
 	tile = (u8*) MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
 	if(!tile) return; 	// no tiles
@@ -1044,7 +1044,9 @@ INLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 
 INLINE void rotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
 	u8 * map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
+	if (!map) return;
 	u8 * tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
+	if (!tile) return;
 	u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 //	printf("rot mode\n");
 	apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_tiled_8bit_entry, map, tile, pal);
@@ -1065,7 +1067,9 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 	case 0 :
 	case 1 :
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
+		if (!map) return;
 		tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
+		if (!tile) return;
 		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 		if (!pal) return;
 
@@ -2343,11 +2347,10 @@ static INLINE void GPU_ligne_Brightness(NDS_Screen * screen, u16 l)
 #endif
 }
 
+extern void* memcpy_fast(void* dest, const void* src, size_t count);
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
-	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
-
 	// initialize the scanline black
 	// not doing this causes invalid colors when all active BGs are prevented to draw at some place
 	// ZERO TODO - shouldnt this be BG palette color 0?
@@ -2357,8 +2360,12 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	switch (gpu->dispMode)
 	{
 		case 0: // Display Off(Display white)
+			{
+				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+
 				for (int i=0; i<256; i++)
 					T2WriteWord(dst, i << 1, 0x7FFF);
+			}
 			break;
 
 		case 1: // Display BG and OBJ layers
@@ -2366,25 +2373,28 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 
 		case 2: // Display framebuffer
-		{
-			struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-			u8 * vram = ARM9Mem.ARM9_LCD + (dispCnt->VRAM_Block * 0x20000) + (l*512);
-			memcpy(dst, vram, 512);
-		}
+			{
+				u8 * dst = GPU_screen + (screen->offset + l) * 512;
+				u8 * src = gpu->VRAMaddr + (l*512);
+				memcpy(dst, gpu->VRAMaddr + (l*512), 512);
+			}
 			break;
 		case 3:
 	// Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels at once format is x555, bit15 unused
 	// Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
 	// (under DISP_MMEM_FIFO)
-#if 1
-			for (int i=0; i<256;)
+#if 0
 			{
-				u32 c = FIFOget(&MMU.fifos[gpu->core]);		// TODO: this is incorrect
-				T2WriteWord(dst, i << 1, c&0xFFFF); i++;
-				T2WriteWord(dst, i << 1, c>>16); i++;
+				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+				for (int i=0; i<256;)
+				{
+					u32 c = FIFOget(&gpu->fifo);
+					T2WriteWord(dst, i << 1, c&0xFFFF); i++;
+					T2WriteWord(dst, i << 1, c>>16); i++;
+				}
 			}
 #else
-		INFO("FIFO MAIN_MEMORY_DISP_FIFO\n");
+		LOG("FIFO MAIN_MEMORY_DISP_FIFO\n");
 #endif
 			break;
 	}
