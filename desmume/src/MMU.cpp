@@ -41,7 +41,7 @@
 #include "mc.h"
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
-u64 isqrt (u64 x) {
+static u64 isqrt (u64 x) {
   u64   squaredbit, remainder, root;
 
    if (x<1) return 0;
@@ -1340,7 +1340,7 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
 //=========================================================================================================
 //=========================================================================================================
 //================================================= MMU write 08
-void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
+static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if(((adr & ~0x3FFF) == MMU.DTCMRegion))
@@ -1531,7 +1531,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 }
 
 //================================================= MMU ARM9 write 16
-void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
+static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((adr & ~0x3FFF) == MMU.DTCMRegion)
@@ -2048,7 +2048,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 } 
 
 //================================================= MMU ARM9 write 32
-void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
+static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -2698,8 +2698,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
              case REG_GCROMCTRL :
 				{
-					unsigned int i;
-
                     if(MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) == 0xB7)
 					{
                         MMU.dscard[ARMCPU_ARM9].address = (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+4));
@@ -2795,7 +2793,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 }
 
 //================================================= MMU ARM9 read 08
-u8 FASTCALL _MMU_ARM9_read08(u32 adr)
+static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -2817,7 +2815,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 }
 
 //================================================= MMU ARM9 read 16
-u16 FASTCALL _MMU_ARM9_read16(u32 adr)
+static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -2878,7 +2876,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 }
 
 //================================================= MMU ARM9 read 32
-u32 FASTCALL _MMU_ARM9_read32(u32 adr)
+static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -3045,7 +3043,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 //=========================================================================================================
 //=========================================================================================================
 //================================================= MMU ARM7 write 08
-void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
+static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) 
@@ -3078,7 +3076,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 }
 
 //================================================= MMU ARM7 write 16
-void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
+static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
 	// CFlash writing, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
@@ -3485,7 +3483,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 } 
 //================================================= MMU ARM7 write 32
-void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
+static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
@@ -3720,8 +3718,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 			case REG_GCROMCTRL :
 				{
-					unsigned int i;
-
 					if(MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT) == 0xB7)
 					{
 						MMU.dscard[ARMCPU_ARM7].address = (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+4));
@@ -3778,7 +3774,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 }
 
 //================================================= MMU ARM7 read 08
-u8 FASTCALL _MMU_ARM7_read08(u32 adr)
+static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
@@ -3800,7 +3796,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
     return MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]];
 }
 //================================================= MMU ARM7 read 16
-u16 FASTCALL _MMU_ARM7_read16(u32 adr)
+static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {    
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
@@ -3848,7 +3844,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 }
 //================================================= MMU ARM7 read 32
-u32 FASTCALL _MMU_ARM7_read32(u32 adr)
+static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
