@@ -26,9 +26,10 @@
 
 #include "types.h"
 
+//=================================================== IPC FIFO
 typedef struct
 {
-	u32		buf[16];		// 16 words
+	u32		buf[16];		// 64K
 	u8		size;			// tail
 
 	BOOL	empty;
@@ -36,16 +37,33 @@ typedef struct
 	BOOL	error;
 } IPC_FIFO;
 
+extern void IPC_FIFOclear(IPC_FIFO * fifo);
+extern void IPC_FIFOadd(IPC_FIFO * fifo, u32 val);
+extern u32 IPC_FIFOget(IPC_FIFO * fifo);
+
+//=================================================== GFX FIFO
 typedef struct
 {
-	u32		buf[16];		// 16 words
-	u8		size;			// tail
+	u32		size;					// tail
 
 	BOOL	empty;
+	BOOL	half;
 	BOOL	full;
 	BOOL	error;
-} GFX_FIFO;
+	u8		irq;
 
+	u32		pipe[4];		// additional 4 entries
+	u8		pipe_size;		// pipe tail
+
+	BOOL	pipe_empty;
+	BOOL	pipe_half;
+	BOOL	pipe_full;
+} GFX_FIFO;
+extern void GFX_FIFOclear(GFX_FIFO * fifo);
+extern void GFX_FIFOadd(GFX_FIFO * fifo);
+
+//=================================================== Display memory FIFO
+#if 0
 typedef struct
 {
 	u32		buf[16];		// 16 words
@@ -56,12 +74,9 @@ typedef struct
 	BOOL	error;
 } DISP_FIFO;
 
-extern void IPC_FIFOclear(IPC_FIFO * fifo);
-extern void IPC_FIFOadd(IPC_FIFO * fifo, u32 val);
-extern u32 IPC_FIFOget(IPC_FIFO * fifo);
-
-//extern void GFX_FIFOclear(GFX_FIFO * fifo);
-//extern void GFX_FIFOadd(GFX_FIFO * fifo, u32 val);
-//extern u32 GFX_FIFOget(GFX_FIFO * fifo);
+extern void DISP_FIFOclear(DISP_FIFO * fifo);
+extern void DISP_FIFOadd(DISP_FIFO * fifo, u32 val);
+extern u32 DISP_FIFOget(DISP_FIFO * fifo);
+#endif
 
 #endif

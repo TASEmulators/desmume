@@ -77,8 +77,11 @@ struct MMU_struct {
     
     u8 ARM9_RW_MODE;
 
+	// IPC FIFO
 	IPC_FIFO	ipc_fifo[2];	// 0 - ARM9 FIFO
-								// 1 - ARM7 FIFO*/
+								// 1 - ARM7 FIFO
+	// GFX FIFO
+	GFX_FIFO	gfx_fifo;
 
 	static TWaitState MMU_WAIT16[2][16];
     static TWaitState MMU_WAIT32[2][16];

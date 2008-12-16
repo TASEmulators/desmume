@@ -42,8 +42,6 @@
 
 NDSSystem nds;
 
-extern u32 gxIRQ;
-
 static u32
 calc_CRC16( u32 start, const u8 *data, int count) {
   int i,j;
@@ -906,6 +904,8 @@ u32 NDS_exec(s32 nb)
 					LOG(logbuf);
 				}
 #endif
+				NDS_makeARM9Int(21);		// GX geometry
+
 				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
 					if(NDS_ARM9.waitIRQ) {
@@ -1550,26 +1550,6 @@ u32 NDS_exec(s32 nb)
 			}
 		}
 
-		/*for (int tt=0; tt<24; tt++)
-		{
-			if (tt == 0) continue;		//VBlank
-			if (tt == 1) continue;		//HBlank
-			if (tt == 3) continue;
-			if (tt == 12) continue;
-			if (tt == 18) continue;
-			if (MMU.reg_IE[0]&(1<<tt)) INFO("wait IRQ%i\n", tt);
-		}*/
-
-		//if(MMU.reg_IE[0]&(1<<0)) gfx3d_VBlankSignal();
-
-		if(MMU.reg_IE[0]&(1<<21))		// IRQ21
-		{
-		//	if (MMU.fifos[0].irq==1) NDS_makeARM9Int(21);
-		//	if (MMU.fifos[0].irq==2) NDS_makeARM9Int(21);
-			if (gxIRQ == 1) NDS_makeARM9Int(21);
-			if (gxIRQ == 2) NDS_makeARM9Int(21);
-		}
-        
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 		{
 #ifdef GDB_STUB

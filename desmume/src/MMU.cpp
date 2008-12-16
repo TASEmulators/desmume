@@ -266,8 +266,6 @@ TWaitState MMU_struct::MMU_WAIT32[2][16] = {
 };
 
 
-u32 gxIRQ = 0;
-	
 // VRAM mapping
 u8		*LCDdst[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 u8		*EngineAddr[4] = { NULL, NULL, NULL, NULL };
@@ -304,6 +302,7 @@ void MMU_Init(void) {
 
 	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM9]);
 	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM7]);
+	GFX_FIFOclear(&MMU.gfx_fifo);
 	
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -360,6 +359,7 @@ void MMU_clearMem()
 	
 	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM9]);
 	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM7]);
+	GFX_FIFOclear(&MMU.gfx_fifo);
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -2084,18 +2084,26 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if((adr>>24)==4)
 	{
-		if (adr >= 0x04000400 && adr < 0x04000440)
-		{
-			// Geometry commands (aka Dislay Lists) - Parameters:X
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x400>>2] = val;
-			gfx3d_glCallList(0xFFFFFFFF, val);
-			return;
-		}
 		if(adr >= 0x04000380 && adr <= 0x040003BC)
 		{
 			//toon table
 			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>2] = val;
 			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(0x380)]);
+			return;
+		}
+
+		if (adr >= 0x04000400 && adr < 0x04000440)
+		{
+			// Geometry commands (aka Dislay Lists) - Parameters:X
+			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>2] = val;
+			gfx3d_Add_Command(val);
+			return;
+		}
+
+		if (adr >= 0x04000440 && adr < 0x04000600)
+		{
+			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>2] = val;
+			gfx3d_Add_Command_Direct((adr - 0x04000400) >> 2, val);
 			return;
 		}
 
@@ -2135,250 +2143,10 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				gfx3d_glFogOffset(val);
 				return;
 			}
-			// Matrix mode - Parameters:1
-			case 0x04000440:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x440>>2] = val;
-				gfx3d_glMatrixMode(val);
-				return;
-			}
-			// Push matrix - Parameters:0
-			case 0x04000444:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x444>>2] = val;
-				gfx3d_glPushMatrix();
-				return;
-			}
-			// Pop matrix/es - Parameters:1
-			case 0x04000448:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x448>>2] = val;
-				gfx3d_glPopMatrix(val);
-				return;
-			}
-			// Store matrix in the stack - Parameters:1
-			case 0x0400044C:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x44C>>2] = val;
-				gfx3d_glStoreMatrix(val);
-				return;
-			}
-			// Restore matrix from the stack - Parameters:1
-			case 0x04000450:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x450>>2] = val;
-				gfx3d_glRestoreMatrix(val);
-				return;
-			}
-			// Load Identity matrix - Parameters:0
-			case 0x04000454:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x454>>2] = val;
-				gfx3d_glLoadIdentity();
-				return;
-			}
-			// Load 4x4 matrix - Parameters:16
-			case 0x04000458:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x458>>2] = val;
-				gfx3d_glLoadMatrix4x4(val);
-				return;
-			}
-			// Load 4x3 matrix - Parameters:12
-			case 0x0400045C:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x45C>>2] = val;
-				gfx3d_glLoadMatrix4x3(val);
-				return;
-			}
-			// Multiply 4x4 matrix - Parameters:16
-			case 0x04000460:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x460>>2] = val;
-				gfx3d_glMultMatrix4x4(val);
-				return;
-			}
-			// Multiply 4x3 matrix - Parameters:12
-			case 0x04000464:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x464>>2] = val;
-				gfx3d_glMultMatrix4x3(val);
-				return;
-			}
-			// Multiply 3x3 matrix - Parameters:9
-			case 0x04000468 :
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x468>>2] = val;
-				gfx3d_glMultMatrix3x3(val);
-				return;
-			}
-			// Multiply current matrix by scaling matrix - Parameters:3
-			case 0x0400046C:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x46C>>2] = val;
-				gfx3d_glScale(val);
-				return;
-			}
-			// Multiply current matrix by translation matrix - Parameters:3
-			case 0x04000470:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x470>>2] = val;
-				gfx3d_glTranslate(val);
-				return;
-			}
-			// Set vertex color - Parameters:1
-			case 0x04000480:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x480>>2] = val;
-				gfx3d_glColor3b(val);
-				return;
-			}
-			// Set vertex normal - Parameters:1
-			case 0x04000484:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x484>>2] = val;
-				gfx3d_glNormal(val);
-				return;
-			}
-			// Set vertex texture coordinate - Parameters:1
-			case 0x04000488:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x488>>2] = val;
-				gfx3d_glTexCoord(val);
-				return;
-			}
-			// Set vertex position 16b/coordinate - Parameters:2
-			case 0x0400048C:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x48C>>2] = val;
-				gfx3d_glVertex16b(val);
-				return;
-			}
-			// Set vertex position 10b/coordinate - Parameters:1
-			case 0x04000490:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x490>>2] = val;
-				gfx3d_glVertex10b(val);
-				return;
-			}
-			// Set vertex XY position - Parameters:1
-			case 0x04000494:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x494>>2] = val;
-				gfx3d_glVertex3_cord(0,1,val);
-				return;
-			}
-			// Set vertex XZ position - Parameters:1
-			case 0x04000498:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x498>>2] = val;
-				gfx3d_glVertex3_cord(0,2,val);
-				return;
-			}
-			// Set vertex YZ position - Parameters:1
-			case 0x0400049C:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x49C>>2] = val;
-				gfx3d_glVertex3_cord(1,2,val);
-				return;
-			}
-			// Set vertex difference position (offset from the last vertex) - Parameters:1
-			case 0x040004A0:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4A0>>2] = val;
-				gfx3d_glVertex_rel (val);
-				return;
-			}
-			// Set polygon attributes - Parameters:1
-			case 0x040004A4:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4A4>>2] = val;
-				gfx3d_glPolygonAttrib(val);
-				return;
-			}
-			// Set texture parameteres - Parameters:1
-			case 0x040004A8:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4A8>>2] = val;
-				gfx3d_glTexImage(val);
-				return;
-			}
-			// Set palette base address - Parameters:1
-			case 0x040004AC:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4AC>>2] = val&0x1FFF;
-				gfx3d_glTexPalette(val&0x1FFFF);
-				return;
-			}
-			// Set material diffuse/ambient parameters - Parameters:1
-			case 0x040004C0:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4C0>>2] = val;
-				gfx3d_glMaterial0 (val);
-				return;
-			}
-			// Set material reflection/emission parameters - Parameters:1
-			case 0x040004C4:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4C4>>2] = val;
-				gfx3d_glMaterial1 (val);
-				return;
-			}
-			// Light direction vector - Parameters:1
-			case 0x040004C8:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4C8>>2] = val;
-				gfx3d_glLightDirection(val);
-				return;
-			}
-			// Light color - Parameters:1
-			case 0x040004CC:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4CC>>2] = val;
-				gfx3d_glLightColor(val);
-				return;
-			}
-			// Material Shininess - Parameters:32
-			case 0x040004D0:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x4D0>>2] = val;
-				gfx3d_glShininess(val);
-				return;
-			}
-			// Begin vertex list - Parameters:1
-			case 0x04000500:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x500>>2] = val;
-				gfx3d_glBegin(val);
-				return;
-			}
-			// End vertex list - Parameters:0
-			case 0x04000504:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x504>>2] = val;
-				gfx3d_glEnd();
-				return;
-			}
-			// Swap rendering engine buffers - Parameters:1
-			case 0x04000540:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x540>>2] = val;
-				gfx3d_glFlush(val);
-				return;
-			}
-			// Set viewport coordinates - Parameters:1
-			case 0x04000580:
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x580>>2] = val;
-				gfx3d_glViewPort(val);
-				return;
-			}
-
-			// ==================================================================== end 3D
 
 			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
-				gxIRQ = ((val >> 30) & 0x3);
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2] = val;
 				return;
 			}
 			case REG_DISPA_WININ: 	 
@@ -2898,24 +2666,13 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	
 	adr &= 0x0FFFFFFF;
 
+	// Address is an IO register
 	if((adr >> 24) == 4)
 	{
-		/* Address is an IO register */
 		switch(adr)
 		{
-			// This is hacked due to the only current 3D core
 			case 0x04000600:		// Geometry Engine Status Register (R and R/W)
-            {
-			/*	u32 gxstat =	( 2 |
-									(MMU.fifos[ARMCPU_ARM9].full<<24)|
-									(MMU.fifos[ARMCPU_ARM9].half<<25)|
-									(MMU.fifos[ARMCPU_ARM9].empty<<26)|
-									(MMU.fifos[ARMCPU_ARM9].irq<<30)
-								);*/
-				u32 gxstat = (2 | (3 << 25) | (gxIRQ << 30));
-
-				return	gxstat;
-            }
+				return gfx3d_GetGXstatus();
 
 			case 0x04000640:
 			case 0x04000644:

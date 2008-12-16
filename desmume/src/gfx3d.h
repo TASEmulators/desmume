@@ -183,11 +183,13 @@ BOOL gfx3d_glPosTest(unsigned long v);
 void gfx3d_glVecTest(unsigned long v);
 void gfx3d_glGetPosRes(unsigned int index);
 void gfx3d_glGetVecRes(unsigned int index);
-void gfx3d_glCallList(u32 addr, u32 cmd);
 void gfx3d_glFlush(unsigned long v);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal();
 void gfx3d_Control(unsigned long v);
+u32 gfx3d_GetGXstatus();
+void gfx3d_Add_Command_Direct(u32 addr, u32 val);
+void gfx3d_Add_Command(u32 val);
 
 //other misc stuff
 void gfx3d_glGetMatrix(unsigned int mode, int index, float* dest);
