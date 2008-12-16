@@ -25,9 +25,10 @@
 #include <string.h>
 #include "debug.h"
 
+// ========================================================= IPC FIFO
 void IPC_FIFOclear(IPC_FIFO * fifo)
 {
-	memset(fifo, 0, sizeof(fifo));
+	memset(fifo, 0, sizeof(IPC_FIFO));
 
 	fifo->empty = TRUE;
 	//LOG("FIFO is cleared\n");
@@ -50,7 +51,6 @@ void IPC_FIFOadd(IPC_FIFO * fifo, u32 val)
 	fifo->empty = FALSE;
 }
 
-extern void NDS_Pause();
 u32 IPC_FIFOget(IPC_FIFO * fifo)
 {
 	if (fifo->empty)
@@ -68,5 +68,32 @@ u32 IPC_FIFOget(IPC_FIFO * fifo)
 	if (fifo->size == 0)
 		fifo->empty = TRUE;
 	return val;
+}
+
+// ========================================================= GFX FIFO
+void GFX_FIFOclear(GFX_FIFO * fifo)
+{
+	memset(fifo, 0, sizeof(GFX_FIFO));
+
+	fifo->empty = TRUE;
+	fifo->half = TRUE;
+}
+
+void GFX_FIFOadd(GFX_FIFO * fifo)
+{
+	if (fifo->full)
+	{
+		//INFO("GFX FIFO send is full\n");
+		fifo->error = true;
+		return;
+	}
+
+	fifo->size++;
+	if (fifo->size > 128)
+		fifo->half = FALSE;
+
+	if (fifo->size == 256)
+		fifo->full = TRUE;
+	fifo->empty = FALSE;
 }
 
