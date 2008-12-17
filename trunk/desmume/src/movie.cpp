@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <fstream>
 
 #include "utils/guid.h"
