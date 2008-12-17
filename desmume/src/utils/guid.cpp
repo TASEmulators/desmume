@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "guid.h"
 #include "types.h"
 

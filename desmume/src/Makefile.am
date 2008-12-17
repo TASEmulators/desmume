@@ -36,7 +36,10 @@ libdesmume_a_SOURCES = \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
         thumb_instructions.cpp thumb_instructions.h types.h \
-	zero_private.h shaders.h
+	zero_private.h shaders.h \
+	movie.cpp movie.h \
+	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
+	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
