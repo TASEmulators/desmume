@@ -904,8 +904,6 @@ u32 NDS_exec(s32 nb)
 					LOG(logbuf);
 				}
 #endif
-				NDS_makeARM9Int(21);		// GX geometry
-
 				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
 					if(NDS_ARM9.waitIRQ) {
@@ -1549,6 +1547,9 @@ u32 NDS_exec(s32 nb)
 				MMU.CheckDMAs &= ~(1<<(3+(1<<2)));
 			}
 		}
+		
+		if(MMU.reg_IE[0]&(1<<21))
+			NDS_makeARM9Int(21);		// GX geometry
 
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 		{

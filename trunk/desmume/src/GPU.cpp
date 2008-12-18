@@ -227,7 +227,7 @@ void GPU_DeInit(GPU * gpu)
 
 static void GPU_resortBGs(GPU *gpu)
 {
-	int i, j, prio;
+	int i, prio;
 	struct _DISPCNT * cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	itemsForPriority_t * item;
 
@@ -250,14 +250,13 @@ static void GPU_resortBGs(GPU *gpu)
 		item->nbBGs=0;
 		item->nbPixelsX=0;
 	}
-	for (i=NB_BG,j=0; i>0; ) {
+	for (i=NB_BG; i>0; ) {
 		i--;
 		if (!gpu->LayersEnable[i]) continue;
 		prio = (gpu->dispx_st)->dispx_BGxCNT[i].bits.Priority;
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
 		item->nbBGs++;
-		j++;
 	}
 	
 #if 0
@@ -345,14 +344,9 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		gpu->spriteRender = sprite2D;
 	}
      
-        if(cnt->OBJ_BMP_1D_Bound && (gpu->core == GPU_MAIN))
-	{
-		gpu->sprBMPBoundary = 8;
-	}
-	else
-	{
-		gpu->sprBMPBoundary = 7;
-	}
+	gpu->sprBMPBoundary = 128;
+	if(gpu->core == GPU_MAIN)
+		gpu->sprBMPBoundary = cnt->OBJ_BMP_1D_Bound * 256;
 
 	gpu->sprEnable = cnt->OBJ_Enable;
 	
@@ -1072,7 +1066,6 @@ INLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 		if (!tile) return;
 		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 		if (!pal) return;
-
 		// 16  bit bgmap entries
 		apply_rot_fun(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, rot_tiled_16bit_entry, map, tile, pal);
 		return;
@@ -1561,11 +1554,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
 				// TODO: fix it for sprite1D
-				/*if (spriteInfo->Depth)
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
-				else
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));*/
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary));
+				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
 				CHECK_SPRITE(1);
 
 				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
@@ -1829,10 +1818,10 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
-				if (spriteInfo->Depth) // 128 * 512
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
-				else // 256*256
+				if (dispCnt->OBJ_BMP_2D_dim) // 256*256
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
+				else // 128 * 512
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
 				CHECK_SPRITE(2);
 
 				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
@@ -2074,6 +2063,7 @@ static void calc_bright_colors() {
 #undef FORMULA_LESS
 }
 #endif
+
 static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
@@ -2085,14 +2075,18 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	u8 prio;
 	u16 i16;
 	u32 c;
-	
+	BOOL BG_enabled  = TRUE;
+
 	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
-	
+	for(int i = 0; i< 256; ++i) T2WriteWord(dst, i << 1, c);
+
+	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && 
+			!gpu->LayersEnable[2] && !gpu->LayersEnable[3] && 
+				!gpu->LayersEnable[4]) return;
+
 	// init background color & priorities
 	for(int i = 0; i< 256; ++i)
 	{
-		T2WriteWord(dst, i << 1, c);
-		T2WriteWord(spr, i << 1, c);
 		sprPrio[i]=0xFF;
 		gpu->sprWin[l][i]=0;
 	}
@@ -2101,11 +2095,14 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	for (int i=0; i<NB_PRIORITIES; i++) {
 		gpu->itemsForPriority[i].nbPixelsX = 0;
 	}
-
+	
 	// for all the pixels in the line
-	if (gpu->LayersEnable[4]) {
+	if (gpu->LayersEnable[4]) 
+	{
+		for(int i = 0; i< 256; ++i) T2WriteWord(spr, i << 1, c);
 		gpu->spriteRender(gpu, l, spr, sprPrio);
-		for(int i = 0; i<256; i++) {
+		for(int i = 0; i<256; i++) 
+		{
 			// assign them to the good priority item
 			prio = sprPrio[i];
 			if (prio >=4) continue;
@@ -2116,6 +2113,10 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		}
 	}
 
+	
+	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && !gpu->LayersEnable[2] && !gpu->LayersEnable[3])
+		BG_enabled = FALSE;
+
 	// paint lower priorities fist
 	// then higher priorities on top
 	for(prio=NB_PRIORITIES; prio > 0; )
@@ -2123,25 +2124,33 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		prio--;
 		item = &(gpu->itemsForPriority[prio]);
 		// render BGs
-		for (int i=0; i < item->nbBGs; i++) 
+		if (BG_enabled)
 		{
-			i16 = item->BGs[i];
-
-			// If BG0, core A, and 3D is enabled, ask the gpu3D plugin for data
-			if (i16 == 0 && dispCnt->BG0_3D && gpu->core == 0)
+			for (int i=0; i < item->nbBGs; i++) 
 			{
-				gpu3D->NDS_3D_GetLine (l, (u16*)dst);
-			}
-			else
-			{
+				i16 = item->BGs[i];
 				if (gpu->LayersEnable[i16])
+				{
+					if (gpu->core == GPU_MAIN)
+					{
+						if (i16 == 0 && dispCnt->BG0_3D)
+						{
+							gpu3D->NDS_3D_GetLine (l, (u16*)dst);
+							continue;
+						}
+					}
 					modeRender[dispCnt->BG_Mode][i16](gpu, i16, l, dst);
+				}
 			}
 		}
 		// render sprite Pixels
-		for (int i=0; i < item->nbPixelsX; i++) {
-			i16=item->PixelsX[i];
-			T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+		if (gpu->LayersEnable[4])
+		{
+			for (int i=0; i < item->nbPixelsX; i++)
+			{
+				i16=item->PixelsX[i];
+				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+			}
 		}
 	}
 }
@@ -2180,7 +2189,9 @@ static INLINE void GPU_ligne_DispCapture(u16 l)
 								{
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
 									u8 *src = (u8 *)(GPU_screen) + (MainScreen.offset + l) * 512;
-									memcpy(cap_dst, src, (gpu->dispCapCnt.capx<<1));
+									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
+										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
+
 								}
 							break;
 							case 1:			// Capture 3D
@@ -2188,7 +2199,8 @@ static INLINE void GPU_ligne_DispCapture(u16 l)
 									u16 cap3DLine[256];
 									//INFO("Capture 3D\n");
 									gpu3D->NDS_3D_GetLine (l, (u16*)cap3DLine);
-									memcpy(cap_dst, cap3DLine, (gpu->dispCapCnt.capx<<1));
+									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
+										T2WriteWord(cap_dst, i << 1, T2ReadWord((u8 *)cap3DLine, i << 1) | (1<<15));
 								}
 							break;
 						}
@@ -2362,7 +2374,6 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		case 0: // Display Off(Display white)
 			{
 				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
-
 				for (int i=0; i<256; i++)
 					T2WriteWord(dst, i << 1, 0x7FFF);
 			}
@@ -2376,7 +2387,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			{
 				u8 * dst = GPU_screen + (screen->offset + l) * 512;
 				u8 * src = gpu->VRAMaddr + (l*512);
-				memcpy(dst, gpu->VRAMaddr + (l*512), 512);
+				memcpy(dst, src, 512);
 			}
 			break;
 		case 3:
