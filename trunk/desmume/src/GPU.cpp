@@ -277,9 +277,7 @@ static void GPU_resortBGs(GPU *gpu)
 
 void GPU_setMasterBrightness (GPU *gpu, u16 val)
 {
-	u8 temp = (val&31);
-
-	gpu->MasterBrightFactor = (temp > 16 ? 16 : temp);
+	gpu->MasterBrightFactor = (val & 0x1F);
 	gpu->MasterBrightMode	= (val>>14);
 }
 
@@ -2244,11 +2242,12 @@ static INLINE void GPU_ligne_DispCapture(u16 l)
 	}
 }
 
-static INLINE void GPU_ligne_Brightness(NDS_Screen * screen, u16 l)
+static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u16 i16;
+	if (!gpu->MasterBrightFactor) return;
 #ifndef HAVE_LIBGDKGLEXT_X11_1_0
 // damdoum :
 //   brightness done with opengl
@@ -2412,7 +2411,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 	if (gpu->core == GPU_MAIN) 
 		GPU_ligne_DispCapture(l);
-	GPU_ligne_Brightness(screen, l);
+	GPU_ligne_MasterBrightness(screen, l);
 }
 
 void gpu_savestate(std::ostream* os)
