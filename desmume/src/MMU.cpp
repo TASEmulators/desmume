@@ -1670,6 +1670,14 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			
             case REG_POWCNT1 :
 				{
+// TODO: make this later
+#if 0			
+					u8	_LCD = (val) & 0x01;
+					u8	_2DEngineA = (val>>1) & 0x01;
+					u8	_2DEngineB = (val>>9) & 0x01;
+					u8	_3DRender = (val>>2) & 0x01;
+					u8	_3DGeometry = (val>>3) & 0x01;
+#endif
 					if(val & (1<<15))
 					{
 						LOG("Main core on top\n");
@@ -2186,6 +2194,13 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				GPU_setWIN1_V(SubScreen.gpu, val>>16);
 				break;
 			}
+
+			case REG_DISPA_MASTERBRIGHT:
+				GPU_setMasterBrightness(MainScreen.gpu, val & 0xFFFF);
+				break;
+			case REG_DISPB_MASTERBRIGHT:
+				GPU_setMasterBrightness(SubScreen.gpu, val & 0xFFFF);
+				break;
 
 			case REG_DISPA_BLDCNT:
 			{
