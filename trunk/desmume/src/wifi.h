@@ -17,10 +17,12 @@
     along with DeSmuME; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#ifdef EXPERIMENTAL_WIFI
-
 #ifndef WIFI_H
 #define WIFI_H
+
+#include "types.h"
+
+#ifdef EXPERIMENTAL_WIFI
 
 /* standardize socket interface for linux and windows */
 #ifdef WIN32
@@ -37,8 +39,6 @@
 #endif
 #define BASEPORT        7000    		/* channel 1: 7000 ... channel 13: 7012 */
 										/* FIXME: make it configureable */
-
-#include "types.h"
 
 #define     REG_WIFI_MODE       		0x004
 #define     REG_WIFI_WEP        		0x006
@@ -446,6 +446,8 @@ u16  WIFI_read16(wifimac_t *wifi,u32 address) ;
 /* wifimac timing */
 void WIFI_usTrigger(wifimac_t *wifi) ;
 
+#endif
+
 /* wifi data to be stored in firmware, when no firmware image was loaded */
 extern u8 FW_Mac[6];
 extern u8 FW_WIFIInit[32] ;
@@ -456,5 +458,3 @@ extern u8 FW_BBChannel[14] ;
 extern u8 FW_WFCProfile[0xC0] ;
 
 #endif
-
-#endif /* #ifdef EXPERIMENTAL_WIFI */
