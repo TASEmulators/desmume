@@ -1799,6 +1799,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             ofn.lpstrFile =  filename;
                             ofn.nMaxFile = MAX_PATH;
                             ofn.lpstrDefExt = "nds";
+							ofn.Flags = OFN_NOCHANGEDIR;
                             
                             if(!GetOpenFileName(&ofn))
                             {
