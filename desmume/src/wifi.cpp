@@ -125,28 +125,70 @@ u8 FW_BBChannel[14]		= { 0xb3, 0xb3, 0xb3, 0xb3, 0xb3,	/* channel  1- 6 */
 							0xb6, 0xb6						/* channel 13-14 */
 						  } ;
 
-u8 FW_WFCProfile[0xC0]  = { 'D','e','S','m','u','m','E',' ','S','o','f','t','A','P',
-							' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ', /* ssid */
-							'D','e','S','m','u','m','E',' ','S','o','f','t','A','P',
-							' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ', /* ssid */
-							'W','E','P','K','E','Y',' ','P','A','R','T',' ','1',' ',' ',' ',
-							'W','E','P','K','E','Y',' ','P','A','R','T',' ','2',' ',' ',' ',
-							'W','E','P','K','E','Y',' ','P','A','R','T',' ','3',' ',' ',' ',
-							'W','E','P','K','E','Y',' ','P','A','R','T',' ','4',' ',' ',' ',
-							127,0,0,1,                          /* IP address */
-							127,0,0,1,                          /* Gateway */
-							127,0,0,1,                          /* DNS 1 */
-							127,0,0,1,                          /* DNS 2 */
-							24,                                 /* subnet/node seperating bit (n*'1' | (32-n)*'0' = subnet mask) */
-							0,0,0,0,0,0,0,
-							0,0,0,0,0,0,0,0,
-							0,0,0,0,0,0,
-							0,                                  /* WEP: disabled */
-							0,                                  /* This entry is: normal (1= AOSS, FF = deleted)*/
-							0,0,0,0,0,0,0,0,
-							'W','F','C',' ','U','S','E','R',' ','I','D',' ',' ',' ',                   /* user id */
-							0,0                                 /* CRC */
-						  } ;
+/* Note : the values are inspired from what I found in a firmware image from my DS */
+
+FW_WFCProfile FW_WFCProfile1 = {"DeSmuME Soft AP",
+								"",
+								"",
+								"",
+								"",
+								"",
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								0,
+								"",
+								0,
+								0,
+								0,
+								{0, 0, 0, 0, 0, 0, 0},
+								0,
+								{0xBA, 0xA0, 0x35, 0xE7, 0x01, 0xD0, 0x05, 0xAD, 0x39, 0x0F, 0x40, 0x1C, 0x2B, 0x2C},
+								{0, 0}
+							   } ;
+
+FW_WFCProfile FW_WFCProfile2 = {"",
+								"",
+								"",
+								"",
+								"",
+								"",
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								{0, 0, 0, 0},
+								0,
+								"",
+								0,
+								0,
+								0xFF,
+								{0, 0, 0, 0, 0, 0, 0},
+								0,
+								{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+								{0, 0}
+							   } ;
+
+FW_WFCProfile FW_WFCProfile3 = {"DeSmuME Soft AP 3",
+								"DeSmuME Soft AP 3",
+								"WEP KEY PART 1",
+								"WEP KEY PART 2",
+								"WEP KEY PART 3",
+								"WEP KEY PART 4",
+								{127, 0, 0, 1},
+								{127, 0, 0, 1},
+								{127, 0, 0, 1},
+								{127, 0, 0, 1},
+								24,
+								"AOSS WEP KEY",
+								0,
+								0,
+								0xFF,
+								{0, 0, 0, 0, 0, 0, 0},
+								0,
+								{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+								{0, 0}
+							   } ;
 
 #ifdef EXPERIMENTAL_WIFI
 
