@@ -784,19 +784,57 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
   fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
   fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
   
-  
-#ifdef EXPERIMENTAL_WIFI
-	memcpy(MMU.fw.data+0x36,FW_Mac,sizeof(FW_Mac)) ;
-	memcpy(MMU.fw.data+0x44,FW_WIFIInit,sizeof(FW_WIFIInit)) ;
-	MMU.fw.data[0x41] = 18 ; /* bits per RF value */
-	MMU.fw.data[0x42] = 12 ; /* # of RF values to init */
-	memcpy(MMU.fw.data+0x64,FW_BBInit,sizeof(FW_BBInit)) ;
-	memcpy(MMU.fw.data+0xCE,FW_RFInit,sizeof(FW_RFInit)) ;
-	memcpy(MMU.fw.data+0xF2,FW_RFChannel,sizeof(FW_RFChannel)) ;
-	memcpy(MMU.fw.data+0x146,FW_BBChannel,sizeof(FW_BBChannel)) ;
+	/* Config length */
+	MMU.fw.data[0x2C] = 0x38;
+	MMU.fw.data[0x2D] = 0x01;
 
-	memcpy(MMU.fw.data+0x03FA40,FW_WFCProfile,sizeof(FW_WFCProfile)) ;
-#endif
+	MMU.fw.data[0x2E] = 0x00;
+
+	/* Wifi version */
+	MMU.fw.data[0x2F] = 0x00;
+
+	/* MAC address */
+	memcpy((MMU.fw.data + 0x36), FW_Mac, sizeof(FW_Mac));
+
+	/* Enabled channels */
+	MMU.fw.data[0x3C] = 0xFE;
+	MMU.fw.data[0x3D] = 0x3F;
+
+	MMU.fw.data[0x3E] = 0xFF;
+	MMU.fw.data[0x3F] = 0xFF;
+
+	/* RF related */
+	MMU.fw.data[0x40] = 0x02;
+	MMU.fw.data[0x41] = 0x18;
+	MMU.fw.data[0x42] = 0x0C;
+
+	MMU.fw.data[0x43] = 0x01;
+
+	/* Wifi I/O init values */
+	memcpy((MMU.fw.data + 0x44), FW_WIFIInit, sizeof(FW_WIFIInit));
+
+	/* Wifi BB init values */
+	memcpy((MMU.fw.data + 0x64), FW_BBInit, sizeof(FW_BBInit));
+
+	/* Wifi RF init values */
+	memcpy((MMU.fw.data + 0xCE), FW_RFInit, sizeof(FW_RFInit));
+
+	/* Wifi channel-related init values */
+	memcpy((MMU.fw.data + 0xF2), FW_RFChannel, sizeof(FW_RFChannel));
+	memcpy((MMU.fw.data + 0x146), FW_BBChannel, sizeof(FW_BBChannel));
+	memset((MMU.fw.data + 0x154), 0x10, 0xE);
+
+	/* WFC profile */
+	memcpy((MMU.fw.data + 0x3FA40), FW_WFCProfile, sizeof(FW_WFCProfile));
+
+	MMU.fw.data[0x162] = 0x19;
+	memset((MMU.fw.data + 0x163), 0xFF, 0x9D);
+
+	/* Wifi settings CRC16 */
+	u16 wifi_crc16 = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
+	MMU.fw.data[0x2A] = (wifi_crc16 & 0xFF);
+	MMU.fw.data[0x2B] = (wifi_crc16 >> 8);
+
 	return TRUE ;
 }
 

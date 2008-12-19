@@ -18,10 +18,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifdef EXPERIMENTAL_WIFI
+
 
 #include "wifi.h"
 #include "armcpu.h"
+
+#ifdef EXPERIMENTAL_WIFI
 
 wifimac_t wifiMac ;
 
@@ -32,6 +34,8 @@ u16			WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength) ;
 BOOL 		WIFI_Host_InitSystem(void) ;
 void 		WIFI_Host_ShutdownSystem(void) ;
 
+#endif
+
 /*******************************************************************************
 
 	Firmware info needed for wifi, if no firmware image is available
@@ -41,7 +45,7 @@ void 		WIFI_Host_ShutdownSystem(void) ;
 
  *******************************************************************************/
 
-u8 FW_Mac[6] 			= { 'D','S','E',0x00,0x00,0x00 } ;
+u8 FW_Mac[6] 			= { 0x00, 0x09, 0xBF, 0x12, 0x34, 0x56 } ;
 u8 FW_WIFIInit[32] 		= { 0x02,0x00,  0x17,0x00,  0x26,0x00,  0x18,0x18,
 							0x48,0x00,  0x40,0x48,  0x58,0x00,  0x42,0x00,
 							0x40,0x01,  0x64,0x80,  0xE0,0xE0,  0x43,0x24,
@@ -143,6 +147,8 @@ u8 FW_WFCProfile[0xC0]  = { 'D','e','S','m','u','m','E',' ','S','o','f','t','A',
 							'W','F','C',' ','U','S','E','R',' ','I','D',' ',' ',' ',                   /* user id */
 							0,0                                 /* CRC */
 						  } ;
+
+#ifdef EXPERIMENTAL_WIFI
 
 /*******************************************************************************
 
