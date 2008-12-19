@@ -779,12 +779,12 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 
 
   /*
-   * User settings (at 0x3FE00 and 0x3FE00)
+   * User settings (at 0x3FE00 and 0x3FF00)
    */
   fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
   fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
   
-	/* Config length */
+	/* Wifi config length */
 	MMU.fw.data[0x2C] = 0x38;
 	MMU.fw.data[0x2D] = 0x01;
 
@@ -824,16 +824,20 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	memcpy((MMU.fw.data + 0x146), FW_BBChannel, sizeof(FW_BBChannel));
 	memset((MMU.fw.data + 0x154), 0x10, 0xE);
 
-	/* WFC profile */
-	memcpy((MMU.fw.data + 0x3FA40), FW_WFCProfile, sizeof(FW_WFCProfile));
+	/* WFC profiles */
+	memcpy((MMU.fw.data + 0x3FA40), &FW_WFCProfile1, sizeof(FW_WFCProfile));
+	memcpy((MMU.fw.data + 0x3FB40), &FW_WFCProfile2, sizeof(FW_WFCProfile));
+	memcpy((MMU.fw.data + 0x3FC40), &FW_WFCProfile3, sizeof(FW_WFCProfile));
+	(*(u16*)(MMU.fw.data + 0x3FAFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FA00), 0xFE);
+	(*(u16*)(MMU.fw.data + 0x3FBFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FB00), 0xFE);
+	(*(u16*)(MMU.fw.data + 0x3FCFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FC00), 0xFE);
+	
 
 	MMU.fw.data[0x162] = 0x19;
 	memset((MMU.fw.data + 0x163), 0xFF, 0x9D);
 
 	/* Wifi settings CRC16 */
-	u16 wifi_crc16 = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
-	MMU.fw.data[0x2A] = (wifi_crc16 & 0xFF);
-	MMU.fw.data[0x2B] = (wifi_crc16 >> 8);
+	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
 
 	return TRUE ;
 }

@@ -448,6 +448,33 @@ void WIFI_usTrigger(wifimac_t *wifi) ;
 
 #endif
 
+/* DS WFC profile data documented here : */
+/* http://dsdev.bigredpimp.com/2006/07/31/aoss-wfc-profile-data/ */
+/* Note : we use bytes to avoid endianness issues */
+typedef struct _FW_WFCProfile
+{
+	char SSID[32];
+	char SSID_WEP64[32];
+	char WEPKEY_PART1[16];
+	char WEPKEY_PART2[16];
+	char WEPKEY_PART3[16];
+	char WEPKEY_PART4[16];
+	u8 IP_ADDRESS[4];
+	u8 GATEWAY[4];
+	u8 PRIM_DNS[4];
+	u8 SEC_DNS[4];
+	u8 SUBNET_MASK;
+	u8 WEP64_KEY_AOSS[20];
+	u8 UNK1;
+	u8 WEP_MODE;
+	u8 STATUS;
+	u8 UNK2[7];
+	u8 UNK3;
+	u8 UNK4[14];
+	u8 CRC16[2];
+
+} FW_WFCProfile;
+
 /* wifi data to be stored in firmware, when no firmware image was loaded */
 extern u8 FW_Mac[6];
 extern u8 FW_WIFIInit[32] ;
@@ -455,6 +482,8 @@ extern u8 FW_BBInit[105] ;
 extern u8 FW_RFInit[36] ;
 extern u8 FW_RFChannel[6*14] ;
 extern u8 FW_BBChannel[14] ;
-extern u8 FW_WFCProfile[0xC0] ;
+extern FW_WFCProfile FW_WFCProfile1;
+extern FW_WFCProfile FW_WFCProfile2;
+extern FW_WFCProfile FW_WFCProfile3;
 
 #endif
