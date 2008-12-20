@@ -449,7 +449,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	// holes
 	if ((vram_addr > 0x6080000) && (vram_addr < 0x6200000)) return NULL;	// Engine ABG max 512KB
 	if ((vram_addr > 0x6220000) && (vram_addr < 0x6400000)) return NULL;	// Engine BBG max 128KB
-	if ((vram_addr > 0x6620000) && (vram_addr < 0x6600000)) return NULL;	// Engine AOBJ max 256KB
+	if ((vram_addr > 0x6420000) && (vram_addr < 0x6600000)) return NULL;	// Engine AOBJ max 256KB
 	
 	vram_addr &= 0x0FFFFFF;
 	u8	engine = (vram_addr >> 21);
@@ -461,6 +461,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	return (LCDdst[block] + vram_addr);
 }
 
+//extern void NDS_Pause();
 static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 {
 	if ((addr < 0x6000000)) return addr;
@@ -469,7 +470,7 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 	// holes
 	if ((addr > 0x6080000) && (addr < 0x6200000)) return addr;	// Engine ABG max 512KB
 	if ((addr > 0x6220000) && (addr < 0x6400000)) return addr;	// Engine BBG max 128KB
-	if ((addr > 0x6620000) && (addr < 0x6600000)) return addr;	// Engine AOBJ max 256KB
+	if ((addr > 0x6420000) && (addr < 0x6600000)) return addr;	// Engine AOBJ max 256KB
 	
 	u32	save_addr = addr;
 
@@ -480,9 +481,25 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 	u8	block = MMU.VRAM_MAP[engine][engine_offset];
 	if (block == 7) return (save_addr);		// not mapped to LCD
 
-	addr -= MMU.LCD_VRAM_ADDR[block];
-	return (addr + LCDdata[block][0]);
+	u32 addr2 = addr - MMU.LCD_VRAM_ADDR[block];
+	u32 addr3 = addr2 + LCDdata[block][0];
+	if (addr3 > 0x68A3FFF)
+	{
+		//INFO("Address 0x%X mapped to 0x%X (ret 0x%X, VRAM_ADDR 0x%X)\n", save_addr, addr3 , addr2, MMU.LCD_VRAM_ADDR[block]);
+		//INFO("Engine %i; Engine offset %i, Block %i, addr 0x%X\n", engine, engine_offset, block, MMU.LCD_VRAM_ADDR[block]);
+		//INFO("\n");
+		//NDS_Pause();
+
+		// This is incorrect. I made this temporally for non crash emu.
+		// I will endeavour to the release to correct.
+		return save_addr;
+	}
+	return (addr2 + LCDdata[block][0]);
+	addr += LCDdata[block][0];
+	return save_addr;
 }
+//#define LOG_VRAM_ERROR() INFO("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
+#define LOG_VRAM_ERROR() ;
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
@@ -523,6 +540,9 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				case 9:		// I		Engine B, BG
 					vram_map_addr = 0x0208000;
 				break;
+				default:
+					LOG_VRAM_ERROR();
+					break;
 			}
 		break ;
 
@@ -549,6 +569,9 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				case 9:		// I		Engine B, OBJ
 					vram_map_addr = 0x0600000;
 				break;
+				default:
+					LOG_VRAM_ERROR();
+					break;
 			}
 		break ;
 
@@ -583,6 +606,9 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 					ARM9Mem.ObjExtPal[1][0] = LCD_addr;
 					ARM9Mem.ObjExtPal[1][1] = LCD_addr+0x2000;
 				break;
+				default:
+					LOG_VRAM_ERROR();
+					break;
 			}
 		break ;
 
@@ -603,10 +629,15 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				break;
 				case 5:		// F
 				case 6:		// G		Engine A, BG
-					u8 tmp_slot = (VRAMBankCnt >> 2) & 0x02;
-					ARM9Mem.ExtPal[0][tmp_slot] = LCD_addr;
-					ARM9Mem.ExtPal[0][tmp_slot+1] = LCD_addr+0x2000;
+					{
+						u8 tmp_slot = (VRAMBankCnt >> 2) & 0x02;
+						ARM9Mem.ExtPal[0][tmp_slot] = LCD_addr;
+						ARM9Mem.ExtPal[0][tmp_slot+1] = LCD_addr+0x2000;
+					}
 				break;
+				default:
+					LOG_VRAM_ERROR();
+					break;
 			}
 		break;
 
@@ -621,6 +652,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 
 	if (vram_map_addr != 0xFFFFFFFF)
 	{
+		//u32 vr = vram_map_addr;
 		u8	engine = (vram_map_addr >> 21);
 		vram_map_addr &= 0x001FFFFF;
 		u8	engine_offset = (vram_map_addr >> 14);
@@ -630,8 +662,9 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		for (unsigned int i = 0; i <= LCDdata[block][1]; i++)
 			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
 		
-		//INFO("VRAM %i mapping: engine=%i (offset=%i, size=%i), address = 0x%X, MST=%i\n", 
-//			block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
+		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i (faddr 0x%X)\n", 
+		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07,
+		//	vr + 0x6000000);
 		return;
 	}
 
@@ -1626,6 +1659,30 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				GPU_setMOSAIC(SubScreen.gpu,val) ; 	 
 				break ;
 				*/
+			case REG_DISPA_BG0HOFS:
+				GPU_setBGxHOFS(0, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG0VOFS:
+				GPU_setBGxVOFS(0, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG1HOFS:
+				GPU_setBGxHOFS(1, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG1VOFS:
+				GPU_setBGxVOFS(1, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG2HOFS:
+				GPU_setBGxHOFS(2, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG2VOFS:
+				GPU_setBGxVOFS(2, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG3HOFS:
+				GPU_setBGxHOFS(3, MainScreen.gpu, val);
+				break;
+			case REG_DISPA_BG3VOFS:
+				GPU_setBGxVOFS(3, MainScreen.gpu, val);
+				break;
 
 			case REG_DISPA_WIN0H: 	 
 				GPU_setWIN0_H (MainScreen.gpu,val) ; 	 
@@ -1712,7 +1769,6 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				return;
-
 			case REG_DISPA_BG0CNT :
 				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 0, val);
@@ -2157,6 +2213,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2] = val;
 				return;
 			}
+
 			case REG_DISPA_WININ: 	 
 			{
 				GPU_setWININ(MainScreen.gpu, val & 0xFFFF) ; 	 
