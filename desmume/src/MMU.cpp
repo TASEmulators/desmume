@@ -461,7 +461,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	return (LCDdst[block] + vram_addr);
 }
 
-//extern void NDS_Pause();
+extern void NDS_Pause();
 static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 {
 	if ((addr < 0x6000000)) return addr;
@@ -481,25 +481,10 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 	u8	block = MMU.VRAM_MAP[engine][engine_offset];
 	if (block == 7) return (save_addr);		// not mapped to LCD
 
-	u32 addr2 = addr - MMU.LCD_VRAM_ADDR[block];
-	u32 addr3 = addr2 + LCDdata[block][0];
-	if (addr3 > 0x68A3FFF)
-	{
-		//INFO("Address 0x%X mapped to 0x%X (ret 0x%X, VRAM_ADDR 0x%X)\n", save_addr, addr3 , addr2, MMU.LCD_VRAM_ADDR[block]);
-		//INFO("Engine %i; Engine offset %i, Block %i, addr 0x%X\n", engine, engine_offset, block, MMU.LCD_VRAM_ADDR[block]);
-		//INFO("\n");
-		//NDS_Pause();
-
-		// This is incorrect. I made this temporally for non crash emu.
-		// I will endeavour to the release to correct.
-		return save_addr;
-	}
-	return (addr2 + LCDdata[block][0]);
-	addr += LCDdata[block][0];
-	return save_addr;
+	addr -= MMU.LCD_VRAM_ADDR[block];
+	return (addr + LCDdata[block][0]);
 }
-//#define LOG_VRAM_ERROR() INFO("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
-#define LOG_VRAM_ERROR() ;
+#define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
@@ -659,7 +644,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		MMU.LCD_VRAM_ADDR[block] = vram_map_addr;
 		MMU.LCDCenable[block] = TRUE;
 
-		for (unsigned int i = 0; i <= LCDdata[block][1]; i++)
+		for (unsigned int i = 0; i < LCDdata[block][1]; i++)
 			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
 		
 		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i (faddr 0x%X)\n", 
@@ -1714,6 +1699,31 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DISPA_WINOUT: 	 
 				GPU_setWINOUT16(MainScreen.gpu, val) ; 	 
 				break ; 	 
+
+			case REG_DISPB_BG0HOFS:
+				GPU_setBGxHOFS(0, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG0VOFS:
+				GPU_setBGxVOFS(0, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG1HOFS:
+				GPU_setBGxHOFS(1, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG1VOFS:
+				GPU_setBGxVOFS(1, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG2HOFS:
+				GPU_setBGxHOFS(2, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG2VOFS:
+				GPU_setBGxVOFS(2, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG3HOFS:
+				GPU_setBGxHOFS(3, SubScreen.gpu, val);
+				break;
+			case REG_DISPB_BG3VOFS:
+				GPU_setBGxVOFS(3, SubScreen.gpu, val);
+				break;
 			case REG_DISPB_WININ: 	 
 				GPU_setWININ(SubScreen.gpu, val) ; 	 
 				break ; 	 
