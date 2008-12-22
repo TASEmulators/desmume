@@ -102,20 +102,20 @@ void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
 		{
 			if (adr >= 0x4000000 && adr <= 0x400006C) return;		// Display Engine A
 			if (adr >= 0x40000B0 && adr <= 0x4000132) return;		// DMA, Timers and Keypad
-			if (adr >= 0x4000180 && adr <= 0x40001BA) return;		// IPC/ROM
-			if (adr >= 0x4000204 && adr <= 0x4000249) return;		// Memory & IRQ control
-			if (adr >= 0x4000280 && adr <= 0x4000304) return;		// Maths
-			if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
-			if (adr >= 0x4100000 && adr <= 0x4100012) return;		// IPC/ROM
+			//if (adr >= 0x4000180 && adr <= 0x40001BA) return;		// IPC/ROM
+			//if (adr >= 0x4000204 && adr <= 0x4000249) return;		// Memory & IRQ control
+			///if (adr >= 0x4000280 && adr <= 0x4000304) return;		// Maths
+			//if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
+			//if (adr >= 0x4100000 && adr <= 0x4100012) return;		// IPC/ROM
 		}
 		else
 		{
-			if (adr >= 0x4000000 && adr <= 0x4000003) return;		// ????
+			//if (adr >= 0x4000000 && adr <= 0x4000003) return;		// ????
 			if (adr >= 0x4000004 && adr <= 0x40001C2) return;		// ARM7 I/O Map
-			if (adr >= 0x4000204 && adr <= 0x4000308) return;		// Memory and IRQ Control
-			if (adr >= 0x4000400 && adr <= 0x400051C) return;		// Sound Registers
-			if (adr >= 0x4100000 && adr <= 0x4100010) return;		// IPC/ROM
-			if (adr >= 0x4800000 && adr <= 0x4808000) return;		// WLAN Registers
+			//if (adr >= 0x4000204 && adr <= 0x4000308) return;		// Memory and IRQ Control
+			//if (adr >= 0x4000400 && adr <= 0x400051C) return;		// Sound Registers
+			//if (adr >= 0x4100000 && adr <= 0x4100010) return;		// IPC/ROM
+			//if (adr >= 0x4800000 && adr <= 0x4808000) return;		// WLAN Registers
 		}
 
 		va_list list;
@@ -511,6 +511,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				case 2:		// C
 				case 3:		// D		Engine A, BG
 					vram_map_addr = ((VRAMBankCnt >> 3) & 3) * 0x20000;
+					if(block == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
+					if(block == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
 				break ;
 				case 4:		// E		Engine A, BG
 					vram_map_addr = 0x0000000;
@@ -537,6 +539,12 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				case 0:		// A
 				case 1:		// B		Engine A, OBJ
 					vram_map_addr = 0x0400000 + (((VRAMBankCnt>>3)&1)*0x20000);
+				break;
+				case 2:		// C
+					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
+				break;
+				case 3:		// D
+					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
 				break;
 				case 4:		// E		Engine A, OBJ
 					vram_map_addr = 0x0400000;
@@ -572,6 +580,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 						int slot_index = (VRAMBankCnt >> 3) & 0x3;
 						ARM9Mem.textureSlotAddr[slot_index] = LCD_addr;
 						gpu3D->NDS_3D_VramReconfigureSignal();
+						if(block == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
+						if(block == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
 					}
 				break;
 				case 4:		// E
@@ -602,9 +612,11 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 			{
 				case 2:		// C		Engine B, BG
 					vram_map_addr = 0x0200000;
+					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
 				break ;
 				case 3:		// D		Engine B, OBJ
 					vram_map_addr = 0x0600000;
+					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
 				break ;
 				case 4:		// E		Engine A, BG
 					ARM9Mem.ExtPal[0][0] = LCD_addr;
@@ -1501,12 +1513,11 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
 				break;
 
-		#ifdef CHECKVRAM
-			case 0x4000247:		// block 7
-				INFO("------- MMU write 08: writing in VRAM block 7 0x%X (stat=0x%X)\n", val,
-						T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x241));
+			case 0x4000247:	
+				/* Update WRAMSTAT at the ARM7 side */
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val);
 				break;
-		#endif
+
 			case REG_VRAMCNTA:
 			case REG_VRAMCNTB:
 			case REG_VRAMCNTC:
@@ -1765,6 +1776,14 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				
 				return;
 
+			case REG_EXMEMCNT:
+			{
+				u16 oldval = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204, val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204, (val & 0xFF80) | (oldval & 0x7F));
+			}
+			return;
+
 			case REG_AUXSPICNT:
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val);
 				AUX_SPI_CNT = val;
@@ -1821,24 +1840,19 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
 
 			case REG_VRAMCNTA:
-			case REG_VRAMCNTB:
 			case REG_VRAMCNTC:
-			case REG_VRAMCNTD:
 			case REG_VRAMCNTE:
-			case REG_VRAMCNTF:
-			case REG_VRAMCNTG:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
 				return;
-			case REG_VRAMCNTG+1:		// WRAM ???
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
+			case REG_VRAMCNTG:
+				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
+				/* Update WRAMSTAT at the ARM7 side */
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val >> 8);
 				return;
 			case REG_VRAMCNTH:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
-				return;
-			case REG_VRAMCNTI:
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				return;
 
 			case REG_IME:
@@ -2294,28 +2308,21 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 
 			case REG_VRAMCNTA:
-			case REG_VRAMCNTB:
-			case REG_VRAMCNTC:
-			case REG_VRAMCNTD:
-			case REG_VRAMCNTE:
-			case REG_VRAMCNTF:
-			case REG_VRAMCNTG:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, (val >> 8) & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+2, (val >> 16) & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+3, (val >> 24) & 0xFF);
 				return;
-			case REG_VRAMCNTG+1:
+			case REG_VRAMCNTE:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, (val >> 8) & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+2, (val >> 16) & 0xFF);
+				/* Update WRAMSTAT at the ARM7 side */
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, (val >> 24) & 0xFF);
 				return;
 			case REG_VRAMCNTH:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, (val >> 8) & 0xFF);
-				return;
-			case REG_VRAMCNTI:
-				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				return;
 
 			case REG_IME : 
@@ -2950,6 +2957,13 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		/* Address is an IO register */
 		switch(adr)
 		{
+		case REG_EXMEMCNT:
+			{
+				u16 oldval = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204, (val & 0x7F) | (oldval & 0xFF80));
+			}
+			return;
+
 			case REG_AUXSPICNT:
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val);
 				AUX_SPI_CNT = val;
