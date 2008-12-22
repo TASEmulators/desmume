@@ -1,3 +1,4 @@
+SUBDIRS = doc
 include $(top_srcdir)/src/desmume.mk
 
 AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTKGLEXT_CFLAGS) $(GTHREAD_CFLAGS)

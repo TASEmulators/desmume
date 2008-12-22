@@ -233,9 +233,12 @@ AC_CONFIG_FILES([Makefile
                  ${PO_MAKEFILE}
                  src/Makefile
                  src/cli/Makefile
+                 src/cli/doc/Makefile
                  src/cocoa/Makefile
                  src/gtk/Makefile
+                 src/gtk/doc/Makefile
                  src/gtk-glade/Makefile
+                 src/gtk-glade/doc/Makefile
                  src/windows/Makefile
 		 src/gdbstub/Makefile
 		 autopackage/default.apspec
