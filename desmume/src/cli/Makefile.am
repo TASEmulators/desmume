@@ -1,3 +1,4 @@
+SUBDIRS = doc
 include $(top_srcdir)/src/desmume.mk
 
 AM_CFLAGS += $(SDL_CFLAGS)
