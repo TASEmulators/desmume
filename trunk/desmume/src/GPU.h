@@ -80,7 +80,7 @@ struct _DISPCNT
 {
 /* 0*/  u8 BG_Mode:3;         // A+B:
 /* 3*/  u8 BG0_3D:1;          // A  : 0=2D,         1=3D
-/* 4*/  u8 OBJ_Tile_1D:1;     // A+B: 0=2D (32KB),  1=1D (32..256KB)
+/* 4*/  u8 OBJ_Tile_mapping:1;     // A+B: 0=2D (32KB),  1=1D (32..256KB)
 /* 5*/  u8 OBJ_BMP_2D_dim:1;  // A+B: 0=128x512,    1=256x256 pixels
 /* 6*/  u8 OBJ_BMP_mapping:1; // A+B: 0=2D (128KB), 1=1D (128..256KB)
 
