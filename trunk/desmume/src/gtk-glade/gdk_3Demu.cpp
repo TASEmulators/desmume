@@ -22,6 +22,7 @@
 #ifdef GTKGLEXT_AVAILABLE
 
 #include <gdk/gdkgl.h>
+#include <gdk/gdk.h>
 
 // Localization
 #include <libintl.h>
@@ -127,13 +128,16 @@ examine_gl_config_attrib (GdkGLConfig *glconfig)
 }
 #endif
 
-
 static bool
 begin_opengl_region_gdk_3d( void) {
+  bool failed = false;
 
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
-    return false;
-  }
+  gdk_error_trap_push();
+  failed = !gdk_gl_drawable_gl_begin(gldrawable, glcontext);
+  gdk_flush();
+  failed = failed | gdk_error_trap_pop();
+
+  if (failed) return false;
 
   return true;
 }
