@@ -1014,9 +1014,10 @@ void gfx3d_VBlankEndSignal()
 u32 gfx3d_GetGXstatus()
 {
 	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
+	gxstat &= 0x0F00A000;
 
 	// 0	 BoxTest,PositionTest,VectorTest Busy (0=Ready, 1=Busy)
-	gxstat |=  0x00;
+	if ( (BTind) || (PTind) ) 	gxstat |=  0x01;
 	// 1	 BoxTest Result  (0=All Outside View, 1=Parts or Fully Inside View)
 	gxstat |= 0x02;
 	// 2-7	 Not used
@@ -1030,7 +1031,7 @@ u32 gfx3d_GetGXstatus()
 	// 15	 Matrix Stack Overflow/Underflow Error (0=No, 1=Error/Acknowledge/Reset)
 	gxstat |= 0x00;	// w
 	// 16-24 Number of 40bit-entries in Command FIFO  (0..256)
-	gxstat |= (MMU.gfx_fifo.size & 0xFF) << 16;
+	//gxstat |= (MMU.gfx_fifo.size & 0xFF) << 16;
 	// 24	 Command FIFO Full (MSB of above)  (0=No, 1=Yes; Full)
 	gxstat |= MMU.gfx_fifo.full << 24;
 	// 25	 Command FIFO Less Than Half Full  (0=No, 1=Yes; Less than Half-full)
