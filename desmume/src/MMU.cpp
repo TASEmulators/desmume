@@ -730,12 +730,12 @@ void execdiv() {
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-	break;
+		break;
 	case 3: //gbatek says this is same as mode 1
 	case 1:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-	break;
+		break;
 	case 2:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
