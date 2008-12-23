@@ -11,7 +11,7 @@ void Desmume_Guid::newGuid()
 std::string Desmume_Guid::toString()
 {
 	char buf[37];
-	sprintf(buf,"%08X-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
+	sprintf(buf,"%08lX-%04X-%04X-%04X-%02X%02X%02X%02X%02X%02X",
 		de32lsb(data),de16lsb(data+4),de16lsb(data+6),de16lsb(data+8),data[10],data[11],data[12],data[13],data[14],data[15]);
 	return std::string(buf);
 }
