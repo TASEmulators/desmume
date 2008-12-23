@@ -968,7 +968,7 @@ static void BeginRenderPoly()
 	{
 		xglEnable(GL_STENCIL_TEST);
 		if(polyID == 0) {
-			enableDepthWrite = true;
+			enableDepthWrite = false;
 			if(stencilStateSet!=0) {
 				stencilStateSet = 0;
 				//when the polyID is zero, we are writing the shadow mask.
@@ -979,7 +979,7 @@ static void BeginRenderPoly()
 				glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 			}
 		} else {
-			enableDepthWrite = false;
+			enableDepthWrite = true;
 			if(stencilStateSet!=1) {
 				stencilStateSet = 1;
 				//when the polyid is nonzero, we are drawing the shadow poly.
@@ -1209,7 +1209,7 @@ static void GetLine (int line, u16* dst)
 
 	for(int i = 0; i < 256; i++)
 	{
-		u32 stencil = screenStencil[i];
+	//	u32 stencil = screenStencil[i];
 
 		//you would use this if you wanted to use the stencil buffer to make decisions here
 		if(!stencil) continue;
