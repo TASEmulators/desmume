@@ -1209,7 +1209,7 @@ static void GetLine (int line, u16* dst)
 
 	for(int i = 0; i < 256; i++)
 	{
-	//	u32 stencil = screenStencil[i];
+		u32 stencil = screenStencil[i];
 
 		//you would use this if you wanted to use the stencil buffer to make decisions here
 		if(!stencil) continue;
