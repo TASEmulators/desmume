@@ -2047,7 +2047,7 @@ void GPU_set_DISPCAPCNT(u32 val)
 	}
 
 	/*INFO("Capture 0x%X:\n EVA=%i, EVB=%i, wBlock=%i, wOffset=%i, capX=%i, capY=%i\n rBlock=%i, rOffset=%i, srcCap=%i, dst=0x%X, src=0x%X\n srcA=%i, srcB=%i\n\n",
-		val, gpu->dispCapCnt.EVA, gpu->dispCapCnt.EVB, gpu->dispCapCnt.writeBlock, gpu->dispCapCnt.writeOffset,
+			val, gpu->dispCapCnt.EVA, gpu->dispCapCnt.EVB, gpu->dispCapCnt.writeBlock, gpu->dispCapCnt.writeOffset,
 			gpu->dispCapCnt.capx, gpu->dispCapCnt.capy, gpu->dispCapCnt.readBlock, gpu->dispCapCnt.readOffset, 
 			gpu->dispCapCnt.capSrc, gpu->dispCapCnt.dst - ARM9Mem.ARM9_LCD, gpu->dispCapCnt.src - ARM9Mem.ARM9_LCD,
 			gpu->dispCapCnt.srcA, gpu->dispCapCnt.srcB);*/
@@ -2232,10 +2232,9 @@ static INLINE void GPU_ligne_DispCapture(u16 l)
 								{
 									//INFO("Capture 3D\n");
 									u16 cap3DLine[512];
-									memset(cap3DLine, 0, 512);
-									//gpu3D->NDS_3D_GetLine (l, (u16*)cap3DLine);
+									gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
-										T2WriteWord(cap_dst, i << 1, T2ReadWord((u8 *)cap3DLine, i << 1) | (1<<15));
+										T2WriteWord(cap_dst, i << 1, (u16)cap3DLine[i]);
 								}
 							break;
 						}
@@ -2265,6 +2264,53 @@ static INLINE void GPU_ligne_DispCapture(u16 l)
 				default:	// Capture source is SourceA+B blended
 					{
 						//INFO("Capture source is SourceA+B blended\n");
+						u16 *srcA = NULL;
+						u16 *srcB = NULL;
+						u16 cap3DLine[512];
+
+						if (gpu->dispCapCnt.srcA == 0)			// Capture screen (BG + OBJ + 3D)
+							srcA = (u16 *)(GPU_screen) + (MainScreen.offset + l) * 512;
+						else
+						{
+							gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
+							srcA = (u16 *)cap3DLine; // 3D screen
+						}
+
+						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
+							srcB = (u16 *)(gpu->dispCapCnt.src) + (l * 512);
+						else
+							srcB = NULL; // DISP FIFOS
+
+						if ((srcA) && (srcB))
+						{
+							u16 a, r, g, b;
+							for(u16 i = 0; i < gpu->dispCapCnt.capx; i++) 
+							{
+								a = r = g = b =0;
+
+								if (gpu->dispCapCnt.EVA && (srcA[i] & 0x8000))
+								{
+									a = 0x8000;
+									r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
+									g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
+									b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
+								}
+
+								if (gpu->dispCapCnt.EVB && (srcB[i] & 0x8000))
+								{
+									a = 0x8000;
+									r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
+									g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
+									b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
+								}
+
+								r >>= 4;
+								g >>= 4;
+								b >>= 4;
+
+								T2WriteWord(cap_dst, i << 1, (u16)(a | (b << 10) | (g << 5) | r));
+							}
+						}
 					}
 				break;
 			}
