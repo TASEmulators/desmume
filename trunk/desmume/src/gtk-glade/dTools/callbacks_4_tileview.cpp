@@ -382,7 +382,7 @@ void other_screen (GtkWidget * widget, int screen) {
 		}
 
 
-        if(dispCnt->OBJ_Tile_1D)
+        if(dispCnt->OBJ_Tile_mapping)
 
 		if (spriteInfo->Depth) {
 			//256 colors
@@ -404,8 +404,8 @@ void other_screen (GtkWidget * widget, int screen) {
 	}
 
 	int boundary = 32;
-	if (dispCnt->OBJ_Tile_1D)
-		boundary <<= dispCnt->OBJ_Tile_1D_Bound;
+	if (dispCnt->OBJ_Tile_mapping)
+		boundary <<= dispCnt->OBJ_Tile_mapping_Bound;
 
 	int bmpboundary = 128;
 	bmpboundary <<= (dispCnt->OBJ_BMP_mapping & dispCnt->OBJ_BMP_1D_Bound);
