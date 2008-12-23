@@ -378,7 +378,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
       free(noext);
       return -1;
    }
-
+   
    i = reader->Read(file, data, size);
    reader->DeInit(file);
    MMU_unsetRom();
@@ -759,7 +759,7 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
   /*
    * Create the firmware header
    */
-  memset( MMU.fw.data, 0, 0x200);
+  memset( MMU.fw.data, 0, 0x40000);
 
   /* firmware identifier */
   MMU.fw.data[0x8] = 'M';
