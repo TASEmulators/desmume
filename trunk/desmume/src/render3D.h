@@ -43,6 +43,9 @@ typedef struct Render3DInterface
 
 	//Retrieves a line of color buffer data
 	void (CALL_CONVENTION*	NDS_3D_GetLine)					(int line, unsigned short* dst);
+	
+	//Retrieves a line of color buffer data for capture
+	void (CALL_CONVENTION*	NDS_3D_GetLineCaptured)			(int line, unsigned short* dst);
 
 
 } GPU3DInterface;

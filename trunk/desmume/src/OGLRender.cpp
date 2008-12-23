@@ -1062,7 +1062,6 @@ static void Control()
 	}
 }
 
-
 static void Render()
 {
 	if(!BEGINGL()) return;
@@ -1183,6 +1182,36 @@ static void GL_ReadFramebuffer()
 	//}
 }
 
+static void GetLineCaptured(int line, u16* dst)
+{
+	if(needRefreshFramebuffer) {
+		needRefreshFramebuffer = false;
+		GL_ReadFramebuffer();
+	}
+
+	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
+	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
+
+	for(int i = 0; i < 256; i++)
+	{
+		u32 stencil = screenStencil[i];
+
+		if(!stencil) 
+		{
+			dst[i] = 0x0000;
+			continue;
+		}
+
+		int t=i<<2;
+		u32 r = screen3D[t+0];
+		u32 g = screen3D[t+1];
+		u32 b = screen3D[t+2];
+
+		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3) | 0x8000;
+	}
+}
+
+
 //NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
 //zeromus post-mod3: fix even better
 static void GetLine (int line, u16* dst)
@@ -1252,7 +1281,8 @@ GPU3DInterface gpu3Dgl = {
 	Close,
 	Render,
 	VramReconfigureSignal,
-	GetLine
+	GetLine,
+	GetLineCaptured
 };
 
 
