@@ -138,8 +138,8 @@ void MovieRecord::dump(MovieData* md, std::ostream* os, int index)
 MovieData::MovieData()
 	: version(MOVIE_VERSION)
 	, emuVersion(DESMUME_VERSION_NUMERIC)
-	, binaryFlag(false)
 	, rerecordCount(1)
+	, binaryFlag(false)
 	//, greenZoneCount(0)
 {
 	memset(&romChecksum,0,sizeof(MD5DATA));
@@ -294,6 +294,10 @@ static bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopA
 			state = VALUE;
 			if(isnewline) goto commit;
 			value += c;
+			break;
+		case COMMENT:
+		default:
+			break;
 		}
 		goto done;
 
@@ -341,7 +345,7 @@ static void StopRecording()
 
 
 
-void FCEUI_StopMovie()
+static void FCEUI_StopMovie()
 {
 	//if(suppressMovieStop)
 	//	return;
@@ -356,7 +360,7 @@ void FCEUI_StopMovie()
 
 
 //begin playing an existing movie
-void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
+static void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
 {
 	//if(!tasedit && !FCEU_IsValidUI(FCEUI_PLAYMOVIE))
 	//	return;
@@ -420,7 +424,7 @@ static void openRecordingMovie(const char* fname)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-void FCEUI_SaveMovie(const char *fname, std::wstring author)
+static void FCEUI_SaveMovie(const char *fname, std::wstring author)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -459,7 +463,7 @@ void FCEUI_SaveMovie(const char *fname, std::wstring author)
 
 //the main interaction point between the emulator and the movie system.
 //either dumps the current joystick state or loads one state from the movie
-void FCEUMOV_AddInputState()
+static void FCEUMOV_AddInputState()
 {
 	//todo - for tasedit, either dump or load depending on whether input recording is enabled
 	//or something like that
@@ -530,7 +534,7 @@ void FCEUMOV_AddInputState()
 
 
 //TODO 
-void FCEUMOV_AddCommand(int cmd)
+static void FCEUMOV_AddCommand(int cmd)
 {
 	// do nothing if not recording a movie
 	if(movieMode != MOVIEMODE_RECORD)
@@ -543,7 +547,7 @@ void FCEUMOV_AddCommand(int cmd)
 }
 
 
-int FCEUMOV_WriteState(std::ostream* os)
+static int FCEUMOV_WriteState(std::ostream* os)
 {
 	//we are supposed to dump the movie data into the savestate
 	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
@@ -556,7 +560,7 @@ int FCEUMOV_WriteState(std::ostream* os)
 
 static bool load_successful;
 
-bool FCEUMOV_ReadState(std::istream* is, uint32 size)
+static bool FCEUMOV_ReadState(std::istream* is, uint32 size)
 {
 	load_successful = false;
 
@@ -662,12 +666,12 @@ bool FCEUMOV_ReadState(std::istream* is, uint32 size)
 	return true;
 }
 
-void FCEUMOV_PreLoad(void)
+static void FCEUMOV_PreLoad(void)
 {
 	load_successful=0;
 }
 
-bool FCEUMOV_PostLoad(void)
+static bool FCEUMOV_PostLoad(void)
 {
 	if(movieMode == MOVIEMODE_INACTIVE)
 		return true;
