@@ -22,6 +22,7 @@
 #ifdef GTKGLEXT_AVAILABLE
 
 #include <gdk/gdkgl.h>
+#include <gdk/gdk.h>
 
 #include "../types.h"
 #include "../render3D.h"
@@ -126,10 +127,14 @@ examine_gl_config_attrib (GdkGLConfig *glconfig)
 
 static bool
 _oglrender_beginOpenGL( void) {
+  int failed = 0;
 
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
-    return 0;
-  }
+  gdk_error_trap_push();
+  failed = !gdk_gl_drawable_gl_begin(gldrawable, glcontext);
+  gdk_flush();
+  failed = failed | gdk_error_trap_pop();
+
+  if (failed) return 0;
 
   return 1;
 }
