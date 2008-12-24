@@ -140,13 +140,6 @@
 #define IDC_ARM7_T                      507
 #define IDC_DATA                        508
 #define IDD_IO_REG                      601
-#define IDC_INTHAND                     602
-#define IDC_IE                          603
-#define IDC_IME                         604
-#define IDC_DISPCNT                     605
-#define IDC_DISPSTAT                    606
-#define IDC_IPCSYNC                     607
-#define IDC_IPCFIFO                     608
 #define IDD_PAL                         703
 #define IDD_TILE                        704
 #define IDC_PAL_SELECT                  705
@@ -210,6 +203,22 @@
 #define IDSAVE                          1017
 #define IDC_AUTOUPDATE_ASM              1018
 #define IDC_VISIBLE                     1019
+#define IDC_IPCFIFO9                    1020
+#define IDC_IPCSYNC9                    1021
+#define IDC_IF9                         1022
+#define IDC_INTHAND9                    1023
+#define IDC_IE9                         1024
+#define IDC_DISPCNTA9                   1025
+#define IDC_DISPSTATA9                  1026
+#define IDC_DISPCNTB9                   1027
+#define IDC_DISPSTATB9                  1028
+#define IDC_IME9                        1029
+#define IDC_GXSTAT9                     1030
+#define IDC_IE7                         1032
+#define IDC_IF7                         1033
+#define IDC_IME7                        1034
+#define IDC_IPCSYNC7                    1035
+#define IDC_IPCFIFO7                    1036
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -359,7 +368,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40038
-#define _APS_NEXT_CONTROL_VALUE         1020
+#define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif
