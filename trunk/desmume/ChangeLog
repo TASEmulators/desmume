@@ -28,6 +28,7 @@
  - Add RTC implementations (not fully) [CrazyMax]
  - Rewrite VRAM mapping control and render (old save states broken) [CrazyMax]
  - Add a GUI hud system; start adding some HUD elements
+ - Add functions for a lid open/close. Holding key (default "Backspace" in Windows port) while game is freeze/non freeze. [CrazyMax]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]

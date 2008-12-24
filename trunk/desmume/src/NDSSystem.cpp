@@ -33,9 +33,14 @@
 #include "ROMReader.h"
 #include "gfx3d.h"
 
+#include "debug.h"
+
 #ifdef _WIN32
 #include "./windows/disView.h"
 #endif
+
+static BOOL LidClosed = FALSE;
+static u8 LidKeyCount = 0;
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -488,6 +493,9 @@ void NDS_Reset( void)
    MMU_write16(0, 0x04000130, 0x3FF);
    MMU_write16(1, 0x04000130, 0x3FF);
    MMU_write8(1, 0x04000136, 0x43);
+
+    LidClosed = FALSE;
+	LidKeyCount = 0;
 
    /*
     * Setup a copy of the firmware user settings in memory.
@@ -1590,7 +1598,7 @@ u32 NDS_exec(s32 nb)
 			}
 		}
 		
-		if(MMU.reg_IE[0]&(1<<21))
+		if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21))
 			NDS_makeARM9Int(21);		// GX geometry
 
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
@@ -1641,12 +1649,13 @@ void NDS_setPadFromMovie(u16 pad)
 		FIX(pad,9),
 		FIX(pad,10),
 		FIX(pad,11),
-		FIX(pad,12)
+		FIX(pad,12),
+		FIX(pad,13)
 		);
 	#undef FIX
 }
 
-void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G)
+void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F)
 {
 	
 	//this macro is the opposite of what you would expect
@@ -1665,6 +1674,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	int w = FIX(W);
 	int e = FIX(E);
 	int g = FIX(G);
+	int f = FIX(F);
 	
 	u16	pad	= (0 |
 					((a) >> 7) |
@@ -1681,17 +1691,31 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
-	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x00F0) |
+	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070) |
 						((x) >> 7) |
 						((y) >> 6) |
 						((g) >> 4) |
 						0x0034;
+
+	// todo: mute sound when Lided close
+	if (!f) 
+	{
+		LidKeyCount++;
+		if (LidKeyCount > 50)
+		{
+			LidKeyCount = 0;
+			LidClosed = (!LidClosed) & 0x01;
+			if (!LidClosed) 
+				NDS_makeARM7Int(22);
+		}
+	} else LidKeyCount = 0;
+
+	if (LidClosed) padExt |= 1 << 7;
 	
 	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
-
 	
 	//put into the format we want for the movie system
-	//RLDUTSBAYXWEG
+	//RLDUTSBAYXWEGF
 	#undef FIX
 	#define FIX(b) (b?1:0)
 
@@ -1708,6 +1732,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	w = FIX(W);
 	e = FIX(E);
 	g = FIX(G);
+	f = FIX(F);
 	
 
 	nds.pad =
@@ -1723,7 +1748,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		(FIX(x)<<9)|
 		(FIX(w)<<10)|
 		(FIX(e)<<11)|
-		(FIX(g)<<12);
+		(FIX(g)<<12)|
+		(FIX(f)<<13);
 	
 	// TODO: low power IRQ
 }

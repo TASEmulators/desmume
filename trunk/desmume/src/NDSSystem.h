@@ -189,7 +189,7 @@ NDS_header * NDS_getROMHeader(void);
  
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
-void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G);
+void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F);
 void NDS_setPadFromMovie(u16 pad);
 
 int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize,
