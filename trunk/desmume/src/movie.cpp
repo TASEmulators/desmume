@@ -473,7 +473,7 @@ static void FCEUMOV_AddInputState()
 	if(movieMode == MOVIEMODE_PLAY)
 	{
 		//stop when we run out of frames
-		if(currFrameCounter == currMovieData.records.size())
+		if(currFrameCounter == (int)currMovieData.records.size())
 		{
 			StopPlayback();
 		}
@@ -490,7 +490,7 @@ static void FCEUMOV_AddInputState()
 		}
 
 		//if we are on the last frame, then pause the emulator if the player requested it
-		if(currFrameCounter == currMovieData.records.size()-1)
+		if(currFrameCounter == (int)currMovieData.records.size()-1)
 		{
 			/*if(FCEUD_PauseAfterPlayback())
 			{
