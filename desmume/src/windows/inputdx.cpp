@@ -188,6 +188,8 @@ const	char	*DIJoyNames[0x04] = { "JUp", "JDown", "JLeft", "JRight" };
 #define KEY_X 10
 #define KEY_Y 11
 #define KEY_DEBUG 12
+#define KEY_FOLD 13
+#define KEY_POWER 14
 
 
 char	*keyPadNames [MAXKEYPAD] = { "A", "B", "SELECT", "START", 
@@ -415,8 +417,9 @@ void NDS_inputPost(BOOL paused, LPSTR buf)
 	bool W = (buf[keyPad[KEY_L]] & 0x80)!=0;
 	bool E = (buf[keyPad[KEY_R]] & 0x80)!=0;
 	bool G = (buf[keyPad[KEY_DEBUG]] & 0x80)!=0;
+	bool F = (buf[keyPad[KEY_FOLD]] & 0x80)!=0;
 
-	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G);
+	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
 }
 
 // TODO
