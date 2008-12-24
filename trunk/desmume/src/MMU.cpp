@@ -22,6 +22,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+//#define NEW_IRQ 1
+
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -92,46 +94,55 @@ u16 partie = 1;
 #ifdef _MMU_DEBUG
 
 #include <stdarg.h>
-void mmu_log_debug(u32 adr, u8 proc, const char *fmt, ...)
+void mmu_log_debug_ARM9(u32 adr, const char *fmt, ...)
 {
-	if ((adr>=0x04000000 && adr<=0x04000800)
-		||(adr>=0x04100000 && adr<=0x04100010)
-		||(adr>=0x04800000 && adr<=0x04808000))
-	{
-		if (proc==ARMCPU_ARM9)
-		{
-			if (adr >= 0x4000000 && adr <= 0x400006C) return;		// Display Engine A
-			if (adr >= 0x40000B0 && adr <= 0x4000132) return;		// DMA, Timers and Keypad
-			//if (adr >= 0x4000180 && adr <= 0x40001BA) return;		// IPC/ROM
-			//if (adr >= 0x4000204 && adr <= 0x4000249) return;		// Memory & IRQ control
-			///if (adr >= 0x4000280 && adr <= 0x4000304) return;		// Maths
-			//if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
-			//if (adr >= 0x4100000 && adr <= 0x4100012) return;		// IPC/ROM
-		}
-		else
-		{
-			//if (adr >= 0x4000000 && adr <= 0x4000003) return;		// ????
-			if (adr >= 0x4000004 && adr <= 0x40001C2) return;		// ARM7 I/O Map
-			//if (adr >= 0x4000204 && adr <= 0x4000308) return;		// Memory and IRQ Control
-			//if (adr >= 0x4000400 && adr <= 0x400051C) return;		// Sound Registers
-			//if (adr >= 0x4100000 && adr <= 0x4100010) return;		// IPC/ROM
-			//if (adr >= 0x4800000 && adr <= 0x4808000) return;		// WLAN Registers
-		}
+	if (adr < 0x4000000) return;
+	if (adr > 0x4100014) return;
 
-		va_list list;
-		char msg[512];
+	if (adr >= 0x4000000 && adr <= 0x400006E) return;		// Display Engine A
+	if (adr >= 0x40000B0 && adr <= 0x4000134) return;		// DMA, Timers and Keypad
+	if (adr >= 0x4000180 && adr <= 0x40001BC) return;		// IPC/ROM
+	if (adr >= 0x4000204 && adr <= 0x400024A) return;		// Memory & IRQ control
+	if (adr >= 0x4000280 && adr <= 0x4000306) return;		// Maths
+	if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
+	if (adr >= 0x4001000 && adr <= 0x400106E) return;		// Display Engine B
+	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
 
-		memset(msg,0,512);
+	va_list list;
+	char msg[512];
 
-		va_start(list,fmt);
-			_vsnprintf(msg,511,fmt,list);
-		va_end(list);
+	memset(msg,0,512);
 
-		INFO("MMU ARM%s 0x%08X: %s\n",proc==ARMCPU_ARM9?"9":"7",adr, msg);
-	}
+	va_start(list,fmt);
+		_vsnprintf(msg,511,fmt,list);
+	va_end(list);
+
+	INFO("MMU ARM9 0x%08X: %s\n", adr, msg);
 }
-#else
-#define	mmu_log_debug(...)
+
+void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
+{
+	if (adr < 0x4000004) return;
+	if (adr > 0x4808FFF) return;
+
+	if (adr >= 0x4000004 && adr <= 0x40001C4) return;		// ARM7 I/O Map
+	if (adr >= 0x4000204 && adr <= 0x400030C) return;		// Memory and IRQ Control
+	if (adr >= 0x4000400 && adr <= 0x400051E) return;		// Sound Registers
+	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
+	//if (adr >= 0x4800000 && adr <= 0x4808FFF) return;		// WLAN Registers
+
+	va_list list;
+	char msg[512];
+
+	memset(msg,0,512);
+
+	va_start(list,fmt);
+		_vsnprintf(msg,511,fmt,list);
+	va_end(list);
+
+	INFO("MMU ARM7 0x%08X: %s\n", adr, msg);
+
+}
 #endif
 
 /*
@@ -730,12 +741,12 @@ void execdiv() {
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-		break;
+	break;
 	case 3: //gbatek says this is same as mode 1
 	case 1:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-		break;
+	break;
 	case 2:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
@@ -1529,11 +1540,6 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_VRAMCNTI:
 					MMU_VRAMmapControl(adr-REG_VRAMCNTA, val);
 				break;
-			case REG_DISPA_DISPCAPCNT :
-					//INFO("MMU write8: REG_DISPA_DISPCAPCNT 0x%X\n", val);
-					GPU_set_DISPCAPCNT(val);
-					T1WriteByte(ARM9Mem.ARM9_REG, 0x64, val);
-				break;
 		#ifdef LOG_CARD
 			case 0x040001A0 : /* TODO (clear): ??? */
 			case 0x040001A1 :
@@ -1549,6 +1555,9 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 						LOG("%08X : %02X\r\n", adr, val);
 		#endif
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM9(adr, "(write08) %0x%X", val);
+#endif
 		MMU.MMU_MEM[ARMCPU_ARM9][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
 		return;
 	}
@@ -2125,6 +2134,9 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
                         //case REG_AUXSPICNT : execute = FALSE;
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM9(adr, "(write16) %0x%X", val);
+#endif
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val); 
 		return;
 	}
@@ -2639,6 +2651,10 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			}
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM9(adr, "(write32) %0x%X", val);
+#endif
+
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 		return;
 	}
@@ -2664,6 +2680,10 @@ static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
+#endif
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
+			MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 #endif
 	
 	adr = MMU_LCDmap(adr);
@@ -2723,6 +2743,10 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_POSTFLG :
 				return 1;
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM9(adr, "(read16) %0x%X", 
+			T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
+#endif
 		return  T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
 	}
 
@@ -2877,6 +2901,10 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 				return val;
 			}
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM9(adr, "(read32) %0x%X", 
+			T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
+#endif
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 	}
 	
@@ -2917,6 +2945,9 @@ static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 
 	if ( adr == REG_RTC ) rtcWrite(val);
 	
+#ifdef _MMU_DEBUG
+	mmu_log_debug_ARM7(adr, "(write08) %0x%X", val);
+#endif
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 }
@@ -3328,6 +3359,9 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
                         //case REG_AUXSPICNT : execute = FALSE;
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM7(adr, "(write16) %0x%X", val);
+#endif
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
 		return;
 	}
@@ -3618,6 +3652,9 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				}
 				return;
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM7(adr, "(write32) %0x%X", val);
+#endif
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 		return;
 	}
@@ -3645,6 +3682,11 @@ static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		return (unsigned char)cflash_read(adr);
 
 	if (adr == REG_RTC) return rtcRead();
+
+#ifdef _MMU_DEBUG
+	mmu_log_debug_ARM7(adr, "(read08) %0x%X", 
+		MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
+#endif
 
     return MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]];
 }
@@ -3690,9 +3732,13 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_POSTFLG :
 				return 1;
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM7(adr, "(read16) %0x%X", 
+			T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+#endif
 		return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 	}
-	
+
 	/* Returns data from memory */
 	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 }
@@ -3772,6 +3818,10 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 					return val;
 			}
 		}
+#ifdef _MMU_DEBUG
+		mmu_log_debug_ARM7(adr, "(read32) %0x%X", 
+			T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+#endif
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 	}
 	
