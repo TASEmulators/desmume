@@ -53,10 +53,10 @@ static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
 static INLINE u64 T1ReadQuad(u8 * mem, u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
-   return (mem[addr + 7] << 56 | mem[addr + 6] << 48 |
-	   mem[addr + 5] << 40 | mem[addr + 4] << 32 |
-           mem[addr + 3] << 24 | mem[addr + 2] << 16 |
-           mem[addr + 1] << 8 | mem[addr]);
+   return (u64(mem[addr + 7]) << 56 | u64(mem[addr + 6]) << 48 |
+           u64(mem[addr + 5]) << 40 | u64(mem[addr + 4]) << 32 |
+           u64(mem[addr + 3]) << 24 | u64(mem[addr + 2]) << 16 |
+           u64(mem[addr + 1]) << 8  | u64(mem[addr    ]));
 #else
    return *((u64 *) (mem + addr));
 #endif
