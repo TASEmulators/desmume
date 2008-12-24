@@ -188,7 +188,7 @@ SFORMAT SF_MMU[]={
 	{ "MDCY", 4, 8,       MMU.DMACycle},
 	{ "MDCR", 4, 8,       MMU.DMACrt},
 	{ "MDMA", 4, 8,       MMU.DMAing},
-	
+
 	//begin memory chips
 	//we are skipping the firmware, because we really don't want to save the firmware to the savestate
 	//but, we will need to think about the philosophy of this.
@@ -512,7 +512,7 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 	while(is->tellg()<temp+size)
 	{
 		u32 sz, count;
-		
+
 		char toa[4];
 		is->read(toa,4);
 		if(is->fail())
@@ -532,8 +532,7 @@ static bool ReadStateChunk(std::istream* is, SFORMAT *sf, int size)
 					is->read((char *)tmp->v + i*sz,sz);
 
 					#ifndef LOCAL_LE
-						if(rlsb)
-							FlipByteOrder((u8*)tmp->v + i*sz,sz);
+                        FlipByteOrder((u8*)tmp->v + i*sz,sz);
 					#endif
 				}
 			}
@@ -567,8 +566,8 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 		int count = sf->count;
 		int size = sf->size;
 
-		acc+=12;			//Description + size + count
-
+        //add size of current node to the accumulator
+		acc += sizeof(sf->desc) + sizeof(sf->size) + sizeof(sf->count);
 		acc += count * size;
 
 		if(os)			//Are we writing or calculating the size of this block?
@@ -583,16 +582,15 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 			} else {
 				for(int i=0;i<count;i++) {
 
-					#ifndef LOCAL_LE
-					FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
+					#ifndef LOCAL_LE vv
+						FlipByteOrder((u8*)sf->v + i*size, size);
 					#endif
 
 					os->write((char*)sf->v + i*size,size);
 
 					//Now restore the original byte order.
 					#ifndef LOCAL_LE
-					if(rlsb)
-						FlipByteOrder((u8*)sf->v,sf->s&(~SS_FLAGS));
+						FlipByteOrder((u8*)sf->v + i*size, size);
 					#endif
 				}
 			}
@@ -806,7 +804,7 @@ static bool savestate_load(std::istream* is)
 	//GO!! READ THE SAVESTATE
 	//THERE IS NO GOING BACK NOW
 	//reset the emulator first to clean out the host's state
-	
+
 	//while the series of resets below should work,
 	//we are testing the robustness of the savestate system with this full reset.
 	//the full reset wipes more things, so we can make sure that they are being restored correctly
