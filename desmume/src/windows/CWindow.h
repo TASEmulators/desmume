@@ -22,7 +22,7 @@
 #ifndef CWINDOW_H
 #define CWINDOW_H
 
-#include <windows.h>
+#include "../common.h"
 
 class WINCLASS
 {

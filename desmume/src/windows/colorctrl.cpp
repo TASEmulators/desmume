@@ -1,4 +1,4 @@
-#include <windows.h>
+#include "../common.h"
 #include <stdio.h>
 #include "colorctrl.h"
 

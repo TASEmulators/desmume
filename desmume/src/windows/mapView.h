@@ -22,7 +22,7 @@
 #ifndef MAPVIEW_H
 #define MAPVIEW_H
 
-#include <windows.h>
+#include "../common.h"
 
 extern BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 

@@ -20,7 +20,7 @@
 #ifndef LIGHTVIEW_H
 #define LIGHTVIEW_H
 
-#include <windows.h>
+#include "../common.h"
 
 extern BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
  

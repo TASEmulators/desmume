@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <windows.h>
+#include "../common.h"
 #include <mmsystem.h>
 #include <COMMDLG.H>
 #include <string.h>
@@ -31,7 +31,6 @@
 #include "FirmConfig.h"
 
 #include "../debug.h"
-#include "../common.h"
 #include "../NDSSystem.h"
 
 static char nickname_buffer[11];

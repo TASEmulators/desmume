@@ -1,6 +1,7 @@
 //THIS SPEED THROTTLE IS TAKEN FROM FCEUX.
 //Copyright (C) 2002 Xodnizel
 
+#include "../common.h"
 #include "../types.h"
 #include "../debug.h"
 #include "../console.h"

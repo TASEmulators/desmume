@@ -19,7 +19,7 @@
 */
 
 
-#include <windows.h>
+#include "../common.h"
 
 #include "AboutBox.h"
 #include "resource.h"
