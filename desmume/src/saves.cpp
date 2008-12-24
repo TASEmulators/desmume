@@ -582,7 +582,7 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 			} else {
 				for(int i=0;i<count;i++) {
 
-					#ifndef LOCAL_LE vv
+					#ifndef LOCAL_LE
 						FlipByteOrder((u8*)sf->v + i*size, size);
 					#endif
 

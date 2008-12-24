@@ -89,7 +89,7 @@ void GFX_FIFOadd(GFX_FIFO * fifo)
 	}
 
 	fifo->size++;
-	if (fifo->size > 128)
+	if (fifo->size > 127)
 		fifo->half = FALSE;
 
 	if (fifo->size == 256)

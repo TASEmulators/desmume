@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "resource.h"
 #include "../MMU.h"
+#include "../armcpu.h"
 
 typedef struct
 {
@@ -41,27 +42,55 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         
         hdc = BeginPaint(hwnd, &ps);
         
-        sprintf(text, "%08X", (int)((u32 *)ARM9Mem.ARM9_DTCM)[0x3FFC>>2]);
-        SetWindowText(GetDlgItem(hwnd, IDC_INTHAND), text);
+		// ARM9 registers
+        sprintf(text, "0x%08X", (int)((u32 *)ARM9Mem.ARM9_DTCM)[0x3FFC>>2]);
+        SetWindowText(GetDlgItem(hwnd, IDC_INTHAND9), text);
 
-        sprintf(text, "%08X", (int)MMU.reg_IF[0]);
-        SetWindowText(GetDlgItem(hwnd, IDC_IE), text);
+		sprintf(text, "0x%08X", (int)MMU.reg_IE[ARMCPU_ARM9]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IE9), text);
 
-        sprintf(text, "%08X", (int)MMU.reg_IME[0]);
-        SetWindowText(GetDlgItem(hwnd, IDC_IME), text);
+        sprintf(text, "0x%08X", (int)MMU.reg_IF[ARMCPU_ARM9]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IF9), text);
 
-        sprintf(text, "%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]);
-        SetWindowText(GetDlgItem(hwnd, IDC_DISPCNT), text);
+        sprintf(text, "0x%08X", (int)MMU.reg_IME[ARMCPU_ARM9]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IME9), text);
 
-        sprintf(text, "%08X",  ((u16 *)MMU.ARM7_REG)[0x0004>>1]);
-        SetWindowText(GetDlgItem(hwnd, IDC_DISPSTAT), text);
+        sprintf(text, "0x%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x0000>>1]);
+        SetWindowText(GetDlgItem(hwnd, IDC_DISPCNTA9), text);
 
-        sprintf(text, "%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x180>>2]);
-        SetWindowText(GetDlgItem(hwnd, IDC_IPCSYNC), text);
+        sprintf(text, "0x%08X",  ((u16 *)ARM9Mem.ARM9_REG)[0x0004>>1]);
+        SetWindowText(GetDlgItem(hwnd, IDC_DISPSTATA9), text);
 
-        sprintf(text, "%08X", (int)((u32 *)MMU.ARM7_REG)[0x180>>2]);
-        SetWindowText(GetDlgItem(hwnd, IDC_IPCFIFO), text);
+		sprintf(text, "0x%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x1000>>1]);
+        SetWindowText(GetDlgItem(hwnd, IDC_DISPCNTB9), text);
 
+        sprintf(text, "0x%08X",  ((u16 *)ARM9Mem.ARM9_REG)[0x1004>>1]);
+        SetWindowText(GetDlgItem(hwnd, IDC_DISPSTATB9), text);
+
+        sprintf(text, "0x%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x180>>2]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IPCSYNC9), text);
+
+        sprintf(text, "0x%08X", (int)((u32 *)ARM9Mem.ARM9_REG)[0x184>>2]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IPCFIFO9), text);
+
+		sprintf(text, "0x%08X", (int)((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2]);
+        SetWindowText(GetDlgItem(hwnd, IDC_GXSTAT9), text);
+
+		// ARM7 registers
+		sprintf(text, "0x%08X", (int)MMU.reg_IE[ARMCPU_ARM7]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IE7), text);
+
+        sprintf(text, "0x%08X", (int)MMU.reg_IF[ARMCPU_ARM7]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IF7), text);
+
+        sprintf(text, "0x%08X", (int)MMU.reg_IME[ARMCPU_ARM7]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IME7), text);
+
+        sprintf(text, "0x%08X", (int)((u32 *)MMU.ARM7_REG)[0x180>>2]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IPCSYNC7), text);
+
+        sprintf(text, "0x%08X", (int)((u32 *)MMU.ARM7_REG)[0x184>>2]);
+        SetWindowText(GetDlgItem(hwnd, IDC_IPCFIFO7), text);
         EndPaint(hwnd, &ps);
 
         return 0;
