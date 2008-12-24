@@ -22,7 +22,7 @@
 #ifndef MEM_VIEW_H
 #define MEM_VIEW_H
 
-#include <windows.h>
+#include "../common.h"
 
 extern BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewMem_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

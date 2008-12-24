@@ -28,6 +28,7 @@
 #include "types.h"
 	
 #ifdef WIN32
+#define _WINSOCKAPI_
 #include <windows.h>
 
 #define CLASSNAME "DeSmuME"

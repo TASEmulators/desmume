@@ -22,7 +22,7 @@
 #ifndef DISVIEW_H
 #define DISVIEW_H
 
-#include <windows.h>
+#include "../common.h"
 
 extern BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern LRESULT CALLBACK ViewDisasm_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

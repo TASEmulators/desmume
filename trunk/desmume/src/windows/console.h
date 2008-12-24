@@ -22,7 +22,7 @@
 */
 #ifndef _CONSOLE_H_
 #define _CONSOLE_H_
-#include <windows.h>
+#include "../common.h"
 #include <stdio.h>
 #include "debug.h"
 

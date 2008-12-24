@@ -25,7 +25,7 @@
 #define _INPUT_DX_
 
 #define DIRECTINPUT_VERSION 0x0800
-#include <windows.h>
+#include "../common.h"
 #include "..\types.h"
 #include "directx\dinput.h"
 

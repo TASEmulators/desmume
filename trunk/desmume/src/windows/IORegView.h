@@ -21,7 +21,7 @@
 
 #ifndef IO_REG_H
 #define IO_REG_H
-#include <windows.h>
+#include "../common.h"
 
 extern BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
