@@ -15,7 +15,6 @@ desmume_SOURCES = \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
 	tools/ioregsView.cpp tools/ioregsView.h \
-	globals.h \
 	../sndsdl.cpp \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	gdk_3Demu.cpp gdk_3Demu.h \

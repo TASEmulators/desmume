@@ -1,6 +1,7 @@
 include $(top_srcdir)/src/desmume.mk
 
-EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp
+EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp \
+	matrix_sse2-x64.asm matrix_sse2-x86.asm
 if HAVE_GDB_STUB
 SUBDIRS = . gdbstub $(UI_DIR)
 else
