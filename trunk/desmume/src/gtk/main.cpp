@@ -18,24 +18,36 @@
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+
+#ifndef GTK_UI
+#define GTK_UI
+#endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <gtk/gtk.h>
+#include <SDL.h>
+
+#include "types.h"
+#include "armcpu.h"
+#include "NDSSystem.h"
+#include "sndsdl.h"
+#include "ctrlssdl.h"
+#include "MMU.h"
+#include "render3D.h"
+#include "desmume.h"
+#include "debug.h"
+
+#ifdef GDB_STUB
+#include "gdbstub.h"
+#endif
+
 #ifdef GTKGLEXT_AVAILABLE
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <gtk/gtkgl.h>
-#endif
-
-#include <gtk/gtk.h>
-
-#include "globals.h"
-#include "desmume.h"
-#include "../debug.h"
-
-#ifdef GDB_STUB
-#include "../gdbstub.h"
-#endif
-
-#ifdef GTKGLEXT_AVAILABLE
-#include "../OGLRender.h"
+#include "OGLRender.h"
 #include "gdk_3Demu.h"
 #endif
 
