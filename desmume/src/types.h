@@ -157,12 +157,6 @@ typedef int desmume_BOOL;
 #define FALSE 0
 #endif
 
-#ifdef __GNUC__
-#define PACKED __attribute__((packed))
-#else
-#define PACKED
-#endif
-
 #ifdef __BIG_ENDIAN__
 #define WORDS_BIGENDIAN
 #endif
@@ -202,12 +196,6 @@ typedef enum
 	ARM9 = 0,
 	ARM7 = 1
 } cpu_id_t;
-
-#ifdef __GNUC__
-#define __PACKED __attribute__((__packed__))
-#else
-#define __PACKED
-#endif
 
 ///endian-flips count bytes.  count should be even and nonzero.
 inline void FlipByteOrder(u8 *src, u32 count)

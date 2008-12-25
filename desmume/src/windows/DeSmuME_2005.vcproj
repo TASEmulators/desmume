@@ -681,6 +681,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\matrixView.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\matrixView.h"
 				>
 			</File>
@@ -784,6 +788,61 @@
 				RelativePath="..\utils\xstring.h"
 				>
 			</File>
+			<Filter
+				Name="decrypt"
+				>
+				<File
+					RelativePath="..\utils\decrypt\crc.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\decrypt\crc.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\decrypt\decrypt.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release (SSE2)|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\$(InputName)1.obj"
+							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\utils\decrypt\decrypt.h"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\decrypt\header.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\utils\decrypt\header.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\ARM9.h"
@@ -1037,10 +1096,6 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath=".\matrixView.cpp"
-			>
-		</File>
-		<File
 			RelativePath="..\mc.cpp"
 			>
 		</File>
@@ -1050,6 +1105,10 @@
 		</File>
 		<File
 			RelativePath="..\mem.h"
+			>
+		</File>
+		<File
+			RelativePath="..\memorystream.h"
 			>
 		</File>
 		<File
