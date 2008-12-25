@@ -32,6 +32,7 @@
 #include "cflash.h"
 #include "ROMReader.h"
 #include "gfx3d.h"
+#include "utils/decrypt/decrypt.h"
 
 #include "debug.h"
 
@@ -314,6 +315,22 @@ enum
 	ROM_DSGBA
 };
 
+//http://www.aggregate.org/MAGIC/#Population%20Count%20(Ones%20Count)
+static u32 ones32(u32 x)
+{
+        /* 32-bit recursive reduction using SWAR...
+	   but first step is mapping 2-bit values
+	   into sum of 2 1-bit values in sneaky way
+	*/
+        x -= ((x >> 1) & 0x55555555);
+        x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
+        x = (((x >> 4) + x) & 0x0f0f0f0f);
+        x += (x >> 8);
+        x += (x >> 16);
+        return(x & 0x0000003f);
+}
+
+
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
                  const char *cflash_disk_image_file)
 {
@@ -358,19 +375,24 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
       size -= DSGBA_LOADER_SIZE;
    }
 
-   /* check that size is at least the size of the header */
-   if (size < 352+160) {
+   //check that size is at least the size of the header
+   //and also that the size is a power of 2
+   if (size < 352+160 || ones32(size) != 1) {
       reader->DeInit(file);
       free(noext);
       return -1;
    }
-
-   mask = size;
-   mask |= (mask >>1);
-   mask |= (mask >>2);
-   mask |= (mask >>4);
-   mask |= (mask >>8);
-   mask |= (mask >>16);
+   
+   //zero 25-dec-08 - this used to yield a mask which was 2x large
+   //mask = size; 
+   //mask |= (mask >>1);
+   //mask |= (mask >>2);
+   //mask |= (mask >>4);
+   //mask |= (mask >>8);
+   //mask |= (mask >>16);
+   
+   //but now, we know it is a power of 2 so the mask is easy to create
+   mask = size-1;
 
    // Make sure old ROM is freed first(at least this way we won't be eating
    // up a ton of ram before the old ROM is freed)
@@ -386,6 +408,13 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
    
    i = reader->Read(file, data, size);
    reader->DeInit(file);
+
+   //decrypt if necessary..
+   //but this is untested and suspected to fail on big endian, so lets not support this on big endian
+	#ifndef WORDS_BIGENDIAN
+    DecryptSecureArea(data,size);
+	#endif
+
    MMU_unsetRom();
    NDS_SetROM(data, mask);
    NDS_Reset();
@@ -586,18 +615,7 @@ typedef struct
     u32 numimpcol;
 } bmpimgheader_struct;
 
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#pragma pack(push, 1)
-typedef struct
-{
-    u16 id;
-    u32 size;
-    u16 reserved1;
-    u16 reserved2;
-    u32 imgoffset;
-} bmpfileheader_struct;
-#pragma pack(pop)
-#else
+#include "PACKED.h"
 typedef struct
 {
     u16 id __PACKED;
@@ -606,7 +624,7 @@ typedef struct
     u16 reserved2 __PACKED;
     u32 imgoffset __PACKED;
 } bmpfileheader_struct;
-#endif
+#include "PACKED_END.h"
 
 int NDS_WriteBMP(const char *filename)
 {

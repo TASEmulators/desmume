@@ -8,6 +8,8 @@
 #define __FAT_H__
 
 #include "types.h"
+#include "PACKED.h"
+#include "PACKED_END.h"
 
 #define ATTRIB_DIR 0x10
 #define ATTRIB_LFN 0x0F
