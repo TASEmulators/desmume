@@ -7,7 +7,7 @@
 
 #include "types.h"
 
-#include "PACKED.H"
+#include "PACKED.h"
 struct __PACKED Header
 {
 	char title[0xC];
@@ -74,7 +74,7 @@ struct __PACKED Header
 	u32 offset_0x16C;
 	unsigned char zero[0x90];
 };
-#include "PACKED_END.H"
+#include "PACKED_END.h"
 
 
 
