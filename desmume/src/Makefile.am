@@ -38,8 +38,11 @@ libdesmume_a_SOURCES = \
         thumb_instructions.cpp thumb_instructions.h types.h \
 	zero_private.h shaders.h \
 	movie.cpp movie.h \
+	PACKED.h PACKED_END.h \
 	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
-	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h
+	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h \
+	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
+	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
