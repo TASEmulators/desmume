@@ -1719,7 +1719,7 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 
-	/** Menu "?" **/
+	/** Menu "Help" **/
 
 	pMenu = gtk_menu_new();
 
@@ -1727,7 +1727,7 @@ common_gtk_main( struct configured_features *my_config)
 	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-	pMenuItem = gtk_menu_item_new_with_label("?");
+	pMenuItem = gtk_menu_item_new_with_label("Help");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 
