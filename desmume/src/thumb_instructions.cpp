@@ -902,7 +902,10 @@ TEMPLATE static  u32 FASTCALL OP_SWI_THUMB()
      }
      else
      {
-        u32 swinum = cpu->instruction & 0xFF;
+		 //zero 25-dec-2008 - in arm, we were masking to 0x1F. 
+		 //this is probably safer since an invalid opcode could crash the emu
+		 //u32 swinum = cpu->instruction & 0xFF;
+		 u32 swinum = cpu->instruction & 0x1F;
         return cpu->swi_tab[swinum](cpu) + 3;  
      }
      //return 3;
