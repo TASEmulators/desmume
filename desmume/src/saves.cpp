@@ -189,6 +189,17 @@ SFORMAT SF_MMU[]={
 	{ "MDCR", 4, 8,       MMU.DMACrt},
 	{ "MDMA", 4, 8,       MMU.DMAing},
 
+	{ "MDV1", 4, 1,       &MMU.divRunning},
+	{ "MDV2", 8, 1,       &MMU.divResult},
+	{ "MDV3", 8, 1,       &MMU.divMod},
+	{ "MDV4", 4, 1,       &MMU.divCnt},
+	{ "MDV5", 4, 1,       &MMU.divCycles},
+
+	{ "MSQ1", 4, 1,       &MMU.sqrtRunning},
+	{ "MSQ2", 4, 1,       &MMU.sqrtResult},
+	{ "MSQ3", 4, 1,       &MMU.sqrtCnt},
+	{ "MSQ4", 4, 1,       &MMU.sqrtCycles},
+	
 	//begin memory chips
 	//we are skipping the firmware, because we really don't want to save the firmware to the savestate
 	//but, we will need to think about the philosophy of this.
