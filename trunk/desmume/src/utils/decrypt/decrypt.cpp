@@ -474,6 +474,6 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 	}
 	else
 	{
-		fprintf(stderr, "File doesn't appear to have a secure area!\n"); exit(1);
+		printf("File doesn't appear to have a secure area.\n");
 	}
 }
