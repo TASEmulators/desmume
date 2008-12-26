@@ -502,7 +502,8 @@ u32 armcpu_exec()
 {
         u32 c = 1;
 
-		assert(ARMPROC.instruct_adr!=0x00000000);
+		//this assert is annoying. but sometimes it is handy.
+		//assert(ARMPROC.instruct_adr!=0x00000000);
 
 #ifdef GDB_STUB
         if (ARMPROC.stalled)

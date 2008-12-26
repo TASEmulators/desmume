@@ -78,8 +78,8 @@ static void ENDGL() {
 #define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
 #endif
 
-static ALIGN(16) unsigned char  GPU_screen3D		[256*256*4]={0};
-static ALIGN(16) unsigned char  GPU_screenStencil[256*256]={0};
+static ALIGN(16) unsigned char  GPU_screen3D		[256*256*4];
+static ALIGN(16) unsigned char  GPU_screenStencil[256*256];
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
@@ -1161,6 +1161,16 @@ static void GL_ReadFramebuffer()
 	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
 	ENDGL();
 
+	//convert the pixels to a different format which is more convenient
+	//is it safe to modify the screen buffer? if not, we could make a temp copy
+	for(int i=0;i<256*192;i++) {
+		int t = i<<2;
+		u32 &u32screen3D = *(u32*)&GPU_screen3D[t];
+		u32screen3D>>=3;
+		u32screen3D &= 0x1F1F1F1F;
+	}
+		
+
 //debug: view depth buffer via color buffer for debugging
 	//int ctr=0;
 	//for(ctr=0;ctr<256*192;ctr++) {
@@ -1207,7 +1217,8 @@ static void GetLineCaptured(int line, u16* dst)
 		u32 g = screen3D[t+1];
 		u32 b = screen3D[t+2];
 
-		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3) | 0x8000;
+		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
+		dst[i] = (b<<10) | (g<<5) | (r>>3) | 0x8000;
 	}
 }
 
@@ -1233,7 +1244,7 @@ static void GetLine (int line, u16* dst)
 	//in fact, we are going to do that to fix some problems. 
 	//but beware that it i figure it might could CAUSE some problems
 
-	//this alpha compositing blending logic isnt thought through at all
+	//this alpha compositing blending logic isnt thought through very much
 	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
 
 	for(int i = 0; i < 256; i++)
@@ -1243,31 +1254,42 @@ static void GetLine (int line, u16* dst)
 		//you would use this if you wanted to use the stencil buffer to make decisions here
 		if(!stencil) continue;
 
+		u16 oldcolor = dst[i];
+		
 		int t=i<<2;
-		u32 r = screen3D[t+0];
-		u32 g = screen3D[t+1];
-		u32 b = screen3D[t+2];
-		u32 a = screen3D[t+3];
-
-		u32 oldcolor = RGB15TO32(dst[i],0);
-		u32 oldr = oldcolor&0xFF;
-		u32 oldg = (oldcolor>>8)&0xFF;
-		u32 oldb = (oldcolor>>16)&0xFF;
-
-		r = (r*a + oldr*(255-a)) >> 8;
-		g = (g*a + oldg*(255-a)) >> 8;
-		b = (b*a + oldb*(255-a)) >> 8;
-
-		r=std::min((u32)255,r);
-		g=std::min((u32)255,g);
-		b=std::min((u32)255,b);
-
-		//debug: display alpha channel
+		u32 dstpixel;
+		
+		//old debug reminder: display alpha channel
 		//u32 r = screen3D[t+3];
 		//u32 g = screen3D[t+3];
 		//u32 b = screen3D[t+3];
 
-		dst[i] = ((b>>3)<<10) | ((g>>3)<<5) | (r>>3);
+		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
+
+		u32 a = screen3D[t+3];
+		
+		typedef u8 mixtbl[32][32];
+		mixtbl & mix = mixTable555[a];
+		
+		//r
+		u32 newpix = screen3D[t+0];
+		u32 oldpix = oldcolor&0x1F;
+		newpix = mix[newpix][oldpix];
+		dstpixel = newpix;
+		
+		//g
+		newpix = screen3D[t+1];
+		oldpix = (oldcolor>>5)&0x1F;
+		newpix = mix[newpix][oldpix];
+		dstpixel |= (newpix<<5);
+
+		//b
+		newpix = screen3D[t+2];
+		oldpix = (oldcolor>>10)&0x1F;
+		newpix = mix[newpix][oldpix];
+		dstpixel |= (newpix<<10);
+
+		dst[i] = dstpixel;
 	}
 }
 
