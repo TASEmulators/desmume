@@ -376,8 +376,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
    }
 
    //check that size is at least the size of the header
-   //and also that the size is a power of 2
-   if (size < 352+160 || ones32(size) != 1) {
+   if (size < 352+160) {
       reader->DeInit(file);
       free(noext);
       return -1;
@@ -385,15 +384,13 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
    
    //zero 25-dec-08 - this used to yield a mask which was 2x large
    //mask = size; 
-   //mask |= (mask >>1);
-   //mask |= (mask >>2);
-   //mask |= (mask >>4);
-   //mask |= (mask >>8);
-   //mask |= (mask >>16);
+   mask = size-1; 
+   mask |= (mask >>1);
+   mask |= (mask >>2);
+   mask |= (mask >>4);
+   mask |= (mask >>8);
+   mask |= (mask >>16);
    
-   //but now, we know it is a power of 2 so the mask is easy to create
-   mask = size-1;
-
    // Make sure old ROM is freed first(at least this way we won't be eating
    // up a ton of ram before the old ROM is freed)
    if(MMU.CART_ROM != MMU.UNUSED_RAM)
