@@ -727,8 +727,13 @@ void execsqrt() {
 		break;
 		}
 	}
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, ret);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt & 0x7FFF);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, 0);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt | 0x8000);
+
+	MMU.sqrtCycles = (nds.cycles + 26);
+	MMU.sqrtResult = ret;
+	MMU.sqrtCnt = (cnt & 0x7FFF);
+	MMU.sqrtRunning = TRUE;
 }
 
 template<u32 proc>
@@ -741,15 +746,18 @@ void execdiv() {
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+		MMU.divCycles = (nds.cycles + 34);
 	break;
 	case 3: //gbatek says this is same as mode 1
 	case 1:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+		MMU.divCycles = (nds.cycles + 68);
 	break;
 	case 2:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
+		MMU.divCycles = (nds.cycles + 68);
 		break;
 	}
 
@@ -771,11 +779,16 @@ void execdiv() {
 							(u32)(den>>32), (u32)den, 
 							(u32)(res>>32), (u32)res);
 
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, (u32) res);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, (u32) (res >> 32));
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, (u32) mod);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, (u32) (mod >> 32));
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, cnt);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, 0);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, 0);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, 0);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, 0);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, ((cnt & 0xBFFF) | 0x8000));
+
+	MMU.divResult = res;
+	MMU.divMod = mod;
+	MMU.divCnt = (cnt & 0x7FFF);
+	MMU.divRunning = TRUE;
 }
 
 void FASTCALL MMU_doDMA(u32 proc, u32 num)

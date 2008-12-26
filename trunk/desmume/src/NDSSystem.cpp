@@ -330,7 +330,6 @@ static u32 ones32(u32 x)
         return(x & 0x0000003f);
 }
 
-
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
                  const char *cflash_disk_image_file)
 {
@@ -1164,6 +1163,16 @@ u32 NDS_exec(s32 nb)
                     nds.ARM7Cycle -= (560190<<1);
 					nb -= (560190<<1);
 
+					if(MMU.divRunning)
+					{
+						MMU.divCycles -= (560190 << 1);
+					}
+
+					if(MMU.sqrtRunning)
+					{
+						MMU.sqrtCycles -= (560190 << 1);
+					}
+
 					if (MMU.CheckTimers)
 					{
 						if(MMU.timerON[0][0])	nds.timerCycle[0][0] -= (560190<<1);
@@ -1215,6 +1224,31 @@ u32 NDS_exec(s32 nb)
                 T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
             }
         }
+
+		if(MMU.divRunning)
+		{
+			if(nds.cycles > MMU.divCycles)
+			{
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, (u32)MMU.divResult);
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, (u32)(MMU.divResult >> 32));
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, (u32)MMU.divMod);
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, (u32)(MMU.divMod >> 32));
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280, MMU.divCnt);
+
+				MMU.divRunning = FALSE;
+			}
+		}
+
+		if(MMU.sqrtRunning)
+		{
+			if(nds.cycles > MMU.sqrtCycles)
+			{
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, MMU.sqrtResult);
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, MMU.sqrtCnt);
+
+				MMU.sqrtRunning = FALSE;
+			}
+		}
 
 		if (MMU.CheckTimers)
 		{

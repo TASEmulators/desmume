@@ -103,6 +103,17 @@ struct MMU_struct {
     s32 DMACycle[2][4];
     u32 DMACrt[2][4];
     BOOL DMAing[2][4];
+
+	BOOL divRunning;
+	s64 divResult;
+	s64 divMod;
+	u32 divCnt;
+	s32 divCycles;
+
+	BOOL sqrtRunning;
+	u32 sqrtResult;
+	u32 sqrtCnt;
+	s32 sqrtCycles;
 	  
     memory_chip_t fw;
     memory_chip_t bupmem;
