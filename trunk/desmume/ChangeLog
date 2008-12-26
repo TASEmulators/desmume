@@ -20,6 +20,7 @@
  - Add functions for a lid open/close. Holding key (default "Backspace" in Windows port) while game is freeze/non freeze. [CrazyMax]
  - Added a bunch of crazy templates to the cpu and mmu for minor speed boosts [zeromus]
  - Add secure area decryption from ndstool [zeromus]
+ - change backupmem autodetection to catch more cases of unusual usage patterns [zeromus]
  Graphics:
  - Added gfx3d module which emulates the whole GE as part of the core emu. [zeromus]
  - Moved the windows/cocoa OGLRender to the emu core and replace ogl_collector. 
