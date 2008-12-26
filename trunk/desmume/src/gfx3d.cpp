@@ -39,6 +39,7 @@ GFX3D gfx3d;
 
 //tables that are provided to anyone
 CACHE_ALIGN u32 color_15bit_to_24bit[32768];
+CACHE_ALIGN u8 mixTable555[32][32][32];
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
 CACHE_ALIGN const int material_5bit_to_31bit[] = {
@@ -184,6 +185,13 @@ static void makeTables() {
 
 	for (int i = 0; i < 1024; i++)
 		normalTable[i] = ((signed short)(i<<6)) / (float)(1<<15);
+
+	for(int r=0;r<=31;r++) 
+		for(int oldr=0;oldr<=31;oldr++) 
+			for(int a=0;a<=31;a++)  {
+				int temp = (r*a + oldr*(31-a)) / 31;
+				mixTable555[a][r][oldr] = temp;
+			}
 }
 
 void gfx3d_init()

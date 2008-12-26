@@ -131,6 +131,7 @@ extern GFX3D gfx3d;
 #define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
 
 extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
+extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const int material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
