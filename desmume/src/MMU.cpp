@@ -730,7 +730,7 @@ void execsqrt() {
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, 0);
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt | 0x8000);
 
-	MMU.sqrtCycles = (nds.cycles + 13);
+	MMU.sqrtCycles = (nds.cycles + 26);
 	MMU.sqrtResult = ret;
 	MMU.sqrtCnt = (cnt & 0x7FFF);
 	MMU.sqrtRunning = TRUE;
@@ -746,18 +746,18 @@ void execdiv() {
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-		MMU.divCycles = (nds.cycles + 18);
+		MMU.divCycles = (nds.cycles + 36);
 	break;
 	case 3: //gbatek says this is same as mode 1
 	case 1:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
-		MMU.divCycles = (nds.cycles + 34);
+		MMU.divCycles = (nds.cycles + 68);
 	break;
 	case 2:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
-		MMU.divCycles = (nds.cycles + 34);
+		MMU.divCycles = (nds.cycles + 68);
 		break;
 	}
 
