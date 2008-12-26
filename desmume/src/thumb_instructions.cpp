@@ -859,7 +859,8 @@ TEMPLATE static  u32 FASTCALL OP_STMIA_THUMB()
 TEMPLATE static  u32 FASTCALL OP_LDMIA_THUMB()
 {
      const u32 &i = cpu->instruction;
-     u32 adr = cpu->R[REG_NUM(i, 8)];
+	 u32 regIndex = REG_NUM(i, 8);
+     u32 adr = cpu->R[regIndex];
      u32 c = 0, j;
 
      for(j = 0; j<8; ++j)
@@ -869,8 +870,12 @@ TEMPLATE static  u32 FASTCALL OP_LDMIA_THUMB()
                c += MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
                adr += 4;
           }
-     cpu->R[REG_NUM(i, 8)] = adr;
-     return c + 3;
+
+	// Only over-write if not on the read list
+	if(!BIT_N(i, regIndex))
+		cpu->R[regIndex] = adr;
+   
+	return c + 3;
 }
 
 TEMPLATE static  u32 FASTCALL OP_B_COND()
