@@ -160,8 +160,6 @@ float DefaultHeight;
 float widthTradeOff;
 float heightTradeOff;
 
-HMENU menu;
-
 //static char IniName[MAX_PATH];
 int sndcoretype=SNDCORE_DIRECTX;
 int sndbuffersize=735*4;
@@ -1073,6 +1071,41 @@ joinThread_gdb( void *thread_handle) {
 }
 
 
+int MenuInit()
+{
+	mainMenu = LoadMenu(hAppInst, "MENU_PRINCIPAL"); //Load Menu, and store handle
+	if (!MainWindow->setMenu(mainMenu)) return 0;
+	
+	// menu checks
+	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
+
+	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
+
+	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+
+	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+
+    DragAcceptFiles(MainWindow->getHWnd(), TRUE);
+
+	recentromsmenu = CreateMenu(); //Create recent Roms menu
+	GetRecentRoms();			   //Populate the recent roms menu
+
+	return 1;
+}
+
+void MenuDeinit()
+{
+	MainWindow->setMenu(NULL);
+	DestroyMenu(mainMenu);
+}
+
+
 void SetLanguage(int langid)
 {
    switch(langid)
@@ -1108,7 +1141,7 @@ void SaveLanguage(int langid)
 void CheckLanguage(UINT id)
 {
    int i;
-   for (i = IDC_LANGENGLISH; i < IDC_LANGFRENCH+1; i++)
+   for (i = IDC_LANGENGLISH; i < IDC_LANGDANISH+1; i++)
       MainWindow->checkMenu(i, MF_BYCOMMAND | MF_UNCHECKED);
 
    MainWindow->checkMenu(id, MF_BYCOMMAND | MF_CHECKED);
@@ -1116,13 +1149,10 @@ void CheckLanguage(UINT id)
 
 void ChangeLanguage(int id)
 {
-   HMENU newmenu;
-
    SetLanguage(id);
-   newmenu = LoadMenu(hAppInst, "MENU_PRINCIPAL");
-   SetMenu(MainWindow->getHWnd(), newmenu);
-   DestroyMenu(menu);
-   menu = newmenu;   
+
+   MenuDeinit();
+   MenuInit();
 }
 
 int RegClass(WNDPROC Proc, LPCTSTR szName)
@@ -1215,40 +1245,25 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
 
-    GetPrivateProfileString("General", "Language", "-1", text, 80, IniName);
+    GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
     SetLanguage(atoi(text));
 
 	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
-	mainMenu = LoadMenu(hThisInstance, "MENU_PRINCIPAL"); //Load Menu, and store handle
-	if (!MainWindow->setMenu(mainMenu))
+	if(MenuInit() == 0)
 	{
 		MessageBox(NULL, "Error creating main menu", "DeSmuME", MB_OK);
 		delete MainWindow;
 		exit(-1);
 	}
-	
-	// menu checks
-	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
 
-	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
-
-	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
-
-	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
-
-    DragAcceptFiles(MainWindow->getHWnd(), TRUE);
-
-	recentromsmenu = CreateMenu(); //Create recent Roms menu
-	GetRecentRoms();			   //Populate the recent roms menu
+	EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+	EnableMenuItem(mainMenu, IDM_PAUSE, MF_GRAYED);
+	EnableMenuItem(mainMenu, IDM_RESET, MF_GRAYED);
+	EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_GRAYED);
+	EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
 	
 	LOG("Init NDS\n");
 
@@ -1330,7 +1345,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     }
 
 #ifdef BETA_VERSION
-	EnableMenuItem (menu, IDM_SUBMITBUGREPORT, MF_GRAYED);
+	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
 #endif
 	LOG("Init sound core\n");
     sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
@@ -1390,21 +1405,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	{
 		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
 		{
-		   EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
-		   EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-		   EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
-		   EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
-		   EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		   EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+		   EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+		   EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+		   EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+		   EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
 		   romloaded = TRUE;
 		   NDS_UnPause();
-		}
-		else
-		{
-		   EnableMenuItem(menu, IDM_EXEC, MF_ENABLED);
-		   EnableMenuItem(menu, IDM_PAUSE, MF_GRAYED);
-		   EnableMenuItem(menu, IDM_RESET, MF_GRAYED);
-		   EnableMenuItem(menu, IDM_GAME_INFO, MF_GRAYED);
-		   EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
 		}
 	}
 
@@ -1575,10 +1582,10 @@ void OpenRecentROM(int listNum)
 	//LOG("Attempting to load %s\n",filename);
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
     {
-		EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-        EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
-        EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
-        EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+        EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+        EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+        EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
         romloaded = TRUE;
 	}     
 	
@@ -1690,11 +1697,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   DragFinish((HDROP)wParam);
                   if(LoadROM(filename, bad_glob_cflash_disk_image_file))
                   {
-                     EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
-                     EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                     EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
-                     EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
-                     EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+                     EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+                     EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+                     EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+                     EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+                     EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
                      romloaded = TRUE;
                   }
 				  NDS_UnPause();
@@ -1812,11 +1819,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
                             if(LoadROM(filename, bad_glob_cflash_disk_image_file))
                             {
-                               EnableMenuItem(menu, IDM_EXEC, MF_GRAYED);
-                               EnableMenuItem(menu, IDM_PAUSE, MF_ENABLED);
-                               EnableMenuItem(menu, IDM_RESET, MF_ENABLED);
-                               EnableMenuItem(menu, IDM_GAME_INFO, MF_ENABLED);
-                               EnableMenuItem(menu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+                               EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+                               EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+                               EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+                               EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+                               EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
                                romloaded = TRUE;
                                NDS_UnPause();
                             }
