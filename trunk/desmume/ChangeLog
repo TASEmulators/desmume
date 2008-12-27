@@ -22,6 +22,7 @@
  - Add secure area decryption from ndstool [zeromus]
  - change backupmem autodetection to catch more cases of unusual usage patterns [zeromus]
  - Fixed Thumb LDMIA (fixes ingame Dead'n'Furious) [shash]
+ - Fix repeating DMA (fixes NSMB parallax BG) [zeromus]
  Graphics:
  - Added gfx3d module which emulates the whole GE as part of the core emu. [zeromus]
  - Moved the windows/cocoa OGLRender to the emu core and replace ogl_collector. 
