@@ -1195,8 +1195,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
 	FpsDisplay = GetPrivateProfileInt("Display","Display Fps", 0, IniName);
-	WndX = GetPrivateProfileInt("Video","WindowPosX", 0, IniName);
-	WndY = GetPrivateProfileInt("Video","WindowPosY", 0, IniName);
+	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
+	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
