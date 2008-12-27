@@ -31,6 +31,7 @@
 #include "bits.h"
 #include "MMU.h"
 #include "render3D.h"
+#include "mem.h"
 #include "types.h"
 #include "saves.h"
 #include "readwrite.h"
@@ -245,6 +246,8 @@ void gfx3d_reset()
 	_s=0;
 	last_t = 0;
 	last_s = 0;
+	
+	GFX_FIFOclear();
 }
 
 void gfx3d_glViewPort(unsigned long v)
@@ -1006,11 +1009,163 @@ void gfx3d_glGetVecRes(unsigned int index)
 	//return 0;
 }
 
+#if 0
+void gfx3d_execute(u8 cmd, u32 param)
+{
+	switch (cmd)
+	{
+		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
+			gfx3d_glMatrixMode(param);
+		break;
+		case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
+			gfx3d_glPushMatrix();
+		break;
+		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
+			gfx3d_glPopMatrix(param);
+		break;
+		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
+			gfx3d_glStoreMatrix(param);
+		break;
+		case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
+			gfx3d_glRestoreMatrix(param);
+		break;
+		case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
+			gfx3d_glLoadIdentity();
+		break;
+		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+			gfx3d_glLoadMatrix4x4(param);
+		break;
+		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+			gfx3d_glLoadMatrix4x3(param);
+		break;
+		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+			gfx3d_glMultMatrix4x4(param);
+		break;
+		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+			gfx3d_glMultMatrix4x3(param);
+		break;
+		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+			gfx3d_glMultMatrix3x3(param);
+		break;
+		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+			gfx3d_glScale(param);
+		break;
+		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+			gfx3d_glTranslate(param);
+		break;
+		case 0x20:		// COLOR - Directly Set Vertex Color (W)
+			gfx3d_glColor3b(param);
+		break;
+		case 0x21:		// NORMAL - Set Normal Vector (W)
+			gfx3d_glNormal(param);
+		break;
+		case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
+			gfx3d_glTexCoord(param);
+		break;
+		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+			gfx3d_glVertex16b(param);
+		break;
+		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
+			gfx3d_glVertex10b(param);
+		break;
+		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
+			gfx3d_glVertex3_cord(0, 1, param);
+		break;
+		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
+			gfx3d_glVertex3_cord(0, 2, param);
+		break;
+		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
+			gfx3d_glVertex3_cord(1, 2, param);
+		break;
+		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
+			gfx3d_glVertex_rel(param);
+		break;
+		case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
+			gfx3d_glPolygonAttrib(param);
+		break;
+		case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
+			gfx3d_glTexImage(param);
+		break;
+		case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
+			gfx3d_glTexPalette(param);
+		break;
+		case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
+			gfx3d_glMaterial0(param);
+		break;
+		case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
+			gfx3d_glMaterial1(param);
+		break;
+		case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
+			gfx3d_glLightDirection(param);
+		break;
+		case 0x33:		// LIGHT_COLOR - Set Light Color (W)
+			gfx3d_glLightColor(param);
+		break;
+		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
+			gfx3d_glShininess(param);
+		break;
+		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
+			gfx3d_glBegin(param);
+		break;
+		case 0x41:		// END_VTXS - End of Vertex List (W)
+			gfx3d_glEnd();
+		break;
+		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
+			gfx3d_glFlush(param);
+		break;
+		case 0x60:		// VIEWPORT - Set Viewport (W)
+			gfx3d_glViewPort(param);
+		break;
+		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+			gfx3d_glBoxTest(param);
+		break;
+		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
+			gfx3d_glPosTest(param);
+		break;
+		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
+			gfx3d_glVecTest(param);
+		break;
+		default:
+			INFO("Unknown execute FIFO 3D command 0x%02X with param 0x%02X\n", cmd&0xFF, param);
+		break;
+	}
+}
+#endif
+
+void gfx3d_FlushFIFO()
+{
+	u32	cmd;
+	u32 param;
+
+	GFX_FIFOclear();
+
+#if 0
+	//INFO("GX FIFO tail at %i, GXstat 0x%08X\n", gxFIFO.tail, gxstat);
+	if (gxFIFO.tail == 0)
+	{
+		GFX_FIFOclear();
+		return;
+	}
+	for (int i=0; i< gxFIFO.tail; i++)
+	{
+		cmd = gxFIFO.cmd[i];
+		param = gxFIFO.param[i];
+		gfx3d_execute(cmd, param);
+	}
+	//gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
+	//INFO("----------- GX FIFO tail at %i, GXstat 0x%08X\n\n", gxFIFO.tail, gxstat);
+	GFX_FIFOclear();
+#endif
+}
+
 
 void gfx3d_glFlush(unsigned long v)
 {
 	//INFO("FIFO size=%i\n", MMU.gfx_fifo.size);
 	GFX_busy = TRUE;
+
+	gfx3d_FlushFIFO();			// GX FIFO commands execute
+
 	flushPending = TRUE;
 	gfx3d.wbuffer = (v&1)!=0;
 	gfx3d.sortmode = ((v>>1)&1)!=0;
@@ -1018,7 +1173,6 @@ void gfx3d_glFlush(unsigned long v)
 	// reset
 	clInd = 0;
 	clCmd = 0;
-	GFX_FIFOclear(&MMU.gfx_fifo);
 
 	//the renderer wil lget the lists we just built
 	gfx3d.polylist = polylist;
@@ -1063,9 +1217,633 @@ void gfx3d_VBlankEndSignal()
 	gpu3D->NDS_3D_Render();
 }
 
+#if 0
+void gfx3d_sendCommandToFIFO(u32 val)
+{
+	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
+	//INFO("GX FIFO cmd 0x%08X, gxstat 0x%08X\n", val, gxstat);
+	//INFO("FIFO 3D command 0x%02X in 0x%08X (0x%08X)\n", clCmd&0xFF, clCmd, val);
+	if (!clInd)
+	{
+		clCmd = val;
+		clInd = 4;
+		return;
+	}
+//	INFO("FIFO 3D command 0x%02X in 0x%08X (0x%08X)\n", clCmd&0xFF, clCmd, val);
+
+	for (;;) 
+	{
+		switch (clCmd & 0xFF)
+		{
+			case 0x00:
+				{
+					if (clInd > 0)
+					{
+						clCmd >>= 8;
+						clInd--;
+						gfx3d_FlushFIFO();
+						continue;
+					}
+					gfx3d_FlushFIFO();
+					break;
+				}
+			case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
+			case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
+			case 0x41:		// END_VTXS - End of Vertex List (W)
+				{
+					GFX_FIFOsend(clCmd & 0xFF, 0);
+					
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+		}
+		break;
+	}
+
+	if (!clInd)
+	{
+		clCmd = val;
+		clInd = 4;
+		//INFO("GX FIFO cmd 0x%08X, gxstat 0x%08X (%i)\n", clCmd, gxstat, gxFIFO.tail);
+		return;
+	}
+
+	switch (clCmd & 0xFF)
+	{
+		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clInd2++;
+			if (clInd2 < 32) return;
+			clInd2 = 0;
+			clCmd >>= 8;
+			clInd--;
+		break;
+
+		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clInd2++;
+			if (clInd2 < 16) return;
+			clInd2 = 0;
+			clCmd >>= 8;
+			clInd--;
+		break;
+
+		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clInd2++;
+			if (clInd2 < 12) return;
+			clInd2 = 0;
+			clCmd >>= 8;
+			clInd--;
+		break;
+
+		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clInd2++;
+			if (clInd2 < 9) return;
+			clInd2 = 0;
+			clCmd >>= 8;
+			clInd--;
+		break;
+
+		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clInd2++;
+			if (clInd2 < 3) return;
+			clInd2 = 0;
+			clCmd >>= 8;
+			clInd--;
+		break;
+
+		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clInd2++;
+			if (clInd2 < 2) return;
+			clInd2 = 0;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		
+		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
+		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
+		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
+		case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
+		case 0x20:		// COLOR - Directly Set Vertex Color (W)
+		case 0x21:		// NORMAL - Set Normal Vector (W)
+		case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
+		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
+		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
+		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
+		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
+		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
+		case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
+		case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
+		case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
+		case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
+		case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
+		case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
+		case 0x33:		// LIGHT_COLOR - Set Light Color (W)
+		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
+		case 0x60:		// VIEWPORT - Set Viewport (W)
+		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
+			
+			clCmd >>= 8;
+			clInd--;
+		break;
+		default:
+			INFO("Unknown FIFO 3D command 0x%02X in 0x%02X\n", clCmd&0xFF, val);
+			clCmd >>= 8;
+			clInd--;
+			return;
+	}
+
+}
+#endif
+
+#if 1
+void NOPARAMS(u32 val)
+{
+	for (;;)
+	{
+		switch (clCmd & 0xFF)
+		{
+			case 0x00:
+				{
+					if (clInd > 0)
+					{
+						clCmd >>= 8;
+						clInd--;
+						gfx3d_FlushFIFO();
+						continue;
+					}
+					gfx3d_FlushFIFO();
+					clCmd = 0;
+					break;
+				}
+			case 0x11:
+				{
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = val;
+					gfx3d_glPushMatrix();
+					GFX_FIFOsend(clCmd & 0xFF, val);
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+			case 0x15:
+				{
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = val;
+					gfx3d_glLoadIdentity();
+					GFX_FIFOsend(clCmd & 0xFF, val);
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+			case 0x41:
+				{
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = val;
+					gfx3d_glEnd();
+					GFX_FIFOsend(clCmd & 0xFF, val);
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+		}
+		break;
+	}
+}
+
+void gfx3d_sendCommandToFIFO(u32 val)
+{
+	//INFO("3D command 0x%02X (full val = 0x%08X, val = 0x%08X, ind %i)\n", clCmd&0xFF, clCmd,  val, clInd);
+	if (!clInd)
+	{
+		if (val == 0) 
+		{
+			gfx3d_FlushFIFO();
+			return;
+		}
+		clCmd = val;
+		clInd = 4;
+		NOPARAMS(val);
+		return;
+	}
+
+	switch (clCmd & 0xFF)
+	{
+		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x440) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glMatrixMode(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x448) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glPopMatrix(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x44C) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glStoreMatrix(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x450) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glRestoreMatrix(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x458) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glLoadMatrix4x4(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x45C) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glLoadMatrix4x3(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x460) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glMultMatrix4x4(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x464) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glMultMatrix4x3(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x468) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glMultMatrix3x3(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x46C) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glScale(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x470) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glTranslate(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x20:		// COLOR - Directly Set Vertex Color (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x480) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glColor3b(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x21:		// NORMAL - Set Normal Vector (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x484) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glNormal(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x488) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glTexCoord(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x48C) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glVertex16b(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x490) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glVertex10b(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x494) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glVertex3_cord(0, 1, val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x498) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glVertex3_cord(0, 2, val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x49C) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glVertex3_cord(1, 2, val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A0) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glVertex_rel(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A4) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glPolygonAttrib(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A8) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glTexImage(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4AC) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glTexPalette(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C0) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glMaterial0(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C4) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glMaterial1(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C8) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glLightDirection(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x33:		// LIGHT_COLOR - Set Light Color (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4CC) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glLightColor(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x4D0) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glShininess(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x500) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glBegin(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x540) = val;
+			gfx3d_glFlush(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x60:		// VIEWPORT - Set Viewport (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x580) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glViewPort(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C0) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glBoxTest(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C4) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			if (!gfx3d_glPosTest(val)) break;
+			clCmd >>= 8;
+			clInd--;
+		break;
+		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
+			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C8) = val;
+			GFX_FIFOsend(clCmd & 0xFF, val);
+			gfx3d_glVecTest(val);
+			clCmd >>= 8;
+			clInd--;
+		break;
+		default:
+			INFO("Unknown 3D command 0x%02X in cmd=0x%02X\n", clCmd&0xFF, val);
+			clCmd >>= 8;
+			clInd--;
+			break;
+	}
+	NOPARAMS(val);
+}
+#endif
+
+void gfx3d_sendCommand(u32 cmd, u32 param)
+{
+	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
+	if (gxstat & 0x08000000)			// GX busy
+						return;
+	cmd &= 0x0FFF;
+
+	switch (cmd)
+	{
+		case 0x340:			// Alpha test reference value - Parameters:1
+			gfx3d_glAlphaFunc(param);
+		break;
+		case 0x350:			// Clear background color setup - Parameters:2
+			gfx3d_glClearColor(param);
+		break;
+		case 0x354:			// Clear background depth setup - Parameters:2
+			gfx3d_glClearDepth(param);
+		break;
+		case 0x356:			// Rear-plane Bitmap Scroll Offsets (W)
+		break;
+		case 0x358:			// Fog Color - Parameters:4b
+			gfx3d_glFogColor(param);
+		break;
+		case 0x35C:
+			gfx3d_glFogOffset(param);
+		break;
+		case 0x440:		// MTX_MODE - Set Matrix Mode (W)
+			gfx3d_glMatrixMode(param);
+		break;
+		case 0x444:		// MTX_PUSH - Push Current Matrix on Stack (W)
+			gfx3d_glPushMatrix();
+		break;
+		case 0x448:		// MTX_POP - Pop Current Matrix from Stack (W)
+			gfx3d_glPopMatrix(param);
+		break;
+		case 0x44C:		// MTX_STORE - Store Current Matrix on Stack (W)
+			gfx3d_glStoreMatrix(param);
+		break;
+		case 0x450:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
+			gfx3d_glRestoreMatrix(param);
+		break;
+		case 0x454:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
+			gfx3d_glLoadIdentity();
+		break;
+		case 0x458:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+			gfx3d_glLoadMatrix4x4(param);
+		break;
+		case 0x45C:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+			gfx3d_glLoadMatrix4x3(param);
+		break;
+		case 0x460:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+			gfx3d_glMultMatrix4x4(param);
+		break;
+		case 0x464:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+			gfx3d_glMultMatrix4x3(param);
+		break;
+		case 0x468:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+			gfx3d_glMultMatrix3x3(param);
+		break;
+		case 0x46C:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+			gfx3d_glScale(param);
+		break;
+		case 0x470:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+			gfx3d_glTranslate(param);
+		break;
+		case 0x480:		// COLOR - Directly Set Vertex Color (W)
+			gfx3d_glColor3b(param);
+		break;
+		case 0x484:		// NORMAL - Set Normal Vector (W)
+			gfx3d_glNormal(param);
+		break;
+		case 0x488:		// TEXCOORD - Set Texture Coordinates (W)
+			gfx3d_glTexCoord(param);
+		break;
+		case 0x48C:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+			gfx3d_glVertex16b(param);
+		break;
+		case 0x490:		// VTX_10 - Set Vertex XYZ Coordinates (W)
+			gfx3d_glVertex10b(param);
+		break;
+		case 0x494:		// VTX_XY - Set Vertex XY Coordinates (W)
+			gfx3d_glVertex3_cord(0, 1, param);
+		break;
+		case 0x498:		// VTX_XZ - Set Vertex XZ Coordinates (W)
+			gfx3d_glVertex3_cord(0, 2, param);
+		break;
+		case 0x49C:		// VTX_YZ - Set Vertex YZ Coordinates (W)
+			gfx3d_glVertex3_cord(1, 2, param);
+		break;
+		case 0x4A0:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
+			gfx3d_glVertex_rel(param);
+		break;
+		case 0x4A4:		// POLYGON_ATTR - Set Polygon Attributes (W)
+			gfx3d_glPolygonAttrib(param);
+		break;
+		case 0x4A8:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
+			gfx3d_glTexImage(param);
+		break;
+		case 0x4AC:		// PLTT_BASE - Set Texture Palette Base Address (W)
+			gfx3d_glTexPalette(param);
+		break;
+		case 0x4C0:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
+			gfx3d_glMaterial0(param);
+		break;
+		case 0x4C4:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
+			gfx3d_glMaterial1(param);
+		break;
+		case 0x4C8:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
+			gfx3d_glLightDirection(param);
+		break;
+		case 0x4CC:		// LIGHT_COLOR - Set Light Color (W)
+			gfx3d_glLightColor(param);
+		break;
+		case 0x4D0:		// SHININESS - Specular Reflection Shininess Table (W)
+			gfx3d_glShininess(param);
+		break;
+		case 0x500:		// BEGIN_VTXS - Start of Vertex List (W)
+			gfx3d_glBegin(param);
+		break;
+		case 0x504:		// END_VTXS - End of Vertex List (W)
+			gfx3d_glEnd();
+		break;
+		case 0x540:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
+			gfx3d_glFlush(param);
+		break;
+		case 0x580:		// VIEWPORT - Set Viewport (W)
+			gfx3d_glViewPort(param);
+		break;
+		case 0x5C0:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+			gfx3d_glBoxTest(param);
+		break;
+		case 0x5C4:		// POS_TEST - Set Position Coordinates for Test (W)
+			gfx3d_glPosTest(param);
+		break;
+		case 0x5C8:		// VEC_TEST - Set Directional Vector for Test (W)
+			gfx3d_glVecTest(param);
+		break;
+		default:
+			INFO("Execute unknown 3D command %03X in param=0x%08X\n", cmd, param);
+			break;
+	}
+}
+
+#if 0
 u32 gfx3d_GetGXstatus()
 {
 	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
+	//INFO("GFX FIFO read size=%i value 0x%X\n", MMU.gfx_fifo.size, gxstat);
+	return (gxstat | 2);
 	gxstat &= 0x0F00A000;
 
 	// 0	 BoxTest,PositionTest,VectorTest Busy (0=Ready, 1=Busy)
@@ -1109,465 +1887,7 @@ u32 gfx3d_GetGXstatus()
 	//INFO("GFX FIFO read size=%i value 0x%X\n", MMU.gfx_fifo.size, gxstat);
 	return gxstat;
 }
-
-void NOPARAMS(u32 val)
-{
-	for (;;)
-	{
-		switch (clCmd & 0xFF)
-		{
-			case 0x00:
-				{
-					if (clInd > 0)
-					{
-						clCmd >>= 8;
-						clInd--;
-						continue;
-					}
-					clCmd = 0;
-					break;
-				}
-			case 0x11:
-				{
-					GFX_FIFOadd(&MMU.gfx_fifo);
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = val;
-					gfx3d_glPushMatrix();
-					clCmd >>= 8;
-					clInd--;
-					continue;
-				}
-			case 0x15:
-				{
-					GFX_FIFOadd(&MMU.gfx_fifo);
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = val;
-					gfx3d_glLoadIdentity();
-					clCmd >>= 8;
-					clInd--;
-					continue;
-				}
-			case 0x41:
-				{
-					GFX_FIFOadd(&MMU.gfx_fifo);
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = val;
-					gfx3d_glEnd();
-					clCmd >>= 8;
-					clInd--;
-					continue;
-				}
-		}
-		break;
-	}
-}
-
-void SETCOUNTCOMMANDS()
-{
-	if (!clCmd) clInd = 0;
-	else
-	{
-		u32 tmp_chk = 0xFF000000;
-		for (int t = 4; t > 0; t--)
-		{
-			if ((clCmd & tmp_chk))
-			{
-				clInd = t;
-				break;
-			}
-			tmp_chk >>= 8;
-		}
-	}
-}
-
-void gfx3d_Add_Command(u32 val)
-{
-	//INFO("3D command 0x%02X (full val = 0x%08X, val = 0x%08X, ind %i)\n", clCmd&0xFF, clCmd,  val, clInd);
-	if (!clInd)
-	{
-		if (val == 0) return;
-		clCmd = val;
-		SETCOUNTCOMMANDS();
-		NOPARAMS(val);
-		return;
-	}
-
-	switch (clCmd & 0xFF)
-	{
-		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x440) = val;
-			gfx3d_glMatrixMode(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x448) = val;
-			gfx3d_glPopMatrix(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x44C) = val;
-			gfx3d_glStoreMatrix(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x450) = val;
-			gfx3d_glRestoreMatrix(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x458) = val;
-			if (!gfx3d_glLoadMatrix4x4(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x45C) = val;
-			if (!gfx3d_glLoadMatrix4x3(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x460) = val;
-			if (!gfx3d_glMultMatrix4x4(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x464) = val;
-			if (!gfx3d_glMultMatrix4x3(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x468) = val;
-			if (!gfx3d_glMultMatrix3x3(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x46C) = val;
-			if (!gfx3d_glScale(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x470) = val;
-			if (!gfx3d_glTranslate(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x20:		// COLOR - Directly Set Vertex Color (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x480) = val;
-			gfx3d_glColor3b(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x21:		// NORMAL - Set Normal Vector (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x484) = val;
-			gfx3d_glNormal(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x488) = val;
-			gfx3d_glTexCoord(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x48C) = val;
-			if (!gfx3d_glVertex16b(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x490) = val;
-			gfx3d_glVertex10b(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x494) = val;
-			gfx3d_glVertex3_cord(0, 1, val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x498) = val;
-			gfx3d_glVertex3_cord(0, 2, val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x49C) = val;
-			gfx3d_glVertex3_cord(1, 2, val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A0) = val;
-			gfx3d_glVertex_rel(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A4) = val;
-			gfx3d_glPolygonAttrib(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A8) = val;
-			gfx3d_glTexImage(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4AC) = val;
-			gfx3d_glTexPalette(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C0) = val;
-			gfx3d_glMaterial0(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C4) = val;
-			gfx3d_glMaterial1(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C8) = val;
-			gfx3d_glLightDirection(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x33:		// LIGHT_COLOR - Set Light Color (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4CC) = val;
-			gfx3d_glLightColor(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4D0) = val;
-			if (!gfx3d_glShininess(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x500) = val;
-			gfx3d_glBegin(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x540) = val;
-			gfx3d_glFlush(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x60:		// VIEWPORT - Set Viewport (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x580) = val;
-			gfx3d_glViewPort(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C0) = val;
-			if (!gfx3d_glBoxTest(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C4) = val;
-			if (!gfx3d_glPosTest(val)) break;
-			clCmd >>= 8;
-			clInd--;
-		break;
-		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C8) = val;
-			gfx3d_glVecTest(val);
-			clCmd >>= 8;
-			clInd--;
-		break;
-		default:
-			LOG("Unknown 3D command 0x%02X in cmd=0x%02X\n", clCmd&0xFF, val);
-			clCmd >>= 8;
-			clInd--;
-			return;
-	}
-	GFX_FIFOadd(&MMU.gfx_fifo);
-	NOPARAMS(val);
-}
-
-void gfx3d_Add_Command_Direct(u32 cmd, u32 val)
-{
-	if (cmd == 0) return;
-
-	switch (cmd)
-	{
-		// 3D commands without parameters
-		case 0x00:		// NOP - No Operation (for padding packed GXFIFO commands)
-		break;
-		case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = val;
-			gfx3d_glPushMatrix();
-		break;
-		case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = val;
-			gfx3d_glLoadIdentity();
-		break;
-		case 0x41:		// END_VTXS - End of Vertex List (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = val;
-			gfx3d_glEnd();
-		break;
-		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x440) = val;
-			gfx3d_glMatrixMode(val);
-		break;
-		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x448) = val;
-			gfx3d_glPopMatrix(val);
-		break;
-		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x44C) = val;
-			gfx3d_glStoreMatrix(val);
-		break;
-		case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x450) = val;
-			gfx3d_glRestoreMatrix(val);
-		break;
-		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x458) = val;
-			if (!gfx3d_glLoadMatrix4x4(val)) break;
-		break;
-		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x45C) = val;
-			if (!gfx3d_glLoadMatrix4x3(val)) break;
-		break;
-		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x460) = val;
-			if (!gfx3d_glMultMatrix4x4(val)) break;
-		break;
-		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x464) = val;
-			if (!gfx3d_glMultMatrix4x3(val)) break;
-		break;
-		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x468) = val;
-			if (!gfx3d_glMultMatrix3x3(val)) break;
-		break;
-		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x46C) = val;
-			if (!gfx3d_glScale(val)) break;
-		break;
-		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x470) = val;
-			if (!gfx3d_glTranslate(val)) break;
-		break;
-		case 0x20:		// COLOR - Directly Set Vertex Color (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x480) = val;
-			gfx3d_glColor3b(val);
-		break;
-		case 0x21:		// NORMAL - Set Normal Vector (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x484) = val;
-			gfx3d_glNormal(val);
-		break;
-		case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x488) = val;
-			gfx3d_glTexCoord(val);
-		break;
-		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x48C) = val;
-			if (!gfx3d_glVertex16b(val)) break;
-		break;
-		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x490) = val;
-			gfx3d_glVertex10b(val);
-		break;
-		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x494) = val;
-			gfx3d_glVertex3_cord(0, 1, val);
-		break;
-		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x498) = val;
-			gfx3d_glVertex3_cord(0, 2, val);
-		break;
-		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x49C) = val;
-			gfx3d_glVertex3_cord(1, 2, val);
-		break;
-		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A0) = val;
-			gfx3d_glVertex_rel(val);
-		break;
-		case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A4) = val;
-			gfx3d_glPolygonAttrib(val);
-		break;
-		case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4A8) = val;
-			gfx3d_glTexImage(val);
-		break;
-		case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4AC) = val;
-			gfx3d_glTexPalette(val);
-		break;
-		case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C0) = val;
-			gfx3d_glMaterial0(val);
-		break;
-		case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C4) = val;
-			gfx3d_glMaterial1(val);
-		break;
-		case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4C8) = val;
-			gfx3d_glLightDirection(val);
-		break;
-		case 0x33:		// LIGHT_COLOR - Set Light Color (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4CC) = val;
-			gfx3d_glLightColor(val);
-		break;
-		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x4D0) = val;
-			if (!gfx3d_glShininess(val)) break;
-		break;
-		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x500) = val;
-			gfx3d_glBegin(val);
-		break;
-		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x540) = val;
-			gfx3d_glFlush(val);
-		break;
-		case 0x60:		// VIEWPORT - Set Viewport (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x580) = val;
-			gfx3d_glViewPort(val);
-		break;
-		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C0) = val;
-			if (!gfx3d_glBoxTest(val)) break;
-		break;
-		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C4) = val;
-			if (!gfx3d_glPosTest(val)) break;
-		break;
-		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
-			*(u32 *)(ARM9Mem.ARM9_REG + 0x5C8) = val;
-			gfx3d_glVecTest(val);
-		break;
-		default:
-			LOG("Execute unknown 3D command 0x%02X in val=0x%02X\n", cmd, val);
-			return;
-	}
-	GFX_FIFOadd(&MMU.gfx_fifo);
-}
+#endif
 
 static void gfx3d_Control_cache()
 {
@@ -1670,11 +1990,9 @@ SFORMAT SF_GFX3D[]={
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLBS", 1, 1, &GFX_busy},
-	{ "GLF1", 1, 1, &MMU.gfx_fifo.empty},
-	{ "GLF1", 1, 1, &MMU.gfx_fifo.half},
-	{ "GLF1", 1, 1, &MMU.gfx_fifo.full},
-	{ "GLF1", 1, 1, &MMU.gfx_fifo.error},
-	{ "GLF1", 1, 1, &MMU.gfx_fifo.irq},
+	{ "GLF9", 4, 1, &gxFIFO.tail},
+	{ "GLF9", 4, 261, &gxFIFO.cmd},
+	{ "GLF9", 4, 261, &gxFIFO.param},
 	{ "GCOL", 1, 4, colorRGB},
 	{ "GLCO", 4, 4, lightColor},
 	{ "GLDI", 4, 4, lightDirection},

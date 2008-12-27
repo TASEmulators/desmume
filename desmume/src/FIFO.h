@@ -29,38 +29,31 @@
 //=================================================== IPC FIFO
 typedef struct
 {
-	u32		buf[16];		// 64K
-	u8		size;			// tail
-
-	BOOL	empty;
-	BOOL	full;
-	BOOL	error;
+	u32		sendBuf[2][16];
+	u32		recvBuf[2][16];
+	
+	u8		sendTail[2];
+	u8		recvTail[2];
 } IPC_FIFO;
 
-extern void IPC_FIFOclear(IPC_FIFO * fifo);
-extern void IPC_FIFOadd(IPC_FIFO * fifo, u32 val);
-extern u32 IPC_FIFOget(IPC_FIFO * fifo);
+extern IPC_FIFO ipc_fifo;
+extern void IPC_FIFOclear();
+extern void IPC_FIFOsend(u8 proc, u32 val);
+extern u32 IPC_FIFOrecv(u8 proc);
+extern void IPC_FIFOcnt(u8 proc, u16 val);
 
 //=================================================== GFX FIFO
 typedef struct
 {
-	u32		size;					// tail
+	u32		cmd[261];
+	u32		param[261];
 
-	BOOL	empty;
-	BOOL	half;
-	BOOL	full;
-	BOOL	error;
-	u8		irq;
-
-	u32		pipe[4];		// additional 4 entries
-	u8		pipe_size;		// pipe tail
-
-	BOOL	pipe_empty;
-	BOOL	pipe_half;
-	BOOL	pipe_full;
+	u32		tail;		// tail
 } GFX_FIFO;
-extern void GFX_FIFOclear(GFX_FIFO * fifo);
-extern void GFX_FIFOadd(GFX_FIFO * fifo);
+
+extern GFX_FIFO gxFIFO;
+extern void GFX_FIFOclear();
+extern void GFX_FIFOsend(u32 cmd, u32 param);
 
 //=================================================== Display memory FIFO
 #if 0

@@ -197,8 +197,8 @@ void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal();
 void gfx3d_Control(unsigned long v);
 u32 gfx3d_GetGXstatus();
-void gfx3d_Add_Command_Direct(u32 cmd, u32 val);
-void gfx3d_Add_Command(u32 val);
+void gfx3d_sendCommandToFIFO(u32 val);
+void gfx3d_sendCommand(u32 cmd, u32 param);
 
 //other misc stuff
 void gfx3d_glGetMatrix(unsigned int mode, int index, float* dest);
