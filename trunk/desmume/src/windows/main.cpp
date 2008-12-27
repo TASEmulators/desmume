@@ -2410,7 +2410,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                      CheckLanguage(LOWORD(wParam));
                   return 0;
                   case IDC_LANGDANISH:
-                     SaveLanguage(1);
+                     SaveLanguage(2);
                      ChangeLanguage(2);
                      CheckLanguage(LOWORD(wParam));
                   return 0;
