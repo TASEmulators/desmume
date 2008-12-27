@@ -876,6 +876,11 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 				dst += dstinc;
 				src += srcinc;
 			}
+
+		//write back the addresses
+		DMASrc[proc][num] = src;
+		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
+			DMADst[proc][num] = dst;
 	}
 }
 
