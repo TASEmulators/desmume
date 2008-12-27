@@ -746,7 +746,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 	u16 yoff;
 	u16 x      = 0;
 	u16 xfin;
-	u16 palette_size;
+	u16 palette_size_shift;
 	u16 mosaic = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
 
 	s8 line_dir = 1;
@@ -897,10 +897,10 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 		return;
 	}
 
-	palette_size=0; // color: no extended palette
+	palette_size_shift=0; // color: no extended palette
 	if(dispCnt->ExBGxPalette_Enable)  // color: extended palette
 	{
-		palette_size=0x100;
+		palette_size_shift=8;
 		pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 		if(!pal) return;
 	}
@@ -926,9 +926,10 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 		}
 		for(; x < xfin; )
 		{
-			color = T1ReadWord(pal, ((*line) + (tileentry.bits.Palette*palette_size)) << 1);
-			if (*line) 
+			color = T1ReadWord(pal, ((*line) + (tileentry.bits.Palette<<palette_size_shift)) << 1);
+			if (*line)
 				gpu->setFinalColorBck(gpu,0,num,dst,color,x,Y);
+			
 			dst += 2; x++; xoff++;
 
 			line += line_dir;
@@ -2166,7 +2167,15 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					{
 						if (i16 == 0 && dispCnt->BG0_3D)
 						{
-							gpu3D->NDS_3D_GetLine (l, (u16*)dst);
+							//determine the 3d range to grab
+							BGxOFS * bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
+							s16 hofs = (s16)T1ReadWord((u8 *)&bgofs->BGxHOFS, 0);
+							int start, end, ofs;
+							if(hofs==0) { start = 0; end = 255; ofs = 0; }
+							else if(hofs<0) { start = -hofs; end=255; ofs=0; }
+							else { start = 0; end=255-hofs; ofs=hofs; }
+							
+							gpu3D->NDS_3D_GetLine (l, start, end, (u16*)dst+ofs);
 							continue;
 						}
 					}

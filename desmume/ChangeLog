@@ -53,6 +53,7 @@
  - Add MMU->GPU signal for when vram mappings change, which allows it to assume textures are unchanged unless vram has changed [zeromus]
  - Move lighting model to software instead of using opengl for more precision [zeromus]
  - Fix a bug in texture transformation mode 1 [zeromus]
+ - Add 3d layer h-scrolling [zeromus]
  Mac OS X port:
  - Fixed: Filenames and paths with unicode characters now work. [Jeff]
  - Fixed: Load state from file button works again. [Jeff]
