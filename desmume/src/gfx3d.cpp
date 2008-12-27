@@ -153,7 +153,13 @@ int listTwiddle = 1;
 int triStripToggle;
 
 //list-building state
-VERTLIST tempVertList;
+struct {
+	//the number of verts registered in this list
+	int count;
+	//indices to the main vert list
+	int map[4];
+} tempVertInfo;
+
 
 static void twiddleLists() {
 	listTwiddle++;
@@ -478,12 +484,12 @@ void gfx3d_glBegin(unsigned long v)
 {
 	vtxFormat = v&0x03;
 	triStripToggle = 0;
-	tempVertList.count = 0;
+	tempVertInfo.count = 0;
 }
 
 void gfx3d_glEnd(void)
 {
-	tempVertList.count = 0;
+	tempVertInfo.count = 0;
 }
 
 void gfx3d_glColor3b(unsigned long v)
@@ -492,6 +498,12 @@ void gfx3d_glColor3b(unsigned long v)
 	colorRGB[1] = ((v>>5)&0x1F);
 	colorRGB[2] = ((v>>10)&0x1F);
 }
+
+static void SUBMITVERTEX(int i, int n) 
+{
+	polylist->list[polylist->count].vertIndexes[i] = tempVertInfo.map[n];
+}
+
 
 //Submit a vertex to the GE
 static void SetVertex()
@@ -530,7 +542,8 @@ static void SetVertex()
 	//TODO - viewport transform
 
 	//record the vertex
-	VERT &vert = tempVertList.list[tempVertList.count];
+	//VERT &vert = tempVertList.list[tempVertList.count];
+	VERT &vert = vertlist->list[vertlist->count + tempVertInfo.count];
 	vert.texcoord[0] = last_s;
 	vert.texcoord[1] = last_t;
 	vert.coord[0] = coordTransformed[0];
@@ -542,51 +555,58 @@ static void SetVertex()
 	vert.color[2] = colorRGB[2];
 	vert.color[3] = colorRGB[3];
 	vert.depth = 0x7FFF * coordTransformed[2];
-	tempVertList.count++;
+	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count;
+	tempVertInfo.count++;
 
 	//possibly complete a polygon
 	{
-		#define SUBMITVERTEX(i,n) vertlist->list[polylist->list[polylist->count].vertIndexes[i] = vertlist->count++] = tempVertList.list[n];
 		int completed=0;
 		switch(vtxFormat) {
 			case 0: //GL_TRIANGLES
-				if(tempVertList.count!=3)
+				if(tempVertInfo.count!=3)
 					break;
 				completed = 1;
+				//vertlist->list[polylist->list[polylist->count].vertIndexes[i] = vertlist->count++] = tempVertList.list[n];
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
+				vertlist->count+=3;
 				polylist->list[polylist->count].type = 3;
-				tempVertList.count = 0;
+				tempVertInfo.count = 0;
 				break;
 			case 1: //GL_QUADS
-				if(tempVertList.count!=4)
+				if(tempVertInfo.count!=4)
 					break;
 				completed = 1;
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				SUBMITVERTEX(3,3);
+				vertlist->count+=4;
 				polylist->list[polylist->count].type = 4;
-				tempVertList.count = 0;
+				tempVertInfo.count = 0;
 				break;
 			case 2: //GL_TRIANGLE_STRIP
-				if(tempVertList.count!=3)
+				if(tempVertInfo.count!=3)
 					break;
 				completed = 1;
 				SUBMITVERTEX(0,0);
 				SUBMITVERTEX(1,1);
 				SUBMITVERTEX(2,2);
 				polylist->list[polylist->count].type = 3;
+
 				if(triStripToggle)
-					tempVertList.list[1] = tempVertList.list[2];
+					tempVertInfo.map[1] = vertlist->count+2;
 				else
-					tempVertList.list[0] = tempVertList.list[2];
+					tempVertInfo.map[0] = vertlist->count+2;
+				
+				vertlist->count+=3;
+
 				triStripToggle ^= 1;
-				tempVertList.count = 2;
+				tempVertInfo.count = 2;
 				break;
 			case 3: //GL_QUAD_STRIP
-				if(tempVertList.count!=4)
+				if(tempVertInfo.count!=4)
 					break;
 				completed = 1;
 				SUBMITVERTEX(0,0);
@@ -594,9 +614,10 @@ static void SetVertex()
 				SUBMITVERTEX(2,3);
 				SUBMITVERTEX(3,2);
 				polylist->list[polylist->count].type = 4;
-				tempVertList.list[0] = tempVertList.list[2];
-				tempVertList.list[1] = tempVertList.list[3];
-				tempVertList.count = 2;
+				tempVertInfo.map[0] = vertlist->count+2;
+				tempVertInfo.map[1] = vertlist->count+3;
+				vertlist->count+=4;
+				tempVertInfo.count = 2;
 				break;
 		}
 
@@ -1684,7 +1705,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GSFO", 4, 1, &gfx3d.fogOffset},
 	{ "GSTT", 4, 32, gfx3d.rgbToonTable},
 	{ "GSST", 4, 128, shininessTable},
-	{ "GSSI", 2, 1, &shininessInd},
+	{ "GSSI", 4, 1, &shininessInd},
 	{ 0 }
 };
 
