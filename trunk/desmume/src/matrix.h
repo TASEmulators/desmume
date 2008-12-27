@@ -48,6 +48,7 @@ void	MATRIXFASTCALL MatrixScale			(float * matrix, const float * ptr);
 float	MATRIXFASTCALL MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
 void	MATRIXFASTCALL MatrixSet				(float *matrix, int x, int y, float value);
 void	MATRIXFASTCALL MatrixCopy				(float * matrixDST, const float * matrixSRC);
+int		MATRIXFASTCALL MatrixCompare				(const float * matrixDST, const float * matrixSRC);
 void	MATRIXFASTCALL MatrixIdentity			(float *matrix);
 
 void	MatrixTranspose				(float *matrix);

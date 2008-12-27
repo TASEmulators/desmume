@@ -29,9 +29,10 @@ void gfx3d_reset();
 
 struct POLY {
 	int type; //tri or quad
-	int vertIndexes[4]; //up to four verts can be referenced by this poly
+	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
-	float projMatrix[16];
+	int projIndex; //the index into the projlist that this poly uses
+	u32 pad;
 
 	bool isTranslucent()
 	{
@@ -51,22 +52,28 @@ struct POLY {
 #define POLYLIST_SIZE 100000
 //#define POLYLIST_SIZE 2048
 struct POLYLIST {
-	int count;
 	POLY list[POLYLIST_SIZE];
+	int count;
+};
+
+#define PROJLIST_SIZE 1000
+struct PROJLIST {
+	float projMatrix[PROJLIST_SIZE][16];
+	int count;
 };
 
 struct VERT {
 	float coord[4];
 	float texcoord[2];
-	u8 color[4];
 	u32 depth;
+	u8 color[4];
 };
 
 #define VERTLIST_SIZE 400000
 //#define VERTLIST_SIZE 10000
 struct VERTLIST {
-	int count;
 	VERT list[VERTLIST_SIZE];
+	int count;
 };
 
 //used to communicate state to the renderer
@@ -96,6 +103,7 @@ struct GFX3D
 
 	POLYLIST* polylist;
 	VERTLIST* vertlist;
+	PROJLIST* projlist;
 	int indexlist[POLYLIST_SIZE];
 
 	BOOL wbuffer, sortmode;

@@ -146,6 +146,8 @@ POLYLIST polylists[2];
 POLYLIST* polylist = &polylists[0];
 VERTLIST vertlists[2];
 VERTLIST* vertlist = &vertlists[0];
+PROJLIST projlists[2];
+PROJLIST* projlist = &projlists[0];
 
 int listTwiddle = 1;
 int triStripToggle;
@@ -158,8 +160,10 @@ static void twiddleLists() {
 	listTwiddle &= 1;
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
+	projlist = &projlists[listTwiddle];
 	polylist->count = 0;
 	vertlist->count = 0;
+	projlist->count = 0;
 }
 
 static BOOL flushPending = FALSE;
@@ -597,10 +601,28 @@ static void SetVertex()
 		}
 
 		if(completed) {
-			MatrixCopy(polylist->list[polylist->count].projMatrix,mtxCurrent[0]);
-			polylist->list[polylist->count].polyAttr = polyAttr;
-			polylist->list[polylist->count].texParam = textureFormat;
-			polylist->list[polylist->count].texPalette = texturePalette;
+			POLY &poly = polylist->list[polylist->count];
+			//todo - dont overrun proj list
+			
+
+			//see if the last entry in the proj list matches the current matrix, if there is one.
+			if(projlist->count != 0 && 
+				//but as a speed hack, we consider the matrices different if the first element differs.
+				//i think this should be good enough.
+				//!MatrixCompare(mtxCurrent[0],projlist->projMatrix[projlist->count-1])
+				mtxCurrent[0][0] == projlist->projMatrix[projlist->count-1][0]
+				) {
+				//it matches. use it
+				poly.projIndex = projlist->count-1;
+			} else {
+				MatrixCopy(projlist->projMatrix[projlist->count],mtxCurrent[0]);
+				poly.projIndex = projlist->count;
+				projlist->count++;
+			}
+
+			poly.polyAttr = polyAttr;
+			poly.texParam = textureFormat;
+			poly.texPalette = texturePalette;
 			polylist->count++;
 		}
 	}
@@ -980,6 +1002,7 @@ void gfx3d_glFlush(unsigned long v)
 	//the renderer wil lget the lists we just built
 	gfx3d.polylist = polylist;
 	gfx3d.vertlist = vertlist;
+	gfx3d.projlist = projlist;
 
 	//we need to sort the poly list with alpha polys last
 	//first, look for alpha polys
@@ -1681,12 +1704,16 @@ bool gfx3d_loadstate(std::istream* is)
 	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
+	projlist = &projlists[listTwiddle];
 	polylist->count = 0;
 	vertlist->count = 0;
+	projlist->count = 0;
 	gfx3d.polylist = &polylists[listTwiddle^1];
 	gfx3d.vertlist = &vertlists[listTwiddle^1];
+	gfx3d.projlist = &projlists[listTwiddle^1];
 	gfx3d.polylist->count=0;
 	gfx3d.vertlist->count=0;
+	gfx3d.projlist->count = 0;
 
 	return true;
 }
