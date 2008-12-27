@@ -145,8 +145,7 @@ void mc_reset_com(memory_chip_t *mc)
          mc->type = MC_TYPE_EEPROM2;
          mc->size = MC_SIZE_64KBITS;
       }
-	  //if it writes a funny number less than 4kbits, then assume it is 4kbit eeprom
-      else if (mc->autodetectsize <= (16+1))
+      else if (mc->autodetectsize == (16+1))
       {
          // 4 Kbit EEPROM
          addr = mc->autodetectbuf[0];
@@ -164,8 +163,6 @@ void mc_reset_com(memory_chip_t *mc)
          mc->type = MC_TYPE_FLASH;
          mc->size = MC_SIZE_2MBITS;
 		 */
-
-		  //otherwise, we hope it must be a 64kbits eeprom
 	 // 64 Kbit EEPROM
          addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
          mc->type = MC_TYPE_EEPROM2;
