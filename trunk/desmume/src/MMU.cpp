@@ -708,25 +708,24 @@ void MMU_unsetRom()
 }
 char txt[80];	
 
-template<u32 proc>
 void execsqrt() {
 	u32 ret;
-	u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x2B0);
+	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0);
 	switch(cnt&1)
 	{
 	case 0: {
-		u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x2B8);
+		u32 v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
 		ret = isqrt(v);
 		break;
 		}
 	case 1: {
-		u64 v = T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x2B8);
+		u64 v = T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
 		ret = isqrt(v);
 		break;
 		}
 	}
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B4, 0);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2B0, cnt | 0x8000);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, 0);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, cnt | 0x8000);
 
 	MMU.sqrtCycles = (nds.cycles + 26);
 	MMU.sqrtResult = ret;
@@ -734,27 +733,26 @@ void execsqrt() {
 	MMU.sqrtRunning = TRUE;
 }
 
-template<u32 proc>
 void execdiv() {
-	u16 cnt = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x280);
+	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280);
 	s64 num,den;
 	s64 res,mod;
 	switch(cnt&3)
 	{
 	case 0:
-		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x290);
-		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
+		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = (nds.cycles + 36);
 	break;
 	case 3: //gbatek says this is same as mode 1
 	case 1:
-		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
-		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x298);
+		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
+		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = (nds.cycles + 68);
 	break;
 	case 2:
-		num = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x290);
-		den = (s64) T1ReadQuad(MMU.MMU_MEM[proc][0x40], 0x298);
+		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
+		den = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = (nds.cycles + 68);
 		break;
 	}
@@ -777,11 +775,11 @@ void execdiv() {
 							(u32)(den>>32), (u32)den, 
 							(u32)(res>>32), (u32)res);
 
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A0, 0);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A4, 0);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2A8, 0);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x2AC, 0);
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x280, ((cnt & 0xBFFF) | 0x8000));
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, 0);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, 0);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, 0);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, 0);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280, ((cnt & 0xBFFF) | 0x8000));
 
 	MMU.divResult = res;
 	MMU.divMod = mod;
@@ -2421,26 +2419,26 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
             case REG_DIVDENOM :
 				{
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298, val);
-					execdiv<ARMCPU_ARM9>();
+					execdiv();
 					return;
 				}
 			case REG_DIVDENOM+4 :
 				{
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x29C, val);
-					execdiv<ARMCPU_ARM9>();
+					execdiv();
 					return;
 				}
 
 			case REG_SQRTPARAM :
 			{
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8, val);
-				execsqrt<ARMCPU_ARM9>();
+				execsqrt();
 				return;
 			}
 			case REG_SQRTPARAM+4 :
 			{
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2BC, val);
-				execsqrt<ARMCPU_ARM9>();
+				execsqrt();
 				return;
 			}
 			case REG_IPCSYNC :
