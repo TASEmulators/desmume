@@ -1089,68 +1089,72 @@ u32 gfx3d_GetGXstatus()
 	return gxstat;
 }
 
-#define NOPARAMS() \
-	for (;;) \
-	{\
-		switch (clCmd & 0xFF)\
-		{\
-			case 0x00:\
-				{\
-					if (clInd > 0)\
-					{\
-						clCmd >>= 8;\
-						clInd--;\
-						continue;\
-					}\
-					clCmd = 0;\
-					break;\
-				}\
-			case 0x11:\
-				{\
-					GFX_FIFOadd(&MMU.gfx_fifo);\
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = val;\
-					gfx3d_glPushMatrix();\
-					clCmd >>= 8;\
-					clInd--;\
-					continue;\
-				}\
-			case 0x15:\
-				{\
-					GFX_FIFOadd(&MMU.gfx_fifo);\
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = val;\
-					gfx3d_glLoadIdentity();\
-					clCmd >>= 8;\
-					clInd--;\
-					continue;\
-				}\
-			case 0x41:\
-				{\
-					GFX_FIFOadd(&MMU.gfx_fifo);\
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = val;\
-					gfx3d_glEnd();\
-					clCmd >>= 8;\
-					clInd--;\
-					continue;\
-				}\
-		}\
-		break;\
+void NOPARAMS(u32 val)
+{
+	for (;;)
+	{
+		switch (clCmd & 0xFF)
+		{
+			case 0x00:
+				{
+					if (clInd > 0)
+					{
+						clCmd >>= 8;
+						clInd--;
+						continue;
+					}
+					clCmd = 0;
+					break;
+				}
+			case 0x11:
+				{
+					GFX_FIFOadd(&MMU.gfx_fifo);
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = val;
+					gfx3d_glPushMatrix();
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+			case 0x15:
+				{
+					GFX_FIFOadd(&MMU.gfx_fifo);
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = val;
+					gfx3d_glLoadIdentity();
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+			case 0x41:
+				{
+					GFX_FIFOadd(&MMU.gfx_fifo);
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = val;
+					gfx3d_glEnd();
+					clCmd >>= 8;
+					clInd--;
+					continue;
+				}
+		}
+		break;
 	}
+}
 
-#define SETCOUNTCOMMANDS() \
-	if (!clCmd) clInd = 0;\
-	else\
-	{\
-		u32 tmp_chk = 0xFF000000;\
-		for (int t = 4; t > 0; t--)\
-		{\
-			if ((clCmd & tmp_chk))\
-			{\
-				clInd = t;\
-				break;\
-			}\
-			tmp_chk >>= 8;\
-		}\
+void SETCOUNTCOMMANDS()
+{
+	if (!clCmd) clInd = 0;
+	else
+	{
+		u32 tmp_chk = 0xFF000000;
+		for (int t = 4; t > 0; t--)
+		{
+			if ((clCmd & tmp_chk))
+			{
+				clInd = t;
+				break;
+			}
+			tmp_chk >>= 8;
+		}
 	}
+}
 
 void gfx3d_Add_Command(u32 val)
 {
@@ -1160,7 +1164,7 @@ void gfx3d_Add_Command(u32 val)
 		if (val == 0) return;
 		clCmd = val;
 		SETCOUNTCOMMANDS();
-		NOPARAMS();
+		NOPARAMS(val);
 		return;
 	}
 
@@ -1377,7 +1381,7 @@ void gfx3d_Add_Command(u32 val)
 			return;
 	}
 	GFX_FIFOadd(&MMU.gfx_fifo);
-	NOPARAMS();
+	NOPARAMS(val);
 }
 
 void gfx3d_Add_Command_Direct(u32 cmd, u32 val)

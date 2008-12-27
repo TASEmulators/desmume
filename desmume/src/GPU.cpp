@@ -235,7 +235,7 @@ static void GPU_resortBGs(GPU *gpu)
 	struct _DISPCNT * cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	itemsForPriority_t * item;
 
-	memset(gpu->sprWin,0, 256*256);
+	memset(gpu->sprWin,0, 256*192);
 
 	// we don't need to check for windows here...
 // if we tick boxes, invisible layers become invisible & vice versa
@@ -2118,11 +2118,8 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 				!gpu->LayersEnable[4]) return;
 
 	// init background color & priorities
-	for(int i = 0; i< 256; ++i)
-	{
-		sprPrio[i]=0xFF;
-		gpu->sprWin[l][i]=0;
-	}
+	memset(sprPrio,0xFF,256);
+	memset(&gpu->sprWin[l],0,256);
 	
 	// init pixels priorities
 	for (int i=0; i<NB_PRIORITIES; i++) {
