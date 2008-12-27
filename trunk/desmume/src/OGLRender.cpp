@@ -1230,9 +1230,7 @@ static void GetLineCaptured(int line, u16* dst)
 }
 
 
-//NHerve mod3 - Fixed blending with 2D backgrounds (New Super Mario Bros looks better)
-//zeromus post-mod3: fix even better
-static void GetLine (int line, u16* dst)
+static void GetLine(int line, int start, int end_inclusive, u16* dst)
 {
 	assert(line<192 && line>=0);
 
@@ -1254,14 +1252,14 @@ static void GetLine (int line, u16* dst)
 	//this alpha compositing blending logic isnt thought through very much
 	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
 
-	for(int i = 0; i < 256; i++)
+	for(int i = start, j=0; i <= end_inclusive; ++i, ++j)
 	{
 		u32 stencil = screenStencil[i];
 
 		//you would use this if you wanted to use the stencil buffer to make decisions here
 		if(!stencil) continue;
 
-		u16 oldcolor = dst[i];
+		u16 oldcolor = dst[j];
 		
 		int t=i<<2;
 		u32 dstpixel;
@@ -1296,7 +1294,7 @@ static void GetLine (int line, u16* dst)
 		newpix = mix[newpix][oldpix];
 		dstpixel |= (newpix<<10);
 
-		dst[i] = dstpixel;
+		dst[j] = dstpixel;
 	}
 }
 
