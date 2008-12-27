@@ -144,7 +144,8 @@ struct NDS_fw_touchscreen_cal {
  */
 enum nds_fw_ds_type {
   NDS_FW_DS_TYPE_FAT,
-  NDS_FW_DS_TYPE_LITE
+  NDS_FW_DS_TYPE_LITE,
+  NDS_FW_DS_TYPE_iQue
 };
 
 #define MAX_FW_NICKNAME_LENGTH 10

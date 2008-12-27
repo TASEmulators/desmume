@@ -220,16 +220,12 @@ SFORMAT SF_MMU[]={
 	{ "MCHD", 4, 1,       &MMU.CheckDMAs},
 
 	//fifos
-	{ "F0ER", 4, 1,       &MMU.ipc_fifo[0].error},
-	{ "F0EM", 4, 1,       &MMU.ipc_fifo[0].empty},
-	{ "F0FU", 4, 1,       &MMU.ipc_fifo[0].full},
-	{ "F0SZ", 1, 1,       &MMU.ipc_fifo[0].size},
-	{ "F0BU", 4, 16,	  &MMU.ipc_fifo[0].buf},
-	{ "F1ER", 4, 1,       &MMU.ipc_fifo[1].error},
-	{ "F1EM", 4, 1,       &MMU.ipc_fifo[1].empty},
-	{ "F1FU", 4, 1,       &MMU.ipc_fifo[1].full},
-	{ "F1SZ", 1, 1,       &MMU.ipc_fifo[1].size},
-	{ "F1BU", 4, 16,	  &MMU.ipc_fifo[1].buf},
+	{ "F0ST", 1, 1,       ipc_fifo.sendTail},
+	{ "F0RT", 1, 1,       ipc_fifo.recvTail},
+	{ "FSB0", 4, 16,      &ipc_fifo.sendBuf[0]},
+	{ "FRB0", 4, 16,      &ipc_fifo.recvBuf[0]},
+	{ "FSB1", 4, 16,      &ipc_fifo.sendBuf[1]},
+	{ "FRB1", 4, 16,      &ipc_fifo.recvBuf[1]},
 	{ 0 }
 };
 

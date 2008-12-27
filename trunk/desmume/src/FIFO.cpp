@@ -23,77 +23,144 @@
 
 #include "FIFO.h"
 #include <string.h>
+#include "armcpu.h"
 #include "debug.h"
+#include "mem.h"
+#include "MMU.h"
 
 // ========================================================= IPC FIFO
-void IPC_FIFOclear(IPC_FIFO * fifo)
-{
-	memset(fifo, 0, sizeof(IPC_FIFO));
+IPC_FIFO ipc_fifo;
 
-	fifo->empty = TRUE;
+void IPC_FIFOclear()
+{
+	memset(&ipc_fifo, 0, sizeof(IPC_FIFO));
 	//LOG("FIFO is cleared\n");
 }
-void IPC_FIFOadd(IPC_FIFO * fifo, u32 val)
+
+void IPC_FIFOsend(u8 proc, u32 val)
 {
-	if (fifo->full)
+	//LOG("IPC%s send FIFO 0x%08X\n", proc?"7":"9", val);
+	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
+	if (!(cnt_l & 0x8000)) return;			// FIFO disabled
+	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
+
+	if (ipc_fifo.sendTail[proc] < 16)		// last full == error
 	{
-		//LOG("FIFO send is full\n");
-		fifo->error = true;
-		return;
+		ipc_fifo.sendBuf[proc][ipc_fifo.sendTail[proc]] = val;
+		ipc_fifo.sendTail[proc]++;
+		if (ipc_fifo.sendTail[proc] == 16) cnt_l |= 0x02;	// full
+		cnt_l &= 0xFFFE;
+
+		if (ipc_fifo.recvTail[proc^1] < 16)	// last full == error
+		{
+			ipc_fifo.recvBuf[proc^1][ipc_fifo.recvTail[proc^1]] = val;
+			ipc_fifo.recvTail[proc^1]++;
+			if (ipc_fifo.recvTail[proc^1] == 16) cnt_r |= 0x0200;	// full
+			cnt_r &= 0xFEFF;
+		}
+		else
+			cnt_r |= 0x4200;
 	}
+	else
+		cnt_l |= 0x4002;
 
-	//LOG("IPC FIFO add value 0x%08X in pos %i\n", val, fifo->size);
+	// save in mem
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
+	T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
 
-	fifo->buf[fifo->size] = val;
-	fifo->size++;
-	if (fifo->size == 16)
-		fifo->full = TRUE;
-	fifo->empty = FALSE;
+	if ((cnt_r & (1<<10)))
+		NDS_makeInt(proc^1, 18);
 }
 
-u32 IPC_FIFOget(IPC_FIFO * fifo)
+u32 IPC_FIFOrecv(u8 proc)
 {
-	if (fifo->empty)
-	{
-		fifo->error = true;
-		//LOG("FIFO get is empty\n");
-		return(0);
-	}
+	//LOG("IPC%s recv FIFO:\n", proc?"7":"9");
+	u32 val = 0;
+	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
+	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 
-	u32 val = fifo->buf[0];
-	//LOG("IPC FIFO get value 0x%08X in pos %i\n", val, fifo->size);
-	for (int i = 0; i < fifo->size; i++)
-		fifo->buf[i] = fifo->buf[i+1];
-	fifo->size--;
-	if (fifo->size == 0)
-		fifo->empty = TRUE;
-	return val;
+	if (ipc_fifo.recvTail[proc] > 0)		// not empty
+	{
+		val = ipc_fifo.recvBuf[proc][0];
+		for (int i = 0; i < ipc_fifo.recvTail[proc]; i++)
+			ipc_fifo.recvBuf[proc][i] = ipc_fifo.recvBuf[proc][i+1];
+		ipc_fifo.recvTail[proc]--;
+		if (ipc_fifo.recvTail[proc] == 0)	// empty
+			cnt_l |= 0x0100;
+
+		// remove from head
+		for (int i = 0; i < ipc_fifo.sendTail[proc^1]; i++)
+			ipc_fifo.sendBuf[proc^1][i] = ipc_fifo.sendBuf[proc^1][i+1];
+		ipc_fifo.sendTail[proc^1]--;
+		if (ipc_fifo.sendTail[proc^1] == 0)	// empty
+			cnt_r |= 0x0001;
+	}
+	else
+		cnt_l |= 0x4100;
+
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
+	T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
+
+	if ((cnt_l & (1<<3)))
+		NDS_makeInt(proc, 19);
+	return (val);
+}
+
+void IPC_FIFOcnt(u8 proc, u16 val)
+{
+	//LOG("IPC%s FIFO context 0x%X\n", proc?"7":"9", val);
+
+	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
+
+	cnt_l &= ~0x8404;
+	cnt_l |= (val & 0x8404);
+	cnt_l &= (~(val & 0x4000));
+	if (val & 0x0008)
+	{
+		IPC_FIFOclear();
+		cnt_l |= 0x0101;
+	}
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
+
+	if ((cnt_l & 0x0004))
+		NDS_makeInt(proc, 18);
 }
 
 // ========================================================= GFX FIFO
-void GFX_FIFOclear(GFX_FIFO * fifo)
-{
-	memset(fifo, 0, sizeof(GFX_FIFO));
+GFX_FIFO	gxFIFO;
 
-	fifo->empty = TRUE;
-	fifo->half = TRUE;
+void GFX_FIFOclear()
+{
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+
+	memset(&gxFIFO, 0, sizeof(GFX_FIFO));
+
+	// TODO: irq handle
+	gxstat &= 0x0000FF00;
+	gxstat |= 0x00000002;			// this is hack
+	gxstat |= 0x86000000;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
-void GFX_FIFOadd(GFX_FIFO * fifo)
+void GFX_FIFOsend(u32 cmd, u32 param)
 {
-	if (fifo->full)
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat &= 0x0000FF00;
+	gxstat |= 0x00000002;		// this is hack
+
+	if (gxFIFO.tail < 260)
 	{
-		//INFO("GFX FIFO send is full\n");
-		fifo->error = true;
-		return;
+		gxFIFO.cmd[gxFIFO.tail] = cmd & 0xFF;
+		gxFIFO.param[gxFIFO.tail] = param;
+		gxFIFO.tail++;
+		// TODO: irq handle
+		if (gxFIFO.tail < 130)
+			gxstat |= 0x72000000;
+		if (gxFIFO.tail == 16)
+			gxstat |= 0x01000000;
 	}
+	else
+		gxstat |= 0x01000000;
 
-	fifo->size++;
-	if (fifo->size > 127)
-		fifo->half = FALSE;
-
-	if (fifo->size == 256)
-		fifo->full = TRUE;
-	fifo->empty = FALSE;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
-

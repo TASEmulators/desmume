@@ -311,9 +311,8 @@ void MMU_Init(void) {
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
 
-	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM9]);
-	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM7]);
-	GFX_FIFOclear(&MMU.gfx_fifo);
+	IPC_FIFOclear();
+	GFX_FIFOclear();
 	
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -368,9 +367,8 @@ void MMU_clearMem()
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
 	
-	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM9]);
-	IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM7]);
-	GFX_FIFOclear(&MMU.gfx_fifo);
+	IPC_FIFOclear();
+	GFX_FIFOclear();
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -1586,6 +1584,22 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
 }
 
+static INLINE void MMU_IPCSync(u8 proc, u32 val)
+{
+	//INFO("IPC%s sync 0x%08X\n", proc?"7":"9", val);
+	u32 IPCSYNC_local = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
+	u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180);
+
+	IPCSYNC_local = (IPCSYNC_local&0x6000)|(val&0xf00)|(IPCSYNC_local&0xf);
+	IPCSYNC_remote =(IPCSYNC_remote&0x6f00)|(val>>8)&0xf;
+
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, IPCSYNC_local);
+	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, IPCSYNC_remote);
+
+	if ((val & 0x2000) && (IPCSYNC_remote & 0x4000))
+		NDS_makeInt(proc^1, 17);
+}
+
 //================================================= MMU ARM9 write 16
 static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
@@ -1938,42 +1952,11 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
 
             case REG_IPCSYNC :
-				{
-					u16 IPCSYNC_remote = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0x0F));
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val>>8)&0x0F));
-					MMU.reg_IF[ARMCPU_ARM9] |= ((IPCSYNC_remote & (1<<14))<<2);
-					MMU.reg_IF[ARMCPU_ARM7] |= ((val & (1<<13))<<3);
-					//MMU.reg_IF[ARMCPU_ARM7] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);
-				}
+					MMU_IPCSync(ARMCPU_ARM9, val);
 				return;
 
 			case REG_IPCFIFOCNT :
-				{
-					//LOG("IPC9 write16 context 0x%X\n", val);
-					u32 cnt_l = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-					u32 cnt_r = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-					/*
-					if ((val & 0x8000) && !(cnt_l & 0x8000))
-					{
-						// this is the first init, the other side didnt init yet
-						// so do a complete init
-						IPC_FIFOclear(&MMU.ipc_fifo);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184,0x8101) ;
-						// and then handle it as usual
-					}*/
-
-					if (val & 0x4008)				// clear FIFO
-					{
-						IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM9]);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
-						MMU.reg_IF[ARMCPU_ARM9] |= ((val & 4)<<15);
-						//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, val);
-						return;
-					}
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, cnt_l | (val & 0xBFF4));
-				}
+					IPC_FIFOcnt(ARMCPU_ARM9, val);
 				return;
             case REG_TM0CNTL :
             case REG_TM1CNTL :
@@ -2202,26 +2185,34 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if((adr>>24)==4)
 	{
-		if(adr >= 0x04000380 && adr <= 0x040003BC)
+		if( (adr >= 0x04000330) && (adr < 0x04000340) )	//edge color table
 		{
-			//toon table
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>2] = val;
+			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
+			return;
+		}
+
+		if( (adr >= 0x04000360) && (adr < 0x04000380) )	//fog table
+		{
+			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
+			return;
+		}
+
+		if( (adr >= 0x04000380) && (adr <= 0x40003BC) )	//toon table
+		{
+			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(0x380)]);
 			return;
 		}
 
-		if (adr >= 0x04000400 && adr < 0x04000440)
+		if ( (adr >= 0x04000400) && (adr < 0x04000440) )
 		{
-			// Geometry commands (aka Dislay Lists) - Parameters:X
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>2] = val;
-			gfx3d_Add_Command(val);
+			gfx3d_sendCommandToFIFO(val);
 			return;
 		}
 
-		if (adr >= 0x04000440 && adr < 0x04000600)
+		if ( (adr >= 0x04000440) && (adr < 0x04000600) )
 		{
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>2] = val;
-			gfx3d_Add_Command_Direct((adr - 0x04000400) >> 2, val);
+			gfx3d_sendCommand(adr, val);
 			return;
 		}
 
@@ -2259,12 +2250,6 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			{
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x35C>>2] = val;
 				gfx3d_glFogOffset(val);
-				return;
-			}
-
-			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
-			{
-				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2] = val;
 				return;
 			}
 
@@ -2459,60 +2444,11 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			}
 			case REG_IPCSYNC :
-				{
-					LOG("MMU write 32 IPCSYNC\n");
-					u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF));
-					MMU.reg_IF[ARMCPU_ARM9] |= ((IPCSYNC_remote & (1<<14))<<2);
-					MMU.reg_IF[ARMCPU_ARM7] |= ((val & (1<<13))<<3);
-					//MMU.reg_IF[ARMCPU_ARM7] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);
-				}
+					MMU_IPCSync(ARMCPU_ARM9, val);
 				return;
-			case REG_IPCFIFOCNT :
-				{
-					//LOG("IPC9 write32 context 0x%X\n", val);
-					u32 cnt_l = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-					u32 cnt_r = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-					
-					/*if ((val & 0x8000) && !(cnt_l & 0x8000))
-					{
-						// this is the first init, the other side didnt init yet
-						// so do a complete init
-						IPC_FIFOclear(&MMU.ipc_fifo);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184,0x8101) ;
-						// and then handle it as usual
-					}*/
-					if(val & 0x4008)
-					{
-						IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM9]);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
-						MMU.reg_IF[ARMCPU_ARM9] |= ((val & 4)<<15);// & (MMU.reg_IME[ARMCPU_ARM9]<<17);// & (MMU.reg_IE[ARMCPU_ARM9]&0x20000);//
-						return;
-					}
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, val & 0xBFF4);
-				return;
-				}
 
 			case REG_IPCFIFOSEND :
-				{
-					//INFO("IPC9 write32\n");
-					u32 cnt_l = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-					if (!(cnt_l & 0x8000)) return;		//FIFO disabled
-					u32 cnt_r = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-					IPC_FIFOadd(&MMU.ipc_fifo[ARMCPU_ARM7], val);
-					cnt_l = (cnt_l & 0xFFFC) | (MMU.ipc_fifo[ARMCPU_ARM9].full?0x0002:0);
-					cnt_r = (cnt_r & 0xFCFF) | (MMU.ipc_fifo[ARMCPU_ARM9].full?0x0200:0);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, cnt_l);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, cnt_r);
-					//MMU.reg_IF[ARMCPU_ARM7] |= ((cnt_r & (1<<10))<<8);
-					if (cnt_r & 0x400)
-					{
-						MMU.reg_IF[ARMCPU_ARM7] |= ((cnt_r & (1<<10))<<8);		// FIFO remote not empty
-						NDS_makeARM7Int(18);
-					}
-				}
+					IPC_FIFOsend(ARMCPU_ARM9, val);
 				return;
 			case REG_DMA0CNTL :
 				//LOG("32 bit dma0 %04X\r\n", val);
@@ -2738,7 +2674,6 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case 0x04000606:
 				return (gfx3d_GetNumVertex()&8191);
 			// ============================================= 3D end
-
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
 				
@@ -2802,8 +2737,16 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	{
 		switch(adr)
 		{
-			case 0x04000600:		// Geometry Engine Status Register (R and R/W)
-				return gfx3d_GetGXstatus();
+			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
+			{
+				
+				u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], 
+								adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
+
+				// this is hack
+				gxstat |= 0x00000002;
+				return gxstat;
+			}
 
 			case 0x04000640:
 			case 0x04000644:
@@ -2853,28 +2796,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_IF :
 				return MMU.reg_IF[ARMCPU_ARM9];
 			case REG_IPCFIFORECV :
-			{
-				//INFO("IPC9 read32\n");
-				u32 cnt_l = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-				if (!(cnt_l & 0x8000)) return 0;	// FIFO disabled
-				u32 cnt_r = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-				u32 val = IPC_FIFOget(&MMU.ipc_fifo[ARMCPU_ARM9]);
-
-				cnt_l |= (MMU.ipc_fifo[ARMCPU_ARM9].empty?0x0100:0) | (MMU.ipc_fifo[ARMCPU_ARM9].full?0x0200:0) | (MMU.ipc_fifo[ARMCPU_ARM9].error?0x4000:0);
-				cnt_r |= (MMU.ipc_fifo[ARMCPU_ARM9].empty?0x0001:0) | (MMU.ipc_fifo[ARMCPU_ARM9].full?0x0002:0);
-
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, cnt_l);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, cnt_r);
-
-				if ((MMU.ipc_fifo[ARMCPU_ARM7].empty) && (cnt_l & BIT(2)))
-				{
-					MMU.reg_IF[ARMCPU_ARM7] |= ((cnt_r & (1<<8))<<7);		// FIFO empty
-					NDS_makeARM7Int(17) ;					// SEND FIFO EMPTY
-				}
-
-				return val;
-			}
-			return 0;
+				return IPC_FIFOrecv(ARMCPU_ARM9);
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
@@ -3207,41 +3129,11 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
 				
             case REG_IPCSYNC :
-				{
-					u16 IPCSYNC_remote = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF));
-					MMU.reg_IF[ARMCPU_ARM9] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));// 
-					//execute = FALSE;
-				}
+					MMU_IPCSync(ARMCPU_ARM7, val);
 				return;
 
 			case REG_IPCFIFOCNT :
-				{
-					//LOG("IPC7 write16 context 0x%X\n", val);
-					u32 cnt_l = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-					u32 cnt_r = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-					/*
-					if ((val & 0x8000) && !(cnt_l & 0x8000))
-					{
-						// this is the first init, the other side didnt init yet
-						// so do a complete init
-						IPC_FIFOclear(&MMU.ipc_fifo);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184,0x8101) ;
-						// and then handle it as usual
-					}*/
-
-					if (val & 0x4008)				// clear FIFO
-					{
-						IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM7]);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
-						MMU.reg_IF[ARMCPU_ARM7] |= ((val & 4)<<15);
-						//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, val);
-						return;
-					}
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, cnt_l | (val & 0xBFF4));
-				}
+					IPC_FIFOcnt(ARMCPU_ARM7, val);
 				return;
             case REG_TM0CNTL :
             case REG_TM1CNTL :
@@ -3496,61 +3388,11 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			}
 
 			case REG_IPCSYNC :
-				{
-					//execute=FALSE;
-					LOG("MMU write 32 IPCSYNC\n");
-					u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x180, (val&0xFFF0)|((IPCSYNC_remote>>8)&0xF));
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x180, (IPCSYNC_remote&0xFFF0)|((val>>8)&0xF));
-					MMU.reg_IF[ARMCPU_ARM9] |= ((IPCSYNC_remote & (1<<14))<<2) & ((val & (1<<13))<<3);// & (MMU.reg_IME[remote] << 16);// & (MMU.reg_IE[remote] & (1<<16));//
-				}
+					MMU_IPCSync(ARMCPU_ARM7, val);
 				return;
-			case REG_IPCFIFOCNT :
-				{
-					//LOG("IPC7 write32 context 0x%X\n", val);
-					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF ;
-					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF ;
-					/*
-					if ((val & 0x8000) && !(cnt_l & 0x8000))
-					{
-						// this is the first init, the other side didnt init yet
-						// so do a complete init
-						IPC_FIFOclear(&MMU.ipc_fifo);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184,0x8101) ;
-						// and then handle it as usual
-					}
-				*/
-					if(val & 0x4008)
-					{
-						IPC_FIFOclear(&MMU.ipc_fifo[ARMCPU_ARM7]);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
-						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, (cnt_r & 0xC507) | 0x100);
-						MMU.reg_IF[ARMCPU_ARM7] |= ((val & 4)<<15);// & (MMU.reg_IME[ARMCPU_ARM7]<<17);// & (MMU.reg_IE[ARMCPU_ARM7]&0x20000);//
-						return;
-					}
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, val & 0xBFF4);
-					//execute = FALSE;
-				return;
-				}
 
 			case REG_IPCFIFOSEND :
-				{
-					//INFO("IPC7 write32\n");
-					u32 cnt_l = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-					if (!(cnt_l & 0x8000)) return;		//FIFO disabled
-					u32 cnt_r = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-					IPC_FIFOadd(&MMU.ipc_fifo[ARMCPU_ARM9], val);
-					cnt_l = (cnt_l & 0xFFFC) | (MMU.ipc_fifo[ARMCPU_ARM7].full?0x0002:0);
-					cnt_r = (cnt_r & 0xFCFF) | (MMU.ipc_fifo[ARMCPU_ARM7].full?0x0200:0);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, cnt_l);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, cnt_r);
-					//MMU.reg_IF[ARMCPU_ARM9] |= ((cnt_r & (1<<10))<<8);
-					if (cnt_r & 0x400)
-					{
-						MMU.reg_IF[ARMCPU_ARM9] |= ((cnt_r & (1<<10))<<8);		// FIFO remote not empty
-						NDS_makeARM9Int(18);
-					}
-				}
+				IPC_FIFOsend(ARMCPU_ARM7, val);
 				return;
 			case REG_DMA0CNTL :
 				//LOG("32 bit dma0 %04X\r\n", val);
@@ -3740,7 +3582,7 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 				return (u16)MMU.reg_IF[ARMCPU_ARM7];
 			case REG_IF + 2 :
 				return (u16)(MMU.reg_IF[ARMCPU_ARM7]>>16);
-				
+
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
@@ -3780,31 +3622,7 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			case REG_IF :
 				return MMU.reg_IF[ARMCPU_ARM7];
 			case REG_IPCFIFORECV :
-			{
-				//INFO("IPC7 read32\n");
-				u32 cnt_l = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184) & 0xFFFF;
-				if (!(cnt_l & 0x8000)) return 0;	// FIFO disabled
-				u32 cnt_r = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184) & 0xFFFF;
-				u32 val = IPC_FIFOget(&MMU.ipc_fifo[ARMCPU_ARM7]);
-
-				cnt_l |= (MMU.ipc_fifo[ARMCPU_ARM7].empty?0x0100:0) | (MMU.ipc_fifo[ARMCPU_ARM7].full?0x0200:0) | (MMU.ipc_fifo[ARMCPU_ARM7].error?0x4000:0);
-				cnt_r |= (MMU.ipc_fifo[ARMCPU_ARM7].empty?0x0001:0) | (MMU.ipc_fifo[ARMCPU_ARM7].full?0x0002:0);
-
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x184, cnt_l);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x184, cnt_r);
-
-				if ((MMU.ipc_fifo[ARMCPU_ARM9].empty) && (cnt_l & BIT(2)))
-				{
-					MMU.reg_IF[ARMCPU_ARM9] |= ((cnt_r & (1<<8))<<7);		// FIFO empty
-					NDS_makeARM9Int(17) ;					// SEND FIFO EMPTY
-				}
-
-				//if ((MMU.ipc_fifo.empty) && (cnt_l & BIT(2)))
-				//	NDS_makeInt(ARMCPU_ARM9,17) ; // remote: SEND FIFO EMPTY
-
-				return val;
-			}
-			return 0;
+				return IPC_FIFOrecv(ARMCPU_ARM7);
             case REG_TM0CNTL :
             case REG_TM1CNTL :
             case REG_TM2CNTL :
