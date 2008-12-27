@@ -628,13 +628,15 @@ static void SetVertex()
 			POLY &poly = polylist->list[polylist->count];
 			//todo - dont overrun proj list
 			
-
 			//see if the last entry in the proj list matches the current matrix, if there is one.
 			if(projlist->count != 0 && 
 				//but as a speed hack, we consider the matrices different if the first element differs.
 				//i think this should be good enough.
-				//!MatrixCompare(mtxCurrent[0],projlist->projMatrix[projlist->count-1])
-				mtxCurrent[0][0] == projlist->projMatrix[projlist->count-1][0]
+				!MatrixCompare(mtxCurrent[0],projlist->projMatrix[projlist->count-1])
+
+				// if compare only one value this is broke some games
+				// zeromus check it please
+				//mtxCurrent[0][0] == projlist->projMatrix[projlist->count-1][0]
 				) {
 				//it matches. use it
 				poly.projIndex = projlist->count-1;
