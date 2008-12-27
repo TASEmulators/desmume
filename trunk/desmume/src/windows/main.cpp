@@ -73,7 +73,8 @@ using namespace std;
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
-unsigned int baseid = 600;					//Base identifier for the recent ROMs items
+const unsigned int clearid = 600;			// ID for the Clear recent ROMs item
+const unsigned int baseid = 601;			//Base identifier for the recent ROMs items
 static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
 //--------------------------------------
 
@@ -502,8 +503,8 @@ void UpdateRecentRomsMenu()
 
 	//UpdateRecentRoms will always call this
 	//This will be always called by GetRecentRoms on DesMume startup
-	if (RecentRoms.size() == 0) return;
 	
+
 	//----------------------------------------------------------------------
 	//Get Menu item info
 	
@@ -512,8 +513,9 @@ void UpdateRecentRomsMenu()
 	moo.fMask = MIIM_SUBMENU | MIIM_STATE;
 
 	GetMenuItemInfo(GetSubMenu(mainMenu, 0), ID_FILE_RECENTROM, FALSE, &moo);
-	moo.hSubMenu = recentromsmenu;
-	moo.fState = RecentRoms[0].c_str() ? MFS_ENABLED : MFS_GRAYED;
+	moo.hSubMenu = GetSubMenu(recentromsmenu, 0);
+	//moo.fState = RecentRoms[0].c_str() ? MFS_ENABLED : MFS_GRAYED;
+	moo.fState = MFS_ENABLED;
 	SetMenuItemInfo(GetSubMenu(mainMenu, 0), ID_FILE_RECENTROM, FALSE, &moo);
 
 	//-----------------------------------------------------------------------
@@ -522,8 +524,50 @@ void UpdateRecentRomsMenu()
 	//Clear the current menu items
 	for(int x = 0; x < MAX_RECENT_ROMS; x++)
 	{
-		RemoveMenu(recentromsmenu, baseid + x, MF_BYCOMMAND);
+		DeleteMenu(GetSubMenu(recentromsmenu, 0), baseid + x, MF_BYCOMMAND);
 	}
+
+	if(RecentRoms.size() == 0)
+	{
+		EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_GRAYED);
+
+		moo.cbSize = sizeof(moo);
+		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_STATE | MIIM_TYPE;
+
+		moo.cch = 5;
+		moo.fType = 0;
+		moo.wID = baseid;
+		moo.dwTypeData = "None";
+		moo.fState = MF_GRAYED;
+
+		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, TRUE, &moo);
+
+		return;
+	}
+
+	EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_ENABLED);
+	DeleteMenu(GetSubMenu(recentromsmenu, 0), baseid, MF_BYCOMMAND);
+	
+	/* If there's no ROM available, add a greyed "None" item */
+	/* Otherwise, let's fill the menu */
+/*	if (RecentRoms.size() == 0)
+	{
+		EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_GRAYED);
+
+		moo.cbSize = sizeof(moo);
+		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_STATE | MIIM_TYPE;
+
+		moo.cch = 5;
+		moo.fType = 0;
+		moo.wID = 0;
+		moo.dwTypeData = "None";
+		moo.fState = MF_GRAYED;
+
+		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, TRUE, &moo);
+	}
+	else
+	{*/
+	
 	
 	//-----------------------------------------------------------------------
 	//Update the list using RecentRoms vector
@@ -533,7 +577,7 @@ void UpdateRecentRomsMenu()
 		string tmp = RecentRoms[x];
 		if(tmp.size()>128)
 			tmp = tmp.substr(0,128);
-		
+			
 		moo.cbSize = sizeof(moo);
 		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
 
@@ -542,7 +586,7 @@ void UpdateRecentRomsMenu()
 		moo.wID = baseid + x;
 		moo.dwTypeData = (LPSTR)tmp.c_str();
 		//LOG("Inserting: %s\n",tmp.c_str());  //Debug
-		InsertMenuItem(recentromsmenu, 0, 1, &moo);
+		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, 1, &moo);
 	}
 	//-----------------------------------------------------------------------
 
@@ -626,6 +670,13 @@ void SaveRecentRoms()
 		else						//Else, make it empty
 			WritePrivateProfileString("General",temp.str().c_str(), "",IniName);
 	}
+}
+
+void ClearRecentRoms()
+{
+	RecentRoms.clear();
+	SaveRecentRoms();
+	UpdateRecentRomsMenu();
 }
 
 
@@ -1091,10 +1142,8 @@ int MenuInit()
 	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 
-    DragAcceptFiles(MainWindow->getHWnd(), TRUE);
-
-	recentromsmenu = CreateMenu(); //Create recent Roms menu
-	GetRecentRoms();			   //Populate the recent roms menu
+	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
+	GetRecentRoms();
 
 	return 1;
 }
@@ -1258,6 +1307,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		delete MainWindow;
 		exit(-1);
 	}
+
+	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
 	EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
 	EnableMenuItem(mainMenu, IDM_PAUSE, MF_GRAYED);
@@ -1758,6 +1809,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				{
 					int x = wParam - baseid;
 					OpenRecentROM(x);					
+				}
+				else if(wParam == clearid)
+				{
+					/* Clear all the recent ROMs */
+					ClearRecentRoms();
 				}
 				
 			}
