@@ -1078,6 +1078,9 @@ static void Render()
 	xglDepthMask(GL_TRUE);
 
 	glViewport(gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
+
+	//it might be handy to print the size of the projection list, in case a game is doing something weird with it
+	//printf("%d\n",gfx3d.projlist->count);
 	
 	//we're not using the alpha clear color right now
 	glClearColor(gfx3d.clearColor[0],gfx3d.clearColor[1],gfx3d.clearColor[2], clearAlpha);
@@ -1090,6 +1093,7 @@ static void Render()
 	{
 
 		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
+		int lastProjIndex = -1;
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
 			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
@@ -1107,8 +1111,11 @@ static void Render()
 			}
 			
 			//since we havent got the whole pipeline working yet, lets use opengl for the projection
-			glMatrixMode(GL_PROJECTION);
-			glLoadMatrixf(poly->projMatrix);
+			if(lastProjIndex != poly->projIndex) {
+				glMatrixMode(GL_PROJECTION);
+				glLoadMatrixf(gfx3d.projlist->projMatrix[poly->projIndex]);
+				lastProjIndex = poly->projIndex;
+			}
 
 			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
 			for(int j=0;j<type;j++) {

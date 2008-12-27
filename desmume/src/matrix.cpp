@@ -149,6 +149,11 @@ void MATRIXFASTCALL MatrixCopy (float* matrixDST, const float* matrixSRC)
 	memcpy ((void*)matrixDST, matrixSRC, sizeof(float)*16);
 }
 
+int MATRIXFASTCALL MatrixCompare (const float* matrixDST, const float* matrixSRC)
+{
+	return memcmp((void*)matrixDST, matrixSRC, sizeof(float)*16);
+}
+
 void MatrixStackInit (MatrixStack *stack)
 {
 	stack->matrix	= NULL;
