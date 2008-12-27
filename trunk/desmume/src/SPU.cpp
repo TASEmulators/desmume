@@ -792,6 +792,15 @@ static void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
+static void SPU_ChanUpdateNoMix(SPU_struct *SPU, channel_struct *chan)
+{
+	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	{
+		// check to see if we're passed the length and need to loop, etc.
+		TestForLoop(SPU, chan);
+	}
+}
+
 static void SPU_ChanUpdate8L(SPU_struct *SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
@@ -987,37 +996,43 @@ static void SPU_ChanUpdatePSGR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void (*SPU_ChanUpdate[4][3])(SPU_struct* SPU, channel_struct *chan) = {
+void (*SPU_ChanUpdate[4][4])(SPU_struct* SPU, channel_struct *chan) = {
 	{ // 8-bit PCM
 		SPU_ChanUpdate8L,
 			SPU_ChanUpdate8LR,
-			SPU_ChanUpdate8R
+			SPU_ChanUpdate8R,
+			SPU_ChanUpdateNoMix
 	},
 	{ // 16-bit PCM
 		SPU_ChanUpdate16L,
 			SPU_ChanUpdate16LR,
-			SPU_ChanUpdate16R
+			SPU_ChanUpdate16R,
+			SPU_ChanUpdateNoMix,
 		},
 		{ // IMA-ADPCM
 			SPU_ChanUpdateADPCML,
 				SPU_ChanUpdateADPCMLR,
-				SPU_ChanUpdateADPCMR
+				SPU_ChanUpdateADPCMR,
+				SPU_ChanUpdateNoMix
 		},
 		{ // PSG/White Noise
 			SPU_ChanUpdatePSGL,
 				SPU_ChanUpdatePSGLR,
-				SPU_ChanUpdatePSGR
+				SPU_ChanUpdatePSGR,
+				SPU_ChanUpdateNoMix
 			}
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
+template<bool actuallyMix> 
 static void SPU_MixAudio(SPU_struct *SPU, int length)
 {
 	int i;
 	u8 vol;
 
-	memset(SPU->sndbuf, 0, length*4*2);
+	if(actuallyMix)
+		memset(SPU->sndbuf, 0, length*4*2);
 
 
 	// If Master Enable isn't set, don't output audio
@@ -1037,7 +1052,9 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 		SPU->buflength = length;
 
 		// Mix audio
-		if (chan->pan == 0)
+		if(!actuallyMix)
+			SPU_ChanUpdate[chan->format][3](SPU,chan);
+		else if (chan->pan == 0)
 			SPU_ChanUpdate[chan->format][0](SPU,chan);
 		else if (chan->pan == 127)
 			SPU_ChanUpdate[chan->format][2](SPU,chan);
@@ -1046,18 +1063,19 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 	}
 
 	// convert from 32-bit->16-bit
-	for (i = 0; i < length*2; i++)
-	{
-		// Apply Master Volume
-		SPU->sndbuf[i] = SPU->sndbuf[i] * vol / 127;
+	if(actuallyMix)
+		for (i = 0; i < length*2; i++)
+		{
+			// Apply Master Volume
+			SPU->sndbuf[i] = SPU->sndbuf[i] * vol / 127;
 
-		if (SPU->sndbuf[i] > 0x7FFF)
-			SPU->outbuf[i] = 0x7FFF;
-		else if (SPU->sndbuf[i] < -0x8000)
-			SPU->outbuf[i] = -0x8000;
-		else
-			SPU->outbuf[i] = (s16)SPU->sndbuf[i];
-	}
+			if (SPU->sndbuf[i] > 0x7FFF)
+				SPU->outbuf[i] = 0x7FFF;
+			else if (SPU->sndbuf[i] < -0x8000)
+				SPU->outbuf[i] = -0x8000;
+			else
+				SPU->outbuf[i] = (s16)SPU->sndbuf[i];
+		}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1076,7 +1094,7 @@ void SPU_Emulate_core()
 	spu_core_samples = (int)(samples);
 	samples -= spu_core_samples;
 	
-	SPU_MixAudio(SPU_core,spu_core_samples);
+	SPU_MixAudio<false>(SPU_core,spu_core_samples);
 }
 
 void SPU_Emulate_user()
@@ -1094,7 +1112,7 @@ void SPU_Emulate_user()
 	{
 		if (audiosize > SPU_user->bufsize)
 			audiosize = SPU_user->bufsize;
-		SPU_MixAudio(SPU_user,audiosize);
+		SPU_MixAudio<true>(SPU_user,audiosize);
 		SNDCore->UpdateAudio(SPU_user->outbuf, audiosize);
 	}
 }
