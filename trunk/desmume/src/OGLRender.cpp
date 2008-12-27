@@ -1225,7 +1225,7 @@ static void GetLineCaptured(int line, u16* dst)
 		u32 b = screen3D[t+2];
 
 		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
-		dst[i] = (b<<10) | (g<<5) | (r>>3) | 0x8000;
+		dst[i] = (b<<10) | (g<<5) | (r) | 0x8000;
 	}
 }
 
