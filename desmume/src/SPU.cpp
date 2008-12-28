@@ -70,7 +70,23 @@ s16 wavedutytbl[8][8] = {
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF }
 };
 
+int precalcdifftbl[89][16];
+int precalcindextbl[89][8];
+
 FILE *spufp=NULL;
+
+//////////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+static INLINE T MinMax(T val, T min, T max)
+{
+	if (val < min)
+		return min;
+	else if (val > max)
+		return max;
+
+	return val;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -129,8 +145,27 @@ SoundInterface_struct *SPU_SoundCore()
 
 int SPU_Init(int coreid, int buffersize)
 {
+	int i, j;
+
 	SPU_core = new SPU_struct(740);
 	SPU_Reset();
+
+	for(i = 0; i < 16; i++)
+	{
+		for(j = 0; j < 89; j++)
+		{
+			precalcdifftbl[j][i] = (((i & 0x7) * 2 + 1) * adpcmtbl[j] / 8);
+			if(i & 0x8) precalcdifftbl[j][i] = -precalcdifftbl[j][i];
+		}
+	}
+
+	for(int i = 0; i < 8; i++)
+	{
+		for(j = 0; j < 89; j++)
+		{
+			precalcindextbl[j][i] = MinMax((j + indextbl[i]), 0, 88);
+		}
+	}
 
 	return SPU_ChangeSoundCore(coreid, buffersize);
 }
@@ -239,7 +274,7 @@ void SPU_struct::KeyOn(int channel)
 		{
 			thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 			thischan.pcm16b = (s16)((thischan.buf8[1] << 8) | thischan.buf8[0]);
-			thischan.pcm16b_last = 0;
+			thischan.pcm16b_last = thischan.pcm16b;
 			thischan.index = thischan.buf8[2] & 0x7F;
 			thischan.lastsampcnt = 7;
 			thischan.sampcnt = 8;
@@ -593,11 +628,12 @@ static INLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 {
 #ifdef SPU_INTERPOLATE
 	int loc = (int)chan->sampcnt;
-	s32 a = (s32)chan->buf8[loc] << 8;
-	if(loc<chan->length-1) {
-		double ratio = chan->sampcnt-loc;
-		s32 b = (s32)chan->buf8[loc+1] << 8;
-		a = (1-ratio)*a + ratio*b;
+	s32 a = (s32)(chan->buf8[loc] << 8);
+	if(loc < (chan->length << 2) - 1) {
+	/*	double ratio = chan->sampcnt-loc;*/
+		s32 b = (s32)(chan->buf8[loc + 1] << 8);
+	/*	a = (1-ratio)*a + ratio*b;*/
+		a = Interpolate(a, b, chan->sampcnt);
 	}
 	*data = a;
 #else
@@ -612,27 +648,16 @@ static INLINE void Fetch16BitData(channel_struct *chan, s32 *data)
 #ifdef SPU_INTERPOLATE
 	int loc = (int)chan->sampcnt;
 	s32 a = (s32)chan->buf16[loc];
-	if(loc<chan->length-1) {
-		double ratio = chan->sampcnt-loc;
-		s32 b = (s32)chan->buf16[loc+1];
-		a = (1-ratio)*a + ratio*b;
+	if(loc < (chan->length << 1) - 1) {
+		//double ratio = chan->sampcnt-loc;
+		s32 b = (s32)chan->buf16[loc + 1];
+		//a = (1-ratio)*a + ratio*b;
+		a = Interpolate(a, b, chan->sampcnt);
 	}
 	*data = a;
 #else
 	*data = (s32)chan->buf16[(int)chan->sampcnt];
 #endif
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static INLINE int MinMax(int val, int min, int max)
-{
-	if (val < min)
-		return min;
-	else if (val > max)
-		return max;
-
-	return val;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -661,15 +686,17 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
 		else
 			data4bit = chan->buf8[i >> 1] & 0xF;
 
-		diff = ((data4bit & 0x7) * 2 + 1) * adpcmtbl[chan->index] / 8;
+		/*diff = ((data4bit & 0x7) * 2 + 1) * adpcmtbl[chan->index] / 8;
 		if (data4bit & 0x8)
-			diff = -diff;
+			diff = -diff;*/
+		diff = precalcdifftbl[chan->index][data4bit];
 
 #ifdef SPU_INTERPOLATE
 		chan->pcm16b_last = chan->pcm16b;
 #endif
-		chan->pcm16b = (s16)MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
-		chan->index = MinMax(chan->index+indextbl[data4bit & 0x7], 0, 88);
+		chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
+		//chan->index = MinMax(chan->index+indextbl[data4bit & 0x7], 0, 88);
+		chan->index = precalcindextbl[chan->index][data4bit & 0x7];
 	}
 
 	chan->lastsampcnt = chan->sampcnt;
@@ -1325,6 +1352,7 @@ void SNDFileUpdateAudio(s16 *buffer, u32 num_samples)
 	size_t elems_written;
 	if (spufp)
 		elems_written = fwrite((void *)buffer, num_samples*2, 2, spufp);
+	INFO("%i written\n", elems_written);
 }
 
 //////////////////////////////////////////////////////////////////////////////
