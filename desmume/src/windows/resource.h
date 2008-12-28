@@ -1,5 +1,5 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
+// Microsoft Developer Studio generated include file.
 // Used by resources.rc
 //
 #define IDM_OPEN                        101
@@ -18,6 +18,7 @@
 #define IDM_DISASSEMBLER                110
 #define IDM_GAME_INFO                   111
 #define IDC_AUTO_UPDATE2                111
+#define IDD_3DSETTINGS                  111
 #define IDM_EXEC                        112
 #define IDM_PAUSE                       113
 #define IDM_RESET                       114
@@ -101,7 +102,6 @@
 #define IDC_LANGENGLISH                 210
 #define IDC_LANGFRENCH                  211
 #define IDC_LANGDANISH                  212
-#define IDM_DEFSIZE						213
 #define IDD_MEM_VIEWER                  301
 #define IDC_8_BIT                       302
 #define IDC_16_BIT                      303
@@ -212,7 +212,9 @@
 #define IDC_DISPCNTA9                   1025
 #define IDC_DISPSTATA9                  1026
 #define IDC_DISPCNTB9                   1027
+#define IDC_DEFAULT                     1027
 #define IDC_DISPSTATB9                  1028
+#define IDC_3DCORE                      1028
 #define IDC_IME9                        1029
 #define IDC_GXSTAT9                     1030
 #define IDC_IE7                         1032
@@ -362,14 +364,16 @@
 #define ID_FIL_RECENTROM                40035
 #define ID_FICHIER_RECENTROM            40036
 #define IDC_SAVETYPE7                   40037
+#define IDM_DEFSIZE                     40038
+#define IDM_3DCONFIG                    40040
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        107
-#define _APS_NEXT_COMMAND_VALUE         40038
-#define _APS_NEXT_CONTROL_VALUE         1027
+#define _APS_NEXT_RESOURCE_VALUE        113
+#define _APS_NEXT_COMMAND_VALUE         40041
+#define _APS_NEXT_CONTROL_VALUE         1029
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif
