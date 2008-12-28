@@ -7,6 +7,8 @@
 
 extern WINCLASS	*MainWindow;
 
+static bool oglAlreadyInit = false;
+
 int CheckHardwareSupport(HDC hdc)
 {
    int PixelFormat = GetPixelFormat(hdc);
@@ -32,6 +34,8 @@ bool windows_opengl_init()
 	PIXELFORMATDESCRIPTOR	pfd;
 	int						res;
 	char					*opengl_modes[3]={"software","half hardware (MCD driver)","hardware"};
+
+	if(oglAlreadyInit == true) return true;
 
 	oglDC = GetDC (MainWindow->getHWnd());
 
@@ -65,6 +69,8 @@ bool windows_opengl_init()
 			LOG("OpenGL mode: %s\n",opengl_modes[res]); 
 		else 
 			LOG("OpenGL mode: uknown\n");
+
+	oglAlreadyInit = true;
 
 	return true;
 }
