@@ -315,6 +315,7 @@ enum
 	ROM_DSGBA
 };
 
+#if 0 /* not used */
 //http://www.aggregate.org/MAGIC/#Population%20Count%20(Ones%20Count)
 static u32 ones32(u32 x)
 {
@@ -329,6 +330,7 @@ static u32 ones32(u32 x)
 	x += (x >> 16);
 	return(x & 0x0000003f);
 }
+#endif
 
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 				const char *cflash_disk_image_file)
