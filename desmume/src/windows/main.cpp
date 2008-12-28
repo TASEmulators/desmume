@@ -25,6 +25,7 @@
 #include <shellapi.h>
 #include <shlwapi.h>
 #include <Winuser.h>
+#include <windowsx.h>
 #include <commctrl.h>
 #include <commdlg.h>
 #include <stdio.h>
@@ -177,6 +178,7 @@ NULL
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3Dgl,
+NULL
 };
 
 int autoframeskipenab=1;
@@ -197,7 +199,7 @@ int displayMessageCounter = 0;	//Counter to keep track with how long to display 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
 
-
+LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
                                       LPARAM lParam);
 
@@ -894,12 +896,12 @@ DWORD WINAPI run()
 		MessageBox(hwnd,"Unable to set DirectDraw buffers","Error",MB_OK);
 		return -1;
     }
-
-    NDS_3D_SetDriver (GPU3D_OPENGL);
 	 
 	if (!gpu3D->NDS_3D_Init ())
 	{
-		MessageBox(hwnd,"Unable to initialize openGL","Error",MB_OK);
+		char err[100];
+		sprintf(err, "Unable to initialize the %s renderer", gpu3D->name);
+		MessageBox(hwnd,err,"Error",MB_OK);
 		return -1;
     }
 
@@ -1381,6 +1383,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
        frameskiprate=atoi(text);
        MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
     }
+
+	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+	NDS_3D_ChangeCore(cur3DCore, false);
 
 #ifdef BETA_VERSION
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
@@ -2319,6 +2324,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                        NDS_Reset();
 					   frameCounter=0;
                   return 0;
+
+				  case IDM_3DCONFIG:
+					  {
+						  bool tpaused = false;
+						  if(execute) 
+						  {
+							  tpaused = true;
+							  NDS_Pause();
+						  }
+
+						  DialogBox(hAppInst, MAKEINTRESOURCE(IDD_3DSETTINGS), hwnd, (DLGPROC)GFX3DSettingsDlgProc);
+
+						  if(tpaused) NDS_UnPause();
+					  }
+					  return 0;
                   case IDM_CONFIG:
                        {
 							bool tpaused=false;
@@ -2517,6 +2537,53 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     }
 
     return 0;
+}
+
+LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
+{
+	switch(msg)
+	{
+	case WM_INITDIALOG:
+		{
+			int i;
+
+			for(i = 0; core3DList[i] != NULL; i++)
+			{
+				ComboBox_AddString(GetDlgItem(hw, IDC_3DCORE), core3DList[i]->name);
+			}
+			ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), cur3DCore);
+		}
+		return TRUE;
+
+	case WM_COMMAND:
+		{
+			switch(LOWORD(wp))
+			{
+			case IDOK:
+				{
+					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)), (execute ? true : false));
+					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
+				}
+			case IDCANCEL:
+				{
+					EndDialog(hw, TRUE);
+				}
+				return TRUE;
+
+			case IDC_DEFAULT:
+				{
+					NDS_3D_ChangeCore(GPU3D_OPENGL, (execute ? true : false));
+					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_OPENGL);
+					WritePrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+				}
+				return TRUE;
+			}
+
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
