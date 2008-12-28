@@ -204,17 +204,17 @@ extern void (*_MMU_write32[2])(u32 addr, u32 val);
 
 // Use this macros for reading/writing, so the GDB stub isn't broken
 #ifdef GDB_STUB
-	#define READ32(a,b)		cpu->mem_if->read32(a,b & 0xFFFFFFFC)
-	#define WRITE32(a,b,c)	cpu->mem_if->write32(a,b & 0xFFFFFFFC,c)
-	#define READ16(a,b)		cpu->mem_if->read16(a,b & 0xFFFFFFFE)
-	#define WRITE16(a,b,c)	cpu->mem_if->write16(a,b & 0xFFFFFFFE,c)
+	#define READ32(a,b)		cpu->mem_if->read32(a,(b) & 0xFFFFFFFC)
+	#define WRITE32(a,b,c)	cpu->mem_if->write32(a,(b) & 0xFFFFFFFC,c)
+	#define READ16(a,b)		cpu->mem_if->read16(a,(b) & 0xFFFFFFFE)
+	#define WRITE16(a,b,c)	cpu->mem_if->write16(a,(b) & 0xFFFFFFFE,c)
 	#define READ8(a,b)		cpu->mem_if->read8(a,b)
 	#define WRITE8(a,b,c)	cpu->mem_if->write8(a,b,c)
 #else
-	#define READ32(a,b)		_MMU_read32[PROCNUM](b & 0xFFFFFFFC)
-	#define WRITE32(a,b,c)	_MMU_write32[PROCNUM](b & 0xFFFFFFFC,c)
-	#define READ16(a,b)		_MMU_read16[PROCNUM](b & 0xFFFFFFFE)
-	#define WRITE16(a,b,c)	_MMU_write16[PROCNUM](b & 0xFFFFFFFE,c)
+	#define READ32(a,b)		_MMU_read32[PROCNUM]((b) & 0xFFFFFFFC)
+	#define WRITE32(a,b,c)	_MMU_write32[PROCNUM]((b) & 0xFFFFFFFC,c)
+	#define READ16(a,b)		_MMU_read16[PROCNUM]((b) & 0xFFFFFFFE)
+	#define WRITE16(a,b,c)	_MMU_write16[PROCNUM]((b) & 0xFFFFFFFE,c)
 	#define READ8(a,b)		_MMU_read08[PROCNUM](b)
 	#define WRITE8(a,b,c)	_MMU_write08[PROCNUM](b, c)
 #endif
