@@ -1,22 +1,22 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+yopyop156@ifrance.com
+yopyop156.ifrance.com
 
-    This file is part of DeSmuME
+This file is part of DeSmuME
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+DeSmuME is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+DeSmuME is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+You should have received a copy of the GNU General Public License
+along with DeSmuME; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <string.h>
@@ -33,7 +33,7 @@
 #include "ROMReader.h"
 #include "gfx3d.h"
 #include "utils/decrypt/decrypt.h"
-
+#include "bios.h"
 #include "debug.h"
 
 #ifdef _WIN32
@@ -50,162 +50,162 @@ NDSSystem nds;
 
 static u32
 calc_CRC16( u32 start, const u8 *data, int count) {
-  int i,j;
-  u32 crc = start & 0xffff;
-  const u16 val[8] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
-  for(i = 0; i < count; i++)
-  {
-    crc = crc ^ data[i];
+	int i,j;
+	u32 crc = start & 0xffff;
+	const u16 val[8] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+	for(i = 0; i < count; i++)
+	{
+		crc = crc ^ data[i];
 
-    for(j = 0; j < 8; j++) {
-      int do_bit = 0;
+		for(j = 0; j < 8; j++) {
+			int do_bit = 0;
 
-      if ( crc & 0x1)
-        do_bit = 1;
+			if ( crc & 0x1)
+				do_bit = 1;
 
-      crc = crc >> 1;
+			crc = crc >> 1;
 
-      if ( do_bit) {
-        crc = crc ^ (val[j] << (7-j));
-      }
-    }
-  }
-  return crc;
+			if ( do_bit) {
+				crc = crc ^ (val[j] << (7-j));
+			}
+		}
+	}
+	return crc;
 }
 
 static int
 copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data) {
-  /*
-   * Determine which of the two user settings in the firmware is the current
-   * and valid one and then copy this into the destination buffer.
-   *
-   * The current setting will have a greater count.
-   * Settings are only valid if its CRC16 is correct.
-   */
-  int user1_valid = 0;
-  int user2_valid = 0;
-  u32 user_settings_offset;
-  u32 fw_crc;
-  u32 crc;
-  int copy_good = 0;
+	/*
+	* Determine which of the two user settings in the firmware is the current
+	* and valid one and then copy this into the destination buffer.
+	*
+	* The current setting will have a greater count.
+	* Settings are only valid if its CRC16 is correct.
+	*/
+	int user1_valid = 0;
+	int user2_valid = 0;
+	u32 user_settings_offset;
+	u32 fw_crc;
+	u32 crc;
+	int copy_good = 0;
 
-  user_settings_offset = fw_data[0x20];
-  user_settings_offset |= fw_data[0x21] << 8;
-  user_settings_offset <<= 3;
+	user_settings_offset = fw_data[0x20];
+	user_settings_offset |= fw_data[0x21] << 8;
+	user_settings_offset <<= 3;
 
-  if ( user_settings_offset <= 0x3FE00) {
-    s32 copy_settings_offset = -1;
+	if ( user_settings_offset <= 0x3FE00) {
+		s32 copy_settings_offset = -1;
 
-    crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset],
-                      NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
-    fw_crc = fw_data[user_settings_offset + 0x72];
-    fw_crc |= fw_data[user_settings_offset + 0x73] << 8;
-    if ( crc == fw_crc) {
-      user1_valid = 1;
-    }
+		crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset],
+			NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
+		fw_crc = fw_data[user_settings_offset + 0x72];
+		fw_crc |= fw_data[user_settings_offset + 0x73] << 8;
+		if ( crc == fw_crc) {
+			user1_valid = 1;
+		}
 
-    crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset + 0x100],
-                      NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
-    fw_crc = fw_data[user_settings_offset + 0x100 + 0x72];
-    fw_crc |= fw_data[user_settings_offset + 0x100 + 0x73] << 8;
-    if ( crc == fw_crc) {
-      user2_valid = 1;
-    }
+		crc = calc_CRC16( 0xffff, &fw_data[user_settings_offset + 0x100],
+			NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
+		fw_crc = fw_data[user_settings_offset + 0x100 + 0x72];
+		fw_crc |= fw_data[user_settings_offset + 0x100 + 0x73] << 8;
+		if ( crc == fw_crc) {
+			user2_valid = 1;
+		}
 
-    if ( user1_valid) {
-      if ( user2_valid) {
-        u16 count1, count2;
+		if ( user1_valid) {
+			if ( user2_valid) {
+				u16 count1, count2;
 
-        count1 = fw_data[user_settings_offset + 0x70];
-        count1 |= fw_data[user_settings_offset + 0x71] << 8;
+				count1 = fw_data[user_settings_offset + 0x70];
+				count1 |= fw_data[user_settings_offset + 0x71] << 8;
 
-        count2 = fw_data[user_settings_offset + 0x100 + 0x70];
-        count2 |= fw_data[user_settings_offset + 0x100 + 0x71] << 8;
+				count2 = fw_data[user_settings_offset + 0x100 + 0x70];
+				count2 |= fw_data[user_settings_offset + 0x100 + 0x71] << 8;
 
-        if ( count2 > count1) {
-          copy_settings_offset = user_settings_offset + 0x100;
-        }
-        else {
-          copy_settings_offset = user_settings_offset;
-        }
-      }
-      else {
-        copy_settings_offset = user_settings_offset;
-      }
-    }
-    else if ( user2_valid) {
-      /* copy the second user settings */
-      copy_settings_offset = user_settings_offset + 0x100;
-    }
+				if ( count2 > count1) {
+					copy_settings_offset = user_settings_offset + 0x100;
+				}
+				else {
+					copy_settings_offset = user_settings_offset;
+				}
+			}
+			else {
+				copy_settings_offset = user_settings_offset;
+			}
+		}
+		else if ( user2_valid) {
+			/* copy the second user settings */
+			copy_settings_offset = user_settings_offset + 0x100;
+		}
 
-    if ( copy_settings_offset > 0) {
-      memcpy( dest_buffer, &fw_data[copy_settings_offset],
-              NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
-      copy_good = 1;
-    }
-  }
+		if ( copy_settings_offset > 0) {
+			memcpy( dest_buffer, &fw_data[copy_settings_offset],
+				NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT);
+			copy_good = 1;
+		}
+	}
 
-  return copy_good;
+	return copy_good;
 }
 
 
 #ifdef GDB_STUB
 int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
-              struct armcpu_ctrl_iface **arm9_ctrl_iface,
-              struct armcpu_memory_iface *arm7_mem_if,
-              struct armcpu_ctrl_iface **arm7_ctrl_iface) {
+struct armcpu_ctrl_iface **arm9_ctrl_iface,
+struct armcpu_memory_iface *arm7_mem_if,
+struct armcpu_ctrl_iface **arm7_ctrl_iface) {
 #else
 int NDS_Init( void) {
 #endif
-     nds.ARM9Cycle = 0;
-     nds.ARM7Cycle = 0;
-     nds.cycles = 0;
-	 nds.idleFrameCounter = 0;
-	 memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
-     MMU_Init();
-     nds.nextHBlank = 3168;
-     nds.VCount = 0;
-     nds.lignerendu = FALSE;
+	nds.ARM9Cycle = 0;
+	nds.ARM7Cycle = 0;
+	nds.cycles = 0;
+	nds.idleFrameCounter = 0;
+	memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
+	MMU_Init();
+	nds.nextHBlank = 3168;
+	nds.VCount = 0;
+	nds.lignerendu = FALSE;
 
-     if (Screen_Init(GFXCORE_DUMMY) != 0)
-        return -1;
+	if (Screen_Init(GFXCORE_DUMMY) != 0)
+		return -1;
 
-	 gfx3d_init();
-     
+	gfx3d_init();
+
 #ifdef GDB_STUB
-     armcpu_new(&NDS_ARM7,1, arm7_mem_if, arm7_ctrl_iface);
-     armcpu_new(&NDS_ARM9,0, arm9_mem_if, arm9_ctrl_iface);
+	armcpu_new(&NDS_ARM7,1, arm7_mem_if, arm7_ctrl_iface);
+	armcpu_new(&NDS_ARM9,0, arm9_mem_if, arm9_ctrl_iface);
 #else
-     armcpu_new(&NDS_ARM7,1);
-     armcpu_new(&NDS_ARM9,0);
+	armcpu_new(&NDS_ARM7,1);
+	armcpu_new(&NDS_ARM9,0);
 #endif
 
-     if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
-        return -1;
+	if (SPU_Init(SNDCORE_DUMMY, 740) != 0)
+		return -1;
 
 #ifdef EXPERIMENTAL_WIFI
-	 WIFI_Init(&wifiMac) ;
+	WIFI_Init(&wifiMac) ;
 #endif
 
-     return 0;
+	return 0;
 }
 
 void NDS_DeInit(void) {
-     if(MMU.CART_ROM != MMU.UNUSED_RAM)
-        NDS_FreeROM();
+	if(MMU.CART_ROM != MMU.UNUSED_RAM)
+		NDS_FreeROM();
 
-     nds.nextHBlank = 3168;
-     SPU_DeInit();
-     Screen_DeInit();
-     MMU_DeInit();
-	 gpu3D->NDS_3D_Close();
+	nds.nextHBlank = 3168;
+	SPU_DeInit();
+	Screen_DeInit();
+	MMU_DeInit();
+	gpu3D->NDS_3D_Close();
 }
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
 {
-     MMU_setRom(rom, mask);
+	MMU_setRom(rom, mask);
 
-     return TRUE;
+	return TRUE;
 } 
 
 NDS_header * NDS_getROMHeader(void)
@@ -254,57 +254,57 @@ NDS_header * NDS_getROMHeader(void)
 
 	return header;
 
-     //return (NDS_header *)MMU.CART_ROM;
+	//return (NDS_header *)MMU.CART_ROM;
 } 
 
 void NDS_setTouchPos(u16 x, u16 y)
 {
-     nds.touchX = (x <<4);
-     nds.touchY = (y <<4);
-	 nds.isTouch = 1;
-     
-     MMU.ARM7_REG[0x136] &= 0xBF;
+	nds.touchX = (x <<4);
+	nds.touchY = (y <<4);
+	nds.isTouch = 1;
+
+	MMU.ARM7_REG[0x136] &= 0xBF;
 }
 
 void NDS_releaseTouch(void)
 { 
-     nds.touchX = 0;
-     nds.touchY = 0;
-	 nds.isTouch = 0;
-     
-     MMU.ARM7_REG[0x136] |= 0x40;
+	nds.touchX = 0;
+	nds.touchY = 0;
+	nds.isTouch = 0;
+
+	MMU.ARM7_REG[0x136] |= 0x40;
 }
 
 void debug()
 {
-     //if(NDS_ARM9.R[15]==0x020520DC) execute = FALSE;
-     //DSLinux
-          //if(NDS_ARM9.CPSR.bits.mode == 0) execute = FALSE;
-          //if((NDS_ARM9.R[15]&0xFFFFF000)==0) execute = FALSE;
-          //if((NDS_ARM9.R[15]==0x0201B4F4)/*&&(NDS_ARM9.R[1]==0x0)*/) execute = FALSE;
-     //AOE
-          //if((NDS_ARM9.R[15]==0x01FFE194)&&(NDS_ARM9.R[0]==0)) execute = FALSE;
-          //if((NDS_ARM9.R[15]==0x01FFE134)&&(NDS_ARM9.R[0]==0)) execute = FALSE;
+	//if(NDS_ARM9.R[15]==0x020520DC) emu_halt();
+	//DSLinux
+	//if(NDS_ARM9.CPSR.bits.mode == 0) emu_halt();
+	//if((NDS_ARM9.R[15]&0xFFFFF000)==0) emu_halt();
+	//if((NDS_ARM9.R[15]==0x0201B4F4)/*&&(NDS_ARM9.R[1]==0x0)*/) emu_halt();
+	//AOE
+	//if((NDS_ARM9.R[15]==0x01FFE194)&&(NDS_ARM9.R[0]==0)) emu_halt();
+	//if((NDS_ARM9.R[15]==0x01FFE134)&&(NDS_ARM9.R[0]==0)) emu_halt();
 
-     //BBMAN
-          //if(NDS_ARM9.R[15]==0x02098B4C) execute = FALSE;
-          //if(NDS_ARM9.R[15]==0x02004924) execute = FALSE;
-          //if(NDS_ARM9.R[15]==0x02004890) execute = FALSE;
-     
-     //if(NDS_ARM9.R[15]==0x0202B800) execute = FALSE;
-     //if(NDS_ARM9.R[15]==0x0202B3DC) execute = FALSE;
-     //if((NDS_ARM9.R[1]==0x9AC29AC1)&&(!fait)) {execute = FALSE;fait = TRUE;}
-     //if(NDS_ARM9.R[1]==0x0400004A) {execute = FALSE;fait = TRUE;}
-     /*if(NDS_ARM9.R[4]==0x2E33373C) execute = FALSE;
-     if(NDS_ARM9.R[15]==0x02036668) //execute = FALSE;
-     {
-     nds.logcount++;
-     sprintf(logbuf, "%d %08X", nds.logcount, NDS_ARM9.R[13]);
-     log::ajouter(logbuf);
-     if(nds.logcount==89) execute=FALSE;
-     }*/
-     //if(NDS_ARM9.instruction==0) execute = FALSE;
-     //if((NDS_ARM9.R[15]>>28)) execute = FALSE;
+	//BBMAN
+	//if(NDS_ARM9.R[15]==0x02098B4C) emu_halt();
+	//if(NDS_ARM9.R[15]==0x02004924) emu_halt();
+	//if(NDS_ARM9.R[15]==0x02004890) emu_halt();
+
+	//if(NDS_ARM9.R[15]==0x0202B800) emu_halt();
+	//if(NDS_ARM9.R[15]==0x0202B3DC) emu_halt();
+	//if((NDS_ARM9.R[1]==0x9AC29AC1)&&(!fait)) {emu_halt();fait = TRUE;}
+	//if(NDS_ARM9.R[1]==0x0400004A) {emu_halt();fait = TRUE;}
+	/*if(NDS_ARM9.R[4]==0x2E33373C) emu_halt();
+	if(NDS_ARM9.R[15]==0x02036668) //emu_halt();
+	{
+	nds.logcount++;
+	sprintf(logbuf, "%d %08X", nds.logcount, NDS_ARM9.R[13]);
+	log::ajouter(logbuf);
+	if(nds.logcount==89) execute=FALSE;
+	}*/
+	//if(NDS_ARM9.instruction==0) emu_halt();
+	//if((NDS_ARM9.R[15]>>28)) emu_halt();
 }
 
 #define DSGBA_EXTENSTION ".ds.gba"
@@ -318,494 +318,515 @@ enum
 //http://www.aggregate.org/MAGIC/#Population%20Count%20(Ones%20Count)
 static u32 ones32(u32 x)
 {
-        /* 32-bit recursive reduction using SWAR...
-	   but first step is mapping 2-bit values
-	   into sum of 2 1-bit values in sneaky way
+	/* 32-bit recursive reduction using SWAR...
+	but first step is mapping 2-bit values
+	into sum of 2 1-bit values in sneaky way
 	*/
-        x -= ((x >> 1) & 0x55555555);
-        x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
-        x = (((x >> 4) + x) & 0x0f0f0f0f);
-        x += (x >> 8);
-        x += (x >> 16);
-        return(x & 0x0000003f);
+	x -= ((x >> 1) & 0x55555555);
+	x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
+	x = (((x >> 4) + x) & 0x0f0f0f0f);
+	x += (x >> 8);
+	x += (x >> 16);
+	return(x & 0x0000003f);
 }
 
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
-                 const char *cflash_disk_image_file)
+				const char *cflash_disk_image_file)
 {
-   int i;
-   int type;
-   char * p;
-   
-   ROMReader_struct * reader;
-   void* file;
-   u32 size, mask;
-   u8 *data;
-   char * noext;
+	int i;
+	int type;
+	char * p;
 
-   if (filename == NULL)
-      return -1;
+	ROMReader_struct * reader;
+	void* file;
+	u32 size, mask;
+	u8 *data;
+	char * noext;
 
-   noext = strdup(filename);
-   
-   reader = ROMReaderInit(&noext);
-   type = ROM_NDS;
+	if (filename == NULL)
+		return -1;
 
-   p = noext;
-   p += strlen(p);
-   p -= strlen(DSGBA_EXTENSTION);
+	noext = strdup(filename);
 
-   if(memcmp(p, DSGBA_EXTENSTION, strlen(DSGBA_EXTENSTION)) == 0)
-      type = ROM_DSGBA;
+	reader = ROMReaderInit(&noext);
+	type = ROM_NDS;
 
-   file = reader->Init(filename);
+	p = noext;
+	p += strlen(p);
+	p -= strlen(DSGBA_EXTENSTION);
 
-   if (!file)
-   {
-      reader->DeInit(file);
-      free(noext);
-      return -1;
-   }
-   size = reader->Size(file);
+	if(memcmp(p, DSGBA_EXTENSTION, strlen(DSGBA_EXTENSTION)) == 0)
+		type = ROM_DSGBA;
 
-   if(type == ROM_DSGBA)
-   {
-      reader->Seek(file, DSGBA_LOADER_SIZE, SEEK_SET);
-      size -= DSGBA_LOADER_SIZE;
-   }
+	file = reader->Init(filename);
 
-   //check that size is at least the size of the header
-   if (size < 352+160) {
-      reader->DeInit(file);
-      free(noext);
-      return -1;
-   }
-   
-   //zero 25-dec-08 - this used to yield a mask which was 2x large
-   //mask = size; 
-   mask = size-1; 
-   mask |= (mask >>1);
-   mask |= (mask >>2);
-   mask |= (mask >>4);
-   mask |= (mask >>8);
-   mask |= (mask >>16);
-   
-   // Make sure old ROM is freed first(at least this way we won't be eating
-   // up a ton of ram before the old ROM is freed)
-   if(MMU.CART_ROM != MMU.UNUSED_RAM)
-      NDS_FreeROM();
+	if (!file)
+	{
+		reader->DeInit(file);
+		free(noext);
+		return -1;
+	}
+	size = reader->Size(file);
 
-   if ((data = (u8*)malloc(mask + 1)) == NULL)
-   {
-      reader->DeInit(file);
-      free(noext);
-      return -1;
-   }
-   
-   i = reader->Read(file, data, size);
-   reader->DeInit(file);
+	if(type == ROM_DSGBA)
+	{
+		reader->Seek(file, DSGBA_LOADER_SIZE, SEEK_SET);
+		size -= DSGBA_LOADER_SIZE;
+	}
 
-   //decrypt if necessary..
-   //but this is untested and suspected to fail on big endian, so lets not support this on big endian
-	#ifndef WORDS_BIGENDIAN
-    DecryptSecureArea(data,size);
-	#endif
+	//check that size is at least the size of the header
+	if (size < 352+160) {
+		reader->DeInit(file);
+		free(noext);
+		return -1;
+	}
 
-   MMU_unsetRom();
-   NDS_SetROM(data, mask);
-   NDS_Reset();
+	//zero 25-dec-08 - this used to yield a mask which was 2x large
+	//mask = size; 
+	mask = size-1; 
+	mask |= (mask >>1);
+	mask |= (mask >>2);
+	mask |= (mask >>4);
+	mask |= (mask >>8);
+	mask |= (mask >>16);
 
-   /* I guess any directory can be used
-    * so the current one should be ok */
-   strncpy(szRomPath, ".", ARRAY_SIZE(szRomPath));
-   cflash_close();
-   cflash_init( cflash_disk_image_file);
+	// Make sure old ROM is freed first(at least this way we won't be eating
+	// up a ton of ram before the old ROM is freed)
+	if(MMU.CART_ROM != MMU.UNUSED_RAM)
+		NDS_FreeROM();
 
-   strncpy(szRomBaseName, filename, ARRAY_SIZE(szRomBaseName));
+	if ((data = (u8*)malloc(mask + 1)) == NULL)
+	{
+		reader->DeInit(file);
+		free(noext);
+		return -1;
+	}
 
-   if(type == ROM_DSGBA)
-      szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;
-   else
-      szRomBaseName[strlen(szRomBaseName)-4] = 0x00;
+	i = reader->Read(file, data, size);
+	reader->DeInit(file);
 
-   // Setup Backup Memory
-   if(type == ROM_DSGBA)
-   {
-	   /* be sure that we dont overwrite anything before stringstart */
-	   if (strlen(noext)>= strlen(DSGBA_EXTENSTION))
-                   strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
-           else
-           {
-                   free(noext);
-                   return -1;
-           }
-   }
-   else
-   {
-	   /* be sure that we dont overwrite anything before stringstart */
-	   if (strlen(noext)>=4)
-                   strncpy(noext + strlen(noext) - 4, ".sav",5);
-           else
-           {
-                   free(noext);
-                   return -1;
-           }
-   }
+	//decrypt if necessary..
+	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
+#ifndef WORDS_BIGENDIAN
+	DecryptSecureArea(data,size);
+#endif
 
-   mc_realloc(&MMU.bupmem, bmtype, bmsize);
-   mc_load_file(&MMU.bupmem, noext);
-   free(noext);
+	MMU_unsetRom();
+	NDS_SetROM(data, mask);
+	NDS_Reset();
 
-   return i;
+	/* I guess any directory can be used
+	* so the current one should be ok */
+	strncpy(szRomPath, ".", ARRAY_SIZE(szRomPath));
+	cflash_close();
+	cflash_init( cflash_disk_image_file);
+
+	strncpy(szRomBaseName, filename, ARRAY_SIZE(szRomBaseName));
+
+	if(type == ROM_DSGBA)
+		szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;
+	else
+		szRomBaseName[strlen(szRomBaseName)-4] = 0x00;
+
+	// Setup Backup Memory
+	if(type == ROM_DSGBA)
+	{
+		/* be sure that we dont overwrite anything before stringstart */
+		if (strlen(noext)>= strlen(DSGBA_EXTENSTION))
+			strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
+		else
+		{
+			free(noext);
+			return -1;
+		}
+	}
+	else
+	{
+		/* be sure that we dont overwrite anything before stringstart */
+		if (strlen(noext)>=4)
+			strncpy(noext + strlen(noext) - 4, ".sav",5);
+		else
+		{
+			free(noext);
+			return -1;
+		}
+	}
+
+	mc_realloc(&MMU.bupmem, bmtype, bmsize);
+	mc_load_file(&MMU.bupmem, noext);
+	free(noext);
+
+	return i;
 }
 
 void NDS_FreeROM(void)
 {
-   if (MMU.CART_ROM != MMU.UNUSED_RAM)
-      free(MMU.CART_ROM);
-   MMU_unsetRom();
-   if (MMU.bupmem.fp)
-      fclose(MMU.bupmem.fp);
-   MMU.bupmem.fp = NULL;
+	if (MMU.CART_ROM != MMU.UNUSED_RAM)
+		free(MMU.CART_ROM);
+	MMU_unsetRom();
+	if (MMU.bupmem.fp)
+		fclose(MMU.bupmem.fp);
+	MMU.bupmem.fp = NULL;
 }
 
 void NDS_Reset( void)
 {
-   unsigned int i;
-   u32 src;
-   u32 dst;
-   NDS_header * header = NDS_getROMHeader();
+	unsigned int i;
+	u32 src;
+	u32 dst;
+	NDS_header * header = NDS_getROMHeader();
 
-   if (!header) return ;
+	if (!header) return ;
 
-   MMU_clearMem();
+	MMU_clearMem();
 
-   src = header->ARM9src;
-   dst = header->ARM9cpy;
+	src = header->ARM9src;
+	dst = header->ARM9cpy;
 
-   for(i = 0; i < (header->ARM9binSize>>2); ++i)
-   {
-      MMU_write32(0, dst, T1ReadLong(MMU.CART_ROM, src));
-      dst += 4;
-      src += 4;
-   }
+	for(i = 0; i < (header->ARM9binSize>>2); ++i)
+	{
+		MMU_write32(0, dst, T1ReadLong(MMU.CART_ROM, src));
+		dst += 4;
+		src += 4;
+	}
 
-   src = header->ARM7src;
-   dst = header->ARM7cpy;
+	src = header->ARM7src;
+	dst = header->ARM7cpy;
 
-   for(i = 0; i < (header->ARM7binSize>>2); ++i)
-   {
-      MMU_write32(1, dst, T1ReadLong(MMU.CART_ROM, src));
-      dst += 4;
-      src += 4;
-   }
+	for(i = 0; i < (header->ARM7binSize>>2); ++i)
+	{
+		MMU_write32(1, dst, T1ReadLong(MMU.CART_ROM, src));
+		dst += 4;
+		src += 4;
+	}
 
-   armcpu_init(&NDS_ARM7, header->ARM7exe);
-   armcpu_init(&NDS_ARM9, header->ARM9exe);
-   nds.ARM9Cycle = 0;
-   nds.ARM7Cycle = 0;
-   nds.cycles = 0;
-   memset(nds.timerCycle, 0, sizeof(s32) * 2 * 4);
-   memset(nds.timerOver, 0, sizeof(BOOL) * 2 * 4);
-   nds.nextHBlank = 3168;
-   nds.VCount = 0;
-   nds.old = 0;
-   nds.diff = 0;
-   nds.lignerendu = FALSE;
-   nds.touchX = nds.touchY = 0;
-   nds.isTouch = 0;
+	armcpu_init(&NDS_ARM7, header->ARM7exe);
+	armcpu_init(&NDS_ARM9, header->ARM9exe);
+	nds.ARM9Cycle = 0;
+	nds.ARM7Cycle = 0;
+	nds.cycles = 0;
+	memset(nds.timerCycle, 0, sizeof(s32) * 2 * 4);
+	memset(nds.timerOver, 0, sizeof(BOOL) * 2 * 4);
+	nds.nextHBlank = 3168;
+	nds.VCount = 0;
+	nds.old = 0;
+	nds.diff = 0;
+	nds.lignerendu = FALSE;
+	nds.touchX = nds.touchY = 0;
+	nds.isTouch = 0;
 
-   MMU_write16(0, 0x04000130, 0x3FF);
-   MMU_write16(1, 0x04000130, 0x3FF);
-   MMU_write8(1, 0x04000136, 0x43);
+	MMU_write16(0, 0x04000130, 0x3FF);
+	MMU_write16(1, 0x04000130, 0x3FF);
+	MMU_write8(1, 0x04000136, 0x43);
 
-    LidClosed = FALSE;
+	LidClosed = FALSE;
 	LidKeyCount = 0;
 
-   /*
-    * Setup a copy of the firmware user settings in memory.
-    * (this is what the DS firmware would do).
-    */
-   {
-     u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
-     int fw_index;
+	/*
+	* Setup a copy of the firmware user settings in memory.
+	* (this is what the DS firmware would do).
+	*/
+	{
+		u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
+		int fw_index;
 
-     if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
-       for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
-         MMU_write8( 0, 0x027FFC80 + fw_index, temp_buffer[fw_index]);
-     }
-   }
+		if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
+			for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
+				MMU_write8( 0, 0x027FFC80 + fw_index, temp_buffer[fw_index]);
+		}
+	}
 
-   // Copy the whole header to Main RAM 0x27FFE00 on startup.
-   //  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
-   for (i = 0; i < ((0x170+0x90)/4); i++) {
-       MMU_write32 (0, 0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
-   }
-   MainScreen.offset = 0;
-   SubScreen.offset = 192;
- 
-   //MMU_write32(0, 0x02007FFC, 0xE92D4030);
+	// Copy the whole header to Main RAM 0x27FFE00 on startup.
+	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
+	for (i = 0; i < ((0x170+0x90)/4); i++) {
+		MMU_write32 (0, 0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+	}
+	MainScreen.offset = 0;
+	SubScreen.offset = 192;
 
-   //ARM7 BIOS IRQ HANDLER
-   MMU_write32(1, 0x00, 0xE25EF002);
-   MMU_write32(1, 0x04, 0xEAFFFFFE);
-   MMU_write32(1, 0x18, 0xEA000000);
-   MMU_write32(1, 0x20, 0xE92D500F);
-   MMU_write32(1, 0x24, 0xE3A00301);
-   MMU_write32(1, 0x28, 0xE28FE000);
-   MMU_write32(1, 0x2C, 0xE510F004);
-   MMU_write32(1, 0x30, 0xE8BD500F);
-   MMU_write32(1, 0x34, 0xE25EF004);
+	//MMU_write32(0, 0x02007FFC, 0xE92D4030);
 
-   //ARM9 BIOS IRQ HANDLER
-   MMU_write32(0, 0xFFFF0018, 0xEA000000);
-   MMU_write32(0, 0xFFFF0020, 0xE92D500F);
-   MMU_write32(0, 0xFFFF0024, 0xEE190F11);
-   MMU_write32(0, 0xFFFF0028, 0xE1A00620);
-   MMU_write32(0, 0xFFFF002C, 0xE1A00600);
-   MMU_write32(0, 0xFFFF0030, 0xE2800C40);
-   MMU_write32(0, 0xFFFF0034, 0xE28FE000);
-   MMU_write32(0, 0xFFFF0038, 0xE510F004);
-   MMU_write32(0, 0xFFFF003C, 0xE8BD500F);
-   MMU_write32(0, 0xFFFF0040, 0xE25EF004);
+	FILE* inf = 0;
 
-   MMU_write32(0, 0x0000004, 0xE3A0010E);
-   MMU_write32(0, 0x0000008, 0xE3A01020);
-// MMU_write32(0, 0x000000C, 0xE1B02110);
-   MMU_write32(0, 0x000000C, 0xE1B02040);
-   MMU_write32(0, 0x0000010, 0xE3B02020);
-// MMU_write32(0, 0x0000010, 0xE2100202);
+	//ARM7 BIOS IRQ HANDLER
+	inf = fopen("BiosNds7.ROM","rb");
+	if(inf) {
+		fread(MMU.ARM7_BIOS,1,16384,inf);
+		fclose(inf);
+		NDS_ARM7.swi_tab = 0;
+	} else {
+		NDS_ARM7.swi_tab = ARM7_swi_tab;
+		MMU_write32(1, 0x00, 0xE25EF002);
+		MMU_write32(1, 0x04, 0xEAFFFFFE);
+		MMU_write32(1, 0x18, 0xEA000000);
+		MMU_write32(1, 0x20, 0xE92D500F);
+		MMU_write32(1, 0x24, 0xE3A00301);
+		MMU_write32(1, 0x28, 0xE28FE000);
+		MMU_write32(1, 0x2C, 0xE510F004);
+		MMU_write32(1, 0x30, 0xE8BD500F);
+		MMU_write32(1, 0x34, 0xE25EF004);
+	}
 
-   delete header;
+	//ARM9 BIOS IRQ HANDLER
+	inf = fopen("BiosNds9.ROM","rb");
+	if(inf) {
+		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
+		fclose(inf);
+		NDS_ARM9.swi_tab = 0;
+	} else {
+		NDS_ARM9.swi_tab = ARM9_swi_tab;
+		MMU_write32(0, 0xFFFF0018, 0xEA000000);
+		MMU_write32(0, 0xFFFF0020, 0xE92D500F);
+		MMU_write32(0, 0xFFFF0024, 0xEE190F11);
+		MMU_write32(0, 0xFFFF0028, 0xE1A00620);
+		MMU_write32(0, 0xFFFF002C, 0xE1A00600);
+		MMU_write32(0, 0xFFFF0030, 0xE2800C40);
+		MMU_write32(0, 0xFFFF0034, 0xE28FE000);
+		MMU_write32(0, 0xFFFF0038, 0xE510F004);
+		MMU_write32(0, 0xFFFF003C, 0xE8BD500F);
+		MMU_write32(0, 0xFFFF0040, 0xE25EF004);
+	}
 
-   GPU_Reset(MainScreen.gpu, 0);
-   GPU_Reset(SubScreen.gpu, 1);
-   gfx3d_reset();
-   gpu3D->NDS_3D_Reset();
-   SPU_Reset();
+
+
+
+	MMU_write32(0, 0x0000004, 0xE3A0010E);
+	MMU_write32(0, 0x0000008, 0xE3A01020);
+	// MMU_write32(0, 0x000000C, 0xE1B02110);
+	MMU_write32(0, 0x000000C, 0xE1B02040);
+	MMU_write32(0, 0x0000010, 0xE3B02020);
+	// MMU_write32(0, 0x0000010, 0xE2100202);
+
+	delete header;
+
+	GPU_Reset(MainScreen.gpu, 0);
+	GPU_Reset(SubScreen.gpu, 1);
+	gfx3d_reset();
+	gpu3D->NDS_3D_Reset();
+	SPU_Reset();
 }
 
 int NDS_ImportSave(const char *filename)
 {
-   if (strlen(filename) < 4)
-      return 0;
+	if (strlen(filename) < 4)
+		return 0;
 
-   if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
-      return mc_load_duc(&MMU.bupmem, filename);
+	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
+		return mc_load_duc(&MMU.bupmem, filename);
 
-   return 0;
+	return 0;
 }
 
 typedef struct
 {
-    u32 size;
-    s32 width;
-    s32 height;
-    u16 planes;
-    u16 bpp;
-    u32 cmptype;
-    u32 imgsize;
-    s32 hppm;
-    s32 vppm;
-    u32 numcol;
-    u32 numimpcol;
+	u32 size;
+	s32 width;
+	s32 height;
+	u16 planes;
+	u16 bpp;
+	u32 cmptype;
+	u32 imgsize;
+	s32 hppm;
+	s32 vppm;
+	u32 numcol;
+	u32 numimpcol;
 } bmpimgheader_struct;
 
 #include "PACKED.h"
 typedef struct
 {
-    u16 id __PACKED;
-    u32 size __PACKED;
-    u16 reserved1 __PACKED;
-    u16 reserved2 __PACKED;
-    u32 imgoffset __PACKED;
+	u16 id __PACKED;
+	u32 size __PACKED;
+	u16 reserved1 __PACKED;
+	u16 reserved2 __PACKED;
+	u32 imgoffset __PACKED;
 } bmpfileheader_struct;
 #include "PACKED_END.h"
 
 int NDS_WriteBMP(const char *filename)
 {
-    bmpfileheader_struct fileheader;
-    bmpimgheader_struct imageheader;
-    FILE *file;
-    int i,j;
-    u16 * bmp = (u16 *)GPU_screen;
-    size_t elems_written = 0;
+	bmpfileheader_struct fileheader;
+	bmpimgheader_struct imageheader;
+	FILE *file;
+	int i,j;
+	u16 * bmp = (u16 *)GPU_screen;
+	size_t elems_written = 0;
 
-    memset(&fileheader, 0, sizeof(fileheader));
-    fileheader.size = sizeof(fileheader);
-    fileheader.id = 'B' | ('M' << 8);
-    fileheader.imgoffset = sizeof(fileheader)+sizeof(imageheader);
-    
-    memset(&imageheader, 0, sizeof(imageheader));
-    imageheader.size = sizeof(imageheader);
-    imageheader.width = 256;
-    imageheader.height = 192*2;
-    imageheader.planes = 1;
-    imageheader.bpp = 24;
-    imageheader.cmptype = 0; // None
-    imageheader.imgsize = imageheader.width * imageheader.height * 3;
-    
-    if ((file = fopen(filename,"wb")) == NULL)
-       return 0;
+	memset(&fileheader, 0, sizeof(fileheader));
+	fileheader.size = sizeof(fileheader);
+	fileheader.id = 'B' | ('M' << 8);
+	fileheader.imgoffset = sizeof(fileheader)+sizeof(imageheader);
 
-    elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
-    elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
+	memset(&imageheader, 0, sizeof(imageheader));
+	imageheader.size = sizeof(imageheader);
+	imageheader.width = 256;
+	imageheader.height = 192*2;
+	imageheader.planes = 1;
+	imageheader.bpp = 24;
+	imageheader.cmptype = 0; // None
+	imageheader.imgsize = imageheader.width * imageheader.height * 3;
 
-    for(j=0;j<192*2;j++)
-    {
-       for(i=0;i<256;i++)
-       {
-          u8 r,g,b;
-          u16 pixel = bmp[(192*2-j-1)*256+i];
-          r = pixel>>10;
-          pixel-=r<<10;
-          g = pixel>>5;
-          pixel-=g<<5;
-          b = pixel;
-          r*=255/31;
-          g*=255/31;
-          b*=255/31;
-          elems_written += fwrite(&r, 1, sizeof(u8), file); 
-          elems_written += fwrite(&g, 1, sizeof(u8), file); 
-          elems_written += fwrite(&b, 1, sizeof(u8), file);
-       }
-    }
-    fclose(file);
+	if ((file = fopen(filename,"wb")) == NULL)
+		return 0;
 
-    return 1;
+	elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
+	elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
+
+	for(j=0;j<192*2;j++)
+	{
+		for(i=0;i<256;i++)
+		{
+			u8 r,g,b;
+			u16 pixel = bmp[(192*2-j-1)*256+i];
+			r = pixel>>10;
+			pixel-=r<<10;
+			g = pixel>>5;
+			pixel-=g<<5;
+			b = pixel;
+			r*=255/31;
+			g*=255/31;
+			b*=255/31;
+			elems_written += fwrite(&r, 1, sizeof(u8), file); 
+			elems_written += fwrite(&g, 1, sizeof(u8), file); 
+			elems_written += fwrite(&b, 1, sizeof(u8), file);
+		}
+	}
+	fclose(file);
+
+	return 1;
 }
 
 int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename)
 {
-    bmpfileheader_struct fileheader;
-    bmpimgheader_struct imageheader;
-    FILE *file;
-    size_t elems_written = 0;
-    memset(&fileheader, 0, sizeof(fileheader));
-    fileheader.size = sizeof(fileheader);
-    fileheader.id = 'B' | ('M' << 8);
-    fileheader.imgoffset = sizeof(fileheader)+sizeof(imageheader);
-    
-    memset(&imageheader, 0, sizeof(imageheader));
-    imageheader.size = sizeof(imageheader);
-    imageheader.width = width;
-    imageheader.height = height;
-    imageheader.planes = 1;
-    imageheader.bpp = 32;
-    imageheader.cmptype = 0; // None
-    imageheader.imgsize = imageheader.width * imageheader.height * 4;
-    
-    if ((file = fopen(filename,"wb")) == NULL)
-       return 0;
+	bmpfileheader_struct fileheader;
+	bmpimgheader_struct imageheader;
+	FILE *file;
+	size_t elems_written = 0;
+	memset(&fileheader, 0, sizeof(fileheader));
+	fileheader.size = sizeof(fileheader);
+	fileheader.id = 'B' | ('M' << 8);
+	fileheader.imgoffset = sizeof(fileheader)+sizeof(imageheader);
 
-    elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
-    elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
+	memset(&imageheader, 0, sizeof(imageheader));
+	imageheader.size = sizeof(imageheader);
+	imageheader.width = width;
+	imageheader.height = height;
+	imageheader.planes = 1;
+	imageheader.bpp = 32;
+	imageheader.cmptype = 0; // None
+	imageheader.imgsize = imageheader.width * imageheader.height * 4;
 
-    elems_written += fwrite(buf,1,imageheader.imgsize,file);
-    fclose(file);
+	if ((file = fopen(filename,"wb")) == NULL)
+		return 0;
 
-    return 1;
+	elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
+	elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
+
+	elems_written += fwrite(buf,1,imageheader.imgsize,file);
+	fclose(file);
+
+	return 1;
 }
 
 
 static void
 fill_user_data_area( struct NDS_fw_config_data *user_settings,
-                     u8 *data, int count) {
-  u32 crc;
-  int i;
-  u8 *ts_cal_data_area;
+					u8 *data, int count) {
+						u32 crc;
+						int i;
+						u8 *ts_cal_data_area;
 
-  memset( data, 0, 0x100);
+						memset( data, 0, 0x100);
 
-  /* version */
-  data[0x00] = 5;
-  data[0x01] = 0;
+						/* version */
+						data[0x00] = 5;
+						data[0x01] = 0;
 
-  /* colour */
-  data[0x02] = user_settings->fav_colour;
+						/* colour */
+						data[0x02] = user_settings->fav_colour;
 
-  /* birthday month and day */
-  data[0x03] = user_settings->birth_month;
-  data[0x04] = user_settings->birth_day;
+						/* birthday month and day */
+						data[0x03] = user_settings->birth_month;
+						data[0x04] = user_settings->birth_day;
 
-  /* nickname and length */
-  for ( i = 0; i < MAX_FW_NICKNAME_LENGTH; i++) {
-    data[0x06 + (i * 2)] = user_settings->nickname[i] & 0xff;
-    data[0x06 + (i * 2) + 1] = (user_settings->nickname[i] >> 8) & 0xff;
-  }
+						/* nickname and length */
+						for ( i = 0; i < MAX_FW_NICKNAME_LENGTH; i++) {
+							data[0x06 + (i * 2)] = user_settings->nickname[i] & 0xff;
+							data[0x06 + (i * 2) + 1] = (user_settings->nickname[i] >> 8) & 0xff;
+						}
 
-  data[0x1a] = user_settings->nickname_len;
+						data[0x1a] = user_settings->nickname_len;
 
-  /* Message */
-  for ( i = 0; i < MAX_FW_MESSAGE_LENGTH; i++) {
-    data[0x1c + (i * 2)] = user_settings->message[i] & 0xff;
-    data[0x1c + (i * 2) + 1] = (user_settings->message[i] >> 8) & 0xff;
-  }
+						/* Message */
+						for ( i = 0; i < MAX_FW_MESSAGE_LENGTH; i++) {
+							data[0x1c + (i * 2)] = user_settings->message[i] & 0xff;
+							data[0x1c + (i * 2) + 1] = (user_settings->message[i] >> 8) & 0xff;
+						}
 
-  data[0x50] = user_settings->message_len;
+						data[0x50] = user_settings->message_len;
 
-  /*
-   * touch screen calibration
-   */
-  ts_cal_data_area = &data[0x58];
-  for ( i = 0; i < 2; i++) {
-    /* ADC x y */
-    *ts_cal_data_area++ = user_settings->touch_cal[i].adc_x & 0xff;
-    *ts_cal_data_area++ = (user_settings->touch_cal[i].adc_x >> 8) & 0xff;
-    *ts_cal_data_area++ = user_settings->touch_cal[i].adc_y & 0xff;
-    *ts_cal_data_area++ = (user_settings->touch_cal[i].adc_y >> 8) & 0xff;
+						/*
+						* touch screen calibration
+						*/
+						ts_cal_data_area = &data[0x58];
+						for ( i = 0; i < 2; i++) {
+							/* ADC x y */
+							*ts_cal_data_area++ = user_settings->touch_cal[i].adc_x & 0xff;
+							*ts_cal_data_area++ = (user_settings->touch_cal[i].adc_x >> 8) & 0xff;
+							*ts_cal_data_area++ = user_settings->touch_cal[i].adc_y & 0xff;
+							*ts_cal_data_area++ = (user_settings->touch_cal[i].adc_y >> 8) & 0xff;
 
-    /* screen x y */
-    *ts_cal_data_area++ = user_settings->touch_cal[i].screen_x;
-    *ts_cal_data_area++ = user_settings->touch_cal[i].screen_y;
-  }
+							/* screen x y */
+							*ts_cal_data_area++ = user_settings->touch_cal[i].screen_x;
+							*ts_cal_data_area++ = user_settings->touch_cal[i].screen_y;
+						}
 
-  /* language and flags */
-  data[0x64] = user_settings->language;
-  data[0x65] = 0xfc;
+						/* language and flags */
+						data[0x64] = user_settings->language;
+						data[0x65] = 0xfc;
 
-  /* update count and crc */
-  data[0x70] = count & 0xff;
-  data[0x71] = (count >> 8) & 0xff;
+						/* update count and crc */
+						data[0x70] = count & 0xff;
+						data[0x71] = (count >> 8) & 0xff;
 
-  crc = calc_CRC16( 0xffff, data, 0x70);
-  data[0x72] = crc & 0xff;
-  data[0x73] = (crc >> 8) & 0xff;
+						crc = calc_CRC16( 0xffff, data, 0x70);
+						data[0x72] = crc & 0xff;
+						data[0x73] = (crc >> 8) & 0xff;
 
-  memset( &data[0x74], 0xff, 0x100 - 0x74);
+						memset( &data[0x74], 0xff, 0x100 - 0x74);
 }
 
 /* creates an firmware flash image, which contains all needed info to initiate a wifi connection */
 int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 {
-  /*
-   * Create the firmware header
-   */
-  memset( MMU.fw.data, 0, 0x40000);
+	/*
+	* Create the firmware header
+	*/
+	memset( MMU.fw.data, 0, 0x40000);
 
-  /* firmware identifier */
-  MMU.fw.data[0x8] = 'M';
-  MMU.fw.data[0x8 + 1] = 'A';
-  MMU.fw.data[0x8 + 2] = 'C';
-  MMU.fw.data[0x8 + 3] = 'P';
+	/* firmware identifier */
+	MMU.fw.data[0x8] = 'M';
+	MMU.fw.data[0x8 + 1] = 'A';
+	MMU.fw.data[0x8 + 2] = 'C';
+	MMU.fw.data[0x8 + 3] = 'P';
 
-  /* DS type */
-  if ( user_settings->ds_type == NDS_FW_DS_TYPE_LITE)
-    MMU.fw.data[0x1d] = 0x20;
-  else
-    MMU.fw.data[0x1d] = 0xff;
+	/* DS type */
+	if ( user_settings->ds_type == NDS_FW_DS_TYPE_LITE)
+		MMU.fw.data[0x1d] = 0x20;
+	else
+		MMU.fw.data[0x1d] = 0xff;
 
-  /* User Settings offset 0x3fe00 / 8 */
-  MMU.fw.data[0x20] = 0xc0;
-  MMU.fw.data[0x21] = 0x7f;
+	/* User Settings offset 0x3fe00 / 8 */
+	MMU.fw.data[0x20] = 0xc0;
+	MMU.fw.data[0x21] = 0x7f;
 
 
-  /*
-   * User settings (at 0x3FE00 and 0x3FF00)
-   */
-  fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
-  fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
-  
+	/*
+	* User settings (at 0x3FE00 and 0x3FF00)
+	*/
+	fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
+	fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
+
 	/* Wifi config length */
 	MMU.fw.data[0x2C] = 0x38;
 	MMU.fw.data[0x2D] = 0x01;
@@ -853,7 +874,7 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	(*(u16*)(MMU.fw.data + 0x3FAFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FA00), 0xFE);
 	(*(u16*)(MMU.fw.data + 0x3FBFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FB00), 0xFE);
 	(*(u16*)(MMU.fw.data + 0x3FCFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FC00), 0xFE);
-	
+
 
 	MMU.fw.data[0x162] = 0x19;
 	memset((MMU.fw.data + 0x163), 0xFF, 0x9D);
@@ -866,69 +887,69 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 
 void
 NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config) {
-  const char *default_nickname = "yopyop";
-  const char *default_message = "DeSmuME makes you happy!";
-  int i;
-  int str_length;
+	const char *default_nickname = "yopyop";
+	const char *default_message = "DeSmuME makes you happy!";
+	int i;
+	int str_length;
 
-  memset( fw_config, 0, sizeof( struct NDS_fw_config_data));
-  fw_config->ds_type = NDS_FW_DS_TYPE_FAT;
+	memset( fw_config, 0, sizeof( struct NDS_fw_config_data));
+	fw_config->ds_type = NDS_FW_DS_TYPE_FAT;
 
-  fw_config->fav_colour = 7;
+	fw_config->fav_colour = 7;
 
-  fw_config->birth_day = 23;
-  fw_config->birth_month = 6;
+	fw_config->birth_day = 23;
+	fw_config->birth_month = 6;
 
-  str_length = strlen( default_nickname);
-  for ( i = 0; i < str_length; i++) {
-    fw_config->nickname[i] = default_nickname[i];
-  }
-  fw_config->nickname_len = str_length;
+	str_length = strlen( default_nickname);
+	for ( i = 0; i < str_length; i++) {
+		fw_config->nickname[i] = default_nickname[i];
+	}
+	fw_config->nickname_len = str_length;
 
-  str_length = strlen( default_message);
-  for ( i = 0; i < str_length; i++) {
-    fw_config->message[i] = default_message[i];
-  }
-  fw_config->message_len = str_length;
+	str_length = strlen( default_message);
+	for ( i = 0; i < str_length; i++) {
+		fw_config->message[i] = default_message[i];
+	}
+	fw_config->message_len = str_length;
 
-  /* default to English */
-  fw_config->language = 1;
+	/* default to English */
+	fw_config->language = 1;
 
-  /* default touchscreen calibration */
-  fw_config->touch_cal[0].adc_x = 0x200;
-  fw_config->touch_cal[0].adc_y = 0x200;
-  fw_config->touch_cal[0].screen_x = 0x20;
-  fw_config->touch_cal[0].screen_y = 0x20;
+	/* default touchscreen calibration */
+	fw_config->touch_cal[0].adc_x = 0x200;
+	fw_config->touch_cal[0].adc_y = 0x200;
+	fw_config->touch_cal[0].screen_x = 0x20;
+	fw_config->touch_cal[0].screen_y = 0x20;
 
-  fw_config->touch_cal[1].adc_x = 0xe00;
-  fw_config->touch_cal[1].adc_y = 0x800;
-  fw_config->touch_cal[1].screen_x = 0xe0;
-  fw_config->touch_cal[1].screen_y = 0x80;
+	fw_config->touch_cal[1].adc_x = 0xe00;
+	fw_config->touch_cal[1].adc_y = 0x800;
+	fw_config->touch_cal[1].screen_x = 0xe0;
+	fw_config->touch_cal[1].screen_y = 0x80;
 }
 
 int NDS_LoadFirmware(const char *filename)
 {
-    int i;
-    unsigned long size;
-    FILE *file;
-	
-    if ((file = fopen(filename, "rb")) == NULL)
-       return -1;
-	
-    fseek(file, 0, SEEK_END);
-    size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-	
-    if(size > MMU.fw.size)
-    {
-       fclose(file);
-       return -1;
-    }
-	
-    i = fread(MMU.fw.data, size, 1, file);
-    fclose(file);
-	
-    return i;
+	int i;
+	unsigned long size;
+	FILE *file;
+
+	if ((file = fopen(filename, "rb")) == NULL)
+		return -1;
+
+	fseek(file, 0, SEEK_END);
+	size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	if(size > MMU.fw.size)
+	{
+		fclose(file);
+		return -1;
+	}
+
+	i = fread(MMU.fw.data, size, 1, file);
+	fclose(file);
+
+	return i;
 }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
@@ -939,18 +960,18 @@ u32 NDS_exec(s32 nb)
 {
 	int i, j;
 
-  nb += nds.cycles;//(nds.cycles>>26)<<26;
+	nb += nds.cycles;//(nds.cycles>>26)<<26;
 
-  //increase this to execute more instructions in each batch (reducing overhead)
-  //the value of 4 seems to optimize speed.. do lower values increase precision? 
-  const int INSTRUCTIONS_PER_BATCH = 4;
+	//increase this to execute more instructions in each batch (reducing overhead)
+	//the value of 4 seems to optimize speed.. do lower values increase precision? 
+	const int INSTRUCTIONS_PER_BATCH = 4;
 
-  //decreasing this should increase precision at the cost of speed
-  //the traditional value was somewhere between 100 and 400 depending on circumstances
-  const int CYCLES_TO_WAIT_FOR_IRQ = 400;
-            
-  for(; (nb >= nds.cycles) && ((FORCE)||(execute)); )
-    {
+	//decreasing this should increase precision at the cost of speed
+	//the traditional value was somewhere between 100 and 400 depending on circumstances
+	const int CYCLES_TO_WAIT_FOR_IRQ = 400;
+
+	for(; (nb >= nds.cycles) && ((FORCE)||(execute)); )
+	{
 		for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
 		{
 			if(nds.ARM9Cycle<=nds.cycles)
@@ -1022,145 +1043,145 @@ u32 NDS_exec(s32 nb)
 		}
 
 		nds.cycles = std::min(nds.ARM9Cycle,nds.ARM7Cycle);
-                 
-      //debug();
+
+		//debug();
 
 		if(nds.cycles>=nds.nextHBlank)
-        {
-          if(!nds.lignerendu)
-            {
-              T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
-              T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
-              NDS_ARM9HBlankInt();
-              NDS_ARM7HBlankInt();
+		{
+			if(!nds.lignerendu)
+			{
+				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
+				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
+				NDS_ARM9HBlankInt();
+				NDS_ARM7HBlankInt();
 
-              if(nds.VCount<192)
-                {
-                  GPU_ligne(&MainScreen, nds.VCount);
-                  GPU_ligne(&SubScreen, nds.VCount);
-				
-                  if(MMU.DMAStartTime[0][0] == 2)
-                    MMU_doDMA(0, 0);
-                  if(MMU.DMAStartTime[0][1] == 2)
-                    MMU_doDMA(0, 1);
-                  if(MMU.DMAStartTime[0][2] == 2)
-                    MMU_doDMA(0, 2);
-                  if(MMU.DMAStartTime[0][3] == 2)
-                    MMU_doDMA(0, 3);
-                }
-              nds.lignerendu = TRUE;
-            }
-          if(nds.cycles>=nds.nextHBlank+1092)
-            {
-              u32 vmatch;
+				if(nds.VCount<192)
+				{
+					GPU_ligne(&MainScreen, nds.VCount);
+					GPU_ligne(&SubScreen, nds.VCount);
 
-              ++nds.VCount;
-              nds.nextHBlank += 4260;
-              T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFD);
-              T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFD);
-                           
-              if(MMU.DMAStartTime[0][0] == 3)
-                MMU_doDMA(0, 0);
-              if(MMU.DMAStartTime[0][1] == 3)
-                MMU_doDMA(0, 1);
-              if(MMU.DMAStartTime[0][2] == 3)
-                MMU_doDMA(0, 2);
-              if(MMU.DMAStartTime[0][3] == 3)
-                MMU_doDMA(0, 3);
+					if(MMU.DMAStartTime[0][0] == 2)
+						MMU_doDMA(0, 0);
+					if(MMU.DMAStartTime[0][1] == 2)
+						MMU_doDMA(0, 1);
+					if(MMU.DMAStartTime[0][2] == 2)
+						MMU_doDMA(0, 2);
+					if(MMU.DMAStartTime[0][3] == 2)
+						MMU_doDMA(0, 3);
+				}
+				nds.lignerendu = TRUE;
+			}
+			if(nds.cycles>=nds.nextHBlank+1092)
+			{
+				u32 vmatch;
 
-              // Main memory display
-              if(MMU.DMAStartTime[0][0] == 4)
-                {
-                  MMU_doDMA(0, 0);
-                  MMU.DMAStartTime[0][0] = 0;
-                }
-              if(MMU.DMAStartTime[0][1] == 4)
-                {
-                  MMU_doDMA(0, 1);
-                  MMU.DMAStartTime[0][1] = 0;
-                }
-              if(MMU.DMAStartTime[0][2] == 4)
-                {
-                  MMU_doDMA(0, 2);
-                  MMU.DMAStartTime[0][2] = 0;
-                }
-              if(MMU.DMAStartTime[0][3] == 4)
-                {
-                  MMU_doDMA(0, 3);
-                  MMU.DMAStartTime[0][3] = 0;
-                }
+				++nds.VCount;
+				nds.nextHBlank += 4260;
+				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFD);
+				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFD);
 
-              if(MMU.DMAStartTime[1][0] == 4)
-                {
-                  MMU_doDMA(1, 0);
-                  MMU.DMAStartTime[1][0] = 0;
-                }
-              if(MMU.DMAStartTime[1][1] == 4)
-                {
-                  MMU_doDMA(1, 1);
-                  MMU.DMAStartTime[0][1] = 0;
-                }
-              if(MMU.DMAStartTime[1][2] == 4)
-                {
-                  MMU_doDMA(1, 2);
-                  MMU.DMAStartTime[1][2] = 0;
-                }
-              if(MMU.DMAStartTime[1][3] == 4)
-                {
-                  MMU_doDMA(1, 3);
-                  MMU.DMAStartTime[1][3] = 0;
-                }
-                                
-              nds.lignerendu = FALSE;
-              if(nds.VCount==192)
-                {
+				if(MMU.DMAStartTime[0][0] == 3)
+					MMU_doDMA(0, 0);
+				if(MMU.DMAStartTime[0][1] == 3)
+					MMU_doDMA(0, 1);
+				if(MMU.DMAStartTime[0][2] == 3)
+					MMU_doDMA(0, 2);
+				if(MMU.DMAStartTime[0][3] == 3)
+					MMU_doDMA(0, 3);
+
+				// Main memory display
+				if(MMU.DMAStartTime[0][0] == 4)
+				{
+					MMU_doDMA(0, 0);
+					MMU.DMAStartTime[0][0] = 0;
+				}
+				if(MMU.DMAStartTime[0][1] == 4)
+				{
+					MMU_doDMA(0, 1);
+					MMU.DMAStartTime[0][1] = 0;
+				}
+				if(MMU.DMAStartTime[0][2] == 4)
+				{
+					MMU_doDMA(0, 2);
+					MMU.DMAStartTime[0][2] = 0;
+				}
+				if(MMU.DMAStartTime[0][3] == 4)
+				{
+					MMU_doDMA(0, 3);
+					MMU.DMAStartTime[0][3] = 0;
+				}
+
+				if(MMU.DMAStartTime[1][0] == 4)
+				{
+					MMU_doDMA(1, 0);
+					MMU.DMAStartTime[1][0] = 0;
+				}
+				if(MMU.DMAStartTime[1][1] == 4)
+				{
+					MMU_doDMA(1, 1);
+					MMU.DMAStartTime[0][1] = 0;
+				}
+				if(MMU.DMAStartTime[1][2] == 4)
+				{
+					MMU_doDMA(1, 2);
+					MMU.DMAStartTime[1][2] = 0;
+				}
+				if(MMU.DMAStartTime[1][3] == 4)
+				{
+					MMU_doDMA(1, 3);
+					MMU.DMAStartTime[1][3] = 0;
+				}
+
+				nds.lignerendu = FALSE;
+				if(nds.VCount==192)
+				{
 					//osdA->update();	//================================= this is don't correct, need swap engine
 					gfx3d_VBlankSignal();
 
-                  T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
-                  T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
-                  NDS_ARM9VBlankInt();
-                  NDS_ARM7VBlankInt();
-				  nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
-				  nds.idleFrameCounter++;
-				  nds.idleFrameCounter &= 15;
-				  nds.idleCycles = 0;
+					T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
+					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
+					NDS_ARM9VBlankInt();
+					NDS_ARM7VBlankInt();
+					nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
+					nds.idleFrameCounter++;
+					nds.idleFrameCounter &= 15;
+					nds.idleCycles = 0;
 
-                                
-                  if(MMU.DMAStartTime[0][0] == 1)
-                    MMU_doDMA(0, 0);
-                  if(MMU.DMAStartTime[0][1] == 1)
-                    MMU_doDMA(0, 1);
-                  if(MMU.DMAStartTime[0][2] == 1)
-                    MMU_doDMA(0, 2);
-                  if(MMU.DMAStartTime[0][3] == 1)
-                    MMU_doDMA(0, 3);
-                                
-                  if(MMU.DMAStartTime[1][0] == 1)
-                    MMU_doDMA(1, 0);
-                  if(MMU.DMAStartTime[1][1] == 1)
-                    MMU_doDMA(1, 1);
-                  if(MMU.DMAStartTime[1][2] == 1)
-                    MMU_doDMA(1, 2);
-                  if(MMU.DMAStartTime[1][3] == 1)
-                    MMU_doDMA(1, 3);
-                }
-			  else if(nds.VCount==214) {
-				gfx3d_VBlankEndSignal();
-			  }
-                else if(nds.VCount==263)
-                  {
+
+					if(MMU.DMAStartTime[0][0] == 1)
+						MMU_doDMA(0, 0);
+					if(MMU.DMAStartTime[0][1] == 1)
+						MMU_doDMA(0, 1);
+					if(MMU.DMAStartTime[0][2] == 1)
+						MMU_doDMA(0, 2);
+					if(MMU.DMAStartTime[0][3] == 1)
+						MMU_doDMA(0, 3);
+
+					if(MMU.DMAStartTime[1][0] == 1)
+						MMU_doDMA(1, 0);
+					if(MMU.DMAStartTime[1][1] == 1)
+						MMU_doDMA(1, 1);
+					if(MMU.DMAStartTime[1][2] == 1)
+						MMU_doDMA(1, 2);
+					if(MMU.DMAStartTime[1][3] == 1)
+						MMU_doDMA(1, 3);
+				}
+				else if(nds.VCount==214) {
+					gfx3d_VBlankEndSignal();
+				}
+				else if(nds.VCount==263)
+				{
 					//osd->update();
 					//osdB->update();	//================================= this is don't correct, need swap engine
 
-                    nds.nextHBlank = 3168;
-                    nds.VCount = 0;
-                    T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFE);
-                    T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
+					nds.nextHBlank = 3168;
+					nds.VCount = 0;
+					T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFE);
+					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
 
-                    nds.cycles -= (560190<<1);
-                    nds.ARM9Cycle -= (560190<<1);
-                    nds.ARM7Cycle -= (560190<<1);
+					nds.cycles -= (560190<<1);
+					nds.ARM9Cycle -= (560190<<1);
+					nds.ARM7Cycle -= (560190<<1);
 					nb -= (560190<<1);
 
 					if(MMU.divRunning)
@@ -1179,7 +1200,7 @@ u32 NDS_exec(s32 nb)
 						if(MMU.timerON[0][1])	nds.timerCycle[0][1] -= (560190<<1);
 						if(MMU.timerON[0][2])	nds.timerCycle[0][2] -= (560190<<1);
 						if(MMU.timerON[0][3])	nds.timerCycle[0][3] -= (560190<<1);
-	                                     
+
 						if(MMU.timerON[1][0])	nds.timerCycle[1][0] -= (560190<<1);
 						if(MMU.timerON[1][1])	nds.timerCycle[1][1] -= (560190<<1);
 						if(MMU.timerON[1][2])	nds.timerCycle[1][2] -= (560190<<1);
@@ -1198,32 +1219,32 @@ u32 NDS_exec(s32 nb)
 						if(MMU.DMAing[1][2])	MMU.DMACycle[1][2] -= (560190<<1);
 						if(MMU.DMAing[1][3])	MMU.DMACycle[1][3] -= (560190<<1);
 					}
-                  }
-                                
-              T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
-              T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
-                           
-              vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
-              if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
-                {
-                  T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 4);
-                  if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 32)
-                    NDS_makeARM9Int(2);
-                }
-              else
-                T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFB);
-                           
-              vmatch = T1ReadWord(MMU.ARM7_REG, 4);
-              if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
-                {
-                  T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
-                  if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
-                    NDS_makeARM7Int(2);
-                }
-              else
-                T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
-            }
-        }
+				}
+
+				T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
+				T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
+
+				vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
+				if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
+				{
+					T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 4);
+					if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 32)
+						NDS_makeARM9Int(2);
+				}
+				else
+					T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0xFFFB);
+
+				vmatch = T1ReadWord(MMU.ARM7_REG, 4);
+				if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))
+				{
+					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 4);
+					if(T1ReadWord(MMU.ARM7_REG, 4) & 32)
+						NDS_makeARM7Int(2);
+				}
+				else
+					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
+			}
+		}
 
 		if(MMU.divRunning)
 		{
@@ -1581,7 +1602,7 @@ u32 NDS_exec(s32 nb)
 
 		if (MMU.CheckDMAs)
 		{
-                 
+
 			if((MMU.DMAing[0][0])&&(MMU.DMACycle[0][0]<=nds.cycles))
 			{
 				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
@@ -1589,7 +1610,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[0][0] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(0+(0<<2)));
 			}
-		                
+
 			if((MMU.DMAing[0][1])&&(MMU.DMACycle[0][1]<=nds.cycles))
 			{
 				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
@@ -1597,7 +1618,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[0][1] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(1+(0<<2)));
 			}
-		                
+
 			if((MMU.DMAing[0][2])&&(MMU.DMACycle[0][2]<=nds.cycles))
 			{
 				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
@@ -1605,7 +1626,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[0][2] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(2+(0<<2)));
 			}
-		                
+
 			if((MMU.DMAing[0][3])&&(MMU.DMACycle[0][3]<=nds.cycles))
 			{
 				T1WriteLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3), T1ReadLong(ARM9Mem.ARM9_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
@@ -1613,7 +1634,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[0][3] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(3+(0<<2)));
 			}
-		                
+
 			if((MMU.DMAing[1][0])&&(MMU.DMACycle[1][0]<=nds.cycles))
 			{
 				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*0), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*0)) & 0x7FFFFFFF);
@@ -1621,7 +1642,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[1][0] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(0+(1<<2)));
 			}
-		                
+
 			if((MMU.DMAing[1][1])&&(MMU.DMACycle[1][1]<=nds.cycles))
 			{
 				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*1), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*1)) & 0x7FFFFFFF);
@@ -1629,7 +1650,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[1][1] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(1+(1<<2)));
 			}
-		                
+
 			if((MMU.DMAing[1][2])&&(MMU.DMACycle[1][2]<=nds.cycles))
 			{
 				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*2), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*2)) & 0x7FFFFFFF);
@@ -1637,7 +1658,7 @@ u32 NDS_exec(s32 nb)
 				MMU.DMAing[1][2] = FALSE;
 				MMU.CheckDMAs &= ~(1<<(2+(1<<2)));
 			}
-		                
+
 			if((MMU.DMAing[1][3])&&(MMU.DMACycle[1][3]<=nds.cycles))
 			{
 				T1WriteLong(MMU.ARM7_REG, 0xB8 + (0xC*3), T1ReadLong(MMU.ARM7_REG, 0xB8 + (0xC*3)) & 0x7FFFFFFF);
@@ -1646,7 +1667,7 @@ u32 NDS_exec(s32 nb)
 				MMU.CheckDMAs &= ~(1<<(3+(1<<2)));
 			}
 		}
-		
+
 		if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21))
 			NDS_makeARM9Int(21);		// GX geometry
 
@@ -1675,16 +1696,16 @@ u32 NDS_exec(s32 nb)
 		}
 
 
-                 
-      
-    }
-  
+
+
+	}
+
 	return nds.cycles;
 }
 
 void NDS_setPadFromMovie(u16 pad)
 {
-	#define FIX(b,n) (((pad>>n)&1)!=0)
+#define FIX(b,n) (((pad>>n)&1)!=0)
 	NDS_setPad(
 		FIX(pad,0),
 		FIX(pad,1),
@@ -1701,15 +1722,15 @@ void NDS_setPadFromMovie(u16 pad)
 		FIX(pad,12),
 		FIX(pad,13)
 		);
-	#undef FIX
+#undef FIX
 }
 
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F)
 {
-	
+
 	//this macro is the opposite of what you would expect
-	#define FIX(b) (b?0:0x80)
-	
+#define FIX(b) (b?0:0x80)
+
 	int r = FIX(R);
 	int l = FIX(L);
 	int d = FIX(D);
@@ -1724,27 +1745,27 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	int e = FIX(E);
 	int g = FIX(G);
 	int f = FIX(F);
-	
+
 	u16	pad	= (0 |
-					((a) >> 7) |
-					((b) >> 6) |
-					((s) >> 5) |
-					((t) >> 4) |
-					((r) >> 3) |
-					((l) >> 2) |
-					((u) >> 1) |
-					((d))	   |
-					((e) << 1) |
-					((w) << 2)) ;
+		((a) >> 7) |
+		((b) >> 6) |
+		((s) >> 5) |
+		((t) >> 4) |
+		((r) >> 3) |
+		((l) >> 2) |
+		((u) >> 1) |
+		((d))	   |
+		((e) << 1) |
+		((w) << 2)) ;
 
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
 	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070) |
-						((x) >> 7) |
-						((y) >> 6) |
-						((g) >> 4) |
-						0x0034;
+		((x) >> 7) |
+		((y) >> 6) |
+		((g) >> 4) |
+		0x0034;
 
 	// todo: mute sound when Lided close
 	if (!f) 
@@ -1760,13 +1781,13 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	} else LidKeyCount = 0;
 
 	if (LidClosed) padExt |= 1 << 7;
-	
+
 	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
-	
+
 	//put into the format we want for the movie system
 	//RLDUTSBAYXWEGF
-	#undef FIX
-	#define FIX(b) (b?1:0)
+#undef FIX
+#define FIX(b) (b?1:0)
 
 	r = FIX(R);
 	l = FIX(L);
@@ -1782,7 +1803,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	e = FIX(E);
 	g = FIX(G);
 	f = FIX(F);
-	
+
 
 	nds.pad =
 		(FIX(r)<<0)|
@@ -1799,8 +1820,13 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		(FIX(e)<<11)|
 		(FIX(g)<<12)|
 		(FIX(f)<<13);
-	
+
 	// TODO: low power IRQ
+}
+
+
+void emu_halt() {
+	execute = false;
 }
 
 //these templates needed to be instantiated manually

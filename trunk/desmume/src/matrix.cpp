@@ -127,7 +127,14 @@ void MatrixTranspose(float *matrix)
 
 void MATRIXFASTCALL MatrixIdentity	(float *matrix) //============== TODO
 {
-	memset (matrix, 0, sizeof(float)*16);
+	//memset (matrix, 0, sizeof(float)*16);
+	//this is fastest for SSE2 i think.
+	//study code generation and split into sse2 specific module later
+	for(int i=0;i<16;i++)
+		matrix[i] = 0.0f;
+	//matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0.0f;
+	//matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0.0f;
+	//matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0.0f;
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 

@@ -181,11 +181,6 @@ int armcpu_new( armcpu_t *armcpu, u32 id)
 {
 	armcpu->proc_ID = id;
 
-	if(id==0) 
-		armcpu->swi_tab = ARM9_swi_tab;
-	else 
-		armcpu->swi_tab = ARM7_swi_tab;
-
 #ifdef GDB_STUB
 	armcpu->mem_if = mem_if;
 

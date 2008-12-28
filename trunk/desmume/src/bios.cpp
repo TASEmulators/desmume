@@ -212,7 +212,7 @@ static u32 intrWaitARM(armcpu_t * cpu)
      u32 intr;
      u32 intrFlag = 0;
      
-     //execute = FALSE;
+     //emu_halt();
      if(cpu->proc_ID) 
      {
       intrFlagAdr = 0x380FFF8;
@@ -246,7 +246,7 @@ static u32 waitVBlankARM(armcpu_t * cpu)
      u32 intr;
      u32 intrFlag = 0;
      
-     //execute = FALSE;
+     //emu_halt();
      if(cpu->proc_ID) 
      {
       intrFlagAdr = 0x380FFF8;
