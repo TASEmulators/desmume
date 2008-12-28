@@ -177,13 +177,13 @@ extern struct armcpu_memory_iface arm9_direct_memory_iface;
 
 extern u8 *MMU_RenderMapToLCD(u32 vram_addr);
 
-extern u8  (*_MMU_read08[2])(u32 addr);
-extern u16 (*_MMU_read16[2])(u32 addr);
-extern u32 (*_MMU_read32[2])(u32 addr);
+extern u8  (* FASTCALL _MMU_read08[2])(u32 addr);
+extern u16 (* FASTCALL _MMU_read16[2])(u32 addr);
+extern u32 (* FASTCALL _MMU_read32[2])(u32 addr);
 
-extern void (*_MMU_write08[2])(u32 addr, u8 val);
-extern void (*_MMU_write16[2])(u32 addr, u16 val);
-extern void (*_MMU_write32[2])(u32 addr, u32 val);
+extern void (* FASTCALL _MMU_write08[2])(u32 addr, u8 val);
+extern void (* FASTCALL _MMU_write16[2])(u32 addr, u16 val);
+extern void (* FASTCALL _MMU_write32[2])(u32 addr, u32 val);
 
 
 #ifdef MMU_ENABLE_ACL

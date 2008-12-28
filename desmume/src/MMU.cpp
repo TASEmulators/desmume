@@ -56,13 +56,13 @@ static u8  FASTCALL _MMU_ARM7_read08(u32 adr);
 static u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 static u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 
-u8  (*_MMU_read08[2])(u32 addr) = {_MMU_ARM9_read08, _MMU_ARM7_read08};
-u16 (*_MMU_read16[2])(u32 addr) = {_MMU_ARM9_read16, _MMU_ARM7_read16};
-u32 (*_MMU_read32[2])(u32 addr) = {_MMU_ARM9_read32, _MMU_ARM7_read32};
+u8 (* FASTCALL _MMU_read08[2])(u32 addr) = {_MMU_ARM9_read08, _MMU_ARM7_read08};
+u16 (* FASTCALL _MMU_read16[2])(u32 addr) = {_MMU_ARM9_read16, _MMU_ARM7_read16};
+u32 (* FASTCALL _MMU_read32[2])(u32 addr) = {_MMU_ARM9_read32, _MMU_ARM7_read32};
 
-void (*_MMU_write08[2])(u32 addr, u8 val) = {_MMU_ARM9_write08, _MMU_ARM7_write08};
-void (*_MMU_write16[2])(u32 addr, u16 val) = {_MMU_ARM9_write16, _MMU_ARM7_write16};
-void (*_MMU_write32[2])(u32 addr, u32 val) = {_MMU_ARM9_write32, _MMU_ARM7_write32};
+void (* FASTCALL _MMU_write08[2])(u32 addr, u8 val) = {_MMU_ARM9_write08, _MMU_ARM7_write08};
+void (* FASTCALL _MMU_write16[2])(u32 addr, u16 val) = {_MMU_ARM9_write16, _MMU_ARM7_write16};
+void (* FASTCALL _MMU_write32[2])(u32 addr, u32 val) = {_MMU_ARM9_write32, _MMU_ARM7_write32};
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
 static u64 isqrt (u64 x) {
