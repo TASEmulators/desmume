@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 
-#include "types.h"
+#include "../types.h"
 
 
 //definitions for str_strip() flags

@@ -2,7 +2,7 @@
 #define _guid_h_
 
 #include <string>
-#include "types.h"
+#include "../types.h"
 #include "valuearray.h"
 
 struct Desmume_Guid : public ValueArray<u8,16>

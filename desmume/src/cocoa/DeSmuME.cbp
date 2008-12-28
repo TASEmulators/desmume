@@ -104,6 +104,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../NDSSystem.h" />
 		<Unit filename="../OGLRender.cpp" />
 		<Unit filename="../OGLRender.h" />
+		<Unit filename="../PACKED.h" />
+		<Unit filename="../PACKED_END.h" />
 		<Unit filename="../ROMReader.cpp" />
 		<Unit filename="../ROMReader.h" />
 		<Unit filename="../SPU.cpp" />
@@ -202,6 +204,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../mc.h" />
 		<Unit filename="../mem.h" />
 		<Unit filename="../memorystream.h" />
+		<Unit filename="../movie.cpp" />
+		<Unit filename="../movie.h" />
 		<Unit filename="../readwrite.cpp" />
 		<Unit filename="../readwrite.h" />
 		<Unit filename="../registers.h" />
@@ -211,6 +215,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../rtc.h" />
 		<Unit filename="../saves.cpp" />
 		<Unit filename="../saves.h" />
+		<Unit filename="../shaders.h" />
 		<Unit filename="../softrender.cpp" />
 		<Unit filename="../softrender.h" />
 		<Unit filename="../softrender_config.h" />
@@ -219,6 +224,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../thumb_instructions.cpp" />
 		<Unit filename="../thumb_instructions.h" />
 		<Unit filename="../types.h" />
+		<Unit filename="../utils/ConvertUTF.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../utils/ConvertUTF.h" />
+		<Unit filename="../utils/decrypt/crc.cpp" />
+		<Unit filename="../utils/decrypt/crc.h" />
+		<Unit filename="../utils/decrypt/decrypt.cpp" />
+		<Unit filename="../utils/decrypt/decrypt.h" />
+		<Unit filename="../utils/decrypt/header.cpp" />
+		<Unit filename="../utils/decrypt/header.h" />
+		<Unit filename="../utils/guid.cpp" />
+		<Unit filename="../utils/guid.h" />
+		<Unit filename="../utils/md5.cpp" />
+		<Unit filename="../utils/md5.h" />
+		<Unit filename="../utils/valuearray.h" />
+		<Unit filename="../utils/xstring.cpp" />
+		<Unit filename="../utils/xstring.h" />
 		<Unit filename="../wifi.cpp" />
 		<Unit filename="../wifi.h" />
 		<Unit filename="../zero_private.h" />

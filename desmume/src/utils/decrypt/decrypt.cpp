@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "types.h"
+#include "../../types.h"
 #include "crc.h"
 #include "header.h"
 
@@ -406,7 +406,7 @@ void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 	init1(cardheader_gamecode);
 	decrypt(card_hash, p+1, p);
 	arg2[1] <<= 1;
-	arg2[2] >>= 1;	
+	arg2[2] >>= 1;
 	init2(card_hash, arg2);
 	decrypt(card_hash, p+1, p);
 
@@ -432,9 +432,9 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 {
 	//this looks like it will only work on little endian hosts
 	Header* header = (Header*)romdata;
-	
+
 	int romType = DetectRomType(*header,(char*)romdata);
-	
+
 	unsigned char data[0x4000];
 	memcpy(data,romdata+0x4000,0x4000);
 

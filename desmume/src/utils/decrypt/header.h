@@ -5,9 +5,9 @@
 #define _HEADER_H_
 
 
-#include "types.h"
+#include "../../types.h"
 
-#include "PACKED.h"
+#include "../../PACKED.h"
 struct __PACKED Header
 {
 	char title[0xC];
@@ -74,7 +74,7 @@ struct __PACKED Header
 	u32 offset_0x16C;
 	unsigned char zero[0x90];
 };
-#include "PACKED_END.h"
+#include "../../PACKED_END.h"
 
 
 

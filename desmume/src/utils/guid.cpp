@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "guid.h"
-#include "types.h"
+#include "../types.h"
 
 void Desmume_Guid::newGuid()
 {
@@ -33,7 +33,7 @@ uint8 Desmume_Guid::hexToByte(char** ptrptr)
 	else a-='0';
 	if(b>='A') b=b-'A'+10;
 	else b-='0';
-	return ((unsigned char)a<<4)|(unsigned char)b; 
+	return ((unsigned char)a<<4)|(unsigned char)b;
 }
 
 void Desmume_Guid::scan(std::string& str)
