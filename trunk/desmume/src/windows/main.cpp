@@ -640,6 +640,9 @@ void GetRecentRoms()
 	
 	stringstream temp;
 	char tempstr[256];
+
+	// Avoids duplicating when changing the language.
+	RecentRoms.clear();
 	
 	//Loops through all available recent slots
 	for (int x = 0; x < MAX_RECENT_ROMS; x++)
