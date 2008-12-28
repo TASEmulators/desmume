@@ -20,12 +20,15 @@
 
 #include "render3D.h"
 
+int cur3DCore = GPU3D_NULL;
+
 static void NDS_nullFunc1		(void){}
 static char NDS_nullFunc2		(void){ return 1; }
 static void NDS_nullFunc3		(int,unsigned short*) {}
 static void NDS_nullFunc4		(int,int,int,unsigned short*) {}
 
 GPU3DInterface gpu3DNull = { 
+	"None",
 	NDS_nullFunc2, //NDS_3D_Init
 	NDS_nullFunc1, //NDS_3D_Reset
 	NDS_nullFunc1, //NDS_3D_Close
@@ -39,5 +42,13 @@ GPU3DInterface *gpu3D = &gpu3DNull;
 
 void NDS_3D_SetDriver (int core3DIndex)
 {
-	gpu3D = core3DList[core3DIndex];
+	cur3DCore = core3DIndex;
+	gpu3D = core3DList[cur3DCore];
+}
+
+void NDS_3D_ChangeCore(int newCore)
+{
+	gpu3D->NDS_3D_Close();
+	NDS_3D_SetDriver(newCore);
+	gpu3D->NDS_3D_Init();
 }
