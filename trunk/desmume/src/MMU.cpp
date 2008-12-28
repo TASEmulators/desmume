@@ -1410,14 +1410,12 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		T1WriteByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
 		return ;
 	}
-	// ???
-#if 0
+
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
 		cflash_write(adr,val);
 		return;
 	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -1615,15 +1613,12 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return ;
 	}
 
-	// ???
-#if 0
 	// CFlash writing, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
 	{
 		cflash_write(adr,val);
 		return;
 	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2162,14 +2157,11 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		return ;
 	}
 	
-	// ???
-#if 0
 	// CFlash writing, Mic
 	if ((adr>=0x9000000) && (adr<0x9900000)) {
 	   cflash_write(adr,val);
 	   return;
 	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2628,11 +2620,9 @@ static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 
-#if 0
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
-#endif
 #ifdef _MMU_DEBUG
 		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
 			MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
@@ -2654,11 +2644,9 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr & 0x7FFF);	
 	
-#if 0
 	// CFlash reading, Mic
 	if ((adr>=0x08800000) && (adr<0x09900000))
 	   return (unsigned short)cflash_read(adr);
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2721,12 +2709,9 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	if(adr<0x02000000) 
 		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 	
-	// ???
-#if 0
 	// CFlash reading, Mic
 	if ((adr>=0x9000000) && (adr<0x9900000))
 	   return (unsigned long)cflash_read(adr);
-#endif
 	
 	adr &= 0x0FFFFFFF;
 
