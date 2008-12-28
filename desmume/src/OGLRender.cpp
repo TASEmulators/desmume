@@ -440,7 +440,10 @@ static char OGLInit(void)
 		glUniform1i(loc, 1);
 
 		hasTexLoc = glGetUniformLocation(shaderProgram, "hasTexture");
+		glUniform1i(hasTexLoc, 1);
+
 		texBlendLoc = glGetUniformLocation(shaderProgram, "texBlending");
+		glUniform1i(texBlendLoc, 0);
 	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
@@ -464,6 +467,8 @@ static char OGLInit(void)
 	else 
 		clearAlpha = 0;
 
+	OGLReset();
+
 	ENDGL();
 
 	return 1;
@@ -471,6 +476,9 @@ static char OGLInit(void)
 
 static void OGLClose()
 {
+	if(!BEGINGL())
+		return;
+
 	if(hasShaders)
 	{
 		glUseProgram(0);
@@ -484,6 +492,11 @@ static void OGLClose()
 
 		hasShaders = false;
 	}
+
+	glDeleteTextures(MAX_TEXTURE, &oglTempTextureID[0]);
+	glDeleteTextures(1, &oglToonTableTextureID);
+
+	ENDGL();
 }
 
 //zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
