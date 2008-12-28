@@ -708,7 +708,7 @@ void MMU_unsetRom()
 }
 char txt[80];	
 
-void execsqrt() {
+static void execsqrt() {
 	u32 ret;
 	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0);
 	switch(cnt&1)
@@ -733,7 +733,7 @@ void execsqrt() {
 	MMU.sqrtRunning = TRUE;
 }
 
-void execdiv() {
+static void execdiv() {
 	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280);
 	s64 num,den;
 	s64 res,mod;
@@ -1587,7 +1587,7 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 	u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180);
 
 	IPCSYNC_local = (IPCSYNC_local&0x6000)|(val&0xf00)|(IPCSYNC_local&0xf);
-	IPCSYNC_remote =(IPCSYNC_remote&0x6f00)|(val>>8)&0xf;
+	IPCSYNC_remote =(IPCSYNC_remote&0x6f00)|((val>>8)&0xf);
 
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, IPCSYNC_local);
 	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, IPCSYNC_remote);
