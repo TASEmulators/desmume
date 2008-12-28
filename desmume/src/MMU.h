@@ -158,42 +158,15 @@ void MMU_unsetRom( void);
 
 void print_memory_profiling( void);
 
-/**
- * Memory reading
- */
+// Memory reading/writing (old)
 u8 FASTCALL MMU_read8(u32 proc, u32 adr);
 u16 FASTCALL MMU_read16(u32 proc, u32 adr);
 u32 FASTCALL MMU_read32(u32 proc, u32 adr);
-
-#ifdef MMU_ENABLE_ACL
-	u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access);
-	u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access);
-	u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access);
-#else
-	#define MMU_read8_acl(proc,adr,access)  MMU_read8(proc,adr)
-	#define MMU_read16_acl(proc,adr,access)  MMU_read16(proc,adr)
-	#define MMU_read32_acl(proc,adr,access)  MMU_read32(proc,adr)
-#endif
-
-/**
- * Memory writing
- */
 void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val);
 void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val);
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val);
-
-#ifdef MMU_ENABLE_ACL
-	void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val);
-	void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val);
-	void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val);
-#else
-	#define MMU_write8_acl MMU_write8
-	#define MMU_write16_acl MMU_write16
-	#define MMU_write32_acl MMU_write32
-#endif
  
 void FASTCALL MMU_doDMA(u32 proc, u32 num);
-
 
 /*
  * The base ARM memory interfaces
@@ -203,5 +176,47 @@ extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
 
 extern u8 *MMU_RenderMapToLCD(u32 vram_addr);
+
+extern u8  (*_MMU_read08[2])(u32 addr);
+extern u16 (*_MMU_read16[2])(u32 addr);
+extern u32 (*_MMU_read32[2])(u32 addr);
+
+extern void (*_MMU_write08[2])(u32 addr, u8 val);
+extern void (*_MMU_write16[2])(u32 addr, u16 val);
+extern void (*_MMU_write32[2])(u32 addr, u32 val);
+
+
+#ifdef MMU_ENABLE_ACL
+	void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val);
+	void FASTCALL MMU_write16_acl(u32 proc, u32 adr, u16 val);
+	void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val);
+	u8 FASTCALL MMU_read8_acl(u32 proc, u32 adr, u32 access);
+	u16 FASTCALL MMU_read16_acl(u32 proc, u32 adr, u32 access);
+	u32 FASTCALL MMU_read32_acl(u32 proc, u32 adr, u32 access);
+#else
+	#define MMU_write8_acl(proc, adr, val)  _MMU_write08[proc](adr, val)
+	#define MMU_write16_acl(proc, adr, val) _MMU_write16[proc](adr, val)
+	#define MMU_write32_acl(proc, adr, val) _MMU_write32[proc][proc](adr, val)
+	#define MMU_read8_acl(proc,adr,access)  _MMU_read08[proc](adr)
+	#define MMU_read16_acl(proc,adr,access) _MMU_read16[proc](adr)
+	#define MMU_read32_acl(proc,adr,access) _MMU_read32[proc](adr)
+#endif
+
+// Use this macros for reading/writing, so the GDB stub isn't broken
+#ifdef GDB_STUB
+	#define READ32(a,b)		cpu->mem_if->read32(a,b & 0xFFFFFFFC)
+	#define WRITE32(a,b,c)	cpu->mem_if->write32(a,b & 0xFFFFFFFC,c)
+	#define READ16(a,b)		cpu->mem_if->read16(a,b & 0xFFFFFFFE)
+	#define WRITE16(a,b,c)	cpu->mem_if->write16(a,b & 0xFFFFFFFE,c)
+	#define READ8(a,b)		cpu->mem_if->read8(a,b)
+	#define WRITE8(a,b,c)	cpu->mem_if->write8(a,b,c)
+#else
+	#define READ32(a,b)		_MMU_read32[PROCNUM](b & 0xFFFFFFFC)
+	#define WRITE32(a,b,c)	_MMU_write32[PROCNUM](b & 0xFFFFFFFC,c)
+	#define READ16(a,b)		_MMU_read16[PROCNUM](b & 0xFFFFFFFE)
+	#define WRITE16(a,b,c)	_MMU_write16[PROCNUM](b & 0xFFFFFFFE,c)
+	#define READ8(a,b)		_MMU_read08[PROCNUM](b)
+	#define WRITE8(a,b,c)	_MMU_write08[PROCNUM](b, c)
+#endif
 
 #endif
