@@ -50,5 +50,9 @@ void NDS_3D_ChangeCore(int newCore)
 {
 	gpu3D->NDS_3D_Close();
 	NDS_3D_SetDriver(newCore);
-	gpu3D->NDS_3D_Init();
+	if(gpu3D->NDS_3D_Init() == 0)
+	{
+		NDS_3D_SetDriver(GPU3D_NULL);
+		gpu3D->NDS_3D_Init();
+	}
 }
