@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1FDD29340F080D68004021C9 /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD292F0F080D68004021C9 /* movie.cpp */; };
+		1FDD294E0F080DBD004021C9 /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD293E0F080DBD004021C9 /* ConvertUTF.c */; };
+		1FDD294F0F080DBD004021C9 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29410F080DBD004021C9 /* crc.cpp */; };
+		1FDD29500F080DBD004021C9 /* decrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29430F080DBD004021C9 /* decrypt.cpp */; };
+		1FDD29510F080DBD004021C9 /* header.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29450F080DBD004021C9 /* header.cpp */; };
+		1FDD29520F080DBD004021C9 /* guid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29470F080DBD004021C9 /* guid.cpp */; };
+		1FDD29530F080DBD004021C9 /* md5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29490F080DBD004021C9 /* md5.cpp */; };
+		1FDD29540F080DBD004021C9 /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD294C0F080DBD004021C9 /* xstring.cpp */; };
 		721F43D10EA2A18F0037FB33 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43C50EA2A18F0037FB33 /* common.cpp */; };
 		721F43D20EA2A18F0037FB33 /* rtc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43C90EA2A18F0037FB33 /* rtc.cpp */; };
 		721F43D30EA2A18F0037FB33 /* softrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43CB0EA2A18F0037FB33 /* softrender.cpp */; };
@@ -61,6 +69,26 @@
 
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		1FDD292F0F080D68004021C9 /* movie.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = movie.cpp; path = ../movie.cpp; sourceTree = SOURCE_ROOT; };
+		1FDD29300F080D68004021C9 /* movie.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = movie.h; path = ../movie.h; sourceTree = SOURCE_ROOT; };
+		1FDD29310F080D68004021C9 /* PACKED.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PACKED.h; path = ../PACKED.h; sourceTree = SOURCE_ROOT; };
+		1FDD29320F080D68004021C9 /* PACKED_END.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PACKED_END.h; path = ../PACKED_END.h; sourceTree = SOURCE_ROOT; };
+		1FDD29330F080D68004021C9 /* shaders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = shaders.h; path = ../shaders.h; sourceTree = SOURCE_ROOT; };
+		1FDD293E0F080DBD004021C9 /* ConvertUTF.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ConvertUTF.c; path = ../utils/ConvertUTF.c; sourceTree = SOURCE_ROOT; };
+		1FDD293F0F080DBD004021C9 /* ConvertUTF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvertUTF.h; path = ../utils/ConvertUTF.h; sourceTree = SOURCE_ROOT; };
+		1FDD29410F080DBD004021C9 /* crc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crc.cpp; sourceTree = "<group>"; };
+		1FDD29420F080DBD004021C9 /* crc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crc.h; sourceTree = "<group>"; };
+		1FDD29430F080DBD004021C9 /* decrypt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = decrypt.cpp; sourceTree = "<group>"; };
+		1FDD29440F080DBD004021C9 /* decrypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = decrypt.h; sourceTree = "<group>"; };
+		1FDD29450F080DBD004021C9 /* header.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = header.cpp; sourceTree = "<group>"; };
+		1FDD29460F080DBD004021C9 /* header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = header.h; sourceTree = "<group>"; };
+		1FDD29470F080DBD004021C9 /* guid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = guid.cpp; path = ../utils/guid.cpp; sourceTree = SOURCE_ROOT; };
+		1FDD29480F080DBD004021C9 /* guid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = guid.h; path = ../utils/guid.h; sourceTree = SOURCE_ROOT; };
+		1FDD29490F080DBD004021C9 /* md5.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = md5.cpp; path = ../utils/md5.cpp; sourceTree = SOURCE_ROOT; };
+		1FDD294A0F080DBD004021C9 /* md5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = md5.h; path = ../utils/md5.h; sourceTree = SOURCE_ROOT; };
+		1FDD294B0F080DBD004021C9 /* valuearray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = valuearray.h; path = ../utils/valuearray.h; sourceTree = SOURCE_ROOT; };
+		1FDD294C0F080DBD004021C9 /* xstring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = xstring.cpp; path = ../utils/xstring.cpp; sourceTree = SOURCE_ROOT; };
+		1FDD294D0F080DBD004021C9 /* xstring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = xstring.h; path = ../utils/xstring.h; sourceTree = SOURCE_ROOT; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		721F43C50EA2A18F0037FB33 /* common.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = common.cpp; path = ../common.cpp; sourceTree = SOURCE_ROOT; };
@@ -235,6 +263,20 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1FDD29400F080DBD004021C9 /* decrypt */ = {
+			isa = PBXGroup;
+			children = (
+				1FDD29410F080DBD004021C9 /* crc.cpp */,
+				1FDD29420F080DBD004021C9 /* crc.h */,
+				1FDD29430F080DBD004021C9 /* decrypt.cpp */,
+				1FDD29440F080DBD004021C9 /* decrypt.h */,
+				1FDD29450F080DBD004021C9 /* header.cpp */,
+				1FDD29460F080DBD004021C9 /* header.h */,
+			);
+			name = decrypt;
+			path = ../utils/decrypt;
+			sourceTree = SOURCE_ROOT;
+		};
 		29B97314FDCFA39411CA2CEA /* DeSmuME */ = {
 			isa = PBXGroup;
 			children = (
@@ -252,6 +294,21 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				1FDD293E0F080DBD004021C9 /* ConvertUTF.c */,
+				1FDD293F0F080DBD004021C9 /* ConvertUTF.h */,
+				1FDD29400F080DBD004021C9 /* decrypt */,
+				1FDD29470F080DBD004021C9 /* guid.cpp */,
+				1FDD29480F080DBD004021C9 /* guid.h */,
+				1FDD29490F080DBD004021C9 /* md5.cpp */,
+				1FDD294A0F080DBD004021C9 /* md5.h */,
+				1FDD294B0F080DBD004021C9 /* valuearray.h */,
+				1FDD294C0F080DBD004021C9 /* xstring.cpp */,
+				1FDD294D0F080DBD004021C9 /* xstring.h */,
+				1FDD292F0F080D68004021C9 /* movie.cpp */,
+				1FDD29300F080D68004021C9 /* movie.h */,
+				1FDD29310F080D68004021C9 /* PACKED.h */,
+				1FDD29320F080D68004021C9 /* PACKED_END.h */,
+				1FDD29330F080D68004021C9 /* shaders.h */,
 				721F43C50EA2A18F0037FB33 /* common.cpp */,
 				721F43C60EA2A18F0037FB33 /* common.h */,
 				721F43C70EA2A18F0037FB33 /* memorystream.h */,
@@ -483,6 +540,14 @@
 				721F43D30EA2A18F0037FB33 /* softrender.cpp in Sources */,
 				721F43E50EA2A23F0037FB33 /* sndOSX.mm in Sources */,
 				721F44230EA2BB6E0037FB33 /* rom_info.m in Sources */,
+				1FDD29340F080D68004021C9 /* movie.cpp in Sources */,
+				1FDD294E0F080DBD004021C9 /* ConvertUTF.c in Sources */,
+				1FDD294F0F080DBD004021C9 /* crc.cpp in Sources */,
+				1FDD29500F080DBD004021C9 /* decrypt.cpp in Sources */,
+				1FDD29510F080DBD004021C9 /* header.cpp in Sources */,
+				1FDD29520F080DBD004021C9 /* guid.cpp in Sources */,
+				1FDD29530F080DBD004021C9 /* md5.cpp in Sources */,
+				1FDD29540F080DBD004021C9 /* xstring.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
