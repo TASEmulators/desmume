@@ -124,6 +124,9 @@ BEGIN
         MENUITEM "Gem Skærmbillede &Som...",    IDM_PRINTSCREEN
         MENUITEM "&Hurtigt Skærmbillede",       IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
+        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
+        MENUITEM "Stop AVI",                    IDM_FILE_STOPAVI
+        MENUITEM SEPARATOR
         MENUITEM "&Afslut\tAlt F4",             IDM_QUIT
     END
     POPUP "&Emulation"
@@ -148,6 +151,7 @@ BEGIN
             MENUITEM "4x",                          IDC_WINDOW4X
         END
         MENUITEM "&Bevar Højde og Bredde",      IDC_FORCERATIO
+        MENUITEM "Default size",                IDM_DEFSIZE
         MENUITEM SEPARATOR
         MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
         MENUITEM "Display Fps",                 ID_VIEW_DISPLAYFPS
@@ -196,6 +200,8 @@ BEGIN
         MENUITEM "Vis &Tiles",                  IDM_TILE
         MENUITEM "Vis M&aps",                   IDM_MAP
         MENUITEM "Vis &OAM",                    IDM_OAM
+        MENUITEM "Vis Matrices",                IDM_MATRIX_VIEWER
+        MENUITEM "Vis Lights",                  IDM_LIGHT_VIEWER
         MENUITEM SEPARATOR
         POPUP "&Vis &Lag"
         BEGIN
@@ -872,6 +878,7 @@ BEGIN
             MENUITEM "4x",                          IDC_WINDOW4X
         END
         MENUITEM "&Force Maintain Ratio",       IDC_FORCERATIO
+        MENUITEM "Default size",                IDM_DEFSIZE
         MENUITEM SEPARATOR
         MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
         MENUITEM "Display FPS",                 ID_VIEW_DISPLAYFPS
@@ -1821,8 +1828,11 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory",        IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
-        MENUITEM "Save Screenshot &As...",      IDM_PRINTSCREEN
-        MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
+        MENUITEM "Capture d'écr&an...",         IDM_PRINTSCREEN
+        MENUITEM "Capture d'écran rapide",      IDM_QUICK_PRINTSCREEN
+        MENUITEM SEPARATOR
+        MENUITEM "Enregistrer une vidéo",       IDM_FILE_RECORDAVI
+        MENUITEM "Arrêter l'enregistrement",    IDM_FILE_STOPAVI
         MENUITEM SEPARATOR
         MENUITEM "&Quitter\tAlt F4",            IDM_QUIT
     END
@@ -1840,21 +1850,22 @@ BEGIN
             MENUITEM "180",                         IDC_ROTATE180
             MENUITEM "270",                         IDC_ROTATE270
         END
-        POPUP "Window &Size"
+        POPUP "Taille de la fenêtre"
         BEGIN
             MENUITEM "1x",                          IDC_WINDOW1X
             MENUITEM "2x",                          IDC_WINDOW2X
             MENUITEM "3x",                          IDC_WINDOW3X
             MENUITEM "4x",                          IDC_WINDOW4X
         END
-        MENUITEM "&Force Maintain Ratio",       IDC_FORCERATIO
+        MENUITEM "Conserver le ratio",          IDC_FORCERATIO
+        MENUITEM "Taille par défaut",           IDM_DEFSIZE
         MENUITEM SEPARATOR
-        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
-        MENUITEM "Display Fps",                 ID_VIEW_DISPLAYFPS
+        MENUITEM "Compteur d'images",           ID_VIEW_FRAMECOUNTER
+        MENUITEM "Framerate",                   ID_VIEW_DISPLAYFPS
     END
     POPUP "&Config"
     BEGIN
-        POPUP "&Save Type"
+        POPUP "Média de &sauvegarde"
         BEGIN
             MENUITEM "Autodetect",                  IDC_SAVETYPE1
             MENUITEM "EEPROM 4kbit",                IDC_SAVETYPE2
@@ -1863,9 +1874,9 @@ BEGIN
             MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
             MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
         END
-        MENUITEM "Control Config",              IDM_CONFIG
-        MENUITEM "Sound Settings",              IDM_SOUNDSETTINGS
-        MENUITEM "Firmware Settings",           IDM_FIRMSETTINGS
+        MENUITEM "Config. des contrôles",       IDM_CONFIG
+        MENUITEM "Config. du son",              IDM_SOUNDSETTINGS
+        MENUITEM "Config. du firmware",         IDM_FIRMSETTINGS
         POPUP "&Frame Skip"
         BEGIN
             MENUITEM "Auto",                        IDC_FRAMESKIPAUTO
@@ -1880,7 +1891,7 @@ BEGIN
             MENUITEM "8",                           IDC_FRAMESKIP8
             MENUITEM "9",                           IDC_FRAMESKIP9
         END
-        POPUP "&Language"
+        POPUP "&Langage"
         BEGIN
             MENUITEM "English",                     IDC_LANGENGLISH
             MENUITEM "French",                      IDC_LANGFRENCH
@@ -1889,13 +1900,15 @@ BEGIN
     END
     POPUP "&Outils"
     BEGIN
-        MENUITEM "&Desassembleur",              IDM_DISASSEMBLER
+        MENUITEM "&Désassembleur",              IDM_DISASSEMBLER
         MENUITEM "Visualiser la &memoire",      IDM_MEMORY
         MENUITEM "Visualiser les &registres",   IDM_IOREG
         MENUITEM "Visualiser les &palettes",    IDM_PAL
         MENUITEM "Visualiser les &tiles",       IDM_TILE
         MENUITEM "Visualiser les m&aps",        IDM_MAP
         MENUITEM "Visualiser les &oams",        IDM_OAM
+        MENUITEM "Visualiser les matrices",     IDM_MATRIX_VIEWER
+        MENUITEM "Visualiser les lights",       IDM_LIGHT_VIEWER
         MENUITEM SEPARATOR
         POPUP "&Visualiser les &couches"
         BEGIN
@@ -1910,11 +1923,11 @@ BEGIN
             MENUITEM "Sub BG 3",                    IDM_SBG3, CHECKED
         END
     END
-    POPUP "&Help"
+    POPUP "?"
     BEGIN
-        MENUITEM "&Website",                    IDM_WEBSITE
+        MENUITEM "Site &web",                   IDM_WEBSITE
         MENUITEM "&Forums",                     IDM_FORUM
-        MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
+        MENUITEM "&Soumettre un report de bug", IDM_SUBMITBUGREPORT
     END
 END
 

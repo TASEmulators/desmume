@@ -2461,40 +2461,40 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_CHECKED);
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
 			break;
 		case IDC_WINDOW2X:
 			windowSize=2;
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_CHECKED);
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
 			break;
 		case IDC_WINDOW3X:
 			windowSize=3;
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_CHECKED);
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
 			break;
 		case IDC_WINDOW4X:
 			windowSize=4;
 			ScaleScreen(hwnd, windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 
-			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_CHECKED);
 			break;
 
 		case IDC_FORCERATIO:
@@ -2513,6 +2513,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
 				ForceRatio = TRUE;
 				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
+			}
+			break;
+			
+		case IDM_DEFSIZE:
+			{
+				ScaleScreen(hwnd, 1.0f);
 			}
 			break;
 
