@@ -40,12 +40,12 @@ extern SoundInterface_struct *SNDCoreList[];
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
-int indextbl[8] =
+s8 indextbl[8] =
 {
 	-1, -1, -1, -1, 2, 4, 6, 8
 };
 
-int adpcmtbl[89] =
+u16 adpcmtbl[89] =
 {
 	0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x0010,
 	0x0011, 0x0013, 0x0015, 0x0017, 0x0019, 0x001C, 0x001F, 0x0022, 0x0025,
@@ -70,8 +70,8 @@ s16 wavedutytbl[8][8] = {
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF }
 };
 
-int precalcdifftbl[89][16];
-int precalcindextbl[89][8];
+s32 precalcdifftbl[89][16];
+u8 precalcindextbl[89][8];
 
 FILE *spufp=NULL;
 
