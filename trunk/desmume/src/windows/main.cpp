@@ -23,6 +23,7 @@
 #include "windriver.h"
 #include <algorithm>
 #include <shellapi.h>
+#include <shlwapi.h>
 #include <Winuser.h>
 #include <commctrl.h>
 #include <commdlg.h>
@@ -548,35 +549,16 @@ void UpdateRecentRomsMenu()
 	EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_ENABLED);
 	DeleteMenu(GetSubMenu(recentromsmenu, 0), baseid, MF_BYCOMMAND);
 	
-	/* If there's no ROM available, add a greyed "None" item */
-	/* Otherwise, let's fill the menu */
-/*	if (RecentRoms.size() == 0)
-	{
-		EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_GRAYED);
-
-		moo.cbSize = sizeof(moo);
-		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_STATE | MIIM_TYPE;
-
-		moo.cch = 5;
-		moo.fType = 0;
-		moo.wID = 0;
-		moo.dwTypeData = "None";
-		moo.fState = MF_GRAYED;
-
-		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, TRUE, &moo);
-	}
-	else
-	{*/
-	
+	HDC dc = GetDC(MainWindow->getHWnd());
 	
 	//-----------------------------------------------------------------------
 	//Update the list using RecentRoms vector
 	for(int x = RecentRoms.size()-1; x >= 0; x--)	//Must loop in reverse order since InsertMenuItem will insert as the first on the list
 	{
-		//Let's Limit the Displayed Rom name to 128 characters
 		string tmp = RecentRoms[x];
-		if(tmp.size()>128)
-			tmp = tmp.substr(0,128);
+		LPSTR tmp2 = (LPSTR)tmp.c_str();
+
+		PathCompactPath(dc, tmp2, 500);
 			
 		moo.cbSize = sizeof(moo);
 		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
@@ -584,10 +566,12 @@ void UpdateRecentRomsMenu()
 		moo.cch = tmp.size();
 		moo.fType = 0;
 		moo.wID = baseid + x;
-		moo.dwTypeData = (LPSTR)tmp.c_str();
+		moo.dwTypeData = tmp2;
 		//LOG("Inserting: %s\n",tmp.c_str());  //Debug
 		InsertMenuItem(GetSubMenu(recentromsmenu, 0), 0, 1, &moo);
 	}
+
+	ReleaseDC(MainWindow->getHWnd(), dc);
 	//-----------------------------------------------------------------------
 
 	HWND temp = MainWindow->getHWnd();
