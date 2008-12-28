@@ -26,6 +26,9 @@
 
 typedef struct Render3DInterface
 {
+	// The name of the plugin, this name will appear in the plugins list
+	char * name;
+
 	//called once when the plugin starts up
 	char (CALL_CONVENTION*  NDS_3D_Init)					(void);
 	
@@ -50,6 +53,8 @@ typedef struct Render3DInterface
 
 } GPU3DInterface;
 
+extern int cur3DCore;
+
 // gpu 3D core list, per port
 extern GPU3DInterface *core3DList[];
 
@@ -61,5 +66,6 @@ extern GPU3DInterface gpu3DNull;
 extern GPU3DInterface *gpu3D;
 
 void NDS_3D_SetDriver (int core3DIndex);
+void NDS_3D_ChangeCore(int newCore);
 
 #endif

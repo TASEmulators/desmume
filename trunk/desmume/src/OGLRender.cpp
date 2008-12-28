@@ -124,11 +124,13 @@ OGLEXT(X_PFNGLGETSHADERSOURCEPROC,glShaderSource)
 OGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
 OGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
 OGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
+OGLEXT(PFNGLDETACHSHADERPROC,glDetachShader)
 OGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 OGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
 OGLEXT(PFNGLGETSHADERIVPROC,glGetShaderiv)
 OGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
 OGLEXT(PFNGLDELETESHADERPROC,glDeleteShader)
+OGLEXT(PFNGLDELETEPROGRAMPROC,glDeleteProgram)
 OGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 OGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
@@ -353,7 +355,7 @@ static void createShaders()
 //=================================================
 
 
-static void Reset()
+static void OGLReset()
 {
 	int i;
 
@@ -370,7 +372,7 @@ static void Reset()
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 }
 
-static char Init(void)
+static char OGLInit(void)
 {
 	GLuint loc;
 
@@ -406,11 +408,13 @@ static char Init(void)
 	INITOGLEXT(PFNGLCOMPILESHADERPROC,glCompileShader)
 	INITOGLEXT(PFNGLCREATEPROGRAMPROC,glCreateProgram)
 	INITOGLEXT(PFNGLATTACHSHADERPROC,glAttachShader)
+	INITOGLEXT(PFNGLDETACHSHADERPROC,glDetachShader)
 	INITOGLEXT(PFNGLLINKPROGRAMPROC,glLinkProgram)
 	INITOGLEXT(PFNGLUSEPROGRAMPROC,glUseProgram)
 	INITOGLEXT(PFNGLGETSHADERIVPROC,glGetShaderiv)
 	INITOGLEXT(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog)
 	INITOGLEXT(PFNGLDELETESHADERPROC,glDeleteShader)
+	INITOGLEXT(PFNGLDELETEPROGRAMPROC,glDeleteProgram)
 	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
@@ -465,8 +469,21 @@ static char Init(void)
 	return 1;
 }
 
-static void Close()
+static void OGLClose()
 {
+	if(hasShaders)
+	{
+		glUseProgram(0);
+
+		glDetachShader(shaderProgram, vertexShaderID);
+		glDetachShader(shaderProgram, fragmentShaderID);
+
+		glDeleteProgram(shaderProgram);
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+
+		hasShaders = false;
+	}
 }
 
 //zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
@@ -1062,7 +1079,7 @@ static void Control()
 	}
 }
 
-static void Render()
+static void OGLRender()
 {
 	if(!BEGINGL()) return;
 
@@ -1152,7 +1169,7 @@ static void Render()
 	ENDGL();
 }
 
-static void VramReconfigureSignal()
+static void OGLVramReconfigureSignal()
 {
 	//well, this is a very blunt instrument.
 	//lets just flag all the textures as invalid.
@@ -1199,7 +1216,7 @@ static void GL_ReadFramebuffer()
 	//}
 }
 
-static void GetLineCaptured(int line, u16* dst)
+static void OGLGetLineCaptured(int line, u16* dst)
 {
 	if(needRefreshFramebuffer) {
 		needRefreshFramebuffer = false;
@@ -1230,7 +1247,7 @@ static void GetLineCaptured(int line, u16* dst)
 }
 
 
-static void GetLine(int line, int start, int end_inclusive, u16* dst)
+static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 {
 	assert(line<192 && line>=0);
 
@@ -1302,14 +1319,15 @@ static void GetLine(int line, int start, int end_inclusive, u16* dst)
 
 
 
-GPU3DInterface gpu3Dgl = {	
-	Init,
-	Reset,
-	Close,
-	Render,
-	VramReconfigureSignal,
-	GetLine,
-	GetLineCaptured
+GPU3DInterface gpu3Dgl = {
+	"OpenGL",
+	OGLInit,
+	OGLReset,
+	OGLClose,
+	OGLRender,
+	OGLVramReconfigureSignal,
+	OGLGetLine,
+	OGLGetLineCaptured
 };
 
 
