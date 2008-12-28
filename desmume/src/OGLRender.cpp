@@ -1194,15 +1194,14 @@ static void GL_ReadFramebuffer()
 {
 	if(!BEGINGL()) return; 
 	glFinish();
-	glReadPixels(0,0,256,192,GL_RGBA,				GL_UNSIGNED_BYTE,	GPU_screen3D);	
 	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
+	glReadPixels(0,0,256,192,GL_BGRA_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
 	ENDGL();
 
 	//convert the pixels to a different format which is more convenient
 	//is it safe to modify the screen buffer? if not, we could make a temp copy
 	for(int i=0;i<256*192;i++) {
-		int t = i<<2;
-		u32 &u32screen3D = *(u32*)&GPU_screen3D[t];
+		u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
 		u32screen3D>>=3;
 		u32screen3D &= 0x1F1F1F1F;
 	}
@@ -1250,9 +1249,9 @@ static void OGLGetLineCaptured(int line, u16* dst)
 		}
 
 		int t=i<<2;
-		u32 r = screen3D[t+0];
+		u32 r = screen3D[t+2];
 		u32 g = screen3D[t+1];
-		u32 b = screen3D[t+2];
+		u32 b = screen3D[t+0];
 
 		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
 		dst[i] = (b<<10) | (g<<5) | (r) | 0x8000;
@@ -1268,7 +1267,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 		needRefreshFramebuffer = false;
 		GL_ReadFramebuffer();
 	}
-	
+
 	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
 	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
 
@@ -1307,7 +1306,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 		mixtbl & mix = mixTable555[a];
 		
 		//r
-		u32 newpix = screen3D[t+0];
+		u32 newpix = screen3D[t+2];
 		u32 oldpix = oldcolor&0x1F;
 		newpix = mix[newpix][oldpix];
 		dstpixel = newpix;
@@ -1319,7 +1318,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 		dstpixel |= (newpix<<5);
 
 		//b
-		newpix = screen3D[t+2];
+		newpix = screen3D[t+0];
 		oldpix = (oldcolor>>10)&0x1F;
 		newpix = mix[newpix][oldpix];
 		dstpixel |= (newpix<<10);
