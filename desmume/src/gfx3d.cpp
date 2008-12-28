@@ -1137,14 +1137,14 @@ void gfx3d_execute(u8 cmd, u32 param)
 }
 #endif
 
-void gfx3d_FlushFIFO()
+static void gfx3d_FlushFIFO()
 {
-	u32	cmd;
+#if 1
+	GFX_FIFOclear();
+#else
+	u32 cmd;
 	u32 param;
 
-	GFX_FIFOclear();
-
-#if 0
 	//INFO("GX FIFO tail at %i, GXstat 0x%08X\n", gxFIFO.tail, gxstat);
 	if (gxFIFO.tail == 0)
 	{
@@ -1384,7 +1384,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 #endif
 
 #if 1
-void NOPARAMS(u32 val)
+static void NOPARAMS(u32 val)
 {
 	for (;;)
 	{
