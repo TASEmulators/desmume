@@ -69,3 +69,4 @@ void NDS_3D_SetDriver (int core3DIndex);
 void NDS_3D_ChangeCore(int newCore);
 
 #endif
+ 
