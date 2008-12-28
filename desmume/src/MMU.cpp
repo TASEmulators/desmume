@@ -2040,7 +2040,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				}
 			case REG_DISPB_DISPCNT+2 : 
 				{
-					//execute = FALSE;
+					//emu_halt();
 					u32 v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000) & 0xFFFF) | ((u32) val << 16);
 					GPU_setVideoProp(SubScreen.gpu, v);
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000, v);
@@ -2049,7 +2049,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DMA0CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma0 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBA, val);
 					DMASrc[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB0);
@@ -2070,7 +2070,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DMA1CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma1 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC6, val);
 					DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBC);
@@ -2091,7 +2091,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DMA2CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma2 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD2, val);
 					DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC8);
@@ -2112,7 +2112,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DMA3CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma3 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDE, val);
 					DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD4);
@@ -2131,7 +2131,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					#endif
 				}
 				return;
-                        //case REG_AUXSPICNT : execute = FALSE;
+                        //case REG_AUXSPICNT : emu_halt();
 		}
 #ifdef _MMU_DEBUG
 		mmu_log_debug_ARM9(adr, "(write16) %0x%X", val);
@@ -2464,7 +2464,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM9, 0, DMASrc[ARMCPU_ARM9][0], DMADst[ARMCPU_ARM9][0], 0, ((MMU.DMACrt[ARMCPU_ARM9][0]>>27)&7));
 				}
 				#endif
-				//execute = FALSE;
+				//emu_halt();
 				return;
 			case REG_DMA1CNTL:
 				//LOG("32 bit dma1 %04X\r\n", val);
@@ -2579,7 +2579,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_DISPA_BG0CNT :
 				GPU_setBGProp(MainScreen.gpu, 0, (val&0xFFFF));
 				GPU_setBGProp(MainScreen.gpu, 1, (val>>16));
-				//if((val>>16)==0x400) execute = FALSE;
+				//if((val>>16)==0x400) emu_halt();
 				T1WriteLong(ARM9Mem.ARM9_REG, 8, val);
 				return;
 			case REG_DISPA_BG2CNT :
@@ -3006,14 +3006,14 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									val = 0;
 									break;
 								case 0x10 :
-									//execute = FALSE;
+									//emu_halt();
 									if(SPI_CNT&(1<<11))
 									{
 										if(partie)
 										{
 											val = ((nds.touchY<<3)&0x7FF);
 											partie = 0;
-											//execute = FALSE;
+											//emu_halt();
 											break;
 										}
 										val = (nds.touchY>>5);
@@ -3102,7 +3102,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 #endif
 				return;
 			case REG_IE + 2 :
-				//execute = FALSE;
+				//emu_halt();
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF) | (((u32)val)<<16);
 #ifndef NEW_IRQ
 				if ( MMU.reg_IME[ARMCPU_ARM7]) 
@@ -3118,11 +3118,11 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
 				
 			case REG_IF :
-				//execute = FALSE;
+				//emu_halt();
 				MMU.reg_IF[ARMCPU_ARM7] &= (~((u32)val)); 
 				return;
 			case REG_IF + 2 :
-				//execute = FALSE;
+				//emu_halt();
 				MMU.reg_IF[ARMCPU_ARM7] &= (~(((u32)val)<<16));
 				return;
 				
@@ -3183,7 +3183,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				{
 					u32 v;
 
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma0 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xBA, val);
 					DMASrc[ARMCPU_ARM7][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB0);
@@ -3204,7 +3204,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_DMA1CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma1 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC6, val);
 					DMASrc[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xBC);
@@ -3225,7 +3225,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_DMA2CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma2 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD2, val);
 					DMASrc[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC8);
@@ -3246,7 +3246,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_DMA3CNTH :
 				{
 					u32 v;
-					//if(val&0x8000) execute = FALSE;
+					//if(val&0x8000) emu_halt();
 					//LOG("16 bit dma3 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDE, val);
 					DMASrc[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD4);
@@ -3265,7 +3265,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					#endif
 				}
 				return;
-                        //case REG_AUXSPICNT : execute = FALSE;
+                        //case REG_AUXSPICNT : emu_halt();
 		}
 #ifdef _MMU_DEBUG
 		mmu_log_debug_ARM7(adr, "(write16) %0x%X", val);
@@ -3408,7 +3408,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM7, 0, DMASrc[ARMCPU_ARM7][0], DMADst[ARMCPU_ARM7][0], 0, ((MMU.DMACrt[ARMCPU_ARM7][0]>>27)&7));
 				}
 				#endif
-				//execute = FALSE;
+				//emu_halt();
 				return;
 			case REG_DMA1CNTL:
 				//LOG("32 bit dma1 %04X\r\n", val);

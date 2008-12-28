@@ -1019,7 +1019,7 @@ DWORD WINAPI run()
 			   if (frameAdvance)
 			   {
 					frameAdvance = false;
-				    execute = FALSE;
+				    emu_halt();
 					SPU_Pause(1);
 			   }
 			   frameCounter++;
@@ -1043,7 +1043,7 @@ void NDS_Pause()
 {
 	if (!paused)
 	{
-		execute = FALSE;
+		emu_halt();
 		paused = TRUE;
 		SPU_Pause(1);
 		while (!paused) {}
@@ -1229,7 +1229,7 @@ int RegClass(WNDPROC Proc, LPCTSTR szName)
 static void ExitRunLoop()
 {
 	finished = TRUE;
-	execute = FALSE;
+	emu_halt();
 }
 
 int WINAPI WinMain (HINSTANCE hThisInstance,

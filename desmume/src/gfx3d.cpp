@@ -624,23 +624,26 @@ static void SetVertex()
 				break;
 		}
 
-		if(completed) {
+		if(completed)
+		{
 			POLY &poly = polylist->list[polylist->count];
 			//todo - dont overrun proj list
 			
 			//see if the last entry in the proj list matches the current matrix, if there is one.
 			if(projlist->count != 0 && 
-				//but as a speed hack, we consider the matrices different if the first element differs.
-				//i think this should be good enough.
-				!MatrixCompare(mtxCurrent[0],projlist->projMatrix[projlist->count-1])
-
-				// if compare only one value this is broke some games
-				// zeromus check it please
+				//here is an example of something that does not work.
+				//(for a speed hack, we consider the matrices different if the first element differs)
 				//mtxCurrent[0][0] == projlist->projMatrix[projlist->count-1][0]
-				) {
+				
+				//here is what we must do: make sure the matrices are identical
+				!MatrixCompare(mtxCurrent[0],projlist->projMatrix[projlist->count-1])
+				)
+			{
 				//it matches. use it
 				poly.projIndex = projlist->count-1;
-			} else {
+			}
+			else
+			{
 				MatrixCopy(projlist->projMatrix[projlist->count],mtxCurrent[0]);
 				poly.projIndex = projlist->count;
 				projlist->count++;

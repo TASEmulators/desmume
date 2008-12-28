@@ -792,7 +792,7 @@ static void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void SPU_ChanUpdateNoMix(SPU_struct *SPU, channel_struct *chan)
+static void SPU_ChanUpdate8NoMix(SPU_struct *SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
@@ -836,6 +836,16 @@ static void SPU_ChanUpdate8R(SPU_struct* SPU, channel_struct *chan)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+static void SPU_ChanUpdate16NoMix(SPU_struct *SPU, channel_struct *chan)
+{
+	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	{
+		// check to see if we're passed the length and need to loop, etc.
+		TestForLoop(SPU, chan);
+	}
+}
+
 
 static void SPU_ChanUpdate16LR(SPU_struct* SPU, channel_struct *chan)
 {
@@ -891,6 +901,16 @@ static void SPU_ChanUpdate16R(SPU_struct* SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
+static void SPU_ChanUpdateADPCMNoMix(SPU_struct *SPU, channel_struct *chan)
+{
+	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	{
+		// check to see if we're passed the length and need to loop, etc.
+		TestForLoop2(SPU, chan);
+	}
+}
+
+
 static void SPU_ChanUpdateADPCMLR(SPU_struct* SPU, channel_struct *chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
@@ -944,6 +964,15 @@ static void SPU_ChanUpdateADPCMR(SPU_struct* SPU, channel_struct *chan)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+static void SPU_ChanUpdatePSGNoMix(SPU_struct* SPU, channel_struct *chan)
+{
+	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	{
+		chan->sampcnt += chan->sampinc;
+	}
+}
+
 
 static void SPU_ChanUpdatePSGLR(SPU_struct* SPU, channel_struct *chan)
 {
@@ -1001,25 +1030,25 @@ void (*SPU_ChanUpdate[4][4])(SPU_struct* SPU, channel_struct *chan) = {
 		SPU_ChanUpdate8L,
 			SPU_ChanUpdate8LR,
 			SPU_ChanUpdate8R,
-			SPU_ChanUpdateNoMix
+			SPU_ChanUpdate8NoMix
 	},
 	{ // 16-bit PCM
 		SPU_ChanUpdate16L,
 			SPU_ChanUpdate16LR,
 			SPU_ChanUpdate16R,
-			SPU_ChanUpdateNoMix,
+			SPU_ChanUpdate16NoMix,
 		},
 		{ // IMA-ADPCM
 			SPU_ChanUpdateADPCML,
 				SPU_ChanUpdateADPCMLR,
 				SPU_ChanUpdateADPCMR,
-				SPU_ChanUpdateNoMix
+				SPU_ChanUpdateADPCMNoMix
 		},
 		{ // PSG/White Noise
 			SPU_ChanUpdatePSGL,
 				SPU_ChanUpdatePSGLR,
 				SPU_ChanUpdatePSGR,
-				SPU_ChanUpdateNoMix
+				SPU_ChanUpdatePSGNoMix
 			}
 };
 

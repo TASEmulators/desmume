@@ -102,6 +102,7 @@ typedef struct
 } NDS_header;
 
 extern void debug();
+void emu_halt();
 
 typedef struct
 {
@@ -232,7 +233,7 @@ inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
             {
                  MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
                  NDS_ARM9.wIRQ = TRUE;
-                      //execute = FALSE;
+                      //emu_halt();
                       /*logcount++;*/
             }
        }
@@ -242,7 +243,7 @@ inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
             if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8)
                  MMU.reg_IF[1] |= 1;// & (MMU.reg_IME[1]);// (MMU.reg_IE[1] & 1);
                  NDS_ARM7.wIRQ = TRUE;
-                 //execute = FALSE;
+                 //emu_halt();
        }
        
        static INLINE void NDS_swapScreen(void)

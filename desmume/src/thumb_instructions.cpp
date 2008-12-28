@@ -32,6 +32,7 @@
 #include "bios.h"
 #include "debug.h"
 #include "MMU.h"
+#include "NDSSystem.h"
 
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM> 
@@ -59,7 +60,7 @@ extern volatile BOOL execute;
 
 TEMPLATE static  u32 FASTCALL OP_UND_THUMB()
 {
-     execute = FALSE;
+     emu_halt();
      return 1;
 }
 
@@ -448,7 +449,7 @@ TEMPLATE static  u32 FASTCALL OP_CMN()
      const u32 &i = cpu->instruction;
      u32 tmp = cpu->R[REG_NUM(i, 0)] + cpu->R[REG_NUM(i, 3)];
      
-     //execute = FALSE;
+     //emu_halt();
      //log::ajouter("OP_CMN THUMB");
      cpu->CPSR.bits.N = BIT31(tmp);
      cpu->CPSR.bits.Z = tmp == 0;
@@ -891,29 +892,26 @@ TEMPLATE static  u32 FASTCALL OP_B_COND()
 
 TEMPLATE static  u32 FASTCALL OP_SWI_THUMB()
 {
-     if (((cpu->intVector != 0) ^ (PROCNUM == ARMCPU_ARM9)))
-     {
+	if(cpu->swi_tab) {
+		 //zero 25-dec-2008 - in arm, we were masking to 0x1F. 
+		 //this is probably safer since an invalid opcode could crash the emu
+		 //u32 swinum = cpu->instruction & 0xFF;
+		u32 swinum = cpu->instruction & 0x1F;
+        return cpu->swi_tab[swinum](cpu) + 3;  
+	}
+	else {
         /* we use an irq thats not in the irq tab, as
         it was replaced duie to a changed intVector */
         Status_Reg tmp = cpu->CPSR;
         armcpu_switchMode(cpu, SVC);            /* enter svc mode */
-        cpu->R[14] = cpu->R[15] - 4;            /* jump to swi Vector */
+        cpu->R[14] = cpu->next_instruction;            /* jump to swi Vector */
         cpu->SPSR = tmp;                        /* save old CPSR as new SPSR */
         cpu->CPSR.bits.T = 0;                   /* handle as ARM32 code */
-        cpu->CPSR.bits.I = cpu->SPSR.bits.I;    /* keep int disable flag */
+        cpu->CPSR.bits.I = 1;
         cpu->R[15] = cpu->intVector + 0x08;
         cpu->next_instruction = cpu->R[15];
         return 3;
      }
-     else
-     {
-		 //zero 25-dec-2008 - in arm, we were masking to 0x1F. 
-		 //this is probably safer since an invalid opcode could crash the emu
-		 //u32 swinum = cpu->instruction & 0xFF;
-		 u32 swinum = cpu->instruction & 0x1F;
-        return cpu->swi_tab[swinum](cpu) + 3;  
-     }
-     //return 3;
 }
 
 #define SIGNEEXT_IMM11(i)     (((i)&0x7FF) | (BIT10(i) * 0xFFFFF800))

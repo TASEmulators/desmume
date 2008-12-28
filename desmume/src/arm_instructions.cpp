@@ -31,6 +31,7 @@
 #include "debug.h"
 #include "MMU.h"
 #include "armcpu.h"
+#include "NDSSystem.h"
 
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM> 
@@ -248,7 +249,7 @@ extern volatile BOOL execute;
 TEMPLATE static u32 FASTCALL  OP_UND()
 {
 	LOG("Undefined instruction: %08X\n", cpu->instruction);
-	execute = FALSE;
+	emu_halt();
 	LOG("Stopped (OP_UND)\n");
 	return 1;
 }
@@ -269,7 +270,7 @@ TEMPLATE static u32 FASTCALL  OP_UND()
  	}											\
  	else											\
  	{											\
- 		execute = FALSE;								\
+ 		emu_halt();								\
  		return 4;									\
  	}											\
 
@@ -5033,7 +5034,7 @@ TEMPLATE static u32 FASTCALL  OP_STR_P_IMM_OFF()
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
      WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i,12)]);
 
-//	 execute = false;
+//	 emu_halt();
      
      return 2 + MMU.MMU_WAIT32[PROCNUM][(adr>>24)&0xF];
 }
@@ -5791,7 +5792,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_IMM_OFF_POSTIND()
           return 2;
      oldmode = armcpu_switchMode(cpu, SYS);
 
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_M_IMM_OFF_POSTIND\n");
      
      
@@ -5817,7 +5818,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_REG_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_P_REG_OFF_POSTIND\n");
           
 
@@ -5843,7 +5844,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSL_IMM_OFF_POSTIND()
      if(cpu->CPSR.bits.mode==USR)
           return 2;
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_P_LSL_IMM_OFF_POSTIND\n");  
           
 
@@ -5871,7 +5872,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSL_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_M_LSL_IMM_OFF_POSTIND\n");  
           
 
@@ -5899,7 +5900,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSR_IMM_OFF_POSTIND()
           return 2;
      
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_P_LSR_IMM_OFF_POSTIND\n");  
           
 
@@ -5927,7 +5928,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSR_IMM_OFF_POSTIND()
           return 2;
      
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_M_LSR_IMM_OFF_POSTIND\n");
           
 
@@ -5955,7 +5956,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ASR_IMM_OFF_POSTIND()
           return 2;
      
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_P_ASR_IMM_OFF_POSTIND\n");
           
 
@@ -5983,7 +5984,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ASR_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_M_ASR_IMM_OFF_POSTIND\n");
           
 
@@ -6011,7 +6012,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ROR_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_P_ROR_IMM_OFF_POSTIND\n");
           
 
@@ -6039,7 +6040,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ROR_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDRBT_M_ROR_IMM_OFF_POSTIND\n");
           
 
@@ -6774,7 +6775,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2()
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
      TWaitState* waitState;
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDMIB2\n");
 
      if(BIT15(i)==0)
@@ -6833,7 +6834,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2()
      TWaitState* waitState;
      
      u32 start = cpu->R[REG_POS(i,16)];
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_LDMDA2\n");
 
      if(BIT15(i)==0)
@@ -6958,7 +6959,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMIA2_W()
      TWaitState* waitState;
      u32 tmp;
      Status_Reg SPSR;
-//     execute = FALSE;     
+//     emu_halt();     
      if(BIT15(i)==0)
      {  
           if(cpu->CPSR.bits.mode==USR)
@@ -7073,7 +7074,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2_W()
      u32 * registres;
      TWaitState * waitState;
      Status_Reg SPSR;
-//     execute = FALSE;     
+//     emu_halt();     
      if(BIT15(i)==0)
      {  
           if(cpu->CPSR.bits.mode==USR)
@@ -7133,7 +7134,7 @@ TEMPLATE static u32 FASTCALL  OP_LDMDB2_W()
      u32 * registres;
      TWaitState* waitState;
      Status_Reg SPSR;
-//     execute = FALSE;     
+//     emu_halt();     
      if(BIT15(i)==0)
      {  
           if(cpu->CPSR.bits.mode==USR)
@@ -7352,7 +7353,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
 
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_STMIA2\n");
 
      for(b=0; b<16; ++b)
@@ -7383,7 +7384,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIB2()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
      
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_STMIB2\n");
      
      for(b=0; b<16; ++b)
@@ -7414,7 +7415,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);     
      
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_STMDA2\n");  
      
      for(b=0; b<16; ++b)
@@ -7473,7 +7474,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2_W()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
      
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_STMIA2_W\n");
      
      for(b=0; b<16; ++b)
@@ -7533,7 +7534,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2_W()
      c = 0;
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_STMDA2_W\n");
      
      for(b=0; b<16; ++b)
@@ -7567,7 +7568,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDB2_W()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
 
-     //execute = FALSE;
+     //emu_halt();
 	 LOG("Untested opcode: OP_STMDB2_W\n");   
 
      for(b=0; b<16; ++b)
@@ -7757,7 +7758,7 @@ TEMPLATE static u32 FASTCALL  OP_MCR()
      
      if(!cpu->coproc[cpnum])
      {
-          execute = FALSE;
+          emu_halt();
 		  LOG("Stopped (OP_MCR)\n");
           return 2;
      }
@@ -7776,7 +7777,7 @@ TEMPLATE static u32 FASTCALL  OP_MRC()
      
      if(!cpu->coproc[cpnum])
      {
-          execute = FALSE;
+          emu_halt();
 		  LOG("Stopped (OP_MRC)\n");
           return 2;
      }
@@ -7789,25 +7790,22 @@ TEMPLATE static u32 FASTCALL  OP_MRC()
 //--------------SWI-------------------------------
 TEMPLATE static u32 FASTCALL  OP_SWI()
 {
-     if (((cpu->intVector != 0) ^ (PROCNUM == ARMCPU_ARM9)))
-     {
+	if(cpu->swi_tab) {
+		u32 swinum = (cpu->instruction>>16)&0x1F;
+		return cpu->swi_tab[swinum](cpu) + 3;
+	} else {
         /* TODO (#1#): translocated SWI vectors */
         /* we use an irq thats not in the irq tab, as
            it was replaced duie to a changed intVector */
         Status_Reg tmp = cpu->CPSR;
         armcpu_switchMode(cpu, SVC);            /* enter svc mode */
-        cpu->R[14] = cpu->R[15] - 4;            /* jump to swi Vector */
+        cpu->R[14] = cpu->next_instruction;
         cpu->SPSR = tmp;                        /* save old CPSR as new SPSR */
         cpu->CPSR.bits.T = 0;                   /* handle as ARM32 code */
-        cpu->CPSR.bits.I = cpu->SPSR.bits.I;    /* keep int disable flag */
-        cpu->R[15] = cpu->intVector + 0x08;
+        cpu->CPSR.bits.I = 1;					
+		cpu->R[15] = cpu->intVector + 0x08;
         cpu->next_instruction = cpu->R[15];
         return 4;
-     }
-     else
-     {
-        u32 swinum = (cpu->instruction>>16)&0x1F;
-        return cpu->swi_tab[swinum](cpu) + 3;
      }
 }
 
