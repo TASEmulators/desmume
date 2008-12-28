@@ -154,7 +154,7 @@ int listTwiddle = 1;
 int triStripToggle;
 
 //list-building state
-struct {
+struct tmpVertInfo {
 	//the number of verts registered in this list
 	int count;
 	//indices to the main vert list
