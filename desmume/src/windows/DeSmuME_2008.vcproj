@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -163,7 +163,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -252,7 +252,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -337,7 +337,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -424,7 +424,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -511,7 +511,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib"
+				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x64.lib zziplib-2008-x64.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_x64.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
