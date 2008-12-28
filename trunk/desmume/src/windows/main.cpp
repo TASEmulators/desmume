@@ -896,14 +896,6 @@ DWORD WINAPI run()
 		MessageBox(hwnd,"Unable to set DirectDraw buffers","Error",MB_OK);
 		return -1;
     }
-	 
-	if (!gpu3D->NDS_3D_Init ())
-	{
-		char err[100];
-		sprintf(err, "Unable to initialize the %s renderer", gpu3D->name);
-		MessageBox(hwnd,err,"Error",MB_OK);
-		return -1;
-    }
 
      QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
      QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
@@ -1385,7 +1377,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     }
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
-	NDS_3D_ChangeCore(cur3DCore, false);
+	NDS_3D_ChangeCore(cur3DCore);
 
 #ifdef BETA_VERSION
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
@@ -2561,7 +2553,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			{
 			case IDOK:
 				{
-					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)), (execute ? true : false));
+					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
 				}
 			case IDCANCEL:
@@ -2572,7 +2564,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 
 			case IDC_DEFAULT:
 				{
-					NDS_3D_ChangeCore(GPU3D_OPENGL, (execute ? true : false));
+					NDS_3D_ChangeCore(GPU3D_OPENGL);
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_OPENGL);
 					WritePrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
 				}
