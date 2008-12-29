@@ -42,7 +42,7 @@ void md5_starts( struct md5_context *ctx )
     ctx->state[3] = 0x10325476;
 }
 
-void md5_process( struct md5_context *ctx, uint8 data[64] )
+static void md5_process( struct md5_context *ctx, uint8 data[64] )
 {
     uint32 A, B, C, D, X[16];
 
