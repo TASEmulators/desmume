@@ -22,6 +22,7 @@
 */
 
 #include "GPU_osd.h"
+#include "GPU.h"
 #include "mem.h"
 #include <string.h> //mem funcs
 #include <stdarg.h> //va_start, etc
@@ -34,7 +35,6 @@
 
 using namespace softrender;
 
-extern u8 GPU_screen[4*256*192];
 image screenshell;
 
 OSDCLASS::OSDCLASS(u8 core)

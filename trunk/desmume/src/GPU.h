@@ -599,7 +599,6 @@ struct _GPU
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
 	itemsForPriority_t itemsForPriority[NB_PRIORITIES];
-	u8 sprWin[192][256];
 
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
@@ -685,7 +684,7 @@ static void REG_DISPx_pack_test(GPU * gpu)
 }
 */
 
-extern u8 GPU_screen[4*256*192];
+CACHE_ALIGN extern u8 GPU_screen[4*256*192];
 
 
 GPU * GPU_Init(u8 l);

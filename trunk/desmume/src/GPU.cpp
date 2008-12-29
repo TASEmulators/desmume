@@ -77,7 +77,9 @@ NDS_Screen SubScreen;
 
 //#define DEBUG_TRI
 
-u8 GPU_screen[4*256*192];
+CACHE_ALIGN u8 GPU_screen[4*256*192];
+
+CACHE_ALIGN u8 sprWin[256];
 
 OSDCLASS	*osd = NULL;
 OSDCLASS	*osdA = NULL;
@@ -235,7 +237,11 @@ static void GPU_resortBGs(GPU *gpu)
 	struct _DISPCNT * cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	itemsForPriority_t * item;
 
-	memset(gpu->sprWin,0, 256*192);
+	//zero 29-dec-2008 - this really doesnt make sense to me.
+	//i changed the sprwin to be line by line,
+	//and resetting it here is pointless since line rendering is instantaneous
+	//and completely produces and consumes sprwin after which the contents of this buffer are useless
+	//memset(gpu->sprWin,0, 256*192);
 
 	// we don't need to check for windows here...
 // if we tick boxes, invisible layers become invisible & vice versa
@@ -481,11 +487,12 @@ static INLINE void renderline_checkWindows(const GPU *gpu, u8 bgnum, u16 x, u16 
 		}
 	}
 
+	//if(true) //sprwin test hack
 	if (gpu->WINOBJ_ENABLED)
 	{
 		// it is in winOBJ, do we display ?
 		// low priority
-		if (gpu->sprWin[y][x])
+		if (sprWin[x])
 		{
 			*draw	= (gpu->WINOBJ >> bgnum)&1;
 			*effect	= (gpu->WINOBJ_SPECIAL);
@@ -506,8 +513,13 @@ static INLINE void renderline_checkWindows(const GPU *gpu, u8 bgnum, u16 x, u16 
 
 static BOOL setFinalColorSpecialNone (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
-	T2WriteWord(dst, passing, color);
+	//sprwin test hack - use this code
+	//BOOL windowDraw = TRUE, windowEffect = TRUE;
+	//renderline_checkWindows(gpu,bgnum,x,y, &windowDraw, &windowEffect);
+	//if(windowDraw) T2WriteWord(dst, passing, color);
+	//return 1;
 
+	T2WriteWord(dst, passing, color);
 	return 1;
 }
 
@@ -1260,7 +1272,7 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 	u16 x1;
 	if (col256) {
 		for(i = 0; i < lg; i++, sprX++,x+=xdir)
-			gpu->sprWin[l][sprX] = (src[x])?1:0;
+			sprWin[sprX] = (src[x])?1:0;
 	} else {
 		for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 		{
@@ -1268,7 +1280,7 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 			palette = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
 			if (x & 1) palette_entry = palette >> 4;
 			else       palette_entry = palette & 0xF;
-			gpu->sprWin[l][sprX] = (palette_entry)?1:0;
+			sprWin[sprX] = (palette_entry)?1:0;
 		}
 	}
 }
@@ -1588,7 +1600,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 				else
 					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
+				//sprwin test hack - to enable, only draw win and not sprite
 				render_sprite_256 (gpu, l, dst, src, pal, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+				//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 
 				continue;
 			}
@@ -1598,7 +1612,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
 			
 			pal += (spriteInfo->PaletteIndex<<4);
+			
+			//sprwin test hack - to enable, only draw win and not sprite
 			render_sprite_16 (gpu, l, dst, src, pal, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+			//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 		}
 	}
 
@@ -2120,7 +2137,7 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 
 	// init background color & priorities
 	memset(sprPrio,0xFF,256);
-	memset(&gpu->sprWin[l],0,256);
+	memset(sprWin,0,256);
 	
 	// init pixels priorities
 	for (int i=0; i<NB_PRIORITIES; i++) {
