@@ -224,4 +224,22 @@ void _MMU_write32(int PROCNUM, u32 addr, u32 val);
 	#define WRITE8(a,b,c)	_MMU_write08<PROCNUM>(b, c)
 #endif
 
+template<int PROCNUM> 
+u8 _MMU_read08(u32 addr) { return _MMU_read08(PROCNUM, addr); }
+
+template<int PROCNUM> 
+u16 _MMU_read16(u32 addr) { return _MMU_read16(PROCNUM, addr); }
+
+template<int PROCNUM> 
+u32 _MMU_read32(u32 addr) { return _MMU_read32(PROCNUM, addr); }
+
+template<int PROCNUM> 
+void _MMU_write08(u32 addr, u8 val) { _MMU_write08(PROCNUM, addr, val); }
+
+template<int PROCNUM> 
+void _MMU_write16(u32 addr, u16 val) { _MMU_write16(PROCNUM, addr, val); }
+
+template<int PROCNUM> 
+void _MMU_write32(u32 addr, u32 val) { _MMU_write32(PROCNUM, addr, val); }
+
 #endif
