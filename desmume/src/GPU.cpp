@@ -953,7 +953,7 @@ INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG,
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
 
-FORCEINLINE static void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
 	
@@ -966,7 +966,7 @@ FORCEINLINE static void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 a
 		gpu->setFinalColorBck(gpu,0,num,dst, color,auxX,auxY);
 }
 
-FORCEINLINE static void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
 	u16 x, y, color;
 	TILEENTRY tileentry;
@@ -982,7 +982,7 @@ FORCEINLINE static void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 
 		gpu->setFinalColorBck(gpu,0,num,dst, color, i, H);
 }
 
-FORCEINLINE static void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+FORCEINLINE void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u8 palette_entry;
 	u16 color;
 
@@ -995,7 +995,7 @@ FORCEINLINE static void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int 
 
 }
 
-FORCEINLINE static void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
+FORCEINLINE void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H) {
 	u16 color;
 
 //	return;
