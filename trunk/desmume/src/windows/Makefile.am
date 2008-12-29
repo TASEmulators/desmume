@@ -1,7 +1,7 @@
 include $(top_srcdir)/src/desmume.mk
 
-EXTRA_DIST = DeSmuME.dev DeSmuME.ico \
-	 DeSmuME.layout Makefile.win \
+EXTRA_DIST = DeSmuME.ico \
+	 Makefile.win \
 	resources.rc
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
