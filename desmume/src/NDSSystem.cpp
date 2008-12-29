@@ -487,7 +487,7 @@ void NDS_Reset( void)
 
 	for(i = 0; i < (header->ARM9binSize>>2); ++i)
 	{
-		_MMU_write32[ARMCPU_ARM9](dst, T1ReadLong(MMU.CART_ROM, src));
+		_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
 		dst += 4;
 		src += 4;
 	}
@@ -497,7 +497,7 @@ void NDS_Reset( void)
 
 	for(i = 0; i < (header->ARM7binSize>>2); ++i)
 	{
-		_MMU_write32[ARMCPU_ARM7](dst, T1ReadLong(MMU.CART_ROM, src));
+		_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
 		dst += 4;
 		src += 4;
 	}
@@ -517,9 +517,9 @@ void NDS_Reset( void)
 	nds.touchX = nds.touchY = 0;
 	nds.isTouch = 0;
 
-	_MMU_write16[ARMCPU_ARM9](0x04000130, 0x3FF);
-	_MMU_write16[ARMCPU_ARM7](0x04000130, 0x3FF);
-	_MMU_write08[ARMCPU_ARM7](0x04000136, 0x43);
+	_MMU_write16<ARMCPU_ARM9>(0x04000130, 0x3FF);
+	_MMU_write16<ARMCPU_ARM7>(0x04000130, 0x3FF);
+	_MMU_write08<ARMCPU_ARM7>(0x04000136, 0x43);
 
 	LidClosed = FALSE;
 	LidKeyCount = 0;
@@ -534,14 +534,14 @@ void NDS_Reset( void)
 
 		if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
 			for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
-				_MMU_write08[ARMCPU_ARM9](0x027FFC80 + fw_index, temp_buffer[fw_index]);
+				_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
 		}
 	}
 
 	// Copy the whole header to Main RAM 0x27FFE00 on startup.
 	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
 	for (i = 0; i < ((0x170+0x90)/4); i++) {
-		_MMU_write32[ARMCPU_ARM9](0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
@@ -558,15 +558,15 @@ void NDS_Reset( void)
 		NDS_ARM7.swi_tab = 0;
 	} else {
 		NDS_ARM7.swi_tab = ARM7_swi_tab;
-		_MMU_write32[ARMCPU_ARM7](0x00, 0xE25EF002);
-		_MMU_write32[ARMCPU_ARM7](0x04, 0xEAFFFFFE);
-		_MMU_write32[ARMCPU_ARM7](0x18, 0xEA000000);
-		_MMU_write32[ARMCPU_ARM7](0x20, 0xE92D500F);
-		_MMU_write32[ARMCPU_ARM7](0x24, 0xE3A00301);
-		_MMU_write32[ARMCPU_ARM7](0x28, 0xE28FE000);
-		_MMU_write32[ARMCPU_ARM7](0x2C, 0xE510F004);
-		_MMU_write32[ARMCPU_ARM7](0x30, 0xE8BD500F);
-		_MMU_write32[ARMCPU_ARM7](0x34, 0xE25EF004);
+		_MMU_write32<ARMCPU_ARM7>(0x00, 0xE25EF002);
+		_MMU_write32<ARMCPU_ARM7>(0x04, 0xEAFFFFFE);
+		_MMU_write32<ARMCPU_ARM7>(0x18, 0xEA000000);
+		_MMU_write32<ARMCPU_ARM7>(0x20, 0xE92D500F);
+		_MMU_write32<ARMCPU_ARM7>(0x24, 0xE3A00301);
+		_MMU_write32<ARMCPU_ARM7>(0x28, 0xE28FE000);
+		_MMU_write32<ARMCPU_ARM7>(0x2C, 0xE510F004);
+		_MMU_write32<ARMCPU_ARM7>(0x30, 0xE8BD500F);
+		_MMU_write32<ARMCPU_ARM7>(0x34, 0xE25EF004);
 	}
 
 	//ARM9 BIOS IRQ HANDLER
@@ -577,27 +577,27 @@ void NDS_Reset( void)
 		NDS_ARM9.swi_tab = 0;
 	} else {
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0018, 0xEA000000);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0020, 0xE92D500F);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0024, 0xEE190F11);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0028, 0xE1A00620);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF002C, 0xE1A00600);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0030, 0xE2800C40);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0034, 0xE28FE000);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0038, 0xE510F004);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF003C, 0xE8BD500F);
-		_MMU_write32[ARMCPU_ARM9](0xFFFF0040, 0xE25EF004);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000000);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0020, 0xE92D500F);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0024, 0xEE190F11);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0028, 0xE1A00620);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF002C, 0xE1A00600);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0030, 0xE2800C40);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0034, 0xE28FE000);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0038, 0xE510F004);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF003C, 0xE8BD500F);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0040, 0xE25EF004);
 	}
 
 
 
 
-	_MMU_write32[ARMCPU_ARM9](0x0000004, 0xE3A0010E);
-	_MMU_write32[ARMCPU_ARM9](0x0000008, 0xE3A01020);
-	// _MMU_write32[ARMCPU_ARM9](0x000000C, 0xE1B02110);
-	_MMU_write32[ARMCPU_ARM9](0x000000C, 0xE1B02040);
-	_MMU_write32[ARMCPU_ARM9](0x0000010, 0xE3B02020);
-	// _MMU_write32[ARMCPU_ARM9](0x0000010, 0xE2100202);
+	_MMU_write32<ARMCPU_ARM9>(0x0000004, 0xE3A0010E);
+	_MMU_write32<ARMCPU_ARM9>(0x0000008, 0xE3A01020);
+	// _MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02110);
+	_MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02040);
+	_MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE3B02020);
+	// _MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE2100202);
 
 	delete header;
 

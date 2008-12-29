@@ -25,6 +25,9 @@
 #include "SPU.h"
 #include "debug.h"
 
+#define cpu (&ARMPROC)
+#define TEMPLATE template<int PROCNUM> 
+
 extern BOOL execute;
 
 static const u16 getsinetbl[] = {
@@ -186,7 +189,7 @@ static const u8 getvoltbl[] = {
 0x7C, 0x7D, 0x7E, 0x7F
 };
 
-static u32 bios_nop(armcpu_t * cpu)
+TEMPLATE static u32 bios_nop()
 {
      if (cpu->proc_ID == ARMCPU_ARM9)
      {
@@ -199,14 +202,14 @@ static u32 bios_nop(armcpu_t * cpu)
      return 3;
 }
 
-static u32 delayLoop(armcpu_t * cpu)
+TEMPLATE static u32 delayLoop()
 {
      return cpu->R[0] * 4;
 }
 
 //u32 oldmode[2];
 
-static u32 intrWaitARM(armcpu_t * cpu)
+TEMPLATE u32 intrWaitARM()
 {
      u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      u32 intr;
@@ -219,7 +222,7 @@ static u32 intrWaitARM(armcpu_t * cpu)
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = _MMU_read32[cpu->proc_ID]( intrFlagAdr);
+     intr = _MMU_read32(cpu->proc_ID,intrFlagAdr);
      intrFlag = cpu->R[1] & intr;
      
      if(intrFlag)
@@ -227,7 +230,7 @@ static u32 intrWaitARM(armcpu_t * cpu)
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
-          _MMU_write32[cpu->proc_ID]( intrFlagAdr, intr);
+          _MMU_write32(cpu->proc_ID, intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
@@ -240,7 +243,7 @@ static u32 intrWaitARM(armcpu_t * cpu)
      return 1;
 }
 
-static u32 waitVBlankARM(armcpu_t * cpu)
+TEMPLATE static u32 waitVBlankARM()
 {
      u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      u32 intr;
@@ -253,7 +256,7 @@ static u32 waitVBlankARM(armcpu_t * cpu)
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = _MMU_read32[cpu->proc_ID]( intrFlagAdr);
+     intr = _MMU_read32(cpu->proc_ID,intrFlagAdr);
      intrFlag = 1 & intr;
      
      if(intrFlag)
@@ -261,7 +264,7 @@ static u32 waitVBlankARM(armcpu_t * cpu)
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
-          _MMU_write32[cpu->proc_ID]( intrFlagAdr, intr);
+          _MMU_write32(cpu->proc_ID,intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
@@ -274,7 +277,7 @@ static u32 waitVBlankARM(armcpu_t * cpu)
      return 1;
 }
 
-static u32 wait4IRQ(armcpu_t* cpu)
+TEMPLATE static u32 wait4IRQ()
 {
      //execute= FALSE;
      if(cpu->wirq)
@@ -298,7 +301,7 @@ static u32 wait4IRQ(armcpu_t* cpu)
      return 1;
 }
 
-static u32 divide(armcpu_t* cpu)
+TEMPLATE static u32 divide()
 {
      s32 num = (s32)cpu->R[0];
      s32 dnum = (s32)cpu->R[1];
@@ -312,7 +315,7 @@ static u32 divide(armcpu_t* cpu)
      return 6;
 }
 
-static u32 copy(armcpu_t* cpu)
+TEMPLATE static u32 copy()
 {
      u32 src = cpu->R[0];
      u32 dst = cpu->R[1];
@@ -329,7 +332,7 @@ static u32 copy(armcpu_t* cpu)
                          cnt &= 0x1FFFFF;
                          while(cnt)
                          {
-                              _MMU_write16[cpu->proc_ID]( dst, _MMU_read16[cpu->proc_ID]( src));
+                              _MMU_write16(cpu->proc_ID,dst, _MMU_read16(cpu->proc_ID,src));
                               cnt--;
                               dst+=2;
                               src+=2;
@@ -337,11 +340,11 @@ static u32 copy(armcpu_t* cpu)
                          break;
                     case 1:
                          {
-                              u32 val = _MMU_read16[cpu->proc_ID]( src);
+                              u32 val = _MMU_read16(cpu->proc_ID, src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
-                                   _MMU_write16[cpu->proc_ID]( dst, val);
+                                   _MMU_write16(cpu->proc_ID, dst, val);
                                    cnt--;
                                    dst+=2;
                               }
@@ -358,7 +361,7 @@ static u32 copy(armcpu_t* cpu)
                          cnt &= 0x1FFFFF;
                          while(cnt)
                          {
-                              _MMU_write32[cpu->proc_ID]( dst, _MMU_read32[cpu->proc_ID]( src));
+                              _MMU_write32(cpu->proc_ID, dst, _MMU_read32(cpu->proc_ID, src));
                               cnt--;
                               dst+=4;
                               src+=4;
@@ -366,11 +369,11 @@ static u32 copy(armcpu_t* cpu)
                          break;
                     case 1:
                          {
-                              u32 val = _MMU_read32[cpu->proc_ID]( src);
+                              u32 val = _MMU_read32(cpu->proc_ID, src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
-                                   _MMU_write32[cpu->proc_ID]( dst, val);
+                                   _MMU_write32(cpu->proc_ID,dst, val);
                                    cnt--;
                                    dst+=4;
                               }
@@ -382,7 +385,7 @@ static u32 copy(armcpu_t* cpu)
      return 1;
 }
 
-static u32 fastCopy(armcpu_t* cpu)
+TEMPLATE static u32 fastCopy()
 {
      u32 src = cpu->R[0] & 0xFFFFFFFC;
      u32 dst = cpu->R[1] & 0xFFFFFFFC;
@@ -394,7 +397,7 @@ static u32 fastCopy(armcpu_t* cpu)
                cnt &= 0x1FFFFF;
                while(cnt)
                {
-                    _MMU_write32[cpu->proc_ID]( dst, _MMU_read32[cpu->proc_ID]( src));
+                    _MMU_write32(cpu->proc_ID,dst, _MMU_read32(cpu->proc_ID,src));
                     cnt--;
                     dst+=4;
                     src+=4;
@@ -402,11 +405,11 @@ static u32 fastCopy(armcpu_t* cpu)
                break;
           case 1:
                {
-                    u32 val = _MMU_read32[cpu->proc_ID]( src);
+                    u32 val = _MMU_read32(cpu->proc_ID,src);
                     cnt &= 0x1FFFFF;
                     while(cnt)
                     {
-                         _MMU_write32[cpu->proc_ID]( dst, val);
+                         _MMU_write32(cpu->proc_ID,dst, val);
                          cnt--;
                          dst+=4;
                     }
@@ -416,7 +419,7 @@ static u32 fastCopy(armcpu_t* cpu)
      return 1;
 }
 
-static u32 LZ77UnCompVram(armcpu_t* cpu)
+TEMPLATE static u32 LZ77UnCompVram()
 {
   int i1, i2;
   int byteCount;
@@ -425,7 +428,7 @@ static u32 LZ77UnCompVram(armcpu_t* cpu)
   int len;
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
-  u32 header = _MMU_read32[cpu->proc_ID]( source);
+  u32 header = _MMU_read32(cpu->proc_ID,source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -439,7 +442,7 @@ static u32 LZ77UnCompVram(armcpu_t* cpu)
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = _MMU_read08[cpu->proc_ID]( source++);
+    u8 d = _MMU_read08(cpu->proc_ID,source++);
 
     if(d) {
       for(i1 = 0; i1 < 8; i1++) {
@@ -447,18 +450,18 @@ static u32 LZ77UnCompVram(armcpu_t* cpu)
           int length;
           int offset;
           u32 windowOffset;
-          u16 data = _MMU_read08[cpu->proc_ID]( source++) << 8;
-          data |= _MMU_read08[cpu->proc_ID]( source++);
+          u16 data = _MMU_read08(cpu->proc_ID,source++) << 8;
+          data |= _MMU_read08(cpu->proc_ID,source++);
           length = (data >> 12) + 3;
           offset = (data & 0x0FFF);
           windowOffset = dest + byteCount - offset - 1;
           for(i2 = 0; i2 < length; i2++) {
-            writeValue |= (_MMU_read08[cpu->proc_ID]( windowOffset++) << byteShift);
+            writeValue |= (_MMU_read08(cpu->proc_ID,windowOffset++) << byteShift);
             byteShift += 8;
             byteCount++;
 
             if(byteCount == 2) {
-              _MMU_write16[cpu->proc_ID]( dest, writeValue);
+              _MMU_write16(cpu->proc_ID,dest, writeValue);
               dest += 2;
               byteCount = 0;
               byteShift = 0;
@@ -469,11 +472,11 @@ static u32 LZ77UnCompVram(armcpu_t* cpu)
               return 0;
           }
         } else {
-          writeValue |= (_MMU_read08[cpu->proc_ID]( source++) << byteShift);
+          writeValue |= (_MMU_read08(cpu->proc_ID,source++) << byteShift);
           byteShift += 8;
           byteCount++;
           if(byteCount == 2) {
-            _MMU_write16[cpu->proc_ID]( dest, writeValue);
+            _MMU_write16(cpu->proc_ID,dest, writeValue);
             dest += 2;
             byteCount = 0;
             byteShift = 0;
@@ -487,11 +490,11 @@ static u32 LZ77UnCompVram(armcpu_t* cpu)
       }
     } else {
       for(i1 = 0; i1 < 8; i1++) {
-        writeValue |= (_MMU_read08[cpu->proc_ID]( source++) << byteShift);
+        writeValue |= (_MMU_read08(cpu->proc_ID, source++) << byteShift);
         byteShift += 8;
         byteCount++;
         if(byteCount == 2) {
-          _MMU_write16[cpu->proc_ID]( dest, writeValue);
+          _MMU_write16(cpu->proc_ID, dest, writeValue);
           dest += 2;      
           byteShift = 0;
           byteCount = 0;
@@ -506,14 +509,14 @@ static u32 LZ77UnCompVram(armcpu_t* cpu)
   return 1;
 }
 
-static u32 LZ77UnCompWram(armcpu_t* cpu)
+TEMPLATE static u32 LZ77UnCompWram()
 {
   int i1, i2;
   int len;
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = _MMU_read32[cpu->proc_ID]( source);
+  u32 header = _MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -523,7 +526,7 @@ static u32 LZ77UnCompWram(armcpu_t* cpu)
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = _MMU_read08[cpu->proc_ID]( source++);
+    u8 d = _MMU_read08(cpu->proc_ID, source++);
 
     if(d) {
       for(i1 = 0; i1 < 8; i1++) {
@@ -531,19 +534,19 @@ static u32 LZ77UnCompWram(armcpu_t* cpu)
           int length;
           int offset;
           u32 windowOffset;
-          u16 data = _MMU_read08[cpu->proc_ID]( source++) << 8;
-          data |= _MMU_read08[cpu->proc_ID]( source++);
+          u16 data = _MMU_read08(cpu->proc_ID, source++) << 8;
+          data |= _MMU_read08(cpu->proc_ID, source++);
           length = (data >> 12) + 3;
           offset = (data & 0x0FFF);
           windowOffset = dest - offset - 1;
           for(i2 = 0; i2 < length; i2++) {
-            _MMU_write08[cpu->proc_ID]( dest++, _MMU_read08[cpu->proc_ID]( windowOffset++));
+            _MMU_write08(cpu->proc_ID, dest++, _MMU_read08(cpu->proc_ID, windowOffset++));
             len--;
             if(len == 0)
               return 0;
           }
         } else {
-          _MMU_write08[cpu->proc_ID]( dest++, _MMU_read08[cpu->proc_ID]( source++));
+          _MMU_write08(cpu->proc_ID, dest++, _MMU_read08(cpu->proc_ID,source++));
           len--;
           if(len == 0)
             return 0;
@@ -552,7 +555,7 @@ static u32 LZ77UnCompWram(armcpu_t* cpu)
       }
     } else {
       for(i1 = 0; i1 < 8; i1++) {
-        _MMU_write08[cpu->proc_ID]( dest++, _MMU_read08[cpu->proc_ID]( source++));
+        _MMU_write08(cpu->proc_ID,dest++, _MMU_read08(cpu->proc_ID, source++));
         len--;
         if(len == 0)
           return 0;
@@ -562,7 +565,7 @@ static u32 LZ77UnCompWram(armcpu_t* cpu)
   return 1;
 }
 
-static u32 RLUnCompVram(armcpu_t* cpu)
+TEMPLATE static u32 RLUnCompVram()
 {
   int i;
   int len;
@@ -572,7 +575,7 @@ static u32 RLUnCompVram(armcpu_t* cpu)
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = _MMU_read32[cpu->proc_ID]( source);
+  u32 header = _MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -585,10 +588,10 @@ static u32 RLUnCompVram(armcpu_t* cpu)
   writeValue = 0;
 
   while(len > 0) {
-    u8 d = _MMU_read08[cpu->proc_ID]( source++);
+    u8 d = _MMU_read08(cpu->proc_ID, source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = _MMU_read08[cpu->proc_ID]( source++);
+      u8 data = _MMU_read08(cpu->proc_ID, source++);
       l += 3;
       for(i = 0;i < l; i++) {
         writeValue |= (data << byteShift);
@@ -596,7 +599,7 @@ static u32 RLUnCompVram(armcpu_t* cpu)
         byteCount++;
 
         if(byteCount == 2) {
-          _MMU_write16[cpu->proc_ID]( dest, writeValue);
+          _MMU_write16(cpu->proc_ID, dest, writeValue);
           dest += 2;
           byteCount = 0;
           byteShift = 0;
@@ -609,11 +612,11 @@ static u32 RLUnCompVram(armcpu_t* cpu)
     } else {
       l++;
       for(i = 0; i < l; i++) {
-        writeValue |= (_MMU_read08[cpu->proc_ID]( source++) << byteShift);
+        writeValue |= (_MMU_read08(cpu->proc_ID,  source++) << byteShift);
         byteShift += 8;
         byteCount++;
         if(byteCount == 2) {
-          _MMU_write16[cpu->proc_ID]( dest, writeValue);
+          _MMU_write16(cpu->proc_ID, dest, writeValue);
           dest += 2;
           byteCount = 0;
           byteShift = 0;
@@ -628,14 +631,14 @@ static u32 RLUnCompVram(armcpu_t* cpu)
   return 1;
 }
 
-static u32 RLUnCompWram(armcpu_t* cpu)
+TEMPLATE static u32 RLUnCompWram()
 {
   int i;
   int len;
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = _MMU_read32[cpu->proc_ID]( source);
+  u32 header = _MMU_read32(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -645,13 +648,13 @@ static u32 RLUnCompWram(armcpu_t* cpu)
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = _MMU_read08[cpu->proc_ID]( source++);
+    u8 d = _MMU_read08(cpu->proc_ID, source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = _MMU_read08[cpu->proc_ID]( source++);
+      u8 data = _MMU_read08(cpu->proc_ID, source++);
       l += 3;
       for(i = 0;i < l; i++) {
-        _MMU_write08[cpu->proc_ID]( dest++, data);
+        _MMU_write08(cpu->proc_ID,dest++, data);
         len--;
         if(len == 0)
           return 0;
@@ -659,7 +662,7 @@ static u32 RLUnCompWram(armcpu_t* cpu)
     } else {
       l++;
       for(i = 0; i < l; i++) {
-        _MMU_write08[cpu->proc_ID]( dest++,  _MMU_read08[cpu->proc_ID]( source++));
+        _MMU_write08(cpu->proc_ID, dest++,  _MMU_read08(cpu->proc_ID,source++));
         len--;
         if(len == 0)
           return 0;
@@ -669,7 +672,7 @@ static u32 RLUnCompWram(armcpu_t* cpu)
   return 1;
 }
 
-static u32 UnCompHuffman(armcpu_t* cpu)
+TEMPLATE static u32 UnCompHuffman()
 {
   u32 source, dest, writeValue, header, treeStart, mask;
   u32 data;
@@ -680,14 +683,14 @@ static u32 UnCompHuffman(armcpu_t* cpu)
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = _MMU_read08[cpu->proc_ID]( source);
+  header = _MMU_read08(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
     return 0;  
   
-  treeSize = _MMU_read08[cpu->proc_ID]( source++);
+  treeSize = _MMU_read08(cpu->proc_ID,source++);
 
   treeStart = source;
 
@@ -696,11 +699,11 @@ static u32 UnCompHuffman(armcpu_t* cpu)
   len = header >> 8;
 
   mask = 0x80000000;
-  data = _MMU_read08[cpu->proc_ID]( source);
+  data = _MMU_read08(cpu->proc_ID,source);
   source += 4;
 
   pos = 0;
-  rootNode = _MMU_read08[cpu->proc_ID]( treeStart);
+  rootNode = _MMU_read08(cpu->proc_ID,treeStart);
   currentNode = rootNode;
   writeData = 0;
   byteShift = 0;
@@ -719,12 +722,12 @@ static u32 UnCompHuffman(armcpu_t* cpu)
         // right
         if(currentNode & 0x40)
           writeData = 1;
-        currentNode = _MMU_read08[cpu->proc_ID]( treeStart+pos+1);
+        currentNode = _MMU_read08(cpu->proc_ID,treeStart+pos+1);
       } else {
         // left
         if(currentNode & 0x80)
           writeData = 1;
-        currentNode = _MMU_read08[cpu->proc_ID]( treeStart+pos);
+        currentNode = _MMU_read08(cpu->proc_ID,treeStart+pos);
       }
       
       if(writeData) {
@@ -739,7 +742,7 @@ static u32 UnCompHuffman(armcpu_t* cpu)
         if(byteCount == 4) {
           byteCount = 0;
           byteShift = 0;
-          _MMU_write08[cpu->proc_ID]( dest, writeValue);
+          _MMU_write08(cpu->proc_ID, dest, writeValue);
           writeValue = 0;
           dest += 4;
           len -= 4;
@@ -748,7 +751,7 @@ static u32 UnCompHuffman(armcpu_t* cpu)
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = _MMU_read08[cpu->proc_ID]( source);
+        data = _MMU_read08(cpu->proc_ID,source);
         source += 4;
       }
     }
@@ -766,12 +769,12 @@ static u32 UnCompHuffman(armcpu_t* cpu)
         // right
         if(currentNode & 0x40)
           writeData = 1;
-        currentNode = _MMU_read08[cpu->proc_ID]( treeStart+pos+1);
+        currentNode = _MMU_read08(cpu->proc_ID, treeStart+pos+1);
       } else {
         // left
         if(currentNode & 0x80)
           writeData = 1;
-        currentNode = _MMU_read08[cpu->proc_ID]( treeStart+pos);
+        currentNode = _MMU_read08(cpu->proc_ID, treeStart+pos);
       }
       
       if(writeData) {
@@ -792,7 +795,7 @@ static u32 UnCompHuffman(armcpu_t* cpu)
           if(byteCount == 4) {
             byteCount = 0;
             byteShift = 0;
-            _MMU_write08[cpu->proc_ID]( dest, writeValue);
+            _MMU_write08(cpu->proc_ID,dest, writeValue);
             dest += 4;
             writeValue = 0;
             len -= 4;
@@ -805,7 +808,7 @@ static u32 UnCompHuffman(armcpu_t* cpu)
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = _MMU_read08[cpu->proc_ID]( source);
+        data = _MMU_read08(cpu->proc_ID, source);
         source += 4;
       }
     }    
@@ -813,7 +816,7 @@ static u32 UnCompHuffman(armcpu_t* cpu)
   return 1;
 }
 
-static u32 BitUnPack(armcpu_t* cpu)
+TEMPLATE static u32 BitUnPack()
 {
   u32 source,dest,header,base,d,temp;
   int len,bits,revbits,dataSize,data,bitwritecount,mask,bitcount,addBase;
@@ -823,15 +826,15 @@ static u32 BitUnPack(armcpu_t* cpu)
   dest = cpu->R[1];
   header = cpu->R[2];
   
-  len = _MMU_read16[cpu->proc_ID]( header);
+  len = _MMU_read16(cpu->proc_ID, header);
   // check address
-  bits = _MMU_read08[cpu->proc_ID]( header+2);
+  bits = _MMU_read08(cpu->proc_ID, header+2);
   revbits = 8 - bits; 
   // u32 value = 0;
-  base = _MMU_read08[cpu->proc_ID]( header+4);
+  base = _MMU_read08(cpu->proc_ID, header+4);
   addBase = (base & 0x80000000) ? 1 : 0;
   base &= 0x7fffffff;
-  dataSize = _MMU_read08[cpu->proc_ID]( header+3);
+  dataSize = _MMU_read08(cpu->proc_ID, header+3);
 
   data = 0; 
   bitwritecount = 0; 
@@ -840,7 +843,7 @@ static u32 BitUnPack(armcpu_t* cpu)
     if(len < 0)
       break;
     mask = 0xff >> revbits; 
-    b = _MMU_read08[cpu->proc_ID]( source); 
+    b = _MMU_read08(cpu->proc_ID, source); 
     source++;
     bitcount = 0;
     while(1) {
@@ -854,7 +857,7 @@ static u32 BitUnPack(armcpu_t* cpu)
       data |= temp << bitwritecount;
       bitwritecount += dataSize;
       if(bitwritecount >= 32) {
-        _MMU_write08[cpu->proc_ID]( dest, data);
+        _MMU_write08(cpu->proc_ID,dest, data);
         dest += 4;
         data = 0;
         bitwritecount = 0;
@@ -866,7 +869,7 @@ static u32 BitUnPack(armcpu_t* cpu)
   return 1;
 }
 
-static u32 Diff8bitUnFilterWram(armcpu_t* cpu)
+TEMPLATE static u32 Diff8bitUnFilterWram()
 {
   u32 source,dest,header;
   u8 data,diff;
@@ -875,7 +878,7 @@ static u32 Diff8bitUnFilterWram(armcpu_t* cpu)
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = _MMU_read08[cpu->proc_ID]( source);
+  header = _MMU_read08(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -884,20 +887,20 @@ static u32 Diff8bitUnFilterWram(armcpu_t* cpu)
 
   len = header >> 8;
 
-  data = _MMU_read08[cpu->proc_ID]( source++);
-  _MMU_write08[cpu->proc_ID]( dest++, data);
+  data = _MMU_read08(cpu->proc_ID, source++);
+  _MMU_write08(cpu->proc_ID, dest++, data);
   len--;
   
   while(len > 0) {
-    diff = _MMU_read08[cpu->proc_ID]( source++);
+    diff = _MMU_read08(cpu->proc_ID,source++);
     data += diff;
-    _MMU_write08[cpu->proc_ID]( dest++, data);
+    _MMU_write08(cpu->proc_ID, dest++, data);
     len--;
   }
   return 1;
 }
 
-static u32 Diff16bitUnFilter(armcpu_t* cpu)
+TEMPLATE static u32 Diff16bitUnFilter()
 {
   u32 source,dest,header;
   u16 data;
@@ -906,7 +909,7 @@ static u32 Diff16bitUnFilter(armcpu_t* cpu)
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = _MMU_read08[cpu->proc_ID]( source);
+  header = _MMU_read08(cpu->proc_ID, source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -915,54 +918,54 @@ static u32 Diff16bitUnFilter(armcpu_t* cpu)
   
   len = header >> 8;
 
-  data = _MMU_read16[cpu->proc_ID]( source);
+  data = _MMU_read16(cpu->proc_ID,source);
   source += 2;
-  _MMU_write16[cpu->proc_ID]( dest, data);
+  _MMU_write16(cpu->proc_ID, dest, data);
   dest += 2;
   len -= 2;
   
   while(len >= 2) {
-    u16 diff = _MMU_read16[cpu->proc_ID]( source);
+    u16 diff = _MMU_read16(cpu->proc_ID, source);
     source += 2;
     data += diff;
-    _MMU_write16[cpu->proc_ID]( dest, data);
+    _MMU_write16(cpu->proc_ID,dest, data);
     dest += 2;
     len -= 2;
   }
   return 1;
 }
 
-static u32 bios_sqrt(armcpu_t* cpu)
+TEMPLATE static u32 bios_sqrt()
 {
      cpu->R[0] = (u32)sqrt((double)(cpu->R[0]));
      return 1;
 }
 
-static u32 setHaltCR(armcpu_t* cpu)
+TEMPLATE static u32 setHaltCR()
 { 
-     _MMU_write08[cpu->proc_ID]( 0x4000300+cpu->proc_ID, cpu->R[0]);
+     _MMU_write08(cpu->proc_ID,0x4000300+cpu->proc_ID, cpu->R[0]);
      return 1;
 }
 
-static u32 getSineTab(armcpu_t* cpu)
+TEMPLATE static u32 getSineTab()
 { 
      cpu->R[0] = getsinetbl[cpu->R[0]];
      return 1;
 }
 
-static u32 getPitchTab(armcpu_t* cpu)
+TEMPLATE static u32 getPitchTab()
 { 
      cpu->R[0] = getpitchtbl[cpu->R[0]];
      return 1;
 }
 
-static u32 getVolumeTab(armcpu_t* cpu)
+TEMPLATE static u32 getVolumeTab()
 { 
      cpu->R[0] = getvoltbl[cpu->R[0]];
      return 1;
 }
 
-static u32 getCRC16(armcpu_t* cpu)
+TEMPLATE static u32 getCRC16()
 {
   unsigned int i,j;
   
@@ -973,7 +976,7 @@ static u32 getCRC16(armcpu_t* cpu)
   static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
   for(i = 0; i < size; i++)
   {
-    crc = crc ^ _MMU_read08[cpu->proc_ID]( datap + i);
+    crc = crc ^ _MMU_read08(cpu->proc_ID, datap + i);
 
     for(j = 0; j < 8; j++) {
       int do_bit = 0;
@@ -992,7 +995,7 @@ static u32 getCRC16(armcpu_t* cpu)
   return 1;
 }
 
-static u32 SoundBias(armcpu_t* cpu)
+TEMPLATE static u32 SoundBias()
 {
      u32 current = SPU_ReadLong(0x4000504);
      if (cpu->R[0] > current)
@@ -1002,72 +1005,72 @@ static u32 SoundBias(armcpu_t* cpu)
      return cpu->R[1];
 }
 
-u32 (* ARM9_swi_tab[32])(armcpu_t* cpu)={
-         bios_nop,             // 0x00
-         bios_nop,             // 0x01
-         bios_nop,             // 0x02
-         delayLoop,            // 0x03
-         intrWaitARM,          // 0x04
-         waitVBlankARM,        // 0x05
-         wait4IRQ,             // 0x06
-         bios_nop,             // 0x07
-         bios_nop,             // 0x08
-         divide,               // 0x09
-         bios_nop,             // 0x0A
-         copy,                 // 0x0B
-         fastCopy,             // 0x0C
-         bios_sqrt,            // 0x0D
-         getCRC16,             // 0x0E
-         bios_nop,             // 0x0F
-         BitUnPack,            // 0x10
-         LZ77UnCompWram,       // 0x11
-         LZ77UnCompVram,       // 0x12
-         UnCompHuffman,        // 0x13
-         RLUnCompWram,         // 0x14
-         RLUnCompVram,         // 0x15
-         Diff8bitUnFilterWram, // 0x16
-         bios_nop,             // 0x17
-         Diff16bitUnFilter,    // 0x18
-         bios_nop,             // 0x19
-         bios_nop,             // 0x1A
-         bios_nop,             // 0x1B
-         bios_nop,             // 0x1C
-         bios_nop,             // 0x1D
-         bios_nop,             // 0x1E
-         setHaltCR,            // 0x1F
+u32 (* ARM9_swi_tab[32])()={
+         bios_nop<ARMCPU_ARM9>,             // 0x00
+         bios_nop<ARMCPU_ARM9>,             // 0x01
+         bios_nop<ARMCPU_ARM9>,             // 0x02
+         delayLoop<ARMCPU_ARM9>,            // 0x03
+         intrWaitARM<ARMCPU_ARM9>,          // 0x04
+         waitVBlankARM<ARMCPU_ARM9>,        // 0x05
+         wait4IRQ<ARMCPU_ARM9>,             // 0x06
+         bios_nop<ARMCPU_ARM9>,             // 0x07
+         bios_nop<ARMCPU_ARM9>,             // 0x08
+         divide<ARMCPU_ARM9>,               // 0x09
+         bios_nop<ARMCPU_ARM9>,             // 0x0A
+         copy<ARMCPU_ARM9>,                 // 0x0B
+         fastCopy<ARMCPU_ARM9>,             // 0x0C
+         bios_sqrt<ARMCPU_ARM9>,            // 0x0D
+         getCRC16<ARMCPU_ARM9>,             // 0x0E
+         bios_nop<ARMCPU_ARM9>,             // 0x0F
+         BitUnPack<ARMCPU_ARM9>,            // 0x10
+         LZ77UnCompWram<ARMCPU_ARM9>,       // 0x11
+         LZ77UnCompVram<ARMCPU_ARM9>,       // 0x12
+         UnCompHuffman<ARMCPU_ARM9>,        // 0x13
+         RLUnCompWram<ARMCPU_ARM9>,         // 0x14
+         RLUnCompVram<ARMCPU_ARM9>,         // 0x15
+         Diff8bitUnFilterWram<ARMCPU_ARM9>, // 0x16
+         bios_nop<ARMCPU_ARM9>,             // 0x17
+         Diff16bitUnFilter<ARMCPU_ARM9>,    // 0x18
+         bios_nop<ARMCPU_ARM9>,             // 0x19
+         bios_nop<ARMCPU_ARM9>,             // 0x1A
+         bios_nop<ARMCPU_ARM9>,             // 0x1B
+         bios_nop<ARMCPU_ARM9>,             // 0x1C
+         bios_nop<ARMCPU_ARM9>,             // 0x1D
+         bios_nop<ARMCPU_ARM9>,             // 0x1E
+         setHaltCR<ARMCPU_ARM9>,            // 0x1F
 };
 
-u32 (* ARM7_swi_tab[32])(armcpu_t* cpu)={
-         bios_nop,             // 0x00
-         bios_nop,             // 0x01
-         bios_nop,             // 0x02
-         delayLoop,            // 0x03
-         intrWaitARM,          // 0x04
-         waitVBlankARM,        // 0x05
-         wait4IRQ,             // 0x06
-         wait4IRQ,             // 0x07
-         SoundBias,            // 0x08
-         divide,               // 0x09
-         bios_nop,             // 0x0A
-         copy,                 // 0x0B
-         fastCopy,             // 0x0C
-         bios_sqrt,            // 0x0D
-         getCRC16,             // 0x0E
-         bios_nop,             // 0x0F
-         BitUnPack,            // 0x10
-         LZ77UnCompWram,       // 0x11
-         LZ77UnCompVram,       // 0x12
-         UnCompHuffman,        // 0x13
-         RLUnCompWram,         // 0x14
-         RLUnCompVram,         // 0x15
-         Diff8bitUnFilterWram, // 0x16
-         bios_nop,             // 0x17
-         bios_nop,             // 0x18
-         bios_nop,             // 0x19
-         getSineTab,           // 0x1A
-         getPitchTab,          // 0x1B
-         getVolumeTab,         // 0x1C
-         bios_nop,             // 0x1D
-         bios_nop,             // 0x1E
-         setHaltCR,            // 0x1F
+u32 (* ARM7_swi_tab[32])()={
+         bios_nop<ARMCPU_ARM7>,             // 0x00
+         bios_nop<ARMCPU_ARM7>,             // 0x01
+         bios_nop<ARMCPU_ARM7>,             // 0x02
+         delayLoop<ARMCPU_ARM7>,            // 0x03
+         intrWaitARM<ARMCPU_ARM7>,          // 0x04
+         waitVBlankARM<ARMCPU_ARM7>,        // 0x05
+         wait4IRQ<ARMCPU_ARM7>,             // 0x06
+         wait4IRQ<ARMCPU_ARM7>,             // 0x07
+         SoundBias<ARMCPU_ARM7>,            // 0x08
+         divide<ARMCPU_ARM7>,               // 0x09
+         bios_nop<ARMCPU_ARM7>,             // 0x0A
+         copy<ARMCPU_ARM7>,                 // 0x0B
+         fastCopy<ARMCPU_ARM7>,             // 0x0C
+         bios_sqrt<ARMCPU_ARM7>,            // 0x0D
+         getCRC16<ARMCPU_ARM7>,             // 0x0E
+         bios_nop<ARMCPU_ARM7>,             // 0x0F
+         BitUnPack<ARMCPU_ARM7>,            // 0x10
+         LZ77UnCompWram<ARMCPU_ARM7>,       // 0x11
+         LZ77UnCompVram<ARMCPU_ARM7>,       // 0x12
+         UnCompHuffman<ARMCPU_ARM7>,        // 0x13
+         RLUnCompWram<ARMCPU_ARM7>,         // 0x14
+         RLUnCompVram<ARMCPU_ARM7>,         // 0x15
+         Diff8bitUnFilterWram<ARMCPU_ARM7>, // 0x16
+         bios_nop<ARMCPU_ARM7>,             // 0x17
+         bios_nop<ARMCPU_ARM7>,             // 0x18
+         bios_nop<ARMCPU_ARM7>,             // 0x19
+         getSineTab<ARMCPU_ARM7>,           // 0x1A
+         getPitchTab<ARMCPU_ARM7>,          // 0x1B
+         getVolumeTab<ARMCPU_ARM7>,         // 0x1C
+         bios_nop<ARMCPU_ARM7>,             // 0x1D
+         bios_nop<ARMCPU_ARM7>,             // 0x1E
+         setHaltCR<ARMCPU_ARM7>,            // 0x1F
 };

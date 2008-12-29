@@ -760,16 +760,16 @@ static void loadstate()
 {
     // This should regenerate the vram banks
     for (int i = 0; i < 0xA; i++)
-       _MMU_write08[ARMCPU_ARM9](0x04000240+i, _MMU_read08[ARMCPU_ARM9](0x04000240+i));
+       _MMU_write08<ARMCPU_ARM9>(0x04000240+i, _MMU_read08<ARMCPU_ARM9>(0x04000240+i));
 
     // This should regenerate the graphics power control register
-    _MMU_write16[ARMCPU_ARM9](0x04000304, _MMU_read16[ARMCPU_ARM9](0x04000304));
+    _MMU_write16<ARMCPU_ARM9>(0x04000304, _MMU_read16<ARMCPU_ARM9>(0x04000304));
 
 	// This should regenerate the graphics configuration
     for (int i = REG_BASE_DISPA; i<=REG_BASE_DISPA + 0x7F; i+=2)
-	_MMU_write16[ARMCPU_ARM9](i, _MMU_read16[ARMCPU_ARM9](i));
+	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
     for (int i = REG_BASE_DISPB; i<=REG_BASE_DISPB + 0x7F; i+=2)
-	_MMU_write16[ARMCPU_ARM9](i, _MMU_read16[ARMCPU_ARM9](i));
+	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
 }
 
 static bool savestate_load(std::istream* is)

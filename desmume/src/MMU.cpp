@@ -56,13 +56,56 @@ static u8  FASTCALL _MMU_ARM7_read08(u32 adr);
 static u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 static u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 
-u8 (* FASTCALL _MMU_read08[2])(u32 addr) = {_MMU_ARM9_read08, _MMU_ARM7_read08};
-u16 (* FASTCALL _MMU_read16[2])(u32 addr) = {_MMU_ARM9_read16, _MMU_ARM7_read16};
-u32 (* FASTCALL _MMU_read32[2])(u32 addr) = {_MMU_ARM9_read32, _MMU_ARM7_read32};
 
-void (* FASTCALL _MMU_write08[2])(u32 addr, u8 val) = {_MMU_ARM9_write08, _MMU_ARM7_write08};
-void (* FASTCALL _MMU_write16[2])(u32 addr, u16 val) = {_MMU_ARM9_write16, _MMU_ARM7_write16};
-void (* FASTCALL _MMU_write32[2])(u32 addr, u32 val) = {_MMU_ARM9_write32, _MMU_ARM7_write32};
+u8 _MMU_read08(int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read08(addr);
+	else return _MMU_ARM7_read08(addr);
+}
+
+u16 _MMU_read16(int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
+	else return _MMU_ARM7_read16(addr);
+}
+
+u32 _MMU_read32(int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read32(addr);
+	else return _MMU_ARM7_read32(addr);
+}
+
+void _MMU_write08(int PROCNUM, u32 addr, u8 val) {
+	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write08(addr,val);
+	else _MMU_ARM7_write08(addr,val);
+}
+
+void _MMU_write16(int PROCNUM, u32 addr, u16 val) {
+	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write16(addr,val);
+	else _MMU_ARM7_write16(addr,val);
+}
+
+void _MMU_write32(int PROCNUM, u32 addr, u32 val) {
+	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write32(addr,val);
+	else _MMU_ARM7_write32(addr,val);
+}
+
+
+
+template<int PROCNUM> 
+u8 _MMU_read08(u32 addr) { return _MMU_read08(PROCNUM, addr); }
+
+template<int PROCNUM> 
+u16 _MMU_read16(u32 addr) { return _MMU_read16(PROCNUM, addr); }
+
+template<int PROCNUM> 
+u32 _MMU_read32(u32 addr) { return _MMU_read32(PROCNUM, addr); }
+
+template<int PROCNUM> 
+void _MMU_write08(u32 addr, u8 val) { _MMU_write08(PROCNUM, addr, val); }
+
+template<int PROCNUM> 
+void _MMU_write16(u32 addr, u16 val) { _MMU_write16(PROCNUM, addr, val); }
+
+template<int PROCNUM> 
+void _MMU_write32(u32 addr, u32 val) { _MMU_write32(PROCNUM, addr, val); }
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
 static u64 isqrt (u64 x) {
@@ -880,20 +923,26 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 			default:
 				return;
 		}
-		if ((MMU.DMACrt[proc][num]>>26)&1)
-			for(; i < taille; ++i)
-			{
-				_MMU_write32[proc](dst, _MMU_read32[proc](src));
-				dst += dstinc;
-				src += srcinc;
-			}
-		else
-			for(; i < taille; ++i)
-			{
-				_MMU_write16[proc](dst, _MMU_read16[proc](src));
-				dst += dstinc;
-				src += srcinc;
-			}
+
+		#define DMA_LOOP(PROC) \
+		if ((MMU.DMACrt[proc][num]>>26)&1) \
+			for(; i < taille; ++i) \
+			{ \
+				_MMU_write32<PROC>(dst, _MMU_read32<PROC>(src)); \
+				dst += dstinc; \
+				src += srcinc; \
+			} \
+		else \
+			for(; i < taille; ++i) \
+			{ \
+				_MMU_write16<PROC>(dst, _MMU_read16<PROC>(src)); \
+				dst += dstinc; \
+				src += srcinc; \
+			} \
+
+		if(proc == ARMCPU_ARM9) { DMA_LOOP(ARMCPU_ARM9); }
+		else  { DMA_LOOP(ARMCPU_ARM7); }
+		
 
 		//write back the addresses
 		DMASrc[proc][num] = src;
@@ -1119,7 +1168,7 @@ arm9_prefetch16( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read16[ARMCPU_ARM9](adr);
+  return _MMU_read16<ARMCPU_ARM9>(adr);
 }
 static u32 FASTCALL
 arm9_prefetch32( void *data, u32 adr) {
@@ -1140,7 +1189,7 @@ arm9_prefetch32( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read32[ARMCPU_ARM9](adr);
+  return _MMU_read32<ARMCPU_ARM9>(adr);
 }
 
 static u8 FASTCALL
@@ -1161,7 +1210,7 @@ arm9_read8( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read08[ARMCPU_ARM9](adr);
+  return _MMU_read08<ARMCPU_ARM9>(adr);
 }
 static u16 FASTCALL
 arm9_read16( void *data, u32 adr) {
@@ -1183,7 +1232,7 @@ arm9_read16( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read16[ARMCPU_ARM9](adr);
+  return _MMU_read16<ARMCPU_ARM9>(adr);
 }
 static u32 FASTCALL
 arm9_read32( void *data, u32 adr) {
@@ -1204,7 +1253,7 @@ arm9_read32( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read32[ARMCPU_ARM9](adr);
+  return _MMU_read32<ARMCPU_ARM9>(adr);
 }
 
 
@@ -1229,7 +1278,7 @@ arm9_write8(void *data, u32 adr, u8 val) {
   }
 #endif
 
- _MMU_write08[ARMCPU_ARM9](adr, val);
+ _MMU_write08<ARMCPU_ARM9>(adr, val);
 }
 static void FASTCALL
 arm9_write16(void *data, u32 adr, u16 val) {
@@ -1252,7 +1301,7 @@ arm9_write16(void *data, u32 adr, u16 val) {
   }
 #endif
 
-  _MMU_write16[ARMCPU_ARM9](adr, val);
+  _MMU_write16<ARMCPU_ARM9>(adr, val);
 }
 static void FASTCALL
 arm9_write32(void *data, u32 adr, u32 val) {
@@ -1275,7 +1324,7 @@ arm9_write32(void *data, u32 adr, u32 val) {
   }
 #endif
 
-  _MMU_write32[ARMCPU_ARM9](adr, val);
+  _MMU_write32<ARMCPU_ARM9>(adr, val);
 }
 
 
@@ -1295,7 +1344,7 @@ arm7_prefetch16( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read16[ARMCPU_ARM7](adr);
+  return _MMU_read16<ARMCPU_ARM7>(adr);
 }
 static u32 FASTCALL
 arm7_prefetch32( void *data, u32 adr) {
@@ -1311,7 +1360,7 @@ arm7_prefetch32( void *data, u32 adr) {
   }
 #endif
 
-  return _MMU_read32[ARMCPU_ARM7](adr);
+  return _MMU_read32<ARMCPU_ARM7>(adr);
 }
 
 static u8 FASTCALL
@@ -1320,7 +1369,7 @@ arm7_read8( void *data, u32 adr) {
   profile_memory_access( 0, adr, PROFILE_READ);
 #endif
 
-  return _MMU_read08[ARMCPU_ARM7](adr);
+  return _MMU_read08<ARMCPU_ARM7>(adr);
 }
 static u16 FASTCALL
 arm7_read16( void *data, u32 adr) {
@@ -1328,7 +1377,7 @@ arm7_read16( void *data, u32 adr) {
   profile_memory_access( 0, adr, PROFILE_READ);
 #endif
 
-  return _MMU_read16[ARMCPU_ARM7](adr);
+  return _MMU_read16<ARMCPU_ARM7>(adr);
 }
 static u32 FASTCALL
 arm7_read32( void *data, u32 adr) {
@@ -1336,7 +1385,7 @@ arm7_read32( void *data, u32 adr) {
   profile_memory_access( 0, adr, PROFILE_READ);
 #endif
 
-  return _MMU_read32[ARMCPU_ARM7](adr);
+  return _MMU_read32<ARMCPU_ARM7>(adr);
 }
 
 static void FASTCALL
@@ -1345,7 +1394,7 @@ arm7_write8(void *data, u32 adr, u8 val) {
   profile_memory_access( 0, adr, PROFILE_WRITE);
 #endif
 
-  _MMU_write08[ARMCPU_ARM7](adr, val);
+  _MMU_write08<ARMCPU_ARM7>(adr, val);
 }
 static void FASTCALL
 arm7_write16(void *data, u32 adr, u16 val) {
@@ -1353,7 +1402,7 @@ arm7_write16(void *data, u32 adr, u16 val) {
   profile_memory_access( 0, adr, PROFILE_WRITE);
 #endif
 
-  _MMU_write16[ARMCPU_ARM7](adr, val);
+  _MMU_write16<ARMCPU_ARM7>(adr, val);
 }
 static void FASTCALL
 arm7_write32(void *data, u32 adr, u32 val) {
@@ -1361,7 +1410,7 @@ arm7_write32(void *data, u32 adr, u32 val) {
   profile_memory_access( 0, adr, PROFILE_WRITE);
 #endif
 
-  _MMU_write32[ARMCPU_ARM7](adr, val);
+  _MMU_write32<ARMCPU_ARM7>(adr, val);
 }
 
 

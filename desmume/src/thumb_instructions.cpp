@@ -880,7 +880,7 @@ TEMPLATE static  u32 FASTCALL OP_SWI_THUMB()
 		 //this is probably safer since an invalid opcode could crash the emu
 		 //u32 swinum = cpu->instruction & 0xFF;
 		u32 swinum = cpu->instruction & 0x1F;
-        return cpu->swi_tab[swinum](cpu) + 3;  
+        return cpu->swi_tab[swinum]() + 3;  
 	}
 	else {
         /* we use an irq thats not in the irq tab, as

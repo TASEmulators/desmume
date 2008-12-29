@@ -7773,7 +7773,7 @@ TEMPLATE static u32 FASTCALL  OP_SWI()
 {
 	if(cpu->swi_tab) {
 		u32 swinum = (cpu->instruction>>16)&0x1F;
-		return cpu->swi_tab[swinum](cpu) + 3;
+		return cpu->swi_tab[swinum]() + 3;
 	} else {
         /* TODO (#1#): translocated SWI vectors */
         /* we use an irq thats not in the irq tab, as
