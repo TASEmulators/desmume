@@ -476,6 +476,7 @@ void NDS_Reset( void)
 	unsigned int i;
 	u32 src;
 	u32 dst;
+	FILE* inf;
 	NDS_header * header = NDS_getROMHeader();
 
 	if (!header) return ;
@@ -547,8 +548,6 @@ void NDS_Reset( void)
 	SubScreen.offset = 192;
 
 	//_MMU_write32[ARMCPU_ARM9](0x02007FFC, 0xE92D4030);
-
-	FILE* inf = 0;
 
 	//ARM7 BIOS IRQ HANDLER
 	inf = fopen("BiosNds7.ROM","rb");
