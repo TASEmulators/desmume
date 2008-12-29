@@ -247,7 +247,7 @@ const char MSR_FIELD[16][5] = {
           {\
                if((!BIT_N(i, j+1))||(j==nb-1))\
                {\
-                    sprintf(lreg, "%s%s,", lreg, Registre[j]);\
+                    sprintf(lreg + strlen(lreg), "%s,", Registre[j]);\
                     prec = 0;\
                }\
           }\
@@ -257,11 +257,11 @@ const char MSR_FIELD[16][5] = {
                {\
                     if((BIT_N(i, j+1))&&(j!=nb-1))\
                     {\
-                         sprintf(lreg, "%s%s-", lreg, Registre[j]);\
+                         sprintf(lreg + strlen(lreg), "%s-", Registre[j]);\
                          prec = 1;\
                     }\
                     else\
-                         sprintf(lreg, "%s%s,", lreg, Registre[j]);\
+                         sprintf(lreg + strlen(lreg), "%s,", Registre[j]);\
                }\
           }\
      }\
