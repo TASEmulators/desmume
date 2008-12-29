@@ -165,7 +165,8 @@ FinalColFunct pixelBlitters[8] = {	//setFinalColorDirect,
                                     setFinalColorSpecialIncreaseWnd,
                                     setFinalColorSpecialDecreaseWnd};
 
-
+u16 fadeInColors[17][0x8000];
+u16 fadeOutColors[17][0x8000];
 
 /*****************************************************************************/
 //			INITIALIZATION
@@ -173,12 +174,34 @@ FinalColFunct pixelBlitters[8] = {	//setFinalColorDirect,
 
 GPU * GPU_Init(u8 l)
 {
+	int i, j;
+
      GPU * g;
 
      if ((g = (GPU *) malloc(sizeof(GPU))) == NULL)
         return NULL;
 
      GPU_Reset(g, l);
+
+	 for(i = 0; i <= 16; i++)
+	 {
+		 for(j = 0x8000; j < 0x10000; j++)
+		 {
+			 COLOR cur;
+
+			 cur.val = j;
+			 cur.bits.red = (cur.bits.red + ((31 - cur.bits.red) * i / 16));
+			 cur.bits.green = (cur.bits.green + ((31 - cur.bits.green) * i / 16));
+			 cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
+			 fadeInColors[i][j & 0x7FFF] = cur.val;
+
+			 cur.val = j;
+			 cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
+			 cur.bits.green = (cur.bits.green - (cur.bits.green * i / 16));
+			 cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
+			 fadeOutColors[i][j & 0x7FFF] = cur.val;
+		 }
+	 }
 
 	 g->setFinalColorBck = setFinalColorSpecialNone;
 	 g->setFinalColorSpr = setFinalColorSpecialNone;
@@ -296,7 +319,7 @@ void SetupFinalPixelBlitter (GPU *gpu)
 	u8 windowUsed = (gpu->WIN0_ENABLED | gpu->WIN1_ENABLED | gpu->WINOBJ_ENABLED);
 	u8 blendMode  = (gpu->BLDCNT >> 6)&3;
 
-	gpu->setFinalColorSpr = pixelBlitters[windowUsed*4 + 1];
+	gpu->setFinalColorSpr = pixelBlitters[windowUsed*4 + blendMode];
 	gpu->setFinalColorBck = pixelBlitters[windowUsed*4 + blendMode];
 }
     
@@ -439,19 +462,23 @@ void GPU_addBack(GPU * gpu, u8 num)
 /* check whether (x,y) is within the rectangle (including wraparounds) */
 static INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
 {
-	// when the start > end,
-	//	all points between start & end are outside the window,
-	// otherwise
-	//	they are inside
+	if(startX > endX)
+	{
+		if((x < startX) && (x > endX)) return 0;
+	}
+	else
+	{
+		if((x < startX) || (x >= endX)) return 0;
+	}
 
-	if (startX > endX) return 0;
-	if (startY > endY) return 0;
-
-	if (x < startX) return 0;
-	if (x > endX) return 0;
-
-	if (y < startY) return 0;
-	if (y > endY) return 0;
+	if(startY > endY)
+	{
+		if((y < startY) && (y > endY)) return 0;
+	}
+	else
+	{
+		if((y < startY) || (y >= endY)) return 0;
+	}
 
 	return 1;
 }
@@ -569,6 +596,7 @@ static BOOL setFinalColorSpecialIncrease (const GPU *gpu, u32 passing, u8 bgnum,
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
+#if 0
 			u16 modFraction = gpu->BLDY_EVY;
 			u16 sourceR = (color & 0x1F) ;
 			u16 sourceG = ((color>>5) & 0x1F) ;
@@ -577,6 +605,8 @@ static BOOL setFinalColorSpecialIncrease (const GPU *gpu, u32 passing, u8 bgnum,
 			sourceG += ((31-sourceG) * modFraction) >> 4 ;
 			sourceB += ((31-sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+#endif
+			color = (fadeInColors[gpu->BLDY_EVY][color] | 0x8000);
 		}
 
 		T2WriteWord(dst, passing, color) ;
@@ -595,6 +625,7 @@ static BOOL setFinalColorSpecialDecrease (const GPU *gpu, u32 passing, u8 bgnum,
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
+#if 0
 			u16 modFraction = gpu->BLDY_EVY;
 			u16 sourceR = (color & 0x1F) ;
 			u16 sourceG = ((color>>5) & 0x1F) ;
@@ -603,6 +634,8 @@ static BOOL setFinalColorSpecialDecrease (const GPU *gpu, u32 passing, u8 bgnum,
 			sourceG -= ((sourceG) * modFraction) >> 4 ;
 			sourceB -= ((sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+#endif
+			color = (fadeOutColors[gpu->BLDY_EVY][color] | 0x8000);
 		}
 		T2WriteWord(dst, passing, color) ;
 	}
@@ -689,6 +722,7 @@ static BOOL setFinalColorSpecialIncreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
+#if 0
 			u16 modFraction = gpu->BLDY_EVY;
 			u16 sourceR = (color & 0x1F) ;
 			u16 sourceG = ((color>>5) & 0x1F) ;
@@ -697,6 +731,8 @@ static BOOL setFinalColorSpecialIncreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 			sourceG += ((31-sourceG) * modFraction) >> 4 ;
 			sourceB += ((31-sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+#endif
+			color = (fadeInColors[gpu->BLDY_EVY][color] | 0x8000);
 		}
 
 		T2WriteWord(dst, passing, color) ;
@@ -720,6 +756,7 @@ static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
+#if 0
 			u16 modFraction = gpu->BLDY_EVY;
 			u16 sourceR = (color & 0x1F) ;
 			u16 sourceG = ((color>>5) & 0x1F) ;
@@ -728,6 +765,8 @@ static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 			sourceG -= ((sourceG) * modFraction) >> 4 ;
 			sourceB -= ((sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
+#endif
+			color = (fadeOutColors[gpu->BLDY_EVY][color] | 0x8000);
 		}
 		T2WriteWord(dst, passing, color) ;
 	}
@@ -1274,7 +1313,9 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 	u16 x1;
 	if (col256) {
 		for(i = 0; i < lg; i++, sprX++,x+=xdir)
-			sprWin[sprX] = (src[x])?1:0;
+			//sprWin[sprX] = (src[x])?1:0;
+			if(src[x])
+				sprWin[sprX] = 1;
 	} else {
 		for(i = 0; i < lg; i++, ++sprX, x+=xdir)
 		{
@@ -1282,57 +1323,59 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 			palette = src[(x1&0x3) + ((x1&0xFFFC)<<3)];
 			if (x & 1) palette_entry = palette >> 4;
 			else       palette_entry = palette & 0xF;
-			sprWin[sprX] = (palette_entry)?1:0;
+			//sprWin[sprX] = (palette_entry)?1:0;
+			if(palette_entry)
+				sprWin[sprX] = 1;
 		}
 	}
 }
 
 // return val means if the sprite is to be drawn or not
 INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l, 
-	size *sprSize, s32 *sprX, s32 *sprY, s32 *x, s32 *y, s32 *lg, int *xdir) {
+	size &sprSize, s32 &sprX, s32 &sprY, s32 &x, s32 &y, s32 &lg, int &xdir) {
 
-	*x = 0;
+	x = 0;
 	// get sprite location and size
-	*sprX = (spriteInfo->X<<23)>>23;
-	*sprY = spriteInfo->Y;
-	*sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
+	sprX = (spriteInfo->X/*<<23*/)/*>>23*/;
+	sprY = spriteInfo->Y;
+	sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
 
-	*lg = sprSize->x;
+	lg = sprSize.x;
 	
-	if (*sprY>=192)
-		*sprY = (s32)((s8)(spriteInfo->Y));
+	if (sprY>=192)
+		sprY = (s32)((s8)(spriteInfo->Y));
 	
 // FIXME: for rot/scale, a list of entries into the sprite should be maintained,
 // that tells us where the first pixel of a screenline starts in the sprite,
 // and how a step to the right in a screenline translates within the sprite
 
-	if ((l<*sprY)||(l>=*sprY+sprSize->y) ||	/* sprite lines outside of screen */
-		(*sprX==256)||(*sprX+sprSize->x<=0))	/* sprite pixels outside of line */
+	if ((l<sprY)||(l>=sprY+sprSize.y) ||	/* sprite lines outside of screen */
+		(sprX==256)||(sprX+sprSize.x<=0))	/* sprite pixels outside of line */
 		return FALSE;				/* not to be drawn */
 
 	// sprite portion out of the screen (LEFT)
-	if(*sprX<0)
+	if(sprX<0)
 	{
-		*lg += *sprX;	
-		*x = -(*sprX);
-		*sprX = 0;
+		lg += sprX;	
+		x = -(sprX);
+		sprX = 0;
 	}
 	// sprite portion out of the screen (RIGHT)
-	if (*sprX+sprSize->x >= 256)
-		*lg = 256 - *sprX;
+	if (sprX+sprSize.x >= 256)
+		lg = 256 - sprX;
 
-	*y = l - *sprY;                           /* get the y line within sprite coords */
+	y = l - sprY;                           /* get the y line within sprite coords */
 
 	// switch TOP<-->BOTTOM
 	if (spriteInfo->VFlip)
-		*y = sprSize->y - *y -1;
+		y = sprSize.y - y -1;
 	
 	// switch LEFT<-->RIGHT
 	if (spriteInfo->HFlip) {
-		*x = sprSize->x - *x -1;
-		*xdir  = -1;
+		x = sprSize.x - x -1;
+		xdir  = -1;
 	} else {
-		*xdir  = 1;
+		xdir  = 1;
 	}
 	return TRUE;
 }
@@ -1556,7 +1599,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		{
 			u16 * pal;
 
-			if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
+			if (!compute_sprite_vars(spriteInfo, l, sprSize, sprX, sprY, x, y, lg, xdir))
 				continue;
 
 			if (spriteInfo->Mode == 2)
@@ -1841,7 +1884,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 		{
 			u16 *pal;
 
-			if (!compute_sprite_vars(spriteInfo, l, &sprSize, &sprX, &sprY, &x, &y, &lg, &xdir))
+			if (!compute_sprite_vars(spriteInfo, l, sprSize, sprX, sprY, x, y, lg, xdir))
 				continue;
 
 			if (spriteInfo->Mode == 2) {
@@ -2131,6 +2174,22 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	BOOL BG_enabled  = TRUE;
 
 	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
+
+	/* Apply fading to backdrop */
+	if((gpu->BLDCNT & 0x20) && (gpu->BLDY_EVY > 0))
+	{
+		switch(gpu->BLDCNT & 0xC0)
+		{
+		case 0x80:	/* Fade in */
+			c = fadeInColors[gpu->BLDY_EVY][c];
+			break;
+		case 0xC0:	/* Fade out */
+			c = fadeOutColors[gpu->BLDY_EVY][c];
+			break;
+		default: break;
+		}
+	}
+
 	for(int i = 0; i< 256; ++i) T2WriteWord(dst, i << 1, c);
 
 	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && 
@@ -2382,15 +2441,18 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
+#if 0
 			COLOR dstColor;
 			unsigned int masterBrightFactor = gpu->MasterBrightFactor;
 			u16 * colors = bright_more_colors[masterBrightFactor];
+#endif
 
 			/* when we wont do anything, we dont need to loop */
-			if (!masterBrightFactor) break ;
+			if (!(gpu->MasterBrightFactor)) break ;
 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
+#if 0
 #ifndef BRIGHT_TABLES
 				u8 base ;
 				u8 r,g,b; // get components, 5bit each
@@ -2408,6 +2470,8 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
 #endif
 				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
+#endif
+				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]];
 			}
 			break;
 		}
@@ -2432,15 +2496,18 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 	i'll add that so you can check back.
 
 */
+#if 0
 			COLOR dstColor;
 			unsigned int    masterBrightFactor = gpu->MasterBrightFactor;
 			u16 * colors = bright_less_colors[masterBrightFactor];
+#endif
  
 			/* when we wont do anything, we dont need to loop */
-			if (!masterBrightFactor) break;
+			if (!gpu->MasterBrightFactor) break;
  
 			for(i16 = 0; i16 < 256; ++i16)
 			{
+#if 0
 #ifndef BRIGHT_TABLES
 				u8 r,g,b;
 				dstColor.val = *((u16 *) (dst + (i16 << 1)));
@@ -2456,6 +2523,8 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
 #endif
 				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
+#endif
+				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]];
 			}
 			break;
 		}
