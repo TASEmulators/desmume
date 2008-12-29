@@ -182,7 +182,7 @@ typedef struct armcpu_t
 	BOOL wIRQ;
 	BOOL wirq;
 
-        u32 (* *swi_tab)(struct armcpu_t * cpu);
+        u32 (* *swi_tab)();
 
 #ifdef GDB_STUB
   /** there is a pending irq for the cpu */
