@@ -7,9 +7,7 @@ Applicationsdir = $(datadir)/applications
 Applications_DATA = desmume.desktop
 pixmapdir = $(datadir)/pixmaps
 pixmap_DATA = DeSmuME.xpm
-EXTRA_DIST = DeSmuME.xpm dev-cpp/desmume.dev dev-cpp/desmume.layout \
-	 dev-cpp/Makefile.win dev-cpp/pthread.h dev-cpp/sched.h \
-	 dev-cpp/semaphore.h desmume.desktop
+EXTRA_DIST = DeSmuME.xpm desmume.desktop
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
 	desmume.h desmume.cpp \
