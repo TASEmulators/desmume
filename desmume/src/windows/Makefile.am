@@ -5,6 +5,7 @@ EXTRA_DIST = DeSmuME.ico \
 	resources.rc
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
+	afxres.h \
         CWindow.cpp CWindow.h \
         disView.cpp disView.h ginfo.cpp ginfo.h \
         IORegView.cpp IORegView.h \
