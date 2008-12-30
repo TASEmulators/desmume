@@ -139,31 +139,51 @@ NULL
 };
 
 //static BOOL setFinalColorDirect				(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialNone		(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialBlend		(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialIncrease	(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialDecrease	(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialNone			(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialBlend			(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialIncrease		(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialDecrease		(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
 
 //static BOOL setFinalColorDirectWnd			(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialNoneWnd		(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialBlendWnd	(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialIncreaseWnd (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialNoneWnd		(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+static BOOL setFinalBGColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+
+static BOOL setFinal3DColorSpecialNone			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialBlend			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialIncrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialDecrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialNoneWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
+static BOOL setFinal3DColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
 
 
-typedef  BOOL (*FinalColFunct)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+typedef  BOOL (*FinalBGColFunct)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+typedef  BOOL (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
 
-FinalColFunct pixelBlitters[8] = {	//setFinalColorDirect,
-									setFinalColorSpecialNone,
-                                    setFinalColorSpecialBlend,
-                                    setFinalColorSpecialIncrease,
-                                    setFinalColorSpecialDecrease,
+FinalBGColFunct pixelBlittersBG[8] = {	//setFinalColorDirect,
+									setFinalBGColorSpecialNone,
+                                    setFinalBGColorSpecialBlend,
+                                    setFinalBGColorSpecialIncrease,
+                                    setFinalBGColorSpecialDecrease,
 
 									//setFinalColorDirectWnd,
-                                    setFinalColorSpecialNoneWnd,
-									setFinalColorSpecialBlendWnd,
-                                    setFinalColorSpecialIncreaseWnd,
-                                    setFinalColorSpecialDecreaseWnd};
+                                    setFinalBGColorSpecialNoneWnd,
+									setFinalBGColorSpecialBlendWnd,
+                                    setFinalBGColorSpecialIncreaseWnd,
+                                    setFinalBGColorSpecialDecreaseWnd};
+
+Final3DColFunct pixelBlitters3D[8] = {
+									setFinal3DColorSpecialNone,
+                                    setFinal3DColorSpecialBlend,
+                                    setFinal3DColorSpecialIncrease,
+                                    setFinal3DColorSpecialDecrease,
+                                    setFinal3DColorSpecialNoneWnd,
+									setFinal3DColorSpecialBlendWnd,
+                                    setFinal3DColorSpecialIncreaseWnd,
+                                    setFinal3DColorSpecialDecreaseWnd};
 
 u16 fadeInColors[17][0x8000];
 u16 fadeOutColors[17][0x8000];
@@ -203,8 +223,9 @@ GPU * GPU_Init(u8 l)
 		 }
 	 }
 
-	 g->setFinalColorBck = setFinalColorSpecialNone;
-	 g->setFinalColorSpr = setFinalColorSpecialNone;
+	 g->setFinalColorBck = setFinalBGColorSpecialNone;
+	 g->setFinalColorSpr = setFinalBGColorSpecialNone;
+	 g->setFinalColor3D = setFinal3DColorSpecialNone;
 
      return g;
 }
@@ -213,8 +234,9 @@ void GPU_Reset(GPU *g, u8 l)
 {
 	memset(g, 0, sizeof(GPU));
 
-	g->setFinalColorBck = setFinalColorSpecialNone;
-	g->setFinalColorSpr = setFinalColorSpecialNone;
+	g->setFinalColorBck = setFinalBGColorSpecialNone;
+	g->setFinalColorSpr = setFinalBGColorSpecialNone;
+	g->setFinalColor3D = setFinal3DColorSpecialNone;
 	g->core = l;
 	g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
 	g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
@@ -319,8 +341,9 @@ void SetupFinalPixelBlitter (GPU *gpu)
 	u8 windowUsed = (gpu->WIN0_ENABLED | gpu->WIN1_ENABLED | gpu->WINOBJ_ENABLED);
 	u8 blendMode  = (gpu->BLDCNT >> 6)&3;
 
-	gpu->setFinalColorSpr = pixelBlitters[windowUsed*4 + blendMode];
-	gpu->setFinalColorBck = pixelBlitters[windowUsed*4 + blendMode];
+	gpu->setFinalColorSpr = pixelBlittersBG[windowUsed*4 + blendMode];
+	gpu->setFinalColorBck = pixelBlittersBG[windowUsed*4 + blendMode];
+	gpu->setFinalColor3D = pixelBlitters3D[windowUsed*4 + blendMode];
 }
     
 /* Sets up LCD control variables for Display Engines A and B for quick reading */
@@ -535,10 +558,10 @@ static INLINE void renderline_checkWindows(const GPU *gpu, u8 bgnum, u16 x, u16 
 }
 
 /*****************************************************************************/
-//			PIXEL RENDERING
+//			PIXEL RENDERING - BGS
 /*****************************************************************************/
 
-static BOOL setFinalColorSpecialNone (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialNone (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	//sprwin test hack - use this code
 	//BOOL windowDraw = TRUE, windowEffect = TRUE;
@@ -547,10 +570,11 @@ static BOOL setFinalColorSpecialNone (const GPU *gpu, u32 passing, u8 bgnum, u8 
 	//return 1;
 
 	T2WriteWord(dst, passing, color);
+	gpu->bgPixels[x] = bgnum;
 	return 1;
 }
 
-static BOOL setFinalColorSpecialBlend (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialBlend (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	if ((gpu->BLDCNT >> bgnum)&1 && gpu->BLDALPHA_EVA)
 	{
@@ -581,16 +605,18 @@ static BOOL setFinalColorSpecialBlend (const GPU *gpu, u32 passing, u8 bgnum, u8
 		color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 
 		T2WriteWord(dst, passing, color);
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		T2WriteWord(dst, passing, color);
+		gpu->bgPixels[x] = bgnum;
 	}
 
 	return 1;
 }
 
-static BOOL setFinalColorSpecialIncrease (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialIncrease (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	if ((gpu->BLDCNT >> bgnum)&1)   // the bg to draw has a special color effect
 	{
@@ -610,16 +636,18 @@ static BOOL setFinalColorSpecialIncrease (const GPU *gpu, u32 passing, u8 bgnum,
 		}
 
 		T2WriteWord(dst, passing, color) ;
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		T2WriteWord(dst, passing, color);
+		gpu->bgPixels[x] = bgnum;
 	}
 
 	return 1;
 }
 
-static BOOL setFinalColorSpecialDecrease (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialDecrease (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	if ((gpu->BLDCNT >> bgnum)&1)   // the bg to draw has a special color effect
 	{
@@ -638,16 +666,18 @@ static BOOL setFinalColorSpecialDecrease (const GPU *gpu, u32 passing, u8 bgnum,
 			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 		T2WriteWord(dst, passing, color) ;
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		T2WriteWord(dst, passing, color);
+		gpu->bgPixels[x] = bgnum;
 	}
 
 	return 1;
 }
 
-static BOOL setFinalColorSpecialNoneWnd (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialNoneWnd (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	BOOL windowDraw = TRUE, windowEffect = TRUE;
 	
@@ -656,17 +686,21 @@ static BOOL setFinalColorSpecialNoneWnd (const GPU *gpu, u32 passing, u8 bgnum, 
 	if (((gpu->BLDCNT >> bgnum)&1) && windowEffect)   // the bg to draw has a special color effect
 	{
 		T2WriteWord(dst, passing, color);
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		{
 			T2WriteWord(dst, passing, color);
+			gpu->bgPixels[x] = bgnum;
+		}
 	}
 
 	return windowDraw;
 }
 
-static BOOL setFinalColorSpecialBlendWnd (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialBlendWnd (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	BOOL windowDraw = TRUE, windowEffect = TRUE;
 	
@@ -702,17 +736,21 @@ static BOOL setFinalColorSpecialBlendWnd (const GPU *gpu, u32 passing, u8 bgnum,
 		color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 
 		T2WriteWord(dst, passing, color);
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		{
 			T2WriteWord(dst, passing, color);
+			gpu->bgPixels[x] = bgnum;
+		}
 	}
 
 	return windowDraw;
 }
 
-static BOOL setFinalColorSpecialIncreaseWnd (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialIncreaseWnd (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	BOOL windowDraw = TRUE, windowEffect = TRUE;
 	
@@ -736,17 +774,21 @@ static BOOL setFinalColorSpecialIncreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 		}
 
 		T2WriteWord(dst, passing, color) ;
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		{
 			T2WriteWord(dst, passing, color);
+			gpu->bgPixels[x] = bgnum;
+		}
 	}
 
 	return windowDraw;
 }
 
-static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
+static BOOL setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y)
 {
 	BOOL windowDraw = TRUE, windowEffect = TRUE;
 	
@@ -769,11 +811,241 @@ static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 		T2WriteWord(dst, passing, color) ;
+		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
 		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		{
 			T2WriteWord(dst, passing, color);
+			gpu->bgPixels[x] = bgnum;
+		}
+	}
+
+	return windowDraw;
+}
+
+/*****************************************************************************/
+//			PIXEL RENDERING - 3D
+/*****************************************************************************/
+
+static BOOL setFinal3DColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	T2WriteWord(dst, passing, (color | 0x8000));
+	return 1;
+}
+
+static BOOL setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	/* We can blend if the 3D layer is selected as 1st target, */
+	/* but also if the 3D layer has the highest prio. */
+	if((gpu->BLDCNT & 0x1) || (gpu->dispx_st->dispx_BGxCNT[0].bits.Priority == 0))
+	{
+		int bg_under = gpu->bgPixels[x];
+		u16 final = color;
+
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if(gpu->BLDCNT & (1 << (8 + bg_under)))
+		{
+			/* Test for easy cases like alpha = min or max */
+			if(alpha == 16)
+			{
+				final = color;
+			}
+			else if(alpha == 0)
+			{
+				final = T2ReadWord(dst, passing);
+			}
+			else
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+				final = cfinal.val;
+			}
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+
+	return 1;
+}
+
+static BOOL setFinal3DColorSpecialIncrease(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	if(gpu->BLDCNT & 0x1)
+	{
+		if (gpu->BLDY_EVY != 0x0)
+		{
+			color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF];
+		}
+
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+
+	return 1;
+}
+
+static BOOL setFinal3DColorSpecialDecrease(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	if(gpu->BLDCNT & 0x1)
+	{
+		if (gpu->BLDY_EVY != 0x0)
+		{
+			color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF];
+		}
+
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+
+	return 1;
+}
+
+static BOOL setFinal3DColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+	
+	renderline_checkWindows(gpu, 0, x, y, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 0;
+	}
+
+	return windowDraw;
+}
+
+static BOOL setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+	
+	renderline_checkWindows(gpu, 0, x, y, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		/* We can blend if the 3D layer is selected as 1st target, */
+		/* but also if the 3D layer has the highest prio. */
+		if(((gpu->BLDCNT & 0x1) && windowEffect) || (gpu->dispx_st->dispx_BGxCNT[0].bits.Priority == 0))
+		{
+			int bg_under = gpu->bgPixels[x];
+			u16 final = color;
+
+			/* If the layer we are drawing on is selected as 2nd source, we can blend */
+			if(gpu->BLDCNT & (1 << (8 + bg_under)))
+			{
+				/* Test for easy cases like alpha = min or max */
+				if(alpha == 16)
+				{
+					final = color;
+				}
+				else if(alpha == 0)
+				{
+					final = T2ReadWord(dst, passing);
+				}
+				else
+				{
+					COLOR c1, c2, cfinal;
+
+					c1.val = color;
+					c2.val = T2ReadWord(dst, passing);
+
+					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+					final = cfinal.val;
+				}
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			gpu->bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 0;
+		}
+	}
+
+	return windowDraw;
+}
+
+static BOOL setFinal3DColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+	
+	renderline_checkWindows(gpu, 0, x, y, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		if((gpu->BLDCNT & 0x1) && windowEffect)
+		{
+			if (gpu->BLDY_EVY != 0x0)
+			{
+				color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF];
+			}
+
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 0;
+		}
+	}
+
+	return windowDraw;
+}
+
+static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+	
+	renderline_checkWindows(gpu, 0, x, y, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		if((gpu->BLDCNT & 0x1) && windowEffect)
+		{
+			if (gpu->BLDY_EVY != 0x0)
+			{
+				color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF];
+			}
+
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 0;
+		}
 	}
 
 	return windowDraw;
@@ -783,7 +1055,7 @@ static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 //			BACKGROUND RENDERING -TEXT-
 /*****************************************************************************/
 // render a text background to the combined pixelbuffer
-INLINE void renderline_textBG(const GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
+INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
 	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
@@ -1188,7 +1460,7 @@ void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
               256);
 }
 
-void textBG(const GPU * gpu, u8 num, u8 * DST)
+void textBG(GPU * gpu, u8 num, u8 * DST)
 {
 	u32 i;
 	for(i = 0; i < gpu->BGSize[num][1]; ++i)
@@ -2192,6 +2464,9 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 
 	for(int i = 0; i< 256; ++i) T2WriteWord(dst, i << 1, c);
 
+	/* reset them to backdrop */
+	memset(gpu->bgPixels, 5, 256);
+
 	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && 
 			!gpu->LayersEnable[2] && !gpu->LayersEnable[3] && 
 				!gpu->LayersEnable[4]) return;
@@ -2245,6 +2520,9 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					{
 						if (i16 == 0 && dispCnt->BG0_3D)
 						{
+							u16 line3Dcolor[256];
+							u8 line3Dalpha[256];
+
 							//determine the 3d range to grab
 							BGxOFS * bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
 							s16 hofs = (s16)T1ReadWord((u8 *)&bgofs->BGxHOFS, 0);
@@ -2253,7 +2531,13 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							else if(hofs<0) { start = -hofs; end=255; ofs=0; }
 							else { start = 0; end=255-hofs; ofs=hofs; }
 							
-							gpu3D->NDS_3D_GetLine (l, start, end, (u16*)dst+ofs);
+							//gpu3D->NDS_3D_GetLine (l, start, end, (u16*)dst+ofs);
+							gpu3D->NDS_3D_GetLine(l, start, end, line3Dcolor + ofs, line3Dalpha + ofs);
+
+							for(int k = start; k <= end; k++)
+								if(line3Dcolor[k] & 0x8000)
+									gpu->setFinalColor3D(gpu, (k << 1), dst, line3Dcolor[k], line3Dalpha[k], k, l);
+
 							continue;
 						}
 					}
