@@ -27,7 +27,7 @@
 typedef struct Render3DInterface
 {
 	// The name of the plugin, this name will appear in the plugins list
-	char * name;
+	const char * name;
 
 	//called once when the plugin starts up
 	char (CALL_CONVENTION*  NDS_3D_Init)					(void);
