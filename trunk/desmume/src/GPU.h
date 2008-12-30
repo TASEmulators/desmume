@@ -661,8 +661,11 @@ struct _GPU
 	u8	MasterBrightMode;
 	u32 MasterBrightFactor;
 
-	BOOL (*setFinalColorSpr)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
-	BOOL (*setFinalColorBck)(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+	u8 bgPixels[256];
+
+	BOOL (*setFinalColorSpr)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+	BOOL (*setFinalColorBck)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, u16 y);
+	BOOL (*setFinalColor3D) (GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x, u16 y);
 	void (*spriteRender) (GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
 };
 /*
@@ -692,7 +695,7 @@ GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
 void GPU_DeInit(GPU *);
 
-void textBG(const GPU * gpu, u8 num, u8 * DST);		//Draw text based background
+void textBG(GPU * gpu, u8 num, u8 * DST);		//Draw text based background
 void rotBG(GPU * gpu, u8 num, u8 * DST);
 void extRotBG(GPU * gpu, u8 num, u8 * DST);
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);

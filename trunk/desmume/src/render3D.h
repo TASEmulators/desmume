@@ -45,7 +45,7 @@ typedef struct Render3DInterface
 	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
 
 	//Retrieves a line of color buffer data
-	void (CALL_CONVENTION*	NDS_3D_GetLine)					(int line, int start, int end_inclusive, unsigned short* dst);
+	void (CALL_CONVENTION*	NDS_3D_GetLine)					(int line, int start, int end_inclusive, unsigned short* dst, unsigned char* dstAlpha);
 	
 	//Retrieves a line of color buffer data for capture
 	void (CALL_CONVENTION*	NDS_3D_GetLineCaptured)			(int line, unsigned short* dst);

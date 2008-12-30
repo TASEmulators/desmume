@@ -1183,7 +1183,7 @@ static void OGLGetLineCaptured(int line, u16* dst)
 }
 
 
-static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
+static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dstAlpha)
 {
 	assert(line<192 && line>=0);
 
@@ -1193,7 +1193,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 	}
 
 	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
-	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
+	//u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
 
 	//the renderer clears the stencil to 0
 	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
@@ -1207,15 +1207,18 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 
 	for(int i = start, j=0; i <= end_inclusive; ++i, ++j)
 	{
-		u32 stencil = screenStencil[i];
+	//	u32 stencil = screenStencil[i];
 
 		//you would use this if you wanted to use the stencil buffer to make decisions here
-		if(!stencil) continue;
+	//	if(!stencil) continue;
 
-		u16 oldcolor = dst[j];
+	//	u16 oldcolor = dst[j];
 		
 		int t=i<<2;
-		u32 dstpixel;
+	//	u32 dstpixel;
+
+		dst[j] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
+		dstAlpha[j] = (screen3D[t+3] / 2);
 		
 		//old debug reminder: display alpha channel
 		//u32 r = screen3D[t+3];
@@ -1224,7 +1227,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 
 		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
 
-		u32 a = screen3D[t+3];
+	/*	u32 a = screen3D[t+3];
 		
 		typedef u8 mixtbl[32][32];
 		mixtbl & mix = mixTable555[a];
@@ -1247,7 +1250,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 		newpix = mix[newpix][oldpix];
 		dstpixel |= (newpix<<10);
 
-		dst[j] = dstpixel;
+		dst[j] = dstpixel;*/
 	}
 }
 
