@@ -2564,7 +2564,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			{
 				u8 * dst = GPU_screen + (screen->offset + l) * 512;
 				u8 * src = gpu->VRAMaddr + (l*512);
-				GPU_copyLine(dst, src);
+				memcpy (dst, src, 512);
 			}
 			break;
 		case 3:

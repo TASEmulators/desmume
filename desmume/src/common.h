@@ -28,35 +28,18 @@
 #include "types.h"
 	
 #ifdef WIN32
-#define _WINSOCKAPI_
-#include <windows.h>
+	#define _WINSOCKAPI_
+	#include <windows.h>
 
-#define CLASSNAME "DeSmuME"
+	#define CLASSNAME "DeSmuME"
 
-extern HINSTANCE hAppInst;
+	extern HINSTANCE hAppInst;
 
-extern char IniName[MAX_PATH];
-extern void GetINIPath();
-extern void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
-
-// temporally while fix x64 build
-#ifndef _WIN64
-#define memcpy_fast(d,s,c) memcpy(d,s,c)
-#define GPU_copyLine(d,s) memcpy(d,s,512)
-#else
-extern "C" 
-{
-	void __fastcall memcpy_fast(void* dest, void* src, size_t count);
-	void __fastcall GPU_copyLine(void* dest, const void* src);
-}
+	extern char IniName[MAX_PATH];
+	extern void GetINIPath();
+	extern void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
 #endif
 
-// check it in other ports
-#else
-#define memcpy_fast(d,s,c) memcpy(d,s,c)
-#define GPU_copyLine(d,s) memcpy(d,s,512)
-#endif
-
-extern u8 reverseBitsInByte(u8 x);
+	extern u8 reverseBitsInByte(u8 x);
 	
 #endif
