@@ -192,42 +192,64 @@ u16 fadeOutColors[17][0x8000];
 //			INITIALIZATION
 /*****************************************************************************/
 
+static void GPU_InitFadeColors()
+{
+	/*
+	NOTE: gbatek (in the reference above) seems to expect 6bit values 
+	per component, but as desmume works with 5bit per component, 
+	we use 31 as top, instead of 63. Testing it on a few games, 
+	using 63 seems to give severe color wraping, and 31 works
+	nicely, so for now we'll just that, until proven wrong.
+
+	i have seen pics of pokemon ranger getting white with 31, with 63 it is nice.
+	it could be pb of alpha or blending or...
+
+	MightyMax> created a test NDS to check how the brightness values work,
+	and 31 seems to be correct. FactorEx is a override for max brighten/darken
+	See: http://mightymax.org/gfx_test_brightness.nds
+	The Pokemon Problem could be a problem with 8/32 bit writes not recognized yet,
+	i'll add that so you can check back.
+
+	*/
+
+	for(int i = 0; i <= 16; i++)
+	{
+		for(int j = 0x8000; j < 0x10000; j++)
+		{
+			COLOR cur;
+
+			cur.val = j;
+			cur.bits.red = (cur.bits.red + ((31 - cur.bits.red) * i / 16));
+			cur.bits.green = (cur.bits.green + ((31 - cur.bits.green) * i / 16));
+			cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
+			fadeInColors[i][j & 0x7FFF] = cur.val;
+
+			cur.val = j;
+			cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
+			cur.bits.green = (cur.bits.green - (cur.bits.green * i / 16));
+			cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
+			fadeOutColors[i][j & 0x7FFF] = cur.val;
+		}
+	}
+}
+
+
+
 GPU * GPU_Init(u8 l)
 {
-	int i, j;
+	GPU * g;
 
-     GPU * g;
+	if ((g = (GPU *) malloc(sizeof(GPU))) == NULL)
+		return NULL;
 
-     if ((g = (GPU *) malloc(sizeof(GPU))) == NULL)
-        return NULL;
+	GPU_Reset(g, l);
+	GPU_InitFadeColors();
 
-     GPU_Reset(g, l);
+	g->setFinalColorBck = setFinalBGColorSpecialNone;
+	g->setFinalColorSpr = setFinalBGColorSpecialNone;
+	g->setFinalColor3D = setFinal3DColorSpecialNone;
 
-	 for(i = 0; i <= 16; i++)
-	 {
-		 for(j = 0x8000; j < 0x10000; j++)
-		 {
-			 COLOR cur;
-
-			 cur.val = j;
-			 cur.bits.red = (cur.bits.red + ((31 - cur.bits.red) * i / 16));
-			 cur.bits.green = (cur.bits.green + ((31 - cur.bits.green) * i / 16));
-			 cur.bits.blue = (cur.bits.blue + ((31 - cur.bits.blue) * i / 16));
-			 fadeInColors[i][j & 0x7FFF] = cur.val;
-
-			 cur.val = j;
-			 cur.bits.red = (cur.bits.red - (cur.bits.red * i / 16));
-			 cur.bits.green = (cur.bits.green - (cur.bits.green * i / 16));
-			 cur.bits.blue = (cur.bits.blue - (cur.bits.blue * i / 16));
-			 fadeOutColors[i][j & 0x7FFF] = cur.val;
-		 }
-	 }
-
-	 g->setFinalColorBck = setFinalBGColorSpecialNone;
-	 g->setFinalColorSpr = setFinalBGColorSpecialNone;
-	 g->setFinalColor3D = setFinal3DColorSpecialNone;
-
-     return g;
+	return g;
 }
 
 void GPU_Reset(GPU *g, u8 l)
@@ -2387,50 +2409,8 @@ void GPU_set_DISPCAPCNT(u32 val)
 			gpu->dispCapCnt.capSrc, gpu->dispCapCnt.dst - ARM9Mem.ARM9_LCD, gpu->dispCapCnt.src - ARM9Mem.ARM9_LCD,
 			gpu->dispCapCnt.srcA, gpu->dispCapCnt.srcB);*/
 }
-
-// trade off for speed is 1MB
-u16 bright_more_colors[16][0x8000];
-u16 bright_less_colors[16][0x8000];
-BOOL bright_init=FALSE;
-
-// comment this if want to use formulas instead
 // #define BRIGHT_TABLES
 
-#ifdef BRIGHT_TABLES
-static void calc_bright_colors() {
-	int base = 31 ;
-	int factor;
-	u16 red, green, blue;
-	COLOR color_more, color_less, color_ref;
-
-#define FORMULA_MORE(x)   x + ((base-x)*factor)/16
-#define FORMULA_LESS(x)   x - (x*factor)/16
-
-	if (bright_init) return;
-	for (factor=0; factor<16; factor++)
-	for (red  =0; red  <32; red++) {
-		color_ref.bits.red = red;
-		color_more.bits.red = FORMULA_MORE(red);
-		color_less.bits.red = FORMULA_LESS(red);
-		for (green=0; green<32; green++) {
-			color_ref.bits.green = green;
-			color_more.bits.green = FORMULA_MORE(green);
-			color_less.bits.green = FORMULA_LESS(green);
-			for (blue =0; blue <32; blue++) {
-				color_ref.bits.blue = blue;
-				color_more.bits.blue = FORMULA_MORE(blue);
-				color_less.bits.blue = FORMULA_LESS(blue);
-				bright_more_colors[factor][color_ref.bitx.bgr] = color_more.val;
-				bright_less_colors[factor][color_ref.bitx.bgr] = color_less.val;
-			}
-		}
-	}
-	bright_init=TRUE;
-
-#undef FORMULA_MORE
-#undef FORMULA_LESS
-}
-#endif
 
 static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
@@ -2698,17 +2678,11 @@ static void GPU_ligne_DispCapture(u16 l)
 static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
-#ifndef HAVE_LIBGDKGLEXT_X11_1_0
+
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u16 i16;
-#endif
+
 	if (!gpu->MasterBrightFactor) return;
-#ifndef HAVE_LIBGDKGLEXT_X11_1_0
-// damdoum :
-//   brightness done with opengl
-//   test are ok (gfx_test_brightness)
-//   now, if we are going to support 3D, this becomes dead code
-//   because it is obvious we'll use openGL / mesa3D
 
 #ifdef BRIGHT_TABLES
 	calc_bright_colors();
@@ -2728,36 +2702,11 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
-#if 0
-			COLOR dstColor;
-			unsigned int masterBrightFactor = gpu->MasterBrightFactor;
-			u16 * colors = bright_more_colors[masterBrightFactor];
-#endif
-
-			/* when we wont do anything, we dont need to loop */
+			// when we wont do anything, we dont need to loop
 			if (!(gpu->MasterBrightFactor)) break ;
 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-#if 0
-#ifndef BRIGHT_TABLES
-				u8 base ;
-				u8 r,g,b; // get components, 5bit each
-				dstColor.val = *((u16 *) (dst + (i16 << 1)));
-				r = dstColor.bits.red;
-				g = dstColor.bits.green;
-				b = dstColor.bits.blue;
-				// Bright up and clamp to 5bit <-- automatic
-				base = 31 ;
-				dstColor.bits.red   = r + ((base-r)*masterBrightFactor)/16;
-				dstColor.bits.green = g + ((base-g)*masterBrightFactor)/16;
-				dstColor.bits.blue  = b + ((base-b)*masterBrightFactor)/16;
-#else
-				dstColor.val = T1ReadWord(dst, i16 << 1);
-				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
-#endif
-				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
-#endif
 				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
@@ -2766,51 +2715,11 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright down
 		case 2:
 		{
-/*
-	NOTE: gbatek (in the reference above) seems to expect 6bit values 
-	per component, but as desmume works with 5bit per component, 
-			we use 31 as top, instead of 63. Testing it on a few games, 
-			using 63 seems to give severe color wraping, and 31 works
-			nicely, so for now we'll just that, until proven wrong.
-
-	i have seen pics of pokemon ranger getting white with 31, with 63 it is nice.
-	it could be pb of alpha or blending or...
-
-	MightyMax> created a test NDS to check how the brightness values work,
-	and 31 seems to be correct. FactorEx is a override for max brighten/darken
-	See: http://mightymax.org/gfx_test_brightness.nds
-	The Pokemon Problem could be a problem with 8/32 bit writes not recognized yet,
-	i'll add that so you can check back.
-
-*/
-#if 0
-			COLOR dstColor;
-			unsigned int    masterBrightFactor = gpu->MasterBrightFactor;
-			u16 * colors = bright_less_colors[masterBrightFactor];
-#endif
- 
-			/* when we wont do anything, we dont need to loop */
+			// when we wont do anything, we dont need to loop 
 			if (!gpu->MasterBrightFactor) break;
  
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-#if 0
-#ifndef BRIGHT_TABLES
-				u8 r,g,b;
-				dstColor.val = *((u16 *) (dst + (i16 << 1)));
-				r = dstColor.bits.red;
-				g = dstColor.bits.green;
-				b = dstColor.bits.blue;
-				// Bright up and clamp to 5bit <- automatic
-				dstColor.bits.red   = r - (r*masterBrightFactor)/16;
-				dstColor.bits.green = g - (g*masterBrightFactor)/16;
-				dstColor.bits.blue  = b - (b*masterBrightFactor)/16;
-#else
-				dstColor.val = T1ReadWord(dst, i16 << 1);
-				dstColor.bitx.bgr = colors[dstColor.bitx.bgr];
-#endif
-				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
-#endif
 				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
@@ -2820,7 +2729,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		case 3:
 			break;
 	 }
-#endif
+
 }
 
 void GPU_ligne(NDS_Screen * screen, u16 l)
