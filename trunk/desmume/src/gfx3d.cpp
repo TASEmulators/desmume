@@ -1659,8 +1659,9 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
 			*(u32 *)(ARM9Mem.ARM9_REG + 0x540) = val;
 			gfx3d_glFlush(val);
-			clCmd >>= 8;
-			clInd--;
+			// This is reseted by glFlush, thus not needed here (fixes dsracing.nds)
+			//clCmd >>= 8;
+			//clInd--;
 		break;
 		case 0x60:		// VIEWPORT - Set Viewport (W)
 			*(u32 *)(ARM9Mem.ARM9_REG + 0x580) = val;
