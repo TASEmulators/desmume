@@ -67,23 +67,23 @@ static u32 mem[NBR_IO_REGS];
 
 static void update_regs_fast(){
 	char text[10];
-	const char * mask;
 	int i; u32 w, m;
 	for( i = 0; i < NBR_IO_REGS; i++ )
 	{	
 		w = MMU_read32(cpu,Reg_Names_Addr[i].addr);
 		m = mem[i];
 		if ( Reg_Names_Addr[i].trunc ) {
-			mask = "    0x%04X";
 			w &= 0xFFFF;
 			m &= 0xFFFF;
-		} else {
-			mask = "0x%08X";
 		}
 		mem[i] = w;
 		if (w == m) continue;
 
-		sprintf(text, mask, w);
+		if ( Reg_Names_Addr[i].trunc )
+			sprintf(text, "    0x%04lX", w);
+		else
+			sprintf(text, "0x%08lX", w);
+
 		dTools_display_select_attr(&dsp, 2);
 		dTools_display_clear_char(&dsp, size_+3, i, 10);
 		dTools_display_draw_text(&dsp, size_+3, i, text);
@@ -93,7 +93,6 @@ static void update_regs_fast(){
 static void update_regs()
 {
 	char text[80];
-	const char * mask;
 	int len, i;
 
 	if (init==FALSE) {
@@ -115,9 +114,11 @@ static void update_regs()
 	dTools_display_clear(&dsp);
 	for( i = 0; i < NBR_IO_REGS; i++ )
 	{
-		mask = ( Reg_Names_Addr[i].trunc ) ? "    0x%04X" : "0x%08X";
 		mem[i] = MMU_read32(cpu,Reg_Names_Addr[i].addr);
-		sprintf(text, mask, mem[i]);
+		if  ( Reg_Names_Addr[i].trunc )
+			sprintf(text, "    0x%04lX", mem[i]);
+		else
+			sprintf(text, "0x%08lX", mem[i]);
 
 		dTools_display_select_attr(&dsp, 0);
 		dTools_display_draw_text(&dsp, 0, i, Reg_Names_Addr[i].name);

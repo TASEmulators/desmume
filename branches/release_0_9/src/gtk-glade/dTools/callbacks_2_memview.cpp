@@ -183,6 +183,8 @@ gboolean on_wtools_2_draw_scroll_event (GtkWidget *widget, GdkEventScroll *event
 		add_to_address(-STEP_ONE_PAGE); break;
 	case GDK_SCROLL_DOWN:
 		add_to_address(+STEP_ONE_PAGE); break;
+	case GDK_SCROLL_LEFT:
+	case GDK_SCROLL_RIGHT:
 	default:
 		break;
 	}
