@@ -1,6 +1,4 @@
-#ifdef __GNUC__
-__attribute__((packed))
-#else
+#ifndef __GNUC__
 #pragma pack(push, 1)
 #pragma warning(disable : 4103)
 #endif
