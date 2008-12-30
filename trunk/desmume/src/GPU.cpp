@@ -2523,6 +2523,8 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							u16 line3Dcolor[256];
 							u8 line3Dalpha[256];
 
+							memset(line3Dcolor, 0, sizeof(line3Dcolor));
+							memset(line3Dalpha, 0, sizeof(line3Dalpha));
 							//determine the 3d range to grab
 							BGxOFS * bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
 							s16 hofs = (s16)T1ReadWord((u8 *)&bgofs->BGxHOFS, 0);
