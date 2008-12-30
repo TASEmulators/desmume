@@ -476,7 +476,7 @@ void NDS_Reset( void)
 	unsigned int i;
 	u32 src;
 	u32 dst;
-	FILE* inf;
+	FILE* inf = 0;
 	NDS_header * header = NDS_getROMHeader();
 
 	if (!header) return ;
@@ -550,7 +550,7 @@ void NDS_Reset( void)
 	//_MMU_write32[ARMCPU_ARM9](0x02007FFC, 0xE92D4030);
 
 	//ARM7 BIOS IRQ HANDLER
-	inf = fopen("BiosNds7.ROM","rb");
+	//inf = fopen("BiosNds7.ROM","rb");
 	if(inf) {
 		fread(MMU.ARM7_BIOS,1,16384,inf);
 		fclose(inf);
@@ -569,7 +569,7 @@ void NDS_Reset( void)
 	}
 
 	//ARM9 BIOS IRQ HANDLER
-	inf = fopen("BiosNds9.ROM","rb");
+	//inf = fopen("BiosNds9.ROM","rb");
 	if(inf) {
 		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
 		fclose(inf);
