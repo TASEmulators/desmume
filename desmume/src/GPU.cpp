@@ -606,7 +606,7 @@ static BOOL setFinalColorSpecialIncrease (const GPU *gpu, u32 passing, u8 bgnum,
 			sourceB += ((31-sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 #endif
-			color = (fadeInColors[gpu->BLDY_EVY][color] | 0x8000);
+			color = (fadeInColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 
 		T2WriteWord(dst, passing, color) ;
@@ -635,7 +635,7 @@ static BOOL setFinalColorSpecialDecrease (const GPU *gpu, u32 passing, u8 bgnum,
 			sourceB -= ((sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 #endif
-			color = (fadeOutColors[gpu->BLDY_EVY][color] | 0x8000);
+			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 		T2WriteWord(dst, passing, color) ;
 	}
@@ -732,7 +732,7 @@ static BOOL setFinalColorSpecialIncreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 			sourceB += ((31-sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 #endif
-			color = (fadeInColors[gpu->BLDY_EVY][color] | 0x8000);
+			color = (fadeInColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 
 		T2WriteWord(dst, passing, color) ;
@@ -766,7 +766,7 @@ static BOOL setFinalColorSpecialDecreaseWnd (const GPU *gpu, u32 passing, u8 bgn
 			sourceB -= ((sourceB) * modFraction) >> 4 ;
 			color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 #endif
-			color = (fadeOutColors[gpu->BLDY_EVY][color] | 0x8000);
+			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 		T2WriteWord(dst, passing, color) ;
 	}
@@ -2173,7 +2173,7 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	u32 c;
 	BOOL BG_enabled  = TRUE;
 
-	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400);
+	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
 
 	/* Apply fading to backdrop */
 	if((gpu->BLDCNT & 0x20) && (gpu->BLDY_EVY > 0))
@@ -2471,7 +2471,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 #endif
 				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
 #endif
-				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]];
+				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
 		}
@@ -2524,7 +2524,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 #endif
 				*((u16 *) (dst + (i16 << 1))) = dstColor.val;
 #endif
-				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]];
+				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
 		}
