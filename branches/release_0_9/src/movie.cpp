@@ -387,7 +387,9 @@ static void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, in
 	//LoadFM2(currMovieData, fp->stream, INT_MAX, false);
 
 	
-	LoadFM2(currMovieData, &fstream(fname), INT_MAX, false);
+	fstream fs (fname);
+	LoadFM2(currMovieData, &fs, INT_MAX, false);
+	fs.close();
 
 	//TODO
 	//fully reload the game to reinitialize everything before playing any movie
