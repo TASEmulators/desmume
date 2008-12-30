@@ -22,6 +22,13 @@
 #ifndef OGLRENDER_H
 #define OGLRENDER_H
 
+#include "common.h"
+#include <algorithm>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include "debug.h"
 #include "render3D.h"
 
 extern GPU3DInterface gpu3Dgl;

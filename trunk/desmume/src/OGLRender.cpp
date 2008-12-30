@@ -24,12 +24,7 @@
 //so, it doesnt composite to 2d correctly.
 //(re: new super mario brothers renders the stormclouds at the beginning)
 
-#include <algorithm>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include "debug.h"
+#include "OGLRender.h"
 
 //#define DEBUG_DUMP_TEXTURE
 
@@ -238,7 +233,11 @@ struct TextureCache
 	int					coord;
 	float				invSizeX;
 	float				invSizeY;
+#ifdef SSE2
+	ALIGN(16) unsigned char		texture[128*1024]; // 128Kb texture slot
+#else
 	unsigned char		texture[128*1024]; // 128Kb texture slot
+#endif
 
 	//set if this texture is suspected be invalid due to a vram reconfigure
 	bool				suspectedInvalid;
@@ -510,80 +509,6 @@ static void OGLClose()
 
 //todo - make all color conversions go through a properly spread table!!
 
-//I think this is slower than the regular memcmp.. doesnt make sense to me, but my
-//asm optimization knowlege is 15 years old..
-
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-int memcmp_slow(const void* src, const void* dst, u32 count) {
-	int retval;
-	__asm {
-		mov [retval], 0;
-		mov ecx, [count];
-		shr ecx, 2;
-		mov esi, [src];
-		mov edi, [dst];
-		repe cmpsd;
-		setc byte ptr [retval];
-	}
-	return retval;
-}
-
-void* memcpy_fast(void* dest, const void* src, size_t count)
-{
-	size_t blockCnt = count / 64;
-	size_t remainder = count % 64;
-
-	__asm
-	{
-		mov esi, [src] 
-		mov edi, [dest] 
-		mov ecx, [blockCnt]
-
-		test ecx, ecx
-		jz copy_remainder
-
-	copyloop:
-		//prefetchnta [esi]
-		mov eax, [esi]
-		
-		movq mm0, qword ptr [esi]
-		movq mm1, qword ptr [esi+8]
-		movq mm2, qword ptr [esi+16]
-		movq mm3, qword ptr [esi+24]
-		movq mm4, qword ptr [esi+32]
-		movq mm5, qword ptr [esi+40]
-		movq mm6, qword ptr [esi+48]
-		movq mm7, qword ptr [esi+56]
-		movntq qword ptr [edi], mm0
-		movntq qword ptr [edi+8], mm1
-		movntq qword ptr [edi+16], mm2
-		movntq qword ptr [edi+24], mm3
-		movntq qword ptr [edi+32], mm4
-		movntq qword ptr [edi+40], mm5
-		movntq qword ptr [edi+48], mm6
-		movntq qword ptr [edi+56], mm7
-
-		add edi, 64
-		add	esi, 64
-		dec ecx
-		jnz copyloop
-
-		sfence
-		emms
-
-	copy_remainder:
-
-		mov ecx, remainder
-		rep movsb
-	}
-
-	return dest;
-}
-#else
-#define memcpy_fast(d,s,c) memcpy(d,s,c)
-#endif
-
-
 #if defined (DEBUG_DUMP_TEXTURE) && defined (WIN32)
 static void DebugDumpTexture(int which)
 {
@@ -700,8 +625,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].coord=(format>>30);
 	texcache[i].invSizeX=1.0f/((float)(sizeX*(1<<4)));
 	texcache[i].invSizeY=1.0f/((float)(sizeY*(1<<4)));
-	//memcpy(texcache[i].texture,adr,imageSize);			//======================= copy
-	memcpy_fast(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));			//======================= copy
+	memcpy_fast(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
 	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;

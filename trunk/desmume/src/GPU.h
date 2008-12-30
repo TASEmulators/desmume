@@ -28,6 +28,7 @@
 #include "ARM9.h"
 #include <stdio.h>
 #include "mem.h"
+#include "common.h"
 #include "registers.h"
 #include "FIFO.h"
 #include "MMU.h"

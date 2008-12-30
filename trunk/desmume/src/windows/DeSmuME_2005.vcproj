@@ -10,9 +10,6 @@
 		<Platform
 			Name="Win32"
 		/>
-		<Platform
-			Name="x64"
-		/>
 	</Platforms>
 	<ToolFiles>
 		<DefaultToolFile
@@ -53,7 +50,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;DEBUG\&quot;;WIN32;BETA_VERSION;SPU_INTERPOLATE;HAVE_LIBZ;NOMINMAX"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
@@ -141,7 +138,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;Release\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -230,7 +227,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;Release SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -270,265 +267,6 @@
 			<Tool
 				Name="VCManifestTool"
 				AdditionalManifestFiles="DeSmuME_x86.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				InlineFunctionExpansion="0"
-				EnableIntrinsicFunctions="false"
-				FavorSizeOrSpeed="0"
-				EnableFiberSafeOptimizations="false"
-				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 x64 DEBUG\&quot;;WIN32;_x64;BETA_VERSION"
-				ExceptionHandling="0"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
-				DebugInformationFormat="3"
-				CallingConvention="0"
-				CompileAs="1"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib shlwapi.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_x64_debug.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				GenerateDebugInformation="true"
-				GenerateMapFile="true"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x64.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 x64\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION"
-				ExceptionHandling="0"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="0"
-				CompileAs="1"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_x64.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				GenerateDebugInformation="true"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x64.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release (SSE2)|x64"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;0.8.0b2 x64 SSE2\&quot;;WIN32;_x64;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION"
-				ExceptionHandling="0"
-				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="0"
-				CompileAs="1"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib dxguid.lib shell32.lib comdlg32.lib dxerr.lib dsound.lib dinput8.lib ddraw.lib zlib-2005-x64.lib zziplib-2005-x64.lib shlwapi.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_x64_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				GenerateDebugInformation="true"
-				TargetMachine="17"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x64.manifest"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -653,22 +391,6 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						CompileAs="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release (SSE2)|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						CompileAs="1"
 					/>
 				</FileConfiguration>
 			</File>
@@ -844,6 +566,152 @@
 				</File>
 			</Filter>
 		</Filter>
+		<Filter
+			Name="asm"
+			>
+			<File
+				RelativePath="..\common-x64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release (SSE2)|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\common-x86.asm"
+				>
+				<FileConfiguration
+					Name="Release (SSE2)|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\common_sse2-x64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release (SSE2)|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\common_sse2-x86.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\matrix_sse2-x64.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="$(IntDir)\$(InputName).obj"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release (SSE2)|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Assembling..."
+						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="$(IntDir)\$(InputName).obj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\matrix_sse2-x86.asm"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\ARM9.h"
 			>
@@ -987,113 +855,6 @@
 		<File
 			RelativePath="..\matrix.h"
 			>
-		</File>
-		<File
-			RelativePath="..\matrix_sse2-x64.asm"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					Description="Assembling..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-					Outputs="$(IntDir)\$(InputName).obj"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release (SSE2)|Win32"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					Description="Assembling..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-					Outputs="$(IntDir)\$(InputName).obj"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|x64"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|x64"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					Description="Assembling..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-					Outputs="$(IntDir)\$(InputName).obj"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release (SSE2)|x64"
-				>
-				<Tool
-					Name="VCCustomBuildTool"
-					Description="Assembling..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-					Outputs="$(IntDir)\$(InputName).obj"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="..\matrix_sse2-x86.asm"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|x64"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|x64"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release (SSE2)|x64"
-				ExcludedFromBuild="true"
-				>
-				<Tool
-					Name="MASM"
-				/>
-			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\mc.cpp"
