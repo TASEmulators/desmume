@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-struct ALIGN(16) ARM9_struct {
+typedef ALIGN(16) struct {
         //ARM9 mem
         u8 ARM9_ITCM[0x8000];
         u8 ARM9_DTCM[0x4000];
@@ -25,7 +25,7 @@ struct ALIGN(16) ARM9_struct {
 		u8 *textureSlotAddr[4];
 
 		u8 *blank_memory[0x20000];
-};
+} ARM9_struct;
 
 extern ARM9_struct ARM9Mem;
 

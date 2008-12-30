@@ -74,7 +74,7 @@ static void ENDGL() {
 #endif
 
 static ALIGN(16) unsigned char  GPU_screen3D		[256*256*4];
-//static ALIGN(16) unsigned char  GPU_screenStencil[256*256];
+static ALIGN(16) unsigned char  GPU_screenStencil[256*256];
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
@@ -367,7 +367,7 @@ static void OGLReset()
 	texcache_stop=MAX_TEXTURE<<1;
 
 	//clear the framebuffers
-//	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
+	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 }
 
@@ -1037,7 +1037,7 @@ static void OGLRender()
 	//printf("%d\n",gfx3d.projlist->count);
 	
 	//we're not using the alpha clear color right now
-	glClearColor(gfx3d.clearColor[0],gfx3d.clearColor[1],gfx3d.clearColor[2], gfx3d.clearColor[3]);
+	glClearColor(gfx3d.clearColor[0],gfx3d.clearColor[1],gfx3d.clearColor[2], clearAlpha);
 	glClearDepth(gfx3d.clearDepth);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -1118,7 +1118,7 @@ static void GL_ReadFramebuffer()
 {
 	if(!BEGINGL()) return; 
 	glFinish();
-//	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
+	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
 	glReadPixels(0,0,256,192,GL_BGRA_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
 	ENDGL();
 
@@ -1160,31 +1160,30 @@ static void OGLGetLineCaptured(int line, u16* dst)
 	}
 
 	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
-//	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
+	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
 
 	for(int i = 0; i < 256; i++)
 	{
-	/*	u32 stencil = screenStencil[i];
+		u32 stencil = screenStencil[i];
 
 		if(!stencil) 
 		{
 			dst[i] = 0x0000;
 			continue;
-		}*/
+		}
 
 		int t=i<<2;
-	/*	u8 r = screen3D[t+2];
-		u8 g = screen3D[t+1];
-		u8 b = screen3D[t+0];*/
+		u32 r = screen3D[t+2];
+		u32 g = screen3D[t+1];
+		u32 b = screen3D[t+0];
 
 		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
-		//dst[i] = (b<<10) | (g<<5) | (r) | 0x8000;
-		dst[i] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
+		dst[i] = (b<<10) | (g<<5) | (r) | 0x8000;
 	}
 }
 
 
-static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dstAlpha)
+static void OGLGetLine(int line, int start, int end_inclusive, u16* dst)
 {
 	assert(line<192 && line>=0);
 
@@ -1194,7 +1193,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 	}
 
 	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
-	//u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
+	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
 
 	//the renderer clears the stencil to 0
 	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
@@ -1208,18 +1207,15 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 
 	for(int i = start, j=0; i <= end_inclusive; ++i, ++j)
 	{
-	//	u32 stencil = screenStencil[i];
+		u32 stencil = screenStencil[i];
 
 		//you would use this if you wanted to use the stencil buffer to make decisions here
-	//	if(!stencil) continue;
+		if(!stencil) continue;
 
-	//	u16 oldcolor = dst[j];
+		u16 oldcolor = dst[j];
 		
 		int t=i<<2;
-	//	u32 dstpixel;
-
-		dst[j] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
-		dstAlpha[j] = (screen3D[t+3] / 2);
+		u32 dstpixel;
 		
 		//old debug reminder: display alpha channel
 		//u32 r = screen3D[t+3];
@@ -1228,7 +1224,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 
 		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
 
-	/*	u32 a = screen3D[t+3];
+		u32 a = screen3D[t+3];
 		
 		typedef u8 mixtbl[32][32];
 		mixtbl & mix = mixTable555[a];
@@ -1251,7 +1247,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 		newpix = mix[newpix][oldpix];
 		dstpixel |= (newpix<<10);
 
-		dst[j] = dstpixel;*/
+		dst[j] = dstpixel;
 	}
 }
 
