@@ -1437,7 +1437,6 @@ static void NOPARAMS(u32 val)
 
 void gfx3d_sendCommandToFIFO(u32 val)
 {
-	//INFO("3D command 0x%02X (full val = 0x%08X, val = 0x%08X, ind %i)\n", clCmd&0xFF, clCmd,  val, clInd);
 	if (!clInd)
 	{
 		if (val == 0) 
@@ -1692,7 +1691,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 			clInd--;
 		break;
 		default:
-			INFO("Unknown 3D command 0x%02X in cmd=0x%02X\n", clCmd&0xFF, val);
+			LOG("Unknown FIFO 3D command 0x%02X in cmd=0x%02X\n", clCmd&0xFF, val);
 			clCmd >>= 8;
 			clInd--;
 			break;
@@ -1839,7 +1838,7 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 			gfx3d_glVecTest(param);
 		break;
 		default:
-			INFO("Execute unknown 3D command %03X in param=0x%08X\n", cmd, param);
+			LOG("Execute direct Port 3D command %03X in param=0x%08X\n", cmd, param);
 			break;
 	}
 }
