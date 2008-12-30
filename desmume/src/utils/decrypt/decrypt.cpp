@@ -8,6 +8,7 @@
 #include "../../types.h"
 #include "crc.h"
 #include "header.h"
+#include "decrypt.h"
 
 const unsigned char encr_data[] =
 {
@@ -280,7 +281,7 @@ u32 global3_x00, global3_x04;	// RTC value
 u32 global3_rand1;
 u32 global3_rand3;
 
-u32 lookup(u32 *magic, u32 v)
+static u32 lookup(u32 *magic, u32 v)
 {
 	u32 a = (v >> 24) & 0xFF;
 	u32 b = (v >> 16) & 0xFF;
@@ -295,7 +296,7 @@ u32 lookup(u32 *magic, u32 v)
 	return d + (c ^ (b + a));
 }
 
-void encrypt(u32 *magic, u32 *arg1, u32 *arg2)
+static void encrypt(u32 *magic, u32 *arg1, u32 *arg2)
 {
 	u32 a,b,c;
 	a = *arg1;
@@ -310,7 +311,7 @@ void encrypt(u32 *magic, u32 *arg1, u32 *arg2)
 	*arg1 = b ^ magic[17];
 }
 
-void decrypt(u32 *magic, u32 *arg1, u32 *arg2)
+static void decrypt(u32 *magic, u32 *arg1, u32 *arg2)
 {
 	u32 a,b,c;
 	a = *arg1;
@@ -325,17 +326,17 @@ void decrypt(u32 *magic, u32 *arg1, u32 *arg2)
 	*arg2 = a ^ magic[1];
 }
 
-void encrypt(u32 *magic, u64 &cmd)
+static void encrypt(u32 *magic, u64 &cmd)
 {
 	encrypt(magic, (u32 *)&cmd + 1, (u32 *)&cmd + 0);
 }
 
-void decrypt(u32 *magic, u64 &cmd)
+static void decrypt(u32 *magic, u64 &cmd)
 {
 	decrypt(magic, (u32 *)&cmd + 1, (u32 *)&cmd + 0);
 }
 
-void update_hashtable(u32* magic, u8 arg1[8])
+static void update_hashtable(u32* magic, u8 arg1[8])
 {
 	for (int j=0;j<18;j++)
 	{
@@ -366,14 +367,14 @@ void update_hashtable(u32* magic, u8 arg1[8])
 
 u32 arg2[3];
 
-void init2(u32 *magic, u32 a[3])
+static void init2(u32 *magic, u32 a[3])
 {
 	encrypt(magic, a+2, a+1);
 	encrypt(magic, a+1, a+0);
 	update_hashtable(magic, (u8*)a);
 }
 
-void init1(u32 cardheader_gamecode)
+static void init1(u32 cardheader_gamecode)
 {
 	memcpy(card_hash, &encr_data, 4*(1024 + 18));
 	arg2[0] = *(u32 *)&cardheader_gamecode;
@@ -383,7 +384,7 @@ void init1(u32 cardheader_gamecode)
 	init2(card_hash, arg2);
 }
 
-void init0(u32 cardheader_gamecode)
+static void init0(u32 cardheader_gamecode)
 {
 	init1(cardheader_gamecode);
 	encrypt(card_hash, (u32*)&global3_x04, (u32*)&global3_x00);
@@ -399,7 +400,7 @@ void init0(u32 cardheader_gamecode)
 /*
  * decrypt_arm9
  */
-void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
+static void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 {
 	u32 *p = (u32*)data;
 
@@ -442,8 +443,10 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 	bool do_encrypt = (endecrypt_option == 'e') || (endecrypt_option == 'E');
 	unsigned int rounds_offsets = (endecrypt_option == 'E') ? 0x2000 : 0x1600;
 	unsigned int sbox_offsets = (endecrypt_option == 'E') ? 0x2400 : 0x2800;*/
+#if 0
 	unsigned int rounds_offsets = 0x1600;
 	unsigned int sbox_offsets = 0x2800;
+#endif
 
 	// check if ROM is already encrypted
 	if (romType == ROMTYPE_NDSDUMPED)
