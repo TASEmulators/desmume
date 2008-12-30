@@ -2432,7 +2432,7 @@ static void calc_bright_colors() {
 }
 #endif
 
-static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
+static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
@@ -2560,7 +2560,7 @@ static INLINE void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 }
 
 // TODO: capture emulated not fully
-static INLINE void GPU_ligne_DispCapture(u16 l)
+static void GPU_ligne_DispCapture(u16 l)
 {
 	GPU * gpu = MainScreen.gpu;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
