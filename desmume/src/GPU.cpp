@@ -2698,7 +2698,7 @@ static void GPU_ligne_DispCapture(u16 l)
 static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
-#if 0
+#ifndef HAVE_LIBGDKGLEXT_X11_1_0
 	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u16 i16;
 #endif
