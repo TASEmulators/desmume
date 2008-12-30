@@ -1,0 +1,8 @@
+[encoding: UTF-8]
+src/gtk-glade/callbacks.cpp
+src/gtk-glade/gdk_3Demu.cpp
+src/gtk-glade/glade-xml.cpp
+src/gtk-glade/keyval_names.cpp
+src/gtk-glade/main.cpp
+src/gtk-glade/glade/DeSmuMe.glade
+src/gtk-glade/glade/DeSmuMe_Dtools.glade
