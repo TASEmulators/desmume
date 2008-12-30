@@ -756,18 +756,13 @@ char txt[80];
 static void execsqrt() {
 	u32 ret;
 	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0);
-	switch(cnt&1)
-	{
-	case 0: {
-		u32 v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
-		ret = isqrt(v);
-		break;
-		}
-	case 1: {
+
+	if (cnt&1) { 
 		u64 v = T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
 		ret = isqrt(v);
-		break;
-		}
+	} else {
+		u32 v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
+		ret = isqrt(v);
 	}
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, 0);
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, cnt | 0x8000);
@@ -782,20 +777,22 @@ static void execdiv() {
 	u16 cnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x280);
 	s64 num,den;
 	s64 res,mod;
+
 	switch(cnt&3)
 	{
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = (nds.cycles + 36);
-	break;
-	case 3: //gbatek says this is same as mode 1
+		break;
 	case 1:
+	case 3: //gbatek says this is same as mode 1
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = (nds.cycles + 68);
-	break;
+		break;
 	case 2:
+	default:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
 		MMU.divCycles = (nds.cycles + 68);
