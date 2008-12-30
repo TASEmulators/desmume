@@ -559,7 +559,7 @@ std::string mass_replace(const std::string &source, const std::string &victim, c
 #include "ConvertUTF.h"
 namespace UtfConverter
 {
-    std::wstring FromUtf8(const std::string& utf8string)
+    static std::wstring FromUtf8(const std::string& utf8string)
     {
         size_t widesize = utf8string.length();
         if (sizeof(wchar_t) == 2)
@@ -605,7 +605,7 @@ namespace UtfConverter
         return L"";
     }
 
-    std::string ToUtf8(const std::wstring& widestring)
+    static std::string ToUtf8(const std::wstring& widestring)
     {
         size_t widesize = widestring.length();
 
