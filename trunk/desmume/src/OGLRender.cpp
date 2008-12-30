@@ -625,7 +625,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].coord=(format>>30);
 	texcache[i].invSizeX=1.0f/((float)(sizeX*(1<<4)));
 	texcache[i].invSizeY=1.0f/((float)(sizeY*(1<<4)));
-	memcpy_fast(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
+	memcpy (texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
 	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;
