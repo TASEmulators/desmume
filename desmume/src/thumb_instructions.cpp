@@ -24,11 +24,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-//zero 9/8/08 - fixed a bug
-//SIGNED_UNDERFLOW(a, (!cpu->CPSR.bits.C), tmp) 
-//was being called. but SIGNED_UNDERFLOW expects values in bit31. replaced with
-//SIGNED_UNDERFLOW(a, (cpu->CPSR.bits.C?0:0x80000000), tmp) 
-
 #include "bios.h"
 #include "debug.h"
 #include "MMU.h"
@@ -357,8 +352,11 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG()
      cpu->CPSR.bits.N = BIT31(res);
      cpu->CPSR.bits.Z = res == 0;
      
-     cpu->CPSR.bits.C = (!UNSIGNED_UNDERFLOW(a, (u32)(cpu->CPSR.bits.C?0:0x80000000), tmp)) & (!UNSIGNED_OVERFLOW(tmp, b, res));
-     cpu->CPSR.bits.V = SIGNED_UNDERFLOW(a, (u32)(cpu->CPSR.bits.C?0:0x80000000), tmp) | SIGNED_OVERFLOW(tmp, b, res);
+	 //zero 31-dec-2008 - apply normatt's fixed logic from the arm SBC instruction
+	 //although it seemed a bit odd to me and to whomever wrote this for SBC not to work similar to ADC..
+	 //but thats how it is.
+	 cpu->CPSR.bits.C = !UNSIGNED_UNDERFLOW(a, b, res);
+	 cpu->CPSR.bits.V = SIGNED_UNDERFLOW(a, b, res);
      
      return 3;
 }
