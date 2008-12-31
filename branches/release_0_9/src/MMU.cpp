@@ -39,8 +39,13 @@
 #include "gfx3d.h"
 #include "rtc.h"
 #include "GPU_osd.h"
-#include "zero_private.h"
 #include "mc.h"
+
+#ifdef DO_ASSERT_UNALIGNED
+#define ASSERT_UNALIGNED(x) assert(x)
+#else
+#define ASSERT_UNALIGNED(x)
+#endif
 
 static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val);
 static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val);
