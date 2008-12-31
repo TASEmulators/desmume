@@ -1,85 +1,95 @@
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.
- The savestate system is totally changed and incompatible with old savestates.
- General/Core:
- - Convert to c++!
- - Added "high-level" check for DMAs and Timer for minor (really minor) speed up [shash]
- - Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
- - Really minor memory access speed up (mainly added for clarity) [shash]
- - Fixes in IPC FIFO [CrazyMax]
- - Add Geometry FIFO simulation (New SMB and others games not freeze now) [CrazyMax]
- - Add cosine interpolation in the SPU (conditionally compiled) [zeromus,luigi__]
- - Experiment: always one silent SPU core at 44.1khz synched with emu for more precision.
-   The audible core runs with the host, causing music to slow down but not tear or pitch bend. [zeromus]
- - Change savestate code to support loosely bound chunks and more easily other parts of the emu (GE, GPU).
-   The savestate format is changed, but from now on it is in principle more resilient 
-   (though it will continue to break as we tinker with the internals) [zeromus]
- - Remove 16MB of WRAM at 0x01****** from arm9. Mapped to unused instead. What was this? [zeromus]
- - Add RTC implementations (not fully) [CrazyMax]
- - Add a GUI hud system; start adding some HUD elements
- - Add functions for a lid open/close. Holding key (default "Backspace" in Windows port) while game is freeze/non freeze. [CrazyMax]
- - Added a bunch of crazy templates to the cpu and mmu for minor speed boosts [zeromus]
- - Add secure area decryption from ndstool [zeromus]
- - change backupmem autodetection to catch more cases of unusual usage patterns [zeromus]
- - Fixed Thumb LDMIA (fixes ingame Dead'n'Furious) [shash]
- - Fix repeating DMA (fixes NSMB parallax BG) [zeromus]
- Graphics:
- - Added gfx3d module which emulates the whole GE as part of the core emu. [zeromus]
- - Moved the windows/cocoa OGLRender to the emu core and replace ogl_collector. 
-   Now every platform shares the same 3d code. [zeromus]
- - Reorganize 3d code to defer rendering to after 3d vblank. eliminates tearing, and texturing artifacts. [zeromus]
- - Add optional fragment shading pipeline for more precision [luigi__]
- - Many tweaks and improvements to 3d precision [zeromus, CrazyMax, luigi__]
- - Rewrite VRAM mapping control and rendering [CrazyMax, luigi__]
- - Improvements to 2d/3d compositing aiming at better NSMB rendering; still imperfect [zeromus] 
- - Fix in capture display (many games with both 3D screen not blinking now) [CrazyMax]
- - Fix in master brightness (this is fix games with black screens) [CrazyMax] 
- - Added SSE2 version for some matrix routines [CrazyMax]
- - Make matrix 4x4 multiply routines use W-coordinate. [zeromus]
- - Add many matrix and vector functions to matrix.cpp [zeromus]
- - Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
- - Changed how depth initial values are calculated (fixes SM64DS skybox) [shash] 
- - Some fixes in 3D core OGL (fixed textures) [CrazyMax]
- - Added texture caching (speedup 3D core) [CrazyMax]
- - Render shadow volumes [zeromus, luigi__]
- - Toon shading system [luigi__]
- - Carry w=1 from vertex() through pipeline (this will be necessary for software 3d rendering) [zeromus]
- - Fix clear depth (ex. Castlevania now doesnt flip) [lugi__]
- - Make GE matrix mult and load commands clear out unused rows and cols to identity correctly [zeromus]
- - Fix errors in matrix operations regarding projection mode and pos-vector mode [zeromus]
- - Fix error in command unpacking which caused some display lists to totally blow up [zeromus]
- - Convert alpha and material values from [0,31], [0,7] etc ranges to opengl [0,maxint] ranges in a more precise way [zeromus]
- - Add opengl state caching. This is of dubious performance assistance, but it is easy to take out so I am leaving it for now. [zeromus]
- - Add MMU->GPU signal for when vram mappings change, which allows it to assume textures are unchanged unless vram has changed [zeromus]
- - Move lighting model to software instead of using opengl for more precision [zeromus]
- - Fix a bug in texture transformation mode 1 [zeromus]
- - Add 3d layer h-scrolling [zeromus]
- - Removed some serious inefficiencies from sprite window code [zeromus]
- Mac OS X port:
- - Fixed: Filenames and paths with unicode characters now work. [Jeff]
- - Fixed: Load state from file button works again. [Jeff]
- - Save State panel now pauses emulation while the file selection box is open. [Jeff]
- - Fixed: Frozen video output (and/or messed 3d emulation) after loading a state. [Jeff]
- - Added option to load the most recent file upon launching the program. [Jeff]
- - Added French translation (thanks to Pierre Rudloff). [Jeff]
- - Added basic key mapping configuration to application preferences (thanks to Julio GorgŽ). [Jeff]
- - Added keyboard shortcuts for Execute, Pause and Reset command (thanks to Julio GorgŽ). [Jeff]
- - Default key mappings are no longer case sensitive. [Jeff]
- - Added ability to limit speed. [Jeff]
- - Fixed: Video output should work on software-only 3D renderers. [Jeff]
- Windows port:
- - Removed the bug report link with a define, to avoid reports from betas/external builds [shash]
- - Added the version on window bar to recognize versions from screenshots [shash]
- - Changed graphics render core to DirectDraw (work faster) [CrazyMax]
- - Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
- - Tweak optimization flags and change entire source code to use fastcall [zeromus]
- - Add an arm9 cpu load average calculator similar to no$ [zeromus]
- - Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
- - Fix resizing, rotate & aspect ration of main window. Add save window position and parameters [CrazyMax]
- - Rewrite all debug tools (autoupdate works now) [CrazyMax]
- - Add AVI output [zeromus]
- - Remove multithreading from user interface after finding several synchronization issues [zeromus]
- - Rewrite input core & replace config input dialog [CrazyMax]
+ For this release, we have formatted the list into a high level overview of big changes and bad bugs relative to the previous release. Hopefully what you're interested in.
+ This list does not include items which are solely performance boosts, for let us just say that virtually every system has been speeded up.
+  
+ * The savestate system is totally changed and incompatible with old savestates.
+ * The 3d system should be considered rewritten.
+ 
+General/Core:
+ enh: Convert to c++
+ enh: Add functions for a lid open/close. Holding key (default "Backspace" in Windows port) while game is freeze/non freeze. [CrazyMax]
+ enh: Add secure area decryption from ndstool [zeromus]
+ enh: Change savestate code to support loosely bound chunks and more easily other parts of the emu (GE, GPU).
+      The savestate format is changed, but from now on it is in principle more resilient 
+      (though it will continue to break as we tinker with the internals) [zeromus]
+ enh: Added SSE2 optimizations for matrices. Since we now make an SSE2 build, more optimizations can be made. [CrazyMax]
+ enh: Add a preliminary GUI hud system [CrazyMax,zeromus]
+
+CPU/MMU:
+ bug: Many fixes in IPC and GE FIFOs. Fixes freezes in NSMB, dsracing, and others. [CrazyMax,luigi__,shash]
+ bug: Fix ARM instructions SBC and RSC (likewise SBC in thumb) [normatt]
+ bug: Fixed Thumb LDMIA (fixes ingame Dead'n'Furious) [shash]
+ bug: Fix repeating DMA (fixes NSMB parallax BG) [zeromus]
+ bug: Proper handling for unaligned CPU accesses [luigi__]
+ bug: Proper handling for undefined instruction exceptions [Salva Peiró]
+ enh: Remove 16MB of WRAM at 0x01****** from arm9. Mapped to unused instead. Nobody knows what this was. [zeromus]
+ enh: Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
+
+Hardware: 
+ bug: Newer and better sqrt and div emulation; makes SM64DS playable [luigi__,shash,zeromus]
+ bug: Add preliminary RTC implementations [CrazyMax]
+ enh: Add cosine interpolation in the SPU (conditionally compiled) [zeromus,luigi__]
+ enh: Experimental: always one silent non-mixing SPU core at 44.1khz synched with emu, for more precision.
+      The audible core runs with the host, causing music to slow down but not tear or pitch bend. [zeromus]
+
+Graphics:
+ - Overhaul 3d:
+  . Move entire GE to core emu.
+  . Move OpenGL renderer to emu core for optional use by platforms, removing ogl_collector. Now every platform shares the same 3d code.
+  . Reorganize 3d code to defer rendering to after 3d vblank. Eliminates tearing, and texturing artifacts. [zeromus]
+  . Add optional fragment shading pipeline (more precision) [luigi__]
+  . 3d compositing integrated into GPU engine (more precision and speed in cases where no compositing needed) [luigi__]
+  . Move lighting model to software instead of using opengl's fixed function model [zeromus]
+  . Render shadow volumes; toon shading and highlight table [zeromus, luigi__]
+  . Added texture caching! big speed up. [CrazyMax]
+ 
+ bug: Many assorted tweaks and improvements to 3d and 2d precision [zeromus,CrazyMax,luigi__]
+ bug: Fixes to GE: command unpacking, projection and pos-vector mode matrix handling, mult and load commands [zeromus]
+ bug: Fix a bug in texture transformation mode 1 [zeromus]
+ bug: Fixed GPU rendering bugs in sprites and BG [CrazyMax]
+ bug: Fixes to texture conversion [CrazyMax,zeromus]
+ bug: Fixes in capture display (no blinking in many games with dual 3D) [CrazyMax]
+ bug: Fixes in master brightness (this fixes some games with black screens) [CrazyMax] 
+ bug: Fixes in screen, backdrop, and sprite blending [luigi__]
+ bug: Changed clear depths and how depth initial values are calculated (fixes SM64DS skybox, Castlevania) [shash,lugi__] 
+ bug: Add 3d layer h-scrolling [zeromus]
+ bug: Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
+ bug: Rewrite VRAM mapping control and rendering (more accurate) [CrazyMax,luigi__]
+ bug: Fix some errors in rendering 512 tall BG [zeromus]
+ bug: convert colors to opengl better to prevent alpha=31 polys from being ever so slightly transparent [zeromus]
+ enh: Add MMU->GPU signal for when vram mappings change to function as a texture cache invalidate signal [zeromus]
+ enh: Make matrix 4x4 multiply routines use W-coordinate; carry w coord through pipeline [zeromus]
+  
+Mac OS X port:
+ bug: Fixed: Filenames and paths with unicode characters now work. [Jeff]
+ bug: Fixed: Load state from file button works again. [Jeff]
+ enh: Save State panel now pauses emulation while the file selection box is open. [Jeff]
+ bug: Fixed: Frozen video output (and/or messed 3d emulation) after loading a state. [Jeff]
+ bug: Added option to load the most recent file upon launching the program. [Jeff]
+ enh: Added French translation (thanks to Pierre Rudloff). [Jeff]
+ enh: Added basic key mapping configuration to application preferences (thanks to Julio GorgŽ). [Jeff]
+ enh: Added keyboard shortcuts for Execute, Pause and Reset command (thanks to Julio GorgŽ). [Jeff]
+ enh: Default key mappings are no longer case sensitive. [Jeff]
+ enh: Added ability to limit speed. [Jeff]
+ enh: Fixed: Video output should work on software-only 3D renderers. [Jeff]
+ 
+Windows port:
+ bug: Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
+ bug: Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
+ bug: Fix resizing, rotate & aspect ration of main window. [CrazyMax,_zeromus]
+ bug: Remove multithreading from user interface after finding several synchronization issues [zeromus]
+ enh: recent roms menu [luigi_]
+ enh: Changed graphics render core to DirectDraw (work faster) [CrazyMax]
+ enh: Add an arm9 cpu load average calculator similar to no$. but I dont think it works right. [zeromus]
+ enh: Rewrite all debug tools (autoupdate works now) [CrazyMax]
+ enh: Rewrite input core & replace config input dialog [CrazyMax]
+ enh: Add AVI output [zeromus]
+ enh: Add pause toggle and frame advance hotkeys [adelikat]
+ enh: Add frame counter display and hud messages framework [adelikat]
+ enh: Main window remembers position, size, and a few other emu preferences [adelikat]
+ enh: Removed directx sdk dependency for easier building. [zeromus]
+ enh: Savestate doesnt unpause emu if it is already paused [adelikat]
 
 0.7.3 -> 0.8
  Cocoa:
