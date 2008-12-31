@@ -1100,7 +1100,11 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	TILEENTRY tileentry;
 
 
-	map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp&31) * 64);
+	//zero 30-dec-2008 - if you mask by 31 here, you lose the ability to correctly map the bottom half of 512-tall BG.
+	//the masking to keep it to a reasonable value was already done when tmp was calculated
+	//map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp&31) * 64);
+	map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp) * 64);
+	
 	if (!map) return;
 	
 	if(tmp>31) 
@@ -1251,6 +1255,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	}
 
 	yoff = ((YBG&7)<<3);
+
 	xfin = 8 - (xoff&7);
 	for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
 	{
