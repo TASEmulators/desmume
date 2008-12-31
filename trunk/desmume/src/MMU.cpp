@@ -2228,35 +2228,67 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 	if((adr>>24)==4)
 	{
-		if( (adr >= 0x04000330) && (adr < 0x04000340) )	//edge color table
-		{
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-			return;
-		}
 
-		if( (adr >= 0x04000360) && (adr < 0x04000380) )	//fog table
+		// MightyMax: no need to do several ifs, when only one can happen
+		// switch/case instead
+		// both comparison >=,< per if can be replaced by one bit comparison since
+		// they are 2^4 aligned and 2^4n wide
+		// this looks ugly but should reduce load on register writes, they are done as 
+		// lookups by the compiler
+		switch (adr >> 4)
 		{
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-			return;
-		}
-
-		if( (adr >= 0x04000380) && (adr <= 0x40003BC) )	//toon table
-		{
-			((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(0x380)]);
-			return;
-		}
-
-		if ( (adr >= 0x04000400) && (adr < 0x04000440) )
-		{
-			gfx3d_sendCommandToFIFO(val);
-			return;
-		}
-
-		if ( (adr >= 0x04000440) && (adr < 0x04000600) )
-		{
-			gfx3d_sendCommand(adr, val);
-			return;
+			case 0x400033:		//edge color table
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
+				return;
+			case 0x400036:		//fog table
+			case 0x400037:
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
+				return;
+			case 0x400038:
+			case 0x400039:
+			case 0x40003A:
+			case 0x40003B:		//toon table
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
+				gfx3d_UpdateToonTable(&((MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(0x380)]);
+				return;
+			case 0x400040:
+			case 0x400041:
+			case 0x400042:
+			case 0x400043:		// FIFO Commands
+				gfx3d_sendCommandToFIFO(val);
+				return;
+			case 0x400044:
+			case 0x400045:
+			case 0x400046:
+			case 0x400047:
+			case 0x400048:
+			case 0x400049:
+			case 0x40004A:
+			case 0x40004B:
+			case 0x40004C:
+			case 0x40004D:
+			case 0x40004E:
+			case 0x40004F:
+			case 0x400050:
+			case 0x400051:
+			case 0x400052:
+			case 0x400053:
+			case 0x400054:
+			case 0x400055:
+			case 0x400056:
+			case 0x400057:
+			case 0x400058:
+			case 0x400059:
+			case 0x40005A:
+			case 0x40005B:
+			case 0x40005C:
+			case 0x40005D:
+			case 0x40005E:
+			case 0x40005F:		// Individual Commands
+				gfx3d_sendCommand(adr, val);
+				return;
+			default:
+				break;
 		}
 
 		switch(adr)
