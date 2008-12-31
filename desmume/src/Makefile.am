@@ -37,7 +37,7 @@ libdesmume_a_SOURCES = \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
         thumb_instructions.cpp thumb_instructions.h types.h \
-	zero_private.h shaders.h \
+	shaders.h \
 	movie.cpp movie.h \
 	PACKED.h PACKED_END.h \
 	utils/ConvertUTF.c utils/ConvertUTF.h utils/guid.cpp utils/guid.h \
