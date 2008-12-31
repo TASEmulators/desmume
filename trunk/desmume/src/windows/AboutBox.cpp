@@ -24,7 +24,7 @@
 #include "AboutBox.h"
 #include "resource.h"
 
-#define TEAM	31
+#define TEAM	32
 const char	*team[TEAM] = { "Original author",
 							"---------------",
 							"yopyop",
@@ -44,6 +44,7 @@ const char	*team[TEAM] = { "Original author",
 							"Max Tabachenko (CrazyMax/mtabachenko)",
 							"zeromus",
 							"Luigi__",
+							"adelikat",
 							"",
 							"Contributors",
 							"------------",
