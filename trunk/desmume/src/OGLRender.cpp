@@ -217,12 +217,12 @@ static void _xglDisable(GLenum cap) {
 
 //================================================= Textures
 #define MAX_TEXTURE 500
-struct TextureCache
+#ifdef SSE2
+typedef ALIGN(16) struct
+#else
+typedef ALIGN(8) struct
+#endif
 {
-	TextureCache()
-		: suspectedInvalid(true)
-	{}
-
 	GLenum				id;
 	unsigned int		frm;
 	unsigned int		mode;
@@ -233,16 +233,14 @@ struct TextureCache
 	int					coord;
 	float				invSizeX;
 	float				invSizeY;
-#ifdef SSE2
-	ALIGN(16) unsigned char		texture[128*1024]; // 128Kb texture slot
-#else
 	unsigned char		texture[128*1024]; // 128Kb texture slot
-#endif
+	u8					palette[256*2];
+	u16					palSize;
 
 	//set if this texture is suspected be invalid due to a vram reconfigure
 	bool				suspectedInvalid;
 
-} ;
+}  TextureCache;
 
 TextureCache	texcache[MAX_TEXTURE+1];
 u32				texcache_count;
@@ -366,9 +364,13 @@ static void OGLReset()
 	texcache_start=0;
 	texcache_stop=MAX_TEXTURE<<1;
 
+	for(int i=0;i<MAX_TEXTURE+1;i++)
+		texcache[i].suspectedInvalid = true;
+
 	//clear the framebuffers
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
+
 }
 
 static char OGLInit(void)
@@ -572,6 +574,31 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 	txt_slot_current=(format>>14)&0x03;
 	adr=(unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
+
+	switch (textureMode)
+	{
+		case 1: //a3i5
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+		break;
+		case 2: //i2
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<3));
+		break;
+		case 3: //i4
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+		break;
+		case 4: //i8
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+		break;
+		case 5: //4x4
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+		break;
+		case 6: //a5i3
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+		break;
+		case 7: //16bpp
+			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+		break;
+	}
 	
 	i=texcache_start;
 	
@@ -580,11 +607,31 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	{
 		if (texcache_stop==i) break;
 		if (texcache[i].frm==0) break;
-		if ((texcache[i].frm==format)&&(texcache[i].pal==texpal))
+		if ( (texcache[i].frm == format) && (texcache[i].pal == texpal) )
 		{
-			//TODO - we need to compare the palette also.
-			//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
-			if (!texcache[i].suspectedInvalid || !memcmp(adr,texcache[i].texture,std::min((size_t)imageSize,sizeof(texcache[i].texture))))
+
+			if ((texcache[i].mode == 5) ||
+				(texcache[i].mode == 7) ||
+				!memcmp(texcache[i].palette, pal, texcache[i].palSize) )
+			{
+				//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
+				if (!memcmp(adr, texcache[i].texture, std::min((size_t)imageSize,sizeof(texcache[i].texture))) )
+				{
+					texcache[i].suspectedInvalid = false;
+					texcache_count=i;
+					if(lastTexture == -1 || (int)i != lastTexture)
+					{
+						lastTexture = i;
+						glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+						glMatrixMode (GL_TEXTURE);
+						glLoadIdentity ();
+						glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
+					}
+					return;
+				}
+			}
+#if 0
+			if (!texcache[i].suspectedInvalid)
 			{
 				texcache[i].suspectedInvalid = false;
 				texcache_count=i;
@@ -598,6 +645,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 				}
 				return;
 			}
+#endif
 		}
 		i++;
 		if (i>MAX_TEXTURE) 
@@ -625,7 +673,14 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].coord=(format>>30);
 	texcache[i].invSizeX=1.0f/((float)(sizeX*(1<<4)));
 	texcache[i].invSizeY=1.0f/((float)(sizeY*(1<<4)));
-	memcpy (texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
+	memcpy(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
+	texcache[i].palSize = 0;
+	if ( (textureMode != 5) || (textureMode != 7) )
+	{
+		texcache[i].palSize = 256*2;
+		memcpy(texcache[i].palette, pal, texcache[i].palSize);
+	}
+
 	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;
@@ -641,228 +696,222 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
 	txt_slot_size=(txt_slot_current_size=0x020000-((format & 0x3FFF)<<3));
 
-		switch (texcache[i].mode)
+	switch (texcache[i].mode)
+	{
+		case 1: //a3i5
 		{
-			case 1: //a3i5
+			for(x = 0; x < imageSize; x++, dst += 4)
 			{
-				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-				for(x = 0; x < imageSize; x++, dst += 4)
+				u16 c = pal[adr[x]&31];
+				u8 alpha = adr[x]>>5;
+				*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
+				CHECKSLOT;
+			}
+			break;
+		}
+		case 2: //i2
+		{
+			for(x = 0; x < imageSize>>2; ++x)
+			{
+				unsigned short c = pal[(adr[x])&0x3];
+				dst[0] = ((c & 0x1F)<<3);
+				dst[1] = ((c & 0x3E0)>>2);
+				dst[2] = ((c & 0x7C00)>>7);
+				dst[3] = ((adr[x]&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst += 4;
+
+				c = pal[((adr[x])>>2)&0x3];
+				dst[0] = ((c & 0x1F)<<3);
+				dst[1] = ((c & 0x3E0)>>2);
+				dst[2] = ((c & 0x7C00)>>7);
+				dst[3] = (((adr[x]>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst += 4;
+
+				c = pal[((adr[x])>>4)&0x3];
+				dst[0] = ((c & 0x1F)<<3);
+				dst[1] = ((c & 0x3E0)>>2);
+				dst[2] = ((c & 0x7C00)>>7);
+				dst[3] = (((adr[x]>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst += 4;
+
+				c = pal[(adr[x])>>6];
+				dst[0] = ((c & 0x1F)<<3);
+				dst[1] = ((c & 0x3E0)>>2);
+				dst[2] = ((c & 0x7C00)>>7);
+				dst[3] = (((adr[x]>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst += 4;
+				CHECKSLOT;
+			}
+			break;
+		}
+		case 3: //i4
+			{
+				for(x = 0; x < (imageSize>>1); x++)
 				{
-					u16 c = pal[adr[x]&31];
-					u8 alpha = adr[x]>>5;
-					*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
+					unsigned short c = pal[adr[x]&0xF];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = (((adr[x])&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst += 4;
+
+					c = pal[((adr[x])>>4)];
+					dst[0] = ((c & 0x1F)<<3);
+					dst[1] = ((c & 0x3E0)>>2);
+					dst[2] = ((c & 0x7C00)>>7);
+					dst[3] = (((adr[x]>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst += 4;
 					CHECKSLOT;
 				}
 				break;
 			}
-			case 2: //i2
+		case 4: //i8
 			{
-				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<3));
-				for(x = 0; x < imageSize>>2; ++x)
+				for(x = 0; x < imageSize; ++x)
 				{
-					unsigned short c = pal[(adr[x])&0x3];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = ((adr[x]&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-					dst += 4;
-
-					c = pal[((adr[x])>>2)&0x3];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((adr[x]>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-					dst += 4;
-
-					c = pal[((adr[x])>>4)&0x3];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((adr[x]>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-					dst += 4;
-
-					c = pal[(adr[x])>>6];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((adr[x]>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-					dst += 4;
+					u16 c = pal[adr[x]];
+					*dwdst++ = RGB15TO32(c,(adr[x] == 0) ? palZeroTransparent : 255);
 					CHECKSLOT;
 				}
-				break;
 			}
-			case 3: //i4
-				{
-					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-					for(x = 0; x < (imageSize>>1); x++)
-					{
-						unsigned short c = pal[adr[x]&0xF];
-						dst[0] = ((c & 0x1F)<<3);
-						dst[1] = ((c & 0x3E0)>>2);
-						dst[2] = ((c & 0x7C00)>>7);
-						dst[3] = (((adr[x])&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-						dst += 4;
+			break;
+		case 5: //4x4
+		{
+			unsigned short * slot1;
+			unsigned int * map = (unsigned int *)adr;
+			unsigned int d = 0;
+			if ( (texcache[i].frm & 0xc000) == 0x8000)
+				// texel are in slot 2
+				slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
+			else 
+				slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
 
-						c = pal[((adr[x])>>4)];
-						dst[0] = ((c & 0x1F)<<3);
-						dst[1] = ((c & 0x3E0)>>2);
-						dst[2] = ((c & 0x7C00)>>7);
-						dst[3] = (((adr[x]>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-						dst += 4;
-						CHECKSLOT;
-					}
-					break;
-				}
-			case 4: //i8
-				{
-					pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-					for(x = 0; x < imageSize; ++x)
-					{
-						u16 c = pal[adr[x]];
-						*dwdst++ = RGB15TO32(c,(adr[x] == 0) ? palZeroTransparent : 255);
-						CHECKSLOT;
-					}
-				}
-				break;
-			case 5: //4x4
+			bool dead = false;
+			u16 yTmpSize = (texcache[i].sizeY>>2);
+			u16 xTmpSize = (texcache[i].sizeX>>2);
+
+			for (y = 0; y < yTmpSize; y ++)
 			{
-				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-				unsigned short * slot1;
-				unsigned int * map = (unsigned int *)adr;
-				unsigned int d = 0;
-				if ( (texcache[i].frm & 0xc000) == 0x8000)
-					// texel are in slot 2
-					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
-				else 
-					slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
+				u32 tmpPos[4]={(y<<2)*texcache[i].sizeX,((y<<2)+1)*texcache[i].sizeX,
+											((y<<2)+2)*texcache[i].sizeX,((y<<2)+3)*texcache[i].sizeX};
+				for (x = 0; x < xTmpSize; x ++, d++)
+					{
+					u32 currBlock	= map[d], sy;
+					u16 pal1		= slot1[d];
+					u16 pal1offset	= (pal1 & 0x3FFF)<<1;
+					u8  mode		= pal1>>14;
+					u32 tmp_col[4];
 
-				bool dead = false;
+					tmp_col[0]=RGB16TO32(pal[pal1offset],255);
+					tmp_col[1]=RGB16TO32(pal[pal1offset+1],255);
 
-				for (y = 0; y < (texcache[i].sizeY>>2); y ++)
-				{
-					u32 tmpPos[4]={(y<<2)*texcache[i].sizeX,((y<<2)+1)*texcache[i].sizeX,
-												((y<<2)+2)*texcache[i].sizeX,((y<<2)+3)*texcache[i].sizeX};
-					for (x = 0; x < (texcache[i].sizeX>>2); x ++, d++)
+					switch (mode) 
+					{
+						case 0:
+							tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
+							tmp_col[3]=RGB16TO32(0x7FFF,0);
+							break;
+						case 1:
+							tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
+											(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
+												(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
+													(0xff<<24);
+							tmp_col[3]=RGB16TO32(0x7FFF,0);
+							break;
+						case 2:
+							tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
+							tmp_col[3]=RGB16TO32(pal[pal1offset+3],255);
+							break;
+						case 3: 
 						{
-						u32 currBlock	= map[d], sy;
-						u16 pal1		= slot1[d];
-						u16 pal1offset	= (pal1 & 0x3FFF)<<1;
-						u8  mode		= pal1>>14;
-						u32 tmp_col[4];
+							u32 red1, red2;
+							u32 green1, green2;
+							u32 blue1, blue2;
+							u16 tmp1, tmp2;
 
-						tmp_col[0]=RGB16TO32(pal[pal1offset],255);
-						tmp_col[1]=RGB16TO32(pal[pal1offset+1],255);
+							red1=tmp_col[0]&0xff;
+							green1=(tmp_col[0]>>8)&0xff;
+							blue1=(tmp_col[0]>>16)&0xff;
+							red2=tmp_col[1]&0xff;
+							green2=(tmp_col[1]>>8)&0xff;
+							blue2=(tmp_col[1]>>16)&0xff;
 
-						switch (mode) 
+							tmp1=((red1*5+red2*3)>>6)|
+										(((green1*5+green2*3)>>6)<<5)|
+											(((blue1*5+blue2*3)>>6)<<10);
+							tmp2=((red2*5+red1*3)>>6)|
+										(((green2*5+green1*3)>>6)<<5)|
+										  (((blue2*5+blue1*3)>>6)<<10);
+
+							tmp_col[2]=RGB16TO32(tmp1,255);
+							tmp_col[3]=RGB16TO32(tmp2,255);
+							break;
+						}
+					  }
+						for (sy = 0; sy < 4; sy++)
 						{
-							case 0:
-								tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
-								tmp_col[3]=RGB16TO32(0x7FFF,0);
-								break;
-							case 1:
-								tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
-												(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
-													(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
-														(0xff<<24);
-								tmp_col[3]=RGB16TO32(0x7FFF,0);
-								break;
-							case 2:
-								tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
-								tmp_col[3]=RGB16TO32(pal[pal1offset+3],255);
-								break;
-							case 3: 
-							{
-								u32 red1, red2;
-								u32 green1, green2;
-								u32 blue1, blue2;
-								u16 tmp1, tmp2;
+							// Texture offset
+							u32 currentPos = (x<<2) + tmpPos[sy];
+							u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
 
-								red1=tmp_col[0]&0xff;
-								green1=(tmp_col[0]>>8)&0xff;
-								blue1=(tmp_col[0]>>16)&0xff;
-								red2=tmp_col[1]&0xff;
-								green2=(tmp_col[1]>>8)&0xff;
-								blue2=(tmp_col[1]>>16)&0xff;
+							dwdst[currentPos] = tmp_col[currRow&3];
+							dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
+							dwdst[currentPos+2] = tmp_col[(currRow>>4)&3];
+							dwdst[currentPos+3] = tmp_col[(currRow>>6)&3];
 
-								tmp1=((red1*5+red2*3)>>6)|
-											(((green1*5+green2*3)>>6)<<5)|
-												(((blue1*5+blue2*3)>>6)<<10);
-								tmp2=((red2*5+red1*3)>>6)|
-											(((green2*5+green1*3)>>6)<<5)|
-											  (((blue2*5+blue1*3)>>6)<<10);
-
-								tmp_col[2]=RGB16TO32(tmp1,255);
-								tmp_col[3]=RGB16TO32(tmp2,255);
-								break;
+							if(dead) {
+								memset(dwdst, 0, sizeof(dwdst[0]) * 4);
 							}
-						  }
-							for (sy = 0; sy < 4; sy++)
+
+							txt_slot_current_size-=4;;
+							if (txt_slot_current_size<=0)
 							{
-								// Texture offset
-								u32 currentPos = (x<<2) + tmpPos[sy];
-								u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
-
-								dwdst[currentPos] = tmp_col[currRow&3];
-								dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
-								dwdst[currentPos+2] = tmp_col[(currRow>>4)&3];
-								dwdst[currentPos+3] = tmp_col[(currRow>>6)&3];
-
-								if(dead) {
-									memset(dwdst, 0, sizeof(dwdst[0]) * 4);
-								}
-
-								txt_slot_current_size-=4;;
-								if (txt_slot_current_size<=0)
-								{
-									//dead = true;
-									txt_slot_current++;
-									map=(unsigned int*)ARM9Mem.textureSlotAddr[txt_slot_current];
-									map-=txt_slot_size>>2; //this is weird, but necessary since we use map[d] above
-									txt_slot_size=txt_slot_current_size=0x020000;
-								}
+								//dead = true;
+								txt_slot_current++;
+								map=(unsigned int*)ARM9Mem.textureSlotAddr[txt_slot_current];
+								map-=txt_slot_size>>2; //this is weird, but necessary since we use map[d] above
+								txt_slot_size=txt_slot_current_size=0x020000;
 							}
 						}
 					}
-
-
-				break;
-			}
-			case 6: //a5i3
-			{
-				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-				for(x = 0; x < imageSize; x++)
-				{
-					u16 c = pal[adr[x]&0x07];
-					u8 alpha = (adr[x]>>3);
-					*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
-					CHECKSLOT;
 				}
-				break;
-			}
-			case 7: //16bpp
+
+
+			break;
+		}
+		case 6: //a5i3
+		{
+			for(x = 0; x < imageSize; x++)
 			{
-				unsigned short * map = ((unsigned short *)adr);
-				pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
+				u16 c = pal[adr[x]&0x07];
+				u8 alpha = (adr[x]>>3);
+				*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
+				CHECKSLOT;
+			}
+			break;
+		}
+		case 7: //16bpp
+		{
+			unsigned short * map = ((unsigned short *)adr);
+			
+			for(x = 0; x < imageSize; ++x)
+			{
+				u16 c = map[x];
+				int alpha = ((c&0x8000)?255:0);
+				*dwdst++ = RGB15TO32(c&0x7FFF,alpha);
 				
-				for(x = 0; x < imageSize; ++x)
+				txt_slot_current_size-=2;;
+				if (txt_slot_current_size<=0)
 				{
-					u16 c = map[x];
-					int alpha = ((c&0x8000)?255:0);
-					*dwdst++ = RGB15TO32(c&0x7FFF,alpha);
-					
-					txt_slot_current_size-=2;;
-					if (txt_slot_current_size<=0)
-					{
-						txt_slot_current++;
-						map=(unsigned short *)ARM9Mem.textureSlotAddr[txt_slot_current];
-						map-=txt_slot_size>>1;
-						txt_slot_size=txt_slot_current_size=0x020000;
-					}
+					txt_slot_current++;
+					map=(unsigned short *)ARM9Mem.textureSlotAddr[txt_slot_current];
+					map-=txt_slot_size>>1;
+					txt_slot_size=txt_slot_current_size=0x020000;
 				}
-				break;
 			}
+			break;
+		}
 	}
-
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
 						texcache[i].sizeX, texcache[i].sizeY, 0, 
