@@ -1102,14 +1102,16 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 	//zero 30-dec-2008 - if you mask by 31 here, you lose the ability to correctly map the bottom half of 512-tall BG.
 	//the masking to keep it to a reasonable value was already done when tmp was calculated
-	//map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp&31) * 64);
-	map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp) * 64);
-	
-	if (!map) return;
-	
-	if(tmp>31) 
-		map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
+	// this is broke some games
+	//map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num] + (tmp) * 64);
 
+	u32 tmp_map = gpu->BG_map_ram[num] + (tmp&31) * 64;
+	if(tmp>31) 
+		tmp_map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
+
+	map = (u8 *)MMU_RenderMapToLCD(tmp_map);
+	if(!map) return; 	// no map
+	
 	tile = (u8*) MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
 	if(!tile) return; 	// no tiles
 
