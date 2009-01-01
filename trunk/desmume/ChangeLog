@@ -2,7 +2,8 @@
 Graphics:
  bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
  bug: 3d compositing integrated into GPU engine (more precision and speed in cases where no compositing needed) [luigi__]
-
+ bug: Add optional fragment shading pipeline (more precision) [luigi__]
+ 
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.
  For this release, we have formatted the list into a high level overview of big changes and bad bugs relative to the previous release. Hopefully what you're interested in.
