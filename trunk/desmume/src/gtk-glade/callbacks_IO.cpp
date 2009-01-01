@@ -21,6 +21,7 @@
  */
 
 #include "callbacks_IO.h"
+#include "keyval_names.h"
 
 static u16 Cur_Keypad = 0;
 float ScreenCoeff_Size[2]={1.0,1.0};
