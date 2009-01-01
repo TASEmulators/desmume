@@ -29,15 +29,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <libgen.h>
 #include <unistd.h>
 
 // Localization
 #include <libintl.h>
 #define _(String) gettext (String)
 
-//#include <SDL/SDL.h>
-// more portable
 #include "SDL.h"
 
 // fix gtk-glade on windows with no configure
@@ -130,9 +127,5 @@ extern float ScreenRotate;
 void black_screen ();
 void edit_controls();
 void init_joy_labels();
-
-/* keyvalnames.c   -see <gdk/gdkkeysyms.h>- */
-const char * KEYNAME(int k);
-void init_keyvals();
 
 #endif /* __GLOBALS_H__ */
