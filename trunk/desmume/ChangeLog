@@ -1,3 +1,8 @@
+0.9+
+Graphics:
+ bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
+ bug: 3d compositing integrated into GPU engine (more precision and speed in cases where no compositing needed) [luigi__]
+
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.
  For this release, we have formatted the list into a high level overview of big changes and bad bugs relative to the previous release. Hopefully what you're interested in.
@@ -39,7 +44,6 @@ Graphics:
   . Move OpenGL renderer to emu core for optional use by platforms, removing ogl_collector. Now every platform shares the same 3d code.
   . Reorganize 3d code to defer rendering to after 3d vblank. Eliminates tearing, and texturing artifacts. [zeromus]
   . Add optional fragment shading pipeline (more precision) [luigi__]
-  . 3d compositing integrated into GPU engine (more precision and speed in cases where no compositing needed) [luigi__]
   . Move lighting model to software instead of using opengl's fixed function model [zeromus]
   . Render shadow volumes; toon shading and highlight table [zeromus, luigi__]
   . Added texture caching! big speed up. [CrazyMax]
@@ -56,7 +60,7 @@ Graphics:
  bug: Add 3d layer h-scrolling [zeromus]
  bug: Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
  bug: Rewrite VRAM mapping control and rendering (more accurate) [CrazyMax,luigi__]
- bug: Fix some errors in rendering 512 tall BG [zeromus]
+
  bug: convert colors to opengl better to prevent alpha=31 polys from being ever so slightly transparent [zeromus]
  enh: Add MMU->GPU signal for when vram mappings change to function as a texture cache invalidate signal [zeromus]
  enh: Make matrix 4x4 multiply routines use W-coordinate; carry w coord through pipeline [zeromus]
