@@ -218,9 +218,9 @@ static void _xglDisable(GLenum cap) {
 //================================================= Textures
 #define MAX_TEXTURE 500
 #ifdef SSE2
-typedef ALIGN(16) struct
+struct ALIGN(16) TextureCache
 #else
-typedef ALIGN(8) struct
+struct ALIGN(8) TextureCache
 #endif
 {
 	GLenum				id;
@@ -240,7 +240,7 @@ typedef ALIGN(8) struct
 	//set if this texture is suspected be invalid due to a vram reconfigure
 	bool				suspectedInvalid;
 
-}  TextureCache;
+};
 
 TextureCache	texcache[MAX_TEXTURE+1];
 u32				texcache_count;
