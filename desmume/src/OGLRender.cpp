@@ -364,7 +364,7 @@ static void OGLReset()
 	texcache_start=0;
 	texcache_stop=MAX_TEXTURE<<1;
 
-	for(int i=0;i<MAX_TEXTURE+1;i++)
+	for(i=0;i<MAX_TEXTURE+1;i++)
 		texcache[i].suspectedInvalid = true;
 
 	//clear the framebuffers
