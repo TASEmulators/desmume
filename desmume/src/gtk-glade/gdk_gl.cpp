@@ -1,4 +1,4 @@
-/* gdk_gl.c - this file is part of DeSmuME
+/* gdk_gl.cpp - this file is part of DeSmuME
  *
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net

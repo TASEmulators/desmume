@@ -103,7 +103,7 @@ glade_xml_signal_autoconnect_StringObject (GladeXML *self);
 
 extern int Frameskip;
 
-/* main.c */
+/* main.cpp */
 extern GtkWidget * pWindow;
 extern GtkWidget * pDrawingArea, * pDrawingArea2;
 extern GladeXML  * xml, * xml_tools;
@@ -114,13 +114,13 @@ void register_Tool(VoidFunPtr fun);
 void unregister_Tool(VoidFunPtr fun);
 gchar * get_ui_file (const char *filename);
 
-/* callbacks.c */
+/* callbacks.cpp */
 void enable_rom_features();
 void resize (float Size1, float Size2);
 void rotate(float angle);
 extern gboolean ScreenInvert;
 
-/* callbacks_IO.c */
+/* callbacks_IO.cpp */
 extern float ScreenCoeff_Size[2];
 extern float ScreenRotate;
 

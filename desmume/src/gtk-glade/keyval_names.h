@@ -1,4 +1,4 @@
-/* keyval_names.c - this file is part of DeSmuME
+/* keyval_names.h - this file is part of DeSmuME
  *
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net
