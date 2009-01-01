@@ -38,7 +38,6 @@ Graphics:
   . Move entire GE to core emu.
   . Move OpenGL renderer to emu core for optional use by platforms, removing ogl_collector. Now every platform shares the same 3d code.
   . Reorganize 3d code to defer rendering to after 3d vblank. Eliminates tearing, and texturing artifacts. [zeromus]
-  . Add optional fragment shading pipeline (more precision) [luigi__]
   . Move lighting model to software instead of using opengl's fixed function model [zeromus]
   . Render shadow volumes; toon shading and highlight table [zeromus, luigi__]
   . Added texture caching! big speed up. [CrazyMax]

@@ -426,7 +426,9 @@ static char OGLInit(void)
 #endif
 
 	/* Create the shaders */
-	createShaders();
+	//as a hack for 0.9 release, we're disabling shaders.
+	hasShaders = false;
+	//createShaders();
 	
 	/* Assign the texture units : 0 for main textures, 1 for toon table */
 	/* Also init the locations for some variables in the shaders */
