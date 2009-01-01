@@ -307,17 +307,20 @@ static GLuint texBlendLoc;
 
 static void createShaders()
 {
+	const char *extString;
+
 	hasShaders = true;
 
-	if (glCreateShader == NULL ||  //use ==NULL instead of !func to avoid always true warnings for some systems
-		glShaderSource == NULL ||
-		glCompileShader == NULL ||
-		glCreateProgram == NULL ||
-		glAttachShader == NULL ||
-		glLinkProgram == NULL ||
-		glUseProgram == NULL ||
-		glGetShaderInfoLog == NULL)
-		NOSHADERS(1);
+	extString = (const char*)glGetString(GL_EXTENSIONS);
+	if ((strstr(extString, "GL_ARB_shading_language_100") == NULL) ||
+		(strstr(extString, "GL_ARB_shader_objects") == NULL) ||
+		(strstr(extString, "GL_ARB_vertex_shader") == NULL) ||
+		(strstr(extString, "GL_ARB_fragment_shader") == NULL))
+	{
+		INFO("Your system doesn't support OpenGL shaders. Using fixed pipeline.\n");
+		hasShaders = false;
+		return;
+	}
 
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	if(!vertexShaderID)
@@ -426,9 +429,7 @@ static char OGLInit(void)
 #endif
 
 	/* Create the shaders */
-	//as a hack for 0.9 release, we're disabling shaders.
-	hasShaders = false;
-	//createShaders();
+	createShaders();
 	
 	/* Assign the texture units : 0 for main textures, 1 for toon table */
 	/* Also init the locations for some variables in the shaders */
