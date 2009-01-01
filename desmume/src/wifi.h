@@ -40,6 +40,7 @@
 #define BASEPORT        7000    		/* channel 1: 7000 ... channel 13: 7012 */
 										/* FIXME: make it configureable */
 
+#define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
 #define     REG_WIFI_WEP        		0x006
 #define     REG_WIFI_IF     			0x010
@@ -50,10 +51,11 @@
 #define     REG_WIFI_BSS0       		0x020
 #define     REG_WIFI_BSS1       		0x022
 #define     REG_WIFI_BSS2       		0x024
-#define     REG_WIFI_AID        		0x028
-#define     REG_WIFI_AIDCPY        		0x02A
+#define     REG_WIFI_AID_LOW       		0x028
+#define     REG_WIFI_AID_HIGH      		0x02A
 #define     REG_WIFI_RETRYLIMIT 		0x02C
 #define		REG_WIFI_WEPCNT				0x032
+#define		REG_WIFI_POWER_US			0x036
 #define     REG_WIFI_POWERSTATE 		0x03C
 #define     REG_WIFI_FORCEPS    		0x040
 #define     REG_WIFI_RANDOM     		0x044
@@ -63,7 +65,10 @@
 #define     REG_WIFI_WRITECSRLATCH      0x056
 #define     REG_WIFI_CIRCBUFRADR        0x058
 #define     REG_WIFI_RXREADCSR          0x05A
+#define     REG_WIFI_RXBUF_COUNT		0x05C
 #define     REG_WIFI_CIRCBUFREAD        0x060
+#define     REG_WIFI_CIRCBUFRD_END      0x062
+#define     REG_WIFI_CIRCBUFRD_SKIP     0x064
 #define     REG_WIFI_CIRCBUFWADR        0x068
 #define     REG_WIFI_CIRCBUFWRITE       0x070
 #define     REG_WIFI_CIRCBUFWR_END      0x074
@@ -81,6 +86,7 @@
 #define     REG_WIFI_RXFILTER           0x0D0
 #define     REG_WIFI_USCOUNTERCNT       0x0E8
 #define     REG_WIFI_USCOMPARECNT       0x0EA
+#define		REG_WIFI_EXTRACOUNTCNT		0x0EE
 #define     REG_WIFI_USCOMPARE0         0x0F0
 #define     REG_WIFI_USCOMPARE1         0x0F2
 #define     REG_WIFI_USCOMPARE2         0x0F4
@@ -89,6 +95,7 @@
 #define     REG_WIFI_USCOUNTER1         0x0FA
 #define     REG_WIFI_USCOUNTER2         0x0FC
 #define     REG_WIFI_USCOUNTER3         0x0FE
+#define		REG_WIFI_EXTRACOUNT			0x118
 #define     REG_WIFI_BBSIOCNT           0x158
 #define     REG_WIFI_BBSIOWRITE         0x15A
 #define     REG_WIFI_BBSIOREAD          0x15C
@@ -97,6 +104,11 @@
 #define     REG_WIFI_RFIODATA1  		0x17E
 #define     REG_WIFI_RFIOBSY    		0x180
 #define     REG_WIFI_RFIOCNT    		0x184
+#define		REG_WIFI_IF_SET				0x21C
+
+/* WIFI misc constants */
+#define		WIFI_CHIPID					0x1440		/* emulates "old" wifi chip, new is 0xC340 */
+#define		REG_PWRCNT					0x04000304	
 
 /* Referenced as RF_ in dswifi: rffilter_t */
 /* based on the documentation for the RF2958 chip of RF Micro Devices */
@@ -386,13 +398,17 @@ typedef struct
 		u8	 bytes[6] ;
 	} bss ;
 	u16 aid ;
+	u16 pid ; /* player ID or aid_low */
 	u16 retryLimit ;
 
 	/* timing */
+	BOOL crystalEnabled ;
 	u64 usec ;
 	BOOL usecEnable ;
 	u64 ucmp ;
 	BOOL ucmpEnable ;
+	u16 eCount ;
+	BOOL eCountEnable ;
 
 	/* subchips */
     rffilter_t 	RF ;
@@ -411,10 +427,13 @@ typedef struct
 	u16         RXHWWriteCursor ;
 	u16         RXReadCursor ;
 	u16         RXUnits ;
+	u16			RXBufCount ;
 	u16         CircBufReadAddress ;
 	u16         CircBufWriteAddress ;
-	u16         CircBufEnd ;
-	u16         CircBufSkip ;
+	u16         CircBufRdEnd ;
+	u16         CircBufRdSkip ;
+	u16         CircBufWrEnd ;
+	u16         CircBufWrSkip ;
 
 	/* others */
 	u16			randomSeed ;
