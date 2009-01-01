@@ -1,4 +1,4 @@
-/* callbacks_1_ioregs.c - this file is part of DeSmuME
+/* callbacks_1_ioregs.cpp - this file is part of DeSmuME
  *
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Copyright (C) 2007 Pascal Giard (evilynux)

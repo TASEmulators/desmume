@@ -1,4 +1,4 @@
-/* callbacks_2_memview.c - this file is part of DeSmuME
+/* callbacks_2_memview.cpp - this file is part of DeSmuME
  *
  * Copyright (C) 2007 Damien Nozay (damdoum)
  * Author: damdoum at users.sourceforge.net
