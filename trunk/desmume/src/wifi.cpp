@@ -384,15 +384,21 @@ void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
 
  *******************************************************************************/
 
+void WIFI_triggerIRQMask(wifimac_t *wifi, u16 mask)
+{
+	u16 oResult,nResult ;
+	oResult = wifi->IE.val & wifi->IF.val ;
+	wifi->IF.val = wifi->IF.val | (mask & ~0x0400) ;
+	nResult = wifi->IE.val & wifi->IF.val ;
+	if (!oResult && nResult)
+	{
+		NDS_makeARM7Int(24) ;   /* cascade it via arm7 wifi irq */
+	}
+}
+
 void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
 {
-	/* trigger an irq */
-	u16 irqBit = 1 << irq ;
-	if (wifi->IE.val & irqBit)
-	{
-		wifi->IF.val |= irqBit ;
-        NDS_makeARM7Int(24) ;   /* cascade it via arm7 wifi irq */
-	}
+	WIFI_triggerIRQMask(wifi,1<<irq) ;
 }
 
 void WIFI_Init(wifimac_t *wifi)
@@ -451,6 +457,7 @@ void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 {
 	BOOL action = FALSE ;
+	if (!(MMU_read32(ARMCPU_ARM7,REG_PWRCNT) & 0x0002)) return ;		/* access to wifi hardware was disabled */
 	if ((address & 0xFF800000) != 0x04800000) return ;      /* error: the address does not describe a wiifi register */
 
 	/* the first 0x1000 bytes are mirrored at +0x1000,+0x2000,+0x3000,+06000,+0x7000 */
@@ -461,7 +468,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 	if (((address & 0x00007000) >= 0x00004000) && ((address & 0x00007000) < 0x00006000))
 	{
 		/* access to the circular buffer */
-		address &= 0x1FFFF ;
+		address &= 0x1FFF ;
         wifi->circularBuffer[address >> 1] = val ;
 		return ;
 	}
@@ -470,7 +477,16 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 	address &= 0x00000FFF ;
 	switch (address)
 	{
+		case REG_WIFI_ID:
+			break ;
 		case REG_WIFI_MODE:
+			if (val & 0x4000) 
+			{
+				/* does some resets */
+				wifi->RXRangeBegin = 0x4000 ;
+				/* this bit does not save */
+				val &= ~0x4000 ;
+			}
 			wifi->macMode = val ;
 			break ;
 		case REG_WIFI_WEP:
@@ -492,10 +508,6 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_BSS2:
 			wifi->bss.words[(address - REG_WIFI_BSS0) >> 1] = val ;
 			break ;
-		case REG_WIFI_AID:			/* CHECKME: are those two really the same? */
-		case REG_WIFI_AIDCPY:
-			wifi->aid = val ;
-			break ;
 		case REG_WIFI_RETRYLIMIT:
 			wifi->retryLimit = val ;
 			break ;
@@ -515,7 +527,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			}
 			break ;
 		case REG_WIFI_CIRCBUFRADR:
-			wifi->CircBufReadAddress = val ;
+			wifi->CircBufReadAddress = (val & 0x1FFE);
 			break ;
 		case REG_WIFI_RXREADCSR:
 			wifi->RXReadCursor = val ;
@@ -530,15 +542,15 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			{
 				/* move to next hword */
                 wifi->CircBufWriteAddress+=2 ;
-				if (wifi->CircBufWriteAddress == wifi->CircBufEnd)
+				if (wifi->CircBufWriteAddress == wifi->CircBufWrEnd)
 				{
 					/* on end of buffer, add skip hwords to it */
-					wifi->CircBufEnd += wifi->CircBufSkip * 2 ;
+					wifi->CircBufWrEnd += wifi->CircBufWrSkip * 2 ;
 				}
 			}
 			break ;
 		case REG_WIFI_CIRCBUFWR_SKIP:
-			wifi->CircBufSkip = val ;
+			wifi->CircBufWrSkip = val ;
 			break ;
 		case REG_WIFI_BEACONTRANS:
 			wifi->BEACONSlot = val & 0x7FFF ;
@@ -592,6 +604,33 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_BBSIOWRITE:
             WIFI_setBB_DATA(wifi,val) ;
 			break ;
+		case REG_WIFI_RXBUF_COUNT:
+			wifi->RXBufCount = val & 0x0FFF ;
+			break ;
+		case REG_WIFI_EXTRACOUNTCNT:
+			wifi->eCountEnable = (val & 0x0001) ;
+			break ;
+		case REG_WIFI_EXTRACOUNT:
+			wifi->eCount = val ;
+			break ;
+		case REG_WIFI_POWER_US:
+			wifi->crystalEnabled = !(val & 0x0001) ;
+			break ;
+		case REG_WIFI_IF_SET:
+			WIFI_triggerIRQMask(wifi,val) ;
+			break ;
+		case REG_WIFI_CIRCBUFRD_END:
+			wifi->CircBufRdEnd = (val & 0x1FFE) ;
+			break ;
+		case REG_WIFI_CIRCBUFRD_SKIP:
+			wifi->CircBufRdSkip = val & 0xFFF ;
+			break ;
+		case REG_WIFI_AID_LOW:
+			wifi->pid = val & 0x0F ;
+			break ;
+		case REG_WIFI_AID_HIGH:
+			wifi->aid = val & 0x07FF ;
+			break ;
 		default:
 			val = 0 ;       /* not handled yet */
 			break ;
@@ -601,6 +640,8 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 u16 WIFI_read16(wifimac_t *wifi,u32 address)
 {
 	BOOL action = FALSE ;
+	u16 temp ;
+	if (!(MMU_read32(ARMCPU_ARM7,REG_PWRCNT) & 0x0002)) return 0 ;		/* access to wifi hardware was disabled */
 	if ((address & 0xFF800000) != 0x04800000) return 0 ;      /* error: the address does not describe a wiifi register */
 
 	/* the first 0x1000 bytes are mirrored at +0x1000,+0x2000,+0x3000,+06000,+0x7000 */
@@ -618,6 +659,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 	address &= 0x00000FFF ;
 	switch (address)
 	{
+		case REG_WIFI_ID:
+			return WIFI_CHIPID ;
 		case REG_WIFI_MODE:
 			return wifi->macMode ;
 		case REG_WIFI_WEP:
@@ -646,6 +689,55 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 		case REG_WIFI_BSS1:
 		case REG_WIFI_BSS2:
 			return wifi->bss.words[(address - REG_WIFI_BSS0) >> 1] ;
+		case REG_WIFI_RXRANGEBEGIN:
+			return wifi->RXRangeBegin ;
+		case REG_WIFI_CIRCBUFREAD:
+			temp = wifi->circularBuffer[((wifi->RXRangeBegin + wifi->CircBufReadAddress) >> 1) & 0x0FFF] ;
+			if (action)
+			{
+				wifi->CircBufReadAddress += 2 ;
+				wifi->CircBufReadAddress &= 0x1FFE ;
+				if (wifi->CircBufReadAddress + wifi->RXRangeBegin == wifi->RXRangeEnd) 
+				{ 
+					wifi->CircBufReadAddress = 0 ;
+				} else
+				{
+					/* skip does not fire after a reset */
+					if (wifi->CircBufReadAddress == wifi->CircBufRdEnd)
+					{
+						wifi->CircBufReadAddress += wifi->CircBufRdSkip * 2 ;
+						wifi->CircBufReadAddress &= 0x1FFE ;
+						if (wifi->CircBufReadAddress + wifi->RXRangeBegin == wifi->RXRangeEnd) wifi->CircBufReadAddress = 0 ;
+					}
+				}
+				if (wifi->RXBufCount > 0)
+				{
+					if (wifi->RXBufCount == 1)
+					{
+						WIFI_triggerIRQ(wifi,9) ;
+					}
+					wifi->RXBufCount-- ;
+				}				
+			}
+			return temp;
+		case REG_WIFI_CIRCBUFRADR:
+			return wifi->CircBufReadAddress ;
+		case REG_WIFI_RXBUF_COUNT:
+			return wifi->RXBufCount ;
+		case REG_WIFI_EXTRACOUNTCNT:
+			return wifi->eCountEnable?1:0 ;
+		case REG_WIFI_EXTRACOUNT:
+			return wifi->eCount ;
+		case REG_WIFI_POWER_US:
+			return wifi->crystalEnabled?0:1 ;
+		case REG_WIFI_CIRCBUFRD_END:
+			return wifi->CircBufRdEnd ;
+		case REG_WIFI_CIRCBUFRD_SKIP:
+			return wifi->CircBufRdSkip ;
+		case REG_WIFI_AID_LOW:
+			return wifi->pid ;
+		case REG_WIFI_AID_HIGH:
+			return wifi->aid ;
 		default:
 			return 0 ;
 	}
@@ -656,9 +748,19 @@ void WIFI_usTrigger(wifimac_t *wifi)
 {
 	u8 dataBuffer[0x2000] ; 
 	u16 rcvSize ;
-	/* a usec (=3F03 cycles) has passed */
-	if (wifi->usecEnable)
-		wifi->usec++ ;
+	if (wifi->crystalEnabled)
+	{
+		/* a usec (=3F03 cycles) has passed */
+		if (wifi->usecEnable)
+			wifi->usec++ ;
+		if (wifi->eCountEnable)
+		{
+			if (wifi->eCount > 0)
+			{
+				wifi->eCount-- ;
+			}
+		}
+	}
 	if ((wifi->ucmpEnable) && (wifi->ucmp == wifi->usec))
 	{
 			WIFI_triggerIRQ(wifi,WIFI_IRQ_TIMEBEACON) ;
