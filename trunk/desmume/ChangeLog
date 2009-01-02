@@ -3,6 +3,8 @@ Graphics:
  bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
  bug: 3d compositing integrated into GPU engine (more precision and speed in cases where no compositing needed) [luigi__]
  bug: Add optional fragment shading pipeline (more precision) [luigi__]
+ bug: fix texture mapping across texture banks [zeromus]
+ enh: dont memcmp for texcache validity when the texture banks arent unmapping [zeromus]
  
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.

@@ -1167,7 +1167,7 @@ u32 NDS_exec(s32 nb)
 					if(MMU.DMAStartTime[1][3] == 1)
 						MMU_doDMA(1, 3);
 				}
-				else if(nds.VCount==214) {
+				else if(nds.VCount==215) {
 					gfx3d_VBlankEndSignal();
 				}
 				else if(nds.VCount==263)
