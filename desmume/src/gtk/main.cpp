@@ -472,7 +472,6 @@ static void Reset()
 	pStatusBar_Change("Running ...");
 }
 
-int ScreenCoeff_Size;
 
 
 #ifdef GTKGLEXT_AVAILABLE
@@ -917,7 +916,7 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 	return TRUE;
 }
 
-static u16 Cur_Keypad = 0;
+static u16 Cur_Keypad;
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e)
 {
@@ -1040,12 +1039,12 @@ static void Edit_Controls(GtkWidget* widget, gpointer data)
 static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 {
 	int Size = GPOINTER_TO_INT(data);
+	static int ScreenCoeff_Size;
 
 	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 384 * Size);
 	gtk_widget_set_usize (pDrawingArea, 256 * Size, 384 * Size);
 
 	ScreenCoeff_Size = Size;
-
 }
 
 /////////////////////////////// LAYER HIDING /////////////////////////////////
@@ -1084,20 +1083,6 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
 	}
 	LOG ("Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
 }
-
-const char *Layers_Menu[10] =
-{
-	"Main BG 0",
-	"Main BG 1",
-	"Main BG 2",
-	"Main BG 3",
-	"Main OBJ",
-	"SUB BG 0",
-	"SUB BG 1",
-	"SUB BG 2",
-	"SUB BG 3",
-	"SUB OBJ",
-};
 
 /////////////////////////////// PRINTSCREEN /////////////////////////////////
 
@@ -1357,10 +1342,9 @@ static inline void _updateDTools()
 	}
 }
 
-Uint32 fps, fps_SecStart, fps_FrameCount;
-
 gboolean EmuLoop(gpointer data)
 {
+	static Uint32 fps, fps_SecStart, fps_FrameCount;
 	unsigned int i;
 	gchar *Title;
 
@@ -1438,6 +1422,20 @@ common_gtk_main( struct configured_features *my_config)
 	gchar * config_file;
 	int i;
 	SDL_TimerID limiter_timer;
+
+	const char *Layers_Menu[10] = {
+		"Main BG 0",
+		"Main BG 1",
+		"Main BG 2",
+		"Main BG 3",
+		"Main OBJ",
+		"SUB BG 0",
+		"SUB BG 1",
+		"SUB BG 2",
+		"SUB BG 3",
+		"SUB OBJ"
+	};
+
 
 	GtkWidget *pVBox;
 	GtkWidget *pMenuBar;
