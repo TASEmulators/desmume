@@ -648,12 +648,14 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 					ARM9Mem.texPalSlot[1] = LCD_addr+0x2000;
 					ARM9Mem.texPalSlot[2] = LCD_addr+0x4000;
 					ARM9Mem.texPalSlot[3] = LCD_addr+0x6000;
+					gpu3D->NDS_3D_VramReconfigureSignal();
 				break;
 				case 5:		// F
 				case 6:		// G
 				{
 					u8 tmp_slot = ((VRAMBankCnt >> 3) & 0x01) + (((VRAMBankCnt >> 4) & 0x01)*4);
 					ARM9Mem.texPalSlot[tmp_slot] = LCD_addr;
+					gpu3D->NDS_3D_VramReconfigureSignal();
 				}
 				break;
 				case 9:		// I		Engine B, OBJ

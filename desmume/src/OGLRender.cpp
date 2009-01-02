@@ -500,7 +500,7 @@ static void OGLClose()
 	ENDGL();
 }
 
-//zero 9/7/08 - changed *adr= to adr= while changing from c++. was that a bug?
+
 #define CHECKSLOT txt_slot_current_size--;\
 					if (txt_slot_current_size<=0)\
 					{\
@@ -615,7 +615,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 				!memcmp(texcache[i].palette, pal, texcache[i].palSize) )
 			{
 				//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
-				if (!memcmp(adr, texcache[i].texture, std::min((size_t)imageSize,sizeof(texcache[i].texture))) )
+				if (!texcache[i].suspectedInvalid || !memcmp(adr, texcache[i].texture, std::min((size_t)imageSize,sizeof(texcache[i].texture))) )
 				{
 					texcache[i].suspectedInvalid = false;
 					texcache_count=i;
@@ -630,22 +630,6 @@ static void setTexture(unsigned int format, unsigned int texpal)
 					return;
 				}
 			}
-#if 0
-			if (!texcache[i].suspectedInvalid)
-			{
-				texcache[i].suspectedInvalid = false;
-				texcache_count=i;
-				if(lastTexture == -1 || (int)i != lastTexture)
-				{
-					lastTexture = i;
-					glBindTexture(GL_TEXTURE_2D,texcache[i].id);
-					glMatrixMode (GL_TEXTURE);
-					glLoadIdentity ();
-					glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
-				}
-				return;
-			}
-#endif
 		}
 		i++;
 		if (i>MAX_TEXTURE) 
@@ -702,9 +686,10 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		{
 			for(x = 0; x < imageSize; x++, dst += 4)
 			{
-				u16 c = pal[adr[x]&31];
-				u8 alpha = adr[x]>>5;
+				u16 c = pal[*adr&31];
+				u8 alpha = *adr>>5;
 				*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
+				adr++;
 				CHECKSLOT;
 			}
 			break;
@@ -713,33 +698,35 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		{
 			for(x = 0; x < imageSize>>2; ++x)
 			{
-				unsigned short c = pal[(adr[x])&0x3];
+				unsigned short c = pal[(*adr)&0x3];
 				dst[0] = ((c & 0x1F)<<3);
 				dst[1] = ((c & 0x3E0)>>2);
 				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = ((adr[x]&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst[3] = ((*adr&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
 				dst += 4;
 
-				c = pal[((adr[x])>>2)&0x3];
+				c = pal[((*adr)>>2)&0x3];
 				dst[0] = ((c & 0x1F)<<3);
 				dst[1] = ((c & 0x3E0)>>2);
 				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst[3] = (((*adr>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
 				dst += 4;
 
-				c = pal[((adr[x])>>4)&0x3];
+				c = pal[((*adr)>>4)&0x3];
 				dst[0] = ((c & 0x1F)<<3);
 				dst[1] = ((c & 0x3E0)>>2);
 				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst[3] = (((*adr>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
 				dst += 4;
 
-				c = pal[(adr[x])>>6];
+				c = pal[(*adr)>>6];
 				dst[0] = ((c & 0x1F)<<3);
 				dst[1] = ((c & 0x3E0)>>2);
 				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((adr[x]>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+				dst[3] = (((*adr>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
 				dst += 4;
+
+				adr++;
 				CHECKSLOT;
 			}
 			break;
@@ -748,19 +735,22 @@ static void setTexture(unsigned int format, unsigned int texpal)
 			{
 				for(x = 0; x < (imageSize>>1); x++)
 				{
-					unsigned short c = pal[adr[x]&0xF];
+					unsigned short c = pal[*adr&0xF];
 					dst[0] = ((c & 0x1F)<<3);
 					dst[1] = ((c & 0x3E0)>>2);
 					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((adr[x])&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst[3] = (((*adr)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
 					dst += 4;
 
-					c = pal[((adr[x])>>4)];
+					c = pal[((*adr)>>4)];
 					dst[0] = ((c & 0x1F)<<3);
 					dst[1] = ((c & 0x3E0)>>2);
 					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((adr[x]>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
+					dst[3] = (((*adr>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
 					dst += 4;
+
+					adr++;
+					
 					CHECKSLOT;
 				}
 				break;
@@ -769,8 +759,9 @@ static void setTexture(unsigned int format, unsigned int texpal)
 			{
 				for(x = 0; x < imageSize; ++x)
 				{
-					u16 c = pal[adr[x]];
-					*dwdst++ = RGB15TO32(c,(adr[x] == 0) ? palZeroTransparent : 255);
+					u16 c = pal[*adr];
+					*dwdst++ = RGB15TO32(c,(*adr == 0) ? palZeroTransparent : 255);
+					adr++;
 					CHECKSLOT;
 				}
 			}
@@ -883,9 +874,10 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		{
 			for(x = 0; x < imageSize; x++)
 			{
-				u16 c = pal[adr[x]&0x07];
-				u8 alpha = (adr[x]>>3);
+				u16 c = pal[*adr&0x07];
+				u8 alpha = (*adr>>3);
 				*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
+				adr++;
 				CHECKSLOT;
 			}
 			break;
