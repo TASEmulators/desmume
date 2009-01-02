@@ -28,11 +28,6 @@
 
 volatile BOOL execute = FALSE;
 BOOL click = FALSE;
-BOOL fini = FALSE;
-unsigned long glock = 0;
-
-u8 *desmume_rom_data = NULL;
-u32 desmume_last_cycle;
 
 void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
                    struct armcpu_ctrl_iface **arm9_ctrl_iface,
@@ -79,7 +74,9 @@ BOOL desmume_running( void)
 
 void desmume_cycle( void)
 {
+  static u32 desmume_last_cycle;
   u16 keypad;
+
   /* Joystick events */
   /* Retrieve old value: can use joysticks w/ another device (from our side) */
   keypad = get_keypad();
