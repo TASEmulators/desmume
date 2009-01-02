@@ -21,9 +21,17 @@
 #define TYPES_HPP
 
 #define DESMUME_NAME "DeSmuME"
+#ifdef _WIN64
+#define DESMUME_VERSION_STRING "0.9-interim x64"
+#else
 #define DESMUME_VERSION_STRING "0.9-interim"
+#endif
 #define DESMUME_VERSION_NUMERIC 90000
+#ifdef __INTEL_COMPILER
+#define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " Intel " VERSION
+#else
 #define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " " VERSION
+#endif
 
 #ifdef _WIN32
 #define strcasecmp(x,y) _stricmp(x,y)

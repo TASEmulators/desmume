@@ -479,10 +479,10 @@ void MMU_clearMem()
 		ARM9Mem.ExtPal[0][i] = ARM9Mem.ARM9_LCD;
 		ARM9Mem.ExtPal[1][i] = ARM9Mem.ARM9_LCD;
 	}
+	ARM9Mem.ObjExtPal[0][0] = ARM9Mem.ARM9_LCD;
 	ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.ObjExtPal[0][2] = ARM9Mem.ARM9_LCD;
+	ARM9Mem.ObjExtPal[1][0] = ARM9Mem.ARM9_LCD;
 	ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.ObjExtPal[1][2] = ARM9Mem.ARM9_LCD;
 
 	ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD;
 	ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD;
