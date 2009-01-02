@@ -1933,16 +1933,16 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_VRAMCNTE:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
-				return;
+				break;
 			case REG_VRAMCNTG:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				/* Update WRAMSTAT at the ARM7 side */
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val >> 8);
-				return;
+				break;
 			case REG_VRAMCNTH:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, val >> 8);
-				return;
+				break;
 
 			case REG_IME:
 				{
@@ -2411,11 +2411,11 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+2, (val >> 16) & 0xFF);
 				/* Update WRAMSTAT at the ARM7 side */
 				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, (val >> 24) & 0xFF);
-				return;
+				break;
 			case REG_VRAMCNTH:
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA, val & 0xFF);
 				MMU_VRAMmapControl(adr-REG_VRAMCNTA+1, (val >> 8) & 0xFF);
-				return;
+				break;
 
 			case REG_IME : 
 				{
