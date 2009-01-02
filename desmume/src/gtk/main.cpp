@@ -64,7 +64,7 @@ static const char *bad_glob_cflash_disk_image_file;
 
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
-static int gtk_fps_limiter_disabled = 0;
+static int gtk_fps_limiter_disabled;
 
 
 /************************ CONFIG FILE *****************************/
