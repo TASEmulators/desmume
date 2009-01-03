@@ -333,8 +333,14 @@ float nds_screen_size_ratio = 1.0f;
 
 static BOOL regMainLoop = FALSE;
 
-static gint pStatusBar_Ctx;
-#define pStatusBar_Change(t) gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx); gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, t)
+static inline void pStatusBar_Change (const char *message)
+{
+	gint pStatusBar_Ctx;
+
+	pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
+	gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx);
+	gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, message);
+}
 
 gboolean EmuLoop(gpointer data);
 
@@ -1599,6 +1605,7 @@ common_gtk_main( struct configured_features *my_config)
 	GtkAccelGroup * accel_group;
 	GtkWidget *pVBox;
 	GtkWidget *pMenuBar;
+	gint pStatusBar_Ctx;
 
 #ifdef GTKGLEXT_AVAILABLE
         GdkGLConfig *glconfig;
@@ -1846,14 +1853,10 @@ common_gtk_main( struct configured_features *my_config)
             nds_screen_widget = pDrawingArea;
         }
 
-	/* Création de la barre d'état */
-
+	/* Status bar */
 	pStatusBar = gtk_statusbar_new();
-
 	pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
-
 	pStatusBar_Change("Desmume");
-
 	gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
 
 	gtk_widget_show_all(pWindow);
