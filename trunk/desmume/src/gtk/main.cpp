@@ -1044,6 +1044,7 @@ static void Edit_Controls(GtkWidget* widget, gpointer data)
 
 ///////////////////////////////// SCREEN SCALING //////////////////////////////
 
+#ifdef BROKEN_SCREENSIZE
 #define MAX_SCREENCOEFF 4 
 
 static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
@@ -1056,6 +1057,7 @@ static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 
 	ScreenCoeff_Size = Size;
 }
+#endif
 
 /////////////////////////////// LAYER HIDING /////////////////////////////////
 
@@ -1443,7 +1445,10 @@ static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean opengl)
 {
 	GtkWidget *pMenuItem, *pSubmenu;
+#ifdef BROKEN_SCREENSIZE
 	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
+	gchar *buf;
+#endif
 	GtkWidget *mLayers_Radio[10];
 	const char *Layers_Menu[10] = {
 		"Main BG 0",
@@ -1457,9 +1462,10 @@ static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean open
 		"SUB BG 3",
 		"SUB OBJ"
 	};
-	gchar *buf;
 	guint i;
 
+	/* FIXME: this does not work and there's a lot of code that assume the default screen size, drawing function included */
+#ifdef BROKEN_SCREENSIZE
 	if (!opengl) {
 		pSubmenu = gtk_menu_new();
 		pMenuItem = gtk_menu_item_new_with_label("Size");
@@ -1477,6 +1483,7 @@ static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean open
 			gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
 		}
 	}
+#endif
 
 	pSubmenu = gtk_menu_new();
 	pMenuItem = gtk_menu_item_new_with_label("Layers");
