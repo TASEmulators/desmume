@@ -317,7 +317,6 @@ uint Frameskip = 0;
 
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
-static GtkWidget *pToolbar;
 static GtkWidget *pDrawingArea;
 
 /** The target for the expose event */
@@ -1416,13 +1415,25 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 
 /////////////////////////////// MAIN ///////////////////////////////
 
-static int
-common_gtk_main( struct configured_features *my_config)
+static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 {
-	gchar * config_file;
-	int i;
-	SDL_TimerID limiter_timer;
+	GtkWidget *pMenu, *pMenuItem;
 
+	pMenu = gtk_menu_new();
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
+
+	pMenuItem = gtk_menu_item_new_with_label("File");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+}
+
+static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean opengl)
+{
+	GtkWidget *pMenuItem, *pSubmenu;
+	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
+	GtkWidget *mLayers_Radio[10];
 	const char *Layers_Menu[10] = {
 		"Main BG 0",
 		"Main BG 1",
@@ -1435,13 +1446,160 @@ common_gtk_main( struct configured_features *my_config)
 		"SUB BG 3",
 		"SUB OBJ"
 	};
+	gchar *buf;
+	guint i;
 
+	if (!opengl) {
+		pSubmenu = gtk_menu_new();
+		pMenuItem = gtk_menu_item_new_with_label("Size");
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
+		for(i = 1; i < MAX_SCREENCOEFF; i++) {
+			buf = g_strdup_printf("x%d", i);
+			if (i>1)
+				mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
+			else
+				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+			g_free(buf);
+			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GINT_TO_POINTER(i));
+			gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
+		}
+	}
+
+	pSubmenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Layers");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+	for(i = 0; i < 10; i++) {
+		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
+		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), (void*)Layers_Menu[i]);
+		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
+	}
+}
+
+static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
+{
+	GtkWidget *pMenu, *pMenuItem, *pSubmenu;
+	GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
+	gchar *buf;
+	guint i;
+
+	pMenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Emulation");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
+
+	pSubmenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Frameskip");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+	for(i = 0; i < MAX_FRAMESKIP; i++) {
+		buf = g_strdup_printf("%d", i);
+		if (i>0)
+			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), buf);
+		else
+			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+		g_free(buf);
+		g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
+		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mFrameskip_Radio[i]);
+	}
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
+
+	pSubmenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Graphics");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+	desmume_gtk_menu_emulation_graphics(pSubmenu, opengl);
+}
+
+static void desmume_gtk_menu_config (GtkWidget *pMenuBar)
+{
+	GtkWidget *pMenu, *pMenuItem;
+	
+	pMenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Config");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+
+	pMenuItem = gtk_menu_item_new_with_label("Edit controls");
+	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+#if 0
+	GtkWidget *pSubMenu;
+	pSubmenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Firmware");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+	pMenuItem = gtk_menu_item_new_with_label("Select...");
+	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(SelectFirmwareFile), (gpointer)0);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), pMenuItem);
+#endif
+}
+
+static void desmume_gtk_menu_tools (GtkWidget *pMenuBar)
+{
+	GtkWidget *pMenu, *pMenuItem;
+	gint i;
+
+	pMenu = gtk_menu_new();
+	for(i = 0; i < dTools_list_size; i++) {
+		pMenuItem = gtk_menu_item_new_with_label(dTools_list[i]->name);
+		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
+		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+	}
+
+	pMenuItem = gtk_menu_item_new_with_label("Tools");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+}
+
+static void desmume_gtk_menu_help (GtkWidget *pMenuBar)
+{
+	GtkWidget *pMenu, *pMenuItem;
+
+	pMenu = gtk_menu_new();
+	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT,NULL);
+	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+	pMenuItem = gtk_menu_item_new_with_label("Help");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+}
+
+static void desmume_gtk_toolbar (GtkWidget *pVBox)
+{
+	GtkWidget *pToolbar;
+	
+	pToolbar = gtk_toolbar_new();
+	gtk_box_pack_start(GTK_BOX(pVBox), pToolbar, FALSE, FALSE, 0);
+
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "open"))), -1);
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "run"))), -1);
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "pause"))), -1);
+	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "quit"))), -1);
+}
+
+static int
+common_gtk_main( struct configured_features *my_config)
+{
+	SDL_TimerID limiter_timer = NULL;
+	gchar *config_file;
+
+	GtkAccelGroup * accel_group;
 	GtkWidget *pVBox;
 	GtkWidget *pMenuBar;
-	GtkWidget *pMenu;
-	GtkWidget *pMenuItem;
-	GtkAccelGroup * accel_group;
+
 #ifdef GTKGLEXT_AVAILABLE
         GdkGLConfig *glconfig;
         GdkGLContext *glcontext;
@@ -1582,165 +1740,18 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
 
-	/**** Creation du menu ****/
-
+	/* Menu and Toolbar */
 	pMenuBar = gtk_menu_bar_new();
 
-	/** Menu "Fichier" **/
+	desmume_gtk_menu_file(pMenuBar);
+	desmume_gtk_menu_emulation(pMenuBar, my_config->opengl);
+	desmume_gtk_menu_config(pMenuBar);
+	desmume_gtk_menu_tools(pMenuBar);
+	desmume_gtk_menu_help(pMenuBar);
 
-	pMenu = gtk_menu_new();
-
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
-
-	pMenuItem = gtk_menu_item_new_with_label("File");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-	/** Menu "Emulation" **/
-	GtkWidget *mEmulation;
-	GtkWidget *mFrameskip;
-	GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
-	GtkWidget *mGraphics;
-	GtkWidget *mSize;
-	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
-	GtkWidget *mLayers;
-	GtkWidget *mLayers_Radio[10];
-	gchar *buf;
-
-	mEmulation = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Emulation");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mEmulation);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
-
-	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
-
-	gtk_container_add(GTK_CONTAINER(mEmulation), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
-
-	mFrameskip = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Frameskip");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mFrameskip);
-	gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
-
-	for(i = 0; i < MAX_FRAMESKIP; i++) {
-		buf = g_strdup_printf("%d", i);
-		if (i>0)
-			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), buf);
-		else
-			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-		g_free(buf);
-		g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
-		gtk_menu_shell_append(GTK_MENU_SHELL(mFrameskip), mFrameskip_Radio[i]);
-	}
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
-
-	mGraphics = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Graphics");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mGraphics);
-	gtk_menu_shell_append(GTK_MENU_SHELL(mEmulation), pMenuItem);
-
-// TODO: Un jour, peut �tre... ><
-	if ( !my_config->opengl) {
-		mSize = gtk_menu_new();
-		pMenuItem = gtk_menu_item_new_with_label("Size");
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mSize);
-		gtk_menu_shell_append(GTK_MENU_SHELL(mGraphics), pMenuItem);
-
-		for(i = 1; i < MAX_SCREENCOEFF; i++) {
-			buf = g_strdup_printf("x%d", i);
-			if (i>1)
-				mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
-			else
-				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-			g_free(buf);
-			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GINT_TO_POINTER(i));
-			gtk_menu_shell_append(GTK_MENU_SHELL(mSize), mSize_Radio[i]);
-		}
-	}
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
-
-	mLayers = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Layers");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mLayers);
-	gtk_menu_shell_append(GTK_MENU_SHELL(mGraphics), pMenuItem);
-
-	for(i = 0; i < 10; i++) {
-		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
-		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), (void*)Layers_Menu[i]);
-		gtk_menu_shell_append(GTK_MENU_SHELL(mLayers), mLayers_Radio[i]);
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
-	}
-
-
-	/** Menu "Options" **/
-	GtkWidget *mConfig = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Config");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mConfig);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-	pMenuItem = gtk_menu_item_new_with_label("Edit controls");
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
-	gtk_menu_shell_append(GTK_MENU_SHELL(mConfig), pMenuItem);
-
-#if 0
-	GtkWidget *mFirmware;
-
-	mFirmware = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Firmware");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mFirmware);
-	gtk_menu_shell_append(GTK_MENU_SHELL(mConfig), pMenuItem);
-
-	pMenuItem = gtk_menu_item_new_with_label("Select...");
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(SelectFirmwareFile), (gpointer)0);
-	gtk_menu_shell_append(GTK_MENU_SHELL(mFirmware), pMenuItem);
-
-	pMenuItem = gtk_menu_item_new_with_label("Config");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), mConfig);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-#endif
-
-	/** Menu "Outils" **/
-
-	pMenu = gtk_menu_new();
-
-	for(i = 0; i < dTools_list_size; i++) {
-		pMenuItem = gtk_menu_item_new_with_label(dTools_list[i]->name);
-		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
-		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-	}
-
-	pMenuItem = gtk_menu_item_new_with_label("Tools");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-	/** Menu "Help" **/
-
-	pMenu = gtk_menu_new();
-
-	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT,NULL);
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-	pMenuItem = gtk_menu_item_new_with_label("Help");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-	/* Ajout du menu a la fenetre */
 	gtk_box_pack_start(GTK_BOX(pVBox), pMenuBar, FALSE, FALSE, 0);
 
-	/* Création de la Toolbar */
-
-	pToolbar = gtk_toolbar_new();
-	gtk_box_pack_start(GTK_BOX(pVBox), pToolbar, FALSE, FALSE, 0);
-
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "open"))), -1);
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "run"))), -1);
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "pause"))), -1);
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "quit"))), -1);
+	desmume_gtk_toolbar(pVBox);
 
 	/* Création de l'endroit pour l'affichage des écrans */
 #ifdef GTKGLEXT_AVAILABLE
