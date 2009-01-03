@@ -947,26 +947,31 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e)
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
 
-GtkWidget *mkLabel;
-gint Modify_Key_Chosen = 0;
+struct modify_key_ctx {
+	gint mk_key_chosen;
+	GtkWidget *label;
+};
 
-static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e)
+static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e, struct modify_key_ctx *ctx)
 {
 	gchar *YouPressed;
 
-	Modify_Key_Chosen = e->keyval;
+	ctx->mk_key_chosen = e->keyval;
 	YouPressed = g_strdup_printf("You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
-	gtk_label_set(GTK_LABEL(mkLabel), YouPressed);
+	gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
 	g_free(YouPressed);
 }
 
 static void Modify_Key(GtkWidget* widget, gpointer data)
 {
-	gint Key = GPOINTER_TO_INT(data);
+	struct modify_key_ctx ctx;
 	GtkWidget *mkDialog;
 	gchar *Key_Label;
 	gchar *Title;
+	gint Key;
 
+	Key = GPOINTER_TO_INT(data);
+	ctx.mk_key_chosen = 0;
 	Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
 	mkDialog = gtk_dialog_new_with_buttons(Title,
 		GTK_WINDOW(pWindow),
@@ -975,24 +980,24 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 		GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
 		NULL);
 
-	g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), NULL);
-
-	mkLabel = gtk_label_new(Title);
+	ctx.label = gtk_label_new(Title);
 	g_free(Title);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), mkLabel,TRUE, FALSE, 0);	
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), ctx.label, TRUE, FALSE, 0);
+
+	g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), &ctx);
 
 	gtk_widget_show_all(GTK_DIALOG(mkDialog)->vbox);
 
 	switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
 	case GTK_RESPONSE_OK:
-		Keypad_Temp[Key] = Modify_Key_Chosen;
+		Keypad_Temp[Key] = ctx.mk_key_chosen;
 		Key_Label = g_strdup_printf("%s (%s)", key_names[Key], gdk_keyval_name(Keypad_Temp[Key]));
 		gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
 		g_free(Key_Label);
 		break;
 	case GTK_RESPONSE_CANCEL:
 	case GTK_RESPONSE_NONE:
-		Modify_Key_Chosen = 0;
+		ctx.mk_key_chosen = 0;
 		break;
 	}
 
