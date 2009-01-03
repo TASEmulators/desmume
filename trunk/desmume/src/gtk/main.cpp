@@ -43,12 +43,17 @@
 #include "gdbstub.h"
 #endif
 
-#ifdef GTKGLEXT_AVAILABLE
+#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <gtk/gtkgl.h>
 #include "OGLRender.h"
+#ifdef GTKGLEXT_AVAILABLE
+#include <gtk/gtkgl.h>
 #include "gdk_3Demu.h"
+#endif
+#ifdef HAVE_LIBOSMESA
+#include "osmesa_3Demu.h"
+#endif
 #endif
 
 #include "DeSmuME.xpm"
@@ -98,7 +103,7 @@ NULL
 
 GPU3DInterface *core3DList[] = {
   &gpu3DNull
-#ifdef GTKGLEXT_AVAILABLE
+#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
   ,
   &gpu3Dgl
 #endif
@@ -1895,10 +1900,14 @@ common_gtk_main( struct configured_features *my_config)
         {
           int use_null_3d = my_config->disable_3d;
 
-#ifdef GTKGLEXT_AVAILABLE
+#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
           if ( !use_null_3d) {
             /* setup the gdk 3D emulation */
+#ifdef GTKGLEXT_AVAILABLE
             if ( init_opengl_gdk_3Demu()) {
+#else
+            if ( init_osmesa_3Demu()) {
+#endif
               NDS_3D_SetDriver ( 1);
 
               if (!gpu3D->NDS_3D_Init ()) {

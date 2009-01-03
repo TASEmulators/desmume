@@ -55,6 +55,19 @@ dnl - Check for the OpenGL includes
 AC_CHECK_HEADERS([GL/gl.h])
 AC_CHECK_HEADERS([GL/glu.h])
 
+dnl - if --enable-osmesa is used, check for it
+AC_ARG_ENABLE(osmesa,
+              [AC_HELP_STRING(--enable-osmesa, use off-screen mesa)],
+              [
+		if test "x$enableval" = "xyes" ; then
+			AC_CHECK_LIB(OSMesa, main,[
+				useosmesa=yes
+				AC_DEFINE(HAVE_LIBOSMESA)
+				LIBS="-lOSMesa $LIBS"
+			])
+		fi
+		])
+
 dnl - Check for GTK and/or libglade
 GLIB_VER=2.8
 GTK_VER=2.6
@@ -79,12 +92,14 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     AC_SUBST(GTK_CFLAGS)
     AC_SUBST(GTK_LIBS)
 
+    if test ! "x$useosmesa" = "xyes" ; then
     PKG_CHECK_MODULES(GTKGLEXT,
                       "gtkglext-1.0",
                       HAVE_GTKGLEXT=yes,
                       HAVE_GTKGLEXT=no)
     AC_SUBST(GTKGLEXT_CFLAGS)
     AC_SUBST(GTKGLEXT_LIBS)
+    fi
 
     PKG_CHECK_MODULES(GTHREAD,
                       "gthread-2.0",
@@ -128,6 +143,9 @@ if test "x$HAVE_SDL" = "xyes"; then
     UI_DIR="gtk $UI_DIR"
   fi
 
+  dnl - the glade port has a weird relation to gtkglext and doesn't
+  dnl - works yet with osmesa, feel free to fix it :)
+  if test ! "x$useosmesa" = "xyes" ; then
   if test "x$HAVE_LIBGLADE" = "xyes"; then
     AC_PROVIDE_IFELSE([IT_PROG_INTLTOOL],[
       # libglade requires SDL too
@@ -147,12 +165,13 @@ if test "x$HAVE_SDL" = "xyes"; then
       echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed. The gtk-glade UI requires intltool and gettext."
     ])
   fi
+  fi
 fi
 
 dnl Set compiler library flags per target.
 case $target in
   *linux* | *bsd*)
-    LIBS="$LIBS -lGL -lGLU"
+    LIBS="$LIBS -lGLU"
     ;;
   *mingw*)
     LIBS="$LIBS -ldxguid -ldxerr8 -ldsound -lopengl32 -lws2_32 -mwindows"
