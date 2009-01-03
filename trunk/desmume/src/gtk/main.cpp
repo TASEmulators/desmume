@@ -1711,11 +1711,7 @@ common_gtk_main( struct configured_features *my_config)
 	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-        if ( my_config->opengl) {
-          gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
-        } else {
-          gtk_window_set_resizable(GTK_WINDOW (pWindow), FALSE);
-        }
+  	gtk_window_set_resizable(GTK_WINDOW (pWindow), my_config->opengl ? TRUE : FALSE);
 
 	gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
