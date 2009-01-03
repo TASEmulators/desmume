@@ -307,6 +307,10 @@ static void createShaders()
 {
 	hasShaders = true;
 
+#ifdef HAVE_LIBOSMESA
+	NOSHADERS(1);
+#endif
+
 	if (glCreateShader == NULL ||  //use ==NULL instead of !func to avoid always true warnings for some systems
 		glShaderSource == NULL ||
 		glCompileShader == NULL ||
@@ -419,7 +423,11 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETPROGRAMIVPROC,glGetProgramiv)
 	INITOGLEXT(PFNGLGETPROGRAMINFOLOGPROC,glGetProgramInfoLog)
 	INITOGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
+#ifdef HAVE_LIBOSMESA
+	glBlendFuncSeparateEXT = NULL;
+#else
 	INITOGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
+#endif
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 #endif

@@ -16,6 +16,7 @@ desmume_SOURCES = \
 	../sndsdl.cpp \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	gdk_3Demu.cpp gdk_3Demu.h \
+	osmesa_3Demu.cpp osmesa_3Demu.h \
 	 main.cpp
 desmume_LDADD = ../libdesmume.a \
 	$(SDL_LIBS) $(GTK_LIBS) $(GTKGLEXT_LIBS) $(GTHREAD_LIBS)
