@@ -1,7 +1,7 @@
                         DeSmuME
         _________________________________________
         Copyright (C) 2006 yopyop
-        Copyright (C) 2006-2007 DeSmuME team
+        Copyright (C) 2006-2007-2008-2009 DeSmuME team
 
 
 1) Compiling instructions...................................13
@@ -12,16 +12,11 @@
 
 1 Compiling instructions______________________________________
 
-DeSmuME is written in C, using the DirectX 8.0, OpenGL, zlib,
-zziplib libraries, so you need a working C compiler(such as
-mingw). Other supported compilers include Visual C++ 2005 and
-dev-cpp.
-
-  * You can find DirectX headers and libraries(for mingw) at
-    http://alleg.sourceforge.net/wip.html as the file
-    "dx80_mgw.zip". The actual runtime libraries(or
-    headers/libraries for MSVC) can be gotten from
-    http://www.microsoft.com/DirectX
+DeSmuME is written in C++, using the DirectX 8.0, OpenGL, zlib,
+zziplib libraries, so you need a working C++ compiler, such as
+Visual C++ 2005, Visual C++ 2008  or Intel compiler. It should
+also be possible to compile  it on dev-cpp, but it's currently
+untested.
 
   * OpenGL should be included with your compiler, if it isn't,
     check on your compiler's website for links.
@@ -30,155 +25,168 @@ dev-cpp.
 
   * zziplib can be found at http://zziplib.sourceforge.net
 
-mingw:
-All you have to do now is go into your mingw shell
-environment, go into the directory where you extracted DeSmuME,
-and type: "./configure". Once that's done(and there was no
-errors), type: "make". It should now take some time to compile so
-go grab yourself a sandwich or beer - whatever suits your fancy
-and it should be done in a few minutes. Now all you have to do is
-type "./src/desmume" in order to run it.
-
-dev-cpp:
-Load the project file DeSmuME.dev in the src/windows directory,
-compile, and you're set.
-
 Visual C++:
-Load the project file DeSmuME.vcproj in the src/windows directory,
-compile, and you're set.
+ Load    either    the    project   file   DeSmuME_2005.vcproj
+or  DeSmuME_2008.vcproj (depending  on the  VisualC++  version
+you're using)  in the  src/windows  directory,  compile,   and
+you're set.
 
 
 2 How to use DeSmuME__________________________________________
 
-Execute "desmume". A new window should pop up. The default
-settings should be fine for most people, but in case you need to
-adjust them, here's a brief explanation:
+Execute "desmume".  A new  window  (and a information console)
+should  pop up. The default  settings should be fine for  most
+people, but  in case you need to  adjust them,  here's a brief
+explanation:
 
 Under the "Config", there are a number of items:
 
 Save Type:
 Here you can select which type of Backup Memory DeSmuME should
-emulate. By default, Autodetect works fine, but in some cases
-DeSmuME doesn't correctly detect the Backup Memory. In that
+emulate. By default, Autodetect  works fine, but in some cases
+DeSmuME  doesn't correctly  detect the  Backup Memory. In that
 case, you will want to select the correct one.
+
+3D Config:
+Here you can change  what will be used to  emulate the 3D core
+of the DS. By default it's  on openGL, but you can also select
+a Null device, that won't show any 3D.
 
 Control Config:
 Here you can change the default key mappings. For now only the
-keyboard is supported, but in the near future gamepads and
+keyboard  is supported,  but in the  near future  gamepads and
 joysticks will be supported.
 
-Here are the default key mappings(they may be subject to change):
-Up arrow - Up
-Left arrow - Left
-Down arrow - Down
-right arrow - Right
-v - A button
-b - B button
-g - X button
-h - Y button
-c - Left Trigger
-n - Right Trigger
-enter - Start button
-space - Select button
+Here  are  the  default key mappings (they  may be  subject to
+change):
+  Up arrow - Up
+  Left arrow - Left
+  Down arrow - Down
+  right arrow - Right
+  v - A button
+  b - B button
+  g - X button
+  h - Y button
+  c - Left Trigger
+  n - Right Trigger
+  Enter - Start button
+  Space - Select button
 
 Sound Settings:
-Here you can change the default sound settings. By default
-DeSmuME uses Direct Sound, a buffer size of 2940, and
-volume set to max. But if you want to mute the sound, you can
-set the sound core to none. Or if you want to save the sound
-to a file, you can set the sound core to WAV write. If you find
-the sound is crackling a lot, try increasing the buffer size. On
-the other hand, if you find the sound somewhat delayed or jumpy,
-try decreasing the buffer size.
+Here  you can  change the  default sound settings.  By default
+DeSmuME uses  Direct Sound, a buffer size of 2940, and  volume
+set to max. But if you want to mute the sound, you can set the 
+sound  core to  none. Or if  you want to  save the  sound to a
+file, you can set the sound core to WAV write. If you find the
+sound is crackling a lot, try  increasing the buffer  size. On
+the other  hand, if you  find the sound  somewhat  delayed  or
+jumpy, try decreasing the buffer size.
+
+Firmware Settings:
+Here you can change settings  that are used as a customization
+on the  real DS: your name, birthday, favourite colour, etc...
 
 Frame Skip:
-Here you can adjust the amount of frame draws to skip during
-emulation. Normally the emulator detects whether the emulator
-is running too fast or slow and skips a frame or more if it
-needs to speed things up. However some people don't like the
+Here you  can adjust the amount  of frame draws to skip during
+emulation.  Normally the emulator detects whether the emulator
+is running  too fast or  slow and  skips a frame or more if it
+needs to speed  things up. However  some people don't like the
 results of it, so here you can adjust that.
 
-After all the settings are set to your satisfaction, you can then
-load a ROM image by going into the "File" menu, and choosing
-"Open". Select which file you'd like to open, and the emulator
-will automatically load and start running the selected ROM.
+Language:
+Here you can change the  emulator menus language. Currently we
+only support English, French and Danish.
 
-You can save the current emulation state by press shift + one of
-the twelve F keys. To load, just press one of the twelve F keys
-(without shift pressed).
 
-Under the View menu there's also a few additional options you may
-wish to change.
+
+After all the settings  are set to  your satisfaction, you can 
+then load  a ROM image  by going  into  the "File"  menu,  and 
+choosing "Open". Select which file you'd like to open, and the
+emulator  will   automatically  load  and  start  running  the
+selected ROM.
+
+You  can save the current emulation state by press shift + one
+of  the twelve F keys. To load, just press one of the twelve F
+keys (without shift pressed).
+
+------------------------
+
+Under the View menu there's  also a few additional options you
+may wish to change.
 
 Rotation:
-Here you can adjust which angle of the display. Some programs
-require that you normally turn the DS on its side. You can set it
-up in that manner using this.
+Here you can adjust which  angle of the display. Some programs
+require that you normally turn the DS on its side. You can set
+it up in that manner using this.
 
-Magnify/DeMagnify:
-With these options you can increase or decrease the window size.
+Window size:
+With  these  options  you  can increase or decrease the window
+size.
 
-Note: You can also adjust the window size by clicking on the edge
-of the window, and dragging the mouse.
+Note: You can  also adjust the  window size by clicking on the 
+edge of the window, and dragging the mouse.
 
 Force Maintain Ratio:
-Sometimes when the window size is changed it's doesn't look
-correct on the screen. This option forces the window to maintain
-a correct ratio so it looks correct.
+Sometimes when the  window size is  changed it's  doesn't look
+correct  on  the  screen.  This  option  forces  the window to
+maintain a correct ratio so it looks correct.
 
+Default size:
+This option  makes the emulator  window go back to the default
+size.
+
+------------------------
 
 GDB Debugger Stubs:
-Source level debugging of ARM9 and/or ARM7 code is supported
-using a GDB/Insight debugger.
-The GDB stubs are enabled from the command line using the
-following options:
+Source level debugging  of ARM9 and/or ARM7 code is  supported
+using a  GDB/Insight debugger. The GDB stubs  are enabled from
+the command line using the following options:
 
 --arm9gdb=<PORT_NUM> (for the ARM9)
 --arm7gdb=<PORT_NUM> (for the ARM7)
 
-The PORT_NUM is the TCP port upon which the stub will listen for
-connections. Once enabled you can connect to the stub using the
-following command at the GDB debugger prompt (assuming GDB and
-DeSmuME are running on the same machine):
+The PORT_NUM is  the TCP port  upon which the stub will listen
+for  connections.  Once enabled  you can  connect to  the stub
+using  the  following  command  at  the  GDB  debugger  prompt
+(assuming GDB and DeSmuME are running on the same machine):
 
 target remote :<PORT_NUM>
 
-NOTE: there are problems with the ARM support when stepping code
-with GDB versions prior to version 6.6. It is recommended that
-you use at least version 6.6 if possible.
+NOTE: There  are  problems  with the ARM support when stepping
+code with GDB versions prior to version 6.6. It is recommended
+that you use at least version 6.6 if possible.
 
+------------------------
 
 GBAMP compact flash emulation:
-
 The default behaviour of DeSmumME is to attempt to emulate the
-FAT image for the contents of the directory where the running
-.nds file was located.
-This behaviour can be altered using the
---cflash=<DISK_IMAGE_FILE> command line option. Using this
-option DeSmuME will emulation a GBAMP and read and write sectors
-from/to the disk image file.
-The disk image file must be created and populated with files
-using some external tool.
-NOTE: currently if desmume fails to open the disk image file it
-will silently continue minus a working GBAMP emulation.
+FAT image for the contents  of the directory where the running
+.nds file was located. 
+
+This behaviour can be altered using the --cflash=<DISK_IMAGE_FILE>
+command line option. Using  this option DeSmuME will emulation 
+a GBAMP and read and  write sectors  from/to  the  disk  image 
+file. The disk image  file must be created and populated  with
+files using some external tool.
+
+NOTE: Currently if  desmume fails to open  the disk image file
+it will silently continue minus a working GBAMP emulation.
 
 
 3 Contact information_________________________________________
 
 General inquiries should go to:
+
 E-mail:	guillaume@desmume.org
-
-Windows Port-related inquiries should go to:
-E-mail:
-
-Web:    http://desmume.org
+Web:    http://www.desmume.org
+Forums: http://forums.desmume.org
 
 Please don't ask for roms, bios files or any other copyrighted
 stuff.
 
-If you want to submit a bug report, please run desmume, go into
-the "Help" menu, and click on "Submit a bug report". If you're
-having trouble with it, please feel free to email.
+If you  want to submit  a bug report,  please run  desmume, go 
+into the "Help" menu, and  click on "Submit a bug report".  If
+you're having trouble with it, please feel free to email.
 
 
 4 Disclaimer__________________________________________________
