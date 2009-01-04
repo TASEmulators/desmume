@@ -31,6 +31,7 @@ CPU/MMU:
  bug: Fix repeating DMA (fixes NSMB parallax BG) [zeromus]
  bug: Proper handling for unaligned CPU accesses [luigi__]
  bug: Proper handling for undefined instruction exceptions [Salva Peiró]
+ bug: correctly return vram control register values (fixes homebrew 3d games) [zeromus]
  enh: Remove 16MB of WRAM at 0x01****** from arm9. Mapped to unused instead. Nobody knows what this was. [zeromus]
  enh: Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
 
