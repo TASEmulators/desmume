@@ -24,14 +24,11 @@
 #include "AboutBox.h"
 #include "resource.h"
 
-#define TEAM	32
-const char	*team[TEAM] = { "Original author",
-							"---------------",
-							"yopyop",
-							"",
-							"Current team",
-							"------------",
-							"Guillaume Duhamel",
+#define ABOUT_TIMER_ID 110222
+#define PER_PAGE_TEAM 23
+#define TEAM 26
+#define SIZE_SCROLL_BUFFER PER_PAGE_TEAM + TEAM
+const char	*team[TEAM] = { "Guillaume Duhamel",
 							"Normmatt",
 							"Bernat Muñoz (shash)",
 							"thoduv",
@@ -41,7 +38,7 @@ const char	*team[TEAM] = { "Original author",
 							"Jeff Bland",
 							"Andres Delikat",
 							"Riccardo Magliocchetti",
-							"Max Tabachenko (CrazyMax/mtabachenko)",
+							"Max Tabachenko (CrazyMax)",
 							"zeromus",
 							"Luigi__",
 							"adelikat",
@@ -59,6 +56,9 @@ const char	*team[TEAM] = { "Original author",
 							"Theo Berkau"};
 
 
+u8	scroll_start;
+u8	scroll_buffer[SIZE_SCROLL_BUFFER][255];
+
 BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lparam)
 {
 	switch(message)
@@ -67,13 +67,22 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 		{
 			char buf[2048];
 			memset(buf, 0, sizeof(buf));
+			wsprintf(buf, "version %s", DESMUME_VERSION_STRING);
+			SetDlgItemText(dialog, IDC_TXT_VERSION, buf);
+
+			memset(buf, 0, sizeof(buf));
+			wsprintf(buf, "compiled: %s %s", __DATE__,__TIME__);
+			SetDlgItemText(dialog, IDC_TXT_COMPILED, buf);
+
+			for (int i = 0; i < SIZE_SCROLL_BUFFER; i++)
+				strcpy((char *)scroll_buffer[i], "\n");
 			for (int i = 0; i < TEAM; i++)
 			{
-				strcat(buf,team[i]);
-				strcat(buf,"\n");
+				strcpy((char *)scroll_buffer[i + PER_PAGE_TEAM], team[i]);
+				strcat((char *)scroll_buffer[i + PER_PAGE_TEAM], "\n");
 			}
-
-			SetDlgItemText(dialog, IDC_AUTHORS_LIST, buf);
+			SetTimer(dialog, ABOUT_TIMER_ID, 400, (TIMERPROC) NULL);
+			scroll_start = 0;
 			break;
 		}
 	
@@ -81,9 +90,23 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 		{
 			if((HIWORD(wparam) == BN_CLICKED)&&(((int)LOWORD(wparam)) == IDC_FERMER))
 			{
+				KillTimer(dialog, ABOUT_TIMER_ID);
 				EndDialog(dialog,0);
 				return 1;
 			}
+			break;
+		}
+
+		case WM_TIMER:
+		{
+			char buf[4096];
+			memset(buf, 0, sizeof(buf));
+			for (int i = 0; i < PER_PAGE_TEAM; i++)
+				strcat(buf, (char *)scroll_buffer[i + scroll_start]);
+			scroll_start++;
+			if (scroll_start >= SIZE_SCROLL_BUFFER)
+				scroll_start = 0;
+			SetDlgItemText(dialog, IDC_AUTHORS_LIST, buf);
 			break;
 		}
 	}

@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include "../common.h"
+#include "../debug.h"
 #include <gl/gl.h>
 #include <gl/glext.h>
 #include "console.h"
@@ -66,9 +67,9 @@ bool windows_opengl_init()
 
 	res=CheckHardwareSupport(oglDC);
 	if (res>=0&&res<=2) 
-			LOG("OpenGL mode: %s\n",opengl_modes[res]); 
+			INFO("OpenGL mode: %s\n",opengl_modes[res]); 
 		else 
-			LOG("OpenGL mode: uknown\n");
+			INFO("OpenGL mode: uknown\n");
 
 	oglAlreadyInit = true;
 

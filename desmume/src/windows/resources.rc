@@ -17,7 +17,7 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
 #ifdef _WIN32
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-#pragma code_page(1252)
+#pragma code_page(1251)
 #endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1340,8 +1340,14 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTI
 CAPTION "About DeSmuME..."
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    CTEXT           "",IDC_AUTHORS_LIST,7,75,198,188,0,WS_EX_CLIENTEDGE
     DEFPUSHBUTTON   "Close",IDC_FERMER,86,277,50,14
-    CTEXT           "",IDC_AUTHORS_LIST,7,7,198,264,0,WS_EX_CLIENTEDGE
+    CTEXT           "DeSmuME",IDC_STATIC,7,7,198,10
+    CTEXT           "version",IDC_TXT_VERSION,7,18,198,8
+    RTEXT           "compiled",IDC_TXT_COMPILED,7,265,198,8
+    CTEXT           "Original author",IDC_STATIC,7,36,198,10
+    CTEXT           "yopyop",IDC_STATIC,9,45,196,10
+    CTEXT           "current team",IDC_STATIC,8,63,198,10
 END
 
 IDD_INPUT DIALOGEX 0, 0, 325, 148
