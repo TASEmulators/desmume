@@ -1,0 +1,65 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH DESMUME 1 "June 26, 2007"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+desmume-glade \- Nintendo DS emulator
+.SH SYNOPSIS
+.B desmume-glade
+.RI [ options ] " files" ...
+.SH DESCRIPTION
+This manual page documents briefly the
+.B desmume-glade
+program
+.PP
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics, 
+.\" respectively.
+\fBdesmume\fP is a Nintendo DS emulator running homebrew demos and commercial games.
+.SH OPTIONS
+These programs follow the usual GNU command line syntax, with long
+options starting with two dashes (`-').
+A summary of options is included below.
+For a complete description, see the Info files.
+.TP
+.B \-\-soft-convert
+Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.
+.TP
+.B \-\-disable-3d
+Disables the 3D emulation
+.TP
+.B \-\-disable-limiter
+Disables the 60 fps limiter
+.TP
+.B \-\-arm9gdb=PORT_NUM
+Enable the ARM9 GDB stub on the given port
+.TP
+.B \-\-arm7gdb=PORT_NUM
+Enable the ARM7 GDB stub on the given port
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-v, \-\-version
+Show version of program.
+.SH SEE ALSO
+.BR undocumented (7)
+.br
+.SH AUTHOR
+desmume was written by DeSmuME team
+(http://sourceforge.net/projects/desmume).
+.PP
+This manual page was written by Pascal Giard <pascal@debian.org>, for the Debian project (but may be used by others).
