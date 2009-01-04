@@ -7,6 +7,8 @@
 #include <vfw.h>
 #include <stdio.h>
 
+#include "debug.h"
+
 void EMU_PrintError(const char* msg) {
 	LOG(msg);
 }

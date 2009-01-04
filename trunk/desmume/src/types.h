@@ -21,17 +21,43 @@
 #define TYPES_HPP
 
 #define DESMUME_NAME "DeSmuME"
+
 #ifdef _WIN64
-#define DESMUME_VERSION_STRING "0.9-interim x64"
+#define DESMUME_PLATFORM_STRING " x64"
 #else
-#define DESMUME_VERSION_STRING "0.9-interim"
+#ifdef _WIN32
+#define DESMUME_PLATFORM_STRING " x86"
+#else
+#define DESMUME_PLATFORM_STRING ""
 #endif
-#define DESMUME_VERSION_NUMERIC 90000
+#endif
+
+#ifdef SSE2
+#define DESMUME_CPUEXT_STRING " SSE2"
+#else
+#define DESMUME_CPUEXT_STRING ""
+#endif
+
+#ifdef DEBUG
+#define DESMUME_SUBVERSION_STRING " debug"
+#else
+#ifdef RELEASE
+#define DESMUME_SUBVERSION_STRING ""
+#else
+#define DESMUME_SUBVERSION_STRING " interim"
+#endif
+#endif
+
 #ifdef __INTEL_COMPILER
-#define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " Intel " VERSION
+#define DESMUME_COMPILER " (Intel) "
 #else
-#define DESMUME_NAME_AND_VERSION DESMUME_NAME " " DESMUME_VERSION_STRING " " VERSION
+// TODO: make for others compilers
+#define DESMUME_COMPILER ""
 #endif
+
+#define DESMUME_VERSION_NUMERIC 90000
+#define DESMUME_VERSION_STRING " " "0.9" DESMUME_PLATFORM_STRING DESMUME_CPUEXT_STRING DESMUME_SUBVERSION_STRING DESMUME_COMPILER
+#define DESMUME_NAME_AND_VERSION " " DESMUME_NAME DESMUME_VERSION_STRING
 
 #ifdef _WIN32
 #define strcasecmp(x,y) _stricmp(x,y)
@@ -70,7 +96,7 @@
 #endif
 
 #ifndef FORCEINLINE
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define FORCEINLINE __forceinline
 #else
 #define FORCEINLINE INLINE
