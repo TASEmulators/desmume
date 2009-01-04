@@ -1,0 +1,93 @@
+# Project: DeSmuME
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = obj/yopyop_private.res
+OBJ  = obj/main.o obj/mem_view.o obj/des_view.o obj/ginfo.o obj/IORegView.o obj/palView.o obj/CWindow.o obj/tileView.o obj/mapView.o obj/oamView.o obj/arm_instructions.o obj/armcpu.o obj/bios.o obj/cp15.o obj/debug.o obj/Disassembler.o obj/FIFO.o obj/GPU.o obj/MMU.o obj/NDSSystem.o obj/thumb_instructions.o $(RES)
+LINKOBJ  = obj/main.o obj/mem_view.o obj/des_view.o obj/ginfo.o obj/IORegView.o obj/palView.o obj/CWindow.o obj/tileView.o obj/mapView.o obj/oamView.o obj/arm_instructions.o obj/armcpu.o obj/bios.o obj/cp15.o obj/debug.o obj/Disassembler.o obj/FIFO.o obj/GPU.o obj/MMU.o obj/NDSSystem.o obj/thumb_instructions.o $(RES)
+LIBS =  -L"lib" -mwindows  -s -march=pentium4 -msse2 
+INCS =  -I"include" 
+CXXINCS =  -I"lib/gcc/mingw32/3.4.2/include"  -I"include/c++/3.4.2/backward"  -I"include/c++/3.4.2/mingw32"  -I"include/c++/3.4.2"  -I"include" 
+BIN  = DeSmuME.exe
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O3 -march=pentium4 -msse2
+CFLAGS = $(INCS)   -fexpensive-optimizations -O3 -march=pentium4 -msse2
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before DeSmuME.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o "DeSmuME.exe" $(LIBS)
+
+obj/main.o: main.cpp
+	$(CPP) -c main.cpp -o obj/main.o $(CXXFLAGS)
+
+obj/mem_view.o: mem_view.cpp
+	$(CPP) -c mem_view.cpp -o obj/mem_view.o $(CXXFLAGS)
+
+obj/des_view.o: des_view.cpp
+	$(CPP) -c des_view.cpp -o obj/des_view.o $(CXXFLAGS)
+
+obj/ginfo.o: ginfo.cpp
+	$(CPP) -c ginfo.cpp -o obj/ginfo.o $(CXXFLAGS)
+
+obj/IORegView.o: IORegView.cpp
+	$(CPP) -c IORegView.cpp -o obj/IORegView.o $(CXXFLAGS)
+
+obj/palView.o: palView.cpp
+	$(CPP) -c palView.cpp -o obj/palView.o $(CXXFLAGS)
+
+obj/CWindow.o: CWindow.cpp
+	$(CPP) -c CWindow.cpp -o obj/CWindow.o $(CXXFLAGS)
+
+obj/tileView.o: tileView.cpp
+	$(CPP) -c tileView.cpp -o obj/tileView.o $(CXXFLAGS)
+
+obj/mapView.o: mapView.cpp
+	$(CPP) -c mapView.cpp -o obj/mapView.o $(CXXFLAGS)
+
+obj/oamView.o: oamView.cpp
+	$(CPP) -c oamView.cpp -o obj/oamView.o $(CXXFLAGS)
+
+obj/arm_instructions.o: ../arm_instructions.cpp
+	$(CPP) -c ../arm_instructions.cpp -o obj/arm_instructions.o $(CXXFLAGS)
+
+obj/armcpu.o: ../armcpu.cpp
+	$(CPP) -c ../armcpu.cpp -o obj/armcpu.o $(CXXFLAGS)
+
+obj/bios.o: ../bios.cpp
+	$(CPP) -c ../bios.cpp -o obj/bios.o $(CXXFLAGS)
+
+obj/cp15.o: ../cp15.cpp
+	$(CPP) -c ../cp15.cpp -o obj/cp15.o $(CXXFLAGS)
+
+obj/debug.o: ../debug.c
+	$(CPP) -c ../debug.c -o obj/debug.o $(CXXFLAGS)
+
+obj/Disassembler.o: ../Disassembler.cpp
+	$(CPP) -c ../Disassembler.cpp -o obj/Disassembler.o $(CXXFLAGS)
+
+obj/FIFO.o: ../FIFO.cpp
+	$(CPP) -c ../FIFO.cpp -o obj/FIFO.o $(CXXFLAGS)
+
+obj/GPU.o: ../GPU.cpp
+	$(CPP) -c ../GPU.cpp -o obj/GPU.o $(CXXFLAGS)
+
+obj/MMU.o: ../MMU.cpp
+	$(CPP) -c ../MMU.cpp -o obj/MMU.o $(CXXFLAGS)
+
+obj/NDSSystem.o: ../NDSSystem.cpp
+	$(CPP) -c ../NDSSystem.cpp -o obj/NDSSystem.o $(CXXFLAGS)
+
+obj/thumb_instructions.o: ../thumb_instructions.cpp
+	$(CPP) -c ../thumb_instructions.cpp -o obj/thumb_instructions.o $(CXXFLAGS)
+
+obj/yopyop_private.res: yopyop_private.rc resources.rc yopyop_private.rc 
+	$(WINDRES) -i yopyop_private.rc --input-format=rc -o obj/yopyop_private.res -O coff 
