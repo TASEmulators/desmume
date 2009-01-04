@@ -66,6 +66,7 @@
 
 static const char *bad_glob_cflash_disk_image_file;
 
+#define SCREENS_PIXEL_SIZE 98304
 
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
@@ -816,30 +817,21 @@ common_configure_fn( GtkWidget *widget,
 /* Drawing callback */
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-	SDL_PixelFormat screenPixFormat;
-	SDL_Surface *rawImage, *screenImage;
+	guchar *rgb;
+	rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
+	if (!rgb)
+		return 0;
+	for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
+		rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+		rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+		rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+	}
 
-	rawImage = SDL_CreateRGBSurfaceFrom((void*)&GPU_screen, 256, 192*2, 16, 512, 0x001F, 0x03E0, 0x7C00, 0);
-	if(rawImage == NULL) return 1;
-
-	memcpy(&screenPixFormat, rawImage->format, sizeof(SDL_PixelFormat));
-
-	screenPixFormat.BitsPerPixel = 24;
-	screenPixFormat.BytesPerPixel = 3;
-	screenPixFormat.Rshift = 0;
-	screenPixFormat.Gshift = 8;
-	screenPixFormat.Bshift = 16;
-	screenPixFormat.Rmask = 0x0000FF;
-	screenPixFormat.Gmask = 0x00FF00;
-	screenPixFormat.Bmask = 0xFF0000;
-
-	screenImage = SDL_ConvertSurface(rawImage, &screenPixFormat, 0);
-
-	gdk_draw_rgb_image	(widget->window,
-							  widget->style->fg_gc[widget->state],0,0,screenImage->w, screenImage->h,
-							  GDK_RGB_DITHER_NONE,(guchar*)screenImage->pixels,screenImage->pitch);
-	SDL_FreeSurface(screenImage);
-	SDL_FreeSurface(rawImage);
+	gdk_draw_rgb_image (widget->window,
+			    widget->style->fg_gc[widget->state], 0, 0,
+			    256, 192*2,
+			    GDK_RGB_DITHER_NONE,
+			    rgb, 256*3);
 
 	return 1;
 }
@@ -1102,8 +1094,6 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
 }
 
 /////////////////////////////// PRINTSCREEN /////////////////////////////////
-
-#define SCREENS_PIXEL_SIZE 98304
 
 static void Printscreen()
 {
