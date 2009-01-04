@@ -575,6 +575,15 @@ gtk_init_sub_gl_area(GtkWidget *widget,
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
 
+static inline void gpu_screen_to_rgb(u8 *rgb, int size)
+{
+	for (int i = 0; i < size; i++) {
+		rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+		rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+		rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+	}
+}
+
 #ifdef GTKGLEXT_AVAILABLE
 static int
 top_screen_expose_fn( GtkWidget *widget, GdkEventExpose *event, gpointer data)
@@ -599,15 +608,9 @@ top_screen_expose_fn( GtkWidget *widget, GdkEventExpose *event, gpointer data)
   glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
 
   if ( software_convert) {
-    int i;
     u8 converted[256 * 384 * 3];
 
-    for ( i = 0; i < (256 * 384); i++) {
-      converted[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-      converted[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-      converted[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
-    }
-
+    gpu_screen_to_rgb(converted, 256 * 384);
     glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
                      GL_RGB,
                      GL_UNSIGNED_BYTE,
@@ -821,12 +824,8 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
 	rgb = (guchar *) malloc(SCREENS_PIXEL_SIZE*3);
 	if (!rgb)
 		return 0;
-	for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
-		rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-		rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-		rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
-	}
 
+	gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
 	gdk_draw_rgb_image (widget->window,
 			    widget->style->fg_gc[widget->state], 0, 0,
 			    256, 192*2,
@@ -1107,12 +1106,8 @@ static void Printscreen()
 	rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
 	if (!rgb)
 		return;
-	for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
-		rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-		rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-		rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
-	}
 
+	gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
 	screenshot = gdk_pixbuf_new_from_data(rgb,
 					      GDK_COLORSPACE_RGB,
 					      FALSE,
