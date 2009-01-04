@@ -818,7 +818,7 @@ common_configure_fn( GtkWidget *widget,
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
 	guchar *rgb;
-	rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
+	rgb = (guchar *) malloc(SCREENS_PIXEL_SIZE*3);
 	if (!rgb)
 		return 0;
 	for (int i = 0; i < SCREENS_PIXEL_SIZE; i++) {
@@ -833,6 +833,7 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
 			    GDK_RGB_DITHER_NONE,
 			    rgb, 256*3);
 
+	free(rgb);
 	return 1;
 }
 
