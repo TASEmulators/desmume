@@ -29,8 +29,6 @@ static BOOL regMainLoop = FALSE;
 static BOOL noticed_3D=FALSE;
 volatile BOOL execute = FALSE;
 BOOL click = FALSE;
-BOOL fini = FALSE;
-unsigned long glock = 0;
 int savetype=MC_TYPE_AUTODETECT;
 u32 savesize=1;
 
