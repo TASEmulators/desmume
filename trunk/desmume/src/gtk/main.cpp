@@ -1458,77 +1458,12 @@ static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 }
 
-static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean opengl)
+static void desmume_gtk_menu_emulation_frameskip (GtkWidget *pMenu)
 {
-	GtkWidget *pMenuItem, *pSubmenu;
-#ifdef BROKEN_SCREENSIZE
-	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
-	gchar *buf;
-#endif
-	GtkWidget *mLayers_Radio[10];
-	const char *Layers_Menu[10] = {
-		"Main BG 0",
-		"Main BG 1",
-		"Main BG 2",
-		"Main BG 3",
-		"Main OBJ",
-		"SUB BG 0",
-		"SUB BG 1",
-		"SUB BG 2",
-		"SUB BG 3",
-		"SUB OBJ"
-	};
-	guint i;
-
-	/* FIXME: this does not work and there's a lot of code that assume the default screen size, drawing function included */
-#ifdef BROKEN_SCREENSIZE
-	if (!opengl) {
-		pSubmenu = gtk_menu_new();
-		pMenuItem = gtk_menu_item_new_with_label("Size");
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-		for(i = 1; i < MAX_SCREENCOEFF; i++) {
-			buf = g_strdup_printf("x%d", i);
-			if (i>1)
-				mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
-			else
-				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-			g_free(buf);
-			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GUINT_TO_POINTER(i));
-			gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
-		}
-	}
-#endif
-
-	pSubmenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Layers");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-	for(i = 0; i < 10; i++) {
-		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
-		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
-		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
-	}
-}
-
-static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
-{
-	GtkWidget *pMenu, *pMenuItem, *pSubmenu;
 	GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
+	GtkWidget *pMenuItem, *pSubmenu;
 	gchar *buf;
 	guint i;
-
-	pMenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Emulation");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
 
 	pSubmenu = gtk_menu_new();
 	pMenuItem = gtk_menu_item_new_with_label("Frameskip");
@@ -1546,12 +1481,86 @@ static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
 		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mFrameskip_Radio[i]);
 	}
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
+}
+
+#ifdef BROKEN_SCREENSIZE
+static void desmume_gtk_menu_emulation_display_size (GtkWidget *pMenu, gboolean opengl)
+{
+	GtkWidget *pMenuItem, *pSubmenu;
+	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
+	gchar *buf;
+	guint i;
+
+	/* FIXME: this does not work and there's a lot of code that assume the default screen size, drawing function included */
+	if (!opengl) {
+		pSubmenu = gtk_menu_new();
+		pMenuItem = gtk_menu_item_new_with_label("Display size");
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+		for(i = 1; i < MAX_SCREENCOEFF; i++) {
+			buf = g_strdup_printf("x%d", i);
+			if (i>1)
+				mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
+			else
+				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+			g_free(buf);
+			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GUINT_TO_POINTER(i));
+			gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
+		}
+	}
+}
+#endif
+
+static void desmume_gtk_menu_emulation_layers (GtkWidget *pMenu, gboolean opengl)
+{
+	GtkWidget *pMenuItem, *pSubmenu;
+	GtkWidget *mLayers_Radio[10];
+	const char *Layers_Menu[10] = {
+		"Main BG 0",
+		"Main BG 1",
+		"Main BG 2",
+		"Main BG 3",
+		"Main OBJ",
+		"SUB BG 0",
+		"SUB BG 1",
+		"SUB BG 2",
+		"SUB BG 3",
+		"SUB OBJ"
+	};
+	guint i;
 
 	pSubmenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Graphics");
+	pMenuItem = gtk_menu_item_new_with_label("Layers");
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-	desmume_gtk_menu_emulation_graphics(pSubmenu, opengl);
+
+	for(i = 0; i < 10; i++) {
+		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
+		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
+		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
+	}
+}
+
+static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
+{
+	GtkWidget *pMenu, *pMenuItem;
+
+	pMenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Emulation");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
+	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
+
+	desmume_gtk_menu_emulation_frameskip(pMenu);
+	desmume_gtk_menu_emulation_layers(pMenu, opengl);
+#ifdef BROKEN_SCREENSIZE
+	desmume_gtk_menu_emulation_display_size(pMenu, opengl);
+#endif
 }
 
 static void desmume_gtk_menu_config (GtkWidget *pMenuBar)
