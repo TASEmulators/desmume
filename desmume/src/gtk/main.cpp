@@ -1088,6 +1088,13 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
 			if(MainScreen.gpu->dispBG[Layer]) GPU_remove(MainScreen.gpu, Layer);
 		}
 		break;
+	case MAIN_OBJ:
+		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+			if(!MainScreen.gpu->dispOBJ) GPU_addBack(MainScreen.gpu, Layer);
+		} else { 
+			if(MainScreen.gpu->dispOBJ) GPU_remove(MainScreen.gpu, Layer);
+		}
+		break;
 	case SUB_BG_0:
 	case SUB_BG_1:
 	case SUB_BG_2:
@@ -1099,8 +1106,11 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
 		}
 		break;
 	case SUB_OBJ:
-	case MAIN_OBJ:
-		/* TODO: Disable sprites */
+		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+			if(!SubScreen.gpu->dispOBJ) GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+		} else { 
+			if(SubScreen.gpu->dispOBJ) GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
+		}
 		break;
 	default:
 		break;
