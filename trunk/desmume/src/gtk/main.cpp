@@ -930,10 +930,9 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 	return TRUE;
 }
 
-static u16 Cur_Keypad;
-
-static gint Key_Press(GtkWidget *w, GdkEventKey *e)
+static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
+  u16 Cur_Keypad = (u16) (long) data;
   u16 Key = lookup_key(e->keyval);
   ADD_KEY( Cur_Keypad, Key );
   if(desmume_running()) update_keypad(Cur_Keypad);
@@ -946,8 +945,9 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e)
   return 1;
 }
 
-static gint Key_Release(GtkWidget *w, GdkEventKey *e)
+static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
+  u16 Cur_Keypad = (u16) (long) data;
   u16 Key = lookup_key(e->keyval);
   RM_KEY( Cur_Keypad, Key );
   if(desmume_running()) update_keypad(Cur_Keypad);
@@ -1629,6 +1629,7 @@ common_gtk_main( struct configured_features *my_config)
 {
 	SDL_TimerID limiter_timer = NULL;
 	gchar *config_file;
+	u16 Cur_Keypad = 0;
 
 	GtkAccelGroup * accel_group;
 	GtkWidget *pVBox;
@@ -1751,8 +1752,8 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
 	g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-	g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
-	g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
+	g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), (void *) (long) Cur_Keypad);
+	g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), (void *) (long) Cur_Keypad);
 
 	/* Creation de la GtkVBox */
 	pVBox = gtk_vbox_new(FALSE, 0);
