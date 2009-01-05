@@ -29,15 +29,14 @@
 //=================================================== IPC FIFO
 typedef struct
 {
-	u32		sendBuf[2][16];
-	u32		recvBuf[2][16];
+	u32		buf[16];
 	
-	u8		sendTail[2];
-	u8		recvTail[2];
+	u8		head;
+	u8		tail;
 } IPC_FIFO;
 
-extern IPC_FIFO ipc_fifo;
-extern void IPC_FIFOclear();
+extern IPC_FIFO ipc_fifo[2];
+extern void IPC_FIFOinit(u8 proc);
 extern void IPC_FIFOsend(u8 proc, u32 val);
 extern u32 IPC_FIFOrecv(u8 proc);
 extern void IPC_FIFOcnt(u8 proc, u16 val);

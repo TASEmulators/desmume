@@ -82,7 +82,7 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 				strcat((char *)scroll_buffer[i + PER_PAGE_TEAM], "\n");
 			}
 			SetTimer(dialog, ABOUT_TIMER_ID, 400, (TIMERPROC) NULL);
-			scroll_start = 0;
+			scroll_start = 1;
 			break;
 		}
 	
