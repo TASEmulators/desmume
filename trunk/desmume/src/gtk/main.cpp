@@ -1925,7 +1925,7 @@ common_gtk_main( struct configured_features *my_config)
           if ( !use_null_3d) {
             /* setup the gdk 3D emulation */
 #ifdef GTKGLEXT_AVAILABLE
-            if ( init_opengl_gdk_3Demu()) {
+            if ( init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window))) {
 #else
             if ( init_osmesa_3Demu()) {
 #endif

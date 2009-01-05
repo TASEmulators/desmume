@@ -27,6 +27,6 @@
  */
 
 int
-init_opengl_gdk_3Demu( void);
+init_opengl_gdk_3Demu( GdkDrawable * drawable);
 
 #endif

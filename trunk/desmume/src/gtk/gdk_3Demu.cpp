@@ -151,11 +151,11 @@ _oglrender_init( void) {
 }
 
 int
-init_opengl_gdk_3Demu( void) {
+init_opengl_gdk_3Demu( GdkDrawable * drawable) {
   GdkGLConfig *glconfig;
 
   /* create the off screen pixmap */
-  target_pixmap = gdk_pixmap_new ( NULL, 256, 192, 24);
+  target_pixmap = gdk_pixmap_new ( drawable, 256, 192, -1);
 
   if ( target_pixmap == NULL) {
       g_print ("*** Failed to create pixmap.\n");
