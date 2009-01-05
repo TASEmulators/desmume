@@ -123,7 +123,6 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 	//LOG("IPC%s FIFO context 0x%X (local 0x%X)\n", proc?"7":"9", val, cnt_l);
 	if (val & 0x4008)
 	{
-		u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
 		ipc_fifo[proc].head = 0;
 		ipc_fifo[proc].tail = 0;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
