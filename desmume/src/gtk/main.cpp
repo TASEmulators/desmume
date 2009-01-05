@@ -72,6 +72,18 @@ static const char *bad_glob_cflash_disk_image_file;
 static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
 
+enum {
+	MAIN_BG_0 = 0,
+	MAIN_BG_1,
+	MAIN_BG_2,
+	MAIN_BG_3,
+	MAIN_OBJ,
+	SUB_BG_0,
+	SUB_BG_1,
+	SUB_BG_2,
+	SUB_BG_3,
+	SUB_OBJ
+};
 
 /************************ CONFIG FILE *****************************/
 
@@ -1060,35 +1072,38 @@ static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 
 static void Modify_Layer(GtkWidget* widget, gpointer data)
 {
-	int i;
-	gchar *Layer = (gchar*)data;
+	int Layer = GPOINTER_TO_INT(data);
 
-	if(!desmume_running()) {
+	if (!desmume_running())
 		return;
-	}
 
-	if(memcmp(Layer, "Sub", 3) == 0) {
-		if(memcmp(Layer, "Sub BG", 6) == 0) {
-			i = atoi(Layer + strlen("Sub BG "));
-			if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-				if(!SubScreen.gpu->dispBG[i]) GPU_addBack(SubScreen.gpu, i);
-			} else { 
-				if(SubScreen.gpu->dispBG[i]) GPU_remove(SubScreen.gpu, i);
-			}
-		} else {
-			/* TODO: Disable sprites */
+	switch (Layer) {
+	case MAIN_BG_0:
+	case MAIN_BG_1:
+	case MAIN_BG_2:
+	case MAIN_BG_3:
+		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+			if(!MainScreen.gpu->dispBG[Layer]) GPU_addBack(MainScreen.gpu, Layer);
+		} else { 
+			if(MainScreen.gpu->dispBG[Layer]) GPU_remove(MainScreen.gpu, Layer);
 		}
-	} else {
-		if(memcmp(Layer, "Main BG", 7) == 0) {
-			i = atoi(Layer + strlen("Main BG "));
-			if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-				if(!MainScreen.gpu->dispBG[i]) GPU_addBack(MainScreen.gpu, i);
-			} else { 
-				if(MainScreen.gpu->dispBG[i]) GPU_remove(MainScreen.gpu, i);
-			}
-		} else {
-			/* TODO: Disable sprites */
+		break;
+	case SUB_BG_0:
+	case SUB_BG_1:
+	case SUB_BG_2:
+	case SUB_BG_3:
+		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+			if(!SubScreen.gpu->dispBG[Layer-SUB_BG_0]) GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+		} else { 
+			if(SubScreen.gpu->dispBG[Layer-SUB_BG_0]) GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
 		}
+		break;
+	case SUB_OBJ:
+	case MAIN_OBJ:
+		/* TODO: Disable sprites */
+		break;
+	default:
+		break;
 	}
 	LOG ("Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
 }
@@ -1483,7 +1498,7 @@ static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean open
 
 	for(i = 0; i < 10; i++) {
 		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
-		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), (void*)Layers_Menu[i]);
+		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), (void *)i);
 		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
 	}
