@@ -87,6 +87,12 @@ public:
 #define DMALOG(...)
 #endif
 
+#ifdef CFLASHDEBUG
+#define CFLASHLOG(...) LOGC(5, __VA_ARGS__)
+#else
+#define CFLASHLOG(...)
+#endif
+
 #define INFOC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
 #define INFO(...) INFOC(10, __VA_ARGS__)
 

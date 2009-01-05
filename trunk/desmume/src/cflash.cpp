@@ -74,32 +74,7 @@
 #include "MMU.h"
 #include "cflash.h"
 #include "NDSSystem.h"
-
-#ifdef WIN32
-#include <stdarg.h>
-#include <windows.h>
-static void
-debug_output( const char *fmt, ...) {
-  char debug_string[2048];
-  va_list ap;
-  va_start( ap, fmt);
-
-  vsprintf( debug_string, fmt, ap);
-  OutputDebugStringA( debug_string);
-
-  va_end( ap);
-}
-#endif
-
-#if 1
-#ifdef WIN32
-#define LOCAL_LOG debug_output
-#else
-#define LOCAL_LOG( fmt, ...) printf("CFLASH: ");printf( fmt, ##__VA_ARGS__)
-#endif
-#else
-#define LOCAL_LOG( fmt, ...)
-#endif
+#include "debug.h"
 
 static int use_disk_image_file = 0;
 
@@ -513,24 +488,24 @@ cflash_init( const char *disk_image_filename) {
   BOOL init_good = FALSE;
 
   if ( disk_image_filename != NULL) {
-    LOCAL_LOG("Using CFlash disk image file %s\n", disk_image_filename);
+    CFLASHLOG("Using CFlash disk image file %s\n", disk_image_filename);
     use_disk_image_file = 1;
     disk_image = OPEN_FN( disk_image_filename, OPEN_MODE);
 
     if ( disk_image != -1) {
       file_size = LSEEK_FN( disk_image, 0, SEEK_END);
         if (0 && file_size == -1) {
-			LOCAL_LOG( "Error when seeking to end of disk image" );
+			CFLASHLOG( "Error when seeking to end of disk image" );
         } else {
 			LSEEK_FN( disk_image, 0, SEEK_SET);
 
-			LOCAL_LOG( "Disk image size = %ld (%ld sectors)\n",
+			CFLASHLOG( "Disk image size = %ld (%ld sectors)\n",
                  file_size, file_size / 512);
 			init_good = TRUE;
 		}
 	}
     else {
-      LOCAL_LOG("Failed to open file %s: \"%s\"\n",
+      CFLASHLOG("Failed to open file %s: \"%s\"\n",
                 disk_image_filename,
                 strerror( errno));
     }
@@ -619,7 +594,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset) {
 	if (dirent == activeDirEnt) {
 		if ((offset < bufferStart) || (offset >= bufferStart + 512)) {
 			if (!hFile) {
-				LOCAL_LOG("fread_buffered with hFile null with"
+				CFLASHLOG("fread_buffered with hFile null with"
 					  "offset %lu and bufferStart %lu\n",
 					  offset, bufferStart);
 				return 0;
@@ -688,13 +663,13 @@ cflash_read(unsigned int address) {
                          BUFFERED_BLOCK_SIZE - read_bytes);
 
               if ( cur_read == -1) {
-				LOCAL_LOG( "Error during read: %s\n", strerror(errno) );
+				CFLASHLOG( "Error during read: %s\n", strerror(errno) );
                 break;
               }
               read_bytes += cur_read;
             }
 
-            LOCAL_LOG( "Read %d bytes\n", read_bytes);
+            CFLASHLOG( "Read %d bytes\n", read_bytes);
 
             buffered_start_index = currLBA;
           }
@@ -802,7 +777,7 @@ cflash_write(unsigned int address,unsigned int data) {
         sector_write_index += 2;
 
         if ( sector_write_index == 512) {
-          LOCAL_LOG( "Write sector to %ld\n", currLBA);
+          CFLASHLOG( "Write sector to %ld\n", currLBA);
 
           if ( currLBA + 512 < file_size) {
             size_t written = 0;
@@ -821,7 +796,7 @@ cflash_write(unsigned int address,unsigned int data) {
               }
             }
 
-            LOCAL_LOG("Wrote %u bytes\n", written);
+            CFLASHLOG("Wrote %u bytes\n", written);
           }
           currLBA += 512;
           sector_write_index = 0;
