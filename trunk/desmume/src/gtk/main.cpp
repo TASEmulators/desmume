@@ -1058,7 +1058,7 @@ static void Edit_Controls(GtkWidget* widget, gpointer data)
 
 static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 {
-	int Size = GPOINTER_TO_INT(data);
+	guint Size = GPOINTER_TO_UINT(data);
 	static int ScreenCoeff_Size;
 
 	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 384 * Size);
@@ -1072,7 +1072,7 @@ static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 
 static void Modify_Layer(GtkWidget* widget, gpointer data)
 {
-	int Layer = GPOINTER_TO_INT(data);
+	guint Layer = GPOINTER_TO_UINT(data);
 
 	if (!desmume_running())
 		return;
@@ -1495,7 +1495,7 @@ static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean open
 			else
 				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
 			g_free(buf);
-			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GINT_TO_POINTER(i));
+			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GUINT_TO_POINTER(i));
 			gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
 		}
 	}
@@ -1508,7 +1508,7 @@ static void desmume_gtk_menu_emulation_graphics (GtkWidget *pMenu, gboolean open
 
 	for(i = 0; i < 10; i++) {
 		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
-		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), (void *)i);
+		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
 		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
 	}
