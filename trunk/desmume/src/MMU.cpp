@@ -361,7 +361,8 @@ void MMU_Init(void) {
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
 
-	IPC_FIFOclear();
+	IPC_FIFOinit(ARMCPU_ARM9);
+	IPC_FIFOinit(ARMCPU_ARM7);
 	GFX_FIFOclear();
 	
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
@@ -416,8 +417,9 @@ void MMU_clearMem()
 	
 	memset(MMU.ARM7_ERAM,     0, 0x010000);
 	memset(MMU.ARM7_REG,      0, 0x010000);
-	
-	IPC_FIFOclear();
+
+	IPC_FIFOinit(ARMCPU_ARM9);
+	IPC_FIFOinit(ARMCPU_ARM7);
 	GFX_FIFOclear();
 	
 	MMU.DTCMRegion = 0x027C0000;
@@ -1446,6 +1448,22 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
   arm9_write32
 };
 
+static INLINE void MMU_IPCSync(u8 proc, u32 val)
+{
+	//INFO("IPC%s sync 0x%08X\n", proc?"7":"9", val);
+	u32 IPCSYNC_local = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
+	u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180);
+
+	IPCSYNC_local = (IPCSYNC_local&0x6000)|(val&0xf00)|(IPCSYNC_local&0xf);
+	IPCSYNC_remote =(IPCSYNC_remote&0x6f00)|((val>>8)&0xf);
+
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, IPCSYNC_local);
+	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, IPCSYNC_remote);
+
+	if ((val & 0x2000) && (IPCSYNC_remote & 0x4000))
+		NDS_makeInt(proc^1, 17);
+}
+
 //================================================================================================== ARM9 *
 //=========================================================================================================
 //=========================================================================================================
@@ -1633,22 +1651,6 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
-}
-
-static INLINE void MMU_IPCSync(u8 proc, u32 val)
-{
-	//INFO("IPC%s sync 0x%08X\n", proc?"7":"9", val);
-	u32 IPCSYNC_local = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
-	u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180);
-
-	IPCSYNC_local = (IPCSYNC_local&0x6000)|(val&0xf00)|(IPCSYNC_local&0xf);
-	IPCSYNC_remote =(IPCSYNC_remote&0x6f00)|((val>>8)&0xf);
-
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, IPCSYNC_local);
-	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, IPCSYNC_remote);
-
-	if ((val & 0x2000) && (IPCSYNC_remote & 0x4000))
-		NDS_makeInt(proc^1, 17);
 }
 
 //================================================= MMU ARM9 write 16
@@ -2866,7 +2868,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_IF :
 				return MMU.reg_IF[ARMCPU_ARM9];
 			case REG_IPCFIFORECV :
-				return IPC_FIFOrecv(ARMCPU_ARM9);
+				return IPC_FIFOrecv(ARMCPU_ARM7);
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
@@ -3462,7 +3464,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 
 			case REG_IPCFIFOSEND :
-				IPC_FIFOsend(ARMCPU_ARM7, val);
+					IPC_FIFOsend(ARMCPU_ARM7, val);
 				return;
 			case REG_DMA0CNTL :
 				//LOG("32 bit dma0 %04X\r\n", val);
@@ -3692,7 +3694,7 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 			case REG_IF :
 				return MMU.reg_IF[ARMCPU_ARM7];
 			case REG_IPCFIFORECV :
-				return IPC_FIFOrecv(ARMCPU_ARM7);
+				return IPC_FIFOrecv(ARMCPU_ARM9);
             case REG_TM0CNTL :
             case REG_TM1CNTL :
             case REG_TM2CNTL :

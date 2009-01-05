@@ -40,6 +40,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "./windows/disView.h"
 #endif
 
+//#define USE_REAL_BIOS
+
 static BOOL LidClosed = FALSE;
 static u8 LidKeyCount = 0;
 
@@ -550,7 +552,11 @@ void NDS_Reset( void)
 	//_MMU_write32[ARMCPU_ARM9](0x02007FFC, 0xE92D4030);
 
 	//ARM7 BIOS IRQ HANDLER
-	//inf = fopen("BiosNds7.ROM","rb");
+#ifdef USE_REAL_BIOS
+	inf = fopen("BiosNds7.ROM","rb");
+#else
+	inf = NULL;
+#endif
 	if(inf) {
 		fread(MMU.ARM7_BIOS,1,16384,inf);
 		fclose(inf);
@@ -569,7 +575,11 @@ void NDS_Reset( void)
 	}
 
 	//ARM9 BIOS IRQ HANDLER
-	//inf = fopen("BiosNds9.ROM","rb");
+#ifdef USE_REAL_BIOS
+	inf = fopen("BiosNds9.ROM","rb");
+#else
+	inf = NULL;
+#endif
 	if(inf) {
 		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
 		fclose(inf);
