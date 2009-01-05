@@ -497,7 +497,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 #ifdef GTKGLEXT_AVAILABLE
           if ( !use_null_3d) {
             /* setup the gdk 3D emulation */
-            if ( init_opengl_gdk_3Demu()) {
+            if ( init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window))) {
               NDS_3D_SetDriver(1);
 
               if (!gpu3D->NDS_3D_Init()) {
