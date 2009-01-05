@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="DeSmuME_VS2005"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -51,7 +51,7 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;HAVE_LIBZ;NOMINMAX"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;DEBUG\&quot;;WIN32;BETA_VERSION;SPU_INTERPOLATE;HAVE_LIBZ;NOMINMAX"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
@@ -105,7 +105,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Interim|Win32"
+			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)\__bins"
 			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
@@ -139,7 +139,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;NDEBUG"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;Release\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
@@ -193,7 +193,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Interim SSE2|Win32"
+			Name="Release (SSE2)|Win32"
 			OutputDirectory="$(SolutionDir)\__bins"
 			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
@@ -228,167 +228,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;NDEBUG"
-				StringPooling="true"
-				ExceptionHandling="1"
-				StructMemberAlignment="0"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="false"
-				EnableEnhancedInstructionSet="2"
-				FloatingPointModel="2"
-				RuntimeTypeInfo="false"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="1"
-				CompileAs="0"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				GenerateDebugInformation="true"
-				GenerateMapFile="true"
-				EnableCOMDATFolding="0"
-				OptimizeForWindows98="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-				AdditionalManifestFiles="DeSmuME_x86.manifest"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release (public)|Win32"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release SSE2 (public)|Win32"
-			OutputDirectory="$(SolutionDir)\__bins"
-			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="MASM"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;VERSION=\&quot;Release SSE2\&quot;;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
 				StructMemberAlignment="0"
@@ -546,7 +386,7 @@
 				RelativePath=".\main.cpp"
 				>
 				<FileConfiguration
-					Name="Interim|Win32"
+					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -694,7 +534,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Interim|Win32"
+						Name="Release|Win32"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -703,16 +543,7 @@
 						/>
 					</FileConfiguration>
 					<FileConfiguration
-						Name="Interim SSE2|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\$(InputName)1.obj"
-							XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release SSE2 (public)|Win32"
+						Name="Release (SSE2)|Win32"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
@@ -750,7 +581,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Interim|Win32"
+					Name="Release|Win32"
 					ExcludedFromBuild="true"
 					>
 					<Tool
@@ -761,18 +592,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Interim SSE2|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Assembling..."
-						CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;"
-						Outputs="$(IntDir)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release SSE2 (public)|Win32"
+					Name="Release (SSE2)|Win32"
 					ExcludedFromBuild="true"
 					>
 					<Tool
@@ -795,7 +615,7 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
-					Name="Interim|Win32"
+					Name="Release|Win32"
 					ExcludedFromBuild="true"
 					>
 					<Tool
@@ -1016,15 +836,7 @@
 			RelativePath="..\ROMReader.cpp"
 			>
 			<FileConfiguration
-				Name="Interim SSE2|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					CallingConvention="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release SSE2 (public)|Win32"
+				Name="Release (SSE2)|Win32"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -1048,15 +860,7 @@
 			RelativePath="..\saves.cpp"
 			>
 			<FileConfiguration
-				Name="Interim SSE2|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					CallingConvention="1"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release SSE2 (public)|Win32"
+				Name="Release (SSE2)|Win32"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
