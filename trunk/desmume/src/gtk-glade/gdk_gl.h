@@ -23,8 +23,7 @@
 #define __GDKGL_H__
 
 #include "globals.h"
-// comment for GL :D
-//#undef HAVE_LIBGDKGLEXT_X11_1_0
+
 #ifdef GTKGLEXT_AVAILABLE
 	#include <GL/gl.h>
 	#include <GL/glext.h>

@@ -76,7 +76,7 @@ void black_screen () {
 	memset(on_screen_image32,0,screen_size());
 }
 
-#ifndef HAVE_LIBGDKGLEXT_X11_1_0
+#ifndef GTKGLEXT_AVAILABLE
 // they are empty if no opengl
 // else see gdk_gl.c / gdk_gl.h
 BOOL my_gl_Begin (int screen) { return FALSE; }
@@ -163,7 +163,7 @@ gboolean screen (GtkWidget * widget, int off) {
 		GDK_RGB_DITHER_NONE,((guchar*)on_screen_image32)+off,L);
 	return TRUE;
 }
-#endif /* if HAVE_LIBGDKGLEXT_X11_1_0 */
+#endif /* if GTKGLEXT_AVAILABLE */
 
 
 /* OUTPUT SCREENS  */
@@ -183,7 +183,7 @@ gboolean  on_wDrawScreen_configure_event(GtkWidget *widget, GdkEventConfigure *e
 /* ***** ***** INPUT STYLUS / MOUSE ***** ***** */
 
 static void resize_incremental(int i, GdkEventScroll *event) {
-#ifdef HAVE_LIBGDKGLEXT_X11_1_0
+#ifdef GTKGLEXT_AVAILABLE
 	float zoom_inc=.125, zoom_min=0.25, zoom_max=5.0;
 #else
 	float zoom_inc=1.0, zoom_min=1.0, zoom_max=3.0;

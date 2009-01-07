@@ -108,9 +108,6 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     AC_SUBST(GTHREAD_CFLAGS)
     AC_SUBST(GTHREAD_LIBS)
 
-
-    AC_CHECK_LIB(gdkglext-x11-1.0, gdk_gl_init)
-
     PKG_CHECK_MODULES(LIBGLADE,
                       "libglade-2.0",
                       HAVE_LIBGLADE=yes,
