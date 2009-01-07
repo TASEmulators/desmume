@@ -431,7 +431,7 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 #endif
-#ifdef _WIN32
+#ifndef GL_VERSION_1_3
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
 
