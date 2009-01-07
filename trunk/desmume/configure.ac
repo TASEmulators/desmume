@@ -13,7 +13,7 @@ case $target in
 esac
 AC_SUBST(desmume_arch)
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.10])
 
 dnl -- make sure we have a C compiler
 AC_PROG_CC
