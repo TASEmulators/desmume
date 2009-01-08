@@ -19,6 +19,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifdef GTKGLEXT_AVAILABLE
 #include "callbacks_dtools.h"
 #include "../gdk_gl.h"
 
@@ -457,5 +458,7 @@ void other_screen (GtkWidget * widget, int screen) {
 	my_gl_End(screen);
 	glDeleteTextures(3, &Textures);
 }
+
+#endif
 
 #endif
