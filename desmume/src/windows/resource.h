@@ -21,7 +21,9 @@
 #define IDD_3DSETTINGS                  111
 #define IDM_EXEC                        112
 #define IDM_PAUSE                       113
+#define IDD_GBASLOT                     113
 #define IDM_RESET                       114
+#define IDD_GBASLOT_CFLASH              114
 #define IDM_IOREG                       115
 #define IDM_LOG                         116
 #define IDM_PAL                         117
@@ -221,10 +223,22 @@
 #define IDC_TXT_VERSION                 1030
 #define IDC_SCROLLBAR1                  1031
 #define IDC_IE7                         1032
+#define IDC_ADDONS_CONFIG               1032
 #define IDC_IF7                         1033
+#define IDC_ADDONS_LIST                 1033
 #define IDC_IME7                        1034
+#define IDC_ADDONS_INFO                 1034
 #define IDC_IPCSYNC7                    1035
+#define IDC_BBROWSE                     1035
 #define IDC_IPCFIFO7                    1036
+#define IDC_PATHIMG                     1036
+#define IDC_PATHGAME                    1037
+#define IDC_PATH                        1037
+#define IDC_RFILE                       1038
+#define IDC_RFOLDER                     1039
+#define IDC_BBROWSE2                    1040
+#define IDC_CHECK1                      1041
+#define IDC_PATHDESMUME                 1041
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -313,6 +327,9 @@
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_EDIT 1303
 #define IDD_MEM_VIEWER9                 1303
 #define IDC_LIGHT_VIEWER_LIGHT0VECTOR_EDIT 1304
+#define IDD_GBASLOT_NONE                1304
+#define IDD_GBASLOT_RUMBLEPAK           1305
+#define IDD_GBASLOT_GBAGAME             1306
 #define IDC_LIGHT_VIWER_LIGHT1_GROUP    1311
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_COLORCTRL 1312
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_EDIT 1313
@@ -369,14 +386,16 @@
 #define IDC_SAVETYPE7                   40037
 #define IDM_DEFSIZE                     40038
 #define IDM_3DCONFIG                    40040
+#define ID_EMULATION_GBASLOT            40041
+#define IDM_GBASLOT                     40042
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        113
-#define _APS_NEXT_COMMAND_VALUE         40041
-#define _APS_NEXT_CONTROL_VALUE         1032
+#define _APS_NEXT_RESOURCE_VALUE        115
+#define _APS_NEXT_COMMAND_VALUE         40043
+#define _APS_NEXT_CONTROL_VALUE         1042
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

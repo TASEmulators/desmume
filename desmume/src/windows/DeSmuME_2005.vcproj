@@ -511,6 +511,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\gbaslot_config.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\gbaslot_config.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ginfo.cpp"
 				>
 			</File>
@@ -804,6 +812,34 @@
 				</FileConfiguration>
 			</File>
 		</Filter>
+		<Filter
+			Name="addons"
+			>
+			<File
+				RelativePath="..\addons\compactFlash.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\gbagame.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\none.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\addons\rumblepak.cpp"
+				>
+			</File>
+		</Filter>
+		<File
+			RelativePath="..\addons.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\addons.h"
+			>
+		</File>
 		<File
 			RelativePath="..\ARM9.h"
 			>

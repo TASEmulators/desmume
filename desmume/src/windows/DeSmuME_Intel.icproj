@@ -5,7 +5,7 @@
 	Name="DeSmuME_Intel"
 	ProjectGUID="{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="1380849017"
+	VCNestedProjectCRC32="4289079542"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -320,6 +320,8 @@
 	</Configurations>
 	<Files>
 		<File 
+			RelativePath="..\addons.h"/>
+		<File 
 			RelativePath="..\ARM9.h"/>
 		<File 
 			RelativePath="..\arm_instructions.h"/>
@@ -345,8 +347,6 @@
 			RelativePath="..\fat.h"/>
 		<File 
 			RelativePath="..\FIFO.h"/>
-		<File 
-			RelativePath="..\fs-windows.cpp"/>
 		<File 
 			RelativePath="..\fs.h"/>
 		<File 
@@ -409,6 +409,8 @@
 			RelativePath=".\disView.h"/>
 		<File 
 			RelativePath=".\FirmConfig.h"/>
+		<File 
+			RelativePath=".\gbaslot_config.h"/>
 		<File 
 			RelativePath=".\ginfo.h"/>
 		<File 
@@ -526,6 +528,14 @@
 			</FileConfiguration>
 		</File>
 		<File 
+			RelativePath="..\addons\compactFlash.cpp"/>
+		<File 
+			RelativePath="..\addons\gbagame.cpp"/>
+		<File 
+			RelativePath="..\addons\none.cpp"/>
+		<File 
+			RelativePath="..\addons\rumblepak.cpp"/>
+		<File 
 			RelativePath="..\utils\decrypt\crc.cpp"/>
 		<File 
 			RelativePath="..\utils\decrypt\crc.h"/>
@@ -556,6 +566,8 @@
 		<File 
 			RelativePath="..\utils\xstring.h"/>
 		<File 
+			RelativePath="..\addons.cpp"/>
+		<File 
 			RelativePath="..\arm_instructions.cpp"/>
 		<File 
 			RelativePath="..\armcpu.cpp"/>
@@ -573,6 +585,8 @@
 			RelativePath="..\Disassembler.cpp"/>
 		<File 
 			RelativePath="..\FIFO.cpp"/>
+		<File 
+			RelativePath="..\fs-windows.cpp"/>
 		<File 
 			RelativePath="..\gfx3d.cpp"/>
 		<File 
@@ -621,6 +635,8 @@
 			RelativePath=".\disView.cpp"/>
 		<File 
 			RelativePath=".\FirmConfig.cpp"/>
+		<File 
+			RelativePath=".\gbaslot_config.cpp"/>
 		<File 
 			RelativePath=".\ginfo.cpp"/>
 		<File 

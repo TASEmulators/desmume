@@ -473,6 +473,10 @@
 				Name="core"
 				>
 				<File
+					RelativePath="..\addons.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\arm_instructions.cpp"
 					>
 				</File>
@@ -506,6 +510,10 @@
 				</File>
 				<File
 					RelativePath="..\FIFO.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fs-windows.cpp"
 					>
 				</File>
 				<File
@@ -826,6 +834,26 @@
 						</FileConfiguration>
 					</File>
 				</Filter>
+				<Filter
+					Name="addons"
+					>
+					<File
+						RelativePath="..\addons\compactFlash.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\addons\gbagame.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\addons\none.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\addons\rumblepak.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="windows"
@@ -856,6 +884,10 @@
 				</File>
 				<File
 					RelativePath=".\FirmConfig.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\gbaslot_config.cpp"
 					>
 				</File>
 				<File
@@ -965,6 +997,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\gbaslot_config.h"
+					>
+				</File>
+				<File
 					RelativePath=".\ginfo.h"
 					>
 				</File>
@@ -1021,6 +1057,10 @@
 				Name="core"
 				>
 				<File
+					RelativePath="..\addons.h"
+					>
+				</File>
+				<File
 					RelativePath="..\ARM9.h"
 					>
 				</File>
@@ -1070,10 +1110,6 @@
 				</File>
 				<File
 					RelativePath="..\FIFO.h"
-					>
-				</File>
-				<File
-					RelativePath="..\fs-windows.cpp"
 					>
 				</File>
 				<File

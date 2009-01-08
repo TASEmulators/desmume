@@ -41,6 +41,9 @@
 	----------------------
 	
 */
+#include "common.h"
+
+#ifndef EXPERIMENTAL_GBASLOT
 
 #include <errno.h>
 #include <stdio.h>
@@ -874,3 +877,4 @@ cflash_close( void) {
   }
 }
 
+#endif
