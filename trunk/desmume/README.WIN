@@ -59,18 +59,27 @@ joysticks will be supported.
 
 Here  are  the  default key mappings (they  may be  subject to
 change):
-  Up arrow - Up
-  Left arrow - Left
-  Down arrow - Down
-  right arrow - Right
-  x - A button
-  z - B button
-  s - X button
-  a - Y button
-  q - Left Trigger
-  w - Right Trigger
-  Enter - Start button
-  Right Shift - Select button
+
+  Up arrow             - Up
+  Left arrow           - Left
+  Down arrow           - Down
+  Right arrow          - Right
+  x                    - A button
+  z                    - B button
+  s                    - X button
+  a                    - Y button
+  q                    - Left Trigger
+  w                    - Right Trigger
+  Enter                - Start button
+  Right Shift          - Select button
+  
+  n                    - Frame advance
+  Space                - Pause/Unpause 
+  p                    - Load current state
+  1,2,3,4,5,6,7,8,9,0  - Select current state
+  F1-F10               - Load relevant state
+  Shift+F1-F10         - Save relevant state
+  
 
 Sound Settings:
 Here  you can  change the  default sound settings.  By default
@@ -104,10 +113,6 @@ then load  a ROM image  by going  into  the "File"  menu,  and
 choosing "Open". Select which file you'd like to open, and the
 emulator  will   automatically  load  and  start  running  the
 selected ROM.
-
-You  can save the current emulation state by press shift + one
-of  the twelve F keys. To load, just press one of the twelve F
-keys (without shift pressed).
 
 ------------------------
 
