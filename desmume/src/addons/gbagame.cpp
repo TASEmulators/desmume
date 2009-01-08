@@ -23,6 +23,7 @@
 
 #include "../addons.h"
 #include "../mem.h"
+#include "../MMU.h"
 
 u8		*GBArom = NULL;
 
@@ -68,16 +69,22 @@ void GBAgame_write32(u32 adr, u32 val) {}
 u8   GBAgame_read08(u32 adr)
 { 
 	//INFO("Read08 at 0x%08X value 0x%02X\n", adr, (u8)T1ReadByte(GBArom, (adr - 0x08000000)));
+	if ( (adr >= 0x08000004) && (adr < 0x080000A0) )
+		return MMU.MMU_MEM[0][0xFF][(adr +0x1C) & MMU.MMU_MASK[0][0xFF]];
 	return (u8)T1ReadByte(GBArom, (adr - 0x08000000));
 }
 u16  GBAgame_read16(u32 adr)
 { 
 	//INFO("Read16 at 0x%08X value 0x%04X\n", adr, (u16)T1ReadWord(GBArom, (adr - 0x08000000)));
+	if ( (adr >= 0x08000004) && (adr < 0x080000A0) )
+		return T1ReadWord(MMU.MMU_MEM[0][0xFF], (adr +0x1C) & MMU.MMU_MASK[0][0xFF]);  
 	return (u16)T1ReadWord(GBArom, (adr - 0x08000000));
 }
 u32  GBAgame_read32(u32 adr)
 { 
 	//INFO("Read32 at 0x%08X value 0x%08X\n", adr, (u32)T1ReadLong(GBArom, (adr - 0x08000000)));
+	if ( (adr >= 0x08000004) && (adr < 0x080000A0) )
+		return T1ReadLong(MMU.MMU_MEM[0][0xFF], (adr +0x1C) & MMU.MMU_MASK[0][0xFF]);
 	return (u32)T1ReadLong(GBArom, (adr - 0x08000000));
 }
 void GBAgame_info(char *info) { strcpy(info, "GBA game in slot"); };
