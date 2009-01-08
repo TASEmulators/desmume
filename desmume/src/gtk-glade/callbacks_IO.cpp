@@ -81,6 +81,8 @@ void black_screen () {
 // else see gdk_gl.c / gdk_gl.h
 BOOL my_gl_Begin (int screen) { return FALSE; }
 void my_gl_End (int screen) {}
+void reshape (GtkWidget * widget, int screen) {}
+void init_GL_capabilities( int use_software_convert) {}
 
 int has_pix_col_map=0;
 u32 pix_col_map[0x8000];
