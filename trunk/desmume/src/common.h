@@ -51,7 +51,7 @@ extern u8	gba_header_data_0x04[156];
 	// About GBA game in slot (only for use together with NDS + GBA): 
 	// in real BIOS 9 at offset 0x0020 placed compressed logo 
 	// for comparing with logo in header GBA cartridge. 
-	// so, GBA game in slot work now if using only real BIOS.
+	// so, GBA game in slot work now.
 	// Later need make loading this table in BIOS memory (from gba_header_data_0x04)
 	//
 	// in windows ports:
