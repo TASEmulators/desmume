@@ -133,7 +133,7 @@ extern GFX3D gfx3d;
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
 
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
-#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col] )
+#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col&0x7FFF] )
 
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, not using a table (but using other tables)
 #define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
