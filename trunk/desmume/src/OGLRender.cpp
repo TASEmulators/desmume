@@ -133,7 +133,8 @@ OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 #endif
-#ifndef GL_VERSION_1_3
+
+#if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
 OGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
 
@@ -431,7 +432,7 @@ static char OGLInit(void)
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
 #endif
-#ifndef GL_VERSION_1_3
+#if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
 #endif
 
