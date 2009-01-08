@@ -29,9 +29,12 @@
 #include <string.h>
 #include <assert.h>
 
+#include "common.h"
 #include "debug.h"
 #include "NDSSystem.h"
+#ifndef EXPERIMENTAL_GBASLOT
 #include "cflash.h"
+#endif
 #include "cp15.h"
 #include "wifi.h"
 #include "registers.h"
@@ -40,6 +43,7 @@
 #include "rtc.h"
 #include "GPU_osd.h"
 #include "mc.h"
+#include "addons.h"
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -341,6 +345,7 @@ const static u32	LCDdata[10][2]= {
 					{0, 0},
 					{0x6898000, 2},			// Bank H
 					{0x68A0000, 1}};		// Bank I
+u8 VRAM_blockEnabled[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 void MMU_Init(void) {
 	int i;
@@ -374,6 +379,8 @@ void MMU_Init(void) {
 	mc_alloc(&MMU.bupmem, 1);
 	MMU.bupmem.fp = NULL;
 	rtcInit();
+	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
+	addonsInit();
 } 
 
 void MMU_DeInit(void) {
@@ -384,6 +391,7 @@ void MMU_DeInit(void) {
     if (MMU.bupmem.fp)
        fclose(MMU.bupmem.fp);
     mc_free(&MMU.bupmem);
+	addonsClose();
 }
 
 //Card rom & ram
@@ -499,6 +507,8 @@ void MMU_clearMem()
 	}
 	rtcInit();
 	partie = 1;
+	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
+	addonsReset();
 }
 
 // VRAM mapping control
@@ -518,11 +528,11 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	u8	engine_offset = (vram_addr >> 14);
 	u8	block = MMU.VRAM_MAP[engine][engine_offset];
 	if (block == 7) return (EngineAddr[engine] + vram_addr);		// not mapped to LCD
+	if (!VRAM_blockEnabled[block]) return NULL;
 	vram_addr -= MMU.LCD_VRAM_ADDR[block];
 	return (LCDdst[block] + vram_addr);
 }
 
-extern void NDS_Pause();
 static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 {
 	if ((addr < 0x6000000)) return addr;
@@ -541,7 +551,6 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 	u8	engine_offset = (addr >> 14);
 	u8	block = MMU.VRAM_MAP[engine][engine_offset];
 	if (block == 7) return (save_addr);		// not mapped to LCD
-
 	addr -= MMU.LCD_VRAM_ADDR[block];
 	return (addr + LCDdata[block][0]);
 }
@@ -549,7 +558,11 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
-	if (!(VRAMBankCnt & 0x80)) return;
+	if ( !(VRAMBankCnt & 0x80) && (VRAMBankCnt & 0x07) )
+	{
+		VRAM_blockEnabled[block] = 0;
+		return;
+	}
 	if (!(VRAMBankCnt & 0x07)) return;
 
 	for (int i = 0; i < 4; i++)
@@ -725,10 +738,12 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i (faddr 0x%X)\n", 
 		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07,
 		//	vr + 0x6000000);
+		VRAM_blockEnabled[block] = 1;
 		return;
 	}
 
 	MMU.LCDCenable[block] = FALSE;
+	VRAM_blockEnabled[block] = 0;
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
@@ -1451,7 +1466,7 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
 static INLINE void MMU_IPCSync(u8 proc, u32 val)
 {
 	//INFO("IPC%s sync 0x%08X\n", proc?"7":"9", val);
-	u32 IPCSYNC_local = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
+	u32 IPCSYNC_local = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180);
 	u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180);
 
 	IPCSYNC_local = (IPCSYNC_local&0x6000)|(val&0xf00)|(IPCSYNC_local&0xf);
@@ -1461,7 +1476,7 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, IPCSYNC_remote);
 
 	if ((val & 0x2000) && (IPCSYNC_remote & 0x4000))
-		NDS_makeInt(proc^1, 17);
+		MMU.reg_IF[proc^1] |= ( 1<<17 );
 }
 
 //================================================================================================== ARM9 *
@@ -1484,11 +1499,19 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		return ;
 	}
 
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	{
+		addon.write08(adr, val);
+		return;
+	}
+#else
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
 		cflash_write(adr,val);
 		return;
 	}
+#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -1670,12 +1693,20 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return ;
 	}
 
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	{
+		addon.write16(adr, val);
+		return;
+	}
+#else
 	// CFlash writing, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
 	{
 		cflash_write(adr,val);
 		return;
 	}
+#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2213,12 +2244,20 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		T1WriteLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
 		return ;
 	}
-	
+
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	{
+		addon.write32(adr, val);
+		return;
+	}
+#else
 	// CFlash writing, Mic
 	if ((adr>=0x9000000) && (adr<0x9900000)) {
 	   cflash_write(adr,val);
 	   return;
 	}
+#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2709,13 +2748,21 @@ static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+		return addon.read08(adr);
+#else
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
+#endif
+
 #ifdef _MMU_DEBUG
 		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
 			MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 #endif
+	if ( (adr >= 0xFFFF0020) && (adr <= 0xFFFF00BC) )
+		INFO("Read08 at 0x%08X\n", adr);
 	
 	adr = MMU_LCDmap(adr);
 
@@ -2732,10 +2779,17 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 
 	if(adr<0x02000000)
 		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr & 0x7FFF);	
-	
+
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+		return addon.read16(adr);
+#else
 	// CFlash reading, Mic
 	if ((adr>=0x08800000) && (adr<0x09900000))
 	   return (unsigned short)cflash_read(adr);
+#endif
+	if ( (adr >= 0xFFFF0020) && (adr <= 0xFFFF00BC) )
+		INFO("Read16 at 0x%08X - 0x%04X\n", adr, T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]) );
 
 	adr &= 0x0FFFFFFF;
 
@@ -2797,11 +2851,16 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 	if(adr<0x02000000) 
 		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
-	
+
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+		return addon.read32(adr);
+#else
 	// CFlash reading, Mic
 	if ((adr>=0x9000000) && (adr<0x9900000))
 	   return (unsigned long)cflash_read(adr);
-	
+#endif
+
 	adr &= 0x0FFFFFFF;
 
 	// Address is an IO register
@@ -2931,12 +2990,20 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 //================================================= MMU ARM7 write 08
 static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	{
+		addon.write08(adr, val);
+		return;
+	}
+#else
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) 
 	{
 		cflash_write(adr,val);
 		return;
 	}
+#endif
 
 	adr &= 0x0FFFFFFF;
     // This is bad, remove it
@@ -2967,12 +3034,20 @@ static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 //================================================= MMU ARM7 write 16
 static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	{
+		addon.write16(adr, val);
+		return;
+	}
+#else
 	// CFlash writing, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
 	{
 		cflash_write(adr,val);
 		return;
 	}
+#endif
 
 #ifdef EXPERIMENTAL_WIFI
 
@@ -3000,7 +3075,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		/* Address is an IO register */
 		switch(adr)
 		{
-		case REG_EXMEMCNT:
+			case REG_EXMEMCNT:
 			{
 				u16 oldval = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204, (val & 0x7F) | (oldval & 0xFF80));
@@ -3354,11 +3429,20 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 //================================================= MMU ARM7 write 32
 static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	{
+		addon.write32(adr, val);
+		return;
+	}
+#else
 	// CFlash writing, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000)) {
 	   cflash_write(adr,val);
 	   return;
 	}
+#endif
+	
 
 #ifdef EXPERIMENTAL_WIFI
 	if ((adr & 0xFF800000) == 0x04800000) 
@@ -3609,9 +3693,14 @@ static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	}
 #endif
 
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+		return addon.read08(adr);
+#else
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
+#endif
 
 	if (adr == REG_RTC) return rtcRead();
 
@@ -3624,16 +3713,21 @@ static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 }
 //================================================= MMU ARM7 read 16
 static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
-{    
+{
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 		return WIFI_read16(&wifiMac,adr) ;
 #endif
 
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+		return addon.read16(adr);
+#else
 	// CFlash reading, Mic
 	if ((adr>=0x08800000)&&(adr<0x09900000))
 	   return (unsigned short)cflash_read(adr);
+#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -3677,9 +3771,15 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 //================================================= MMU ARM7 read 32
 static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
+#ifdef EXPERIMENTAL_GBASLOT
+	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+		return addon.read32(adr);
+#else
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 	   return (unsigned long)cflash_read(adr);
+#endif
+
 	adr &= 0x0FFFFFFF;
 
 	if((adr >> 24) == 4)

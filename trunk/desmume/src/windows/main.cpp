@@ -38,7 +38,11 @@
 #include "../NDSSystem.h"
 #include "../debug.h"
 #include "../saves.h"
+#ifndef EXPERIMENTAL_GBASLOT
 #include "../cflash.h"
+#else
+#include "../addons.h"
+#endif
 #include "resource.h"
 #include "memView.h"
 #include "disView.h"
@@ -60,6 +64,7 @@
 #include "colorctrl.h"
 #include "console.h"
 #include "throttle.h"
+#include "gbaslot_config.h"
 
 #include "../common.h"
 
@@ -107,9 +112,11 @@ LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 //===================== Input vars
 INPUTCLASS				*input = NULL;
 
+#ifndef EXPERIMENTAL_GBASLOT
 /* The compact flash disk image file */
 static const char *bad_glob_cflash_disk_image_file;
 static char cflash_filename_buffer[512];
+#endif
 
 /*  Declare Windows procedure  */
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
@@ -144,7 +151,6 @@ TOOLSCLASS	*ViewMaps = NULL;
 TOOLSCLASS	*ViewOAM = NULL;
 TOOLSCLASS	*ViewMatrices = NULL;
 TOOLSCLASS	*ViewLights = NULL;
-
 
 volatile BOOL execute = FALSE;
 volatile BOOL paused = TRUE;
@@ -256,6 +262,34 @@ fill_configured_features( struct configured_features *config, LPSTR lpszArgument
 					good_args = 0;
 				}
 			}
+
+#ifdef EXPERIMENTAL_GBASLOT
+			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) 
+			{
+				char buf[512];
+				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
+				if (convert_count > 0)
+				{
+					addon_type = NDS_ADDON_CFLASH;
+					CFlashUsePath = FALSE;
+					strcpy(CFlashName, buf);
+				}
+			}
+			else if ( wcsncmp( argv[i], L"--gbagame=", 10) == 0) 
+			{
+				char buf[512];
+				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
+				if (convert_count > 0)
+				{
+					addon_type = NDS_ADDON_GBAGAME;
+					strcpy(GBAgameName, buf);
+				}
+			}
+			else if ( wcsncmp( argv[i], L"--rumble", 8) == 0) 
+			{
+				addon_type = NDS_ADDON_RUMBLEPAK;
+			}
+#else
 			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) {
 				if ( config->cflash_disk_image_file == NULL) {
 					size_t convert_count = wcstombs( &cflash_filename_buffer[0], &argv[i][9], 512);
@@ -268,6 +302,7 @@ fill_configured_features( struct configured_features *config, LPSTR lpszArgument
 					good_args = 0;
 				}
 			}
+#endif
 		}
 		LocalFree( argv);
 	}
@@ -1069,12 +1104,20 @@ void StateLoadSlot(int num)
 		Display();
 }
 
+#ifdef EXPERIMENTAL_GBASLOT
+BOOL LoadROM(char * filename)
+#else
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
+#endif
 {
     NDS_Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
-    if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
+#ifdef EXPERIMENTAL_GBASLOT
+	if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize) > 0)
+#else
+	if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
+#endif
 	{
 		INFO("Loading %s was successful\n",filename);
 		frameCounter=0;
@@ -1235,6 +1278,41 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     char text[80];
     hAppInst=hThisInstance;
 
+	GetINIPath();
+#ifdef EXPERIMENTAL_GBASLOT
+	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
+	CFlashUsePath = GetPrivateProfileInt("GBAslot.CFlash", "usePath", 1, IniName);
+	CFlashUseRomPath = GetPrivateProfileInt("GBAslot.CFlash", "useRomPath", 1, IniName);
+	GetPrivateProfileString("GBAslot.CFlash", "path", "", CFlashPath, MAX_PATH, IniName);
+	GetPrivateProfileString("GBAslot.CFlash", "filename", "", CFlashName, MAX_PATH, IniName);
+	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
+
+	switch (addon_type)
+	{
+		case NDS_ADDON_NONE:
+		break;
+		case NDS_ADDON_CFLASH:
+			if (!strlen(CFlashPath)) CFlashUseRomPath = TRUE;
+			if (!strlen(CFlashName)) CFlashUsePath = TRUE;
+			// TODO: check for file exist
+		break;
+		case NDS_ADDON_RUMBLEPAK:
+		break;
+		case NDS_ADDON_GBAGAME:
+			if (!strlen(GBAgameName))
+			{
+				addon_type = NDS_ADDON_NONE;
+				break;
+			}
+			// TODO: check for file exist
+		break;
+		default:
+			addon_type = NDS_ADDON_NONE;
+			break;
+	}
+	addonsChangePak(addon_type);
+#endif
+
 	init_configured_features( &my_config);
 	if ( !fill_configured_features( &my_config, lpszArgument)) {
         MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
@@ -1242,15 +1320,14 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 	ColorCtrl_Register();
 
-	OpenConsole();			// Init debug console
-
 	if (!RegClass(WindowProcedure, "DeSmuME"))
 	{
 		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
 		exit(-1);
 	}
+
+	OpenConsole();			// Init debug console
 	
-	GetINIPath();
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
@@ -1278,7 +1355,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
     SetLanguage(atoi(text));
 
+#ifndef EXPERIMENTAL_GBASLOT
 	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
+#endif
 
     hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
@@ -1296,6 +1375,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	EnableMenuItem(mainMenu, IDM_RESET, MF_GRAYED);
 	EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_GRAYED);
 	EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
+#ifndef EXPERIMENTAL_GBASLOT
+	EnableMenuItem(mainMenu, IDM_GBASLOT, MF_GRAYED);
+#endif
 	
 	LOG("Init NDS\n");
 
@@ -1436,9 +1518,14 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
     // Make sure any quotes from lpszArgument are removed
     if (lpszArgument[0] == '\"')
        sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
+
 	if (lpszArgument[0])
 	{
+#ifdef EXPERIMENTAL_GBASLOT
+		if(LoadROM(lpszArgument))
+#else
 		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
+#endif
 		{
 		   EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
 		   EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
@@ -1615,14 +1702,18 @@ void OpenRecentROM(int listNum)
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
 	//LOG("Attempting to load %s\n",filename);
+#ifdef EXPERIMENTAL_GBASLOT
+	if(LoadROM(filename))
+#else
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#endif
     {
 		EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
         EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
         EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
         EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
         romloaded = TRUE;
-	}     
+	}
 	
 	NDS_UnPause();
 }
@@ -1730,7 +1821,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   char filename[MAX_PATH] = "";
                   DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
                   DragFinish((HDROP)wParam);
-                  if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#ifdef EXPERIMENTAL_GBASLOT
+                  if(LoadROM(filename))
+#else
+				  if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#endif
                   {
                      EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
                      EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
@@ -1856,8 +1951,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                             }
                             
                             //LOG("%s\r\n", filename);
-
-                            if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#ifdef EXPERIMENTAL_GBASLOT
+                            if(LoadROM(filename))
+#else
+							if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#endif
                             {
                                EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
                                EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
@@ -2243,6 +2341,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					  else NDS_Pause();
 					  emu_paused ^= 1;
 					  MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+				  return 0;
+
+				  case IDM_GBASLOT:
+					  GBAslotDialog(hwnd, hAppInst);
 				  return 0;
 				  
 				  case ACCEL_N: //Frame Advance

@@ -23,13 +23,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdlib.h>
 #include <algorithm>
 
+#include "common.h"
 #include "NDSSystem.h"
 #include "render3D.h"
 #include "MMU.h"
+#ifndef EXPERIMENTAL_GBASLOT
 #include "cflash.h"
-
-#include "MMU.h"
-#include "cflash.h"
+#endif
 #include "ROMReader.h"
 #include "gfx3d.h"
 #include "utils/decrypt/decrypt.h"
@@ -334,8 +334,12 @@ static u32 ones32(u32 x)
 }
 #endif
 
+#ifdef EXPERIMENTAL_GBASLOT
+int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize)
+#else
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 				const char *cflash_disk_image_file)
+#endif
 {
 	int i;
 	int type;
@@ -414,16 +418,21 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 #ifndef WORDS_BIGENDIAN
 	DecryptSecureArea(data,size);
 #endif
+	for (int t = strlen(filename); t>0; t--)
+		if ( (filename[t] == '\\') || (filename[t] == '/') )
+		{
+			strncpy(szRomPath, filename, t+1);
+			break;
+		}
 
 	MMU_unsetRom();
 	NDS_SetROM(data, mask);
 	NDS_Reset();
 
-	/* I guess any directory can be used
-	* so the current one should be ok */
-	strncpy(szRomPath, ".", ARRAY_SIZE(szRomPath));
+#ifndef EXPERIMENTAL_GBASLOT
 	cflash_close();
 	cflash_init( cflash_disk_image_file);
+#endif
 
 	strncpy(szRomBaseName, filename, ARRAY_SIZE(szRomBaseName));
 
@@ -579,6 +588,7 @@ void NDS_Reset( void)
 	inf = fopen("BiosNds9.ROM","rb");
 #else
 	inf = NULL;
+	//memcpy(ARM9Mem.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
 #endif
 	if(inf) {
 		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
