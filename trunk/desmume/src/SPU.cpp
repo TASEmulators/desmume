@@ -1352,7 +1352,7 @@ void SNDFileUpdateAudio(s16 *buffer, u32 num_samples)
 	size_t elems_written;
 	if (spufp) {
 		elems_written = fwrite((void *)buffer, num_samples*2, 2, spufp);
-		INFO("%i written\n", elems_written);
+		//INFO("%i written\n", elems_written);
 	}
 }
 
