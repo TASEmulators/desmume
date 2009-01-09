@@ -28,6 +28,7 @@
 #include "debug.h"
 #include "MMU.h"
 #include "NDSSystem.h"
+#include <assert.h>
 
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM> 
@@ -333,10 +334,20 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG()
      
      cpu->CPSR.bits.N = BIT31(res);
      cpu->CPSR.bits.Z = res == 0;
-     
+
+	 //the below UNSIGNED_OVERFLOW calculation is the clever way of doing it
+	 //but just to keep from making a mistake, lets assert that it matches the precise definition of unsigned overflow
+	 static int passcount = 0;
+	 assert(++passcount);
+	assert(
+		((((u64)a+(u64)b+cpu->CPSR.bits.C)>>32)&1)
+		== (UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res))
+		);
+
      cpu->CPSR.bits.C = UNSIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | UNSIGNED_OVERFLOW(tmp, a, res);
      cpu->CPSR.bits.V = SIGNED_OVERFLOW(b, (u32) cpu->CPSR.bits.C, tmp) | SIGNED_OVERFLOW(tmp, a, res);
-     
+
+    
      return 3;
 }
 
@@ -351,6 +362,15 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG()
      
      cpu->CPSR.bits.N = BIT31(res);
      cpu->CPSR.bits.Z = res == 0;
+
+	 //the below UNSIGNED_UNDERFLOW calculation is the clever way of doing it
+	 //but just to keep from making a mistake, lets assert that it matches the precise definition of unsigned overflow
+	 static int passcount = 0;
+	 assert(++passcount);
+	assert(
+		((((u64)a+(u64)b+cpu->CPSR.bits.C)>>63)&1)
+		== UNSIGNED_UNDERFLOW(a, b, res)
+		);
      
 	 //zero 31-dec-2008 - apply normatt's fixed logic from the arm SBC instruction
 	 //although it seemed a bit odd to me and to whomever wrote this for SBC not to work similar to ADC..
