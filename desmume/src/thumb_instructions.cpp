@@ -337,7 +337,7 @@ TEMPLATE static  u32 FASTCALL OP_ADC_REG()
 
 	 //the below UNSIGNED_OVERFLOW calculation is the clever way of doing it
 	 //but just to keep from making a mistake, lets assert that it matches the precise definition of unsigned overflow
-	 static int passcount = 0;
+	 static long passcount = 0;
 	 assert(++passcount);
 	assert(
 		((((u64)a+(u64)b+cpu->CPSR.bits.C)>>32)&1)
@@ -365,10 +365,10 @@ TEMPLATE static  u32 FASTCALL OP_SBC_REG()
 
 	 //the below UNSIGNED_UNDERFLOW calculation is the clever way of doing it
 	 //but just to keep from making a mistake, lets assert that it matches the precise definition of unsigned overflow
-	 static int passcount = 0;
+	 static long passcount = 0;
 	 assert(++passcount);
 	assert(
-		((((u64)a+(u64)b+cpu->CPSR.bits.C)>>63)&1)
+		((((u64)a-(u64)b-(!cpu->CPSR.bits.C))>>32)&1)
 		== UNSIGNED_UNDERFLOW(a, b, res)
 		);
      
