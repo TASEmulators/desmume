@@ -946,6 +946,12 @@ DWORD WINAPI run()
 			   	LeaveCriticalSection(&win_sync);
 	
 			   SPU_Emulate_core();
+
+			   //we are driving the dsound output from another thread
+			   //but there is no thread for the filewriter. so we need to do it here
+			   if(sndcoretype == SNDCORE_FILEWRITE)
+				   SPU_Emulate_user();
+
 			   //avi writing
 				DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
 			   DRV_AviVideoUpdate((u16*)GPU_screen);

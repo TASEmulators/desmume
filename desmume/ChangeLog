@@ -6,6 +6,7 @@ Graphics:
  bug: fix texture mapping across texture banks [zeromus]
  bug: fix texture handling for texels with MSB set (fixes some texture corruption) [zeromus]
  bug: fix thumb ROR [zeromus]
+ bug: win32: fix spu wav file writer (regression from 0.8) [zeromus]
  enh: dont memcmp for texcache validity when the texture banks arent unmapping [zeromus]
  
 0.8 -> 0.9
