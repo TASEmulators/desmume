@@ -99,7 +99,7 @@ static CACHE_ALIGN float	scale[4] = {0.0, 0.0, 0.0, 0.0};
 static int		scaleind = 0;
 
 //various other registers
-static int _t=0, _s=0;
+static float _t=0, _s=0;
 static float last_t, last_s;
 static u32 clCmd = 0;
 static u32 clInd = 0;
@@ -547,6 +547,7 @@ static void SetVertex()
 	//record the vertex
 	//VERT &vert = tempVertList.list[tempVertList.count];
 	VERT &vert = vertlist->list[vertlist->count + tempVertInfo.count];
+
 	vert.texcoord[0] = last_s;
 	vert.texcoord[1] = last_t;
 	vert.coord[0] = coordTransformed[0];
@@ -817,18 +818,15 @@ void gfx3d_glTexCoord(unsigned long val)
 	_t = (s16)(val>>16);
 	_s = (s16)(val&0xFFFF);
 
+	_s /= 16.0f;
+	_t /= 16.0f;
+
 	if (texCoordinateTransform == 1)
 	{
-		//last_s =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
-		//		0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
-		//last_t =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
-		//		0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
-
-		//zero 9/11/08 - I dunno... I think it needs to be like this to make things look right
 		last_s =_s*mtxCurrent[3][0] + _t*mtxCurrent[3][4] +
-				mtxCurrent[3][8] + mtxCurrent[3][12];
+				0.0625f*mtxCurrent[3][8] + 0.0625f*mtxCurrent[3][12];
 		last_t =_s*mtxCurrent[3][1] + _t*mtxCurrent[3][5] +
-				mtxCurrent[3][9] + mtxCurrent[3][13];
+				0.0625f*mtxCurrent[3][9] + 0.0625f*mtxCurrent[3][13];
 	}
 	else
 	{

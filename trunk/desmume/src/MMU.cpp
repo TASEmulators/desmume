@@ -660,9 +660,9 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				break;
 				case 4:		// E
 					ARM9Mem.texPalSlot[0] = LCD_addr;
-					ARM9Mem.texPalSlot[1] = LCD_addr+0x2000;
-					ARM9Mem.texPalSlot[2] = LCD_addr+0x4000;
-					ARM9Mem.texPalSlot[3] = LCD_addr+0x6000;
+					ARM9Mem.texPalSlot[1] = LCD_addr+0x4000;
+					ARM9Mem.texPalSlot[2] = LCD_addr+0x8000;
+					ARM9Mem.texPalSlot[3] = LCD_addr+0xC000;
 					gpu3D->NDS_3D_VramReconfigureSignal();
 				break;
 				case 5:		// F
