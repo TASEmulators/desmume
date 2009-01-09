@@ -592,16 +592,17 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 	switch (textureMode)
 	{
+		case 2: //i2
+			paletteAddress = texturePalette<<3;
+			break;
 		case 1: //a3i5
 		case 3: //i4
 		case 4: //i8
 		case 6: //a5i3
 		case 7: //16bpp
 		case 5: //4x4
+		default:
 			paletteAddress = texturePalette<<4;
-			break;
-		case 2: //i2
-			paletteAddress = texturePalette<<3;
 			break;
 	}
 
