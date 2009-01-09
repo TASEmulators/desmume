@@ -227,7 +227,6 @@ struct ALIGN(8) TextureCache
 	GLenum				id;
 	unsigned int		frm;
 	unsigned int		mode;
-	unsigned int		numcolors;
 	unsigned int		pal;
 	unsigned int		sizeX;
 	unsigned int		sizeY;
@@ -529,7 +528,7 @@ static void DebugDumpTexture(int which)
 	glBindTexture(GL_TEXTURE_2D,texcache[which].id);
 	  glGetTexImage( GL_TEXTURE_2D ,
 			      0,
-			    GL_RGBA,
+			    GL_BGRA_EXT,
 			      GL_UNSIGNED_BYTE,
 			      texMAP);
 
@@ -544,7 +543,12 @@ static int lastTexture = -1;
 static bool hasTexture = false;
 static void setTexture(unsigned int format, unsigned int texpal)
 {
-	int palSize[7]={32,4,16,256,0,8,32768};
+	//BIG TODO - 
+	//none of this is capable of spanning bank boundaries. this is an obscure bug waiting to happen.
+	//each texel, palette, and 4x4 lookup need to be memory mapped.
+	//since we're caching textures, this cost is not too severe.
+
+	const int palSize[]={8,32,512,0,64,16,0};
 	unsigned int x=0, y=0, i;
 	unsigned int palZeroTransparent;
 	
@@ -584,31 +588,28 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	txt_slot_current=(format>>14)&0x03;
 	adr=(unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
 
+	u32 paletteAddress;
+
 	switch (textureMode)
 	{
 		case 1: //a3i5
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-		break;
-		case 2: //i2
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<3));
-		break;
 		case 3: //i4
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-		break;
 		case 4: //i8
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-		break;
-		case 5: //4x4
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-		break;
 		case 6: //a5i3
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-		break;
 		case 7: //16bpp
-			pal = (unsigned short *)(ARM9Mem.texPalSlot[0] + (texturePalette<<4));
-		break;
+		case 5: //4x4
+			paletteAddress = texturePalette<<4;
+			break;
+		case 2: //i2
+			paletteAddress = texturePalette<<3;
+			break;
 	}
-	
+
+	u32 paletteSlot = paletteAddress>>14;
+	u32 paletteOffset = paletteAddress&0x3FFF;
+
+	pal = (unsigned short *)(ARM9Mem.texPalSlot[paletteSlot] + (paletteOffset));
+
 	i=texcache_start;
 	
 	//if(false)
@@ -664,17 +665,16 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	texcache[i].sizeX=sizeX;
 	texcache[i].sizeY=sizeY;
 	texcache[i].coord=(format>>30);
-	texcache[i].invSizeX=1.0f/((float)(sizeX*(1<<4)));
-	texcache[i].invSizeY=1.0f/((float)(sizeY*(1<<4)));
+	texcache[i].invSizeX=1.0f/((float)(sizeX));
+	texcache[i].invSizeY=1.0f/((float)(sizeY));
 	memcpy(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
-	texcache[i].palSize = 0;
-	if ( (textureMode != 5) || (textureMode != 7) )
+	texcache[i].palSize = palSize[textureMode];
+	if ( texcache[i].palSize != 0 )
 	{
-		texcache[i].palSize = 256*2;
+		//TODO - the 4x4 lookup table should probably be checked also.
+		//but maybe we could concatenate that to the texture
 		memcpy(texcache[i].palette, pal, texcache[i].palSize);
 	}
-
-	texcache[i].numcolors=palSize[texcache[i].mode];
 
 	texcache[i].frm=format;
 
