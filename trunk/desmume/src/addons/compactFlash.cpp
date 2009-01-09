@@ -22,6 +22,7 @@
 */
 
 #include "../addons.h"
+#include <string.h>
 #ifdef EXPERIMENTAL_GBASLOT
 
 #define DEBUG
@@ -31,7 +32,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>

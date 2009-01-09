@@ -22,6 +22,7 @@
 */
 
 #include "../addons.h"
+#include <string.h>
 
 BOOL None_init(void) { return (TRUE); };
 void None_reset(void) {};
