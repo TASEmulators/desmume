@@ -28,6 +28,11 @@
 #include "types.h"
 #include "debug.h"
 
+#ifdef __GNUC__
+#include <limits.h>
+#define MAX_PATH PATH_MAX
+#endif 
+
 typedef struct
 {
 	// The name of the plugin, this name will appear in the plugins list

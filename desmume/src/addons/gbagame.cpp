@@ -23,6 +23,7 @@
 
 #include "../addons.h"
 #include "../mem.h"
+#include <string.h>
 #include "../MMU.h"
 
 u8		*GBArom = NULL;

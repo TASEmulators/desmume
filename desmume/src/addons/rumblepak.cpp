@@ -24,6 +24,7 @@
 #include "../addons.h"
 #include "../mem.h"
 #include "../MMU.h"
+#include <string.h>
 
 u8	rumble_hdr[0xC0];
 
