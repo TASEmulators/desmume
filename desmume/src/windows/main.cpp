@@ -719,9 +719,9 @@ void ClearRecentRoms()
 
 int CreateDDrawBuffers()
 {
-	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
-	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
-	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
+	if (lpDDClipPrimary!=NULL) { IDirectDraw7_Release(lpDDClipPrimary); lpDDClipPrimary = NULL; }
+	if (lpPrimarySurface != NULL) { IDirectDraw7_Release(lpPrimarySurface); lpPrimarySurface = NULL; }
+	if (lpBackSurface != NULL) { IDirectDraw7_Release(lpBackSurface); lpBackSurface = NULL; }
 
 	memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
@@ -757,6 +757,59 @@ int CreateDDrawBuffers()
 }
 
 
+
+void applyRotation_0deg(u32 *in, u32 *out, int pitch)
+{
+	for(int i = 0; i < (256 * 384); i += 256)
+	{
+		memcpy(out, (in + i), 1024);
+		out = (u32*)(((u8*)out) + pitch);
+	}
+}
+
+void applyRotation_90deg(u32 *in, u32 *out, int pitch)
+{
+	for(int i = 0; i < 256; i++)
+	{
+		for(int j = 0; j < 384; j++)
+		{
+			out[383 - j] = in[(j * 256) + i];
+		}
+		out = (u32*)(((u8*)out) + pitch);
+	}
+}
+
+void applyRotation_180deg(u32 *in, u32 *out, int pitch)
+{
+	for(int i = 0; i < 384; i++)
+	{
+		for(int j = 0; j < 256; j++)
+		{
+			out[j] = in[98303 - ((i * 256) + j)];
+		}
+		out = (u32*)(((u8*)out) + pitch);
+	}
+}
+
+void applyRotation_270deg(u32 *in, u32 *out, int pitch)
+{
+	for(int i = 0; i < 256; i++)
+	{
+		for(int j = 0; j < 384; j++)
+		{
+			out[j] = in[(j * 256) + (255 - i)];
+		}
+		out = (u32*)(((u8*)out) + pitch);
+	}
+}
+
+void (*applyRotation[4])(u32 *in, u32 *out, int pitch) = {
+	applyRotation_0deg,
+	applyRotation_90deg,
+	applyRotation_180deg,
+	applyRotation_270deg
+};
+
 void Display()
 {
 	int res;
@@ -778,59 +831,8 @@ void Display()
 				tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
 									(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
 									(((tmpGPU_Screen_src[i])&0x1F)<<19);
-			switch (GPU_rotation)
-			{
-				case 0:
-				{
-					for (i = 0; i < 98304; i+=256)  //384*256
-					{
-						memcpy(buffer,tmpGPU_screen+i,sz);
-						buffer += ddsd.lPitch;
-					}
-					break;
-				}
-				case 90:
-				{
-					u32 start;
-					for (j=0; j<256; j++)
-					{
-						start=98304+j;
-						for (i=0; i<384; i++)
-						{
-							start-=256;
-							((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
-						}
-						buffer += ddsd.lPitch;
-					}
-					break;
-				}
-				case 180:
-				{
-					u32 start=98300;
-					for (j=0; j<384; j++)
-					{
-						for (i=0; i<256; i++, --start)
-							((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
-						buffer += ddsd.lPitch;
-					}
-					break;
-				}
-				case 270:
-				{
-					u32 start;
-					for (j=0; j<256; j++)
-					{
-						start=256-j;
-						for (i=0; i<384; i++)
-						{
-							((u32*)buffer)[i]=((u32 *)tmpGPU_screen)[start];
-							start+=256;
-						}
-						buffer += ddsd.lPitch;
-					}
-					break;
-				}
-			}
+
+			applyRotation[GPU_rotation / 90](tmpGPU_screen, (u32*)buffer, ddsd.lPitch);
 		}
 		else
 			 INFO("16bit depth color not supported");
@@ -1707,6 +1709,21 @@ void SetRotate(HWND hwnd, int rot)
 
 	MainWindow->setMinSize(GPU_width, GPU_height);
 	MainWindow->setClientSize(newwidth, newheight);
+
+	/* Recreate the DirectDraw back buffer */
+	if (lpBackSurface!=NULL)
+	{
+		IDirectDrawSurface7_Release(lpBackSurface);
+
+		memset(&ddsd, 0, sizeof(ddsd));
+		ddsd.dwSize          = sizeof(ddsd);
+		ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
+		ddsd.dwWidth         = GPU_width;
+		ddsd.dwHeight        = GPU_height;
+		
+		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
+	}
   
 //	SetWindowClientSize(hwnd, GPU_width, GPU_height);
 	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
