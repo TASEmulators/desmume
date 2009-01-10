@@ -446,7 +446,7 @@ static BOOL (FASTCALL* test_conditions[])(Status_Reg CPSR)= {
 #endif
 
 
-BOOL armcpu_irqExeption(armcpu_t *armcpu)
+BOOL armcpu_irqException(armcpu_t *armcpu)
 {
     Status_Reg tmp;
 
@@ -506,7 +506,7 @@ u32 armcpu_exec()
 
         /* check for interrupts */
         if ( ARMPROC.irq_flag) {
-          armcpu_irqExeption( &ARMPROC);
+          armcpu_irqException( &ARMPROC);
         }
 
         c = armcpu_prefetch(&ARMPROC);
