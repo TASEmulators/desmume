@@ -156,7 +156,6 @@ static const char *fifocnt_strings[] =
 	"","","",
 	"Error (read when empty/write when full)",
 	"Enable FIFOs"
-	
 };
 #define FIFOCNT_SKIP(c) if(i==4||i==5||i==6||i==11||i==12||i==13)continue;
 
@@ -334,7 +333,7 @@ static void _clearContainer(GtkWidget *widget, gpointer data)
 {
 	if(widget == mRegInfos[0] || widget == mRegInfos[1]) return;
 	if(widget == mIoRegCombo[0] || widget == mIoRegCombo[1]) return;
-	
+
 	gtk_container_remove(GTK_CONTAINER((GtkWidget*)data), widget);
 //	gtk_widget_destroy(widget);
 //	gtk_object_destroy(GTK_OBJECT(widget));
@@ -346,12 +345,12 @@ static void selected_reg(GtkWidget* widget, gpointer data)
 	gchar *regInfosBuffer;
 
 	guint active = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
-		
+
 	if(current_reg[c]) current_reg[c]->destroy(c);
 	gtk_container_foreach(GTK_CONTAINER(mVbox0[c]), _clearContainer, (gpointer)mVbox0[c]);
-	
+
 	current_reg[c] = (reg_t*)&(GET_REG_LIST(c)[active]);
-	
+
 // 	gtk_box_pack_start(GTK_BOX(mVbox0[c]), mIoRegCombo[c], FALSE, FALSE, 0);
 	
 	switch (current_reg[c]->size) {
@@ -388,7 +387,7 @@ static void _closeOne(GtkWidget *widget, gpointer data)
 	CPUS[c] = FALSE;
 	if(c == 0 && !CPUS[1]) close();
 	if(c == 1 && !CPUS[0]) close();
-	
+
 	gtk_widget_destroy(mRegInfos[c]);
 	gtk_widget_destroy(mIoRegCombo[c]);
 	gtk_widget_destroy(mVbox0[c]);
@@ -398,7 +397,7 @@ static void _closeOne(GtkWidget *widget, gpointer data)
 static void update()
 {
 	int c;
-	
+
 	for(c = 0; c < 2; c++)
 	{
 		if(!CPUS[c]) continue;
@@ -409,24 +408,24 @@ static void update()
 static void open(int ID)
 {
 	int c, i;
-	
+
 	DTOOL_ID = ID;
-	
+
 	for(c = 0; c < 2; c++)
 	{
 		CPUS[c] = TRUE;
-		
+
 		mWin[c]= gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		if(c == 0)	gtk_window_set_title(GTK_WINDOW(mWin[c]), TOOL_NAME " : ARM9");
 		else	gtk_window_set_title(GTK_WINDOW(mWin[c]), TOOL_NAME " : ARM7");
 		g_signal_connect(G_OBJECT(mWin[c]), "destroy", G_CALLBACK(&_closeOne), GINT_TO_POINTER(c));
-		
+
 		mVbox0[c] = gtk_vbox_new(FALSE, 0);
 		gtk_container_add(GTK_CONTAINER(mWin[c]), mVbox0[c]);
-		
+
 		mIoRegCombo[c] = gtk_combo_box_new_text();
 		mRegInfos[c] = gtk_label_new("");
-		
+
 		for(i = 0; i < GET_REG_LIST_SIZE(c); i++)
 		{
 			gchar *reg_name_buffer;
@@ -434,14 +433,14 @@ static void open(int ID)
 			gtk_combo_box_append_text(GTK_COMBO_BOX(mIoRegCombo[c]), reg_name_buffer);
 			g_free(reg_name_buffer);
 		}
-		
+
 		gtk_combo_box_set_active(GTK_COMBO_BOX(mIoRegCombo[c]), 0);
 		g_signal_connect(G_OBJECT(mIoRegCombo[c]), "changed", G_CALLBACK(selected_reg), GINT_TO_POINTER(c));
-		
+
 		gtk_box_pack_start(GTK_BOX(mVbox0[c]), mIoRegCombo[c], FALSE, FALSE, 0);
 		gtk_box_pack_start(GTK_BOX(mVbox0[c]), mRegInfos[c], FALSE, FALSE, 0);
 		selected_reg(mIoRegCombo[c], GINT_TO_POINTER(c));
-		
+
 		gtk_widget_show_all(mWin[c]);
 	}
 }
@@ -455,7 +454,4 @@ dTool_t dTool_ioregsView =
 	&update,
 	&close
 };
-
-
-
 
