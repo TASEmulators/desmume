@@ -854,6 +854,7 @@ static BOOL setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u32 passing, u8 bgnum, 
 static BOOL setFinal3DColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
 {
 	T2WriteWord(dst, passing, (color | 0x8000));
+	gpu->bgPixels[x] = 0;
 	return 1;
 }
 
