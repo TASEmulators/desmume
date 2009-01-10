@@ -1697,7 +1697,7 @@ u32 NDS_exec(s32 nb)
 #ifdef GDB_STUB
 			if ( armcpu_flagIrq( &NDS_ARM9)) 
 #else
-			if ( armcpu_irqExeption(&NDS_ARM9))
+			if ( armcpu_irqException(&NDS_ARM9))
 #endif
 			{
 				nds.ARM9Cycle = nds.cycles;
@@ -1709,7 +1709,7 @@ u32 NDS_exec(s32 nb)
 #ifdef GDB_STUB
 			if ( armcpu_flagIrq( &NDS_ARM7)) 
 #else
-			if ( armcpu_irqExeption(&NDS_ARM7))
+			if ( armcpu_irqException(&NDS_ARM7))
 #endif
 			{
 				nds.ARM7Cycle = nds.cycles;
