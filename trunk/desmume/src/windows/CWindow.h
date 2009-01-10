@@ -31,6 +31,7 @@ private:
 	HMENU		hmenu;
 	HINSTANCE	hInstance;
 	char		regclass[256];
+	int minWidth, minHeight;
 public:
 	WINCLASS(LPSTR rclass, HINSTANCE hInst);
 	~WINCLASS();
@@ -47,6 +48,11 @@ public:
 	void Hide();
 
 	HWND getHWnd();
+
+	void setMinSize(int width, int height);
+
+	void sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio = FALSE);
+	void setClientSize(int width, int height);
 };
 
 class THREADCLASS
