@@ -513,6 +513,7 @@ static void OGLClose()
 					if (txt_slot_current_size<=0)\
 					{\
 						txt_slot_current++;\
+						if (txt_slot_current>3) txt_slot_current = 0;\
 						adr=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];\
 						txt_slot_size=txt_slot_current_size=0x020000;\
 					}
