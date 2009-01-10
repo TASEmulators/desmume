@@ -549,7 +549,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	//each texel, palette, and 4x4 lookup need to be memory mapped.
 	//since we're caching textures, this cost is not too severe.
 
-	const int palSize[]={8,32,512,0,64,16,0};
+	const int palSize[]={0, 8, 32, 512, 64, 0, 16, 0};
 	unsigned int x=0, y=0, i;
 	unsigned int palZeroTransparent;
 	
@@ -622,8 +622,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		if ( (texcache[i].frm == format) && (texcache[i].pal == texpal) )
 		{
 
-			if ((texcache[i].mode == 5) ||
-				(texcache[i].mode == 7) ||
+			if ((texcache[i].palSize == 0) ||
 				!memcmp(texcache[i].palette, pal, texcache[i].palSize) )
 			{
 				//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
