@@ -130,7 +130,7 @@ public:
 };
 
 //creates a MemSpan in texture memory
-MemSpan MemSpan_TexMem(u32 ofs, u32 len) 
+static MemSpan MemSpan_TexMem(u32 ofs, u32 len) 
 {
 	MemSpan ret;
 	ret.size = len;
@@ -166,7 +166,7 @@ MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 }
 
 //creates a MemSpan in texture palette memory
-MemSpan MemSpan_TexPalette(u32 ofs, u32 len) 
+static MemSpan MemSpan_TexPalette(u32 ofs, u32 len) 
 {
 	MemSpan ret;
 	ret.size = len;
@@ -754,7 +754,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	mspal.dump(pal);
 
 
-	int i=texcache_start;
+	u32 i=texcache_start;
 
 	while (TRUE)
 	{
@@ -860,9 +860,9 @@ REJECT:
 	{
 	case TEXMODE_A3I5:
 		{
-			for(int i=0;i<ms.numItems;i++) {
-				adr = ms.items[i].ptr;
-				for(int x = 0; x < ms.items[i].len; x++)
+			for(int j=0;j<ms.numItems;j++) {
+				adr = ms.items[j].ptr;
+				for(int x = 0; x < ms.items[j].len; x++)
 				{
 					u16 c = pal[*adr&31];
 					u8 alpha = *adr>>5;
@@ -875,9 +875,9 @@ REJECT:
 		}
 	case TEXMODE_I2:
 		{
-			for(int i=0;i<ms.numItems;i++) {
-				adr = ms.items[i].ptr;
-				for(int x = 0; x < ms.items[i].len; x++)
+			for(int j=0;j<ms.numItems;j++) {
+				adr = ms.items[j].ptr;
+				for(int x = 0; x < ms.items[j].len; x++)
 				{
 					u8 bits;
 					u16 c;
@@ -905,9 +905,9 @@ REJECT:
 		}
 	case TEXMODE_I4:
 		{
-			for(int i=0;i<ms.numItems;i++) {
-				adr = ms.items[i].ptr;
-				for(int x = 0; x < ms.items[i].len; x++)
+			for(int j=0;j<ms.numItems;j++) {
+				adr = ms.items[j].ptr;
+				for(int x = 0; x < ms.items[j].len; x++)
 				{
 					u8 bits;
 					u16 c;
@@ -927,9 +927,9 @@ REJECT:
 		}
 	case TEXMODE_I8:
 		{
-			for(int i=0;i<ms.numItems;i++) {
-				adr = ms.items[i].ptr;
-				for(int x = 0; x < ms.items[i].len; ++x)
+			for(int j=0;j<ms.numItems;j++) {
+				adr = ms.items[j].ptr;
+				for(int x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = pal[*adr];
 					*dwdst++ = RGB15TO32(c,(*adr == 0) ? palZeroTransparent : 255);
@@ -940,7 +940,9 @@ REJECT:
 		break;
 	case TEXMODE_4X4:
 		{
-			if(ms.numItems != 1) PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
+			if(ms.numItems != 1) {
+				PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
+			}
 			//this check isnt necessary since the addressing is tied to the texture data which will also run out:
 			//if(msIndex.numItems != 1) PROGINFO("Your 4x4 texture index has overrun its slot.\n");
 
@@ -1056,9 +1058,9 @@ REJECT:
 		}
 	case TEXMODE_A5I3:
 		{
-			for(int i=0;i<ms.numItems;i++) {
-				adr = ms.items[i].ptr;
-				for(int x = 0; x < ms.items[i].len; ++x)
+			for(int j=0;j<ms.numItems;j++) {
+				adr = ms.items[j].ptr;
+				for(int x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = pal[*adr&0x07];
 					u8 alpha = (*adr>>3);
@@ -1070,9 +1072,9 @@ REJECT:
 		}
 	case TEXMODE_16BPP:
 		{
-			for(int i=0;i<ms.numItems;i++) {
-				u16* map = (u16*)ms.items[i].ptr;
-				for(int x = 0; x < ms.items[i].len; ++x)
+			for(int j=0;j<ms.numItems;j++) {
+				u16* map = (u16*)ms.items[j].ptr;
+				for(int x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = map[x];
 					int alpha = ((c&0x8000)?255:0);
