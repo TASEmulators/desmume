@@ -24,6 +24,15 @@
 #include "types.h"
 #include <iosfwd>
 
+#define TEXMODE_NONE 0
+#define TEXMODE_A3I5 1
+#define TEXMODE_I2 2
+#define TEXMODE_I4 3
+#define TEXMODE_I8 4
+#define TEXMODE_4X4 5
+#define TEXMODE_A5I3 6
+#define TEXMODE_16BPP 7
+
 void gfx3d_init();
 void gfx3d_reset();
 
@@ -128,9 +137,6 @@ struct GFX3D
 extern GFX3D gfx3d;
 
 //---------------------
-
-//produce a 32bpp color from a DS RGB16
-#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
 
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
 #define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col&0x7FFF] )

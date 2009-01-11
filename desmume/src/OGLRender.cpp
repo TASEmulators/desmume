@@ -25,6 +25,7 @@
 //(re: new super mario brothers renders the stormclouds at the beginning)
 
 #include "OGLRender.h"
+#include "debug.h"
 
 //#define DEBUG_DUMP_TEXTURE
 
@@ -69,11 +70,146 @@ static void ENDGL() {
 
 #include "shaders.h"
 
+//This class represents a number of regions of memory which should be viewed as contiguous
+class MemSpan
+{
+public:
+	static const int MAXSIZE = 8;
+
+	MemSpan() 
+		: numItems(0)
+	{}
+
+	int numItems;
+
+	struct Item {
+		u32 start;
+		u32 len;
+		u8* ptr;
+		u32 ofs; //offset within the memspan
+	} items[MAXSIZE];
+
+	int size;
+
+	//this MemSpan shall be considered the first argument to a standard memcmp
+	//the length shall be as specified in this MemSpan, unless you specify otherwise
+	int memcmp(void* buf2, int size=-1)
+	{
+		if(size==-1) size = this->size;
+		for(int i=0;i<numItems;i++)
+		{
+			Item &item = items[i];
+			int todo = std::min((int)item.len,size);
+			size -= todo;
+			int temp = ::memcmp(item.ptr,((u8*)buf2)+item.ofs,todo);
+			if(temp) return temp;
+			if(size == 0) break;
+		}
+		return 0;
+	}
+
+	//dumps the memspan to the specified buffer
+	//you may set size to limit the size to be copied
+	int dump(void* buf, int size=-1)
+	{
+		if(size==-1) size = this->size;
+		u8* bufptr = (u8*)buf;
+		int done = 0;
+		for(int i=0;i<numItems;i++)
+		{
+			Item item = items[i];
+			int todo = std::min((int)item.len,size);
+			size -= todo;
+			done += todo;
+			memcpy(bufptr,item.ptr,item.len);
+			bufptr += item.len;
+			if(size==0) return done;
+		}
+		return done;
+	}
+};
+
+//creates a MemSpan in texture memory
+MemSpan MemSpan_TexMem(u32 ofs, u32 len) 
+{
+	MemSpan ret;
+	ret.size = len;
+	u32 currofs = 0;
+	while(len) {
+		MemSpan::Item &curr = ret.items[ret.numItems++];
+		curr.start = ofs&0x1FFFF;
+		u32 slot = (ofs>>17)&3; //slots will wrap around
+		curr.len = std::min(len,0x20000-curr.start);
+		curr.ofs = currofs;
+		len -= curr.len;
+		ofs += curr.len;
+		if(len != 0) {
+			int zzz=9;
+			//here is an actual test case of bank spanning
+		}
+		currofs += curr.len;
+		u8* ptr = ARM9Mem.textureSlotAddr[slot];
+		//this is just a guess. what happens if there is a gap in the mapping? lets put zeros
+		if(ptr == NULL) {
+			PROGINFO("Texture gap in memory mapping. Trying to accomodate.\n");
+			static u8* emptyTextureSlot = 0;
+			if(emptyTextureSlot == NULL) {
+				emptyTextureSlot = new u8[128*1024];
+				memset(emptyTextureSlot,0,128*1024);
+			}
+			ptr = emptyTextureSlot;
+		}
+
+		curr.ptr = ptr + curr.start;
+	}
+	return ret;
+}
+
+//creates a MemSpan in texture palette memory
+MemSpan MemSpan_TexPalette(u32 ofs, u32 len) 
+{
+	MemSpan ret;
+	ret.size = len;
+	u32 currofs = 0;
+	while(len) {
+		MemSpan::Item &curr = ret.items[ret.numItems++];
+		curr.start = ofs&0x3FFF;
+		u32 slot = (ofs>>14)&7; //this masks to 8 slots, but there are really only 6
+		if(slot>5) {
+			PROGINFO("Texture palette overruns texture memory. Wrapping at palette slot 0.\n");
+			slot -= 5;
+		}
+		curr.len = std::min(len,0x4000-curr.start);
+		curr.ofs = currofs;
+		len -= curr.len;
+		ofs += curr.len;
+		if(len != 0) {
+			int zzz=9;
+			//here is an actual test case of bank spanning
+		}
+		currofs += curr.len;
+		u8* ptr = ARM9Mem.texPalSlot[slot];
+		//this is just a guess. what happens if there is a gap in the mapping? lets put zeros
+		if(ptr == NULL) {
+			PROGINFO("Texture palette gap in memory mapping. Trying to accomodate.\n");
+			static u8* emptyTexturePalette = 0;
+			if(emptyTexturePalette == NULL) {
+				emptyTexturePalette = new u8[16*1024];
+				memset(emptyTexturePalette,0,16*1024);
+			}
+			ptr = emptyTexturePalette;
+		}
+		curr.ptr = ptr + curr.start;
+	}
+	return ret;
+}
+
+
 #ifndef CTASSERT
 #define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
 #endif
 
-static ALIGN(16) unsigned char  GPU_screen3D		[256*256*4];
+static ALIGN(16) u8  GPU_screen3D		[256*192*4];
 //static ALIGN(16) unsigned char  GPU_screenStencil[256*256];
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
@@ -81,7 +217,7 @@ static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE }
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
 static bool needRefreshFramebuffer = false;
 static unsigned char texMAP[1024*2048*4]; 
-static unsigned int textureMode=0;
+static unsigned int textureMode=TEXMODE_NONE;
 
 float clearAlpha;
 
@@ -225,15 +361,15 @@ struct ALIGN(8) TextureCache
 #endif
 {
 	GLenum				id;
-	unsigned int		frm;
-	unsigned int		mode;
-	unsigned int		pal;
-	unsigned int		sizeX;
-	unsigned int		sizeY;
-	int					coord;
+	u32					frm;
+	u32					mode;
+	u32					pal;
+	u32					sizeX;
+	u32					sizeY;
 	float				invSizeX;
 	float				invSizeY;
-	unsigned char		texture[128*1024]; // 128Kb texture slot
+	int					textureSize, indexSize;
+	u8					texture[128*1024]; // 128Kb texture slot
 	u8					palette[256*2];
 	u16					palSize;
 
@@ -508,16 +644,6 @@ static void OGLClose()
 	ENDGL();
 }
 
-
-#define CHECKSLOT txt_slot_current_size--;\
-					if (txt_slot_current_size<=0)\
-					{\
-						txt_slot_current++;\
-						if (txt_slot_current>3) txt_slot_current = 0;\
-						adr=(unsigned char *)ARM9Mem.textureSlotAddr[txt_slot_current];\
-						txt_slot_size=txt_slot_current_size=0x020000;\
-					}
-
 //todo - make all color conversions go through a properly spread table!!
 
 #if defined (DEBUG_DUMP_TEXTURE) && defined (WIN32)
@@ -544,28 +670,24 @@ static int lastTexture = -1;
 static bool hasTexture = false;
 static void setTexture(unsigned int format, unsigned int texpal)
 {
-	//BIG TODO - 
-	//none of this is capable of spanning bank boundaries. this is an obscure bug waiting to happen.
-	//each texel, palette, and 4x4 lookup need to be memory mapped.
-	//since we're caching textures, this cost is not too severe.
+	//for each texformat, number of palette entries
+	const int palSizes[] = {0, 32, 4, 16, 256, 0, 8, 0};
 
-	const int palSize[]={0, 8, 32, 512, 64, 0, 16, 0};
-	unsigned int x=0, y=0, i;
-	unsigned int palZeroTransparent;
-	
-	u16 *pal = NULL;
-	unsigned char *dst = texMAP;
+	//for each texformat, multiplier from numtexels to numbytes (fixed point 30.2)
+	const int texSizes[] = {0, 4, 1, 2, 4, 1, 4, 8};
+
+	//used to hold a copy of the palette specified for this texture
+	u16 pal[256];
+
 	u32 *dwdst = (u32*)texMAP;
+	
+	textureMode = (unsigned short)((format>>26)&0x07);
 	unsigned int sizeX=(8 << ((format>>20)&0x07));
 	unsigned int sizeY=(8 << ((format>>23)&0x07));
 	unsigned int imageSize = sizeX*sizeY;
 
-	u64 txt_slot_current_size;
-	u64 txt_slot_size;
-	u64 txt_slot_current;
 	u8 *adr;
 
-	textureMode = (unsigned short)((format>>26)&0x07);
 
 	if (format==0)
 	{
@@ -586,62 +708,101 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	txt_slot_current=(format>>14)&0x03;
-	adr=(unsigned char *)(ARM9Mem.textureSlotAddr[txt_slot_current]+((format&0x3FFF)<<3));
-
 	u32 paletteAddress;
 
 	switch (textureMode)
 	{
-		case 2: //i2
-			paletteAddress = texturePalette<<3;
-			break;
-		case 1: //a3i5
-		case 3: //i4
-		case 4: //i8
-		case 6: //a5i3
-		case 7: //16bpp
-		case 5: //4x4
-		default:
-			paletteAddress = texturePalette<<4;
-			break;
+	case TEXMODE_I2:
+		paletteAddress = texturePalette<<3;
+		break;
+	case TEXMODE_A3I5: //a3i5
+	case TEXMODE_I4: //i4
+	case TEXMODE_I8: //i8
+	case TEXMODE_A5I3: //a5i3
+	case TEXMODE_16BPP: //16bpp
+	case TEXMODE_4X4: //4x4
+	default:
+		paletteAddress = texturePalette<<4;
+		break;
 	}
 
-	u32 paletteSlot = paletteAddress>>14;
-	u32 paletteOffset = paletteAddress&0x3FFF;
+	//analyze the texture memory mapping and the specifications of this texture
+	int palSize = palSizes[textureMode];
+	int texSize = (imageSize*texSizes[textureMode])>>2;
+	MemSpan ms = MemSpan_TexMem((format&0xFFFF)<<3,texSize);
+	MemSpan mspal = MemSpan_TexPalette(paletteAddress,palSize*2);
 
-	pal = (unsigned short *)(ARM9Mem.texPalSlot[paletteSlot] + (paletteOffset));
+	//determine the location for 4x4 index data
+	u32 indexBase;
+	if((format & 0xc000) == 0x8000) indexBase = 0x30000;
+	else indexBase = 0x20000;
 
-	i=texcache_start;
-	
-	//if(false)
+	u32 indexOffset = (format&0x3FFF)<<2;
+
+	int indexSize = 0;
+	MemSpan msIndex;
+	if(textureMode == TEXMODE_4X4)
+	{
+		indexSize = imageSize>>3;
+		MemSpan_TexMem(indexOffset+indexBase,indexSize);
+	}
+
+
+	//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
+	//this isnt such a problem with texture memory, because we read sequentially from it.
+	//however, we read randomly from palette memory, so the mapping is more costly.
+	mspal.dump(pal);
+
+
+	int i=texcache_start;
+
 	while (TRUE)
 	{
+		//conditions where we give up and regenerate the texture:
 		if (texcache_stop==i) break;
 		if (texcache[i].frm==0) break;
-		if ( (texcache[i].frm == format) && (texcache[i].pal == texpal) )
-		{
 
-			if ((texcache[i].palSize == 0) ||
-				!memcmp(texcache[i].palette, pal, texcache[i].palSize) )
-			{
-				//TODO - this doesnt correctly span bank boundaries. in fact, it seems quite dangerous.
-				if (!texcache[i].suspectedInvalid || !memcmp(adr, texcache[i].texture, std::min((size_t)imageSize,sizeof(texcache[i].texture))) )
-				{
-					texcache[i].suspectedInvalid = false;
-					texcache_count=i;
-					if(lastTexture == -1 || (int)i != lastTexture)
-					{
-						lastTexture = i;
-						glBindTexture(GL_TEXTURE_2D,texcache[i].id);
-						glMatrixMode (GL_TEXTURE);
-						glLoadIdentity ();
-						glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
-					}
-					return;
-				}
-			}
+		//conditions where we reject matches:
+		//when the teximage or texpal params dont match 
+		//(this is our key for identifying palettes in the cache)
+		if(texcache[i].frm != format) goto REJECT;
+		if(texcache[i].pal != texpal) goto REJECT;
+
+		//the texture matches params, but isnt suspected invalid. accept it.
+		if(!texcache[i].suspectedInvalid) goto ACCEPT;
+
+		//if we couldnt cache this entire texture due to it being too large, then reject it
+		if(texSize+indexSize > sizeof(texcache[i].texture)) goto REJECT;
+
+		//when the palettes dont match:
+		//note that we are considering 4x4 textures to have a palette size of 0.
+		//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
+		//so they go through a different system
+		if(mspal.size != 0 && memcmp(texcache[i].palette,pal,mspal.size)) goto REJECT;
+
+		//when the texture data doesn't match
+		if(ms.memcmp(texcache[i].texture,sizeof(texcache[i].texture))) goto REJECT;
+
+		//if the texture is 4x4 then the index data must match
+		if(textureMode == TEXMODE_4X4) {
+			if(msIndex.memcmp(texcache[i].texture + texcache[i].textureSize,texcache[i].indexSize)) goto REJECT;
 		}
+
+
+ACCEPT:
+		texcache[i].suspectedInvalid = false;
+		texcache_count=i;
+		if(lastTexture == -1 || (int)i != lastTexture)
+		{
+			lastTexture = i;
+			glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+			glMatrixMode (GL_TEXTURE);
+			glLoadIdentity ();
+			glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
+		}
+		return;
+ 
+REJECT:
 		i++;
 		if (i>MAX_TEXTURE) 
 		{
@@ -661,23 +822,29 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	glBindTexture(GL_TEXTURE_2D, texcache[i].id);
 
 	texcache[i].suspectedInvalid = false;
+	texcache[i].frm=format;
 	texcache[i].mode=textureMode;
 	texcache[i].pal=texpal;
 	texcache[i].sizeX=sizeX;
 	texcache[i].sizeY=sizeY;
-	texcache[i].coord=(format>>30);
 	texcache[i].invSizeX=1.0f/((float)(sizeX));
 	texcache[i].invSizeY=1.0f/((float)(sizeY));
-	memcpy(texcache[i].texture,adr,std::min((size_t)imageSize,sizeof(texcache[i].texture)));
-	texcache[i].palSize = palSize[textureMode];
+	texcache[i].textureSize = ms.dump(texcache[i].texture,sizeof(texcache[i].texture));
+
+	//dump palette data for cache keying
+	texcache[i].palSize = mspal.size;
 	if ( texcache[i].palSize != 0 )
 	{
-		//TODO - the 4x4 lookup table should probably be checked also.
-		//but maybe we could concatenate that to the texture
-		memcpy(texcache[i].palette, pal, texcache[i].palSize);
+		memcpy(texcache[i].palette, pal, texcache[i].palSize*2);
+	}
+	//dump 4x4 index data for cache keying
+	texcache[i].indexSize = 0;
+	if(textureMode == TEXMODE_4X4)
+	{
+		texcache[i].indexSize = std::min(msIndex.size,(int)sizeof(texcache[i].texture) - texcache[i].textureSize);
+		msIndex.dump(texcache[i].texture,texcache[i].indexSize);
 	}
 
-	texcache[i].frm=format;
 
 	glMatrixMode (GL_TEXTURE);
 	glLoadIdentity ();
@@ -685,145 +852,162 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 
 	//INFO("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
-	
-	//============================================================================ Texture render
-	palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
-	txt_slot_size=(txt_slot_current_size=0x020000-((format & 0x3FFF)<<3));
+
+	//============================================================================ Texture conversion
+	u32 palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
 
 	switch (texcache[i].mode)
 	{
-		case 1: //a3i5
+	case TEXMODE_A3I5:
 		{
-			for(x = 0; x < imageSize; x++, dst += 4)
-			{
-				u16 c = pal[*adr&31];
-				u8 alpha = *adr>>5;
-				*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
-				adr++;
-				CHECKSLOT;
-			}
-			break;
-		}
-		case 2: //i2
-		{
-			for(x = 0; x < imageSize>>2; ++x)
-			{
-				unsigned short c = pal[(*adr)&0x3];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = ((*adr&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-
-				c = pal[((*adr)>>2)&0x3];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((*adr>>2)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-
-				c = pal[((*adr)>>4)&0x3];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((*adr>>4)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-
-				c = pal[(*adr)>>6];
-				dst[0] = ((c & 0x1F)<<3);
-				dst[1] = ((c & 0x3E0)>>2);
-				dst[2] = ((c & 0x7C00)>>7);
-				dst[3] = (((*adr>>6)&3) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-				dst += 4;
-
-				adr++;
-				CHECKSLOT;
-			}
-			break;
-		}
-		case 3: //i4
-			{
-				for(x = 0; x < (imageSize>>1); x++)
+			for(int i=0;i<ms.numItems;i++) {
+				adr = ms.items[i].ptr;
+				for(int x = 0; x < ms.items[i].len; x++)
 				{
-					unsigned short c = pal[*adr&0xF];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((*adr)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-					dst += 4;
+					u16 c = pal[*adr&31];
+					u8 alpha = *adr>>5;
+					*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
+					adr++;
+				}
+			}
 
-					c = pal[((*adr)>>4)];
-					dst[0] = ((c & 0x1F)<<3);
-					dst[1] = ((c & 0x3E0)>>2);
-					dst[2] = ((c & 0x7C00)>>7);
-					dst[3] = (((*adr>>4)&0xF) == 0) ? palZeroTransparent : 255;//(c>>15)*255;
-					dst += 4;
+			break;
+		}
+	case TEXMODE_I2:
+		{
+			for(int i=0;i<ms.numItems;i++) {
+				adr = ms.items[i].ptr;
+				for(int x = 0; x < ms.items[i].len; x++)
+				{
+					u8 bits;
+					u16 c;
+
+					bits = (*adr)&0x3;
+					c = pal[bits];
+					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+
+					bits = ((*adr)>>2)&0x3;
+					c = pal[bits];
+					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+
+					bits = ((*adr)>>4)&0x3;
+					c = pal[bits];
+					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+
+					bits = ((*adr)>>6)&0x3;
+					c = pal[bits];
+					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
 
 					adr++;
-					
-					CHECKSLOT;
 				}
-				break;
 			}
-		case 4: //i8
-			{
-				for(x = 0; x < imageSize; ++x)
+			break;
+		}
+	case TEXMODE_I4:
+		{
+			for(int i=0;i<ms.numItems;i++) {
+				adr = ms.items[i].ptr;
+				for(int x = 0; x < ms.items[i].len; x++)
+				{
+					u8 bits;
+					u16 c;
+
+					bits = (*adr)&0xF;
+					c = pal[bits];
+					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+
+					bits = ((*adr)>>4);
+					c = pal[bits];
+					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+
+					adr++;
+				}
+			}
+			break;
+		}
+	case TEXMODE_I8:
+		{
+			for(int i=0;i<ms.numItems;i++) {
+				adr = ms.items[i].ptr;
+				for(int x = 0; x < ms.items[i].len; ++x)
 				{
 					u16 c = pal[*adr];
 					*dwdst++ = RGB15TO32(c,(*adr == 0) ? palZeroTransparent : 255);
 					adr++;
-					CHECKSLOT;
 				}
 			}
-			break;
-		case 5: //4x4
+		}
+		break;
+	case TEXMODE_4X4:
 		{
-			unsigned short * slot1;
-			unsigned int * map = (unsigned int *)adr;
-			unsigned int d = 0;
+			if(ms.numItems != 1) PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
+			//this check isnt necessary since the addressing is tied to the texture data which will also run out:
+			//if(msIndex.numItems != 1) PROGINFO("Your 4x4 texture index has overrun its slot.\n");
+
+#define PAL4X4(offset) ( *(u16*)( ARM9Mem.texPalSlot[((paletteAddress + (offset)*2)>>14)] + ((paletteAddress + (offset)*2)&0x3FFF) ) )
+
+			u16* slot1;
+			u32* map = (u32*)ms.items[0].ptr;
+			u32 limit = ms.items[0].len<<2;
+			u32 d = 0;
 			if ( (texcache[i].frm & 0xc000) == 0x8000)
 				// texel are in slot 2
-				slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
+				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
 			else 
-				slot1=(unsigned short*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
+				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
 
-			bool dead = false;
 			u16 yTmpSize = (texcache[i].sizeY>>2);
 			u16 xTmpSize = (texcache[i].sizeX>>2);
 
-			for (y = 0; y < yTmpSize; y ++)
+			//this is flagged whenever a 4x4 overruns its slot.
+			//i am guessing we just generate black in that case
+			bool dead = false;
+
+			for (int y = 0; y < yTmpSize; y ++)
 			{
 				u32 tmpPos[4]={(y<<2)*texcache[i].sizeX,((y<<2)+1)*texcache[i].sizeX,
-											((y<<2)+2)*texcache[i].sizeX,((y<<2)+3)*texcache[i].sizeX};
-				for (x = 0; x < xTmpSize; x ++, d++)
-					{
-					u32 currBlock	= map[d], sy;
+					((y<<2)+2)*texcache[i].sizeX,((y<<2)+3)*texcache[i].sizeX};
+				for (int x = 0; x < xTmpSize; x ++, d++)
+				{
+					if(d >= limit)
+						dead = true;
+
+					if(dead) {
+						for (int sy = 0; sy < 4; sy++)
+						{
+							u32 currentPos = (x<<2) + tmpPos[sy];
+							dwdst[currentPos] = dwdst[currentPos+1] = dwdst[currentPos+2] = dwdst[currentPos+3] = 0;
+						}
+						continue;
+					}
+
+					u32 currBlock	= map[d];
 					u16 pal1		= slot1[d];
 					u16 pal1offset	= (pal1 & 0x3FFF)<<1;
 					u8  mode		= pal1>>14;
 					u32 tmp_col[4];
 
-					tmp_col[0]=RGB16TO32(pal[pal1offset],255);
-					tmp_col[1]=RGB16TO32(pal[pal1offset+1],255);
+					tmp_col[0]=RGB15TO32(PAL4X4(pal1offset),255);
+					tmp_col[1]=RGB15TO32(PAL4X4(pal1offset+1),255);
 
 					switch (mode) 
 					{
-						case 0:
-							tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
-							tmp_col[3]=RGB16TO32(0x7FFF,0);
-							break;
-						case 1:
-							tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
-											(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
-												(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
-													(0xff<<24);
-							tmp_col[3]=RGB16TO32(0x7FFF,0);
-							break;
-						case 2:
-							tmp_col[2]=RGB16TO32(pal[pal1offset+2],255);
-							tmp_col[3]=RGB16TO32(pal[pal1offset+3],255);
-							break;
-						case 3: 
+					case 0:
+						tmp_col[2]=RGB15TO32(PAL4X4(pal1offset+2),255);
+						tmp_col[3]=RGB15TO32(0x7FFF,0);
+						break;
+					case 1:
+						tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
+							(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
+							(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
+							(0xff<<24);
+						tmp_col[3]=RGB15TO32(0x7FFF,0);
+						break;
+					case 2:
+						tmp_col[2]=RGB15TO32(PAL4X4(pal1offset+2),255);
+						tmp_col[3]=RGB15TO32(PAL4X4(pal1offset+3),255);
+						break;
+					case 3: 
 						{
 							u32 red1, red2;
 							u32 green1, green2;
@@ -838,77 +1022,61 @@ static void setTexture(unsigned int format, unsigned int texpal)
 							blue2=(tmp_col[1]>>16)&0xff;
 
 							tmp1=((red1*5+red2*3)>>6)|
-										(((green1*5+green2*3)>>6)<<5)|
-											(((blue1*5+blue2*3)>>6)<<10);
+								(((green1*5+green2*3)>>6)<<5)|
+								(((blue1*5+blue2*3)>>6)<<10);
 							tmp2=((red2*5+red1*3)>>6)|
-										(((green2*5+green1*3)>>6)<<5)|
-										  (((blue2*5+blue1*3)>>6)<<10);
+								(((green2*5+green1*3)>>6)<<5)|
+								(((blue2*5+blue1*3)>>6)<<10);
 
-							tmp_col[2]=RGB16TO32(tmp1,255);
-							tmp_col[3]=RGB16TO32(tmp2,255);
+							tmp_col[2]=RGB15TO32(tmp1,255);
+							tmp_col[3]=RGB15TO32(tmp2,255);
 							break;
 						}
-					  }
-						for (sy = 0; sy < 4; sy++)
-						{
-							// Texture offset
-							u32 currentPos = (x<<2) + tmpPos[sy];
-							u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
-
-							dwdst[currentPos] = tmp_col[currRow&3];
-							dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
-							dwdst[currentPos+2] = tmp_col[(currRow>>4)&3];
-							dwdst[currentPos+3] = tmp_col[(currRow>>6)&3];
-
-							if(dead) {
-								memset(dwdst, 0, sizeof(dwdst[0]) * 4);
-							}
-
-							txt_slot_current_size-=4;;
-							if (txt_slot_current_size<=0)
-							{
-								//dead = true;
-								txt_slot_current++;
-								map=(unsigned int*)ARM9Mem.textureSlotAddr[txt_slot_current];
-								map-=txt_slot_size>>2; //this is weird, but necessary since we use map[d] above
-								txt_slot_size=txt_slot_current_size=0x020000;
-							}
-						}
 					}
+
+					//set all 16 texels
+					for (int sy = 0; sy < 4; sy++)
+					{
+						// Texture offset
+						u32 currentPos = (x<<2) + tmpPos[sy];
+						u8 currRow = (u8)((currBlock>>(sy<<3))&0xFF);
+
+						dwdst[currentPos] = tmp_col[currRow&3];
+						dwdst[currentPos+1] = tmp_col[(currRow>>2)&3];
+						dwdst[currentPos+2] = tmp_col[(currRow>>4)&3];
+						dwdst[currentPos+3] = tmp_col[(currRow>>6)&3];
+					}
+
+
 				}
+			}
 
 
 			break;
 		}
-		case 6: //a5i3
+	case TEXMODE_A5I3:
 		{
-			for(x = 0; x < imageSize; x++)
-			{
-				u16 c = pal[*adr&0x07];
-				u8 alpha = (*adr>>3);
-				*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
-				adr++;
-				CHECKSLOT;
+			for(int i=0;i<ms.numItems;i++) {
+				adr = ms.items[i].ptr;
+				for(int x = 0; x < ms.items[i].len; ++x)
+				{
+					u16 c = pal[*adr&0x07];
+					u8 alpha = (*adr>>3);
+					*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
+					adr++;
+				}
 			}
 			break;
 		}
-		case 7: //16bpp
+	case TEXMODE_16BPP:
 		{
-			unsigned short * map = ((unsigned short *)adr);
-			
-			for(x = 0; x < imageSize; ++x)
-			{
-				u16 c = map[x];
-				int alpha = ((c&0x8000)?255:0);
-				*dwdst++ = RGB15TO32(c&0x7FFF,alpha);
-				
-				txt_slot_current_size-=2;;
-				if (txt_slot_current_size<=0)
+			for(int i=0;i<ms.numItems;i++) {
+				u16* map = (u16*)ms.items[i].ptr;
+				for(int x = 0; x < ms.items[i].len; ++x)
 				{
-					txt_slot_current++;
-					map=(unsigned short *)ARM9Mem.textureSlotAddr[txt_slot_current];
-					map-=txt_slot_size>>1;
-					txt_slot_size=txt_slot_current_size=0x020000;
+					u16 c = map[x];
+					int alpha = ((c&0x8000)?255:0);
+					*dwdst++ = RGB15TO32(c&0x7FFF,alpha);
 				}
 			}
 			break;
@@ -916,15 +1084,15 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
-						texcache[i].sizeX, texcache[i].sizeY, 0, 
-							GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
+		texcache[i].sizeX, texcache[i].sizeY, 0, 
+		GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
 	DebugDumpTexture(i);
 
 	//============================================================================================
 
 	texcache_count=i;
-	
+
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
@@ -1161,8 +1329,18 @@ static void OGLVramReconfigureSignal()
 {
 	//well, this is a very blunt instrument.
 	//lets just flag all the textures as invalid.
-	for(int i=0;i<MAX_TEXTURE+1;i++)
+	for(int i=0;i<MAX_TEXTURE+1;i++) {
 		texcache[i].suspectedInvalid = true;
+
+		//invalidate all 4x4 textures when texture palettes change mappings
+		//this is necessary because we arent tracking 4x4 texture palettes to look for changes.
+		//Although I concede this is a bit paranoid.. I think the odds of anyone changing 4x4 palette data
+		//without also changing the texture data is pretty much zero.
+		//
+		//TODO - move this to a separate signal: split into TexReconfigureSignal and TexPaletteReconfigureSignal
+		if(texcache[i].mode == TEXMODE_4X4)
+			texcache[i].frm = 0;
+	}
 }
 
 static void GL_ReadFramebuffer()

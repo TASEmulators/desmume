@@ -51,7 +51,7 @@ public:
 	static void log(unsigned int channel, const char * file, unsigned int line, void (*callback)(const Logger& logger, const char * message));
 };
 
-#if defined(DEBUG) || defined(GPUDEBUG) || defined(DIVDEBUG) || defined(SQRTDEBUG) || defined(DMADEBUG)
+#if defined(DEBUG) || defined(GPUDEBUG) || defined(DIVDEBUG) || defined(SQRTDEBUG) || defined(DMADEBUG) || defined(WANTPROGINFO)
 #define LOGC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define LOGC(...)
@@ -92,6 +92,20 @@ public:
 #else
 #define CFLASHLOG(...)
 #endif
+
+#ifdef UNTESTEDOPCODELOG
+#define UNTESTEDOPCODELOG(...) LOGC(6, __VA_ARGS__)
+#else
+#define UNTESTEDOPCODELOG(...)
+#endif
+
+
+#ifdef WANTPROGINFO
+#define PROGINFO(...) LOGC(7, __VA_ARGS__)
+#else
+#define PROGINFO(...)
+#endif
+
 
 #define INFOC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
 #define INFO(...) INFOC(10, __VA_ARGS__)
