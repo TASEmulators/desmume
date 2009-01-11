@@ -5768,9 +5768,7 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_IMM_OFF_POSTIND()
           return 2;
      oldmode = armcpu_switchMode(cpu, SYS);
 
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_M_IMM_OFF_POSTIND\n");
-     
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_IMM_OFF_POSTIND\n");
      
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
@@ -5794,9 +5792,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_REG_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_P_REG_OFF_POSTIND\n");
-          
+	 
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_REG_OFF_POSTIND\n");
 
      i = cpu->instruction;
      adr = cpu->R[REG_POS(i,16)];
@@ -5820,9 +5817,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSL_IMM_OFF_POSTIND()
      if(cpu->CPSR.bits.mode==USR)
           return 2;
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_P_LSL_IMM_OFF_POSTIND\n");  
-          
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_LSL_IMM_OFF_POSTIND\n");  
 
      i = cpu->instruction;
      LSL_IMM; 
@@ -5848,9 +5844,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSL_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_M_LSL_IMM_OFF_POSTIND\n");  
-          
+	 
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_LSL_IMM_OFF_POSTIND\n");  
 
      i = cpu->instruction;
      LSL_IMM; 
@@ -5876,9 +5871,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_LSR_IMM_OFF_POSTIND()
           return 2;
      
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_P_LSR_IMM_OFF_POSTIND\n");  
-          
+	 
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_LSR_IMM_OFF_POSTIND\n");  
 
      i = cpu->instruction;
      LSR_IMM; 
@@ -5904,9 +5898,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_LSR_IMM_OFF_POSTIND()
           return 2;
      
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_M_LSR_IMM_OFF_POSTIND\n");
-          
+	 
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_LSR_IMM_OFF_POSTIND\n");
 
      i = cpu->instruction;
      LSR_IMM; 
@@ -5932,8 +5925,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ASR_IMM_OFF_POSTIND()
           return 2;
      
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_P_ASR_IMM_OFF_POSTIND\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_ASR_IMM_OFF_POSTIND\n");
           
 
      i = cpu->instruction;
@@ -5960,8 +5953,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ASR_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_M_ASR_IMM_OFF_POSTIND\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_ASR_IMM_OFF_POSTIND\n");
           
 
      i = cpu->instruction;
@@ -5988,8 +5981,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_P_ROR_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_P_ROR_IMM_OFF_POSTIND\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_P_ROR_IMM_OFF_POSTIND\n");
           
 
      i = cpu->instruction;
@@ -6016,8 +6009,8 @@ TEMPLATE static u32 FASTCALL  OP_LDRBT_M_ROR_IMM_OFF_POSTIND()
           return 2;
           
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDRBT_M_ROR_IMM_OFF_POSTIND\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDRBT_M_ROR_IMM_OFF_POSTIND\n");
           
 
      i = cpu->instruction;
@@ -6751,8 +6744,8 @@ TEMPLATE static u32 FASTCALL  OP_LDMIB2()
      u32 start = cpu->R[REG_POS(i,16)];
      u32 * registres;
      TWaitState* waitState;
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDMIB2\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDMIB2\n");
 
      if(BIT15(i)==0)
      {  
@@ -6810,8 +6803,8 @@ TEMPLATE static u32 FASTCALL  OP_LDMDA2()
      TWaitState* waitState;
      
      u32 start = cpu->R[REG_POS(i,16)];
-     //emu_halt();
-	 LOG("Untested opcode: OP_LDMDA2\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_LDMDA2\n");
 
      if(BIT15(i)==0)
      {  
@@ -7329,8 +7322,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
 
-     //emu_halt();
-	 LOG("Untested opcode: OP_STMIA2\n");
+	 UNTESTEDOPCODELOG("Untested opcode: OP_STMIA2\n");
 
      for(b=0; b<16; ++b)
      {
@@ -7360,8 +7352,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIB2()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
      
-     //emu_halt();
-	 LOG("Untested opcode: OP_STMIB2\n");
+	 UNTESTEDOPCODELOG("Untested opcode: OP_STMIB2\n");
      
      for(b=0; b<16; ++b)
      {
@@ -7391,8 +7382,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);     
      
-     //emu_halt();
-	 LOG("Untested opcode: OP_STMDA2\n");  
+	 UNTESTEDOPCODELOG("Untested opcode: OP_STMDA2\n");  
      
      for(b=0; b<16; ++b)
      {
@@ -7450,8 +7440,7 @@ TEMPLATE static u32 FASTCALL  OP_STMIA2_W()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
      
-     //emu_halt();
-	 LOG("Untested opcode: OP_STMIA2_W\n");
+	 UNTESTEDOPCODELOG("Untested opcode: OP_STMIA2_W\n");
      
      for(b=0; b<16; ++b)
      {
@@ -7510,8 +7499,8 @@ TEMPLATE static u32 FASTCALL  OP_STMDA2_W()
      c = 0;
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
-     //emu_halt();
-	 LOG("Untested opcode: OP_STMDA2_W\n");
+
+	 UNTESTEDOPCODELOG("Untested opcode: OP_STMDA2_W\n");
      
      for(b=0; b<16; ++b)
      {
@@ -7544,8 +7533,7 @@ TEMPLATE static u32 FASTCALL  OP_STMDB2_W()
      start = cpu->R[REG_POS(i,16)];
      oldmode = armcpu_switchMode(cpu, SYS);
 
-     //emu_halt();
-	 LOG("Untested opcode: OP_STMDB2_W\n");   
+	 UNTESTEDOPCODELOG("Untested opcode: OP_STMDB2_W\n");   
 
      for(b=0; b<16; ++b)
      {
