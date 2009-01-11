@@ -772,7 +772,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		if(!texcache[i].suspectedInvalid) goto ACCEPT;
 
 		//if we couldnt cache this entire texture due to it being too large, then reject it
-		if(texSize+indexSize > sizeof(texcache[i].texture)) goto REJECT;
+		if(texSize+indexSize > (int)sizeof(texcache[i].texture)) goto REJECT;
 
 		//when the palettes dont match:
 		//note that we are considering 4x4 textures to have a palette size of 0.
@@ -862,7 +862,7 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				adr = ms.items[j].ptr;
-				for(int x = 0; x < ms.items[j].len; x++)
+				for(u32 x = 0; x < ms.items[j].len; x++)
 				{
 					u16 c = pal[*adr&31];
 					u8 alpha = *adr>>5;
@@ -877,7 +877,7 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				adr = ms.items[j].ptr;
-				for(int x = 0; x < ms.items[j].len; x++)
+				for(u32 x = 0; x < ms.items[j].len; x++)
 				{
 					u8 bits;
 					u16 c;
@@ -907,7 +907,7 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				adr = ms.items[j].ptr;
-				for(int x = 0; x < ms.items[j].len; x++)
+				for(u32 x = 0; x < ms.items[j].len; x++)
 				{
 					u8 bits;
 					u16 c;
@@ -929,7 +929,7 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				adr = ms.items[j].ptr;
-				for(int x = 0; x < ms.items[j].len; ++x)
+				for(u32 x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = pal[*adr];
 					*dwdst++ = RGB15TO32(c,(*adr == 0) ? palZeroTransparent : 255);
@@ -1060,7 +1060,7 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				adr = ms.items[j].ptr;
-				for(int x = 0; x < ms.items[j].len; ++x)
+				for(u32 x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = pal[*adr&0x07];
 					u8 alpha = (*adr>>3);
@@ -1074,7 +1074,7 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				u16* map = (u16*)ms.items[j].ptr;
-				for(int x = 0; x < ms.items[j].len; ++x)
+				for(u32 x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = map[x];
 					int alpha = ((c&0x8000)?255:0);
