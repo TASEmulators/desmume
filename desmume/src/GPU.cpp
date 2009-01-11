@@ -2515,12 +2515,11 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							else if(hofs<0) { start = -hofs; end=255; ofs=0; }
 							else { start = 0; end=255-hofs; ofs=hofs; }
 							
-							//gpu3D->NDS_3D_GetLine (l, start, end, (u16*)dst+ofs);
-							gpu3D->NDS_3D_GetLine(l, start, end, line3Dcolor + ofs, line3Dalpha + ofs);
+							gpu3D->NDS_3D_GetLine(l, start, end, line3Dcolor, line3Dalpha);
 
-							for(int k = start; k <= end; k++)
-								if(line3Dcolor[k] & 0x8000)
-									gpu->setFinalColor3D(gpu, (k << 1), dst, line3Dcolor[k], line3Dalpha[k], k);
+							for(int k = start, q=0; k <= end; ++k, ++q)
+								if(line3Dcolor[q] & 0x8000)
+									gpu->setFinalColor3D(gpu, (q+ofs)<<1, dst, line3Dcolor[q], line3Dalpha[q], 0);
 
 							continue;
 						}
