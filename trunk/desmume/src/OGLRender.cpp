@@ -754,57 +754,57 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	mspal.dump(pal);
 
 
-	u32 i=texcache_start;
+	u32 tx=texcache_start;
 
 	while (TRUE)
 	{
 		//conditions where we give up and regenerate the texture:
-		if (texcache_stop==i) break;
-		if (texcache[i].frm==0) break;
+		if (texcache_stop == tx) break;
+		if (texcache[tx].frm == 0) break;
 
 		//conditions where we reject matches:
 		//when the teximage or texpal params dont match 
 		//(this is our key for identifying palettes in the cache)
-		if(texcache[i].frm != format) goto REJECT;
-		if(texcache[i].pal != texpal) goto REJECT;
+		if (texcache[tx].frm != format) goto REJECT;
+		if (texcache[tx].pal != texpal) goto REJECT;
 
 		//the texture matches params, but isnt suspected invalid. accept it.
-		if(!texcache[i].suspectedInvalid) goto ACCEPT;
+		if (!texcache[tx].suspectedInvalid) goto ACCEPT;
 
 		//if we couldnt cache this entire texture due to it being too large, then reject it
-		if(texSize+indexSize > (int)sizeof(texcache[i].texture)) goto REJECT;
+		if (texSize+indexSize > (int)sizeof(texcache[tx].texture)) goto REJECT;
 
 		//when the palettes dont match:
 		//note that we are considering 4x4 textures to have a palette size of 0.
 		//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
 		//so they go through a different system
-		if(mspal.size != 0 && memcmp(texcache[i].palette,pal,mspal.size)) goto REJECT;
+		if (mspal.size != 0 && memcmp(texcache[tx].palette,pal,mspal.size)) goto REJECT;
 
 		//when the texture data doesn't match
-		if(ms.memcmp(texcache[i].texture,sizeof(texcache[i].texture))) goto REJECT;
+		if(ms.memcmp(texcache[tx].texture,sizeof(texcache[tx].texture))) goto REJECT;
 
 		//if the texture is 4x4 then the index data must match
 		if(textureMode == TEXMODE_4X4) {
-			if(msIndex.memcmp(texcache[i].texture + texcache[i].textureSize,texcache[i].indexSize)) goto REJECT;
+			if(msIndex.memcmp(texcache[tx].texture + texcache[tx].textureSize,texcache[tx].indexSize)) goto REJECT;
 		}
 
 
 ACCEPT:
-		texcache[i].suspectedInvalid = false;
-		texcache_count=i;
-		if(lastTexture == -1 || (int)i != lastTexture)
+		texcache[tx].suspectedInvalid = false;
+		texcache_count = tx;
+		if(lastTexture == -1 || (int)tx != lastTexture)
 		{
-			lastTexture = i;
-			glBindTexture(GL_TEXTURE_2D,texcache[i].id);
+			lastTexture = tx;
+			glBindTexture(GL_TEXTURE_2D,texcache[tx].id);
 			glMatrixMode (GL_TEXTURE);
 			glLoadIdentity ();
-			glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
+			glScaled (texcache[tx].invSizeX, texcache[tx].invSizeY, 1.0f);
 		}
 		return;
  
 REJECT:
-		i++;
-		if (i>MAX_TEXTURE) 
+		tx++;
+		if ( tx > MAX_TEXTURE )
 		{
 			texcache_stop=texcache_start;
 			texcache[texcache_stop].frm=0;
@@ -814,41 +814,41 @@ REJECT:
 				texcache_start=0;
 				texcache_stop=MAX_TEXTURE<<1;
 			}
-			i=0;
+			tx=0;
 		}
 	}
 
-	lastTexture = i;
-	glBindTexture(GL_TEXTURE_2D, texcache[i].id);
+	lastTexture = tx;
+	glBindTexture(GL_TEXTURE_2D, texcache[tx].id);
 
-	texcache[i].suspectedInvalid = false;
-	texcache[i].frm=format;
-	texcache[i].mode=textureMode;
-	texcache[i].pal=texpal;
-	texcache[i].sizeX=sizeX;
-	texcache[i].sizeY=sizeY;
-	texcache[i].invSizeX=1.0f/((float)(sizeX));
-	texcache[i].invSizeY=1.0f/((float)(sizeY));
-	texcache[i].textureSize = ms.dump(texcache[i].texture,sizeof(texcache[i].texture));
+	texcache[tx].suspectedInvalid = false;
+	texcache[tx].frm=format;
+	texcache[tx].mode=textureMode;
+	texcache[tx].pal=texpal;
+	texcache[tx].sizeX=sizeX;
+	texcache[tx].sizeY=sizeY;
+	texcache[tx].invSizeX=1.0f/((float)(sizeX));
+	texcache[tx].invSizeY=1.0f/((float)(sizeY));
+	texcache[tx].textureSize = ms.dump(texcache[tx].texture,sizeof(texcache[tx].texture));
 
 	//dump palette data for cache keying
-	texcache[i].palSize = mspal.size;
-	if ( texcache[i].palSize != 0 )
+	texcache[tx].palSize = mspal.size;
+	if ( texcache[tx].palSize )
 	{
-		memcpy(texcache[i].palette, pal, texcache[i].palSize*2);
+		memcpy(texcache[tx].palette, pal, texcache[tx].palSize*2);
 	}
 	//dump 4x4 index data for cache keying
-	texcache[i].indexSize = 0;
+	texcache[tx].indexSize = 0;
 	if(textureMode == TEXMODE_4X4)
 	{
-		texcache[i].indexSize = std::min(msIndex.size,(int)sizeof(texcache[i].texture) - texcache[i].textureSize);
-		msIndex.dump(texcache[i].texture,texcache[i].indexSize);
+		texcache[tx].indexSize = std::min(msIndex.size,(int)sizeof(texcache[tx].texture) - texcache[tx].textureSize);
+		msIndex.dump(texcache[tx].texture,texcache[tx].indexSize);
 	}
 
 
 	glMatrixMode (GL_TEXTURE);
 	glLoadIdentity ();
-	glScaled (texcache[i].invSizeX, texcache[i].invSizeY, 1.0f);
+	glScaled (texcache[tx].invSizeX, texcache[tx].invSizeY, 1.0f);
 
 
 	//INFO("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
@@ -856,7 +856,7 @@ REJECT:
 	//============================================================================ Texture conversion
 	u32 palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
 
-	switch (texcache[i].mode)
+	switch (texcache[tx].mode)
 	{
 	case TEXMODE_A3I5:
 		{
@@ -952,14 +952,14 @@ REJECT:
 			u32* map = (u32*)ms.items[0].ptr;
 			u32 limit = ms.items[0].len<<2;
 			u32 d = 0;
-			if ( (texcache[i].frm & 0xc000) == 0x8000)
+			if ( (texcache[tx].frm & 0xc000) == 0x8000)
 				// texel are in slot 2
-				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][((texcache[i].frm&0x3FFF)<<2)+0x010000];
+				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][((texcache[tx].frm & 0x3FFF)<<2)+0x010000];
 			else 
-				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][(texcache[i].frm&0x3FFF)<<2];
+				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][(texcache[tx].frm & 0x3FFF)<<2];
 
-			u16 yTmpSize = (texcache[i].sizeY>>2);
-			u16 xTmpSize = (texcache[i].sizeX>>2);
+			u16 yTmpSize = (texcache[tx].sizeY>>2);
+			u16 xTmpSize = (texcache[tx].sizeX>>2);
 
 			//this is flagged whenever a 4x4 overruns its slot.
 			//i am guessing we just generate black in that case
@@ -967,8 +967,8 @@ REJECT:
 
 			for (int y = 0; y < yTmpSize; y ++)
 			{
-				u32 tmpPos[4]={(y<<2)*texcache[i].sizeX,((y<<2)+1)*texcache[i].sizeX,
-					((y<<2)+2)*texcache[i].sizeX,((y<<2)+3)*texcache[i].sizeX};
+				u32 tmpPos[4]={(y<<2)*texcache[tx].sizeX,((y<<2)+1)*texcache[tx].sizeX,
+					((y<<2)+2)*texcache[tx].sizeX,((y<<2)+3)*texcache[tx].sizeX};
 				for (int x = 0; x < xTmpSize; x ++, d++)
 				{
 					if(d >= limit)
@@ -1086,19 +1086,19 @@ REJECT:
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
-		texcache[i].sizeX, texcache[i].sizeY, 0, 
+		texcache[tx].sizeX, texcache[tx].sizeY, 0, 
 		GL_RGBA, GL_UNSIGNED_BYTE, texMAP);
 
-	DebugDumpTexture(i);
+	DebugDumpTexture(tx);
 
 	//============================================================================================
 
-	texcache_count=i;
+	texcache_count=tx;
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[i].frm) ? (BIT18(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[i].frm) ? (BIT19(texcache[i].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[tx].frm) ? (BIT18(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[tx].frm) ? (BIT19(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
 }
 
 
