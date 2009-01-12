@@ -16,7 +16,8 @@ void Mic_DeInit()
 {
 }
 
-u8 Mic_ReadSample() {
+u8 Mic_ReadSample()
+{
 	return 0;
 }
 
