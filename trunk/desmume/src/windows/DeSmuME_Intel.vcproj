@@ -923,6 +923,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\mic.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\oamView.cpp"
 					>
 				</File>
@@ -1150,6 +1154,10 @@
 				</File>
 				<File
 					RelativePath="..\memorystream.h"
+					>
+				</File>
+				<File
+					RelativePath="..\mic.h"
 					>
 				</File>
 				<File

@@ -5,7 +5,7 @@
 	Name="DeSmuME_Intel"
 	ProjectGUID="{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="4289079542"
+	VCNestedProjectCRC32="1264686066"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -368,6 +368,8 @@
 		<File 
 			RelativePath="..\memorystream.h"/>
 		<File 
+			RelativePath="..\mic.h"/>
+		<File 
 			RelativePath="..\MMU.h"/>
 		<File 
 			RelativePath="..\NDSSystem.h"/>
@@ -450,6 +452,14 @@
 		<File 
 			RelativePath=".\resources.rc"/>
 		<File 
+			RelativePath="..\addons\compactFlash.cpp"/>
+		<File 
+			RelativePath="..\addons\gbagame.cpp"/>
+		<File 
+			RelativePath="..\addons\none.cpp"/>
+		<File 
+			RelativePath="..\addons\rumblepak.cpp"/>
+		<File 
 			RelativePath="..\matrix_sse2-x64.asm">
 			<FileConfiguration 
 				Name="Debug|Win32">
@@ -527,14 +537,6 @@
 					ExcludedFromBuild="1"/>
 			</FileConfiguration>
 		</File>
-		<File 
-			RelativePath="..\addons\compactFlash.cpp"/>
-		<File 
-			RelativePath="..\addons\gbagame.cpp"/>
-		<File 
-			RelativePath="..\addons\none.cpp"/>
-		<File 
-			RelativePath="..\addons\rumblepak.cpp"/>
 		<File 
 			RelativePath="..\utils\decrypt\crc.cpp"/>
 		<File 
@@ -653,6 +655,8 @@
 			RelativePath=".\matrixView.cpp"/>
 		<File 
 			RelativePath=".\memView.cpp"/>
+		<File 
+			RelativePath=".\mic.cpp"/>
 		<File 
 			RelativePath=".\oamView.cpp"/>
 		<File 
