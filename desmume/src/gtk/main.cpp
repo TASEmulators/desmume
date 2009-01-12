@@ -1073,43 +1073,54 @@ static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 static void Modify_Layer(GtkWidget* widget, gpointer data)
 {
 	guint Layer = GPOINTER_TO_UINT(data);
+	gboolean active;
 
 	if (!desmume_running())
 		return;
+
+	active = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
 
 	switch (Layer) {
 	case MAIN_BG_0:
 	case MAIN_BG_1:
 	case MAIN_BG_2:
 	case MAIN_BG_3:
-		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-			if(!MainScreen.gpu->dispBG[Layer]) GPU_addBack(MainScreen.gpu, Layer);
-		} else { 
-			if(MainScreen.gpu->dispBG[Layer]) GPU_remove(MainScreen.gpu, Layer);
+		if(active == TRUE) {
+			if (!MainScreen.gpu->dispBG[Layer])
+				GPU_addBack(MainScreen.gpu, Layer);
+		} else {
+			if (MainScreen.gpu->dispBG[Layer])
+				 GPU_remove(MainScreen.gpu, Layer);
 		}
 		break;
 	case MAIN_OBJ:
-		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-			if(!MainScreen.gpu->dispOBJ) GPU_addBack(MainScreen.gpu, Layer);
+		if(active == TRUE) {
+			if (!MainScreen.gpu->dispOBJ)
+				GPU_addBack(MainScreen.gpu, Layer);
 		} else { 
-			if(MainScreen.gpu->dispOBJ) GPU_remove(MainScreen.gpu, Layer);
+			if (MainScreen.gpu->dispOBJ)
+				GPU_remove(MainScreen.gpu, Layer);
 		}
 		break;
 	case SUB_BG_0:
 	case SUB_BG_1:
 	case SUB_BG_2:
 	case SUB_BG_3:
-		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-			if(!SubScreen.gpu->dispBG[Layer-SUB_BG_0]) GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+		if(active == TRUE) {
+			if (!SubScreen.gpu->dispBG[Layer-SUB_BG_0])
+				GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
 		} else { 
-			if(SubScreen.gpu->dispBG[Layer-SUB_BG_0]) GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
+			if (SubScreen.gpu->dispBG[Layer-SUB_BG_0])
+				GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
 		}
 		break;
 	case SUB_OBJ:
-		if(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-			if(!SubScreen.gpu->dispOBJ) GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+		if(active == TRUE) {
+			if (!SubScreen.gpu->dispOBJ)
+				GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
 		} else { 
-			if(SubScreen.gpu->dispOBJ) GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
+			if (SubScreen.gpu->dispOBJ)
+				GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
 		}
 		break;
 	default:
