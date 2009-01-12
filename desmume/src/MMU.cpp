@@ -2927,7 +2927,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			case REG_IF :
 				return MMU.reg_IF[ARMCPU_ARM9];
 			case REG_IPCFIFORECV :
-				return IPC_FIFOrecv(ARMCPU_ARM7);
+				return IPC_FIFOrecv(ARMCPU_ARM9);
 			case REG_TM0CNTL :
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
@@ -3787,14 +3787,14 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		/* Address is an IO register */
 		switch(adr)
 		{
-			case REG_IME :
+			case REG_IME : 
 				return MMU.reg_IME[ARMCPU_ARM7];
 			case REG_IE :
 				return MMU.reg_IE[ARMCPU_ARM7];
 			case REG_IF :
 				return MMU.reg_IF[ARMCPU_ARM7];
 			case REG_IPCFIFORECV :
-				return IPC_FIFOrecv(ARMCPU_ARM9);
+				return IPC_FIFOrecv(ARMCPU_ARM7);
             case REG_TM0CNTL :
             case REG_TM1CNTL :
             case REG_TM2CNTL :

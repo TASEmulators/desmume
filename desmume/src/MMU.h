@@ -39,10 +39,7 @@ extern char szRomBaseName[512];
 
 /* theses ones for reading in rom data */
 #define ROM_8(m, a)  (((u8*)(m))[(a)])
- 
-//#define IPCFIFO  0
-//#define MAIN_MEMORY_DISP_FIFO 2
- 
+
 typedef const u32 TWaitState;
 
 struct MMU_struct {
