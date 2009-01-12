@@ -101,10 +101,10 @@ void Mic_DeInit()
 	if(!Mic_Inited)
 		return;
 
+	Mic_Inited = FALSE;
+
 	waveInReset(waveIn);
 	waveInClose(waveIn);
-
-	Mic_Inited = FALSE;
 }
 
 u8 Mic_ReadSample()
