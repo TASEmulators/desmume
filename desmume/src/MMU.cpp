@@ -44,6 +44,7 @@
 #include "GPU_osd.h"
 #include "mc.h"
 #include "addons.h"
+#include "mic.h"
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)
@@ -381,6 +382,10 @@ void MMU_Init(void) {
 	rtcInit();
 	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
 	addonsInit();
+	if(Mic_Init() == FALSE)
+		INFO("Microphone init failed.\n");
+	else
+		INFO("Microphone successfully inited.\n");
 } 
 
 void MMU_DeInit(void) {
@@ -392,6 +397,7 @@ void MMU_DeInit(void) {
        fclose(MMU.bupmem.fp);
     mc_free(&MMU.bupmem);
 	addonsClose();
+	Mic_DeInit();
 }
 
 //Card rom & ram
@@ -509,6 +515,7 @@ void MMU_clearMem()
 	partie = 1;
 	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
 	addonsReset();
+	Mic_Reset();
 }
 
 // VRAM mapping control
@@ -3198,7 +3205,10 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 									partie = 1;
 									break;
 								case 0x60 :
-									val = 0;
+									if(!(val & 0x80))
+										val = (Mic_ReadSample() & 0xFF);
+									else
+										val = 0;
 									break;
 								case 0x70 :
 									val = 0;
