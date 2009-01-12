@@ -590,9 +590,9 @@ gtk_init_sub_gl_area(GtkWidget *widget,
 static inline void gpu_screen_to_rgb(u8 *rgb, int size)
 {
 	for (int i = 0; i < size; i++) {
-		rgb[(i * 3) + 0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-		rgb[(i * 3) + 1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-		rgb[(i * 3) + 2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+		rgb[(i*3)+0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+		rgb[(i*3)+1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+		rgb[(i*3)+2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
 	}
 }
 
