@@ -221,10 +221,8 @@ SFORMAT SF_MMU[]={
 
 	//fifos
 	{ "F0TL", 1, 1,       &ipc_fifo[0].tail},
-	{ "F0HD", 1, 1,       &ipc_fifo[0].head},
 	{ "F0BF", 4, 16,      &ipc_fifo[0].buf[0]},
 	{ "F1TL", 1, 1,       &ipc_fifo[1].tail},
-	{ "F1HD", 1, 1,       &ipc_fifo[1].head},
 	{ "F1BF", 4, 16,      &ipc_fifo[1].buf[0]},
 	{ 0 }
 };

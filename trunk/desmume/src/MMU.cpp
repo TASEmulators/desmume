@@ -1472,18 +1472,18 @@ struct armcpu_memory_iface arm9_direct_memory_iface = {
 
 static INLINE void MMU_IPCSync(u8 proc, u32 val)
 {
-	//INFO("IPC%s sync 0x%08X\n", proc?"7":"9", val);
-	u32 IPCSYNC_local = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180);
-	u32 IPCSYNC_remote = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180);
+	//INFO("IPC%s sync 0x%04X (0x%02X|%02X)\n", proc?"7":"9", val, val >> 8, val & 0xFF);
+	u32 sync_l = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
+	u32 sync_r = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180) & 0xFFFF;
 
-	IPCSYNC_local = (IPCSYNC_local&0x6000)|(val&0xf00)|(IPCSYNC_local&0xf);
-	IPCSYNC_remote =(IPCSYNC_remote&0x6f00)|((val>>8)&0xf);
+	sync_l = ( sync_l & 0x600F ) | ( val & 0x0F00 );
+	sync_r = ( sync_r & 0x6F00 ) | ( (val >> 8) & 0x000F );
 
-	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, IPCSYNC_local);
-	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, IPCSYNC_remote);
+	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, sync_l);
+	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, sync_r);
 
-	if ((val & 0x2000) && (IPCSYNC_remote & 0x4000))
-		MMU.reg_IF[proc^1] |= ( 1<<17 );
+	if ((val & 0x2000) && (sync_r & 0x4000))
+		MMU.reg_IF[proc^1] |= ( 1 << 16 );
 }
 
 //================================================================================================== ARM9 *

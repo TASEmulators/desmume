@@ -34,14 +34,9 @@ IPC_FIFO ipc_fifo[2];		// 0 - ARM9
 
 void IPC_FIFOinit(u8 proc)
 {
-	ipc_fifo[proc].head = 0;
-	ipc_fifo[proc].tail = 0;
+	memset(&ipc_fifo[proc], 0, sizeof(IPC_FIFO));
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, 0x00000101);
-	NDS_makeInt(proc^1, 18); 
 }
-
-#define FIFO_IS_FULL(proc) ((ipc_fifo[proc].head) && (ipc_fifo[proc].head == ipc_fifo[proc].tail+1)) ||\
-							((!ipc_fifo[proc].head) && (ipc_fifo[proc].tail == 15))
 
 void IPC_FIFOsend(u8 proc, u32 val)
 {
@@ -49,7 +44,7 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	if (!(cnt_l & 0x8000)) return;			// FIFO disabled
 	u8	proc_remote = proc ^ 1;
 
-	if (FIFO_IS_FULL(proc_remote))				// FIFO error
+	if (ipc_fifo[proc].tail > 15)
 	{
 		cnt_l |= 0x4000;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
@@ -57,62 +52,66 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	}
 
 	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc_remote][0x40], 0x184);
-	cnt_l &= 0xFFFC;		// clear send empty bit & full
-	cnt_r &= 0xFCFF;		// set recv empty bit & full
-	ipc_fifo[proc_remote].buf[ipc_fifo[proc_remote].tail] = val;
-	ipc_fifo[proc_remote].tail++;
-	if (ipc_fifo[proc_remote].tail == 16)
-			ipc_fifo[proc_remote].tail = 0;
 
-	if (FIFO_IS_FULL(proc_remote))
+	//LOG("IPC%s send FIFO 0x%08X (l 0x%X, tail %02i) (r 0x%X, tail %02i)\n", 
+	//	proc?"7":"9", val, cnt_l, ipc_fifo[proc].tail, cnt_r, ipc_fifo[proc^1].tail);
+	
+	cnt_l &= 0xBFFC;		// clear send empty bit & full
+	cnt_r &= 0xBCFF;		// set recv empty bit & full
+	ipc_fifo[proc].buf[ipc_fifo[proc].tail++] = val;
+	
+	if (ipc_fifo[proc].tail > 15)
 	{
 		cnt_l |= 0x0002;		// set send full bit
 		cnt_r |= 0x0200;		// set recv full bit
 	}
 
-	//LOG("IPC%s send FIFO 0x%08X (l 0x%X, r 0x%X), head %02i, tail %02i\n", proc?"7":"9", val, cnt_l, cnt_r, ipc_fifo[proc].head, ipc_fifo[proc].tail);
-
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	MMU.reg_IF[proc_remote] |= ( (cnt_r & 0x0400) << 8 );
+	MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0400) << 8 );
 }
 
 u32 IPC_FIFOrecv(u8 proc)
 {
-	u32 val = 0;
 	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
-	if (!(cnt_l & 0x8000)) return (0);						// FIFO disabled
+	if (!(cnt_l & 0x8000)) return (0);									// FIFO disabled
 	u8	proc_remote = proc ^ 1;
 
-	if ( ipc_fifo[proc].head == ipc_fifo[proc].tail )		// FIFO error
+	u32 val = 0;
+
+	if ( ipc_fifo[proc_remote].tail == 0 )		// remote FIFO error
 	{
 		cnt_l |= 0x4000;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
-		return (val);
+		return (0);
 	}
 
 	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc_remote][0x40], 0x184);
 
-	cnt_l &= 0xFCFF;		// clear send full bit & empty
-	cnt_r &= 0xFFFC;		// set recv full bit & empty
+	cnt_l &= 0xBCFF;		// clear send full bit & empty
+	cnt_r &= 0xBFFC;		// set recv full bit & empty
 
-	val = ipc_fifo[proc].buf[ipc_fifo[proc].head];
-	ipc_fifo[proc].head++;
-	if (ipc_fifo[proc].head == 16)
-			ipc_fifo[proc].head = 0;
-	if ( ipc_fifo[proc].head == ipc_fifo[proc].tail )		// FIFO empty
+	val = ipc_fifo[proc_remote].buf[0];
+	
+	//LOG("IPC%s recv FIFO 0x%08X (l 0x%X, tail %02i) (r 0x%X, tail %02i)\n", 
+	//	proc?"7":"9", val, cnt_l, ipc_fifo[proc].tail, cnt_r, ipc_fifo[proc^1].tail);
+
+	ipc_fifo[proc_remote].tail--;
+	for (int i = 0; i < ipc_fifo[proc_remote].tail; i++)
+		ipc_fifo[proc_remote].buf[i] = ipc_fifo[proc_remote].buf[i+1];;
+
+	if ( ipc_fifo[proc_remote].tail == 0 )		// FIFO empty
 	{
 		cnt_l |= 0x0100;
 		cnt_r |= 0x0001;
 	}
 
-	//LOG("IPC%s recv FIFO 0x%08X (l 0x%X, r 0x%X), head %02i, tail %02i\n", proc?"7":"9", val, cnt_l, cnt_r, ipc_fifo[proc].head, ipc_fifo[proc].tail);
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	if ((cnt_l & 0x0100) && (cnt_l & BIT(2)) )
-		MMU.reg_IF[proc_remote] |= ( 1<<17 );
+	MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0004) << 15);
+
 	return (val);
 }
 
@@ -120,23 +119,18 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 {
 	u16 cnt_l = T1ReadWord(MMU.MMU_MEM[proc][0x40], 0x184);
 	u16 cnt_r = T1ReadWord(MMU.MMU_MEM[proc^1][0x40], 0x184);
-	cnt_r &= 0x3FFF;
-	cnt_r |= (val & 0x8000);
 
-	//LOG("IPC%s FIFO context 0x%X (local 0x%X)\n", proc?"7":"9", val, cnt_l);
+	//LOG("IPC%s FIFO context 0x%X (local 0x%04X, remote 0x%04X)\n", proc?"7":"9", val, cnt_l, cnt_r);
 	if (val & 0x4008)
 	{
-		ipc_fifo[proc].head = 0;
 		ipc_fifo[proc].tail = 0;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
 		T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0x8407) | 0x100);
-		MMU.reg_IF[proc] |= ((cnt_l & 0x0004) << 16);
+		MMU.reg_IF[proc^1] |= ((val & 0x0004) << 15);
 		return;
 	}
 
-	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l | (val & 0xBFF4));
-	T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, cnt_r);
-	MMU.reg_IF[proc] |= ((cnt_l & 0x0004) << 16);
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, val);
 }
 
 // ========================================================= GFX FIFO
