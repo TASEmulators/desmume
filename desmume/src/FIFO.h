@@ -31,7 +31,6 @@ typedef struct
 {
 	u32		buf[16];
 	
-	u8		head;
 	u8		tail;
 } IPC_FIFO;
 
