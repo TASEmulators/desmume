@@ -982,7 +982,7 @@ BOOL gfx3d_glBoxTest(unsigned long v)
 	BTind++;
 	if (BTind < 3) return FALSE;
 	BTind = 0;
-	//INFO("BoxTest=%i\n",val);
+	//INFO("BoxTest=%i\n",v);
 	return TRUE;
 }
 
@@ -2003,6 +2003,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GLIN", 4, 1, &clInd},
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
+	{ "GLPC", 4, 4, PTcoords},
 	{ "GLBS", 1, 1, &GFX_busy},
 	{ "GLF9", 4, 1, &gxFIFO.tail},
 	{ "GLF9", 4, 261, &gxFIFO.cmd},
