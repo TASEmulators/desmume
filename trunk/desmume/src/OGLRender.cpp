@@ -1260,6 +1260,9 @@ static void OGLRender()
 	glClearDepth(gfx3d.clearDepth);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
 
 	//render display list
 	//TODO - properly doublebuffer the display lists
@@ -1284,11 +1287,11 @@ static void OGLRender()
 			}
 			
 			//since we havent got the whole pipeline working yet, lets use opengl for the projection
-			if(lastProjIndex != poly->projIndex) {
+		/*	if(lastProjIndex != poly->projIndex) {
 				glMatrixMode(GL_PROJECTION);
 				glLoadMatrixf(gfx3d.projlist->projMatrix[poly->projIndex]);
 				lastProjIndex = poly->projIndex;
-			}
+			}*/
 
 			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
 			for(int j=0;j<type;j++) {
@@ -1301,7 +1304,7 @@ static void OGLRender()
 				};
 				
 				//float tempCoord[4];
-				//Vector4Copy(tempCoord,vert->coord);
+				//Vector4Copy(tempCoord, vert->coord);
 				//we havent got the whole pipeline working yet, so we cant do this
 				////convert from ds device coords to opengl
 				//tempCoord[0] *= 2;
@@ -1312,8 +1315,8 @@ static void OGLRender()
 				//todo - edge flag?
 				glTexCoord2fv(vert->texcoord);
 				glColor4ubv((GLubyte*)color);
-				//glVertex3fv(tempCoord);
-				glVertex3fv(vert->coord);
+				//glVertex4fv(tempCoord);
+				glVertex4fv(vert->coord);
 			}
 			glEnd();
 		}
