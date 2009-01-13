@@ -2809,6 +2809,10 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 				return (gfx3d_GetNumPolys()&2047);
 			case 0x04000606:
 				return (gfx3d_GetNumVertex()&8191);
+			case 0x04000630:
+			case 0x04000632:
+			case 0x04000634:
+				return gfx3d_glGetVecRes((adr & 0xF) >> 1);
 			// ============================================= 3D end
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM9];
@@ -2924,6 +2928,14 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			{
 				return (gfx3d_GetNumPolys()&2047) & ((gfx3d_GetNumVertex()&8191) << 16);
 				//LOG ("read32 - RAM_COUNT -> 0x%X", ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF])>>2]);
+			}
+
+			case 0x04000620:
+			case 0x04000624:
+			case 0x04000628:
+			case 0x0400062C:
+			{
+				return gfx3d_glGetPosRes((adr & 0xF) >> 2);
 			}
 			//	======================================== 3D end
 			

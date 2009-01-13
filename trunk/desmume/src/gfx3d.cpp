@@ -999,16 +999,16 @@ void gfx3d_glVecTest(unsigned long v)
 	//INFO("NDS_glVecTest\n");
 }
 
-void gfx3d_glGetPosRes(unsigned int index)
+unsigned int gfx3d_glGetPosRes(unsigned int index)
 {
 	//INFO("NDS_glGetPosRes\n");
-	//return 0;
+	return 0;
 }
 
-void gfx3d_glGetVecRes(unsigned int index)
+unsigned short gfx3d_glGetVecRes(unsigned int index)
 {
 	//INFO("NDS_glGetVecRes\n");
-	//return 0;
+	return 0;
 }
 
 #if 0
