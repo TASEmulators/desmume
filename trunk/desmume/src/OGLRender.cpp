@@ -96,6 +96,7 @@ public:
 	int memcmp(void* buf2, int size=-1)
 	{
 		if(size==-1) size = this->size;
+		size = std::min(this->size,size);
 		for(int i=0;i<numItems;i++)
 		{
 			Item &item = items[i];
@@ -113,6 +114,7 @@ public:
 	int dump(void* buf, int size=-1)
 	{
 		if(size==-1) size = this->size;
+		size = std::min(this->size,size);
 		u8* bufptr = (u8*)buf;
 		int done = 0;
 		for(int i=0;i<numItems;i++)
@@ -121,8 +123,8 @@ public:
 			int todo = std::min((int)item.len,size);
 			size -= todo;
 			done += todo;
-			memcpy(bufptr,item.ptr,item.len);
-			bufptr += item.len;
+			memcpy(bufptr,item.ptr,todo);
+			bufptr += todo;
 			if(size==0) return done;
 		}
 		return done;
@@ -143,10 +145,6 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 		curr.ofs = currofs;
 		len -= curr.len;
 		ofs += curr.len;
-		if(len != 0) {
-			int zzz=9;
-			//here is an actual test case of bank spanning
-		}
 		currofs += curr.len;
 		u8* ptr = ARM9Mem.textureSlotAddr[slot];
 		//this is just a guess. what happens if there is a gap in the mapping? lets put zeros
@@ -183,10 +181,8 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 		curr.ofs = currofs;
 		len -= curr.len;
 		ofs += curr.len;
-		if(len != 0) {
-			int zzz=9;
+		//if(len != 0) 
 			//here is an actual test case of bank spanning
-		}
 		currofs += curr.len;
 		u8* ptr = ARM9Mem.texPalSlot[slot];
 		//this is just a guess. what happens if there is a gap in the mapping? lets put zeros
@@ -371,7 +367,6 @@ struct ALIGN(8) TextureCache
 	int					textureSize, indexSize;
 	u8					texture[128*1024]; // 128Kb texture slot
 	u8					palette[256*2];
-	u16					palSize;
 
 	//set if this texture is suspected be invalid due to a vram reconfigure
 	bool				suspectedInvalid;
@@ -728,7 +723,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 	//analyze the texture memory mapping and the specifications of this texture
 	int palSize = palSizes[textureMode];
-	int texSize = (imageSize*texSizes[textureMode])>>2;
+	int texSize = (imageSize*texSizes[textureMode])>>2; //shifted because the texSizes multiplier is fixed point
 	MemSpan ms = MemSpan_TexMem((format&0xFFFF)<<3,texSize);
 	MemSpan mspal = MemSpan_TexPalette(paletteAddress,palSize*2);
 
@@ -744,7 +739,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	if(textureMode == TEXMODE_4X4)
 	{
 		indexSize = imageSize>>3;
-		MemSpan_TexMem(indexOffset+indexBase,indexSize);
+		msIndex = MemSpan_TexMem(indexOffset+indexBase,indexSize);
 	}
 
 
@@ -756,6 +751,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 	u32 tx=texcache_start;
 
+	//if(false)
 	while (TRUE)
 	{
 		//conditions where we give up and regenerate the texture:
@@ -784,8 +780,9 @@ static void setTexture(unsigned int format, unsigned int texpal)
 		if(ms.memcmp(texcache[tx].texture,sizeof(texcache[tx].texture))) goto REJECT;
 
 		//if the texture is 4x4 then the index data must match
-		if(textureMode == TEXMODE_4X4) {
-			if(msIndex.memcmp(texcache[tx].texture + texcache[tx].textureSize,texcache[tx].indexSize)) goto REJECT;
+		if(textureMode == TEXMODE_4X4)
+		{
+			if(msIndex.memcmp(texcache[tx].texture + texcache[tx].textureSize,texcache[tx].indexSize)) goto REJECT; 
 		}
 
 
@@ -832,17 +829,16 @@ REJECT:
 	texcache[tx].textureSize = ms.dump(texcache[tx].texture,sizeof(texcache[tx].texture));
 
 	//dump palette data for cache keying
-	texcache[tx].palSize = mspal.size;
-	if ( texcache[tx].palSize )
+	if ( palSize )
 	{
-		memcpy(texcache[tx].palette, pal, texcache[tx].palSize*2);
+		memcpy(texcache[tx].palette, pal, palSize*2);
 	}
 	//dump 4x4 index data for cache keying
 	texcache[tx].indexSize = 0;
 	if(textureMode == TEXMODE_4X4)
 	{
 		texcache[tx].indexSize = std::min(msIndex.size,(int)sizeof(texcache[tx].texture) - texcache[tx].textureSize);
-		msIndex.dump(texcache[tx].texture,texcache[tx].indexSize);
+		msIndex.dump(texcache[tx].texture+texcache[tx].textureSize,texcache[tx].indexSize);
 	}
 
 
@@ -940,6 +936,8 @@ REJECT:
 		break;
 	case TEXMODE_4X4:
 		{
+			//RGB16TO32 is used here because the other conversion macros result in broken interpolation logic
+
 			if(ms.numItems != 1) {
 				PROGINFO("Your 4x4 texture has overrun its texture slot.\n");
 			}
@@ -989,25 +987,25 @@ REJECT:
 					u8  mode		= pal1>>14;
 					u32 tmp_col[4];
 
-					tmp_col[0]=RGB15TO32(PAL4X4(pal1offset),255);
-					tmp_col[1]=RGB15TO32(PAL4X4(pal1offset+1),255);
+					tmp_col[0]=RGB16TO32(PAL4X4(pal1offset),255);
+					tmp_col[1]=RGB16TO32(PAL4X4(pal1offset+1),255);
 
 					switch (mode) 
 					{
 					case 0:
-						tmp_col[2]=RGB15TO32(PAL4X4(pal1offset+2),255);
-						tmp_col[3]=RGB15TO32(0x7FFF,0);
+						tmp_col[2]=RGB16TO32(PAL4X4(pal1offset+2),255);
+						tmp_col[3]=RGB16TO32(0x7FFF,0);
 						break;
 					case 1:
 						tmp_col[2]=(((tmp_col[0]&0xFF)+(tmp_col[1]&0xff))>>1)|
 							(((tmp_col[0]&(0xFF<<8))+(tmp_col[1]&(0xFF<<8)))>>1)|
 							(((tmp_col[0]&(0xFF<<16))+(tmp_col[1]&(0xFF<<16)))>>1)|
 							(0xff<<24);
-						tmp_col[3]=RGB15TO32(0x7FFF,0);
+						tmp_col[3]=RGB16TO32(0x7FFF,0);
 						break;
 					case 2:
-						tmp_col[2]=RGB15TO32(PAL4X4(pal1offset+2),255);
-						tmp_col[3]=RGB15TO32(PAL4X4(pal1offset+3),255);
+						tmp_col[2]=RGB16TO32(PAL4X4(pal1offset+2),255);
+						tmp_col[3]=RGB16TO32(PAL4X4(pal1offset+3),255);
 						break;
 					case 3: 
 						{
@@ -1030,8 +1028,8 @@ REJECT:
 								(((green2*5+green1*3)>>6)<<5)|
 								(((blue2*5+blue1*3)>>6)<<10);
 
-							tmp_col[2]=RGB15TO32(tmp1,255);
-							tmp_col[3]=RGB15TO32(tmp2,255);
+							tmp_col[2]=RGB16TO32(tmp1,255);
+							tmp_col[3]=RGB16TO32(tmp2,255);
 							break;
 						}
 					}
