@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1FB3725C0F1CB9D300F75A43 /* mic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB3725A0F1CB9D300F75A43 /* mic.cpp */; };
+		1FB372630F1CB9F700F75A43 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372610F1CB9F700F75A43 /* addons.cpp */; };
+		1FB3727A0F1CBAB200F75A43 /* compactFlash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372760F1CBAB200F75A43 /* compactFlash.cpp */; };
+		1FB3727B0F1CBAB200F75A43 /* gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372770F1CBAB200F75A43 /* gbagame.cpp */; };
+		1FB3727C0F1CBAB200F75A43 /* none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372780F1CBAB200F75A43 /* none.cpp */; };
+		1FB3727D0F1CBAB200F75A43 /* rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372790F1CBAB200F75A43 /* rumblepak.cpp */; };
 		1FDD29340F080D68004021C9 /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD292F0F080D68004021C9 /* movie.cpp */; };
 		1FDD294E0F080DBD004021C9 /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD293E0F080DBD004021C9 /* ConvertUTF.c */; };
 		1FDD294F0F080DBD004021C9 /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29410F080DBD004021C9 /* crc.cpp */; };
@@ -69,6 +75,14 @@
 
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		1FB3725A0F1CB9D300F75A43 /* mic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mic.cpp; path = ../mic.cpp; sourceTree = SOURCE_ROOT; };
+		1FB3725B0F1CB9D300F75A43 /* mic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mic.h; path = ../mic.h; sourceTree = SOURCE_ROOT; };
+		1FB372610F1CB9F700F75A43 /* addons.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = addons.cpp; path = ../addons.cpp; sourceTree = SOURCE_ROOT; };
+		1FB372620F1CB9F700F75A43 /* addons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = addons.h; path = ../addons.h; sourceTree = SOURCE_ROOT; };
+		1FB372760F1CBAB200F75A43 /* compactFlash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = compactFlash.cpp; sourceTree = "<group>"; };
+		1FB372770F1CBAB200F75A43 /* gbagame.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gbagame.cpp; sourceTree = "<group>"; };
+		1FB372780F1CBAB200F75A43 /* none.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = none.cpp; sourceTree = "<group>"; };
+		1FB372790F1CBAB200F75A43 /* rumblepak.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = rumblepak.cpp; sourceTree = "<group>"; };
 		1FDD292F0F080D68004021C9 /* movie.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = movie.cpp; path = ../movie.cpp; sourceTree = SOURCE_ROOT; };
 		1FDD29300F080D68004021C9 /* movie.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = movie.h; path = ../movie.h; sourceTree = SOURCE_ROOT; };
 		1FDD29310F080D68004021C9 /* PACKED.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PACKED.h; path = ../PACKED.h; sourceTree = SOURCE_ROOT; };
@@ -102,7 +116,6 @@
 		721F43CD0EA2A18F0037FB33 /* softrender_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender_config.h; path = ../softrender_config.h; sourceTree = SOURCE_ROOT; };
 		721F43CE0EA2A18F0037FB33 /* softrender_desmumefont.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender_desmumefont.h; path = ../softrender_desmumefont.h; sourceTree = SOURCE_ROOT; };
 		721F43CF0EA2A18F0037FB33 /* softrender_v3sysfont.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = softrender_v3sysfont.h; path = ../softrender_v3sysfont.h; sourceTree = SOURCE_ROOT; };
-		721F43D00EA2A18F0037FB33 /* zero_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zero_private.h; path = ../zero_private.h; sourceTree = SOURCE_ROOT; };
 		721F43E40EA2A23F0037FB33 /* sndOSX.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = sndOSX.mm; sourceTree = "<group>"; };
 		721F44210EA2BB6E0037FB33 /* rom_info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rom_info.h; path = dialogs/rom_info.h; sourceTree = "<group>"; };
 		721F44220EA2BB6E0037FB33 /* rom_info.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = rom_info.m; path = dialogs/rom_info.m; sourceTree = "<group>"; };
@@ -263,6 +276,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1FB372750F1CBAB200F75A43 /* addons */ = {
+			isa = PBXGroup;
+			children = (
+				1FB372760F1CBAB200F75A43 /* compactFlash.cpp */,
+				1FB372770F1CBAB200F75A43 /* gbagame.cpp */,
+				1FB372780F1CBAB200F75A43 /* none.cpp */,
+				1FB372790F1CBAB200F75A43 /* rumblepak.cpp */,
+			);
+			name = addons;
+			path = ../addons;
+			sourceTree = SOURCE_ROOT;
+		};
 		1FDD29400F080DBD004021C9 /* decrypt */ = {
 			isa = PBXGroup;
 			children = (
@@ -294,9 +319,14 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				1FB372750F1CBAB200F75A43 /* addons */,
+				1FDD29400F080DBD004021C9 /* decrypt */,
+				1FB372610F1CB9F700F75A43 /* addons.cpp */,
+				1FB372620F1CB9F700F75A43 /* addons.h */,
+				1FB3725A0F1CB9D300F75A43 /* mic.cpp */,
+				1FB3725B0F1CB9D300F75A43 /* mic.h */,
 				1FDD293E0F080DBD004021C9 /* ConvertUTF.c */,
 				1FDD293F0F080DBD004021C9 /* ConvertUTF.h */,
-				1FDD29400F080DBD004021C9 /* decrypt */,
 				1FDD29470F080DBD004021C9 /* guid.cpp */,
 				1FDD29480F080DBD004021C9 /* guid.h */,
 				1FDD29490F080DBD004021C9 /* md5.cpp */,
@@ -320,7 +350,6 @@
 				721F43CD0EA2A18F0037FB33 /* softrender_config.h */,
 				721F43CE0EA2A18F0037FB33 /* softrender_desmumefont.h */,
 				721F43CF0EA2A18F0037FB33 /* softrender_v3sysfont.h */,
-				721F43D00EA2A18F0037FB33 /* zero_private.h */,
 				72D89E360E845C7E008D9B64 /* readwrite.cpp */,
 				728E5E200E7F54CC00608344 /* GPU_osd.h */,
 				7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */,
@@ -548,6 +577,12 @@
 				1FDD29520F080DBD004021C9 /* guid.cpp in Sources */,
 				1FDD29530F080DBD004021C9 /* md5.cpp in Sources */,
 				1FDD29540F080DBD004021C9 /* xstring.cpp in Sources */,
+				1FB3725C0F1CB9D300F75A43 /* mic.cpp in Sources */,
+				1FB372630F1CB9F700F75A43 /* addons.cpp in Sources */,
+				1FB3727A0F1CBAB200F75A43 /* compactFlash.cpp in Sources */,
+				1FB3727B0F1CBAB200F75A43 /* gbagame.cpp in Sources */,
+				1FB3727C0F1CBAB200F75A43 /* none.cpp in Sources */,
+				1FB3727D0F1CBAB200F75A43 /* rumblepak.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

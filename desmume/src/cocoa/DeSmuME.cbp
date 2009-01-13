@@ -110,6 +110,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../ROMReader.h" />
 		<Unit filename="../SPU.cpp" />
 		<Unit filename="../SPU.h" />
+		<Unit filename="../addons.cpp" />
+		<Unit filename="../addons.h" />
+		<Unit filename="../addons/compactFlash.cpp" />
+		<Unit filename="../addons/gbagame.cpp" />
+		<Unit filename="../addons/none.cpp" />
+		<Unit filename="../addons/rumblepak.cpp" />
 		<Unit filename="../arm_instructions.cpp" />
 		<Unit filename="../arm_instructions.h" />
 		<Unit filename="../armcpu.cpp" />
@@ -204,6 +210,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../mc.h" />
 		<Unit filename="../mem.h" />
 		<Unit filename="../memorystream.h" />
+		<Unit filename="../mic.cpp" />
+		<Unit filename="../mic.h" />
 		<Unit filename="../movie.cpp" />
 		<Unit filename="../movie.h" />
 		<Unit filename="../readwrite.cpp" />
@@ -243,7 +251,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../utils/xstring.h" />
 		<Unit filename="../wifi.cpp" />
 		<Unit filename="../wifi.h" />
-		<Unit filename="../zero_private.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
