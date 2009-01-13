@@ -105,6 +105,7 @@ static u32 clCmd = 0;
 static u32 clInd = 0;
 static u32 BTind = 0;
 static u32 PTind = 0;
+static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 static BOOL GFX_busy = FALSE;
 
 //raw ds format poly attributes
@@ -988,9 +989,21 @@ BOOL gfx3d_glBoxTest(unsigned long v)
 BOOL gfx3d_glPosTest(unsigned long v)
 {
 	PTind++;
-	if (BTind < 2) return FALSE;
+	if (PTind < 2)
+	{
+		PTcoords[0] = float16table[v & 0xFFFF];
+		PTcoords[1] = float16table[v >> 16];
+
+		return FALSE;
+	}
 	PTind = 0;
-	//INFO("PosTest=%i\n",val);
+	
+	PTcoords[2] = float16table[v & 0xFFFF];
+	PTcoords[3] = 1.0f;
+
+	MatrixMultVec4x4(mtxCurrent[1], PTcoords);
+	MatrixMultVec4x4(mtxCurrent[0], PTcoords);
+
 	return TRUE;
 }
 
@@ -1001,8 +1014,7 @@ void gfx3d_glVecTest(unsigned long v)
 
 unsigned int gfx3d_glGetPosRes(unsigned int index)
 {
-	//INFO("NDS_glGetPosRes\n");
-	return 0;
+	return (unsigned int)(PTcoords[index] * 4096.0f);
 }
 
 unsigned short gfx3d_glGetVecRes(unsigned int index)
