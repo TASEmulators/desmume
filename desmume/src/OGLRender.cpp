@@ -1269,7 +1269,7 @@ static void OGLRender()
 	{
 
 		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
-		int lastProjIndex = -1;
+		// int lastProjIndex = -1;
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
 			POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
