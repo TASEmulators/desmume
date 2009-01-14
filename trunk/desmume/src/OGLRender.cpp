@@ -1451,7 +1451,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 	//	u32 dstpixel;
 
 		dst[j] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
-		dstAlpha[j] = (screen3D[t+3] / 2);
+		dstAlpha[j] = alpha_5bit_to_4bit[screen3D[t+3]];
 		
 		//old debug reminder: display alpha channel
 		//u32 r = screen3D[t+3];

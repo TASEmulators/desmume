@@ -152,6 +152,7 @@ extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const int material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
+extern CACHE_ALIGN const u8 alpha_5bit_to_4bit[32];
 
 //GE commands:
 void gfx3d_glViewPort(unsigned long v);
