@@ -187,10 +187,10 @@ extern volatile BOOL execute;
      }
              
 #define ROR_REG      u32 shift_op = (cpu->R[REG_POS(i,8)])&0xFF;\
-     if((shift_op==0)||((shift_op&0xF)==0))\
+     if((shift_op==0)||((shift_op&0x1F)==0))\
              shift_op=cpu->R[REG_POS(i,0)];\
      else\
-             shift_op = ROR(cpu->R[REG_POS(i,0)],(shift_op&0xF));
+             shift_op = ROR(cpu->R[REG_POS(i,0)],(shift_op&0x1F));
 
 #define S_ROR_REG      u32 shift_op = (cpu->R[REG_POS(i,8)])&0xFF;\
      u32 c = cpu->CPSR.bits.C;\
@@ -198,7 +198,7 @@ extern volatile BOOL execute;
              shift_op=cpu->R[REG_POS(i,0)];\
      else\
      {\
-             shift_op&=0xF;\
+             shift_op&=0x1F;\
              if(shift_op==0)\
              {\
                   shift_op=cpu->R[REG_POS(i,0)];\
@@ -207,7 +207,7 @@ extern volatile BOOL execute;
              else\
              {\
                  c = BIT_N(cpu->R[REG_POS(i,0)], shift_op-1);\
-                  shift_op = ROR(cpu->R[REG_POS(i,0)],(shift_op&0xF));\
+                  shift_op = ROR(cpu->R[REG_POS(i,0)],(shift_op&0x1F));\
              }\
      }
 
