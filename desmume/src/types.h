@@ -65,6 +65,11 @@
 #define WINAPI
 #endif
 
+#ifdef __GNUC__
+#include <limits.h>
+#define MAX_PATH PATH_MAX
+#endif
+
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define ALIGN(X) __declspec(align(X))
 #elif __GNUC__
