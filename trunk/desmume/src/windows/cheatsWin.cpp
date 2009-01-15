@@ -227,7 +227,12 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					if (cheatsAdd(atol(editBuf[3]), searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
 					{
 						if (cheatsSave())
+						{
+							searchAddAddress = tmp_addr;
+							searchAddValue = atol(editBuf[1]);
+
 							EndDialog(dialog, TRUE);
+						}
 					}
 				}
 				return TRUE;
@@ -424,7 +429,7 @@ BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpar
 						if (searchAddFreeze)
 							lvi.pszText= "X";
 						else
-							lvi.pszText= "";
+							lvi.pszText= " ";
 						u32 row = ListView_InsertItem(cheatListView, &lvi);
 						wsprintf(buf, "0x02%06X", searchAddAddress);
 						ListView_SetItemText(cheatListView, row, 1, buf);
