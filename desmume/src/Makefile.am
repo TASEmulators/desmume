@@ -46,7 +46,8 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	addons.c addons.h \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp \
-	mic.cpp mic.h
+	mic.cpp mic.h \
+	cheatSystem.cpp cheatSystem.h
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
