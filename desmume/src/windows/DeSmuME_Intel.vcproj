@@ -493,6 +493,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\cheatSystem.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\common.cpp"
 					>
 				</File>
@@ -867,6 +871,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\cheatsWin.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\colorctrl.cpp"
 					>
 				</File>
@@ -981,6 +989,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\cheatsWin.h"
+					>
+				</File>
+				<File
 					RelativePath=".\colorctrl.h"
 					>
 				</File>
@@ -1086,6 +1098,10 @@
 				</File>
 				<File
 					RelativePath="..\cflash.h"
+					>
+				</File>
+				<File
+					RelativePath="..\cheatSystem.h"
 					>
 				</File>
 				<File

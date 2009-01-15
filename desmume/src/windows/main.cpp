@@ -65,6 +65,7 @@
 #include "console.h"
 #include "throttle.h"
 #include "gbaslot_config.h"
+#include "cheatsWin.h"
 
 #include "../common.h"
 
@@ -134,7 +135,7 @@ WINCLASS	*MainWindow=NULL;
 //HWND hwnd;
 //HDC  hdc;
 HACCEL hAccel;
-HINSTANCE hAppInst;
+HINSTANCE hAppInst = NULL;
 RECT	MainWindowRect;
 int WndX = 0;
 int WndY = 0;
@@ -1571,6 +1572,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		   EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
 		   EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
 		   EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		   EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+		   EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
 		   romloaded = TRUE;
 		   NDS_UnPause();
 		}
@@ -1805,6 +1808,8 @@ void OpenRecentROM(int listNum)
         EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
         EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
         EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
         romloaded = TRUE;
 	}
 	
@@ -1901,6 +1906,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                      EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
                      EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
                      EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+					 EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+					 EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
                      romloaded = TRUE;
                   }
 				  NDS_UnPause();
@@ -2031,6 +2038,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
                                EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
                                EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+							   EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+							   EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
                                romloaded = TRUE;
                                NDS_UnPause();
                             }
@@ -2413,7 +2422,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				  return 0;
 
 				  case IDM_GBASLOT:
-					  GBAslotDialog(hwnd, hAppInst);
+					  GBAslotDialog(hwnd);
+				  return 0;
+
+				  case IDM_CHEATS_LIST:
+					  CheatsListDialog(hwnd);
+				  return 0;
+
+				  case IDM_CHEATS_SEARCH:
+					  CheatsSearchDialog(hwnd);
 				  return 0;
 				  
 				  case ACCEL_N: //Frame Advance
@@ -2484,6 +2501,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   return 0; 
                   
                   case IDM_RESET:
+						CheatsSearchReset();
                        NDS_Reset();
 					   frameCounter=0;
                   return 0;

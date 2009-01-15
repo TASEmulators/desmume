@@ -2768,12 +2768,9 @@ static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
 			MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 #endif
-	if ( (adr >= 0xFFFF0020) && (adr <= 0xFFFF00BC) )
-		INFO("Read08 at 0x%08X\n", adr);
-	
 	adr = MMU_LCDmap(adr);
 
-    return MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]];
+	return MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]];
 }
 
 //================================================= MMU ARM9 read 16
@@ -2795,8 +2792,6 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	if ((adr>=0x08800000) && (adr<0x09900000))
 	   return (unsigned short)cflash_read(adr);
 #endif
-	if ( (adr >= 0xFFFF0020) && (adr <= 0xFFFF00BC) )
-		INFO("Read16 at 0x%08X - 0x%04X\n", adr, T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]) );
 
 	adr &= 0x0FFFFFFF;
 
@@ -2999,6 +2994,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	}
 	
 	adr = MMU_LCDmap(adr);
+
 	//Returns data from memory
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
 	return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
@@ -3854,7 +3850,7 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 #endif
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 	}
-	
+
 	//Returns data from memory
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
 	return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
@@ -3865,6 +3861,7 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 u32 FASTCALL MMU_read32(u32 proc, u32 adr) 
 {
 	ASSERT_UNALIGNED((adr&3)==0);
+
 	if(proc==0) 
 		return _MMU_ARM9_read32(adr);
 	else
@@ -3874,6 +3871,7 @@ u32 FASTCALL MMU_read32(u32 proc, u32 adr)
 u16 FASTCALL MMU_read16(u32 proc, u32 adr) 
 {
 	ASSERT_UNALIGNED((adr&1)==0);
+
 	if(proc==0)
 		return _MMU_ARM9_read16(adr);
 	else 

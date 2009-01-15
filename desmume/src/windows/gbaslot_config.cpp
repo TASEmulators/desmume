@@ -31,7 +31,6 @@
 
 WNDCLASSEX	wc;
 HWND		wndConfig;
-HINSTANCE	ghInstance = NULL;
 u8			temp_type = 0;
 u8			last_type;
 char		tmp_cflash_filename[MAX_PATH];
@@ -99,39 +98,39 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			switch (LOWORD(wparam))
 			{
 				case IDC_BBROWSE:
-					{
-							int filterSize = 0, i = 0;
-                            OPENFILENAME ofn;
-                            char filename[MAX_PATH] = "",
-								 fileFilter[512]="";
-                            
-                            ZeroMemory(&ofn, sizeof(ofn));
-                            ofn.lStructSize = sizeof(ofn);
-                            ofn.hwndOwner = dialog;
+				{
+					int filterSize = 0, i = 0;
+                    OPENFILENAME ofn;
+                    char filename[MAX_PATH] = "",
+						 fileFilter[512]="";
+                    
+                    ZeroMemory(&ofn, sizeof(ofn));
+                    ofn.lStructSize = sizeof(ofn);
+                    ofn.hwndOwner = dialog;
 
-							strncpy (fileFilter, "Compact Flash image (*.img)|*.img||",512 - strlen(fileFilter));
-							strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
-							
-							filterSize = strlen(fileFilter);
-							for (i = 0; i < filterSize; i++)
-								if (fileFilter[i] == '|')	fileFilter[i] = '\0';
-                            ofn.lpstrFilter = fileFilter;
-                            ofn.nFilterIndex = 1;
-                            ofn.lpstrFile =  filename;
-                            ofn.nMaxFile = MAX_PATH;
-                            ofn.lpstrDefExt = "img";
-							ofn.Flags = OFN_NOCHANGEDIR | OFN_CREATEPROMPT;
-                            
-                            if(!GetOpenFileName(&ofn)) return FALSE;
+					strncpy (fileFilter, "Compact Flash image (*.img)|*.img||",512 - strlen(fileFilter));
+					strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
+					
+					filterSize = strlen(fileFilter);
+					for (i = 0; i < filterSize; i++)
+						if (fileFilter[i] == '|')	fileFilter[i] = '\0';
+                    ofn.lpstrFilter = fileFilter;
+                    ofn.nFilterIndex = 1;
+                    ofn.lpstrFile =  filename;
+                    ofn.nMaxFile = MAX_PATH;
+                    ofn.lpstrDefExt = "img";
+					ofn.Flags = OFN_NOCHANGEDIR | OFN_CREATEPROMPT;
+                    
+                    if(!GetOpenFileName(&ofn)) return FALSE;
 
-							SetWindowText(GetDlgItem(dialog, IDC_PATHIMG), filename);
-							strcpy(tmp_cflash_filename, filename);
-							if (!strlen(tmp_cflash_filename))
-								EnableWindow(OKbutton, FALSE);
-							else
-								EnableWindow(OKbutton, TRUE);
-						return FALSE;
-					}
+					SetWindowText(GetDlgItem(dialog, IDC_PATHIMG), filename);
+					strcpy(tmp_cflash_filename, filename);
+					if (!strlen(tmp_cflash_filename))
+						EnableWindow(OKbutton, FALSE);
+					else
+						EnableWindow(OKbutton, TRUE);
+					return FALSE;
+				}
 
 				case IDC_BBROWSE2:
 				{
@@ -327,7 +326,7 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			addonList[temp_type].info((char *)tmp_info);
 			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
 
-			wndConfig=CreateDialog(ghInstance, MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), 
+			wndConfig=CreateDialog(hAppInst, MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), 
 										dialog, (DLGPROC)GBAslot_Procs[temp_type]);
 			if (temp_type == 0)
 				EnableWindow(OKbutton, TRUE);
@@ -349,13 +348,13 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 						}
 						if (Msg == IDYES)
 						{
-							if (wndConfig) CloseWindow(wndConfig);
+							if (wndConfig) DestroyWindow(wndConfig);
 							EndDialog(dialog, TRUE);
 						}
 					}
 				return TRUE;
 				case IDCANCEL:
-					if (wndConfig) CloseWindow(wndConfig);
+					if (wndConfig) DestroyWindow(wndConfig);
 					EndDialog(dialog, FALSE);
 				return TRUE;
 
@@ -365,8 +364,8 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 						temp_type = ComboBox_GetCurSel(GetDlgItem(dialog, IDC_ADDONS_LIST));
 						if (temp_type != last_type)
 						{
-							if (wndConfig) CloseWindow(wndConfig);
-							wndConfig=CreateDialog(ghInstance, 
+							if (wndConfig) DestroyWindow(wndConfig);
+							wndConfig=CreateDialog(hAppInst, 
 								MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), dialog, 
 								(DLGPROC)GBAslot_Procs[temp_type]);
 							u8 tmp_info[512];
@@ -383,9 +382,8 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
-void GBAslotDialog(HWND hwnd, HINSTANCE hInstance)
+void GBAslotDialog(HWND hwnd)
 {
-	ghInstance = hInstance;
 	temp_type = addon_type;
 	last_type = temp_type;
 	strcpy(tmp_cflash_filename, CFlashName);
@@ -393,7 +391,7 @@ void GBAslotDialog(HWND hwnd, HINSTANCE hInstance)
 	strcpy(tmp_gbagame_filename, GBAgameName);
 	tmp_CFlashUseRomPath = CFlashUseRomPath;
 	tmp_CFlashUsePath = CFlashUsePath;
-	u32 res=DialogBox(hInstance, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
+	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
 	{
 		switch (temp_type)
