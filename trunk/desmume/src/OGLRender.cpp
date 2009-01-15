@@ -147,16 +147,9 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 		ofs += curr.len;
 		currofs += curr.len;
 		u8* ptr = ARM9Mem.textureSlotAddr[slot];
-		//this is just a guess. what happens if there is a gap in the mapping? lets put zeros
-		if(ptr == NULL) {
-			PROGINFO("Texture gap in memory mapping. Trying to accomodate.\n");
-			static u8* emptyTextureSlot = 0;
-			if(emptyTextureSlot == NULL) {
-				emptyTextureSlot = new u8[128*1024];
-				memset(emptyTextureSlot,0,128*1024);
-			}
-			ptr = emptyTextureSlot;
-		}
+		
+		if(ptr == ARM9Mem.blank_memory)
+			PROGINFO("Tried to reference unmapped texture memory: slot %d\n",slot);
 
 		curr.ptr = ptr + curr.start;
 	}
@@ -185,16 +178,10 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 			//here is an actual test case of bank spanning
 		currofs += curr.len;
 		u8* ptr = ARM9Mem.texPalSlot[slot];
-		//this is just a guess. what happens if there is a gap in the mapping? lets put zeros
-		if(ptr == NULL) {
-			PROGINFO("Texture palette gap in memory mapping. Trying to accomodate.\n");
-			static u8* emptyTexturePalette = 0;
-			if(emptyTexturePalette == NULL) {
-				emptyTexturePalette = new u8[16*1024];
-				memset(emptyTexturePalette,0,16*1024);
-			}
-			ptr = emptyTexturePalette;
-		}
+		
+		if(ptr == ARM9Mem.blank_memory)
+			PROGINFO("Tried to reference unmapped texture palette memory: 16k slot #%d\n",slot);
+
 		curr.ptr = ptr + curr.start;
 	}
 	return ret;

@@ -461,18 +461,10 @@ void MMU_clearMem()
 	osdA->setOffset(MainScreen.offset);
 	osdB->setOffset(SubScreen.offset);
 
-        /* setup the texture slot pointers */
-#if 0
-        ARM9Mem.textureSlotAddr[0] = ARM9Mem.blank_memory;
-        ARM9Mem.textureSlotAddr[1] = ARM9Mem.blank_memory;
-        ARM9Mem.textureSlotAddr[2] = ARM9Mem.blank_memory;
-        ARM9Mem.textureSlotAddr[3] = ARM9Mem.blank_memory;
-#else
-        ARM9Mem.textureSlotAddr[0] = &ARM9Mem.ARM9_LCD[0x20000 * 0];
-        ARM9Mem.textureSlotAddr[1] = &ARM9Mem.ARM9_LCD[0x20000 * 1];
-        ARM9Mem.textureSlotAddr[2] = &ARM9Mem.ARM9_LCD[0x20000 * 2];
-        ARM9Mem.textureSlotAddr[3] = &ARM9Mem.ARM9_LCD[0x20000 * 3];
-#endif
+	for(int i=0;i<4;i++)
+		ARM9Mem.textureSlotAddr[i] = ARM9Mem.blank_memory;
+	for(int i=0;i<6;i++)
+		ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
 
 	LCDdst[0] = ARM9Mem.ARM9_LCD;				// Bank A
 	LCDdst[1] = ARM9Mem.ARM9_LCD + 0x20000;		// Bank B
@@ -581,6 +573,21 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	
 	u32	vram_map_addr = 0xFFFFFFFF;
 	u8	*LCD_addr = LCDdst[block];
+
+	//unmap texmem
+	for(int i=0;i<4;i++)
+		if(ARM9Mem.textureSlotAddr[i] == LCD_addr)
+			ARM9Mem.textureSlotAddr[i] = ARM9Mem.blank_memory;
+
+	//unmap texpal mem. This is not a straightforward way to do it, 
+	//but it is the only place we have this information stored.
+	for(int i=0;i<4;i++)
+		if(ARM9Mem.texPalSlot[i] == LCD_addr + 0x4000*i || ARM9Mem.texPalSlot[i] == LCD_addr)
+			ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
+	for(int i=4;i<6;i++)
+		if(ARM9Mem.texPalSlot[i] == LCD_addr)
+			ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
+
 	
 	switch (VRAMBankCnt & 0x07)
 	{
