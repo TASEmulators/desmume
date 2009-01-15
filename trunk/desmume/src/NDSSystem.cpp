@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "utils/decrypt/decrypt.h"
 #include "bios.h"
 #include "debug.h"
+#include "cheatSystem.h"
 
 #ifdef _WIN32
 #include "./windows/disView.h"
@@ -44,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 static BOOL LidClosed = FALSE;
 static u8 LidKeyCount = 0;
+static u8 pathToROMwithoutExt[MAX_PATH];
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -424,6 +426,14 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 			strncpy(szRomPath, filename, t+1);
 			break;
 		}
+	
+	for (int t = strlen(filename); t>0; t--)
+		if ( (filename[t] == '\\') || (filename[t] == '/') || (filename[t] == '.') )
+		{
+			if (filename[t] != '.') return -1;
+			strncpy((char *)pathToROMwithoutExt, filename, t+1);
+			break;
+		}
 
 	MMU_unsetRom();
 	NDS_SetROM(data, mask);
@@ -440,6 +450,8 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 		szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;
 	else
 		szRomBaseName[strlen(szRomBaseName)-4] = 0x00;
+
+	cheatsInit((char *)pathToROMwithoutExt);
 
 	// Setup Backup Memory
 	if(type == ROM_DSGBA)
@@ -625,6 +637,7 @@ void NDS_Reset( void)
 	gfx3d_reset();
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
+	cheatsSearchClose();
 }
 
 int NDS_ImportSave(const char *filename)
@@ -1163,6 +1176,8 @@ u32 NDS_exec(s32 nb)
 					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
 					NDS_ARM9VBlankInt();
 					NDS_ARM7VBlankInt();
+					cheatsProcess();
+
 					nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
 					nds.idleFrameCounter++;
 					nds.idleFrameCounter &= 15;

@@ -25,8 +25,11 @@
 #define IDM_RESET                       114
 #define IDD_GBASLOT_CFLASH              114
 #define IDM_IOREG                       115
+#define IDD_CHEAT_SEARCH_VIEW           115
 #define IDM_LOG                         116
+#define IDD_CHEAT_LIST                  116
 #define IDM_PAL                         117
+#define IDD_CHEAT_ADD                   117
 #define IDM_TILE                        118
 #define IDM_MAP                         119
 #define IDM_MBG0                        120
@@ -104,13 +107,11 @@
 #define IDC_LANGENGLISH                 210
 #define IDC_LANGFRENCH                  211
 #define IDC_LANGDANISH                  212
-#define IDD_MEM_VIEWER                  301
 #define IDC_8_BIT                       302
 #define IDC_16_BIT                      303
 #define IDC_32_BIT                      304
 #define IDC_MEM_BOX                     305
 #define IDC_GOTOMEM                     306
-#define IDD_DESASSEMBLEUR_VIEWER        401
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
@@ -237,13 +238,47 @@
 #define IDC_RFILE                       1038
 #define IDC_RFOLDER                     1039
 #define IDC_BBROWSE2                    1040
-#define IDC_CHECK1                      1041
 #define IDC_PATHDESMUME                 1041
+#define IDC_BBUTTON01                   1042
+#define IDC_BRESTART                    1042
+#define IDC_BBUTTON02                   1043
+#define IDC_BVIEW                       1043
+#define IDC_BBUTTON03                   1044
+#define IDC_BSEARCH                     1044
+#define IDC_RADIO1                      1045
+#define IDC_RADIO2                      1046
+#define IDC_RADIO3                      1047
+#define IDC_RADIO4                      1048
+#define IDC_RADIO5                      1049
+#define IDC_RADIO6                      1050
+#define IDC_RADIO7                      1051
+#define IDC_RADIO8                      1052
+#define IDC_LIST1                       1056
+#define IDC_BUTTON2                     1057
+#define IDC_BADD_AR                     1057
+#define IDC_BUTTON3                     1058
+#define IDC_BADD_CB                     1058
+#define IDC_BUTTON4                     1060
+#define IDC_BREMOVE                     1060
+#define IDC_BUTTON5                     1061
+#define IDC_STATIC_S1                   1061
+#define IDC_BEDIT                       1061
+#define IDC_STATIC_S2                   1062
+#define IDC_STATIC_S3                   1063
+#define IDC_STATIC_S4                   1064
+#define IDC_EVALUE                      1065
+#define IDC_STATIC_RANGE                1066
+#define IDC_BADD                        1068
+#define IDC_LIST                        1069
+#define IDC_SNUMBER                     1071
+#define IDC_CHECK1                      1074
+#define IDC_RADIO9                      1075
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
 #define IDC_EDIT2                       1103
 #define IDC_EDIT13                      1104
+#define IDC_EDIT3                       1104
 #define IDC_EDIT14                      1105
 #define IDD_MATRIX_VIEWER               1200
 #define IDM_MATRIX_VIEWER               1200
@@ -330,10 +365,17 @@
 #define IDD_GBASLOT_NONE                1304
 #define IDD_GBASLOT_RUMBLEPAK           1305
 #define IDD_GBASLOT_GBAGAME             1306
+#define IDD_CHEAT_SEARCH_COMP           1307
+#define IDD_CHEAT_SEARCH_MAIN           1308
+#define IDD_CHEAT_SEARCH_RESULT         1310
 #define IDC_LIGHT_VIWER_LIGHT1_GROUP    1311
+#define IDD_CHEAT_SEARCH_EXACT          1311
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_COLORCTRL 1312
+#define IDD_CHEAT_SEARCH                1312
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_EDIT 1313
+#define IDD_CHEAT_ADD_AR_CODE           1313
 #define IDC_LIGHT_VIEWER_LIGHT1VECTOR_EDIT 1314
+#define IDD_CHEAT_ADD_BC_CODE           1314
 #define IDC_LIGHT_VIWER_LIGHT2_GROUP    1321
 #define IDC_LIGHT_VIEWER_LIGHT2COLOR_COLORCTRL 1322
 #define IDC_LIGHT_VIEWER_LIGHT2COLOR_EDIT 1323
@@ -363,7 +405,6 @@
 #define ID_VIEW_DISPLAYFRAMECOUNTER40009 40009
 #define ID_VIEW_DISPLAYFPS              40010
 #define ID_VIS_DISPLAYFPS               40011
-#define ID_VIEW_DISPLAYFPS40012         40012
 #define ID_FILE_RECORDAVI               40013
 #define ID_FILE_STOPAVI                 40014
 #define IDM_FILE_RECORDAVI              40015
@@ -388,14 +429,21 @@
 #define IDM_3DCONFIG                    40040
 #define ID_EMULATION_GBASLOT            40041
 #define IDM_GBASLOT                     40042
+#define ID_TOOLS_D                      40043
+#define ID_TOOLS_CHEATS                 40044
+#define ID_CHEATS_LIST                  40045
+#define ID_CHEATS_SEARCH                40046
+#define ID_EMULATION_CHEATS             40047
+#define IDM_CHEATS_LIST                 40050
+#define IDM_CHEATS_SEARCH               40051
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        115
-#define _APS_NEXT_COMMAND_VALUE         40043
-#define _APS_NEXT_CONTROL_VALUE         1042
+#define _APS_NEXT_RESOURCE_VALUE        118
+#define _APS_NEXT_COMMAND_VALUE         40052
+#define _APS_NEXT_CONTROL_VALUE         1076
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

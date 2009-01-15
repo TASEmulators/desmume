@@ -5,7 +5,7 @@
 	Name="DeSmuME_Intel"
 	ProjectGUID="{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="1264686066"
+	VCNestedProjectCRC32="2631812102"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -334,6 +334,8 @@
 		<File 
 			RelativePath="..\cflash.h"/>
 		<File 
+			RelativePath="..\cheatSystem.h"/>
+		<File 
 			RelativePath="..\common.h"/>
 		<File 
 			RelativePath="..\cp15.h"/>
@@ -401,6 +403,8 @@
 			RelativePath="..\wifi.h"/>
 		<File 
 			RelativePath=".\AboutBox.h"/>
+		<File 
+			RelativePath=".\cheatsWin.h"/>
 		<File 
 			RelativePath=".\colorctrl.h"/>
 		<File 
@@ -578,6 +582,8 @@
 		<File 
 			RelativePath="..\cflash.cpp"/>
 		<File 
+			RelativePath="..\cheatSystem.cpp"/>
+		<File 
 			RelativePath="..\common.cpp"/>
 		<File 
 			RelativePath="..\cp15.cpp"/>
@@ -627,6 +633,8 @@
 			RelativePath=".\AboutBox.cpp"/>
 		<File 
 			RelativePath=".\aviout.cpp"/>
+		<File 
+			RelativePath=".\cheatsWin.cpp"/>
 		<File 
 			RelativePath=".\colorctrl.cpp"/>
 		<File 

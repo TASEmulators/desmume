@@ -33,6 +33,7 @@
 
 extern volatile BOOL execute;
 extern BOOL click;
+extern u8 pathToROMwithoutExt[MAX_PATH];
 
 /*
  * The firmware language values

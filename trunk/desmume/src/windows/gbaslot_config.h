@@ -22,5 +22,5 @@
 #define __GBASLOT_CONFIG_H_
 #include "../common.h"
 
-extern void GBAslotDialog(HWND hwnd, HINSTANCE hInstance);
+extern void GBAslotDialog(HWND hwnd);
 #endif
