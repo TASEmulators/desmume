@@ -24,7 +24,7 @@ struct ALIGN(16) ARM9_struct {
 
 		u8 *textureSlotAddr[4];
 
-		u8 *blank_memory[0x20000];
+		u8 blank_memory[0x20000];
 };
 
 extern ARM9_struct ARM9Mem;
