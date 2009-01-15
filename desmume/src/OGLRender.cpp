@@ -148,9 +148,9 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 		currofs += curr.len;
 		u8* ptr = ARM9Mem.textureSlotAddr[slot];
 		
-		if(ptr == ARM9Mem.blank_memory)
+		if(ptr == ARM9Mem.blank_memory) {
 			PROGINFO("Tried to reference unmapped texture memory: slot %d\n",slot);
-
+		}
 		curr.ptr = ptr + curr.start;
 	}
 	return ret;
@@ -179,9 +179,9 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 		currofs += curr.len;
 		u8* ptr = ARM9Mem.texPalSlot[slot];
 		
-		if(ptr == ARM9Mem.blank_memory)
+		if(ptr == ARM9Mem.blank_memory) {
 			PROGINFO("Tried to reference unmapped texture palette memory: 16k slot #%d\n",slot);
-
+		}
 		curr.ptr = ptr + curr.start;
 	}
 	return ret;
