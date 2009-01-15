@@ -134,12 +134,13 @@ BOOL cheatsSave()
 		for (int t = 0; t < cheats[i].num; t++)
 		{
 			char tmp_hex[6] = {0};
-			wsprintf(tmp_hex, "%06X", cheats[i].hi[t]);
 
 			wsprintf(buf, "H%03i%04i", i, t);
+			wsprintf(tmp_hex, "%06X", cheats[i].hi[t]);
 			WritePrivateProfileString("Cheats", buf, tmp_hex, (char *)cheatFilename);
 			wsprintf(buf, "L%03i%04i", i, t);
-			WritePrivateProfileInt("Cheats", buf, cheats[i].lo[t], (char *)cheatFilename);
+			wsprintf(tmp_hex, "%06X", cheats[i].lo[t]);
+			WritePrivateProfileString("Cheats", buf, tmp_hex, (char *)cheatFilename);
 		}
 	}
 #endif
@@ -173,7 +174,8 @@ BOOL cheatsLoad()
 			GetPrivateProfileString("Cheats", buf, "0", tmp_buf, 10, (char *)cheatFilename);
 			sscanf_s(tmp_buf, "%x", &cheats[i].hi[t]);
 			wsprintf(buf, "L%03i%04i", i, t);
-			cheats[i].lo[t] = GetPrivateProfileInt("Cheats", buf, 0, (char *)cheatFilename);
+			GetPrivateProfileString("Cheats", buf, "0", tmp_buf, 10, (char *)cheatFilename);
+			sscanf_s(tmp_buf, "%x", &cheats[i].lo[t]);
 		}
 	}
 #endif
