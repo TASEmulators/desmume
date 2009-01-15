@@ -756,7 +756,8 @@ int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char 
 	elems_written += fwrite(&fileheader, 1, sizeof(fileheader), file);
 	elems_written += fwrite(&imageheader, 1, sizeof(imageheader), file);
 
-	elems_written += fwrite(buf,1,imageheader.imgsize,file);
+	for(int i=0;i<height;i++)
+		elems_written += fwrite((u8*)buf + (height-i-1)*width*4,1,imageheader.width*4,file);
 	fclose(file);
 
 	return 1;
