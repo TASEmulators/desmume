@@ -1080,8 +1080,8 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 // render a text background to the combined pixelbuffer
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
-	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
-	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
+	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
+	struct _DISPCNT *dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
 	u16 tmp    = ((YBG&(ht-1))>>3);
@@ -2502,24 +2502,25 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					{
 						if (i16 == 0 && dispCnt->BG0_3D)
 						{
-							u16 line3Dcolor[256];
-							u8 line3Dalpha[256];
+							u16 line3Dcolor[512];
+							u8 line3Dalpha[512];
 
 							memset(line3Dcolor, 0, sizeof(line3Dcolor));
 							memset(line3Dalpha, 0, sizeof(line3Dalpha));
-							//determine the 3d range to grab
-							BGxOFS * bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
-							s16 hofs = (s16)T1ReadWord((u8 *)&bgofs->BGxHOFS, 0);
-							int start, end, ofs;
-							if(hofs==0) { start = 0; end = 255; ofs = 0; }
-							else if(hofs<0) { start = -hofs; end=255; ofs=0; }
-							else { start = 0; end=255-hofs; ofs=hofs; }
-							
-							gpu3D->NDS_3D_GetLine(l, start, end, line3Dcolor, line3Dalpha);
 
-							for(int k = start, q=0; k <= end; ++k, ++q)
+							BGxOFS *bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
+							u16 hofs = (T1ReadWord((u8*)&bgofs->BGxHOFS, 0) & 0x1FF);
+							
+							gpu3D->NDS_3D_GetLine(l, 0, 255, line3Dcolor, line3Dalpha);
+
+							for(int k = 0, q = hofs; k < 256; k++)
+							{
 								if(line3Dcolor[q] & 0x8000)
-									gpu->setFinalColor3D(gpu, (q+ofs)<<1, dst, line3Dcolor[q], line3Dalpha[q], k);
+									gpu->setFinalColor3D(gpu, (k << 1), dst, line3Dcolor[q], line3Dalpha[q], k);
+
+								q++;
+								q &= 0x1FF;
+							}
 
 							continue;
 						}
