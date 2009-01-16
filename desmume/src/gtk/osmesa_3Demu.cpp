@@ -19,10 +19,10 @@
 */
 
 #ifdef HAVE_LIBOSMESA
+#include <stdlib.h>
 #include <GL/osmesa.h>
 #include "../OGLRender.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include "osmesa_3Demu.h"
 
 static bool osmesa_beginOpenGL(void) {
   return 1;
