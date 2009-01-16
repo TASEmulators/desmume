@@ -1554,6 +1554,25 @@ static void desmume_gtk_menu_emulation_layers (GtkWidget *pMenu, gboolean opengl
 	}
 }
 
+static void desmume_gtk_disable_audio (GtkWidget *widget, gpointer data)
+{
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+	} else {
+		SPU_ChangeSoundCore(0, 0);
+	}
+}
+
+static void desmume_gtk_menu_emulation_disable_audio (GtkWidget *pMenu)
+{
+	GtkWidget *pMenuItem;
+
+	pMenuItem = gtk_check_menu_item_new_with_label("Enable Audio");
+	g_signal_connect(G_OBJECT(pMenuItem), "toggled", G_CALLBACK(desmume_gtk_disable_audio), NULL);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pMenuItem), TRUE);
+}
+
 static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
 {
 	GtkWidget *pMenu, *pMenuItem;
@@ -1567,6 +1586,7 @@ static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
 	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
 	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
 
+	desmume_gtk_menu_emulation_disable_audio(pMenu);
 	desmume_gtk_menu_emulation_frameskip(pMenu);
 	desmume_gtk_menu_emulation_layers(pMenu, opengl);
 #ifdef BROKEN_SCREENSIZE
