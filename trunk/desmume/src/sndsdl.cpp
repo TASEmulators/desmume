@@ -73,9 +73,8 @@ static void MixAudio(void *userdata, Uint8 *stream, int len) {
 
 int SNDSDLInit(int buffersize)
 {
-   SDL_InitSubSystem(SDL_INIT_AUDIO);
-//   if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0);
-//      return -1;
+   if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+      return -1;
 
    audiofmt.freq = 44100;
    audiofmt.format = AUDIO_S16SYS;
