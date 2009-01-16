@@ -1084,7 +1084,9 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	struct _DISPCNT *dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	u16 lg     = gpu->BGSize[num][0];
 	u16 ht     = gpu->BGSize[num][1];
-	u16 tmp    = ((YBG&(ht-1))>>3);
+	u16 wmask  = (lg-1);
+	u16 hmask  = (ht-1);
+	u16 tmp    = ((YBG & hmask) >> 3);
 	u8 *map    = NULL;
 	u8 *tile, *pal, *line;
 	u16 color;
@@ -1110,14 +1112,14 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	if(tmp>31) 
 		tmp_map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
 
-	map = (u8 *)MMU_RenderMapToLCD(tmp_map);
+	map = (u8*)MMU_RenderMapToLCD(tmp_map);
 	if(!map) return; 	// no map
 	
 	tile = (u8*) MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
 	if(!tile) return; 	// no tiles
 
 	xoff = XBG;
-	pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB ;
+	pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
 
 	if(!bgCnt->Palette_256)    // color: 16 palette entries
 	{
@@ -1192,7 +1194,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 			for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
 			{
 				u16 tilePalette = 0;
-				tmp = ((xoff&(lg-1))>>3);
+				tmp = ((xoff&wmask)>>3);
 				mapinfo = map + (tmp&0x1F) * 2;
 				if(tmp>31) mapinfo += 32*32*2;
 				tileentry.val = T1ReadWord(mapinfo, 0);
@@ -1208,12 +1210,15 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 					{	
 						u8 currLine = *line;
 
-						if (currLine>>4) 
+						if(!(xoff&1))
 						{
-							color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-							gpu->setFinalColorBck(gpu,0,num,dst,color,x);
+							if (currLine>>4) 
+							{
+								color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
+								gpu->setFinalColorBck(gpu,0,num,dst,color,x);
+							}
+							dst += 2; x++; xoff++;
 						}
-						dst += 2; x++; xoff++;
 						
 						if (currLine&0xF) 
 						{
@@ -1228,15 +1233,18 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 					{
 						u8 currLine = *line;
 
-						if (currLine&0xF) 
+						if(!(xoff&1))
 						{
-							color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-							gpu->setFinalColorBck(gpu,0,num,dst,color,x);
+							if (currLine&0xF) 
+							{
+								color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
+								gpu->setFinalColorBck(gpu,0,num,dst,color,x);
+							}
+
+							dst += 2; x++; xoff++;
 						}
 
-						dst += 2; x++; xoff++;
-
-						if (currLine>>4) 
+						if (currLine>>4)  
 						{
 							color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
 							gpu->setFinalColorBck(gpu,0,num,dst,color,x);
@@ -2513,13 +2521,12 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							
 							gpu3D->NDS_3D_GetLine(l, 0, 255, line3Dcolor, line3Dalpha);
 
-							for(int k = 0, q = hofs; k < 256; k++)
+							for(int k = 0, q = 0; k < 256; k++)
 							{
+								q = ((k + hofs) & 0x1FF);
+
 								if(line3Dcolor[q] & 0x8000)
 									gpu->setFinalColor3D(gpu, (k << 1), dst, line3Dcolor[q], line3Dalpha[q], k);
-
-								q++;
-								q &= 0x1FF;
 							}
 
 							continue;
