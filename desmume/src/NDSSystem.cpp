@@ -450,7 +450,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	delete [] noext;
 
 	strcpy((char *)buf, (char *)pathFilenameToROMwithoutExt);
-	strcat((char *)buf, ".dmc");							// DeSmuME memory card	:)
+	strcat((char *)buf, ".sav");							// DeSmuME memory card	:)
 
 	mc_realloc(&MMU.bupmem, bmtype, bmsize);
 	mc_load_file(&MMU.bupmem, (char *)buf);
