@@ -309,7 +309,7 @@ static BOOL cflash_build_fat( void) {
 	fileLevel = -1;
 	maxLevel  = -1;
 
-	sRomPath = szRomPath;   // From MMU.cpp
+	sRomPath = pathToROM;
 	files = (DIR_ENT *) malloc(MAXFILES*sizeof(DIR_ENT));
 	if (files == NULL)
 		return FALSE;

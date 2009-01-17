@@ -396,9 +396,9 @@ void scan_savestates()
 
   for( i = 1; i <= NB_STATES; i++ )
     {
-      strncpy(filename, szRomBaseName,MAX_PATH);
+      strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
 	  if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ >MAX_PATH) return ;
-      sprintf(filename+strlen(filename), "%d.dst", i);
+      sprintf(filename+strlen(filename), ".ds%d", i);
       if( stat(filename,&sbuf) == -1 ) continue;
       savestates[i-1].exists = TRUE;
       strncpy(savestates[i-1].date, format_time(sbuf.st_mtime),40-strlen(savestates[i-1].date));
@@ -412,9 +412,9 @@ void savestate_slot(int num)
    struct stat sbuf;
    char filename[MAX_PATH];
 
-   strncpy(filename, szRomBaseName,MAX_PATH);
-   if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
-   sprintf(filename+strlen(filename), "%d.dst", num);
+   strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+   if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
+   sprintf(filename+strlen(filename), ".ds%d", num);
    savestate_save(filename);
 
    savestates[num-1].exists = TRUE;
@@ -425,9 +425,9 @@ void savestate_slot(int num)
 void loadstate_slot(int num)
 {
    char filename[MAX_PATH];
-   strncpy(filename, szRomBaseName,MAX_PATH);
-   if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
-   sprintf(filename+strlen(filename), "%d.dst", num);
+   strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+   if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
+   sprintf(filename+strlen(filename), ".ds%d", num);
    savestate_load(filename);
 }
 

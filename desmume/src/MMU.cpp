@@ -214,8 +214,8 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 //#define LOG_DMA2
 //#define LOG_DIV
 
+// brrr... if remove next line - Castlevania DoS freeze when press "Start" ingame... ???!
 char szRomPath[512];
-char szRomBaseName[512];
 
 #define DUP2(x)  x, x
 #define DUP4(x)  x, x, x, x

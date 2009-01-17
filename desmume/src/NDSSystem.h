@@ -33,6 +33,8 @@
 
 extern volatile BOOL execute;
 extern BOOL click;
+extern char pathToROM[MAX_PATH];
+extern char pathFilenameToROMwithoutExt[MAX_PATH];
 
 /*
  * The firmware language values
