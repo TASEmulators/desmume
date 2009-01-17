@@ -1792,7 +1792,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	else 
 	{
 		if (countLid > 0)
-			countLid = countLid--;
+			countLid--;
 	}
 
 	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070) |
