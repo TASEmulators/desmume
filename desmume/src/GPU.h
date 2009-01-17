@@ -622,6 +622,8 @@ struct _GPU
 	BOOL dispBG[4];
 	BOOL dispOBJ;
 
+	u8 bgPrio[5];
+
 	OAM * oam;
 	u32	sprMem;
 	u8 sprBoundary;
@@ -662,6 +664,7 @@ struct _GPU
 	u32 MasterBrightFactor;
 
 	u8 bgPixels[256];
+	u8 bgPxPrio[256];
 	u8 currLine;
 
 	BOOL (*setFinalColorSpr)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
