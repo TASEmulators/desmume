@@ -89,6 +89,7 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
         OAM * oam = &win->oam[win->num];
         char text[80];
         u16 bitmap[256*192];
+		u16 bitmap_under[256*192];
         u8 prio[256*192];
         BITMAPV4HEADER bmi;
         u16 i;
@@ -109,6 +110,7 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
         for(i = 0; i < 256*192; ++i)
         {
            bitmap[i] = 0x7F0F;
+		   bitmap_under[i] = 0x7F0F;
            prio[i] = 4;
         }
      
@@ -175,7 +177,7 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
         
         for(i = 0; i < 192; ++i)
         {
-             win->gpu->spriteRender(win->gpu, i, (u8*)(bitmap + i*256), prio + i*256);
+             win->gpu->spriteRender(win->gpu, i, (u8*)(bitmap_under + i*256), (u8*)(bitmap + i*256), prio + i*256);
         }
         
         SetDIBitsToDevice(hdc, 180, 4, 256, 192, 0, 0, 0, 192, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);

@@ -266,7 +266,7 @@ void GPU_Reset(GPU *g, u8 l)
 
 	g->spriteRender = sprite1D;
 
-	g->bgPrio[4] = 4;
+	g->bgPrio[4] = 0xFF;
 
 	if(g->core == GPU_SUB)
 	{
@@ -597,7 +597,6 @@ static BOOL setFinalBGColorSpecialNone (GPU *gpu, u32 passing, u8 bgnum, u8 *dst
 
 	T2WriteWord(dst, passing, color);
 	gpu->bgPixels[x] = bgnum;
-	gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	return 1;
 }
 
@@ -633,13 +632,11 @@ static BOOL setFinalBGColorSpecialBlend (GPU *gpu, u32 passing, u8 bgnum, u8 *ds
 
 		T2WriteWord(dst, passing, color);
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
 		T2WriteWord(dst, passing, color);
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 
 	return 1;
@@ -666,13 +663,11 @@ static BOOL setFinalBGColorSpecialIncrease (GPU *gpu, u32 passing, u8 bgnum, u8 
 
 		T2WriteWord(dst, passing, color) ;
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
 		T2WriteWord(dst, passing, color);
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 
 	return 1;
@@ -698,13 +693,11 @@ static BOOL setFinalBGColorSpecialDecrease (GPU *gpu, u32 passing, u8 bgnum, u8 
 		}
 		T2WriteWord(dst, passing, color) ;
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
 		T2WriteWord(dst, passing, color);
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 
 	return 1;
@@ -720,7 +713,6 @@ static BOOL setFinalBGColorSpecialNoneWnd (GPU *gpu, u32 passing, u8 bgnum, u8 *
 	{
 		T2WriteWord(dst, passing, color);
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
@@ -728,7 +720,6 @@ static BOOL setFinalBGColorSpecialNoneWnd (GPU *gpu, u32 passing, u8 bgnum, u8 *
 		{
 			T2WriteWord(dst, passing, color);
 			gpu->bgPixels[x] = bgnum;
-			gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 		}
 	}
 
@@ -772,7 +763,6 @@ static BOOL setFinalBGColorSpecialBlendWnd (GPU *gpu, u32 passing, u8 bgnum, u8 
 
 		T2WriteWord(dst, passing, color);
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
@@ -780,7 +770,6 @@ static BOOL setFinalBGColorSpecialBlendWnd (GPU *gpu, u32 passing, u8 bgnum, u8 
 		{
 			T2WriteWord(dst, passing, color);
 			gpu->bgPixels[x] = bgnum;
-			gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 		}
 	}
 
@@ -812,7 +801,6 @@ static BOOL setFinalBGColorSpecialIncreaseWnd (GPU *gpu, u32 passing, u8 bgnum, 
 
 		T2WriteWord(dst, passing, color) ;
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
@@ -820,7 +808,6 @@ static BOOL setFinalBGColorSpecialIncreaseWnd (GPU *gpu, u32 passing, u8 bgnum, 
 		{
 			T2WriteWord(dst, passing, color);
 			gpu->bgPixels[x] = bgnum;
-			gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 		}
 	}
 
@@ -851,7 +838,6 @@ static BOOL setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u32 passing, u8 bgnum, 
 		}
 		T2WriteWord(dst, passing, color) ;
 		gpu->bgPixels[x] = bgnum;
-		gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 	}
 	else
 	{
@@ -859,7 +845,6 @@ static BOOL setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u32 passing, u8 bgnum, 
 		{
 			T2WriteWord(dst, passing, color);
 			gpu->bgPixels[x] = bgnum;
-			gpu->bgPxPrio[x] = gpu->bgPrio[bgnum];
 		}
 	}
 
@@ -874,7 +859,6 @@ static BOOL setFinal3DColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color
 {
 	T2WriteWord(dst, passing, (color | 0x8000));
 	gpu->bgPixels[x] = 0;
-	gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	return 1;
 }
 
@@ -916,13 +900,11 @@ static BOOL setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 colo
 
 		T2WriteWord(dst, passing, (final | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 	else
 	{
 		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 
 	return 1;
@@ -939,13 +921,11 @@ static BOOL setFinal3DColorSpecialIncrease(GPU *gpu, u32 passing, u8 *dst, u16 c
 
 		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 	else
 	{
 		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 
 	return 1;
@@ -962,13 +942,11 @@ static BOOL setFinal3DColorSpecialDecrease(GPU *gpu, u32 passing, u8 *dst, u16 c
 
 		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 	else
 	{
 		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 
 	return 1;
@@ -984,7 +962,6 @@ static BOOL setFinal3DColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 co
 	{
 		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = 0;
-		gpu->bgPxPrio[x] = gpu->bgPrio[0];
 	}
 
 	return windowDraw;
@@ -1034,13 +1011,11 @@ static BOOL setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 
 			T2WriteWord(dst, passing, (final | 0x8000));
 			gpu->bgPixels[x] = 0;
-			gpu->bgPxPrio[x] = gpu->bgPrio[0];
 		}
 		else
 		{
 			T2WriteWord(dst, passing, (color | 0x8000));
 			gpu->bgPixels[x] = 0;
-			gpu->bgPxPrio[x] = gpu->bgPrio[0];
 		}
 	}
 
@@ -1064,13 +1039,11 @@ static BOOL setFinal3DColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 
 			T2WriteWord(dst, passing, (color | 0x8000));
 			gpu->bgPixels[x] = 0;
-			gpu->bgPxPrio[x] = gpu->bgPrio[0];
 		}
 		else
 		{
 			T2WriteWord(dst, passing, (color | 0x8000));
 			gpu->bgPixels[x] = 0;
-			gpu->bgPxPrio[x] = gpu->bgPrio[0];
 		}
 	}
 
@@ -1094,13 +1067,11 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 
 			T2WriteWord(dst, passing, (color | 0x8000));
 			gpu->bgPixels[x] = 0;
-			gpu->bgPxPrio[x] = gpu->bgPrio[0];
 		}
 		else
 		{
 			T2WriteWord(dst, passing, (color | 0x8000));
 			gpu->bgPixels[x] = 0;
-			gpu->bgPxPrio[x] = gpu->bgPrio[0];
 		}
 	}
 
@@ -1567,14 +1538,12 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * prioT
 		color = LE_TO_LOCAL_16(src[x]);
 
 		// alpha bit = invisible
-		/*if ((color&0x8000)&&(prio<=prioTab[sprX]))
+		if ((color&0x8000)&&(prio<=prioTab[sprX]))
 		{
-			/* if we don't draw, do not set prio, or else *-/
+			/* if we don't draw, do not set prio, or else */
 			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
 				prioTab[sprX] = prio;
-		}*/
-		if ((color&0x8000) && (prio <= gpu->bgPxPrio[sprX]))
-			gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX);
+		}
 	}
 }
 
@@ -1591,14 +1560,12 @@ INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
-		/*if ((palette_entry>0)&&(prio<=prioTab[sprX]))
+		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
 		{
-			/* if we don't draw, do not set prio, or else *-/
+			/* if we don't draw, do not set prio, or else */
 			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
 				prioTab[sprX] = prio;
-		}*/
-		if ((palette_entry>0) && (prio <= gpu->bgPxPrio[sprX]))
-			gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX);
+		}
 	}
 }
 
@@ -1618,14 +1585,12 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		color = LE_TO_LOCAL_16(pal[palette_entry]);
 
 		// palette entry = 0 means backdrop
-		/*if ((palette_entry>0)&&(prio<=prioTab[sprX]))
+		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
 		{
-			/* if we don't draw, do not set prio, or else *-/
+			/* if we don't draw, do not set prio, or else */
 			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX ))
 				prioTab[sprX] = prio;
-		}*/
-		if ((palette_entry>0) && (prio <= gpu->bgPxPrio[sprX]))
-			gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX);
+		}
 	}
 }
 
@@ -1705,7 +1670,7 @@ INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 /*****************************************************************************/
 //			SPRITE RENDERING
 /*****************************************************************************/
-void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
+void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 {
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
@@ -1829,13 +1794,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 						offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.x*8) + ((auxY&0x7)*8);
 						colour = src[offset];
 
-					/*	if (colour && (prioTab[sprX]>=prio))
+						if (colour && (prioTab[sprX]>=prio))
 						{ 
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
 								prioTab[sprX] = prio;
-						}*/
-						if ((colour) && (prio <= gpu->bgPxPrio[sprX]))
-							gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord(pal, colour<<1), sprX);
+						}
 					}
 
 					//  Add the rotation/scale coeficients, here the rotation/scaling
@@ -1866,13 +1829,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 						offset = (auxX) + (auxY<<5);
 						colour = T1ReadWord (src, offset<<1);
 
-						/*if((colour&0x8000) && (prioTab[sprX]>=prio))
+						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX))
 								prioTab[sprX] = prio;
-						}*/
-						if ((colour&0x8000) && (prio <= gpu->bgPxPrio[sprX]))
-							gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, colour, sprX);
+						}
 					}
 
 					//  Add the rotation/scale coeficients, here the rotation/scaling
@@ -1905,13 +1866,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 						if (auxX&1)	colour >>= 4;
 						else		colour &= 0xF;
 
-					/*	if(colour && (prioTab[sprX]>=prio))
+						if(colour && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
 								prioTab[sprX] = prio;
-						}*/
-						if ((colour) && (prio <= gpu->bgPxPrio[sprX]))
-							gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord(pal, colour<<1), sprX);
+						}
 					}
 
 					//  Add the rotation/scale coeficients, here the rotation/scaling
@@ -1998,7 +1957,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 #endif
 }
 
-void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
+void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 {
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
@@ -2121,13 +2080,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 						offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8);
 						colour = src[offset];
 
-					/*	if (colour && (prioTab[sprX]>=prio))
+						if (colour && (prioTab[sprX]>=prio))
 						{ 
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
 								prioTab[sprX] = prio;
-						}*/
-						if ((colour) && (prio <= gpu->bgPxPrio[sprX]))
-							gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord(pal, colour<<1), sprX);
+						}
 					}
 
 					//  Add the rotation/scale coeficients, here the rotation/scaling
@@ -2158,13 +2115,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 						offset = auxX + (auxY<<8);
 						colour = T1ReadWord(src, offset<<1);
 
-					/*	if((colour&0x8000) && (prioTab[sprX]>=prio))
+						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX ))
 								prioTab[sprX] = prio;
-						}*/
-						if ((colour&0x8000) && (prio <= gpu->bgPxPrio[sprX]))
-							gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, colour, sprX);
+						}
 					}
 
 					//  Add the rotation/scale coeficients, here the rotation/scaling
@@ -2196,13 +2151,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab)
 						if (auxX&1)	colour >>= 4;
 						else		colour &= 0xF;
 
-					/*	if(colour && (prioTab[sprX]>=prio))
+						if(colour && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord (pal, colour<<1), sprX))
 								prioTab[sprX] = prio;
-						}*/
-						if ((colour) && (prio <= gpu->bgPxPrio[sprX]))
-							gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord(pal, colour<<1), sprX);
+						}
 					}
 
 					//  Add the rotation/scale coeficients, here the rotation/scaling
@@ -2487,8 +2440,6 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	/* reset them to backdrop */
 	memset(gpu->bgPixels, 5, 256);
 
-	memset(gpu->bgPxPrio, 0xFF, 256);
-
 	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && 
 			!gpu->LayersEnable[2] && !gpu->LayersEnable[3] && 
 				!gpu->LayersEnable[4]) return;
@@ -2503,10 +2454,10 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	}
 	
 	// for all the pixels in the line
-	/*if (gpu->LayersEnable[4]) 
+	if (gpu->LayersEnable[4]) 
 	{
 		for(int i = 0; i< 256; ++i) T2WriteWord(spr, i << 1, c);
-		gpu->spriteRender(gpu, l, spr, sprPrio);
+		gpu->spriteRender(gpu, l, dst, spr, sprPrio);
 
 		for(int i = 0; i<256; i++) 
 		{
@@ -2518,7 +2469,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 			item->PixelsX[item->nbPixelsX]=i;
 			item->nbPixelsX++;
 		}
-	}*/
+	}
 
 	
 	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && !gpu->LayersEnable[2] && !gpu->LayersEnable[3])
@@ -2569,18 +2520,15 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 			}
 		}
 		// render sprite Pixels
-	/*	if (gpu->LayersEnable[4])
+		if (gpu->LayersEnable[4])
 		{
 			for (int i=0; i < item->nbPixelsX; i++)
 			{
 				i16=item->PixelsX[i];
 				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
 			}
-		}*/
+		}
 	}
-
-	if(gpu->LayersEnable[4])
-		gpu->spriteRender(gpu, l, dst, sprPrio);
 }
 
 // TODO: capture emulated not fully
