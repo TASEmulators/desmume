@@ -44,7 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define USE_REAL_BIOS
 
 static BOOL LidClosed = FALSE;
-static u8 LidKeyCount = 0;
+static u8	countLid = 0;
 static u8 pathToROMwithoutExt[MAX_PATH];
 
 /* the count of bytes copied from the firmware into memory */
@@ -546,7 +546,7 @@ void NDS_Reset( void)
 	_MMU_write08<ARMCPU_ARM7>(0x04000136, 0x43);
 
 	LidClosed = FALSE;
-	LidKeyCount = 0;
+	countLid = 0;
 
 	/*
 	* Setup a copy of the firmware user settings in memory.
@@ -1764,7 +1764,6 @@ void NDS_setPadFromMovie(u16 pad)
 
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F)
 {
-
 	//this macro is the opposite of what you would expect
 #define FIX(b) (b?0:0x80)
 
@@ -1798,26 +1797,26 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
+	// todo: mute sound when Lided close
+	if (!f && !countLid) 
+	{
+		LidClosed = (!LidClosed) & 0x01;
+		if (!LidClosed) 
+			NDS_makeARM7Int(22);
+		countLid = 30;
+	}
+	else 
+	{
+		if (countLid > 0)
+			countLid = countLid--;
+	}
+
 	u16 padExt = (((u16 *)MMU.ARM7_REG)[0x136>>1] & 0x0070) |
 		((x) >> 7) |
 		((y) >> 6) |
 		((g) >> 4) |
+		((LidClosed) << 7) |
 		0x0034;
-
-	// todo: mute sound when Lided close
-	if (!f) 
-	{
-		LidKeyCount++;
-		if (LidKeyCount > 50)
-		{
-			LidKeyCount = 0;
-			LidClosed = (!LidClosed) & 0x01;
-			if (!LidClosed) 
-				NDS_makeARM7Int(22);
-		}
-	} else LidKeyCount = 0;
-
-	if (LidClosed) padExt |= 1 << 7;
 
 	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
 
