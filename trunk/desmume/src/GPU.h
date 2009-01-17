@@ -664,13 +664,12 @@ struct _GPU
 	u32 MasterBrightFactor;
 
 	u8 bgPixels[256];
-	u8 bgPxPrio[256];
 	u8 currLine;
 
 	BOOL (*setFinalColorSpr)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
 	BOOL (*setFinalColorBck)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
 	BOOL (*setFinalColor3D) (GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-	void (*spriteRender) (GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
+	void (*spriteRender) (GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab);
 };
 /*
 // normally should have same addresses
@@ -702,8 +701,8 @@ void GPU_DeInit(GPU *);
 void textBG(GPU * gpu, u8 num, u8 * DST);		//Draw text based background
 void rotBG(GPU * gpu, u8 num, u8 * DST);
 void extRotBG(GPU * gpu, u8 num, u8 * DST);
-void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
-void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * prioTab);
+void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab);
+void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab);
 
 extern const short sizeTab[4][4][2];
 extern const size sprSizeTab[4][4];
