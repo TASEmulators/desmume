@@ -691,9 +691,7 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
 			diff = -diff;*/
 		diff = precalcdifftbl[chan->index][data4bit];
 
-#ifdef SPU_INTERPOLATE
 		chan->pcm16b_last = chan->pcm16b;
-#endif
 		chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
 		//chan->index = MinMax(chan->index+indextbl[data4bit & 0x7], 0, 88);
 		chan->index = precalcindextbl[chan->index][data4bit & 0x7];
@@ -1089,7 +1087,10 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 
 	if(actuallyMix)
 		memset(SPU->sndbuf, 0, length*4*2);
-
+	
+	// If the sound speakers are disabled, don't output audio
+	if(!(T1ReadWord(MMU.ARM7_REG, 0x304) & 0x01))
+		return;
 
 	// If Master Enable isn't set, don't output audio
 	if (!(T1ReadByte(MMU.ARM7_REG, 0x501) & 0x80))

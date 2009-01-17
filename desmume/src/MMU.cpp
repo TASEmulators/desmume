@@ -455,6 +455,9 @@ void MMU_clearMem()
 	memset(MMU.DMAing,        0, sizeof(BOOL) * 2 * 4);
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
+
+	// Enable the sound speakers
+	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
 	
 	MainScreen.offset = 0;
 	SubScreen.offset  = 192;
