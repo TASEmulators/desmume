@@ -26,14 +26,27 @@
 
 #define DIRECTINPUT_VERSION 0x0800
 #include "../common.h"
-#include "..\types.h"
-#include "directx\dinput.h"
+#include "../types.h"
+#include "directx/dinput.h"
 
 #define MAXKEYPAD 15
 
 typedef void (*INPUTPROC)(BOOL, LPSTR);
 
-class INPUTCLASS
+class DI_CLASS
+{
+	friend BOOL CALLBACK EnumCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
+	friend BOOL CALLBACK EnumObjects(const DIDEVICEOBJECTINSTANCE* pdidoi,VOID* pContext);
+public:
+	char	JoystickName[255];
+	BOOL	Feedback;
+	LPDIRECTINPUTDEVICE8 EnumDevices(LPDIRECTINPUT8 pDI);
+protected:
+	BOOL CALLBACK EnumCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
+	BOOL CALLBACK EnumObjects(const DIDEVICEOBJECTINSTANCE* pdidoi,VOID* pContext);
+};
+
+class INPUTCLASS : private DI_CLASS
 {
 private:
 	HWND					hParentWnd;
@@ -44,6 +57,7 @@ private:
 	LPDIRECTINPUTDEVICE8	pKeyboard;
 	LPDIRECTINPUTDEVICE8	pJoystick;
 	DIDEVCAPS				DIJoycap;
+	LPDIRECTINPUTEFFECT     pEffect;
 
 	INPUTPROC				inputProc;
 
@@ -52,6 +66,7 @@ public:
 	~INPUTCLASS();
 	BOOL	Init(HWND hParentWnd, INPUTPROC inputProc);
 	BOOL	JoystickEnabled();
+	void	JoystickFeedback(BOOL on);
 	void	process();
 };
 
