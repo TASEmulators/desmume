@@ -2,7 +2,7 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright (C) 2006-2008 DeSmuME team
+    Copyright (C) 2006-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -28,6 +28,7 @@
 #include "..\debug.h"
 #include "..\MMU.h"
 #include "..\common.h"
+#include "..\addons.h"
 #include "resource.h"
 #include "NDSSystem.h"
 
@@ -207,6 +208,8 @@ const int	inputIDs[15]={ IDC_EDIT06, IDC_EDIT05, IDC_EDIT11, IDC_EDIT12, IDC_EDI
 
 u16				keyPad[15];
 extern INPUTCLASS	*input;
+
+void NDS_inputFeedback(BOOL enable);
 
 // ==================================================== Config Input
 INPUTCLASS		*inputCfg = NULL;
@@ -398,6 +401,8 @@ void NDS_inputInit()
 			}
 		}
 	}
+
+	FeedbackON = NDS_inputFeedback;
 }
 
 void NDS_inputPost(BOOL paused, LPSTR buf)
@@ -422,6 +427,11 @@ void NDS_inputPost(BOOL paused, LPSTR buf)
 	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
 }
 
+void NDS_inputFeedback(BOOL enable)
+{
+	input->JoystickFeedback(enable);
+}
+
 // TODO
 // ==================================================== GUI input
 // =======================================================================
@@ -431,6 +441,12 @@ void NDS_inputPost(BOOL paused, LPSTR buf)
 // ===============================================================
 // ===============================================================
 // ===============================================================
+static LPDIRECTINPUT8		tmp_pDI = NULL;
+static BOOL					tmp_Feedback = FALSE;
+static char					tmp_device_name[255] = { 0 };
+static LPDIRECTINPUTDEVICE8 tmp_Device = NULL;
+static LPDIRECTINPUTDEVICE8 tmp_Joystick = NULL;
+
 INPUTCLASS::INPUTCLASS()
 {
 	hParentWnd = NULL;
@@ -443,18 +459,79 @@ INPUTCLASS::~INPUTCLASS()
 	{
 		if (pKeyboard != NULL)
 		{
-			IDirectInputDevice8_Unacquire(pKeyboard);
-			IDirectInputDevice8_Release(pKeyboard);
+			pKeyboard->Unacquire();
+			pKeyboard->Release();
 			pKeyboard = NULL;
 		}
 
 		if (pJoystick != NULL)
 		{
-			IDirectInputDevice8_Unacquire(pJoystick);
-			IDirectInputDevice8_Release(pJoystick);
+			pEffect->Stop();
+			pEffect->Release();
+			pJoystick->Unacquire();
+			pJoystick->Release();
 			pJoystick = NULL;
 		}
+		pDI->Release();
 	}
+}
+
+extern BOOL CALLBACK EnumCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
+{
+	DI_CLASS *tmp = (DI_CLASS *)lpddi;
+	return tmp->EnumCallback(lpddi, pvRef);
+}
+
+LPDIRECTINPUTDEVICE8 DI_CLASS::EnumDevices(LPDIRECTINPUT8 pDI)
+{
+	tmp_pDI = pDI;
+	tmp_Feedback = FALSE;
+	memset(tmp_device_name, 0, 255);
+	if( FAILED( pDI->EnumDevices(DI8DEVCLASS_GAMECTRL,
+									::EnumCallback,
+									NULL,
+									DIEDFL_ATTACHEDONLY) ) )
+			return NULL;
+	Feedback = tmp_Feedback;
+	strcpy(JoystickName, tmp_device_name);
+	return tmp_Device;
+}
+
+BOOL DI_CLASS::EnumCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
+{
+	if ( FAILED( tmp_pDI->CreateDevice(lpddi->guidInstance, &tmp_Device, NULL) ) )
+	{
+		tmp_Device = NULL;
+		return DIENUM_CONTINUE;
+	}
+
+	strcpy(tmp_device_name, lpddi->tszProductName);
+	if (lpddi->guidFFDriver.Data1) tmp_Feedback = TRUE;
+	return DIENUM_STOP;
+}
+
+extern BOOL CALLBACK EnumObjects(const DIDEVICEOBJECTINSTANCE* pdidoi,VOID* pContext)
+{
+	DI_CLASS *tmp = (DI_CLASS *)pdidoi;
+	return tmp->EnumObjects(pdidoi, pContext);
+}
+
+BOOL CALLBACK DI_CLASS::EnumObjects(const DIDEVICEOBJECTINSTANCE* pdidoi,VOID* pContext)
+{
+	if( pdidoi->dwType & DIDFT_AXIS )
+	{
+		DIPROPRANGE diprg; 
+        diprg.diph.dwSize       = sizeof(DIPROPRANGE); 
+        diprg.diph.dwHeaderSize = sizeof(DIPROPHEADER); 
+        diprg.diph.dwHow        = DIPH_BYID; 
+        diprg.diph.dwObj        = pdidoi->dwType;
+        diprg.lMin              = -3; 
+        diprg.lMax              = 3; 
+   
+        if( FAILED(tmp_Joystick->SetProperty(DIPROP_RANGE, &diprg.diph)) ) 
+			return DIENUM_STOP;
+	}
+	return DIENUM_CONTINUE;
 }
 
 BOOL INPUTCLASS::Init(HWND hParentWnd, INPUTPROC inputProc)
@@ -467,59 +544,109 @@ BOOL INPUTCLASS::Init(HWND hParentWnd, INPUTPROC inputProc)
 	pDI = NULL;
 	pKeyboard = NULL;
 	pJoystick = NULL;
+	Feedback = FALSE;
 	memset(cDIBuf, 0, sizeof(cDIBuf));
+	memset(JoystickName, 0, sizeof(JoystickName));
 
 	if(FAILED(DirectInput8Create(GetModuleHandle(NULL),DIRECTINPUT_VERSION,IID_IDirectInput8,(void**)&pDI,NULL)))
 		return FALSE;
 
-	if (!FAILED(IDirectInput8_CreateDevice(pDI,GUID_SysKeyboard,&pKeyboard,NULL)))
+	if (!FAILED(pDI->CreateDevice(GUID_SysKeyboard,&pKeyboard,NULL)))
 	{
-		if (!FAILED(IDirectInputDevice8_SetDataFormat(pKeyboard,&c_dfDIKeyboard)))
+		if (!FAILED(pKeyboard->SetDataFormat(&c_dfDIKeyboard)))
 		{
-			if (FAILED(IDirectInputDevice8_SetCooperativeLevel(pKeyboard,hParentWnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE)))
+			if (FAILED(pKeyboard->SetCooperativeLevel(hParentWnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE)))
 			{
-				IDirectInputDevice8_Release(pKeyboard);
+				pKeyboard->Release();
 				pKeyboard = NULL;
 			}
 		}
 		else
 		{
-			IDirectInputDevice8_Release(pKeyboard);
+			pKeyboard->Release();
 			pKeyboard = NULL;
 		}
 	}
 
-	if (!FAILED(IDirectInput8_CreateDevice(pDI,GUID_Joystick,&pJoystick,NULL)))
+	pJoystick = EnumDevices(pDI);
+
+	if (pJoystick)
 	{
-		if(!FAILED(IDirectInputDevice8_SetDataFormat(pJoystick,&c_dfDIJoystick2)))
+		if(!FAILED(pJoystick->SetDataFormat(&c_dfDIJoystick2)))
 		{
-			if(FAILED(IDirectInputDevice8_SetCooperativeLevel(pJoystick,hParentWnd,DISCL_FOREGROUND|DISCL_NONEXCLUSIVE)))
+			if(FAILED(pJoystick->SetCooperativeLevel(hParentWnd,DISCL_FOREGROUND|DISCL_EXCLUSIVE)))
 			{
-				IDirectInputDevice8_Release(pJoystick);
+				pJoystick->Release();
 				pJoystick = NULL;
 			}
 			else
 			{
+				tmp_Joystick = pJoystick;
+				pJoystick->EnumObjects(::EnumObjects, (VOID*)hParentWnd, DIDFT_ALL);
 				memset(&DIJoycap,0,sizeof(DIDEVCAPS));
 				DIJoycap.dwSize=sizeof(DIDEVCAPS);
-				IDirectInputDevice8_GetCapabilities(pJoystick,&DIJoycap);
+				pJoystick->GetCapabilities(&DIJoycap);
 			}
 		}
 		else
 		{
-			IDirectInputDevice8_Release(pJoystick);
+			pJoystick->Release();
 			pJoystick = NULL;
 		}
+	}
+
+	if (pJoystick)
+	{
+		DIPROPDWORD dipdw;
+		dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+		dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+		dipdw.diph.dwObj = 0;
+		dipdw.diph.dwHow = DIPH_DEVICE;
+		dipdw.dwData = 0;
+		if ( !FAILED( pJoystick->SetProperty(DIPROP_AUTOCENTER, &dipdw.diph) ) )
+		{
+			DWORD		rgdwAxes[1] = { DIJOFS_Y };
+			LONG		rglDirection[2] = { 0 };
+			DICONSTANTFORCE		cf = { 0 };
+			DIEFFECT	eff;
+
+			cf.lMagnitude = (DI_FFNOMINALMAX * 100);
+			
+			memset(&eff, 0, sizeof(eff));
+			eff.dwSize = sizeof(DIEFFECT);
+			eff.dwFlags = DIEFF_CARTESIAN | DIEFF_OBJECTOFFSETS;
+			eff.dwDuration = INFINITE;
+			eff.dwSamplePeriod = 0;
+			eff.dwGain = DI_FFNOMINALMAX;
+			eff.dwTriggerButton = DIEB_NOTRIGGER;
+			eff.dwTriggerRepeatInterval = 0;
+			eff.cAxes = 1;
+			eff.rgdwAxes = rgdwAxes;
+			eff.rglDirection = rglDirection;
+			eff.lpEnvelope = 0;
+			eff.cbTypeSpecificParams = sizeof( DICONSTANTFORCE );
+			eff.lpvTypeSpecificParams = &cf;
+			eff.dwStartDelay = 0;
+
+			if( FAILED( pJoystick->CreateEffect(GUID_ConstantForce, &eff, &pEffect, NULL) ) )
+				Feedback = FALSE;
+		}
+		else
+			Feedback = FALSE;
 	}
 
 	if (pKeyboard == NULL && pJoystick == NULL) return FALSE;
 
 	this->inputProc = inputProc;
 
-#if 1
-	if (pKeyboard != NULL) INFO("DirectX Input: keyboard is initialised\n");
-	if (pJoystick != NULL) INFO("DirectX Input: joystick is initialised\n");
-#endif
+	INFO("DirectX Input: \n");
+	if (pKeyboard != NULL) INFO("   - keyboard successfully inited\n");
+	if (pJoystick != NULL)
+	{
+		INFO("   - gamecontrol successfully inited: %s\n", JoystickName);
+		if (Feedback) INFO("\t\t\t\t      (with FeedBack support)\n");
+	}
+
 	paused = FALSE;
 
 	return TRUE;
@@ -539,32 +666,30 @@ void INPUTCLASS::process()
 
 	if (pKeyboard)
 	{
-		hr=IDirectInputDevice8_GetDeviceState(pKeyboard,256,cDIBuf);
+		hr=pKeyboard->GetDeviceState(256,cDIBuf);
 		if (FAILED(hr)) 
-		{
-			//LOG("DInput: keyboard acquire\n");
-			IDirectInputDevice8_Acquire(pKeyboard);
-		}
+			pKeyboard->Acquire();
 	}
 
 	if (pJoystick)
 	{
 		DIJOYSTATE2 JoyStatus;
 
-		hr=IDirectInputDevice8_Poll(pJoystick);
-		if (FAILED(hr))	IDirectInputDevice8_Acquire(pJoystick);
+		hr=pJoystick->Poll();
+		if (FAILED(hr))	
+			pJoystick->Acquire();
 		else
 		{
-			hr=IDirectInputDevice8_GetDeviceState(pJoystick,sizeof(JoyStatus),&JoyStatus);
-			if (FAILED(hr)) hr=IDirectInputDevice8_Acquire(pJoystick);
+			hr=pJoystick->GetDeviceState(sizeof(JoyStatus),&JoyStatus);
+			if (FAILED(hr)) hr=pJoystick->Acquire();
 			else
 			{
-				memset(cDIBuf+255,0,sizeof(cDIBuf)-255);
-				//TODO: analog
-				//if (JoyStatus.lX<-1) cDIBuf[258]=-128;
-				//if (JoyStatus.lX>1) cDIBuf[259]=-128;
-				//if (JoyStatus.lY<-1) cDIBuf[256]=-128;
-				//if (JoyStatus.lY>1) cDIBuf[257]=-128;
+				memset(cDIBuf+255, 0, sizeof(cDIBuf)-255);
+
+				if (JoyStatus.lX<-1) cDIBuf[258]=-128;
+				if (JoyStatus.lX>1) cDIBuf[259]=-128;
+				if (JoyStatus.lY<-1) cDIBuf[256]=-128;
+				if (JoyStatus.lY>1) cDIBuf[257]=-128;
 				
 				if (JoyStatus.rgdwPOV[0]==0) cDIBuf[256]=-128;
 				if (JoyStatus.rgdwPOV[0]==4500) { cDIBuf[256]=-128; cDIBuf[259]=-128;}
@@ -574,11 +699,22 @@ void INPUTCLASS::process()
 				if (JoyStatus.rgdwPOV[0]==22500) { cDIBuf[257]=-128; cDIBuf[258]=-128;}
 				if (JoyStatus.rgdwPOV[0]==27000) cDIBuf[258]=-128;
 				if (JoyStatus.rgdwPOV[0]==31500) { cDIBuf[258]=-128; cDIBuf[256]=-128;}
-				memcpy(cDIBuf+260,JoyStatus.rgbButtons,sizeof(JoyStatus.rgbButtons));
+				memcpy(cDIBuf+260, JoyStatus.rgbButtons, sizeof(JoyStatus.rgbButtons));
 			}
 		}
 	}
 
 	this->inputProc(paused, (LPSTR)&cDIBuf);
+}
+
+void INPUTCLASS::JoystickFeedback(BOOL on)
+{
+	if (!Feedback) return;
+	if (!pEffect) return;
+
+	if (on)
+		pEffect->Start(2, 0);
+	else
+		pEffect->Stop();
 }
 // ==================================================== END INPUTCLASS

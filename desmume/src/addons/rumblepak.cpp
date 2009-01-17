@@ -26,61 +26,56 @@
 #include "../MMU.h"
 #include <string.h>
 
-u8	rumble_hdr[0xC0];
+void (*FeedbackON)(BOOL enable) = NULL;
 
 BOOL RumblePak_init(void) { return (TRUE); };
+
 void RumblePak_reset(void)
 {
-	memset(rumble_hdr, 0, sizeof(rumble_hdr));
-	memcpy(rumble_hdr + 0x04, gba_header_data_0x04, 156);
-	memcpy(rumble_hdr + 0xA0, "Rumble Pak  ", 12);
-	rumble_hdr[0xB2] = 0x96;
-	rumble_hdr[0xBE] = 0x45;
 };
+
 void RumblePak_close(void) {};
+
 void RumblePak_config(void) {};
+
 void RumblePak_write08(u32 adr, u8 val)
 {
-	//INFO("write08 0x%X\n", val);
 };
+
 void RumblePak_write16(u32 adr, u16 val)
 {
-	//INFO("write16 0x%X\n", val);
+	if (!FeedbackON) return;
+
+	// CrazyMax 17/01/2009
+	// i don't know how send to feedback (PC) impulse with small latency.
+	if (adr == 0x08000000) 
+		FeedbackON(val);
+	if (adr == 0x08001000) 
+		FeedbackON(val);
 };
+
 void RumblePak_write32(u32 adr, u32 val)
 {
-	//INFO("write32 0x%X\n", val);
 };
+
 u8   RumblePak_read08(u32 adr)
 {
-	u8	val = 0;
-
-	if (adr >= 0x08000000 && adr < 0x080000C0)
-		val = rumble_hdr[adr & 0xFF];
-	if (adr == 0x0801FFFE) val = 0x45;
-
-	return ((u8)val);
+	return (0);
 };
 
 u16  RumblePak_read16(u32 adr)
 {
-	u16 val = 0;
-
-	if (adr >= 0x08000000 && adr < 0x080000C0)
-		val = T1ReadWord(rumble_hdr, adr & 0xFF );
-	if (adr == 0x0801FFFE) val = 0x0045;
+	u16 val = ( (adr & 0x1FFFF) >> 1 ) & 0xFFFD;
+	if (adr == 0x0801FFFE) val = 0x005D;	// hack!!! anybody have docs for RumblePak?
 
 	return ((u16)val); 
 };
+
 u32  RumblePak_read32(u32 adr)
 {
-	u32 val = 0;
-	if (adr >= 0x08000000 && adr < 0x080000C0)
-		val = T1ReadLong(rumble_hdr, adr & 0xFF );
-	if (adr == 0x0801FFFE) val = 0x00000045;
-
-	return ((u32)val);
+	return (0);
 };
+
 void RumblePak_info(char *info) { strcpy(info, "NDS Rumble Pak (need joystick)"); };
 
 ADDONINTERFACE addonRumblePak = {

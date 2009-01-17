@@ -77,6 +77,7 @@ extern char CFlashPath[MAX_PATH];					// path to compact flash directory
 extern u8	CFlashUsePath;							// true is used path from CFlashPath for cflash folder
 extern u8	CFlashUseRomPath;						// true is used path to rom file for cflash folder
 extern char GBAgameName[MAX_PATH];					// file name for GBA game (rom)
+extern void (*FeedbackON)(BOOL enable);				// feedback on/off
 
 extern BOOL addonsInit();							// Init addons
 extern void addonsClose();							// Shutdown addons
