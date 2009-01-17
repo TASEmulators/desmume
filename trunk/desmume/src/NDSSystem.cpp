@@ -45,7 +45,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
-static u8 pathToROMwithoutExt[MAX_PATH];
+char pathToROM[MAX_PATH];
+char pathFilenameToROMwithoutExt[MAX_PATH];
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -311,7 +312,6 @@ void debug()
 	//if((NDS_ARM9.R[15]>>28)) emu_halt();
 }
 
-#define DSGBA_EXTENSTION ".ds.gba"
 #define DSGBA_LOADER_SIZE 512
 enum
 {
@@ -343,39 +343,56 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 				const char *cflash_disk_image_file)
 #endif
 {
-	int i;
-	int type;
-	char * p;
-
-	ROMReader_struct * reader;
-	void* file;
-	u32 size, mask;
-	u8 *data;
-	char * noext;
+	int					i;
+	int					type;
+	ROMReader_struct	*reader;
+	void				*file;
+	u32					size, mask;
+	u8					*data;
+	char				*noext;
+	char				*buf[MAX_PATH];
+	char				extROM[MAX_PATH];
+	char				extROM2[5];
 
 	if (filename == NULL)
 		return -1;
 
+	memset(extROM, 0, MAX_PATH);
+	memset(extROM2, 0, 5);
+
 	noext = strdup(filename);
-
 	reader = ROMReaderInit(&noext);
+	
+	for (int t = strlen(filename); t>0; t--)
+		if ( (filename[t] == '\\') || (filename[t] == '/') )
+		{
+			strncpy((char *)pathToROM, filename, t+1);
+			break;
+		}
+	
+	for (int t = strlen(filename); t>0; t--)
+		if ( (filename[t] == '\\') || (filename[t] == '/') || (filename[t] == '.') )
+		{
+			if (filename[t] != '.') return -1;
+			strncpy((char *)pathFilenameToROMwithoutExt, filename, t);
+			strncpy((char *)extROM, filename+t, strlen(filename) - t);
+			if (t>4)
+				strncpy((char *)extROM2, filename+(t-3), 3);
+			break;
+		}
+
 	type = ROM_NDS;
-
-	p = noext;
-	p += strlen(p);
-	p -= strlen(DSGBA_EXTENSTION);
-
-	if(memcmp(p, DSGBA_EXTENSTION, strlen(DSGBA_EXTENSTION)) == 0)
-		type = ROM_DSGBA;
+	if ( !strcmp((char *)extROM, ".gba") && !strcmp((char *)extROM2, ".ds")) 
+			type = ROM_DSGBA;
 
 	file = reader->Init(filename);
-
 	if (!file)
 	{
 		reader->DeInit(file);
-		free(noext);
+		delete [] noext;
 		return -1;
 	}
+
 	size = reader->Size(file);
 
 	if(type == ROM_DSGBA)
@@ -387,7 +404,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	//check that size is at least the size of the header
 	if (size < 352+160) {
 		reader->DeInit(file);
-		free(noext);
+		delete [] noext;
 		return -1;
 	}
 
@@ -405,10 +422,11 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	if(MMU.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
-	if ((data = (u8*)malloc(mask + 1)) == NULL)
+	data = new u8[mask + 1];
+	if (!data)
 	{
 		reader->DeInit(file);
-		free(noext);
+		delete [] noext;
 		return -1;
 	}
 
@@ -420,20 +438,6 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 #ifndef WORDS_BIGENDIAN
 	DecryptSecureArea(data,size);
 #endif
-	for (int t = strlen(filename); t>0; t--)
-		if ( (filename[t] == '\\') || (filename[t] == '/') )
-		{
-			strncpy(szRomPath, filename, t+1);
-			break;
-		}
-	
-	for (int t = strlen(filename); t>0; t--)
-		if ( (filename[t] == '\\') || (filename[t] == '/') || (filename[t] == '.') )
-		{
-			if (filename[t] != '.') return -1;
-			strncpy((char *)pathToROMwithoutExt, filename, t+1);
-			break;
-		}
 
 	MMU_unsetRom();
 	NDS_SetROM(data, mask);
@@ -441,45 +445,19 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 #ifndef EXPERIMENTAL_GBASLOT
 	cflash_close();
-	cflash_init( cflash_disk_image_file);
+	cflash_init(cflash_disk_image_file);
 #endif
+	delete [] noext;
 
-	strncpy(szRomBaseName, filename, ARRAY_SIZE(szRomBaseName));
-
-	if(type == ROM_DSGBA)
-		szRomBaseName[strlen(szRomBaseName)-strlen(DSGBA_EXTENSTION)] = 0x00;
-	else
-		szRomBaseName[strlen(szRomBaseName)-4] = 0x00;
-
-	cheatsInit((char *)pathToROMwithoutExt);
-
-	// Setup Backup Memory
-	if(type == ROM_DSGBA)
-	{
-		/* be sure that we dont overwrite anything before stringstart */
-		if (strlen(noext)>= strlen(DSGBA_EXTENSTION))
-			strncpy(noext + strlen(noext) - strlen(DSGBA_EXTENSTION), ".sav",strlen(DSGBA_EXTENSTION)+1);
-		else
-		{
-			free(noext);
-			return -1;
-		}
-	}
-	else
-	{
-		/* be sure that we dont overwrite anything before stringstart */
-		if (strlen(noext)>=4)
-			strncpy(noext + strlen(noext) - 4, ".sav",5);
-		else
-		{
-			free(noext);
-			return -1;
-		}
-	}
+	strcpy((char *)buf, (char *)pathFilenameToROMwithoutExt);
+	strcat((char *)buf, ".dmc");							// DeSmuME memory card	:)
 
 	mc_realloc(&MMU.bupmem, bmtype, bmsize);
-	mc_load_file(&MMU.bupmem, noext);
-	free(noext);
+	mc_load_file(&MMU.bupmem, (char *)buf);
+
+	strcpy((char *)buf, (char *)pathFilenameToROMwithoutExt);
+	strcat((char *)buf, ".dct");							// DeSmuME cheat		:)
+	cheatsInit((char *)buf);
 
 	return i;
 }
@@ -487,7 +465,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 void NDS_FreeROM(void)
 {
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)
-		free(MMU.CART_ROM);
+		delete [] MMU.CART_ROM;
 	MMU_unsetRom();
 	if (MMU.bupmem.fp)
 		fclose(MMU.bupmem.fp);
@@ -1797,12 +1775,18 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = (u16)pad;
 	((u16 *)MMU.ARM7_REG)[0x130>>1] = (u16)pad;
 
-	// todo: mute sound when Lided close
 	if (!f && !countLid) 
 	{
 		LidClosed = (!LidClosed) & 0x01;
-		if (!LidClosed) 
+		if (!LidClosed)
+		{
+			SPU_Pause(FALSE);
 			NDS_makeARM7Int(22);
+
+		}
+		else
+			SPU_Pause(TRUE);
+
 		countLid = 30;
 	}
 	else 

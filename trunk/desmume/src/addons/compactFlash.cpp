@@ -311,7 +311,7 @@ static BOOL cflash_build_fat( void)
 	maxLevel  = -1;
 
 	if (CFlashUseRomPath)
-		sRomPath = szRomPath;   // From MMU.cpp
+		sRomPath = pathToROM;
 	else
 		sRomPath = CFlashPath;
 		
@@ -517,7 +517,7 @@ BOOL cflash_init()
 	{
 		if (!strlen(CFlashPath)) CFlashUseRomPath = TRUE;
 		if (CFlashUseRomPath)
-			CFLASHLOG("Using CFlash directory of rom: %s\n", szRomPath);
+			CFLASHLOG("Using CFlash directory of rom: %s\n", pathToROM);
 		cflashDeviceEnabled = FALSE;
 		currLBA = 0;
 

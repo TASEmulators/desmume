@@ -44,7 +44,6 @@ void cheatsInit(char *path)
 	cheatsNum = 0;
 	cheatsCurrentGet = 0;
 	strcpy((char *)cheatFilename, path);
-	strcat((char *)cheatFilename, "cht");
 
 	if (cheatsStack) delete [] cheatsStack;
 	cheatsStack = NULL;
