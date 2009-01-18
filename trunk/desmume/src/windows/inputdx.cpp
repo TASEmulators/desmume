@@ -466,8 +466,11 @@ INPUTCLASS::~INPUTCLASS()
 
 		if (pJoystick != NULL)
 		{
-			pEffect->Stop();
-			pEffect->Release();
+			if (pEffect)
+			{
+				pEffect->Stop();
+				pEffect->Release();
+			}
 			pJoystick->Unacquire();
 			pJoystick->Release();
 			pJoystick = NULL;
