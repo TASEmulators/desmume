@@ -61,6 +61,7 @@ typedef struct
 	u32		tail;					// tail
 } DISP_FIFO;
 
+extern DISP_FIFO disp_fifo;
 extern void DISP_FIFOinit();
 extern void DISP_FIFOsend(u32 val);
 extern u32 DISP_FIFOrecv();
