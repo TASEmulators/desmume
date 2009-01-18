@@ -3109,9 +3109,6 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright up
 		case 1:
 		{
-			// when we wont do anything, we dont need to loop
-			if (!(gpu->MasterBrightFactor)) break ;
-
 			for(i16 = 0; i16 < 256; ++i16)
 			{
 				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
@@ -3122,9 +3119,6 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		// Bright down
 		case 2:
 		{
-			// when we wont do anything, we dont need to loop 
-			if (!gpu->MasterBrightFactor) break;
- 
 			for(i16 = 0; i16 < 256; ++i16)
 			{
 				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
@@ -3172,23 +3166,12 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 				memcpy (dst, src, 512);
 			}
 			break;
-		case 3:
-	// Read from FIFO MAIN_MEMORY_DISP_FIFO, two pixels at once format is x555, bit15 unused
-	// Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
-	// (under DISP_MMEM_FIFO)
-#if 0
+		case 3: // Display memory FIFO
 			{
 				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
-				for (int i=0; i<256;)
-				{
-					u32 c = FIFOget(&gpu->fifo);
-					T2WriteWord(dst, i << 1, c&0xFFFF); i++;
-					T2WriteWord(dst, i << 1, c>>16); i++;
-				}
+				for (int i=0; i < 128; i++)
+					T1WriteLong(dst, i << 2, DISP_FIFOrecv() & 0x7FFF7FFF);
 			}
-#else
-		LOG("FIFO MAIN_MEMORY_DISP_FIFO\n");
-#endif
 			break;
 	}
 
