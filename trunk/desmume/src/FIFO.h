@@ -54,20 +54,15 @@ extern void GFX_FIFOclear();
 extern void GFX_FIFOsend(u32 cmd, u32 param);
 
 //=================================================== Display memory FIFO
-#if 0
 typedef struct
 {
-	u32		buf[16];		// 16 words
-	u8		size;			// tail
-
-	BOOL	empty;
-	BOOL	full;
-	BOOL	error;
+	u32		buf[0x6000];			// 256x192 32K color
+	u32		head;					// head
+	u32		tail;					// tail
 } DISP_FIFO;
 
-extern void DISP_FIFOclear(DISP_FIFO * fifo);
-extern void DISP_FIFOadd(DISP_FIFO * fifo, u32 val);
-extern u32 DISP_FIFOget(DISP_FIFO * fifo);
-#endif
+extern void DISP_FIFOinit();
+extern void DISP_FIFOsend(u32 val);
+extern u32 DISP_FIFOrecv();
 
 #endif

@@ -171,3 +171,29 @@ void GFX_FIFOsend(u32 cmd, u32 param)
 
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
+
+// ========================================================= DISP FIFO
+DISP_FIFO	disp_fifo;
+
+void DISP_FIFOinit()
+{
+	memset(&disp_fifo, 0, sizeof(DISP_FIFO));
+}
+
+void DISP_FIFOsend(u32 val)
+{
+	//INFO("DISP_FIFO send value 0x%08X (head 0x%06X, tail 0x%06X)\n", val, disp_fifo.head, disp_fifo.tail);
+	disp_fifo.buf[disp_fifo.tail] = val;
+	disp_fifo.tail++;
+	if (disp_fifo.tail > 0x5FFF)
+		disp_fifo.tail = 0;
+}
+
+u32 DISP_FIFOrecv()
+{
+	u32 val = disp_fifo.buf[disp_fifo.head];
+	disp_fifo.head++;
+	if (disp_fifo.head > 0x5FFF)
+		disp_fifo.head = 0;
+	return (val);
+}

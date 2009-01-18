@@ -370,6 +370,7 @@ void MMU_Init(void) {
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
 	GFX_FIFOclear();
+	DISP_FIFOinit();
 	
 	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
@@ -435,6 +436,7 @@ void MMU_clearMem()
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
 	GFX_FIFOclear();
+	DISP_FIFOinit();
 	
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -742,7 +744,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 
 	if (vram_map_addr != 0xFFFFFFFF)
 	{
-		//u32 vr = vram_map_addr;
 		u8	engine = (vram_map_addr >> 21);
 		vram_map_addr &= 0x001FFFFF;
 		u8	engine_offset = (vram_map_addr >> 14);
@@ -752,9 +753,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		for (unsigned int i = 0; i < LCDdata[block][1]; i++)
 			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
 		
-		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i (faddr 0x%X)\n", 
-		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07,
-		//	vr + 0x6000000);
+		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i\n", 
+		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
 		VRAM_blockEnabled[block] = 1;
 		return;
 	}
@@ -1665,6 +1665,11 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_VRAMCNTI:
 					MMU_VRAMmapControl(adr-REG_VRAMCNTA, val);
 				break;
+			case REG_DISPA_DISPMMEMFIFO:
+			{
+				DISP_FIFOsend(val);
+				return;
+			}
 		#ifdef LOG_CARD
 			case 0x040001A0 : /* TODO (clear): ??? */
 			case 0x040001A1 :
@@ -2232,6 +2237,11 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				}
 				return;
                         //case REG_AUXSPICNT : emu_halt();
+			case REG_DISPA_DISPMMEMFIFO:
+			{
+				DISP_FIFOsend(val);
+				return;
+			}
 		}
 #ifdef _MMU_DEBUG
 		mmu_log_debug_ARM9(adr, "(write16) %0x%X", val);
@@ -2736,7 +2746,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			case REG_DISPA_DISPMMEMFIFO:
 			{
-				//FIFOadd(&MainScreen.gpu->fifo, val);
+				DISP_FIFOsend(val);
 				return;
 			}
 		}
