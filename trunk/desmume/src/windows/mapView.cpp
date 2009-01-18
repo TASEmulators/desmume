@@ -129,7 +129,9 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         sprintf(text, "%d x %d", parms->BGxPC, parms->BGxPD);
         SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), text);
         
-		memset(win->bitmap, 0, sizeof(win->bitmap));
+	//	memset(win->bitmap, 0, sizeof(win->bitmap));
+		for(int i = 0; i < (1024*1024); i++)
+			win->bitmap[i] = 0x7C1F;
         if(win->lcd)
 		{
 			 switch(dispcnt & 7)
