@@ -579,20 +579,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	u32	vram_map_addr = 0xFFFFFFFF;
 	u8	*LCD_addr = LCDdst[block];
 
-	//unmap texmem
-	for(int i=0;i<4;i++)
-		if(ARM9Mem.textureSlotAddr[i] == LCD_addr)
-			ARM9Mem.textureSlotAddr[i] = ARM9Mem.blank_memory;
-
-	//unmap texpal mem. This is not a straightforward way to do it, 
-	//but it is the only place we have this information stored.
-	for(int i=0;i<4;i++)
-		if(ARM9Mem.texPalSlot[i] == LCD_addr + 0x4000*i || ARM9Mem.texPalSlot[i] == LCD_addr)
-			ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
-	for(int i=4;i<6;i++)
-		if(ARM9Mem.texPalSlot[i] == LCD_addr)
-			ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
-
 	
 	switch (VRAMBankCnt & 0x07)
 	{
@@ -756,6 +742,20 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i\n", 
 		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
 		VRAM_blockEnabled[block] = 1;
+
+		//unmap texmem
+		for(int i=0;i<4;i++)
+			if(ARM9Mem.textureSlotAddr[i] == LCD_addr)
+				ARM9Mem.textureSlotAddr[i] = ARM9Mem.blank_memory;
+
+		//unmap texpal mem. This is not a straightforward way to do it, 
+		//but it is the only place we have this information stored.
+		for(int i=0;i<4;i++)
+			if( (ARM9Mem.texPalSlot[i] == LCD_addr + 0x4000*i) || (ARM9Mem.texPalSlot[i] == LCD_addr) )
+				ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
+		for(int i=4;i<6;i++)
+			if(ARM9Mem.texPalSlot[i] == LCD_addr)
+				ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
 		return;
 	}
 
