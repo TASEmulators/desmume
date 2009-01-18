@@ -150,6 +150,15 @@ static BOOL setFinalBGColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 bgnum, u8
 static BOOL setFinalBGColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
 static BOOL setFinalBGColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
 
+static BOOL setFinalOBJColorSpecialNone			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialBlend		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialIncrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialDecrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialNoneWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+static BOOL setFinalOBJColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+
 static BOOL setFinal3DColorSpecialNone			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
 static BOOL setFinal3DColorSpecialBlend			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
 static BOOL setFinal3DColorSpecialIncrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
@@ -161,6 +170,7 @@ static BOOL setFinal3DColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u
 
 
 typedef  BOOL (*FinalBGColFunct)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
+typedef  BOOL (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 typedef  BOOL (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
 
 FinalBGColFunct pixelBlittersBG[8] = {	//setFinalColorDirect,
@@ -174,6 +184,16 @@ FinalBGColFunct pixelBlittersBG[8] = {	//setFinalColorDirect,
 									setFinalBGColorSpecialBlendWnd,
                                     setFinalBGColorSpecialIncreaseWnd,
                                     setFinalBGColorSpecialDecreaseWnd};
+
+FinalOBJColFunct pixelBlittersOBJ[8] = {
+									setFinalOBJColorSpecialNone,
+									setFinalOBJColorSpecialBlend,
+									setFinalOBJColorSpecialIncrease,
+									setFinalOBJColorSpecialDecrease,
+									setFinalOBJColorSpecialNoneWnd,
+									setFinalOBJColorSpecialBlendWnd,
+									setFinalOBJColorSpecialIncreaseWnd,
+									setFinalOBJColorSpecialDecreaseWnd,};
 
 Final3DColFunct pixelBlitters3D[8] = {
 									setFinal3DColorSpecialNone,
@@ -246,7 +266,7 @@ GPU * GPU_Init(u8 l)
 	GPU_InitFadeColors();
 
 	g->setFinalColorBck = setFinalBGColorSpecialNone;
-	g->setFinalColorSpr = setFinalBGColorSpecialNone;
+	g->setFinalColorSpr = setFinalOBJColorSpecialNone;
 	g->setFinalColor3D = setFinal3DColorSpecialNone;
 
 	return g;
@@ -257,7 +277,7 @@ void GPU_Reset(GPU *g, u8 l)
 	memset(g, 0, sizeof(GPU));
 
 	g->setFinalColorBck = setFinalBGColorSpecialNone;
-	g->setFinalColorSpr = setFinalBGColorSpecialNone;
+	g->setFinalColorSpr = setFinalOBJColorSpecialNone;
 	g->setFinalColor3D = setFinal3DColorSpecialNone;
 	g->core = l;
 	g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
@@ -365,7 +385,7 @@ void SetupFinalPixelBlitter (GPU *gpu)
 	u8 windowUsed = (gpu->WIN0_ENABLED | gpu->WIN1_ENABLED | gpu->WINOBJ_ENABLED);
 	u8 blendMode  = (gpu->BLDCNT >> 6)&3;
 
-	gpu->setFinalColorSpr = pixelBlittersBG[windowUsed*4 + blendMode];
+	gpu->setFinalColorSpr = pixelBlittersOBJ[windowUsed*4 + blendMode];
 	gpu->setFinalColorBck = pixelBlittersBG[windowUsed*4 + blendMode];
 	gpu->setFinalColor3D = pixelBlitters3D[windowUsed*4 + blendMode];
 }
@@ -845,6 +865,350 @@ static BOOL setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u32 passing, u8 bgnum, 
 		{
 			T2WriteWord(dst, passing, color);
 			gpu->bgPixels[x] = bgnum;
+		}
+	}
+
+	return windowDraw;
+}
+
+/*****************************************************************************/
+//			PIXEL RENDERING - OBJS
+/*****************************************************************************/
+
+static BOOL setFinalOBJColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	if(type == 1)
+	{
+		int bg_under = gpu->bgPixels[x];
+		u16 final = color;
+
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+		{
+			COLOR c1, c2, cfinal;
+
+			c1.val = color;
+			c2.val = T2ReadWord(dst, passing);
+
+			cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+			final = cfinal.val;
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+
+	return 1;
+}
+
+static BOOL setFinalOBJColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	if((gpu->BLDCNT & 0x10) || (type == 1))
+	{
+		int bg_under = gpu->bgPixels[x];
+		u16 final = color;
+
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+		{
+			COLOR c1, c2, cfinal;
+
+			c1.val = color;
+			c2.val = T2ReadWord(dst, passing);
+
+			cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+			final = cfinal.val;
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+
+	return 1;
+}
+
+static BOOL setFinalOBJColorSpecialIncrease(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	if(type == 1)
+	{
+		int bg_under = gpu->bgPixels[x];
+		u16 final = color;
+
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+		{
+			COLOR c1, c2, cfinal;
+
+			c1.val = color;
+			c2.val = T2ReadWord(dst, passing);
+
+			cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+			final = cfinal.val;
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+	else if(gpu->BLDCNT & 0x10)
+	{
+		if (gpu->BLDY_EVY != 0x0)
+		{
+			color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF];
+		}
+
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+
+	return 1;
+}
+
+static BOOL setFinalOBJColorSpecialDecrease(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	if(type == 1)
+	{
+		int bg_under = gpu->bgPixels[x];
+		u16 final = color;
+
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+		{
+			COLOR c1, c2, cfinal;
+
+			c1.val = color;
+			c2.val = T2ReadWord(dst, passing);
+
+			cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+			final = cfinal.val;
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+	else if(gpu->BLDCNT & 0x10)
+	{
+		if (gpu->BLDY_EVY != 0x0)
+		{
+			color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF];
+		}
+
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		gpu->bgPixels[x] = 4;
+	}
+
+	return 1;
+}
+
+static BOOL setFinalOBJColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+
+	renderline_checkWindows(gpu, 4, x, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		if((type == 1) && windowEffect)
+		{
+			int bg_under = gpu->bgPixels[x];
+			u16 final = color;
+
+			/* If the layer we are drawing on is selected as 2nd source, we can blend */
+			if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+				final = cfinal.val;
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+	}
+
+	return windowDraw;
+}
+
+static BOOL setFinalOBJColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+
+	renderline_checkWindows(gpu, 4, x, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		if(((gpu->BLDCNT & 0x10) || (type == 1)) && windowEffect)
+		{
+			int bg_under = gpu->bgPixels[x];
+			u16 final = color;
+
+			/* If the layer we are drawing on is selected as 2nd source, we can blend */
+			if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+				final = cfinal.val;
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+	}
+
+	return windowDraw;
+}
+
+static BOOL setFinalOBJColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+
+	renderline_checkWindows(gpu, 4, x, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		if((type == 1) && windowEffect)
+		{
+			int bg_under = gpu->bgPixels[x];
+			u16 final = color;
+
+			/* If the layer we are drawing on is selected as 2nd source, we can blend */
+			if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+				final = cfinal.val;
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+		else if((gpu->BLDCNT & 0x10) && windowEffect)
+		{
+			if (gpu->BLDY_EVY != 0x0)
+			{
+				color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF];
+			}
+
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+	}
+
+	return windowDraw;
+}
+
+static BOOL setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	BOOL windowDraw = TRUE, windowEffect = TRUE;
+
+	renderline_checkWindows(gpu, 4, x, &windowDraw, &windowEffect);
+
+	if(windowDraw)
+	{
+		if((type == 1) && windowEffect)
+		{
+			int bg_under = gpu->bgPixels[x];
+			u16 final = color;
+
+			/* If the layer we are drawing on is selected as 2nd source, we can blend */
+			if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+				final = cfinal.val;
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+		else if((gpu->BLDCNT & 0x10) && windowEffect)
+		{
+			if (gpu->BLDY_EVY != 0x0)
+			{
+				color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF];
+			}
+
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 4;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			gpu->bgPixels[x] = 4;
 		}
 	}
 
@@ -1541,8 +1905,9 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * dst_a
 		if ((color&0x8000)&&(prio<=prioTab[sprX]))
 		{
 			/* if we don't draw, do not set prio, or else */
-			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
+		//	if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
 			{
+				T2WriteWord(dst, (sprX<<1), color);
 				dst_alpha[sprX] = alpha;
 				typeTab[sprX] = 3;
 				prioTab[sprX] = prio;
@@ -1567,8 +1932,9 @@ INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
 		{
 			/* if we don't draw, do not set prio, or else */
-			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
+			//if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
 			{
+				T2WriteWord(dst, (sprX<<1), color);
 				dst_alpha[sprX] = 16;
 				typeTab[sprX] = (alpha ? 1 : 0);
 				prioTab[sprX] = prio;
@@ -1596,8 +1962,9 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		if ((palette_entry>0)&&(prio<=prioTab[sprX]))
 		{
 			/* if we don't draw, do not set prio, or else */
-			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX ))
+			//if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX ))
 			{
+				T2WriteWord(dst, (sprX<<1), color);
 				dst_alpha[sprX] = 16;
 				typeTab[sprX] = (alpha ? 1 : 0);
 				prioTab[sprX] = prio;
@@ -1808,8 +2175,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if (colour && (prioTab[sprX]>=prio))
 						{ 
-							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
+							//if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
 							{
+								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
 								dst_alpha[sprX] = 16;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
@@ -1847,8 +2215,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
-							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX))
+						//	if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX))
 							{
+								T2WriteWord(dst, (sprX<<1), colour);
 								dst_alpha[sprX] = spriteInfo->PaletteIndex;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
@@ -1888,8 +2257,9 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if(colour && (prioTab[sprX]>=prio))
 						{
-							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
+							//if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
 							{
+								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
 								dst_alpha[sprX] = 16;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
@@ -2106,8 +2476,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if (colour && (prioTab[sprX]>=prio))
 						{ 
-							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
+						//	if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
 							{
+								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
 								dst_alpha[sprX] = 16;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
@@ -2145,8 +2516,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
-							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX ))
+						//	if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX ))
 							{
+								T2WriteWord(dst, (sprX<<1), colour);
 								dst_alpha[sprX] = spriteInfo->PaletteIndex;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
@@ -2185,8 +2557,9 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if(colour && (prioTab[sprX]>=prio))
 						{
-							if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord (pal, colour<<1), sprX))
+						//	if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord (pal, colour<<1), sprX))
 							{
+								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
 								dst_alpha[sprX] = 16;
 								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
@@ -2565,7 +2938,9 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 			for (int i=0; i < item->nbPixelsX; i++)
 			{
 				i16=item->PixelsX[i];
-				T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+			//	T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
+			//	gpu->bgPixels[i16] = 4;
+				gpu->setFinalColorSpr(gpu, (i16<<1), dst, T2ReadWord(spr, (i16<<1)), sprAlpha[i16], sprType[i16], i16);
 			}
 		}
 	}
