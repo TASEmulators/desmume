@@ -622,40 +622,32 @@ static BOOL setFinalBGColorSpecialNone (GPU *gpu, u32 passing, u8 bgnum, u8 *dst
 
 static BOOL setFinalBGColorSpecialBlend (GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x)
 {
-	if ((gpu->BLDCNT >> bgnum)&1 && gpu->BLDALPHA_EVA)
+	if(gpu->BLDCNT & (1 << bgnum))
 	{
-		u16 sourceFraction = gpu->BLDALPHA_EVA, sourceR, sourceG, sourceB,targetFraction;
-		if (!sourceFraction) return 0;
+		int bg_under = gpu->bgPixels[x];
+		u16 final = color;
 
-		// no fraction of this BG to be showed, so don't do anything
-		sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
-		// weighted component from color to draw
-		sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
-		sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
-		targetFraction = gpu->BLDALPHA_EVB;
-		if (targetFraction) {
-		// when we dont take any fraction from existing pixel, we can just draw
-			u16 targetR, targetG, targetB;
-			color = T2ReadWord(dst, passing) ;
-			//if (color & 0x8000) {
-			// the existing pixel is not invisible
-				targetR = ((color & 0x1F) * targetFraction) >> 4 ;  // weighted component from color we draw on
-				targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
-				targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
-				// limit combined components to 31 max
-				sourceR = std::min(0x1F,targetR+sourceR) ;
-				sourceG = std::min(0x1F,targetG+sourceG) ;
-				sourceB = std::min(0x1F,targetB+sourceB) ;
-			//}
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if(gpu->BLDCNT & (0x100 << bg_under))
+		{
+			COLOR c1, c2, cfinal;
+
+			c1.val = color;
+			c2.val = T2ReadWord(dst, passing);
+
+			cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+			cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+			final = cfinal.val;
 		}
-		color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
 
-		T2WriteWord(dst, passing, color);
+		T2WriteWord(dst, passing, (final | 0x8000));
 		gpu->bgPixels[x] = bgnum;
 	}
 	else
 	{
-		T2WriteWord(dst, passing, color);
+		T2WriteWord(dst, passing, (color | 0x8000));
 		gpu->bgPixels[x] = bgnum;
 	}
 
@@ -752,43 +744,34 @@ static BOOL setFinalBGColorSpecialBlendWnd (GPU *gpu, u32 passing, u8 bgnum, u8 
 	
 	renderline_checkWindows(gpu,bgnum,x, &windowDraw, &windowEffect);
 
-	if (((gpu->BLDCNT >> bgnum)&1) && windowEffect)   // the bg to draw has a special color effect
+	if(windowDraw)
 	{
-		u16 sourceFraction = gpu->BLDALPHA_EVA,
-			sourceR, sourceG, sourceB,targetFraction;
-		if (!sourceFraction) 
-			return 0;
-		// no fraction of this BG to be showed, so don't do anything
-		sourceR = ((color & 0x1F) * sourceFraction) >> 4 ;
-		// weighted component from color to draw
-		sourceG = (((color>>5) & 0x1F) * sourceFraction) >> 4 ;
-		sourceB = (((color>>10) & 0x1F) * sourceFraction) >> 4 ;
-		targetFraction = gpu->BLDALPHA_EVB;
-		if (targetFraction) {
-		// when we dont take any fraction from existing pixel, we can just draw
-			u16 targetR, targetG, targetB;
-			color = T2ReadWord(dst, passing) ;
-			//if (color & 0x8000) {
-			// the existing pixel is not invisible
-				targetR = ((color & 0x1F) * targetFraction) >> 4 ;  // weighted component from color we draw on
-				targetG = (((color>>5) & 0x1F) * targetFraction) >> 4 ;
-				targetB = (((color>>10) & 0x1F) * targetFraction) >> 4 ;
-				// limit combined components to 31 max
-				sourceR = std::min(0x1F,targetR+sourceR) ;
-				sourceG = std::min(0x1F,targetG+sourceG) ;
-				sourceB = std::min(0x1F,targetB+sourceB) ;
-			//}
-		}
-		color = (sourceR & 0x1F) | ((sourceG & 0x1F) << 5) | ((sourceB & 0x1F) << 10) | 0x8000 ;
-
-		T2WriteWord(dst, passing, color);
-		gpu->bgPixels[x] = bgnum;
-	}
-	else
-	{
-		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		if((gpu->BLDCNT & (1 << bgnum)) && windowEffect)
 		{
-			T2WriteWord(dst, passing, color);
+			int bg_under = gpu->bgPixels[x];
+			u16 final = color;
+
+			/* If the layer we are drawing on is selected as 2nd source, we can blend */
+			if(gpu->BLDCNT & (0x100 << bg_under))
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = std::min<int>(31, ((c1.bits.red * gpu->BLDALPHA_EVA / 16) + (c2.bits.red * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.green = std::min<int>(31, ((c1.bits.green * gpu->BLDALPHA_EVA / 16) + (c2.bits.green * gpu->BLDALPHA_EVB / 16)));
+				cfinal.bits.blue = std::min<int>(31, ((c1.bits.blue * gpu->BLDALPHA_EVA / 16) + (c2.bits.blue * gpu->BLDALPHA_EVB / 16)));
+
+				final = cfinal.val;
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			gpu->bgPixels[x] = bgnum;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
 			gpu->bgPixels[x] = bgnum;
 		}
 	}
@@ -1236,7 +1219,7 @@ static BOOL setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 colo
 		u16 final = color;
 
 		/* If the layer we are drawing on is selected as 2nd source, we can blend */
-		if(gpu->BLDCNT & (1 << (8 + bg_under)))
+		if(gpu->BLDCNT & (0x100 << bg_under))
 		{
 			/* Test for easy cases like alpha = min or max */
 			if(alpha == 16)
@@ -1347,7 +1330,7 @@ static BOOL setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 			u16 final = color;
 
 			/* If the layer we are drawing on is selected as 2nd source, we can blend */
-			if(gpu->BLDCNT & (1 << (8 + bg_under)))
+			if(gpu->BLDCNT & (0x100 << bg_under))
 			{
 				/* Test for easy cases like alpha = min or max */
 				if(alpha == 16)
