@@ -1529,8 +1529,8 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * prioTab, 
-							   u8 prio, int lg, int sprX, int x, int xdir) 
+INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, 
+							   u8 prio, int lg, int sprX, int x, int xdir, u8 alpha) 
 {
 	int i; u16 color;
 	for(i = 0; i < lg; i++, ++sprX, x+=xdir)
@@ -1542,13 +1542,17 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * prioT
 		{
 			/* if we don't draw, do not set prio, or else */
 			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
+			{
+				dst_alpha[sprX] = alpha;
+				typeTab[sprX] = 3;
 				prioTab[sprX] = prio;
+			}
 		}
 	}
 }
 
 INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
-								u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
+								u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
 {
 	int i; 
 	u8 palette_entry; 
@@ -1564,13 +1568,17 @@ INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		{
 			/* if we don't draw, do not set prio, or else */
 			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX))
+			{
+				dst_alpha[sprX] = 16;
+				typeTab[sprX] = (alpha ? 1 : 0);
 				prioTab[sprX] = prio;
+			}
 		}
 	}
 }
 
 INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
-								u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
+								u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
 {
 	int i; 
 	u8 palette, palette_entry;
@@ -1589,7 +1597,11 @@ INLINE void render_sprite_16 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 		{
 			/* if we don't draw, do not set prio, or else */
 			if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, color, sprX ))
+			{
+				dst_alpha[sprX] = 16;
+				typeTab[sprX] = (alpha ? 1 : 0);
 				prioTab[sprX] = prio;
+			}
 		}
 	}
 }
@@ -1670,7 +1682,7 @@ INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 /*****************************************************************************/
 //			SPRITE RENDERING
 /*****************************************************************************/
-void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
+void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
@@ -1797,7 +1809,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 						if (colour && (prioTab[sprX]>=prio))
 						{ 
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
+							{
+								dst_alpha[sprX] = 16;
+								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -1832,7 +1848,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX))
+							{
+								dst_alpha[sprX] = spriteInfo->PaletteIndex;
+								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -1869,7 +1889,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 						if(colour && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
+							{
+								dst_alpha[sprX] = 16;
+								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -1918,7 +1942,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 				}
 				CHECK_SPRITE(1);
 
-				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
+				render_sprite_BMP (gpu, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 				continue;
 			}
 				
@@ -1933,7 +1957,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
 				//sprwin test hack - to enable, only draw win and not sprite
-				render_sprite_256 (gpu, l, dst, src, pal, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+				render_sprite_256 (gpu, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 				//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 
 				continue;
@@ -1946,7 +1970,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 			pal += (spriteInfo->PaletteIndex<<4);
 			
 			//sprwin test hack - to enable, only draw win and not sprite
-			render_sprite_16 (gpu, l, dst, src, pal, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+			render_sprite_16 (gpu, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 			//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 		}
 	}
@@ -1957,7 +1981,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 #endif
 }
 
-void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
+void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
@@ -2083,7 +2107,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 						if (colour && (prioTab[sprX]>=prio))
 						{ 
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
+							{
+								dst_alpha[sprX] = 16;
+								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -2118,7 +2146,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX ))
+							{
+								dst_alpha[sprX] = spriteInfo->PaletteIndex;
+								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -2154,7 +2186,11 @@ void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 						if(colour && (prioTab[sprX]>=prio))
 						{
 							if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord (pal, colour<<1), sprX))
+							{
+								dst_alpha[sprX] = 16;
+								typeTab[sprX] = spriteInfo->Mode;
 								prioTab[sprX] = prio;
+							}
 						}
 					}
 
@@ -2202,7 +2238,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 				}
 				CHECK_SPRITE(2);
 
-				render_sprite_BMP (gpu, l, dst, (u16*)src, prioTab, prio, lg, sprX, x, xdir);
+				render_sprite_BMP (gpu, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 
 				continue;
 			}
@@ -2218,7 +2254,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
 				render_sprite_256 (gpu, l, dst, src, pal,
-					prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+					dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 
 				continue;
 			}
@@ -2230,7 +2266,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * buf_under, u8 * dst, u8 * prioTab)
 
 			pal += (spriteInfo->PaletteIndex<<4);
 			render_sprite_16 (gpu, l, dst, src, pal,
-				prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+				dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 		}
 	}
 
@@ -2412,6 +2448,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	u8 * dst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
 	itemsForPriority_t * item;
 	u8 spr[512];
+	u8 sprAlpha[256];
+	u8 sprType[256];
 	u8 sprPrio[256];
 	u8 prio;
 	u16 i16;
@@ -2445,6 +2483,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 				!gpu->LayersEnable[4]) return;
 
 	// init background color & priorities
+	memset(sprAlpha, 0, 256);
+	memset(sprType, 0, 256);
 	memset(sprPrio,0xFF,256);
 	memset(sprWin,0,256);
 	
@@ -2457,7 +2497,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	if (gpu->LayersEnable[4]) 
 	{
 		for(int i = 0; i< 256; ++i) T2WriteWord(spr, i << 1, c);
-		gpu->spriteRender(gpu, l, dst, spr, sprPrio);
+		gpu->spriteRender(gpu, l, spr, sprAlpha, sprType, sprPrio);
 
 		for(int i = 0; i<256; i++) 
 		{
