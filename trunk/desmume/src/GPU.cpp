@@ -288,6 +288,8 @@ void GPU_Reset(GPU *g, u8 l)
 
 	g->bgPrio[4] = 0xFF;
 
+	g->bg0HasHighestPrio = TRUE;
+
 	if(g->core == GPU_SUB)
 	{
 		g->oam = (OAM *)(ARM9Mem.ARM9_OAM + ADDRESS_STEP_1KB);
@@ -356,6 +358,20 @@ static void GPU_resortBGs(GPU *gpu)
 		item = &(gpu->itemsForPriority[prio]);
 		item->BGs[item->nbBGs]=i;
 		item->nbBGs++;
+	}
+
+	int bg0Prio = gpu->dispx_st->dispx_BGxCNT[0].bits.Priority;
+	gpu->bg0HasHighestPrio = TRUE;
+	for(i = 1; i < 4; i++)
+	{
+		if(gpu->LayersEnable[i])
+		{
+			if(gpu->dispx_st->dispx_BGxCNT[i].bits.Priority < bg0Prio)
+			{
+				gpu->bg0HasHighestPrio = FALSE;
+				break;
+			}
+		}
 	}
 	
 #if 0
@@ -1213,7 +1229,7 @@ static BOOL setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 colo
 {
 	/* We can blend if the 3D layer is selected as 1st target, */
 	/* but also if the 3D layer has the highest prio. */
-	if((gpu->BLDCNT & 0x1) || (gpu->dispx_st->dispx_BGxCNT[0].bits.Priority == 0))
+	if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
 	{
 		int bg_under = gpu->bgPixels[x];
 		u16 final = color;
@@ -1324,7 +1340,7 @@ static BOOL setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 	{
 		/* We can blend if the 3D layer is selected as 1st target, */
 		/* but also if the 3D layer has the highest prio. */
-		if(((gpu->BLDCNT & 0x1) && windowEffect) || (gpu->dispx_st->dispx_BGxCNT[0].bits.Priority == 0))
+		if(((gpu->BLDCNT & 0x1) && windowEffect) || gpu->bg0HasHighestPrio)
 		{
 			int bg_under = gpu->bgPixels[x];
 			u16 final = color;
@@ -1473,7 +1489,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 	if(!bgCnt->Palette_256)    // color: 16 palette entries
 	{
-		if (bgCnt->Mosaic_Enable){
+		if (bgCnt->Mosaic_Enable && 0){
 //test NDS: #2 of http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192
 
 			u8 mw = (mosaic & 0xF) +1 ;            // horizontal granularity of the mosaic
