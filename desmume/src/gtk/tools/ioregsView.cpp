@@ -1,5 +1,6 @@
 /* ioregsView.cpp - this file is part of DeSmuME
  *
+ * Copyright (C) 2006 Thoduv
  * Copyright (C) 2006,2007 DeSmuME Team
  *
  * This file is free software; you can redistribute it and/or modify
