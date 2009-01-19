@@ -1672,7 +1672,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
 
-FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 palShift) {
+FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
 	
@@ -1685,7 +1685,7 @@ FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, in
 		gpu->setFinalColorBck(gpu,0,num,dst, color,i);
 }
 
-FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 palShift) {
+FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u8 palette_entry;
 	u16 x, y, color;
 	TILEENTRY tileentry;
@@ -1696,12 +1696,12 @@ FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, i
 	y = (tileentry.bits.VFlip) ? 7 - (auxY&7) : (auxY&7);
 
 	palette_entry = tile[(tileentry.bits.TileNum<<6)+(y<<3)+x];
-	color = T1ReadWord(pal, (palette_entry + (tileentry.bits.Palette<<palShift)) << 1);
+	color = T1ReadWord(pal, (palette_entry + (extPal ? (tileentry.bits.Palette<<8) : 0)) << 1);
 	if (palette_entry>0)
 		gpu->setFinalColorBck(gpu,0,num,dst, color, i);
 }
 
-FORCEINLINE void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 palShift) {
+FORCEINLINE void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u8 palette_entry;
 	u16 color;
 
@@ -1712,7 +1712,7 @@ FORCEINLINE void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 
 
 }
 
-FORCEINLINE void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 palShift) {
+FORCEINLINE void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u16 color;
 
 	color = T1ReadWord(map, (auxX + auxY * lg) << 1);
@@ -1721,10 +1721,10 @@ FORCEINLINE void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 
 
 }
 
-typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal , int i, u16 H, u8 palShift);
+typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal , int i, u16 H, u8 extPal);
 
 template<rot_fun fun>
-FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, u8 * map, u8 * tile, u8 * pal, u8 palShift)
+FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, u8 * map, u8 * tile, u8 * pal, u8 extPal)
 {
 	ROTOCOORD x, y;
 
@@ -1749,7 +1749,7 @@ FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, 
 		}
 		
 		if ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht))
-			fun(gpu, num, auxX, auxY, wh, dst, map, tile, pal, i, H, palShift);
+			fun(gpu, num, auxX, auxY, wh, dst, map, tile, pal, i, H, extPal);
 		dst += 2;
 		x.val += dx;
 		y.val += dy;
@@ -1757,12 +1757,12 @@ FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, 
 }
 
 template<rot_fun fun>
-FORCEINLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, u8 * map, u8 * tile, u8 * pal, u8 palShift)
+FORCEINLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, u8 * map, u8 * tile, u8 * pal, u8 extPal)
 {
 	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	s32 wh = gpu->BGSize[num][0];
 	s32 ht = gpu->BGSize[num][1];
-	rot_scale_op<fun>(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt->PaletteSet_Wrap, map, tile, pal, palShift);	
+	rot_scale_op<fun>(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt->PaletteSet_Wrap, map, tile, pal, extPal);	
 }
 
 
@@ -1802,7 +1802,7 @@ FORCEINLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16
 			pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		if (!pal) return;
 		// 16  bit bgmap entries
-		apply_rot_fun<rot_tiled_16bit_entry>(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, map, tile, pal, (dispCnt->ExBGxPalette_Enable ? 8 : 4));
+		apply_rot_fun<rot_tiled_16bit_entry>(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, map, tile, pal, dispCnt->ExBGxPalette_Enable);
 		return;
 	case 2 :
 		// 256 colors 
