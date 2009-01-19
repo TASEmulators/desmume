@@ -624,6 +624,8 @@ struct _GPU
 
 	u8 bgPrio[5];
 
+	BOOL bg0HasHighestPrio;
+
 	OAM * oam;
 	u32	sprMem;
 	u8 sprBoundary;
