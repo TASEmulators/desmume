@@ -1491,7 +1491,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 	if(!bgCnt->Palette_256)    // color: 16 palette entries
 	{
-		if (bgCnt->Mosaic_Enable && 0){
+		if (bgCnt->Mosaic_Enable){
 //test NDS: #2 of http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192
 
 			u8 mw = (mosaic & 0xF) +1 ;            // horizontal granularity of the mosaic
