@@ -192,7 +192,7 @@ void DISP_FIFOsend(u32 val)
 
 u32 DISP_FIFOrecv()
 {
-	if (disp_fifo.tail == disp_fifo.head) return (0); // FIFO is empty
+	//if (disp_fifo.tail == disp_fifo.head) return (0); // FIFO is empty
 	u32 val = disp_fifo.buf[disp_fifo.head];
 	disp_fifo.head++;
 	if (disp_fifo.head > 0x5FFF)
