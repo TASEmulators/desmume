@@ -1636,6 +1636,46 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 	return windowDraw;
 }
 
+//this can be extended to sprites by considering the sprites a 5th layer
+void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
+{
+	if(!opaque) color = 0xFFFF;
+	else color &= 0x7FFF;
+
+	u8 y = gpu->currLine;
+
+	//I intend to cache all this at the beginning of line rendering
+	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[bgnum].bits;
+	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
+	bool enabled = bgCnt->Mosaic_Enable;
+	u8 mw = (mosaic_control & 0xF) +1 ;            // horizontal granularity of the mosaic
+	u8 mh = ((mosaic_control>>4) & 0xF) +1 ;       // vertical granularity of the mosaic
+
+	//mosaic test hacks
+	//mw = 4;
+	//mh = 4;
+	//enabled = true;
+
+	//I intend to make all this a 16x256 lookup table
+	if(enabled)
+	{
+		bool x_zero = (x%mw)==0;
+		bool y_zero = (y%mh)==0;
+		int x_int;
+		if(enabled)
+			x_int = x/mw*mw;
+		else
+			x_int = x;
+
+		if(x_zero && y_zero) {}
+		else color = gpu->MosaicColors.bg[bgnum][x_int];
+		gpu->MosaicColors.bg[bgnum][x] = color;
+	}
+
+	if(color != 0xFFFF)
+		gpu->setFinalColorBck(gpu,0,bgnum,dst,color,x);
+}
+
 /*****************************************************************************/
 //			BACKGROUND RENDERING -TEXT-
 /*****************************************************************************/
@@ -1656,7 +1696,6 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	u16 yoff;
 	u16 x      = 0;
 	u16 xfin;
-	u16 mosaic = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
 
 	s8 line_dir = 1;
 	u8 pt_xor   = 0;
@@ -1684,139 +1723,62 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 
 	if(!bgCnt->Palette_256)    // color: 16 palette entries
 	{
-		if (bgCnt->Mosaic_Enable){
-//test NDS: #2 of http://desmume.sourceforge.net/forums/index.php?action=vthread&forum=2&topic=50&page=0#msg192
+		yoff = ((YBG&7)<<2);
+		xfin = 8 - (xoff&7);
+		for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
+		{
+			u16 tilePalette = 0;
+			tmp = ((xoff&wmask)>>3);
+			mapinfo = map + (tmp&0x1F) * 2;
+			if(tmp>31) mapinfo += 32*32*2;
+			tileentry.val = T1ReadWord(mapinfo, 0);
 
-			u8 mw = (mosaic & 0xF) +1 ;            // horizontal granularity of the mosaic
-			u8 mh = ((mosaic>>4) & 0xF) +1 ;       // vertical granularity of the mosaic
-			YBG = (YBG / mh) * mh ;                         // align y by vertical granularity
-			yoff = ((YBG&7)<<2);
+			tilePalette = (tileentry.bits.Palette*16);
 
-			xfin = 8 - (xoff&7);
-			for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
+			line = (u8 * )tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip) ? (7*4)-yoff : yoff);
+			
+			if(tileentry.bits.HFlip)
 			{
-				u8 pt = 0, save = 0;
-				tmp = ((xoff&(lg-1))>>3);
-				mapinfo = map + (tmp&0x1F) * 2;
-				if(tmp>31) mapinfo += 32*32*2;
-				tileentry.val = T1ReadWord(mapinfo, 0);
+				line += (3 - ((xoff&7)>>1));
+				for(; x < xfin; line --) 
+				{	
+					u8 currLine = *line;
 
-				line = (u8*)tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip)? (7*4)-yoff:yoff);
-
-				if(tileentry.bits.HFlip)
-				{
-					line += 3 - ((xoff&7)>>1);
-					line_dir = -1;
-					pt_xor = 0;
-				} else {
-					line += ((xoff&7)>>1);
-					line_dir = 1;
-					pt_xor = 1;
-				}
-// XXX
-				for(; x < xfin; ) {
-					if (!(pt % mw)) {               // only update the color we draw every n mw pixels
-						if ((pt & 1)^pt_xor) {
-							save = (*line) & 0xF ;
-						} else {
-							save = (*line) >> 4 ;
-						}
+					if(!(xoff&1))
+					{
+						color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
+						__setFinalColorBck(gpu,0,num,dst,color,x,currLine>>4);
+						dst += 2; x++; xoff++;
 					}
 					
-					color = T1ReadWord(pal, ((save) + (tileentry.bits.Palette*16)) << 1);
-					if (save) 
-						gpu->setFinalColorBck(gpu,0,num,dst,color,x);
-					dst += 2; 
-					x++; 
-					xoff++;
-
-					pt++ ;
-					if (!(pt % mw)) {               // next pixel next possible color update
-						if ((pt & 1)^pt_xor) {
-							save = (*line) & 0xF ;
-						} else {
-							save = (*line) >> 4 ;
-						}
-					}
-
-					color = T1ReadWord(pal, ((save) + (tileentry.bits.Palette*16)) << 1);
-					if (save) 
-						gpu->setFinalColorBck(gpu,0,num,dst,color,x);
-					dst += 2; 
-					x++; 
-					xoff++;
-
-					line+=line_dir; pt++ ;
+					color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
+					__setFinalColorBck(gpu,0,num,dst,color,x,currLine&0xF);
+					dst += 2; x++; xoff++;
 				}
-			}
-		} else {                // no mosaic mode
-			yoff = ((YBG&7)<<2);
-			xfin = 8 - (xoff&7);
-			for(x = 0; x < LG; xfin = std::min<u16>(x+8, LG))
-			{
-				u16 tilePalette = 0;
-				tmp = ((xoff&wmask)>>3);
-				mapinfo = map + (tmp&0x1F) * 2;
-				if(tmp>31) mapinfo += 32*32*2;
-				tileentry.val = T1ReadWord(mapinfo, 0);
-
-				tilePalette = (tileentry.bits.Palette*16);
-
-				line = (u8 * )tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip) ? (7*4)-yoff : yoff);
-				
-				if(tileentry.bits.HFlip)
+			} else {
+				line += ((xoff&7)>>1);
+				for(; x < xfin; line ++) 
 				{
-					line += (3 - ((xoff&7)>>1));
-					for(; x < xfin; line --) 
-					{	
-						u8 currLine = *line;
+					u8 currLine = *line;
 
-						if(!(xoff&1))
-						{
-							if (currLine>>4) 
-							{
-								color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-								gpu->setFinalColorBck(gpu,0,num,dst,color,x);
-							}
-							dst += 2; x++; xoff++;
-						}
-						
-						if (currLine&0xF) 
-						{
-							color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-							gpu->setFinalColorBck(gpu,0,num,dst,color,x);
-						}
-						dst += 2; x++; xoff++;
-					}
-				} else {
-					line += ((xoff&7)>>1);
-					for(; x < xfin; line ++) 
+					if(!(xoff&1))
 					{
-						u8 currLine = *line;
+						color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
+						__setFinalColorBck(gpu,0,num,dst,color,x,currLine&0xF);
 
-						if(!(xoff&1))
-						{
-							if (currLine&0xF) 
-							{
-								color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-								gpu->setFinalColorBck(gpu,0,num,dst,color,x);
-							}
-
-							dst += 2; x++; xoff++;
-						}
-
-						if (currLine>>4)  
-						{
-							color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-							gpu->setFinalColorBck(gpu,0,num,dst,color,x);
-						}
 						dst += 2; x++; xoff++;
 					}
+
+					color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
+					__setFinalColorBck(gpu,0,num,dst,color,x,currLine>>4);
+					dst += 2; x++; xoff++;
 				}
 			}
 		}
 		return;
 	}
+
+	//256-color BG
 
 	if(dispCnt->ExBGxPalette_Enable)  // color: extended palette
 	{
@@ -1851,8 +1813,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 			else
 				color = T1ReadWord(pal, (*line) << 1);
 
-			if (*line)
-				gpu->setFinalColorBck(gpu,0,num,dst,color,x);
+			__setFinalColorBck(gpu,0,num,dst,color,x,*line);
 			
 			dst += 2; x++; xoff++;
 
