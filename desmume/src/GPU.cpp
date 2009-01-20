@@ -3181,7 +3181,10 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	}
 
 	if (gpu->core == GPU_MAIN) 
+	{
 		GPU_ligne_DispCapture(l);
+		if (l == 192) { disp_fifo.head = disp_fifo.tail = 0; }
+	}
 	GPU_ligne_MasterBrightness(screen, l);
 }
 
