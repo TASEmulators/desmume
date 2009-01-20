@@ -47,6 +47,7 @@ static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];
 char pathFilenameToROMwithoutExt[MAX_PATH];
+char gameCodeTxt[19];
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -350,7 +351,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	u32					size, mask;
 	u8					*data;
 	char				*noext;
-	char				*buf[MAX_PATH];
+	char				buf[MAX_PATH];
 	char				extROM[MAX_PATH];
 	char				extROM2[5];
 
@@ -366,7 +367,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	for (int t = strlen(filename); t>0; t--)
 		if ( (filename[t] == '\\') || (filename[t] == '/') )
 		{
-			strncpy((char *)pathToROM, filename, t+1);
+			strncpy(pathToROM, filename, t+1);
 			break;
 		}
 	
@@ -374,15 +375,15 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 		if ( (filename[t] == '\\') || (filename[t] == '/') || (filename[t] == '.') )
 		{
 			if (filename[t] != '.') return -1;
-			strncpy((char *)pathFilenameToROMwithoutExt, filename, t);
-			strncpy((char *)extROM, filename+t, strlen(filename) - t);
+			strncpy(pathFilenameToROMwithoutExt, filename, t);
+			strncpy(extROM, filename+t, strlen(filename) - t);
 			if (t>4)
-				strncpy((char *)extROM2, filename+(t-3), 3);
+				strncpy(extROM2, filename+(t-3), 3);
 			break;
 		}
 
 	type = ROM_NDS;
-	if ( !strcmp((char *)extROM, ".gba") && !strcmp((char *)extROM2, ".ds")) 
+	if ( !strcmp(extROM, ".gba") && !strcmp(extROM2, ".ds")) 
 			type = ROM_DSGBA;
 
 	file = reader->Init(filename);
@@ -449,15 +450,26 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 #endif
 	delete [] noext;
 
-	strcpy((char *)buf, (char *)pathFilenameToROMwithoutExt);
-	strcat((char *)buf, ".sav");							// DeSmuME memory card	:)
+	strcpy(buf, pathFilenameToROMwithoutExt);
+	strcat(buf, ".sav");							// DeSmuME memory card	:)
 
 	mc_realloc(&MMU.bupmem, bmtype, bmsize);
-	mc_load_file(&MMU.bupmem, (char *)buf);
+	mc_load_file(&MMU.bupmem, buf);
 
-	strcpy((char *)buf, (char *)pathFilenameToROMwithoutExt);
-	strcat((char *)buf, ".dct");							// DeSmuME cheat		:)
-	cheatsInit((char *)buf);
+	strcpy(buf, pathFilenameToROMwithoutExt);
+	strcat(buf, ".dct");							// DeSmuME cheat		:)
+	cheatsInit(buf);
+
+	memset(buf, 0, MAX_PATH);
+	NDS_header * header = NDS_getROMHeader();
+	memcpy(buf, header->gameTile, 12);
+	for (int i=strlen(buf); i<12; i++)
+			strcat(buf, "_");
+	strcat(buf, "_");
+	memcpy(buf+strlen(buf), header->gameCode, 4);
+	memcpy(buf+strlen(buf), &header->makerCode, 2);
+	INFO("Game code: %s\n", buf);
+	strcpy(gameCodeTxt, buf);
 
 	return i;
 }
