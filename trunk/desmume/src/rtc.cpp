@@ -2,7 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright (C) 2006-2008 DeSmuME team
+    Copyright 2008 CrazyMax
+	Copyright 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -18,8 +19,10 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
+
+// TODO: interrupt handler
 
 #include "rtc.h"
 #include "common.h"
@@ -28,233 +31,268 @@
 #include <time.h>
 #include <string.h>
 
-const u8 valRTC[100]=	{	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
-						0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
-						0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
-						0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
-						0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49,
-						0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,
-						0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69,
-						0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79,
-						0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89,
-						0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99	};
-
-const	u8	cmdSizes[8] = {1, 7, 3, 1, 3, 1, 1};
-
-
 typedef struct
 {
-	u16	reg;
-
+	// RTC registers
 	u8	regStatus1;
 	u8	regStatus2;
+	u8	regAdjustment;
+	u8	regFree;
 
+	// BUS
+	u8	_prevSCK;
+	u8	_prevCS;
+	u8	_prevSIO;
+	u8	_SCK;
+	u8	_CS;
+	u8	_SIO;
+	u8	_DD;
+	u16	_REG;
+
+	// command & data
 	u8	cmd;
-
-	u8	dataWrite;
-	u8	bitPosWrite;
-
-	u32	dataRead1;
-	u32	dataRead2;
-	u8	bitPosRead;
-	u8	bitSizeRead;
-	
-	u8	cmdSize;
-	
-	u8	stat;		// 0 - write, 1 - read
+	u8	cmdStat;
+	u8	bitsCount;
+	u8	data[8];
 } _RTC;
 
 _RTC	rtc;
 
-void rtcPost(u8 data);
+u8 cmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
 
-void rtcInit()
+#define toBCD(x) ((x / 10) << 4) | (x % 10);
+
+void rtcRecv()
 {
-	memset(&rtc, 0, sizeof(_RTC));
-}
-
-//====================================================== RTC write
-INLINE void rtcPost(u8 data)
-{
-	if (rtc.cmdSize == 0)
-	{
-		if (rtc.bitPosRead != rtc.bitSizeRead) return;
-		rtc.bitPosRead = 0;
-
-		if ((data & 0x0F) == 0x06)
-			rtc.cmd = reverseBitsInByte(data);
-		else
-			if ((data & 0xF0) == 0x60)
-				rtc.cmd = data;
-				else 
-				{
-					//INFO("RTC ERROR: command not supported\n");
-					return;
-				}
-				
-		rtc.stat = (rtc.cmd & 0x01);
-		rtc.cmd = (rtc.cmd & 0x0E)>>1;
-		//INFO("+++++RTC: execute command 0x%02X (%s)\n", rtc.cmd, rtc.stat?"read":"write");
-		if (!rtc.stat)
-		{
-			rtc.cmdSize = cmdSizes[rtc.cmd];
-			return;
-		} 
-		else 
-			rtc.cmdSize = 0;
-	
-		if (rtc.stat)
-		{
-			rtc.bitSizeRead = 8;
-			rtc.dataRead1 = 0;
-			rtc.dataRead2 = 0;
-			//INFO("RTC: read %X\n", rtc.cmd);
-			switch (rtc.cmd)
-			{
-				case 0:				// status register 1
-					//INFO("RTC: read status 1 (%X) %s\n", rtc.regStatus1, rtc.revBits?"rev":"fwd");
-					rtc.dataRead1 = rtc.regStatus1;
-					rtc.regStatus1 &= 0x0F;
-					break;
-				case 1:				// status register 2
-					//INFO("RTC: read status 2 %s\n", rtc.revBits?"rev":"fwd");
-					rtc.dataRead1 = rtc.regStatus2;
-					break;
-				case 2:				// date & time
-					{
-						time_t	tm;
-						time(&tm);
-						struct tm *tm_local= localtime(&tm);
-						u8 hour = tm_local->tm_hour, noon=0;
-						if (hour>11)
-						{
-							hour-=12;
-							noon=1;
-						}
-						
-						rtc.dataRead2 = ( ((valRTC[hour]) << 0) 
-										//| (noon << 7)
-										| (valRTC[tm_local->tm_min] << 8) 
-										| (valRTC[tm_local->tm_sec] << 16));
-
-						rtc.dataRead1 = ( (valRTC[tm_local->tm_year-100] << 0)
-										| (valRTC[tm_local->tm_mon+1] << 8)
-										| (valRTC[tm_local->tm_mday] << 16)
-										| (valRTC[tm_local->tm_wday] << 24));
-
-						rtc.bitSizeRead = 7 << 3;
-						break;
-					}
-				case 3:				// time
-					{
-						//INFO("RTC: read time\n");
-						time_t	tm;
-						time(&tm);
-						struct tm *tm_local= localtime(&tm);
-						u8 hour = tm_local->tm_hour, noon=0;
-						if (hour>11)
-						{
-							hour-=12;
-							noon=1;
-						}
-
-						rtc.dataRead1 = ( ((valRTC[hour]) << 0) 
-										//| (noon << 6)
-										| (valRTC[tm_local->tm_min] << 8) 
-										| (valRTC[tm_local->tm_sec] << 16));
-						
-						rtc.bitSizeRead = 3 << 3;
-						break;
-					}
-				case 4:				// freq/alarm 1
-					//INFO("RTC: read freq");
-					break;
-				case 5:				// alarm 2
-					//INFO("RTC: read alarm 2\n");
-					break;
-				case 6:				// clock adjust
-					//INFO("RTC: read clock adjust\n");
-					break;
-				case 7:				// free register
-					//INFO("RTC: read free register\n");
-					break;
-				default:
-					rtc.bitSizeRead = 0;
-					break;
-			}
-		}
-		return;
-	}
-	rtc.cmdSize--;
-	//INFO("RTC: write %X val=%X\n", rtc.cmd, data);
+	//INFO("RTC Read command 0x%02X\n", rtc.cmd);
+	memset(rtc.data, 0, sizeof(rtc.data));
 	switch (rtc.cmd)
 	{
-		case 0:				// status1
-			//INFO("RTC: write status 1 (%X)\n", data);
-			rtc.regStatus1 = data;
-			if (rtc.regStatus1 & 0x10) 
-			{
-				//INFO("IRQ7\n");
-				NDS_makeARM7Int(7);
-			}
+		case 0:				// status register 1
+			//INFO("RTC: read regstatus1 (0x%02X)\n", rtc.regStatus1);
+			rtc.data[0] = rtc.regStatus1;
+			rtc.regStatus1 &= 0x7F;
 			break;
 		case 1:				// status register 2
-			rtc.regStatus2 = data;
-			//INFO("RTC: write status 2 (%X)\n", data);
+			//INFO("RTC: read regstatus2 (0x%02X)\n", rtc.regStatus1);
+			rtc.data[0] = rtc.regStatus2;
 			break;
 		case 2:				// date & time
-			//INFO("RTC: write date & time (%X)\n", data);
-			break;
+			{
+				//INFO("RTC: read date & time\n");
+				time_t	tm;
+				time(&tm);
+				struct tm *tm_local= localtime(&tm);
+				tm_local->tm_year %= 100;
+				tm_local->tm_mon++;
+				rtc.data[0] = toBCD(tm_local->tm_year);
+				rtc.data[1] = toBCD(tm_local->tm_mon);
+				rtc.data[2] = toBCD(tm_local->tm_mday);
+				rtc.data[3] =  (tm_local->tm_wday + 6) & 7;
+				if (!(rtc.regStatus1 & 0x02))
+				{
+					rtc.data[4] = (tm_local->tm_hour < 12)?0x00:0x40;
+					tm_local->tm_hour %= 12;
+				}
+				rtc.data[4] |= toBCD(tm_local->tm_hour);
+				rtc.data[5] =  toBCD(tm_local->tm_min);
+				rtc.data[6] =  toBCD(tm_local->tm_sec);
+				break;
+			}
 		case 3:				// time
-			//INFO("RTC: write time (%X)\n", data);
-			break;
+			{
+				//INFO("RTC: read time\n");
+				time_t	tm;
+				time(&tm);
+				struct tm *tm_local= localtime(&tm);
+				if (!(rtc.regStatus1 & 0x02))
+				{
+					rtc.data[4] = (tm_local->tm_hour < 12)?0x00:0x40;
+					tm_local->tm_hour %= 12;
+				}
+				rtc.data[0] |= toBCD(tm_local->tm_hour);
+				rtc.data[1] =  toBCD(tm_local->tm_min);
+				rtc.data[2] =  toBCD(tm_local->tm_sec);
+				break;
+			}
 		case 4:				// freq/alarm 1
-			//INFO("RTC: write freq (%X)", data);
+			/*if (cmdBitsSize[0x04] == 8)
+				INFO("RTC: read INT1 freq\n");
+			else
+				INFO("RTC: read INT1 alarm1\n");*/
+			//NDS_makeARM7Int(7);
 			break;
 		case 5:				// alarm 2
-			//INFO("RTC: write alarm 2 (%X)\n", data);
+			//INFO("RTC: read alarm 2\n");
 			break;
 		case 6:				// clock adjust
-			//INFO("RTC: write clock adjust (%X)\n", data);
+			//INFO("RTC: read clock adjust\n");
+			rtc.data[0] = rtc.regAdjustment;
 			break;
 		case 7:				// free register
-			//INFO("RTC: write free register (%X)\n", data);
+			//INFO("RTC: read free register\n");
+			rtc.data[0] = rtc.regFree;
 			break;
-
 	}
 }
 
-u8 rtcRead()
+void rtcSend()
 {
-	u8	val;
+	//INFO("RTC write 0x%02X\n", rtc.cmd);
+	switch (rtc.cmd)
+	{
+		case 0:				// status register 1
+			//INFO("RTC: write regstatus1 0x%02X\n", rtc.data[0]);
+			rtc.regStatus1 &= 0xF1;
+			rtc.regStatus1 |= (rtc.data[0] | 0x0E);
+			break;
+		case 1:				// status register 2
+			//INFO("RTC: write regstatus2 0x%02X\n", rtc.data[0]);
+			rtc.regStatus2 = rtc.data[0];
+			break;
+		case 2:				// date & time
+			//INFO("RTC: write date & time\n");
+		break;
+		case 3:				// time
+			//INFO("RTC: write time\n");
+		break;
+		case 4:				// freq/alarm 1
+			/*if (cmdBitsSize[0x04] == 8)
+				INFO("RTC: write INT1 freq 0x%02X\n", rtc.data[0]);
+			else
+				INFO("RTC: write INT1 alarm1 0x%02X\n", rtc.data[0]);*/
+		break;
+		case 5:				// alarm 2
+			//INFO("RTC: write alarm 2\n");
+		break;
+		case 6:				// clock adjust
+			//INFO("RTC: write clock adjust\n");
+			rtc.regAdjustment = rtc.data[0];
+			break;
+		case 7:				// free register
+			//INFO("RTC: write free register\n");
+			rtc.regFree = rtc.data[0];
+		break;
+	}
+}
 
-	if (rtc.bitPosRead == rtc.bitSizeRead)
-					rtcPost(rtc.cmd);
+void rtcInit() 
+{
+	memset(&rtc, 0, sizeof(_RTC));
+	rtc.regStatus1 |= 0x02;
+}
 
-	if (rtc.bitPosRead > 31)
-		val =  ((rtc.dataRead2 >> rtc.bitPosRead) & 0x01);
-	else
-		val =  ((rtc.dataRead1 >> rtc.bitPosRead) & 0x01);
-	
-	rtc.bitPosRead++;
-	return val;
+u8 rtcRead() 
+{ 
+	//INFO("MMU Read RTC 0x%02X (%03i)\n", rtc._REG, rtc.bitsCount);
+	return (rtc._REG); 
 }
 
 void rtcWrite(u16 val)
 {
-	rtc.reg = val;
+	//INFO("MMU Write RTC 0x%02X (%03i)\n", val, rtc.bitsCount);
+	rtc._DD  = (val & 0x10) >> 4;
+	rtc._SIO = rtc._DD?(val & 0x01):rtc._prevSIO;
+	rtc._SCK = (val & 0x20)?((val & 0x02) >> 1):rtc._prevSCK;
+	rtc._CS  = (val & 0x40)?((val & 0x04) >> 2):rtc._prevCS;
 
-	if (!(rtc.reg & 0x02))
+	switch (rtc.cmdStat)
 	{
-		rtc.dataWrite |= ((val & 0x01) << rtc.bitPosWrite);
-		
-		rtc.bitPosWrite++;
-		if (rtc.bitPosWrite == 8)
-		{
-			//INFO("RTC: write\n");
-			rtcPost(rtc.dataWrite);
-			rtc.bitPosWrite = 0;
-			rtc.dataWrite = 0;
-		}
+		case 0:
+			if ( (!rtc._prevCS) && (rtc._prevSCK) && (rtc._CS) && (rtc._SCK) )
+			{
+				rtc.cmdStat = 1;
+				rtc.bitsCount = 0;
+				rtc.cmd = 0;
+			}
+		break;
+
+		case 1:
+			if (!rtc._CS) 
+			{
+				rtc.cmdStat = 0;
+				break;
+			}
+
+			if (rtc._SCK && rtc._DD) break;
+			if (!rtc._SCK && !rtc._DD) break;
+
+			rtc.cmd |= (rtc._SIO << rtc.bitsCount );
+			rtc.bitsCount ++;
+			if (rtc.bitsCount == 7)
+			{
+				if ( (rtc.cmd & 0x06) != 0x06 )
+				{
+					rtc.cmdStat = 0;
+					//INFO("RTC uknown command 0x02%X\n", rtc.cmd);
+					break;
+				}
+				rtc.cmdStat = 2;
+				rtc.cmd >>= 4;
+				rtc.cmd &= 0x07;
+				//INFO("RTC command 0x%02X\n", rtc.cmd);
+			}
+
+		break;
+		case 2:
+			if (!rtc._CS) 
+			{
+				rtc.cmdStat = 0;
+				break;
+			}
+			if((rtc._prevSCK) && (!rtc._SCK))
+			{
+				rtc.bitsCount = 0;
+				if (rtc.cmd == 0x04)
+				{
+					if (rtc.regStatus2 & 0x0F == 0x04)
+						cmdBitsSize[rtc.cmd] = 24;
+					else
+						cmdBitsSize[rtc.cmd] = 8;
+				}
+				if (rtc._SIO)
+				{
+					rtc.cmdStat = 4;
+					rtcRecv();
+				}
+				else
+				{
+					rtc.cmdStat = 3;
+				}
+			}
+		break;
+
+		case 3:			// write:
+			if( (rtc._prevSCK) && (!rtc._SCK) )
+			{
+				if(rtc._SIO) rtc.data[rtc.bitsCount >> 3] |= (1 << (rtc.bitsCount & 0x07));
+				rtc.bitsCount++;
+				if (rtc.bitsCount == cmdBitsSize[rtc.cmd])
+				{
+					rtcSend();
+					rtc.cmdStat = 0;
+				}
+			}
+		break;
+
+		case 4:			// read:
+			if( (rtc._prevSCK) && (!rtc._SCK) )
+			{
+				rtc._REG = val;
+				if(rtc.data[rtc.bitsCount >> 3] >> (rtc.bitsCount & 0x07) & 0x01) 
+					rtc._REG |= 0x01;
+				else
+					rtc._REG &= ~0x01;
+
+				rtc.bitsCount++;
+				if (rtc.bitsCount == cmdBitsSize[rtc.cmd])
+					rtc.cmdStat = 0;
+			}
+		break;
+
 	}
+
+	rtc._prevSIO = rtc._SIO;
+	rtc._prevSCK = rtc._SCK;
+	rtc._prevCS  = rtc._CS;
 }

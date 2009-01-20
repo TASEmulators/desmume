@@ -2,7 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-	Copyright (C) 2007 shash
+    Copyright 2007 shash
+	Copyright 2007-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -18,7 +19,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include "FIFO.h"
@@ -191,6 +192,7 @@ void DISP_FIFOsend(u32 val)
 
 u32 DISP_FIFOrecv()
 {
+	if (disp_fifo.tail == disp_fifo.head) return (0); // FIFO is empty
 	u32 val = disp_fifo.buf[disp_fifo.head];
 	disp_fifo.head++;
 	if (disp_fifo.head > 0x5FFF)
