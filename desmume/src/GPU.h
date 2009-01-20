@@ -611,6 +611,10 @@ struct _GPU
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
 
+	struct {
+		u16 bg[4][256];
+	} MosaicColors;
+
 	u8 core;
 
 	u8 dispMode;
