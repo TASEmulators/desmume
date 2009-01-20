@@ -1223,7 +1223,7 @@ static BOOL setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 static BOOL setFinal3DColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
 {
 	/* We must blend if the 3D layer has the highest prio */
-	if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+	if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 	{
 		int bg_under = gpu->bgPixels[x];
 		u16 final = color;
@@ -1231,12 +1231,6 @@ static BOOL setFinal3DColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color
 		/* If the layer we are drawing on is selected as 2nd source, we can blend */
 		if(gpu->BLDCNT & (0x100 << bg_under))
 		{
-			/* Test for easy cases like alpha = min or max */
-			if(alpha == 16)
-			{
-				final = color;
-			}
-			else
 			{
 				COLOR c1, c2, cfinal;
 
@@ -1267,7 +1261,7 @@ static BOOL setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 colo
 {
 	/* We can blend if the 3D layer is selected as 1st target, */
 	/* but also if the 3D layer has the highest prio. */
-	if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+	if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 	{
 		int bg_under = gpu->bgPixels[x];
 		u16 final = color;
@@ -1275,12 +1269,6 @@ static BOOL setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 colo
 		/* If the layer we are drawing on is selected as 2nd source, we can blend */
 		if(gpu->BLDCNT & (0x100 << bg_under))
 		{
-			/* Test for easy cases like alpha = min or max */
-			if(alpha == 16)
-			{
-				final = color;
-			}
-			else
 			{
 				COLOR c1, c2, cfinal;
 
@@ -1314,19 +1302,13 @@ static BOOL setFinal3DColorSpecialIncrease(GPU *gpu, u32 passing, u8 *dst, u16 c
 	/* We must blend if the 3D layer has the highest prio */
 	/* But it doesn't seem to have priority over fading, */
 	/* unlike semi-transparent sprites */
-	if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+	if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 	{
 		int bg_under = gpu->bgPixels[x];
 
 		/* If the layer we are drawing on is selected as 2nd source, we can blend */
 		if(gpu->BLDCNT & (0x100 << bg_under))
 		{
-			/* Test for easy cases like alpha = min or max */
-			if(alpha == 16)
-			{
-				final = color;
-			}
-			else
 			{
 				COLOR c1, c2, cfinal;
 
@@ -1368,19 +1350,13 @@ static BOOL setFinal3DColorSpecialDecrease(GPU *gpu, u32 passing, u8 *dst, u16 c
 	/* We must blend if the 3D layer has the highest prio */
 	/* But it doesn't seem to have priority over fading, */
 	/* unlike semi-transparent sprites */
-	if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+	if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 	{
 		int bg_under = gpu->bgPixels[x];
 
 		/* If the layer we are drawing on is selected as 2nd source, we can blend */
 		if(gpu->BLDCNT & (0x100 << bg_under))
 		{
-			/* Test for easy cases like alpha = min or max */
-			if(alpha == 16)
-			{
-				final = color;
-			}
-			else
 			{
 				COLOR c1, c2, cfinal;
 
@@ -1424,7 +1400,7 @@ static BOOL setFinal3DColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 co
 	if(windowDraw)
 	{
 		/* We must blend if the 3D layer has the highest prio */
-		if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+		if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 		{
 			int bg_under = gpu->bgPixels[x];
 			u16 final = color;
@@ -1432,12 +1408,6 @@ static BOOL setFinal3DColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 co
 			/* If the layer we are drawing on is selected as 2nd source, we can blend */
 			if(gpu->BLDCNT & (0x100 << bg_under))
 			{
-				/* Test for easy cases like alpha = min or max */
-				if(alpha == 16)
-				{
-					final = color;
-				}
-				else
 				{
 					COLOR c1, c2, cfinal;
 
@@ -1475,7 +1445,7 @@ static BOOL setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 	{
 		/* We can blend if the 3D layer is selected as 1st target, */
 		/* but also if the 3D layer has the highest prio. */
-		if(((gpu->BLDCNT & 0x1) && windowEffect) || gpu->bg0HasHighestPrio)
+		if((alpha < 16) && (((gpu->BLDCNT & 0x1) && windowEffect) || gpu->bg0HasHighestPrio))
 		{
 			int bg_under = gpu->bgPixels[x];
 			u16 final = color;
@@ -1483,12 +1453,6 @@ static BOOL setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 			/* If the layer we are drawing on is selected as 2nd source, we can blend */
 			if(gpu->BLDCNT & (0x100 << bg_under))
 			{
-				/* Test for easy cases like alpha = min or max */
-				if(alpha == 16)
-				{
-					final = color;
-				}
-				else
 				{
 					COLOR c1, c2, cfinal;
 
@@ -1528,19 +1492,13 @@ static BOOL setFinal3DColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 		/* We must blend if the 3D layer has the highest prio */
 		/* But it doesn't seem to have priority over fading, */
 		/* unlike semi-transparent sprites */
-		if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+		if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 		{
 			int bg_under = gpu->bgPixels[x];
 
 			/* If the layer we are drawing on is selected as 2nd source, we can blend */
 			if(gpu->BLDCNT & (0x100 << bg_under))
 			{
-				/* Test for easy cases like alpha = min or max */
-				if(alpha == 16)
-				{
-					final = color;
-				}
-				else
 				{
 					COLOR c1, c2, cfinal;
 
@@ -1588,19 +1546,13 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 		/* We must blend if the 3D layer has the highest prio */
 		/* But it doesn't seem to have priority over fading, */
 		/* unlike semi-transparent sprites */
-		if((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio)
+		if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
 		{
 			int bg_under = gpu->bgPixels[x];
 
 			/* If the layer we are drawing on is selected as 2nd source, we can blend */
 			if(gpu->BLDCNT & (0x100 << bg_under))
 			{
-				/* Test for easy cases like alpha = min or max */
-				if(alpha == 16)
-				{
-					final = color;
-				}
-				else
 				{
 					COLOR c1, c2, cfinal;
 
