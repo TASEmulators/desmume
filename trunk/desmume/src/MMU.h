@@ -1,9 +1,9 @@
-/*  Copyright (C) 2006 yopyop
+/*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
-    yopyop156.ifrance.com
+    yopyop156.ifrance.com 
 
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2008 DeSmuME team
+	Copyright (C) 2007-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -19,7 +19,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #ifndef MMU_H
@@ -160,7 +160,7 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val);
 void FASTCALL MMU_write16(u32 proc, u32 adr, u16 val);
 void FASTCALL MMU_write32(u32 proc, u32 adr, u32 val);
  
-void FASTCALL MMU_doDMA(u32 proc, u32 num);
+template<int PROCNUM> void FASTCALL MMU_doDMA(u32 num);
 
 /*
  * The base ARM memory interfaces

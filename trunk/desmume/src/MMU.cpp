@@ -1,9 +1,9 @@
-/*  Copyright (C) 2006 yopyop
+/*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
-    yopyop156.ifrance.com
+    yopyop156.ifrance.com 
 
 	Copyright (C) 2007 shash
-	Copyright (C) 2007-2008 DeSmuME team
+	Copyright (C) 2007-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -19,7 +19,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 //#define NEW_IRQ 1
@@ -870,60 +870,61 @@ static void execdiv() {
 	MMU.divRunning = TRUE;
 }
 
-void FASTCALL MMU_doDMA(u32 proc, u32 num)
+template<int PROCNUM> 
+void FASTCALL MMU_doDMA(u32 num)
 {
-	u32 src = DMASrc[proc][num];
-	u32 dst = DMADst[proc][num];
+	u32 src = DMASrc[PROCNUM][num];
+	u32 dst = DMADst[PROCNUM][num];
         u32 taille;
 
 	if(src==dst)
 	{
-		T1WriteLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[proc][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num), T1ReadLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB8 + (0xC*num)) & 0x7FFFFFFF);
 		return;
 	}
 	
-	if((!(MMU.DMACrt[proc][num]&(1<<31)))&&(!(MMU.DMACrt[proc][num]&(1<<25))))
+	if((!(MMU.DMACrt[PROCNUM][num]&(1<<31)))&&(!(MMU.DMACrt[PROCNUM][num]&(1<<25))))
 	{       /* not enabled and not to be repeated */
-		MMU.DMAStartTime[proc][num] = 0;
-		MMU.DMACycle[proc][num] = 0;
-		//MMU.DMAing[proc][num] = FALSE;
+		MMU.DMAStartTime[PROCNUM][num] = 0;
+		MMU.DMACycle[PROCNUM][num] = 0;
+		//MMU.DMAing[PROCNUM][num] = FALSE;
 		return;
 	}
 	
 	
 	/* word count */
-	taille = (MMU.DMACrt[proc][num]&0xFFFF);
+	taille = (MMU.DMACrt[PROCNUM][num]&0xFFFF);
 	
 	// If we are in "Main memory display" mode just copy an entire 
 	// screen (256x192 pixels). 
 	//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
 	//       (under DISP_MMEM_FIFO)
-	if ((MMU.DMAStartTime[proc][num]==4) &&		// Must be in main memory display mode
+	if ((MMU.DMAStartTime[PROCNUM][num]==4) &&		// Must be in main memory display mode
 		(taille==4) &&							// Word must be 4
-		(((MMU.DMACrt[proc][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
+		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
 		taille = 24576; //256*192/2;
 	
-	if(MMU.DMAStartTime[proc][num] == 5)
+	if(MMU.DMAStartTime[PROCNUM][num] == 5)
 		taille *= 0x80;
 	
-	MMU.DMACycle[proc][num] = taille + nds.cycles;
-	MMU.DMAing[proc][num] = TRUE;
-	MMU.CheckDMAs |= (1<<(num+(proc<<2)));
+	MMU.DMACycle[PROCNUM][num] = taille + nds.cycles;
+	MMU.DMAing[PROCNUM][num] = TRUE;
+	MMU.CheckDMAs |= (1<<(num+(PROCNUM<<2)));
 	
-	DMALOG("proc %d, dma %d src %08X dst %08X start %d taille %d repeat %s %08X\r\n",
-		proc, num, src, dst, MMU.DMAStartTime[proc][num], taille,
-		(MMU.DMACrt[proc][num]&(1<<25))?"on":"off",MMU.DMACrt[proc][num]);
+	DMALOG("PROCNUM %d, dma %d src %08X dst %08X start %d taille %d repeat %s %08X\r\n",
+		PROCNUM, num, src, dst, MMU.DMAStartTime[PROCNUM][num], taille,
+		(MMU.DMACrt[PROCNUM][num]&(1<<25))?"on":"off",MMU.DMACrt[PROCNUM][num]);
 	
-	if(!(MMU.DMACrt[proc][num]&(1<<25)))
-		MMU.DMAStartTime[proc][num] = 0;
+	if(!(MMU.DMACrt[PROCNUM][num]&(1<<25)))
+		MMU.DMAStartTime[PROCNUM][num] = 0;
 	
 	// transfer
 	{
 		u32 i=0;
 		// 32 bit or 16 bit transfer ?
-		int sz = ((MMU.DMACrt[proc][num]>>26)&1)? 4 : 2; 
+		int sz = ((MMU.DMACrt[PROCNUM][num]>>26)&1)? 4 : 2; 
 		int dstinc,srcinc;
-		int u=(MMU.DMACrt[proc][num]>>21);
+		int u=(MMU.DMACrt[PROCNUM][num]>>21);
 		switch(u & 0x3) {
 			case 0 :  dstinc =  sz; break;
 			case 1 :  dstinc = -sz; break;
@@ -942,30 +943,25 @@ void FASTCALL MMU_doDMA(u32 proc, u32 num)
 				return;
 		}
 
-		#define DMA_LOOP(PROC) \
-		if ((MMU.DMACrt[proc][num]>>26)&1) \
-			for(; i < taille; ++i) \
-			{ \
-				_MMU_write32<PROC>(dst, _MMU_read32<PROC>(src)); \
-				dst += dstinc; \
-				src += srcinc; \
-			} \
-		else \
-			for(; i < taille; ++i) \
-			{ \
-				_MMU_write16<PROC>(dst, _MMU_read16<PROC>(src)); \
-				dst += dstinc; \
-				src += srcinc; \
-			} \
-
-		if(proc == ARMCPU_ARM9) { DMA_LOOP(ARMCPU_ARM9); }
-		else  { DMA_LOOP(ARMCPU_ARM7); }
-		
+		if ((MMU.DMACrt[PROCNUM][num]>>26)&1)
+			for(; i < taille; ++i)
+			{
+				_MMU_write32<PROCNUM>(dst, _MMU_read32<PROCNUM>(src));
+				dst += dstinc;
+				src += srcinc;
+			}
+		else
+			for(; i < taille; ++i)
+			{
+				_MMU_write16<PROCNUM>(dst, _MMU_read16<PROCNUM>(src));
+				dst += dstinc;
+				src += srcinc;
+			}
 
 		//write back the addresses
-		DMASrc[proc][num] = src;
+		DMASrc[PROCNUM][num] = src;
 		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
-			DMADst[proc][num] = dst;
+			DMADst[PROCNUM][num] = dst;
 	}
 }
 
@@ -1734,15 +1730,18 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 	if((adr >> 24) == 4)
 	{
-		if(adr >= 0x04000380 && adr <= 0x040003BE)
+		switch (adr >> 4)
 		{
-			//toon table
-			((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr-0x04000000)>>1] = val;
-			gfx3d_UpdateToonTable(&((MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(0x380)]);
+						//toon table
+			case 0x0400038:
+			case 0x0400039:
+			case 0x040003A:
+			case 0x040003B:
+				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF)>>1] = val;
+				gfx3d_UpdateToonTable((adr & 0x3F) >> 1, val);
 			return;
 		}
-		/* Address is an IO register */
-		
+		// Address is an IO register
 		switch(adr)
 		{
 			case 0x0400035C:
@@ -2163,7 +2162,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					MMU.DMAStartTime[ARMCPU_ARM9][0] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][0] = v;
 					if(MMU.DMAStartTime[ARMCPU_ARM9][0] == 0)
-						MMU_doDMA(ARMCPU_ARM9, 0);
+						MMU_doDMA<ARMCPU_ARM9>(0);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -2184,7 +2183,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					MMU.DMAStartTime[ARMCPU_ARM9][1] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][1] = v;
 					if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 0)
-						MMU_doDMA(ARMCPU_ARM9, 1);
+						MMU_doDMA<ARMCPU_ARM9>(1);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -2205,7 +2204,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					MMU.DMAStartTime[ARMCPU_ARM9][2] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][2] = v;
 					if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 0)
-						MMU_doDMA(ARMCPU_ARM9, 2);
+						MMU_doDMA<ARMCPU_ARM9>(2);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -2227,7 +2226,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					MMU.DMACrt[ARMCPU_ARM9][3] = v;
 			
 					if(MMU.DMAStartTime[ARMCPU_ARM9][3] == 0)
-						MMU_doDMA(ARMCPU_ARM9, 3);
+						MMU_doDMA<ARMCPU_ARM9>(3);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -2314,13 +2313,15 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x400037:
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				return;
+
 			case 0x400038:
 			case 0x400039:
 			case 0x40003A:
 			case 0x40003B:		//toon table
 				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-				gfx3d_UpdateToonTable(&((MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(0x380)]);
+				gfx3d_UpdateToonTable((adr & 0x3F) >> 1, val);
 				return;
+
 			case 0x400040:
 			case 0x400041:
 			case 0x400042:
@@ -2604,7 +2605,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8, val);
 				if( MMU.DMAStartTime[ARMCPU_ARM9][0] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM9][0] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM9, 0);
+					MMU_doDMA<ARMCPU_ARM9>(0);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -2622,7 +2623,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4, val);
 				if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM9][1] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM9, 1);
+					MMU_doDMA<ARMCPU_ARM9>(1);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -2639,7 +2640,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0, val);
 				if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM9][2] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM9, 2);
+					MMU_doDMA<ARMCPU_ARM9>(2);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -2656,7 +2657,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC, val);
 				if(	MMU.DMAStartTime[ARMCPU_ARM9][3] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM9][3] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM9, 3);
+					MMU_doDMA<ARMCPU_ARM9>(3);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -2697,22 +2698,22 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 					/* launch DMA if start flag was set to "DS Cart" */
 					if(MMU.DMAStartTime[ARMCPU_ARM9][0] == 5)
 					{
-						MMU_doDMA(ARMCPU_ARM9, 0);
+						MMU_doDMA<ARMCPU_ARM9>(0);
 						return;
 					}
 					if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 5)
 					{
-						MMU_doDMA(ARMCPU_ARM9, 1);
+						MMU_doDMA<ARMCPU_ARM9>(1);
 						return;
 					}
 					if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 5)
 					{
-						MMU_doDMA(ARMCPU_ARM9, 2);
+						MMU_doDMA<ARMCPU_ARM9>(2);
 						return;
 					}
 					if(MMU.DMAStartTime[ARMCPU_ARM9][3] == 5)
 					{
-						MMU_doDMA(ARMCPU_ARM9, 3);
+						MMU_doDMA<ARMCPU_ARM9>(3);
 						return;
 					}
 				}
@@ -3379,7 +3380,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					MMU.DMAStartTime[ARMCPU_ARM7][0] = (v>>28) & 0x3;
 					MMU.DMACrt[ARMCPU_ARM7][0] = v;
 					if(MMU.DMAStartTime[ARMCPU_ARM7][0] == 0)
-						MMU_doDMA(ARMCPU_ARM7, 0);
+						MMU_doDMA<ARMCPU_ARM7>(0);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -3400,7 +3401,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					MMU.DMAStartTime[ARMCPU_ARM7][1] = (v>>28) & 0x3;
 					MMU.DMACrt[ARMCPU_ARM7][1] = v;
 					if(MMU.DMAStartTime[ARMCPU_ARM7][1] == 0)
-						MMU_doDMA(ARMCPU_ARM7, 1);
+						MMU_doDMA<ARMCPU_ARM7>(1);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -3421,7 +3422,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					MMU.DMAStartTime[ARMCPU_ARM7][2] = (v>>28) & 0x3;
 					MMU.DMACrt[ARMCPU_ARM7][2] = v;
 					if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 0)
-						MMU_doDMA(ARMCPU_ARM7, 2);
+						MMU_doDMA<ARMCPU_ARM7>(2);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -3443,7 +3444,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					MMU.DMACrt[ARMCPU_ARM7][3] = v;
 
 					if(MMU.DMAStartTime[ARMCPU_ARM7][3] == 0)
-						MMU_doDMA(ARMCPU_ARM7, 3);
+						MMU_doDMA<ARMCPU_ARM7>(3);
 					#ifdef LOG_DMA2
 					//else
 					{
@@ -3597,7 +3598,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB8, val);
 				if( MMU.DMAStartTime[ARMCPU_ARM7][0] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM7][0] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM7, 0);
+					MMU_doDMA<ARMCPU_ARM7>(0);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -3615,7 +3616,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC4, val);
 				if(MMU.DMAStartTime[ARMCPU_ARM7][1] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM7][1] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM7, 1);
+					MMU_doDMA<ARMCPU_ARM7>(1);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -3632,7 +3633,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD0, val);
 				if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM7][2] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM7, 2);
+					MMU_doDMA<ARMCPU_ARM7>(2);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -3649,7 +3650,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDC, val);
 				if(	MMU.DMAStartTime[ARMCPU_ARM7][3] == 0 ||
 					MMU.DMAStartTime[ARMCPU_ARM7][3] == 7)		// Start Immediately
-					MMU_doDMA(ARMCPU_ARM7, 3);
+					MMU_doDMA<ARMCPU_ARM7>(3);
 				#ifdef LOG_DMA2
 				else
 				{
@@ -3692,13 +3693,13 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 					if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 2)
 					{
-						MMU_doDMA(ARMCPU_ARM7, 2);
+						MMU_doDMA<ARMCPU_ARM7>(2);
 						return;
 					}
 					else
 						if(MMU.DMAStartTime[ARMCPU_ARM7][3] == 2)
 					{
-						MMU_doDMA(ARMCPU_ARM7, 3);
+						MMU_doDMA<ARMCPU_ARM7>(3);
 						return;
 					}
 					return;

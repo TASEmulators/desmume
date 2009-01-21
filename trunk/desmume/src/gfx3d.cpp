@@ -1,5 +1,8 @@
-/*
-	Copyright (C) 2008 DeSmuME team
+/*	Copyright (C) 2006 yopyop
+    yopyop156@ifrance.com
+    yopyop156.ifrance.com 
+
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -15,7 +18,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 //This file implements the geometry engine hardware component.
@@ -809,12 +812,15 @@ BOOL gfx3d_glShininess (unsigned long val)
 	return TRUE;
 }
 
-void gfx3d_UpdateToonTable(void* toonTable)
+void gfx3d_UpdateToonTable(u8 offset, u16 val)
 {
-	u16* u16toonTable = (u16*)toonTable;
-	int i;
-	for(i=0;i<32;i++)
-		gfx3d.rgbToonTable[i] = RGB15TO32(u16toonTable[i],255);
+	gfx3d.rgbToonTable[offset] =  RGB15TO32(val, 255);
+}
+
+void gfx3d_UpdateToonTable(u8 offset, u32 val)
+{
+	gfx3d.rgbToonTable[offset] =  RGB15TO32(val & 0xFFFF, 255);
+	gfx3d.rgbToonTable[offset+1] =  RGB15TO32(val >> 8, 255);
 }
 
 static void gfx3d_glTexImage_cache()
