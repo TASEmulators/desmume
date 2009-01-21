@@ -1,22 +1,24 @@
-/*  Copyright (C) 2006 yopyop
-yopyop156@ifrance.com
-yopyop156.ifrance.com
+/*	Copyright (C) 2006 yopyop
+    yopyop156@ifrance.com
+    yopyop156.ifrance.com 
 
-This file is part of DeSmuME
+	Copyright (C) 2008-2009 DeSmuME team
 
-DeSmuME is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+    This file is part of DeSmuME
 
-DeSmuME is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-You should have received a copy of the GNU General Public License
-along with DeSmuME; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include <string.h>
@@ -1117,13 +1119,13 @@ u32 NDS_exec(s32 nb)
 					GPU_ligne(&SubScreen, nds.VCount);
 
 					if(MMU.DMAStartTime[0][0] == 2)
-						MMU_doDMA(0, 0);
+						MMU_doDMA<ARMCPU_ARM9>(0);
 					if(MMU.DMAStartTime[0][1] == 2)
-						MMU_doDMA(0, 1);
+						MMU_doDMA<ARMCPU_ARM9>(1);
 					if(MMU.DMAStartTime[0][2] == 2)
-						MMU_doDMA(0, 2);
+						MMU_doDMA<ARMCPU_ARM9>(2);
 					if(MMU.DMAStartTime[0][3] == 2)
-						MMU_doDMA(0, 3);
+						MMU_doDMA<ARMCPU_ARM9>(3);
 				}
 				nds.lignerendu = TRUE;
 			}
@@ -1137,54 +1139,54 @@ u32 NDS_exec(s32 nb)
 				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFD);
 
 				if(MMU.DMAStartTime[0][0] == 3)
-					MMU_doDMA(0, 0);
+					MMU_doDMA<ARMCPU_ARM9>(0);
 				if(MMU.DMAStartTime[0][1] == 3)
-					MMU_doDMA(0, 1);
+					MMU_doDMA<ARMCPU_ARM9>(1);
 				if(MMU.DMAStartTime[0][2] == 3)
-					MMU_doDMA(0, 2);
+					MMU_doDMA<ARMCPU_ARM9>(2);
 				if(MMU.DMAStartTime[0][3] == 3)
-					MMU_doDMA(0, 3);
+					MMU_doDMA<ARMCPU_ARM9>(3);
 
 				// Main memory display
 				if(MMU.DMAStartTime[0][0] == 4)
 				{
-					MMU_doDMA(0, 0);
+					MMU_doDMA<ARMCPU_ARM9>(0);
 					MMU.DMAStartTime[0][0] = 0;
 				}
 				if(MMU.DMAStartTime[0][1] == 4)
 				{
-					MMU_doDMA(0, 1);
+					MMU_doDMA<ARMCPU_ARM9>(1);
 					MMU.DMAStartTime[0][1] = 0;
 				}
 				if(MMU.DMAStartTime[0][2] == 4)
 				{
-					MMU_doDMA(0, 2);
+					MMU_doDMA<ARMCPU_ARM9>(2);
 					MMU.DMAStartTime[0][2] = 0;
 				}
 				if(MMU.DMAStartTime[0][3] == 4)
 				{
-					MMU_doDMA(0, 3);
+					MMU_doDMA<ARMCPU_ARM9>(3);
 					MMU.DMAStartTime[0][3] = 0;
 				}
 
 				if(MMU.DMAStartTime[1][0] == 4)
 				{
-					MMU_doDMA(1, 0);
+					MMU_doDMA<ARMCPU_ARM7>(0);
 					MMU.DMAStartTime[1][0] = 0;
 				}
 				if(MMU.DMAStartTime[1][1] == 4)
 				{
-					MMU_doDMA(1, 1);
+					MMU_doDMA<ARMCPU_ARM7>(1);
 					MMU.DMAStartTime[0][1] = 0;
 				}
 				if(MMU.DMAStartTime[1][2] == 4)
 				{
-					MMU_doDMA(1, 2);
+					MMU_doDMA<ARMCPU_ARM7>(2);
 					MMU.DMAStartTime[1][2] = 0;
 				}
 				if(MMU.DMAStartTime[1][3] == 4)
 				{
-					MMU_doDMA(1, 3);
+					MMU_doDMA<ARMCPU_ARM7>(3);
 					MMU.DMAStartTime[1][3] = 0;
 				}
 
@@ -1207,22 +1209,22 @@ u32 NDS_exec(s32 nb)
 
 
 					if(MMU.DMAStartTime[0][0] == 1)
-						MMU_doDMA(0, 0);
+						MMU_doDMA<ARMCPU_ARM9>(0);
 					if(MMU.DMAStartTime[0][1] == 1)
-						MMU_doDMA(0, 1);
+						MMU_doDMA<ARMCPU_ARM9>(1);
 					if(MMU.DMAStartTime[0][2] == 1)
-						MMU_doDMA(0, 2);
+						MMU_doDMA<ARMCPU_ARM9>(2);
 					if(MMU.DMAStartTime[0][3] == 1)
-						MMU_doDMA(0, 3);
+						MMU_doDMA<ARMCPU_ARM9>(3);
 
 					if(MMU.DMAStartTime[1][0] == 1)
-						MMU_doDMA(1, 0);
+						MMU_doDMA<ARMCPU_ARM7>(0);
 					if(MMU.DMAStartTime[1][1] == 1)
-						MMU_doDMA(1, 1);
+						MMU_doDMA<ARMCPU_ARM7>(1);
 					if(MMU.DMAStartTime[1][2] == 1)
-						MMU_doDMA(1, 2);
+						MMU_doDMA<ARMCPU_ARM7>(2);
 					if(MMU.DMAStartTime[1][3] == 1)
-						MMU_doDMA(1, 3);
+						MMU_doDMA<ARMCPU_ARM7>(3);
 				}
 				else if(nds.VCount==215) {
 					gfx3d_VBlankEndSignal();

@@ -1,5 +1,8 @@
-/*
-	Copyright (C) 2008 DeSmuME team
+/*	Copyright (C) 2006 yopyop
+    yopyop156@ifrance.com
+    yopyop156.ifrance.com 
+
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -15,7 +18,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #ifndef _GFX3D_H_
@@ -187,7 +190,8 @@ void gfx3d_glPolygonAttrib (unsigned long val);
 void gfx3d_glMaterial0(unsigned long val);
 void gfx3d_glMaterial1(unsigned long val);
 BOOL gfx3d_glShininess (unsigned long val);
-void gfx3d_UpdateToonTable(void* toonTable);
+void gfx3d_UpdateToonTable(u8 offset, u16 val);
+void gfx3d_UpdateToonTable(u8 offset, u32 val);
 void gfx3d_glTexImage(unsigned long val);
 void gfx3d_glTexPalette(unsigned long val);
 void gfx3d_glTexCoord(unsigned long val);
