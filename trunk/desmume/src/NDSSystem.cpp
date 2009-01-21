@@ -493,7 +493,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	else
 	{
 		memcpy(buf, header->gameTile, 12);
-		for (int i=strlen(buf); i<12; i++)
+		for (int j=strlen(buf); j<12; j++)
 				strcat(buf, "_");
 		strcat(buf, "_");
 		memcpy(buf+strlen(buf), header->gameCode, 4);
