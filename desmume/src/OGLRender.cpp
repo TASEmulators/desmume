@@ -492,7 +492,9 @@ static void OGLReset()
 	//clear the framebuffers
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
-
+	needRefreshFramebuffer = false;
+	memset(texMAP, 0, sizeof(texMAP)); 
+	textureMode=TEXMODE_NONE;
 }
 
 static char OGLInit(void)
