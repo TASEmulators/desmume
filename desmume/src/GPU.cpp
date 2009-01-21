@@ -1591,40 +1591,47 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 
 static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
 {
-	if(!opaque) color = 0xFFFF;
-	else color &= 0x7FFF;
-
-	u8 y = gpu->currLine;
-
-	//I intend to cache all this at the beginning of line rendering
 	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[bgnum].bits;
-	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
 	bool enabled = bgCnt->Mosaic_Enable;
-	u8 mw = (mosaic_control & 0xF) +1 ;            // horizontal granularity of the mosaic
-	u8 mh = ((mosaic_control>>4) & 0xF) +1 ;       // vertical granularity of the mosaic
 
-	//mosaic test hacks
-	//mw = 4;
-	//mh = 4;
-	//enabled = true;
+//	if(!opaque) color = 0xFFFF;
+//	else color &= 0x7FFF;
+	if(!opaque)
+		return;
 
-	//I intend to make all this a 16x256 lookup table
 	if(enabled)
 	{
-		bool x_zero = (x%mw)==0;
-		bool y_zero = (y%mh)==0;
-		int x_int;
-		if(enabled)
-			x_int = x/mw*mw;
-		else
-			x_int = x;
+		u8 y = gpu->currLine;
 
-		if(x_zero && y_zero) {}
-		else color = gpu->MosaicColors.bg[bgnum][x_int];
-		gpu->MosaicColors.bg[bgnum][x] = color;
+		//I intend to cache all this at the beginning of line rendering
+		
+		u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
+		u8 mw = (mosaic_control & 0xF) +1 ;            // horizontal granularity of the mosaic
+		u8 mh = ((mosaic_control>>4) & 0xF) +1 ;       // vertical granularity of the mosaic
+
+		//mosaic test hacks
+		//mw = 4;
+		//mh = 4;
+		//enabled = true;
+
+		//I intend to make all this a 16x256 lookup table
+	//	if(enabled)
+		{
+			bool x_zero = (x%mw)==0;
+			bool y_zero = (y%mh)==0;
+			int x_int;
+			if(enabled)
+				x_int = x/mw*mw;
+			else
+				x_int = x;
+
+			if(x_zero && y_zero) {}
+			else color = gpu->MosaicColors.bg[bgnum][x_int];
+			gpu->MosaicColors.bg[bgnum][x] = color;
+		}
 	}
 
-	if(color != 0xFFFF)
+//	if(color != 0xFFFF)
 		gpu->setFinalColorBck(gpu,0,bgnum,dst,color,x);
 }
 
