@@ -1588,7 +1588,6 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 	return windowDraw;
 }
 
-//this can be extended to sprites by considering the sprites a 5th layer
 static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
 {
 	if(!opaque) color = 0xFFFF;
@@ -1627,6 +1626,63 @@ static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 col
 	if(color != 0xFFFF)
 		gpu->setFinalColorBck(gpu,0,bgnum,dst,color,x);
 }
+
+void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+{
+	u8 y = l;
+
+	bool opaque = prioTab[x] <= 4;
+
+	//I intend to cache this at the beginning of line rendering
+	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
+
+	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + gpu->sprNum[x]);
+
+	bool enabled = spriteInfo->Mosaic;
+	u8 mw = (mosaic_control & 0xF) +1 ;            // horizontal granularity of the mosaic
+	u8 mh = ((mosaic_control>>4) & 0xF) +1 ;       // vertical granularity of the mosaic
+
+	//mosaic test hacks
+	//mw = 3;
+	//mh = 3;
+	//enabled = true;
+
+	u16 color = T1ReadWord(dst,x<<1);
+	u8 alpha = dst_alpha[x];
+
+	if(enabled)
+	{
+		bool x_zero = (x%mw)==0;
+		bool y_zero = (y%mh)==0;
+		int x_int;
+		if(enabled)
+			x_int = x/mw*mw;
+		else
+			x_int = x;
+
+		if(x_zero && y_zero) {}
+		else {
+			color = gpu->MosaicColors.obj[x_int].color;
+			alpha = gpu->MosaicColors.obj[x_int].alpha;
+			opaque = gpu->MosaicColors.obj[x_int].opaque;
+		}
+
+		gpu->MosaicColors.obj[x].color = color;
+		gpu->MosaicColors.obj[x].alpha = alpha;
+		gpu->MosaicColors.obj[x].opaque = opaque;
+	}
+
+	T1WriteWord(dst,x<<1,color);
+	dst_alpha[x] = alpha;
+	if(!opaque) prioTab[x] = 0xFF;
+}
+
+void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+{
+	for(int i=0;i<256;i++)
+		mosaicSpriteLinePixel(gpu,i,l,dst,dst_alpha,typeTab,prioTab);
+}
+
 
 /*****************************************************************************/
 //			BACKGROUND RENDERING -TEXT-
@@ -2026,7 +2082,7 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * dst_a
 	}
 }
 
-INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal, 
+INLINE void render_sprite_256 (	GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u8 * src, u16 * pal, 
 								u8 * dst_alpha, u8 * typeTab, u8 * prioTab, u8 prio, int lg, int sprX, int x, int xdir, u8 alpha)
 {
 	int i; 
@@ -2048,6 +2104,7 @@ INLINE void render_sprite_256 (	GPU * gpu, u16 l, u8 * dst, u8 * src, u16 * pal,
 				dst_alpha[sprX] = 16;
 				typeTab[sprX] = (alpha ? 1 : 0);
 				prioTab[sprX] = prio;
+				gpu->sprNum[sprX] = spriteNum;
 			}
 		}
 	}
@@ -2437,7 +2494,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
 				//sprwin test hack - to enable, only draw win and not sprite
-				render_sprite_256 (gpu, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+				render_sprite_256 (gpu, i, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 				//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 
 				continue;
@@ -2736,7 +2793,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 				else
 					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
-				render_sprite_256 (gpu, l, dst, src, pal,
+				render_sprite_256 (gpu, i, l, dst, src, pal,
 					dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 
 				continue;
@@ -2981,6 +3038,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	{
 		for(int i = 0; i< 256; ++i) T2WriteWord(spr, i << 1, c);
 		gpu->spriteRender(gpu, l, spr, sprAlpha, sprType, sprPrio);
+		mosaicSpriteLine(gpu, l, spr, sprAlpha, sprType, sprPrio);
+
 
 		for(int i = 0; i<256; i++) 
 		{
