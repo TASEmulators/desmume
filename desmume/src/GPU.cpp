@@ -1589,7 +1589,7 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 }
 
 //this can be extended to sprites by considering the sprites a 5th layer
-void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
+static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
 {
 	if(!opaque) color = 0xFFFF;
 	else color &= 0x7FFF;
@@ -1650,7 +1650,6 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 	u16 xfin;
 
 	s8 line_dir = 1;
-	u8 pt_xor   = 0;
 	u8 * mapinfo;
 	TILEENTRY tileentry;
 
