@@ -613,7 +613,14 @@ struct _GPU
 
 	struct {
 		u16 bg[4][256];
+		struct {
+			u16 color;
+			u8 alpha, opaque;
+		} obj[256];
 	} MosaicColors;
+
+	u8 sprNum[256];
+
 
 	u8 core;
 
