@@ -214,9 +214,6 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 //#define LOG_DMA2
 //#define LOG_DIV
 
-// brrr... if remove next line - Castlevania DoS freeze when press "Start" ingame... ???!
-char szRomPath[512];
-
 #define DUP2(x)  x, x
 #define DUP4(x)  x, x, x, x
 #define DUP8(x)  x, x, x, x,  x, x, x, x
@@ -558,6 +555,25 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 	addr -= MMU.LCD_VRAM_ADDR[block];
 	return (addr + LCDdata[block][0]);
 }
+
+template<u8 DMA_CHANNEL>
+void DMAtoVRAMmapping()
+{
+	if (DMADst[ARMCPU_ARM9][DMA_CHANNEL] < 0x6000000) return;
+	if (DMADst[ARMCPU_ARM9][DMA_CHANNEL] > 0x661FFFF) return;
+
+	u32 addr = DMADst[ARMCPU_ARM9][DMA_CHANNEL];
+
+	addr &= 0x0FFFFFF;
+	u8	engine = (addr >> 21);
+	addr &= 0x01FFFFF;
+	u8	engine_offset = (addr >> 14);
+	u8	block = MMU.VRAM_MAP[engine][engine_offset];
+	if (block == 7) return;
+	addr -= MMU.LCD_VRAM_ADDR[block];
+	DMADst[ARMCPU_ARM9][DMA_CHANNEL] = (addr + LCDdata[block][0]);
+}
+
 #define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
@@ -2150,6 +2166,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000, v);
 					return;
 				}
+
 			case REG_DMA0CNTH :
 				{
 					u32 v;
@@ -2158,6 +2175,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBA, val);
 					DMASrc[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB0);
 					DMADst[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB4);
+					DMAtoVRAMmapping<0>();
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8);
 					MMU.DMAStartTime[ARMCPU_ARM9][0] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][0] = v;
@@ -2179,6 +2197,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC6, val);
 					DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBC);
 					DMADst[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC0);
+					DMAtoVRAMmapping<1>();
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4);
 					MMU.DMAStartTime[ARMCPU_ARM9][1] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][1] = v;
@@ -2200,6 +2219,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD2, val);
 					DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC8);
 					DMADst[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xCC);
+					DMAtoVRAMmapping<2>();
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0);
 					MMU.DMAStartTime[ARMCPU_ARM9][2] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][2] = v;
@@ -2221,7 +2241,8 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDE, val);
 					DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD4);
 					DMADst[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD8);
-									v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC);
+					DMAtoVRAMmapping<3>();
+					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC);
 					MMU.DMAStartTime[ARMCPU_ARM9][3] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][3] = v;
 			
@@ -2596,10 +2617,12 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_IPCFIFOSEND :
 					IPC_FIFOsend(ARMCPU_ARM9, val);
 				return;
+
 			case REG_DMA0CNTL :
 				//LOG("32 bit dma0 %04X\r\n", val);
 				DMASrc[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB0);
 				DMADst[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB4);
+				DMAtoVRAMmapping<0>();
 				MMU.DMAStartTime[ARMCPU_ARM9][0] = (val>>27) & 0x7;
 				MMU.DMACrt[ARMCPU_ARM9][0] = val;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8, val);
@@ -2618,6 +2641,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				//LOG("32 bit dma1 %04X\r\n", val);
 				DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBC);
 				DMADst[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC0);
+				DMAtoVRAMmapping<1>();
 				MMU.DMAStartTime[ARMCPU_ARM9][1] = (val>>27) & 0x7;
 				MMU.DMACrt[ARMCPU_ARM9][1] = val;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4, val);
@@ -2635,6 +2659,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				//LOG("32 bit dma2 %04X\r\n", val);
 				DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC8);
 				DMADst[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xCC);
+				DMAtoVRAMmapping<2>();
 				MMU.DMAStartTime[ARMCPU_ARM9][2] = (val>>27) & 0x7;
 				MMU.DMACrt[ARMCPU_ARM9][2] = val;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0, val);
@@ -2648,10 +2673,11 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				}
 				#endif
 				return;
-			case 0x040000DC :
+			case REG_DMA3CNTL :
 				//LOG("32 bit dma3 %04X\r\n", val);
 				DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD4);
 				DMADst[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD8);
+				DMAtoVRAMmapping<3>();
 				MMU.DMAStartTime[ARMCPU_ARM9][3] = (val>>27) & 0x7;
 				MMU.DMACrt[ARMCPU_ARM9][3] = val;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC, val);
@@ -3641,7 +3667,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				}
 				#endif
 				return;
-			case 0x040000DC :
+			case REG_DMA3CNTL :
 				//LOG("32 bit dma3 %04X\r\n", val);
 				DMASrc[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD4);
 				DMADst[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD8);
