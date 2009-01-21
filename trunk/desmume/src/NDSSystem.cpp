@@ -1010,6 +1010,10 @@ int NDS_LoadFirmware(const char *filename)
 	return i;
 }
 
+bool skipThisFrame = false;
+
+void NDS_SkipFrame(bool skip) { skipThisFrame = skip; }
+
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
 
@@ -1115,8 +1119,11 @@ u32 NDS_exec(s32 nb)
 
 				if(nds.VCount<192)
 				{
-					GPU_ligne(&MainScreen, nds.VCount);
-					GPU_ligne(&SubScreen, nds.VCount);
+					if(!skipThisFrame)
+					{
+						GPU_ligne(&MainScreen, nds.VCount);
+						GPU_ligne(&SubScreen, nds.VCount);
+					}
 
 					if(MMU.DMAStartTime[0][0] == 2)
 						MMU_doDMA<ARMCPU_ARM9>(0);
@@ -1226,7 +1233,8 @@ u32 NDS_exec(s32 nb)
 					if(MMU.DMAStartTime[1][3] == 1)
 						MMU_doDMA<ARMCPU_ARM7>(3);
 				}
-				else if(nds.VCount==215) {
+				else if(nds.VCount==215)
+				{
 					gfx3d_VBlankEndSignal();
 				}
 				else if(nds.VCount==263)

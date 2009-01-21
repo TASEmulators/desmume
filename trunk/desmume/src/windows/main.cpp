@@ -971,8 +971,8 @@ DWORD WINAPI run()
 				DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
 			   DRV_AviVideoUpdate((u16*)GPU_screen);
 
-               if (!skipnextframe)
-               {
+           //    if (!skipnextframe)
+            //   {
 				   input->process();
 
 				 if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
@@ -1002,10 +1002,15 @@ DWORD WINAPI run()
 					 SetWindowText(hwnd, txt);
 				  }
 
+			   if(!skipnextframe)
+			   {
+
                   framesskipped = 0;
 
                   if (framestoskip > 0)
                      skipnextframe = 1;
+
+				  NDS_SkipFrame(false);
                }
                else
                {
@@ -1017,6 +1022,8 @@ DWORD WINAPI run()
                      skipnextframe = 1;
 
                   framesskipped++;
+
+				  NDS_SkipFrame(true);
                }
 				
 			   while(SpeedThrottle())
