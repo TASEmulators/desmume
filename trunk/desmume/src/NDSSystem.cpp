@@ -47,7 +47,7 @@ static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];
 char pathFilenameToROMwithoutExt[MAX_PATH];
-char gameSerial[19];
+char ROMserial[19];
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -358,6 +358,9 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	if (filename == NULL)
 		return -1;
 
+	memset(pathToROM, 0, MAX_PATH);
+	memset(pathFilenameToROMwithoutExt, 0, MAX_PATH);
+	memset(ROMserial, 0, sizeof(ROMserial));
 	memset(extROM, 0, MAX_PATH);
 	memset(extROM2, 0, 5);
 
@@ -450,12 +453,14 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 #endif
 	delete [] noext;
 
+	memset(buf, 0, MAX_PATH);
 	strcpy(buf, pathFilenameToROMwithoutExt);
 	strcat(buf, ".sav");							// DeSmuME memory card	:)
 
 	mc_realloc(&MMU.bupmem, bmtype, bmsize);
 	mc_load_file(&MMU.bupmem, buf);
 
+	memset(buf, 0, MAX_PATH);
 	strcpy(buf, pathFilenameToROMwithoutExt);
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheatsInit(buf);
@@ -494,8 +499,8 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 		memcpy(buf+strlen(buf), header->gameCode, 4);
 		memcpy(buf+strlen(buf), &header->makerCode, 2);
 	}
-	INFO("\nGame serial: %s\n\n", buf);
-	strcpy(gameSerial, buf);
+	INFO("\nROM serial: %s\n\n", buf);
+	strcpy(ROMserial, buf);
 
 	return i;
 }
