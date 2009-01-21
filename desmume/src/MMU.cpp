@@ -2178,7 +2178,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					//LOG("16 bit dma1 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC6, val);
 					DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBC);
-					DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC0);
+					DMADst[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC0);
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4);
 					MMU.DMAStartTime[ARMCPU_ARM9][1] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][1] = v;
@@ -2199,7 +2199,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					//LOG("16 bit dma2 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD2, val);
 					DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC8);
-					DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xCC);
+					DMADst[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xCC);
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0);
 					MMU.DMAStartTime[ARMCPU_ARM9][2] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][2] = v;
@@ -2220,7 +2220,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 					//LOG("16 bit dma3 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDE, val);
 					DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD4);
-					DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD8);
+					DMADst[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD8);
 									v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC);
 					MMU.DMAStartTime[ARMCPU_ARM9][3] = (v>>27) & 0x7;
 					MMU.DMACrt[ARMCPU_ARM9][3] = v;
@@ -3396,7 +3396,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					//LOG("16 bit dma1 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC6, val);
 					DMASrc[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xBC);
-					DMASrc[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC0);
+					DMADst[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC0);
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC4);
 					MMU.DMAStartTime[ARMCPU_ARM7][1] = (v>>28) & 0x3;
 					MMU.DMACrt[ARMCPU_ARM7][1] = v;
@@ -3417,7 +3417,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					//LOG("16 bit dma2 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD2, val);
 					DMASrc[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC8);
-					DMASrc[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xCC);
+					DMADst[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xCC);
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD0);
 					MMU.DMAStartTime[ARMCPU_ARM7][2] = (v>>28) & 0x3;
 					MMU.DMACrt[ARMCPU_ARM7][2] = v;
@@ -3438,7 +3438,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					//LOG("16 bit dma3 %04X\r\n", val);
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDE, val);
 					DMASrc[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD4);
-					DMASrc[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD8);
+					DMADst[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD8);
 					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDC);
 					MMU.DMAStartTime[ARMCPU_ARM7][3] = (v>>28) & 0x3;
 					MMU.DMACrt[ARMCPU_ARM7][3] = v;
