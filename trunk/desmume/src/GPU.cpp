@@ -312,6 +312,7 @@ void GPU_Reset(GPU *g, u8 l)
 	delete osd;
 	osd = new OSDCLASS(-1);
 	//DISP_FIFOclear(&g->disp_fifo);
+	memset(GPU_screen, 0, sizeof(GPU_screen));
 }
 
 void GPU_DeInit(GPU * gpu)
