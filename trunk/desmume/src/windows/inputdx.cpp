@@ -448,9 +448,13 @@ static LPDIRECTINPUTDEVICE8 tmp_Device = NULL;
 static LPDIRECTINPUTDEVICE8 tmp_Joystick = NULL;
 
 INPUTCLASS::INPUTCLASS()
+: pEffect(NULL)
+, hParentWnd(0)
+, inputProc(NULL)
+, pKeyboard(NULL)
+, pJoystick(NULL)
+, pDI(NULL)
 {
-	hParentWnd = NULL;
-	inputProc = NULL;
 }
 
 INPUTCLASS::~INPUTCLASS()
@@ -470,6 +474,7 @@ INPUTCLASS::~INPUTCLASS()
 			{
 				pEffect->Stop();
 				pEffect->Release();
+				pEffect = NULL;
 			}
 			pJoystick->Unacquire();
 			pJoystick->Release();
