@@ -47,7 +47,7 @@ static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];
 char pathFilenameToROMwithoutExt[MAX_PATH];
-char gameCodeTxt[19];
+char gameSerial[19];
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -462,14 +462,40 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 	memset(buf, 0, MAX_PATH);
 	NDS_header * header = NDS_getROMHeader();
-	memcpy(buf, header->gameTile, 12);
-	for (int i=strlen(buf); i<12; i++)
-			strcat(buf, "_");
-	strcat(buf, "_");
-	memcpy(buf+strlen(buf), header->gameCode, 4);
-	memcpy(buf+strlen(buf), &header->makerCode, 2);
-	INFO("Game code: %s\n", buf);
-	strcpy(gameCodeTxt, buf);
+
+	if (
+		// ??? in all Homebrews game title have is 2E0000EA
+		//(
+		//(header->gameTile[0] == 0x2E) && 
+		//(header->gameTile[1] == 0x00) && 
+		//(header->gameTile[2] == 0x00) && 
+		//(header->gameTile[3] == 0xEA)
+		//) &&
+		(
+			((header->gameCode[0] == 0x23) && 
+			(header->gameCode[1] == 0x23) && 
+			(header->gameCode[2] == 0x23) && 
+			(header->gameCode[3] == 0x23)
+			) ||
+			header->gameCode[0] == 0x00 
+		)
+		&&
+			header->makerCode == 0x0
+		)
+	{
+		strcpy(buf, "Homebrew");
+	}
+	else
+	{
+		memcpy(buf, header->gameTile, 12);
+		for (int i=strlen(buf); i<12; i++)
+				strcat(buf, "_");
+		strcat(buf, "_");
+		memcpy(buf+strlen(buf), header->gameCode, 4);
+		memcpy(buf+strlen(buf), &header->makerCode, 2);
+	}
+	INFO("\nGame serial: %s\n\n", buf);
+	strcpy(gameSerial, buf);
 
 	return i;
 }
