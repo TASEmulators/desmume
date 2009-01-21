@@ -62,7 +62,7 @@ u8 cmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
 
 #define toBCD(x) ((x / 10) << 4) | (x % 10);
 
-void rtcRecv()
+static void rtcRecv()
 {
 	//INFO("RTC Read command 0x%02X\n", rtc.cmd);
 	memset(rtc.data, 0, sizeof(rtc.data));
@@ -136,7 +136,7 @@ void rtcRecv()
 	}
 }
 
-void rtcSend()
+static void rtcSend()
 {
 	//INFO("RTC write 0x%02X\n", rtc.cmd);
 	switch (rtc.cmd)
@@ -245,7 +245,7 @@ void rtcWrite(u16 val)
 				rtc.bitsCount = 0;
 				if (rtc.cmd == 0x04)
 				{
-					if (rtc.regStatus2 & 0x0F == 0x04)
+					if ((rtc.regStatus2 & 0x0F) == 0x04)
 						cmdBitsSize[rtc.cmd] = 24;
 					else
 						cmdBitsSize[rtc.cmd] = 8;
