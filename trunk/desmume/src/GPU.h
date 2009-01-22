@@ -589,9 +589,7 @@ typedef struct
 #define ARM9MEM_AOBJ	0x06400000
 #define ARM9MEM_BOBJ	0x06600000
 
-typedef struct _GPU GPU;
-
-struct _GPU
+struct GPU
 {
 	// some structs are becoming redundant
 	// some functions too (no need to recopy some vars as it is done by MMU)
@@ -620,7 +618,6 @@ struct _GPU
 	} MosaicColors;
 
 	u8 sprNum[256];
-
 
 	u8 core;
 
@@ -677,7 +674,30 @@ struct _GPU
 	u32 MasterBrightFactor;
 
 	u8 bgPixels[256];
+
 	u8 currLine;
+
+
+	static struct MosaicLookup {
+
+		struct TableEntry {
+			u8 begin, trunc;
+		} table[16][256];
+
+		MosaicLookup() {
+			for(int m=0;m<16;m++)
+				for(int i=0;i<256;i++) {
+					int mosaic = m+1;
+					TableEntry &te = table[m][i];
+					te.begin = (i%mosaic==0);
+					te.trunc = i/mosaic*mosaic;
+				}
+		}
+
+		TableEntry *width, *height;
+		
+	} mosaicLookup;
+	bool curr_mosaic_enabled;
 
 	BOOL (*setFinalColorBck)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
 	BOOL (*setFinalColorSpr)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
