@@ -1622,7 +1622,7 @@ finish:
 	}
 }
 
-void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+static void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
 	u8 y = l;
 
@@ -1672,7 +1672,7 @@ void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_alpha, u8
 	if(!opaque) prioTab[x] = 0xFF;
 }
 
-void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+static void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
 	for(int i=0;i<256;i++)
 		mosaicSpriteLinePixel(gpu,i,l,dst,dst_alpha,typeTab,prioTab);
