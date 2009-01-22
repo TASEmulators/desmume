@@ -502,7 +502,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 		memcpy(buf+strlen(buf), &header->makerCode, 2);
 	}
 	INFO("\nROM serial: %s\n\n", buf);
-	strcpy(ROMserial, buf);
+	strncpy(ROMserial, buf, sizeof(ROMserial));
 
 	return i;
 }
