@@ -395,7 +395,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	if (!file)
 	{
 		reader->DeInit(file);
-		delete [] noext;
+		free(noext);
 		return -1;
 	}
 
@@ -410,7 +410,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	//check that size is at least the size of the header
 	if (size < 352+160) {
 		reader->DeInit(file);
-		delete [] noext;
+		free(noext);
 		return -1;
 	}
 
@@ -432,7 +432,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	if (!data)
 	{
 		reader->DeInit(file);
-		delete [] noext;
+		free(noext);
 		return -1;
 	}
 
@@ -453,7 +453,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	cflash_close();
 	cflash_init(cflash_disk_image_file);
 #endif
-	delete [] noext;
+	free(noext);
 
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, pathFilenameToROMwithoutExt);
