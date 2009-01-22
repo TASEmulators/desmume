@@ -75,6 +75,9 @@ extern BOOL click;
 NDS_Screen MainScreen;
 NDS_Screen SubScreen;
 
+//instantiate static instance
+GPU::MosaicLookup GPU::mosaicLookup;
+
 //#define DEBUG_TRI
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
@@ -211,6 +214,7 @@ u16 fadeOutColors[17][0x8000];
 /*****************************************************************************/
 //			INITIALIZATION
 /*****************************************************************************/
+
 
 static void GPU_InitFadeColors()
 {
@@ -1589,50 +1593,31 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 	return windowDraw;
 }
 
-static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
+INLINE static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
 {
-	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[bgnum].bits;
-	bool enabled = bgCnt->Mosaic_Enable;
-
-//	if(!opaque) color = 0xFFFF;
-//	else color &= 0x7FFF;
-	if(!opaque)
-		return;
-
-	if(enabled)
-	{
-		u8 y = gpu->currLine;
-
-		//I intend to cache all this at the beginning of line rendering
-		
-		u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
-		u8 mw = (mosaic_control & 0xF) +1 ;            // horizontal granularity of the mosaic
-		u8 mh = ((mosaic_control>>4) & 0xF) +1 ;       // vertical granularity of the mosaic
-
-		//mosaic test hacks
-		//mw = 4;
-		//mh = 4;
-		//enabled = true;
-
-		//I intend to make all this a 16x256 lookup table
-	//	if(enabled)
-		{
-			bool x_zero = (x%mw)==0;
-			bool y_zero = (y%mh)==0;
-			int x_int;
-			if(enabled)
-				x_int = x/mw*mw;
-			else
-				x_int = x;
-
-			if(x_zero && y_zero) {}
-			else color = gpu->MosaicColors.bg[bgnum][x_int];
-			gpu->MosaicColors.bg[bgnum][x] = color;
-		}
+	//due to this early out, we will get incorrect behavior in cases where 
+	//we enable mosaic in the middle of a frame. this is deemed unlikely.
+	if(!gpu->curr_mosaic_enabled) {
+		if(opaque) goto finish;
+		else return;
 	}
 
-//	if(color != 0xFFFF)
+	if(!opaque) color = 0xFFFF;
+	else color &= 0x7FFF;
+
+	//due to the early out, enabled must always be true
+	//int x_int = enabled ? GPU::mosaicLookup.width[x].trunc : x;
+	int x_int = GPU::mosaicLookup.width[x].trunc;
+
+	if(GPU::mosaicLookup.width[x].begin && GPU::mosaicLookup.height[gpu->currLine].begin) {}
+	else color = gpu->MosaicColors.bg[bgnum][x_int];
+	gpu->MosaicColors.bg[bgnum][x] = color;
+
+	if(color != 0xFFFF)
+	{
+finish:
 		gpu->setFinalColorBck(gpu,0,bgnum,dst,color,x);
+	}
 }
 
 void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
@@ -3079,6 +3064,13 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 				i16 = item->BGs[i];
 				if (gpu->LayersEnable[i16])
 				{
+
+					struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[i16].bits;
+					gpu->curr_mosaic_enabled = bgCnt->Mosaic_Enable;
+
+					//mosaic test hacks
+					//gpu->curr_mosaic_enabled = true;
+
 					if (gpu->core == GPU_MAIN)
 					{
 						if (i16 == 0 && dispCnt->BG0_3D)
@@ -3313,7 +3305,18 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
+
+	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	gpu->currLine = (u8)l;
+	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
+	u16 mosaic_width = (mosaic_control & 0xF);
+	u16 mosaic_height = ((mosaic_control>>4) & 0xF);
+
+	//mosaic test hacks
+	//mosaic_width = mosaic_height = 3;
+
+	GPU::mosaicLookup.width = &GPU::mosaicLookup.table[mosaic_width][0];
+	GPU::mosaicLookup.height = &GPU::mosaicLookup.table[mosaic_height][0];
 
 	// initialize the scanline black
 	// not doing this causes invalid colors when all active BGs are prevented to draw at some place
@@ -3370,3 +3373,53 @@ bool gpu_loadstate(std::istream* is)
 	is->read((char*)GPU_screen,sizeof(GPU_screen));
 	return !is->fail();
 }
+
+
+
+//here is an old bg mosaic with some old code commented out. I am going to leave it here for a while to look at it
+//sometimes in case I find a problem with the mosaic.
+//static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
+//{
+//	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[bgnum].bits;
+//	bool enabled = bgCnt->Mosaic_Enable;
+//
+////	if(!opaque) color = 0xFFFF;
+////	else color &= 0x7FFF;
+//	if(!opaque)
+//		return;
+//
+//	//mosaic test hacks
+//	enabled = true;
+//
+//	//due to this early out, we will get incorrect behavior in cases where 
+//	//we enable mosaic in the middle of a frame. this is deemed unlikely.
+//	if(enabled)
+//	{
+//		u8 y = gpu->currLine;
+//
+//		//I intend to cache all this at the beginning of line rendering
+//		
+//		u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
+//		u8 mw = (mosaic_control & 0xF);
+//		u8 mh = ((mosaic_control>>4) & 0xF); 
+//
+//		//mosaic test hacks
+//		mw = 3;
+//		mh = 3;
+//
+//		MosaicLookup::TableEntry &te_x = mosaicLookup.table[mw][x];
+//		MosaicLookup::TableEntry &te_y = mosaicLookup.table[mh][y];
+//
+//		//int x_int;
+//		//if(enabled) 
+//			int x_int = te_x.trunc;
+//		//else x_int = x;
+//
+//		if(te_x.begin && te_y.begin) {}
+//		else color = gpu->MosaicColors.bg[bgnum][x_int];
+//		gpu->MosaicColors.bg[bgnum][x] = color;
+//	}
+//
+////	if(color != 0xFFFF)
+//		gpu->setFinalColorBck(gpu,0,bgnum,dst,color,x);
+//}
