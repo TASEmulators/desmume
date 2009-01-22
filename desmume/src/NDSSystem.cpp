@@ -605,6 +605,7 @@ void NDS_Reset( void)
 		fread(MMU.ARM7_BIOS,1,16384,inf);
 		fclose(inf);
 		NDS_ARM7.swi_tab = 0;
+		INFO("ARM7 BIOS is loaded.\n");
 	} else {
 		NDS_ARM7.swi_tab = ARM7_swi_tab;
 		_MMU_write32<ARMCPU_ARM7>(0x00, 0xE25EF002);
@@ -629,6 +630,7 @@ void NDS_Reset( void)
 		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
 		fclose(inf);
 		NDS_ARM9.swi_tab = 0;
+		INFO("ARM9 BIOS is loaded.\n");
 	} else {
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000000);

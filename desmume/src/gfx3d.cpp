@@ -38,6 +38,9 @@
 #include "types.h"
 #include "saves.h"
 #include "readwrite.h"
+#include "FIFO.h"
+
+//#define USE_GEOMETRY_FIFO_EMULATION
 
 GFX3D gfx3d;
 
@@ -125,10 +128,12 @@ static float _t=0, _s=0;
 static float last_t, last_s;
 static u32 clCmd = 0;
 static u32 clInd = 0;
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+static u32 clInd2 = 0;
+#endif
 static u32 BTind = 0;
 static u32 PTind = 0;
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
-static BOOL GFX_busy = FALSE;
 
 //raw ds format poly attributes
 static u32 polyAttr=0,textureFormat=0, texturePalette=0;
@@ -255,6 +260,9 @@ void gfx3d_reset()
 
 	clCmd = 0;
 	clInd = 0;
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	clInd2 = 0;
+#endif
 
 	ML4x4ind = 0;
 	ML4x3ind = 0;
@@ -1048,7 +1056,9 @@ unsigned short gfx3d_glGetVecRes(unsigned int index)
 	return 0;
 }
 
-#if 0
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+extern void NDS_Pause();
+
 void gfx3d_execute(u8 cmd, u32 param)
 {
 	switch (cmd)
@@ -1165,53 +1175,44 @@ void gfx3d_execute(u8 cmd, u32 param)
 			gfx3d_glVecTest(param);
 		break;
 		default:
-			INFO("Unknown execute FIFO 3D command 0x%02X with param 0x%02X\n", cmd&0xFF, param);
+			INFO("Unknown execute FIFO 3D command 0x%02X with param 0x%08X\n", cmd, param);
 		break;
 	}
 }
-#endif
 
 static void gfx3d_FlushFIFO()
 {
-#if 1
-	GFX_FIFOclear();
-#else
-	u32 cmd;
-	u32 param;
+	if (!gxFIFO.tail) return;
 
-	//INFO("GX FIFO tail at %i, GXstat 0x%08X\n", gxFIFO.tail, gxstat);
-	if (gxFIFO.tail == 0)
-	{
-		GFX_FIFOclear();
-		return;
-	}
-	for (int i=0; i< gxFIFO.tail; i++)
-	{
-		cmd = gxFIFO.cmd[i];
-		param = gxFIFO.param[i];
-		gfx3d_execute(cmd, param);
-	}
-	//gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
-	//INFO("----------- GX FIFO tail at %i, GXstat 0x%08X\n\n", gxFIFO.tail, gxstat);
+	for (int i=0; i < gxFIFO.tail; i++)
+		gfx3d_execute(gxFIFO.cmd[i], gxFIFO.param[i]);
 	GFX_FIFOclear();
-#endif
+}
+#else
+
+static void gfx3d_FlushFIFO()
+{
+	GFX_FIFOclear();
 }
 
+#endif
 
 void gfx3d_glFlush(unsigned long v)
 {
-	//INFO("FIFO size=%i\n", MMU.gfx_fifo.size);
-	GFX_busy = TRUE;
-
 	gfx3d_FlushFIFO();			// GX FIFO commands execute
 
 	flushPending = TRUE;
 	gfx3d.wbuffer = (v&1)!=0;
 	gfx3d.sortmode = ((v>>1)&1)!=0;
 
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	//INFO("GFX FIFO: swap buffers (cmd 0x%08X, index %i)\n", clCmd, clInd);
+	//NDS_Pause();
+#else
 	// reset
 	clInd = 0;
 	clCmd = 0;
+#endif
 
 	//the renderer wil lget the lists we just built
 	gfx3d.polylist = polylist;
@@ -1236,8 +1237,6 @@ void gfx3d_glFlush(unsigned long v)
 
 	//switch to the new lists
 	twiddleLists();
-
-	GFX_busy = FALSE;
 }
 
 void gfx3d_VBlankSignal()
@@ -1256,42 +1255,26 @@ void gfx3d_VBlankEndSignal()
 	gpu3D->NDS_3D_Render();
 }
 
-#if 0
-void gfx3d_sendCommandToFIFO(u32 val)
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+static void NOPARAMS()
 {
-	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
-	//INFO("GX FIFO cmd 0x%08X, gxstat 0x%08X\n", val, gxstat);
-	//INFO("FIFO 3D command 0x%02X in 0x%08X (0x%08X)\n", clCmd&0xFF, clCmd, val);
-	if (!clInd)
+	for (;;)
 	{
-		clCmd = val;
-		clInd = 4;
-		return;
-	}
-//	INFO("FIFO 3D command 0x%02X in 0x%08X (0x%08X)\n", clCmd&0xFF, clCmd, val);
-
-	for (;;) 
-	{
+		if (!clInd) return;
 		switch (clCmd & 0xFF)
 		{
 			case 0x00:
 				{
-					if (clInd > 0)
-					{
-						clCmd >>= 8;
-						clInd--;
-						gfx3d_FlushFIFO();
-						continue;
-					}
+					clCmd >>= 8;
+					clInd--;
 					gfx3d_FlushFIFO();
-					break;
+					continue;
 				}
 			case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
 			case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
 			case 0x41:		// END_VTXS - End of Vertex List (W)
 				{
 					GFX_FIFOsend(clCmd & 0xFF, 0);
-					
 					clCmd >>= 8;
 					clInd--;
 					continue;
@@ -1299,12 +1282,48 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		}
 		break;
 	}
+}
 
+void gfx3d_sendCommandToFIFO(u32 val)
+{
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+						
+	//INFO("GX FIFO cmd 0x%08X, gxstat 0x%08X\n", val, gxstat);
 	if (!clInd)
 	{
+#if 0
+		if (val == 0)
+		{
+			gfx3d_FlushFIFO();
+			return;
+		}
+#endif
 		clCmd = val;
+		if (clInd2)
+		{
+			INFO("!!! Error FIFO index2: %i\n", clInd2);
+			NDS_Pause();
+		}
+#if 0
+		if (!(clCmd & 0xFFFFFF00))	// unpacked command
+			clInd = 1;
+		else
+			if (!(clCmd & 0xFFFF0000))	// packed command
+				clInd = 2;
+			else
+				if (!(clCmd & 0xFF000000))	// packed command
+					clInd = 3;
+				else
+					clInd = 4;
+#else
 		clInd = 4;
-		//INFO("GX FIFO cmd 0x%08X, gxstat 0x%08X (%i)\n", clCmd, gxstat, gxFIFO.tail);
+#endif
+		NOPARAMS();
+		/*if (clInd)
+		{
+			gxstat |= 0x08000000;
+			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		}*/
 		return;
 	}
 
@@ -1312,7 +1331,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 	{
 		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
 			GFX_FIFOsend(clCmd & 0xFF, val);
-			
+
 			clInd2++;
 			if (clInd2 < 32) return;
 			clInd2 = 0;
@@ -1323,7 +1342,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
 		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
 			GFX_FIFOsend(clCmd & 0xFF, val);
-			
+
 			clInd2++;
 			if (clInd2 < 16) return;
 			clInd2 = 0;
@@ -1334,7 +1353,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
 		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
 			GFX_FIFOsend(clCmd & 0xFF, val);
-			
+
 			clInd2++;
 			if (clInd2 < 12) return;
 			clInd2 = 0;
@@ -1344,7 +1363,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 
 		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
 			GFX_FIFOsend(clCmd & 0xFF, val);
-			
+
 			clInd2++;
 			if (clInd2 < 9) return;
 			clInd2 = 0;
@@ -1374,7 +1393,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 			clCmd >>= 8;
 			clInd--;
 		break;
-		
+
 		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
 		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
 		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
@@ -1398,27 +1417,97 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		case 0x60:		// VIEWPORT - Set Viewport (W)
 		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
 			GFX_FIFOsend(clCmd & 0xFF, val);
-			
 			clCmd >>= 8;
 			clInd--;
 		break;
 		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
-			
-			clCmd >>= 8;
-			clInd--;
+			gfx3d_glFlush(val);
 		break;
 		default:
-			INFO("Unknown FIFO 3D command 0x%02X in 0x%02X\n", clCmd&0xFF, val);
+			INFO("Unknown FIFO 3D command 0x%02X (0x%08X)\n", clCmd&0xFF, clCmd);
 			clCmd >>= 8;
 			clInd--;
 			return;
 	}
 
+	NOPARAMS();
+	/*
+	if (!clInd)
+	{
+		gxstat &= 0xF7FFFFFF;
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+	}
+	*/
 }
-#endif
 
-#if 1
-static void NOPARAMS(u32 val)
+void gfx3d_sendCommand(u32 cmd, u32 param)
+{
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	//if (gxstat & 0x08000000) return;			// GX busy
+	cmd = (cmd & 0x01FF) >> 2;
+
+	if (clInd)
+	{
+		INFO("!!! Error index: %i\n", clInd);
+		NDS_Pause();
+	}
+	if (clInd2)
+	{
+		INFO("!!! Error index2: %i\n", clInd2);
+		NDS_Pause();
+	}
+
+	switch (cmd)
+	{
+		case 0x10:		// MTX_MODE - Set Matrix Mode (W)
+		case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
+		case 0x12:		// MTX_POP - Pop Current Matrix from Stack (W)
+		case 0x13:		// MTX_STORE - Store Current Matrix on Stack (W)
+		case 0x14:		// MTX_RESTORE - Restore Current Matrix from Stack (W)
+		case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
+		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+		case 0x20:		// COLOR - Directly Set Vertex Color (W)
+		case 0x21:		// NORMAL - Set Normal Vector (W)
+		case 0x22:		// TEXCOORD - Set Texture Coordinates (W)
+		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
+		case 0x25:		// VTX_XY - Set Vertex XY Coordinates (W)
+		case 0x26:		// VTX_XZ - Set Vertex XZ Coordinates (W)
+		case 0x27:		// VTX_YZ - Set Vertex YZ Coordinates (W)
+		case 0x28:		// VTX_DIFF - Set Relative Vertex Coordinates (W)
+		case 0x29:		// POLYGON_ATTR - Set Polygon Attributes (W)
+		case 0x2A:		// TEXIMAGE_PARAM - Set Texture Parameters (W)
+		case 0x2B:		// PLTT_BASE - Set Texture Palette Base Address (W)
+		case 0x30:		// DIF_AMB - MaterialColor0 - Diffuse/Ambient Reflect. (W)
+		case 0x31:		// SPE_EMI - MaterialColor1 - Specular Ref. & Emission (W)
+		case 0x32:		// LIGHT_VECTOR - Set Light's Directional Vector (W)
+		case 0x33:		// LIGHT_COLOR - Set Light Color (W)
+		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
+		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
+		case 0x41:		// END_VTXS - End of Vertex List (W)
+		case 0x60:		// VIEWPORT - Set Viewport (W)
+		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
+		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
+			GFX_FIFOsend(cmd, param);
+			break;
+		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
+			gfx3d_glFlush(param);
+			break;
+		default:
+			INFO("Unknown 3D command %03X with param 0x%08X (directport)\n", cmd, param);
+			break;
+	}
+}
+#else
+
+static void NOPARAMS()
 {
 	for (;;)
 	{
@@ -1439,27 +1528,27 @@ static void NOPARAMS(u32 val)
 				}
 			case 0x11:
 				{
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = val;
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x444) = 0;
 					gfx3d_glPushMatrix();
-					GFX_FIFOsend(clCmd & 0xFF, val);
+					GFX_FIFOsend(clCmd & 0xFF, 0);
 					clCmd >>= 8;
 					clInd--;
 					continue;
 				}
 			case 0x15:
 				{
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = val;
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x454) = 0;
 					gfx3d_glLoadIdentity();
-					GFX_FIFOsend(clCmd & 0xFF, val);
+					GFX_FIFOsend(clCmd & 0xFF, 0);
 					clCmd >>= 8;
 					clInd--;
 					continue;
 				}
 			case 0x41:
 				{
-					*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = val;
+					*(u32 *)(ARM9Mem.ARM9_REG + 0x504) = 0;
 					gfx3d_glEnd();
-					GFX_FIFOsend(clCmd & 0xFF, val);
+					GFX_FIFOsend(clCmd & 0xFF, 0);
 					clCmd >>= 8;
 					clInd--;
 					continue;
@@ -1471,6 +1560,7 @@ static void NOPARAMS(u32 val)
 
 void gfx3d_sendCommandToFIFO(u32 val)
 {
+	//if (clCmd) INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", clCmd, val);
 	if (!clInd)
 	{
 		if (val == 0) 
@@ -1480,7 +1570,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		}
 		clCmd = val;
 		clInd = 4;
-		NOPARAMS(val);
+		NOPARAMS();
 		return;
 	}
 
@@ -1730,16 +1820,16 @@ void gfx3d_sendCommandToFIFO(u32 val)
 			clInd--;
 			break;
 	}
-	NOPARAMS(val);
+	NOPARAMS();
 }
-#endif
 
 void gfx3d_sendCommand(u32 cmd, u32 param)
 {
 	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
-	if (gxstat & 0x08000000)			// GX busy
-						return;
+	if (gxstat & 0x08000000) return;			// GX busy
+
 	cmd &= 0x0FFF;
+	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", (cmd & 0x1FF)>>2, param);
 
 	switch (cmd)
 	{
@@ -1876,56 +1966,6 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 			break;
 	}
 }
-
-#if 0
-u32 gfx3d_GetGXstatus()
-{
-	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
-	//INFO("GFX FIFO read size=%i value 0x%X\n", MMU.gfx_fifo.size, gxstat);
-	return (gxstat | 2);
-	gxstat &= 0x0F00A000;
-
-	// 0	 BoxTest,PositionTest,VectorTest Busy (0=Ready, 1=Busy)
-	if ( (BTind) || (PTind) ) 	gxstat |=  0x01;
-	// 1	 BoxTest Result  (0=All Outside View, 1=Parts or Fully Inside View)
-	gxstat |= 0x02;
-	// 2-7	 Not used
-	//
-	// 8-12	 Position & Vector Matrix Stack Level (0..31) (lower 5bit of 6bit value)
-	gxstat |= 0x00;
-	// 13	 Projection Matrix Stack Level        (0..1)
-	gxstat |= 0x00;	// w
-	// 14	 Matrix Stack Busy (0=No, 1=Yes; Currently executing a Push/Pop command)
-	gxstat |= 0x00;
-	// 15	 Matrix Stack Overflow/Underflow Error (0=No, 1=Error/Acknowledge/Reset)
-	gxstat |= 0x00;	// w
-	// 16-24 Number of 40bit-entries in Command FIFO  (0..256)
-	//gxstat |= (MMU.gfx_fifo.size & 0xFF) << 16;
-	// 24	 Command FIFO Full (MSB of above)  (0=No, 1=Yes; Full)
-	gxstat |= MMU.gfx_fifo.full << 24;
-	// 25	 Command FIFO Less Than Half Full  (0=No, 1=Yes; Less than Half-full)
-	gxstat |= MMU.gfx_fifo.half << 25;
-	// 26	 Command FIFO Empty                (0=No, 1=Yes; Empty)
-	gxstat |= MMU.gfx_fifo.empty << 26;
-	// 27	 Geometry Engine Busy (0=No, 1=Yes; Busy; Commands are executing)
-	if (GFX_busy) gxstat |= 0x08000000;
-	// 28-29 Not used
-	//
-	// 30-31 Command FIFO IRQ (0=Never, 1=Less than half full, 2=Empty, 3=Reserved)
-	if (MMU.gfx_fifo.empty)
-	{
-		gxstat |= 2 << 30;
-		MMU.reg_IF[ARMCPU_ARM9] |= (1<<21);
-	}
-	if (MMU.gfx_fifo.half)
-	{
-		gxstat |= 1 << 30;
-		MMU.reg_IF[ARMCPU_ARM9] |= (1<<21);
-	}
-
-	//INFO("GFX FIFO read size=%i value 0x%X\n", MMU.gfx_fifo.size, gxstat);
-	return gxstat;
-}
 #endif
 
 static void gfx3d_Control_cache()
@@ -2029,7 +2069,6 @@ SFORMAT SF_GFX3D[]={
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLPC", 4, 4, PTcoords},
-	{ "GLBS", 1, 1, &GFX_busy},
 	{ "GLF9", 4, 1, &gxFIFO.tail},
 	{ "GLF9", 4, 261, &gxFIFO.cmd},
 	{ "GLF9", 4, 261, &gxFIFO.param},

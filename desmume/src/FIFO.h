@@ -2,7 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-	Copyright (C) 2007 shash
+    Copyright 2007 shash
+	Copyright 2007-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -18,8 +19,9 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
+
 
 #ifndef FIFO_H
 #define FIFO_H
@@ -43,7 +45,7 @@ extern void IPC_FIFOcnt(u8 proc, u16 val);
 //=================================================== GFX FIFO
 typedef struct
 {
-	u32		cmd[261];
+	u8		cmd[261];
 	u32		param[261];
 
 	u32		tail;		// tail
@@ -51,7 +53,8 @@ typedef struct
 
 extern GFX_FIFO gxFIFO;
 extern void GFX_FIFOclear();
-extern void GFX_FIFOsend(u32 cmd, u32 param);
+extern void GFX_FIFOsend(u8 cmd, u32 param);
+extern void GFX_FIFOcnt(u32 val);
 
 //=================================================== Display memory FIFO
 typedef struct
