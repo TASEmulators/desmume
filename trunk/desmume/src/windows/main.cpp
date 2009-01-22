@@ -1947,9 +1947,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                           translateXY(x,y);
                        else 
                           y-=192;
-                       if(x<0) x = 0; else if(x>255) x = 255;
-                       if(y<0) y = 0; else if(y>192) y = 192;
-                       NDS_setTouchPos(x, y);
+					   //zero 21-01-2009 - if the touch is entirely out of bounds,
+					   //I think we should throw it out instead of clamping it
+                       //if(x<0) x = 0; else if(x>255) x = 255;
+                       //if(y<0) y = 0; else if(y>192) y = 192;
+					   if(x>=0 && x<=255 && y>=0 && y<=192)
+							NDS_setTouchPos(x, y);
                        return 0;
                   }
 				NDS_releaseTouch();
