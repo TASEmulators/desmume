@@ -571,6 +571,9 @@ void DMAtoVRAMmapping()
 	u8	block = MMU.VRAM_MAP[engine][engine_offset];
 	if (block == 7) return;
 	addr -= MMU.LCD_VRAM_ADDR[block];
+
+	//INFO("ARM9 DMA%i at dst address 0x%08X mapped to 0x%X\n", DMA_CHANNEL, DMADst[ARMCPU_ARM9][DMA_CHANNEL], (addr + LCDdata[block][0]) );
+
 	DMADst[ARMCPU_ARM9][DMA_CHANNEL] = (addr + LCDdata[block][0]);
 }
 
@@ -594,7 +597,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	
 	u32	vram_map_addr = 0xFFFFFFFF;
 	u8	*LCD_addr = LCDdst[block];
-
 	
 	switch (VRAMBankCnt & 0x07)
 	{
@@ -2373,10 +2375,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x400059:
 			case 0x40005A:
 			case 0x40005B:
-			case 0x40005C:
-			case 0x40005D:
-			case 0x40005E:
-			case 0x40005F:		// Individual Commands
+			case 0x40005C:		// Individual Commands
 				gfx3d_sendCommand(adr, val);
 				return;
 			default:
@@ -2385,6 +2384,11 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+			case 0x04000600:
+				GFX_FIFOcnt(val);
+				return;
+#endif
 			// Alpha test reference value - Parameters:1
 			case 0x04000340:
 			{
@@ -2921,6 +2925,14 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	{
 		switch(adr)
 		{
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
+			{
+				u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+				//INFO("GXSTAT:   read  context 0x%08X%s\n", gxstat, (gxstat&0x01000000)?" FULL":"");
+				break;
+			}
+#else
 			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
 				
@@ -2931,6 +2943,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 				gxstat |= 0x00000002;
 				return gxstat;
 			}
+#endif
 
 			case 0x04000640:
 			case 0x04000644:
