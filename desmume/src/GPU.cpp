@@ -1595,6 +1595,8 @@ static BOOL setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 
 INLINE static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x, bool opaque)
 {
+	int x_int;
+
 	//due to this early out, we will get incorrect behavior in cases where 
 	//we enable mosaic in the middle of a frame. this is deemed unlikely.
 	if(!gpu->curr_mosaic_enabled) {
@@ -1606,8 +1608,8 @@ INLINE static void __setFinalColorBck(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, 
 	else color &= 0x7FFF;
 
 	//due to the early out, enabled must always be true
-	//int x_int = enabled ? GPU::mosaicLookup.width[x].trunc : x;
-	int x_int = GPU::mosaicLookup.width[x].trunc;
+	//x_int = enabled ? GPU::mosaicLookup.width[x].trunc : x;
+	x_int = GPU::mosaicLookup.width[x].trunc;
 
 	if(GPU::mosaicLookup.width[x].begin && GPU::mosaicLookup.height[gpu->currLine].begin) {}
 	else color = gpu->MosaicColors.bg[bgnum][x_int];
