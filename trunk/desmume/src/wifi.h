@@ -499,12 +499,12 @@ typedef struct _FW_WFCProfile
 } FW_WFCProfile;
 
 /* wifi data to be stored in firmware, when no firmware image was loaded */
-extern u8 FW_Mac[6];
-extern u8 FW_WIFIInit[32] ;
-extern u8 FW_BBInit[105] ;
-extern u8 FW_RFInit[36] ;
-extern u8 FW_RFChannel[6*14] ;
-extern u8 FW_BBChannel[14] ;
+extern const u8 FW_Mac[6];
+extern const u8 FW_WIFIInit[32] ;
+extern const u8 FW_BBInit[105] ;
+extern const u8 FW_RFInit[36] ;
+extern const u8 FW_RFChannel[6*14] ;
+extern const u8 FW_BBChannel[14] ;
 extern FW_WFCProfile FW_WFCProfile1;
 extern FW_WFCProfile FW_WFCProfile2;
 extern FW_WFCProfile FW_WFCProfile3;
