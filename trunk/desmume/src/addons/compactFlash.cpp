@@ -2,6 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+	Copyright (C) 2006 Mic
+    Copyright (C) 2009 CrazyMax
 	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
@@ -18,15 +20,12 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include "../addons.h"
 #include <string.h>
 #ifdef EXPERIMENTAL_GBASLOT
-
-#define DEBUG
-#define CFLASHDEBUG
 
 #include "debug.h"
 #include <errno.h>
@@ -508,7 +507,7 @@ static BOOL cflash_build_fat( void)
 	return TRUE;
 }
 
-BOOL cflash_init() 
+static BOOL cflash_init() 
 {
 	if (inited) return FALSE;
 	BOOL init_good = FALSE;
@@ -666,7 +665,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset)
 	return freadBuffer[(offset-bufferStart)>>1];
 }
 
-unsigned int cflash_read(unsigned int address)
+static unsigned int cflash_read(unsigned int address)
 {
 	unsigned int ret_value = 0;
 	size_t elems_read = 0;
@@ -817,7 +816,7 @@ unsigned int cflash_read(unsigned int address)
 	return ret_value;
 }
 
-void cflash_write(unsigned int address,unsigned int data)
+static void cflash_write(unsigned int address,unsigned int data)
 {
 	static u8 sector_data[512];
 	static u32 sector_write_index = 0;
@@ -904,7 +903,7 @@ void cflash_write(unsigned int address,unsigned int data)
 	}  
 }
 
-void cflash_close( void) 
+static void cflash_close( void) 
 {
 	if (!inited) return;
 	if (!CFlashUsePath)
@@ -944,73 +943,75 @@ void cflash_close( void)
 	inited = FALSE;
 }
 
-BOOL CFlash_init(void)
+static BOOL CFlash_init(void)
 {
 	CFlashUseRomPath = TRUE;
 	CFlashUsePath = TRUE;
 	return TRUE;
 }
 
-void CFlash_reset(void)
+static void CFlash_reset(void)
 {
 	cflash_close();
 	cflash_init();
 }
-void CFlash_close(void)
+
+static void CFlash_close(void)
 {
 	cflash_close();
 }
-void CFlash_config(void)
+
+static void CFlash_config(void)
 {
 }
 
-void CFlash_write08(u32 adr, u8 val)
-{
-	cflash_write(adr, val);
-}
-
-void CFlash_write16(u32 adr, u16 val)
+static void CFlash_write08(u32 adr, u8 val)
 {
 	cflash_write(adr, val);
 }
 
-void CFlash_write32(u32 adr, u32 val)
+static void CFlash_write16(u32 adr, u16 val)
 {
 	cflash_write(adr, val);
 }
 
-u8   CFlash_read08(u32 adr)
+static void CFlash_write32(u32 adr, u32 val)
+{
+	cflash_write(adr, val);
+}
+
+static u8 CFlash_read08(u32 adr)
 {
 	return (cflash_read(adr));
 }
 
-u16  CFlash_read16(u32 adr)
+static u16 CFlash_read16(u32 adr)
 {
 	return (cflash_read(adr));
 }
 
-u32  CFlash_read32(u32 adr)
+static u32 CFlash_read32(u32 adr)
 {
 	return (cflash_read(adr));
 }
 
-void CFlash_info(char *info)
+static void CFlash_info(char *info)
 {
 	strcpy(info, "Compact Flash memory in slot");
 }
 #else
-BOOL CFlash_init(void) { return TRUE; }
-void CFlash_reset(void) {}
-void CFlash_close(void) {}
-void CFlash_config(void){}
-void CFlash_write08(u32 adr, u8 val){}
-void CFlash_write16(u32 adr, u16 val){}
-void CFlash_write32(u32 adr, u32 val){}
-u8   CFlash_read08(u32 adr){return (0);}
-u16  CFlash_read16(u32 adr){return (0);}
-u32  CFlash_read32(u32 adr){return (0);}
+static BOOL CFlash_init(void) { return TRUE; }
+static void CFlash_reset(void) {}
+static void CFlash_close(void) {}
+static void CFlash_config(void){}
+static void CFlash_write08(u32 adr, u8 val){}
+static void CFlash_write16(u32 adr, u16 val){}
+static void CFlash_write32(u32 adr, u32 val){}
+static u8   CFlash_read08(u32 adr){return (0);}
+static u16  CFlash_read16(u32 adr){return (0);}
+static u32  CFlash_read32(u32 adr){return (0);}
 
-void CFlash_info(char *info)
+static void CFlash_info(char *info)
 {
 	strcpy(info, "Compact Flash memory in slot");
 }
@@ -1030,5 +1031,4 @@ ADDONINTERFACE addonCFlash = {
 				CFlash_read32,
 				CFlash_info};
 
-#undef DEBUG
 #undef CFLASHDEBUG
