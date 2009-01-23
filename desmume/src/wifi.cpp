@@ -198,7 +198,7 @@ FW_WFCProfile FW_WFCProfile3 = {"",
 
  *******************************************************************************/
 
-void WIFI_resetRF(rffilter_t *rf) {
+static void WIFI_resetRF(rffilter_t *rf) {
 	/* reinitialize RF chip with the default values refer RF2958 docs */
 	/* CFG1 */
 	rf->CFG1.bits.IF_VGA_REG_EN = 1 ;
@@ -311,7 +311,7 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 								u32 channelFreqN ;
 								rfreg[wifi->rfIOData.bits.address].bits.content = wifi->rfIOData.bits.content ;
 								/* get the complete rfpll.n */
-								channelFreqN = (u32)wifi->RF.RFPLL3.bits.NUM2 + ((u32)wifi->RF.RFPLL2.bits.NUM2) << 18 + ((u32)wifi->RF.RFPLL2.bits.N2) << 24 ;
+								channelFreqN = (u32)wifi->RF.RFPLL3.bits.NUM2 + ((u32)wifi->RF.RFPLL2.bits.NUM2 << 18) + ((u32)wifi->RF.RFPLL2.bits.N2 << 24) ;
 								/* frequency setting is out of range */
 								if (channelFreqN<0x00A2E8BA) return ;
 								/* substract base frequency (channel 1) */
@@ -384,7 +384,7 @@ void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
 
  *******************************************************************************/
 
-void WIFI_triggerIRQMask(wifimac_t *wifi, u16 mask)
+static void WIFI_triggerIRQMask(wifimac_t *wifi, u16 mask)
 {
 	u16 oResult,nResult ;
 	oResult = wifi->IE.val & wifi->IF.val ;
@@ -396,7 +396,7 @@ void WIFI_triggerIRQMask(wifimac_t *wifi, u16 mask)
 	}
 }
 
-void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
+static void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
 {
 	WIFI_triggerIRQMask(wifi,1<<irq) ;
 }
@@ -408,7 +408,7 @@ void WIFI_Init(wifimac_t *wifi)
 	wifi->udpSocket = WIFI_Host_OpenChannel(1) ;
 }
 
-void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
+static void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
 {
 	/* abort when RX data queuing is not enabled */
 	if (!(wifi->RXCnt & 0x8000)) return ;
@@ -422,7 +422,7 @@ void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
 	wifi->RXHWWriteCursor %= (wifi->RXRangeEnd - wifi->RXRangeBegin) >> 1 ;
 }
 
-void WIFI_TXStart(wifimac_t *wifi,u8 slot)
+static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 {
 	if (wifi->TXSlot[slot] & 0x8000)	/* is slot enabled? */
 	{
