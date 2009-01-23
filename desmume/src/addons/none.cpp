@@ -2,6 +2,7 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+    Copyright (C) 2009 CrazyMax
 	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
@@ -18,23 +19,23 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include "../addons.h"
 #include <string.h>
 
-BOOL None_init(void) { return (TRUE); };
-void None_reset(void) {};
-void None_close(void) {};
-void None_config(void) {};
-void None_write08(u32 adr, u8 val) {};
-void None_write16(u32 adr, u16 val) {};
-void None_write32(u32 adr, u32 val) {};
-u8   None_read08(u32 adr){ return (0); };
-u16  None_read16(u32 adr){ return (0); };
-u32  None_read32(u32 adr){ return (0); };
-void None_info(char *info) { strcpy(info, "Nothing in GBA slot"); };
+static BOOL None_init(void) { return (TRUE); }
+static void None_reset(void) {}
+static void None_close(void) {}
+static void None_config(void) {}
+static void None_write08(u32 adr, u8 val) {}
+static void None_write16(u32 adr, u16 val) {}
+static void None_write32(u32 adr, u32 val) {}
+static u8   None_read08(u32 adr){ return (0); }
+static u16  None_read16(u32 adr){ return (0); }
+static u32  None_read32(u32 adr){ return (0); }
+static void None_info(char *info) { strcpy(info, "Nothing in GBA slot"); }
 
 ADDONINTERFACE addonNone = {
 				"NONE",

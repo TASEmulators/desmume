@@ -2,6 +2,7 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+    Copyright (C) 2009 CrazyMax
 	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
@@ -18,7 +19,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include "../addons.h"
@@ -28,21 +29,21 @@
 
 void (*FeedbackON)(BOOL enable) = NULL;
 
-BOOL RumblePak_init(void) { return (TRUE); };
+static BOOL RumblePak_init(void) { return (TRUE); }
 
-void RumblePak_reset(void)
+static void RumblePak_reset(void)
 {
-};
+}
 
-void RumblePak_close(void) {};
+static void RumblePak_close(void) {}
 
-void RumblePak_config(void) {};
+static void RumblePak_config(void) {}
 
-void RumblePak_write08(u32 adr, u8 val)
+static void RumblePak_write08(u32 adr, u8 val)
 {
-};
+}
 
-void RumblePak_write16(u32 adr, u16 val)
+static void RumblePak_write16(u32 adr, u16 val)
 {
 	if (!FeedbackON) return;
 
@@ -52,31 +53,34 @@ void RumblePak_write16(u32 adr, u16 val)
 		FeedbackON(val);
 	if (adr == 0x08001000) 
 		FeedbackON(val);
-};
+}
 
-void RumblePak_write32(u32 adr, u32 val)
+static void RumblePak_write32(u32 adr, u32 val)
 {
-};
+}
 
-u8   RumblePak_read08(u32 adr)
+static u8   RumblePak_read08(u32 adr)
 {
 	return (0);
-};
+}
 
-u16  RumblePak_read16(u32 adr)
+static u16  RumblePak_read16(u32 adr)
 {
 	u16 val = ( (adr & 0x1FFFF) >> 1 ) & 0xFFFD;
 	if (adr == 0x0801FFFE) val = 0x005D;	// hack!!! anybody have docs for RumblePak?
 
 	return ((u16)val); 
-};
+}
 
-u32  RumblePak_read32(u32 adr)
+static u32  RumblePak_read32(u32 adr)
 {
 	return (0);
-};
+}
 
-void RumblePak_info(char *info) { strcpy(info, "NDS Rumble Pak (need joystick)"); };
+static void RumblePak_info(char *info)
+{
+	strcpy(info, "NDS Rumble Pak (need joystick with Feedback)"); 
+}
 
 ADDONINTERFACE addonRumblePak = {
 				"Rumble Pak",
