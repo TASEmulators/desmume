@@ -30,6 +30,10 @@
 	#define socket_t 	SOCKET
 	#define sockaddr_t  SOCKADDR
 #else
+	#include <unistd.h>
+	#include <stdlib.h>
+	#include <string.h>
+	#include <arpa/inet.h>
 	#include <sys/socket.h>
 	#define socket_t 	int
 	#define sockaddr_t  struct sockaddr
