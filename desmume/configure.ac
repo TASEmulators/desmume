@@ -1,7 +1,7 @@
 dnl --- Package name is first argument to AC_INIT
 dnl --- Release version is second argument to AC_INIT
 
-AC_INIT(desmume, [0.8])
+AC_INIT(desmume, [svn])
 
 dnl -- find target architecture for some os specific libraries
 AC_CANONICAL_TARGET
@@ -14,9 +14,6 @@ esac
 AC_SUBST(desmume_arch)
 
 AM_INIT_AUTOMAKE([1.10])
-
-dnl -- make sure we have a C compiler
-AC_PROG_CC
 
 dnl -- make sure we have a c++ compiler
 AC_PROG_CXX
