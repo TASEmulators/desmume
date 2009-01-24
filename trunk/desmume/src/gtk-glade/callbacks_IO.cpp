@@ -87,7 +87,7 @@ void init_GL_capabilities( int use_software_convert) {}
 int has_pix_col_map=0;
 u32 pix_col_map[0x8000];
 
-void init_pix_col_map() {
+static void init_pix_col_map() {
 	// precalc factors
 	int a,b,c,A,B,C,rA,rB,rC;
 	if (has_pix_col_map) return;
@@ -104,7 +104,7 @@ void init_pix_col_map() {
 	has_pix_col_map=1;
 }
 
-void decode_screen () {
+static void decode_screen () {
 
 	int x,y, m, W,H,L,BL;
 	u32 image[RAW_H*2][RAW_W], pix;
