@@ -137,9 +137,6 @@ if test "x$HAVE_SDL" = "xyes"; then
     UI_DIR="gtk $UI_DIR"
   fi
 
-  dnl - the glade port has a weird relation to gtkglext and doesn't
-  dnl - works yet with osmesa, feel free to fix it :)
-  if test ! "x$useosmesa" = "xyes" ; then
   if test "x$HAVE_LIBGLADE" = "xyes"; then
     AC_PROVIDE_IFELSE([IT_PROG_INTLTOOL],[
       # libglade requires SDL too
@@ -158,7 +155,6 @@ if test "x$HAVE_SDL" = "xyes"; then
     ],[
       echo "WARNING: intltool and/or gettext are not available therefore the gtk-glade interface won't be installed. The gtk-glade UI requires intltool and gettext."
     ])
-  fi
   fi
 fi
 
