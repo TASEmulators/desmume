@@ -1643,17 +1643,17 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 				break;
 
 			case REG_DISPA_BLDALPHA: 	 
-				GPU_setBLDALPHA_EVB(MainScreen.gpu,val) ; 	 
+				MainScreen.gpu->setBLDALPHA_EVB(val);
 				break;
 			case REG_DISPA_BLDALPHA+1:
-				GPU_setBLDALPHA_EVA(MainScreen.gpu,val) ; 	 
+				MainScreen.gpu->setBLDALPHA_EVA(val);
 				break;
 
 			case REG_DISPB_BLDALPHA:
-				GPU_setBLDALPHA_EVB(SubScreen.gpu,val) ; 	 
+				SubScreen.gpu->setBLDALPHA_EVB(val);
 				break;
 			case REG_DISPB_BLDALPHA+1:
-				GPU_setBLDALPHA_EVA(SubScreen.gpu,val);
+				SubScreen.gpu->setBLDALPHA_EVA(val);
 				break;
 
 			case REG_DISPA_BLDY: 	 
@@ -1794,10 +1794,10 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				GPU_setBLDCNT(SubScreen.gpu,val) ; 	 
 				break ; 	 
 			case REG_DISPA_BLDALPHA: 	 
-				GPU_setBLDALPHA(MainScreen.gpu,val) ; 	 
+				MainScreen.gpu->setBLDALPHA(val);
 				break ; 	 
 			case REG_DISPB_BLDALPHA: 	 
-				GPU_setBLDALPHA(SubScreen.gpu,val) ; 	 
+				SubScreen.gpu->setBLDALPHA(val);
 				break ; 	 
 			case REG_DISPA_BLDY: 	 
 				GPU_setBLDY_EVY(MainScreen.gpu,val) ; 	 
@@ -2472,13 +2472,13 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case REG_DISPA_BLDCNT:
 			{
 				GPU_setBLDCNT   (MainScreen.gpu,val&0xffff);
-				GPU_setBLDALPHA (MainScreen.gpu,val>>16);
+				MainScreen.gpu->setBLDALPHA(val>>16);
 				break;
 			}
 			case REG_DISPB_BLDCNT:
 			{
 				GPU_setBLDCNT   (SubScreen.gpu,val&0xffff);
-				GPU_setBLDALPHA (SubScreen.gpu,val>>16);
+				SubScreen.gpu->setBLDALPHA(val>>16);
 				break;
 			}
 			case REG_DISPA_DISPCNT :
