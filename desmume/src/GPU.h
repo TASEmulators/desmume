@@ -613,13 +613,13 @@ struct GPU
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
 
-	struct {
+	struct MosaicColor {
 		u16 bg[4][256];
-		struct {
+		struct Obj {
 			u16 color;
 			u8 alpha, opaque;
 		} obj[256];
-	} MosaicColors;
+	} mosaicColors;
 
 	u8 sprNum[256];
 
@@ -699,13 +699,14 @@ struct GPU
 		}
 
 		TableEntry *width, *height;
+		int widthValue, heightValue;
 		
 	} mosaicLookup;
 	bool curr_mosaic_enabled;
 
 	u16 blend(u16 colA, u16 colB);
 
-	typedef  void (*FinalBGColFunct)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
+	typedef  void (*FinalBGColFunct)(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
 	typedef  void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 	typedef  void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
 	typedef void (*SpriteRenderFunct) (GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
