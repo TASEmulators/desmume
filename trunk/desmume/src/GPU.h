@@ -589,6 +589,10 @@ typedef struct
 #define ARM9MEM_AOBJ	0x06400000
 #define ARM9MEM_BOBJ	0x06600000
 
+extern CACHE_ALIGN u16 fadeInColors[17][0x8000];
+extern CACHE_ALIGN u16 fadeOutColors[17][0x8000];
+extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
+
 struct GPU
 {
 	// some structs are becoming redundant
@@ -699,10 +703,45 @@ struct GPU
 	} mosaicLookup;
 	bool curr_mosaic_enabled;
 
-	BOOL (*setFinalColorBck)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
-	BOOL (*setFinalColorSpr)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-	BOOL (*setFinalColor3D) (GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-	void (*spriteRender) (GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
+	u16 blend(u16 colA, u16 colB);
+
+	typedef  void (*FinalBGColFunct)(GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
+	typedef  void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+	typedef  void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
+	typedef void (*SpriteRenderFunct) (GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
+
+	FinalBGColFunct setFinalColorBck;
+	FinalOBJColFunct setFinalColorSpr;
+	Final3DColFunct setFinalColor3D;
+	SpriteRenderFunct spriteRender;
+
+	void setBLDALPHA(u16 val)
+	{
+		BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f); 
+		BLDALPHA_EVB = (val>>8&0x1f) > 16 ? 16 : (val>>8&0x1f);
+		updateBLDALPHA();
+	}
+
+	void setBLDALPHA_EVA(u8 val)
+	{
+		BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);
+		updateBLDALPHA();
+	}
+	
+	void setBLDALPHA_EVB(u8 val)
+	{
+		BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);
+		updateBLDALPHA();
+	}
+
+	typedef u8 TBlendTable[32][32];
+	TBlendTable *blendTable;
+
+	void updateBLDALPHA()
+	{
+		blendTable = (TBlendTable*)&gpuBlendTable555[BLDALPHA_EVA][BLDALPHA_EVB][0][0];
+	}
+	
 };
 /*
 // normally should have same addresses
@@ -780,7 +819,6 @@ void GPU_setVideoProp(GPU *, u32 p);
 void GPU_setBGProp(GPU *, u16 num, u16 p);
 
 void GPU_setBLDCNT(GPU *gpu, u16 v) ;
-void GPU_setBLDALPHA(GPU *gpu, u16 v) ;
 void GPU_setBLDY(GPU *gpu, u16 v) ;
 void GPU_setMOSAIC(GPU *gpu, u16 v) ;
 
@@ -832,10 +870,7 @@ void SetupFinalPixelBlitter (GPU *gpu);
 #define GPU_setBLDCNT_HIGH(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF) | (val<<8); SetupFinalPixelBlitter (gpu);}
 #define GPU_setBLDCNT(gpu, val) {gpu->BLDCNT = val; SetupFinalPixelBlitter (gpu);}
 
-#define GPU_setBLDALPHA(gpu, val) {gpu->BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);\
-									gpu->BLDALPHA_EVB = (val>>8&0x1f) > 16 ? 16 : (val>>8&0x1f);}
-#define GPU_setBLDALPHA_EVA(gpu, val) {gpu->BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f);}
-#define GPU_setBLDALPHA_EVB(gpu, val) {gpu->BLDALPHA_EVB = (val&0x1f) > 16 ? 16 : (val&0x1f);}
+
 
 #define GPU_setBLDY_EVY(gpu, val) {gpu->BLDY_EVY = (val&0x1f) > 16 ? 16 : (val&0x1f);}
 
