@@ -403,23 +403,51 @@ void gfx3d_glRestoreMatrix(unsigned long v)
 
 void gfx3d_glPushMatrix()
 {
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
-	MatrixStackPushMatrix (&mtxStack[mymode], mtxCurrent[mymode]);
+	if (mtxStack[mymode].position >= mtxStack[mymode].size)
+	{
+		gxstat |= (1<<15);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		return;
+	}
+
+	gxstat &= 0xFFFF00FF;
+
+	MatrixStackPushMatrix(&mtxStack[mymode], mtxCurrent[mymode]);
 	if(mymode==2)
 		MatrixStackPushMatrix (&mtxStack[1], mtxCurrent[1]);
+
+	gxstat |= ((mtxStack[0].position << 13) | (mtxStack[1].position << 8));
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
 void gfx3d_glPopMatrix(signed long i)
 {
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
-	MatrixCopy (mtxCurrent[mode], MatrixStackPopMatrix (&mtxStack[mode], i));
+	/*
+	if (i > mtxStack[mymode].position)
+	{
+		gxstat |= (1<<15);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		return;
+	}
+	*/
+	gxstat &= 0xFFFF00FF;
+
+	MatrixCopy(mtxCurrent[mode], MatrixStackPopMatrix (&mtxStack[mode], i));
 
 	if (mymode == 2)
-		MatrixCopy (mtxCurrent[1], MatrixStackPopMatrix (&mtxStack[1], i));
+		MatrixCopy(mtxCurrent[1], MatrixStackPopMatrix (&mtxStack[1], i));
+
+	gxstat |= ((mtxStack[0].position << 13) | (mtxStack[1].position << 8));
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
 BOOL gfx3d_glTranslate(signed long v)
