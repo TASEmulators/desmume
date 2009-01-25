@@ -589,8 +589,6 @@ typedef struct
 #define ARM9MEM_AOBJ	0x06400000
 #define ARM9MEM_BOBJ	0x06600000
 
-extern CACHE_ALIGN u16 fadeInColors[17][0x8000];
-extern CACHE_ALIGN u16 fadeOutColors[17][0x8000];
 extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 
 struct GPU
