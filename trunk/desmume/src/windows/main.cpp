@@ -761,11 +761,14 @@ int CreateDDrawBuffers()
 
 void applyRotation_0deg(u32 *in, u32 *out, int pitch)
 {
-	for(int i = 0; i < (256 * 384); i += 256)
-	{
-		memcpy(out, (in + i), 1024);
-		out = (u32*)(((u8*)out) + pitch);
-	}
+	if(pitch==1024)
+		memcpy(out,in,256*192*2*4);
+	else
+		for(int i = 0; i < (256 * 384); i += 256)
+		{
+			memcpy(out, (in + i), 1024);
+			out = (u32*)(((u8*)out) + pitch);
+		}
 }
 
 void applyRotation_90deg(u32 *in, u32 *out, int pitch)
@@ -829,9 +832,7 @@ void Display()
 			u16 *tmpGPU_Screen_src=(u16*)GPU_screen;
 			u32	tmpGPU_screen[98304];
 			for(i=0; i<98304; i++)
-				tmpGPU_screen[i]=	(((tmpGPU_Screen_src[i]>>10)&0x1F)<<3)|
-									(((tmpGPU_Screen_src[i]>>5)&0x1F)<<11)|
-									(((tmpGPU_Screen_src[i])&0x1F)<<19);
+				tmpGPU_screen[i] = RGB15TO24_REVERSE(tmpGPU_Screen_src[i]);
 
 			applyRotation[GPU_rotation / 90](tmpGPU_screen, (u32*)buffer, ddsd.lPitch);
 		}

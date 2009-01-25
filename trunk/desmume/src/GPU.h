@@ -678,6 +678,7 @@ struct GPU
 	u8 bgPixels[256];
 
 	u8 currLine;
+	u8 currBgNum;
 
 
 	static struct MosaicLookup {
@@ -704,15 +705,24 @@ struct GPU
 
 	u16 blend(u16 colA, u16 colB);
 
-	typedef  void (*FinalBGColFunct)(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-	typedef  void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-	typedef  void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
+	typedef void (*FinalBGColFunct)(GPU *gpu, u8 *dst, u16 color, u8 x);
+	typedef void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
+	typedef void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
 	typedef void (*SpriteRenderFunct) (GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
 	FinalBGColFunct setFinalColorBck;
 	FinalOBJColFunct setFinalColorSpr;
 	Final3DColFunct setFinalColor3D;
 	SpriteRenderFunct spriteRender;
+
+	void __setFinalColorBck(u8 *dst, u16 color, u8 x, bool opaque);
+
+
+	void renderline_checkWindows(u16 x, bool &draw, bool &effect) const;
+
+	// check whether (x,y) is within the rectangle (including wraparounds) 
+	template<int WIN_NUM>
+	bool withinRect(u8 x) const;
 
 	void setBLDALPHA(u16 val)
 	{

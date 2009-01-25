@@ -142,16 +142,16 @@ NULL
 };
 
 //static BOOL setFinalColorDirect				(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialNone			(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialBlend			(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialIncrease		(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialDecrease		(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
+static void setFinalBGColorSpecialNone			(GPU *gpu, u8 *dst, u16 color, u8 x);
+static void setFinalBGColorSpecialBlend			(GPU *gpu, u8 *dst, u16 color, u8 x);
+static void setFinalBGColorSpecialIncrease		(GPU *gpu, u8 *dst, u16 color, u8 x);
+static void setFinalBGColorSpecialDecrease		(GPU *gpu, u8 *dst, u16 color, u8 x);
 
 //static BOOL setFinalColorDirectWnd			(const GPU *gpu, u32 passing, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialNoneWnd		(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialBlendWnd		(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialIncreaseWnd	(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
-static void setFinalBGColorSpecialDecreaseWnd	(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x);
+static void setFinalBGColorSpecialNoneWnd		(GPU *gpu, u8 *dst, u16 color, u8 x);
+static void setFinalBGColorSpecialBlendWnd		(GPU *gpu, u8 *dst, u16 color, u8 x);
+static void setFinalBGColorSpecialIncreaseWnd	(GPU *gpu, u8 *dst, u16 color, u8 x);
+static void setFinalBGColorSpecialDecreaseWnd	(GPU *gpu, u8 *dst, u16 color, u8 x);
 
 static void setFinalOBJColorSpecialNone			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 static void setFinalOBJColorSpecialBlend		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
@@ -572,81 +572,97 @@ void GPU_addBack(GPU * gpu, u8 num)
 //		ROUTINES FOR INSIDE / OUTSIDE WINDOW CHECKS
 /*****************************************************************************/
 
-
-/* check whether (x,y) is within the rectangle (including wraparounds) */
-static INLINE BOOL withinRect (u8 x,u8 y, u16 startX, u16 startY, u16 endX, u16 endY)
+template<int WIN_NUM>
+bool GPU::withinRect(u8 x) const
 {
-	if(startX > endX)
+	u8 y = currLine;
+	u16 startX,startY,endX,endY;
+
+	if(WIN_NUM==0)
 	{
-		if((x < startX) && (x > endX)) return 0;
+		startX = WIN0H0;
+		startY = WIN0V0;
+		endX = WIN0H1;
+		endY = WIN0V1;
 	}
 	else
 	{
-		if((x < startX) || (x >= endX)) return 0;
+		startX = WIN1H0;
+		startY = WIN1V0;
+		endX = WIN1H1;
+		endY = WIN1V1;
+	}
+
+	if(startX > endX)
+	{
+		if((x < startX) && (x > endX)) return false;
+	}
+	else
+	{
+		if((x < startX) || (x >= endX)) return false;
 	}
 
 	if(startY > endY)
 	{
-		if((y < startY) && (y > endY)) return 0;
+		if((y < startY) && (y > endY)) return false;
 	}
 	else
 	{
-		if((y < startY) || (y >= endY)) return 0;
+		if((y < startY) || (y >= endY)) return false;
 	}
 
-	return 1;
+	return true;
 }
-
 
 //  Now assumes that *draw and *effect are different from 0 when called, so we can avoid
 // setting some values twice
-static INLINE void renderline_checkWindows(const GPU *gpu, u8 bgnum, u16 x, bool draw, bool &effect)
+void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) const
 {
 	// Check if win0 if enabled, and only check if it is
-	if (gpu->WIN0_ENABLED)
+	if (WIN0_ENABLED)
 	{
 		// it is in win0, do we display ?
 		// high priority	
-		if (withinRect(	x, gpu->currLine , gpu->WIN0H0, gpu->WIN0V0, gpu->WIN0H1, gpu->WIN0V1))
+		if (withinRect<0>(x))
 		{
 			//INFO("bg%i passed win0 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->currLine, gpu->WIN0H0, gpu->WIN0V0, gpu->WIN0H1, gpu->WIN0V1);
-			draw	= (gpu->WININ0 >> bgnum)&1;
-			effect = (gpu->WININ0_SPECIAL);
+			draw	= (WININ0 >> currBgNum)&1;
+			effect = (WININ0_SPECIAL);
 			return;
 		}
 	}
 
 	// Check if win1 if enabled, and only check if it is
-	if (gpu->WIN1_ENABLED)
+	if (WIN1_ENABLED)
 	{
 		// it is in win1, do we display ?
 		// mid priority
-		if (withinRect(	x, gpu->currLine, gpu->WIN1H0, gpu->WIN1V0, gpu->WIN1H1, gpu->WIN1V1))
+		if(withinRect<1>(x))
 		{
 			//INFO("bg%i passed win1 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->currLine, gpu->WIN1H0, gpu->WIN1V0, gpu->WIN1H1, gpu->WIN1V1);
-			draw	= (gpu->WININ1 >> bgnum)&1;
-			effect = (gpu->WININ1_SPECIAL);
+			draw	= (WININ1 >> currBgNum)&1;
+			effect = (WININ1_SPECIAL);
 			return;
 		}
 	}
 
 	//if(true) //sprwin test hack
-	if (gpu->WINOBJ_ENABLED)
+	if (WINOBJ_ENABLED)
 	{
 		// it is in winOBJ, do we display ?
 		// low priority
 		if (sprWin[x])
 		{
-			draw	= (gpu->WINOBJ >> bgnum)&1;
-			effect	= (gpu->WINOBJ_SPECIAL);
+			draw	= (WINOBJ >> currBgNum)&1;
+			effect	= (WINOBJ_SPECIAL);
 			return;
 		}
 	}
 
-	if (gpu->WINOBJ_ENABLED | gpu->WIN1_ENABLED | gpu->WIN0_ENABLED)
+	if (WINOBJ_ENABLED | WIN1_ENABLED | WIN0_ENABLED)
 	{
-		draw	= (gpu->WINOUT >> bgnum) & 1;
-		effect	= (gpu->WINOUT_SPECIAL);
+		draw	= (WINOUT >> currBgNum) & 1;
+		effect	= (WINOUT_SPECIAL);
 	}
 }
 
@@ -654,7 +670,7 @@ static INLINE void renderline_checkWindows(const GPU *gpu, u8 bgnum, u16 x, bool
 //			PIXEL RENDERING - BGS
 /*****************************************************************************/
 
-static void setFinalBGColorSpecialNone (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialNone (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
 	//sprwin test hack - use this code
 	//BOOL windowDraw = TRUE, windowEffect = TRUE;
@@ -663,12 +679,12 @@ static void setFinalBGColorSpecialNone (GPU *gpu, u8 bgnum, u8 *dst, u16 color, 
 	//return 1;
 
 	T2WriteWord(dst, 0, color);
-	gpu->bgPixels[x] = bgnum;
+	gpu->bgPixels[x] = gpu->currBgNum;
 }
 
-static void setFinalBGColorSpecialBlend (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialBlend (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
-	if(gpu->BLDCNT & (1 << bgnum))
+	if(gpu->BLDCNT & (1 << gpu->currBgNum))
 	{
 		int bg_under = gpu->bgPixels[x];
 		u16 final = color;
@@ -678,18 +694,18 @@ static void setFinalBGColorSpecialBlend (GPU *gpu, u8 bgnum, u8 *dst, u16 color,
 			final = gpu->blend(color,T2ReadWord(dst, 0));
 
 		T2WriteWord(dst, 0, (final | 0x8000));
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 	else
 	{
 		T2WriteWord(dst, 0, (color | 0x8000));
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 }
 
-static void setFinalBGColorSpecialIncrease (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialIncrease (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
-	if ((gpu->BLDCNT >> bgnum)&1)   // the bg to draw has a special color effect
+	if ((gpu->BLDCNT >> gpu->currBgNum)&1)   // the bg to draw has a special color effect
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
@@ -697,63 +713,63 @@ static void setFinalBGColorSpecialIncrease (GPU *gpu, u8 bgnum, u8 *dst, u16 col
 		}
 
 		T2WriteWord(dst, 0, color) ;
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 	else
 	{
 		T2WriteWord(dst, 0, color);
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 }
 
-static void setFinalBGColorSpecialDecrease (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialDecrease (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
-	if ((gpu->BLDCNT >> bgnum)&1)   // the bg to draw has a special color effect
+	if ((gpu->BLDCNT >> gpu->currBgNum)&1)   // the bg to draw has a special color effect
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
 			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 		T2WriteWord(dst, 0, color) ;
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 	else
 	{
 		T2WriteWord(dst, 0, color);
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 }
 
-static void setFinalBGColorSpecialNoneWnd (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialNoneWnd (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
-	renderline_checkWindows(gpu,bgnum,x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
-	if (((gpu->BLDCNT >> bgnum)&1) && windowEffect)   // the bg to draw has a special color effect
+	if (((gpu->BLDCNT >> gpu->currBgNum)&1) && windowEffect)   // the bg to draw has a special color effect
 	{
 		T2WriteWord(dst, 0, color);
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 	else
 	{
-		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		if ((windowEffect && (gpu->BLDCNT & (0x100 << gpu->currBgNum))) || windowDraw)
 		{
 			T2WriteWord(dst, 0, color);
-			gpu->bgPixels[x] = bgnum;
+			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 	}
 }
 
-static void setFinalBGColorSpecialBlendWnd (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialBlendWnd (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
-	renderline_checkWindows(gpu,bgnum,x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
-		if((gpu->BLDCNT & (1 << bgnum)) && windowEffect)
+		if((gpu->BLDCNT & (1 << gpu->currBgNum)) && windowEffect)
 		{
 			int bg_under = gpu->bgPixels[x];
 			u16 final = color;
@@ -764,62 +780,62 @@ static void setFinalBGColorSpecialBlendWnd (GPU *gpu, u8 bgnum, u8 *dst, u16 col
 			
 
 			T2WriteWord(dst, 0, (final | 0x8000));
-			gpu->bgPixels[x] = bgnum;
+			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 		else
 		{
 			T2WriteWord(dst, 0, (color | 0x8000));
-			gpu->bgPixels[x] = bgnum;
+			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 	}
 }
 
-static void setFinalBGColorSpecialIncreaseWnd (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialIncreaseWnd (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
-	renderline_checkWindows(gpu,bgnum,x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
-	if (((gpu->BLDCNT >> bgnum)&1) && windowEffect)   // the bg to draw has a special color effect
+	if (((gpu->BLDCNT >> gpu->currBgNum)&1) && windowEffect)   // the bg to draw has a special color effect
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
 		}
 
 		T2WriteWord(dst, 0, color) ;
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 	else
 	{
-		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		if ((windowEffect && (gpu->BLDCNT & (0x100 << gpu->currBgNum))) || windowDraw)
 		{
 			T2WriteWord(dst, 0, color);
-			gpu->bgPixels[x] = bgnum;
+			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 	}
 }
 
-static void setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u8 bgnum, u8 *dst, u16 color, u16 x)
+static void setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u8 *dst, u16 color, u8 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
-	renderline_checkWindows(gpu,bgnum,x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
-	if (((gpu->BLDCNT >> bgnum)&1) && windowEffect)   // the bg to draw has a special color effect
+	if (((gpu->BLDCNT >> gpu->currBgNum)&1) && windowEffect)   // the bg to draw has a special color effect
 	{
 		if (gpu->BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
 			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
 		}
 		T2WriteWord(dst, 0, color) ;
-		gpu->bgPixels[x] = bgnum;
+		gpu->bgPixels[x] = gpu->currBgNum;
 	}
 	else
 	{
-		if ((windowEffect && (gpu->BLDCNT & (0x100 << bgnum))) || windowDraw)
+		if ((windowEffect && (gpu->BLDCNT & (0x100 << gpu->currBgNum))) || windowDraw)
 		{
 			T2WriteWord(dst, 0, color);
-			gpu->bgPixels[x] = bgnum;
+			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 	}
 }
@@ -937,7 +953,7 @@ static void setFinalOBJColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 {
 	bool windowDraw = true, windowEffect = true;
 
-	renderline_checkWindows(gpu, 4, x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -965,7 +981,7 @@ static void setFinalOBJColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 
 {
 	bool windowDraw = true, windowEffect = true;
 
-	renderline_checkWindows(gpu, 4, x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -993,7 +1009,7 @@ static void setFinalOBJColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 {
 	bool windowDraw = true, windowEffect = true;
 
-	renderline_checkWindows(gpu, 4, x, windowDraw,windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw,windowEffect);
 
 	if(windowDraw)
 	{
@@ -1032,7 +1048,7 @@ static void setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 {
 	bool windowDraw = true, windowEffect = true;
 
-	renderline_checkWindows(gpu, 4, x, windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -1237,7 +1253,7 @@ static void setFinal3DColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 co
 {
 	bool windowDraw = true, windowEffect = true;
 	
-	renderline_checkWindows(gpu, 0, x,  windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -1279,7 +1295,7 @@ static void setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 c
 {
 	bool windowDraw = true, windowEffect = true;
 	
-	renderline_checkWindows(gpu, 0, x,  windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -1323,7 +1339,7 @@ static void setFinal3DColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 	bool windowDraw = true, windowEffect = true;
 	u16 final = color;
 	
-	renderline_checkWindows(gpu, 0, x,  windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -1375,7 +1391,7 @@ static void setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 	bool windowDraw = true, windowEffect = true;
 	u16 final = color;
 	
-	renderline_checkWindows(gpu, 0, x,  windowDraw, windowEffect);
+	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
 
 	if(windowDraw)
 	{
@@ -1422,7 +1438,9 @@ static void setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u1
 	}
 }
 
-INLINE static void __setFinalColorBck(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u8 x, bool opaque)
+//this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
+//overhead was ridiculous and terrible
+FORCEINLINE void GPU::__setFinalColorBck(u8 *dst, u16 color, u8 x, bool opaque)
 {
 	//I commented out this line to make a point.
 	//indeed, since x is a u8 we cannot pass in anything >=256
@@ -1435,7 +1453,7 @@ INLINE static void __setFinalColorBck(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u8
 
 	//due to this early out, we will get incorrect behavior in cases where 
 	//we enable mosaic in the middle of a frame. this is deemed unlikely.
-	if(!gpu->curr_mosaic_enabled) {
+	if(!curr_mosaic_enabled) {
 		if(opaque) goto finish;
 		else return;
 	}
@@ -1447,14 +1465,14 @@ INLINE static void __setFinalColorBck(GPU *gpu, u8 bgnum, u8 *dst, u16 color, u8
 	//x_int = enabled ? GPU::mosaicLookup.width[x].trunc : x;
 	x_int = GPU::mosaicLookup.width[x].trunc;
 
-	if(GPU::mosaicLookup.width[x].begin && GPU::mosaicLookup.height[gpu->currLine].begin) {}
-	else color = gpu->mosaicColors.bg[bgnum][x_int];
-	gpu->mosaicColors.bg[bgnum][x] = color;
+	if(GPU::mosaicLookup.width[x].begin && GPU::mosaicLookup.height[currLine].begin) {}
+	else color = mosaicColors.bg[currBgNum][x_int];
+	mosaicColors.bg[currBgNum][x] = color;
 
 	if(color != 0xFFFF)
 	{
 finish:
-		gpu->setFinalColorBck(gpu,bgnum,dst,color,x);
+		setFinalColorBck(this,dst,color,x);
 	}
 }
 
@@ -1507,6 +1525,8 @@ static void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * ty
 // render a text background to the combined pixelbuffer
 INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 YBG, u16 LG)
 {
+	gpu->currBgNum = num;
+
 	struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	struct _DISPCNT *dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	u16 lg     = gpu->BGSize[num][0];
@@ -1565,12 +1585,12 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 					if(!(xoff&1))
 					{
 						color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-						__setFinalColorBck(gpu,num,dst,color,x,currLine>>4);
+						gpu->__setFinalColorBck(dst,color,x,currLine>>4);
 						dst += 2; x++; xoff++;
 					}
 					
 					color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-					__setFinalColorBck(gpu,num,dst,color,x,currLine&0xF);
+					gpu->__setFinalColorBck(dst,color,x,currLine&0xF);
 					dst += 2; x++; xoff++;
 				}
 			} else {
@@ -1582,13 +1602,13 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 					if(!(xoff&1))
 					{
 						color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
-						__setFinalColorBck(gpu,num,dst,color,x,currLine&0xF);
+						gpu->__setFinalColorBck(dst,color,x,currLine&0xF);
 
 						dst += 2; x++; xoff++;
 					}
 
 					color = T1ReadWord(pal, ((currLine>>4) + tilePalette) << 1);
-					__setFinalColorBck(gpu,num,dst,color,x,currLine>>4);
+					gpu->__setFinalColorBck(dst,color,x,currLine>>4);
 					dst += 2; x++; xoff++;
 				}
 			}
@@ -1631,7 +1651,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 			else
 				color = T1ReadWord(pal, (*line) << 1);
 
-			__setFinalColorBck(gpu,num,dst,color,x,*line);
+			gpu->__setFinalColorBck(dst,color,x,*line);
 			
 			dst += 2; x++; xoff++;
 
@@ -1644,7 +1664,7 @@ INLINE void renderline_textBG(GPU * gpu, u8 num, u8 * dst, u32 Y, u16 XBG, u16 Y
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
 
-FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
+FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
 	
@@ -1653,10 +1673,10 @@ FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, in
 
 	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
 	color = T1ReadWord(pal, palette_entry << 1);
-	__setFinalColorBck(gpu,num,dst, color,i,palette_entry);
+	gpu->__setFinalColorBck(dst, color,i,palette_entry);
 }
 
-FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
+FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u8 palette_entry;
 	u16 x, y, color;
 	TILEENTRY tileentry;
@@ -1668,31 +1688,31 @@ FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, int num, s32 auxX, s32 auxY, i
 
 	palette_entry = tile[(tileentry.bits.TileNum<<6)+(y<<3)+x];
 	color = T1ReadWord(pal, (palette_entry + (extPal ? (tileentry.bits.Palette<<8) : 0)) << 1);
-	__setFinalColorBck(gpu,num,dst, color, i, palette_entry);
+	gpu->__setFinalColorBck(dst, color, i, palette_entry);
 }
 
-FORCEINLINE void rot_256_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
+FORCEINLINE void rot_256_map(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u8 palette_entry;
 	u16 color;
 
 	palette_entry = map[auxX + auxY * lg];
 	color = T1ReadWord(pal, palette_entry << 1);
-	__setFinalColorBck(gpu,num,dst, color, i, palette_entry);
+	gpu->__setFinalColorBck(dst, color, i, palette_entry);
 
 }
 
-FORCEINLINE void rot_BMP_map(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
+FORCEINLINE void rot_BMP_map(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal, int i, u16 H, u8 extPal) {
 	u16 color;
 
 	color = T1ReadWord(map, (auxX + auxY * lg) << 1);
-	__setFinalColorBck(gpu,num,dst, color, i, color&0x8000);
+	gpu->__setFinalColorBck(dst, color, i, color&0x8000);
 
 }
 
-typedef void (*rot_fun)(GPU * gpu, int num, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal , int i, u16 H, u8 extPal);
+typedef void (*rot_fun)(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * dst, u8 * map, u8 * tile, u8 * pal , int i, u16 H, u8 extPal);
 
 template<rot_fun fun>
-FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, u8 * map, u8 * tile, u8 * pal, u8 extPal)
+FORCEINLINE void rot_scale_op(GPU * gpu, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, u8 * map, u8 * tile, u8 * pal, u8 extPal)
 {
 	ROTOCOORD x, y;
 
@@ -1717,7 +1737,7 @@ FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, 
 		}
 		
 		if ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht))
-			fun(gpu, num, auxX, auxY, wh, dst, map, tile, pal, i, H, extPal);
+			fun(gpu, auxX, auxY, wh, dst, map, tile, pal, i, H, extPal);
 		dst += 2;
 		x.val += dx;
 		y.val += dy;
@@ -1725,28 +1745,30 @@ FORCEINLINE void rot_scale_op(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, 
 }
 
 template<rot_fun fun>
-FORCEINLINE void apply_rot_fun(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, u8 * map, u8 * tile, u8 * pal, u8 extPal)
+FORCEINLINE void apply_rot_fun(GPU * gpu, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, u8 * map, u8 * tile, u8 * pal, u8 extPal)
 {
-	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
-	s32 wh = gpu->BGSize[num][0];
-	s32 ht = gpu->BGSize[num][1];
-	rot_scale_op<fun>(gpu, num, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt->PaletteSet_Wrap, map, tile, pal, extPal);	
+	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[gpu->currBgNum].bits;
+	s32 wh = gpu->BGSize[gpu->currBgNum][0];
+	s32 ht = gpu->BGSize[gpu->currBgNum][1];
+	rot_scale_op<fun>(gpu, dst, H, X, Y, PA, PB, PC, PD, LG, wh, ht, bgCnt->PaletteSet_Wrap, map, tile, pal, extPal);	
 }
 
 
 FORCEINLINE void rotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
+	gpu->currBgNum = num;
 	u8 * map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
 	if (!map) return;
 	u8 * tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
 	if (!tile) return;
 	u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 //	printf("rot mode\n");
-	apply_rot_fun<rot_tiled_8bit_entry>(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, map, tile, pal, 0);
+	apply_rot_fun<rot_tiled_8bit_entry>(gpu, dst, H,X,Y,PA,PB,PC,PD,LG, map, tile, pal, 0);
 }
 
 FORCEINLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
+	gpu->currBgNum = num;
 	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	
@@ -1770,20 +1792,20 @@ FORCEINLINE void extRotBG2(GPU * gpu, u8 num, u8 * dst, u16 H, s32 X, s32 Y, s16
 			pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		if (!pal) return;
 		// 16  bit bgmap entries
-		apply_rot_fun<rot_tiled_16bit_entry>(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, map, tile, pal, dispCnt->ExBGxPalette_Enable);
+		apply_rot_fun<rot_tiled_16bit_entry>(gpu, dst, H,X,Y,PA,PB,PC,PD,LG, map, tile, pal, dispCnt->ExBGxPalette_Enable);
 		return;
 	case 2 :
 		// 256 colors 
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
 		if (!map) return;
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-		apply_rot_fun<rot_256_map>(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
+		apply_rot_fun<rot_256_map>(gpu, dst, H,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
 		return;
 	case 3 :
 		// direct colors / BMP
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
 		if (!map) return;
-		apply_rot_fun<rot_BMP_map>(gpu, num, dst, H,X,Y,PA,PB,PC,PD,LG, map, NULL, NULL, 0);
+		apply_rot_fun<rot_BMP_map>(gpu, dst, H,X,Y,PA,PB,PC,PD,LG, map, NULL, NULL, 0);
 		return;
 	}
 }
@@ -2889,6 +2911,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					{
 						if (i16 == 0 && dispCnt->BG0_3D)
 						{
+							gpu->currBgNum = 0;
 							u16 line3Dcolor[512];
 							u8 line3Dalpha[512];
 
@@ -2919,6 +2942,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		// render sprite Pixels
 		if (gpu->LayersEnable[4])
 		{
+			gpu->currBgNum = 4;
 			////analyze mosaic configuration
 			//u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
 			//gpu->curr_mosaic_enabled
