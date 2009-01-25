@@ -407,7 +407,7 @@ void gfx3d_glPushMatrix()
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
-	if (mtxStack[mymode].position >= mtxStack[mymode].size)
+	if (mtxStack[mymode].position > mtxStack[mymode].size)
 	{
 		gxstat |= (1<<15);
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
