@@ -45,6 +45,7 @@
 GFX3D gfx3d;
 
 //tables that are provided to anyone
+CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 CACHE_ALIGN u8 mixTable555[32][32][32];
 
@@ -207,11 +208,17 @@ static BOOL drawPending = FALSE;
 
 static void makeTables() {
 
-	//produce the color bits of a 32bpp color from a DS RGB15 using bit logic (internal use only)
+	//produce the color bits of a 24bpp color from a DS RGB15 using bit logic (internal use only)
 	#define RGB15TO24_BITLOGIC(col) ( (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
 
 	for(int i=0;i<32768;i++)
 		color_15bit_to_24bit[i] = RGB15TO24_BITLOGIC((u16)i);
+
+	//produce the color bits of a 24bpp color from a DS RGB15 using bit logic (internal use only). RGB are reverse of usual
+	#define RGB15TO24_BITLOGIC_REVERSE(col) ( (material_5bit_to_8bit[(col)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[((col)>>10)&0x1F] )
+
+	for(int i=0;i<32768;i++)
+		color_15bit_to_24bit_reverse[i] = RGB15TO24_BITLOGIC_REVERSE((u16)i);
 
 	for (int i = 0; i < 65536; i++)
 		float16table[i] = fix2float((signed short)i);
