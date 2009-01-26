@@ -82,7 +82,7 @@ waiter:
 		if( (ttime-ltime) >= (tfreq/desiredfps) ) // Oops, we're behind!
 		{
 			behind = true;
-			return(1);
+			return 0;
 		}
 	}
 	return(0);
