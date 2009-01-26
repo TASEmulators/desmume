@@ -40,8 +40,6 @@
 #include "readwrite.h"
 #include "FIFO.h"
 
-//#define USE_GEOMETRY_FIFO_EMULATION
-
 GFX3D gfx3d;
 
 //tables that are provided to anyone
@@ -441,7 +439,7 @@ void gfx3d_glPopMatrix(signed long i)
 	*/
 	gxstat &= 0xFFFF00FF;
 
-	MatrixCopy(mtxCurrent[mode], MatrixStackPopMatrix (&mtxStack[mode], i));
+	MatrixCopy(mtxCurrent[mymode], MatrixStackPopMatrix (&mtxStack[mymode], i));
 
 	if (mymode == 2)
 		MatrixCopy(mtxCurrent[1], MatrixStackPopMatrix (&mtxStack[1], i));
@@ -1047,15 +1045,26 @@ void gfx3d_glAlphaFunc(unsigned long v)
 
 BOOL gfx3d_glBoxTest(unsigned long v)
 {
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat |= 0x00000001;		// busy
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
 	BTind++;
 	if (BTind < 3) return FALSE;
 	BTind = 0;
+
+	gxstat &= 0xFFFFFFFE;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 	//INFO("BoxTest=%i\n",v);
 	return TRUE;
 }
 
 BOOL gfx3d_glPosTest(unsigned long v)
 {
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat |= 0x00000001;		// busy
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
 	PTind++;
 	if (PTind < 2)
 	{
@@ -1072,11 +1081,18 @@ BOOL gfx3d_glPosTest(unsigned long v)
 	MatrixMultVec4x4(mtxCurrent[1], PTcoords);
 	MatrixMultVec4x4(mtxCurrent[0], PTcoords);
 
+	gxstat &= 0xFFFFFFFE;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
 	return TRUE;
 }
 
 void gfx3d_glVecTest(unsigned long v)
 {
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat &= 0xFFFFFFFE;
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
 	//INFO("NDS_glVecTest\n");
 }
 
@@ -1214,40 +1230,33 @@ void gfx3d_execute(u8 cmd, u32 param)
 		break;
 	}
 }
+#endif
 
-static void gfx3d_FlushFIFO()
+void gfx3d_FlushFIFO()
 {
 	if (!gxFIFO.tail) return;
 
+#ifdef USE_GEOMETRY_FIFO_EMULATION
 	for (int i=0; i < gxFIFO.tail; i++)
+	{
+		//INFO("3D execute command 0x%02X with param 0x%08X (pos %03i)\n", gxFIFO.cmd[i], gxFIFO.param[i], i);
 		gfx3d_execute(gxFIFO.cmd[i], gxFIFO.param[i]);
-	GFX_FIFOclear();
-}
-#else
-
-static void gfx3d_FlushFIFO()
-{
-	GFX_FIFOclear();
-}
-
+	}
 #endif
+	GFX_FIFOclear();
+}
 
 void gfx3d_glFlush(unsigned long v)
 {
-	gfx3d_FlushFIFO();			// GX FIFO commands execute
+	gfx3d_FlushFIFO();
 
 	flushPending = TRUE;
 	gfx3d.wbuffer = (v&1)!=0;
 	gfx3d.sortmode = ((v>>1)&1)!=0;
 
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	//INFO("GFX FIFO: swap buffers (cmd 0x%08X, index %i)\n", clCmd, clInd);
-	//NDS_Pause();
-#else
 	// reset
 	clInd = 0;
 	clCmd = 0;
-#endif
 
 	//the renderer wil lget the lists we just built
 	gfx3d.polylist = polylist;
@@ -1278,7 +1287,12 @@ void gfx3d_VBlankSignal()
 {
 	//the 3d buffers are swapped when a vblank begins.
 	//so, if we have a redraw pending, now is a safe time to do it
-	if(!flushPending) return;
+	if(!flushPending)
+	{
+		gfx3d_FlushFIFO();
+		return;
+	}
+
 	flushPending = FALSE;
 	drawPending = TRUE;
 }
@@ -1286,11 +1300,13 @@ void gfx3d_VBlankSignal()
 void gfx3d_VBlankEndSignal()
 {
 	if(!drawPending) return;
+
 	drawPending = FALSE;
 	gpu3D->NDS_3D_Render();
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
+//#define _3D_LOG
 static void NOPARAMS()
 {
 	for (;;)
@@ -1302,13 +1318,19 @@ static void NOPARAMS()
 				{
 					clCmd >>= 8;
 					clInd--;
-					gfx3d_FlushFIFO();
+#ifdef _3D_LOG
+					INFO("GX FIFO !!!ZERO!!! (%03i) (without params)\n", gxFIFO.tail);
+#endif
+					//gfx3d_FlushFIFO();
 					continue;
 				}
 			case 0x11:		// MTX_PUSH - Push Current Matrix on Stack (W)
 			case 0x15:		// MTX_IDENTITY - Load Unit Matrix to Current Matrix (W)
 			case 0x41:		// END_VTXS - End of Vertex List (W)
 				{
+#ifdef _3D_LOG
+					INFO("GX FIFO cmd 0x%02X (without params)\n", clCmd, gxFIFO.tail);
+#endif
 					GFX_FIFOsend(clCmd & 0xFF, 0);
 					clCmd >>= 8;
 					clInd--;
@@ -1321,25 +1343,18 @@ static void NOPARAMS()
 
 void gfx3d_sendCommandToFIFO(u32 val)
 {
-	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-						
-	//INFO("GX FIFO cmd 0x%08X, gxstat 0x%08X\n", val, gxstat);
 	if (!clInd)
 	{
-#if 0
 		if (val == 0)
 		{
-			gfx3d_FlushFIFO();
+			//gfx3d_FlushFIFO();
 			return;
 		}
+#ifdef _3D_LOG
+		INFO("GX FIFO cmd 0x%02X, gxstat 0x%08X (%03i)\n", val, gxstat, gxFIFO.tail);
 #endif
 		clCmd = val;
-		if (clInd2)
-		{
-			INFO("!!! Error FIFO index2: %i\n", clInd2);
-			NDS_Pause();
-		}
-#if 0
+
 		if (!(clCmd & 0xFFFFFF00))	// unpacked command
 			clInd = 1;
 		else
@@ -1350,15 +1365,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 					clInd = 3;
 				else
 					clInd = 4;
-#else
-		clInd = 4;
-#endif
 		NOPARAMS();
-		/*if (clInd)
-		{
-			gxstat |= 0x08000000;
-			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		}*/
 		return;
 	}
 
@@ -1452,6 +1459,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		case 0x60:		// VIEWPORT - Set Viewport (W)
 		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
 			GFX_FIFOsend(clCmd & 0xFF, val);
+
 			clCmd >>= 8;
 			clInd--;
 		break;
@@ -1466,31 +1474,15 @@ void gfx3d_sendCommandToFIFO(u32 val)
 	}
 
 	NOPARAMS();
-	/*
-	if (!clInd)
-	{
-		gxstat &= 0xF7FFFFFF;
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-	}
-	*/
 }
 
 void gfx3d_sendCommand(u32 cmd, u32 param)
 {
-	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	//if (gxstat & 0x08000000) return;			// GX busy
 	cmd = (cmd & 0x01FF) >> 2;
-
-	if (clInd)
-	{
-		INFO("!!! Error index: %i\n", clInd);
-		NDS_Pause();
-	}
-	if (clInd2)
-	{
-		INFO("!!! Error index2: %i\n", clInd2);
-		NDS_Pause();
-	}
+	
+#ifdef _3D_LOG
+	INFO("GX (dir) cmd 0x%02X = 0x%08X, gxstat 0x%08X (%02i)\n", cmd, param, gxstat, gxFIFO.tail);
+#endif
 
 	switch (cmd)
 	{
@@ -1534,7 +1526,7 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 			break;
 		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
 			gfx3d_glFlush(param);
-			break;
+		break;
 		default:
 			INFO("Unknown 3D command %03X with param 0x%08X (directport)\n", cmd, param);
 			break;
@@ -1546,20 +1538,14 @@ static void NOPARAMS()
 {
 	for (;;)
 	{
+		if (!clInd) return;
 		switch (clCmd & 0xFF)
 		{
 			case 0x00:
 				{
-					if (clInd > 0)
-					{
-						clCmd >>= 8;
-						clInd--;
-						gfx3d_FlushFIFO();
-						continue;
-					}
-					gfx3d_FlushFIFO();
-					clCmd = 0;
-					break;
+					clCmd >>= 8;
+					clInd--;
+					continue;
 				}
 			case 0x11:
 				{
@@ -1595,16 +1581,24 @@ static void NOPARAMS()
 
 void gfx3d_sendCommandToFIFO(u32 val)
 {
-	//if (clCmd) INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", clCmd, val);
 	if (!clInd)
 	{
-		if (val == 0) 
-		{
-			gfx3d_FlushFIFO();
-			return;
-		}
+		if (val == 0) return;
+
+#ifdef _3D_LOG
+		INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", clCmd, val);
+#endif
 		clCmd = val;
-		clInd = 4;
+		if (!(clCmd & 0xFFFFFF00))	// unpacked command
+			clInd = 1;
+		else
+			if (!(clCmd & 0xFFFF0000))	// packed command
+				clInd = 2;
+			else
+				if (!(clCmd & 0xFF000000))	// packed command
+					clInd = 3;
+				else
+					clInd = 4;
 		NOPARAMS();
 		return;
 	}
@@ -1817,9 +1811,6 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		case 0x50:		// SWAP_BUFFERS - Swap Rendering Engine Buffer (W)
 			*(u32 *)(ARM9Mem.ARM9_REG + 0x540) = val;
 			gfx3d_glFlush(val);
-			// This is reseted by glFlush, thus not needed here (fixes dsracing.nds)
-			//clCmd >>= 8;
-			//clInd--;
 		break;
 		case 0x60:		// VIEWPORT - Set Viewport (W)
 			*(u32 *)(ARM9Mem.ARM9_REG + 0x580) = val;
@@ -1861,10 +1852,11 @@ void gfx3d_sendCommandToFIFO(u32 val)
 void gfx3d_sendCommand(u32 cmd, u32 param)
 {
 	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
-	if (gxstat & 0x08000000) return;			// GX busy
 
 	cmd &= 0x0FFF;
-	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", (cmd & 0x1FF)>>2, param);
+#ifdef _3D_LOG
+	INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X) - DIRECT\n", (cmd & 0x1FF)>>2, param);
+#endif
 
 	switch (cmd)
 	{
@@ -2101,11 +2093,14 @@ SFORMAT SF_GFX3D[]={
 	{ "GL_S", 4, 1, &last_s},
 	{ "GLCM", 4, 1, &clCmd},
 	{ "GLIN", 4, 1, &clInd},
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	{ "GLIN", 4, 1, &clInd2},
+#endif
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLPC", 4, 4, PTcoords},
 	{ "GLF9", 4, 1, &gxFIFO.tail},
-	{ "GLF9", 4, 261, &gxFIFO.cmd},
+	{ "GLF9", 1, 261, &gxFIFO.cmd},
 	{ "GLF9", 4, 261, &gxFIFO.param},
 	{ "GCOL", 1, 4, colorRGB},
 	{ "GLCO", 4, 4, lightColor},

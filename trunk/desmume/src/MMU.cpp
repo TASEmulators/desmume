@@ -976,10 +976,12 @@ void FASTCALL MMU_doDMA(u32 num)
 				src += srcinc;
 			}
 
+#if 0
 		//write back the addresses
 		DMASrc[PROCNUM][num] = src;
 		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
 			DMADst[PROCNUM][num] = dst;
+#endif
 	}
 }
 
@@ -1762,28 +1764,38 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		// Address is an IO register
 		switch(adr)
 		{
-			case 0x0400035C:
-			{
-				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x35C>>1] = val;
-				gfx3d_glFogOffset (val);
-				return;
-			}
+			// Alpha test reference value - Parameters:1
 			case 0x04000340:
 			{
 				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x340>>1] = val;
 				gfx3d_glAlphaFunc(val);
 				return;
 			}
-			case 0x04000060:
+			// Clear background color setup - Parameters:2
+			case 0x04000350:
 			{
-				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x060>>1] = val;
-				gfx3d_Control(val);
+				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x350>>1] = val;
+				gfx3d_glClearColor(val);
 				return;
 			}
+			// Clear background depth setup - Parameters:2
 			case 0x04000354:
 			{
 				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x354>>1] = val;
 				gfx3d_glClearDepth(val);
+				return;
+			}
+			// Fog Color - Parameters:4b
+			case 0x04000358:
+			{
+				((u16 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x358>>1] = val;
+				gfx3d_glFogColor(val);
+				return;
+			}
+			case 0x0400035C:
+			{
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x35C>>1] = val;
+				gfx3d_glFogOffset(val);
 				return;
 			}
 
@@ -2384,11 +2396,9 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
-#ifdef USE_GEOMETRY_FIFO_EMULATION
 			case 0x04000600:
 				GFX_FIFOcnt(val);
 				return;
-#endif
 			// Alpha test reference value - Parameters:1
 			case 0x04000340:
 			{
@@ -2925,14 +2935,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	{
 		switch(adr)
 		{
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
-			{
-				u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-				//INFO("GXSTAT:   read  context 0x%08X%s\n", gxstat, (gxstat&0x01000000)?" FULL":"");
-				break;
-			}
-#else
+#ifndef USE_GEOMETRY_FIFO_EMULATION
 			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
 			{
 				

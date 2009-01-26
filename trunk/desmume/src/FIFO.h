@@ -26,6 +26,8 @@
 #ifndef FIFO_H
 #define FIFO_H
 
+//#define USE_GEOMETRY_FIFO_EMULATION
+
 #include "types.h"
 
 //=================================================== IPC FIFO
@@ -48,12 +50,13 @@ typedef struct
 	u8		cmd[261];
 	u32		param[261];
 
-	u32		tail;		// tail
+	u16		tail;		// tail
 } GFX_FIFO;
 
 extern GFX_FIFO gxFIFO;
 extern void GFX_FIFOclear();
 extern void GFX_FIFOsend(u8 cmd, u32 param);
+extern BOOL GFX_FIFOrecv(u8 *cmd, u32 *param);
 extern void GFX_FIFOcnt(u32 val);
 
 //=================================================== Display memory FIFO
