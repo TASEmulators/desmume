@@ -142,7 +142,8 @@ void GFX_FIFOclear()
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0x0000FFFF;
 
-	memset(&gxFIFO, 0, sizeof(GFX_FIFO));
+	//memset(&gxFIFO, 0, sizeof(GFX_FIFO));
+	gxFIFO.tail = 0;
 	gxstat |= 0x06000000;
 	gxstat |= 0x00000002;	// this is hack
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
