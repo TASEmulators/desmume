@@ -573,7 +573,7 @@ void GPU_addBack(GPU * gpu, u8 num)
 /*****************************************************************************/
 
 template<int WIN_NUM>
-bool GPU::withinRect(u8 x) const
+FORCEINLINE bool GPU::withinRect(u8 x) const
 {
 	u8 y = currLine;
 	u16 startX,startY,endX,endY;
@@ -1993,7 +1993,7 @@ INLINE void render_sprite_Win (GPU * gpu, u16 l, u8 * src,
 }
 
 // return val means if the sprite is to be drawn or not
-INLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l, 
+FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l, 
 	size &sprSize, s32 &sprX, s32 &sprY, s32 &x, s32 &y, s32 &lg, int &xdir) {
 
 	x = 0;
@@ -2143,7 +2143,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 			else
 			{
 				if(sprX+fieldX>256)
-					lg = 255 - sprX;
+					lg = 256 - sprX;
 			}
 
 			// If we are using 1 palette of 256 colours
@@ -2444,7 +2444,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 			else
 			{
 				if(sprX+fieldX>256)
-					lg = 255 - sprX;
+					lg = 256 - sprX;
 			}
 
 			// If we are using 1 palette of 256 colours
