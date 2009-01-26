@@ -431,7 +431,9 @@ u16 GPU::blend(u16 colA, u16 colB)
 
 void GPU_setMasterBrightness (GPU *gpu, u16 val)
 {
-	if(!nds.isInVblank()) PROGINFO("Changing master brightness outside of vblank\n");
+	if(!nds.isInVblank()) {
+		PROGINFO("Changing master brightness outside of vblank\n");
+	}
  	gpu->MasterBrightFactor = (val & 0x1F);
 	gpu->MasterBrightMode	= (val>>14);
 }
