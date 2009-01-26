@@ -620,6 +620,12 @@ struct GPU
 	} mosaicColors;
 
 	u8 sprNum[256];
+	u8 h_win[2][256];
+	const u8 *curr_win[2];
+	void update_winh(int WIN_NUM); 
+	bool need_update_winh[2];
+	
+	template<int WIN_NUM> void setup_windows();
 
 	u8 core;
 
@@ -841,17 +847,17 @@ void GPU_set_DISPCAPCNT(u32 val) ;
 void GPU_ligne(NDS_Screen * screen, u16 l) ;
 void GPU_setMasterBrightness (GPU *gpu, u16 val);
 
-#define GPU_setWIN0_H(gpu, val) {gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF;}
-#define GPU_setWIN0_H0(gpu, val) gpu->WIN0H0 = val
-#define GPU_setWIN0_H1(gpu, val) gpu->WIN0H1 = val
+#define GPU_setWIN0_H(gpu, val) {gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF; gpu->need_update_winh[0] = true; }
+#define GPU_setWIN0_H0(gpu, val) { gpu->WIN0H0 = val;  gpu->need_update_winh[0] = true; }
+#define GPU_setWIN0_H1(gpu, val) { gpu->WIN0H1 = val;  gpu->need_update_winh[0] = true; }
 
 #define GPU_setWIN0_V(gpu, val) {gpu->WIN0V0 = val >> 8; gpu->WIN0V1 = val&0xFF;}
 #define GPU_setWIN0_V0(gpu, val) gpu->WIN0V0 = val
 #define GPU_setWIN0_V1(gpu, val) gpu->WIN0V1 = val
 
-#define GPU_setWIN1_H(gpu, val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;}
-#define GPU_setWIN1_H0(gpu, val) gpu->WIN1H0 = val
-#define GPU_setWIN1_H1(gpu, val) gpu->WIN1H1 = val
+#define GPU_setWIN1_H(gpu, val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
+#define GPU_setWIN1_H0(gpu, val) { gpu->WIN1H0 = val;  gpu->need_update_winh[1] = true; }
+#define GPU_setWIN1_H1(gpu, val) { gpu->WIN1H1 = val;  gpu->need_update_winh[1] = true; }
 
 #define GPU_setWIN1_V(gpu, val) {gpu->WIN1V0 = val >> 8; gpu->WIN1V1 = val&0xFF;}
 #define GPU_setWIN1_V0(gpu, val) gpu->WIN1V0 = val
