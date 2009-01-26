@@ -142,10 +142,9 @@ void GFX_FIFOclear()
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0x0000FFFF;
 
-	//memset(&gxFIFO, 0, sizeof(GFX_FIFO));
 	gxFIFO.tail = 0;
 	gxstat |= 0x06000000;
-	gxstat |= 0x00000002;	// this is hack
+	gxstat |= 0x00000002;					// this is hack (must be removed later)
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
@@ -153,25 +152,69 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 {
 	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO - 0x%08X (%03i/%02X)\n", cmd, param, gxFIFO.tail, gxFIFO.tail);
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	if (gxstat & 0x01000000) return;		// full
+
 	gxstat &= 0x0000FFFF;
-	gxstat |= 0x00000002;		// this is hack
-	if (gxFIFO.tail > 255)
-	{
-		gxstat |= (0x01FF << 16);
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		return;
-	}
+	gxstat |= 0x00000002;					// this is hack (must be removed later)
 
 	gxFIFO.cmd[gxFIFO.tail] = cmd;
 	gxFIFO.param[gxFIFO.tail] = param;
 	gxFIFO.tail++;
+	if (gxFIFO.tail > 256)
+		gxFIFO.tail = 256;
+
 	// TODO: irq handle
 	if (gxFIFO.tail < 128)
 		gxstat |= 0x02000000;
-	//gxstat |= 0x72000000; // hack: later MUST be removed
-	gxstat |= ((gxFIFO.tail & 0x01FF) << 16);
+	gxstat |= (gxFIFO.tail << 16);
+
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	gxstat |= 0x08000000;					// busy
+#else
+	gxstat |= 0x02000000;					// this is hack (must be removed later)
+#endif
 
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+}
+
+BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
+{
+	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat &= 0xF000FFFF;
+	gxstat |= 0x00000002;					// this is hack (must be removed later)
+	if (!gxFIFO.tail)						// empty
+	{
+		//gxstat |= (0x01FF << 16);
+		gxstat |= 0x06000000;
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		return FALSE;
+	}
+	*cmd = gxFIFO.cmd[0];
+	*param = gxFIFO.param[0];
+	gxFIFO.tail--;
+	for (int i=0; i < gxFIFO.tail; i++)
+	{
+		gxFIFO.cmd[i] = gxFIFO.cmd[i+1];
+		gxFIFO.param[i] = gxFIFO.param[i+1];
+	}
+
+	if (gxFIFO.tail)			// not empty
+	{
+		gxstat |= (gxFIFO.tail << 16);
+		gxstat |= 0x08000000;
+	}
+	else
+	{
+		gxstat |= 0x04000000;
+		return FALSE;
+	}
+
+	if (gxFIFO.tail < 128)
+		gxstat |= 0x02000000;
+
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
+	return TRUE;
 }
 
 void GFX_FIFOcnt(u32 val)
@@ -180,15 +223,16 @@ void GFX_FIFOcnt(u32 val)
 	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X)\n", val, gxstat);
 	if (val & (1<<29))		// clear? (homebrew)
 	{
-		// need to flush???
+		// need to flush before???
 		GFX_FIFOclear();
 		return;
 	}
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-
+	
 	if (gxstat & 0xC0000000)
 	{
-		NDS_makeARM9Int(21);
+		//NDS_makeARM9Int(21);
+		MMU.reg_IF[0] = (1<<21);
 	}
 }
 
