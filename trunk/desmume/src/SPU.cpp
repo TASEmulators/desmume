@@ -21,6 +21,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdlib.h>
 #include <string.h>
+
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #include "debug.h"
@@ -143,9 +145,14 @@ SoundInterface_struct *SPU_SoundCore()
 
 //////////////////////////////////////////////////////////////////////////////
 
+//static double cos_lut[256];
+
 int SPU_Init(int coreid, int buffersize)
 {
 	int i, j;
+
+	//for(int i=0;i<256;i++)
+	//	cos_lut[i] = cos(i/256.0*M_PI);
 
 	SPU_core = new SPU_struct(740);
 	SPU_Reset();
@@ -616,9 +623,14 @@ void SPU_WriteLong(u32 addr, u32 val)
 #ifdef SPU_INTERPOLATE
 static s32 Interpolate(s32 a, s32 b, double ratio)
 {
+	//ratio = ratio - (int)ratio;
+	//double ratio2 = ((1.0f - cos(ratio * 3.14f)) / 2.0f);
+	////double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
+	//return (((1-ratio2)*a) + (ratio2*b));
+	
+	//linear interpolation
 	ratio = ratio - (int)ratio;
-	double ratio2 = ((1.0f - cos(ratio * 3.14f)) / 2.0f);
-	return (((1-ratio2)*a) + (ratio2*b));
+	return (1-ratio)*a + ratio*b;
 }
 #endif
 
