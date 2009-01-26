@@ -131,6 +131,9 @@ typedef struct
 	s32 idleCycles;
 	s32 runCycleCollector[16];
 	s32 idleFrameCounter;
+
+	bool isInVblank() const { return VCount >= 192; } 
+	bool isIn3dVblank() const { return VCount >= 192 && VCount<215; } 
 } NDSSystem;
 
 /** /brief A touchscreen calibration point.

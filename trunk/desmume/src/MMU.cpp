@@ -597,6 +597,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	
 	u32	vram_map_addr = 0xFFFFFFFF;
 	u8	*LCD_addr = LCDdst[block];
+
+	bool changingTexOrTexPalette = false;
 	
 	switch (VRAMBankCnt & 0x07)
 	{
@@ -674,6 +676,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				case 3:		// D
 					// Textures
 					{
+						changingTexOrTexPalette = true;
 						int slot_index = (VRAMBankCnt >> 3) & 0x3;
 						ARM9Mem.textureSlotAddr[slot_index] = LCD_addr;
 						gpu3D->NDS_3D_VramReconfigureSignal();
@@ -682,6 +685,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 					}
 				break;
 				case 4:		// E
+					changingTexOrTexPalette = true;
 					ARM9Mem.texPalSlot[0] = LCD_addr;
 					ARM9Mem.texPalSlot[1] = LCD_addr+0x4000;
 					ARM9Mem.texPalSlot[2] = LCD_addr+0x8000;
@@ -691,6 +695,7 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				case 5:		// F
 				case 6:		// G
 				{
+					changingTexOrTexPalette = true;
 					u8 tmp_slot = ((VRAMBankCnt >> 3) & 0x01) + (((VRAMBankCnt >> 4) & 0x01)*4);
 					ARM9Mem.texPalSlot[tmp_slot] = LCD_addr;
 					gpu3D->NDS_3D_VramReconfigureSignal();
@@ -744,6 +749,11 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				ARM9Mem.ObjExtPal[0][1] = LCD_addr + 0x2000;
 			}
 		break;
+	}
+
+	if(changingTexOrTexPalette && !nds.isIn3dVblank())
+	{
+		PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
 	}
 
 	if (vram_map_addr != 0xFFFFFFFF)
