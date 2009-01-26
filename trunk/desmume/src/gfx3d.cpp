@@ -1232,7 +1232,7 @@ void gfx3d_execute(u8 cmd, u32 param)
 }
 #endif
 
-void gfx3d_FlushFIFO()
+static void gfx3d_FlushFIFO()
 {
 	if (!gxFIFO.tail) return;
 
