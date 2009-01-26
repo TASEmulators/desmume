@@ -206,6 +206,11 @@ GPU::Final3DColFunct pixelBlitters3D[8] = {
                                     setFinal3DColorSpecialIncreaseWnd,
                                     setFinal3DColorSpecialDecreaseWnd};
 
+static const CACHE_ALIGN u8 win_empty[256] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 static CACHE_ALIGN u16 fadeInColors[17][0x8000];
 static CACHE_ALIGN u16 fadeOutColors[17][0x8000];
 CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
@@ -279,6 +284,10 @@ GPU * GPU_Init(u8 l)
 	GPU_Reset(g, l);
 	GPU_InitFadeColors();
 
+	g->curr_win[0] = win_empty;
+	g->curr_win[1] = win_empty;
+	g->need_update_winh[0] = true;
+	g->need_update_winh[1] = true;
 	g->setFinalColorBck = setFinalBGColorSpecialNone;
 	g->setFinalColorSpr = setFinalOBJColorSpecialNone;
 	g->setFinalColor3D = setFinal3DColorSpecialNone;
@@ -575,51 +584,18 @@ void GPU_addBack(GPU * gpu, u8 num)
 template<int WIN_NUM>
 FORCEINLINE bool GPU::withinRect(u8 x) const
 {
-	u8 y = currLine;
-	u16 startX,startY,endX,endY;
-
-	if(WIN_NUM==0)
-	{
-		startX = WIN0H0;
-		startY = WIN0V0;
-		endX = WIN0H1;
-		endY = WIN0V1;
-	}
-	else
-	{
-		startX = WIN1H0;
-		startY = WIN1V0;
-		endX = WIN1H1;
-		endY = WIN1V1;
-	}
-
-	if(startX > endX)
-	{
-		if((x < startX) && (x > endX)) return false;
-	}
-	else
-	{
-		if((x < startX) || (x >= endX)) return false;
-	}
-
-	if(startY > endY)
-	{
-		if((y < startY) && (y > endY)) return false;
-	}
-	else
-	{
-		if((y < startY) || (y >= endY)) return false;
-	}
-
-	return true;
+	return curr_win[WIN_NUM][x];
 }
+
+
 
 //  Now assumes that *draw and *effect are different from 0 when called, so we can avoid
 // setting some values twice
-void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) const
+FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) const
 {
 	// Check if win0 if enabled, and only check if it is
-	if (WIN0_ENABLED)
+	// howevever, this has already been taken care of by the window precalculation
+	//if (WIN0_ENABLED)
 	{
 		// it is in win0, do we display ?
 		// high priority	
@@ -633,7 +609,8 @@ void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) const
 	}
 
 	// Check if win1 if enabled, and only check if it is
-	if (WIN1_ENABLED)
+	//if (WIN1_ENABLED)
+	// howevever, this has already been taken care of by the window precalculation
 	{
 		// it is in win1, do we display ?
 		// mid priority
@@ -3145,6 +3122,92 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 
 }
 
+template<int WIN_NUM>
+FORCEINLINE void GPU::setup_windows()
+{
+	u8 y = currLine;
+	u16 startY,endY;
+
+	if(WIN_NUM==0)
+	{
+		startY = WIN0V0;
+		endY = WIN0V1;
+	}
+	else
+	{
+		startY = WIN1V0;
+		endY = WIN1V1;
+	}
+
+	if(WIN_NUM == 0 && !WIN0_ENABLED) goto allout;
+	if(WIN_NUM == 1 && !WIN1_ENABLED) goto allout;
+
+	if(startY > endY)
+	{
+		if((y < startY) && (y > endY)) goto allout;
+	}
+	else
+	{
+		if((y < startY) || (y >= endY)) goto allout;
+	}
+
+	//the x windows will apply for this scanline
+	curr_win[WIN_NUM] = h_win[WIN_NUM];
+	return;
+	
+allout:
+	curr_win[WIN_NUM] = win_empty;
+}
+
+void GPU::update_winh(int WIN_NUM)
+{
+	//dont even waste any time in here if the window isnt enabled
+	if(WIN_NUM==0 && !WIN0_ENABLED) return;
+	if(WIN_NUM==1 && !WIN1_ENABLED) return;
+
+	need_update_winh[WIN_NUM] = false;
+	u16 startX,endX;
+
+	if(WIN_NUM==0)
+	{
+		startX = WIN0H0;
+		endX = WIN0H1;
+	}
+	else
+	{
+		startX = WIN1H0;
+		endX = WIN1H1;
+	}
+
+	//the original logic: if you doubt the window code, please check it against the newer implementation below
+	//if(startX > endX)
+	//{
+	//	if((x < startX) && (x > endX)) return false;
+	//}
+	//else
+	//{
+	//	if((x < startX) || (x >= endX)) return false;
+	//}
+
+	if(startX > endX)
+	{
+		for(int i=0;i<=endX;i++)
+			h_win[WIN_NUM][i] = 1;
+		for(int i=endX+1;i<startX;i++)
+			h_win[WIN_NUM][i] = 0;
+		for(int i=startX;i<256;i++)
+			h_win[WIN_NUM][i] = 1;
+	} else
+	{
+		for(int i=0;i<startX;i++)
+			h_win[WIN_NUM][i] = 0;
+		for(int i=startX;i<endX;i++)
+			h_win[WIN_NUM][i] = 1;
+		for(int i=endX;i<256;i++)
+			h_win[WIN_NUM][i] = 0;
+	}
+}
+
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
@@ -3162,6 +3225,14 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	GPU::mosaicLookup.heightValue = mosaic_height;
 	GPU::mosaicLookup.width = &GPU::mosaicLookup.table[mosaic_width][0];
 	GPU::mosaicLookup.height = &GPU::mosaicLookup.table[mosaic_height][0];
+
+	if(gpu->need_update_winh[0]) gpu->update_winh(0);
+	if(gpu->need_update_winh[1]) gpu->update_winh(1);
+
+	gpu->setup_windows<0>();
+	gpu->setup_windows<1>();
+
+
 
 	// initialize the scanline black
 	// not doing this causes invalid colors when all active BGs are prevented to draw at some place
