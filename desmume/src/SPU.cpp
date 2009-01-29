@@ -223,6 +223,9 @@ void SPU_struct::reset()
 	memset((void *)channels, 0, sizeof(channel_struct) * 16);
 	memset(sndbuf,0,bufsize*2*4);
 	memset(outbuf,0,bufsize*2*2);
+
+	for(int i = 0; i < 16; i++)
+		channels[i].num = i;
 }
 
 SPU_struct::SPU_struct(int buffersize)
@@ -291,6 +294,7 @@ void SPU_struct::KeyOn(int channel)
 		}
 	case 3: // PSG
 		{
+			thischan.x = 0x7FFF;
 			break;
 		}
 	default: break;
@@ -722,7 +726,40 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
 
 static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
 {
-	*data = (s32)wavedutytbl[chan->waveduty][((int)chan->sampcnt) & 0x7];
+	if(chan->num < 8)
+	{
+		*data = 0;
+	}
+	else if(chan->num < 14)
+	{
+		*data = (s32)wavedutytbl[chan->waveduty][((int)chan->sampcnt) & 0x7];
+	}
+	else
+	{
+		if(chan->lastsampcnt == (int)chan->sampcnt)
+		{
+			*data = chan->psgnoise_last;
+			return;
+		}
+
+		for(int i = chan->lastsampcnt; i < (int)chan->sampcnt; i++)
+		{
+			if(chan->x & 0x1)
+			{
+				chan->x = (chan->x >> 1);
+				chan->psgnoise_last = -0x7FFF;
+			}
+			else
+			{
+				chan->x = ((chan->x >> 1) ^ 0x6000);
+				chan->psgnoise_last = 0x7FFF;
+			}
+		}
+
+		chan->lastsampcnt = (int)chan->sampcnt;
+
+		*data = chan->psgnoise_last;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
