@@ -45,6 +45,7 @@ extern SoundInterface_struct SNDFile;
 
 struct channel_struct
 {
+	int num;
    u8 vol;
    u8 datashift;
    u8 hold;
@@ -65,6 +66,8 @@ struct channel_struct
    int lastsampcnt;
    s16 pcm16b, pcm16b_last;
    int index;
+   u16 x;
+   s16 psgnoise_last;
 } ;
 
 class SPU_struct
