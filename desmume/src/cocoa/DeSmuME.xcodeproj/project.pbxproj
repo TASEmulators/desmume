@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5577060F326E2000DCF447 /* cheatSystem.cpp */; };
 		1FB3725C0F1CB9D300F75A43 /* mic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB3725A0F1CB9D300F75A43 /* mic.cpp */; };
 		1FB372630F1CB9F700F75A43 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372610F1CB9F700F75A43 /* addons.cpp */; };
 		1FB3727A0F1CBAB200F75A43 /* compactFlash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372760F1CBAB200F75A43 /* compactFlash.cpp */; };
@@ -75,6 +76,8 @@
 
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		1F5577060F326E2000DCF447 /* cheatSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cheatSystem.cpp; path = ../cheatSystem.cpp; sourceTree = SOURCE_ROOT; };
+		1F5577070F326E2000DCF447 /* cheatSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cheatSystem.h; path = ../cheatSystem.h; sourceTree = SOURCE_ROOT; };
 		1FB3725A0F1CB9D300F75A43 /* mic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mic.cpp; path = ../mic.cpp; sourceTree = SOURCE_ROOT; };
 		1FB3725B0F1CB9D300F75A43 /* mic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mic.h; path = ../mic.h; sourceTree = SOURCE_ROOT; };
 		1FB372610F1CB9F700F75A43 /* addons.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = addons.cpp; path = ../addons.cpp; sourceTree = SOURCE_ROOT; };
@@ -321,6 +324,8 @@
 			children = (
 				1FB372750F1CBAB200F75A43 /* addons */,
 				1FDD29400F080DBD004021C9 /* decrypt */,
+				1F5577060F326E2000DCF447 /* cheatSystem.cpp */,
+				1F5577070F326E2000DCF447 /* cheatSystem.h */,
 				1FB372610F1CB9F700F75A43 /* addons.cpp */,
 				1FB372620F1CB9F700F75A43 /* addons.h */,
 				1FB3725A0F1CB9D300F75A43 /* mic.cpp */,
@@ -583,6 +588,7 @@
 				1FB3727B0F1CBAB200F75A43 /* gbagame.cpp in Sources */,
 				1FB3727C0F1CBAB200F75A43 /* none.cpp in Sources */,
 				1FB3727D0F1CBAB200F75A43 /* rumblepak.cpp in Sources */,
+				1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

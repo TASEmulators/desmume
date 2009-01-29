@@ -125,6 +125,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../bits.h" />
 		<Unit filename="../cflash.cpp" />
 		<Unit filename="../cflash.h" />
+		<Unit filename="../cheatSystem.cpp" />
+		<Unit filename="../cheatSystem.h" />
 		<Unit filename="English.strings" />
 		<Unit filename="Japanese.strings" />
 		<Unit filename="about.m">
