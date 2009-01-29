@@ -986,12 +986,13 @@ void FASTCALL MMU_doDMA(u32 num)
 				src += srcinc;
 			}
 
-#if 0
+		//this is necessary for repeating DMA such as to scroll registers for NSMB level backdrop scrolling effect
+//#if 0
 		//write back the addresses
 		DMASrc[PROCNUM][num] = src;
 		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
 			DMADst[PROCNUM][num] = dst;
-#endif
+//#endif
 	}
 }
 
