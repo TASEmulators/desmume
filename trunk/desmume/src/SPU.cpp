@@ -738,7 +738,7 @@ static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
 	{
 		if(chan->lastsampcnt == (int)chan->sampcnt)
 		{
-			*data = chan->psgnoise_last;
+			*data = (s32)chan->psgnoise_last;
 			return;
 		}
 
@@ -758,7 +758,7 @@ static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
 
 		chan->lastsampcnt = (int)chan->sampcnt;
 
-		*data = chan->psgnoise_last;
+		*data = (s32)chan->psgnoise_last;
 	}
 }
 
@@ -1385,7 +1385,7 @@ void SNDFileDeInit()
 
 		// Let's fix the riff chunk size and the data chunk size
 		fseek(spufp, sizeof(waveheader_struct)-0x8, SEEK_SET);
-		length -= 0x4;
+		length -= 0x8;
 		elems_written += fwrite((void *)&length, 1, 4, spufp);
 
 		fseek(spufp, sizeof(waveheader_struct)+sizeof(fmt_struct)+0x4, SEEK_SET);
@@ -1442,6 +1442,7 @@ void spu_savestate(std::ostream* os)
 
 	for(int j=0;j<16;j++) {
 		channel_struct &chan = spu->channels[j];
+		write32le(chan.num,os);
 		write8le(chan.vol,os);
 		write8le(chan.datashift,os);
 		write8le(chan.hold,os);
@@ -1460,6 +1461,7 @@ void spu_savestate(std::ostream* os)
 		write16le(chan.pcm16b,os);
 		write16le(chan.pcm16b_last,os);
 		write32le(chan.index,os);
+		write16le(chan.psgnoise_last,os);
 	}
 }
 
@@ -1474,6 +1476,7 @@ bool spu_loadstate(std::istream* is)
 
 	for(int j=0;j<16;j++) {
 		channel_struct &chan = spu->channels[j];
+		read32le(&chan.num,is);
 		read8le(&chan.vol,is);
 		read8le(&chan.datashift,is);
 		read8le(&chan.hold,is);
@@ -1493,6 +1496,7 @@ bool spu_loadstate(std::istream* is)
 		read16le(&chan.pcm16b,is);
 		read16le(&chan.pcm16b_last,is);
 		read32le(&chan.index,is);
+		read16le(&chan.psgnoise_last,is);
 
 		//fixup the pointers which we had are supposed to keep cached
 		chan.buf8 = (s8*)&MMU.MMU_MEM[1][(chan.addr>>20)&0xFF][(chan.addr & MMU.MMU_MASK[1][(chan.addr >> 20) & 0xFF])];
