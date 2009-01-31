@@ -1869,7 +1869,7 @@ void extRotBG(GPU * gpu, u8 num, u8 * DST)
 /* if i understand it correct, and it fixes some sprite problems in chameleon shot */
 /* we have a 15 bit color, and should use the pal entry bits as alpha ?*/
 /* http://nocash.emubase.de/gbatek.htm#dsvideoobjs */
-INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, 
+INLINE void render_sprite_BMP (GPU * gpu, u8 spriteNum, u16 l, u8 * dst, u16 * src, u8 * dst_alpha, u8 * typeTab, u8 * prioTab, 
 							   u8 prio, int lg, int sprX, int x, int xdir, u8 alpha) 
 {
 	int i; u16 color;
@@ -1887,6 +1887,7 @@ INLINE void render_sprite_BMP (GPU * gpu, u16 l, u8 * dst, u16 * src, u8 * dst_a
 				dst_alpha[sprX] = alpha;
 				typeTab[sprX] = 3;
 				prioTab[sprX] = prio;
+				gpu->sprNum[sprX] = spriteNum;
 			}
 		}
 	}
@@ -2289,7 +2290,7 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 				}
 				CHECK_SPRITE(1);
 
-				render_sprite_BMP (gpu, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
+				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 				continue;
 			}
 				
@@ -2588,7 +2589,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 				}
 				CHECK_SPRITE(2);
 
-				render_sprite_BMP (gpu, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
+				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 
 				continue;
 			}
@@ -2971,6 +2972,14 @@ static void GPU_ligne_DispCapture(u16 l)
 							case 0:			// Capture screen (BG + OBJ + 3D)
 								{
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
+
+									//here we have a special hack. if the main screen is in an unusual display mode
+									//(other than the regular layer combination mode)
+									//then we havent combined layers including the 3d.
+									//in that case, we need to skip straight to the capture 3d only
+									if(MainScreen.gpu->dispMode != 1)
+										goto cap3d;
+
 									u8 *src = (u8 *)(GPU_screen) + (MainScreen.offset + l) * 512;
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
 										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
@@ -2980,6 +2989,7 @@ static void GPU_ligne_DispCapture(u16 l)
 							case 1:			// Capture 3D
 								{
 									//INFO("Capture 3D\n");
+								cap3d:
 									u16 cap3DLine[512];
 									gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
