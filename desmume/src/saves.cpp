@@ -86,6 +86,7 @@ SFORMAT SF_ARM7[]={
 	{ "7Wai", 4, 1, &NDS_ARM7.waitIRQ },
 	{ "7wIR", 4, 1, &NDS_ARM7.wIRQ, },
 	{ "7wir", 4, 1, &NDS_ARM7.wirq, },
+	{ "7NIF", 4, 1, &NDS_ARM7.newIrqFlags},
 	{ 0 }
 };
 
@@ -123,6 +124,7 @@ SFORMAT SF_ARM9[]={
 	{ "9Wai", 4, 1, &NDS_ARM9.waitIRQ},
 	{ "9wIR", 4, 1, &NDS_ARM9.wIRQ},
 	{ "9wir", 4, 1, &NDS_ARM9.wirq},
+	{ "9NIF", 4, 1, &NDS_ARM9.newIrqFlags},
 	{ 0 }
 };
 
