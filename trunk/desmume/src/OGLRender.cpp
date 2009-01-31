@@ -197,7 +197,7 @@ static ALIGN(16) u8  GPU_screen3D		[256*192*4];
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
-static const int depthFunc[2] = { /*GL_LESS*/GL_LEQUAL, GL_EQUAL };
+static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
 static bool needRefreshFramebuffer = false;
 static unsigned char texMAP[1024*2048*4]; 
 static unsigned int textureMode=TEXMODE_NONE;
@@ -1122,8 +1122,8 @@ static void BeginRenderPoly()
 
 	setTexture(textureFormat, texturePalette);
 
-//	if(isTranslucent)
-//		enableDepthWrite = alphaDepthWrite;
+	if(isTranslucent)
+		enableDepthWrite = alphaDepthWrite;
 
 	//handle shadow polys
 	if(envMode == 3)

@@ -1027,9 +1027,10 @@ DWORD WINAPI run()
 				  NDS_SkipFrame(true);
                }
 				
-			   while(SpeedThrottle())
-			   {
-			   }
+			   if(frameskiprate != 0)
+				   while(SpeedThrottle())
+				   {
+				   }
                
 			   if (autoframeskipenab)
                {
