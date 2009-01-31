@@ -163,6 +163,9 @@ SFORMAT SF_NDS[]={
 	{ 0 }
 };
 
+extern u32 DMASrc[2][4];
+extern u32 DMADst[2][4];
+
 SFORMAT SF_MMU[]={
 	{ "M7BI", 1, 0x4000,  MMU.ARM7_BIOS},
 	{ "M7ER", 1, 0x10000, MMU.ARM7_ERAM},
@@ -184,10 +187,13 @@ SFORMAT SF_MMU[]={
 	{ "MIME", 4, 2,       MMU.reg_IME},
 	{ "MIE_", 4, 2,       MMU.reg_IE},
 	{ "MIF_", 4, 2,       MMU.reg_IF},
+
 	{ "MDST", 4, 8,       MMU.DMAStartTime},
 	{ "MDCY", 4, 8,       MMU.DMACycle},
 	{ "MDCR", 4, 8,       MMU.DMACrt},
 	{ "MDMA", 4, 8,       MMU.DMAing},
+	{ "MDSR", 4, 8,       DMASrc},
+	{ "MDDS", 4, 8,       DMADst},
 
 	{ "MDV1", 4, 1,       &MMU.divRunning},
 	{ "MDV2", 8, 1,       &MMU.divResult},

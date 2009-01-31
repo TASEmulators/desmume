@@ -25,12 +25,13 @@
 
 extern "C" {
 
-typedef struct MatrixStack
+struct MatrixStack
 {
+	MatrixStack(int size);
 	float	*matrix;
 	int		position;
 	int		size;
-} MatrixStack;
+};
 
 void	MatrixInit				(float *matrix);
 
