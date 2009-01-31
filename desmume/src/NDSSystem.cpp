@@ -218,7 +218,7 @@ BOOL NDS_SetROM(u8 * rom, u32 mask)
 
 NDS_header * NDS_getROMHeader(void)
 {
-	NDS_header * header = new NDS_header();
+	NDS_header * header = new NDS_header;
 
 	memcpy(header->gameTile, MMU.CART_ROM, 12);
 	memcpy(header->gameCode, MMU.CART_ROM + 12, 4);
@@ -261,8 +261,6 @@ NDS_header * NDS_getROMHeader(void)
 	memcpy(header->reserved, MMU.CART_ROM + 352, 160);
 
 	return header;
-
-	//return (NDS_header *)MMU.CART_ROM;
 } 
 
 void NDS_setTouchPos(u16 x, u16 y)
@@ -503,6 +501,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	}
 	INFO("\nROM serial: %s\n\n", buf);
 	strncpy(ROMserial, buf, sizeof(ROMserial));
+	delete header;
 
 	return i;
 }
