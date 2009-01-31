@@ -1,18 +1,25 @@
-0.9+
+0.9 -> 0/10
+General/Core:
+ bug: SF [ 2550645 ] Super Princess Peach: crash when starting a puzzle [zeromus]
+ bug: win32: fix spu wav file writer (regression from 0.8) [zeromus]
+ bug: More variables added to savestate. Savestates probably invalidated.
+
 Graphics:
  bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
  bug: 3d compositing integrated into GPU engine (more precision and speed in cases where no compositing needed) [luigi__]
  bug: Add optional fragment shading pipeline (more precision) [luigi__]
- bug: fix texture mapping across texture banks [zeromus]
+ bug: fix texture mapping across texture and palette banks [zeromus]
  bug: fix texture handling for texels with MSB set (fixes some texture corruption) [zeromus]
- bug: fix thumb ROR [zeromus]
- bug: win32: fix spu wav file writer (regression from 0.8) [zeromus]
- enh: dont memcmp for texcache validity when the texture banks arent unmapping [zeromus]
-
+ bug: fix arm/thumb ROR [zeromus]
+ bug: fix texture coordinate generation from normal (fixes environment mapping) [zeromus]
+ bug: fix display capturing from 2d+3d source when display mode is display-vram [zeromus]
+ bug: more correct mosaic effects [zeromus]
+ enh: dont memcmp for texcache validity when the texture banks arent unmapping (speedup) [zeromus]
+  
 Mac OS X Port:
  bug: left key setting no longer gets confused with the right key [jeff]
  enh: more keys can be mapped
- 
+  
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.
  For this release, we have formatted the list into a high level overview of big changes and bad bugs relative to the previous release. Hopefully what you're interested in.
