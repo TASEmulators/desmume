@@ -49,7 +49,7 @@ static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];
 char pathFilenameToROMwithoutExt[MAX_PATH];
-char ROMserial[19];
+char ROMserial[20];
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -337,6 +337,46 @@ static u32 ones32(u32 x)
 }
 #endif
 
+static void NDS_SetROMSerial()
+{
+	NDS_header * header;
+
+	header = NDS_getROMHeader();
+	if (
+		// ??? in all Homebrews game title have is 2E0000EA
+		//(
+		//(header->gameTile[0] == 0x2E) && 
+		//(header->gameTile[1] == 0x00) && 
+		//(header->gameTile[2] == 0x00) && 
+		//(header->gameTile[3] == 0xEA)
+		//) &&
+		(
+			((header->gameCode[0] == 0x23) && 
+			(header->gameCode[1] == 0x23) && 
+			(header->gameCode[2] == 0x23) && 
+			(header->gameCode[3] == 0x23)
+			) || 
+			(header->gameCode[0] == 0x00) 
+		)
+		&&
+			header->makerCode == 0x0
+		)
+	{
+		memset(ROMserial, 0, sizeof(ROMserial));
+		strcpy(ROMserial, "Homebrew");
+	}
+	else
+	{
+		memset(ROMserial, '_', sizeof(ROMserial));
+		memcpy(ROMserial, header->gameTile, strlen(header->gameTile) < 12 ? strlen(header->gameTile) : 12);
+		memcpy(ROMserial+12+1, header->gameCode, 4);
+		memcpy(ROMserial+12+1+4, &header->makerCode, 2);
+		memset(ROMserial+19, '\0', 1);
+	}
+	delete header;
+	INFO("\nROM serial: %s\n\n", ROMserial);
+}
+
 #ifdef EXPERIMENTAL_GBASLOT
 int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize)
 #else
@@ -360,7 +400,6 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 	memset(pathToROM, 0, MAX_PATH);
 	memset(pathFilenameToROMwithoutExt, 0, MAX_PATH);
-	memset(ROMserial, 0, sizeof(ROMserial));
 	memset(extROM, 0, MAX_PATH);
 	memset(extROM2, 0, 5);
 
@@ -465,43 +504,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheatsInit(buf);
 
-	memset(buf, 0, MAX_PATH);
-	NDS_header * header = NDS_getROMHeader();
-
-	if (
-		// ??? in all Homebrews game title have is 2E0000EA
-		//(
-		//(header->gameTile[0] == 0x2E) && 
-		//(header->gameTile[1] == 0x00) && 
-		//(header->gameTile[2] == 0x00) && 
-		//(header->gameTile[3] == 0xEA)
-		//) &&
-		(
-			((header->gameCode[0] == 0x23) && 
-			(header->gameCode[1] == 0x23) && 
-			(header->gameCode[2] == 0x23) && 
-			(header->gameCode[3] == 0x23)
-			) ||
-			header->gameCode[0] == 0x00 
-		)
-		&&
-			header->makerCode == 0x0
-		)
-	{
-		strcpy(buf, "Homebrew");
-	}
-	else
-	{
-		memcpy(buf, header->gameTile, 12);
-		for (int j=strlen(buf); j<12; j++)
-				strcat(buf, "_");
-		strcat(buf, "_");
-		memcpy(buf+strlen(buf), header->gameCode, 4);
-		memcpy(buf+strlen(buf), &header->makerCode, 2);
-	}
-	INFO("\nROM serial: %s\n\n", buf);
-	strncpy(ROMserial, buf, sizeof(ROMserial));
-	delete header;
+	NDS_SetROMSerial();
 
 	return i;
 }
