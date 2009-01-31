@@ -213,6 +213,8 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	armcpu->waitIRQ = FALSE;
 	armcpu->wirq = FALSE;
 
+	armcpu->newIrqFlags = 0;
+
 #ifdef GDB_STUB
     armcpu->irq_flag = 0;
 #endif
