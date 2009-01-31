@@ -8,6 +8,9 @@ Graphics:
  bug: fix thumb ROR [zeromus]
  bug: win32: fix spu wav file writer (regression from 0.8) [zeromus]
  enh: dont memcmp for texcache validity when the texture banks arent unmapping [zeromus]
+
+Mac OS X Port:
+ bug: left key setting no longer gets confused with the right key [jeff]
  
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.
