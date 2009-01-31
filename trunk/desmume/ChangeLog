@@ -11,6 +11,7 @@ Graphics:
 
 Mac OS X Port:
  bug: left key setting no longer gets confused with the right key [jeff]
+ enh: more keys can be mapped
  
 0.8 -> 0.9
  There have been so many changes that this list can hardly be considered complete.
