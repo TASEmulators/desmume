@@ -536,6 +536,12 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 
 static FORCEINLINE u32 MMU_LCDmap(u32 addr)
 {
+	//handle LCD memory mirroring
+	if ((addr < 0x07000000) && (addr>=0x068A4000)) 
+		return 0x06800000 + 
+		//(addr%0xA4000); //yuck!! is this even how it mirrors? but we have to keep from overrunning the buffer somehow
+		(addr&0x80000); //just as likely to be right (I have no clue how it should work) but faster.
+
 	if ((addr < 0x6000000)) return addr;
 	if ((addr > 0x661FFFF)) return addr;	// Engine BOBJ max 128KB
 
@@ -921,7 +927,7 @@ void FASTCALL MMU_doDMA(u32 num)
 	
 	
 	/* word count */
-	taille = (MMU.DMACrt[PROCNUM][num]&0xFFFF);
+	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFF);
 	
 	// If we are in "Main memory display" mode just copy an entire 
 	// screen (256x192 pixels). 
