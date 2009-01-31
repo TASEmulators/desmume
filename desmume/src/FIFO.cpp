@@ -70,7 +70,8 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0400) << 8 );
+//	MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0400) << 8 );
+	setIF(proc_remote, ((cnt_l & 0x0400)<<8));
 }
 
 u32 IPC_FIFOrecv(u8 proc)
@@ -111,7 +112,8 @@ u32 IPC_FIFOrecv(u8 proc)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0004) << 15);
+	//MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0004) << 15);
+	setIF(proc_remote, ((cnt_l & 0x0004)<<15));
 
 	return (val);
 }
@@ -127,7 +129,8 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 		ipc_fifo[proc].tail = 0;
 		T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, (cnt_l & 0x0301) | (val & 0x8404) | 1);
 		T1WriteWord(MMU.MMU_MEM[proc^1][0x40], 0x184, (cnt_r & 0x8407) | 0x100);
-		MMU.reg_IF[proc^1] |= ((val & 0x0004) << 15);
+		//MMU.reg_IF[proc^1] |= ((val & 0x0004) << 15);
+		setIF(proc^1, ((val & 0x0004)<<15));
 		return;
 	}
 
@@ -232,7 +235,8 @@ void GFX_FIFOcnt(u32 val)
 	if (gxstat & 0xC0000000)
 	{
 		//NDS_makeARM9Int(21);
-		MMU.reg_IF[0] = (1<<21);
+		//MMU.reg_IF[0] = (1<<21);
+		setIF(0, (1<<21));
 	}
 }
 

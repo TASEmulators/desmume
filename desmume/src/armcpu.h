@@ -182,6 +182,8 @@ typedef struct armcpu_t
 	BOOL wIRQ;
 	BOOL wirq;
 
+	u32 newIrqFlags;
+
         u32 (* *swi_tab)();
 
 #ifdef GDB_STUB
@@ -224,10 +226,20 @@ BOOL armcpu_flagIrq( armcpu_t *armcpu);
 extern armcpu_t NDS_ARM7;
 extern armcpu_t NDS_ARM9;
 
+
+static INLINE void setIF(int PROCNUM, u32 flag)
+{
+	MMU.reg_IF[PROCNUM] |= flag;
+
+	if(ARMPROC.waitIRQ)
+		ARMPROC.newIrqFlags |= flag;
+}
+
 static INLINE void NDS_makeARM9Int(u32 num)
 {
         /* flag the interrupt request source */
-        MMU.reg_IF[0] |= (1<<num);
+       // MMU.reg_IF[0] |= (1<<num);
+		setIF(0, (1<<num));
 
         /* generate the interrupt if enabled */
 	if ((MMU.reg_IE[0] & (1 << num)) && MMU.reg_IME[0])
@@ -240,7 +252,8 @@ static INLINE void NDS_makeARM9Int(u32 num)
 static INLINE void NDS_makeARM7Int(u32 num)
 {
         /* flag the interrupt request source */
-	MMU.reg_IF[1] |= (1<<num);
+	//MMU.reg_IF[1] |= (1<<num);
+	setIF(1, (1<<num));
 
         /* generate the interrupt if enabled */
 	if ((MMU.reg_IE[1] & (1 << num)) && MMU.reg_IME[1])

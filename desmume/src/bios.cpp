@@ -214,6 +214,8 @@ TEMPLATE u32 intrWaitARM()
      u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      u32 intr;
      u32 intrFlag = 0;
+
+	 BOOL noDiscard = ((cpu->R[0] == 0) && (PROCNUM == 1));
      
      //emu_halt();
      if(cpu->proc_ID) 
@@ -223,13 +225,17 @@ TEMPLATE u32 intrWaitARM()
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
      intr = _MMU_read32(cpu->proc_ID,intrFlagAdr);
-     intrFlag = cpu->R[1] & intr;
+     intrFlag = (cpu->R[1] & intr);
+
+	 if(!noDiscard)
+		 intrFlag &= ARMPROC.newIrqFlags;
      
      if(intrFlag)
      {
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
+		  cpu->newIrqFlags ^= intrFlag;
           _MMU_write32(cpu->proc_ID, intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
@@ -245,6 +251,10 @@ TEMPLATE u32 intrWaitARM()
 
 TEMPLATE static u32 waitVBlankARM()
 {
+	cpu->R[0] = 1;
+	cpu->R[1] = 1;
+	return intrWaitARM<PROCNUM>();
+#if 0
      u32 intrFlagAdr;// = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      u32 intr;
      u32 intrFlag = 0;
@@ -259,7 +269,7 @@ TEMPLATE static u32 waitVBlankARM()
      intr = _MMU_read32(cpu->proc_ID,intrFlagAdr);
      intrFlag = 1 & intr;
      
-     if(intrFlag)
+    // if(intrFlag)
      {
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
@@ -275,6 +285,7 @@ TEMPLATE static u32 waitVBlankARM()
      //oldmode[cpu->proc_ID] = cpu->switchMode(SVC);
 
      return 1;
+#endif
 }
 
 TEMPLATE static u32 wait4IRQ()
