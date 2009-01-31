@@ -52,7 +52,7 @@ extern char pathFilenameToROMwithoutExt[MAX_PATH];
 //#define LOG_ARM9
 //#define LOG_ARM7
 
-typedef struct
+struct NDS_header
 {
        char     gameTile[12];
        char     gameCode[4];
@@ -101,7 +101,7 @@ typedef struct
        u16     logoCRC16;
        u16     headerCRC16;
        u8      reserved[160];
-} NDS_header;
+};
 
 extern void debug();
 void emu_halt();
