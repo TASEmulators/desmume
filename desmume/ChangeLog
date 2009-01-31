@@ -1,6 +1,6 @@
 0.9 -> 0/10
 General/Core:
- bug: SF [ 2550645 ] Super Princess Peach: crash when starting a puzzle [zeromus]
+ bug: [ 2550645 ] Super Princess Peach: crash when starting a puzzle [zeromus]
  bug: win32: fix spu wav file writer (regression from 0.8) [zeromus]
  bug: More variables added to savestate. Savestates probably invalidated.
 
@@ -14,6 +14,7 @@ Graphics:
  bug: fix texture coordinate generation from normal (fixes environment mapping) [zeromus]
  bug: fix display capturing from 2d+3d source when display mode is display-vram [zeromus]
  bug: more correct mosaic effects [zeromus]
+ bug: [ 2488334 ].3 added affine BG parameter writebacks to support hdma of params instead of only auto mode [zeromus]
  enh: dont memcmp for texcache validity when the texture banks arent unmapping (speedup) [zeromus]
   
 Mac OS X Port:

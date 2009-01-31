@@ -1569,6 +1569,19 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	{
 		switch(adr)
 		{
+			case REG_DISPA_DISP3DCNT:
+			{
+				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
+				disp3dcnt = (disp3dcnt&0xFF00) | val;
+				break;
+			}
+			case REG_DISPA_DISP3DCNT+1:
+			{
+				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
+				disp3dcnt = (disp3dcnt&0x00FF) | (val<<8);
+				break;
+			}
+
 			case REG_DISPA_WIN0H: 	 
 				GPU_setWIN0_H1(MainScreen.gpu, val);
 				break ; 	 
@@ -1781,6 +1794,12 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		// Address is an IO register
 		switch(adr)
 		{
+			case REG_DISPA_DISP3DCNT:
+			{
+				MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val = val;
+				break;
+			}
+
 			// Alpha test reference value - Parameters:1
 			case 0x04000340:
 			{

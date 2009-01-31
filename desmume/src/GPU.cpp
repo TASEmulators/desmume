@@ -1702,8 +1702,8 @@ FORCEINLINE void rot_scale_op(GPU * gpu, u8 * dst, u16 H, s32 X, s32 Y, s16 PA, 
 	u32 i;
 	s32 auxX, auxY;
 	
-	x.val = X + (s32)PB*(s32)H;
-	y.val = Y + (s32)PD*(s32)H;
+	x.val = X + (s32)H;
+	y.val = Y + (s32)H;
 
 	for(i = 0; i < LG; ++i)
 	{
@@ -1817,6 +1817,8 @@ void lineRot(GPU * gpu, u8 num, u16 l, u8 * DST)
               parms->BGxPC,
               parms->BGxPD,
               256);
+	 parms->BGxX += parms->BGxPB;
+	 parms->BGxY += parms->BGxPD;
 }
 
 void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
@@ -1835,6 +1837,8 @@ void lineExtRot(GPU * gpu, u8 num, u16 l, u8 * DST)
               parms->BGxPC,
               parms->BGxPD,
               256);
+	 parms->BGxX += parms->BGxPB;
+	 parms->BGxY += parms->BGxPD;
 }
 
 void textBG(GPU * gpu, u8 num, u8 * DST)
@@ -2905,9 +2909,9 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							
 							gpu3D->NDS_3D_GetLine(l, 0, 255, line3Dcolor, line3Dalpha);
 
-							for(int k = 0, q = 0; k < 256; k++)
+							for(int k = 0; k < 256; k++)
 							{
-								q = ((k + hofs) & 0x1FF);
+								int q = ((k + hofs) & 0x1FF);
 
 								if(line3Dcolor[q] & 0x8000)
 									gpu->setFinalColor3D(gpu, (k << 1), dst, line3Dcolor[q], line3Dalpha[q], k);
