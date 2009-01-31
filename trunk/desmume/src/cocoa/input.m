@@ -120,7 +120,7 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyR:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_R,
 		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyUp:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_UP,
 		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyDown:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_DOWN,			
-		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyLeft:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_RIGHT,
+		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyLeft:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_LEFT,
 		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyRight:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_RIGHT,			
 		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeyStart:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_START,
 		[NSArray arrayWithObjects:@"Dictionary", [NSData dataWithBytes:&@selector(bindingForKeySelect:) length:sizeof(SEL)], keyboardMap , nil] , PREF_KEY_SELECT,				
