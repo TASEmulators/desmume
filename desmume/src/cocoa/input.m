@@ -89,9 +89,10 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 + (NSView*)createPreferencesView:(float)width
 {
 	NSArray *keys = [NSArray arrayWithObjects:
-		@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", 
+		@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9",
 		@"A", @"B", @"C", @"D", @"E", @"F", @"G", @"H", @"I", @"J", @"K", @"L",
-		@"M", @"N",	@"O", @"P", @"Q", @"R", @"S", @"T", @"V", @"W", @"X", @"Y", @"Z", 
+		@"M", @"N",	@"O", @"P", @"Q", @"R", @"S", @"T", @"V", @"W", @"X", @"Y", @"Z",
+		@",", @"<", @".", @">", @"/", @"?", @";", @":", @"'", @"\"", @"[", @"{", @"]", @"}", @"\\", @"|",   
 		@"Up Key"   , @"Down Key" , @"Left Key" ,
 		@"Right Key", @"Space Bar", @"Enter Key",
 		nil];
@@ -100,6 +101,7 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 		@"0" , @"1" , @"2" , @"3" , @"4" , @"5" , @"6" , @"7" , @"8" , @"9",
 		@"aA", @"bB", @"cC", @"dD", @"eE", @"fF", @"gG", @"hH", @"iI", @"jJ", @"kK", @"lL",
 		@"mM", @"nN", @"oO", @"pP", @"qQ", @"rR", @"sS", @"tT", @"vV", @"wW", @"xX", @"yY", @"zZ",
+		@",", @"<", @".", @">", @"/", @"?", @";", @":", @"'", @"\"", @"[", @"{", @"]", @"}", @"\\", @"|",   
 		[[[NSString alloc] initWithBytesNoCopy:utf8_up length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
 		[[[NSString alloc] initWithBytesNoCopy:utf8_down length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
 		[[[NSString alloc] initWithBytesNoCopy:utf8_left length:3 encoding:NSUTF8StringEncoding freeWhenDone:NO] autorelease],
