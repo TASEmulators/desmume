@@ -384,7 +384,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 				const char *cflash_disk_image_file)
 #endif
 {
-	int					i;
+	int					ret;
 	int					type;
 	ROMReader_struct	*reader;
 	void				*file;
@@ -473,7 +473,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 		return -1;
 	}
 
-	i = reader->Read(file, data, size);
+	ret = reader->Read(file, data, size);
 	reader->DeInit(file);
 
 	//decrypt if necessary..
@@ -506,7 +506,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 	NDS_SetROMSerial();
 
-	return i;
+	return ret;
 }
 
 void NDS_FreeROM(void)
