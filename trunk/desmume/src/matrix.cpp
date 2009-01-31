@@ -26,6 +26,7 @@
 
 extern "C" {
 
+
 void MatrixInit  (float *matrix)
 {
 	memset (matrix, 0, sizeof(float)*16);
@@ -161,13 +162,6 @@ int MATRIXFASTCALL MatrixCompare (const float* matrixDST, const float* matrixSRC
 	return memcmp((void*)matrixDST, matrixSRC, sizeof(float)*16);
 }
 
-void MatrixStackInit (MatrixStack *stack)
-{
-	stack->matrix	= NULL;
-	stack->position	= 0;
-	stack->size		= 0;
-}
-
 void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 {
 	int i;
@@ -187,6 +181,11 @@ void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 	stack->size--;
 }
 
+
+MatrixStack::MatrixStack(int size)
+{
+	MatrixStackSetMaxSize(this,size);
+}
 
 void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 {

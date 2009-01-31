@@ -99,7 +99,13 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 // Matrix stack handling
-static CACHE_ALIGN MatrixStack	mtxStack[4];
+static CACHE_ALIGN MatrixStack	mtxStack[4] = {
+	MatrixStack(1), // Projection stack
+	MatrixStack(31), // Coordinate stack
+	MatrixStack(31), // Directional stack
+	MatrixStack(1), // Texture stack
+};
+
 static CACHE_ALIGN float		mtxCurrent [4][16];
 static CACHE_ALIGN float		mtxTemporal[16];
 static u32 mode = 0;
@@ -251,11 +257,6 @@ void gfx3d_reset()
 	flushPending = FALSE;
 	listTwiddle = 1;
 	twiddleLists();
-
-	MatrixStackSetMaxSize(&mtxStack[0], 1);		// Projection stack
-	MatrixStackSetMaxSize(&mtxStack[1], 31);	// Coordinate stack
-	MatrixStackSetMaxSize(&mtxStack[2], 31);	// Directional stack
-	MatrixStackSetMaxSize(&mtxStack[3], 1);		// Texture stack
 
 	MatrixInit (mtxCurrent[0]);
 	MatrixInit (mtxCurrent[1]);
@@ -910,6 +911,9 @@ void gfx3d_glNormal(unsigned long v)
 						normalTable[(v>>10)&1023],
 						normalTable[(v>>20)&1023]};
 
+	//use the current normal transform matrix
+	MatrixMultVec3x3 (mtxCurrent[2], normal);
+
 	if (texCoordinateTransform == 2)
 	{
 		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
@@ -918,8 +922,6 @@ void gfx3d_glNormal(unsigned long v)
 					 normal[2] *mtxCurrent[3][9]) + _t);
 	}
 
-	//use the current normal transform matrix
-	MatrixMultVec3x3 (mtxCurrent[2], normal);
 
 	//apply lighting model
 	{
