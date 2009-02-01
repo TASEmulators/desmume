@@ -759,60 +759,70 @@ int CreateDDrawBuffers()
 
 
 
-void applyRotation_0deg(u32 *in, u32 *out, int pitch)
+void applyRotation_0deg(u16 *in, u32 *out, int pitch)
 {
+	//this is the most normal case so we have a special branch for it
 	if(pitch==1024)
-		memcpy(out,in,256*192*2*4);
+		for(int i=0; i<98304; i++)
+			out[i] = RGB15TO24_REVERSE(in[i]);
 	else
-		for(int i = 0; i < (256 * 384); i += 256)
+	{
+		pitch>>=2;
+		for(int y=0,i=0;y<384;y++)
 		{
-			memcpy(out, (in + i), 1024);
-			out = (u32*)(((u8*)out) + pitch);
+			int dst = y*(pitch);
+			for(int x=0;x<256;x++)
+				out[dst++] = RGB15TO24_REVERSE(in[i++]);
 		}
+	}
+
 }
 
-void applyRotation_90deg(u32 *in, u32 *out, int pitch)
+void applyRotation_90deg(u16 *in, u32 *out, int pitch)
 {
-	for(int i = 0; i < 256; i++)
+	pitch>>=2;
+	for(int y=0,dst=0;y<256;y++)
 	{
-		for(int j = 0; j < 384; j++)
+		int i=y+383*256;
+		for(int x=0;x<384;x++)
 		{
-			out[383 - j] = in[(j * 256) + i];
+			out[dst++] = RGB15TO24_REVERSE(in[i]);
+			i -= 256;
 		}
-		out = (u32*)(((u8*)out) + pitch);
+		dst += (pitch-384);
 	}
 }
 
-void applyRotation_180deg(u32 *in, u32 *out, int pitch)
+void applyRotation_180deg(u16 *in, u32 *out, int pitch)
 {
-	for(int i = 0; i < 384; i++)
+	pitch>>=2;
+	int i = 256*384-1;
+	for(int y=0,dst=0;y<384;y++)
 	{
-		for(int j = 0; j < 256; j++)
+		for(int x=0;x<256;x++)
 		{
-			out[j] = in[98303 - ((i * 256) + j)];
+			out[dst++] = RGB15TO24_REVERSE(in[i]);
+			i--;
 		}
-		out = (u32*)(((u8*)out) + pitch);
+		dst += (pitch-256);
 	}
 }
 
-void applyRotation_270deg(u32 *in, u32 *out, int pitch)
+void applyRotation_270deg(u16 *in, u32 *out, int pitch)
 {
-	for(int i = 0; i < 256; i++)
+	pitch>>=2;
+	for(int y=0,dst=0;y<256;y++)
 	{
-		for(int j = 0; j < 384; j++)
+		int i=255-y;
+		for(int x=0;x<384;x++)
 		{
-			out[j] = in[(j * 256) + (255 - i)];
+			out[dst++] = RGB15TO24_REVERSE(in[i]);
+			i += 256;
 		}
-		out = (u32*)(((u8*)out) + pitch);
+		dst += (pitch-384);
 	}
 }
 
-void (*applyRotation[4])(u32 *in, u32 *out, int pitch) = {
-	applyRotation_0deg,
-	applyRotation_90deg,
-	applyRotation_180deg,
-	applyRotation_270deg
-};
 
 void Display()
 {
@@ -829,12 +839,13 @@ void Display()
 		int i, j, sz=256*sizeof(u32);
 		if (ddsd.ddpfPixelFormat.dwRGBBitCount>16)
 		{
-			u16 *tmpGPU_Screen_src=(u16*)GPU_screen;
-			u32	tmpGPU_screen[98304];
-			for(i=0; i<98304; i++)
-				tmpGPU_screen[i] = RGB15TO24_REVERSE(tmpGPU_Screen_src[i]);
-
-			applyRotation[GPU_rotation / 90](tmpGPU_screen, (u32*)buffer, ddsd.lPitch);
+			switch(GPU_rotation)
+			{
+			case 0: applyRotation_0deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
+			case 90: applyRotation_90deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
+			case 180: applyRotation_180deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
+			case 270: applyRotation_270deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
+			}
 		}
 		else
 			 INFO("16bit depth color not supported");
