@@ -777,20 +777,21 @@ static void setFinalBGColorSpecialIncreaseWnd (GPU *gpu, u8 *dst, u16 color, u8 
 	
 	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
-	if (((gpu->BLDCNT >> gpu->currBgNum)&1) && windowEffect)   // the bg to draw has a special color effect
+	if(windowDraw)
 	{
-		if (gpu->BLDY_EVY != 0x0)
-		{ // dont slow down if there is nothing to do
-		}
-
-		T2WriteWord(dst, 0, color) ;
-		gpu->bgPixels[x] = gpu->currBgNum;
-	}
-	else
-	{
-		if ((windowEffect && (gpu->BLDCNT & (0x100 << gpu->currBgNum))) || windowDraw)
+		if((gpu->BLDCNT & (1 << gpu->currBgNum)) && windowEffect)
 		{
-			T2WriteWord(dst, 0, color);
+			if (gpu->BLDY_EVY != 0x0)
+			{
+				color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF];
+			}
+
+			T2WriteWord(dst, 0, (color | 0x8000));
+			gpu->bgPixels[x] = gpu->currBgNum;
+		}
+		else
+		{
+			T2WriteWord(dst, 0, (color | 0x8000));
 			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 	}
@@ -802,20 +803,21 @@ static void setFinalBGColorSpecialDecreaseWnd (GPU *gpu, u8 *dst, u16 color, u8 
 	
 	gpu->renderline_checkWindows(x, windowDraw, windowEffect);
 
-	if (((gpu->BLDCNT >> gpu->currBgNum)&1) && windowEffect)   // the bg to draw has a special color effect
+	if(windowDraw)
 	{
-		if (gpu->BLDY_EVY != 0x0)
-		{ // dont slow down if there is nothing to do
-			color = (fadeOutColors[gpu->BLDY_EVY][color&0x7FFF] | 0x8000);
-		}
-		T2WriteWord(dst, 0, color) ;
-		gpu->bgPixels[x] = gpu->currBgNum;
-	}
-	else
-	{
-		if ((windowEffect && (gpu->BLDCNT & (0x100 << gpu->currBgNum))) || windowDraw)
+		if((gpu->BLDCNT & (1 << gpu->currBgNum)) && windowEffect)
 		{
-			T2WriteWord(dst, 0, color);
+			if (gpu->BLDY_EVY != 0x0)
+			{
+				color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF];
+			}
+
+			T2WriteWord(dst, 0, (color | 0x8000));
+			gpu->bgPixels[x] = gpu->currBgNum;
+		}
+		else
+		{
+			T2WriteWord(dst, 0, (color | 0x8000));
 			gpu->bgPixels[x] = gpu->currBgNum;
 		}
 	}
