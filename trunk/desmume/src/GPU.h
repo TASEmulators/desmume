@@ -722,7 +722,12 @@ struct GPU
 	SpriteRenderFunct spriteRender;
 
 	void __setFinalColorBck(u8 *dst, u16 color, u8 x, bool opaque);
+	void setAffineStart(int layer, int xy, u32 val);
 
+	struct AffineInfo {
+		AffineInfo() : x(0), y(0) {}
+		u32 x, y;
+	} affineInfo[2];
 
 	void renderline_checkWindows(u16 x, bool &draw, bool &effect) const;
 
