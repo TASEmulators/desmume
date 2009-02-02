@@ -396,6 +396,7 @@ static void Launch()
 
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
+	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
 	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
 }
 
@@ -468,7 +469,6 @@ static void Open_Select(GtkWidget* widget, gpointer data)
 			gtk_widget_destroy(pDialog);
 		} else {
 			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
-			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
 		}
 
 		//Launch(NULL, pWindow);
