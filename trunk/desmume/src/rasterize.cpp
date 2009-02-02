@@ -245,15 +245,18 @@ static void Render()
 	{
 		VERT &vert = gfx3d.vertlist->list[i];
 
-		//perspective division
-		vert.coord[0] = (vert.coord[0] + vert.coord[3]) / 2 / vert.coord[3];
-		vert.coord[1] = (vert.coord[1] + vert.coord[3]) / 2 / vert.coord[3];
-		vert.coord[2] = (vert.coord[2] + vert.coord[3]) / 2 / vert.coord[3];
-		vert.coord[3] = 1;
+		////perspective division
+		//vert.coord[0] = (vert.coord[0] + vert.coord[3]) / 2 / vert.coord[3];
+		//vert.coord[1] = (vert.coord[1] + vert.coord[3]) / 2 / vert.coord[3];
+		//vert.coord[2] = (vert.coord[2] + vert.coord[3]) / 2 / vert.coord[3];
+		//vert.coord[3] = 1;
 
-		//transform to viewport. this is badly broken
-		vert.coord[0] = (vert.coord[0])*128;
-		vert.coord[1] = (vert.coord[1])*96;
+		////transform to viewport. this is badly broken
+		//vert.coord[0] = (vert.coord[0])*128;
+		//vert.coord[1] = (vert.coord[1])*96;
+
+		vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
+		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
 
 		int zzz=9;
 	}
