@@ -26,6 +26,7 @@
 #include "../MMU.h"
 #include "../GPU.h"
 #include "../NDSSystem.h"
+#include "windriver.h"
 
 typedef struct
 {
@@ -50,6 +51,8 @@ const char dimm[4][4][8] =
 
 LRESULT OAMViewBox_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
+	Lock lock;
+
         //HWND         hwnd = GetDlgItem(win->hwnd, IDC_OAM_BOX);
         HDC          hdc;
         PAINTSTRUCT  ps;

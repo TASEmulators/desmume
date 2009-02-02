@@ -20,11 +20,15 @@
 */
 
 #include "mapView.h"
+#include "resource.h"
+
 #include <commctrl.h>
 #include "../MMU.h"
 #include "../NDSSystem.h"
 #include "debug.h"
-#include "resource.h"
+#include "windriver.h"
+
+using namespace GPU_EXT;
 
 typedef struct
 {
@@ -40,6 +44,8 @@ mapview_struct	*MapView = NULL;
 
 LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
+	Lock lock;
+
         HDC          hdc;
         PAINTSTRUCT  ps;
         char text[80];

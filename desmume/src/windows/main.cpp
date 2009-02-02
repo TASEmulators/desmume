@@ -967,10 +967,11 @@ DWORD WINAPI run()
      {
           while(execute)
           {
-			  EnterCriticalSection(&win_sync);
-               cycles = NDS_exec((560190<<1)-cycles);
-				win_sound_samplecounter = 735;
-			   	LeaveCriticalSection(&win_sync);
+			  {
+			     Lock lock;
+                 cycles = NDS_exec((560190<<1)-cycles);
+				 win_sound_samplecounter = 735;
+			  }
 	
 			   SPU_Emulate_core();
 

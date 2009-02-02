@@ -685,6 +685,8 @@ struct GPU
 
 	u8 currLine;
 	u8 currBgNum;
+	bool blend1;
+	u8* currDst;
 
 
 	static struct MosaicLookup {
@@ -711,17 +713,26 @@ struct GPU
 
 	u16 blend(u16 colA, u16 colB);
 
-	typedef void (*FinalBGColFunct)(GPU *gpu, u8 *dst, u16 color, u8 x);
 	typedef void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 	typedef void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
 	typedef void (*SpriteRenderFunct) (GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
-	FinalBGColFunct setFinalColorBck;
+	int setFinalColorBck_funcNum;
 	FinalOBJColFunct setFinalColorSpr;
 	Final3DColFunct setFinalColor3D;
 	SpriteRenderFunct spriteRender;
 
-	void __setFinalColorBck(u8 *dst, u16 color, u8 x, bool opaque);
+	void setFinalColorBG(u16 color, u8 x);
+	FORCEINLINE void setFinalBGColorSpecialNone(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialBlend(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialIncrease(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialDecrease(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialNoneWnd(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialDecreaseWnd(u16 color, u8 x, bool blend1);
+
+	void __setFinalColorBck(u16 color, u8 x, bool opaque);
 	void setAffineStart(int layer, int xy, u32 val);
 
 	struct AffineInfo {
@@ -790,16 +801,19 @@ GPU * GPU_Init(u8 l);
 void GPU_Reset(GPU *g, u8 l);
 void GPU_DeInit(GPU *);
 
-void textBG(GPU * gpu, u8 num, u8 * DST);		//Draw text based background
-void rotBG(GPU * gpu, u8 num, u8 * DST);
-void extRotBG(GPU * gpu, u8 num, u8 * DST);
+//these are functions used by debug tools which want to render layers etc outside the context of the emulation
+namespace GPU_EXT
+{
+	void textBG(GPU * gpu, u8 num, u8 * DST);		//Draw text based background
+	void rotBG(GPU * gpu, u8 num, u8 * DST);
+	void extRotBG(GPU * gpu, u8 num, u8 * DST);
+};
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
 extern const short sizeTab[4][4][2];
 extern const size sprSizeTab[4][4];
 extern const s8 mode2type[8][4];
-extern void (*modeRender[8][4])(GPU * gpu, u8 num, u16 l, u8 * DST);
 
 typedef struct {
 	GPU * gpu;

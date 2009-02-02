@@ -1405,7 +1405,7 @@ static void OGLGetLineCaptured(int line, u16* dst)
 }
 
 
-static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dstAlpha)
+static void OGLGetLine(int line, u16* dst, u8* dstAlpha)
 {
 	assert(line<192 && line>=0);
 
@@ -1427,7 +1427,7 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 	//this alpha compositing blending logic isnt thought through very much
 	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
 
-	for(int i = start, j=0; i <= end_inclusive; ++i, ++j)
+	for(int i=0;i<256;i++)
 	{
 	//	u32 stencil = screenStencil[i];
 
@@ -1439,8 +1439,8 @@ static void OGLGetLine(int line, int start, int end_inclusive, u16* dst, u8* dst
 		int t=i<<2;
 	//	u32 dstpixel;
 
-		dst[j] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
-		dstAlpha[j] = alpha_5bit_to_4bit[screen3D[t+3]];
+		dst[i] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
+		dstAlpha[i] = alpha_5bit_to_4bit[screen3D[t+3]];
 		
 		//old debug reminder: display alpha channel
 		//u32 r = screen3D[t+3];
