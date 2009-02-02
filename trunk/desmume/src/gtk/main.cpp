@@ -848,10 +848,6 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
 	return 1;
 }
 
-static void Draw()
-{
-}
-
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
 static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
@@ -1408,8 +1404,6 @@ gboolean EmuLoop(gpointer data)
 		}
 		NDS_SkipFrame(false);
 
-		Draw();
-
 		_updateDTools();
 		gtk_widget_queue_draw( nds_screen_widget);
 
@@ -1916,8 +1910,6 @@ common_gtk_main( struct configured_features *my_config)
             g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
                              G_CALLBACK(Stylus_Move), &my_config->opengl);
 
-            g_signal_connect( G_OBJECT(pDrawingArea), "realize",
-                              G_CALLBACK(Draw), NULL ) ;
             g_signal_connect( G_OBJECT(pDrawingArea), "expose_event",
                               G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
 
