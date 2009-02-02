@@ -8,7 +8,7 @@ General/Core:
  enh: Savestates invalidated, as more variables have been added.
  bug: Added PSG white noise [luigi__]
  bug: fix arm/thumb ROR [zeromus]
-* bug: [ 2550645 ] Super Princess Peach: crash when starting a puzzle [zeromus]
+ bug: [ 2550645 ] Super Princess Peach: crash when starting a puzzle [zeromus]
  bug: win32: fix spu wav file writer (regression from 0.8) [zeromus,luigi__]
  bug: Much work on FIFOs, still not finished [CrazyMax]
  bug: Many fixes to dma [zeromus, CrazyMax]
@@ -22,16 +22,16 @@ Graphics:
  bug: Implement some pos test function [luigi__]
  bug: fix texture mapping across texture and palette banks and to unmapped banks [zeromus]
  bug: fix texture handling for texels with MSB set (fixes some texture corruption) [zeromus]
-* bug: fix texture coordinate generation, including environment mapping [zeromus]
+ bug: fix texture coordinate generation, including environment mapping [zeromus]
  bug: texture cache invalidates when palettes change, prevents some texture corruption [zeromus]
-* bug: fix display capturing from 2d+3d source when display mode is display-vram [zeromus] 
+ bug: fix display capturing from 2d+3d source when display mode is display-vram [zeromus] 
  bug: [ 2488334 ].1 fixes to layer compositing [luigi__]
  bug: [ 2488334 ].3 fix bug in support for hdma affine bg parameters [zeromus]
  bug: Improvements to 3d h-scrolling [luigi__]
  bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
  bug: Add optional fragment shading pipeline (more precision) [luigi__]
  bug: Fix bug where some sprites got cut of on x=255 [zeromus]
- enh: Implement GXSTAT register [CrazyMax]
+ bug: Implement GXSTAT register [CrazyMax]
  
 Windows:
  bug: resizing and rotating work in vista [luigi__]
