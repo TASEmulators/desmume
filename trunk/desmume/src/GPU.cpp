@@ -1850,7 +1850,6 @@ namespace GPU_EXT {
 	void textBG(GPU * gpu, u8 num, u8 * DST)
 	{
 		gpu->currBgNum = num;
-		u32 i;
 		for(u32 i = 0; i < gpu->BGSize[num][1]; ++i)
 		{
 			gpu->currDst = DST + i*gpu->BGSize[num][0]*2;
