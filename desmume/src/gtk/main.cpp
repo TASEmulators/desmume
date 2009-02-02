@@ -1402,7 +1402,11 @@ gboolean EmuLoop(gpointer data)
 		}
 
 		desmume_cycle();	/* Emule ! */
-		for(i = 0; i < Frameskip; i++) desmume_cycle();	/* cycles supplémentaires pour le frameskip */
+		NDS_SkipFrame(true);
+		for(i = 0; i < Frameskip; i++) {
+			desmume_cycle();
+		}
+		NDS_SkipFrame(false);
 
 		Draw();
 
