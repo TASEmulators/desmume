@@ -26,7 +26,7 @@
 
 #define ABOUT_TIMER_ID 110222
 #define PER_PAGE_TEAM 23
-#define TEAM 26
+#define TEAM 25
 #define SIZE_SCROLL_BUFFER PER_PAGE_TEAM + TEAM
 const char	*team[TEAM] = { "Guillaume Duhamel",
 							"Normmatt",
@@ -36,7 +36,6 @@ const char	*team[TEAM] = { "Guillaume Duhamel",
 							"Pascal Giard (evilynux)",
 							"Ben Jaques (masscat)",
 							"Jeff Bland",
-							"Andres Delikat",
 							"Riccardo Magliocchetti",
 							"Max Tabachenko (CrazyMax)",
 							"zeromus",
@@ -102,7 +101,8 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 			char buf[4096];
 			memset(buf, 0, sizeof(buf));
 			for (int i = 0; i < PER_PAGE_TEAM; i++)
-				strcat(buf, (char *)scroll_buffer[i + scroll_start]);
+				if(i+scroll_start < SIZE_SCROLL_BUFFER)
+					strcat(buf, (char *)scroll_buffer[i + scroll_start]);
 			scroll_start++;
 			if (scroll_start >= SIZE_SCROLL_BUFFER)
 				scroll_start = 0;
