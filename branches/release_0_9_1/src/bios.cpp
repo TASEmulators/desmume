@@ -984,7 +984,7 @@ TEMPLATE static u32 getCRC16()
   u32 datap = cpu->R[1];
   u32 size = cpu->R[2];
   
-  static u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
+  const u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
   for(i = 0; i < size; i++)
   {
     crc = crc ^ _MMU_read08(cpu->proc_ID, datap + i);
