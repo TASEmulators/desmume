@@ -1,0 +1,171 @@
+/* DeSmuME Strings File */
+/* FRENCH */
+
+/* General */
+"DeSmuME Emulator" = "DeSmuME Emulator";
+//"OK" = ?;
+//"Cancel" = ?;
+
+/* Menu Headers */
+"File" = "Fichier";
+"Emulation" = "Emulation";
+"View" = "Présentation";
+"Sound" = "Son";
+"Window" = "Fenêtre";
+"Help" = "Aide";
+
+/* File Menu */
+"Open ROM..." = "Ouvrir une ROM...";
+"Open Recent" = "Fichiers récents";
+"ROM Info..." = "Informations sur la ROM...";
+"Save State As..." = "Enregistrer l'état sous...";
+"Load State From..." = "Charger l'état depuis...";
+"Save State" = "Enregistrer l'état";
+"Load State" = "Charger l'état";
+"Close ROM" = "Fermer la ROM";
+"Slot %d" = "Slot %d";
+
+/* Emulation Menu */
+"Execute" = "Exécuter";
+"Pause" = "Pause";
+"Reset" = "Réinitialiser";
+"Frame Skip" = "Saut d'image";
+"Auto" = "Automatique";
+"Off" = "Off";
+"Skip %d" = "%d";
+//"Speed Limit" = ?;
+//"25% Speed Limit" = ?;
+//"50% Speed Limit" = ?;
+//"75% Speed Limit" = ?;
+//"100% Speed Limit" = ?;
+//"200% Speed Limit" = ?;
+//"No Speed Limit" = ?;
+//"Custom Speed Limit" = ?;
+//"Custom Speed Limit Window" = ?;
+//"Set Max Speed:" = ?;
+"Speed %d%%" = "%d%%";
+"Set FAT Image File..." = "Définir le fichier d'image FAT...";
+
+/* View Menu */
+"Size 1x" = "Taille 1x";
+"Size 2x" = "Taille 2x";
+"Size 3x" = "Taille 3x";
+"Size 4x" = "Taille 4x";
+"Full Screen" = "Plein écran";
+"Constrain Proportions" = "Contraindre les proportions";
+"No Smaller Than DS" = "Pas plus petit que la DS";
+"Show Status Bar" = "Afficher la barre d&apos;état";
+"Rotation" = "Rotation";
+"Rotation 0" = "0°";
+"Rotation 90" = "90°";
+"Rotation 180" = "180°";
+"Rotation 270" = "270°";
+"Layers" = "Calques";
+"Top BG0" = "Top BG0";
+"Top BG1" = "Top BG1";
+"Top BG2" = "Top BG2";
+"Top BG3" = "Top BG3";
+"Sub BG0" = "Sub BG0";
+"Sub BG1" = "Sub BG1";
+"Sub BG2" = "Sub BG2";
+"Sub BG3" = "Sub BG3";
+"Save Screenshot..." = "Enregistrer une capture d'écran...";
+
+/* Sound Menu */
+"Volume" = "Volume";
+"Volume %d" = "%d%";
+"Mute" = "Muet";
+
+/* Window Menu */
+
+/* Help Menu */
+"Go to Website" = "Aller sur le site web";
+"Go to Forums" = "Aller sur les forums";
+"Submit a Bug Report" = "Envoyer un rapport de bug";
+
+/* About panel */
+"DeSmuME" = "DeSmuME";
+"Nintendo DS Emulator" = "Emulateur Nintendo DS";
+"Version %@" = "Version %@";
+"Readme" = "Lisez-moi";
+"License" = "Licence";
+"Authors" = "Auteurs";
+"Change Log" = "Change Log";
+
+/* Dialogs */
+"Are you sure you want to quit?" = "Etes vous su de vouloir quitter ?";
+"Are you sure you want to close the ROM?" = "Etes vous sur de vouloir fermer la ROM ?";
+
+/* Status Bar Messages */
+"No ROM Loaded" = "Aucune ROM chargée";
+"Executing" = "Exécution";
+"Paused" = "En pause";
+
+/* Preferences Window */
+"DeSmuME Preferences" = "Préférences de DeSmuME";
+"Interface" = "Interface";
+"Controls" = "Contrôles";
+"DS Firmware" = "DS Firmware";
+"Yes" = "Oui";
+"No" = "Non";
+
+/* Interface Preferences */
+"Execute Upon Load" = "Exécuter après le chargement";
+//"When Launching, Load" = ?;
+//"Load Nothing" = ?;
+//"Load Last ROM" = ?;
+
+/* Control Preferences */
+//"A Button" = ?;
+//"B Button" = ?;
+//"X Button" = ?;
+//"Y Button" = ?;
+//"L Button" = ?;
+//"R Button" = ?;
+//"Up Button" = ?;
+//"Down Button" = ?;				
+//"Left Button" = ?;
+//"Right Button" = ?;			
+//"Start Button" = ?;
+//"Select Button" = ?;
+
+//"Up Key" = ?;
+//"Down Key" = ?;
+//"Left Key" = ?;
+//"Right Key" = ?;
+//"Space Bar" = ?;
+//"Enter Key" = ?;
+
+/* ROM Info */
+"ROM File" = "Fichier";
+"ROM Title" = "Titre";
+"ROM Maker" = "Maker";
+"ROM Size" = "Taille de la ROM";
+"ARM9 Size" = "ARM9 Size";
+"ARM7 Size" = "ARM7 Size";
+"Data Size" = "Taille des données";
+"ROM Icon" = "Icône de la ROM";
+
+/* Screenshots */
+"Save Screenshot to File..." = "Enregistrer une capture d'écran dans un fichier...";
+"Select Image Format: " = "Sélectionner le format d'image :";
+"Pick by Extension" = "Choisir par extension";
+"BMP" = "BMP";
+"GIF" = "GIF";
+"JPG" = "JPG";
+"PNG" = "PNG";
+"TIFF" = "TIFF";
+
+/* Status Bar */
+"No ROM loaded" = "Aucune ROM chargée";
+"ROM Loaded" = "ROM chargée";
+"Emulation Executing" = "Exécution";
+"Emulation Paused" = "En pause";
+"Emulation Reset" = "Réinitialiser";
+
+/* Save States */
+"Save State..." = "Enregistrer l'état...";
+
+/* Errors */
+"Error" = "Erreur";
+"An emulation error occured" = "Une erreur d'émulation est survenue";
