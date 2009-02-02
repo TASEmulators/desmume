@@ -44,7 +44,7 @@ libdesmume_a_SOURCES = \
 	utils/md5.cpp utils/md5.h utils/valuearray.h utils/xstring.cpp utils/xstring.h \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
-	addons.c addons.h \
+	addons.cpp addons.h \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp \
 	mic.cpp mic.h \
 	cheatSystem.cpp cheatSystem.h
