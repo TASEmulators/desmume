@@ -628,7 +628,7 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 //			PIXEL RENDERING - BGS
 /*****************************************************************************/
 
-FORCEINLINE void GPU::setFinalBGColorSpecialNone(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialNone(u16 color, u8 x, bool doblend1)
 {
 	//sprwin test hack - use this code
 	//BOOL windowDraw = TRUE, windowEffect = TRUE;
@@ -640,9 +640,9 @@ FORCEINLINE void GPU::setFinalBGColorSpecialNone(u16 color, u8 x, bool blend1)
 	bgPixels[x] = currBgNum;
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 color, u8 x, bool doblend1)
 {
-	if(blend1)
+	if(doblend1)
 	{
 		int bg_under = bgPixels[x];
 		u16 final = color;
@@ -661,9 +661,9 @@ FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 color, u8 x, bool blend1)
 	}
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 color, u8 x, bool doblend1)
 {
-	if(blend1)   // the bg to draw has a special color effect
+	if(doblend1)   // the bg to draw has a special color effect
 	{
 		if (BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
@@ -680,9 +680,9 @@ FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 color, u8 x, bool blen
 	}
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 color, u8 x, bool doblend1)
 {
-	if(blend1)   // the bg to draw has a special color effect
+	if(doblend1)   // the bg to draw has a special color effect
 	{
 		if (BLDY_EVY != 0x0)
 		{ // dont slow down if there is nothing to do
@@ -698,13 +698,13 @@ FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 color, u8 x, bool blend
 	}
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialNoneWnd(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialNoneWnd(u16 color, u8 x, bool doblend1)
 {
 	bool windowDraw = true, windowEffect = true;
 	
 	renderline_checkWindows(x, windowDraw, windowEffect);
 
-	if (blend1 && windowEffect)   // the bg to draw has a special color effect
+	if (doblend1 && windowEffect)   // the bg to draw has a special color effect
 	{
 		T2WriteWord(currDst, x<<1, color);
 		bgPixels[x] = currBgNum;
@@ -719,7 +719,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialNoneWnd(u16 color, u8 x, bool blend1
 	}
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool doblend1)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -727,7 +727,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool blend
 
 	if(windowDraw)
 	{
-		if(blend1 && windowEffect)
+		if(doblend1 && windowEffect)
 		{
 			int bg_under = bgPixels[x];
 			u16 final = color;
@@ -748,7 +748,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool blend
 	}
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool doblend1)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -756,7 +756,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool bl
 
 	if(windowDraw)
 	{
-		if(blend1 && windowEffect)
+		if(doblend1 && windowEffect)
 		{
 			if (BLDY_EVY != 0x0)
 			{
@@ -774,7 +774,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool bl
 	}
 }
 
-FORCEINLINE void GPU::setFinalBGColorSpecialDecreaseWnd(u16 color, u8 x, bool blend1)
+FORCEINLINE void GPU::setFinalBGColorSpecialDecreaseWnd(u16 color, u8 x, bool doblend1)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -782,7 +782,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialDecreaseWnd(u16 color, u8 x, bool bl
 
 	if(windowDraw)
 	{
-		if(blend1 && windowEffect)
+		if(doblend1 && windowEffect)
 		{
 			if (BLDY_EVY != 0x0)
 			{
@@ -1722,7 +1722,7 @@ FORCEINLINE void rot_scale_op(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s
 			checkBounds = false;
 		}
 		
-		if(!checkBounds || (auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht))
+		if(!checkBounds || ((auxX >= 0) && (auxX < wh) && (auxY >= 0) && (auxY < ht)))
 			fun(gpu, auxX, auxY, wh, map, tile, pal, i, extPal);
 
 		x.val += dx;
