@@ -25,7 +25,7 @@ int cur3DCore = GPU3D_NULL;
 static void NDS_nullFunc1		(void){}
 static char NDS_nullFunc2		(void){ return 1; }
 static void NDS_nullFunc3		(int,unsigned short*) {}
-static void NDS_nullFunc4		(int,int,int,unsigned short*,unsigned char*) {}
+static void NDS_nullFunc4		(int,unsigned short*,unsigned char*) {}
 
 GPU3DInterface gpu3DNull = { 
 	"None",
