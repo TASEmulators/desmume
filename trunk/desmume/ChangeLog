@@ -1,8 +1,8 @@
-0.9 -> 0/10
+0.9 -> 0.10
 General/Core:
  enh: GBA slot emulation  [CrazyMax]
   - Rumble support (windows only)
-  - GBA game (windows only?)
+  - GBA game
  enh: Mic support (windows only?) [luigi__]
  enh: Preliminary cheats system [CrazyMax]
  enh: Savestates invalidated, as more variables have been added.
@@ -19,7 +19,7 @@ Graphics:
  bug: more correct mosaic effects, still imperfect [zeromus]
  bug: Many fixes to tile rendering; all graphics tests now pass [luigi__]
  bug: fix crashes in some affine BG [zeromus]
- bug: Implement some pos, box, vec test functions [luigi__]
+ bug: Implement some pos test function [luigi__]
  bug: fix texture mapping across texture and palette banks and to unmapped banks [zeromus]
  bug: fix texture handling for texels with MSB set (fixes some texture corruption) [zeromus]
 * bug: fix texture coordinate generation, including environment mapping [zeromus]
@@ -31,6 +31,7 @@ Graphics:
  bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
  bug: Add optional fragment shading pipeline (more precision) [luigi__]
  bug: Fix bug where some sprites got cut of on x=255 [zeromus]
+ enh: Implement GXSTAT register [CrazyMax]
  
 Windows:
  bug: resizing and rotating work in vista [luigi__]
