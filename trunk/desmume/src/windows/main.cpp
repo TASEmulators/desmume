@@ -58,6 +58,7 @@
 #include "FirmConfig.h"
 #include "AboutBox.h"
 #include "OGLRender.h"
+#include "rasterize.h"
 #include "../gfx3d.h"
 #include "../render3D.h"
 #include "../gdbstub.h"
@@ -185,6 +186,7 @@ NULL
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
 &gpu3Dgl,
+&gpu3DRasterize,
 NULL
 };
 
