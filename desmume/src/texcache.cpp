@@ -1,5 +1,6 @@
 #include "texcache.h"
 
+#include <string.h>
 #include <algorithm>
 
 #include "bits.h"

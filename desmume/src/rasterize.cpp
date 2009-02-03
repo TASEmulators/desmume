@@ -26,10 +26,11 @@
 //if you change it, erase other signatures.
 //if you optimize it and think it is risky, erase other signatures
 
-#include "Rasterize.h"
+#include "rasterize.h"
 
 #include <algorithm>
 #include <assert.h>
+#include <string.h>
 
 #include "bits.h"
 #include "common.h"
