@@ -395,3 +395,15 @@
 #define IDM_GBASLOT                             40042
 #define IDM_CHEATS_LIST                         40050
 #define IDM_CHEATS_SEARCH                       40051
+#define IDT_VIEW_DISASM7						50001
+#define IDT_VIEW_DISASM9                		50002
+#define IDT_VIEW_MEM7                   		50003
+#define IDT_VIEW_MEM9                   		50004
+#define IDT_VIEW_IOREG                  		50005
+#define IDT_VIEW_PAL                    		50006
+#define IDT_VIEW_TILE                   		50007
+#define IDT_VIEW_MAP                    		50008
+#define IDT_VIEW_OAM                    		50009
+#define IDT_VIEW_MATRIX                 		50010
+#define IDT_VIEW_LIGHTS                 		50011
+#define IDM_EXEC								50112
