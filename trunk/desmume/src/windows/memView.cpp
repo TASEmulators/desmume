@@ -25,7 +25,6 @@
 #include "../MMU.h"
 #include "debug.h"
 #include "resource.h"
-#include "res_timer_ids.h"
 
 typedef struct
 {

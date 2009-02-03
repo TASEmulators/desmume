@@ -22,7 +22,6 @@
 #include "colorctrl.h"
 #include "gfx3d.h"
 #include "resource.h"
-#include "res_timer_ids.h"
 #include "debug.h"
 
 // Convert B5G5R5 color format into R8G8B8 color format
