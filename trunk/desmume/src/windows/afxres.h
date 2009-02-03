@@ -17,6 +17,14 @@ extern "C" {
 #define IDC_STATIC (-1)
 #endif
 
+#ifndef WC_LISTVIEW
+#define WC_LISTVIEW "SysListView32"
+#endif
+
+#ifndef UPDOWN_CLASS
+#define UPDOWN_CLASS "msctls_updown32"
+#endif
+
 #ifdef __cplusplus
 }
 #endif
