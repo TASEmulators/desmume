@@ -93,7 +93,6 @@ struct PROJLIST {
 struct VERT {
 	float coord[4];
 	float texcoord[2];
-	u32 depth;
 	u8 color[4];
 };
 

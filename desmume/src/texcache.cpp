@@ -590,5 +590,23 @@ TextureCache* TexCache_Curr()
 	else return &texcache[lastTexture];
 }
 
+void TexCache_Invalidate()
+{
+	//well, this is a very blunt instrument.
+	//lets just flag all the textures as invalid.
+	for(int i=0;i<MAX_TEXTURE+1;i++) {
+		texcache[i].suspectedInvalid = true;
+
+		//invalidate all 4x4 textures when texture palettes change mappings
+		//this is necessary because we arent tracking 4x4 texture palettes to look for changes.
+		//Although I concede this is a bit paranoid.. I think the odds of anyone changing 4x4 palette data
+		//without also changing the texture data is pretty much zero.
+		//
+		//TODO - move this to a separate signal: split into TexReconfigureSignal and TexPaletteReconfigureSignal
+		if(texcache[i].mode == TEXMODE_4X4)
+			texcache[i].frm = 0;
+	}
+}
+
 void (*TexCache_BindTexture)(u32 texnum) = NULL;
 void (*TexCache_BindTextureData)(u32 texnum, u8* data);

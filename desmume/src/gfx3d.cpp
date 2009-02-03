@@ -602,14 +602,8 @@ static void SetVertex()
 	//apply projection matrix
 	MatrixMultVec4x4 (mtxCurrent[0], coordTransformed);
 
-	////perspective division
-	//coordTransformed[0] = (coordTransformed[0] + coordTransformed[3]) / 2 / coordTransformed[3];
-	//coordTransformed[1] = (coordTransformed[1] + coordTransformed[3]) / 2 / coordTransformed[3];
-	//coordTransformed[2] = (coordTransformed[2] + coordTransformed[3]) / 2 / coordTransformed[3];
-	//coordTransformed[3] = 1;
-
 	//TODO - culling should be done here.
-	//TODO - viewport transform
+	//TODO - viewport transform?
 
 	int continuation = 0;
 	if(vtxFormat==2 && !tempVertInfo.first)
@@ -632,7 +626,6 @@ static void SetVertex()
 	vert.color[1] = colorRGB[1];
 	vert.color[2] = colorRGB[2];
 	vert.color[3] = colorRGB[3];
-	vert.depth = 0x7FFF * coordTransformed[2];
 	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
@@ -709,27 +702,6 @@ static void SetVertex()
 		if(completed)
 		{
 			POLY &poly = polylist->list[polylist->count];
-			//todo - dont overrun proj list
-			
-			//see if the last entry in the proj list matches the current matrix, if there is one.
-		/*	if(projlist->count != 0 && 
-				//here is an example of something that does not work.
-				//(for a speed hack, we consider the matrices different if the first element differs)
-				//mtxCurrent[0][0] == projlist->projMatrix[projlist->count-1][0]
-				
-				//here is what we must do: make sure the matrices are identical
-				!MatrixCompare(mtxCurrent[0],projlist->projMatrix[projlist->count-1])
-				)
-			{
-				//it matches. use it
-				poly.projIndex = projlist->count-1;
-			}
-			else
-			{
-				MatrixCopy(projlist->projMatrix[projlist->count],mtxCurrent[0]);
-				poly.projIndex = projlist->count;
-				projlist->count++;
-			}*/
 
 			poly.polyAttr = polyAttr;
 			poly.texParam = textureFormat;
