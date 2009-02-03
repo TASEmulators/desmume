@@ -1161,6 +1161,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\texcache.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\texcache.h"
+			>
+		</File>
+		<File
 			RelativePath="..\thumb_instructions.cpp"
 			>
 		</File>
