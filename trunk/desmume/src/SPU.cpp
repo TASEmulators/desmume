@@ -1461,6 +1461,7 @@ void spu_savestate(std::ostream* os)
 		write16le(chan.pcm16b,os);
 		write16le(chan.pcm16b_last,os);
 		write32le(chan.index,os);
+		write16le(chan.x,os);
 		write16le(chan.psgnoise_last,os);
 	}
 }
@@ -1496,6 +1497,7 @@ bool spu_loadstate(std::istream* is)
 		read16le(&chan.pcm16b,is);
 		read16le(&chan.pcm16b_last,is);
 		read32le(&chan.index,is);
+		read16le(&chan.x,is);
 		read16le(&chan.psgnoise_last,is);
 
 		//fixup the pointers which we had are supposed to keep cached
