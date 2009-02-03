@@ -1854,8 +1854,6 @@ void gfx3d_sendCommandToFIFO(u32 val)
 
 void gfx3d_sendCommand(u32 cmd, u32 param)
 {
-	u32 gxstat = ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2];
-
 	cmd &= 0x0FFF;
 #ifdef _3D_LOG
 	INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X) - DIRECT\n", (cmd & 0x1FF)>>2, param);
@@ -2071,7 +2069,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GMTM", 4,16, mtxTemporal},
 	{ "GMCU", 4,64, mtxCurrent},
 	{ "GM0P", 4, 1, &mtxStack[0].position},
-	{ "GM1M", 4,16, mtxStack[0].matrix},
+	{ "GM0M", 4,16, mtxStack[0].matrix},
 	{ "GM1P", 4, 1, &mtxStack[1].position},
 	{ "GM1M", 4,496,mtxStack[1].matrix},
 	{ "GM2P", 4, 1, &mtxStack[2].position},
@@ -2097,7 +2095,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GLCM", 4, 1, &clCmd},
 	{ "GLIN", 4, 1, &clInd},
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-	{ "GLIN", 4, 1, &clInd2},
+	{ "GLI2", 4, 1, &clInd2},
 #endif
 	{ "GLBT", 4, 1, &BTind},
 	{ "GLPT", 4, 1, &PTind},
