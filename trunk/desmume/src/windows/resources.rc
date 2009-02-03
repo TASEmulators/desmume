@@ -880,7 +880,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CTEXT           "",IDC_AUTHORS_LIST,7,75,198,188,0,WS_EX_CLIENTEDGE
     DEFPUSHBUTTON   "Close",IDC_FERMER,86,277,50,14
-    CTEXT           "DeSmuME",IDC_STATIC,7,8,198,10
+    CTEXT           "DeSmuME",IDC_STATIC,7,9,198,10
     CTEXT           "version",IDC_TXT_VERSION,7,18,198,8
     RTEXT           "compiled",IDC_TXT_COMPILED,7,265,198,8
     CTEXT           "Original author",IDC_STATIC,7,36,198,10
