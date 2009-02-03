@@ -1573,12 +1573,14 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			{
 				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
 				disp3dcnt = (disp3dcnt&0xFF00) | val;
+				gfx3d_Control(disp3dcnt);
 				break;
 			}
 			case REG_DISPA_DISP3DCNT+1:
 			{
 				u32 &disp3dcnt = MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val;
 				disp3dcnt = (disp3dcnt&0x00FF) | (val<<8);
+				gfx3d_Control(disp3dcnt);
 				break;
 			}
 
@@ -1797,6 +1799,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DISPA_DISP3DCNT:
 			{
 				MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val = val;
+				gfx3d_Control(val);
 				break;
 			}
 
