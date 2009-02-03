@@ -79,6 +79,10 @@
 
 using namespace std;
 
+#include <GdiPlus.h>
+
+using namespace Gdiplus;
+
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
@@ -1302,6 +1306,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
                     int nFunsterStil)
 
 {
+	ULONG_PTR GdiplusToken;
+	GdiplusStartupInput GdiplusSI;
+
+	GdiplusSI.GdiplusVersion = 1;
+
+	if(GdiplusStartup(&GdiplusToken, &GdiplusSI, NULL) != Ok)
+	{
+		MessageBox(0, "Failed to initialize GDI+ !", "Severe error", MB_OK | MB_ICONERROR);
+		return 1;
+	}
+
 	InitializeCriticalSection(&win_sync);
 
 #ifdef GDB_STUB
@@ -1634,6 +1649,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	delete MainWindow;
 	
 	CloseConsole();
+
+	GdiplusShutdown(GdiplusToken);
 
     return 0;
 }
