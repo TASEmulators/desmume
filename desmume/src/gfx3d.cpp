@@ -192,6 +192,8 @@ struct tmpVertInfo {
 	int count;
 	//indices to the main vert list
 	int map[4];
+	//indicates that the first poly in a list has been completed
+	BOOL first;
 } tempVertInfo;
 
 
@@ -553,6 +555,7 @@ void gfx3d_glBegin(unsigned long v)
 	vtxFormat = v&0x03;
 	triStripToggle = 0;
 	tempVertInfo.count = 0;
+	tempVertInfo.first = true;
 }
 
 void gfx3d_glEnd(void)
@@ -608,9 +611,16 @@ static void SetVertex()
 	//TODO - culling should be done here.
 	//TODO - viewport transform
 
+	int continuation = 0;
+	if(vtxFormat==2 && !tempVertInfo.first)
+		continuation = 2;
+	else if(vtxFormat==3 && !tempVertInfo.first)
+		continuation = 2;
+
+
 	//record the vertex
 	//VERT &vert = tempVertList.list[tempVertList.count];
-	VERT &vert = vertlist->list[vertlist->count + tempVertInfo.count];
+	VERT &vert = vertlist->list[vertlist->count + tempVertInfo.count - continuation];
 
 	vert.texcoord[0] = last_s;
 	vert.texcoord[1] = last_t;
@@ -623,7 +633,7 @@ static void SetVertex()
 	vert.color[2] = colorRGB[2];
 	vert.color[3] = colorRGB[3];
 	vert.depth = 0x7FFF * coordTransformed[2];
-	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count;
+	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
 	//possibly complete a polygon
@@ -664,13 +674,17 @@ static void SetVertex()
 				polylist->list[polylist->count].type = 3;
 
 				if(triStripToggle)
-					tempVertInfo.map[1] = vertlist->count+2;
+					tempVertInfo.map[1] = vertlist->count+2-continuation;
 				else
-					tempVertInfo.map[0] = vertlist->count+2;
+					tempVertInfo.map[0] = vertlist->count+2-continuation;
 				
-				vertlist->count+=3;
+				if(tempVertInfo.first)
+					vertlist->count+=3;
+				else
+					vertlist->count+=1;
 
 				triStripToggle ^= 1;
+				tempVertInfo.first = false;
 				tempVertInfo.count = 2;
 				break;
 			case 3: //GL_QUAD_STRIP
@@ -682,9 +696,12 @@ static void SetVertex()
 				SUBMITVERTEX(2,3);
 				SUBMITVERTEX(3,2);
 				polylist->list[polylist->count].type = 4;
-				tempVertInfo.map[0] = vertlist->count+2;
-				tempVertInfo.map[1] = vertlist->count+3;
-				vertlist->count+=4;
+				tempVertInfo.map[0] = vertlist->count+2-continuation;
+				tempVertInfo.map[1] = vertlist->count+3-continuation;
+				if(tempVertInfo.first)
+					vertlist->count+=4;
+				else vertlist->count+=2;
+				tempVertInfo.first = false;
 				tempVertInfo.count = 2;
 				break;
 		}
@@ -2111,6 +2128,9 @@ SFORMAT SF_GFX3D[]={
 	{ "GMSP", 2, 1, &dsSpecular},
 	{ "GMEM", 2, 1, &dsEmission},
 	{ "GTST", 4, 1, &triStripToggle},
+	{ "GTVC", 4, 1, &tempVertInfo.count},
+	{ "GTVM", 4, 4, &tempVertInfo.map[0]},
+	{ "GTVF", 4, 1, &tempVertInfo.first},
 	{ "GLTW", 4, 1, &listTwiddle},
 	{ "GFLP", 4, 1, &flushPending},
 	{ "GDRP", 4, 1, &drawPending},
