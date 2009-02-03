@@ -67,7 +67,7 @@ struct Vertex
 	int w;
 } verts[3];
 
-void SubmitVertex(VERT* rawvert)
+static void SubmitVertex(VERT* rawvert)
 {
 	static int vert_index = 0;
 	Vertex &vert = verts[vert_index++];
@@ -252,7 +252,7 @@ struct Interpolator
 
 //http://www.devmaster.net/forums/showthread.php?t=1884&page=1
 //todo - change to the tile-based renderer and try to apply some optimizations from that thread
-void triangle_from_devmaster()
+static void triangle_from_devmaster()
 {
 	// 28.4 fixed-point coordinates
     const int Y1 = iround(16.0f * verts[0].vert->coord[1]);
