@@ -21,6 +21,7 @@
 
 #include "mapView.h"
 #include "resource.h"
+#include "res_timer_ids.h"
 
 #include <commctrl.h>
 #include "../MMU.h"

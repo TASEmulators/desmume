@@ -22,6 +22,7 @@
 #include "tileView.h"
 #include "commctrl.h"
 #include "resource.h"
+#include "res_timer_ids.h"
 #include "debug.h"
 #include "../MMU.h"
 
