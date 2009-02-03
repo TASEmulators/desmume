@@ -32,6 +32,7 @@
 
 #include "bits.h"
 #include "common.h"
+#include "matrix.h"
 #include "render3D.h"
 #include "gfx3d.h"
 #include "texcache.h"
@@ -180,18 +181,19 @@ struct Shader
 		mode = (polyattr>>4)&0x3;
 	}
 
-	float u, v;
+	float invu, invv, invw;
 	Fragment::Color materialColor;
 	
 	void shade(Fragment& dst)
 	{
 		Fragment::Color texColor;
-		//if(mode==0||mode==1)
-		//	texColor = sampler.sample(i_tex_u.Z,i_tex_v.Z);
+		float u,v;
 
 		switch(mode)
 		{
 		case 0: //modulate
+			u = invu/invw;
+			v = invv/invw;
 			texColor = sampler.sample(u,v);
 			dst.color.components.r = ((texColor.components.r+1) * (materialColor.components.r+1)-1)>>5;
 			dst.color.components.g = ((texColor.components.g+1) * (materialColor.components.g+1)-1)>>5;
@@ -201,6 +203,8 @@ struct Shader
 		case 1: //decal
 		case 2:
 		case 3: //..and everything else, for now
+			u = invu/invw;
+			v = invv/invw;
 			texColor = sampler.sample(u,v);
 			dst.color = texColor;
 			break;
@@ -212,19 +216,30 @@ struct Shader
 
 struct Interpolator
 {
-	int A,B,C;
 	float dx, dy;
 	float Z, pZ;
 
 	struct {
-		int x,y,z;
+		float x,y,z;
 	} point0;
 	
+	Interpolator(int x1, int x2, int x3, int y1, int y2, int y3, float z1, float z2, float z3)
+	{
+		float A = (z3 - z1) * (y2 - y1) - (z2 - z1) * (y3 - y1);
+		float B = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
+		float C = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+		dx = -(float)A / C;
+		dy = -(float)B / C;
+		point0.x = x1;
+		point0.y = y1;
+		point0.z = z1;
+	}
+
 	Interpolator(int x1, int x2, int x3, int y1, int y2, int y3, int z1, int z2, int z3)
 	{
-		A = (z3 - z1) * (y2 - y1) - (z2 - z1) * (y3 - y1);
-		B = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
-		C = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+		int A = (z3 - z1) * (y2 - y1) - (z2 - z1) * (y3 - y1);
+		int B = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
+		int C = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
 		dx = -(float)A / C;
 		dy = -(float)B / C;
 		point0.x = x1;
@@ -314,18 +329,20 @@ void triangle_from_devmaster()
 	Interpolator i_color_g(fx1,fx2,fx3,fy1,fy2,fy3,g1,g2,g3);
 	Interpolator i_color_b(fx1,fx2,fx3,fy1,fy2,fy3,b1,b2,b3);
 	Interpolator i_color_a(fx1,fx2,fx3,fy1,fy2,fy3,a1,a2,a3);
-	Interpolator i_tex_u(fx1,fx2,fx3,fy1,fy2,fy3,u1,u2,u3);
-	Interpolator i_tex_v(fx1,fx2,fx3,fy1,fy2,fy3,v1,v2,v3);
+	Interpolator i_tex_invu(fx1,fx2,fx3,fy1,fy2,fy3,u1*4096.0f/w1,u2*4096.0f/w2,u3*4096.0f/w3);
+	Interpolator i_tex_invv(fx1,fx2,fx3,fy1,fy2,fy3,v1*4096.0f/w1,v2*4096.0f/w2,v3*4096.0f/w3);
 	Interpolator i_w(fx1,fx2,fx3,fy1,fy2,fy3,w1,w2,w3);
+	Interpolator i_invw(fx1,fx2,fx3,fy1,fy2,fy3,4096.0f/w1,4096.0f/w2,4096.0f/w3);
 	
 
 	i_color_r.init(minx,miny);
 	i_color_g.init(minx,miny);
 	i_color_b.init(minx,miny);
 	i_color_a.init(minx,miny);
-	i_tex_u.init(minx,miny);
-	i_tex_v.init(minx,miny);
+	i_tex_invu.init(minx,miny);
+	i_tex_invv.init(minx,miny);
 	i_w.init(minx,miny);
+	i_invw.init(minx,miny);
 
     for(int y = miny; y < maxy; y++)
     {
@@ -336,9 +353,9 @@ void triangle_from_devmaster()
         int CX3 = CY3;
 
 		bool done = false;
-		i_color_r.push(); i_color_g.push(); i_color_b.push(); ; i_color_a.push(); 
-		i_tex_u.push(); i_tex_v.push();
-		i_w.push();
+		i_color_r.push(); i_color_g.push(); i_color_b.push(); i_color_a.push(); 
+		i_tex_invu.push(); i_tex_invv.push();
+		i_w.push(); i_invw.push();
 
 		if(y>=0 && y<192)
 		{			
@@ -358,8 +375,8 @@ void triangle_from_devmaster()
 					//since we dont, we are receiving waaay out of bounds polys and so unless we do this we spend a lot of time calculating
 					//out of bounds pixels
 					i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum); i_color_a.incx(xaccum);
-					i_tex_u.incx(xaccum); i_tex_v.incx(xaccum);
-					i_w.incx(xaccum);
+					i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
+					i_w.incx(xaccum); i_invw.incx(xaccum);
 					xaccum = 0;
 
 					int adr = (y<<8)+x;
@@ -370,11 +387,9 @@ void triangle_from_devmaster()
 					if(w>destFragment.depth) 
 						goto rejected_fragment;
 					
-					//material color
-					//color = R5G5B5TORGB15(i_color_r.cur(),i_color_g.cur(),i_color_b.cur());
-					
-					shader.u = i_tex_u.Z;
-					shader.v = i_tex_v.Z;
+					shader.invw = i_invw.Z;
+					shader.invu = i_tex_invu.Z;
+					shader.invv = i_tex_invv.Z;
 					shader.materialColor.components.a = i_color_a.cur();
 					shader.materialColor.components.r = i_color_r.cur();
 					shader.materialColor.components.g = i_color_g.cur();
@@ -394,7 +409,7 @@ void triangle_from_devmaster()
 						destFragment.color.components.r = (alpha*shaderOutput.color.components.r + invAlpha*destFragment.color.components.r)>>5;
 						destFragment.color.components.g = (alpha*shaderOutput.color.components.g + invAlpha*destFragment.color.components.g)>>5;
 						destFragment.color.components.b = (alpha*shaderOutput.color.components.b + invAlpha*destFragment.color.components.b)>>5;
-						destFragment.color.components.a = max(shaderOutput.color.components.b,destFragment.color.components.a);
+						destFragment.color.components.a = max(shaderOutput.color.components.a,destFragment.color.components.a);
 					}
 
 					destFragment.depth = w;
@@ -412,9 +427,10 @@ void triangle_from_devmaster()
 		i_color_r.pop(); i_color_r.incy();
 		i_color_g.pop(); i_color_g.incy();
 		i_color_b.pop(); i_color_b.incy();
-		i_tex_u.pop(); i_tex_u.incy();
-		i_tex_v.pop(); i_tex_v.incy();
+		i_tex_invu.pop(); i_tex_invu.incy();
+		i_tex_invv.pop(); i_tex_invv.incy();
 		i_w.pop(); i_w.incy();
+		i_invw.pop(); i_invw.incy();
 
 
         CY1 += FDX12;
@@ -443,11 +459,13 @@ static void GetLine(int line, u16* dst, u8* dstAlpha)
 	Fragment* src = screen+((191-line)<<8);
 	for(int i=0;i<256;i++)
 	{
+
 		u8 r = src->color.components.r;
 		u8 g = src->color.components.g;
 		u8 b = src->color.components.b;
 		*dst = R5G5B5TORGB15(r,g,b);
-		if(src->color.components.a > 0) *dst |= 0x8000;
+		if(src->color.components.a > 0) 
+			*dst |= 0x8000;
 		*dstAlpha = alpha_5bit_to_4bit[src->color.components.a];
 		src++;
 		dst++;
@@ -479,12 +497,39 @@ static void Render()
 		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
 	}
 
-
+	int culled = 0;
 	
 	//iterate over gfx3d.polylist and gfx3d.vertlist
-	for(int i=0;i<gfx3d.polylist->count;i++) {
+	for(int i=0;i<gfx3d.polylist->count;i++)
+	{
 		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
 		int type = poly->type;
+
+		VERT* verts[4] = {
+			&gfx3d.vertlist->list[poly->vertIndexes[0]],
+			&gfx3d.vertlist->list[poly->vertIndexes[1]],
+			&gfx3d.vertlist->list[poly->vertIndexes[2]],
+			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
+		};
+
+		//HACK: backface culling
+		//this should be moved to gfx3d, but first we need to redo the way the lists are built
+		//because it is too convoluted right now.
+		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
+		//TODO - use some freaking matrix and vector classes
+		float ab[3], ac[3];
+		Vector3Copy(ab,verts[0]->coord);
+		Vector3Copy(ac,verts[0]->coord);
+		Vector3Subtract(ab,verts[1]->coord);
+		Vector3Subtract(ac,verts[2]->coord);
+		float cross[3];
+		Vector3Cross(cross,ab,ac);
+		float view[3] = {0,0,1};
+		float dot = Vector3Dot(view,cross);
+		if(dot<0)  {
+			culled++;
+			continue;
+		}
 
 		TexCache_SetTexture(poly->texParam,poly->texPalette);
 		sampler.setup(poly->texParam);
@@ -494,29 +539,30 @@ static void Render()
 		//but then again, what does it matter?
 		if(type == 4) {
 
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[2]]);
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[1]]);
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[0]]);
+			SubmitVertex(verts[2]);
+			SubmitVertex(verts[1]);
+			SubmitVertex(verts[0]);
 
 			triangle_from_devmaster();
 
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[0]]);
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[3]]);
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[2]]);
+			SubmitVertex(verts[0]);
+			SubmitVertex(verts[3]);
+			SubmitVertex(verts[2]);
 
 			triangle_from_devmaster();
 
 		}
 		if(type == 3) {
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[2]]);
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[1]]);
-			SubmitVertex(&gfx3d.vertlist->list[poly->vertIndexes[0]]);
+			SubmitVertex(verts[2]);
+			SubmitVertex(verts[1]);
+			SubmitVertex(verts[0]);
 
 			triangle_from_devmaster();
 		}
 
 	}
-				
+
+	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
 
 

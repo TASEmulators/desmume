@@ -63,8 +63,10 @@ float*	MatrixStackGet				(MatrixStack *stack);
 void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const float *ptr);
 
 float Vector3Dot(const float *a, const float *b);
+void Vector3Cross(float* dst, const float *a, const float *b);
 float Vector3Length(const float *a);
 void Vector3Add(float *dst, const float *src);
+void Vector3Subtract(float *dst, const float *src);
 void Vector3Scale(float *dst, const float scale);
 void Vector3Copy(float *dst, const float *src);
 void Vector3Normalize(float *dst);
