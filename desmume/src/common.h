@@ -61,3 +61,4 @@ extern u8	gba_header_data_0x04[156];
 extern u8 reverseBitsInByte(u8 x);
 	
 #endif
+

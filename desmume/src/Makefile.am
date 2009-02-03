@@ -36,6 +36,7 @@ libdesmume_a_SOURCES = \
 	softrender_v3sysfont.h softrender_desmumefont.h \
 	matrix.cpp matrix.h \
 	gfx3d.cpp gfx3d.h \
+	texcache.cpp texcache.h \
         thumb_instructions.cpp thumb_instructions.h types.h \
 	shaders.h \
 	movie.cpp movie.h \
