@@ -29,6 +29,7 @@
 #include "disView.h"
 #include <commctrl.h>
 #include "resource.h"
+#include "res_timer_ids.h"
 
 typedef struct
 {
