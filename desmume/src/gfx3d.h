@@ -27,6 +27,22 @@
 #include "types.h"
 #include <iosfwd>
 
+//produce a 32bpp color from a DS RGB16
+#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
+
+//produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
+#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col&0x7FFF] )
+
+//produce a 24bpp color from a ds RGB15, using a table
+#define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[col&0x7FFF] )
+
+//produce a 32bpp color from a ds RGB15 plus an 8bit alpha, not using a table (but using other tables)
+#define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
+
+//produce a 15bpp color from individual 5bit components
+#define R5G5B5TORGB15(r,g,b) ((r)|((g)<<5)|((b)<<10))
+
+
 #define TEXMODE_NONE 0
 #define TEXMODE_A3I5 1
 #define TEXMODE_I2 2
@@ -140,18 +156,6 @@ struct GFX3D
 extern GFX3D gfx3d;
 
 //---------------------
-
-//produce a 32bpp color from a DS RGB16
-#define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
-
-//produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
-#define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col&0x7FFF] )
-
-//produce a 24bpp color from a ds RGB15, using a table
-#define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[col&0x7FFF] )
-
-//produce a 32bpp color from a ds RGB15 plus an 8bit alpha, not using a table (but using other tables)
-#define RGB15TO32_DIRECT(col,alpha8) ( ((alpha8)<<24) | (material_5bit_to_8bit[((col)>>10)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[(col)&0x1F] )
 
 extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 extern CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
