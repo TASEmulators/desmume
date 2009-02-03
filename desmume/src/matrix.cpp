@@ -231,6 +231,14 @@ float Vector3Dot(const float *a, const float *b)
 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
+void Vector3Cross(float* dst, const float *a, const float *b) 
+{
+	dst[0] = a[1]*b[2] - a[2]*b[1];
+	dst[1] = a[2]*b[0] - a[0]*b[2];
+	dst[2] = a[0]*b[1] - a[1]*b[0];
+}
+
+
 float Vector3Length(const float *a)
 {
 	float lengthSquared = Vector3Dot(a,a);
@@ -243,6 +251,13 @@ void Vector3Add(float *dst, const float *src)
 	dst[0] += src[0];
 	dst[1] += src[1];
 	dst[2] += src[2];
+}
+
+void Vector3Subtract(float *dst, const float *src)
+{
+	dst[0] -= src[0];
+	dst[1] -= src[1];
+	dst[2] -= src[2];
 }
 
 void Vector3Scale(float *dst, const float scale)
