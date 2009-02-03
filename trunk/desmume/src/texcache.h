@@ -34,6 +34,7 @@ extern void (*TexCache_BindTextureData)(u32 texnum, u8* data);
 
 void TexCache_Reset();
 void TexCache_SetTexture(unsigned int format, unsigned int texpal);
+void TexCache_Invalidate();
 
 extern u8 TexCache_texMAP[1024*2048*4]; 
 TextureCache* TexCache_Curr();

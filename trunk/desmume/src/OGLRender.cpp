@@ -683,9 +683,6 @@ static void OGLRender()
 
 	glViewport(gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
 
-	//it might be handy to print the size of the projection list, in case a game is doing something weird with it
-	//printf("%d\n",gfx3d.projlist->count);
-	
 	//we're not using the alpha clear color right now
 	glClearColor(gfx3d.clearColor[0],gfx3d.clearColor[1],gfx3d.clearColor[2], gfx3d.clearColor[3]);
 	glClearDepth(gfx3d.clearDepth);
@@ -761,20 +758,7 @@ static void OGLRender()
 
 static void OGLVramReconfigureSignal()
 {
-	//well, this is a very blunt instrument.
-	//lets just flag all the textures as invalid.
-	for(int i=0;i<MAX_TEXTURE+1;i++) {
-		texcache[i].suspectedInvalid = true;
-
-		//invalidate all 4x4 textures when texture palettes change mappings
-		//this is necessary because we arent tracking 4x4 texture palettes to look for changes.
-		//Although I concede this is a bit paranoid.. I think the odds of anyone changing 4x4 palette data
-		//without also changing the texture data is pretty much zero.
-		//
-		//TODO - move this to a separate signal: split into TexReconfigureSignal and TexPaletteReconfigureSignal
-		if(texcache[i].mode == TEXMODE_4X4)
-			texcache[i].frm = 0;
-	}
+	TexCache_Invalidate();
 }
 
 static void GL_ReadFramebuffer()
