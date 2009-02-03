@@ -184,8 +184,6 @@ struct Shader
 			u = invu/invw;
 			v = invv/invw;
 			texColor = sampler.sample(u,v);
- 			assert(texColor.components.r<32); assert(texColor.components.g<32); assert(texColor.components.b<32);assert(texColor.components.a<32);
-			assert(materialColor.components.r<32); assert(materialColor.components.g<32); assert(materialColor.components.b<32);assert(materialColor.components.a<32);
 			dst.color.components.r = modulate_table[texColor.components.r][materialColor.components.r];
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
@@ -385,6 +383,16 @@ void triangle_from_devmaster()
 					shader.materialColor.components.r = i_color_r.cur();
 					shader.materialColor.components.g = i_color_g.cur();
 					shader.materialColor.components.b = i_color_b.cur();
+					//this is a HACK: 
+					//we are being very sloppy with our interpolation precision right now
+					//and rather than fix it, i just want to clamp it
+					//assert(texColor.components.r<32); assert(texColor.components.g<32); assert(texColor.components.b<32);assert(texColor.components.a<32);
+					//assert(materialColor.components.r<32); assert(materialColor.components.g<32); assert(materialColor.components.b<32);assert(materialColor.components.a<32);
+					shader.materialColor.components.r = max((u8)0,min((u8)31,shader.materialColor.components.r));
+					shader.materialColor.components.g = max((u8)0,min((u8)31,shader.materialColor.components.g));
+					shader.materialColor.components.b = max((u8)0,min((u8)31,shader.materialColor.components.b));
+					shader.materialColor.components.a = max((u8)0,min((u8)31,shader.materialColor.components.a));
+
 					Fragment shaderOutput;
 					shader.shade(shaderOutput);
 
