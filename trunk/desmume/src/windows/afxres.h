@@ -12,17 +12,13 @@ extern "C" {
 #include <windows.h>
 #endif
 
+#ifndef _INC_COMMCTRL
+#include <commctrl.h>
+#endif
+
 /* IDC_STATIC is documented in winuser.h, but not defined. */
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
-
-#ifndef WC_LISTVIEW
-#define WC_LISTVIEW "SysListView32"
-#endif
-
-#ifndef UPDOWN_CLASS
-#define UPDOWN_CLASS "msctls_updown32"
 #endif
 
 #ifdef __cplusplus
