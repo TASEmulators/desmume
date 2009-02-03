@@ -29,6 +29,7 @@
 #include "Rasterize.h"
 
 #include <algorithm>
+#include <assert.h>
 
 #include "bits.h"
 #include "common.h"
@@ -42,6 +43,8 @@ using std::max;
 
 template<typename T> T min(T a, T b, T c) { return min(min(a,b),c); }
 template<typename T> T max(T a, T b, T c) { return max(max(a,b),c); }
+
+static u8 modulate_table[32][32];
 
 struct Fragment
 {
@@ -75,62 +78,47 @@ void SubmitVertex(VERT* rawvert)
 
 static Fragment screen[256*192];
 
-//http://www.devmaster.net/forums/showthread.php?t=1884
-#if defined(_MSC_VER)
-inline int iround(float x)
-{
-  int t;
-
-  __asm
-  {
-    fld  x
-    fistp t
-  }
-
-  return t;
-}
-#else
-int iround(float f) {
+FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
-#endif
-
 
 static struct
 {
 	int width, height;
 	int wmask, hmask;
 	int wrap;
+	int wshift;
 	void setup(u32 format)
 	{
-		width=(8 << ((format>>20)&0x07));
+		wshift = ((format>>20)&0x07) + 3;
+		width=(1 << wshift);
 		height=(8 << ((format>>23)&0x07));
 		wmask = width-1;
 		hmask = height-1;
 		wrap = (format>>16)&0xF;
 	}
 
-	void clamp(int &val, int size, int sizemask){
+	FORCEINLINE void clamp(int &val, int size, int sizemask){
 		if(val<0) val = 0;
 		if(val>sizemask) val = sizemask;
 	}
-	void hclamp(int &val) { clamp(val,width,wmask); }
-	void vclamp(int &val) { clamp(val,height,hmask); }
+	FORCEINLINE void hclamp(int &val) { clamp(val,width,wmask); }
+	FORCEINLINE void vclamp(int &val) { clamp(val,height,hmask); }
 
-	void repeat(int &val, int size, int sizemask) {
+	FORCEINLINE void repeat(int &val, int size, int sizemask) {
 		val &= sizemask;
 	}
-	void hrepeat(int &val) { repeat(val,width,wmask); }
-	void vrepeat(int &val) { repeat(val,height,hmask); }
+	FORCEINLINE void hrepeat(int &val) { repeat(val,width,wmask); }
+	FORCEINLINE void vrepeat(int &val) { repeat(val,height,hmask); }
 
-	void flip(int &val, int size, int sizemask) {
+	FORCEINLINE void flip(int &val, int size, int sizemask) {
 		val &= ((size<<1)-1);
 		if(val>=size) val = (size<<1)-val-1;
 	}
-	void hflip(int &val) { flip(val,width,wmask); }
-	void vflip(int &val) { flip(val,height,hmask); }
+	FORCEINLINE void hflip(int &val) { flip(val,width,wmask); }
+	FORCEINLINE void vflip(int &val) { flip(val,height,hmask); }
 
-	void dowrap(int& iu, int& iv)
+	FORCEINLINE void dowrap(int& iu, int& iv)
 	{
 		switch(wrap) {
 			//flip none
@@ -163,7 +151,7 @@ static struct
 		dowrap(iu,iv);
 
 		Fragment::Color color;
-		u32 col32 = ((u32*)TexCache_texMAP)[iv*width+iu];
+		u32 col32 = ((u32*)TexCache_texMAP)[(iv<<wshift)+iu];
 		//todo - teach texcache how to provide these already in 5555
 		col32 >>= 3;
 		col32 &= 0x1F1F1F1F;
@@ -195,10 +183,12 @@ struct Shader
 			u = invu/invw;
 			v = invv/invw;
 			texColor = sampler.sample(u,v);
-			dst.color.components.r = ((texColor.components.r+1) * (materialColor.components.r+1)-1)>>5;
-			dst.color.components.g = ((texColor.components.g+1) * (materialColor.components.g+1)-1)>>5;
-			dst.color.components.b = ((texColor.components.b+1) * (materialColor.components.b+1)-1)>>5;
-			dst.color.components.a = ((texColor.components.a+1) * (materialColor.components.a+1)-1)>>5;
+ 			assert(texColor.components.r<32); assert(texColor.components.g<32); assert(texColor.components.b<32);assert(texColor.components.a<32);
+			assert(materialColor.components.r<32); assert(materialColor.components.g<32); assert(materialColor.components.b<32);assert(materialColor.components.a<32);
+			dst.color.components.r = modulate_table[texColor.components.r][materialColor.components.r];
+			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
+			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
+			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
 			break;
 		case 1: //decal
 		case 2:
@@ -443,6 +433,10 @@ void triangle_from_devmaster()
 
 static char Init(void)
 {
+	for(int i=0;i<32;i++)
+		for(int j=0;j<32;j++)
+			modulate_table[i][j] = ((i+1)*(j+1)-1)>>5;	
+
 	return 1;
 }
 
@@ -497,9 +491,12 @@ static void Render()
 		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
 	}
 
+	//a counter for how many polys got culled
 	int culled = 0;
+
+	u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
 	
-	//iterate over gfx3d.polylist and gfx3d.vertlist
+	//iterate over polys
 	for(int i=0;i<gfx3d.polylist->count;i++)
 	{
 		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
@@ -531,8 +528,15 @@ static void Render()
 			continue;
 		}
 
-		TexCache_SetTexture(poly->texParam,poly->texPalette);
-		sampler.setup(poly->texParam);
+		if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
+		{
+			TexCache_SetTexture(poly->texParam,poly->texPalette);
+			sampler.setup(poly->texParam);
+			lastTextureFormat = poly->texParam;
+			lastTexturePalette = poly->texPalette;
+			lastPolyAttr = poly->polyAttr;
+		}
+
 
 		//note that when we build our triangle vert lists, we reorder them for our renderer.
 		//we should probably fix the renderer so we dont have to do this;
@@ -562,7 +566,7 @@ static void Render()
 
 	}
 
-	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
 
 
