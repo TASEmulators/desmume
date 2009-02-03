@@ -23,7 +23,6 @@
 #include <commctrl.h>
 #include "debug.h"
 #include "resource.h"
-#include "res_timer_ids.h"
 #include "../MMU.h"
 #include "../armcpu.h"
 

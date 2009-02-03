@@ -44,7 +44,6 @@
 #include "../addons.h"
 #endif
 #include "resource.h"
-#include "res_timer_ids.h"
 #include "memView.h"
 #include "disView.h"
 #include "ginfo.h"
