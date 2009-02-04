@@ -212,11 +212,8 @@
 #define IDC_IPCFIFO9                            1020
 #define IDC_BGMAP_SCROLL                        1021
 #define IDC_IPCSYNC9                            1021
-#define IDC_BGMAP_ROT                           1022
 #define IDC_IF9                                 1022
-#define IDC_BGMAP_SCALE                         1023
 #define IDC_INTHAND9                            1023
-#define IDC_BGMAP_ROTSCALE                      1024
 #define IDC_IE9                                 1024
 #define IDC_BGMAP_MOSAIC                        1025
 #define IDC_DISPCNTA9                           1025
@@ -410,4 +407,6 @@
 #define IDM_3DCONFIG                            40040
 #define IDM_GBASLOT                             40042
 #define IDM_CHEATS_LIST                         40050
+#define IDC_BGMAP_ROTSCALEPARAMS                40051
 #define IDM_CHEATS_SEARCH                       40051
+#define IDC_BGMAP_ROTSCALE                      40052
