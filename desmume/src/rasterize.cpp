@@ -336,7 +336,7 @@ struct Interpolator
 	FORCEINLINE void incx(int count) { Z += dx*count; }
 };
 
-void alphaBlend(Fragment & dst, const Fragment & src)
+static void alphaBlend(Fragment & dst, const Fragment & src)
 {
 	if(gfx3d.enableAlphaBlending)
 	{
