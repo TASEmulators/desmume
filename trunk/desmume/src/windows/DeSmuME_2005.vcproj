@@ -1083,6 +1083,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\render3D.h"
+			>
+		</File>
+		<File
 			RelativePath="..\ROMReader.cpp"
 			>
 			<FileConfiguration

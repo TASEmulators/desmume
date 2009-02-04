@@ -289,7 +289,7 @@ void gfx3d_reset()
 	GFX_FIFOclear();
 }
 
-void gfx3d_glViewPort(unsigned long v)
+void gfx3d_glViewPort(u32 v)
 {
 	//zero: NHerve messed with this in mod2 and mod3, but im still not sure its perfect. need to research this.
 	gfx3d.viewport.x = (v&0xFF);
@@ -299,15 +299,13 @@ void gfx3d_glViewPort(unsigned long v)
 }
 
 
-void gfx3d_glClearColor(unsigned long v)
+void gfx3d_glClearColor(u32 v)
 {
-	gfx3d.clearColor[0] = ((float)(v&0x1F))/31.0f;
-	gfx3d.clearColor[1] = ((float)((v>>5)&0x1F))/31.0f;
-	gfx3d.clearColor[2] = ((float)((v>>10)&0x1F))/31.0f;
-	gfx3d.clearColor[3] = ((float)((v>>16)&0x1F))/31.0f;
+	gfx3d.clearColor = v;
+
 }
 
-void gfx3d_glFogColor(unsigned long v)
+void gfx3d_glFogColor(u32 v)
 {
 	gfx3d.fogColor[0] = ((float)((v    )&0x1F))/31.0f;
 	gfx3d.fogColor[1] = ((float)((v>> 5)&0x1F))/31.0f;
@@ -315,12 +313,12 @@ void gfx3d_glFogColor(unsigned long v)
 	gfx3d.fogColor[3] = ((float)((v>>16)&0x1F))/31.0f;
 }
 
-void gfx3d_glFogOffset (unsigned long v)
+void gfx3d_glFogOffset (u32 v)
 {
 	gfx3d.fogOffset = (float)(v&0xffff);
 }
 
-void gfx3d_glClearDepth(unsigned long v)
+void gfx3d_glClearDepth(u32 v)
 {
 	//Thanks to NHerve
 	v &= 0x7FFFF;
@@ -328,7 +326,7 @@ void gfx3d_glClearDepth(unsigned long v)
 	gfx3d.clearDepth = depth24b / ((float)(1<<24));
 }
 
-void gfx3d_glMatrixMode(unsigned long v)
+void gfx3d_glMatrixMode(u32 v)
 {
 	mode = (v&3);
 }
@@ -374,7 +372,7 @@ BOOL gfx3d_glLoadMatrix4x3(signed long v)
 	return TRUE;
 }
 
-void gfx3d_glStoreMatrix(unsigned long v)
+void gfx3d_glStoreMatrix(u32 v)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -388,7 +386,7 @@ void gfx3d_glStoreMatrix(unsigned long v)
 		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
 }
 
-void gfx3d_glRestoreMatrix(unsigned long v)
+void gfx3d_glRestoreMatrix(u32 v)
 {
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
@@ -550,7 +548,7 @@ BOOL gfx3d_glMultMatrix4x4(signed long v)
 	return TRUE;
 }
 
-void gfx3d_glBegin(unsigned long v)
+void gfx3d_glBegin(u32 v)
 {
 	vtxFormat = v&0x03;
 	triStripToggle = 0;
@@ -563,7 +561,7 @@ void gfx3d_glEnd(void)
 	tempVertInfo.count = 0;
 }
 
-void gfx3d_glColor3b(unsigned long v)
+void gfx3d_glColor3b(u32 v)
 {
 	colorRGB[0] = (v&0x1F);
 	colorRGB[1] = ((v>>5)&0x1F);
@@ -729,7 +727,7 @@ BOOL gfx3d_glVertex16b(unsigned int v)
 	return TRUE;
 }
 
-void gfx3d_glVertex10b(unsigned long v)
+void gfx3d_glVertex10b(u32 v)
 {
 	coord[0]		= float10Table[v&1023];
 	coord[1]		= float10Table[(v>>10)&1023];
@@ -746,7 +744,7 @@ void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v)
 	SetVertex ();
 }
 
-void gfx3d_glVertex_rel(unsigned long v)
+void gfx3d_glVertex_rel(u32 v)
 {
 	coord[0]		+= float10RelTable[v&1023];
 	coord[1]		+= float10RelTable[(v>>10)&1023];
@@ -797,7 +795,7 @@ static void gfx3d_glPolygonAttrib_cache()
 	//polyID = (polyAttr>>24)&0x1F;
 }
 
-void gfx3d_glPolygonAttrib (unsigned long val)
+void gfx3d_glPolygonAttrib (u32 val)
 {
 	polyAttr = val;
 	gfx3d_glPolygonAttrib_cache();
@@ -812,7 +810,7 @@ void gfx3d_glPolygonAttrib (unsigned long val)
 	21-25 Ambient Reflection Green
 	26-30 Ambient Reflection Blue
 */
-void gfx3d_glMaterial0(unsigned long val)
+void gfx3d_glMaterial0(u32 val)
 {
 	dsDiffuse = val&0xFFFF;
 	dsAmbient = val>>16;
@@ -825,13 +823,13 @@ void gfx3d_glMaterial0(unsigned long val)
 	}
 }
 
-void gfx3d_glMaterial1(unsigned long val)
+void gfx3d_glMaterial1(u32 val)
 {
 	dsSpecular = val&0xFFFF;
 	dsEmission = val>>16;
 }
 
-BOOL gfx3d_glShininess (unsigned long val)
+BOOL gfx3d_glShininess (u32 val)
 {
 	shininessTable[shininessInd++] = ((val & 0xFF) / 256.0f);
 	shininessTable[shininessInd++] = (((val >> 8) & 0xFF) / 256.0f);
@@ -858,18 +856,18 @@ static void gfx3d_glTexImage_cache()
 {
 	texCoordinateTransform = (textureFormat>>30);
 }
-void gfx3d_glTexImage(unsigned long val)
+void gfx3d_glTexImage(u32 val)
 {
 	textureFormat = val;
 	gfx3d_glTexImage_cache();
 }
 
-void gfx3d_glTexPalette(unsigned long val)
+void gfx3d_glTexPalette(u32 val)
 {
 	texturePalette = val;
 }
 
-void gfx3d_glTexCoord(unsigned long val)
+void gfx3d_glTexCoord(u32 val)
 {
 	_t = (s16)(val>>16);
 	_s = (s16)(val&0xFFFF);
@@ -893,7 +891,7 @@ void gfx3d_glTexCoord(unsigned long val)
 
 #define vec3dot(a, b)		(((a[0]) * (b[0])) + ((a[1]) * (b[1])) + ((a[2]) * (b[2])))
 
-void gfx3d_glNormal(unsigned long v)
+void gfx3d_glNormal(u32 v)
 {
 	int i,c;
 	ALIGN(16) float normal[3] = { normalTable[v&1023],
@@ -1016,7 +1014,7 @@ static void gfx3d_glLightDirection_cache(int index)
 	20-29 Directional Vector's Z component (1bit sign + 9bit fractional part)
 	30-31 Light Number                     (0..3)
 */
-void gfx3d_glLightDirection (unsigned long v)
+void gfx3d_glLightDirection (u32 v)
 {
 	int index = v>>30;
 
@@ -1024,18 +1022,18 @@ void gfx3d_glLightDirection (unsigned long v)
 	gfx3d_glLightDirection_cache(index);
 }
 
-void gfx3d_glLightColor (unsigned long v)
+void gfx3d_glLightColor (u32 v)
 {
 	int index = v>>30;
 	lightColor[index] = v;
 }
 
-void gfx3d_glAlphaFunc(unsigned long v)
+void gfx3d_glAlphaFunc(u32 v)
 {
-	gfx3d.alphaTestRef = (v&31)/31.f;
+	gfx3d.alphaTestRef = v&31;
 }
 
-BOOL gfx3d_glBoxTest(unsigned long v)
+BOOL gfx3d_glBoxTest(u32 v)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat |= 0x00000001;		// busy
@@ -1051,7 +1049,7 @@ BOOL gfx3d_glBoxTest(unsigned long v)
 	return TRUE;
 }
 
-BOOL gfx3d_glPosTest(unsigned long v)
+BOOL gfx3d_glPosTest(u32 v)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat |= 0x00000001;		// busy
@@ -1079,7 +1077,7 @@ BOOL gfx3d_glPosTest(unsigned long v)
 	return TRUE;
 }
 
-void gfx3d_glVecTest(unsigned long v)
+void gfx3d_glVecTest(u32 v)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0xFFFFFFFE;
@@ -1238,7 +1236,7 @@ static void gfx3d_FlushFIFO()
 	GFX_FIFOclear();
 }
 
-void gfx3d_glFlush(unsigned long v)
+void gfx3d_glFlush(u32 v)
 {
 	gfx3d_FlushFIFO();
 
@@ -2014,7 +2012,7 @@ static void gfx3d_Control_cache()
 	}
 }
 
-void gfx3d_Control(unsigned long v)
+void gfx3d_Control(u32 v)
 {
 	control = v;
 	gfx3d_Control_cache();
@@ -2114,12 +2112,12 @@ SFORMAT SF_GFX3D[]={
 	{ "GSSH", 4, 1, &gfx3d.shading},
 	{ "GSWB", 4, 1, &gfx3d.wbuffer},
 	{ "GSSM", 4, 1, &gfx3d.sortmode},
-	{ "GSAR", 4, 1, &gfx3d.alphaTestRef},
+	{ "GSAR", 1, 1, &gfx3d.alphaTestRef},
 	{ "GSVX", 4, 1, &gfx3d.viewport.x},
 	{ "GSVY", 4, 1, &gfx3d.viewport.y},
 	{ "GSVW", 4, 1, &gfx3d.viewport.width},
 	{ "GSVH", 4, 1, &gfx3d.viewport.height},
-	{ "GSCC", 4, 4, gfx3d.clearColor},
+	{ "GSCC", 4, 1, &gfx3d.clearColor},
 	{ "GSCD", 4, 1, &gfx3d.clearDepth},
 	{ "GSFC", 4, 4, gfx3d.fogColor},
 	{ "GSFO", 4, 1, &gfx3d.fogOffset},

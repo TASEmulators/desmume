@@ -47,6 +47,92 @@ template<typename T> T max(T a, T b, T c) { return max(max(a,b),c); }
 
 static u8 modulate_table[32][32];
 
+//----texture cache---
+
+//TODO - the texcache could ask for a buffer to generate into
+//that would avoid us ever having to buffercopy..
+struct TextureBuffers
+{
+	static const int numTextures = MAX_TEXTURE+1;
+	u8* buffers[numTextures];
+
+	void clear() { memset(buffers,0,sizeof(buffers)); }
+
+	TextureBuffers()
+	{
+		clear();
+	}
+
+	void free()
+	{
+		for(int i=0;i<numTextures;i++)
+			delete[] buffers[i];
+		clear();
+	}
+
+	~TextureBuffers() {
+		free();
+	}
+
+	void setCurrent(int num)
+	{
+		currentData = buffers[num];
+	}
+
+	void create(int num, u8* data)
+	{
+		delete[] buffers[num];
+		int size = texcache[num].sizeX * texcache[num].sizeY * 4;
+		buffers[num] = new u8[size];
+		setCurrent(num);
+		memcpy(currentData,data,size);
+	}
+	u8* currentData;
+} textures;
+
+//called from the texture cache to change the active texture
+static void BindTexture(u32 tx)
+{
+	textures.setCurrent(tx);
+}
+
+//caled from the texture cache to change to a new texture
+static void BindTextureData(u32 tx, u8* data)
+{
+	textures.create(tx,data);
+}
+
+//---------------
+
+struct PolyAttr
+{
+	u32 val;
+
+	bool decalMode;
+	bool translucent;
+	bool translucentDepthWrite;
+
+	bool isVisible(bool backfacing) 
+	{
+		switch((val>>6)&3) {
+			case 0: return false;
+			case 1: return backfacing;
+			case 2: return !backfacing;
+			case 3: return true;
+			default: assert(false); return false;
+		}
+	}
+
+	void setup(u32 polyAttr, bool translucent)
+	{
+		val = polyAttr;
+		decalMode = BIT14(val);
+		this->translucent = translucent;
+		translucentDepthWrite = BIT11(val);
+	}
+
+} polyAttr;
+
 struct Fragment
 {
 	union Color {
@@ -99,20 +185,20 @@ static struct
 		wrap = (format>>16)&0xF;
 	}
 
-	FORCEINLINE void clamp(int &val, int size, int sizemask){
+	FORCEINLINE void clamp(int &val, const int size, const int sizemask){
 		if(val<0) val = 0;
 		if(val>sizemask) val = sizemask;
 	}
 	FORCEINLINE void hclamp(int &val) { clamp(val,width,wmask); }
 	FORCEINLINE void vclamp(int &val) { clamp(val,height,hmask); }
 
-	FORCEINLINE void repeat(int &val, int size, int sizemask) {
+	FORCEINLINE void repeat(int &val, const int size, const int sizemask) {
 		val &= sizemask;
 	}
 	FORCEINLINE void hrepeat(int &val) { repeat(val,width,wmask); }
 	FORCEINLINE void vrepeat(int &val) { repeat(val,height,hmask); }
 
-	FORCEINLINE void flip(int &val, int size, int sizemask) {
+	FORCEINLINE void flip(int &val, const int size, const int sizemask) {
 		val &= ((size<<1)-1);
 		if(val>=size) val = (size<<1)-val-1;
 	}
@@ -152,7 +238,7 @@ static struct
 		dowrap(iu,iv);
 
 		Fragment::Color color;
-		u32 col32 = ((u32*)TexCache_texMAP)[(iv<<wshift)+iu];
+		u32 col32 = ((u32*)textures.currentData)[(iv<<wshift)+iu];
 		//todo - teach texcache how to provide these already in 5555
 		col32 >>= 3;
 		col32 &= 0x1F1F1F1F;
@@ -249,6 +335,42 @@ struct Interpolator
 	FORCEINLINE void incx() { Z += dx; }
 	FORCEINLINE void incx(int count) { Z += dx*count; }
 };
+
+void alphaBlend(Fragment & dst, const Fragment & src)
+{
+	if(gfx3d.enableAlphaBlending)
+	{
+		if(src.color.components.a == 0)
+		{
+			dst.color.components.a = max(src.color.components.a,dst.color.components.a);	
+		}
+		else if(src.color.components.a == 31 || dst.color.components.a == 0)
+		{
+			dst.color = src.color;
+			dst.color.components.a = max(src.color.components.a,dst.color.components.a);
+		}
+		else
+		{
+			u8 alpha = src.color.components.a+1;
+			u8 invAlpha = 32 - alpha;
+			dst.color.components.r = (alpha*src.color.components.r + invAlpha*dst.color.components.r)>>5;
+			dst.color.components.g = (alpha*src.color.components.g + invAlpha*dst.color.components.g)>>5;
+			dst.color.components.b = (alpha*src.color.components.b + invAlpha*dst.color.components.b)>>5;
+			dst.color.components.a = max(src.color.components.a,dst.color.components.a);
+		}
+	}
+	else
+	{
+		if(src.color.components.a == 0)
+		{
+			//do nothing; the fragment is totally transparent
+		}
+		else
+		{
+			dst.color = src.color;
+		}
+	}
+}
 
 //http://www.devmaster.net/forums/showthread.php?t=1884&page=1
 //todo - change to the tile-based renderer and try to apply some optimizations from that thread
@@ -363,9 +485,16 @@ static void triangle_from_devmaster()
 					//this is just a temporary measure until we do proper clipping against the clip frustum.
 					//since we dont, we are receiving waaay out of bounds polys and so unless we do this we spend a lot of time calculating
 					//out of bounds pixels
-					i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum); i_color_a.incx(xaccum);
-					i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-					i_w.incx(xaccum); i_invw.incx(xaccum);
+					//if(xaccum==1) {
+					//	i_color_r.incx(); i_color_g.incx(); i_color_b.incx(); i_color_a.incx();
+					//	i_tex_invu.incx(); i_tex_invv.incx();
+					//	i_w.incx(); i_invw.incx();
+					//} else {
+						i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum); i_color_a.incx(xaccum);
+						i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
+						i_w.incx(xaccum); i_invw.incx(xaccum);
+					//}
+
 					xaccum = 0;
 
 					int adr = (y<<8)+x;
@@ -373,8 +502,16 @@ static void triangle_from_devmaster()
 
 					//w-buffer depth test
 					int w = i_w.cur();
-					if(w>destFragment.depth) 
-						goto rejected_fragment;
+					if(polyAttr.decalMode)
+					{
+						if(abs(w-destFragment.depth)>1)
+							goto rejected_fragment;
+					}
+					else
+					{
+						if(w>=destFragment.depth) 
+							goto rejected_fragment;
+					}
 					
 					shader.invw = i_invw.Z;
 					shader.invu = i_tex_invu.Z;
@@ -396,24 +533,32 @@ static void triangle_from_devmaster()
 					Fragment shaderOutput;
 					shader.shade(shaderOutput);
 
-					//alpha blend
-					if(shaderOutput.color.components.a == 31)
+					//alpha test
+					if(gfx3d.enableAlphaTest)
 					{
-						destFragment.color = shaderOutput.color;
+						if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
+							goto rejected_fragment;
+					}
+
+					//alpha blending
+					alphaBlend(destFragment, shaderOutput);
+
+					//depth writing
+					if(destFragment.color.components.a == 0)
+					{
+						//never update depth if the pixel is transparent
 					}
 					else
 					{
-						u8 alpha = shaderOutput.color.components.a+1;
-						u8 invAlpha = 32 - alpha;
-						destFragment.color.components.r = (alpha*shaderOutput.color.components.r + invAlpha*destFragment.color.components.r)>>5;
-						destFragment.color.components.g = (alpha*shaderOutput.color.components.g + invAlpha*destFragment.color.components.g)>>5;
-						destFragment.color.components.b = (alpha*shaderOutput.color.components.b + invAlpha*destFragment.color.components.b)>>5;
-						destFragment.color.components.a = max(shaderOutput.color.components.a,destFragment.color.components.a);
+						if(!polyAttr.translucent)
+							destFragment.depth = w;
+						else
+							if(polyAttr.translucent && polyAttr.translucentDepthWrite)
+								destFragment.depth = w;
 					}
 
-					destFragment.depth = w;
-
 				} else if(done) break;
+			
 			rejected_fragment:
 				xaccum++;
 
@@ -446,12 +591,18 @@ static char Init(void)
 		for(int j=0;j<32;j++)
 			modulate_table[i][j] = ((i+1)*(j+1)-1)>>5;	
 
+	TexCache_Reset();
+	TexCache_BindTexture = BindTexture;
+	TexCache_BindTextureData = BindTextureData;
+
 	return 1;
 }
 
 static void Reset() {}
 
-static void Close() {}
+static void Close()
+{
+}
 
 static void VramReconfigureSignal() {
 	TexCache_Invalidate();
@@ -462,7 +613,7 @@ static void GetLine(int line, u16* dst, u8* dstAlpha)
 	Fragment* src = screen+((191-line)<<8);
 	for(int i=0;i<256;i++)
 	{
-
+		const bool testRenderAlpha = false;
 		u8 r = src->color.components.r;
 		u8 g = src->color.components.g;
 		u8 b = src->color.components.b;
@@ -470,6 +621,13 @@ static void GetLine(int line, u16* dst, u8* dstAlpha)
 		if(src->color.components.a > 0) 
 			*dst |= 0x8000;
 		*dstAlpha = alpha_5bit_to_4bit[src->color.components.a];
+
+		if(testRenderAlpha)
+		{
+			*dst = 0x8000 | R5G5B5TORGB15(src->color.components.a,src->color.components.a,src->color.components.a);
+			*dstAlpha = 16;
+		}
+
 		src++;
 		dst++;
 		dstAlpha++;
@@ -487,9 +645,18 @@ static void Render()
 	//B. backface cull
 	//C. transforms
 
+	Fragment::Color clearColor;
+	clearColor.components.r = gfx3d.clearColor&0x1F;
+	clearColor.components.g = (gfx3d.clearColor>>5)&0x1F;
+	clearColor.components.b = (gfx3d.clearColor>>10)&0x1F;
+	clearColor.components.a = (gfx3d.clearColor>>16)&0x1F;
 	memset(screen,0,sizeof(screen));
 	for(int i=0;i<256*192;i++)
+	{
 		screen[i].depth = 0x007FFFFF;
+		screen[i].color = clearColor;
+	}
+		
 
 	for(int i=0;i<gfx3d.vertlist->count;i++)
 	{
@@ -518,6 +685,8 @@ static void Render()
 			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
 		};
 
+		polyAttr.setup(poly->polyAttr, poly->isTranslucent());
+
 		//HACK: backface culling
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
 		//because it is too convoluted right now.
@@ -532,11 +701,14 @@ static void Render()
 		Vector3Cross(cross,ab,ac);
 		float view[3] = {0,0,1};
 		float dot = Vector3Dot(view,cross);
-		if(dot<0)  {
+		bool backfacing = dot<0;
+
+		if(!polyAttr.isVisible(backfacing)) {
 			culled++;
 			continue;
 		}
-
+		
+	
 		if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
 		{
 			TexCache_SetTexture(poly->texParam,poly->texPalette);
@@ -572,7 +744,6 @@ static void Render()
 
 			triangle_from_devmaster();
 		}
-
 	}
 
 	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);

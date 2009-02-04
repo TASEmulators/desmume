@@ -117,8 +117,8 @@ struct GFX3D
 		, vertlist(0)
 		, alphaTestRef(0)
 		, clearDepth(1)
+		, clearColor(0)
 	{
-		clearColor[0] = clearColor[1] = clearColor[2] = clearColor[3] = 0;
 		fogColor[0] = fogColor[1] = fogColor[2] = fogColor[3] = 0;
 		fogOffset = 0;
 	}
@@ -135,7 +135,7 @@ struct GFX3D
 
 	BOOL wbuffer, sortmode;
 
-	float alphaTestRef;
+	u8 alphaTestRef;
 
 	struct VIEWPORT {
 		VIEWPORT()
@@ -144,7 +144,7 @@ struct GFX3D
 		int x, y, width, height;
 	} viewport;
 
-	float clearColor[4];
+	u32 clearColor;
 	float clearDepth;
 	float fogColor[4];
 	float fogOffset;
