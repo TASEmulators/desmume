@@ -1213,7 +1213,7 @@ CAPTION "BG map viewer"
 FONT 8, "MS Sans Serif"
 BEGIN
     PUSHBUTTON      "Close", IDCANCEL, 5, 301, 50, 14, BS_PUSHBUTTON
-    GROUPBOX        "Map info", IDC_STATIC, 5, 23, 142, 250
+    GROUPBOX        "Map info", IDC_STATIC, 5, 23, 142, 230
     COMBOBOX        IDC_BGMAP_SEL, 5, 5, 142, 154, CBS_DROPDOWNLIST | CBS_HASSTRINGS
     LTEXT           "BG control : ", IDC_STATIC, 15, 35, 60, 8, SS_LEFT
     LTEXT           "Char base :", IDC_STATIC, 15, 65, 60, 8, SS_LEFT
@@ -1223,10 +1223,10 @@ BEGIN
     LTEXT           "Palette :", IDC_STATIC, 15, 110, 60, 8, SS_LEFT
     LTEXT           "Size :", IDC_STATIC, 15, 125, 60, 8, SS_LEFT
     LTEXT           "Scroll :", IDC_STATIC, 15, 140, 60, 8, SS_LEFT
-    LTEXT           "Mosaic :", IDC_STATIC, 15, 230, 60, 8, SS_LEFT
+    LTEXT           "Mosaic :", IDC_STATIC, 15, 210, 60, 8, SS_LEFT
     LTEXT           "Rot/scale :", IDC_STATIC, 15, 155, 60, 8, SS_LEFT
-    LTEXT           "Special effect :", IDC_STATIC, 15, 245, 60, 8, SS_LEFT
-    LTEXT           "Windows :", IDC_STATIC, 15, 260, 60, 8, SS_LEFT
+    LTEXT           "Special effect :", IDC_STATIC, 15, 225, 60, 8, SS_LEFT
+    LTEXT           "Windows :", IDC_STATIC, 15, 240, 60, 8, SS_LEFT
     LTEXT           "Rot/scale params :", IDC_STATIC, 15, 170, 60, 8, SS_LEFT
     LTEXT           "BGxCNT here", IDC_BGMAP_BGXCNT, 75, 35, 68, 8, SS_LEFT
     LTEXT           "type here", IDC_BGMAP_TYPE, 75, 50, 68, 8, SS_LEFT
@@ -1237,10 +1237,10 @@ BEGIN
     LTEXT           "size here", IDC_BGMAP_SIZE, 75, 125, 68, 8, SS_LEFT
     LTEXT           "scroll (x,y) here", IDC_BGMAP_SCROLL, 75, 140, 68, 8, SS_LEFT
     LTEXT           "{yes/no} here", IDC_BGMAP_ROTSCALE, 75, 155, 68, 8, SS_LEFT
-    LTEXT           "pa/pb/pc/pd here", IDC_BGMAP_ROTSCALEPARAMS, 75, 170, 68, 55, SS_LEFT
-    LTEXT           "mosaic here", IDC_BGMAP_MOSAIC, 75, 230, 68, 8, SS_LEFT
-    LTEXT           "special effect here", IDC_BGMAP_SPECEFF, 75, 245, 68, 8, SS_LEFT
-    LTEXT           "windows here", IDC_BGMAP_WINDOWS, 75, 260, 68, 8, SS_LEFT
+    LTEXT           "pa/pb/pc/pd here\npa/pb/pc/pd here\npa/pb/pc/pd here\npa/pb/pc/pd here\n", IDC_BGMAP_ROTSCALEPARAMS, 75, 170, 68, 35, SS_LEFT
+    LTEXT           "mosaic here", IDC_BGMAP_MOSAIC, 75, 210, 68, 8, SS_LEFT
+    LTEXT           "special effect here", IDC_BGMAP_SPECEFF, 75, 225, 68, 8, SS_LEFT
+    LTEXT           "windows here", IDC_BGMAP_WINDOWS, 75, 240, 68, 8, SS_LEFT
 END
 
 
