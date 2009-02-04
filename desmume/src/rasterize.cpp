@@ -169,7 +169,7 @@ FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
 
-static struct
+static struct Sampler
 {
 	int width, height;
 	int wmask, hmask;
@@ -470,7 +470,7 @@ static void triangle_from_devmaster()
 
 		if(y>=0 && y<192)
 		{			
-			int xaccum = 1;
+			int xaccum = 0;
 			for(int x = minx; x < maxx; x++)
 			{
 				if(CX1 > 0 && CX2 > 0 && CX3 > 0)
@@ -485,15 +485,15 @@ static void triangle_from_devmaster()
 					//this is just a temporary measure until we do proper clipping against the clip frustum.
 					//since we dont, we are receiving waaay out of bounds polys and so unless we do this we spend a lot of time calculating
 					//out of bounds pixels
-					//if(xaccum==1) {
-					//	i_color_r.incx(); i_color_g.incx(); i_color_b.incx(); i_color_a.incx();
-					//	i_tex_invu.incx(); i_tex_invv.incx();
-					//	i_w.incx(); i_invw.incx();
-					//} else {
+					if(xaccum==1) {
+						i_color_r.incx(); i_color_g.incx(); i_color_b.incx(); i_color_a.incx();
+						i_tex_invu.incx(); i_tex_invv.incx();
+						i_w.incx(); i_invw.incx();
+					} else {
 						i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum); i_color_a.incx(xaccum);
 						i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
 						i_w.incx(xaccum); i_invw.incx(xaccum);
-					//}
+					}
 
 					xaccum = 0;
 
