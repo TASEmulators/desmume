@@ -450,6 +450,7 @@ static char OGLInit(void)
 	if(glBlendFuncSeparateEXT != NULL)
 	{
 		glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_DST_ALPHA);
+	//	glBlendFuncSeparateEXT(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	if(hasShaders)
@@ -534,6 +535,8 @@ static void setTexture(unsigned int format, unsigned int texpal)
 //glStencilOp
 //glColorMask
 static u32 stencilStateSet = -1;
+
+static u32 polyalpha=0;
 
 static void BeginRenderPoly()
 {
@@ -639,8 +642,10 @@ static void InstallPolygonAttrib(unsigned long val)
 	// Alpha value, actually not well handled, 0 should be wireframe
 	wireframe = ((val>>16)&0x1F)==0;
 
+	polyalpha = ((val>>16)&0x1F);
+
 	// polyID
-	polyID = (val>>24)&0x1F;
+	polyID = (val>>24)&0x3F;
 }
 
 static void Control()
@@ -680,7 +685,6 @@ static void OGLRender()
 
 	glViewport(gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
 
-	//we're not using the alpha clear color right now
 	float clearColor[4] = {
 		((float)(gfx3d.clearColor&0x1F))/31.0f,
 		((float)((gfx3d.clearColor>>5)&0x1F))/31.0f,
@@ -724,7 +728,7 @@ static void OGLRender()
 				lastProjIndex = poly->projIndex;
 			}*/
 
-			glBegin(type==3?GL_TRIANGLES:GL_QUADS);
+		/*	glBegin(type==3?GL_TRIANGLES:GL_QUADS);
 			for(int j=0;j<type;j++) {
 				VERT* vert = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				u8 color[4] = {
@@ -749,6 +753,47 @@ static void OGLRender()
 				//glVertex4fv(tempCoord);
 				glVertex4fv(vert->coord);
 			}
+			glEnd();*/
+			glBegin(GL_TRIANGLES);
+
+			for(int j = 1; j < (type-1); j++)
+			{
+				VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
+				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
+				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
+
+				u8 color0[4] = {
+					material_5bit_to_8bit[vert0->color[0]],
+					material_5bit_to_8bit[vert0->color[1]],
+					material_5bit_to_8bit[vert0->color[2]],
+					material_5bit_to_8bit[vert0->color[3]]
+				};
+				u8 color1[4] = {
+					material_5bit_to_8bit[vert1->color[0]],
+					material_5bit_to_8bit[vert1->color[1]],
+					material_5bit_to_8bit[vert1->color[2]],
+					material_5bit_to_8bit[vert1->color[3]]
+				};
+				u8 color2[4] = {
+					material_5bit_to_8bit[vert2->color[0]],
+					material_5bit_to_8bit[vert2->color[1]],
+					material_5bit_to_8bit[vert2->color[2]],
+					material_5bit_to_8bit[vert2->color[3]]
+				};
+
+				glTexCoord2fv(vert0->texcoord);
+				glColor4ubv((GLubyte*)color0);
+				glVertex4fv(vert0->coord);
+
+				glTexCoord2fv(vert1->texcoord);
+				glColor4ubv((GLubyte*)color1);
+				glVertex4fv(vert1->coord);
+
+				glTexCoord2fv(vert2->texcoord);
+				glColor4ubv((GLubyte*)color2);
+				glVertex4fv(vert2->coord);
+			}
+
 			glEnd();
 		}
 	}
