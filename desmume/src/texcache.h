@@ -18,9 +18,12 @@ struct ALIGN(8) TextureCache
 	u32					sizeY;
 	float				invSizeX;
 	float				invSizeY;
+
+	struct {
 	int					textureSize, indexSize;
 	u8					texture[128*1024]; // 128Kb texture slot
 	u8					palette[256*2];
+	} dump;
 
 	//set if this texture is suspected be invalid due to a vram reconfigure
 	bool				suspectedInvalid;

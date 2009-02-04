@@ -27,8 +27,6 @@
 #include "OGLRender.h"
 #include "debug.h"
 
-//#define DEBUG_DUMP_TEXTURE
-
 bool (*oglrender_init)() = 0;
 bool (*oglrender_beginOpenGL)() = 0;
 void (*oglrender_endOpenGL)() = 0;
@@ -331,17 +329,18 @@ static void createShaders()
 
 static void OGLReset()
 {
-	int i;
-
-	//reset the texture cache
 	TexCache_Reset();
-	for (i = 0; i < MAX_TEXTURE; i++)
+	
+	for (int i = 0; i < MAX_TEXTURE; i++)
 		texcache[i].id=oglTempTextureID[i];
 
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
 	needRefreshFramebuffer = false;
 }
+
+
+
 
 static void BindTexture(u32 tx)
 {
@@ -509,13 +508,11 @@ static void setTexture(unsigned int format, unsigned int texpal)
 
 	if (format==0)
 	{
-//		texcache_count=-1;
 		if(hasShaders && hasTexture) { glUniform1i(hasTexLoc, 0); hasTexture = false; }
 		return;
 	}
 	if (textureMode==0)
 	{
-//		texcache_count=-1;
 		if(hasShaders && hasTexture) { glUniform1i(hasTexLoc, 0); hasTexture = false; }
 		return;
 	}
@@ -652,7 +649,7 @@ static void Control()
 	else glDisable (GL_TEXTURE_2D);
 
 	if(gfx3d.enableAlphaTest)
-		glAlphaFunc	(GL_GREATER, gfx3d.alphaTestRef);
+		glAlphaFunc	(GL_GREATER, gfx3d.alphaTestRef/31.f);
 	else
 		glAlphaFunc	(GL_GREATER, 0);
 
@@ -684,7 +681,13 @@ static void OGLRender()
 	glViewport(gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
 
 	//we're not using the alpha clear color right now
-	glClearColor(gfx3d.clearColor[0],gfx3d.clearColor[1],gfx3d.clearColor[2], gfx3d.clearColor[3]);
+	float clearColor[4] = {
+		((float)(gfx3d.clearColor&0x1F))/31.0f,
+		((float)((gfx3d.clearColor>>5)&0x1F))/31.0f,
+		((float)((gfx3d.clearColor>>10)&0x1F))/31.0f,
+		((float)((gfx3d.clearColor>>16)&0x1F))/31.0f,
+	};
+	glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
 	glClearDepth(gfx3d.clearDepth);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 

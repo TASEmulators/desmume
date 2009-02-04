@@ -12,6 +12,8 @@
 using std::min;
 using std::max;
 
+#define DEBUG_DUMP_TEXTURE
+
 //This class represents a number of regions of memory which should be viewed as contiguous
 class MemSpan
 {
@@ -129,35 +131,21 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 	return ret;
 }
 
-//================================================= Textures
 TextureCache	texcache[MAX_TEXTURE+1];
-//u32				texcache_count;
 u32				texcache_start;
 u32				texcache_stop;
-
-
 u8 TexCache_texMAP[1024*2048*4]; 
-//raw ds format poly attributes
 
-//todo - make all color conversions go through a properly spread table!!
 
 #if defined (DEBUG_DUMP_TEXTURE) && defined (WIN32)
+#define DO_DEBUG_DUMP_TEXTURE
 static void DebugDumpTexture(int which)
 {
 	char fname[100];
 	sprintf(fname,"c:\\dump\\%d.bmp", which);
 
-	glBindTexture(GL_TEXTURE_2D,texcache[which].id);
-	  glGetTexImage( GL_TEXTURE_2D ,
-			      0,
-			    GL_BGRA_EXT,
-			      GL_UNSIGNED_BYTE,
-			      TexCache_texMAP);
-
 	NDS_WriteBMP_32bppBuffer(texcache[which].sizeX,texcache[which].sizeY,TexCache_texMAP,fname);
 }
-#else
-#define DebugDumpTexture(which) do { (void)which; } while (0)
 #endif
 
 
@@ -247,27 +235,26 @@ void TexCache_SetTexture(unsigned int format, unsigned int texpal)
 		if (!texcache[tx].suspectedInvalid) goto ACCEPT;
 
 		//if we couldnt cache this entire texture due to it being too large, then reject it
-		if (texSize+indexSize > (int)sizeof(texcache[tx].texture)) goto REJECT;
+		if (texSize+indexSize > (int)sizeof(texcache[tx].dump.texture)) goto REJECT;
 
 		//when the palettes dont match:
 		//note that we are considering 4x4 textures to have a palette size of 0.
 		//they really have a potentially HUGE palette, too big for us to handle like a normal palette,
 		//so they go through a different system
-		if (mspal.size != 0 && memcmp(texcache[tx].palette,pal,mspal.size)) goto REJECT;
+		if (mspal.size != 0 && memcmp(texcache[tx].dump.palette,pal,mspal.size)) goto REJECT;
 
 		//when the texture data doesn't match
-		if(ms.memcmp(texcache[tx].texture,sizeof(texcache[tx].texture))) goto REJECT;
+		if(ms.memcmp(texcache[tx].dump.texture,sizeof(texcache[tx].dump.texture))) goto REJECT;
 
 		//if the texture is 4x4 then the index data must match
 		if(textureMode == TEXMODE_4X4)
 		{
-			if(msIndex.memcmp(texcache[tx].texture + texcache[tx].textureSize,texcache[tx].indexSize)) goto REJECT; 
+			if(msIndex.memcmp(texcache[tx].dump.texture + texcache[tx].dump.textureSize,texcache[tx].dump.indexSize)) goto REJECT; 
 		}
 
 
 ACCEPT:
 		texcache[tx].suspectedInvalid = false;
-//		texcache_count = tx;
 		if(lastTexture == -1 || (int)tx != lastTexture)
 		{
 			lastTexture = tx;
@@ -303,25 +290,20 @@ REJECT:
 	texcache[tx].sizeY=sizeY;
 	texcache[tx].invSizeX=1.0f/((float)(sizeX));
 	texcache[tx].invSizeY=1.0f/((float)(sizeY));
-	texcache[tx].textureSize = ms.dump(texcache[tx].texture,sizeof(texcache[tx].texture));
+	texcache[tx].dump.textureSize = ms.dump(texcache[tx].dump.texture,sizeof(texcache[tx].dump.texture));
 
 	//dump palette data for cache keying
 	if ( palSize )
 	{
-		memcpy(texcache[tx].palette, pal, palSize*2);
+		memcpy(texcache[tx].dump.palette, pal, palSize*2);
 	}
 	//dump 4x4 index data for cache keying
-	texcache[tx].indexSize = 0;
+	texcache[tx].dump.indexSize = 0;
 	if(textureMode == TEXMODE_4X4)
 	{
-		texcache[tx].indexSize = min(msIndex.size,(int)sizeof(texcache[tx].texture) - texcache[tx].textureSize);
-		msIndex.dump(texcache[tx].texture+texcache[tx].textureSize,texcache[tx].indexSize);
+		texcache[tx].dump.indexSize = min(msIndex.size,(int)sizeof(texcache[tx].dump.texture) - texcache[tx].dump.textureSize);
+		msIndex.dump(texcache[tx].dump.texture+texcache[tx].dump.textureSize,texcache[tx].dump.indexSize);
 	}
-
-
-	//glMatrixMode (GL_TEXTURE);
-	//glLoadIdentity ();
-	//glScaled (texcache[tx].invSizeX, texcache[tx].invSizeY, 1.0f);
 
 
 	//INFO("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
@@ -392,7 +374,6 @@ REJECT:
 					bits = ((*adr)>>4);
 					c = pal[bits];
 					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
-
 					adr++;
 				}
 			}
@@ -563,25 +544,18 @@ REJECT:
 	if(TexCache_BindTextureData != 0)
 		TexCache_BindTextureData(tx,TexCache_texMAP);
 
+#ifdef DO_DEBUG_DUMP_TEXTURE
 	DebugDumpTexture(tx);
-
-	//============================================================================================
-
-//	texcache_count=tx;
-
+#endif
 
 }
 
 void TexCache_Reset()
 {
-	memset(&texcache,0,sizeof(texcache));
+	memset(texcache,0,sizeof(texcache));
 
-	//texcache_count=0;
 	texcache_start=0;
 	texcache_stop=MAX_TEXTURE<<1;
-
-	for(int i=0;i<MAX_TEXTURE+1;i++)
-		texcache[i].suspectedInvalid = true;
 }
 
 TextureCache* TexCache_Curr()
