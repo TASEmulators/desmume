@@ -171,6 +171,7 @@
 #define IDC_PROP0                               908
 #define IDC_PROP1                               909
 #define IDD_BGMAP_VIEWER                        911
+#define IDB_BGTILES                             913
 #define IDC_BGMAP_SEL                           1000
 #define IDC_EDIT03                              1000
 #define IDC_SOUNDCORECB                         1000
