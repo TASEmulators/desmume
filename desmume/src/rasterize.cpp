@@ -298,23 +298,11 @@ struct Interpolator
 		float x,y,z;
 	} point0;
 	
-	Interpolator(int x1, int x2, int x3, int y1, int y2, int y3, float z1, float z2, float z3)
+	Interpolator(float x1, float x2, float x3, float y1, float y2, float y3, float z1, float z2, float z3)
 	{
 		float A = (z3 - z1) * (y2 - y1) - (z2 - z1) * (y3 - y1);
 		float B = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
 		float C = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
-		dx = -(float)A / C;
-		dy = -(float)B / C;
-		point0.x = x1;
-		point0.y = y1;
-		point0.z = z1;
-	}
-
-	Interpolator(int x1, int x2, int x3, int y1, int y2, int y3, int z1, int z2, int z3)
-	{
-		int A = (z3 - z1) * (y2 - y1) - (z2 - z1) * (y3 - y1);
-		int B = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
-		int C = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
 		dx = -(float)A / C;
 		dy = -(float)B / C;
 		point0.x = x1;
@@ -635,7 +623,21 @@ static void GetLine(int line, u16* dst, u8* dstAlpha)
 
 }
 
-static void GetLineCaptured(int line, u16* dst) {}
+static void GetLineCaptured(int line, u16* dst) {
+	Fragment* src = screen+((191-line)<<8);
+	for(int i=0;i<256;i++)
+	{
+		const bool testRenderAlpha = false;
+		u8 r = src->color.components.r;
+		u8 g = src->color.components.g;
+		u8 b = src->color.components.b;
+		*dst = R5G5B5TORGB15(r,g,b);
+		if(src->color.components.a > 0) 
+			*dst |= 0x8000;
+		src++;
+		dst++;
+	}
+}
 
 static void Render()
 {
@@ -724,23 +726,49 @@ static void Render()
 		//but then again, what does it matter?
 		if(type == 4) {
 
-			SubmitVertex(verts[2]);
-			SubmitVertex(verts[1]);
-			SubmitVertex(verts[0]);
+			if(backfacing)
+			{
+				SubmitVertex(verts[0]);
+				SubmitVertex(verts[1]);
+				SubmitVertex(verts[2]);
 
-			triangle_from_devmaster();
+				triangle_from_devmaster();
 
-			SubmitVertex(verts[0]);
-			SubmitVertex(verts[3]);
-			SubmitVertex(verts[2]);
+				SubmitVertex(verts[2]);
+				SubmitVertex(verts[3]);
+				SubmitVertex(verts[0]);
 
-			triangle_from_devmaster();
+				triangle_from_devmaster();
+			}
+			else
+			{
+				SubmitVertex(verts[2]);
+				SubmitVertex(verts[1]);
+				SubmitVertex(verts[0]);
+
+				triangle_from_devmaster();
+
+				SubmitVertex(verts[0]);
+				SubmitVertex(verts[3]);
+				SubmitVertex(verts[2]);
+
+				triangle_from_devmaster();
+			}
 
 		}
 		if(type == 3) {
-			SubmitVertex(verts[2]);
-			SubmitVertex(verts[1]);
-			SubmitVertex(verts[0]);
+			if(backfacing)
+			{
+				SubmitVertex(verts[0]);
+				SubmitVertex(verts[1]);
+				SubmitVertex(verts[2]);
+			}
+			else
+			{
+				SubmitVertex(verts[2]);
+				SubmitVertex(verts[1]);
+				SubmitVertex(verts[0]);
+			}
 
 			triangle_from_devmaster();
 		}
