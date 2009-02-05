@@ -226,6 +226,35 @@ void MatrixStackLoadMatrix (MatrixStack *stack, int pos, const float *ptr)
 	MatrixCopy (&stack->matrix[pos*16], ptr);
 }
 
+void Vector2Copy(float *dst, const float *src)
+{
+	dst[0] = src[0];
+	dst[1] = src[1];
+}
+
+void Vector2Add(float *dst, const float *src)
+{
+	dst[0] += src[0];
+	dst[1] += src[1];
+}
+
+void Vector2Subtract(float *dst, const float *src)
+{
+	dst[0] -= src[0];
+	dst[1] -= src[1];
+}
+
+float Vector2Dot(const float *a, const float *b)
+{
+	return (a[0]*b[0]) + (a[1]*b[1]);
+}
+
+/* http://www.gamedev.net/community/forums/topic.asp?topic_id=289972 */
+float Vector2Cross(const float *a, const float *b)
+{
+	return (a[0]*b[1]) - (a[1]*b[0]);
+}
+
 float Vector3Dot(const float *a, const float *b) 
 {
 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];

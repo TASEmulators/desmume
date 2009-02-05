@@ -573,7 +573,7 @@ static void triangle_from_devmaster()
     }
 }
 
-static char Init(void)
+static char SoftRastInit(void)
 {
 	for(int i=0;i<32;i++)
 		for(int j=0;j<32;j++)
@@ -586,17 +586,17 @@ static char Init(void)
 	return 1;
 }
 
-static void Reset() {}
+static void SoftRastReset() {}
 
-static void Close()
+static void SoftRastClose()
 {
 }
 
-static void VramReconfigureSignal() {
+static void SoftRastVramReconfigureSignal() {
 	TexCache_Invalidate();
 }
 
-static void GetLine(int line, u16* dst, u8* dstAlpha)
+static void SoftRastGetLine(int line, u16* dst, u8* dstAlpha)
 {
 	Fragment* src = screen+((191-line)<<8);
 	for(int i=0;i<256;i++)
@@ -623,7 +623,7 @@ static void GetLine(int line, u16* dst, u8* dstAlpha)
 
 }
 
-static void GetLineCaptured(int line, u16* dst) {
+static void SoftRastGetLineCaptured(int line, u16* dst) {
 	Fragment* src = screen+((191-line)<<8);
 	for(int i=0;i<256;i++)
 	{
@@ -639,7 +639,7 @@ static void GetLineCaptured(int line, u16* dst) {
 	}
 }
 
-static void Render()
+static void SoftRastRender()
 {
 	//transform verts and polys
 	//which order?
@@ -694,7 +694,7 @@ static void Render()
 		//because it is too convoluted right now.
 		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
 		//TODO - use some freaking matrix and vector classes
-		float ab[3], ac[3];
+	/*	float ab[3], ac[3];
 		Vector3Copy(ab,verts[0]->coord);
 		Vector3Copy(ac,verts[0]->coord);
 		Vector3Subtract(ab,verts[1]->coord);
@@ -703,7 +703,15 @@ static void Render()
 		Vector3Cross(cross,ab,ac);
 		float view[3] = {0,0,1};
 		float dot = Vector3Dot(view,cross);
-		bool backfacing = dot<0;
+		bool backfacing = dot<0;*/
+		float ab[2], ac[2];
+		Vector2Copy(ab, verts[1]->coord);
+		Vector2Copy(ac, verts[2]->coord);
+		Vector2Subtract(ab, verts[0]->coord);
+		Vector2Subtract(ac, verts[0]->coord);
+		float cross = Vector2Cross(ab, ac);
+		bool backfacing = (cross<0);
+
 
 		if(!polyAttr.isVisible(backfacing)) {
 			culled++;
@@ -724,7 +732,7 @@ static void Render()
 		//note that when we build our triangle vert lists, we reorder them for our renderer.
 		//we should probably fix the renderer so we dont have to do this;
 		//but then again, what does it matter?
-		if(type == 4) {
+	/*	if(type == 4) {
 
 			if(backfacing)
 			{
@@ -771,6 +779,27 @@ static void Render()
 			}
 
 			triangle_from_devmaster();
+		}*/
+		for(int j = 1; j < (type-1); j++)
+		{
+			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
+			VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
+			VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
+
+			if(backfacing)
+			{
+				SubmitVertex(vert1);
+				SubmitVertex(vert2);
+				SubmitVertex(vert0);
+			}
+			else
+			{
+				SubmitVertex(vert2);
+				SubmitVertex(vert1);
+				SubmitVertex(vert0);
+			}
+
+			triangle_from_devmaster();
 		}
 	}
 
@@ -780,11 +809,11 @@ static void Render()
 
 GPU3DInterface gpu3DRasterize = {
 	"SoftRasterizer",
-	Init,
-	Reset,
-	Close,
-	Render,
-	VramReconfigureSignal,
-	GetLine,
-	GetLineCaptured
+	SoftRastInit,
+	SoftRastReset,
+	SoftRastClose,
+	SoftRastRender,
+	SoftRastVramReconfigureSignal,
+	SoftRastGetLine,
+	SoftRastGetLineCaptured
 };

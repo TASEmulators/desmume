@@ -62,6 +62,12 @@ float*	MatrixStackGetPos			(MatrixStack *stack, int pos);
 float*	MatrixStackGet				(MatrixStack *stack);
 void	MatrixStackLoadMatrix		(MatrixStack *stack, int pos, const float *ptr);
 
+void Vector2Copy(float *dst, const float *src);
+void Vector2Add(float *dst, const float *src);
+void Vector2Subtract(float *dst, const float *src);
+float Vector2Dot(const float *a, const float *b);
+float Vector2Cross(const float *a, const float *b);
+
 float Vector3Dot(const float *a, const float *b);
 void Vector3Cross(float* dst, const float *a, const float *b);
 float Vector3Length(const float *a);
