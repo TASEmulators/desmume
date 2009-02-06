@@ -718,6 +718,7 @@ static void OGLRender()
 				InstallPolygonAttrib(lastPolyAttr=poly->polyAttr);
 				lastTextureFormat = textureFormat = poly->texParam;
 				lastTexturePalette = texturePalette = poly->texPalette;
+				lastPolyAttr = poly->polyAttr;
 				BeginRenderPoly();
 			}
 			
