@@ -22,14 +22,12 @@
 */
 
 //nothing in this file should be assumed to be accurate
-//please check everything carefully, and sign off on it when you think it is accurate
-//if you change it, erase other signatures.
-//if you optimize it and think it is risky, erase other signatures
 
 #include "rasterize.h"
 
 #include <algorithm>
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 
 #include "bits.h"
@@ -153,12 +151,9 @@ struct Vertex
 	int w;
 } verts[3];
 
-static void SubmitVertex(VERT* rawvert)
+INLINE static void SubmitVertex(int vert_index, VERT* rawvert)
 {
-	static int vert_index = 0;
-	Vertex &vert = verts[vert_index++];
-	if(vert_index==3) vert_index = 0;
-
+	Vertex &vert = verts[vert_index];
 	vert.vert = rawvert;
 	vert.w = rawvert->coord[3] * 4096; //not sure about this
 }
@@ -233,8 +228,8 @@ static struct Sampler
 
 	Fragment::Color sample(float u, float v)
 	{
-		int iu = iround(u);
-		int iv = iround(v);
+		int iu = (int)floorf(u);
+		int iv = (int)floorf(v);
 		dowrap(iu,iv);
 
 		Fragment::Color color;
@@ -419,9 +414,9 @@ static void triangle_from_devmaster()
 	u8 r1 = verts[0].vert->color[0], g1 = verts[0].vert->color[1], b1 = verts[0].vert->color[2], a1 = verts[0].vert->color[3];
 	u8 r2 = verts[1].vert->color[0], g2 = verts[1].vert->color[1], b2 = verts[1].vert->color[2], a2 = verts[1].vert->color[3];
 	u8 r3 = verts[2].vert->color[0], g3 = verts[2].vert->color[1], b3 = verts[2].vert->color[2], a3 = verts[2].vert->color[3];
-	int u1 = verts[0].vert->texcoord[0], v1 = verts[0].vert->texcoord[1];
-	int u2 = verts[1].vert->texcoord[0], v2 = verts[1].vert->texcoord[1];
-	int u3 = verts[2].vert->texcoord[0], v3 = verts[2].vert->texcoord[1];
+	float u1 = verts[0].vert->texcoord[0], v1 = verts[0].vert->texcoord[1];
+	float u2 = verts[1].vert->texcoord[0], v2 = verts[1].vert->texcoord[1];
+	float u3 = verts[2].vert->texcoord[0], v3 = verts[2].vert->texcoord[1];
 	int w1 = verts[0].w, w2 = verts[1].w, w3 = verts[2].w;
 
 	Interpolator i_color_r(fx1,fx2,fx3,fy1,fy2,fy3,r1,r2,r3);
@@ -492,7 +487,7 @@ static void triangle_from_devmaster()
 					int w = i_w.cur();
 					if(polyAttr.decalMode)
 					{
-						if(abs(w-destFragment.depth)>1)
+						if(abs(w-(int)destFragment.depth)>1)
 							goto rejected_fragment;
 					}
 					else
@@ -693,17 +688,6 @@ static void SoftRastRender()
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
 		//because it is too convoluted right now.
 		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
-		//TODO - use some freaking matrix and vector classes
-	/*	float ab[3], ac[3];
-		Vector3Copy(ab,verts[0]->coord);
-		Vector3Copy(ac,verts[0]->coord);
-		Vector3Subtract(ab,verts[1]->coord);
-		Vector3Subtract(ac,verts[2]->coord);
-		float cross[3];
-		Vector3Cross(cross,ab,ac);
-		float view[3] = {0,0,1};
-		float dot = Vector3Dot(view,cross);
-		bool backfacing = dot<0;*/
 		float ab[2], ac[2];
 		Vector2Copy(ab, verts[1]->coord);
 		Vector2Copy(ac, verts[2]->coord);
@@ -732,78 +716,54 @@ static void SoftRastRender()
 		//note that when we build our triangle vert lists, we reorder them for our renderer.
 		//we should probably fix the renderer so we dont have to do this;
 		//but then again, what does it matter?
-	/*	if(type == 4) {
-
-			if(backfacing)
-			{
-				SubmitVertex(verts[0]);
-				SubmitVertex(verts[1]);
-				SubmitVertex(verts[2]);
-
-				triangle_from_devmaster();
-
-				SubmitVertex(verts[2]);
-				SubmitVertex(verts[3]);
-				SubmitVertex(verts[0]);
-
-				triangle_from_devmaster();
-			}
-			else
-			{
-				SubmitVertex(verts[2]);
-				SubmitVertex(verts[1]);
-				SubmitVertex(verts[0]);
-
-				triangle_from_devmaster();
-
-				SubmitVertex(verts[0]);
-				SubmitVertex(verts[3]);
-				SubmitVertex(verts[2]);
-
-				triangle_from_devmaster();
-			}
-
-		}
-		if(type == 3) {
-			if(backfacing)
-			{
-				SubmitVertex(verts[0]);
-				SubmitVertex(verts[1]);
-				SubmitVertex(verts[2]);
-			}
-			else
-			{
-				SubmitVertex(verts[2]);
-				SubmitVertex(verts[1]);
-				SubmitVertex(verts[0]);
-			}
-
-			triangle_from_devmaster();
-		}*/
-		for(int j = 1; j < (type-1); j++)
+		if(type == 4)
 		{
-			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
-			VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-			VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
-
 			if(backfacing)
 			{
-				SubmitVertex(vert1);
-				SubmitVertex(vert2);
-				SubmitVertex(vert0);
+				SubmitVertex(0,verts[0]);
+				SubmitVertex(1,verts[1]);
+				SubmitVertex(2,verts[2]);
+				triangle_from_devmaster();
+
+				SubmitVertex(0,verts[2]);
+				SubmitVertex(1,verts[3]);
+				SubmitVertex(2,verts[0]);
+				triangle_from_devmaster();
 			}
 			else
 			{
-				SubmitVertex(vert2);
-				SubmitVertex(vert1);
-				SubmitVertex(vert0);
-			}
+				SubmitVertex(0,verts[2]);
+				SubmitVertex(1,verts[1]);
+				SubmitVertex(2,verts[0]);
+				triangle_from_devmaster();
 
-			triangle_from_devmaster();
+				SubmitVertex(0,verts[0]);
+				SubmitVertex(1,verts[3]);
+				SubmitVertex(2,verts[2]);
+				triangle_from_devmaster();
+			}
 		}
+		if(type == 3)
+		{
+			if(backfacing)
+			{
+				SubmitVertex(0,verts[0]);
+				SubmitVertex(1,verts[1]);
+				SubmitVertex(2,verts[2]);
+				triangle_from_devmaster();
+			}
+			else
+			{
+				SubmitVertex(0,verts[2]);
+				SubmitVertex(1,verts[1]);
+				SubmitVertex(2,verts[0]);
+				triangle_from_devmaster();
+			}
+		}
+		
 	}
 
-	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
 
 
