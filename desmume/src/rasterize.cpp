@@ -703,15 +703,13 @@ static void SoftRastRender()
 		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
 		int type = poly->type;
 
-		/*VERT* verts[4] = {
+		VERT* verts[4] = {
 			&gfx3d.vertlist->list[poly->vertIndexes[0]],
 			&gfx3d.vertlist->list[poly->vertIndexes[1]],
 			&gfx3d.vertlist->list[poly->vertIndexes[2]],
 			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
-		};*/
-		VERT **verts = new VERT*[type];
-		for(int j = 0; j < type; j++)
-			verts[j] = &gfx3d.vertlist->list[poly->vertIndexes[j]];
+		};
+		
 
 		if(i == 0 || lastPolyAttr != poly->polyAttr)
 		{
@@ -752,7 +750,7 @@ static void SoftRastRender()
 		//note that when we build our triangle vert lists, we reorder them for our renderer.
 		//we should probably fix the renderer so we dont have to do this;
 		//but then again, what does it matter?
-		/*if(type == 4)
+		if(type == 4)
 		{
 			if(backfacing)
 			{
@@ -795,31 +793,8 @@ static void SoftRastRender()
 				SubmitVertex(2,verts[0]);
 				triangle_from_devmaster();
 			}
-		}*/
-		for(int j = 1; j < (type-1); j++)
-		{
-			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
-			VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-			VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
-
-			if(backfacing)
-			{
-				SubmitVertex(0, vert1);
-				SubmitVertex(1, vert2);
-				SubmitVertex(2, vert0);
-			}
-			else
-			{
-				SubmitVertex(0, vert2);
-				SubmitVertex(1, vert1);
-				SubmitVertex(2, vert0);
-			}
-
-			triangle_from_devmaster();
 		}
 
-		delete verts;
-		
 	}
 
 	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
