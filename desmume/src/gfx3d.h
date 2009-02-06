@@ -144,7 +144,7 @@ struct GFX3D
 		int x, y, width, height;
 	} viewport;
 
-	float clearDepth;
+	u32 clearDepth;
 	u32 clearColor;
 	float fogColor[4];
 	float fogOffset;
