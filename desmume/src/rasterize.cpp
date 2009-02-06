@@ -107,8 +107,8 @@ struct PolyAttr
 	u32 val;
 
 	bool decalMode;
-	bool translucent;
 	bool translucentDepthWrite;
+	u8 polyid;
 
 	bool isVisible(bool backfacing) 
 	{
@@ -125,8 +125,8 @@ struct PolyAttr
 	{
 		val = polyAttr;
 		decalMode = BIT14(val);
-		this->translucent = translucent;
 		translucentDepthWrite = BIT11(val);
+		polyid = (polyAttr>>24)&0x3F;
 	}
 
 } polyAttr;
@@ -141,8 +141,12 @@ struct Fragment
 		} components;
 	} color;
 
-	u8 polyid;
 	u32 depth;
+
+	struct {
+		u8 opaque, translucent;
+	} polyid;
+	u8 pad[6];
 };
 
 struct Vertex
@@ -523,22 +527,29 @@ static void triangle_from_devmaster()
 							goto rejected_fragment;
 					}
 
-					//alpha blending
-					alphaBlend(destFragment, shaderOutput);
-
-					//depth writing
-					if(destFragment.color.components.a == 0)
+					//handle polyids
+					bool isOpaquePixel = shaderOutput.color.components.a == 31;
+					if(isOpaquePixel)
 					{
-						//never update depth if the pixel is transparent
+						destFragment.polyid.opaque = polyAttr.polyid;
 					}
 					else
 					{
-						if(!polyAttr.translucent)
-							destFragment.depth = w;
-						else
-							if(polyAttr.translucent && polyAttr.translucentDepthWrite)
-								destFragment.depth = w;
+						//dont overwrite pixels on translucent polys with the same polyids
+						if(destFragment.polyid.translucent == polyAttr.polyid)
+							goto rejected_fragment;
+						destFragment.polyid.translucent = polyAttr.polyid;						
 					}
+
+
+					//alpha blending and write to framebuffer
+					alphaBlend(destFragment, shaderOutput);
+
+					//depth writing
+					//at one point i wrote code with this comment, but I'm not sure whether it is accurate
+					//if(destFragment.color.components.a == 0) {} //never update depth if the pixel is transparent
+					if(isOpaquePixel || polyAttr.translucentDepthWrite)
+						destFragment.depth = w;
 
 				} else if(done) break;
 			
@@ -642,16 +653,17 @@ static void SoftRastRender()
 	//B. backface cull
 	//C. transforms
 
-	Fragment::Color clearColor;
-	clearColor.components.r = gfx3d.clearColor&0x1F;
-	clearColor.components.g = (gfx3d.clearColor>>5)&0x1F;
-	clearColor.components.b = (gfx3d.clearColor>>10)&0x1F;
-	clearColor.components.a = (gfx3d.clearColor>>16)&0x1F;
-	memset(screen,0,sizeof(screen));
+	Fragment clearFragment;
+	clearFragment.color.components.r = gfx3d.clearColor&0x1F;
+	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
+	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
+	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
+	clearFragment.polyid.opaque = clearFragment.polyid.translucent = (gfx3d.clearColor>>24)&0x3F;
+	clearFragment.depth = 0x007FFFFF;
+	
 	for(int i=0;i<256*192;i++)
 	{
-		screen[i].depth = 0x007FFFFF;
-		screen[i].color = clearColor;
+		screen[i] = clearFragment;
 	}
 		
 
@@ -763,7 +775,7 @@ static void SoftRastRender()
 		
 	}
 
-	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
 
 
