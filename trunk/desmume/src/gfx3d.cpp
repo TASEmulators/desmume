@@ -1227,7 +1227,7 @@ void gfx3d_glFlush(u32 v)
 {
 	gfx3d_FlushFIFO();
 
-	assert(!flushPending);
+	//assert(!flushPending);
 	flushPending = TRUE;
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
