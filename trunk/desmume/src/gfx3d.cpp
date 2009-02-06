@@ -26,6 +26,7 @@
 // plugin responsible only for drawing primitives.
 
 #include <algorithm>
+#include <assert.h>
 #include <math.h>
 #include "armcpu.h"
 #include "debug.h"
@@ -180,8 +181,6 @@ POLYLIST polylists[2];
 POLYLIST* polylist = &polylists[0];
 VERTLIST vertlists[2];
 VERTLIST* vertlist = &vertlists[0];
-//PROJLIST projlists[2];
-//PROJLIST* projlist = &projlists[0];
 
 int listTwiddle = 1;
 int triStripToggle;
@@ -202,10 +201,8 @@ static void twiddleLists() {
 	listTwiddle &= 1;
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
-//	projlist = &projlists[listTwiddle];
 	polylist->count = 0;
 	vertlist->count = 0;
-//	projlist->count = 0;
 }
 
 static BOOL flushPending = FALSE;
@@ -320,10 +317,9 @@ void gfx3d_glFogOffset (u32 v)
 
 void gfx3d_glClearDepth(u32 v)
 {
-	//Thanks to NHerve
+	//formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
 	v &= 0x7FFFF;
-	u32 depth24b = (v*0x200)+((v+1)/0x8000)*0x01FF;
-	gfx3d.clearDepth = depth24b / ((float)(1<<24));
+	gfx3d.clearDepth = (v*0x200)+((v+1)/0x8000)*0x01FF;
 }
 
 void gfx3d_glMatrixMode(u32 v)
@@ -779,20 +775,11 @@ static void gfx3d_glPolygonAttrib_cache()
 	// texture environment
 	envMode = (polyAttr&0x30)>>4;
 
-	//// overwrite depth on alpha pass
-	//alphaDepthWrite = BIT11(polyAttr);
-
-	//// depth test function
-	//depthFuncMode = depthFunc[BIT14(polyAttr)];
-
 	//// back face culling
 	cullingMask = (polyAttr>>6)&3;
 
 	// Alpha value, actually not well handled, 0 should be wireframe
 	colorRGB[3] = colorAlpha = ((polyAttr>>16)&0x1F);
-
-	//// polyID
-	//polyID = (polyAttr>>24)&0x1F;
 }
 
 void gfx3d_glPolygonAttrib (u32 val)
@@ -1240,9 +1227,10 @@ void gfx3d_glFlush(u32 v)
 {
 	gfx3d_FlushFIFO();
 
+	assert(!flushPending);
 	flushPending = TRUE;
-	gfx3d.wbuffer = (v&1)!=0;
-	gfx3d.sortmode = ((v>>1)&1)!=0;
+	gfx3d.sortmode = BIT0(v);
+	gfx3d.wbuffer = BIT1(v);
 
 	// reset
 	clInd = 0;
@@ -1251,10 +1239,9 @@ void gfx3d_glFlush(u32 v)
 	//the renderer wil lget the lists we just built
 	gfx3d.polylist = polylist;
 	gfx3d.vertlist = vertlist;
-//	gfx3d.projlist = projlist;
 
 	//we need to sort the poly list with alpha polys last
-	//first, look for alpha polys
+	//first, look for opaque polys
 	int polycount = polylist->count;
 	int ctr=0;
 	for(int i=0;i<polycount;i++) {
@@ -2147,16 +2134,12 @@ bool gfx3d_loadstate(std::istream* is)
 	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
-//	projlist = &projlists[listTwiddle];
 	polylist->count = 0;
 	vertlist->count = 0;
-//	projlist->count = 0;
 	gfx3d.polylist = &polylists[listTwiddle^1];
 	gfx3d.vertlist = &vertlists[listTwiddle^1];
-//	gfx3d.projlist = &projlists[listTwiddle^1];
 	gfx3d.polylist->count=0;
 	gfx3d.vertlist->count=0;
-//	gfx3d.projlist->count = 0;
 
 	return true;
 }

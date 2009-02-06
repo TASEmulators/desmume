@@ -43,6 +43,8 @@ using std::max;
 template<typename T> T min(T a, T b, T c) { return min(min(a,b),c); }
 template<typename T> T max(T a, T b, T c) { return max(max(a,b),c); }
 
+static int polynum;
+
 static u8 modulate_table[32][32];
 
 //----texture cache---
@@ -121,7 +123,7 @@ struct PolyAttr
 		}
 	}
 
-	void setup(u32 polyAttr, bool translucent)
+	void setup(u32 polyAttr)
 	{
 		val = polyAttr;
 		decalMode = BIT14(val);
@@ -149,17 +151,11 @@ struct Fragment
 	u8 pad[6];
 };
 
-struct Vertex
-{
-	VERT* vert;
-	int w;
-} verts[3];
+static VERT* verts[3];
 
 INLINE static void SubmitVertex(int vert_index, VERT* rawvert)
 {
-	Vertex &vert = verts[vert_index];
-	vert.vert = rawvert;
-	vert.w = rawvert->coord[3] * 4096; //not sure about this
+	verts[vert_index] = rawvert;
 }
 
 static Fragment screen[256*192];
@@ -174,14 +170,16 @@ static struct Sampler
 	int wmask, hmask;
 	int wrap;
 	int wshift;
-	void setup(u32 format)
+	int texFormat;
+	void setup(u32 texParam)
 	{
-		wshift = ((format>>20)&0x07) + 3;
+		texFormat = (texParam>>26)&7;
+		wshift = ((texParam>>20)&0x07) + 3;
 		width=(1 << wshift);
-		height=(8 << ((format>>23)&0x07));
+		height=(8 << ((texParam>>23)&0x07));
 		wmask = width-1;
 		hmask = height-1;
-		wrap = (format>>16)&0xF;
+		wrap = (texParam>>16)&0xF;
 	}
 
 	FORCEINLINE void clamp(int &val, const int size, const int sizemask){
@@ -253,6 +251,9 @@ struct Shader
 	void setup(u32 polyattr)
 	{
 		mode = (polyattr>>4)&0x3;
+		//if there is no texture set, then set to the mode which doesnt even use a texture
+		if(sampler.texFormat == 0)
+			mode = 4;
 	}
 
 	float invu, invv, invw;
@@ -273,6 +274,7 @@ struct Shader
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			//dst.color = materialColor;
 			break;
 		case 1: //decal
 		case 2:
@@ -282,6 +284,10 @@ struct Shader
 			texColor = sampler.sample(u,v);
 			dst.color = texColor;
 			break;
+		case 4: //except for our own special mode which only uses the material color (for when texturing is disabled)
+			dst.color = materialColor;
+			break;
+
 		}
 	}
 
@@ -364,13 +370,13 @@ static void alphaBlend(Fragment & dst, const Fragment & src)
 static void triangle_from_devmaster()
 {
 	// 28.4 fixed-point coordinates
-    const int Y1 = iround(16.0f * verts[0].vert->coord[1]);
-    const int Y2 = iround(16.0f * verts[1].vert->coord[1]);
-    const int Y3 = iround(16.0f * verts[2].vert->coord[1]);
+    const int Y1 = iround(16.0f * verts[0]->coord[1]);
+    const int Y2 = iround(16.0f * verts[1]->coord[1]);
+    const int Y3 = iround(16.0f * verts[2]->coord[1]);
 
-    const int X1 = iround(16.0f * verts[0].vert->coord[0]);
-    const int X2 = iround(16.0f * verts[1].vert->coord[0]);
-    const int X3 = iround(16.0f * verts[2].vert->coord[0]);
+    const int X1 = iround(16.0f * verts[0]->coord[0]);
+    const int X2 = iround(16.0f * verts[1]->coord[0]);
+    const int X3 = iround(16.0f * verts[2]->coord[0]);
 
     // Deltas
     const int DX12 = X1 - X2;
@@ -412,16 +418,16 @@ static void triangle_from_devmaster()
     int CY2 = C2 + DX23 * (miny << 4) - DY23 * (minx << 4);
     int CY3 = C3 + DX31 * (miny << 4) - DY31 * (minx << 4);
 
-	float fx1 = verts[0].vert->coord[0], fy1 = verts[0].vert->coord[1];
-	float fx2 = verts[1].vert->coord[0], fy2 = verts[1].vert->coord[1];
-	float fx3 = verts[2].vert->coord[0], fy3 = verts[2].vert->coord[1];
-	u8 r1 = verts[0].vert->color[0], g1 = verts[0].vert->color[1], b1 = verts[0].vert->color[2], a1 = verts[0].vert->color[3];
-	u8 r2 = verts[1].vert->color[0], g2 = verts[1].vert->color[1], b2 = verts[1].vert->color[2], a2 = verts[1].vert->color[3];
-	u8 r3 = verts[2].vert->color[0], g3 = verts[2].vert->color[1], b3 = verts[2].vert->color[2], a3 = verts[2].vert->color[3];
-	float u1 = verts[0].vert->texcoord[0], v1 = verts[0].vert->texcoord[1];
-	float u2 = verts[1].vert->texcoord[0], v2 = verts[1].vert->texcoord[1];
-	float u3 = verts[2].vert->texcoord[0], v3 = verts[2].vert->texcoord[1];
-	int w1 = verts[0].w, w2 = verts[1].w, w3 = verts[2].w;
+	float fx1 = verts[0]->coord[0], fy1 = verts[0]->coord[1], fz1 = verts[0]->coord[2];
+	float fx2 = verts[1]->coord[0], fy2 = verts[1]->coord[1], fz2 = verts[1]->coord[2];
+	float fx3 = verts[2]->coord[0], fy3 = verts[2]->coord[1], fz3 = verts[2]->coord[2];
+	u8 r1 = verts[0]->color[0], g1 = verts[0]->color[1], b1 = verts[0]->color[2], a1 = verts[0]->color[3];
+	u8 r2 = verts[1]->color[0], g2 = verts[1]->color[1], b2 = verts[1]->color[2], a2 = verts[1]->color[3];
+	u8 r3 = verts[2]->color[0], g3 = verts[2]->color[1], b3 = verts[2]->color[2], a3 = verts[2]->color[3];
+	float u1 = verts[0]->texcoord[0], v1 = verts[0]->texcoord[1];
+	float u2 = verts[1]->texcoord[0], v2 = verts[1]->texcoord[1];
+	float u3 = verts[2]->texcoord[0], v3 = verts[2]->texcoord[1];
+	float w1 = verts[0]->coord[3], w2 = verts[1]->coord[3], w3 = verts[2]->coord[3];
 
 	Interpolator i_color_r(fx1,fx2,fx3,fy1,fy2,fy3,r1,r2,r3);
 	Interpolator i_color_g(fx1,fx2,fx3,fy1,fy2,fy3,g1,g2,g3);
@@ -430,6 +436,7 @@ static void triangle_from_devmaster()
 	Interpolator i_tex_invu(fx1,fx2,fx3,fy1,fy2,fy3,u1*4096.0f/w1,u2*4096.0f/w2,u3*4096.0f/w3);
 	Interpolator i_tex_invv(fx1,fx2,fx3,fy1,fy2,fy3,v1*4096.0f/w1,v2*4096.0f/w2,v3*4096.0f/w3);
 	Interpolator i_w(fx1,fx2,fx3,fy1,fy2,fy3,w1,w2,w3);
+	Interpolator i_z(fx1,fx2,fx3,fy1,fy2,fy3,fz1,fz2,fz3);
 	Interpolator i_invw(fx1,fx2,fx3,fy1,fy2,fy3,4096.0f/w1,4096.0f/w2,4096.0f/w3);
 	
 
@@ -439,8 +446,9 @@ static void triangle_from_devmaster()
 	i_color_a.init(minx,miny);
 	i_tex_invu.init(minx,miny);
 	i_tex_invv.init(minx,miny);
-	i_w.init(minx,miny);
+	i_w.init(minx,miny); i_z.init(minx,miny);
 	i_invw.init(minx,miny);
+
 
     for(int y = miny; y < maxy; y++)
     {
@@ -453,7 +461,7 @@ static void triangle_from_devmaster()
 		bool done = false;
 		i_color_r.push(); i_color_g.push(); i_color_b.push(); i_color_a.push(); 
 		i_tex_invu.push(); i_tex_invv.push();
-		i_w.push(); i_invw.push();
+		i_w.push(); i_invw.push(); i_z.push();
 
 		if(y>=0 && y<192)
 		{			
@@ -475,11 +483,11 @@ static void triangle_from_devmaster()
 					if(xaccum==1) {
 						i_color_r.incx(); i_color_g.incx(); i_color_b.incx(); i_color_a.incx();
 						i_tex_invu.incx(); i_tex_invv.incx();
-						i_w.incx(); i_invw.incx();
+						i_w.incx(); i_invw.incx(); i_z.incx();
 					} else {
 						i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum); i_color_a.incx(xaccum);
 						i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-						i_w.incx(xaccum); i_invw.incx(xaccum);
+						i_w.incx(xaccum); i_invw.incx(xaccum); i_z.incx(xaccum);
 					}
 
 					xaccum = 0;
@@ -487,36 +495,42 @@ static void triangle_from_devmaster()
 					int adr = (y<<8)+x;
 					Fragment &destFragment = screen[adr];
 
-					//w-buffer depth test
-					int w = i_w.cur();
+					//depth test
+					int depth;
+					if(gfx3d.wbuffer)
+						depth = i_w.cur();
+					else
+					{
+						float z = i_z.Z;
+						depth = z*0x7FFF*4; //not sure about this
+					}
 					if(polyAttr.decalMode)
 					{
-						if(abs(w-(int)destFragment.depth)>1)
+						if(depth != destFragment.depth)
+						{
 							goto rejected_fragment;
+						}
 					}
 					else
 					{
-						if(w>=destFragment.depth) 
+						if(depth>=destFragment.depth) 
+						{
 							goto rejected_fragment;
+						}
 					}
 					
 					shader.invw = i_invw.Z;
 					shader.invu = i_tex_invu.Z;
 					shader.invv = i_tex_invv.Z;
-					shader.materialColor.components.a = i_color_a.cur();
-					shader.materialColor.components.r = i_color_r.cur();
-					shader.materialColor.components.g = i_color_g.cur();
-					shader.materialColor.components.b = i_color_b.cur();
 					//this is a HACK: 
 					//we are being very sloppy with our interpolation precision right now
 					//and rather than fix it, i just want to clamp it
-					//assert(texColor.components.r<32); assert(texColor.components.g<32); assert(texColor.components.b<32);assert(texColor.components.a<32);
-					//assert(materialColor.components.r<32); assert(materialColor.components.g<32); assert(materialColor.components.b<32);assert(materialColor.components.a<32);
-					shader.materialColor.components.r = max((u8)0,min((u8)31,shader.materialColor.components.r));
-					shader.materialColor.components.g = max((u8)0,min((u8)31,shader.materialColor.components.g));
-					shader.materialColor.components.b = max((u8)0,min((u8)31,shader.materialColor.components.b));
-					shader.materialColor.components.a = max((u8)0,min((u8)31,shader.materialColor.components.a));
+					shader.materialColor.components.a = max(0,min(31,i_color_a.cur()));
+					shader.materialColor.components.r = max(0,min(31,i_color_r.cur()));
+					shader.materialColor.components.g = max(0,min(31,i_color_g.cur()));
+					shader.materialColor.components.b = max(0,min(31,i_color_b.cur()));
 
+					//pixel shader
 					Fragment shaderOutput;
 					shader.shade(shaderOutput);
 
@@ -542,14 +556,16 @@ static void triangle_from_devmaster()
 					}
 
 
-					//alpha blending and write to framebuffer
-					alphaBlend(destFragment, shaderOutput);
+					//we shouldnt do any of this if we generated a totally transparent pixel
+					if(shaderOutput.color.components.a != 0)
+					{
+						//alpha blending and write to framebuffer
+						alphaBlend(destFragment, shaderOutput);
 
-					//depth writing
-					//at one point i wrote code with this comment, but I'm not sure whether it is accurate
-					//if(destFragment.color.components.a == 0) {} //never update depth if the pixel is transparent
-					if(isOpaquePixel || polyAttr.translucentDepthWrite)
-						destFragment.depth = w;
+						//depth writing
+						if(isOpaquePixel || polyAttr.translucentDepthWrite)
+							destFragment.depth = depth;
+					}
 
 				} else if(done) break;
 			
@@ -568,6 +584,7 @@ static void triangle_from_devmaster()
 		i_tex_invu.pop(); i_tex_invu.incy();
 		i_tex_invv.pop(); i_tex_invv.incy();
 		i_w.pop(); i_w.incy();
+		i_z.pop(); i_z.incy();
 		i_invw.pop(); i_invw.incy();
 
 
@@ -647,19 +664,13 @@ static void SoftRastGetLineCaptured(int line, u16* dst) {
 
 static void SoftRastRender()
 {
-	//transform verts and polys
-	//which order?
-	//A. clip
-	//B. backface cull
-	//C. transforms
-
 	Fragment clearFragment;
 	clearFragment.color.components.r = gfx3d.clearColor&0x1F;
 	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
 	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
 	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
 	clearFragment.polyid.opaque = clearFragment.polyid.translucent = (gfx3d.clearColor>>24)&0x3F;
-	clearFragment.depth = 0x007FFFFF;
+	clearFragment.depth = gfx3d.clearDepth;
 	
 	for(int i=0;i<256*192;i++)
 	{
@@ -674,6 +685,8 @@ static void SoftRastRender()
 		//perspective division and viewport transform
 		vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
 		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
+		vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
+		vert.coord[3] *= 4096; //not sure about this
 	}
 
 	//a counter for how many polys got culled
@@ -682,8 +695,11 @@ static void SoftRastRender()
 	u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
 	
 	//iterate over polys
+	bool needInitTexture = true;
 	for(int i=0;i<gfx3d.polylist->count;i++)
 	{
+		polynum = i;
+
 		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
 		int type = poly->type;
 
@@ -694,7 +710,11 @@ static void SoftRastRender()
 			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
 		};
 
-		polyAttr.setup(poly->polyAttr, poly->isTranslucent());
+		if(i == 0 || lastPolyAttr != poly->polyAttr)
+		{
+			polyAttr.setup(poly->polyAttr);
+			lastPolyAttr = poly->polyAttr;
+		}
 
 		//HACK: backface culling
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
@@ -713,17 +733,18 @@ static void SoftRastRender()
 			culled++;
 			continue;
 		}
-		
 	
-		if(i==0 || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette || lastPolyAttr != poly->polyAttr)
+		if(needInitTexture || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
 		{
 			TexCache_SetTexture(poly->texParam,poly->texPalette);
 			sampler.setup(poly->texParam);
 			lastTextureFormat = poly->texParam;
 			lastTexturePalette = poly->texPalette;
-			lastPolyAttr = poly->polyAttr;
+			needInitTexture = false;
 		}
 
+		//hmm... shader gets setup every time because it depends on sampler which may have just changed
+		shader.setup(poly->polyAttr);
 
 		//note that when we build our triangle vert lists, we reorder them for our renderer.
 		//we should probably fix the renderer so we dont have to do this;
