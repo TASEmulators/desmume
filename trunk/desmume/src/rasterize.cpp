@@ -111,6 +111,7 @@ struct PolyAttr
 	bool decalMode;
 	bool translucentDepthWrite;
 	u8 polyid;
+	u8 alpha;
 
 	bool isVisible(bool backfacing) 
 	{
@@ -129,6 +130,7 @@ struct PolyAttr
 		decalMode = BIT14(val);
 		translucentDepthWrite = BIT11(val);
 		polyid = (polyAttr>>24)&0x3F;
+		alpha = (polyAttr>>16)&0x1F;
 	}
 
 } polyAttr;
@@ -432,7 +434,6 @@ static void triangle_from_devmaster()
 	Interpolator i_color_r(fx1,fx2,fx3,fy1,fy2,fy3,r1,r2,r3);
 	Interpolator i_color_g(fx1,fx2,fx3,fy1,fy2,fy3,g1,g2,g3);
 	Interpolator i_color_b(fx1,fx2,fx3,fy1,fy2,fy3,b1,b2,b3);
-	Interpolator i_color_a(fx1,fx2,fx3,fy1,fy2,fy3,a1,a2,a3);
 	Interpolator i_tex_invu(fx1,fx2,fx3,fy1,fy2,fy3,u1*4096.0f/w1,u2*4096.0f/w2,u3*4096.0f/w3);
 	Interpolator i_tex_invv(fx1,fx2,fx3,fy1,fy2,fy3,v1*4096.0f/w1,v2*4096.0f/w2,v3*4096.0f/w3);
 	Interpolator i_w(fx1,fx2,fx3,fy1,fy2,fy3,w1,w2,w3);
@@ -443,7 +444,6 @@ static void triangle_from_devmaster()
 	i_color_r.init(minx,miny);
 	i_color_g.init(minx,miny);
 	i_color_b.init(minx,miny);
-	i_color_a.init(minx,miny);
 	i_tex_invu.init(minx,miny);
 	i_tex_invv.init(minx,miny);
 	i_w.init(minx,miny); i_z.init(minx,miny);
@@ -459,7 +459,7 @@ static void triangle_from_devmaster()
         int CX3 = CY3;
 
 		bool done = false;
-		i_color_r.push(); i_color_g.push(); i_color_b.push(); i_color_a.push(); 
+		i_color_r.push(); i_color_g.push(); i_color_b.push();
 		i_tex_invu.push(); i_tex_invv.push();
 		i_w.push(); i_invw.push(); i_z.push();
 
@@ -481,11 +481,11 @@ static void triangle_from_devmaster()
 					//since we dont, we are receiving waaay out of bounds polys and so unless we do this we spend a lot of time calculating
 					//out of bounds pixels
 					if(xaccum==1) {
-						i_color_r.incx(); i_color_g.incx(); i_color_b.incx(); i_color_a.incx();
+						i_color_r.incx(); i_color_g.incx(); i_color_b.incx();
 						i_tex_invu.incx(); i_tex_invv.incx();
 						i_w.incx(); i_invw.incx(); i_z.incx();
 					} else {
-						i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum); i_color_a.incx(xaccum);
+						i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
 						i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
 						i_w.incx(xaccum); i_invw.incx(xaccum); i_z.incx(xaccum);
 					}
@@ -525,7 +525,7 @@ static void triangle_from_devmaster()
 					//this is a HACK: 
 					//we are being very sloppy with our interpolation precision right now
 					//and rather than fix it, i just want to clamp it
-					shader.materialColor.components.a = max(0,min(31,i_color_a.cur()));
+					shader.materialColor.components.a = polyAttr.alpha;
 					shader.materialColor.components.r = max(0,min(31,i_color_r.cur()));
 					shader.materialColor.components.g = max(0,min(31,i_color_g.cur()));
 					shader.materialColor.components.b = max(0,min(31,i_color_b.cur()));
@@ -577,7 +577,6 @@ static void triangle_from_devmaster()
 				CX3 -= FDY31;
 			}
 		} //end of y inbounds check
-		i_color_a.pop(); i_color_a.incy();
 		i_color_r.pop(); i_color_r.incy();
 		i_color_g.pop(); i_color_g.incy();
 		i_color_b.pop(); i_color_b.incy();
