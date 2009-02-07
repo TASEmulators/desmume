@@ -711,7 +711,7 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord)
 
 	float t = insideAmount / distance;
 
-#define INTERP(X) ret.##X = interpolate(inside->##X,outside->##X,t);
+#define INTERP(X) ret . X = interpolate(inside-> X ,outside-> X ,t)
 	INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
 	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
 	INTERP(texcoord[0]); INTERP(texcoord[1]);
