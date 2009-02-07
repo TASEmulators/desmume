@@ -700,6 +700,11 @@ static void SetVertex()
 			poly.polyAttr = polyAttr;
 			poly.texParam = textureFormat;
 			poly.texPalette = texturePalette;
+			poly.averageDepth = getAverageDepth(	vertlist->list[poly.vertIndexes[0]].coord,
+													vertlist->list[poly.vertIndexes[1]].coord,
+													vertlist->list[poly.vertIndexes[2]].coord,
+													vertlist->list[poly.vertIndexes[3]].coord,
+													poly.type);
 			polylist->count++;
 		}
 	}
@@ -890,11 +895,10 @@ void gfx3d_glNormal(u32 v)
 
 	if (texCoordinateTransform == 2)
 	{
-		float normal_fixed[3] = {normal[0]/8,normal[1]/8,normal[2]/8};
-		last_s =(	(normal_fixed[0] *mtxCurrent[3][0] + normal_fixed[1] *mtxCurrent[3][4] +
-					 normal_fixed[2] *mtxCurrent[3][8]) + _s);
-		last_t =(	(normal_fixed[0] *mtxCurrent[3][1] + normal_fixed[1] *mtxCurrent[3][5] +
-					 normal_fixed[2] *mtxCurrent[3][9]) + _t);
+		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
+					 normal[2] *mtxCurrent[3][8]) + (_s*16.0f)) / 16.0f;
+		last_t =(	(normal[0] *mtxCurrent[3][1] + normal[1] *mtxCurrent[3][5] +
+					 normal[2] *mtxCurrent[3][9]) + (_t*16.0f)) / 16.0f;
 	}
 
 
@@ -1249,6 +1253,7 @@ void gfx3d_glFlush(u32 v)
 		if(!poly.isTranslucent())
 			gfx3d.indexlist[ctr++] = i;
 	}
+	int translucentPolyStart = ctr;
 	//then look for translucent polys
 	for(int i=0;i<polycount;i++) {
 		POLY &poly = polylist->list[i];
