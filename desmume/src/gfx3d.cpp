@@ -700,11 +700,6 @@ static void SetVertex()
 			poly.polyAttr = polyAttr;
 			poly.texParam = textureFormat;
 			poly.texPalette = texturePalette;
-			poly.averageDepth = getAverageDepth(	vertlist->list[poly.vertIndexes[0]].coord,
-													vertlist->list[poly.vertIndexes[1]].coord,
-													vertlist->list[poly.vertIndexes[2]].coord,
-													vertlist->list[poly.vertIndexes[3]].coord,
-													poly.type);
 			polylist->count++;
 		}
 	}
