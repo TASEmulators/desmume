@@ -110,6 +110,7 @@ struct PolyAttr
 
 	bool decalMode;
 	bool translucentDepthWrite;
+	bool drawBackPlaneIntersectingPolys;
 	u8 polyid;
 	u8 alpha;
 
@@ -131,6 +132,7 @@ struct PolyAttr
 		translucentDepthWrite = BIT11(val);
 		polyid = (polyAttr>>24)&0x3F;
 		alpha = (polyAttr>>16)&0x1F;
+		drawBackPlaneIntersectingPolys = BIT12(val);
 	}
 
 } polyAttr;
@@ -277,6 +279,8 @@ struct Shader
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
 			//dst.color = materialColor;
+			//dst.color.color = polynum;
+			//dst.color.components.a = 31;
 			break;
 		case 1: //decal
 		case 2:
@@ -448,7 +452,6 @@ static void triangle_from_devmaster()
 	i_tex_invv.init(minx,miny);
 	i_w.init(minx,miny); i_z.init(minx,miny);
 	i_invw.init(minx,miny);
-
 
     for(int y = miny; y < maxy; y++)
     {
@@ -665,20 +668,20 @@ static struct TClippedPoly
 {
 	int type;
 	POLY* poly;
-	VERT clipVerts[5];
+	VERT clipVerts[16]; //how many? i cant imagine having more than 6
 } clippedPolys[POLYLIST_SIZE*2];
 static int clippedPolyCounter;
 
 TClippedPoly tempClippedPoly;
 TClippedPoly outClippedPoly;
 
-static const float CLIP_LIMIT = 1024;
-
 template<typename T>
 static T interpolate(const T& x0, const T& x1, const float ratio) {
-	return (float)x0 * (1-ratio) + (float)x1 * ratio;
+	return x0 + (float)(x1-x0) * (ratio);
 }
 
+
+bool KILLED = false;
 
 static VERT clipPoint(VERT* inside, VERT* outside, int coord)
 {
@@ -687,11 +690,25 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord)
 	float coord_inside = inside->coord[coord];
 	float coord_outside = outside->coord[coord];
 	
-	float distance = coord_outside - coord_inside;
+	float distance = fabs(coord_outside - coord_inside);
 	float insideAmount;
 	float limit;
-	if(coord_outside < -CLIP_LIMIT) { limit = -CLIP_LIMIT; insideAmount = CLIP_LIMIT+coord_inside; }
-	else { limit = CLIP_LIMIT; insideAmount = CLIP_LIMIT-coord_inside; }
+	if(coord_outside < 0) { limit = 0; insideAmount = coord_inside; }
+	else { limit = 1; insideAmount = 1-coord_inside; }
+
+	//??? HACK ???
+	if(distance<0.01) {
+		//a special case: to avoid funny math, if the points are close to each other then just pick the inside point
+		//after clamping it
+		ret = *inside;
+		ret.coord[coord] = limit;
+		return ret;
+	}
+
+	if(distance>1000) {
+		KILLED = true;
+	}
+
 	float t = insideAmount / distance;
 
 #define INTERP(X) ret.##X = interpolate(inside->##X,outside->##X,t);
@@ -699,6 +716,8 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord)
 	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
 	INTERP(texcoord[0]); INTERP(texcoord[1]);
 
+	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
+	//of the clip volume through interpolation
 	ret.coord[coord] = limit;
 
 	return ret;
@@ -709,44 +728,50 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord)
 #define CLIPLOG(X)
 #define CLIPLOG2(X,Y,Z)
 
+static bool clipped;
+
 static void clipSegmentVsPlane(VERT** verts, const int coord, float x)
 {
 	bool out0, out1;
-	if(x<0) out0 = verts[0]->coord[coord] < -CLIP_LIMIT;
-	else out0 = verts[0]->coord[coord] > CLIP_LIMIT;
-	if(x<0) out1 = verts[1]->coord[coord] < -CLIP_LIMIT;
-	else out1 = verts[1]->coord[coord] > CLIP_LIMIT;
+	if(x==0) 
+		out0 = verts[0]->coord[coord] < 0;
+	else 
+		out0 = verts[0]->coord[coord] > 1;
+	if(x==0) 
+		out1 = verts[1]->coord[coord] < 0;
+	else 
+		out1 = verts[1]->coord[coord] > 1;
 
-	if(outClippedPoly.type>5)
+
+	if(out0 || out1) 
 	{
-		int zzz=9;
+		clipped = true;
 	}
 
 	//both outside: insert no points
 	if(out0 && out1) {
 		CLIPLOG(" both outside\n");
-		return;
 	}
 
-	//both inside: insert the second point
+	//both inside: insert the first point
 	if(!out0 && !out1) 
 	{
 		CLIPLOG(" both inside\n");
-		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
+		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[0];
 	}
 
-	//exiting volume: insert the clipped point
+	//exiting volume: insert the clipped point and the first (interior) point
 	if(!out0 && out1)
 	{
 		CLIPLOG(" exiting\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[0];
 		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[0],verts[1], coord);
 	}
 
-	//entering volume: insert clipped point and second point
+	//entering volume: insert clipped point
 	if(out0 && !out1) {
 		CLIPLOG(" entering\n");
 		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[1],verts[0], coord);
-		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
 	}
 
 	if(outClippedPoly.type>5)
@@ -757,7 +782,7 @@ static void clipSegmentVsPlane(VERT** verts, const int coord, float x)
 
 static void clipPolyVsPlane(const int coord, float x)
 {
-	if(tempClippedPoly.type>=4)
+	if(tempClippedPoly.type<2)
 	{
 		int zzz=9;
 	}
@@ -771,23 +796,37 @@ static void clipPolyVsPlane(const int coord, float x)
 	tempClippedPoly = outClippedPoly;
 }
 
-static void clipTriangle(POLY* poly)
+static void clipTriangle(POLY* poly, int type)
 {
-	tempClippedPoly.type = 3;
+	KILLED = false;
+	tempClippedPoly.type = type;
 	
 
-	clipPolyVsPlane(0, -1); 
+	clipPolyVsPlane(0, 0); 
 	clipPolyVsPlane(0, 1);
-	clipPolyVsPlane(1, -1);
+	clipPolyVsPlane(1, 0);
 	clipPolyVsPlane(1, 1);
-	clipPolyVsPlane(2, -1);
-	clipPolyVsPlane(2, 1);
+	
+	clipPolyVsPlane(2, 0);
 
-	if(tempClippedPoly.type > 5) {
-		int qqq=9;
+	clipped = false;
+	clipPolyVsPlane(2, 1);
+	bool clippedByBackPlane = clipped;
+
+	if(clippedByBackPlane)
+	{
+		int zzz=9;
 	}
 
-	if(tempClippedPoly.type < 5)
+	//TODO - we need to parameterize this back plane clipping
+	if(KILLED || clippedByBackPlane || tempClippedPoly.type < 3)
+	{
+		//a degenerate poly. we're not handling these right now
+		int zzz=9;
+	}
+	else if(tempClippedPoly.type < 4) 
+		//ideally we would submit a quad here, but i'm not sure whether 
+		//we can trust it to be planar or something like that. so i am sending everything non-try down to the triangle fan
 	{
 		clippedPolys[clippedPolyCounter] = tempClippedPoly;
 		clippedPolys[clippedPolyCounter].poly = poly;
@@ -795,6 +834,9 @@ static void clipTriangle(POLY* poly)
 	}
 	else
 	{
+		//printf("clipping to a %d-vert poly\n",tempClippedPoly.type);
+		//return;
+
 		//turn into a triangle fan. no point even trying to make quads since those would have to get split anyway.
 		//well, maybe it could end up being faster.
 		for(int i=0;i<tempClippedPoly.type-2;i++)
@@ -825,17 +867,18 @@ static void clipPoly(POLY* poly)
 		tempClippedPoly.clipVerts[0] = *verts[0];
 		tempClippedPoly.clipVerts[1] = *verts[1];
 		tempClippedPoly.clipVerts[2] = *verts[2];
-		clipTriangle(poly);
+		clipTriangle(poly,3);
 	} else 
 	{
 		tempClippedPoly.clipVerts[0] = *verts[0];
 		tempClippedPoly.clipVerts[1] = *verts[1];
 		tempClippedPoly.clipVerts[2] = *verts[2];
-		clipTriangle(poly);
-		tempClippedPoly.clipVerts[0] = *verts[2];
-		tempClippedPoly.clipVerts[1] = *verts[3];
-		tempClippedPoly.clipVerts[2] = *verts[0];
-		clipTriangle(poly);
+		tempClippedPoly.clipVerts[3] = *verts[3];
+		clipTriangle(poly,4);
+		//tempClippedPoly.clipVerts[0] = *verts[2];
+		//tempClippedPoly.clipVerts[1] = *verts[3];
+		//tempClippedPoly.clipVerts[2] = *verts[0];
+		//clipTriangle(poly);
 	}
 
 
@@ -854,27 +897,44 @@ static void SoftRastRender()
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
 
+	//perspective and viewport transforms
+	for(int i=0;i<gfx3d.vertlist->count;i++)
+	{
+		VERT &vert = gfx3d.vertlist->list[i];
+		if(i==851) {
+			int zzz=9;
+		}
+		vert.coord[0] = (vert.coord[0]+vert.coord[3]) / (2*vert.coord[3]);
+		vert.coord[1] = (vert.coord[1]+vert.coord[3]) / (2*vert.coord[3]);
+		vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
+	}
+
 	//submit all polys to clipper
 	clippedPolyCounter = 0;
 	for(int i=0;i<gfx3d.polylist->count;i++)
 	{
 		clipPoly(&gfx3d.polylist->list[gfx3d.indexlist[i]]);
 	}
-		
 
-	//perspective and viewport transforms
+	//viewport transforms
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
 		TClippedPoly &poly = clippedPolys[i];
+		if(i==164) {
+			int zzz=9;
+		}
 		for(int j=0;j<poly.type;j++)
 		{
 			VERT &vert = poly.clipVerts[j];
 
-			//perspective division and viewport transform
-			vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
-			vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
-			vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
-			vert.coord[3] *= 4096; //not sure about this
+			//accomodate errors in clipping. this shouldnt be necessary...
+			vert.coord[0] = max(0.0f,min(1.0f,vert.coord[0]));
+			vert.coord[1] = max(0.0f,min(1.0f,vert.coord[1]));
+			vert.coord[2] = max(0.0f,min(1.0f,vert.coord[2]));
+
+			vert.coord[0] *= 256;
+			vert.coord[1] *= 192;
+			//vert.coord[3] *= 4096; //not sure about this
 		}
 	}
 
@@ -967,7 +1027,7 @@ static void SoftRastRender()
 				triangle_from_devmaster();
 			}
 		}
-		if(type == 3)
+		else if(type == 3)
 		{
 			if(backfacing)
 			{
@@ -983,11 +1043,11 @@ static void SoftRastRender()
 				SubmitVertex(2,verts[0]);
 				triangle_from_devmaster();
 			}
-		}
+		} else printf("skipping type %d\n",type);
 
 	}
 
-	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
 
 //the old non-clipping renderer
