@@ -134,6 +134,7 @@ OGLEXT(PFNGLVALIDATEPROGRAMPROC,glValidateProgram)
 OGLEXT(PFNGLBLENDFUNCSEPARATEEXTPROC,glBlendFuncSeparateEXT)
 OGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 OGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+OGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
 #endif
 
 #if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
@@ -421,6 +422,7 @@ static char OGLInit(void)
 #endif
 	INITOGLEXT(PFNGLGETUNIFORMLOCATIONPROC,glGetUniformLocation)
 	INITOGLEXT(PFNGLUNIFORM1IPROC,glUniform1i)
+	INITOGLEXT(PFNGLUNIFORM1IVPROC,glUniform1iv)
 #endif
 #if !defined(GL_VERSION_1_3) || defined(_MSC_VER) || defined(__INTEL_COMPILER)
 	INITOGLEXT(PFNGLACTIVETEXTUREPROC,glActiveTexture)
@@ -578,7 +580,7 @@ static void BeginRenderPoly()
 				//when the polyID is zero, we are writing the shadow mask.
 				//set stencilbuf = 1 where the shadow volume is obstructed by geometry.
 				//do not write color or depth information.
-				glStencilFunc(GL_ALWAYS,2,255);
+				glStencilFunc(GL_ALWAYS,65,255);
 				glStencilOp(GL_KEEP,GL_REPLACE,GL_KEEP);
 				glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 			}
@@ -589,16 +591,24 @@ static void BeginRenderPoly()
 				//when the polyid is nonzero, we are drawing the shadow poly.
 				//only draw the shadow poly where the stencilbuf==1.
 				//I am not sure whether to update the depth buffer here--so I chose not to.
-				glStencilFunc(GL_EQUAL,2,255);
+				glStencilFunc(GL_EQUAL,65,255);
 				glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 				glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 			}
 		}
 	} else {
 		xglEnable(GL_STENCIL_TEST);
+		if(isTranslucent)
+		{
+			stencilStateSet = 3;
+			glStencilFunc(GL_NOTEQUAL,polyID,255);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+		}
+		else
 		if(stencilStateSet!=2) {
-			stencilStateSet=2;
-			glStencilFunc(GL_ALWAYS,1,255);
+			stencilStateSet=2;	
+			glStencilFunc(GL_ALWAYS,64,255);
 			glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
 			glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 		}
@@ -693,6 +703,7 @@ static void OGLRender()
 	};
 	glClearColor(clearColor[0],clearColor[1],clearColor[2],clearColor[3]);
 	glClearDepth(gfx3d.clearDepth);
+	glClearStencil((gfx3d.clearColor >> 24) & 0x3F);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glMatrixMode(GL_PROJECTION);
