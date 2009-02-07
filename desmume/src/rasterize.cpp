@@ -661,6 +661,186 @@ static void SoftRastGetLineCaptured(int line, u16* dst) {
 	}
 }
 
+static struct TClippedPoly
+{
+	int type;
+	POLY* poly;
+	VERT clipVerts[5];
+} clippedPolys[POLYLIST_SIZE*2];
+static int clippedPolyCounter;
+
+TClippedPoly tempClippedPoly;
+TClippedPoly outClippedPoly;
+
+static const float CLIP_LIMIT = 1024;
+
+template<typename T>
+static T interpolate(const T& x0, const T& x1, const float ratio) {
+	return (float)x0 * (1-ratio) + (float)x1 * ratio;
+}
+
+
+static VERT clipPoint(VERT* inside, VERT* outside, int coord)
+{
+	VERT ret;
+	
+	float coord_inside = inside->coord[coord];
+	float coord_outside = outside->coord[coord];
+	
+	float distance = coord_outside - coord_inside;
+	float insideAmount;
+	float limit;
+	if(coord_outside < -CLIP_LIMIT) { limit = -CLIP_LIMIT; insideAmount = CLIP_LIMIT+coord_inside; }
+	else { limit = CLIP_LIMIT; insideAmount = CLIP_LIMIT-coord_inside; }
+	float t = insideAmount / distance;
+
+#define INTERP(X) ret.##X = interpolate(inside->##X,outside->##X,t);
+	INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
+	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
+	INTERP(texcoord[0]); INTERP(texcoord[1]);
+
+	ret.coord[coord] = limit;
+
+	return ret;
+}
+
+//#define CLIPLOG(X) printf(X);
+//#define CLIPLOG2(X,Y,Z) printf(X,Y,Z);
+#define CLIPLOG(X)
+#define CLIPLOG2(X,Y,Z)
+
+static void clipSegmentVsPlane(VERT** verts, const int coord, float x)
+{
+	bool out0, out1;
+	if(x<0) out0 = verts[0]->coord[coord] < -CLIP_LIMIT;
+	else out0 = verts[0]->coord[coord] > CLIP_LIMIT;
+	if(x<0) out1 = verts[1]->coord[coord] < -CLIP_LIMIT;
+	else out1 = verts[1]->coord[coord] > CLIP_LIMIT;
+
+	if(outClippedPoly.type>5)
+	{
+		int zzz=9;
+	}
+
+	//both outside: insert no points
+	if(out0 && out1) {
+		CLIPLOG(" both outside\n");
+		return;
+	}
+
+	//both inside: insert the second point
+	if(!out0 && !out1) 
+	{
+		CLIPLOG(" both inside\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
+	}
+
+	//exiting volume: insert the clipped point
+	if(!out0 && out1)
+	{
+		CLIPLOG(" exiting\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[0],verts[1], coord);
+	}
+
+	//entering volume: insert clipped point and second point
+	if(out0 && !out1) {
+		CLIPLOG(" entering\n");
+		outClippedPoly.clipVerts[outClippedPoly.type++] = clipPoint(verts[1],verts[0], coord);
+		outClippedPoly.clipVerts[outClippedPoly.type++] = *verts[1];
+	}
+
+	if(outClippedPoly.type>5)
+	{
+ 		int zzz=9;
+	}
+}
+
+static void clipPolyVsPlane(const int coord, float x)
+{
+	if(tempClippedPoly.type>=4)
+	{
+		int zzz=9;
+	}
+	outClippedPoly.type = 0;
+	CLIPLOG2("Clipping coord %d against %f\n",coord,x);
+	for(int i=0;i<tempClippedPoly.type;i++)
+	{
+		VERT* testverts[2] = {&tempClippedPoly.clipVerts[i],&tempClippedPoly.clipVerts[(i+1)%tempClippedPoly.type]};
+		clipSegmentVsPlane(testverts, coord, x);
+	}
+	tempClippedPoly = outClippedPoly;
+}
+
+static void clipTriangle(POLY* poly)
+{
+	tempClippedPoly.type = 3;
+	
+
+	clipPolyVsPlane(0, -1); 
+	clipPolyVsPlane(0, 1);
+	clipPolyVsPlane(1, -1);
+	clipPolyVsPlane(1, 1);
+	clipPolyVsPlane(2, -1);
+	clipPolyVsPlane(2, 1);
+
+	if(tempClippedPoly.type > 5) {
+		int qqq=9;
+	}
+
+	if(tempClippedPoly.type < 5)
+	{
+		clippedPolys[clippedPolyCounter] = tempClippedPoly;
+		clippedPolys[clippedPolyCounter].poly = poly;
+		clippedPolyCounter++;
+	}
+	else
+	{
+		//turn into a triangle fan. no point even trying to make quads since those would have to get split anyway.
+		//well, maybe it could end up being faster.
+		for(int i=0;i<tempClippedPoly.type-2;i++)
+		{
+			clippedPolys[clippedPolyCounter].type = 3;
+			clippedPolys[clippedPolyCounter].poly = poly;
+			clippedPolys[clippedPolyCounter].clipVerts[0] = tempClippedPoly.clipVerts[0];
+			clippedPolys[clippedPolyCounter].clipVerts[1] = tempClippedPoly.clipVerts[i+1];
+			clippedPolys[clippedPolyCounter].clipVerts[2] = tempClippedPoly.clipVerts[i+2];
+			clippedPolyCounter++;
+		}
+	}
+}
+
+static void clipPoly(POLY* poly)
+{
+	int type = poly->type;
+	
+	VERT* verts[4] = {
+		&gfx3d.vertlist->list[poly->vertIndexes[0]],
+		&gfx3d.vertlist->list[poly->vertIndexes[1]],
+		&gfx3d.vertlist->list[poly->vertIndexes[2]],
+		type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
+	};
+
+	if(type == 3)
+	{
+		tempClippedPoly.clipVerts[0] = *verts[0];
+		tempClippedPoly.clipVerts[1] = *verts[1];
+		tempClippedPoly.clipVerts[2] = *verts[2];
+		clipTriangle(poly);
+	} else 
+	{
+		tempClippedPoly.clipVerts[0] = *verts[0];
+		tempClippedPoly.clipVerts[1] = *verts[1];
+		tempClippedPoly.clipVerts[2] = *verts[2];
+		clipTriangle(poly);
+		tempClippedPoly.clipVerts[0] = *verts[2];
+		tempClippedPoly.clipVerts[1] = *verts[3];
+		tempClippedPoly.clipVerts[2] = *verts[0];
+		clipTriangle(poly);
+	}
+
+
+}
+
 static void SoftRastRender()
 {
 	Fragment clearFragment;
@@ -672,20 +852,30 @@ static void SoftRastRender()
 	clearFragment.depth = gfx3d.clearDepth;
 	
 	for(int i=0;i<256*192;i++)
-	{
 		screen[i] = clearFragment;
+
+	//submit all polys to clipper
+	clippedPolyCounter = 0;
+	for(int i=0;i<gfx3d.polylist->count;i++)
+	{
+		clipPoly(&gfx3d.polylist->list[gfx3d.indexlist[i]]);
 	}
 		
 
-	for(int i=0;i<gfx3d.vertlist->count;i++)
+	//perspective and viewport transforms
+	for(int i=0;i<clippedPolyCounter;i++)
 	{
-		VERT &vert = gfx3d.vertlist->list[i];
+		TClippedPoly &poly = clippedPolys[i];
+		for(int j=0;j<poly.type;j++)
+		{
+			VERT &vert = poly.clipVerts[j];
 
-		//perspective division and viewport transform
-		vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
-		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
-		vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
-		vert.coord[3] *= 4096; //not sure about this
+			//perspective division and viewport transform
+			vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
+			vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
+			vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
+			vert.coord[3] *= 4096; //not sure about this
+		}
 	}
 
 	//a counter for how many polys got culled
@@ -695,18 +885,19 @@ static void SoftRastRender()
 	
 	//iterate over polys
 	bool needInitTexture = true;
-	for(int i=0;i<gfx3d.polylist->count;i++)
+	for(int i=0;i<clippedPolyCounter;i++)
 	{
 		polynum = i;
 
-		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
-		int type = poly->type;
+		TClippedPoly &clippedPoly = clippedPolys[i];
+		POLY *poly = clippedPoly.poly;
+		int type = clippedPoly.type;
 
 		VERT* verts[4] = {
-			&gfx3d.vertlist->list[poly->vertIndexes[0]],
-			&gfx3d.vertlist->list[poly->vertIndexes[1]],
-			&gfx3d.vertlist->list[poly->vertIndexes[2]],
-			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
+			&clippedPoly.clipVerts[0],
+			&clippedPoly.clipVerts[1],
+			&clippedPoly.clipVerts[2],
+			type==4?&clippedPoly.clipVerts[3]:0
 		};
 		
 
@@ -796,8 +987,147 @@ static void SoftRastRender()
 
 	}
 
-	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
+
+//the old non-clipping renderer
+//static void SoftRastRender()
+//{
+//	Fragment clearFragment;
+//	clearFragment.color.components.r = gfx3d.clearColor&0x1F;
+//	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
+//	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
+//	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
+//	clearFragment.polyid.opaque = clearFragment.polyid.translucent = (gfx3d.clearColor>>24)&0x3F;
+//	clearFragment.depth = gfx3d.clearDepth;
+//	
+//	for(int i=0;i<256*192;i++)
+//	{
+//		screen[i] = clearFragment;
+//	}
+//		
+//
+//	for(int i=0;i<gfx3d.vertlist->count;i++)
+//	{
+//		VERT &vert = gfx3d.vertlist->list[i];
+//
+//		//perspective division and viewport transform
+//		vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
+//		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
+//		vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
+//		vert.coord[3] *= 4096; //not sure about this
+//	}
+//
+//	//a counter for how many polys got culled
+//	int culled = 0;
+//
+//	u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
+//	
+//	//iterate over polys
+//	bool needInitTexture = true;
+//	for(int i=0;i<gfx3d.polylist->count;i++)
+//	{
+//		polynum = i;
+//
+//		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
+//		int type = poly->type;
+//
+//		VERT* verts[4] = {
+//			&gfx3d.vertlist->list[poly->vertIndexes[0]],
+//			&gfx3d.vertlist->list[poly->vertIndexes[1]],
+//			&gfx3d.vertlist->list[poly->vertIndexes[2]],
+//			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
+//		};
+//		
+//
+//		if(i == 0 || lastPolyAttr != poly->polyAttr)
+//		{
+//			polyAttr.setup(poly->polyAttr);
+//			lastPolyAttr = poly->polyAttr;
+//		}
+//
+//		//HACK: backface culling
+//		//this should be moved to gfx3d, but first we need to redo the way the lists are built
+//		//because it is too convoluted right now.
+//		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
+//		float ab[2], ac[2];
+//		Vector2Copy(ab, verts[1]->coord);
+//		Vector2Copy(ac, verts[2]->coord);
+//		Vector2Subtract(ab, verts[0]->coord);
+//		Vector2Subtract(ac, verts[0]->coord);
+//		float cross = Vector2Cross(ab, ac);
+//		bool backfacing = (cross<0);
+//
+//
+//		if(!polyAttr.isVisible(backfacing)) {
+//			culled++;
+//			continue;
+//		}
+//	
+//		if(needInitTexture || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
+//		{
+//			TexCache_SetTexture(poly->texParam,poly->texPalette);
+//			sampler.setup(poly->texParam);
+//			lastTextureFormat = poly->texParam;
+//			lastTexturePalette = poly->texPalette;
+//			needInitTexture = false;
+//		}
+//
+//		//hmm... shader gets setup every time because it depends on sampler which may have just changed
+//		shader.setup(poly->polyAttr);
+//
+//		//note that when we build our triangle vert lists, we reorder them for our renderer.
+//		//we should probably fix the renderer so we dont have to do this;
+//		//but then again, what does it matter?
+//		if(type == 4)
+//		{
+//			if(backfacing)
+//			{
+//				SubmitVertex(0,verts[0]);
+//				SubmitVertex(1,verts[1]);
+//				SubmitVertex(2,verts[2]);
+//				triangle_from_devmaster();
+//
+//				SubmitVertex(0,verts[2]);
+//				SubmitVertex(1,verts[3]);
+//				SubmitVertex(2,verts[0]);
+//				triangle_from_devmaster();
+//			}
+//			else
+//			{
+//				SubmitVertex(0,verts[2]);
+//				SubmitVertex(1,verts[1]);
+//				SubmitVertex(2,verts[0]);
+//				triangle_from_devmaster();
+//
+//				SubmitVertex(0,verts[0]);
+//				SubmitVertex(1,verts[3]);
+//				SubmitVertex(2,verts[2]);
+//				triangle_from_devmaster();
+//			}
+//		}
+//		if(type == 3)
+//		{
+//			if(backfacing)
+//			{
+//				SubmitVertex(0,verts[0]);
+//				SubmitVertex(1,verts[1]);
+//				SubmitVertex(2,verts[2]);
+//				triangle_from_devmaster();
+//			}
+//			else
+//			{
+//				SubmitVertex(0,verts[2]);
+//				SubmitVertex(1,verts[1]);
+//				SubmitVertex(2,verts[0]);
+//				triangle_from_devmaster();
+//			}
+//		}
+//
+//	}
+//
+//	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+//}
 
 
 GPU3DInterface gpu3DRasterize = {
