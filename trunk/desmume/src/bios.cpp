@@ -312,6 +312,12 @@ TEMPLATE static u32 wait4IRQ()
      return 1;
 }
 
+TEMPLATE static u32 sleep()
+{
+	_MMU_write08(cpu->proc_ID, 0x04000301, 0xC0);
+	return 1;
+}
+
 TEMPLATE static u32 divide()
 {
      s32 num = (s32)cpu->R[0];
@@ -1059,7 +1065,7 @@ u32 (* ARM7_swi_tab[32])()={
          intrWaitARM<ARMCPU_ARM7>,          // 0x04
          waitVBlankARM<ARMCPU_ARM7>,        // 0x05
          wait4IRQ<ARMCPU_ARM7>,             // 0x06
-         wait4IRQ<ARMCPU_ARM7>,             // 0x07
+         sleep<ARMCPU_ARM7>,             // 0x07
          SoundBias<ARMCPU_ARM7>,            // 0x08
          divide<ARMCPU_ARM7>,               // 0x09
          bios_nop<ARMCPU_ARM7>,             // 0x0A
