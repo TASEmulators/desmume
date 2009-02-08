@@ -1,0 +1,39 @@
+# -*-shell-script-*-
+
+[Meta]
+RootName: @desmume.sf.net/desmume:$SOFTWAREVERSION
+DisplayName: DeSmuME Nintendo DS Emulator
+ShortName: desmume
+Maintainer: Guillaume Duhamel <guillaume.duhamel@gmail.com>
+Packager: Guillaume Duhamel <guillaume.duhamel@gmail.com>
+Summary: DeSmuME is a Nintendo DS emulator.
+URL: http://desmume.sf.net/
+License: GNU General Public License, Version 2
+SoftwareVersion: @VERSION@
+AutopackageTarget: 1.0
+
+[Description]
+This is a Nintendo DS emulator.
+
+[BuildPrepare]
+prepareBuild
+
+[BuildUnprepare]
+unprepareBuild
+
+[Imports]
+echo '*' | import
+
+[Prepare]
+# Dependency checking
+require @gtk.org/gtk 2.4
+
+[Install]
+# Put your installation script here
+installExe bin/desmume
+installExe bin/desmume-cli
+installExe bin/desmume-glade
+
+[Uninstall]
+# Usually just the following line is enough to uninstall everything
+uninstallFromLog
