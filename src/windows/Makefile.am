@@ -22,8 +22,10 @@ desmume_SOURCES = \
 	aviout.cpp console.cpp console.h \
 	inputdx.cpp inputdx.h ogl.cpp \
 	throttle.cpp throttle.h windriver.h \
+	cheatsWin.cpp cheatsWin.h gbaslot_config.cpp gbaslot_config.h \
+	mic.cpp \
 	DeSmuME_2005.vcproj DeSmuME_2008.vcproj \
-	DeSmuME_Intel.icproj DeSmuME_Intel.vcproj \
+	DeSmuME_Intel.icproj DeSmuME_Intel.vcproj DeSmuME_Intel.sln \
 	DeSmuME_x64.manifest DeSmuME_x86.manifest
 desmume_LDADD = ../libdesmume.a yopyop_private.o
 if HAVE_GDB_STUB
