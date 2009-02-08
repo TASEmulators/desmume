@@ -1230,6 +1230,7 @@ void gfx3d_glFlush(u32 v)
 	flushPending = TRUE;
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
+	gfx3d.wbuffer = FALSE;
 
 	// reset
 	clInd = 0;
