@@ -501,11 +501,13 @@ static void triangle_from_devmaster()
 					//depth test
 					int depth;
 					if(gfx3d.wbuffer)
-						depth = i_w.cur();
+						//not sure about this
+						//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
+						depth = 4096/i_invw.Z; 
 					else
 					{
 						float z = i_z.Z;
-						depth = z*0xFFFFFF; //not sure about this
+						depth = z*0x7FFF; //not sure about this
 					}
 					if(polyAttr.decalMode)
 					{
@@ -733,10 +735,11 @@ static void clipSegmentVsPlane(VERT** verts, const int coord, int which)
 	else
 		out1 = verts[1]->coord[coord] > verts[1]->coord[3];
 
-	if(coord==2 && which==-1) {
-		out0 = verts[0]->coord[2] < 0;
-		out1 = verts[1]->coord[2] < 0;
-	}
+	//CONSIDER: should we try and clip things behind the eye? does this code even successfully do it? not sure.
+	//if(coord==2 && which==1) {
+	//	out0 = verts[0]->coord[2] < 0;
+	//	out1 = verts[1]->coord[2] < 0;
+	//}
 
 	//both outside: insert no points
 	if(out0 && out1) {
@@ -768,10 +771,6 @@ static void clipSegmentVsPlane(VERT** verts, const int coord, int which)
 
 static void clipPolyVsPlane(const int coord, int which)
 {
-	if(tempClippedPoly.type<2)
-	{
-		int zzz=9;
-	}
 	outClippedPoly.type = 0;
 	CLIPLOG2("Clipping coord %d against %f\n",coord,x);
 	for(int i=0;i<tempClippedPoly.type;i++)
@@ -808,7 +807,8 @@ static void clipPoly(POLY* poly)
 
 	if(tempClippedPoly.type < 3)
 	{
-		//a degenerate poly. we're not handling these right now
+		//a totally clipped poly. discard it.
+		//or, a degenerate poly. we're not handling these right now
 	}
 	else if(tempClippedPoly.type < 5) 
 	{
@@ -843,6 +843,8 @@ static void SoftRastRender()
 	clearFragment.depth = gfx3d.clearDepth;
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
+
+	//printf("%d\n",gfx3d.wbuffer?1:0);
 
 	//submit all polys to clipper
 	clippedPolyCounter = 0;
@@ -986,148 +988,9 @@ static void SoftRastRender()
 
 	}
 
-//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+
 }
-
-//the old non-clipping renderer
-//static void SoftRastRender()
-//{
-//	Fragment clearFragment;
-//	clearFragment.color.components.r = gfx3d.clearColor&0x1F;
-//	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
-//	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
-//	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
-//	clearFragment.polyid.opaque = clearFragment.polyid.translucent = (gfx3d.clearColor>>24)&0x3F;
-//	clearFragment.depth = gfx3d.clearDepth;
-//	
-//	for(int i=0;i<256*192;i++)
-//	{
-//		screen[i] = clearFragment;
-//	}
-//		
-//
-//	for(int i=0;i<gfx3d.vertlist->count;i++)
-//	{
-//		VERT &vert = gfx3d.vertlist->list[i];
-//
-//		//perspective division and viewport transform
-//		vert.coord[0] = (vert.coord[0]+vert.coord[3])*256 / (2*vert.coord[3]) + 0;
-//		vert.coord[1] = (vert.coord[1]+vert.coord[3])*192 / (2*vert.coord[3]) + 0;
-//		vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
-//		vert.coord[3] *= 4096; //not sure about this
-//	}
-//
-//	//a counter for how many polys got culled
-//	int culled = 0;
-//
-//	u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
-//	
-//	//iterate over polys
-//	bool needInitTexture = true;
-//	for(int i=0;i<gfx3d.polylist->count;i++)
-//	{
-//		polynum = i;
-//
-//		POLY *poly = &gfx3d.polylist->list[gfx3d.indexlist[i]];
-//		int type = poly->type;
-//
-//		VERT* verts[4] = {
-//			&gfx3d.vertlist->list[poly->vertIndexes[0]],
-//			&gfx3d.vertlist->list[poly->vertIndexes[1]],
-//			&gfx3d.vertlist->list[poly->vertIndexes[2]],
-//			type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
-//		};
-//		
-//
-//		if(i == 0 || lastPolyAttr != poly->polyAttr)
-//		{
-//			polyAttr.setup(poly->polyAttr);
-//			lastPolyAttr = poly->polyAttr;
-//		}
-//
-//		//HACK: backface culling
-//		//this should be moved to gfx3d, but first we need to redo the way the lists are built
-//		//because it is too convoluted right now.
-//		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
-//		float ab[2], ac[2];
-//		Vector2Copy(ab, verts[1]->coord);
-//		Vector2Copy(ac, verts[2]->coord);
-//		Vector2Subtract(ab, verts[0]->coord);
-//		Vector2Subtract(ac, verts[0]->coord);
-//		float cross = Vector2Cross(ab, ac);
-//		bool backfacing = (cross<0);
-//
-//
-//		if(!polyAttr.isVisible(backfacing)) {
-//			culled++;
-//			continue;
-//		}
-//	
-//		if(needInitTexture || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
-//		{
-//			TexCache_SetTexture(poly->texParam,poly->texPalette);
-//			sampler.setup(poly->texParam);
-//			lastTextureFormat = poly->texParam;
-//			lastTexturePalette = poly->texPalette;
-//			needInitTexture = false;
-//		}
-//
-//		//hmm... shader gets setup every time because it depends on sampler which may have just changed
-//		shader.setup(poly->polyAttr);
-//
-//		//note that when we build our triangle vert lists, we reorder them for our renderer.
-//		//we should probably fix the renderer so we dont have to do this;
-//		//but then again, what does it matter?
-//		if(type == 4)
-//		{
-//			if(backfacing)
-//			{
-//				SubmitVertex(0,verts[0]);
-//				SubmitVertex(1,verts[1]);
-//				SubmitVertex(2,verts[2]);
-//				triangle_from_devmaster();
-//
-//				SubmitVertex(0,verts[2]);
-//				SubmitVertex(1,verts[3]);
-//				SubmitVertex(2,verts[0]);
-//				triangle_from_devmaster();
-//			}
-//			else
-//			{
-//				SubmitVertex(0,verts[2]);
-//				SubmitVertex(1,verts[1]);
-//				SubmitVertex(2,verts[0]);
-//				triangle_from_devmaster();
-//
-//				SubmitVertex(0,verts[0]);
-//				SubmitVertex(1,verts[3]);
-//				SubmitVertex(2,verts[2]);
-//				triangle_from_devmaster();
-//			}
-//		}
-//		if(type == 3)
-//		{
-//			if(backfacing)
-//			{
-//				SubmitVertex(0,verts[0]);
-//				SubmitVertex(1,verts[1]);
-//				SubmitVertex(2,verts[2]);
-//				triangle_from_devmaster();
-//			}
-//			else
-//			{
-//				SubmitVertex(0,verts[2]);
-//				SubmitVertex(1,verts[1]);
-//				SubmitVertex(2,verts[0]);
-//				triangle_from_devmaster();
-//			}
-//		}
-//
-//	}
-//
-//	//printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
-//}
-
 
 GPU3DInterface gpu3DRasterize = {
 	"SoftRasterizer",
