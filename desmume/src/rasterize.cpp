@@ -504,8 +504,8 @@ static void triangle_from_devmaster()
 						depth = i_w.cur();
 					else
 					{
-						float z = i_z.Z;
-						depth = z*0x7FFF*4; //not sure about this
+						float z = i_z.Z / i_invw.Z;
+						depth = z*0xFFFFFF; //not sure about this
 					}
 					if(polyAttr.decalMode)
 					{
@@ -696,18 +696,18 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord)
 	if(coord_outside < 0) { limit = 0; insideAmount = coord_inside; }
 	else { limit = 1; insideAmount = 1-coord_inside; }
 
-	//??? HACK ???
-	if(distance<0.01) {
-		//a special case: to avoid funny math, if the points are close to each other then just pick the inside point
-		//after clamping it
-		ret = *inside;
-		ret.coord[coord] = limit;
-		return ret;
-	}
+	////??? HACK ???
+	//if(distance<0.01) {
+	//	//a special case: to avoid funny math, if the points are close to each other then just pick the inside point
+	//	//after clamping it
+	//	ret = *inside;
+	//	ret.coord[coord] = limit;
+	//	return ret;
+	//}
 
-	if(distance>1000) {
-		KILLED = true;
-	}
+	//if(distance>1000) {
+	//	KILLED = true;
+	//}
 
 	float t = insideAmount / distance;
 
@@ -796,9 +796,19 @@ static void clipPolyVsPlane(const int coord, float x)
 	tempClippedPoly = outClippedPoly;
 }
 
-static void clipTriangle(POLY* poly, int type)
+static void clipPoly(POLY* poly)
 {
-	KILLED = false;
+	int type = poly->type;
+
+	CLIPLOG("==Begin poly==\n");
+
+	tempClippedPoly.clipVerts[0] = gfx3d.vertlist->list[poly->vertIndexes[0]];
+	tempClippedPoly.clipVerts[1] = gfx3d.vertlist->list[poly->vertIndexes[1]];
+	tempClippedPoly.clipVerts[2] = gfx3d.vertlist->list[poly->vertIndexes[2]];
+	if(type==4)
+		tempClippedPoly.clipVerts[3] = gfx3d.vertlist->list[poly->vertIndexes[3]];
+
+	
 	tempClippedPoly.type = type;
 	
 
@@ -806,20 +816,11 @@ static void clipTriangle(POLY* poly, int type)
 	clipPolyVsPlane(0, 1);
 	clipPolyVsPlane(1, 0);
 	clipPolyVsPlane(1, 1);
-	
 	clipPolyVsPlane(2, 0);
-
-	clipped = false;
 	clipPolyVsPlane(2, 1);
-	bool clippedByBackPlane = clipped;
-
-	if(clippedByBackPlane)
-	{
-		int zzz=9;
-	}
 
 	//TODO - we need to parameterize this back plane clipping
-	if(KILLED || clippedByBackPlane || tempClippedPoly.type < 3)
+	if(KILLED || tempClippedPoly.type < 3)
 	{
 		//a degenerate poly. we're not handling these right now
 		int zzz=9;
@@ -851,39 +852,6 @@ static void clipTriangle(POLY* poly, int type)
 	}
 }
 
-static void clipPoly(POLY* poly)
-{
-	int type = poly->type;
-	
-	VERT* verts[4] = {
-		&gfx3d.vertlist->list[poly->vertIndexes[0]],
-		&gfx3d.vertlist->list[poly->vertIndexes[1]],
-		&gfx3d.vertlist->list[poly->vertIndexes[2]],
-		type==4?&gfx3d.vertlist->list[poly->vertIndexes[3]]:0
-	};
-
-	if(type == 3)
-	{
-		tempClippedPoly.clipVerts[0] = *verts[0];
-		tempClippedPoly.clipVerts[1] = *verts[1];
-		tempClippedPoly.clipVerts[2] = *verts[2];
-		clipTriangle(poly,3);
-	} else 
-	{
-		tempClippedPoly.clipVerts[0] = *verts[0];
-		tempClippedPoly.clipVerts[1] = *verts[1];
-		tempClippedPoly.clipVerts[2] = *verts[2];
-		tempClippedPoly.clipVerts[3] = *verts[3];
-		clipTriangle(poly,4);
-		//tempClippedPoly.clipVerts[0] = *verts[2];
-		//tempClippedPoly.clipVerts[1] = *verts[3];
-		//tempClippedPoly.clipVerts[2] = *verts[0];
-		//clipTriangle(poly);
-	}
-
-
-}
-
 static void SoftRastRender()
 {
 	Fragment clearFragment;
@@ -897,13 +865,14 @@ static void SoftRastRender()
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
 
-	//perspective and viewport transforms
+	//perspective transform
 	for(int i=0;i<gfx3d.vertlist->count;i++)
 	{
 		VERT &vert = gfx3d.vertlist->list[i];
-		if(i==851) {
-			int zzz=9;
-		}
+
+		//account for a negative w-coord
+		if(vert.coord[3] < 0) vert.coord[3] = -vert.coord[3];
+
 		vert.coord[0] = (vert.coord[0]+vert.coord[3]) / (2*vert.coord[3]);
 		vert.coord[1] = (vert.coord[1]+vert.coord[3]) / (2*vert.coord[3]);
 		vert.coord[2] = (vert.coord[2]+vert.coord[3]) / (2*vert.coord[3]);
