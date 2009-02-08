@@ -5,7 +5,7 @@
 	Name="DeSmuME_Intel"
 	ProjectGUID="{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="2631812102"
+	VCNestedProjectCRC32="2055535478"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -40,7 +40,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
 				GenerateDebugInformation="1"
 				GenerateMapFile="1"
 				RandomizedBaseAddress="1"
@@ -104,7 +104,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_interim_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -165,7 +165,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_interim.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -226,7 +226,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -290,7 +290,7 @@
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -378,6 +378,8 @@
 		<File 
 			RelativePath="..\OGLRender.h"/>
 		<File 
+			RelativePath="..\rasterize.h"/>
+		<File 
 			RelativePath="..\readwrite.h"/>
 		<File 
 			RelativePath="..\registers.h"/>
@@ -395,6 +397,8 @@
 			RelativePath="..\softrender_config.h"/>
 		<File 
 			RelativePath="..\SPU.h"/>
+		<File 
+			RelativePath="..\texcache.h"/>
 		<File 
 			RelativePath="..\thumb_instructions.h"/>
 		<File 
@@ -447,8 +451,6 @@
 			RelativePath="..\font_eng.inc"/>
 		<File 
 			RelativePath="..\instruction_tabdef.inc"/>
-		<File 
-			RelativePath="..\shaders.h"/>
 		<File 
 			RelativePath="..\thumb_tabdef.inc"/>
 		<File 
@@ -612,6 +614,8 @@
 		<File 
 			RelativePath="..\OGLRender.cpp"/>
 		<File 
+			RelativePath="..\rasterize.cpp"/>
+		<File 
 			RelativePath="..\readwrite.cpp"/>
 		<File 
 			RelativePath="..\render3D.cpp"/>
@@ -625,6 +629,8 @@
 			RelativePath="..\softrender.cpp"/>
 		<File 
 			RelativePath="..\SPU.cpp"/>
+		<File 
+			RelativePath="..\texcache.cpp"/>
 		<File 
 			RelativePath="..\thumb_instructions.cpp"/>
 		<File 

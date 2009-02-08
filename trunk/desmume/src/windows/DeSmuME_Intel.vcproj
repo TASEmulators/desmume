@@ -71,7 +71,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -161,7 +161,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_interim_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -250,7 +250,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_interim.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -339,7 +339,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -429,7 +429,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -553,6 +553,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\rasterize.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\readwrite.cpp"
 					>
 				</File>
@@ -578,6 +582,10 @@
 				</File>
 				<File
 					RelativePath="..\SPU.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\texcache.cpp"
 					>
 				</File>
 				<File
@@ -974,10 +982,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\shaders.h"
-				>
-			</File>
-			<File
 				RelativePath="..\thumb_tabdef.inc"
 				>
 			</File>
@@ -1189,6 +1193,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\rasterize.h"
+					>
+				</File>
+				<File
 					RelativePath="..\readwrite.h"
 					>
 				</File>
@@ -1222,6 +1230,10 @@
 				</File>
 				<File
 					RelativePath="..\SPU.h"
+					>
+				</File>
+				<File
+					RelativePath="..\texcache.h"
 					>
 				</File>
 				<File

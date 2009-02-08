@@ -40,8 +40,8 @@
 using std::min;
 using std::max;
 
-template<typename T> T min(T a, T b, T c) { return min(min(a,b),c); }
-template<typename T> T max(T a, T b, T c) { return max(max(a,b),c); }
+template<typename T> T _min(T a, T b, T c) { return min(min(a,b),c); }
+template<typename T> T _max(T a, T b, T c) { return max(max(a,b),c); }
 
 static int polynum;
 
@@ -403,10 +403,10 @@ static void triangle_from_devmaster()
     const int FDY31 = DY31 << 4;
 
     // Bounding rectangle
-    int minx = (min(X1, X2, X3) + 0xF) >> 4;
-    int maxx = (max(X1, X2, X3) + 0xF) >> 4;
-    int miny = (min(Y1, Y2, Y3) + 0xF) >> 4;
-    int maxy = (max(Y1, Y2, Y3) + 0xF) >> 4;
+    int minx = (_min(X1, X2, X3) + 0xF) >> 4;
+    int maxx = (_max(X1, X2, X3) + 0xF) >> 4;
+    int miny = (_min(Y1, Y2, Y3) + 0xF) >> 4;
+    int maxy = (_max(Y1, Y2, Y3) + 0xF) >> 4;
 
 	int desty = miny;
 
