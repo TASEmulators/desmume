@@ -109,6 +109,7 @@ void OSDCLASS::setColor(u16 col)
 void OSDCLASS::update() // don't optimized
 {
 	if (!needUpdate) return;	// don't update if buffer empty (speed up)
+	memcpy(GPU_screen, GPU_tempScreen, sizeof(GPU_screen));
 	u16	*dst=(u16*)GPU_screen;
 	if (mode!=255)
 		dst+=offset*512;

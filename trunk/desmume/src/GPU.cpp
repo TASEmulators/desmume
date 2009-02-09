@@ -82,6 +82,7 @@ GPU::MosaicLookup GPU::mosaicLookup;
 //#define DEBUG_TRI
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
+CACHE_ALIGN u8 GPU_tempScreen[4*256*192];
 
 CACHE_ALIGN u8 sprWin[256];
 
@@ -317,6 +318,7 @@ void GPU_Reset(GPU *g, u8 l)
 	osd = new OSDCLASS(-1);
 	//DISP_FIFOclear(&g->disp_fifo);
 	memset(GPU_screen, 0, sizeof(GPU_screen));
+	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
 }
 
 void GPU_DeInit(GPU * gpu)
@@ -2814,7 +2816,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	gpu->currDst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
+	gpu->currDst = (u8 *)(GPU_tempScreen) + (screen->offset + l) * 512;
 	itemsForPriority_t * item;
 	u8 spr[512];
 	u8 sprAlpha[256];
@@ -3003,7 +3005,7 @@ static void GPU_ligne_DispCapture(u16 l)
 									if(MainScreen.gpu->dispMode != 1)
 										goto cap3d;
 
-									u8 *src = (u8 *)(GPU_screen) + (MainScreen.offset + l) * 512;
+									u8 *src = (u8 *)(GPU_tempScreen) + (MainScreen.offset + l) * 512;
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
 										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
 
@@ -3051,7 +3053,7 @@ static void GPU_ligne_DispCapture(u16 l)
 						u16 cap3DLine[512];
 
 						if (gpu->dispCapCnt.srcA == 0)			// Capture screen (BG + OBJ + 3D)
-							srcA = (u16 *)(GPU_screen) + (MainScreen.offset + l) * 512;
+							srcA = (u16 *)(GPU_tempScreen) + (MainScreen.offset + l) * 512;
 						else
 						{
 							gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
@@ -3112,7 +3114,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 
-	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+	u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
 	u16 i16;
 
 	if (!gpu->MasterBrightFactor) return;
@@ -3296,7 +3298,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	{
 		case 0: // Display Off(Display white)
 			{
-				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+				u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
 
 				for (int i=0; i<256; i++)
 					T2WriteWord(dst, i << 1, 0x7FFF);
@@ -3309,14 +3311,14 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 		case 2: // Display framebuffer
 			{
-				u8 * dst = GPU_screen + (screen->offset + l) * 512;
+				u8 * dst = GPU_tempScreen + (screen->offset + l) * 512;
 				u8 * src = gpu->VRAMaddr + (l*512);
 				memcpy (dst, src, 512);
 			}
 			break;
 		case 3: // Display memory FIFO
 			{
-				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+				u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
 				for (int i=0; i < 128; i++)
 					T1WriteLong(dst, i << 2, DISP_FIFOrecv() & 0x7FFF7FFF);
 			}
@@ -3333,12 +3335,12 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 void gpu_savestate(std::ostream* os)
 {
-	os->write((char*)GPU_screen,sizeof(GPU_screen));
+	os->write((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
 }
 
 bool gpu_loadstate(std::istream* is)
 {
-	is->read((char*)GPU_screen,sizeof(GPU_screen));
+	is->read((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();
