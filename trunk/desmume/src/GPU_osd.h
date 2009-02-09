@@ -36,6 +36,8 @@ private:
 	u64		offset;
 	u8		mode;
 
+	u16		rotAngle;
+
 	u8		startline;
 	u8		lastline;
 
@@ -56,6 +58,7 @@ public:
 	~OSDCLASS();
 
 	void	setOffset(u16 ofs);
+	void	setRotate(u16 angle);
 	void	update();
 	void	clear();
 	void	setColor(u16 col);
