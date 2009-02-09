@@ -1734,11 +1734,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
              ExitRunLoop();
              return 0;
 			}
+		case WM_MOVING:
+			SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
+			return 0;
 		case WM_MOVE:
-				GetWndRect(hwnd);
-				return 0;
+			GetWndRect(hwnd);
+			return 0;
 		case WM_SIZING:
 			{
+				SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
 				if(windowSize)
 				{
 					windowSize = 0;
@@ -1769,7 +1773,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			return 0;
 		case WM_PAINT:
-			if(paused)
+			if(paused || (lParam == 0x12345678))
 			{
 				osd->update();
 				Display();
