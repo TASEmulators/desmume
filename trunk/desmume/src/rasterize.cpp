@@ -152,7 +152,10 @@ struct Fragment
 	struct {
 		u8 opaque, translucent;
 	} polyid;
-	u8 pad[6];
+
+	u8 stencil;
+
+	u8 pad[5];
 };
 
 static VERT* verts[3];
@@ -256,7 +259,7 @@ struct Shader
 	{
 		mode = (polyattr>>4)&0x3;
 		//if there is no texture set, then set to the mode which doesnt even use a texture
-		if(sampler.texFormat == 0)
+		if(sampler.texFormat == 0 && mode == 0)
 			mode = 4;
 	}
 
@@ -284,11 +287,14 @@ struct Shader
 			break;
 		case 1: //decal
 		case 2:
-		case 3: //..and everything else, for now
 			u = invu/invw;
 			v = invv/invw;
 			texColor = sampler.sample(u,v);
 			dst.color = texColor;
+			break;
+		case 3: //shadows
+			//is this right? only with the material color?
+			dst.color = materialColor;
 			break;
 		case 4: //except for our own special mode which only uses the material color (for when texturing is disabled)
 			dst.color = materialColor;
@@ -469,6 +475,8 @@ static void triangle_from_devmaster()
 		int xaccum = 0;
 		for(int x = minx; x < maxx; x++, adr++)
 		{
+			Fragment &destFragment = screen[adr];
+
 			if(CX1 > 0 && CX2 > 0 && CX3 > 0)
 			{
 				done = true;
@@ -489,8 +497,6 @@ static void triangle_from_devmaster()
 
 				xaccum = 0;
 
-				Fragment &destFragment = screen[adr];
-
 				//depth test
 				int depth;
 				if(gfx3d.wbuffer)
@@ -506,14 +512,14 @@ static void triangle_from_devmaster()
 				{
 					if(depth != destFragment.depth)
 					{
-						goto rejected_fragment;
+						goto depth_fail;
 					}
 				}
 				else
 				{
 					if(depth>=destFragment.depth) 
 					{
-						goto rejected_fragment;
+						goto depth_fail;
 					}
 				}
 				
@@ -538,10 +544,21 @@ static void triangle_from_devmaster()
 					if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
 						goto rejected_fragment;
 				}
-
+		
 				//we shouldnt do any of this if we generated a totally transparent pixel
 				if(shaderOutput.color.components.a != 0)
 				{
+					//handle shadow polys
+					if(shader.mode == 3)
+					{
+						//now, if we arent supposed to draw shadow here, then bail out
+						if(destFragment.stencil == 0)
+							goto rejected_fragment;
+
+						//reset the shadow flag to keep the shadow from getting drawn more than once
+						destFragment.stencil = 0;
+					}
+
 					//alpha blending and write to framebuffer
 					alphaBlend(destFragment, shaderOutput);
 
@@ -567,7 +584,17 @@ static void triangle_from_devmaster()
 
 			} else if(done) break;
 		
+			goto done_with_pixel;
+
+		depth_fail:
+			//handle stencil-writing in shadow mode
+			if(shader.mode == 3)
+			{
+				destFragment.stencil = 1;
+			}
+
 		rejected_fragment:
+		done_with_pixel:
 			xaccum++;
 
 			CX1 -= FDY12;
@@ -832,6 +859,7 @@ static void SoftRastRender()
 	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
 	clearFragment.polyid.opaque = clearFragment.polyid.translucent = (gfx3d.clearColor>>24)&0x3F;
 	clearFragment.depth = gfx3d.clearDepth;
+	clearFragment.stencil = 0;
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
 
