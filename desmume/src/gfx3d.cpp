@@ -885,9 +885,6 @@ void gfx3d_glNormal(u32 v)
 						normalTable[(v>>10)&1023],
 						normalTable[(v>>20)&1023]};
 
-	//use the current normal transform matrix
-	MatrixMultVec3x3 (mtxCurrent[2], normal);
-
 	if (texCoordinateTransform == 2)
 	{
 		last_s =(	(normal[0] *mtxCurrent[3][0] + normal[1] *mtxCurrent[3][4] +
@@ -896,6 +893,8 @@ void gfx3d_glNormal(u32 v)
 					 normal[2] *mtxCurrent[3][9]) + (_t*16.0f)) / 16.0f;
 	}
 
+	//use the current normal transform matrix
+	MatrixMultVec3x3 (mtxCurrent[2], normal);
 
 	//apply lighting model
 	{
