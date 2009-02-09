@@ -455,8 +455,6 @@ static void triangle_from_devmaster()
 
     for(int y = miny; y < maxy; y++)
     {
-		//HACK - bad screen clipping
-        
 		int CX1 = CY1;
         int CX2 = CY2;
         int CX3 = CY3;
@@ -466,122 +464,117 @@ static void triangle_from_devmaster()
 		i_tex_invu.push(); i_tex_invv.push();
 		i_w.push(); i_invw.push(); i_z.push();
 
-		if(y>=0 && y<192)
-		{			
-			int xaccum = 0;
-			for(int x = minx; x < maxx; x++)
+		assert(y>=0 && y<192); //I dont think we need this bounds check, so it is only here as an assert
+		int adr = (y<<8)+minx;
+
+		int xaccum = 0;
+		for(int x = minx; x < maxx; x++, adr++)
+		{
+			if(CX1 > 0 && CX2 > 0 && CX3 > 0)
 			{
-				if(CX1 > 0 && CX2 > 0 && CX3 > 0)
+				done = true;
+
+				assert(x>=0 && x<256); //I dont think we need this bounds check, so it is only here as an assert
+
+				//execute interpolators.
+				//we defer this until the triangle scanline begins, and accumulate the number of deltas which were necessary.
+				if(xaccum==1) {
+					i_color_r.incx(); i_color_g.incx(); i_color_b.incx();
+					i_tex_invu.incx(); i_tex_invv.incx();
+					i_w.incx(); i_invw.incx(); i_z.incx();
+				} else {
+					i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
+					i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
+					i_w.incx(xaccum); i_invw.incx(xaccum); i_z.incx(xaccum);
+				}
+
+				xaccum = 0;
+
+				Fragment &destFragment = screen[adr];
+
+				//depth test
+				int depth;
+				if(gfx3d.wbuffer)
+					//not sure about this
+					//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
+					depth = 4096/i_invw.Z; 
+				else
 				{
-					done = true;
-
-					//reject out of bounds pixels
-					if(x<0 || x>=256) goto rejected_fragment;
-
-					//execute interpolators.
-					//HACK: we defer this until we know we need it, and accumulate the number of deltas which are necessary.
-					//this is just a temporary measure until we do proper clipping against the clip frustum.
-					//since we dont, we are receiving waaay out of bounds polys and so unless we do this we spend a lot of time calculating
-					//out of bounds pixels
-					if(xaccum==1) {
-						i_color_r.incx(); i_color_g.incx(); i_color_b.incx();
-						i_tex_invu.incx(); i_tex_invv.incx();
-						i_w.incx(); i_invw.incx(); i_z.incx();
-					} else {
-						i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
-						i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-						i_w.incx(xaccum); i_invw.incx(xaccum); i_z.incx(xaccum);
-					}
-
-					xaccum = 0;
-
-					int adr = (y<<8)+x;
-					Fragment &destFragment = screen[adr];
-
-					//depth test
-					int depth;
-					if(gfx3d.wbuffer)
-						//not sure about this
-						//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-						depth = 4096/i_invw.Z; 
-					else
+					float z = i_z.Z;
+					depth = z*0x7FFF; //not sure about this
+				}
+				if(polyAttr.decalMode)
+				{
+					if(depth != destFragment.depth)
 					{
-						float z = i_z.Z;
-						depth = z*0x7FFF; //not sure about this
+						goto rejected_fragment;
 					}
-					if(polyAttr.decalMode)
+				}
+				else
+				{
+					if(depth>=destFragment.depth) 
 					{
-						if(depth != destFragment.depth)
-						{
-							goto rejected_fragment;
-						}
+						goto rejected_fragment;
 					}
-					else
-					{
-						if(depth>=destFragment.depth) 
-						{
-							goto rejected_fragment;
-						}
-					}
-					
-					shader.invw = i_invw.Z;
-					shader.invu = i_tex_invu.Z;
-					shader.invv = i_tex_invv.Z;
-					//this is a HACK: 
-					//we are being very sloppy with our interpolation precision right now
-					//and rather than fix it, i just want to clamp it
-					shader.materialColor.components.a = polyAttr.alpha;
-					shader.materialColor.components.r = max(0,min(31,i_color_r.cur()));
-					shader.materialColor.components.g = max(0,min(31,i_color_g.cur()));
-					shader.materialColor.components.b = max(0,min(31,i_color_b.cur()));
+				}
+				
+				shader.invw = i_invw.Z;
+				shader.invu = i_tex_invu.Z;
+				shader.invv = i_tex_invv.Z;
+				//this is a HACK: 
+				//we are being very sloppy with our interpolation precision right now
+				//and rather than fix it, i just want to clamp it
+				shader.materialColor.components.a = polyAttr.alpha;
+				shader.materialColor.components.r = max(0,min(31,i_color_r.cur()));
+				shader.materialColor.components.g = max(0,min(31,i_color_g.cur()));
+				shader.materialColor.components.b = max(0,min(31,i_color_b.cur()));
 
-					//pixel shader
-					Fragment shaderOutput;
-					shader.shade(shaderOutput);
+				//pixel shader
+				Fragment shaderOutput;
+				shader.shade(shaderOutput);
 
-					//alpha test
-					if(gfx3d.enableAlphaTest)
-					{
-						if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
-							goto rejected_fragment;
-					}
+				//alpha test
+				if(gfx3d.enableAlphaTest)
+				{
+					if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
+						goto rejected_fragment;
+				}
 
-					//handle polyids
-					bool isOpaquePixel = shaderOutput.color.components.a == 31;
-					if(isOpaquePixel)
-					{
-						destFragment.polyid.opaque = polyAttr.polyid;
-					}
-					else
-					{
-						//dont overwrite pixels on translucent polys with the same polyids
-						if(destFragment.polyid.translucent == polyAttr.polyid)
-							goto rejected_fragment;
-						destFragment.polyid.translucent = polyAttr.polyid;						
-					}
+				//handle polyids
+				bool isOpaquePixel = shaderOutput.color.components.a == 31;
+				if(isOpaquePixel)
+				{
+					destFragment.polyid.opaque = polyAttr.polyid;
+				}
+				else
+				{
+					//dont overwrite pixels on translucent polys with the same polyids
+					if(destFragment.polyid.translucent == polyAttr.polyid)
+						goto rejected_fragment;
+					destFragment.polyid.translucent = polyAttr.polyid;						
+				}
 
 
-					//we shouldnt do any of this if we generated a totally transparent pixel
-					if(shaderOutput.color.components.a != 0)
-					{
-						//alpha blending and write to framebuffer
-						alphaBlend(destFragment, shaderOutput);
+				//we shouldnt do any of this if we generated a totally transparent pixel
+				if(shaderOutput.color.components.a != 0)
+				{
+					//alpha blending and write to framebuffer
+					alphaBlend(destFragment, shaderOutput);
 
-						//depth writing
-						if(isOpaquePixel || polyAttr.translucentDepthWrite)
-							destFragment.depth = depth;
-					}
+					//depth writing
+					if(isOpaquePixel || polyAttr.translucentDepthWrite)
+						destFragment.depth = depth;
+				}
 
-				} else if(done) break;
-			
-			rejected_fragment:
-				xaccum++;
+			} else if(done) break;
+		
+		rejected_fragment:
+			xaccum++;
 
-				CX1 -= FDY12;
-				CX2 -= FDY23;
-				CX3 -= FDY31;
-			}
-		} //end of y inbounds check
+			CX1 -= FDY12;
+			CX2 -= FDY23;
+			CX3 -= FDY31;
+		}
 		i_color_r.pop(); i_color_r.incy();
 		i_color_g.pop(); i_color_g.incy();
 		i_color_b.pop(); i_color_b.incy();
@@ -876,7 +869,6 @@ static void SoftRastRender()
 			//viewport transformation
 			vert.coord[0] *= 256;
 			vert.coord[1] *= 192;
-			//vert.coord[3] *= 4096; //not sure about this, sometimes I think we might need this here
 		}
 	}
 
