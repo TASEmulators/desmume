@@ -175,6 +175,8 @@ int NDS_Init( void) {
 	nds.VCount = 0;
 	nds.lignerendu = FALSE;
 
+	nds.sleeping = FALSE;
+
 	if (Screen_Init(GFXCORE_DUMMY) != 0)
 		return -1;
 
@@ -1014,6 +1016,8 @@ int NDS_LoadFirmware(const char *filename)
 	return i;
 }
 
+void NDS_Sleep() { nds.sleeping = TRUE; }
+
 bool skipThisFrame = false;
 
 void NDS_SkipFrame(bool skip) { skipThisFrame = skip; }
@@ -1057,6 +1061,9 @@ u32 NDS_exec(s32 nb)
 #endif
 				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
+					if(nds.sleeping) {
+						break;
+					} else
 					if(NDS_ARM9.waitIRQ) {
 						nds.ARM9Cycle += CYCLES_TO_WAIT_FOR_IRQ;
 						nds.idleCycles += CYCLES_TO_WAIT_FOR_IRQ;
@@ -1094,6 +1101,9 @@ u32 NDS_exec(s32 nb)
 #endif
 				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
+					if(nds.sleeping) {
+						break;
+					} else
 					if(NDS_ARM7.waitIRQ)
 					{
 						nds.ARM7Cycle += CYCLES_TO_WAIT_FOR_IRQ;
@@ -1107,6 +1117,9 @@ u32 NDS_exec(s32 nb)
 #endif
 			}
 		}
+
+		if(!nds.sleeping)
+		{
 
 		nds.cycles = std::min(nds.ARM9Cycle,nds.ARM7Cycle);
 
@@ -1767,9 +1780,15 @@ u32 NDS_exec(s32 nb)
 			}
 		}
 
-
-
-
+		} // if(!nds.sleeping)
+		else
+		{
+			if((MMU.reg_IE[1] & MMU.reg_IF[1]) & (1<<22))
+			{
+				nds.sleeping = FALSE;
+			}
+			break;
+		}
 	}
 
 	return nds.cycles;
@@ -1837,12 +1856,12 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		LidClosed = (!LidClosed) & 0x01;
 		if (!LidClosed)
 		{
-			SPU_Pause(FALSE);
+		//	SPU_Pause(FALSE);
 			NDS_makeARM7Int(22);
 
 		}
-		else
-			SPU_Pause(TRUE);
+		//else
+			//SPU_Pause(TRUE);
 
 		countLid = 30;
 	}

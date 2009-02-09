@@ -102,6 +102,10 @@ struct MMU_struct {
 	u32 sqrtResult;
 	u32 sqrtCnt;
 	s32 sqrtCycles;
+
+	u8 powerMan_CntReg;
+	BOOL powerMan_CntRegWritten;
+	u8 powerMan_Reg[4];
 	  
     memory_chip_t fw;
     memory_chip_t bupmem;

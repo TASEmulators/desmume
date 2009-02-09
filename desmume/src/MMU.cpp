@@ -505,6 +505,14 @@ void MMU_clearMem()
 		for (int t = 0; t < 32; t++)
 			MMU.VRAM_MAP[i][t] = 7;
 	}
+
+	MMU.powerMan_CntReg = 0x00;
+	MMU.powerMan_CntRegWritten = FALSE;
+	MMU.powerMan_Reg[0] = 0x0B;
+	MMU.powerMan_Reg[1] = 0x00;
+	MMU.powerMan_Reg[2] = 0x01;
+	MMU.powerMan_Reg[3] = 0x00;
+
 	rtcInit();
 	partie = 1;
 	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
@@ -3155,6 +3163,15 @@ static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
     }
 
+	if(adr == 0x04000301)
+	{
+		switch(val)
+		{
+		case 0xC0: NDS_Sleep(); break;
+		default: break;
+		}
+	}
+
 #ifdef EXPERIMENTAL_WIFI
 	if ((adr & 0xFF800000) == 0x04800000)
 	{
@@ -3279,6 +3296,26 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					switch((spicnt >> 8) & 0x3)
 					{
 						case 0 :
+							{
+								if(!MMU.powerMan_CntRegWritten)
+								{
+									MMU.powerMan_CntReg = (val & 0xFF);
+									MMU.powerMan_CntRegWritten = TRUE;
+								}
+								else
+								{
+									if(MMU.powerMan_CntReg & 0x80)
+									{
+										val = MMU.powerMan_Reg[MMU.powerMan_CntReg & 0x3];
+									}
+									else
+									{
+										MMU.powerMan_Reg[MMU.powerMan_CntReg & 0x3] = val;
+									}
+
+									MMU.powerMan_CntRegWritten = FALSE;
+								}
+							}
 						break;
 						
 						case 1 : /* firmware memory device */

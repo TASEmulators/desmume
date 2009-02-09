@@ -124,6 +124,8 @@ typedef struct
 	BOOL isTouch;
 	u16 pad;
 
+	BOOL sleeping;
+
 	//this is not essential NDS runtime state.
 	//it was perhaps a mistake to put it here.
 	//it is far less important than the above.
@@ -212,6 +214,8 @@ int NDS_ImportSave(const char *filename);
 int NDS_WriteBMP(const char *filename);
 int NDS_LoadFirmware(const char *filename);
 int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
+
+void NDS_Sleep();
 
 void NDS_SkipFrame(bool skip);
 
