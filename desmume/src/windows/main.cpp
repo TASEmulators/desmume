@@ -369,156 +369,6 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 	}
 }
 
-void ResizingLimit(int wParam, RECT *rc)
-{
-	u32	width = (rc->right - rc->left);
-	u32	height = (rc->bottom - rc->top);
-
-	u32 minX = 256;
-	u32 minY = 414;
-
-	//LOG("width=%i; height=%i\n", width, height);
-
-	if (GPU_rotation == 90 || GPU_rotation == 270)
-	{
-		minX = 390;
-		minY = 272;
-	}
-	switch (wParam)
-	{
-		case WMSZ_LEFT:
-			{
-				if (width<minX) rc->left=rc->left+(width-minX);
-				return;
-			}
-
-		case WMSZ_RIGHT:
-			{
-				if (width<minX) rc->right=rc->left+minX;
-				return;
-			}
-
-		case WMSZ_TOP:
-			{
-				if (height<minY) rc->top=rc->top+(height-minY);
-				return;
-			}
-
-		case WMSZ_BOTTOM:
-			{
-				if (height<minY) rc->bottom=rc->top+minY;
-				return;
-			}
-
-		case WMSZ_TOPLEFT:
-			{
-				if (height<minY) rc->top=rc->top+(height-minY);
-				if (width<minX) rc->left=rc->left+(width-minX);
-				return;
-			}
-		case WMSZ_BOTTOMLEFT:
-			{
-				if (height<minY) rc->bottom=rc->top+minY;
-				if (width<minX) rc->left=rc->left+(width-minX);
-				return;
-			}
-
-		case WMSZ_TOPRIGHT:
-			{
-				if (height<minY) rc->top=rc->top+(height-minY);
-				if (width<minX) rc->right=rc->left+minX;
-				return;
-			}
-
-		case WMSZ_BOTTOMRIGHT:
-			{
-				if (height<minY) rc->bottom=rc->top+minY;
-				if (width<minX) rc->right=rc->left+minX;
-				return;
-			}
-	}
-
-}
-
-void ScaleScreen(HWND hwnd, int wParam, RECT *rc)
-{
-	float	aspect;
-	u32	width;
-	u32	height;
-	u32	width2;
-	u32	height2;
-
-	width = (rc->right - rc->left - widthTradeOff);
-	height = (rc->bottom - rc->top - heightTradeOff);
-
-	if (width ==  height) return;
-
-	if (GPU_rotation == 0 || GPU_rotation == 180)
-	{
-		aspect = DefaultWidth / DefaultHeight;
-	}
-	else
-	{
-		aspect = DefaultHeight / DefaultWidth;
-	}
-
-	switch (wParam)
-	{
-		case WMSZ_LEFT:
-		case WMSZ_RIGHT:
-			{
-				height = (int)(width / aspect);
-				rc->bottom=rc->top+height+heightTradeOff;
-				return;
-			}
-
-		case WMSZ_TOP:
-		case WMSZ_BOTTOM:
-			{
-				width = (int)(height * aspect);
-				rc->right=rc->left+width+widthTradeOff;
-				return;
-			}
-
-		case WMSZ_TOPLEFT:
-			{
-				width = (int)(height * aspect);
-				rc->left=rc->right-width-widthTradeOff;
-				return;
-			}
-		case WMSZ_BOTTOMLEFT:
-			{
-				height = (int)(width / aspect);
-				rc->bottom=rc->top + height + heightTradeOff;
-				return;
-			}
-
-		case WMSZ_TOPRIGHT:
-		case WMSZ_BOTTOMRIGHT:
-			{
-				width = (int)(height * aspect);
-				rc->right=rc->left+width+widthTradeOff;
-				return;
-			}
-	}
-}
-
-void ScaleScreen(HWND hwnd, float factor)
-{
-
-	if ((GPU_rotation==0)||(GPU_rotation==180))
-	{
-		SetWindowPos(hwnd, NULL, WndX, WndY, widthTradeOff + DefaultWidth * factor, 
-				heightTradeOff + DefaultHeight * factor, SWP_NOMOVE | SWP_NOZORDER);
-	}
-	else
-	if ((GPU_rotation==90)||(GPU_rotation==270))
-	{
-		SetWindowPos(hwnd, NULL, WndX, WndY, heightTradeOff + DefaultHeight * factor, 
-				widthTradeOff + DefaultWidth * factor, SWP_NOMOVE | SWP_NOZORDER);
-	}
-}
-
 void ScaleScreen(float factor)
 {
 	if((GPU_rotation == 0) || (GPU_rotation == 180))
@@ -764,72 +614,6 @@ int CreateDDrawBuffers()
 }
 
 
-
-void applyRotation_0deg(u16 *in, u32 *out, int pitch)
-{
-	//this is the most normal case so we have a special branch for it
-	if(pitch==1024)
-		for(int i=0; i<98304; i++)
-			out[i] = RGB15TO24_REVERSE(in[i]);
-	else
-	{
-		pitch>>=2;
-		for(int y=0,i=0;y<384;y++)
-		{
-			int dst = y*(pitch);
-			for(int x=0;x<256;x++)
-				out[dst++] = RGB15TO24_REVERSE(in[i++]);
-		}
-	}
-
-}
-
-void applyRotation_90deg(u16 *in, u32 *out, int pitch)
-{
-	pitch>>=2;
-	for(int y=0,dst=0;y<256;y++)
-	{
-		int i=y+383*256;
-		for(int x=0;x<384;x++)
-		{
-			out[dst++] = RGB15TO24_REVERSE(in[i]);
-			i -= 256;
-		}
-		dst += (pitch-384);
-	}
-}
-
-void applyRotation_180deg(u16 *in, u32 *out, int pitch)
-{
-	pitch>>=2;
-	int i = 256*384-1;
-	for(int y=0,dst=0;y<384;y++)
-	{
-		for(int x=0;x<256;x++)
-		{
-			out[dst++] = RGB15TO24_REVERSE(in[i]);
-			i--;
-		}
-		dst += (pitch-256);
-	}
-}
-
-void applyRotation_270deg(u16 *in, u32 *out, int pitch)
-{
-	pitch>>=2;
-	for(int y=0,dst=0;y<256;y++)
-	{
-		int i=255-y;
-		for(int x=0;x<384;x++)
-		{
-			out[dst++] = RGB15TO24_REVERSE(in[i]);
-			i += 256;
-		}
-		dst += (pitch-384);
-	}
-}
-
-
 void Display()
 {
 	int res;
@@ -847,10 +631,46 @@ void Display()
 		{
 			switch(GPU_rotation)
 			{
-			case 0: applyRotation_0deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
-			case 90: applyRotation_90deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
-			case 180: applyRotation_180deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
-			case 270: applyRotation_270deg((u16*)GPU_screen,(u32*)buffer,ddsd.lPitch); break;
+			case 0:
+			case 180:
+				{
+					if(ddsd.lPitch == 1024)
+					{
+						for(int i = 0; i < 98304; i++)
+							((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
+					}
+					else
+					{
+						for(int y = 0; y < 384; y++)
+						{
+							for(int x = 0; x < 256; x++)
+								((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
+
+							buffer += (ddsd.lPitch>>2);
+						}
+					}
+				}
+				break;
+			case 90:
+			case 270:
+				{
+					if(ddsd.lPitch == 1536)
+					{
+						for(int i = 0; i < 98304; i++)
+							((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
+					}
+					else
+					{
+						for(int y = 0; y < 256; y++)
+						{
+							for(int x = 0; x < 384; x++)
+								((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
+
+							buffer += (ddsd.lPitch>>2);
+						}
+					}
+				}
+				break;
 			}
 		}
 		else
@@ -946,6 +766,8 @@ DWORD WINAPI run()
 	 DDCAPS	hw_caps, sw_caps;
 
 	 InitSpeedThrottle();
+
+	 osd->setRotate(GPU_rotation);
 
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
 	{
@@ -1170,6 +992,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 		INFO("Loading %s was successful\n",filename);
 		frameCounter=0;
 		UpdateRecentRoms(filename);
+		osd->setRotate(GPU_rotation);
 		return TRUE;		
 	}
 	INFO("Loading %s FAILED.\n",filename);
@@ -1715,6 +1538,8 @@ void SetRotate(HWND hwnd, int rot)
 		}
 		break;
 	}
+
+	osd->setRotate(rot);
 
 	switch (rot)
 	{

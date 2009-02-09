@@ -54,6 +54,8 @@ OSDCLASS::OSDCLASS(u8 core)
 	startline=0;
 	lastline=0;
 
+	rotAngle = 0;
+
 	needUpdate = false;
 
 	if (core==0) 
@@ -93,6 +95,39 @@ void OSDCLASS::setOffset(u16 ofs)
 	offset=ofs;
 }
 
+void OSDCLASS::setRotate(u16 angle)
+{
+	rotAngle = angle;
+
+	switch(rotAngle)
+	{
+	case 0:
+	case 180:
+		{
+			screenshell.width = 256;
+			screenshell.height = 384;
+			screenshell.pitch = 256;
+			screenshell.cx1 = 0;
+			screenshell.cx2 = 255;
+			screenshell.cy1 = 0;
+			screenshell.cy2 = 383;
+		}
+		break;
+	case 90:
+	case 270:
+		{
+			screenshell.width = 384;
+			screenshell.height = 256;
+			screenshell.pitch = 384;
+			screenshell.cx1 = 0;
+			screenshell.cx2 = 383;
+			screenshell.cy1 = 0;
+			screenshell.cy2 = 255;
+		}
+		break;
+	}
+}
+
 void OSDCLASS::clear()
 {
 	memset(screen, 0, sizeof(screen));
@@ -109,8 +144,54 @@ void OSDCLASS::setColor(u16 col)
 void OSDCLASS::update() // don't optimized
 {
 	if (!needUpdate) return;	// don't update if buffer empty (speed up)
-	memcpy(GPU_screen, GPU_tempScreen, sizeof(GPU_screen));
-	u16	*dst=(u16*)GPU_screen;
+
+	int x, y;
+	u16 *src = (u16*)GPU_tempScreen;
+	u16	*dst = (u16*)GPU_screen;
+
+	switch(rotAngle)
+	{
+	case 0:
+		for(y = 0; y < 384; y++)
+		{
+			for(x = 0; x < 256; x++)
+			{
+				dst[x + (y * 256)] = src[x + (y * 256)];
+			}
+		}
+		break;
+
+	case 90:
+		for(y = 0; y < 384; y++)
+		{
+			for(x = 0; x < 256; x++)
+			{
+				dst[(383 - y) + (x * 384)] = src[x + (y * 256)];
+			}
+		}
+		break;
+
+	case 180:
+		for(y = 0; y < 384; y++)
+		{
+			for(x = 0; x < 256; x++)
+			{
+				dst[(255 - x) + ((383 - y) * 256)] = src[x + (y * 256)];
+			}
+		}
+		break;
+
+	case 270:
+		for(y = 0; y < 384; y++)
+		{
+			for(x = 0; x < 256; x++)
+			{
+				dst[y + ((255 - x) * 384)] = src[x + (y * 256)];
+			}
+		}
+		break;
+	}
+
 	if (mode!=255)
 		dst+=offset*512;
 
