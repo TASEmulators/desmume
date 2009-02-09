@@ -795,6 +795,7 @@ static void REG_DISPx_pack_test(GPU * gpu)
 */
 
 CACHE_ALIGN extern u8 GPU_screen[4*256*192];
+CACHE_ALIGN extern u8 GPU_tempScreen[4*256*192];
 
 
 GPU * GPU_Init(u8 l);
