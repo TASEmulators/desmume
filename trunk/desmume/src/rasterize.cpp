@@ -237,8 +237,14 @@ static struct Sampler
 
 	Fragment::Color sample(float u, float v)
 	{
-		int iu = (int)floorf(u);
-		int iv = (int)floorf(v);
+		//should we use floor here? I still think so, but now I am not so sure.
+		//note that I changed away from floor for accuracy reasons, not performance, even though it would be faster without the floor.
+		//however, I am afraid this could be masking some other texturing precision issue. in fact, I am pretty sure of this.
+		//there are still lingering issues in 2d games
+		//int iu = (int)floorf(u);
+		//int iv = (int)floorf(v);
+		int iu = (int)(u);
+		int iv = (int)(v);
 		dowrap(iu,iv);
 
 		Fragment::Color color;
@@ -341,32 +347,32 @@ struct Interpolator
 	FORCEINLINE void incx(int count) { Z += dx*count; }
 };
 
-static void alphaBlend(Fragment & dst, const Fragment & src)
+static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 {
 	if(gfx3d.enableAlphaBlending)
 	{
-		if(src.color.components.a == 0)
+		if(src.components.a == 0)
 		{
-			dst.color.components.a = max(src.color.components.a,dst.color.components.a);	
+			dst.components.a = max(src.components.a,dst.components.a);	
 		}
-		else if(src.color.components.a == 31 || dst.color.components.a == 0)
+		else if(src.components.a == 31 || dst.components.a == 0)
 		{
 			dst.color = src.color;
-			dst.color.components.a = max(src.color.components.a,dst.color.components.a);
+			dst.components.a = max(src.components.a,dst.components.a);
 		}
 		else
 		{
-			u8 alpha = src.color.components.a+1;
+			u8 alpha = src.components.a+1;
 			u8 invAlpha = 32 - alpha;
-			dst.color.components.r = (alpha*src.color.components.r + invAlpha*dst.color.components.r)>>5;
-			dst.color.components.g = (alpha*src.color.components.g + invAlpha*dst.color.components.g)>>5;
-			dst.color.components.b = (alpha*src.color.components.b + invAlpha*dst.color.components.b)>>5;
-			dst.color.components.a = max(src.color.components.a,dst.color.components.a);
+			dst.components.r = (alpha*src.components.r + invAlpha*dst.components.r)>>5;
+			dst.components.g = (alpha*src.components.g + invAlpha*dst.components.g)>>5;
+			dst.components.b = (alpha*src.components.b + invAlpha*dst.components.b)>>5;
+			dst.components.a = max(src.components.a,dst.components.a);
 		}
 	}
 	else
 	{
-		if(src.color.components.a == 0)
+		if(src.components.a == 0)
 		{
 			//do nothing; the fragment is totally transparent
 		}
@@ -559,9 +565,6 @@ static void triangle_from_devmaster()
 						destFragment.stencil = 0;
 					}
 
-					//alpha blending and write to framebuffer
-					alphaBlend(destFragment, shaderOutput);
-
 					//handle polyids
 					bool isOpaquePixel = shaderOutput.color.components.a == 31;
 					if(isOpaquePixel)
@@ -573,8 +576,15 @@ static void triangle_from_devmaster()
 						//dont overwrite pixels on translucent polys with the same polyids
 						if(destFragment.polyid.translucent == polyAttr.polyid)
 							goto rejected_fragment;
-						destFragment.polyid.translucent = polyAttr.polyid;						
+
+						//this is an interesting item. not very straightforward, but then nothing about the shadows are
+						//this was the result of testing trauma center, SPP area menu, and SM64 with yoshi's red feet behind translucent trees
+						if(shader.mode != 3)
+							destFragment.polyid.translucent = polyAttr.polyid;
 					}
+
+					//alpha blending and write color
+					alphaBlend(destFragment.color, shaderOutput.color);
 
 					//depth writing
 					if(isOpaquePixel || polyAttr.translucentDepthWrite)
