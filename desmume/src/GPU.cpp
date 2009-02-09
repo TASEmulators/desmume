@@ -319,6 +319,9 @@ void GPU_Reset(GPU *g, u8 l)
 	//DISP_FIFOclear(&g->disp_fifo);
 	memset(GPU_screen, 0, sizeof(GPU_screen));
 	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
+
+	for(int i = 0; i < (256*192*2); i++)
+		((u16*)GPU_screen)[i] = 0x7FFF;
 }
 
 void GPU_DeInit(GPU * gpu)

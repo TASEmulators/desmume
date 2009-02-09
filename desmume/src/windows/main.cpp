@@ -1928,8 +1928,29 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 1;
 			//break;
 		case WM_SIZE:
-				GetWndRect(hwnd);
-				return 0;
+			switch(wParam)
+			{
+			case SIZE_MINIMIZED:
+				{
+					NDS_Pause();
+				}
+				break;
+			default:
+				{
+					NDS_UnPause();
+					GetWndRect(hwnd);
+				}
+				break;
+			}
+			return 0;
+		case WM_PAINT:
+			if(paused)
+			{
+				osd->update();
+				Display();
+				osd->clear();
+			}
+			return DefWindowProc(hwnd, message, wParam, lParam);
         case WM_DROPFILES:
              {
                   char filename[MAX_PATH] = "";
