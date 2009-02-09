@@ -440,7 +440,6 @@ static void triangle_from_devmaster()
 	Interpolator i_color_b(fx1,fx2,fx3,fy1,fy2,fy3,b1,b2,b3);
 	Interpolator i_tex_invu(fx1,fx2,fx3,fy1,fy2,fy3,u1,u2,u3);
 	Interpolator i_tex_invv(fx1,fx2,fx3,fy1,fy2,fy3,v1,v2,v3);
-	Interpolator i_w(fx1,fx2,fx3,fy1,fy2,fy3,w1,w2,w3);
 	Interpolator i_z(fx1,fx2,fx3,fy1,fy2,fy3,fz1,fz2,fz3);
 	Interpolator i_invw(fx1,fx2,fx3,fy1,fy2,fy3,1.0f/w1,1.0f/w2,1.0f/w3);
 	
@@ -450,7 +449,7 @@ static void triangle_from_devmaster()
 	i_color_b.init(minx,miny);
 	i_tex_invu.init(minx,miny);
 	i_tex_invv.init(minx,miny);
-	i_w.init(minx,miny); i_z.init(minx,miny);
+	i_z.init(minx,miny);
 	i_invw.init(minx,miny);
 
     for(int y = miny; y < maxy; y++)
@@ -462,7 +461,7 @@ static void triangle_from_devmaster()
 		bool done = false;
 		i_color_r.push(); i_color_g.push(); i_color_b.push();
 		i_tex_invu.push(); i_tex_invv.push();
-		i_w.push(); i_invw.push(); i_z.push();
+		i_invw.push(); i_z.push();
 
 		assert(y>=0 && y<192); //I dont think we need this bounds check, so it is only here as an assert
 		int adr = (y<<8)+minx;
@@ -481,11 +480,11 @@ static void triangle_from_devmaster()
 				if(xaccum==1) {
 					i_color_r.incx(); i_color_g.incx(); i_color_b.incx();
 					i_tex_invu.incx(); i_tex_invv.incx();
-					i_w.incx(); i_invw.incx(); i_z.incx();
+					i_invw.incx(); i_z.incx();
 				} else {
 					i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
 					i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-					i_w.incx(xaccum); i_invw.incx(xaccum); i_z.incx(xaccum);
+					i_invw.incx(xaccum); i_z.incx(xaccum);
 				}
 
 				xaccum = 0;
@@ -540,30 +539,30 @@ static void triangle_from_devmaster()
 						goto rejected_fragment;
 				}
 
-				//handle polyids
-				bool isOpaquePixel = shaderOutput.color.components.a == 31;
-				if(isOpaquePixel)
-				{
-					destFragment.polyid.opaque = polyAttr.polyid;
-				}
-				else
-				{
-					//dont overwrite pixels on translucent polys with the same polyids
-					if(destFragment.polyid.translucent == polyAttr.polyid)
-						goto rejected_fragment;
-					destFragment.polyid.translucent = polyAttr.polyid;						
-				}
-
-
 				//we shouldnt do any of this if we generated a totally transparent pixel
 				if(shaderOutput.color.components.a != 0)
 				{
 					//alpha blending and write to framebuffer
 					alphaBlend(destFragment, shaderOutput);
 
+					//handle polyids
+					bool isOpaquePixel = shaderOutput.color.components.a == 31;
+					if(isOpaquePixel)
+					{
+						destFragment.polyid.opaque = polyAttr.polyid;
+					}
+					else
+					{
+						//dont overwrite pixels on translucent polys with the same polyids
+						if(destFragment.polyid.translucent == polyAttr.polyid)
+							goto rejected_fragment;
+						destFragment.polyid.translucent = polyAttr.polyid;						
+					}
+
 					//depth writing
 					if(isOpaquePixel || polyAttr.translucentDepthWrite)
 						destFragment.depth = depth;
+
 				}
 
 			} else if(done) break;
@@ -580,7 +579,6 @@ static void triangle_from_devmaster()
 		i_color_b.pop(); i_color_b.incy();
 		i_tex_invu.pop(); i_tex_invu.incy();
 		i_tex_invv.pop(); i_tex_invv.incy();
-		i_w.pop(); i_w.incy();
 		i_z.pop(); i_z.incy();
 		i_invw.pop(); i_invw.incy();
 
