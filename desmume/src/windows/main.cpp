@@ -25,6 +25,7 @@
 #include <shellapi.h>
 #include <shlwapi.h>
 #include <Winuser.h>
+#include <Winnls.h>
 #include <windowsx.h>
 #include <commctrl.h>
 #include <commdlg.h>
@@ -1056,12 +1057,18 @@ typedef int (WINAPI *setLanguageFunc)(LANGID id);
 
 void SetLanguage(int langid)
 {
-	OSVERSIONINFO info;
-	ZeroMemory(&info, sizeof(info));
-	info.dwOSVersionInfoSize = sizeof(info);
-	GetVersionEx(&info);
-	setLanguageFunc setLanguage = ((info.dwMajorVersion >= 6) ? 
-		(setLanguageFunc)SetThreadUILanguage : (setLanguageFunc)SetThreadLocale);
+
+	HMODULE kernel32 = LoadLibrary("kernel32.dll");
+	FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
+
+	//OSVERSIONINFO info;
+	//ZeroMemory(&info, sizeof(info));
+	//info.dwOSVersionInfoSize = sizeof(info);
+	//GetVersionEx(&info);
+	//setLanguageFunc setLanguage = ((info.dwMajorVersion >= 6) ? 
+	//	(setLanguageFunc)_setThreadUILanguage : (setLanguageFunc)SetThreadLocale);
+	
+	setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
 
    switch(langid)
    {
@@ -1080,6 +1087,8 @@ void SetLanguage(int langid)
       default: break;
          break;
    }
+
+   FreeLibrary(kernel32);
 }
 
 void SaveLanguage(int langid)
