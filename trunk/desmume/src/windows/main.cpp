@@ -116,7 +116,7 @@ LPDIRECTDRAWCLIPPER		lpDDClipPrimary=NULL;
 LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 
 //===================== Input vars
-INPUTCLASS				*input = NULL;
+//INPUTCLASS				*input = NULL;
 
 #ifndef EXPERIMENTAL_GBASLOT
 /* The compact flash disk image file */
@@ -814,7 +814,10 @@ DWORD WINAPI run()
 
            //    if (!skipnextframe)
             //   {
-				   input->process();
+				   //input->process();
+			   //TODO INPUT
+			   void input_process();
+			   input_process();
 
 				 if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
 				 osd->update();
@@ -1141,6 +1144,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 
 	InitializeCriticalSection(&win_sync);
+	InitInputCustomControl();
+	InitKeyCustomControl();
 
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
@@ -1282,13 +1287,16 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	
 	LOG("Init NDS\n");
 
-	input = new INPUTCLASS();
-	if (!input->Init(MainWindow->getHWnd(), &NDS_inputPost))
-	{
-		MessageBox(NULL, "Error DXInput init\n", "DeSmuME", MB_OK);
-		exit(-1);
-	}
-	NDS_inputInit();
+	//input = new INPUTCLASS();
+	//if (!input->Init(MainWindow->getHWnd(), &NDS_inputPost))
+	//{
+	//	MessageBox(NULL, "Error DXInput init\n", "DeSmuME", MB_OK);
+	//	exit(-1);
+	//}
+	//NDS_inputInit();
+
+	void input_init();
+	input_init();
 
 	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
@@ -1456,7 +1464,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef DEBUG
     //LogStop();
 #endif
-	if (input!=NULL) delete input;
+	//if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
 	if (ViewMatrices!=NULL) delete ViewMatrices;
 	if (ViewOAM!=NULL) delete ViewOAM;
@@ -2418,7 +2426,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 								tpaused=true;
 								NDS_Pause();
 							}
-							InputConfig(hwnd);
+							//InputConfig(hwnd);
+							void RunInputConfig();
+							RunInputConfig();
 							if (tpaused)
 								NDS_UnPause();
                        }
