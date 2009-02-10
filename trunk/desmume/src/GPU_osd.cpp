@@ -143,54 +143,9 @@ void OSDCLASS::setColor(u16 col)
 
 void OSDCLASS::update() // don't optimized
 {
-	//if (!needUpdate) return;	// don't update if buffer empty (speed up)
+	if (!needUpdate) return;	// don't update if buffer empty (speed up)
 
-	int x, y;
-	u16 *src = (u16*)GPU_tempScreen;
 	u16	*dst = (u16*)GPU_screen;
-
-	switch(rotAngle)
-	{
-	case 0:
-		for(y = 0; y < 384; y++)
-		{
-			for(x = 0; x < 256; x++)
-			{
-				dst[x + (y * 256)] = src[x + (y * 256)];
-			}
-		}
-		break;
-
-	case 90:
-		for(y = 0; y < 384; y++)
-		{
-			for(x = 0; x < 256; x++)
-			{
-				dst[(383 - y) + (x * 384)] = src[x + (y * 256)];
-			}
-		}
-		break;
-
-	case 180:
-		for(y = 0; y < 384; y++)
-		{
-			for(x = 0; x < 256; x++)
-			{
-				dst[(255 - x) + ((383 - y) * 256)] = src[x + (y * 256)];
-			}
-		}
-		break;
-
-	case 270:
-		for(y = 0; y < 384; y++)
-		{
-			for(x = 0; x < 256; x++)
-			{
-				dst[y + ((255 - x) * 384)] = src[x + (y * 256)];
-			}
-		}
-		break;
-	}
 
 	if (mode!=255)
 		dst+=offset*512;
