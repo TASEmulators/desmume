@@ -46,6 +46,7 @@ template<typename T> T _max(T a, T b, T c) { return max(max(a,b),c); }
 static int polynum;
 
 static u8 modulate_table[32][32];
+static u8 decal_table[32][32][32];
 
 //----texture cache---
 
@@ -292,11 +293,33 @@ struct Shader
 			//dst.color.components.a = 31;
 			break;
 		case 1: //decal
-		case 2:
 			u = invu/invw;
 			v = invv/invw;
 			texColor = sampler.sample(u,v);
-			dst.color = texColor;
+			dst.color.components.r = decal_table[texColor.components.a][texColor.components.r][materialColor.components.r];
+			dst.color.components.g = decal_table[texColor.components.a][texColor.components.g][materialColor.components.g];
+			dst.color.components.b = decal_table[texColor.components.a][texColor.components.b][materialColor.components.b];
+			dst.color.components.a = materialColor.components.a;
+			break;
+		case 2: //toon/highlight shading
+			u = invu/invw;
+			v = invv/invw;
+			texColor = sampler.sample(u,v);
+			u32 toonColorVal; toonColorVal = gfx3d.rgbToonTable[materialColor.components.r];
+			Fragment::Color toonColor;
+			toonColor.components.r = ((toonColorVal & 0x0000FF) >>  3);
+			toonColor.components.g = ((toonColorVal & 0x00FF00) >> 11);
+			toonColor.components.b = ((toonColorVal & 0xFF0000) >> 19);
+			dst.color.components.r = modulate_table[texColor.components.r][toonColor.components.r];
+			dst.color.components.g = modulate_table[texColor.components.g][toonColor.components.g];
+			dst.color.components.b = modulate_table[texColor.components.b][toonColor.components.b];
+			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			if(gfx3d.shading == GFX3D::HIGHLIGHT)
+			{
+				dst.color.components.r = min<u8>(31, (dst.color.components.r + toonColor.components.r));
+				dst.color.components.g = min<u8>(31, (dst.color.components.g + toonColor.components.g));
+				dst.color.components.b = min<u8>(31, (dst.color.components.b + toonColor.components.b));
+			}
 			break;
 		case 3: //shadows
 			//is this right? only with the material color?
@@ -631,8 +654,14 @@ static void triangle_from_devmaster()
 static char SoftRastInit(void)
 {
 	for(int i=0;i<32;i++)
+	{
 		for(int j=0;j<32;j++)
-			modulate_table[i][j] = ((i+1)*(j+1)-1)>>5;	
+		{
+			modulate_table[i][j] = ((i+1) * (j+1) - 1) >> 5;	
+			for(int a=0;a<32;a++)
+				decal_table[a][i][j] = ((i*a) + (j*(31-a))) >> 5;
+		}
+	}
 
 	TexCache_Reset();
 	TexCache_BindTexture = BindTexture;
@@ -832,7 +861,6 @@ static void clipPoly(POLY* poly)
 	clipPolyVsPlane(2, 1);
 
 	//TODO - we need to parameterize back plane clipping
-
 	if(tempClippedPoly.type < 3)
 	{
 		//a totally clipped poly. discard it.
