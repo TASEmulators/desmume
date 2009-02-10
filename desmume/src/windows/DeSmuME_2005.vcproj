@@ -573,6 +573,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\main.h"
+				>
+			</File>
+			<File
 				RelativePath=".\mapView.cpp"
 				>
 			</File>
