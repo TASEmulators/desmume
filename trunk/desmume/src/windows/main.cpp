@@ -1052,25 +1052,30 @@ void MenuDeinit()
 	DestroyMenu(mainMenu);
 }
 
+typedef int (WINAPI *setLanguageFunc)(LANGID id);
 
 void SetLanguage(int langid)
 {
+	OSVERSIONINFO info;
+	ZeroMemory(&info, sizeof(info));
+	info.dwOSVersionInfoSize = sizeof(info);
+	GetVersionEx(&info);
+	setLanguageFunc setLanguage = ((info.dwMajorVersion >= 6) ? 
+		(setLanguageFunc)SetThreadUILanguage : (setLanguageFunc)SetThreadLocale);
+
    switch(langid)
    {
       case 1:
-         // French
-         SetThreadLocale(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH),
-                         SORT_DEFAULT));          
+         // French       
+		  setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
          break;
       case 2:
          // Danish
-         SetThreadLocale(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT),
-                         SORT_DEFAULT));          
+		  setLanguage(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
          break;
       case 0:
          // English
-         SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                         SORT_DEFAULT));
+		  setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
          break;
       default: break;
          break;
