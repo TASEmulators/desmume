@@ -609,7 +609,7 @@ void S9xUpdateJoyState()
 			else
 			{
 				CheckAxis_game(JoyStatus.lX,-10000,10000,Joystick[0].Left,Joystick[0].Right);
-				CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[0].Down,Joystick[0].Up);
+				CheckAxis_game(JoyStatus.lY,-10000,10000,Joystick[0].Up,Joystick[0].Down);
 		
 				 switch (JoyStatus.rgdwPOV[0])
 				{
@@ -1127,7 +1127,7 @@ COLORREF CheckHotKey( WORD Key, int modifiers)
     return white;
 }
 
-void InitInputCustomControl()
+static void InitCustomControls()
 {
 
     WNDCLASSEX wc;
@@ -1148,12 +1148,6 @@ void InitInputCustomControl()
 
     RegisterClassEx(&wc);
 
-}
-void InitKeyCustomControl()
-{
-
-    WNDCLASSEX wc;
-
     wc.cbSize         = sizeof(wc);
     wc.lpszClassName  = szHotkeysClassName;
     wc.hInstance      = GetModuleHandle(0);
@@ -1171,22 +1165,7 @@ void InitKeyCustomControl()
     RegisterClassEx(&wc);
 
 }
-//HWND CreateInputCustom(HWND hwndParent)
-//{
-//    HWND hwndCtrl;
-//
-//    hwndCtrl = CreateWindowEx(
-//                 WS_EX_CLIENTEDGE, // give it a standard border
-//                 szClassName,
-//                 _T("A custom control"),
-//                 WS_VISIBLE | WS_CHILD,
-//                 0, 0, 100, 100,
-//                 hwndParent,
-//                 NULL, GetModuleHandle(0), NULL
-//               );
-//
-//    return hwndCtrl;
-//}
+
 InputCust * GetInputCustom(HWND hwnd)
 {
 	return (InputCust *)GetWindowLong(hwnd, 0);
@@ -1759,7 +1738,6 @@ INT_PTR CALLBACK DlgInputConfig(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 	//HBRUSH g_hbrBackground;
 
-	InitInputCustomControl();
 switch(msg)
 	{
 	case WM_INITDIALOG:
@@ -2197,37 +2175,21 @@ void S9xWinScanJoypads ()
 //#endif
 }
 
-//void NDS_inputInit()
-//{
-//	int i;
-//	memset(keyPad, 0, sizeof(keyPad));
-//	
-//	for (i=0; i < MAXKEYPAD; i++)
-//	{
-//		char buf[64];
-//		memset(buf, 0, sizeof(buf));
-//		wsprintf(buf,"Key_%s", keyPadNames[i]);
-//		keyPad[i] = GetPrivateProfileInt("NDS_Input",buf,keyPadDefs[i], IniName);
-//		if (keyPad[i]>255)
-//		{
-//			if (!input->JoystickEnabled())
-//			{
-//				keyPad[i] = keyPadDefs[i];
-//			}
-//		}
-//	}
-//
-//	FeedbackON = NDS_inputFeedback;
-//}
-
 void input_feedback(BOOL enable)
 {
-	//input->JoystickFeedback(enable);
+	if (!Feedback) return;
+	if (!pEffect) return;
+
+	if (enable)
+		pEffect->Start(2, 0);
+	else
+		pEffect->Stop();
 }
 
 
 void input_init()
 {
+	InitCustomControls();
 	di_init();
 	FeedbackON = input_feedback;
 }
@@ -2259,8 +2221,12 @@ void input_process()
 
 void RunInputConfig()
 {
-	
 	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_INPUTCONFIG), MainWindow->getHWnd(), DlgInputConfig);
+}
+
+void RunHotkeyConfig()
+{
+	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_KEYCUSTOM), MainWindow->getHWnd(), DlgInputConfig);
 }
 
 

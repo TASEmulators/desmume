@@ -1144,8 +1144,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 
 	InitializeCriticalSection(&win_sync);
-	InitInputCustomControl();
-	InitKeyCustomControl();
 
 #ifdef GDB_STUB
 	gdbstub_handle_t arm9_gdb_stub;
@@ -1689,6 +1687,131 @@ void OpenRecentROM(int listNum)
 	NDS_UnPause();
 }
 
+LRESULT OpenFile()
+{
+	HWND hwnd = MainWindow->getHWnd();
+
+	int filterSize = 0, i = 0;
+    OPENFILENAME ofn;
+    char filename[MAX_PATH] = "",
+		 fileFilter[512]="";
+    NDS_Pause(); //Stop emulation while opening new rom
+    
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwnd;
+
+	//  To avoid #ifdef hell, we'll do a little trick, as lpstrFilter
+	// needs 0 terminated string, and standard string library, of course,
+	// can't help us with string creation: just put a '|' were a string end
+	// should be, and later transform prior assigning to the OPENFILENAME structure
+	strncpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|",512);
+#ifdef HAVE_LIBZZIP
+	strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz)|*.nds;*.ds.gba;*.zip;*.gz|",512);
+#endif			
+	
+#ifdef HAVE_LIBZZIP
+	strncat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|",512 - strlen(fileFilter));
+#endif
+#ifdef HAVE_LIBZ
+	strncat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|",512 - strlen(fileFilter));
+#endif
+	strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
+	
+	filterSize = strlen(fileFilter);
+	for (i = 0; i < filterSize; i++)
+	{
+		if (fileFilter[i] == '|')	fileFilter[i] = '\0';
+	}
+    ofn.lpstrFilter = fileFilter;
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFile =  filename;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrDefExt = "nds";
+	ofn.Flags = OFN_NOCHANGEDIR;
+    
+    if(!GetOpenFileName(&ofn))
+    {
+         if (romloaded)
+            NDS_UnPause(); //Restart emulation if no new rom chosen
+         return 0;
+    }
+    
+    //LOG("%s\r\n", filename);
+#ifdef EXPERIMENTAL_GBASLOT
+    if(LoadROM(filename))
+#else
+	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#endif
+    {
+       EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+       EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+       EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+       EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+       EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+	   EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+	   EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
+       romloaded = TRUE;
+       NDS_UnPause();
+    }
+
+	return 0;
+}
+
+//TODO - async key state? for real?
+int GetModifiers(int key)
+{
+    int modifiers = 0;
+
+    if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
+        return 0;
+
+    if(GetAsyncKeyState(VK_MENU   )) modifiers |= CUSTKEY_ALT_MASK;
+    if(GetAsyncKeyState(VK_CONTROL)) modifiers |= CUSTKEY_CTRL_MASK;
+    if(GetAsyncKeyState(VK_SHIFT  )) modifiers |= CUSTKEY_SHIFT_MASK;
+    return modifiers;
+}
+
+int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
+{
+	//some crap from snes9x I dont understand with toggles and macros...
+
+	bool hitHotKey = false;
+
+	if((wParam == 0 || wParam == VK_ESCAPE)) // if it's the 'disabled' key, it's never pressed as a hotkey
+		return 0;
+
+	return 0;
+}
+
+void RunConfig(int num) 
+{
+	HWND hwnd = MainWindow->getHWnd();
+	bool tpaused=false;
+	if (execute) 
+	{
+		tpaused=true;
+		NDS_Pause();
+	}
+
+	switch(num) {
+		case 0:
+			void RunInputConfig();
+			RunInputConfig();
+			break;
+		case 1:
+			/*void RunHotkeyConfig();
+			RunHotkeyConfig();*/
+			break;
+		case 2:
+			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
+			break;
+	}
+
+	if (tpaused)
+		NDS_UnPause();
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -1877,72 +2000,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					return 0;
 				case ACCEL_CTRL_O:
                   case IDM_OPEN:
-                       {
-							int filterSize = 0, i = 0;
-                            OPENFILENAME ofn;
-                            char filename[MAX_PATH] = "",
-								 fileFilter[512]="";
-                            NDS_Pause(); //Stop emulation while opening new rom
-                            
-                            ZeroMemory(&ofn, sizeof(ofn));
-                            ofn.lStructSize = sizeof(ofn);
-                            ofn.hwndOwner = hwnd;
-
-							//  To avoid #ifdef hell, we'll do a little trick, as lpstrFilter
-							// needs 0 terminated string, and standard string library, of course,
-							// can't help us with string creation: just put a '|' were a string end
-							// should be, and later transform prior assigning to the OPENFILENAME structure
-							strncpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|",512);
-#ifdef HAVE_LIBZZIP
-							strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz)|*.nds;*.ds.gba;*.zip;*.gz|",512);
-#endif			
-							
-#ifdef HAVE_LIBZZIP
-							strncat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|",512 - strlen(fileFilter));
-#endif
-#ifdef HAVE_LIBZ
-							strncat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|",512 - strlen(fileFilter));
-#endif
-							strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
-							
-							filterSize = strlen(fileFilter);
-							for (i = 0; i < filterSize; i++)
-							{
-								if (fileFilter[i] == '|')	fileFilter[i] = '\0';
-							}
-                            ofn.lpstrFilter = fileFilter;
-                            ofn.nFilterIndex = 1;
-                            ofn.lpstrFile =  filename;
-                            ofn.nMaxFile = MAX_PATH;
-                            ofn.lpstrDefExt = "nds";
-							ofn.Flags = OFN_NOCHANGEDIR;
-                            
-                            if(!GetOpenFileName(&ofn))
-                            {
-                                 if (romloaded)
-                                    NDS_UnPause(); //Restart emulation if no new rom chosen
-                                 return 0;
-                            }
-                            
-                            //LOG("%s\r\n", filename);
-#ifdef EXPERIMENTAL_GBASLOT
-                            if(LoadROM(filename))
-#else
-							if(LoadROM(filename, bad_glob_cflash_disk_image_file))
-#endif
-                            {
-                               EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-                               EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-                               EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-                               EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-                               EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-							   EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-							   EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
-                               romloaded = TRUE;
-                               NDS_UnPause();
-                            }
-                       }
-                  return 0;
+                       return OpenFile();
                   case IDM_PRINTSCREEN:
                        {
                             OPENFILENAME ofn;
@@ -2418,35 +2476,17 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 						  if(tpaused) NDS_UnPause();
 					  }
 					  return 0;
-                  case IDM_CONFIG:
-                       {
-							bool tpaused=false;
-							if (execute) 
-							{
-								tpaused=true;
-								NDS_Pause();
-							}
-							//InputConfig(hwnd);
-							void RunInputConfig();
-							RunInputConfig();
-							if (tpaused)
-								NDS_UnPause();
-                       }
-                  return 0;
+                  
+				  case IDM_CONFIG:
+					   RunConfig(0);
+	                  return 0;
+				  case IDM_HOTKEY_CONFIG:
+					  RunConfig(1);
+					  return 0;
                   case IDM_FIRMSETTINGS:
-					  {
-				  		bool tpaused=false;
-						if (execute) 
-						{
-							tpaused=true;
-							NDS_Pause();
-						}
-						DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
-						if (tpaused)
-							NDS_UnPause();
-		
-						return 0;
-					  }
+					  RunConfig(2);
+					return 0;
+
                   case IDC_FRAMESKIPAUTO:
                   case IDC_FRAMESKIP0:
                   case IDC_FRAMESKIP1:
@@ -2604,6 +2644,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
 			}
 			break;
+
+		case WM_SYSKEYDOWN:
+		{
+			int modifiers = GetModifiers(wParam);
+			if(!HandleKeyMessage(wParam,lParam, modifiers))
+				return 0;
+	        break;
+		}
 			
 		case IDM_DEFSIZE:
 			{

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="DeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -1034,6 +1034,10 @@
 				</File>
 				<File
 					RelativePath=".\lightView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\main.h"
 					>
 				</File>
 				<File
