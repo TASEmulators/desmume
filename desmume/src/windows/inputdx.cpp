@@ -617,16 +617,24 @@ void S9xUpdateJoyState()
                 Joystick[C].PovDown = true;
                 break;
 			case 4500:
-				Joystick[C].PovUpRight = true;
+				//Joystick[C].PovUpRight = true;
+				Joystick[C].PovUp = true;
+				Joystick[C].PovRight = true;
 				break;
 			case 13500:
-				Joystick[C].PovDnRight = true;
+				//Joystick[C].PovDnRight = true;
+				Joystick[C].PovDown = true;
+				Joystick[C].PovRight = true;
 				break;
 			case 22500:
-				Joystick[C].PovDnLeft = true;
+				//Joystick[C].PovDnLeft = true;
+				Joystick[C].PovDown = true;
+				Joystick[C].PovLeft = true;
 				break;
 			case 31500:
-				Joystick[C].PovUpLeft = true;
+				//Joystick[C].PovUpLeft = true;
+				Joystick[C].PovUp = true;
+				Joystick[C].PovLeft = true;
 				break;
 
             case JOY_POVFORWARD:
