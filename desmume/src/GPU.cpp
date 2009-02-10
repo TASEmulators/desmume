@@ -90,6 +90,8 @@ OSDCLASS	*osd = NULL;
 OSDCLASS	*osdA = NULL;
 OSDCLASS	*osdB = NULL;
 
+u16			gpu_angle = 0;
+
 const short sizeTab[4][4][2] =
 {
       {{256,256}, {512, 256}, {256, 512}, {512, 512}},
@@ -3353,6 +3355,54 @@ void GPU::setAffineStart(int layer, int xy, u32 val)
 {
 	if(xy==0) affineInfo[layer-2].x = val;
 	else affineInfo[layer-2].y = val;
+}
+
+void gpu_UpdateRender()
+{
+	int x = 0, y = 0;
+	u16 *src = (u16*)GPU_tempScreen;
+	u16	*dst = (u16*)GPU_screen;
+
+	switch (gpu_angle)
+	{
+		case 0:
+			memcpy(dst, src, 256*192*4);
+			break;
+
+		case 90:
+			for(y = 0; y < 384; y++)
+			{
+				for(x = 0; x < 256; x++)
+				{
+					dst[(383 - y) + (x * 384)] = src[x + (y * 256)];
+				}
+			}
+			break;
+		case 180:
+			for(y = 0; y < 384; y++)
+			{
+				for(x = 0; x < 256; x++)
+				{
+					dst[(255 - x) + ((383 - y) * 256)] = src[x + (y * 256)];
+				}
+			}
+			break;
+		case 270:
+			for(y = 0; y < 384; y++)
+			{
+				for(x = 0; x < 256; x++)
+				{
+					dst[y + ((255 - x) * 384)] = src[x + (y * 256)];
+				}
+			}
+		default:
+			break;
+	}
+}
+
+void gpu_SetRotateScreen(u16 angle)
+{
+	gpu_angle = angle;
 }
 
 //here is an old bg mosaic with some old code commented out. I am going to leave it here for a while to look at it

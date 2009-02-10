@@ -1217,7 +1217,7 @@ u32 NDS_exec(s32 nb)
 				nds.lignerendu = FALSE;
 				if(nds.VCount==192)
 				{
-					//osdA->update();	//================================= this is don't correct, need swap engine
+					//osdA->update();
 					gfx3d_VBlankSignal();
 
 					T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
@@ -1257,7 +1257,8 @@ u32 NDS_exec(s32 nb)
 				else if(nds.VCount==263)
 				{
 					//osd->update();
-					//osdB->update();	//================================= this is don't correct, need swap engine
+					//osdB->update();
+					gpu_UpdateRender();
 
 					nds.nextHBlank = 3168;
 					nds.VCount = 0;
@@ -1783,6 +1784,7 @@ u32 NDS_exec(s32 nb)
 		} // if(!nds.sleeping)
 		else
 		{
+			gpu_UpdateRender();
 			if((MMU.reg_IE[1] & MMU.reg_IF[1]) & (1<<22))
 			{
 				nds.sleeping = FALSE;

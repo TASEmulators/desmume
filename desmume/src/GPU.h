@@ -912,5 +912,9 @@ void SetupFinalPixelBlitter (GPU *gpu);
 #define GPU_setBGxHOFS(bg, gpu, val) gpu->dispx_st->dispx_BGxOFS[bg].BGxHOFS = (val & 0x1F)
 #define GPU_setBGxVOFS(bg, gpu, val) gpu->dispx_st->dispx_BGxOFS[bg].BGxVOFS = (val & 0x1F)
 
+// render
+void gpu_UpdateRender();
+void gpu_SetRotateScreen(u16 angle);
+
 #endif
 

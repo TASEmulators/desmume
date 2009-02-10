@@ -621,7 +621,7 @@ void Display()
 	ddsd.dwSize = sizeof(ddsd);
 	ddsd.dwFlags=DDSD_ALL;
 	res=IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL);
-	
+
 	if (res == DD_OK)
 	{
 		char* buffer = (char*)ddsd.lpSurface;
@@ -1231,6 +1231,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		exit(-1);
 	}
 
+	gpu_SetRotateScreen(GPU_rotation);
+
  	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
 
@@ -1605,6 +1607,8 @@ void SetRotate(HWND hwnd, int rot)
 	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
+
+	gpu_SetRotateScreen(GPU_rotation);
 }
 
 static void AviEnd()
