@@ -143,7 +143,7 @@ void OSDCLASS::setColor(u16 col)
 
 void OSDCLASS::update() // don't optimized
 {
-	if (!needUpdate) return;	// don't update if buffer empty (speed up)
+	//if (!needUpdate) return;	// don't update if buffer empty (speed up)
 
 	int x, y;
 	u16 *src = (u16*)GPU_tempScreen;
