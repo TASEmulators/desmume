@@ -2176,7 +2176,8 @@ void input_process()
 {
 	S9xWinScanJoypads();
 
-	if (paused) return;
+	//not appropriate right now in desmume
+	//if (paused) return;
 
 	bool R = joypads[0] & RIGHT_MASK;
 	bool L = joypads[0] & LEFT_MASK;
