@@ -72,6 +72,7 @@
 
 #include "../common.h"
 #include "main.h"
+#include "hotkey.h"
 
 #include "snddx.h"
 
@@ -1065,14 +1066,6 @@ void SetLanguage(int langid)
 
 	HMODULE kernel32 = LoadLibrary("kernel32.dll");
 	FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
-
-	//OSVERSIONINFO info;
-	//ZeroMemory(&info, sizeof(info));
-	//info.dwOSVersionInfoSize = sizeof(info);
-	//GetVersionEx(&info);
-	//setLanguageFunc setLanguage = ((info.dwMajorVersion >= 6) ? 
-	//	(setLanguageFunc)_setThreadUILanguage : (setLanguageFunc)SetThreadLocale);
-	
 	setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
 
    switch(langid)
@@ -1776,11 +1769,6 @@ LRESULT OpenFile()
 	return 0;
 }
 
-void SetDefaults()
-{
-	InitCustomKeys(&CustomKeys);
-}
-
 //TODO - async key state? for real?
 int GetModifiers(int key)
 {
@@ -1794,8 +1782,6 @@ int GetModifiers(int key)
     if(GetAsyncKeyState(VK_SHIFT  )) modifiers |= CUSTKEY_SHIFT_MASK;
     return modifiers;
 }
-
-SCustomKeys CustomKeys;
 
 int HandleKeyUp(WPARAM wParam, LPARAM lParam, int modifiers)
 {
@@ -1836,81 +1822,6 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 	return 1;
 }
 
-
-bool IsLastCustomKey (const SCustomKey *key)
-{
-	return (key->key == 0xFFFF && key->modifiers == 0xFFFF);
-}
-
-void SetLastCustomKey (SCustomKey *key)
-{
-	key->key = 0xFFFF;
-	key->modifiers = 0xFFFF;
-}
-
-void ZeroCustomKeys (SCustomKeys *keys)
-{
-	UINT i = 0;
-
-	SetLastCustomKey(&keys->LastItem);
-	while (!IsLastCustomKey(&keys->key[i])) {
-		keys->key[i].key = 0;
-		keys->key[i].modifiers = 0;
-		i++;
-	};
-}
-
-
-void HK_PrintScreen()
-{
-    OPENFILENAME ofn;
-    char filename[MAX_PATH] = "";
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = MainWindow->getHWnd();
-    ofn.lpstrFilter = "Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
-    ofn.nFilterIndex = 1;
-    ofn.lpstrFile =  filename;
-	ofn.lpstrTitle = "Print Screen Save As";
-    ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrDefExt = "bmp";
-    ofn.Flags = OFN_OVERWRITEPROMPT;
-    GetSaveFileName(&ofn);
-    NDS_WriteBMP(filename);
-}
-
-void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
-{
-	UINT i = 0;
-
-	do {
-		dst->key[i] = src->key[i];
-	} while (!IsLastCustomKey(&src->key[i++]));
-}
-
-void InitCustomKeys (SCustomKeys *keys)
-{
-	UINT i = 0;
-
-	SetLastCustomKey(&keys->LastItem);
-	while (!IsLastCustomKey(&keys->key[i])) {
-		keys->key[i].key = 0;
-		keys->key[i].modifiers = 0;
-		keys->key[i].handleKeyDown = NULL;
-		keys->key[i].handleKeyUp = NULL;
-		keys->key[i].page = NUM_HOTKEY_PAGE;
-		keys->key[i].name = NULL;
-		//keys->key[i].timing = PROCESS_NOW;
-		i++;
-	};
-
-	//set handlers
-	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
-	keys->PrintScreen.code = "PrintScreen";
-	keys->PrintScreen.name = _T("Print Screen");
-	keys->PrintScreen.page = HOTKEY_PAGE_TOOLS;
-	keys->PrintScreen.key = VK_PAUSE;
-}
 
 void RunConfig(int num) 
 {
