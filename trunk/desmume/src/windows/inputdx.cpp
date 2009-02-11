@@ -346,7 +346,7 @@ static void ReadHotkey(const char* name, WORD& output)
 
 static void LoadHotkeyConfig()
 {
-	SCustomKey *key = CustomKeys.key;
+	SCustomKey *key = &CustomKeys.key(0);
 
 	while (!IsLastCustomKey(key)) {
 		ReadHotkey(key->code,key->key); 
@@ -358,7 +358,7 @@ static void LoadHotkeyConfig()
 
 static void SaveHotkeyConfig()
 {
-	SCustomKey *key = CustomKeys.key;
+	SCustomKey *key = &CustomKeys.key(0);
 
 	while (!IsLastCustomKey(key)) {
 		WritePrivateProfileInt("Hotkeys",(char*)key->code,key->key,IniName);
@@ -1011,7 +1011,7 @@ int GetNumHotKeysAssignedTo (WORD Key, int modifiers)
 		   || (k->key == VK_MENU    && modifiers & CUSTKEY_ALT_MASK) \
 		   || (k->key == VK_CONTROL && modifiers & CUSTKEY_CTRL_MASK)))
 
-		SCustomKey *key = CustomKeys.key;
+		SCustomKey *key = &CustomKeys.key(0);
 		while (!IsLastCustomKey(key)) {
 			if (MATCHES_KEY(key)) {
 				count++;
@@ -2199,13 +2199,13 @@ void input_process()
 static void set_hotkeyinfo(HWND hDlg)
 {
 	HotkeyPage page = (HotkeyPage) SendDlgItemMessage(hDlg,IDC_HKCOMBO,CB_GETCURSEL,0,0);
-	SCustomKey *key = CustomKeys.key;
+	SCustomKey *key = &CustomKeys.key(0);
 	int i = 0;
 
 	while (!IsLastCustomKey(key) && i < NUM_HOTKEY_CONTROLS) {
 		if (page == key->page) {
 			SendDlgItemMessage(hDlg, IDC_HOTKEY_Table[i], WM_USER+44, key->key, key->modifiers);
-			SetDlgItemText(hDlg, IDC_LABEL_HK_Table[i], key->name);
+			SetDlgItemTextW(hDlg, IDC_LABEL_HK_Table[i], key->name.c_str());
 			ShowWindow(GetDlgItem(hDlg, IDC_HOTKEY_Table[i]), SW_SHOW);
 			i++;
 		}
@@ -2284,19 +2284,19 @@ switch(msg)
 		int modifiers = GetModifiers(wParam);
 
 		page = (HotkeyPage) SendDlgItemMessage(hDlg, IDC_HKCOMBO, CB_GETCURSEL, 0, 0);
-		TCHAR text[256];
+		wchar_t text[256];
 
 		which = GetDlgCtrlID((HWND)lParam);
 		for (i = 0; i < NUM_HOTKEY_CONTROLS; i++) {
 			if (which == IDC_HOTKEY_Table[i])
 				break;
 		}
-		GetDlgItemText(hDlg, IDC_LABEL_HK_Table[i], text, COUNT(text));
+		GetDlgItemTextW(hDlg, IDC_LABEL_HK_Table[i], text, COUNT(text));
 
-		SCustomKey *key = CustomKeys.key;
+		SCustomKey *key = &CustomKeys.key(0);
 		while (!IsLastCustomKey(key)) {
 			if (page == key->page) {
-				if (lstrcmp(text, key->name) == 0) {
+				if(text == key->name) {
 					key->key = wParam;
 					key->modifiers = modifiers;
 					break;

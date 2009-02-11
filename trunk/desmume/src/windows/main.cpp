@@ -1,24 +1,24 @@
 /*  Copyright (C) 2006 yopyop
-    yopyop156@ifrance.com
-    yopyop156.ifrance.com
+yopyop156@ifrance.com
+yopyop156.ifrance.com
 
-    Copyright 2006 Theo Berkau
+Copyright 2006 Theo Berkau
 
-    This file is part of DeSmuME
+This file is part of DeSmuME
 
-    DeSmuME is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+DeSmuME is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
-    DeSmuME is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+DeSmuME is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+You should have received a copy of the GNU General Public License
+along with DeSmuME; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include "windriver.h"
 #include <algorithm>
@@ -188,17 +188,17 @@ int sndbuffersize=735*4;
 int sndvolume=100;
 
 SoundInterface_struct *SNDCoreList[] = {
-&SNDDummy,
-&SNDFile,
-&SNDDIRECTX,
-NULL
+	&SNDDummy,
+	&SNDFile,
+	&SNDDIRECTX,
+	NULL
 };
 
 GPU3DInterface *core3DList[] = {
-&gpu3DNull,
-&gpu3Dgl,
-&gpu3DRasterize,
-NULL
+	&gpu3DNull,
+	&gpu3Dgl,
+	&gpu3DRasterize,
+	NULL
 };
 
 int autoframeskipenab=1;
@@ -221,21 +221,21 @@ struct NDS_fw_config_data win_fw_config;
 
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
-                                      LPARAM lParam);
+									  LPARAM lParam);
 
 struct configured_features {
-  u16 arm9_gdb_port;
-  u16 arm7_gdb_port;
+	u16 arm9_gdb_port;
+	u16 arm7_gdb_port;
 
-  const char *cflash_disk_image_file;
+	const char *cflash_disk_image_file;
 };
 
 static void
 init_configured_features( struct configured_features *config) {
-  config->arm9_gdb_port = 0;
-  config->arm7_gdb_port = 0;
+	config->arm9_gdb_port = 0;
+	config->arm7_gdb_port = 0;
 
-  config->cflash_disk_image_file = NULL;
+	config->cflash_disk_image_file = NULL;
 }
 
 
@@ -260,7 +260,7 @@ fill_configured_features( struct configured_features *config, LPSTR lpszArgument
 					config->arm9_gdb_port = port_num;
 				}
 				else {
-			        MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
+					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
 					good_args = 0;
 				}
 			}
@@ -272,7 +272,7 @@ fill_configured_features( struct configured_features *config, LPSTR lpszArgument
 					config->arm7_gdb_port = port_num;
 				}
 				else {
-                                  MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
+					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
 					good_args = 0;
 				}
 			}
@@ -312,7 +312,7 @@ fill_configured_features( struct configured_features *config, LPSTR lpszArgument
 					}
 				}
 				else {
-			        MessageBox(NULL,"CFlash disk image file already set","Error",MB_OK);
+					MessageBox(NULL,"CFlash disk image file already set","Error",MB_OK);
 					good_args = 0;
 				}
 			}
@@ -333,34 +333,34 @@ DWORD rotationscanlines = 192*2;
 
 void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msdn.com/oldnewthing/archive/2003/09/11/54885.aspx
 {
-    HMENU hmenu = GetMenu(hwnd);
-    RECT rcWindow = { 0, 0, cx, cy };
+	HMENU hmenu = GetMenu(hwnd);
+	RECT rcWindow = { 0, 0, cx, cy };
 
-    /*
-     *  First convert the client rectangle to a window rectangle the
-     *  menu-wrap-agnostic way.
-     */
-    AdjustWindowRect(&rcWindow, WS_CAPTION| WS_SYSMENU |WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, hmenu != NULL);
+	/*
+	*  First convert the client rectangle to a window rectangle the
+	*  menu-wrap-agnostic way.
+	*/
+	AdjustWindowRect(&rcWindow, WS_CAPTION| WS_SYSMENU |WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, hmenu != NULL);
 
-    /*
-     *  If there is a menu, then check how much wrapping occurs
-     *  when we set a window to the width specified by AdjustWindowRect
-     *  and an infinite amount of height.  An infinite height allows
-     *  us to see every single menu wrap.
-     */
-    if (hmenu) {
-        RECT rcTemp = rcWindow;
-        rcTemp.bottom = 0x7FFF;     /* "Infinite" height */
-        SendMessage(hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp);
+	/*
+	*  If there is a menu, then check how much wrapping occurs
+	*  when we set a window to the width specified by AdjustWindowRect
+	*  and an infinite amount of height.  An infinite height allows
+	*  us to see every single menu wrap.
+	*/
+	if (hmenu) {
+		RECT rcTemp = rcWindow;
+		rcTemp.bottom = 0x7FFF;     /* "Infinite" height */
+		SendMessage(hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp);
 
-        /*
-         *  Adjust our previous calculation to compensate for menu
-         *  wrapping.
-         */
-        rcWindow.bottom += rcTemp.top;
-    }
-    SetWindowPos(hwnd, NULL, WndX, WndY, rcWindow.right - rcWindow.left,
-                 rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
+		/*
+		*  Adjust our previous calculation to compensate for menu
+		*  wrapping.
+		*/
+		rcWindow.bottom += rcTemp.top;
+	}
+	SetWindowPos(hwnd, NULL, WndX, WndY, rcWindow.right - rcWindow.left,
+		rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
 
 	if (lpBackSurface!=NULL)
 	{
@@ -371,7 +371,7 @@ void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msd
 		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
 		ddsd.dwWidth         = cx;
 		ddsd.dwHeight        = cy;
-		
+
 		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
 	}
 }
@@ -387,7 +387,7 @@ void ScaleScreen(float factor)
 		MainWindow->setClientSize((384 * factor), (256 * factor));
 	}
 }
- 
+
 void translateXY(s32& x, s32& y)
 {
 	s32 tx=x, ty=y;
@@ -417,11 +417,11 @@ void UpdateRecentRomsMenu()
 
 	//UpdateRecentRoms will always call this
 	//This will be always called by GetRecentRoms on DesMume startup
-	
+
 
 	//----------------------------------------------------------------------
 	//Get Menu item info
-	
+
 	MENUITEMINFO moo;
 	moo.cbSize = sizeof(moo);
 	moo.fMask = MIIM_SUBMENU | MIIM_STATE;
@@ -461,9 +461,9 @@ void UpdateRecentRomsMenu()
 
 	EnableMenuItem(GetSubMenu(recentromsmenu, 0), clearid, MF_ENABLED);
 	DeleteMenu(GetSubMenu(recentromsmenu, 0), baseid, MF_BYCOMMAND);
-	
+
 	HDC dc = GetDC(MainWindow->getHWnd());
-	
+
 	//-----------------------------------------------------------------------
 	//Update the list using RecentRoms vector
 	for(int x = RecentRoms.size()-1; x >= 0; x--)	//Must loop in reverse order since InsertMenuItem will insert as the first on the list
@@ -472,7 +472,7 @@ void UpdateRecentRomsMenu()
 		LPSTR tmp2 = (LPSTR)tmp.c_str();
 
 		PathCompactPath(dc, tmp2, 500);
-			
+
 		moo.cbSize = sizeof(moo);
 		moo.fMask = MIIM_DATA | MIIM_ID | MIIM_TYPE;
 
@@ -494,9 +494,9 @@ void UpdateRecentRomsMenu()
 void UpdateRecentRoms(char* filename)
 {
 	//This function assumes filename is a ROM filename that was successfully loaded
-	
+
 	string newROM = filename; //Convert to std::string
-	
+
 	//--------------------------------------------------------------
 	//Check to see if filename is in list
 	vector<string>::iterator x;
@@ -515,7 +515,7 @@ void UpdateRecentRoms(char* filename)
 	//If there was a match, remove it
 	if (match)
 		RecentRoms.erase(theMatch);
-	
+
 	RecentRoms.insert(RecentRoms.begin(), newROM);	//Add to the array
 
 	//If over the max, we have too many, so remove the last entry
@@ -534,19 +534,19 @@ void GetRecentRoms()
 	//This function retrieves the recent ROMs stored in the .ini file
 	//Then is populates the RecentRomsMenu array
 	//Then it calls Update RecentRomsMenu() to populate the menu
-	
+
 	stringstream temp;
 	char tempstr[256];
 
 	// Avoids duplicating when changing the language.
 	RecentRoms.clear();
-	
+
 	//Loops through all available recent slots
 	for (int x = 0; x < MAX_RECENT_ROMS; x++)
 	{
 		temp.str("");
 		temp << "Recent Rom " << (x+1);
-		
+
 		GetPrivateProfileString("General",temp.str().c_str(),"", tempstr, 256, IniName);
 		if (tempstr[0])
 			RecentRoms.push_back(tempstr);
@@ -557,16 +557,16 @@ void GetRecentRoms()
 void SaveRecentRoms()
 {
 	//This function stores the RecentRomsMenu array to the .ini file
-	
+
 	stringstream temp;
-	
+
 	//Loops through all available recent slots
 	for (int x = 0; x < MAX_RECENT_ROMS; x++)
 	{
 		temp.str("");
 		temp << "Recent Rom " << (x+1);
 		if (x < RecentRoms.size())	//If it exists in the array, save it
-			 WritePrivateProfileString("General",temp.str().c_str(),RecentRoms[x].c_str(),IniName);
+			WritePrivateProfileString("General",temp.str().c_str(),RecentRoms[x].c_str(),IniName);
 		else						//Else, make it empty
 			WritePrivateProfileString("General",temp.str().c_str(), "",IniName);
 	}
@@ -592,7 +592,7 @@ int CreateDDrawBuffers()
 	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
 	ddsd.dwFlags = DDSD_CAPS;
 	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpPrimarySurface, NULL) != DD_OK) return -1;
-	
+
 	memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize          = sizeof(ddsd);
 	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
@@ -604,20 +604,20 @@ int CreateDDrawBuffers()
 		ddsd.dwHeight        = 384;
 	}
 	else
-	if ( (GPU_rotation == 90) || (GPU_rotation == 270) )
-	{
-		ddsd.dwWidth         = 384;
-		ddsd.dwHeight        = 256;
-	}
+		if ( (GPU_rotation == 90) || (GPU_rotation == 270) )
+		{
+			ddsd.dwWidth         = 384;
+			ddsd.dwHeight        = 256;
+		}
 
-	if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
+		if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
 
-	if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
+		if (IDirectDraw7_CreateClipper(lpDDraw, 0, &lpDDClipPrimary, NULL) != DD_OK) return -3;
 
-	if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
-	if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
+		if (IDirectDrawClipper_SetHWnd(lpDDClipPrimary, 0, MainWindow->getHWnd()) != DD_OK) return -4;
+		if (IDirectDrawSurface7_SetClipper(lpPrimarySurface, lpDDClipPrimary) != DD_OK) return -5;
 
-	return 1;
+		return 1;
 }
 
 
@@ -632,7 +632,7 @@ void Display()
 	if (res == DD_OK)
 	{
 		char* buffer = (char*)ddsd.lpSurface;
-		
+
 		int i, j, sz=256*sizeof(u32);
 		if (ddsd.ddpfPixelFormat.dwRGBBitCount>16)
 		{
@@ -681,7 +681,7 @@ void Display()
 			}
 		}
 		else
-			 INFO("16bit depth color not supported");
+			INFO("16bit depth color not supported");
 		IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
 
 		if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
@@ -735,201 +735,201 @@ void SaveStateMessages(int slotnum, int whichMessage)
 	displayMessageCounter = 120;
 	switch (whichMessage)
 	{
-		case 0:		//State saved
-			MessageToDisplay << "State " << slotnum << " saved.";
-			break;
-		case 1:		//State loaded
-			MessageToDisplay << "State " << slotnum << " loaded.";
-			break;
-		case 2:		//Save slot selected
-			MessageToDisplay << "State " << slotnum << " selected.";
-		default:
-			break;
+	case 0:		//State saved
+		MessageToDisplay << "State " << slotnum << " saved.";
+		break;
+	case 1:		//State loaded
+		MessageToDisplay << "State " << slotnum << " loaded.";
+		break;
+	case 2:		//Save slot selected
+		MessageToDisplay << "State " << slotnum << " selected.";
+	default:
+		break;
 	}
 	//DisplayMessage();
 }
 
 DWORD WINAPI run()
 {
-     char txt[80];
-     u32 cycles = 0;
-     int wait=0;
-     u64 freq;
-     u64 OneFrameTime;
-     int framestoskip=0;
-     int framesskipped=0;
-     int skipnextframe=0;
-     u64 lastticks=0;
-     u64 curticks=0;
-     u64 diffticks=0;
-     u32 framecount=0;
-     u64 onesecondticks=0;
-     int fps=0;
-     int fpsframecount=0;
-     u64 fpsticks=0;
-	 int	res;
-	 HWND	hwnd = MainWindow->getHWnd();
+	char txt[80];
+	u32 cycles = 0;
+	int wait=0;
+	u64 freq;
+	u64 OneFrameTime;
+	int framestoskip=0;
+	int framesskipped=0;
+	int skipnextframe=0;
+	u64 lastticks=0;
+	u64 curticks=0;
+	u64 diffticks=0;
+	u32 framecount=0;
+	u64 onesecondticks=0;
+	int fps=0;
+	int fpsframecount=0;
+	u64 fpsticks=0;
+	int	res;
+	HWND	hwnd = MainWindow->getHWnd();
 
-	 DDCAPS	hw_caps, sw_caps;
+	DDCAPS	hw_caps, sw_caps;
 
-	 InitSpeedThrottle();
+	InitSpeedThrottle();
 
-	 osd->setRotate(GPU_rotation);
+	osd->setRotate(GPU_rotation);
 
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
 	{
 		MessageBox(hwnd,"Unable to initialize DirectDraw","Error",MB_OK);
 		return -1;
-    }
+	}
 
 	if (IDirectDraw7_SetCooperativeLevel(lpDDraw,hwnd, DDSCL_NORMAL) != DD_OK)
 	{
 		MessageBox(hwnd,"Unable to set DirectDraw Cooperative Level","Error",MB_OK);
 		return -1;
-    }
+	}
 
 	if (CreateDDrawBuffers()<1)
 	{
 		MessageBox(hwnd,"Unable to set DirectDraw buffers","Error",MB_OK);
 		return -1;
-    }
+	}
 
-     QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
-     QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
-     OneFrameTime = freq / 60;
+	QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
+	QueryPerformanceCounter((LARGE_INTEGER *)&lastticks);
+	OneFrameTime = freq / 60;
 
-     while(!finished)
-     {
-          while(execute)
-          {
-			  {
-			     Lock lock;
-                 cycles = NDS_exec((560190<<1)-cycles);
-				 win_sound_samplecounter = 735;
-			  }
-	
-			   SPU_Emulate_core();
+	while(!finished)
+	{
+		while(execute)
+		{
+			{
+				Lock lock;
+				cycles = NDS_exec((560190<<1)-cycles);
+				win_sound_samplecounter = 735;
+			}
 
-			   //we are driving the dsound output from another thread
-			   //but there is no thread for the filewriter. so we need to do it here
-			   if(sndcoretype == SNDCORE_FILEWRITE)
-				   SPU_Emulate_user();
+			SPU_Emulate_core();
 
-			   //avi writing
-				DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
-			   DRV_AviVideoUpdate((u16*)GPU_screen);
+			//we are driving the dsound output from another thread
+			//but there is no thread for the filewriter. so we need to do it here
+			if(sndcoretype == SNDCORE_FILEWRITE)
+				SPU_Emulate_user();
 
-           //    if (!skipnextframe)
-            //   {
-				   //input->process();
-			   //TODO INPUT
-			   void input_process();
-			   input_process();
+			//avi writing
+			DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
+			DRV_AviVideoUpdate((u16*)GPU_screen);
 
-				 if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
-				 osd->update();
-				   Display();
-				   osd->clear();
+			//    if (!skipnextframe)
+			//   {
+			//input->process();
+			//TODO INPUT
+			void input_process();
+			input_process();
+
+			if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
+			osd->update();
+			Display();
+			osd->clear();
 
 
-                  fpsframecount++;
-                  QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-				  bool oneSecond = curticks >= fpsticks + freq;
-                  if(oneSecond) // TODO: print fps on screen in DDraw
-                  {
-                     fps = fpsframecount;
-                     fpsframecount = 0;
-                     QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
-                  }
+			fpsframecount++;
+			QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
+			bool oneSecond = curticks >= fpsticks + freq;
+			if(oneSecond) // TODO: print fps on screen in DDraw
+			{
+				fps = fpsframecount;
+				fpsframecount = 0;
+				QueryPerformanceCounter((LARGE_INTEGER *)&fpsticks);
+			}
 
-				  if(nds.idleFrameCounter==0 || oneSecond) 
-				  {
-					  //calculate a 16 frame arm9 load average
-					 int load = 0;
-					 for(int i=0;i<16;i++)
-						 load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
-					 load = std::min(100,std::max(0,(int)(load*100/1120380)));
-					 sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
-					 SetWindowText(hwnd, txt);
-				  }
+			if(nds.idleFrameCounter==0 || oneSecond) 
+			{
+				//calculate a 16 frame arm9 load average
+				int load = 0;
+				for(int i=0;i<16;i++)
+					load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
+				load = std::min(100,std::max(0,(int)(load*100/1120380)));
+				sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
+				SetWindowText(hwnd, txt);
+			}
 
-			   if(!skipnextframe)
-			   {
+			if(!skipnextframe)
+			{
 
-                  framesskipped = 0;
+				framesskipped = 0;
 
-                  if (framestoskip > 0)
-                     skipnextframe = 1;
+				if (framestoskip > 0)
+					skipnextframe = 1;
 
-				  NDS_SkipFrame(false);
-               }
-               else
-               {
-                  framestoskip--;
+				NDS_SkipFrame(false);
+			}
+			else
+			{
+				framestoskip--;
 
-                  if (framestoskip < 1)
-                     skipnextframe = 0;
-                  else
-                     skipnextframe = 1;
+				if (framestoskip < 1)
+					skipnextframe = 0;
+				else
+					skipnextframe = 1;
 
-                  framesskipped++;
+				framesskipped++;
 
-				  NDS_SkipFrame(true);
-               }
-				
-			   if(frameskiprate != 0 || autoframeskipenab)
-				   while(SpeedThrottle())
-				   {
-				   }
-               
-			   if (autoframeskipenab)
-               {
-                  framecount++;
+				NDS_SkipFrame(true);
+			}
 
-                  if (framecount > 60)
-                  {
-                     framecount = 1;
-                     onesecondticks = 0;
-                  }
+			if(frameskiprate != 0 || autoframeskipenab)
+				while(SpeedThrottle())
+				{
+				}
 
-                  QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
-                  diffticks = curticks-lastticks;
+				if (autoframeskipenab)
+				{
+					framecount++;
 
-				  if(ThrottleIsBehind() && framesskipped < 9)
-				  {
-					  skipnextframe = 1;
-					  framestoskip = 1;
-				  }
+					if (framecount > 60)
+					{
+						framecount = 1;
+						onesecondticks = 0;
+					}
 
-                  onesecondticks += diffticks;
-                  lastticks = curticks;
-               }
-               else
-               {
-                  if (framestoskip < 1)
-                     framestoskip += frameskiprate;
-               }
-			   if (frameAdvance)
-			   {
+					QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
+					diffticks = curticks-lastticks;
+
+					if(ThrottleIsBehind() && framesskipped < 9)
+					{
+						skipnextframe = 1;
+						framestoskip = 1;
+					}
+
+					onesecondticks += diffticks;
+					lastticks = curticks;
+				}
+				else
+				{
+					if (framestoskip < 1)
+						framestoskip += frameskiprate;
+				}
+				if (frameAdvance)
+				{
 					frameAdvance = false;
-				    emu_halt();
+					emu_halt();
 					SPU_Pause(1);
-			   }
-			   frameCounter++;
-			   if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
-			   DisplayMessage();
-			   CheckMessages();
-          }
-          
-		  paused = TRUE;
-		  CheckMessages();
-          Sleep(100);
-     }
+				}
+				frameCounter++;
+				if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
+				DisplayMessage();
+				CheckMessages();
+		}
+
+		paused = TRUE;
+		CheckMessages();
+		Sleep(100);
+	}
 	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
 	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
 	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
-    if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
-     return 1;
+	if (lpDDraw != NULL) IDirectDraw7_Release(lpDDraw);
+	return 1;
 }
 
 void NDS_Pause()
@@ -946,43 +946,16 @@ void NDS_Pause()
 
 void NDS_UnPause()
 {
-   if (romloaded && paused)
-   {
+	if (romloaded && paused)
+	{
 		paused = FALSE;
 		execute = TRUE;
 		SPU_Pause(0);
 		INFO("Emulation unpaused\n");
-   }
-}
-
-void StateSaveSlot(int num)
-{
-	if (!paused)
-	{
-		NDS_Pause();
-		savestate_slot(num);	//Savestate
-		NDS_UnPause();
 	}
-	else
-		savestate_slot(num);	//Savestate
-	
-	lastSaveState = num;		//Set last savestate used
-	SaveStateMessages(num, 0);	//Display state loaded message
 }
 
-void StateLoadSlot(int num)
-{
-	BOOL wasPaused = paused;
-	NDS_Pause();
-	loadstate_slot(num);		//Loadstate
-	lastSaveState = num;		//Set last savestate used
-	SaveStateMessages(num, 1);	//Display state loaded message
 
-	if(!wasPaused)
-		NDS_UnPause();
-	else
-		Display();
-}
 
 #ifdef EXPERIMENTAL_GBASLOT
 BOOL LoadROM(char * filename)
@@ -990,7 +963,7 @@ BOOL LoadROM(char * filename)
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 #endif
 {
-    NDS_Pause();
+	NDS_Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
 #ifdef EXPERIMENTAL_GBASLOT
@@ -1010,16 +983,16 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 }
 
 /*
- * The thread handling functions needed by the GDB stub code.
- */
+* The thread handling functions needed by the GDB stub code.
+*/
 void *
 createThread_gdb( void (APIENTRY *thread_function)( void *data),
 				 void *thread_data) {
-	void *new_thread = CreateThread( NULL, 0,
-		(LPTHREAD_START_ROUTINE)thread_function, thread_data,
-		0, NULL);
+					 void *new_thread = CreateThread( NULL, 0,
+						 (LPTHREAD_START_ROUTINE)thread_function, thread_data,
+						 0, NULL);
 
-	return new_thread;
+					 return new_thread;
 }
 
 void
@@ -1031,7 +1004,7 @@ int MenuInit()
 {
 	mainMenu = LoadMenu(hAppInst, "MENU_PRINCIPAL"); //Load Menu, and store handle
 	if (!MainWindow->setMenu(mainMenu)) return 0;
-	
+
 	// menu checks
 	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
 
@@ -1068,50 +1041,50 @@ void SetLanguage(int langid)
 	FARPROC _setThreadUILanguage = (FARPROC)GetProcAddress(kernel32,"SetThreadUILanguage");
 	setLanguageFunc setLanguage = _setThreadUILanguage?(setLanguageFunc)_setThreadUILanguage:(setLanguageFunc)SetThreadLocale;
 
-   switch(langid)
-   {
-      case 1:
-         // French       
-		  setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
-         break;
-      case 2:
-         // Danish
-		  setLanguage(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
-         break;
-      case 0:
-         // English
-		  setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
-         break;
-      default: break;
-         break;
-   }
+	switch(langid)
+	{
+	case 1:
+		// French       
+		setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
+		break;
+	case 2:
+		// Danish
+		setLanguage(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
+		break;
+	case 0:
+		// English
+		setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
+		break;
+	default: break;
+		break;
+	}
 
-   FreeLibrary(kernel32);
+	FreeLibrary(kernel32);
 }
 
 void SaveLanguage(int langid)
 {
-   char text[80];
+	char text[80];
 
-   sprintf(text, "%d", langid);
-   WritePrivateProfileString("General", "Language", text, IniName);
+	sprintf(text, "%d", langid);
+	WritePrivateProfileString("General", "Language", text, IniName);
 }
 
 void CheckLanguage(UINT id)
 {
-   int i;
-   for (i = IDC_LANGENGLISH; i < IDC_LANGDANISH+1; i++)
-      MainWindow->checkMenu(i, MF_BYCOMMAND | MF_UNCHECKED);
+	int i;
+	for (i = IDC_LANGENGLISH; i < IDC_LANGDANISH+1; i++)
+		MainWindow->checkMenu(i, MF_BYCOMMAND | MF_UNCHECKED);
 
-   MainWindow->checkMenu(id, MF_BYCOMMAND | MF_CHECKED);
+	MainWindow->checkMenu(id, MF_BYCOMMAND | MF_CHECKED);
 }
 
 void ChangeLanguage(int id)
 {
-   SetLanguage(id);
+	SetLanguage(id);
 
-   MenuDeinit();
-   MenuInit();
+	MenuDeinit();
+	MenuInit();
 }
 
 int RegClass(WNDPROC Proc, LPCTSTR szName)
@@ -1128,7 +1101,7 @@ int RegClass(WNDPROC Proc, LPCTSTR szName)
 	wc.lpszMenuName=(LPCTSTR)NULL;
 	wc.lpszClassName=szName;
 	wc.cbClsExtra = 0;
-    wc.cbWndExtra = 0;
+	wc.cbWndExtra = 0;
 	return RegisterClass(&wc);
 }
 
@@ -1139,9 +1112,9 @@ static void ExitRunLoop()
 }
 
 int WINAPI WinMain (HINSTANCE hThisInstance,
-                    HINSTANCE hPrevInstance,
-                    LPSTR lpszArgument,
-                    int nFunsterStil)
+					HINSTANCE hPrevInstance,
+					LPSTR lpszArgument,
+					int nFunsterStil)
 
 {
 	ULONG_PTR GdiplusToken;
@@ -1171,8 +1144,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	oglrender_init = windows_opengl_init;
 
 
-    char text[80];
-    hAppInst=hThisInstance;
+	char text[80];
+	hAppInst=hThisInstance;
 
 	GetINIPath();
 #ifdef EXPERIMENTAL_GBASLOT
@@ -1185,34 +1158,34 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	switch (addon_type)
 	{
-		case NDS_ADDON_NONE:
+	case NDS_ADDON_NONE:
 		break;
-		case NDS_ADDON_CFLASH:
-			if (!strlen(CFlashPath)) CFlashUseRomPath = TRUE;
-			if (!strlen(CFlashName)) CFlashUsePath = TRUE;
-			// TODO: check for file exist
+	case NDS_ADDON_CFLASH:
+		if (!strlen(CFlashPath)) CFlashUseRomPath = TRUE;
+		if (!strlen(CFlashName)) CFlashUsePath = TRUE;
+		// TODO: check for file exist
 		break;
-		case NDS_ADDON_RUMBLEPAK:
+	case NDS_ADDON_RUMBLEPAK:
 		break;
-		case NDS_ADDON_GBAGAME:
-			if (!strlen(GBAgameName))
-			{
-				addon_type = NDS_ADDON_NONE;
-				break;
-			}
-			// TODO: check for file exist
-		break;
-		default:
+	case NDS_ADDON_GBAGAME:
+		if (!strlen(GBAgameName))
+		{
 			addon_type = NDS_ADDON_NONE;
 			break;
+		}
+		// TODO: check for file exist
+		break;
+	default:
+		addon_type = NDS_ADDON_NONE;
+		break;
 	}
 	addonsChangePak(addon_type);
 #endif
 
 	init_configured_features( &my_config);
 	if ( !fill_configured_features( &my_config, lpszArgument)) {
-        MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
-        return 0;
+		MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
+		return 0;
 	}
 	ColorCtrl_Register();
 
@@ -1223,7 +1196,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 
 	OpenConsole();			// Init debug console
-	
+
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
@@ -1235,8 +1208,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384,
-			WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
-				NULL))
+		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
+		NULL))
 	{
 		MessageBox(NULL, "Error creating main window", "DeSmuME", MB_OK);
 		delete MainWindow;
@@ -1245,17 +1218,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	gpu_SetRotateScreen(GPU_rotation);
 
- 	/* default the firmware settings, they may get changed later */
+	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
 
-    GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
-    SetLanguage(atoi(text));
+	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
+	SetLanguage(atoi(text));
 
 #ifndef EXPERIMENTAL_GBASLOT
 	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
 #endif
 
-    hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
+	hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
 
 	if(MenuInit() == 0)
 	{
@@ -1296,7 +1269,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifndef EXPERIMENTAL_GBASLOT
 	EnableMenuItem(mainMenu, IDM_GBASLOT, MF_GRAYED);
 #endif
-	
+
 
 	InitCustomKeys(&CustomKeys);
 
@@ -1316,38 +1289,38 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	ViewOAM = new TOOLSCLASS(hThisInstance, IDD_OAM, (DLGPROC) ViewOAMProc);
 	ViewMatrices = new TOOLSCLASS(hThisInstance, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
 	ViewLights = new TOOLSCLASS(hThisInstance, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
-   
+
 #ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
 		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
 			&arm9_memio, &arm9_direct_memory_iface);
 
 		if ( arm9_gdb_stub == NULL) {
-	       MessageBox(hwnd,"Failed to create ARM9 gdbstub","Error",MB_OK);
-		   return -1;
+			MessageBox(hwnd,"Failed to create ARM9 gdbstub","Error",MB_OK);
+			return -1;
 		}
 	}
 	if ( my_config.arm7_gdb_port != 0) {
 		arm7_gdb_stub = createStub_gdb( my_config.arm7_gdb_port,
-                                    &arm7_memio,
-                                    &arm7_base_memory_iface);
+			&arm7_memio,
+			&arm7_base_memory_iface);
 
 		if ( arm7_gdb_stub == NULL) {
-	       MessageBox(hwnd,"Failed to create ARM7 gdbstub","Error",MB_OK);
-		   return -1;
+			MessageBox(hwnd,"Failed to create ARM7 gdbstub","Error",MB_OK);
+			return -1;
 		}
 	}
 
-    NDS_Init( arm9_memio, &arm9_ctrl_iface,
+	NDS_Init( arm9_memio, &arm9_ctrl_iface,
 		arm7_memio, &arm7_ctrl_iface);
 #else
 	NDS_Init ();
 #endif
 
-  /*
-   * Activate the GDB stubs
-   * This has to come after the NDS_Init where the cpus are set up.
-   */
+	/*
+	* Activate the GDB stubs
+	* This has to come after the NDS_Init where the cpus are set up.
+	*/
 #ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
 		activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
@@ -1356,23 +1329,23 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
 	}
 #endif
-    GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	//================================================== ???
-    CheckLanguage(IDC_LANGENGLISH+atoi(text));
+	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	//================================================== ???
+	CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
-    GetPrivateProfileString("Video", "FrameSkip", "AUTO", text, 80, IniName);
+	GetPrivateProfileString("Video", "FrameSkip", "AUTO", text, 80, IniName);
 
-    if (strcmp(text, "AUTO") == 0)
-    {
-       autoframeskipenab=1;
-       frameskiprate=0;
-       MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_CHECKED);
-    }
-    else
-    {
-       autoframeskipenab=0;
-       frameskiprate=atoi(text);
-       MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
-    }
+	if (strcmp(text, "AUTO") == 0)
+	{
+		autoframeskipenab=1;
+		frameskiprate=0;
+		MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_CHECKED);
+	}
+	else
+	{
+		autoframeskipenab=0;
+		frameskiprate=atoi(text);
+		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
+	}
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
@@ -1381,35 +1354,35 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
 #endif
 	LOG("Init sound core\n");
-    sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
-    sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
+	sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
+	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
 
 	EnterCriticalSection(&win_sync);
-    int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
+	int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
 	LeaveCriticalSection(&win_sync);
 	if(spu_ret != 0)
-    {
-       MessageBox(MainWindow->getHWnd(),"Unable to initialize DirectSound","Error",MB_OK);
-       return -1;
-    }
+	{
+		MessageBox(MainWindow->getHWnd(),"Unable to initialize DirectSound","Error",MB_OK);
+		return -1;
+	}
 
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
-    SPU_SetVolume(sndvolume);
+	SPU_SetVolume(sndvolume);
 
 	/* Read the firmware settings from the init file */
-    win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
-    win_fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
-    win_fw_config.birth_day = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
-    win_fw_config.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
+	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
+	win_fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
+	win_fw_config.birth_day = GetPrivateProfileInt("Firmware","bDay", 15, IniName);
+	win_fw_config.language = GetPrivateProfileInt("Firmware","Language", 1, IniName);
 
 	{
 		/*
-		 * Read in the nickname and message.
-		 * Convert the strings into Unicode UTF-16 characters.
-		 */
+		* Read in the nickname and message.
+		* Convert the strings into Unicode UTF-16 characters.
+		*/
 		char temp_str[27];
 		int char_index;
-	    GetPrivateProfileString("Firmware","nickName", "yopyop", temp_str, 11, IniName);
+		GetPrivateProfileString("Firmware","nickName", "yopyop", temp_str, 11, IniName);
 		win_fw_config.nickname_len = strlen( temp_str);
 
 		if ( win_fw_config.nickname_len == 0) {
@@ -1422,7 +1395,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		}
 
 		GetPrivateProfileString("Firmware","Message", "DeSmuME makes you happy!", temp_str, 27, IniName);
-	    win_fw_config.message_len = strlen( temp_str);
+		win_fw_config.message_len = strlen( temp_str);
 		for ( char_index = 0; char_index < win_fw_config.message_len; char_index++) {
 			win_fw_config.message[char_index] = temp_str[char_index];
 		}
@@ -1431,9 +1404,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	// Create the dummy firmware
 	NDS_CreateDummyFirmware( &win_fw_config);
 
-    // Make sure any quotes from lpszArgument are removed
-    if (lpszArgument[0] == '\"')
-       sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
+	// Make sure any quotes from lpszArgument are removed
+	if (lpszArgument[0] == '\"')
+		sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
 
 	if (lpszArgument[0])
 	{
@@ -1443,24 +1416,24 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
 #endif
 		{
-		   EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-		   EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-		   EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-		   EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-		   EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-		   EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-		   EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
-		   romloaded = TRUE;
-		   NDS_UnPause();
+			EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+			EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+			EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+			EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+			EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
+			romloaded = TRUE;
+			NDS_UnPause();
 		}
 	}
 
-    MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
-    MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
-    MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED);
-    MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
-    MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
-    MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->Show(SW_NORMAL);
 	run();
@@ -1469,7 +1442,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	//------SHUTDOWN
 
 #ifdef DEBUG
-    //LogStop();
+	//LogStop();
 #endif
 	//if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
@@ -1485,12 +1458,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
 
 	delete MainWindow;
-	
+
 	CloseConsole();
 
 	GdiplusShutdown(GdiplusToken);
 
-    return 0;
+	return 0;
 }
 
 void GetWndRect(HWND hwnd)
@@ -1558,36 +1531,36 @@ void SetRotate(HWND hwnd, int rot)
 
 	switch (rot)
 	{
-		case 0:
-			GPU_width    = 256;
-			GPU_height   = 192*2;
-			rotationstartscan = 192;
-			rotationscanlines = 192*2;
-			break;
+	case 0:
+		GPU_width    = 256;
+		GPU_height   = 192*2;
+		rotationstartscan = 192;
+		rotationscanlines = 192*2;
+		break;
 
-		case 90:
-			GPU_rotation = 90;
-			GPU_width    = 192*2;
-			GPU_height   = 256;
-			rotationstartscan = 0;
-			rotationscanlines = 256;
-			break;
+	case 90:
+		GPU_rotation = 90;
+		GPU_width    = 192*2;
+		GPU_height   = 256;
+		rotationstartscan = 0;
+		rotationscanlines = 256;
+		break;
 
-		case 180:
-			GPU_rotation = 180;
-			GPU_width    = 256;
-			GPU_height   = 192*2;
-			rotationstartscan = 0;
-			rotationscanlines = 192*2;
-			break;
+	case 180:
+		GPU_rotation = 180;
+		GPU_width    = 256;
+		GPU_height   = 192*2;
+		rotationstartscan = 0;
+		rotationscanlines = 192*2;
+		break;
 
-		case 270:
-			GPU_rotation = 270;
-			GPU_width    = 192*2;
-			GPU_height   = 256;
-			rotationstartscan = 0;
-			rotationscanlines = 256;
-			break;
+	case 270:
+		GPU_rotation = 270;
+		GPU_width    = 192*2;
+		GPU_height   = 256;
+		rotationstartscan = 0;
+		rotationscanlines = 256;
+		break;
 	}
 
 	MainWindow->setMinSize(GPU_width, GPU_height);
@@ -1604,11 +1577,11 @@ void SetRotate(HWND hwnd, int rot)
 		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
 		ddsd.dwWidth         = GPU_width;
 		ddsd.dwHeight        = GPU_height;
-		
+
 		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
 	}
-  
-//	SetWindowClientSize(hwnd, GPU_width, GPU_height);
+
+	//	SetWindowClientSize(hwnd, GPU_width, GPU_height);
 	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
@@ -1685,16 +1658,16 @@ void OpenRecentROM(int listNum)
 #else
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
 #endif
-    {
+	{
 		EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-        EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-        EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-        EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
 		EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
 		EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
-        romloaded = TRUE;
+		romloaded = TRUE;
 	}
-	
+
 	NDS_UnPause();
 }
 
@@ -1703,14 +1676,14 @@ LRESULT OpenFile()
 	HWND hwnd = MainWindow->getHWnd();
 
 	int filterSize = 0, i = 0;
-    OPENFILENAME ofn;
-    char filename[MAX_PATH] = "",
-		 fileFilter[512]="";
-    NDS_Pause(); //Stop emulation while opening new rom
-    
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = hwnd;
+	OPENFILENAME ofn;
+	char filename[MAX_PATH] = "",
+		fileFilter[512]="";
+	NDS_Pause(); //Stop emulation while opening new rom
+
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = hwnd;
 
 	//  To avoid #ifdef hell, we'll do a little trick, as lpstrFilter
 	// needs 0 terminated string, and standard string library, of course,
@@ -1720,7 +1693,7 @@ LRESULT OpenFile()
 #ifdef HAVE_LIBZZIP
 	strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz)|*.nds;*.ds.gba;*.zip;*.gz|",512);
 #endif			
-	
+
 #ifdef HAVE_LIBZZIP
 	strncat (fileFilter, "Zipped NDS ROM file (*.zip)|*.zip|",512 - strlen(fileFilter));
 #endif
@@ -1728,43 +1701,43 @@ LRESULT OpenFile()
 	strncat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|",512 - strlen(fileFilter));
 #endif
 	strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
-	
+
 	filterSize = strlen(fileFilter);
 	for (i = 0; i < filterSize; i++)
 	{
 		if (fileFilter[i] == '|')	fileFilter[i] = '\0';
 	}
-    ofn.lpstrFilter = fileFilter;
-    ofn.nFilterIndex = 1;
-    ofn.lpstrFile =  filename;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrDefExt = "nds";
+	ofn.lpstrFilter = fileFilter;
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFile =  filename;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrDefExt = "nds";
 	ofn.Flags = OFN_NOCHANGEDIR;
-    
-    if(!GetOpenFileName(&ofn))
-    {
-         if (romloaded)
-            NDS_UnPause(); //Restart emulation if no new rom chosen
-         return 0;
-    }
-    
-    //LOG("%s\r\n", filename);
+
+	if(!GetOpenFileName(&ofn))
+	{
+		if (romloaded)
+			NDS_UnPause(); //Restart emulation if no new rom chosen
+		return 0;
+	}
+
+	//LOG("%s\r\n", filename);
 #ifdef EXPERIMENTAL_GBASLOT
-    if(LoadROM(filename))
+	if(LoadROM(filename))
 #else
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
 #endif
-    {
-       EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-       EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-       EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-       EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-       EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-	   EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-	   EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
-       romloaded = TRUE;
-       NDS_UnPause();
-    }
+	{
+		EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+		EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+		EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
+		romloaded = TRUE;
+		NDS_UnPause();
+	}
 
 	return 0;
 }
@@ -1772,24 +1745,24 @@ LRESULT OpenFile()
 //TODO - async key state? for real?
 int GetModifiers(int key)
 {
-    int modifiers = 0;
+	int modifiers = 0;
 
-    if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
-        return 0;
+	if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
+		return 0;
 
-    if(GetAsyncKeyState(VK_MENU   )) modifiers |= CUSTKEY_ALT_MASK;
-    if(GetAsyncKeyState(VK_CONTROL)) modifiers |= CUSTKEY_CTRL_MASK;
-    if(GetAsyncKeyState(VK_SHIFT  )) modifiers |= CUSTKEY_SHIFT_MASK;
-    return modifiers;
+	if(GetAsyncKeyState(VK_MENU   )) modifiers |= CUSTKEY_ALT_MASK;
+	if(GetAsyncKeyState(VK_CONTROL)) modifiers |= CUSTKEY_CTRL_MASK;
+	if(GetAsyncKeyState(VK_SHIFT  )) modifiers |= CUSTKEY_SHIFT_MASK;
+	return modifiers;
 }
 
 int HandleKeyUp(WPARAM wParam, LPARAM lParam, int modifiers)
 {
-	SCustomKey *key = CustomKeys.key;
+	SCustomKey *key = &CustomKeys.key(0);
 
 	while (!IsLastCustomKey(key)) {
 		if (wParam == key->key && modifiers == key->modifiers && key->handleKeyUp) {
-			key->handleKeyUp();
+			key->handleKeyUp(key->param);
 		}
 		key++;
 	}
@@ -1805,10 +1778,10 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 
 	if(!(wParam == 0 || wParam == VK_ESCAPE)) // if it's the 'disabled' key, it's never pressed as a hotkey
 	{
-		SCustomKey *key = CustomKeys.key;
+		SCustomKey *key = &CustomKeys.key(0);
 		while (!IsLastCustomKey(key)) {
 			if (wParam == key->key && modifiers == key->modifiers && key->handleKeyDown) {
-				key->handleKeyDown();
+				key->handleKeyDown(key->param);
 				hitHotKey = true;
 			}
 			key++;
@@ -1822,8 +1795,31 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 	return 1;
 }
 
+void Pause()
+{
+	if (emu_paused) NDS_UnPause();
+	else NDS_Pause();
+	emu_paused ^= 1;
+	MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+}
 
-void RunConfig(int num) 
+void FrameAdvance()
+{
+	frameAdvance = true;
+	execute = TRUE;
+	emu_paused = 1;
+	MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
+}
+
+enum CONFIGSCREEN
+{
+	CONFIGSCREEN_INPUT,
+	CONFIGSCREEN_HOTKEY,
+	CONFIGSCREEN_FIRMWARE,
+	CONFIGSCREEN_SOUND
+};
+
+void RunConfig(CONFIGSCREEN which) 
 {
 	HWND hwnd = MainWindow->getHWnd();
 	bool tpaused=false;
@@ -1833,18 +1829,20 @@ void RunConfig(int num)
 		NDS_Pause();
 	}
 
-	switch(num) {
-		case 0:
-			void RunInputConfig();
-			RunInputConfig();
-			break;
-		case 1:
-			void RunHotkeyConfig();
-			RunHotkeyConfig();
-			break;
-		case 2:
-			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
-			break;
+	switch(which)
+	{
+	case CONFIGSCREEN_INPUT:
+		RunInputConfig();
+		break;
+	case CONFIGSCREEN_HOTKEY:
+		RunHotkeyConfig();
+		break;
+	case CONFIGSCREEN_FIRMWARE:
+		DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
+		break;
+	case CONFIGSCREEN_SOUND:
+		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
+		break;
 	}
 
 	if (tpaused)
@@ -1855,778 +1853,713 @@ void RunConfig(int num)
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
 	static int tmp_execute;
-    switch (message)                  // handle the messages
+	switch (message)                  // handle the messages
 	{
 		/*case WM_ENTERMENULOOP:		// temporally removed it (freezes)
-			{
-				if (execute)
-				{
-					NDS_Pause();
-					tmp_execute=2;
-				} else tmp_execute=-1;
-				return 0;
-			}
+		{
+		if (execute)
+		{
+		NDS_Pause();
+		tmp_execute=2;
+		} else tmp_execute=-1;
+		return 0;
+		}
 		case WM_EXITMENULOOP:
-			{
-				if (tmp_execute==2) NDS_UnPause();
-				return 0;
-			}*/
+		{
+		if (tmp_execute==2) NDS_UnPause();
+		return 0;
+		}*/
 
-        case WM_CREATE:
-	     {
+	case WM_CREATE:
+		{
 			return 0;
 		}
-        case WM_DESTROY:
-		case WM_CLOSE:
-			{
-             NDS_Pause();
-			
-			 //Save window size
-			 WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-			 if (windowSize==0)
-			 {
-			//	 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
-			//	 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
-				 RECT rc;
-				 GetClientRect(hwnd, &rc);
-				 WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
-				 WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
-			 }
+	case WM_DESTROY:
+	case WM_CLOSE:
+		{
+			NDS_Pause();
 
-			 //Save window position
-			 WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
-			 WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
-			 
-			 //Save frame counter status
-			 WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
-			 SaveRecentRoms();
-             NDS_DeInit();
-             ExitRunLoop();
-             return 0;
+			//Save window size
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+			if (windowSize==0)
+			{
+				//	 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
+				//	 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
+				RECT rc;
+				GetClientRect(hwnd, &rc);
+				WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
+				WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
 			}
-		case WM_MOVING:
+
+			//Save window position
+			WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
+			WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
+
+			//Save frame counter status
+			WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
+			SaveRecentRoms();
+			NDS_DeInit();
+			ExitRunLoop();
+			return 0;
+		}
+	case WM_MOVING:
+		SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
+		return 0;
+	case WM_MOVE:
+		GetWndRect(hwnd);
+		return 0;
+	case WM_SIZING:
+		{
 			SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
-			return 0;
-		case WM_MOVE:
-			GetWndRect(hwnd);
-			return 0;
-		case WM_SIZING:
+			if(windowSize)
 			{
-				SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
-				if(windowSize)
-				{
-					windowSize = 0;
-					MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
-					MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
-					MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
-					MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
-				}
-
-				MainWindow->sizingMsg(wParam, lParam, ForceRatio);
+				windowSize = 0;
+				MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
 			}
-			return 1;
-			//break;
-		
-		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN:
-		case WM_CUSTKEYDOWN:
+
+			MainWindow->sizingMsg(wParam, lParam, ForceRatio);
+		}
+		return 1;
+		//break;
+
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+	case WM_CUSTKEYDOWN:
 		{
 			int modifiers = GetModifiers(wParam);
 			if(!HandleKeyMessage(wParam,lParam, modifiers))
 				return 0;
-	        break;
+			break;
 		}
-		case WM_CUSTKEYUP:
+	case WM_CUSTKEYUP:
 		{
 			int modifiers = GetModifiers(wParam);
 			HandleKeyUp(wParam, lParam, modifiers);
 		}
 		break;
 
-		case WM_SIZE:
-			switch(wParam)
+	case WM_SIZE:
+		switch(wParam)
+		{
+		case SIZE_MINIMIZED:
 			{
-			case SIZE_MINIMIZED:
-				{
-					NDS_Pause();
-				}
-				break;
-			default:
-				{
-					NDS_UnPause();
-					GetWndRect(hwnd);
-				}
-				break;
+				NDS_Pause();
+			}
+			break;
+		default:
+			{
+				NDS_UnPause();
+				GetWndRect(hwnd);
+			}
+			break;
+		}
+		return 0;
+	case WM_PAINT:
+		if(paused || (lParam == 0x12345678))
+		{
+			osd->update();
+			Display();
+			osd->clear();
+		}
+		return DefWindowProc(hwnd, message, wParam, lParam);
+	case WM_DROPFILES:
+		{
+			char filename[MAX_PATH] = "";
+			DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
+			DragFinish((HDROP)wParam);
+#ifdef EXPERIMENTAL_GBASLOT
+			if(LoadROM(filename))
+#else
+			if(LoadROM(filename, bad_glob_cflash_disk_image_file))
+#endif
+			{
+				EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
+				EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
+				EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
+				EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
+				EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
+				EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
+				EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
+				romloaded = TRUE;
+			}
+			NDS_UnPause();
+		}
+		return 0;
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+		if (wParam & MK_LBUTTON)
+		{
+			RECT r ;
+			s32 x = (s32)((s16)LOWORD(lParam));
+			s32 y = (s32)((s16)HIWORD(lParam));
+			GetClientRect(hwnd,&r) ;
+			// translate from scaling (screen resolution to 256x384 or 512x192) 
+			switch (GPU_rotation)
+			{
+			case 0:
+			case 180:
+				x = (x*256) / (r.right - r.left) ;
+				y = (y*384) / (r.bottom - r.top) ;
+				break ;
+			case 90:
+			case 270:
+				x = (x*384) / (r.right - r.left) ;
+				y = (y*256) / (r.bottom - r.top) ;
+				break ;
+			}
+			//translate for rotation
+			if (GPU_rotation != 0)
+				translateXY(x,y);
+			else 
+				y-=192;
+			if(x<0) x = 0; else if(x>255) x = 255;
+			if(y<0) y = 0; else if(y>192) y = 192;
+			NDS_setTouchPos(x, y);
+			return 0;
+		}
+		NDS_releaseTouch();
+		return 0;
+
+	case WM_LBUTTONUP:
+		if(click)
+			ReleaseCapture();
+		NDS_releaseTouch();
+		return 0;
+
+	case WM_COMMAND:
+		if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
+		{
+			//wParam &= 0xFFFF;
+
+			// A menu item from the recent files menu was clicked.
+			if(wParam >= baseid && wParam <= baseid + MAX_RECENT_ROMS - 1)
+			{
+				int x = wParam - baseid;
+				OpenRecentROM(x);					
+			}
+			else if(wParam == clearid)
+			{
+				/* Clear all the recent ROMs */
+				ClearRecentRoms();
+			}
+
+		}
+		switch(LOWORD(wParam))
+		{
+		case IDM_QUIT:
+			DestroyWindow(hwnd);
+			return 0;
+		case ACCEL_CTRL_O:
+		case IDM_OPEN:
+			return OpenFile();
+		case IDM_PRINTSCREEN:
+			HK_PrintScreen(0);
+			return 0;
+		case IDM_QUICK_PRINTSCREEN:
+			{
+				NDS_WriteBMP("./printscreen.bmp");
 			}
 			return 0;
-		case WM_PAINT:
-			if(paused || (lParam == 0x12345678))
+		case IDM_FILE_RECORDAVI:
+			AviRecordTo();
+			break;
+		case IDM_FILE_STOPAVI:
+			AviEnd();
+			break;
+		case IDM_STATE_LOAD:
 			{
-				osd->update();
-				Display();
-				osd->clear();
-			}
-			return DefWindowProc(hwnd, message, wParam, lParam);
-        case WM_DROPFILES:
-             {
-                  char filename[MAX_PATH] = "";
-                  DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
-                  DragFinish((HDROP)wParam);
-#ifdef EXPERIMENTAL_GBASLOT
-                  if(LoadROM(filename))
-#else
-				  if(LoadROM(filename, bad_glob_cflash_disk_image_file))
-#endif
-                  {
-                     EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-                     EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-                     EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-                     EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-                     EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-					 EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-					 EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
-                     romloaded = TRUE;
-                  }
-				  NDS_UnPause();
-             }
-             return 0;
-        case WM_MOUSEMOVE:
-		case WM_LBUTTONDOWN:
-                  if (wParam & MK_LBUTTON)
-                  {
-					   RECT r ;
-                       s32 x = (s32)((s16)LOWORD(lParam));
-                       s32 y = (s32)((s16)HIWORD(lParam));
-						GetClientRect(hwnd,&r) ;
-						// translate from scaling (screen resolution to 256x384 or 512x192) 
-					   switch (GPU_rotation)
-						{
-							case 0:
-							case 180:
-								x = (x*256) / (r.right - r.left) ;
-								y = (y*384) / (r.bottom - r.top) ;
-								break ;
-							case 90:
-							case 270:
-								x = (x*384) / (r.right - r.left) ;
-								y = (y*256) / (r.bottom - r.top) ;
-								break ;
-						}
-						//translate for rotation
-                       if (GPU_rotation != 0)
-                          translateXY(x,y);
-                       else 
-                          y-=192;
-                       if(x<0) x = 0; else if(x>255) x = 255;
-                       if(y<0) y = 0; else if(y>192) y = 192;
-						NDS_setTouchPos(x, y);
-                       return 0;
-                  }
-				NDS_releaseTouch();
-             return 0;
-       
-        case WM_LBUTTONUP:
-				if(click)
-					  ReleaseCapture();
-				NDS_releaseTouch();
-             return 0;
+				OPENFILENAME ofn;
+				NDS_Pause();
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hwnd;
+				ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile =  SavName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.lpstrDefExt = "dst";
 
-		case WM_COMMAND:
-            if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
+				if(!GetOpenFileName(&ofn))
+				{
+					NDS_UnPause();
+					return 0;
+				}
+
+				savestate_load(SavName);
+				NDS_UnPause();
+			}
+			return 0;
+		case IDM_STATE_SAVE:
 			{
-				//wParam &= 0xFFFF;
+				OPENFILENAME ofn;
+				NDS_Pause();
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hwnd;
+				ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile =  SavName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.lpstrDefExt = "dst";
 
-				// A menu item from the recent files menu was clicked.
-				if(wParam >= baseid && wParam <= baseid + MAX_RECENT_ROMS - 1)
+				if(!GetSaveFileName(&ofn))
 				{
-					int x = wParam - baseid;
-					OpenRecentROM(x);					
+					return 0;
 				}
-				else if(wParam == clearid)
-				{
-					/* Clear all the recent ROMs */
-					ClearRecentRoms();
-				}
-				
+
+				savestate_save(SavName);
+				NDS_UnPause();
 			}
-			switch(LOWORD(wParam))
-             {
-				case IDM_QUIT:
-					DestroyWindow(hwnd);
+			return 0;
+		case IDM_STATE_SAVE_F1:
+			HK_StateSaveSlot(1);
+			return 0;
+		case IDM_STATE_SAVE_F2:
+			HK_StateSaveSlot(2);
+			return 0;
+		case IDM_STATE_SAVE_F3:
+			HK_StateSaveSlot(3);
+			return 0;
+		case IDM_STATE_SAVE_F4:
+			HK_StateSaveSlot(4);
+			return 0;
+		case IDM_STATE_SAVE_F5:
+			HK_StateSaveSlot(5);
+			return 0;
+		case IDM_STATE_SAVE_F6:
+			HK_StateSaveSlot(6);
+			return 0;
+		case IDM_STATE_SAVE_F7:
+			HK_StateSaveSlot(7);
+			return 0;
+		case IDM_STATE_SAVE_F8:
+			HK_StateSaveSlot(8);
+			return 0;
+		case IDM_STATE_SAVE_F9:
+			HK_StateSaveSlot(9);
+			return 0;
+		case IDM_STATE_SAVE_F10:
+			HK_StateSaveSlot(10);
+			return 0;
+		case IDM_STATE_LOAD_F1:
+			HK_StateLoadSlot(1);
+			return 0;
+		case IDM_STATE_LOAD_F2:
+			HK_StateLoadSlot(2);
+			return 0;
+		case IDM_STATE_LOAD_F3:
+			HK_StateLoadSlot(3);
+			return 0;
+		case IDM_STATE_LOAD_F4:
+			HK_StateLoadSlot(4);
+			return 0;
+		case IDM_STATE_LOAD_F5:
+			HK_StateLoadSlot(5);
+			return 0;
+		case IDM_STATE_LOAD_F6:
+			HK_StateLoadSlot(6);
+			return 0;
+		case IDM_STATE_LOAD_F7:
+			HK_StateLoadSlot(7);
+			return 0;
+		case IDM_STATE_LOAD_F8:
+			HK_StateLoadSlot(8);
+			return 0;
+		case IDM_STATE_LOAD_F9:
+			HK_StateLoadSlot(9);
+			return 0;
+		case IDM_STATE_LOAD_F10:
+			HK_StateLoadSlot(10);
+			return 0;
+		case IDM_IMPORTBACKUPMEMORY:
+			{
+				OPENFILENAME ofn;
+				NDS_Pause();
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hwnd;
+				ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0DS-Xtreme Save (*.sav)\0*.sav\0\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile =  ImportSavName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.lpstrDefExt = "duc";
+
+				if(!GetOpenFileName(&ofn))
+				{
+					NDS_UnPause();
 					return 0;
-				case ACCEL_CTRL_O:
-                  case IDM_OPEN:
-                       return OpenFile();
-                  case IDM_PRINTSCREEN:
-					  HK_PrintScreen();
-					  return 0;
-                  case IDM_QUICK_PRINTSCREEN:
-                       {
-                          NDS_WriteBMP("./printscreen.bmp");
-                       }
-                  return 0;
-				  case IDM_FILE_RECORDAVI:
-					  AviRecordTo();
-					  break;
-				case IDM_FILE_STOPAVI:
-						AviEnd();
-						break;
-                  case IDM_STATE_LOAD:
-                       {
-                            OPENFILENAME ofn;
-                            NDS_Pause();
-                            ZeroMemory(&ofn, sizeof(ofn));
-                            ofn.lStructSize = sizeof(ofn);
-                            ofn.hwndOwner = hwnd;
-                            ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0\0";
-                            ofn.nFilterIndex = 1;
-                            ofn.lpstrFile =  SavName;
-                            ofn.nMaxFile = MAX_PATH;
-                            ofn.lpstrDefExt = "dst";
-                            
-                            if(!GetOpenFileName(&ofn))
-                            {
-                                 NDS_UnPause();
-                                 return 0;
-                            }
-                            
-                            savestate_load(SavName);
-                            NDS_UnPause();
-                       }
-                  return 0;
-                  case IDM_STATE_SAVE:
-                       {
-                            OPENFILENAME ofn;
-                            NDS_Pause();
-                            ZeroMemory(&ofn, sizeof(ofn));
-                            ofn.lStructSize = sizeof(ofn);
-                            ofn.hwndOwner = hwnd;
-                            ofn.lpstrFilter = "DeSmuME Savestate (*.dst)\0*.dst\0\0";
-                            ofn.nFilterIndex = 1;
-                            ofn.lpstrFile =  SavName;
-                            ofn.nMaxFile = MAX_PATH;
-                            ofn.lpstrDefExt = "dst";
-                            
-                            if(!GetSaveFileName(&ofn))
-                            {
-                                 return 0;
-                            }
-                            
-                            savestate_save(SavName);
-                            NDS_UnPause();
-                       }
-                  return 0;
-                  case IDM_STATE_SAVE_F1:
-                     StateSaveSlot(1);
-                     return 0;
-                  case IDM_STATE_SAVE_F2:
-                     StateSaveSlot(2);
-                     return 0;
-                  case IDM_STATE_SAVE_F3:
-                     StateSaveSlot(3);
-                     return 0;
-                  case IDM_STATE_SAVE_F4:
-                     StateSaveSlot(4);
-                     return 0;
-                  case IDM_STATE_SAVE_F5:
-                     StateSaveSlot(5);
-                     return 0;
-                  case IDM_STATE_SAVE_F6:
-                     StateSaveSlot(6);
-                     return 0;
-                  case IDM_STATE_SAVE_F7:
-                     StateSaveSlot(7);
-                     return 0;
-                  case IDM_STATE_SAVE_F8:
-                     StateSaveSlot(8);
-                     return 0;
-                  case IDM_STATE_SAVE_F9:
-                     StateSaveSlot(9);
-                     return 0;
-                  case IDM_STATE_SAVE_F10:
-                     StateSaveSlot(10);
-                     return 0;
-                  case IDM_STATE_LOAD_F1:
-                     StateLoadSlot(1);
-                     return 0;
-                  case IDM_STATE_LOAD_F2:
-                     StateLoadSlot(2);
-                     return 0;
-                  case IDM_STATE_LOAD_F3:
-                     StateLoadSlot(3);
-                     return 0;
-                  case IDM_STATE_LOAD_F4:
-                     StateLoadSlot(4);
-                     return 0;
-                  case IDM_STATE_LOAD_F5:
-                     StateLoadSlot(5);
-                     return 0;
-                  case IDM_STATE_LOAD_F6:
-                     StateLoadSlot(6);
-                     return 0;
-                  case IDM_STATE_LOAD_F7:
-                     StateLoadSlot(7);
-                     return 0;
-                  case IDM_STATE_LOAD_F8:
-                     StateLoadSlot(8);
-                     return 0;
-                  case IDM_STATE_LOAD_F9:
-                     StateLoadSlot(9);
-                     return 0;
-                  case IDM_STATE_LOAD_F10:
-                     StateLoadSlot(10);
-                     return 0;
-				  case ACCEL_I:		//Quick Save
-					  StateSaveSlot(lastSaveState);
-					  return 0;
-				  case ACCEL_P:		//Quick Load
-					  StateLoadSlot(lastSaveState);
-					  return 0;
-				  //Save slot selection
-				  case ACCEL_0:
-					  lastSaveState = 0;
-					  SaveStateMessages(0,2);					  
-					  return 0;
-				  case ACCEL_1:
-					  lastSaveState = 1;
-					  SaveStateMessages(1,2);
-					  return 0;
-				  case ACCEL_2:
-					  lastSaveState = 2;
-					  SaveStateMessages(2,2);
-					  return 0;
-				  case ACCEL_3:
-					  lastSaveState = 3;
-					  SaveStateMessages(3,2);
-					  return 0;
-				  case ACCEL_4:
-					  lastSaveState = 4;
-					  SaveStateMessages(4,2);
-					  return 0;
-				  case ACCEL_5:
-					  lastSaveState = 5;
-					  SaveStateMessages(5,2);
-				  case ACCEL_6:
-					  lastSaveState = 6;
-					  SaveStateMessages(6,2);
-					  return 0;
-				  case ACCEL_7:
-					  lastSaveState = 7;
-					  SaveStateMessages(7,2);
-				  case ACCEL_8:
-					  lastSaveState = 8;
-					  SaveStateMessages(8,2);
-					  return 0;
-				  case ACCEL_9:
-					  lastSaveState = 9;
-					  SaveStateMessages(9,2);
-					  return 0;		
-                  case IDM_IMPORTBACKUPMEMORY:
-                  {
-                     OPENFILENAME ofn;
-                     NDS_Pause();
-                     ZeroMemory(&ofn, sizeof(ofn));
-                     ofn.lStructSize = sizeof(ofn);
-                     ofn.hwndOwner = hwnd;
-                     ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0DS-Xtreme Save (*.sav)\0*.sav\0\0";
-                     ofn.nFilterIndex = 1;
-                     ofn.lpstrFile =  ImportSavName;
-                     ofn.nMaxFile = MAX_PATH;
-                     ofn.lpstrDefExt = "duc";
-                            
-                     if(!GetOpenFileName(&ofn))
-                     {
-                        NDS_UnPause();
-                        return 0;
-                     }
+				}
 
-                     if (!NDS_ImportSave(ImportSavName))
-                        MessageBox(hwnd,"Save was not successfully imported","Error",MB_OK);
-                     NDS_UnPause();
-                     return 0;
-                  }
-                  case IDM_SOUNDSETTINGS:
-                  {
-						bool tpaused=false;
-						if (execute) 
-						{
-							tpaused=true;
-							NDS_Pause();
-						}
-						DialogBox(hAppInst, MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
-						if (tpaused)
-							NDS_UnPause();
-                  }
-                  return 0;
-                  case IDM_GAME_INFO:
-                       {
-                            CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
-                       }
-                  return 0;
-
-//========================================================= Tools
-                  case IDM_PAL:
-						ViewPalette->open();
-						return 0;
-                  case IDM_TILE:
-                       {
-						   ViewTiles->regClass("TileViewBox", TileViewBoxProc);
-						   ViewTiles->regClass("MiniTileViewBox", MiniTileViewBoxProc, true);
-						   if (!ViewTiles->open())
-							   ViewTiles->unregClass();
-                       }
-                  return 0;
-                  case IDM_IOREG:
-						ViewRegisters->open();
-						return 0;
-                  case IDM_MEMORY:
-						   ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
-						   if (!ViewMem_ARM7->open())
-							   ViewMem_ARM7->unregClass();
-						   ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
-						   if (!ViewMem_ARM9->open())
-							   ViewMem_ARM9->unregClass();
-	                  return 0;
-                  case IDM_DISASSEMBLER:
-					   ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
-					   if (!ViewDisasm_ARM7->open())
-						   ViewDisasm_ARM7->unregClass();
-
-					   ViewDisasm_ARM9->regClass("DesViewBox9",ViewDisasm_ARM9BoxProc);
-					   if (!ViewDisasm_ARM9->open())
-						   ViewDisasm_ARM9->unregClass();
-						return 0;
-                  case IDM_MAP:
-						ViewMaps->open();
-						return 0;
-                  case IDM_OAM:
-						ViewOAM->regClass("OAMViewBox", ViewOAMBoxProc);
-						if (!ViewOAM->open())
-						   ViewOAM->unregClass();
-						return 0;
-
-				  case IDM_MATRIX_VIEWER:
-						ViewMatrices->open();
-						return 0;
-
-				  case IDM_LIGHT_VIEWER:
-						ViewLights->open();
-						return 0;
-//========================================================== Tools end
-
-				  case IDM_MBG0 : 
-                       if(MainScreen.gpu->dispBG[0])
-                       {
-                            GPU_remove(MainScreen.gpu, 0);
-                            MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(MainScreen.gpu, 0);
-                            MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_MBG1 : 
-                       if(MainScreen.gpu->dispBG[1])
-                       {
-                            GPU_remove(MainScreen.gpu, 1);
-                            MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(MainScreen.gpu, 1);
-                            MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_MBG2 : 
-                       if(MainScreen.gpu->dispBG[2])
-                       {
-                            GPU_remove(MainScreen.gpu, 2);
-                            MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(MainScreen.gpu, 2);
-                            MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_MBG3 : 
-                       if(MainScreen.gpu->dispBG[3])
-                       {
-                            GPU_remove(MainScreen.gpu, 3);
-                            MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(MainScreen.gpu, 3);
-                            MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_SBG0 : 
-                       if(SubScreen.gpu->dispBG[0])
-                       {
-                            GPU_remove(SubScreen.gpu, 0);
-                            MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(SubScreen.gpu, 0);
-                            MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_SBG1 : 
-                       if(SubScreen.gpu->dispBG[1])
-                       {
-                            GPU_remove(SubScreen.gpu, 1);
-                            MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(SubScreen.gpu, 1);
-                            MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_SBG2 : 
-                       if(SubScreen.gpu->dispBG[2])
-                       {
-                            GPU_remove(SubScreen.gpu, 2);
-                            MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(SubScreen.gpu, 2);
-                            MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  case IDM_SBG3 : 
-                       if(SubScreen.gpu->dispBG[3])
-                       {
-                            GPU_remove(SubScreen.gpu, 3);
-                            MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_UNCHECKED);
-                       }
-                       else
-                       {
-                            GPU_addBack(SubScreen.gpu, 3);
-                            MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
-                       }
-                       return 0;
-                  
-				  case ACCEL_SPACEBAR:
-				  case IDM_PAUSE:
-					  if (emu_paused) NDS_UnPause();
-					  else NDS_Pause();
-					  emu_paused ^= 1;
-					  MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
-				  return 0;
-
-				  case IDM_GBASLOT:
-					  GBAslotDialog(hwnd);
-				  return 0;
-
-				  case IDM_CHEATS_LIST:
-					  CheatsListDialog(hwnd);
-				  return 0;
-
-				  case IDM_CHEATS_SEARCH:
-					  CheatsSearchDialog(hwnd);
-				  return 0;
-				  
-				  case ACCEL_N: //Frame Advance
-					  frameAdvance = true;
-					  execute = TRUE;
-					  emu_paused = 1;
-					  MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
-				  return 0;
-
-				  case ID_VIEW_FRAMECOUNTER:
-					  frameCounterDisplay ^= 1;
-					  MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
-				  return 0;
-
-				  case ID_VIEW_DISPLAYFPS:
-					  FpsDisplay ^= 1;
-					  MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
-					  WritePrivateProfileInt("Display", "Display Fps", FpsDisplay, IniName);
-					  osd->clear();
-				  return 0;
-
-                  #define clearsaver() \
-                  MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_UNCHECKED); \
-                  MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED); \
-                  MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED); \
-                  MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED); \
-                  MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED); \
-                  MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED); \
-				  MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED); 
-				  
-				  #define saver(one) \
-				  MainWindow->checkMenu(one, MF_BYCOMMAND | MF_CHECKED); 
-                  
-                  case IDC_SAVETYPE1:
-					   clearsaver();
-                       saver(IDC_SAVETYPE1);
-                       mmu_select_savetype(0,&backupmemorytype,&backupmemorysize);
-                  return 0;
-                  case IDC_SAVETYPE2:
-                       clearsaver();
-                       saver(IDC_SAVETYPE2);
-                       mmu_select_savetype(1,&backupmemorytype,&backupmemorysize);
-                  return 0;   
-                  case IDC_SAVETYPE3:
-                       clearsaver();
-                       saver(IDC_SAVETYPE3);
-                       mmu_select_savetype(2,&backupmemorytype,&backupmemorysize);
-                  return 0;   
-                  case IDC_SAVETYPE4:
-                       clearsaver();
-                       saver(IDC_SAVETYPE4);
-                       mmu_select_savetype(3,&backupmemorytype,&backupmemorysize);
-                  return 0;
-                  case IDC_SAVETYPE5:
-                       clearsaver();
-                       saver(IDC_SAVETYPE5);
-                       mmu_select_savetype(4,&backupmemorytype,&backupmemorysize);
-                  return 0; 
-                  case IDC_SAVETYPE6:
-                       clearsaver();
-                       saver(IDC_SAVETYPE6);
-                       mmu_select_savetype(5,&backupmemorytype,&backupmemorysize);
-                  return 0; 
-				  case IDC_SAVETYPE7:
-                       clearsaver();
-                       saver(IDC_SAVETYPE7);
-                       mmu_select_savetype(6,&backupmemorytype,&backupmemorysize);
-                  return 0; 
-                  
-                  case IDM_RESET:
-						CheatsSearchReset();
-                       NDS_Reset();
-					   frameCounter=0;
-                  return 0;
-
-				  case IDM_3DCONFIG:
-					  {
-						  bool tpaused = false;
-						  if(execute) 
-						  {
-							  tpaused = true;
-							  NDS_Pause();
-						  }
-
-						  DialogBox(hAppInst, MAKEINTRESOURCE(IDD_3DSETTINGS), hwnd, (DLGPROC)GFX3DSettingsDlgProc);
-
-						  if(tpaused) NDS_UnPause();
-					  }
-					  return 0;
-                  
-				  case IDM_CONFIG:
-					   RunConfig(0);
-	                  return 0;
-				  case IDM_HOTKEY_CONFIG:
-					  RunConfig(1);
-					  return 0;
-                  case IDM_FIRMSETTINGS:
-					  RunConfig(2);
-					return 0;
-
-                  case IDC_FRAMESKIPAUTO:
-                  case IDC_FRAMESKIP0:
-                  case IDC_FRAMESKIP1:
-                  case IDC_FRAMESKIP2:
-                  case IDC_FRAMESKIP3:
-                  case IDC_FRAMESKIP4:
-                  case IDC_FRAMESKIP5:
-                  case IDC_FRAMESKIP6:
-                  case IDC_FRAMESKIP7:
-                  case IDC_FRAMESKIP8:
-                  case IDC_FRAMESKIP9:
-                  {
-                       if(LOWORD(wParam) == IDC_FRAMESKIPAUTO)
-                       {
-                          autoframeskipenab = 1;
-                          WritePrivateProfileString("Video", "FrameSkip", "AUTO", IniName);
-                       }
-                       else
-                       {
-                          char text[80];
-                          autoframeskipenab = 0;
-                          frameskiprate = LOWORD(wParam) - IDC_FRAMESKIP0;
-                          sprintf(text, "%d", frameskiprate);
-                          WritePrivateProfileString("Video", "FrameSkip", text, IniName);
-                       }
-
-                       MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP0, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP1, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP2, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP3, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP4, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP5, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP6, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP7, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
-                       MainWindow->checkMenu(LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
-                  }
-                  return 0;
-                  case IDC_LANGENGLISH:
-                     SaveLanguage(0);
-                     ChangeLanguage(0);
-                     CheckLanguage(LOWORD(wParam));
-                  return 0;
-                  case IDC_LANGFRENCH:
-                     SaveLanguage(1);
-                     ChangeLanguage(1);
-                     CheckLanguage(LOWORD(wParam));
-                  return 0;
-                  case IDC_LANGDANISH:
-                     SaveLanguage(2);
-                     ChangeLanguage(2);
-                     CheckLanguage(LOWORD(wParam));
-                  return 0;
-                  case IDM_WEBSITE:
-                       ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
-                  return 0;
-
-                  case IDM_FORUM:
-                       ShellExecute(NULL, "open", "http://forums.desmume.org/index.php", NULL, NULL, SW_SHOWNORMAL);
-                  return 0;
-
-				  case IDM_ABOUT:
-					  {
-				  		bool tpaused=false;
-						if (execute) 
-						{
-							tpaused=true;
-							NDS_Pause();
-						}
-						DialogBox(hAppInst,MAKEINTRESOURCE(IDD_ABOUT_BOX), hwnd, (DLGPROC) AboutBox_Proc);
-						if (tpaused)
-							NDS_UnPause();
+				if (!NDS_ImportSave(ImportSavName))
+					MessageBox(hwnd,"Save was not successfully imported","Error",MB_OK);
+				NDS_UnPause();
+				return 0;
+			}
 		
-						return 0;
-					  }
+		case IDM_CONFIG:
+			RunConfig(CONFIGSCREEN_INPUT);
+			return 0;
+		case IDM_HOTKEY_CONFIG:
+			RunConfig(CONFIGSCREEN_HOTKEY);
+			return 0;
+		case IDM_FIRMSETTINGS:
+			RunConfig(CONFIGSCREEN_FIRMWARE);
+			return 0;
+		case IDM_SOUNDSETTINGS:
+			RunConfig(CONFIGSCREEN_SOUND);
+			return 0;
+
+		case IDM_GAME_INFO:
+			{
+				CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
+			}
+			return 0;
+
+			//========================================================= Tools
+		case IDM_PAL:
+			ViewPalette->open();
+			return 0;
+		case IDM_TILE:
+			{
+				ViewTiles->regClass("TileViewBox", TileViewBoxProc);
+				ViewTiles->regClass("MiniTileViewBox", MiniTileViewBoxProc, true);
+				if (!ViewTiles->open())
+					ViewTiles->unregClass();
+			}
+			return 0;
+		case IDM_IOREG:
+			ViewRegisters->open();
+			return 0;
+		case IDM_MEMORY:
+			ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
+			if (!ViewMem_ARM7->open())
+				ViewMem_ARM7->unregClass();
+			ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
+			if (!ViewMem_ARM9->open())
+				ViewMem_ARM9->unregClass();
+			return 0;
+		case IDM_DISASSEMBLER:
+			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
+			if (!ViewDisasm_ARM7->open())
+				ViewDisasm_ARM7->unregClass();
+
+			ViewDisasm_ARM9->regClass("DesViewBox9",ViewDisasm_ARM9BoxProc);
+			if (!ViewDisasm_ARM9->open())
+				ViewDisasm_ARM9->unregClass();
+			return 0;
+		case IDM_MAP:
+			ViewMaps->open();
+			return 0;
+		case IDM_OAM:
+			ViewOAM->regClass("OAMViewBox", ViewOAMBoxProc);
+			if (!ViewOAM->open())
+				ViewOAM->unregClass();
+			return 0;
+
+		case IDM_MATRIX_VIEWER:
+			ViewMatrices->open();
+			return 0;
+
+		case IDM_LIGHT_VIEWER:
+			ViewLights->open();
+			return 0;
+			//========================================================== Tools end
+
+		case IDM_MBG0 : 
+			if(MainScreen.gpu->dispBG[0])
+			{
+				GPU_remove(MainScreen.gpu, 0);
+				MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(MainScreen.gpu, 0);
+				MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_MBG1 : 
+			if(MainScreen.gpu->dispBG[1])
+			{
+				GPU_remove(MainScreen.gpu, 1);
+				MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(MainScreen.gpu, 1);
+				MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_MBG2 : 
+			if(MainScreen.gpu->dispBG[2])
+			{
+				GPU_remove(MainScreen.gpu, 2);
+				MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(MainScreen.gpu, 2);
+				MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_MBG3 : 
+			if(MainScreen.gpu->dispBG[3])
+			{
+				GPU_remove(MainScreen.gpu, 3);
+				MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(MainScreen.gpu, 3);
+				MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_SBG0 : 
+			if(SubScreen.gpu->dispBG[0])
+			{
+				GPU_remove(SubScreen.gpu, 0);
+				MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(SubScreen.gpu, 0);
+				MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_SBG1 : 
+			if(SubScreen.gpu->dispBG[1])
+			{
+				GPU_remove(SubScreen.gpu, 1);
+				MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(SubScreen.gpu, 1);
+				MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_SBG2 : 
+			if(SubScreen.gpu->dispBG[2])
+			{
+				GPU_remove(SubScreen.gpu, 2);
+				MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(SubScreen.gpu, 2);
+				MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDM_SBG3 : 
+			if(SubScreen.gpu->dispBG[3])
+			{
+				GPU_remove(SubScreen.gpu, 3);
+				MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_UNCHECKED);
+			}
+			else
+			{
+				GPU_addBack(SubScreen.gpu, 3);
+				MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+
+		case IDM_PAUSE:
+			Pause();
+			return 0;
+
+		case IDM_GBASLOT:
+			GBAslotDialog(hwnd);
+			return 0;
+
+		case IDM_CHEATS_LIST:
+			CheatsListDialog(hwnd);
+			return 0;
+
+		case IDM_CHEATS_SEARCH:
+			CheatsSearchDialog(hwnd);
+			return 0;
+
+		case ID_VIEW_FRAMECOUNTER:
+			frameCounterDisplay ^= 1;
+			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
+			return 0;
+
+		case ID_VIEW_DISPLAYFPS:
+			FpsDisplay ^= 1;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileInt("Display", "Display Fps", FpsDisplay, IniName);
+			osd->clear();
+			return 0;
+
+#define clearsaver() \
+	MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_UNCHECKED); \
+	MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED); \
+	MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED); \
+	MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED); \
+	MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED); \
+	MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED); \
+	MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED); 
+
+#define saver(one) \
+	MainWindow->checkMenu(one, MF_BYCOMMAND | MF_CHECKED); 
+
+		case IDC_SAVETYPE1:
+			clearsaver();
+			saver(IDC_SAVETYPE1);
+			mmu_select_savetype(0,&backupmemorytype,&backupmemorysize);
+			return 0;
+		case IDC_SAVETYPE2:
+			clearsaver();
+			saver(IDC_SAVETYPE2);
+			mmu_select_savetype(1,&backupmemorytype,&backupmemorysize);
+			return 0;   
+		case IDC_SAVETYPE3:
+			clearsaver();
+			saver(IDC_SAVETYPE3);
+			mmu_select_savetype(2,&backupmemorytype,&backupmemorysize);
+			return 0;   
+		case IDC_SAVETYPE4:
+			clearsaver();
+			saver(IDC_SAVETYPE4);
+			mmu_select_savetype(3,&backupmemorytype,&backupmemorysize);
+			return 0;
+		case IDC_SAVETYPE5:
+			clearsaver();
+			saver(IDC_SAVETYPE5);
+			mmu_select_savetype(4,&backupmemorytype,&backupmemorysize);
+			return 0; 
+		case IDC_SAVETYPE6:
+			clearsaver();
+			saver(IDC_SAVETYPE6);
+			mmu_select_savetype(5,&backupmemorytype,&backupmemorysize);
+			return 0; 
+		case IDC_SAVETYPE7:
+			clearsaver();
+			saver(IDC_SAVETYPE7);
+			mmu_select_savetype(6,&backupmemorytype,&backupmemorysize);
+			return 0; 
+
+		case IDM_RESET:
+			CheatsSearchReset();
+			NDS_Reset();
+			frameCounter=0;
+			return 0;
+
+		case IDM_3DCONFIG:
+			{
+				bool tpaused = false;
+				if(execute) 
+				{
+					tpaused = true;
+					NDS_Pause();
+				}
+
+				DialogBox(hAppInst, MAKEINTRESOURCE(IDD_3DSETTINGS), hwnd, (DLGPROC)GFX3DSettingsDlgProc);
+
+				if(tpaused) NDS_UnPause();
+			}
+			return 0;
+
+		case IDC_FRAMESKIPAUTO:
+		case IDC_FRAMESKIP0:
+		case IDC_FRAMESKIP1:
+		case IDC_FRAMESKIP2:
+		case IDC_FRAMESKIP3:
+		case IDC_FRAMESKIP4:
+		case IDC_FRAMESKIP5:
+		case IDC_FRAMESKIP6:
+		case IDC_FRAMESKIP7:
+		case IDC_FRAMESKIP8:
+		case IDC_FRAMESKIP9:
+			{
+				if(LOWORD(wParam) == IDC_FRAMESKIPAUTO)
+				{
+					autoframeskipenab = 1;
+					WritePrivateProfileString("Video", "FrameSkip", "AUTO", IniName);
+				}
+				else
+				{
+					char text[80];
+					autoframeskipenab = 0;
+					frameskiprate = LOWORD(wParam) - IDC_FRAMESKIP0;
+					sprintf(text, "%d", frameskiprate);
+					WritePrivateProfileString("Video", "FrameSkip", text, IniName);
+				}
+
+				MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP0, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP1, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP2, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP3, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP4, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP5, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP6, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP7, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
+			}
+			return 0;
+		case IDC_LANGENGLISH:
+			SaveLanguage(0);
+			ChangeLanguage(0);
+			CheckLanguage(LOWORD(wParam));
+			return 0;
+		case IDC_LANGFRENCH:
+			SaveLanguage(1);
+			ChangeLanguage(1);
+			CheckLanguage(LOWORD(wParam));
+			return 0;
+		case IDC_LANGDANISH:
+			SaveLanguage(2);
+			ChangeLanguage(2);
+			CheckLanguage(LOWORD(wParam));
+			return 0;
+		case IDM_WEBSITE:
+			ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
+			return 0;
+
+		case IDM_FORUM:
+			ShellExecute(NULL, "open", "http://forums.desmume.org/index.php", NULL, NULL, SW_SHOWNORMAL);
+			return 0;
+
+		case IDM_ABOUT:
+			{
+				bool tpaused=false;
+				if (execute) 
+				{
+					tpaused=true;
+					NDS_Pause();
+				}
+				DialogBox(hAppInst,MAKEINTRESOURCE(IDD_ABOUT_BOX), hwnd, (DLGPROC) AboutBox_Proc);
+				if (tpaused)
+					NDS_UnPause();
+
+				return 0;
+			}
 
 #ifndef BETA_VERSION
-                  case IDM_SUBMITBUGREPORT:
-                       ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
-                  return 0;
+		case IDM_SUBMITBUGREPORT:
+			ShellExecute(NULL, "open", "http://sourceforge.net/tracker/?func=add&group_id=164579&atid=832291", NULL, NULL, SW_SHOWNORMAL);
+			return 0;
 #endif
 
-                  case IDC_ROTATE0:
-						SetRotate(hwnd, 0);
-						return 0;
-                  case IDC_ROTATE90:
-						SetRotate(hwnd, 90);
-						return 0;
-                  case IDC_ROTATE180:
-						SetRotate(hwnd, 180);
-						return 0;
-                  case IDC_ROTATE270:
-						SetRotate(hwnd, 270);
-						return 0;
+		case IDC_ROTATE0:
+			SetRotate(hwnd, 0);
+			return 0;
+		case IDC_ROTATE90:
+			SetRotate(hwnd, 90);
+			return 0;
+		case IDC_ROTATE180:
+			SetRotate(hwnd, 180);
+			return 0;
+		case IDC_ROTATE270:
+			SetRotate(hwnd, 270);
+			return 0;
 
-        case IDC_WINDOW1X:
+		case IDC_WINDOW1X:
 			windowSize=1;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
@@ -2687,7 +2620,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			break;
 
-			
+
 		case IDM_DEFSIZE:
 			{
 				if(windowSize)
@@ -2704,13 +2637,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 
 		}
-		
-            // return 0;
-        default:                      /* for messages that we don't deal with */
-            return DefWindowProc (hwnd, message, wParam, lParam);
-    }
 
-    return 0;
+		// return 0;
+	default:                      /* for messages that we don't deal with */
+		return DefWindowProc (hwnd, message, wParam, lParam);
+	}
+
+	return 0;
 }
 
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
@@ -2761,105 +2694,105 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
-                                      LPARAM lParam)
+									  LPARAM lParam)
 {
-   static UINT_PTR timerid=0;
-   switch (uMsg)
-   {
-      case WM_INITDIALOG:
-      {
-         int i;
-         char tempstr[MAX_PATH];
-         // Setup Sound Core Combo box
-         SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_RESETCONTENT, 0, 0);
-         SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)"None");
+	static UINT_PTR timerid=0;
+	switch (uMsg)
+	{
+	case WM_INITDIALOG:
+		{
+			int i;
+			char tempstr[MAX_PATH];
+			// Setup Sound Core Combo box
+			SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_RESETCONTENT, 0, 0);
+			SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)"None");
 
-		 for (i = 1; SNDCoreList[i] != NULL; i++)
-            SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)SNDCoreList[i]->Name);
+			for (i = 1; SNDCoreList[i] != NULL; i++)
+				SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_ADDSTRING, 0, (LPARAM)SNDCoreList[i]->Name);
 
-         // Set Selected Sound Core
-         for (i = 0; SNDCoreList[i] != NULL; i++)
-         {
-            if (sndcoretype == SNDCoreList[i]->id)
-               SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_SETCURSEL, i, 0);
-         }
+			// Set Selected Sound Core
+			for (i = 0; SNDCoreList[i] != NULL; i++)
+			{
+				if (sndcoretype == SNDCoreList[i]->id)
+					SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_SETCURSEL, i, 0);
+			}
 
-         // Setup Sound Buffer Size Edit Text
-         sprintf(tempstr, "%d", sndbuffersize);
-         SetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr);
+			// Setup Sound Buffer Size Edit Text
+			sprintf(tempstr, "%d", sndbuffersize);
+			SetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr);
 
-         // Setup Volume Slider
-         SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETRANGE, 0, MAKELONG(0, 100));
+			// Setup Volume Slider
+			SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETRANGE, 0, MAKELONG(0, 100));
 
-         // Set Selected Volume
-         SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETPOS, TRUE, sndvolume);
+			// Set Selected Volume
+			SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_SETPOS, TRUE, sndvolume);
 
-         timerid = SetTimer(hDlg, 1, 500, NULL);
-         return TRUE;
-      }
-      case WM_TIMER:
-      {
-         if (timerid == wParam)
-         {
-            int setting;
-            setting = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);
-            SPU_SetVolume(setting);
-            break;
-         }
-         break;
-      }
-      case WM_COMMAND:
-      {
-         switch (LOWORD(wParam))
-         {
-            case IDOK:
-            {
-               char tempstr[MAX_PATH];
+			timerid = SetTimer(hDlg, 1, 500, NULL);
+			return TRUE;
+		}
+	case WM_TIMER:
+		{
+			if (timerid == wParam)
+			{
+				int setting;
+				setting = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);
+				SPU_SetVolume(setting);
+				break;
+			}
+			break;
+		}
+	case WM_COMMAND:
+		{
+			switch (LOWORD(wParam))
+			{
+			case IDOK:
+				{
+					char tempstr[MAX_PATH];
 
-               EndDialog(hDlg, TRUE);
+					EndDialog(hDlg, TRUE);
 
-               // Write Sound core type
-               sndcoretype = SNDCoreList[SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_GETCURSEL, 0, 0)]->id;
-               sprintf(tempstr, "%d", sndcoretype);
-               WritePrivateProfileString("Sound", "SoundCore", tempstr, IniName);
+					// Write Sound core type
+					sndcoretype = SNDCoreList[SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_GETCURSEL, 0, 0)]->id;
+					sprintf(tempstr, "%d", sndcoretype);
+					WritePrivateProfileString("Sound", "SoundCore", tempstr, IniName);
 
-               // Write Sound Buffer size
-               GetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr, 6);
-               sscanf(tempstr, "%d", &sndbuffersize);
-               WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
+					// Write Sound Buffer size
+					GetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr, 6);
+					sscanf(tempstr, "%d", &sndbuffersize);
+					WritePrivateProfileString("Sound", "SoundBufferSize", tempstr, IniName);
 
-			   {
-				Lock lock;
-				SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
-			   }
+					{
+						Lock lock;
+						SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
+					}
 
-               // Write Volume
-               sndvolume = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);
-               sprintf(tempstr, "%d", sndvolume);
-               WritePrivateProfileString("Sound", "Volume", tempstr, IniName);
-               SPU_SetVolume(sndvolume);
+					// Write Volume
+					sndvolume = SendDlgItemMessage(hDlg, IDC_SLVOLUME, TBM_GETPOS, 0, 0);
+					sprintf(tempstr, "%d", sndvolume);
+					WritePrivateProfileString("Sound", "Volume", tempstr, IniName);
+					SPU_SetVolume(sndvolume);
 
-               return TRUE;
-            }
-            case IDCANCEL:
-            {
-               EndDialog(hDlg, FALSE);
-               return TRUE;
-            }
-            default: break;
-         }
+					return TRUE;
+				}
+			case IDCANCEL:
+				{
+					EndDialog(hDlg, FALSE);
+					return TRUE;
+				}
+			default: break;
+			}
 
-         break;
-      }
-      case WM_DESTROY:
-      {
-         if (timerid != 0)
-            KillTimer(hDlg, timerid);
-         break;
-      }
-   }
+			break;
+		}
+	case WM_DESTROY:
+		{
+			if (timerid != 0)
+				KillTimer(hDlg, timerid);
+			break;
+		}
+	}
 
-   return FALSE;
+	return FALSE;
 }
 
 

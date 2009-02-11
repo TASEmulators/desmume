@@ -38,9 +38,6 @@ InputCust * GetInputCustom(HWND hwnd);
 #define CUSTKEY_CTRL_MASK  0x02
 #define CUSTKEY_SHIFT_MASK 0x04
 
-
-
-
 struct SJoypad {
     BOOL Enabled;
     WORD Left;
@@ -111,6 +108,8 @@ extern SJoypad ToggleJoypadStorage[8];
 //extern SCustomKeys CustomKeys;
 extern SJoypad TurboToggleJoypadStorage[8];
 
+void RunInputConfig();
+void RunHotkeyConfig();
 
 #endif
 
