@@ -1789,7 +1789,9 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 
 		// don't pull down menu if alt is a hotkey or the menu isn't there, unless no game is running
 		//if(!Settings.StopEmulation && ((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey || GetMenu (GUI.hWnd) == NULL) && !GetAsyncKeyState(VK_F4)))
-		//	return 0;
+		/*if(((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey || GetMenu (MainWindow->getHWnd()) == NULL) && !GetAsyncKeyState(VK_F4)))
+			return 0;*/
+		return 1;
 	}
 
 	return 1;
@@ -2637,13 +2639,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 
 		}
-
-		// return 0;
-	default:                      /* for messages that we don't deal with */
-		return DefWindowProc (hwnd, message, wParam, lParam);
 	}
 
-	return 0;
+  return DefWindowProc (hwnd, message, wParam, lParam);
 }
 
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
