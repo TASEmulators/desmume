@@ -911,6 +911,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\hotkey.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\inputdx.cpp"
 					>
 				</File>
@@ -1022,6 +1026,10 @@
 				</File>
 				<File
 					RelativePath=".\ginfo.h"
+					>
+				</File>
+				<File
+					RelativePath=".\hotkey.h"
 					>
 				</File>
 				<File

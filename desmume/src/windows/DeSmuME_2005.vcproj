@@ -537,6 +537,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\hotkey.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\hotkey.h"
+				>
+			</File>
+			<File
 				RelativePath=".\inputdx.cpp"
 				>
 			</File>

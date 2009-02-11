@@ -43,6 +43,7 @@
 #endif
 
 #include "inputdx.h"
+#include "hotkey.h"
 
 #include "main.h"
 #include "resource.h"
