@@ -24,39 +24,54 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <string>
 
 enum HotkeyPage {
-	HOTKEY_PAGE_TOOLS=0,
-	HOTKEY_PAGE_PLACEHOLDER=1,
+	HOTKEY_PAGE_MAIN=0,
+	HOTKEY_PAGE_STATE,
+	HOTKEY_PAGE_STATE_SLOTS,
 	NUM_HOTKEY_PAGE,
 };
 
 static LPCTSTR hotkeyPageTitle[] = {
-	_T("Tools"),
-	_T("Placeholder"),
+	_T("Main"),
+	_T("Savestates"),
+	_T("Savestate Slots"),
 	_T("NUM_HOTKEY_PAGE"),
 };
 
 
-struct SCustomKey {
-	typedef void (*THandler) (void);
+struct SCustomKey
+{
+	typedef void (*THandler) (int param);
 	WORD key;
 	WORD modifiers;
 	THandler handleKeyDown;
 	THandler handleKeyUp;
 	HotkeyPage page;
-	LPCTSTR name;
+	std::wstring name;
 	const char* code;
+	int param;
 	//HotkeyTiming timing;
 };
 
-union SCustomKeys {
-	struct {
-		SCustomKey PrintScreen;
-		SCustomKey LastItem; // dummy, must be last
-	};
-	SCustomKey key[];
+struct SCustomKeys
+{
+	SCustomKey Save[10];
+	SCustomKey Load[10];
+	SCustomKey Slot[10];
+	SCustomKey QuickSave, QuickLoad;
+
+	SCustomKey Pause, FrameAdvance;
+
+	SCustomKey PrintScreen;
+	SCustomKey LastItem; // dummy, must be last
+
+	//--methods--
+	SCustomKey &key(int i) { return ((SCustomKey*)this)[i]; }
+	SCustomKey const &key(int i) const { return ((SCustomKey*)this)[i]; }
 };
+//SCustomKey key[];
 
 extern SCustomKeys CustomKeys;
 
@@ -66,7 +81,11 @@ void InitCustomKeys (SCustomKeys *keys);
 int GetModifiers(int key);
 
 //HOTKEY HANDLERS
-void HK_PrintScreen();
+void HK_PrintScreen(int);
+void HK_StateSaveSlot(int);
+void HK_StateLoadSlot(int);
+void HK_StateSetSlot(int);
+void HK_Pause(int);
 
 #endif //HOTKEY_H_INCLUDED
 

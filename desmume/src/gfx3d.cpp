@@ -1083,7 +1083,6 @@ unsigned short gfx3d_glGetVecRes(unsigned int index)
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-extern void NDS_Pause();
 
 void gfx3d_execute(u8 cmd, u32 param)
 {
