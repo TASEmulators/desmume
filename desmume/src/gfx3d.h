@@ -75,6 +75,8 @@ struct POLY {
 		
 		return false;
 	}
+
+	int getAlpha() { return (polyAttr>>16)&0x1F; }
 };
 
 #define POLYLIST_SIZE 100000
@@ -84,16 +86,16 @@ struct POLYLIST {
 	int count;
 };
 
-/*#define PROJLIST_SIZE 1000
-struct PROJLIST {
-	float projMatrix[PROJLIST_SIZE][16];
-	int count;
-};*/
-
 struct VERT {
 	float coord[4];
 	float texcoord[2];
-	u8 color[4];
+	u8 color[3];
+	float fcolor[3];
+	void color_to_float() {
+		fcolor[0] = color[0];
+		fcolor[1] = color[1];
+		fcolor[2] = color[2];
+	}
 };
 
 #define VERTLIST_SIZE 400000
@@ -130,7 +132,6 @@ struct GFX3D
 
 	POLYLIST* polylist;
 	VERTLIST* vertlist;
-	//PROJLIST* projlist;
 	int indexlist[POLYLIST_SIZE];
 
 	BOOL wbuffer, sortmode;

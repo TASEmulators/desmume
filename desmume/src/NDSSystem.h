@@ -274,6 +274,14 @@ inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
 
 	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
 
+extern struct TCommonSettings {
+	TCommonSettings() 
+		: HighResolutionInterpolateColor(true)
+	{}
+	bool HighResolutionInterpolateColor;
+} CommonSettings;
+
+
 #endif
 
  	  	 

@@ -774,23 +774,25 @@ static void OGLRender()
 				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
 				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
 
+				u8 alpha =	material_5bit_to_8bit[poly->getAlpha()];
+
 				u8 color0[4] = {
 					material_5bit_to_8bit[vert0->color[0]],
 					material_5bit_to_8bit[vert0->color[1]],
 					material_5bit_to_8bit[vert0->color[2]],
-					material_5bit_to_8bit[vert0->color[3]]
+					alpha
 				};
 				u8 color1[4] = {
 					material_5bit_to_8bit[vert1->color[0]],
 					material_5bit_to_8bit[vert1->color[1]],
 					material_5bit_to_8bit[vert1->color[2]],
-					material_5bit_to_8bit[vert1->color[3]]
+					alpha
 				};
 				u8 color2[4] = {
 					material_5bit_to_8bit[vert2->color[0]],
 					material_5bit_to_8bit[vert2->color[1]],
 					material_5bit_to_8bit[vert2->color[2]],
-					material_5bit_to_8bit[vert2->color[3]]
+					alpha
 				};
 
 				glTexCoord2fv(vert0->texcoord);
