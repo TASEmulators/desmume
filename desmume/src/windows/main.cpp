@@ -802,6 +802,8 @@ DWORD WINAPI run()
 	{
 		while(execute)
 		{
+			input_process();
+
 			{
 				Lock lock;
 				cycles = NDS_exec((560190<<1)-cycles);
@@ -821,10 +823,7 @@ DWORD WINAPI run()
 
 			//    if (!skipnextframe)
 			//   {
-			//input->process();
-			//TODO INPUT
-			void input_process();
-			input_process();
+	
 
 			if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
 			osd->update();

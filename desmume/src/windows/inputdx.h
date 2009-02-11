@@ -110,6 +110,7 @@ extern SJoypad TurboToggleJoypadStorage[8];
 
 void RunInputConfig();
 void RunHotkeyConfig();
+void input_process();
 
 #endif
 
