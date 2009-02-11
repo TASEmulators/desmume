@@ -23,11 +23,6 @@
 #ifndef INPUTDX_INCLUDED
 #define INPUTDX_INCLUDED
 
-void InitInputCustomControl(void);
-HWND CreateInputCustom(HWND hwndParent);
-void InitKeyCustomControl(void);
-HWND CreateKeyCustom(HWND hwndParent);
-
 typedef struct
 {
     COLORREF crForeGnd;    // Foreground text colour
@@ -43,52 +38,8 @@ InputCust * GetInputCustom(HWND hwnd);
 #define CUSTKEY_CTRL_MASK  0x02
 #define CUSTKEY_SHIFT_MASK 0x04
 
-struct SCustomKey {
-	WORD key;
-	WORD modifiers;
-};
 
-struct SCustomKeys {
-	SCustomKey SpeedUp;
-	SCustomKey SpeedDown;
-	SCustomKey Pause;
-	SCustomKey FrameAdvance;
-	SCustomKey SkipUp;
-	SCustomKey SkipDown;
-	SCustomKey ScopeTurbo;
-	SCustomKey ScopePause;
-	SCustomKey FrameCount;
-	SCustomKey ReadOnly;
-	SCustomKey Save [10];
-	SCustomKey Load [10];
-	SCustomKey FastForward;
-	SCustomKey ShowPressed;
-	SCustomKey SaveScreenShot;
-	SCustomKey SlotPlus;
-	SCustomKey SlotMinus;
-	SCustomKey SlotSave;
-	SCustomKey SlotLoad;
-	SCustomKey BGL1;
-	SCustomKey BGL2;
-	SCustomKey BGL3;
-	SCustomKey BGL4;
-	SCustomKey BGL5;
-	SCustomKey ClippingWindows;
-//	SCustomKey BGLHack;
-	SCustomKey Transparency;
-	SCustomKey HDMA;
-	SCustomKey GLCube;
-//	SCustomKey InterpMode7;
-	SCustomKey JoypadSwap;
-	SCustomKey SwitchControllers;
-	SCustomKey TurboA, TurboB, TurboY, TurboX, TurboL, TurboR, TurboStart, TurboSelect, TurboLeft, TurboUp, TurboRight, TurboDown;
-	SCustomKey SelectSave [10];
-	SCustomKey ResetGame;
-	SCustomKey ToggleCheats;
-	SCustomKey ToggleSound [8];
-	SCustomKey ToggleMacro [8];
-	SCustomKey EditMacro;
-};
+
 
 struct SJoypad {
     BOOL Enabled;
@@ -157,7 +108,7 @@ struct SJoyState{
 
 extern SJoypad Joypad[16];
 extern SJoypad ToggleJoypadStorage[8];
-extern SCustomKeys CustomKeys;
+//extern SCustomKeys CustomKeys;
 extern SJoypad TurboToggleJoypadStorage[8];
 
 

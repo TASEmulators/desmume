@@ -31,6 +31,8 @@
 #include <tchar.h>
 #include <io.h>
 
+#include <string>
+
 #if (((defined(_MSC_VER) && _MSC_VER >= 1300)) || defined(__MINGW32__))
 	// both MINGW and VS.NET use fstream instead of fstream.h which is deprecated
 	#include <fstream>
@@ -91,46 +93,6 @@
 #define HOTKEYS_ALT_MOD "Alt + "
 #define HOTKEYS_LABEL_BLUE "Blue means the hotkey is already mapped.\nPink means it conflicts with a game button.\nRed means it's reserved by Windows.\nA hotkey can be disabled using Escape."
 #define HOTKEYS_HKCOMBO "Page %d"
-#define HOTKEYS_LABEL_1_1 "speed +"
-#define HOTKEYS_LABEL_1_2 "speed -"
-#define HOTKEYS_LABEL_1_3 "pause"
-#define HOTKEYS_LABEL_1_4 "frame advance"
-#define HOTKEYS_LABEL_1_5 "fast forward"
-#define HOTKEYS_LABEL_1_6 "skip +"
-#define HOTKEYS_LABEL_1_7 "skip -"
-#define HOTKEYS_LABEL_1_8 "superscope turbo"
-#define HOTKEYS_LABEL_1_9 "superscope pause"
-#define HOTKEYS_LABEL_1_10 "show pressed keys"
-#define HOTKEYS_LABEL_1_11 "movie frame count"
-#define HOTKEYS_LABEL_1_12 "movie read-only"
-#define HOTKEYS_LABEL_1_13 "save screenshot"
-#define HOTKEYS_LABEL_2_1 "Graphics Layer 1"
-#define HOTKEYS_LABEL_2_2 "Graphics Layer 2"
-#define HOTKEYS_LABEL_2_3 "Graphics Layer 3"
-#define HOTKEYS_LABEL_2_4 "Graphics Layer 4"
-#define HOTKEYS_LABEL_2_5 "Sprites Layer"
-#define HOTKEYS_LABEL_2_6 "Clipping Windows"
-#define HOTKEYS_LABEL_2_7 "Transparency"
-#define HOTKEYS_LABEL_2_8 "HDMA Emulation"
-#define HOTKEYS_LABEL_2_9 "GLCube Mode"
-#define HOTKEYS_LABEL_2_10 "Switch Controllers"
-#define HOTKEYS_LABEL_2_11 "Joypad Swap"
-#define HOTKEYS_LABEL_2_12 "Reset Game"
-#define HOTKEYS_LABEL_2_13 "Toggle Cheats"
-#define HOTKEYS_LABEL_3_1 "Turbo A mode"
-#define HOTKEYS_LABEL_3_2 "Turbo B mode"
-#define HOTKEYS_LABEL_3_3 "Turbo Y mode"
-#define HOTKEYS_LABEL_3_4 "Turbo X mode"
-#define HOTKEYS_LABEL_3_5 "Turbo L mode"
-#define HOTKEYS_LABEL_3_6 "Turbo R mode"
-#define HOTKEYS_LABEL_3_7 "Turbo Start mode"
-#define HOTKEYS_LABEL_3_8 "Turbo Select mode"
-#define HOTKEYS_LABEL_3_9 "Turbo Left mode"
-#define HOTKEYS_LABEL_3_10 "Turbo Up mode"
-#define HOTKEYS_LABEL_3_11 "Turbo Right mode"
-#define HOTKEYS_LABEL_3_12 "Turbo Down mode"
-//#define HOTKEYS_LABEL_4_12 "Interpolate Mode 7"
-//#define HOTKEYS_LABEL_4_13 "BG Layering hack"
 
 // gaming buttons and axes
 #define GAMEDEVICE_JOYNUMPREFIX "(J%x)" // don't change this
@@ -243,7 +205,6 @@ SJoyState JoystickF [16];
 SJoypad ToggleJoypadStorage[8];
 SJoypad TurboToggleJoypadStorage[8];
 u32 joypads [8];
-SCustomKeys CustomKeys;
 
 //the main input configuration:
 SJoypad DefaultJoypad[16] = {
@@ -279,6 +240,26 @@ SJoypad Joypad[16];
 extern volatile BOOL paused;
 
 #define MAXKEYPAD 15
+
+#define WM_CUSTKEYDOWN	(WM_USER+50)
+#define WM_CUSTKEYUP	(WM_USER+51)
+
+#define NUM_HOTKEY_CONTROLS 20
+
+#define COUNT(a) (sizeof (a) / sizeof (a[0]))
+
+const int IDC_LABEL_HK_Table[NUM_HOTKEY_CONTROLS] = {
+	IDC_LABEL_HK1 , IDC_LABEL_HK2 , IDC_LABEL_HK3 , IDC_LABEL_HK4 , IDC_LABEL_HK5 ,
+	IDC_LABEL_HK6 , IDC_LABEL_HK7 , IDC_LABEL_HK8 , IDC_LABEL_HK9 , IDC_LABEL_HK10,
+	IDC_LABEL_HK11, IDC_LABEL_HK12, IDC_LABEL_HK13, IDC_LABEL_HK14, IDC_LABEL_HK15,
+	IDC_LABEL_HK16, IDC_LABEL_HK17, IDC_LABEL_HK18, IDC_LABEL_HK19, IDC_LABEL_HK20,
+};
+const int IDC_HOTKEY_Table[NUM_HOTKEY_CONTROLS] = {
+	IDC_HOTKEY1 , IDC_HOTKEY2 , IDC_HOTKEY3 , IDC_HOTKEY4 , IDC_HOTKEY5 ,
+	IDC_HOTKEY6 , IDC_HOTKEY7 , IDC_HOTKEY8 , IDC_HOTKEY9 , IDC_HOTKEY10,
+	IDC_HOTKEY11, IDC_HOTKEY12, IDC_HOTKEY13, IDC_HOTKEY14, IDC_HOTKEY15,
+	IDC_HOTKEY16, IDC_HOTKEY17, IDC_HOTKEY18, IDC_HOTKEY19, IDC_HOTKEY20,
+};
 
 typedef char TcDIBuf[512];
 
@@ -353,7 +334,40 @@ static void ReadControl(const char* name, WORD& output)
 	}
 }
 
-static void LoadConfig()
+static void ReadHotkey(const char* name, WORD& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("Hotkeys",name,-1,IniName);
+	if(temp != -1) {
+		output = temp;
+	}
+}
+
+static void LoadHotkeyConfig()
+{
+	SCustomKey *key = CustomKeys.key;
+
+	while (!IsLastCustomKey(key)) {
+		ReadHotkey(key->code,key->key); 
+		std::string modname = (std::string)key->code + (std::string)" MOD";
+		ReadHotkey(modname.c_str(),key->modifiers);
+		key++;
+	}
+}
+
+static void SaveHotkeyConfig()
+{
+	SCustomKey *key = CustomKeys.key;
+
+	while (!IsLastCustomKey(key)) {
+		WritePrivateProfileInt("Hotkeys",(char*)key->code,key->key,IniName);
+		std::string modname = (std::string)key->code + (std::string)" MOD";
+		WritePrivateProfileInt("Hotkeys",(char*)modname.c_str(),key->modifiers,IniName);
+		key++;
+	}
+}
+
+static void LoadInputConfig()
 {
 	memcpy(&Joypad,&DefaultJoypad,sizeof(Joypad));
 	
@@ -374,7 +388,7 @@ static void WriteControl(char* name, WORD val)
 	WritePrivateProfileInt("Controls",name,val,IniName);
 }
 
-static void SaveConfig()
+static void SaveInputConfig()
 {
 #define DO(X) WriteControl(#X,Joypad[0] . X);
 	DO(Left); DO(Right); DO(Up); DO(Down);
@@ -389,8 +403,6 @@ static void SaveConfig()
 BOOL di_init()
 {
 	HWND hParentWnd = MainWindow->getHWnd();
-
-	LoadConfig();
 
 	pDI = NULL;
 	pJoystick = NULL;
@@ -983,75 +995,29 @@ bool IsReserved (WORD Key, int modifiers)
 	return false;
 }
 
+
 int GetNumHotKeysAssignedTo (WORD Key, int modifiers)
 {
 	int count = 0;
 	{
 		#define MATCHES_KEY(k) \
 			(Key != 0 && Key != VK_ESCAPE \
-		   && ((Key == CustomKeys.k.key && modifiers == CustomKeys.k.modifiers) \
-		   || (Key == VK_SHIFT   && CustomKeys.k.modifiers & CUSTKEY_SHIFT_MASK) \
-		   || (Key == VK_MENU    && CustomKeys.k.modifiers & CUSTKEY_ALT_MASK) \
-		   || (Key == VK_CONTROL && CustomKeys.k.modifiers & CUSTKEY_CTRL_MASK) \
-		   || (CustomKeys.k.key == VK_SHIFT   && modifiers & CUSTKEY_SHIFT_MASK) \
-		   || (CustomKeys.k.key == VK_MENU    && modifiers & CUSTKEY_ALT_MASK) \
-		   || (CustomKeys.k.key == VK_CONTROL && modifiers & CUSTKEY_CTRL_MASK)))
+		   && ((Key == k->key && modifiers == k->modifiers) \
+		   || (Key == VK_SHIFT   && k->modifiers & CUSTKEY_SHIFT_MASK) \
+		   || (Key == VK_MENU    && k->modifiers & CUSTKEY_ALT_MASK) \
+		   || (Key == VK_CONTROL && k->modifiers & CUSTKEY_CTRL_MASK) \
+		   || (k->key == VK_SHIFT   && modifiers & CUSTKEY_SHIFT_MASK) \
+		   || (k->key == VK_MENU    && modifiers & CUSTKEY_ALT_MASK) \
+		   || (k->key == VK_CONTROL && modifiers & CUSTKEY_CTRL_MASK)))
 
-		if(MATCHES_KEY(SpeedUp))           count++;
-		if(MATCHES_KEY(SpeedDown))         count++;
-		if(MATCHES_KEY(Pause))             count++;
-		if(MATCHES_KEY(FrameAdvance))      count++;
-		if(MATCHES_KEY(SkipUp))            count++;
-		if(MATCHES_KEY(SkipDown))          count++;
-		if(MATCHES_KEY(ScopeTurbo))        count++;
-		if(MATCHES_KEY(ScopePause))        count++;
-		if(MATCHES_KEY(FrameCount))        count++;
-		if(MATCHES_KEY(ReadOnly))          count++;
-		for(int i = 0 ; i < 10 ; i++) {
-			if(MATCHES_KEY(Save[i]))       count++;
-			if(MATCHES_KEY(Load[i]))       count++;
-			if(MATCHES_KEY(SelectSave[i])) count++;
+		SCustomKey *key = CustomKeys.key;
+		while (!IsLastCustomKey(key)) {
+			if (MATCHES_KEY(key)) {
+				count++;
+			}
+			key++;
 		}
-		if(MATCHES_KEY(FastForward))       count++;
-		if(MATCHES_KEY(ShowPressed))       count++;
-		if(MATCHES_KEY(SaveScreenShot))    count++;
-		if(MATCHES_KEY(SlotPlus))          count++;
-		if(MATCHES_KEY(SlotMinus))         count++;
-		if(MATCHES_KEY(SlotSave))          count++;
-		if(MATCHES_KEY(SlotLoad))          count++;
-		if(MATCHES_KEY(BGL1))              count++;
-		if(MATCHES_KEY(BGL2))              count++;
-		if(MATCHES_KEY(BGL3))              count++;
-		if(MATCHES_KEY(BGL4))              count++;
-		if(MATCHES_KEY(BGL5))              count++;
-		if(MATCHES_KEY(ClippingWindows))   count++;
-//		if(MATCHES_KEY(BGLHack))           count++;
-		if(MATCHES_KEY(Transparency))      count++;
-		if(MATCHES_KEY(GLCube))            count++;
-//		if(MATCHES_KEY(InterpMode7))       count++;
-		if(MATCHES_KEY(JoypadSwap))        count++;
-		if(MATCHES_KEY(SwitchControllers)) count++;
-		if(MATCHES_KEY(TurboA))            count++;
-		if(MATCHES_KEY(TurboB))            count++;
-		if(MATCHES_KEY(TurboY))            count++;
-		if(MATCHES_KEY(TurboX))            count++;
-		if(MATCHES_KEY(TurboL))            count++;
-		if(MATCHES_KEY(TurboR))            count++;
-		if(MATCHES_KEY(TurboStart))        count++;
-		if(MATCHES_KEY(TurboSelect))       count++;
-		if(MATCHES_KEY(TurboLeft))         count++;
-		if(MATCHES_KEY(TurboUp))           count++;
-		if(MATCHES_KEY(TurboRight))        count++;
-		if(MATCHES_KEY(TurboDown))         count++;
-		if(MATCHES_KEY(ResetGame))         count++;
-		if(MATCHES_KEY(ToggleCheats))      count++;
-		for(int i = 0 ; i < 8 ; i++) {
-			if(MATCHES_KEY(ToggleSound[i])) count++;
-		}
-		for(int i = 0 ; i < 8 ; i++) {
-			if(MATCHES_KEY(ToggleMacro[i])) count++;
-		}
-		if(MATCHES_KEY(EditMacro))         count++;
+
 
 		#undef MATCHES_KEY
 	}
@@ -1915,8 +1881,7 @@ switch(msg)
 
 		case IDOK:
 			//Settings.UpAndDown = IsDlgButtonChecked(hDlg, IDC_ALLOWLEFTRIGHT);
-			//WinSaveConfigFile(); //TODO
-			SaveConfig();
+			SaveInputConfig();
 			EndDialog(hDlg,0);
 			break;
 
@@ -2198,6 +2163,10 @@ void input_feedback(BOOL enable)
 void input_init()
 {
 	InitCustomControls();
+	
+	LoadInputConfig();
+	LoadHotkeyConfig();
+
 	di_init();
 	FeedbackON = input_feedback;
 }
@@ -2226,6 +2195,151 @@ void input_process()
 	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
 }
 
+static void set_hotkeyinfo(HWND hDlg)
+{
+	HotkeyPage page = (HotkeyPage) SendDlgItemMessage(hDlg,IDC_HKCOMBO,CB_GETCURSEL,0,0);
+	SCustomKey *key = CustomKeys.key;
+	int i = 0;
+
+	while (!IsLastCustomKey(key) && i < NUM_HOTKEY_CONTROLS) {
+		if (page == key->page) {
+			SendDlgItemMessage(hDlg, IDC_HOTKEY_Table[i], WM_USER+44, key->key, key->modifiers);
+			SetDlgItemText(hDlg, IDC_LABEL_HK_Table[i], key->name);
+			ShowWindow(GetDlgItem(hDlg, IDC_HOTKEY_Table[i]), SW_SHOW);
+			i++;
+		}
+		key++;
+	}
+	// disable unused controls
+	for (; i < NUM_HOTKEY_CONTROLS; i++) {
+		SendDlgItemMessage(hDlg, IDC_HOTKEY_Table[i], WM_USER+44, 0, 0);
+		SetDlgItemText(hDlg, IDC_LABEL_HK_Table[i], INPUTCONFIG_LABEL_UNUSED);
+		ShowWindow(GetDlgItem(hDlg, IDC_HOTKEY_Table[i]), SW_HIDE);
+	}
+}
+
+
+// DlgHotkeyConfig
+INT_PTR CALLBACK DlgHotkeyConfig(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	int i, which;
+	static HotkeyPage page = (HotkeyPage) 0;
+
+
+	static SCustomKeys keys;
+
+	//HBRUSH g_hbrBackground;
+switch(msg)
+	{
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			BeginPaint (hDlg, &ps);
+
+			EndPaint (hDlg, &ps);
+		}
+		return true;
+	case WM_INITDIALOG:
+		//if(DirectX.Clipped) S9xReRefresh();
+		SetWindowText(hDlg,HOTKEYS_TITLE);
+
+		// insert hotkey page list items
+		for(i = 0 ; i < NUM_HOTKEY_PAGE ; i++)
+		{
+			SendDlgItemMessage(hDlg, IDC_HKCOMBO, CB_ADDSTRING, 0, (LPARAM)(LPCTSTR)hotkeyPageTitle[i]);
+		}
+
+		SendDlgItemMessage(hDlg,IDC_HKCOMBO,CB_SETCURSEL,(WPARAM)0,0);
+
+		InitCustomKeys(&keys);
+		CopyCustomKeys(&keys, &CustomKeys);
+		for( i=0;i<256;i++)
+		{
+			GetAsyncKeyState(i);
+		}
+
+		SetDlgItemText(hDlg,IDC_LABEL_BLUE,HOTKEYS_LABEL_BLUE);
+
+		set_hotkeyinfo(hDlg);
+
+		PostMessage(hDlg,WM_COMMAND, CBN_SELCHANGE<<16, 0);
+
+		SetFocus(GetDlgItem(hDlg,IDC_HKCOMBO));
+
+
+		return true;
+		break;
+	case WM_CLOSE:
+		EndDialog(hDlg, 0);
+		return TRUE;
+	case WM_USER+46:
+		// refresh command, for clicking away from a selected field
+		page = (HotkeyPage) SendDlgItemMessage(hDlg, IDC_HKCOMBO, CB_GETCURSEL, 0, 0);
+		set_hotkeyinfo(hDlg);
+		return TRUE;
+	case WM_USER+43:
+	{
+		//MessageBox(hDlg,"USER+43 CAUGHT","moo",MB_OK);
+		int modifiers = GetModifiers(wParam);
+
+		page = (HotkeyPage) SendDlgItemMessage(hDlg, IDC_HKCOMBO, CB_GETCURSEL, 0, 0);
+		TCHAR text[256];
+
+		which = GetDlgCtrlID((HWND)lParam);
+		for (i = 0; i < NUM_HOTKEY_CONTROLS; i++) {
+			if (which == IDC_HOTKEY_Table[i])
+				break;
+		}
+		GetDlgItemText(hDlg, IDC_LABEL_HK_Table[i], text, COUNT(text));
+
+		SCustomKey *key = CustomKeys.key;
+		while (!IsLastCustomKey(key)) {
+			if (page == key->page) {
+				if (lstrcmp(text, key->name) == 0) {
+					key->key = wParam;
+					key->modifiers = modifiers;
+					break;
+				}
+			}
+			key++;
+		}
+
+		set_hotkeyinfo(hDlg);
+		PostMessage(hDlg,WM_NEXTDLGCTL,0,0);
+//		PostMessage(hDlg,WM_KILLFOCUS,0,0);
+	}
+		return true;
+	case WM_COMMAND:
+		switch(LOWORD(wParam))
+		{
+		case IDCANCEL:
+			CopyCustomKeys(&CustomKeys, &keys);
+			EndDialog(hDlg,0);
+			break;
+		case IDOK:
+			SaveHotkeyConfig();
+			EndDialog(hDlg,0);
+			break;
+		}
+		switch(HIWORD(wParam))
+		{
+			case CBN_SELCHANGE:
+				page = (HotkeyPage) SendDlgItemMessage(hDlg, IDC_HKCOMBO, CB_GETCURSEL, 0, 0);
+				SendDlgItemMessage(hDlg, IDC_HKCOMBO, CB_SETCURSEL, (WPARAM)page, 0);
+
+				set_hotkeyinfo(hDlg);
+
+				SetFocus(GetDlgItem(hDlg, IDC_HKCOMBO));
+
+				break;
+		}
+		return FALSE;
+
+	}
+
+	return FALSE;
+}
+
 
 void RunInputConfig()
 {
@@ -2234,7 +2348,7 @@ void RunInputConfig()
 
 void RunHotkeyConfig()
 {
-	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_KEYCUSTOM), MainWindow->getHWnd(), DlgInputConfig);
+	DialogBox(hAppInst, MAKEINTRESOURCE(IDD_KEYCUSTOM), MainWindow->getHWnd(), DlgHotkeyConfig);
 }
 
 

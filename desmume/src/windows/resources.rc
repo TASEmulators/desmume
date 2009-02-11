@@ -2247,91 +2247,56 @@ BEGIN
     CONTROL         " ",IDC_DEBUG,"InputCustom",WS_DISABLED | WS_TABSTOP,163,120,71,12,WS_EX_CLIENTEDGE
 END
 
-IDD_KEYCUSTOM DIALOGEX 0, 0, 349, 203
+IDD_KEYCUSTOM DIALOGEX 0, 0, 382, 180
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION
 CAPTION "Customize Special Keys"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    PUSHBUTTON      "Cancel",IDCANCEL,66,182,50,14
-    PUSHBUTTON      "OK",IDOK,16,182,50,14
-    RTEXT           "speed +",IDC_LABEL_HK1,4,8,58,8
-    RTEXT           "frame advance",IDC_LABEL_HK4,2,47,59,8
-    RTEXT           "speed -",IDC_LABEL_HK2,3,21,59,8
-    RTEXT           "pause",IDC_LABEL_HK3,2,34,60,8
-    RTEXT           "skip +",IDC_LABEL_HK6,2,74,60,8
-    RTEXT           "movie frame count",IDC_LABEL_HK11,0,138,62,8
-    RTEXT           "superscope turbo",IDC_LABEL_HK8,0,98,62,8
-    RTEXT           "movie read-only",IDC_LABEL_HK12,3,150,59,8
-    RTEXT           "superscope pause",IDC_LABEL_HK9,2,111,60,8
-    RTEXT           "skip -",IDC_LABEL_HK7,3,85,59,8
-    CONTROL         "",IDC_HOTKEY1,"InputCustomHot",WS_TABSTOP,66,5,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY2,"InputCustomHot",WS_TABSTOP,66,18,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY3,"InputCustomHot",WS_TABSTOP,66,31,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY4,"InputCustomHot",WS_TABSTOP,66,45,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY5,"InputCustomHot",WS_TABSTOP,66,58,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY6,"InputCustomHot",WS_TABSTOP,66,70,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY7,"InputCustomHot",WS_TABSTOP,66,83,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY8,"InputCustomHot",WS_TABSTOP,66,96,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY9,"InputCustomHot",WS_TABSTOP,66,109,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY10,"InputCustomHot",WS_TABSTOP,66,122,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY11,"InputCustomHot",WS_TABSTOP,66,135,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY12,"InputCustomHot",WS_TABSTOP,66,149,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_HOTKEY13,"InputCustomHot",WS_TABSTOP,66,162,98,12,WS_EX_CLIENTEDGE
-    CONTROL         "",IDC_SAVE1,"InputCustomHot",WS_TABSTOP,192,5,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save1",IDC_LABEL_UP2,170,21,20,8
-    CONTROL         "",IDC_SAVE2,"InputCustomHot",WS_TABSTOP,192,18,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save2",IDC_LABEL_UP3,170,34,20,8
-    CONTROL         "",IDC_SAVE3,"InputCustomHot",WS_TABSTOP,192,31,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save3",IDC_LABEL_UP4,170,47,20,8
-    CONTROL         "",IDC_SAVE4,"InputCustomHot",WS_TABSTOP,192,45,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save4",IDC_LABEL_UP5,170,58,20,8
-    CONTROL         "",IDC_SAVE5,"InputCustomHot",WS_TABSTOP,192,58,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save5",IDC_LABEL_UP6,170,72,20,8
-    CONTROL         "",IDC_SAVE6,"InputCustomHot",WS_TABSTOP,192,71,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save6",IDC_LABEL_UP7,170,85,20,8
-    CONTROL         "",IDC_SAVE7,"InputCustomHot",WS_TABSTOP,192,82,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save7",IDC_LABEL_UP8,170,98,20,8
-    CONTROL         "",IDC_SAVE8,"InputCustomHot",WS_TABSTOP,192,96,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save8",IDC_LABEL_UP9,170,112,20,8
-    CONTROL         "",IDC_SAVE9,"InputCustomHot",WS_TABSTOP,192,109,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save9",IDC_LABEL_UP10,170,125,20,8
-    CONTROL         "",IDC_SAVE10,"InputCustomHot",WS_TABSTOP,192,122,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save0",IDC_LABEL_UP11,170,8,20,8
-    CONTROL         "",IDC_SAVE11,"InputCustomHot",WS_TABSTOP,279,5,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load1",IDC_LABEL_UP12,257,21,20,8
-    CONTROL         "",IDC_SAVE12,"InputCustomHot",WS_TABSTOP,279,18,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load2",IDC_LABEL_UP13,257,34,20,8
-    CONTROL         "",IDC_SAVE13,"InputCustomHot",WS_TABSTOP,279,31,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load3",IDC_LABEL_UP14,257,48,20,8
-    CONTROL         "",IDC_SAVE14,"InputCustomHot",WS_TABSTOP,279,45,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load4",IDC_LABEL_UP15,257,61,20,8
-    CONTROL         "",IDC_SAVE15,"InputCustomHot",WS_TABSTOP,279,58,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load5",IDC_LABEL_UP16,257,72,20,8
-    CONTROL         "",IDC_SAVE16,"InputCustomHot",WS_TABSTOP,279,71,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load6",IDC_LABEL_UP17,257,85,20,8
-    CONTROL         "",IDC_SAVE17,"InputCustomHot",WS_TABSTOP,279,82,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load7",IDC_LABEL_UP18,257,98,20,8
-    CONTROL         "",IDC_SAVE18,"InputCustomHot",WS_TABSTOP,279,96,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load8",IDC_LABEL_UP19,257,111,20,8
-    CONTROL         "",IDC_SAVE19,"InputCustomHot",WS_TABSTOP,279,109,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load9",IDC_LABEL_UP20,257,125,20,8
-    CONTROL         "",IDC_SAVE20,"InputCustomHot",WS_TABSTOP,279,122,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load0",IDC_LABEL_UP21,257,8,20,8
-    RTEXT           "fast forward",IDC_LABEL_HK5,3,61,58,8
-    RTEXT           "show pressed keys",IDC_LABEL_HK10,1,125,61,8
-    RTEXT           "save screenshot",IDC_LABEL_HK13,3,163,59,8
-    RTEXT           "slot-",IDC_LABEL_UP22,170,138,20,8
-    CONTROL         "",IDC_SLOTMINUS,"InputCustomHot",WS_TABSTOP,192,135,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "slot+",IDC_LABEL_UP23,257,138,20,8
-    CONTROL         "",IDC_SLOTPLUS,"InputCustomHot",WS_TABSTOP,279,135,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "save#",IDC_LABEL_UP24,166,151,23,8
-    CONTROL         "",IDC_SLOTSAVE,"InputCustomHot",WS_TABSTOP,192,149,60,12,WS_EX_CLIENTEDGE
-    RTEXT           "load#",IDC_LABEL_UP25,253,151,23,8
-    CONTROL         "",IDC_SLOTLOAD,"InputCustomHot",WS_TABSTOP,279,149,60,12,WS_EX_CLIENTEDGE
-    LTEXT           "Blue means the hotkey is already mapped.\nPink means it conflicts with a game button.\nRed means it's reserved by Windows.\nA hotkey can be disabled using Escape.",IDC_LABEL_BLUE,208,164,136,32
-    COMBOBOX        IDC_HKCOMBO,134,183,60,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "OK",IDOK,16,159,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,66,159,50,14
+    RTEXT           "Item #01",IDC_LABEL_HK1,2,7,80,8
+    RTEXT           "Item #02",IDC_LABEL_HK2,2,20,80,8
+    RTEXT           "Item #03",IDC_LABEL_HK3,2,33,80,8
+    RTEXT           "Item #04",IDC_LABEL_HK4,2,47,80,8
+    RTEXT           "Item #05",IDC_LABEL_HK5,2,60,80,8
+    RTEXT           "Item #06",IDC_LABEL_HK6,2,72,80,8
+    RTEXT           "Item #07",IDC_LABEL_HK7,2,85,80,8
+    RTEXT           "Item #08",IDC_LABEL_HK8,2,98,80,8
+    RTEXT           "Item #09",IDC_LABEL_HK9,2,111,80,8
+    RTEXT           "Item #10",IDC_LABEL_HK10,2,124,80,8
+    RTEXT           "Item #11",IDC_LABEL_HK11,192,7,80,8
+    RTEXT           "Item #12",IDC_LABEL_HK12,192,20,80,8
+    RTEXT           "Item #13",IDC_LABEL_HK13,192,33,80,8
+    RTEXT           "Item #14",IDC_LABEL_HK14,192,47,80,8
+    RTEXT           "Item #15",IDC_LABEL_HK15,192,60,80,8
+    RTEXT           "Item #16",IDC_LABEL_HK16,192,72,80,8
+    RTEXT           "Item #17",IDC_LABEL_HK17,192,85,80,8
+    RTEXT           "Item #18",IDC_LABEL_HK18,192,98,80,8
+    RTEXT           "Item #19",IDC_LABEL_HK19,192,111,80,8
+    RTEXT           "Item #20",IDC_LABEL_HK20,192,124,80,8
+    CONTROL         "",IDC_HOTKEY1,"InputCustomHot",WS_TABSTOP,86,5,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY2,"InputCustomHot",WS_TABSTOP,86,18,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY3,"InputCustomHot",WS_TABSTOP,86,31,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY4,"InputCustomHot",WS_TABSTOP,86,45,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY5,"InputCustomHot",WS_TABSTOP,86,58,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY6,"InputCustomHot",WS_TABSTOP,86,70,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY7,"InputCustomHot",WS_TABSTOP,86,83,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY8,"InputCustomHot",WS_TABSTOP,86,96,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY9,"InputCustomHot",WS_TABSTOP,86,109,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY10,"InputCustomHot",WS_TABSTOP,86,122,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY11,"InputCustomHot",WS_TABSTOP,276,5,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY12,"InputCustomHot",WS_TABSTOP,276,18,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY13,"InputCustomHot",WS_TABSTOP,276,31,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY14,"InputCustomHot",WS_TABSTOP,276,45,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY15,"InputCustomHot",WS_TABSTOP,276,58,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY16,"InputCustomHot",WS_TABSTOP,276,70,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY17,"InputCustomHot",WS_TABSTOP,276,83,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY18,"InputCustomHot",WS_TABSTOP,276,96,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY19,"InputCustomHot",WS_TABSTOP,276,109,98,12,WS_EX_CLIENTEDGE
+    CONTROL         "",IDC_HOTKEY20,"InputCustomHot",WS_TABSTOP,276,122,98,12,WS_EX_CLIENTEDGE
+    LTEXT           "Blue means the hotkey is already mapped.\nPink means it conflicts with a game button.\nRed means it's reserved by Windows.\nA hotkey can be disabled using Escape.",IDC_LABEL_BLUE,238,140,136,32
+    COMBOBOX        IDC_HKCOMBO,16,141,168,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
-
 //
 // Accelerator resources
 //
