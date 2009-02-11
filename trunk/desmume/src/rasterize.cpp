@@ -36,6 +36,7 @@
 #include "render3D.h"
 #include "gfx3d.h"
 #include "texcache.h"
+#include "NDSSystem.h"
 
 using std::min;
 using std::max;
@@ -288,6 +289,7 @@ struct Shader
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			//debugging tricks
 			//dst.color = materialColor;
 			//dst.color.color = polynum*8+8;
 			//dst.color.components.a = 31;
@@ -462,9 +464,9 @@ static void triangle_from_devmaster()
 	float fx1 = verts[0]->coord[0], fy1 = verts[0]->coord[1], fz1 = verts[0]->coord[2];
 	float fx2 = verts[1]->coord[0], fy2 = verts[1]->coord[1], fz2 = verts[1]->coord[2];
 	float fx3 = verts[2]->coord[0], fy3 = verts[2]->coord[1], fz3 = verts[2]->coord[2];
-	u8 r1 = verts[0]->color[0], g1 = verts[0]->color[1], b1 = verts[0]->color[2], a1 = verts[0]->color[3];
-	u8 r2 = verts[1]->color[0], g2 = verts[1]->color[1], b2 = verts[1]->color[2], a2 = verts[1]->color[3];
-	u8 r3 = verts[2]->color[0], g3 = verts[2]->color[1], b3 = verts[2]->color[2], a3 = verts[2]->color[3];
+	float r1 = verts[0]->fcolor[0], g1 = verts[0]->fcolor[1], b1 = verts[0]->fcolor[2];
+	float r2 = verts[1]->fcolor[0], g2 = verts[1]->fcolor[1], b2 = verts[1]->fcolor[2];
+	float r3 = verts[2]->fcolor[0], g3 = verts[2]->fcolor[1], b3 = verts[2]->fcolor[2];
 	float u1 = verts[0]->texcoord[0], v1 = verts[0]->texcoord[1];
 	float u2 = verts[1]->texcoord[0], v2 = verts[1]->texcoord[1];
 	float u3 = verts[2]->texcoord[0], v3 = verts[2]->texcoord[1];
@@ -555,13 +557,20 @@ static void triangle_from_devmaster()
 				shader.invw = i_invw.Z;
 				shader.invu = i_tex_invu.Z;
 				shader.invv = i_tex_invv.Z;
+
+				//perspective-correct the colors
+				float r = (i_color_r.Z / i_invw.Z) + 0.5f;
+				float g = (i_color_g.Z / i_invw.Z) + 0.5f;
+				float b = (i_color_b.Z / i_invw.Z) + 0.5f;
+
 				//this is a HACK: 
 				//we are being very sloppy with our interpolation precision right now
 				//and rather than fix it, i just want to clamp it
+				shader.materialColor.components.r = max(0,min(31,(int)r));
+				shader.materialColor.components.g = max(0,min(31,(int)g));
+				shader.materialColor.components.b = max(0,min(31,(int)b));
+
 				shader.materialColor.components.a = polyAttr.alpha;
-				shader.materialColor.components.r = max(0,min(31,i_color_r.cur()));
-				shader.materialColor.components.g = max(0,min(31,i_color_g.cur()));
-				shader.materialColor.components.b = max(0,min(31,i_color_b.cur()));
 
 				//pixel shader
 				Fragment shaderOutput;
@@ -761,9 +770,19 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
 	
 
 #define INTERP(X) ret . X = interpolate(t, inside-> X ,outside-> X )
-	INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
+	
 	INTERP(coord[0]); INTERP(coord[1]); INTERP(coord[2]); INTERP(coord[3]);
 	INTERP(texcoord[0]); INTERP(texcoord[1]);
+
+	if(CommonSettings.HighResolutionInterpolateColor)
+	{
+		INTERP(fcolor[0]); INTERP(fcolor[1]); INTERP(fcolor[2]);
+	}
+	else
+	{
+		INTERP(color[0]); INTERP(color[1]); INTERP(color[2]);
+		ret.color_to_float();
+	}
 
 	//this seems like a prudent measure to make sure that math doesnt make a point pop back out
 	//of the clip volume through interpolation
@@ -901,7 +920,9 @@ static void SoftRastRender()
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
 
-	//printf("%d\n",gfx3d.wbuffer?1:0);
+	//convert colors to float to get more precision in case we need it
+	for(int i=0;i<gfx3d.vertlist->count;i++)
+		gfx3d.vertlist->list[i].color_to_float();
 
 	//submit all polys to clipper
 	clippedPolyCounter = 0;
@@ -929,6 +950,11 @@ static void SoftRastRender()
 			//vert.coord[0] = max(0.0f,min(1.0f,vert.coord[0]));
 			//vert.coord[1] = max(0.0f,min(1.0f,vert.coord[1]));
 			//vert.coord[2] = max(0.0f,min(1.0f,vert.coord[2]));
+
+			//perspective-correct the colors
+			vert.fcolor[0] /= vert.coord[3];
+			vert.fcolor[1] /= vert.coord[3];
+			vert.fcolor[2] /= vert.coord[3];
 
 			//viewport transformation
 			vert.coord[0] *= 256;

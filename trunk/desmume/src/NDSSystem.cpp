@@ -45,6 +45,8 @@
 
 //#define USE_REAL_BIOS
 
+TCommonSettings CommonSettings;
+
 static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];

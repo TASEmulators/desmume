@@ -493,4 +493,4 @@
 #define	IDC_HKCOMBO								60077
 #define	IDD_KEYCUSTOM							60078
 #define IDM_HOTKEY_CONFIG						60079
-
+#define IDC_INTERPOLATECOLOR					70000

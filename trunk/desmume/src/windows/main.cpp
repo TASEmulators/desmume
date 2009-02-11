@@ -1347,6 +1347,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	}
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileInt("3D", "HighResolutionInterpolateColor", 1, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
 
 #ifdef BETA_VERSION
@@ -2651,6 +2652,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 		{
 			int i;
 
+			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.HighResolutionInterpolateColor?1:0);
+
 			for(i = 0; core3DList[i] != NULL; i++)
 			{
 				ComboBox_AddString(GetDlgItem(hw, IDC_3DCORE), core3DList[i]->name);
@@ -2665,8 +2668,10 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			{
 			case IDOK:
 				{
+					CommonSettings.HighResolutionInterpolateColor = IsDlgButtonChecked(hw,IDC_INTERPOLATECOLOR);
 					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
+					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.HighResolutionInterpolateColor?1:0, IniName);
 				}
 			case IDCANCEL:
 				{
