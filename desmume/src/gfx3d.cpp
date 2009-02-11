@@ -619,7 +619,6 @@ static void SetVertex()
 	vert.color[0] = colorRGB[0];
 	vert.color[1] = colorRGB[1];
 	vert.color[2] = colorRGB[2];
-	vert.color[3] = colorRGB[3];
 	tempVertInfo.map[tempVertInfo.count] = vertlist->count + tempVertInfo.count - continuation;
 	tempVertInfo.count++;
 
