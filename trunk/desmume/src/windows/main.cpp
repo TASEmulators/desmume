@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <tchar.h>
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"
@@ -70,6 +71,7 @@
 #include "cheatsWin.h"
 
 #include "../common.h"
+#include "main.h"
 
 #include "snddx.h"
 
@@ -118,6 +120,9 @@ LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 
 //===================== Input vars
 //INPUTCLASS				*input = NULL;
+
+#define WM_CUSTKEYDOWN	(WM_USER+50)
+#define WM_CUSTKEYUP	(WM_USER+51)
 
 #ifndef EXPERIMENTAL_GBASLOT
 /* The compact flash disk image file */
@@ -1299,18 +1304,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	EnableMenuItem(mainMenu, IDM_GBASLOT, MF_GRAYED);
 #endif
 	
-	LOG("Init NDS\n");
 
-	//input = new INPUTCLASS();
-	//if (!input->Init(MainWindow->getHWnd(), &NDS_inputPost))
-	//{
-	//	MessageBox(NULL, "Error DXInput init\n", "DeSmuME", MB_OK);
-	//	exit(-1);
-	//}
-	//NDS_inputInit();
+	InitCustomKeys(&CustomKeys);
 
 	void input_init();
 	input_init();
+
+	LOG("Init NDS\n");
 
 	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
@@ -1776,6 +1776,11 @@ LRESULT OpenFile()
 	return 0;
 }
 
+void SetDefaults()
+{
+	InitCustomKeys(&CustomKeys);
+}
+
 //TODO - async key state? for real?
 int GetModifiers(int key)
 {
@@ -1790,16 +1795,121 @@ int GetModifiers(int key)
     return modifiers;
 }
 
+SCustomKeys CustomKeys;
+
+int HandleKeyUp(WPARAM wParam, LPARAM lParam, int modifiers)
+{
+	SCustomKey *key = CustomKeys.key;
+
+	while (!IsLastCustomKey(key)) {
+		if (wParam == key->key && modifiers == key->modifiers && key->handleKeyUp) {
+			key->handleKeyUp();
+		}
+		key++;
+	}
+
+	return 1;
+}
+
 int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 {
 	//some crap from snes9x I dont understand with toggles and macros...
 
 	bool hitHotKey = false;
 
-	if((wParam == 0 || wParam == VK_ESCAPE)) // if it's the 'disabled' key, it's never pressed as a hotkey
-		return 0;
+	if(!(wParam == 0 || wParam == VK_ESCAPE)) // if it's the 'disabled' key, it's never pressed as a hotkey
+	{
+		SCustomKey *key = CustomKeys.key;
+		while (!IsLastCustomKey(key)) {
+			if (wParam == key->key && modifiers == key->modifiers && key->handleKeyDown) {
+				key->handleKeyDown();
+				hitHotKey = true;
+			}
+			key++;
+		}
 
-	return 0;
+		// don't pull down menu if alt is a hotkey or the menu isn't there, unless no game is running
+		//if(!Settings.StopEmulation && ((wParam == VK_MENU || wParam == VK_F10) && (hitHotKey || GetMenu (GUI.hWnd) == NULL) && !GetAsyncKeyState(VK_F4)))
+		//	return 0;
+	}
+
+	return 1;
+}
+
+
+bool IsLastCustomKey (const SCustomKey *key)
+{
+	return (key->key == 0xFFFF && key->modifiers == 0xFFFF);
+}
+
+void SetLastCustomKey (SCustomKey *key)
+{
+	key->key = 0xFFFF;
+	key->modifiers = 0xFFFF;
+}
+
+void ZeroCustomKeys (SCustomKeys *keys)
+{
+	UINT i = 0;
+
+	SetLastCustomKey(&keys->LastItem);
+	while (!IsLastCustomKey(&keys->key[i])) {
+		keys->key[i].key = 0;
+		keys->key[i].modifiers = 0;
+		i++;
+	};
+}
+
+
+void HK_PrintScreen()
+{
+    OPENFILENAME ofn;
+    char filename[MAX_PATH] = "";
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = MainWindow->getHWnd();
+    ofn.lpstrFilter = "Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFile =  filename;
+	ofn.lpstrTitle = "Print Screen Save As";
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrDefExt = "bmp";
+    ofn.Flags = OFN_OVERWRITEPROMPT;
+    GetSaveFileName(&ofn);
+    NDS_WriteBMP(filename);
+}
+
+void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
+{
+	UINT i = 0;
+
+	do {
+		dst->key[i] = src->key[i];
+	} while (!IsLastCustomKey(&src->key[i++]));
+}
+
+void InitCustomKeys (SCustomKeys *keys)
+{
+	UINT i = 0;
+
+	SetLastCustomKey(&keys->LastItem);
+	while (!IsLastCustomKey(&keys->key[i])) {
+		keys->key[i].key = 0;
+		keys->key[i].modifiers = 0;
+		keys->key[i].handleKeyDown = NULL;
+		keys->key[i].handleKeyUp = NULL;
+		keys->key[i].page = NUM_HOTKEY_PAGE;
+		keys->key[i].name = NULL;
+		//keys->key[i].timing = PROCESS_NOW;
+		i++;
+	};
+
+	//set handlers
+	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
+	keys->PrintScreen.code = "PrintScreen";
+	keys->PrintScreen.name = _T("Print Screen");
+	keys->PrintScreen.page = HOTKEY_PAGE_TOOLS;
+	keys->PrintScreen.key = VK_PAUSE;
 }
 
 void RunConfig(int num) 
@@ -1818,8 +1928,8 @@ void RunConfig(int num)
 			RunInputConfig();
 			break;
 		case 1:
-			/*void RunHotkeyConfig();
-			RunHotkeyConfig();*/
+			void RunHotkeyConfig();
+			RunHotkeyConfig();
 			break;
 		case 2:
 			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_FIRMSETTINGS), hwnd, (DLGPROC) FirmConfig_Proc);
@@ -1905,6 +2015,23 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			return 1;
 			//break;
+		
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+		case WM_CUSTKEYDOWN:
+		{
+			int modifiers = GetModifiers(wParam);
+			if(!HandleKeyMessage(wParam,lParam, modifiers))
+				return 0;
+	        break;
+		}
+		case WM_CUSTKEYUP:
+		{
+			int modifiers = GetModifiers(wParam);
+			HandleKeyUp(wParam, lParam, modifiers);
+		}
+		break;
+
 		case WM_SIZE:
 			switch(wParam)
 			{
@@ -2020,22 +2147,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                   case IDM_OPEN:
                        return OpenFile();
                   case IDM_PRINTSCREEN:
-                       {
-                            OPENFILENAME ofn;
-                            char filename[MAX_PATH] = "";
-                            ZeroMemory(&ofn, sizeof(ofn));
-                            ofn.lStructSize = sizeof(ofn);
-                            ofn.hwndOwner = hwnd;
-                            ofn.lpstrFilter = "Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
-                            ofn.nFilterIndex = 1;
-                            ofn.lpstrFile =  filename;
-                            ofn.nMaxFile = MAX_PATH;
-                            ofn.lpstrDefExt = "bmp";
-                            ofn.Flags = OFN_OVERWRITEPROMPT;
-                            GetSaveFileName(&ofn);
-                            NDS_WriteBMP(filename);
-                       }
-                  return 0;
+					  HK_PrintScreen();
+					  return 0;
                   case IDM_QUICK_PRINTSCREEN:
                        {
                           NDS_WriteBMP("./printscreen.bmp");
@@ -2663,13 +2776,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			break;
 
-		case WM_SYSKEYDOWN:
-		{
-			int modifiers = GetModifiers(wParam);
-			if(!HandleKeyMessage(wParam,lParam, modifiers))
-				return 0;
-	        break;
-		}
 			
 		case IDM_DEFSIZE:
 			{
