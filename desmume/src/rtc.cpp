@@ -89,12 +89,8 @@ static void rtcRecv()
 				rtc.data[1] = toBCD(tm_local->tm_mon);
 				rtc.data[2] = toBCD(tm_local->tm_mday);
 				rtc.data[3] =  (tm_local->tm_wday + 6) & 7;
-				if (!(rtc.regStatus1 & 0x02))
-				{
-					rtc.data[4] = (tm_local->tm_hour < 12)?0x00:0x40;
-					tm_local->tm_hour %= 12;
-				}
-				rtc.data[4] |= toBCD(tm_local->tm_hour);
+				if (!(rtc.regStatus1 & 0x02)) tm_local->tm_hour %= 12;
+				rtc.data[4] = ((tm_local->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm_local->tm_hour);
 				rtc.data[5] =  toBCD(tm_local->tm_min);
 				rtc.data[6] =  toBCD(tm_local->tm_sec);
 				break;
@@ -105,12 +101,8 @@ static void rtcRecv()
 				time_t	tm;
 				time(&tm);
 				struct tm *tm_local= localtime(&tm);
-				if (!(rtc.regStatus1 & 0x02))
-				{
-					rtc.data[4] = (tm_local->tm_hour < 12)?0x00:0x40;
-					tm_local->tm_hour %= 12;
-				}
-				rtc.data[0] |= toBCD(tm_local->tm_hour);
+				if (!(rtc.regStatus1 & 0x02)) tm_local->tm_hour %= 12;
+				rtc.data[0] = ((tm_local->tm_hour < 12) ? 0x00 : 0x40) | toBCD(tm_local->tm_hour);
 				rtc.data[1] =  toBCD(tm_local->tm_min);
 				rtc.data[2] =  toBCD(tm_local->tm_sec);
 				break;
