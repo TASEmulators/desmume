@@ -148,9 +148,12 @@ WINCLASS	*MainWindow=NULL;
 //HDC  hdc;
 HACCEL hAccel;
 HINSTANCE hAppInst = NULL;
-RECT	MainWindowRect;
+RECT MainScreenRect, SubScreenRect, GapRect;
+RECT MainScreenSrcRect, SubScreenSrcRect;
 int WndX = 0;
 int WndY = 0;
+
+int ScreenGap = 0;
 
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
@@ -173,6 +176,8 @@ BOOL click = FALSE;
 
 BOOL finished = FALSE;
 BOOL romloaded = FALSE;
+
+void SetScreenGap(int gap);
 
 void SetRotate(HWND hwnd, int rot);
 
@@ -331,60 +336,15 @@ DWORD GPU_height        = 192*2;
 DWORD rotationstartscan = 192;
 DWORD rotationscanlines = 192*2;
 
-void SetWindowClientSize(HWND hwnd, int cx, int cy) //found at: http://blogs.msdn.com/oldnewthing/archive/2003/09/11/54885.aspx
-{
-	HMENU hmenu = GetMenu(hwnd);
-	RECT rcWindow = { 0, 0, cx, cy };
-
-	/*
-	*  First convert the client rectangle to a window rectangle the
-	*  menu-wrap-agnostic way.
-	*/
-	AdjustWindowRect(&rcWindow, WS_CAPTION| WS_SYSMENU |WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, hmenu != NULL);
-
-	/*
-	*  If there is a menu, then check how much wrapping occurs
-	*  when we set a window to the width specified by AdjustWindowRect
-	*  and an infinite amount of height.  An infinite height allows
-	*  us to see every single menu wrap.
-	*/
-	if (hmenu) {
-		RECT rcTemp = rcWindow;
-		rcTemp.bottom = 0x7FFF;     /* "Infinite" height */
-		SendMessage(hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rcTemp);
-
-		/*
-		*  Adjust our previous calculation to compensate for menu
-		*  wrapping.
-		*/
-		rcWindow.bottom += rcTemp.top;
-	}
-	SetWindowPos(hwnd, NULL, WndX, WndY, rcWindow.right - rcWindow.left,
-		rcWindow.bottom - rcWindow.top, SWP_NOMOVE | SWP_NOZORDER);
-
-	if (lpBackSurface!=NULL)
-	{
-		IDirectDrawSurface7_Release(lpBackSurface);
-		memset(&ddsd, 0, sizeof(ddsd));
-		ddsd.dwSize          = sizeof(ddsd);
-		ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
-		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
-		ddsd.dwWidth         = cx;
-		ddsd.dwHeight        = cy;
-
-		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
-	}
-}
-
 void ScaleScreen(float factor)
 {
-	if((GPU_rotation == 0) || (GPU_rotation == 180))
+	if((GPU_rotation == 90) || (GPU_rotation == 270))
 	{
-		MainWindow->setClientSize((256 * factor), (384 * factor));
+		MainWindow->setClientSize(((384 + ScreenGap) * factor), (256 * factor));
 	}
 	else
 	{
-		MainWindow->setClientSize((384 * factor), (256 * factor));
+		MainWindow->setClientSize((256 * factor), ((384 + ScreenGap) * factor));
 	}
 }
 
@@ -404,7 +364,7 @@ void translateXY(s32& x, s32& y)
 		break;
 	case 270:
 		x = 255-ty;
-		y = (tx-192);
+		y = (tx-192-ScreenGap);
 		break;
 	}
 }  
@@ -627,7 +587,7 @@ void Display()
 	memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
 	ddsd.dwFlags=DDSD_ALL;
-	res=IDirectDrawSurface7_Lock(lpBackSurface,NULL,&ddsd,DDLOCK_WAIT, NULL);
+	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
 
 	if (res == DD_OK)
 	{
@@ -682,13 +642,38 @@ void Display()
 		}
 		else
 			INFO("16bit depth color not supported");
-		IDirectDrawSurface7_Unlock(lpBackSurface,(LPRECT)ddsd.lpSurface);
 
-		if (IDirectDrawSurface7_Blt(lpPrimarySurface,&MainWindowRect,lpBackSurface,0, DDBLT_WAIT,0)==DDERR_SURFACELOST)
+		lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
+
+		// Main screen
+		if(lpPrimarySurface->Blt(&MainScreenRect, lpBackSurface, &MainScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
 		{
 			LOG("DirectDraw buffers is lost\n");
-			if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
+			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
 				IDirectDrawSurface7_Restore(lpBackSurface);
+		}
+
+		// Sub screen
+		if(lpPrimarySurface->Blt(&SubScreenRect, lpBackSurface, &SubScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
+		{
+			LOG("DirectDraw buffers is lost\n");
+			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
+				IDirectDrawSurface7_Restore(lpBackSurface);
+		}
+
+		// Gap
+		if(ScreenGap > 0)
+		{
+			HDC dc;
+			HBRUSH brush;
+
+			dc = GetDC(MainWindow->getHWnd());
+			brush = CreateSolidBrush(RGB(255, 255, 255));
+
+			FillRect(dc, &GapRect, brush);
+
+			DeleteObject((HGDIOBJ)brush);
+			ReleaseDC(MainWindow->getHWnd(), dc);
 		}
 	}
 	else
@@ -1019,6 +1004,10 @@ int MenuInit()
 	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 
+	MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | ((ScreenGap==0)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==90)?MF_CHECKED:MF_UNCHECKED));
+
 	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
 	GetRecentRoms();
 
@@ -1203,10 +1192,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
+	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384,
+	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384+ScreenGap,
 		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -1238,11 +1228,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	if((GPU_rotation == 90) || (GPU_rotation == 270))
 	{
-		MainWindow->setMinSize(384, 256);
+		MainWindow->setMinSize(384+ScreenGap, 256);
 	}
 	else
 	{
-		MainWindow->setMinSize(256, 384);
+		MainWindow->setMinSize(256, 384+ScreenGap);
 	}
 
 	{
@@ -1466,24 +1456,156 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	return 0;
 }
 
-void GetWndRect(HWND hwnd)
+void UpdateWndRects(HWND hwnd)
 {
 	POINT ptClient;
 	RECT rc;
 
-	GetClientRect(hwnd,&rc);
-	ptClient.x=rc.left;
-	ptClient.y=rc.top;
-	ClientToScreen(hwnd,&ptClient);
-	MainWindowRect.left=ptClient.x;
-	MainWindowRect.top=ptClient.y;
-	WndX = ptClient.x;
-	WndY = ptClient.y;
-	ptClient.x=rc.right;
-	ptClient.y=rc.bottom;
-	ClientToScreen(hwnd,&ptClient);
-	MainWindowRect.right=ptClient.x;
-	MainWindowRect.bottom=ptClient.y;
+	int wndWidth, wndHeight;
+	int defHeight = (384 + ScreenGap);
+	float ratio;
+	int oneScreenHeight, gapHeight;
+
+	GetClientRect(hwnd, &rc);
+
+	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	{
+		wndWidth = (rc.bottom - rc.top);
+		wndHeight = (rc.right - rc.left);
+	}
+	else
+	{
+		wndWidth = (rc.right - rc.left);
+		wndHeight = (rc.bottom - rc.top);
+	}
+
+	ratio = ((float)wndHeight / (float)defHeight);
+	oneScreenHeight = (192 * ratio);
+	gapHeight = (wndHeight - (oneScreenHeight * 2));
+
+	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	{
+		// Main screen
+		ptClient.x = rc.left;
+		ptClient.y = rc.top;
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.left = ptClient.x;
+		MainScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + oneScreenHeight);
+		ptClient.y = (rc.top + wndWidth);
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.right = ptClient.x;
+		MainScreenRect.bottom = ptClient.y;
+
+		// Sub screen
+		ptClient.x = (rc.left + oneScreenHeight + gapHeight);
+		ptClient.y = rc.top;
+		ClientToScreen(hwnd, &ptClient);
+		SubScreenRect.left = ptClient.x;
+		SubScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + oneScreenHeight + gapHeight + oneScreenHeight);
+		ptClient.y = (rc.top + wndWidth);
+		ClientToScreen(hwnd, &ptClient);
+		SubScreenRect.right = ptClient.x;
+		SubScreenRect.bottom = ptClient.y;
+
+		// Gap
+		GapRect.left = (rc.left + oneScreenHeight);
+		GapRect.top = rc.top;
+		GapRect.right = (rc.left + oneScreenHeight + gapHeight);
+		GapRect.bottom = (rc.top + wndWidth);
+	}
+	else
+	{
+		// Main screen
+		ptClient.x = rc.left;
+		ptClient.y = rc.top;
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.left = ptClient.x;
+		MainScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + wndWidth);
+		ptClient.y = (rc.top + oneScreenHeight);
+		ClientToScreen(hwnd, &ptClient);
+		MainScreenRect.right = ptClient.x;
+		MainScreenRect.bottom = ptClient.y;
+
+		// Sub screen
+		ptClient.x = rc.left;
+		ptClient.y = (rc.top + oneScreenHeight + gapHeight);
+		ClientToScreen(hwnd, &ptClient);
+		SubScreenRect.left = ptClient.x;
+		SubScreenRect.top = ptClient.y;
+		ptClient.x = (rc.left + wndWidth);
+		ptClient.y = (rc.top + oneScreenHeight + gapHeight + oneScreenHeight);
+		ClientToScreen(hwnd, &ptClient);
+		SubScreenRect.right = ptClient.x;
+		SubScreenRect.bottom = ptClient.y;
+
+		// Gap
+		GapRect.left = rc.left;
+		GapRect.top = (rc.top + oneScreenHeight);
+		GapRect.right = (rc.left + wndWidth);
+		GapRect.bottom = (rc.top + oneScreenHeight + gapHeight);
+	}
+}
+
+void UpdateScreenRects()
+{
+	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	{
+		// Main screen
+		MainScreenSrcRect.left = 0;
+		MainScreenSrcRect.top = 0;
+		MainScreenSrcRect.right = 192;
+		MainScreenSrcRect.bottom = 256;
+
+		// Sub screen
+		SubScreenSrcRect.left = 192;
+		SubScreenSrcRect.top = 0;
+		SubScreenSrcRect.right = 384;
+		SubScreenSrcRect.bottom = 256;
+	}
+	else
+	{
+		// Main screen
+		MainScreenSrcRect.left = 0;
+		MainScreenSrcRect.top = 0;
+		MainScreenSrcRect.right = 256;
+		MainScreenSrcRect.bottom = 192;
+
+		// Sub screen
+		SubScreenSrcRect.left = 0;
+		SubScreenSrcRect.top = 192;
+		SubScreenSrcRect.right = 256;
+		SubScreenSrcRect.bottom = 384;
+	}
+}
+
+void SetScreenGap(int gap)
+{
+	RECT rc;
+	int height, width;
+	int oldgap, diff;
+
+	GetClientRect(MainWindow->getHWnd(), &rc);
+	width = (rc.right - rc.left);
+	height = (rc.bottom - rc.top);
+
+	oldgap = ScreenGap;
+	ScreenGap = gap;
+
+	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	{
+		diff = ((gap - oldgap) * (height / 256.0f));
+		MainWindow->setMinSize((384 + gap), 256);
+		MainWindow->setClientSize(width+diff, height);
+	}
+	else
+	{
+		diff = ((gap - oldgap) * (width / 256.0f));
+		MainWindow->setMinSize(256, (384 + gap));
+		MainWindow->setClientSize(width, height+diff);
+	}
 }
 
 //========================================================================================
@@ -1536,6 +1658,7 @@ void SetRotate(HWND hwnd, int rot)
 		GPU_height   = 192*2;
 		rotationstartscan = 192;
 		rotationscanlines = 192*2;
+		MainWindow->setMinSize(GPU_width, (GPU_height + ScreenGap));
 		break;
 
 	case 90:
@@ -1544,6 +1667,7 @@ void SetRotate(HWND hwnd, int rot)
 		GPU_height   = 256;
 		rotationstartscan = 0;
 		rotationscanlines = 256;
+		MainWindow->setMinSize((GPU_width + ScreenGap), GPU_height);
 		break;
 
 	case 180:
@@ -1552,6 +1676,7 @@ void SetRotate(HWND hwnd, int rot)
 		GPU_height   = 192*2;
 		rotationstartscan = 0;
 		rotationscanlines = 192*2;
+		MainWindow->setMinSize(GPU_width, (GPU_height + ScreenGap));
 		break;
 
 	case 270:
@@ -1560,10 +1685,10 @@ void SetRotate(HWND hwnd, int rot)
 		GPU_height   = 256;
 		rotationstartscan = 0;
 		rotationscanlines = 256;
+		MainWindow->setMinSize((GPU_width + ScreenGap), GPU_height);
 		break;
 	}
 
-	MainWindow->setMinSize(GPU_width, GPU_height);
 	MainWindow->setClientSize(newwidth, newheight);
 
 	/* Recreate the DirectDraw back buffer */
@@ -1589,6 +1714,8 @@ void SetRotate(HWND hwnd, int rot)
 	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
 
 	gpu_SetRotateScreen(GPU_rotation);
+
+	UpdateScreenRects();
 }
 
 static void AviEnd()
@@ -1874,6 +2001,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_CREATE:
 		{
+			UpdateScreenRects();
 			return 0;
 		}
 	case WM_DESTROY:
@@ -1899,6 +2027,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Save frame counter status
 			WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
+			WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
 			SaveRecentRoms();
 			NDS_DeInit();
 			ExitRunLoop();
@@ -1908,7 +2037,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
 		return 0;
 	case WM_MOVE:
-		GetWndRect(hwnd);
+		UpdateWndRects(hwnd);
 		return 0;
 	case WM_SIZING:
 		{
@@ -1954,7 +2083,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		default:
 			{
 				NDS_UnPause();
-				GetWndRect(hwnd);
+				UpdateWndRects(hwnd);
 			}
 			break;
 		}
@@ -1997,26 +2126,28 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			RECT r ;
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
-			GetClientRect(hwnd,&r) ;
+			GetClientRect(hwnd,&r);
+			int defwidth = 256, defheight = (384+ScreenGap);
+			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 			// translate from scaling (screen resolution to 256x384 or 512x192) 
 			switch (GPU_rotation)
 			{
 			case 0:
 			case 180:
-				x = (x*256) / (r.right - r.left) ;
-				y = (y*384) / (r.bottom - r.top) ;
+				x = (x*defwidth) / winwidth;
+				y = (y*defheight) / winheight;
 				break ;
 			case 90:
 			case 270:
-				x = (x*384) / (r.right - r.left) ;
-				y = (y*256) / (r.bottom - r.top) ;
+				x = (x*defheight) / winwidth;
+				y = (y*defwidth) / winheight;
 				break ;
 			}
 			//translate for rotation
 			if (GPU_rotation != 0)
 				translateXY(x,y);
 			else 
-				y-=192;
+				y-=(192+ScreenGap);
 			if(x<0) x = 0; else if(x>255) x = 255;
 			if(y<0) y = 0; else if(y>192) y = 192;
 			NDS_setTouchPos(x, y);
@@ -2518,6 +2649,33 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			SaveLanguage(2);
 			ChangeLanguage(2);
 			CheckLanguage(LOWORD(wParam));
+			return 0;
+		case IDM_SCREENSEP_NONE:
+			{
+				SetScreenGap(0);
+				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_UNCHECKED);
+				UpdateWndRects(hwnd);
+			}
+			return 0;
+		case IDM_SCREENSEP_BORDER:
+			{
+				SetScreenGap(5);
+				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_UNCHECKED);
+				UpdateWndRects(hwnd);
+			}
+			return 0;
+		case IDM_SCREENSEP_NDSGAP:
+			{
+				SetScreenGap(90);
+				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_CHECKED);
+				UpdateWndRects(hwnd);
+			}
 			return 0;
 		case IDM_WEBSITE:
 			ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
