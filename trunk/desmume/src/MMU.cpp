@@ -3015,7 +3015,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 								adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 
 				// this is hack
-				gxstat |= 0x00000002;
+				//gxstat |= 0x00000002;
 				return gxstat;
 			}
 #endif
@@ -3234,6 +3234,10 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		/* Address is an IO register */
 		switch(adr)
 		{
+			case REG_RTC:
+				rtcWrite(val);
+				break;
+
 			case REG_EXMEMCNT:
 			{
 				u16 oldval = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
@@ -3624,6 +3628,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	   return;
 	}
 #endif
+
 	
 
 #ifdef EXPERIMENTAL_WIFI
@@ -3648,6 +3653,10 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	{
 		switch(adr)
 		{
+			case REG_RTC:
+				rtcWrite((u16)val);
+				break;
+
 			case REG_IME : 
 			{
 				u32 old_val = MMU.reg_IME[ARMCPU_ARM7];
@@ -3884,7 +3893,7 @@ static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 		return (unsigned char)cflash_read(adr);
 #endif
 
-	if (adr == REG_RTC) return rtcRead();
+	if (adr == REG_RTC) return (u8)rtcRead();
 
 #ifdef _MMU_DEBUG
 	mmu_log_debug_ARM7(adr, "(read08) %0x%X", 
@@ -3918,6 +3927,9 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 		/* Address is an IO register */
 		switch(adr)
 		{
+			case REG_RTC:
+				return rtcRead();
+
 			case REG_IME :
 				return (u16)MMU.reg_IME[ARMCPU_ARM7];
 				
@@ -3969,6 +3981,9 @@ static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		/* Address is an IO register */
 		switch(adr)
 		{
+			case REG_RTC:
+				return (u32)rtcRead();
+
 			case REG_IME : 
 				return MMU.reg_IME[ARMCPU_ARM7];
 			case REG_IE :
