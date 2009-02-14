@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <iostream>
+#include <cstdio>
 
 #include "../types.h"
 
