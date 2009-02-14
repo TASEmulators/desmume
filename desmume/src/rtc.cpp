@@ -70,8 +70,9 @@ static void rtcRecv()
 	{
 		case 0:				// status register 1
 			//INFO("RTC: read regstatus1 (0x%02X)\n", rtc.regStatus1);
+			rtc.regStatus1 &= 0x0F;
 			rtc.data[0] = rtc.regStatus1;
-			rtc.regStatus1 &= 0x7F;
+			//rtc.regStatus1 &= 0x7F;
 			break;
 		case 1:				// status register 2
 			//INFO("RTC: read regstatus2 (0x%02X)\n", rtc.regStatus1);
@@ -135,18 +136,19 @@ static void rtcSend()
 	{
 		case 0:				// status register 1
 			//INFO("RTC: write regstatus1 0x%02X\n", rtc.data[0]);
-			rtc.regStatus1 &= 0xF1;
-			rtc.regStatus1 |= (rtc.data[0] | 0x0E);
+		//	rtc.regStatus1 &= 0xF1;
+		//	rtc.regStatus1 |= (rtc.data[0] | 0x0E);
+			rtc.regStatus1 = rtc.data[0];
 			break;
 		case 1:				// status register 2
 			//INFO("RTC: write regstatus2 0x%02X\n", rtc.data[0]);
 			rtc.regStatus2 = rtc.data[0];
 			break;
 		case 2:				// date & time
-			//INFO("RTC: write date & time\n");
+			//INFO("RTC: write date & time : %02X %02X %02X %02X %02X %02X %02X\n", rtc.data[0], rtc.data[1], rtc.data[2], rtc.data[3], rtc.data[4], rtc.data[5], rtc.data[6]);
 		break;
 		case 3:				// time
-			//INFO("RTC: write time\n");
+			//INFO("RTC: write time : %02X %02X %02X\n", rtc.data[0], rtc.data[1], rtc.data[2]);
 		break;
 		case 4:				// freq/alarm 1
 			/*if (cmdBitsSize[0x04] == 8)
@@ -174,7 +176,7 @@ void rtcInit()
 	rtc.regStatus1 |= 0x02;
 }
 
-u8 rtcRead() 
+u16 rtcRead() 
 { 
 	//INFO("MMU Read RTC 0x%02X (%03i)\n", rtc._REG, rtc.bitsCount);
 	return (rtc._REG); 
@@ -213,15 +215,20 @@ void rtcWrite(u16 val)
 			rtc.bitsCount ++;
 			if (rtc.bitsCount == 7)
 			{
-				if ( (rtc.cmd & 0x06) != 0x06 )
+				// Little-endian command
+				if((rtc.cmd & 0x0F) == 0x06)
 				{
-					rtc.cmdStat = 0;
-					//INFO("RTC uknown command 0x02%X\n", rtc.cmd);
-					break;
+					rtc.cmdStat = 2;
+					u8 tmp = rtc.cmd;
+					rtc.cmd = ((tmp & 0x40) >> 6) | ((tmp & 0x20) >> 4) | ((tmp & 0x10) >> 2);
 				}
-				rtc.cmdStat = 2;
-				rtc.cmd >>= 4;
-				rtc.cmd &= 0x07;
+				// Big-endian command
+				else
+				{
+					rtc.cmdStat = 2;
+					rtc.cmd >>= 1;
+					rtc.cmd &= 0x07;
+				}
 				//INFO("RTC command 0x%02X\n", rtc.cmd);
 			}
 

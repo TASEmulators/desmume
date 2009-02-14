@@ -28,6 +28,6 @@
 #include "types.h"
 
 extern	void rtcInit();
-extern	u8 rtcRead();
+extern	u16 rtcRead();
 extern	void rtcWrite(u16 val);
 #endif
