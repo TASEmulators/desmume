@@ -224,6 +224,25 @@ int displayMessageCounter = 0;	//Counter to keep track with how long to display 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
 
+/*const u32 gapColors[16] = {
+	Color::Gray,
+	Color::Brown,
+	Color::Red,
+	Color::Pink,
+	Color::Orange,
+	Color::Yellow,
+	Color::LightGreen,
+	Color::Lime,
+	Color::Green,
+	Color::SeaGreen,
+	Color::SkyBlue,
+	Color::Blue,
+	Color::DarkBlue,
+	Color::DarkViolet,
+	Color::Purple,
+	Color::Fuchsia
+};*/
+
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 									  LPARAM lParam);
@@ -580,7 +599,6 @@ int CreateDDrawBuffers()
 		return 1;
 }
 
-
 void Display()
 {
 	int res;
@@ -664,11 +682,15 @@ void Display()
 		// Gap
 		if(ScreenGap > 0)
 		{
+			//u32 color = gapColors[win_fw_config.fav_colour];
+			//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
+			u32 color_rev = 0xFFFFFF;
+
 			HDC dc;
 			HBRUSH brush;
 
 			dc = GetDC(MainWindow->getHWnd());
-			brush = CreateSolidBrush(RGB(255, 255, 255));
+			brush = CreateSolidBrush(color_rev);
 
 			FillRect(dc, &GapRect, brush);
 
@@ -2670,7 +2692,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_SCREENSEP_NDSGAP:
 			{
-				SetScreenGap(90);
+				SetScreenGap(64);
 				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_UNCHECKED);
 				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_UNCHECKED);
 				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_CHECKED);
