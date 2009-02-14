@@ -2,6 +2,7 @@
 #define _guid_h_
 
 #include <string>
+#include <cstdio>
 #include "../types.h"
 #include "valuearray.h"
 

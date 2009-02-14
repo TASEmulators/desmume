@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cstdarg>
 
 class Logger {
 protected:

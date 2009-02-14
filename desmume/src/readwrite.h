@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include <iostream>
+#include <cstdio>
 
 //well. just for the sake of consistency
 int write8le(u8 b, FILE *fp);
