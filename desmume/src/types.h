@@ -197,7 +197,9 @@ typedef int desmume_BOOL;
 #endif
 
 #ifdef __BIG_ENDIAN__
+#ifndef WORDS_BIGENDIAN
 #define WORDS_BIGENDIAN
+#endif
 #endif
 
 #ifdef WORDS_BIGENDIAN
