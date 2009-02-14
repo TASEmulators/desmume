@@ -105,7 +105,7 @@ BEGIN
         BEGIN
             MENUITEM "None\t(0 px)", IDM_SCREENSEP_NONE
             MENUITEM "Narrow border\t(5 px)", IDM_SCREENSEP_BORDER
-            MENUITEM "DS\t(90 px)", IDM_SCREENSEP_NDSGAP
+            MENUITEM "DS\t(64 px)", IDM_SCREENSEP_NDSGAP
         END
         MENUITEM "&Bevar Højde og Bredde", IDC_FORCERATIO
         MENUITEM "Default size", IDM_DEFSIZE
@@ -266,7 +266,7 @@ BEGIN
         BEGIN
             MENUITEM "None\t(0 px)", IDM_SCREENSEP_NONE
             MENUITEM "Narrow border\t(5 px)", IDM_SCREENSEP_BORDER
-            MENUITEM "DS\t(90 px)", IDM_SCREENSEP_NDSGAP
+            MENUITEM "DS\t(64 px)", IDM_SCREENSEP_NDSGAP
         END
         MENUITEM "&Force Maintain Ratio", IDC_FORCERATIO
         MENUITEM "Default size", IDM_DEFSIZE
@@ -428,7 +428,7 @@ BEGIN
         BEGIN
             MENUITEM "Aucune\t(0 px)", IDM_SCREENSEP_NONE
             MENUITEM "Bordure fine\t(5 px)", IDM_SCREENSEP_BORDER
-            MENUITEM "DS\t(90 px)", IDM_SCREENSEP_NDSGAP
+            MENUITEM "DS\t(64 px)", IDM_SCREENSEP_NDSGAP
         END
         MENUITEM "Conserver le ratio", IDC_FORCERATIO
         MENUITEM "Taille par défaut", IDM_DEFSIZE
