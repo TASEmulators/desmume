@@ -605,14 +605,17 @@ static void triangle_from_devmaster()
 					}
 					else
 					{
-						//dont overwrite pixels on translucent polys with the same polyids
-						if(destFragment.polyid.translucent == polyAttr.polyid)
-							goto rejected_fragment;
-
-						//this is an interesting item. not very straightforward, but then nothing about the shadows are
+						//interesting that we have to check for mode 3 here. not very straightforward, but then nothing about the shadows are
 						//this was the result of testing trauma center, SPP area menu, and SM64 with yoshi's red feet behind translucent trees
+						//as well as the intermittent bug in ff4 where your shadow only appears under other shadows
 						if(shader.mode != 3)
+						{
+							//dont overwrite pixels on translucent polys with the same polyids
+							if(destFragment.polyid.translucent == polyAttr.polyid)
+								goto rejected_fragment;
+						
 							destFragment.polyid.translucent = polyAttr.polyid;
+						}
 					}
 
 					//alpha blending and write color
