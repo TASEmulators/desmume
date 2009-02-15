@@ -1930,8 +1930,9 @@ bool S9xGetState (WORD KeyIdent)
 	if(KeyIdent == 0 || KeyIdent == VK_ESCAPE) // if it's the 'disabled' key, it's never pressed
 		return true;
 
-	//if(!GUI.BackgroundKeyGamekeys && GUI.hWnd != GetForegroundWindow())
-	//	return true;
+	//TODO - option for background game keys
+	if(MainWindow->getHWnd() != GetForegroundWindow())
+		return true;
 
     if (KeyIdent & 0x8000) // if it's a joystick 'key':
     {
