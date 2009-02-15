@@ -223,9 +223,9 @@ static void _xglDisable(GLenum cap) {
 GLenum			oglTempTextureID[MAX_TEXTURE];
 GLenum			oglToonTableTextureID;
 
-#define NOSHADERS(i)					{ hasShaders = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(failed shader init at step %i)\n", i); return; }
+#define NOSHADERS(s)					{ hasShaders = false; INFO("Shaders aren't supported on your system, using fixed pipeline\n(%s)\n", s); return; }
 
-#define SHADER_COMPCHECK(s)				{ \
+#define SHADER_COMPCHECK(s, t)				{ \
 	GLint status = GL_TRUE; \
 	glGetShaderiv(s, GL_COMPILE_STATUS, &status); \
 	if(status != GL_TRUE) \
@@ -238,7 +238,7 @@ GLenum			oglToonTableTextureID;
 		INFO("SEVERE : FAILED TO COMPILE GL SHADER : %s\n", log); \
 		delete log; \
 		if(s)glDeleteShader(s); \
-		NOSHADERS(3); \
+		NOSHADERS("Failed to compile the "t" shader."); \
 	} \
 }
 
@@ -256,7 +256,7 @@ GLenum			oglToonTableTextureID;
 		delete log; \
 		if(s1)glDeleteShader(s1); \
 		if(s2)glDeleteShader(s2); \
-		NOSHADERS(5); \
+		NOSHADERS("Failed to link the shader program."); \
 	} \
 }
 
@@ -280,10 +280,13 @@ static void createShaders()
 	hasShaders = true;
 
 #ifdef HAVE_LIBOSMESA
-	NOSHADERS(1);
+	NOSHADERS("Shaders aren't supported by OSMesa.");
 #endif
 
-	if (glCreateShader == NULL ||  //use ==NULL instead of !func to avoid always true warnings for some systems
+	/* This check is just plain wrong. */
+	/* It will always pass if you've OpenGL 2.0 or later, */
+	/* even if your GFX card doesn't support shaders. */
+/*	if (glCreateShader == NULL ||  //use ==NULL instead of !func to avoid always true warnings for some systems
 		glShaderSource == NULL ||
 		glCompileShader == NULL ||
 		glCreateProgram == NULL ||
@@ -291,27 +294,33 @@ static void createShaders()
 		glLinkProgram == NULL ||
 		glUseProgram == NULL ||
 		glGetShaderInfoLog == NULL)
-		NOSHADERS(1);
+		NOSHADERS("Shaders aren't supported by your system.");*/
+
+	const char *extString = (const char*)glGetString(GL_EXTENSIONS);
+	if ((strstr(extString, "GL_ARB_shader_objects") == NULL) ||
+		(strstr(extString, "GL_ARB_vertex_shader") == NULL) ||
+		(strstr(extString, "GL_ARB_fragment_shader") == NULL))
+		NOSHADERS("Shaders aren't supported by your system.");
 
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	if(!vertexShaderID)
-		NOSHADERS(2);
+		NOSHADERS("Failed to create the vertex shader.");
 
 	glShaderSource(vertexShaderID, 1, (const GLchar**)&vertexShader, NULL);
 	glCompileShader(vertexShaderID);
-	SHADER_COMPCHECK(vertexShaderID);
+	SHADER_COMPCHECK(vertexShaderID, "vertex");
 
 	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 	if(!fragmentShaderID)
-		NOSHADERS(2);
+		NOSHADERS("Failed to create the fragment shader.");
 
 	glShaderSource(fragmentShaderID, 1, (const GLchar**)&fragmentShader, NULL);
 	glCompileShader(fragmentShaderID);
-	SHADER_COMPCHECK(fragmentShaderID);
+	SHADER_COMPCHECK(fragmentShaderID, "fragment");
 
 	shaderProgram = glCreateProgram();
 	if(!shaderProgram)
-		NOSHADERS(4);
+		NOSHADERS("Failed to create the shader program.");
 
 	glAttachShader(shaderProgram, vertexShaderID);
 	glAttachShader(shaderProgram, fragmentShaderID);
