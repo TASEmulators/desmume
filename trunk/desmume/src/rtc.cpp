@@ -64,9 +64,9 @@ u8 cmdBitsSize[8] = {8, 8, 56, 24, 0, 24, 8, 8};
 
 static void rtcRecv()
 {
-	//INFO("RTC Read command 0x%02X\n", rtc.cmd);
+	//INFO("RTC Read command 0x%02X\n", (rtc.cmd >> 1));
 	memset(rtc.data, 0, sizeof(rtc.data));
-	switch (rtc.cmd)
+	switch (rtc.cmd >> 1)
 	{
 		case 0:				// status register 1
 			//INFO("RTC: read regstatus1 (0x%02X)\n", rtc.regStatus1);
@@ -131,8 +131,8 @@ static void rtcRecv()
 
 static void rtcSend()
 {
-	//INFO("RTC write 0x%02X\n", rtc.cmd);
-	switch (rtc.cmd)
+	//INFO("RTC write 0x%02X\n", (rtc.cmd >> 1));
+	switch (rtc.cmd >> 1)
 	{
 		case 0:				// status register 1
 			//INFO("RTC: write regstatus1 0x%02X\n", rtc.data[0]);
@@ -213,52 +213,44 @@ void rtcWrite(u16 val)
 
 			rtc.cmd |= (rtc._SIO << rtc.bitsCount );
 			rtc.bitsCount ++;
-			if (rtc.bitsCount == 7)
+			if (rtc.bitsCount == 8)
 			{
+				//INFO("RTC command 0x%02X\n", rtc.cmd);
+
 				// Little-endian command
 				if((rtc.cmd & 0x0F) == 0x06)
 				{
-					rtc.cmdStat = 2;
 					u8 tmp = rtc.cmd;
-					rtc.cmd = ((tmp & 0x40) >> 6) | ((tmp & 0x20) >> 4) | ((tmp & 0x10) >> 2);
+					rtc.cmd = ((tmp & 0x80) >> 7) | ((tmp & 0x40) >> 5) | ((tmp & 0x20) >> 3) | ((tmp & 0x10) >> 1);
 				}
 				// Big-endian command
 				else
 				{
-					rtc.cmdStat = 2;
-					rtc.cmd >>= 1;
-					rtc.cmd &= 0x07;
+					rtc.cmd &= 0x0F;
 				}
-				//INFO("RTC command 0x%02X\n", rtc.cmd);
+
+				if((rtc._prevSCK) && (!rtc._SCK))
+				{
+					rtc.bitsCount = 0;
+					if ((rtc.cmd >> 1) == 0x04)
+					{
+						if ((rtc.regStatus2 & 0x0F) == 0x04)
+							cmdBitsSize[rtc.cmd >> 1] = 24;
+						else
+							cmdBitsSize[rtc.cmd >> 1] = 8;
+					}
+					if (rtc.cmd & 0x01)
+					{
+						rtc.cmdStat = 4;
+						rtcRecv();
+					}
+					else
+					{
+						rtc.cmdStat = 3;
+					}
+				}
 			}
 
-		break;
-		case 2:
-			if (!rtc._CS) 
-			{
-				rtc.cmdStat = 0;
-				break;
-			}
-			if((rtc._prevSCK) && (!rtc._SCK))
-			{
-				rtc.bitsCount = 0;
-				if (rtc.cmd == 0x04)
-				{
-					if ((rtc.regStatus2 & 0x0F) == 0x04)
-						cmdBitsSize[rtc.cmd] = 24;
-					else
-						cmdBitsSize[rtc.cmd] = 8;
-				}
-				if (rtc._SIO)
-				{
-					rtc.cmdStat = 4;
-					rtcRecv();
-				}
-				else
-				{
-					rtc.cmdStat = 3;
-				}
-			}
 		break;
 
 		case 3:			// write:
@@ -266,7 +258,7 @@ void rtcWrite(u16 val)
 			{
 				if(rtc._SIO) rtc.data[rtc.bitsCount >> 3] |= (1 << (rtc.bitsCount & 0x07));
 				rtc.bitsCount++;
-				if (rtc.bitsCount == cmdBitsSize[rtc.cmd])
+				if (rtc.bitsCount == cmdBitsSize[rtc.cmd >> 1])
 				{
 					rtcSend();
 					rtc.cmdStat = 0;
@@ -284,7 +276,7 @@ void rtcWrite(u16 val)
 					rtc._REG &= ~0x01;
 
 				rtc.bitsCount++;
-				if (rtc.bitsCount == cmdBitsSize[rtc.cmd])
+				if (rtc.bitsCount == cmdBitsSize[rtc.cmd >> 1])
 					rtc.cmdStat = 0;
 			}
 		break;
