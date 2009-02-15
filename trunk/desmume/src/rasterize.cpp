@@ -960,8 +960,10 @@ static void SoftRastRender()
 			vert.fcolor[2] /= vert.coord[3];
 
 			//viewport transformation
-			vert.coord[0] *= 256;
-			vert.coord[1] *= 192;
+			vert.coord[0] *= gfx3d.viewport.width;
+			vert.coord[0] += gfx3d.viewport.x;
+			vert.coord[1] *= gfx3d.viewport.height;
+			vert.coord[1] += gfx3d.viewport.y;
 		}
 	}
 
