@@ -931,6 +931,7 @@ DWORD WINAPI run()
 		CheckMessages();
 		Sleep(100);
 	}
+
 	if (lpDDClipPrimary!=NULL) IDirectDraw7_Release(lpDDClipPrimary);
 	if (lpPrimarySurface != NULL) IDirectDraw7_Release(lpPrimarySurface);
 	if (lpBackSurface != NULL) IDirectDraw7_Release(lpBackSurface);
@@ -2143,6 +2144,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		return 0;
 	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
+	case WM_LBUTTONDBLCLK:
 		if (wParam & MK_LBUTTON)
 		{
 			RECT r ;
