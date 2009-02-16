@@ -1697,7 +1697,7 @@ void EnableDisableKeyFields (int index, HWND hDlg)
 	EnableWindow(GetDlgItem(hDlg,IDC_DWNRIGHT), false);
 	EnableWindow(GetDlgItem(hDlg,IDC_DWNLEFT), false);
 	EnableWindow(GetDlgItem(hDlg,IDC_DEBUG), false);
-	EnableWindow(GetDlgItem(hDlg,IDC_LID), false);
+	EnableWindow(GetDlgItem(hDlg,IDC_LID), true);
 }
 
 INT_PTR CALLBACK DlgInputConfig(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1858,9 +1858,11 @@ switch(msg)
 		case IDC_DWNRIGHT:
 			Joypad[index].Right_Down = wParam;
 
+			break;
 		case IDC_LID:
 			Joypad[index].Lid = wParam;
 
+			break;
 		case IDC_DEBUG:
 			Joypad[index].Debug = wParam;
 
