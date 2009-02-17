@@ -46,6 +46,7 @@ GFX3D gfx3d;
 //tables that are provided to anyone
 CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 CACHE_ALIGN u32 color_15bit_to_24bit[32768];
+CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 CACHE_ALIGN u8 mixTable555[32][32][32];
 
 //is this a crazy idea? this table spreads 5 bits evenly over 31 from exactly 0 to INT_MAX
@@ -58,6 +59,13 @@ CACHE_ALIGN const int material_5bit_to_31bit[] = {
 	0x5294A529, 0x56B5AD6B, 0x5AD6B5AD, 0x5EF7BDEF,
 	0x6318C631, 0x6739CE73, 0x6B5AD6B5, 0x6F7BDEF7,
 	0x739CE739, 0x77BDEF7B, 0x7BDEF7BD, 0x7FFFFFFF
+};
+
+CACHE_ALIGN const u8 material_5bit_to_6bit[] = {
+	0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E,
+	0x10, 0x12, 0x14, 0x16, 0x19, 0x1A, 0x1C, 0x1E,
+	0x21, 0x23, 0x25, 0x27, 0x29, 0x2B, 0x2D, 0x2F,
+	0x31, 0x33, 0x35, 0x37, 0x39, 0x3B, 0x3D, 0x3F
 };
 
 CACHE_ALIGN const u8 material_5bit_to_8bit[] = {
@@ -139,6 +147,7 @@ static u32 clInd2 = 0;
 #endif
 static u32 BTind = 0;
 static u32 PTind = 0;
+static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 
 //raw ds format poly attributes
@@ -221,7 +230,10 @@ static void makeTables() {
 	#define RGB15TO24_BITLOGIC_REVERSE(col) ( (material_5bit_to_8bit[(col)&0x1F]<<16) | (material_5bit_to_8bit[((col)>>5)&0x1F]<<8) | material_5bit_to_8bit[((col)>>10)&0x1F] )
 
 	for(int i=0;i<32768;i++)
+	{
 		color_15bit_to_24bit_reverse[i] = RGB15TO24_BITLOGIC_REVERSE((u16)i);
+		color_15bit_to_16bit_reverse[i] = (((i & 0x001F) << 11) | (material_5bit_to_6bit[(i & 0x03E0) >> 5] << 5) | ((i & 0x7C00) >> 10));
+	}
 
 	for (int i = 0; i < 65536; i++)
 		float16table[i] = fix2float((signed short)i);
@@ -1024,12 +1036,92 @@ BOOL gfx3d_glBoxTest(u32 v)
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
 	BTind++;
-	if (BTind < 3) return FALSE;
+	if (BTind < 3) 
+	{
+	/*	if(BTind == 1)
+		{
+			BTcoords[0] = float16table[v & 0xFFFF];
+			BTcoords[1] = float16table[v >> 16];
+		}
+		else if(BTind == 2)
+		{
+			BTcoords[2] = float16table[v & 0xFFFF];
+			BTcoords[3] = float16table[v >> 16];
+		}*/
+
+		return FALSE;
+	}
 	BTind = 0;
 
+/*	BTcoords[4] = float16table[v & 0xFFFF];
+	BTcoords[5] = float16table[v >> 16];
+
+	ALIGN(16) float boxCoords[6][4][4] = {
+		// near
+		{{BTcoords[0], BTcoords[1], BTcoords[2], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}, 
+			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}},
+		// far
+		{{BTcoords[0], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}},
+		// left
+		{{BTcoords[0], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0], BTcoords[1], BTcoords[2], 1.0f}, 
+			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}, 
+			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}},
+		// right
+		{{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}},
+		// top
+		{{BTcoords[0], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1], BTcoords[2], 1.0f}, 
+			{BTcoords[0], BTcoords[1], BTcoords[2], 1.0f}},
+		// bottom
+		{{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2]+BTcoords[5], 1.0f}, 
+			{BTcoords[0]+BTcoords[3], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}, 
+			{BTcoords[0], BTcoords[1]+BTcoords[4], BTcoords[2], 1.0f}}
+	};
+
+	for(int face = 0; face < 6; face++)
+	{
+		for(int vtx = 0; vtx < 4; vtx++)
+		{
+			MatrixMultVec4x4(mtxCurrent[1], boxCoords[face][vtx]);
+			MatrixMultVec4x4(mtxCurrent[0], boxCoords[face][vtx]);
+
+			boxCoords[face][vtx][0] = ((boxCoords[face][vtx][0] + boxCoords[face][vtx][3]) / (2 * boxCoords[face][vtx][3]));
+			boxCoords[face][vtx][1] = ((boxCoords[face][vtx][1] + boxCoords[face][vtx][3]) / (2 * boxCoords[face][vtx][3]));
+			boxCoords[face][vtx][2] = ((boxCoords[face][vtx][2] + boxCoords[face][vtx][3]) / (2 * boxCoords[face][vtx][3]));
+
+		//	if(face==0)INFO("box test: testing face %i, vtx %i: %f %f %f %f\n", face, vtx, 
+		//		boxCoords[face][vtx][0], boxCoords[face][vtx][1], boxCoords[face][vtx][2], boxCoords[face][vtx][3]);
+
+			if ((boxCoords[face][vtx][0] >= 0.0f) && (boxCoords[face][vtx][0] <= 1.0f) &&
+				(boxCoords[face][vtx][1] >= 0.0f) && (boxCoords[face][vtx][1] <= 1.0f) &&
+				(boxCoords[face][vtx][2] >= 0.0f) && (boxCoords[face][vtx][2] <= 1.0f))
+			{
+			//	goto faceInside;
+			}
+			else
+				goto noFaceInside;
+		}
+	}
+
+	goto faceInside;
+
+faceInside:
+	gxstat |= 0x2;
+
+noFaceInside:*/
 	gxstat &= 0xFFFFFFFE;
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-	//INFO("BoxTest=%i\n",v);
 	return TRUE;
 }
 
