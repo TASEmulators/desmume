@@ -33,9 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Build>
 			<Target title="Cocoa X86">
 				<Option platforms="Mac;" />
-				<Option output="DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="DeSmuME.app/Contents/MacOS" />
-				<Option object_output="obj/X86" />
+				<Option output="build/codeblocks/DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="build/codeblocks/DeSmuME.app/Contents/MacOS" />
+				<Option object_output="build/codeblocks/x86" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -51,9 +51,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 			</Target>
 			<Target title="Cocoa PPC">
 				<Option platforms="Mac;" />
-				<Option output="DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
-				<Option working_dir="DeSmuME.app/Contents/MacOS" />
-				<Option object_output="obj/PPC" />
+				<Option output="build/codeblocks/DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="build/codeblocks/DeSmuME.app/Contents/MacOS" />
+				<Option object_output="build/codeblocks/ppc" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
