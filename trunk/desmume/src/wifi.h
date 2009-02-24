@@ -424,6 +424,8 @@ typedef struct
 	rfIOData_t  rfIOData ;
     bbIOCnt_t   bbIOCnt ;
 
+	u8 bbDataToWrite;
+
 	/* buffers */
 	u16         circularBuffer[0x1000] ;
 	u16         RXRangeBegin ;
@@ -438,6 +440,9 @@ typedef struct
 	u16         CircBufRdSkip ;
 	u16         CircBufWrEnd ;
 	u16         CircBufWrSkip ;
+
+	/* i/o mem */
+	u16			ioMem[0x800];
 
 	/* others */
 	u16			randomSeed ;

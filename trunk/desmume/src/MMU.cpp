@@ -3636,6 +3636,8 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 	{
 		// access to non regular hw registers
 		// return to not overwrite valid data
+		WIFI_write16(&wifiMac, adr, val & 0xFFFF);
+		WIFI_write16(&wifiMac, adr+2, val >> 16);
 		return ;
 	}
 #endif
@@ -3878,7 +3880,7 @@ static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
 		if (adr & 1)
-			return (WIFI_read16(&wifiMac,adr) >> 8) & 0xFF;
+			return (WIFI_read16(&wifiMac,adr-1) >> 8) & 0xFF;
 		else
 			return WIFI_read16(&wifiMac,adr) & 0xFF;
 	}
@@ -3965,6 +3967,12 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 //================================================= MMU ARM7 read 32
 static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
+#ifdef EXPERIMENTAL_WIFI
+	/* wifi mac access */
+	if ((adr>=0x04800000)&&(adr<0x05000000))
+		return (WIFI_read16(&wifiMac,adr) | (WIFI_read16(&wifiMac,adr+2) << 16));
+#endif
+
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
 		return addon.read32(adr);
