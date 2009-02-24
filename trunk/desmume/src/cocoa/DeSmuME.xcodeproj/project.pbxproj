@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1F4B54D90F538DFE00C8B514 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F4B54D70F538DFE00C8B514 /* texcache.cpp */; };
 		1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5577060F326E2000DCF447 /* cheatSystem.cpp */; };
 		1FB3725C0F1CB9D300F75A43 /* mic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB3725A0F1CB9D300F75A43 /* mic.cpp */; };
 		1FB372630F1CB9F700F75A43 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372610F1CB9F700F75A43 /* addons.cpp */; };
@@ -76,6 +77,8 @@
 
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		1F4B54D70F538DFE00C8B514 /* texcache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = texcache.cpp; path = ../texcache.cpp; sourceTree = SOURCE_ROOT; };
+		1F4B54D80F538DFE00C8B514 /* texcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = texcache.h; path = ../texcache.h; sourceTree = SOURCE_ROOT; };
 		1F5577060F326E2000DCF447 /* cheatSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cheatSystem.cpp; path = ../cheatSystem.cpp; sourceTree = SOURCE_ROOT; };
 		1F5577070F326E2000DCF447 /* cheatSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cheatSystem.h; path = ../cheatSystem.h; sourceTree = SOURCE_ROOT; };
 		1FB3725A0F1CB9D300F75A43 /* mic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mic.cpp; path = ../mic.cpp; sourceTree = SOURCE_ROOT; };
@@ -383,6 +386,8 @@
 				7227645F0E78E18100AEDC8B /* SPU.cpp */,
 				722764600E78E18100AEDC8B /* thumb_instructions.cpp */,
 				722764610E78E18100AEDC8B /* wifi.cpp */,
+				1F4B54D70F538DFE00C8B514 /* texcache.cpp */,
+				1F4B54D80F538DFE00C8B514 /* texcache.h */,
 				729BEC9A0D9D57AF00ED561B /* ARM9.h */,
 				729BEC9C0D9D57AF00ED561B /* arm_instructions.h */,
 				729BEC9E0D9D57AF00ED561B /* armcpu.h */,
@@ -589,6 +594,7 @@
 				1FB3727C0F1CBAB200F75A43 /* none.cpp in Sources */,
 				1FB3727D0F1CBAB200F75A43 /* rumblepak.cpp in Sources */,
 				1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */,
+				1F4B54D90F538DFE00C8B514 /* texcache.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

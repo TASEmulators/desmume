@@ -231,6 +231,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
 		<Unit filename="../softrender_config.h" />
 		<Unit filename="../softrender_desmumefont.h" />
 		<Unit filename="../softrender_v3sysfont.h" />
+		<Unit filename="../texcache.cpp" />
+		<Unit filename="../texcache.h" />
 		<Unit filename="../thumb_instructions.cpp" />
 		<Unit filename="../thumb_instructions.h" />
 		<Unit filename="../types.h" />
