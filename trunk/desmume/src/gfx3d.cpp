@@ -130,6 +130,7 @@ static u8 MM3x3ind = 0;
 static CACHE_ALIGN float	coord[4] = {0.0, 0.0, 0.0, 0.0};
 static char		coordind = 0;
 static u32 vtxFormat;
+static BOOL inBegin = FALSE;
 
 // Data for basic transforms
 static CACHE_ALIGN float	trans[4] = {0.0, 0.0, 0.0, 0.0};
@@ -151,7 +152,7 @@ static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 
 //raw ds format poly attributes
-static u32 polyAttr=0,textureFormat=0, texturePalette=0;
+static u32 polyAttr=0,textureFormat=0, texturePalette=0, polyAttrPending=0;
 
 //the current vertex color, 5bit values
 static int colorRGB[4] = { 31,31,31,31 };
@@ -556,16 +557,35 @@ BOOL gfx3d_glMultMatrix4x4(signed long v)
 	return TRUE;
 }
 
+static void gfx3d_glPolygonAttrib_cache()
+{
+	// Light enable/disable
+	lightMask = (polyAttr&0xF);
+
+	// texture environment
+	envMode = (polyAttr&0x30)>>4;
+
+	// back face culling
+	cullingMask = (polyAttr>>6)&3;
+
+	// Alpha value, actually not well handled, 0 should be wireframe
+	colorRGB[3] = colorAlpha = ((polyAttr>>16)&0x1F);
+}
+
 void gfx3d_glBegin(u32 v)
 {
+	inBegin = TRUE;
 	vtxFormat = v&0x03;
 	triStripToggle = 0;
 	tempVertInfo.count = 0;
 	tempVertInfo.first = true;
+	polyAttr = polyAttrPending;
+	gfx3d_glPolygonAttrib_cache();
 }
 
 void gfx3d_glEnd(void)
 {
+	inBegin = FALSE;
 	tempVertInfo.count = 0;
 }
 
@@ -778,25 +798,15 @@ int gfx3d_GetNumVertex()
 	return 0;
 }
 
-static void gfx3d_glPolygonAttrib_cache()
-{
-	// Light enable/disable
-	lightMask = (polyAttr&0xF);
 
-	// texture environment
-	envMode = (polyAttr&0x30)>>4;
-
-	//// back face culling
-	cullingMask = (polyAttr>>6)&3;
-
-	// Alpha value, actually not well handled, 0 should be wireframe
-	colorRGB[3] = colorAlpha = ((polyAttr>>16)&0x1F);
-}
 
 void gfx3d_glPolygonAttrib (u32 val)
 {
-	polyAttr = val;
-	gfx3d_glPolygonAttrib_cache();
+	if(inBegin) {
+		PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
+		//TODO - we need some some similar checking for teximageparam etc.
+	}
+	polyAttrPending = val;
 }
 
 /*
@@ -2126,6 +2136,8 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 SFORMAT SF_GFX3D[]={
 	{ "GCTL", 4, 1, &control},
 	{ "GPAT", 4, 1, &polyAttr},
+	{ "GPAP", 4, 1, &polyAttrPending},
+	{ "GINB", 4, 1, &inBegin},
 	{ "GTFM", 4, 1, &textureFormat},
 	{ "GTPA", 4, 1, &texturePalette},
 	{ "GMOD", 4, 1, &mode},

@@ -1978,13 +1978,13 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 #endif
 					if(val & (1<<15))
 					{
-						LOG("Main core on top\n");
+						//LOG("Main core on top\n");
 						MainScreen.offset = 0;
 						SubScreen.offset = 192;
 					}
 					else
 					{
-						LOG("Main core on bottom (%04X)\n", val);
+						//LOG("Main core on bottom (%04X)\n", val);
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}
