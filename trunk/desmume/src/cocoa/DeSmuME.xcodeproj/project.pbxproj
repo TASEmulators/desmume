@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1F4B54D90F538DFE00C8B514 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F4B54D70F538DFE00C8B514 /* texcache.cpp */; };
+		1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
+		1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
 		1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5577060F326E2000DCF447 /* cheatSystem.cpp */; };
 		1FB3725C0F1CB9D300F75A43 /* mic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB3725A0F1CB9D300F75A43 /* mic.cpp */; };
 		1FB372630F1CB9F700F75A43 /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372610F1CB9F700F75A43 /* addons.cpp */; };
@@ -51,13 +53,7 @@
 		7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.m */; };
 		7248E4620E7E0B0E004DCFFE /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */; };
 		7248E4630E7E0B0E004DCFFE /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */; };
-		726D68AC0E310B1800800002 /* French.nib in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AA0E310B1800800002 /* French.nib */; };
-		726D68AD0E310B1800800002 /* French.strings in Resources */ = {isa = PBXBuildFile; fileRef = 726D68AB0E310B1800800002 /* French.strings */; };
 		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
-		7277B6E30D9E045700D283BD /* English.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6DF0D9E045700D283BD /* English.nib */; };
-		7277B6E40D9E045700D283BD /* English.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E00D9E045700D283BD /* English.strings */; };
-		7277B6E50D9E045700D283BD /* Japanese.nib in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E10D9E045700D283BD /* Japanese.nib */; };
-		7277B6E60D9E045700D283BD /* Japanese.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7277B6E20D9E045700D283BD /* Japanese.strings */; };
 		7277B8EB0D9F25F700D283BD /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
 		728E5E210E7F54CC00608344 /* GPU_osd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */; };
 		729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
@@ -79,6 +75,14 @@
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		1F4B54D70F538DFE00C8B514 /* texcache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = texcache.cpp; path = ../texcache.cpp; sourceTree = SOURCE_ROOT; };
 		1F4B54D80F538DFE00C8B514 /* texcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = texcache.h; path = ../texcache.h; sourceTree = SOURCE_ROOT; };
+		1F4B55030F53921B00C8B514 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1F4B55040F53921B00C8B514 /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = translations/English.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		1F4B550D0F53928000C8B514 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Italian; path = translations/Italian.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1F4B550E0F53928400C8B514 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Japanese; path = translations/Japanese.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1F4B550F0F53928700C8B514 /* French */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = French; path = translations/French.lproj/Localizable.strings; sourceTree = "<group>"; };
+		1F4B55100F53929300C8B514 /* Italian */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Italian; path = translations/Italian.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		1F4B55110F53929700C8B514 /* Japanese */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = Japanese; path = translations/Japanese.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		1F4B55120F53929900C8B514 /* French */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = French; path = translations/French.lproj/MainMenu.nib; sourceTree = "<group>"; };
 		1F5577060F326E2000DCF447 /* cheatSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cheatSystem.cpp; path = ../cheatSystem.cpp; sourceTree = SOURCE_ROOT; };
 		1F5577070F326E2000DCF447 /* cheatSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cheatSystem.h; path = ../cheatSystem.h; sourceTree = SOURCE_ROOT; };
 		1FB3725A0F1CB9D300F75A43 /* mic.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mic.cpp; path = ../mic.cpp; sourceTree = SOURCE_ROOT; };
@@ -152,13 +156,7 @@
 		7248E45F0E7E0B0E004DCFFE /* gfx3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gfx3d.h; path = ../gfx3d.h; sourceTree = SOURCE_ROOT; };
 		7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OGLRender.cpp; path = ../OGLRender.cpp; sourceTree = SOURCE_ROOT; };
 		7248E4610E7E0B0E004DCFFE /* OGLRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OGLRender.h; path = ../OGLRender.h; sourceTree = SOURCE_ROOT; };
-		726D68AA0E310B1800800002 /* French.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = French.nib; sourceTree = "<group>"; };
-		726D68AB0E310B1800800002 /* French.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = French.strings; sourceTree = "<group>"; };
 		7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = DeSmuME.icns; sourceTree = "<group>"; };
-		7277B6DF0D9E045700D283BD /* English.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = English.nib; sourceTree = "<group>"; };
-		7277B6E00D9E045700D283BD /* English.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = English.strings; sourceTree = "<group>"; };
-		7277B6E10D9E045700D283BD /* Japanese.nib */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; path = Japanese.nib; sourceTree = "<group>"; };
-		7277B6E20D9E045700D283BD /* Japanese.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = Japanese.strings; sourceTree = "<group>"; };
 		7277B8EA0D9F25F700D283BD /* about.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = about.m; sourceTree = "<group>"; };
 		728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GPU_osd.cpp; path = ../GPU_osd.cpp; sourceTree = SOURCE_ROOT; };
 		728E5E200E7F54CC00608344 /* GPU_osd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPU_osd.h; path = ../GPU_osd.h; sourceTree = SOURCE_ROOT; };
@@ -208,7 +206,7 @@
 		729BECE60D9D57F600ED561B /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		729BECEF0D9D581900ED561B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		72C000010D9D59E60046B7EA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
+		72C000020D9D59E60046B7EA /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; path = InfoPlist.strings; sourceTree = "<group>"; };
 		72D89DE30E83973A008D9B64 /* screen_state.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screen_state.h; sourceTree = "<group>"; };
 		72D89DE40E83973A008D9B64 /* screen_state.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screen_state.m; sourceTree = "<group>"; };
 		72D89E360E845C7E008D9B64 /* readwrite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = readwrite.cpp; path = ../readwrite.cpp; sourceTree = SOURCE_ROOT; };
@@ -260,6 +258,8 @@
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 			);
 			name = "Linked Frameworks";
@@ -268,8 +268,6 @@
 		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
-				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
 			);
 			name = "Other Frameworks";
 			sourceTree = "<group>";
@@ -422,14 +420,10 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				1F4B55090F53924500C8B514 /* Localizable.strings */,
+				1F4B550B0F53924500C8B514 /* MainMenu.nib */,
 				72C000010D9D59E60046B7EA /* Info.plist */,
 				72C000020D9D59E60046B7EA /* InfoPlist.strings */,
-				726D68AA0E310B1800800002 /* French.nib */,
-				726D68AB0E310B1800800002 /* French.strings */,
-				7277B6DF0D9E045700D283BD /* English.nib */,
-				7277B6E00D9E045700D283BD /* English.strings */,
-				7277B6E10D9E045700D283BD /* Japanese.nib */,
-				7277B6E20D9E045700D283BD /* Japanese.strings */,
 				7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */,
 			);
 			name = Resources;
@@ -491,6 +485,7 @@
 				French,
 				German,
 				TestLocale,
+				Italian,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* DeSmuME */;
 			projectDirPath = "";
@@ -507,12 +502,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */,
-				7277B6E30D9E045700D283BD /* English.nib in Resources */,
-				7277B6E40D9E045700D283BD /* English.strings in Resources */,
-				7277B6E50D9E045700D283BD /* Japanese.nib in Resources */,
-				7277B6E60D9E045700D283BD /* Japanese.strings in Resources */,
-				726D68AC0E310B1800800002 /* French.nib in Resources */,
-				726D68AD0E310B1800800002 /* French.strings in Resources */,
+				1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */,
+				1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,7 +521,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\nmkdir English.lproj\nmv English.nib English.lproj/MainMenu.nib\nmv English.strings English.lproj/Localizable.strings\nmkdir Japanese.lproj\nmv Japanese.nib Japanese.lproj/MainMenu.nib\nmv Japanese.strings Japanese.lproj/Localizable.strings\nmkdir French.lproj\nmv French.nib French.lproj/MainMenu.nib\nmv French.strings French.lproj/Localizable.strings\n";
+			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -599,6 +590,31 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		1F4B55090F53924500C8B514 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1F4B55030F53921B00C8B514 /* English */,
+				1F4B550D0F53928000C8B514 /* Italian */,
+				1F4B550E0F53928400C8B514 /* Japanese */,
+				1F4B550F0F53928700C8B514 /* French */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		1F4B550B0F53924500C8B514 /* MainMenu.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1F4B55040F53921B00C8B514 /* English */,
+				1F4B55100F53929300C8B514 /* Italian */,
+				1F4B55110F53929700C8B514 /* Japanese */,
+				1F4B55120F53929900C8B514 /* French */,
+			);
+			name = MainMenu.nib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		C01FCF4B08A954540054247B /* Debug */ = {
