@@ -159,16 +159,9 @@ task :build_cocoa_app => :link do
 	cp 'PkgInfo', output_file + '/Contents/PkgInfo'
 	cp 'InfoPlist.strings', output_file + '/Contents/Resources/InfoPlist.strings'
 	cp 'DeSmuME.icns', output_file + '/Contents/Resources/DeSmuME.icns'
+	cp_r 'translations/*.lproj', output_file + '/Contents/Resources/'
 
 	cp output_executable, output_file + '/Contents/MacOS/DeSmuME'
-
-	Dir['*.nib'].each do |nib_file|
-		locale = nib_file[0...-4]
-		locale_dir = output_file + '/Contents/Resources/' + locale +'.lproj'
-		mkdir locale_dir rescue Errno::EEXIST
-		cp_r nib_file, locale_dir + '/MainMenu.nib' rescue Errno::EEXIST
-		cp_r locale + '.strings', locale_dir + '/Localizable.strings'
-	end
 
 	puts 'Built ' + output_file
 end
