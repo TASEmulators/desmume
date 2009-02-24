@@ -359,19 +359,27 @@ u16 WIFI_getRF_STATUS(wifimac_t *wifi)
 
 void WIFI_setBB_CNT(wifimac_t *wifi,u16 val)
 {
-	wifi->bbIOCnt.val = val ;
+	wifi->bbIOCnt.val = val;
+
+	if(wifi->bbIOCnt.bits.mode == 1)
+		wifi->BB.data[wifi->bbIOCnt.bits.address] = wifi->bbDataToWrite;
 }
 
 u8 WIFI_getBB_DATA(wifimac_t *wifi)
 {
-	if ((wifi->bbIOCnt.bits.mode != 2) || !(wifi->bbIOCnt.bits.enable)) return 0 ; /* not for read or disabled */
-	return wifi->BB.data[wifi->bbIOCnt.bits.address] ;
+	if((!wifi->bbIOCnt.bits.enable) || (wifi->bbIOCnt.bits.mode != 2))
+		return 0;
+
+	return wifi->BB.data[wifi->bbIOCnt.bits.address];
+//	if ((wifi->bbIOCnt.bits.mode != 2) || !(wifi->bbIOCnt.bits.enable)) return 0 ; /* not for read or disabled */
+//	return wifi->BB.data[wifi->bbIOCnt.bits.address] ;
 }
 
 void WIFI_setBB_DATA(wifimac_t *wifi, u8 val)
 {
-	if ((wifi->bbIOCnt.bits.mode != 1) || !(wifi->bbIOCnt.bits.enable)) return ; /* not for write or disabled */
-    wifi->BB.data[wifi->bbIOCnt.bits.address] = val ;
+	wifi->bbDataToWrite = (val & 0xFF);
+//	if ((wifi->bbIOCnt.bits.mode != 1) || !(wifi->bbIOCnt.bits.enable)) return ; /* not for write or disabled */
+//    wifi->BB.data[wifi->bbIOCnt.bits.address] = val ;
 }
 
 /*******************************************************************************
@@ -473,6 +481,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		return ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
+
 	/* mirrors => register address */
 	address &= 0x00000FFF ;
 	switch (address)
@@ -632,9 +641,11 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			wifi->aid = val & 0x07FF ;
 			break ;
 		default:
-			val = 0 ;       /* not handled yet */
+		//	val = 0 ;       /* not handled yet */
 			break ;
 	}
+
+	wifi->ioMem[address >> 1] = val;
 }
 
 u16 WIFI_read16(wifimac_t *wifi,u32 address)
@@ -655,6 +666,7 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
         return wifi->circularBuffer[(address & 0x1FFF) >> 1] ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
+
 	/* mirrors => register address */
 	address &= 0x00000FFF ;
 	switch (address)
@@ -680,6 +692,7 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return WIFI_getBB_DATA(wifi) ;
 		case REG_WIFI_RANDOM:
 			/* FIXME: random generator */
+			return (rand() & 0x7FF);
 			return 0 ;
 		case REG_WIFI_MAC0:
 		case REG_WIFI_MAC1:
@@ -739,7 +752,7 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 		case REG_WIFI_AID_HIGH:
 			return wifi->aid ;
 		default:
-			return 0 ;
+			return wifi->ioMem[address >> 1];
 	}
 }
 
