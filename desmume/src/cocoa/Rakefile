@@ -11,7 +11,7 @@ compile = {
 	:command => 'g++',
 	:files   => Dir['*.m'] + Dir['*.mm'] + Dir['dialogs/*.m'] + Dir['dialogs/*.mm'] + ([
 		'MMU', 'SPU', 'cflash',	'fs-linux', 'matrix', 'FIFO', 'NDSSystem', 'arm_instructions', 'cp15', 'mc', 'cheatSystem',
-		'thumb_instructions', 'GPU', 'OGLRender', 'armcpu', 'gfx3d', 'render3D', 'wifi', 'GPU_osd', 'ROMReader',
+		'thumb_instructions', 'GPU', 'OGLRender', 'armcpu', 'gfx3d', 'render3D', 'wifi', 'GPU_osd', 'ROMReader', 'texcache',
 		'bios', 'debug', 'saves', 'readwrite', 'rtc', 'softrender', 'common', 'mic', 'addons'].map { |core_file| '../' + core_file + '.cpp' } ) +
                  Dir['../utils/*.c'] + Dir['../utils/*.cpp'] + Dir['../utils/decrypt/*.cpp'] + Dir['../addons/*.cpp'],
 	:defines => {
