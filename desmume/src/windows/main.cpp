@@ -1087,7 +1087,7 @@ int MenuInit()
 
 	MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | ((ScreenGap==0)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==90)?MF_CHECKED:MF_UNCHECKED));
+	MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
 
 	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
 	GetRecentRoms();
