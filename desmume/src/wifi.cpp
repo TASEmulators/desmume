@@ -418,6 +418,8 @@ void WIFI_Init(wifimac_t *wifi)
 	WIFI_resetRF(&wifi->RF) ;
 	WIFI_Host_InitSystem() ;
 	wifi->udpSocket = WIFI_Host_OpenChannel(1) ;
+	wifi->powerOn = FALSE;
+	wifi->powerOnPending = FALSE;
 }
 
 static void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
@@ -507,7 +509,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			break ;
 		case REG_WIFI_IE:
 			wifi->IE.val = val ;
-			printf("wifi ie write %04X\n", val);
+			//printf("wifi ie write %04X\n", val);
 			break ;
 		case REG_WIFI_IF:
 			wifi->IF.val &= ~val ;		/* clear flagging bits */
@@ -528,6 +530,30 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_WEPCNT:
 			wifi->WEP_enable = (val & 0x8000) != 0 ;
 			break ;
+		case REG_WIFI_POWERSTATE:
+			wifi->powerOn = ((val & 0x0002)?TRUE:FALSE);
+			if(wifi->powerOn) WIFI_triggerIRQ(wifi, 11);
+			break;
+		case REG_WIFI_FORCEPS:
+			if((val & 0x8000) && (!wifi->powerOnPending))
+			{
+				BOOL newPower = ((val & 0x0001)?FALSE:TRUE);
+				if(newPower != wifi->powerOn)
+				{
+					if(!newPower)
+						wifi->powerOn = FALSE;
+					else
+						wifi->powerOnPending = TRUE;
+				}
+			}
+			break;
+		case REG_WIFI_POWERACK:
+			if((val == 0x0000) && wifi->powerOnPending)
+			{
+				wifi->powerOn = TRUE;
+				wifi->powerOnPending = FALSE;
+			}
+			break;
 		case REG_WIFI_RXRANGEBEGIN:
 			wifi->RXRangeBegin = val ;
 			break ;
@@ -645,6 +671,12 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_AID_HIGH:
 			wifi->aid = val & 0x07FF ;
 			break ;
+		//case 0x36:
+		//case 0x38:
+		//case 0x3C:
+		//case 0x40:
+		//	printf("wifi power reg %03X write %04X\n", address, val);
+		//	break;
 		default:
 		//	val = 0 ;       /* not handled yet */
 			break ;
@@ -687,6 +719,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return wifi->IE.val ;
 		case REG_WIFI_IF:
 			return wifi->IF.val ;
+		case REG_WIFI_POWERSTATE:
+			return ((wifi->powerOn ? 0x0000 : 0x0200) | (wifi->powerOnPending ? 0x0102 : 0x0000));
 		case REG_WIFI_RFIODATA1:
 			return WIFI_getRF_DATA(wifi,0) ;
 		case REG_WIFI_RFIODATA2:
@@ -757,10 +791,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return wifi->pid ;
 		case REG_WIFI_AID_HIGH:
 			return wifi->aid ;
-		case 0x03C:
-			return 0x0200;
 		case 0x214:
-			return 0x0000;
+			return 0x0009;
 		default:
 			return wifi->ioMem[address >> 1];
 	}
