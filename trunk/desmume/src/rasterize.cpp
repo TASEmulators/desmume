@@ -298,6 +298,7 @@ struct Shader
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			#ifdef _MSC_VER
 			if(GetAsyncKeyState(VK_SHIFT)) {
 				//debugging tricks
 				dst.color = materialColor;
@@ -307,6 +308,7 @@ struct Shader
 					dst.color.components.a = alpha;
 				}
 			}
+			#endif
 			break;
 		case 1: //decal
 			u = invu/invw;
