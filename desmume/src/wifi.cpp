@@ -462,9 +462,9 @@ static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 
 		/* FIXME: calculate FCS */
 
-		WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDSTART) ;
+		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDSTART*/7) ;
 		WIFI_Host_SendData(wifi->udpSocket,wifi->channel,(u8 *)&wifi->circularBuffer[address],txLen) ;
-		WIFI_triggerIRQ(wifi,WIFI_IRQ_SENDCOMPLETE) ;
+		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDCOMPLETE*/1) ;
 	}
 } 
 
@@ -818,7 +818,7 @@ void WIFI_usTrigger(wifimac_t *wifi)
 	}
 	if ((wifi->ucmpEnable) && (wifi->ucmp == wifi->usec))
 	{
-			WIFI_triggerIRQ(wifi,WIFI_IRQ_TIMEBEACON) ;
+			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_TIMEBEACON*/14) ;
 	}
 	/* receive check, given a 2 mbit connection, 2 bits per usec can be transfered. */
 	/* for a packet of 32 Bytes, at least 128 usec passed, we will use the 32 byte accuracy to reduce load */
@@ -830,12 +830,12 @@ void WIFI_usTrigger(wifimac_t *wifi)
 		{
 			u16 i ;
 			/* process data, put it into mac memory */
-			WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVSTART) ;
+			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVSTART*/6) ;
 			for (i=0;i<(rcvSize+1) << 1;i++)
 			{
 				WIFI_RXPutWord(wifi,((u16 *)dataBuffer)[i]) ;
 			}
-			WIFI_triggerIRQ(wifi,WIFI_IRQ_RECVCOMPLETE) ;
+			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVCOMPLETE*/0) ;
 		}
 	}
 }
