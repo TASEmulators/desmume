@@ -13,6 +13,9 @@ void Display();
 void Pause();
 void FrameAdvance();
 
+#define GPU3D_NULL 0
+#define GPU3D_OPENGL 1
+#define GPU3D_SWRAST 2
 
 
 #endif

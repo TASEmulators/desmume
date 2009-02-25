@@ -23,6 +23,8 @@
 
 //nothing in this file should be assumed to be accurate
 
+const bool USE_HECKER = false;
+
 #include "rasterize.h"
 
 #include <algorithm>
@@ -40,9 +42,12 @@
 
 using std::min;
 using std::max;
+using std::swap;
 
 template<typename T> T _min(T a, T b, T c) { return min(min(a,b),c); }
 template<typename T> T _max(T a, T b, T c) { return max(max(a,b),c); }
+template<typename T> T _min(T a, T b, T c, T d) { return min(_min(a,b,d),c); }
+template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 
 static int polynum;
 
@@ -164,7 +169,11 @@ static VERT* verts[3];
 
 INLINE static void SubmitVertex(int vert_index, VERT* rawvert)
 {
-	verts[vert_index] = rawvert;
+	//HACK - reverse winding
+	if(USE_HECKER)
+		verts[2-vert_index] = rawvert;
+	else
+		verts[vert_index] = rawvert;
 }
 
 static Fragment screen[256*192];
@@ -289,10 +298,15 @@ struct Shader
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
-			//debugging tricks
-			//dst.color = materialColor;
-			//dst.color.color = polynum*8+8;
-			//dst.color.components.a = 31;
+			if(GetAsyncKeyState(VK_SHIFT)) {
+				//debugging tricks
+				dst.color = materialColor;
+				if(GetAsyncKeyState(VK_TAB)) {
+					u8 alpha = dst.color.components.a;
+					dst.color.color = polynum*8+8;
+					dst.color.components.a = alpha;
+				}
+			}
 			break;
 		case 1: //decal
 			u = invu/invw;
@@ -408,10 +422,447 @@ static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 	}
 }
 
+void pixel(int adr,float r, float g, float b, float invu, float invv, float invw, float z) {
+	Fragment &destFragment = screen[adr];
+
+	//depth test
+	int depth;
+	if(gfx3d.wbuffer)
+		//not sure about this
+		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
+		depth = 4096/invw;
+	else
+	{
+		depth = z*0x7FFF; //not sure about this
+	}
+	if(polyAttr.decalMode)
+	{
+		if(depth != destFragment.depth)
+		{
+			goto depth_fail;
+		}
+	}
+	else
+	{
+		if(depth>=destFragment.depth) 
+		{
+			goto depth_fail;
+		}
+	}
+	
+	shader.invw = invw;
+	shader.invu = invu;
+	shader.invv = invv;
+
+	//perspective-correct the colors
+	r = (r / invw) + 0.5f;
+	g = (g / invw) + 0.5f;
+	b = (b / invw) + 0.5f;
+
+	//this is a HACK: 
+	//we are being very sloppy with our interpolation precision right now
+	//and rather than fix it, i just want to clamp it
+	shader.materialColor.components.r = max(0,min(31,(int)r));
+	shader.materialColor.components.g = max(0,min(31,(int)g));
+	shader.materialColor.components.b = max(0,min(31,(int)b));
+
+	shader.materialColor.components.a = polyAttr.alpha;
+
+	//pixel shader
+	Fragment shaderOutput;
+	shader.shade(shaderOutput);
+
+	//alpha test
+	if(gfx3d.enableAlphaTest)
+	{
+		if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
+			goto rejected_fragment;
+	}
+
+	//we shouldnt do any of this if we generated a totally transparent pixel
+	if(shaderOutput.color.components.a != 0)
+	{
+		//handle shadow polys
+		if(shader.mode == 3)
+		{
+			//now, if we arent supposed to draw shadow here, then bail out
+			if(destFragment.stencil == 0)
+				goto rejected_fragment;
+
+			//reset the shadow flag to keep the shadow from getting drawn more than once
+			destFragment.stencil = 0;
+		}
+
+		//handle polyids
+		bool isOpaquePixel = shaderOutput.color.components.a == 31;
+		if(isOpaquePixel)
+		{
+			destFragment.polyid.opaque = polyAttr.polyid;
+		}
+		else
+		{
+			//interesting that we have to check for mode 3 here. not very straightforward, but then nothing about the shadows are
+			//this was the result of testing trauma center, SPP area menu, and SM64 with yoshi's red feet behind translucent trees
+			//as well as the intermittent bug in ff4 where your shadow only appears under other shadows
+			if(shader.mode != 3)
+			{
+				//dont overwrite pixels on translucent polys with the same polyids
+				if(destFragment.polyid.translucent == polyAttr.polyid)
+					goto rejected_fragment;
+			
+				destFragment.polyid.translucent = polyAttr.polyid;
+			}
+		}
+
+		//alpha blending and write color
+		alphaBlend(destFragment.color, shaderOutput.color);
+
+		//depth writing
+		if(isOpaquePixel || polyAttr.translucentDepthWrite)
+			destFragment.depth = depth;
+
+	}
+
+	goto done_with_pixel;
+
+	depth_fail:
+	//handle stencil-writing in shadow mode
+	if(shader.mode == 3)
+	{
+		destFragment.stencil = 1;
+	}
+
+	rejected_fragment:
+	done_with_pixel:
+	;
+}
+
+void scanline(int y, int xstart, int xend, 
+			  float r0, float g0, float b0, float invu0, float invv0, float invw0, float z0,
+			  float r1, float g1, float b1, float invu1, float invv1, float invw1, float z1)
+{
+	float dx = xend-xstart+1;
+	float dr_dx = (r1-r0)/dx;
+	float dg_dx = (g1-g0)/dx;
+	float db_dx = (b1-b0)/dx;
+	float du_dx = (invu1-invu0)/dx;
+	float dv_dx = (invv1-invv0)/dx;
+	float dw_dx = (invw1-invw0)/dx;
+	float dz_dx = (z1-z0)/dx;
+	for(int x=xstart;x<=xend;x++) {
+		int adr = (y<<8)+x;
+		pixel(adr,r0,g0,b0,invu0,invv0,invw0,z0);
+		r0 += dr_dx;
+		g0 += dg_dx;
+		b0 += db_dx;
+		invu0 += du_dx;
+		invv0 += dv_dx;
+		invw0 += dw_dx;
+		z0 += dz_dx;
+	}
+}
+
+typedef int fixed28_4;
+
+inline fixed28_4 FloatToFixed28_4( float Value ) {
+	return Value * 16;
+}
+inline float Fixed28_4ToFloat( fixed28_4 Value ) {
+	return Value / 16.0;
+}
+//inline fixed16_16 FloatToFixed16_16( float Value ) {
+//	return Value * 65536;
+//}
+//inline float Fixed16_16ToFloat( fixed16_16 Value ) {
+//	return Value / 65536.0;
+//}
+inline fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
+	// could make this asm to prevent overflow
+	return (A * B) / 16;	// 28.4 * 28.4 = 24.8 / 16 = 28.4
+}
+inline long Ceil28_4( fixed28_4 Value ) {
+	long ReturnValue;
+	long Numerator = Value - 1 + 16;
+	if(Numerator >= 0) {
+		ReturnValue = Numerator/16;
+	} else {
+		// deal with negative numerators correctly
+		ReturnValue = -((-Numerator)/16);
+		ReturnValue -= ((-Numerator) % 16) ? 1 : 0;
+	}
+	return ReturnValue;
+}
+
+
+struct Derivatives {
+	float dx, dy;
+	void calculate(float v0, float v1, float v2, float invdx, float invdy, const VERT** pVertices)
+	{
+		dx = invdx * (
+		  ((v1 - v2) * Fixed28_4ToFloat(pVertices[0]->y - pVertices[2]->y)) 
+		- ((v0 - v2) * Fixed28_4ToFloat(pVertices[1]->y - pVertices[2]->y))
+		);
+
+		dy = invdy * (
+		  ((v1 - v2) * Fixed28_4ToFloat(pVertices[0]->x - pVertices[2]->x)) 
+		- ((v0 - v2) * Fixed28_4ToFloat(pVertices[1]->x - pVertices[2]->x))
+		);
+	}
+};
+
+struct gradients_fx_fl {
+	gradients_fx_fl( const VERT **pVertices );
+	float invw[3];
+	struct GradientDerivatives {
+		Derivatives invw, z, u, v, color[3];
+	} d;
+};
+
+struct edge_fx_fl {
+	edge_fx_fl(gradients_fx_fl const &Gradients, VERT **pVertices, int Top,
+			int Bottom );
+	inline int Step( void );
+
+	long X, XStep, Numerator, Denominator;			// DDA info for x
+	long ErrorTerm;
+	int Y, Height;					// current y and vertical count
+	
+	struct Interpolant {
+		float curr, step, stepExtra;
+		void doStep() { curr += step; }
+		void doStepExtra() { curr += stepExtra; }
+		void initialize(float val, long XStep, float XPrestep, float YPrestep, const Derivatives& gradient) {
+			curr = val + YPrestep * gradient.dy
+						+ XPrestep * gradient.dx;
+			step = XStep * gradient.dx + gradient.dy;
+			stepExtra = gradient.dx;
+		}
+	};
+	
+	static const int NUM_INTERPOLANTS = 7;
+	union {
+		struct {
+			Interpolant invw,z,u,v,color[3];
+		};
+		Interpolant interpolants[NUM_INTERPOLANTS];
+	};
+	void doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
+	void doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
+};
+
+inline int edge_fx_fl::Step( void ) {
+	X += XStep; Y++; Height--;
+	doStepInterpolants();
+
+	ErrorTerm += Numerator;
+	if(ErrorTerm >= Denominator) {
+		X++;
+		ErrorTerm -= Denominator;
+		doStepExtraInterpolants();
+	}
+	return Height;
+}	
+
+
+gradients_fx_fl::gradients_fx_fl( const VERT **verts )
+{
+	int Counter;
+
+	fixed28_4 X1Y0 = Fixed28_4Mul(verts[1]->x - verts[2]->x,
+							verts[0]->y - verts[2]->y);
+	fixed28_4 X0Y1 = Fixed28_4Mul(verts[0]->x - verts[2]->x,
+							verts[1]->y - verts[2]->y);
+	float invdx = 1.0 / Fixed28_4ToFloat(X1Y0 - X0Y1);
+
+	float invdy = -invdx;
+
+	for(int i=0;i<3;i++) invw[i] = 1/verts[i]->w;
+
+
+	d.invw.calculate(invw[0],invw[1],invw[2],invdx,invdy,verts);
+	d.u.calculate(verts[0]->u,verts[1]->u,verts[2]->u,invdx,invdy,verts);
+	d.v.calculate(verts[0]->v,verts[1]->v,verts[2]->v,invdx,invdy,verts);
+	d.z.calculate(verts[0]->z,verts[1]->z,verts[2]->z,invdx,invdy,verts);
+	for(int i=0;i<3;i++)
+		d.color[i].calculate(verts[0]->fcolor[i],verts[1]->fcolor[i],verts[2]->fcolor[i],invdx,invdy,verts);
+}
+
+
+/********** handle floor divides and mods correctly ***********/
+
+inline void FloorDivMod( long Numerator, long Denominator, long &Floor,
+				long &Mod )
+{
+	assert(Denominator > 0);		// we assume it's positive
+	if(Numerator >= 0) {
+		// positive case, C is okay
+		Floor = Numerator / Denominator;
+		Mod = Numerator % Denominator;
+	} else {
+		// Numerator is negative, do the right thing
+		Floor = -((-Numerator) / Denominator);
+		Mod = (-Numerator) % Denominator;
+		if(Mod) {
+			// there is a remainder
+			Floor--; Mod = Denominator - Mod;
+		}
+	}
+}
+
+/********** edge_fx_fl constructor ***********/
+
+edge_fx_fl::edge_fx_fl( gradients_fx_fl const &Gradients, VERT **verts, int Top,
+		int Bottom )
+{
+	Y = Ceil28_4(verts[Top]->y);
+	int YEnd = Ceil28_4(verts[Bottom]->y);
+	Height = YEnd - Y;
+
+	if(Height)
+	{
+		long dN = verts[Bottom]->y - verts[Top]->y;
+		long dM = verts[Bottom]->x - verts[Top]->x;
+	
+		long InitialNumerator = dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16;
+		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm);
+		FloorDivMod(dM*16,dN*16,XStep,Numerator);
+		Denominator = dN*16;
+	
+		float YPrestep = Fixed28_4ToFloat(Y*16 - verts[Top]->y);
+		float XPrestep = Fixed28_4ToFloat(X*16 - verts[Top]->x);
+	
+		invw.initialize(Gradients.invw[Top],XStep,XPrestep,YPrestep,Gradients.d.invw);
+		u.initialize(verts[Top]->u,XStep,XPrestep,YPrestep,Gradients.d.u);
+		v.initialize(verts[Top]->v,XStep,XPrestep,YPrestep,Gradients.d.v);
+		z.initialize(verts[Top]->z,XStep,XPrestep,YPrestep,Gradients.d.z);
+		for(int i=0;i<3;i++)
+			color[i].initialize(verts[Top]->fcolor[i],XStep,XPrestep,YPrestep,Gradients.d.color[i]);
+	}
+}
+
+
+void hecker_DrawScanLine( gradients_fx_fl const &Gradients,edge_fx_fl *pLeft, edge_fx_fl *pRight )
+{
+	int XStart = pLeft->X;
+	int Width = pRight->X - XStart;
+
+	//char unsigned *pDestBits = Dest.pBits;
+	//char unsigned * const pTextureBits = Texture.pBits;
+	//pDestBits += pLeft->Y * Dest.DeltaScan + XStart;
+	//long TextureDeltaScan = Texture.DeltaScan;
+
+	float invw = pLeft->invw.curr;
+	float u = pLeft->u.curr;
+	float v = pLeft->v.curr;
+	float z = pLeft->z.curr;
+	float color[3] = {
+		pLeft->color[0].curr,
+		pLeft->color[1].curr,
+		pLeft->color[2].curr };
+
+	//scanline(pLeft->Y,pLeft->X,pRight->X,31,31,31,0,0,0,1/pLeft->OneOverZ,31,31,31,0,0,
+
+	int adr = (pLeft->Y<<8)+XStart;
+
+	while(Width-- > 0)
+	{
+		float W = 1/invw;
+
+		pixel(adr,color[0],color[1],color[2],u,v,invw,z);
+		adr++;
+
+		invw += Gradients.d.invw.dx;
+		u += Gradients.d.u.dx;
+		v += Gradients.d.v.dx;
+		z += Gradients.d.z.dx;
+		for(int i=0;i<3;i++) color[i] += Gradients.d.color[i].dx;
+	}
+}
+
+//http://chrishecker.com/Miscellaneous_Technical_Articles
+static void triangle_from_hecker()
+{
+	int Top, Middle, Bottom, MiddleForCompare, BottomForCompare;
+	fixed28_4 Y0 = verts[0]->y, Y1 = verts[1]->y, Y2 = verts[2]->y;
+
+	// sort vertices in y
+	if(Y0 < Y1) {
+		if(Y2 < Y0) {
+			Top = 2; Middle = 0; Bottom = 1;
+			MiddleForCompare = 0; BottomForCompare = 1;
+		} else {
+			Top = 0;
+			if(Y1 < Y2) {
+				Middle = 1; Bottom = 2;
+				MiddleForCompare = 1; BottomForCompare = 2;
+			} else {
+				Middle = 2; Bottom = 1;
+				MiddleForCompare = 2; BottomForCompare = 1;
+			}
+		}
+	} else {
+		if(Y2 < Y1) {
+			Top = 2; Middle = 1; Bottom = 0;
+			MiddleForCompare = 1; BottomForCompare = 0;
+		} else {
+			Top = 1;
+			if(Y0 < Y2) {
+				Middle = 0; Bottom = 2;
+				MiddleForCompare = 3; BottomForCompare = 2;
+			} else {
+				Middle = 2; Bottom = 0;
+				MiddleForCompare = 2; BottomForCompare = 3;
+			}
+		}
+	}
+
+	gradients_fx_fl Gradients((const VERT**)verts);
+	edge_fx_fl TopToBottom(Gradients,verts,Top,Bottom);
+	edge_fx_fl TopToMiddle(Gradients,verts,Top,Middle);
+	edge_fx_fl MiddleToBottom(Gradients,verts,Middle,Bottom);
+	edge_fx_fl *pLeft, *pRight;
+	int MiddleIsLeft;
+
+	if(BottomForCompare > MiddleForCompare) {
+		MiddleIsLeft = 0;
+		pLeft = &TopToBottom; pRight = &TopToMiddle;
+	} else {
+		MiddleIsLeft = 1;
+		pLeft = &TopToMiddle; pRight = &TopToBottom;
+	}
+
+	int Height = TopToMiddle.Height;
+
+	while(Height--) {
+		hecker_DrawScanLine(Gradients,pLeft,pRight);
+		TopToMiddle.Step(); TopToBottom.Step();
+	}
+
+	Height = MiddleToBottom.Height;
+
+	if(MiddleIsLeft) {
+		pLeft = &MiddleToBottom; pRight = &TopToBottom;
+	} else {
+		pLeft = &TopToBottom; pRight = &MiddleToBottom;
+	}
+	
+	while(Height--) {
+		hecker_DrawScanLine(Gradients,pLeft,pRight);
+		MiddleToBottom.Step(); TopToBottom.Step();
+	}
+
+}
+
+
 //http://www.devmaster.net/forums/showthread.php?t=1884&page=1
-//todo - change to the tile-based renderer and try to apply some optimizations from that thread
 static void triangle_from_devmaster()
 {
+	if(USE_HECKER)
+	{
+		triangle_from_hecker();
+		return;
+	}
+
 	// 28.4 fixed-point coordinates
     const int Y1 = iround(16.0f * verts[0]->coord[1]);
     const int Y2 = iround(16.0f * verts[1]->coord[1]);
@@ -472,6 +923,7 @@ static void triangle_from_devmaster()
 	float u3 = verts[2]->texcoord[0], v3 = verts[2]->texcoord[1];
 	float w1 = verts[0]->coord[3], w2 = verts[1]->coord[3], w3 = verts[2]->coord[3];
 
+
 	Interpolator i_color_r(fx1,fx2,fx3,fy1,fy2,fy3,r1,r2,r3);
 	Interpolator i_color_g(fx1,fx2,fx3,fy1,fy2,fy3,g1,g2,g3);
 	Interpolator i_color_b(fx1,fx2,fx3,fy1,fy2,fy3,b1,b2,b3);
@@ -503,149 +955,54 @@ static void triangle_from_devmaster()
 		assert(y>=0 && y<192); //I dont think we need this bounds check, so it is only here as an assert
 		int adr = (y<<8)+minx;
 
-		int xaccum = 0;
+		int xstart = -1, xend;
+
+		//determine the current scanline, which will be in xstart <= x < xend
 		for(int x = minx; x < maxx; x++, adr++)
 		{
-			Fragment &destFragment = screen[adr];
-
 			if(CX1 > 0 && CX2 > 0 && CX3 > 0)
 			{
+				xend = x;
+				if(!done)
+					xstart = x;
 				done = true;
-
-				assert(x>=0 && x<256); //I dont think we need this bounds check, so it is only here as an assert
-
-				//execute interpolators.
-				//we defer this until the triangle scanline begins, and accumulate the number of deltas which were necessary.
-				if(xaccum==1) {
-					i_color_r.incx(); i_color_g.incx(); i_color_b.incx();
-					i_tex_invu.incx(); i_tex_invv.incx();
-					i_invw.incx(); i_z.incx();
-				} else {
-					i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
-					i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-					i_invw.incx(xaccum); i_z.incx(xaccum);
-				}
-
-				xaccum = 0;
-
-				//depth test
-				int depth;
-				if(gfx3d.wbuffer)
-					//not sure about this
-					//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-					depth = 4096/i_invw.Z; 
-				else
-				{
-					float z = i_z.Z;
-					depth = z*0x7FFF; //not sure about this
-				}
-				if(polyAttr.decalMode)
-				{
-					if(depth != destFragment.depth)
-					{
-						goto depth_fail;
-					}
-				}
-				else
-				{
-					if(depth>=destFragment.depth) 
-					{
-						goto depth_fail;
-					}
-				}
-				
-				shader.invw = i_invw.Z;
-				shader.invu = i_tex_invu.Z;
-				shader.invv = i_tex_invv.Z;
-
-				//perspective-correct the colors
-				float r = (i_color_r.Z / i_invw.Z) + 0.5f;
-				float g = (i_color_g.Z / i_invw.Z) + 0.5f;
-				float b = (i_color_b.Z / i_invw.Z) + 0.5f;
-
-				//this is a HACK: 
-				//we are being very sloppy with our interpolation precision right now
-				//and rather than fix it, i just want to clamp it
-				shader.materialColor.components.r = max(0,min(31,(int)r));
-				shader.materialColor.components.g = max(0,min(31,(int)g));
-				shader.materialColor.components.b = max(0,min(31,(int)b));
-
-				shader.materialColor.components.a = polyAttr.alpha;
-
-				//pixel shader
-				Fragment shaderOutput;
-				shader.shade(shaderOutput);
-
-				//alpha test
-				if(gfx3d.enableAlphaTest)
-				{
-					if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
-						goto rejected_fragment;
-				}
-		
-				//we shouldnt do any of this if we generated a totally transparent pixel
-				if(shaderOutput.color.components.a != 0)
-				{
-					//handle shadow polys
-					if(shader.mode == 3)
-					{
-						//now, if we arent supposed to draw shadow here, then bail out
-						if(destFragment.stencil == 0)
-							goto rejected_fragment;
-
-						//reset the shadow flag to keep the shadow from getting drawn more than once
-						destFragment.stencil = 0;
-					}
-
-					//handle polyids
-					bool isOpaquePixel = shaderOutput.color.components.a == 31;
-					if(isOpaquePixel)
-					{
-						destFragment.polyid.opaque = polyAttr.polyid;
-					}
-					else
-					{
-						//interesting that we have to check for mode 3 here. not very straightforward, but then nothing about the shadows are
-						//this was the result of testing trauma center, SPP area menu, and SM64 with yoshi's red feet behind translucent trees
-						//as well as the intermittent bug in ff4 where your shadow only appears under other shadows
-						if(shader.mode != 3)
-						{
-							//dont overwrite pixels on translucent polys with the same polyids
-							if(destFragment.polyid.translucent == polyAttr.polyid)
-								goto rejected_fragment;
-						
-							destFragment.polyid.translucent = polyAttr.polyid;
-						}
-					}
-
-					//alpha blending and write color
-					alphaBlend(destFragment.color, shaderOutput.color);
-
-					//depth writing
-					if(isOpaquePixel || polyAttr.translucentDepthWrite)
-						destFragment.depth = depth;
-
-				}
 
 			} else if(done) break;
 		
-			goto done_with_pixel;
-
-		depth_fail:
-			//handle stencil-writing in shadow mode
-			if(shader.mode == 3)
-			{
-				destFragment.stencil = 1;
-			}
-
-		rejected_fragment:
-		done_with_pixel:
-			xaccum++;
-
 			CX1 -= FDY12;
 			CX2 -= FDY23;
 			CX3 -= FDY31;
 		}
+
+		//---------
+		//render the scanline
+		if(xstart != -1)
+		{
+			//seed the interpolators with the distance to the start of this scanline
+			//this is crappy and we need to redo it now that we've changing the main interpolation method to bilinear
+			int xaccum = xstart-minx;
+			i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
+			i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
+			i_invw.incx(xaccum); i_z.incx(xaccum);
+			float rr = i_color_r.Z;
+			float gg = i_color_g.Z;
+			float bb = i_color_b.Z;
+			float uu = i_tex_invu.Z;
+			float vv = i_tex_invv.Z;
+			float ww = i_invw.Z;
+			float zz = i_z.Z;
+			//now boost the interpolators to the end of this scanline
+			i_color_r.pop();i_color_g.pop();i_color_b.pop();
+			i_tex_invu.pop();i_tex_invv.pop();
+			i_z.pop();i_invw.pop();
+			xaccum = xend-minx;
+			i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
+			i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
+			i_invw.incx(xaccum); i_z.incx(xaccum);
+			scanline(y, xstart, xend, rr,gg,bb,uu,vv,ww,zz,i_color_r.Z, i_color_g.Z, i_color_b.Z, i_tex_invu.Z, i_tex_invv.Z, i_invw.Z, i_z.Z);
+		}
+		//----------
+
 		i_color_r.pop(); i_color_r.incy();
 		i_color_g.pop(); i_color_g.incy();
 		i_color_b.pop(); i_color_b.incy();
@@ -679,6 +1036,7 @@ static char SoftRastInit(void)
 	TexCache_BindTexture = BindTexture;
 	TexCache_BindTextureData = BindTextureData;
 
+	printf("SoftRast Initialized\n");
 	return 1;
 }
 
@@ -974,10 +1332,9 @@ static void SoftRastRender()
 	
 	//iterate over polys
 	bool needInitTexture = true;
+	polynum = 0;
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
-		polynum = i;
-
 		TClippedPoly &clippedPoly = clippedPolys[i];
 		POLY *poly = clippedPoly.poly;
 		int type = clippedPoly.type;
@@ -1022,6 +1379,11 @@ static void SoftRastRender()
 			needInitTexture = false;
 		}
 
+		if(USE_HECKER)
+			for(int i=0;i<type;i++)
+				for(int j=0;j<2;j++)
+					verts[i]->coord[j] = iround(16.0f * verts[i]->coord[j]);
+
 		//hmm... shader gets setup every time because it depends on sampler which may have just changed
 		shader.setup(poly->polyAttr);
 
@@ -1035,24 +1397,24 @@ static void SoftRastRender()
 				SubmitVertex(0,verts[0]);
 				SubmitVertex(1,verts[1]);
 				SubmitVertex(2,verts[2]);
-				triangle_from_devmaster();
+				triangle_from_devmaster();polynum++;
 
 				SubmitVertex(0,verts[2]);
 				SubmitVertex(1,verts[3]);
 				SubmitVertex(2,verts[0]);
-				triangle_from_devmaster();
+				triangle_from_devmaster();polynum++;
 			}
 			else
 			{
 				SubmitVertex(0,verts[2]);
 				SubmitVertex(1,verts[1]);
 				SubmitVertex(2,verts[0]);
-				triangle_from_devmaster();
+				triangle_from_devmaster();polynum++;
 
 				SubmitVertex(0,verts[0]);
 				SubmitVertex(1,verts[3]);
 				SubmitVertex(2,verts[2]);
-				triangle_from_devmaster();
+				triangle_from_devmaster();polynum++;
 			}
 		}
 		else if(type == 3)
@@ -1062,14 +1424,14 @@ static void SoftRastRender()
 				SubmitVertex(0,verts[0]);
 				SubmitVertex(1,verts[1]);
 				SubmitVertex(2,verts[2]);
-				triangle_from_devmaster();
+				triangle_from_devmaster();polynum++;
 			}
 			else
 			{
 				SubmitVertex(0,verts[2]);
 				SubmitVertex(1,verts[1]);
 				SubmitVertex(2,verts[0]);
-				triangle_from_devmaster();
+				triangle_from_devmaster();polynum++;
 			}
 		} else printf("skipping type %d\n",type);
 
