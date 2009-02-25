@@ -275,12 +275,14 @@ static void WIFI_resetRF(rffilter_t *rf) {
 
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val)
 {
+//	printf("write rf cnt %04X\n", val);
 	if (!wifi->rfIOStatus.bits.busy)
 		wifi->rfIOCnt.val = val ;
 }
 
 void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 {
+//	printf("write rf data %04X %s part\n", val, (part?"high":"low"));
 	if (!wifi->rfIOStatus.bits.busy)
 	{
         rfIOData_t *rfreg = (rfIOData_t *)&wifi->RF;
@@ -337,6 +339,7 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 
 u16 WIFI_getRF_DATA(wifimac_t *wifi, u8 part)
 {
+//	printf("read rf data %s part\n", (part?"high":"low"));
 	if (!wifi->rfIOStatus.bits.busy)
 	{
 		return wifi->rfIOData.array16[part] ;
@@ -348,6 +351,7 @@ u16 WIFI_getRF_DATA(wifimac_t *wifi, u8 part)
 
 u16 WIFI_getRF_STATUS(wifimac_t *wifi)
 {
+//	printf("read rf status\n");
 	return wifi->rfIOStatus.val ;
 }
 
@@ -481,7 +485,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		return ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
-
+//	printf("wifi write at %08X, %04X\n", address, val);
 	/* mirrors => register address */
 	address &= 0x00000FFF ;
 	switch (address)
@@ -503,6 +507,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			break ;
 		case REG_WIFI_IE:
 			wifi->IE.val = val ;
+			printf("wifi ie write %04X\n", val);
 			break ;
 		case REG_WIFI_IF:
 			wifi->IF.val &= ~val ;		/* clear flagging bits */
@@ -666,7 +671,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
         return wifi->circularBuffer[(address & 0x1FFF) >> 1] ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
-
+//	if((address != 0x04808214) && (address != 0x0480803C))
+//		printf("wifi read at %08X\n", address);
 	/* mirrors => register address */
 	address &= 0x00000FFF ;
 	switch (address)
@@ -751,6 +757,10 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return wifi->pid ;
 		case REG_WIFI_AID_HIGH:
 			return wifi->aid ;
+		case 0x03C:
+			return 0x0200;
+		case 0x214:
+			return 0x0000;
 		default:
 			return wifi->ioMem[address >> 1];
 	}
