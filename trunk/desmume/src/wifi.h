@@ -109,6 +109,7 @@
 #define     REG_WIFI_RFIOBSY    		0x180
 #define     REG_WIFI_RFIOCNT    		0x184
 #define		REG_WIFI_IF_SET				0x21C
+#define		REG_WIFI_POWERACK			0x2D0
 
 /* WIFI misc constants */
 #define		WIFI_CHIPID					0x1440		/* emulates "old" wifi chip, new is 0xC340 */
@@ -370,6 +371,10 @@ typedef union
 /* http://www.akkit.org/info/dswifi.htm#WifiIOMap */
 typedef struct 
 {
+	/* power */
+	BOOL powerOn;
+	BOOL powerOnPending;
+
 	/* wifi interrupt handling */
     wifiirq_t   IE ;
     wifiirq_t   IF ;
