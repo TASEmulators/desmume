@@ -54,21 +54,22 @@ template<typename T>
 inline T SIGNED_UNDERFLOW(T a,T b,T c) { return ((BIT31(a)&BIT31(~(b))&BIT31(~c))|
 										  (BIT31(~a)&BIT31(b)&BIT31(c))); }
 
-#define EQ	0x0
-#define NE	0x1
-#define CS	0x2
-#define CC	0x3
-#define MI	0x4
-#define PL	0x5
-#define VS	0x6
-#define VC	0x7
-#define HI	0x8
-#define LS	0x9
-#define GE	0xA
-#define LT	0xB
-#define GT	0xC
-#define LE	0xD
-#define AL	0xE
+//zero 15-feb-2009 - these werent getting used and they were getting in my way
+//#define EQ	0x0
+//#define NE	0x1
+//#define CS	0x2
+//#define CC	0x3
+//#define MI	0x4
+//#define PL	0x5
+//#define VS	0x6
+//#define VC	0x7
+//#define HI	0x8
+//#define LS	0x9
+//#define GE	0xA
+//#define LT	0xB
+//#define GT	0xC
+//#define LE	0xD
+//#define AL	0xE
 
 extern const unsigned char arm_cond_table[16*16];
 

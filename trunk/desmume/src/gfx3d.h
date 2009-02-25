@@ -90,8 +90,18 @@ struct POLYLIST {
 };
 
 struct VERT {
-	float coord[4];
-	float texcoord[2];
+	union {
+		float coord[4];
+		struct {
+			float x,y,z,w;
+		};
+	};
+	union {
+		float texcoord[2];
+		struct {
+			float u,v;
+		};
+	};
 	u8 color[3];
 	float fcolor[3];
 	void color_to_float() {

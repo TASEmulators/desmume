@@ -64,6 +64,8 @@ struct SCustomKeys
 
 	SCustomKey Pause, FrameAdvance;
 
+	SCustomKey ToggleRasterizer;
+
 	SCustomKey PrintScreen;
 	SCustomKey LastItem; // dummy, must be last
 
