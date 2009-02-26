@@ -23,7 +23,7 @@
 
 //nothing in this file should be assumed to be accurate
 
-const bool USE_HECKER = false;
+//#define USE_HECKER
 
 #include "rasterize.h"
 
@@ -170,10 +170,11 @@ static VERT* verts[3];
 INLINE static void SubmitVertex(int vert_index, VERT* rawvert)
 {
 	//HACK - reverse winding
-	if(USE_HECKER)
+	#ifdef USE_HECKER
 		verts[2-vert_index] = rawvert;
-	else
+	#else
 		verts[vert_index] = rawvert;
+	#endif
 }
 
 static Fragment screen[256*192];
@@ -781,76 +782,78 @@ void hecker_DrawScanLine( gradients_fx_fl const &Gradients,edge_fx_fl *pLeft, ed
 	}
 }
 
+static void runscanline(gradients_fx_fl & gradients, edge_fx_fl *left, edge_fx_fl *right)
+{
+	int Height = min(left->Height,right->Height);
+	while(Height--) {
+		hecker_DrawScanLine(gradients,left,right);
+		left->Step(); right->Step();
+	}
+}
+
 //http://chrishecker.com/Miscellaneous_Technical_Articles
 static void triangle_from_hecker()
 {
-	int Top, Middle, Bottom, MiddleForCompare, BottomForCompare;
-	fixed28_4 Y0 = verts[0]->y, Y1 = verts[1]->y, Y2 = verts[2]->y;
+	VERT* v[3] = {verts[0],verts[1],verts[2]};
 
-	// sort vertices in y
-	if(Y0 < Y1) {
-		if(Y2 < Y0) {
-			Top = 2; Middle = 0; Bottom = 1;
-			MiddleForCompare = 0; BottomForCompare = 1;
-		} else {
-			Top = 0;
-			if(Y1 < Y2) {
-				Middle = 1; Bottom = 2;
-				MiddleForCompare = 1; BottomForCompare = 2;
-			} else {
-				Middle = 2; Bottom = 1;
-				MiddleForCompare = 2; BottomForCompare = 1;
-			}
+	//rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
+	//this will reduce the complexity of our logic
+	while(v[0]->y > v[1]->y || v[0]->y > v[2]->y) {
+		swap(v[0],v[1]);
+		swap(v[1],v[2]);
+	}
+	while(v[0]->y == v[1]->y && v[0]->x > v[1]->x) {
+		swap(v[0],v[1]);
+		swap(v[1],v[2]);
+	}
+
+	//wants clockwise
+
+	fixed28_4 Y0 = v[0]->y, Y1 = v[1]->y, Y2 = v[2]->y;
+
+	gradients_fx_fl Gradients((const VERT**)v);
+
+	if(Y0 == Y1)
+	{
+		//if the first two points have the same y-coord, then there is only one pair of edges
+		edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
+		edge_fx_fl edge2 = edge_fx_fl(Gradients,v,1,2);
+		runscanline(Gradients,&edge1,&edge2);
+	}
+	else if(Y1 == Y2)
+	{
+		//if the last two points have the same y-coord then there is only one pair of edges
+		edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
+		edge_fx_fl edge2 = edge_fx_fl(Gradients,v,0,1);
+		runscanline(Gradients,&edge1,&edge2);
+	}
+	else
+	{
+		//there are two pairs of edges
+		if(Y1<Y2)
+		{
+			//a triangle like 
+			// 0
+			//   1
+			//2
+			edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
+			edge_fx_fl edge2 = edge_fx_fl(Gradients,v,0,1);
+			runscanline(Gradients,&edge1,&edge2);
+			edge2 = edge_fx_fl(Gradients,v,1,2);
+			runscanline(Gradients,&edge1,&edge2);
 		}
-	} else {
-		if(Y2 < Y1) {
-			Top = 2; Middle = 1; Bottom = 0;
-			MiddleForCompare = 1; BottomForCompare = 0;
-		} else {
-			Top = 1;
-			if(Y0 < Y2) {
-				Middle = 0; Bottom = 2;
-				MiddleForCompare = 3; BottomForCompare = 2;
-			} else {
-				Middle = 2; Bottom = 0;
-				MiddleForCompare = 2; BottomForCompare = 3;
-			}
+		else
+		{
+			//a triangle like 
+			// 0
+			//2   
+			//   1
+			edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
+			edge_fx_fl edge2 = edge_fx_fl(Gradients,v,0,1);
+			runscanline(Gradients,&edge1,&edge2);
+			edge1 = edge_fx_fl(Gradients,v,2,1);
+			runscanline(Gradients,&edge1,&edge2);
 		}
-	}
-
-	gradients_fx_fl Gradients((const VERT**)verts);
-	edge_fx_fl TopToBottom(Gradients,verts,Top,Bottom);
-	edge_fx_fl TopToMiddle(Gradients,verts,Top,Middle);
-	edge_fx_fl MiddleToBottom(Gradients,verts,Middle,Bottom);
-	edge_fx_fl *pLeft, *pRight;
-	int MiddleIsLeft;
-
-	if(BottomForCompare > MiddleForCompare) {
-		MiddleIsLeft = 0;
-		pLeft = &TopToBottom; pRight = &TopToMiddle;
-	} else {
-		MiddleIsLeft = 1;
-		pLeft = &TopToMiddle; pRight = &TopToBottom;
-	}
-
-	int Height = TopToMiddle.Height;
-
-	while(Height--) {
-		hecker_DrawScanLine(Gradients,pLeft,pRight);
-		TopToMiddle.Step(); TopToBottom.Step();
-	}
-
-	Height = MiddleToBottom.Height;
-
-	if(MiddleIsLeft) {
-		pLeft = &MiddleToBottom; pRight = &TopToBottom;
-	} else {
-		pLeft = &TopToBottom; pRight = &MiddleToBottom;
-	}
-	
-	while(Height--) {
-		hecker_DrawScanLine(Gradients,pLeft,pRight);
-		MiddleToBottom.Step(); TopToBottom.Step();
 	}
 
 }
@@ -859,11 +862,12 @@ static void triangle_from_hecker()
 //http://www.devmaster.net/forums/showthread.php?t=1884&page=1
 static void triangle_from_devmaster()
 {
-	if(USE_HECKER)
+#ifdef USE_HECKER
 	{
 		triangle_from_hecker();
 		return;
 	}
+#endif
 
 	// 28.4 fixed-point coordinates
     const int Y1 = iround(16.0f * verts[0]->coord[1]);
@@ -1381,10 +1385,11 @@ static void SoftRastRender()
 			needInitTexture = false;
 		}
 
-		if(USE_HECKER)
+#ifdef USE_HECKER
 			for(int i=0;i<type;i++)
 				for(int j=0;j<2;j++)
 					verts[i]->coord[j] = iround(16.0f * verts[i]->coord[j]);
+#endif
 
 		//hmm... shader gets setup every time because it depends on sampler which may have just changed
 		shader.setup(poly->polyAttr);
