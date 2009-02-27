@@ -567,6 +567,25 @@ void scanline(int y, int xstart, int xend,
 
 typedef int fixed28_4;
 
+// handle floor divides and mods correctly 
+inline void FloorDivMod( long Numerator, long Denominator, long &Floor, long &Mod )
+{
+	assert(Denominator > 0);		// we assume it's positive
+	if(Numerator >= 0) {
+		// positive case, C is okay
+		Floor = Numerator / Denominator;
+		Mod = Numerator % Denominator;
+	} else {
+		// Numerator is negative, do the right thing
+		Floor = -((-Numerator) / Denominator);
+		Mod = (-Numerator) % Denominator;
+		if(Mod) {
+			// there is a remainder
+			Floor--; Mod = Denominator - Mod;
+		}
+	}
+}
+
 inline fixed28_4 FloatToFixed28_4( float Value ) {
 	return Value * 16;
 }
@@ -613,17 +632,9 @@ struct Derivatives {
 	}
 };
 
-struct gradients_fx_fl {
-	gradients_fx_fl( const VERT **pVertices );
-	float invw[3];
-	struct GradientDerivatives {
-		Derivatives invw, z, u, v, color[3];
-	} d;
-};
 
 struct edge_fx_fl {
-	edge_fx_fl(gradients_fx_fl const &Gradients, VERT **pVertices, int Top,
-			int Bottom );
+	edge_fx_fl(VERT **pVertices, int Top, int Bottom );
 	inline int Step( void );
 
 	long X, XStep, Numerator, Denominator;			// DDA info for x
@@ -634,7 +645,14 @@ struct edge_fx_fl {
 		float curr, step, stepExtra;
 		void doStep() { curr += step; }
 		void doStepExtra() { curr += stepExtra; }
-		void initialize(float val, long XStep, float XPrestep, float YPrestep, const Derivatives& gradient) {
+		void initialize(float top, float bottom, float dx, float dy, long XStep, float XPrestep, float YPrestep) {
+			dx = 0;
+			dy *= (bottom-top);
+			curr = top + YPrestep * dy + XPrestep * dx;
+			step = XStep * dx + dy;
+			stepExtra = dx;
+		}
+		void old_initialize(float val, long XStep, float XPrestep, float YPrestep, const Derivatives& gradient) {
 			curr = val + YPrestep * gradient.dy
 						+ XPrestep * gradient.dx;
 			step = XStep * gradient.dx + gradient.dy;
@@ -653,69 +671,7 @@ struct edge_fx_fl {
 	void doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
 
-inline int edge_fx_fl::Step( void ) {
-	X += XStep; Y++; Height--;
-	doStepInterpolants();
-
-	ErrorTerm += Numerator;
-	if(ErrorTerm >= Denominator) {
-		X++;
-		ErrorTerm -= Denominator;
-		doStepExtraInterpolants();
-	}
-	return Height;
-}	
-
-
-gradients_fx_fl::gradients_fx_fl( const VERT **verts )
-{
-	int Counter;
-
-	fixed28_4 X1Y0 = Fixed28_4Mul(verts[1]->x - verts[2]->x,
-							verts[0]->y - verts[2]->y);
-	fixed28_4 X0Y1 = Fixed28_4Mul(verts[0]->x - verts[2]->x,
-							verts[1]->y - verts[2]->y);
-	float invdx = 1.0 / Fixed28_4ToFloat(X1Y0 - X0Y1);
-
-	float invdy = -invdx;
-
-	for(int i=0;i<3;i++) invw[i] = 1/verts[i]->w;
-
-
-	d.invw.calculate(invw[0],invw[1],invw[2],invdx,invdy,verts);
-	d.u.calculate(verts[0]->u,verts[1]->u,verts[2]->u,invdx,invdy,verts);
-	d.v.calculate(verts[0]->v,verts[1]->v,verts[2]->v,invdx,invdy,verts);
-	d.z.calculate(verts[0]->z,verts[1]->z,verts[2]->z,invdx,invdy,verts);
-	for(int i=0;i<3;i++)
-		d.color[i].calculate(verts[0]->fcolor[i],verts[1]->fcolor[i],verts[2]->fcolor[i],invdx,invdy,verts);
-}
-
-
-/********** handle floor divides and mods correctly ***********/
-
-inline void FloorDivMod( long Numerator, long Denominator, long &Floor,
-				long &Mod )
-{
-	assert(Denominator > 0);		// we assume it's positive
-	if(Numerator >= 0) {
-		// positive case, C is okay
-		Floor = Numerator / Denominator;
-		Mod = Numerator % Denominator;
-	} else {
-		// Numerator is negative, do the right thing
-		Floor = -((-Numerator) / Denominator);
-		Mod = (-Numerator) % Denominator;
-		if(Mod) {
-			// there is a remainder
-			Floor--; Mod = Denominator - Mod;
-		}
-	}
-}
-
-/********** edge_fx_fl constructor ***********/
-
-edge_fx_fl::edge_fx_fl( gradients_fx_fl const &Gradients, VERT **verts, int Top,
-		int Bottom )
+edge_fx_fl::edge_fx_fl( VERT **verts, int Top, int Bottom )
 {
 	Y = Ceil28_4(verts[Top]->y);
 	int YEnd = Ceil28_4(verts[Bottom]->y);
@@ -733,18 +689,36 @@ edge_fx_fl::edge_fx_fl( gradients_fx_fl const &Gradients, VERT **verts, int Top,
 	
 		float YPrestep = Fixed28_4ToFloat(Y*16 - verts[Top]->y);
 		float XPrestep = Fixed28_4ToFloat(X*16 - verts[Top]->x);
-	
-		invw.initialize(Gradients.invw[Top],XStep,XPrestep,YPrestep,Gradients.d.invw);
-		u.initialize(verts[Top]->u,XStep,XPrestep,YPrestep,Gradients.d.u);
-		v.initialize(verts[Top]->v,XStep,XPrestep,YPrestep,Gradients.d.v);
-		z.initialize(verts[Top]->z,XStep,XPrestep,YPrestep,Gradients.d.z);
+
+		float dy = 1/Fixed28_4ToFloat(dN);
+		float dx = 1/Fixed28_4ToFloat(dM);
+		
+		invw.initialize(1/verts[Top]->w,1/verts[Bottom]->w,dx,dy,XStep,XPrestep,YPrestep);
+		u.initialize(verts[Top]->u,verts[Bottom]->u,dx,dy,XStep,XPrestep,YPrestep);
+		v.initialize(verts[Top]->v,verts[Bottom]->v,dx,dy,XStep,XPrestep,YPrestep);
+		z.initialize(verts[Top]->z,verts[Bottom]->z,dx,dy,XStep,XPrestep,YPrestep);
 		for(int i=0;i<3;i++)
-			color[i].initialize(verts[Top]->fcolor[i],XStep,XPrestep,YPrestep,Gradients.d.color[i]);
+			color[i].initialize(verts[Top]->fcolor[i],verts[Bottom]->fcolor[i],dx,dy,XStep,XPrestep,YPrestep);
 	}
 }
 
+inline int edge_fx_fl::Step( void ) {
+	X += XStep; Y++; Height--;
+	doStepInterpolants();
 
-void hecker_DrawScanLine( gradients_fx_fl const &Gradients,edge_fx_fl *pLeft, edge_fx_fl *pRight )
+	ErrorTerm += Numerator;
+	if(ErrorTerm >= Denominator) {
+		X++;
+		ErrorTerm -= Denominator;
+		doStepExtraInterpolants();
+	}
+	return Height;
+}	
+
+
+
+
+void hecker_DrawScanLine( edge_fx_fl *pLeft, edge_fx_fl *pRight )
 {
 	int XStart = pLeft->X;
 	int Width = pRight->X - XStart;
@@ -763,31 +737,41 @@ void hecker_DrawScanLine( gradients_fx_fl const &Gradients,edge_fx_fl *pLeft, ed
 		pLeft->color[1].curr,
 		pLeft->color[2].curr };
 
+	float invWidth = 1.0f / Width;
+	float dinvw_dx = (pRight->invw.curr - invw) * invWidth;
+	float du_dx = (pRight->u.curr - u) * invWidth;
+	float dv_dx = (pRight->v.curr - v) * invWidth;
+	float dz_dx = (pRight->z.curr - z) * invWidth;
+	float dc_dx[3] = {
+		(pRight->color[0].curr - color[0]) * invWidth,
+		(pRight->color[1].curr - color[1]) * invWidth,
+		(pRight->color[2].curr - color[2]) * invWidth };
+
+
 	//scanline(pLeft->Y,pLeft->X,pRight->X,31,31,31,0,0,0,1/pLeft->OneOverZ,31,31,31,0,0,
 
 	int adr = (pLeft->Y<<8)+XStart;
 
 	while(Width-- > 0)
 	{
-		float W = 1/invw;
-
 		pixel(adr,color[0],color[1],color[2],u,v,invw,z);
 		adr++;
 
-		invw += Gradients.d.invw.dx;
-		u += Gradients.d.u.dx;
-		v += Gradients.d.v.dx;
-		z += Gradients.d.z.dx;
-		for(int i=0;i<3;i++) color[i] += Gradients.d.color[i].dx;
+		invw += dinvw_dx;
+		u += du_dx;
+		v += dv_dx;
+		z += dz_dx;
+		for(int i=0;i<3;i++) color[i] += dc_dx[i];
 	}
 }
 
-static void runscanline(gradients_fx_fl & gradients, edge_fx_fl *left, edge_fx_fl *right)
+static void runscanline(edge_fx_fl *left, edge_fx_fl *right)
 {
 	int Height = min(left->Height,right->Height);
 	while(Height--) {
-		hecker_DrawScanLine(gradients,left,right);
-		left->Step(); right->Step();
+		hecker_DrawScanLine(left,right);
+		left->Step(); 
+		right->Step();
 	}
 }
 
@@ -811,21 +795,19 @@ static void triangle_from_hecker()
 
 	fixed28_4 Y0 = v[0]->y, Y1 = v[1]->y, Y2 = v[2]->y;
 
-	gradients_fx_fl Gradients((const VERT**)v);
-
 	if(Y0 == Y1)
 	{
 		//if the first two points have the same y-coord, then there is only one pair of edges
-		edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
-		edge_fx_fl edge2 = edge_fx_fl(Gradients,v,1,2);
-		runscanline(Gradients,&edge1,&edge2);
+		edge_fx_fl edge1 = edge_fx_fl(v,0,2);
+		edge_fx_fl edge2 = edge_fx_fl(v,1,2);
+		runscanline(&edge1,&edge2);
 	}
 	else if(Y1 == Y2)
 	{
 		//if the last two points have the same y-coord then there is only one pair of edges
-		edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
-		edge_fx_fl edge2 = edge_fx_fl(Gradients,v,0,1);
-		runscanline(Gradients,&edge1,&edge2);
+		edge_fx_fl edge1 = edge_fx_fl(v,0,2);
+		edge_fx_fl edge2 = edge_fx_fl(v,0,1);
+		runscanline(&edge1,&edge2);
 	}
 	else
 	{
@@ -836,11 +818,11 @@ static void triangle_from_hecker()
 			// 0
 			//   1
 			//2
-			edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
-			edge_fx_fl edge2 = edge_fx_fl(Gradients,v,0,1);
-			runscanline(Gradients,&edge1,&edge2);
-			edge2 = edge_fx_fl(Gradients,v,1,2);
-			runscanline(Gradients,&edge1,&edge2);
+			edge_fx_fl edge1 = edge_fx_fl(v,0,2);
+			edge_fx_fl edge2 = edge_fx_fl(v,0,1);
+			runscanline(&edge1,&edge2);
+			edge2 = edge_fx_fl(v,1,2);
+			runscanline(&edge1,&edge2);
 		}
 		else
 		{
@@ -848,11 +830,11 @@ static void triangle_from_hecker()
 			// 0
 			//2   
 			//   1
-			edge_fx_fl edge1 = edge_fx_fl(Gradients,v,0,2);
-			edge_fx_fl edge2 = edge_fx_fl(Gradients,v,0,1);
-			runscanline(Gradients,&edge1,&edge2);
-			edge1 = edge_fx_fl(Gradients,v,2,1);
-			runscanline(Gradients,&edge1,&edge2);
+			edge_fx_fl edge1 = edge_fx_fl(v,0,2);
+			edge_fx_fl edge2 = edge_fx_fl(v,0,1);
+			runscanline(&edge1,&edge2);
+			edge1 = edge_fx_fl(v,2,1);
+			runscanline(&edge1,&edge2);
 		}
 	}
 
