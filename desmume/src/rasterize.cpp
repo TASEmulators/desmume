@@ -26,6 +26,10 @@
 //the shape rasterizers contained herein are based on code supplied by Chris Hecker from 
 //http://chrishecker.com/Miscellaneous_Technical_Articles
 
+//The worst case we've managed to think of so far would be a viewport zoomed in a little bit 
+//on a diamond, with cut-out bits in all four corners
+#define MAX_CLIPPED_VERTS 8
+
 #include "rasterize.h"
 
 #include <algorithm>
@@ -166,11 +170,12 @@ struct Fragment
 	u8 pad[5];
 };
 
-static VERT* verts[4];
+static VERT* verts[MAX_CLIPPED_VERTS];
+static VERT* sortedVerts[MAX_CLIPPED_VERTS];
 
-INLINE static void SubmitVertex(int vert_index, VERT* rawvert)
+INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 {
-	verts[vert_index] = rawvert;
+	verts[vert_index] = &rawvert;
 }
 
 static Fragment screen[256*192];
@@ -348,42 +353,6 @@ struct Shader
 	}
 
 } shader;
-
-
-struct Interpolator
-{
-	float dx, dy;
-	float Z, pZ;
-
-	struct {
-		float x,y,z;
-	} point0;
-	
-	Interpolator(float x1, float x2, float x3, float y1, float y2, float y3, float z1, float z2, float z3)
-	{
-		float A = (z3 - z1) * (y2 - y1) - (z2 - z1) * (y3 - y1);
-		float B = (x3 - x1) * (z2 - z1) - (x2 - x1) * (z3 - z1);
-		float C = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
-		dx = -(float)A / C;
-		dy = -(float)B / C;
-		point0.x = x1;
-		point0.y = y1;
-		point0.z = z1;
-	}
-
-	void init(int x, int y)
-	{
-		Z = point0.z + dx * (x-point0.x) + dy * (y-point0.y);
-	}
-
-	FORCEINLINE int cur() { return iround(Z); }
-	
-	FORCEINLINE void push() { pZ = Z; }
-	FORCEINLINE void pop() { Z = pZ; }
-	FORCEINLINE void incy() { Z += dy; }
-	FORCEINLINE void incx() { Z += dx; }
-	FORCEINLINE void incx(int count) { Z += dx*count; }
-};
 
 static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 {
@@ -566,7 +535,7 @@ typedef int fixed28_4;
 static bool failure;
 
 // handle floor divides and mods correctly 
-inline void FloorDivMod( long Numerator, long Denominator, long &Floor, long &Mod )
+inline void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod)
 {
 	//These must be caused by invalid or degenerate shapes.. not sure yet.
 	//check it out in the mario face intro of SM64
@@ -628,8 +597,8 @@ inline long Ceil28_4( fixed28_4 Value ) {
 
 struct edge_fx_fl {
 	edge_fx_fl() {}
-	edge_fx_fl(VERT **pVertices, int Top, int Bottom );
-	inline int Step( void );
+	edge_fx_fl(int Top, int Bottom);
+	inline int Step();
 
 	long X, XStep, Numerator, Denominator;			// DDA info for x
 	long ErrorTerm;
@@ -659,8 +628,7 @@ struct edge_fx_fl {
 	void doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
 
-edge_fx_fl::edge_fx_fl( VERT **verts, int Top, int Bottom )
-{
+edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
 	Y = Ceil28_4(verts[Top]->y);
 	int YEnd = Ceil28_4(verts[Bottom]->y);
 	Height = YEnd - Y;
@@ -690,7 +658,7 @@ edge_fx_fl::edge_fx_fl( VERT **verts, int Top, int Bottom )
 	}
 }
 
-inline int edge_fx_fl::Step( void ) {
+inline int edge_fx_fl::Step() {
 	X += XStep; Y++; Height--;
 	doStepInterpolants();
 
@@ -703,8 +671,8 @@ inline int edge_fx_fl::Step( void ) {
 	return Height;
 }	
 
-
-void hecker_DrawScanLine(edge_fx_fl *pLeft, edge_fx_fl *pRight)
+//draws a single scanline
+static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 {
 	int XStart = pLeft->X;
 	int width = pRight->X - XStart;
@@ -747,60 +715,93 @@ void hecker_DrawScanLine(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 	}
 }
 
-static void runscanline(edge_fx_fl *left, edge_fx_fl *right)
+//runs several scanlines, until an edge is finished
+static void runscanlines(edge_fx_fl *left, edge_fx_fl *right)
 {
 	//do not overstep either of the edges
 	int Height = min(left->Height,right->Height);
 	while(Height--) {
-		hecker_DrawScanLine(left,right);
+		drawscanline(left,right);
 		left->Step(); 
 		right->Step();
 	}
 }
 
-//This function can handle a quad or a triangle. A triangle is just a quad with a duped vert.
+//rotates verts counterclockwise
+template<int type>
+inline static void rot_verts() {
+	#define ROTSWAP(X) if(type>X) swap(verts[X-1],verts[X]);
+	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
+	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7);
+}
+
+//rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
+//this is a necessary precondition for our shape engine
+template<int type>
+static void sort_verts(bool backwards) {
+	//if the verts are backwards, reorder them first
+	if(backwards)
+		for(int i=0;i<type/2;i++)
+			swap(verts[i],verts[type-i-1]);
+
+	for(;;)
+	{
+		//this was the only way we could get this to unroll
+		#define CHECKY(X) if(type>X) if(verts[0]->y > verts[X]->y) goto doswap;
+		CHECKY(1); CHECKY(2); CHECKY(3); CHECKY(4);
+		CHECKY(5); CHECKY(6); CHECKY(7);
+		break;
+		
+	doswap:
+		rot_verts<type>();
+	}
+	
+	while(verts[0]->y == verts[1]->y && verts[0]->x > verts[1]->x)
+		rot_verts<type>();
+	
+}
+
+//This function can handle any convex N-gon up to octagons
 //verts must be clockwise.
-//The algorithm used here is of my own devising... as far as I know.
-static void shape_engine()
+//I didnt reference anything for this algorithm but it seems like I've seen it somewhere before.
+static void shape_engine(int type, bool backwards)
 {
 	failure = false;
 
-	VERT* v[4] = {verts[0],verts[1],verts[2],verts[3]};
-
-	//rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
-	//this will reduce the complexity of our logic
-	while(v[0]->y > v[1]->y || v[0]->y > v[2]->y || v[0]->y > v[3]->y) {
-		swap(v[0],v[1]);
-		swap(v[1],v[2]);
-		swap(v[2],v[3]);
+	switch(type) {
+		case 3: sort_verts<3>(backwards); break;
+		case 4: sort_verts<4>(backwards); break;
+		case 5: sort_verts<5>(backwards); break;
+		case 6: sort_verts<6>(backwards); break;
+		case 7: sort_verts<7>(backwards); break;
+		case 8: sort_verts<8>(backwards); break;
+		default: printf("skipping type %d\n",type); return;
 	}
-	while(v[0]->y == v[1]->y && v[0]->x > v[1]->x) {
-		swap(v[0],v[1]);
-		swap(v[1],v[2]);
-		swap(v[2],v[3]);
-	}
-
+	
 	//we are going to step around the polygon in both directions starting from vert 0.
 	//right edges will be stepped over clockwise and left edges stepped over counterclockwise.
 	//these variables track that stepping, but in order to facilitate wrapping we start extra high
 	//for the counter we're decrementing.
-	int lv = 4, rv = 0;
+	int lv = type, rv = 0;
 
 	edge_fx_fl left, right;
 	bool step_left = true, step_right = true;
 	for(;;) {
 		//generate new edges if necessary. we must avoid regenerating edges when they are incomplete
 		//so that they can be continued on down the shape
-		if(step_left) left = edge_fx_fl(v,lv&3,lv-1);
-		if(step_right) right = edge_fx_fl(v,rv&3,rv+1);
+		assert(rv != type);
+		int _lv = lv==type?0:lv; //make sure that we ask for vert 0 when the variable contains the starting value
+		if(step_left) left = edge_fx_fl(_lv,lv-1);
+		if(step_right) right = edge_fx_fl(rv,rv+1);
 		step_left = step_right = false;
 
-		//handle a failure in the edge setup.
+		//handle a failure in the edge setup due to nutty polys
 		if(failure) 
 			return;
 
-		runscanline(&left,&right);
+		runscanlines(&left,&right);
 		
+		//if we ran out of an edge, step to the next one
 		if(right.Height == 0) {
 			step_right = true;
 			rv++;
@@ -893,7 +894,7 @@ static struct TClippedPoly
 {
 	int type;
 	POLY* poly;
-	VERT clipVerts[16]; //how many? i cant imagine having more than 6
+	VERT clipVerts[MAX_CLIPPED_VERTS];
 } clippedPolys[POLYLIST_SIZE*2];
 static int clippedPolyCounter;
 
@@ -1035,33 +1036,22 @@ static void clipPoly(POLY* poly)
 	clipPolyVsPlane(1, 1);
 	clipPolyVsPlane(2, -1);
 	clipPolyVsPlane(2, 1);
-
 	//TODO - we need to parameterize back plane clipping
+
+	
 	if(tempClippedPoly.type < 3)
 	{
 		//a totally clipped poly. discard it.
 		//or, a degenerate poly. we're not handling these right now
 	}
-	else if(tempClippedPoly.type < 5) 
+	else
 	{
+		//TODO - build right in this list instead of copying
 		clippedPolys[clippedPolyCounter] = tempClippedPoly;
 		clippedPolys[clippedPolyCounter].poly = poly;
 		clippedPolyCounter++;
 	}
-	else
-	{
-		//turn into a triangle fan. no point even trying to make quads since those would have to get split anyway.
-		//well, maybe it could end up being faster.
-		for(int i=0;i<tempClippedPoly.type-2;i++)
-		{
-			clippedPolys[clippedPolyCounter].type = 3;
-			clippedPolys[clippedPolyCounter].poly = poly;
-			clippedPolys[clippedPolyCounter].clipVerts[0] = tempClippedPoly.clipVerts[0];
-			clippedPolys[clippedPolyCounter].clipVerts[1] = tempClippedPoly.clipVerts[i+1];
-			clippedPolys[clippedPolyCounter].clipVerts[2] = tempClippedPoly.clipVerts[i+2];
-			clippedPolyCounter++;
-		}
-	}
+
 }
 
 static void SoftRastRender()
@@ -1128,19 +1118,15 @@ static void SoftRastRender()
 	
 	//iterate over polys
 	bool needInitTexture = true;
-	polynum = 0;
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
+		polynum = i;
+
 		TClippedPoly &clippedPoly = clippedPolys[i];
 		POLY *poly = clippedPoly.poly;
 		int type = clippedPoly.type;
 
-		VERT* verts[4] = {
-			&clippedPoly.clipVerts[0],
-			&clippedPoly.clipVerts[1],
-			&clippedPoly.clipVerts[2],
-			type==4?&clippedPoly.clipVerts[3]:0
-		};
+		VERT* verts = &clippedPoly.clipVerts[0];
 
 		if(i == 0 || lastPolyAttr != poly->polyAttr)
 		{
@@ -1152,12 +1138,12 @@ static void SoftRastRender()
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
 		//because it is too convoluted right now.
 		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
-		//TODO - is this good enough for quads? we think so.
+		//TODO - is this good enough for quads and other shapes? we think so.
 		float ab[2], ac[2];
-		Vector2Copy(ab, verts[1]->coord);
-		Vector2Copy(ac, verts[2]->coord);
-		Vector2Subtract(ab, verts[0]->coord);
-		Vector2Subtract(ac, verts[0]->coord);
+		Vector2Copy(ab, verts[1].coord);
+		Vector2Copy(ac, verts[2].coord);
+		Vector2Subtract(ab, verts[0].coord);
+		Vector2Subtract(ac, verts[0].coord);
 		float cross = Vector2Cross(ab, ac);
 		bool backfacing = (cross<0);
 
@@ -1181,54 +1167,15 @@ static void SoftRastRender()
 		//which is currently just a float
 		for(int i=0;i<type;i++)
 			for(int j=0;j<2;j++)
-				verts[i]->coord[j] = iround(16.0f * verts[i]->coord[j]);
+				verts[i].coord[j] = iround(16.0f * verts[i].coord[j]);
 
 		//hmm... shader gets setup every time because it depends on sampler which may have just changed
 		shader.setup(poly->polyAttr);
 
-		//note that when we build our triangle vert lists, we reorder them for our renderer.
-		//we should probably fix the renderer so we dont have to do this;
-		//but then again, what does it matter?
-		if(type == 4)
-		{
-			if(backfacing)
-			{
-				SubmitVertex(3,verts[0]);
-				SubmitVertex(2,verts[1]);
-				SubmitVertex(1,verts[2]);
-				SubmitVertex(0,verts[3]);
-				shape_engine();polynum++;
-			}
-			else
-			{
-				SubmitVertex(3,verts[3]);
-				SubmitVertex(2,verts[2]);
-				SubmitVertex(1,verts[1]);
-				SubmitVertex(0,verts[0]);
-				shape_engine();polynum++;
+		for(int i=0;i<MAX_CLIPPED_VERTS;i++)
+			::verts[i] = &verts[i];
 
-			}
-		}
-		else if(type == 3)
-		{
-			if(backfacing)
-			{
-				SubmitVertex(3,verts[0]);
-				SubmitVertex(2,verts[0]);
-				SubmitVertex(1,verts[1]);
-				SubmitVertex(0,verts[2]);
-				shape_engine();polynum++;
-			}
-			else
-			{
-				SubmitVertex(3,verts[2]);
-				SubmitVertex(2,verts[2]);
-				SubmitVertex(1,verts[1]);
-				SubmitVertex(0,verts[0]);
-				shape_engine();polynum++;
-			}
-		} else printf("skipping type %d\n",type);
-
+		shape_engine(type,backfacing);
 	}
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
