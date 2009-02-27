@@ -22,8 +22,9 @@
 */
 
 //nothing in this file should be assumed to be accurate
-
-//#define USE_HECKER
+//
+//the shape rasterizers contained herein are based on code supplied by Chris Hecker from 
+//http://chrishecker.com/Miscellaneous_Technical_Articles
 
 #include "rasterize.h"
 
@@ -165,16 +166,11 @@ struct Fragment
 	u8 pad[5];
 };
 
-static VERT* verts[3];
+static VERT* verts[4];
 
 INLINE static void SubmitVertex(int vert_index, VERT* rawvert)
 {
-	//HACK - reverse winding
-	#ifdef USE_HECKER
-		verts[2-vert_index] = rawvert;
-	#else
-		verts[vert_index] = rawvert;
-	#endif
+	verts[vert_index] = rawvert;
 }
 
 static Fragment screen[256*192];
@@ -567,10 +563,25 @@ void scanline(int y, int xstart, int xend,
 
 typedef int fixed28_4;
 
+static bool failure;
+
 // handle floor divides and mods correctly 
 inline void FloorDivMod( long Numerator, long Denominator, long &Floor, long &Mod )
 {
-	assert(Denominator > 0);		// we assume it's positive
+	//These must be caused by invalid or degenerate shapes.. not sure yet.
+	//check it out in the mario face intro of SM64
+	//so, we have to take out the assert.
+	//I do know that we handle SOME invalid shapes without crashing,
+	//since I see them acting poppy in a way that doesnt happen in the HW.. so alas it is also incorrect.
+	//This particular incorrectness is not likely ever to get fixed!
+
+	//assert(Denominator > 0);		
+
+	//but we have to bail out since our handling for these cases currently steps scanlines 
+	//the wrong way and goes totally nuts (freezes)
+	if(Denominator<=0) 
+		failure = true;
+
 	if(Numerator >= 0) {
 		// positive case, C is okay
 		Floor = Numerator / Denominator;
@@ -615,25 +626,8 @@ inline long Ceil28_4( fixed28_4 Value ) {
 	return ReturnValue;
 }
 
-
-struct Derivatives {
-	float dx, dy;
-	void calculate(float v0, float v1, float v2, float invdx, float invdy, const VERT** pVertices)
-	{
-		dx = invdx * (
-		  ((v1 - v2) * Fixed28_4ToFloat(pVertices[0]->y - pVertices[2]->y)) 
-		- ((v0 - v2) * Fixed28_4ToFloat(pVertices[1]->y - pVertices[2]->y))
-		);
-
-		dy = invdy * (
-		  ((v1 - v2) * Fixed28_4ToFloat(pVertices[0]->x - pVertices[2]->x)) 
-		- ((v0 - v2) * Fixed28_4ToFloat(pVertices[1]->x - pVertices[2]->x))
-		);
-	}
-};
-
-
 struct edge_fx_fl {
+	edge_fx_fl() {}
 	edge_fx_fl(VERT **pVertices, int Top, int Bottom );
 	inline int Step( void );
 
@@ -651,12 +645,6 @@ struct edge_fx_fl {
 			curr = top + YPrestep * dy + XPrestep * dx;
 			step = XStep * dx + dy;
 			stepExtra = dx;
-		}
-		void old_initialize(float val, long XStep, float XPrestep, float YPrestep, const Derivatives& gradient) {
-			curr = val + YPrestep * gradient.dy
-						+ XPrestep * gradient.dx;
-			step = XStep * gradient.dx + gradient.dy;
-			stepExtra = gradient.dx;
 		}
 	};
 	
@@ -716,18 +704,12 @@ inline int edge_fx_fl::Step( void ) {
 }	
 
 
-
-
-void hecker_DrawScanLine( edge_fx_fl *pLeft, edge_fx_fl *pRight )
+void hecker_DrawScanLine(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 {
 	int XStart = pLeft->X;
-	int Width = pRight->X - XStart;
+	int width = pRight->X - XStart;
 
-	//char unsigned *pDestBits = Dest.pBits;
-	//char unsigned * const pTextureBits = Texture.pBits;
-	//pDestBits += pLeft->Y * Dest.DeltaScan + XStart;
-	//long TextureDeltaScan = Texture.DeltaScan;
-
+	//these are the starting values, taken from the left edge
 	float invw = pLeft->invw.curr;
 	float u = pLeft->u.curr;
 	float v = pLeft->v.curr;
@@ -737,7 +719,8 @@ void hecker_DrawScanLine( edge_fx_fl *pLeft, edge_fx_fl *pRight )
 		pLeft->color[1].curr,
 		pLeft->color[2].curr };
 
-	float invWidth = 1.0f / Width;
+	//our dx values are taken from the steps up until the right edge
+	float invWidth = 1.0f / width;
 	float dinvw_dx = (pRight->invw.curr - invw) * invWidth;
 	float du_dx = (pRight->u.curr - u) * invWidth;
 	float dv_dx = (pRight->v.curr - v) * invWidth;
@@ -748,11 +731,9 @@ void hecker_DrawScanLine( edge_fx_fl *pLeft, edge_fx_fl *pRight )
 		(pRight->color[2].curr - color[2]) * invWidth };
 
 
-	//scanline(pLeft->Y,pLeft->X,pRight->X,31,31,31,0,0,0,1/pLeft->OneOverZ,31,31,31,0,0,
-
 	int adr = (pLeft->Y<<8)+XStart;
 
-	while(Width-- > 0)
+	while(width-- > 0)
 	{
 		pixel(adr,color[0],color[1],color[2],u,v,invw,z);
 		adr++;
@@ -761,12 +742,14 @@ void hecker_DrawScanLine( edge_fx_fl *pLeft, edge_fx_fl *pRight )
 		u += du_dx;
 		v += dv_dx;
 		z += dz_dx;
-		for(int i=0;i<3;i++) color[i] += dc_dx[i];
+		for(int i=0;i<3;i++) 
+			color[i] += dc_dx[i];
 	}
 }
 
 static void runscanline(edge_fx_fl *left, edge_fx_fl *right)
 {
+	//do not overstep either of the edges
 	int Height = min(left->Height,right->Height);
 	while(Height--) {
 		hecker_DrawScanLine(left,right);
@@ -775,237 +758,62 @@ static void runscanline(edge_fx_fl *left, edge_fx_fl *right)
 	}
 }
 
-//http://chrishecker.com/Miscellaneous_Technical_Articles
-static void triangle_from_hecker()
+//This function can handle a quad or a triangle. A triangle is just a quad with a duped vert.
+//verts must be clockwise.
+//The algorithm used here is of my own devising... as far as I know.
+static void shape_engine()
 {
-	VERT* v[3] = {verts[0],verts[1],verts[2]};
+	failure = false;
+
+	VERT* v[4] = {verts[0],verts[1],verts[2],verts[3]};
 
 	//rotate verts until vert0.y is minimum, and then vert0.x is minimum in case of ties
 	//this will reduce the complexity of our logic
-	while(v[0]->y > v[1]->y || v[0]->y > v[2]->y) {
+	while(v[0]->y > v[1]->y || v[0]->y > v[2]->y || v[0]->y > v[3]->y) {
 		swap(v[0],v[1]);
 		swap(v[1],v[2]);
+		swap(v[2],v[3]);
 	}
 	while(v[0]->y == v[1]->y && v[0]->x > v[1]->x) {
 		swap(v[0],v[1]);
 		swap(v[1],v[2]);
+		swap(v[2],v[3]);
 	}
 
-	//wants clockwise
+	//we are going to step around the polygon in both directions starting from vert 0.
+	//right edges will be stepped over clockwise and left edges stepped over counterclockwise.
+	//these variables track that stepping, but in order to facilitate wrapping we start extra high
+	//for the counter we're decrementing.
+	int lv = 4, rv = 0;
 
-	fixed28_4 Y0 = v[0]->y, Y1 = v[1]->y, Y2 = v[2]->y;
+	edge_fx_fl left, right;
+	bool step_left = true, step_right = true;
+	for(;;) {
+		//generate new edges if necessary. we must avoid regenerating edges when they are incomplete
+		//so that they can be continued on down the shape
+		if(step_left) left = edge_fx_fl(v,lv&3,lv-1);
+		if(step_right) right = edge_fx_fl(v,rv&3,rv+1);
+		step_left = step_right = false;
 
-	if(Y0 == Y1)
-	{
-		//if the first two points have the same y-coord, then there is only one pair of edges
-		edge_fx_fl edge1 = edge_fx_fl(v,0,2);
-		edge_fx_fl edge2 = edge_fx_fl(v,1,2);
-		runscanline(&edge1,&edge2);
-	}
-	else if(Y1 == Y2)
-	{
-		//if the last two points have the same y-coord then there is only one pair of edges
-		edge_fx_fl edge1 = edge_fx_fl(v,0,2);
-		edge_fx_fl edge2 = edge_fx_fl(v,0,1);
-		runscanline(&edge1,&edge2);
-	}
-	else
-	{
-		//there are two pairs of edges
-		if(Y1<Y2)
-		{
-			//a triangle like 
-			// 0
-			//   1
-			//2
-			edge_fx_fl edge1 = edge_fx_fl(v,0,2);
-			edge_fx_fl edge2 = edge_fx_fl(v,0,1);
-			runscanline(&edge1,&edge2);
-			edge2 = edge_fx_fl(v,1,2);
-			runscanline(&edge1,&edge2);
-		}
-		else
-		{
-			//a triangle like 
-			// 0
-			//2   
-			//   1
-			edge_fx_fl edge1 = edge_fx_fl(v,0,2);
-			edge_fx_fl edge2 = edge_fx_fl(v,0,1);
-			runscanline(&edge1,&edge2);
-			edge1 = edge_fx_fl(v,2,1);
-			runscanline(&edge1,&edge2);
-		}
-	}
+		//handle a failure in the edge setup.
+		if(failure) 
+			return;
 
-}
-
-
-//http://www.devmaster.net/forums/showthread.php?t=1884&page=1
-static void triangle_from_devmaster()
-{
-#ifdef USE_HECKER
-	{
-		triangle_from_hecker();
-		return;
-	}
-#endif
-
-	// 28.4 fixed-point coordinates
-    const int Y1 = iround(16.0f * verts[0]->coord[1]);
-    const int Y2 = iround(16.0f * verts[1]->coord[1]);
-    const int Y3 = iround(16.0f * verts[2]->coord[1]);
-
-    const int X1 = iround(16.0f * verts[0]->coord[0]);
-    const int X2 = iround(16.0f * verts[1]->coord[0]);
-    const int X3 = iround(16.0f * verts[2]->coord[0]);
-
-    // Deltas
-    const int DX12 = X1 - X2;
-    const int DX23 = X2 - X3;
-    const int DX31 = X3 - X1;
-
-    const int DY12 = Y1 - Y2;
-    const int DY23 = Y2 - Y3;
-    const int DY31 = Y3 - Y1;
-
-    // Fixed-point deltas
-    const int FDX12 = DX12 << 4;
-    const int FDX23 = DX23 << 4;
-    const int FDX31 = DX31 << 4;
-
-    const int FDY12 = DY12 << 4;
-    const int FDY23 = DY23 << 4;
-    const int FDY31 = DY31 << 4;
-
-    // Bounding rectangle
-    int minx = (_min(X1, X2, X3) + 0xF) >> 4;
-    int maxx = (_max(X1, X2, X3) + 0xF) >> 4;
-    int miny = (_min(Y1, Y2, Y3) + 0xF) >> 4;
-    int maxy = (_max(Y1, Y2, Y3) + 0xF) >> 4;
-
-	int desty = miny;
-
-    // Half-edge constants
-    int C1 = DY12 * X1 - DX12 * Y1;
-    int C2 = DY23 * X2 - DX23 * Y2;
-    int C3 = DY31 * X3 - DX31 * Y3;
-
-    // Correct for fill convention
-    if(DY12 < 0 || (DY12 == 0 && DX12 > 0)) C1++;
-    if(DY23 < 0 || (DY23 == 0 && DX23 > 0)) C2++;
-    if(DY31 < 0 || (DY31 == 0 && DX31 > 0)) C3++;
-
-    int CY1 = C1 + DX12 * (miny << 4) - DY12 * (minx << 4);
-    int CY2 = C2 + DX23 * (miny << 4) - DY23 * (minx << 4);
-    int CY3 = C3 + DX31 * (miny << 4) - DY31 * (minx << 4);
-
-	float fx1 = verts[0]->coord[0], fy1 = verts[0]->coord[1], fz1 = verts[0]->coord[2];
-	float fx2 = verts[1]->coord[0], fy2 = verts[1]->coord[1], fz2 = verts[1]->coord[2];
-	float fx3 = verts[2]->coord[0], fy3 = verts[2]->coord[1], fz3 = verts[2]->coord[2];
-	float r1 = verts[0]->fcolor[0], g1 = verts[0]->fcolor[1], b1 = verts[0]->fcolor[2];
-	float r2 = verts[1]->fcolor[0], g2 = verts[1]->fcolor[1], b2 = verts[1]->fcolor[2];
-	float r3 = verts[2]->fcolor[0], g3 = verts[2]->fcolor[1], b3 = verts[2]->fcolor[2];
-	float u1 = verts[0]->texcoord[0], v1 = verts[0]->texcoord[1];
-	float u2 = verts[1]->texcoord[0], v2 = verts[1]->texcoord[1];
-	float u3 = verts[2]->texcoord[0], v3 = verts[2]->texcoord[1];
-	float w1 = verts[0]->coord[3], w2 = verts[1]->coord[3], w3 = verts[2]->coord[3];
-
-
-	Interpolator i_color_r(fx1,fx2,fx3,fy1,fy2,fy3,r1,r2,r3);
-	Interpolator i_color_g(fx1,fx2,fx3,fy1,fy2,fy3,g1,g2,g3);
-	Interpolator i_color_b(fx1,fx2,fx3,fy1,fy2,fy3,b1,b2,b3);
-	Interpolator i_tex_invu(fx1,fx2,fx3,fy1,fy2,fy3,u1,u2,u3);
-	Interpolator i_tex_invv(fx1,fx2,fx3,fy1,fy2,fy3,v1,v2,v3);
-	Interpolator i_z(fx1,fx2,fx3,fy1,fy2,fy3,fz1,fz2,fz3);
-	Interpolator i_invw(fx1,fx2,fx3,fy1,fy2,fy3,1.0f/w1,1.0f/w2,1.0f/w3);
-	
-
-	i_color_r.init(minx,miny);
-	i_color_g.init(minx,miny);
-	i_color_b.init(minx,miny);
-	i_tex_invu.init(minx,miny);
-	i_tex_invv.init(minx,miny);
-	i_z.init(minx,miny);
-	i_invw.init(minx,miny);
-
-    for(int y = miny; y < maxy; y++)
-    {
-		int CX1 = CY1;
-        int CX2 = CY2;
-        int CX3 = CY3;
-
-		bool done = false;
-		i_color_r.push(); i_color_g.push(); i_color_b.push();
-		i_tex_invu.push(); i_tex_invv.push();
-		i_invw.push(); i_z.push();
-
-		assert(y>=0 && y<192); //I dont think we need this bounds check, so it is only here as an assert
-		int adr = (y<<8)+minx;
-
-		int xstart = -1, xend;
-
-		//determine the current scanline, which will be in xstart <= x < xend
-		for(int x = minx; x < maxx; x++, adr++)
-		{
-			if(CX1 > 0 && CX2 > 0 && CX3 > 0)
-			{
-				xend = x;
-				if(!done)
-					xstart = x;
-				done = true;
-
-			} else if(done) break;
+		runscanline(&left,&right);
 		
-			CX1 -= FDY12;
-			CX2 -= FDY23;
-			CX3 -= FDY31;
+		if(right.Height == 0) {
+			step_right = true;
+			rv++;
+		} 
+		if(left.Height == 0) {
+			step_left = true;
+			lv--;
 		}
 
-		//---------
-		//render the scanline
-		if(xstart != -1)
-		{
-			//seed the interpolators with the distance to the start of this scanline
-			//this is crappy and we need to redo it now that we've changing the main interpolation method to bilinear
-			int xaccum = xstart-minx;
-			i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
-			i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-			i_invw.incx(xaccum); i_z.incx(xaccum);
-			float rr = i_color_r.Z;
-			float gg = i_color_g.Z;
-			float bb = i_color_b.Z;
-			float uu = i_tex_invu.Z;
-			float vv = i_tex_invv.Z;
-			float ww = i_invw.Z;
-			float zz = i_z.Z;
-			//now boost the interpolators to the end of this scanline
-			i_color_r.pop();i_color_g.pop();i_color_b.pop();
-			i_tex_invu.pop();i_tex_invv.pop();
-			i_z.pop();i_invw.pop();
-			xaccum = xend-minx;
-			i_color_r.incx(xaccum); i_color_g.incx(xaccum); i_color_b.incx(xaccum);
-			i_tex_invu.incx(xaccum); i_tex_invv.incx(xaccum);
-			i_invw.incx(xaccum); i_z.incx(xaccum);
-			scanline(y, xstart, xend, rr,gg,bb,uu,vv,ww,zz,i_color_r.Z, i_color_g.Z, i_color_b.Z, i_tex_invu.Z, i_tex_invv.Z, i_invw.Z, i_z.Z);
-		}
-		//----------
+		//this is our completion condition: when our stepped edges meet in the middle
+		if(lv<=rv+1) break;
+	}
 
-		i_color_r.pop(); i_color_r.incy();
-		i_color_g.pop(); i_color_g.incy();
-		i_color_b.pop(); i_color_b.incy();
-		i_tex_invu.pop(); i_tex_invu.incy();
-		i_tex_invv.pop(); i_tex_invv.incy();
-		i_z.pop(); i_z.incy();
-		i_invw.pop(); i_invw.incy();
-
-
-        CY1 += FDX12;
-        CY2 += FDX23;
-        CY3 += FDX31;
-
-		desty++;
-    }
 }
 
 static char SoftRastInit(void)
@@ -1344,6 +1152,7 @@ static void SoftRastRender()
 		//this should be moved to gfx3d, but first we need to redo the way the lists are built
 		//because it is too convoluted right now.
 		//(must we throw out verts if a poly gets backface culled? if not, then it might be easier)
+		//TODO - is this good enough for quads? we think so.
 		float ab[2], ac[2];
 		Vector2Copy(ab, verts[1]->coord);
 		Vector2Copy(ac, verts[2]->coord);
@@ -1367,11 +1176,12 @@ static void SoftRastRender()
 			needInitTexture = false;
 		}
 
-#ifdef USE_HECKER
-			for(int i=0;i<type;i++)
-				for(int j=0;j<2;j++)
-					verts[i]->coord[j] = iround(16.0f * verts[i]->coord[j]);
-#endif
+		//here is a hack which needs to be removed.
+		//at some point our shape engine needs these to be converted to "fixed point"
+		//which is currently just a float
+		for(int i=0;i<type;i++)
+			for(int j=0;j<2;j++)
+				verts[i]->coord[j] = iround(16.0f * verts[i]->coord[j]);
 
 		//hmm... shader gets setup every time because it depends on sampler which may have just changed
 		shader.setup(poly->polyAttr);
@@ -1383,44 +1193,39 @@ static void SoftRastRender()
 		{
 			if(backfacing)
 			{
-				SubmitVertex(0,verts[0]);
-				SubmitVertex(1,verts[1]);
-				SubmitVertex(2,verts[2]);
-				triangle_from_devmaster();polynum++;
-
-				SubmitVertex(0,verts[2]);
-				SubmitVertex(1,verts[3]);
-				SubmitVertex(2,verts[0]);
-				triangle_from_devmaster();polynum++;
+				SubmitVertex(3,verts[0]);
+				SubmitVertex(2,verts[1]);
+				SubmitVertex(1,verts[2]);
+				SubmitVertex(0,verts[3]);
+				shape_engine();polynum++;
 			}
 			else
 			{
-				SubmitVertex(0,verts[2]);
-				SubmitVertex(1,verts[1]);
-				SubmitVertex(2,verts[0]);
-				triangle_from_devmaster();polynum++;
-
-				SubmitVertex(0,verts[0]);
-				SubmitVertex(1,verts[3]);
+				SubmitVertex(3,verts[3]);
 				SubmitVertex(2,verts[2]);
-				triangle_from_devmaster();polynum++;
+				SubmitVertex(1,verts[1]);
+				SubmitVertex(0,verts[0]);
+				shape_engine();polynum++;
+
 			}
 		}
 		else if(type == 3)
 		{
 			if(backfacing)
 			{
-				SubmitVertex(0,verts[0]);
+				SubmitVertex(3,verts[0]);
+				SubmitVertex(2,verts[0]);
 				SubmitVertex(1,verts[1]);
-				SubmitVertex(2,verts[2]);
-				triangle_from_devmaster();polynum++;
+				SubmitVertex(0,verts[2]);
+				shape_engine();polynum++;
 			}
 			else
 			{
-				SubmitVertex(0,verts[2]);
+				SubmitVertex(3,verts[2]);
+				SubmitVertex(2,verts[2]);
 				SubmitVertex(1,verts[1]);
-				SubmitVertex(2,verts[0]);
-				triangle_from_devmaster();polynum++;
+				SubmitVertex(0,verts[0]);
+				shape_engine();polynum++;
 			}
 		} else printf("skipping type %d\n",type);
 
