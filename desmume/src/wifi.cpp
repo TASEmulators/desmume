@@ -127,7 +127,7 @@ const u8 FW_BBChannel[14]		= { 0xb3, 0xb3, 0xb3, 0xb3, 0xb3,	/* channel  1- 6 */
 
 /* Note : the values are inspired from what I found in a firmware image from my DS */
 
-FW_WFCProfile FW_WFCProfile1 = {"DeSmuME Soft AP",
+FW_WFCProfile FW_WFCProfile1 = {"SoftAP",
 								"",
 								"",
 								"",
@@ -413,6 +413,18 @@ static void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
 	WIFI_triggerIRQMask(wifi,1<<irq) ;
 }
 
+/*int WIFI_uSleep(socket_t sock, long usec)
+{
+    struct timeval tv;
+    fd_set dummy;
+    FD_ZERO(&dummy);
+    FD_SET(sock, &dummy);
+    tv.tv_sec = (usec / 1000000);
+    tv.tv_usec = (usec % 1000000);
+    return select(0, 0, 0, &dummy, &tv);
+}*/
+
+
 void WIFI_Init(wifimac_t *wifi)
 {
 	WIFI_resetRF(&wifi->RF) ;
@@ -422,14 +434,27 @@ void WIFI_Init(wifimac_t *wifi)
 	wifi->powerOnPending = FALSE;
 }
 
+/*void WIFI_Thread(wifimac_t *wifi)
+{
+	for(;;)
+	{
+		WIFI_usTrigger(wifi);
+		WIFI_SoftAP_usTrigger(wifi);
+		WIFI_uSleep(wifi->udpSocket, 1);
+	}
+}*/
+
 static void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
 {
+//	printf("wifi: rx circbuf write attempt: rxcnt=%04X, rxread=%04X, rxwrite=%04X\n", 
+//		wifi->RXCnt, wifi->RXReadCursor, wifi->RXHWWriteCursor);
 	/* abort when RX data queuing is not enabled */
 	if (!(wifi->RXCnt & 0x8000)) return ;
 	/* abort when ringbuffer is full */
 	if (wifi->RXReadCursor == wifi->RXHWWriteCursor) return ;
 	/* write the data to cursor position */
-	wifi->circularBuffer[wifi->RXHWWriteCursor & 0xFFF] ;
+	wifi->circularBuffer[wifi->RXHWWriteCursor & 0xFFF] = val;
+//	printf("wifi: written word %04X to circbuf addr %04X\n", val, (wifi->RXHWWriteCursor << 1));
 	/* move cursor by one */
 	wifi->RXHWWriteCursor++ ;
 	/* wrap around */
@@ -447,11 +472,11 @@ static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 		if (address > 0x1000-6) return ; 
 
 		/* 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx */
-		txLen = ntohs(wifi->circularBuffer[address+5]) ;
+		txLen = /*ntohs*/(wifi->circularBuffer[address+5]) ;
 		/* zero length */
 		if (txLen==0) return ;
 		/* unsupported txRate */
-		switch (ntohs(wifi->circularBuffer[address+4]))
+		switch (/*ntohs*/(wifi->circularBuffer[address+4]))
 		{
 			case 10: /* 1 mbit */
 			case 20: /* 2 mbit */
@@ -464,6 +489,7 @@ static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 
 		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDSTART*/7) ;
 		WIFI_Host_SendData(wifi->udpSocket,wifi->channel,(u8 *)&wifi->circularBuffer[address],txLen) ;
+		WIFI_SoftAP_RecvPacketFromDS(wifi, (u8*)&wifi->circularBuffer[address+6], txLen);
 		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDCOMPLETE*/1) ;
 	}
 } 
@@ -554,15 +580,21 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 				wifi->powerOnPending = FALSE;
 			}
 			break;
+		case REG_WIFI_RXCNT:
+			wifi->RXCnt = val;
+			break;
 		case REG_WIFI_RXRANGEBEGIN:
 			wifi->RXRangeBegin = val ;
+		//	printf("wifi: rx range begin=%04X\n", val);
 			break ;
 		case REG_WIFI_RXRANGEEND:
 			wifi->RXRangeEnd = val ;
+			//printf("wifi: rx range end=%04X\n", val);
 			break ;
 		case REG_WIFI_WRITECSRLATCH:
 			if ((action) && (wifi->RXCnt & 1))        /* only when action register and CSR change enabled */
 			{
+			//	printf("wifi: rx write cursor=%04X\n", (val << 1));
 				wifi->RXHWWriteCursor = val ;
 			}
 			break ;
@@ -595,6 +627,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_BEACONTRANS:
 			wifi->BEACONSlot = val & 0x7FFF ;
 			wifi->BEACON_enable = (val & 0x8000) != 0 ;
+			//printf("wifi beacon: enable=%s, addr=%04X\n", (wifi->BEACON_enable?"yes":"no"), (wifi->BEACONSlot<<1));
 			break ;
 		case REG_WIFI_TXLOC1:
 		case REG_WIFI_TXLOC2:
@@ -606,7 +639,7 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			{
 				/* reset TX logic */
 				/* CHECKME */
-                wifi->TXSlot[0] = 0 ; wifi->TXSlot[1] = 0 ; wifi->TXSlot[2] = 0 ;
+            //    wifi->TXSlot[0] = 0 ; wifi->TXSlot[1] = 0 ; wifi->TXSlot[2] = 0 ;
                 wifi->TXOpt = 0 ;
                 wifi->TXCnt = 0 ;
 			} else
@@ -700,10 +733,11 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 	if (((address & 0x00007000) >= 0x00004000) && ((address & 0x00007000) < 0x00006000))
 	{
 		/* access to the circular buffer */
+		//printf("wifi: circbuf read at %04X\n", (address & 0x1FFF));
         return wifi->circularBuffer[(address & 0x1FFF) >> 1] ;
 	}
 	if (!(address & 0x00007000)) action = TRUE ;
-//	if((address != 0x04808214) && (address != 0x0480803C))
+	//if((address != 0x04808214) && (address != 0x0480803C) && (address != 0x048080F8) && (address != 0x048080FA) && (address != 0x0480819C))
 //		printf("wifi read at %08X\n", address);
 	/* mirrors => register address */
 	address &= 0x00000FFF ;
@@ -742,6 +776,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 		case REG_WIFI_BSS1:
 		case REG_WIFI_BSS2:
 			return wifi->bss.words[(address - REG_WIFI_BSS0) >> 1] ;
+		case REG_WIFI_RXCNT:
+			return wifi->RXCnt;
 		case REG_WIFI_RXRANGEBEGIN:
 			return wifi->RXRangeBegin ;
 		case REG_WIFI_CIRCBUFREAD:
@@ -775,12 +811,22 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			return temp;
 		case REG_WIFI_CIRCBUFRADR:
 			return wifi->CircBufReadAddress ;
+		case REG_WIFI_RXREADCSR:
+			return wifi->RXReadCursor;
 		case REG_WIFI_RXBUF_COUNT:
 			return wifi->RXBufCount ;
 		case REG_WIFI_EXTRACOUNTCNT:
 			return wifi->eCountEnable?1:0 ;
 		case REG_WIFI_EXTRACOUNT:
 			return wifi->eCount ;
+		case REG_WIFI_USCOMPARE0:
+			return (wifi->usec & 0xFFFF);
+		case REG_WIFI_USCOMPARE1:
+			return ((wifi->usec >> 16) & 0xFFFF);
+		case REG_WIFI_USCOMPARE2:
+			return ((wifi->usec >> 32) & 0xFFFF);
+		case REG_WIFI_USCOMPARE3:
+			return ((wifi->usec >> 48) & 0xFFFF);
 		case REG_WIFI_POWER_US:
 			return wifi->crystalEnabled?0:1 ;
 		case REG_WIFI_CIRCBUFRD_END:
@@ -842,6 +888,262 @@ void WIFI_usTrigger(wifimac_t *wifi)
 
 /*******************************************************************************
 
+	SoftAP (fake wifi access point)
+
+ *******************************************************************************/
+
+u32 SoftAP_CRC32Table[256];
+
+u8 SoftAP_MACAddr[6] = {0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D};
+
+u8 SoftAP_Beacon[58] = {
+	/* 802.11 header */
+	0x80, 0x00,											// Frame control
+	0x00, 0x00,											// Duration ID
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,					// Receiver
+	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// Sender
+	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// BSSID
+	0x00, 0x00,											// Sequence control
+
+	/* Frame body */
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,		// Timestamp
+	0x64, 0x00,											// Beacon interval
+	0xFF, 0xFF,											// Capablilty information
+	0x00, 0x06, 'S', 'o', 'f', 't', 'A', 'P',			// SSID
+	0x01, 0x02, 0x82, 0x84,								// Supported rates
+	0x05, 0x04, 0x00, 0x00, 0x00, 0x00,					// TIM
+	
+	/* CRC32 */
+	0x00, 0x00, 0x00, 0x00
+};
+
+u8 SoftAP_ProbeResponse[52] = {
+	/* 802.11 header */
+	0x50, 0x00,											// Frame control
+	0x00, 0x00,											// Duration ID
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,					// Receiver
+	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// Sender
+	0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D,					// BSSID
+	0x00, 0x00,											// Sequence control
+
+	/* Frame body */
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,		// Timestamp
+	0x64, 0x00,											// Beacon interval
+	0xFF, 0xFF,											// Capablilty information
+	0x00, 0x06, 'S', 'o', 'f', 't', 'A', 'P',			// SSID
+	0x01, 0x02, 0x82, 0x84,								// Supported rates
+	
+	/* CRC32 */
+	0x00, 0x00, 0x00, 0x00
+};
+
+// http://www.codeproject.com/KB/recipes/crc32_large.aspx
+u32 reflect(u32 ref, char ch)
+{
+    u32 value = 0;
+
+    for(int i = 1; i < (ch + 1); i++)
+    {
+        if (ref & 1)
+            value |= 1 << (ch - i);
+        ref >>= 1;
+    } 
+	
+	return value;
+}
+
+// http://www.codeproject.com/KB/recipes/crc32_large.aspx
+u32 WIFI_SoftAP_GetCRC32(u8 *data, int len)
+{
+	u32 crc = 0xFFFFFFFF;
+
+	while(len--)
+        crc = (crc >> 8) ^ SoftAP_CRC32Table[(crc & 0xFF) ^ *data++];
+
+	return (crc ^ 0xFFFFFFFF);
+}
+
+int WIFI_SoftAP_Init(wifimac_t *wifi)
+{
+	sockaddr_t addr;
+
+	wifi->SoftAP.sock = socket(AF_INET, SOCK_RAW, 0);
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sa_family = AF_INET;
+	*(u32*)&addr.sa_data[2] = htonl(INADDR_ANY);
+	*(u16*)&addr.sa_data[0] = htons(80);
+	bind(wifi->SoftAP.sock, &addr, sizeof(addr));
+
+	wifi->SoftAP.usecCounter = 0;
+
+	wifi->SoftAP.curPacket = NULL;
+	wifi->SoftAP.curPacketSize = 0;
+	wifi->SoftAP.curPacketPos = 0;
+	wifi->SoftAP.curPacketSending = FALSE;
+
+	// http://www.codeproject.com/KB/recipes/crc32_large.aspx
+	u32 polynomial = 0x04C11DB7;
+
+	for(int i = 0; i < 0x100; i++)
+    {
+        SoftAP_CRC32Table[i] = reflect(i, 8) << 24;
+        for(int j = 0; j < 8; j++)
+            SoftAP_CRC32Table[i] = (SoftAP_CRC32Table[i] << 1) ^ (SoftAP_CRC32Table[i] & (1 << 31) ? polynomial : 0);
+        SoftAP_CRC32Table[i] = reflect(SoftAP_CRC32Table[i],  32);
+    }
+
+	return 1;
+}
+
+void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
+{
+	//
+}
+
+/*void WIFI_SoftAP_SendWordToDS(wifimac_t *wifi, u16 data)
+{
+	if(wifi->RXCnt & 0x8000)
+	{
+		//
+	}
+}*/
+
+void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
+{
+	u16 frameCtl = *(u16*)&packet[0];
+
+	//printf("wifi: packet arrived, frame ctl = %04X\n", frameCtl);
+
+	switch((frameCtl >> 2) & 0x3)
+	{
+	case 0:
+		{
+			switch((frameCtl >> 4) & 0xF)
+			{
+			case 4:		// Probe request
+				{
+					u8 proberes[52];
+
+					memcpy(proberes, SoftAP_ProbeResponse, 52);
+					u64 timestamp = (wifi->SoftAP.usecCounter / 1000);		// FIXME: is it correct?
+					*(u64*)&proberes[24] = timestamp;
+					u32 crc32 = WIFI_SoftAP_GetCRC32(proberes, 48);
+					*(u32*)&proberes[48] = crc32;
+
+					if(wifi->SoftAP.curPacket)
+						delete wifi->SoftAP.curPacket;
+
+					wifi->SoftAP.curPacket = new u8[52+12];
+
+					wifi->SoftAP.curPacket[0] = 0x11;
+					wifi->SoftAP.curPacket[1] = 0x00;
+					wifi->SoftAP.curPacket[2] = 0x40;
+					wifi->SoftAP.curPacket[3] = 0x00;
+					wifi->SoftAP.curPacket[4] = 0x01;
+					wifi->SoftAP.curPacket[5] = 0x00;
+					wifi->SoftAP.curPacket[6] = 0x14;
+					wifi->SoftAP.curPacket[7] = 0x00;
+					wifi->SoftAP.curPacket[8] = 0x30;
+					wifi->SoftAP.curPacket[9] = 0x00;
+					wifi->SoftAP.curPacket[10] = 0x00;
+					wifi->SoftAP.curPacket[11] = 0x00;
+
+					memcpy((wifi->SoftAP.curPacket+12), proberes, 52);
+					wifi->SoftAP.curPacketSize = 52+12;
+					wifi->SoftAP.curPacketPos = 0;
+					wifi->SoftAP.curPacketSending = TRUE;
+				}
+				break;
+			}
+		}
+		break;
+	}
+}
+
+void WIFI_SoftAP_SendToNetwork(wifimac_t *wifi)
+{
+	//
+}
+
+void WIFI_SoftAP_RecvFromNetwork(wifimac_t *wifi)
+{
+	//
+}
+
+void WIFI_SoftAP_SendBeacon(wifimac_t *wifi)
+{
+	u8 beacon[58];
+
+	memcpy(beacon, SoftAP_Beacon, 58);
+	u64 timestamp = (wifi->SoftAP.usecCounter / 1000);		// FIXME: is it correct?
+	*(u64*)&beacon[24] = timestamp;
+	u32 crc32 = WIFI_SoftAP_GetCRC32(beacon, 54);
+	*(u32*)&beacon[54] = crc32;
+
+	if(wifi->SoftAP.curPacket)
+		delete wifi->SoftAP.curPacket;
+
+	wifi->SoftAP.curPacket = new u8[58+12];
+
+	wifi->SoftAP.curPacket[0] = 0x11;
+	wifi->SoftAP.curPacket[1] = 0x00;
+	wifi->SoftAP.curPacket[2] = 0x40;
+	wifi->SoftAP.curPacket[3] = 0x00;
+	wifi->SoftAP.curPacket[4] = 0x64;
+	wifi->SoftAP.curPacket[5] = 0x00;
+	wifi->SoftAP.curPacket[6] = 0x14;
+	wifi->SoftAP.curPacket[7] = 0x00;
+	wifi->SoftAP.curPacket[8] = 0x36;
+	wifi->SoftAP.curPacket[9] = 0x00;
+	wifi->SoftAP.curPacket[10] = 0x00;
+	wifi->SoftAP.curPacket[11] = 0x00;
+
+	memcpy((wifi->SoftAP.curPacket+12), beacon, 58);
+
+	wifi->SoftAP.curPacketSize = 58+12;
+	wifi->SoftAP.curPacketPos = 0;
+	wifi->SoftAP.curPacketSending = TRUE;
+}
+
+void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
+{
+	wifi->SoftAP.usecCounter++;
+
+	if(!wifi->SoftAP.curPacketSending)
+	{
+		if((wifi->SoftAP.usecCounter % 100000) == 0)
+		{
+			WIFI_SoftAP_SendBeacon(wifi);
+		}
+	}
+
+	/* Given a connection of 2 megabits per second, */
+	/* we take ~4 microseconds to transfer a byte, */
+	/* ie ~8 microseconds to transfer a word. */
+	if((wifi->SoftAP.curPacketSending) && !(wifi->SoftAP.usecCounter & 7))
+	{
+		if(wifi->SoftAP.curPacketPos == 0)
+			WIFI_triggerIRQ(wifi, 6);
+
+		u16 word = wifi->SoftAP.curPacket[wifi->SoftAP.curPacketPos];
+		//WIFI_SoftAP_SendWordToDS(wifi, word);
+		WIFI_RXPutWord(wifi, word);
+
+		wifi->SoftAP.curPacketPos++;
+		if(wifi->SoftAP.curPacketPos == wifi->SoftAP.curPacketSize)
+		{
+			wifi->SoftAP.curPacketSize = 0;
+			wifi->SoftAP.curPacketPos = 0;
+			wifi->SoftAP.curPacketSending = FALSE;
+
+			WIFI_triggerIRQ(wifi, 0);
+		}
+	}
+}
+
+/*******************************************************************************
+
 	Host system operations
 
  *******************************************************************************/
@@ -874,6 +1176,7 @@ void WIFI_Host_CloseChannel(socket_t sock)
 
 void WIFI_Host_SendData(socket_t sock, u8 channel, u8 *data, u16 length)
 {
+	//printf("wifi: sending packet of length %i on channel %i\n", length, channel);
 	sockaddr_t address ;
 	/* create the frame to validate data: "DSWIFI" string and a u16 constant of the payload length */
 	u8 *frame = (u8 *)malloc(length + 8) ;
@@ -904,6 +1207,7 @@ u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
 	{
 		/* there is data available */
 		u32 receivedBytes = recv(sock,(char*)data,maxLength,0) ;
+		//printf("wifi: received %i bytes\n", receivedBytes);
 		if (receivedBytes < 8) return 0 ;			/* this cant be data for us, the header alone is 8 bytes */
 		if (memcmp(data,"DSWIFI",6)!=0) return 0 ;	/* this isnt data for us, as the tag is not our */
 		if (ntohs(*(u16 *)(data+6))+8 != receivedBytes) return 0 ; /* the datalen+headerlen is not what we received */

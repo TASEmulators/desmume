@@ -197,6 +197,7 @@ int NDS_Init( void) {
 
 #ifdef EXPERIMENTAL_WIFI
 	WIFI_Init(&wifiMac) ;
+	WIFI_SoftAP_Init(&wifiMac);
 #endif
 
 	return 0;
@@ -1086,14 +1087,17 @@ u32 NDS_exec(s32 nb)
 #endif
 			}
 
-#ifdef EXPERIMENTAL_WIFI
+/*#ifdef EXPERIMENTAL_WIFI
 
 			if((nds.ARM7Cycle % 0x3F03) == 0)
 			{
-				/* 3F03 arm7 cyles = ~1usec */
+				/* 3F03 arm7 cycles = ~1usec *-/
 				WIFI_usTrigger(&wifiMac) ;
 			}
-#endif
+#endif*/
+
+			int nds7old = nds.ARM7Cycle;
+
 			if(nds.ARM7Cycle<=nds.cycles)
 			{
 #ifdef LOG_ARM7
@@ -1126,6 +1130,22 @@ u32 NDS_exec(s32 nb)
 				DisassemblerTools_Refresh(ARMCPU_ARM7);
 #endif
 			}
+
+#ifdef EXPERIMENTAL_WIFI
+			/* TODO: the wifi stuff isn't actually clocked by the ARM7 clock, */
+			/* but by a 22 mhz oscillator. */
+			if(nds7old < nds.ARM7Cycle)
+			{
+				nds7old %= 67;
+				int nds7new = (nds.ARM7Cycle % 67);
+
+				if(nds7old > nds7new)
+				{
+					WIFI_usTrigger(&wifiMac);
+					WIFI_SoftAP_usTrigger(&wifiMac);
+				}
+			}
+#endif
 		}
 
 		if(!nds.sleeping)

@@ -58,6 +58,7 @@
 #define     REG_WIFI_AID_LOW       		0x028
 #define     REG_WIFI_AID_HIGH      		0x02A
 #define     REG_WIFI_RETRYLIMIT 		0x02C
+#define		REG_WIFI_RXCNT				0x030
 #define		REG_WIFI_WEPCNT				0x032
 #define		REG_WIFI_POWER_US			0x036
 #define     REG_WIFI_POWERSTATE 		0x03C
@@ -452,6 +453,20 @@ typedef struct
 	/* others */
 	u16			randomSeed ;
 
+	/* SoftAP */
+	struct _SoftAP
+	{
+		socket_t sock;
+
+		u64 usecCounter;
+
+		u8 *curPacket;
+		int curPacketSize;
+		int curPacketPos;
+		BOOL curPacketSending;
+
+	} SoftAP;
+
 	/* desmume host communication */
 	socket_t    udpSocket ;
 	u8			channel ;
@@ -461,6 +476,8 @@ typedef struct
 extern wifimac_t wifiMac ;
 
 void WIFI_Init(wifimac_t *wifi);
+
+//void WIFI_Thread(wifimac_t *wifi);
 
 /* subchip communication IO functions */
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;
@@ -478,6 +495,24 @@ u16  WIFI_read16(wifimac_t *wifi,u32 address) ;
 
 /* wifimac timing */
 void WIFI_usTrigger(wifimac_t *wifi) ;
+
+/* SoftAP */
+
+typedef struct _WIFI_FrameHeader
+{
+	u8 FrameControl[2];
+	u8 DurationID[2];
+	u8 Receiver[6];
+	u8 Sender[6];
+	u8 BSSID[6];
+	u8 SeqCtl[2];
+
+} WIFI_FrameHeader;
+
+int WIFI_SoftAP_Init(wifimac_t *wifi);
+void WIFI_SoftAP_Shutdown(wifimac_t *wifi);
+void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len);
+void WIFI_SoftAP_usTrigger(wifimac_t *wifi);
 
 #endif
 
