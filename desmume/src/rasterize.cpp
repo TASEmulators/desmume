@@ -180,6 +180,7 @@ INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 
 static Fragment screen[256*192];
 
+
 FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
@@ -282,7 +283,7 @@ struct Shader
 			mode = 4;
 	}
 
-	float invu, invv, invw;
+	float invu, invv, w;
 	Fragment::Color materialColor;
 	
 	void shade(Fragment& dst)
@@ -293,8 +294,8 @@ struct Shader
 		switch(mode)
 		{
 		case 0: //modulate
-			u = invu/invw;
-			v = invv/invw;
+			u = invu*w;
+			v = invv*w;
 			texColor = sampler.sample(u,v);
 			dst.color.components.r = modulate_table[texColor.components.r][materialColor.components.r];
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
@@ -313,8 +314,8 @@ struct Shader
 			#endif
 			break;
 		case 1: //decal
-			u = invu/invw;
-			v = invv/invw;
+			u = invu*w;
+			v = invv*w;
 			texColor = sampler.sample(u,v);
 			dst.color.components.r = decal_table[texColor.components.a][texColor.components.r][materialColor.components.r];
 			dst.color.components.g = decal_table[texColor.components.a][texColor.components.g][materialColor.components.g];
@@ -322,8 +323,8 @@ struct Shader
 			dst.color.components.a = materialColor.components.a;
 			break;
 		case 2: //toon/highlight shading
-			u = invu/invw;
-			v = invv/invw;
+			u = invu*w;
+			v = invv*w;
 			texColor = sampler.sample(u,v);
 			u32 toonColorVal; toonColorVal = gfx3d.rgbToonTable[materialColor.components.r];
 			Fragment::Color toonColor;
@@ -345,7 +346,7 @@ struct Shader
 			//is this right? only with the material color?
 			dst.color = materialColor;
 			break;
-		case 4: //except for our own special mode which only uses the material color (for when texturing is disabled)
+		case 4: //our own special mode which only uses the material color (for when texturing is disabled)
 			dst.color = materialColor;
 			break;
 
@@ -390,7 +391,7 @@ static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 	}
 }
 
-void pixel(int adr,float r, float g, float b, float invu, float invv, float invw, float z) {
+void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
 	Fragment &destFragment = screen[adr];
 
 	//depth test
@@ -398,7 +399,7 @@ void pixel(int adr,float r, float g, float b, float invu, float invv, float invw
 	if(gfx3d.wbuffer)
 		//not sure about this
 		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-		depth = 4096/invw;
+		depth = 4096*w;
 	else
 	{
 		depth = z*0x7FFF; //not sure about this
@@ -418,14 +419,14 @@ void pixel(int adr,float r, float g, float b, float invu, float invv, float invw
 		}
 	}
 	
-	shader.invw = invw;
+	shader.w = w;
 	shader.invu = invu;
 	shader.invv = invv;
 
 	//perspective-correct the colors
-	r = (r / invw) + 0.5f;
-	g = (g / invw) + 0.5f;
-	b = (b / invw) + 0.5f;
+	r = (r * w) + 0.5f;
+	g = (g * w) + 0.5f;
+	b = (b * w) + 0.5f;
 
 	//this is a HACK: 
 	//we are being very sloppy with our interpolation precision right now
@@ -503,31 +504,6 @@ void pixel(int adr,float r, float g, float b, float invu, float invv, float invw
 	rejected_fragment:
 	done_with_pixel:
 	;
-}
-
-void scanline(int y, int xstart, int xend, 
-			  float r0, float g0, float b0, float invu0, float invv0, float invw0, float z0,
-			  float r1, float g1, float b1, float invu1, float invv1, float invw1, float z1)
-{
-	float dx = xend-xstart+1;
-	float dr_dx = (r1-r0)/dx;
-	float dg_dx = (g1-g0)/dx;
-	float db_dx = (b1-b0)/dx;
-	float du_dx = (invu1-invu0)/dx;
-	float dv_dx = (invv1-invv0)/dx;
-	float dw_dx = (invw1-invw0)/dx;
-	float dz_dx = (z1-z0)/dx;
-	for(int x=xstart;x<=xend;x++) {
-		int adr = (y<<8)+x;
-		pixel(adr,r0,g0,b0,invu0,invv0,invw0,z0);
-		r0 += dr_dx;
-		g0 += dg_dx;
-		b0 += db_dx;
-		invu0 += du_dx;
-		invv0 += dv_dx;
-		invw0 += dw_dx;
-		z0 += dz_dx;
-	}
 }
 
 typedef int fixed28_4;
@@ -703,7 +679,7 @@ static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 
 	while(width-- > 0)
 	{
-		pixel(adr,color[0],color[1],color[2],u,v,invw,z);
+		pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
 		adr++;
 
 		invw += dinvw_dx;
@@ -819,13 +795,18 @@ static void shape_engine(int type, bool backwards)
 
 static char SoftRastInit(void)
 {
-	for(int i=0;i<32;i++)
+	static bool tables_generated = false;
+	if(!tables_generated)
 	{
-		for(int j=0;j<32;j++)
+		tables_generated = true;
+		for(int i=0;i<32;i++)
 		{
-			modulate_table[i][j] = ((i+1) * (j+1) - 1) >> 5;	
-			for(int a=0;a<32;a++)
-				decal_table[a][i][j] = ((i*a) + (j*(31-a))) >> 5;
+			for(int j=0;j<32;j++)
+			{
+				modulate_table[i][j] = ((i+1) * (j+1) - 1) >> 5;	
+				for(int a=0;a<32;a++)
+					decal_table[a][i][j] = ((i*a) + (j*(31-a))) >> 5;
+			}
 		}
 	}
 
