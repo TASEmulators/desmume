@@ -3751,8 +3751,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF()
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
      u32 val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3772,8 +3771,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF()
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
      u32 val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3798,8 +3796,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3824,8 +3821,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3850,8 +3846,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3876,8 +3871,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3902,8 +3896,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3928,8 +3921,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3954,8 +3946,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -3980,8 +3971,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4003,8 +3993,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_PREIND()
      u32 adr = cpu->R[REG_POS(i,16)] + IMM_OFF_12;
      u32 val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4027,8 +4016,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF_PREIND()
      u32 adr = cpu->R[REG_POS(i,16)] - IMM_OFF_12;
      u32 val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4056,8 +4044,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4085,8 +4072,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4114,8 +4100,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4143,8 +4128,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4172,8 +4156,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4201,8 +4184,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4230,8 +4212,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] + shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4259,8 +4240,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_PREIND()
      adr = cpu->R[REG_POS(i,16)] - shift_op;
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4283,8 +4263,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND()
      u32 adr = cpu->R[REG_POS(i,16)];
      u32 val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+	val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4309,8 +4288,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_IMM_OFF_POSTIND2()
      u32 adr = cpu->R[REG_POS(i,16)];
      u32 val = READ32(cpu->mem_if->data, adr);
      u32 old;
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4338,8 +4316,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_IMM_OFF_POSTIND()
      u32 adr = cpu->R[REG_POS(i,16)];
      u32 val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4366,8 +4343,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSL_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4394,8 +4370,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSL_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4422,8 +4397,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_LSR_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4450,8 +4424,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_LSR_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4478,8 +4451,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ASR_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4506,8 +4478,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ASR_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4534,8 +4505,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_P_ROR_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -4562,8 +4532,7 @@ TEMPLATE static u32 FASTCALL  OP_LDR_M_ROR_IMM_OFF_POSTIND()
      adr = cpu->R[REG_POS(i,16)];
      val = READ32(cpu->mem_if->data, adr);
      
-     if(adr&3)
-         val = ROR(val, 8*(adr&3));
+     val = ROR(val, 8*(adr&3));
      
      if(REG_POS(i,12)==15)
      {
@@ -7779,8 +7748,9 @@ TEMPLATE static u32 FASTCALL  OP_SWI()
 //----------------BKPT-------------------------
 TEMPLATE static u32 FASTCALL OP_BKPT()
 {
-	LOG("Stopped (OP_BKPT)\n");
-	TRAPUNDEF();
+	/*LOG("Stopped (OP_BKPT)\n");
+	TRAPUNDEF();*/
+	return 4;
 }
 
 //----------------CDP-----------------------

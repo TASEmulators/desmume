@@ -241,8 +241,8 @@ struct NDS_fw_config_data win_fw_config;
 };*/
 
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
-LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
-									  LPARAM lParam);
+LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 struct configured_features {
 	u16 arm9_gdb_port;
@@ -2023,7 +2023,8 @@ enum CONFIGSCREEN
 	CONFIGSCREEN_INPUT,
 	CONFIGSCREEN_HOTKEY,
 	CONFIGSCREEN_FIRMWARE,
-	CONFIGSCREEN_SOUND
+	CONFIGSCREEN_SOUND,
+	CONFIGSCREEN_EMULATION
 };
 
 void RunConfig(CONFIGSCREEN which) 
@@ -2049,6 +2050,9 @@ void RunConfig(CONFIGSCREEN which)
 		break;
 	case CONFIGSCREEN_SOUND:
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_SOUNDSETTINGS), hwnd, (DLGPROC)SoundSettingsDlgProc);
+		break;
+	case CONFIGSCREEN_EMULATION:
+		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
 		break;
 	}
 
@@ -2422,6 +2426,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_SOUNDSETTINGS:
 			RunConfig(CONFIGSCREEN_SOUND);
+			return 0;
+		case IDM_EMULATIONSETTINGS:
+			RunConfig(CONFIGSCREEN_EMULATION);
 			return 0;
 
 		case IDM_GAME_INFO:
@@ -2932,8 +2939,18 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 	return FALSE;
 }
 
-LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam,
-									  LPARAM lParam)
+LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+		break;
+	}
+	
+	return FALSE;
+}
+
+LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static UINT_PTR timerid=0;
 	switch (uMsg)

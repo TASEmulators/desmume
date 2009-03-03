@@ -162,10 +162,12 @@
 #define IDC_PROP1                               909
 #define IDD_BGMAP_VIEWER                        911
 #define IDB_BGTILES                             913
+#define IDD_EMULATIONSETTINGS                   916
 #define IDC_BGMAP_SEL                           1000
 #define IDC_EDIT03                              1000
 #define IDC_SOUNDCORECB                         1000
 #define IDC_BGMAP_BGXCNT                        1001
+#define IDC_CHECKBOX_DEBUGGERMODE               1001
 #define IDC_EDIT01                              1001
 #define IDC_SOUNDBUFFERET                       1001
 #define IDC_EDIT05                              1002
@@ -376,6 +378,7 @@
 #define IDM_SCREENSEP_BORDER                    40001
 #define IDM_SCREENSEP_NDSGAP                    40002
 #define IDM_ABOUT                               40003
+#define IDM_EMULATIONSETTINGS                   40004
 #define ID_VIEW_FRAMECOUNTER                    40009
 #define ID_VIEW_DISPLAYFPS                      40010
 #define IDM_FILE_RECORDAVI                      40015

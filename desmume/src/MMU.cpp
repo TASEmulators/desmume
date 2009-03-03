@@ -67,32 +67,98 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 static u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 
 
-u8 _MMU_read08(int PROCNUM, u32 addr) {
+u8 _MMU_read08(const int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			//Returns data from DTCM (ARM9 only)
+			return T1ReadByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000)
+		return T1ReadByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read08(addr);
 	else return _MMU_ARM7_read08(addr);
 }
 
-u16 _MMU_read16(int PROCNUM, u32 addr) {
+u16 _MMU_read16(const int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			//Returns data from DTCM (ARM9 only)
+			return T1ReadWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000)
+		return T1ReadWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
 	else return _MMU_ARM7_read16(addr);
 }
 
 u32 _MMU_read32(int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			//Returns data from DTCM (ARM9 only)
+			return T1ReadLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000)
+		return T1ReadLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read32(addr);
 	else return _MMU_ARM7_read32(addr);
 }
 
-void _MMU_write08(int PROCNUM, u32 addr, u8 val) {
+void _MMU_write08(const int PROCNUM, u32 addr, u8 val) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			T1WriteByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			return;
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000) {
+		T1WriteByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		return;
+	}
+
 	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write08(addr,val);
 	else _MMU_ARM7_write08(addr,val);
 }
 
-void _MMU_write16(int PROCNUM, u32 addr, u16 val) {
+void _MMU_write16(const int PROCNUM, u32 addr, u16 val) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			T1WriteWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			return;
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000) {
+		T1WriteWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		return;
+	}
+
 	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write16(addr,val);
 	else _MMU_ARM7_write16(addr,val);
 }
 
-void _MMU_write32(int PROCNUM, u32 addr, u32 val) {
+void _MMU_write32(const int PROCNUM, u32 addr, u32 val) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			T1WriteLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			return;
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000) {
+		T1WriteLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		return;
+	}
+
 	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write32(addr,val);
 	else _MMU_ARM7_write32(addr,val);
 }
@@ -274,7 +340,7 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 	{
 		/* 0X*/	DUP16(0x00007FFF), 
 		/* 1X*/	//DUP16(0x00007FFF)
-		/* 1X*/	DUP16(0x00000003), 
+		/* 1X*/	DUP16(0x00000003),
 		/* 2X*/	DUP16(0x003FFFFF),
 		/* 3X*/	DUP16(0x00007FFF),
 		/* 4X*/	DUP16(0x00FFFFFF),
@@ -423,7 +489,7 @@ void MMU_clearMem()
 	memset(ARM9Mem.ARM9_OAM,  0, 0x0800);
 	memset(ARM9Mem.ARM9_REG,  0, 0x01000000);
 	memset(ARM9Mem.ARM9_VMEM, 0, 0x0800);
-	memset(ARM9Mem.MAIN_MEM,  0, 0x400000);
+	memset(ARM9Mem.MAIN_MEM,  0, sizeof(ARM9Mem.MAIN_MEM));
 
 	memset(ARM9Mem.blank_memory,  0, 0x020000);
 	
@@ -2347,10 +2413,22 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		return ;
 	}
 #endif
+
+#ifdef EARLY_MEMORY_ACCESS
+	if ( (adr & 0x0F000000) == 0x02000000) {
+		T1WriteLong( ARM9Mem.MAIN_MEM, adr & 0x3FFFFF, val);
+		return;
+	}
+#endif
+
 	if(adr<0x02000000)
 	{
 		T1WriteLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
 		return ;
+	}
+
+	if(adr>=0x02400000 && adr<0x03000000) {
+		//int zzz=9;
 	}
 
 #ifdef EXPERIMENTAL_GBASLOT
@@ -2987,6 +3065,15 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		return T1ReadLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
 	}
 #endif
+
+#ifdef EARLY_MEMORY_ACCESS
+	if ( (adr & 0x0F000000) == 0x02000000)
+		return T1ReadLong( ARM9Mem.MAIN_MEM, adr & 0x3FFFFF);
+#endif
+
+	if(adr>=0x02400000 && adr<0x03000000) {
+		//int zzz=9;
+	}
 
 	if(adr<0x02000000) 
 		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
