@@ -52,116 +52,7 @@
 #define ASSERT_UNALIGNED(x)
 #endif
 
-static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val);
-static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val);
-static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val);
-static u8  FASTCALL _MMU_ARM9_read08(u32 adr);
-static u16 FASTCALL _MMU_ARM9_read16(u32 adr);
-static u32 FASTCALL _MMU_ARM9_read32(u32 adr);
 
-static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val);
-static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val);
-static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val);
-static u8  FASTCALL _MMU_ARM7_read08(u32 adr);
-static u16 FASTCALL _MMU_ARM7_read16(u32 adr);
-static u32 FASTCALL _MMU_ARM7_read32(u32 adr);
-
-
-u8 _MMU_read08(const int PROCNUM, u32 addr) {
-	if(PROCNUM==ARMCPU_ARM9)
-		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
-		{
-			//Returns data from DTCM (ARM9 only)
-			return T1ReadByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
-		}
-
-	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
-
-	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read08(addr);
-	else return _MMU_ARM7_read08(addr);
-}
-
-u16 _MMU_read16(const int PROCNUM, u32 addr) {
-	if(PROCNUM==ARMCPU_ARM9)
-		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
-		{
-			//Returns data from DTCM (ARM9 only)
-			return T1ReadWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
-		}
-
-	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
-
-	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
-	else return _MMU_ARM7_read16(addr);
-}
-
-u32 _MMU_read32(int PROCNUM, u32 addr) {
-	if(PROCNUM==ARMCPU_ARM9)
-		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
-		{
-			//Returns data from DTCM (ARM9 only)
-			return T1ReadLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
-		}
-
-	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
-
-	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read32(addr);
-	else return _MMU_ARM7_read32(addr);
-}
-
-void _MMU_write08(const int PROCNUM, u32 addr, u8 val) {
-	if(PROCNUM==ARMCPU_ARM9)
-		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
-		{
-			T1WriteByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
-			return;
-		}
-
-	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
-		return;
-	}
-
-	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write08(addr,val);
-	else _MMU_ARM7_write08(addr,val);
-}
-
-void _MMU_write16(const int PROCNUM, u32 addr, u16 val) {
-	if(PROCNUM==ARMCPU_ARM9)
-		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
-		{
-			T1WriteWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
-			return;
-		}
-
-	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
-		return;
-	}
-
-	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write16(addr,val);
-	else _MMU_ARM7_write16(addr,val);
-}
-
-void _MMU_write32(const int PROCNUM, u32 addr, u32 val) {
-	if(PROCNUM==ARMCPU_ARM9)
-		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
-		{
-			T1WriteLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
-			return;
-		}
-
-	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
-		return;
-	}
-
-	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write32(addr,val);
-	else _MMU_ARM7_write32(addr,val);
-}
 
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
 static u64 isqrt (u64 x) {
@@ -1607,7 +1498,7 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 //=========================================================================================================
 //=========================================================================================================
 //================================================= MMU write 08
-static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
+void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if(((adr & ~0x3FFF) == MMU.DTCMRegion))
@@ -1821,7 +1712,7 @@ static void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 }
 
 //================================================= MMU ARM9 write 16
-static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
+void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((adr & ~0x3FFF) == MMU.DTCMRegion)
@@ -2404,7 +2295,7 @@ static void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 } 
 
 //================================================= MMU ARM9 write 32
-static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
+void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 {
 #ifdef INTERNAL_DTCM_WRITE
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -2956,7 +2847,7 @@ static void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 }
 
 //================================================= MMU ARM9 read 08
-static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
+u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -2985,7 +2876,7 @@ static u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 }
 
 //================================================= MMU ARM9 read 16
-static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
+u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -3056,7 +2947,7 @@ static u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 }
 
 //================================================= MMU ARM9 read 32
-static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
+u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
@@ -3225,7 +3116,7 @@ static u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 //=========================================================================================================
 //=========================================================================================================
 //================================================= MMU ARM7 write 08
-static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
+void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
@@ -3278,7 +3169,7 @@ static void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 }
 
 //================================================= MMU ARM7 write 16
-static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
+void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
@@ -3700,7 +3591,7 @@ static void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 } 
 //================================================= MMU ARM7 write 32
-static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
+void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
@@ -3960,7 +3851,7 @@ static void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 }
 
 //================================================= MMU ARM7 read 08
-static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
+u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
@@ -3992,7 +3883,7 @@ static u8 FASTCALL _MMU_ARM7_read08(u32 adr)
     return MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]];
 }
 //================================================= MMU ARM7 read 16
-static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
+u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
@@ -4052,7 +3943,7 @@ static u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 }
 //================================================= MMU ARM7 read 32
-static u32 FASTCALL _MMU_ARM7_read32(u32 adr)
+u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */

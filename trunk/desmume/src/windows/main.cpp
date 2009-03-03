@@ -1363,7 +1363,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 			&arm9_memio, &arm9_direct_memory_iface);
 
 		if ( arm9_gdb_stub == NULL) {
-			MessageBox(hwnd,"Failed to create ARM9 gdbstub","Error",MB_OK);
+			MessageBox(MainWindow->getHWnd(),"Failed to create ARM9 gdbstub","Error",MB_OK);
 			return -1;
 		}
 	}
@@ -1373,7 +1373,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 			&arm7_base_memory_iface);
 
 		if ( arm7_gdb_stub == NULL) {
-			MessageBox(hwnd,"Failed to create ARM7 gdbstub","Error",MB_OK);
+			MessageBox(MainWindow->getHWnd(),"Failed to create ARM7 gdbstub","Error",MB_OK);
 			return -1;
 		}
 	}

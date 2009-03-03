@@ -27,9 +27,17 @@
 
 #include "FIFO.h"
 #include "dscard.h"
+#include "mem.h"
 
 #include "ARM9.h"
 #include "mc.h"
+
+//HACK!!!! REMOVE ME SOON!
+#ifndef ARMCPU_ARM7
+#define ARMCPU_ARM7 1
+#define ARMCPU_ARM9 0
+#define ARMPROC (PROCNUM?NDS_ARM7:NDS_ARM9)
+#endif
 
 /* theses macros are designed for reading/writing in memory (m is a pointer to memory, like MMU.MMU_MEM[proc], and a is an address, like 0x04000000 */
 #define MEM_8(m, a)  (((u8*)(m[((a)>>20)&0xff]))[((a)&0xfff)])
@@ -182,12 +190,117 @@ template<int PROCNUM> void _MMU_write08(u32 addr, u8 val);
 template<int PROCNUM> void _MMU_write16(u32 addr, u16 val);
 template<int PROCNUM> void _MMU_write32(u32 addr, u32 val);
 
-FORCEINLINE extern u8 _MMU_read08(const int PROCNUM, u32 addr);
-FORCEINLINE extern u16 _MMU_read16(const int PROCNUM, u32 addr);
-FORCEINLINE extern u32 _MMU_read32(const int PROCNUM, u32 addr);
-FORCEINLINE extern void _MMU_write08(const int PROCNUM, u32 addr, u8 val);
-FORCEINLINE extern void _MMU_write16(const int PROCNUM, u32 addr, u16 val);
-FORCEINLINE extern void _MMU_write32(const int PROCNUM, u32 addr, u32 val);
+void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val);
+void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val);
+void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val);
+u8  FASTCALL _MMU_ARM9_read08(u32 adr);
+u16 FASTCALL _MMU_ARM9_read16(u32 adr);
+u32 FASTCALL _MMU_ARM9_read32(u32 adr);
+
+void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val);
+void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val);
+void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val);
+u8  FASTCALL _MMU_ARM7_read08(u32 adr);
+u16 FASTCALL _MMU_ARM7_read16(u32 adr);
+u32 FASTCALL _MMU_ARM7_read32(u32 adr);
+
+
+FORCEINLINE u8 _MMU_read08(const int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			//Returns data from DTCM (ARM9 only)
+			return T1ReadByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000)
+		return T1ReadByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+
+	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read08(addr);
+	else return _MMU_ARM7_read08(addr);
+}
+
+FORCEINLINE u16 _MMU_read16(const int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			//Returns data from DTCM (ARM9 only)
+			return T1ReadWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000)
+		return T1ReadWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+
+	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
+	else return _MMU_ARM7_read16(addr);
+}
+
+FORCEINLINE u32 _MMU_read32(int PROCNUM, u32 addr) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			//Returns data from DTCM (ARM9 only)
+			return T1ReadLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000)
+		return T1ReadLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+
+	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read32(addr);
+	else return _MMU_ARM7_read32(addr);
+}
+
+FORCEINLINE void _MMU_write08(const int PROCNUM, u32 addr, u8 val) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			T1WriteByte(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			return;
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000) {
+		T1WriteByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		return;
+	}
+
+	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write08(addr,val);
+	else _MMU_ARM7_write08(addr,val);
+}
+
+FORCEINLINE void _MMU_write16(const int PROCNUM, u32 addr, u16 val) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			T1WriteWord(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			return;
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000) {
+		T1WriteWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		return;
+	}
+
+	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write16(addr,val);
+	else _MMU_ARM7_write16(addr,val);
+}
+
+FORCEINLINE void _MMU_write32(const int PROCNUM, u32 addr, u32 val) {
+	if(PROCNUM==ARMCPU_ARM9)
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
+		{
+			T1WriteLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF, val);
+			return;
+		}
+
+	if ( (addr & 0x0F000000) == 0x02000000) {
+		T1WriteLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		return;
+	}
+
+	if(PROCNUM==ARMCPU_ARM9) _MMU_ARM9_write32(addr,val);
+	else _MMU_ARM7_write32(addr,val);
+}
+
 
 #ifdef MMU_ENABLE_ACL
 	void FASTCALL MMU_write8_acl(u32 proc, u32 adr, u8 val);
