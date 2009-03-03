@@ -182,10 +182,6 @@ template<int PROCNUM> void _MMU_write08(u32 addr, u8 val);
 template<int PROCNUM> void _MMU_write16(u32 addr, u16 val);
 template<int PROCNUM> void _MMU_write32(u32 addr, u32 val);
 
-u8 FASTCALL arm9_read8( void *data, u32 adr);
-u16 FASTCALL arm9_read16( void *data, u32 adr);
-u32 FASTCALL arm9_read32( void *data, u32 adr);
-
 FORCEINLINE extern u8 _MMU_read08(const int PROCNUM, u32 addr);
 FORCEINLINE extern u16 _MMU_read16(const int PROCNUM, u32 addr);
 FORCEINLINE extern u32 _MMU_read32(const int PROCNUM, u32 addr);
