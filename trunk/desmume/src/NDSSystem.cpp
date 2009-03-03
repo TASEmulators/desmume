@@ -1087,14 +1087,14 @@ u32 NDS_exec(s32 nb)
 #endif
 			}
 
-/*#ifdef EXPERIMENTAL_WIFI
+#if 0 && defined(EXPERIMENTAL_WIFI)
 
 			if((nds.ARM7Cycle % 0x3F03) == 0)
 			{
-				/* 3F03 arm7 cycles = ~1usec *-/
+				/* 3F03 arm7 cycles = ~1usec */
 				WIFI_usTrigger(&wifiMac) ;
 			}
-#endif*/
+#endif
 
 			int nds7old = nds.ARM7Cycle;
 
