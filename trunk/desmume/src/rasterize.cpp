@@ -171,7 +171,6 @@ struct Fragment
 };
 
 static VERT* verts[MAX_CLIPPED_VERTS];
-static VERT* sortedVerts[MAX_CLIPPED_VERTS];
 
 INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 {
@@ -391,11 +390,11 @@ static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 	}
 }
 
-void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
+static void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
 	Fragment &destFragment = screen[adr];
 
 	//depth test
-	int depth;
+	u32 depth;
 	if(gfx3d.wbuffer)
 		//not sure about this
 		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
@@ -859,7 +858,6 @@ static void SoftRastGetLineCaptured(int line, u16* dst) {
 	Fragment* src = screen+((191-line)<<8);
 	for(int i=0;i<256;i++)
 	{
-		const bool testRenderAlpha = false;
 		u8 r = src->color.components.r;
 		u8 g = src->color.components.g;
 		u8 b = src->color.components.b;
@@ -1146,15 +1144,15 @@ static void SoftRastRender()
 		//here is a hack which needs to be removed.
 		//at some point our shape engine needs these to be converted to "fixed point"
 		//which is currently just a float
-		for(int i=0;i<type;i++)
-			for(int j=0;j<2;j++)
-				verts[i].coord[j] = iround(16.0f * verts[i].coord[j]);
+		for(int j=0;j<type;j++)
+			for(int k=0;k<2;k++)
+				verts[j].coord[k] = iround(16.0f * verts[j].coord[k]);
 
 		//hmm... shader gets setup every time because it depends on sampler which may have just changed
 		shader.setup(poly->polyAttr);
 
-		for(int i=0;i<MAX_CLIPPED_VERTS;i++)
-			::verts[i] = &verts[i];
+		for(int j=0;j<MAX_CLIPPED_VERTS;j++)
+			::verts[j] = &verts[j];
 
 		shape_engine(type,backfacing);
 	}
