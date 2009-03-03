@@ -22,13 +22,13 @@
 #ifndef ARM_CPU
 #define ARM_CPU
 
-#include "types.h"
-#include "bits.h"
-#include "MMU.h"
-
 #define ARMCPU_ARM7 1
 #define ARMCPU_ARM9 0
 #define ARMPROC (PROCNUM?NDS_ARM7:NDS_ARM9)
+
+#include "types.h"
+#include "bits.h"
+#include "MMU.h"
 
 #define CODE(i)     (((i)>>25)&0x7)
 #define OPCODE(i)   (((i)>>21)&0xF)
