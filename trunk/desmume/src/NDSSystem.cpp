@@ -1087,7 +1087,8 @@ u32 NDS_exec(s32 nb)
 #endif
 			}
 
-#if 0 && defined(EXPERIMENTAL_WIFI)
+#ifdef EXPERIMENTAL_WIFI
+#if 0
 
 			if((nds.ARM7Cycle % 0x3F03) == 0)
 			{
@@ -1097,6 +1098,7 @@ u32 NDS_exec(s32 nb)
 #endif
 
 			int nds7old = nds.ARM7Cycle;
+#endif
 
 			if(nds.ARM7Cycle<=nds.cycles)
 			{
