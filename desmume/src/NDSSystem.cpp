@@ -57,6 +57,8 @@ char ROMserial[20];
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
 
+BOOL fw_success = FALSE;
+
 NDSSystem nds;
 
 /* ------------------------------------------------------------------------- */
@@ -74,19 +76,8 @@ u32 bswap32(u32 val)
 
 BOOL getKeyBuf()
 {
-	/* TODO: make the BIOS image name configurable */
-
-	FILE *file = fopen("./biosnds7.bin", "rb");
 	int dummy;
-
-	if(file == NULL)
-		file = fopen("./bios7.bin", "rb");
-
-	if(file == NULL)
-		file = fopen("./biosnds7.rom", "rb");
-
-	if(file == NULL)
-		file = fopen("./bios7.rom", "rb");
+	FILE *file = fopen(CommonSettings.ARM7BIOS, "rb");
 
 	if(file == NULL)
 		return FALSE;
@@ -374,18 +365,6 @@ BOOL decryptFirmware(u8 *data)
 			crc16_mine, crc16_header);
 		return FALSE;
 	}
-
-/*	u32 i;
-
-	for(i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
-	{
-		_MMU_write32(0, (part1ram + i), T1ReadLong(nds.FW_ARM9BootCode, i));
-	}
-
-	for(i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
-	{
-		_MMU_write32(1, (part2ram + i), T1ReadLong(nds.FW_ARM7BootCode, i));
-	}*/
 
 	return TRUE;
 }
@@ -876,7 +855,7 @@ void NDS_Reset( void)
 	if(CommonSettings.UseExtFirmware == true)
 		NDS_LoadFirmware(CommonSettings.Firmware);
 
-	if((CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true))
+	if((CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
 	{
 		for(i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
 		{
@@ -1377,6 +1356,7 @@ int NDS_LoadFirmware(const char *filename)
 	if(size > MMU.fw.size)
 	{
 		fclose(file);
+		fw_success = FALSE;
 		return -1;
 	}
 
@@ -1386,9 +1366,15 @@ int NDS_LoadFirmware(const char *filename)
 	INFO("Firmware: decrypting NDS firmware %s...\n", filename);
 
 	if(decryptFirmware(MMU.fw.data) == FALSE)
+	{
 		INFO("Firmware: decryption failed.\n");
+		fw_success = FALSE;
+	}
 	else
+	{
 		INFO("Firmware: decryption successful.\n");
+		fw_success = TRUE;
+	}
 
 	return i;
 }
