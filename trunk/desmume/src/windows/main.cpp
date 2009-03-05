@@ -3063,7 +3063,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					cur = GetDlgItem(hDlg, IDC_BIOSSWIS);
 					EnableWindow(cur, enable);
 					cur = GetDlgItem(hDlg, IDC_FIRMWAREBOOT);
-					EnableWindow(cur, enable);
+					EnableWindow(cur, (enable && IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE)));
 				}
 				return TRUE;
 
