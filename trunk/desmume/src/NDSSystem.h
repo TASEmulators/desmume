@@ -124,6 +124,13 @@ typedef struct
 	BOOL isTouch;
 	u16 pad;
 
+	u8 *FW_ARM9BootCode;
+	u8 *FW_ARM7BootCode;
+	u32 FW_ARM9BootCodeAddr;
+	u32 FW_ARM7BootCodeAddr;
+	u32 FW_ARM9BootCodeSize;
+	u32 FW_ARM7BootCodeSize;
+
 	BOOL sleeping;
 
 	//this is not essential NDS runtime state.
@@ -277,8 +284,25 @@ inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
 extern struct TCommonSettings {
 	TCommonSettings() 
 		: HighResolutionInterpolateColor(true)
-	{}
+		, UseExtBIOS(false)
+		, SWIFromBIOS(false)
+		, UseExtFirmware(false)
+		, BootFromFirmware(false)
+	{
+		strcpy(ARM9BIOS, "biosnds9.bin");
+		strcpy(ARM7BIOS, "biosnds7.bin");
+		strcpy(Firmware, "firmware.bin");
+	}
 	bool HighResolutionInterpolateColor;
+
+	bool UseExtBIOS;
+	char ARM9BIOS[256];
+	char ARM7BIOS[256];
+	bool SWIFromBIOS;
+
+	bool UseExtFirmware;
+	char Firmware[256];
+	bool BootFromFirmware;
 } CommonSettings;
 
 
