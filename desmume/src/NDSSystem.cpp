@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <math.h>
 
 #include "common.h"
 #include "NDSSystem.h"
@@ -57,6 +58,339 @@ char ROMserial[20];
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
 
 NDSSystem nds;
+
+/* ------------------------------------------------------------------------- */
+/* FIRMWARE DECRYPTION */
+
+static u32 keyBuf[0x412];
+static u32 keyCode[3];
+
+#define DWNUM(i) ((i) >> 2)
+
+u32 bswap32(u32 val)
+{
+	return (((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24));
+}
+
+BOOL getKeyBuf()
+{
+	/* TODO: make the BIOS image name configurable */
+
+	FILE *file = fopen("./biosnds7.bin", "rb");
+	int dummy;
+
+	if(file == NULL)
+		file = fopen("./bios7.bin", "rb");
+
+	if(file == NULL)
+		file = fopen("./biosnds7.rom", "rb");
+
+	if(file == NULL)
+		file = fopen("./bios7.rom", "rb");
+
+	if(file == NULL)
+		return FALSE;
+
+	fseek(file, 0x30, SEEK_SET);
+	dummy = fread(keyBuf, 0x412, 4, file);
+
+	fclose(file);
+	return TRUE;
+}
+
+void crypt64BitUp(u32 *ptr)
+{
+	u32 Y = ptr[0];
+	u32 X = ptr[1];
+
+	for(u32 i = 0x00; i <= 0x0F; i++)
+	{
+		u32 Z = (keyBuf[i] ^ X);
+		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
+		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
+		X = (keyBuf[DWNUM(0x848 + (((Z >> 8) & 0xFF) << 2))] ^ X);
+		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
+		X = (Y ^ X);
+		Y = Z;
+	}
+
+	ptr[0] = (X ^ keyBuf[DWNUM(0x40)]);
+	ptr[1] = (Y ^ keyBuf[DWNUM(0x44)]);
+}
+
+void crypt64BitDown(u32 *ptr)
+{
+	u32 Y = ptr[0];
+	u32 X = ptr[1];
+
+	for(u32 i = 0x11; i >= 0x02; i--)
+	{
+		u32 Z = (keyBuf[i] ^ X);
+		X = keyBuf[DWNUM(0x048 + (((Z >> 24) & 0xFF) << 2))];
+		X = (keyBuf[DWNUM(0x448 + (((Z >> 16) & 0xFF) << 2))] + X);
+		X = (keyBuf[DWNUM(0x848 + (((Z >> 8) & 0xFF) << 2))] ^ X);
+		X = (keyBuf[DWNUM(0xC48 + ((Z & 0xFF) << 2))] + X);
+		X = (Y ^ X);
+		Y = Z;
+	}
+
+	ptr[0] = (X ^ keyBuf[DWNUM(0x04)]);
+	ptr[1] = (Y ^ keyBuf[DWNUM(0x00)]);
+}
+
+void applyKeycode(u32 modulo)
+{
+	crypt64BitUp(&keyCode[1]);
+	crypt64BitUp(&keyCode[0]);
+
+	u32 scratch[2] = {0x00000000, 0x00000000};
+
+	for(u32 i = 0; i <= 0x44; i += 4)
+	{
+		keyBuf[DWNUM(i)] = (keyBuf[DWNUM(i)] ^ bswap32(keyCode[DWNUM(i % modulo)]));
+	}
+
+	for(u32 i = 0; i <= 0x1040; i += 8)
+	{
+		crypt64BitUp(scratch);
+		keyBuf[DWNUM(i)] = scratch[1];
+		keyBuf[DWNUM(i+4)] = scratch[0];
+	}
+}
+
+BOOL initKeycode(u32 idCode, int level, u32 modulo)
+{
+	if(getKeyBuf() == FALSE)
+		return FALSE;
+
+	keyCode[0] = idCode;
+	keyCode[1] = (idCode >> 1);
+	keyCode[2] = (idCode << 1);
+
+	if(level >= 1) applyKeycode(modulo);
+	if(level >= 2) applyKeycode(modulo);
+
+	keyCode[1] <<= 1;
+	keyCode[2] >>= 1;
+
+	if(level >= 3) applyKeycode(modulo);
+
+	return TRUE;
+}
+
+u16 getBootCodeCRC16()
+{
+	int i, j;
+	u32 crc = 0xFFFF;
+	const u16 val[8] = {0xC0C1, 0xC181, 0xC301, 0xC601, 0xCC01, 0xD801, 0xF001, 0xA001};
+
+	for(i = 0; i < nds.FW_ARM9BootCodeSize; i++)
+	{
+		crc = (crc ^ nds.FW_ARM9BootCode[i]);
+
+		for(j = 0; j < 8; j++) 
+		{
+			if(crc & 0x0001)
+				crc = ((crc >> 1) ^ (val[j] << (7-j)));
+			else
+				crc =  (crc >> 1);
+		}
+	}
+
+	for(i = 0; i < nds.FW_ARM7BootCodeSize; i++)
+	{
+		crc = (crc ^ nds.FW_ARM7BootCode[i]);
+
+		for(j = 0; j < 8; j++) 
+		{
+			if(crc & 0x0001)
+				crc = ((crc >> 1) ^ (val[j] << (7-j)));
+			else
+				crc =  (crc >> 1);
+		}
+	}
+
+	return (crc & 0xFFFF);
+}
+
+u32 * decryptFirmwareBlock(char *blockName, u32 *src, u32 &size)
+{
+	u32 curBlock[2];
+	u32 *dst;
+	u32 header;
+	u32 i, j;
+	u32 xIn = 4, xOut = 0;
+	u32 len;
+	u32 offset;
+	u32 windowOffset;
+	u32 xLen;
+	u8 d;
+	u16 data;
+
+	memcpy(curBlock, src, 8);
+	crypt64BitDown(curBlock);
+
+	u32 blockSize = (curBlock[0] >> 8);
+	size = blockSize;
+
+	INFO("Firmware: %s final size: %i bytes\n", blockName, blockSize);
+
+	dst = (u32*)new u8[blockSize];
+
+	xLen = blockSize;
+
+	while(xLen > 0)
+	{
+		d = T1ReadByte((u8*)curBlock, (xIn % 8));
+		xIn++;
+		if((xIn % 8) == 0)
+		{
+			memcpy(curBlock, (((u8*)src) + xIn), 8);
+			crypt64BitDown(curBlock);
+		}
+
+		for(i = 0; i < 8; i++)
+		{
+			if(d & 0x80)
+			{
+				data = (T1ReadByte((u8*)curBlock, (xIn % 8)) << 8);
+				xIn++;
+				if((xIn % 8) == 0)
+				{
+					memcpy(curBlock, (((u8*)src) + xIn), 8);
+					crypt64BitDown(curBlock);
+				}
+				data |= T1ReadByte((u8*)curBlock, (xIn % 8));
+				xIn++;
+				if((xIn % 8) == 0)
+				{
+					memcpy(curBlock, (((u8*)src) + xIn), 8);
+					crypt64BitDown(curBlock);
+				}
+
+				len = (data >> 12) + 3;
+				offset = (data & 0xFFF);
+				windowOffset = (xOut - offset - 1);
+
+				for(j = 0; j < len; j++)
+				{
+					T1WriteByte((u8*)dst, xOut, T1ReadByte((u8*)dst, windowOffset));
+					xOut++;
+					windowOffset++;
+
+					xLen--;
+					if(xLen == 0)
+						goto lz77End;
+				}
+			}
+			else
+			{
+				T1WriteByte((u8*)dst, xOut, T1ReadByte((u8*)curBlock, (xIn % 8)));
+				xOut++;
+				xIn++;
+				if((xIn % 8) == 0)
+				{
+					memcpy(curBlock, (((u8*)src) + xIn), 8);
+					crypt64BitDown(curBlock);
+				}
+
+				xLen--;
+				if(xLen == 0)
+					goto lz77End;
+			}
+
+			d = ((d << 1) & 0xFF);
+		}
+	}
+
+lz77End:
+
+	return dst;
+}
+
+BOOL decryptFirmware(u8 *data)
+{
+	u16 shifts;
+	u16 shift1, shift2, shift3, shift4;
+	u32 part1addr, part2addr, part3addr, part4addr, part5addr;
+	u32 part1ram, part2ram;
+
+	shifts = T1ReadWord(data, 0x14);
+	shift1 = (shifts & 0x7);
+	shift2 = ((shifts >> 3) & 0x7);
+	shift3 = ((shifts >> 6) & 0x7);
+	shift4 = ((shifts >> 9) & 0x7);
+
+	part1addr = T1ReadWord(data, 0x0C);
+	part1addr = (part1addr << (2+shift1));
+
+	INFO("Firmware: ARM9 boot code address: %05X\n", part1addr);
+
+	part1ram = T1ReadWord(data, 0x0E);
+	part1ram = (0x02800000 - (part1ram << (2+shift2)));
+
+	INFO("Firmware: ARM9 boot code RAM address: %08X\n", part1ram);
+
+	part2addr = T1ReadWord(data, 0x10);
+	part2addr = (part2addr << (2+shift3));
+
+	INFO("Firmware: ARM7 boot code address: %05X\n", part2addr);
+
+	part2ram = T1ReadWord(data, 0x12);
+	part2ram = (0x03810000 - (part2ram << (2+shift4)));
+
+	INFO("Firmware: ARM7 boot code RAM address: %08X\n", part2ram);
+
+	part3addr = T1ReadWord(data, 0x00);
+	part3addr = (part3addr << 3);
+
+	INFO("Firmware: ARM9 GUI code address: %05X\n", part3addr);
+
+	part4addr = T1ReadWord(data, 0x02);
+	part4addr = (part4addr << 3);
+
+	INFO("Firmware: ARM7 GUI code address: %05X\n", part4addr);
+
+	part5addr = T1ReadWord(data, 0x16);
+	part5addr = (part5addr << 3);
+
+	INFO("Firmware: data/gfx address: %05X\n", part5addr);
+
+	if(initKeycode(T1ReadLong(data, 0x08), 1, 0xC) == FALSE) return FALSE;
+	crypt64BitDown((u32*)&data[0x18]);
+	if(initKeycode(T1ReadLong(data, 0x08), 2, 0xC) == FALSE) return FALSE;
+
+	nds.FW_ARM9BootCode = (u8*)decryptFirmwareBlock("ARM9 boot code", (u32*)&data[part1addr], nds.FW_ARM9BootCodeSize);
+	nds.FW_ARM7BootCode = (u8*)decryptFirmwareBlock("ARM7 boot code", (u32*)&data[part2addr], nds.FW_ARM7BootCodeSize);
+
+	nds.FW_ARM9BootCodeAddr = part1ram;
+	nds.FW_ARM7BootCodeAddr = part2ram;
+
+	u16 crc16_header = T1ReadWord(data, 0x06);
+	u16 crc16_mine = getBootCodeCRC16();
+	if(crc16_header != crc16_mine)
+	{
+		INFO("Firmware: error: the boot code CRC16 (%04X) doesn't match the value in the firmware header (%04X).\n", 
+			crc16_mine, crc16_header);
+		return FALSE;
+	}
+
+/*	u32 i;
+
+	for(i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
+	{
+		_MMU_write32(0, (part1ram + i), T1ReadLong(nds.FW_ARM9BootCode, i));
+	}
+
+	for(i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
+	{
+		_MMU_write32(1, (part2ram + i), T1ReadLong(nds.FW_ARM7BootCode, i));
+	}*/
+
+	return TRUE;
+}
+
+/* ------------------------------------------------------------------------- */
 
 static u32
 calc_CRC16( u32 start, const u8 *data, int count) {
@@ -199,6 +533,9 @@ int NDS_Init( void) {
 	WIFI_Init(&wifiMac) ;
 	WIFI_SoftAP_Init(&wifiMac);
 #endif
+
+	nds.FW_ARM9BootCode = NULL;
+	nds.FW_ARM7BootCode = NULL;
 
 	return 0;
 }
@@ -536,28 +873,50 @@ void NDS_Reset( void)
 
 	MMU_clearMem();
 
-	src = header->ARM9src;
-	dst = header->ARM9cpy;
+	if(CommonSettings.UseExtFirmware == true)
+		NDS_LoadFirmware(CommonSettings.Firmware);
 
-	for(i = 0; i < (header->ARM9binSize>>2); ++i)
+	if((CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true))
 	{
-		_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
-		dst += 4;
-		src += 4;
+		for(i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
+		{
+			_MMU_write32(0, (nds.FW_ARM9BootCodeAddr + i), T1ReadLong(nds.FW_ARM9BootCode, i));
+		}
+
+		for(i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
+		{
+			_MMU_write32(1, (nds.FW_ARM7BootCodeAddr + i), T1ReadLong(nds.FW_ARM7BootCode, i));
+		}
+
+		armcpu_init(&NDS_ARM9, nds.FW_ARM9BootCodeAddr);
+		armcpu_init(&NDS_ARM7, nds.FW_ARM7BootCodeAddr);
 	}
-
-	src = header->ARM7src;
-	dst = header->ARM7cpy;
-
-	for(i = 0; i < (header->ARM7binSize>>2); ++i)
+	else
 	{
-		_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
-		dst += 4;
-		src += 4;
-	}
+		src = header->ARM9src;
+		dst = header->ARM9cpy;
 
-	armcpu_init(&NDS_ARM7, header->ARM7exe);
-	armcpu_init(&NDS_ARM9, header->ARM9exe);
+		for(i = 0; i < (header->ARM9binSize>>2); ++i)
+		{
+			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
+			dst += 4;
+			src += 4;
+		}
+
+		src = header->ARM7src;
+		dst = header->ARM7cpy;
+
+		for(i = 0; i < (header->ARM7binSize>>2); ++i)
+		{
+			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
+			dst += 4;
+			src += 4;
+		}
+
+		armcpu_init(&NDS_ARM7, header->ARM7exe);
+		armcpu_init(&NDS_ARM9, header->ARM9exe);
+	}
+	
 	nds.ARM9Cycle = 0;
 	nds.ARM7Cycle = 0;
 	nds.cycles = 0;
@@ -603,15 +962,15 @@ void NDS_Reset( void)
 	//_MMU_write32[ARMCPU_ARM9](0x02007FFC, 0xE92D4030);
 
 	//ARM7 BIOS IRQ HANDLER
-#ifdef USE_REAL_BIOS
-	inf = fopen("BiosNds7.ROM","rb");
-#else
-	inf = NULL;
-#endif
+	if(CommonSettings.UseExtBIOS == true)
+		inf = fopen(CommonSettings.ARM7BIOS,"rb");
+	else
+		inf = NULL;
+
 	if(inf) {
 		fread(MMU.ARM7_BIOS,1,16384,inf);
 		fclose(inf);
-		NDS_ARM7.swi_tab = 0;
+		if(CommonSettings.SWIFromBIOS == true) NDS_ARM7.swi_tab = 0;
 		INFO("ARM7 BIOS is loaded.\n");
 	} else {
 		NDS_ARM7.swi_tab = ARM7_swi_tab;
@@ -627,16 +986,16 @@ void NDS_Reset( void)
 	}
 
 	//ARM9 BIOS IRQ HANDLER
-#ifdef USE_REAL_BIOS
-	inf = fopen("BiosNds9.ROM","rb");
-#else
-	inf = NULL;
+	if(CommonSettings.UseExtBIOS == true)
+		inf = fopen(CommonSettings.ARM9BIOS,"rb");
+	else
+		inf = NULL;
 	//memcpy(ARM9Mem.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
-#endif
+
 	if(inf) {
 		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
 		fclose(inf);
-		NDS_ARM9.swi_tab = 0;
+		if(CommonSettings.SWIFromBIOS == true) NDS_ARM9.swi_tab = 0;
 		INFO("ARM9 BIOS is loaded.\n");
 	} else {
 		NDS_ARM9.swi_tab = ARM9_swi_tab;
@@ -1023,6 +1382,13 @@ int NDS_LoadFirmware(const char *filename)
 
 	i = fread(MMU.fw.data, size, 1, file);
 	fclose(file);
+
+	INFO("Firmware: decrypting NDS firmware %s...\n", filename);
+
+	if(decryptFirmware(MMU.fw.data) == FALSE)
+		INFO("Firmware: decryption failed.\n");
+	else
+		INFO("Firmware: decryption successful.\n");
 
 	return i;
 }

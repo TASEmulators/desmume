@@ -1437,6 +1437,15 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
 	SPU_SetVolume(sndvolume);
 
+	CommonSettings.UseExtBIOS = GetPrivateProfileInt("BIOS", "UseExtBIOS", false, IniName);
+	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
+	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
+	CommonSettings.SWIFromBIOS = GetPrivateProfileInt("BIOS", "SWIFromBIOS", false, IniName);
+
+	CommonSettings.UseExtFirmware = GetPrivateProfileInt("Firmware", "UseExtFirmware", false, IniName);
+	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
+	CommonSettings.BootFromFirmware = GetPrivateProfileInt("Firmware", "BootFromFirmware", false, IniName);
+
 	/* Read the firmware settings from the init file */
 	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
 	win_fw_config.birth_month = GetPrivateProfileInt("Firmware","bMonth", 7, IniName);
@@ -2944,7 +2953,167 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
-		break;
+		{
+			HWND cur;
+
+			cur = GetDlgItem(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
+			EnableWindow(cur, FALSE);
+
+			CheckDlgButton(hDlg, IDC_USEEXTBIOS, ((CommonSettings.UseExtBIOS == true) ? BST_CHECKED : BST_UNCHECKED));
+			cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
+			SetWindowText(cur, CommonSettings.ARM9BIOS);
+			cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
+			SetWindowText(cur, CommonSettings.ARM7BIOS);
+			CheckDlgButton(hDlg, IDC_BIOSSWIS, ((CommonSettings.SWIFromBIOS == true) ? BST_CHECKED : BST_UNCHECKED));
+
+			if(CommonSettings.UseExtBIOS == false)
+			{
+				cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_ARM9BIOSBROWSE);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_ARM7BIOSBROWSE);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_BIOSSWIS);
+				EnableWindow(cur, FALSE);
+			}
+
+			CheckDlgButton(hDlg, IDC_USEEXTFIRMWARE, ((CommonSettings.UseExtFirmware == true) ? BST_CHECKED : BST_UNCHECKED));
+			cur = GetDlgItem(hDlg, IDC_FIRMWARE);
+			SetWindowText(cur, CommonSettings.Firmware);
+			CheckDlgButton(hDlg, IDC_FIRMWAREBOOT, ((CommonSettings.BootFromFirmware == true) ? BST_CHECKED : BST_UNCHECKED));
+
+			if(CommonSettings.UseExtFirmware == false)
+			{
+				cur = GetDlgItem(hDlg, IDC_FIRMWARE);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_FIRMWAREBROWSE);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_FIRMWAREBOOT);
+				EnableWindow(cur, FALSE);
+			}
+		}
+		return TRUE;
+
+	case WM_COMMAND:
+		{
+			switch(LOWORD(wParam))
+			{
+			case IDOK:
+				{
+					int val = 0;
+
+					if(romloaded)
+						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
+
+					if((!romloaded) || (val == IDYES))
+					{
+						HWND cur;
+
+						CommonSettings.UseExtBIOS = IsDlgButtonChecked(hDlg, IDC_USEEXTBIOS);
+						cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
+						GetWindowText(cur, CommonSettings.ARM9BIOS, 256);
+						cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
+						GetWindowText(cur, CommonSettings.ARM7BIOS, 256);
+						CommonSettings.SWIFromBIOS = IsDlgButtonChecked(hDlg, IDC_BIOSSWIS);
+
+						CommonSettings.UseExtFirmware = IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE);
+						cur = GetDlgItem(hDlg, IDC_FIRMWARE);
+						GetWindowText(cur, CommonSettings.Firmware, 256);
+						CommonSettings.BootFromFirmware = IsDlgButtonChecked(hDlg, IDC_FIRMWAREBOOT);
+
+						WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
+						WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
+						WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);
+						WritePrivateProfileInt("BIOS", "SWIFromBIOS", ((CommonSettings.SWIFromBIOS == true) ? 1 : 0), IniName);
+
+						WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
+						WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
+						WritePrivateProfileInt("Firmware", "BootFromFirmware", ((CommonSettings.BootFromFirmware == true) ? 1 : 0), IniName);
+
+						if(romloaded)
+						{
+							CheatsSearchReset();
+							NDS_Reset();
+							frameCounter = 0;
+						}
+					}
+				}
+			case IDCANCEL:
+				{
+					EndDialog(hDlg, TRUE);
+				}
+				return TRUE;
+
+			case IDC_USEEXTBIOS:
+				{
+					HWND cur;
+					BOOL enable = IsDlgButtonChecked(hDlg, IDC_USEEXTBIOS);
+
+					cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_ARM9BIOSBROWSE);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_ARM7BIOSBROWSE);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_BIOSSWIS);
+					EnableWindow(cur, enable);
+				}
+				return TRUE;
+
+			case IDC_USEEXTFIRMWARE:
+				{
+					HWND cur;
+					BOOL enable = IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE);
+
+					cur = GetDlgItem(hDlg, IDC_FIRMWARE);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_FIRMWAREBROWSE);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_FIRMWAREBOOT);
+					EnableWindow(cur, enable);
+				}
+				return TRUE;
+
+			case IDC_ARM9BIOSBROWSE:
+			case IDC_ARM7BIOSBROWSE:
+			case IDC_FIRMWAREBROWSE:
+				{
+					char fileName[256] = "";
+					OPENFILENAME ofn;
+
+					ZeroMemory(&ofn, sizeof(ofn));
+					ofn.lStructSize = sizeof(ofn);
+					ofn.hwndOwner = hDlg;
+					ofn.lpstrFilter = "Binary file (*.bin)\0*.bin\0ROM file (*.rom)\0*.rom\0Any file(*.*)\0*.*\0\0";
+					ofn.nFilterIndex = 1;
+					ofn.lpstrFile = fileName;
+					ofn.nMaxFile = 256;
+					ofn.lpstrDefExt = "bin";
+					ofn.Flags = OFN_NOCHANGEDIR;
+
+					if(GetOpenFileName(&ofn))
+					{
+						HWND cur;
+
+						switch(LOWORD(wParam))
+						{
+						case IDC_ARM9BIOSBROWSE: cur = GetDlgItem(hDlg, IDC_ARM9BIOS); break;
+						case IDC_ARM7BIOSBROWSE: cur = GetDlgItem(hDlg, IDC_ARM7BIOS); break;
+						case IDC_FIRMWAREBROWSE: cur = GetDlgItem(hDlg, IDC_FIRMWARE); break;
+						}
+
+						SetWindowText(cur, fileName);
+					}
+				}
+				return TRUE;
+			}
+		}
+		return TRUE;
 	}
 	
 	return FALSE;
