@@ -1,5 +1,3 @@
-/* $Id: gdk_3Demu.c,v 1.3 2007-06-27 14:44:40 masscat Exp $
- */
 /*  
 	Copyright (C) 2006-2007 Ben Jaques
 
