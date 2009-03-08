@@ -22,6 +22,7 @@
 #ifndef NDSSYSTEM_H
 #define NDSSYSTEM_H
 
+#include <string.h>
 #include "armcpu.h"
 #include "MMU.h"
 
