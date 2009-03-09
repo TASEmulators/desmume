@@ -1514,6 +1514,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	MainWindow->Show(SW_NORMAL);
 	run();
+	SaveRecentRoms();
+	NDS_DeInit();
 	DRV_AviEnd();
 
 	//------SHUTDOWN
@@ -2119,8 +2121,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Save frame counter status
 			WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
 			WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
-			SaveRecentRoms();
-			NDS_DeInit();
 			ExitRunLoop();
 			return 0;
 		}
