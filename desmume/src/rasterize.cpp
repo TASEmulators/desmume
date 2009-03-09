@@ -216,7 +216,6 @@ INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 
 static Fragment screen[256*192];
 
-
 FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
@@ -449,6 +448,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	{
 		//depth = fastFloor(z*0x7FFF)>>8;
 		depth = z*0x7FFF;
+		//depth = z*0xFFFFFF;
 	}
 	if(polyAttr.decalMode)
 	{
@@ -500,12 +500,26 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		//handle shadow polys
 		if(shader.mode == 3)
 		{
-			//now, if we arent supposed to draw shadow here, then bail out
-			if(destFragment.stencil == 0)
+			if(polyAttr.polyid == 0)
+			{
+				destFragment.stencil = 1;
 				goto rejected_fragment;
+			}
+			else
+			{
+				//now, if we arent supposed to draw shadow here, then bail out
+				if(destFragment.stencil == 1)
+				{
+					destFragment.stencil = 0;
+					goto rejected_fragment;
+				}
+
+				destFragment.stencil = 0;
+			}
 
 			//reset the shadow flag to keep the shadow from getting drawn more than once
-			destFragment.stencil = 0;
+			//if(polyAttr.polyid == 0)
+			//	destFragment.stencil = 1;
 		}
 
 		//handle polyids
@@ -519,7 +533,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 			//interesting that we have to check for mode 3 here. not very straightforward, but then nothing about the shadows are
 			//this was the result of testing trauma center, SPP area menu, and SM64 with yoshi's red feet behind translucent trees
 			//as well as the intermittent bug in ff4 where your shadow only appears under other shadows
-			if(shader.mode != 3)
+			//if(shader.mode != 3)
 			{
 				//dont overwrite pixels on translucent polys with the same polyids
 				if(destFragment.polyid.translucent == polyAttr.polyid)
@@ -542,10 +556,10 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 
 	depth_fail:
 	//handle stencil-writing in shadow mode
-	if(shader.mode == 3)
+/*	if((shader.mode == 3) && (polyAttr.polyid == 0))
 	{
 		destFragment.stencil = 1;
-	}
+	}*/
 
 	rejected_fragment:
 	done_with_pixel:
