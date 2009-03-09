@@ -45,6 +45,9 @@
 #include "texcache.h"
 #include "NDSSystem.h"
 
+//#undef FORCEINLINE
+//#define FORCEINLINE
+
 using std::min;
 using std::max;
 using std::swap;
@@ -58,6 +61,40 @@ static int polynum;
 
 static u8 modulate_table[32][32];
 static u8 decal_table[32][32][32];
+static u8 index_lookup_table[65];
+static u8 index_start_table[8];
+
+////optimized float floor useful in limited cases
+////from http://www.stereopsis.com/FPU.html#convert
+//int Real2Int(double val)
+//{
+//	const double _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
+//	const int _shiftamt        = 16;                    //16.16 fixed point representation,
+//
+//	#ifdef WORDS_BIGENDIAN
+//		#define iman_				1
+//	#else
+//		#define iman_				0
+//	#endif
+//
+//	val		= val + _double2fixmagic;
+//	return ((int*)&val)[iman_] >> _shiftamt; 
+//}
+
+
+//
+//int Real2Int(float val)
+//{
+//	//val -= 0.5f;
+//	//int temp;
+//	//__asm {
+//	//	fld val;
+//	//	fistp temp;
+//	//}
+//	//return temp;
+//	return 0;
+//}
+
 
 //----texture cache---
 
@@ -248,7 +285,7 @@ static struct Sampler
 		}
 	}
 
-	Fragment::Color sample(float u, float v)
+	FORCEINLINE Fragment::Color sample(float u, float v)
 	{
 		//should we use floor here? I still think so, but now I am not so sure.
 		//note that I changed away from floor for accuracy reasons, not performance, even though it would be faster without the floor.
@@ -285,7 +322,7 @@ struct Shader
 	float invu, invv, w;
 	Fragment::Color materialColor;
 	
-	void shade(Fragment& dst)
+	FORCEINLINE void shade(Fragment& dst)
 	{
 		Fragment::Color texColor;
 		float u,v;
@@ -300,17 +337,17 @@ struct Shader
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
-			#ifdef _MSC_VER
-			if(GetAsyncKeyState(VK_SHIFT)) {
-				//debugging tricks
-				dst.color = materialColor;
-				if(GetAsyncKeyState(VK_TAB)) {
-					u8 alpha = dst.color.components.a;
-					dst.color.color = polynum*8+8;
-					dst.color.components.a = alpha;
-				}
-			}
-			#endif
+			//#ifdef _MSC_VER
+			//if(GetAsyncKeyState(VK_SHIFT)) {
+			//	//debugging tricks
+			//	dst.color = materialColor;
+			//	if(GetAsyncKeyState(VK_TAB)) {
+			//		u8 alpha = dst.color.components.a;
+			//		dst.color.color = polynum*8+8;
+			//		dst.color.components.a = alpha;
+			//	}
+			//}
+			//#endif
 			break;
 		case 1: //decal
 			u = invu*w;
@@ -354,7 +391,7 @@ struct Shader
 
 } shader;
 
-static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
+static FORCEINLINE void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 {
 	if(gfx3d.enableAlphaBlending)
 	{
@@ -390,18 +427,28 @@ static void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
 	}
 }
 
-static void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
+//doesnt work yet
+//static FORCEINLINE int fastFloor(float f)
+//{
+//	float temp = f + 1.f;
+//	int ret = (*((u32*)&temp))&0x7FFFFF;
+//	return ret;
+//}
+
+static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
 	Fragment &destFragment = screen[adr];
 
 	//depth test
 	u32 depth;
-	if(gfx3d.wbuffer)
+	if(gfx3d.wbuffer) {
 		//not sure about this
 		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-		depth = 4096*w;
+		depth = (4096*w);
+	}
 	else
 	{
-		depth = z*0x7FFF; //not sure about this
+		//depth = fastFloor(z*0x7FFF)>>8;
+		depth = z*0x7FFF;
 	}
 	if(polyAttr.decalMode)
 	{
@@ -573,7 +620,7 @@ inline long Ceil28_4( fixed28_4 Value ) {
 struct edge_fx_fl {
 	edge_fx_fl() {}
 	edge_fx_fl(int Top, int Bottom);
-	inline int Step();
+	FORCEINLINE int Step();
 
 	long X, XStep, Numerator, Denominator;			// DDA info for x
 	long ErrorTerm;
@@ -581,8 +628,8 @@ struct edge_fx_fl {
 	
 	struct Interpolant {
 		float curr, step, stepExtra;
-		void doStep() { curr += step; }
-		void doStepExtra() { curr += stepExtra; }
+		FORCEINLINE void doStep() { curr += step; }
+		FORCEINLINE void doStepExtra() { curr += stepExtra; }
 		void initialize(float top, float bottom, float dx, float dy, long XStep, float XPrestep, float YPrestep) {
 			dx = 0;
 			dy *= (bottom-top);
@@ -599,11 +646,11 @@ struct edge_fx_fl {
 		};
 		Interpolant interpolants[NUM_INTERPOLANTS];
 	};
-	void doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
-	void doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
+	void FORCEINLINE doStepInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStep(); }
+	void FORCEINLINE doStepExtraInterpolants() { for(int i=0;i<NUM_INTERPOLANTS;i++) interpolants[i].doStepExtra(); }
 };
 
-edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
+FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
 	Y = Ceil28_4(verts[Top]->y);
 	int YEnd = Ceil28_4(verts[Bottom]->y);
 	Height = YEnd - Y;
@@ -633,7 +680,7 @@ edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
 	}
 }
 
-inline int edge_fx_fl::Step() {
+FORCEINLINE int edge_fx_fl::Step() {
 	X += XStep; Y++; Height--;
 	doStepInterpolants();
 
@@ -685,8 +732,9 @@ static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 		u += du_dx;
 		v += dv_dx;
 		z += dz_dx;
-		for(int i=0;i<3;i++) 
-			color[i] += dc_dx[i];
+		color[0] += dc_dx[0];
+		color[1] += dc_dx[1];
+		color[2] += dc_dx[2];
 	}
 }
 
@@ -807,6 +855,20 @@ static char SoftRastInit(void)
 					decal_table[a][i][j] = ((i*a) + (j*(31-a))) >> 5;
 			}
 		}
+
+		//these tables are used to increment through vert lists without having to do wrapping logic/math
+		int idx=0;
+		for(int i=3;i<=8;i++)
+		{
+			index_start_table[i-3] = idx;
+			for(int j=0;j<i;j++) {
+				int a = j;
+				int b = j+1;
+				if(b==i) b = 0;
+				index_lookup_table[idx++] = a;
+				index_lookup_table[idx++] = b;
+			}
+		}
 	}
 
 	TexCache_Reset();
@@ -887,7 +949,7 @@ static T interpolate(const float ratio, const T& x0, const T& x1) {
 
 
 //http://www.cs.berkeley.edu/~ug/slide/pipeline/assignments/as6/discussion.shtml
-static VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
+static FORCEINLINE VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
 {
 	VERT ret;
 
@@ -936,7 +998,7 @@ static VERT clipPoint(VERT* inside, VERT* outside, int coord, int which)
 #define CLIPLOG(X)
 #define CLIPLOG2(X,Y,Z)
 
-static void clipSegmentVsPlane(VERT** verts, const int coord, int which)
+static FORCEINLINE void clipSegmentVsPlane(VERT** verts, const int coord, int which)
 {
 	bool out0, out1;
 	if(which==-1) 
@@ -982,7 +1044,7 @@ static void clipSegmentVsPlane(VERT** verts, const int coord, int which)
 	}
 }
 
-static void clipPolyVsPlane(const int coord, int which)
+static FORCEINLINE void clipPolyVsPlane(const int coord, int which)
 {
 	outClippedPoly.type = 0;
 	CLIPLOG2("Clipping coord %d against %f\n",coord,x);
@@ -991,6 +1053,15 @@ static void clipPolyVsPlane(const int coord, int which)
 		VERT* testverts[2] = {&tempClippedPoly.clipVerts[i],&tempClippedPoly.clipVerts[(i+1)%tempClippedPoly.type]};
 		clipSegmentVsPlane(testverts, coord, which);
 	}
+
+	//this doesnt seem to help any. leaving it until i decide to get rid of it
+	//int j = index_start_table[tempClippedPoly.type-3];
+	//for(int i=0;i<tempClippedPoly.type;i++,j+=2)
+	//{
+	//	VERT* testverts[2] = {&tempClippedPoly.clipVerts[index_lookup_table[j]],&tempClippedPoly.clipVerts[index_lookup_table[j+1]]};
+	//	clipSegmentVsPlane(testverts, coord, which);
+	//}
+
 	tempClippedPoly = outClippedPoly;
 }
 
