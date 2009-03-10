@@ -69,12 +69,12 @@ static u32 keyCode[3];
 
 #define DWNUM(i) ((i) >> 2)
 
-u32 bswap32(u32 val)
+static u32 bswap32(u32 val)
 {
 	return (((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24));
 }
 
-BOOL getKeyBuf()
+static BOOL getKeyBuf()
 {
 	int dummy;
 	FILE *file = fopen(CommonSettings.ARM7BIOS, "rb");
@@ -89,7 +89,7 @@ BOOL getKeyBuf()
 	return TRUE;
 }
 
-void crypt64BitUp(u32 *ptr)
+static void crypt64BitUp(u32 *ptr)
 {
 	u32 Y = ptr[0];
 	u32 X = ptr[1];
@@ -109,7 +109,7 @@ void crypt64BitUp(u32 *ptr)
 	ptr[1] = (Y ^ keyBuf[DWNUM(0x44)]);
 }
 
-void crypt64BitDown(u32 *ptr)
+static void crypt64BitDown(u32 *ptr)
 {
 	u32 Y = ptr[0];
 	u32 X = ptr[1];
@@ -129,7 +129,7 @@ void crypt64BitDown(u32 *ptr)
 	ptr[1] = (Y ^ keyBuf[DWNUM(0x00)]);
 }
 
-void applyKeycode(u32 modulo)
+static void applyKeycode(u32 modulo)
 {
 	crypt64BitUp(&keyCode[1]);
 	crypt64BitUp(&keyCode[0]);
@@ -149,7 +149,7 @@ void applyKeycode(u32 modulo)
 	}
 }
 
-BOOL initKeycode(u32 idCode, int level, u32 modulo)
+static BOOL initKeycode(u32 idCode, int level, u32 modulo)
 {
 	if(getKeyBuf() == FALSE)
 		return FALSE;
@@ -169,7 +169,7 @@ BOOL initKeycode(u32 idCode, int level, u32 modulo)
 	return TRUE;
 }
 
-u16 getBootCodeCRC16()
+static u16 getBootCodeCRC16()
 {
 	int i, j;
 	u32 crc = 0xFFFF;
@@ -204,11 +204,10 @@ u16 getBootCodeCRC16()
 	return (crc & 0xFFFF);
 }
 
-u32 * decryptFirmwareBlock(char *blockName, u32 *src, u32 &size)
+static u32 * decryptFirmwareBlock(const char *blockName, u32 *src, u32 &size)
 {
 	u32 curBlock[2];
 	u32 *dst;
-	u32 header;
 	u32 i, j;
 	u32 xIn = 4, xOut = 0;
 	u32 len;
@@ -299,7 +298,7 @@ lz77End:
 	return dst;
 }
 
-BOOL decryptFirmware(u8 *data)
+static BOOL decryptFirmware(u8 *data)
 {
 	u16 shifts;
 	u16 shift1, shift2, shift3, shift4;
