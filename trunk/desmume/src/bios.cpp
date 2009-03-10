@@ -338,6 +338,8 @@ TEMPLATE static u32 copy()
      u32 dst = cpu->R[1];
      u32 cnt = cpu->R[2];
 
+	 //INFO("swi copy from %08X to %08X, cnt=%08X\n", src, dst, cnt);
+
      switch(BIT26(cnt))
      {
           case 0:
@@ -408,6 +410,8 @@ TEMPLATE static u32 fastCopy()
      u32 dst = cpu->R[1] & 0xFFFFFFFC;
      u32 cnt = cpu->R[2];
 
+	 //INFO("swi fastcopy from %08X to %08X, cnt=%08X\n", src, dst, cnt);
+
      switch(BIT24(cnt))
      {
           case 0:
@@ -447,6 +451,8 @@ TEMPLATE static u32 LZ77UnCompVram()
   u32 dest = cpu->R[1];
   u32 header = _MMU_read32(cpu->proc_ID,source);
   source += 4;
+
+  //INFO("swi lz77uncompvram\n");
 
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
@@ -536,6 +542,8 @@ TEMPLATE static u32 LZ77UnCompWram()
   u32 header = _MMU_read32(cpu->proc_ID, source);
   source += 4;
 
+  //INFO("swi lz77uncompwram\n");
+
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
     return 0;  
@@ -594,6 +602,8 @@ TEMPLATE static u32 RLUnCompVram()
 
   u32 header = _MMU_read32(cpu->proc_ID, source);
   source += 4;
+
+  //INFO("swi rluncompvram\n");
 
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
@@ -658,6 +668,8 @@ TEMPLATE static u32 RLUnCompWram()
   u32 header = _MMU_read32(cpu->proc_ID, source);
   source += 4;
 
+  //INFO("swi rluncompwram\n");
+
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
     return 0;  
@@ -702,6 +714,8 @@ TEMPLATE static u32 UnCompHuffman()
 
   header = _MMU_read08(cpu->proc_ID, source);
   source += 4;
+
+  //INFO("swi uncomphuffman\n");
 
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
@@ -842,6 +856,8 @@ TEMPLATE static u32 BitUnPack()
   source = cpu->R[0];
   dest = cpu->R[1];
   header = cpu->R[2];
+
+  //INFO("swi bitunpack\n");
   
   len = _MMU_read16(cpu->proc_ID, header);
   // check address
@@ -898,6 +914,8 @@ TEMPLATE static u32 Diff8bitUnFilterWram()
   header = _MMU_read08(cpu->proc_ID, source);
   source += 4;
 
+  //INFO("swi diff8bitunfilterwram\n");
+
   if(((source & 0xe000000) == 0) ||
      (( (source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0))
     return 0;  
@@ -925,6 +943,8 @@ TEMPLATE static u32 Diff16bitUnFilter()
 
   source = cpu->R[0];
   dest = cpu->R[1];
+
+  //INFO("swi diff16bitunfilter\n");
 
   header = _MMU_read08(cpu->proc_ID, source);
   source += 4;
@@ -1022,6 +1042,14 @@ TEMPLATE static u32 SoundBias()
      return cpu->R[1];
 }
 
+TEMPLATE static u32 getBootProcs()
+{
+	cpu->R[0] = 0x00000A2E;
+	cpu->R[1] = 0x00002C3C;
+	cpu->R[3] = 0x000005FF;
+	return 1;
+}
+
 u32 (* ARM9_swi_tab[32])()={
          bios_nop<ARMCPU_ARM9>,             // 0x00
          bios_nop<ARMCPU_ARM9>,             // 0x01
@@ -1065,7 +1093,7 @@ u32 (* ARM7_swi_tab[32])()={
          intrWaitARM<ARMCPU_ARM7>,          // 0x04
          waitVBlankARM<ARMCPU_ARM7>,        // 0x05
          wait4IRQ<ARMCPU_ARM7>,             // 0x06
-         sleep<ARMCPU_ARM7>,             // 0x07
+         sleep<ARMCPU_ARM7>,                // 0x07
          SoundBias<ARMCPU_ARM7>,            // 0x08
          divide<ARMCPU_ARM7>,               // 0x09
          bios_nop<ARMCPU_ARM7>,             // 0x0A
@@ -1087,7 +1115,7 @@ u32 (* ARM7_swi_tab[32])()={
          getSineTab<ARMCPU_ARM7>,           // 0x1A
          getPitchTab<ARMCPU_ARM7>,          // 0x1B
          getVolumeTab<ARMCPU_ARM7>,         // 0x1C
-         bios_nop<ARMCPU_ARM7>,             // 0x1D
+         getBootProcs<ARMCPU_ARM7>,         // 0x1D
          bios_nop<ARMCPU_ARM7>,             // 0x1E
          setHaltCR<ARMCPU_ARM7>,            // 0x1F
 };
