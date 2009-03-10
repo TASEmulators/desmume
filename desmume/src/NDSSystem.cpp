@@ -852,10 +852,70 @@ void NDS_Reset( void)
 
 	MMU_clearMem();
 
+	//ARM7 BIOS IRQ HANDLER
+	if(CommonSettings.UseExtBIOS == true)
+		inf = fopen(CommonSettings.ARM7BIOS,"rb");
+	else
+		inf = NULL;
+
+	if(inf) {
+		fread(MMU.ARM7_BIOS,1,16384,inf);
+		fclose(inf);
+		if(CommonSettings.SWIFromBIOS == true) NDS_ARM7.swi_tab = 0;
+		else NDS_ARM7.swi_tab = ARM7_swi_tab;
+		INFO("ARM7 BIOS is loaded.\n");
+	} else {
+		NDS_ARM7.swi_tab = ARM7_swi_tab;
+		_MMU_write32<ARMCPU_ARM7>(0x00, 0xE25EF002);
+		_MMU_write32<ARMCPU_ARM7>(0x04, 0xEAFFFFFE);
+		_MMU_write32<ARMCPU_ARM7>(0x18, 0xEA000000);
+		_MMU_write32<ARMCPU_ARM7>(0x20, 0xE92D500F);
+		_MMU_write32<ARMCPU_ARM7>(0x24, 0xE3A00301);
+		_MMU_write32<ARMCPU_ARM7>(0x28, 0xE28FE000);
+		_MMU_write32<ARMCPU_ARM7>(0x2C, 0xE510F004);
+		_MMU_write32<ARMCPU_ARM7>(0x30, 0xE8BD500F);
+		_MMU_write32<ARMCPU_ARM7>(0x34, 0xE25EF004);
+	}
+
+	//ARM9 BIOS IRQ HANDLER
+	if(CommonSettings.UseExtBIOS == true)
+		inf = fopen(CommonSettings.ARM9BIOS,"rb");
+	else
+		inf = NULL;
+	//memcpy(ARM9Mem.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
+
+	if(inf) {
+		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
+		fclose(inf);
+		if(CommonSettings.SWIFromBIOS == true) NDS_ARM9.swi_tab = 0;
+		else NDS_ARM9.swi_tab = ARM9_swi_tab;
+		INFO("ARM9 BIOS is loaded.\n");
+	} else {
+		NDS_ARM9.swi_tab = ARM9_swi_tab;
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000000);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0020, 0xE92D500F);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0024, 0xEE190F11);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0028, 0xE1A00620);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF002C, 0xE1A00600);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0030, 0xE2800C40);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0034, 0xE28FE000);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0038, 0xE510F004);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF003C, 0xE8BD500F);
+		_MMU_write32<ARMCPU_ARM9>(0xFFFF0040, 0xE25EF004);
+	}
+
+	/* Is it really needed ??? */
+	_MMU_write32<ARMCPU_ARM9>(0x0000004, 0xE3A0010E);
+	_MMU_write32<ARMCPU_ARM9>(0x0000008, 0xE3A01020);
+	// _MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02110);
+	_MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02040);
+	_MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE3B02020);
+	// _MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE2100202);
+
 	if(CommonSettings.UseExtFirmware == true)
 		NDS_LoadFirmware(CommonSettings.Firmware);
 
-	if((CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
+	if((CommonSettings.UseExtBIOS == true) && (CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
 	{
 		for(i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
 		{
@@ -869,6 +929,8 @@ void NDS_Reset( void)
 
 		armcpu_init(&NDS_ARM9, nds.FW_ARM9BootCodeAddr);
 		armcpu_init(&NDS_ARM7, nds.FW_ARM7BootCodeAddr);
+		//armcpu_init(&NDS_ARM9, 0xFFFF0000);
+		//armcpu_init(&NDS_ARM7, 0x00000000);
 	}
 	else
 	{
@@ -939,68 +1001,6 @@ void NDS_Reset( void)
 	SubScreen.offset = 192;
 
 	//_MMU_write32[ARMCPU_ARM9](0x02007FFC, 0xE92D4030);
-
-	//ARM7 BIOS IRQ HANDLER
-	if(CommonSettings.UseExtBIOS == true)
-		inf = fopen(CommonSettings.ARM7BIOS,"rb");
-	else
-		inf = NULL;
-
-	if(inf) {
-		fread(MMU.ARM7_BIOS,1,16384,inf);
-		fclose(inf);
-		if(CommonSettings.SWIFromBIOS == true) NDS_ARM7.swi_tab = 0;
-		else NDS_ARM7.swi_tab = ARM7_swi_tab;
-		INFO("ARM7 BIOS is loaded.\n");
-	} else {
-		NDS_ARM7.swi_tab = ARM7_swi_tab;
-		_MMU_write32<ARMCPU_ARM7>(0x00, 0xE25EF002);
-		_MMU_write32<ARMCPU_ARM7>(0x04, 0xEAFFFFFE);
-		_MMU_write32<ARMCPU_ARM7>(0x18, 0xEA000000);
-		_MMU_write32<ARMCPU_ARM7>(0x20, 0xE92D500F);
-		_MMU_write32<ARMCPU_ARM7>(0x24, 0xE3A00301);
-		_MMU_write32<ARMCPU_ARM7>(0x28, 0xE28FE000);
-		_MMU_write32<ARMCPU_ARM7>(0x2C, 0xE510F004);
-		_MMU_write32<ARMCPU_ARM7>(0x30, 0xE8BD500F);
-		_MMU_write32<ARMCPU_ARM7>(0x34, 0xE25EF004);
-	}
-
-	//ARM9 BIOS IRQ HANDLER
-	if(CommonSettings.UseExtBIOS == true)
-		inf = fopen(CommonSettings.ARM9BIOS,"rb");
-	else
-		inf = NULL;
-	//memcpy(ARM9Mem.ARM9_BIOS + 0x20, gba_header_data_0x04, 156);
-
-	if(inf) {
-		fread(ARM9Mem.ARM9_BIOS,1,4096,inf);
-		fclose(inf);
-		if(CommonSettings.SWIFromBIOS == true) NDS_ARM9.swi_tab = 0;
-		else NDS_ARM9.swi_tab = ARM9_swi_tab;
-		INFO("ARM9 BIOS is loaded.\n");
-	} else {
-		NDS_ARM9.swi_tab = ARM9_swi_tab;
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0018, 0xEA000000);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0020, 0xE92D500F);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0024, 0xEE190F11);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0028, 0xE1A00620);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF002C, 0xE1A00600);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0030, 0xE2800C40);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0034, 0xE28FE000);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0038, 0xE510F004);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF003C, 0xE8BD500F);
-		_MMU_write32<ARMCPU_ARM9>(0xFFFF0040, 0xE25EF004);
-	}
-
-
-
-
-	_MMU_write32<ARMCPU_ARM9>(0x0000004, 0xE3A0010E);
-	_MMU_write32<ARMCPU_ARM9>(0x0000008, 0xE3A01020);
-	// _MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02110);
-	_MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02040);
-	_MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE3B02020);
-	// _MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE2100202);
 
 	delete header;
 
@@ -1346,24 +1346,24 @@ int NDS_LoadFirmware(const char *filename)
 {
 	int i;
 	unsigned long size;
-	FILE *file;
+	//FILE *file;
 
-	if ((file = fopen(filename, "rb")) == NULL)
+	if ((MMU.fw.fp = fopen(filename, "rb+")) == NULL)
 		return -1;
 
-	fseek(file, 0, SEEK_END);
-	size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	fseek(MMU.fw.fp, 0, SEEK_END);
+	size = ftell(MMU.fw.fp);
+	fseek(MMU.fw.fp, 0, SEEK_SET);
 
 	if(size > MMU.fw.size)
 	{
-		fclose(file);
+		fclose(MMU.fw.fp);
 		fw_success = FALSE;
 		return -1;
 	}
 
-	i = fread(MMU.fw.data, size, 1, file);
-	fclose(file);
+	i = fread(MMU.fw.data, size, 1, MMU.fw.fp);
+	//fclose(file);
 
 	INFO("Firmware: decrypting NDS firmware %s...\n", filename);
 

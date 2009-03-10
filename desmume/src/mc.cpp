@@ -179,7 +179,7 @@ void mc_reset_com(memory_chip_t *mc)
       if ((mc->fp = fopen(mc->filename, "wb+")) != NULL)
          elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp);
    }
-   else if (mc->com == BM_CMD_WRITELOW)
+   else if ((mc->com == BM_CMD_WRITELOW) || (mc->com == FW_CMD_PAGEWRITE))
    {      
       if (mc->fp)
       {
@@ -296,39 +296,39 @@ int mc_load_duc(memory_chip_t *mc, const char* filename)
 
 u8 fw_transfer(memory_chip_t *mc, u8 data)
 {
-        if(mc->com == FW_CMD_READ || mc->com == FW_CMD_PAGEWRITE) /* check if we are in a command that needs 3 bytes address */
+	if(mc->com == FW_CMD_READ || mc->com == FW_CMD_PAGEWRITE) /* check if we are in a command that needs 3 bytes address */
 	{
-                if(mc->addr_shift > 0)   /* if we got a complete address */
+		if(mc->addr_shift > 0)   /* if we got a complete address */
 		{
-                        mc->addr_shift--;
-                        mc->addr |= data << (mc->addr_shift * 8); /* argument is a byte of address */
+			mc->addr_shift--;
+			mc->addr |= data << (mc->addr_shift * 8); /* argument is a byte of address */
 		}
-                else    /* if we have received 3 bytes of address, proceed command */
+		else    /* if we have received 3 bytes of address, proceed command */
 		{
-                        switch(mc->com)
+			switch(mc->com)
 			{
-                                case FW_CMD_READ:
-                                        if(mc->addr < mc->size)  /* check if we can read */
+				case FW_CMD_READ:
+					if(mc->addr < mc->size)  /* check if we can read */
 					{
-                                                data = mc->data[mc->addr];       /* return byte */
-                                                mc->addr++;      /* then increment address */
+						data = mc->data[mc->addr];       /* return byte */
+						mc->addr++;      /* then increment address */
 					}
 					break;
 					
-                                case FW_CMD_PAGEWRITE:
-                                        if(mc->addr < mc->size)
+				case FW_CMD_PAGEWRITE:
+					if(mc->addr < mc->size)
 					{
-                                                mc->data[mc->addr] = data;       /* write byte */
-                                                mc->addr++;
+						mc->data[mc->addr] = data;       /* write byte */
+						mc->addr++;
 					}
 					break;
 			}
 			
 		}
 	}
-        else if(mc->com == FW_CMD_READSTATUS)
+	else if(mc->com == FW_CMD_READSTATUS)
 	{
-		return 0;
+		return (mc->write_enable ? 0x02 : 0x00);
 	}
 	else	/* finally, check if it's a new command */
 	{
@@ -336,36 +336,36 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 		{
 			case 0: break;	/* nothing */
 			
-                        case FW_CMD_READ:    /* read command */
-                                mc->addr = 0;
-                                mc->addr_shift = 3;
-                                mc->com = FW_CMD_READ;
+			case FW_CMD_READ:    /* read command */
+				mc->addr = 0;
+				mc->addr_shift = 3;
+				mc->com = FW_CMD_READ;
 				break;
 				
-                        case FW_CMD_WRITEENABLE:     /* enable writing */
-                                if(mc->writeable_buffer) { mc->write_enable = TRUE; }
+			case FW_CMD_WRITEENABLE:     /* enable writing */
+				if(mc->writeable_buffer) { mc->write_enable = TRUE; }
 				break;
 				
-                        case FW_CMD_WRITEDISABLE:    /* disable writing */
-                                mc->write_enable = FALSE;
+			case FW_CMD_WRITEDISABLE:    /* disable writing */
+				mc->write_enable = FALSE;
 				break;
 				
-                        case FW_CMD_PAGEWRITE:       /* write command */
-                                if(mc->write_enable)
+			case FW_CMD_PAGEWRITE:       /* write command */
+				if(mc->write_enable)
 				{
-                                        mc->addr = 0;
-                                        mc->addr_shift = 3;
-                                        mc->com = FW_CMD_PAGEWRITE;
+					mc->addr = 0;
+					mc->addr_shift = 3;
+					mc->com = FW_CMD_PAGEWRITE;
 				}
 				else { data = 0; }
 				break;
 			
-                        case FW_CMD_READSTATUS:  /* status register command */
-                                mc->com = FW_CMD_READSTATUS;
+			case FW_CMD_READSTATUS:  /* status register command */
+				mc->com = FW_CMD_READSTATUS;
 				break;
 				
 			default:
-                                LOG("Unhandled FW command: %02X\n", data);
+				LOG("Unhandled FW command: %02X\n", data);
 				break;
 		}
 	}
@@ -375,49 +375,49 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 
 u8 bm_transfer(memory_chip_t *mc, u8 data)
 {
-        if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_WRITELOW) /* check if we are in a command that needs multiple byte address */
+	if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_WRITELOW) /* check if we are in a command that needs multiple byte address */
 	{
-                if(mc->addr_shift > 0)   /* if we got a complete address */
+		if(mc->addr_shift > 0)   /* if we got a complete address */
 		{
-                        mc->addr_shift--;
-                        mc->addr |= data << (mc->addr_shift * 8); /* argument is a byte of address */
+			mc->addr_shift--;
+			mc->addr |= data << (mc->addr_shift * 8); /* argument is a byte of address */
 		}
-                else    /* if we have received all bytes of address, proceed command */
+		else    /* if we have received all bytes of address, proceed command */
 		{
-                        switch(mc->com)
+			switch(mc->com)
 			{
-                                case BM_CMD_READLOW:
-                                        if(mc->addr < mc->size)  /* check if we can read */
-                                        {
-                                                //LOG("Read Backup Memory addr %08X(%02X)\n", mc->addr, mc->data[mc->addr]);
-                                                data = mc->data[mc->addr];       /* return byte */
-                                                mc->addr++;      /* then increment address */
-                                        }
+				case BM_CMD_READLOW:
+					if(mc->addr < mc->size)  /* check if we can read */
+					{
+						//LOG("Read Backup Memory addr %08X(%02X)\n", mc->addr, mc->data[mc->addr]);
+						data = mc->data[mc->addr];       /* return byte */
+						mc->addr++;      /* then increment address */
+					}
 					break;
 					
-                                case BM_CMD_WRITELOW:
-                                        if(mc->addr < mc->size)
-                                        {
-                                                //LOG("Write Backup Memory addr %08X with %02X\n", mc->addr, data);
-                                                mc->data[mc->addr] = data;       /* write byte */
-                                                mc->addr++;
-                                        }
+				case BM_CMD_WRITELOW:
+					if(mc->addr < mc->size)
+					{
+						//LOG("Write Backup Memory addr %08X with %02X\n", mc->addr, data);
+						mc->data[mc->addr] = data;       /* write byte */
+						mc->addr++;
+					}
 					break;
 			}
 			
 		}
 	}
-        else if(mc->com == BM_CMD_AUTODETECT)
-        {
-           // Store everything in a temporary
-           mc->autodetectbuf[mc->autodetectsize] = data;
-           mc->autodetectsize++;
-           return 0;
-        }
-        else if(mc->com == BM_CMD_READSTATUS)
+	else if(mc->com == BM_CMD_AUTODETECT)
 	{
-                //LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
-                return (mc->write_enable << 1);
+		// Store everything in a temporary
+		mc->autodetectbuf[mc->autodetectsize] = data;
+		mc->autodetectsize++;
+		return 0;
+	}
+	else if(mc->com == BM_CMD_READSTATUS)
+	{
+		//LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
+		return (mc->write_enable << 1);
 	}
 	else	/* finally, check if it's a new command */
 	{
@@ -425,71 +425,71 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 		{
 			case 0: break;	/* nothing */
 			
-                        case BM_CMD_WRITELOW:       /* write command */
-                                if(mc->write_enable)
+			case BM_CMD_WRITELOW:       /* write command */
+				if(mc->write_enable)
 				{
-                                        if(mc->type == MC_TYPE_AUTODETECT)
-                                        {
-                                           mc->com = BM_CMD_AUTODETECT;
-                                           break;
-                                        }
+					if(mc->type == MC_TYPE_AUTODETECT)
+					{
+						mc->com = BM_CMD_AUTODETECT;
+						break;
+					}
 
-                                        mc->addr = 0;
-                                        mc->addr_shift = mc->addr_size;
-                                        mc->com = BM_CMD_WRITELOW;
+					mc->addr = 0;
+					mc->addr_shift = mc->addr_size;
+					mc->com = BM_CMD_WRITELOW;
 				}
 				else { data = 0; }
 				break;
 
-                        case BM_CMD_READLOW:    /* read command */
-                                mc->addr = 0;           
-                                mc->addr_shift = mc->addr_size;
-                                mc->com = BM_CMD_READLOW;
+			case BM_CMD_READLOW:    /* read command */
+				mc->addr = 0;           
+				mc->addr_shift = mc->addr_size;
+				mc->com = BM_CMD_READLOW;
 				break;
 								
-                        case BM_CMD_WRITEDISABLE:    /* disable writing */
-                                mc->write_enable = FALSE;
+			case BM_CMD_WRITEDISABLE:    /* disable writing */
+				mc->write_enable = FALSE;
 				break;
 							
-                        case BM_CMD_READSTATUS:  /* status register command */
-                                mc->com = BM_CMD_READSTATUS;
+			case BM_CMD_READSTATUS:  /* status register command */
+				mc->com = BM_CMD_READSTATUS;
 				break;
 
-                        case BM_CMD_WRITEENABLE:     /* enable writing */
-                                if(mc->writeable_buffer) { mc->write_enable = TRUE; }
+			case BM_CMD_WRITEENABLE:     /* enable writing */
+				if(mc->writeable_buffer) { mc->write_enable = TRUE; }
 				break;
 
-                        case BM_CMD_WRITEHIGH:       /* write command that's only available on ST M95040-W that I know of */
-                                if(mc->write_enable)
+			case BM_CMD_WRITEHIGH:       /* write command that's only available on ST M95040-W that I know of */
+				if(mc->write_enable)
 				{
-                                        if(mc->type == MC_TYPE_AUTODETECT)
-                                        {
-                                           mc->com = BM_CMD_AUTODETECT;
-                                           break;
-                                        }
+					if(mc->type == MC_TYPE_AUTODETECT)
+					{
+						mc->com = BM_CMD_AUTODETECT;
+						break;
+					}
 
-                                        if (mc->type == MC_TYPE_EEPROM1)
-                                           mc->addr = 0x100;
-                                        else
-                                           mc->addr = 0;
-                                        mc->addr_shift = mc->addr_size;
-                                        mc->com = BM_CMD_WRITELOW;
+					if (mc->type == MC_TYPE_EEPROM1)
+						mc->addr = 0x100;
+					else
+						mc->addr = 0;
+					mc->addr_shift = mc->addr_size;
+					mc->com = BM_CMD_WRITELOW;
 				}
 				else { data = 0; }
 				break;
 
-                        case BM_CMD_READHIGH:    /* read command that's only available on ST M95040-W that I know of */
-                                if (mc->type == MC_TYPE_EEPROM1)
-                                   mc->addr = 0x100;
-                                else
-                                   mc->addr = 0;
-                                mc->addr_shift = mc->addr_size;
-                                mc->com = BM_CMD_READLOW;
+			case BM_CMD_READHIGH:    /* read command that's only available on ST M95040-W that I know of */
+				if (mc->type == MC_TYPE_EEPROM1)
+					mc->addr = 0x100;
+				else
+					mc->addr = 0;
+				mc->addr_shift = mc->addr_size;
+				mc->com = BM_CMD_READLOW;
 
 				break;
 
 			default:
-                                LOG("Unhandled Backup Memory command: %02X\n", data);
+				LOG("Unhandled Backup Memory command: %02X\n", data);
 				break;
 		}
 	}
