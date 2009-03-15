@@ -918,12 +918,12 @@ void NDS_Reset( void)
 	{
 		for(i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
 		{
-			_MMU_write32(0, (nds.FW_ARM9BootCodeAddr + i), T1ReadLong(nds.FW_ARM9BootCode, i));
+			_MMU_write32<ARMCPU_ARM9>((nds.FW_ARM9BootCodeAddr + i), T1ReadLong(nds.FW_ARM9BootCode, i));
 		}
 
 		for(i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
 		{
-			_MMU_write32(1, (nds.FW_ARM7BootCodeAddr + i), T1ReadLong(nds.FW_ARM7BootCode, i));
+			_MMU_write32<ARMCPU_ARM7>((nds.FW_ARM7BootCodeAddr + i), T1ReadLong(nds.FW_ARM7BootCode, i));
 		}
 
 		armcpu_init(&NDS_ARM9, nds.FW_ARM9BootCodeAddr);
@@ -996,6 +996,10 @@ void NDS_Reset( void)
 	for (i = 0; i < ((0x170+0x90)/4); i++) {
 		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
+
+	// Write the Nintendo logo checksum to memory (the firmware needs it to see the cart)
+	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
+
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
 

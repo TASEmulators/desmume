@@ -2748,54 +2748,79 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
              case REG_GCROMCTRL :
 				{
-                    if(MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) == 0xB7)
+					if(!(val & 0x80000000))
 					{
-                        MMU.dscard[ARMCPU_ARM9].address = (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+4));
-						MMU.dscard[ARMCPU_ARM9].transfer_count = 0x80;// * ((val>>24)&7));
-					}
-                    else if (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) == 0xB8)
-                    {
-                        // Get ROM chip ID
-                        val |= 0x800000; // Data-Word Status
-                        T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
-                        MMU.dscard[ARMCPU_ARM9].address = 0;
-                    }
-					else
-					{
-                       LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT));
-					}
-					
-					//CARDLOG("%08X : %08X %08X\r\n", adr, val, adresse[ARMCPU_ARM9]);
-                    val |= 0x00800000;
-					
-					if(MMU.dscard[ARMCPU_ARM9].address == 0)
-					{
-                        val &= ~0x80000000; 
-                        T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
+						MMU.dscard[ARMCPU_ARM9].address = 0;
+						MMU.dscard[ARMCPU_ARM9].transfer_count = 0;
+
+						val &= 0x7F7FFFFF;
+						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, val);
 						return;
 					}
-                    T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
+
+                    switch(MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT))
+					{
+						/* Dummy */
+						case 0x9F:
+							{
+								MMU.dscard[ARMCPU_ARM9].address = 0;
+								MMU.dscard[ARMCPU_ARM9].transfer_count = 0x800;
+							}
+							break;
+
+						/* Data read */
+						case 0x00:
+						case 0xB7:
+							{
+								MMU.dscard[ARMCPU_ARM9].address = (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+4));
+								MMU.dscard[ARMCPU_ARM9].transfer_count = 0x80;
+							}
+							break;
+
+						/* Get ROM chip ID */
+						case 0x90:
+						case 0xB8:
+							{
+								MMU.dscard[ARMCPU_ARM9].address = 0;
+								MMU.dscard[ARMCPU_ARM9].transfer_count = 1;
+							}
+							break;
+
+						default:
+							{
+								LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT));
+								MMU.dscard[ARMCPU_ARM9].address = 0;
+								MMU.dscard[ARMCPU_ARM9].transfer_count = 0;
+							}
+							break;
+					}
+
+					if(MMU.dscard[ARMCPU_ARM9].transfer_count == 0)
+					{
+						val &= 0x7F7FFFFF;
+						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, val);
+						return;
+					}
+					
+                    val |= 0x00800000;
+                    T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, val);
 										
 					/* launch DMA if start flag was set to "DS Cart" */
 					if(MMU.DMAStartTime[ARMCPU_ARM9][0] == 5)
 					{
 						MMU_doDMA<ARMCPU_ARM9>(0);
-						return;
 					}
 					if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 5)
 					{
 						MMU_doDMA<ARMCPU_ARM9>(1);
-						return;
 					}
 					if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 5)
 					{
 						MMU_doDMA<ARMCPU_ARM9>(2);
-						return;
 					}
 					if(MMU.DMAStartTime[ARMCPU_ARM9][3] == 5)
 					{
 						MMU_doDMA<ARMCPU_ARM9>(3);
-						return;
 					}
 				}
 				return;
@@ -2851,7 +2876,9 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
+	{
 		return T1ReadByte(ARM9Mem.ARM9_DTCM, adr&0x3FFF);
+	}
 #endif
 
 	if(adr<0x02000000)
@@ -2880,7 +2907,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
 #ifdef INTERNAL_DTCM_READ
 	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
+	{
 		return T1ReadWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
+	}
 #endif
 
 	if(adr<0x02000000)
@@ -3076,25 +3105,52 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 			*/
             case REG_GCDATAIN:
 			{
-                u32 val=0;
+                u32 val = 0;
 
-                if(MMU.dscard[ARMCPU_ARM9].address)
-					val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address);
+				if(MMU.dscard[ARMCPU_ARM9].transfer_count == 0)
+					return 0;
+
+				switch(MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT))
+				{
+					/* Dummy */
+					case 0x9F:
+						{
+							val = 0xFFFFFFFF;
+						}
+						break;
+
+					/* Data read */
+					case 0x00:
+					case 0xB7:
+						{
+							/* TODO: prevent read if the address is out of range */
+							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address);
+						}
+						break;
+
+					/* Get ROM chip ID */
+					case 0x90:
+					case 0xB8:
+						{
+							/* TODO */
+							val = 0x00000000;
+						}
+						break;
+				}
 
 				MMU.dscard[ARMCPU_ARM9].address += 4;	// increment address
 
 				MMU.dscard[ARMCPU_ARM9].transfer_count--;	// update transfer counter
 				if(MMU.dscard[ARMCPU_ARM9].transfer_count) // if transfer is not ended
 					return val;	// return data
+
 				// transfer is done
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][(REG_GCROMCTRL >> 20) & 0xff], 
-								REG_GCROMCTRL & 0xfff, T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(REG_GCROMCTRL >> 20) & 0xff], 
-									REG_GCROMCTRL & 0xfff) & ~(0x00800000 | 0x80000000));
-				// = 0x7f7fffff
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, 
+					T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0x7F7FFFFF);
 	
 				// if needed, throw irq for the end of transfer
-				if(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff) & 0x4000)
-					NDS_makeInt(ARMCPU_ARM9,19);
+				if(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A0) & 0x4000)
+					NDS_makeInt(ARMCPU_ARM9, 19);
 
 				return val;
 			}
@@ -3792,48 +3848,74 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 			case REG_GCROMCTRL :
 				{
-					if(MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT) == 0xB7)
+					if(!(val & 0x80000000))
 					{
-						MMU.dscard[ARMCPU_ARM7].address = (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+4));
-						MMU.dscard[ARMCPU_ARM7].transfer_count = 0x80;// * ((val>>24)&7));
-					}
-					else 
-						if (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT) == 0xB8)
-						{
-						// Get ROM chip ID
-						val |= 0x800000; // Data-Word Status
-						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
 						MMU.dscard[ARMCPU_ARM7].address = 0;
-						}
-						else
-							{
-							LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT));
-							}
+						MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
 
-					//CARDLOG("%08X : %08X %08X\r\n", adr, val, adresse[ARMCPU_ARM7]);
-					val |= 0x00800000;
-
-					if(MMU.dscard[ARMCPU_ARM7].address == 0)
-					{
-						val &= ~0x80000000; 
-						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
+						val &= 0x7F7FFFFF;
+						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4, val);
 						return;
 					}
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, val);
+
+                    switch(MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT))
+					{
+						/* Dummy */
+						case 0x9F:
+							{
+								MMU.dscard[ARMCPU_ARM7].address = 0;
+								MMU.dscard[ARMCPU_ARM7].transfer_count = 0x800;
+							}
+							break;
+
+						/* Data read */
+						case 0x00:
+						case 0xB7:
+							{
+								MMU.dscard[ARMCPU_ARM7].address = (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+1) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+2) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+3) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT+4));
+								MMU.dscard[ARMCPU_ARM7].transfer_count = 0x80;
+							}
+							break;
+
+						/* Get ROM chip ID */
+						case 0x90:
+						case 0xB8:
+							{
+								MMU.dscard[ARMCPU_ARM7].address = 0;
+								MMU.dscard[ARMCPU_ARM7].transfer_count = 1;
+							}
+							break;
+
+						default:
+							{
+								LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT));
+								MMU.dscard[ARMCPU_ARM7].address = 0;
+								MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
+							}
+							break;
+					}
+
+					if(MMU.dscard[ARMCPU_ARM7].transfer_count == 0)
+					{
+						val &= 0x7F7FFFFF;
+						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4, val);
+						return;
+					}
+					
+                    val |= 0x00800000;
+                    T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4, val);
 
 					/* launch DMA if start flag was set to "DS Cart" */
 
 					if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 2)
 					{
 						MMU_doDMA<ARMCPU_ARM7>(2);
-						return;
 					}
-					else
-						if(MMU.DMAStartTime[ARMCPU_ARM7][3] == 2)
+					if(MMU.DMAStartTime[ARMCPU_ARM7][3] == 2)
 					{
 						MMU_doDMA<ARMCPU_ARM7>(3);
-						return;
 					}
+
 					return;
 
 				}
@@ -3986,27 +4068,61 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				u32 val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], (adr + 2) & 0xFFF);
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
 			}	
+			case REG_GCROMCTRL:
+			{
+				//INFO("arm7 romctrl read\n");
+				break;
+			}
             case REG_GCDATAIN:
 			{
-                    u32 val=0;
+                u32 val = 0;
 
-                    if(MMU.dscard[ARMCPU_ARM7].address)
-						val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM7].address);
+				if(MMU.dscard[ARMCPU_ARM7].transfer_count == 0)
+					return 0;
 
-					MMU.dscard[ARMCPU_ARM7].address += 4;	/* increment address */
+				switch(MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT))
+				{
+					/* Dummy */
+					case 0x9F:
+						{
+							val = 0xFFFFFFFF;
+						}
+						break;
+
+					/* Data read */
+					case 0x00:
+					case 0xB7:
+						{
+							/* TODO: prevent read if the address is out of range */
+							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM7].address);
+						}
+						break;
+
+					/* Get ROM chip ID */
+					case 0x90:
+					case 0xB8:
+						{
+							/* TODO */
+							val = 0x00000000;
+						}
+						break;
+				}
+
+				MMU.dscard[ARMCPU_ARM7].address += 4;	// increment address
+
+				MMU.dscard[ARMCPU_ARM7].transfer_count--;	// update transfer counter
+				if(MMU.dscard[ARMCPU_ARM7].transfer_count) // if transfer is not ended
+					return val;	// return data
+
+				// transfer is done
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4, 
+					T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0x7F7FFFFF);
 	
-					MMU.dscard[ARMCPU_ARM7].transfer_count--;	/* update transfer counter */
-					if(MMU.dscard[ARMCPU_ARM7].transfer_count) /* if transfer is not ended */
-						return val;	/* return data */
-					/* transfer is done */
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff, T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(REG_GCROMCTRL >> 20) & 0xff], REG_GCROMCTRL & 0xfff) & ~(0x00800000 | 0x80000000));
-						/* = 0x7f7fffff */
+				// if needed, throw irq for the end of transfer
+				if(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A0) & 0x4000)
+					NDS_makeInt(ARMCPU_ARM7, 19);
 	
-						/* if needed, throw irq for the end of transfer */
-					if(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff) & 0x4000)
-						NDS_makeInt(ARMCPU_ARM7,19);
-	
-					return val;
+				return val;
 			}
 		}
 #ifdef _MMU_DEBUG
