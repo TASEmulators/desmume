@@ -148,7 +148,7 @@ static u32 clInd2 = 0;
 #endif
 static u32 BTind = 0;
 static u32 PTind = 0;
-static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+//static CACHE_ALIGN float BTcoords[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 static CACHE_ALIGN float PTcoords[4] = {0.0, 0.0, 0.0, 1.0};
 
 //raw ds format poly attributes
@@ -1347,7 +1347,6 @@ void gfx3d_glFlush(u32 v)
 		if(!poly.isTranslucent())
 			gfx3d.indexlist[ctr++] = i;
 	}
-	int translucentPolyStart = ctr;
 	//then look for translucent polys
 	for(int i=0;i<polycount;i++) {
 		POLY &poly = polylist->list[i];
