@@ -72,6 +72,8 @@ extern u8	gba_header_data_0x04[156];
 #endif
 
 extern u8 reverseBitsInByte(u8 x);
+extern void removeCR(char *buf);
+extern u32 strlen_ws(char *buf);
 	
 #endif
 

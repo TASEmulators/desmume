@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include "cheatSystem.h"
+#include "NDSSystem.h"
 #include "mem.h"
 #include "MMU.h"
 #include "debug.h"
@@ -36,13 +37,18 @@ static	u32					cheatsCurrentGet = 0;
 static	u8					*cheatsStack = NULL;
 static	u16					cheatsNumStack = 0;
 
-void cheatsInit(char *path)
+void cheatsClear()
 {
 	memset(cheats, 0, sizeof(cheats));
 	for (int i = 0; i < MAX_CHEAT_LIST; i++)
 		cheats[i].type = 0xFF;
 	cheatsNum = 0;
 	cheatsCurrentGet = 0;
+}
+
+void cheatsInit(char *path)
+{
+	cheatsClear();
 	strcpy((char *)cheatFilename, path);
 
 	if (cheatsStack) delete [] cheatsStack;
@@ -111,75 +117,115 @@ BOOL cheatsGetList(CHEATS_LIST *cheat)
 
 BOOL cheatsSave()
 {
-#ifdef WIN32
-	char buf[20];
-	FILE *file = fopen((char *)cheatFilename, "w");
-	fclose(file);
-	WritePrivateProfileString("General", "Name", "<game name>", (char *)cheatFilename);
-	WritePrivateProfileInt("General", "NumberOfCheats", cheatsNum, (char *)cheatFilename);
-	for (int i = 0; i < cheatsNum; i++)
-	{
-		wsprintf(buf, "Desc%04i", i);
-		WritePrivateProfileString("Cheats", buf, cheats[i].description, (char *)cheatFilename);
-		wsprintf(buf, "Type%04i", i);
-		WritePrivateProfileInt("Cheats", buf, cheats[i].type, (char *)cheatFilename);
-		wsprintf(buf, "Num_%04i", i);
-		WritePrivateProfileInt("Cheats", buf, cheats[i].num, (char *)cheatFilename);
-		wsprintf(buf, "Enab%04i", i);
-		WritePrivateProfileInt("Cheats", buf, cheats[i].enabled, (char *)cheatFilename);
-		wsprintf(buf, "Proc%04i", i);
-		WritePrivateProfileInt("Cheats", buf, cheats[i].proc, (char *)cheatFilename);
-		wsprintf(buf, "Size%04i", i);
-		WritePrivateProfileInt("Cheats", buf, cheats[i].size, (char *)cheatFilename);
-		for (int t = 0; t < cheats[i].num; t++)
-		{
-			char tmp_hex[6] = {0};
+	FILE	*fcheat = fopen((char *)cheatFilename, "w");
 
-			wsprintf(buf, "H%03i%04i", i, t);
-			wsprintf(tmp_hex, "%06X", cheats[i].hi[t]);
-			WritePrivateProfileString("Cheats", buf, tmp_hex, (char *)cheatFilename);
-			wsprintf(buf, "L%03i%04i", i, t);
-			wsprintf(tmp_hex, "%06X", cheats[i].lo[t]);
-			WritePrivateProfileString("Cheats", buf, tmp_hex, (char *)cheatFilename);
+	if (fcheat)
+	{
+		fprintf(fcheat, "; DeSmuME cheat file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
+		fputs("\n", fcheat);
+		fprintf(fcheat, "Name=%s\n", ROMserial);
+		fputs("\n; cheats list\n", fcheat);
+		for (int i = 0;  i < cheatsNum; i++)
+		{
+			fprintf(fcheat, "Desc=%s\n", cheats[i].description);
+			fprintf(fcheat, "Info=%i,%i,%i,%i,%i\n", cheats[i].type, cheats[i].num, cheats[i].enabled, cheats[i].proc, cheats[i].size);
+
+			if (cheats[i].num > 0)
+			{
+				for (int t = 0; t < cheats[i].num; t++)
+				{
+					fprintf(fcheat, "Data=%08X%08X", cheats[i].hi[t], cheats[i].lo[t]);
+					if (t < (cheats[i].num - 1)) fputs(",", fcheat);
+				}
+				fputs("\n", fcheat);
+			}
+			fputs("\n", fcheat);
 		}
+
+		fclose(fcheat);
+		return TRUE;
 	}
-#endif
-	return TRUE;
+
+	return FALSE;
 }
 
 BOOL cheatsLoad()
 {
-#ifdef WIN32
-	char buf[20];
-	cheatsNum = GetPrivateProfileInt("General", "NumberOfCheats", 0, (char *)cheatFilename);
-	if (cheatsNum > MAX_CHEAT_LIST) cheatsNum = MAX_CHEAT_LIST;
-	for (int i = 0; i < cheatsNum; i++)
+	FILE	*fcheat = fopen((char *)cheatFilename, "r");
+	char	buf[1024];
+	int		last=0;
+	if (fcheat)
 	{
-		wsprintf(buf, "Desc%04i", i);
-		GetPrivateProfileString("Cheats", buf, "", cheats[i].description, 75, (char *)cheatFilename);
-		wsprintf(buf, "Type%04i", i);
-		cheats[i].type = GetPrivateProfileInt("Cheats", buf, 0xFF, (char *)cheatFilename);
-		wsprintf(buf, "Num_%04i", i);
-		cheats[i].num = GetPrivateProfileInt("Cheats", buf, 0, (char *)cheatFilename);
-		wsprintf(buf, "Enab%04i", i);
-		cheats[i].enabled = GetPrivateProfileInt("Cheats", buf, 0, (char *)cheatFilename);
-		wsprintf(buf, "Proc%04i", i);
-		cheats[i].proc = GetPrivateProfileInt("Cheats", buf, 0, (char *)cheatFilename);
-		wsprintf(buf, "Size%04i", i);
-		cheats[i].size = GetPrivateProfileInt("Cheats", buf, 0, (char *)cheatFilename);
-		for (int t = 0; t < cheats[i].num; t++)
+		cheatsClear();
+		memset(buf, 0, 1024);
+
+		while (!feof(fcheat))
 		{
-			char tmp_buf[10] = { 0 };
-			wsprintf(buf, "H%03i%04i", i, t);
-			GetPrivateProfileString("Cheats", buf, "0", tmp_buf, 10, (char *)cheatFilename);
-			sscanf_s(tmp_buf, "%x", &cheats[i].hi[t]);
-			wsprintf(buf, "L%03i%04i", i, t);
-			GetPrivateProfileString("Cheats", buf, "0", tmp_buf, 10, (char *)cheatFilename);
-			sscanf_s(tmp_buf, "%x", &cheats[i].lo[t]);
+			fgets(buf, 1024, fcheat);
+			if (buf[0] == ';') continue;
+			removeCR((char *)&buf);
+			if (!strlen_ws(buf)) continue;
+			if ( (buf[0] == 'D') &&
+					(buf[1] == 'e') &&
+					(buf[2] == 's') &&
+					(buf[3] == 'c') &&
+					(buf[4] == '=') )		// new cheat block
+			{
+				strncpy((char *)cheats[last].description, (char *)buf+5, strlen(buf)-5);
+				fgets(buf, 1024, fcheat);
+				if ( (buf[0] == 'I') &&
+						(buf[1] == 'n') &&
+						(buf[2] == 'f') &&
+						(buf[3] == 'o') &&
+						(buf[4] == '=') )		// Info cheat
+				{
+					// TODO: parse number for comma
+					cheats[last].type=atoi(&buf[5]);
+					if (buf[6]!=',') continue;			// error
+					cheats[last].num=atoi(&buf[7]);
+					if (buf[8]!=',') continue;			// error
+					cheats[last].enabled=atoi(&buf[9]);
+					if (buf[10]!=',') continue;			// error
+					cheats[last].proc=atoi(&buf[11]);
+					if (buf[12]!=',') continue;			// error
+					cheats[last].size=atoi(&buf[13]);
+					fgets(buf, 1024, fcheat);
+					if ( (buf[0] == 'D') &&
+							(buf[1] == 'a') &&
+							(buf[2] == 't') &&
+							(buf[3] == 'a') &&
+							(buf[4] == '=') )		// Data cheat
+					{
+						int		offs = 5;
+						char	tmp_buf[9];
+						memset(tmp_buf, 0, 9);
+
+						for (int j=0; j<cheats[last].num; j++)
+						{
+							strncpy(tmp_buf, (char *)buf+offs, 8);
+							sscanf_s(tmp_buf, "%x", &cheats[last].hi[j]);
+							offs+=8;
+							strncpy(tmp_buf, (char *)buf+offs, 8);
+							sscanf_s(tmp_buf, "%x", &cheats[last].lo[j]);
+							offs++;		// skip comma
+						}
+					}
+					else
+						continue;				// error
+				}
+				else 
+					continue;				// error
+
+				last++;
+			} //		else parser error
 		}
+		fclose(fcheat);
+
+		INFO("Loaded %i cheats\n", last);
+		cheatsNum = last;
+		return TRUE;
 	}
-#endif
-	return TRUE;
+	return FALSE;
 }
 
 BOOL cheatsPush()

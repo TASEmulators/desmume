@@ -24,6 +24,8 @@
 
 #include "common.h"
 
+#define CHEAT_VERSION_MAJOR		1
+#define CHEAT_VERSION_MINOR		2
 #define MAX_CHEAT_LIST 100
 
 typedef struct
