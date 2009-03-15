@@ -37,6 +37,10 @@ static	u32					cheatsCurrentGet = 0;
 static	u8					*cheatsStack = NULL;
 static	u16					cheatsNumStack = 0;
 
+#ifndef WIN32
+#define sscanf_s sscanf
+#endif
+
 void cheatsClear()
 {
 	memset(cheats, 0, sizeof(cheats));
@@ -134,7 +138,7 @@ BOOL cheatsSave()
 			{
 				for (int t = 0; t < cheats[i].num; t++)
 				{
-					fprintf(fcheat, "Data=%08X%08X", cheats[i].hi[t], cheats[i].lo[t]);
+					fprintf(fcheat, "Data=%08lX%08lX", cheats[i].hi[t], cheats[i].lo[t]);
 					if (t < (cheats[i].num - 1)) fputs(",", fcheat);
 				}
 				fputs("\n", fcheat);
