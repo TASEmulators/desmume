@@ -384,7 +384,7 @@ armcpu_prefetch()
 			armcpu->R[15] = armcpu->next_instruction + 4;
 		}
 #else
-		armcpu->instruction = MMU_read32_acl(PROCNUM, armcpu->next_instruction,CP15_ACCESS_EXECUTE);
+		armcpu->instruction = MMU_read32_acl(PROCNUM, armcpu->next_instruction&0xFFFFFFFC,CP15_ACCESS_EXECUTE);
 
 		armcpu->instruct_adr = armcpu->next_instruction;
 		armcpu->next_instruction += 4;
@@ -406,7 +406,7 @@ armcpu_prefetch()
 		armcpu->R[15] = armcpu->next_instruction + 2;
 	}
 #else
-	armcpu->instruction = MMU_read16_acl(PROCNUM, armcpu->next_instruction,CP15_ACCESS_EXECUTE);
+	armcpu->instruction = MMU_read16_acl(PROCNUM, armcpu->next_instruction&0xFFFFFFFE,CP15_ACCESS_EXECUTE);
 
 	armcpu->instruct_adr = armcpu->next_instruction;
 	armcpu->next_instruction += 2;
@@ -532,7 +532,6 @@ u32 armcpu_exec()
                         }
 			else
 				c += arm_instructions_set_1[INSTRUCTION_INDEX(ARMPROC.instruction)]();
-			
 		}
 #ifdef GDB_STUB
         if ( ARMPROC.post_ex_fn != NULL) {
