@@ -41,7 +41,7 @@ static	u16					cheatsNumStack = 0;
 #define sscanf_s sscanf
 #endif
 
-void cheatsClear()
+static void cheatsClear()
 {
 	memset(cheats, 0, sizeof(cheats));
 	for (int i = 0; i < MAX_CHEAT_LIST; i++)
@@ -207,10 +207,10 @@ BOOL cheatsLoad()
 						for (int j=0; j<cheats[last].num; j++)
 						{
 							strncpy(tmp_buf, (char *)buf+offs, 8);
-							sscanf_s(tmp_buf, "%x", &cheats[last].hi[j]);
+							sscanf_s(tmp_buf, "%lx", &cheats[last].hi[j]);
 							offs+=8;
 							strncpy(tmp_buf, (char *)buf+offs, 8);
-							sscanf_s(tmp_buf, "%x", &cheats[last].lo[j]);
+							sscanf_s(tmp_buf, "%lx", &cheats[last].lo[j]);
 							offs++;		// skip comma
 						}
 					}
