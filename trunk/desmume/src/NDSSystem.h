@@ -306,6 +306,7 @@ extern struct TCommonSettings {
 	bool BootFromFirmware;
 } CommonSettings;
 
+extern char ROMserial[20];
 
 #endif
 
