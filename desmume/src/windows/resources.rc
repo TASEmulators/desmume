@@ -131,6 +131,7 @@ BEGIN
         MENUITEM "Firmware Indstillinger", IDM_FIRMSETTINGS
         POPUP "&Frame Skip"
         BEGIN
+            MENUITEM "Limit to 60", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
             MENUITEM "1", IDC_FRAMESKIP1
@@ -294,6 +295,7 @@ BEGIN
         MENUITEM "Emulation Settings", IDM_EMULATIONSETTINGS
         POPUP "&Frame Skip"
         BEGIN
+            MENUITEM "Limit to 60", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
             MENUITEM "1", IDC_FRAMESKIP1
@@ -455,6 +457,7 @@ BEGIN
         MENUITEM "Config. du firmware", IDM_FIRMSETTINGS
         POPUP "&Frame Skip"
         BEGIN
+            MENUITEM "Limit to 60", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
             MENUITEM "1", IDC_FRAMESKIP1

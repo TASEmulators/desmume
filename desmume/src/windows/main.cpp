@@ -152,6 +152,8 @@ int WndY = 0;
 
 int ScreenGap = 0;
 
+static int FrameLimit = 0;
+
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
 TOOLSCLASS	*ViewDisasm_ARM9 = NULL;
@@ -938,7 +940,7 @@ DWORD WINAPI run()
 				NDS_SkipFrame(true);
 			}
 
-			if(frameskiprate != 0 || autoframeskipenab)
+			if(autoframeskipenab || FrameLimit)
 				while(SpeedThrottle())
 				{
 				}
@@ -1085,6 +1087,8 @@ int MenuInit()
 	MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | ((ScreenGap==0)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
+
+	MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND | FrameLimit?MF_CHECKED:MF_UNCHECKED);
 
 	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
 	GetRecentRoms();
@@ -1271,6 +1275,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
+	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -2745,6 +2750,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ChangeLanguage(2);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
+		case IDC_FRAMELIMIT:
+		{
+			FrameLimit ^= 1;
+			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileInt("FrameLimit", "FrameLimit", FrameLimit, IniName);
+		}
 		case IDM_SCREENSEP_NONE:
 			{
 				SetScreenGap(0);

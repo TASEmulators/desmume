@@ -389,6 +389,7 @@
 #define IDM_SCREENSEP_NDSGAP                    40002
 #define IDM_ABOUT                               40003
 #define IDM_EMULATIONSETTINGS                   40004
+#define IDC_FRAMELIMIT                          40005
 #define ID_VIEW_FRAMECOUNTER                    40009
 #define ID_VIEW_DISPLAYFPS                      40010
 #define IDM_FILE_RECORDAVI                      40015
