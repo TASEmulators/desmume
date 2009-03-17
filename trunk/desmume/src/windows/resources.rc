@@ -97,6 +97,7 @@ BEGIN
         POPUP "Vindue &Størrelse"
         BEGIN
             MENUITEM "1x", IDC_WINDOW1X
+            MENUITEM "1.5x", IDC_WINDOW1_5X
             MENUITEM "2x", IDC_WINDOW2X
             MENUITEM "3x", IDC_WINDOW3X
             MENUITEM "4x", IDC_WINDOW4X
@@ -259,6 +260,7 @@ BEGIN
         POPUP "Window &Size"
         BEGIN
             MENUITEM "1x", IDC_WINDOW1X
+            MENUITEM "1.5x", IDC_WINDOW1_5X
             MENUITEM "2x", IDC_WINDOW2X
             MENUITEM "3x", IDC_WINDOW3X
             MENUITEM "4x", IDC_WINDOW4X
@@ -423,6 +425,7 @@ BEGIN
         POPUP "Taille de la fenêtre"
         BEGIN
             MENUITEM "1x", IDC_WINDOW1X
+            MENUITEM "1.5x", IDC_WINDOW1_5X
             MENUITEM "2x", IDC_WINDOW2X
             MENUITEM "3x", IDC_WINDOW3X
             MENUITEM "4x", IDC_WINDOW4X
