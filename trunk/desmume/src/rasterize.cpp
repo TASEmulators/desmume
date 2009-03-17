@@ -162,6 +162,7 @@ struct PolyAttr
 	bool drawBackPlaneIntersectingPolys;
 	u8 polyid;
 	u8 alpha;
+	bool backfacing;
 
 	bool isVisible(bool backfacing) 
 	{
@@ -336,6 +337,7 @@ struct Shader
 			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
 			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
 			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			//dst.color.components.a = 31;
 			//#ifdef _MSC_VER
 			//if(GetAsyncKeyState(VK_SHIFT)) {
 			//	//debugging tricks
@@ -507,12 +509,28 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 			}
 			else
 			{
+				//some shadow volumes are rendering two-sided
+				//and this is the only way to fix them.
+				//rendering two-sided makes no sense, since the back side
+				//will clear the stencil bit and cause the shadow to get drawn in
+				//empty space.
+				//but yet, it is done, and gbatek even suggests that we should do it
+				if(polyAttr.backfacing)
+					goto rejected_fragment;
+
 				//now, if we arent supposed to draw shadow here, then bail out
 				if(destFragment.stencil == 1)
 				{
 					destFragment.stencil = 0;
 					goto rejected_fragment;
 				}
+
+				if(polyAttr.backfacing) {
+					shaderOutput.color.components.r = 31;
+					shaderOutput.color.components.g = 31;
+					shaderOutput.color.components.b = 31;
+				}
+
 
 				destFragment.stencil = 0;
 			}
@@ -530,17 +548,23 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		}
 		else
 		{
-			//interesting that we have to check for mode 3 here. not very straightforward, but then nothing about the shadows are
-			//this was the result of testing trauma center, SPP area menu, and SM64 with yoshi's red feet behind translucent trees
-			//as well as the intermittent bug in ff4 where your shadow only appears under other shadows
-			//if(shader.mode != 3)
+
+			//shadow polys have a special check here to keep from self-shadowing when user
+			//has tried to prevent it from happening
+			if(shader.mode == 3)
 			{
-				//dont overwrite pixels on translucent polys with the same polyids
-				if(destFragment.polyid.translucent == polyAttr.polyid)
+				if(destFragment.polyid.opaque == polyAttr.polyid)
 					goto rejected_fragment;
-			
-				destFragment.polyid.translucent = polyAttr.polyid;
 			}
+		
+			//dont overwrite pixels on translucent polys with the same polyids
+			if(destFragment.polyid.translucent == polyAttr.polyid)
+				goto rejected_fragment;
+		
+			//this makes yoshi's feet in sm64 look better behind trees..
+			if(shader.mode != 3)
+				destFragment.polyid.translucent = polyAttr.polyid;
+			//but we need to check whether his feet are SUPPOSED to be shadowed
 		}
 
 		//alpha blending and write color
@@ -836,6 +860,8 @@ static void shape_engine(int type, bool backwards)
 		if(failure) 
 			return;
 
+		
+
 		runscanlines(&left,&right);
 		
 		//if we ran out of an edge, step to the next one
@@ -1125,7 +1151,8 @@ static void SoftRastRender()
 	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
 	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
 	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
-	clearFragment.polyid.opaque = clearFragment.polyid.translucent = (gfx3d.clearColor>>24)&0x3F;
+	clearFragment.polyid.opaque = (gfx3d.clearColor>>24)&0x3F;
+	clearFragment.polyid.translucent = 0;
 	clearFragment.depth = gfx3d.clearDepth;
 	clearFragment.stencil = 0;
 	for(int i=0;i<256*192;i++)
@@ -1209,10 +1236,9 @@ static void SoftRastRender()
 		Vector2Subtract(ab, verts[0].coord);
 		Vector2Subtract(ac, verts[0].coord);
 		float cross = Vector2Cross(ab, ac);
-		bool backfacing = (cross<0);
+		polyAttr.backfacing = (cross<0);
 
-
-		if(!polyAttr.isVisible(backfacing)) {
+		if(!polyAttr.isVisible(polyAttr.backfacing)) {
 			culled++;
 			continue;
 		}
@@ -1239,7 +1265,7 @@ static void SoftRastRender()
 		for(int j=0;j<MAX_CLIPPED_VERTS;j++)
 			::verts[j] = &verts[j];
 
-		shape_engine(type,backfacing);
+		shape_engine(type,polyAttr.backfacing);
 	}
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
