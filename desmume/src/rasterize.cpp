@@ -525,13 +525,6 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 					goto rejected_fragment;
 				}
 
-				if(polyAttr.backfacing) {
-					shaderOutput.color.components.r = 31;
-					shaderOutput.color.components.g = 31;
-					shaderOutput.color.components.b = 31;
-				}
-
-
 				destFragment.stencil = 0;
 			}
 
@@ -551,6 +544,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 
 			//shadow polys have a special check here to keep from self-shadowing when user
 			//has tried to prevent it from happening
+			//if this isnt here, then the vehicle select in mariokart will look terrible
 			if(shader.mode == 3)
 			{
 				if(destFragment.polyid.opaque == polyAttr.polyid)
@@ -561,10 +555,10 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 			if(destFragment.polyid.translucent == polyAttr.polyid)
 				goto rejected_fragment;
 		
-			//this makes yoshi's feet in sm64 look better behind trees..
-			if(shader.mode != 3)
-				destFragment.polyid.translucent = polyAttr.polyid;
-			//but we need to check whether his feet are SUPPOSED to be shadowed
+			//originally we were using a test case of shadows-behind-trees in sm64ds
+			//but, it looks bad in that game. this is actually correct
+			//if this isnt correct, then complex shape cart shadows in mario kart don't work right
+			destFragment.polyid.translucent = polyAttr.polyid;
 		}
 
 		//alpha blending and write color
