@@ -1223,7 +1223,7 @@ FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 130, 250, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 185, 250, 50, 14, BS_PUSHBUTTON
-    AUTOCHECKBOX    "8MB Debugger Mode", IDC_CHECKBOX_DEBUGGERMODE, 15, 35, 82, 10, BS_AUTOCHECKBOX
+    AUTOCHECKBOX    "Use 8MB debugger mode when starting execution", IDC_CHECKBOX_DEBUGGERMODE, 15, 35, 182, 10, BS_AUTOCHECKBOX
     LTEXT           "If you have to ask, you don't need to change these.", IDC_STATIC, 15, 20, 169, 8, SS_LEFT
     GROUPBOX        "BIOS", IDC_STATIC, 5, 55, 230, 105
     AUTOCHECKBOX    "Use external BIOS images", IDC_USEEXTBIOS, 15, 70, 210, 10, BS_AUTOCHECKBOX

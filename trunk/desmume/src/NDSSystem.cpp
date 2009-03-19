@@ -969,6 +969,8 @@ void NDS_Reset( void)
 	nds.lignerendu = FALSE;
 	nds.touchX = nds.touchY = 0;
 	nds.isTouch = 0;
+	nds.debugConsole = CommonSettings.DebugConsole;
+	SetupMMU(nds.debugConsole);
 
 	_MMU_write16<ARMCPU_ARM9>(0x04000130, 0x3FF);
 	_MMU_write16<ARMCPU_ARM7>(0x04000130, 0x3FF);
@@ -1440,7 +1442,9 @@ u32 NDS_exec(s32 nb)
 						nds.ARM9Cycle += armcpu_exec<ARMCPU_ARM9>();
 				}
 #ifdef _WIN32
+#ifdef DEVELOPER
 				DisassemblerTools_Refresh(ARMCPU_ARM9);
+#endif
 #endif
 			}
 
@@ -1486,7 +1490,9 @@ u32 NDS_exec(s32 nb)
 						nds.ARM7Cycle += (armcpu_exec<ARMCPU_ARM7>()<<1);
 				}
 #ifdef _WIN32
+#ifdef DEVELOPER
 				DisassemblerTools_Refresh(ARMCPU_ARM7);
+#endif
 #endif
 			}
 

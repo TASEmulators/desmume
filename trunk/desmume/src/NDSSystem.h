@@ -142,6 +142,9 @@ typedef struct
 	s32 runCycleCollector[16];
 	s32 idleFrameCounter;
 
+	//if the game was booted on a debug console, this is set
+	BOOL debugConsole;
+
 	bool isInVblank() const { return VCount >= 192; } 
 	bool isIn3dVblank() const { return VCount >= 192 && VCount<215; } 
 } NDSSystem;
@@ -289,6 +292,7 @@ extern struct TCommonSettings {
 		, SWIFromBIOS(false)
 		, UseExtFirmware(false)
 		, BootFromFirmware(false)
+		, DebugConsole(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -304,6 +308,7 @@ extern struct TCommonSettings {
 	bool UseExtFirmware;
 	char Firmware[256];
 	bool BootFromFirmware;
+	bool DebugConsole;
 } CommonSettings;
 
 extern char ROMserial[20];

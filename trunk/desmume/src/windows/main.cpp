@@ -1445,14 +1445,15 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
 	SPU_SetVolume(sndvolume);
 
-	CommonSettings.UseExtBIOS = GetPrivateProfileInt("BIOS", "UseExtBIOS", false, IniName);
+	CommonSettings.DebugConsole = GetPrivateProfileInt("Emulation", "DebugConsole", FALSE, IniName);
+	CommonSettings.UseExtBIOS = GetPrivateProfileInt("BIOS", "UseExtBIOS", FALSE, IniName);
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
 	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
-	CommonSettings.SWIFromBIOS = GetPrivateProfileInt("BIOS", "SWIFromBIOS", false, IniName);
+	CommonSettings.SWIFromBIOS = GetPrivateProfileInt("BIOS", "SWIFromBIOS", FALSE, IniName);
 
-	CommonSettings.UseExtFirmware = GetPrivateProfileInt("Firmware", "UseExtFirmware", false, IniName);
+	CommonSettings.UseExtFirmware = GetPrivateProfileInt("Firmware", "UseExtFirmware", FALSE, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
-	CommonSettings.BootFromFirmware = GetPrivateProfileInt("Firmware", "BootFromFirmware", false, IniName);
+	CommonSettings.BootFromFirmware = GetPrivateProfileInt("Firmware", "BootFromFirmware", FALSE, IniName);
 
 	/* Read the firmware settings from the init file */
 	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
@@ -2272,6 +2273,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		NDS_releaseTouch();
 		return 0;
 
+	case WM_INITMENU: {
+		HMENU menu = (HMENU)wParam;
+		//last minute modification of menu before display
+		#ifndef DEVELOPER
+			RemoveMenu(menu,IDM_DISASSEMBLER,MF_BYCOMMAND);
+		#endif
+		break;
+	}
+
 	case WM_COMMAND:
 		if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
 		{
@@ -2981,14 +2991,10 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 		{
 			HWND cur;
 
-			cur = GetDlgItem(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
-			EnableWindow(cur, FALSE);
-
+			CheckDlgButton(hDlg, IDC_CHECKBOX_DEBUGGERMODE, ((CommonSettings.DebugConsole == true) ? BST_CHECKED : BST_UNCHECKED));
 			CheckDlgButton(hDlg, IDC_USEEXTBIOS, ((CommonSettings.UseExtBIOS == true) ? BST_CHECKED : BST_UNCHECKED));
-			cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
-			SetWindowText(cur, CommonSettings.ARM9BIOS);
-			cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
-			SetWindowText(cur, CommonSettings.ARM7BIOS);
+			SetDlgItemText(hDlg, IDC_ARM9BIOS, CommonSettings.ARM9BIOS);
+			SetDlgItemText(hDlg, IDC_ARM7BIOS, CommonSettings.ARM7BIOS);
 			CheckDlgButton(hDlg, IDC_BIOSSWIS, ((CommonSettings.SWIFromBIOS == true) ? BST_CHECKED : BST_UNCHECKED));
 
 			if(CommonSettings.UseExtBIOS == false)
@@ -3006,8 +3012,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 			}
 
 			CheckDlgButton(hDlg, IDC_USEEXTFIRMWARE, ((CommonSettings.UseExtFirmware == true) ? BST_CHECKED : BST_UNCHECKED));
-			cur = GetDlgItem(hDlg, IDC_FIRMWARE);
-			SetWindowText(cur, CommonSettings.Firmware);
+			SetDlgItemText(hDlg, IDC_FIRMWARE, CommonSettings.Firmware);
 			CheckDlgButton(hDlg, IDC_FIRMWAREBOOT, ((CommonSettings.BootFromFirmware == true) ? BST_CHECKED : BST_UNCHECKED));
 
 			if(CommonSettings.UseExtFirmware == false)
@@ -3049,6 +3054,9 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 						GetWindowText(cur, CommonSettings.Firmware, 256);
 						CommonSettings.BootFromFirmware = IsDlgButtonChecked(hDlg, IDC_FIRMWAREBOOT);
 
+						CommonSettings.DebugConsole = IsDlgButtonChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
+
+						WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
 						WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
 						WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
 						WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);

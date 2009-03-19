@@ -131,11 +131,10 @@ SFORMAT SF_ARM9[]={
 SFORMAT SF_MEM[]={
 	{ "ITCM", 1, 0x8000,   ARM9Mem.ARM9_ITCM},
 	{ "DTCM", 1, 0x4000,   ARM9Mem.ARM9_DTCM},
+
+	 //for legacy purposes, WRAX is a separate variable. shouldnt be a problem.
 	{ "WRAM", 1, 0x400000, ARM9Mem.MAIN_MEM},
-#ifdef DEVELOPER
-	//expanded memory is only saved and loaded if this is a debug console
 	{ "WRAX", 1, 0x400000, ARM9Mem.MAIN_MEM+0x400000},
-#endif
 
 	//NOTE - this is not as large as the allocated memory.
 	//the memory is overlarge due to the way our memory map system is setup
@@ -166,6 +165,7 @@ SFORMAT SF_NDS[]={
 	{ "_TPX", 2, 1, &nds.touchX},
 	{ "_TPY", 2, 1, &nds.touchY},
 	{ "_TPB", 4, 1, &nds.isTouch},
+	{ "_DBG", 4, 1, &nds.debugConsole},
 	{ 0 }
 };
 
@@ -785,6 +785,8 @@ static void loadstate()
 	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
     for (int i = REG_BASE_DISPB; i<=REG_BASE_DISPB + 0x7F; i+=2)
 	_MMU_write16<ARMCPU_ARM9>(i, _MMU_read16<ARMCPU_ARM9>(i));
+
+	SetupMMU(nds.debugConsole);
 }
 
 static bool savestate_load(std::istream* is)
@@ -832,17 +834,23 @@ static bool savestate_load(std::istream* is)
 	//the full reset wipes more things, so we can make sure that they are being restored correctly
 	NDS_Reset();
 
+	//reset some options to their old defaults which werent saved
+	nds.debugConsole = FALSE;
+
 	//GPU_Reset(MainScreen.gpu, 0);
 	//GPU_Reset(SubScreen.gpu, 1);
 	//gfx3d_reset();
 	//gpu3D->NDS_3D_Reset();
 	//SPU_Reset();
 
-
 	memorystream mstemp(&buf);
 	bool x = ReadStateChunks(&mstemp,(s32)len);
 
 	loadstate();
+
+	if(nds.debugConsole!=0 != CommonSettings.DebugConsole) {
+		printf("WARNING: forcing console debug mode to: debugmode=%s\n",nds.debugConsole?"TRUE":"FALSE");
+	}
 
 	return x;
 }

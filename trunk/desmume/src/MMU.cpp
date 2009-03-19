@@ -98,6 +98,7 @@ static const int save_types[7][2] = {
 };
 
 u16 partie = 1;
+u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 
 #define ROM_MASK 3
 
