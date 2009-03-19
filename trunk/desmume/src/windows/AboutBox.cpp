@@ -66,7 +66,7 @@ BOOL CALLBACK AboutBox_Proc (HWND dialog, UINT message,WPARAM wparam,LPARAM lpar
 		{
 			char buf[2048];
 			memset(buf, 0, sizeof(buf));
-			wsprintf(buf, "version %s", DESMUME_VERSION_STRING);
+			wsprintf(buf, "version %s", DESMUME_VERSION_STRING DESMUME_COMPILER_DETAIL);
 			SetDlgItemText(dialog, IDC_TXT_VERSION, buf);
 
 			memset(buf, 0, sizeof(buf));

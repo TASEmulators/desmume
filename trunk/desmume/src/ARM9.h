@@ -7,7 +7,7 @@ struct ALIGN(16) ARM9_struct {
         //ARM9 mem
         u8 ARM9_ITCM[0x8000];
         u8 ARM9_DTCM[0x4000];
-        u8 MAIN_MEM[0x400000];
+        u8 MAIN_MEM[0x800000]; //this has been expanded to 8MB to support debug consoles
         u8 ARM9_REG[0x1000000];
         u8 ARM9_BIOS[0x8000];
         u8 ARM9_VMEM[0x800];

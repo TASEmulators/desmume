@@ -20,6 +20,11 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+//--------------
+//configuration
+//#define DEVELOPER
+//--------------
+
 #define DESMUME_NAME "DeSmuME"
 
 #ifdef _WIN64
@@ -38,6 +43,12 @@
 #define DESMUME_CPUEXT_STRING ""
 #endif
 
+#ifdef DEVELOPER
+#define DESMUME_FEATURE_STRING " dev+"
+#else
+#define DESMUME_FEATURE_STRING ""
+#endif
+
 #ifdef DEBUG
 #define DESMUME_SUBVERSION_STRING " debug"
 #else
@@ -50,13 +61,22 @@
 
 #ifdef __INTEL_COMPILER
 #define DESMUME_COMPILER " (Intel) "
+#define DESMUME_COMPILER_DETAIL " (Intel) "
+#elif _MSC_VER
+#define DESMUME_COMPILER ""
+#define DESMUME_COMPILER_DETAIL " msvc " _Py_STRINGIZE(_MSC_VER)
+#define _Py_STRINGIZE(X) _Py_STRINGIZE1((X))
+#define _Py_STRINGIZE1(X) _Py_STRINGIZE2 ## X
+#define _Py_STRINGIZE2(X) #X
+//re: http://72.14.203.104/search?q=cache:HG-okth5NGkJ:mail.python.org/pipermail/python-checkins/2002-November/030704.html+_msc_ver+compiler+version+string&hl=en&gl=us&ct=clnk&cd=5
 #else
 // TODO: make for others compilers
 #define DESMUME_COMPILER ""
+#define DESMUME_COMPILER_DETAIL ""
 #endif
 
 #define DESMUME_VERSION_NUMERIC 90200
-#define DESMUME_VERSION_STRING " " "0.9.2" DESMUME_PLATFORM_STRING DESMUME_CPUEXT_STRING DESMUME_SUBVERSION_STRING DESMUME_COMPILER
+#define DESMUME_VERSION_STRING " " "0.9.2" DESMUME_FEATURE_STRING DESMUME_PLATFORM_STRING DESMUME_CPUEXT_STRING DESMUME_SUBVERSION_STRING DESMUME_COMPILER
 #define DESMUME_NAME_AND_VERSION " " DESMUME_NAME DESMUME_VERSION_STRING
 
 #ifdef _WIN32

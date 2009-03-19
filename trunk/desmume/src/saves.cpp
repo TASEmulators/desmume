@@ -131,7 +131,11 @@ SFORMAT SF_ARM9[]={
 SFORMAT SF_MEM[]={
 	{ "ITCM", 1, 0x8000,   ARM9Mem.ARM9_ITCM},
 	{ "DTCM", 1, 0x4000,   ARM9Mem.ARM9_DTCM},
-	{ "WRAM", 1, sizeof(ARM9Mem.MAIN_MEM), ARM9Mem.MAIN_MEM},
+	{ "WRAM", 1, 0x400000, ARM9Mem.MAIN_MEM},
+#ifdef DEVELOPER
+	//expanded memory is only saved and loaded if this is a debug console
+	{ "WRAX", 1, 0x400000, ARM9Mem.MAIN_MEM+0x400000},
+#endif
 
 	//NOTE - this is not as large as the allocated memory.
 	//the memory is overlarge due to the way our memory map system is setup
