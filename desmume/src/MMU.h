@@ -204,12 +204,11 @@ u8  FASTCALL _MMU_ARM7_read08(u32 adr);
 u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 
-//in debug builds we have twice as much memory
-#ifdef DEVELOPER
-#define _MMU_MAIN_MEM_MASK 0x7FFFFF
-#else
-#define _MMU_MAIN_MEM_MASK 0x3FFFFF
-#endif
+extern u32 _MMU_MAIN_MEM_MASK;
+inline void SetupMMU(bool debugConsole) {
+	if(debugConsole) _MMU_MAIN_MEM_MASK = 0x7FFFFF;
+	else _MMU_MAIN_MEM_MASK = 0x3FFFFF;
+}
 
 FORCEINLINE u8 _MMU_read08(const int PROCNUM, u32 addr) {
 	if(PROCNUM==ARMCPU_ARM9)
