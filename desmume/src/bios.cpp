@@ -1032,6 +1032,17 @@ TEMPLATE static u32 getCRC16()
   return 1;
 }
 
+TEMPLATE static u32 isDebugger()
+{
+	//gbatek has additional specifications which are not emulated here
+#ifdef DEVELOPER
+	cpu->R[0] = 1;
+#else
+	cpu->R[0] = 0;
+#endif
+	return 1;
+}
+
 TEMPLATE static u32 SoundBias()
 {
      u32 current = SPU_ReadLong(0x4000504);
@@ -1066,7 +1077,7 @@ u32 (* ARM9_swi_tab[32])()={
          fastCopy<ARMCPU_ARM9>,             // 0x0C
          bios_sqrt<ARMCPU_ARM9>,            // 0x0D
          getCRC16<ARMCPU_ARM9>,             // 0x0E
-         bios_nop<ARMCPU_ARM9>,             // 0x0F
+         isDebugger<ARMCPU_ARM9>,           // 0x0F
          BitUnPack<ARMCPU_ARM9>,            // 0x10
          LZ77UnCompWram<ARMCPU_ARM9>,       // 0x11
          LZ77UnCompVram<ARMCPU_ARM9>,       // 0x12
@@ -1101,7 +1112,7 @@ u32 (* ARM7_swi_tab[32])()={
          fastCopy<ARMCPU_ARM7>,             // 0x0C
          bios_sqrt<ARMCPU_ARM7>,            // 0x0D
          getCRC16<ARMCPU_ARM7>,             // 0x0E
-         bios_nop<ARMCPU_ARM7>,             // 0x0F
+		 isDebugger<ARMCPU_ARM7>,           // 0x0F
          BitUnPack<ARMCPU_ARM7>,            // 0x10
          LZ77UnCompWram<ARMCPU_ARM7>,       // 0x11
          LZ77UnCompVram<ARMCPU_ARM7>,       // 0x12

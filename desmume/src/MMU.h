@@ -204,6 +204,12 @@ u8  FASTCALL _MMU_ARM7_read08(u32 adr);
 u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 
+//in debug builds we have twice as much memory
+#ifdef DEVELOPER
+#define _MMU_MAIN_MEM_MASK 0x7FFFFF
+#else
+#define _MMU_MAIN_MEM_MASK 0x3FFFFF
+#endif
 
 FORCEINLINE u8 _MMU_read08(const int PROCNUM, u32 addr) {
 	if(PROCNUM==ARMCPU_ARM9)
@@ -214,7 +220,7 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, u32 addr) {
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+		return T1ReadByte( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read08(addr);
 	else return _MMU_ARM7_read08(addr);
@@ -229,7 +235,7 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, u32 addr) {
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+		return T1ReadWord( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read16(addr);
 	else return _MMU_ARM7_read16(addr);
@@ -244,7 +250,7 @@ FORCEINLINE u32 _MMU_read32(int PROCNUM, u32 addr) {
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF);
+		return T1ReadLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read32(addr);
 	else return _MMU_ARM7_read32(addr);
@@ -259,7 +265,7 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, u32 addr, u8 val) {
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteByte( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		T1WriteByte( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 		return;
 	}
 
@@ -276,7 +282,7 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, u32 addr, u16 val) {
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteWord( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		T1WriteWord( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 		return;
 	}
 
@@ -293,7 +299,7 @@ FORCEINLINE void _MMU_write32(const int PROCNUM, u32 addr, u32 val) {
 		}
 
 	if ( (addr & 0x0F000000) == 0x02000000) {
-		T1WriteLong( ARM9Mem.MAIN_MEM, addr & 0x3FFFFF, val);
+		T1WriteLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK, val);
 		return;
 	}
 

@@ -52,7 +52,7 @@ public:
 	static void log(unsigned int channel, const char * file, unsigned int line, void (*callback)(const Logger& logger, const char * message));
 };
 
-#if defined(DEBUG) || defined(GPUDEBUG) || defined(DIVDEBUG) || defined(SQRTDEBUG) || defined(DMADEBUG) || defined(WANTPROGINFO)
+#if defined(DEBUG) || defined(GPUDEBUG) || defined(DIVDEBUG) || defined(SQRTDEBUG) || defined(DMADEBUG) || defined(DEVELOPER)
 #define LOGC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define LOGC(...)
@@ -101,7 +101,7 @@ public:
 #endif
 
 
-#ifdef WANTPROGINFO
+#ifdef DEVELOPER
 #define PROGINFO(...) LOGC(7, __VA_ARGS__)
 #else
 #define PROGINFO(...)

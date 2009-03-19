@@ -369,23 +369,23 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
-	memset(ARM9Mem.ARM9_ABG,  0, 0x080000);
-	memset(ARM9Mem.ARM9_AOBJ, 0, 0x040000);
-	memset(ARM9Mem.ARM9_BBG,  0, 0x020000);
-	memset(ARM9Mem.ARM9_BOBJ, 0, 0x020000);
+	memset(ARM9Mem.ARM9_ABG,  0, sizeof(ARM9Mem.ARM9_ABG));
+	memset(ARM9Mem.ARM9_AOBJ, 0, sizeof(ARM9Mem.ARM9_AOBJ));
+	memset(ARM9Mem.ARM9_BBG,  0, sizeof(ARM9Mem.ARM9_BBG));
+	memset(ARM9Mem.ARM9_BOBJ, 0, sizeof(ARM9Mem.ARM9_BOBJ));
 
-	memset(ARM9Mem.ARM9_DTCM, 0, 0x4000);
-	memset(ARM9Mem.ARM9_ITCM, 0, 0x8000);
-	memset(ARM9Mem.ARM9_LCD,  0, 0x0A4000);
-	memset(ARM9Mem.ARM9_OAM,  0, 0x0800);
-	memset(ARM9Mem.ARM9_REG,  0, 0x01000000);
-	memset(ARM9Mem.ARM9_VMEM, 0, 0x0800);
+	memset(ARM9Mem.ARM9_DTCM, 0, sizeof(ARM9Mem.ARM9_DTCM));
+	memset(ARM9Mem.ARM9_ITCM, 0, sizeof(ARM9Mem.ARM9_ITCM));
+	memset(ARM9Mem.ARM9_LCD,  0, sizeof(ARM9Mem.ARM9_LCD));
+	memset(ARM9Mem.ARM9_OAM,  0, sizeof(ARM9Mem.ARM9_OAM));
+	memset(ARM9Mem.ARM9_REG,  0, sizeof(ARM9Mem.ARM9_REG));
+	memset(ARM9Mem.ARM9_VMEM, 0, sizeof(ARM9Mem.ARM9_VMEM));
 	memset(ARM9Mem.MAIN_MEM,  0, sizeof(ARM9Mem.MAIN_MEM));
 
-	memset(ARM9Mem.blank_memory,  0, 0x020000);
+	memset(ARM9Mem.blank_memory,  0, sizeof(ARM9Mem.blank_memory));
 	
-	memset(MMU.ARM7_ERAM,     0, 0x010000);
-	memset(MMU.ARM7_REG,      0, 0x010000);
+	memset(MMU.ARM7_ERAM,     0, sizeof(MMU.ARM7_ERAM));
+	memset(MMU.ARM7_REG,      0, sizeof(MMU.ARM7_REG));
 
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
