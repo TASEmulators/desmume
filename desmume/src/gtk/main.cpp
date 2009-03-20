@@ -64,6 +64,9 @@
 #include <gdk/gdkkeysyms.h>
 #endif
 
+static int backupmemorytype=MC_TYPE_AUTODETECT;
+static u32 backupmemorysize=1;
+
 static const char *bad_glob_cflash_disk_image_file;
 
 #define SCREENS_PIXEL_SIZE 98304
@@ -379,8 +382,7 @@ static void About(GtkWidget* widget, gpointer data)
 
 static int Open(const char *filename, const char *cflash_disk_image)
 {
-        return NDS_LoadROM( filename, MC_TYPE_AUTODETECT, 1,
-                             cflash_disk_image);
+	return NDS_LoadROM( filename, backupmemorytype, backupmemorysize, cflash_disk_image );
 }
 
 static void Launch()
@@ -1467,6 +1469,45 @@ static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 }
 
+static void changesavetype(GtkCheckMenuItem *checkmenuitem, gpointer type)
+{
+	if (gtk_check_menu_item_get_active(checkmenuitem))
+		mmu_select_savetype((int) type, &backupmemorytype, &backupmemorysize);
+}
+
+static void desmume_gtk_menu_saves (GtkWidget *pMenu)
+{
+	GtkWidget *pMenuItem, *pSubmenu, *item;
+	GSList * list;
+	int i;
+	const char * types[] = {
+		"Autodetect",
+		"EEPROM 4kbit",
+		"EEPROM 64kbit",
+		"EEPROM 512kbit",
+		"FRAM 256kbit",
+		"FLASH 2mbit",
+		"FLASH 4mbit",
+		NULL
+	};
+
+	pSubmenu = gtk_menu_new();
+	pMenuItem = gtk_menu_item_new_with_label("Saves");
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+
+	list = NULL;
+	i = 0;
+	while(types[i] != NULL)
+	{
+		item = gtk_radio_menu_item_new_with_label(list, types[i]);
+		g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), (void *) i);
+		list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), item);
+		i++;
+	}
+}
+
 static void desmume_gtk_menu_emulation_frameskip (GtkWidget *pMenu)
 {
 	GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
@@ -1814,6 +1855,7 @@ common_gtk_main( struct configured_features *my_config)
 	pMenuBar = gtk_menu_bar_new();
 
 	desmume_gtk_menu_file(pMenuBar);
+	desmume_gtk_menu_saves(pMenuBar);
 	desmume_gtk_menu_emulation(pMenuBar, my_config->opengl);
 	desmume_gtk_menu_config(pMenuBar);
 	desmume_gtk_menu_tools(pMenuBar);
