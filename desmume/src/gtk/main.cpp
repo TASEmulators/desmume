@@ -1472,14 +1472,13 @@ static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 static void changesavetype(GtkCheckMenuItem *checkmenuitem, gpointer type)
 {
 	if (gtk_check_menu_item_get_active(checkmenuitem))
-		mmu_select_savetype((int) type, &backupmemorytype, &backupmemorysize);
+		mmu_select_savetype(GPOINTER_TO_INT(type), &backupmemorytype, &backupmemorysize);
 }
 
 static void desmume_gtk_menu_saves (GtkWidget *pMenu)
 {
 	GtkWidget *pMenuItem, *pSubmenu, *item;
 	GSList * list;
-	int i;
 	const char * types[] = {
 		"Autodetect",
 		"EEPROM 4kbit",
@@ -1497,14 +1496,12 @@ static void desmume_gtk_menu_saves (GtkWidget *pMenu)
 	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
 	list = NULL;
-	i = 0;
-	while(types[i] != NULL)
+	for (gint i = 0; types[i] != NULL; i++)
 	{
 		item = gtk_radio_menu_item_new_with_label(list, types[i]);
-		g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), (void *) i);
+		g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), GINT_TO_POINTER(i));
 		list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
 		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), item);
-		i++;
 	}
 }
 
