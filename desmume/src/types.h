@@ -62,7 +62,7 @@
 #ifdef __INTEL_COMPILER
 #define DESMUME_COMPILER " (Intel) "
 #define DESMUME_COMPILER_DETAIL " (Intel) "
-#elif _MSC_VER
+#elif defined(_MSC_VER)
 #define DESMUME_COMPILER ""
 #define DESMUME_COMPILER_DETAIL " msvc " _Py_STRINGIZE(_MSC_VER)
 #define _Py_STRINGIZE(X) _Py_STRINGIZE1((X))
