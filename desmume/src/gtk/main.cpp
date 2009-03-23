@@ -1475,7 +1475,7 @@ static void changesavetype(GtkCheckMenuItem *checkmenuitem, gpointer type)
 		mmu_select_savetype(GPOINTER_TO_INT(type), &backupmemorytype, &backupmemorysize);
 }
 
-static void desmume_gtk_menu_saves (GtkWidget *pMenu)
+static void desmume_gtk_menu_emulation_saves (GtkWidget *pMenu)
 {
 	GtkWidget *pMenuItem, *pSubmenu, *item;
 	GSList * list;
@@ -1624,6 +1624,7 @@ static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
 
 	desmume_gtk_menu_emulation_disable_audio(pMenu);
 	desmume_gtk_menu_emulation_frameskip(pMenu);
+	desmume_gtk_menu_emulation_saves(pMenu);
 	desmume_gtk_menu_emulation_layers(pMenu, opengl);
 #ifdef BROKEN_SCREENSIZE
 	desmume_gtk_menu_emulation_display_size(pMenu, opengl);
@@ -1852,7 +1853,6 @@ common_gtk_main( struct configured_features *my_config)
 	pMenuBar = gtk_menu_bar_new();
 
 	desmume_gtk_menu_file(pMenuBar);
-	desmume_gtk_menu_saves(pMenuBar);
 	desmume_gtk_menu_emulation(pMenuBar, my_config->opengl);
 	desmume_gtk_menu_config(pMenuBar);
 	desmume_gtk_menu_tools(pMenuBar);
