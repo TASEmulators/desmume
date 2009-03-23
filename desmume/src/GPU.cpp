@@ -454,16 +454,16 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	switch (gpu->dispMode)
 	{
 		case 0: // Display Off
-			return;
+			break;
 		case 1: // Display BG and OBJ layers
 			break;
 		case 2: // Display framebuffer
 			gpu->VRAMaddr = (u8 *)ARM9Mem.ARM9_LCD + (gpu->vramBlock * 0x20000);
-			return;
+			break;
 		case 3: // Display from Main RAM
 			// nothing to be done here
 			// see GPU_ligne who gets data from FIFO.
-			return;
+			break;
 	}
 
 	if(cnt->OBJ_Tile_mapping)
