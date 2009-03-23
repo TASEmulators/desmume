@@ -83,6 +83,7 @@ GPU::MosaicLookup GPU::mosaicLookup;
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
 CACHE_ALIGN u8 GPU_tempScreen[4*256*192];
+CACHE_ALIGN u8 GPU_tempScanline[4*256]; //only one scanline
 
 CACHE_ALIGN u8 sprWin[256];
 
@@ -2821,7 +2822,6 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	gpu->currDst = (u8 *)(GPU_tempScreen) + (screen->offset + l) * 512;
 	itemsForPriority_t * item;
 	u8 spr[512];
 	u8 sprAlpha[256];
@@ -3003,14 +3003,7 @@ static void GPU_ligne_DispCapture(u16 l)
 								{
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
 
-									//here we have a special hack. if the main screen is in an unusual display mode
-									//(other than the regular layer combination mode)
-									//then we havent combined layers including the 3d.
-									//in that case, we need to skip straight to the capture 3d only
-									if(MainScreen.gpu->dispMode != 1)
-										goto cap3d;
-
-									u8 *src = (u8 *)(GPU_tempScreen) + (MainScreen.offset + l) * 512;
+									u8 *src = (u8*)(GPU_tempScanline);
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
 										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
 
@@ -3058,7 +3051,7 @@ static void GPU_ligne_DispCapture(u16 l)
 						u16 cap3DLine[512];
 
 						if (gpu->dispCapCnt.srcA == 0)			// Capture screen (BG + OBJ + 3D)
-							srcA = (u16 *)(GPU_tempScreen) + (MainScreen.offset + l) * 512;
+							srcA = (u16*)(GPU_tempScanline);
 						else
 						{
 							gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
@@ -3311,6 +3304,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 
 		case 1: // Display BG and OBJ layers
+				screen->gpu->currDst = (u8 *)(GPU_tempScreen) + (screen->offset + l) * 512;
 				GPU_ligne_layer(screen, l);
 			break;
 
@@ -3332,6 +3326,16 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 	if (gpu->core == GPU_MAIN) 
 	{
+		//when not displaying the BG and OBJ, we might still need to generate it
+		//for purposes of capturing. therefore:
+		//TODO - LOW PRIORITY OPTIMIZATION - based on capture settings, selectively generate this
+		//we have already optimized it a tiny bit by putting it under the if(core is main)
+		if(gpu->dispMode != 1)
+		{
+			screen->gpu->currDst = (u8 *)(GPU_tempScanline);
+			GPU_ligne_layer(screen, l);
+		}
+
 		GPU_ligne_DispCapture(l);
 		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
 	}
