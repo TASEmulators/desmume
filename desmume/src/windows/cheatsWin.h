@@ -2,7 +2,6 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright 2009 CrazyMax
 	Copyright 2009 DeSmuME team
 
     This file is part of DeSmuME

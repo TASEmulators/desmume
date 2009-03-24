@@ -2,7 +2,6 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright 2009 CrazyMax
 	Copyright 2009 DeSmuME team
 
     This file is part of DeSmuME
@@ -37,10 +36,6 @@ static	u32					cheatsCurrentGet = 0;
 static	u8					*cheatsStack = NULL;
 static	u16					cheatsNumStack = 0;
 
-#ifndef WIN32
-#define sscanf_s sscanf
-#endif
-
 static void cheatsClear()
 {
 	memset(cheats, 0, sizeof(cheats));
@@ -61,10 +56,9 @@ void cheatsInit(char *path)
 	cheatsLoad();
 }
 
-BOOL cheatsAdd(u8 proc, u8 size, u32 address, u32 val, char *description, BOOL enabled)
+BOOL cheatsAdd(u8 size, u32 address, u32 val, char *description, BOOL enabled)
 {
 	if (cheatsNum == MAX_CHEAT_LIST) return FALSE;
-	cheats[cheatsNum].proc = proc;
 	cheats[cheatsNum].hi[0] = address & 0x00FFFFFF;
 	cheats[cheatsNum].lo[0] = val;
 	cheats[cheatsNum].num = 1;
@@ -73,6 +67,19 @@ BOOL cheatsAdd(u8 proc, u8 size, u32 address, u32 val, char *description, BOOL e
 	strcpy(cheats[cheatsNum].description, description);
 	cheats[cheatsNum].enabled = enabled;
 	cheatsNum++;
+	return TRUE;
+}
+
+BOOL cheatsUpdate(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos)
+{
+	if (pos > cheatsNum) return FALSE;
+	cheats[pos].hi[0] = address & 0x00FFFFFF;
+	cheats[pos].lo[0] = val;
+	cheats[pos].num = 1;
+	cheats[pos].type = 0;
+	cheats[pos].size = size;
+	strcpy(cheats[pos].description, description);
+	cheats[pos].enabled = enabled;
 	return TRUE;
 }
 
@@ -89,10 +96,13 @@ BOOL cheatsAdd_CB(char *code, char *description, BOOL enabled)
 BOOL cheatsRemove(u32 pos)
 {
 	if (pos > cheatsNum) return FALSE;
+	if (cheatsNum == 0) return FALSE;
+
 	for (int i = pos; i < cheatsNum; i++)
 		memcpy(&cheats[i], &cheats[i+1], sizeof(CHEATS_LIST));
 
-	if (cheatsNum == 0) return FALSE;
+	memset(&cheats[cheatsNum], 0, sizeof(CHEATS_LIST));
+
 	cheatsNum--;
 	return TRUE;
 }
@@ -119,6 +129,18 @@ BOOL cheatsGetList(CHEATS_LIST *cheat)
 	return TRUE;
 }
 
+BOOL cheatsGet(CHEATS_LIST *cheat, u32 pos)
+{
+	if (pos > cheatsNum) return FALSE;
+	memcpy(cheat, &cheats[pos], sizeof(CHEATS_LIST));
+	return TRUE;
+}
+
+u32	cheatsGetSize()
+{
+	return cheatsNum;
+}
+
 BOOL cheatsSave()
 {
 	FILE	*fcheat = fopen((char *)cheatFilename, "w");
@@ -126,13 +148,12 @@ BOOL cheatsSave()
 	if (fcheat)
 	{
 		fprintf(fcheat, "; DeSmuME cheat file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		fputs("\n", fcheat);
 		fprintf(fcheat, "Name=%s\n", ROMserial);
-		fputs("\n; cheats list\n", fcheat);
+		fputs("; cheats list\n", fcheat);
 		for (int i = 0;  i < cheatsNum; i++)
 		{
 			fprintf(fcheat, "Desc=%s\n", cheats[i].description);
-			fprintf(fcheat, "Info=%i,%i,%i,%i,%i\n", cheats[i].type, cheats[i].num, cheats[i].enabled, cheats[i].proc, cheats[i].size);
+			fprintf(fcheat, "Info=%i,%i,%i,%i\n", cheats[i].type, cheats[i].num, cheats[i].enabled, cheats[i].size);
 
 			if (cheats[i].num > 0)
 			{
@@ -190,9 +211,7 @@ BOOL cheatsLoad()
 					if (buf[8]!=',') continue;			// error
 					cheats[last].enabled=atoi(&buf[9]);
 					if (buf[10]!=',') continue;			// error
-					cheats[last].proc=atoi(&buf[11]);
-					if (buf[12]!=',') continue;			// error
-					cheats[last].size=atoi(&buf[13]);
+					cheats[last].size=atoi(&buf[11]);
 					fgets(buf, 1024, fcheat);
 					if ( (buf[0] == 'D') &&
 							(buf[1] == 'a') &&
@@ -225,7 +244,7 @@ BOOL cheatsLoad()
 		}
 		fclose(fcheat);
 
-		INFO("Loaded %i cheats\n", last);
+		//INFO("Loaded %i cheats\n", last);
 		cheatsNum = last;
 		return TRUE;
 	}
@@ -271,17 +290,17 @@ void cheatsProcess()
 				//INFO("cheat at 0x02|%06X value %i (size %i)\n",cheats[i].hi[0], cheats[i].lo[0], cheats[i].size);
 				switch (cheats[i].size)
 				{
-					case 0: T1WriteByte(MMU.MMU_MEM[cheats[i].proc][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
-					case 1: T1WriteWord(MMU.MMU_MEM[cheats[i].proc][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
+					case 0: T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
+					case 1: T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
 					case 2:
 						{
-							u32 tmp = T1ReadLong(MMU.MMU_MEM[cheats[i].proc][0x20], cheats[i].hi[0]);
+							u32 tmp = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0]);
 							tmp &= 0xFF000000;
 							tmp |= (cheats[i].lo[0] & 0x00FFFFFF);
-							T1WriteLong(MMU.MMU_MEM[cheats[i].proc][0x20], cheats[i].hi[0], tmp); 
+							T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], tmp); 
 							break;
 						}
-					case 3: T1WriteLong(MMU.MMU_MEM[cheats[i].proc][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
+					case 3: T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], cheats[i].hi[0], cheats[i].lo[0]); break;
 				}
 			break;
 
@@ -295,13 +314,10 @@ void cheatsProcess()
 }
 
 // ========================================== search
-u8					*searchStatMemARM9 = NULL;
-u8					*searchStatMemARM7 = NULL;
-u8					*searchMemARM9 = NULL;
-u8					*searchMemARM7 = NULL;
+u8					*searchStatMem = NULL;
+u8					*searchMem = NULL;
 u32					searchNumber = 0;
 u32					searchLastRecord = 0;
-u32					searchLastRecordProc = 0;
 
 u32					searchType = 0;
 u32					searchSize = 0;
@@ -309,23 +325,17 @@ u32					searchSign = 0;
 
 void cheatsSearchInit(u8 type, u8 size, u8 sign)
 {
-	if (searchStatMemARM9) return;
-	if (searchStatMemARM7) return;
-	if (searchMemARM9) return;
-	if (searchMemARM7) return;
+	if (searchStatMem) return;
+	if (searchMem) return;
 
-	searchStatMemARM9 = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
-	searchStatMemARM7 = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
+	searchStatMem = new u8 [ ( 4 * 1024 * 1024 ) / 8 ];
 	
-	memset(searchStatMemARM9, 0xFF, ( 4 * 1024 * 1024 ) / 8);
-	memset(searchStatMemARM7, 0xFF, ( 4 * 1024 * 1024 ) / 8);
+	memset(searchStatMem, 0xFF, ( 4 * 1024 * 1024 ) / 8);
 
 	if (type == 1) // comparative search type (need 8Mb RAM !!! (4+4))
 	{
-		searchMemARM9 = new u8 [ ( 4 * 1024 * 1024 ) ];
-		searchMemARM7 = new u8 [ ( 4 * 1024 * 1024 ) ];
-		memcpy(searchMemARM9, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
-		memcpy(searchMemARM7, MMU.MMU_MEM[1][0x20], ( 4 * 1024 * 1024 ) );
+		searchMem = new u8 [ ( 4 * 1024 * 1024 ) ];
+		memcpy(searchMem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 	}
 
 	searchType = type;
@@ -333,110 +343,98 @@ void cheatsSearchInit(u8 type, u8 size, u8 sign)
 	searchSign = sign;
 	searchNumber = 0;
 	searchLastRecord = 0;
-	searchLastRecordProc = 0;
 	
 	//INFO("Cheat search system is inited (type %s)\n", type?"comparative":"exact");
 }
 
 void cheatsSearchClose()
 {
-	if (searchStatMemARM9) delete [] searchStatMemARM9;
-	if (searchStatMemARM7) delete [] searchStatMemARM7;
-	searchStatMemARM9 = NULL;
-	searchStatMemARM7 = NULL;
+	if (searchStatMem) delete [] searchStatMem;
+	searchStatMem = NULL;
 
-	if (searchMemARM9) delete [] searchMemARM9;
-	if (searchMemARM7) delete [] searchMemARM7;
-	searchMemARM9 = NULL;
-	searchMemARM7 = NULL;
+	if (searchMem) delete [] searchMem;
+	searchMem = NULL;
 	searchNumber = 0;
 	searchLastRecord = 0;
-	searchLastRecordProc = 0;
 	//INFO("Cheat search system is closed\n");
 }
 
 u32 cheatsSearchValue(u32 val)
 {
-	u8		*stat[2] = {searchStatMemARM9, searchStatMemARM7};
-
 	searchNumber = 0;
 
 	switch (searchSize)
 	{
 		case 0:		// 1 byte
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i++)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i++)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (1<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (1<<offs))
+					if ( T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						if ( T1ReadByte(MMU.MMU_MEM[t][0x20], i) == val )
-						{
-							stat[t][addr] |= (1<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(1<<offs);
+						searchStatMem[addr] |= (1<<offs);
+						searchNumber++;
+						continue;
 					}
+					searchStatMem[addr] &= ~(1<<offs);
 				}
+			}
 		break;
 
 		case 1:		// 2 bytes
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i+=2)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i+=2)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (3<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (3<<offs))
+					if ( T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						if ( T1ReadWord(MMU.MMU_MEM[t][0x20], i) == val )
-						{
-							stat[t][addr] |= (3<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(3<<offs);
+						searchStatMem[addr] |= (3<<offs);
+						searchNumber++;
+						continue;
 					}
+					searchStatMem[addr] &= ~(3<<offs);
 				}
+			}
 		break;
 
 		case 2:		// 3 bytes
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i+=3)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i+=3)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (0x7<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (0x7<<offs))
+					if ( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == val )
 					{
-						if ( (T1ReadLong(MMU.MMU_MEM[t][0x20], i) & 0x00FFFFFF) == val )
-						{
-							stat[t][addr] |= (0x7<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(0x7<<offs);
+						searchStatMem[addr] |= (0x7<<offs);
+						searchNumber++;
+						continue;
 					}
+					searchStatMem[addr] &= ~(0x7<<offs);
 				}
+			}
 		break;
 
 		case 3:		// 4 bytes
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i+=4)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i+=4)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (0xF<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (0xF<<offs))
+					if ( T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == val )
 					{
-						if ( T1ReadLong(MMU.MMU_MEM[t][0x20], i) == val )
-						{
-							stat[t][addr] |= (0xF<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(0xF<<offs);
+						searchStatMem[addr] |= (0xF<<offs);
+						searchNumber++;
+						continue;
 					}
+					searchStatMem[addr] &= ~(0xF<<offs);
 				}
+			}
 		break;
 	}
 
@@ -445,8 +443,6 @@ u32 cheatsSearchValue(u32 val)
 
 u32 cheatsSearchComp(u8 comp)
 {
-	u8		*mem[2] = {searchMemARM9, searchMemARM7};
-	u8		*stat[2] = {searchStatMemARM9, searchStatMemARM7};
 	BOOL	res = FALSE;
 
 	searchNumber = 0;
@@ -454,116 +450,111 @@ u32 cheatsSearchComp(u8 comp)
 	switch (searchSize)
 	{
 		case 0:		// 1 byte
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i++)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i++)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (1<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (1<<offs))
+					switch (comp)
 					{
-						switch (comp)
-						{
-							case 0: res=(T1ReadByte(MMU.MMU_MEM[t][0x20], i) > T1ReadByte(mem[t], i)); break;
-							case 1: res=(T1ReadByte(MMU.MMU_MEM[t][0x20], i) < T1ReadByte(mem[t], i)); break;
-							case 2: res=(T1ReadByte(MMU.MMU_MEM[t][0x20], i) == T1ReadByte(mem[t], i)); break;
-							case 3: res=(T1ReadByte(MMU.MMU_MEM[t][0x20], i) != T1ReadByte(mem[t], i)); break;
-							default: res = FALSE; break;
-						}
-						if ( res )
-						{
-							stat[t][addr] |= (1<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(1<<offs);
+						case 0: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadByte(searchMem, i)); break;
+						case 1: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadByte(searchMem, i)); break;
+						case 2: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadByte(searchMem, i)); break;
+						case 3: res=(T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadByte(searchMem, i)); break;
+						default: res = FALSE; break;
 					}
+					if ( res )
+					{
+						searchStatMem[addr] |= (1<<offs);
+						searchNumber++;
+						continue;
+					}
+					searchStatMem[addr] &= ~(1<<offs);
 				}
+			}
 		break;
 
 		case 1:		// 2 bytes
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i+=2)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i+=2)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (3<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (3<<offs))
+					switch (comp)
 					{
-						switch (comp)
-						{
-							case 0: res=(T1ReadWord(MMU.MMU_MEM[t][0x20], i) > T1ReadWord(mem[t], i)); break;
-							case 1: res=(T1ReadWord(MMU.MMU_MEM[t][0x20], i) < T1ReadWord(mem[t], i)); break;
-							case 2: res=(T1ReadWord(MMU.MMU_MEM[t][0x20], i) == T1ReadWord(mem[t], i)); break;
-							case 3: res=(T1ReadWord(MMU.MMU_MEM[t][0x20], i) != T1ReadWord(mem[t], i)); break;
-							default: res = FALSE; break;
-						}
-						if ( res )
-						{
-							stat[t][addr] |= (3<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(3<<offs);
+						case 0: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadWord(searchMem, i)); break;
+						case 1: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadWord(searchMem, i)); break;
+						case 2: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadWord(searchMem, i)); break;
+						case 3: res=(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadWord(searchMem, i)); break;
+						default: res = FALSE; break;
 					}
+					if ( res )
+					{
+						searchStatMem[addr] |= (3<<offs);
+						searchNumber++;
+						continue;
+					}
+					searchStatMem[addr] &= ~(3<<offs);
 				}
+			}
 		break;
 
 		case 2:		// 3 bytes
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i+=3)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i+=3)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (7<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (7<<offs))
+					switch (comp)
 					{
-						switch (comp)
-						{
-							case 0: res=((T1ReadLong(MMU.MMU_MEM[t][0x20], i) & 0x00FFFFFF) > (T1ReadLong(mem[t], i) & 0x00FFFFFF) ); break;
-							case 1: res=((T1ReadLong(MMU.MMU_MEM[t][0x20], i) & 0x00FFFFFF) < (T1ReadLong(mem[t], i) & 0x00FFFFFF) ); break;
-							case 2: res=((T1ReadLong(MMU.MMU_MEM[t][0x20], i) & 0x00FFFFFF) == (T1ReadLong(mem[t], i) & 0x00FFFFFF) ); break;
-							case 3: res=((T1ReadLong(MMU.MMU_MEM[t][0x20], i) & 0x00FFFFFF) != (T1ReadLong(mem[t], i) & 0x00FFFFFF) ); break;
-							default: res = FALSE; break;
-						}
-						if ( res )
-						{
-							stat[t][addr] |= (7<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(7<<offs);
+						case 0: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) > (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
+						case 1: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) < (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
+						case 2: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) == (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
+						case 3: res=((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF) != (T1ReadLong(searchMem, i) & 0x00FFFFFF) ); break;
+						default: res = FALSE; break;
 					}
+					if ( res )
+					{
+						searchStatMem[addr] |= (7<<offs);
+						searchNumber++;
+						continue;
+					}
+					searchStatMem[addr] &= ~(7<<offs);
 				}
+			}
 		break;
 
 		case 3:		// 4 bytes
-			for (u32 t = 0; t < 2; t++)
-				for (u32 i = 0; i < (4 * 1024 * 1024); i+=4)
+			for (u32 i = 0; i < (4 * 1024 * 1024); i+=4)
+			{
+				u32	addr = (i >> 3);
+				u32	offs = (i % 8);
+				if (searchStatMem[addr] & (0xF<<offs))
 				{
-					u32	addr = (i >> 3);
-					u32	offs = (i % 8);
-					if (stat[t][addr] & (0xF<<offs))
+					switch (comp)
 					{
-						switch (comp)
-						{
-							case 0: res=(T1ReadLong(MMU.MMU_MEM[t][0x20], i) > T1ReadLong(mem[t], i)); break;
-							case 1: res=(T1ReadLong(MMU.MMU_MEM[t][0x20], i) < T1ReadLong(mem[t], i)); break;
-							case 2: res=(T1ReadLong(MMU.MMU_MEM[t][0x20], i) == T1ReadLong(mem[t], i)); break;
-							case 3: res=(T1ReadLong(MMU.MMU_MEM[t][0x20], i) != T1ReadLong(mem[t], i)); break;
-							default: res = FALSE; break;
-						}
-						if ( res )
-						{
-							stat[t][addr] |= (0xF<<offs);
-							searchNumber++;
-							continue;
-						}
-						stat[t][addr] &= ~(0xF<<offs);
+						case 0: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) > T1ReadLong(searchMem, i)); break;
+						case 1: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) < T1ReadLong(searchMem, i)); break;
+						case 2: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) == T1ReadLong(searchMem, i)); break;
+						case 3: res=(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) != T1ReadLong(searchMem, i)); break;
+						default: res = FALSE; break;
 					}
+					if ( res )
+					{
+						searchStatMem[addr] |= (0xF<<offs);
+						searchNumber++;
+						continue;
+					}
+					searchStatMem[addr] &= ~(0xF<<offs);
 				}
+			}
 		break;
 	}
 
-	memcpy(searchMemARM9, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
-	memcpy(searchMemARM7, MMU.MMU_MEM[1][0x20], ( 4 * 1024 * 1024 ) );
+	memcpy(searchMem, MMU.MMU_MEM[0][0x20], ( 4 * 1024 * 1024 ) );
 
 	return (searchNumber);
 }
@@ -573,41 +564,32 @@ u32 cheatSearchNumber()
 	return (searchNumber);
 }
 
-BOOL cheatSearchGetList(u8 *proc, u32 *address, u32 *curVal)
+BOOL cheatSearchGetList(u32 *address, u32 *curVal)
 {
-	u8		*stat[2] = {searchStatMemARM9, searchStatMemARM7};
-
-	for (u32 t = searchLastRecordProc; t < 2; t++)
+	for (u32 i = searchLastRecord; i < (4 * 1024 * 1024); i++)
 	{
-		for (u32 i = searchLastRecord; i < (4 * 1024 * 1024); i++)
+		u32	addr = (i >> 3);
+		u32	offs = (i % 8);
+		if (searchStatMem[addr] & (1<<offs))
 		{
-			u32	addr = (i >> 3);
-			u32	offs = (i % 8);
-			if (stat[t][addr] & (1<<offs))
+			*address = i;
+			searchLastRecord = i+1;
+			
+			switch (searchSize)
 			{
-				*proc = t;
-				*address = i;
-				searchLastRecord = i+1;
-				
-				switch (searchSize)
-				{
-					case 0: *curVal=(u32)T1ReadByte(MMU.MMU_MEM[t][0x20], i); return TRUE;
-					case 1: *curVal=(u32)T1ReadWord(MMU.MMU_MEM[t][0x20], i); return TRUE;
-					case 2: *curVal=(u32)T1ReadLong(MMU.MMU_MEM[t][0x20], i) & 0x00FFFFFF; return TRUE;
-					case 3: *curVal=(u32)T1ReadLong(MMU.MMU_MEM[t][0x20], i); return TRUE;
-					default: return TRUE;
-				}
+				case 0: *curVal=(u32)T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
+				case 1: *curVal=(u32)T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
+				case 2: *curVal=(u32)T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i) & 0x00FFFFFF; return TRUE;
+				case 3: *curVal=(u32)T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], i); return TRUE;
+				default: return TRUE;
 			}
 		}
-		searchLastRecordProc = t;
 	}
 	searchLastRecord = 0;
-	searchLastRecordProc = 0;
 	return FALSE;
 }
 
 void cheatSearchGetListReset()
 {
 	searchLastRecord = 0;
-	searchLastRecordProc = 0;
 }

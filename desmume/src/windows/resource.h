@@ -272,7 +272,6 @@
 #define IDC_LIST                                1069
 #define IDC_SNUMBER                             1071
 #define IDC_CHECK1                              1074
-#define IDC_RADIO9                              1075
 #define IDM_FIRMSETTINGS                        1100
 #define IDD_FIRMSETTINGS                        1101
 #define IDC_EDIT1                               1102

@@ -2,7 +2,6 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright 2009 CrazyMax
 	Copyright 2009 DeSmuME team
 
     This file is part of DeSmuME
@@ -25,7 +24,7 @@
 #include "common.h"
 
 #define CHEAT_VERSION_MAJOR		1
-#define CHEAT_VERSION_MINOR		2
+#define CHEAT_VERSION_MINOR		3
 #define MAX_CHEAT_LIST 100
 
 typedef struct
@@ -34,7 +33,6 @@ typedef struct
 								// 1 - Action Replay
 								// 2 - Codebreakers
 	BOOL	enabled;
-	u8		proc;
 	u32		hi[255];
 	u32		lo[255];
 	char	description[75];
@@ -44,12 +42,15 @@ typedef struct
 } CHEATS_LIST;
 
 extern void cheatsInit(char *path);
-extern BOOL cheatsAdd(u8 proc, u8 size, u32 address, u32 val, char *description, BOOL enabled);
+extern BOOL cheatsAdd(u8 size, u32 address, u32 val, char *description, BOOL enabled);
+extern BOOL cheatsUpdate(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos);
 extern BOOL cheatsAdd_AR(char *code, char *description, BOOL enabled);
 extern BOOL cheatsAdd_CB(char *code, char *description, BOOL enabled);
 extern BOOL cheatsRemove(u32 pos);
 extern void cheatsGetListReset();
 extern BOOL cheatsGetList(CHEATS_LIST *cheat);
+extern BOOL cheatsGet(CHEATS_LIST *cheat, u32 pos);
+extern u32	cheatsGetSize();
 extern BOOL cheatsSave();
 extern BOOL cheatsLoad();
 extern BOOL cheatsPush();
@@ -63,5 +64,5 @@ extern void cheatsSearchClose();
 extern u32 cheatsSearchValue(u32 val);
 extern u32 cheatsSearchComp(u8 comp);
 extern u32 cheatSearchNumber();
-extern BOOL cheatSearchGetList(u8 *proc, u32 *address, u32 *curVal);
+extern BOOL cheatSearchGetList(u32 *address, u32 *curVal);
 extern void cheatSearchGetListReset();

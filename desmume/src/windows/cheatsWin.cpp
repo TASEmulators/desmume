@@ -2,7 +2,6 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
-    Copyright 2009 CrazyMax
 	Copyright 2009 DeSmuME team
 
     This file is part of DeSmuME
@@ -39,23 +38,21 @@ static	HWND	hBSearch = NULL;
 static	u32		exactVal = 0;
 static	u32		searchNumberResults = 0;
 
-u8				searchAddProc = 0;
-u32				searchAddAddress = 0;
-u32				searchAddValue = 0;
-u8				searchAddMode = 0;
-u8				searchAddFreeze = 1;
-u8				searchAddSize = 0;
-static char		editBuf[4][75] = { 0 };
+static	u32		searchAddAddress = 0;
+static	u32		searchAddValue = 0;
+static	u8		searchAddMode = 0;
+static	u8		searchAddFreeze = 1;
+static	u8		searchAddSize = 0;
+static	char	editBuf[3][75] = { 0 };
+static	u32		cheatEditPos = 0;
 
-HWND			searchWnd = NULL;
-HWND			searchListView = NULL;
-HWND			cheatListView = NULL;
-WNDPROC			oldEditProc = NULL;
-WNDPROC			oldEditProcHEX = NULL;
+static	HWND	searchWnd = NULL;
+static	HWND	searchListView = NULL;
+static	HWND	cheatListView = NULL;
+static	WNDPROC	oldEditProc = NULL;
+static	WNDPROC	oldEditProcHEX = NULL;
 
 CHEATS_LIST		tempCheat;
-
-static	char *NAME_CPUs[2] = { "ARM9", "ARM7" };
 
 u32		searchIDDs[2][4] = {
 	{ IDD_CHEAT_SEARCH_MAIN, IDD_CHEAT_SEARCH_EXACT, IDD_CHEAT_SEARCH_RESULT, NULL },
@@ -184,25 +181,17 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					wsprintf(buf, "%i", searchAddValue);
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
 					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
-					if (searchAddProc)
-						CheckDlgButton(dialog, IDC_RADIO9, BST_CHECKED);
-					else
-						CheckDlgButton(dialog, IDC_RADIO8, BST_CHECKED);
 					EnableWindow(GetDlgItem(dialog, IDC_EDIT1), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_RADIO1), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_RADIO2), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_RADIO3), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_RADIO4), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_RADIO8), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_RADIO9), FALSE);
-					ltoa(searchAddProc, editBuf[3], 10);
-					strcpy(editBuf[3], "0");
 				}
 				else
 				{
 					SetWindowText(GetDlgItem(dialog, IDC_EDIT2), "0");
 					CheckDlgButton(dialog, IDC_RADIO1, BST_CHECKED);
-					strcpy(editBuf[3], "0");
 				}
 
 				memset(editBuf, 0, sizeof(editBuf));
@@ -214,6 +203,7 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				CheckDlgButton(dialog, searchSizeIDDs[searchAddSize], BST_CHECKED);
 			}
 		return TRUE;
+
 		case WM_COMMAND:
 		{
 			switch (LOWORD(wparam))
@@ -222,12 +212,12 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				{
 					u32 tmp_addr = 0;
 					sscanf_s(editBuf[0], "%x", &tmp_addr);
-
-					oldEditProc = saveOldEditProc;
-					if (cheatsAdd(atol(editBuf[3]), searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
+					
+					if (cheatsAdd(searchAddSize, tmp_addr, atol(editBuf[1]), editBuf[2], searchAddFreeze))
 					{
-						if (cheatsSave())
+						if ((searchAddMode == 0) || (cheatsSave() && searchAddMode == 1))
 						{
+							oldEditProc = saveOldEditProc;
 							searchAddAddress = tmp_addr;
 							searchAddValue = atol(editBuf[1]);
 
@@ -242,12 +232,12 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					EndDialog(dialog, FALSE);
 				return TRUE;
 
-				case IDC_EDIT1:
+				case IDC_EDIT1:		// address
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[0], 8);
-						if (!strlen(editBuf[0]) && !strlen(editBuf[1]))
+						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) )
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;
@@ -266,12 +256,12 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					return TRUE;
 				}
 
-				case IDC_EDIT2:
+				case IDC_EDIT2:		// value
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 					{
-						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), editBuf[1], 10);
-						if (!strlen(editBuf[1]) && !strlen(editBuf[0]))
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), editBuf[1], 10);
+						if ( (strlen(editBuf[0]) < 6) || (!strlen(editBuf[1])) )
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;
@@ -288,22 +278,10 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					return TRUE;
 				}
 
-				case IDC_EDIT3:
+				case IDC_EDIT3:		// description
 				{
 					if (HIWORD(wparam) == EN_UPDATE)
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT3), editBuf[2], 75);
-					return TRUE;
-				}
-
-				case IDC_RADIO8:
-				{
-					strcpy(editBuf[3], "0");
-					return TRUE;
-				}
-
-				case IDC_RADIO9:
-				{
-					strcpy(editBuf[3], "1");
 					return TRUE;
 				}
 
@@ -332,6 +310,143 @@ BOOL CALLBACK CheatsAddProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	}
 	return FALSE;
 }
+
+BOOL CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	static WNDPROC	saveOldEditProc = NULL;
+	char			buf[100] = {0}, buf2[100] = {0};
+
+	switch(msg)
+	{
+		case WM_INITDIALOG:
+			{	
+				saveOldEditProc = oldEditProc;
+				SendMessage(GetDlgItem(dialog, IDC_EDIT1), EM_SETLIMITTEXT, 6, 0);
+				SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, 10, 0);
+				SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, 75, 0);
+				oldEditProcHEX = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT1), GWLP_WNDPROC, (LONG)EditValueHEXProc);
+				oldEditProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EDIT2), GWLP_WNDPROC, (LONG)EditValueProc);
+
+				cheatsGet(&tempCheat, cheatEditPos);
+				
+				memset(buf, 0, 100);
+				memset(buf2, 0, 100);
+				tempCheat.hi[0] &= 0x00FFFFFF;
+				wsprintf(buf, "%06X", tempCheat.hi[0]);
+				SetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf);
+				wsprintf(buf, "%i", tempCheat.lo[0]);
+				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
+				strcpy(buf, tempCheat.description);
+				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), buf);
+				EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+
+				CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);
+				CheckDlgButton(dialog, searchSizeIDDs[tempCheat.size], BST_CHECKED);
+				SetWindowText(GetDlgItem(dialog, IDOK), "Update");
+			}
+		return TRUE;
+
+		case WM_COMMAND:
+		{
+			switch (LOWORD(wparam))
+			{
+				case IDOK:
+				{
+					if (cheatsUpdate(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos))
+					{
+						oldEditProc = saveOldEditProc;
+						EndDialog(dialog, TRUE);
+					}
+				}
+				return TRUE;
+
+				case IDCANCEL:
+					oldEditProc = saveOldEditProc;
+					EndDialog(dialog, FALSE);
+				return TRUE;
+
+				case IDC_EDIT1:		// address
+				{
+					if (HIWORD(wparam) == EN_UPDATE)
+					{
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf, 8);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf2, 10);
+						if ( (strlen(buf) < 6) || (!strlen(buf2)) )
+						{
+							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
+							return TRUE;
+						}
+						
+						u32 val = 0;
+						sscanf_s(buf, "%x", &val);
+						val &= 0x00FFFFFF;
+						if (val > 0x400000)
+						{
+							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
+							return TRUE;
+						}
+						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						tempCheat.hi[0] = val;
+					}
+					return TRUE;
+				}
+
+				case IDC_EDIT2:		// value
+				{
+					if (HIWORD(wparam) == EN_UPDATE)
+					{
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, 10);
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT1), buf2, 8);
+						if ( (strlen(buf2) < 6) || (!strlen(buf)) )
+						{
+							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
+							return TRUE;
+						}
+						
+						u32 val = atol(buf);
+						if (val > searchRange[tempCheat.size][1])
+						{
+							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
+							return TRUE;
+						}
+						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						tempCheat.lo[0] = val;
+					}
+					return TRUE;
+				}
+
+				case IDC_EDIT3:		// description
+				{
+					if (HIWORD(wparam) == EN_UPDATE)
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT3), tempCheat.description, 75);
+					return TRUE;
+				}
+
+				case IDC_RADIO1:		// 1 byte
+					tempCheat.size = 0;
+				return TRUE;
+				case IDC_RADIO2:		// 2 bytes
+					tempCheat.size = 1;
+				return TRUE;
+				case IDC_RADIO3:		// 3 bytes
+					tempCheat.size = 2;
+				return TRUE;
+				case IDC_RADIO4:		// 4 bytes
+					tempCheat.size = 3;
+				return TRUE;
+
+				case IDC_CHECK1:		// freeze
+				{
+					if (IsDlgButtonChecked(dialog, IDC_CHECK1) == BST_CHECKED)
+						tempCheat.enabled = 1;
+					else
+						tempCheat.enabled = 0;
+				}
+			}
+		}
+	}
+	return FALSE;
+}
 //==============================================================================
 BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -340,79 +455,114 @@ BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpar
 		case WM_INITDIALOG: 
 		{
 			LV_COLUMN lvColumn;
-				u8	proc = 0;
-				u32 address = 0;
-				u32 val = 0;
+			u32 address = 0;
+			u32 val = 0;
 
-				cheatListView = GetDlgItem(dialog, IDC_LIST1);
+			cheatListView = GetDlgItem(dialog, IDC_LIST1);
 
-				ListView_SetExtendedListViewStyle(cheatListView, LVS_EX_FULLROWSELECT);
-				
-				memset(&lvColumn,0,sizeof(LV_COLUMN));
-				lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
-	
-				lvColumn.fmt=LVCFMT_CENTER;
-				lvColumn.cx=20;
-				lvColumn.pszText="X";
-				ListView_InsertColumn(cheatListView, 0, &lvColumn);
+			ListView_SetExtendedListViewStyle(cheatListView, LVS_EX_FULLROWSELECT | LVS_EX_TWOCLICKACTIVATE);
+			
+			memset(&lvColumn,0,sizeof(LV_COLUMN));
+			lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
 
-				lvColumn.fmt=LVCFMT_LEFT;
-				lvColumn.cx=84;
-				lvColumn.pszText="Address";
-				ListView_InsertColumn(cheatListView, 1, &lvColumn);
-				lvColumn.cx=100;
-				lvColumn.pszText="Value";
-				ListView_InsertColumn(cheatListView, 2, &lvColumn);
-				lvColumn.cx=200;
-				lvColumn.pszText="Description";
-				ListView_InsertColumn(cheatListView, 3, &lvColumn);
-				lvColumn.fmt=LVCFMT_CENTER;
-				lvColumn.cx=45;
-				lvColumn.pszText="CPU";
-				ListView_InsertColumn(cheatListView, 4, &lvColumn);
+			lvColumn.fmt=LVCFMT_CENTER;
+			lvColumn.cx=20;
+			lvColumn.pszText="X";
+			ListView_InsertColumn(cheatListView, 0, &lvColumn);
 
-				LVITEM lvi;
-				memset(&lvi,0,sizeof(LVITEM));
-				lvi.mask = LVIF_TEXT|LVIF_STATE;
-				lvi.iItem = INT_MAX;
+			lvColumn.fmt=LVCFMT_LEFT;
+			lvColumn.cx=84;
+			lvColumn.pszText="Address";
+			ListView_InsertColumn(cheatListView, 1, &lvColumn);
+			lvColumn.cx=100;
+			lvColumn.pszText="Value";
+			ListView_InsertColumn(cheatListView, 2, &lvColumn);
+			lvColumn.cx=245;
+			lvColumn.pszText="Description";
+			ListView_InsertColumn(cheatListView, 3, &lvColumn);
+			lvColumn.fmt=LVCFMT_CENTER;
 
-				
-				cheatsGetListReset();
-				SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)FALSE,0);
-				while (cheatsGetList(&tempCheat))
-				{
-					char buf[256];
-					if (tempCheat.enabled)
-						lvi.pszText= "X";
-					else
-						lvi.pszText= "";
-					u32 row = ListView_InsertItem(cheatListView, &lvi);
-					wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
-					ListView_SetItemText(cheatListView, row, 1, buf);
-					ltoa(tempCheat.lo[0], buf, 10);
-					ListView_SetItemText(cheatListView, row, 2, buf);
-					ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
-					ListView_SetItemText(cheatListView, row, 4, NAME_CPUs[tempCheat.proc]);
-				}
-				SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)TRUE,0);
+			LVITEM lvi;
+			memset(&lvi,0,sizeof(LVITEM));
+			lvi.mask = LVIF_TEXT|LVIF_STATE;
+			lvi.iItem = INT_MAX;
 
-				ListView_SetItemState(searchListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
-				SetFocus(searchListView);
+			cheatsGetListReset();
+			SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)FALSE,0);
+			while (cheatsGetList(&tempCheat))
+			{
+				char buf[256];
+				if (tempCheat.enabled)
+					lvi.pszText= "X";
+				else
+					lvi.pszText= "";
+				u32 row = ListView_InsertItem(cheatListView, &lvi);
+				wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+				ListView_SetItemText(cheatListView, row, 1, buf);
+				ltoa(tempCheat.lo[0], buf, 10);
+				ListView_SetItemText(cheatListView, row, 2, buf);
+				ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+			}
+			SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)TRUE,0);
+
+			ListView_SetItemState(searchListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
+			SetFocus(searchListView);
 			return TRUE;
 		}
-	
+
+		case WM_NOTIFY:
+			if (wparam == IDC_LIST1)
+			{
+				LPNMHDR tmp_msg = (LPNMHDR)lparam;
+				if ( tmp_msg->code == LVN_ITEMACTIVATE )
+				{
+					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
+					cheatsGet(&tempCheat, cheatEditPos);
+					tempCheat.enabled = !tempCheat.enabled;
+					cheatsUpdate(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos);
+					if (tempCheat.enabled)
+						ListView_SetItemText(cheatListView, cheatEditPos, 0, "X")
+					else
+						ListView_SetItemText(cheatListView, cheatEditPos, 0, "");
+					EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+				}
+
+				if ( tmp_msg->code == NM_CLICK )
+				{
+					if (ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED) != -1)
+					{
+						EnableWindow(GetDlgItem(dialog, IDC_BEDIT), TRUE);
+						EnableWindow(GetDlgItem(dialog, IDC_BREMOVE), TRUE);
+					}
+					else
+					{
+						EnableWindow(GetDlgItem(dialog, IDC_BEDIT), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_BREMOVE), FALSE);
+					}
+				}
+
+				return TRUE;
+			}
+		return FALSE;
+
 		case WM_COMMAND:
 		{
 			switch (LOWORD(wparam))
 			{
 				case IDOK:
+					if (cheatsSave())
+					{
+						EndDialog(dialog, TRUE);
+					}
+					else
+						MessageBox(dialog, "Can't save cheats to file","Error",MB_OK);
+				return TRUE;
 				case IDCANCEL:
 					EndDialog(dialog, FALSE);
 				return TRUE;
 
 				case IDC_BADD:
 				{
-					searchAddProc = 0;
 					searchAddAddress = 0;;
 					searchAddValue = 0;
 					searchAddMode = 0;
@@ -436,10 +586,42 @@ BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpar
 						ltoa(searchAddValue, buf, 10);
 						ListView_SetItemText(cheatListView, row, 2, buf);
 						ListView_SetItemText(cheatListView, row, 3, editBuf[2]);
-						ListView_SetItemText(cheatListView, row, 4, NAME_CPUs[searchAddProc]);
 
 						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
 					}
+				}
+				return TRUE;
+
+				case IDC_BEDIT:
+				{
+					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
+					if (cheatEditPos > cheatsGetSize()) return TRUE;
+					if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
+					{
+						char buf[256];
+						cheatsGet(&tempCheat, cheatEditPos);
+						wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+						ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
+						ltoa(tempCheat.lo[0], buf, 10);
+						ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
+						ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
+						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+					}
+				}
+				return TRUE;
+
+				case IDC_BREMOVE:
+				{
+					int tmp_pos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
+					if (tmp_pos != -1)
+					{
+						if (cheatsRemove(tmp_pos))
+						{
+							ListView_DeleteItem(cheatListView, tmp_pos);
+							EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						}
+					}
+
 				}
 				return TRUE;
 			}
@@ -484,6 +666,7 @@ BOOL CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			SetWindowText(GetDlgItem(dialog, IDC_STATIC_RANGE), searchRangeText[searchSign][searchSize]);
 			oldEditProc = (WNDPROC)SetWindowLongPtr(GetDlgItem(dialog, IDC_EVALUE), GWLP_WNDPROC, (LONG)EditValueProc);
 			char buf[256];
+			memset(buf, 0, 256);
 			ltoa(searchNumberResults, buf, 10);
 			SetWindowText(GetDlgItem(dialog, IDC_SNUMBER), buf);
 			SetFocus(GetDlgItem(dialog, IDC_EVALUE));
@@ -588,7 +771,6 @@ BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 		case WM_INITDIALOG:
 			{
 				LV_COLUMN lvColumn;
-				u8	proc = 0;
 				u32 address = 0;
 				u32 val = 0;
 
@@ -598,17 +780,13 @@ BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				
 				memset(&lvColumn,0,sizeof(LV_COLUMN));
 				lvColumn.mask=LVCF_FMT|LVCF_WIDTH|LVCF_TEXT;
-				lvColumn.fmt=LVCFMT_CENTER;
-				lvColumn.cx=40;
-				lvColumn.pszText="CPU";
-				ListView_InsertColumn(searchListView, 0, &lvColumn);
 				lvColumn.fmt=LVCFMT_LEFT;
-				lvColumn.cx=84;
+				lvColumn.cx=94;
 				lvColumn.pszText="Address";
-				ListView_InsertColumn(searchListView, 1, &lvColumn);
-				lvColumn.cx=100;
+				ListView_InsertColumn(searchListView, 0, &lvColumn);
+				lvColumn.cx=130;
 				lvColumn.pszText="Value";
-				ListView_InsertColumn(searchListView, 2, &lvColumn);
+				ListView_InsertColumn(searchListView, 1, &lvColumn);
 
 				LVITEM lvi;
 				memset(&lvi,0,sizeof(LVITEM));
@@ -617,16 +795,14 @@ BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 
 				cheatSearchGetListReset();
 				SendMessage(searchListView, WM_SETREDRAW, (WPARAM)FALSE,0);
-				while (cheatSearchGetList(&proc, &address, &val))
+				while (cheatSearchGetList(&address, &val))
 				{
 					char buf[256];
-					char buf2[256];
 					wsprintf(buf, "0x02%06X", address);
-					_ltoa(val, buf2, 10);
-					lvi.pszText= NAME_CPUs[proc];
+					lvi.pszText= buf;
 					u32 row = SendMessage(searchListView, LVM_INSERTITEM, 0, (LPARAM)&lvi);
+					_ltoa(val, buf, 10);
 					ListView_SetItemText(searchListView, row, 1, buf);
-					ListView_SetItemText(searchListView, row, 2, buf2);
 				}
 				SendMessage(searchListView, WM_SETREDRAW, (WPARAM)TRUE,0);
 				ListView_SetItemState(searchListView,0, LVIS_SELECTED|LVIS_FOCUSED, LVIS_SELECTED|LVIS_FOCUSED);
@@ -646,12 +822,10 @@ BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 						u32 val = 0;
 						char buf[12];
 						u32 pos = ListView_GetNextItem(searchListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
-						ListView_GetItemText(searchListView, pos, 0, buf, 4);
-						searchAddProc = (buf[3] == '7');
-						ListView_GetItemText(searchListView, pos, 1, buf, 12);
+						ListView_GetItemText(searchListView, pos, 0, buf, 12);
 						sscanf_s(buf, "%x", &val);
 						searchAddAddress = val & 0x00FFFFFF;
-						ListView_GetItemText(searchListView, pos, 2, buf, 12);
+						ListView_GetItemText(searchListView, pos, 1, buf, 12);
 						searchAddValue = atol(buf);
 						searchAddMode = 1;
 						searchAddSize = searchSize;
