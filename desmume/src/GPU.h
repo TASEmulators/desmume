@@ -427,9 +427,9 @@ typedef union
 
 struct _ROTOCOORD
 {
-/* 0*/	unsigned Fraction:8;
-/* 8*/	  signed Integer:24;
-// /*28*/	unsigned :4;
+	u32 Fraction:8;
+	s32 Integer:20;
+	u32 pad:4;
 };
 typedef union
 {
