@@ -84,6 +84,7 @@ GPU::MosaicLookup GPU::mosaicLookup;
 CACHE_ALIGN u8 GPU_screen[4*256*192];
 CACHE_ALIGN u8 GPU_tempScreen[4*256*192];
 CACHE_ALIGN u8 GPU_tempScanline[4*256]; //only one scanline
+bool GPU_tempScanline_valid; //whether GPU_tempScanline is valid (if not, fetch it from GPU_screen)
 
 CACHE_ALIGN u8 sprWin[256];
 
@@ -3003,7 +3004,11 @@ static void GPU_ligne_DispCapture(u16 l)
 								{
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
 
-									u8 *src = (u8*)(GPU_tempScanline);
+									u8 *src;
+									if(GPU_tempScanline_valid)
+										src = (u8*)(GPU_tempScanline);
+									else 
+										src = (u8 *)(GPU_tempScreen + (MainScreen.offset + l) * 512);
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
 										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
 
@@ -3012,7 +3017,6 @@ static void GPU_ligne_DispCapture(u16 l)
 							case 1:			// Capture 3D
 								{
 									//INFO("Capture 3D\n");
-								cap3d:
 									u16 cap3DLine[512];
 									gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
 									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
@@ -3050,8 +3054,14 @@ static void GPU_ligne_DispCapture(u16 l)
 						u16 *srcB = NULL;
 						u16 cap3DLine[512];
 
-						if (gpu->dispCapCnt.srcA == 0)			// Capture screen (BG + OBJ + 3D)
-							srcA = (u16*)(GPU_tempScanline);
+						if (gpu->dispCapCnt.srcA == 0)
+						{
+							// Capture screen (BG + OBJ + 3D)
+							if(GPU_tempScanline_valid)
+								srcA = (u16*)(GPU_tempScanline);
+							else 
+								srcA = (u16*)((u8 *)GPU_tempScreen + (MainScreen.offset + l) * 512);
+						}
 						else
 						{
 							gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
@@ -3248,6 +3258,7 @@ void GPU::update_winh(int WIN_NUM)
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
+	GPU_tempScanline_valid = false;
 
 	//here is some setup which is only done on line 0
 	if(l == 0) {
@@ -3334,6 +3345,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		{
 			screen->gpu->currDst = (u8 *)(GPU_tempScanline);
 			GPU_ligne_layer(screen, l);
+			GPU_tempScanline_valid = true;
 		}
 
 		GPU_ligne_DispCapture(l);
