@@ -58,22 +58,15 @@ extern u8	gba_header_data_0x04[156];
 	extern void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
 
 	#define EXPERIMENTAL_GBASLOT 1
-	// this is experimental and only tested for windows port 
-	// (I can`t test on another ports) 
-	// 
-	// About GBA game in slot (only for use together with NDS + GBA): 
-	// in real BIOS 9 at offset 0x0020 placed compressed logo 
-	// for comparing with logo in header GBA cartridge. 
-	// so, GBA game in slot work now.
-	// Later need make loading this table in BIOS memory (from gba_header_data_0x04)
-	//
-	// in windows ports:
-	// i added in menu "Emulation" submenu "GBA slot"
+#else		// non Windows
+
+#define sscanf_s sscanf
+
 #endif
 
-extern u8 reverseBitsInByte(u8 x);
-extern void removeCR(char *buf);
-extern u32 strlen_ws(char *buf);
+extern u8	reverseBitsInByte(u8 x);
+extern void	removeCR(char *buf);
+extern u32	strlen_ws(char *buf);
 	
 #endif
 
