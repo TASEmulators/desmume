@@ -342,15 +342,17 @@ typedef union
     source:
     http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
 *******************************************************************************/
-typedef struct
+struct DISPCAPCNT
 {
+	enum CAPX {
+		_128, _256
+	} capx;
     u32		val;
 	BOOL	enabled;
 	u8		EVA;
 	u8		EVB;
 	u8		writeBlock;
 	u8		writeOffset;
-	u16		capx;
 	u16		capy;
 	u8		srcA;
 	u8		srcB;
@@ -359,7 +361,7 @@ typedef struct
 	u8		capSrc;
 	u8		*dst;
 	u8		*src;
-} DISPCAPCNT;
+} ;
 
 /*******************************************************************************
     this structure holds everything and should be mapped to
