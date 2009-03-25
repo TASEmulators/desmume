@@ -889,12 +889,21 @@ DWORD WINAPI run()
 
 			//    if (!skipnextframe)
 			//   {
-	
 
-			if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps", fps);
+			static int fps3d = 0;
+
+			if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps / %02d 3d", fps, fps3d);
 			osd->update();
 			Display();
 			osd->clear();
+
+			gfx3d.frameCtrRaw++;
+			if(gfx3d.frameCtrRaw == 60) {
+				fps3d = gfx3d.frameCtr;
+				gfx3d.frameCtrRaw = 0;
+				gfx3d.frameCtr = 0;
+			}
+
 
 
 			fpsframecount++;
