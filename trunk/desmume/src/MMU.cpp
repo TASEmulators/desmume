@@ -301,7 +301,6 @@ const static u32	LCDdata[10][2]= {
 					{0, 0},
 					{0x6898000, 2},			// Bank H
 					{0x68A0000, 1}};		// Bank I
-u8 VRAM_blockEnabled[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 void MMU_Init(void) {
 	int i;
@@ -336,7 +335,6 @@ void MMU_Init(void) {
 	mc_alloc(&MMU.bupmem, 1);
 	MMU.bupmem.fp = NULL;
 	rtcInit();
-	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
 	addonsInit();
 	if(Mic_Init() == FALSE)
 		INFO("Microphone init failed.\n");
@@ -473,7 +471,6 @@ void MMU_clearMem()
 
 	rtcInit();
 	partie = 1;
-	memset(VRAM_blockEnabled, 0, sizeof(VRAM_blockEnabled));
 	addonsReset();
 	Mic_Reset();
 }
@@ -495,7 +492,6 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	u8	engine_offset = (vram_addr >> 14);
 	u8	block = MMU.VRAM_MAP[engine][engine_offset];
 	if (block == 7) return (EngineAddr[engine] + vram_addr);		// not mapped to LCD
-	if (!VRAM_blockEnabled[block]) return NULL;
 	vram_addr -= MMU.LCD_VRAM_ADDR[block];
 	return (LCDdst[block] + vram_addr);
 }
@@ -553,12 +549,11 @@ void DMAtoVRAMmapping()
 
 static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 {
-	if ( !(VRAMBankCnt & 0x80) && (VRAMBankCnt & 0x07) )
-	{
-		VRAM_blockEnabled[block] = 0;
-		return;
-	}
-	if (!(VRAMBankCnt & 0x07)) return;
+	if (!(VRAMBankCnt & 0x80)) return;		// disabled
+
+	u32	vram_map_addr = 0xFFFFFFFF;
+	u8	*LCD_addr = LCDdst[block];
+	bool changingTexOrTexPalette = false;
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -567,13 +562,11 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 				MMU.VRAM_MAP[i][t] = 7;
 	}
 	
-	u32	vram_map_addr = 0xFFFFFFFF;
-	u8	*LCD_addr = LCDdst[block];
-
-	bool changingTexOrTexPalette = false;
-	
 	switch (VRAMBankCnt & 0x07)
 	{
+		case 0:			// not mapped
+			MMU.LCDCenable[block] = FALSE;
+		return;
 		case 1:
 			switch(block)
 			{
@@ -741,7 +734,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 		
 		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i\n", 
 		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
-		VRAM_blockEnabled[block] = 1;
 
 		//unmap texmem
 		for(int i=0;i<4;i++)
@@ -760,7 +752,6 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	}
 
 	MMU.LCDCenable[block] = FALSE;
-	VRAM_blockEnabled[block] = 0;
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
