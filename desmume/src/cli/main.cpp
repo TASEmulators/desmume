@@ -52,6 +52,7 @@
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../render3D.h"
+#include "../rasterize.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"
 #endif
@@ -82,7 +83,9 @@ SoundInterface_struct *SNDCoreList[] = {
 };
 
 GPU3DInterface *core3DList[] = {
-&gpu3DNull
+&gpu3DNull,
+&gpu3DRasterize,
+NULL
 };
 
 
@@ -631,6 +634,8 @@ int main(int argc, char ** argv) {
   if ( !my_config.disable_sound) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
   }
+
+  NDS_3D_ChangeCore(1);
 
   if (NDS_LoadROM( my_config.nds_file, MC_TYPE_AUTODETECT, 1, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
