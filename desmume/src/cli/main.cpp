@@ -112,6 +112,7 @@ struct my_config {
   u16 arm7_gdb_port;
 
   int disable_sound;
+  int engine_3d;
 
 #ifdef INCLUDE_OPENGL_2D
   int opengl_2d;
@@ -138,6 +139,8 @@ init_config( struct my_config *config) {
 
   config->cflash_disk_image_file = NULL;
 
+  config->engine_3d = 0;
+
 #ifdef INCLUDE_OPENGL_2D
   config->opengl_2d = 0;
   config->soft_colour_convert = 0;
@@ -159,8 +162,11 @@ fill_config( struct my_config *config,
     if ( strcmp( argv[i], "--help") == 0) {
       printf( "USAGE: %s <nds-file>\n", argv[0]);
       printf( "OPTIONS:\n");
-      printf( "   --disable-sound         Disables the sound emulation\n");
+      printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
+      printf( "   --3d-engine=ENGINE  Enables software 3d rasterizer, available ENGINES:\n");
+      printf( "                         0 = 3d disabled - default\n");
+      printf( "                         1 = internal desmume software rasterizer\n");
 #ifdef INCLUDE_OPENGL_2D
       printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
       printf( "    --soft-convert     Use software colour conversion during OpenGL\n");
@@ -206,6 +212,18 @@ fill_config( struct my_config *config,
 #endif
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
+    }
+    else if ( strncmp( argv[i], "--3d-engine=", 12) == 0) {
+      char *end_char;
+      int engine = strtoul( &argv[i][12], &end_char, 10);
+
+      if ( engine == 0 || engine == 1) {
+        config->engine_3d = engine;
+      }
+      else {
+        fprintf( stderr, "3d engine can be 0 or 1\n");
+        good_args = 0;
+      }
     }
     else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
       char *end_char;
@@ -635,7 +653,7 @@ int main(int argc, char ** argv) {
     SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
   }
 
-  NDS_3D_ChangeCore(1);
+  NDS_3D_ChangeCore(my_config.engine_3d);
 
   if (NDS_LoadROM( my_config.nds_file, MC_TYPE_AUTODETECT, 1, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
