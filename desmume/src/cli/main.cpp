@@ -53,6 +53,7 @@
 #include "../ctrlssdl.h"
 #include "../render3D.h"
 #include "../rasterize.h"
+#include "../saves.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"
 #endif
@@ -108,6 +109,7 @@ const u16 cli_kb_cfg[NB_KEYS] =
   };
 
 struct my_config {
+  int load_slot;
   u16 arm9_gdb_port;
   u16 arm7_gdb_port;
 
@@ -128,6 +130,8 @@ struct my_config {
 
 static void
 init_config( struct my_config *config) {
+  config->load_slot = 0;
+
   config->arm9_gdb_port = 0;
   config->arm7_gdb_port = 0;
 
@@ -160,8 +164,9 @@ fill_config( struct my_config *config,
 
   for ( i = 1; i < argc && good_args; i++) {
     if ( strcmp( argv[i], "--help") == 0) {
-      printf( "USAGE: %s <nds-file>\n", argv[0]);
+      printf( "USAGE: %s [options] <nds-file>\n", argv[0]);
       printf( "OPTIONS:\n");
+      printf( "   --load-slot=<n>     Loads savegame from slot n\n");
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
       printf( "   --3d-engine=ENGINE  Enables software 3d rasterizer, available ENGINES:\n");
@@ -198,6 +203,13 @@ fill_config( struct my_config *config,
     else if ( strcmp( argv[i], "--version") == 0) {
       printf( "%s\n", VERSION);
       good_args = 0;
+    }
+    else if ( strncmp( argv[i], "--load-slot=", 12) == 0) {
+      long slot = strtol( &argv[i][12], NULL, 10 );
+      if(slot >= 0 && slot <= 10)
+        config->load_slot = slot;
+      else
+        printf("Invalid slot number %ld\n", slot);
     }
     else if ( strcmp( argv[i], "--disable-sound") == 0) {
       config->disable_sound = 1;
@@ -292,7 +304,7 @@ fill_config( struct my_config *config,
   }
 
   if ( print_usage) {
-    fprintf( stderr, "USAGE: %s <nds-file>\n", argv[0]);
+    fprintf( stderr, "USAGE: %s <nds-file>\n  %s --help for more info\n", argv[0], argv[0]);
   }
 
   return good_args;
@@ -781,7 +793,9 @@ int main(int argc, char ** argv) {
     }
   }
 
-
+  if(my_config.load_slot){
+    loadstate_slot(my_config.load_slot);
+  }
 
   while(!sdl_quit) {
     /* Look for queued events and update keypad status */
