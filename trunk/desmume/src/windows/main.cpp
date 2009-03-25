@@ -2146,6 +2146,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
 		return 0;
 	case WM_MOVE:
+		WndY = HIWORD(lParam);
+		WndX = LOWORD(lParam);
 		UpdateWndRects(hwnd);
 		return 0;
 	case WM_SIZING:
