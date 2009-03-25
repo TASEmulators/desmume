@@ -2793,19 +2793,19 @@ void GPU_set_DISPCAPCNT(u32 val)
 	switch((val >> 20) & 0x03)
 	{
 		case 0:
-			gpu->dispCapCnt.capx = 128;
+			gpu->dispCapCnt.capx = DISPCAPCNT::_128;
 			gpu->dispCapCnt.capy = 128;
 			break;
 		case 1:
-			gpu->dispCapCnt.capx = 256;
+			gpu->dispCapCnt.capx = DISPCAPCNT::_256;
 			gpu->dispCapCnt.capy = 64;
 			break;
 		case 2:
-			gpu->dispCapCnt.capx = 256;
+			gpu->dispCapCnt.capx = DISPCAPCNT::_256;
 			gpu->dispCapCnt.capy = 128;
 			break;
 		case 3:
-			gpu->dispCapCnt.capx = 256;
+			gpu->dispCapCnt.capx = DISPCAPCNT::_256;
 			gpu->dispCapCnt.capy = 192;
 			break;
 	}
@@ -2974,6 +2974,20 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 // TODO: capture emulated not fully
 static void GPU_ligne_DispCapture(u16 l)
 {
+	//this macro takes advantage of the fact that there are only two possible values for capx
+	#define CAPCOPY(SRC,DST) \
+	switch(gpu->dispCapCnt.capx) { \
+		case DISPCAPCNT::_128: \
+			for (int i = 0; i < 128; i++)  \
+				T2WriteWord(DST, i << 1, T2ReadWord(SRC, i << 1) | (1<<15)); \
+			break; \
+		case DISPCAPCNT::_256: \
+			for (int i = 0; i < 256; i++)  \
+				T2WriteWord(DST, i << 1, T2ReadWord(SRC, i << 1) | (1<<15)); \
+			break; \
+			default: assert(false); \
+		}
+	
 	GPU * gpu = MainScreen.gpu;
 
 	if (l == 0)
@@ -3009,9 +3023,7 @@ static void GPU_ligne_DispCapture(u16 l)
 										src = (u8*)(GPU_tempScanline);
 									else 
 										src = (u8 *)(GPU_tempScreen + (MainScreen.offset + l) * 512);
-									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
-										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
-
+									CAPCOPY(src,cap_dst);
 								}
 							break;
 							case 1:			// Capture 3D
@@ -3019,8 +3031,7 @@ static void GPU_ligne_DispCapture(u16 l)
 									//INFO("Capture 3D\n");
 									u16 cap3DLine[512];
 									gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
-									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
-										T2WriteWord(cap_dst, i << 1, (u16)cap3DLine[i]);
+									CAPCOPY(((u8*)cap3DLine),cap_dst);
 								}
 							break;
 						}
@@ -3035,8 +3046,7 @@ static void GPU_ligne_DispCapture(u16 l)
 								{
 									//INFO("Capture VRAM\n");
 									u8 *src = (u8 *)(gpu->dispCapCnt.src) + (l * 512);
-									for (int i = 0; i < gpu->dispCapCnt.capx; i++)
-										T2WriteWord(cap_dst, i << 1, T2ReadWord(src, i << 1) | (1<<15));
+									CAPCOPY(src,cap_dst);
 								}
 								break;
 							case 1:			// Capture Main Memory Display FIFO
@@ -3076,7 +3086,8 @@ static void GPU_ligne_DispCapture(u16 l)
 						if ((srcA) && (srcB))
 						{
 							u16 a, r, g, b;
-							for(u16 i = 0; i < gpu->dispCapCnt.capx; i++) 
+							const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
+							for(u16 i = 0; i < todo; i++) 
 							{
 								a = r = g = b =0;
 
