@@ -133,6 +133,8 @@ struct GFX3D
 		, alphaTestRef(0)
 		, clearDepth(1)
 		, clearColor(0)
+		, frameCtr(0)
+		, frameCtrRaw(0)
 	{
 		fogColor[0] = fogColor[1] = fogColor[2] = fogColor[3] = 0;
 		fogOffset = 0;
@@ -163,6 +165,11 @@ struct GFX3D
 	float fogColor[4];
 	float fogOffset;
 
+	//ticks every time flush() is called
+	int frameCtr;
+
+	//you can use this to track how many real frames passed, for comparing to frameCtr;
+	int frameCtrRaw;
 
 	u32 rgbToonTable[32];
 };

@@ -1323,6 +1323,8 @@ static void gfx3d_FlushFIFO()
 
 void gfx3d_glFlush(u32 v)
 {
+	gfx3d.frameCtr++;
+
 	gfx3d_FlushFIFO();
 
 	//assert(!flushPending);
