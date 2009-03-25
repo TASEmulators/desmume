@@ -848,7 +848,7 @@ static bool savestate_load(std::istream* is)
 
 	loadstate();
 
-	if(nds.debugConsole!=0 != CommonSettings.DebugConsole) {
+	if((nds.debugConsole!=0) != CommonSettings.DebugConsole) {
 		printf("WARNING: forcing console debug mode to: debugmode=%s\n",nds.debugConsole?"TRUE":"FALSE");
 	}
 
