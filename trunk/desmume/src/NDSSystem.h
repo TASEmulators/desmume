@@ -293,6 +293,7 @@ extern struct TCommonSettings {
 		, UseExtFirmware(false)
 		, BootFromFirmware(false)
 		, DebugConsole(false)
+		, wifiBridgeAdapterNum(0)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -308,7 +309,10 @@ extern struct TCommonSettings {
 	bool UseExtFirmware;
 	char Firmware[256];
 	bool BootFromFirmware;
+
 	bool DebugConsole;
+	
+	int wifiBridgeAdapterNum;
 } CommonSettings;
 
 extern char ROMserial[20];
