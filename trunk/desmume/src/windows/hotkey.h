@@ -22,6 +22,7 @@
 #ifndef HOTKEY_H_INCLUDED
 #define HOTKEY_H_INCLUDED
 
+#include <winsock2.h>
 #include <windows.h>
 #include <tchar.h>
 #include <string>

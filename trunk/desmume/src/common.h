@@ -31,7 +31,7 @@ extern u8	gba_header_data_0x04[156];
 
 #ifdef WIN32
 
-	#define _WINSOCKAPI_
+	#include <winsock2.h>
 	#include <windows.h>
 
 	#define IDT_VIEW_DISASM7						50001

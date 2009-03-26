@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <sstream>
 #include <tchar.h>
+#include <pcap.h>
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"
@@ -1199,6 +1200,16 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
+	 pcap_if_t *alldevs;
+    pcap_if_t *d;
+    int i = 0;
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+	if ( pcap_findalldevs(&alldevs, errbuf) == -1 )
+	{
+		printf("fail initializing pcap\n");
+	}
+
 	ULONG_PTR GdiplusToken;
 	GdiplusStartupInput GdiplusSI;
 

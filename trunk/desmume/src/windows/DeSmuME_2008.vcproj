@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="DeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -51,14 +51,14 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus;.\winpcap"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"
 				DebugInformationFormat="4"
-				CallingConvention="1"
+				CallingConvention="0"
 				CompileAs="0"
 			/>
 			<Tool
@@ -72,7 +72,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -139,7 +139,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus;.\winpcap"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;_WINSOCKAPI_"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
 				StringPooling="true"
 				ExceptionHandling="1"
 				StructMemberAlignment="0"
