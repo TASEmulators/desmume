@@ -33,13 +33,9 @@ program
 These programs follow the usual GNU command line syntax, with long
 options starting with two dashes (`-').
 A summary of options is included below.
-For a complete description, see the Info files.
 .TP
-.B \-\-opengl-2d
-Enables using OpenGL for screen rendering
-.TP
-.B \-\-soft-convert
-Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.
+.B \-\-load-slot=NUM
+Loads savegame from slot NUM
 .TP
 .B \-\-disable-sound
 Disables the sound emulation
@@ -47,20 +43,58 @@ Disables the sound emulation
 .B \-\-disable-limiter
 Disables the 60 fps limiter
 .TP
+.B \-\-3d-engine=ENGINE
+Enables software 3d rasterizer, available ENGINES:
+.RS
+0 = 3d disabled - default
+.RE
+.RS
+1 = internal desmume software rasterizer
+.RE
+.TP
+.B \-\-opengl-2d
+Enables using OpenGL for screen rendering
+.TP
+.B \-\-soft-convert
+Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.
+.TP
 .B \-\-arm9gdb=PORT_NUM
 Enable the ARM9 GDB stub on the given port
 .TP
 .B \-\-arm7gdb=PORT_NUM
 Enable the ARM7 GDB stub on the given port
 .TP
+.B \-\-fwlang=LANG
+Set the language in the firmware, LANG as follows:
+.RS
+0 = Japanese
+.RE
+.RS
+1 = English
+.RE
+.RS
+2 = French
+.RE
+.RS
+3 = German
+.RE
+.RS
+4 = Italian
+.RE
+.RS
+5 = Spanish
+.RE
+.TP
 .B \-\-cflash=PATH_TO_DISK_IMAGE
 Enable disk image GBAMP compact flash emulation
 .TP
-.B \-h, \-\-help
+.B \-\-help
 Show summary of options.
 .TP
-.B \-v, \-\-version
+.B \-\-version
 Show version of program.
+.PP
+Some options may be unavailable, depending on compile-time configuration, for instance gdb stubs and opengl.
 .SH SEE ALSO
 .BR undocumented (7)
 .br
