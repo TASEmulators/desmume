@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="DeSmuME_VS2008"
 	ProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
 	RootNamespace="DeSmuME"
@@ -139,7 +139,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;_WINSOCKAPI_"
 				StringPooling="true"
 				ExceptionHandling="1"
 				StructMemberAlignment="0"
@@ -470,6 +470,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\CMemViewer.cpp"
+				>
+			</File>
 			<Filter
 				Name="core"
 				>
@@ -892,6 +896,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\CToolWindow.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\CWindow.cpp"
 					>
 				</File>
@@ -979,6 +987,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\CMemViewer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\font_eng.inc"
 				>
 			</File>
@@ -1007,6 +1019,10 @@
 				</File>
 				<File
 					RelativePath=".\console.h"
+					>
+				</File>
+				<File
+					RelativePath=".\CToolWindow.h"
 					>
 				</File>
 				<File
