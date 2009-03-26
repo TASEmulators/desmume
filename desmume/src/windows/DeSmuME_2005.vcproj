@@ -50,8 +50,8 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;WANTPROGINFO"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus;.\winpcap"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;WANTPROGINFO;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
@@ -73,7 +73,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib winpcap\wpcap.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				GenerateDebugInformation="true"
@@ -548,6 +548,14 @@
 			<File
 				RelativePath=".\inputdx.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						GeneratePreprocessedFile="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\inputdx.h"

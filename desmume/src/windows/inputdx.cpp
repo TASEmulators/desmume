@@ -27,6 +27,7 @@
 #endif
 
 #define STRICT
+#include <winsock2.h>
 #include <windows.h>
 #include <tchar.h>
 #include <io.h>
