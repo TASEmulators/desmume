@@ -166,7 +166,7 @@ fill_config( struct my_config *config,
     if ( strcmp( argv[i], "--help") == 0) {
       printf( "USAGE: %s [options] <nds-file>\n", argv[0]);
       printf( "OPTIONS:\n");
-      printf( "   --load-slot=<n>     Loads savegame from slot n\n");
+      printf( "   --load-slot=NUM     Loads savegame from slot NUM\n");
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
       printf( "   --3d-engine=ENGINE  Enables software 3d rasterizer, available ENGINES:\n");
@@ -174,7 +174,7 @@ fill_config( struct my_config *config,
       printf( "                         1 = internal desmume software rasterizer\n");
 #ifdef INCLUDE_OPENGL_2D
       printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
-      printf( "    --soft-convert     Use software colour conversion during OpenGL\n");
+      printf( "   --soft-convert      Use software colour conversion during OpenGL\n");
       printf( "                       screen rendering. May produce better or worse\n");
       printf( "                       frame rates depending on hardware.\n");
 #endif
@@ -188,16 +188,16 @@ fill_config( struct my_config *config,
       printf( "                         5 = Spanish\n");
       printf( "\n");
 #ifdef GDB_STUB
-      printf( "   --arm9gdb=PORT_NUM      Enable the ARM9 GDB stub on the given port\n");
-      printf( "   --arm7gdb=PORT_NUM      Enable the ARM7 GDB stub on the given port\n");
+      printf( "   --arm9gdb=PORT_NUM  Enable the ARM9 GDB stub on the given port\n");
+      printf( "   --arm7gdb=PORT_NUM  Enable the ARM7 GDB stub on the given port\n");
 #endif
       //printf( "   --sticky                Enable sticky keys and stylus\n");
       printf( "\n");
       printf( "   --cflash=PATH_TO_DISK_IMAGE\n");
       printf( "                       Enable disk image GBAMP compact flash emulation\n");
       printf( "\n");
-      printf( "   --help                  Display this message\n");
-      printf( "   --version               Display the version\n");
+      printf( "   --help              Display this message\n");
+      printf( "   --version           Display the version\n");
       good_args = 0;
     }
     else if ( strcmp( argv[i], "--version") == 0) {
