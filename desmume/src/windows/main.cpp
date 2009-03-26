@@ -85,6 +85,13 @@ using namespace std;
 
 using namespace Gdiplus;
 
+#define HAVE_REMOTE
+#define WPCAP
+#define PACKET_SIZE 65535
+
+#include <pcap.h>
+#include <remote-ext.h> //uh?
+
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
@@ -246,6 +253,7 @@ struct NDS_fw_config_data win_fw_config;
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 struct configured_features {
 	u16 arm9_gdb_port;
@@ -1365,6 +1373,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	EnableMenuItem(mainMenu, IDM_GBASLOT, MF_GRAYED);
 #endif
 
+#ifdef EXPERIMENTAL_WIFI
+	EnableMenuItem(mainMenu, IDM_WIFISETTINGS, MF_ENABLED);
+#endif
+
 
 	InitCustomKeys(&CustomKeys);
 
@@ -1474,6 +1486,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	CommonSettings.UseExtFirmware = GetPrivateProfileInt("Firmware", "UseExtFirmware", FALSE, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
 	CommonSettings.BootFromFirmware = GetPrivateProfileInt("Firmware", "BootFromFirmware", FALSE, IniName);
+
+	CommonSettings.wifiBridgeAdapterNum = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	/* Read the firmware settings from the init file */
 	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
@@ -2063,6 +2077,7 @@ enum CONFIGSCREEN
 	CONFIGSCREEN_INPUT,
 	CONFIGSCREEN_HOTKEY,
 	CONFIGSCREEN_FIRMWARE,
+	CONFIGSCREEN_WIFI,
 	CONFIGSCREEN_SOUND,
 	CONFIGSCREEN_EMULATION
 };
@@ -2093,6 +2108,9 @@ void RunConfig(CONFIGSCREEN which)
 		break;
 	case CONFIGSCREEN_EMULATION:
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
+		break;
+	case CONFIGSCREEN_WIFI:
+		DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
 		break;
 	}
 
@@ -2488,6 +2506,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_SOUNDSETTINGS:
 			RunConfig(CONFIGSCREEN_SOUND);
+			return 0;
+		case IDM_WIFISETTINGS:
+			RunConfig(CONFIGSCREEN_WIFI);
 			return 0;
 		case IDM_EMULATIONSETTINGS:
 			RunConfig(CONFIGSCREEN_EMULATION);
@@ -3169,6 +3190,74 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 						SetWindowText(cur, fileName);
 					}
+				}
+				return TRUE;
+			}
+		}
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+		{
+			char errbuf[PCAP_ERRBUF_SIZE];
+			pcap_if_t *alldevs;
+			pcap_if_t *d;
+			int i;
+			HWND cur;
+
+			if(pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+			{
+				EndDialog(hDlg, TRUE);
+				return TRUE;
+			}
+
+			cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
+			for(i = 0, d = alldevs; d != NULL; i++, d = d->next)
+			{
+				ComboBox_AddString(cur, d->description);
+			}
+			ComboBox_SetCurSel(cur, CommonSettings.wifiBridgeAdapterNum);
+		}
+		return TRUE;
+
+	case WM_COMMAND:
+		{
+			switch(LOWORD(wParam))
+			{
+			case IDOK:
+				{
+					int val = 0;
+
+					if(romloaded)
+						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
+
+					if((!romloaded) || (val == IDYES))
+					{
+						HWND cur;
+
+						cur = GetDlgItem(hDlg, IDC_BRIDGEADAPTER);
+						CommonSettings.wifiBridgeAdapterNum = ComboBox_GetCurSel(cur);
+
+						WritePrivateProfileInt("Wifi", "BridgeAdapter", CommonSettings.wifiBridgeAdapterNum, IniName);
+
+						if(romloaded)
+						{
+							CheatsSearchReset();
+							NDS_Reset();
+							frameCounter = 0;
+						}
+					}
+				}
+			case IDCANCEL:
+				{
+					EndDialog(hDlg, TRUE);
 				}
 				return TRUE;
 			}
