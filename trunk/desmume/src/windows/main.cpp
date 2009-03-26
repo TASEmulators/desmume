@@ -2154,11 +2154,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_MOVING:
 		SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
 		return 0;
-	case WM_MOVE:
-		WndY = HIWORD(lParam);
-		WndX = LOWORD(lParam);
+	case WM_MOVE: {
+		RECT rect;
+		GetWindowRect(MainWindow->getHWnd(),&rect);
+		WndX = rect.left;
+		WndY = rect.top;
 		UpdateWndRects(hwnd);
 		return 0;
+	}
 	case WM_SIZING:
 		{
 			SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
