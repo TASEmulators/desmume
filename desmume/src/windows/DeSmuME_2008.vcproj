@@ -138,7 +138,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\gdiplus;.\winpcap"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;_WINSOCKAPI_"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -162,9 +162,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib gdiplus.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib gdiplus.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib wpcap.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_interim_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap"
 				GenerateDebugInformation="true"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -470,10 +470,6 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath=".\CMemViewer.cpp"
-				>
-			</File>
 			<Filter
 				Name="core"
 				>
@@ -896,10 +892,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\CToolWindow.cpp"
-					>
-				</File>
-				<File
 					RelativePath=".\CWindow.cpp"
 					>
 				</File>
@@ -987,10 +979,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\CMemViewer.h"
-				>
-			</File>
-			<File
 				RelativePath="..\font_eng.inc"
 				>
 			</File>
@@ -1019,10 +1007,6 @@
 				</File>
 				<File
 					RelativePath=".\console.h"
-					>
-				</File>
-				<File
-					RelativePath=".\CToolWindow.h"
 					>
 				</File>
 				<File
