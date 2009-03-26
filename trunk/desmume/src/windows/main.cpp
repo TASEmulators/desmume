@@ -34,7 +34,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <sstream>
 #include <tchar.h>
+#ifdef EXPERIMENTAL_WIFI
 #include <pcap.h>
+#endif
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"
@@ -1208,16 +1210,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
-	 pcap_if_t *alldevs;
-    pcap_if_t *d;
-    int i = 0;
-    char errbuf[PCAP_ERRBUF_SIZE];
-
-	if ( pcap_findalldevs(&alldevs, errbuf) == -1 )
-	{
-		printf("fail initializing pcap\n");
-	}
-
 	ULONG_PTR GdiplusToken;
 	GdiplusStartupInput GdiplusSI;
 
@@ -3202,6 +3194,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	#ifdef EXPERIMENTAL_WIFI
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
@@ -3264,7 +3257,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 		}
 		return TRUE;
 	}
-	
+#endif
 	return FALSE;
 }
 
