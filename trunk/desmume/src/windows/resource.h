@@ -163,7 +163,9 @@
 #define IDD_BGMAP_VIEWER                        911
 #define IDB_BGTILES                             913
 #define IDD_EMULATIONSETTINGS                   916
+#define IDD_WIFISETTINGS                        918
 #define IDC_BGMAP_SEL                           1000
+#define IDC_BRIDGEADAPTER                       1000
 #define IDC_EDIT03                              1000
 #define IDC_SOUNDCORECB                         1000
 #define IDC_USEEXTBIOS                          1000
@@ -390,6 +392,7 @@
 #define IDM_EMULATIONSETTINGS                   40004
 #define IDC_FRAMELIMIT                          40005
 #define IDC_WINDOW1_5X                          40006
+#define IDM_WIFISETTINGS                        40007
 #define ID_VIEW_FRAMECOUNTER                    40009
 #define ID_VIEW_DISPLAYFPS                      40010
 #define IDM_FILE_RECORDAVI                      40015
