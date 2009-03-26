@@ -21,11 +21,15 @@
  */
 
 #include "ctrlssdl.h"
+#include "saves.h"
+#include "SPU.h"
 
 u16 keyboard_cfg[NB_KEYS];
 u16 joypad_cfg[NB_KEYS];
 u16 nbr_joy;
 mouse_status mouse;
+
+extern volatile BOOL execute;
 
 static SDL_Joystick **open_joysticks = NULL;
 
@@ -377,6 +381,8 @@ process_joystick_events( u16 *keypad) {
     }
 }
 
+u16 shift_pressed;
+
 /* Manage input events */
 int
 process_ctrls_events( u16 *keypad,
@@ -404,13 +410,56 @@ process_ctrls_events( u16 *keypad,
             break;
 
           case SDL_KEYDOWN:
-            key = lookup_key(event.key.keysym.sym);
-            ADD_KEY( *keypad, key );
+            switch(event.key.keysym.sym){
+                case SDLK_LSHIFT:
+                    shift_pressed |= 1;
+                    break;
+                case SDLK_RSHIFT:
+                    shift_pressed |= 2;
+                    break;
+                default:
+                    key = lookup_key(event.key.keysym.sym);
+                    ADD_KEY( *keypad, key );
+                    break;
+            }
             break;
 
           case SDL_KEYUP:
-            key = lookup_key(event.key.keysym.sym);
-            RM_KEY( *keypad, key );
+            switch(event.key.keysym.sym){
+                case SDLK_LSHIFT:
+                    shift_pressed &= ~1;
+                    break;
+                case SDLK_RSHIFT:
+                    shift_pressed &= ~2;
+                    break;
+
+                case SDLK_F1:
+                case SDLK_F2:
+                case SDLK_F3:
+                case SDLK_F4:
+                case SDLK_F5:
+                case SDLK_F6:
+                case SDLK_F7:
+                case SDLK_F8:
+                case SDLK_F9:
+                case SDLK_F10:
+                    int prevexec;
+                    prevexec = execute;
+                    execute = FALSE;
+                    SPU_Pause(1);
+                    if(!shift_pressed){
+                        loadstate_slot(event.key.keysym.sym - SDLK_F1 + 1);
+                    }else{
+                        savestate_slot(event.key.keysym.sym - SDLK_F1 + 1);
+                    }
+                    execute = prevexec;
+                    SPU_Pause(!execute);
+                    break;
+                default:
+                    key = lookup_key(event.key.keysym.sym);
+                    RM_KEY( *keypad, key );
+                    break;
+            }
             break;
 
           case SDL_MOUSEBUTTONDOWN:
