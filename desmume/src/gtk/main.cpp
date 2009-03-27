@@ -38,6 +38,7 @@
 #include "render3D.h"
 #include "desmume.h"
 #include "debug.h"
+#include "rasterize.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -118,7 +119,8 @@ NULL
 };
 
 GPU3DInterface *core3DList[] = {
-  &gpu3DNull
+  &gpu3DNull,
+  &gpu3DRasterize
 #if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
   ,
   &gpu3Dgl
@@ -131,7 +133,7 @@ struct configured_features {
   int soft_colour;
 
   int disable_sound;
-  int disable_3d;
+  int engine_3d;
   int disable_limiter;
 
   int arm9_gdb_port;
@@ -154,7 +156,7 @@ init_configured_features( struct configured_features *config)
   config->opengl = 0;
   config->soft_colour = 0;
 
-  config->disable_3d = 0;
+  config->engine_3d = 0;
 
   config->disable_limiter = 0;
 
@@ -173,19 +175,30 @@ fill_configured_features( struct configured_features *config,
   GOptionEntry options[] = {
 #ifdef GTKGLEXT_AVAILABLE
     { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl, "Enables using OpenGL for screen rendering", NULL},
-    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, "Use software colour conversion during OpenGL screen rendering."
-									    " May produce better or worse frame rates depending on hardware", NULL},
-    { "disable-3d", 0, 0, G_OPTION_ARG_NONE, &config->disable_3d, "Disables the 3D emulation", NULL},
+    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, 
+        "Use software colour conversion during OpenGL screen rendering.\n"
+            "\t\t\t\t  May produce better or worse frame rates depending on hardware", NULL},
 #endif
+    { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
+        "\t\t\t\t  0 = 3d disabled\n"
+        "\t\t\t\t  1 = internal rasterizer\n"
+// GTKGLEXT and LIBOSMESA are currently exclusive, so, no conflict below
+#ifdef GTKGLEXT_AVAILABLE
+        "\t\t\t\t  2 = gtkglext off-screen opengl\n"
+#endif
+#ifdef HAVE_LIBOSMESA
+        "\t\t\t\t  2 = osmesa opengl\n"
+#endif
+        ,"ENGINE"},
     { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
     { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
     { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
-								    "  \t\t\t\t  0 = Japanese\n"
-								    "  \t\t\t\t  1 = English\n"
-								    "  \t\t\t\t  2 = French\n"
-								    "  \t\t\t\t  3 = German\n"
-								    "  \t\t\t\t  4 = Italian\n"
-								    "  \t\t\t\t  5 = Spanish\n"
+								    "\t\t\t\t  0 = Japanese\n"
+								    "\t\t\t\t  1 = English\n"
+								    "\t\t\t\t  2 = French\n"
+								    "\t\t\t\t  3 = German\n"
+								    "\t\t\t\t  4 = Italian\n"
+								    "\t\t\t\t  5 = Spanish\n",
 								    "LANG"},
 #ifdef GDB_STUB
     { "arm9gdb", 0, 0, G_OPTION_ARG_INT, &config->arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
@@ -216,6 +229,19 @@ fill_configured_features( struct configured_features *config,
 
   if (config->firmware_language < -1 || config->firmware_language > 5) {
     g_printerr("Firmware language must be set to a value from 0 to 5.\n");
+    goto error;
+  }
+
+  if (config->engine_3d != 0 && config->engine_3d != 1
+#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+           && config->engine_3d != 2
+#endif
+          ) {
+    g_printerr("Currently available ENGINES: 0, 1"
+#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+            ", 2"
+#endif
+            "\n");
     goto error;
   }
 
@@ -1766,15 +1792,15 @@ common_gtk_main( struct configured_features *my_config)
 
 #ifdef GTKGLEXT_AVAILABLE
         /* Try double-buffered visual */
-        glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB    |
-                                              GDK_GL_MODE_DEPTH  |
+        glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB |
+                                              GDK_GL_MODE_DEPTH |
                                               GDK_GL_MODE_DOUBLE));
         if (glconfig == NULL) {
             g_printerr ("*** Cannot find the double-buffered visual.\n");
             g_printerr ("*** Trying single-buffered visual.\n");
 
             /* Try single-buffered visual */
-            glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB   |
+            glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB |
                                                   GDK_GL_MODE_DEPTH));
             if (glconfig == NULL) {
               g_printerr ("*** No appropriate OpenGL-capable visual found.\n");
@@ -1981,42 +2007,28 @@ common_gtk_main( struct configured_features *my_config)
           }
 	}
 
-        /*
-         * Set the 3D emulation to use
-         */
-        {
-          int use_null_3d = my_config->disable_3d;
-
+    /*
+     * Set the 3D emulation to use
+     */
+    printf("3d engine: %d\n", my_config->engine_3d);
+    unsigned core = my_config->engine_3d;
+    /* setup the gdk 3D emulation; GTKGLEXT and LIBOSMESA are exclusive currently */
 #if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
-          if ( !use_null_3d) {
-            /* setup the gdk 3D emulation */
-#ifdef GTKGLEXT_AVAILABLE
-            if ( init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window))) {
+    if(my_config->engine_3d == 2){
+#if defined(GTKGLEXT_AVAILABLE) 
+        core = init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window)) ? 2 : GPU3D_NULL;
 #else
-            if ( init_osmesa_3Demu()) {
+        core = init_osmesa_3Demu() ? 2 : GPU3D_NULL;
 #endif
-              NDS_3D_SetDriver ( 1);
-
-              if (!gpu3D->NDS_3D_Init ()) {
-                g_printerr("Failed to initialise openGL 3D emulation; "
-                         "removing 3D support\n");
-                use_null_3d = 1;
-              }
-            }
-            else {
-              g_printerr("Failed to setup openGL 3D emulation; "
-                       "removing 3D support\n");
-              use_null_3d = 1;
-            }
-          }
+    }
 #endif
+    printf("changing 3d core to %u\n", core);
+    NDS_3D_ChangeCore(core);
 
-          if ( use_null_3d) {
-            NDS_3D_SetDriver ( 0);
-            gpu3D->NDS_3D_Init();
-          }
-        }
-
+    if(my_config->engine_3d != 0 && gpu3D == &gpu3DNull){
+            g_printerr("Failed to initialise openGL 3D emulation; "
+                     "removing 3D support\n");
+    }
 
 	/* Vérifie la ligne de commandes */
 	if( my_config->nds_file != NULL) {

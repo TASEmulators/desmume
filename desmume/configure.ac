@@ -53,17 +53,18 @@ AC_CHECK_HEADERS([GL/gl.h])
 AC_CHECK_HEADERS([GL/glu.h])
 
 dnl - if --enable-osmesa is used, check for it
-AC_ARG_ENABLE(osmesa,
-              [AC_HELP_STRING(--enable-osmesa, use off-screen mesa)],
-              [
-		if test "x$enableval" = "xyes" ; then
-			AC_CHECK_LIB(OSMesa, main,[
-				useosmesa=yes
-				AC_DEFINE(HAVE_LIBOSMESA)
-				LIBS="-lOSMesa $LIBS"
-			])
-		fi
-		])
+AC_ARG_ENABLE([osmesa],
+               [AC_HELP_STRING([--enable-osmesa], [use off-screen mesa])],
+               [osmesa=$enableval],
+               [osmesa=no])
+
+if test "x$osmesa" = "xyes" ; then
+	AC_CHECK_LIB(OSMesa, main,[
+		useosmesa=yes
+		AC_DEFINE(HAVE_LIBOSMESA)
+		LIBS="-lOSMesa $LIBS"
+	])
+fi
 
 dnl - Check for GTK and/or libglade
 GLIB_VER=2.8
