@@ -62,9 +62,7 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-#ifdef PROFILE_MEMORY_ACCESS
 #include <gdk/gdkkeysyms.h>
-#endif
 
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
@@ -131,7 +129,7 @@ GPU3DInterface *core3DList[] = {
 
 struct configured_features {
   int load_slot;
-  int opengl;
+  int opengl_2d;
   int soft_colour;
 
   int disable_sound;
@@ -157,7 +155,7 @@ init_configured_features( struct configured_features *config)
 
   config->disable_sound = 0;
 
-  config->opengl = 0;
+  config->opengl_2d = 0;
   config->soft_colour = 0;
 
   config->engine_3d = 0;
@@ -178,8 +176,8 @@ fill_configured_features( struct configured_features *config,
 {
   GOptionEntry options[] = {
     { "load-slot", 0, 0, G_OPTION_ARG_INT, &config->load_slot, "Loads savegame from slot NUM", "NUM"},
-#ifdef GTKGLEXT_AVAILABLE
-    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl, "Enables using OpenGL for screen rendering", NULL},
+#if defined(GTKGLEXT_AVAILABLE)
+    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
     { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, 
         "Use software colour conversion during OpenGL screen rendering.\n"
             "\t\t\t\t  May produce better or worse frame rates depending on hardware", NULL},
@@ -964,9 +962,48 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 	return TRUE;
 }
 
+void loadgame(int num){
+   if (desmume_running())
+   {   
+       Pause();
+       loadstate_slot(num);
+       Launch();
+   }
+   else
+       loadstate_slot(num);
+}
+
+void savegame(int num){
+   if (desmume_running())
+   {   
+       Pause();
+       savestate_slot(num);    //Savestate
+       Launch();
+   }
+   else
+       savestate_slot(num);    //Savestate
+}
+
+u16 Cur_Keypad = 0;
+u16 gdk_shift_pressed = 0;
+
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  u16 Cur_Keypad = (u16) (long) data;
+  if (e->keyval == GDK_Shift_L){
+      gdk_shift_pressed |= 1;
+      return 1;
+  }
+  if (e->keyval == GDK_Shift_R){
+      gdk_shift_pressed |= 2;
+      return 1;
+  }
+  if( e->keyval >= GDK_F1 && e->keyval <= GDK_F10 ){
+      if(!gdk_shift_pressed)
+          loadgame(e->keyval - GDK_F1 + 1);
+      else
+          savegame(e->keyval - GDK_F1 + 1);
+      return 1;
+  }
   u16 Key = lookup_key(e->keyval);
   ADD_KEY( Cur_Keypad, Key );
   if(desmume_running()) update_keypad(Cur_Keypad);
@@ -981,11 +1018,19 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  u16 Cur_Keypad = (u16) (long) data;
+  if (e->keyval == GDK_Shift_L){
+      gdk_shift_pressed &= ~1;
+      return 1;
+  }
+  if (e->keyval == GDK_Shift_R){
+      gdk_shift_pressed &= ~2;
+      return 1;
+  }
   u16 Key = lookup_key(e->keyval);
   RM_KEY( Cur_Keypad, Key );
   if(desmume_running()) update_keypad(Cur_Keypad);
   return 1;
+
 }
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
@@ -1860,7 +1905,7 @@ common_gtk_main( struct configured_features *my_config)
 	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-  	gtk_window_set_resizable(GTK_WINDOW (pWindow), my_config->opengl ? TRUE : FALSE);
+  	gtk_window_set_resizable(GTK_WINDOW (pWindow), my_config->opengl_2d ? TRUE : FALSE);
 
 	gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
@@ -1889,7 +1934,7 @@ common_gtk_main( struct configured_features *my_config)
 	pMenuBar = gtk_menu_bar_new();
 
 	desmume_gtk_menu_file(pMenuBar);
-	desmume_gtk_menu_emulation(pMenuBar, my_config->opengl);
+	desmume_gtk_menu_emulation(pMenuBar, my_config->opengl_2d);
 	desmume_gtk_menu_config(pMenuBar);
 	desmume_gtk_menu_tools(pMenuBar);
 	desmume_gtk_menu_help(pMenuBar);
@@ -1900,7 +1945,7 @@ common_gtk_main( struct configured_features *my_config)
 
 	/* Création de l'endroit pour l'affichage des écrans */
 #ifdef GTKGLEXT_AVAILABLE
-        if ( my_config->opengl) {
+        if ( my_config->opengl_2d) {
           /*
            * Create the top screen render area
            */
@@ -1954,11 +1999,11 @@ common_gtk_main( struct configured_features *my_config)
           g_signal_connect( G_OBJECT(bottom_screen_widget), "configure_event",
                             G_CALLBACK(common_configure_fn), NULL ) ;
           g_signal_connect(G_OBJECT(bottom_screen_widget), "button_press_event",
-                           G_CALLBACK(Stylus_Press), &my_config->opengl);
+                           G_CALLBACK(Stylus_Press), &my_config->opengl_2d);
           g_signal_connect(G_OBJECT(bottom_screen_widget), "button_release_event",
                            G_CALLBACK(Stylus_Release), NULL);
           g_signal_connect(G_OBJECT(bottom_screen_widget), "motion_notify_event",
-                           G_CALLBACK(Stylus_Move), &my_config->opengl);
+                           G_CALLBACK(Stylus_Move), &my_config->opengl_2d);
 
           gtk_box_pack_start(GTK_BOX(pVBox), bottom_screen_widget, TRUE, TRUE, 0);
 
@@ -1979,11 +2024,11 @@ common_gtk_main( struct configured_features *my_config)
                                   GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
 
             g_signal_connect(G_OBJECT(pDrawingArea), "button_press_event",
-                             G_CALLBACK(Stylus_Press), &my_config->opengl);
+                             G_CALLBACK(Stylus_Press), &my_config->opengl_2d);
             g_signal_connect(G_OBJECT(pDrawingArea), "button_release_event",
                              G_CALLBACK(Stylus_Release), NULL);
             g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
-                             G_CALLBACK(Stylus_Move), &my_config->opengl);
+                             G_CALLBACK(Stylus_Move), &my_config->opengl_2d);
 
             g_signal_connect( G_OBJECT(pDrawingArea), "expose_event",
                               G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
