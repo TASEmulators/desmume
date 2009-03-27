@@ -20,11 +20,13 @@
 #ifndef WIFI_H
 #define WIFI_H
 
+#include <stdio.h>
 #include "types.h"
 
 #ifdef EXPERIMENTAL_WIFI
 
 /* standardize socket interface for linux and windows */
+/* TODO: get rid of the socket thing, as we're going to use libpcap */
 #ifdef WIN32
 	#include <winsock2.h>
 	#define socket_t 	SOCKET
@@ -43,6 +45,14 @@
 #endif
 #define BASEPORT        7000    		/* channel 1: 7000 ... channel 13: 7012 */
 										/* FIXME: make it configureable */
+
+#define HAVE_REMOTE
+#define WPCAP
+#define PACKET_SIZE 65535
+#define _INC_STDIO
+
+#include <pcap.h>
+#include <remote-ext.h> //uh?
 
 #define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
@@ -87,6 +97,8 @@
 #define     REG_WIFI_TXLOC3             0x0A8
 #define     REG_WIFI_TXOPT              0x0AC
 #define     REG_WIFI_TXCNT              0x0AE
+#define		REG_WIFI_TXREQ_READ			0x0B0
+#define		REG_WIFI_TXBUSY				0x0B6
 #define     REG_WIFI_TXSTAT             0x0B8
 #define     REG_WIFI_RXFILTER           0x0D0
 #define     REG_WIFI_USCOUNTERCNT       0x0E8
@@ -389,8 +401,14 @@ typedef struct
 	u16 TXSlot[3] ;
 	u16 TXCnt ;
 	u16 TXOpt ;
+	u16 TXStat;
 	u16 BEACONSlot ;
 	BOOL BEACON_enable ;
+	u8 txCurSlot;
+	u8 txSlotBusy[3];
+	u32 txSlotAddr[3];
+	u32 txSlotLen[3];
+	u32 txSlotRemainingBytes[3];
 
 	/* receiving */
 	u16 RXCnt ;
@@ -437,6 +455,8 @@ typedef struct
 	u16         RXRangeBegin ;
 	u16         RXRangeEnd ;
 	u16         RXHWWriteCursor ;
+	u16			RXHWWriteCursorReg;
+	u16			RXHWWriteCursorLatched;
 	u16         RXReadCursor ;
 	u16         RXUnits ;
 	u16			RXBufCount ;
@@ -447,6 +467,12 @@ typedef struct
 	u16         CircBufWrEnd ;
 	u16         CircBufWrSkip ;
 
+	/* tx packets */
+	u8 *curPacket[3];
+	int curPacketSize[3];
+	int curPacketPos[3];
+	BOOL curPacketSending[3];
+
 	/* i/o mem */
 	u16			ioMem[0x800];
 
@@ -456,7 +482,7 @@ typedef struct
 	/* SoftAP */
 	struct _SoftAP
 	{
-		socket_t sock;
+		pcap_t *bridge;
 
 		u64 usecCounter;
 
@@ -544,7 +570,7 @@ typedef struct _FW_WFCProfile
 } FW_WFCProfile;
 
 /* wifi data to be stored in firmware, when no firmware image was loaded */
-extern const u8 FW_Mac[6];
+extern u8 FW_Mac[6];
 extern const u8 FW_WIFIInit[32] ;
 extern const u8 FW_BBInit[105] ;
 extern const u8 FW_RFInit[36] ;
