@@ -169,7 +169,7 @@ fill_config( struct my_config *config,
       printf( "   --load-slot=NUM     Loads savegame from slot NUM\n");
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
-      printf( "   --3d-engine=ENGINE  Enables software 3d rasterizer, available ENGINES:\n");
+      printf( "   --3d-engine=ENGINE  Select 3d rendering engine, available ENGINES:\n");
       printf( "                         0 = 3d disabled - default\n");
       printf( "                         1 = internal desmume software rasterizer\n");
 #ifdef INCLUDE_OPENGL_2D
