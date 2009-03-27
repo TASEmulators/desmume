@@ -527,6 +527,10 @@ void NDS_DeInit(void) {
 	Screen_DeInit();
 	MMU_DeInit();
 	gpu3D->NDS_3D_Close();
+
+#ifdef EXPERIMENTAL_WIFI
+	WIFI_SoftAP_Shutdown(&wifiMac);
+#endif
 }
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
@@ -999,7 +1003,7 @@ void NDS_Reset( void)
 		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
 
-	// Write the Nintendo logo checksum to memory (the firmware needs it to see the cart)
+	// Write the header checksum to memory (the firmware needs it to see the cart)
 	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
 
 	MainScreen.offset = 0;
@@ -1015,6 +1019,15 @@ void NDS_Reset( void)
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
 	cheatsSearchClose();
+
+#ifdef EXPERIMENTAL_WIFI
+	WIFI_Init(&wifiMac);
+
+	WIFI_SoftAP_Shutdown(&wifiMac);
+	WIFI_SoftAP_Init(&wifiMac);
+#endif
+
+	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
 }
 
 int NDS_ImportSave(const char *filename)
