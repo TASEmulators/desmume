@@ -1111,6 +1111,15 @@ u32 WIFI_SoftAP_GetCRC32(u8 *data, int len)
 //	return 0x1D46B6B8;
 }
 
+//todo - make a class to wrap this
+//todo - zeromus - inspect memory leak safety of all this
+static pcap_if_t * WIFI_index_device(pcap_if_t *alldevs, int index) {
+	pcap_if_t *curr = alldevs;
+	for(int i=0;i<index;i++)
+		curr = curr->next;
+	return curr;
+}
+
 int WIFI_SoftAP_Init(wifimac_t *wifi)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -1140,7 +1149,7 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 		return 0;
 	}
 
-	wifi->SoftAP.bridge = pcap_open(alldevs[CommonSettings.wifiBridgeAdapterNum].name, PACKET_SIZE, 0, 1, NULL, errbuf);
+	wifi->SoftAP.bridge = pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, NULL, errbuf);
 	if(wifi->SoftAP.bridge == NULL)
 	{
 		printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
