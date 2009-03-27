@@ -39,6 +39,7 @@
 #include "desmume.h"
 #include "debug.h"
 #include "rasterize.h"
+#include "saves.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -129,6 +130,7 @@ GPU3DInterface *core3DList[] = {
 
 
 struct configured_features {
+  int load_slot;
   int opengl;
   int soft_colour;
 
@@ -148,6 +150,8 @@ struct configured_features {
 static void
 init_configured_features( struct configured_features *config)
 {
+  config->load_slot = 0;
+
   config->arm9_gdb_port = 0;
   config->arm7_gdb_port = 0;
 
@@ -173,6 +177,7 @@ fill_configured_features( struct configured_features *config,
                           int argc, char ** argv)
 {
   GOptionEntry options[] = {
+    { "load-slot", 0, 0, G_OPTION_ARG_INT, &config->load_slot, "Loads savegame from slot NUM", "NUM"},
 #ifdef GTKGLEXT_AVAILABLE
     { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl, "Enables using OpenGL for screen rendering", NULL},
     { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, 
@@ -229,6 +234,11 @@ fill_configured_features( struct configured_features *config,
 
   if (config->firmware_language < -1 || config->firmware_language > 5) {
     g_printerr("Firmware language must be set to a value from 0 to 5.\n");
+    goto error;
+  }
+
+  if (config->load_slot < 0 || config->load_slot > 10) {
+    g_printerr("I only know how to load from slots 1-10, 0 means 'do not load savegame' and is default\n");
     goto error;
   }
 
@@ -2010,7 +2020,6 @@ common_gtk_main( struct configured_features *my_config)
     /*
      * Set the 3D emulation to use
      */
-    printf("3d engine: %d\n", my_config->engine_3d);
     unsigned core = my_config->engine_3d;
     /* setup the gdk 3D emulation; GTKGLEXT and LIBOSMESA are exclusive currently */
 #if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
@@ -2022,17 +2031,19 @@ common_gtk_main( struct configured_features *my_config)
 #endif
     }
 #endif
-    printf("changing 3d core to %u\n", core);
     NDS_3D_ChangeCore(core);
-
     if(my_config->engine_3d != 0 && gpu3D == &gpu3DNull){
             g_printerr("Failed to initialise openGL 3D emulation; "
                      "removing 3D support\n");
     }
 
-	/* Vérifie la ligne de commandes */
+	/* Command line arg */
 	if( my_config->nds_file != NULL) {
 		if(Open( my_config->nds_file, bad_glob_cflash_disk_image_file) >= 0) {
+            if(my_config->load_slot){
+              loadstate_slot(my_config->load_slot);
+            }
+
 			Launch();
 		} else {
 			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
