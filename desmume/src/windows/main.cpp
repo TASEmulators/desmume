@@ -1377,6 +1377,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	LOG("Init NDS\n");
 
+	GInfo_Init();
+
 	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
 	ViewMem_ARM7 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
@@ -1558,6 +1560,9 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #ifdef DEBUG
 	//LogStop();
 #endif
+
+	GInfo_DeInit();
+
 	//if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
 	if (ViewMatrices!=NULL) delete ViewMatrices;
@@ -2508,7 +2513,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_GAME_INFO:
 			{
-				CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
+				//CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hwnd, GinfoView_Proc);
+				GInfo_DlgOpen(hwnd);
 			}
 			return 0;
 

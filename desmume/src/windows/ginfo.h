@@ -22,7 +22,12 @@
 #ifndef GINFO_H
 #define GINFO_H
 
-BOOL CALLBACK GinfoView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+BOOL GInfo_Init();
+void GInfo_DeInit();
+
+BOOL GInfo_DlgOpen(HWND hParentWnd);
+
+BOOL CALLBACK GInfo_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK GInfo_IconBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif
- 

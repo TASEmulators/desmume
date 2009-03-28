@@ -20,71 +20,326 @@
 */
 
 #include "resource.h"
-#include "../NDSSystem.h"
+#include "common.h"
 #include "../MMU.h"
+#include "../NDSSystem.h"
+#include "FirmConfig.h"
 #include <stdio.h>
-#include "CWindow.h"
+#include <windows.h>
+#include <commctrl.h>
+#include "ginfo.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT Ginfo_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
+BOOL GInfo_Init()
 {
-        HDC          hdc;
-        PAINTSTRUCT  ps;
-        TCHAR        text[80];
-        NDS_header * header = NDS_getROMHeader();
-        
-        hdc = BeginPaint(hwnd, &ps);
-         
-        //sprintf(text, "%08X", MMU::ARM9_MEM_MASK[0x80]);
-        // This needs to be done because some games use all 12 bytes for text
-        // without a 0x00 termination
-        memcpy(text, header->gameTile, 12);
-        text[12] = 0x00;
-        SetWindowText(GetDlgItem(hwnd, IDC_NOM_JEU), text);
-        SetWindowText(GetDlgItem(hwnd, IDC_CDE), header->gameCode);
-        sprintf(text, "%d", header->makerCode);
-        SetWindowText(GetDlgItem(hwnd, IDC_FAB), text);
-        sprintf(text, "%d", header->cardSize);
-        SetWindowText(GetDlgItem(hwnd, IDC_TAILLE), text);
-        sprintf(text, "%d", (int)header->ARM9binSize);
-        SetWindowText(GetDlgItem(hwnd, IDC_ARM9_T), text);
-        sprintf(text, "%d", (int)header->ARM7binSize);
-        SetWindowText(GetDlgItem(hwnd, IDC_ARM7_T), text);
-        sprintf(text, "%d", (int)(header->ARM7binSize + header->ARM7src));
-        SetWindowText(GetDlgItem(hwnd, IDC_DATA), text);
-        
-        EndPaint(hwnd, &ps);
+	WNDCLASSEX wc;
 
-        delete header;
+	wc.cbSize         = sizeof(wc);
+	wc.lpszClassName  = "GInfo_IconBox";
+	wc.hInstance      = hAppInst;
+	wc.lpfnWndProc    = GInfo_IconBoxProc;
+	wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon          = 0;
+	wc.lpszMenuName   = 0;
+	wc.hbrBackground  = (HBRUSH)GetSysColorBrush(COLOR_BTNFACE);
+	wc.style          = 0;
+	wc.cbClsExtra     = 0;
+	wc.cbWndExtra     = 0;
+	wc.hIconSm        = 0;
 
-        return 0;
+	RegisterClassEx(&wc);
+
+	return 1;
+}
+
+void GInfo_DeInit()
+{
+	UnregisterClass("GInfo_IconBox", hAppInst);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-BOOL CALLBACK GinfoView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL GInfo_DlgOpen(HWND hParentWnd)
 {
-     switch (message)
-     {
-            case WM_INITDIALOG :
-                 return 1;
-            case WM_CLOSE :
-                 EndDialog(hwnd, 0);
-                 return 1;
-            case WM_PAINT:
-                 Ginfo_OnPaint(hwnd, wParam, lParam);
-                 return 1;
-            case WM_COMMAND :
-                 switch (LOWORD (wParam))
-                 {
-                        case IDC_FERMER :
-                             EndDialog(hwnd, 0);
-                             return 1;
-                 }
-                 return 0;
-     }
-     return 0;    
+	HWND hDlg;
+
+	hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_GAME_INFO), hParentWnd, GInfo_DlgProc);
+	if(hDlg == NULL)
+		return 0;
+
+	ShowWindow(hDlg, SW_SHOW);
+	UpdateWindow(hDlg);
+
+	return 1;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
+{
+	HDC				hdc;
+	PAINTSTRUCT		ps;
+	char			text[80];
+	u32				icontitleOffset;
+	wchar_t			*utf16text;
+	u32				val;
+        
+	hdc = BeginPaint(hDlg, &ps);
+
+	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
+
+	if(icontitleOffset >= 0x8000)
+	{
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x240 + (0x100 * win_fw_config.language));
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), text);
+
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x240);
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), text);
+
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x340);
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), text);
+
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x440);
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), text);
+
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x540);
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), text);
+
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x640);
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), text);
+
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x740);
+		sprintf(text, "%ws", utf16text);
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), text);
+	}
+	else
+	{
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), "\nNo title\n");
+
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), "None");
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), "None");
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), "None");
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), "None");
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), "None");
+		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), "None");
+	}
+
+
+	memcpy(text, MMU.CART_ROM, 12);
+	text[12] = '\0';
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMETITLE), text);
+
+	memcpy(text, (MMU.CART_ROM+0xC), 4);
+	text[4] = '\0';
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMECODE), text);
+
+	memcpy(text, (MMU.CART_ROM+0x10), 2);
+	text[2] = '\0';
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_MAKERCODE), text);
+
+	val = T1ReadByte(MMU.CART_ROM, 0x14);
+	sprintf(text, "%i kilobytes", (0x80 << val));
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_CHIPSIZE), text);
+
+
+	val = T1ReadLong(MMU.CART_ROM, 0x20);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ROM), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x24);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ENTRY), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x28);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9START), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x2C);
+	sprintf(text, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9SIZE), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x30);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ROM), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x34);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ENTRY), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x38);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7START), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x3C);
+	sprintf(text, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7SIZE), text);
+
+
+	val = T1ReadLong(MMU.CART_ROM, 0x40);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTOFS), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x44);
+	sprintf(text, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTSIZE), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x48);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATOFS), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x4C);
+	sprintf(text, "%i bytes", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATSIZE), text);
+
+
+	sprintf(text, "0x%08X", icontitleOffset);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_ICONTITLEOFS), text);
+
+	val = T1ReadLong(MMU.CART_ROM, 0x80);
+	sprintf(text, "0x%08X", val);
+	SetWindowText(GetDlgItem(hDlg, IDC_GI_USEDROMSIZE), text);
+
+
+	EndPaint(hDlg, &ps);
+
+	return 0;
+}
+
+BOOL CALLBACK GInfo_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+		return 1;
+
+	case WM_CLOSE:
+		EndDialog(hDlg, 0);
+		return 1;
+
+	case WM_PAINT:
+		GInfo_Paint(hDlg, wParam, lParam);
+		return 1;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam))
+		{
+		case IDCANCEL:
+			EndDialog(hDlg, 0);
+			return 1;
+		}
+		return 0;
+	}
+
+	return 0;    
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+LRESULT GInfo_IconBoxPaint(HWND hCtl, WPARAM wParam, LPARAM lParam)
+{
+	HDC				hdc;
+	PAINTSTRUCT		ps;
+	RECT			rc;
+	int				w, h;
+	SIZE			fontsize;
+	HDC				mem_hdc;
+	HBITMAP			mem_bmp;
+	BITMAPV4HEADER	bmph;
+	u32				icontitleOffset;
+	u16				icon[32 * 32];
+	int				x, y;
+
+	GetClientRect(hCtl, &rc);
+	w = (rc.right - rc.left);
+	h = (rc.bottom - rc.top);
+
+	hdc = BeginPaint(hCtl, &ps);
+
+	mem_hdc = CreateCompatibleDC(hdc);
+	mem_bmp = CreateCompatibleBitmap(hdc, w, h);
+	SelectObject(mem_hdc, mem_bmp);
+		
+	FillRect(mem_hdc, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
+	ZeroMemory(&bmph, sizeof(bmph));
+	bmph.bV4Size			 = sizeof(bmph);
+	bmph.bV4Planes			 = 1;
+	bmph.bV4BitCount		 = 16;
+	bmph.bV4V4Compression	 = BI_BITFIELDS;
+	bmph.bV4RedMask			 = 0x001F;
+	bmph.bV4GreenMask		 = 0x03E0;
+	bmph.bV4BlueMask		 = 0x7C00;
+	bmph.bV4Width			 = 32;
+	bmph.bV4Height			 = -32;
+
+	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
+
+	if(icontitleOffset >= 0x8000)
+	{
+		for(y = 0; y < 32; y++)
+		{
+			for(x = 0; x < 32; x++)
+			{
+				int tilenum = (((y / 8) * 4) + (x / 8));
+				int tilex = (x % 8);
+				int tiley = (y % 8);
+				int mapoffset = ((tilenum * 64) + (tiley * 8) + tilex);
+
+				u8 val = T1ReadByte(MMU.CART_ROM, (icontitleOffset + 0x20 + (mapoffset>>1)));
+
+				if(mapoffset & 1)
+					val = ((val >> 4) & 0xF);
+				else
+					val = (val & 0xF);
+
+				icon[(y * 32) + x] = T1ReadWord(MMU.CART_ROM, (icontitleOffset + 0x220 + (val<<1)));
+			}
+		}
+
+		SetDIBitsToDevice(mem_hdc, ((w/2) - 16), ((h/2) - 16), 32, 32, 0, 0, 0, 32, icon, (BITMAPINFO*)&bmph, DIB_RGB_COLORS);
+	}
+	else
+	{
+		GetTextExtentPoint32(mem_hdc, "No icon", strlen("No icon"), &fontsize);
+		TextOut(mem_hdc, ((w/2) - (fontsize.cx/2)), ((h/2) - (fontsize.cy/2)), "No icon", strlen("No icon"));
+	}
+	
+	BitBlt(hdc, 0, 0, w, h, mem_hdc, 0, 0, SRCCOPY);
+
+	DeleteDC(mem_hdc);
+	DeleteObject(mem_bmp);
+
+	EndPaint(hCtl, &ps);
+
+	return 0;
+}
+
+LRESULT CALLBACK GInfo_IconBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch(uMsg)
+	{
+	case WM_NCCREATE:
+		return 1;
+
+	case WM_NCDESTROY:
+		return 1;
+	
+	case WM_ERASEBKGND:
+		return 1;
+
+	case WM_PAINT:
+		GInfo_IconBoxPaint(hCtl, wParam, lParam);
+		return 1;
+	}
+
+	return DefWindowProc(hCtl, uMsg, wParam, lParam);
 }
 
 //////////////////////////////////////////////////////////////////////////////
