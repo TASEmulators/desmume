@@ -126,6 +126,8 @@ GPU3DInterface *core3DList[] = {
 #endif
 };
 
+static u16 Cur_Keypad = 0;
+static u16 gdk_shift_pressed = 0;
 
 struct configured_features {
   int load_slot;
@@ -977,15 +979,12 @@ void savegame(int num){
    if (desmume_running())
    {   
        Pause();
-       savestate_slot(num);    //Savestate
+       savestate_slot(num);
        Launch();
    }
    else
-       savestate_slot(num);    //Savestate
+       savestate_slot(num);
 }
-
-u16 Cur_Keypad = 0;
-u16 gdk_shift_pressed = 0;
 
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
@@ -1787,7 +1786,6 @@ common_gtk_main( struct configured_features *my_config)
 {
 	SDL_TimerID limiter_timer = NULL;
 	gchar *config_file;
-	u16 Cur_Keypad = 0;
 
 	GtkAccelGroup * accel_group;
 	GtkWidget *pVBox;
@@ -1910,8 +1908,8 @@ common_gtk_main( struct configured_features *my_config)
 	gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
 	g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-	g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), (void *) (long) Cur_Keypad);
-	g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), (void *) (long) Cur_Keypad);
+	g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
+	g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
 
 	/* Creation de la GtkVBox */
 	pVBox = gtk_vbox_new(FALSE, 0);

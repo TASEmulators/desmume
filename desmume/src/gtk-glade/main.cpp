@@ -68,7 +68,9 @@ GPU3DInterface *core3DList[] = {
  *
  */
 struct configured_features {
+  int load_slot;
   int software_colour_convert;
+  int opengl_2d;
   int disable_3d;
   int disable_limiter;
 
@@ -82,11 +84,13 @@ struct configured_features {
 
 static void
 init_configured_features( struct configured_features *config) {
+  config->load_slot = 0;
   config->arm9_gdb_port = 0;
   config->arm7_gdb_port = 0;
 
   config->software_colour_convert = 0;
 
+  config->opengl_2d = 0;
   config->disable_3d = 0;
 
   config->disable_limiter = 0;
@@ -108,13 +112,17 @@ fill_configured_features( struct configured_features *config,
     if ( strcmp( argv[i], "--help") == 0) {
       g_print( _("USAGE: %s [OPTIONS] [nds-file]\n"), argv[0]);
       g_print( _("OPTIONS:\n"));
+      g_print( _("\
+   --load-slot=NUM     Load game saved under NUM position.\n\n"));
 #ifdef GTKGLEXT_AVAILABLE
       g_print( _("\
    --soft-convert      Use software colour conversion during OpenGL\n\
                        screen rendering. May produce better or worse\n\
                        frame rates depending on hardware.\n\
    \n\
-   --disable-3d        Disables the 3D emulation\n\n"));
+   --3d-engine=ENGINE  Selects 3D rendering engine\n\
+                         0 = disabled\n\
+                         1 = gtkglext off-screen 3d opengl\n\n"));
 #endif
       g_print( _("\
    --disable-limiter   Disables the 60 fps limiter\n\
@@ -136,12 +144,37 @@ fill_configured_features( struct configured_features *config,
       //g_print("   --sticky            Enable sticky keys and stylus\n");
       good_args = 0;
     }
+    else if ( strncmp( argv[i], "--load-slot=", 12) == 0) {
+      char *end_char;
+      int slot = strtoul( &argv[i][12], &end_char, 10);
+
+      if ( slot >= 0 && slot <= 10) {
+        config->load_slot = slot;
+      }
+      else {
+        g_printerr( _("I only know how to load from slots 1-10.\n"));
+        good_args = 0;
+      }
+    }
 #ifdef GTKGLEXT_AVAILABLE
+    else if ( strcmp( argv[i], "--opengl-2d") == 0) {
+        // FIXME: to be implemented
+      config->opengl_2d = 1;
+    }
     else if ( strcmp( argv[i], "--soft-convert") == 0) {
       config->software_colour_convert = 1;
     }
-    else if ( strcmp( argv[i], "--disable-3d") == 0) {
-      config->disable_3d = 1;
+    else if ( strncmp( argv[i], "--3d-engine=", 12) == 0) {
+      char *end_char;
+      int engine = strtoul( &argv[i][12], &end_char, 10);
+
+      if ( engine == 0 || engine == 1) {
+        config->disable_3d = !engine;
+      }
+      else {
+        g_printerr( _("Only 0(disabled) or 1(gtkglext off-screen 3d) are currently supported\n"));
+        good_args = 0;
+      }
     }
 #endif
     else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
@@ -475,6 +508,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	/* check command line file */
 	if( my_config->nds_file) {
 		if(desmume_open( my_config->nds_file) >= 0)	{
+            loadstate_slot( my_config->load_slot);
 			desmume_resume();
 			enable_rom_features();
 		} else {
