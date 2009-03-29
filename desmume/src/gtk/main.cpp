@@ -186,7 +186,7 @@ fill_configured_features( struct configured_features *config,
 #endif
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
-        "\t\t\t\t  1 = internal rasterizer\n"
+        "\t\t\t\t  1 = internal rasterizer (default)\n"
 // GTKGLEXT and LIBOSMESA are currently exclusive, so, no conflict below
 #ifdef GTKGLEXT_AVAILABLE
         "\t\t\t\t  2 = gtkglext off-screen opengl\n"

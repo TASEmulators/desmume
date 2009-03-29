@@ -170,8 +170,8 @@ fill_config( struct my_config *config,
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
       printf( "   --3d-engine=ENGINE  Select 3d rendering engine, available ENGINES:\n");
-      printf( "                         0 = 3d disabled - default\n");
-      printf( "                         1 = internal desmume software rasterizer\n");
+      printf( "                         0 = 3d disabled\n");
+      printf( "                         1 = internal desmume software rasterizer (default)\n");
 #ifdef INCLUDE_OPENGL_2D
       printf( "   --opengl-2d         Enables using OpenGL for screen rendering\n");
       printf( "   --soft-convert      Use software colour conversion during OpenGL\n");
