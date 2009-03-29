@@ -124,7 +124,7 @@ fill_configured_features( struct configured_features *config,
    \n\
    --3d-engine=ENGINE  Selects 3D rendering engine\n\
                          0 = disabled\n\
-                         1 = internal desmume rasterizer\n\
+                         1 = internal desmume rasterizer (default)\n\
                          2 = gtkglext off-screen 3d opengl\n\n"));
 #endif
       g_print( _("\
@@ -171,11 +171,11 @@ fill_configured_features( struct configured_features *config,
       char *end_char;
       int engine = strtoul( &argv[i][12], &end_char, 10);
 
-      if ( engine == 0 || engine == 1) {
+      if ( engine >= 0 && engine <= 2) {
         config->engine_3d = engine;
       }
       else {
-        g_printerr( _("Only 0(disabled) or 1(gtkglext off-screen 3d) are currently supported\n"));
+        g_printerr( _("Supported 3d engines: 0, 1, 2; use --help option for details\n"));
         good_args = 0;
       }
     }
@@ -529,31 +529,19 @@ common_gtk_glade_main( struct configured_features *my_config) {
         gtk_widget_show(pDrawingArea2);
 
         {
-          int use_null_3d = !my_config->engine_3d;
+          int engine = my_config->engine_3d;
 
 #ifdef GTKGLEXT_AVAILABLE
-          if ( !use_null_3d) {
+          if ( my_config->engine_3d==2 )
             /* setup the gdk 3D emulation */
-            if ( init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window))) {
-              NDS_3D_SetDriver(1);
-
-              if (!gpu3D->NDS_3D_Init()) {
-                fprintf( stderr, _("Failed to initialise openGL 3D emulation; "
-                         "removing 3D support\n"));
-                use_null_3d = 1;
+              if(!init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window))){
+                  fprintf( stderr, _("Failed to initialise openGL 3D emulation; "
+                                     "removing 3D support\n"));
+                  engine = 0;
               }
-            }
-            else {
-              fprintf( stderr, _("Failed to setup openGL 3D emulation; "
-                       "removing 3D support\n"));
-              use_null_3d = 1;
-            }
-          }
 #endif
-          if ( use_null_3d) {
-            NDS_3D_SetDriver ( 0);
-            gpu3D->NDS_3D_Init();
-          }
+          NDS_3D_ChangeCore(engine);
+          if(gpu3D == GPU3D_NULL);
         }
 
 //	on_menu_tileview_activate(NULL,NULL);
