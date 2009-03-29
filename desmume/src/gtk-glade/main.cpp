@@ -25,6 +25,7 @@
 #include "dTools/callbacks_dtools.h"
 #include "globals.h"
 #include "keyval_names.h"
+#include "rasterize.h"
 
 #ifdef GDB_STUB
 #include "../gdbstub.h"
@@ -54,7 +55,8 @@ NULL
 };
 
 GPU3DInterface *core3DList[] = {
-&gpu3DNull
+&gpu3DNull,
+&gpu3DRasterize
 #ifdef GTKGLEXT_AVAILABLE
   ,
   &gpu3Dgl
@@ -71,7 +73,7 @@ struct configured_features {
   int load_slot;
   int software_colour_convert;
   int opengl_2d;
-  int disable_3d;
+  int engine_3d;
   int disable_limiter;
 
   u16 arm9_gdb_port;
@@ -91,7 +93,7 @@ init_configured_features( struct configured_features *config) {
   config->software_colour_convert = 0;
 
   config->opengl_2d = 0;
-  config->disable_3d = 0;
+  config->engine_3d = 1;
 
   config->disable_limiter = 0;
 
@@ -122,7 +124,8 @@ fill_configured_features( struct configured_features *config,
    \n\
    --3d-engine=ENGINE  Selects 3D rendering engine\n\
                          0 = disabled\n\
-                         1 = gtkglext off-screen 3d opengl\n\n"));
+                         1 = internal desmume rasterizer\n\
+                         2 = gtkglext off-screen 3d opengl\n\n"));
 #endif
       g_print( _("\
    --disable-limiter   Disables the 60 fps limiter\n\
@@ -169,7 +172,7 @@ fill_configured_features( struct configured_features *config,
       int engine = strtoul( &argv[i][12], &end_char, 10);
 
       if ( engine == 0 || engine == 1) {
-        config->disable_3d = !engine;
+        config->engine_3d = engine;
       }
       else {
         g_printerr( _("Only 0(disabled) or 1(gtkglext off-screen 3d) are currently supported\n"));
@@ -526,7 +529,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
         gtk_widget_show(pDrawingArea2);
 
         {
-          int use_null_3d = my_config->disable_3d;
+          int use_null_3d = !my_config->engine_3d;
 
 #ifdef GTKGLEXT_AVAILABLE
           if ( !use_null_3d) {
