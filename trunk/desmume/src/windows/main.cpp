@@ -1204,12 +1204,45 @@ static void ExitRunLoop()
 	emu_halt();
 }
 
+class WinDriver : public Driver
+{
+	virtual BOOL WIFI_Host_InitSystem() {
+		#ifdef EXPERIMENTAL_WIFI
+			//require winsock initialization
+			WSADATA wsaData ;
+			WORD version = MAKEWORD(1,1) ;
+			if (WSAStartup(version,&wsaData))
+			{
+				printf("Failed initializing WSAStartup - softAP support disabled\n");
+				return FALSE ;
+			}
+			//require winpcap.dll
+			HMODULE temp = LoadLibrary("winpcap.dll");
+			if(temp == NULL) {
+				printf("Failed initializing winpcap.dll - softAP support disabled\n");
+				return FALSE;
+			}
+			FreeLibrary(temp);
+			return TRUE;
+		#else
+			return FALSE ;
+		#endif
+	}
+	virtual void WIFI_Host_ShutdownSystem() {
+		#ifdef EXPERIMENTAL_WIFI
+			WSACleanup() ;
+		#endif
+	}
+};
+
 int WINAPI WinMain (HINSTANCE hThisInstance,
 					HINSTANCE hPrevInstance,
 					LPSTR lpszArgument,
 					int nFunsterStil)
 
 {
+	driver = new WinDriver();
+
 	ULONG_PTR GdiplusToken;
 	GdiplusStartupInput GdiplusSI;
 

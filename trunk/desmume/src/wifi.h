@@ -494,6 +494,7 @@ typedef struct
 	} SoftAP;
 
 	/* desmume host communication */
+	bool		netEnabled;
 	socket_t    udpSocket ;
 	u8			channel ;
 
