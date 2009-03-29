@@ -160,7 +160,7 @@ init_configured_features( struct configured_features *config)
   config->opengl_2d = 0;
   config->soft_colour = 0;
 
-  config->engine_3d = 0;
+  config->engine_3d = 1;
 
   config->disable_limiter = 0;
 

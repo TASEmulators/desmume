@@ -143,7 +143,7 @@ init_config( struct my_config *config) {
 
   config->cflash_disk_image_file = NULL;
 
-  config->engine_3d = 0;
+  config->engine_3d = 1;
 
 #ifdef INCLUDE_OPENGL_2D
   config->opengl_2d = 0;
