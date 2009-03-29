@@ -18,6 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <assert.h>
 #include "wifi.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
@@ -427,8 +428,12 @@ static void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
 void WIFI_Init(wifimac_t *wifi)
 {
 	WIFI_resetRF(&wifi->RF) ;
-	WIFI_Host_InitSystem() ;
-	wifi->udpSocket = WIFI_Host_OpenChannel(1) ;
+	wifi->netEnabled = false;
+	if(driver->WIFI_Host_InitSystem())
+	{
+		wifi->netEnabled = true;
+		wifi->udpSocket = WIFI_Host_OpenChannel(1) ;
+	}
 	wifi->powerOn = FALSE;
 	wifi->powerOnPending = FALSE;
 }
@@ -922,7 +927,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			//printf("wifi: read reg 0x0214\n");
 			return 0x0009;
 		case 0x19C:
-			break;
+			assert(false); //luigi, please pick something to return from here
+			return 0;
 		default:
 		//	printf("wifi: read unhandled reg %03X\n", address);
 			return wifi->ioMem[address >> 1];
@@ -1500,26 +1506,6 @@ u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
 		return receivedBytes-8 ;
 	}
 	return 0 ;
-}
-
-BOOL WIFI_Host_InitSystem(void)
-{
-	#ifdef WIN32
-	WSADATA wsaData ;
-	WORD version = MAKEWORD(1,1) ;
-	if (WSAStartup(version,&wsaData))
-	{
-		return FALSE ;
-	}
-	#endif
-	return TRUE ;
-}
-
-void WIFI_Host_ShutdownSystem(void)
-{
-	#ifdef WIN32
-	WSACleanup() ;
-	#endif
 }
 
 #endif

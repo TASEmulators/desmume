@@ -317,6 +317,15 @@ extern struct TCommonSettings {
 
 extern char ROMserial[20];
 
+//this should be moved to a driver.h later, but for now, here they are.
+//each platform needs to implement this, although it doesnt need to implement any functions
+class Driver {
+public:
+	virtual BOOL WIFI_Host_InitSystem() { return FALSE; }
+	virtual void WIFI_Host_ShutdownSystem() {}
+};
+extern Driver* driver;
+
 #endif
 
  	  	 
