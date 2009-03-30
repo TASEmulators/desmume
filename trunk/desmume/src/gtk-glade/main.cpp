@@ -63,7 +63,6 @@ GPU3DInterface *core3DList[] = {
 #endif
 };
 
-
 /*
  *
  * Command line handling
@@ -120,11 +119,14 @@ fill_configured_features( struct configured_features *config,
       g_print( _("\
    --soft-convert      Use software colour conversion during OpenGL\n\
                        screen rendering. May produce better or worse\n\
-                       frame rates depending on hardware.\n\
-   \n\
+                       frame rates depending on hardware.\n\n"));
+#endif
+      g_print( _("\
    --3d-engine=ENGINE  Selects 3D rendering engine\n\
                          0 = disabled\n\
-                         1 = internal desmume rasterizer (default)\n\
+                         1 = internal desmume rasterizer (default)\n"));
+#ifdef GTKGLEXT_AVAILABLE
+      g_print( _("\
                          2 = gtkglext off-screen 3d opengl\n\n"));
 #endif
       g_print( _("\
@@ -167,19 +169,22 @@ fill_configured_features( struct configured_features *config,
     else if ( strcmp( argv[i], "--soft-convert") == 0) {
       config->software_colour_convert = 1;
     }
+#define MAX3DEMU 2
+#else
+#define MAX3DEMU 1
+#endif
     else if ( strncmp( argv[i], "--3d-engine=", 12) == 0) {
       char *end_char;
       int engine = strtoul( &argv[i][12], &end_char, 10);
 
-      if ( engine >= 0 && engine <= 2) {
+      if ( engine >= 0 && engine <= MAX3DEMU) {
         config->engine_3d = engine;
       }
       else {
-        g_printerr( _("Supported 3d engines: 0, 1, 2; use --help option for details\n"));
+        g_printerr( _("Supported 3d engines: 0, 1, and on some machines 2; use --help option for details\n"));
         good_args = 0;
       }
     }
-#endif
     else if ( strncmp( argv[i], "--fwlang=", 9) == 0) {
       char *end_char;
       int lang = strtoul( &argv[i][9], &end_char, 10);
