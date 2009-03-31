@@ -312,7 +312,7 @@ ARM7 cpu</property>
               <widget class="GtkSpinButton" id="wtools_3_palnum">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="adjustment">0 0 15 1 2 1</property>
+                <property name="adjustment">0 0 15 1 2 0</property>
                 <property name="climb_rate">1</property>
                 <signal name="value_changed" handler="on_wtools_3_palnum_value_changed"/>
               </widget>
@@ -471,7 +471,7 @@ ARM7 cpu</property>
               <widget class="GtkSpinButton" id="wtools_4_palnum">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="adjustment">0 0 15 1 2 1</property>
+                <property name="adjustment">0 0 15 1 2 0</property>
                 <property name="climb_rate">1</property>
                 <signal name="value_changed" handler="on_wtools_4_palnum_value_changed"/>
               </widget>

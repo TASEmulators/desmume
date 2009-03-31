@@ -76,16 +76,16 @@ static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
 
 enum {
-	MAIN_BG_0 = 0,
-	MAIN_BG_1,
-	MAIN_BG_2,
-	MAIN_BG_3,
-	MAIN_OBJ,
-	SUB_BG_0,
-	SUB_BG_1,
-	SUB_BG_2,
-	SUB_BG_3,
-	SUB_OBJ
+    MAIN_BG_0 = 0,
+    MAIN_BG_1,
+    MAIN_BG_2,
+    MAIN_BG_3,
+    MAIN_OBJ,
+    SUB_BG_0,
+    SUB_BG_1,
+    SUB_BG_2,
+    SUB_BG_3,
+    SUB_OBJ
 };
 
 /************************ CONFIG FILE *****************************/
@@ -100,12 +100,12 @@ static void Printscreen();
 static void Reset();
 
 static const GtkActionEntry action_entries[] = {
-	{ "open",	"gtk-open",		"Open",			"<Ctrl>o",	NULL,	G_CALLBACK(Open_Select) },
-	{ "run",	"gtk-media-play",	"Run",			"<Ctrl>r",	NULL,	G_CALLBACK(Launch) },
-	{ "pause",	"gtk-media-pause",	"Pause",		"<Ctrl>p",	NULL,	G_CALLBACK(Pause) },
-	{ "quit",	"gtk-quit",		"Quit",			"<Ctrl>q",	NULL,	G_CALLBACK(gtk_main_quit) },
-	{ "printscreen","gtk-media-record",	"Take a screenshot",	"<Ctrl>s",	NULL,	G_CALLBACK(Printscreen) },
-	{ "reset",	"gtk-refresh",		"Reset",		NULL,		NULL,	G_CALLBACK(Reset) }
+    { "open",       "gtk-open",         "Open",         "<Ctrl>o",  NULL,   G_CALLBACK(Open_Select) },
+    { "run",        "gtk-media-play",   "Run",          "<Ctrl>r",  NULL,   G_CALLBACK(Launch) },
+    { "pause",      "gtk-media-pause",  "Pause",        "<Ctrl>p",  NULL,   G_CALLBACK(Pause) },
+    { "quit",       "gtk-quit",         "Quit",         "<Ctrl>q",  NULL,   G_CALLBACK(gtk_main_quit) },
+    { "printscreen","gtk-media-record", "Take a screenshot",    "<Ctrl>s",  NULL,   G_CALLBACK(Printscreen) },
+    { "reset",      "gtk-refresh",      "Reset",        NULL,       NULL,   G_CALLBACK(Reset) }
 };
 
 GtkActionGroup * action_group;
@@ -198,13 +198,13 @@ fill_configured_features( struct configured_features *config,
     { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
     { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
     { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
-								    "\t\t\t\t  0 = Japanese\n"
-								    "\t\t\t\t  1 = English\n"
-								    "\t\t\t\t  2 = French\n"
-								    "\t\t\t\t  3 = German\n"
-								    "\t\t\t\t  4 = Italian\n"
-								    "\t\t\t\t  5 = Spanish\n",
-								    "LANG"},
+                                    "\t\t\t\t  0 = Japanese\n"
+                                    "\t\t\t\t  1 = English\n"
+                                    "\t\t\t\t  2 = French\n"
+                                    "\t\t\t\t  3 = German\n"
+                                    "\t\t\t\t  4 = Italian\n"
+                                    "\t\t\t\t  5 = Spanish\n",
+                                    "LANG"},
 #ifdef GDB_STUB
     { "arm9gdb", 0, 0, G_OPTION_ARG_INT, &config->arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
     { "arm7gdb", 0, 0, G_OPTION_ARG_INT, &config->arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
@@ -303,69 +303,69 @@ u16 Keypad_Temp[NB_KEYS];
 
 static int Write_ConfigFile(const gchar *config_file)
 {
-	int i;
-	GKeyFile * keyfile;
-	gchar *contents;
-	gboolean ret;
+    int i;
+    GKeyFile * keyfile;
+    gchar *contents;
+    gboolean ret;
 
-	keyfile = g_key_file_new();
+    keyfile = g_key_file_new();
 
-	for(i = 0; i < NB_KEYS; i++) {
-		g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
-		g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
-	}
+    for(i = 0; i < NB_KEYS; i++) {
+        g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
+        g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
+    }
 
-// 	if(FirmwareFile[0]) {
-// 		ini_add_section(ini, "FIRMWARE");
-// 		ini_add_value(ini, "FIRMWARE", "FILE", FirmwareFile);
-// 	}
+//  if(FirmwareFile[0]) {
+//      ini_add_section(ini, "FIRMWARE");
+//      ini_add_value(ini, "FIRMWARE", "FILE", FirmwareFile);
+//  }
 
-	contents = g_key_file_to_data(keyfile, 0, 0);	
-	ret = g_file_set_contents(config_file, contents, -1, NULL);
-	if (!ret)
-		g_printerr("Failed to write to %s\n", config_file);
-	g_free (contents);
+    contents = g_key_file_to_data(keyfile, 0, 0);   
+    ret = g_file_set_contents(config_file, contents, -1, NULL);
+    if (!ret)
+        g_printerr("Failed to write to %s\n", config_file);
+    g_free (contents);
 
-	g_key_file_free(keyfile);
+    g_key_file_free(keyfile);
 
-	return 0;
+    return 0;
 }
 
 static int Read_ConfigFile(const gchar *config_file)
 {
-	int i, tmp;
-	GKeyFile * keyfile = g_key_file_new();
-	GError * error = NULL;
+    int i, tmp;
+    GKeyFile * keyfile = g_key_file_new();
+    GError * error = NULL;
 
-	load_default_config();
+    load_default_config();
 
-	g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_NONE, 0);
+    g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_NONE, 0);
 
-	/* Load keyboard keys */
-	for(i = 0; i < NB_KEYS; i++) {
-		tmp = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
-		if (error != NULL) {
+    /* Load keyboard keys */
+    for(i = 0; i < NB_KEYS; i++) {
+        tmp = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
+        if (error != NULL) {
                   g_error_free(error);
                   error = NULL;
-		} else {
+        } else {
                   keyboard_cfg[i] = tmp;
-		}
-	}
+        }
+    }
 
-	/* Load joystick keys */
-	for(i = 0; i < NB_KEYS; i++) {
-		tmp = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
-		if (error != NULL) {
+    /* Load joystick keys */
+    for(i = 0; i < NB_KEYS; i++) {
+        tmp = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
+        if (error != NULL) {
                   g_error_free(error);
                   error = NULL;
-		} else {
+        } else {
                   joypad_cfg[i] = tmp;
-		}
-	}
+        }
+    }
 
-	g_key_file_free(keyfile);
+    g_key_file_free(keyfile);
 
-	return 0;
+    return 0;
 }
 
 /************************ GTK *******************************/
@@ -392,131 +392,130 @@ static BOOL regMainLoop = FALSE;
 
 static inline void pStatusBar_Change (const char *message)
 {
-	gint pStatusBar_Ctx;
+    gint pStatusBar_Ctx;
 
-	pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
-	gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx);
-	gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, message);
+    pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
+    gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx);
+    gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, message);
 }
 
 gboolean EmuLoop(gpointer data);
 
 static void About(GtkWidget* widget, gpointer data)
 {
-	GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
+    GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 
-	gtk_show_about_dialog(GTK_WINDOW(pWindow),
-			"name", "DeSmuME",
-			"version", VERSION,
-			"website", "http://desmume.org",
-			"logo", pixbuf,
-			"comments", "Nintendo DS emulator based on work by Yopyop",
-			NULL);
+    gtk_show_about_dialog(GTK_WINDOW(pWindow),
+            "name", "DeSmuME",
+            "version", VERSION,
+            "website", "http://desmume.org",
+            "logo", pixbuf,
+            "comments", "Nintendo DS emulator based on work by Yopyop",
+            NULL);
 
-	g_object_unref(pixbuf);
+    g_object_unref(pixbuf);
 }
 
 static int Open(const char *filename, const char *cflash_disk_image)
 {
-	return NDS_LoadROM( filename, backupmemorytype, backupmemorysize, cflash_disk_image );
+    return NDS_LoadROM( filename, backupmemorytype, backupmemorysize, cflash_disk_image );
 }
 
 static void Launch()
 {
-	desmume_resume();
+    desmume_resume();
 
-	if(!regMainLoop) {
-		g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
-		regMainLoop = TRUE;
-	}
+    if(!regMainLoop) {
+        g_idle_add_full(EMULOOP_PRIO, &EmuLoop, pWindow, NULL);
+        regMainLoop = TRUE;
+    }
 
-	pStatusBar_Change("Running ...");
+    pStatusBar_Change("Running ...");
 
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
 }
 
 static void Pause()
 {
-	desmume_pause();
-	pStatusBar_Change("Paused");
+    desmume_pause();
+    pStatusBar_Change("Paused");
 
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
 }
 
 /* Choose a file then load it */
 static void Open_Select(GtkWidget* widget, gpointer data)
 {
-	GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
-	GtkWidget *pFileSelection;
-	GtkWidget *pParent;
-	gchar *sChemin;
+    GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
 
-	if (desmume_running())
-		Pause();
+    if (desmume_running())
+        Pause();
 
-	pParent = GTK_WIDGET(data);
+    pParent = GTK_WIDGET(data);
 
-	pFilter_nds = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
+    pFilter_nds = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
 #ifdef HAVE_LIBZ
-	gtk_file_filter_add_pattern(pFilter_nds, "*.nds.gz");
+    gtk_file_filter_add_pattern(pFilter_nds, "*.nds.gz");
 #endif
 #ifdef HAVE_LIBZZIP
-	gtk_file_filter_add_pattern(pFilter_nds, "*.nds.zip");
+    gtk_file_filter_add_pattern(pFilter_nds, "*.nds.zip");
 #endif
-	gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
+    gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
 
-	pFilter_dsgba = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_dsgba, "*.ds.gba");
-	gtk_file_filter_set_name(pFilter_dsgba, "Nds binary with loader (.ds.gba)");
+    pFilter_dsgba = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_dsgba, "*.ds.gba");
+    gtk_file_filter_set_name(pFilter_dsgba, "Nds binary with loader (.ds.gba)");
 
-	pFilter_any = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_any, "*");
-	gtk_file_filter_set_name(pFilter_any, "All files");
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
 
-	/* Creating the selection window */
-	pFileSelection = gtk_file_chooser_dialog_new("Open...",
-			GTK_WINDOW(pParent),
-			GTK_FILE_CHOOSER_ACTION_OPEN,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-			NULL);
-	/* On limite les actions a cette fenetre */
-	gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Open...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            NULL);
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsgba);
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsgba);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
-	/* Affichage fenetre */
-	switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-	case GTK_RESPONSE_OK:
-		/* Recuperation du chemin */
-		sChemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-		if(Open((const char*)sChemin, bad_glob_cflash_disk_image_file) < 0) {
-			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
-					GTK_DIALOG_MODAL,
-					GTK_MESSAGE_ERROR,
-					GTK_BUTTONS_OK,
-					"Unable to load :\n%s", sChemin);
-			gtk_dialog_run(GTK_DIALOG(pDialog));
-			gtk_widget_destroy(pDialog);
-		} else {
-			gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
-		}
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+        if(Open((const char*)sPath, bad_glob_cflash_disk_image_file) < 0) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to load :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        }
 
-		//Launch(NULL, pWindow);
+        //Launch(NULL, pWindow);
 
-		g_free(sChemin);
-		break;
-	default:
-		break;
-	}
-	gtk_widget_destroy(pFileSelection);
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
 }
 
 #if 0 /* not used */
@@ -527,13 +526,11 @@ static void Close()
 
 static void Reset()
 {
-        NDS_Reset();
-	desmume_resume();
+    NDS_Reset();
+    desmume_resume();
 
-	pStatusBar_Change("Running ...");
+    pStatusBar_Change("Running ...");
 }
-
-
 
 #ifdef GTKGLEXT_AVAILABLE
 static void
@@ -627,11 +624,11 @@ gtk_init_sub_gl_area(GtkWidget *widget,
 
 static inline void gpu_screen_to_rgb(u8 *rgb, int size)
 {
-	for (int i = 0; i < size; i++) {
-		rgb[(i*3)+0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-		rgb[(i*3)+1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-		rgb[(i*3)+2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
-	}
+    for (int i = 0; i < size; i++) {
+        rgb[(i*3)+0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
+        rgb[(i*3)+1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
+        rgb[(i*3)+2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+    }
 }
 
 #ifdef GTKGLEXT_AVAILABLE
@@ -870,98 +867,100 @@ common_configure_fn( GtkWidget *widget,
 /* Drawing callback */
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-	guchar *rgb;
-	rgb = (guchar *) malloc(SCREENS_PIXEL_SIZE*3);
-	if (!rgb)
-		return 0;
+    guchar *rgb;
+    rgb = (guchar *) malloc(SCREENS_PIXEL_SIZE*3);
+    if (!rgb)
+        return 0;
 
-	gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
-	gdk_draw_rgb_image (widget->window,
-			    widget->style->fg_gc[widget->state], 0, 0,
-			    256, 192*2,
-			    GDK_RGB_DITHER_NONE,
-			    rgb, 256*3);
+    gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
+    gdk_draw_rgb_image (widget->window,
+                widget->style->fg_gc[widget->state], 0, 0,
+                256, 192*2,
+                GDK_RGB_DITHER_NONE,
+                rgb, 256*3);
 
-	free(rgb);
-	return 1;
+    free(rgb);
+    return 1;
 }
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
 static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
 {
-	GdkModifierType state;
-	gint x,y;
-	s32 EmuX, EmuY;
+    GdkModifierType state;
+    gint x,y;
+    s32 EmuX, EmuY;
         const int *opengl = (const int *)data;
 
 
-	if(click) {
+    if(click) {
                 int scaled_x, scaled_y;
-		if(e->is_hint)
-			gdk_window_get_pointer(w->window, &x, &y, &state);
-		else {
-			x= (gint)e->x;
-			y= (gint)e->y;
-			state=(GdkModifierType)e->state;
-		}
+        if(e->is_hint)
+            gdk_window_get_pointer(w->window, &x, &y, &state);
+        else {
+            x= (gint)e->x;
+            y= (gint)e->y;
+            state=(GdkModifierType)e->state;
+        }
 
                 scaled_x = x * nds_screen_size_ratio;
                 scaled_y = y * nds_screen_size_ratio;
 
-		LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
+        LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
 
                 if ( !(*opengl)) {
                   scaled_y -= 192;
                 }
-		if(scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
+        if(scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
                   EmuX = scaled_x;
                   EmuY = scaled_y;
                   if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
                   if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
                   NDS_setTouchPos(EmuX, EmuY);
-		}
-	}
+        }
+    }
 
-	return TRUE;
+    return TRUE;
 }
-static gboolean Stylus_Press(GtkWidget *w, GdkEventButton *e, gpointer data)
+
+static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
+                             gpointer data)
 {
-	GdkModifierType state;
-	gint x,y;
-	s32 EmuX, EmuY;
-        const int *opengl = (const int *)data;
+    GdkModifierType state;
+    gint x, y;
+    s32 EmuX, EmuY;
+    const int *opengl = (const int *) data;
 
-	if(desmume_running()) {
-		if(e->button == 1) {
-                  int scaled_x, scaled_y;
-			click = TRUE;
+    if (desmume_running()) {
+        if (e->button == 1) {
+            int scaled_x, scaled_y;
+            click = TRUE;
 
-			gdk_window_get_pointer(w->window, &x, &y, &state);
+            gdk_window_get_pointer(w->window, &x, &y, &state);
 
-                        scaled_x = x * nds_screen_size_ratio;
-                        scaled_y = y * nds_screen_size_ratio;
+            scaled_x = x * nds_screen_size_ratio;
+            scaled_y = y * nds_screen_size_ratio;
 
-                        if ( !(*opengl)) {
-                          scaled_y -= 192;
-                        }
-                        if(scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
-                            EmuX = scaled_x;
-                            EmuY = scaled_y;
-                            if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
-                            if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-                            NDS_setTouchPos(EmuX, EmuY);
-			}
-		}
-	}
+            if (!(*opengl)) {
+                scaled_y -= 192;
+            }
+            if (scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
+                EmuX = scaled_x;
+                EmuY = scaled_y;
+                if (EmuX < 0) EmuX = 0; else if (EmuX > 255) EmuX = 255;
+                if (EmuY < 0) EmuY = 0; else if (EmuY > 192) EmuY = 192;
+                NDS_setTouchPos(EmuX, EmuY);
+            }
+        }
+    }
 
-	return TRUE;
+    return TRUE;
 }
 static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
 {
-	if(click) NDS_releaseTouch();
-	click = FALSE;
-	return TRUE;
+    if(click) NDS_releaseTouch();
+    click = FALSE;
+    return TRUE;
 }
 
 void loadgame(int num){
@@ -1003,16 +1002,26 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
           savegame(e->keyval - GDK_F1 + 1);
       return 1;
   }
-  u16 Key = lookup_key(e->keyval);
-  ADD_KEY( Cur_Keypad, Key );
-  if(desmume_running()) update_keypad(Cur_Keypad);
+  // FIXME: this is a hack to allow accels to work together with keypad emulation
+  // should be fixed by somebody who knows how to make key_press_event trigger AFTER all GtkAccels
+  guint mask;
+  mask = GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD5_MASK; // shift,ctrl, both alts
+  if( (e->state & mask) == 0){
+    u16 Key = lookup_key(e->keyval);
+    if(Key){
+      ADD_KEY( Cur_Keypad, Key );
+      if(desmume_running()) update_keypad(Cur_Keypad);
+      return 1;
+    }
+  }
 
 #ifdef PROFILE_MEMORY_ACCESS
   if ( e->keyval == GDK_Tab) {
     print_memory_profiling();
+    return 1;
   }
 #endif
-  return 1;
+  return 0;
 }
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
@@ -1035,97 +1044,97 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
 
 struct modify_key_ctx {
-	gint mk_key_chosen;
-	GtkWidget *label;
+    gint mk_key_chosen;
+    GtkWidget *label;
 };
 
 static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e, struct modify_key_ctx *ctx)
 {
-	gchar *YouPressed;
+    gchar *YouPressed;
 
-	ctx->mk_key_chosen = e->keyval;
-	YouPressed = g_strdup_printf("You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
-	gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
-	g_free(YouPressed);
+    ctx->mk_key_chosen = e->keyval;
+    YouPressed = g_strdup_printf("You pressed : %s\nClick OK to keep this key.", gdk_keyval_name(e->keyval));
+    gtk_label_set(GTK_LABEL(ctx->label), YouPressed);
+    g_free(YouPressed);
 }
 
 static void Modify_Key(GtkWidget* widget, gpointer data)
 {
-	struct modify_key_ctx ctx;
-	GtkWidget *mkDialog;
-	gchar *Key_Label;
-	gchar *Title;
-	gint Key;
+    struct modify_key_ctx ctx;
+    GtkWidget *mkDialog;
+    gchar *Key_Label;
+    gchar *Title;
+    gint Key;
 
-	Key = GPOINTER_TO_INT(data);
-	ctx.mk_key_chosen = 0;
-	Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
-	mkDialog = gtk_dialog_new_with_buttons(Title,
-		GTK_WINDOW(pWindow),
-		GTK_DIALOG_MODAL,
-		GTK_STOCK_OK,GTK_RESPONSE_OK,
-		GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
-		NULL);
+    Key = GPOINTER_TO_INT(data);
+    ctx.mk_key_chosen = 0;
+    Title = g_strdup_printf("Press \"%s\" key ...\n", key_names[Key]);
+    mkDialog = gtk_dialog_new_with_buttons(Title,
+        GTK_WINDOW(pWindow),
+        GTK_DIALOG_MODAL,
+        GTK_STOCK_OK,GTK_RESPONSE_OK,
+        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+        NULL);
 
-	ctx.label = gtk_label_new(Title);
-	g_free(Title);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), ctx.label, TRUE, FALSE, 0);
+    ctx.label = gtk_label_new(Title);
+    g_free(Title);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), ctx.label, TRUE, FALSE, 0);
 
-	g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), &ctx);
+    g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), &ctx);
 
-	gtk_widget_show_all(GTK_DIALOG(mkDialog)->vbox);
+    gtk_widget_show_all(GTK_DIALOG(mkDialog)->vbox);
 
-	switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
-	case GTK_RESPONSE_OK:
-		Keypad_Temp[Key] = ctx.mk_key_chosen;
-		Key_Label = g_strdup_printf("%s (%s)", key_names[Key], gdk_keyval_name(Keypad_Temp[Key]));
-		gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
-		g_free(Key_Label);
-		break;
-	case GTK_RESPONSE_CANCEL:
-	case GTK_RESPONSE_NONE:
-		ctx.mk_key_chosen = 0;
-		break;
-	}
+    switch(gtk_dialog_run(GTK_DIALOG(mkDialog))) {
+    case GTK_RESPONSE_OK:
+        Keypad_Temp[Key] = ctx.mk_key_chosen;
+        Key_Label = g_strdup_printf("%s (%s)", key_names[Key], gdk_keyval_name(Keypad_Temp[Key]));
+        gtk_button_set_label(GTK_BUTTON(widget), Key_Label);
+        g_free(Key_Label);
+        break;
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        ctx.mk_key_chosen = 0;
+        break;
+    }
 
-	gtk_widget_destroy(mkDialog);
+    gtk_widget_destroy(mkDialog);
 
 }
 
 static void Edit_Controls(GtkWidget* widget, gpointer data)
 {
-	GtkWidget *ecDialog;
-	GtkWidget *ecKey;
-	gchar *Key_Label;
-	int i;
+    GtkWidget *ecDialog;
+    GtkWidget *ecKey;
+    gchar *Key_Label;
+    int i;
 
-	memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
+    memcpy(&Keypad_Temp, &keyboard_cfg, sizeof(keyboard_cfg));
 
-	ecDialog = gtk_dialog_new_with_buttons("Edit controls",
-						GTK_WINDOW(pWindow),
-						GTK_DIALOG_MODAL,
-						GTK_STOCK_OK,GTK_RESPONSE_OK,
-						GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
-						NULL);
+    ecDialog = gtk_dialog_new_with_buttons("Edit controls",
+                        GTK_WINDOW(pWindow),
+                        GTK_DIALOG_MODAL,
+                        GTK_STOCK_OK,GTK_RESPONSE_OK,
+                        GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
+                        NULL);
 
-	for(i = 0; i < NB_KEYS; i++) {
-		Key_Label = g_strdup_printf("%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
-		ecKey = gtk_button_new_with_label(Key_Label);
-		g_free(Key_Label);
-		g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
-		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);
-	}
+    for(i = 0; i < NB_KEYS; i++) {
+        Key_Label = g_strdup_printf("%s (%s)", key_names[i], gdk_keyval_name(Keypad_Temp[i]));
+        ecKey = gtk_button_new_with_label(Key_Label);
+        g_free(Key_Label);
+        g_signal_connect(G_OBJECT(ecKey), "clicked", G_CALLBACK(Modify_Key), GINT_TO_POINTER(i));
+        gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ecDialog)->vbox), ecKey,TRUE, FALSE, 0);
+    }
 
-	gtk_widget_show_all(GTK_DIALOG(ecDialog)->vbox);
+    gtk_widget_show_all(GTK_DIALOG(ecDialog)->vbox);
 
-	switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
-	case GTK_RESPONSE_OK:
-		memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
-	case GTK_RESPONSE_CANCEL:
-	case GTK_RESPONSE_NONE:
-		break;
-	}
-	gtk_widget_destroy(ecDialog);
+    switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
+    case GTK_RESPONSE_OK:
+        memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_NONE:
+        break;
+    }
+    gtk_widget_destroy(ecDialog);
 
 }
 
@@ -1136,13 +1145,13 @@ static void Edit_Controls(GtkWidget* widget, gpointer data)
 
 static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 {
-	guint Size = GPOINTER_TO_UINT(data);
-	static int ScreenCoeff_Size;
+    guint Size = GPOINTER_TO_UINT(data);
+    static int ScreenCoeff_Size;
 
-	gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 384 * Size);
-	gtk_widget_set_usize (pDrawingArea, 256 * Size, 384 * Size);
+    gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 384 * Size);
+    gtk_widget_set_usize (pDrawingArea, 256 * Size, 384 * Size);
 
-	ScreenCoeff_Size = Size;
+    ScreenCoeff_Size = Size;
 }
 #endif
 
@@ -1150,100 +1159,100 @@ static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 
 static void Modify_Layer(GtkWidget* widget, gpointer data)
 {
-	guint Layer = GPOINTER_TO_UINT(data);
-	gboolean active;
+    guint Layer = GPOINTER_TO_UINT(data);
+    gboolean active;
 
-	if (!desmume_running())
-		return;
+    if (!desmume_running())
+        return;
 
-	active = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
+    active = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
 
-	switch (Layer) {
-	case MAIN_BG_0:
-	case MAIN_BG_1:
-	case MAIN_BG_2:
-	case MAIN_BG_3:
-		if(active == TRUE) {
-			if (!MainScreen.gpu->dispBG[Layer])
-				GPU_addBack(MainScreen.gpu, Layer);
-		} else {
-			if (MainScreen.gpu->dispBG[Layer])
-				 GPU_remove(MainScreen.gpu, Layer);
-		}
-		break;
-	case MAIN_OBJ:
-		if(active == TRUE) {
-			if (!MainScreen.gpu->dispOBJ)
-				GPU_addBack(MainScreen.gpu, Layer);
-		} else { 
-			if (MainScreen.gpu->dispOBJ)
-				GPU_remove(MainScreen.gpu, Layer);
-		}
-		break;
-	case SUB_BG_0:
-	case SUB_BG_1:
-	case SUB_BG_2:
-	case SUB_BG_3:
-		if(active == TRUE) {
-			if (!SubScreen.gpu->dispBG[Layer-SUB_BG_0])
-				GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
-		} else { 
-			if (SubScreen.gpu->dispBG[Layer-SUB_BG_0])
-				GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
-		}
-		break;
-	case SUB_OBJ:
-		if(active == TRUE) {
-			if (!SubScreen.gpu->dispOBJ)
-				GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
-		} else { 
-			if (SubScreen.gpu->dispOBJ)
-				GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
-		}
-		break;
-	default:
-		break;
-	}
-	LOG ("Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
+    switch (Layer) {
+    case MAIN_BG_0:
+    case MAIN_BG_1:
+    case MAIN_BG_2:
+    case MAIN_BG_3:
+        if(active == TRUE) {
+            if (!MainScreen.gpu->dispBG[Layer])
+                GPU_addBack(MainScreen.gpu, Layer);
+        } else {
+            if (MainScreen.gpu->dispBG[Layer])
+                 GPU_remove(MainScreen.gpu, Layer);
+        }
+        break;
+    case MAIN_OBJ:
+        if(active == TRUE) {
+            if (!MainScreen.gpu->dispOBJ)
+                GPU_addBack(MainScreen.gpu, Layer);
+        } else { 
+            if (MainScreen.gpu->dispOBJ)
+                GPU_remove(MainScreen.gpu, Layer);
+        }
+        break;
+    case SUB_BG_0:
+    case SUB_BG_1:
+    case SUB_BG_2:
+    case SUB_BG_3:
+        if(active == TRUE) {
+            if (!SubScreen.gpu->dispBG[Layer-SUB_BG_0])
+                GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+        } else { 
+            if (SubScreen.gpu->dispBG[Layer-SUB_BG_0])
+                GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
+        }
+        break;
+    case SUB_OBJ:
+        if(active == TRUE) {
+            if (!SubScreen.gpu->dispOBJ)
+                GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+        } else { 
+            if (SubScreen.gpu->dispOBJ)
+                GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
+        }
+        break;
+    default:
+        break;
+    }
+    LOG ("Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
 }
 
 /////////////////////////////// PRINTSCREEN /////////////////////////////////
 
 static void Printscreen()
 {
-	GdkPixbuf *screenshot;
-	gchar *filename;
-	GError *error = NULL;
-	u8 *rgb;
-	static int seq = 0;
+    GdkPixbuf *screenshot;
+    gchar *filename;
+    GError *error = NULL;
+    u8 *rgb;
+    static int seq = 0;
 
-	rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
-	if (!rgb)
-		return;
+    rgb = (u8 *) malloc(SCREENS_PIXEL_SIZE*3);
+    if (!rgb)
+        return;
 
-	gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
-	screenshot = gdk_pixbuf_new_from_data(rgb,
-					      GDK_COLORSPACE_RGB,
-					      FALSE,
-					      8,
-					      256,
-					      192*2,
-					      256*3, 
-					      NULL,
-					      NULL);
+    gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
+    screenshot = gdk_pixbuf_new_from_data(rgb,
+                          GDK_COLORSPACE_RGB,
+                          FALSE,
+                          8,
+                          256,
+                          192*2,
+                          256*3, 
+                          NULL,
+                          NULL);
 
-	filename = g_strdup_printf("./desmume-screenshot-%d.png", seq);
-	gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
-	if (error) {
-		g_error_free (error);
-		g_printerr("Failed to save %s", filename);
-	} else {
-		seq++;
-	}
+    filename = g_strdup_printf("./desmume-screenshot-%d.png", seq);
+    gdk_pixbuf_save(screenshot, filename, "png", &error, NULL);
+    if (error) {
+        g_error_free (error);
+        g_printerr("Failed to save %s", filename);
+    } else {
+        seq++;
+    }
 
-	free(rgb);
-	g_object_unref(screenshot);
-	g_free(filename);
+    free(rgb);
+    g_object_unref(screenshot);
+    g_free(filename);
 }
 
 /////////////////////////////// DS CONFIGURATION //////////////////////////////////
@@ -1254,157 +1263,149 @@ char FirmwareFile[256];
 
 int LoadFirmware(const char *filename)
 {
-	int i;
-	u32 size;
-	FILE *f;
+    int i;
+    u32 size;
+    FILE *f;
 
-	strncpy(FirmwareFile, filename, ARRAY_SIZE(FirmwareFile));
+    strncpy(FirmwareFile, filename, ARRAY_SIZE(FirmwareFile));
 
-	f = fopen(filename, "rb");
-	if(!f) return -1;
+    f = fopen(filename, "rb");
+    if(!f) return -1;
 
-	fseek(f, 0, SEEK_END);
-	size = ftell(f);
-	fseek(f, 0, SEEK_SET);
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
 
-	if(size > MMU.spi7.fw.size) { fclose(f); return -1; }		/* this must be a small file*/
+    if(size > MMU.spi7.fw.size) { fclose(f); return -1; }       /* this must be a small file*/
 
-	i = fread(MMU.spi7.fw.data, size, 1, f);
+    i = fread(MMU.spi7.fw.data, size, 1, f);
 
-	fclose(f);
+    fclose(f);
 
-	return i;
+    return i;
 }
 
 int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
 {
-	GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
-	GtkWidget *pFileSelection;
-	GtkWidget *pParent;
-	gchar *sChemin;
+    GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
 
-	BOOL oldState = desmume_running();
-	Pause();
+    BOOL oldState = desmume_running();
+    Pause();
 
-	pParent = GTK_WIDGET(data);
+    pParent = GTK_WIDGET(data);
 
-	pFilter_nds = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
-	gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
+    pFilter_nds = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
+    gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
 
-	pFilter_bin = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_bin, "*.bin");
-	gtk_file_filter_set_name(pFilter_bin, "Binary file (.bin)");
+    pFilter_bin = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_bin, "*.bin");
+    gtk_file_filter_set_name(pFilter_bin, "Binary file (.bin)");
 
-	pFilter_any = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_any, "*");
-	gtk_file_filter_set_name(pFilter_any, "All files");
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
 
-	/* Creation de la fenetre de selection */
-	pFileSelection = gtk_file_chooser_dialog_new("Load firmware...",
-			GTK_WINDOW(pParent),
-			GTK_FILE_CHOOSER_ACTION_OPEN,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OPEN, GTK_RESPONSE_OK,
-			NULL);
-	/* On limite les actions a cette fenetre */
-	gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+    pFileSelection = gtk_file_chooser_dialog_new("Load firmware...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            NULL);
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
-	if(FirmwareFile[0]) gtk_file_chooser_select_uri(GTK_FILE_CHOOSER(pFileSelection), FirmwareFile);
+    if(FirmwareFile[0]) gtk_file_chooser_select_uri(GTK_FILE_CHOOSER(pFileSelection), FirmwareFile);
 
-	/* Affichage fenetre */
-	switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-	case GTK_RESPONSE_OK:
-		/* Recuperation du chemin */
-		sChemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-		if(LoadFirmware((const char*)sChemin) < 0) {
-			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to load :\n%s", sChemin);
-			gtk_dialog_run(GTK_DIALOG(pDialog));
-			gtk_widget_destroy(pDialog);
-		} else {
-			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Selected firmware :\n%s", sChemin);
-			gtk_dialog_run(GTK_DIALOG(pDialog));
-			gtk_widget_destroy(pDialog);
-		}
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+        if(LoadFirmware((const char*)sPath) < 0) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to load :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Selected firmware :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        }
 
-		g_free(sChemin);
-		break;
-	default:
-		break;
-	}
-	gtk_widget_destroy(pFileSelection);
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
 
-	if(oldState) Launch();
+    if(oldState) Launch();
 
 }
 
 int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
 {
-	GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
-	GtkWidget *pFileSelection;
-	GtkWidget *pParent;
-	gchar *sChemin;
+    GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
 
-	BOOL oldState = desmume_running();
-	Pause();
+    BOOL oldState = desmume_running();
+    Pause();
 
-	pParent = GTK_WIDGET(data);
+    pParent = GTK_WIDGET(data);
 
-	pFilter_nds = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
-	gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
+    pFilter_nds = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
+    gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
 
-	pFilter_bin = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_bin, "*.bin");
-	gtk_file_filter_set_name(pFilter_bin, "Binary file (.bin)");
+    pFilter_bin = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_bin, "*.bin");
+    gtk_file_filter_set_name(pFilter_bin, "Binary file (.bin)");
 
-	pFilter_any = gtk_file_filter_new();
-	gtk_file_filter_add_pattern(pFilter_any, "*");
-	gtk_file_filter_set_name(pFilter_any, "All files");
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
 
-	/* Creation de la fenetre de selection */
-	pFileSelection = gtk_file_chooser_dialog_new("Save firmware...",
-			GTK_WINDOW(pParent),
-			GTK_FILE_CHOOSER_ACTION_OPEN,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-			NULL);
-	/* On limite les actions a cette fenetre */
-	gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+    pFileSelection = gtk_file_chooser_dialog_new("Save firmware...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
 
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
-	if(FirmwareFile[0]) gtk_file_chooser_select_uri(GTK_FILE_CHOOSER(pFileSelection), FirmwareFile);
+    if(FirmwareFile[0]) gtk_file_chooser_select_uri(GTK_FILE_CHOOSER(pFileSelection), FirmwareFile);
 
-	/* Affichage fenetre */
-	switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-	case GTK_RESPONSE_OK:
-		/* Recuperation du chemin */
-		sChemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-		if(LoadFirmware((const char*)sChemin) < 0) {
-			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to load :\n%s", sChemin);
-			gtk_dialog_run(GTK_DIALOG(pDialog));
-			gtk_widget_destroy(pDialog);
-		} else {
-			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Selected firmware :\n%s", sChemin);
-			gtk_dialog_run(GTK_DIALOG(pDialog));
-			gtk_widget_destroy(pDialog);
-		}
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+        if(LoadFirmware((const char*)sPath) < 0) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to load :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Selected firmware :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        }
 
-		g_free(sChemin);
-		break;
-	default:
-		break;
-	}
-	gtk_widget_destroy(pFileSelection);
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
 
-	if(oldState) Launch();
+    if(oldState) Launch();
 
 }
 
@@ -1416,7 +1417,7 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
 
 static void Modify_Frameskip(GtkWidget *widget, gpointer data)
 {
-	Frameskip = GPOINTER_TO_INT(data);
+    Frameskip = GPOINTER_TO_INT(data);
 }
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
@@ -1430,64 +1431,64 @@ BOOL *dTools_running;
 
 static void Start_dTool(GtkWidget *widget, gpointer data)
 {
-	int tool = GPOINTER_TO_INT(data);
+    int tool = GPOINTER_TO_INT(data);
 
-	if(dTools_running == NULL || dTools_running[tool])
-		return;
+    if(dTools_running == NULL || dTools_running[tool])
+        return;
 
-	dTools_list[tool]->open(tool);
-	dTools_running[tool] = TRUE;
+    dTools_list[tool]->open(tool);
+    dTools_running[tool] = TRUE;
 }
 
 void dTool_CloseCallback(int tool)
 {
-	if (dTools_running == NULL)
-		return;
+    if (dTools_running == NULL)
+        return;
 
-	dTools_running[tool] = FALSE;
+    dTools_running[tool] = FALSE;
 }
 
 /////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
 static inline void _updateDTools()
 {
-	if (dTools_running == NULL)
-		return;
+    if (dTools_running == NULL)
+        return;
 
-	for(int i = 0; i < dTools_list_size; i++) {
-		if(dTools_running[i]) { dTools_list[i]->update(); }
-	}
+    for(int i = 0; i < dTools_list_size; i++) {
+        if(dTools_running[i]) { dTools_list[i]->update(); }
+    }
 }
 
 gboolean EmuLoop(gpointer data)
 {
-	static Uint32 fps, fps_SecStart, fps_FrameCount;
-	unsigned int i;
-	gchar *Title;
+    static Uint32 fps, fps_SecStart, fps_FrameCount;
+    unsigned int i;
+    gchar *Title;
 
-	if(desmume_running()) {	/* Si on est en train d'executer le programme ... */
-		static int limiter_frame_counter = 0;
-		fps_FrameCount += Frameskip + 1;
-		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
-		if(SDL_GetTicks() - fps_SecStart >= 1000) {
-			fps_SecStart = SDL_GetTicks();
-			fps = fps_FrameCount;
-			fps_FrameCount = 0;
+    if(desmume_running()) { /* Si on est en train d'executer le programme ... */
+        static int limiter_frame_counter = 0;
+        fps_FrameCount += Frameskip + 1;
+        if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
+        if(SDL_GetTicks() - fps_SecStart >= 1000) {
+            fps_SecStart = SDL_GetTicks();
+            fps = fps_FrameCount;
+            fps_FrameCount = 0;
 
-			Title = g_strdup_printf("Desmume - %dfps", fps);
-			gtk_window_set_title(GTK_WINDOW(pWindow), Title);
-			g_free(Title);
-		}
+            Title = g_strdup_printf("Desmume - %dfps", fps);
+            gtk_window_set_title(GTK_WINDOW(pWindow), Title);
+            g_free(Title);
+        }
 
-		desmume_cycle();	/* Emule ! */
-		NDS_SkipFrame(true);
-		for(i = 0; i < Frameskip; i++) {
-			desmume_cycle();
-		}
-		NDS_SkipFrame(false);
+        desmume_cycle();    /* Emule ! */
+        NDS_SkipFrame(true);
+        for(i = 0; i < Frameskip; i++) {
+            desmume_cycle();
+        }
+        NDS_SkipFrame(false);
 
-		_updateDTools();
-		gtk_widget_queue_draw( nds_screen_widget);
+        _updateDTools();
+        gtk_widget_queue_draw( nds_screen_widget);
 
                 if ( !gtk_fps_limiter_disabled) {
                   limiter_frame_counter += 1;
@@ -1497,14 +1498,14 @@ gboolean EmuLoop(gpointer data)
                     /* wait for the timer to expire */
                     SDL_SemWait( fps_limiter_semaphore);
                   }
-		}
+        }
 
 
-		return TRUE;
-	}
+        return TRUE;
+    }
 
-	regMainLoop = FALSE;
-	return FALSE;
+    regMainLoop = FALSE;
+    return FALSE;
 }
 
 
@@ -1537,260 +1538,260 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 
 static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 {
-	GtkWidget *pMenu, *pMenuItem;
+    GtkWidget *pMenu, *pMenuItem;
 
-	pMenu = gtk_menu_new();
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
+    pMenu = gtk_menu_new();
+    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
+    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
+    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
 
-	pMenuItem = gtk_menu_item_new_with_label("File");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+    pMenuItem = gtk_menu_item_new_with_label("File");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 }
 
 static void changesavetype(GtkCheckMenuItem *checkmenuitem, gpointer type)
 {
-	if (gtk_check_menu_item_get_active(checkmenuitem))
-		mmu_select_savetype(GPOINTER_TO_INT(type), &backupmemorytype, &backupmemorysize);
+    if (gtk_check_menu_item_get_active(checkmenuitem))
+        mmu_select_savetype(GPOINTER_TO_INT(type), &backupmemorytype, &backupmemorysize);
 }
 
 static void desmume_gtk_menu_emulation_saves (GtkWidget *pMenu)
 {
-	GtkWidget *pMenuItem, *pSubmenu, *item;
-	GSList * list;
-	const char * types[] = {
-		"Autodetect",
-		"EEPROM 4kbit",
-		"EEPROM 64kbit",
-		"EEPROM 512kbit",
-		"FRAM 256kbit",
-		"FLASH 2mbit",
-		"FLASH 4mbit",
-		NULL
-	};
+    GtkWidget *pMenuItem, *pSubmenu, *item;
+    GSList * list;
+    const char * types[] = {
+        "Autodetect",
+        "EEPROM 4kbit",
+        "EEPROM 64kbit",
+        "EEPROM 512kbit",
+        "FRAM 256kbit",
+        "FLASH 2mbit",
+        "FLASH 4mbit",
+        NULL
+    };
 
-	pSubmenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Saves");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    pSubmenu = gtk_menu_new();
+    pMenuItem = gtk_menu_item_new_with_label("Saves");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-	list = NULL;
-	for (gint i = 0; types[i] != NULL; i++)
-	{
-		item = gtk_radio_menu_item_new_with_label(list, types[i]);
-		g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), GINT_TO_POINTER(i));
-		list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
-		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), item);
-	}
+    list = NULL;
+    for (gint i = 0; types[i] != NULL; i++)
+    {
+        item = gtk_radio_menu_item_new_with_label(list, types[i]);
+        g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), GINT_TO_POINTER(i));
+        list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), item);
+    }
 }
 
 static void desmume_gtk_menu_emulation_frameskip (GtkWidget *pMenu)
 {
-	GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
-	GtkWidget *pMenuItem, *pSubmenu;
-	gchar *buf;
-	guint i;
+    GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
+    GtkWidget *pMenuItem, *pSubmenu;
+    gchar *buf;
+    guint i;
 
-	pSubmenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Frameskip");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    pSubmenu = gtk_menu_new();
+    pMenuItem = gtk_menu_item_new_with_label("Frameskip");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-	for(i = 0; i < MAX_FRAMESKIP; i++) {
-		buf = g_strdup_printf("%d", i);
-		if (i>0)
-			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), buf);
-		else
-			mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-		g_free(buf);
-		g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
-		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mFrameskip_Radio[i]);
-	}
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
+    for(i = 0; i < MAX_FRAMESKIP; i++) {
+        buf = g_strdup_printf("%d", i);
+        if (i>0)
+            mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), buf);
+        else
+            mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+        g_free(buf);
+        g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
+        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mFrameskip_Radio[i]);
+    }
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
 }
 
 #ifdef BROKEN_SCREENSIZE
 static void desmume_gtk_menu_emulation_display_size (GtkWidget *pMenu, gboolean opengl)
 {
-	GtkWidget *pMenuItem, *pSubmenu;
-	GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
-	gchar *buf;
-	guint i;
+    GtkWidget *pMenuItem, *pSubmenu;
+    GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
+    gchar *buf;
+    guint i;
 
-	/* FIXME: this does not work and there's a lot of code that assume the default screen size, drawing function included */
-	if (!opengl) {
-		pSubmenu = gtk_menu_new();
-		pMenuItem = gtk_menu_item_new_with_label("Display size");
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    /* FIXME: this does not work and there's a lot of code that assume the default screen size, drawing function included */
+    if (!opengl) {
+        pSubmenu = gtk_menu_new();
+        pMenuItem = gtk_menu_item_new_with_label("Display size");
+        gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+        gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-		for(i = 1; i < MAX_SCREENCOEFF; i++) {
-			buf = g_strdup_printf("x%d", i);
-			if (i>1)
-				mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
-			else
-				mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-			g_free(buf);
-			g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GUINT_TO_POINTER(i));
-			gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
-		}
-	}
+        for(i = 1; i < MAX_SCREENCOEFF; i++) {
+            buf = g_strdup_printf("x%d", i);
+            if (i>1)
+                mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
+            else
+                mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
+            g_free(buf);
+            g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GUINT_TO_POINTER(i));
+            gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
+        }
+    }
 }
 #endif
 
 static void desmume_gtk_menu_emulation_layers (GtkWidget *pMenu, gboolean opengl)
 {
-	GtkWidget *pMenuItem, *pSubmenu;
-	GtkWidget *mLayers_Radio[10];
-	const char *Layers_Menu[10] = {
-		"Main BG 0",
-		"Main BG 1",
-		"Main BG 2",
-		"Main BG 3",
-		"Main OBJ",
-		"SUB BG 0",
-		"SUB BG 1",
-		"SUB BG 2",
-		"SUB BG 3",
-		"SUB OBJ"
-	};
-	guint i;
+    GtkWidget *pMenuItem, *pSubmenu;
+    GtkWidget *mLayers_Radio[10];
+    const char *Layers_Menu[10] = {
+        "Main BG 0",
+        "Main BG 1",
+        "Main BG 2",
+        "Main BG 3",
+        "Main OBJ",
+        "SUB BG 0",
+        "SUB BG 1",
+        "SUB BG 2",
+        "SUB BG 3",
+        "SUB OBJ"
+    };
+    guint i;
 
-	pSubmenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Layers");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    pSubmenu = gtk_menu_new();
+    pMenuItem = gtk_menu_item_new_with_label("Layers");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-	for(i = 0; i < 10; i++) {
-		mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
-		g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
-		gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
-	}
+    for(i = 0; i < 10; i++) {
+        mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
+        g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
+        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
+    }
 }
 
 static void desmume_gtk_disable_audio (GtkWidget *widget, gpointer data)
 {
-	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
-		SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
-	} else {
-		SPU_ChangeSoundCore(0, 0);
-	}
+    if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+        SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+    } else {
+        SPU_ChangeSoundCore(0, 0);
+    }
 }
 
 static void desmume_gtk_menu_emulation_disable_audio (GtkWidget *pMenu)
 {
-	GtkWidget *pMenuItem;
+    GtkWidget *pMenuItem;
 
-	pMenuItem = gtk_check_menu_item_new_with_label("Enable Audio");
-	g_signal_connect(G_OBJECT(pMenuItem), "toggled", G_CALLBACK(desmume_gtk_disable_audio), NULL);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pMenuItem), TRUE);
+    pMenuItem = gtk_check_menu_item_new_with_label("Enable Audio");
+    g_signal_connect(G_OBJECT(pMenuItem), "toggled", G_CALLBACK(desmume_gtk_disable_audio), NULL);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pMenuItem), TRUE);
 }
 
 static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
 {
-	GtkWidget *pMenu, *pMenuItem;
+    GtkWidget *pMenu, *pMenuItem;
 
-	pMenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Emulation");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+    pMenu = gtk_menu_new();
+    pMenuItem = gtk_menu_item_new_with_label("Emulation");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
-	gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
+    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
+    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
+    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
 
-	desmume_gtk_menu_emulation_disable_audio(pMenu);
-	desmume_gtk_menu_emulation_frameskip(pMenu);
-	desmume_gtk_menu_emulation_saves(pMenu);
-	desmume_gtk_menu_emulation_layers(pMenu, opengl);
+    desmume_gtk_menu_emulation_disable_audio(pMenu);
+    desmume_gtk_menu_emulation_frameskip(pMenu);
+    desmume_gtk_menu_emulation_saves(pMenu);
+    desmume_gtk_menu_emulation_layers(pMenu, opengl);
 #ifdef BROKEN_SCREENSIZE
-	desmume_gtk_menu_emulation_display_size(pMenu, opengl);
+    desmume_gtk_menu_emulation_display_size(pMenu, opengl);
 #endif
 }
 
 static void desmume_gtk_menu_config (GtkWidget *pMenuBar)
 {
-	GtkWidget *pMenu, *pMenuItem;
-	
-	pMenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Config");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+    GtkWidget *pMenu, *pMenuItem;
+    
+    pMenu = gtk_menu_new();
+    pMenuItem = gtk_menu_item_new_with_label("Config");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 
-	pMenuItem = gtk_menu_item_new_with_label("Edit controls");
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    pMenuItem = gtk_menu_item_new_with_label("Edit controls");
+    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
 #if 0
-	GtkWidget *pSubMenu;
-	pSubmenu = gtk_menu_new();
-	pMenuItem = gtk_menu_item_new_with_label("Firmware");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    GtkWidget *pSubMenu;
+    pSubmenu = gtk_menu_new();
+    pMenuItem = gtk_menu_item_new_with_label("Firmware");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-	pMenuItem = gtk_menu_item_new_with_label("Select...");
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(SelectFirmwareFile), (gpointer)0);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), pMenuItem);
+    pMenuItem = gtk_menu_item_new_with_label("Select...");
+    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(SelectFirmwareFile), (gpointer)0);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), pMenuItem);
 #endif
 }
 
 static void desmume_gtk_menu_tools (GtkWidget *pMenuBar)
 {
-	GtkWidget *pMenu, *pMenuItem;
-	gint i;
+    GtkWidget *pMenu, *pMenuItem;
+    gint i;
 
-	pMenu = gtk_menu_new();
-	for(i = 0; i < dTools_list_size; i++) {
-		pMenuItem = gtk_menu_item_new_with_label(dTools_list[i]->name);
-		g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
-		gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-	}
+    pMenu = gtk_menu_new();
+    for(i = 0; i < dTools_list_size; i++) {
+        pMenuItem = gtk_menu_item_new_with_label(dTools_list[i]->name);
+        g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
+        gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    }
 
-	pMenuItem = gtk_menu_item_new_with_label("Tools");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+    pMenuItem = gtk_menu_item_new_with_label("Tools");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 }
 
 static void desmume_gtk_menu_help (GtkWidget *pMenuBar)
 {
-	GtkWidget *pMenu, *pMenuItem;
+    GtkWidget *pMenu, *pMenuItem;
 
-	pMenu = gtk_menu_new();
-	pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT,NULL);
-	g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    pMenu = gtk_menu_new();
+    pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT,NULL);
+    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
-	pMenuItem = gtk_menu_item_new_with_label("Help");
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-	gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
+    pMenuItem = gtk_menu_item_new_with_label("Help");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 }
 
 static void desmume_gtk_toolbar (GtkWidget *pVBox)
 {
-	GtkWidget *pToolbar;
-	
-	pToolbar = gtk_toolbar_new();
-	gtk_box_pack_start(GTK_BOX(pVBox), pToolbar, FALSE, FALSE, 0);
+    GtkWidget *pToolbar;
+    
+    pToolbar = gtk_toolbar_new();
+    gtk_box_pack_start(GTK_BOX(pVBox), pToolbar, FALSE, FALSE, 0);
 
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "open"))), -1);
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "run"))), -1);
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "pause"))), -1);
-	gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "quit"))), -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "open"))), -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "run"))), -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "pause"))), -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "quit"))), -1);
 }
 
 static int
 common_gtk_main( struct configured_features *my_config)
 {
-	SDL_TimerID limiter_timer = NULL;
-	gchar *config_file;
+    SDL_TimerID limiter_timer = NULL;
+    gchar *config_file;
 
-	GtkAccelGroup * accel_group;
-	GtkWidget *pVBox;
-	GtkWidget *pMenuBar;
-	gint pStatusBar_Ctx;
+    GtkAccelGroup * accel_group;
+    GtkWidget *pVBox;
+    GtkWidget *pMenuBar;
+    gint pStatusBar_Ctx;
 
 #ifdef GTKGLEXT_AVAILABLE
         GdkGLConfig *glconfig;
@@ -1863,12 +1864,12 @@ common_gtk_main( struct configured_features *my_config)
 #endif
         /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
            Perhaps it needs a "window" to catch events...? */
-	if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
+    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
             g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
             return 1;
         }
-	desmume_init( arm9_memio, &arm9_ctrl_iface,
+    desmume_init( arm9_memio, &arm9_ctrl_iface,
                       arm7_memio, &arm7_ctrl_iface,
                       my_config->disable_sound);
 
@@ -1892,56 +1893,56 @@ common_gtk_main( struct configured_features *my_config)
         /* Initialize joysticks */
         if(!init_joy()) return 1;
 
- 	dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
-	if (dTools_running != NULL) 
-	  memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size); 
+    dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
+    if (dTools_running != NULL) 
+      memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size); 
 
-	config_file = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
-	Read_ConfigFile(config_file);
+    config_file = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
+    Read_ConfigFile(config_file);
 
-	/* Creation de la fenetre */
-	pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
+    /* Create the window */
+    pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-  	gtk_window_set_resizable(GTK_WINDOW (pWindow), my_config->opengl_2d ? TRUE : FALSE);
+    gtk_window_set_resizable(GTK_WINDOW (pWindow), my_config->opengl_2d ? TRUE : FALSE);
 
-	gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
+    gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
-	g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-	g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
-	g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "key_press_event", G_CALLBACK(Key_Press), NULL);
+    g_signal_connect(G_OBJECT(pWindow), "key_release_event", G_CALLBACK(Key_Release), NULL);
 
-	/* Creation de la GtkVBox */
-	pVBox = gtk_vbox_new(FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(pWindow), pVBox);
+    /* Create the GtkVBox */
+    pVBox = gtk_vbox_new(FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(pWindow), pVBox);
 
-	accel_group = gtk_accel_group_new();
-	action_group = gtk_action_group_new("dui");
-	gtk_action_group_add_actions(action_group, action_entries, sizeof(action_entries) / sizeof(GtkActionEntry), pWindow);
-        {
-                GList * list = gtk_action_group_list_actions(action_group);
-                g_list_foreach(list, dui_set_accel_group, accel_group);
-        }
-	gtk_window_add_accel_group(GTK_WINDOW(pWindow), accel_group);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
-	gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
+    accel_group = gtk_accel_group_new();
+    action_group = gtk_action_group_new("dui");
+    gtk_action_group_add_actions(action_group, action_entries, sizeof(action_entries) / sizeof(GtkActionEntry), pWindow);
+    {
+        GList * list = gtk_action_group_list_actions(action_group);
+        g_list_foreach(list, dui_set_accel_group, accel_group);
+    }
+    gtk_window_add_accel_group(GTK_WINDOW(pWindow), accel_group);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
 
-	/* Menu and Toolbar */
-	pMenuBar = gtk_menu_bar_new();
+    /* Menu and Toolbar */
+    pMenuBar = gtk_menu_bar_new();
 
-	desmume_gtk_menu_file(pMenuBar);
-	desmume_gtk_menu_emulation(pMenuBar, my_config->opengl_2d);
-	desmume_gtk_menu_config(pMenuBar);
-	desmume_gtk_menu_tools(pMenuBar);
-	desmume_gtk_menu_help(pMenuBar);
+    desmume_gtk_menu_file(pMenuBar);
+    desmume_gtk_menu_emulation(pMenuBar, my_config->opengl_2d);
+    desmume_gtk_menu_config(pMenuBar);
+    desmume_gtk_menu_tools(pMenuBar);
+    desmume_gtk_menu_help(pMenuBar);
 
-	gtk_box_pack_start(GTK_BOX(pVBox), pMenuBar, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(pVBox), pMenuBar, FALSE, FALSE, 0);
 
-	desmume_gtk_toolbar(pVBox);
+    desmume_gtk_toolbar(pVBox);
 
-	/* Création de l'endroit pour l'affichage des écrans */
+    /* Creating the place for showing DS screens */
 #ifdef GTKGLEXT_AVAILABLE
         if ( my_config->opengl_2d) {
           /*
@@ -2009,7 +2010,7 @@ common_gtk_main( struct configured_features *my_config)
           nds_screen_widget = top_screen_widget;
         } else {
 #else
-	{
+    {
 #endif
             pDrawingArea= gtk_drawing_area_new();
 
@@ -2036,15 +2037,15 @@ common_gtk_main( struct configured_features *my_config)
             nds_screen_widget = pDrawingArea;
         }
 
-	/* Status bar */
-	pStatusBar = gtk_statusbar_new();
-	pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
-	pStatusBar_Change("Desmume");
-	gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
+    /* Status bar */
+    pStatusBar = gtk_statusbar_new();
+    pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
+    pStatusBar_Change("Desmume");
+    gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
 
-	gtk_widget_show_all(pWindow);
+    gtk_widget_show_all(pWindow);
 
-	//LoadFirmware("fw.bin");
+    //LoadFirmware("fw.bin");
 
         gtk_fps_limiter_disabled = my_config->disable_limiter;
         if ( !gtk_fps_limiter_disabled) {
@@ -2058,7 +2059,7 @@ common_gtk_main( struct configured_features *my_config)
                      SDL_GetError());
             return 1;
           }
-	}
+    }
 
     /*
      * Set the 3D emulation to use
@@ -2080,33 +2081,33 @@ common_gtk_main( struct configured_features *my_config)
                      "removing 3D support\n");
     }
 
-	/* Command line arg */
-	if( my_config->nds_file != NULL) {
-		if(Open( my_config->nds_file, bad_glob_cflash_disk_image_file) >= 0) {
+    /* Command line arg */
+    if( my_config->nds_file != NULL) {
+        if(Open( my_config->nds_file, bad_glob_cflash_disk_image_file) >= 0) {
             if(my_config->load_slot){
               loadstate_slot(my_config->load_slot);
             }
 
-			Launch();
-		} else {
-			GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
-					GTK_DIALOG_MODAL,
-					GTK_MESSAGE_INFO,
-					GTK_BUTTONS_OK,
-					"Unable to load :\n%s", my_config->nds_file);
-			gtk_dialog_run(GTK_DIALOG(pDialog));
-			gtk_widget_destroy(pDialog);
-		}
-	}
+            Launch();
+        } else {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pWindow),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_INFO,
+                    GTK_BUTTONS_OK,
+                    "Unable to load :\n%s", my_config->nds_file);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        }
+    }
 
-	/* Boucle principale */
+    /* Main loop */
 
-//	gtk_idle_add(&EmuLoop, pWindow);
-//	g_idle_add(&EmuLoop, pWindow);
+//  gtk_idle_add(&EmuLoop, pWindow);
+//  g_idle_add(&EmuLoop, pWindow);
 
-	gtk_main();
+    gtk_main();
 
-	desmume_free();
+    desmume_free();
 
         if ( !gtk_fps_limiter_disabled) {
           /* tidy up the FPS limiter timer and semaphore */
@@ -2117,10 +2118,10 @@ common_gtk_main( struct configured_features *my_config)
         /* Unload joystick */
         uninit_joy();
 
-	SDL_Quit();
+    SDL_Quit();
 
-	Write_ConfigFile(config_file);
-	g_free(config_file);
+    Write_ConfigFile(config_file);
+    g_free(config_file);
 
 #ifdef GDB_STUB
         if ( my_config->arm9_gdb_port != 0) {
@@ -2131,7 +2132,7 @@ common_gtk_main( struct configured_features *my_config)
         }
 #endif
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 
