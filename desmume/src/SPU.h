@@ -87,6 +87,9 @@ public:
    void WriteByte(u32 addr, u8 val);
    void WriteWord(u32 addr, u16 val);
    void WriteLong(u32 addr, u32 val);
+   
+   //kills all channels but leaves SPU otherwise running normally
+   void ShutUp();
 };
 
 int SPU_ChangeSoundCore(int coreid, int buffersize);
@@ -105,7 +108,7 @@ u32 SPU_ReadLong(u32 addr);
 void SPU_Emulate_core(void);
 void SPU_Emulate_user(void);
 
-extern SPU_struct *SPU_core;
+extern SPU_struct *SPU_core, *SPU_user;
 extern int spu_core_samples;
 
 void spu_savestate(std::ostream* os);
