@@ -243,6 +243,8 @@ BEGIN
         MENUITEM "&Pause", IDM_PAUSE
         MENUITEM "&Reset", IDM_RESET
         MENUITEM SEPARATOR
+        MENUITEM "Shut Up", IDM_SHUT_UP
+        MENUITEM SEPARATOR
         MENUITEM "GBA &slot", IDM_GBASLOT
         POPUP "&Cheats"
         BEGIN

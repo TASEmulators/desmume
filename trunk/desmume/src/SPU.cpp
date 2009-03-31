@@ -258,6 +258,11 @@ void SPU_DeInit(void)
 
 //////////////////////////////////////////////////////////////////////////////
 
+void SPU_struct::ShutUp()
+{
+	for(int i=0;i<16;i++)
+		 channels[i].status = CHANSTAT_STOPPED;
+}
 
 void SPU_struct::KeyOn(int channel)
 {

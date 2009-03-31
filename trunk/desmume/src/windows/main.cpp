@@ -2375,6 +2375,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		}
 		switch(LOWORD(wParam))
 		{
+		case IDM_SHUT_UP:
+			if(SPU_user) SPU_user->ShutUp();
+			return 0;
 		case IDM_QUIT:
 			DestroyWindow(hwnd);
 			return 0;
