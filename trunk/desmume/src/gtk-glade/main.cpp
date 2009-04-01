@@ -40,7 +40,7 @@
 /*
  * The frame limiter semaphore
  */
-SDL_sem *glade_fps_limiter_semaphore;
+//SDL_sem *glade_fps_limiter_semaphore;
 int glade_fps_limiter_disabled = 0;
 
 GtkWidget * pWindow;
@@ -393,17 +393,17 @@ joinThread_gdb( void *thread_handle) {
  * 
  * @return The interval to the next call (required by SDL)
  */
-static Uint32
+/*static Uint32
 glade_fps_limiter_fn( Uint32 interval, void *param) {
   SDL_sem *sdl_semaphore = (SDL_sem *)param;
 
-  /* signal the semaphore if it is getting low */
+  /* signal the semaphore if it is getting low *-/
   if ( SDL_SemValue( sdl_semaphore) < 4) {
     SDL_SemPost( sdl_semaphore);
   }
 
   return interval;
-}
+}*/
 
 /* ***** ***** MAIN ***** ***** */
 
@@ -554,12 +554,12 @@ common_gtk_glade_main( struct configured_features *my_config) {
         /* setup the frame limiter and indicate if it is disabled */
         glade_fps_limiter_disabled = my_config->disable_limiter;
 
-        if ( !glade_fps_limiter_disabled) {
-          /* create the semaphore used for fps limiting */
+    /*    if ( !glade_fps_limiter_disabled) {
+          /* create the semaphore used for fps limiting *-/
           glade_fps_limiter_semaphore = SDL_CreateSemaphore( 1);
 
           /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD
-           * frames to keep us at 60 fps */
+           * frames to keep us at 60 fps *-/
           limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
                                         glade_fps_limiter_fn,
                                         glade_fps_limiter_semaphore);
@@ -569,17 +569,17 @@ common_gtk_glade_main( struct configured_features *my_config) {
             SDL_DestroySemaphore( glade_fps_limiter_semaphore);
             glade_fps_limiter_disabled = 1;
           }
-        }
+        }*/
 
 	/* start event loop */
 	gtk_main();
 	desmume_free();
 
-        if ( !glade_fps_limiter_disabled) {
-          /* tidy up the FPS limiter timer and semaphore */
+      /*  if ( !glade_fps_limiter_disabled) {
+          /* tidy up the FPS limiter timer and semaphore *-/
           SDL_RemoveTimer( limiter_timer);
           SDL_DestroySemaphore( glade_fps_limiter_semaphore);
-        }
+        }*/
 
         /* Unload joystick */
         uninit_joy();

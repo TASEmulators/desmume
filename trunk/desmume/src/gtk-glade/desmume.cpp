@@ -25,6 +25,8 @@
 gboolean EmuLoop(gpointer data);
 static BOOL regMainLoop = FALSE;
 
+#define TICKS_PER_FRAME 17
+
 
 static BOOL noticed_3D=FALSE;
 volatile BOOL execute = FALSE;
@@ -121,6 +123,7 @@ void desmume_cycle()
 
 
 Uint32 fps, fps_SecStart, fps_FrameCount;
+Uint32 ticksPrevFrame = 0, ticksCurFrame = 0;
 static void Draw()
 {
 }
@@ -128,15 +131,18 @@ static void Draw()
 gboolean EmuLoop(gpointer data)
 {
 	int i;
-	if (!noticed_3D) {
+	/*if (!noticed_3D) {
 		GtkWidget * dlg = glade_xml_get_widget(xml, "w3Dop");
 		gtk_widget_show(dlg);
 		noticed_3D=TRUE;
-	}
+	}*/
 		
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
 	  static int limiter_frame_counter = 0;
+	  
+	  	ticksCurFrame = SDL_GetTicks();
+	  
 		fps_FrameCount += Frameskip + 1;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000)
@@ -158,16 +164,24 @@ gboolean EmuLoop(gpointer data)
 		notify_Tools();
 		gtk_widget_queue_draw(pDrawingArea);
 		gtk_widget_queue_draw(pDrawingArea2);
+		
+		if(!glade_fps_limiter_disabled)
+		{
+			while((ticksCurFrame - ticksPrevFrame) < TICKS_PER_FRAME)
+				ticksCurFrame = SDL_GetTicks();
+		}
+		
+		ticksPrevFrame = ticksCurFrame;
 
-                if ( !glade_fps_limiter_disabled) {
+             /*   if ( !glade_fps_limiter_disabled) {
                   limiter_frame_counter += 1;
                   if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
                     limiter_frame_counter = 0;
 
-                    /* wait for the timer to expire */
+                    /* wait for the timer to expire *-/
                     SDL_SemWait( glade_fps_limiter_semaphore);
                   }
-                }
+                }*/
 
 		return TRUE;
 	}
