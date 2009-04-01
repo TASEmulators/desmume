@@ -19,7 +19,7 @@
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
+ 
 #include "callbacks.h"
 #include "callbacks_IO.h"
 #include "dTools/callbacks_dtools.h"
@@ -633,4 +633,3 @@ int WinMain ( HINSTANCE hThisInstance, HINSTANCE hPrevInstance,
   main( argc, argv);
 }
 #endif
-
