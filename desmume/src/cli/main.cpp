@@ -60,6 +60,9 @@
 
 volatile BOOL execute = FALSE;
 
+int savetype=MC_TYPE_AUTODETECT;
+u32 savesize=1;
+
 static float nds_screen_size_ratio = 1.0f;
 
 #define DISPLAY_FPS 1
@@ -89,6 +92,17 @@ GPU3DInterface *core3DList[] = {
 NULL
 };
 
+const char * save_type_names[] = {
+    "Autodetect",
+    "EEPROM 4kbit",
+    "EEPROM 64kbit",
+    "EEPROM 512kbit",
+    "FRAM 256kbit",
+    "FLASH 2mbit",
+    "FLASH 4mbit",
+    NULL
+};
+
 
 /* Our keyboard config is different because of the directional keys */
 const u16 cli_kb_cfg[NB_KEYS] =
@@ -115,6 +129,8 @@ struct my_config {
 
   int disable_sound;
   int engine_3d;
+
+  int savetype;
 
 #ifdef INCLUDE_OPENGL_2D
   int opengl_2d;
@@ -144,6 +160,7 @@ init_config( struct my_config *config) {
   config->cflash_disk_image_file = NULL;
 
   config->engine_3d = 1;
+  config->savetype = 0;
 
 #ifdef INCLUDE_OPENGL_2D
   config->opengl_2d = 0;
@@ -178,6 +195,12 @@ fill_config( struct my_config *config,
       printf( "                       screen rendering. May produce better or worse\n");
       printf( "                       frame rates depending on hardware.\n");
 #endif
+      printf( "\n");
+      printf( "   --save-type=TYPE    Select savetype from the following:\n");
+      for(int jj = 0; save_type_names[jj] != NULL; jj++){
+          printf("                         %d = %s\n",jj,save_type_names[jj]);
+      }
+
       printf( "\n");
       printf( "   --fwlang=LANG       Set the language in the firmware, LANG as follows:\n");
       printf( "                         0 = Japanese\n");
@@ -234,6 +257,19 @@ fill_config( struct my_config *config,
       }
       else {
         fprintf( stderr, "3d engine can be 0 or 1\n");
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--save-type=", 12) == 0) {
+      char *end_char;
+      int savetype = strtoul( &argv[i][12], &end_char, 10);
+      int last = sizeof(save_type_names)/sizeof(const char * )-2; // NULL terminator, 0-based 
+
+      if ( savetype >= 0 && savetype <= last) {
+        config->savetype = savetype;
+      }
+      else {
+        fprintf( stderr, "savetype can be 0-%d\n",last);
         good_args = 0;
       }
     }
@@ -667,7 +703,9 @@ int main(int argc, char ** argv) {
 
   NDS_3D_ChangeCore(my_config.engine_3d);
 
-  if (NDS_LoadROM( my_config.nds_file, MC_TYPE_AUTODETECT, 1, my_config.cflash_disk_image_file) < 0) {
+  mmu_select_savetype(my_config.savetype, &savetype, &savesize);
+
+  if (NDS_LoadROM( my_config.nds_file, savetype, savesize, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
     exit(-1);
   }
