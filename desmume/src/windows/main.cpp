@@ -1659,6 +1659,9 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
 
+		//if there was no specified screen gap, extend the top screen to cover the extra column
+		if(ScreenGap == 0) MainScreenRect.right += gapHeight;
+
 		// Sub screen
 		ptClient.x = (rc.left + oneScreenHeight + gapHeight);
 		ptClient.y = rc.top;
@@ -1690,6 +1693,9 @@ void UpdateWndRects(HWND hwnd)
 		ClientToScreen(hwnd, &ptClient);
 		MainScreenRect.right = ptClient.x;
 		MainScreenRect.bottom = ptClient.y;
+
+		//if there was no specified screen gap, extend the top screen to cover the extra row
+		if(ScreenGap == 0) MainScreenRect.bottom += gapHeight;
 
 		// Sub screen
 		ptClient.x = rc.left;
