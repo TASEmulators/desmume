@@ -38,8 +38,12 @@ extern void desmume_pause( void);
 extern void desmume_resume( void);
 extern void desmume_reset( void);
 extern void desmume_toggle( void);
-extern BOOL desmume_running( void);
+//extern BOOL desmume_running( void);
+INLINE BOOL desmume_running(void)
+{
+	return execute;
+}
 
-extern void desmume_cycle( void);
+extern INLINE void desmume_cycle( void);
 #endif /*__DESMUME_H__*/
 
