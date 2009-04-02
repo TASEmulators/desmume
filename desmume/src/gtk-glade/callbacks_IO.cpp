@@ -32,26 +32,34 @@ int saveFS;
 
 /* ***** ***** INPUT BUTTONS / KEYBOARD ***** ***** */
 gboolean  on_wMainW_key_press_event    (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
-	u16 Key = lookup_key(event->keyval);
-	if (event->keyval == keyboard_cfg[KEY_BOOST-1]) {
-		Boost = !Boost;
-		if (Boost) {
-			saveFS = Frameskip;
-			Frameskip = BoostFS;
-		} else {
-			Frameskip = saveFS;
-		}
-	}
-        ADD_KEY( Cur_Keypad, Key );
-        if(desmume_running()) update_keypad(Cur_Keypad);
-	return 1;
+    u16 Key = lookup_key(event->keyval);
+    guint mask;
+    mask = GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD5_MASK; // shift,ctrl, both alts
+    if( (event->state & mask) == 0){ 
+        if (event->keyval == keyboard_cfg[KEY_BOOST-1]) {
+            Boost = !Boost;
+            if (Boost) {
+                saveFS = Frameskip;
+                Frameskip = BoostFS;
+            } else {
+                Frameskip = saveFS;
+            }
+            return 1;
+        }
+        if(Key){
+            ADD_KEY( Cur_Keypad, Key );
+            if(desmume_running()) update_keypad(Cur_Keypad);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 gboolean  on_wMainW_key_release_event  (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
-	u16 Key = lookup_key(event->keyval);
-        RM_KEY( Cur_Keypad, Key );
-        if(desmume_running()) update_keypad(Cur_Keypad);
-	return 1;
+    u16 Key = lookup_key(event->keyval);
+    RM_KEY( Cur_Keypad, Key );
+    if(desmume_running()) update_keypad(Cur_Keypad);
+    return 1;
 }
 
 
