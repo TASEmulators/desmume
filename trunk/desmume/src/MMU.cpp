@@ -52,9 +52,6 @@
 #define ASSERT_UNALIGNED(x)
 #endif
 
-int LagFrameFlag=0;
-
-
 //http://home.utah.edu/~nahaj/factoring/isqrt.c.html
 static u64 isqrt (u64 x) {
   u64   squaredbit, remainder, root;
@@ -2864,12 +2861,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 }
 
-void CheckLag(u32 adr) {
-
-	if (adr == 0x04000130 || 0x04000136)
-		LagFrameFlag=0;
-}
-
 //================================================= MMU ARM9 read 08
 u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
@@ -2891,7 +2882,6 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	if ((adr>=0x9000000)&&(adr<0x9900000))
 		return (unsigned char)cflash_read(adr);
 #endif
-	CheckLag(adr);
 
 #ifdef _MMU_DEBUG
 		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
@@ -2926,13 +2916,12 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 
 	adr &= 0x0FFFFFFF;
 
-	CheckLag(adr);
-
 	if (adr >> 24 == 4)
 	{
-		/* Address is an IO register */
+		// Address is an IO register
 		switch(adr)
 		{
+			// ============================================= 3D
 			case 0x04000604:
 				return (gfx3d_GetNumPolys()&2047);
 			case 0x04000606:
@@ -2960,6 +2949,12 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
 				return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2];
+
+			case 0x04000130:
+			case 0x04000136:
+				//not sure whether these should trigger from byte reads
+				LagFrameFlag=0;
+				break;
 			
 			case REG_POSTFLG :
 				return 1;
@@ -3010,8 +3005,6 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 #endif
 
 	adr &= 0x0FFFFFFF;
-
-	CheckLag(adr);
 
 	// Address is an IO register
 	if((adr >> 24) == 4)
@@ -4014,6 +4007,14 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2];
+
+
+			case 0x04000130:
+			case 0x04000136:
+				//here is an example of what not to do:
+				//since the arm7 polls this every frame, we shouldnt count this as an input check
+				//LagFrameFlag=0;
+				break;
 			
 			case REG_POSTFLG :
 				return 1;
