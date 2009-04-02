@@ -63,7 +63,7 @@ struct SCustomKeys
 	SCustomKey Slot[10];
 	SCustomKey QuickSave, QuickLoad;
 
-	SCustomKey Pause, FrameAdvance;
+	SCustomKey Pause, FrameAdvance, FastForward, IncreaseSpeed, DecreaseSpeed;
 
 	SCustomKey ToggleRasterizer;
 
@@ -89,6 +89,7 @@ void HK_StateSaveSlot(int);
 void HK_StateLoadSlot(int);
 void HK_StateSetSlot(int);
 void HK_Pause(int);
+void HK_FastForward(int);
 
 #endif //HOTKEY_H_INCLUDED
 

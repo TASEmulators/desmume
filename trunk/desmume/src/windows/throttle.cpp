@@ -7,8 +7,25 @@
 #include "../console.h"
 #include <windows.h>
 
+int FastForward=0;
 static u64 tmethod,tfreq;
-static u64 desiredfps = 3920763; //59.8261
+static const u64 core_desiredfps = 3920763; //59.8261
+static u64 desiredfps = core_desiredfps;
+static u64 desiredFpsScaler = 256;
+
+void IncreaseSpeed(void) {
+
+	desiredFpsScaler*=2;
+	desiredfps = core_desiredfps * desiredFpsScaler / 256;
+	printf("Throttle fps scaling increased to: %f\n",desiredFpsScaler/256.0);
+}
+
+void DecreaseSpeed(void) {
+
+	desiredFpsScaler/=2;
+	desiredfps = core_desiredfps * desiredFpsScaler / 256;
+	printf("Throttle fps scaling decreased to: %f\n",desiredFpsScaler/256.0);
+}
 
 static u64 GetCurTime(void)
 {
@@ -46,6 +63,9 @@ bool ThrottleIsBehind() {
 int SpeedThrottle(void)
 {
 	static u64 ttime,ltime;
+
+	if(FastForward)
+		return (0);
 
 	behind = false;
 
