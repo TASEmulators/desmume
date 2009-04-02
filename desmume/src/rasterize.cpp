@@ -314,6 +314,7 @@ static struct Sampler
 		col32 >>= 3;
 		col32 &= 0x1F1F1F1F;
 		color.color = col32;
+
 		return color;
 	}
 
@@ -1152,7 +1153,10 @@ static void SoftRastRender()
 	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
 	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
 	clearFragment.polyid.opaque = (gfx3d.clearColor>>24)&0x3F;
-	clearFragment.polyid.translucent = 0;
+	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
+	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
+	//but in spiderman2 some fires with polyid 0 try to render on top of the background
+	clearFragment.polyid.translucent = 255; 
 	clearFragment.depth = gfx3d.clearDepth;
 	clearFragment.stencil = 0;
 	for(int i=0;i<256*192;i++)
