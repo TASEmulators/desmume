@@ -32,6 +32,8 @@
 #include "mem.h"
 #include "wifi.h"
 
+#include <string>
+
 extern volatile BOOL execute;
 extern BOOL click;
 extern char pathToROM[MAX_PATH];
@@ -326,6 +328,7 @@ public:
 };
 extern Driver* driver;
 
+extern std::string InputDisplayString;
 #endif
 
  	  	 
