@@ -235,6 +235,8 @@ void NDS_SkipFrame(bool skip);
 template<bool FORCE>
 u32 NDS_exec(s32 nb);
 
+extern int lagframecounter;
+
 inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
 
        static INLINE void NDS_ARM9HBlankInt(void)

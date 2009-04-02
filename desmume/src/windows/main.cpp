@@ -225,6 +225,7 @@ bool frameAdvance = false;
 bool frameCounterDisplay = false;
 bool FpsDisplay = false;
 bool ShowInputDisplay = false;
+bool ShowLagFrameCounter = false;
 unsigned short windowSize = 0;
 
 unsigned int lastSaveState = 0;	//Keeps track of last savestate used for quick save/load functions
@@ -1014,6 +1015,7 @@ DWORD WINAPI run()
 				frameCounter++;
 				if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
 				if (ShowInputDisplay) osd->addFixed(0, 45, "%s",InputDisplayString.c_str());
+				if (ShowLagFrameCounter) osd->addFixed(0, 65, "%d",lagframecounter);
 				DisplayMessage();
 				CheckMessages();
 		}
@@ -1072,6 +1074,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 	{
 		INFO("Loading %s was successful\n",filename);
 		frameCounter=0;
+		lagframecounter=0;
 		UpdateRecentRoms(filename);
 		osd->setRotate(GPU_rotation);
 		return TRUE;		
@@ -1108,6 +1111,7 @@ int MenuInit()
 
 	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
 	MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
+	MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
 
 	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | ((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
@@ -1344,6 +1348,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
 	ShowInputDisplay = GetPrivateProfileInt("Display","Display Input", 0, IniName);
+	ShowLagFrameCounter = GetPrivateProfileInt("Display","Display Lag Counter", 0, IniName);
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
@@ -2753,6 +2758,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ShowInputDisplay ^= 1;
 			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("Display", "Display Input", ShowInputDisplay, IniName);
+			osd->clear();
+			return 0;
+
+		case ID_VIEW_DISPLAYLAG:
+			ShowLagFrameCounter ^= 1;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileInt("Display", "Display Lag Counter", ShowLagFrameCounter, IniName);
 			osd->clear();
 			return 0;
 

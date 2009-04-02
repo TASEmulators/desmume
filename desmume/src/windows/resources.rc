@@ -114,6 +114,7 @@ BEGIN
         MENUITEM "Display Frame Counter", ID_VIEW_FRAMECOUNTER
         MENUITEM "Display Fps", ID_VIEW_DISPLAYFPS
 		MENUITEM "Display Input", ID_VIEW_DISPLAYINPUT
+		MENUITEM "Display Lag Counter", ID_VIEW_DISPLAYLAG
     END
     POPUP "&Konfigure"
     BEGIN
@@ -282,6 +283,7 @@ BEGIN
         MENUITEM "Display Frame Counter", ID_VIEW_FRAMECOUNTER
         MENUITEM "Display FPS", ID_VIEW_DISPLAYFPS
 		MENUITEM "Display Input", ID_VIEW_DISPLAYINPUT
+		MENUITEM "Display Lag Counter", ID_VIEW_DISPLAYLAG
     END
     POPUP "&Config"
     BEGIN
@@ -449,6 +451,7 @@ BEGIN
         MENUITEM "Compteur d'images", ID_VIEW_FRAMECOUNTER
         MENUITEM "Framerate", ID_VIEW_DISPLAYFPS
 		MENUITEM "Display Input", ID_VIEW_DISPLAYINPUT
+		MENUITEM "Display Lag Counter", ID_VIEW_DISPLAYLAG
     END
     POPUP "&Config"
     BEGIN
