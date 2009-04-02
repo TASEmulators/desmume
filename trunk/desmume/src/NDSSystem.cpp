@@ -64,9 +64,10 @@ BOOL fw_success = FALSE;
 
 NDSSystem nds;
 
-int lagframecounter=0;
-int LagFrameFlag=0;
-int lastLag=0;
+int lagframecounter;
+int LagFrameFlag;
+int lastLag;
+int TotalLagFrames;
 
 /* ------------------------------------------------------------------------- */
 /* FIRMWARE DECRYPTION */
@@ -861,6 +862,11 @@ void NDS_Reset( void)
 	NDS_header * header = NDS_getROMHeader();
 
 	if (!header) return ;
+
+	lagframecounter=0;
+	LagFrameFlag=0;
+	lastLag=0;
+	TotalLagFrames=0;
 
 	MMU_clearMem();
 
@@ -2218,6 +2224,7 @@ u32 NDS_exec(s32 nb)
 	if(LagFrameFlag)
 	{
 		lagframecounter++;
+		TotalLagFrames++;
 	}
 	else 
 	{

@@ -332,7 +332,7 @@ extern Driver* driver;
 
 extern std::string InputDisplayString;
 extern int LagFrameFlag;
-extern int lastLag;
+extern int lastLag, TotalLagFrames;
 
 #endif
 
