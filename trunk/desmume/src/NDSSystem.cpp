@@ -2226,8 +2226,8 @@ std::string MakeInputDisplayString(u16 pad, u16 padExt) {
     const std::string Buttons[] = {"A", "B", "Sl", "St", "R", "L", "U", "D", "Rs", "Ls"};
     const std::string Ext[] = {"X", "Y"};
 
-    std::string s = MakeInputDisplayString(pad, Ext, ARRAYSIZE(Ext));
-    s += MakeInputDisplayString(padExt, Buttons, ARRAYSIZE(Buttons));
+    std::string s = MakeInputDisplayString(pad, Ext, ARRAY_SIZE(Ext));
+    s += MakeInputDisplayString(padExt, Buttons, ARRAY_SIZE(Buttons));
 
     return s;
 }
