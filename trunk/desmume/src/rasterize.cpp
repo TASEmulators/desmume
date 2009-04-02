@@ -30,6 +30,11 @@
 //on a diamond, with cut-out bits in all four corners
 #define MAX_CLIPPED_VERTS 8
 
+//TODO - due to a late change of a y-coord flipping, our winding order is wrong
+//this causes us to have to flip the verts for every front-facing poly.
+//a performance improvement would be to change the winding order logic
+//so that this is done less frequently
+
 #include "rasterize.h"
 
 #include <algorithm>
@@ -66,6 +71,7 @@ static u8 index_start_table[8];
 
 ////optimized float floor useful in limited cases
 ////from http://www.stereopsis.com/FPU.html#convert
+////(unfortunately, it relies on certain FPU register settings)
 //int Real2Int(double val)
 //{
 //	const double _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
@@ -81,8 +87,7 @@ static u8 index_start_table[8];
 //	return ((int*)&val)[iman_] >> _shiftamt; 
 //}
 
-
-//
+//// this probably relies on rounding settings..
 //int Real2Int(float val)
 //{
 //	//val -= 0.5f;
@@ -94,6 +99,16 @@ static u8 index_start_table[8];
 //	//return temp;
 //	return 0;
 //}
+
+
+//doesnt work yet
+static FORCEINLINE int fastFloor(float f)
+{
+	float temp = f + 1.f;
+	int ret = (*((u32*)&temp))&0x7FFFFF;
+	return ret;
+}
+
 
 
 //----texture cache---
@@ -287,14 +302,10 @@ static struct Sampler
 
 	FORCEINLINE Fragment::Color sample(float u, float v)
 	{
-		//should we use floor here? I still think so, but now I am not so sure.
-		//note that I changed away from floor for accuracy reasons, not performance, even though it would be faster without the floor.
-		//however, I am afraid this could be masking some other texturing precision issue. in fact, I am pretty sure of this.
-		//there are still lingering issues in 2d games
-		//int iu = (int)floorf(u);
-		//int iv = (int)floorf(v);
-		int iu = (int)(u);
-		int iv = (int)(v);
+		//finally, we can use floor here. but, it is slower than we want.
+		//the best solution is probably to wait until the pipeline is full of fixed point
+		int iu = floorf(u);
+		int iv = floorf(v);
 		dowrap(iu,iv);
 
 		Fragment::Color color;
@@ -427,14 +438,6 @@ static FORCEINLINE void alphaBlend(Fragment::Color & dst, const Fragment::Color 
 		}
 	}
 }
-
-//doesnt work yet
-//static FORCEINLINE int fastFloor(float f)
-//{
-//	float temp = f + 1.f;
-//	int ret = (*((u32*)&temp))&0x7FFFFF;
-//	return ret;
-//}
 
 static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
 	Fragment &destFragment = screen[adr];
@@ -752,8 +755,11 @@ static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 		(pRight->color[1].curr - color[1]) * invWidth,
 		(pRight->color[2].curr - color[2]) * invWidth };
 
-
 	int adr = (pLeft->Y<<8)+XStart;
+
+	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
+	//better check the Y value.
+	//but, we think the math is always right
 
 	while(width-- > 0)
 	{
@@ -925,7 +931,7 @@ static void SoftRastVramReconfigureSignal() {
 
 static void SoftRastGetLine(int line, u16* dst, u8* dstAlpha)
 {
-	Fragment* src = screen+((191-line)<<8);
+	Fragment* src = screen+((line)<<8);
 	for(int i=0;i<256;i++)
 	{
 		const bool testRenderAlpha = false;
@@ -1193,6 +1199,7 @@ static void SoftRastRender()
 			vert.coord[0] += gfx3d.viewport.x;
 			vert.coord[1] *= gfx3d.viewport.height;
 			vert.coord[1] += gfx3d.viewport.y;
+			vert.coord[1] = 192 - vert.coord[1];
 		}
 	}
 
@@ -1230,7 +1237,7 @@ static void SoftRastRender()
 		Vector2Subtract(ab, verts[0].coord);
 		Vector2Subtract(ac, verts[0].coord);
 		float cross = Vector2Cross(ab, ac);
-		polyAttr.backfacing = (cross<0);
+		polyAttr.backfacing = (cross>0);
 
 		if(!polyAttr.isVisible(polyAttr.backfacing)) {
 			culled++;
@@ -1259,7 +1266,7 @@ static void SoftRastRender()
 		for(int j=0;j<MAX_CLIPPED_VERTS;j++)
 			::verts[j] = &verts[j];
 
-		shape_engine(type,polyAttr.backfacing);
+		shape_engine(type,!polyAttr.backfacing);
 	}
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
