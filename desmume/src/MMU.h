@@ -126,7 +126,6 @@ struct MMU_struct {
 
 extern MMU_struct MMU;
 
-extern int LagFrameFlag;
 
 struct armcpu_memory_iface {
   /** the 32 bit instruction prefetch */

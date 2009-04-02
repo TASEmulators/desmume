@@ -65,6 +65,8 @@ BOOL fw_success = FALSE;
 NDSSystem nds;
 
 int lagframecounter=0;
+int LagFrameFlag=0;
+int lastLag=0;
 
 /* ------------------------------------------------------------------------- */
 /* FIRMWARE DECRYPTION */
@@ -1422,6 +1424,7 @@ u32 NDS_exec(s32 nb)
 {
 	int i, j;
 
+	//TODO - since NDS_exec is not necessarily called one frame at a time, this could be wrong.
 	LagFrameFlag=1;
 
 	nb += nds.cycles;//(nds.cycles>>26)<<26;
@@ -2213,7 +2216,14 @@ u32 NDS_exec(s32 nb)
 	}
 
 	if(LagFrameFlag)
+	{
 		lagframecounter++;
+	}
+	else 
+	{
+		lastLag = lagframecounter;
+		lagframecounter = 0;
+	}
 
 	return nds.cycles;
 }
