@@ -100,12 +100,12 @@ void desmume_toggle()
 {
 	execute = (execute) ? FALSE : TRUE;
 }
-BOOL desmume_running()
+/*INLINE BOOL desmume_running()
 {
 	return execute;
-}
+}*/
 
-void desmume_cycle()
+INLINE void desmume_cycle()
 {
   u16 keypad;
   /* Joystick events */
@@ -141,8 +141,6 @@ gboolean EmuLoop(gpointer data)
 	{
 	  static int limiter_frame_counter = 0;
 	  
-	  	ticksCurFrame = SDL_GetTicks();
-	  
 		fps_FrameCount += Frameskip + 1;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000)
@@ -164,6 +162,8 @@ gboolean EmuLoop(gpointer data)
 		notify_Tools();
 		gtk_widget_queue_draw(pDrawingArea);
 		gtk_widget_queue_draw(pDrawingArea2);
+		
+		ticksCurFrame = SDL_GetTicks();
 		
 		if(!glade_fps_limiter_disabled)
 		{
