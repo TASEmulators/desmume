@@ -957,7 +957,7 @@ static void SoftRastGetLine(int line, u16* dst, u8* dstAlpha)
 }
 
 static void SoftRastGetLineCaptured(int line, u16* dst) {
-	Fragment* src = screen+((191-line)<<8);
+	Fragment* src = screen+((line)<<8);
 	for(int i=0;i<256;i++)
 	{
 		u8 r = src->color.components.r;
