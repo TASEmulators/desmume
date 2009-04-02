@@ -49,6 +49,7 @@
 TCommonSettings CommonSettings;
 static Driver _stub_driver;
 Driver* driver = &_stub_driver;
+std::string InputDisplayString;
 
 static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
@@ -2210,6 +2211,27 @@ u32 NDS_exec(s32 nb)
 	return nds.cycles;
 }
 
+std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {
+    std::string s;
+    for (int x = 0; x < count; x++) {
+        if (pad & (1 << x))
+            s.append(Buttons[x].size(), ' '); 
+        else
+            s += Buttons[x];
+    }
+    return s;
+}
+
+std::string MakeInputDisplayString(u16 pad, u16 padExt) {
+    const std::string Buttons[] = {"A", "B", "Sl", "St", "R", "L", "U", "D", "Rs", "Ls"};
+    const std::string Ext[] = {"X", "Y"};
+
+    std::string s = MakeInputDisplayString(pad, Ext, ARRAYSIZE(Ext));
+    s += MakeInputDisplayString(padExt, Buttons, ARRAYSIZE(Buttons));
+
+    return s;
+}
+
 void NDS_setPadFromMovie(u16 pad)
 {
 #define FIX(b,n) (((pad>>n)&1)!=0)
@@ -2295,6 +2317,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		0x0034;
 
 	((u16 *)MMU.ARM7_REG)[0x136>>1] = (u16)padExt;
+
+	InputDisplayString=MakeInputDisplayString(padExt, pad);
 
 	//put into the format we want for the movie system
 	//RLDUTSBAYXWEGF
