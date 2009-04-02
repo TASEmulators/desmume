@@ -113,6 +113,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Display Frame Counter", ID_VIEW_FRAMECOUNTER
         MENUITEM "Display Fps", ID_VIEW_DISPLAYFPS
+		MENUITEM "Display Input", ID_VIEW_DISPLAYINPUT
     END
     POPUP "&Konfigure"
     BEGIN
@@ -134,7 +135,7 @@ BEGIN
         MENUITEM "Emulation settings", IDM_EMULATIONSETTINGS
         POPUP "&Frame Skip"
         BEGIN
-            MENUITEM "Limit to 60", IDC_FRAMELIMIT
+            MENUITEM "Limit framerate", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
             MENUITEM "1", IDC_FRAMESKIP1
@@ -280,6 +281,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Display Frame Counter", ID_VIEW_FRAMECOUNTER
         MENUITEM "Display FPS", ID_VIEW_DISPLAYFPS
+		MENUITEM "Display Input", ID_VIEW_DISPLAYINPUT
     END
     POPUP "&Config"
     BEGIN
@@ -302,7 +304,7 @@ BEGIN
         MENUITEM "Emulation Settings", IDM_EMULATIONSETTINGS
         POPUP "&Frame Skip"
         BEGIN
-            MENUITEM "Limit to 60", IDC_FRAMELIMIT
+            MENUITEM "Limit framerate", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
             MENUITEM "1", IDC_FRAMESKIP1
@@ -446,6 +448,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Compteur d'images", ID_VIEW_FRAMECOUNTER
         MENUITEM "Framerate", ID_VIEW_DISPLAYFPS
+		MENUITEM "Display Input", ID_VIEW_DISPLAYINPUT
     END
     POPUP "&Config"
     BEGIN
@@ -467,7 +470,7 @@ BEGIN
         MENUITEM "Config. d'émulation", IDM_EMULATIONSETTINGS
         POPUP "&Frame Skip"
         BEGIN
-            MENUITEM "Limit to 60", IDC_FRAMELIMIT
+            MENUITEM "Limit framerate", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
             MENUITEM "1", IDC_FRAMESKIP1

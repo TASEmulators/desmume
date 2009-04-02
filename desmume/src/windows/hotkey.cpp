@@ -25,6 +25,7 @@
 #include "saves.h"
 #include "inputdx.h"
 #include "render3d.h"
+#include "throttle.h"
 
 SCustomKeys CustomKeys;
 
@@ -130,6 +131,9 @@ void HK_StateQuickLoadSlot(int)
 }
 
 void HK_Pause(int) { Pause(); }
+void HK_FastForward(int) { FastForward ^=1; }
+void HK_IncreaseSpeed(int) { IncreaseSpeed(); }
+void HK_DecreaseSpeed(int) { DecreaseSpeed(); }
 void HK_FrameAdvance(int) { FrameAdvance(); }
 void HK_ToggleRasterizer(int) { 
 	if(cur3DCore == GPU3D_OPENGL)
@@ -167,6 +171,24 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Pause.name = L"Pause";
 	keys->Pause.page = HOTKEY_PAGE_MAIN;
 	keys->Pause.key = VK_SPACE;
+
+	keys->FastForward.handleKeyDown = HK_FastForward;
+	keys->FastForward.code = "FastForward";
+	keys->FastForward.name = L"Fast Forward";
+	keys->FastForward.page = HOTKEY_PAGE_MAIN;
+	keys->FastForward.key = VK_TAB;
+
+	keys->IncreaseSpeed.handleKeyDown = HK_IncreaseSpeed;
+	keys->IncreaseSpeed.code = "IncreaseSpeed";
+	keys->IncreaseSpeed.name = L"Increase Speed";
+	keys->IncreaseSpeed.page = HOTKEY_PAGE_MAIN;
+	keys->IncreaseSpeed.key = VK_OEM_PLUS;
+
+	keys->DecreaseSpeed.handleKeyDown = HK_DecreaseSpeed;
+	keys->DecreaseSpeed.code = "DecreaseSpeed";
+	keys->DecreaseSpeed.name = L"Decrease Speed";
+	keys->DecreaseSpeed.page = HOTKEY_PAGE_MAIN;
+	keys->DecreaseSpeed.key = VK_OEM_MINUS;
 
 	keys->FrameAdvance.handleKeyDown = HK_FrameAdvance;
 	keys->FrameAdvance.code = "FrameAdvance";

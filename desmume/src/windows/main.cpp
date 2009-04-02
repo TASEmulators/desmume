@@ -224,6 +224,7 @@ unsigned int frameCounter=0;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
 bool FpsDisplay = false;
+bool ShowInputDisplay = false;
 unsigned short windowSize = 0;
 
 unsigned int lastSaveState = 0;	//Keeps track of last savestate used for quick save/load functions
@@ -961,8 +962,18 @@ DWORD WINAPI run()
 
 				NDS_SkipFrame(true);
 			}
+			if(FastForward) {
 
-			if(autoframeskipenab || FrameLimit)
+				if(framesskipped < 9)
+				{
+					skipnextframe = 1;
+					framestoskip = 1;
+				}
+				if (framestoskip < 1)
+				framestoskip += 9;
+			}
+
+			else if(autoframeskipenab || FrameLimit)
 				while(SpeedThrottle())
 				{
 				}
@@ -1002,6 +1013,7 @@ DWORD WINAPI run()
 				}
 				frameCounter++;
 				if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
+				if (ShowInputDisplay) osd->addFixed(0, 45, "%s",InputDisplayString.c_str());
 				DisplayMessage();
 				CheckMessages();
 		}
@@ -1095,6 +1107,7 @@ int MenuInit()
 	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
 
 	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
+	MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
 
 	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | ((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
@@ -1330,6 +1343,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
+	ShowInputDisplay = GetPrivateProfileInt("Display","Display Input", 0, IniName);
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
@@ -2732,6 +2746,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			FpsDisplay ^= 1;
 			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("Display", "Display Fps", FpsDisplay, IniName);
+			osd->clear();
+			return 0;
+
+		case ID_VIEW_DISPLAYINPUT:
+			ShowInputDisplay ^= 1;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileInt("Display", "Display Input", ShowInputDisplay, IniName);
 			osd->clear();
 			return 0;
 

@@ -415,7 +415,7 @@
 #define IDM__1                                  40008
 #define ID_VIEW_FRAMECOUNTER                    40009
 #define ID_VIEW_DISPLAYFPS                      40010
-#define IDM_SHUT_UP                             40011
+#define ID_VIEW_DISPLAYINPUT                    40011
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_FILE_STOPAVI                        40016
 #define ACCEL_CTRL_O                            40032
@@ -428,6 +428,7 @@
 #define IDC_BGMAP_ROTSCALEPARAMS                40051
 #define IDM_CHEATS_SEARCH                       40051
 #define IDC_BGMAP_ROTSCALE                      40052
+#define IDM_SHUT_UP                             40053
 #define IDC_LABEL_UP                            50000
 #define IDC_LABEL_RIGHT                         50001
 #define IDC_LABEL_LEFT                          50002

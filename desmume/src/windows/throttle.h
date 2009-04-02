@@ -4,5 +4,8 @@
 void InitSpeedThrottle();
 int SpeedThrottle();
 bool ThrottleIsBehind();
+extern int FastForward;
+void IncreaseSpeed();
+void DecreaseSpeed();
 
 #endif
