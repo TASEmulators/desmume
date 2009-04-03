@@ -1680,7 +1680,7 @@ u32 NDS_exec(s32 nb)
 				}
 				else if(nds.VCount==215)
 				{
-					gfx3d_VBlankEndSignal();
+					gfx3d_VBlankEndSignal(skipThisFrame);
 				}
 				else if(nds.VCount==263)
 				{
