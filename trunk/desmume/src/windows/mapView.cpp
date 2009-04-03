@@ -241,7 +241,7 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
                  {
 						MapView = new mapview_struct;
 						memset(MapView, 0, sizeof(MapView));
-						MapView->autoup_secs = 5;
+						MapView->autoup_secs = 1;
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -298,7 +298,7 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              MapView->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_MAP, MapView->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_MAP, MapView->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -312,7 +312,7 @@ BOOL CALLBACK ViewMapsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 									MapView->autoup_secs = t;
 									if (MapView->autoup)
 										SetTimer(hwnd, IDT_VIEW_MAP, 
-												MapView->autoup_secs*1000, (TIMERPROC) NULL);
+												MapView->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;

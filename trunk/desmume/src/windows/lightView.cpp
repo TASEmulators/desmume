@@ -107,7 +107,7 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 		case WM_INITDIALOG:
 				LightsView = new lightsview_struct;
 				memset(LightsView, 0, sizeof(lightsview_struct));
-				LightsView->autoup_secs = 5;
+				LightsView->autoup_secs = 1;
 				SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 				SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -156,7 +156,7 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 						 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 						 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                          LightsView->autoup = TRUE;
-						 SetTimer(hwnd, IDT_VIEW_LIGHTS, LightsView->autoup_secs*1000, (TIMERPROC) NULL);
+						 SetTimer(hwnd, IDT_VIEW_LIGHTS, LightsView->autoup_secs*20, (TIMERPROC) NULL);
 						 return 1;
 					case IDC_AUTO_UPDATE_SECS:
 						{
@@ -170,7 +170,7 @@ BOOL CALLBACK ViewLightsProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 								LightsView->autoup_secs = t;
 								if (LightsView->autoup)
 									SetTimer(hwnd, IDT_VIEW_LIGHTS, 
-											LightsView->autoup_secs*1000, (TIMERPROC) NULL);
+											LightsView->autoup_secs*20, (TIMERPROC) NULL);
 							}
 						}
                          return 1;

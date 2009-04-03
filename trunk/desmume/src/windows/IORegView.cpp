@@ -103,7 +103,7 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
             case WM_INITDIALOG :
 				 IORegView = new ioregview_struct;
 				 memset(IORegView, 0, sizeof(ioregview_struct));
-				 IORegView->autoup_secs = 5;
+				 IORegView->autoup_secs = 1;
 				 SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 				 SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -147,7 +147,7 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              IORegView->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_IOREG, IORegView->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_IOREG, IORegView->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -157,7 +157,7 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 									IORegView->autoup_secs = t;
 									if (IORegView->autoup)
 										SetTimer(hwnd, IDT_VIEW_IOREG, 
-												IORegView->autoup_secs*1000, (TIMERPROC) NULL);
+												IORegView->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;
