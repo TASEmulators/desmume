@@ -75,6 +75,24 @@ static const char *bad_glob_cflash_disk_image_file;
 static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
 
+const u16 gtk_kb_cfg[NB_KEYS] =
+  {
+    GDK_x,         // A
+    GDK_z,         // B
+    GDK_Shift_R,   // select
+    GDK_Return,    // start
+    GDK_Right,     // Right
+    GDK_Left,      // Left
+    GDK_Up,        // Up
+    GDK_Down,      // Down       
+    GDK_w,         // R
+    GDK_q,         // L
+    GDK_s,         // X
+    GDK_a,         // Y
+    GDK_p,         // DEBUG
+    GDK_o          // BOOST
+  };    
+
 enum {
     MAIN_BG_0 = 0,
     MAIN_BG_1,
@@ -337,7 +355,7 @@ static int Read_ConfigFile(const gchar *config_file)
     GKeyFile * keyfile = g_key_file_new();
     GError * error = NULL;
 
-    load_default_config();
+    load_default_config(gtk_kb_cfg);
 
     g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_NONE, 0);
 

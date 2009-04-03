@@ -106,18 +106,19 @@ const char * save_type_names[] = {
 
 /* Our keyboard config is different because of the directional keys */
 const u16 cli_kb_cfg[NB_KEYS] =
-  { SDLK_c,         // A
-    SDLK_x,         // B
-    SDLK_BACKSPACE, // select
+  { 
+    SDLK_x,         // A
+    SDLK_z,         // B
+    SDLK_RSHIFT,    // select
     SDLK_RETURN,    // start
     SDLK_RIGHT,     // Right
     SDLK_LEFT,      // Left
     SDLK_UP,        // Up
     SDLK_DOWN,      // Down
-    SDLK_e,         // R
-    SDLK_w,         // L
-    SDLK_d,         // X
-    SDLK_s,         // Y
+    SDLK_w,         // R
+    SDLK_q,         // L
+    SDLK_s,         // X
+    SDLK_a,         // Y
     SDLK_p,         // DEBUG
     SDLK_o          // BOOST
   };
