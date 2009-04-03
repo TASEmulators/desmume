@@ -77,7 +77,7 @@ extern mouse_status mouse;
 void set_mouse_coord(signed long x,signed long y);
 #endif // !GTK_UI
 
-void load_default_config( void);
+void load_default_config(const u16 kbCfg[]);
 BOOL init_joy( void);
 void uninit_joy( void);
 void set_joy_keys(const u16 joyCfg[]);

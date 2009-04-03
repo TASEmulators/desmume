@@ -60,28 +60,28 @@ const u16 default_joypad_cfg[NB_KEYS] =
     -1  // BOOST
   };
 
-const u16 default_keyboard_cfg[NB_KEYS] =
+const u16 plain_keyboard_cfg[NB_KEYS] =
 {
-  97, // a
-  98, // b
-  65288, // backspace
-  65293, // enter
-  65363, // directional arrows
-  65361,
-  65362,
-  65364,
-  65454, // numeric .
-  65456, // numeric 0
-  120, // x
-  121, // y
-  112,
-  113
+    'x',         // A
+    'z',         // B
+    'y',         // select
+    'u',         // start
+    'l',         // Right
+    'j',         // Left
+    'i',         // Up
+    'k',         // Down
+    'w',         // R
+    'q',         // L
+    's',         // X
+    'a',         // Y
+    'p',         // DEBUG
+    'o'          // BOOST
 };
 
 /* Load default joystick and keyboard configurations */
-void load_default_config( void)
+void load_default_config(const u16 kbCfg[])
 {
-  memcpy(keyboard_cfg, default_keyboard_cfg, sizeof(keyboard_cfg));
+  memcpy(keyboard_cfg, kbCfg, sizeof(keyboard_cfg));
   memcpy(joypad_cfg, default_joypad_cfg, sizeof(joypad_cfg));
 }
 

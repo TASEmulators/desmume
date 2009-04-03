@@ -47,6 +47,24 @@ GtkWidget * pWindow;
 GtkWidget * pDrawingArea, * pDrawingArea2;
 GladeXML  * xml, * xml_tools;
 
+const u16 gtk_kb_cfg[NB_KEYS] =
+  {
+    GDK_x,         // A
+    GDK_z,         // B
+    GDK_Shift_R,   // select
+    GDK_Return,    // start
+    GDK_Right,     // Right
+    GDK_Left,      // Left
+    GDK_Up,        // Up
+    GDK_Down,      // Down       
+    GDK_w,         // R
+    GDK_q,         // L
+    GDK_s,         // X
+    GDK_a,         // Y
+    GDK_p,         // DEBUG
+    GDK_o          // BOOST
+  };
+
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
 &SNDFile,
@@ -304,7 +322,7 @@ static int Read_ConfigFile()
 	GKeyFile * keyfile = g_key_file_new();
 	GError * error = NULL;
 	
-	load_default_config();
+	load_default_config(gtk_kb_cfg);
 	
 	g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, 0);
 
