@@ -1374,12 +1374,12 @@ void gfx3d_VBlankSignal()
 	drawPending = TRUE;
 }
 
-void gfx3d_VBlankEndSignal()
+void gfx3d_VBlankEndSignal(bool skipdraw)
 {
 	if(!drawPending) return;
 
 	drawPending = FALSE;
-	gpu3D->NDS_3D_Render();
+	gpu3D->NDS_3D_Render(skipdraw);
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION

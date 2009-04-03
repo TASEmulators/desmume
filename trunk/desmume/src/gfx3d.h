@@ -237,7 +237,7 @@ unsigned int gfx3d_glGetPosRes(unsigned int index);
 unsigned short gfx3d_glGetVecRes(unsigned int index);
 void gfx3d_glFlush(unsigned long v);
 void gfx3d_VBlankSignal();
-void gfx3d_VBlankEndSignal();
+void gfx3d_VBlankEndSignal(bool skipdraw);
 void gfx3d_Control(unsigned long v);
 u32 gfx3d_GetGXstatus();
 void gfx3d_sendCommandToFIFO(u32 val);

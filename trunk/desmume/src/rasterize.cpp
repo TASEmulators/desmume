@@ -1145,8 +1145,11 @@ static void clipPoly(POLY* poly)
 
 }
 
-static void SoftRastRender()
+static void SoftRastRender(bool skipdraw)
 {
+	if(skipdraw)
+		return;
+
 	Fragment clearFragment;
 	clearFragment.color.components.r = gfx3d.clearColor&0x1F;
 	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
