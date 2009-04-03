@@ -1374,12 +1374,15 @@ void gfx3d_VBlankSignal()
 	drawPending = TRUE;
 }
 
-void gfx3d_VBlankEndSignal(bool skipdraw)
+void gfx3d_VBlankEndSignal(bool skipFrame)
 {
+	//if we are skipping 3d frames then the 3d rendering will get held up here.
+	//but, as soon as we quit skipping frames, the held-up 3d frame will render
+	if(skipFrame) return;
 	if(!drawPending) return;
 
 	drawPending = FALSE;
-	gpu3D->NDS_3D_Render(skipdraw);
+	gpu3D->NDS_3D_Render();
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION

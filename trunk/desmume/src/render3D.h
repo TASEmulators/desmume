@@ -39,7 +39,7 @@ typedef struct Render3DInterface
 	void (CALL_CONVENTION*  NDS_3D_Close)					(void);
 	
 	//called when the renderer should do its job and render the current display lists
-	void (CALL_CONVENTION*  NDS_3D_Render)					(bool skipdraw);
+	void (CALL_CONVENTION*  NDS_3D_Render)					(void);
 
 	//called when the emulator reconfigures its vram. you may need to invalidate your texture cache.
 	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
