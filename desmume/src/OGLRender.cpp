@@ -687,7 +687,7 @@ static void Control()
 	}
 }
 
-static void OGLRender(bool skipdraw)
+static void OGLRender()
 {
 	if(!BEGINGL()) return;
 
