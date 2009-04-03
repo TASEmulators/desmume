@@ -564,7 +564,8 @@ common_gtk_glade_main( struct configured_features *my_config) {
               }
 #endif
           NDS_3D_ChangeCore(engine);
-          if(gpu3D == GPU3D_NULL);
+          if(my_config->engine_3d != 0 && gpu3D == GPU3D_NULL)
+              fprintf(stderr, _("Failed to setup 3D engine; removing 3D support\n"));
         }
 
 //	on_menu_tileview_activate(NULL,NULL);
