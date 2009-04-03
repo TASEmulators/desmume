@@ -179,6 +179,7 @@ TOOLSCLASS	*ViewLights = NULL;
 
 volatile BOOL execute = FALSE;
 volatile BOOL paused = TRUE;
+volatile BOOL pausedByMinimize = FALSE;
 u32 glock = 0;
 
 BOOL click = FALSE;
@@ -1049,6 +1050,7 @@ void NDS_UnPause()
 	if (romloaded && paused)
 	{
 		paused = FALSE;
+		pausedByMinimize = FALSE;
 		execute = TRUE;
 		SPU_Pause(0);
 		INFO("Emulation unpaused\n");
@@ -2205,6 +2207,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_CREATE:
 		{
+			pausedByMinimize = FALSE;
 			UpdateScreenRects();
 			return 0;
 		}
@@ -2236,7 +2239,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		}
 	case WM_MOVING:
-		SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
+		InvalidateRect(hwnd, NULL, FALSE); UpdateWindow(hwnd);
 		return 0;
 	case WM_MOVE: {
 		RECT rect;
@@ -2248,7 +2251,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	}
 	case WM_SIZING:
 		{
-			SendMessage(hwnd, WM_PAINT, 0, 0x12345678);
+			InvalidateRect(hwnd, NULL, FALSE); UpdateWindow(hwnd);
+
 			if(windowSize)
 			{
 				windowSize = 0;
@@ -2285,25 +2289,37 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		{
 		case SIZE_MINIMIZED:
 			{
-				NDS_Pause();
+				if(!paused)
+				{
+					pausedByMinimize = TRUE;
+					NDS_Pause();
+				}
 			}
 			break;
 		default:
 			{
-				NDS_UnPause();
+				if(pausedByMinimize)
+					NDS_UnPause();
+
 				UpdateWndRects(hwnd);
 			}
 			break;
 		}
 		return 0;
 	case WM_PAINT:
-		if(paused || (lParam == 0x12345678))
 		{
+			HDC				hdc;
+			PAINTSTRUCT		ps;
+
+			hdc = BeginPaint(hwnd, &ps);
+
 			osd->update();
 			Display();
 			osd->clear();
+
+			EndPaint(hwnd, &ps);
 		}
-		return DefWindowProc(hwnd, message, wParam, lParam);
+		return 0;
 	case WM_DROPFILES:
 		{
 			char filename[MAX_PATH] = "";
