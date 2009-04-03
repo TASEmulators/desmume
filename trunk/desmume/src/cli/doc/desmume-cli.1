@@ -44,12 +44,12 @@ Disables the sound emulation
 Disables the 60 fps limiter
 .TP
 .B \-\-3d-engine=ENGINE
-Enables software 3d rasterizer, available ENGINES:
+Select available 3d emulation:
 .RS
-0 = 3d disabled - default
+0 = 3d disabled
 .RE
 .RS
-1 = internal desmume software rasterizer
+1 = internal desmume software rasterizer (default)
 .RE
 .TP
 .B \-\-opengl-2d
@@ -63,6 +63,30 @@ Enable the ARM9 GDB stub on the given port
 .TP
 .B \-\-arm7gdb=PORT_NUM
 Enable the ARM7 GDB stub on the given port
+.TP
+.B \-\-save-type=TYPE
+Select savetype from the following:
+.RS
+0 = Autodetect
+.RE
+.RS
+1 = EEPROM 4kbit
+.RE
+.RS
+2 = EEPROM 64kbit
+.RE
+.RS
+3 = EEPROM 512kbit
+.RE
+.RS
+4 = FRAM 256kbit
+.RE
+.RS
+5 = FLASH 2mbit
+.RE
+.RS
+6 = FLASH 4mbit
+.RE
 .TP
 .B \-\-fwlang=LANG
 Set the language in the firmware, LANG as follows:
@@ -95,9 +119,43 @@ Show summary of options.
 Show version of program.
 .PP
 Some options may be unavailable, depending on compile-time configuration, for instance gdb stubs and opengl.
-.SH SEE ALSO
-.BR undocumented (7)
-.br
+.SH INPUT
+Mouse cursor acts as stylus, mouse click replaces stylus touch.
+.PP
+Keyboard is configured as follows:
+.RS
+F1-F10 load savegame from slot 1-10
+.RE
+.RS
+Shift+F1-F10 save game to slot 1-10
+.RE
+.RS
+Non-keypad arrows act as d-pad
+.RE
+.RS
+z = A
+.RE
+.RS
+x = B
+.RE
+.RS
+a = Y
+.RE
+.RS
+s = X
+.RE
+.RS
+q = L
+.RE
+.RS
+w = R
+.RE
+.RS
+Enter = START
+.RE
+.RS
+Left Shift = SELECT
+.RE
 .SH AUTHOR
 desmume was written by DeSmuME team
 (http://sourceforge.net/projects/desmume).
