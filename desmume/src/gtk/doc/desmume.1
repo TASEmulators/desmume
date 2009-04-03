@@ -33,7 +33,9 @@ program
 These programs follow the usual GNU command line syntax, with long
 options starting with two dashes (`-').
 A summary of options is included below.
-For a complete description, see the Info files.
+.TP
+.B \-\-load-slot=NUM
+Loads savegame from slot NUM
 .TP
 .B \-\-opengl-2d
 Enables using OpenGL for screen rendering
@@ -41,8 +43,17 @@ Enables using OpenGL for screen rendering
 .B \-\-soft-convert
 Use software colour conversion during OpenGL screen rendering. May produce better or worse frame rates depending on hardware.
 .TP
-.B \-\-disable-3d
-Disables the 3D emulation
+.B \-\-3d-engine=ENGINE
+Select available 3d emulation:
+.RS
+0 = 3d disabled 
+.RE
+.RS
+1 = internal desmume software rasterizer (default)
+.RE
+.RS
+2 = osmesa or gtkglext opengl (if available, depending on compilation options, see desmume --help)
+.RE
 .TP
 .B \-\-disable-sound
 Disables the sound emulation
@@ -64,9 +75,45 @@ Show summary of options.
 .TP
 .B \-v, \-\-version
 Show version of program.
-.SH SEE ALSO
-.BR undocumented (7)
-.br
+.SH INPUT
+Mouse cursor acts as stylus, mouse click replaces stylus touch.
+.PP
+Keyboard can be configured and by default works as follows:
+.RS
+F1-F10 load savegame from slot 1-10
+.RE
+.RS
+Shift+F1-F10 save game to slot 1-10
+.RE
+.RS
+Non-keypad arrows act as d-pad
+.RE
+.RS
+z = A
+.RE
+.RS
+x = B
+.RE
+.RS
+a = Y
+.RE
+.RS
+s = X
+.RE
+.RS
+q = L
+.RE
+.RS
+w = R
+.RE
+.RS
+Enter = START
+.RE
+.RS
+Left Shift = SELECT
+.RE
+.PP
+Desmume accepts joystick events, which can be configured by user.
 .SH AUTHOR
 desmume was written by DeSmuME team
 (http://sourceforge.net/projects/desmume).
