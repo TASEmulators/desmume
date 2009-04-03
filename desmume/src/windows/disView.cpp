@@ -299,7 +299,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					DisView7 = new disview_struct;
 					memset(DisView7, 0, sizeof(disview_struct));
 					DisView7->cpu = &NDS_ARM7;
-					DisView7->autoup_secs = 5;
+					DisView7->autoup_secs = 1;
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -378,7 +378,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              DisView7->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_DISASM7, DisView7->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_DISASM7, DisView7->autoup_secs*20, (TIMERPROC) NULL);
                              return 1;
                         case IDC_STEP :					// TODO: draw in DD
                              {
@@ -442,7 +442,7 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									DisView7->autoup_secs = t;
 									if (DisView7->autoup)
 										SetTimer(hwnd, IDT_VIEW_DISASM7, 
-												DisView7->autoup_secs*1000, (TIMERPROC) NULL);
+												DisView7->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
 							return 1;
@@ -543,7 +543,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 					DisView9 = new disview_struct;
 					memset(DisView9, 0, sizeof(disview_struct));
 					DisView9->cpu = &NDS_ARM9;
-					DisView9->autoup_secs = 5;
+					DisView9->autoup_secs = 1;
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -622,7 +622,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              DisView9->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_DISASM9, DisView9->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_DISASM9, DisView9->autoup_secs*20, (TIMERPROC) NULL);
                              return 1;
                         case IDC_STEP :					// TODO: draw in DD
                              {
@@ -686,7 +686,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 									DisView9->autoup_secs = t;
 									if (DisView9->autoup)
 										SetTimer(hwnd, IDT_VIEW_DISASM9, 
-												DisView9->autoup_secs*1000, (TIMERPROC) NULL);
+												DisView9->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
 							return 1;

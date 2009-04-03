@@ -226,7 +226,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 						OAMView->oam = (OAM *)(ARM9Mem.ARM9_OAM);
 						OAMView->gpu = MainScreen.gpu;
 
-						OAMView->autoup_secs = 5;
+						OAMView->autoup_secs = 1;
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -295,7 +295,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              OAMView->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_OAM, OAMView->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_OAM, OAMView->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -309,7 +309,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 									OAMView->autoup_secs = t;
 									if (OAMView->autoup)
 										SetTimer(hwnd, IDT_VIEW_OAM, 
-												OAMView->autoup_secs*1000, (TIMERPROC) NULL);
+												OAMView->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;

@@ -327,7 +327,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 						TileView->hwnd = hwnd;
 						TileView->mem = ARM9Mem.ARM9_ABG;
 						TileView->pal = ((u16 *)ARM9Mem.ARM9_VMEM);
-						TileView->autoup_secs = 5;
+						TileView->autoup_secs = 1;
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 								UDM_SETRANGE, 0, MAKELONG(99, 1));
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -442,7 +442,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              TileView->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_TILE, TileView->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_TILE, TileView->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -456,7 +456,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 									TileView->autoup_secs = t;
 									if (TileView->autoup)
 										SetTimer(hwnd, IDT_VIEW_TILE, 
-												TileView->autoup_secs*1000, (TIMERPROC) NULL);
+												TileView->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;

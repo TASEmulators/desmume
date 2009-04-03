@@ -151,7 +151,7 @@ BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 				{
 					MatrixView = new matrixview_struct;
 					memset(MatrixView, 0, sizeof(matrixview_struct));
-					MatrixView->autoup_secs = 5;
+					MatrixView->autoup_secs = 1;
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -222,7 +222,7 @@ BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              MatrixView->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_MATRIX, MatrixView->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_MATRIX, MatrixView->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -236,7 +236,7 @@ BOOL CALLBACK ViewMatricesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 									MatrixView->autoup_secs = t;
 									if (MatrixView->autoup)
 										SetTimer(hwnd, IDT_VIEW_MATRIX, 
-												MatrixView->autoup_secs*1000, (TIMERPROC) NULL);
+												MatrixView->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;

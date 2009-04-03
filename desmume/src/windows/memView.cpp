@@ -218,7 +218,7 @@ BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 				MemView7 = new memview_struct;
 				memset(MemView7, 0, sizeof(memview_struct));
 				MemView7->cpu = 1;
-				MemView7->autoup_secs = 5;
+				MemView7->autoup_secs = 1;
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -276,7 +276,7 @@ BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              MemView7->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_MEM7, MemView7->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_MEM7, MemView7->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -290,7 +290,7 @@ BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 									MemView7->autoup_secs = t;
 									if (MemView7->autoup)
 										SetTimer(hwnd, IDT_VIEW_MEM7, 
-												MemView7->autoup_secs*1000, (TIMERPROC) NULL);
+												MemView7->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;
@@ -406,7 +406,7 @@ BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 				MemView9 = new memview_struct;
 				memset(MemView9, 0, sizeof(memview_struct));
 				MemView9->cpu = 0;
-				MemView9->autoup_secs = 5;
+				MemView9->autoup_secs = 1;
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
 									UDM_SETRANGE, 0, MAKELONG(99, 1));
 					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -464,7 +464,7 @@ BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
 							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
                              MemView9->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_MEM9, MemView9->autoup_secs*1000, (TIMERPROC) NULL);
+							 SetTimer(hwnd, IDT_VIEW_MEM9, MemView9->autoup_secs*20, (TIMERPROC) NULL);
 							 return 1;
 						case IDC_AUTO_UPDATE_SECS:
 							{
@@ -478,7 +478,7 @@ BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 									MemView9->autoup_secs = t;
 									if (MemView9->autoup)
 										SetTimer(hwnd, IDT_VIEW_MEM9, 
-												MemView9->autoup_secs*1000, (TIMERPROC) NULL);
+												MemView9->autoup_secs*20, (TIMERPROC) NULL);
 								}
 							}
                              return 1;
