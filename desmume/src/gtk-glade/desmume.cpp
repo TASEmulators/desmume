@@ -40,7 +40,7 @@ u8 *desmume_rom_data = NULL;
 u32 desmume_last_cycle;
 
 void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
-                   struct armcpu_ctrl_iface **arm9_ctrl_iface,
+		   struct armcpu_ctrl_iface **arm9_ctrl_iface,		//ticksPrevFrame = ticksCurFrame;
                    struct armcpu_memory_iface *arm7_mem_if,
                    struct armcpu_ctrl_iface **arm7_ctrl_iface)
 {
@@ -123,6 +123,7 @@ INLINE void desmume_cycle()
 
 
 Uint32 fps, fps_SecStart, fps_FrameCount;
+Uint32 fsFrameCount = 0;
 Uint32 ticksPrevFrame = 0, ticksCurFrame = 0;
 static void Draw()
 {
@@ -139,9 +140,15 @@ gboolean EmuLoop(gpointer data)
 		
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
-	  static int limiter_frame_counter = 0;
+	 // static int limiter_frame_counter = 0;	
+		if(Frameskip == 0)
+			NDS_SkipFrame(false);
+		else
+			NDS_SkipFrame(((fsFrameCount % (Frameskip+1)) == 0) ? false : true);
+		
+		fsFrameCount++;
 	  
-		fps_FrameCount += Frameskip + 1;
+		fps_FrameCount++;
 		if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
 		if(SDL_GetTicks() - fps_SecStart >= 1000)
 		{
@@ -155,7 +162,7 @@ gboolean EmuLoop(gpointer data)
 		}
 		
 		desmume_cycle();	/* Emule ! */
-		for(i = 0; i < Frameskip; i++) desmume_cycle();	/* cycles supplémentaires pour le frameskip */
+		//for(i = 0; i < Frameskip; i++) desmume_cycle();	/* cycles supplémentaires pour le frameskip */
 		
 		Draw();
 		
@@ -167,11 +174,12 @@ gboolean EmuLoop(gpointer data)
 		
 		if(!glade_fps_limiter_disabled)
 		{
-			while((ticksCurFrame - ticksPrevFrame) < TICKS_PER_FRAME)
-				ticksCurFrame = SDL_GetTicks();
+			if((ticksCurFrame - ticksPrevFrame) < TICKS_PER_FRAME)
+				while((ticksCurFrame - ticksPrevFrame) < TICKS_PER_FRAME)
+					ticksCurFrame = SDL_GetTicks();
 		}
 		
-		ticksPrevFrame = ticksCurFrame;
+		ticksPrevFrame = SDL_GetTicks();
 
              /*   if ( !glade_fps_limiter_disabled) {
                   limiter_frame_counter += 1;
