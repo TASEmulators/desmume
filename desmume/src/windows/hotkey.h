@@ -63,7 +63,7 @@ struct SCustomKeys
 	SCustomKey Slot[10];
 	SCustomKey QuickSave, QuickLoad;
 
-	SCustomKey Pause, FrameAdvance, FastForward, IncreaseSpeed, DecreaseSpeed;
+	SCustomKey Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed;
 
 	SCustomKey ToggleRasterizer;
 

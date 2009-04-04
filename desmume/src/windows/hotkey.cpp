@@ -131,7 +131,9 @@ void HK_StateQuickLoadSlot(int)
 }
 
 void HK_Pause(int) { Pause(); }
-void HK_FastForward(int) { FastForward ^=1; }
+void HK_FastForwardToggle(int) { FastForward ^=1; }
+void HK_FastForwardKeyDown(int) { FastForward = 1; }
+void HK_FastForwardKeyUp(int) { FastForward = 0; }
 void HK_IncreaseSpeed(int) { IncreaseSpeed(); }
 void HK_DecreaseSpeed(int) { DecreaseSpeed(); }
 void HK_FrameAdvance(int) { FrameAdvance(); }
@@ -172,11 +174,18 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Pause.page = HOTKEY_PAGE_MAIN;
 	keys->Pause.key = VK_SPACE;
 
-	keys->FastForward.handleKeyDown = HK_FastForward;
+	keys->FastForward.handleKeyDown = HK_FastForwardKeyDown;
+	keys->FastForward.handleKeyUp = HK_FastForwardKeyUp;
 	keys->FastForward.code = "FastForward";
 	keys->FastForward.name = L"Fast Forward";
 	keys->FastForward.page = HOTKEY_PAGE_MAIN;
 	keys->FastForward.key = VK_TAB;
+
+	keys->FastForwardToggle.handleKeyDown = HK_FastForwardToggle;
+	keys->FastForwardToggle.code = "FastForwardToggle";
+	keys->FastForwardToggle.name = L"Fast Forward Toggle";
+	keys->FastForwardToggle.page = HOTKEY_PAGE_MAIN;
+	keys->FastForwardToggle.key = NULL;
 
 	keys->IncreaseSpeed.handleKeyDown = HK_IncreaseSpeed;
 	keys->IncreaseSpeed.code = "IncreaseSpeed";

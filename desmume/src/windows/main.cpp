@@ -2277,6 +2277,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				return 0;
 			break;
 		}
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
 	case WM_CUSTKEYUP:
 		{
 			int modifiers = GetModifiers(wParam);
