@@ -2779,7 +2779,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case ID_VIEW_DISPLAYLAG:
 			ShowLagFrameCounter ^= 1;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("Display", "Display Lag Counter", ShowLagFrameCounter, IniName);
 			osd->clear();
 			return 0;
