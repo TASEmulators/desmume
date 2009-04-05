@@ -427,7 +427,7 @@ glade_fps_limiter_fn( Uint32 interval, void *param) {
 
 static int
 common_gtk_glade_main( struct configured_features *my_config) {
-	SDL_TimerID limiter_timer;
+	/*SDL_TimerID limiter_timer;*/
 #ifdef GDB_STUB
         gdbstub_handle_t arm9_gdb_stub;
         gdbstub_handle_t arm7_gdb_stub;
