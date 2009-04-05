@@ -131,8 +131,9 @@ static void Draw()
 
 gboolean EmuLoop(gpointer data)
 {
+	/*
 	int i;
-	/*if (!noticed_3D) {
+	if (!noticed_3D) {
 		GtkWidget * dlg = glade_xml_get_widget(xml, "w3Dop");
 		gtk_widget_show(dlg);
 		noticed_3D=TRUE;
