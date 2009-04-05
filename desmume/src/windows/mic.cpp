@@ -19,8 +19,11 @@
 
 BOOL Mic_Inited = FALSE;
 
-s8 Mic_Buffer[MIC_BUFSIZE];
+u8 Mic_TempBuf[MIC_BUFSIZE];
+u8 Mic_Buffer[2][MIC_BUFSIZE];
 u16 Mic_BufPos;
+u8 Mic_WriteBuf;
+u8 Mic_PlayBuf;
 
 HWAVEIN waveIn;
 WAVEHDR waveHdr;
@@ -36,6 +39,9 @@ static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD p
 	if(msg == WIM_DATA)
 	{
 		lpWaveHdr = (LPWAVEHDR)param1;
+
+		memcpy(Mic_Buffer[Mic_WriteBuf], lpWaveHdr->lpData, MIC_BUFSIZE);
+		Mic_WriteBuf ^= 1;
 
 		hr = waveInAddBuffer(waveIn, lpWaveHdr, sizeof(WAVEHDR));
 		if(hr != MMSYSERR_NOERROR)
@@ -55,8 +61,13 @@ BOOL Mic_Init()
 	HRESULT hr;
 	WAVEFORMATEX wfx;
 
-	memset(Mic_Buffer, 0, MIC_BUFSIZE);
+	memset(Mic_TempBuf, 0, MIC_BUFSIZE);
+	memset(Mic_Buffer[0], 0, MIC_BUFSIZE);
+	memset(Mic_Buffer[1], 0, MIC_BUFSIZE);
 	Mic_BufPos = 0;
+
+	Mic_WriteBuf = 0;
+	Mic_PlayBuf = 1;
 
 	memset(&wfx, 0, sizeof(wfx));
 	wfx.cbSize = 0;
@@ -71,7 +82,7 @@ BOOL Mic_Init()
 	MIC_CHECKERR(hr)
 
 	memset(&waveHdr, 0, sizeof(waveHdr));
-	waveHdr.lpData = (LPSTR)Mic_Buffer;
+	waveHdr.lpData = (LPSTR)Mic_TempBuf;
 	waveHdr.dwBufferLength = MIC_BUFSIZE;
 
 	hr = waveInPrepareHeader(waveIn, &waveHdr, sizeof(WAVEHDR));
@@ -92,8 +103,13 @@ void Mic_Reset()
 	if(!Mic_Inited)
 		return;
 
-	memset(Mic_Buffer, 0, MIC_BUFSIZE);
+	memset(Mic_TempBuf, 0, MIC_BUFSIZE);
+	memset(Mic_Buffer[0], 0, MIC_BUFSIZE);
+	memset(Mic_Buffer[1], 0, MIC_BUFSIZE);
 	Mic_BufPos = 0;
+
+	Mic_WriteBuf = 0;
+	Mic_PlayBuf = 1;
 }
 
 void Mic_DeInit()
@@ -112,7 +128,7 @@ u8 Mic_ReadSample()
 	if(!Mic_Inited)
 		return 0;
 
-	u8 tmp = (u8)Mic_Buffer[Mic_BufPos >> 1];
+	u8 tmp = Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
 	u8 ret;
 
 	if(Mic_BufPos & 0x1)
@@ -125,7 +141,11 @@ u8 Mic_ReadSample()
 	}
 
 	Mic_BufPos++;
-	Mic_BufPos %= (MIC_BUFSIZE << 1);
+	if(Mic_BufPos >= (MIC_BUFSIZE << 1))
+	{
+		Mic_BufPos = 0;
+		Mic_PlayBuf ^= 1;
+	}
 
 	return ret;
 }
