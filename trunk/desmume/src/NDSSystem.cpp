@@ -1419,6 +1419,7 @@ int NDS_LoadFirmware(const char *filename)
 void NDS_Sleep() { nds.sleeping = TRUE; }
 
 bool skipThisFrame = false;
+bool skipThisFrame3D = false;
 
 void NDS_SkipFrame(bool skip) { skipThisFrame = skip; }
 
@@ -1570,6 +1571,8 @@ u32 NDS_exec(s32 nb)
 						GPU_ligne(&SubScreen, nds.VCount);
 					}
 
+					skipThisFrame3D = skipThisFrame;
+
 					if(MMU.DMAStartTime[0][0] == 2)
 						MMU_doDMA<ARMCPU_ARM9>(0);
 					if(MMU.DMAStartTime[0][1] == 2)
@@ -1680,7 +1683,7 @@ u32 NDS_exec(s32 nb)
 				}
 				else if(nds.VCount==215)
 				{
-					gfx3d_VBlankEndSignal(skipThisFrame);
+					gfx3d_VBlankEndSignal(false);
 				}
 				else if(nds.VCount==263)
 				{
