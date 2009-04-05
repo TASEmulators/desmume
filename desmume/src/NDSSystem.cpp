@@ -2238,7 +2238,7 @@ u32 NDS_exec(s32 nb)
 	return nds.cycles;
 }
 
-std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {
+static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {
     std::string s;
     for (int x = 0; x < count; x++) {
         if (pad & (1 << x))
@@ -2249,7 +2249,7 @@ std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int coun
     return s;
 }
 
-std::string MakeInputDisplayString(u16 pad, u16 padExt) {
+static std::string MakeInputDisplayString(u16 pad, u16 padExt) {
     const std::string Buttons[] = {"A", "B", "Sl", "St", "R", "L", "U", "D", "Rs", "Ls"};
     const std::string Ext[] = {"X", "Y"};
 
