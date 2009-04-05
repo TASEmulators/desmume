@@ -3121,6 +3121,11 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 					case 0xB7:
 						{
 							/* TODO: prevent read if the address is out of range */
+							/* Make sure any reads below 0x8000 redirect to 0x8000+(adr%0x1FF) as on real cart */
+							if(MMU.dscard[ARMCPU_ARM9].address < 0x8000)
+							{
+								MMU.dscard[ARMCPU_ARM9].address = (0x8000 + (MMU.dscard[ARMCPU_ARM9].address&0x1FF));
+							}
 							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address);
 						}
 						break;
