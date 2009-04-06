@@ -116,7 +116,7 @@ void HK_StateLoadSlot(int num)
 
 void HK_StateSetSlot(int num)
 {
-	lastSaveState = 0;
+	lastSaveState = num;
 	SaveStateMessages(num,2);	
 }
 
