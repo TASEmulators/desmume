@@ -27,6 +27,10 @@ Mac related questions can go to osx@desmume.org
 #import "main_window.h"
 #import "preferences.h"
 
+#ifdef GDB_STUB
+#include <pthread.h>
+#endif
+
 /*
 FIXME: .nds.gba support?
 */
@@ -405,6 +409,41 @@ void CreateMenu(AppDelegate *delegate)
 		[help_menu release];
 	}
 }
+
+#ifdef GDB_STUB
+//GDB Stub implementation----------------------------------------------------------------------------
+
+void * createThread_gdb(void (*thread_function)( void *data),void *thread_data)
+{
+  // Create the thread using POSIX routines.
+  pthread_attr_t  attr;
+  pthread_t*      posixThreadID = (pthread_t*)malloc(sizeof(pthread_t));
+  
+  assert(!pthread_attr_init(&attr));
+  assert(!pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE));
+  
+  int threadError = pthread_create(posixThreadID, &attr, (void* (*)(void *))thread_function, thread_data);
+  
+  assert(!pthread_attr_destroy(&attr));
+  
+  if (threadError != 0)
+  {
+    // Report an error.
+    return NULL;
+  }
+  else
+  {
+    return posixThreadID;
+  }
+}
+
+void joinThread_gdb( void *thread_handle)
+{
+  pthread_join(*((pthread_t*)thread_handle), NULL);
+  free(thread_handle);
+}
+
+#endif
 
 //Main Function--------------------------------------------------------------------------------------
 

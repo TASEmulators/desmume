@@ -21,6 +21,11 @@
 
 @class ScreenState;
 
+#ifdef GDB_STUB
+#define OBJ_C
+#include "../gdbstub.h"
+#endif
+
 #define MAX_SLOTS 10
 #define MAX_FRAME_SKIP 10
 
@@ -59,6 +64,13 @@
 
 	NSString *current_file;
 	NSString *flash_file;
+  
+#ifdef GDB_STUB
+  NSInteger arm9_gdb_port;
+  NSInteger arm7_gdb_port;
+  gdbstub_handle_t arm9_gdb_stub;
+  gdbstub_handle_t arm7_gdb_stub;
+#endif
 
 	unsigned char gpu_buff[256 * 256 * 5]; //this is where the 3D rendering of the NDS is stored
 }

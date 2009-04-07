@@ -27,6 +27,11 @@
 
 #define PREF_FLASH_FILE @"Flash File"
 
+#ifdef GDB_STUB
+#define PREF_ARM9_GDB_PORT @"arm9gdb"
+#define PREF_ARM7_GDB_PORT @"arm7gdb"
+#endif
+
 #define PREF_KEY_A @"A Button"
 #define PREF_KEY_B @"B Button"
 #define PREF_KEY_X @"X Button"
