@@ -74,9 +74,8 @@ static void GBAgame_reset(void)
 	if(fgame)
 	{
 		fread(GBArom+GBA_ROMSIZE,1,GBA_RAMSIZE,fgame);
+		fclose(fgame);
 	}
-	fclose(fgame);
-
 }
 
 static void GBAgame_close(void)
