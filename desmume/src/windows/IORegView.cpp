@@ -130,6 +130,7 @@ BOOL CALLBACK IoregView_Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
 				SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
 				return 1;
             case WM_COMMAND :
+				if(IORegView == NULL) return 0;
                  switch (LOWORD (wParam))
                  {
                         case IDC_FERMER :
