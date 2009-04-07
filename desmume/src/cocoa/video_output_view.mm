@@ -66,7 +66,7 @@
 		//NSOpenGLPFAFullScreen,
 		NSOpenGLPFAWindow, //need a renderer that can draw to a window
 		//NSOpenGLPFARendererID, some_number, //this picks a particular renderer, for testing
-		0
+		(NSOpenGLPixelFormatAttribute)0
 	};
 
 	NSOpenGLPixelFormat* pixel_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];

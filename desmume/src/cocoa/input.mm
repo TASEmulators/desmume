@@ -35,8 +35,8 @@ inline int testKey(NSString *chars_pressed, NSString *chars_for_key)
 {
 	//Checks for common characters in chars_pressed and chars_for_key
 
-	unichar *buffer1 = malloc([chars_pressed length] * sizeof(unichar));
-	unichar *buffer2 = malloc([chars_for_key length] * sizeof(unichar));
+	unichar *buffer1 = (unichar*)malloc([chars_pressed length] * sizeof(unichar));
+	unichar *buffer2 = (unichar*)malloc([chars_for_key length] * sizeof(unichar));
 	if(!buffer1 || !buffer2)return 0;
 	
 	[chars_pressed getCharacters:buffer1];

@@ -7,6 +7,69 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1EFD51790F892B1A00B029BB /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
+		1EFD517A0F892B1A00B029BB /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
+		1EFD517B0F892B1A00B029BB /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
+		1EFD517D0F892B1A00B029BB /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
+		1EFD517E0F892B1A00B029BB /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.mm */; };
+		1EFD517F0F892B1A00B029BB /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.mm */; };
+		1EFD51800F892B1A00B029BB /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC620D9D55DB00ED561B /* main_window.mm */; };
+		1EFD51810F892B1A00B029BB /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC640D9D55DB00ED561B /* nds_control.mm */; };
+		1EFD51820F892B1A00B029BB /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC660D9D55DB00ED561B /* preferences.mm */; };
+		1EFD51830F892B1A00B029BB /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6A0D9D55DB00ED561B /* screenshot.mm */; };
+		1EFD51840F892B1A00B029BB /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6E0D9D55DB00ED561B /* video_output_view.mm */; };
+		1EFD51850F892B1A00B029BB /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
+		1EFD51860F892B1A00B029BB /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.mm */; };
+		1EFD51870F892B1A00B029BB /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644A0E78E18100AEDC8B /* arm_instructions.cpp */; };
+		1EFD51880F892B1A00B029BB /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644B0E78E18100AEDC8B /* armcpu.cpp */; };
+		1EFD51890F892B1A00B029BB /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644C0E78E18100AEDC8B /* bios.cpp */; };
+		1EFD518A0F892B1A00B029BB /* cflash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644D0E78E18100AEDC8B /* cflash.cpp */; };
+		1EFD518B0F892B1A00B029BB /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644E0E78E18100AEDC8B /* cp15.cpp */; };
+		1EFD518C0F892B1A00B029BB /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644F0E78E18100AEDC8B /* debug.cpp */; };
+		1EFD518D0F892B1A00B029BB /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764500E78E18100AEDC8B /* Disassembler.cpp */; };
+		1EFD518E0F892B1A00B029BB /* FIFO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764510E78E18100AEDC8B /* FIFO.cpp */; };
+		1EFD518F0F892B1A00B029BB /* fs-linux.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764520E78E18100AEDC8B /* fs-linux.cpp */; };
+		1EFD51900F892B1A00B029BB /* GPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764560E78E18100AEDC8B /* GPU.cpp */; };
+		1EFD51910F892B1A00B029BB /* matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764570E78E18100AEDC8B /* matrix.cpp */; };
+		1EFD51920F892B1A00B029BB /* mc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764580E78E18100AEDC8B /* mc.cpp */; };
+		1EFD51930F892B1A00B029BB /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764590E78E18100AEDC8B /* MMU.cpp */; };
+		1EFD51940F892B1A00B029BB /* NDSSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645A0E78E18100AEDC8B /* NDSSystem.cpp */; };
+		1EFD51950F892B1A00B029BB /* render3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645B0E78E18100AEDC8B /* render3D.cpp */; };
+		1EFD51960F892B1A00B029BB /* ROMReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645C0E78E18100AEDC8B /* ROMReader.cpp */; };
+		1EFD51970F892B1A00B029BB /* saves.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645D0E78E18100AEDC8B /* saves.cpp */; };
+		1EFD51980F892B1A00B029BB /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645F0E78E18100AEDC8B /* SPU.cpp */; };
+		1EFD51990F892B1A00B029BB /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764600E78E18100AEDC8B /* thumb_instructions.cpp */; };
+		1EFD519A0F892B1A00B029BB /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764610E78E18100AEDC8B /* wifi.cpp */; };
+		1EFD519B0F892B1A00B029BB /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */; };
+		1EFD519C0F892B1A00B029BB /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */; };
+		1EFD519D0F892B1A00B029BB /* GPU_osd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */; };
+		1EFD519E0F892B1A00B029BB /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = 72D89DE40E83973A008D9B64 /* screen_state.m */; };
+		1EFD519F0F892B1A00B029BB /* readwrite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 72D89E360E845C7E008D9B64 /* readwrite.cpp */; };
+		1EFD51A00F892B1A00B029BB /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43C50EA2A18F0037FB33 /* common.cpp */; };
+		1EFD51A10F892B1A00B029BB /* rtc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43C90EA2A18F0037FB33 /* rtc.cpp */; };
+		1EFD51A20F892B1A00B029BB /* softrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 721F43CB0EA2A18F0037FB33 /* softrender.cpp */; };
+		1EFD51A30F892B1A00B029BB /* sndOSX.mm in Sources */ = {isa = PBXBuildFile; fileRef = 721F43E40EA2A23F0037FB33 /* sndOSX.mm */; };
+		1EFD51A40F892B1A00B029BB /* rom_info.m in Sources */ = {isa = PBXBuildFile; fileRef = 721F44220EA2BB6E0037FB33 /* rom_info.m */; };
+		1EFD51A50F892B1A00B029BB /* movie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD292F0F080D68004021C9 /* movie.cpp */; };
+		1EFD51A60F892B1A00B029BB /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD293E0F080DBD004021C9 /* ConvertUTF.c */; };
+		1EFD51A70F892B1A00B029BB /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29410F080DBD004021C9 /* crc.cpp */; };
+		1EFD51A80F892B1A00B029BB /* decrypt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29430F080DBD004021C9 /* decrypt.cpp */; };
+		1EFD51A90F892B1A00B029BB /* header.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29450F080DBD004021C9 /* header.cpp */; };
+		1EFD51AA0F892B1A00B029BB /* guid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29470F080DBD004021C9 /* guid.cpp */; };
+		1EFD51AB0F892B1A00B029BB /* md5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD29490F080DBD004021C9 /* md5.cpp */; };
+		1EFD51AC0F892B1A00B029BB /* xstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FDD294C0F080DBD004021C9 /* xstring.cpp */; };
+		1EFD51AD0F892B1A00B029BB /* mic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB3725A0F1CB9D300F75A43 /* mic.cpp */; };
+		1EFD51AE0F892B1A00B029BB /* addons.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372610F1CB9F700F75A43 /* addons.cpp */; };
+		1EFD51AF0F892B1A00B029BB /* compactFlash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372760F1CBAB200F75A43 /* compactFlash.cpp */; };
+		1EFD51B00F892B1A00B029BB /* gbagame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372770F1CBAB200F75A43 /* gbagame.cpp */; };
+		1EFD51B10F892B1A00B029BB /* none.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372780F1CBAB200F75A43 /* none.cpp */; };
+		1EFD51B20F892B1A00B029BB /* rumblepak.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1FB372790F1CBAB200F75A43 /* rumblepak.cpp */; };
+		1EFD51B30F892B1A00B029BB /* cheatSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F5577060F326E2000DCF447 /* cheatSystem.cpp */; };
+		1EFD51B40F892B1A00B029BB /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F4B54D70F538DFE00C8B514 /* texcache.cpp */; };
+		1EFD51B50F892B1A00B029BB /* gdbstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1EFD50B50F891CA400B029BB /* gdbstub.cpp */; };
+		1EFD51B70F892B1A00B029BB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		1EFD51B80F892B1A00B029BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
+		1EFD51B90F892B1A00B029BB /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		1F4B54D90F538DFE00C8B514 /* texcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1F4B54D70F538DFE00C8B514 /* texcache.cpp */; };
 		1F4B550A0F53924500C8B514 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B55090F53924500C8B514 /* Localizable.strings */; };
 		1F4B550C0F53924500C8B514 /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 1F4B550B0F53924500C8B514 /* MainMenu.nib */; };
@@ -50,20 +113,20 @@
 		722764760E78E18100AEDC8B /* SPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227645F0E78E18100AEDC8B /* SPU.cpp */; };
 		722764770E78E18100AEDC8B /* thumb_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764600E78E18100AEDC8B /* thumb_instructions.cpp */; };
 		722764780E78E18100AEDC8B /* wifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764610E78E18100AEDC8B /* wifi.cpp */; };
-		7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.m */; };
+		7233955A0E596E9100999693 /* speed_limit_selection_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = 723395590E596E9100999693 /* speed_limit_selection_window.mm */; };
 		7248E4620E7E0B0E004DCFFE /* gfx3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */; };
 		7248E4630E7E0B0E004DCFFE /* OGLRender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */; };
 		7277B62F0D9D9AEA00D283BD /* DeSmuME.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7277B62E0D9D9AEA00D283BD /* DeSmuME.icns */; };
 		7277B8EB0D9F25F700D283BD /* about.m in Sources */ = {isa = PBXBuildFile; fileRef = 7277B8EA0D9F25F700D283BD /* about.m */; };
 		728E5E210E7F54CC00608344 /* GPU_osd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 728E5E1F0E7F54CC00608344 /* GPU_osd.cpp */; };
 		729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5A0D9D55DB00ED561B /* cocoa_util.m */; };
-		729BEC710D9D55DB00ED561B /* input.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.m */; };
-		729BEC730D9D55DB00ED561B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.m */; };
-		729BEC740D9D55DB00ED561B /* main_window.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC620D9D55DB00ED561B /* main_window.m */; };
+		729BEC710D9D55DB00ED561B /* input.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC5E0D9D55DB00ED561B /* input.mm */; };
+		729BEC730D9D55DB00ED561B /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC600D9D55DB00ED561B /* main.mm */; };
+		729BEC740D9D55DB00ED561B /* main_window.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC620D9D55DB00ED561B /* main_window.mm */; };
 		729BEC750D9D55DB00ED561B /* nds_control.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC640D9D55DB00ED561B /* nds_control.mm */; };
-		729BEC760D9D55DB00ED561B /* preferences.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC660D9D55DB00ED561B /* preferences.m */; };
-		729BEC780D9D55DB00ED561B /* screenshot.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6A0D9D55DB00ED561B /* screenshot.m */; };
-		729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6E0D9D55DB00ED561B /* video_output_view.m */; };
+		729BEC760D9D55DB00ED561B /* preferences.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC660D9D55DB00ED561B /* preferences.mm */; };
+		729BEC780D9D55DB00ED561B /* screenshot.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6A0D9D55DB00ED561B /* screenshot.mm */; };
+		729BEC7A0D9D55DB00ED561B /* video_output_view.mm in Sources */ = {isa = PBXBuildFile; fileRef = 729BEC6E0D9D55DB00ED561B /* video_output_view.mm */; };
 		729BECE70D9D57F600ED561B /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECE60D9D57F600ED561B /* OpenGL.framework */; };
 		729BECF00D9D581900ED561B /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 729BECEF0D9D581900ED561B /* AudioUnit.framework */; };
 		72D89DE50E83973A008D9B64 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = 72D89DE40E83973A008D9B64 /* screen_state.m */; };
@@ -73,6 +136,9 @@
 
 /* Begin PBXFileReference section */
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		1EFD50B50F891CA400B029BB /* gdbstub.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gdbstub.cpp; path = ../gdbstub/gdbstub.cpp; sourceTree = SOURCE_ROOT; };
+		1EFD50B60F891CA400B029BB /* gdbstub_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gdbstub_internal.h; path = ../gdbstub/gdbstub_internal.h; sourceTree = SOURCE_ROOT; };
+		1EFD51BE0F892B1A00B029BB /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F4B54D70F538DFE00C8B514 /* texcache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = texcache.cpp; path = ../texcache.cpp; sourceTree = SOURCE_ROOT; };
 		1F4B54D80F538DFE00C8B514 /* texcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = texcache.h; path = ../texcache.h; sourceTree = SOURCE_ROOT; };
 		1F4B55030F53921B00C8B514 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = translations/English.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -151,7 +217,7 @@
 		722764600E78E18100AEDC8B /* thumb_instructions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = thumb_instructions.cpp; path = ../thumb_instructions.cpp; sourceTree = SOURCE_ROOT; };
 		722764610E78E18100AEDC8B /* wifi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wifi.cpp; path = ../wifi.cpp; sourceTree = SOURCE_ROOT; };
 		723395580E596E9100999693 /* speed_limit_selection_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = speed_limit_selection_window.h; path = dialogs/speed_limit_selection_window.h; sourceTree = "<group>"; };
-		723395590E596E9100999693 /* speed_limit_selection_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = speed_limit_selection_window.m; path = dialogs/speed_limit_selection_window.m; sourceTree = "<group>"; };
+		723395590E596E9100999693 /* speed_limit_selection_window.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = speed_limit_selection_window.mm; path = dialogs/speed_limit_selection_window.mm; sourceTree = "<group>"; };
 		7248E45E0E7E0B0E004DCFFE /* gfx3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gfx3d.cpp; path = ../gfx3d.cpp; sourceTree = SOURCE_ROOT; };
 		7248E45F0E7E0B0E004DCFFE /* gfx3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = gfx3d.h; path = ../gfx3d.h; sourceTree = SOURCE_ROOT; };
 		7248E4600E7E0B0E004DCFFE /* OGLRender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OGLRender.cpp; path = ../OGLRender.cpp; sourceTree = SOURCE_ROOT; };
@@ -163,19 +229,19 @@
 		729BEC5A0D9D55DB00ED561B /* cocoa_util.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoa_util.m; sourceTree = SOURCE_ROOT; };
 		729BEC5C0D9D55DB00ED561B /* globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = SOURCE_ROOT; };
 		729BEC5D0D9D55DB00ED561B /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = SOURCE_ROOT; };
-		729BEC5E0D9D55DB00ED561B /* input.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = input.m; sourceTree = SOURCE_ROOT; };
-		729BEC600D9D55DB00ED561B /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = SOURCE_ROOT; };
+		729BEC5E0D9D55DB00ED561B /* input.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = input.mm; sourceTree = "<group>"; };
+		729BEC600D9D55DB00ED561B /* main.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		729BEC610D9D55DB00ED561B /* main_window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main_window.h; sourceTree = SOURCE_ROOT; };
-		729BEC620D9D55DB00ED561B /* main_window.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main_window.m; sourceTree = SOURCE_ROOT; };
+		729BEC620D9D55DB00ED561B /* main_window.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = main_window.mm; sourceTree = "<group>"; };
 		729BEC630D9D55DB00ED561B /* nds_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nds_control.h; sourceTree = SOURCE_ROOT; };
 		729BEC640D9D55DB00ED561B /* nds_control.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = nds_control.mm; sourceTree = "<group>"; };
 		729BEC650D9D55DB00ED561B /* preferences.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = preferences.h; sourceTree = SOURCE_ROOT; };
-		729BEC660D9D55DB00ED561B /* preferences.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = preferences.m; sourceTree = SOURCE_ROOT; };
+		729BEC660D9D55DB00ED561B /* preferences.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = preferences.mm; sourceTree = "<group>"; };
 		729BEC690D9D55DB00ED561B /* screenshot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = screenshot.h; sourceTree = SOURCE_ROOT; };
-		729BEC6A0D9D55DB00ED561B /* screenshot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screenshot.m; sourceTree = SOURCE_ROOT; };
+		729BEC6A0D9D55DB00ED561B /* screenshot.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = screenshot.mm; sourceTree = "<group>"; };
 		729BEC6B0D9D55DB00ED561B /* sndOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sndOSX.h; sourceTree = SOURCE_ROOT; };
 		729BEC6D0D9D55DB00ED561B /* video_output_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = video_output_view.h; sourceTree = SOURCE_ROOT; };
-		729BEC6E0D9D55DB00ED561B /* video_output_view.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = video_output_view.m; sourceTree = SOURCE_ROOT; };
+		729BEC6E0D9D55DB00ED561B /* video_output_view.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = video_output_view.mm; sourceTree = "<group>"; };
 		729BEC9A0D9D57AF00ED561B /* ARM9.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ARM9.h; path = ../ARM9.h; sourceTree = SOURCE_ROOT; };
 		729BEC9C0D9D57AF00ED561B /* arm_instructions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arm_instructions.h; path = ../arm_instructions.h; sourceTree = SOURCE_ROOT; };
 		729BEC9E0D9D57AF00ED561B /* armcpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = armcpu.h; path = ../armcpu.h; sourceTree = SOURCE_ROOT; };
@@ -214,6 +280,16 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1EFD51B60F892B1A00B029BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EFD51B70F892B1A00B029BB /* Cocoa.framework in Frameworks */,
+				1EFD51B80F892B1A00B029BB /* OpenGL.framework in Frameworks */,
+				1EFD51B90F892B1A00B029BB /* AudioUnit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D11072E0486CEB800E47090 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -231,26 +307,26 @@
 			isa = PBXGroup;
 			children = (
 				72D219C40E6B4DDF00439B28 /* Dialogs */,
-				721F43E40EA2A23F0037FB33 /* sndOSX.mm */,
 				72D89DE30E83973A008D9B64 /* screen_state.h */,
 				72D89DE40E83973A008D9B64 /* screen_state.m */,
 				7277B8EA0D9F25F700D283BD /* about.m */,
 				729BEC5C0D9D55DB00ED561B /* globals.h */,
-				729BEC600D9D55DB00ED561B /* main.m */,
+				729BEC600D9D55DB00ED561B /* main.mm */,
 				729BEC5A0D9D55DB00ED561B /* cocoa_util.m */,
 				729BEC5D0D9D55DB00ED561B /* input.h */,
-				729BEC5E0D9D55DB00ED561B /* input.m */,
+				729BEC5E0D9D55DB00ED561B /* input.mm */,
 				729BEC610D9D55DB00ED561B /* main_window.h */,
-				729BEC620D9D55DB00ED561B /* main_window.m */,
+				729BEC620D9D55DB00ED561B /* main_window.mm */,
 				729BEC630D9D55DB00ED561B /* nds_control.h */,
 				729BEC640D9D55DB00ED561B /* nds_control.mm */,
 				729BEC650D9D55DB00ED561B /* preferences.h */,
-				729BEC660D9D55DB00ED561B /* preferences.m */,
+				729BEC660D9D55DB00ED561B /* preferences.mm */,
 				729BEC690D9D55DB00ED561B /* screenshot.h */,
-				729BEC6A0D9D55DB00ED561B /* screenshot.m */,
+				729BEC6A0D9D55DB00ED561B /* screenshot.mm */,
 				729BEC6B0D9D55DB00ED561B /* sndOSX.h */,
-				729BEC6E0D9D55DB00ED561B /* video_output_view.m */,
+				721F43E40EA2A23F0037FB33 /* sndOSX.mm */,
 				729BEC6D0D9D55DB00ED561B /* video_output_view.h */,
+				729BEC6E0D9D55DB00ED561B /* video_output_view.mm */,
 			);
 			name = "Cocoa Port";
 			sourceTree = "<group>";
@@ -276,8 +352,18 @@
 			isa = PBXGroup;
 			children = (
 				8D1107320486CEB800E47090 /* DeSmuME.app */,
+				1EFD51BE0F892B1A00B029BB /* DeSmuME.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1EFD50B80F891CAA00B029BB /* gdbstub */ = {
+			isa = PBXGroup;
+			children = (
+				1EFD50B50F891CA400B029BB /* gdbstub.cpp */,
+				1EFD50B60F891CA400B029BB /* gdbstub_internal.h */,
+			);
+			name = gdbstub;
 			sourceTree = "<group>";
 		};
 		1FB372750F1CBAB200F75A43 /* addons */ = {
@@ -323,6 +409,7 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				1EFD50B80F891CAA00B029BB /* gdbstub */,
 				1FB372750F1CBAB200F75A43 /* addons */,
 				1FDD29400F080DBD004021C9 /* decrypt */,
 				1F5577060F326E2000DCF447 /* cheatSystem.cpp */,
@@ -444,7 +531,7 @@
 				721F44210EA2BB6E0037FB33 /* rom_info.h */,
 				721F44220EA2BB6E0037FB33 /* rom_info.m */,
 				723395580E596E9100999693 /* speed_limit_selection_window.h */,
-				723395590E596E9100999693 /* speed_limit_selection_window.m */,
+				723395590E596E9100999693 /* speed_limit_selection_window.mm */,
 			);
 			name = Dialogs;
 			sourceTree = "<group>";
@@ -452,6 +539,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1EFD51770F892B1A00B029BB /* DeSmuME_gdbstub */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1EFD51BB0F892B1A00B029BB /* Build configuration list for PBXNativeTarget "DeSmuME_gdbstub" */;
+			buildPhases = (
+				1EFD51780F892B1A00B029BB /* Resources */,
+				1EFD517C0F892B1A00B029BB /* Sources */,
+				1EFD51B60F892B1A00B029BB /* Frameworks */,
+				1EFD51BA0F892B1A00B029BB /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DeSmuME_gdbstub;
+			productInstallPath = "$(HOME)/Applications";
+			productName = DeSmuME;
+			productReference = 1EFD51BE0F892B1A00B029BB /* DeSmuME.app */;
+			productType = "com.apple.product-type.application";
+		};
 		8D1107260486CEB800E47090 /* DeSmuME */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME" */;
@@ -492,11 +598,22 @@
 			projectRoot = "";
 			targets = (
 				8D1107260486CEB800E47090 /* DeSmuME */,
+				1EFD51770F892B1A00B029BB /* DeSmuME_gdbstub */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1EFD51780F892B1A00B029BB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EFD51790F892B1A00B029BB /* DeSmuME.icns in Resources */,
+				1EFD517A0F892B1A00B029BB /* Localizable.strings in Resources */,
+				1EFD517B0F892B1A00B029BB /* MainMenu.nib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D1107290486CEB800E47090 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -510,6 +627,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		1EFD51BA0F892B1A00B029BB /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp ../../README $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README\ncp ../../README.MAC $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.MAC\ncp ../../AUTHORS $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/AUTHORS\ncp ../../README.TRANSLATION $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/README.TRANSLATION\ncp ../../ChangeLog $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/ChangeLog\ncp ../../COPYING $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/COPYING\ncd $BUILT_PRODUCTS_DIR/DeSmuME.app/Contents/Resources/\n";
+		};
 		72C000600D9D61BF0046B7EA /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -526,20 +656,84 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1EFD517C0F892B1A00B029BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EFD517D0F892B1A00B029BB /* cocoa_util.m in Sources */,
+				1EFD517E0F892B1A00B029BB /* input.mm in Sources */,
+				1EFD517F0F892B1A00B029BB /* main.mm in Sources */,
+				1EFD51800F892B1A00B029BB /* main_window.mm in Sources */,
+				1EFD51810F892B1A00B029BB /* nds_control.mm in Sources */,
+				1EFD51820F892B1A00B029BB /* preferences.mm in Sources */,
+				1EFD51830F892B1A00B029BB /* screenshot.mm in Sources */,
+				1EFD51840F892B1A00B029BB /* video_output_view.mm in Sources */,
+				1EFD51850F892B1A00B029BB /* about.m in Sources */,
+				1EFD51860F892B1A00B029BB /* speed_limit_selection_window.mm in Sources */,
+				1EFD51870F892B1A00B029BB /* arm_instructions.cpp in Sources */,
+				1EFD51880F892B1A00B029BB /* armcpu.cpp in Sources */,
+				1EFD51890F892B1A00B029BB /* bios.cpp in Sources */,
+				1EFD518A0F892B1A00B029BB /* cflash.cpp in Sources */,
+				1EFD518B0F892B1A00B029BB /* cp15.cpp in Sources */,
+				1EFD518C0F892B1A00B029BB /* debug.cpp in Sources */,
+				1EFD518D0F892B1A00B029BB /* Disassembler.cpp in Sources */,
+				1EFD518E0F892B1A00B029BB /* FIFO.cpp in Sources */,
+				1EFD518F0F892B1A00B029BB /* fs-linux.cpp in Sources */,
+				1EFD51900F892B1A00B029BB /* GPU.cpp in Sources */,
+				1EFD51910F892B1A00B029BB /* matrix.cpp in Sources */,
+				1EFD51920F892B1A00B029BB /* mc.cpp in Sources */,
+				1EFD51930F892B1A00B029BB /* MMU.cpp in Sources */,
+				1EFD51940F892B1A00B029BB /* NDSSystem.cpp in Sources */,
+				1EFD51950F892B1A00B029BB /* render3D.cpp in Sources */,
+				1EFD51960F892B1A00B029BB /* ROMReader.cpp in Sources */,
+				1EFD51970F892B1A00B029BB /* saves.cpp in Sources */,
+				1EFD51980F892B1A00B029BB /* SPU.cpp in Sources */,
+				1EFD51990F892B1A00B029BB /* thumb_instructions.cpp in Sources */,
+				1EFD519A0F892B1A00B029BB /* wifi.cpp in Sources */,
+				1EFD519B0F892B1A00B029BB /* gfx3d.cpp in Sources */,
+				1EFD519C0F892B1A00B029BB /* OGLRender.cpp in Sources */,
+				1EFD519D0F892B1A00B029BB /* GPU_osd.cpp in Sources */,
+				1EFD519E0F892B1A00B029BB /* screen_state.m in Sources */,
+				1EFD519F0F892B1A00B029BB /* readwrite.cpp in Sources */,
+				1EFD51A00F892B1A00B029BB /* common.cpp in Sources */,
+				1EFD51A10F892B1A00B029BB /* rtc.cpp in Sources */,
+				1EFD51A20F892B1A00B029BB /* softrender.cpp in Sources */,
+				1EFD51A30F892B1A00B029BB /* sndOSX.mm in Sources */,
+				1EFD51A40F892B1A00B029BB /* rom_info.m in Sources */,
+				1EFD51A50F892B1A00B029BB /* movie.cpp in Sources */,
+				1EFD51A60F892B1A00B029BB /* ConvertUTF.c in Sources */,
+				1EFD51A70F892B1A00B029BB /* crc.cpp in Sources */,
+				1EFD51A80F892B1A00B029BB /* decrypt.cpp in Sources */,
+				1EFD51A90F892B1A00B029BB /* header.cpp in Sources */,
+				1EFD51AA0F892B1A00B029BB /* guid.cpp in Sources */,
+				1EFD51AB0F892B1A00B029BB /* md5.cpp in Sources */,
+				1EFD51AC0F892B1A00B029BB /* xstring.cpp in Sources */,
+				1EFD51AD0F892B1A00B029BB /* mic.cpp in Sources */,
+				1EFD51AE0F892B1A00B029BB /* addons.cpp in Sources */,
+				1EFD51AF0F892B1A00B029BB /* compactFlash.cpp in Sources */,
+				1EFD51B00F892B1A00B029BB /* gbagame.cpp in Sources */,
+				1EFD51B10F892B1A00B029BB /* none.cpp in Sources */,
+				1EFD51B20F892B1A00B029BB /* rumblepak.cpp in Sources */,
+				1EFD51B30F892B1A00B029BB /* cheatSystem.cpp in Sources */,
+				1EFD51B40F892B1A00B029BB /* texcache.cpp in Sources */,
+				1EFD51B50F892B1A00B029BB /* gdbstub.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D11072C0486CEB800E47090 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				729BEC6F0D9D55DB00ED561B /* cocoa_util.m in Sources */,
-				729BEC710D9D55DB00ED561B /* input.m in Sources */,
-				729BEC730D9D55DB00ED561B /* main.m in Sources */,
-				729BEC740D9D55DB00ED561B /* main_window.m in Sources */,
+				729BEC710D9D55DB00ED561B /* input.mm in Sources */,
+				729BEC730D9D55DB00ED561B /* main.mm in Sources */,
+				729BEC740D9D55DB00ED561B /* main_window.mm in Sources */,
 				729BEC750D9D55DB00ED561B /* nds_control.mm in Sources */,
-				729BEC760D9D55DB00ED561B /* preferences.m in Sources */,
-				729BEC780D9D55DB00ED561B /* screenshot.m in Sources */,
-				729BEC7A0D9D55DB00ED561B /* video_output_view.m in Sources */,
+				729BEC760D9D55DB00ED561B /* preferences.mm in Sources */,
+				729BEC780D9D55DB00ED561B /* screenshot.mm in Sources */,
+				729BEC7A0D9D55DB00ED561B /* video_output_view.mm in Sources */,
 				7277B8EB0D9F25F700D283BD /* about.m in Sources */,
-				7233955A0E596E9100999693 /* speed_limit_selection_window.m in Sources */,
+				7233955A0E596E9100999693 /* speed_limit_selection_window.mm in Sources */,
 				722764620E78E18100AEDC8B /* arm_instructions.cpp in Sources */,
 				722764630E78E18100AEDC8B /* armcpu.cpp in Sources */,
 				722764640E78E18100AEDC8B /* bios.cpp in Sources */,
@@ -617,6 +811,64 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		1EFD51BC0F892B1A00B029BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
+				COPY_PHASE_STRIP = NO;
+				GCC_AUTO_VECTORIZATION = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					DESMUME_OBJ_C,
+					HAVE_OPENGL,
+					HAVE_LIBZ,
+					DESMUME_COCOA,
+					GDB_STUB,
+				);
+				GCC_STRICT_ALIASING = YES;
+				GCC_UNROLL_LOOPS = YES;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
+				PRODUCT_NAME = DeSmuME;
+				VALID_ARCHS = "i386 ppc";
+			};
+			name = Debug;
+		};
+		1EFD51BD0F892B1A00B029BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_AUTO_VECTORIZATION = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					DESMUME_OBJ_C,
+					HAVE_OPENGL,
+					HAVE_LIBZ,
+					DESMUME_COCOA,
+					GDB_STUB,
+				);
+				GCC_STRICT_ALIASING = YES;
+				GCC_UNROLL_LOOPS = YES;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
+				PRODUCT_NAME = DeSmuME;
+				VALID_ARCHS = "i386 ppc";
+			};
+			name = Release;
+		};
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -701,6 +953,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1EFD51BB0F892B1A00B029BB /* Build configuration list for PBXNativeTarget "DeSmuME_gdbstub" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1EFD51BC0F892B1A00B029BB /* Debug */,
+				1EFD51BD0F892B1A00B029BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "DeSmuME" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

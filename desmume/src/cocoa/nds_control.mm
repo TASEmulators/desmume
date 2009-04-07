@@ -95,6 +95,17 @@ bool opengl_init()
 	execution_lock = [[NSLock alloc] init];
 	sound_lock = [[NSLock alloc] init];
 	current_screen = nil;
+  
+#ifdef GDB_STUB
+  arm9_gdb_port = 0;
+  arm7_gdb_port = 0;
+  arm9_gdb_stub = NULL;
+  arm7_gdb_stub = NULL;
+  struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+  struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+  struct armcpu_ctrl_iface *arm9_ctrl_iface;
+  struct armcpu_ctrl_iface *arm7_ctrl_iface;
+#endif
 
 	//Set the flash file if it's in the prefs/cmd line.  It will be nil if it isn't.
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -106,18 +117,71 @@ bool opengl_init()
 		flash_file = nil;
 		//NSLog(@"No flash file given\n");
 	}
+  
+#ifdef GDB_STUB
+  //create GDB stubs if required
+  arm9_gdb_port = [defaults integerForKey:PREF_ARM9_GDB_PORT];
+  arm7_gdb_port = [defaults integerForKey:PREF_ARM7_GDB_PORT];
+  
+  if(arm9_gdb_port > 0 && arm9_gdb_port < 65536)
+  {
+    NSLog(@"Using ARM9 GDB port %d", arm9_gdb_port);
+    arm9_gdb_stub = createStub_gdb(arm9_gdb_port,
+                                   &arm9_memio,
+                                   &arm9_direct_memory_iface);
+    if ( arm9_gdb_stub == NULL)
+    {
+      NSLog(@"Failed to create ARM9 gdbstub on port %d\n",arm9_gdb_port);
+      exit(1);
+    }
+  }
+  
+  if (arm7_gdb_port > 0 && arm7_gdb_port < 65536)
+  {
+    NSLog(@"Using ARM7 GDB port %d", arm7_gdb_port);
+    arm7_gdb_stub = createStub_gdb(arm7_gdb_port,
+                                   &arm7_memio,
+                                   &arm7_base_memory_iface);
+    
+    if ( arm7_gdb_stub == NULL) {
+      NSLog(@"Failed to create ARM7 gdbstub on port %d\n",arm7_gdb_port);
+      exit(1);
+    }
+  }
+#endif
 
 	//check if we can send messages on other threads, which we will use for video update
 	//this is for compatibility for tiger and earlier
 	timer_based = ([NSObject instancesRespondToSelector:@selector(performSelector:onThread:withObject:waitUntilDone:)]==NO)?true:false;
 
 	//Firmware setup
-	NDS_Init();
+#ifdef GDB_STUB
+  NDS_Init(arm9_memio, &arm9_ctrl_iface,
+           arm7_memio, &arm7_ctrl_iface);
+#else
+  NDS_Init();
+#endif
 
 	//use default firmware
 	NDS_FillDefaultFirmwareConfigData(&firmware);
 	NDS_CreateDummyFirmware(&firmware);
 
+  /*
+   * Activate the GDB stubs
+   * This has to come after the NDS_Init where the cpus are set up.
+   */
+#ifdef GDB_STUB
+  if(arm9_gdb_port > 0 && arm9_gdb_port < 65536)
+  {  
+    activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+  }
+  if(arm7_gdb_port > 0 && arm7_gdb_port < 65536)
+  {
+    activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+  }
+#endif
+  
+  
 	//3D Init
 #ifdef HAVE_OPENGL
 	NSOpenGLContext *prev_context = [NSOpenGLContext currentContext];
@@ -274,6 +338,17 @@ bool opengl_init()
 
 	NDS_DeInit();
 
+#ifdef GDB_STUB
+  if(arm9_gdb_port > 0 && arm9_gdb_port < 65536)
+  {
+    destroyStub_gdb(arm9_gdb_stub);
+  }
+  if(arm7_gdb_port > 0 && arm7_gdb_port < 65536)
+  {
+    destroyStub_gdb(arm7_gdb_stub);
+  }
+#endif
+  
 	[super dealloc];
 }
 
