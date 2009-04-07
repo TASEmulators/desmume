@@ -67,6 +67,51 @@ Enable the ARM9 GDB stub on the given port
 .B \-\-arm7gdb=PORT_NUM
 Enable the ARM7 GDB stub on the given port
 .TP
+.B \-\-save-type=TYPE
+Select savetype from the following:
+.RS
+0 = Autodetect
+.RE
+.RS
+1 = EEPROM 4kbit
+.RE
+.RS
+2 = EEPROM 64kbit
+.RE
+.RS
+3 = EEPROM 512kbit
+.RE
+.RS
+4 = FRAM 256kbit
+.RE
+.RS
+5 = FLASH 2mbit
+.RE
+.RS
+6 = FLASH 4mbit
+.RE
+.TP
+.B \-\-fwlang=LANG
+Set the language in the firmware, LANG as follows:
+.RS
+0 = Japanese
+.RE
+.RS
+1 = English
+.RE
+.RS
+2 = French
+.RE
+.RS
+3 = German
+.RE
+.RS
+4 = Italian
+.RE
+.RS
+5 = Spanish
+.RE
+.TP
 .B \-\-cflash=PATH_TO_DISK_IMAGE
 Enable disk image GBAMP compact flash emulation
 .TP
