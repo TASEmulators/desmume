@@ -83,10 +83,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace std;
 
-#include <GdiPlus.h>
-
-using namespace Gdiplus;
-
 #define HAVE_REMOTE
 #define WPCAP
 #define PACKET_SIZE 65535
@@ -1262,17 +1258,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 {
 	driver = new WinDriver();
 
-	ULONG_PTR GdiplusToken;
-	GdiplusStartupInput GdiplusSI;
-
-	GdiplusSI.GdiplusVersion = 1;
-
-	if(GdiplusStartup(&GdiplusToken, &GdiplusSI, NULL) != Ok)
-	{
-		MessageBox(0, "Failed to initialize GDI+ !", "Severe error", MB_OK | MB_ICONERROR);
-		return 1;
-	}
-
 	InitializeCriticalSection(&win_sync);
 
 #ifdef GDB_STUB
@@ -1633,8 +1618,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	delete MainWindow;
 
 	CloseConsole();
-
-	GdiplusShutdown(GdiplusToken);
 
 	return 0;
 }
@@ -3460,5 +3443,3 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 
 	return FALSE;
 }
-
-
