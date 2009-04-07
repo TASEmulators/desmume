@@ -75,6 +75,17 @@ static const char *bad_glob_cflash_disk_image_file;
 static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
 
+const char * save_type_names[] = {
+    "Autodetect",
+    "EEPROM 4kbit",
+    "EEPROM 64kbit",
+    "EEPROM 512kbit",
+    "FRAM 256kbit",
+    "FLASH 2mbit",
+    "FLASH 4mbit",
+    NULL
+};
+
 const u16 gtk_kb_cfg[NB_KEYS] =
   {
     GDK_x,         // A
@@ -155,6 +166,7 @@ struct configured_features {
   int disable_sound;
   int engine_3d;
   int disable_limiter;
+  int savetype;
 
   int arm9_gdb_port;
   int arm7_gdb_port;
@@ -183,6 +195,7 @@ init_configured_features( struct configured_features *config)
   config->disable_limiter = 0;
 
   config->nds_file = NULL;
+  config->savetype = 0;
 
   config->cflash_disk_image_file = NULL;
 
@@ -196,12 +209,8 @@ fill_configured_features( struct configured_features *config,
 {
   GOptionEntry options[] = {
     { "load-slot", 0, 0, G_OPTION_ARG_INT, &config->load_slot, "Loads savegame from slot NUM", "NUM"},
-#if defined(GTKGLEXT_AVAILABLE)
-    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
-    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, 
-        "Use software colour conversion during OpenGL screen rendering.\n"
-            "\t\t\t\t  May produce better or worse frame rates depending on hardware", NULL},
-#endif
+    { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
+    { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"
@@ -213,8 +222,21 @@ fill_configured_features( struct configured_features *config,
         "\t\t\t\t  2 = osmesa opengl\n"
 #endif
         ,"ENGINE"},
-    { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
-    { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
+#if defined(GTKGLEXT_AVAILABLE)
+    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
+    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, 
+        "Use software colour conversion during OpenGL screen rendering.\n"
+            "\t\t\t\t  May produce better or worse frame rates depending on hardware", NULL},
+#endif
+    { "save-type", 0, 0, G_OPTION_ARG_INT, &config->savetype, "Select savetype from the following:\n"
+    "\t\t\t\t  0 = Autodetect (default)\n"
+    "\t\t\t\t  1 = EEPROM 4kbit\n"
+    "\t\t\t\t  2 = EEPROM 64kbit\n"
+    "\t\t\t\t  3 = EEPROM 512kbit\n"
+    "\t\t\t\t  4 = FRAM 256kbit\n"
+    "\t\t\t\t  5 = FLASH 2mbit\n"
+    "\t\t\t\t  6 = FLASH 4mbit\n",
+    "SAVETYPE"},
     { "fwlang", 0, 0, G_OPTION_ARG_INT, &config->firmware_language, "Set the language in the firmware, LANG as follows:\n"
                                     "\t\t\t\t  0 = Japanese\n"
                                     "\t\t\t\t  1 = English\n"
@@ -1574,20 +1596,10 @@ static void changesavetype(GtkCheckMenuItem *checkmenuitem, gpointer type)
         mmu_select_savetype(GPOINTER_TO_INT(type), &backupmemorytype, &backupmemorysize);
 }
 
-static void desmume_gtk_menu_emulation_saves (GtkWidget *pMenu)
+static void desmume_gtk_menu_emulation_saves (GtkWidget *pMenu, int act_savetype)
 {
     GtkWidget *pMenuItem, *pSubmenu, *item;
     GSList * list;
-    const char * types[] = {
-        "Autodetect",
-        "EEPROM 4kbit",
-        "EEPROM 64kbit",
-        "EEPROM 512kbit",
-        "FRAM 256kbit",
-        "FLASH 2mbit",
-        "FLASH 4mbit",
-        NULL
-    };
 
     pSubmenu = gtk_menu_new();
     pMenuItem = gtk_menu_item_new_with_label("Saves");
@@ -1595,12 +1607,14 @@ static void desmume_gtk_menu_emulation_saves (GtkWidget *pMenu)
     gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
 
     list = NULL;
-    for (gint i = 0; types[i] != NULL; i++)
+    for (gint i = 0; save_type_names[i] != NULL; i++)
     {
-        item = gtk_radio_menu_item_new_with_label(list, types[i]);
+        item = gtk_radio_menu_item_new_with_label(list, save_type_names[i]);
         g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), GINT_TO_POINTER(i));
         list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
         gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), item);
+        if( i == act_savetype )
+            gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
     }
 }
 
@@ -1723,14 +1737,13 @@ static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
 
     desmume_gtk_menu_emulation_disable_audio(pMenu);
     desmume_gtk_menu_emulation_frameskip(pMenu);
-    desmume_gtk_menu_emulation_saves(pMenu);
     desmume_gtk_menu_emulation_layers(pMenu, opengl);
 #ifdef BROKEN_SCREENSIZE
     desmume_gtk_menu_emulation_display_size(pMenu, opengl);
 #endif
 }
 
-static void desmume_gtk_menu_config (GtkWidget *pMenuBar)
+static void desmume_gtk_menu_config (GtkWidget *pMenuBar, int act_savetype)
 {
     GtkWidget *pMenu, *pMenuItem;
     
@@ -1739,6 +1752,7 @@ static void desmume_gtk_menu_config (GtkWidget *pMenuBar)
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
     gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 
+    desmume_gtk_menu_emulation_saves(pMenu, act_savetype);
     pMenuItem = gtk_menu_item_new_with_label("Edit controls");
     g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
     gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
@@ -1952,7 +1966,7 @@ common_gtk_main( struct configured_features *my_config)
 
     desmume_gtk_menu_file(pMenuBar);
     desmume_gtk_menu_emulation(pMenuBar, my_config->opengl_2d);
-    desmume_gtk_menu_config(pMenuBar);
+    desmume_gtk_menu_config(pMenuBar, my_config->savetype);
     desmume_gtk_menu_tools(pMenuBar);
     desmume_gtk_menu_help(pMenuBar);
 
@@ -2098,6 +2112,8 @@ common_gtk_main( struct configured_features *my_config)
             g_printerr("Failed to initialise openGL 3D emulation; "
                      "removing 3D support\n");
     }
+
+    mmu_select_savetype(my_config->savetype, &backupmemorytype, &backupmemorysize);
 
     /* Command line arg */
     if( my_config->nds_file != NULL) {
