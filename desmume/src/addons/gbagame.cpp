@@ -27,17 +27,24 @@
 #include <string.h>
 #include "../MMU.h"
 
+//SRAM is going to be stored just above the rom.
+//that is convenient for us, since it mirrors the nds memory map
+
 static u8		*GBArom = NULL;
+
+#define GBA_ROMSIZE (32 * 1024 * 1024)
+#define GBA_RAMSIZE (64 * 1024)
+#define GBA_SIZE (GBA_ROMSIZE+GBA_RAMSIZE)
 
 static BOOL GBAgame_init(void)
 {
-	GBArom = new u8 [32 * 1024 * 1024];
+	GBArom = new u8 [GBA_SIZE];
 	return (TRUE); 
 }
 
 static void GBAgame_reset(void)
 {
-	memset(GBArom, 0, 32 * 1024 * 1024);
+	memset(GBArom, 0, GBA_SIZE);
 
 	if (!strlen(GBAgameName)) return;
 	FILE *fgame = 0;
@@ -56,15 +63,26 @@ static void GBAgame_reset(void)
 	}
 
 	fclose(fgame);
+
+	//try loading the sram
+	char * dot = strrchr(GBAgameName,'.');
+	if(!dot) return;
+	std::string sram_fname = GBAgameName;
+	sram_fname.resize(dot-GBAgameName);
+	sram_fname += ".sav";
+	fgame = fopen(sram_fname.c_str(),"rb");
+	if(fgame)
+	{
+		fread(GBArom+GBA_ROMSIZE,1,GBA_RAMSIZE,fgame);
+	}
+	fclose(fgame);
+
 }
 
 static void GBAgame_close(void)
 {
-	if (GBArom)
-	{
-		delete [] GBArom;
-		GBArom = NULL;
-	}
+	delete[] GBArom;
+	GBArom = NULL;
 }
 
 static void GBAgame_config(void) {}

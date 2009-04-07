@@ -1568,7 +1568,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
 BEGIN
     EDITTEXT        IDC_PATHGAME, 7, 34, 236, 14, ES_AUTOHSCROLL | ES_READONLY
     PUSHBUTTON      "Browse...", IDC_BBROWSE, 245, 33, 50, 14, BS_PUSHBUTTON
-    CTEXT           "Select file name for GBA game rom:", IDC_STATIC, 7, 7, 288, 14, SS_CENTER
+    CTEXT           "Select file name for GBA game rom:\n(Please make save file matching name with extension .sav)", IDC_STATIC, 7, 7, 288, 21, SS_CENTER
 END
 
 

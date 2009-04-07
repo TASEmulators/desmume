@@ -1505,7 +1505,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	}
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write08(adr, val);
 		return;
@@ -1719,7 +1719,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 	}
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write16(adr, val);
 		return;
@@ -2313,7 +2313,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	}
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write32(adr, val);
 		return;
@@ -2875,7 +2875,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
 #else
 	// CFlash reading, Mic
@@ -2906,7 +2906,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr & 0x7FFF);	
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
 #else
 	// CFlash reading, Mic
@@ -2996,7 +2996,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
 #else
 	// CFlash reading, Mic
@@ -3177,7 +3177,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write08(adr, val);
 		return;
@@ -3230,7 +3230,7 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write16(adr, val);
 		return;
@@ -3652,7 +3652,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write32(adr, val);
 		return;
@@ -3949,7 +3949,7 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 #endif
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
 #else
 	// CFlash reading, Mic
@@ -3976,7 +3976,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 #endif
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
 #else
 	// CFlash reading, Mic
@@ -4044,7 +4044,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 #endif
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if ( (adr >= 0x08000000) && (adr < 0x0A000000) )
+	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
 #else
 	// CFlash reading, Mic
