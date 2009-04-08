@@ -1228,8 +1228,8 @@ class WinDriver : public Driver
 				printf("Failed initializing WSAStartup - softAP support disabled\n");
 				return FALSE ;
 			}
-			//require winpcap.dll
-			HMODULE temp = LoadLibrary("winpcap.dll");
+			//require wpcap.dll
+			HMODULE temp = LoadLibrary("wpcap.dll");
 			if(temp == NULL) {
 				printf("Failed initializing winpcap.dll - softAP support disabled\n");
 				return FALSE;

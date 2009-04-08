@@ -791,6 +791,14 @@
 				RelativePath="..\matrix_sse2-x64.asm"
 				>
 				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Interim|Win32"
 					ExcludedFromBuild="true"
 					>

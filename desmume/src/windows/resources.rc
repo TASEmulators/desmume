@@ -2518,6 +2518,7 @@ BEGIN
     GROUPBOX        "Network adapter settings", IDC_STATIC, 5, 5, 320, 60
     LTEXT           "Bridge network adapter:", IDC_STATIC, 15, 20, 76, 8, SS_LEFT
     COMBOBOX        IDC_BRIDGEADAPTER, 15, 30, 300, 45, CBS_DROPDOWNLIST | CBS_HASSTRINGS
+    LTEXT           "(wifi emulation is not yet complete. this doesn't work.)", IDC_STATIC, 15, 48, 166, 8, SS_LEFT
 END
 
 
