@@ -2151,7 +2151,14 @@ void RunConfig(CONFIGSCREEN which)
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
 		break;
 	case CONFIGSCREEN_WIFI:
-		DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
+		if(wifiMac.netEnabled)
+		{
+			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
+		}
+		else
+		{
+			MessageBox(MainWindow->getHWnd(),"winpcap failed to initialize, and so wifi cannot be configured.","wifi system failure",0);
+		}
 		break;
 	}
 
