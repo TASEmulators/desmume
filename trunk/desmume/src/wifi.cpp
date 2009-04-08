@@ -1149,27 +1149,27 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
         SoftAP_CRC32Table[i] = reflect(SoftAP_CRC32Table[i],  32);
     }
 	
-	if(pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+	if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
 	{
 		printf("SoftAP: PCAP error with pcap_findalldevs_ex(): %s\n", errbuf);
 		return 0;
 	}
 
-	wifi->SoftAP.bridge = pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, NULL, errbuf);
+	wifi->SoftAP.bridge = PCAP::pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, NULL, errbuf);
 	if(wifi->SoftAP.bridge == NULL)
 	{
 		printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
 		return 0;
 	}
 
-	pcap_freealldevs(alldevs);
+	PCAP::pcap_freealldevs(alldevs);
 
 	return 1;
 }
 
 void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 {
-	pcap_close(wifi->SoftAP.bridge);
+	PCAP::pcap_close(wifi->SoftAP.bridge);
 }
 
 void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
@@ -1327,7 +1327,7 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 			/* Checksum */
 			/* TODO ? */
 
-			pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
+			PCAP::pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
 
 			delete ethernetframe;
 		}
