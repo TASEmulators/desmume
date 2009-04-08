@@ -760,12 +760,21 @@ static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 
 	//CONSIDER: in case some other math is wrong (shouldve been clipped OK), we might go out of bounds here.
 	//better check the Y value.
-	//but, we think the math is always right
+	if(pLeft->Y<0 || pLeft->Y>191) {
+		printf("rasterizer rendering at y=%d! oops!\n",pLeft->Y);
+		return;
+	}
+
+	int x = XStart;
 
 	while(width-- > 0)
 	{
+		if(x<0 || x>255) {
+			printf("rasterizer rendering at x=%d! oops!\n",x);
+		}
 		pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
 		adr++;
+		x++;
 
 		invw += dinvw_dx;
 		u += du_dx;
@@ -1173,6 +1182,8 @@ static void SoftRastRender()
 		clipPoly(&gfx3d.polylist->list[gfx3d.indexlist[i]]);
 	}
 
+	//printf("%d %d %d %d\n",gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
+
 	//viewport transforms
 	for(int i=0;i<clippedPolyCounter;i++)
 	{
@@ -1199,10 +1210,15 @@ static void SoftRastRender()
 			vert.fcolor[2] /= vert.coord[3];
 
 			//viewport transformation
-			vert.coord[0] *= gfx3d.viewport.width;
-			vert.coord[0] += gfx3d.viewport.x;
-			vert.coord[1] *= gfx3d.viewport.height;
-			vert.coord[1] += gfx3d.viewport.y;
+			VIEWPORT viewport;
+			viewport.decode(poly.poly->viewport);
+			vert.coord[0] *= viewport.width;
+			vert.coord[0] += viewport.x;
+			vert.coord[1] *= viewport.height;
+			vert.coord[1] += viewport.y;
+			if(vert.coord[1]>192||vert.color[1]<0) {
+				int zzz=9;
+			}
 			vert.coord[1] = 192 - vert.coord[1];
 		}
 	}

@@ -64,6 +64,7 @@ struct POLY {
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
 //	int projIndex; //the index into the projlist that this poly uses
 	u32 pad;
+	u32 viewport;
 
 	bool isTranslucent()
 	{
@@ -118,6 +119,12 @@ struct VERTLIST {
 	int count;
 };
 
+
+struct VIEWPORT {
+	int x, y, width, height;
+	void decode(u32 v);
+};
+
 //used to communicate state to the renderer
 struct GFX3D
 {
@@ -152,13 +159,6 @@ struct GFX3D
 	BOOL wbuffer, sortmode;
 
 	u8 alphaTestRef;
-
-	struct VIEWPORT {
-		VIEWPORT()
-			: x(0), y(0), width(256), height(256)
-		{}
-		int x, y, width, height;
-	} viewport;
 
 	u32 clearDepth;
 	u32 clearColor;

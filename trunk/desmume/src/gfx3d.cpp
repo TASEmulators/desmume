@@ -137,6 +137,7 @@ static CACHE_ALIGN float	trans[4] = {0.0, 0.0, 0.0, 0.0};
 static int		transind = 0;
 static CACHE_ALIGN float	scale[4] = {0.0, 0.0, 0.0, 0.0};
 static int		scaleind = 0;
+static u32 viewport;
 
 //various other registers
 static float _t=0, _s=0;
@@ -295,17 +296,22 @@ void gfx3d_reset()
 	_s=0;
 	last_t = 0;
 	last_s = 0;
+	viewport = 0xBFFF0000;
 	
 	GFX_FIFOclear();
 }
 
 void gfx3d_glViewPort(u32 v)
 {
-	//zero: NHerve messed with this in mod2 and mod3, but im still not sure its perfect. need to research this.
-	gfx3d.viewport.x = (v&0xFF);
-	gfx3d.viewport.y = (v&0xFF);
-	gfx3d.viewport.width = (((v>>16)&0xFF)+1)-(v&0xFF);
-	gfx3d.viewport.height = ((v>>24)+1)-((v>>8)&0xFF);
+	viewport = v;
+}
+
+void VIEWPORT::decode(u32 v) 
+{
+	x = (v&0xFF);
+	y = std::min(191,(int)(((v>>8)&0xFF)));
+	width = (((v>>16)&0xFF)+1)-(v&0xFF);
+	height = ((v>>24)+1)-((v>>8)&0xFF);
 }
 
 
@@ -731,6 +737,7 @@ static void SetVertex()
 			poly.polyAttr = polyAttr;
 			poly.texParam = textureFormat;
 			poly.texPalette = texturePalette;
+			poly.viewport = viewport;
 			polylist->count++;
 		}
 	}
@@ -2205,10 +2212,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GSWB", 4, 1, &gfx3d.wbuffer},
 	{ "GSSM", 4, 1, &gfx3d.sortmode},
 	{ "GSAR", 1, 1, &gfx3d.alphaTestRef},
-	{ "GSVX", 4, 1, &gfx3d.viewport.x},
-	{ "GSVY", 4, 1, &gfx3d.viewport.y},
-	{ "GSVW", 4, 1, &gfx3d.viewport.width},
-	{ "GSVH", 4, 1, &gfx3d.viewport.height},
+	{ "GSVP", 4, 1, &viewport},
 	{ "GSCC", 4, 1, &gfx3d.clearColor},
 	{ "GSCD", 4, 1, &gfx3d.clearDepth},
 	{ "GSFC", 4, 4, gfx3d.fogColor},
