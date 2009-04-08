@@ -155,7 +155,7 @@ int WndY = 0;
 
 int ScreenGap = 0;
 
-static int FrameLimit = 0;
+static int FrameLimit = 1;
 
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
@@ -209,7 +209,7 @@ GPU3DInterface *core3DList[] = {
 	NULL
 };
 
-int autoframeskipenab=1;
+int autoframeskipenab=0;
 int frameskiprate=0;
 int emu_paused = 0;
 static int backupmemorytype=MC_TYPE_AUTODETECT;
@@ -1231,7 +1231,7 @@ class WinDriver : public Driver
 			//require wpcap.dll
 			HMODULE temp = LoadLibrary("wpcap.dll");
 			if(temp == NULL) {
-				printf("Failed initializing winpcap.dll - softAP support disabled\n");
+				printf("Failed initializing wpcap.dll - softAP support disabled\n");
 				return FALSE;
 			}
 			FreeLibrary(temp);
@@ -1469,7 +1469,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	//================================================== ???
 	CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
-	GetPrivateProfileString("Video", "FrameSkip", "AUTO", text, 80, IniName);
+	GetPrivateProfileString("Video", "FrameSkip", "0", text, 80, IniName);
 
 	if (strcmp(text, "AUTO") == 0)
 	{
