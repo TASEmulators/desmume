@@ -31,6 +31,7 @@
 	#include <winsock2.h>
 	#define socket_t 	SOCKET
 	#define sockaddr_t  SOCKADDR
+	#include "windriver.h"
 #else
 	#include <unistd.h>
 	#include <stdlib.h>
@@ -51,8 +52,6 @@
 #define PACKET_SIZE 65535
 #define _INC_STDIO
 
-#include <pcap.h>
-#include <remote-ext.h> //uh?
 
 #define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
