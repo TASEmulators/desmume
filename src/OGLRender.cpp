@@ -702,8 +702,6 @@ static void OGLRender()
 
 	xglDepthMask(GL_TRUE);
 
-	glViewport(gfx3d.viewport.x,gfx3d.viewport.y,gfx3d.viewport.width,gfx3d.viewport.height);
-
 	float clearColor[4] = {
 		((float)(gfx3d.clearColor&0x1F))/31.0f,
 		((float)((gfx3d.clearColor>>5)&0x1F))/31.0f,
@@ -723,7 +721,7 @@ static void OGLRender()
 	//TODO - properly doublebuffer the display lists
 	{
 
-		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0;
+		u32 lastTextureFormat = 0, lastTexturePalette = 0, lastPolyAttr = 0, lastViewport = 0xFFFFFFFF;
 		// int lastProjIndex = -1;
 
 		for(int i=0;i<gfx3d.polylist->count;i++) {
@@ -775,6 +773,15 @@ static void OGLRender()
 				glVertex4fv(vert->coord);
 			}
 			glEnd();*/
+		
+			if(lastViewport != poly->viewport)
+			{
+				VIEWPORT viewport;
+				viewport.decode(poly->viewport);
+				glViewport(viewport.x,viewport.y,viewport.width,viewport.height);
+				lastViewport = poly->viewport;
+			}
+
 			glBegin(GL_TRIANGLES);
 
 			for(int j = 1; j < (type-1); j++)

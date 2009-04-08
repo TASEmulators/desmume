@@ -3,7 +3,7 @@
     yopyop156.ifrance.com
 
 	Copyright (C) 2006 Mic
-    Copyright (C) 2009 CrazyMax
+    Copyright (C) 2009 CrazyMax 
 	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
