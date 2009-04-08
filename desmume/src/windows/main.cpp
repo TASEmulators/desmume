@@ -1587,6 +1587,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
 	MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
 	MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->Show(SW_NORMAL);
 	run();
