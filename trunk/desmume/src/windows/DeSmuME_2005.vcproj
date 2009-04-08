@@ -791,6 +791,22 @@
 				RelativePath="..\matrix_sse2-x64.asm"
 				>
 				<FileConfiguration
+					Name="Interim|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Interim SSE2|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="MASM"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release (public)|Win32"
 					ExcludedFromBuild="true"
 					>
