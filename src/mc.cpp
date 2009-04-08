@@ -181,11 +181,15 @@ void mc_reset_com(memory_chip_t *mc)
    }
    else if ((mc->com == BM_CMD_WRITELOW) || (mc->com == FW_CMD_PAGEWRITE))
    {      
+      if(!mc->fp)
+         mc->fp = fopen(mc->filename, "wb+");
+
       if (mc->fp)
       {
          fseek(mc->fp, 0, SEEK_SET);
-         elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp); // fix me
+         elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp); // FIXME
       }
+      // FIXME: desmume silently ignores not having opened save-file
       mc->write_enable = FALSE;
    }
 

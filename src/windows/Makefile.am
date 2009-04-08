@@ -9,7 +9,7 @@ desmume_SOURCES = \
         CWindow.cpp CWindow.h \
         disView.cpp disView.h ginfo.cpp ginfo.h \
         IORegView.cpp IORegView.h \
-        main.cpp mapView.cpp mapView.h memView.cpp memView.h \
+        main.cpp main.h mapView.cpp mapView.h memView.cpp memView.h \
         oamView.cpp oamView.h palView.cpp palView.h \
         resource.h \
         snddx.cpp snddx.h \
@@ -23,7 +23,7 @@ desmume_SOURCES = \
 	inputdx.cpp inputdx.h ogl.cpp \
 	throttle.cpp throttle.h windriver.h \
 	cheatsWin.cpp cheatsWin.h gbaslot_config.cpp gbaslot_config.h \
-	mic.cpp \
+	mic.cpp hotkey.cpp hotkey.h \
 	DeSmuME_2005.vcproj DeSmuME_2008.vcproj \
 	DeSmuME_Intel.icproj DeSmuME_Intel.vcproj DeSmuME_Intel.sln \
 	DeSmuME_x64.manifest DeSmuME_x86.manifest
