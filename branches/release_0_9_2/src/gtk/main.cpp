@@ -1003,7 +1003,7 @@ static gboolean Stylus_Release(GtkWidget *w, GdkEventButton *e, gpointer data)
     return TRUE;
 }
 
-void loadgame(int num){
+static void loadgame(int num){
    if (desmume_running())
    {   
        Pause();
@@ -1014,7 +1014,7 @@ void loadgame(int num){
        loadstate_slot(num);
 }
 
-void savegame(int num){
+static void savegame(int num){
    if (desmume_running())
    {   
        Pause();

@@ -34,9 +34,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <sstream>
 #include <tchar.h>
-#ifdef EXPERIMENTAL_WIFI
-#include <pcap.h>
-#endif
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"
@@ -1587,6 +1584,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
 	MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
 	MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
+	MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->Show(SW_NORMAL);
 	run();
@@ -2148,9 +2146,20 @@ void RunConfig(CONFIGSCREEN which)
 		break;
 	case CONFIGSCREEN_EMULATION:
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
-		break;
+		break; 
 	case CONFIGSCREEN_WIFI:
-		DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
+#ifdef EXPERIMENTAL_WIFI
+		if(wifiMac.netEnabled)
+		{
+			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
+		}
+		else
+		{
+#endif
+			MessageBox(MainWindow->getHWnd(),"winpcap failed to initialize, and so wifi cannot be configured.","wifi system failure",0);
+#ifdef EXPERIMENTAL_WIFI
+		}
+#endif
 		break;
 	}
 
@@ -3287,7 +3296,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			int i;
 			HWND cur;
 
-			if(pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+			if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
 			{
 				EndDialog(hDlg, TRUE);
 				return TRUE;
