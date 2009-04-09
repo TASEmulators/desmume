@@ -1,0 +1,440 @@
+# Swedish translation for desmume.
+# Copyright (C) 2007 Free Software Foundation, Inc.
+# This file is distributed under the same license as the desmume package.
+# Daniel Nylander <po@danielnylander.se>, 2007.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: desmume\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-05-12 01:00+0200\n"
+"PO-Revision-Date: 2007-05-12 01:08+0100\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:1
+msgid "0"
+msgstr "0"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:2
+msgid "1"
+msgstr "1"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:3
+msgid "1x"
+msgstr "1x"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:4
+msgid "2"
+msgstr "2"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:5
+msgid "2x"
+msgstr "2x"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:6
+msgid "3"
+msgstr "3"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:7
+msgid "3D operation detected"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:8
+msgid "3D rom"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:9
+msgid "3x"
+msgstr "3x"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:10
+msgid "4"
+msgstr "4"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:11
+msgid "5"
+msgstr "5"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:12
+msgid "6"
+msgstr "6"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:13
+msgid "7"
+msgstr "7"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:14
+msgid "8"
+msgstr "8"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:15
+msgid "9"
+msgstr "9"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:16
+msgid "?"
+msgstr "?"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:17
+msgid "A : "
+msgstr "A : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:18
+msgid "Audio On"
+msgstr "Ljud på"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:19
+msgid "Axis :"
+msgstr "Axel :"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:20
+msgid "B : "
+msgstr "B : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:21
+msgid "BG0"
+msgstr "BG0"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:22
+msgid "BG1"
+msgstr "BG1"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:23
+msgid "BG2"
+msgstr "BG2"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:24
+msgid "BG3"
+msgstr "BG3"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:25
+msgid "Boost : "
+msgstr "Boost : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:26
+msgid "Config"
+msgstr "Konfiguration"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:27
+msgid "DeSmuME"
+msgstr "DeSmuME"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:28
+msgid "DeSmuMe"
+msgstr "DeSmuMe"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:29
+msgid "Debug : "
+msgstr "Felsökning : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:30
+msgid "Down : "
+msgstr "Ner : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:31
+msgid "FrameSkip"
+msgstr "Hoppa över bildrutor"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:32
+msgid "IO regs"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:33
+msgid "Joystick Config"
+msgstr "Styrspakskonfiguration"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:34
+msgid "Joystick controls"
+msgstr "Styrspakskontroller"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:35
+msgid "Key definition"
+msgstr "Tangentdefinition"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:36
+msgid "Keyboad Config"
+msgstr "Tangentbordskonfiguration"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:37
+msgid "Keyboard controls"
+msgstr "Tangentbordskontroller"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:38
+msgid "L : "
+msgstr "V : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:39
+msgid "Layers"
+msgstr "Lager"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:40
+msgid "Left : "
+msgstr "Vänster : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:41
+msgid "Load State"
+msgstr "Läs in"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:42
+msgid "Nintendo DS emulator based on work by Yopyop"
+msgstr "Nintendo DS-emulator baserad på Yopyops arbete"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:43
+msgid "OBJ"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:44
+msgid "Press a button..."
+msgstr "Tryck på en knapp..."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:45
+msgid "Press a key..."
+msgstr "Tryck på en tangent..."
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:46
+msgid "R : "
+msgstr "H : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:47
+msgid "Reset"
+msgstr "Nollställ"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:48
+msgid "Right : "
+msgstr "Höger : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:49
+msgid "Right Screen"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:50
+msgid "Rotate Screen 0"
+msgstr "Rotera skärmen 0"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:51
+msgid "Rotate Screen 180"
+msgstr "Rotera skärmen 180"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:52
+msgid "Rotate Screen 270"
+msgstr "Rotera skärmen 270"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:53
+msgid "Rotate Screen 90"
+msgstr "Rotera skärmen 90"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:54
+msgid "Save State"
+msgstr "Spara"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:55
+msgid "Select : "
+msgstr "Välj : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:56
+msgid "Size"
+msgstr "Storlek"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:57
+msgid "Start : "
+msgstr "Start : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:58
+msgid "State 1"
+msgstr "Plats 1"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:59
+msgid "State 10"
+msgstr "Plats 10"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:60
+msgid "State 2"
+msgstr "Plats 2"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:61
+msgid "State 3"
+msgstr "Plats 3"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:62
+msgid "State 4"
+msgstr "Plats 4"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:63
+msgid "State 5"
+msgstr "Plats 5"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:64
+msgid "State 6"
+msgstr "Plats 6"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:65
+msgid "State 7"
+msgstr "Plats 7"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:66
+msgid "State 8"
+msgstr "Plats 8"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:67
+msgid "State 9"
+msgstr "Plats 9"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:68
+msgid "TYPE: Auto (1B)"
+msgstr "TYP: Auto (1B)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:69
+msgid "TYPE: EEPROM1 (4KB)"
+msgstr "TYP: EEPROM1 (4KB)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:70
+msgid "TYPE: EEPROM2 (512KB)"
+msgstr "TYP: EEPROM2 (512KB)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:71
+msgid "TYPE: EEPROM2 (64KB)"
+msgstr "TYP: EEPROM2 (64KB)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:72
+msgid "TYPE: FLASH (256KB)"
+msgstr "TYP: FLASH (256KB)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:73
+msgid "TYPE: FRAM (2MB)"
+msgstr "TYP: FRAM (2MB)"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:74
+msgid "Tools"
+msgstr "Verktyg"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:75
+msgid "True Gap"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:76
+msgid "Up : "
+msgstr "Upp : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:77
+msgid "View Memory"
+msgstr "Visa minne"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:78
+msgid "View Palette"
+msgstr "Visa palett"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:79
+msgid "View Tiles"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:80
+msgid "X : "
+msgstr "X : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:81
+msgid "Y : "
+msgstr "Y : "
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:82
+msgid "_Emulation"
+msgstr "_Emulering"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:83
+msgid "_File"
+msgstr "_Arkiv"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:84
+msgid "_PrintScreen"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:85
+msgid "_Saves"
+msgstr "_Sparningar"
+
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:86
+msgid "http://desmume.sf.net"
+msgstr "http://desmume.sf.net"
+
+#. TRANSLATORS: Replace this string with your names, one name per line.
+#: ../src/gtk-glade/glade/DeSmuMe.glade.h:88
+msgid "translator-credits"
+msgstr "Daniel Nylander <po@danielnylander.se>"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:1
+msgid "      GoTo: "
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:2
+msgid "  Palette : "
+msgstr "  Palett : "
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:3
+msgid "0x00000000"
+msgstr "0x00000000"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:4
+msgid "16 bit"
+msgstr "16 bitar"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:5
+msgid "16c"
+msgstr "16 färger"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:6
+msgid "256c"
+msgstr "256 färger"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:7
+msgid "32 bit"
+msgstr "32 bitar"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:8
+msgid "8 bit"
+msgstr "8 bitar"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:9
+msgid ""
+"ARM9 cpu\n"
+"ARM7 cpu"
+msgstr ""
+"ARM9-processor\n"
+"ARM7-processor"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:11
+msgid "BMP"
+msgstr "BMP"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:12
+msgid "Go!"
+msgstr "Kör!"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:13
+msgid "IO registers"
+msgstr "IO-register"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:14
+msgid "Palette Viewer"
+msgstr "Palettvisare"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:15
+msgid "Tile viewer"
+msgstr ""
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:16
+msgid ""
+"cpu : ARM7\n"
+"cpu : ARM9"
+msgstr ""
+"processor : ARM7\n"
+"processor : ARM9"
+
+#: ../src/gtk-glade/glade/DeSmuMe_Dtools.glade.h:18
+msgid "memory viewer"
+msgstr "minnesvisare"
+
+
+ 	  	 
