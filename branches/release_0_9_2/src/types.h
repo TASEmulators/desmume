@@ -22,7 +22,7 @@
 
 //--------------
 //configuration
-//#define DEVELOPER
+#define DEVELOPER
 //--------------
 
 #define DESMUME_NAME "DeSmuME"
@@ -43,11 +43,11 @@
 #define DESMUME_CPUEXT_STRING ""
 #endif
 
-#ifdef DEVELOPER
-#define DESMUME_FEATURE_STRING " dev+"
-#else
+//#ifdef DEVELOPER
+//#define DESMUME_FEATURE_STRING " dev+"
+//#else
 #define DESMUME_FEATURE_STRING ""
-#endif
+//#endif
 
 #ifdef DEBUG
 #define DESMUME_SUBVERSION_STRING " debug"
