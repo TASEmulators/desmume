@@ -42,7 +42,7 @@ BOOL GInfo_Init()
 	wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon          = 0;
 	wc.lpszMenuName   = 0;
-	wc.hbrBackground  = (HBRUSH)GetSysColorBrush(COLOR_BTNFACE);
+	wc.hbrBackground  = GetSysColorBrush(COLOR_BTNFACE);
 	wc.style          = 0;
 	wc.cbClsExtra     = 0;
 	wc.cbWndExtra     = 0;
@@ -307,8 +307,9 @@ LRESULT GInfo_IconBoxPaint(HWND hCtl, WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		GetTextExtentPoint32(mem_hdc, "No icon", strlen("No icon"), &fontsize);
-		TextOut(mem_hdc, ((w/2) - (fontsize.cx/2)), ((h/2) - (fontsize.cy/2)), "No icon", strlen("No icon"));
+		char *noicon = "No icon";
+		GetTextExtentPoint32(mem_hdc, noicon, strlen(noicon), &fontsize);
+		TextOut(mem_hdc, ((w/2) - (fontsize.cx/2)), ((h/2) - (fontsize.cy/2)), noicon, strlen(noicon));
 	}
 	
 	BitBlt(hdc, 0, 0, w, h, mem_hdc, 0, 0, SRCCOPY);

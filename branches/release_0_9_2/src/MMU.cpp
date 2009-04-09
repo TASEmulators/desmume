@@ -342,12 +342,12 @@ void MMU_Init(void) {
 
 void MMU_DeInit(void) {
 	LOG("MMU deinit\n");
-    if (MMU.fw.fp)
-       fclose(MMU.fw.fp);
-    mc_free(&MMU.fw);      
-    if (MMU.bupmem.fp)
-       fclose(MMU.bupmem.fp);
-    mc_free(&MMU.bupmem);
+	if (MMU.fw.fp)
+		fclose(MMU.fw.fp);
+	mc_free(&MMU.fw);      
+	if (MMU.bupmem.fp)
+		fclose(MMU.bupmem.fp);
+	mc_free(&MMU.bupmem);
 	addonsClose();
 	Mic_DeInit();
 }
