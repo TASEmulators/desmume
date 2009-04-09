@@ -26,7 +26,7 @@
 
 #define ABOUT_TIMER_ID 110222
 #define PER_PAGE_TEAM 23
-#define TEAM 25
+#define TEAM 27
 #define SIZE_SCROLL_BUFFER PER_PAGE_TEAM + TEAM
 const char	*team[TEAM] = { "Guillaume Duhamel",
 							"Normmatt",
@@ -41,6 +41,8 @@ const char	*team[TEAM] = { "Guillaume Duhamel",
 							"zeromus",
 							"Luigi__",
 							"adelikat",
+							"matusz",
+							"pa__",
 							"",
 							"Contributors",
 							"------------",
