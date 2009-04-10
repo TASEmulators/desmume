@@ -64,6 +64,7 @@ struct MMU_struct {
     
     //Card rom & ram
     u8 * CART_ROM;
+	u32 CART_ROM_MASK;
     u8 CART_RAM[0x10000];
 
 	//Unused ram
