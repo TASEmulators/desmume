@@ -220,7 +220,117 @@ bool frameCounterDisplay = false;
 bool FpsDisplay = false;
 bool ShowInputDisplay = false;
 bool ShowLagFrameCounter = false;
+bool HudEditorMode = false;
 unsigned short windowSize = 0;
+
+struct HudCoordinates{
+	int x;
+	int y;
+	int xsize;
+	int ysize;
+	int storedx;
+	int storedy;
+	int clicked;
+};
+
+struct HudStruct {
+
+	HudCoordinates FpsDisplay;
+	HudCoordinates FrameCounter;
+	HudCoordinates InputDisplay;
+	HudCoordinates LagFrameCounter;
+	HudCoordinates Dummy;
+
+	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
+};
+
+void SetHudDummy (HudCoordinates *hud)
+{
+	hud->x=666;
+	hud->y=666;
+}
+
+bool IsHudDummy (HudCoordinates *hud)
+{
+	return (hud->x == 666 && hud->y == 666);
+}
+
+HudStruct Hud;
+
+void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
+
+	UINT i = 0;
+
+	while (!IsHudDummy(&hudstruct->hud(i))) {
+		HudCoordinates &hud = hudstruct->hud(i);
+
+		//reset
+		if(!hud.clicked) {
+			hud.storedx=0;
+			hud.storedy=0;
+		}
+
+		if((x >= hud.x && x <= hud.x + hud.xsize) && 
+			(y >= hud.y && y <= hud.y + hud.ysize) && !hud.clicked ) {
+
+				hud.clicked=1;
+				hud.storedx = x - hud.x;
+				hud.storedy = y - hud.y;
+		}
+
+		if(hud.clicked) {
+			hud.x = x - hud.storedx;
+			hud.y = y - hud.storedy;
+		}
+
+		//sanity checks
+		if(hud.x < 0)  hud.x = 0;
+		if(hud.y < 0)  hud.y = 0;
+		if(hud.x > 245)hud.x = 245; //margins
+		if(hud.y > 180)hud.y = 180;
+
+		if(hud.clicked)
+			break;//prevent items from grouping together
+
+		i++;
+	}
+}
+
+void HudClickRelease(HudStruct *hudstruct) {
+
+	UINT i = 0;
+
+	while (!IsHudDummy(&hudstruct->hud(i))) {
+		HudCoordinates &hud = hudstruct->hud(i);
+		hud.clicked=0;
+		i++;
+	}
+}
+
+void ResetHud(HudStruct *hudstruct) {
+
+	hudstruct->FpsDisplay.x=0;
+	hudstruct->FpsDisplay.y=5;
+	hudstruct->FpsDisplay.xsize=120;
+	hudstruct->FpsDisplay.ysize=10;
+
+	hudstruct->FrameCounter.x=0;
+	hudstruct->FrameCounter.y=25;
+	hudstruct->FrameCounter.xsize=60;
+	hudstruct->FrameCounter.ysize=10;
+
+	hudstruct->InputDisplay.x=0;
+	hudstruct->InputDisplay.y=45;
+	hudstruct->InputDisplay.xsize=120;
+	hudstruct->InputDisplay.ysize=10;
+
+	hudstruct->LagFrameCounter.x=0;
+	hudstruct->LagFrameCounter.y=65;
+	hudstruct->LagFrameCounter.xsize=30;
+	hudstruct->LagFrameCounter.ysize=10;
+
+	SetHudDummy(&hudstruct->Dummy);
+}
 
 unsigned int lastSaveState = 0;	//Keeps track of last savestate used for quick save/load functions
 stringstream MessageToDisplay;	//temp variable to store message that will be displayed via DisplayMessage function
@@ -899,7 +1009,7 @@ DWORD WINAPI run()
 
 			static int fps3d = 0;
 
-			if (FpsDisplay) osd->addFixed(0, 5, "%02d Fps / %02d 3d", fps, fps3d);
+			if (FpsDisplay) osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "%02d Fps / %02d 3d", fps, fps3d);
 			osd->update();
 			Display();
 			osd->clear();
@@ -1007,8 +1117,9 @@ DWORD WINAPI run()
 					SPU_Pause(1);
 				}
 				frameCounter++;
-				if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
-				if (ShowLagFrameCounter) osd->addFixed(0, 65, "%d",TotalLagFrames);
+				if (frameCounterDisplay) osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",frameCounter);
+				if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
+				if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
 				DisplayMessage();
 				CheckMessages();
 		}
@@ -1406,6 +1517,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 
 	InitCustomKeys(&CustomKeys);
+	ResetHud(&Hud);
 
 	void input_init();
 	input_init();
@@ -2345,31 +2457,36 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
 			GetClientRect(hwnd,&r);
-			int defwidth = 256, defheight = (384+ScreenGap);
-			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
-			// translate from scaling (screen resolution to 256x384 or 512x192) 
-			switch (GPU_rotation)
-			{
-			case 0:
-			case 180:
-				x = (x*defwidth) / winwidth;
-				y = (y*defheight) / winheight;
-				break ;
-			case 90:
-			case 270:
-				x = (x*defheight) / winwidth;
-				y = (y*defwidth) / winheight;
-				break ;
+			if(HudEditorMode) {
+				EditHud(x,y, &Hud);
 			}
-			//translate for rotation
-			if (GPU_rotation != 0)
-				translateXY(x,y);
-			else 
-				y-=(192+ScreenGap);
-			if(x<0) x = 0; else if(x>255) x = 255;
-			if(y<0) y = 0; else if(y>192) y = 192;
-			NDS_setTouchPos(x, y);
-			return 0;
+			else {
+				int defwidth = 256, defheight = (384+ScreenGap);
+				int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
+				// translate from scaling (screen resolution to 256x384 or 512x192) 
+				switch (GPU_rotation)
+				{
+				case 0:
+				case 180:
+					x = (x*defwidth) / winwidth;
+					y = (y*defheight) / winheight;
+					break ;
+				case 90:
+				case 270:
+					x = (x*defheight) / winwidth;
+					y = (y*defwidth) / winheight;
+					break ;
+				}
+				//translate for rotation
+				if (GPU_rotation != 0)
+					translateXY(x,y);
+				else 
+					y-=(192+ScreenGap);
+				if(x<0) x = 0; else if(x>255) x = 255;
+				if(y<0) y = 0; else if(y>192) y = 192;
+				NDS_setTouchPos(x, y);
+				return 0;
+			}
 		}
 		NDS_releaseTouch();
 		return 0;
@@ -2378,6 +2495,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		if(click)
 			ReleaseCapture();
 		NDS_releaseTouch();
+		HudClickRelease(&Hud);
 		return 0;
 
 	case WM_INITMENU: {
@@ -2774,6 +2892,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ShowLagFrameCounter ^= 1;
 			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("Display", "Display Lag Counter", ShowLagFrameCounter, IniName);
+			osd->clear();
+			return 0;
+
+		case ID_VIEW_HUDEDITOR:
+			HudEditorMode ^= 1;
+			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode ? MF_CHECKED : MF_UNCHECKED);
 			osd->clear();
 			return 0;
 

@@ -416,6 +416,7 @@
 #define ID_VIEW_DISPLAYFPS                      40010
 #define ID_VIEW_DISPLAYINPUT                    40011
 #define ID_VIEW_DISPLAYLAG                      40012
+#define ID_VIEW_HUDEDITOR	                   	  40013
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_FILE_STOPAVI                        40016
 #define ACCEL_CTRL_O                            40032
