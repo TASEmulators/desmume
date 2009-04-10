@@ -12,6 +12,12 @@
 #include "../types.h"
 #include "../debug.h"
 #include "../mic.h"
+#include <iostream>
+#include <fstream>
+
+int MicDisplay;
+int MicButtonPressed=0;
+int SampleLoaded=0;
 
 #define MIC_CHECKERR(hr) if(hr != MMSYSERR_NOERROR) return FALSE;
 
@@ -51,8 +57,27 @@ static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD p
 	return 0;
 }
 
-BOOL Mic_Init()
+char* samplebuffer;
+int samplebuffersize;
+FILE* fp;
+
+char* LoadSample(const char *name)
 {
+
+	std::ifstream fl(name);
+	fl.seekg( 0, std::ios::end );
+	size_t len = fl.tellg();
+	samplebuffersize=len;
+	char *ret = new char[len];
+	fl.seekg(0, std::ios::beg);
+	fl.read(ret, len);
+	samplebuffer=ret;
+	SampleLoaded=1;
+	return ret;
+}
+
+BOOL Mic_Init() {
+
 	if(Mic_Inited)
 		return TRUE;
 
@@ -123,21 +148,44 @@ void Mic_DeInit()
 	waveInClose(waveIn);
 }
 
+int random[32] = {0xB1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9, 0x70, 
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x28, 0x00, 0x00, 0x00, 
+0x00, 0x00, 0x20, 0xE1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9};
+
+int x=0;
+
 u8 Mic_ReadSample()
 {
+
 	if(!Mic_Inited)
 		return 0;
 
-	u8 tmp = Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
 	u8 ret;
 
-	if(Mic_BufPos & 0x1)
-	{
-		ret = ((tmp & 0x1) << 7);
-	}
-	else
-	{
-		ret = ((tmp & 0xFE) >> 1);
+	if(MicButtonPressed)
+		if(SampleLoaded) {  //use a sample
+			x++;
+			if(x > samplebuffersize)
+				x=0;
+			ret=samplebuffer[x];
+		}
+		else {  //use the "random" values
+			x++;
+			if(x > ARRAYSIZE(random))
+				x=0;
+			ret = random[x];
+		}
+	else { //normal mic behavior
+		u8 tmp = (u8)Mic_Buffer[Mic_BufPos >> 1];
+
+		if(Mic_BufPos & 0x1)
+		{
+			ret = ((tmp & 0x1) << 7);
+		}
+		else
+		{
+			ret = ((tmp & 0xFE) >> 1);
+		}
 	}
 
 	Mic_BufPos++;
@@ -146,6 +194,8 @@ u8 Mic_ReadSample()
 		Mic_BufPos = 0;
 		Mic_PlayBuf ^= 1;
 	}
+
+	MicDisplay = ret;
 
 	return ret;
 }

@@ -70,6 +70,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
 
+#include "../mic.h"
 #include "../common.h"
 #include "main.h"
 #include "hotkey.h"
@@ -220,7 +221,9 @@ bool frameCounterDisplay = false;
 bool FpsDisplay = false;
 bool ShowInputDisplay = false;
 bool ShowLagFrameCounter = false;
+bool ShowMicrophone = false;
 bool HudEditorMode = false;
+bool UseMicSample = false;
 unsigned short windowSize = 0;
 
 struct HudCoordinates{
@@ -239,6 +242,7 @@ struct HudStruct {
 	HudCoordinates FrameCounter;
 	HudCoordinates InputDisplay;
 	HudCoordinates LagFrameCounter;
+	HudCoordinates Microphone;
 	HudCoordinates Dummy;
 
 	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
@@ -328,6 +332,11 @@ void ResetHud(HudStruct *hudstruct) {
 	hudstruct->LagFrameCounter.y=65;
 	hudstruct->LagFrameCounter.xsize=30;
 	hudstruct->LagFrameCounter.ysize=10;
+	
+	hudstruct->Microphone.x=0;
+	hudstruct->Microphone.y=85;
+	hudstruct->Microphone.xsize=20;
+	hudstruct->Microphone.ysize=10;
 
 	SetHudDummy(&hudstruct->Dummy);
 }
@@ -361,6 +370,7 @@ struct NDS_fw_config_data win_fw_config;
 LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp);
 LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 struct configured_features {
@@ -1120,6 +1130,7 @@ DWORD WINAPI run()
 				if (frameCounterDisplay) osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",frameCounter);
 				if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
 				if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
+				if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 				DisplayMessage();
 				CheckMessages();
 		}
@@ -1217,6 +1228,7 @@ int MenuInit()
 	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
 	MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
 	MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
+	MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
 
 	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
 	MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | ((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
@@ -1443,6 +1455,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
 	ShowInputDisplay = GetPrivateProfileInt("Display","Display Input", 0, IniName);
 	ShowLagFrameCounter = GetPrivateProfileInt("Display","Display Lag Counter", 0, IniName);
+	ShowMicrophone = GetPrivateProfileInt("Display","Display Microphone", 0, IniName);
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
@@ -2228,7 +2241,8 @@ enum CONFIGSCREEN
 	CONFIGSCREEN_FIRMWARE,
 	CONFIGSCREEN_WIFI,
 	CONFIGSCREEN_SOUND,
-	CONFIGSCREEN_EMULATION
+	CONFIGSCREEN_EMULATION,
+	CONFIGSCREEN_MICROPHONE
 };
 
 void RunConfig(CONFIGSCREEN which) 
@@ -2258,6 +2272,9 @@ void RunConfig(CONFIGSCREEN which)
 	case CONFIGSCREEN_EMULATION:
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_EMULATIONSETTINGS), hwnd, (DLGPROC)EmulationSettingsDlgProc);
 		break; 
+	case CONFIGSCREEN_MICROPHONE:
+		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_MICROPHONE), hwnd, (DLGPROC)MicrophoneSettingsDlgProc);
+		break;
 	case CONFIGSCREEN_WIFI:
 #ifdef EXPERIMENTAL_WIFI
 		if(wifiMac.netEnabled)
@@ -2698,6 +2715,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_EMULATIONSETTINGS:
 			RunConfig(CONFIGSCREEN_EMULATION);
 			return 0;
+		case IDM_MICROPHONESETTINGS:
+			RunConfig(CONFIGSCREEN_MICROPHONE);
+			return 0;
 
 		case IDM_GAME_INFO:
 			{
@@ -2898,6 +2918,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case ID_VIEW_HUDEDITOR:
 			HudEditorMode ^= 1;
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode ? MF_CHECKED : MF_UNCHECKED);
+			osd->clear();
+			return 0;
+
+		case ID_VIEW_DISPLAYMICROPHONE:
+			ShowMicrophone ^= 1;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileInt("Display", "Display Microphone", ShowMicrophone, IniName);
 			osd->clear();
 			return 0;
 
@@ -3392,6 +3419,104 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 						case IDC_ARM9BIOSBROWSE: cur = GetDlgItem(hDlg, IDC_ARM9BIOS); break;
 						case IDC_ARM7BIOSBROWSE: cur = GetDlgItem(hDlg, IDC_ARM7BIOS); break;
 						case IDC_FIRMWAREBROWSE: cur = GetDlgItem(hDlg, IDC_FIRMWARE); break;
+						}
+
+						SetWindowText(cur, fileName);
+					}
+				}
+				return TRUE;
+			}
+		}
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+		{
+			HWND cur;
+
+			UseMicSample = GetPrivateProfileInt("Use Mic Sample", "UseMicSample", FALSE, IniName);
+			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((UseMicSample == true) ? BST_CHECKED : BST_UNCHECKED));
+			GetPrivateProfileString("Use Mic Sample", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
+			SetDlgItemText(hDlg, IDC_MICSAMPLE, MicSampleName);
+
+			if(UseMicSample == false)
+			{
+				cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
+				EnableWindow(cur, FALSE);
+				cur = GetDlgItem(hDlg, IDC_MICSAMPLEBROWSE);
+				EnableWindow(cur, FALSE);
+			}
+		}
+		return TRUE;
+
+	case WM_COMMAND:
+		{
+			switch(LOWORD(wParam))
+			{
+			case IDOK:
+				{
+					int val = 0;
+
+					if((!romloaded) || (val == IDYES))
+					{
+						HWND cur;
+
+						UseMicSample = IsDlgButtonChecked(hDlg, IDC_USEMICSAMPLE);
+						cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
+						GetWindowText(cur, MicSampleName, 256);
+		
+						WritePrivateProfileInt("Use Mic Sample", "UseMicSample", ((UseMicSample == true) ? 1 : 0), IniName);
+						WritePrivateProfileString("Use Mic Sample", "MicSampleFile", MicSampleName, IniName);
+						LoadSample(MicSampleName);
+					}
+				}
+			case IDCANCEL:
+				{
+					EndDialog(hDlg, TRUE);
+				}
+				return TRUE;
+
+			case IDC_USEMICSAMPLE:
+				{
+					HWND cur;
+					BOOL enable = IsDlgButtonChecked(hDlg, IDC_USEMICSAMPLE);
+
+					cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
+					EnableWindow(cur, enable);
+					cur = GetDlgItem(hDlg, IDC_MICSAMPLEBROWSE);
+					EnableWindow(cur, enable);
+				}
+				return TRUE;
+
+			case IDC_MICSAMPLEBROWSE:
+				{
+					char fileName[256] = "";
+					OPENFILENAME ofn;
+
+					ZeroMemory(&ofn, sizeof(ofn));
+					ofn.lStructSize = sizeof(ofn);
+					ofn.hwndOwner = hDlg;
+					ofn.lpstrFilter = "Any file(*.*)\0*.*\0\0";
+					ofn.nFilterIndex = 1;
+					ofn.lpstrFile = fileName;
+					ofn.nMaxFile = 256;
+					ofn.lpstrDefExt = "bin";
+					ofn.Flags = OFN_NOCHANGEDIR;
+
+					if(GetOpenFileName(&ofn))
+					{
+						HWND cur;
+
+						switch(LOWORD(wParam))
+						{
+						case IDC_MICSAMPLEBROWSE: cur = GetDlgItem(hDlg, IDC_MICSAMPLE); break;
 						}
 
 						SetWindowText(cur, fileName);

@@ -26,6 +26,7 @@
 #include "inputdx.h"
 #include "render3d.h"
 #include "throttle.h"
+#include "../mic.h"
 
 SCustomKeys CustomKeys;
 
@@ -145,6 +146,9 @@ void HK_StateQuickLoadSlot(int)
 {
 	HK_StateLoadSlot(lastSaveState);
 }
+
+void HK_MicrophoneKeyDown(int) {MicButtonPressed =1;}
+void HK_MicrophoneKeyUp(int) {MicButtonPressed =0;}
 
 void HK_AutoHoldClearKeyDown(int) {
 	
@@ -355,6 +359,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->PrintScreen.name = L"Print Screen";
 	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
 	keys->PrintScreen.key = VK_PAUSE;
+
+	keys->Microphone.handleKeyDown = HK_MicrophoneKeyDown;
+	keys->Microphone.handleKeyUp = HK_MicrophoneKeyUp;
+	keys->Microphone.code = "Microphone";
+	keys->Microphone.name = L"Microphone";
+	keys->Microphone.page = HOTKEY_PAGE_MAIN;
+	keys->Microphone.key = NULL;
 
 	keys->QuickSave.handleKeyDown = HK_StateQuickSaveSlot;
 	keys->QuickSave.code = "QuickSave";
