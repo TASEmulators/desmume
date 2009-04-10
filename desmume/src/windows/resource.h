@@ -404,6 +404,11 @@
 #define IDC_GI_ARM7SIZE                         4486
 #define IDC_GI_FNTOFS                           4487
 #define IDC_GI_FNTSIZE                          4488
+#define IDD_MICROPHONE                          5000
+#define IDM_MICROPHONESETTINGS                  5001
+#define IDC_MICSAMPLEBROWSE                     5003
+#define IDC_MICSAMPLE                           5004
+#define IDC_USEMICSAMPLE                        5005
 #define IDM_SCREENSEP_NONE                      40000
 #define IDM_SCREENSEP_BORDER                    40001
 #define IDM_SCREENSEP_NDSGAP                    40002
@@ -416,7 +421,8 @@
 #define ID_VIEW_DISPLAYFPS                      40010
 #define ID_VIEW_DISPLAYINPUT                    40011
 #define ID_VIEW_DISPLAYLAG                      40012
-#define ID_VIEW_HUDEDITOR	                   	  40013
+#define ID_VIEW_HUDEDITOR	                   	40013
+#define ID_VIEW_DISPLAYMICROPHONE	           	40014
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_FILE_STOPAVI                        40016
 #define ACCEL_CTRL_O                            40032
