@@ -403,6 +403,9 @@ void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 #define ADDRESS_STEP_16KB	   0x04000
 #define ADDRESS_STEP_32KB	   0x08000
 #define ADDRESS_STEP_64kB	   0x10000
+#define ADDRESS_STEP_128KB	   0x20000
+#define ADDRESS_STEP_256KB	   0x40000
+#define ADDRESS_MASK_256KB	   (ADDRESS_STEP_256KB-1)
 
 #ifdef WORDS_BIGENDIAN
 struct _TILEENTRY
@@ -717,12 +720,17 @@ struct GPU
 
 	typedef void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 	typedef void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-	typedef void (*SpriteRenderFunct) (GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
 	int setFinalColorBck_funcNum;
 	FinalOBJColFunct setFinalColorSpr;
 	Final3DColFunct setFinalColor3D;
-	SpriteRenderFunct spriteRender;
+	enum SpriteRenderMode {
+		SPRITE_1D, SPRITE_2D
+	} spriteRenderMode;
+
+	template<GPU::SpriteRenderMode MODE>
+	void _spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
+	void spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
 	void setFinalColorBG(u16 color, u8 x);
 	FORCEINLINE void setFinalBGColorSpecialNone(u16 color, u8 x, bool blend1);

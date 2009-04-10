@@ -482,7 +482,10 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	// holes
 	if ((vram_addr > 0x6080000) && (vram_addr < 0x6200000)) return NULL;	// Engine ABG max 512KB
 	if ((vram_addr > 0x6220000) && (vram_addr < 0x6400000)) return NULL;	// Engine BBG max 128KB
-	if ((vram_addr > 0x6420000) && (vram_addr < 0x6600000)) return NULL;	// Engine AOBJ max 256KB
+	if ((vram_addr >= 0x6440000) && (vram_addr < 0x6600000)) {
+		assert(false); //please verify
+		vram_addr = (vram_addr & ADDRESS_MASK_256KB) + 0x6440000;	// Engine AOBJ max 256KB
+	}
 	
 	vram_addr &= 0x0FFFFFF;
 	u8	engine = (vram_addr >> 21);

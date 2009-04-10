@@ -39,7 +39,6 @@ typedef struct
 } oamview_struct;
 
 oamview_struct	*OAMView = NULL;
-//extern NDSSystem nds;
 
 const char dimm[4][4][8] = 
 {
@@ -180,9 +179,11 @@ LRESULT OamView_OnPaint(HWND hwnd, oamview_struct *win, WPARAM wParam, LPARAM lP
              SetWindowText(GetDlgItem(hwnd, IDC_PROP1), "");
         }
         
+		GPU copy = *win->gpu;
         for(i = 0; i < 192; ++i)
         {
-             win->gpu->spriteRender(win->gpu, i, (u8*)(bitmap + i*256), bitmap_alpha + i*256, type + i*256, prio + i*256);
+			copy.currLine = i;
+             copy.spriteRender((u8*)(bitmap + i*256), bitmap_alpha + i*256, type + i*256, prio + i*256);
         }
         
         SetDIBitsToDevice(hdc, 180, 4, 256, 192, 0, 0, 0, 192, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
@@ -319,7 +320,7 @@ BOOL CALLBACK ViewOAMProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                         case IDC_SCR_SELECT :
                              switch(HIWORD(wParam))
                              {
-                                  case CBN_CLOSEUP :
+                                  case CBN_SELCHANGE :
                                        {
                                             u32 sel = SendMessage(GetDlgItem(hwnd, IDC_SCR_SELECT), CB_GETCURSEL, 0, 0);
                                             switch(sel)
