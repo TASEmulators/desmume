@@ -53,23 +53,6 @@
 #include "debug.h"
 #include "NDSSystem.h"
 
-//#define CHECKSPRITES
-
-#ifdef CHECKSPRITES
-#define CHECK_SPRITE(type) \
-if (!src) {\
-	INFO("Sprite%s(%s) in mode %i %s\n",\
-	type==1?"1D":"2D",\
-	dispCnt->OBJ_BMP_mapping==1?"1D":"2D",\
-	spriteInfo->Mode,\
-	(spriteInfo->RotScale & 1)?"(Rotoscaled)":"");\
-continue;\
-};
-#else
-#define CHECK_SPRITE(type) if (!src) { continue; };
-#endif
-
-
 ARM9_struct ARM9Mem;
 
 extern BOOL click;
@@ -293,7 +276,7 @@ void GPU_Reset(GPU *g, u8 l)
 	g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
 	g->dispOBJ = g->dispBG[0] = g->dispBG[1] = g->dispBG[2] = g->dispBG[3] = TRUE;
 
-	g->spriteRender = sprite1D;
+	g->spriteRenderMode = GPU::SPRITE_1D;
 
 	g->bgPrio[4] = 0xFF;
 
@@ -469,20 +452,21 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 
 	if(cnt->OBJ_Tile_mapping)
 	{
-		/* 1-d sprite mapping */
+		// 1-d sprite mapping 
 		// boundary :
 		// core A : 32k, 64k, 128k, 256k
 		// core B : 32k, 64k, 128k, 128k
 		gpu->sprBoundary = 5 + cnt->OBJ_Tile_1D_Bound ;
-		if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3))
-			gpu->sprBoundary = 7;
+		
+		//zero 10-apr-09 - this is just wrong.
+		//if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3)) gpu->sprBoundary = 7;
 
-		gpu->spriteRender = sprite1D;
+		gpu->spriteRenderMode = GPU::SPRITE_1D;
 	} else {
-		/* 2d sprite mapping */
+		// 2d sprite mapping
 		// boundary : 32k
 		gpu->sprBoundary = 5;
-		gpu->spriteRender = sprite2D;
+		gpu->spriteRenderMode = GPU::SPRITE_2D;
 	}
      
 	if(cnt->OBJ_BMP_1D_Bound && (gpu->core == GPU_MAIN))
@@ -2054,14 +2038,26 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 /*****************************************************************************/
 //			SPRITE RENDERING
 /*****************************************************************************/
-void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+
+void GPU::spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
+	if(spriteRenderMode == SPRITE_1D)
+		_spriteRender<SPRITE_1D>(dst,dst_alpha,typeTab, prioTab);
+	else
+		_spriteRender<SPRITE_2D>(dst,dst_alpha,typeTab, prioTab);
+}
+
+template<GPU::SpriteRenderMode MODE>
+void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+{
+	u16 l = currLine;
+	GPU *gpu = this;
+
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
 	u8 block = gpu->sprBoundary;
 	u16 i;
 
-	//for(i = 0; i<nbShow; ++i, --spriteInfo)     /* check all sprites */
 #ifdef WORDS_BIGENDIAN
 	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
 	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
@@ -2074,8 +2070,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
 	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
 #endif
-	)     /* check all sprites */
+	)     
 	{
+		const int oamNum = 127 - i;
+		//for each sprite:
+
 		size sprSize;
 		s32 sprX, sprY, x, y, lg;
 		int xdir;
@@ -2158,8 +2157,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 			// If we are using 1 palette of 256 colours
 			if(spriteInfo->Depth)
 			{
+				//2d: src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex) << 5));
 				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex << block));
-				CHECK_SPRITE(1);
+				if (!src) { 
+					continue;
+				}
 
 				// If extended palettes are set, use them
 				if (dispCnt->ExOBJPalette_Enable)
@@ -2175,18 +2177,19 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
 					{
-						offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.x*8) + ((auxY&0x7)*8);
+						if(MODE == SPRITE_2D)
+							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8);
+						else
+							offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)*sprSize.x*8) + ((auxY&0x7)*8);
+
 						colour = src[offset];
 
 						if (colour && (prioTab[sprX]>=prio))
 						{ 
-							//if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
-							{
-								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
-								dst_alpha[sprX] = 16;
-								typeTab[sprX] = spriteInfo->Mode;
-								prioTab[sprX] = prio;
-							}
+							T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
+							dst_alpha[sprX] = 16;
+							typeTab[sprX] = spriteInfo->Mode;
+							prioTab[sprX] = prio;
 						}
 					}
 
@@ -2205,7 +2208,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex)*32);
 				else
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
-				CHECK_SPRITE(1);
+				
+				if (!src) { 
+					continue;
+				}
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -2215,18 +2221,19 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
 					{
-						offset = (auxX) + (auxY<<5);
+						if(MODE == SPRITE_2D)
+							offset = auxX + (auxY<<8);
+						else
+							offset = (auxX) + (auxY<<5);
+
 						colour = T1ReadWord (src, offset<<1);
 
 						if((colour&0x8000) && (prioTab[sprX]>=prio))
 						{
-						//	if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX))
-							{
-								T2WriteWord(dst, (sprX<<1), colour);
-								dst_alpha[sprX] = spriteInfo->PaletteIndex;
-								typeTab[sprX] = spriteInfo->Mode;
-								prioTab[sprX] = prio;
-							}
+							T2WriteWord(dst, (sprX<<1), colour);
+							dst_alpha[sprX] = spriteInfo->PaletteIndex;
+							typeTab[sprX] = spriteInfo->Mode;
+							prioTab[sprX] = prio;
 						}
 					}
 
@@ -2241,9 +2248,20 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 			// Rotozoomed 16/16 palette
 			else
 			{
-				pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary));
-				CHECK_SPRITE(1);
+				if(MODE == SPRITE_2D)
+				{
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<5));
+					pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
+				}
+				else
+				{
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary));
+					pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
+				}
+
+				if (!src) { 
+					continue;
+				}
 
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
@@ -2253,7 +2271,11 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
 					{
-						offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.x)*4 + ((auxY&0x7)*4);
+						if(MODE == SPRITE_2D)
+							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*4);
+						else
+							offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)*sprSize.x)*4 + ((auxY&0x7)*4);
+						
 						colour = src[offset];
 
 						// Get 4bits value from the readed 8bits
@@ -2262,13 +2284,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 
 						if(colour && (prioTab[sprX]>=prio))
 						{
-							//if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
-							{
-								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
-								dst_alpha[sprX] = 16;
-								typeTab[sprX] = spriteInfo->Mode;
-								prioTab[sprX] = prio;
-							}
+							T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
+							dst_alpha[sprX] = 16;
+							typeTab[sprX] = spriteInfo->Mode;
+							prioTab[sprX] = prio;
 						}
 					}
 
@@ -2285,16 +2304,29 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 		{
 			u16 * pal;
 
+	
 			if (!compute_sprite_vars(spriteInfo, l, sprSize, sprX, sprY, x, y, lg, xdir))
 				continue;
 
 			if (spriteInfo->Mode == 2)
 			{
-				if (spriteInfo->Depth)
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+				if(MODE == SPRITE_2D)
+				{
+					if (spriteInfo->Depth)
+						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
+					else
+						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
+				}
 				else
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
-				CHECK_SPRITE(1);
+				{
+					if (spriteInfo->Depth)
+						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+					else
+						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+				}
+				if (!src) { 
+					continue;
+				}
 
 				render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
 				continue;
@@ -2315,7 +2347,10 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 					else // 128 * 512
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
 				}
-				CHECK_SPRITE(1);
+				
+				if (!src) { 
+					continue;
+				}
 
 				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 				continue;
@@ -2323,328 +2358,44 @@ void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 				
 			if(spriteInfo->Depth)                   /* 256 colors */
 			{
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
-				CHECK_SPRITE(1);
-		
-				if (dispCnt->ExOBJPalette_Enable)
-					pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
-				else
-					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
-		
-				//sprwin test hack - to enable, only draw win and not sprite
-				render_sprite_256 (gpu, i, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
-				//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
-
-				continue;
-			}
-			/* 16 colors */
-			src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
-			CHECK_SPRITE(1);
-			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
-			
-			pal += (spriteInfo->PaletteIndex<<4);
-			
-			//sprwin test hack - to enable, only draw win and not sprite
-			render_sprite_16 (gpu, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
-			//render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
-		}
-	}
-
-#ifdef WORDS_BIGENDIAN
-	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) << 1) | *(((u16*)spriteInfo)+1) >> 15;
-	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
-#endif
-}
-
-void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
-{
-	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	_OAM_ * spriteInfo = (_OAM_*)(gpu->oam + (nbShow-1));// + 127;
-	u16 i;
-	
-#ifdef WORDS_BIGENDIAN
-	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
-	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14;
-#endif
-
-	for(i = 0; i<nbShow; ++i, --spriteInfo
-#ifdef WORDS_BIGENDIAN    
-	,*(((u16*)(spriteInfo+1))+1) = (*(((u16*)(spriteInfo+1))+1) << 1) | *(((u16*)(spriteInfo+1))+1) >> 15
-	,*(((u16*)(spriteInfo+1))+2) = (*(((u16*)(spriteInfo+1))+2) << 2) | *(((u16*)(spriteInfo+1))+2) >> 14
-	,*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15
-	,*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) >> 2) | *(((u16*)spriteInfo)+2) << 14
-#endif
-	)     /* check all sprites */
-	{
-		size sprSize;
-		s32 sprX, sprY, x, y, lg;
-		int xdir;
-		u8 prio, * src;
-		//u16 * pal;
-		u16 j;
-
-		// Check if sprite is disabled before everything
-		if (spriteInfo->RotScale == 2)
-			continue;
-
-		prio = spriteInfo->Priority;
-	
-		if (spriteInfo->RotScale & 1) 
-		{
-			s32		fieldX, fieldY, auxX, auxY, realX, realY, offset;
-			u8		blockparameter, *pal;
-			s16		dx, dmx, dy, dmy;
-			u16		colour;
-
-			// Get sprite positions and size
-			sprX = (spriteInfo->X<<23)>>23;
-			sprY = spriteInfo->Y;
-			sprSize = sprSizeTab[spriteInfo->Size][spriteInfo->Shape];
-
-			lg = sprSize.x;
-			
-			if (sprY>=192)
-				sprY = (s32)((s8)(spriteInfo->Y));
-
-			// Copy sprite size, to check change it if needed
-			fieldX = sprSize.x;
-			fieldY = sprSize.y;
-
-			// If we are using double size mode, double our control vars
-			if (spriteInfo->RotScale & 2)
-			{
-				fieldX <<= 1;
-				fieldY <<= 1;
-				lg <<= 1;
-			}
-
-			// Check if sprite enabled
-			if ((l   <sprY) || (l >= sprY+fieldY) ||
-				(sprX==256) || (sprX+fieldX<=0))
-				continue;
-
-			y = l - sprY;
-
-			// Get which four parameter block is assigned to this sprite
-			blockparameter = (spriteInfo->RotScalIndex + (spriteInfo->HFlip<< 3) + (spriteInfo->VFlip << 4))*4;
-
-			// Get rotation/scale parameters
-			dx  = (s16)(gpu->oam + blockparameter+0)->attr3;
-			dmx = (s16)(gpu->oam + blockparameter+1)->attr3;
-			dy  = (s16)(gpu->oam + blockparameter+2)->attr3;
-			dmy = (s16)(gpu->oam + blockparameter+3)->attr3;
-
-			// Calculate fixed poitn 8.8 start offsets
-			realX = ((sprSize.x) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + y * dmx;
-			realY = ((sprSize.y) << 7) - (fieldX >> 1)*dy - (fieldY>>1)*dmy + y * dmy;
-
-			if(sprX<0)
-			{
-				// If sprite is not in the window
-				if(sprX + fieldX <= 0)
-					continue;
-
-				// Otherwise, is partially visible
-				lg += sprX;
-				realX -= sprX*dx;
-				realY -= sprX*dy;
-				sprX = 0;
-			}
-			else
-			{
-				if(sprX+fieldX>256)
-					lg = 256 - sprX;
-			}
-
-			// If we are using 1 palette of 256 colours
-			if(spriteInfo->Depth)
-			{
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex) << 5));
-				CHECK_SPRITE(2);
-
-				// If extended palettes are set, use them
-				if (dispCnt->ExOBJPalette_Enable)
-					pal = (ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
-				else
-					pal = (ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
-			
-				for(j = 0; j < lg; ++j, ++sprX)
-				{
-					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
-					auxX = (realX>>8);
-					auxY = (realY>>8);
-
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
-					{
-						offset = (auxX&0x7) + ((auxX&0xFFF8)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*8);
-						colour = src[offset];
-
-						if (colour && (prioTab[sprX]>=prio))
-						{ 
-						//	if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, T1ReadWord(pal, colour<<1), sprX ))
-							{
-								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
-								dst_alpha[sprX] = 16;
-								typeTab[sprX] = spriteInfo->Mode;
-								prioTab[sprX] = prio;
-							}
-						}
-					}
-
-					//  Add the rotation/scale coeficients, here the rotation/scaling
-					// is performed
-					realX += dx;
-					realY += dy;
-				}
-
-				continue;
-			}
-			// Rotozoomed direct color
-			else if(spriteInfo->Mode == 3)
-			{
-				if (dispCnt->OBJ_BMP_mapping)
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex)*32);
-				else
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
-				CHECK_SPRITE(2);
-
-				for(j = 0; j < lg; ++j, ++sprX)
-				{
-					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
-					auxX = (realX>>8);
-					auxY = (realY>>8);
-
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
-					{
-						offset = auxX + (auxY<<8);
-						colour = T1ReadWord(src, offset<<1);
-
-						if((colour&0x8000) && (prioTab[sprX]>=prio))
-						{
-						//	if (gpu->setFinalColorSpr(gpu, sprX << 1, 4, dst, colour, sprX ))
-							{
-								T2WriteWord(dst, (sprX<<1), colour);
-								dst_alpha[sprX] = spriteInfo->PaletteIndex;
-								typeTab[sprX] = spriteInfo->Mode;
-								prioTab[sprX] = prio;
-							}
-						}
-					}
-
-					//  Add the rotation/scale coeficients, here the rotation/scaling
-					// is performed
-					realX += dx;
-					realY += dy;
-				}
-
-				continue;
-			}
-			// Rotozoomed 16/16 palette
-			else
-			{
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<5));
-				CHECK_SPRITE(2);
-				pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
-				
-				for(j = 0; j < lg; ++j, ++sprX)
-				{
-					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
-					auxX = (realX>>8);
-					auxY = (realY>>8);
-
-					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
-					{
-						offset = ((auxX>>1)&0x3) + (((auxX>>1)&0xFFFC)<<3) + ((auxY>>3)<<10) + ((auxY&0x7)*4);
-						colour = src[offset];
-
-						if (auxX&1)	colour >>= 4;
-						else		colour &= 0xF;
-
-						if(colour && (prioTab[sprX]>=prio))
-						{
-						//	if (gpu->setFinalColorSpr(gpu, sprX << 1,4,dst, T1ReadWord (pal, colour<<1), sprX))
-							{
-								T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
-								dst_alpha[sprX] = 16;
-								typeTab[sprX] = spriteInfo->Mode;
-								prioTab[sprX] = prio;
-							}
-						}
-					}
-
-					//  Add the rotation/scale coeficients, here the rotation/scaling
-					// is performed
-					realX += dx;
-					realY += dy;
-				}  
-
-				continue;
-			}
-		}
-		else
-		{
-			u16 *pal;
-
-			if (!compute_sprite_vars(spriteInfo, l, sprSize, sprX, sprY, x, y, lg, xdir))
-				continue;
-
-			if (spriteInfo->Mode == 2) {
-				if (spriteInfo->Depth)
+				if(MODE == SPRITE_2D)
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
 				else
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
-				CHECK_SPRITE(2);
-
-				render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
-				continue;
-			}
-
-			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
-			{
-				if (dispCnt->OBJ_BMP_mapping)
-				{
-					// TODO: fix it for sprite1D
-					//src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary));
-				}
-				else
-				{
-					if (dispCnt->OBJ_BMP_2D_dim) // 256*256
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-					else // 128 * 512
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
-				}
-				CHECK_SPRITE(2);
-
-				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
-
-				continue;
-			}
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 				
-			if(spriteInfo->Depth)                   /* 256 colors */
-			{
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
-				CHECK_SPRITE(2);
-
+				if (!src) { 
+					continue;
+				}
+		
 				if (dispCnt->ExOBJPalette_Enable)
 					pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
 				else
 					pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core *0x400);
 		
-				render_sprite_256 (gpu, i, l, dst, src, pal,
+				render_sprite_256 (gpu, i, l, dst, src, pal, 
 					dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 
 				continue;
 			}
+			// 16 colors 
+			if(MODE == SPRITE_2D)
+			{
+				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
+			}
+			else
+			{
+				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+			}
+			
+			if (!src) { 
+				continue;
+			}
 		
-			/* 16 colors */
-			src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
-			CHECK_SPRITE(2);
 			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
-
+			
 			pal += (spriteInfo->PaletteIndex<<4);
-			render_sprite_16 (gpu, l, dst, src, pal,
-				dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
+			
+			render_sprite_16 (gpu, l, dst, src, pal, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->Mode == 1);
 		}
 	}
 
@@ -2653,6 +2404,7 @@ void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * pri
 	*(((u16*)spriteInfo)+2) = (*(((u16*)spriteInfo)+2) << 2) | *(((u16*)spriteInfo)+2) >> 14;
 #endif
 }
+
 
 /*****************************************************************************/
 //			SCREEN FUNCTIONS
@@ -2879,7 +2631,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		//but it has been changed to write u32 instead of u16 for a little speedup
 		for(int i = 0; i< 128; ++i) T2WriteWord(spr, i << 2, c | (c<<16));
 		
-		gpu->spriteRender(gpu, l, spr, sprAlpha, sprType, sprPrio);
+
+		gpu->spriteRender(spr, sprAlpha, sprType, sprPrio);
 		mosaicSpriteLine(gpu, l, spr, sprAlpha, sprType, sprPrio);
 
 
