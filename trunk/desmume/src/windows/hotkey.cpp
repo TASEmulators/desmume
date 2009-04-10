@@ -238,7 +238,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboRight.handleKeyUp = HK_TurboRightKeyUp;
 	keys->TurboRight.code = "TurboRight";
 	keys->TurboRight.name = L"Turbo Right";
-	keys->TurboRight.page = HOTKEY_PAGE_MAIN;
+	keys->TurboRight.page = HOTKEY_PAGE_TURBO;
 	keys->TurboRight.key = NULL;
 
 	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
@@ -258,63 +258,63 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboLeft.handleKeyUp = HK_TurboLeftKeyUp;
 	keys->TurboLeft.code = "TurboLeft";
 	keys->TurboLeft.name = L"Turbo Left";
-	keys->TurboLeft.page = HOTKEY_PAGE_MAIN;
+	keys->TurboLeft.page = HOTKEY_PAGE_TURBO;
 	keys->TurboLeft.key = NULL;
 
 	keys->TurboDown.handleKeyDown = HK_TurboDownKeyDown;
 	keys->TurboDown.handleKeyUp = HK_TurboDownKeyUp;
 	keys->TurboDown.code = "TurboDown";
 	keys->TurboDown.name = L"Turbo Down";
-	keys->TurboDown.page = HOTKEY_PAGE_MAIN;
+	keys->TurboDown.page = HOTKEY_PAGE_TURBO;
 	keys->TurboDown.key = NULL;
 
 	keys->TurboUp.handleKeyDown = HK_TurboUpKeyDown;
 	keys->TurboUp.handleKeyUp = HK_TurboUpKeyUp;
 	keys->TurboUp.code = "TurboUp";
 	keys->TurboUp.name = L"Turbo Up";
-	keys->TurboUp.page = HOTKEY_PAGE_MAIN;
+	keys->TurboUp.page = HOTKEY_PAGE_TURBO;
 	keys->TurboUp.key = NULL;
 
 	keys->TurboB.handleKeyDown = HK_TurboBKeyDown;
 	keys->TurboB.handleKeyUp = HK_TurboBKeyUp;
 	keys->TurboB.code = "TurboB";
 	keys->TurboB.name = L"Turbo B";
-	keys->TurboB.page = HOTKEY_PAGE_MAIN;
+	keys->TurboB.page = HOTKEY_PAGE_TURBO;
 	keys->TurboB.key = NULL;
 
 	keys->TurboA.handleKeyDown = HK_TurboAKeyDown;
 	keys->TurboA.handleKeyUp = HK_TurboAKeyUp;
 	keys->TurboA.code = "TurboA";
 	keys->TurboA.name = L"Turbo A";
-	keys->TurboA.page = HOTKEY_PAGE_MAIN;
+	keys->TurboA.page = HOTKEY_PAGE_TURBO;
 	keys->TurboA.key = NULL;
 
 	keys->TurboX.handleKeyDown = HK_TurboXKeyDown;
 	keys->TurboX.handleKeyUp = HK_TurboXKeyUp;
 	keys->TurboX.code = "TurboX";
 	keys->TurboX.name = L"Turbo X";
-	keys->TurboX.page = HOTKEY_PAGE_MAIN;
+	keys->TurboX.page = HOTKEY_PAGE_TURBO;
 	keys->TurboX.key = NULL;
 
 	keys->TurboY.handleKeyDown = HK_TurboYKeyDown;
 	keys->TurboY.handleKeyUp = HK_TurboYKeyUp;
 	keys->TurboY.code = "TurboY";
 	keys->TurboY.name = L"Turbo Y";
-	keys->TurboY.page = HOTKEY_PAGE_MAIN;
+	keys->TurboY.page = HOTKEY_PAGE_TURBO;
 	keys->TurboY.key = NULL;
 
 	keys->TurboSelect.handleKeyDown = HK_TurboSelectKeyDown;
 	keys->TurboSelect.handleKeyUp = HK_TurboSelectKeyUp;
 	keys->TurboSelect.code = "TurboSelect";
 	keys->TurboSelect.name = L"Turbo Select";
-	keys->TurboSelect.page = HOTKEY_PAGE_MAIN;
+	keys->TurboSelect.page = HOTKEY_PAGE_TURBO;
 	keys->TurboSelect.key = NULL;
 
 	keys->TurboStart.handleKeyDown = HK_TurboStartKeyDown;
 	keys->TurboStart.handleKeyUp = HK_TurboStartKeyUp;
 	keys->TurboStart.code = "TurboStart";
 	keys->TurboStart.name = L"Turbo Start";
-	keys->TurboStart.page = HOTKEY_PAGE_MAIN;
+	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
 
 	keys->FastForward.handleKeyDown = HK_FastForwardKeyDown;

@@ -31,6 +31,7 @@ enum HotkeyPage {
 	HOTKEY_PAGE_MAIN=0,
 	HOTKEY_PAGE_STATE,
 	HOTKEY_PAGE_STATE_SLOTS,
+	HOTKEY_PAGE_TURBO,
 	NUM_HOTKEY_PAGE,
 };
 
@@ -38,6 +39,7 @@ static LPCTSTR hotkeyPageTitle[] = {
 	_T("Main"),
 	_T("Savestates"),
 	_T("Savestate Slots"),
+	_T("Turbo"),
 	_T("NUM_HOTKEY_PAGE"),
 };
 
