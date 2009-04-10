@@ -12,6 +12,7 @@ void SaveStateMessages(int slotnum, int whichMessage);
 void Display();
 void Pause();
 void FrameAdvance();
+extern bool ShowInputDisplay;
 
 #define GPU3D_NULL 0
 #define GPU3D_OPENGL 1
