@@ -759,6 +759,7 @@ void MMU_setRom(u8 * rom, u32 mask)
 {
 	unsigned int i;
 	MMU.CART_ROM = rom;
+	MMU.CART_ROM_MASK = mask;
 	
 	for(i = 0x80; i<0xA0; ++i)
 	{
@@ -3129,7 +3130,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 							{
 								MMU.dscard[ARMCPU_ARM9].address = (0x8000 + (MMU.dscard[ARMCPU_ARM9].address&0x1FF));
 							}
-							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address);
+							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address & MMU.CART_ROM_MASK);
 						}
 						break;
 
