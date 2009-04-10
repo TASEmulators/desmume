@@ -65,6 +65,10 @@ struct SCustomKeys
 
 	SCustomKey Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed;
 
+	SCustomKey TurboRight, TurboLeft, TurboDown, TurboUp, TurboSelect, TurboStart, TurboB, TurboA, TurboY, TurboX;
+
+	SCustomKey AutoHold, AutoHoldClear;
+
 	SCustomKey ToggleRasterizer;
 
 	SCustomKey PrintScreen;
@@ -90,6 +94,8 @@ void HK_StateLoadSlot(int);
 void HK_StateSetSlot(int);
 void HK_Pause(int);
 void HK_FastForward(int);
+
+extern bool AutoHoldPressed;
 
 #endif //HOTKEY_H_INCLUDED
 

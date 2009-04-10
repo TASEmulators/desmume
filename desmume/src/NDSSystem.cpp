@@ -2414,8 +2414,61 @@ void NDS_setPadFromMovie(u16 pad)
 #undef FIX
 }
 
+turbo Turbo;
+turbotime TurboTime;
+
+void SetTurbo(bool (&pad) [10]) {
+
+	bool turbo[4] = {true, false, true, false};
+	bool currentbutton;
+	
+	for (int i=0; i < 10; i++) {
+		currentbutton=Turbo.button(i);
+
+		if(currentbutton) {
+			pad[i]=turbo[TurboTime.time(i)-1];
+			
+			if(TurboTime.time(i)>=ARRAYSIZE(turbo))
+				TurboTime.time(i)=0;
+		}
+		else
+			TurboTime.time(i)=0; //reset timer if the button isn't pressed
+	}
+	for (int i=0; i<10; i++)
+		TurboTime.time(i)++;
+}
+
+autohold AutoHold;
+
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F)
 {
+
+	bool padarray[10] = {R, L, D, U, T, S, B, A, Y, X};
+
+	SetTurbo(padarray);
+
+	R=padarray[0];
+	L=padarray[1];
+	D=padarray[2];
+	U=padarray[3];
+	T=padarray[4];
+	S=padarray[5];
+	B=padarray[6];
+	A=padarray[7];
+	Y=padarray[8];
+	X=padarray[9];
+
+	if(AutoHold.Right) R=!padarray[0];
+	if(AutoHold.Left)  L=!padarray[1];
+	if(AutoHold.Down)  D=!padarray[2];
+	if(AutoHold.Up)    U=!padarray[3];
+	if(AutoHold.Select)T=!padarray[4];
+	if(AutoHold.Start) S=!padarray[5];
+	if(AutoHold.B)     B=!padarray[6];
+	if(AutoHold.A)     A=!padarray[7];
+	if(AutoHold.Y)     Y=!padarray[8];
+	if(AutoHold.X)     X=!padarray[9];
+
 	//this macro is the opposite of what you would expect
 #define FIX(b) (b?0:0x80)
 

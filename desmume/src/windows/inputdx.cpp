@@ -2198,7 +2198,21 @@ void input_process()
 	bool G = joypads[0] & DEBUG_MASK;
 	bool F = joypads[0] & LID_MASK;
 
+	if(AutoHoldPressed && R) AutoHold.Right  ^= true;
+	if(AutoHoldPressed && L) AutoHold.Left   ^= true;
+	if(AutoHoldPressed && D) AutoHold.Down   ^= true;
+	if(AutoHoldPressed && U) AutoHold.Up     ^= true;
+	if(AutoHoldPressed && T) AutoHold.Select ^= true;
+	if(AutoHoldPressed && S) AutoHold.Start  ^= true;
+	if(AutoHoldPressed && B) AutoHold.B      ^= true;
+	if(AutoHoldPressed && A) AutoHold.A      ^= true;
+	if(AutoHoldPressed && Y) AutoHold.Y      ^= true;
+	if(AutoHoldPressed && X) AutoHold.X      ^= true;
+
 	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
+
+	if (ShowInputDisplay) osd->addFixed(0, 45, "%s",InputDisplayString.c_str());
+
 }
 
 static void set_hotkeyinfo(HWND hDlg)

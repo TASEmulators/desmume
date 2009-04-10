@@ -34,6 +34,57 @@
 
 #include <string>
 
+struct turbo {
+	bool Right;
+	bool Left;
+	bool Down;
+	bool Up;
+	bool Select;
+	bool Start;
+	bool B;
+	bool A;
+	bool Y;
+	bool X;
+
+	bool &button(int i) { return ((bool*)this)[i]; }
+};
+
+extern turbo Turbo;
+
+struct turbotime {
+	int Right;
+	int Left;
+	int Down;
+	int Up;
+	int Select;
+	int Start;
+	int B;
+	int A;
+	int Y;
+	int X;
+
+	int &time(int i) { return ((int*)this)[i]; }
+};
+
+extern turbotime TurboTime;
+
+struct autohold {
+	bool Right;
+	bool Left;
+	bool Down;
+	bool Up;
+	bool Select;
+	bool Start;
+	bool B;
+	bool A;
+	bool Y;
+	bool X;
+
+	bool &hold(int i) { return ((bool*)this)[i]; }
+};
+
+extern autohold AutoHold;
+
 int NDS_WritePNG(const char *fname);
 
 extern volatile BOOL execute;

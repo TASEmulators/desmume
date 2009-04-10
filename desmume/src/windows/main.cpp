@@ -1008,7 +1008,6 @@ DWORD WINAPI run()
 				}
 				frameCounter++;
 				if (frameCounterDisplay) osd->addFixed(0, 25, "%d",frameCounter);
-				if (ShowInputDisplay) osd->addFixed(0, 45, "%s",InputDisplayString.c_str());
 				if (ShowLagFrameCounter) osd->addFixed(0, 65, "%d",TotalLagFrames);
 				DisplayMessage();
 				CheckMessages();
