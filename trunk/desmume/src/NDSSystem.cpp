@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <math.h>
+#include <zlib.h>
 
 #include "common.h"
 #include "NDSSystem.h"
@@ -1056,6 +1057,138 @@ int NDS_ImportSave(const char *filename)
 		return mc_load_duc(&MMU.bupmem, filename);
 
 	return 0;
+}
+
+static int WritePNGChunk(FILE *fp, uint32 size, const char *type, const uint8 *data)
+{
+	uint32 crc;
+
+	uint8 tempo[4];
+
+	tempo[0]=size>>24;
+	tempo[1]=size>>16;
+	tempo[2]=size>>8;
+	tempo[3]=size;
+
+	if(fwrite(tempo,4,1,fp)!=1)
+		return 0;
+	if(fwrite(type,4,1,fp)!=1)
+		return 0;
+
+	if(size)
+		if(fwrite(data,1,size,fp)!=size)
+			return 0;
+
+	crc = crc32(0,(uint8 *)type,4);
+	if(size)
+		crc = crc32(crc,data,size);
+
+	tempo[0]=crc>>24;
+	tempo[1]=crc>>16;
+	tempo[2]=crc>>8;
+	tempo[3]=crc;
+
+	if(fwrite(tempo,4,1,fp)!=1)
+		return 0;
+	return 1;
+}
+int NDS_WritePNG(const char *fname)
+{
+	int x, y;
+	int width=256;
+	int height=192*2;
+	u16 * bmp = (u16 *)GPU_screen;
+	FILE *pp=NULL;
+	uint8 *compmem = NULL;
+	uLongf compmemsize = (uLongf)( (height * (width + 1) * 3 * 1.001 + 1) + 12 );
+
+	if(!(compmem=(uint8 *)malloc(compmemsize)))
+		return 0;
+
+	if(!(pp=fopen(fname, "wb")))
+	{
+		return 0;
+	}
+	{
+		static uint8 header[8]={137,80,78,71,13,10,26,10};
+		if(fwrite(header,8,1,pp)!=1)
+			goto PNGerr;
+	}
+
+	{
+		uint8 chunko[13];
+
+		chunko[0] = width >> 24;		// Width
+		chunko[1] = width >> 16;
+		chunko[2] = width >> 8;
+		chunko[3] = width;
+
+		chunko[4] = height >> 24;		// Height
+		chunko[5] = height >> 16;
+		chunko[6] = height >> 8;
+		chunko[7] = height;
+
+		chunko[8]=8;				// 8 bits per sample(24 bits per pixel)
+		chunko[9]=2;				// Color type; RGB triplet
+		chunko[10]=0;				// compression: deflate
+		chunko[11]=0;				// Basic adapative filter set(though none are used).
+		chunko[12]=0;				// No interlace.
+
+		if(!WritePNGChunk(pp,13,"IHDR",chunko))
+			goto PNGerr;
+	}
+
+	{
+		uint8 *tmp_buffer;
+		uint8 *tmp_inc;
+		tmp_inc = tmp_buffer = (uint8 *)malloc((width * 3 + 1) * height);
+
+		for(y=0;y<height;y++)
+		{
+			*tmp_inc = 0;
+			tmp_inc++;
+			for(x=0;x<width;x++)
+			{
+				int r,g,b;
+				u16 pixel = bmp[y*256+x];
+				r = pixel>>10;
+				pixel-=r<<10;
+				g = pixel>>5;
+				pixel-=g<<5;
+				b = pixel;
+				r*=255/31;
+				g*=255/31;
+				b*=255/31;
+				tmp_inc[0] = b;
+				tmp_inc[1] = g;
+				tmp_inc[2] = r;
+				tmp_inc += 3;
+			}
+		}
+
+		if(compress(compmem, &compmemsize, tmp_buffer, height * (width * 3 + 1))!=Z_OK)
+		{
+			if(tmp_buffer) free(tmp_buffer);
+			goto PNGerr;
+		}
+		if(tmp_buffer) free(tmp_buffer);
+		if(!WritePNGChunk(pp,compmemsize,"IDAT",compmem))
+			goto PNGerr;
+	}
+	if(!WritePNGChunk(pp,0,"IEND",0))
+		goto PNGerr;
+
+	free(compmem);
+	fclose(pp);
+
+	return 1;
+
+PNGerr:
+	if(compmem)
+		free(compmem);
+	if(pp)
+		fclose(pp);
+	return(0);
 }
 
 typedef struct

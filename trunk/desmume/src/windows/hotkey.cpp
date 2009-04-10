@@ -70,19 +70,34 @@ void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
 void HK_PrintScreen(int param)
 {
     OPENFILENAME ofn;
+	char * ptr;
     char filename[MAX_PATH] = "";
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = MainWindow->getHWnd();
-    ofn.lpstrFilter = "Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
+    ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFile =  filename;
 	ofn.lpstrTitle = "Print Screen Save As";
-    ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrDefExt = "bmp";
-    ofn.Flags = OFN_OVERWRITEPROMPT;
-    GetSaveFileName(&ofn);
-    NDS_WriteBMP(filename);
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrDefExt = "png";
+	ofn.Flags = OFN_OVERWRITEPROMPT;
+	GetSaveFileName(&ofn);
+
+	ptr = strrchr(filename,'.');//look for the last . in the filename
+
+	if ( ptr != 0 ) {
+		if (( strcmp ( ptr, ".BMP" ) == 0 ) ||
+			( strcmp ( ptr, ".bmp" ) == 0 )) 
+		{
+			NDS_WriteBMP(filename);
+		}
+		if (( strcmp ( ptr, ".PNG" ) == 0 ) ||
+			( strcmp ( ptr, ".png" ) == 0 )) 
+		{
+			NDS_WritePNG(filename);
+		}
+	}
 }
 
 void HK_StateSaveSlot(int num)
