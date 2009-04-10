@@ -34,6 +34,8 @@
 
 #include <string>
 
+int NDS_WritePNG(const char *fname);
+
 extern volatile BOOL execute;
 extern BOOL click;
 extern char pathToROM[MAX_PATH];
