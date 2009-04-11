@@ -2417,7 +2417,7 @@ void NDS_setPadFromMovie(u16 pad)
 turbo Turbo;
 turbotime TurboTime;
 
-void SetTurbo(bool (&pad) [10]) {
+static void SetTurbo(bool (&pad) [10]) {
 
 	bool turbo[4] = {true, false, true, false};
 	bool currentbutton;
