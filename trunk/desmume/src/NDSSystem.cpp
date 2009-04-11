@@ -2428,7 +2428,7 @@ void SetTurbo(bool (&pad) [10]) {
 		if(currentbutton) {
 			pad[i]=turbo[TurboTime.time(i)-1];
 			
-			if(TurboTime.time(i)>=ARRAYSIZE(turbo))
+			if(TurboTime.time(i)>=ARRAY_SIZE(turbo))
 				TurboTime.time(i)=0;
 		}
 		else
