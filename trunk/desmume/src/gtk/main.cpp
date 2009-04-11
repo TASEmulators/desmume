@@ -942,8 +942,8 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
             state=(GdkModifierType)e->state;
         }
 
-        scaled_x = x * nds_screen_size_ratio;
-        scaled_y = y * nds_screen_size_ratio;
+        scaled_x = int(x * nds_screen_size_ratio);
+        scaled_y = int(y * nds_screen_size_ratio);
 
         LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
 
@@ -975,8 +975,8 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
 
             gdk_window_get_pointer(w->window, &x, &y, &state);
 
-            scaled_x = x * nds_screen_size_ratio;
-            scaled_y = y * nds_screen_size_ratio;
+            scaled_x = int(x * nds_screen_size_ratio);
+            scaled_y = int(y * nds_screen_size_ratio);
 
             if (!(*opengl)) {
                 scaled_y -= 192;
