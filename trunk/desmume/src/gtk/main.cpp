@@ -982,10 +982,8 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
                 scaled_y -= 192;
             }
             if (scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
-                EmuX = scaled_x;
-                EmuY = scaled_y;
-                if (EmuX < 0) EmuX = 0; else if (EmuX > 255) EmuX = 255;
-                if (EmuY < 0) EmuY = 0; else if (EmuY > 192) EmuY = 192;
+                EmuX = CLAMP(scaled_x, 0, 255);
+                EmuY = CLAMP(scaled_y, 0, 192);
                 NDS_setTouchPos(EmuX, EmuY);
             }
         }
