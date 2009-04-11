@@ -359,4 +359,6 @@ void _MMU_write16(u32 addr, u16 val) { _MMU_write16(PROCNUM, addr, val); }
 template<int PROCNUM> 
 void _MMU_write32(u32 addr, u32 val) { _MMU_write32(PROCNUM, addr, val); }
 
+void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer);
+
 #endif

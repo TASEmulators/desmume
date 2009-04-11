@@ -161,8 +161,8 @@ static int FrameLimit = 1;
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
 TOOLSCLASS	*ViewDisasm_ARM9 = NULL;
-TOOLSCLASS	*ViewMem_ARM7 = NULL;
-TOOLSCLASS	*ViewMem_ARM9 = NULL;
+//TOOLSCLASS	*ViewMem_ARM7 = NULL;
+//TOOLSCLASS	*ViewMem_ARM9 = NULL;
 TOOLSCLASS	*ViewRegisters = NULL;
 TOOLSCLASS	*ViewPalette = NULL;
 TOOLSCLASS	*ViewTiles = NULL;
@@ -960,6 +960,7 @@ DWORD WINAPI run()
 	int fps=0;
 	int fpsframecount=0;
 	u64 fpsticks=0;
+	int tools_frames = 0;
 	int	res;
 	HWND	hwnd = MainWindow->getHWnd();
 
@@ -1031,6 +1032,16 @@ DWORD WINAPI run()
 				fps3d = gfx3d.frameCtr;
 				gfx3d.frameCtrRaw = 0;
 				gfx3d.frameCtr = 0;
+			}
+
+
+			tools_frames++;
+			if(tools_frames == 10)
+			{
+				if(MemView_IsOpened(ARMCPU_ARM9)) MemView_Refresh(ARMCPU_ARM9);
+				if(MemView_IsOpened(ARMCPU_ARM7)) MemView_Refresh(ARMCPU_ARM7);
+
+				tools_frames = 0;
 			}
 
 
@@ -1540,10 +1551,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	GInfo_Init();
 
+	MemView_Init();
+
 	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
-	ViewMem_ARM7 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
-	ViewMem_ARM9 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER9, (DLGPROC) ViewMem_ARM9Proc);
+	//ViewMem_ARM7 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
+	//ViewMem_ARM9 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER9, (DLGPROC) ViewMem_ARM9Proc);
 	ViewRegisters = new TOOLSCLASS(hThisInstance, IDD_IO_REG, (DLGPROC) IoregView_Proc);
 	ViewPalette = new TOOLSCLASS(hThisInstance, IDD_PAL, (DLGPROC) ViewPalProc);
 	ViewTiles = new TOOLSCLASS(hThisInstance, IDD_TILE, (DLGPROC) ViewTilesProc);
@@ -1725,6 +1738,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	GInfo_DeInit();
 
+	MemView_DlgClose(ARMCPU_ARM9);
+	MemView_DlgClose(ARMCPU_ARM7);
+
+	MemView_DeInit();
+
 	//if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
 	if (ViewMatrices!=NULL) delete ViewMatrices;
@@ -1733,8 +1751,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	if (ViewTiles!=NULL) delete ViewTiles;
 	if (ViewPalette!=NULL) delete ViewPalette;
 	if (ViewRegisters!=NULL) delete ViewRegisters;
-	if (ViewMem_ARM9!=NULL) delete ViewMem_ARM9;
-	if (ViewMem_ARM7!=NULL) delete ViewMem_ARM7;
+//	if (ViewMem_ARM9!=NULL) delete ViewMem_ARM9;
+//	if (ViewMem_ARM7!=NULL) delete ViewMem_ARM7;
 	if (ViewDisasm_ARM9!=NULL) delete ViewDisasm_ARM9;
 	if (ViewDisasm_ARM7!=NULL) delete ViewDisasm_ARM7;
 
@@ -2743,12 +2761,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ViewRegisters->open();
 			return 0;
 		case IDM_MEMORY:
-			ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
+		/*	ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
 			if (!ViewMem_ARM7->open())
 				ViewMem_ARM7->unregClass();
 			ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
 			if (!ViewMem_ARM9->open())
-				ViewMem_ARM9->unregClass();
+				ViewMem_ARM9->unregClass();*/
+			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(hwnd, ARMCPU_ARM9);
+			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(hwnd, ARMCPU_ARM7);
 			return 0;
 		case IDM_DISASSEMBLER:
 			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);

@@ -4363,6 +4363,17 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 		_MMU_ARM7_write08(adr,val);
 }
 
+void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer)
+{
+	u32 i;
+	u32 curaddr;
+
+	for(i = 0, curaddr = address; i < size; i++, curaddr++)
+	{
+		buffer[i] = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][(curaddr >> 20) & 0xFF], (curaddr & MMU.MMU_MASK[ARMCPU_ARM7][(curaddr >> 20) & 0xFF]));
+	}
+}
+
 void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
     if (type<0 || type > 6) return;
     *bmemtype=save_types[type][0];
