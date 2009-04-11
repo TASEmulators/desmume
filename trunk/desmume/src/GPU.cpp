@@ -2518,8 +2518,8 @@ void GPU_set_DISPCAPCNT(u32 val)
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 
 	gpu->dispCapCnt.val = val;
-	gpu->dispCapCnt.EVA = val & 0x1F;
-	gpu->dispCapCnt.EVB = (val >> 8) & 0x1F;
+	gpu->dispCapCnt.EVA = std::min((u32)16, (val & 0x1F));
+	gpu->dispCapCnt.EVB = std::min((u32)16, ((val >> 8) & 0x1F));
 	gpu->dispCapCnt.writeBlock =  (val >> 16) & 0x03;
 	gpu->dispCapCnt.writeOffset = (val >> 18) & 0x03;
 	gpu->dispCapCnt.readBlock = dispCnt->VRAM_Block;
