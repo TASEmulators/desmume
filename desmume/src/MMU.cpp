@@ -4370,7 +4370,7 @@ void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer)
 
 	for(i = 0, curaddr = address; i < size; i++, curaddr++)
 	{
-		buffer[i] = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][(curaddr >> 20) & 0xFF], (curaddr & MMU.MMU_MASK[ARMCPU_ARM7][(curaddr >> 20) & 0xFF]));
+		buffer[i] = T1ReadByte(MMU.MMU_MEM[proc][(curaddr >> 20) & 0xFF], (curaddr & MMU.MMU_MASK[proc][(curaddr >> 20) & 0xFF]));
 	}
 }
 
