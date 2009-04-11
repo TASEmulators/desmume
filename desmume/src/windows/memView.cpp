@@ -19,501 +19,565 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <algorithm>
-#include "memView.h"
-#include <commctrl.h>
+
 #include "../MMU.h"
 #include "debug.h"
 #include "resource.h"
+#include "common.h"
+#include <algorithm>
+#include <windows.h>
+#include <windowsx.h>
+#include <commctrl.h>
+#include "memView.h"
 
-typedef struct
+using namespace std;
+
+//////////////////////////////////////////////////////////////////////////////
+
+typedef struct MemView_DataStruct
 {
-	u32	autoup_secs;
-	bool autoup;
-
-	s8 cpu;
-	u32 curr_ligne;
-	u8 representation;
-} memview_struct;
-
-
-memview_struct		*MemView7 = NULL;
-memview_struct		*MemView9 = NULL;
-
-LRESULT MemViewBox_OnPaint(HWND hwnd, memview_struct * win, WPARAM wParam, LPARAM lParam)
-{
-        HDC          hdc;
-        PAINTSTRUCT  ps;
-        SIZE fontsize;
-        TCHAR text[80];
-        int i;
-        RECT rect;
-        int lg;
-        int ht;
-        HDC mem_dc;
-        HBITMAP mem_bmp;
-        int nbligne;
-        RECT r;
-        u32 adr;
-
-        GetClientRect(hwnd, &rect);
-        lg = rect.right - rect.left;
-        ht = rect.bottom - rect.top;
-        
-        hdc = BeginPaint(hwnd, &ps);
-        
-        mem_dc = CreateCompatibleDC(hdc);
-        mem_bmp = CreateCompatibleBitmap(hdc, lg, ht);
-        SelectObject(mem_dc, mem_bmp);
-        
-        FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
-        
-        SelectObject(mem_dc, GetStockObject(SYSTEM_FIXED_FONT));
-        
-        GetTextExtentPoint32(mem_dc, "0", 1, &fontsize);
-        
-        nbligne = ht/fontsize.cy;
-        
-        SetTextColor(mem_dc, RGB(0,0,0));
-                
-        r.top = 3;
-        r.left = 3;
-        r.bottom = r.top+fontsize.cy;
-        r.right = rect.right-3;
-        
-        adr = win->curr_ligne*0x10;
-        
-        for(i=0; i<nbligne; ++i)
-        {
-                int j;
-                sprintf(text, "%04X:%04X", (int)(adr>>16), (int)(adr&0xFFFF));
-                DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                r.left += 11*fontsize.cx;
-
-                if(win->representation == 0)
-                     for(j=0; j<16; ++j)
-                     {
-                          sprintf(text, "%02X", MMU_read8(win->cpu, adr+j));
-                          DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                          r.left+=3*fontsize.cx;
-                     }
-                else
-                     if(win->representation == 1)
-                          for(j=0; j<16; j+=2)
-                          {
-                               sprintf(text, "%04X", MMU_read16(win->cpu, adr+j));
-                               DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                               r.left+=5*fontsize.cx;
-                          }
-                     else
-                          for(j=0; j<16; j+=4)
-                          {
-                               sprintf(text, "%08X", (int)MMU_read32(win->cpu, adr+j));
-                               DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                               r.left+=9*fontsize.cx;
-                          }                     
-                
-                r.left+=fontsize.cx;
-                 
-                for(j=0; j<16; ++j)
-                {
-                        u8 c = MMU_read8(win->cpu, adr+j);
-                        if(c >= 32 && c <= 127) {
-                             text[j] = (char)c;
-                        }
-                        else
-                             text[j] = '.';
-                }
-                text[j] = '\0';
-                DrawText(mem_dc, text, -1, &r, DT_TOP | DT_LEFT | DT_NOPREFIX);
-                
-                adr+=0x10;
-                r.top += fontsize.cy;
-                r.bottom += fontsize.cy;
-                r.left = 3;
-        }
-                
-        BitBlt(hdc, 0, 0, lg, ht, mem_dc, 0, 0, SRCCOPY);
-        
-        DeleteDC(mem_dc);
-        DeleteObject(mem_bmp);
-        
-        EndPaint(hwnd, &ps);
-        return 1;
-}
-
-//=================================================== ARM7
-LRESULT CALLBACK ViewMem_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch(msg)
-    {
-               case WM_NCCREATE:
-                    SetScrollRange(hwnd, SB_VERT, 0, 0x0FFFFFFF, TRUE);
-                    SetScrollPos(hwnd, SB_VERT, 10, TRUE);
-                    return 1;
-                    
-               case WM_NCDESTROY:
-                    return 1;
-               
-               case WM_PAINT:
-                    MemViewBox_OnPaint(hwnd, MemView7, wParam, lParam);
-                    return 1;
-               
-               case WM_ERASEBKGND:
-	                return 1;
-               case WM_VSCROLL :
-                    {
-                         RECT rect;
-                         SIZE fontsize;
-                         HDC dc;
-                         HFONT old;
-                         int nbligne;
-
-						 GetClientRect(hwnd, &rect);
-                         dc = GetDC(hwnd);
-                         old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
-                         GetTextExtentPoint32(dc, "0", 1, &fontsize);
-    
-                         nbligne = (rect.bottom - rect.top)/fontsize.cy;
-
-                         switch LOWORD(wParam)
-                         {
-                              case SB_LINEDOWN :
-                                   MemView7->curr_ligne = std::min((u32)0x0FFFFFFFF, (u32)MemView7->curr_ligne+1);
-                                   break;
-                              case SB_LINEUP :
-                                   MemView7->curr_ligne = (u32)std::max((u32)0l, (u32)MemView7->curr_ligne-1);
-                                   break;
-                              case SB_PAGEDOWN :
-                                   MemView7->curr_ligne = std::min((u32)0x0FFFFFFFF, (u32)MemView7->curr_ligne+nbligne);
-                                   break;
-                              case SB_PAGEUP :
-                                   MemView7->curr_ligne = (u32)std::max((u32)0l, (u32)MemView7->curr_ligne-nbligne);
-                                   break;
-                          }
-                          
-                          SelectObject(dc, old);
-                          SetScrollPos(hwnd, SB_VERT, MemView7->curr_ligne, TRUE);
-                          InvalidateRect(hwnd, NULL, FALSE);
-                          UpdateWindow(hwnd);
-                    }
-                    return 1;
-    }
-
-	return FALSE;
-}
-
-BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	//bail out early if the dialog isnt initialized
-	if(!MemView7 && message != WM_INITDIALOG)
-		return false;
-
-	switch (message)
+	MemView_DataStruct(u8 CPU) : cpu(CPU), address(0x02000000), viewMode(0)
 	{
-		case WM_INITDIALOG :
-			{
-				SetWindowText(hwnd, "ARM7 memory viewer");
-				SendMessage(GetDlgItem(hwnd, IDC_8_BIT), BM_SETCHECK, TRUE, 0);
-				MemView7 = new memview_struct;
-				memset(MemView7, 0, sizeof(memview_struct));
-				MemView7->cpu = 1;
-				MemView7->autoup_secs = 1;
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETRANGE, 0, MAKELONG(99, 1));
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETPOS32, 0, MemView7->autoup_secs);
-				return 0;
-			}
-		case WM_CLOSE:
-			{
-				if(MemView7->autoup)
-				{
-					KillTimer(hwnd, IDT_VIEW_MEM7);
-					MemView7->autoup = false;
-				}
+	}
 
-				if (MemView7!=NULL) 
-				{
-					delete MemView7;
-					MemView7 = NULL;
-				}
-				//INFO("Close ARM7 memory dialog\n");
-				PostQuitMessage(0);
-				return 0;
+	HWND hDlg;
+	u8 cpu;
+	u32 address;
+	u8 viewMode;
+} MemView_DataStruct;
+
+MemView_DataStruct * MemView_Data[2] = {NULL, NULL};
+
+//////////////////////////////////////////////////////////////////////////////
+
+BOOL MemView_Init()
+{
+	WNDCLASSEX wc;
+
+	wc.cbSize         = sizeof(wc);
+	wc.lpszClassName  = "MemView_ViewBox";
+	wc.hInstance      = hAppInst;
+	wc.lpfnWndProc    = MemView_ViewBoxProc;
+	wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon          = 0;
+	wc.lpszMenuName   = 0;
+	wc.hbrBackground  = GetSysColorBrush(COLOR_BTNFACE);
+	wc.style          = 0;
+	wc.cbClsExtra     = 0;
+	wc.cbWndExtra     = sizeof(MemView_DataStruct);
+	wc.hIconSm        = 0;
+
+	RegisterClassEx(&wc);
+
+	return 1;
+}
+
+void MemView_DeInit()
+{
+	UnregisterClass("MemView_ViewBox", hAppInst);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+BOOL MemView_DlgOpen(HWND hParentWnd, u8 CPU)
+{
+	HWND hDlg;
+	char title[32];
+
+	MemView_Data[CPU] = new MemView_DataStruct(CPU);
+	if(MemView_Data[CPU] == NULL)
+		return 0;
+
+	hDlg = CreateDialogParam(hAppInst, MAKEINTRESOURCE(IDD_MEM_VIEW), hParentWnd, MemView_DlgProc, (LPARAM)MemView_Data[CPU]);
+	if(hDlg == NULL)
+		return 0;
+
+	MemView_Data[CPU]->hDlg = hDlg;
+
+	sprintf(title, "ARM%s memory", ((CPU == ARMCPU_ARM7) ? "7" : "9"));
+	SetWindowText(hDlg, title);
+
+	ShowWindow(hDlg, SW_SHOW);
+	UpdateWindow(hDlg);
+
+	return 1;
+}
+
+void MemView_DlgClose(u8 CPU)
+{
+	if(MemView_Data[CPU] != NULL)
+	{
+		DestroyWindow(MemView_Data[CPU]->hDlg);
+		delete MemView_Data[CPU];
+		MemView_Data[CPU] = NULL;
+	}
+}
+
+BOOL MemView_IsOpened(u8 CPU)
+{
+	return (MemView_Data[CPU] != NULL);
+}
+
+void MemView_Refresh(u8 CPU)
+{
+	InvalidateRect(MemView_Data[CPU]->hDlg, NULL, FALSE);
+	UpdateWindow(MemView_Data[CPU]->hDlg);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+LRESULT MemView_DlgPaint(HWND hDlg, MemView_DataStruct *data, WPARAM wParam, LPARAM lParam)
+{
+	HDC				hdc;
+	PAINTSTRUCT		ps;
+
+	hdc = BeginPaint(hDlg, &ps);
+
+	EndPaint(hDlg, &ps);
+
+	return 0;
+}
+
+BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLong(hDlg, DWL_USER);
+	if((data == NULL) && (uMsg != WM_INITDIALOG))
+		return 0;
+
+	switch(uMsg)
+	{
+	case WM_INITDIALOG:
+		{
+			if(data == NULL)
+			{
+				data = (MemView_DataStruct*)lParam;
+				SetWindowLong(hDlg, DWL_USER, (LONG)data);
 			}
-		case WM_TIMER:
-			SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+
+			CheckRadioButton(hDlg, IDC_8_BIT, IDC_32_BIT, IDC_8_BIT);
+
+			SendMessage(GetDlgItem(hDlg, IDC_ADDRESS), EM_SETLIMITTEXT, 8, 0);
+			SetWindowText(GetDlgItem(hDlg, IDC_ADDRESS), "02000000");
+
+			SetWindowLong(GetDlgItem(hDlg, IDC_MEMVIEWBOX), DWL_USER, (LONG)data);
+
+			InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
+		}
+		return 1;
+
+	case WM_CLOSE:
+	case WM_DESTROY:
+		MemView_DlgClose(data->cpu);
+		return 1;
+
+	case WM_PAINT:
+		MemView_DlgPaint(hDlg, data, wParam, lParam);
+		return 1;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam))
+		{
+		case IDCANCEL:
+			MemView_DlgClose(data->cpu);
 			return 1;
 
-		case WM_COMMAND :
-                 switch (LOWORD (wParam))
-                 {
-                        case IDC_8_BIT :
-                             MemView7->representation = 0;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_MEM_BOX), NULL, FALSE);
-                             UpdateWindow(GetDlgItem(hwnd, IDC_MEM_BOX));
-                             return 1;
-                        case IDC_16_BIT :
-                             MemView7->representation = 1;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_MEM_BOX), NULL, FALSE);
-                             UpdateWindow(GetDlgItem(hwnd, IDC_MEM_BOX)); 
-                             return 1;
-                        case IDC_32_BIT :
-                             MemView7->representation = 2;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_MEM_BOX), NULL, FALSE);
-                             UpdateWindow(GetDlgItem(hwnd, IDC_MEM_BOX)); 
-                             return 1;
-						case IDC_AUTO_UPDATE :
-							 if(MemView7->autoup)
-                             {
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
-								 KillTimer(hwnd, IDT_VIEW_MEM7);
-                                  MemView7->autoup = FALSE;
-                                  return 1;
-                             }
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
-                             MemView7->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_MEM7, MemView7->autoup_secs*20, (TIMERPROC) NULL);
-							 return 1;
-						case IDC_AUTO_UPDATE_SECS:
-							{
-								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
-								if (!MemView7) 
-								{
-									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
-								}
-								if (t != MemView7->autoup_secs)
-								{
-									MemView7->autoup_secs = t;
-									if (MemView7->autoup)
-										SetTimer(hwnd, IDT_VIEW_MEM7, 
-												MemView7->autoup_secs*20, (TIMERPROC) NULL);
-								}
-							}
-                             return 1;
-						case IDC_REFRESH:
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-                        case IDC_GO :
-                             {
-                             char tmp[8];
-                             int lg = GetDlgItemText(hwnd, IDC_GOTOMEM, tmp, 8);
-                             u32 adr = 0;
-                             u16 i;
-
-                             for(i = 0; i<lg; ++i)
-                             {
-                                  if((tmp[i]>='A')&&(tmp[i]<='F'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'A'+10);
-                                       continue;
-                                  }         
-                                  if((tmp[i]>='0')&&(tmp[i]<='9'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'0');
-                                       continue;
-                                  }         
-                             } 
-                             MemView7->curr_ligne = (adr>>4);
-                             InvalidateRect(hwnd, NULL, FALSE);
-                             UpdateWindow(hwnd);
-                             }
-                             return 1;
-                        case IDC_FERMER :
-                             SendMessage(hwnd, WM_CLOSE, 0, 0);
-                             return 1;
-                 }
-	}
-	return FALSE;
-}
-
-//=================================================== ARM9
-LRESULT CALLBACK ViewMem_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch(msg)
-    {
-               case WM_NCCREATE:
-                    SetScrollRange(hwnd, SB_VERT, 0, 0x0FFFFFFF, TRUE);
-                    SetScrollPos(hwnd, SB_VERT, 10, TRUE);
-                    return 1;
-                    
-               case WM_NCDESTROY:
-                    return 1;
-               
-               case WM_PAINT:
-                    MemViewBox_OnPaint(hwnd, MemView9, wParam, lParam);
-                    return 1;
-               
-               case WM_ERASEBKGND:
-	                return 1;
-               case WM_VSCROLL :
-                    {
-                         RECT rect;
-                         SIZE fontsize;
-                         HDC dc;
-                         HFONT old;
-                         int nbligne;
-
-						 GetClientRect(hwnd, &rect);
-                         dc = GetDC(hwnd);
-                         old = (HFONT)SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
-                         GetTextExtentPoint32(dc, "0", 1, &fontsize);
-    
-                         nbligne = (rect.bottom - rect.top)/fontsize.cy;
-
-                         switch LOWORD(wParam)
-                         {
-                              case SB_LINEDOWN :
-                                   MemView9->curr_ligne = std::min((u32)0x0FFFFFFFF, (u32)MemView9->curr_ligne+1);
-                                   break;
-                              case SB_LINEUP :
-                                   MemView9->curr_ligne = (u32)std::max((u32)0l, (u32)MemView9->curr_ligne-1);
-                                   break;
-                              case SB_PAGEDOWN :
-                                   MemView9->curr_ligne = std::min((u32)0x0FFFFFFFF, (u32)MemView9->curr_ligne+nbligne);
-                                   break;
-                              case SB_PAGEUP :
-                                   MemView9->curr_ligne = (u32)std::max((u32)0l, (u32)MemView9->curr_ligne-nbligne);
-                                   break;
-                          }
-                          
-                          SelectObject(dc, old);
-                          SetScrollPos(hwnd, SB_VERT, MemView9->curr_ligne, TRUE);
-                          InvalidateRect(hwnd, NULL, FALSE);
-                          UpdateWindow(hwnd);
-                    }
-                    return 1;
-    }
-
-	return FALSE;
-}
-
-BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	//bail out early if the dialog isnt initialized
-	if(!MemView9 && message != WM_INITDIALOG)
-		return false;	
-
-	switch (message)
-	{
-		case WM_INITDIALOG :
-			{
-				SetWindowText(hwnd, "ARM9 memory viewer");
-				SendMessage(GetDlgItem(hwnd, IDC_8_BIT), BM_SETCHECK, TRUE, 0);
-				MemView9 = new memview_struct;
-				memset(MemView9, 0, sizeof(memview_struct));
-				MemView9->cpu = 0;
-				MemView9->autoup_secs = 1;
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETRANGE, 0, MAKELONG(99, 1));
-					SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
-									UDM_SETPOS32, 0, MemView9->autoup_secs);
-				return 1;
-			}
-		case WM_CLOSE:
-			{
-				if(MemView9->autoup)
-				{
-					KillTimer(hwnd, IDT_VIEW_MEM9);
-					MemView9->autoup = false;
-				}
-
-				if (MemView9!=NULL) 
-				{
-					delete MemView9;
-					MemView9 = NULL;
-				}
-				//INFO("Close ARM9 memory dialog\n");
-				PostQuitMessage(0);
-				return 0;
-			}
-		case WM_TIMER:
-			SendMessage(hwnd, WM_COMMAND, IDC_REFRESH, 0);
+		case IDC_8_BIT:
+		case IDC_16_BIT:
+		case IDC_32_BIT:
+			CheckRadioButton(hDlg, IDC_8_BIT, IDC_32_BIT, LOWORD(wParam));
+			data->viewMode = (LOWORD(wParam) - IDC_8_BIT);
+			InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
 			return 1;
 
-		case WM_COMMAND :
-                 switch (LOWORD (wParam))
-                 {
-                        case IDC_8_BIT :
-                             MemView9->representation = 0;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_MEM_BOX), NULL, FALSE);
-                             UpdateWindow(GetDlgItem(hwnd, IDC_MEM_BOX));
-                             return 1;
-                        case IDC_16_BIT :
-                             MemView9->representation = 1;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_MEM_BOX), NULL, FALSE);
-                             UpdateWindow(GetDlgItem(hwnd, IDC_MEM_BOX)); 
-                             return 1;
-                        case IDC_32_BIT :
-                             MemView9->representation = 2;
-                             InvalidateRect(GetDlgItem(hwnd, IDC_MEM_BOX), NULL, FALSE);
-                             UpdateWindow(GetDlgItem(hwnd, IDC_MEM_BOX)); 
-                             return 1;
-						case IDC_AUTO_UPDATE :
-							 if(MemView9->autoup)
-                             {
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), false);
-								 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), false);
-								 KillTimer(hwnd, IDT_VIEW_MEM9);
-                                  MemView9->autoup = FALSE;
-                                  return 1;
-                             }
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SECS), true);
-							 EnableWindow(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN), true);
-                             MemView9->autoup = TRUE;
-							 SetTimer(hwnd, IDT_VIEW_MEM9, MemView9->autoup_secs*20, (TIMERPROC) NULL);
-							 return 1;
-						case IDC_AUTO_UPDATE_SECS:
-							{
-								int t = GetDlgItemInt(hwnd, IDC_AUTO_UPDATE_SECS, FALSE, TRUE);
-								if (!MemView9) 
-								{
-									SendMessage(hwnd, WM_INITDIALOG, 0, 0);
-								}
-								if (t != MemView9->autoup_secs)
-								{
-									MemView9->autoup_secs = t;
-									if (MemView9->autoup)
-										SetTimer(hwnd, IDT_VIEW_MEM9, 
-												MemView9->autoup_secs*20, (TIMERPROC) NULL);
-								}
-							}
-                             return 1;
-						case IDC_REFRESH:
-							InvalidateRect(hwnd, NULL, FALSE);
-							return 1;
-                        case IDC_GO :
-                             {
-                             char tmp[8];
-                             int lg = GetDlgItemText(hwnd, IDC_GOTOMEM, tmp, 8);
-                             u32 adr = 0;
-                             u16 i;
+		case IDC_GO:
+			{
+				char addrstr[9];
+				int len;
+				int i;
+				int shift;
+				BOOL error = FALSE;
+				u32 address = 0x00000000;
 
-                             for(i = 0; i<lg; ++i)
-                             {
-                                  if((tmp[i]>='A')&&(tmp[i]<='F'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'A'+10);
-                                       continue;
-                                  }         
-                                  if((tmp[i]>='0')&&(tmp[i]<='9'))
-                                  {
-                                       adr = adr*16 + (tmp[i]-'0');
-                                       continue;
-                                  }         
-                             } 
-                             MemView9->curr_ligne = (adr>>4);
-                             InvalidateRect(hwnd, NULL, FALSE);
-                             UpdateWindow(hwnd);
-                             }
-                             return 1;
-                        case IDC_FERMER :
-                             SendMessage(hwnd, WM_CLOSE, 0, 0);
-                             return 1;
-                 }
+				len = GetWindowText(GetDlgItem(hDlg, IDC_ADDRESS), addrstr, 9);
+
+				for(i = 0; i < len; i++)
+				{
+					char ch = addrstr[i];
+
+					if((ch >= '0') && (ch <= '9'))
+						continue;
+
+					if((ch >= 'A') && (ch <= 'F'))
+						continue;
+
+					if((ch >= 'a') && (ch <= 'f'))
+						continue;
+
+					if(ch == '\0')
+						break;
+
+					error = TRUE;
+					break;
+				}
+
+				if(error)
+				{
+					MessageBox(hDlg, "Error:\nInvalid address specified.\nThe address must be an hexadecimal value.", "DeSmuME", (MB_OK | MB_ICONERROR));
+					SetWindowText(GetDlgItem(hDlg, IDC_ADDRESS), "");
+					return 1;
+				}
+
+				for(i = (len-1), shift = 0; i >= 0; i--, shift += 4)
+				{
+					char ch = addrstr[i];
+
+					if((ch >= '0') && (ch <= '9'))
+						address |= ((ch - '0') << shift);
+					else if((ch >= 'A') && (ch <= 'F'))
+						address |= ((ch - 'A' + 0xA) << shift);
+					else if((ch >= 'a') && (ch <= 'f'))
+						address |= ((ch - 'a' + 0xA) << shift);
+				}
+
+				data->address = min((u32)0xFFFFFF00, (address & 0xFFFFFFF0));
+				SetScrollPos(GetDlgItem(hDlg, IDC_MEMVIEWBOX), SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
+				InvalidateRect(hDlg, NULL, FALSE); UpdateWindow(hDlg);
+			}
+			return 1;
+
+		case IDC_TEXTDUMP:
+			{
+				char fileName[256] = "";
+				OPENFILENAME ofn;
+
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hDlg;
+				ofn.lpstrFilter = "Text file (*.txt)\0*.txt\0Any file (*.*)\0*.*\0\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile = fileName;
+				ofn.nMaxFile = 256;
+				ofn.lpstrDefExt = "txt";
+				ofn.Flags = OFN_NOCHANGEDIR;
+
+				if(GetSaveFileName(&ofn))
+				{
+					FILE *f;
+					u8 memory[0x100];
+					int line;
+
+					MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
+
+					f = fopen(fileName, "a");
+
+					for(line = 0; line < 16; line++)
+					{
+						int i;
+						
+						fprintf(f, "%08X\t\t", (data->address + (line << 4)));
+
+						switch(data->viewMode)
+						{
+						case 0:
+							{
+								for(i = 0; i < 16; i++)
+								{
+									fprintf(f, "%02X ", T1ReadByte(memory, ((line << 4) + i)));
+								}
+								fprintf(f, "\t");
+							}
+							break;
+
+						case 1:
+							{
+								for(i = 0; i < 16; i += 2)
+								{
+									fprintf(f, "%04X ", T1ReadWord(memory, ((line << 4) + i)));
+								}
+								fprintf(f, "\t\t");
+							}
+							break;
+
+						case 2:
+							{
+								for(i = 0; i < 16; i += 4)
+								{
+									fprintf(f, "%08X ", T1ReadLong(memory, ((line << 4) + i)));
+								}
+								fprintf(f, "\t\t\t");
+							}
+							break;
+						}
+
+						for(i = 0; i < 16; i++)
+						{
+							u8 val = T1ReadByte(memory, ((line << 4) + i));
+									
+							if((val >= 32) && (val <= 127))
+								fprintf(f, "%c", (char)val);
+							else
+								fprintf(f, ".");
+						}
+						fprintf(f, "\n");
+					}
+
+					fclose(f);
+				}
+			}
+			return 1;
+
+		case IDC_RAWDUMP:
+			{
+				char fileName[256] = "";
+				OPENFILENAME ofn;
+
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hDlg;
+				ofn.lpstrFilter = "Binary file (*.bin)\0*.bin\0Any file (*.*)\0*.*\0\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile = fileName;
+				ofn.nMaxFile = 256;
+				ofn.lpstrDefExt = "bin";
+				ofn.Flags = OFN_NOCHANGEDIR;
+
+				if(GetSaveFileName(&ofn))
+				{
+					FILE *f;
+					u8 memory[0x100];
+					int line;
+
+					MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
+
+					f = fopen(fileName, "ab");
+
+					fwrite(memory, 0x100, 1, f);
+
+					fclose(f);
+				}
+			}
+			return 1;
+		}
+		return 0;
 	}
-	return FALSE;
+
+	return 0;
 }
+
+//////////////////////////////////////////////////////////////////////////////
+
+LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam, LPARAM lParam)
+{
+	HDC				hdc;
+	PAINTSTRUCT		ps;
+	RECT			rc;
+	int				w, h;
+	SIZE			fontsize;
+	int				fontwidth, fontheight;
+	HDC				mem_hdc;
+	HBITMAP			mem_bmp;
+
+	GetClientRect(hCtl, &rc);
+	w = (rc.right - rc.left);
+	h = (rc.bottom - rc.top);
+
+	hdc = BeginPaint(hCtl, &ps);
+
+	mem_hdc = CreateCompatibleDC(hdc);
+	mem_bmp = CreateCompatibleBitmap(hdc, w, h);
+	SelectObject(mem_hdc, mem_bmp);
+
+	SelectObject(mem_hdc, GetStockObject(SYSTEM_FIXED_FONT));
+
+	GetTextExtentPoint32(mem_hdc, " ", 1, &fontsize);
+	fontwidth = fontsize.cx;
+	fontheight = fontsize.cy;
+		
+	FillRect(mem_hdc, &rc, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
+	if(data != NULL)
+	{
+		u32 addr = data->address;
+		u8 memory[0x100];
+		char text[80];
+		int startx, cury;
+		int line;
+
+		startx = 0;
+		cury = 0;
+
+		sprintf(text, "        ");
+		GetTextExtentPoint32(mem_hdc, text, strlen(text), &fontsize);
+		startx = (fontsize.cx + 5);
+		cury = (fontsize.cy + 3);
+
+		MoveToEx(mem_hdc, (fontsize.cx + 2), 0, NULL);
+		LineTo(mem_hdc, (fontsize.cx + 2), h);
+
+		MoveToEx(mem_hdc, 0, (fontsize.cy + 1), NULL);
+		LineTo(mem_hdc, w, (fontsize.cy + 1));
+
+		switch(data->viewMode)
+		{
+		case 0:
+			{
+				sprintf(text, "   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F   0123456789ABCDEF");
+				TextOut(mem_hdc, startx, 0, text, strlen(text));
+			}
+			break;
+
+		case 1:
+			{
+				sprintf(text, "       0 1  2 3  4 5  6 7  8 9  A B  C D  E F       0123456789ABCDEF");
+				TextOut(mem_hdc, startx, 0, text, strlen(text));
+			}
+			break;
+
+		case 2:
+			{
+				sprintf(text, "         0 1 2 3  4 5 6 7  8 9 A B  C D E F         0123456789ABCDEF");
+				TextOut(mem_hdc, startx, 0, text, strlen(text));
+			}
+			break;
+		}
+
+		MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
+
+		for(line = 0; line < 16; line++, addr += 0x10)
+		{
+			int i;
+
+			sprintf(text, "%08X", addr);
+			TextOut(mem_hdc, 0, cury, text, strlen(text));
+
+			switch(data->viewMode)
+			{
+			case 0:
+				{
+					sprintf(text, "  ");
+					for(i = 0; i < 16; i++)
+					{
+						sprintf(text, "%s%02X ", text, T1ReadByte(memory, ((line << 4) + i)));
+					}
+					sprintf(text, "%s  ", text);
+				}
+				break;
+
+			case 1:
+				{
+					sprintf(text, "      ");
+					for(i = 0; i < 16; i += 2)
+					{
+						sprintf(text, "%s%04X ", text, T1ReadWord(memory, ((line << 4) + i)));
+					}
+					sprintf(text, "%s      ", text);
+				}
+				break;
+
+			case 2:
+				{
+					sprintf(text, "        ");
+					for(i = 0; i < 16; i += 4)
+					{
+						sprintf(text, "%s%08X ", text, T1ReadLong(memory, ((line << 4) + i)));
+					}
+					sprintf(text, "%s        ", text);
+				}
+				break;
+			}
+
+			for(i = 0; i < 16; i++)
+			{
+				u8 val = T1ReadByte(memory, ((line << 4) + i));
+
+				if((val >= 32) && (val <= 127))
+					sprintf(text, "%s%c", text, (char)val);
+				else
+					sprintf(text, "%s.", text);
+			}
+
+			TextOut(mem_hdc, startx, cury, text, strlen(text));
+
+			cury += fontheight;
+		}
+	}
+
+	BitBlt(hdc, 0, 0, w, h, mem_hdc, 0, 0, SRCCOPY);
+
+	DeleteDC(mem_hdc);
+	DeleteObject(mem_bmp);
+
+	EndPaint(hCtl, &ps);
+
+	return 0;
+}
+
+LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	MemView_DataStruct *data = (MemView_DataStruct*)GetWindowLong(hCtl, DWL_USER);
+
+	switch(uMsg)
+	{
+	case WM_NCCREATE:
+		SetScrollRange(hCtl, SB_VERT, 0x00000000, 0x000FFFF0, TRUE);
+		SetScrollPos(hCtl, SB_VERT, 0x00000000, TRUE);
+		return 1;
+
+	case WM_NCDESTROY:
+		return 1;
+	
+	case WM_ERASEBKGND:
+		return 1;
+
+	case WM_PAINT:
+		MemView_ViewBoxPaint(hCtl, data, wParam, lParam);
+		return 1;
+
+	case WM_VSCROLL:
+		{
+			int firstpos = GetScrollPos(hCtl, SB_VERT);
+
+			switch(LOWORD(wParam))
+			{
+			case SB_LINEUP:
+				data->address = (u32)max(0x00000000, ((int)data->address - 0x10));
+				break;
+
+			case SB_LINEDOWN:
+				data->address = min((u32)0xFFFFFF00, (data->address + 0x10));
+				break;
+
+			case SB_PAGEUP:
+				data->address = (u32)max(0x00000000, ((int)data->address - 0x100));
+				break;
+
+			case SB_PAGEDOWN:
+				data->address = min((u32)0xFFFFFF00, (data->address + 0x100));
+				break;
+
+			case SB_THUMBTRACK:
+			case SB_THUMBPOSITION:
+				{
+					SCROLLINFO si;
+					
+					ZeroMemory(&si, sizeof(si));
+					si.cbSize = sizeof(si);
+					si.fMask = SIF_TRACKPOS;
+
+					GetScrollInfo(hCtl, SB_VERT, &si);
+
+					data->address = min((u32)0xFFFFFF00, (data->address + ((si.nTrackPos - firstpos) * 16)));
+				}
+				break;
+			}
+
+			SetScrollPos(hCtl, SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
+			InvalidateRect(hCtl, NULL, FALSE); UpdateWindow(hCtl);
+		}
+		return 1;
+	}
+
+	return DefWindowProc(hCtl, uMsg, wParam, lParam);
+}
+
+//////////////////////////////////////////////////////////////////////////////

@@ -22,12 +22,15 @@
 #ifndef MEM_VIEW_H
 #define MEM_VIEW_H
 
-#include "../common.h"
+BOOL MemView_Init();
+void MemView_DeInit();
 
-extern BOOL CALLBACK ViewMem_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-extern LRESULT CALLBACK ViewMem_ARM7BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+BOOL MemView_DlgOpen(HWND hParentWnd, u8 CPU);
+void MemView_DlgClose(u8 CPU);
+BOOL MemView_IsOpened(u8 CPU);
+void MemView_Refresh(u8 CPU);
 
-extern BOOL CALLBACK ViewMem_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-extern LRESULT CALLBACK ViewMem_ARM9BoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #endif

@@ -7,7 +7,6 @@
 #define IDC_FERMER                              103
 #define IDD_DESASSEMBLEUR_VIEWER7               103
 #define IDC_STEP                                104
-#define IDD_MEM_VIEWER7                         104
 #define IDC_SETPNUM                             105
 #define IDC_SCROLLER                            106
 #define IDD_SOUNDSETTINGS                       106
@@ -97,8 +96,6 @@
 #define IDC_8_BIT                               302
 #define IDC_16_BIT                              303
 #define IDC_32_BIT                              304
-#define IDC_MEM_BOX                             305
-#define IDC_GOTOMEM                             306
 #define IDC_DES_BOX                             402
 #define IDC_R0                                  403
 #define IDC_R1                                  404
@@ -157,6 +154,7 @@
 #define IDB_BGTILES                             913
 #define IDD_EMULATIONSETTINGS                   916
 #define IDD_WIFISETTINGS                        918
+#define IDD_MEM_VIEW                            920
 #define IDC_BGMAP_SEL                           1000
 #define IDC_BRIDGEADAPTER                       1000
 #define IDC_EDIT03                              1000
@@ -185,16 +183,20 @@
 #define IDC_ARM7BIOSBROWSE                      1007
 #define IDC_EDIT06                              1007
 #define IDC_EDIT09                              1008
+#define IDC_MEMVIEWBOX                          1008
+#define IDC_ADDRESS                             1009
 #define IDC_BIOSSWIS                            1009
 #define IDC_EDIT10                              1009
 #define IDC_FORCERATIO                          1009
 #define IDC_AUTO_UPDATE_SPIN                    1010
 #define IDC_EDIT15                              1010
+#define IDC_TEXTDUMP                            1010
 #define IDC_WINDOW1X                            1010
 #define IDC_AUTO_UPDATE_SECS                    1011
 #define IDC_USEEXTFIRMWARE                      1011
 #define IDC_WINDOW2X                            1011
 #define IDC_FIRMWARE                            1012
+#define IDC_RAWDUMP                             1012
 #define IDC_REFRESH                             1012
 #define IDC_WINDOW3X                            1012
 #define IDC_EDIT02                              1013
@@ -356,7 +358,6 @@
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_COLORCTRL  1302
 #define IDD_DESASSEMBLEUR_VIEWER9               1302
 #define IDC_LIGHT_VIEWER_LIGHT0COLOR_EDIT       1303
-#define IDD_MEM_VIEWER9                         1303
 #define IDC_LIGHT_VIEWER_LIGHT0VECTOR_EDIT      1304
 #define IDD_GBASLOT_NONE                        1304
 #define IDD_GBASLOT_RUMBLEPAK                   1305
@@ -421,8 +422,8 @@
 #define ID_VIEW_DISPLAYFPS                      40010
 #define ID_VIEW_DISPLAYINPUT                    40011
 #define ID_VIEW_DISPLAYLAG                      40012
-#define ID_VIEW_HUDEDITOR	                   	40013
-#define ID_VIEW_DISPLAYMICROPHONE	           	40014
+#define ID_VIEW_HUDEDITOR	                40013
+#define ID_VIEW_DISPLAYMICROPHONE	        40014
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_FILE_STOPAVI                        40016
 #define ACCEL_CTRL_O                            40032
