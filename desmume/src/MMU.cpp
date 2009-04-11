@@ -3159,7 +3159,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 #else
 	// CFlash reading, Mic
 	if ((adr>=0x9000000) && (adr<0x9900000))
-	   return (unsigned long)cflash_read(adr);
+	   return (u32)cflash_read(adr);
 #endif
 
 	adr &= 0x0FFFFFFF;
@@ -4208,7 +4208,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 #else
 	// CFlash reading, Mic
 	if ((adr>=0x9000000)&&(adr<0x9900000))
-	   return (unsigned long)cflash_read(adr);
+	   return (u32)cflash_read(adr);
 #endif
 
 	adr &= 0x0FFFFFFF;
