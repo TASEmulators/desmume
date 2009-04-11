@@ -275,7 +275,7 @@ BOOL CALLBACK ViewPalProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                                                  case 17 :
                                                  case 18 :
                                                  case 19 :
-                                                      PalView->adr = ((u16 *)(ARM9Mem.texPalSlot[sel-16]));
+                                                      PalView->adr = ((u16 *)(ARM9Mem.texInfo.texPalSlot[sel-16]));
                                                       PalView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_SCROLLER), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_SCROLLER), TRUE);

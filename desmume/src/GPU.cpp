@@ -458,8 +458,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		// core B : 32k, 64k, 128k, 128k
 		gpu->sprBoundary = 5 + cnt->OBJ_Tile_1D_Bound ;
 		
-		//zero 10-apr-09 - this is just wrong.
-		//if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3)) gpu->sprBoundary = 7;
+		//zero 10-apr-09 - not sure whether this is right...
+		if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3)) gpu->sprBoundary = 7;
 
 		gpu->spriteRenderMode = GPU::SPRITE_1D;
 	} else {
