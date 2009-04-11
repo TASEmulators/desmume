@@ -3714,7 +3714,7 @@ static char * OP_LDMIA_THUMB(u32 adr, u32 i, char * txt)
 
 static char * OP_B_COND(u32 adr, u32 i, char * txt)
 {
-     sprintf(txt, "B%s #%X", Condition[(i>>8)&0xF], (int)(adr+(((signed long)((signed char)(i&0xFF)))<<1)+4));
+     sprintf(txt, "B%s #%X", Condition[(i>>8)&0xF], (int)(adr+(((s32)((signed char)(i&0xFF)))<<1)+4));
      return txt;
 }
 
