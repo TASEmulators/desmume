@@ -1253,7 +1253,6 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
     default:
         break;
     }
-    LOG ("Changed %s to %d\n",Layer,gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)));
 }
 
 /////////////////////////////// PRINTSCREEN /////////////////////////////////
