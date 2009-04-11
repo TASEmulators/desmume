@@ -381,7 +381,6 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 		}
 	}
 
-finish:
 	if(vram_page == VRAM_PAGE_UNMAPPED)
 	{
 		unmapped = true;
