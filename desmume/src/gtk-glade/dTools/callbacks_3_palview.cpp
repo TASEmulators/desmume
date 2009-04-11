@@ -49,10 +49,10 @@ void init_combo_palette(GtkComboBox *combo, u16 ** addresses) {
 	DO("Main screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[0][1],)
 	DO("Sub  screen SPR ExtPAL 0", ARM9Mem.ObjExtPal[1][0],)
 	DO("Sub  screen SPR ExtPAL 1", ARM9Mem.ObjExtPal[1][1],)
-	DO("Texture PAL 0", ARM9Mem.texPalSlot[0],)
-	DO("Texture PAL 1", ARM9Mem.texPalSlot[1],)
-	DO("Texture PAL 2", ARM9Mem.texPalSlot[2],)
-	DO("Texture PAL 3", ARM9Mem.texPalSlot[3],)
+	DO("Texture PAL 0", ARM9Mem.texInfo.texPalSlot[0],)
+	DO("Texture PAL 1", ARM9Mem.texInfo.texPalSlot[1],)
+	DO("Texture PAL 2", ARM9Mem.texInfo.texPalSlot[2],)
+	DO("Texture PAL 3", ARM9Mem.texInfo.texPalSlot[3],)
 #undef DO
 	gtk_combo_box_set_active(combo,0);
 }
