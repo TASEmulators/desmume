@@ -2211,8 +2211,6 @@ void input_process()
 
 	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
 
-	if (ShowInputDisplay) osd->addFixed(0, 45, "%s",InputDisplayString.c_str());
-
 }
 
 static void set_hotkeyinfo(HWND hDlg)

@@ -996,6 +996,8 @@ DWORD WINAPI run()
 		while(execute)
 		{
 			input_process();
+				
+			if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
 
 			{
 				Lock lock;
@@ -1128,7 +1130,6 @@ DWORD WINAPI run()
 				}
 				frameCounter++;
 				if (frameCounterDisplay) osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",frameCounter);
-				if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
 				if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
 				if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 				DisplayMessage();
