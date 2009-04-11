@@ -187,11 +187,8 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 3X*/	DUP16(MMU.SWIRAM),
 		/* 4X*/	DUP16(ARM9Mem.ARM9_REG),
 		/* 5X*/	DUP16(ARM9Mem.ARM9_VMEM),
-		/* 6X*/	DUP2(ARM9Mem.ARM9_ABG), 
-				DUP2(ARM9Mem.ARM9_BBG),
-				DUP2(ARM9Mem.ARM9_AOBJ),
-				DUP2(ARM9Mem.ARM9_BOBJ),
-				DUP8(ARM9Mem.ARM9_LCD),
+		/* 6X*/	DUP8(0), //this gets handled by special logic
+				DUP8(ARM9Mem.ARM9_LCD), 
 		/* 7X*/	DUP16(ARM9Mem.ARM9_OAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
@@ -212,7 +209,7 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 4X*/	DUP8(MMU.ARM7_REG),
 				DUP8(MMU.ARM7_WIRAM),
 		/* 5X*/	DUP16(MMU.UNUSED_RAM),
-		/* 6X*/	DUP16(ARM9Mem.ARM9_ABG), 
+		/* 6X*/	DUP16(MMU.UNUSED_RAM),
 		/* 7X*/	DUP16(MMU.UNUSED_RAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
@@ -235,10 +232,7 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 3X*/	DUP16(0x00007FFF),
 		/* 4X*/	DUP16(0x00FFFFFF),
 		/* 5X*/	DUP16(0x000007FF),
-		/* 6X*/	DUP2(0x0007FFFF), 
-				DUP2(0x0001FFFF),
-				DUP2(0x0003FFFF),
-				DUP2(0x0001FFFF),
+		/* 6X*/	DUP8(0x00000003),
 				DUP8(0x000FFFFF),
 		/* 7X*/	DUP16(0x000007FF),
 		/* 8X*/	DUP16(ROM_MASK),
@@ -260,7 +254,7 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 4X*/	DUP8(0x00FFFFFF),
 				DUP8(0x0000FFFF),
 		/* 5X*/	DUP16(0x00000003),
-		/* 6X*/	DUP16(0x0003FFFF), 
+		/* 6X*/	DUP16(0x00000003),
 		/* 7X*/	DUP16(0x00000003),
 		/* 8X*/	DUP16(ROM_MASK),
 		/* 9X*/	DUP16(ROM_MASK),
@@ -284,21 +278,500 @@ TWaitState MMU_struct::MMU_WAIT32[2][16] = {
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm7
 };
 
+//////////////////////////////////////////////////////////////
 
-// VRAM mapping
-u8		*LCDdst[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-u8		*EngineAddr[4] = { NULL, NULL, NULL, NULL };
-const static u32	LCDdata[10][2]= {
-					{0x6800000, 8},			// Bank A
-					{0x6820000, 8},			// Bank B
-					{0x6840000, 8},			// Bank C
-					{0x6860000, 8},			// Bank D
-					{0x6880000, 4},			// Bank E
-					{0x6890000, 1},			// Bank F
-					{0x6894000, 1},			// Bank G
-					{0, 0},
-					{0x6898000, 2},			// Bank H
-					{0x68A0000, 1}};		// Bank I
+//-------------
+//VRAM MEMORY MAPPING
+//-------------
+//(Everything is mapped through to ARM9_LCD in blocks of 16KB)
+
+//for all of the below, values = 41 indicate unmapped memory
+#define VRAM_PAGE_UNMAPPED 41
+
+#define VRAM_LCDC_PAGES 41
+u8 vram_lcdc_map[VRAM_LCDC_PAGES];
+
+//in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
+//this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
+#define VRAM_ARM9_PAGES 512
+u8 vram_arm9_map[VRAM_ARM9_PAGES];
+
+//----->
+//consider these later, for better recordkeeping, instead of using the u8* in ARM9Mem
+
+////for each 128KB texture slot, this maps to a 16KB starting page in the LCDC buffer
+//#define VRAM_TEX_SLOTS 4
+//u8 vram_tex_map[VRAM_TEX_SLOTS];
+//
+////for each 16KB tex palette slot, this maps to a 16KB starting page in the LCDC buffer
+//#define VRAM_TEX_PALETTE_SLOTS 6
+//u8 vram_tex_palette_map[VRAM_TEX_PALETTE_SLOTS];
+
+//<---------
+
+#define VRAM_BANKS 9
+#define VRAM_BANK_A 0
+#define VRAM_BANK_B 1
+#define VRAM_BANK_C 2
+#define VRAM_BANK_D 3
+#define VRAM_BANK_E 4
+#define VRAM_BANK_F 5
+#define VRAM_BANK_G 6
+#define VRAM_BANK_H 7
+#define VRAM_BANK_I 8
+
+#define VRAM_PAGE_ABG 0
+#define VRAM_PAGE_BBG 128
+#define VRAM_PAGE_AOBJ 256
+#define VRAM_PAGE_BOBJ 384
+
+void MMU_VRAM_unmap_all();
+
+struct TVramBankInfo {
+	u8 page_addr, num_pages;
+};
+
+static const TVramBankInfo vram_bank_info[VRAM_BANKS] = {
+	{0,8},
+	{8,8},
+	{16,8},
+	{24,8},
+	{32,4},
+	{36,1},
+	{37,1},
+	{38,2},
+	{40,1}
+};
+
+
+//maps an ARM9 BG/OBJ or LCDC address into an LCDC address, and informs the caller of whether it isn't mapped
+static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
+{
+	unmapped = false;
+
+	//in case the address is entirely outside of the interesting ranges
+	if(addr < 0x06000000) return addr;
+	if(addr >= 0x07000000) return addr;
+
+	//handle LCD memory mirroring
+	if(addr>=0x068A4000)
+		addr = 0x06800000 + 
+		//(addr%0xA4000); //yuck!! is this even how it mirrors? but we have to keep from overrunning the buffer somehow
+		(addr&0x80000); //just as likely to be right (I have no clue how it should work) but faster.
+
+	u32 vram_page;
+	u32 ofs = addr & 0x3FFF;
+
+	//return addresses in LCDC range
+	if(addr>=0x06800000) 
+	{
+		//already in LCDC range. just look it up to see whether it is unmapped
+		vram_page = (addr>>14)&63;
+		assert(vram_page<VRAM_LCDC_PAGES);
+		vram_page = vram_lcdc_map[vram_page];
+	}
+	else
+	{
+		//map addresses in BG/OBJ range to an LCDC range
+		vram_page = (addr>>14)&(VRAM_ARM9_PAGES-1);
+		assert(vram_page<VRAM_ARM9_PAGES);
+		vram_page = vram_arm9_map[vram_page];
+		if(vram_page>=8&&vram_page<12) {
+			//return 0x06800000;
+		}
+	}
+
+finish:
+	if(vram_page == VRAM_PAGE_UNMAPPED)
+	{
+		unmapped = true;
+		return 0;
+	}
+	else
+		return + 0x06800000 + (vram_page<<14) + ofs;
+}
+
+
+u8 *MMU_RenderMapToLCD(u32 vram_addr)
+{
+	//THIS FUNCTION IS DANGEROUS!
+	//the very idea is heinous, since people are
+	//certainly reading several bytes which probably overrun a page or something
+	//this needs to go through a system like what is used for textures for mapping into chunks
+
+	bool unmapped;
+	vram_addr = MMU_LCDmap(vram_addr,unmapped);
+	if(unmapped) return 0;
+	else return ARM9Mem.ARM9_LCD + (vram_addr - 0x06800000);
+}
+
+
+template<u8 DMA_CHANNEL>
+void DMAtoVRAMmapping()
+{
+	//THIS IS ALSO DANGEROUS!!!!!!
+	//but i dont think it needs to be done
+
+	/*u32 dst = DMADst[ARMCPU_ARM9][DMA_CHANNEL];
+
+	bool unmapped;
+	dst = MMU_LCDmap(dst,unmapped);
+
+	DMADst[ARMCPU_ARM9][DMA_CHANNEL] = dst;*/
+}
+
+#define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
+
+//maps the specified bank to LCDC
+static inline void MMU_vram_lcdc(const int bank)
+{
+	for(int i=0;i<vram_bank_info[bank].num_pages;i++)
+	{
+		int page = vram_bank_info[bank].page_addr+i;
+		vram_lcdc_map[page] = page;
+	}
+}
+
+//maps the specified bank to ARM9 at the provided page offset
+static inline void MMU_vram_arm9(const int bank, const int offset)
+{
+	for(int i=0;i<vram_bank_info[bank].num_pages;i++)
+	{
+		int page = vram_bank_info[bank].page_addr+i;
+		vram_arm9_map[i+offset] = page;
+	}
+}
+
+static inline u8* MMU_vram_physical(const int page)
+{
+	return ARM9Mem.ARM9_LCD + (page*ADDRESS_STEP_16KB);
+}
+
+//todo - templateize
+//note: it doesnt seem right to me to map LCDC whenever a bank is allocated to BG/OBJ but thats how it is
+//(in FF4, when entering a town from worldmap, the subscreen tiles are via LCDC while mapped to sub BG)
+static inline void MMU_VRAMmapRefreshBank(const int bank)
+{
+	int block = bank;
+	if(bank >= VRAM_BANK_H) block++;
+
+	u8 VRAMBankCnt = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x240 + block);
+	
+	//do nothing if the bank isnt enabled
+	u8 en = VRAMBankCnt & 0x80;
+	if(!en) return;
+
+	int mst,ofs;
+	switch(bank) {
+		case VRAM_BANK_A:
+		case VRAM_BANK_B:
+			mst = VRAMBankCnt & 3;
+			ofs = (VRAMBankCnt>>3) & 3;
+			switch(mst)
+			{
+			case 0: //LCDC
+				MMU_vram_lcdc(bank);
+				break;
+			case 1: //ABG
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
+				break;
+			case 2: //AOBJ
+				switch(ofs) {
+				case 0:
+				case 1:
+					MMU_vram_lcdc(bank);
+					MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+ofs*8);
+					break;
+				default:
+					PROGINFO("Unsupported ofs setting %d for engine A OBJ vram bank %c\n", ofs, 'A'+bank);
+				}
+				break;
+			case 3: //texture
+				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				break;
+			}
+			break;
+
+		case VRAM_BANK_C:
+		case VRAM_BANK_D:
+			mst = VRAMBankCnt & 7;
+			ofs = (VRAMBankCnt>>3) & 3;
+			switch(mst)
+			{
+			case 0: //LCDC
+				MMU_vram_lcdc(bank);
+				break;
+			case 1: //ABG
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
+				break;
+			case 2: //arm7
+				//MMU_vram_lcdc(bank); ?
+				if(bank == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
+				if(bank == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
+				break;
+			case 3: //texture
+				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				break;
+			case 4: //BGB or BOBJ
+				MMU_vram_lcdc(bank);
+				if(bank == VRAM_BANK_C) 
+					MMU_vram_arm9(bank,VRAM_PAGE_BBG); //BBG
+				else 
+					MMU_vram_arm9(bank,VRAM_PAGE_BOBJ); //BOBJ
+				break;
+			default: goto unsupported_mst;
+			}
+			break;
+
+		case VRAM_BANK_E:
+			mst = VRAMBankCnt & 7;
+			switch(mst) {
+			case 0: //LCDC
+				MMU_vram_lcdc(bank);
+				break;
+			case 1: //ABG
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_ABG);
+				break;
+			case 2: //AOBJ
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ);
+				break;
+			case 3: //texture palette
+				ARM9Mem.texInfo.texPalSlot[0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				ARM9Mem.texInfo.texPalSlot[1] = MMU_vram_physical(vram_bank_info[bank].page_addr+1);
+				ARM9Mem.texInfo.texPalSlot[2] = MMU_vram_physical(vram_bank_info[bank].page_addr+2);
+				ARM9Mem.texInfo.texPalSlot[3] = MMU_vram_physical(vram_bank_info[bank].page_addr+3);
+				break;
+			case 4: //A BG extended palette
+				ARM9Mem.ExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				ARM9Mem.ExtPal[0][1] = ARM9Mem.ExtPal[0][0] + ADDRESS_STEP_8KB;
+				ARM9Mem.ExtPal[0][2] = ARM9Mem.ExtPal[0][1] + ADDRESS_STEP_8KB;
+				ARM9Mem.ExtPal[0][3] = ARM9Mem.ExtPal[0][2] + ADDRESS_STEP_8KB;
+				break;
+			default: goto unsupported_mst;
+			}
+			break;
+			
+		case VRAM_BANK_F:
+		case VRAM_BANK_G: {
+			mst = VRAMBankCnt & 7;
+			ofs = (VRAMBankCnt>>3) & 3;
+			const int pageofslut[] = {0,1,4,5};
+			const int pageofs = pageofslut[ofs];
+			switch(mst)
+			{
+			case 0: //LCDC
+				MMU_vram_lcdc(bank);
+				break;
+			case 1: //ABG
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs);
+				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring (required by spyro eternal night)
+				break;
+			case 2: //AOBJ
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
+				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
+				break;
+			case 3: //texture palette
+				ARM9Mem.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				break;
+			case 4: //A BG extended palette
+				switch(ofs) {
+				case 0:
+				case 1:
+					ARM9Mem.ExtPal[0][ofs*2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					ARM9Mem.ExtPal[0][ofs*2+1] = ARM9Mem.ExtPal[0][ofs*2] + ADDRESS_STEP_8KB;
+					break;
+				default:
+					PROGINFO("Unsupported ofs setting %d for engine A bgextpal vram bank %c\n", ofs, 'A'+bank);
+					break;
+				}
+				break;
+			case 5: //A OBJ extended palette
+				ARM9Mem.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ObjExtPal[0][1] + ADDRESS_STEP_8KB;
+				break;
+			default: goto unsupported_mst;
+			}
+			break;
+		}
+
+		case VRAM_BANK_H:
+			mst = VRAMBankCnt & 3;
+			switch(mst)
+			{
+			case 0: //LCDC
+				MMU_vram_lcdc(bank);
+				break;
+			case 1: //BBG
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_BBG);
+				MMU_vram_arm9(bank,VRAM_PAGE_BBG + 4); //unexpected mirroring
+				break;
+			case 2: //B BG extended palette
+				ARM9Mem.ExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				ARM9Mem.ExtPal[1][1] = ARM9Mem.ExtPal[1][0] + ADDRESS_STEP_8KB;
+				ARM9Mem.ExtPal[1][2] = ARM9Mem.ExtPal[1][1] + ADDRESS_STEP_8KB;
+				ARM9Mem.ExtPal[1][3] = ARM9Mem.ExtPal[1][2] + ADDRESS_STEP_8KB;
+				break;
+			default: goto unsupported_mst;
+			}
+			break;
+
+		case VRAM_BANK_I:
+			mst = VRAMBankCnt & 3;
+			switch(mst)
+			{
+			case 0: //LCDC
+				MMU_vram_lcdc(bank);
+				break;
+			case 1: //BBG
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_BBG+2);
+				MMU_vram_arm9(bank,VRAM_PAGE_BBG+3); //unexpected mirroring
+				break;
+			case 2: //BOBJ
+				MMU_vram_lcdc(bank);
+				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
+				break;
+			case 3: //B OBJ extended palette
+				ARM9Mem.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+				ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ObjExtPal[1][1] + ADDRESS_STEP_8KB;
+				break;
+			}
+			break;
+
+			
+	} //switch(bank)
+
+	return;
+
+unsupported_mst:
+	PROGINFO("Unsupported mst setting %d for vram bank %c\n", mst, 'A'+bank);
+}
+
+void MMU_VRAM_unmap_all()
+{
+	for(int i=0;i<VRAM_LCDC_PAGES;i++)
+		vram_lcdc_map[i] = VRAM_PAGE_UNMAPPED;
+	for(int i=0;i<VRAM_ARM9_PAGES;i++)
+		vram_arm9_map[i] = VRAM_PAGE_UNMAPPED;
+
+	for (int i = 0; i < 4; i++)
+	{
+		ARM9Mem.ExtPal[0][i] = ARM9Mem.blank_memory;
+		ARM9Mem.ExtPal[1][i] = ARM9Mem.blank_memory;
+	}
+
+	ARM9Mem.ObjExtPal[0][0] = ARM9Mem.blank_memory;
+	ARM9Mem.ObjExtPal[0][1] = ARM9Mem.blank_memory;
+	ARM9Mem.ObjExtPal[1][0] = ARM9Mem.blank_memory;
+	ARM9Mem.ObjExtPal[1][1] = ARM9Mem.blank_memory;
+
+	for(int i=0;i<6;i++)
+		ARM9Mem.texInfo.texPalSlot[i] = ARM9Mem.blank_memory;
+
+	for(int i=0;i<4;i++)
+		ARM9Mem.texInfo.textureSlotAddr[i] = ARM9Mem.blank_memory;
+}
+
+static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
+{
+	//dont handle wram mappings in here
+	if(block == 7) {
+		//wram
+		return;
+	}
+
+	//first, save the texture info so we can check it for changes and trigger purges of the texcache
+	ARM9_struct::TextureInfo oldTexInfo = ARM9Mem.texInfo;
+
+	//unmap everything
+	MMU_VRAM_unmap_all();
+
+	//unmap VRAM_BANK_C and VRAM_BANK_D from arm7. theyll get mapped again in a moment if necessary
+	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
+	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
+
+	//write the new value to the reg
+	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x240 + block, VRAMBankCnt);
+
+	//refresh all bank settings
+	for(int i=0;i<VRAM_BANKS;i++)
+		MMU_VRAMmapRefreshBank(i);
+
+	//if texInfo changed, trigger notifications
+	if(memcmp(&oldTexInfo,&ARM9Mem.texInfo,sizeof(ARM9_struct::TextureInfo)))
+	{
+		if(!nds.isIn3dVblank())
+			PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
+		gpu3D->NDS_3D_VramReconfigureSignal();
+	}
+
+	//-------------------------------
+	//set up arm9 mirrorings
+	//these are probably not entirely accurate. more study will be necessary.
+	//in general, we find that it is not uncommon at all for games to accidentally do this.
+	//
+	//being able to easily do these experiments was one of the primary motivations for this remake of the vram mapping system
+
+	//see the "unexpected mirroring" comments above for some more mirroring
+	//so far "unexpected mirrorings" are tested by combining these games:
+	//despereaux - storybook subtitles
+	//NSMB - world map sub screen
+	//drill spirits EU - mission select (just for control purposes, as it doesnt use H or I)
+	//...
+	//note that the "unexpected mirroring" items above may at some point rely on being executed in a certain order.
+	//(sequentially A..I)
+
+	const int types[] = {VRAM_PAGE_ABG,VRAM_PAGE_BBG,VRAM_PAGE_AOBJ,VRAM_PAGE_BOBJ};
+	const int sizes[] = {32,8,16,8};
+	for(int t=0;t<4;t++)
+	{
+		//the idea here is to pad out the mirrored space with copies of the mappable area,
+		//without respect to what is mapped within that mappable area.
+		//we hope that this is correct in all cases
+		//required for driller spirits in mission select (mapping is simple A,B,C,D to each purpose)
+		const int size = sizes[t];
+		const int mask = size-1;
+		const int type = types[t];
+		for(int i=size;i<128;i++)
+		{
+			const int page = type + i;
+			vram_arm9_map[page] = vram_arm9_map[type+(i&mask)];
+		}
+
+		//attempt #1: screen corruption in drill spirits EU
+		//it seems like these shouldnt pad out 128K banks (space beyond those should have remained unmapped)
+		//int mirrorMask = -1;
+		//int type = types[t];
+		////if(type==VRAM_PAGE_BOBJ) continue;
+		//if(type==VRAM_PAGE_AOBJ) continue;
+		//for(int i=0;i<128;i++)
+		//{
+		//	int page = type + i;
+		//	if(vram_arm9_map[page] == VRAM_PAGE_UNMAPPED)
+		//	{
+		//		if(i==0) break; //can't mirror anything if theres nothing mapped!
+		//		if(mirrorMask == -1)
+		//			mirrorMask = i-1;
+		//		vram_arm9_map[page] = vram_arm9_map[type+(i&mirrorMask)];
+		//	}
+		//}
+	}
+
+	//-------------------------------
+}
+
+//////////////////////////////////////////////////////////////
+//end vram
+//////////////////////////////////////////////////////////////
+
+
 
 void MMU_Init(void) {
 	int i;
@@ -309,12 +782,11 @@ void MMU_Init(void) {
 
 	MMU.CART_ROM = MMU.UNUSED_RAM;
 
-        for(i = 0x80; i<0xA0; ++i)
-        {
-			MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
-			MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
-        }
-
+    for(i = 0x80; i<0xA0; ++i)
+    {
+		MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
+		MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
+    }
 
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
@@ -366,11 +838,6 @@ u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
 
 void MMU_clearMem()
 {
-	memset(ARM9Mem.ARM9_ABG,  0, sizeof(ARM9Mem.ARM9_ABG));
-	memset(ARM9Mem.ARM9_AOBJ, 0, sizeof(ARM9Mem.ARM9_AOBJ));
-	memset(ARM9Mem.ARM9_BBG,  0, sizeof(ARM9Mem.ARM9_BBG));
-	memset(ARM9Mem.ARM9_BOBJ, 0, sizeof(ARM9Mem.ARM9_BOBJ));
-
 	memset(ARM9Mem.ARM9_DTCM, 0, sizeof(ARM9Mem.ARM9_DTCM));
 	memset(ARM9Mem.ARM9_ITCM, 0, sizeof(ARM9Mem.ARM9_ITCM));
 	memset(ARM9Mem.ARM9_LCD,  0, sizeof(ARM9Mem.ARM9_LCD));
@@ -416,49 +883,8 @@ void MMU_clearMem()
 	SubScreen.offset  = 192;
 	osdA->setOffset(MainScreen.offset);
 	osdB->setOffset(SubScreen.offset);
-
-	for(int i=0;i<4;i++)
-		ARM9Mem.textureSlotAddr[i] = ARM9Mem.blank_memory;
-	for(int i=0;i<6;i++)
-		ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
-
-	LCDdst[0] = ARM9Mem.ARM9_LCD;				// Bank A
-	LCDdst[1] = ARM9Mem.ARM9_LCD + 0x20000;		// Bank B
-	LCDdst[2] = ARM9Mem.ARM9_LCD + 0x40000;		// Bank C
-	LCDdst[3] = ARM9Mem.ARM9_LCD + 0x60000;		// Bank D
-	LCDdst[4] = ARM9Mem.ARM9_LCD + 0x80000;		// Bank E
-	LCDdst[5] = ARM9Mem.ARM9_LCD + 0x90000;		// Bank F
-	LCDdst[6] = ARM9Mem.ARM9_LCD + 0x94000;		// Bank G
-	LCDdst[7] = NULL;
-	LCDdst[8] = ARM9Mem.ARM9_LCD + 0x98000;		// Bank H
-	LCDdst[9] = ARM9Mem.ARM9_LCD + 0xA0000;		// Bank I
-
-	EngineAddr[0] = ARM9Mem.ARM9_ABG;			// Engine ABG
-	EngineAddr[1] = ARM9Mem.ARM9_BBG;			// Engine BBG
-	EngineAddr[2] = ARM9Mem.ARM9_AOBJ;			// Engine BOBJ
-	EngineAddr[3] = ARM9Mem.ARM9_BOBJ;			// Engine BOBJ
-
-	for (int i = 0; i < 4; i++)
-	{
-		ARM9Mem.ExtPal[0][i] = ARM9Mem.ARM9_LCD;
-		ARM9Mem.ExtPal[1][i] = ARM9Mem.ARM9_LCD;
-	}
-	ARM9Mem.ObjExtPal[0][0] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.ObjExtPal[1][0] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ARM9_LCD;
-
-	ARM9Mem.texPalSlot[0] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.texPalSlot[1] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.texPalSlot[2] = ARM9Mem.ARM9_LCD;
-	ARM9Mem.texPalSlot[3] = ARM9Mem.ARM9_LCD;
-
-	for (int i =0; i < 9; i++)
-	{
-		MMU.LCD_VRAM_ADDR[i] = 0;
-		for (int t = 0; t < 32; t++)
-			MMU.VRAM_MAP[i][t] = 7;
-	}
+	
+	MMU_VRAM_unmap_all();
 
 	MMU.powerMan_CntReg = 0x00;
 	MMU.powerMan_CntRegWritten = FALSE;
@@ -471,288 +897,6 @@ void MMU_clearMem()
 	partie = 1;
 	addonsReset();
 	Mic_Reset();
-}
-
-// VRAM mapping control
-u8 *MMU_RenderMapToLCD(u32 vram_addr)
-{
-	if ((vram_addr < 0x6000000)) return NULL;
-	if ((vram_addr > 0x661FFFF)) return NULL;	// Engine BOBJ max 128KB
-
-	// holes
-	if ((vram_addr > 0x6080000) && (vram_addr < 0x6200000)) return NULL;	// Engine ABG max 512KB
-	if ((vram_addr > 0x6220000) && (vram_addr < 0x6400000)) return NULL;	// Engine BBG max 128KB
-	if ((vram_addr >= 0x6440000) && (vram_addr < 0x6600000)) {
-		assert(false); //please verify
-		vram_addr = (vram_addr & ADDRESS_MASK_256KB) + 0x6440000;	// Engine AOBJ max 256KB
-	}
-	
-	vram_addr &= 0x0FFFFFF;
-	u8	engine = (vram_addr >> 21);
-	vram_addr &= 0x01FFFFF;
-	u8	engine_offset = (vram_addr >> 14);
-	u8	block = MMU.VRAM_MAP[engine][engine_offset];
-	if (block == 7) return (EngineAddr[engine] + vram_addr);		// not mapped to LCD
-	vram_addr -= MMU.LCD_VRAM_ADDR[block];
-	return (LCDdst[block] + vram_addr);
-}
-
-static FORCEINLINE u32 MMU_LCDmap(u32 addr)
-{
-	//handle LCD memory mirroring
-	if ((addr < 0x07000000) && (addr>=0x068A4000)) 
-		return 0x06800000 + 
-		//(addr%0xA4000); //yuck!! is this even how it mirrors? but we have to keep from overrunning the buffer somehow
-		(addr&0x80000); //just as likely to be right (I have no clue how it should work) but faster.
-
-	if ((addr < 0x6000000)) return addr;
-	if ((addr > 0x661FFFF)) return addr;	// Engine BOBJ max 128KB
-
-	// holes
-	if ((addr > 0x6080000) && (addr < 0x6200000)) return addr;	// Engine ABG max 512KB
-	if ((addr > 0x6220000) && (addr < 0x6400000)) return addr;	// Engine BBG max 128KB
-	if ((addr > 0x6420000) && (addr < 0x6600000)) return addr;	// Engine AOBJ max 256KB
-	
-	u32	save_addr = addr;
-
-	addr &= 0x0FFFFFF;
-	u8	engine = (addr >> 21);
-	addr &= 0x01FFFFF;
-	u8	engine_offset = (addr >> 14);
-	u8	block = MMU.VRAM_MAP[engine][engine_offset];
-	if (block == 7) return (save_addr);		// not mapped to LCD
-	addr -= MMU.LCD_VRAM_ADDR[block];
-	return (addr + LCDdata[block][0]);
-}
-
-template<u8 DMA_CHANNEL>
-void DMAtoVRAMmapping()
-{
-	if (DMADst[ARMCPU_ARM9][DMA_CHANNEL] < 0x6000000) return;
-	if (DMADst[ARMCPU_ARM9][DMA_CHANNEL] > 0x661FFFF) return;
-
-	u32 addr = DMADst[ARMCPU_ARM9][DMA_CHANNEL];
-
-	addr &= 0x0FFFFFF;
-	u8	engine = (addr >> 21);
-	addr &= 0x01FFFFF;
-	u8	engine_offset = (addr >> 14);
-	u8	block = MMU.VRAM_MAP[engine][engine_offset];
-	if (block == 7) return;
-	addr -= MMU.LCD_VRAM_ADDR[block];
-
-	//INFO("ARM9 DMA%i at dst address 0x%08X mapped to 0x%X\n", DMA_CHANNEL, DMADst[ARMCPU_ARM9][DMA_CHANNEL], (addr + LCDdata[block][0]) );
-
-	DMADst[ARMCPU_ARM9][DMA_CHANNEL] = (addr + LCDdata[block][0]);
-}
-
-#define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
-
-static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
-{
-	if (!(VRAMBankCnt & 0x80)) return;		// disabled
-
-	u32	vram_map_addr = 0xFFFFFFFF;
-	u8	*LCD_addr = LCDdst[block];
-	bool changingTexOrTexPalette = false;
-
-	for (int i = 0; i < 4; i++)
-	{
-		for (int t = 0; t < 32; t++)
-			if (MMU.VRAM_MAP[i][t] == block) 
-				MMU.VRAM_MAP[i][t] = 7;
-	}
-	
-	switch (VRAMBankCnt & 0x07)
-	{
-		case 0:			// not mapped
-			MMU.LCDCenable[block] = FALSE;
-		return;
-		case 1:
-			switch(block)
-			{
-				case 0:		// A
-				case 1:		// B
-				case 2:		// C
-				case 3:		// D		Engine A, BG
-					vram_map_addr = ((VRAMBankCnt >> 3) & 3) * 0x20000;
-					if(block == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
-					if(block == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
-				break ;
-				case 4:		// E		Engine A, BG
-					vram_map_addr = 0x0000000;
-				break;
-				case 5:		// F
-				case 6:		// G		Engine A, BG
-					vram_map_addr = (((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
-				break;
-				case 8:		// H		Engine B, BG
-					vram_map_addr = 0x0200000;
-				break ;
-				case 9:		// I		Engine B, BG
-					vram_map_addr = 0x0208000;
-				break;
-				default:
-					LOG_VRAM_ERROR();
-					break;
-			}
-		break ;
-
-		case 2:
-			switch(block)
-			{
-				case 0:		// A
-				case 1:		// B		Engine A, OBJ
-					vram_map_addr = 0x0400000 + (((VRAMBankCnt>>3)&1)*0x20000);
-				break;
-				case 2:		// C
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
-				break;
-				case 3:		// D
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
-				break;
-				case 4:		// E		Engine A, OBJ
-					vram_map_addr = 0x0400000;
-				break;
-				case 5:		// F
-				case 6:		// G		Engine A, OBJ
-					vram_map_addr = 0x0400000 + (((VRAMBankCnt>>3)&1)*0x4000)+(((VRAMBankCnt>>4)&1)*0x10000);
-				break;
-				case 8:		// H		Engine B, BG
-					ARM9Mem.ExtPal[1][0] = LCD_addr;
-					ARM9Mem.ExtPal[1][1] = LCD_addr+0x2000;
-					ARM9Mem.ExtPal[1][2] = LCD_addr+0x4000;
-					ARM9Mem.ExtPal[1][3] = LCD_addr+0x6000;
-				break;
-				case 9:		// I		Engine B, OBJ
-					vram_map_addr = 0x0600000;
-				break;
-				default:
-					LOG_VRAM_ERROR();
-					break;
-			}
-		break ;
-
-		case 3:
-			switch (block)
-			{
-				case 0:		// A
-				case 1:		// B
-				case 2:		// C
-				case 3:		// D
-					// Textures
-					{
-						changingTexOrTexPalette = true;
-						int slot_index = (VRAMBankCnt >> 3) & 0x3;
-						ARM9Mem.textureSlotAddr[slot_index] = LCD_addr;
-						gpu3D->NDS_3D_VramReconfigureSignal();
-						if(block == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
-						if(block == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
-					}
-				break;
-				case 4:		// E
-					changingTexOrTexPalette = true;
-					ARM9Mem.texPalSlot[0] = LCD_addr;
-					ARM9Mem.texPalSlot[1] = LCD_addr+0x4000;
-					ARM9Mem.texPalSlot[2] = LCD_addr+0x8000;
-					ARM9Mem.texPalSlot[3] = LCD_addr+0xC000;
-					gpu3D->NDS_3D_VramReconfigureSignal();
-				break;
-				case 5:		// F
-				case 6:		// G
-				{
-					changingTexOrTexPalette = true;
-					u8 tmp_slot = ((VRAMBankCnt >> 3) & 0x01) + (((VRAMBankCnt >> 4) & 0x01)*4);
-					ARM9Mem.texPalSlot[tmp_slot] = LCD_addr;
-					gpu3D->NDS_3D_VramReconfigureSignal();
-				}
-				break;
-				case 9:		// I		Engine B, OBJ
-					ARM9Mem.ObjExtPal[1][0] = LCD_addr;
-					ARM9Mem.ObjExtPal[1][1] = LCD_addr+0x2000;
-				break;
-				default:
-					LOG_VRAM_ERROR();
-					break;
-			}
-		break ;
-
-		case 4:
-			switch(block)
-			{
-				case 2:		// C		Engine B, BG
-					vram_map_addr = 0x0200000;
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 2);
-				break ;
-				case 3:		// D		Engine B, OBJ
-					vram_map_addr = 0x0600000;
-					T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) & 1);
-				break ;
-				case 4:		// E		Engine A, BG
-					ARM9Mem.ExtPal[0][0] = LCD_addr;
-					ARM9Mem.ExtPal[0][1] = LCD_addr+0x2000;
-					ARM9Mem.ExtPal[0][2] = LCD_addr+0x4000;
-					ARM9Mem.ExtPal[0][3] = LCD_addr+0x6000;
-				break;
-				case 5:		// F
-				case 6:		// G		Engine A, BG
-					{
-						u8 tmp_slot = (VRAMBankCnt >> 2) & 0x02;
-						ARM9Mem.ExtPal[0][tmp_slot] = LCD_addr;
-						ARM9Mem.ExtPal[0][tmp_slot+1] = LCD_addr+0x2000;
-					}
-				break;
-				default:
-					LOG_VRAM_ERROR();
-					break;
-			}
-		break;
-
-		case 5:
-			if ((block == 5) || (block == 6))		// F, G		Engine A, OBJ
-			{
-				ARM9Mem.ObjExtPal[0][0] = LCD_addr;
-				ARM9Mem.ObjExtPal[0][1] = LCD_addr + 0x2000;
-			}
-		break;
-	}
-
-	if(changingTexOrTexPalette && !nds.isIn3dVblank())
-	{
-		PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
-	}
-
-	if (vram_map_addr != 0xFFFFFFFF)
-	{
-		u8	engine = (vram_map_addr >> 21);
-		vram_map_addr &= 0x001FFFFF;
-		u8	engine_offset = (vram_map_addr >> 14);
-		MMU.LCD_VRAM_ADDR[block] = vram_map_addr;
-		MMU.LCDCenable[block] = TRUE;
-
-		for (unsigned int i = 0; i < LCDdata[block][1]; i++)
-			MMU.VRAM_MAP[engine][engine_offset + i] = (u8)block;
-		
-		//INFO("VRAM %i mapping: eng=%i (offs=%i, size=%i), addr = 0x%X, MST=%i\n", 
-		//	block, engine, engine_offset, LCDdata[block][1]*0x4000, MMU.LCD_VRAM_ADDR[block], VRAMBankCnt & 0x07);
-
-		//unmap texmem
-		for(int i=0;i<4;i++)
-			if(ARM9Mem.textureSlotAddr[i] == LCD_addr)
-				ARM9Mem.textureSlotAddr[i] = ARM9Mem.blank_memory;
-
-		//unmap texpal mem. This is not a straightforward way to do it, 
-		//but it is the only place we have this information stored.
-		for(int i=0;i<4;i++)
-			if( (ARM9Mem.texPalSlot[i] == LCD_addr + 0x4000*i) || (ARM9Mem.texPalSlot[i] == LCD_addr) )
-				ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
-		for(int i=4;i<6;i++)
-			if(ARM9Mem.texPalSlot[i] == LCD_addr)
-				ARM9Mem.texPalSlot[i] = ARM9Mem.blank_memory;
-		return;
-	}
-
-	MMU.LCDCenable[block] = FALSE;
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
@@ -1699,7 +1843,9 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		return;
 	}
 
-	adr = MMU_LCDmap(adr);
+	bool unmapped;
+	adr = MMU_LCDmap(adr, unmapped);
+	if(unmapped) return;
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
@@ -2282,7 +2428,9 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return;
 	}
 
-	adr = MMU_LCDmap(adr);			// VRAM mapping
+	bool unmapped;
+	adr = MMU_LCDmap(adr, unmapped);
+	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
@@ -2859,7 +3007,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		return;
 	}
 
-	adr = MMU_LCDmap(adr);			// VRAM mapping
+	bool unmapped;
+	adr = MMU_LCDmap(adr, unmapped);
+	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
@@ -2891,7 +3041,10 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
 			MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 #endif
-	adr = MMU_LCDmap(adr);
+
+	bool unmapped;	
+	adr = MMU_LCDmap(adr, unmapped);
+	if(unmapped) return 0;
 
 	return MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]];
 }
@@ -2970,9 +3123,10 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		return  T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
 	}
 
-	adr = MMU_LCDmap(adr);
+	bool unmapped;
+	adr = MMU_LCDmap(adr,unmapped);
+	if(unmapped) return 0;
 	
-	/* Returns data from memory */
 	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]); 
 }
 
@@ -3168,9 +3322,10 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 	}
 	
-	adr = MMU_LCDmap(adr);
+	bool unmapped;
+	adr = MMU_LCDmap(adr,unmapped);
+	if(unmapped) return 0;
 
-	//Returns data from memory
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
 	return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 }
@@ -4209,8 +4364,8 @@ void FASTCALL MMU_write8(u32 proc, u32 adr, u8 val)
 }
 
 void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
-        if (type<0 || type > 6) return;
-        *bmemtype=save_types[type][0];
-        *bmemsize=save_types[type][1];
-        mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
+    if (type<0 || type > 6) return;
+    *bmemtype=save_types[type][0];
+    *bmemsize=save_types[type][1];
+    mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }

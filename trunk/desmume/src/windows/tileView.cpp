@@ -24,6 +24,7 @@
 #include "resource.h"
 #include "debug.h"
 #include "../MMU.h"
+#include "../gpu.h"
 
 typedef struct
 {
@@ -31,7 +32,7 @@ typedef struct
 	bool autoup;
 
 	HWND	hwnd;
-	u8 * mem;
+	u32 target;
 	u16 * pal;
 	s16 palnum;
 	u16 tilenum;
@@ -78,7 +79,9 @@ LRESULT TileViewBox_Direct(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
         
         FillRect(mem_dc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
         
-        SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, win->mem, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+		u8* mem = MMU_RenderMapToLCD(win->target);
+		if(mem)
+			SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, mem, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
         
         BitBlt(hdc, 0, 0, lg, ht, mem_dc, 0, 0, SRCCOPY);
         
@@ -133,14 +136,16 @@ LRESULT TileViewBox_Pal256(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
         {
              u32 i, num2, num, y, x;
 
-             //for(i = 0; i<256*256; ++i)
-             //     bitmap[i] = pal[win->mem[i]];
-             for(num2 = 0; num2<32; ++num2)
-             for(num = 0; num<32; ++num)
-             for(y = 0; y<8; ++y)
-             for(x = 0; x<8; ++x)
-                  bitmap[x + (y*256) + (num*8) +(num2*256*8)] = pal[win->mem[x + (y*8) + (num*64) +(num2*2048)]];        
-             SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+             u8* mem = MMU_RenderMapToLCD(win->target);
+			 if(mem)
+			 {
+				 for(num2 = 0; num2<32; ++num2)
+				 for(num = 0; num<32; ++num)
+				 for(y = 0; y<8; ++y)
+				 for(x = 0; x<8; ++x)
+					  bitmap[x + (y*256) + (num*8) +(num2*256*8)] = pal[mem[x + (y*8) + (num*64) +(num2*2048)]];        
+				 SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+			 }
              sprintf(text, "Pal : %d", win->palnum);
              SetWindowText(GetDlgItem(hwnd, IDC_PALNUM), text);
         }
@@ -198,16 +203,20 @@ LRESULT TileViewBox_Pal16(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARA
         
         if(win->pal)
         {
-             u32 num2, num, y, x;
-             for(num2 = 0; num2<32; ++num2)
-             for(num = 0; num<64; ++num)
-             for(y = 0; y<8; ++y)
-             for(x = 0; x<4; ++x)
-             {
-                  bitmap[(x<<1) + (y*512) + (num*8) +(num2*512*8)] = pal[win->mem[x + (y*4) + (num*32) +(num2*2048)]&0xF];
-                  bitmap[(x<<1)+1 + (y*512) + (num*8) +(num2*512*8)] = pal[win->mem[x + (y*4) + (num*32) +(num2*2048)]>>4];
-             }        
-             SetDIBitsToDevice(mem_dc, 0, 0, 512, 256, 0, 0, 0, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+			u8* mem = MMU_RenderMapToLCD(win->target);
+			if(mem)
+				{
+				 u32 num2, num, y, x;
+				 for(num2 = 0; num2<32; ++num2)
+				 for(num = 0; num<64; ++num)
+				 for(y = 0; y<8; ++y)
+				 for(x = 0; x<4; ++x)
+				 {
+					  bitmap[(x<<1) + (y*512) + (num*8) +(num2*512*8)] = pal[mem[x + (y*4) + (num*32) +(num2*2048)]&0xF];
+					  bitmap[(x<<1)+1 + (y*512) + (num*8) +(num2*512*8)] = pal[mem[x + (y*4) + (num*32) +(num2*2048)]>>4];
+				 }        
+				 SetDIBitsToDevice(mem_dc, 0, 0, 512, 256, 0, 0, 0, 256, bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+			}
              sprintf(text, "Pal : %d", win->palnum);
              SetWindowText(GetDlgItem(hwnd, IDC_PALNUM), text);
         }
@@ -325,7 +334,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
 						TileView = new tileview_struct;
 						memset(TileView, 0, sizeof(tileview_struct));
 						TileView->hwnd = hwnd;
-						TileView->mem = ARM9Mem.ARM9_ABG;
+						TileView->target = ARM9MEM_ABG;
 						TileView->pal = ((u16 *)ARM9Mem.ARM9_VMEM);
 						TileView->autoup_secs = 1;
 						SendMessage(GetDlgItem(hwnd, IDC_AUTO_UPDATE_SPIN),
@@ -492,21 +501,21 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                                                  case 5 :
                                                  case 6 :
                                                  case 7 :
-                                                      TileView->mem = ARM9Mem.ARM9_ABG + 0x10000*sel;
+                                                      TileView->target = ARM9MEM_ABG + 0x10000*sel;
                                                       break;
                                                  case 8 :
                                                  case 9 :
-                                                      TileView->mem = ARM9Mem.ARM9_BBG + 0x10000*(sel-8);
+                                                      TileView->target = ARM9MEM_BBG + 0x10000*(sel-8);
                                                       break;
                                                  case 10 :
                                                  case 11 :
                                                  case 12 :
                                                  case 13 :
-                                                      TileView->mem = ARM9Mem.ARM9_AOBJ + 0x10000*(sel-10);
+                                                      TileView->target = ARM9MEM_AOBJ + 0x10000*(sel-10);
                                                       break;
                                                  case 14 :
                                                  case 15 :
-                                                      TileView->mem = ARM9Mem.ARM9_BOBJ + 0x10000*(sel-14);
+                                                      TileView->target = ARM9MEM_BOBJ + 0x10000*(sel-14);
                                                       break;
                                                  case 16 :
                                                  case 17 :
@@ -518,7 +527,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                                                  case 23 :
                                                  case 24 :
                                                  case 25 :
-                                                      TileView->mem = ARM9Mem.ARM9_LCD + 0x10000*(sel-16);
+                                                      TileView->target = ARM9MEM_LCDC + 0x10000*(sel-16);
                                                       break;
                                                  default :
                                                          return 1;
@@ -617,7 +626,7 @@ BOOL CALLBACK ViewTilesProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                                                  case 17 :
                                                  case 18 :
                                                  case 19 :
-                                                      TileView->pal = ((u16 *)(ARM9Mem.texPalSlot[sel-16]));
+                                                      TileView->pal = ((u16 *)(ARM9Mem.texInfo.texPalSlot[sel-16]));
                                                       TileView->palnum = 0;
                                                       ShowWindow(GetDlgItem(hwnd, IDC_16COUL), SW_SHOW);
                                                       EnableWindow(GetDlgItem(hwnd, IDC_16COUL), TRUE);

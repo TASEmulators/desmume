@@ -405,6 +405,7 @@ void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 #define ADDRESS_STEP_64kB	   0x10000
 #define ADDRESS_STEP_128KB	   0x20000
 #define ADDRESS_STEP_256KB	   0x40000
+#define ADDRESS_STEP_512KB	   0x80000
 #define ADDRESS_MASK_256KB	   (ADDRESS_STEP_256KB-1)
 
 #ifdef WORDS_BIGENDIAN
@@ -593,6 +594,7 @@ typedef struct
 #define ARM9MEM_BBG		0x06200000
 #define ARM9MEM_AOBJ	0x06400000
 #define ARM9MEM_BOBJ	0x06600000
+#define ARM9MEM_LCDC	0x06800000
 
 extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 

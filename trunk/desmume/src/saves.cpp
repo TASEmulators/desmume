@@ -143,10 +143,6 @@ SFORMAT SF_MEM[]={
 
 	{ "VMEM", 1, 0x800,    ARM9Mem.ARM9_VMEM},
 	{ "OAMS", 1, 0x800,    ARM9Mem.ARM9_OAM},
-	{ "ABGM", 1, 0x80000,  ARM9Mem.ARM9_ABG},
-	{ "BBGM", 1, 0x20000,  ARM9Mem.ARM9_BBG},
-	{ "AOBJ", 1, 0x40000,  ARM9Mem.ARM9_AOBJ},
-	{ "BOBJ", 1, 0x20000,  ARM9Mem.ARM9_BOBJ},
 	{ "LCDM", 1, 0xA4000,  ARM9Mem.ARM9_LCD},
 	{ 0 }
 };

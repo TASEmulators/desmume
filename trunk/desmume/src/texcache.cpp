@@ -90,7 +90,7 @@ static MemSpan MemSpan_TexMem(u32 ofs, u32 len)
 		len -= curr.len;
 		ofs += curr.len;
 		currofs += curr.len;
-		u8* ptr = ARM9Mem.textureSlotAddr[slot];
+		u8* ptr = ARM9Mem.texInfo.textureSlotAddr[slot];
 		
 		if(ptr == ARM9Mem.blank_memory) {
 			PROGINFO("Tried to reference unmapped texture memory: slot %d\n",slot);
@@ -121,7 +121,7 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 		//if(len != 0) 
 			//here is an actual test case of bank spanning
 		currofs += curr.len;
-		u8* ptr = ARM9Mem.texPalSlot[slot];
+		u8* ptr = ARM9Mem.texInfo.texPalSlot[slot];
 		
 		if(ptr == ARM9Mem.blank_memory) {
 			PROGINFO("Tried to reference unmapped texture palette memory: 16k slot #%d\n",slot);
@@ -402,7 +402,7 @@ REJECT:
 			//this check isnt necessary since the addressing is tied to the texture data which will also run out:
 			//if(msIndex.numItems != 1) PROGINFO("Your 4x4 texture index has overrun its slot.\n");
 
-#define PAL4X4(offset) ( *(u16*)( ARM9Mem.texPalSlot[((paletteAddress + (offset)*2)>>14)] + ((paletteAddress + (offset)*2)&0x3FFF) ) )
+#define PAL4X4(offset) ( *(u16*)( ARM9Mem.texInfo.texPalSlot[((paletteAddress + (offset)*2)>>14)] + ((paletteAddress + (offset)*2)&0x3FFF) ) )
 
 			u16* slot1;
 			u32* map = (u32*)ms.items[0].ptr;
@@ -410,9 +410,9 @@ REJECT:
 			u32 d = 0;
 			if ( (texcache[tx].frm & 0xc000) == 0x8000)
 				// texel are in slot 2
-				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][((texcache[tx].frm & 0x3FFF)<<2)+0x010000];
+				slot1=(u16*)&ARM9Mem.texInfo.textureSlotAddr[1][((texcache[tx].frm & 0x3FFF)<<2)+0x010000];
 			else 
-				slot1=(u16*)&ARM9Mem.textureSlotAddr[1][(texcache[tx].frm & 0x3FFF)<<2];
+				slot1=(u16*)&ARM9Mem.texInfo.textureSlotAddr[1][(texcache[tx].frm & 0x3FFF)<<2];
 
 			u16 yTmpSize = (texcache[tx].sizeY>>2);
 			u16 xTmpSize = (texcache[tx].sizeX>>2);
