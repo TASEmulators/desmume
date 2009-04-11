@@ -930,11 +930,10 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
     GdkModifierType state;
     gint x,y;
     s32 EmuX, EmuY;
-        const int *opengl = (const int *)data;
-
+    const int *opengl = (const int *)data;
 
     if(click) {
-                int scaled_x, scaled_y;
+        int scaled_x, scaled_y;
         if(e->is_hint)
             gdk_window_get_pointer(w->window, &x, &y, &state);
         else {
@@ -943,20 +942,27 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
             state=(GdkModifierType)e->state;
         }
 
-                scaled_x = x * nds_screen_size_ratio;
-                scaled_y = y * nds_screen_size_ratio;
+        scaled_x = x * nds_screen_size_ratio;
+        scaled_y = y * nds_screen_size_ratio;
 
         LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
 
-                if ( !(*opengl)) {
-                  scaled_y -= 192;
-                }
+        if ( !(*opengl)) {
+            scaled_y -= 192;
+        }
         if(scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
-                  EmuX = scaled_x;
-                  EmuY = scaled_y;
-                  if(EmuX<0) EmuX = 0; else if(EmuX>255) EmuX = 255;
-                  if(EmuY<0) EmuY = 0; else if(EmuY>192) EmuY = 192;
-                  NDS_setTouchPos(EmuX, EmuY);
+            EmuX = scaled_x;
+            EmuY = scaled_y;
+
+            if(EmuX<0)
+                EmuX = 0;
+            else if(EmuX>255)
+                EmuX = 255;
+            if(EmuY<0)
+                EmuY = 0;
+            else if(EmuY>192)
+                EmuY = 192;
+            NDS_setTouchPos(EmuX, EmuY);
         }
     }
 
