@@ -171,7 +171,7 @@ u8 Mic_ReadSample()
 		}
 		else {  //use the "random" values
 			x++;
-			if(x > ARRAYSIZE(random))
+			if(x > ARRAY_SIZE(random))
 				x=0;
 			ret = random[x];
 		}
