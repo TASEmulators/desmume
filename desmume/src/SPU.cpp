@@ -544,7 +544,7 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
 		chan->index = precalcindextbl[chan->index][data4bit & 0x7];
 	}
 
-	chan->lastsampcnt = chan->sampcnt;
+	chan->lastsampcnt = (int)chan->sampcnt;
 
 #ifdef SPU_INTERPOLATE
 	*data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
