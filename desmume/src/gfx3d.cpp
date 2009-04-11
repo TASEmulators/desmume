@@ -355,7 +355,7 @@ void gfx3d_glLoadIdentity()
 		MatrixIdentity (mtxCurrent[1]);
 }
 
-BOOL gfx3d_glLoadMatrix4x4(signed long v)
+BOOL gfx3d_glLoadMatrix4x4(s32 v)
 {
 	mtxCurrent[mode][ML4x4ind] = fix2float(v);
 
@@ -369,7 +369,7 @@ BOOL gfx3d_glLoadMatrix4x4(signed long v)
 	return TRUE;
 }
 
-BOOL gfx3d_glLoadMatrix4x3(signed long v)
+BOOL gfx3d_glLoadMatrix4x3(s32 v)
 {
 	mtxCurrent[mode][ML4x3ind] = fix2float(v);
 
@@ -438,7 +438,7 @@ void gfx3d_glPushMatrix()
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
-void gfx3d_glPopMatrix(signed long i)
+void gfx3d_glPopMatrix(s32 i)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 
@@ -464,7 +464,7 @@ void gfx3d_glPopMatrix(signed long i)
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
-BOOL gfx3d_glTranslate(signed long v)
+BOOL gfx3d_glTranslate(s32 v)
 {
 	trans[transind] = fix2float(v);
 
@@ -480,7 +480,7 @@ BOOL gfx3d_glTranslate(signed long v)
 	return TRUE;
 }
 
-BOOL gfx3d_glScale(signed long v)
+BOOL gfx3d_glScale(s32 v)
 {
 	short mymode = (mode==2?1:mode);
 
@@ -501,7 +501,7 @@ BOOL gfx3d_glScale(signed long v)
 	return TRUE;
 }
 
-BOOL gfx3d_glMultMatrix3x3(signed long v)
+BOOL gfx3d_glMultMatrix3x3(s32 v)
 {
 	mtxTemporal[MM3x3ind] = fix2float(v);
 
@@ -525,7 +525,7 @@ BOOL gfx3d_glMultMatrix3x3(signed long v)
 	return TRUE;
 }
 
-BOOL gfx3d_glMultMatrix4x3(signed long v)
+BOOL gfx3d_glMultMatrix4x3(s32 v)
 {
 	mtxTemporal[MM4x3ind] = fix2float(v);
 
@@ -547,7 +547,7 @@ BOOL gfx3d_glMultMatrix4x3(signed long v)
 	return TRUE;
 }
 
-BOOL gfx3d_glMultMatrix4x4(signed long v)
+BOOL gfx3d_glMultMatrix4x4(s32 v)
 {
 	mtxTemporal[MM4x4ind] = fix2float(v);
 
@@ -971,7 +971,7 @@ void gfx3d_glNormal(u32 v)
 
 				for(c = 0; c < 3; c++)
 				{
-					vertexColor[c] += (((specular[c] * _lightColor[c] * shininessLevel)
+                                  vertexColor[c] += (int)(((specular[c] * _lightColor[c] * shininessLevel)
 						+ (diffuse[c] * _lightColor[c] * diffuseLevel)
 						+ (ambient[c] * _lightColor[c])) / 31.0f);
 				}
@@ -984,20 +984,20 @@ void gfx3d_glNormal(u32 v)
 }
 
 
-signed long gfx3d_GetClipMatrix (unsigned int index)
+s32 gfx3d_GetClipMatrix (unsigned int index)
 {
 	float val = MatrixGetMultipliedIndex (index, mtxCurrent[0], mtxCurrent[1]);
 
 	val *= (1<<12);
 
-	return (signed long)val;
+	return (s32)val;
 }
 
-signed long gfx3d_GetDirectionalMatrix (unsigned int index)
+s32 gfx3d_GetDirectionalMatrix (unsigned int index)
 {
 	int _index = (((index / 3) * 4) + (index % 3));
 
-	return (signed long)(mtxCurrent[2][_index]*(1<<12));
+	return (s32)(mtxCurrent[2][_index]*(1<<12));
 }
 
 static void gfx3d_glLightDirection_cache(int index)
