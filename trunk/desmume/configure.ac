@@ -59,6 +59,7 @@ AC_ARG_ENABLE([osmesa],
                [osmesa=no])
 
 if test "x$osmesa" = "xyes" ; then
+	AC_CHECK_LIB(dl, main)
 	AC_CHECK_LIB(OSMesa, main,[
 		useosmesa=yes
 		AC_DEFINE(HAVE_LIBOSMESA)
