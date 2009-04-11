@@ -8,5 +8,7 @@ EXTRA_DIST = cocoa_util.m  DeSmuME.cbp  globals.h  main.mm  main_window.h  main_
 	translations/English.lproj/MainMenu.nib/info.nib translations/English.lproj/MainMenu.nib/keyedobjects.nib \
 	translations/French.lproj/Localizable.strings translations/French.lproj/MainMenu.nib/classes.nib \
 	translations/French.lproj/MainMenu.nib/info.nib translations/French.lproj/MainMenu.nib/keyedobjects.nib \
+	translations/Italian.lproj/Localizable.strings translations/Italian.lproj/MainMenu.nib/classes.nib \
+	translations/Italian.lproj/MainMenu.nib/info.nib translations/Italian.lproj/MainMenu.nib/keyedobjects.nib \
 	translations/Japanese.lproj/Localizable.strings translations/Japanese.lproj/MainMenu.nib/classes.nib \
 	translations/Japanese.lproj/MainMenu.nib/info.nib translations/Japanese.lproj/MainMenu.nib/keyedobjects.nib
