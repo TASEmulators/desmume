@@ -2031,7 +2031,7 @@ void SetRotate(HWND hwnd, int rot)
 	UpdateScreenRects();
 }
 
-static void AviEnd()
+void AviEnd()
 {
 	NDS_Pause();
 	DRV_AviEnd();
@@ -2039,7 +2039,7 @@ static void AviEnd()
 }
 
 //Shows an Open File menu and starts recording an AVI
-static void AviRecordTo()
+void AviRecordTo()
 {
 	NDS_Pause();
 

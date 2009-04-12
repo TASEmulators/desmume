@@ -13,6 +13,8 @@ void Display();
 void Pause();
 void FrameAdvance();
 void ResetGame();	//Resets game (for the menu item & hotkey
+void AviRecordTo();
+void AviEnd();
 
 extern bool ShowInputDisplay;
 extern bool frameCounterDisplay;
