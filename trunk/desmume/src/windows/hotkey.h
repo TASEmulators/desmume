@@ -74,6 +74,9 @@ struct SCustomKeys
 	SCustomKey ToggleRasterizer;
 
 	SCustomKey PrintScreen;
+	SCustomKey ToggleFrameCounter;
+	SCustomKey ToggleFPS;
+	SCustomKey ToggleInput;
 	SCustomKey ToggleLag;
 	SCustomKey LastItem; // dummy, must be last
 
