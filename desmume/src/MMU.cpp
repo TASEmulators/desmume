@@ -209,7 +209,8 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 4X*/	DUP8(MMU.ARM7_REG),
 				DUP8(MMU.ARM7_WIRAM),
 		/* 5X*/	DUP16(MMU.UNUSED_RAM),
-		/* 6X*/	DUP16(MMU.UNUSED_RAM),
+		/* 6X*/	DUP8(0), //this gets handled by special logic
+				DUP8(ARM9Mem.ARM9_LCD), 
 		/* 7X*/	DUP16(MMU.UNUSED_RAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
@@ -254,7 +255,8 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 4X*/	DUP8(0x00FFFFFF),
 				DUP8(0x0000FFFF),
 		/* 5X*/	DUP16(0x00000003),
-		/* 6X*/	DUP16(0x00000003),
+		/* 6X*/	DUP8(0x00000003),
+				DUP8(0x000FFFFF),
 		/* 7X*/	DUP16(0x00000003),
 		/* 8X*/	DUP16(ROM_MASK),
 		/* 9X*/	DUP16(ROM_MASK),
@@ -295,6 +297,9 @@ u8 vram_lcdc_map[VRAM_LCDC_PAGES];
 //this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
 #define VRAM_ARM9_PAGES 512
 u8 vram_arm9_map[VRAM_ARM9_PAGES];
+
+//this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7
+u8 vram_arm7_map[2];
 
 //----->
 //consider these later, for better recordkeeping, instead of using the u8* in ARM9Mem
@@ -345,6 +350,9 @@ static const TVramBankInfo vram_bank_info[VRAM_BANKS] = {
 
 
 //maps an ARM9 BG/OBJ or LCDC address into an LCDC address, and informs the caller of whether it isn't mapped
+//TODO - in cases where this does some mapping work, we could bypass the logic at the end of the _read* and _write* routines
+//this is a good optimization to consider
+template<int PROCNUM> 
 static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 {
 	unmapped = false;
@@ -352,6 +360,19 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 	//in case the address is entirely outside of the interesting ranges
 	if(addr < 0x06000000) return addr;
 	if(addr >= 0x07000000) return addr;
+
+	//shared wram mapping for arm7
+	if(PROCNUM==ARMCPU_ARM7)
+	{
+		u32 ofs = addr & 0x1FFFF;
+		u32 bank = (addr >> 17)&1;
+		if(vram_arm7_map[bank] == VRAM_PAGE_UNMAPPED)
+		{
+			unmapped = true;
+			return 0;
+		}
+		return 0x06800000 + (vram_arm7_map[bank]<<17) + ofs;
+	}
 
 	//handle LCD memory mirroring
 	if(addr>=0x068A4000)
@@ -399,7 +420,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	//this needs to go through a system like what is used for textures for mapping into chunks
 
 	bool unmapped;
-	vram_addr = MMU_LCDmap(vram_addr,unmapped);
+	vram_addr = MMU_LCDmap<0>(vram_addr,unmapped);
 	if(unmapped) return 0;
 	else return ARM9Mem.ARM9_LCD + (vram_addr - 0x06800000);
 }
@@ -506,9 +527,17 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //arm7
-				//MMU_vram_lcdc(bank); ?
 				if(bank == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
 				if(bank == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
+				switch(ofs) {
+				case 0:
+				case 1:
+					vram_arm7_map[ofs] = vram_bank_info[bank].page_addr;
+					break;
+				default:
+					PROGINFO("Unsupported ofs setting %d for arm7 vram bank %c\n", ofs, 'A'+bank);
+				}
+
 				break;
 			case 3: //texture
 				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
@@ -655,6 +684,9 @@ unsupported_mst:
 
 void MMU_VRAM_unmap_all()
 {
+	vram_arm7_map[0] = VRAM_PAGE_UNMAPPED;
+	vram_arm7_map[1] = VRAM_PAGE_UNMAPPED;
+
 	for(int i=0;i<VRAM_LCDC_PAGES;i++)
 		vram_lcdc_map[i] = VRAM_PAGE_UNMAPPED;
 	for(int i=0;i<VRAM_ARM9_PAGES;i++)
@@ -1843,7 +1875,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 	}
 
 	bool unmapped;
-	adr = MMU_LCDmap(adr, unmapped);
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return;
 	
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
@@ -2428,7 +2460,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 	}
 
 	bool unmapped;
-	adr = MMU_LCDmap(adr, unmapped);
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
@@ -3007,7 +3039,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 	}
 
 	bool unmapped;
-	adr = MMU_LCDmap(adr, unmapped);
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
@@ -3042,7 +3074,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 #endif
 
 	bool unmapped;	
-	adr = MMU_LCDmap(adr, unmapped);
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return 0;
 
 	return MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]];
@@ -3123,7 +3155,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	}
 
 	bool unmapped;
-	adr = MMU_LCDmap(adr,unmapped);
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped);
 	if(unmapped) return 0;
 	
 	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]); 
@@ -3322,7 +3354,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	}
 	
 	bool unmapped;
-	adr = MMU_LCDmap(adr,unmapped);
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped);
 	if(unmapped) return 0;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
@@ -3376,6 +3408,10 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 #endif
 
 	if ( adr == REG_RTC ) rtcWrite(val);
+
+	bool unmapped;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	if(unmapped) return;
 	
 #ifdef _MMU_DEBUG
 	mmu_log_debug_ARM7(adr, "(write08) %0x%X", val);
@@ -3803,6 +3839,10 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 		return;
 	}
 
+	bool unmapped;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	if(unmapped) return;
+
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 } 
@@ -4088,6 +4128,10 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		return;
 	}
 
+	bool unmapped;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	if(unmapped) return;
+
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 }
@@ -4121,6 +4165,10 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	mmu_log_debug_ARM7(adr, "(read08) %0x%X", 
 		MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
 #endif
+
+	bool unmapped;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	if(unmapped) return 0;
 
     return MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]];
 }
@@ -4188,6 +4236,10 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 #endif
 		return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 	}
+
+	bool unmapped;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	if(unmapped) return 0;
 
 	/* Returns data from memory */
 	return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
@@ -4299,6 +4351,10 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 #endif
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 	}
+
+	bool unmapped;
+	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
+	if(unmapped) return 0;
 
 	//Returns data from memory
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [zeromus, inspired by shash]
