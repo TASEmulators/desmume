@@ -15,6 +15,7 @@ void FrameAdvance();
 void ResetGame();	//Resets game (for the menu item & hotkey
 void AviRecordTo();
 void AviEnd();
+void SetMessageToDisplay(const char *message);	//For sending output to the main screen
 
 extern bool ShowInputDisplay;
 extern bool frameCounterDisplay;
