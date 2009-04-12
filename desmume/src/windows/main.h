@@ -12,8 +12,9 @@ void SaveStateMessages(int slotnum, int whichMessage);
 void Display();
 void Pause();
 void FrameAdvance();
-extern bool ShowInputDisplay;
+void ResetGame();	//Resets game (for the menu item & hotkey
 
+extern bool ShowInputDisplay;
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
 extern bool ShowInputDisplay;

@@ -2998,9 +2998,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0; 
 
 		case IDM_RESET:
-			CheatsSearchReset();
-			NDS_Reset();
-			frameCounter=0;
+			ResetGame();
 			return 0;
 
 		case IDM_3DCONFIG:
@@ -3720,4 +3718,11 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 	}
 
 	return FALSE;
+}
+
+void ResetGame()
+{
+	CheatsSearchReset();
+	NDS_Reset();
+	frameCounter=0;
 }
