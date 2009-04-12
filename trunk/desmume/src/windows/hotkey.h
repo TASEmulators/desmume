@@ -65,7 +65,7 @@ struct SCustomKeys
 	SCustomKey Slot[10];
 	SCustomKey QuickSave, QuickLoad;
 
-	SCustomKey Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, Microphone;
+	SCustomKey Reset, Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, Microphone;
 
 	SCustomKey TurboRight, TurboLeft, TurboDown, TurboUp, TurboSelect, TurboStart, TurboB, TurboA, TurboY, TurboX;
 

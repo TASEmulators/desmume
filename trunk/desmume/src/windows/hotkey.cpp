@@ -157,6 +157,8 @@ void HK_AutoHoldClearKeyDown(int) {
 	}
 }
 
+void HK_Reset(int) {ResetGame();}
+
 void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
 void HK_ToggleInput(int) {ShowInputDisplay ^= true;}
@@ -233,33 +235,37 @@ void InitCustomKeys (SCustomKeys *keys)
 		i++;
 	};
 
-
-	
-
 	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
-	keys->ToggleFrameCounter.code = "Toggle Frame Display";
+	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
 	keys->ToggleFrameCounter.name = L"Toggle Frame Display";
 	keys->ToggleFrameCounter.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
 
 	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
-	keys->ToggleFPS.code = "Toggle FPS Display";
+	keys->ToggleFPS.code = "ToggleFPSDisplay";
 	keys->ToggleFPS.name = L"Toggle FPS Display";
 	keys->ToggleFPS.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleFPS.key = NULL;
 
 	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
-	keys->ToggleInput.code = "Toggle Input Display";
+	keys->ToggleInput.code = "ToggleInputDisplay";
 	keys->ToggleInput.name = L"Toggle Input Display";
 	keys->ToggleInput.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleInput.key = VK_OEM_COMMA;
 
 	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
-	keys->ToggleLag.code = "Toggle Lag Display";
+	keys->ToggleLag.code = "ToggleLagDisplay";
 	keys->ToggleLag.name = L"Toggle Lag Display";
 	keys->ToggleLag.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleLag.key = NULL;
 	
+	keys->Reset.handleKeyDown = HK_Reset;
+	keys->Reset.code = "Reset";
+	keys->Reset.name = L"Reset";
+	keys->Reset.page = HOTKEY_PAGE_MAIN;
+	keys->Reset.key = 'R';
+	keys->Reset.modifiers = CUSTKEY_CTRL_MASK;
+
 	keys->Pause.handleKeyDown = HK_Pause;
 	keys->Pause.code = "Pause";
 	keys->Pause.name = L"Pause";
@@ -387,10 +393,10 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleRasterizer.key = VK_SUBTRACT;
 
 	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
-	keys->PrintScreen.code = "PrintScreen";
-	keys->PrintScreen.name = L"Print Screen";
+	keys->PrintScreen.code = "SaveScreenshotas";
+	keys->PrintScreen.name = L"Save Screenshot as";
 	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
-	keys->PrintScreen.key = VK_PAUSE;
+	keys->PrintScreen.key = VK_F12;
 
 	keys->Microphone.handleKeyDown = HK_MicrophoneKeyDown;
 	keys->Microphone.handleKeyUp = HK_MicrophoneKeyUp;
