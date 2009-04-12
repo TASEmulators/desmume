@@ -2329,16 +2329,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	static int tmp_execute;
 	switch (message)                  // handle the messages
 	{
-		/*case WM_ENTERMENULOOP:		// temporally removed it (freezes)
+		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
-		if (execute)
-		{
-		NDS_Pause();
-		tmp_execute=2;
-		} else tmp_execute=-1;
-		return 0;
+			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (!DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
+			return 0;
 		}
-		case WM_EXITMENULOOP:
+		/*case WM_EXITMENULOOP:
 		{
 		if (tmp_execute==2) NDS_UnPause();
 		return 0;
