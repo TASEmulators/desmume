@@ -18,7 +18,7 @@
  * along with DeSmuME; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-
+#include "main.h"		//I added this so that this file could gain access to SetMessageToDisplay.
 #include "types.h"
 #include "windriver.h"
 #include "console.h"
@@ -374,8 +374,10 @@ bool DRV_AviBegin(const char* fname)
 	}
 
 	// Don't display at file splits
-	if(!avi_segnum)
+	if(!avi_segnum) {
 		EMU_PrintMessage("AVI recording started.");
+		SetMessageToDisplay("AVI recording started.");
+	}
 
 	strncpy(saved_cur_avi_fnameandext,fname,MAX_PATH);
 	strncpy(saved_avi_fname,fname,MAX_PATH);
@@ -438,8 +440,10 @@ void DRV_AviEnd()
 		return;
 
 	// Don't display if we're just starting another segment
-	if(avi_file->tBytes <= 2097152000)
+	if(avi_file->tBytes <= 2097152000) {
 		EMU_PrintMessage("AVI recording ended.");
+		SetMessageToDisplay("AVI recording ended.");
+	}
 
 	avi_destroy(&avi_file);
 }

@@ -3723,3 +3723,12 @@ void ResetGame()
 	NDS_Reset();
 	frameCounter=0;
 }
+
+void SetMessageToDisplay(const char *message)
+{
+	MessageToDisplay.str("");	//adelikat: Clear previous message //TODO set up a queue system, and/or a multiline system, instead of rudely cancelling out messages.
+								//adelikat: TODO: set up a function that does the clearing and setting of the counter, so this code doesn't have to be done all over the place
+								//				  make the function receive an int for the counter, but overload so that if no int, 120 is used
+	MessageToDisplay << message;
+	displayMessageCounter = 120;//				  
+}
