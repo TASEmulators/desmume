@@ -157,6 +157,8 @@ void HK_AutoHoldClearKeyDown(int) {
 	}
 }
 
+void HK_ToggleLag(int) {ShowLagFrameCounter ^= true;}
+
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
@@ -228,6 +230,12 @@ void InitCustomKeys (SCustomKeys *keys)
 		i++;
 	};
 
+	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
+	keys->ToggleLag.code = "Toggle Lag Display";
+	keys->ToggleLag.name = L"Toggle Lag Display";
+	keys->ToggleLag.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleLag.key = NULL;
+	
 	keys->Pause.handleKeyDown = HK_Pause;
 	keys->Pause.code = "Pause";
 	keys->Pause.name = L"Pause";
