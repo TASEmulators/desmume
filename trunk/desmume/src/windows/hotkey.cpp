@@ -159,6 +159,9 @@ void HK_AutoHoldClearKeyDown(int) {
 
 void HK_Reset(int) {ResetGame();}
 
+void HK_RecordAVI(int) {AviRecordTo();}
+void HK_StopAVI(int) {AviEnd();}
+
 void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
 void HK_ToggleInput(int) {ShowInputDisplay ^= true;}
@@ -235,6 +238,83 @@ void InitCustomKeys (SCustomKeys *keys)
 		i++;
 	};
 
+	//Main Page---------------------------------------
+	keys->Reset.handleKeyDown = HK_Reset;
+	keys->Reset.code = "Reset";
+	keys->Reset.name = L"Reset";
+	keys->Reset.page = HOTKEY_PAGE_MAIN;
+	keys->Reset.key = 'R';
+	keys->Reset.modifiers = CUSTKEY_CTRL_MASK;
+
+	keys->Pause.handleKeyDown = HK_Pause;
+	keys->Pause.code = "Pause";
+	keys->Pause.name = L"Pause";
+	keys->Pause.page = HOTKEY_PAGE_MAIN;
+	keys->Pause.key = VK_SPACE;
+
+	keys->FrameAdvance.handleKeyDown = HK_FrameAdvance;
+	keys->FrameAdvance.code = "FrameAdvance";
+	keys->FrameAdvance.name = L"Frame Advance";
+	keys->FrameAdvance.page = HOTKEY_PAGE_MAIN;
+	keys->FrameAdvance.key = 'N';
+
+	keys->FastForward.handleKeyDown = HK_FastForwardKeyDown;
+	keys->FastForward.handleKeyUp = HK_FastForwardKeyUp;
+	keys->FastForward.code = "FastForward";
+	keys->FastForward.name = L"Fast Forward";
+	keys->FastForward.page = HOTKEY_PAGE_MAIN;
+	keys->FastForward.key = VK_TAB;
+
+	keys->FastForwardToggle.handleKeyDown = HK_FastForwardToggle;
+	keys->FastForwardToggle.code = "FastForwardToggle";
+	keys->FastForwardToggle.name = L"Fast Forward Toggle";
+	keys->FastForwardToggle.page = HOTKEY_PAGE_MAIN;
+	keys->FastForwardToggle.key = NULL;
+
+	keys->IncreaseSpeed.handleKeyDown = HK_IncreaseSpeed;
+	keys->IncreaseSpeed.code = "IncreaseSpeed";
+	keys->IncreaseSpeed.name = L"Increase Speed";
+	keys->IncreaseSpeed.page = HOTKEY_PAGE_MAIN;
+	keys->IncreaseSpeed.key = VK_OEM_PLUS;
+
+	keys->DecreaseSpeed.handleKeyDown = HK_DecreaseSpeed;
+	keys->DecreaseSpeed.code = "DecreaseSpeed";
+	keys->DecreaseSpeed.name = L"Decrease Speed";
+	keys->DecreaseSpeed.page = HOTKEY_PAGE_MAIN;
+	keys->DecreaseSpeed.key = VK_OEM_MINUS;
+	
+	keys->Microphone.handleKeyDown = HK_MicrophoneKeyDown;
+	keys->Microphone.handleKeyUp = HK_MicrophoneKeyUp;
+	keys->Microphone.code = "Microphone";
+	keys->Microphone.name = L"Microphone";
+	keys->Microphone.page = HOTKEY_PAGE_MAIN;
+	keys->Microphone.key = NULL;
+
+	keys->AutoHold.handleKeyDown = HK_AutoHoldKeyDown;
+	keys->AutoHold.handleKeyUp = HK_AutoHoldKeyUp;
+	keys->AutoHold.code = "AutoHold";
+	keys->AutoHold.name = L"Auto-Hold";
+	keys->AutoHold.page = HOTKEY_PAGE_MAIN;
+	keys->AutoHold.key = NULL;
+
+	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
+	keys->AutoHoldClear.code = "AutoHoldClear";
+	keys->AutoHoldClear.name = L"Auto-Hold Clear";
+	keys->AutoHoldClear.page = HOTKEY_PAGE_MAIN;
+	keys->AutoHoldClear.key = NULL;
+
+	keys->ToggleRasterizer.handleKeyDown = HK_ToggleRasterizer;
+	keys->ToggleRasterizer.code = "ToggleRasterizer";
+	keys->ToggleRasterizer.name = L"Toggle Rasterizer";
+	keys->ToggleRasterizer.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleRasterizer.key = VK_SUBTRACT;
+
+	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
+	keys->PrintScreen.code = "SaveScreenshotas";
+	keys->PrintScreen.name = L"Save Screenshot as";
+	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
+	keys->PrintScreen.key = VK_F12;
+
 	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
 	keys->ToggleFrameCounter.code = "ToggleFrameDisplay";
 	keys->ToggleFrameCounter.name = L"Toggle Frame Display";
@@ -258,39 +338,26 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleLag.name = L"Toggle Lag Display";
 	keys->ToggleLag.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleLag.key = NULL;
-	
-	keys->Reset.handleKeyDown = HK_Reset;
-	keys->Reset.code = "Reset";
-	keys->Reset.name = L"Reset";
-	keys->Reset.page = HOTKEY_PAGE_MAIN;
-	keys->Reset.key = 'R';
-	keys->Reset.modifiers = CUSTKEY_CTRL_MASK;
 
-	keys->Pause.handleKeyDown = HK_Pause;
-	keys->Pause.code = "Pause";
-	keys->Pause.name = L"Pause";
-	keys->Pause.page = HOTKEY_PAGE_MAIN;
-	keys->Pause.key = VK_SPACE;
+	keys->RecordAVI.handleKeyDown = HK_RecordAVI;
+	keys->RecordAVI.code = "RecordAVI";
+	keys->RecordAVI.name = L"Record AVI";
+	keys->RecordAVI.page = HOTKEY_PAGE_MAIN;
+	keys->RecordAVI.key = NULL;
 
+	keys->StopAVI.handleKeyDown = HK_StopAVI;
+	keys->StopAVI.code = "StopAVI";
+	keys->StopAVI.name = L"Stop AVI";
+	keys->StopAVI.page = HOTKEY_PAGE_MAIN;
+	keys->StopAVI.key = NULL;
+
+	//Turbo Page---------------------------------------
 	keys->TurboRight.handleKeyDown = HK_TurboRightKeyDown;
 	keys->TurboRight.handleKeyUp = HK_TurboRightKeyUp;
 	keys->TurboRight.code = "TurboRight";
 	keys->TurboRight.name = L"Turbo Right";
 	keys->TurboRight.page = HOTKEY_PAGE_TURBO;
 	keys->TurboRight.key = NULL;
-
-	keys->AutoHoldClear.handleKeyDown = HK_AutoHoldClearKeyDown;
-	keys->AutoHoldClear.code = "AutoHoldClear";
-	keys->AutoHoldClear.name = L"Auto-Hold Clear";
-	keys->AutoHoldClear.page = HOTKEY_PAGE_MAIN;
-	keys->AutoHoldClear.key = NULL;
-
-	keys->AutoHold.handleKeyDown = HK_AutoHoldKeyDown;
-	keys->AutoHold.handleKeyUp = HK_AutoHoldKeyUp;
-	keys->AutoHold.code = "AutoHold";
-	keys->AutoHold.name = L"Auto-Hold";
-	keys->AutoHold.page = HOTKEY_PAGE_MAIN;
-	keys->AutoHold.key = NULL;
 
 	keys->TurboLeft.handleKeyDown = HK_TurboLeftKeyDown;
 	keys->TurboLeft.handleKeyUp = HK_TurboLeftKeyUp;
@@ -354,57 +421,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.name = L"Turbo Start";
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
-
-	keys->FastForward.handleKeyDown = HK_FastForwardKeyDown;
-	keys->FastForward.handleKeyUp = HK_FastForwardKeyUp;
-	keys->FastForward.code = "FastForward";
-	keys->FastForward.name = L"Fast Forward";
-	keys->FastForward.page = HOTKEY_PAGE_MAIN;
-	keys->FastForward.key = VK_TAB;
-
-	keys->FastForwardToggle.handleKeyDown = HK_FastForwardToggle;
-	keys->FastForwardToggle.code = "FastForwardToggle";
-	keys->FastForwardToggle.name = L"Fast Forward Toggle";
-	keys->FastForwardToggle.page = HOTKEY_PAGE_MAIN;
-	keys->FastForwardToggle.key = NULL;
-
-	keys->IncreaseSpeed.handleKeyDown = HK_IncreaseSpeed;
-	keys->IncreaseSpeed.code = "IncreaseSpeed";
-	keys->IncreaseSpeed.name = L"Increase Speed";
-	keys->IncreaseSpeed.page = HOTKEY_PAGE_MAIN;
-	keys->IncreaseSpeed.key = VK_OEM_PLUS;
-
-	keys->DecreaseSpeed.handleKeyDown = HK_DecreaseSpeed;
-	keys->DecreaseSpeed.code = "DecreaseSpeed";
-	keys->DecreaseSpeed.name = L"Decrease Speed";
-	keys->DecreaseSpeed.page = HOTKEY_PAGE_MAIN;
-	keys->DecreaseSpeed.key = VK_OEM_MINUS;
-
-	keys->FrameAdvance.handleKeyDown = HK_FrameAdvance;
-	keys->FrameAdvance.code = "FrameAdvance";
-	keys->FrameAdvance.name = L"Frame Advance";
-	keys->FrameAdvance.page = HOTKEY_PAGE_MAIN;
-	keys->FrameAdvance.key = 'N';
-
-	keys->ToggleRasterizer.handleKeyDown = HK_ToggleRasterizer;
-	keys->ToggleRasterizer.code = "ToggleRasterizer";
-	keys->ToggleRasterizer.name = L"Toggle Rasterizer";
-	keys->ToggleRasterizer.page = HOTKEY_PAGE_MAIN;
-	keys->ToggleRasterizer.key = VK_SUBTRACT;
-
-	keys->PrintScreen.handleKeyDown = HK_PrintScreen;
-	keys->PrintScreen.code = "SaveScreenshotas";
-	keys->PrintScreen.name = L"Save Screenshot as";
-	keys->PrintScreen.page = HOTKEY_PAGE_MAIN;
-	keys->PrintScreen.key = VK_F12;
-
-	keys->Microphone.handleKeyDown = HK_MicrophoneKeyDown;
-	keys->Microphone.handleKeyUp = HK_MicrophoneKeyUp;
-	keys->Microphone.code = "Microphone";
-	keys->Microphone.name = L"Microphone";
-	keys->Microphone.page = HOTKEY_PAGE_MAIN;
-	keys->Microphone.key = NULL;
-
+	
 	keys->QuickSave.handleKeyDown = HK_StateQuickSaveSlot;
 	keys->QuickSave.code = "QuickSave";
 	keys->QuickSave.name = L"Quick Save";
