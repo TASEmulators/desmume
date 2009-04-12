@@ -286,7 +286,7 @@ LRESULT CALLBACK TileViewBoxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 LRESULT MiniTileViewBox_Paint(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARAM lParam)
 {
-        HWND         hwnd_src = GetDlgItem(hwnd, IDC_Tile_BOX);
+        HWND         hwnd_src = GetDlgItem(GetParent(hwnd), IDC_Tile_BOX);
         HDC          hdc_src;
         HDC          hdc_dst;
         char txt[80];
