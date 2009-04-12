@@ -157,6 +157,9 @@ void HK_AutoHoldClearKeyDown(int) {
 	}
 }
 
+void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
+void HK_ToggleFPS(int) {FpsDisplay ^= true;}
+void HK_ToggleInput(int) {ShowInputDisplay ^= true;}
 void HK_ToggleLag(int) {ShowLagFrameCounter ^= true;}
 
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
@@ -229,6 +232,27 @@ void InitCustomKeys (SCustomKeys *keys)
 		//keys->key[i].timing = PROCESS_NOW;
 		i++;
 	};
+
+
+	
+
+	keys->ToggleFrameCounter.handleKeyDown = HK_ToggleFrame;
+	keys->ToggleFrameCounter.code = "Toggle Frame Display";
+	keys->ToggleFrameCounter.name = L"Toggle Frame Display";
+	keys->ToggleFrameCounter.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleFrameCounter.key = VK_OEM_PERIOD;
+
+	keys->ToggleFPS.handleKeyDown = HK_ToggleFPS;
+	keys->ToggleFPS.code = "Toggle FPS Display";
+	keys->ToggleFPS.name = L"Toggle FPS Display";
+	keys->ToggleFPS.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleFPS.key = NULL;
+
+	keys->ToggleInput.handleKeyDown = HK_ToggleInput;
+	keys->ToggleInput.code = "Toggle Input Display";
+	keys->ToggleInput.name = L"Toggle Input Display";
+	keys->ToggleInput.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleInput.key = VK_OEM_COMMA;
 
 	keys->ToggleLag.handleKeyDown = HK_ToggleLag;
 	keys->ToggleLag.code = "Toggle Lag Display";

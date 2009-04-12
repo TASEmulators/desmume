@@ -13,6 +13,10 @@ void Display();
 void Pause();
 void FrameAdvance();
 extern bool ShowInputDisplay;
+
+extern bool frameCounterDisplay;
+extern bool FpsDisplay;
+extern bool ShowInputDisplay;
 extern bool ShowLagFrameCounter;
 
 #define GPU3D_NULL 0
