@@ -2285,6 +2285,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				EnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			}
 			
+			//Gray the recent ROM menu item if there are no recent ROMs
+			EnableMenuItem(mainMenu, ID_FILE_RECENTROM,      MF_BYCOMMAND | (RecentRoms.size()) ? MF_ENABLED : MF_GRAYED);
+
 			//Updated Checked menu items
 			
 			//Pause
@@ -2317,8 +2320,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((ShowMicrophone)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND    | ((HudEditorMode)      ?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND       | ((FrameLimit)         ?MF_CHECKED:MF_UNCHECKED));
-
-			//TODO Recent ROMs gray if no recent roms
+			
 			//Language selection
 			//Frame Skip
 
