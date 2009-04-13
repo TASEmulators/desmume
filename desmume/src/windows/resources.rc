@@ -832,10 +832,10 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     GROUPBOX        " Select search type ", IDC_STATIC, 7, 104, 164, 33
     AUTORADIOBUTTON "Exact value search", IDC_RADIO7, 9, 114, 77, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Comparative search", IDC_RADIO8, 9, 125, 80, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
-    LTEXT           "[0..255]", IDC_STATIC_S1, 53, 10, 118, 8, SS_LEFT
-    LTEXT           "[0..65535]", IDC_STATIC_S2, 53, 20, 118, 8, SS_LEFT
-    LTEXT           "[0..16777215]", IDC_STATIC_S3, 53, 31, 118, 8, SS_LEFT
-    LTEXT           "[0..4294967295]", IDC_STATIC_S4, 53, 41, 118, 8, SS_LEFT
+    LTEXT           "[0..255]", IDC_STATIC_S1, 53, 10, 115, 8, SS_LEFT
+    LTEXT           "[0..65535]", IDC_STATIC_S2, 53, 20, 116, 8, SS_LEFT
+    LTEXT           "[0..16777215]", IDC_STATIC_S3, 53, 31, 115, 8, SS_LEFT
+    LTEXT           "[0..4294967295]", IDC_STATIC_S4, 53, 41, 116, 8, SS_LEFT
 }
 
 
