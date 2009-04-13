@@ -18,6 +18,7 @@ void AviEnd();
 void SetMessageToDisplay(const char *message);	//For sending output to the main screen
 
 extern bool ShowInputDisplay;
+extern unsigned int frameCounter;
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
 extern bool ShowInputDisplay;
