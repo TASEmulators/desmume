@@ -426,7 +426,6 @@
 #define ID_VIEW_DISPLAYMICROPHONE               40014
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_FILE_STOPAVI                        40016
-#define ACCEL_CTRL_O                            40032
 #define ID_FILE_RECENTROM                       40034
 #define IDC_SAVETYPE7                           40037
 #define IDM_DEFSIZE                             40038
