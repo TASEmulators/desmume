@@ -2331,8 +2331,59 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
+			//Check if AVI is recording
 			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (!DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
+
+			//Menu items dependent on a ROM oaded
+			EnableMenuItem(mainMenu, IDM_STATE_SAVE,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_STATE_LOAD,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_RESET,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_SHUT_UP,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+
+			//Update savestate slot items based on ROM loaded
+			for (int x = 0; x < 10; x++)
+			{
+				EnableMenuItem(mainMenu, IDM_STATE_SAVE_F1+x,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+				EnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			}
+			
+			//Updated Checked menu items
+			
+			//Pause
+			MainWindow->checkMenu(IDM_PAUSE, MF_BYCOMMAND | ((paused)?MF_CHECKED:MF_UNCHECKED));
+			//Screen rotation
+			MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+
+			//Window Size
+			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND   | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND |((windowSize==-1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND   | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND   | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND   | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+
+			//Screen Separation
+			MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND |   ((ScreenGap==0)? MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)? MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
+	
+			//Counters
+			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, MF_BYCOMMAND | ((frameCounterDisplay)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, MF_BYCOMMAND   | ((FpsDisplay)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, MF_BYCOMMAND | ((ShowInputDisplay)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, MF_BYCOMMAND | ((ShowLagFrameCounter)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((ShowMicrophone)?MF_UNCHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND | ((HudEditorMode)?MF_CHECKED:MF_UNCHECKED));
+
 			return 0;
 		}
 		/*case WM_EXITMENULOOP:
