@@ -28,6 +28,8 @@
 #include "throttle.h"
 #include "../mic.h"
 
+extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
+
 SCustomKeys CustomKeys;
 
 bool AutoHoldPressed=false;
@@ -68,7 +70,7 @@ void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
 //======================================================================================
 //=====================================HANDLERS=========================================
 //======================================================================================
-
+void HK_OpenROM(int) {OpenFile();}
 void HK_PrintScreen(int param)
 {
     OPENFILENAME ofn;
@@ -239,6 +241,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	};
 
 	//Main Page---------------------------------------
+	keys->OpenROM.handleKeyDown = HK_OpenROM;
+	keys->OpenROM.code = "OpenROM";
+	keys->OpenROM.name = L"Open ROM";
+	keys->OpenROM.page = HOTKEY_PAGE_MAIN;
+	keys->OpenROM.key = 'O';
+	keys->OpenROM.modifiers = CUSTKEY_CTRL_MASK;
+
 	keys->Reset.handleKeyDown = HK_Reset;
 	keys->Reset.code = "Reset";
 	keys->Reset.name = L"Reset";
