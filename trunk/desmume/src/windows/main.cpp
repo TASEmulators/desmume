@@ -1234,31 +1234,6 @@ int MenuInit()
 	mainMenu = LoadMenu(hAppInst, "MENU_PRINCIPAL"); //Load Menu, and store handle
 	if (!MainWindow->setMenu(mainMenu)) return 0;
 
-	// menu checks
-	MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | (ForceRatio==1?MF_CHECKED:MF_UNCHECKED));
-
-	MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
-	MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
-	MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
-	MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
-
-	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | ((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
-
-	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
-
-	MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | ((ScreenGap==0)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
-
-	MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND | FrameLimit?MF_CHECKED:MF_UNCHECKED);
-
 	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
 	GetRecentRoms();
 
@@ -1527,11 +1502,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
-	EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-	EnableMenuItem(mainMenu, IDM_PAUSE, MF_GRAYED);
-	EnableMenuItem(mainMenu, IDM_RESET, MF_GRAYED);
-	EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_GRAYED);
-	EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_GRAYED);
 #ifndef EXPERIMENTAL_GBASLOT
 	EnableMenuItem(mainMenu, IDM_GBASLOT, MF_GRAYED);
 #endif
@@ -1704,25 +1674,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
 #endif
 		{
-			EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-			EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-			EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-			EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-			EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
 			romloaded = TRUE;
 			NDS_UnPause();
 		}
 	}
-
-	MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
-	MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->Show(SW_NORMAL);
 	run();
@@ -2019,11 +1974,6 @@ void SetRotate(HWND hwnd, int rot)
 		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
 	}
 
-	//	SetWindowClientSize(hwnd, GPU_width, GPU_height);
-	MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
-	MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
 	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
 
 	gpu_SetRotateScreen(GPU_rotation);
@@ -2099,12 +2049,6 @@ void OpenRecentROM(int listNum)
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
 #endif
 	{
-		EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
 		romloaded = TRUE;
 	}
 
@@ -2168,13 +2112,6 @@ LRESULT OpenFile()
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
 #endif
 	{
-		EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-		EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-		EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
 		romloaded = TRUE;
 		NDS_UnPause();
 	}
@@ -2242,7 +2179,6 @@ void Pause()
 	if (emu_paused) NDS_UnPause();
 	else NDS_Pause();
 	emu_paused ^= 1;
-	MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
 }
 
 void FrameAdvance()
@@ -2250,7 +2186,6 @@ void FrameAdvance()
 	frameAdvance = true;
 	execute = TRUE;
 	emu_paused = 1;
-	MainWindow->checkMenu(IDM_PAUSE, emu_paused ? MF_CHECKED : MF_UNCHECKED);
 }
 
 enum CONFIGSCREEN
@@ -2314,15 +2249,6 @@ void RunConfig(CONFIGSCREEN which)
 		NDS_UnPause();
 }
 
-static void UncheckViewScalers()
-{
-	MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
-	MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
-}
-
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -2335,17 +2261,22 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (!DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
 
-			//Menu items dependent on a ROM oaded
-			EnableMenuItem(mainMenu, IDM_STATE_SAVE,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_STATE_LOAD,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_RESET,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_SHUT_UP,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			//Menu items dependent on a ROM loaded
+			EnableMenuItem(mainMenu, IDM_GAME_INFO,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY,MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_STATE_SAVE,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_STATE_LOAD,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_RESET,             MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_SHUT_UP,           MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_WIFISETTINGS,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
@@ -2358,6 +2289,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			
 			//Pause
 			MainWindow->checkMenu(IDM_PAUSE, MF_BYCOMMAND | ((paused)?MF_CHECKED:MF_UNCHECKED));
+			//Force Maintain Ratio
+			MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | ((ForceRatio)?MF_CHECKED:MF_UNCHECKED));
 			//Screen rotation
 			MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
@@ -2366,7 +2299,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Window Size
 			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND   | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND |((windowSize==-1)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND |((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND   | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND   | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND   | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
@@ -2376,13 +2309,18 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)? MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
 	
-			//Counters
+			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, MF_BYCOMMAND | ((frameCounterDisplay)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, MF_BYCOMMAND   | ((FpsDisplay)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, MF_BYCOMMAND | ((ShowInputDisplay)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, MF_BYCOMMAND | ((ShowLagFrameCounter)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((ShowMicrophone)?MF_UNCHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND | ((HudEditorMode)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, MF_BYCOMMAND   | ((FpsDisplay)         ?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, MF_BYCOMMAND | ((ShowInputDisplay)   ?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, MF_BYCOMMAND   | ((ShowLagFrameCounter)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((ShowMicrophone)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND    | ((HudEditorMode)      ?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND       | ((FrameLimit)         ?MF_CHECKED:MF_UNCHECKED));
+
+			//TODO Recent ROMs gray if no recent roms
+			//Language selection
+			//Frame Skip
 
 			return 0;
 		}
@@ -2520,13 +2458,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			if(LoadROM(filename, bad_glob_cflash_disk_image_file))
 #endif
 			{
-				EnableMenuItem(mainMenu, IDM_EXEC, MF_GRAYED);
-				EnableMenuItem(mainMenu, IDM_PAUSE, MF_ENABLED);
-				EnableMenuItem(mainMenu, IDM_RESET, MF_ENABLED);
-				EnableMenuItem(mainMenu, IDM_GAME_INFO, MF_ENABLED);
-				EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY, MF_ENABLED);
-				EnableMenuItem(mainMenu, IDM_CHEATS_LIST, MF_ENABLED);
-				EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH, MF_ENABLED);
 				romloaded = TRUE;
 			}
 			NDS_UnPause();
@@ -3198,47 +3129,31 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			windowSize=-1;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-
-			UncheckViewScalers();
-			MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | MF_CHECKED);
 			break;
 
 		case IDC_WINDOW1X:
 			windowSize=1;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-
-			UncheckViewScalers();
-			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_CHECKED);
 			break;
 		case IDC_WINDOW2X:
 			windowSize=2;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-
-			UncheckViewScalers();
-			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_CHECKED);
 			break;
 		case IDC_WINDOW3X:
 			windowSize=3;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-
-			UncheckViewScalers();
-			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_CHECKED);
 			break;
 		case IDC_WINDOW4X:
 			windowSize=4;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-
-			UncheckViewScalers();
-			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_CHECKED);
 			break;
 
 		case IDC_FORCERATIO:
 			if (ForceRatio) {
-				MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | MF_UNCHECKED);
 				ForceRatio = FALSE;
 				WritePrivateProfileInt("Video","Window Force Ratio",0,IniName);
 			}
@@ -3246,11 +3161,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				RECT rc;
 				GetClientRect(hwnd, &rc);
 				ScaleScreen((rc.right - rc.left) / 256.0f);
-
-				MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | MF_CHECKED);
 				ForceRatio = TRUE;
 				WritePrivateProfileInt("Video","Window Force Ratio",1,IniName);
-
 				WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
 				WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
 			}
@@ -3260,13 +3172,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_DEFSIZE:
 			{
 				if(windowSize)
-				{
 					windowSize = 0;
-					MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
-					MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
-					MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
-					MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
-				}
 
 				ScaleScreen(1);
 			}
