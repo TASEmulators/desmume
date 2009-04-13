@@ -2321,8 +2321,21 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND    | ((HudEditorMode)      ?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND       | ((FrameLimit)         ?MF_CHECKED:MF_UNCHECKED));
 			
-			//Language selection
 			//Frame Skip
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | ((autoframeskipenab)?MF_CHECKED:MF_UNCHECKED));
+
+			MainWindow->checkMenu(IDC_FRAMESKIP0, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==0) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP1, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==1) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP2, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==2) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP3, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==3) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP4, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==4) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP5, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==5) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP6, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==6) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP7, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==7) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==8) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==9) ? MF_CHECKED:MF_UNCHECKED);
+
+			//Language selection
 
 			return 0;
 		}
@@ -3021,19 +3034,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					sprintf(text, "%d", frameskiprate);
 					WritePrivateProfileString("Video", "FrameSkip", text, IniName);
 				}
-
-				MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP0, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP1, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP2, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP3, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP4, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP5, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP6, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP7, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(LOWORD(wParam), MF_BYCOMMAND | MF_CHECKED);
 			}
 			return 0;
 		case IDC_LANGENGLISH:
