@@ -96,6 +96,8 @@ const unsigned int baseid = 601;			//Base identifier for the recent ROMs items
 static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
 //--------------------------------------
 
+void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
+
 static HMENU mainMenu; //Holds handle to the main DeSmuME menu
 
 //------todo move these into a generic driver api
@@ -2257,6 +2259,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	{
 		case WM_ENTERMENULOOP:		  //Update menu items that needs to be updated dynamically
 		{
+			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
+
 			//Check if AVI is recording
 			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (!DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
@@ -3682,6 +3686,7 @@ void ResetGame()
 	frameCounter=0;
 }
 
+//adelikat: This function allows another file to add a message to the screen
 void SetMessageToDisplay(const char *message)
 {
 	MessageToDisplay.str("");	//adelikat: Clear previous message //TODO set up a queue system, and/or a multiline system, instead of rudely cancelling out messages.
@@ -3689,4 +3694,39 @@ void SetMessageToDisplay(const char *message)
 								//				  make the function receive an int for the counter, but overload so that if no int, 120 is used
 	MessageToDisplay << message;
 	displayMessageCounter = 120;//				  
+}
+
+
+//adelikat: This function changes a menu item's text
+void ChangeMenuItemText(int menuitem, string text)
+{
+	MENUITEMINFO moo;
+	moo.cbSize = sizeof(moo);
+	moo.fMask = MIIM_TYPE;
+	moo.cch = NULL;
+	GetMenuItemInfo(mainMenu, menuitem, FALSE, &moo);
+	moo.dwTypeData = (LPSTR)text.c_str();
+	SetMenuItemInfo(mainMenu, menuitem, FALSE, &moo);
+}
+
+//adelikat:  This function find the current hotkey assignments for corresponding menu items
+//			 and appends it to the menu item.  This function works correctly for all language menus
+//		     However, a Menu item in the Resource file must NOT have a /t (tab) in its caption.
+void UpdateHotkeyAssignments()
+{
+	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
+	char itemText[255];	//To get the current text from a mnue item
+	string text;		//Used to manipulate menu item text
+	int truncate;		//Used to truncate the hotkey config from the menu item
+
+	//-------------------------------FILE---------------------------------------
+
+	//Open ROM
+	GetMenuString(mainMenu,IDM_OPEN, itemText, 255, IDM_OPEN);	//Get menu item text
+	text = itemText;											//Store in string object
+	truncate = text.find("\t");									//Find the tab
+	if (truncate >= 1)											//Truncate if it exists
+		text = text.substr(0,truncate);
+	text.append("\tCtrl+O");	//TODO: Append actual hotkey assignment
+	ChangeMenuItemText(IDM_OPEN, text);		//Set Menu item text
 }
