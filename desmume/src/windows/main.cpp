@@ -1469,7 +1469,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
 #endif
 
-	hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL));
+	//hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL)); //Now that we have a hotkey system we down need the Accel table.  Not deleting just yet though
 
 	if(MenuInit() == 0)
 	{
