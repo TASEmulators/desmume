@@ -89,7 +89,7 @@ static void wtools_2_update() {
 			for (j=0; j<16; j+=4, addr+=4,mem32++) { 
 				m32 = *mem32; *mem32 = MMU_read32(cpu, addr);
 				if (m32 != *mem32) {
-					sprintf(txt, "  %08lX", *mem32);
+					sprintf(txt, "  %08X", *mem32);
 					dTools_display_clear_char(&dsp, 12+3*j, i, 12);
 					dTools_display_draw_text(&dsp, 12+3*j, i, txt);
 				}
@@ -273,7 +273,7 @@ static void refresh() {
 			break;
 		case Bit32:
 			for (j=0; j<16; j+=4,ptxt+=12, mem32++)
-				sprintf(ptxt, "  %08lX  ", *mem32);
+				sprintf(ptxt, "  %08X  ", *mem32);
 			break;
 		}
 		sprintf(ptxt, "| "); ptxt +=2;

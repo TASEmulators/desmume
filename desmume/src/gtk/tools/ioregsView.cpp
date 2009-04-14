@@ -376,13 +376,13 @@ static void selected_reg(GtkWidget* widget, gpointer data)
 	
 	switch (current_reg[c]->size) {
 	case BITS_8:
-		regInfosBuffer = g_strdup_printf("0x%02lX", current_reg[c]->value(c));
+		regInfosBuffer = g_strdup_printf("0x%02X", current_reg[c]->value(c));
 		break;
 	case BITS_16:
-		regInfosBuffer = g_strdup_printf("0x%04lX", current_reg[c]->value(c));
+		regInfosBuffer = g_strdup_printf("0x%04X", current_reg[c]->value(c));
 		break;
 	default:
-		regInfosBuffer = g_strdup_printf("0x%08lX", current_reg[c]->value(c));
+		regInfosBuffer = g_strdup_printf("0x%08X", current_reg[c]->value(c));
 	}	
 // 	gtk_box_pack_start(GTK_BOX(mVbox0[c]), mRegInfos[c], FALSE, FALSE, 0);
 	gtk_label_set_label(GTK_LABEL(mRegInfos[c]), regInfosBuffer);
@@ -450,7 +450,7 @@ static void open(int ID)
 		for(i = 0; i < GET_REG_LIST_SIZE(c); i++)
 		{
 			gchar *reg_name_buffer;
-			reg_name_buffer = g_strdup_printf("0x%08lX : %s (%s)", GET_REG_LIST(c)[i].adress, GET_REG_LIST(c)[i].name, bits_strings[GET_REG_LIST(c)[i].size]);
+			reg_name_buffer = g_strdup_printf("0x%08X : %s (%s)", GET_REG_LIST(c)[i].adress, GET_REG_LIST(c)[i].name, bits_strings[GET_REG_LIST(c)[i].size]);
 			gtk_combo_box_append_text(GTK_COMBO_BOX(mIoRegCombo[c]), reg_name_buffer);
 			g_free(reg_name_buffer);
 		}
