@@ -460,6 +460,7 @@ struct VramConfiguration {
 
 	std::string describePurpose(Purpose p) {
 		switch(p) {
+			case OFF: return "OFF";
 			case INVALID: return "INVALID";
 			case ABG: return "ABG";
 			case BBG: return "BBG";
