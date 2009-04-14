@@ -84,8 +84,8 @@ int totalseconds;
 bool init=false;
 bool moviemode=false;
 
-void MovieTime(void) {
 #ifdef WIN32
+static void MovieTime(void) {
 	if(!init) {
 		movie.year=9;
 		movie.month=1;
@@ -111,8 +111,12 @@ void MovieTime(void) {
 	//convert to sane numbers
 	movie.minute=movie.minute % 60;
 	movie.hour=movie.hour % 24;
-#endif
 }
+#else
+static void MovieTime(void)
+{
+}
+#endif
 
 static void rtcRecv()
 {
