@@ -2074,7 +2074,6 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 #endif
 	)     
 	{
-		const int oamNum = 127 - i;
 		//for each sprite:
 
 		size sprSize;
