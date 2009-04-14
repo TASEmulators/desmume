@@ -443,7 +443,7 @@ void DMAtoVRAMmapping()
 struct VramConfiguration {
 
 	enum Purpose {
-		OFF, INVALID, ERROR, ABG, BBG, AOBJ, BOBJ, LCDC, ARM7, TEX, TEXPAL, ABGEXTPAL, BBGEXTPAL, AOBJEXTPAL, BOBJEXTPAL
+		OFF, INVALID, ABG, BBG, AOBJ, BOBJ, LCDC, ARM7, TEX, TEXPAL, ABGEXTPAL, BBGEXTPAL, AOBJEXTPAL, BOBJEXTPAL
 	};
 
 	struct BankInfo {
@@ -461,7 +461,6 @@ struct VramConfiguration {
 	std::string describePurpose(Purpose p) {
 		switch(p) {
 			case INVALID: return "INVALID";
-			case ERROR: return "ERROR";
 			case ABG: return "ABG";
 			case BBG: return "BBG";
 			case AOBJ: return "AOBJ";
