@@ -28,6 +28,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <sstream>
 
 #include "common.h"
 #include "debug.h"
@@ -438,6 +439,54 @@ void DMAtoVRAMmapping()
 
 #define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
 
+
+struct VramConfiguration {
+
+	enum Purpose {
+		OFF, INVALID, ABG, BBG, AOBJ, BOBJ, LCDC, ARM7, TEX, TEXPAL, ABGEXTPAL, BBGEXTPAL, AOBJEXTPAL, BOBJEXTPAL
+	};
+
+	struct BankInfo {
+		Purpose purpose;
+		int ofs;
+	} banks[VRAM_BANKS];
+	
+	void clear() {
+		for(int i=0;i<VRAM_BANKS;i++) {
+			banks[i].ofs = 0;
+			banks[i].purpose = OFF;
+		}
+	}
+
+	std::string describePurpose(Purpose p) {
+		switch(p) {
+			case INVALID: return "INVALID";
+			case ERROR: return "ERROR";
+			case ABG: return "ABG";
+			case BBG: return "BBG";
+			case AOBJ: return "AOBJ";
+			case BOBJ: return "BOBJ";
+			case LCDC: return "LCDC";
+			case ARM7: return "ARM7";
+			case TEX: return "TEX";
+			case TEXPAL: return "TEXPAL";
+			case ABGEXTPAL: return "ABGEXTPAL";
+			case BBGEXTPAL: return "BBGEXTPAL";
+			case AOBJEXTPAL: return "AOBJEXTPAL";
+			case BOBJEXTPAL: return "BOBJEXTPAL";
+		}
+	}
+
+	std::string describe() {
+		std::stringstream ret;
+		for(int i=0;i<VRAM_BANKS;i++) {
+			ret << (char)(i+'A') << ": " << banks[0].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
+		}
+		return ret.str();
+	}
+} vramConfiguration;
+
+
 //maps the specified bank to LCDC
 static inline void MMU_vram_lcdc(const int bank)
 {
@@ -486,13 +535,16 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			switch(mst)
 			{
 			case 0: //LCDC
+				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
 				break;
 			case 1: //ABG
+				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //AOBJ
+				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				switch(ofs) {
 				case 0:
 				case 1:
@@ -504,6 +556,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				}
 				break;
 			case 3: //texture
+				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
 				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			}
@@ -516,13 +569,16 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			switch(mst)
 			{
 			case 0: //LCDC
+				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
 				break;
 			case 1: //ABG
+				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //arm7
+				vramConfiguration.banks[bank].purpose = VramConfiguration::ARM7;
 				if(bank == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
 				if(bank == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
 				switch(ofs) {
@@ -536,14 +592,18 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 
 				break;
 			case 3: //texture
+				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
 				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //BGB or BOBJ
 				MMU_vram_lcdc(bank);
-				if(bank == VRAM_BANK_C) 
+				if(bank == VRAM_BANK_C)  {
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 					MMU_vram_arm9(bank,VRAM_PAGE_BBG); //BBG
-				else 
+				} else {
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
 					MMU_vram_arm9(bank,VRAM_PAGE_BOBJ); //BOBJ
+				}
 				break;
 			default: goto unsupported_mst;
 			}
@@ -553,23 +613,28 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			mst = VRAMBankCnt & 7;
 			switch(mst) {
 			case 0: //LCDC
+				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
 				break;
 			case 1: //ABG
+				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG);
 				break;
 			case 2: //AOBJ
 				MMU_vram_lcdc(bank);
+				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ);
 				break;
 			case 3: //texture palette
+				vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
 				ARM9Mem.texInfo.texPalSlot[0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.texInfo.texPalSlot[1] = MMU_vram_physical(vram_bank_info[bank].page_addr+1);
 				ARM9Mem.texInfo.texPalSlot[2] = MMU_vram_physical(vram_bank_info[bank].page_addr+2);
 				ARM9Mem.texInfo.texPalSlot[3] = MMU_vram_physical(vram_bank_info[bank].page_addr+3);
 				break;
 			case 4: //A BG extended palette
+				vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
 				ARM9Mem.ExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ExtPal[0][1] = ARM9Mem.ExtPal[0][0] + ADDRESS_STEP_8KB;
 				ARM9Mem.ExtPal[0][2] = ARM9Mem.ExtPal[0][1] + ADDRESS_STEP_8KB;
@@ -588,34 +653,41 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			switch(mst)
 			{
 			case 0: //LCDC
+				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
 				break;
 			case 1: //ABG
+				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring (required by spyro eternal night)
 				break;
 			case 2: //AOBJ
+				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
 				break;
 			case 3: //texture palette
+				vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
 				ARM9Mem.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //A BG extended palette
 				switch(ofs) {
 				case 0:
 				case 1:
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
 					ARM9Mem.ExtPal[0][ofs*2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 					ARM9Mem.ExtPal[0][ofs*2+1] = ARM9Mem.ExtPal[0][ofs*2] + ADDRESS_STEP_8KB;
 					break;
 				default:
+					vramConfiguration.banks[bank].purpose = VramConfiguration::INVALID;
 					PROGINFO("Unsupported ofs setting %d for engine A bgextpal vram bank %c\n", ofs, 'A'+bank);
 					break;
 				}
 				break;
 			case 5: //A OBJ extended palette
+				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				ARM9Mem.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ObjExtPal[0][1] + ADDRESS_STEP_8KB;
 				break;
@@ -629,14 +701,17 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			switch(mst)
 			{
 			case 0: //LCDC
+				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
 				break;
 			case 1: //BBG
+				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG + 4); //unexpected mirroring
 				break;
 			case 2: //B BG extended palette
+				vramConfiguration.banks[bank].purpose = VramConfiguration::BBGEXTPAL;
 				ARM9Mem.ExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ExtPal[1][1] = ARM9Mem.ExtPal[1][0] + ADDRESS_STEP_8KB;
 				ARM9Mem.ExtPal[1][2] = ARM9Mem.ExtPal[1][1] + ADDRESS_STEP_8KB;
@@ -651,18 +726,22 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			switch(mst)
 			{
 			case 0: //LCDC
+				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
 				break;
 			case 1: //BBG
+				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+2);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+3); //unexpected mirroring
 				break;
 			case 2: //BOBJ
+				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
 				break;
 			case 3: //B OBJ extended palette
+				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJEXTPAL;
 				ARM9Mem.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ObjExtPal[1][1] + ADDRESS_STEP_8KB;
 				break;
@@ -672,14 +751,19 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			
 	} //switch(bank)
 
+	vramConfiguration.banks[bank].ofs = ofs;
+
 	return;
 
 unsupported_mst:
+	vramConfiguration.banks[bank].purpose = VramConfiguration::INVALID;
 	PROGINFO("Unsupported mst setting %d for vram bank %c\n", mst, 'A'+bank);
 }
 
 void MMU_VRAM_unmap_all()
 {
+	vramConfiguration.clear();
+
 	vram_arm7_map[0] = VRAM_PAGE_UNMAPPED;
 	vram_arm7_map[1] = VRAM_PAGE_UNMAPPED;
 
@@ -730,6 +814,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	//refresh all bank settings
 	for(int i=0;i<VRAM_BANKS;i++)
 		MMU_VRAMmapRefreshBank(i);
+
+	//printf(vramConfiguration.describe().c_str());
 
 	//if texInfo changed, trigger notifications
 	if(memcmp(&oldTexInfo,&ARM9Mem.texInfo,sizeof(ARM9_struct::TextureInfo)))
