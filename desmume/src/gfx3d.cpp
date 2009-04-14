@@ -967,7 +967,7 @@ void gfx3d_glNormal(u32 v)
 				if(dsSpecular & 0x8000)
 				{
 					int shininessIndex = (int)(shininessLevel * 128);
-					if(shininessIndex >= ARRAY_SIZE(shininessTable)) {
+					if(shininessIndex >= (int)ARRAY_SIZE(shininessTable)) {
 						//we can't print this right now, because when a game triggers this it triggers it _A_LOT_
 						//so wait until we have per-frame diagnostics.
 						//this was tested using Princess Debut (US) after proceeding through the intro and getting the tiara.
