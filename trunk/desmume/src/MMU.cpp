@@ -409,7 +409,7 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 }
 
 
-inline u8 *MMU_RenderMapToLCD(u32 vram_addr)
+u8 *MMU_RenderMapToLCD(u32 vram_addr)
 {
 	//THIS FUNCTION IS DANGEROUS!
 	//the very idea is heinous, since people are
