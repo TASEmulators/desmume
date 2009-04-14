@@ -180,7 +180,7 @@ static BOOL initKeycode(u32 idCode, int level, u32 modulo)
 
 static u16 getBootCodeCRC16()
 {
-	int i, j;
+	unsigned int i, j;
 	u32 crc = 0xFFFF;
 	const u16 val[8] = {0xC0C1, 0xC181, 0xC301, 0xC601, 0xCC01, 0xD801, 0xF001, 0xA001};
 
@@ -2428,7 +2428,7 @@ static void SetTurbo(bool (&pad) [10]) {
 		if(currentbutton) {
 			pad[i]=turbo[TurboTime.time(i)-1];
 			
-			if(TurboTime.time(i)>=ARRAY_SIZE(turbo))
+			if(TurboTime.time(i) >= (int)ARRAY_SIZE(turbo))
 				TurboTime.time(i)=0;
 		}
 		else
