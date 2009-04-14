@@ -2047,6 +2047,8 @@ void GPU::spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 		_spriteRender<SPRITE_2D>(dst,dst_alpha,typeTab, prioTab);
 }
 
+//TODO - refactor this so there isnt as much duped code between rotozoomed and non-rotozoomed versions
+
 template<GPU::SpriteRenderMode MODE>
 void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
@@ -2205,8 +2207,9 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			else if(spriteInfo->Mode == 3)
 			{
 				if (dispCnt->OBJ_BMP_mapping)
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex)*32);
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary));
 				else
+					//NOT TESTED
 					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
 				
 				if (!src) { 
@@ -2222,8 +2225,10 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
 					{
 						if(MODE == SPRITE_2D)
-							offset = auxX + (auxY<<8);
+							//tested by buffy sacrifice damage blood splatters in corner
+							offset = auxX + (auxY*sprSize.x);
 						else
+							//NOT TESTED
 							offset = (auxX) + (auxY<<5);
 
 						colour = T1ReadWord (src, offset<<1);
@@ -2334,14 +2339,16 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
+
 				if (dispCnt->OBJ_BMP_mapping)
 				{
-					// TODO: fix it for sprite1D
-					//src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<4) + (y<<gpu->sprBMPBoundary));
+					//tested by buffy sacrifice damage blood splatters in corner
+					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary) + (y*sprSize.x*2));
 				}
 				else
 				{
+					//NOT TESTED:
+
 					if (dispCnt->OBJ_BMP_2D_dim) // 256*256
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
 					else // 128 * 512
