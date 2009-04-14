@@ -481,20 +481,12 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 					curx += (fontwidth * 2);
 					for(i = 0; i < 16; i++)
 					{
+						u8 val = T1ReadByte(memory, ((line << 4) + i));
 						if(data->sel && (data->selAddress == (addr + i)))
 						{
 							SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
 							SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-						}
-						else
-						{
-							SetBkColor(mem_hdc, RGB(255, 255, 255));
-							SetTextColor(mem_hdc, RGB(0, 0, 0));
-						}
-
-						u8 val = T1ReadByte(memory, ((line << 4) + i));
-						if(data->sel && (data->selAddress == (addr + i)))
-						{
+							
 							switch(data->selPart)
 							{
 							case 0: sprintf(text, "%02X", val); break;
@@ -502,7 +494,12 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 							}
 						}
 						else
+						{
+							SetBkColor(mem_hdc, RGB(255, 255, 255));
+							SetTextColor(mem_hdc, RGB(0, 0, 0));
+							
 							sprintf(text, "%02X", val);
+						}
 
 						TextOut(mem_hdc, curx, cury, text, strlen(text));
 						curx += (fontwidth * (2+1));
@@ -516,20 +513,12 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 					curx += (fontwidth * 6);
 					for(i = 0; i < 16; i += 2)
 					{
+						u16 val = T1ReadWord(memory, ((line << 4) + i));
 						if(data->sel && (data->selAddress == (addr + i)))
 						{
 							SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
 							SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-						}
-						else
-						{
-							SetBkColor(mem_hdc, RGB(255, 255, 255));
-							SetTextColor(mem_hdc, RGB(0, 0, 0));
-						}
-
-						u16 val = T1ReadWord(memory, ((line << 4) + i));
-						if(data->sel && (data->selAddress == (addr + i)))
-						{
+							
 							switch(data->selPart)
 							{
 							case 0: sprintf(text, "%04X", val); break;
@@ -539,7 +528,12 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 							}
 						}
 						else
+						{
+							SetBkColor(mem_hdc, RGB(255, 255, 255));
+							SetTextColor(mem_hdc, RGB(0, 0, 0));
+							
 							sprintf(text, "%04X", val);
+						}
 
 						TextOut(mem_hdc, curx, cury, text, strlen(text));
 						curx += (fontwidth * (4+1));
@@ -553,20 +547,12 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 					curx += (fontwidth * 8);
 					for(i = 0; i < 16; i += 4)
 					{
+						u32 val = T1ReadLong(memory, ((line << 4) + i));
 						if(data->sel && (data->selAddress == (addr + i)))
 						{
 							SetBkColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHT));
 							SetTextColor(mem_hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
-						}
-						else
-						{
-							SetBkColor(mem_hdc, RGB(255, 255, 255));
-							SetTextColor(mem_hdc, RGB(0, 0, 0));
-						}
-
-						u32 val = T1ReadLong(memory, ((line << 4) + i));
-						if(data->sel && (data->selAddress == (addr + i)))
-						{
+							
 							switch(data->selPart)
 							{
 							case 0: sprintf(text, "%08X", val); break;
@@ -580,7 +566,12 @@ LRESULT MemView_ViewBoxPaint(HWND hCtl, MemView_DataStruct *data, WPARAM wParam,
 							}
 						}
 						else
+						{
+							SetBkColor(mem_hdc, RGB(255, 255, 255));
+							SetTextColor(mem_hdc, RGB(0, 0, 0));
+							
 							sprintf(text, "%08X", val);
+						}	
 
 						TextOut(mem_hdc, curx, cury, text, strlen(text));
 						curx += (fontwidth * (8+1));
@@ -748,6 +739,16 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 					}
 					data->selPart = 0;
 					data->selNewVal = 0x00000000;
+
+					if(data->selAddress == 0x00000000)
+					{
+						data->sel = FALSE;
+					}
+					else if(data->selAddress >= (data->address + 0x100))
+					{
+						data->address = min((u32)0xFFFFFF00, (data->address + 0x10));
+						SetScrollPos(hCtl, SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
+					}
 				}
 			}
 
@@ -791,6 +792,14 @@ LRESULT CALLBACK MemView_ViewBoxProc(HWND hCtl, UINT uMsg, WPARAM wParam, LPARAM
 					data->address = min((u32)0xFFFFFF00, (data->address + ((si.nTrackPos - firstpos) * 16)));
 				}
 				break;
+			}
+
+			if((data->selAddress < data->address) || (data->selAddress >= (data->address + 0x100)))
+			{
+				data->sel = FALSE;
+				data->selAddress = 0x00000000;
+				data->selPart = 0;
+				data->selNewVal = 0x00000000;
 			}
 
 			SetScrollPos(hCtl, SB_VERT, ((data->address >> 4) & 0x000FFFFF), TRUE);
