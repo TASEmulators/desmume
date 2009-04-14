@@ -966,7 +966,20 @@ void gfx3d_glNormal(u32 v)
 
 				if(dsSpecular & 0x8000)
 				{
-					shininessLevel = shininessTable[(int)(shininessLevel * 128)];	
+					int shininessIndex = (int)(shininessLevel * 128);
+					if(shininessIndex >= ARRAY_SIZE(shininessTable)) {
+						//we can't print this right now, because when a game triggers this it triggers it _A_LOT_
+						//so wait until we have per-frame diagnostics.
+						//this was tested using Princess Debut (US) after proceeding through the intro and getting the tiara.
+						//After much research, I determined that this was caused by the game feeding in a totally jacked matrix
+						//to mult4x4 from 0x02129B80 (after feeding two other valid matrices)
+						//the game seems to internally index these as: ?, 0x37, 0x2B <-- error
+						//but, man... this is seriously messed up. there must be something going wrong.
+						//maybe it has something to do with what looks like a mirror room effect that is going on during this time?
+						//PROGINFO("ERROR: shininess table out of bounds.\n  maybe an emulator error; maybe a non-unit normal; setting to 0\n");
+						shininessIndex = 0;
+					}
+					shininessLevel = shininessTable[shininessIndex];
 				}
 
 				for(c = 0; c < 3; c++)

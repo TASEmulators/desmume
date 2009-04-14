@@ -771,6 +771,7 @@ static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 	{
 		if(x<0 || x>255) {
 			printf("rasterizer rendering at x=%d! oops!\n",x);
+			return;
 		}
 		pixel(adr,color[0],color[1],color[2],u,v,1.0f/invw,z);
 		adr++;
@@ -1216,10 +1217,12 @@ static void SoftRastRender()
 			vert.coord[0] += viewport.x;
 			vert.coord[1] *= viewport.height;
 			vert.coord[1] += viewport.y;
-			if(vert.coord[1]>192||vert.color[1]<0) {
-				int zzz=9;
-			}
 			vert.coord[1] = 192 - vert.coord[1];
+
+			//well, i guess we need to do this to keep Princess Debut from rendering huge polys.
+			//there must be something strange going on
+			vert.coord[0] = max(0.0f,min(256.0f,vert.coord[0]));
+			vert.coord[1] = max(0.0f,min(192.0f,vert.coord[1]));
 		}
 	}
 
