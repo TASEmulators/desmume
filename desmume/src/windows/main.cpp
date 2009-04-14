@@ -2764,8 +2764,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
 			if (!ViewMem_ARM9->open())
 				ViewMem_ARM9->unregClass();*/
-			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(hwnd, ARMCPU_ARM9);
-			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(hwnd, ARMCPU_ARM7);
+			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(hwnd, "ARM9 memory", ARMCPU_ARM9);
+			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(hwnd, "ARM7 memory", ARMCPU_ARM7);
 			return 0;
 		case IDM_DISASSEMBLER:
 			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);

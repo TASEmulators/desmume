@@ -25,7 +25,7 @@
 BOOL MemView_Init();
 void MemView_DeInit();
 
-BOOL MemView_DlgOpen(HWND hParentWnd, u8 CPU);
+BOOL MemView_DlgOpen(HWND hParentWnd, char *Title, u8 CPU);
 void MemView_DlgClose(u8 CPU);
 BOOL MemView_IsOpened(u8 CPU);
 void MemView_Refresh(u8 CPU);
