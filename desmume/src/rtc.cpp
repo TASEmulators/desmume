@@ -79,7 +79,7 @@ struct movietime {
 struct movietime movie;
 
 int oldframeCounter;
-u64 totalcycles=2904024960000;//noon
+u64 totalcycles=2904024960000ULL;//noon
 int totalseconds;
 bool init=false;
 bool moviemode=false;
