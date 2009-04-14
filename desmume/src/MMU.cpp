@@ -187,8 +187,7 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 3X*/	DUP16(MMU.SWIRAM),
 		/* 4X*/	DUP16(ARM9Mem.ARM9_REG),
 		/* 5X*/	DUP16(ARM9Mem.ARM9_VMEM),
-		/* 6X*/	DUP8(0), //this gets handled by special logic
-				DUP8(ARM9Mem.ARM9_LCD), 
+		/* 6X*/	DUP16(ARM9Mem.ARM9_LCD),
 		/* 7X*/	DUP16(ARM9Mem.ARM9_OAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
@@ -209,8 +208,7 @@ u8 * MMU_struct::MMU_MEM[2][256] = {
 		/* 4X*/	DUP8(MMU.ARM7_REG),
 				DUP8(MMU.ARM7_WIRAM),
 		/* 5X*/	DUP16(MMU.UNUSED_RAM),
-		/* 6X*/	DUP8(0), //this gets handled by special logic
-				DUP8(ARM9Mem.ARM9_LCD), 
+		/* 6X*/	DUP16(ARM9Mem.ARM9_LCD),
 		/* 7X*/	DUP16(MMU.UNUSED_RAM),
 		/* 8X*/	DUP16(NULL),
 		/* 9X*/	DUP16(NULL),
@@ -233,8 +231,7 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 3X*/	DUP16(0x00007FFF),
 		/* 4X*/	DUP16(0x00FFFFFF),
 		/* 5X*/	DUP16(0x000007FF),
-		/* 6X*/	DUP8(0x00000003),
-				DUP8(0x000FFFFF),
+		/* 6X*/	DUP16(0x00FFFFFF),
 		/* 7X*/	DUP16(0x000007FF),
 		/* 8X*/	DUP16(ROM_MASK),
 		/* 9X*/	DUP16(ROM_MASK),
@@ -255,8 +252,7 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		/* 4X*/	DUP8(0x00FFFFFF),
 				DUP8(0x0000FFFF),
 		/* 5X*/	DUP16(0x00000003),
-		/* 6X*/	DUP8(0x00000003),
-				DUP8(0x000FFFFF),
+		/* 6X*/	DUP16(0x00FFFFFF),
 		/* 7X*/	DUP16(0x00000003),
 		/* 8X*/	DUP16(ROM_MASK),
 		/* 9X*/	DUP16(ROM_MASK),
@@ -348,6 +344,9 @@ static const TVramBankInfo vram_bank_info[VRAM_BANKS] = {
 	{40,1}
 };
 
+//this is to remind you that the LCDC mapping returns a strange value (not 0x06800000) as you would expect
+//in order to play nicely with the MMU address and mask tables
+#define LCDC_HACKY_LOCATION 0x06000000
 
 //maps an ARM9 BG/OBJ or LCDC address into an LCDC address, and informs the caller of whether it isn't mapped
 //TODO - in cases where this does some mapping work, we could bypass the logic at the end of the _read* and _write* routines
@@ -371,7 +370,7 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 			unmapped = true;
 			return 0;
 		}
-		return 0x06800000 + (vram_arm7_map[bank]<<17) + ofs;
+		return LCDC_HACKY_LOCATION + (vram_arm7_map[bank]<<17) + ofs;
 	}
 
 	//handle LCD memory mirroring
@@ -397,9 +396,6 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 		vram_page = (addr>>14)&(VRAM_ARM9_PAGES-1);
 		assert(vram_page<VRAM_ARM9_PAGES);
 		vram_page = vram_arm9_map[vram_page];
-		if(vram_page>=8&&vram_page<12) {
-			//return 0x06800000;
-		}
 	}
 
 	if(vram_page == VRAM_PAGE_UNMAPPED)
@@ -408,11 +404,11 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 		return 0;
 	}
 	else
-		return + 0x06800000 + (vram_page<<14) + ofs;
+		return LCDC_HACKY_LOCATION + (vram_page<<14) + ofs;
 }
 
 
-u8 *MMU_RenderMapToLCD(u32 vram_addr)
+inline u8 *MMU_RenderMapToLCD(u32 vram_addr)
 {
 	//THIS FUNCTION IS DANGEROUS!
 	//the very idea is heinous, since people are
@@ -422,7 +418,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	bool unmapped;
 	vram_addr = MMU_LCDmap<0>(vram_addr,unmapped);
 	if(unmapped) return 0;
-	else return ARM9Mem.ARM9_LCD + (vram_addr - 0x06800000);
+	else return ARM9Mem.ARM9_LCD + (vram_addr - LCDC_HACKY_LOCATION);
 }
 
 
@@ -602,7 +598,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			case 2: //AOBJ
 				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
-				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
+				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
 				break;
 			case 3: //texture palette
 				ARM9Mem.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
