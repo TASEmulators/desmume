@@ -80,9 +80,9 @@ static void update_regs_fast(){
 		if (w == m) continue;
 
 		if ( Reg_Names_Addr[i].trunc )
-			sprintf(text, "    0x%04lX", w);
+			sprintf(text, "    0x%04X", w);
 		else
-			sprintf(text, "0x%08lX", w);
+			sprintf(text, "0x%08X", w);
 
 		dTools_display_select_attr(&dsp, 2);
 		dTools_display_clear_char(&dsp, size_+3, i, 10);
@@ -116,9 +116,9 @@ static void update_regs()
 	{
 		mem[i] = MMU_read32(cpu,Reg_Names_Addr[i].addr);
 		if  ( Reg_Names_Addr[i].trunc )
-			sprintf(text, "    0x%04lX", mem[i]);
+			sprintf(text, "    0x%04X", mem[i]);
 		else
-			sprintf(text, "0x%08lX", mem[i]);
+			sprintf(text, "0x%08X", mem[i]);
 
 		dTools_display_select_attr(&dsp, 0);
 		dTools_display_draw_text(&dsp, 0, i, Reg_Names_Addr[i].name);

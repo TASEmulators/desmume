@@ -159,7 +159,7 @@ BOOL cheatsSave()
 			{
 				for (int t = 0; t < cheats[i].num; t++)
 				{
-					fprintf(fcheat, "Data=%08lX%08lX", cheats[i].hi[t], cheats[i].lo[t]);
+					fprintf(fcheat, "Data=%08X%08X", cheats[i].hi[t], cheats[i].lo[t]);
 					if (t < (cheats[i].num - 1)) fputs(",", fcheat);
 				}
 				fputs("\n", fcheat);
@@ -226,10 +226,10 @@ BOOL cheatsLoad()
 						for (int j=0; j<cheats[last].num; j++)
 						{
 							strncpy(tmp_buf, (char *)buf+offs, 8);
-							sscanf_s(tmp_buf, "%lx", &cheats[last].hi[j]);
+							sscanf_s(tmp_buf, "%x", &cheats[last].hi[j]);
 							offs+=8;
 							strncpy(tmp_buf, (char *)buf+offs, 8);
-							sscanf_s(tmp_buf, "%lx", &cheats[last].lo[j]);
+							sscanf_s(tmp_buf, "%x", &cheats[last].lo[j]);
 							offs++;		// skip comma
 						}
 					}
