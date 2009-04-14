@@ -2224,12 +2224,9 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
 					{
-						if(MODE == SPRITE_2D)
-							//tested by buffy sacrifice damage blood splatters in corner
-							offset = auxX + (auxY*sprSize.x);
-						else
-							//NOT TESTED
-							offset = (auxX) + (auxY<<5);
+						//if(MODE == SPRITE_2D) //tested by buffy sacrifice damage blood splatters in corner
+						//else //tested by lego indiana jones
+						offset = auxX + (auxY*sprSize.x);
 
 						colour = T1ReadWord (src, offset<<1);
 
