@@ -41,11 +41,28 @@ void	MatrixInit				(float *matrix);
 #define MATRIXFASTCALL
 #endif
 
-void	MATRIXFASTCALL MatrixMultVec3x3		(const float * matrix, float * vecPtr);
-void	MATRIXFASTCALL MatrixMultVec4x4		(const float * matrix, float * vecPtr);
-void	MATRIXFASTCALL MatrixMultiply		(float * matrix, const float * rightMatrix);
-void	MATRIXFASTCALL MatrixTranslate		(float *matrix, const float *ptr);
-void	MATRIXFASTCALL MatrixScale			(float * matrix, const float * ptr);
+//In order to conditionally use these asm optimized functions in visual studio
+//without having to make new build types to exclude the assembly files.
+//a bit sloppy, but there aint much to it
+#ifdef SSE2
+#define SSE2_FUNC(X) _sse2_##X
+#define MatrixMultVec4x4 _sse2_MatrixMultVec4x4
+#define MatrixMultVec3x3 _sse2_MatrixMultVec3x3
+#define MatrixMultiply _sse2_MatrixMultiply
+#define MatrixTranslate _sse2_MatrixTranslate
+#define MatrixScale _sse2_MatrixScale
+#else
+#define SSE2_FUNC(X) X
+#endif
+
+void	MATRIXFASTCALL SSE2_FUNC(MatrixMultVec3x3)		(const float * matrix, float * vecPtr);
+void	MATRIXFASTCALL SSE2_FUNC(MatrixMultVec4x4)		(const float * matrix, float * vecPtr);
+void	MATRIXFASTCALL SSE2_FUNC(MatrixMultiply)		(float * matrix, const float * rightMatrix);
+void	MATRIXFASTCALL SSE2_FUNC(MatrixTranslate)		(float *matrix, const float *ptr);
+void	MATRIXFASTCALL SSE2_FUNC(MatrixScale)			(float * matrix, const float * ptr);
+
+
+
 float	MATRIXFASTCALL MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
 void	MATRIXFASTCALL MatrixSet				(float *matrix, int x, int y, float value);
 void	MATRIXFASTCALL MatrixCopy				(float * matrixDST, const float * matrixSRC);
