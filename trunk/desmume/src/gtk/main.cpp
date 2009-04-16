@@ -1020,6 +1020,16 @@ static void savegame(int num){
        savestate_slot(num);
 }
 
+static void MenuLoad(GtkMenuItem *item, gpointer slot)
+{
+    loadgame(GPOINTER_TO_INT(slot));
+}
+
+static void MenuSave(GtkMenuItem *item, gpointer slot)
+{
+    savegame(GPOINTER_TO_INT(slot));
+}
+
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
   if (e->keyval == GDK_Shift_L){
@@ -1197,6 +1207,7 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
     guint Layer = GPOINTER_TO_UINT(data);
     gboolean active;
 
+    // FIXME: make it work after resume
     if (!desmume_running())
         return;
 
@@ -1570,12 +1581,42 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 
 /////////////////////////////// MAIN ///////////////////////////////
 
+static void desmume_gtk_menu_file_saveload_slot (GtkWidget *pMenu)
+{
+    GtkWidget *pMenuItemS, *pMenuItemL, *pSubmenuS, *pSubmenuL, *item;
+    GSList * list;
+
+    pSubmenuS = gtk_menu_new();
+    pMenuItemS = gtk_menu_item_new_with_label("Save State");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItemS), pSubmenuS);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItemS);
+
+    pSubmenuL = gtk_menu_new();
+    pMenuItemL = gtk_menu_item_new_with_label("Load State");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItemL), pSubmenuL);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItemL);
+
+    for(int i = 1; i <= 10; i++){
+        char label[64];
+        snprintf(label, 60, "SSlot %d", i);
+        item = gtk_menu_item_new_with_label(label);
+        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenuS), item);
+        g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(MenuSave), GINT_TO_POINTER(i));
+
+        snprintf(label, 60, "LSlot %d", i);
+        item = gtk_menu_item_new_with_label(label);
+        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenuL), item);
+        g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(MenuLoad), GINT_TO_POINTER(i));
+    }
+}
+
 static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
 {
     GtkWidget *pMenu, *pMenuItem;
 
     pMenu = gtk_menu_new();
     gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
+    desmume_gtk_menu_file_saveload_slot(pMenu);
     gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
     gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
 
