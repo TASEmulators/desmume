@@ -155,6 +155,7 @@
 #define IDD_EMULATIONSETTINGS                   916
 #define IDD_WIFISETTINGS                        918
 #define IDD_MEM_VIEW                            920
+#define IDD_RECORDTO                            922
 #define IDC_BGMAP_SEL                           1000
 #define IDC_BRIDGEADAPTER                       1000
 #define IDC_EDIT03                              1000
@@ -168,15 +169,18 @@
 #define IDC_EDIT05                              1002
 #define IDC_SLVOLUME                            1002
 #define IDC_BGMAP_TYPE                          1003
+#define IDC_BUTTON_BROWSEFILE                   1003
 #define IDC_EDIT08                              1003
 #define IDC_GI_GAMETITLE                        1003
 #define IDC_ROTATE0                             1003
 #define IDC_ARM9BIOSBROWSE                      1004
 #define IDC_EDIT11                              1004
+#define IDC_EDIT_FILENAME                       1004
 #define IDC_GI_GAMECODE                         1004
 #define IDC_ROTATE90                            1004
 #define IDC_ARM7BIOS                            1005
 #define IDC_EDIT07                              1005
+#define IDC_EDIT_AUTHOR                         1005
 #define IDC_ROTATE180                           1005
 #define IDC_EDIT12                              1006
 #define IDC_ROTATE270                           1006
