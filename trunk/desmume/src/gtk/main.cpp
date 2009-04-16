@@ -1584,7 +1584,6 @@ static void dui_set_accel_group(gpointer action, gpointer group) {
 static void desmume_gtk_menu_file_saveload_slot (GtkWidget *pMenu)
 {
     GtkWidget *pMenuItemS, *pMenuItemL, *pSubmenuS, *pSubmenuL, *item;
-    GSList * list;
 
     pSubmenuS = gtk_menu_new();
     pMenuItemS = gtk_menu_item_new_with_label("Save State");
