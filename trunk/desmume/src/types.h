@@ -20,10 +20,10 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
-//--------------
-//configuration
-#define DEVELOPER
-//--------------
+//todo - everyone will want to support this eventually, i suppose
+#ifdef _MSC_VER
+#include "config.h"
+#endif
 
 #define DESMUME_NAME "DeSmuME"
 
@@ -43,20 +43,18 @@
 #define DESMUME_CPUEXT_STRING ""
 #endif
 
-//#ifdef DEVELOPER
-//#define DESMUME_FEATURE_STRING " dev+"
-//#else
+#ifdef DEVELOPER
+#define DESMUME_FEATURE_STRING " dev+"
+#else
 #define DESMUME_FEATURE_STRING ""
-//#endif
+#endif
 
 #ifdef DEBUG
 #define DESMUME_SUBVERSION_STRING " debug"
-#else
-#ifdef RELEASE
+#elif defined(PUBLIC_RELEASE)
 #define DESMUME_SUBVERSION_STRING ""
 #else
-#define DESMUME_SUBVERSION_STRING " prerelease"
-#endif
+#define DESMUME_SUBVERSION_STRING " svn"
 #endif
 
 #ifdef __INTEL_COMPILER
@@ -76,7 +74,7 @@
 #endif
 
 #define DESMUME_VERSION_NUMERIC 90300
-#define DESMUME_VERSION_STRING " " "0.9.3 svn" DESMUME_FEATURE_STRING DESMUME_PLATFORM_STRING DESMUME_CPUEXT_STRING DESMUME_SUBVERSION_STRING DESMUME_COMPILER
+#define DESMUME_VERSION_STRING " " "0.9.3" DESMUME_SUBVERSION_STRING DESMUME_FEATURE_STRING DESMUME_PLATFORM_STRING DESMUME_CPUEXT_STRING DESMUME_COMPILER
 #define DESMUME_NAME_AND_VERSION " " DESMUME_NAME DESMUME_VERSION_STRING
 
 #ifdef _WIN32

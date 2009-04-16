@@ -24,7 +24,7 @@
 	.model	flat
 	.code
 	
-@MatrixMultVec4x4@8 PROC PUBLIC
+@_sse2_MatrixMultVec4x4@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -46,9 +46,9 @@
 		addps	xmm4, xmm7
 		movaps	XMMWORD PTR [edx], xmm4
 		ret		0
-@MatrixMultVec4x4@8 ENDP
+@_sse2_MatrixMultVec4x4@8 ENDP
 
-@MatrixMultVec3x3@8 PROC PUBLIC
+@_sse2_MatrixMultVec3x3@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -66,9 +66,9 @@
 		addps	xmm4, xmm6
 		movaps	XMMWORD PTR [edx], xmm4
 		ret		0
-@MatrixMultVec3x3@8 ENDP
+@_sse2_MatrixMultVec3x3@8 ENDP
 
-@MatrixMultiply@8 PROC PUBLIC
+@_sse2_MatrixMultiply@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -138,9 +138,9 @@
 		addps	xmm4,xmm7
 		movaps	XMMWORD PTR [ecx+48],xmm4
 		ret		0
-@MatrixMultiply@8 ENDP
+@_sse2_MatrixMultiply@8 ENDP
 
-@MatrixTranslate@8 PROC PUBLIC
+@_sse2_MatrixTranslate@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -160,9 +160,9 @@
 		addps	xmm4, xmm3
 		movaps	XMMWORD PTR [ecx+48], xmm4
 		ret		0
-@MatrixTranslate@8 ENDP
+@_sse2_MatrixTranslate@8 ENDP
 
-@MatrixScale@8 PROC PUBLIC
+@_sse2_MatrixScale@8 PROC PUBLIC
 		movaps	xmm0, XMMWORD PTR [ecx]
 		movaps	xmm1, XMMWORD PTR [ecx+16]
 		movaps	xmm2, XMMWORD PTR [ecx+32]
@@ -179,7 +179,7 @@
 		movaps	XMMWORD PTR [ecx+16],xmm5
 		movaps	XMMWORD PTR [ecx+32],xmm6
 		ret		0
-@MatrixScale@8 ENDP
+@_sse2_MatrixScale@8 ENDP
 
 end
 
