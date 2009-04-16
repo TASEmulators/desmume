@@ -60,7 +60,7 @@ static void update_savestate_menu(const char * cb_name, u8 num)
   GtkWidget * w;
   char cb[40];
 
-  sprintf( cb, "%s%d", cb_name, num);
+  snprintf( cb, 39, "%s%d", cb_name, num);
   w = glade_xml_get_widget(xml, cb);
   set_menuitem_label( w, savestates[num-1].date );
 }
