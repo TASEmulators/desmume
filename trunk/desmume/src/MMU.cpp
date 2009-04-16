@@ -820,8 +820,9 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	//if texInfo changed, trigger notifications
 	if(memcmp(&oldTexInfo,&ARM9Mem.texInfo,sizeof(ARM9_struct::TextureInfo)))
 	{
-		if(!nds.isIn3dVblank())
+		if(!nds.isIn3dVblank()) {
 			PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
+ 		}
 		gpu3D->NDS_3D_VramReconfigureSignal();
 	}
 
