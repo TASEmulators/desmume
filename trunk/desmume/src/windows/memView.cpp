@@ -88,7 +88,6 @@ void MemView_DeInit()
 BOOL MemView_DlgOpen(HWND hParentWnd, char *Title, u8 CPU)
 {
 	HWND hDlg;
-	char title[32];
 
 	MemView_Data[CPU] = new MemView_DataStruct(CPU);
 	if(MemView_Data[CPU] == NULL)
