@@ -19,13 +19,14 @@
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
- 
+
 #include "callbacks.h"
 #include "callbacks_IO.h"
 #include "dTools/callbacks_dtools.h"
 #include "globals.h"
 #include "keyval_names.h"
 #include "rasterize.h"
+#include "desmume.h"
 
 #ifdef GDB_STUB
 #include "../gdbstub.h"
@@ -92,6 +93,7 @@ struct configured_features {
   int opengl_2d;
   int engine_3d;
   int disable_limiter;
+  int savetype;
 
   u16 arm9_gdb_port;
   u16 arm7_gdb_port;
@@ -113,6 +115,7 @@ init_configured_features( struct configured_features *config) {
   config->engine_3d = 1;
 
   config->disable_limiter = 0;
+  config->savetype = 0;
 
   config->nds_file = NULL;
 
@@ -148,8 +151,18 @@ fill_configured_features( struct configured_features *config,
                          2 = gtkglext off-screen 3d opengl\n\n"));
 #endif
       g_print( _("\
-   --disable-limiter   Disables the 60 fps limiter\n\
-   \n\
+   --disable-limiter   Disables the 60 fps limiter\n\n"));
+      g_print( _("\
+   --save-type=TYPE    Selects savetype:\n\
+                         0 = Autodetect (default)\n\
+                         1 = EEPROM 4kbit\n\
+                         2 = EEPROM 64kbit\n\
+                         3 = EEPROM 512kbit\n\
+                         4 = FRAM 256kbit\n\
+                         5 = FLASH 2mbit\n\
+                         6 = FLASH 4mbit\n\
+   \n"));
+      g_print( _("\
    --fwlang=LANG       Set the language in the firmware, LANG as follows:\n\
                          0 = Japanese\n\
                          1 = English\n\
@@ -200,6 +213,18 @@ fill_configured_features( struct configured_features *config,
       }
       else {
         g_printerr( _("Supported 3d engines: 0, 1, and on some machines 2; use --help option for details\n"));
+        good_args = 0;
+      }
+    }
+    else if ( strncmp( argv[i], "--save-type=", 12) == 0) {
+      char *end_char;
+      int type = strtoul( &argv[i][12], &end_char, 10);
+
+      if ( type >= 0 && type <= 6) {
+        config->savetype = type;
+      }
+      else {
+        g_printerr( _("select savetype from 0 to 6; use --help option for details\n"));
         good_args = 0;
       }
     }
@@ -447,6 +472,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
         if ( my_config->firmware_language != -1) {
           fw_config.language = my_config->firmware_language;
         }
+        desmume_savetype(my_config->savetype);
 
 #ifdef GTKGLEXT_AVAILABLE
 // check if you have GTHREAD when running configure script
@@ -524,6 +550,13 @@ common_gtk_glade_main( struct configured_features *my_config) {
 	pWindow       = glade_xml_get_widget(xml, "wMainW");
 	pDrawingArea  = glade_xml_get_widget(xml, "wDraw_Main");
 	pDrawingArea2 = glade_xml_get_widget(xml, "wDraw_Sub");
+
+    {
+      char wdgName[40];
+      snprintf(wdgName, 39, "savetype%d", my_config->savetype);
+      GtkWidget * wdgt = glade_xml_get_widget(xml, wdgName);
+      gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (wdgt), TRUE);
+    }
 
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect_StringObject(xml);
