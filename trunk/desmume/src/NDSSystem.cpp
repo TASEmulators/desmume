@@ -854,7 +854,7 @@ void NDS_FreeROM(void)
 	MMU.bupmem.fp = NULL;
 }
 
-void NDS_Reset( void)
+void NDS_Reset(BOOL resetBySavestate)
 {
 	unsigned int i;
 	u32 src;
@@ -1034,7 +1034,8 @@ void NDS_Reset( void)
 	gfx3d_reset();
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
-	cheatsSearchClose();
+	if (!resetBySavestate)
+		cheatsSearchClose();
 
 #ifdef EXPERIMENTAL_WIFI
 	WIFI_Init(&wifiMac);

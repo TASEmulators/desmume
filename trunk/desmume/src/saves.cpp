@@ -828,7 +828,7 @@ static bool savestate_load(std::istream* is)
 	//while the series of resets below should work,
 	//we are testing the robustness of the savestate system with this full reset.
 	//the full reset wipes more things, so we can make sure that they are being restored correctly
-	NDS_Reset();
+	NDS_Reset(TRUE);
 
 	//reset some options to their old defaults which werent saved
 	nds.debugConsole = FALSE;
