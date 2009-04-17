@@ -155,15 +155,11 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 	INFO("MMU ARM7 0x%08X: %s\n", adr, msg);
 
 }
+#else
+#define mmu_log_debug_ARM9(...)
+#define mmu_log_debug_ARM7(...)
 #endif
 
-/*
- *
- */
-#define EARLY_MEMORY_ACCESS 1
-
-#define INTERNAL_DTCM_READ 1
-#define INTERNAL_DTCM_WRITE 1
 
 //#define LOG_CARD
 //#define LOG_GPU
@@ -266,12 +262,13 @@ u32 MMU_struct::MMU_MASK[2][256] = {
 		}
 };
 
-
+CACHE_ALIGN
 TWaitState MMU_struct::MMU_WAIT16[2][16] = {
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm9
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm7
 };
 
+CACHE_ALIGN
 TWaitState MMU_struct::MMU_WAIT32[2][16] = {
 	{ 1, 1, 1, 1, 1, 2, 2, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm9
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm7
@@ -1282,453 +1279,10 @@ void FASTCALL MMU_write32_acl(u32 proc, u32 adr, u32 val)
 }
 #endif
 
-#ifdef PROFILE_MEMORY_ACCESS
+//a stub for memory profiler, if we choose to re-add it
+#define PROFILE_PREFETCH 1
+#define profile_memory_access(X,Y,Z)
 
-#define PROFILE_PREFETCH 0
-#define PROFILE_READ 1
-#define PROFILE_WRITE 2
-
-struct mem_access_profile {
-  u64 num_accesses;
-  u32 address_mask;
-  u32 masked_value;
-};
-
-#define PROFILE_NUM_MEM_ACCESS_PROFILES 4
-
-static u64 profile_num_accesses[2][3];
-static u64 profile_unknown_addresses[2][3];
-static struct mem_access_profile
-profile_memory_accesses[2][3][PROFILE_NUM_MEM_ACCESS_PROFILES];
-
-static void
-setup_profiling( void) {
-  int i;
-
-  for ( i = 0; i < 2; i++) {
-    int access_type;
-
-    for ( access_type = 0; access_type < 3; access_type++) {
-      profile_num_accesses[i][access_type] = 0;
-      profile_unknown_addresses[i][access_type] = 0;
-
-      /*
-       * Setup the access testing structures
-       */
-      profile_memory_accesses[i][access_type][0].address_mask = 0x0e000000;
-      profile_memory_accesses[i][access_type][0].masked_value = 0x00000000;
-      profile_memory_accesses[i][access_type][0].num_accesses = 0;
-
-      /* main memory */
-      profile_memory_accesses[i][access_type][1].address_mask = 0x0f000000;
-      profile_memory_accesses[i][access_type][1].masked_value = 0x02000000;
-      profile_memory_accesses[i][access_type][1].num_accesses = 0;
-
-      /* shared memory */
-      profile_memory_accesses[i][access_type][2].address_mask = 0x0f800000;
-      profile_memory_accesses[i][access_type][2].masked_value = 0x03000000;
-      profile_memory_accesses[i][access_type][2].num_accesses = 0;
-
-      /* arm7 memory */
-      profile_memory_accesses[i][access_type][3].address_mask = 0x0f800000;
-      profile_memory_accesses[i][access_type][3].masked_value = 0x03800000;
-      profile_memory_accesses[i][access_type][3].num_accesses = 0;
-    }
-  }
-}
-
-static void
-profile_memory_access( int arm9, u32 adr, int access_type) {
-  static int first = 1;
-  int mem_profile;
-  int address_found = 0;
-
-  if ( first) {
-    setup_profiling();
-    first = 0;
-  }
-
-  profile_num_accesses[arm9][access_type] += 1;
-
-  for ( mem_profile = 0;
-        mem_profile < PROFILE_NUM_MEM_ACCESS_PROFILES &&
-          !address_found;
-        mem_profile++) {
-    if ( (adr & profile_memory_accesses[arm9][access_type][mem_profile].address_mask) ==
-         profile_memory_accesses[arm9][access_type][mem_profile].masked_value) {
-      /*printf( "adr %08x mask %08x res %08x expected %08x\n",
-              adr,
-              profile_memory_accesses[arm9][access_type][mem_profile].address_mask,
-              adr & profile_memory_accesses[arm9][access_type][mem_profile].address_mask,
-              profile_memory_accesses[arm9][access_type][mem_profile].masked_value);*/
-      address_found = 1;
-      profile_memory_accesses[arm9][access_type][mem_profile].num_accesses += 1;
-    }
-  }
-
-  if ( !address_found) {
-    profile_unknown_addresses[arm9][access_type] += 1;
-  }
-}
-
-
-static const char *access_type_strings[] = {
-  "prefetch",
-  "read    ",
-  "write   "
-};
-
-void
-print_memory_profiling( void) {
-  int arm;
-
-  printf("------ Memory access profile ------\n");
-
-  for ( arm = 0; arm < 2; arm++) {
-    int access_type;
-
-    for ( access_type = 0; access_type < 3; access_type++) {
-      int mem_profile;
-      printf("ARM%c: num of %s %lld\n",
-             arm ? '9' : '7',
-             access_type_strings[access_type],
-             profile_num_accesses[arm][access_type]);
-
-      for ( mem_profile = 0;
-            mem_profile < PROFILE_NUM_MEM_ACCESS_PROFILES;
-            mem_profile++) {
-        printf( "address %08x: %lld\n",
-                profile_memory_accesses[arm][access_type][mem_profile].masked_value,
-                profile_memory_accesses[arm][access_type][mem_profile].num_accesses);
-      }
-              
-      printf( "unknown addresses %lld\n",
-              profile_unknown_addresses[arm][access_type]);
-
-      printf( "\n");
-    }
-  }
-
-  printf("------ End of Memory access profile ------\n\n");
-}
-#else
-void
-print_memory_profiling( void) {
-}
-#endif /* End of PROFILE_MEMORY_ACCESS area */
-
-static u16 FASTCALL
-arm9_prefetch16( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_PREFETCH);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if((adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Returns data from DTCM (ARM9 only) */
-      return T1ReadWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
-    }
-  /* access to main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    return T1ReadWord( MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF],
-                       adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
-  }
-#endif
-
-  return _MMU_read16<ARMCPU_ARM9>(adr);
-}
-static u32 FASTCALL
-arm9_prefetch32( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_PREFETCH);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if((adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Returns data from DTCM (ARM9 only) */
-      return T1ReadLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
-    }
-  /* access to main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    return T1ReadLong( MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF],
-                       adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
-  }
-#endif
-
-  return _MMU_read32<ARMCPU_ARM9>(adr);
-}
-
-static u8 FASTCALL
-arm9_read8( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_READ);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if( (adr&(~0x3FFF)) == MMU.DTCMRegion)
-    {
-      return ARM9Mem.ARM9_DTCM[adr&0x3FFF];
-    }
-  /* access to main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    return MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF]
-      [adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]];
-  }
-#endif
-
-  return _MMU_read08<ARMCPU_ARM9>(adr);
-}
-static u16 FASTCALL
-arm9_read16( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_READ);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if((adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Returns data from DTCM (ARM9 only) */
-      return T1ReadWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
-    }
-
-  /* access to main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    return T1ReadWord( MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF],
-                       adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
-  }
-#endif
-
-  return _MMU_read16<ARMCPU_ARM9>(adr);
-}
-static u32 FASTCALL
-arm9_read32( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_READ);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if((adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Returns data from DTCM (ARM9 only) */
-      return T1ReadLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
-    }
-  /* access to main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    return T1ReadLong( MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF],
-                       adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
-  }
-#endif
-
-  return _MMU_read32<ARMCPU_ARM9>(adr);
-}
-
-
-static void FASTCALL
-arm9_write8(void *data, u32 adr, u8 val) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_WRITE);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if( (adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Writes data in DTCM (ARM9 only) */
-      ARM9Mem.ARM9_DTCM[adr&0x3FFF] = val;
-      return ;
-    }
-  /* main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF]
-      [adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]] = val;
-    return;
-  }
-#endif
-
- _MMU_write08<ARMCPU_ARM9>(adr, val);
-}
-static void FASTCALL
-arm9_write16(void *data, u32 adr, u16 val) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_WRITE);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if((adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Writes in DTCM (ARM9 only) */
-      T1WriteWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val);
-      return;
-    }
-  /* main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    T1WriteWord( MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF],
-                 adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF], val);
-    return;
-  }
-#endif
-
-  _MMU_write16<ARMCPU_ARM9>(adr, val);
-}
-static void FASTCALL
-arm9_write32(void *data, u32 adr, u32 val) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 1, adr, PROFILE_WRITE);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  if((adr & ~0x3FFF) == MMU.DTCMRegion)
-    {
-      /* Writes in DTCM (ARM9 only) */
-      T1WriteLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val);
-      return;
-    }
-  /* main memory */
-  if ( (adr & 0x0f000000) == 0x02000000) {
-    T1WriteLong( MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF],
-                 adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF], val);
-    return;
-  }
-#endif
-
-  _MMU_write32<ARMCPU_ARM9>(adr, val);
-}
-
-
-
-
-static u16 FASTCALL
-arm7_prefetch16( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_PREFETCH);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  /* ARM7 private memory */
-  if ( (adr & 0x0f800000) == 0x03800000) {
-    T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
-               adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
-  }
-#endif
-
-  return _MMU_read16<ARMCPU_ARM7>(adr);
-}
-static u32 FASTCALL
-arm7_prefetch32( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_PREFETCH);
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-  /* ARM7 private memory */
-  if ( (adr & 0x0f800000) == 0x03800000) {
-    T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
-               adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
-  }
-#endif
-
-  return _MMU_read32<ARMCPU_ARM7>(adr);
-}
-
-static u8 FASTCALL
-arm7_read8( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_READ);
-#endif
-
-  return _MMU_read08<ARMCPU_ARM7>(adr);
-}
-static u16 FASTCALL
-arm7_read16( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_READ);
-#endif
-
-  return _MMU_read16<ARMCPU_ARM7>(adr);
-}
-static u32 FASTCALL
-arm7_read32( void *data, u32 adr) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_READ);
-#endif
-
-  return _MMU_read32<ARMCPU_ARM7>(adr);
-}
-
-static void FASTCALL
-arm7_write8(void *data, u32 adr, u8 val) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_WRITE);
-#endif
-
-  _MMU_write08<ARMCPU_ARM7>(adr, val);
-}
-static void FASTCALL
-arm7_write16(void *data, u32 adr, u16 val) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_WRITE);
-#endif
-
-  _MMU_write16<ARMCPU_ARM7>(adr, val);
-}
-static void FASTCALL
-arm7_write32(void *data, u32 adr, u32 val) {
-#ifdef PROFILE_MEMORY_ACCESS
-  profile_memory_access( 0, adr, PROFILE_WRITE);
-#endif
-
-  _MMU_write32<ARMCPU_ARM7>(adr, val);
-}
-
-
-
-/*
- * the base memory interfaces
- */
-struct armcpu_memory_iface arm9_base_memory_iface = {
-  arm9_prefetch32,
-  arm9_prefetch16,
-
-  arm9_read8,
-  arm9_read16,
-  arm9_read32,
-
-  arm9_write8,
-  arm9_write16,
-  arm9_write32
-};
-
-struct armcpu_memory_iface arm7_base_memory_iface = {
-  arm7_prefetch32,
-  arm7_prefetch16,
-
-  arm7_read8,
-  arm7_read16,
-  arm7_read32,
-
-  arm7_write8,
-  arm7_write16,
-  arm7_write32
-};
-
-/*
- * The direct memory interface for the ARM9.
- * This avoids the ARM9 protection unit when accessing
- * memory.
- */
-struct armcpu_memory_iface arm9_direct_memory_iface = {
-  NULL,
-  NULL,
-
-  arm9_read8,
-  arm9_read16,
-  arm9_read32,
-
-  arm9_write8,
-  arm9_write16,
-  arm9_write32
-};
 
 static INLINE void MMU_IPCSync(u8 proc, u32 val)
 {
@@ -1752,18 +1306,12 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 //================================================= MMU write 08
 void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 {
-#ifdef INTERNAL_DTCM_WRITE
-	if(((adr & ~0x3FFF) == MMU.DTCMRegion))
-	{
-		/* Writes data in DTCM (ARM9 only) */
-		ARM9Mem.ARM9_DTCM[adr & 0x3FFF] = val;
-		return ;
-	}
-#endif
+	mmu_log_debug_ARM9(adr, "(write08) %0x%X", val);
+
 	if(adr < 0x02000000)
 	{
 		T1WriteByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
-		return ;
+		return;
 	}
 
 #ifdef EXPERIMENTAL_GBASLOT
@@ -1950,9 +1498,7 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 						LOG("%08X : %02X\r\n", adr, val);
 		#endif
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM9(adr, "(write08) %0x%X", val);
-#endif
+
 		MMU.MMU_MEM[ARMCPU_ARM9][0x40][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
 		return;
 	}
@@ -1968,18 +1514,12 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 //================================================= MMU ARM9 write 16
 void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 {
-#ifdef INTERNAL_DTCM_WRITE
-	if((adr & ~0x3FFF) == MMU.DTCMRegion)
-	{
-		/* Writes in DTCM (ARM9 only) */
-		T1WriteWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val);
-		return;
-	}
-#endif
+	mmu_log_debug_ARM9(adr, "(write16) %0x%X", val);
+
 	if (adr < 0x02000000)
 	{
 		T1WriteWord(ARM9Mem.ARM9_ITCM, adr&0x7FFF, val);
-		return ;
+		return;
 	}
 
 #ifdef EXPERIMENTAL_GBASLOT
@@ -2535,9 +2075,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
 			}
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM9(adr, "(write16) %0x%X", val);
-#endif
+
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val); 
 		return;
 	}
@@ -2553,20 +2091,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 //================================================= MMU ARM9 write 32
 void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 {
-#ifdef INTERNAL_DTCM_WRITE
-	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
-	{
-		T1WriteLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF, val);
-		return ;
-	}
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-	if ( (adr & 0x0F000000) == 0x02000000) {
-		T1WriteLong( ARM9Mem.MAIN_MEM, adr & 0x3FFFFF, val);
-		return;
-	}
-#endif
+	mmu_log_debug_ARM9(adr, "(write32) %0x%X", val);
 
 	if(adr<0x02000000)
 	{
@@ -3113,9 +2638,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			}
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM9(adr, "(write32) %0x%X", val);
-#endif
 
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
 		return;
@@ -3132,12 +2654,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 //================================================= MMU ARM9 read 08
 u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 {
-#ifdef INTERNAL_DTCM_READ
-	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
-	{
-		return T1ReadByte(ARM9Mem.ARM9_DTCM, adr&0x3FFF);
-	}
-#endif
+	mmu_log_debug_ARM9(adr, "(read08) %0x%X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
 
 	if(adr<0x02000000)
 		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
@@ -3151,11 +2668,6 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 		return (unsigned char)cflash_read(adr);
 #endif
 
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM9(adr, "(read08) %0x%X", 
-			MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
-#endif
-
 	bool unmapped;	
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
 	if(unmapped) return 0;
@@ -3166,12 +2678,7 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 //================================================= MMU ARM9 read 16
 u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 {    
-#ifdef INTERNAL_DTCM_READ
-	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
-	{
-		return T1ReadWord(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
-	}
-#endif
+	mmu_log_debug_ARM9(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
 
 	if(adr<0x02000000)
 		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr & 0x7FFF);	
@@ -3230,10 +2737,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_POSTFLG :
 				return 1;
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM9(adr, "(read16) %0x%X", 
-			T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]));
-#endif
+
 		return  T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]);
 	}
 
@@ -3247,22 +2751,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 //================================================= MMU ARM9 read 32
 u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 {
-#ifdef INTERNAL_DTCM_READ
-	if((adr&(~0x3FFF)) == MMU.DTCMRegion)
-	{
-		/* Returns data from DTCM (ARM9 only) */
-		return T1ReadLong(ARM9Mem.ARM9_DTCM, adr & 0x3FFF);
-	}
-#endif
-
-#ifdef EARLY_MEMORY_ACCESS
-	if ( (adr & 0x0F000000) == 0x02000000)
-		return T1ReadLong( ARM9Mem.MAIN_MEM, adr & 0x3FFFFF);
-#endif
-
-	if(adr>=0x02400000 && adr<0x03000000) {
-		//int zzz=9;
-	}
+	mmu_log_debug_ARM9(adr, "(read32) %0x%X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
 
 	if(adr<0x02000000) 
 		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
@@ -3429,10 +2918,6 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 				return val;
 			}
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM9(adr, "(read32) %0x%X", 
-			T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]));
-#endif
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
 	}
 	
@@ -3449,6 +2934,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 //================================================= MMU ARM7 write 08
 void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
+	mmu_log_debug_ARM7(adr, "(write08) %0x%X", val);
+
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3496,9 +2983,6 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return;
 	
-#ifdef _MMU_DEBUG
-	mmu_log_debug_ARM7(adr, "(write08) %0x%X", val);
-#endif
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFFF [shash]
 	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
 }
@@ -3506,6 +2990,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 //================================================= MMU ARM7 write 16
 void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
+	mmu_log_debug_ARM7(adr, "(write16) %0x%X", val);
+
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -3915,9 +3401,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
                         //case REG_AUXSPICNT : emu_halt();
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM7(adr, "(write16) %0x%X", val);
-#endif
+
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
 		return;
 	}
@@ -3932,6 +3416,8 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 //================================================= MMU ARM7 write 32
 void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
+	mmu_log_debug_ARM7(adr, "(write32) %0x%X", val);
+
 #ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
@@ -4204,9 +3690,6 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				}
 				return;
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM7(adr, "(write32) %0x%X", val);
-#endif
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
 		return;
 	}
@@ -4222,6 +3705,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 //================================================= MMU ARM7 read 08
 u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 {
+	mmu_log_debug_ARM7(adr, "(read08) %0x%X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
+
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4244,11 +3729,6 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 
 	if (adr == REG_RTC) return (u8)rtcRead();
 
-#ifdef _MMU_DEBUG
-	mmu_log_debug_ARM7(adr, "(read08) %0x%X", 
-		MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
-#endif
-
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
 	if(unmapped) return 0;
@@ -4258,6 +3738,8 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 //================================================= MMU ARM7 read 16
 u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 {
+	mmu_log_debug_ARM7(adr, "(read16) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4313,10 +3795,6 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_POSTFLG :
 				return 1;
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM7(adr, "(read16) %0x%X", 
-			T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
-#endif
 		return T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 	}
 
@@ -4330,6 +3808,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 //================================================= MMU ARM7 read 32
 u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 {
+	mmu_log_debug_ARM7(adr, "(read32) %0x%X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
+
 #ifdef EXPERIMENTAL_WIFI
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
@@ -4428,10 +3908,6 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 				return val;
 			}
 		}
-#ifdef _MMU_DEBUG
-		mmu_log_debug_ARM7(adr, "(read32) %0x%X", 
-			T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]));
-#endif
 		return T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20)], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20)]);
 	}
 
@@ -4518,3 +3994,278 @@ void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
     *bmemsize=save_types[type][1];
     mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }
+
+////////////////////////////////////////////////////////////
+//function pointer handlers for gdb stub stuff
+
+static u16 arm9_prefetch16( void *data, u32 adr) {
+	profile_memory_access( 1, adr, PROFILE_PREFETCH);
+	return _MMU_read16<ARMCPU_ARM9>(adr);
+}
+
+static u32 arm9_prefetch32( void *data, u32 adr) {
+	profile_memory_access( 1, adr, PROFILE_PREFETCH);
+	return _MMU_read32<ARMCPU_ARM9>(adr);
+}
+
+static u8 arm9_read8( void *data, u32 adr) {
+	profile_memory_access( 1, adr, PROFILE_READ);
+	return _MMU_read08<ARMCPU_ARM9>(adr);
+}
+
+static u16 arm9_read16( void *data, u32 adr) {
+	profile_memory_access( 1, adr, PROFILE_READ);
+	return _MMU_read16<ARMCPU_ARM9>(adr);
+}
+
+static u32 arm9_read32( void *data, u32 adr) {
+	profile_memory_access( 1, adr, PROFILE_READ);
+	return _MMU_read32<ARMCPU_ARM9>(adr);
+}
+
+static void arm9_write8(void *data, u32 adr, u8 val) {
+	profile_memory_access( 1, adr, PROFILE_WRITE);
+	_MMU_write08<ARMCPU_ARM9>(adr, val);
+}
+
+static void FASTCALL arm9_write16(void *data, u32 adr, u16 val) {
+	profile_memory_access( 1, adr, PROFILE_WRITE);
+	_MMU_write16<ARMCPU_ARM9>(adr, val);
+}
+
+static void FASTCALL arm9_write32(void *data, u32 adr, u32 val) {
+	profile_memory_access( 1, adr, PROFILE_WRITE);
+	_MMU_write32<ARMCPU_ARM9>(adr, val);
+}
+
+static u16 FASTCALL arm7_prefetch16( void *data, u32 adr) {
+  profile_memory_access( 0, adr, PROFILE_PREFETCH);
+  return _MMU_read16<ARMCPU_ARM7>(adr);
+}
+
+static u32 FASTCALL arm7_prefetch32( void *data, u32 adr) {
+  profile_memory_access( 0, adr, PROFILE_PREFETCH);
+  return _MMU_read32<ARMCPU_ARM7>(adr);
+}
+
+static u8 FASTCALL arm7_read8( void *data, u32 adr) {
+  profile_memory_access( 0, adr, PROFILE_READ);
+  return _MMU_read08<ARMCPU_ARM7>(adr);
+}
+
+static u16 FASTCALL arm7_read16( void *data, u32 adr) {
+  profile_memory_access( 0, adr, PROFILE_READ);
+  return _MMU_read16<ARMCPU_ARM7>(adr);
+}
+
+static u32 FASTCALL arm7_read32( void *data, u32 adr) {
+  profile_memory_access( 0, adr, PROFILE_READ);
+  return _MMU_read32<ARMCPU_ARM7>(adr);
+}
+
+static void FASTCALL arm7_write8(void *data, u32 adr, u8 val) {
+  profile_memory_access( 0, adr, PROFILE_WRITE);
+  _MMU_write08<ARMCPU_ARM7>(adr, val);
+}
+
+static void FASTCALL arm7_write16(void *data, u32 adr, u16 val) {
+  profile_memory_access( 0, adr, PROFILE_WRITE);
+  _MMU_write16<ARMCPU_ARM7>(adr, val);
+}
+
+static void FASTCALL arm7_write32(void *data, u32 adr, u32 val) {
+  profile_memory_access( 0, adr, PROFILE_WRITE);
+  _MMU_write32<ARMCPU_ARM7>(adr, val);
+}
+
+
+
+/*
+ * the base memory interfaces
+ */
+struct armcpu_memory_iface arm9_base_memory_iface = {
+  arm9_prefetch32,
+  arm9_prefetch16,
+
+  arm9_read8,
+  arm9_read16,
+  arm9_read32,
+
+  arm9_write8,
+  arm9_write16,
+  arm9_write32
+};
+
+struct armcpu_memory_iface arm7_base_memory_iface = {
+  arm7_prefetch32,
+  arm7_prefetch16,
+
+  arm7_read8,
+  arm7_read16,
+  arm7_read32,
+
+  arm7_write8,
+  arm7_write16,
+  arm7_write32
+};
+
+/*
+ * The direct memory interface for the ARM9.
+ * This avoids the ARM9 protection unit when accessing
+ * memory.
+ */
+struct armcpu_memory_iface arm9_direct_memory_iface = {
+  NULL,
+  NULL,
+
+  arm9_read8,
+  arm9_read16,
+  arm9_read32,
+
+  arm9_write8,
+  arm9_write16,
+  arm9_write32
+};
+
+
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+
+//#ifdef PROFILE_MEMORY_ACCESS
+//
+//#define PROFILE_PREFETCH 0
+//#define PROFILE_READ 1
+//#define PROFILE_WRITE 2
+//
+//struct mem_access_profile {
+//  u64 num_accesses;
+//  u32 address_mask;
+//  u32 masked_value;
+//};
+//
+//#define PROFILE_NUM_MEM_ACCESS_PROFILES 4
+//
+//static u64 profile_num_accesses[2][3];
+//static u64 profile_unknown_addresses[2][3];
+//static struct mem_access_profile
+//profile_memory_accesses[2][3][PROFILE_NUM_MEM_ACCESS_PROFILES];
+//
+//static void
+//setup_profiling( void) {
+//  int i;
+//
+//  for ( i = 0; i < 2; i++) {
+//    int access_type;
+//
+//    for ( access_type = 0; access_type < 3; access_type++) {
+//      profile_num_accesses[i][access_type] = 0;
+//      profile_unknown_addresses[i][access_type] = 0;
+//
+//      /*
+//       * Setup the access testing structures
+//       */
+//      profile_memory_accesses[i][access_type][0].address_mask = 0x0e000000;
+//      profile_memory_accesses[i][access_type][0].masked_value = 0x00000000;
+//      profile_memory_accesses[i][access_type][0].num_accesses = 0;
+//
+//      /* main memory */
+//      profile_memory_accesses[i][access_type][1].address_mask = 0x0f000000;
+//      profile_memory_accesses[i][access_type][1].masked_value = 0x02000000;
+//      profile_memory_accesses[i][access_type][1].num_accesses = 0;
+//
+//      /* shared memory */
+//      profile_memory_accesses[i][access_type][2].address_mask = 0x0f800000;
+//      profile_memory_accesses[i][access_type][2].masked_value = 0x03000000;
+//      profile_memory_accesses[i][access_type][2].num_accesses = 0;
+//
+//      /* arm7 memory */
+//      profile_memory_accesses[i][access_type][3].address_mask = 0x0f800000;
+//      profile_memory_accesses[i][access_type][3].masked_value = 0x03800000;
+//      profile_memory_accesses[i][access_type][3].num_accesses = 0;
+//    }
+//  }
+//}
+//
+//static void
+//profile_memory_access( int arm9, u32 adr, int access_type) {
+//  static int first = 1;
+//  int mem_profile;
+//  int address_found = 0;
+//
+//  if ( first) {
+//    setup_profiling();
+//    first = 0;
+//  }
+//
+//  profile_num_accesses[arm9][access_type] += 1;
+//
+//  for ( mem_profile = 0;
+//        mem_profile < PROFILE_NUM_MEM_ACCESS_PROFILES &&
+//          !address_found;
+//        mem_profile++) {
+//    if ( (adr & profile_memory_accesses[arm9][access_type][mem_profile].address_mask) ==
+//         profile_memory_accesses[arm9][access_type][mem_profile].masked_value) {
+//      /*printf( "adr %08x mask %08x res %08x expected %08x\n",
+//              adr,
+//              profile_memory_accesses[arm9][access_type][mem_profile].address_mask,
+//              adr & profile_memory_accesses[arm9][access_type][mem_profile].address_mask,
+//              profile_memory_accesses[arm9][access_type][mem_profile].masked_value);*/
+//      address_found = 1;
+//      profile_memory_accesses[arm9][access_type][mem_profile].num_accesses += 1;
+//    }
+//  }
+//
+//  if ( !address_found) {
+//    profile_unknown_addresses[arm9][access_type] += 1;
+//  }
+//}
+//
+//
+//static const char *access_type_strings[] = {
+//  "prefetch",
+//  "read    ",
+//  "write   "
+//};
+//
+//void
+//print_memory_profiling( void) {
+//  int arm;
+//
+//  printf("------ Memory access profile ------\n");
+//
+//  for ( arm = 0; arm < 2; arm++) {
+//    int access_type;
+//
+//    for ( access_type = 0; access_type < 3; access_type++) {
+//      int mem_profile;
+//      printf("ARM%c: num of %s %lld\n",
+//             arm ? '9' : '7',
+//             access_type_strings[access_type],
+//             profile_num_accesses[arm][access_type]);
+//
+//      for ( mem_profile = 0;
+//            mem_profile < PROFILE_NUM_MEM_ACCESS_PROFILES;
+//            mem_profile++) {
+//        printf( "address %08x: %lld\n",
+//                profile_memory_accesses[arm][access_type][mem_profile].masked_value,
+//                profile_memory_accesses[arm][access_type][mem_profile].num_accesses);
+//      }
+//              
+//      printf( "unknown addresses %lld\n",
+//              profile_unknown_addresses[arm][access_type]);
+//
+//      printf( "\n");
+//    }
+//  }
+//
+//  printf("------ End of Memory access profile ------\n\n");
+//}
+//#else
+//void
+//print_memory_profiling( void) {
+//}
+//#endif /* End of PROFILE_MEMORY_ACCESS area */
