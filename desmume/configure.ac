@@ -25,6 +25,9 @@ dnl -- check for endianess
 AC_C_BIGENDIAN
 
 dnl --- Other prerequisites ---
+dnl - FIXME: provide a way to compile asm sources 
+dnl -        and/or autodecide if we can have SSE2
+AC_DEFINE(NOSSE2) 
 dnl - Check for pkg-config macros
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 dnl - Check for intltool/gettext macros
