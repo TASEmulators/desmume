@@ -224,7 +224,7 @@ TEMPLATE u32 intrWaitARM()
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = _MMU_read32(cpu->proc_ID,intrFlagAdr);
+     intr = _MMU_read32<PROCNUM>(intrFlagAdr);
      intrFlag = (cpu->R[1] & intr);
 
 	 if(!noDiscard)
@@ -236,7 +236,7 @@ TEMPLATE u32 intrWaitARM()
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
 		  cpu->newIrqFlags ^= intrFlag;
-          _MMU_write32(cpu->proc_ID, intrFlagAdr, intr);
+          _MMU_write32<PROCNUM>(intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
@@ -266,7 +266,7 @@ TEMPLATE static u32 waitVBlankARM()
      } else {
       intrFlagAdr = (((armcp15_t *)(cpu->coproc[15]))->DTCMRegion&0xFFFFF000)+0x3FF8;
      }
-     intr = _MMU_read32(cpu->proc_ID,intrFlagAdr);
+     intr = _MMU_read32<PROCNUM>(intrFlagAdr);
      intrFlag = 1 & intr;
      
     // if(intrFlag)
@@ -274,7 +274,7 @@ TEMPLATE static u32 waitVBlankARM()
           // si une(ou plusieurs) des interruptions que l'on attend s'est(se sont) produite(s)
           // on efface son(les) occurence(s).
           intr ^= intrFlag;
-          _MMU_write32(cpu->proc_ID,intrFlagAdr, intr);
+          _MMU_write32<PROCNUM>(intrFlagAdr, intr);
           //cpu->switchMode(oldmode[cpu->proc_ID]);
           return 1;
      }
@@ -314,7 +314,7 @@ TEMPLATE static u32 wait4IRQ()
 
 TEMPLATE static u32 sleep()
 {
-	_MMU_write08(cpu->proc_ID, 0x04000301, 0xC0);
+	_MMU_write08<PROCNUM>(0x04000301, 0xC0);
 	return 1;
 }
 
@@ -351,7 +351,7 @@ TEMPLATE static u32 copy()
                          cnt &= 0x1FFFFF;
                          while(cnt)
                          {
-                              _MMU_write16(cpu->proc_ID,dst, _MMU_read16(cpu->proc_ID,src));
+                              _MMU_write16<PROCNUM>(dst, _MMU_read16<PROCNUM>(src));
                               cnt--;
                               dst+=2;
                               src+=2;
@@ -359,11 +359,11 @@ TEMPLATE static u32 copy()
                          break;
                     case 1:
                          {
-                              u32 val = _MMU_read16(cpu->proc_ID, src);
+                              u32 val = _MMU_read16<PROCNUM>(src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
-                                   _MMU_write16(cpu->proc_ID, dst, val);
+                                   _MMU_write16<PROCNUM>(dst, val);
                                    cnt--;
                                    dst+=2;
                               }
@@ -380,7 +380,7 @@ TEMPLATE static u32 copy()
                          cnt &= 0x1FFFFF;
                          while(cnt)
                          {
-                              _MMU_write32(cpu->proc_ID, dst, _MMU_read32(cpu->proc_ID, src));
+                              _MMU_write32<PROCNUM>(dst, _MMU_read32<PROCNUM>(src));
                               cnt--;
                               dst+=4;
                               src+=4;
@@ -388,11 +388,11 @@ TEMPLATE static u32 copy()
                          break;
                     case 1:
                          {
-                              u32 val = _MMU_read32(cpu->proc_ID, src);
+                              u32 val = _MMU_read32<PROCNUM>(src);
                               cnt &= 0x1FFFFF;
                               while(cnt)
                               {
-                                   _MMU_write32(cpu->proc_ID,dst, val);
+                                   _MMU_write32<PROCNUM>(dst, val);
                                    cnt--;
                                    dst+=4;
                               }
@@ -418,7 +418,7 @@ TEMPLATE static u32 fastCopy()
                cnt &= 0x1FFFFF;
                while(cnt)
                {
-                    _MMU_write32(cpu->proc_ID,dst, _MMU_read32(cpu->proc_ID,src));
+                    _MMU_write32<PROCNUM>(dst, _MMU_read32<PROCNUM>(src));
                     cnt--;
                     dst+=4;
                     src+=4;
@@ -426,11 +426,11 @@ TEMPLATE static u32 fastCopy()
                break;
           case 1:
                {
-                    u32 val = _MMU_read32(cpu->proc_ID,src);
+                    u32 val = _MMU_read32<PROCNUM>(src);
                     cnt &= 0x1FFFFF;
                     while(cnt)
                     {
-                         _MMU_write32(cpu->proc_ID,dst, val);
+                         _MMU_write32<PROCNUM>(dst, val);
                          cnt--;
                          dst+=4;
                     }
@@ -449,7 +449,7 @@ TEMPLATE static u32 LZ77UnCompVram()
   int len;
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
-  u32 header = _MMU_read32(cpu->proc_ID,source);
+  u32 header = _MMU_read32<PROCNUM>(source);
   source += 4;
 
   //INFO("swi lz77uncompvram\n");
@@ -465,7 +465,7 @@ TEMPLATE static u32 LZ77UnCompVram()
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = _MMU_read08(cpu->proc_ID,source++);
+    u8 d = _MMU_read08<PROCNUM>(source++);
 
     if(d) {
       for(i1 = 0; i1 < 8; i1++) {
@@ -473,18 +473,18 @@ TEMPLATE static u32 LZ77UnCompVram()
           int length;
           int offset;
           u32 windowOffset;
-          u16 data = _MMU_read08(cpu->proc_ID,source++) << 8;
-          data |= _MMU_read08(cpu->proc_ID,source++);
+          u16 data = _MMU_read08<PROCNUM>(source++) << 8;
+          data |= _MMU_read08<PROCNUM>(source++);
           length = (data >> 12) + 3;
           offset = (data & 0x0FFF);
           windowOffset = dest + byteCount - offset - 1;
           for(i2 = 0; i2 < length; i2++) {
-            writeValue |= (_MMU_read08(cpu->proc_ID,windowOffset++) << byteShift);
+            writeValue |= (_MMU_read08<PROCNUM>(windowOffset++) << byteShift);
             byteShift += 8;
             byteCount++;
 
             if(byteCount == 2) {
-              _MMU_write16(cpu->proc_ID,dest, writeValue);
+              _MMU_write16<PROCNUM>(dest, writeValue);
               dest += 2;
               byteCount = 0;
               byteShift = 0;
@@ -495,11 +495,11 @@ TEMPLATE static u32 LZ77UnCompVram()
               return 0;
           }
         } else {
-          writeValue |= (_MMU_read08(cpu->proc_ID,source++) << byteShift);
+          writeValue |= (_MMU_read08<PROCNUM>(source++) << byteShift);
           byteShift += 8;
           byteCount++;
           if(byteCount == 2) {
-            _MMU_write16(cpu->proc_ID,dest, writeValue);
+            _MMU_write16<PROCNUM>(dest, writeValue);
             dest += 2;
             byteCount = 0;
             byteShift = 0;
@@ -513,11 +513,11 @@ TEMPLATE static u32 LZ77UnCompVram()
       }
     } else {
       for(i1 = 0; i1 < 8; i1++) {
-        writeValue |= (_MMU_read08(cpu->proc_ID, source++) << byteShift);
+        writeValue |= (_MMU_read08<PROCNUM>(source++) << byteShift);
         byteShift += 8;
         byteCount++;
         if(byteCount == 2) {
-          _MMU_write16(cpu->proc_ID, dest, writeValue);
+          _MMU_write16<PROCNUM>(dest, writeValue);
           dest += 2;      
           byteShift = 0;
           byteCount = 0;
@@ -539,7 +539,7 @@ TEMPLATE static u32 LZ77UnCompWram()
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = _MMU_read32(cpu->proc_ID, source);
+  u32 header = _MMU_read32<PROCNUM>(source);
   source += 4;
 
   //INFO("swi lz77uncompwram\n");
@@ -551,7 +551,7 @@ TEMPLATE static u32 LZ77UnCompWram()
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = _MMU_read08(cpu->proc_ID, source++);
+    u8 d = _MMU_read08<PROCNUM>(source++);
 
     if(d) {
       for(i1 = 0; i1 < 8; i1++) {
@@ -559,19 +559,19 @@ TEMPLATE static u32 LZ77UnCompWram()
           int length;
           int offset;
           u32 windowOffset;
-          u16 data = _MMU_read08(cpu->proc_ID, source++) << 8;
-          data |= _MMU_read08(cpu->proc_ID, source++);
+          u16 data = _MMU_read08<PROCNUM>(source++) << 8;
+          data |= _MMU_read08<PROCNUM>(source++);
           length = (data >> 12) + 3;
           offset = (data & 0x0FFF);
           windowOffset = dest - offset - 1;
           for(i2 = 0; i2 < length; i2++) {
-            _MMU_write08(cpu->proc_ID, dest++, _MMU_read08(cpu->proc_ID, windowOffset++));
+            _MMU_write08<PROCNUM>(dest++, _MMU_read08<PROCNUM>(windowOffset++));
             len--;
             if(len == 0)
               return 0;
           }
         } else {
-          _MMU_write08(cpu->proc_ID, dest++, _MMU_read08(cpu->proc_ID,source++));
+          _MMU_write08<PROCNUM>(dest++, _MMU_read08<PROCNUM>(source++));
           len--;
           if(len == 0)
             return 0;
@@ -580,7 +580,7 @@ TEMPLATE static u32 LZ77UnCompWram()
       }
     } else {
       for(i1 = 0; i1 < 8; i1++) {
-        _MMU_write08(cpu->proc_ID,dest++, _MMU_read08(cpu->proc_ID, source++));
+        _MMU_write08<PROCNUM>(dest++, _MMU_read08<PROCNUM>(source++));
         len--;
         if(len == 0)
           return 0;
@@ -600,7 +600,7 @@ TEMPLATE static u32 RLUnCompVram()
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = _MMU_read32(cpu->proc_ID, source);
+  u32 header = _MMU_read32<PROCNUM>(source);
   source += 4;
 
   //INFO("swi rluncompvram\n");
@@ -615,10 +615,10 @@ TEMPLATE static u32 RLUnCompVram()
   writeValue = 0;
 
   while(len > 0) {
-    u8 d = _MMU_read08(cpu->proc_ID, source++);
+    u8 d = _MMU_read08<PROCNUM>(source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = _MMU_read08(cpu->proc_ID, source++);
+      u8 data = _MMU_read08<PROCNUM>(source++);
       l += 3;
       for(i = 0;i < l; i++) {
         writeValue |= (data << byteShift);
@@ -626,7 +626,7 @@ TEMPLATE static u32 RLUnCompVram()
         byteCount++;
 
         if(byteCount == 2) {
-          _MMU_write16(cpu->proc_ID, dest, writeValue);
+          _MMU_write16<PROCNUM>(dest, writeValue);
           dest += 2;
           byteCount = 0;
           byteShift = 0;
@@ -639,11 +639,11 @@ TEMPLATE static u32 RLUnCompVram()
     } else {
       l++;
       for(i = 0; i < l; i++) {
-        writeValue |= (_MMU_read08(cpu->proc_ID,  source++) << byteShift);
+        writeValue |= (_MMU_read08<PROCNUM>(source++) << byteShift);
         byteShift += 8;
         byteCount++;
         if(byteCount == 2) {
-          _MMU_write16(cpu->proc_ID, dest, writeValue);
+          _MMU_write16<PROCNUM>(dest, writeValue);
           dest += 2;
           byteCount = 0;
           byteShift = 0;
@@ -665,7 +665,7 @@ TEMPLATE static u32 RLUnCompWram()
   u32 source = cpu->R[0];
   u32 dest = cpu->R[1];
 
-  u32 header = _MMU_read32(cpu->proc_ID, source);
+  u32 header = _MMU_read32<PROCNUM>(source);
   source += 4;
 
   //INFO("swi rluncompwram\n");
@@ -677,13 +677,13 @@ TEMPLATE static u32 RLUnCompWram()
   len = header >> 8;
 
   while(len > 0) {
-    u8 d = _MMU_read08(cpu->proc_ID, source++);
+    u8 d = _MMU_read08<PROCNUM>(source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = _MMU_read08(cpu->proc_ID, source++);
+      u8 data = _MMU_read08<PROCNUM>(source++);
       l += 3;
       for(i = 0;i < l; i++) {
-        _MMU_write08(cpu->proc_ID,dest++, data);
+        _MMU_write08<PROCNUM>(dest++, data);
         len--;
         if(len == 0)
           return 0;
@@ -691,7 +691,7 @@ TEMPLATE static u32 RLUnCompWram()
     } else {
       l++;
       for(i = 0; i < l; i++) {
-        _MMU_write08(cpu->proc_ID, dest++,  _MMU_read08(cpu->proc_ID,source++));
+        _MMU_write08<PROCNUM>(dest++,  _MMU_read08<PROCNUM>(source++));
         len--;
         if(len == 0)
           return 0;
@@ -712,7 +712,7 @@ TEMPLATE static u32 UnCompHuffman()
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = _MMU_read08(cpu->proc_ID, source);
+  header = _MMU_read08<PROCNUM>(source);
   source += 4;
 
   //INFO("swi uncomphuffman\n");
@@ -721,7 +721,7 @@ TEMPLATE static u32 UnCompHuffman()
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
     return 0;  
   
-  treeSize = _MMU_read08(cpu->proc_ID,source++);
+  treeSize = _MMU_read08<PROCNUM>(source++);
 
   treeStart = source;
 
@@ -730,11 +730,11 @@ TEMPLATE static u32 UnCompHuffman()
   len = header >> 8;
 
   mask = 0x80000000;
-  data = _MMU_read08(cpu->proc_ID,source);
+  data = _MMU_read08<PROCNUM>(source);
   source += 4;
 
   pos = 0;
-  rootNode = _MMU_read08(cpu->proc_ID,treeStart);
+  rootNode = _MMU_read08<PROCNUM>(treeStart);
   currentNode = rootNode;
   writeData = 0;
   byteShift = 0;
@@ -753,12 +753,12 @@ TEMPLATE static u32 UnCompHuffman()
         // right
         if(currentNode & 0x40)
           writeData = 1;
-        currentNode = _MMU_read08(cpu->proc_ID,treeStart+pos+1);
+        currentNode = _MMU_read08<PROCNUM>(treeStart+pos+1);
       } else {
         // left
         if(currentNode & 0x80)
           writeData = 1;
-        currentNode = _MMU_read08(cpu->proc_ID,treeStart+pos);
+        currentNode = _MMU_read08<PROCNUM>(treeStart+pos);
       }
       
       if(writeData) {
@@ -773,7 +773,7 @@ TEMPLATE static u32 UnCompHuffman()
         if(byteCount == 4) {
           byteCount = 0;
           byteShift = 0;
-          _MMU_write08(cpu->proc_ID, dest, writeValue);
+          _MMU_write08<PROCNUM>(dest, writeValue);
           writeValue = 0;
           dest += 4;
           len -= 4;
@@ -782,7 +782,7 @@ TEMPLATE static u32 UnCompHuffman()
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = _MMU_read08(cpu->proc_ID,source);
+        data = _MMU_read08<PROCNUM>(source);
         source += 4;
       }
     }
@@ -800,12 +800,12 @@ TEMPLATE static u32 UnCompHuffman()
         // right
         if(currentNode & 0x40)
           writeData = 1;
-        currentNode = _MMU_read08(cpu->proc_ID, treeStart+pos+1);
+        currentNode = _MMU_read08<PROCNUM>(treeStart+pos+1);
       } else {
         // left
         if(currentNode & 0x80)
           writeData = 1;
-        currentNode = _MMU_read08(cpu->proc_ID, treeStart+pos);
+        currentNode = _MMU_read08<PROCNUM>(treeStart+pos);
       }
       
       if(writeData) {
@@ -826,7 +826,7 @@ TEMPLATE static u32 UnCompHuffman()
           if(byteCount == 4) {
             byteCount = 0;
             byteShift = 0;
-            _MMU_write08(cpu->proc_ID,dest, writeValue);
+            _MMU_write08<PROCNUM>(dest, writeValue);
             dest += 4;
             writeValue = 0;
             len -= 4;
@@ -839,7 +839,7 @@ TEMPLATE static u32 UnCompHuffman()
       mask >>= 1;
       if(mask == 0) {
         mask = 0x80000000;
-        data = _MMU_read08(cpu->proc_ID, source);
+        data = _MMU_read08<PROCNUM>(source);
         source += 4;
       }
     }    
@@ -859,15 +859,15 @@ TEMPLATE static u32 BitUnPack()
 
   //INFO("swi bitunpack\n");
   
-  len = _MMU_read16(cpu->proc_ID, header);
+  len = _MMU_read16<PROCNUM>(header);
   // check address
-  bits = _MMU_read08(cpu->proc_ID, header+2);
+  bits = _MMU_read08<PROCNUM>(header+2);
   revbits = 8 - bits; 
   // u32 value = 0;
-  base = _MMU_read08(cpu->proc_ID, header+4);
+  base = _MMU_read08<PROCNUM>(header+4);
   addBase = (base & 0x80000000) ? 1 : 0;
   base &= 0x7fffffff;
-  dataSize = _MMU_read08(cpu->proc_ID, header+3);
+  dataSize = _MMU_read08<PROCNUM>(header+3);
 
   data = 0; 
   bitwritecount = 0; 
@@ -876,7 +876,7 @@ TEMPLATE static u32 BitUnPack()
     if(len < 0)
       break;
     mask = 0xff >> revbits; 
-    b = _MMU_read08(cpu->proc_ID, source); 
+    b = _MMU_read08<PROCNUM>(source); 
     source++;
     bitcount = 0;
     while(1) {
@@ -890,7 +890,7 @@ TEMPLATE static u32 BitUnPack()
       data |= temp << bitwritecount;
       bitwritecount += dataSize;
       if(bitwritecount >= 32) {
-        _MMU_write08(cpu->proc_ID,dest, data);
+        _MMU_write08<PROCNUM>(dest, data);
         dest += 4;
         data = 0;
         bitwritecount = 0;
@@ -911,7 +911,7 @@ TEMPLATE static u32 Diff8bitUnFilterWram()
   source = cpu->R[0];
   dest = cpu->R[1];
 
-  header = _MMU_read08(cpu->proc_ID, source);
+  header = _MMU_read08<PROCNUM>(source);
   source += 4;
 
   //INFO("swi diff8bitunfilterwram\n");
@@ -922,14 +922,14 @@ TEMPLATE static u32 Diff8bitUnFilterWram()
 
   len = header >> 8;
 
-  data = _MMU_read08(cpu->proc_ID, source++);
-  _MMU_write08(cpu->proc_ID, dest++, data);
+  data = _MMU_read08<PROCNUM>(source++);
+  _MMU_write08<PROCNUM>(dest++, data);
   len--;
   
   while(len > 0) {
-    diff = _MMU_read08(cpu->proc_ID,source++);
+    diff = _MMU_read08<PROCNUM>(source++);
     data += diff;
-    _MMU_write08(cpu->proc_ID, dest++, data);
+    _MMU_write08<PROCNUM>(dest++, data);
     len--;
   }
   return 1;
@@ -946,7 +946,7 @@ TEMPLATE static u32 Diff16bitUnFilter()
 
   //INFO("swi diff16bitunfilter\n");
 
-  header = _MMU_read08(cpu->proc_ID, source);
+  header = _MMU_read08<PROCNUM>(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -955,17 +955,17 @@ TEMPLATE static u32 Diff16bitUnFilter()
   
   len = header >> 8;
 
-  data = _MMU_read16(cpu->proc_ID,source);
+  data = _MMU_read16<PROCNUM>(source);
   source += 2;
-  _MMU_write16(cpu->proc_ID, dest, data);
+  _MMU_write16<PROCNUM>(dest, data);
   dest += 2;
   len -= 2;
   
   while(len >= 2) {
-    u16 diff = _MMU_read16(cpu->proc_ID, source);
+    u16 diff = _MMU_read16<PROCNUM>(source);
     source += 2;
     data += diff;
-    _MMU_write16(cpu->proc_ID,dest, data);
+    _MMU_write16<PROCNUM>(dest, data);
     dest += 2;
     len -= 2;
   }
@@ -980,7 +980,7 @@ TEMPLATE static u32 bios_sqrt()
 
 TEMPLATE static u32 setHaltCR()
 { 
-     _MMU_write08(cpu->proc_ID,0x4000300+cpu->proc_ID, cpu->R[0]);
+     _MMU_write08<PROCNUM>(0x4000300+cpu->proc_ID, cpu->R[0]);
      return 1;
 }
 
@@ -1013,7 +1013,7 @@ TEMPLATE static u32 getCRC16()
   const u16 val[] = { 0xC0C1,0xC181,0xC301,0xC601,0xCC01,0xD801,0xF001,0xA001 };
   for(i = 0; i < size; i++)
   {
-    crc = crc ^ _MMU_read08(cpu->proc_ID, datap + i);
+    crc = crc ^ _MMU_read08<PROCNUM>(datap + i);
 
     for(j = 0; j < 8; j++) {
       int do_bit = 0;
