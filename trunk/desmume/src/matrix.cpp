@@ -33,7 +33,7 @@ void MatrixInit  (float *matrix)
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
-#ifdef NOSSE2
+#if not defined(WIN32) || defined(NOSSE2)
 void MATRIXFASTCALL MatrixMultVec4x4 (const float *matrix, float *vecPtr)
 {
 	float x = vecPtr[0];
