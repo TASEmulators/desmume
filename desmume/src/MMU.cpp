@@ -3998,32 +3998,32 @@ void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
 ////////////////////////////////////////////////////////////
 //function pointer handlers for gdb stub stuff
 
-static u16 arm9_prefetch16( void *data, u32 adr) {
+static u16 FASTCALL arm9_prefetch16( void *data, u32 adr) {
 	profile_memory_access( 1, adr, PROFILE_PREFETCH);
 	return _MMU_read16<ARMCPU_ARM9>(adr);
 }
 
-static u32 arm9_prefetch32( void *data, u32 adr) {
+static u32 FASTCALL arm9_prefetch32( void *data, u32 adr) {
 	profile_memory_access( 1, adr, PROFILE_PREFETCH);
 	return _MMU_read32<ARMCPU_ARM9>(adr);
 }
 
-static u8 arm9_read8( void *data, u32 adr) {
+static u8 FASTCALL arm9_read8( void *data, u32 adr) {
 	profile_memory_access( 1, adr, PROFILE_READ);
 	return _MMU_read08<ARMCPU_ARM9>(adr);
 }
 
-static u16 arm9_read16( void *data, u32 adr) {
+static u16 FASTCALL arm9_read16( void *data, u32 adr) {
 	profile_memory_access( 1, adr, PROFILE_READ);
 	return _MMU_read16<ARMCPU_ARM9>(adr);
 }
 
-static u32 arm9_read32( void *data, u32 adr) {
+static u32 FASTCALL arm9_read32( void *data, u32 adr) {
 	profile_memory_access( 1, adr, PROFILE_READ);
 	return _MMU_read32<ARMCPU_ARM9>(adr);
 }
 
-static void arm9_write8(void *data, u32 adr, u8 val) {
+static void FASTCALL arm9_write8(void *data, u32 adr, u8 val) {
 	profile_memory_access( 1, adr, PROFILE_WRITE);
 	_MMU_write08<ARMCPU_ARM9>(adr, val);
 }
