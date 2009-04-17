@@ -553,7 +553,7 @@ common_gtk_glade_main( struct configured_features *my_config) {
 
     {
       char wdgName[40];
-      snprintf(wdgName, 39, "savetype%d", my_config->savetype);
+      snprintf(wdgName, 39, "savetype%d", my_config->savetype+1);
       GtkWidget * wdgt = glade_xml_get_widget(xml, wdgName);
       gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (wdgt), TRUE);
     }

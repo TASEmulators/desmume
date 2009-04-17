@@ -619,6 +619,17 @@
                               <signal name="activate" handler="on_savetypeXX_activate" object="%d:5" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
                             </widget>
                           </child>
+
+                          <child>
+                            <widget class="GtkRadioMenuItem" id="savetype7">
+                              <property name="visible">True</property>
+                              <property name="label" translatable="yes">TYPE: FRAM (4MB)</property>
+                              <property name="use_underline">True</property>
+                              <property name="active">False</property>
+                              <property name="group">savetype1</property>
+                              <signal name="activate" handler="on_savetypeXX_activate" object="%d:5" last_modification_time="Thu, 01 Feb 2007 11:41:11 GMT"/>
+                            </widget>
+                          </child>
                         </widget>
                       </child>
                     </widget>
