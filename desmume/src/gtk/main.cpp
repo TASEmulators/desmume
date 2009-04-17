@@ -272,6 +272,11 @@ fill_configured_features( struct configured_features *config,
   if (argc > 2)
     goto error;
 
+  if (config->savetype < 0 || config->savetype > 6) {
+    g_printerr("Accepted savetypes are from 0 to 6.\n");
+    goto error;
+  }
+
   if (config->firmware_language < -1 || config->firmware_language > 5) {
     g_printerr("Firmware language must be set to a value from 0 to 5.\n");
     goto error;
