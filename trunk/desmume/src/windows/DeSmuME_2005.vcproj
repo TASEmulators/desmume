@@ -51,10 +51,10 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;EXPERIMENTAL_WIFI"
+				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="2"
 				FloatingPointModel="2"
 				WarningLevel="1"
 				DebugInformationFormat="4"
@@ -168,7 +168,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
+				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
@@ -546,13 +546,6 @@
 			<File
 				RelativePath="..\matrix_sse2-x86.asm"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter

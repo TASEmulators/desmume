@@ -5,8 +5,8 @@
 //to customize your build, place a customized copy in the userconfig directory
 //(alongside this defaultconfig directory)
 
-//#define SSE2
-//#define DEVELOPER
+//#define NOSSE2 //disables SSE2 optimizations (better change it in the vc++ codegen options too)
+//#define DEVELOPER //enables dev+ features
 
 
 #endif //_USERCONFIG_H

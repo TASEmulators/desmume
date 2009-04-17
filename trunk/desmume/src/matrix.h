@@ -44,7 +44,7 @@ void	MatrixInit				(float *matrix);
 //In order to conditionally use these asm optimized functions in visual studio
 //without having to make new build types to exclude the assembly files.
 //a bit sloppy, but there aint much to it
-#ifdef SSE2
+#ifndef NOSSE2
 #define SSE2_FUNC(X) _sse2_##X
 #define MatrixMultVec4x4 _sse2_MatrixMultVec4x4
 #define MatrixMultVec3x3 _sse2_MatrixMultVec3x3

@@ -29,7 +29,7 @@
 
 
 ///////////////////////////////////////////////////////////////// Console
-#ifdef BETA_VERSION
+#if !defined(PUBLIC_RELEASE) || defined(DEVELOPER)
 #define BUFFER_SIZE 100
 HANDLE hConsole;
 void printlog(const char *fmt, ...);
@@ -87,4 +87,9 @@ void printlog(const char *fmt, ...)
 	va_end(list);
 	WriteConsole(hConsole,msg, (DWORD)strlen(msg), &tmp, 0);
 }
+#else
+
+void OpenConsole() {}
+void CloseConsole() {}
+
 #endif
