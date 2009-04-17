@@ -29,15 +29,13 @@
 #include <stdio.h>
 #include "debug.h"
 
-void OpenConsole();
-void CloseConsole();
-
 #else
 
-#define OpenConsole()
-#define CloseConsole()
 #define pringlog(...)
 
 #endif
+
+void OpenConsole();
+void CloseConsole();
 
 #endif

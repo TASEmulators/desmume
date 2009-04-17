@@ -4,7 +4,7 @@
 #include "common.h"
 
 #define MAX_TEXTURE 500
-#ifdef SSE2
+#ifndef NOSSE2
 struct ALIGN(16) TextureCache
 #else
 struct ALIGN(8) TextureCache

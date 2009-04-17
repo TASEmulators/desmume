@@ -37,8 +37,8 @@
 #endif
 #endif
 
-#ifdef SSE2
-#define DESMUME_CPUEXT_STRING " SSE2"
+#ifdef NOSSE2
+#define DESMUME_CPUEXT_STRING " NOSSE2"
 #else
 #define DESMUME_CPUEXT_STRING ""
 #endif

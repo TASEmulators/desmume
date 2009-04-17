@@ -52,10 +52,10 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
+				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="2"
 				FloatingPointModel="2"
 				DebugInformationFormat="4"
 				CallingConvention="0"
@@ -482,13 +482,6 @@
 					<File
 						RelativePath="..\matrix_sse2-x86.asm"
 						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="MASM"
-							/>
-						</FileConfiguration>
 						<FileConfiguration
 							Name="Debug|x64"
 							ExcludedFromBuild="true"
