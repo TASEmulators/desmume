@@ -274,7 +274,7 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize,
                  const char *cflash_disk_image_file);
 #endif
 void NDS_FreeROM(void);
-void NDS_Reset(void);
+void NDS_Reset(BOOL resetBySaveState = FALSE);
 int NDS_ImportSave(const char *filename);
 
 int NDS_WriteBMP(const char *filename);

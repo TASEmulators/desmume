@@ -566,14 +566,23 @@ u32 cheatSearchNumber()
 
 BOOL cheatSearchGetList(u32 *address, u32 *curVal)
 {
-	for (u32 i = searchLastRecord; i < (4 * 1024 * 1024); i++)
+	u8	step = (searchSize+1);
+	u8	stepMem = 1;
+	switch (searchSize)
+	{
+		case 1: stepMem = 0x3; break;
+		case 2: stepMem = 0x7; break;
+		case 3: stepMem = 0xF; break;
+	}
+
+	for (u32 i = searchLastRecord; i < (4 * 1024 * 1024); i+=step)
 	{
 		u32	addr = (i >> 3);
 		u32	offs = (i % 8);
-		if (searchStatMem[addr] & (1<<offs))
+		if (searchStatMem[addr] & (stepMem<<offs))
 		{
 			*address = i;
-			searchLastRecord = i+1;
+			searchLastRecord = i+step;
 			
 			switch (searchSize)
 			{
