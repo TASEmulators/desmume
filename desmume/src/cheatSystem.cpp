@@ -558,14 +558,28 @@ BOOL cheatsLoad()
 						(buf[3] == 'o') &&
 						(buf[4] == '=') )		// Info cheat
 				{
-					// TODO: parse number for comma
-					cheats[last].type=atoi(&buf[5]);
-					if (buf[6]!=',') continue;			// error
-					cheats[last].num=atoi(&buf[7]);
-					if (buf[8]!=',') continue;			// error
-					cheats[last].enabled=atoi(&buf[9]);
-					if (buf[10]!=',') continue;			// error
-					cheats[last].size=atoi(&buf[11]);
+					u32		dstart = 5;
+					u32		dsize = 0;
+					char	bf[4] = { 0 };
+
+					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
+					if (buf[dstart+dsize]==0) continue;			// error
+					strncpy(bf, (char*)buf+dstart, dsize);
+					cheats[last].type=atoi(bf);
+					dstart += (dsize+1); dsize=0;
+					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
+					if (buf[dstart+dsize]==0) continue;			// error
+					strncpy(bf, (char*)buf+dstart, dsize);
+					dstart += (dsize+1); dsize=0;
+					cheats[last].num=atoi(bf);
+					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
+					if (buf[dstart+dsize]==0) continue;			// error
+					strncpy(bf, (char*)(buf+dstart), dsize);
+					dstart += (dsize+1); dsize=0;
+					cheats[last].enabled=atoi(bf);
+					while ( (buf[dstart+dsize] != ',') && (buf[dstart+dsize]!=0)) { dsize++; };
+					strncpy(bf, (char*)buf+dstart, dsize);
+					cheats[last].size=atoi(bf);
 					fgets(buf, 1024, fcheat);
 					if ( (buf[0] == 'D') &&
 							(buf[1] == 'a') &&
