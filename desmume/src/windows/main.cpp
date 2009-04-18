@@ -2129,9 +2129,9 @@ int GetModifiers(int key)
 	if (key == VK_MENU || key == VK_CONTROL || key == VK_SHIFT)
 		return 0;
 
-	if(GetAsyncKeyState(VK_MENU   )) modifiers |= CUSTKEY_ALT_MASK;
-	if(GetAsyncKeyState(VK_CONTROL)) modifiers |= CUSTKEY_CTRL_MASK;
-	if(GetAsyncKeyState(VK_SHIFT  )) modifiers |= CUSTKEY_SHIFT_MASK;
+	if(GetAsyncKeyState(VK_MENU   )&0x8000) modifiers |= CUSTKEY_ALT_MASK;
+	if(GetAsyncKeyState(VK_CONTROL)&0x8000) modifiers |= CUSTKEY_CTRL_MASK;
+	if(GetAsyncKeyState(VK_SHIFT  )&0x8000) modifiers |= CUSTKEY_SHIFT_MASK;
 	return modifiers;
 }
 
