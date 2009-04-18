@@ -931,7 +931,7 @@ BOOL CALLBACK CheatsSearchExactWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lp
 			ltoa(searchNumberResults, buf, 10);
 			SetWindowText(GetDlgItem(dialog, IDC_SNUMBER), buf);
 			SetFocus(GetDlgItem(dialog, IDC_EVALUE));
-			return TRUE;
+			break;
 		}
 
 		case WM_COMMAND:
@@ -986,7 +986,7 @@ BOOL CALLBACK CheatsSearchCompWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 			char buf[256];
 			ltoa(searchNumberResults, buf, 10);
 			SetWindowText(GetDlgItem(dialog, IDC_SNUMBER), buf);
-			return TRUE;
+			break;
 		}
 
 		case WM_COMMAND:
@@ -1070,6 +1070,7 @@ BOOL CALLBACK CheatsSearchViewWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				SetFocus(searchListView);
 			}
 		return TRUE;
+
 		case WM_COMMAND:
 		{
 			switch (LOWORD(wparam))
@@ -1113,7 +1114,7 @@ BOOL CALLBACK CheatsSearchMainWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 			EnableWindow(hBRestart, FALSE);
 			EnableWindow(hBView, FALSE);
 			EnableWindow(hBSearch, TRUE);
-			return TRUE;
+			break;
 		}
 
 		case WM_COMMAND:
@@ -1134,28 +1135,26 @@ BOOL CALLBACK CheatsSearchMainWnd(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpa
 				return TRUE;
 
 				case IDC_RADIO5:		// unsigned
-				{
 					searchSign = 0;
 					for (int i = 0; i < 4; i++)
 						SetWindowText(GetDlgItem(dialog, searchRangeIDDs[i]), searchRangeText[searchSign][i]);
-					return TRUE;
-				}
+				return TRUE;
+
 				case IDC_RADIO6:		//signed
-				{
 					searchSign = 1;
 					for (int i = 0; i < 4; i++)
 						SetWindowText(GetDlgItem(dialog, searchRangeIDDs[i]), searchRangeText[searchSign][i]);
-					return TRUE;
-				}
+				return TRUE;
 
 				case IDC_RADIO7:		// exact value search
 					searchType = 0;
 				return TRUE;
+
 				case IDC_RADIO8:		// comparative search
 					searchType = 1;
 				return TRUE;
 			}
-			break;
+			return TRUE;
 		}
 	}
 	return FALSE;
