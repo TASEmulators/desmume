@@ -236,7 +236,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -248,7 +250,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -260,7 +264,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -272,7 +278,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -284,7 +292,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -296,7 +306,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -308,7 +320,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
@@ -320,7 +334,9 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+					if (if_flag > 32) {
+						LOG("AR: error in 'if' expression (type %i)\n", type);
+					}
 				}
 			break;
 
