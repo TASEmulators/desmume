@@ -49,11 +49,11 @@
                 <widget class="GtkMenu" id="menu_file_menu">
 
                   <child>
-                    <widget class="GtkImageMenuItem" id="menu_ouvrir">
+                    <widget class="GtkImageMenuItem" id="menu_open">
                       <property name="visible">True</property>
                       <property name="label">gtk-open</property>
                       <property name="use_stock">True</property>
-                      <signal name="activate" handler="on_menu_ouvrir_activate" last_modification_time="Mon, 01 Jan 2007 16:34:54 GMT"/>
+                      <signal name="activate" handler="on_menu_open_activate" last_modification_time="Mon, 01 Jan 2007 16:34:54 GMT"/>
                     </widget>
                   </child>
 

@@ -205,7 +205,7 @@ static void file_open() {
 	gtk_widget_destroy(pFileSelection);
 }
  
-void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data) { file_open();}
+void  on_menu_open_activate  (GtkMenuItem *menuitem, gpointer user_data) { file_open();}
 void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data) { gtk_main_quit(); }
 
 #define SCREENS_PIXEL_SIZE 98304
