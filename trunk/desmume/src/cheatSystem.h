@@ -45,7 +45,9 @@ extern void cheatsInit(char *path);
 extern BOOL cheatsAdd(u8 size, u32 address, u32 val, char *description, BOOL enabled);
 extern BOOL cheatsUpdate(u8 size, u32 address, u32 val, char *description, BOOL enabled, u32 pos);
 extern BOOL cheatsAdd_AR(char *code, char *description, BOOL enabled);
+extern BOOL cheatsUpdate_AR(char *code, char *description, BOOL enabled, u32 pos);
 extern BOOL cheatsAdd_CB(char *code, char *description, BOOL enabled);
+extern BOOL cheatsUpdate_CB(char *code, char *description, BOOL enabled, u32 pos);
 extern BOOL cheatsRemove(u32 pos);
 extern void cheatsGetListReset();
 extern BOOL cheatsGetList(CHEATS_LIST *cheat);
@@ -57,6 +59,7 @@ extern BOOL cheatsPush();
 extern BOOL cheatsPop();
 extern void cheatsStackClear();
 extern void cheatsProcess();
+extern void cheatGetXXcodeString(CHEATS_LIST cheat, char *res_buf);
 
 // ==================================================== cheat search
 extern void cheatsSearchInit(u8 type, u8 size, u8 sign);

@@ -28,6 +28,8 @@
 #include "MMU.h"
 #include "debug.h"
 
+//#define AR_DISASM 1
+
 static	CHEATS_LIST			cheats[MAX_CHEAT_LIST];
 static	u16					cheatsNum = 0;
 static	u8					cheatFilename[MAX_PATH];
@@ -83,14 +85,207 @@ BOOL cheatsUpdate(u8 size, u32 address, u32 val, char *description, BOOL enabled
 	return TRUE;
 }
 
+#ifdef	AR_DISASM
+void cheatsDisassemble_AR(u32 hi, u32 lo)
+{
+	u8		type = (hi >> 28);
+	u32		hi_save = hi;
+
+	hi &= 0x0FFFFFFF;
+
+	switch (type)
+	{
+		case 0x00: 
+				if (hi==0)
+					INFO("AR: manual hook\n"); 
+				else
+				if ((hi==0x0000AA99) && (lo=0))
+					INFO("AR: parameter bytes 9..10 for above code (padded with 00s)\n"); 
+				else
+					INFO("AR: word [%07X+%07X] = %08X\n", hi, 0, lo); 
+			break;
+		case 0x01: INFO("AR: half [%07X+%07X] = %04X\n", hi, 0, lo); break;
+		case 0x02: INFO("AR: byte [%07X+%07X] = %02X\n", hi, 0, lo); break;
+		case 0x03: INFO("AR: IF %08X > word[%07X] ; unsigned\n", lo, hi); break;
+		case 0x04:
+		{
+			if ((hi == 04332211) && (lo == 88776655))
+			{
+				INFO("AR: parameter bytes 1..8 for above code (example)\n"); 
+			}
+			else
+				INFO("AR: IF %08X < word[%07X] ; unsigned\n", lo, hi); 
+		}
+		break;
+		case 0x05: INFO("AR: IF %08X = word[%07X]\n", lo, hi); break;
+		case 0x06: INFO("AR: IF %08X <> word[%07X]\n", lo, hi); break;
+		case 0x07: INFO("AR: IF %04X > ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
+		case 0x08: INFO("AR: IF %04X < ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
+		case 0x09: INFO("AR: IF %04X = ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
+		case 0x0A: INFO("AR: IF %04X <> ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
+		case 0x0B: INFO("AR: offset = word[%07X + %07X]\n", hi, 0); break;
+		case 0x0C: 
+		{
+			switch (hi >> 24)
+			{
+				case 0x0:INFO("AR: FOR loopcount=0 to %08X ;execute %08X times\n", lo, (lo+1)); break;
+				case 0x2:INFO("AR: offset = address of the C4000000 code ???\n");break;
+				case 0x5:INFO("AR: counter=counter+1, IF (counter AND YYY) = XXX\n");break;
+				case 0x6:INFO("AR: [%07X]=%07 (offset)\n", hi, 0);break;
+				default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
+			}
+		}
+		break;
+		
+		case 0x0D: 
+		{
+			switch (hi >> 24)
+			{
+				case 0x0:INFO("AR: ENDIF\n");break;
+				case 0x1:INFO("AR: NEXT loopcount\n");break;
+				case 0x2:INFO("AR: NEXT loopcount & Flush\n");break;
+				case 0x3:INFO("AR: offset = %07X\n", hi);break;
+				case 0x4:INFO("AR: datareg = datareg + %07X\n", hi);break;
+				case 0x5:INFO("AR: datareg = %07X\n",hi);break;
+				case 0x6:INFO("AR: \n");break;
+				case 0x7:INFO("AR: \n");break;
+				case 0x8:INFO("AR: \n");break;
+				case 0x9:INFO("AR: \n");break;
+				case 0xA:INFO("AR: \n");break;
+				case 0xB:INFO("AR: \n");break;
+				case 0xC:INFO("AR: \n");break;
+				default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
+			}
+		}
+		break;
+		case 0x0E: INFO("AR: copy %08X parameter bytes to [%08X + %07X...]\n", lo, hi, 0); break;
+		case 0x0F: INFO("AR: copy %08X bytes from [%07X...] to [%07X...]\n", lo, 0, hi); break;
+		default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
+	}
+}
+#endif
+
+void cheats_ARparser(CHEATS_LIST cheat)
+{
+	for (int i=0; i < cheat.num; i++)
+	{
+#ifdef	AR_DISASM
+		cheatsDisassemble_AR(cheat.hi[i], cheat.lo[i]);
+#endif
+	}
+}
+
+BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
+{
+	u16		count = 0;
+	u16		t = 0;
+	char	tmp_buf[sizeof(cheat->hi)+sizeof(cheat->lo)];
+
+	memset(tmp_buf, 0, sizeof(tmp_buf));
+	// remove wrong chars
+	for (int i=0; i < strlen(code); i++)
+	{
+		switch (code[i])
+		{
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+			case 'A':
+			case 'a':
+			case 'B':
+			case 'b':
+			case 'C':
+			case 'c':
+			case 'D':
+			case 'd':
+			case 'E':
+			case 'e':
+			case 'F':
+			case 'f':
+				tmp_buf[t] = code[i];
+				t++;
+			break;
+		}
+	}
+
+	if ((strlen(tmp_buf) % 8) != 0) return FALSE;			// error
+	if ((strlen(tmp_buf) % 16) != 0) return FALSE;			// error
+
+	// TODO: syntax check
+	count = (strlen(tmp_buf) / 16);
+	for (int i=0; i < count; i++)
+	{
+		char buf[8] = {0};
+		strncpy(buf, tmp_buf+(i*16), 8);
+		sscanf_s(buf, "%x", &cheat->hi[i]);
+		strncpy(buf, tmp_buf+(i*16) + 8, 8);
+		sscanf_s(buf, "%x", &cheat->lo[i]);
+	}
+	
+	cheat->num = count;
+	cheat->size = 0;
+	return TRUE;
+}
+
 BOOL cheatsAdd_AR(char *code, char *description, BOOL enabled)
 {
-	return FALSE;
+	if (cheatsNum == MAX_CHEAT_LIST) return FALSE;
+
+	if (!cheatsXXcodePreparser(&cheats[cheatsNum], code)) return FALSE;
+	
+	cheats[cheatsNum].type = 1;
+	
+	strcpy(cheats[cheatsNum].description, description);
+	cheats[cheatsNum].enabled = enabled;
+	cheatsNum++;
+	return TRUE;
+}
+
+BOOL cheatsUpdate_AR(char *code, char *description, BOOL enabled, u32 pos)
+{
+	if (pos > cheatsNum) return FALSE;
+
+	if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
+	
+	cheats[pos].type = 1;
+	
+	strcpy(cheats[pos].description, description);
+	cheats[pos].enabled = enabled;
+	return TRUE;
 }
 
 BOOL cheatsAdd_CB(char *code, char *description, BOOL enabled)
 {
-	return FALSE;
+	if (cheatsNum == MAX_CHEAT_LIST) return FALSE;
+
+	if (!cheatsXXcodePreparser(&cheats[cheatsNum], code)) return FALSE;
+	
+	cheats[cheatsNum].type = 2;
+	
+	strcpy(cheats[cheatsNum].description, description);
+	cheats[cheatsNum].enabled = enabled;
+	cheatsNum++;
+	return TRUE;
+}
+
+BOOL cheatsUpdate_CB(char *code, char *description, BOOL enabled, u32 pos)
+{
+	if (pos > cheatsNum) return FALSE;
+
+	if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
+	
+	cheats[pos].type = 2;
+	
+	strcpy(cheats[pos].description, description);
+	cheats[pos].enabled = enabled;
+	return TRUE;
 }
 
 BOOL cheatsRemove(u32 pos)
@@ -157,9 +352,10 @@ BOOL cheatsSave()
 
 			if (cheats[i].num > 0)
 			{
+				fprintf(fcheat, "Data=");
 				for (int t = 0; t < cheats[i].num; t++)
 				{
-					fprintf(fcheat, "Data=%08X%08X", cheats[i].hi[t], cheats[i].lo[t]);
+					fprintf(fcheat, "%08X%08X", cheats[i].hi[t], cheats[i].lo[t]);
 					if (t < (cheats[i].num - 1)) fputs(",", fcheat);
 				}
 				fputs("\n", fcheat);
@@ -230,6 +426,8 @@ BOOL cheatsLoad()
 							offs+=8;
 							strncpy(tmp_buf, (char *)buf+offs, 8);
 							sscanf_s(tmp_buf, "%x", &cheats[last].lo[j]);
+							offs+=8;
+							if (buf[offs] != ',') continue; //error
 							offs++;		// skip comma
 						}
 					}
@@ -305,11 +503,23 @@ void cheatsProcess()
 			break;
 
 			case 1:		// Action Replay
+				cheats_ARparser(cheats[i]);
 				break;
 			case 2:		// Codebreaker
 				break;
 			default: continue;
 		}
+	}
+}
+
+void cheatGetXXcodeString(CHEATS_LIST cheat, char *res_buf)
+{
+	char	buf[50] = { 0 };
+
+	for (int i=0; i < cheat.num; i++)
+	{
+		sprintf(buf, "%08X %08X\n", cheat.hi[i], cheat.lo[i]);
+		strcat(res_buf, buf);
 	}
 }
 
