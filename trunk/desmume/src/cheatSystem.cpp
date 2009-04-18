@@ -165,7 +165,7 @@ void cheatsDisassemble_AR(u32 hi, u32 lo)
 }
 #endif
 
-void cheats_ARparser(CHEATS_LIST cheat)
+static void cheats_ARparser(CHEATS_LIST cheat)
 {
 	for (int i=0; i < cheat.num; i++)
 	{
@@ -175,7 +175,7 @@ void cheats_ARparser(CHEATS_LIST cheat)
 	}
 }
 
-BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
+static BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
 {
 	u16		count = 0;
 	u16		t = 0;
@@ -183,7 +183,7 @@ BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
 
 	memset(tmp_buf, 0, sizeof(tmp_buf));
 	// remove wrong chars
-	for (int i=0; i < strlen(code); i++)
+	for (unsigned int i=0; i < strlen(code); i++)
 	{
 		switch (code[i])
 		{
