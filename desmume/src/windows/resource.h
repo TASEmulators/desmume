@@ -155,6 +155,7 @@
 #define IDD_EMULATIONSETTINGS                   916
 #define IDD_WIFISETTINGS                        918
 #define IDD_MEM_VIEW                            920
+#define IDD_CHEAT_ADD_XX_CODE                   921
 #define IDC_BGMAP_SEL                           1000
 #define IDC_BRIDGEADAPTER                       1000
 #define IDC_EDIT03                              1000
@@ -370,9 +371,7 @@
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_COLORCTRL  1312
 #define IDD_CHEAT_SEARCH                        1312
 #define IDC_LIGHT_VIEWER_LIGHT1COLOR_EDIT       1313
-#define IDD_CHEAT_ADD_AR_CODE                   1313
 #define IDC_LIGHT_VIEWER_LIGHT1VECTOR_EDIT      1314
-#define IDD_CHEAT_ADD_BC_CODE                   1314
 #define IDC_LIGHT_VIWER_LIGHT2_GROUP            1321
 #define IDC_LIGHT_VIEWER_LIGHT2COLOR_COLORCTRL  1322
 #define IDC_LIGHT_VIEWER_LIGHT2COLOR_EDIT       1323

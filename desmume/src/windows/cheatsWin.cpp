@@ -45,6 +45,8 @@ static	u8		searchAddFreeze = 1;
 static	u8		searchAddSize = 0;
 static	char	editBuf[3][75] = { 0 };
 static	u32		cheatEditPos = 0;
+static	u8		cheatXXtype = 0;
+static	u8		cheatXXaction = 0;
 
 static	HWND	searchWnd = NULL;
 static	HWND	searchListView = NULL;
@@ -447,6 +449,155 @@ BOOL CALLBACK CheatsEditProc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	}
 	return FALSE;
 }
+//============================================================================== Action Replay
+BOOL CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	switch(msg)
+	{
+		case WM_INITDIALOG:
+		{
+			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_FMTLINES, (WPARAM)TRUE, (LPARAM)0);
+
+			if (cheatXXtype == 0)
+			{
+				if (cheatXXaction == 0)		// add
+				{
+					SetWindowText(dialog, "Add Action Replay code");
+					tempCheat.enabled = TRUE;
+				}
+				else						// edit
+				{
+					SetWindowText(dialog, "Edit Action Replay code");
+				}
+			}
+			else
+			{
+				if (cheatXXaction == 0)		// add
+				{
+					SetWindowText(dialog, "Add Codebreaker code");
+					tempCheat.enabled = TRUE;
+				}
+				else						// edit
+				{
+					SetWindowText(dialog, "Edit Codebreaker code");
+				}
+			}
+
+			if (cheatXXaction != 0)
+			{
+				char buf[sizeof(tempCheat.hi)+sizeof(tempCheat.lo)] = { 0 };
+				memset(buf, 0, sizeof(buf));
+
+				cheatGetXXcodeString(tempCheat, buf);
+				SetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf);
+				SetWindowText(GetDlgItem(dialog, IDC_EDIT3), tempCheat.description);
+
+				EnableWindow(GetDlgItem(dialog, IDOK), (strlen(buf) > 16)?TRUE:FALSE);
+				SetWindowText(GetDlgItem(dialog, IDOK), "Update");
+			}
+			CheckDlgButton(dialog, IDC_CHECK1, tempCheat.enabled?BST_CHECKED:BST_UNCHECKED);	
+
+			SendMessage(GetDlgItem(dialog, IDC_EDIT2), EM_SETLIMITTEXT, sizeof(tempCheat.hi)+sizeof(tempCheat.lo), 0);
+			SendMessage(GetDlgItem(dialog, IDC_EDIT3), EM_SETLIMITTEXT, sizeof(tempCheat.description), 0);
+		}
+		return TRUE;
+
+		case WM_COMMAND:
+		{
+			switch (LOWORD(wparam))
+			{
+				case IDOK:
+				{
+					char buf[sizeof(tempCheat.hi)+sizeof(tempCheat.lo)] = { 0 };
+
+					memset(buf, 0, sizeof(buf));
+					GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
+
+					if (cheatXXtype == 0)		// Action Replay
+					{
+						if (cheatXXaction == 0)		// add
+						{
+							if (!cheatsAdd_AR(buf, tempCheat.description, tempCheat.enabled))
+							{
+								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", "DeSmuME",
+											MB_OK | MB_ICONERROR);
+								return FALSE;
+							}
+						}
+						else						// edit
+						{
+							if (!cheatsUpdate_AR(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
+							{
+								MessageBox(dialog, "Syntax error in Action Replay code.\nTry again", "DeSmuME",
+											MB_OK | MB_ICONERROR);
+								return FALSE;
+							}
+						}
+					}
+					else
+					{
+						if (cheatXXaction == 0)		// add
+						{
+							if (!cheatsAdd_CB(buf, tempCheat.description, tempCheat.enabled))
+							{
+								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", "DeSmuME",
+											MB_OK | MB_ICONERROR);
+								return FALSE;
+							}
+						}
+						else						// edit
+						{
+							if (!cheatsUpdate_CB(buf, tempCheat.description, tempCheat.enabled, cheatEditPos))
+							{
+								MessageBox(dialog, "Syntax error in Codebreaker code.\nTry again", "DeSmuME",
+											MB_OK | MB_ICONERROR);
+								return FALSE;
+							}
+						}
+					}
+					EndDialog(dialog, TRUE);
+				}
+				return TRUE;
+
+				case IDCANCEL:
+					EndDialog(dialog, FALSE);
+				return TRUE;
+
+				case IDC_EDIT2:					// code
+					if (HIWORD(wparam) == EN_UPDATE)
+					{
+						char buf[sizeof(tempCheat.hi)+sizeof(tempCheat.lo)] = { 0 };
+
+						memset(buf, 0, sizeof(buf));
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
+						if (strlen(buf) < 18)		// min size of code "CXXXXXXX YYYYYYYY"
+						{
+							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
+							return TRUE;
+						}
+						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+					}
+				return TRUE;
+
+				case IDC_EDIT3:					// description
+					if (HIWORD(wparam) == EN_UPDATE)
+					{
+						memset(tempCheat.description, 0, sizeof(tempCheat.description));
+						GetWindowText(GetDlgItem(dialog, IDC_EDIT3), tempCheat.description, sizeof(tempCheat.description));
+					}
+				return TRUE;
+
+				case IDC_CHECK1:
+					if (IsDlgButtonChecked(dialog, IDC_CHECK1) == BST_CHECKED)
+						tempCheat.enabled = 1;
+					else
+						tempCheat.enabled = 0;
+				return TRUE;
+			}
+		}
+	}
+	return FALSE;
+}
 //==============================================================================
 BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -496,12 +647,37 @@ BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpar
 					lvi.pszText= "X";
 				else
 					lvi.pszText= "";
-				u32 row = ListView_InsertItem(cheatListView, &lvi);
-				wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
-				ListView_SetItemText(cheatListView, row, 1, buf);
-				ltoa(tempCheat.lo[0], buf, 10);
-				ListView_SetItemText(cheatListView, row, 2, buf);
-				ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+				switch (tempCheat.type)
+				{
+					case 0:					// Internal
+					{
+						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+						ListView_SetItemText(cheatListView, row, 1, buf);
+						ltoa(tempCheat.lo[0], buf, 10);
+						ListView_SetItemText(cheatListView, row, 2, buf);
+						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+						break;
+					}
+
+					case 1:					// Action Replay
+					{
+						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						ListView_SetItemText(cheatListView, row, 1, "Action");
+						ListView_SetItemText(cheatListView, row, 2, "Replay");
+						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+						break;
+					}
+
+					case 2:					// Codebreaker
+					{
+						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						ListView_SetItemText(cheatListView, row, 1, "Code");
+						ListView_SetItemText(cheatListView, row, 2, "breaker");
+						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+						break;
+					}
+				}
 			}
 			SendMessage(cheatListView, WM_SETREDRAW, (WPARAM)TRUE,0);
 
@@ -592,20 +768,105 @@ BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpar
 				}
 				return TRUE;
 
+				case IDC_BADD_AR:
+				{
+					if (LOWORD(wparam) == IDC_BADD_AR)
+					{
+						cheatXXtype = 0;
+					}
+					else
+						if (LOWORD(wparam) == IDC_BADD_CB)
+						{
+							cheatXXtype = 1;
+						}
+						else
+							return TRUE;
+					cheatXXaction = 0;				// 0 = add
+
+					if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
+					{
+						LVITEM lvi;
+
+						memset(&lvi,0,sizeof(LVITEM));
+						lvi.mask = LVIF_TEXT|LVIF_STATE;
+						lvi.iItem = INT_MAX;
+
+						if (tempCheat.enabled)
+							lvi.pszText= "X";
+						else
+							lvi.pszText= " ";
+						u32 row = ListView_InsertItem(cheatListView, &lvi);
+						if (cheatXXtype == 0)
+						{
+							ListView_SetItemText(cheatListView, row, 1, "Action");
+							ListView_SetItemText(cheatListView, row, 2, "Replay");
+						}
+						else
+						{
+							ListView_SetItemText(cheatListView, row, 1, "Code");
+							ListView_SetItemText(cheatListView, row, 2, "breaker");
+						}
+						ListView_SetItemText(cheatListView, row, 3, tempCheat.description);
+
+						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+					}
+				}
+				return TRUE;
+
 				case IDC_BEDIT:
 				{
 					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
 					if (cheatEditPos > cheatsGetSize()) return TRUE;
-					if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
+
+					cheatsGet(&tempCheat, cheatEditPos);
+
+					switch (tempCheat.type)
 					{
-						char buf[256];
-						cheatsGet(&tempCheat, cheatEditPos);
-						wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
-						ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
-						ltoa(tempCheat.lo[0], buf, 10);
-						ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
-						ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
-						EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+						case 0:				// internal
+							if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD), dialog, (DLGPROC) CheatsEditProc))
+							{
+								char buf[256];
+								cheatsGet(&tempCheat, cheatEditPos);
+								if (tempCheat.enabled)
+									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
+								wsprintf(buf, "0x02%06X", tempCheat.hi[0]);
+								ListView_SetItemText(cheatListView, cheatEditPos, 1, buf);
+								ltoa(tempCheat.lo[0], buf, 10);
+								ListView_SetItemText(cheatListView, cheatEditPos, 2, buf);
+								ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
+								EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+							}
+						break;
+
+						case 1:				// Action replay
+						case 2:				// Codebreaker
+							if (tempCheat.type == 1)
+								cheatXXtype = 0;
+							else
+								cheatXXtype = 1;
+							cheatXXaction = 1;		// 1 = edit
+
+							if (DialogBox(hAppInst, MAKEINTRESOURCE(IDD_CHEAT_ADD_XX_CODE), dialog, (DLGPROC) CheatsAdd_XX_Proc))
+							{
+								cheatsGet(&tempCheat, cheatEditPos);
+								if (tempCheat.enabled)
+									ListView_SetItemText(cheatListView, cheatEditPos, 0, "X");
+
+								if (cheatXXtype == 0)
+								{
+									ListView_SetItemText(cheatListView, cheatEditPos, 1, "Action");
+									ListView_SetItemText(cheatListView, cheatEditPos, 2, "Replay");
+								}
+								else
+								{
+									ListView_SetItemText(cheatListView, cheatEditPos, 1, "Code");
+									ListView_SetItemText(cheatListView, cheatEditPos, 2, "breaker");
+								}
+
+								ListView_SetItemText(cheatListView, cheatEditPos, 3, tempCheat.description);
+								EnableWindow(GetDlgItem(dialog, IDOK), TRUE);
+							}
+						break;
 					}
 				}
 				return TRUE;
