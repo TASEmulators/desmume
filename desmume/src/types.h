@@ -25,6 +25,10 @@
 #include "config.h"
 #endif
 
+#ifndef _MSC_VER
+#define NOSSE2
+#endif
+
 #define DESMUME_NAME "DeSmuME"
 
 #ifdef _WIN64
