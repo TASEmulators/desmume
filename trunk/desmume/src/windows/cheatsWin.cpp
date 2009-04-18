@@ -570,7 +570,7 @@ BOOL CALLBACK CheatsAdd_XX_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpara
 
 						memset(buf, 0, sizeof(buf));
 						GetWindowText(GetDlgItem(dialog, IDC_EDIT2), buf, sizeof(buf));
-						if (strlen(buf) < 18)		// min size of code "CXXXXXXX YYYYYYYY"
+						if (strlen(buf) < 17)		// min size of code "CXXXXXXX YYYYYYYY"
 						{
 							EnableWindow(GetDlgItem(dialog, IDOK), FALSE);
 							return TRUE;

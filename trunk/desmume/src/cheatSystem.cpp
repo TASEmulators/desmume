@@ -102,10 +102,10 @@ void cheatsDisassemble_AR(u32 hi, u32 lo)
 				if ((hi==0x0000AA99) && (lo=0))
 					INFO("AR: parameter bytes 9..10 for above code (padded with 00s)\n"); 
 				else
-					INFO("AR: word [%07X+%07X] = %08X\n", hi, 0, lo); 
+					INFO("AR: word [%07X+offset] = %08X\n", hi, lo); 
 			break;
-		case 0x01: INFO("AR: half [%07X+%07X] = %04X\n", hi, 0, lo); break;
-		case 0x02: INFO("AR: byte [%07X+%07X] = %02X\n", hi, 0, lo); break;
+		case 0x01: INFO("AR: half [%07X+offset] = %04X\n", hi, lo & 0xFFFF); break;
+		case 0x02: INFO("AR: byte [%07X+offset] = %02X\n", hi, lo & 0xFF); break;
 		case 0x03: INFO("AR: IF %08X > word[%07X] ; unsigned\n", lo, hi); break;
 		case 0x04:
 		{
@@ -119,10 +119,10 @@ void cheatsDisassemble_AR(u32 hi, u32 lo)
 		break;
 		case 0x05: INFO("AR: IF %08X = word[%07X]\n", lo, hi); break;
 		case 0x06: INFO("AR: IF %08X <> word[%07X]\n", lo, hi); break;
-		case 0x07: INFO("AR: IF %04X > ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
-		case 0x08: INFO("AR: IF %04X < ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
-		case 0x09: INFO("AR: IF %04X = ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
-		case 0x0A: INFO("AR: IF %04X <> ((not %04X) AND half[%07X])\n", hi, (lo >> 4), (lo & 0xF)); break;
+		case 0x07: INFO("AR: IF %04X > ((not %04X) AND half[%07X])\n", (lo & 0xF), (lo >> 16), hi); break;
+		case 0x08: INFO("AR: IF %04X < ((not %04X) AND half[%07X])\n", (lo & 0xF), (lo >> 16), hi); break;
+		case 0x09: INFO("AR: IF %04X = ((not %04X) AND half[%07X])\n", (lo & 0xF), (lo >> 16), hi); break;
+		case 0x0A: INFO("AR: IF %04X <> ((not %04X) AND half[%07X])\n",(lo & 0xF), (lo >> 16), hi); break;
 		case 0x0B: INFO("AR: offset = word[%07X + %07X]\n", hi, 0); break;
 		case 0x0C: 
 		{
@@ -130,8 +130,8 @@ void cheatsDisassemble_AR(u32 hi, u32 lo)
 			{
 				case 0x0:INFO("AR: FOR loopcount=0 to %08X ;execute %08X times\n", lo, (lo+1)); break;
 				case 0x2:INFO("AR: offset = address of the C4000000 code ???\n");break;
-				case 0x5:INFO("AR: counter=counter+1, IF (counter AND YYY) = XXX\n");break;
-				case 0x6:INFO("AR: [%07X]=%07 (offset)\n", hi, 0);break;
+				case 0x5:INFO("AR: counter=counter+1, IF (counter AND %04X) = %04X\n", (lo >> 4), (lo &0xF));break;
+				case 0x6:INFO("AR: [%07X]=offset\n", lo);break;
 				default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
 			}
 		}
@@ -144,16 +144,16 @@ void cheatsDisassemble_AR(u32 hi, u32 lo)
 				case 0x0:INFO("AR: ENDIF\n");break;
 				case 0x1:INFO("AR: NEXT loopcount\n");break;
 				case 0x2:INFO("AR: NEXT loopcount & Flush\n");break;
-				case 0x3:INFO("AR: offset = %07X\n", hi);break;
-				case 0x4:INFO("AR: datareg = datareg + %07X\n", hi);break;
-				case 0x5:INFO("AR: datareg = %07X\n",hi);break;
-				case 0x6:INFO("AR: \n");break;
-				case 0x7:INFO("AR: \n");break;
-				case 0x8:INFO("AR: \n");break;
-				case 0x9:INFO("AR: \n");break;
-				case 0xA:INFO("AR: \n");break;
-				case 0xB:INFO("AR: \n");break;
-				case 0xC:INFO("AR: \n");break;
+				case 0x3:INFO("AR: offset = %07X\n", lo);break;
+				case 0x4:INFO("AR: datareg = datareg + %07X\n", lo);break;
+				case 0x5:INFO("AR: datareg = %07X\n",lo);break;
+				case 0x6:INFO("AR: word[%07X+offset] = datareg, offset=offset+4\n", lo);break;
+				case 0x7:INFO("AR: half[%07X+offset] = datareg, offset=offset+2\n", lo);break;
+				case 0x8:INFO("AR: byte[%07X+offset] = datareg, offset=offset+1\n", lo);break;
+				case 0x9:INFO("AR: datareg = word[%08X+offset]\n", lo);break;
+				case 0xA:INFO("AR: datareg = half[%08X+offset]\n", lo);break;
+				case 0xB:INFO("AR: datareg = byte[%08X+offset]\n", lo);break;
+				case 0xC:INFO("AR: offset = offset + %08X\n", lo);break;
 				default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
 			}
 		}
@@ -167,11 +167,169 @@ void cheatsDisassemble_AR(u32 hi, u32 lo)
 
 static void cheats_ARparser(CHEATS_LIST cheat)
 {
+	u8	type = 0;
+	u8	subtype = 0;
+	u32	hi = 0;
+	u32	lo = 0;
+	// AR temporary vars & flags
+	u32	offset = 0;
+	u32	datareg = 0;
+	u32	loopcount = 0;
+	u32	counter = 0;
+	u32	if_flag = 0;
+	
 	for (int i=0; i < cheat.num; i++)
 	{
+		type = cheat.hi[i] >> 28;
+		subtype = (cheat.hi[i] >> 24) & 0x0F;
+
+		hi = cheat.hi[i] & 0x00FFFFFF;
+		lo = cheat.lo[i];
 #ifdef	AR_DISASM
 		cheatsDisassemble_AR(cheat.hi[i], cheat.lo[i]);
 #endif
+		if (if_flag > 0) 
+		{
+			if ( (type == 0x0D) && (subtype == 0)) if_flag--;	// ENDIF
+			if ( (type == 0x0D) && (subtype == 2))				// NEXT & Flush
+			{
+				offset = 0;
+				datareg = 0;
+				loopcount = 0;
+				counter = 0;
+				if_flag = 0;
+			}
+			continue;
+		}
+
+		switch (type)
+		{
+			case 0x00:
+			{
+				if (hi==0)
+				{
+					//manual hook
+				}
+				else
+				if ((hi==0x0000AA99) && (lo==0))
+				{
+					//parameter bytes 9..10 for above code (padded with 00s)
+				}
+				else
+					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset, lo);
+			}
+			break;
+
+			case 0x01:
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset, lo & 0x0000FFFF);
+			break;
+
+			case 0x02:
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset, lo & 0x000000FF);
+			break;
+
+			case 0x03:
+				if ( lo > T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x04:
+				if ( lo < T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x05:
+				if ( lo == T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x06:
+				if ( lo != T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x07:
+				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x08:
+				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x09:
+				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x0A:
+				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				{
+					if (if_flag > 0) if_flag--;
+				}
+				else
+				{
+					if_flag++;
+					if (if_flag > 32) LOG("AR: error in 'if' expression (type %i)\n", type);
+				}
+			break;
+
+			case 0x0B:
+				offset = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset);
+			break;
+
+			//default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
+		}
 	}
 }
 
