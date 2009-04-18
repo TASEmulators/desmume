@@ -171,6 +171,8 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 	u8	subtype = 0;
 	u32	hi = 0;
 	u32	lo = 0;
+	u32	addr = 0;
+	u32	val = 0;
 	// AR temporary vars & flags
 	u32	offset = 0;
 	u32	datareg = 0;
@@ -183,7 +185,7 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 		type = cheat.hi[i] >> 28;
 		subtype = (cheat.hi[i] >> 24) & 0x0F;
 
-		hi = cheat.hi[i] & 0x00FFFFFF;
+		hi = cheat.hi[i] & 0x0FFFFFFF;
 		lo = cheat.lo[i];
 #ifdef	AR_DISASM
 		cheatsDisassemble_AR(cheat.hi[i], cheat.lo[i]);
@@ -216,132 +218,238 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 					//parameter bytes 9..10 for above code (padded with 00s)
 				}
 				else
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset, lo);
+				{
+					addr = hi + offset;
+					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], lo);
+				}
 			}
 			break;
 
 			case 0x01:
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset, lo & 0x0000FFFF);
+				addr = hi + offset;
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], lo & 0x0000FFFF);
 			break;
 
 			case 0x02:
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset, lo & 0x000000FF);
+				addr = hi + offset;
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], lo & 0x000000FF);
 			break;
 
 			case 0x03:
-				if ( lo > T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				if ( lo > val )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x04:
-				if ( lo < T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				if ( lo < val )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x05:
-				if ( lo == T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				if ( lo == val )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x06:
-				if ( lo != T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi) )
+				val = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				if ( lo != val )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x07:
-				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
+				if ( (lo & 0xFFFF) > ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x08:
-				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
+				if ( (lo & 0xFFFF) < ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x09:
-				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]);
+				if ( (lo & 0xFFFF) == ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x0A:
-				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi)) )
+				val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][hi>>20], hi & MMU.MMU_MASK[ARMCPU_ARM9][hi>>20]) & 0x0000FFFF;
+				if ( (lo & 0xFFFF) != ( (~(lo >> 16)) & val) )
 				{
 					if (if_flag > 0) if_flag--;
 				}
 				else
 				{
 					if_flag++;
-					if (if_flag > 32) {
+					if (if_flag > 32)
+					{
 						LOG("AR: error in 'if' expression (type %i)\n", type);
 					}
 				}
 			break;
 
 			case 0x0B:
-				offset = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x20], hi + offset);
+				addr = hi + offset;
+				offset = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]) & 0x0000FFFF;
+			break;
+
+			case 0x0C:
+				switch (subtype)
+				{
+					case 0x0:
+					break;
+
+					case 0x4:
+					break;
+
+					case 0x5:
+					break;
+
+					case 0x6:
+					break;
+				}
+			break;
+
+			case 0x0D:
+			{
+				switch (subtype)
+				{
+					case 0x0:
+					case 0x1:
+					case 0x2:
+					break;
+
+					case 0x3:
+						offset = lo;
+					break;
+
+					case 0x4:
+						datareg += lo;
+					break;
+
+					case 0x5:
+						datareg = lo;
+					break;
+
+					case 0x6:
+						addr = lo + offset;
+						T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], datareg);
+						offset += 4;
+					break;
+
+					case 0x7:
+						addr = lo + offset;
+						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], datareg & 0x0000FFFF);
+						offset += 2;
+					break;
+
+					case 0x8:
+						addr = lo + offset;
+						T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20], datareg & 0x000000FF);
+						offset += 1;
+					break;
+
+					case 0x9:
+						addr = lo + offset;
+						datareg = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]);
+					break;
+
+					case 0xA:
+						addr = lo + offset;
+						datareg = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]) & 0x0000FFFF;
+					break;
+
+					case 0xB:
+						addr = lo + offset;
+						datareg = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]) & 0x000000FF;
+					break;
+
+					case 0xC:
+						offset += lo;
+					break;
+				}
+			}
+			break;
+
+			case 0xE:
+			break;
+
+			case 0xF:
 			break;
 
 			//default: INFO("AR: ERROR uknown command 0x%2X at %08X:%08X\n", type, hi, lo); break;
