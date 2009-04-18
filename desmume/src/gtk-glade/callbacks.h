@@ -24,7 +24,7 @@
 extern "C" {
 
 /* MENU FILE */
-G_MODULE_EXPORT void  on_menu_ouvrir_activate  (GtkMenuItem *menuitem, gpointer user_data);
+G_MODULE_EXPORT void  on_menu_open_activate  (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_pscreen_activate (GtkMenuItem *menuitem, gpointer user_data);
 G_MODULE_EXPORT void  on_menu_quit_activate    (GtkMenuItem *menuitem, gpointer user_data);
 
