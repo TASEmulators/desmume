@@ -365,7 +365,7 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 
 			case 0x0B:
 				addr = hi + offset;
-				offset = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]) & 0x0000FFFF;
+				offset = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][addr>>20], addr & MMU.MMU_MASK[ARMCPU_ARM9][addr>>20]);
 			break;
 
 			case 0x0C:
