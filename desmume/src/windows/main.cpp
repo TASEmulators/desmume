@@ -3059,11 +3059,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			CheckLanguage(LOWORD(wParam));
 			return 0;
 		case IDC_FRAMELIMIT:
-		{
 			FrameLimit ^= 1;
 			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("FrameLimit", "FrameLimit", FrameLimit, IniName);
-		}
+			return 0;
 		case IDM_SCREENSEP_NONE:
 			{
 				SetScreenGap(0);
