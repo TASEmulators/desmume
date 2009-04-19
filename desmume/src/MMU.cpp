@@ -471,6 +471,7 @@ struct VramConfiguration {
 			case BBGEXTPAL: return "BBGEXTPAL";
 			case AOBJEXTPAL: return "AOBJEXTPAL";
 			case BOBJEXTPAL: return "BOBJEXTPAL";
+			default: return "UNHANDLED CASE";
 		}
 	}
 
@@ -1729,13 +1730,13 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 #endif
 					if(val & (1<<15))
 					{
-						//LOG("Main core on top\n");
+						LOG("Main core on top\n");
 						MainScreen.offset = 0;
 						SubScreen.offset = 192;
 					}
 					else
 					{
-						//LOG("Main core on bottom (%04X)\n", val);
+						LOG("Main core on bottom\n");
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}
@@ -1951,14 +1952,14 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_DISPA_DISPCAPCNT :
 				{
 					u32 v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64) & 0xFFFF0000) | val; 
-					GPU_set_DISPCAPCNT(val);
+					GPU_set_DISPCAPCNT(v);
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64, v);
 					return;
 				}
 			case REG_DISPA_DISPCAPCNT + 2:
 				{
-					u32 v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64) & 0xFFFF) | val; 
-					GPU_set_DISPCAPCNT(val);
+					u32 v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64) & 0xFFFF) | ((u32)val << 16); 
+					GPU_set_DISPCAPCNT(v);
 					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64, v);
 					return;
 				}

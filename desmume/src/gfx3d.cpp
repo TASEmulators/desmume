@@ -1343,14 +1343,24 @@ static void gfx3d_FlushFIFO()
 
 void gfx3d_glFlush(u32 v)
 {
-	gfx3d.frameCtr++;
-
-	gfx3d_FlushFIFO();
-
-	//assert(!flushPending);
 	flushPending = TRUE;
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
+}
+
+void gfx3d_VBlankSignal()
+{
+	//the 3d buffers are swapped when a vblank begins.
+	//so, if we have a redraw pending, now is a safe time to do it
+	if(!flushPending)
+	{
+		gfx3d_FlushFIFO();
+		return;
+	}
+
+	gfx3d.frameCtr++;
+
+	gfx3d_FlushFIFO();
 
 	// reset
 	clInd = 0;
@@ -1378,17 +1388,6 @@ void gfx3d_glFlush(u32 v)
 
 	//switch to the new lists
 	twiddleLists();
-}
-
-void gfx3d_VBlankSignal()
-{
-	//the 3d buffers are swapped when a vblank begins.
-	//so, if we have a redraw pending, now is a safe time to do it
-	if(!flushPending)
-	{
-		gfx3d_FlushFIFO();
-		return;
-	}
 
 	flushPending = FALSE;
 	drawPending = TRUE;
