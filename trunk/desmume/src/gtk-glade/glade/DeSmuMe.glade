@@ -361,7 +361,7 @@
                       <property name="visible">True</property>
                       <property name="label" translatable="yes">Layers</property>
                       <property name="use_underline">True</property>
-                      <property name="active">True</property>
+                      <property name="active">False</property>
                       <signal name="activate" handler="on_menu_layers_activate" last_modification_time="Mon, 01 Jan 2007 16:45:37 GMT"/>
                     </widget>
                   </child>
@@ -1050,7 +1050,7 @@
 
           <child>
             <widget class="GtkVBox" id="wvb_2_Sub">
-              <property name="visible">True</property>
+              <property name="visible">False</property>
               <property name="homogeneous">False</property>
               <property name="spacing">0</property>
 
@@ -1166,7 +1166,7 @@
 
           <child>
             <widget class="GtkVBox" id="wvb_1_Main">
-              <property name="visible">True</property>
+              <property name="visible">False</property>
               <property name="homogeneous">False</property>
               <property name="spacing">0</property>
 
