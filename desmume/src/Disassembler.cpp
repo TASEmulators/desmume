@@ -3743,7 +3743,7 @@ static char * OP_BLX(u32 adr, u32 i, char * txt)
 static char * OP_BL_10(u32 adr, u32 i, char * txt)
 {
      part = adr+4 + (SIGNEEXT_IMM11(i)<<12);
-     sprintf(txt, "CALCUL LA PARTIE HAUTE DE L'ADRESSE");
+     sprintf(txt, "calculating high part of the address");
      return txt;
 
 }
