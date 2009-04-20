@@ -1516,7 +1516,7 @@ gboolean EmuLoop(gpointer data)
     unsigned int i;
     gchar *Title;
 
-    if(desmume_running()) { /* Si on est en train d'executer le programme ... */
+    if(desmume_running()) { /* If desmume is currently running */
         static int limiter_frame_counter = 0;
         fps_FrameCount += Frameskip + 1;
         if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
