@@ -309,12 +309,7 @@ static struct Sampler
 		dowrap(iu,iv);
 
 		Fragment::Color color;
-		u32 col32 = ((u32*)textures.currentData)[(iv<<wshift)+iu];
-		//todo - teach texcache how to provide these already in 5555
-		col32 >>= 3;
-		col32 &= 0x1F1F1F1F;
-		color.color = col32;
-
+		color.color = ((u32*)textures.currentData)[(iv<<wshift)+iu];
 		return color;
 	}
 
@@ -940,18 +935,24 @@ static void SoftRastVramReconfigureSignal() {
 	TexCache_Invalidate();
 }
 
+CACHE_ALIGN static const u16 alpha_lookup[] = {
+	0x0000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
+
 static void SoftRastGetLine(int line, u16* dst, u8* dstAlpha)
 {
 	Fragment* src = screen+((line)<<8);
 	for(int i=0;i<256;i++)
 	{
 		const bool testRenderAlpha = false;
-		u8 r = src->color.components.r;
-		u8 g = src->color.components.g;
-		u8 b = src->color.components.b;
+		const u8 r = src->color.components.r;
+		const u8 g = src->color.components.g;
+		const u8 b = src->color.components.b;
 		*dst = R5G5B5TORGB15(r,g,b);
-		if(src->color.components.a > 0) 
-			*dst |= 0x8000;
+
+		*dst |= alpha_lookup[src->color.components.a];
 		*dstAlpha = alpha_5bit_to_4bit[src->color.components.a];
 
 		if(testRenderAlpha)
@@ -971,12 +972,11 @@ static void SoftRastGetLineCaptured(int line, u16* dst) {
 	Fragment* src = screen+((line)<<8);
 	for(int i=0;i<256;i++)
 	{
-		u8 r = src->color.components.r;
-		u8 g = src->color.components.g;
-		u8 b = src->color.components.b;
+		const u8 r = src->color.components.r;
+		const u8 g = src->color.components.g;
+		const u8 b = src->color.components.b;
 		*dst = R5G5B5TORGB15(r,g,b);
-		if(src->color.components.a > 0) 
-			*dst |= 0x8000;
+		*dst |= alpha_lookup[src->color.components.a];
 		src++;
 		dst++;
 	}
@@ -1269,7 +1269,7 @@ static void SoftRastRender()
 	
 		if(needInitTexture || lastTextureFormat != poly->texParam || lastTexturePalette != poly->texPalette)
 		{
-			TexCache_SetTexture(poly->texParam,poly->texPalette);
+			TexCache_SetTexture<TexFormat_15bpp>(poly->texParam,poly->texPalette);
 			sampler.setup(poly->texParam);
 			lastTextureFormat = poly->texParam;
 			lastTexturePalette = poly->texPalette;

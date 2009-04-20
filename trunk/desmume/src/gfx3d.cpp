@@ -79,6 +79,11 @@ CACHE_ALIGN const u8 material_3bit_to_8bit[] = {
 	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
 };
 
+//maybe not very precise
+CACHE_ALIGN const u8 material_3bit_to_5bit[] = {
+	0, 4, 8, 13, 17, 22, 26, 31
+};
+
 CACHE_ALIGN const u8 alpha_5bit_to_4bit[] = {
 	0x00, 0x00,
 	0x01, 0x01,

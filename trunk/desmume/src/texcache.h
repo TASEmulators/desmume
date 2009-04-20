@@ -3,6 +3,12 @@
 
 #include "common.h"
 
+enum TexCache_TexFormat
+{
+	TexFormat_32bpp,
+	TexFormat_15bpp
+};
+
 #define MAX_TEXTURE 500
 #ifndef NOSSE2
 struct ALIGN(16) TextureCache
@@ -36,7 +42,10 @@ extern void (*TexCache_BindTexture)(u32 texnum);
 extern void (*TexCache_BindTextureData)(u32 texnum, u8* data);
 
 void TexCache_Reset();
-void TexCache_SetTexture(unsigned int format, unsigned int texpal);
+
+template<TexCache_TexFormat format>
+void TexCache_SetTexture(u32 format, u32 texpal);
+
 void TexCache_Invalidate();
 
 extern u8 TexCache_texMAP[1024*2048*4]; 
