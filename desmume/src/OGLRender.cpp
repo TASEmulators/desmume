@@ -536,7 +536,7 @@ static void setTexture(unsigned int format, unsigned int texpal)
 	}
 
 
-	TexCache_SetTexture(format, texpal);
+	TexCache_SetTexture<TexFormat_32bpp>(format, texpal);
 }
 
 

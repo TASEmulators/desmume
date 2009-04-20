@@ -12,6 +12,7 @@
 using std::min;
 using std::max;
 
+//only dump this from ogl renderer. for now, softrasterizer creates things in an incompatible pixel format
 //#define DEBUG_DUMP_TEXTURE
 
 //This class represents a number of regions of memory which should be viewed as contiguous
@@ -150,7 +151,11 @@ static void DebugDumpTexture(int which)
 
 
 static int lastTexture = -1;
-void TexCache_SetTexture(unsigned int format, unsigned int texpal)
+
+#define CONVERT(color,alpha) ((TEXFORMAT == TexFormat_32bpp)?(RGB15TO32(color,alpha)):RGB15TO5555(color,alpha))
+
+template<TexCache_TexFormat TEXFORMAT>
+void TexCache_SetTexture(u32 format, u32 texpal)
 {
 	//for each texformat, number of palette entries
 	const int palSizes[] = {0, 32, 4, 16, 256, 0, 8, 0};
@@ -309,7 +314,8 @@ REJECT:
 	//INFO("Texture %03i - format=%08X; pal=%04X (mode %X, width %04i, height %04i)\n",i, texcache[i].frm, texcache[i].pal, texcache[i].mode, sizeX, sizeY);
 
 	//============================================================================ Texture conversion
-	u32 palZeroTransparent = (1-((format>>29)&1))*255;						// shash: CONVERT THIS TO A TABLE :)
+	const u32 opaqueColor = TEXFORMAT==TexFormat_32bpp?255:31;
+	u32 palZeroTransparent = (1-((format>>29)&1))*opaqueColor;
 
 	switch (texcache[tx].mode)
 	{
@@ -321,7 +327,10 @@ REJECT:
 				{
 					u16 c = pal[*adr&31];
 					u8 alpha = *adr>>5;
-					*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
+					if(TEXFORMAT == TexFormat_15bpp)
+						*dwdst++ = RGB15TO5555(c,material_3bit_to_5bit[alpha]);
+					else
+						*dwdst++ = RGB15TO32(c,material_3bit_to_8bit[alpha]);
 					adr++;
 				}
 			}
@@ -339,19 +348,19 @@ REJECT:
 
 					bits = (*adr)&0x3;
 					c = pal[bits];
-					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
 
 					bits = ((*adr)>>2)&0x3;
 					c = pal[bits];
-					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
 
 					bits = ((*adr)>>4)&0x3;
 					c = pal[bits];
-					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
 
 					bits = ((*adr)>>6)&0x3;
 					c = pal[bits];
-					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
 
 					adr++;
 				}
@@ -369,11 +378,11 @@ REJECT:
 
 					bits = (*adr)&0xF;
 					c = pal[bits];
-					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
 
 					bits = ((*adr)>>4);
 					c = pal[bits];
-					*dwdst++ = RGB15TO32(c,(bits == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(bits == 0) ? palZeroTransparent : opaqueColor);
 					adr++;
 				}
 			}
@@ -386,7 +395,7 @@ REJECT:
 				for(u32 x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = pal[*adr];
-					*dwdst++ = RGB15TO32(c,(*adr == 0) ? palZeroTransparent : 255);
+					*dwdst++ = CONVERT(c,(*adr == 0) ? palZeroTransparent : opaqueColor);
 					adr++;
 				}
 			}
@@ -444,7 +453,7 @@ REJECT:
 					u16 pal1offset	= (pal1 & 0x3FFF)<<1;
 					u8  mode		= pal1>>14;
 					u32 tmp_col[4];
-
+					
 					tmp_col[0]=RGB16TO32(PAL4X4(pal1offset),255);
 					tmp_col[1]=RGB16TO32(PAL4X4(pal1offset+1),255);
 
@@ -492,6 +501,17 @@ REJECT:
 						}
 					}
 
+					if(TEXFORMAT==TexFormat_15bpp)
+					{
+						for(int i=0;i<4;i++)
+						{
+							tmp_col[i] >>= 3;
+							tmp_col[i] &= 0x1F1F1F1F;
+						}
+					}
+
+					//TODO - this could be more precise for 32bpp mode (run it through the color separation table)
+
 					//set all 16 texels
 					for (int sy = 0; sy < 4; sy++)
 					{
@@ -520,7 +540,10 @@ REJECT:
 				{
 					u16 c = pal[*adr&0x07];
 					u8 alpha = (*adr>>3);
-					*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
+					if(TEXFORMAT == TexFormat_15bpp)
+						*dwdst++ = RGB15TO5555(c,alpha);
+					else
+						*dwdst++ = RGB15TO32(c,material_5bit_to_8bit[alpha]);
 					adr++;
 				}
 			}
@@ -534,7 +557,7 @@ REJECT:
 				{
 					u16 c = map[x];
 					int alpha = ((c&0x8000)?255:0);
-					*dwdst++ = RGB15TO32(c&0x7FFF,alpha);
+					*dwdst++ = CONVERT(c&0x7FFF,alpha);
 				}
 			}
 			break;
@@ -585,3 +608,7 @@ void TexCache_Invalidate()
 
 void (*TexCache_BindTexture)(u32 texnum) = NULL;
 void (*TexCache_BindTextureData)(u32 texnum, u8* data);
+
+//these templates needed to be instantiated manually
+template void TexCache_SetTexture<TexFormat_32bpp>(u32 format, u32 texpal);
+template void TexCache_SetTexture<TexFormat_15bpp>(u32 format, u32 texpal);

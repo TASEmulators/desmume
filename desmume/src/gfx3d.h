@@ -33,6 +33,9 @@
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
 #define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col&0x7FFF] )
 
+//produce a 5555 32bit color from a ds RGB15 plus an 5bit alpha
+#define RGB15TO5555(col,alpha5) (((alpha5)<<24) | ((((col) & 0x7C00)>>10)<<16) | ((((col) & 0x3E0)>>5)<<8) | (((col) & 0x1F)))
+
 //produce a 24bpp color from a ds RGB15, using a table
 #define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[col&0x7FFF] )
 
@@ -183,6 +186,7 @@ extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const int material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
+extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 extern CACHE_ALIGN const u8 alpha_5bit_to_4bit[32];
 
