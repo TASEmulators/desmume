@@ -846,7 +846,7 @@ static void GL_ReadFramebuffer()
 		u16* dst = gfx3d_convertedScreen + (y<<8);
 		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
 
-		#ifndef NOSSE
+		#ifndef NOSSE2
 			//I dont know much about this kind of stuff, but this seems to help
 			//for some reason I couldnt make the intrinsics work 
 			u8* wanx =  (u8*)&((u32*)GPU_screen3D)[i];
