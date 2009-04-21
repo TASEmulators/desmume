@@ -103,6 +103,13 @@ CACHE_ALIGN const u8 alpha_5bit_to_4bit[] = {
 	0x10, 0x10
 };
 
+CACHE_ALIGN static const u16 alpha_lookup[] = {
+	0x0000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
+
+
 //private acceleration tables
 static float float16table[65536];
 static float float10Table[1024];
@@ -111,6 +118,9 @@ static float normalTable[1024];
 
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
+
+CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
+CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192];
 
 // Matrix stack handling
 static CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -2154,6 +2164,16 @@ void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest)
 void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 {
 	*dest = lightColor[index];
+}
+
+void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha)
+{
+	gpu3D->NDS_3D_CheckFresh();
+	*dst = gfx3d_convertedScreen+((line)<<8);
+	if(dstAlpha != NULL)
+	{
+		*dstAlpha = gfx3d_convertedAlpha+((line)<<8);
+	}
 }
 
 

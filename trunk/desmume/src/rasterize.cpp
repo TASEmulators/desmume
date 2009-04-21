@@ -63,6 +63,7 @@ template<typename T> T _min(T a, T b, T c, T d) { return min(_min(a,b,d),c); }
 template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 
 static int polynum;
+static bool validFramebuffer = false;
 
 static u8 modulate_table[32][32];
 static u8 decal_table[32][32][32];
@@ -202,16 +203,16 @@ struct PolyAttr
 
 } polyAttr;
 
+union FragmentColor {
+	u32 color;
+	struct {
+		//#ifdef WORDS_BIGENDIAN ?
+		u8 r,g,b,a;
+	};
+};
+
 struct Fragment
 {
-	union Color {
-		u32 color;
-		struct {
-			//#ifdef WORDS_BIGENDIAN ?
-			u8 r,g,b,a;
-		} components;
-	} color;
-
 	u32 depth;
 
 	struct {
@@ -220,7 +221,7 @@ struct Fragment
 
 	u8 stencil;
 
-	u8 pad[5];
+	u8 pad;
 };
 
 static VERT* verts[MAX_CLIPPED_VERTS];
@@ -231,6 +232,8 @@ INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 }
 
 static Fragment screen[256*192];
+static FragmentColor screenColor[256*192];
+
 
 FORCEINLINE int iround(float f) {
 	return (int)f; //lol
@@ -300,7 +303,7 @@ static struct Sampler
 		}
 	}
 
-	FORCEINLINE Fragment::Color sample(float u, float v)
+	FORCEINLINE FragmentColor sample(float u, float v)
 	{
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
@@ -308,7 +311,7 @@ static struct Sampler
 		int iv = floorf(v);
 		dowrap(iu,iv);
 
-		Fragment::Color color;
+		FragmentColor color;
 		color.color = ((u32*)textures.currentData)[(iv<<wshift)+iu];
 		return color;
 	}
@@ -327,11 +330,11 @@ struct Shader
 	}
 
 	float invu, invv, w;
-	Fragment::Color materialColor;
+	FragmentColor materialColor;
 	
-	FORCEINLINE void shade(Fragment& dst)
+	FORCEINLINE void shade(FragmentColor& dst)
 	{
-		Fragment::Color texColor;
+		FragmentColor texColor;
 		float u,v;
 
 		switch(mode)
@@ -340,10 +343,10 @@ struct Shader
 			u = invu*w;
 			v = invv*w;
 			texColor = sampler.sample(u,v);
-			dst.color.components.r = modulate_table[texColor.components.r][materialColor.components.r];
-			dst.color.components.g = modulate_table[texColor.components.g][materialColor.components.g];
-			dst.color.components.b = modulate_table[texColor.components.b][materialColor.components.b];
-			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			dst.r = modulate_table[texColor.r][materialColor.r];
+			dst.g = modulate_table[texColor.g][materialColor.g];
+			dst.b = modulate_table[texColor.b][materialColor.b];
+			dst.a = modulate_table[texColor.a][materialColor.a];
 			//dst.color.components.a = 31;
 			//#ifdef _MSC_VER
 			//if(GetAsyncKeyState(VK_SHIFT)) {
@@ -361,37 +364,37 @@ struct Shader
 			u = invu*w;
 			v = invv*w;
 			texColor = sampler.sample(u,v);
-			dst.color.components.r = decal_table[texColor.components.a][texColor.components.r][materialColor.components.r];
-			dst.color.components.g = decal_table[texColor.components.a][texColor.components.g][materialColor.components.g];
-			dst.color.components.b = decal_table[texColor.components.a][texColor.components.b][materialColor.components.b];
-			dst.color.components.a = materialColor.components.a;
+			dst.r = decal_table[texColor.a][texColor.r][materialColor.r];
+			dst.g = decal_table[texColor.a][texColor.g][materialColor.g];
+			dst.b = decal_table[texColor.a][texColor.b][materialColor.b];
+			dst.a = materialColor.a;
 			break;
 		case 2: //toon/highlight shading
 			u = invu*w;
 			v = invv*w;
 			texColor = sampler.sample(u,v);
-			u32 toonColorVal; toonColorVal = gfx3d.rgbToonTable[materialColor.components.r];
-			Fragment::Color toonColor;
-			toonColor.components.r = ((toonColorVal & 0x0000FF) >>  3);
-			toonColor.components.g = ((toonColorVal & 0x00FF00) >> 11);
-			toonColor.components.b = ((toonColorVal & 0xFF0000) >> 19);
-			dst.color.components.r = modulate_table[texColor.components.r][toonColor.components.r];
-			dst.color.components.g = modulate_table[texColor.components.g][toonColor.components.g];
-			dst.color.components.b = modulate_table[texColor.components.b][toonColor.components.b];
-			dst.color.components.a = modulate_table[texColor.components.a][materialColor.components.a];
+			u32 toonColorVal; toonColorVal = gfx3d.rgbToonTable[materialColor.r];
+			FragmentColor toonColor;
+			toonColor.r = ((toonColorVal & 0x0000FF) >>  3);
+			toonColor.g = ((toonColorVal & 0x00FF00) >> 11);
+			toonColor.b = ((toonColorVal & 0xFF0000) >> 19);
+			dst.r = modulate_table[texColor.r][toonColor.r];
+			dst.g = modulate_table[texColor.g][toonColor.g];
+			dst.b = modulate_table[texColor.b][toonColor.b];
+			dst.a = modulate_table[texColor.a][materialColor.a];
 			if(gfx3d.shading == GFX3D::HIGHLIGHT)
 			{
-				dst.color.components.r = min<u8>(31, (dst.color.components.r + toonColor.components.r));
-				dst.color.components.g = min<u8>(31, (dst.color.components.g + toonColor.components.g));
-				dst.color.components.b = min<u8>(31, (dst.color.components.b + toonColor.components.b));
+				dst.r = min<u8>(31, (dst.r + toonColor.r));
+				dst.g = min<u8>(31, (dst.g + toonColor.g));
+				dst.b = min<u8>(31, (dst.b + toonColor.b));
 			}
 			break;
 		case 3: //shadows
 			//is this right? only with the material color?
-			dst.color = materialColor;
+			dst = materialColor;
 			break;
 		case 4: //our own special mode which only uses the material color (for when texturing is disabled)
-			dst.color = materialColor;
+			dst = materialColor;
 			break;
 
 		}
@@ -399,44 +402,45 @@ struct Shader
 
 } shader;
 
-static FORCEINLINE void alphaBlend(Fragment::Color & dst, const Fragment::Color & src)
+static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & src)
 {
 	if(gfx3d.enableAlphaBlending)
 	{
-		if(src.components.a == 0)
+		if(src.a == 0)
 		{
-			dst.components.a = max(src.components.a,dst.components.a);	
+			dst.a = max(src.a,dst.a);	
 		}
-		else if(src.components.a == 31 || dst.components.a == 0)
+		else if(src.a == 31 || dst.a == 0)
 		{
-			dst.color = src.color;
-			dst.components.a = max(src.components.a,dst.components.a);
+			dst = src;
+			dst.a = max(src.a,dst.a);
 		}
 		else
 		{
-			u8 alpha = src.components.a+1;
+			u8 alpha = src.a+1;
 			u8 invAlpha = 32 - alpha;
-			dst.components.r = (alpha*src.components.r + invAlpha*dst.components.r)>>5;
-			dst.components.g = (alpha*src.components.g + invAlpha*dst.components.g)>>5;
-			dst.components.b = (alpha*src.components.b + invAlpha*dst.components.b)>>5;
-			dst.components.a = max(src.components.a,dst.components.a);
+			dst.r = (alpha*src.r + invAlpha*dst.r)>>5;
+			dst.g = (alpha*src.g + invAlpha*dst.g)>>5;
+			dst.b = (alpha*src.b + invAlpha*dst.b)>>5;
+			dst.a = max(src.a,dst.a);
 		}
 	}
 	else
 	{
-		if(src.components.a == 0)
+		if(src.a == 0)
 		{
 			//do nothing; the fragment is totally transparent
 		}
 		else
 		{
-			dst.color = src.color;
+			dst = src;
 		}
 	}
 }
 
 static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, float invv, float w, float z) {
 	Fragment &destFragment = screen[adr];
+	FragmentColor &destFragmentColor = screenColor[adr];
 
 	//depth test
 	u32 depth;
@@ -478,25 +482,25 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	//this is a HACK: 
 	//we are being very sloppy with our interpolation precision right now
 	//and rather than fix it, i just want to clamp it
-	shader.materialColor.components.r = max(0,min(31,(int)r));
-	shader.materialColor.components.g = max(0,min(31,(int)g));
-	shader.materialColor.components.b = max(0,min(31,(int)b));
+	shader.materialColor.r = max(0,min(31,(int)r));
+	shader.materialColor.g = max(0,min(31,(int)g));
+	shader.materialColor.b = max(0,min(31,(int)b));
 
-	shader.materialColor.components.a = polyAttr.alpha;
+	shader.materialColor.a = polyAttr.alpha;
 
 	//pixel shader
-	Fragment shaderOutput;
+	FragmentColor shaderOutput;
 	shader.shade(shaderOutput);
 
 	//alpha test
 	if(gfx3d.enableAlphaTest)
 	{
-		if(shaderOutput.color.components.a < gfx3d.alphaTestRef)
+		if(shaderOutput.a < gfx3d.alphaTestRef)
 			goto rejected_fragment;
 	}
 
 	//we shouldnt do any of this if we generated a totally transparent pixel
-	if(shaderOutput.color.components.a != 0)
+	if(shaderOutput.a != 0)
 	{
 		//handle shadow polys
 		if(shader.mode == 3)
@@ -533,7 +537,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		}
 
 		//handle polyids
-		bool isOpaquePixel = shaderOutput.color.components.a == 31;
+		bool isOpaquePixel = shaderOutput.a == 31;
 		if(isOpaquePixel)
 		{
 			destFragment.polyid.opaque = polyAttr.polyid;
@@ -561,7 +565,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		}
 
 		//alpha blending and write color
-		alphaBlend(destFragment.color, shaderOutput.color);
+		alphaBlend(destFragmentColor, shaderOutput);
 
 		//depth writing
 		if(isOpaquePixel || polyAttr.translucentDepthWrite)
@@ -925,7 +929,9 @@ static char SoftRastInit(void)
 	return 1;
 }
 
-static void SoftRastReset() {}
+static void SoftRastReset() {
+	validFramebuffer = false;
+}
 
 static void SoftRastClose()
 {
@@ -935,50 +941,41 @@ static void SoftRastVramReconfigureSignal() {
 	TexCache_Invalidate();
 }
 
-CACHE_ALIGN static const u16 alpha_lookup[] = {
-	0x0000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
-	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
-	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
-	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
-
-static void SoftRastGetLine(int line, u16* dst, u8* dstAlpha)
+static void SoftRastConvertFramebuffer()
 {
-	Fragment* src = screen+((line)<<8);
-	for(int i=0;i<256;i++)
+	FragmentColor* src = screenColor;
+	u16* dst = gfx3d_convertedScreen;
+	u8* dstAlpha = gfx3d_convertedAlpha;
+
+	//in an effort to speed this up, the misc pixel buffers and the color buffer were separated.
+
+	for(int i=0,y=0;y<192;y++)
 	{
-		const bool testRenderAlpha = false;
-		const u8 r = src->color.components.r;
-		const u8 g = src->color.components.g;
-		const u8 b = src->color.components.b;
-		*dst = R5G5B5TORGB15(r,g,b);
+		#ifndef NOSSE
+			u8* wanx = (u8*)&src[i];
+			#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
+			#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
+			PUNK(0); PUNK(1);
+		#endif
 
-		*dst |= alpha_lookup[src->color.components.a];
-		*dstAlpha = alpha_5bit_to_4bit[src->color.components.a];
-
-		if(testRenderAlpha)
+		for(int x=0;x<256;x++,i++)
 		{
-			*dst = 0x8000 | R5G5B5TORGB15(src->color.components.a,src->color.components.a,src->color.components.a);
-			*dstAlpha = 16;
+			const u8 r = src[i].r;
+			const u8 g = src[i].g;
+			const u8 b = src[i].b;
+			const u8 a = src[i].a;
+			dst[i] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
+			dstAlpha[i] = alpha_5bit_to_4bit[a];
 		}
-
-		src++;
-		dst++;
-		dstAlpha++;
 	}
-
+	validFramebuffer = true;
 }
 
-static void SoftRastGetLineCaptured(int line, u16* dst) {
-	Fragment* src = screen+((line)<<8);
-	for(int i=0;i<256;i++)
+static void SoftRastCheckFresh()
+{
+	if(!validFramebuffer)
 	{
-		const u8 r = src->color.components.r;
-		const u8 g = src->color.components.g;
-		const u8 b = src->color.components.b;
-		*dst = R5G5B5TORGB15(r,g,b);
-		*dst |= alpha_lookup[src->color.components.a];
-		src++;
-		dst++;
+		SoftRastConvertFramebuffer();
 	}
 }
 
@@ -1158,10 +1155,11 @@ static void clipPoly(POLY* poly)
 static void SoftRastRender()
 {
 	Fragment clearFragment;
-	clearFragment.color.components.r = gfx3d.clearColor&0x1F;
-	clearFragment.color.components.g = (gfx3d.clearColor>>5)&0x1F;
-	clearFragment.color.components.b = (gfx3d.clearColor>>10)&0x1F;
-	clearFragment.color.components.a = (gfx3d.clearColor>>16)&0x1F;
+	FragmentColor clearFragmentColor;
+	clearFragmentColor.r = gfx3d.clearColor&0x1F;
+	clearFragmentColor.g = (gfx3d.clearColor>>5)&0x1F;
+	clearFragmentColor.b = (gfx3d.clearColor>>10)&0x1F;
+	clearFragmentColor.a = (gfx3d.clearColor>>16)&0x1F;
 	clearFragment.polyid.opaque = (gfx3d.clearColor>>24)&0x3F;
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
@@ -1171,6 +1169,8 @@ static void SoftRastRender()
 	clearFragment.stencil = 0;
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
+	for(int i=0;i<256*192;i++)
+		screenColor[i] = clearFragmentColor;
 
 	//convert colors to float to get more precision in case we need it
 	for(int i=0;i<gfx3d.vertlist->count;i++)
@@ -1292,8 +1292,9 @@ static void SoftRastRender()
 		shape_engine(type,!polyAttr.backfacing);
 	}
 
-	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	validFramebuffer = false;
 
+	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 }
 
 GPU3DInterface gpu3DRasterize = {
@@ -1303,6 +1304,5 @@ GPU3DInterface gpu3DRasterize = {
 	SoftRastClose,
 	SoftRastRender,
 	SoftRastVramReconfigureSignal,
-	SoftRastGetLine,
-	SoftRastGetLineCaptured
+	SoftRastCheckFresh,
 };

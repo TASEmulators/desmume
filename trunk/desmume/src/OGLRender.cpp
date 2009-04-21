@@ -75,19 +75,15 @@ static void ENDGL() {
 #define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
 #endif
 
-static ALIGN(16) u8  GPU_screen3D		[256*192*4];
-//static ALIGN(16) unsigned char  GPU_screenStencil[256*256];
+static ALIGN(16) u8  GPU_screen3D			[256*192*4];
+
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
 static bool needRefreshFramebuffer = false;
 
-
-float clearAlpha;
-
-
-
+static bool validFramebuffer = false;
 
 //derived values extracted from polyattr etc
 static bool wireframe=false, alpha31=false;
@@ -474,11 +470,6 @@ static char OGLInit(void)
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP); //clamp so that we dont run off the edges due to 1.0 -> [0,31] math
 	}
 
-	if(glBlendFuncSeparateEXT == NULL)
-		clearAlpha = 1;
-	else 
-		clearAlpha = 0;
-
 	OGLReset();
 
 	ENDGL();
@@ -839,6 +830,7 @@ static void OGLVramReconfigureSignal()
 	TexCache_Invalidate();
 }
 
+
 static void GL_ReadFramebuffer()
 {
 	if(!BEGINGL()) return; 
@@ -849,139 +841,45 @@ static void GL_ReadFramebuffer()
 
 	//convert the pixels to a different format which is more convenient
 	//is it safe to modify the screen buffer? if not, we could make a temp copy
-	for(int i=0;i<256*192;i++) {
-		u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
-		u32screen3D>>=3;
-		u32screen3D &= 0x1F1F1F1F;
-	}
-		
-
-//debug: view depth buffer via color buffer for debugging
-	//int ctr=0;
-	//for(ctr=0;ctr<256*192;ctr++) {
-	//	float zval = GPU_screen3Ddepth[ctr];
-	//	u8* colorPtr = GPU_screen3D+ctr*3;
-	//	if(zval<0) {
-	//		colorPtr[0] = 255;
-	//		colorPtr[1] = 0;
-	//		colorPtr[2] = 0;
-	//	} else if(zval>1) {
-	//		colorPtr[0] = 0;
-	//		colorPtr[1] = 0;
-	//		colorPtr[2] = 255;
-	//	} else {
-	//		colorPtr[0] = colorPtr[1] = colorPtr[2] = zval*255;
-	//		//INFO("%f %f %d\n",zval, zval*255,colorPtr[0]);
-	//	}
-
-	//}
-}
-
-static void OGLGetLineCaptured(int line, u16* dst)
-{
-	if(needRefreshFramebuffer) {
-		needRefreshFramebuffer = false;
-		GL_ReadFramebuffer();
-	}
-
-	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
-//	u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
-
-	for(int i = 0; i < 256; i++)
+	for(int i=0,y=191;y>=0;y--)
 	{
-	/*	u32 stencil = screenStencil[i];
+		u16* dst = gfx3d_convertedScreen + (y<<8);
+		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
 
-		if(!stencil) 
+		#ifndef NOSSE
+			//I dont know much about this kind of stuff, but this seems to help
+			//for some reason I couldnt make the intrinsics work 
+			u8* wanx =  (u8*)&((u32*)GPU_screen3D)[i];
+			#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
+			#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
+			PUNK(0); PUNK(1);
+		#endif
+
+		for(int x=0;x<256;x++,i++)
 		{
-			dst[i] = 0x0000;
-			continue;
-		}*/
+			u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
+			u32screen3D>>=3;
+			u32screen3D &= 0x1F1F1F1F;
 
-		int t=i<<2;
-	/*	u8 r = screen3D[t+2];
-		u8 g = screen3D[t+1];
-		u8 b = screen3D[t+0];*/
-
-		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
-		//dst[i] = (b<<10) | (g<<5) | (r) | 0x8000;
-		dst[i] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
+			const int t = i<<2;
+			const u8 a = GPU_screen3D[t+3];
+			const u8 r = GPU_screen3D[t+2];
+			const u8 g = GPU_screen3D[t+1];
+			const u8 b = GPU_screen3D[t+0];
+			dst[x] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
+			dstAlpha[x] = alpha_5bit_to_4bit[a];
+		}
 	}
 }
 
-
-static void OGLGetLine(int line, u16* dst, u8* dstAlpha)
+static void OGLCheckFresh()
 {
-	assert(line<192 && line>=0);
-
-	if(needRefreshFramebuffer) {
+	if(needRefreshFramebuffer)
+	{
 		needRefreshFramebuffer = false;
 		GL_ReadFramebuffer();
 	}
-
-	u8 *screen3D = (u8*)GPU_screen3D+((191-line)<<10);
-	//u8 *screenStencil = (u8*)GPU_screenStencil+((191-line)<<8);
-
-	//the renderer clears the stencil to 0
-	//then it sets it to 1 whenever it renders a pixel that passes the alpha test
-	//(it also sets it to 2 under some circumstances when rendering shadow volumes)
-	//so, we COULD use a zero stencil value to indicate that nothing should get composited.
-	//in fact, we are going to do that to fix some problems. 
-	//but beware that it i figure it might could CAUSE some problems
-
-	//this alpha compositing blending logic isnt thought through very much
-	//someone needs to think about what bitdepth it should take place at and how to do it efficiently
-
-	for(int i=0;i<256;i++)
-	{
-	//	u32 stencil = screenStencil[i];
-
-		//you would use this if you wanted to use the stencil buffer to make decisions here
-	//	if(!stencil) continue;
-
-	//	u16 oldcolor = dst[j];
-		
-		int t=i<<2;
-	//	u32 dstpixel;
-
-		dst[i] = (screen3D[t+2] | (screen3D[t+1] << 5) | (screen3D[t+0] << 10) | ((screen3D[t+3] > 0) ? 0x8000 : 0x0000));
-		dstAlpha[i] = alpha_5bit_to_4bit[screen3D[t+3]];
-		
-		//old debug reminder: display alpha channel
-		//u32 r = screen3D[t+3];
-		//u32 g = screen3D[t+3];
-		//u32 b = screen3D[t+3];
-
-		//if this math strikes you as wrong, be sure to look at GL_ReadFramebuffer() where the pixel format in screen3D is changed
-
-	/*	u32 a = screen3D[t+3];
-		
-		typedef u8 mixtbl[32][32];
-		mixtbl & mix = mixTable555[a];
-		
-		//r
-		u32 newpix = screen3D[t+2];
-		u32 oldpix = oldcolor&0x1F;
-		newpix = mix[newpix][oldpix];
-		dstpixel = newpix;
-		
-		//g
-		newpix = screen3D[t+1];
-		oldpix = (oldcolor>>5)&0x1F;
-		newpix = mix[newpix][oldpix];
-		dstpixel |= (newpix<<5);
-
-		//b
-		newpix = screen3D[t+0];
-		oldpix = (oldcolor>>10)&0x1F;
-		newpix = mix[newpix][oldpix];
-		dstpixel |= (newpix<<10);
-
-		dst[j] = dstpixel;*/
-	}
 }
-
-
-
 
 
 GPU3DInterface gpu3Dgl = {
@@ -991,9 +889,5 @@ GPU3DInterface gpu3Dgl = {
 	OGLClose,
 	OGLRender,
 	OGLVramReconfigureSignal,
-	OGLGetLine,
-	OGLGetLineCaptured
+	OGLCheckFresh,
 };
-
-
-
