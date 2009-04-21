@@ -24,8 +24,6 @@ int cur3DCore = GPU3D_NULL;
 
 static void NDS_nullFunc1		(void){}
 static char NDS_nullFunc2		(void){ return 1; }
-static void NDS_nullFunc3		(int,unsigned short*) {}
-static void NDS_nullFunc4		(int,unsigned short*,unsigned char*) {}
 
 GPU3DInterface gpu3DNull = { 
 	"None",
@@ -34,8 +32,7 @@ GPU3DInterface gpu3DNull = {
 	NDS_nullFunc1, //NDS_3D_Close
 	NDS_nullFunc1, //NDS_3D_Render
 	NDS_nullFunc1, //NDS_3D_VramReconfigureSignal
-	NDS_nullFunc4, //NDS_3D_GetLine
-	NDS_nullFunc3 //NDS_3D_GetLineCaptured
+	NDS_nullFunc1, //NDS_3D_CheckFresh
 };
 
 GPU3DInterface *gpu3D = &gpu3DNull;

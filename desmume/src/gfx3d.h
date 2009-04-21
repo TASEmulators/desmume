@@ -180,6 +180,7 @@ extern GFX3D gfx3d;
 
 //---------------------
 
+extern CACHE_ALIGN const u16 alpha_lookup[32];
 extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 extern CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
@@ -189,6 +190,11 @@ extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
 extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 extern CACHE_ALIGN const u8 alpha_5bit_to_4bit[32];
+
+//these contain the 3d framebuffer converted into the most useful format
+//they are stored here instead of in the renderers in order to consolidate the buffers
+extern CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
+extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192];
 
 //GE commands:
 void gfx3d_glViewPort(u32 v);
@@ -212,11 +218,11 @@ BOOL gfx3d_glMultMatrix4x4(s32 v);
 void gfx3d_glBegin(u32 v);
 void gfx3d_glEnd(void);
 void gfx3d_glColor3b(u32 v);
-BOOL gfx3d_glVertex16b(unsigned int v);
+BOOL gfx3d_glVertex16b(u32 v);
 void gfx3d_glVertex10b(u32 v);
-void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v);
+void gfx3d_glVertex3_cord(u32 one, u32 two, u32 v);
 void gfx3d_glVertex_rel(u32 v);
-void gfx3d_glSwapScreen(unsigned int screen);
+void gfx3d_glSwapScreen(u32 screen);
 int gfx3d_GetNumPolys();
 int gfx3d_GetNumVertex();
 void gfx3d_glPolygonAttrib (u32 val);
@@ -229,16 +235,16 @@ void gfx3d_glTexImage(u32 val);
 void gfx3d_glTexPalette(u32 val);
 void gfx3d_glTexCoord(u32 val);
 void gfx3d_glNormal(u32 v);
-s32 gfx3d_GetClipMatrix (unsigned int index);
-s32 gfx3d_GetDirectionalMatrix (unsigned int index);
+s32 gfx3d_GetClipMatrix (u32 index);
+s32 gfx3d_GetDirectionalMatrix (u32 index);
 void gfx3d_glLightDirection (u32 v);
 void gfx3d_glLightColor (u32 v);
 void gfx3d_glAlphaFunc(u32 v);
 BOOL gfx3d_glBoxTest(u32 v);
 BOOL gfx3d_glPosTest(u32 v);
 void gfx3d_glVecTest(u32 v);
-unsigned int gfx3d_glGetPosRes(unsigned int index);
-unsigned short gfx3d_glGetVecRes(unsigned int index);
+u32 gfx3d_glGetPosRes(u32 index);
+u16 gfx3d_glGetVecRes(u32 index);
 void gfx3d_glFlush(u32 v);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
@@ -248,9 +254,11 @@ void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 
 //other misc stuff
-void gfx3d_glGetMatrix(unsigned int mode, int index, float* dest);
-void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest);
-void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest);
+void gfx3d_glGetMatrix(u32 mode, int index, float* dest);
+void gfx3d_glGetLightDirection(u32 index, u32* dest);
+void gfx3d_glGetLightColor(u32 index, u32* dest);
+
+void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha);
 
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
