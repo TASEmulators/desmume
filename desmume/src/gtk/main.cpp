@@ -45,14 +45,10 @@
 #include "gdbstub.h"
 #endif
 
-#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA)
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "OGLRender.h"
-#ifdef GTKGLEXT_AVAILABLE
-#include <gtk/gtkgl.h>
-#include "gdk_3Demu.h"
-#endif
 #ifdef HAVE_LIBOSMESA
 #include "osmesa_3Demu.h"
 #endif
@@ -278,7 +274,7 @@ NULL
 GPU3DInterface *core3DList[] = {
   &gpu3DNull,
   &gpu3DRasterize
-#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA)
   ,
   &gpu3Dgl
 #endif
@@ -343,20 +339,10 @@ fill_configured_features( struct configured_features *config,
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
         "\t\t\t\t  0 = 3d disabled\n"
         "\t\t\t\t  1 = internal rasterizer (default)\n"
-// GTKGLEXT and LIBOSMESA are currently exclusive, so, no conflict below
-#ifdef GTKGLEXT_AVAILABLE
-        "\t\t\t\t  2 = gtkglext off-screen opengl\n"
-#endif
 #ifdef HAVE_LIBOSMESA
         "\t\t\t\t  2 = osmesa opengl\n"
 #endif
         ,"ENGINE"},
-#if defined(GTKGLEXT_AVAILABLE)
-    { "opengl-2d", 0, 0, G_OPTION_ARG_NONE, &config->opengl_2d, "Enables using OpenGL for screen rendering", NULL},
-    { "soft-convert", 0, 0, G_OPTION_ARG_NONE, &config->soft_colour, 
-        "Use software colour conversion during OpenGL screen rendering.\n"
-            "\t\t\t\t  May produce better or worse frame rates depending on hardware", NULL},
-#endif
     { "save-type", 0, 0, G_OPTION_ARG_INT, &config->savetype, "Select savetype from the following:\n"
     "\t\t\t\t  0 = Autodetect (default)\n"
     "\t\t\t\t  1 = EEPROM 4kbit\n"
@@ -417,12 +403,12 @@ fill_configured_features( struct configured_features *config,
   }
 
   if (config->engine_3d != 0 && config->engine_3d != 1
-#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA)
            && config->engine_3d != 2
 #endif
           ) {
     g_printerr("Currently available ENGINES: 0, 1"
-#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+#if defined(HAVE_LIBOSMESA)
             ", 2"
 #endif
             "\n");
@@ -552,13 +538,6 @@ static GtkWidget *pDrawingArea;
 
 /** The target for the expose event */
 static GtkWidget *nds_screen_widget;
-
-#ifdef GTKGLEXT_AVAILABLE
-static GtkWidget *top_screen_widget;
-static GtkWidget *bottom_screen_widget;
-
-GLuint screen_texture[1];
-#endif
 
 float nds_screen_size_ratio = 1.0f;
 
@@ -706,93 +685,6 @@ static void Reset()
     pStatusBar_Change("Running ...");
 }
 
-#ifdef GTKGLEXT_AVAILABLE
-static void
-gtk_init_main_gl_area(GtkWidget *widget,
-                      gpointer   data)
-{
-  GLenum errCode;
-  GdkGLContext *glcontext;
-  GdkGLDrawable *gldrawable;
-  glcontext = gtk_widget_get_gl_context (widget);
-  gldrawable = gtk_widget_get_gl_drawable (widget);
-  uint16_t blank_texture[256 * 512];
-
-  /*** OpenGL BEGIN ***/
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
-    return;
-
-  LOG("Doing GL init\n");
-
-  memset(blank_texture, 0x001f, sizeof(blank_texture));
-
-  /* Enable Texture Mapping */
-  glEnable( GL_TEXTURE_2D );
-
-  /* Set the background black */
-  glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-
-  /* Create The Texture */
-  glGenTextures( 1, &screen_texture[0]);
-
-  glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
-
-  /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, 256, 512,
-                0, GL_RGBA,
-                GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                blank_texture);
-
-  /* Linear Filtering */
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    g_printerr("Failed to init GL: %s\n", errString);
-  }
-
-  gdk_gl_drawable_gl_end (gldrawable);
-  /*** OpenGL END ***/
-}
-
-static void
-gtk_init_sub_gl_area(GtkWidget *widget,
-                      gpointer   data)
-{
-  GLenum errCode;
-  GdkGLContext *glcontext;
-  GdkGLDrawable *gldrawable;
-  glcontext = gtk_widget_get_gl_context (widget);
-  gldrawable = gtk_widget_get_gl_drawable (widget);
-
-
-  /*** OpenGL BEGIN ***/
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
-    return;
-
-  /* Enable Texture Mapping */
-  glEnable( GL_TEXTURE_2D );
-
-  /* Set the background black */
-  glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-
-  glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    g_printerr("Failed to init GL: %s\n", errString);
-  }
-
-  gdk_gl_drawable_gl_end (gldrawable);
-  /*** OpenGL END ***/
-}
-#endif
-
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
 
@@ -804,239 +696,6 @@ static inline void gpu_screen_to_rgb(u8 *rgb, int size)
         rgb[(i*3)+2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
     }
 }
-
-#ifdef GTKGLEXT_AVAILABLE
-static int
-top_screen_expose_fn( GtkWidget *widget, GdkEventExpose *event, gpointer data)
-{
-  GdkGLContext *glcontext = gtk_widget_get_gl_context (widget);
-  GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable (widget);
-  int software_convert = *((int *)data);
-
-  /*** OpenGL BEGIN ***/
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
-    return FALSE;
-
-  GLenum errCode;
-
-  /* Clear The Screen And The Depth Buffer */
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-  /* Move Into The Screen 5 Units */
-  //glLoadIdentity( );
-
-  /* Select screen Texture */
-  glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
-
-  if ( software_convert) {
-    u8 converted[256 * 384 * 3];
-
-    gpu_screen_to_rgb(converted, 256 * 384);
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
-                     GL_RGB,
-                     GL_UNSIGNED_BYTE,
-                     converted);
-  } else {
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 256, 384,
-                     GL_RGBA,
-                     GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                     &GPU_screen);
-  }
-
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    g_printerr("GL subimage failed: %s\n", errString);
-  }
-
-
-  glBegin( GL_QUADS);
-
-  /* Top screen */
-  glTexCoord2f( 0.0f, 0.0f ); glVertex3f( 0.0f,  0.0f, 0.0f );
-  glTexCoord2f( 1.0f, 0.0f ); glVertex3f( 256.0f,  0.0f,  0.0f );
-  glTexCoord2f( 1.0f, 0.375f ); glVertex3f( 256.0f,  192.0f,  0.0f );
-  glTexCoord2f( 0.0f, 0.375f ); glVertex3f(  0.0f,  192.0f, 0.0f );
-  glEnd( );
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    g_printerr("GL draw failed: %s\n", errString);
-  }
-
-  if (gdk_gl_drawable_is_double_buffered (gldrawable))
-    gdk_gl_drawable_swap_buffers (gldrawable);
-  else
-    glFlush ();
-
-
-  gdk_gl_drawable_gl_end (gldrawable);
-  /*** OpenGL END ***/
-
-  gtk_widget_queue_draw( bottom_screen_widget);
-
-  return TRUE;
-}
-
-static int
-bottom_screen_expose_fn(GtkWidget *widget, GdkEventExpose *event, gpointer data)
-{
-  GdkGLContext *glcontext = gtk_widget_get_gl_context (widget);
-  GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable (widget);
-
-  LOG("Sub Expose\n");
-
-  /*** OpenGL BEGIN ***/
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
-    g_printerr("begin failed\n");
-    return FALSE;
-  }
-  LOG("begin\n");
-
-  GLenum errCode;
-
-  /* Clear The Screen */
-  glClear( GL_COLOR_BUFFER_BIT);
-
-  //glBindTexture( GL_TEXTURE_2D, screen_texture[0]);
-
-  glBegin( GL_QUADS);
-
-  /* Bottom screen */
-  glTexCoord2f( 0.0f, 0.375f ); glVertex2f( 0.0f,  0.0f);
-  glTexCoord2f( 1.0f, 0.375f ); glVertex2f( 256.0f,  0.0f);
-  glTexCoord2f( 1.0f, 0.75f ); glVertex2f( 256.0f,  192.0f);
-  glTexCoord2f( 0.0f, 0.75f ); glVertex2f(  0.0f,  192.0f);
-  glEnd( );
-
-  if (gdk_gl_drawable_is_double_buffered (gldrawable))
-    gdk_gl_drawable_swap_buffers (gldrawable);
-  else
-    glFlush ();
-
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    g_printerr("sub GL draw failed: %s\n", errString);
-  }
-
-  gdk_gl_drawable_gl_end (gldrawable);
-  /*** OpenGL END ***/
-
-  return 1;
-}
-
-static gboolean
-common_configure_fn( GtkWidget *widget,
-                     GdkEventConfigure *event )
-{
-  if ( gtk_widget_is_gl_capable( widget) == FALSE)
-    return TRUE;
-
-  GdkGLContext *glcontext = gtk_widget_get_gl_context (widget);
-  GdkGLDrawable *gldrawable = gtk_widget_get_gl_drawable (widget);
-
-  int comp_width = 3 * event->width;
-  int comp_height = 4 * event->height;
-  int use_width = 1;
-  GLenum errCode;
-
-  /* Height / width ration */
-  GLfloat ratio;
-
-  LOG("width %d, height %d\n", event->width, event->height);
-
-  /*** OpenGL BEGIN ***/
-  if (!gdk_gl_drawable_gl_begin (gldrawable, glcontext))
-    return FALSE;
-
-  if ( comp_width > comp_height) {
-    use_width = 0;
-  }
-
-  /* Protect against a divide by zero */
-  if ( event->height == 0 )
-    event->height = 1;
-  if ( event->width == 0)
-    event->width = 1;
-
-  ratio = ( GLfloat )event->width / ( GLfloat )event->height;
-
-  /* Setup our viewport. */
-  glViewport( 0, 0, ( GLint )event->width, ( GLint )event->height );
-
-  /*
-   * change to the projection matrix and set
-   * our viewing volume.
-   */
-  glMatrixMode( GL_PROJECTION );
-  glLoadIdentity( );
-
-  {
-    double left;
-    double right;
-    double bottom;
-    double top;
-    double other_dimen;
-
-    if ( use_width) {
-      left = 0.0;
-      right = 256.0;
-
-      nds_screen_size_ratio = 256.0 / (double)event->width;
-
-      other_dimen = (double)event->width * 3.0 / 4.0;
-
-      top = 0.0;
-      bottom = 192.0 * ((double)event->height / other_dimen);
-    } else {
-      top = 0.0;
-      bottom = 192.0;
-
-      nds_screen_size_ratio = 192.0 / (double)event->height;
-
-      other_dimen = (double)event->height * 4.0 / 3.0;
-
-      left = 0.0;
-      right = 256.0 * ((double)event->width / other_dimen);
-    }
-
-    LOG("%d,%d\n", event->width, event->height);
-    LOG("l %lf, r %lf, t %lf, b %lf, other dimen %lf\n",
-           left, right, top, bottom, other_dimen);
-
-    /* get the area (0,0) to (256,384) into the middle of the viewport */
-    gluOrtho2D( left, right, bottom, top);
-  }
-
-  /* Make sure we're chaning the model view and not the projection */
-  glMatrixMode( GL_MODELVIEW );
-
-  /* Reset The View */
-  glLoadIdentity( );
-
-  if ((errCode = glGetError()) != GL_NO_ERROR) {
-    const GLubyte *errString;
-
-    errString = gluErrorString(errCode);
-    g_printerr("GL resie failed: %s\n", errString);
-  }
-
-  gdk_gl_drawable_gl_end (gldrawable);
-  /*** OpenGL END ***/
-
-  return TRUE;
-}
-
-#endif
-
-
 
 /* Drawing callback */
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
@@ -1850,10 +1509,6 @@ common_gtk_main( struct configured_features *my_config)
     GtkWidget *pToolBar;
     gint pStatusBar_Ctx;
 
-#ifdef GTKGLEXT_AVAILABLE
-        GdkGLConfig *glconfig;
-        GdkGLContext *glcontext;
-#endif
 #ifdef GDB_STUB
         gdbstub_handle_t arm9_gdb_stub;
         gdbstub_handle_t arm7_gdb_stub;
@@ -1901,24 +1556,6 @@ common_gtk_main( struct configured_features *my_config)
         }
 #endif
 
-#ifdef GTKGLEXT_AVAILABLE
-        /* Try double-buffered visual */
-        glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB |
-                                              GDK_GL_MODE_DEPTH |
-                                              GDK_GL_MODE_DOUBLE));
-        if (glconfig == NULL) {
-            g_printerr ("*** Cannot find the double-buffered visual.\n");
-            g_printerr ("*** Trying single-buffered visual.\n");
-
-            /* Try single-buffered visual */
-            glconfig = gdk_gl_config_new_by_mode ((GdkGLConfigMode)(GDK_GL_MODE_RGB |
-                                                  GDK_GL_MODE_DEPTH));
-            if (glconfig == NULL) {
-              g_printerr ("*** No appropriate OpenGL-capable visual found.\n");
-              exit (1);
-            }
-        }
-#endif
         /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
            Perhaps it needs a "window" to catch events...? */
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
@@ -2010,99 +1647,29 @@ common_gtk_main( struct configured_features *my_config)
     gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
 
     /* Creating the place for showing DS screens */
-#ifdef GTKGLEXT_AVAILABLE
-        if ( my_config->opengl_2d) {
-          /*
-           * Create the top screen render area
-           */
-          top_screen_widget = gtk_drawing_area_new();
-          gtk_drawing_area_size(GTK_DRAWING_AREA(top_screen_widget), 256, 192);
-          gtk_widget_set_gl_capability ( top_screen_widget,
-                                         glconfig,
-                                         NULL,
-                                         TRUE,
-                                         GDK_GL_RGBA_TYPE);
+    pDrawingArea= gtk_drawing_area_new();
 
-          g_signal_connect_after (G_OBJECT (top_screen_widget), "realize",
-                                  G_CALLBACK (gtk_init_main_gl_area),
-                                  NULL);
-          gtk_widget_set_events( top_screen_widget, GDK_EXPOSURE_MASK);
-          g_signal_connect( G_OBJECT(top_screen_widget), "expose_event",
-                            G_CALLBACK(top_screen_expose_fn),
-                            &my_config->soft_colour) ;
-          g_signal_connect( G_OBJECT(top_screen_widget), "configure_event",
-                            G_CALLBACK(common_configure_fn), NULL ) ;
+    gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256, 384);
+    gtk_widget_set_usize (pDrawingArea, 256, 384);
 
-          gtk_box_pack_start(GTK_BOX(pVBox), top_screen_widget, TRUE, TRUE, 0);
+    gtk_widget_set_events(pDrawingArea,
+                          GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
+                          GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
+                          GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
 
-          /* realise the topscreen so we can get the openGL context */
-          gtk_widget_realize ( top_screen_widget);
-          glcontext = gtk_widget_get_gl_context( top_screen_widget);
+    g_signal_connect(G_OBJECT(pDrawingArea), "button_press_event",
+                     G_CALLBACK(Stylus_Press), &my_config->opengl_2d);
+    g_signal_connect(G_OBJECT(pDrawingArea), "button_release_event",
+                     G_CALLBACK(Stylus_Release), NULL);
+    g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
+                     G_CALLBACK(Stylus_Move), &my_config->opengl_2d);
 
-          LOG("Window is direct? %d\n",
-            gdk_gl_context_is_direct( glcontext));
+    g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
+                     G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
 
-          /*
-           *create the bottom screen drawing area.
-           */
-          bottom_screen_widget = gtk_drawing_area_new();
-          gtk_drawing_area_size(GTK_DRAWING_AREA(bottom_screen_widget), 256, 192);
-          gtk_widget_set_gl_capability ( bottom_screen_widget,
-                                         glconfig,
-                                         glcontext,
-                                         TRUE,
-                                         GDK_GL_RGBA_TYPE);
+    gtk_box_pack_start(GTK_BOX(pVBox), pDrawingArea, FALSE, FALSE, 0);
 
-          g_signal_connect_after (G_OBJECT (bottom_screen_widget), "realize",
-                                  G_CALLBACK (gtk_init_sub_gl_area),
-                                  NULL);
-          gtk_widget_set_events( bottom_screen_widget,
-                                 GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
-                                 GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
-                                 GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
-          g_signal_connect( G_OBJECT(bottom_screen_widget), "expose_event",
-                            G_CALLBACK(bottom_screen_expose_fn), NULL ) ;
-          g_signal_connect( G_OBJECT(bottom_screen_widget), "configure_event",
-                            G_CALLBACK(common_configure_fn), NULL ) ;
-          g_signal_connect(G_OBJECT(bottom_screen_widget), "button_press_event",
-                           G_CALLBACK(Stylus_Press), &my_config->opengl_2d);
-          g_signal_connect(G_OBJECT(bottom_screen_widget), "button_release_event",
-                           G_CALLBACK(Stylus_Release), NULL);
-          g_signal_connect(G_OBJECT(bottom_screen_widget), "motion_notify_event",
-                           G_CALLBACK(Stylus_Move), &my_config->opengl_2d);
-
-          gtk_box_pack_start(GTK_BOX(pVBox), bottom_screen_widget, TRUE, TRUE, 0);
-
-          /* each frame expose the top screen */
-          nds_screen_widget = top_screen_widget;
-        } else {
-#else
-    {
-#endif
-            pDrawingArea= gtk_drawing_area_new();
-
-            gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256, 384);
-            gtk_widget_set_usize (pDrawingArea, 256, 384);
-
-            gtk_widget_set_events(pDrawingArea,
-                                  GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
-                                  GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
-                                  GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
-
-            g_signal_connect(G_OBJECT(pDrawingArea), "button_press_event",
-                             G_CALLBACK(Stylus_Press), &my_config->opengl_2d);
-            g_signal_connect(G_OBJECT(pDrawingArea), "button_release_event",
-                             G_CALLBACK(Stylus_Release), NULL);
-            g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
-                             G_CALLBACK(Stylus_Move), &my_config->opengl_2d);
-
-            g_signal_connect( G_OBJECT(pDrawingArea), "expose_event",
-                              G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
-
-            gtk_box_pack_start(GTK_BOX(pVBox), pDrawingArea, FALSE, FALSE, 0);
-
-            nds_screen_widget = pDrawingArea;
-        }
+    nds_screen_widget = pDrawingArea;
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
@@ -2132,14 +1699,10 @@ common_gtk_main( struct configured_features *my_config)
      * Set the 3D emulation to use
      */
     unsigned core = my_config->engine_3d;
-    /* setup the gdk 3D emulation; GTKGLEXT and LIBOSMESA are exclusive currently */
-#if defined(GTKGLEXT_AVAILABLE) || defined(HAVE_LIBOSMESA)
+    /* setup the gdk 3D emulation; */
+#if defined(HAVE_LIBOSMESA)
     if(my_config->engine_3d == 2){
-#if defined(GTKGLEXT_AVAILABLE) 
-        core = init_opengl_gdk_3Demu(GDK_DRAWABLE(pWindow->window)) ? 2 : GPU3D_NULL;
-#else
         core = init_osmesa_3Demu() ? 2 : GPU3D_NULL;
-#endif
     }
 #endif
     NDS_3D_ChangeCore(core);
@@ -2216,10 +1779,6 @@ main (int argc, char *argv[])
     g_thread_init( NULL);
 
   gtk_init(&argc, &argv);
-
-#ifdef GTKGLEXT_AVAILABLE
-  gtk_gl_init( &argc, &argv);
-#endif
 
   if ( !fill_configured_features( &my_config, argc, argv)) {
     exit(0);

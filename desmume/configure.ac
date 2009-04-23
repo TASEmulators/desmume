@@ -56,7 +56,7 @@ dnl - if --enable-osmesa is used, check for it
 AC_ARG_ENABLE([osmesa],
                [AC_HELP_STRING([--enable-osmesa], [use off-screen mesa])],
                [osmesa=$enableval],
-               [osmesa=no])
+               [osmesa=yes])
 
 if test "x$osmesa" = "xyes" ; then
 	AC_CHECK_LIB(dl, main)
@@ -91,14 +91,12 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     AC_SUBST(GTK_CFLAGS)
     AC_SUBST(GTK_LIBS)
 
-    if test ! "x$useosmesa" = "xyes" ; then
     PKG_CHECK_MODULES(GTKGLEXT,
                       "gtkglext-1.0",
                       HAVE_GTKGLEXT=yes,
                       HAVE_GTKGLEXT=no)
     AC_SUBST(GTKGLEXT_CFLAGS)
     AC_SUBST(GTKGLEXT_LIBS)
-    fi
 
     PKG_CHECK_MODULES(GTHREAD,
                       "gthread-2.0",
