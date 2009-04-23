@@ -556,7 +556,7 @@ REJECT:
 				for(u32 x = 0; x < ms.items[j].len; ++x)
 				{
 					u16 c = map[x];
-					int alpha = ((c&0x8000)?255:0);
+					int alpha = ((c&0x8000)?opaqueColor:0);
 					*dwdst++ = CONVERT(c&0x7FFF,alpha);
 				}
 			}
