@@ -1826,12 +1826,12 @@ static void desmume_gtk_menu_config (GtkWidget *pMenuBar, int act_savetype)
 }
 #endif
 
-//    { "ioregtool",  NULL,               "_IO regs view", NULL,       NULL,   Edit_Controls },
 static void desmume_gtk_menu_tools (GtkActionGroup *ag)
 {
     gint i;
     for(i = 0; i < dTools_list_size; i++) {
         GtkAction *act;
+        //FIXME: remove hardcoded 'ioregtool' from here and in ui_description
         act = gtk_action_new("ioregtool", dTools_list[i]->name, NULL, NULL);
         g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
         gtk_action_group_add_action(ag, GTK_ACTION(act));
