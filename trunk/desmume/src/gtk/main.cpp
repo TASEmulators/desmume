@@ -45,13 +45,11 @@
 #include "gdbstub.h"
 #endif
 
-#if defined(HAVE_LIBOSMESA)
+#ifdef HAVE_LIBOSMESA
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "OGLRender.h"
-#ifdef HAVE_LIBOSMESA
 #include "osmesa_3Demu.h"
-#endif
 #endif
 
 #include "DeSmuME.xpm"
