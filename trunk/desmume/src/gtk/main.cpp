@@ -1508,82 +1508,82 @@ common_gtk_main( struct configured_features *my_config)
     gint pStatusBar_Ctx;
 
 #ifdef GDB_STUB
-        gdbstub_handle_t arm9_gdb_stub;
-        gdbstub_handle_t arm7_gdb_stub;
+    gdbstub_handle_t arm9_gdb_stub;
+    gdbstub_handle_t arm7_gdb_stub;
 #endif
-        struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
-        struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
-        struct armcpu_ctrl_iface *arm9_ctrl_iface;
-        struct armcpu_ctrl_iface *arm7_ctrl_iface;
+    struct armcpu_memory_iface *arm9_memio = &arm9_base_memory_iface;
+    struct armcpu_memory_iface *arm7_memio = &arm7_base_memory_iface;
+    struct armcpu_ctrl_iface *arm9_ctrl_iface;
+    struct armcpu_ctrl_iface *arm7_ctrl_iface;
 
-        /* the firmware settings */
-        struct NDS_fw_config_data fw_config;
+    /* the firmware settings */
+    struct NDS_fw_config_data fw_config;
 
-        /* default the firmware settings, they may get changed later */
-        NDS_FillDefaultFirmwareConfigData( &fw_config);
+    /* default the firmware settings, they may get changed later */
+    NDS_FillDefaultFirmwareConfigData( &fw_config);
 
-        /* use any language set on the command line */
-        if ( my_config->firmware_language != -1) {
-          fw_config.language = my_config->firmware_language;
-        }
+    /* use any language set on the command line */
+    if ( my_config->firmware_language != -1) {
+        fw_config.language = my_config->firmware_language;
+    }
 
-        bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
+    bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
 
 #ifdef GDB_STUB
-        if ( my_config->arm9_gdb_port != 0) {
-          arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
+    if ( my_config->arm9_gdb_port != 0) {
+         arm9_gdb_stub = createStub_gdb( my_config->arm9_gdb_port,
                                           &arm9_memio,
                                           &arm9_base_memory_iface);
 
-          if ( arm9_gdb_stub == NULL) {
+        if ( arm9_gdb_stub == NULL) {
             g_printerr("Failed to create ARM9 gdbstub on port %d\n",
                      my_config->arm9_gdb_port);
             exit( -1);
-          }
         }
-        if ( my_config->arm7_gdb_port != 0) {
-          arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
+    }
+    if ( my_config->arm7_gdb_port != 0) {
+         arm7_gdb_stub = createStub_gdb( my_config->arm7_gdb_port,
                                           &arm7_memio,
                                           &arm7_base_memory_iface);
 
-          if ( arm7_gdb_stub == NULL) {
+        if ( arm7_gdb_stub == NULL) {
             g_printerr("Failed to create ARM7 gdbstub on port %d\n",
                      my_config->arm7_gdb_port);
             exit( -1);
-          }
         }
+    }
 #endif
 
         /* FIXME: SDL_INIT_VIDEO is needed for joystick support to work!?
            Perhaps it needs a "window" to catch events...? */
     if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO) == -1) {
-            g_printerr("Error trying to initialize SDL: %s\n",
+        g_printerr("Error trying to initialize SDL: %s\n",
                     SDL_GetError());
-            return 1;
-        }
+        return 1;
+    }
     desmume_init( arm9_memio, &arm9_ctrl_iface,
                       arm7_memio, &arm7_ctrl_iface,
                       my_config->disable_sound);
 
-        /*
-         * Activate the GDB stubs
-         * This has to come after the NDS_Init (called in desmume_init)
-         * where the cpus are set up.
-         */
+    /*
+     * Activate the GDB stubs
+     * This has to come after the NDS_Init (called in desmume_init)
+     * where the cpus are set up.
+     */
 #ifdef GDB_STUB
-        if ( my_config->arm9_gdb_port != 0) {
-          activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
-        }
-        if ( my_config->arm7_gdb_port != 0) {
-          activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
-        }
+    if ( my_config->arm9_gdb_port != 0) {
+        activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
+    }
+    if ( my_config->arm7_gdb_port != 0) {
+        activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
+    }
 #endif
 
-        /* Create the dummy firmware */
-        NDS_CreateDummyFirmware( &fw_config);
+    /* Create the dummy firmware */
+    NDS_CreateDummyFirmware( &fw_config);
 
-        /* Initialize joysticks */
-        if(!init_joy()) return 1;
+    /* Initialize joysticks */
+    if(!init_joy()) return 1;
 
     dTools_running = (BOOL*)malloc(sizeof(BOOL) * dTools_list_size);
     if (dTools_running != NULL) 
@@ -1679,18 +1679,18 @@ common_gtk_main( struct configured_features *my_config)
 
     //LoadFirmware("fw.bin");
 
-        gtk_fps_limiter_disabled = my_config->disable_limiter;
-        if ( !gtk_fps_limiter_disabled) {
-          /* create the semaphore used for fps limiting */
-          fps_limiter_semaphore = SDL_CreateSemaphore( 1);
+    gtk_fps_limiter_disabled = my_config->disable_limiter;
+    if ( !gtk_fps_limiter_disabled) {
+        /* create the semaphore used for fps limiting */
+        fps_limiter_semaphore = SDL_CreateSemaphore( 1);
 
-          /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
-          limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
-          if ( limiter_timer == NULL) {
+        /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
+        limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD, fps_limiter_fn, fps_limiter_semaphore);
+        if ( limiter_timer == NULL) {
             g_printerr("Error trying to start FPS limiter timer: %s\n",
                      SDL_GetError());
             return 1;
-          }
+        }
     }
 
     /*
@@ -1704,9 +1704,9 @@ common_gtk_main( struct configured_features *my_config)
     }
 #endif
     NDS_3D_ChangeCore(core);
-    if(my_config->engine_3d != 0 && gpu3D == &gpu3DNull){
-            g_printerr("Failed to initialise openGL 3D emulation; "
-                     "removing 3D support\n");
+    if(my_config->engine_3d != 0 && gpu3D == &gpu3DNull) {
+        g_printerr("Failed to initialise openGL 3D emulation; "
+                   "removing 3D support\n");
     }
 
     mmu_select_savetype(my_config->savetype, &backupmemorytype, &backupmemorysize);
@@ -1739,14 +1739,14 @@ common_gtk_main( struct configured_features *my_config)
 
     desmume_free();
 
-        if ( !gtk_fps_limiter_disabled) {
-          /* tidy up the FPS limiter timer and semaphore */
-          SDL_RemoveTimer( limiter_timer);
-          SDL_DestroySemaphore( fps_limiter_semaphore);
-        }
+    if ( !gtk_fps_limiter_disabled) {
+        /* tidy up the FPS limiter timer and semaphore */
+        SDL_RemoveTimer( limiter_timer);
+        SDL_DestroySemaphore( fps_limiter_semaphore);
+    }
 
-        /* Unload joystick */
-        uninit_joy();
+    /* Unload joystick */
+    uninit_joy();
 
     SDL_Quit();
 
@@ -1754,12 +1754,12 @@ common_gtk_main( struct configured_features *my_config)
     g_free(config_file);
 
 #ifdef GDB_STUB
-        if ( my_config->arm9_gdb_port != 0) {
-          destroyStub_gdb( arm9_gdb_stub);
-        }
-        if ( my_config->arm7_gdb_port != 0) {
-          destroyStub_gdb( arm7_gdb_stub);
-        }
+    if ( my_config->arm9_gdb_port != 0) {
+        destroyStub_gdb( arm9_gdb_stub);
+    }
+    if ( my_config->arm7_gdb_port != 0) {
+        destroyStub_gdb( arm7_gdb_stub);
+    }
 #endif
 
     return EXIT_SUCCESS;
