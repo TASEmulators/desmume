@@ -1707,10 +1707,10 @@ static Uint32 fps_limiter_fn(Uint32 interval, void *param)
   return interval;
 }
 
-static void desmume_try_adding_ui(GtkUIManager *self, const char *ui_description){
+static void desmume_try_adding_ui(GtkUIManager *self, const char *ui_descr){
     GError *error;
     error = NULL;
-    if (!gtk_ui_manager_add_ui_from_string (self, ui_description, -1, &error))
+    if (!gtk_ui_manager_add_ui_from_string (self, ui_descr, -1, &error))
       {
         g_message ("building menus failed: %s", error->message);
         g_error_free (error);
