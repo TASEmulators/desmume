@@ -122,19 +122,159 @@ enum {
 // extern char FirmwareFile[256];
 // int LoadFirmware(const char *filename);
 
-static void Open_Select(GtkWidget* widget, gpointer data);
+static void Open_Select();
 static void Launch();
 static void Pause();
 static void Printscreen();
 static void Reset();
+static void Edit_Controls();
+static void MenuSave(GtkMenuItem *item, gpointer slot);
+static void MenuLoad(GtkMenuItem *item, gpointer slot);
+static void About();//GtkWidget* widget, gpointer data);
+static void desmume_gtk_disable_audio (GtkToggleAction *action);
+static void Modify_Layer(GtkToggleAction* action, gpointer data);
 
+static const char *ui_description =
+"<ui>"
+"  <menubar name='MainMenu'>"
+"    <menu action='FileMenu'>"
+"      <menuitem action='open'/>"
+"      <menu action='SavestateMenu'>"
+"        <menuitem action='savestate1'/>"
+"        <menuitem action='savestate2'/>"
+"        <menuitem action='savestate3'/>"
+"        <menuitem action='savestate4'/>"
+"        <menuitem action='savestate5'/>"
+"        <menuitem action='savestate6'/>"
+"        <menuitem action='savestate7'/>"
+"        <menuitem action='savestate8'/>"
+"        <menuitem action='savestate9'/>"
+"        <menuitem action='savestate10'/>"
+"      </menu>"
+"      <menu action='LoadstateMenu'>"
+"        <menuitem action='loadstate1'/>"
+"        <menuitem action='loadstate2'/>"
+"        <menuitem action='loadstate3'/>"
+"        <menuitem action='loadstate4'/>"
+"        <menuitem action='loadstate5'/>"
+"        <menuitem action='loadstate6'/>"
+"        <menuitem action='loadstate7'/>"
+"        <menuitem action='loadstate8'/>"
+"        <menuitem action='loadstate9'/>"
+"        <menuitem action='loadstate10'/>"
+"      </menu>"
+"      <menuitem action='printscreen'/>"
+"      <menuitem action='quit'/>"
+"    </menu>"
+"    <menu action='EmulationMenu'>"
+"      <menuitem action='run'/>"
+"      <menuitem action='pause'/>"
+"      <menuitem action='reset'/>"
+"      <menuitem action='enableaudio'/>"
+"      <menu action='FrameskipMenu'>"
+"        <menuitem action='frameskip0'/>"
+"        <menuitem action='frameskip1'/>"
+"        <menuitem action='frameskip2'/>"
+"        <menuitem action='frameskip3'/>"
+"        <menuitem action='frameskip4'/>"
+"        <menuitem action='frameskip5'/>"
+"        <menuitem action='frameskip6'/>"
+"        <menuitem action='frameskip7'/>"
+"        <menuitem action='frameskip8'/>"
+"        <menuitem action='frameskip9'/>"
+"      </menu>"
+"      <menu action='LayersMenu'>"
+"        <menuitem action='layermainbg0'/>"
+"        <menuitem action='layermainbg1'/>"
+"        <menuitem action='layermainbg2'/>"
+"        <menuitem action='layermainbg3'/>"
+"        <menuitem action='layermainobj'/>"
+"        <menuitem action='layersubbg0'/>"
+"        <menuitem action='layersubbg1'/>"
+"        <menuitem action='layersubbg2'/>"
+"        <menuitem action='layersubbg3'/>"
+"        <menuitem action='layersubobj'/>"
+"      </menu>"
+"    </menu>"
+"    <menu action='ConfigMenu'>"
+"      <menu action='ConfigSaveMenu'>"
+"        <menuitem action='save_t0'/>"
+"        <menuitem action='save_t1'/>"
+"        <menuitem action='save_t2'/>"
+"        <menuitem action='save_t3'/>"
+"        <menuitem action='save_t4'/>"
+"        <menuitem action='save_t5'/>"
+"        <menuitem action='save_t6'/>"
+"      </menu>"
+"      <menuitem action='editctrls'/>"
+"    </menu>"
+"    <menu action='ToolsMenu'>"
+"      <menuitem action='ioregtool'/>"
+"    </menu>"
+"    <menu action='HelpMenu'>"
+"      <menuitem action='about'/>"
+"    </menu>"
+"  </menubar>"
+"  <toolbar name='ToolBar'>"
+"    <toolitem action='open'/>"
+"    <toolitem action='run'/>"
+"    <toolitem action='pause'/>"
+"    <toolitem action='quit'/>"
+"  </toolbar>"
+"</ui>";
+  
 static const GtkActionEntry action_entries[] = {
-    { "open",       "gtk-open",         "Open",         "<Ctrl>o",  NULL,   G_CALLBACK(Open_Select) },
-    { "run",        "gtk-media-play",   "Run",          "<Ctrl>r",  NULL,   G_CALLBACK(Launch) },
-    { "pause",      "gtk-media-pause",  "Pause",        "<Ctrl>p",  NULL,   G_CALLBACK(Pause) },
-    { "quit",       "gtk-quit",         "Quit",         "<Ctrl>q",  NULL,   G_CALLBACK(gtk_main_quit) },
-    { "printscreen","gtk-media-record", "Take a screenshot",    "<Ctrl>s",  NULL,   G_CALLBACK(Printscreen) },
-    { "reset",      "gtk-refresh",      "Reset",        NULL,       NULL,   G_CALLBACK(Reset) }
+    { "FileMenu", NULL, "_File" },
+    { "EmulationMenu", NULL, "_Emulation" },
+    { "ConfigMenu", NULL, "_Config" },
+    { "ToolsMenu", NULL, "_Tools" },
+    { "HelpMenu", NULL, "_Help" },
+
+    { "SavestateMenu", NULL, "Sa_ve state" },
+    { "LoadstateMenu", NULL, "_Load state" },
+
+    { "FrameskipMenu", NULL, "_Frameskip" },
+    { "LayersMenu", NULL, "_Layers" },
+
+    { "ConfigSaveMenu", NULL, "_Saves" },
+
+    { "open",       "gtk-open",         "_Open",         "<Ctrl>o",  NULL,   Open_Select },
+    { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
+    { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   gtk_main_quit },
+
+    { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
+    { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
+    { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
+
+    { "editctrls",  NULL,               "_Edit controls",NULL,       NULL,   Edit_Controls },
+    { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
+};
+
+static const GtkToggleActionEntry toggle_entries[] = {
+    { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE}//,
+};
+
+static const GtkRadioActionEntry frameskip_entries[] = {
+    { "frameskip0", NULL, "_0", NULL, NULL, 0},
+    { "frameskip1", NULL, "_1", NULL, NULL, 1},
+    { "frameskip2", NULL, "_2", NULL, NULL, 2},
+    { "frameskip3", NULL, "_3", NULL, NULL, 3},
+    { "frameskip4", NULL, "_4", NULL, NULL, 4},
+    { "frameskip5", NULL, "_5", NULL, NULL, 5},
+    { "frameskip6", NULL, "_6", NULL, NULL, 6},
+    { "frameskip7", NULL, "_7", NULL, NULL, 7},
+    { "frameskip8", NULL, "_8", NULL, NULL, 8},
+    { "frameskip9", NULL, "_9", NULL, NULL, 9},
+};
+
+static const GtkRadioActionEntry savet_entries[] = {
+    { "save_t0", NULL, "_0 Autodetect",     NULL, NULL, 0},
+    { "save_t1", NULL, "_1 EEPROM 4kbit",   NULL, NULL, 1},
+    { "save_t2", NULL, "_2 EEPROM 64kbit",  NULL, NULL, 2},
+    { "save_t3", NULL, "_3 EEPROM 512kbit", NULL, NULL, 3},
+    { "save_t4", NULL, "_4 FRAM 256kbit",   NULL, NULL, 4},
+    { "save_t5", NULL, "_5 FLASH 2mbit",    NULL, NULL, 5},
+    { "save_t6", NULL, "_6 FLASH 4mbit",    NULL, NULL, 6}
 };
 
 GtkActionGroup * action_group;
@@ -446,7 +586,7 @@ static inline void pStatusBar_Change (const char *message)
 
 gboolean EmuLoop(gpointer data);
 
-static void About(GtkWidget* widget, gpointer data)
+static void About()//GtkWidget* widget, gpointer data)
 {
     GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 
@@ -493,7 +633,7 @@ static void Pause()
 }
 
 /* Choose a file then load it */
-static void Open_Select(GtkWidget* widget, gpointer data)
+static void Open_Select()
 {
     GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
     GtkWidget *pFileSelection;
@@ -503,7 +643,7 @@ static void Open_Select(GtkWidget* widget, gpointer data)
     if (desmume_running())
         Pause();
 
-    pParent = GTK_WIDGET(data);
+    pParent = GTK_WIDGET(pWindow);
 
     pFilter_nds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
@@ -1151,7 +1291,7 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
 
 }
 
-static void Edit_Controls(GtkWidget* widget, gpointer data)
+static void Edit_Controls()
 {
     GtkWidget *ecDialog;
     GtkWidget *ecKey;
@@ -1207,7 +1347,7 @@ static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 
 /////////////////////////////// LAYER HIDING /////////////////////////////////
 
-static void Modify_Layer(GtkWidget* widget, gpointer data)
+static void Modify_Layer(GtkToggleAction* action, gpointer data)
 {
     guint Layer = GPOINTER_TO_UINT(data);
     gboolean active;
@@ -1216,7 +1356,7 @@ static void Modify_Layer(GtkWidget* widget, gpointer data)
     if (!desmume_running())
         return;
 
-    active = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
+    active = gtk_toggle_action_get_active(action);
 
     switch (Layer) {
     case MAIN_BG_0:
@@ -1465,9 +1605,9 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
 
 #define MAX_FRAMESKIP 10
 
-static void Modify_Frameskip(GtkWidget *widget, gpointer data)
+static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
-    Frameskip = GPOINTER_TO_INT(data);
+    Frameskip = gtk_radio_action_get_current_value(current) ;
 }
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
@@ -1580,106 +1720,45 @@ static Uint32 fps_limiter_fn(Uint32 interval, void *param)
   return interval;
 }
 
+static void desmume_try_adding_ui(GtkUIManager *self, const char *ui_description){
+    GError *error;
+    error = NULL;
+    if (!gtk_ui_manager_add_ui_from_string (self, ui_description, -1, &error))
+      {
+        g_message ("building menus failed: %s", error->message);
+        g_error_free (error);
+        exit (EXIT_FAILURE);
+      }
+}
+
 static void dui_set_accel_group(gpointer action, gpointer group) {
         gtk_action_set_accel_group((GtkAction *)action, (GtkAccelGroup *)group);
 }
 
-/////////////////////////////// MAIN ///////////////////////////////
-
-static void desmume_gtk_menu_file_saveload_slot (GtkWidget *pMenu)
+static void desmume_gtk_menu_file_saveload_slot (GtkActionGroup *ag)
 {
-    GtkWidget *pMenuItemS, *pMenuItemL, *pSubmenuS, *pSubmenuL, *item;
+    for(guint i = 1; i <= 10; i++){
+        GtkAction *act;
+        char label[64], name[64];
 
-    pSubmenuS = gtk_menu_new();
-    pMenuItemS = gtk_menu_item_new_with_label("Save State");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItemS), pSubmenuS);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItemS);
+        snprintf(label, 60, "_%d", i % 10);
 
-    pSubmenuL = gtk_menu_new();
-    pMenuItemL = gtk_menu_item_new_with_label("Load State");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItemL), pSubmenuL);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItemL);
+        snprintf(name, 60, "savestate%d", i);
+        act = gtk_action_new(name, label, NULL, NULL);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuSave), GUINT_TO_POINTER(i));
+        gtk_action_group_add_action(ag, GTK_ACTION(act));
 
-    for(int i = 1; i <= 10; i++){
-        char label[64];
-        snprintf(label, 60, "SSlot %d", i);
-        item = gtk_menu_item_new_with_label(label);
-        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenuS), item);
-        g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(MenuSave), GINT_TO_POINTER(i));
-
-        snprintf(label, 60, "LSlot %d", i);
-        item = gtk_menu_item_new_with_label(label);
-        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenuL), item);
-        g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(MenuLoad), GINT_TO_POINTER(i));
+        snprintf(name, 60, "loadstate%d", i);
+        act = gtk_action_new(name, label, NULL, NULL);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuLoad), GUINT_TO_POINTER(i));
+        gtk_action_group_add_action(ag, GTK_ACTION(act));
     }
 }
 
-static void desmume_gtk_menu_file (GtkWidget *pMenuBar)
+static void changesavetype(GtkAction *action, GtkRadioAction *current)
 {
-    GtkWidget *pMenu, *pMenuItem;
-
-    pMenu = gtk_menu_new();
-    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "open")));
-    desmume_gtk_menu_file_saveload_slot(pMenu);
-    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "printscreen")));
-    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "quit")));
-
-    pMenuItem = gtk_menu_item_new_with_label("File");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-}
-
-static void changesavetype(GtkCheckMenuItem *checkmenuitem, gpointer type)
-{
-    if (gtk_check_menu_item_get_active(checkmenuitem))
-        mmu_select_savetype(GPOINTER_TO_INT(type), &backupmemorytype, &backupmemorysize);
-}
-
-static void desmume_gtk_menu_emulation_saves (GtkWidget *pMenu, int act_savetype)
-{
-    GtkWidget *pMenuItem, *pSubmenu, *item;
-    GSList * list;
-
-    pSubmenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Saves");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-    list = NULL;
-    for (gint i = 0; save_type_names[i] != NULL; i++)
-    {
-        item = gtk_radio_menu_item_new_with_label(list, save_type_names[i]);
-        g_signal_connect(item, "toggled", G_CALLBACK(changesavetype), GINT_TO_POINTER(i));
-        list = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
-        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), item);
-        if( i == act_savetype )
-            gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
-    }
-}
-
-static void desmume_gtk_menu_emulation_frameskip (GtkWidget *pMenu)
-{
-    GtkWidget *mFrameskip_Radio[MAX_FRAMESKIP];
-    GtkWidget *pMenuItem, *pSubmenu;
-    gchar *buf;
-    guint i;
-
-    pSubmenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Frameskip");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-    for(i = 0; i < MAX_FRAMESKIP; i++) {
-        buf = g_strdup_printf("%d", i);
-        if (i>0)
-            mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mFrameskip_Radio[i-1]), buf);
-        else
-            mFrameskip_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-        g_free(buf);
-        g_signal_connect(G_OBJECT(mFrameskip_Radio[i]), "activate", G_CALLBACK(Modify_Frameskip), GINT_TO_POINTER(i));
-        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mFrameskip_Radio[i]);
-    }
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mFrameskip_Radio[0]), TRUE);
+    mmu_select_savetype( gtk_radio_action_get_current_value(current), 
+            &backupmemorytype, &backupmemorysize);
 }
 
 #ifdef BROKEN_SCREENSIZE
@@ -1711,92 +1790,43 @@ static void desmume_gtk_menu_emulation_display_size (GtkWidget *pMenu, gboolean 
 }
 #endif
 
-static void desmume_gtk_menu_emulation_layers (GtkWidget *pMenu, gboolean opengl)
+static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
 {
-    GtkWidget *pMenuItem, *pSubmenu;
-    GtkWidget *mLayers_Radio[10];
-    const char *Layers_Menu[10] = {
-        "Main BG 0",
-        "Main BG 1",
-        "Main BG 2",
-        "Main BG 3",
-        "Main OBJ",
-        "SUB BG 0",
-        "SUB BG 1",
-        "SUB BG 2",
-        "SUB BG 3",
-        "SUB OBJ"
+    const char *Layers_Menu[10][2] = {
+        {"layermainbg0","_0 Main BG 0"},
+        {"layermainbg1","_1 Main BG 1"},
+        {"layermainbg2","_2 Main BG 2"},
+        {"layermainbg3","_3 Main BG 3"},
+        {"layermainobj","_4 Main OBJ"},
+        {"layersubbg0", "_5 SUB BG 0"},
+        {"layersubbg1", "_6 SUB BG 1"},
+        {"layersubbg2", "_7 SUB BG 2"},
+        {"layersubbg3", "_8 SUB BG 3"},
+        {"layersubobj", "_9 SUB OBJ"}
     };
     guint i;
 
-    pSubmenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Layers");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-    for(i = 0; i < 10; i++) {
-        mLayers_Radio[i] = gtk_check_menu_item_new_with_label(Layers_Menu[i]);
-        g_signal_connect(G_OBJECT(mLayers_Radio[i]), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
-        gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mLayers_Radio[i]);
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mLayers_Radio[i]), TRUE);
+    GtkToggleAction *act;
+    for(i = 0; i< 10; i++){
+        act = gtk_toggle_action_new(Layers_Menu[i][0],Layers_Menu[i][1],NULL,NULL);
+        gtk_toggle_action_set_active(act, TRUE);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
+        gtk_action_group_add_action(ag, GTK_ACTION(act));
     }
 }
 
-static void desmume_gtk_disable_audio (GtkWidget *widget, gpointer data)
+static void desmume_gtk_disable_audio (GtkToggleAction *action)
 {
-    if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)) == TRUE) {
+    if (gtk_toggle_action_get_active(action) == TRUE) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
     } else {
         SPU_ChangeSoundCore(0, 0);
     }
 }
 
-static void desmume_gtk_menu_emulation_disable_audio (GtkWidget *pMenu)
-{
-    GtkWidget *pMenuItem;
-
-    pMenuItem = gtk_check_menu_item_new_with_label("Enable Audio");
-    g_signal_connect(G_OBJECT(pMenuItem), "toggled", G_CALLBACK(desmume_gtk_disable_audio), NULL);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(pMenuItem), TRUE);
-}
-
-static void desmume_gtk_menu_emulation (GtkWidget *pMenuBar, gboolean opengl)
-{
-    GtkWidget *pMenu, *pMenuItem;
-
-    pMenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Emulation");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "run")));
-    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "pause")));
-    gtk_container_add(GTK_CONTAINER(pMenu), gtk_action_create_menu_item(gtk_action_group_get_action(action_group, "reset")));
-
-    desmume_gtk_menu_emulation_disable_audio(pMenu);
-    desmume_gtk_menu_emulation_frameskip(pMenu);
-    desmume_gtk_menu_emulation_layers(pMenu, opengl);
-#ifdef BROKEN_SCREENSIZE
-    desmume_gtk_menu_emulation_display_size(pMenu, opengl);
-#endif
-}
-
+#if 0
 static void desmume_gtk_menu_config (GtkWidget *pMenuBar, int act_savetype)
 {
-    GtkWidget *pMenu, *pMenuItem;
-    
-    pMenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Config");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-
-    desmume_gtk_menu_emulation_saves(pMenu, act_savetype);
-    pMenuItem = gtk_menu_item_new_with_label("Edit controls");
-    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Edit_Controls), (GtkWidget*) pWindow);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-#if 0
     GtkWidget *pSubMenu;
     pSubmenu = gtk_menu_new();
     pMenuItem = gtk_menu_item_new_with_label("Firmware");
@@ -1806,51 +1836,19 @@ static void desmume_gtk_menu_config (GtkWidget *pMenuBar, int act_savetype)
     pMenuItem = gtk_menu_item_new_with_label("Select...");
     g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(SelectFirmwareFile), (gpointer)0);
     gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), pMenuItem);
+}
 #endif
-}
 
-static void desmume_gtk_menu_tools (GtkWidget *pMenuBar)
+//    { "ioregtool",  NULL,               "_IO regs view", NULL,       NULL,   Edit_Controls },
+static void desmume_gtk_menu_tools (GtkActionGroup *ag)
 {
-    GtkWidget *pMenu, *pMenuItem;
     gint i;
-
-    pMenu = gtk_menu_new();
     for(i = 0; i < dTools_list_size; i++) {
-        pMenuItem = gtk_menu_item_new_with_label(dTools_list[i]->name);
-        g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
-        gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+        GtkAction *act;
+        act = gtk_action_new("ioregtool", dTools_list[i]->name, NULL, NULL);
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
+        gtk_action_group_add_action(ag, GTK_ACTION(act));
     }
-
-    pMenuItem = gtk_menu_item_new_with_label("Tools");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-}
-
-static void desmume_gtk_menu_help (GtkWidget *pMenuBar)
-{
-    GtkWidget *pMenu, *pMenuItem;
-
-    pMenu = gtk_menu_new();
-    pMenuItem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT,NULL);
-    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(About), (GtkWidget*) pWindow);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-    pMenuItem = gtk_menu_item_new_with_label("Help");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
-}
-
-static void desmume_gtk_toolbar (GtkWidget *pVBox)
-{
-    GtkWidget *pToolbar;
-    
-    pToolbar = gtk_toolbar_new();
-    gtk_box_pack_start(GTK_BOX(pVBox), pToolbar, FALSE, FALSE, 0);
-
-    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "open"))), -1);
-    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "run"))), -1);
-    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "pause"))), -1);
-    gtk_toolbar_insert(GTK_TOOLBAR(pToolbar), GTK_TOOL_ITEM(gtk_action_create_tool_item(gtk_action_group_get_action(action_group, "quit"))), -1);
 }
 
 static int
@@ -1862,6 +1860,7 @@ common_gtk_main( struct configured_features *my_config)
     GtkAccelGroup * accel_group;
     GtkWidget *pVBox;
     GtkWidget *pMenuBar;
+    GtkWidget *pToolBar;
     gint pStatusBar_Ctx;
 
 #ifdef GTKGLEXT_AVAILABLE
@@ -1987,9 +1986,20 @@ common_gtk_main( struct configured_features *my_config)
     pVBox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(pWindow), pVBox);
 
+    GtkUIManager *ui_manager;
+    ui_manager = gtk_ui_manager_new ();
     accel_group = gtk_accel_group_new();
     action_group = gtk_action_group_new("dui");
-    gtk_action_group_add_actions(action_group, action_entries, sizeof(action_entries) / sizeof(GtkActionEntry), pWindow);
+
+    gtk_action_group_add_actions(action_group, action_entries, G_N_ELEMENTS(action_entries), NULL);
+    gtk_action_group_add_toggle_actions(action_group, toggle_entries, G_N_ELEMENTS(toggle_entries), NULL);
+    desmume_gtk_menu_emulation_layers(action_group);
+    desmume_gtk_menu_file_saveload_slot(action_group);
+    desmume_gtk_menu_tools(action_group);
+    gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
+            my_config->savetype, G_CALLBACK(changesavetype), NULL);
+    gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
+            0, G_CALLBACK(Modify_Frameskip), NULL);
     {
         GList * list = gtk_action_group_list_actions(action_group);
         g_list_foreach(list, dui_set_accel_group, accel_group);
@@ -2000,18 +2010,17 @@ common_gtk_main( struct configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
 
-    /* Menu and Toolbar */
-    pMenuBar = gtk_menu_bar_new();
+    gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
+    
+    accel_group = gtk_ui_manager_get_accel_group (ui_manager);
+    gtk_window_add_accel_group (GTK_WINDOW (pWindow), accel_group);
 
-    desmume_gtk_menu_file(pMenuBar);
-    desmume_gtk_menu_emulation(pMenuBar, my_config->opengl_2d);
-    desmume_gtk_menu_config(pMenuBar, my_config->savetype);
-    desmume_gtk_menu_tools(pMenuBar);
-    desmume_gtk_menu_help(pMenuBar);
+    desmume_try_adding_ui(ui_manager, ui_description);
 
-    gtk_box_pack_start(GTK_BOX(pVBox), pMenuBar, FALSE, FALSE, 0);
-
-    desmume_gtk_toolbar(pVBox);
+    pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
+    gtk_box_pack_start (GTK_BOX (pVBox), pMenuBar, FALSE, FALSE, 0);
+    pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
+    gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
 
     /* Creating the place for showing DS screens */
 #ifdef GTKGLEXT_AVAILABLE
