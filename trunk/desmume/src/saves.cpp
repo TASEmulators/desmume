@@ -383,12 +383,12 @@ static bool cp15_loadstate(std::istream* is)
 static char * format_time(time_t cal_time)
 {
   struct tm *time_struct;
-  static char string[30];
+  static char str[64];
 
   time_struct=localtime(&cal_time);
-  strftime(string, sizeof string, "%Y-%m-%d %H:%M", time_struct);
+  strftime(str, sizeof str, "%d-%b-%Y %H:%M:%S", time_struct);
 
-  return(string);
+  return(str);
 }
 
 void clear_savestates()

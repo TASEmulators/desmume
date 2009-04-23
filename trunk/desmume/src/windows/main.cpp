@@ -1186,6 +1186,62 @@ void NDS_UnPause()
 }
 
 
+/***
+ * Author: Hicoder
+ * Function: UpdateSaveStateMenu
+ * Date Added: April 20, 2009
+ * Description: Updates the specified savestate menus
+ * Known Usage:
+ *				ResetSaveStateTimes
+ *				LoadSaveStateInfo
+ **/
+void UpdateSaveStateMenu(int pos, char* txt)
+{
+	ModifyMenu(mainMenu,IDM_STATE_SAVE_F1 + pos, MF_BYCOMMAND | MF_STRING, IDM_STATE_SAVE_F1 + pos,  txt);
+	ModifyMenu(mainMenu,IDM_STATE_LOAD_F1 + pos, MF_BYCOMMAND | MF_STRING, IDM_STATE_LOAD_F1 + pos,	 txt);
+}
+
+/***
+ * Author: Hicoder
+ * Function: ResetSaveStateTime
+ * Date Added: April 20, 2009
+ * Description: Resets the times for save states to blank
+ * Known Usage:
+ *				LoadRom
+ **/
+void ResetSaveStateTimes()
+{
+	char ntxt[64];
+	for(int i = 0; i < NB_STATES;i++)
+	{
+		sprintf(ntxt,"%d %s", i+1, "");
+		UpdateSaveStateMenu(i, ntxt);
+	}
+}
+
+/***
+ * Author: Hicoder
+ * Function: LoadSaveStateInfo
+ * Date Added: April 20, 2009
+ * Description: Checks The Rom thats opening for save states asscociated with it
+ * Known Usage:
+ *				LoadRom
+ **/
+void LoadSaveStateInfo()
+{
+	scan_savestates();
+	char ntxt[22];
+	for(int i = 0; i < NB_STATES; i++)
+	{
+		if(savestates[i].exists)
+		{
+			sprintf(ntxt, "%d %s", i+1, savestates[i].date);
+			UpdateSaveStateMenu(i, ntxt);
+		}
+	}
+}
+
+
 
 #ifdef EXPERIMENTAL_GBASLOT
 BOOL LoadROM(char * filename)
@@ -1193,6 +1249,7 @@ BOOL LoadROM(char * filename)
 BOOL LoadROM(char * filename, const char *cflash_disk_image)
 #endif
 {
+	ResetSaveStateTimes();
 	NDS_Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
@@ -1203,6 +1260,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 #endif
 	{
 		INFO("Loading %s was successful\n",filename);
+		LoadSaveStateInfo();
 		frameCounter=0;
 		lagframecounter=0;
 		UpdateRecentRoms(filename);
@@ -1238,6 +1296,8 @@ int MenuInit()
 
 	recentromsmenu = LoadMenu(hAppInst, "RECENTROMS");
 	GetRecentRoms();
+
+	ResetSaveStateTimes();
 
 	return 1;
 }
@@ -2632,35 +2692,19 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			return 0;
 		case IDM_STATE_SAVE_F1:
-			HK_StateSaveSlot(1);
-			return 0;
 		case IDM_STATE_SAVE_F2:
-			HK_StateSaveSlot(2);
-			return 0;
 		case IDM_STATE_SAVE_F3:
-			HK_StateSaveSlot(3);
-			return 0;
 		case IDM_STATE_SAVE_F4:
-			HK_StateSaveSlot(4);
-			return 0;
 		case IDM_STATE_SAVE_F5:
-			HK_StateSaveSlot(5);
-			return 0;
 		case IDM_STATE_SAVE_F6:
-			HK_StateSaveSlot(6);
-			return 0;
 		case IDM_STATE_SAVE_F7:
-			HK_StateSaveSlot(7);
-			return 0;
 		case IDM_STATE_SAVE_F8:
-			HK_StateSaveSlot(8);
-			return 0;
 		case IDM_STATE_SAVE_F9:
-			HK_StateSaveSlot(9);
-			return 0;
 		case IDM_STATE_SAVE_F10:
-			HK_StateSaveSlot(10);
-			return 0;
+				HK_StateSaveSlot( abs(IDM_STATE_SAVE_F1 - LOWORD(wParam)) +1);
+				LoadSaveStateInfo();
+				return 0;
+
 		case IDM_STATE_LOAD_F1:
 			HK_StateLoadSlot(1);
 			return 0;
