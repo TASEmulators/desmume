@@ -75,17 +75,6 @@ static const char *bad_glob_cflash_disk_image_file;
 static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
 
-const char * save_type_names[] = {
-    "Autodetect",
-    "EEPROM 4kbit",
-    "EEPROM 64kbit",
-    "EEPROM 512kbit",
-    "FRAM 256kbit",
-    "FLASH 2mbit",
-    "FLASH 4mbit",
-    NULL
-};
-
 const u16 gtk_kb_cfg[NB_KEYS] =
   {
     GDK_x,         // A
@@ -1192,10 +1181,8 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
           savegame(e->keyval - GDK_F1 + 1);
       return 1;
   }
-  // FIXME: this is a hack to allow accels to work together with keypad emulation
-  // should be fixed by somebody who knows how to make key_press_event trigger AFTER all GtkAccels
   guint mask;
-  mask = GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD5_MASK; // shift,ctrl, both alts
+  mask = gtk_accelerator_get_default_mod_mask ();
   if( (e->state & mask) == 0){
     u16 Key = lookup_key(e->keyval);
     if(Key){
