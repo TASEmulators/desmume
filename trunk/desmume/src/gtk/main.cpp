@@ -283,8 +283,6 @@ static u16 gdk_shift_pressed = 0;
 
 struct configured_features {
   int load_slot;
-  int opengl_2d;
-  int soft_colour;
 
   int disable_sound;
   int engine_3d;
@@ -309,9 +307,6 @@ init_configured_features( struct configured_features *config)
   config->arm7_gdb_port = 0;
 
   config->disable_sound = 0;
-
-  config->opengl_2d = 0;
-  config->soft_colour = 0;
 
   config->engine_3d = 1;
 
@@ -721,7 +716,6 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
     GdkModifierType state;
     gint x,y;
     s32 EmuX, EmuY;
-    const int *opengl = (const int *)data;
 
     if(click) {
         int scaled_x, scaled_y;
@@ -734,13 +728,10 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
         }
 
         scaled_x = int(x * nds_screen_size_ratio);
-        scaled_y = int(y * nds_screen_size_ratio);
+        scaled_y = int(y * nds_screen_size_ratio)-192;
 
         LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
 
-        if ( !(*opengl)) {
-            scaled_y -= 192;
-        }
         if(scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
             EmuX = CLAMP(scaled_x, 0, 255);
             EmuY = CLAMP(scaled_y, 0, 192);
@@ -757,7 +748,6 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
     GdkModifierType state;
     gint x, y;
     s32 EmuX, EmuY;
-    const int *opengl = (const int *) data;
 
     if (desmume_running()) {
         if (e->button == 1) {
@@ -767,11 +757,8 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
             gdk_window_get_pointer(w->window, &x, &y, &state);
 
             scaled_x = int(x * nds_screen_size_ratio);
-            scaled_y = int(y * nds_screen_size_ratio);
+            scaled_y = int(y * nds_screen_size_ratio)-192;
 
-            if (!(*opengl)) {
-                scaled_y -= 192;
-            }
             if (scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
                 EmuX = CLAMP(scaled_x, 0, 255);
                 EmuY = CLAMP(scaled_y, 0, 192);
@@ -1596,7 +1583,7 @@ common_gtk_main( struct configured_features *my_config)
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-    gtk_window_set_resizable(GTK_WINDOW (pWindow), my_config->opengl_2d ? TRUE : FALSE);
+    gtk_window_set_resizable(GTK_WINDOW (pWindow), FALSE);
 
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
@@ -1656,11 +1643,11 @@ common_gtk_main( struct configured_features *my_config)
                           GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
 
     g_signal_connect(G_OBJECT(pDrawingArea), "button_press_event",
-                     G_CALLBACK(Stylus_Press), &my_config->opengl_2d);
+                     G_CALLBACK(Stylus_Press), NULL);
     g_signal_connect(G_OBJECT(pDrawingArea), "button_release_event",
                      G_CALLBACK(Stylus_Release), NULL);
     g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
-                     G_CALLBACK(Stylus_Move), &my_config->opengl_2d);
+                     G_CALLBACK(Stylus_Move), NULL);
 
     g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
                      G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
