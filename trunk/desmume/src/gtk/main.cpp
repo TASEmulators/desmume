@@ -1287,44 +1287,46 @@ gboolean EmuLoop(gpointer data)
     unsigned int i;
     gchar *Title;
 
-    if(desmume_running()) { /* If desmume is currently running */
-        static int limiter_frame_counter = 0;
-        fps_FrameCount += Frameskip + 1;
-        if(!fps_SecStart) fps_SecStart = SDL_GetTicks();
-        if(SDL_GetTicks() - fps_SecStart >= 1000) {
-            fps_SecStart = SDL_GetTicks();
-            fps = fps_FrameCount;
-            fps_FrameCount = 0;
-
-            Title = g_strdup_printf("Desmume - %dfps", fps);
-            gtk_window_set_title(GTK_WINDOW(pWindow), Title);
-            g_free(Title);
-        }
-
-        desmume_cycle();    /* Emule ! */
-        NDS_SkipFrame(true);
-        for(i = 0; i < Frameskip; i++) {
-            desmume_cycle();
-        }
-        NDS_SkipFrame(false);
-
-        _updateDTools();
-        gtk_widget_queue_draw( nds_screen_widget);
-
-        if ( !gtk_fps_limiter_disabled) {
-            limiter_frame_counter += 1;
-            if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
-                limiter_frame_counter = 0;
-                /* wait for the timer to expire */
-                SDL_SemWait( fps_limiter_semaphore);
-            }
-        }
-
-        return TRUE;
+    if (!desmume_running()) {
+      regMainLoop = FALSE;
+      return FALSE;
     }
 
-    regMainLoop = FALSE;
-    return FALSE;
+    /* If desmume is currently running */
+    static int limiter_frame_counter = 0;
+    fps_FrameCount += Frameskip + 1;
+    if (!fps_SecStart)
+      fps_SecStart = SDL_GetTicks();
+    if (SDL_GetTicks() - fps_SecStart >= 1000) {
+        fps_SecStart = SDL_GetTicks();
+        fps = fps_FrameCount;
+        fps_FrameCount = 0;
+
+        Title = g_strdup_printf("Desmume - %dfps", fps);
+        gtk_window_set_title(GTK_WINDOW(pWindow), Title);
+        g_free(Title);
+    }
+
+    desmume_cycle();    /* Emule ! */
+    NDS_SkipFrame(true);
+    for (i = 0; i < Frameskip; i++) {
+        desmume_cycle();
+    }
+    NDS_SkipFrame(false);
+
+    _updateDTools();
+    gtk_widget_queue_draw( nds_screen_widget);
+
+    if (!gtk_fps_limiter_disabled) {
+        limiter_frame_counter += 1;
+        if (limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+            limiter_frame_counter = 0;
+            /* wait for the timer to expire */
+            SDL_SemWait( fps_limiter_semaphore);
+        }
+    }
+
+    return TRUE;
 }
 
 
