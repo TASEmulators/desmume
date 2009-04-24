@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="DeSmuME Cocoa" />
+		<Option platforms="Mac;" />
+		<Option pch_mode="2" />
+		<Option default_target="Cocoa X86" />
+		<Option compiler="gcc" />
+		<Option show_notes="0">
+			<notes>
+				<![CDATA[DeSmuME
+
+Note that when building DeSmuME with this Code::Blocks project, compatibility may be worse than when building with the XCode project.
+
+Cocoa Port
+
+DeSmuME is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+DeSmuME is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with DeSmuME; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA]]>
+			</notes>
+		</Option>
+		<Build>
+			<Target title="Cocoa X86">
+				<Option platforms="Mac;" />
+				<Option output="build/codeblocks/DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="build/codeblocks/DeSmuME.app/Contents/MacOS" />
+				<Option object_output="build/codeblocks/x86" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-march=pentium-m" />
+					<Add option="-msse2" />
+					<Add option="-DDESMUME_COCOA" />
+					<Add option="-DHAVE_LIBZ" />
+					<Add option="-DHAVE_OPENGL" />
+				</Compiler>
+				<ExtraCommands>
+					<Add after="cp DeSmuME.app/Contents/MacOS/DeSmuME DeSmuME.app/Contents/MacOS/DeSmuME_x86" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Cocoa PPC">
+				<Option platforms="Mac;" />
+				<Option output="build/codeblocks/DeSmuME.app/Contents/MacOS/DeSmuME" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="build/codeblocks/DeSmuME.app/Contents/MacOS" />
+				<Option object_output="build/codeblocks/ppc" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-arch ppc" />
+					<Add option="-DDESMUME_COCOA" />
+					<Add option="-DHAVE_LIBZ" />
+					<Add option="-DHAVE_OPENGL" />
+				</Compiler>
+				<Linker>
+					<Add option="-arch ppc" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="cp DeSmuME.app/Contents/MacOS/DeSmuME DeSmuME.app/Contents/MacOS/DeSmuME_ppc" />
+				</ExtraCommands>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="Cocoa Universal" targets="Cocoa X86;Cocoa PPC;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-fexpensive-optimizations" />
+			<Add option="-O3" />
+			<Add option="-fpascal-strings -fasm-blocks" />
+			<Add option="-DDESMUME_OBJ_C" />
+		</Compiler>
+		<Linker>
+			<Add option="-framework Cocoa" />
+			<Add option="-framework OpenGL" />
+			<Add option="-framework AudioUnit" />
+			<Add option="-lz" />
+		</Linker>
+		<ExtraCommands>
+			<Add after="./makeapp.sh" />
+			<Mode after="always" />
+		</ExtraCommands>
+		<Unit filename="../ARM9.h" />
+		<Unit filename="../Disassembler.cpp" />
+		<Unit filename="../Disassembler.h" />
+		<Unit filename="../FIFO.cpp" />
+		<Unit filename="../FIFO.h" />
+		<Unit filename="../GPU.cpp" />
+		<Unit filename="../GPU.h" />
+		<Unit filename="../GPU_osd.cpp" />
+		<Unit filename="../GPU_osd.h" />
+		<Unit filename="../MMU.cpp" />
+		<Unit filename="../MMU.h" />
+		<Unit filename="../NDSSystem.cpp" />
+		<Unit filename="../NDSSystem.h" />
+		<Unit filename="../OGLRender.cpp" />
+		<Unit filename="../OGLRender.h" />
+		<Unit filename="../PACKED.h" />
+		<Unit filename="../PACKED_END.h" />
+		<Unit filename="../ROMReader.cpp" />
+		<Unit filename="../ROMReader.h" />
+		<Unit filename="../SPU.cpp" />
+		<Unit filename="../SPU.h" />
+		<Unit filename="../addons.cpp" />
+		<Unit filename="../addons.h" />
+		<Unit filename="../addons/compactFlash.cpp" />
+		<Unit filename="../addons/gbagame.cpp" />
+		<Unit filename="../addons/none.cpp" />
+		<Unit filename="../addons/rumblepak.cpp" />
+		<Unit filename="../arm_instructions.cpp" />
+		<Unit filename="../arm_instructions.h" />
+		<Unit filename="../armcpu.cpp" />
+		<Unit filename="../armcpu.h" />
+		<Unit filename="../bios.cpp" />
+		<Unit filename="../bios.h" />
+		<Unit filename="../bits.h" />
+		<Unit filename="../cflash.cpp" />
+		<Unit filename="../cflash.h" />
+		<Unit filename="../cheatSystem.cpp" />
+		<Unit filename="../cheatSystem.h" />
+		<Unit filename="English.strings" />
+		<Unit filename="Japanese.strings" />
+		<Unit filename="about.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cocoa_util.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="dialogs/rom_info.h" />
+		<Unit filename="dialogs/rom_info.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="dialogs/speed_limit_selection_window.h" />
+		<Unit filename="dialogs/speed_limit_selection_window.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="globals.h" />
+		<Unit filename="input.h" />
+		<Unit filename="input.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="main.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="main_window.h" />
+		<Unit filename="main_window.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="nds_control.h" />
+		<Unit filename="nds_control.mm">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="preferences.h" />
+		<Unit filename="preferences.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="screen_state.h" />
+		<Unit filename="screen_state.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="screenshot.h" />
+		<Unit filename="screenshot.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="sndOSX.h" />
+		<Unit filename="sndOSX.mm">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="video_output_view.h" />
+		<Unit filename="video_output_view.m">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="../common.cpp" />
+		<Unit filename="../common.h" />
+		<Unit filename="../cp15.cpp" />
+		<Unit filename="../cp15.h" />
+		<Unit filename="../ctrlssdl.h" />
+		<Unit filename="../debug.cpp" />
+		<Unit filename="../debug.h" />
+		<Unit filename="../dscard.h" />
+		<Unit filename="../fat.h" />
+		<Unit filename="../fs-linux.cpp" />
+		<Unit filename="../fs.h" />
+		<Unit filename="../gdbstub.h" />
+		<Unit filename="../gfx3d.cpp" />
+		<Unit filename="../gfx3d.h" />
+		<Unit filename="../matrix.cpp" />
+		<Unit filename="../matrix.h" />
+		<Unit filename="../mc.cpp" />
+		<Unit filename="../mc.h" />
+		<Unit filename="../mem.h" />
+		<Unit filename="../memorystream.h" />
+		<Unit filename="../mic.cpp" />
+		<Unit filename="../mic.h" />
+		<Unit filename="../movie.cpp" />
+		<Unit filename="../movie.h" />
+		<Unit filename="../readwrite.cpp" />
+		<Unit filename="../readwrite.h" />
+		<Unit filename="../registers.h" />
+		<Unit filename="../render3D.cpp" />
+		<Unit filename="../render3D.h" />
+		<Unit filename="../rtc.cpp" />
+		<Unit filename="../rtc.h" />
+		<Unit filename="../saves.cpp" />
+		<Unit filename="../saves.h" />
+		<Unit filename="../shaders.h" />
+		<Unit filename="../softrender.cpp" />
+		<Unit filename="../softrender.h" />
+		<Unit filename="../softrender_config.h" />
+		<Unit filename="../softrender_desmumefont.h" />
+		<Unit filename="../softrender_v3sysfont.h" />
+		<Unit filename="../texcache.cpp" />
+		<Unit filename="../texcache.h" />
+		<Unit filename="../thumb_instructions.cpp" />
+		<Unit filename="../thumb_instructions.h" />
+		<Unit filename="../types.h" />
+		<Unit filename="../utils/ConvertUTF.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../utils/ConvertUTF.h" />
+		<Unit filename="../utils/decrypt/crc.cpp" />
+		<Unit filename="../utils/decrypt/crc.h" />
+		<Unit filename="../utils/decrypt/decrypt.cpp" />
+		<Unit filename="../utils/decrypt/decrypt.h" />
+		<Unit filename="../utils/decrypt/header.cpp" />
+		<Unit filename="../utils/decrypt/header.h" />
+		<Unit filename="../utils/guid.cpp" />
+		<Unit filename="../utils/guid.h" />
+		<Unit filename="../utils/md5.cpp" />
+		<Unit filename="../utils/md5.h" />
+		<Unit filename="../utils/valuearray.h" />
+		<Unit filename="../utils/xstring.cpp" />
+		<Unit filename="../utils/xstring.h" />
+		<Unit filename="../wifi.cpp" />
+		<Unit filename="../wifi.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
