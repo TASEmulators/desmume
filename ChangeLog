@@ -1,3 +1,8 @@
+0.9.2 -> 0.9.2-1
+General/Core:
+ bug: fixed compilation for 64 bits linux systems
+ bug: fixed compilation when using --enable-osmesa with recent osmesa versions
+
 0.9.1 -> 0.9.2
 General/Core:
  bug: fix error in SBCS/RSCS flags; fixes many odd behaviors and crashes [zeromus]
