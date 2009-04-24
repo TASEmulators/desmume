@@ -1311,16 +1311,14 @@ gboolean EmuLoop(gpointer data)
         _updateDTools();
         gtk_widget_queue_draw( nds_screen_widget);
 
-                if ( !gtk_fps_limiter_disabled) {
-                  limiter_frame_counter += 1;
-                  if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
-                    limiter_frame_counter = 0;
-
-                    /* wait for the timer to expire */
-                    SDL_SemWait( fps_limiter_semaphore);
-                  }
+        if ( !gtk_fps_limiter_disabled) {
+            limiter_frame_counter += 1;
+            if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+                limiter_frame_counter = 0;
+                /* wait for the timer to expire */
+                SDL_SemWait( fps_limiter_semaphore);
+            }
         }
-
 
         return TRUE;
     }
