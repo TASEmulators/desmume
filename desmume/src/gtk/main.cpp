@@ -103,9 +103,6 @@ enum {
 
 /************************ CONFIG FILE *****************************/
 
-// extern char FirmwareFile[256];
-// int LoadFirmware(const char *filename);
-
 static void Open_Select();
 static void Launch();
 static void Pause();
@@ -118,6 +115,9 @@ static void About();//GtkWidget* widget, gpointer data);
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
 static void desmume_gtk_mic_noise (GtkToggleAction *action);
 static void Modify_Layer(GtkToggleAction* action, gpointer data);
+#ifdef DESMUME_GTK_FIRMWARE_BROKEN
+static void SelectFirmwareFile();
+#endif
 
 static const char *ui_description =
 "<ui>"
@@ -148,6 +148,9 @@ static const char *ui_description =
 "        <menuitem action='loadstate9'/>"
 "        <menuitem action='loadstate10'/>"
 "      </menu>"
+#ifdef GTK_DESMUME_FIRMWARE_BROKEN
+"      <menuitem action='loadfirmware'/>"
+#endif
 "      <menuitem action='printscreen'/>"
 "      <menuitem action='quit'/>"
 "    </menu>"
@@ -225,6 +228,9 @@ static const GtkActionEntry action_entries[] = {
     { "ConfigSaveMenu", NULL, "_Saves" },
 
     { "open",       "gtk-open",         "_Open",         "<Ctrl>o",  NULL,   Open_Select },
+#ifdef DESMUME_GTK_FIRMWARE_BROKEN
+    { "loadfirmware","gtk-open",        "_Load Firmware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
+#endif
     { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
     { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   gtk_main_quit },
 
@@ -471,11 +477,6 @@ static int Write_ConfigFile(const gchar *config_file)
         g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
         g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
     }
-
-//  if(FirmwareFile[0]) {
-//      ini_add_section(ini, "FIRMWARE");
-//      ini_add_value(ini, "FIRMWARE", "FILE", FirmwareFile);
-//  }
 
     contents = g_key_file_to_data(keyfile, 0, 0);   
     ret = g_file_set_contents(config_file, contents, -1, NULL);
@@ -1076,35 +1077,8 @@ static void Printscreen()
 
 /////////////////////////////// DS CONFIGURATION //////////////////////////////////
 
-#if 0
-
-char FirmwareFile[256];
-
-int LoadFirmware(const char *filename)
-{
-    int i;
-    u32 size;
-    FILE *f;
-
-    strncpy(FirmwareFile, filename, ARRAY_SIZE(FirmwareFile));
-
-    f = fopen(filename, "rb");
-    if(!f) return -1;
-
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    if(size > MMU.spi7.fw.size) { fclose(f); return -1; }       /* this must be a small file*/
-
-    i = fread(MMU.spi7.fw.data, size, 1, f);
-
-    fclose(f);
-
-    return i;
-}
-
-int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
+#ifdef DESMUME_GTK_FIRMWARE_BROKEN
+static void SelectFirmwareFile()
 {
     GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
     GtkWidget *pFileSelection;
@@ -1114,7 +1088,7 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
     BOOL oldState = desmume_running();
     Pause();
 
-    pParent = GTK_WIDGET(data);
+    pParent = GTK_WIDGET(pWindow);
 
     pFilter_nds = gtk_file_filter_new();
     gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
@@ -1140,21 +1114,11 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
 
-    if(FirmwareFile[0]) gtk_file_chooser_select_uri(GTK_FILE_CHOOSER(pFileSelection), FirmwareFile);
-
     switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-        if(LoadFirmware((const char*)sPath) < 0) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to load :\n%s", sPath);
-            gtk_dialog_run(GTK_DIALOG(pDialog));
-            gtk_widget_destroy(pDialog);
-        } else {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Selected firmware :\n%s", sPath);
-            gtk_dialog_run(GTK_DIALOG(pDialog));
-            gtk_widget_destroy(pDialog);
-        }
-
+        CommonSettings.UseExtFirmware = true;
+        strncpy(CommonSettings.Firmware, (const char*)sPath, g_utf8_strlen(sPath, -1));
         g_free(sPath);
         break;
     default:
@@ -1163,71 +1127,7 @@ int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
     gtk_widget_destroy(pFileSelection);
 
     if(oldState) Launch();
-
 }
-
-int SelectFirmwareFile_Load(GtkWidget *w, gpointer data)
-{
-    GtkFileFilter *pFilter_nds, *pFilter_bin, *pFilter_any;
-    GtkWidget *pFileSelection;
-    GtkWidget *pParent;
-    gchar *sPath;
-
-    BOOL oldState = desmume_running();
-    Pause();
-
-    pParent = GTK_WIDGET(data);
-
-    pFilter_nds = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
-    gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
-
-    pFilter_bin = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_bin, "*.bin");
-    gtk_file_filter_set_name(pFilter_bin, "Binary file (.bin)");
-
-    pFilter_any = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_any, "*");
-    gtk_file_filter_set_name(pFilter_any, "All files");
-
-    pFileSelection = gtk_file_chooser_dialog_new("Save firmware...",
-            GTK_WINDOW(pParent),
-            GTK_FILE_CHOOSER_ACTION_OPEN,
-            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
-            NULL);
-    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
-
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_nds);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_bin);
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
-
-    if(FirmwareFile[0]) gtk_file_chooser_select_uri(GTK_FILE_CHOOSER(pFileSelection), FirmwareFile);
-
-    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
-    case GTK_RESPONSE_OK:
-        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-        if(LoadFirmware((const char*)sPath) < 0) {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to load :\n%s", sPath);
-            gtk_dialog_run(GTK_DIALOG(pDialog));
-            gtk_widget_destroy(pDialog);
-        } else {
-            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Selected firmware :\n%s", sPath);
-            gtk_dialog_run(GTK_DIALOG(pDialog));
-            gtk_widget_destroy(pDialog);
-        }
-
-        g_free(sPath);
-        break;
-    default:
-        break;
-    }
-    gtk_widget_destroy(pFileSelection);
-
-    if(oldState) Launch();
-
-}
-
 #endif
 
 /////////////////////////////// FRAMESKIP /////////////////////////////////
@@ -1458,21 +1358,6 @@ static void desmume_gtk_mic_noise (GtkToggleAction *action)
     Mic_DoNoise((BOOL)gtk_toggle_action_get_active(action));
 }
 
-#if 0
-static void desmume_gtk_menu_config (GtkWidget *pMenuBar, int act_savetype)
-{
-    GtkWidget *pSubMenu;
-    pSubmenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Firmware");
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-    pMenuItem = gtk_menu_item_new_with_label("Select...");
-    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(SelectFirmwareFile), (gpointer)0);
-    gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), pMenuItem);
-}
-#endif
-
 static void desmume_gtk_menu_tools (GtkActionGroup *ag)
 {
     gint i;
@@ -1666,8 +1551,6 @@ common_gtk_main( struct configured_features *my_config)
     gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
 
     gtk_widget_show_all(pWindow);
-
-    //LoadFirmware("fw.bin");
 
     gtk_fps_limiter_disabled = my_config->disable_limiter;
     if ( !gtk_fps_limiter_disabled) {
