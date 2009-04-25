@@ -668,12 +668,6 @@ static void Open_Select()
     gtk_widget_destroy(pFileSelection);
 }
 
-#if 0 /* not used */
-static void Close()
-{
-}
-#endif
-
 static void Reset()
 {
     NDS_Reset();
