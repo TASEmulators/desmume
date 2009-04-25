@@ -114,6 +114,12 @@
 #endif
 #endif
 
+#ifdef _MSC_VER
+#define _CDECL_ __cdecl
+#else
+#define _CDECL_
+#endif
+
 #ifndef INLINE
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define INLINE _inline
