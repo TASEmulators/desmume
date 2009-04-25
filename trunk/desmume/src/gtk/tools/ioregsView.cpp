@@ -20,6 +20,7 @@
  */
 
 #include <gtk/gtk.h>
+#include <string.h>
 #include "../dTool.h"
 
 #include "../MMU.h"
@@ -398,6 +399,7 @@ static int DTOOL_ID;
 
 static void close()
 {
+	memset(current_reg, 0, sizeof(current_reg));
 	dTool_CloseCallback(DTOOL_ID);
 }
 
