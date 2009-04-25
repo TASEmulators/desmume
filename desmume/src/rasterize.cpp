@@ -348,17 +348,17 @@ struct Shader
 			dst.b = modulate_table[texColor.b][materialColor.b];
 			dst.a = modulate_table[texColor.a][materialColor.a];
 			//dst.color.components.a = 31;
-			#ifdef _MSC_VER
-			if(GetAsyncKeyState(VK_SHIFT)) {
-				//debugging tricks
-				dst = materialColor;
-				if(GetAsyncKeyState(VK_TAB)) {
-					u8 alpha = dst.a;
-					dst.color = polynum*8+8;
-					dst.a = alpha;
-				}
-			}
-			#endif
+			//#ifdef _MSC_VER
+			//if(GetAsyncKeyState(VK_SHIFT)) {
+			//	//debugging tricks
+			//	dst = materialColor;
+			//	if(GetAsyncKeyState(VK_TAB)) {
+			//		u8 alpha = dst.a;
+			//		dst.color = polynum*8+8;
+			//		dst.a = alpha;
+			//	}
+			//}
+			//#endif
 			break;
 		case 1: //decal
 			u = invu*w;
