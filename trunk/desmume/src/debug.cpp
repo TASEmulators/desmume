@@ -34,6 +34,11 @@ Logger::Logger() {
 	flags = 0;
 }
 
+Logger::~Logger() {
+	for(int i=0;i<(int)channels.size();i++)
+		delete channels[i];
+}
+
 void Logger::vprintf(const char * format, va_list l, const char * file, unsigned int line) {
 	char buffer[1024];
 	char * cur = buffer;
