@@ -697,6 +697,8 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
     if (!rgb)
         return 0;
 
+    nds_screen_size_ratio = 256.0/(float)widget->allocation.width;
+
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
     gdk_draw_rgb_image (widget->window,
                 widget->style->fg_gc[widget->state], 0, 0,
@@ -705,6 +707,17 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
                 rgb, 256*3);
 
     free(rgb);
+    if(nds_screen_size_ratio!=1.0){
+        float ssize;
+        ssize = 1/(float)nds_screen_size_ratio;
+
+        GdkPixbuf *origPixbuf, *resizedPixbuf;
+        origPixbuf = gdk_pixbuf_get_from_drawable(NULL, widget->window, NULL, 0,0,0,0, 256, 192*2);
+        resizedPixbuf = gdk_pixbuf_scale_simple ( origPixbuf, ssize*256, ssize*2*192, GDK_INTERP_BILINEAR );
+        gdk_draw_pixbuf( widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*256, ssize*2*192, GDK_RGB_DITHER_NONE, 0,0);
+        g_object_unref(resizedPixbuf);
+        g_object_unref(origPixbuf);
+    }
     return 1;
 }
 
@@ -960,20 +973,14 @@ static void Edit_Controls()
 
 ///////////////////////////////// SCREEN SCALING //////////////////////////////
 
-#ifdef BROKEN_SCREENSIZE
 #define MAX_SCREENCOEFF 4 
 
 static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
 {
     guint Size = GPOINTER_TO_UINT(data);
-    static int ScreenCoeff_Size;
 
-    gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256 * Size, 384 * Size);
-    gtk_widget_set_usize (pDrawingArea, 256 * Size, 384 * Size);
-
-    ScreenCoeff_Size = Size;
+    nds_screen_size_ratio = 1/(float)Size;
 }
-#endif
 
 /////////////////////////////// LAYER HIDING /////////////////////////////////
 
@@ -1290,35 +1297,6 @@ static void changesavetype(GtkAction *action, GtkRadioAction *current)
             &backupmemorytype, &backupmemorysize);
 }
 
-#ifdef BROKEN_SCREENSIZE
-static void desmume_gtk_menu_emulation_display_size (GtkWidget *pMenu, gboolean opengl)
-{
-    GtkWidget *pMenuItem, *pSubmenu;
-    GtkWidget *mSize_Radio[MAX_SCREENCOEFF];
-    gchar *buf;
-    guint i;
-
-    /* FIXME: this does not work and there's a lot of code that assume the default screen size, drawing function included */
-    if (!opengl) {
-        pSubmenu = gtk_menu_new();
-        pMenuItem = gtk_menu_item_new_with_label("Display size");
-        gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pSubmenu);
-        gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-
-        for(i = 1; i < MAX_SCREENCOEFF; i++) {
-            buf = g_strdup_printf("x%d", i);
-            if (i>1)
-                mSize_Radio[i] = gtk_radio_menu_item_new_with_label_from_widget(GTK_RADIO_MENU_ITEM(mSize_Radio[i-1]), buf);
-            else
-                mSize_Radio[i] = gtk_radio_menu_item_new_with_label(NULL, buf);
-            g_free(buf);
-            g_signal_connect(G_OBJECT(mSize_Radio[i]), "activate", G_CALLBACK(Modify_ScreenCoeff), GUINT_TO_POINTER(i));
-            gtk_menu_shell_append(GTK_MENU_SHELL(pSubmenu), mSize_Radio[i]);
-        }
-    }
-}
-#endif
-
 static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
 {
     const char *Layers_Menu[10][2] = {
@@ -1471,7 +1449,7 @@ common_gtk_main( struct configured_features *my_config)
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
 
-    gtk_window_set_resizable(GTK_WINDOW (pWindow), FALSE);
+    gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
 
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
@@ -1519,11 +1497,20 @@ common_gtk_main( struct configured_features *my_config)
     pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
     gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
 
+    GtkWidget * pAspectFrame;
+
+    pAspectFrame = gtk_aspect_frame_new (NULL, /* label */
+                                         0.5, /* center x */
+                                         0.5, /* center y */
+                                         256.0/384.0, /* xsize/ysize */
+                                         FALSE /* ignore child's aspect */);
+
+    gtk_container_add (GTK_CONTAINER (pVBox), pAspectFrame);
+
     /* Creating the place for showing DS screens */
     pDrawingArea= gtk_drawing_area_new();
 
-    gtk_drawing_area_size(GTK_DRAWING_AREA(pDrawingArea), 256, 384);
-    gtk_widget_set_usize (pDrawingArea, 256, 384);
+    gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), 256, 384);
 
     gtk_widget_set_events(pDrawingArea,
                           GDK_EXPOSURE_MASK | GDK_LEAVE_NOTIFY_MASK |
@@ -1539,8 +1526,7 @@ common_gtk_main( struct configured_features *my_config)
 
     g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
                      G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
-
-    gtk_box_pack_start(GTK_BOX(pVBox), pDrawingArea, FALSE, FALSE, 0);
+    gtk_container_add (GTK_CONTAINER (pAspectFrame), pDrawingArea);
 
     nds_screen_widget = pDrawingArea;
 
