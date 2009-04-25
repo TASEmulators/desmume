@@ -3041,21 +3041,6 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	GPU * gpu = screen->gpu;
 	GPU_tempScanline_valid = false;
 
-	//here is some setup which is only done on line 0
-	if(l == 0) {
-		for(int num=2;num<=3;num++)
-		{
-			BGxPARMS * parms;
-			if (num==2)
-				parms = &(gpu->dispx_st)->dispx_BG2PARMS;
-			else
-				parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
-
-			parms->BGxX = gpu->affineInfo[num-2].x;
-			parms->BGxY = gpu->affineInfo[num-2].y;
-		}
-	}
-
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	gpu->currLine = (u8)l;
 	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
@@ -3146,12 +3131,6 @@ bool gpu_loadstate(std::istream* is)
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();
-}
-
-void GPU::setAffineStart(int layer, int xy, u32 val)
-{
-	if(xy==0) affineInfo[layer-2].x = val;
-	else affineInfo[layer-2].y = val;
 }
 
 void gpu_UpdateRender()
