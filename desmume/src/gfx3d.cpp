@@ -1366,7 +1366,7 @@ void gfx3d_glFlush(u32 v)
 	gfx3d.wbuffer = BIT1(v);
 }
 
-static int gfx3d_ysort_compare(const void * elem1, const void * elem2)
+static int _CDECL_ gfx3d_ysort_compare(const void * elem1, const void * elem2)
 {
 	int num1 = *(int*)elem1;
 	int num2 = *(int*)elem2;
