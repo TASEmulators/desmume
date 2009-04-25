@@ -40,6 +40,7 @@
 #include "debug.h"
 #include "rasterize.h"
 #include "saves.h"
+#include "mic.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -115,6 +116,7 @@ static void MenuSave(GtkMenuItem *item, gpointer slot);
 static void MenuLoad(GtkMenuItem *item, gpointer slot);
 static void About();//GtkWidget* widget, gpointer data);
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
+static void desmume_gtk_mic_noise (GtkToggleAction *action);
 static void Modify_Layer(GtkToggleAction* action, gpointer data);
 
 static const char *ui_description =
@@ -154,6 +156,7 @@ static const char *ui_description =
 "      <menuitem action='pause'/>"
 "      <menuitem action='reset'/>"
 "      <menuitem action='enableaudio'/>"
+"      <menuitem action='micnoise'/>"
 "      <menu action='FrameskipMenu'>"
 "        <menuitem action='frameskip0'/>"
 "        <menuitem action='frameskip1'/>"
@@ -234,7 +237,8 @@ static const GtkActionEntry action_entries[] = {
 };
 
 static const GtkToggleActionEntry toggle_entries[] = {
-    { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE}//,
+    { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE},
+    { "micnoise", NULL, "_Fake mic noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE}//,
 };
 
 static const GtkRadioActionEntry frameskip_entries[] = {
@@ -1453,6 +1457,11 @@ static void desmume_gtk_disable_audio (GtkToggleAction *action)
     } else {
         SPU_ChangeSoundCore(0, 0);
     }
+}
+
+static void desmume_gtk_mic_noise (GtkToggleAction *action)
+{
+    Mic_DoNoise((BOOL)gtk_toggle_action_get_active(action));
 }
 
 #if 0
