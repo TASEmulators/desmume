@@ -1370,7 +1370,7 @@ static void desmume_gtk_menu_file_saveload_slot (GtkActionGroup *ag)
         GtkAction *act;
         char label[64], name[64];
 
-        snprintf(label, 60, "_%d", i % 10);
+        snprintf(label, 60, "_%d", i);
 
         snprintf(name, 60, "savestate%d", i);
         act = gtk_action_new(name, label, NULL, NULL);
