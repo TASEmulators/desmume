@@ -41,6 +41,9 @@
 #include "readwrite.h"
 #include "FIFO.h"
 
+using std::max;
+using std::min;
+
 GFX3D gfx3d;
 
 //tables that are provided to anyone
@@ -1363,6 +1366,27 @@ void gfx3d_glFlush(u32 v)
 	gfx3d.wbuffer = BIT1(v);
 }
 
+static int gfx3d_ysort_compare(const void * elem1, const void * elem2)
+{
+	int num1 = *(int*)elem1;
+	int num2 = *(int*)elem2;
+
+	POLY &poly1 = polylist->list[num1];
+	POLY &poly2 = polylist->list[num2];
+
+	if(poly1.maxy > poly2.maxy)
+		return 1;
+	else if(poly1.maxy < poly2.maxy)
+		return -1;
+	else if(poly1.miny < poly2.miny)
+		return 1;
+	else if(poly1.miny > poly2.miny)
+		return -1;
+	else 
+		return 0;
+}
+
+
 void gfx3d_VBlankSignal()
 {
 	//the 3d buffers are swapped when a vblank begins.
@@ -1385,20 +1409,45 @@ void gfx3d_VBlankSignal()
 	gfx3d.polylist = polylist;
 	gfx3d.vertlist = vertlist;
 
+	int polycount = polylist->count;
+
+	//find the min and max y values for each poly.
+	//TODO - this could be a small waste of time if we are manual sorting the translucent polys
+	for(int i=0;i<polycount;i++) {
+		POLY &poly = polylist->list[i];
+		for(int j=0;j<poly.type;j++) {
+			VERT &vert = vertlist->list[poly.vertIndexes[j]];
+			poly.miny = j==0?vert.y:min(poly.miny,vert.y);
+			poly.maxy = j==0?vert.y:max(poly.maxy,vert.y);
+		}
+	}
+
 	//we need to sort the poly list with alpha polys last
 	//first, look for opaque polys
-	int polycount = polylist->count;
 	int ctr=0;
 	for(int i=0;i<polycount;i++) {
 		POLY &poly = polylist->list[i];
 		if(!poly.isTranslucent())
 			gfx3d.indexlist[ctr++] = i;
 	}
+	int opaqueCount = ctr;
 	//then look for translucent polys
 	for(int i=0;i<polycount;i++) {
 		POLY &poly = polylist->list[i];
 		if(poly.isTranslucent())
 			gfx3d.indexlist[ctr++] = i;
+	}
+
+	//now we have to sort the opaque polys by y-value.
+	//should this be done after clipping??
+	//test case: harvest moon island of happiness character cretor UI
+	qsort(gfx3d.indexlist, opaqueCount, 4, gfx3d_ysort_compare);
+
+	if(!gfx3d.sortmode)
+	{
+		//if we are autosorting translucent polys, we need to do this also
+		//TODO - this is unverified behavior. need a test case
+		qsort(gfx3d.indexlist + opaqueCount, polycount - opaqueCount, 4, gfx3d_ysort_compare);
 	}
 
 	//switch to the new lists

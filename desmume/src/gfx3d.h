@@ -68,6 +68,7 @@ struct POLY {
 //	int projIndex; //the index into the projlist that this poly uses
 	u32 pad;
 	u32 viewport;
+	float miny, maxy;
 
 	bool isTranslucent()
 	{
