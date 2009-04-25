@@ -2194,31 +2194,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
-			case REG_DISPA_BG2XL:
-				MainScreen.gpu->setAffineStart(2,0,val);
-				break;
-			case REG_DISPA_BG2YL:
-				MainScreen.gpu->setAffineStart(2,1,val);
-				break;
-			case REG_DISPB_BG2XL:
-				SubScreen.gpu->setAffineStart(2,0,val);
-				break;
-			case REG_DISPB_BG2YL:
-				SubScreen.gpu->setAffineStart(2,1,val);
-				break;
-			case REG_DISPA_BG3XL:
-				MainScreen.gpu->setAffineStart(3,0,val);
-				break;
-			case REG_DISPA_BG3YL:
-				MainScreen.gpu->setAffineStart(3,1,val);
-				break;
-			case REG_DISPB_BG3XL:
-				SubScreen.gpu->setAffineStart(3,0,val);
-				break;
-			case REG_DISPB_BG3YL:
-				SubScreen.gpu->setAffineStart(3,1,val);
-				break;
-
 			case 0x04000600:
 				GFX_FIFOcnt(val);
 				return;
