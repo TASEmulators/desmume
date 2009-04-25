@@ -35,6 +35,7 @@ protected:
 	static void fixSize(unsigned int channel);
 public:
 	Logger();
+	~Logger();
 
 	void vprintf(const char * format, va_list l, const char * filename, unsigned int line);
 	void setOutput(std::ostream * o);
