@@ -402,7 +402,7 @@ void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 #define ADDRESS_STEP_8KB		0x02000
 #define ADDRESS_STEP_16KB	   0x04000
 #define ADDRESS_STEP_32KB	   0x08000
-#define ADDRESS_STEP_64kB	   0x10000
+#define ADDRESS_STEP_64KB	   0x10000
 #define ADDRESS_STEP_128KB	   0x20000
 #define ADDRESS_STEP_256KB	   0x40000
 #define ADDRESS_STEP_512KB	   0x80000
