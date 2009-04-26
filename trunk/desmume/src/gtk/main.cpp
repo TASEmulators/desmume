@@ -692,33 +692,25 @@ static inline void gpu_screen_to_rgb(u8 *rgb, int size)
 /* Drawing callback */
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-    guchar *rgb;
-    rgb = (guchar *) malloc(SCREENS_PIXEL_SIZE*3);
-    if (!rgb)
-        return 0;
+    GdkPixbuf *origPixbuf, *resizedPixbuf;
+    guchar rgb[SCREENS_PIXEL_SIZE*3];
+    float ssize;
 
-    nds_screen_size_ratio = 256.0/(float)widget->allocation.width;
+    nds_screen_size_ratio = 256.0 / (float)widget->allocation.width;
+    ssize = 1 / (float)nds_screen_size_ratio;
 
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
-    gdk_draw_rgb_image (widget->window,
-                widget->style->fg_gc[widget->state], 0, 0,
-                256, 192*2,
-                GDK_RGB_DITHER_NONE,
-                rgb, 256*3);
-
-    free(rgb);
-    if(nds_screen_size_ratio!=1.0){
-        float ssize;
-        ssize = 1/(float)nds_screen_size_ratio;
-
-        GdkPixbuf *origPixbuf, *resizedPixbuf;
-        origPixbuf = gdk_pixbuf_get_from_drawable(NULL, widget->window, NULL, 0,0,0,0, 256, 192*2);
-        resizedPixbuf = gdk_pixbuf_scale_simple ( origPixbuf, ssize*256, ssize*2*192, GDK_INTERP_BILINEAR );
-        gdk_draw_pixbuf( widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*256, ssize*2*192, GDK_RGB_DITHER_NONE, 0,0);
+    origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 0, 8, 256, 192*2, 256*3, NULL, NULL);
+    if(nds_screen_size_ratio != 1.0) {
+        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*256, ssize*2*192, GDK_INTERP_BILINEAR);
+        gdk_draw_pixbuf(widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*256, ssize*2*192, GDK_RGB_DITHER_NONE, 0,0);
         g_object_unref(resizedPixbuf);
-        g_object_unref(origPixbuf);
+    } else {
+        gdk_draw_pixbuf(widget->window, NULL, origPixbuf, 0,0,0,0, ssize*256, ssize*2*192, GDK_RGB_DITHER_NONE, 0,0);
     }
-    return 1;
+    g_object_unref(origPixbuf);
+
+    return TRUE;
 }
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
