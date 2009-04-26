@@ -468,11 +468,13 @@ BOOL cheatsUpdate_AR(char *code, char *description, BOOL enabled, u32 pos)
 {
 	if (pos > cheatsNum) return FALSE;
 
-	if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
+	if (code != NULL)
+	{
+		if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
+		strcpy(cheats[pos].description, description);
+		cheats[pos].type = 1;
+	}
 	
-	cheats[pos].type = 1;
-	
-	strcpy(cheats[pos].description, description);
 	cheats[pos].enabled = enabled;
 	return TRUE;
 }
@@ -495,11 +497,12 @@ BOOL cheatsUpdate_CB(char *code, char *description, BOOL enabled, u32 pos)
 {
 	if (pos > cheatsNum) return FALSE;
 
-	if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
-	
-	cheats[pos].type = 2;
-	
-	strcpy(cheats[pos].description, description);
+	if (code != NULL)
+	{
+		if (!cheatsXXcodePreparser(&cheats[pos], code)) return FALSE;
+		cheats[pos].type = 2;
+		strcpy(cheats[pos].description, description);
+	}
 	cheats[pos].enabled = enabled;
 	return TRUE;
 }

@@ -695,7 +695,22 @@ BOOL CALLBACK CheatsListBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lpar
 					cheatEditPos = ListView_GetNextItem(cheatListView, -1, LVNI_SELECTED|LVNI_FOCUSED);
 					cheatsGet(&tempCheat, cheatEditPos);
 					tempCheat.enabled = !tempCheat.enabled;
-					cheatsUpdate(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos);
+					switch (tempCheat.type)
+					{
+						case 0:		// internal
+							cheatsUpdate(tempCheat.size, tempCheat.hi[0], tempCheat.lo[0], tempCheat.description, tempCheat.enabled, cheatEditPos);
+						break;
+
+						case 1:		// Action Replay
+							cheatsUpdate_AR(NULL, NULL, tempCheat.enabled, cheatEditPos);
+						break;
+
+						case 2:		// Codebreaker
+							cheatsUpdate_CB(NULL, NULL, tempCheat.enabled, cheatEditPos);
+						break;
+					}
+
+
 					if (tempCheat.enabled)
 						ListView_SetItemText(cheatListView, cheatEditPos, 0, "X")
 					else
