@@ -2906,11 +2906,12 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 	u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
 	u16 i16;
 
-	if (!gpu->MasterBrightFactor) return;
+	//isn't it odd that we can set uselessly high factors here?
+	//factors above 16 change nothing. curious.
+	int factor = gpu->MasterBrightFactor;
+	if(factor==0) return;
+	if(factor>16) factor=16;
 
-#ifdef BRIGHT_TABLES
-	calc_bright_colors();
-#endif
 
 // Apply final brightness adjust (MASTER_BRIGHT)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
@@ -2928,7 +2929,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		{
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
+				((u16*)dst)[i16] = fadeInColors[factor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
 		}
@@ -2938,7 +2939,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		{
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
+				((u16*)dst)[i16] = fadeOutColors[factor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
 		}
