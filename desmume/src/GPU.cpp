@@ -2849,7 +2849,7 @@ static void GPU_ligne_DispCapture(u16 l)
 						}
 
 						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
-							srcB = (u16 *)(gpu->dispCapCnt.src) + (l * 512);
+							srcB = (u16 *)((gpu->dispCapCnt.src) + (l * 512));
 						else
 							srcB = NULL; // DISP FIFOS
 
