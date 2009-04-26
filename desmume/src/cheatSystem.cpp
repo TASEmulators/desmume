@@ -264,13 +264,12 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 				switch (subtype)
 				{
 					case 0x0:
-						loopcount++;
-						loopbackline = i;
 						if (loopcount < (lo+1))
 							loop_flag = 1;
 						else
 							loop_flag = 0;
-						if (loopcount == 1)
+						loopcount++;
+						loopbackline = i;
 					break;
 
 					case 0x4:
