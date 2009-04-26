@@ -1556,6 +1556,23 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		// Address is an IO register
 		switch(adr)
 		{
+		case REG_DISPA_BG2XL: MainScreen.gpu->setAffineStartWord(2,0,val,0); break;
+		case REG_DISPA_BG2XH: MainScreen.gpu->setAffineStartWord(2,0,val,1); break;
+		case REG_DISPA_BG2YL: MainScreen.gpu->setAffineStartWord(2,1,val,0); break;
+		case REG_DISPA_BG2YH: MainScreen.gpu->setAffineStartWord(2,1,val,1); break;
+		case REG_DISPA_BG3XL: MainScreen.gpu->setAffineStartWord(3,0,val,0); break;
+		case REG_DISPA_BG3XH: MainScreen.gpu->setAffineStartWord(3,0,val,1); break;
+		case REG_DISPA_BG3YL: MainScreen.gpu->setAffineStartWord(3,1,val,0); break;
+		case REG_DISPA_BG3YH: MainScreen.gpu->setAffineStartWord(3,1,val,1); break;
+		case REG_DISPB_BG2XL: SubScreen.gpu->setAffineStartWord(2,0,val,0); break;
+		case REG_DISPB_BG2XH: SubScreen.gpu->setAffineStartWord(2,0,val,1); break;
+		case REG_DISPB_BG2YL: SubScreen.gpu->setAffineStartWord(2,1,val,0); break;
+		case REG_DISPB_BG2YH: SubScreen.gpu->setAffineStartWord(2,1,val,1); break;
+		case REG_DISPB_BG3XL: SubScreen.gpu->setAffineStartWord(3,0,val,0); break;
+		case REG_DISPB_BG3XH: SubScreen.gpu->setAffineStartWord(3,0,val,1); break;
+		case REG_DISPB_BG3YL: SubScreen.gpu->setAffineStartWord(3,1,val,0); break;
+		case REG_DISPB_BG3YH: SubScreen.gpu->setAffineStartWord(3,1,val,1); break;
+
 			case REG_DISPA_DISP3DCNT:
 			{
 				MainScreen.gpu->dispx_st->dispA_DISP3DCNT.val = val;
@@ -2194,6 +2211,31 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 		switch(adr)
 		{
+			case REG_DISPA_BG2XL:
+				MainScreen.gpu->setAffineStart(2,0,val);
+				return;
+			case REG_DISPA_BG2YL:
+				MainScreen.gpu->setAffineStart(2,1,val);
+				return;
+			case REG_DISPB_BG2XL:
+				SubScreen.gpu->setAffineStart(2,0,val);
+				return;
+			case REG_DISPB_BG2YL:
+				SubScreen.gpu->setAffineStart(2,1,val);
+				return;
+			case REG_DISPA_BG3XL:
+				MainScreen.gpu->setAffineStart(3,0,val);
+				return;
+			case REG_DISPA_BG3YL:
+				MainScreen.gpu->setAffineStart(3,1,val);
+				return;
+			case REG_DISPB_BG3XL:
+				SubScreen.gpu->setAffineStart(3,0,val);
+				return;
+			case REG_DISPB_BG3YL:
+				SubScreen.gpu->setAffineStart(3,1,val);
+				return;
+
 			case 0x04000600:
 				GFX_FIFOcnt(val);
 				return;

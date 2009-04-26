@@ -2364,7 +2364,10 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 					//NOT TESTED:
 
 					if (dispCnt->OBJ_BMP_2D_dim) // 256*256
+					{
+						//verified by heroes of mana FMV intro
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
+					}
 					else // 128 * 512
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
 				}
@@ -3042,6 +3045,20 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	GPU * gpu = screen->gpu;
 	GPU_tempScanline_valid = false;
 
+	//here is some setup which is only done on line 0
+	if(l == 0) {
+		//this is speculative. the idea is as follows:
+		//whenever the user updates the affine start position regs, it goes into the active regs immediately
+		//(this is handled on the set event from MMU)
+		//maybe it shouldnt take effect until the next hblank or something..
+		//this is a based on a combination of:
+		//heroes of mana intro FMV
+		//SPP level 3-8 rotoscale room
+		//NSMB raster fx backdrops
+		//bubble bobble revolution classic mode
+		gpu->refreshAffineStartRegs();
+	}
+
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	gpu->currLine = (u8)l;
 	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
@@ -3132,6 +3149,42 @@ bool gpu_loadstate(std::istream* is)
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();
+}
+
+u32 GPU::getAffineStart(int layer, int xy)
+{
+	if(xy==0) return affineInfo[layer-2].x;
+	else return affineInfo[layer-2].y;
+}
+
+void GPU::setAffineStartWord(int layer, int xy, u16 val, int word)
+{
+	u32 curr = getAffineStart(layer,xy);
+	if(word==0) curr = (curr&0xFFFF0000)|val;
+	else curr = (curr&0x0000FFFF)|(((u32)val)<<16);
+	setAffineStart(layer,xy,curr);
+}
+
+void GPU::setAffineStart(int layer, int xy, u32 val)
+{
+	if(xy==0) affineInfo[layer-2].x = val;
+	else affineInfo[layer-2].y = val;
+	refreshAffineStartRegs();
+}
+
+void GPU::refreshAffineStartRegs()
+{
+	for(int num=2;num<=3;num++)
+	{
+		BGxPARMS * parms;
+		if (num==2)
+			parms = &(dispx_st)->dispx_BG2PARMS;
+		else
+			parms = &(dispx_st)->dispx_BG3PARMS;		
+
+		parms->BGxX = affineInfo[num-2].x;
+		parms->BGxY = affineInfo[num-2].y;
+	}
 }
 
 void gpu_UpdateRender()
