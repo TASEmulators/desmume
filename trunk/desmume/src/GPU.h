@@ -598,11 +598,20 @@ typedef struct
 
 extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 
+enum BGType {
+	BGType_Invalid=0, BGType_Text=1, BGType_Affine=2, BGType_Large8bpp=3, 
+	BGType_AffineExt=4, BGType_AffineExt_256x16=5, BGType_AffineExt_256x1=6, BGType_AffineExt_Direct=7
+};
+
 struct GPU
 {
 	// some structs are becoming redundant
 	// some functions too (no need to recopy some vars as it is done by MMU)
 	REG_DISPx * dispx_st;
+
+	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
+	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }
+	void modeRender(int layer);
 
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
@@ -611,12 +620,14 @@ struct GPU
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
 
+	u32 BG_bmp_large_ram[4];
 	u32 BG_bmp_ram[4];
 	u32 BG_tile_ram[4];
 	u32 BG_map_ram[4];
 
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
+	BGType BGTypes[4];
 
 	struct MosaicColor {
 		u16 bg[4][256];
@@ -843,9 +854,7 @@ namespace GPU_EXT
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
-extern const short sizeTab[4][4][2];
 extern const size sprSizeTab[4][4];
-extern const s8 mode2type[8][4];
 
 typedef struct {
 	GPU * gpu;
