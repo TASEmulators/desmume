@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 #include "matrix.h"
 
 extern "C" {
@@ -213,6 +214,7 @@ float * MatrixStackPopMatrix (MatrixStack *stack, int size)
 
 float * MatrixStackGetPos (MatrixStack *stack, int pos)
 {
+	assert(pos<31);
 	return &stack->matrix[pos*16];
 }
 
@@ -223,6 +225,7 @@ float * MatrixStackGet (MatrixStack *stack)
 
 void MatrixStackLoadMatrix (MatrixStack *stack, int pos, const float *ptr)
 {
+	assert(pos<31);
 	MatrixCopy (&stack->matrix[pos*16], ptr);
 }
 
