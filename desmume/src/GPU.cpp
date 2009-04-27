@@ -78,15 +78,6 @@ OSDCLASS	*osdB = NULL;
 
 u16			gpu_angle = 0;
 
-const short sizeTab[4][4][2] =
-{
-      {{256,256}, {512, 256}, {256, 512}, {512, 512}},
-      {{128,128}, {256, 256}, {512, 512}, {1024, 1024}},
-      {{128,128}, {256, 256}, {512, 256}, {512, 512}},
-      {{512,1024}, {1024, 512}, {0, 0}, {0, 0}},
-//      {{0, 0}, {0, 0}, {0, 0}, {0, 0}}
-};
-
 const size sprSizeTab[4][4] = 
 {
      {{8, 8}, {16, 8}, {8, 16}, {8, 8}},
@@ -95,34 +86,51 @@ const size sprSizeTab[4][4] =
      {{64, 64}, {64, 32}, {32, 64}, {8, 8}},
 };
 
-const s8 mode2type[8][4] = 
+
+
+static const BGType mode2type[8][4] = 
 {
-      {0, 0, 0, 0},
-      {0, 0, 0, 1},
-      {0, 0, 1, 1},
-      {0, 0, 0, 1},
-      {0, 0, 1, 1},
-      {0, 0, 1, 1},
-      {3, 3, 2, 3},
-      {0, 0, 0, 0}
+      {BGType_Text, BGType_Text, BGType_Text, BGType_Text},
+      {BGType_Text, BGType_Text, BGType_Text, BGType_Affine},
+      {BGType_Text, BGType_Text, BGType_Affine, BGType_Affine},
+      {BGType_Text, BGType_Text, BGType_Text, BGType_AffineExt},
+      {BGType_Text, BGType_Text, BGType_Affine, BGType_AffineExt},
+      {BGType_Text, BGType_Text, BGType_AffineExt, BGType_AffineExt},
+      {BGType_Invalid, BGType_Invalid, BGType_Large8bpp, BGType_Invalid},
+      {BGType_Invalid, BGType_Invalid, BGType_Invalid, BGType_Invalid}
+};
+
+const short sizeTab[8][4][2] =
+{
+	{{0, 0}, {0, 0}, {0, 0}, {0, 0}}, //Invalid
+    {{256,256}, {512,256}, {256,512}, {512,512}}, //text
+    {{128,128}, {256,256}, {512,512}, {1024,1024}}, //affine
+    {{512,1024}, {1024,512}, {0,0}, {0,0}}, //large 8bpp
+	{{0, 0}, {0, 0}, {0, 0}, {0, 0}}, //affine ext (to be elaborated with another value)
+	{{128,128}, {256,256}, {512,512}, {1024,1024}}, //affine ext 256x16
+	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext 256x1
+	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext direct
 };
 
 void lineText(GPU * gpu);
 void lineRot(GPU * gpu);
 void lineExtRot(GPU * gpu);
+void lineNull(GPU * gpu);
+void lineLarge8bpp(GPU * gpu);
 
-typedef void (*TModeRender)(GPU * gpu);
-TModeRender modeRender[8][4] =
+void GPU::modeRender(int layer)
 {
-     {lineText, lineText, lineText, lineText},     //0
-     {lineText, lineText, lineText, lineRot},      //1
-     {lineText, lineText, lineRot, lineRot},       //2
-     {lineText, lineText, lineText, lineExtRot},   //3
-     {lineText, lineText, lineRot, lineExtRot},    //4
-     {lineText, lineText, lineExtRot, lineExtRot}, //5
-     {lineText, lineText, lineText, lineText},     //6
-     {lineText, lineText, lineText, lineText},     //7
-};
+	switch(mode2type[dispCnt().BG_Mode][layer])
+	{
+		case BGType_Text: lineText(this); break;
+		case BGType_Affine: lineRot(this); break;
+		case BGType_AffineExt: lineExtRot(this); break;
+		case BGType_Large8bpp: lineExtRot(this); break;
+		case BGType_Invalid: 
+			PROGINFO("Attempting to render an invalid BG type\n");
+			break;
+	}
+}
 
 static GraphicsInterface_struct *GFXCore=NULL;
 
@@ -841,13 +849,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	//GPU_resortBGs(gpu);
 }
 
-/* this is writing in BGxCNT */
-/* FIXME: all DEBUG_TRI are broken */
+//this handles writing in BGxCNT
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
 	struct _BGxCNT * cnt = &((gpu->dispx_st)->dispx_BGxCNT[num].bits);
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	int mode;
 	
 	T1WriteWord((u8 *)&(gpu->dispx_st)->dispx_BGxCNT[num].val, 0, p);
 	
@@ -857,12 +863,14 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	{
 		gpu->BG_tile_ram[num] = ARM9MEM_BBG;
 		gpu->BG_bmp_ram[num]  = ARM9MEM_BBG;
+		gpu->BG_bmp_large_ram[num]  = ARM9MEM_BBG;
 		gpu->BG_map_ram[num]  = ARM9MEM_BBG;
 	} 
 	else 
 	{
 		gpu->BG_tile_ram[num] = ARM9MEM_ABG +  dispCnt->CharacBase_Block * ADDRESS_STEP_64KB ;
 		gpu->BG_bmp_ram[num]  = ARM9MEM_ABG;
+		gpu->BG_bmp_large_ram[num] = ARM9MEM_ABG;
 		gpu->BG_map_ram[num]  = ARM9MEM_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64KB;
 	}
 
@@ -882,7 +890,30 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 			break;
 	}
 
-	mode = mode2type[dispCnt->BG_Mode][num];
+	BGType mode = mode2type[dispCnt->BG_Mode][num];
+
+	//clarify affine ext modes 
+	if(mode == BGType_AffineExt)
+	{
+		//see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol
+		u8 affineModeSelection = (cnt->Palette_256 << 1) | (cnt->CharacBase_Block & 1) ;
+		switch(affineModeSelection)
+		{
+		case 0:
+		case 1:
+			mode = BGType_AffineExt_256x16;
+			break;
+		case 2:
+			mode = BGType_AffineExt_256x1;
+			break;
+		case 3:
+			mode = BGType_AffineExt_Direct;
+			break;
+		}
+	}
+
+	gpu->BGTypes[num] = mode;
+
 	gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
 	gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 	
@@ -1513,6 +1544,39 @@ static void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * ty
 			mosaicSpriteLinePixel(gpu,i,l,dst,dst_alpha,typeTab,prioTab);
 }
 
+void lineLarge8bpp(GPU * gpu)
+{
+	if(gpu->core == 1) {
+		PROGINFO("Cannot use large 8bpp screen on sub core\n");
+		return;
+	}
+
+	BGxOFS * ofs = &gpu->dispx_st->dispx_BGxOFS[gpu->currBgNum];
+	u8 num = gpu->currBgNum;
+	u16 XBG = T1ReadWord((u8 *)&ofs->BGxHOFS, 0);
+	u16 YBG = gpu->currLine + T1ReadWord((u8 *)&ofs->BGxVOFS, 0);
+	u16 lg     = gpu->BGSize[num][0];
+	u16 ht     = gpu->BGSize[num][1];
+	u16 wmask  = (lg-1);
+	u16 hmask  = (ht-1);
+	YBG &= hmask;
+
+	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
+
+	u32 tmp_map = gpu->BG_bmp_large_ram[num] + lg * YBG;
+	u8* map = MMU_RenderMapToLCD(tmp_map);
+
+	u8* pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
+
+	for(int x = 0; x < lg; ++x, ++XBG)
+	{
+		XBG &= wmask;
+		u8 pixel = map[XBG];
+		u16 color = T1ReadWord(pal, pixel<<1);
+		gpu->__setFinalColorBck(color,x,color!=0);
+	}
+	
+}
 
 /*****************************************************************************/
 //			BACKGROUND RENDERING -TEXT-
@@ -1768,15 +1832,10 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	
 	u8 *map, *tile, *pal;
-	u8 affineModeSelection ;
 
-	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
-	affineModeSelection = (bgCnt->Palette_256 << 1) | (bgCnt->CharacBase_Block & 1) ;
-//	printf("extrot mode %d\n", affineModeSelection);
-	switch(affineModeSelection)
+	switch(gpu->BGTypes[num])
 	{
-	case 0 :
-	case 1 :
+	case BGType_AffineExt_256x16:
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
 		if (!map) return;
 		tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
@@ -1789,18 +1848,25 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 		// 16  bit bgmap entries
 		apply_rot_fun<rot_tiled_16bit_entry>(gpu,X,Y,PA,PB,PC,PD,LG, map, tile, pal, dispCnt->ExBGxPalette_Enable);
 		return;
-	case 2 :
+	case BGType_AffineExt_256x1:
 		// 256 colors 
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
 		if (!map) return;
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		apply_rot_fun<rot_256_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
 		return;
-	case 3 :
+	case BGType_AffineExt_Direct:
 		// direct colors / BMP
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
 		if (!map) return;
 		apply_rot_fun<rot_BMP_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, NULL, 0);
+		return;
+	case BGType_Large8bpp:
+		// large screen 256 colors
+		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_large_ram[num]);
+		if (!map) return;
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		apply_rot_fun<rot_256_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
 		return;
 	}
 }
@@ -1808,6 +1874,10 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 /*****************************************************************************/
 //			BACKGROUND RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
+
+void lineNull(GPU * gpu)
+{
+}
 
 void lineText(GPU * gpu)
 {
@@ -2722,7 +2792,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							continue;
 						}
 					}
-					modeRender[dispCnt->BG_Mode][i16](gpu);
+					gpu->modeRender(i16);
 				} //layer enabled
 			}
 		}
