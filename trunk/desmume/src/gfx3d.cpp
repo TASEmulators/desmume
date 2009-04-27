@@ -414,6 +414,8 @@ void gfx3d_glStoreMatrix(u32 v)
 	if(mymode==0)
 		v = 0;
 
+	if(v==31) v=30; //? what should happen in this case?
+
 	MatrixStackLoadMatrix (&mtxStack[mymode], v&31, mtxCurrent[mymode]);
 	if(mymode==2)
 		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
@@ -427,6 +429,8 @@ void gfx3d_glRestoreMatrix(u32 v)
 	//for the projection matrix, the provided value is supposed to be reset to zero
 	if(mymode==0)
 		v = 0;
+
+	if(v==31) v=30; //? what should happen in this case?
 
 	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v&31));
 	if (mymode == 2)
