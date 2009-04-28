@@ -11,7 +11,7 @@ struct ALIGN(16) ARM9_struct {
         u8 ARM9_REG[0x1000000];
         u8 ARM9_BIOS[0x8000];
         u8 ARM9_VMEM[0x800];
-        u8 ARM9_LCD[0xA4000];
+        u8 ARM9_LCD[0xA4000+0x4000]; //an extra 16KB for blank memory
         u8 ARM9_OAM[0x800];
 
 		u8* ExtPal[2][4];

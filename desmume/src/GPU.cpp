@@ -1592,8 +1592,9 @@ INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG, u16 LG)
 	u16 wmask  = (lg-1);
 	u16 hmask  = (ht-1);
 	u16 tmp    = ((YBG & hmask) >> 3);
-	u8 *map    = NULL;
-	u8 *tile, *pal, *line;
+	u32 map;
+	u8 *pal, *line;
+	u32 tile;
 	u16 color;
 	u16 xoff;
 	u16 yoff;
@@ -1601,18 +1602,19 @@ INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG, u16 LG)
 	u16 xfin;
 
 	s8 line_dir = 1;
-	u8 * mapinfo;
+	u32 mapinfo;
 	TILEENTRY tileentry;
 
 	u32 tmp_map = gpu->BG_map_ram[num] + (tmp&31) * 64;
 	if(tmp>31) 
 		tmp_map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
 
-	map = (u8*)MMU_RenderMapToLCD(tmp_map);
-	if(!map) return; 	// no map
+	//map = (u8*)MMU_RenderMapToLCD(tmp_map);
+	map = tmp_map;
+	//if(!map) return; 	// no map
 	
-	tile = (u8*) MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
-	if(!tile) return; 	// no tiles
+	tile = gpu->BG_tile_ram[num];
+	//if(!tile) return; 	// no tiles
 
 	xoff = XBG;
 	pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
@@ -1627,11 +1629,11 @@ INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG, u16 LG)
 			tmp = ((xoff&wmask)>>3);
 			mapinfo = map + (tmp&0x1F) * 2;
 			if(tmp>31) mapinfo += 32*32*2;
-			tileentry.val = T1ReadWord(mapinfo, 0);
+			tileentry.val = T1ReadWord(MMU_gpu_map(mapinfo), 0);
 
 			tilePalette = (tileentry.bits.Palette*16);
 
-			line = (u8 * )tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip) ? (7*4)-yoff : yoff);
+			line = (u8*)MMU_gpu_map(tile + (tileentry.bits.TileNum * 0x20) + ((tileentry.bits.VFlip) ? (7*4)-yoff : yoff));
 			
 			if(tileentry.bits.HFlip)
 			{
@@ -1690,9 +1692,9 @@ INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG, u16 LG)
 		tmp = (xoff & (lg-1))>>3;
 		mapinfo = map + (tmp & 31) * 2;
 		if(tmp > 31) mapinfo += 32*32*2;
-		tileentry.val = T1ReadWord(mapinfo, 0);
+		tileentry.val = T1ReadWord(MMU_gpu_map(mapinfo), 0);
 
-		line = (u8 * )tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff);
+		line = (u8*)MMU_gpu_map(tile + (tileentry.bits.TileNum*0x40) + ((tileentry.bits.VFlip) ? (7*8)-yoff : yoff));
 
 		if(tileentry.bits.HFlip)
 		{
