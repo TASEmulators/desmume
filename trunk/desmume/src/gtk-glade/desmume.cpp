@@ -131,17 +131,8 @@ static void Draw()
 
 gboolean EmuLoop(gpointer data)
 {
-	/*
-	int i;
-	if (!noticed_3D) {
-		GtkWidget * dlg = glade_xml_get_widget(xml, "w3Dop");
-		gtk_widget_show(dlg);
-		noticed_3D=TRUE;
-	}*/
-		
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
-	 // static int limiter_frame_counter = 0;	
 		if(Frameskip == 0)
 			NDS_SkipFrame(false);
 		else
@@ -181,16 +172,6 @@ gboolean EmuLoop(gpointer data)
 		}
 		
 		ticksPrevFrame = SDL_GetTicks();
-
-             /*   if ( !glade_fps_limiter_disabled) {
-                  limiter_frame_counter += 1;
-                  if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
-                    limiter_frame_counter = 0;
-
-                    /* wait for the timer to expire *-/
-                    SDL_SemWait( glade_fps_limiter_semaphore);
-                  }
-                }*/
 
 		return TRUE;
 	}
