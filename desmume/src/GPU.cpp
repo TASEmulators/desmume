@@ -53,6 +53,7 @@
 #include "GPU_osd.h"
 #include "debug.h"
 #include "NDSSystem.h"
+#include "readwrite.h"
 
 ARM9_struct ARM9Mem;
 
@@ -2794,6 +2795,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							continue;
 						}
 					}
+					//if(gpu->core == 1 && i16 != 1) continue;
 					gpu->modeRender(i16);
 				} //layer enabled
 			}
@@ -3212,12 +3214,40 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 void gpu_savestate(std::ostream* os)
 {
+	//version
+	write32le(0,os);
+	
 	os->write((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
+	
+	write32le(MainScreen.gpu->affineInfo[0].x,os);
+	write32le(MainScreen.gpu->affineInfo[0].y,os);
+	write32le(MainScreen.gpu->affineInfo[1].x,os);
+	write32le(MainScreen.gpu->affineInfo[1].y,os);
+	write32le(SubScreen.gpu->affineInfo[0].x,os);
+	write32le(SubScreen.gpu->affineInfo[0].y,os);
+	write32le(SubScreen.gpu->affineInfo[1].x,os);
+	write32le(SubScreen.gpu->affineInfo[1].y,os);
 }
 
 bool gpu_loadstate(std::istream* is)
 {
+	//read version
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(version != 0) return false;
+
 	is->read((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
+	read32le(&MainScreen.gpu->affineInfo[0].x,is);
+	read32le(&MainScreen.gpu->affineInfo[0].y,is);
+	read32le(&MainScreen.gpu->affineInfo[1].x,is);
+	read32le(&MainScreen.gpu->affineInfo[1].y,is);
+	read32le(&SubScreen.gpu->affineInfo[0].x,is);
+	read32le(&SubScreen.gpu->affineInfo[0].y,is);
+	read32le(&SubScreen.gpu->affineInfo[1].x,is);
+	read32le(&SubScreen.gpu->affineInfo[1].y,is);
+
+	MainScreen.gpu->refreshAffineStartRegs();
+	SubScreen.gpu->refreshAffineStartRegs();
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();

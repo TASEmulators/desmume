@@ -61,6 +61,9 @@
 void gfx3d_init();
 void gfx3d_reset();
 
+#define OSWRITE(x) os->write((char*)&(x),sizeof((x)));
+#define OSREAD(x) is->read((char*)&(x),sizeof((x)));
+
 struct POLY {
 	int type; //tri or quad
 	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
