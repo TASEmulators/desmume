@@ -5,6 +5,7 @@ General/Core:
 Gtk frontend:
  enh: switch all of menu/toolbar system to GtkAction + GtkUIManager [matusz]
  enh: remove the gtglext 3d code [rm]
+ enh: fix screen resize in gtk frontend, just resize the window [matusz]
 
 Windows:
  bug: fixed many bugs in Cheats [CrazyMax]
