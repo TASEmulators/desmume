@@ -181,7 +181,32 @@ extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
 
 extern u8 *MMU_RenderMapToLCD(u32 vram_addr);
-extern void* MMU_gpu_map(u32 vram_addr);
+
+#define VRAM_ARM9_PAGES 512
+extern u8 vram_arm9_map[VRAM_ARM9_PAGES];
+FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
+{
+	//THIS FUNCTION IS NOT AS DANGEROUS!
+	//as an alternative to the above, use this:
+	//it is supposed to map a single gpu vram address to emulator host memory
+	//but it returns a pointer to some zero memory in case of accesses to unmapped memory.
+	//this correctly handles the case with tile accesses to unmapped memory.
+	//it could also potentially go through a different LUT than vram_arm9_map in case we discover
+	//that it needs to be set up with different or no mirroring
+	//(I think it is a reasonable possibility that only the cpu has the nutty mirroring rules)
+	//
+	//if this system isn't used, Fantasy Aquarium displays garbage in the first ingame screen
+	//due to it storing 0x0F0F or somesuch in screen memory which points to a ridiculously big tile
+	//which should contain all 0 pixels
+
+	u32 vram_page = (vram_addr>>14)&(VRAM_ARM9_PAGES-1);
+	u32 ofs = vram_addr & 0x3FFF;
+	vram_page = vram_arm9_map[vram_page];
+	//blank pages are handled by the extra 16KB of blank memory at the end of ARM9_LCD
+	//and the fact that blank pages are mapped to appear at that location
+	return ARM9Mem.ARM9_LCD + (vram_page<<14) + ofs;
+}
+
 
 enum MMU_ACCESS_TYPE
 {

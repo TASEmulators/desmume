@@ -289,7 +289,6 @@ u8 vram_lcdc_map[VRAM_LCDC_PAGES];
 
 //in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
 //this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
-#define VRAM_ARM9_PAGES 512
 u8 vram_arm9_map[VRAM_ARM9_PAGES];
 
 //this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7
@@ -419,29 +418,6 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 	else return ARM9Mem.ARM9_LCD + (vram_addr - LCDC_HACKY_LOCATION);
 }
 
-
-FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
-{
-	//THIS FUNCTION IS NOT AS DANGEROUS!
-	//as an alternative to the above, use this:
-	//it is supposed to map a single gpu vram address to emulator host memory
-	//but it returns a pointer to some zero memory in case of accesses to unmapped memory.
-	//this correctly handles the case with tile accesses to unmapped memory.
-	//it could also potentially go through a different LUT than vram_arm9_map in case we discover
-	//that it needs to be set up with different or no mirroring
-	//(I think it is a reasonable possibility that only the cpu has the nutty mirroring rules)
-	//
-	//if this system isn't used, Fantasy Aquarium displays garbage in the first ingame screen
-	//due to it storing 0x0F0F or somesuch in screen memory which points to a ridiculously big tile
-	//which should contain all 0 pixels
-
-	u32 vram_page = (vram_addr>>14)&(VRAM_ARM9_PAGES-1);
-	u32 ofs = vram_addr & 0x3FFF;
-	vram_page = vram_arm9_map[vram_page];
-	//blank pages are handled by the extra 16KB of blank memory at the end of ARM9_LCD
-	//and the fact that blank pages are mapped to appear at that location
-	return ARM9Mem.ARM9_LCD + (vram_page<<14) + ofs;
-}
 
 template<u8 DMA_CHANNEL>
 void DMAtoVRAMmapping()
