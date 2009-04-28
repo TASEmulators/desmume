@@ -31,7 +31,7 @@ dnl - Check for intltool/gettext macros
 m4_ifdef([IT_PROG_INTLTOOL],[IT_PROG_INTLTOOL])
 
 dnl - Check for zlib
-AC_CHECK_LIB(z, gzopen)
+AC_CHECK_LIB(z, gzopen, [], [AC_MSG_ERROR([zlib was not found, we can't go further. Please install it or specify the location where it's installed.])])
 
 dnl - Check for zziplib
 AC_CHECK_LIB(zzip, zzip_open)
@@ -78,17 +78,11 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
                       glib-2.0 >= $GLIB_VER,
                       HAVE_GLIB=yes,
                       HAVE_GLIB=no)
-    if test "$HAVE_GLIB" = "no"; then
-      AC_MSG_ERROR([glib-2.0 >= $GLIB_VER is required to build desmume gtk frontend])
-    fi
 
     PKG_CHECK_MODULES(GTK,
                       gtk+-2.0 >= $GTK_VER,
                       HAVE_GTK=yes,
                       HAVE_GTK=no)
-    if test "$HAVE_GTK" = "no"; then
-      AC_MSG_ERROR([gtk-2.0 >= $GTK_VER is required to build desmume gtk frontend])
-    fi
     AC_SUBST(GTK_CFLAGS)
     AC_SUBST(GTK_LIBS)
 
