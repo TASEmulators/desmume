@@ -430,6 +430,10 @@ FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
 	//it could also potentially go through a different LUT than vram_arm9_map in case we discover
 	//that it needs to be set up with different or no mirroring
 	//(I think it is a reasonable possibility that only the cpu has the nutty mirroring rules)
+	//
+	//if this system isn't used, Fantasy Aquarium displays garbage in the first ingame screen
+	//due to it storing 0x0F0F or somesuch in screen memory which points to a ridiculously big tile
+	//which should contain all 0 pixels
 
 	u32 vram_page = (vram_addr>>14)&(VRAM_ARM9_PAGES-1);
 	u32 ofs = vram_addr & 0x3FFF;
@@ -532,6 +536,11 @@ static inline u8* MMU_vram_physical(const int page)
 //todo - templateize
 //note: it doesnt seem right to me to map LCDC whenever a bank is allocated to BG/OBJ but thats how it is
 //(in FF4, when entering a town from worldmap, the subscreen tiles are via LCDC while mapped to sub BG)
+//UPDATED: i had to take them out in order to fix tetris DS music mode.
+//since then, other issues fixed FF4's problems, so they are staying out for now
+//as further, almost definitive proof that these should remain unmapped,
+//making them mapped permit's spiderman2's legal screens / intro FMV to render garbage
+//on top of the studio logo if you interrupt it by pressing enter. 
 static inline void MMU_VRAMmapRefreshBank(const int bank)
 {
 	int block = bank;
@@ -557,7 +566,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //AOBJ
@@ -565,7 +574,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				switch(ofs) {
 				case 0:
 				case 1:
-					MMU_vram_lcdc(bank);
+					//MMU_vram_lcdc(bank);
 					MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+ofs*8);
 					break;
 				default:
@@ -591,7 +600,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //arm7
@@ -613,7 +622,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //BGB or BOBJ
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				if(bank == VRAM_BANK_C)  {
 					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 					MMU_vram_arm9(bank,VRAM_PAGE_BBG); //BBG
@@ -635,11 +644,11 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG);
 				break;
 			case 2: //AOBJ
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ);
 				break;
@@ -675,13 +684,13 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring (required by spyro eternal night)
 				break;
 			case 2: //AOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
 				break;
@@ -723,7 +732,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //BBG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG + 4); //unexpected mirroring
 				break;
@@ -748,13 +757,13 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //BBG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+2);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+3); //unexpected mirroring
 				break;
 			case 2: //BOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
-				MMU_vram_lcdc(bank);
+				//MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
 				break;
 			case 3: //B OBJ extended palette
