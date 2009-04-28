@@ -130,6 +130,8 @@ void GPU::modeRender(int layer)
 		case BGType_Invalid: 
 			PROGINFO("Attempting to render an invalid BG type\n");
 			break;
+		default:
+			break;
 	}
 }
 
@@ -1871,6 +1873,7 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		apply_rot_fun<rot_256_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
 		return;
+	default: break;
 	}
 }
 
