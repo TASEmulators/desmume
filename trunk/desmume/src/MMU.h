@@ -181,6 +181,7 @@ extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
 
 extern u8 *MMU_RenderMapToLCD(u32 vram_addr);
+extern void* MMU_gpu_map(u32 vram_addr);
 
 enum MMU_ACCESS_TYPE
 {
