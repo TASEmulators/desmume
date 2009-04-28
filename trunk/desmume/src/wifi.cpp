@@ -513,12 +513,14 @@ static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 		wifi->txSlotLen[slot] = txLen;
 		wifi->txSlotRemainingBytes[slot] = (txLen + 12);
 
-	/*	WIFI_Host_SendData(wifi->udpSocket,wifi->channel,(u8 *)&wifi->circularBuffer[address],txLen) ;
+#if 0
+		WIFI_Host_SendData(wifi->udpSocket,wifi->channel,(u8 *)&wifi->circularBuffer[address],txLen) ;
 		WIFI_SoftAP_RecvPacketFromDS(wifi, (u8*)&wifi->circularBuffer[address+6], txLen);
-		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDCOMPLETE*-/1) ;
+		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDCOMPLETE*/1) ;
 
 		wifi->circularBuffer[address] = 0x0001;
-		wifi->circularBuffer[address+4] &= 0x00FF;*/
+		wifi->circularBuffer[address+4] &= 0x00FF;
+#endif
 	}
 } 
 
@@ -684,17 +686,19 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 			wifi->TXSlot[(address - REG_WIFI_TXLOC1) >> 2] = val ;
 			break ;
 		case REG_WIFI_TXOPT:
-		/*	if (val == 0xFFFF)
+#if 0
+			if (val == 0xFFFF)
 			{
-				/* reset TX logic *-/
-				/* CHECKME *-/
+				/* reset TX logic */
+				/* CHECKME */
             //    wifi->TXSlot[0] = 0 ; wifi->TXSlot[1] = 0 ; wifi->TXSlot[2] = 0 ;
                 wifi->TXOpt = 0 ;
                 wifi->TXCnt = 0 ;
 			} else
 			{
 				wifi->TXOpt = val ;
-			}*/
+			}
+#endif
 			wifi->TXCnt &= ~val;
 			break ;
 		case REG_WIFI_TXCNT:
@@ -958,22 +962,24 @@ void WIFI_usTrigger(wifimac_t *wifi)
 	}
 	/* receive check, given a 2 mbit connection, 2 bits per usec can be transfered. */
 	/* for a packet of 32 Bytes, at least 128 usec passed, we will use the 32 byte accuracy to reduce load */
-	/*if (!(wifi->RXCheckCounter++ & 0x7F))
+#if 0
+	if (!(wifi->RXCheckCounter++ & 0x7F))
 	{
-		/* check if data arrived in the meantime *-/
+		/* check if data arrived in the meantime */
 		rcvSize = WIFI_Host_RecvData(wifi->udpSocket,dataBuffer,0x2000) ;
 		if (rcvSize)
 		{
 			u16 i ;
-			/* process data, put it into mac memory *-/
-			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVSTART*-/6) ;
+			/* process data, put it into mac memory */
+			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVSTART*/6) ;
 			for (i=0;i<(rcvSize+1) << 1;i++)
 			{
 				WIFI_RXPutWord(wifi,((u16 *)dataBuffer)[i]) ;
 			}
-			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVCOMPLETE*-/0) ;
+			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVCOMPLETE*/0) ;
 		}
-	}*/
+	}
+#endif
 	if((wifi->usec & 3) == 0)
 	{
 		int slot = wifi->txCurSlot;
