@@ -34,7 +34,7 @@ static INLINE u8 T1ReadByte(u8 * mem, u32 addr)
 static INLINE u16 T1ReadWord(void * mem, u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
-   return (mem[addr + 1] << 8) | mem[addr];
+   return (((u8*)mem)[addr + 1] << 8) | ((u8*)mem)[addr];
 #else
    return *((u16 *) ((u8*)mem + addr));
 #endif
