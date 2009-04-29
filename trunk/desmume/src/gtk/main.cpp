@@ -64,7 +64,7 @@ static u32 backupmemorysize=1;
 
 static const char *bad_glob_cflash_disk_image_file;
 
-#define SCREENS_PIXEL_SIZE 98304
+#define SCREENS_PIXEL_SIZE (256*192*2)
 
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
@@ -114,6 +114,7 @@ static void MenuLoad(GtkMenuItem *item, gpointer slot);
 static void About();//GtkWidget* widget, gpointer data);
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
 static void desmume_gtk_mic_noise (GtkToggleAction *action);
+static void SetRotation (GtkToggleAction *action, gpointer data);
 static void Modify_Layer(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
@@ -124,6 +125,8 @@ static const char *ui_description =
 "  <menubar name='MainMenu'>"
 "    <menu action='FileMenu'>"
 "      <menuitem action='open'/>"
+//"      <menuitem action='savestateto'/>"
+//"      <menuitem action='loadstatefrom'/>"
 "      <menu action='SavestateMenu'>"
 "        <menuitem action='savestate1'/>"
 "        <menuitem action='savestate2'/>"
@@ -195,6 +198,12 @@ static const char *ui_description =
 "        <menuitem action='save_t5'/>"
 "        <menuitem action='save_t6'/>"
 "      </menu>"
+"      <menu action='RotationMenu'>"
+"        <menuitem action='rotate_0'/>"
+"        <menuitem action='rotate_90'/>"
+"        <menuitem action='rotate_180'/>"
+"        <menuitem action='rotate_270'/>"
+"      </menu>"
 "      <menuitem action='editctrls'/>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
@@ -214,37 +223,44 @@ static const char *ui_description =
   
 static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
-    { "EmulationMenu", NULL, "_Emulation" },
-    { "ConfigMenu", NULL, "_Config" },
-    { "ToolsMenu", NULL, "_Tools" },
-    { "HelpMenu", NULL, "_Help" },
 
-    { "SavestateMenu", NULL, "Sa_ve state" },
-    { "LoadstateMenu", NULL, "_Load state" },
-
-    { "FrameskipMenu", NULL, "_Frameskip" },
-    { "LayersMenu", NULL, "_Layers" },
-
-    { "ConfigSaveMenu", NULL, "_Saves" },
-
-    { "open",       "gtk-open",         "_Open",         "<Ctrl>o",  NULL,   Open_Select },
+      { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   Open_Select },
+//      { "savestateto",    NULL,         "S_ave state as ...",         NULL,  NULL,   Open_Select },
+//      { "loadstatefrom",  NULL,         "Load state f_rom ...",         NULL,  NULL,   Open_Select },
+      { "SavestateMenu", NULL, "Sa_ve state" },
+      { "LoadstateMenu", NULL, "_Load state" },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
-    { "loadfirmware","gtk-open",        "_Load Firmware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
+      { "loadfirmware","gtk-open",        "_Load Firmware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
 #endif
-    { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
-    { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   gtk_main_quit },
+      { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
+      { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   gtk_main_quit },
 
-    { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
-    { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
-    { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
+    { "EmulationMenu", NULL, "_Emulation" },
+      { "run",        "gtk-media-play",   "_Run",          "<Ctrl>r",  NULL,   Launch },
+      { "pause",      "gtk-media-pause",  "_Pause",        "<Ctrl>p",  NULL,   Pause },
+      { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
+      { "FrameskipMenu", NULL, "_Frameskip" },
+      { "LayersMenu", NULL, "_Layers" },
 
-    { "editctrls",  NULL,               "_Edit controls",NULL,       NULL,   Edit_Controls },
-    { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
+    { "ConfigMenu", NULL, "_Config" },
+      { "ConfigSaveMenu", NULL, "_Saves" },
+      { "editctrls",  NULL,               "_Edit controls",NULL,       NULL,   Edit_Controls },
+      { "RotationMenu", NULL, "_Rotation" },
+        { "rotate_0",   "gtk-orientation-portrait",          "_0",  NULL, NULL, G_CALLBACK(SetRotation) },
+        { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, G_CALLBACK(SetRotation) },
+        { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, G_CALLBACK(SetRotation) },
+        { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, G_CALLBACK(SetRotation) },
+
+
+    { "ToolsMenu", NULL, "_Tools" },
+
+    { "HelpMenu", NULL, "_Help" },
+      { "about",      "gtk-about",        "_About",        NULL,       NULL,   About }
 };
 
 static const GtkToggleActionEntry toggle_entries[] = {
     { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE},
-    { "micnoise", NULL, "_Fake mic noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE}//,
+    { "micnoise", NULL, "Fake _mic noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE}
 };
 
 static const GtkRadioActionEntry frameskip_entries[] = {
@@ -269,8 +285,6 @@ static const GtkRadioActionEntry savet_entries[] = {
     { "save_t5", NULL, "_5 FLASH 2mbit",    NULL, NULL, 5},
     { "save_t6", NULL, "_6 FLASH 4mbit",    NULL, NULL, 6}
 };
-
-GtkActionGroup * action_group;
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
@@ -533,11 +547,12 @@ uint Frameskip = 0;
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
-
-/** The target for the expose event */
-static GtkWidget *nds_screen_widget;
+GtkActionGroup * action_group;
+GtkUIManager *ui_manager;
+GtkAspectFrame * pAspectFrame;
 
 float nds_screen_size_ratio = 1.0f;
+int nds_screen_rotation_angle = 0.0f;
 
 static BOOL regMainLoop = FALSE;
 
@@ -679,13 +694,42 @@ static void Reset()
 
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
-
-static inline void gpu_screen_to_rgb(u8 *rgb, int size)
+#define SCREEN_BYTES_PER_PIXEL 3
+static inline void gpu_screen_to_rgb(u8 * rgb, int size)
 {
-    for (int i = 0; i < size; i++) {
-        rgb[(i*3)+0] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 0) & 0x1f) << 3;
-        rgb[(i*3)+1] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 5) & 0x1f) << 3;
-        rgb[(i*3)+2] = ((*((u16 *)&GPU_screen[(i<<1)]) >> 10) & 0x1f) << 3;
+    u16 gpu_pixel;
+    int rot = nds_screen_rotation_angle;
+    int bytesize = size * SCREEN_BYTES_PER_PIXEL;
+    gint W, H;
+    gtk_widget_get_size_request(pDrawingArea, &W, &H);
+    memset(rgb, 0, bytesize);
+    for (int i = 0; i < 256; i++) {
+        for (int j = 0; j < 384; j++) {
+
+            gpu_pixel = *((u16 *) & GPU_screen[(i + j * 256 << 1)]);
+            u32 offset;
+            if(rot == 0 || rot == 180)
+              offset = i * 3 + j * 3 * 256;
+            else
+              offset = j * 3 + i * 3 * 384;
+            switch (rot) {
+            case 0:
+            case 90:
+                *(rgb + offset + 0) = ((gpu_pixel >> 0) & 0x1f) << 3;
+                *(rgb + offset + 1) = ((gpu_pixel >> 5) & 0x1f) << 3;
+                *(rgb + offset + 2) = ((gpu_pixel >> 10) & 0x1f) << 3;
+                break;
+            case 180:
+            case 270:
+                *(rgb + bytesize - offset - 3) =
+                    ((gpu_pixel >> 0) & 0x1f) << 3;
+                *(rgb + bytesize - offset - 2) =
+                    ((gpu_pixel >> 5) & 0x1f) << 3;
+                *(rgb + bytesize - offset - 1) =
+                    ((gpu_pixel >> 10) & 0x1f) << 3;
+                break;
+            }
+        }
     }
 }
 
@@ -693,20 +737,22 @@ static inline void gpu_screen_to_rgb(u8 *rgb, int size)
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
     GdkPixbuf *origPixbuf, *resizedPixbuf;
-    guchar rgb[SCREENS_PIXEL_SIZE*3];
+    guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
     float ssize;
+    gint W, H;
+    gtk_widget_get_size_request(pDrawingArea, &W, &H);
 
-    nds_screen_size_ratio = 256.0 / (float)widget->allocation.width;
+    nds_screen_size_ratio = W / (float)widget->allocation.width;
     ssize = 1 / (float)nds_screen_size_ratio;
 
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
-    origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 0, 8, 256, 192*2, 256*3, NULL, NULL);
+    origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 0, 8, W, H, W*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
     if(nds_screen_size_ratio != 1.0) {
-        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*256, ssize*2*192, GDK_INTERP_BILINEAR);
-        gdk_draw_pixbuf(widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*256, ssize*2*192, GDK_RGB_DITHER_NONE, 0,0);
+        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*W, ssize*H, GDK_INTERP_BILINEAR);
+        gdk_draw_pixbuf(widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*W, ssize*H, GDK_RGB_DITHER_NONE, 0,0);
         g_object_unref(resizedPixbuf);
     } else {
-        gdk_draw_pixbuf(widget->window, NULL, origPixbuf, 0,0,0,0, ssize*256, ssize*2*192, GDK_RGB_DITHER_NONE, 0,0);
+        gdk_draw_pixbuf(widget->window, NULL, origPixbuf, 0,0,0,0, ssize*W, ssize*H, GDK_RGB_DITHER_NONE, 0,0);
     }
     g_object_unref(origPixbuf);
 
@@ -963,18 +1009,33 @@ static void Edit_Controls()
 
 }
 
-///////////////////////////////// SCREEN SCALING //////////////////////////////
-
-#define MAX_SCREENCOEFF 4 
-
-static void Modify_ScreenCoeff(GtkWidget* widget, gpointer data)
-{
-    guint Size = GPOINTER_TO_UINT(data);
-
-    nds_screen_size_ratio = 1/(float)Size;
-}
-
 /////////////////////////////// LAYER HIDING /////////////////////////////////
+
+static void SetRotation(GtkToggleAction* action, gpointer data)
+{
+    const gchar *angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
+    nds_screen_rotation_angle = atoi(angle);
+    int a = nds_screen_rotation_angle;
+    if( a != 0 && a != 90 && a != 180 && a != 270 ){
+        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s)", angle);
+        exit(1);
+    }
+    gint H, W;
+    gfloat ratio;
+    if(a == 90 || a == 270){
+        W = 384; H = 256;
+    } else {
+        W = 256; H = 384;
+    }
+    ratio = (gfloat) W / (gfloat) H;
+    gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
+    gtk_aspect_frame_set (pAspectFrame , 
+                          0.5, /* center x */
+                          0.5, /* center y */
+                          ratio, /* xsize/ysize */
+                          FALSE /* ignore child's aspect */);
+    
+}
 
 static void Modify_Layer(GtkToggleAction* action, gpointer data)
 {
@@ -1212,7 +1273,7 @@ gboolean EmuLoop(gpointer data)
     NDS_SkipFrame(false);
 
     _updateDTools();
-    gtk_widget_queue_draw( nds_screen_widget);
+    gtk_widget_queue_draw( pDrawingArea );
 
     if (!gtk_fps_limiter_disabled) {
         limiter_frame_counter += 1;
@@ -1274,12 +1335,12 @@ static void desmume_gtk_menu_file_saveload_slot (GtkActionGroup *ag)
         snprintf(name, 60, "savestate%d", i);
         act = gtk_action_new(name, label, NULL, NULL);
         g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuSave), GUINT_TO_POINTER(i));
-        gtk_action_group_add_action(ag, GTK_ACTION(act));
+        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
 
         snprintf(name, 60, "loadstate%d", i);
         act = gtk_action_new(name, label, NULL, NULL);
         g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(MenuLoad), GUINT_TO_POINTER(i));
-        gtk_action_group_add_action(ag, GTK_ACTION(act));
+        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
     }
 }
 
@@ -1310,7 +1371,7 @@ static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
         act = gtk_toggle_action_new(Layers_Menu[i][0],Layers_Menu[i][1],NULL,NULL);
         gtk_toggle_action_set_active(act, TRUE);
         g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
-        gtk_action_group_add_action(ag, GTK_ACTION(act));
+        gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
     }
 }
 
@@ -1453,7 +1514,6 @@ common_gtk_main( struct configured_features *my_config)
     pVBox = gtk_vbox_new(FALSE, 0);
     gtk_container_add(GTK_CONTAINER(pWindow), pVBox);
 
-    GtkUIManager *ui_manager;
     ui_manager = gtk_ui_manager_new ();
     accel_group = gtk_accel_group_new();
     action_group = gtk_action_group_new("dui");
@@ -1489,18 +1549,16 @@ common_gtk_main( struct configured_features *my_config)
     pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
     gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
 
-    GtkWidget * pAspectFrame;
-
-    pAspectFrame = gtk_aspect_frame_new (NULL, /* label */
+    pAspectFrame = GTK_ASPECT_FRAME(gtk_aspect_frame_new (NULL, /* label */
                                          0.5, /* center x */
                                          0.5, /* center y */
                                          256.0/384.0, /* xsize/ysize */
-                                         FALSE /* ignore child's aspect */);
+                                         FALSE /* ignore child's aspect */));
 
-    gtk_container_add (GTK_CONTAINER (pVBox), pAspectFrame);
+    gtk_container_add (GTK_CONTAINER (pVBox), GTK_WIDGET(pAspectFrame));
 
     /* Creating the place for showing DS screens */
-    pDrawingArea= gtk_drawing_area_new();
+    pDrawingArea = gtk_drawing_area_new();
 
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), 256, 384);
 
@@ -1519,8 +1577,6 @@ common_gtk_main( struct configured_features *my_config)
     g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
                      G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
     gtk_container_add (GTK_CONTAINER (pAspectFrame), pDrawingArea);
-
-    nds_screen_widget = pDrawingArea;
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
