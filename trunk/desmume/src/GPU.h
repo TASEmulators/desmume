@@ -533,7 +533,7 @@ typedef struct
 /*12*/    unsigned PaletteIndex:4;
 /*10*/    unsigned Priority:2;
 // attr3
-unsigned attr3:16;    
+          unsigned attr3:16;    
 #else
 // attr0
 /* 0*/	unsigned Y:8;
@@ -559,12 +559,22 @@ unsigned attr3:16;
 
 typedef struct
 {
+#ifdef WORDS_BIGENDIAN
+	 u8 attr00;
+	 u8 attr01;
+	 u8 attr10;
+	 u8 attr11;
+	 u8 attr20;
+	 u8 attr21;
+	 u8 attr30;
+	 u8 attr31;
+#else
 	 u16 attr0;
 	 u16 attr1;
 	 u16 attr2;
 	 u16 attr3;
+#endif
 } OAM;
-
 
 
 typedef struct
