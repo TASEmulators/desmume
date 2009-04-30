@@ -227,6 +227,10 @@ int ZIPROMReaderSeek(void * file, int offset, int whence)
 
 int ZIPROMReaderRead(void * file, void * buffer, u32 size)
 {
+#ifdef ZZIP_OLD_READ
+	return zzip_read((ZZIP_FILE*)file, (char *) buffer, size);
+#else
 	return zzip_read((ZZIP_FILE*)file, buffer, size);
+#endif
 }
 #endif
