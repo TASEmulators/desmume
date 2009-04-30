@@ -706,7 +706,7 @@ static inline void gpu_screen_to_rgb(u8 * rgb, int size)
     for (int i = 0; i < 256; i++) {
         for (int j = 0; j < 384; j++) {
 
-            gpu_pixel = *((u16 *) & GPU_screen[(i + j * 256 << 1)]);
+            gpu_pixel = *((u16 *) & GPU_screen[(i + j * 256) << 1]);
             u32 offset;
             if(rot == 0 || rot == 180)
               offset = i * 3 + j * 3 * 256;
