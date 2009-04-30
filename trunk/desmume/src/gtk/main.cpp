@@ -111,10 +111,10 @@ static void Reset();
 static void Edit_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
 static void MenuLoad(GtkMenuItem *item, gpointer slot);
-static void About();//GtkWidget* widget, gpointer data);
+static void About();
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
 static void desmume_gtk_mic_noise (GtkToggleAction *action);
-static void SetRotation (GtkToggleAction *action, gpointer data);
+static void SetRotation (GtkAction *action, gpointer data);
 static void Modify_Layer(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
@@ -204,6 +204,10 @@ static const char *ui_description =
 "        <menuitem action='rotate_180'/>"
 "        <menuitem action='rotate_270'/>"
 "      </menu>"
+"      <menu action='InterpolationMenu'>"
+"        <menuitem action='interp_nearest'/>"
+"        <menuitem action='interp_bilinear'/>"
+"      </menu>"
 "      <menuitem action='editctrls'/>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
@@ -223,7 +227,6 @@ static const char *ui_description =
   
 static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
-
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   Open_Select },
 //      { "savestateto",    NULL,         "S_ave state as ...",         NULL,  NULL,   Open_Select },
 //      { "loadstatefrom",  NULL,         "Load state f_rom ...",         NULL,  NULL,   Open_Select },
@@ -250,7 +253,7 @@ static const GtkActionEntry action_entries[] = {
         { "rotate_90",  "gtk-orientation-landscape",         "_90", NULL, NULL, G_CALLBACK(SetRotation) },
         { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, G_CALLBACK(SetRotation) },
         { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, G_CALLBACK(SetRotation) },
-
+      { "InterpolationMenu", NULL, "_Interpolation" },
 
     { "ToolsMenu", NULL, "_Tools" },
 
@@ -261,6 +264,11 @@ static const GtkActionEntry action_entries[] = {
 static const GtkToggleActionEntry toggle_entries[] = {
     { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE},
     { "micnoise", NULL, "Fake _mic noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE}
+};
+
+static const GtkRadioActionEntry interpolation_entries[] = {
+    { "interp_nearest", NULL, "_Nearest", NULL, NULL, 0},
+    { "interp_bilinear", NULL, "_Bilinear", NULL, NULL, 1},
 };
 
 static const GtkRadioActionEntry frameskip_entries[] = {
@@ -543,6 +551,7 @@ static int Read_ConfigFile(const gchar *config_file)
 /************************ GTK *******************************/
 
 uint Frameskip = 0;
+GdkInterpType Interpolation = GDK_INTERP_BILINEAR;
 
 static GtkWidget *pWindow;
 static GtkWidget *pStatusBar;
@@ -748,7 +757,7 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
     origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 0, 8, W, H, W*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
     if(nds_screen_size_ratio != 1.0) {
-        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*W, ssize*H, GDK_INTERP_BILINEAR);
+        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*W, ssize*H, Interpolation);
         gdk_draw_pixbuf(widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*W, ssize*H, GDK_RGB_DITHER_NONE, 0,0);
         g_object_unref(resizedPixbuf);
     } else {
@@ -1029,7 +1038,7 @@ static void Edit_Controls()
 
 /////////////////////////////// LAYER HIDING /////////////////////////////////
 
-static void SetRotation(GtkToggleAction* action, gpointer data)
+static void SetRotation(GtkAction* action, gpointer data)
 {
     const gchar *angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
     nds_screen_rotation_angle = atoi(angle);
@@ -1207,6 +1216,12 @@ static void SelectFirmwareFile()
     if(oldState) Launch();
 }
 #endif
+
+static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
+{
+    uint i = gtk_radio_action_get_current_value(current) ;
+    Interpolation = (i == 0 ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR);
+}
 
 /////////////////////////////// FRAMESKIP /////////////////////////////////
 
@@ -1543,6 +1558,8 @@ common_gtk_main( struct configured_features *my_config)
     desmume_gtk_menu_tools(action_group);
     gtk_action_group_add_radio_actions(action_group, savet_entries, G_N_ELEMENTS(savet_entries), 
             my_config->savetype, G_CALLBACK(changesavetype), NULL);
+    gtk_action_group_add_radio_actions(action_group, interpolation_entries, G_N_ELEMENTS(interpolation_entries), 
+            1, G_CALLBACK(Modify_Interpolation), NULL);
     gtk_action_group_add_radio_actions(action_group, frameskip_entries, G_N_ELEMENTS(frameskip_entries), 
             0, G_CALLBACK(Modify_Frameskip), NULL);
     {
