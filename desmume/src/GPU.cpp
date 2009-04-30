@@ -2222,10 +2222,18 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			blockparameter = (spriteInfo->RotScalIndex + (spriteInfo->HFlip<< 3) + (spriteInfo->VFlip << 4))*4;
 
 			// Get rotation/scale parameters
+#ifdef WORDS_BIGENDIAN
+			dx  = ((s16)(gpu->oam + blockparameter+0)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+0)->attr30);
+			dmx = ((s16)(gpu->oam + blockparameter+1)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+1)->attr30);
+			dy  = ((s16)(gpu->oam + blockparameter+2)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+2)->attr30);
+			dmy = ((s16)(gpu->oam + blockparameter+3)->attr31 << 8) | ((s16)(gpu->oam + blockparameter+3)->attr30);
+#else
 			dx  = (s16)(gpu->oam + blockparameter+0)->attr3;
 			dmx = (s16)(gpu->oam + blockparameter+1)->attr3;
 			dy  = (s16)(gpu->oam + blockparameter+2)->attr3;
 			dmy = (s16)(gpu->oam + blockparameter+3)->attr3;
+#endif
+			printf("%x %x %x %x\n", dx, dmx, dy, dmy);
 
 			// Calculate fixed poitn 8.8 start offsets
 			realX = ((sprSize.x) << 7) - (fieldX >> 1)*dx - (fieldY>>1)*dmx + y * dmx;
@@ -2379,7 +2387,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 						if(colour && (prioTab[sprX]>=prio))
 						{
-							T2WriteWord(dst, (sprX<<1), T2ReadWord(pal, (colour<<1)));
+							T2WriteWord(dst, (sprX<<1), LE_TO_LOCAL_16(T2ReadWord(pal, colour << 1)));
 							dst_alpha[sprX] = 16;
 							typeTab[sprX] = spriteInfo->Mode;
 							prioTab[sprX] = prio;
