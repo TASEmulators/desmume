@@ -711,16 +711,16 @@ static inline void gpu_screen_to_rgb(u8 * rgb, int size)
             if(rot == 0 || rot == 180)
               offset = i * 3 + j * 3 * 256;
             else
-              offset = j * 3 + i * 3 * 384;
+              offset = j * 3 + (255 - i) * 3 * 384;
             switch (rot) {
             case 0:
-            case 90:
+            case 270:
                 *(rgb + offset + 0) = ((gpu_pixel >> 0) & 0x1f) << 3;
                 *(rgb + offset + 1) = ((gpu_pixel >> 5) & 0x1f) << 3;
                 *(rgb + offset + 2) = ((gpu_pixel >> 10) & 0x1f) << 3;
                 break;
             case 180:
-            case 270:
+            case 90:
                 *(rgb + bytesize - offset - 3) =
                     ((gpu_pixel >> 0) & 0x1f) << 3;
                 *(rgb + bytesize - offset - 2) =
@@ -761,14 +761,47 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
+inline static void rotoscaled_touchpos(gint x, gint y)
+{
+    int X, Y, rot, inv;
+    u16 EmuX, EmuY;
+
+    rot = ( nds_screen_rotation_angle == 90 || nds_screen_rotation_angle == 270);
+    inv = ( nds_screen_rotation_angle == 180 || nds_screen_rotation_angle == 90);
+    if(rot){
+        X = y; Y = x;
+    } else {
+        X = x; Y = y;
+    }
+    X = int (X * nds_screen_size_ratio);
+    Y = int (Y * nds_screen_size_ratio)-192;
+
+    if(inv){
+        Y = -Y;
+    }
+    
+    if((inv && !rot) || (!inv && rot)){
+        X = 255 - X;
+    }
+
+    LOG("X=%d, Y=%d\n", x,y);
+
+    // FIXME: should ignore events only when STARTING touched-position 
+    //        was outside touchscreen - desmume window does not have physical band
+    //        to limit movement of stylus
+    if ( Y >= 0 ) {
+        EmuX = CLAMP(X, 0, 255);
+        EmuY = CLAMP(Y, 0, 191);
+        NDS_setTouchPos(EmuX, EmuY);
+    }
+}
+
 static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
 {
     GdkModifierType state;
     gint x,y;
-    s32 EmuX, EmuY;
 
     if(click) {
-        int scaled_x, scaled_y;
         if(e->is_hint)
             gdk_window_get_pointer(w->window, &x, &y, &state);
         else {
@@ -777,16 +810,8 @@ static gboolean Stylus_Move(GtkWidget *w, GdkEventMotion *e, gpointer data)
             state=(GdkModifierType)e->state;
         }
 
-        scaled_x = int(x * nds_screen_size_ratio);
-        scaled_y = int(y * nds_screen_size_ratio)-192;
-
-        LOG("X=%d, Y=%d, S&1=%d\n", x,y,state&GDK_BUTTON1_MASK);
-
-        if(scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
-            EmuX = CLAMP(scaled_x, 0, 255);
-            EmuY = CLAMP(scaled_y, 0, 192);
-            NDS_setTouchPos(EmuX, EmuY);
-        }
+        if(state & GDK_BUTTON1_MASK)
+            rotoscaled_touchpos(x,y);
     }
 
     return TRUE;
@@ -797,24 +822,17 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
 {
     GdkModifierType state;
     gint x, y;
-    s32 EmuX, EmuY;
 
-    if (desmume_running()) {
-        if (e->button == 1) {
-            int scaled_x, scaled_y;
-            click = TRUE;
+    if( !desmume_running()) 
+        return TRUE;
 
-            gdk_window_get_pointer(w->window, &x, &y, &state);
+    if (e->button == 1) {
+        click = TRUE;
 
-            scaled_x = int(x * nds_screen_size_ratio);
-            scaled_y = int(y * nds_screen_size_ratio)-192;
+        gdk_window_get_pointer(w->window, &x, &y, &state);
 
-            if (scaled_y >= 0 && (state & GDK_BUTTON1_MASK)) {
-                EmuX = CLAMP(scaled_x, 0, 255);
-                EmuY = CLAMP(scaled_y, 0, 192);
-                NDS_setTouchPos(EmuX, EmuY);
-            }
-        }
+        if(state & GDK_BUTTON1_MASK)
+            rotoscaled_touchpos(x, y);
     }
 
     return TRUE;
