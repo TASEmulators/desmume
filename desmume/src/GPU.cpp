@@ -2798,6 +2798,9 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							{
 								int q = ((k + hofs) & 0x1FF);
 
+								if((q < 0) || (q > 255))
+									continue;
+
 								if(colorLine[q] & 0x8000)
 									gpu->setFinalColor3d(k, q);
 							}
