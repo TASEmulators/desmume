@@ -21,6 +21,7 @@ typedef struct
 	std::string name_of_rom_used;
 
 	std::vector<std::wstring> comments;
+	std::vector<std::string> subtitles;
 } MOVIE_INFO;
 
 enum EMOVIEMODE
@@ -88,12 +89,12 @@ public:
 	void clear();
 	
 	//a waste of memory in lots of cases..  maybe make it a pointer later?
-	std::vector<char> savestate;
+	//std::vector<char> savestate;
 
 	void parse(MovieData* md, std::istream* is);
-	//bool parseBinary(MovieData* md, std::istream* is);
+	bool parseBinary(MovieData* md, std::istream* is);
 	void dump(MovieData* md, std::ostream* os, int index);
-	//void dumpBinary(MovieData* md, std::ostream* os, int index);
+	void dumpBinary(MovieData* md, std::ostream* os, int index);
 	void parsePad(std::istream* is, u16& pad);
 	void dumpPad(std::ostream* os, u16 pad);
 	
@@ -178,6 +179,19 @@ private:
 	}
 };
 
-bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
+extern int currFrameCounter;
+extern EMOVIEMODE movieMode;		//adelikat: main needs this for frame counter display
+extern MovieData currMovieData;		//adelikat: main needs this for frame counter display
 
+bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
+void FCEUI_SaveMovie(const char *fname, std::wstring author);
+void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe);
+void FCEUI_StopMovie();
+void FCEUMOV_AddInputState();
+void NDS_setTouchFromMovie(void);
+void mov_savestate(std::ostream* os);
+bool mov_loadstate(std::istream* is, int size);
+void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size);
+extern bool movie_readonly;
+void FCEUI_MakeBackupMovie(bool dispMessage);
 #endif

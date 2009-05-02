@@ -30,4 +30,6 @@
 extern	void rtcInit();
 extern	u16 rtcRead();
 extern	void rtcWrite(u16 val);
+
+void InitMovieTime(void);
 #endif

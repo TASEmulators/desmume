@@ -52,7 +52,7 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;HAVE_LIBZZIP;HAVE_LIBZ"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
@@ -551,6 +551,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\movie.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NDSSystem.cpp"
 					>
 				</File>
@@ -965,6 +969,22 @@
 					>
 				</File>
 				<File
+					RelativePath=".\ram_search.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ramwatch.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\replay.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\replay.h"
+					>
+				</File>
+				<File
 					RelativePath=".\snddx.cpp"
 					>
 				</File>
@@ -1072,6 +1092,14 @@
 				</File>
 				<File
 					RelativePath=".\palView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ram_search.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ramwatch.h"
 					>
 				</File>
 				<File
@@ -1203,6 +1231,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\movie.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NDSSystem.h"
 					>
 				</File>
@@ -1278,6 +1310,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\bitmap1.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\DeSmuME.ico"
 				>
 			</File>
@@ -1288,5 +1324,9 @@
 		</Filter>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="resources.rc"
+		/>
 	</Globals>
 </VisualStudioProject>

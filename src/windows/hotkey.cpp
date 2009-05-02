@@ -27,6 +27,7 @@
 #include "render3d.h"
 #include "throttle.h"
 #include "../mic.h"
+#include "../movie.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -154,9 +155,7 @@ void HK_MicrophoneKeyUp(int) {MicButtonPressed =0;}
 
 void HK_AutoHoldClearKeyDown(int) {
 	
-	for (int i=0; i < 10; i++) {
-		AutoHold.hold(i)=false;
-	}
+	ClearAutoHold();
 }
 
 void HK_Reset(int) {ResetGame();}
@@ -168,6 +167,13 @@ void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
 void HK_ToggleInput(int) {ShowInputDisplay ^= true;}
 void HK_ToggleLag(int) {ShowLagFrameCounter ^= true;}
+void HK_ToggleReadOnly(int) {
+	movie_readonly ^= true; 
+	if(movie_readonly)
+	SetMessageToDisplay("Read Only");
+	else
+	SetMessageToDisplay("Read+Write");
+}
 
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
@@ -177,6 +183,12 @@ void HK_TurboRightKeyUp(int) { Turbo.Right = false; }
 
 void HK_TurboLeftKeyDown(int) { Turbo.Left = true; }
 void HK_TurboLeftKeyUp(int) { Turbo.Left = false; }
+
+void HK_TurboRKeyDown(int) { Turbo.R = true; }
+void HK_TurboRKeyUp(int) { Turbo.R = false; }
+
+void HK_TurboLKeyDown(int) { Turbo.L = true; }
+void HK_TurboLKeyUp(int) { Turbo.L = false; }
 
 void HK_TurboDownKeyDown(int) { Turbo.Down = true; }
 void HK_TurboDownKeyUp(int) { Turbo.Down = false; }
@@ -208,7 +220,9 @@ void HK_FastForwardKeyDown(int) { FastForward = 1; }
 void HK_FastForwardKeyUp(int) { FastForward = 0; }
 void HK_IncreaseSpeed(int) { IncreaseSpeed(); }
 void HK_DecreaseSpeed(int) { DecreaseSpeed(); }
-void HK_FrameAdvance(int) { FrameAdvance(); }
+void HK_FrameAdvanceKeyDown(int) { FrameAdvance(true); }
+void HK_FrameAdvanceKeyUp(int) { FrameAdvance(false); }
+
 void HK_ToggleRasterizer(int) { 
 	if(cur3DCore == GPU3D_OPENGL)
 		cur3DCore = GPU3D_SWRAST;
@@ -261,7 +275,8 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Pause.page = HOTKEY_PAGE_MAIN;
 	keys->Pause.key = VK_SPACE;
 
-	keys->FrameAdvance.handleKeyDown = HK_FrameAdvance;
+	keys->FrameAdvance.handleKeyDown = HK_FrameAdvanceKeyDown;
+	keys->FrameAdvance.handleKeyUp = HK_FrameAdvanceKeyUp;
 	keys->FrameAdvance.code = "FrameAdvance";
 	keys->FrameAdvance.name = L"Frame Advance";
 	keys->FrameAdvance.page = HOTKEY_PAGE_MAIN;
@@ -348,6 +363,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleLag.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleLag.key = NULL;
 
+	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
+	keys->ToggleReadOnly.code = "ToggleReadOnly";
+	keys->ToggleReadOnly.name = L"Toggle Read Only";
+	keys->ToggleReadOnly.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleReadOnly.key = NULL;
+
 	keys->RecordAVI.handleKeyDown = HK_RecordAVI;
 	keys->RecordAVI.code = "RecordAVI";
 	keys->RecordAVI.name = L"Record AVI";
@@ -374,6 +395,20 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboLeft.name = L"Turbo Left";
 	keys->TurboLeft.page = HOTKEY_PAGE_TURBO;
 	keys->TurboLeft.key = NULL;
+
+	keys->TurboR.handleKeyDown = HK_TurboRKeyDown;
+	keys->TurboR.handleKeyUp = HK_TurboRKeyUp;
+	keys->TurboR.code = "TurboR";
+	keys->TurboR.name = L"Turbo R";
+	keys->TurboR.page = HOTKEY_PAGE_TURBO;
+	keys->TurboR.key = NULL;
+
+	keys->TurboL.handleKeyDown = HK_TurboLKeyDown;
+	keys->TurboL.handleKeyUp = HK_TurboLKeyUp;
+	keys->TurboL.code = "TurboL";
+	keys->TurboL.name = L"Turbo L";
+	keys->TurboL.page = HOTKEY_PAGE_TURBO;
+	keys->TurboL.key = NULL;
 
 	keys->TurboDown.handleKeyDown = HK_TurboDownKeyDown;
 	keys->TurboDown.handleKeyUp = HK_TurboDownKeyUp;

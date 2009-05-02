@@ -112,6 +112,6 @@ extern SPU_struct *SPU_core, *SPU_user;
 extern int spu_core_samples;
 
 void spu_savestate(std::ostream* os);
-bool spu_loadstate(std::istream* is);
+bool spu_loadstate(std::istream* is, int size);
 
 #endif

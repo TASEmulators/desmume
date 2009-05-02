@@ -49,9 +49,11 @@
 #include "GPU.h"
 #include "debug.h"
 #include "render3D.h"
+#include "gfx3d.h"
 #include "GPU_osd.h"
 #include "debug.h"
 #include "NDSSystem.h"
+#include "readwrite.h"
 
 ARM9_struct ARM9Mem;
 
@@ -77,15 +79,6 @@ OSDCLASS	*osdB = NULL;
 
 u16			gpu_angle = 0;
 
-const short sizeTab[4][4][2] =
-{
-      {{256,256}, {512, 256}, {256, 512}, {512, 512}},
-      {{128,128}, {256, 256}, {512, 512}, {1024, 1024}},
-      {{128,128}, {256, 256}, {512, 256}, {512, 512}},
-      {{512,1024}, {1024, 512}, {0, 0}, {0, 0}},
-//      {{0, 0}, {0, 0}, {0, 0}, {0, 0}}
-};
-
 const size sprSizeTab[4][4] = 
 {
      {{8, 8}, {16, 8}, {8, 16}, {8, 8}},
@@ -94,34 +87,51 @@ const size sprSizeTab[4][4] =
      {{64, 64}, {64, 32}, {32, 64}, {8, 8}},
 };
 
-const s8 mode2type[8][4] = 
+
+
+static const BGType mode2type[8][4] = 
 {
-      {0, 0, 0, 0},
-      {0, 0, 0, 1},
-      {0, 0, 1, 1},
-      {0, 0, 0, 1},
-      {0, 0, 1, 1},
-      {0, 0, 1, 1},
-      {3, 3, 2, 3},
-      {0, 0, 0, 0}
+      {BGType_Text, BGType_Text, BGType_Text, BGType_Text},
+      {BGType_Text, BGType_Text, BGType_Text, BGType_Affine},
+      {BGType_Text, BGType_Text, BGType_Affine, BGType_Affine},
+      {BGType_Text, BGType_Text, BGType_Text, BGType_AffineExt},
+      {BGType_Text, BGType_Text, BGType_Affine, BGType_AffineExt},
+      {BGType_Text, BGType_Text, BGType_AffineExt, BGType_AffineExt},
+      {BGType_Invalid, BGType_Invalid, BGType_Large8bpp, BGType_Invalid},
+      {BGType_Invalid, BGType_Invalid, BGType_Invalid, BGType_Invalid}
+};
+
+const short sizeTab[8][4][2] =
+{
+	{{0, 0}, {0, 0}, {0, 0}, {0, 0}}, //Invalid
+    {{256,256}, {512,256}, {256,512}, {512,512}}, //text
+    {{128,128}, {256,256}, {512,512}, {1024,1024}}, //affine
+    {{512,1024}, {1024,512}, {0,0}, {0,0}}, //large 8bpp
+	{{0, 0}, {0, 0}, {0, 0}, {0, 0}}, //affine ext (to be elaborated with another value)
+	{{128,128}, {256,256}, {512,512}, {1024,1024}}, //affine ext 256x16
+	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext 256x1
+	{{128,128}, {256,256}, {512,256}, {512,512}}, //affine ext direct
 };
 
 void lineText(GPU * gpu);
 void lineRot(GPU * gpu);
 void lineExtRot(GPU * gpu);
+void lineNull(GPU * gpu);
+void lineLarge8bpp(GPU * gpu);
 
-typedef void (*TModeRender)(GPU * gpu);
-TModeRender modeRender[8][4] =
+void GPU::modeRender(int layer)
 {
-     {lineText, lineText, lineText, lineText},     //0
-     {lineText, lineText, lineText, lineRot},      //1
-     {lineText, lineText, lineRot, lineRot},       //2
-     {lineText, lineText, lineText, lineExtRot},   //3
-     {lineText, lineText, lineRot, lineExtRot},    //4
-     {lineText, lineText, lineExtRot, lineExtRot}, //5
-     {lineText, lineText, lineText, lineText},     //6
-     {lineText, lineText, lineText, lineText},     //7
-};
+	switch(mode2type[dispCnt().BG_Mode][layer])
+	{
+		case BGType_Text: lineText(this); break;
+		case BGType_Affine: lineRot(this); break;
+		case BGType_AffineExt: lineExtRot(this); break;
+		case BGType_Large8bpp: lineExtRot(this); break;
+		case BGType_Invalid: 
+			PROGINFO("Attempting to render an invalid BG type\n");
+			break;
+	}
+}
 
 static GraphicsInterface_struct *GFXCore=NULL;
 
@@ -131,6 +141,397 @@ GraphicsInterface_struct *GFXCoreList[] = {
 NULL
 };
 
+static const CACHE_ALIGN u8 win_empty[256] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static CACHE_ALIGN u16 fadeInColors[17][0x8000];
+static CACHE_ALIGN u16 fadeOutColors[17][0x8000];
+
+//this should be public, because it gets used somewhere else
+CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
+
+
+/*****************************************************************************/
+//			PIXEL RENDERING - 3D
+/*****************************************************************************/
+
+#define DECL3D \
+	int x = dstX; \
+	int passing = dstX<<1; \
+	u16 color = _3dColorLine[srcX]; \
+	u8 alpha = _3dAlphaLine[srcX]; \
+	u8* dst = currDst;
+
+FORCEINLINE void GPU::setFinal3DColorSpecialNone(int dstX, int srcX)
+{
+	DECL3D;
+
+	// We must blend if the 3D layer has the highest prio
+	if((alpha < 16) && bg0HasHighestPrio)
+	{
+		int bg_under = bgPixels[dstX];
+		u16 final = color;
+
+		// If the layer we are drawing on is selected as 2nd source, we can blend
+		if(BLDCNT & (0x100 << bg_under))
+		{
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+				final = cfinal.val;
+			}
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		bgPixels[x] = 0;
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialBlend(int dstX, int srcX)
+{
+	DECL3D;
+
+	// We can blend if the 3D layer is selected as 1st target,
+	//but also if the 3D layer has the highest prio.
+	if((alpha < 16) && ((BLDCNT & 0x1) || bg0HasHighestPrio))
+	{
+		int bg_under = bgPixels[x];
+		u16 final = color;
+
+		//If the layer we are drawing on is selected as 2nd source, we can blend
+		if(BLDCNT & (0x100 << bg_under))
+		{
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+				final = cfinal.val;
+			}
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (color | 0x8000));
+		bgPixels[x] = 0;
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialIncrease(int dstX, int srcX)
+{
+	DECL3D;
+	u16 final = color;
+
+	// We must blend if the 3D layer has the highest prio
+	// But it doesn't seem to have priority over fading,
+	// unlike semi-transparent sprites
+	if((alpha < 16) && bg0HasHighestPrio)
+	{
+		int bg_under = bgPixels[x];
+
+		/* If the layer we are drawing on is selected as 2nd source, we can blend */
+		if(BLDCNT & (0x100 << bg_under))
+		{
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+				final = cfinal.val;
+			}
+		}
+	}
+	
+	if(BLDCNT & 0x1)
+	{
+		if (BLDY_EVY != 0x0)
+		{
+			final = fadeInColors[BLDY_EVY][final&0x7FFF];
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (final | 0x8000));
+		bgPixels[x] = 0;
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialDecrease(int dstX, int srcX)
+{
+	DECL3D;
+
+	u16 final = color;
+
+	// We must blend if the 3D layer has the highest prio
+	// But it doesn't seem to have priority over fading
+	// unlike semi-transparent sprites
+	if((alpha < 16) && bg0HasHighestPrio)
+	{
+		int bg_under = bgPixels[x];
+
+		// If the layer we are drawing on is selected as 2nd source, we can blend
+		if(BLDCNT & (0x100 << bg_under))
+		{
+			{
+				COLOR c1, c2, cfinal;
+
+				c1.val = color;
+				c2.val = T2ReadWord(dst, passing);
+
+				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+				final = cfinal.val;
+			}
+		}
+	}
+	
+	if(BLDCNT & 0x1)
+	{
+		if (BLDY_EVY != 0x0)
+		{
+			final = fadeOutColors[BLDY_EVY][final&0x7FFF];
+		}
+
+		T2WriteWord(dst, passing, (final | 0x8000));
+		bgPixels[x] = 0;
+	}
+	else
+	{
+		T2WriteWord(dst, passing, (final | 0x8000));
+		bgPixels[x] = 0;
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialNoneWnd(int dstX, int srcX)
+{
+	DECL3D;
+
+	bool windowDraw = true, windowEffect = true;
+	
+	renderline_checkWindows(x,  windowDraw, windowEffect);
+
+	if(windowDraw)
+	{
+		// We must blend if the 3D layer has the highest prio 
+		if((alpha < 16) && bg0HasHighestPrio)
+		{
+			int bg_under = bgPixels[x];
+			u16 final = color;
+
+			// If the layer we are drawing on is selected as 2nd source, we can blend
+			if(BLDCNT & (0x100 << bg_under))
+			{
+				{
+					COLOR c1, c2, cfinal;
+
+					c1.val = color;
+					c2.val = T2ReadWord(dst, passing);
+
+					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+					final = cfinal.val;
+				}
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			bgPixels[x] = 0;
+		}
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialBlendWnd(int dstX, int srcX)
+{
+	DECL3D;
+
+	bool windowDraw = true, windowEffect = true;
+	
+	renderline_checkWindows(x,  windowDraw, windowEffect);
+
+	if(windowDraw)
+	{
+		// We can blend if the 3D layer is selected as 1st target,
+		// but also if the 3D layer has the highest prio.
+		if((alpha < 16) && (((BLDCNT & 0x1) && windowEffect) || bg0HasHighestPrio))
+		{
+			int bg_under = bgPixels[x];
+			u16 final = color;
+
+			// If the layer we are drawing on is selected as 2nd source, we can blend
+			if(BLDCNT & (0x100 << bg_under))
+			{
+				{
+					COLOR c1, c2, cfinal;
+
+					c1.val = color;
+					c2.val = T2ReadWord(dst, passing);
+
+					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+					final = cfinal.val;
+				}
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (color | 0x8000));
+			bgPixels[x] = 0;
+		}
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialIncreaseWnd(int dstX, int srcX)
+{
+	DECL3D;
+
+	bool windowDraw = true, windowEffect = true;
+	u16 final = color;
+	
+	renderline_checkWindows(x,  windowDraw, windowEffect);
+
+	if(windowDraw)
+	{
+		// We must blend if the 3D layer has the highest prio 
+		// But it doesn't seem to have priority over fading, 
+		// unlike semi-transparent sprites 
+		if((alpha < 16) && bg0HasHighestPrio)
+		{
+			int bg_under = bgPixels[x];
+
+			// If the layer we are drawing on is selected as 2nd source, we can blend 
+			if(BLDCNT & (0x100 << bg_under))
+			{
+				{
+					COLOR c1, c2, cfinal;
+
+					c1.val = color;
+					c2.val = T2ReadWord(dst, passing);
+
+					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+					final = cfinal.val;
+				}
+			}
+		}
+		
+		if((BLDCNT & 0x1) && windowEffect)
+		{
+			if (BLDY_EVY != 0x0)
+			{
+				final = fadeInColors[BLDY_EVY][final&0x7FFF];
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (final | 0x8000));
+			bgPixels[x] = 0;
+		}
+	}
+}
+
+FORCEINLINE void GPU::setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX)
+{
+	DECL3D;
+
+	bool windowDraw = true, windowEffect = true;
+	u16 final = color;
+	
+	renderline_checkWindows(x,  windowDraw, windowEffect);
+
+	if(windowDraw)
+	{
+		// We must blend if the 3D layer has the highest prio 
+		// But it doesn't seem to have priority over fading, 
+		// unlike semi-transparent sprites 
+		if((alpha < 16) && bg0HasHighestPrio)
+		{
+			int bg_under = bgPixels[x];
+
+			// If the layer we are drawing on is selected as 2nd source, we can blend 
+			if(BLDCNT & (0x100 << bg_under))
+			{
+				{
+					COLOR c1, c2, cfinal;
+
+					c1.val = color;
+					c2.val = T2ReadWord(dst, passing);
+
+					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
+					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
+					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+
+					final = cfinal.val;
+				}
+			}
+		}
+		
+		if((BLDCNT & 0x1) && windowEffect)
+		{
+			if (BLDY_EVY != 0x0)
+			{
+				final = fadeOutColors[BLDY_EVY][final&0x7FFF];
+			}
+
+			T2WriteWord(dst, passing, (final | 0x8000));
+			bgPixels[x] = 0;
+		}
+		else
+		{
+			T2WriteWord(dst, passing, (final | 0x8000));
+			bgPixels[x] = 0;
+		}
+	}
+}
+
+
 static void setFinalOBJColorSpecialNone			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 static void setFinalOBJColorSpecialBlend		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 static void setFinalOBJColorSpecialIncrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
@@ -139,16 +540,6 @@ static void setFinalOBJColorSpecialNoneWnd		(GPU *gpu, u32 passing, u8 *dst, u16
 static void setFinalOBJColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 static void setFinalOBJColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
 static void setFinalOBJColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-
-static void setFinal3DColorSpecialNone			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialBlend			(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialIncrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialDecrease		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialNoneWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-static void setFinal3DColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
-
 
 const GPU::FinalOBJColFunct pixelBlittersOBJ[8] = {
 									setFinalOBJColorSpecialNone,
@@ -160,24 +551,6 @@ const GPU::FinalOBJColFunct pixelBlittersOBJ[8] = {
 									setFinalOBJColorSpecialIncreaseWnd,
 									setFinalOBJColorSpecialDecreaseWnd,};
 
-const GPU::Final3DColFunct pixelBlitters3D[8] = {
-									setFinal3DColorSpecialNone,
-                                    setFinal3DColorSpecialBlend,
-                                    setFinal3DColorSpecialIncrease,
-                                    setFinal3DColorSpecialDecrease,
-                                    setFinal3DColorSpecialNoneWnd,
-									setFinal3DColorSpecialBlendWnd,
-                                    setFinal3DColorSpecialIncreaseWnd,
-                                    setFinal3DColorSpecialDecreaseWnd};
-
-static const CACHE_ALIGN u8 win_empty[256] = {
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static CACHE_ALIGN u16 fadeInColors[17][0x8000];
-static CACHE_ALIGN u16 fadeOutColors[17][0x8000];
-CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 
 /*****************************************************************************/
 //			INITIALIZATION
@@ -236,9 +609,6 @@ static void GPU_InitFadeColors()
 				}
 }
 
-static u16 line3Dcolor[512];
-static u8 line3Dalpha[512];
-
 GPU * GPU_Init(u8 l)
 {
 	GPU * g;
@@ -249,17 +619,13 @@ GPU * GPU_Init(u8 l)
 	GPU_Reset(g, l);
 	GPU_InitFadeColors();
 
-	//clear out the excess line buffers (beyond x=255)
-	memset(line3Dcolor+256, 0, 256*sizeof(u16));
-	memset(line3Dalpha+256, 0, 256*sizeof(u8));
-
 	g->curr_win[0] = win_empty;
 	g->curr_win[1] = win_empty;
 	g->need_update_winh[0] = true;
 	g->need_update_winh[1] = true;
 	g->setFinalColorBck_funcNum = 0;
+	g->setFinalColor3d_funcNum = 0;
 	g->setFinalColorSpr = setFinalOBJColorSpecialNone;
-	g->setFinalColor3D = setFinal3DColorSpecialNone;
 
 	return g;
 }
@@ -269,8 +635,8 @@ void GPU_Reset(GPU *g, u8 l)
 	memset(g, 0, sizeof(GPU));
 
 	g->setFinalColorBck_funcNum = 0;
+	g->setFinalColor3d_funcNum = 0;
 	g->setFinalColorSpr = setFinalOBJColorSpecialNone;
-	g->setFinalColor3D = setFinal3DColorSpecialNone;
 	g->core = l;
 	g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
 	g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
@@ -413,7 +779,7 @@ void SetupFinalPixelBlitter (GPU *gpu)
 
 	gpu->setFinalColorSpr = pixelBlittersOBJ[windowUsed*4 + blendMode];
 	gpu->setFinalColorBck_funcNum = windowUsed*4 + blendMode;
-	gpu->setFinalColor3D = pixelBlitters3D[windowUsed*4 + blendMode];
+	gpu->setFinalColor3d_funcNum = windowUsed*4 + blendMode;
 	
 }
     
@@ -484,13 +850,11 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 	//GPU_resortBGs(gpu);
 }
 
-/* this is writing in BGxCNT */
-/* FIXME: all DEBUG_TRI are broken */
+//this handles writing in BGxCNT
 void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 {
 	struct _BGxCNT * cnt = &((gpu->dispx_st)->dispx_BGxCNT[num].bits);
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
-	int mode;
 	
 	T1WriteWord((u8 *)&(gpu->dispx_st)->dispx_BGxCNT[num].val, 0, p);
 	
@@ -500,13 +864,15 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 	{
 		gpu->BG_tile_ram[num] = ARM9MEM_BBG;
 		gpu->BG_bmp_ram[num]  = ARM9MEM_BBG;
+		gpu->BG_bmp_large_ram[num]  = ARM9MEM_BBG;
 		gpu->BG_map_ram[num]  = ARM9MEM_BBG;
 	} 
 	else 
 	{
-		gpu->BG_tile_ram[num] = ARM9MEM_ABG +  dispCnt->CharacBase_Block * ADDRESS_STEP_64kB ;
+		gpu->BG_tile_ram[num] = ARM9MEM_ABG +  dispCnt->CharacBase_Block * ADDRESS_STEP_64KB ;
 		gpu->BG_bmp_ram[num]  = ARM9MEM_ABG;
-		gpu->BG_map_ram[num]  = ARM9MEM_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64kB;
+		gpu->BG_bmp_large_ram[num] = ARM9MEM_ABG;
+		gpu->BG_map_ram[num]  = ARM9MEM_ABG +  dispCnt->ScreenBase_Block * ADDRESS_STEP_64KB;
 	}
 
 	gpu->BG_tile_ram[num] += (cnt->CharacBase_Block * ADDRESS_STEP_16KB);
@@ -525,7 +891,30 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 			break;
 	}
 
-	mode = mode2type[dispCnt->BG_Mode][num];
+	BGType mode = mode2type[dispCnt->BG_Mode][num];
+
+	//clarify affine ext modes 
+	if(mode == BGType_AffineExt)
+	{
+		//see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol
+		u8 affineModeSelection = (cnt->Palette_256 << 1) | (cnt->CharacBase_Block & 1) ;
+		switch(affineModeSelection)
+		{
+		case 0:
+		case 1:
+			mode = BGType_AffineExt_256x16;
+			break;
+		case 2:
+			mode = BGType_AffineExt_256x1;
+			break;
+		case 3:
+			mode = BGType_AffineExt_Direct;
+			break;
+		}
+	}
+
+	gpu->BGTypes[num] = mode;
+
 	gpu->BGSize[num][0] = sizeTab[mode][cnt->ScreenSize][0];
 	gpu->BGSize[num][1] = sizeTab[mode][cnt->ScreenSize][1];
 	
@@ -1035,364 +1424,9 @@ static void setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 	}
 }
 
-/*****************************************************************************/
-//			PIXEL RENDERING - 3D
-/*****************************************************************************/
-
-static void setFinal3DColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	/* We must blend if the 3D layer has the highest prio */
-	if((alpha < 16) && gpu->bg0HasHighestPrio)
-	{
-		int bg_under = gpu->bgPixels[x];
-		u16 final = color;
-
-		/* If the layer we are drawing on is selected as 2nd source, we can blend */
-		if(gpu->BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-				final = cfinal.val;
-			}
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (color | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-}
-
-static void setFinal3DColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	/* We can blend if the 3D layer is selected as 1st target, */
-	/* but also if the 3D layer has the highest prio. */
-	if((alpha < 16) && ((gpu->BLDCNT & 0x1) || gpu->bg0HasHighestPrio))
-	{
-		int bg_under = gpu->bgPixels[x];
-		u16 final = color;
-
-		/* If the layer we are drawing on is selected as 2nd source, we can blend */
-		if(gpu->BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-				final = cfinal.val;
-			}
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (color | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-}
-
-static void setFinal3DColorSpecialIncrease(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	u16 final = color;
-
-	/* We must blend if the 3D layer has the highest prio */
-	/* But it doesn't seem to have priority over fading, */
-	/* unlike semi-transparent sprites */
-	if((alpha < 16) && gpu->bg0HasHighestPrio)
-	{
-		int bg_under = gpu->bgPixels[x];
-
-		/* If the layer we are drawing on is selected as 2nd source, we can blend */
-		if(gpu->BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-				final = cfinal.val;
-			}
-		}
-	}
-	
-	if(gpu->BLDCNT & 0x1)
-	{
-		if (gpu->BLDY_EVY != 0x0)
-		{
-			final = fadeInColors[gpu->BLDY_EVY][final&0x7FFF];
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (final | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-}
-
-static void setFinal3DColorSpecialDecrease(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	u16 final = color;
-
-	/* We must blend if the 3D layer has the highest prio */
-	/* But it doesn't seem to have priority over fading, */
-	/* unlike semi-transparent sprites */
-	if((alpha < 16) && gpu->bg0HasHighestPrio)
-	{
-		int bg_under = gpu->bgPixels[x];
-
-		/* If the layer we are drawing on is selected as 2nd source, we can blend */
-		if(gpu->BLDCNT & (0x100 << bg_under))
-		{
-			{
-				COLOR c1, c2, cfinal;
-
-				c1.val = color;
-				c2.val = T2ReadWord(dst, passing);
-
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-				final = cfinal.val;
-			}
-		}
-	}
-	
-	if(gpu->BLDCNT & 0x1)
-	{
-		if (gpu->BLDY_EVY != 0x0)
-		{
-			final = fadeOutColors[gpu->BLDY_EVY][final&0x7FFF];
-		}
-
-		T2WriteWord(dst, passing, (final | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-	else
-	{
-		T2WriteWord(dst, passing, (final | 0x8000));
-		gpu->bgPixels[x] = 0;
-	}
-}
-
-static void setFinal3DColorSpecialNoneWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	
-	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		/* We must blend if the 3D layer has the highest prio */
-		if((alpha < 16) && gpu->bg0HasHighestPrio)
-		{
-			int bg_under = gpu->bgPixels[x];
-			u16 final = color;
-
-			/* If the layer we are drawing on is selected as 2nd source, we can blend */
-			if(gpu->BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-					final = cfinal.val;
-				}
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (color | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-	}
-}
-
-static void setFinal3DColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	
-	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		/* We can blend if the 3D layer is selected as 1st target, */
-		/* but also if the 3D layer has the highest prio. */
-		if((alpha < 16) && (((gpu->BLDCNT & 0x1) && windowEffect) || gpu->bg0HasHighestPrio))
-		{
-			int bg_under = gpu->bgPixels[x];
-			u16 final = color;
-
-			/* If the layer we are drawing on is selected as 2nd source, we can blend */
-			if(gpu->BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-					final = cfinal.val;
-				}
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (color | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-	}
-}
-
-static void setFinal3DColorSpecialIncreaseWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	u16 final = color;
-	
-	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		/* We must blend if the 3D layer has the highest prio */
-		/* But it doesn't seem to have priority over fading, */
-		/* unlike semi-transparent sprites */
-		if((alpha < 16) && gpu->bg0HasHighestPrio)
-		{
-			int bg_under = gpu->bgPixels[x];
-
-			/* If the layer we are drawing on is selected as 2nd source, we can blend */
-			if(gpu->BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-					final = cfinal.val;
-				}
-			}
-		}
-		
-		if((gpu->BLDCNT & 0x1) && windowEffect)
-		{
-			if (gpu->BLDY_EVY != 0x0)
-			{
-				final = fadeInColors[gpu->BLDY_EVY][final&0x7FFF];
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (final | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-	}
-}
-
-static void setFinal3DColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	u16 final = color;
-	
-	gpu->renderline_checkWindows(x,  windowDraw, windowEffect);
-
-	if(windowDraw)
-	{
-		/* We must blend if the 3D layer has the highest prio */
-		/* But it doesn't seem to have priority over fading, */
-		/* unlike semi-transparent sprites */
-		if((alpha < 16) && gpu->bg0HasHighestPrio)
-		{
-			int bg_under = gpu->bgPixels[x];
-
-			/* If the layer we are drawing on is selected as 2nd source, we can blend */
-			if(gpu->BLDCNT & (0x100 << bg_under))
-			{
-				{
-					COLOR c1, c2, cfinal;
-
-					c1.val = color;
-					c2.val = T2ReadWord(dst, passing);
-
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
-
-					final = cfinal.val;
-				}
-			}
-		}
-		
-		if((gpu->BLDCNT & 0x1) && windowEffect)
-		{
-			if (gpu->BLDY_EVY != 0x0)
-			{
-				final = fadeOutColors[gpu->BLDY_EVY][final&0x7FFF];
-			}
-
-			T2WriteWord(dst, passing, (final | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-		else
-		{
-			T2WriteWord(dst, passing, (final | 0x8000));
-			gpu->bgPixels[x] = 0;
-		}
-	}
-}
-
 FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
 {
+	//if someone disagrees with these, they could be reimplemented as a function pointer easily
 	switch(setFinalColorBck_funcNum | (blend1?8:0))
 	{
 	case 0x0: setFinalBGColorSpecialNone(color,x,false); break;
@@ -1414,6 +1448,22 @@ FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
 	};
 }
 
+
+FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
+{
+	//if someone disagrees with these, they could be reimplemented as a function pointer easily
+	switch(setFinalColor3d_funcNum)
+	{
+	case 0x0: setFinal3DColorSpecialNone(dstX,srcX); break;
+	case 0x1: setFinal3DColorSpecialBlend(dstX,srcX); break;
+	case 0x2: setFinal3DColorSpecialIncrease(dstX,srcX); break;
+	case 0x3: setFinal3DColorSpecialDecrease(dstX,srcX); break;
+	case 0x4: setFinal3DColorSpecialNoneWnd(dstX,srcX); break;
+	case 0x5: setFinal3DColorSpecialBlendWnd(dstX,srcX); break;
+	case 0x6: setFinal3DColorSpecialIncreaseWnd(dstX,srcX); break;
+	case 0x7: setFinal3DColorSpecialDecreaseWnd(dstX,srcX); break;
+	};
+}
 
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
@@ -1495,6 +1545,39 @@ static void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * ty
 			mosaicSpriteLinePixel(gpu,i,l,dst,dst_alpha,typeTab,prioTab);
 }
 
+void lineLarge8bpp(GPU * gpu)
+{
+	if(gpu->core == 1) {
+		PROGINFO("Cannot use large 8bpp screen on sub core\n");
+		return;
+	}
+
+	BGxOFS * ofs = &gpu->dispx_st->dispx_BGxOFS[gpu->currBgNum];
+	u8 num = gpu->currBgNum;
+	u16 XBG = T1ReadWord((u8 *)&ofs->BGxHOFS, 0);
+	u16 YBG = gpu->currLine + T1ReadWord((u8 *)&ofs->BGxVOFS, 0);
+	u16 lg     = gpu->BGSize[num][0];
+	u16 ht     = gpu->BGSize[num][1];
+	u16 wmask  = (lg-1);
+	u16 hmask  = (ht-1);
+	YBG &= hmask;
+
+	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
+
+	u32 tmp_map = gpu->BG_bmp_large_ram[num] + lg * YBG;
+	u8* map = MMU_RenderMapToLCD(tmp_map);
+
+	u8* pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
+
+	for(int x = 0; x < lg; ++x, ++XBG)
+	{
+		XBG &= wmask;
+		u8 pixel = map[XBG];
+		u16 color = T1ReadWord(pal, pixel<<1);
+		gpu->__setFinalColorBck(color,x,color!=0);
+	}
+	
+}
 
 /*****************************************************************************/
 //			BACKGROUND RENDERING -TEXT-
@@ -1750,15 +1833,10 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	
 	u8 *map, *tile, *pal;
-	u8 affineModeSelection ;
 
-	/* see: http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol  */
-	affineModeSelection = (bgCnt->Palette_256 << 1) | (bgCnt->CharacBase_Block & 1) ;
-//	printf("extrot mode %d\n", affineModeSelection);
-	switch(affineModeSelection)
+	switch(gpu->BGTypes[num])
 	{
-	case 0 :
-	case 1 :
+	case BGType_AffineExt_256x16:
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
 		if (!map) return;
 		tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
@@ -1771,18 +1849,25 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 		// 16  bit bgmap entries
 		apply_rot_fun<rot_tiled_16bit_entry>(gpu,X,Y,PA,PB,PC,PD,LG, map, tile, pal, dispCnt->ExBGxPalette_Enable);
 		return;
-	case 2 :
+	case BGType_AffineExt_256x1:
 		// 256 colors 
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
 		if (!map) return;
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		apply_rot_fun<rot_256_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
 		return;
-	case 3 :
+	case BGType_AffineExt_Direct:
 		// direct colors / BMP
 		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
 		if (!map) return;
 		apply_rot_fun<rot_BMP_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, NULL, 0);
+		return;
+	case BGType_Large8bpp:
+		// large screen 256 colors
+		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_large_ram[num]);
+		if (!map) return;
+		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
+		apply_rot_fun<rot_256_map>(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
 		return;
 	}
 }
@@ -1790,6 +1875,10 @@ FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 
 /*****************************************************************************/
 //			BACKGROUND RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
+
+void lineNull(GPU * gpu)
+{
+}
 
 void lineText(GPU * gpu)
 {
@@ -2346,7 +2435,10 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 					//NOT TESTED:
 
 					if (dispCnt->OBJ_BMP_2D_dim) // 256*256
+					{
+						//verified by heroes of mana FMV intro
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
+					}
 					else // 128 * 512
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
 				}
@@ -2687,23 +2779,21 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							BGxOFS *bgofs = &gpu->dispx_st->dispx_BGxOFS[i16];
 							u16 hofs = (T1ReadWord((u8*)&bgofs->BGxHOFS, 0) & 0x1FF);
 
-							//line3Dcolor and line3Dalpha are left cleared by GPU initialization,
-							//and they always stay that way.
-
-							gpu3D->NDS_3D_GetLine(l, line3Dcolor, line3Dalpha);
+							gfx3d_GetLineData(l, &gpu->_3dColorLine, &gpu->_3dAlphaLine);
+							u16* colorLine = gpu->_3dColorLine;
 
 							for(int k = 0; k < 256; k++)
 							{
 								int q = ((k + hofs) & 0x1FF);
 
-								if(line3Dcolor[q] & 0x8000)
-									gpu->setFinalColor3D(gpu, (k << 1), gpu->currDst, line3Dcolor[q], line3Dalpha[q], k);
+								if(colorLine[q] & 0x8000)
+									gpu->setFinalColor3d(k, q);
 							}
 
 							continue;
 						}
 					}
-					modeRender[dispCnt->BG_Mode][i16](gpu);
+					gpu->modeRender(i16);
 				} //layer enabled
 			}
 		}
@@ -2785,9 +2875,9 @@ static void GPU_ligne_DispCapture(u16 l)
 							case 1:			// Capture 3D
 								{
 									//INFO("Capture 3D\n");
-									u16 cap3DLine[512];
-									gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
-									CAPCOPY(((u8*)cap3DLine),cap_dst);
+									u16* colorLine;
+									gfx3d_GetLineData(l, &colorLine, NULL);
+									CAPCOPY(((u8*)colorLine),cap_dst);
 								}
 							break;
 						}
@@ -2818,7 +2908,6 @@ static void GPU_ligne_DispCapture(u16 l)
 						//INFO("Capture source is SourceA+B blended\n");
 						u16 *srcA = NULL;
 						u16 *srcB = NULL;
-						u16 cap3DLine[512];
 
 						if (gpu->dispCapCnt.srcA == 0)
 						{
@@ -2830,12 +2919,11 @@ static void GPU_ligne_DispCapture(u16 l)
 						}
 						else
 						{
-							gpu3D->NDS_3D_GetLineCaptured(l, (u16*)cap3DLine);
-							srcA = (u16 *)cap3DLine; // 3D screen
+							gfx3d_GetLineData(l, &srcA, NULL);
 						}
 
 						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
-							srcB = (u16 *)(gpu->dispCapCnt.src) + (l * 512);
+							srcB = (u16 *)((gpu->dispCapCnt.src) + (l * 512));
 						else
 							srcB = NULL; // DISP FIFOS
 
@@ -2892,11 +2980,12 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 	u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
 	u16 i16;
 
-	if (!gpu->MasterBrightFactor) return;
+	//isn't it odd that we can set uselessly high factors here?
+	//factors above 16 change nothing. curious.
+	int factor = gpu->MasterBrightFactor;
+	if(factor==0) return;
+	if(factor>16) factor=16;
 
-#ifdef BRIGHT_TABLES
-	calc_bright_colors();
-#endif
 
 // Apply final brightness adjust (MASTER_BRIGHT)
 //  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
@@ -2914,7 +3003,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		{
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-				((u16*)dst)[i16] = fadeInColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
+				((u16*)dst)[i16] = fadeInColors[factor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
 		}
@@ -2924,7 +3013,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 		{
 			for(i16 = 0; i16 < 256; ++i16)
 			{
-				((u16*)dst)[i16] = fadeOutColors[gpu->MasterBrightFactor][((u16*)dst)[i16]&0x7FFF];
+				((u16*)dst)[i16] = fadeOutColors[factor][((u16*)dst)[i16]&0x7FFF];
 			}
 			break;
 		}
@@ -3029,17 +3118,16 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 	//here is some setup which is only done on line 0
 	if(l == 0) {
-		for(int num=2;num<=3;num++)
-		{
-			BGxPARMS * parms;
-			if (num==2)
-				parms = &(gpu->dispx_st)->dispx_BG2PARMS;
-			else
-				parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
-
-			parms->BGxX = gpu->affineInfo[num-2].x;
-			parms->BGxY = gpu->affineInfo[num-2].y;
-		}
+		//this is speculative. the idea is as follows:
+		//whenever the user updates the affine start position regs, it goes into the active regs immediately
+		//(this is handled on the set event from MMU)
+		//maybe it shouldnt take effect until the next hblank or something..
+		//this is a based on a combination of:
+		//heroes of mana intro FMV
+		//SPP level 3-8 rotoscale room
+		//NSMB raster fx backdrops
+		//bubble bobble revolution classic mode
+		gpu->refreshAffineStartRegs();
 	}
 
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
@@ -3123,21 +3211,79 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 void gpu_savestate(std::ostream* os)
 {
-	os->write((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
+	//version
+	write32le(0,os);
+	
+	os->write((char*)GPU_screen,sizeof(GPU_screen));
+	
+	write32le(MainScreen.gpu->affineInfo[0].x,os);
+	write32le(MainScreen.gpu->affineInfo[0].y,os);
+	write32le(MainScreen.gpu->affineInfo[1].x,os);
+	write32le(MainScreen.gpu->affineInfo[1].y,os);
+	write32le(SubScreen.gpu->affineInfo[0].x,os);
+	write32le(SubScreen.gpu->affineInfo[0].y,os);
+	write32le(SubScreen.gpu->affineInfo[1].x,os);
+	write32le(SubScreen.gpu->affineInfo[1].y,os);
 }
 
-bool gpu_loadstate(std::istream* is)
+bool gpu_loadstate(std::istream* is, int size)
 {
-	is->read((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
+	//read version
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(version != 0) return false;
+
+	is->read((char*)GPU_screen,sizeof(GPU_screen));
+	read32le(&MainScreen.gpu->affineInfo[0].x,is);
+	read32le(&MainScreen.gpu->affineInfo[0].y,is);
+	read32le(&MainScreen.gpu->affineInfo[1].x,is);
+	read32le(&MainScreen.gpu->affineInfo[1].y,is);
+	read32le(&SubScreen.gpu->affineInfo[0].x,is);
+	read32le(&SubScreen.gpu->affineInfo[0].y,is);
+	read32le(&SubScreen.gpu->affineInfo[1].x,is);
+	read32le(&SubScreen.gpu->affineInfo[1].y,is);
+
+	MainScreen.gpu->refreshAffineStartRegs();
+	SubScreen.gpu->refreshAffineStartRegs();
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();
+}
+
+u32 GPU::getAffineStart(int layer, int xy)
+{
+	if(xy==0) return affineInfo[layer-2].x;
+	else return affineInfo[layer-2].y;
+}
+
+void GPU::setAffineStartWord(int layer, int xy, u16 val, int word)
+{
+	u32 curr = getAffineStart(layer,xy);
+	if(word==0) curr = (curr&0xFFFF0000)|val;
+	else curr = (curr&0x0000FFFF)|(((u32)val)<<16);
+	setAffineStart(layer,xy,curr);
 }
 
 void GPU::setAffineStart(int layer, int xy, u32 val)
 {
 	if(xy==0) affineInfo[layer-2].x = val;
 	else affineInfo[layer-2].y = val;
+	refreshAffineStartRegs();
+}
+
+void GPU::refreshAffineStartRegs()
+{
+	for(int num=2;num<=3;num++)
+	{
+		BGxPARMS * parms;
+		if (num==2)
+			parms = &(dispx_st)->dispx_BG2PARMS;
+		else
+			parms = &(dispx_st)->dispx_BG3PARMS;		
+
+		parms->BGxX = affineInfo[num-2].x;
+		parms->BGxY = affineInfo[num-2].y;
+	}
 }
 
 void gpu_UpdateRender()
