@@ -611,7 +611,7 @@ static int SubWrite(std::ostream* os, SFORMAT *sf)
 		int size = sf->size;
 
         //add size of current node to the accumulator
-		acc += sizeof(sf->desc) + sizeof(sf->size) + sizeof(sf->count);
+		acc += 4 + sizeof(sf->size) + sizeof(sf->count);
 		acc += count * size;
 
 		if(os)			//Are we writing or calculating the size of this block?
