@@ -3250,8 +3250,14 @@ bool gpu_loadstate(std::istream* is, int size)
 	//sigh.. shouldve used a new version number
 	if(size == 256*192*2*2)
 		version = 0;
+	else if(size== 0x30024)
+	{
+		read32le(&version,is);
+		version = 1;
+	}
 	else
 		if(read32le(&version,is) != 1) return false;
+		
 
 	if(version<0||version>1) return false;
 
