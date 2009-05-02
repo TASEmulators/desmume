@@ -3228,7 +3228,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 void gpu_savestate(std::ostream* os)
 {
 	//version
-	write32le(0,os);
+	write32le(1,os);
 	
 	os->write((char*)GPU_screen,sizeof(GPU_screen));
 	
@@ -3246,21 +3246,31 @@ bool gpu_loadstate(std::istream* is, int size)
 {
 	//read version
 	int version;
-	if(read32le(&version,is) != 1) return false;
-	if(version != 0) return false;
+
+	//sigh.. shouldve used a new version number
+	if(size == 256*192*2*2)
+		version = 0;
+	else
+		if(read32le(&version,is) != 1) return false;
+
+	if(version<0||version>1) return false;
 
 	is->read((char*)GPU_screen,sizeof(GPU_screen));
-	read32le(&MainScreen.gpu->affineInfo[0].x,is);
-	read32le(&MainScreen.gpu->affineInfo[0].y,is);
-	read32le(&MainScreen.gpu->affineInfo[1].x,is);
-	read32le(&MainScreen.gpu->affineInfo[1].y,is);
-	read32le(&SubScreen.gpu->affineInfo[0].x,is);
-	read32le(&SubScreen.gpu->affineInfo[0].y,is);
-	read32le(&SubScreen.gpu->affineInfo[1].x,is);
-	read32le(&SubScreen.gpu->affineInfo[1].y,is);
 
-	MainScreen.gpu->refreshAffineStartRegs();
-	SubScreen.gpu->refreshAffineStartRegs();
+	if(version==1)
+	{
+		read32le(&MainScreen.gpu->affineInfo[0].x,is);
+		read32le(&MainScreen.gpu->affineInfo[0].y,is);
+		read32le(&MainScreen.gpu->affineInfo[1].x,is);
+		read32le(&MainScreen.gpu->affineInfo[1].y,is);
+		read32le(&SubScreen.gpu->affineInfo[0].x,is);
+		read32le(&SubScreen.gpu->affineInfo[0].y,is);
+		read32le(&SubScreen.gpu->affineInfo[1].x,is);
+		read32le(&SubScreen.gpu->affineInfo[1].y,is);
+		MainScreen.gpu->refreshAffineStartRegs();
+		SubScreen.gpu->refreshAffineStartRegs();
+	}
+
 	MainScreen.gpu->updateBLDALPHA();
 	SubScreen.gpu->updateBLDALPHA();
 	return !is->fail();

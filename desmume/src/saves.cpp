@@ -275,7 +275,8 @@ static bool mmu_loadstate(std::istream* is, int size)
 		//it would silently fail if there was a size mismatch
 		SAV_silent_fail_flag = true;
 		if(read32le(&bupmem_size,is) != 1) return false;
-		if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+		//if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+		mc_realloc(&MMU.bupmem,MC_TYPE_AUTODETECT,bupmem_size);
 	}
 	else
 	{
