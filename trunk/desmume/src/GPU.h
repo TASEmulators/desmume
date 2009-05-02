@@ -785,7 +785,7 @@ struct GPU
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
 	u32 getAffineStart(int layer, int xy);
-	void refreshAffineStartRegs();
+	void refreshAffineStartRegs(const int num, const int xy);
 
 	struct AffineInfo {
 		AffineInfo() : x(0), y(0) {}
