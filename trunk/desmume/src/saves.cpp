@@ -877,10 +877,10 @@ static bool savestate_load(std::istream* is)
 	if(!x && !SAV_silent_fail_flag)
 	{
 		printf("Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked");
-		#ifdef _MSC_VER
+#ifdef _MSC_VER
 		//HACK! we really need a better way to handle this kind of feedback
 		MessageBox(0,"Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked",0,0);
-		#endif
+#endif
 		return false;
 	}
 
