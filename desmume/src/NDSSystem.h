@@ -385,7 +385,7 @@ public:
 	virtual BOOL WIFI_Host_InitSystem() { return FALSE; }
 	virtual void WIFI_Host_ShutdownSystem() {}
 	virtual BOOL AVI_IsRecording() { return FALSE; }
-	virtual void USR_InfoMessage(const char *message) { printf(message); }
+	virtual void USR_InfoMessage(const char *message) { printf("%s\n", message); }
 };
 extern Driver* driver;
 
