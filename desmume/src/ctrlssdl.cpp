@@ -292,8 +292,15 @@ void set_mouse_coord(signed long x,signed long y)
 /* Update NDS keypad */
 void update_keypad(u16 keys)
 {
+#ifdef WORDS_BIGENDIAN
+  ARM9Mem.ARM9_REG[0x130] = ~keys & 0xFF;
+  ARM9Mem.ARM9_REG[0x131] = (~keys >> 8) & 0x3;
+  MMU.ARM7_REG[0x130] = ~keys & 0xFF;
+  MMU.ARM7_REG[0x131] = (~keys >> 8) & 0x3;
+#else
   ((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] = ~keys & 0x3FF;
   ((u16 *)MMU.ARM7_REG)[0x130>>1] = ~keys & 0x3FF;
+#endif
   /* Update X and Y buttons */
   MMU.ARM7_REG[0x136] = ( ~( keys >> 10) & 0x3 ) | (MMU.ARM7_REG[0x136] & ~0x3);
 }
@@ -304,7 +311,11 @@ u16 get_keypad( void)
   u16 keypad;
   keypad = ~MMU.ARM7_REG[0x136];
   keypad = (keypad & 0x3) << 10;
+#ifdef WORDS_BIGENDIAN
+  keypad |= ~(ARM9Mem.ARM9_REG[0x130] | (ARM9Mem.ARM9_REG[0x131] << 8)) & 0x3FF;
+#else
   keypad |= ~((u16 *)ARM9Mem.ARM9_REG)[0x130>>1] & 0x3FF;
+#endif
   return keypad;
 }
 
