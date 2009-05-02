@@ -3143,7 +3143,9 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		//SPP level 3-8 rotoscale room
 		//NSMB raster fx backdrops
 		//bubble bobble revolution classic mode
-		gpu->refreshAffineStartRegs();
+		//NOTE:
+		//I am REALLY unsatisfied with this logic now. But it seems to be working..
+		gpu->refreshAffineStartRegs(-1,-1);
 	}
 
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
@@ -3273,8 +3275,8 @@ bool gpu_loadstate(std::istream* is, int size)
 		read32le(&SubScreen.gpu->affineInfo[0].y,is);
 		read32le(&SubScreen.gpu->affineInfo[1].x,is);
 		read32le(&SubScreen.gpu->affineInfo[1].y,is);
-		MainScreen.gpu->refreshAffineStartRegs();
-		SubScreen.gpu->refreshAffineStartRegs();
+		MainScreen.gpu->refreshAffineStartRegs(-1,-1);
+		SubScreen.gpu->refreshAffineStartRegs(-1,-1);
 	}
 
 	MainScreen.gpu->updateBLDALPHA();
@@ -3300,22 +3302,35 @@ void GPU::setAffineStart(int layer, int xy, u32 val)
 {
 	if(xy==0) affineInfo[layer-2].x = val;
 	else affineInfo[layer-2].y = val;
-	refreshAffineStartRegs();
+	refreshAffineStartRegs(layer,xy);
 }
 
-void GPU::refreshAffineStartRegs()
+void GPU::refreshAffineStartRegs(const int num, const int xy)
 {
-	for(int num=2;num<=3;num++)
+	if(num==-1)
 	{
-		BGxPARMS * parms;
-		if (num==2)
-			parms = &(dispx_st)->dispx_BG2PARMS;
-		else
-			parms = &(dispx_st)->dispx_BG3PARMS;		
-
-		parms->BGxX = affineInfo[num-2].x;
-		parms->BGxY = affineInfo[num-2].y;
+		refreshAffineStartRegs(2,xy);
+		refreshAffineStartRegs(3,xy);
+		return;
 	}
+
+	if(xy==-1)
+	{
+		refreshAffineStartRegs(num,0);
+		refreshAffineStartRegs(num,1);
+		return;
+	}
+
+	BGxPARMS * parms;
+	if (num==2)
+		parms = &(dispx_st)->dispx_BG2PARMS;
+	else
+		parms = &(dispx_st)->dispx_BG3PARMS;		
+
+	if(xy==0)
+		parms->BGxX = affineInfo[num-2].x;
+	else
+		parms->BGxY = affineInfo[num-2].y;
 }
 
 void gpu_UpdateRender()
