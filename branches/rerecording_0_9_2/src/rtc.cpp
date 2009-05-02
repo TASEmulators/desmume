@@ -33,6 +33,7 @@
 #ifdef WIN32
 #include "windows/main.h"
 #endif
+#include "movie.h"
 
 typedef struct
 {
@@ -81,24 +82,26 @@ struct movietime movie;
 int oldframeCounter;
 u64 totalcycles=2904024960000ULL;//noon
 int totalseconds;
-bool init=false;
 bool moviemode=false;
 
-#ifdef WIN32
-static void MovieTime(void) {
-	if(!init) {
+
+void InitMovieTime(void) {
+
 		movie.year=9;
 		movie.month=1;
 		movie.monthday=1;
 		movie.weekday=4;
 		oldframeCounter=0;
-		init=true;
-	}
 
-	if(frameCounter > oldframeCounter) {
+}
+
+#ifdef WIN32
+static void MovieTime(void) {
+
+	if(currFrameCounter > oldframeCounter) {
 		int difference;
-		difference=frameCounter-oldframeCounter;
-		oldframeCounter=frameCounter;
+		difference=currFrameCounter-oldframeCounter;
+		oldframeCounter=currFrameCounter;
 		totalcycles+=((560190<<1)*difference);
 	}
 
@@ -143,7 +146,7 @@ static void rtcRecv()
 				tm_local->tm_year %= 100;
 				tm_local->tm_mon++;
 
-				if(moviemode) {
+				if(movieMode != MOVIEMODE_INACTIVE) {
 
 					MovieTime();
 					
@@ -177,7 +180,7 @@ static void rtcRecv()
 				time(&tm);
 				struct tm *tm_local= localtime(&tm);
 
-				if(moviemode) {
+				if(movieMode != MOVIEMODE_INACTIVE) {
 
 					MovieTime();
 

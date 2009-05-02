@@ -36,7 +36,7 @@
 #include <iosfwd>
 
 void gpu_savestate(std::ostream* os);
-bool gpu_loadstate(std::istream* is);
+bool gpu_loadstate(std::istream* is, int size);
 
 /*******************************************************************************
     this structure is for display control,
@@ -402,7 +402,7 @@ void register_gl_fun(fun_gl_Begin beg,fun_gl_End end);
 #define ADDRESS_STEP_8KB		0x02000
 #define ADDRESS_STEP_16KB	   0x04000
 #define ADDRESS_STEP_32KB	   0x08000
-#define ADDRESS_STEP_64kB	   0x10000
+#define ADDRESS_STEP_64KB	   0x10000
 #define ADDRESS_STEP_128KB	   0x20000
 #define ADDRESS_STEP_256KB	   0x40000
 #define ADDRESS_STEP_512KB	   0x80000
@@ -598,11 +598,20 @@ typedef struct
 
 extern CACHE_ALIGN u8 gpuBlendTable555[17][17][32][32];
 
+enum BGType {
+	BGType_Invalid=0, BGType_Text=1, BGType_Affine=2, BGType_Large8bpp=3, 
+	BGType_AffineExt=4, BGType_AffineExt_256x16=5, BGType_AffineExt_256x1=6, BGType_AffineExt_Direct=7
+};
+
 struct GPU
 {
 	// some structs are becoming redundant
 	// some functions too (no need to recopy some vars as it is done by MMU)
 	REG_DISPx * dispx_st;
+
+	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
+	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }
+	void modeRender(int layer);
 
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
@@ -611,12 +620,14 @@ struct GPU
 #define BGBmpBB BG_bmp_ram
 #define BGChBB BG_tile_ram
 
+	u32 BG_bmp_large_ram[4];
 	u32 BG_bmp_ram[4];
 	u32 BG_tile_ram[4];
 	u32 BG_map_ram[4];
 
 	u8 BGExtPalSlot[4];
 	u32 BGSize[4][2];
+	BGType BGTypes[4];
 
 	struct MosaicColor {
 		u16 bg[4][256];
@@ -695,6 +706,9 @@ struct GPU
 	bool blend1;
 	u8* currDst;
 
+	u16* _3dColorLine;
+	u8* _3dAlphaLine;
+
 
 	static struct MosaicLookup {
 
@@ -721,11 +735,12 @@ struct GPU
 	u16 blend(u16 colA, u16 colB);
 
 	typedef void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-	typedef void (*Final3DColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u16 x);
+	typedef void (*Final3DColFunct)(GPU *gpu, int dstX, int srcX);
 
 	int setFinalColorBck_funcNum;
+	int setFinalColor3d_funcNum;
 	FinalOBJColFunct setFinalColorSpr;
-	Final3DColFunct setFinalColor3D;
+	//Final3DColFunct setFinalColor3D;
 	enum SpriteRenderMode {
 		SPRITE_1D, SPRITE_2D
 	} spriteRenderMode;
@@ -735,6 +750,8 @@ struct GPU
 	void spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
 	void setFinalColorBG(u16 color, u8 x);
+	void setFinalColor3d(int dstX, int srcX);
+
 	FORCEINLINE void setFinalBGColorSpecialNone(u16 color, u8 x, bool blend1);
 	FORCEINLINE void setFinalBGColorSpecialBlend(u16 color, u8 x, bool blend1);
 	FORCEINLINE void setFinalBGColorSpecialIncrease(u16 color, u8 x, bool blend1);
@@ -743,9 +760,22 @@ struct GPU
 	FORCEINLINE void setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool blend1);
 	FORCEINLINE void setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool blend1);
 	FORCEINLINE void setFinalBGColorSpecialDecreaseWnd(u16 color, u8 x, bool blend1);
+	
+	FORCEINLINE void setFinal3DColorSpecialNone(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialBlend(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialIncrease(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialDecrease(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialNoneWnd(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialBlendWnd(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialIncreaseWnd(int dstX, int srcX);
+	FORCEINLINE void setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX);
+
 
 	void __setFinalColorBck(u16 color, u8 x, bool opaque);
 	void setAffineStart(int layer, int xy, u32 val);
+	void setAffineStartWord(int layer, int xy, u16 val, int word);
+	u32 getAffineStart(int layer, int xy);
+	void refreshAffineStartRegs();
 
 	struct AffineInfo {
 		AffineInfo() : x(0), y(0) {}
@@ -824,9 +854,7 @@ namespace GPU_EXT
 void sprite1D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 void sprite2D(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
-extern const short sizeTab[4][4][2];
 extern const size sprSizeTab[4][4];
-extern const s8 mode2type[8][4];
 
 typedef struct {
 	GPU * gpu;
@@ -849,7 +877,7 @@ extern MMU_struct MMU;
 
 #define GFXCORE_FULLSCREEN	  (1 << 0)
 
-typedef struct
+struct GraphicsInterface_struct
 {
    int id; // ID number for core(see above defines)
    const char *Name; // Name of core
@@ -858,7 +886,7 @@ typedef struct
    void (*DeInit)(); // Deinitializes stuff related to core
    void (*Resize)(int width, int height, BOOL fullscreen); // Resizes window or fullscreen
    void (*OnScreenText)(char *string, ...); // For handling save state messages, etc.
-} GraphicsInterface_struct;
+} ;
 
 extern GraphicsInterface_struct GFXDummy;
 
@@ -879,43 +907,46 @@ void GPU_set_DISPCAPCNT(u32 val) ;
 void GPU_ligne(NDS_Screen * screen, u16 l) ;
 void GPU_setMasterBrightness (GPU *gpu, u16 val);
 
-#define GPU_setWIN0_H(gpu, val) {gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF; gpu->need_update_winh[0] = true; }
-#define GPU_setWIN0_H0(gpu, val) { gpu->WIN0H0 = val;  gpu->need_update_winh[0] = true; }
-#define GPU_setWIN0_H1(gpu, val) { gpu->WIN0H1 = val;  gpu->need_update_winh[0] = true; }
+inline void GPU_setWIN0_H(GPU* gpu, u16 val) { gpu->WIN0H0 = val >> 8; gpu->WIN0H1 = val&0xFF; gpu->need_update_winh[0] = true; }
+inline void GPU_setWIN0_H0(GPU* gpu, u8 val) { gpu->WIN0H0 = val;  gpu->need_update_winh[0] = true; }
+inline void GPU_setWIN0_H1(GPU* gpu, u8 val) { gpu->WIN0H1 = val;  gpu->need_update_winh[0] = true; }
 
-#define GPU_setWIN0_V(gpu, val) {gpu->WIN0V0 = val >> 8; gpu->WIN0V1 = val&0xFF;}
-#define GPU_setWIN0_V0(gpu, val) gpu->WIN0V0 = val
-#define GPU_setWIN0_V1(gpu, val) gpu->WIN0V1 = val
+inline void GPU_setWIN0_V(GPU* gpu, u16 val) { gpu->WIN0V0 = val >> 8; gpu->WIN0V1 = val&0xFF;}
+inline void GPU_setWIN0_V0(GPU* gpu, u8 val) { gpu->WIN0V0 = val; }
+inline void GPU_setWIN0_V1(GPU* gpu, u8 val) { gpu->WIN0V1 = val; }
 
-#define GPU_setWIN1_H(gpu, val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
-#define GPU_setWIN1_H0(gpu, val) { gpu->WIN1H0 = val;  gpu->need_update_winh[1] = true; }
-#define GPU_setWIN1_H1(gpu, val) { gpu->WIN1H1 = val;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H(GPU* gpu, u16 val) {gpu->WIN1H0 = val >> 8; gpu->WIN1H1 = val&0xFF;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H0(GPU* gpu, u8 val) { gpu->WIN1H0 = val;  gpu->need_update_winh[1] = true; }
+inline void GPU_setWIN1_H1(GPU* gpu, u8 val) { gpu->WIN1H1 = val;  gpu->need_update_winh[1] = true; }
 
-#define GPU_setWIN1_V(gpu, val) {gpu->WIN1V0 = val >> 8; gpu->WIN1V1 = val&0xFF;}
-#define GPU_setWIN1_V0(gpu, val) gpu->WIN1V0 = val
-#define GPU_setWIN1_V1(gpu, val) gpu->WIN1V1 = val
+inline void GPU_setWIN1_V(GPU* gpu, u16 val) { gpu->WIN1V0 = val >> 8; gpu->WIN1V1 = val&0xFF; }
+inline void GPU_setWIN1_V0(GPU* gpu, u8 val) { gpu->WIN1V0 = val; }
+inline void GPU_setWIN1_V1(GPU* gpu, u8 val) { gpu->WIN1V1 = val; }
 
-#define GPU_setWININ(gpu, val) {gpu->WININ0=val&0x1F;\
-								gpu->WININ0_SPECIAL=(val>>5)&1;\
-								gpu->WININ1=(val>>8)&0x1F;\
-								gpu->WININ1_SPECIAL=(val>>13)&1;\
-								}
-#define GPU_setWININ0(gpu, val) {gpu->WININ0 = val&0x1F; gpu->WININ0_SPECIAL = (val>>5)&1;}
-#define GPU_setWININ1(gpu, val) {gpu->WININ1 = val&0x1F; gpu->WININ1_SPECIAL = (val>>5)&1;}
+inline void GPU_setWININ(GPU* gpu, u16 val) {
+	gpu->WININ0=val&0x1F;
+	gpu->WININ0_SPECIAL=(val>>5)&1;
+	gpu->WININ1=(val>>8)&0x1F;
+	gpu->WININ1_SPECIAL=(val>>13)&1;
+}
 
-#define GPU_setWINOUT16(gpu, val) { gpu->WINOUT=val&0x1F;\
-									gpu->WINOUT_SPECIAL=(val>>5)&1;\
-									gpu->WINOBJ=(val>>8)&0x1F;\
-									gpu->WINOBJ_SPECIAL=(val>>13)&1;\
-									}
-#define GPU_setWINOUT(gpu, val) {gpu->WINOUT = val&0x1F; gpu->WINOUT_SPECIAL = (val>>5)&1;}
-#define GPU_setWINOBJ(gpu, val) {gpu->WINOBJ = val&0x1F; gpu->WINOBJ_SPECIAL = (val>>5)&1;}
+inline void GPU_setWININ0(GPU* gpu, u8 val) { gpu->WININ0 = val&0x1F; gpu->WININ0_SPECIAL = (val>>5)&1; }
+inline void GPU_setWININ1(GPU* gpu, u8 val) { gpu->WININ1 = val&0x1F; gpu->WININ1_SPECIAL = (val>>5)&1; }
+
+inline void GPU_setWINOUT16(GPU* gpu, u16 val) {
+	gpu->WINOUT=val&0x1F;
+	gpu->WINOUT_SPECIAL=(val>>5)&1;
+	gpu->WINOBJ=(val>>8)&0x1F;
+	gpu->WINOBJ_SPECIAL=(val>>13)&1;
+}
+inline void GPU_setWINOUT(GPU* gpu, u8 val) { gpu->WINOUT = val&0x1F; gpu->WINOUT_SPECIAL = (val>>5)&1; }
+inline void GPU_setWINOBJ(GPU* gpu, u8 val) { gpu->WINOBJ = val&0x1F; gpu->WINOBJ_SPECIAL = (val>>5)&1; }
 
 // Blending
 void SetupFinalPixelBlitter (GPU *gpu);
-#define GPU_setBLDCNT_LOW(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF00) | val; SetupFinalPixelBlitter (gpu);}
+#define GPU_setBLDCNT_LOW(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF00) | (val); SetupFinalPixelBlitter (gpu);}
 #define GPU_setBLDCNT_HIGH(gpu, val) {gpu->BLDCNT = (gpu->BLDCNT&0xFF) | (val<<8); SetupFinalPixelBlitter (gpu);}
-#define GPU_setBLDCNT(gpu, val) {gpu->BLDCNT = val; SetupFinalPixelBlitter (gpu);}
+#define GPU_setBLDCNT(gpu, val) {gpu->BLDCNT = (val); SetupFinalPixelBlitter (gpu);}
 
 
 

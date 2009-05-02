@@ -41,6 +41,9 @@
 #include "readwrite.h"
 #include "FIFO.h"
 
+using std::max;
+using std::min;
+
 GFX3D gfx3d;
 
 //tables that are provided to anyone
@@ -79,6 +82,11 @@ CACHE_ALIGN const u8 material_3bit_to_8bit[] = {
 	0x00, 0x24, 0x49, 0x6D, 0x92, 0xB6, 0xDB, 0xFF
 };
 
+//maybe not very precise
+CACHE_ALIGN const u8 material_3bit_to_5bit[] = {
+	0, 4, 8, 13, 17, 22, 26, 31
+};
+
 CACHE_ALIGN const u8 alpha_5bit_to_4bit[] = {
 	0x00, 0x00,
 	0x01, 0x01,
@@ -98,6 +106,13 @@ CACHE_ALIGN const u8 alpha_5bit_to_4bit[] = {
 	0x10, 0x10
 };
 
+CACHE_ALIGN const u16 alpha_lookup[] = {
+	0x0000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,
+	0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
+
+
 //private acceleration tables
 static float float16table[65536];
 static float float10Table[1024];
@@ -106,6 +121,9 @@ static float normalTable[1024];
 
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
+
+CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
+CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192];
 
 // Matrix stack handling
 static CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -165,7 +183,7 @@ static u32 lightColor[4] = {0,0,0,0};
 static u32 lightDirection[4] = {0,0,0,0};
 //material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
-/* Shininess */
+// Shininess
 static float shininessTable[128] = {0};
 static int shininessInd = 0;
 
@@ -297,6 +315,9 @@ void gfx3d_reset()
 	last_t = 0;
 	last_s = 0;
 	viewport = 0xBFFF0000;
+
+	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+	memset(gfx3d_convertedAlpha,0,sizeof(gfx3d_convertedAlpha));
 	
 	GFX_FIFOclear();
 }
@@ -396,6 +417,8 @@ void gfx3d_glStoreMatrix(u32 v)
 	if(mymode==0)
 		v = 0;
 
+	if(v==31) v=30; //? what should happen in this case?
+
 	MatrixStackLoadMatrix (&mtxStack[mymode], v&31, mtxCurrent[mymode]);
 	if(mymode==2)
 		MatrixStackLoadMatrix (&mtxStack[1], v&31, mtxCurrent[1]);
@@ -409,6 +432,8 @@ void gfx3d_glRestoreMatrix(u32 v)
 	//for the projection matrix, the provided value is supposed to be reset to zero
 	if(mymode==0)
 		v = 0;
+
+	if(v==31) v=30; //? what should happen in this case?
 
 	MatrixCopy (mtxCurrent[mymode], MatrixStackGetPos(&mtxStack[mymode], v&31));
 	if (mymode == 2)
@@ -1343,42 +1368,31 @@ static void gfx3d_FlushFIFO()
 
 void gfx3d_glFlush(u32 v)
 {
-	gfx3d.frameCtr++;
-
-	gfx3d_FlushFIFO();
-
-	//assert(!flushPending);
 	flushPending = TRUE;
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
-
-	// reset
-	clInd = 0;
-	clCmd = 0;
-
-	//the renderer wil lget the lists we just built
-	gfx3d.polylist = polylist;
-	gfx3d.vertlist = vertlist;
-
-	//we need to sort the poly list with alpha polys last
-	//first, look for opaque polys
-	int polycount = polylist->count;
-	int ctr=0;
-	for(int i=0;i<polycount;i++) {
-		POLY &poly = polylist->list[i];
-		if(!poly.isTranslucent())
-			gfx3d.indexlist[ctr++] = i;
-	}
-	//then look for translucent polys
-	for(int i=0;i<polycount;i++) {
-		POLY &poly = polylist->list[i];
-		if(poly.isTranslucent())
-			gfx3d.indexlist[ctr++] = i;
-	}
-
-	//switch to the new lists
-	twiddleLists();
 }
+
+static int _CDECL_ gfx3d_ysort_compare(const void * elem1, const void * elem2)
+{
+	int num1 = *(int*)elem1;
+	int num2 = *(int*)elem2;
+
+	POLY &poly1 = polylist->list[num1];
+	POLY &poly2 = polylist->list[num2];
+
+	if(poly1.maxy > poly2.maxy)
+		return 1;
+	else if(poly1.maxy < poly2.maxy)
+		return -1;
+	else if(poly1.miny < poly2.miny)
+		return 1;
+	else if(poly1.miny > poly2.miny)
+		return -1;
+	else 
+		return 0;
+}
+
 
 void gfx3d_VBlankSignal()
 {
@@ -1389,6 +1403,62 @@ void gfx3d_VBlankSignal()
 		gfx3d_FlushFIFO();
 		return;
 	}
+
+	gfx3d.frameCtr++;
+
+	gfx3d_FlushFIFO();
+
+	// reset
+	clInd = 0;
+	clCmd = 0;
+
+	//the renderer wil lget the lists we just built
+	gfx3d.polylist = polylist;
+	gfx3d.vertlist = vertlist;
+
+	int polycount = polylist->count;
+
+	//find the min and max y values for each poly.
+	//TODO - this could be a small waste of time if we are manual sorting the translucent polys
+	for(int i=0;i<polycount;i++) {
+		POLY &poly = polylist->list[i];
+		for(int j=0;j<poly.type;j++) {
+			VERT &vert = vertlist->list[poly.vertIndexes[j]];
+			poly.miny = j==0?vert.y:min(poly.miny,vert.y);
+			poly.maxy = j==0?vert.y:max(poly.maxy,vert.y);
+		}
+	}
+
+	//we need to sort the poly list with alpha polys last
+	//first, look for opaque polys
+	int ctr=0;
+	for(int i=0;i<polycount;i++) {
+		POLY &poly = polylist->list[i];
+		if(!poly.isTranslucent())
+			gfx3d.indexlist[ctr++] = i;
+	}
+	int opaqueCount = ctr;
+	//then look for translucent polys
+	for(int i=0;i<polycount;i++) {
+		POLY &poly = polylist->list[i];
+		if(poly.isTranslucent())
+			gfx3d.indexlist[ctr++] = i;
+	}
+
+	//now we have to sort the opaque polys by y-value.
+	//should this be done after clipping??
+	//test case: harvest moon island of happiness character cretor UI
+	qsort(gfx3d.indexlist, opaqueCount, 4, gfx3d_ysort_compare);
+
+	if(!gfx3d.sortmode)
+	{
+		//if we are autosorting translucent polys, we need to do this also
+		//TODO - this is unverified behavior. need a test case
+		qsort(gfx3d.indexlist + opaqueCount, polycount - opaqueCount, 4, gfx3d_ysort_compare);
+	}
+
+	//switch to the new lists
+	twiddleLists();
 
 	flushPending = FALSE;
 	drawPending = TRUE;
@@ -1403,6 +1473,13 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	drawPending = FALSE;
 	gpu3D->NDS_3D_Render();
+
+	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
+	if(gpu3D == &gpu3DNull)
+	{
+		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
+	}
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
@@ -2152,6 +2229,15 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 	*dest = lightColor[index];
 }
 
+void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha)
+{
+	*dst = gfx3d_convertedScreen+((line)<<8);
+	if(dstAlpha != NULL)
+	{
+		*dstAlpha = gfx3d_convertedAlpha+((line)<<8);
+	}
+}
+
 
 //http://www.opengl.org/documentation/specs/version1.1/glspec1.1/node17.html
 //talks about the state required to process verts in quadlists etc. helpful ideas.
@@ -2209,11 +2295,6 @@ SFORMAT SF_GFX3D[]={
 	{ "GMAM", 2, 1, &dsAmbient},
 	{ "GMSP", 2, 1, &dsSpecular},
 	{ "GMEM", 2, 1, &dsEmission},
-	{ "GTST", 4, 1, &triStripToggle},
-	{ "GTVC", 4, 1, &tempVertInfo.count},
-	{ "GTVM", 4, 4, &tempVertInfo.map[0]},
-	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "GLTW", 4, 1, &listTwiddle},
 	{ "GFLP", 4, 1, &flushPending},
 	{ "GDRP", 4, 1, &drawPending},
 	{ "GSET", 4, 1, &gfx3d.enableTexturing},
@@ -2233,6 +2314,13 @@ SFORMAT SF_GFX3D[]={
 	{ "GSTT", 4, 32, gfx3d.rgbToonTable},
 	{ "GSST", 4, 128, shininessTable},
 	{ "GSSI", 4, 1, &shininessInd},
+	//------------------------
+	{ "GTST", 4, 1, &triStripToggle},
+	{ "GTVC", 4, 1, &tempVertInfo.count},
+	{ "GTVM", 4, 4, tempVertInfo.map},
+	{ "GTVF", 4, 1, &tempVertInfo.first},
+	{ "G3CS", 2, 256*192, gfx3d_convertedScreen},
+	{ "G3CA", 2, 256*192, gfx3d_convertedAlpha},
 	{ 0 }
 };
 
@@ -2240,10 +2328,15 @@ SFORMAT SF_GFX3D[]={
 void gfx3d_savestate(std::ostream* os)
 {
 	//dump the render lists
-	//TODO!!!!
+	OSWRITE(vertlist->count);
+	for(int i=0;i<vertlist->count;i++)
+		vertlist->list[i].save(os);
+	OSWRITE(polylist->count);
+	for(int i=0;i<polylist->count;i++)
+		polylist->list[i].save(os);
 }
 
-bool gfx3d_loadstate(std::istream* is)
+bool gfx3d_loadstate(std::istream* is, int size)
 {
 	gfx3d_glPolygonAttrib_cache();
 	gfx3d_glTexImage_cache();
@@ -2254,10 +2347,17 @@ bool gfx3d_loadstate(std::istream* is)
 	gfx3d_glLightDirection_cache(3);
 
 	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
+	listTwiddle = 0;
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
-	polylist->count = 0;
-	vertlist->count = 0;
+
+	OSREAD(vertlist->count);
+	for(int i=0;i<vertlist->count;i++)
+		vertlist->list[i].load(is);
+	OSREAD(polylist->count);
+	for(int i=0;i<polylist->count;i++)
+		polylist->list[i].load(is);
+
 	gfx3d.polylist = &polylists[listTwiddle^1];
 	gfx3d.vertlist = &vertlists[listTwiddle^1];
 	gfx3d.polylist->count=0;

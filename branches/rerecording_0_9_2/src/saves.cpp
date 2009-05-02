@@ -36,6 +36,8 @@
 #include "memorystream.h"
 #include "readwrite.h"
 #include "gfx3d.h"
+#include "movie.h"
+#include "windows/main.h"
 
 
 //void*v is actually a void** which will be indirected before reading
@@ -129,8 +131,8 @@ SFORMAT SF_ARM9[]={
 };
 
 SFORMAT SF_MEM[]={
-	{ "ITCM", 1, 0x8000,   ARM9Mem.ARM9_ITCM},
-	{ "DTCM", 1, 0x4000,   ARM9Mem.ARM9_DTCM},
+	{ "ITCM", 1, sizeof(ARM9Mem.ARM9_ITCM),   ARM9Mem.ARM9_ITCM},
+	{ "DTCM", 1, sizeof(ARM9Mem.ARM9_DTCM),   ARM9Mem.ARM9_DTCM},
 
 	 //for legacy purposes, WRAX is a separate variable. shouldnt be a problem.
 	{ "WRAM", 1, 0x400000, ARM9Mem.MAIN_MEM},
@@ -141,9 +143,9 @@ SFORMAT SF_MEM[]={
 	//but there are actually no more registers than this
 	{ "9REG", 1, 0x2000,   ARM9Mem.ARM9_REG},
 
-	{ "VMEM", 1, 0x800,    ARM9Mem.ARM9_VMEM},
-	{ "OAMS", 1, 0x800,    ARM9Mem.ARM9_OAM},
-	{ "LCDM", 1, 0xA4000,  ARM9Mem.ARM9_LCD},
+	{ "VMEM", 1, sizeof(ARM9Mem.ARM9_VMEM),    ARM9Mem.ARM9_VMEM},
+	{ "OAMS", 1, sizeof(ARM9Mem.ARM9_OAM),    ARM9Mem.ARM9_OAM},
+	{ "LCDM", 1, sizeof(ARM9Mem.ARM9_LCD),		ARM9Mem.ARM9_LCD},
 	{ 0 }
 };
 
@@ -169,15 +171,12 @@ extern u32 DMASrc[2][4];
 extern u32 DMADst[2][4];
 
 SFORMAT SF_MMU[]={
-	{ "M7BI", 1, 0x4000,  MMU.ARM7_BIOS},
-	{ "M7ER", 1, 0x10000, MMU.ARM7_ERAM},
-	{ "M7RG", 1, 0x10000, MMU.ARM7_REG},
-	{ "M7WI", 1, 0x10000, MMU.ARM7_WIRAM},
-	{ "MVRM", 1, 4,       MMU.VRAM_MAP},
-	{ "MVRM", 4, 9,       MMU.LCD_VRAM_ADDR},
-	{ "MVRM", 1, 9,       MMU.LCDCenable},
-	{ "MSWI", 1, 0x8000,  MMU.SWIRAM},
-	{ "MCRA", 1, 0x10000, MMU.CART_RAM},
+	{ "M7BI", 1, sizeof(MMU.ARM7_BIOS), MMU.ARM7_BIOS},
+	{ "M7ER", 1, sizeof(MMU.ARM7_ERAM), MMU.ARM7_ERAM},
+	{ "M7RG", 1, sizeof(MMU.ARM7_REG), MMU.ARM7_REG},
+	{ "M7WI", 1, sizeof(MMU.ARM7_WIRAM), MMU.ARM7_WIRAM},
+	{ "MSWI", 1, sizeof(MMU.SWIRAM), MMU.SWIRAM},
+	{ "MCRA", 1, sizeof(MMU.CART_RAM), MMU.CART_RAM},
 	{ "M9RW", 1, 1,       &MMU.ARM9_RW_MODE},
 	{ "MDTC", 4, 1,       &MMU.DTCMRegion},
 	{ "MITC", 4, 1,       &MMU.ITCMRegion},
@@ -229,37 +228,46 @@ SFORMAT SF_MMU[]={
 
 	//fifos
 	{ "F0TL", 1, 1,       &ipc_fifo[0].tail},
-	{ "F0BF", 4, 16,      &ipc_fifo[0].buf[0]},
+	{ "F0BF", 4, 16,      ipc_fifo[0].buf},
 	{ "F1TL", 1, 1,       &ipc_fifo[1].tail},
-	{ "F1BF", 4, 16,      &ipc_fifo[1].buf[0]},
+	{ "F1BF", 4, 16,      ipc_fifo[1].buf},
 
 	{ "FDHD", 4, 1,       &disp_fifo.head},
 	{ "FDTL", 4, 1,       &disp_fifo.tail},
-	{ "FDBF", 4, 0x6000,  &disp_fifo.buf[0]},
+	{ "FDBF", 4, 0x6000,  disp_fifo.buf},
 	
 	{ 0 }
 };
 
+SFORMAT SF_MOVIE[]={
+	{ "FRAC", 4, 1, &currFrameCounter},
+	{ "LAGC", 4, 1, &TotalLagFrames},
+	{ 0 }
+};
 
 static void mmu_savestate(std::ostream* os)
 {
 	//version
 	write32le(0,os);
 
+	write32le(MMU.bupmem.type,os);
 	write32le(MMU.bupmem.size,os);
 	os->write((char*)MMU.bupmem.data,MMU.bupmem.size);
 }
 
-static bool mmu_loadstate(std::istream* is)
+static bool mmu_loadstate(std::istream* is, int size)
 {
 	//read version
 	int version;
 	if(read32le(&version,is) != 1) return false;
 	if(version != 0) return false;
 
+	int bupmem_type;
 	u32 bupmem_size;
+	if(read32le(&bupmem_type,is) != 1) return false;
 	if(read32le(&bupmem_size,is) != 1) return false;
-	if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+	
+	mc_realloc(&MMU.bupmem,bupmem_type,bupmem_size);
 
 	is->read((char*)MMU.bupmem.data,bupmem_size);
 	if(is->fail()) return false;
@@ -364,7 +372,7 @@ static bool cp15_loadone(armcp15_t *cp15, std::istream* is)
     return true;
 }
 
-static bool cp15_loadstate(std::istream* is)
+static bool cp15_loadstate(std::istream* is, int size)
 {
 	//read version
 	int version;
@@ -633,6 +641,9 @@ static int savestate_WriteChunk(std::ostream* os, int type, SFORMAT *sf)
 	return (bsize+8);
 }
 
+//TODO TODO TODO TODO TODO TODO TODO 
+// - this is retarded. why not write placeholders for size and then write directly to the stream
+//and then go back and fill them in
 static void savestate_WriteChunk(std::ostream* os, int type, void (*saveproc)(std::ostream* os))
 {
 	//get the size
@@ -656,6 +667,16 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	std::ostream* os = (std::ostream*)&ms;
 	writechunks(os);
 	ms.flush();
+
+	for(int i=0x2000;i<0x1000000;i++)
+		if(ARM9Mem.ARM9_REG[i] != 0) {
+			MessageBox(0,"Debug check fail: ARM9Mem.ARM9_REG",0,0);
+		}
+
+	for(int i=0;i<0x20000;i++)
+		if(ARM9Mem.blank_memory[i] != 0) {
+			MessageBox(0,"Debug check fail: ARM9Mem.blank_memory",0,0);
+		}
 
 	//save the length of the file
 	u32 len = ms.size();
@@ -730,6 +751,8 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,8,spu_savestate);
 	savestate_WriteChunk(os,90,SF_GFX3D);
 	savestate_WriteChunk(os,91,gfx3d_savestate);
+	savestate_WriteChunk(os,100,SF_MOVIE);
+	savestate_WriteChunk(os,101,mov_savestate);
 	savestate_WriteChunk(os,0xFFFFFFFF,(SFORMAT*)0);
 }
 
@@ -747,15 +770,17 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 		{
 			case 1: if(!ReadStateChunk(is,SF_ARM9,size)) ret=false; break;
 			case 2: if(!ReadStateChunk(is,SF_ARM7,size)) ret=false; break;
-			case 3: if(!cp15_loadstate(is)) ret=false; break;
+			case 3: if(!cp15_loadstate(is,size)) ret=false; break;
 			case 4: if(!ReadStateChunk(is,SF_MEM,size)) ret=false; break;
 			case 5: if(!ReadStateChunk(is,SF_NDS,size)) ret=false; break;
 			case 60: if(!ReadStateChunk(is,SF_MMU,size)) ret=false; break;
-			case 61: if(!mmu_loadstate(is)) ret=false; break;
-			case 7: if(!gpu_loadstate(is)) ret=false; break;
-			case 8: if(!spu_loadstate(is)) ret=false; break;
+			case 61: if(!mmu_loadstate(is,size)) ret=false; break;
+			case 7: if(!gpu_loadstate(is,size)) ret=false; break;
+			case 8: if(!spu_loadstate(is,size)) ret=false; break;
 			case 90: if(!ReadStateChunk(is,SF_GFX3D,size)) ret=false; break;
-			case 91: if(!gfx3d_loadstate(is)) ret=false; break;
+			case 91: if(!gfx3d_loadstate(is,size)) ret=false; break;
+			case 100: if(!ReadStateChunk(is,SF_MOVIE, size)) ret=false; break;
+			case 101: if(!mov_loadstate(is, size)) ret=false; break;
 			default:
 				ret=false;
 				break;
@@ -842,13 +867,22 @@ static bool savestate_load(std::istream* is)
 	memorystream mstemp(&buf);
 	bool x = ReadStateChunks(&mstemp,(s32)len);
 
+	if(!x)
+	{
+		printf("Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked");
+#ifdef _MSC_VER
+		MessageBox(0,"Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked",0,0);
+#endif
+		return false;
+	}
+
 	loadstate();
 
 	if((nds.debugConsole!=0) != CommonSettings.DebugConsole) {
 		printf("WARNING: forcing console debug mode to: debugmode=%s\n",nds.debugConsole?"TRUE":"FALSE");
 	}
 
-	return x;
+	return true;
 }
 
 bool savestate_load(const char *file_name)

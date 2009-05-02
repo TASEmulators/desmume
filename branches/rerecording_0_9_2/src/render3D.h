@@ -21,6 +21,8 @@
 #ifndef RENDER3D_H
 #define RENDER3D_H
 
+#include "types.h"
+
 //not using this right now
 #define CALL_CONVENTION
 
@@ -43,13 +45,6 @@ typedef struct Render3DInterface
 
 	//called when the emulator reconfigures its vram. you may need to invalidate your texture cache.
 	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
-
-	//Retrieves a line of color buffer data
-	void (CALL_CONVENTION*	NDS_3D_GetLine)					(int line, unsigned short* dst, unsigned char* dstAlpha);
-	
-	//Retrieves a line of color buffer data for capture
-	void (CALL_CONVENTION*	NDS_3D_GetLineCaptured)			(int line, unsigned short* dst);
-
 
 } GPU3DInterface;
 

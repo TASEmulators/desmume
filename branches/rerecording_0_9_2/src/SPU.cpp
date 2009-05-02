@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "mem.h"
 #include "readwrite.h"
 #include "armcpu.h"
+#include "NDSSystem.h"
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
@@ -1034,7 +1035,10 @@ void SPU_Emulate_core()
 	spu_core_samples = (int)(samples);
 	samples -= spu_core_samples;
 	
-	SPU_MixAudio<false>(SPU_core,spu_core_samples);
+	if(driver->AVI_IsRecording())
+		SPU_MixAudio<true>(SPU_core,spu_core_samples);
+	else 
+		SPU_MixAudio<false>(SPU_core,spu_core_samples);
 }
 
 void SPU_Emulate_user()
@@ -1300,7 +1304,7 @@ void spu_savestate(std::ostream* os)
 	}
 }
 
-bool spu_loadstate(std::istream* is)
+bool spu_loadstate(std::istream* is, int size)
 {
 	//read version
 	int version;

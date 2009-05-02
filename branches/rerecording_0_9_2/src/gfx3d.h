@@ -26,12 +26,17 @@
 
 #include "types.h"
 #include <iosfwd>
+#include <ostream>
+#include <istream>
 
 //produce a 32bpp color from a DS RGB16
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
 
 //produce a 32bpp color from a ds RGB15 plus an 8bit alpha, using a table
 #define RGB15TO32(col,alpha8) ( ((alpha8)<<24) | color_15bit_to_24bit[col&0x7FFF] )
+
+//produce a 5555 32bit color from a ds RGB15 plus an 5bit alpha
+#define RGB15TO5555(col,alpha5) (((alpha5)<<24) | ((((col) & 0x7C00)>>10)<<16) | ((((col) & 0x3E0)>>5)<<8) | (((col) & 0x1F)))
 
 //produce a 24bpp color from a ds RGB15, using a table
 #define RGB15TO24_REVERSE(col) ( color_15bit_to_24bit_reverse[col&0x7FFF] )
@@ -58,13 +63,15 @@
 void gfx3d_init();
 void gfx3d_reset();
 
+#define OSWRITE(x) os->write((char*)&(x),sizeof((x)));
+#define OSREAD(x) is->read((char*)&(x),sizeof((x)));
+
 struct POLY {
 	int type; //tri or quad
 	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
-//	int projIndex; //the index into the projlist that this poly uses
-	u32 pad;
 	u32 viewport;
+	float miny, maxy;
 
 	bool isTranslucent()
 	{
@@ -81,6 +88,26 @@ struct POLY {
 	}
 
 	int getAlpha() { return (polyAttr>>16)&0x1F; }
+
+	void save(std::ostream* os)
+	{
+		OSWRITE(type); 
+		OSWRITE(vertIndexes[0]); OSWRITE(vertIndexes[1]); OSWRITE(vertIndexes[2]); OSWRITE(vertIndexes[3]);
+		OSWRITE(polyAttr); OSWRITE(texParam); OSWRITE(texPalette);
+		OSWRITE(viewport);
+		OSWRITE(miny);
+		OSWRITE(maxy);
+	}
+
+	void load(std::istream* is)
+	{
+		OSREAD(type); 
+		OSREAD(vertIndexes[0]); OSREAD(vertIndexes[1]); OSREAD(vertIndexes[2]); OSREAD(vertIndexes[3]);
+		OSREAD(polyAttr); OSREAD(texParam); OSREAD(texPalette);
+		OSREAD(viewport);
+		OSREAD(miny);
+		OSREAD(maxy);
+	}
 };
 
 #define POLYLIST_SIZE 100000
@@ -109,6 +136,20 @@ struct VERT {
 		fcolor[0] = color[0];
 		fcolor[1] = color[1];
 		fcolor[2] = color[2];
+	}
+	void save(std::ostream* os)
+	{
+		OSWRITE(x); OSWRITE(y); OSWRITE(z); OSWRITE(w);
+		OSWRITE(u); OSWRITE(v);
+		OSWRITE(color[0]); OSWRITE(color[1]); OSWRITE(color[2]);
+		OSWRITE(fcolor[0]); OSWRITE(fcolor[1]); OSWRITE(fcolor[2]);
+	}
+	void load(std::istream* is)
+	{
+		OSREAD(x); OSREAD(y); OSREAD(z); OSREAD(w);
+		OSREAD(u); OSREAD(v);
+		OSREAD(color[0]); OSREAD(color[1]); OSREAD(color[2]);
+		OSREAD(fcolor[0]); OSREAD(fcolor[1]); OSREAD(fcolor[2]);
 	}
 };
 
@@ -177,14 +218,21 @@ extern GFX3D gfx3d;
 
 //---------------------
 
+extern CACHE_ALIGN const u16 alpha_lookup[32];
 extern CACHE_ALIGN u32 color_15bit_to_24bit[32768];
 extern CACHE_ALIGN u32 color_15bit_to_24bit_reverse[32768];
 extern CACHE_ALIGN u16 color_15bit_to_16bit_reverse[32768];
 extern CACHE_ALIGN u8 mixTable555[32][32][32];
 extern CACHE_ALIGN const int material_5bit_to_31bit[32];
 extern CACHE_ALIGN const u8 material_5bit_to_8bit[32];
+extern CACHE_ALIGN const u8 material_3bit_to_5bit[8];
 extern CACHE_ALIGN const u8 material_3bit_to_8bit[8];
 extern CACHE_ALIGN const u8 alpha_5bit_to_4bit[32];
+
+//these contain the 3d framebuffer converted into the most useful format
+//they are stored here instead of in the renderers in order to consolidate the buffers
+extern CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
+extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192];
 
 //GE commands:
 void gfx3d_glViewPort(u32 v);
@@ -208,11 +256,11 @@ BOOL gfx3d_glMultMatrix4x4(s32 v);
 void gfx3d_glBegin(u32 v);
 void gfx3d_glEnd(void);
 void gfx3d_glColor3b(u32 v);
-BOOL gfx3d_glVertex16b(unsigned int v);
+BOOL gfx3d_glVertex16b(u32 v);
 void gfx3d_glVertex10b(u32 v);
-void gfx3d_glVertex3_cord(unsigned int one, unsigned int two, unsigned int v);
+void gfx3d_glVertex3_cord(u32 one, u32 two, u32 v);
 void gfx3d_glVertex_rel(u32 v);
-void gfx3d_glSwapScreen(unsigned int screen);
+void gfx3d_glSwapScreen(u32 screen);
 int gfx3d_GetNumPolys();
 int gfx3d_GetNumVertex();
 void gfx3d_glPolygonAttrib (u32 val);
@@ -225,16 +273,16 @@ void gfx3d_glTexImage(u32 val);
 void gfx3d_glTexPalette(u32 val);
 void gfx3d_glTexCoord(u32 val);
 void gfx3d_glNormal(u32 v);
-s32 gfx3d_GetClipMatrix (unsigned int index);
-s32 gfx3d_GetDirectionalMatrix (unsigned int index);
+s32 gfx3d_GetClipMatrix (u32 index);
+s32 gfx3d_GetDirectionalMatrix (u32 index);
 void gfx3d_glLightDirection (u32 v);
 void gfx3d_glLightColor (u32 v);
 void gfx3d_glAlphaFunc(u32 v);
 BOOL gfx3d_glBoxTest(u32 v);
 BOOL gfx3d_glPosTest(u32 v);
 void gfx3d_glVecTest(u32 v);
-unsigned int gfx3d_glGetPosRes(unsigned int index);
-unsigned short gfx3d_glGetVecRes(unsigned int index);
+u32 gfx3d_glGetPosRes(u32 index);
+u16 gfx3d_glGetVecRes(u32 index);
 void gfx3d_glFlush(u32 v);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
@@ -244,13 +292,15 @@ void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 
 //other misc stuff
-void gfx3d_glGetMatrix(unsigned int mode, int index, float* dest);
-void gfx3d_glGetLightDirection(unsigned int index, unsigned int* dest);
-void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest);
+void gfx3d_glGetMatrix(u32 mode, int index, float* dest);
+void gfx3d_glGetLightDirection(u32 index, u32* dest);
+void gfx3d_glGetLightColor(u32 index, u32* dest);
+
+void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha);
 
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
 void gfx3d_savestate(std::ostream* os);
-bool gfx3d_loadstate(std::istream* is);
+bool gfx3d_loadstate(std::istream* is, int size);
 
 #endif

@@ -23,6 +23,7 @@
 #include "debug.h"
 #include "types.h"
 #include "mc.h"
+#include "movie.h"
 
 #define FW_CMD_READ             0x3
 #define FW_CMD_WRITEDISABLE     0x4
@@ -207,8 +208,15 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
 {
    long size;
    int type = -1;
-   FILE* file = fopen(filename, "rb+");
+   FILE* file;
    size_t elems_read;
+
+   if(movieMode != MOVIEMODE_INACTIVE) {
+	    mc->filename = strdup(filename);
+      return;
+   }
+   else
+	   file = fopen(filename, "rb+");
 
    if(file == NULL)
    {
