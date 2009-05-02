@@ -49,6 +49,9 @@ savestates_t savestates[NB_STATES];
 #define SAVESTATE_VERSION       11
 static const char* magic = "DeSmuME SState\0";
 
+//a savestate chunk loader can set this if it wants to permit a silent failure (for compatibility)
+static bool SAV_silent_fail_flag;
+
 #ifndef MAX_PATH
 #define MAX_PATH 256
 #endif
@@ -145,7 +148,9 @@ SFORMAT SF_MEM[]={
 
 	{ "VMEM", 1, sizeof(ARM9Mem.ARM9_VMEM),    ARM9Mem.ARM9_VMEM},
 	{ "OAMS", 1, sizeof(ARM9Mem.ARM9_OAM),    ARM9Mem.ARM9_OAM},
-	{ "LCDM", 1, sizeof(ARM9Mem.ARM9_LCD),		ARM9Mem.ARM9_LCD},
+
+	//this size is specially chosen to avoid saving the blank space at the end
+	{ "LCDM", 1, 0xA4000,		ARM9Mem.ARM9_LCD},
 	{ 0 }
 };
 
@@ -248,7 +253,7 @@ SFORMAT SF_MOVIE[]={
 static void mmu_savestate(std::ostream* os)
 {
 	//version
-	write32le(0,os);
+	write32le(1,os);
 
 	write32le(MMU.bupmem.type,os);
 	write32le(MMU.bupmem.size,os);
@@ -260,14 +265,26 @@ static bool mmu_loadstate(std::istream* is, int size)
 	//read version
 	int version;
 	if(read32le(&version,is) != 1) return false;
-	if(version != 0) return false;
-
-	int bupmem_type;
-	u32 bupmem_size;
-	if(read32le(&bupmem_type,is) != 1) return false;
-	if(read32le(&bupmem_size,is) != 1) return false;
 	
-	mc_realloc(&MMU.bupmem,bupmem_type,bupmem_size);
+
+	u32 bupmem_size;
+
+	if(version == 0)
+	{
+		//version 0 was buggy and didnt save the type. 
+		//it would silently fail if there was a size mismatch
+		SAV_silent_fail_flag = true;
+		if(read32le(&bupmem_size,is) != 1) return false;
+		if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+	}
+	else
+	{
+		//version 1 reinitializes the save system with the type that was saved
+		int bupmem_type;
+		if(read32le(&bupmem_type,is) != 1) return false;
+		if(read32le(&bupmem_size,is) != 1) return false;
+		mc_realloc(&MMU.bupmem,bupmem_type,bupmem_size);
+	}
 
 	is->read((char*)MMU.bupmem.data,bupmem_size);
 	if(is->fail()) return false;
@@ -668,16 +685,6 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	writechunks(os);
 	ms.flush();
 
-	for(int i=0x2000;i<0x1000000;i++)
-		if(ARM9Mem.ARM9_REG[i] != 0) {
-			MessageBox(0,"Debug check fail: ARM9Mem.ARM9_REG",0,0);
-		}
-
-	for(int i=0;i<0x20000;i++)
-		if(ARM9Mem.blank_memory[i] != 0) {
-			MessageBox(0,"Debug check fail: ARM9Mem.blank_memory",0,0);
-		}
-
 	//save the length of the file
 	u32 len = ms.size();
 
@@ -736,8 +743,6 @@ bool savestate_save (const char *file_name)
 		return (elems_written == ms.size());
 	} else return false;
 }
-
-//u8 GPU_screen[4*256*192];
 
 static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,1,SF_ARM9);
@@ -812,6 +817,7 @@ static void loadstate()
 
 static bool savestate_load(std::istream* is)
 {
+	SAV_silent_fail_flag = false;
 	char header[16];
 	is->read(header,16);
 	if(is->fail() || memcmp(header,magic,16))
@@ -867,12 +873,13 @@ static bool savestate_load(std::istream* is)
 	memorystream mstemp(&buf);
 	bool x = ReadStateChunks(&mstemp,(s32)len);
 
-	if(!x)
+	if(!x && !SAV_silent_fail_flag)
 	{
 		printf("Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked");
-#ifdef _MSC_VER
+		#ifdef _MSC_VER
+		//HACK! we really need a better way to handle this kind of feedback
 		MessageBox(0,"Error loading savestate. It failed halfway through;\nSince there is no savestate backup system, your current game session is wrecked",0,0);
-#endif
+		#endif
 		return false;
 	}
 
