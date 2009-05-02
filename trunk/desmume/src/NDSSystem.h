@@ -385,6 +385,7 @@ public:
 	virtual BOOL WIFI_Host_InitSystem() { return FALSE; }
 	virtual void WIFI_Host_ShutdownSystem() {}
 	virtual BOOL AVI_IsRecording() { return FALSE; }
+	virtual void USR_InfoMessage(const char *message) { printf(message); }
 };
 extern Driver* driver;
 
@@ -392,7 +393,7 @@ extern std::string InputDisplayString;
 extern int LagFrameFlag;
 extern int lastLag, TotalLagFrames;
 
-void MovieSRAM(int bmtype, u32 bmsize);
+void MovieSRAM();
 
 void ClearAutoHold(void);
 

@@ -22,7 +22,6 @@
 #include <assert.h>
 #include <limits.h>
 #include <fstream>
-#include "main.h"
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "movie.h"
@@ -355,7 +354,7 @@ static void closeRecordingMovie()
 /// Stop movie playback.
 static void StopPlayback()
 {
-	SetMessageToDisplay("Movie playback stopped.");
+	driver->USR_InfoMessage("Movie playback stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 }
 
@@ -363,7 +362,7 @@ static void StopPlayback()
 /// Stop movie recording
 static void StopRecording()
 {
-	SetMessageToDisplay("Movie recording stopped.");
+	driver->USR_InfoMessage("Movie recording stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 	
 	closeRecordingMovie();
@@ -436,14 +435,14 @@ void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _paus
 	movieMode = MOVIEMODE_PLAY;
 	currRerecordCount = currMovieData.rerecordCount;
 	InitMovieTime();
-	MovieSRAM(backupmemorytype, backupmemorysize);
+	MovieSRAM();
 	freshMovie = true;
 	ClearAutoHold();
 
 	if(movie_readonly)
-		SetMessageToDisplay("Replay started Read-Only.");
+		driver->USR_InfoMessage("Replay started Read-Only.");
 	else
-		SetMessageToDisplay("Replay started Read+Write.");
+		driver->USR_InfoMessage("Replay started Read+Write.");
 }
 
 static void openRecordingMovie(const char* fname)
@@ -492,9 +491,9 @@ static void openRecordingMovie(const char* fname)
 	movie_readonly = false;
 	currRerecordCount = 0;
 	InitMovieTime();
-	MovieSRAM(backupmemorytype, backupmemorysize);
-	
-	SetMessageToDisplay("Movie recording started.");
+	MovieSRAM();
+
+	driver->USR_InfoMessage("Movie recording started.");
 }
 
  void NDS_setTouchFromMovie(void) {
