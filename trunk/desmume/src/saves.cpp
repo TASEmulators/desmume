@@ -37,7 +37,9 @@
 #include "readwrite.h"
 #include "gfx3d.h"
 #include "movie.h"
+#ifdef _MSC_VER
 #include "windows/main.h"
+#endif
 
 
 //void*v is actually a void** which will be indirected before reading
