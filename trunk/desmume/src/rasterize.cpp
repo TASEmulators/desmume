@@ -63,7 +63,6 @@ template<typename T> T _min(T a, T b, T c, T d) { return min(_min(a,b,d),c); }
 template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 
 static int polynum;
-static bool validFramebuffer = false;
 
 static u8 modulate_table[32][32];
 static u8 decal_table[32][32][32];
@@ -1281,8 +1280,6 @@ static void SoftRastRender()
 
 		shape_engine(type,!polyAttr.backfacing);
 	}
-
-	validFramebuffer = false;
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 	SoftRastConvertFramebuffer();
