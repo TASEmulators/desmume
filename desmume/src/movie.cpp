@@ -608,6 +608,9 @@ static void FCEUMOV_AddCommand(int cmd)
 	//DoEncode((cmd>>3)&0x3,cmd&0x7,1);
 }
 
+//little endian 4-byte cookies
+static const int kMOVI = 0x49564F4D;
+static const int kNOMO = 0x4F4D4F4E;
 
 void mov_savestate(std::ostream* os)
 {
@@ -617,12 +620,12 @@ void mov_savestate(std::ostream* os)
 	//else return 0;
 	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
 	{
-		write32le('MOVI',os);
+		write32le(kMOVI,os);
 		currMovieData.dump(os, true);
 	}
 	else
 	{
-		write32le('NOMO',os);
+		write32le(kNOMO,os);
 	}
 }
 
@@ -636,9 +639,9 @@ bool mov_loadstate(std::istream* is, int size)
 
 	int cookie;
 	if(read32le(&cookie,is) != 1) return false;
-	if(cookie == 'NOMO')
+	if(cookie == kNOMO)
 		return true;
-	else if(cookie != 'MOVI')
+	else if(cookie != kMOVI)
 		return false;
 
 	size -= 4;
