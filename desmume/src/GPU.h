@@ -36,7 +36,7 @@
 #include <iosfwd>
 
 void gpu_savestate(std::ostream* os);
-bool gpu_loadstate(std::istream* is);
+bool gpu_loadstate(std::istream* is, int size);
 
 /*******************************************************************************
     this structure is for display control,

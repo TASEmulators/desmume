@@ -67,7 +67,7 @@ struct SCustomKeys
 
 	SCustomKey OpenROM, Reset, Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, Microphone;
 
-	SCustomKey TurboRight, TurboLeft, TurboDown, TurboUp, TurboSelect, TurboStart, TurboB, TurboA, TurboY, TurboX;
+	SCustomKey TurboRight, TurboLeft, TurboDown, TurboUp, TurboSelect, TurboStart, TurboB, TurboA, TurboY, TurboX, TurboR, TurboL;
 
 	SCustomKey AutoHold, AutoHoldClear;
 
@@ -80,6 +80,7 @@ struct SCustomKeys
 	SCustomKey ToggleFPS;
 	SCustomKey ToggleInput;
 	SCustomKey ToggleLag;
+	SCustomKey ToggleReadOnly;
 	SCustomKey LastItem; // dummy, must be last
 
 	//--methods--

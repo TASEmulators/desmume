@@ -40,6 +40,7 @@
 #include "bios.h"
 #include "debug.h"
 #include "cheatSystem.h"
+#include "movie.h"
 
 #ifdef _WIN32
 #include "./windows/disView.h"
@@ -844,6 +845,23 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	return ret;
 }
 
+void MovieSRAM(int bmtype, u32 bmsize) {
+
+	char buf[MAX_PATH];
+
+	memset(buf, 0, MAX_PATH);
+	strcpy(buf, pathFilenameToROMwithoutExt);
+	strcat(buf, ".sav");							// DeSmuME memory card	:)
+
+	if(movieMode != MOVIEMODE_INACTIVE) {
+		strcat(buf, "movie");
+	}
+
+	mc_realloc(&MMU.bupmem, bmtype, bmsize);
+	mc_load_file(&MMU.bupmem, buf);
+
+}
+
 void NDS_FreeROM(void)
 {
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)
@@ -868,6 +886,8 @@ void NDS_Reset(BOOL resetBySavestate)
 	LagFrameFlag=0;
 	lastLag=0;
 	TotalLagFrames=0;
+
+	currFrameCounter=0;
 
 	MMU_clearMem();
 
@@ -1565,10 +1585,9 @@ u32 NDS_exec(s32 nb)
 {
 	int i, j;
 
-	//TODO - since NDS_exec is not necessarily called one frame at a time, this could be wrong.
-	LagFrameFlag=1;
+	nb = 560190<<1;
 
-	nb += nds.cycles;//(nds.cycles>>26)<<26;
+	LagFrameFlag=1;
 
 	//increase this to execute more instructions in each batch (reducing overhead)
 	//the value of 4 seems to optimize speed.. do lower values increase precision? 
@@ -2393,23 +2412,30 @@ static std::string MakeInputDisplayString(u16 pad, u16 padExt) {
     return s;
 }
 
+void ClearAutoHold(void) {
+	
+	for (int i=0; i < 10; i++) {
+		AutoHold.hold(i)=false;
+	}
+}
+
 void NDS_setPadFromMovie(u16 pad)
 {
 #define FIX(b,n) (((pad>>n)&1)!=0)
 	NDS_setPad(
-		FIX(pad,0),
-		FIX(pad,1),
+		FIX(pad,12), //R
+		FIX(pad,11), //L
+		FIX(pad,10), //D
+		FIX(pad,9), //U 
+		FIX(pad,7), //Select
+		FIX(pad,8), //Start
+		FIX(pad,6), //B
+		FIX(pad,5), //A
+		FIX(pad,4), //Y
+		FIX(pad,3), //X
 		FIX(pad,2),
-		FIX(pad,3),
-		FIX(pad,4),
-		FIX(pad,5),
-		FIX(pad,6),
-		FIX(pad,7),
-		FIX(pad,8),
-		FIX(pad,9),
-		FIX(pad,10),
-		FIX(pad,11),
-		FIX(pad,12),
+		FIX(pad,1),
+		FIX(pad,0),
 		FIX(pad,13)
 		);
 #undef FIX
@@ -2418,12 +2444,12 @@ void NDS_setPadFromMovie(u16 pad)
 turbo Turbo;
 turbotime TurboTime;
 
-static void SetTurbo(bool (&pad) [10]) {
+static void SetTurbo(bool (&pad) [12]) {
 
 	bool turbo[4] = {true, false, true, false};
 	bool currentbutton;
-	
-	for (int i=0; i < 10; i++) {
+
+	for (int i=0; i < 12; i++) {
 		currentbutton=Turbo.button(i);
 
 		if(currentbutton) {
@@ -2435,7 +2461,7 @@ static void SetTurbo(bool (&pad) [10]) {
 		else
 			TurboTime.time(i)=0; //reset timer if the button isn't pressed
 	}
-	for (int i=0; i<10; i++)
+	for (int i=0; i<12; i++)
 		TurboTime.time(i)++;
 }
 
@@ -2444,7 +2470,7 @@ autohold AutoHold;
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F)
 {
 
-	bool padarray[10] = {R, L, D, U, T, S, B, A, Y, X};
+	bool padarray[12] = {R, L, D, U, T, S, B, A, Y, X, W, E};
 
 	SetTurbo(padarray);
 
@@ -2458,6 +2484,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	A=padarray[7];
 	Y=padarray[8];
 	X=padarray[9];
+	W=padarray[10];
+	E=padarray[11];
 
 	if(AutoHold.Right) R=!padarray[0];
 	if(AutoHold.Left)  L=!padarray[1];
@@ -2556,20 +2584,18 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 
 
 	nds.pad =
-		(FIX(r)<<0)|
-		(FIX(l)<<1)|
-		(FIX(d)<<2)|
-		(FIX(u)<<3)|
-		(FIX(t)<<4)|
-		(FIX(s)<<5)|
+		(FIX(r)<<12)|
+		(FIX(l)<<11)|
+		(FIX(d)<<10)|
+		(FIX(u)<<9)|
+		(FIX(s)<<8)|
+		(FIX(t)<<7)|
 		(FIX(b)<<6)|
-		(FIX(a)<<7)|
-		(FIX(y)<<8)|
-		(FIX(x)<<9)|
-		(FIX(w)<<10)|
-		(FIX(e)<<11)|
-		(FIX(g)<<12)|
-		(FIX(f)<<13);
+		(FIX(a)<<5)|
+		(FIX(y)<<4)|
+		(FIX(x)<<3)|
+		(FIX(w)<<2)|
+		(FIX(e)<<1);
 
 	// TODO: low power IRQ
 }

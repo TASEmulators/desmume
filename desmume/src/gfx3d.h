@@ -26,6 +26,8 @@
 
 #include "types.h"
 #include <iosfwd>
+#include <ostream>
+#include <istream>
 
 //produce a 32bpp color from a DS RGB16
 #define RGB16TO32(col,alpha) (((alpha)<<24) | ((((col) & 0x7C00)>>7)<<16) | ((((col) & 0x3E0)>>2)<<8) | (((col) & 0x1F)<<3))
@@ -68,8 +70,6 @@ struct POLY {
 	int type; //tri or quad
 	u16 vertIndexes[4]; //up to four verts can be referenced by this poly
 	u32 polyAttr, texParam, texPalette; //the hardware rendering params
-//	int projIndex; //the index into the projlist that this poly uses
-	u32 pad;
 	u32 viewport;
 	float miny, maxy;
 
@@ -88,6 +88,26 @@ struct POLY {
 	}
 
 	int getAlpha() { return (polyAttr>>16)&0x1F; }
+
+	void save(std::ostream* os)
+	{
+		OSWRITE(type); 
+		OSWRITE(vertIndexes[0]); OSWRITE(vertIndexes[1]); OSWRITE(vertIndexes[2]); OSWRITE(vertIndexes[3]);
+		OSWRITE(polyAttr); OSWRITE(texParam); OSWRITE(texPalette);
+		OSWRITE(viewport);
+		OSWRITE(miny);
+		OSWRITE(maxy);
+	}
+
+	void load(std::istream* is)
+	{
+		OSREAD(type); 
+		OSREAD(vertIndexes[0]); OSREAD(vertIndexes[1]); OSREAD(vertIndexes[2]); OSREAD(vertIndexes[3]);
+		OSREAD(polyAttr); OSREAD(texParam); OSREAD(texPalette);
+		OSREAD(viewport);
+		OSREAD(miny);
+		OSREAD(maxy);
+	}
 };
 
 #define POLYLIST_SIZE 100000
@@ -116,6 +136,20 @@ struct VERT {
 		fcolor[0] = color[0];
 		fcolor[1] = color[1];
 		fcolor[2] = color[2];
+	}
+	void save(std::ostream* os)
+	{
+		OSWRITE(x); OSWRITE(y); OSWRITE(z); OSWRITE(w);
+		OSWRITE(u); OSWRITE(v);
+		OSWRITE(color[0]); OSWRITE(color[1]); OSWRITE(color[2]);
+		OSWRITE(fcolor[0]); OSWRITE(fcolor[1]); OSWRITE(fcolor[2]);
+	}
+	void load(std::istream* is)
+	{
+		OSREAD(x); OSREAD(y); OSREAD(z); OSREAD(w);
+		OSREAD(u); OSREAD(v);
+		OSREAD(color[0]); OSREAD(color[1]); OSREAD(color[2]);
+		OSREAD(fcolor[0]); OSREAD(fcolor[1]); OSREAD(fcolor[2]);
 	}
 };
 
@@ -267,6 +301,6 @@ void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha);
 struct SFORMAT;
 extern SFORMAT SF_GFX3D[];
 void gfx3d_savestate(std::ostream* os);
-bool gfx3d_loadstate(std::istream* is);
+bool gfx3d_loadstate(std::istream* is, int size);
 
 #endif

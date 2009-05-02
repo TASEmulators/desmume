@@ -931,7 +931,8 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 			//printf("wifi: read reg 0x0214\n");
 			return 0x0009;
 		case 0x19C:
-			return 0; //luigi, please pick something to return from here
+			//assert(false); //luigi, please pick something to return from here
+			return 0;
 		default:
 		//	printf("wifi: read unhandled reg %03X\n", address);
 			return wifi->ioMem[address >> 1];

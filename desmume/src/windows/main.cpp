@@ -69,13 +69,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "throttle.h"
 #include "gbaslot_config.h"
 #include "cheatsWin.h"
-
+#include "Mmsystem.h"
 #include "../mic.h"
 #include "../common.h"
 #include "main.h"
 #include "hotkey.h"
-
+#include "../movie.h"
+#include "../replay.h"
 #include "snddx.h"
+#include "ramwatch.h"
+#include "ram_search.h"
+
 
 #include "directx/ddraw.h"
 
@@ -91,8 +95,8 @@ using namespace std;
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
-const unsigned int clearid = 600;			// ID for the Clear recent ROMs item
-const unsigned int baseid = 601;			//Base identifier for the recent ROMs items
+const unsigned int clearid = IDM_RECENT_RESERVED0;			// ID for the Clear recent ROMs item
+const unsigned int baseid = IDM_RECENT_RESERVED1;			//Base identifier for the recent ROMs items
 static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
 //--------------------------------------
 
@@ -107,6 +111,10 @@ void DRV_AviSoundUpdate(void* soundData, int soundLen);
 bool DRV_AviIsRecording();
 void DRV_AviVideoUpdate(const u16* buffer);
 //------
+DWORD hKeyInputTimer;
+
+extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 
 CRITICAL_SECTION win_sync;
 volatile int win_sound_samplecounter = 0;
@@ -157,6 +165,7 @@ int WndX = 0;
 int WndY = 0;
 
 int ScreenGap = 0;
+extern HWND RamSearchHWnd;
 
 static int FrameLimit = 1;
 
@@ -215,9 +224,8 @@ GPU3DInterface *core3DList[] = {
 int autoframeskipenab=0;
 int frameskiprate=0;
 int emu_paused = 0;
-static int backupmemorytype=MC_TYPE_AUTODETECT;
-static u32 backupmemorysize=1;
-unsigned int frameCounter=0;
+int backupmemorytype=MC_TYPE_AUTODETECT;
+u32 backupmemorysize=1;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
 bool FpsDisplay = false;
@@ -343,10 +351,10 @@ void ResetHud(HudStruct *hudstruct) {
 	SetHudDummy(&hudstruct->Dummy);
 }
 
-unsigned int lastSaveState = 0;	//Keeps track of last savestate used for quick save/load functions
-stringstream MessageToDisplay;	//temp variable to store message that will be displayed via DisplayMessage function
-int displayMessageCounter = 0;	//Counter to keep track with how long to display messages on screen
-
+unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
+stringstream MessageToDisplay;		//temp variable to store message that will be displayed via DisplayMessage function
+int displayMessageCounter = 0;		//Counter to keep track with how long to display messages on screen
+bool NewMessageToDisplay = false;	//Flag to indicate a new message is in queue
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
 
@@ -381,6 +389,79 @@ struct configured_features {
 
 	const char *cflash_disk_image_file;
 };
+
+int KeyInDelayInCount=10;
+
+static int lastTime = timeGetTime();
+int repeattime;
+
+VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+{
+	//
+//	if(timeGetTime() - lastTime > 5)
+//	{
+		bool S9xGetState (WORD KeyIdent);
+
+		/*		if(GUI.JoystickHotkeys)
+		{
+		static uint32 joyState [256];
+
+		for(int i = 0 ; i < 255 ; i++)
+		{
+		bool active = !S9xGetState(0x8000|i);
+
+		if(active)
+		{
+		if(joyState[i] < ULONG_MAX) // 0xffffffffUL
+		joyState[i]++;
+		if(joyState[i] == 1 || joyState[i] >= (unsigned) KeyInDelayInCount)
+		PostMessage(GUI.hWnd, WM_CUSTKEYDOWN, (WPARAM)(0x8000|i),(LPARAM)(NULL));
+		}
+		else
+		{
+		if(joyState[i])
+		{
+		joyState[i] = 0;
+		PostMessage(GUI.hWnd, WM_CUSTKEYUP, (WPARAM)(0x8000|i),(LPARAM)(NULL));
+		}
+		}
+		}
+		}*/
+		//		if((!GUI.InactivePause || !Settings.ForcedPause)
+		//				|| (GUI.BackgroundInput || !(Settings.ForcedPause & (PAUSE_INACTIVE_WINDOW | PAUSE_WINDOW_ICONISED))))
+		//		{
+		static uint32 joyState [256];
+		for(int i = 0 ; i < 255 ; i++)
+		{
+			bool active = !S9xGetState(i);
+			if(active)
+			{
+				if(joyState[i] < ULONG_MAX) // 0xffffffffUL
+					joyState[i]++;
+				if(joyState[i] == 1 || joyState[i] >= (unsigned) KeyInDelayInCount) {
+					//sort of fix the auto repeating
+					//TODO find something better
+				//	repeattime++;
+				//	if(repeattime % 10 == 0) {
+
+						PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(NULL));
+						repeattime=0;
+				//	}
+				}
+			}
+			else
+			{
+				if(joyState[i])
+				{
+					joyState[i] = 0;
+					PostMessage(MainWindow->getHWnd(), WM_CUSTKEYUP, (WPARAM)(i),(LPARAM)(NULL));
+				}
+			}
+		}
+		//	}
+	//	lastTime = timeGetTime();
+//	}
+}
 
 static void
 init_configured_features( struct configured_features *config) {
@@ -920,7 +1001,8 @@ void DisplayMessage()
 	{
 		//adelikat - By using stringstream, it leaves open the possibility to keep a series of message in queue
 		displayMessageCounter--;
-		osd->addFixed(0, 40, "%s",MessageToDisplay.str().c_str());
+		osd->addFixed(0, 120, "%s",MessageToDisplay.str().c_str());
+		NewMessageToDisplay = false;
 	}
 }
 
@@ -932,12 +1014,15 @@ void SaveStateMessages(int slotnum, int whichMessage)
 	{
 	case 0:		//State saved
 		MessageToDisplay << "State " << slotnum << " saved.";
+		NewMessageToDisplay = true;		//adelikat: TODO: make these call SetMessageToDisplay instead
 		break;
 	case 1:		//State loaded
 		MessageToDisplay << "State " << slotnum << " loaded.";
+		NewMessageToDisplay = true;
 		break;
 	case 2:		//Save slot selected
 		MessageToDisplay << "State " << slotnum << " selected.";
+		NewMessageToDisplay = true;
 	default:
 		break;
 	}
@@ -999,12 +1084,13 @@ DWORD WINAPI run()
 		while(execute)
 		{
 			input_process();
+			FCEUMOV_AddInputState();
 				
 			if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
 
 			{
 				Lock lock;
-				cycles = NDS_exec((560190<<1)-cycles);
+				NDS_exec(0);
 				win_sound_samplecounter = 735;
 			}
 
@@ -1025,7 +1111,17 @@ DWORD WINAPI run()
 			static int fps3d = 0;
 
 			if (FpsDisplay) osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "%02d Fps / %02d 3d", fps, fps3d);
-			osd->update();
+			if (frameCounterDisplay) 
+			{
+				if (movieMode == MOVIEMODE_PLAY)
+					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d/%d",currFrameCounter,currMovieData.records.size());
+				else if(movieMode == MOVIEMODE_RECORD) 
+					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",currFrameCounter);
+				else
+					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d (no movie)",currFrameCounter);
+			}
+
+			if(!DRV_AviIsRecording()) osd->update();
 			Display();
 			osd->clear();
 
@@ -1047,6 +1143,8 @@ DWORD WINAPI run()
 			}
 
 
+			Update_RAM_Watch();
+			Update_RAM_Search();
 
 			fpsframecount++;
 			QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
@@ -1141,14 +1239,19 @@ DWORD WINAPI run()
 					emu_halt();
 					SPU_Pause(1);
 				}
-				frameCounter++;
-				if (frameCounterDisplay) osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",frameCounter);
 				if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
 				if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
-				DisplayMessage();
+//				DisplayMessage();
 				CheckMessages();
 		}
 
+		if (NewMessageToDisplay)
+		{
+			DisplayMessage();
+			osd->update();
+			Display();
+			osd->clear();
+		}
 		paused = TRUE;
 		CheckMessages();
 		Sleep(100);
@@ -1261,7 +1364,6 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 	{
 		INFO("Loading %s was successful\n",filename);
 		LoadSaveStateInfo();
-		frameCounter=0;
 		lagframecounter=0;
 		UpdateRecentRoms(filename);
 		osd->setRotate(GPU_rotation);
@@ -1390,6 +1492,7 @@ static void ExitRunLoop()
 	emu_halt();
 }
 
+BOOL AVI_IsRecording();
 class WinDriver : public Driver
 {
 	virtual BOOL WIFI_Host_InitSystem() {
@@ -1418,6 +1521,11 @@ class WinDriver : public Driver
 		#ifdef EXPERIMENTAL_WIFI
 			WSACleanup() ;
 		#endif
+	}
+
+	virtual BOOL AVI_IsRecording()
+	{
+		return ::AVI_IsRecording();
 	}
 };
 
@@ -1656,6 +1764,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		frameskiprate=atoi(text);
 		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
 	}
+
+	int KeyInRepeatMSec=20;
+
+	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
 	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileInt("3D", "HighResolutionInterpolateColor", 1, IniName);
@@ -2246,11 +2358,24 @@ void Pause()
 	emu_paused ^= 1;
 }
 
-void FrameAdvance()
+bool first;
+
+void FrameAdvance(bool state)
 {
-	frameAdvance = true;
-	execute = TRUE;
-	emu_paused = 1;
+	if(state) {
+		if(first) {
+			frameAdvance=true;
+		}
+		else {
+			execute = TRUE;
+			first=false;
+		}
+	}
+	else {
+		emu_halt();
+		SPU_Pause(1);
+		emu_paused = 1;
+	}
 }
 
 enum CONFIGSCREEN
@@ -2344,6 +2469,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_WIFISETTINGS,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+
+			EnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      MF_BYCOMMAND | (romloaded && movieMode == MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        MF_BYCOMMAND | (romloaded && movieMode == MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_STOPMOVIE,         MF_BYCOMMAND | (romloaded && movieMode != MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
 
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
@@ -2476,6 +2605,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		//break;
 
 	case WM_KEYDOWN:
+		break;
 	case WM_SYSKEYDOWN:
 	case WM_CUSTKEYDOWN:
 		{
@@ -2953,7 +3083,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_CHEATS_SEARCH:
 			CheatsSearchDialog(hwnd);
 			return 0;
-
+		case IDM_RECORD_MOVIE:
+			MovieRecordTo();
+			return 0;
+		case IDM_PLAY_MOVIE:
+			Replay_LoadMovie();
+			return 0;
+		case IDM_STOPMOVIE:
+			FCEUI_StopMovie();
+			return 0;
 		case ID_VIEW_FRAMECOUNTER:
 			frameCounterDisplay ^= 1;
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
@@ -2991,6 +3129,25 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("Display", "Display Microphone", ShowMicrophone, IniName);
 			osd->clear();
+			return 0;
+
+		case ID_RAM_SEARCH:
+					if(!RamSearchHWnd)
+					{
+						RamSearchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMSEARCH), hwnd, (DLGPROC) RamSearchProc);
+					}
+					else
+						SetForegroundWindow(RamSearchHWnd);
+					break;
+
+		case ID_RAM_WATCH:
+			if(!RamWatchHWnd)
+			{
+				RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), hwnd, (DLGPROC) RamWatchProc);
+				//				DialogsOpen++;
+			}
+			else
+				SetForegroundWindow(RamWatchHWnd);
 			return 0;
 
 #define clearsaver() \
@@ -3231,7 +3388,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		}
 	}
-
   return DefWindowProc (hwnd, message, wParam, lParam);
 }
 
@@ -3373,7 +3529,6 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 						{
 							CheatsSearchReset();
 							NDS_Reset();
-							frameCounter = 0;
 						}
 					}
 				}
@@ -3607,7 +3762,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 						{
 							CheatsSearchReset();
 							NDS_Reset();
-							frameCounter = 0;
 						}
 					}
 				}
@@ -3729,7 +3883,6 @@ void ResetGame()
 {
 	CheatsSearchReset();
 	NDS_Reset();
-	frameCounter=0;
 }
 
 //adelikat: This function allows another file to add a message to the screen
@@ -3739,6 +3892,7 @@ void SetMessageToDisplay(const char *message)
 								//adelikat: TODO: set up a function that does the clearing and setting of the counter, so this code doesn't have to be done all over the place
 								//				  make the function receive an int for the counter, but overload so that if no int, 120 is used
 	MessageToDisplay << message;
+	NewMessageToDisplay = true;
 	displayMessageCounter = 120;//				  
 }
 
@@ -3775,4 +3929,9 @@ void UpdateHotkeyAssignments()
 		text = text.substr(0,truncate);
 	text.append("\tCtrl+O");	//TODO: Append actual hotkey assignment
 	ChangeMenuItemText(IDM_OPEN, text);		//Set Menu item text
+}
+
+HWND GetMainHWND()
+{
+	return MainWindow->getHWnd();
 }

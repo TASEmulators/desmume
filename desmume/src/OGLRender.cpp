@@ -81,9 +81,6 @@ static ALIGN(16) u8  GPU_screen3D			[256*192*4];
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
 static const int depthFunc[2] = { GL_LESS, GL_EQUAL };
-static bool needRefreshFramebuffer = false;
-
-static bool validFramebuffer = false;
 
 //derived values extracted from polyattr etc
 static bool wireframe=false, alpha31=false;
@@ -342,7 +339,6 @@ static void OGLReset()
 
 //	memset(GPU_screenStencil,0,sizeof(GPU_screenStencil));
 	memset(GPU_screen3D,0,sizeof(GPU_screen3D));
-	needRefreshFramebuffer = false;
 }
 
 
@@ -678,6 +674,49 @@ static void Control()
 	}
 }
 
+
+static void GL_ReadFramebuffer()
+{
+	if(!BEGINGL()) return; 
+	glFinish();
+//	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
+	glReadPixels(0,0,256,192,GL_BGRA_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
+	ENDGL();
+
+	//convert the pixels to a different format which is more convenient
+	//is it safe to modify the screen buffer? if not, we could make a temp copy
+	for(int i=0,y=191;y>=0;y--)
+	{
+		u16* dst = gfx3d_convertedScreen + (y<<8);
+		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
+
+		#ifndef NOSSE2
+			//I dont know much about this kind of stuff, but this seems to help
+			//for some reason I couldnt make the intrinsics work 
+			u8* wanx =  (u8*)&((u32*)GPU_screen3D)[i];
+			#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
+			#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
+			PUNK(0); PUNK(1);
+		#endif
+
+		for(int x=0;x<256;x++,i++)
+		{
+			u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
+			u32screen3D>>=3;
+			u32screen3D &= 0x1F1F1F1F;
+
+			const int t = i<<2;
+			const u8 a = GPU_screen3D[t+3];
+			const u8 r = GPU_screen3D[t+2];
+			const u8 g = GPU_screen3D[t+1];
+			const u8 b = GPU_screen3D[t+0];
+			dst[x] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
+			dstAlpha[x] = alpha_5bit_to_4bit[a];
+		}
+	}
+}
+
+
 static void OGLRender()
 {
 	if(!BEGINGL()) return;
@@ -819,68 +858,15 @@ static void OGLRender()
 		}
 	}
 
-	//since we just redrew, we need to refresh the framebuffers
-	needRefreshFramebuffer = true;
-
 	ENDGL();
+
+	GL_ReadFramebuffer();
 }
 
 static void OGLVramReconfigureSignal()
 {
 	TexCache_Invalidate();
 }
-
-
-static void GL_ReadFramebuffer()
-{
-	if(!BEGINGL()) return; 
-	glFinish();
-//	glReadPixels(0,0,256,192,GL_STENCIL_INDEX,		GL_UNSIGNED_BYTE,	GPU_screenStencil);
-	glReadPixels(0,0,256,192,GL_BGRA_EXT,			GL_UNSIGNED_BYTE,	GPU_screen3D);	
-	ENDGL();
-
-	//convert the pixels to a different format which is more convenient
-	//is it safe to modify the screen buffer? if not, we could make a temp copy
-	for(int i=0,y=191;y>=0;y--)
-	{
-		u16* dst = gfx3d_convertedScreen + (y<<8);
-		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
-
-		#ifndef NOSSE2
-			//I dont know much about this kind of stuff, but this seems to help
-			//for some reason I couldnt make the intrinsics work 
-			u8* wanx =  (u8*)&((u32*)GPU_screen3D)[i];
-			#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
-			#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
-			PUNK(0); PUNK(1);
-		#endif
-
-		for(int x=0;x<256;x++,i++)
-		{
-			u32 &u32screen3D = ((u32*)GPU_screen3D)[i];
-			u32screen3D>>=3;
-			u32screen3D &= 0x1F1F1F1F;
-
-			const int t = i<<2;
-			const u8 a = GPU_screen3D[t+3];
-			const u8 r = GPU_screen3D[t+2];
-			const u8 g = GPU_screen3D[t+1];
-			const u8 b = GPU_screen3D[t+0];
-			dst[x] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
-			dstAlpha[x] = alpha_5bit_to_4bit[a];
-		}
-	}
-}
-
-static void OGLCheckFresh()
-{
-	if(needRefreshFramebuffer)
-	{
-		needRefreshFramebuffer = false;
-		GL_ReadFramebuffer();
-	}
-}
-
 
 GPU3DInterface gpu3Dgl = {
 	"OpenGL",
@@ -889,5 +875,4 @@ GPU3DInterface gpu3Dgl = {
 	OGLClose,
 	OGLRender,
 	OGLVramReconfigureSignal,
-	OGLCheckFresh,
 };
