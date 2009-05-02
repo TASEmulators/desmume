@@ -183,7 +183,7 @@ static u32 lightColor[4] = {0,0,0,0};
 static u32 lightDirection[4] = {0,0,0,0};
 //material state:
 static u16 dsDiffuse, dsAmbient, dsSpecular, dsEmission;
-/* Shininess */
+// Shininess
 static float shininessTable[128] = {0};
 static int shininessInd = 0;
 
@@ -315,6 +315,9 @@ void gfx3d_reset()
 	last_t = 0;
 	last_s = 0;
 	viewport = 0xBFFF0000;
+
+	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+	memset(gfx3d_convertedAlpha,0,sizeof(gfx3d_convertedAlpha));
 	
 	GFX_FIFOclear();
 }
@@ -1470,6 +1473,13 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 
 	drawPending = FALSE;
 	gpu3D->NDS_3D_Render();
+
+	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
+	if(gpu3D == &gpu3DNull)
+	{
+		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
+	}
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
@@ -2221,7 +2231,6 @@ void gfx3d_glGetLightColor(unsigned int index, unsigned int* dest)
 
 void gfx3d_GetLineData(int line, u16** dst, u8** dstAlpha)
 {
-	gpu3D->NDS_3D_CheckFresh();
 	*dst = gfx3d_convertedScreen+((line)<<8);
 	if(dstAlpha != NULL)
 	{
@@ -2286,11 +2295,6 @@ SFORMAT SF_GFX3D[]={
 	{ "GMAM", 2, 1, &dsAmbient},
 	{ "GMSP", 2, 1, &dsSpecular},
 	{ "GMEM", 2, 1, &dsEmission},
-	{ "GTST", 4, 1, &triStripToggle},
-	{ "GTVC", 4, 1, &tempVertInfo.count},
-	{ "GTVM", 4, 4, &tempVertInfo.map[0]},
-	{ "GTVF", 4, 1, &tempVertInfo.first},
-	{ "GLTW", 4, 1, &listTwiddle},
 	{ "GFLP", 4, 1, &flushPending},
 	{ "GDRP", 4, 1, &drawPending},
 	{ "GSET", 4, 1, &gfx3d.enableTexturing},
@@ -2310,6 +2314,13 @@ SFORMAT SF_GFX3D[]={
 	{ "GSTT", 4, 32, gfx3d.rgbToonTable},
 	{ "GSST", 4, 128, shininessTable},
 	{ "GSSI", 4, 1, &shininessInd},
+	//------------------------
+	{ "GTST", 4, 1, &triStripToggle},
+	{ "GTVC", 4, 1, &tempVertInfo.count},
+	{ "GTVM", 4, 4, tempVertInfo.map},
+	{ "GTVF", 4, 1, &tempVertInfo.first},
+	{ "G3CS", 2, 256*192, gfx3d_convertedScreen},
+	{ "G3CA", 2, 256*192, gfx3d_convertedAlpha},
 	{ 0 }
 };
 
@@ -2317,10 +2328,15 @@ SFORMAT SF_GFX3D[]={
 void gfx3d_savestate(std::ostream* os)
 {
 	//dump the render lists
-	//TODO!!!!
+	OSWRITE(vertlist->count);
+	for(int i=0;i<vertlist->count;i++)
+		vertlist->list[i].save(os);
+	OSWRITE(polylist->count);
+	for(int i=0;i<polylist->count;i++)
+		polylist->list[i].save(os);
 }
 
-bool gfx3d_loadstate(std::istream* is)
+bool gfx3d_loadstate(std::istream* is, int size)
 {
 	gfx3d_glPolygonAttrib_cache();
 	gfx3d_glTexImage_cache();
@@ -2331,10 +2347,17 @@ bool gfx3d_loadstate(std::istream* is)
 	gfx3d_glLightDirection_cache(3);
 
 	//jiggle the lists. and also wipe them. this is clearly not the best thing to be doing.
+	listTwiddle = 0;
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
-	polylist->count = 0;
-	vertlist->count = 0;
+
+	OSREAD(vertlist->count);
+	for(int i=0;i<vertlist->count;i++)
+		vertlist->list[i].load(is);
+	OSREAD(polylist->count);
+	for(int i=0;i<polylist->count;i++)
+		polylist->list[i].load(is);
+
 	gfx3d.polylist = &polylists[listTwiddle^1];
 	gfx3d.vertlist = &vertlists[listTwiddle^1];
 	gfx3d.polylist->count=0;

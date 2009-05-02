@@ -930,7 +930,6 @@ static char SoftRastInit(void)
 }
 
 static void SoftRastReset() {
-	validFramebuffer = false;
 }
 
 static void SoftRastClose()
@@ -967,15 +966,6 @@ static void SoftRastConvertFramebuffer()
 			dst[i] = R5G5B5TORGB15(r,g,b) | alpha_lookup[a];
 			dstAlpha[i] = alpha_5bit_to_4bit[a];
 		}
-	}
-	validFramebuffer = true;
-}
-
-static void SoftRastCheckFresh()
-{
-	if(!validFramebuffer)
-	{
-		SoftRastConvertFramebuffer();
 	}
 }
 
@@ -1295,6 +1285,7 @@ static void SoftRastRender()
 	validFramebuffer = false;
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
+	SoftRastConvertFramebuffer();
 }
 
 GPU3DInterface gpu3DRasterize = {
@@ -1304,5 +1295,4 @@ GPU3DInterface gpu3DRasterize = {
 	SoftRastClose,
 	SoftRastRender,
 	SoftRastVramReconfigureSignal,
-	SoftRastCheckFresh,
 };

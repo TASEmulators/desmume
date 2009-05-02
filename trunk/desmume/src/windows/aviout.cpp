@@ -414,11 +414,15 @@ void DRV_AviVideoUpdate(const u16* buffer)
 		AviNextSegment();
 }
 
+BOOL AVI_IsRecording()
+{
+	return avi_file && avi_file->valid;
+}
 void DRV_AviSoundUpdate(void* soundData, int soundLen)
 {
 	int nBytes;
 
-	if(!avi_file || !avi_file->valid || !avi_file->sound_added)
+	if(!AVI_IsRecording() || !avi_file->sound_added)
 		return;
 
 	nBytes = soundLen * avi_file->wave_format.nBlockAlign;

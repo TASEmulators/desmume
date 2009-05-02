@@ -46,9 +46,6 @@ typedef struct Render3DInterface
 	//called when the emulator reconfigures its vram. you may need to invalidate your texture cache.
 	void (CALL_CONVENTION*  NDS_3D_VramReconfigureSignal)	();
 
-	//ensures that the plugin's framebuffer generation is fresh
-	void (CALL_CONVENTION*	NDS_3D_CheckFresh)				();
-	
 } GPU3DInterface;
 
 extern int cur3DCore;

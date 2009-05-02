@@ -46,6 +46,7 @@
 #include "mc.h"
 #include "addons.h"
 #include "mic.h"
+#include "movie.h"
 
 #ifdef DO_ASSERT_UNALIGNED
 #define ASSERT_UNALIGNED(x) assert(x)

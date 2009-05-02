@@ -45,6 +45,8 @@ struct turbo {
 	bool A;
 	bool Y;
 	bool X;
+	bool L;
+	bool R;
 
 	bool &button(int i) { return ((bool*)this)[i]; }
 };
@@ -62,6 +64,8 @@ struct turbotime {
 	int A;
 	int Y;
 	int X;
+	int L;
+	int R;
 
 	int &time(int i) { return ((int*)this)[i]; }
 };
@@ -380,12 +384,17 @@ class Driver {
 public:
 	virtual BOOL WIFI_Host_InitSystem() { return FALSE; }
 	virtual void WIFI_Host_ShutdownSystem() {}
+	virtual BOOL AVI_IsRecording() { return FALSE; }
 };
 extern Driver* driver;
 
 extern std::string InputDisplayString;
 extern int LagFrameFlag;
 extern int lastLag, TotalLagFrames;
+
+void MovieSRAM(int bmtype, u32 bmsize);
+
+void ClearAutoHold(void);
 
 #endif
 

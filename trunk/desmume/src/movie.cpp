@@ -1,6 +1,6 @@
 /* movie.cpp
  *
- * Copyright (C) 2006-2008 Zeromus
+ * Copyright (C) 2006-2009 DeSmuME team
  *
  * This file is part of DeSmuME
  *
@@ -22,14 +22,18 @@
 #include <assert.h>
 #include <limits.h>
 #include <fstream>
-
+#include "main.h"
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "movie.h"
 #include "NDSSystem.h"
+#include "readwrite.h"
 #include "debug.h"
+#include "rtc.h"
 
 using namespace std;
+bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
+bool autoMovieBackup = true;
 
 #define FCEU_PrintError LOG
 
@@ -189,6 +193,8 @@ void MovieData::installValue(std::string& key, std::string& val)
 		guid = Desmume_Guid::fromString(val);
 	else if(key == "comment")
 		comments.push_back(mbstowcs(val));
+	else if(key == "binary")
+		installBool(val,binaryFlag);
 	else if(key == "savestate")
 	{
 		int len = Base64StringToBytesLength(val);
@@ -222,10 +228,10 @@ int MovieData::dump(std::ostream *os, bool binary)
 		*os << "savestate " << BytesToString(&savestate[0],savestate.size()) << endl;
 	if(binary)
 	{
-		////put one | to start the binary dump
-		//os->put('|');
-		//for(int i=0;i<(int)records.size();i++)
-		//	records[i].dumpBinary(this,os,i);
+		//put one | to start the binary dump
+		os->put('|');
+		for(int i=0;i<(int)records.size();i++)
+			records[i].dumpBinary(this,os,i);
 	}
 	else
 		for(int i=0;i<(int)records.size();i++)
@@ -268,8 +274,8 @@ static bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopA
 		isnewline = (c==10||c==13);
 		if(isrecchar && movieData.binaryFlag && !stopAfterHeader)
 		{
-			//LoadFM2_binarychunk(movieData, fp, size);
-			return false;
+			LoadFM2_binarychunk(movieData, fp, size);
+			return true;
 		}
 		switch(state)
 		{
@@ -349,7 +355,7 @@ static void closeRecordingMovie()
 /// Stop movie playback.
 static void StopPlayback()
 {
-	//FCEU_DispMessageOnMovie("Movie playback stopped.");
+	SetMessageToDisplay("Movie playback stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 }
 
@@ -357,8 +363,7 @@ static void StopPlayback()
 /// Stop movie recording
 static void StopRecording()
 {
-	//FCEU_DispMessage("Movie recording stopped.");
-
+	SetMessageToDisplay("Movie recording stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 	
 	closeRecordingMovie();
@@ -366,7 +371,7 @@ static void StopRecording()
 
 
 
-static void FCEUI_StopMovie()
+void FCEUI_StopMovie()
 {
 	//if(suppressMovieStop)
 	//	return;
@@ -377,11 +382,12 @@ static void FCEUI_StopMovie()
 		StopRecording();
 
 	curMovieFilename[0] = 0;
+	freshMovie = false;
 }
 
 
 //begin playing an existing movie
-static void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
+void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
 {
 	//if(!tasedit && !FCEU_IsValidUI(FCEUI_PLAYMOVIE))
 	//	return;
@@ -416,6 +422,7 @@ static void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, in
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
+	NDS_Reset();
 	////WE NEED TO LOAD A SAVESTATE
 	//if(currMovieData.savestate.size() != 0)
 	//{
@@ -428,11 +435,15 @@ static void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, in
 	movie_readonly = _read_only;
 	movieMode = MOVIEMODE_PLAY;
 	currRerecordCount = currMovieData.rerecordCount;
+	InitMovieTime();
+	MovieSRAM(backupmemorytype, backupmemorysize);
+	freshMovie = true;
+	ClearAutoHold();
 
-	//if(movie_readonly)
-	//	FCEU_DispMessage("Replay started Read-Only.");
-	//else
-	//	FCEU_DispMessage("Replay started Read+Write.");
+	if(movie_readonly)
+		SetMessageToDisplay("Replay started Read-Only.");
+	else
+		SetMessageToDisplay("Replay started Read+Write.");
 }
 
 static void openRecordingMovie(const char* fname)
@@ -447,7 +458,7 @@ static void openRecordingMovie(const char* fname)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
-static void FCEUI_SaveMovie(const char *fname, std::wstring author)
+ void FCEUI_SaveMovie(const char *fname, std::wstring author)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -468,6 +479,7 @@ static void FCEUI_SaveMovie(const char *fname, std::wstring author)
 	//currMovieData.romChecksum = GameInfo->MD5;
 	//currMovieData.romFilename = FileBase;
 
+	NDS_Reset();
 	//todo ?
 	//poweron(true);
 	//else
@@ -479,81 +491,109 @@ static void FCEUI_SaveMovie(const char *fname, std::wstring author)
 	movieMode = MOVIEMODE_RECORD;
 	movie_readonly = false;
 	currRerecordCount = 0;
+	InitMovieTime();
+	MovieSRAM(backupmemorytype, backupmemorysize);
 	
-	//FCEU_DispMessage("Movie recording started.");
+	SetMessageToDisplay("Movie recording started.");
 }
 
+ void NDS_setTouchFromMovie(void) {
 
-//the main interaction point between the emulator and the movie system.
-//either dumps the current joystick state or loads one state from the movie
-static void FCEUMOV_AddInputState()
-{
-	//todo - for tasedit, either dump or load depending on whether input recording is enabled
-	//or something like that
-	//(input recording is just like standard read+write movie recording with input taken from gamepad)
-	//otherwise, it will come from the tasedit data.
+	 if(movieMode == MOVIEMODE_PLAY)
+	 {
 
-	if(movieMode == MOVIEMODE_PLAY)
-	{
-		//stop when we run out of frames
-		if(currFrameCounter == (int)currMovieData.records.size())
-		{
-			StopPlayback();
-		}
-		else
-		{
-			MovieRecord* mr = &currMovieData.records[currFrameCounter];
-			
-			//reset if necessary
-			if(mr->command_reset())
-			{}
-				//ResetNES();
+		 MovieRecord* mr = &currMovieData.records[currFrameCounter];
+		 nds.touchX=mr->touch.x << 4;
+		 nds.touchY=mr->touch.y << 4;
 
-			NDS_setPadFromMovie(mr->pad);
-		}
+		 if(mr->touch.touch) {
+			 nds.isTouch=mr->touch.touch;
+			 MMU.ARM7_REG[0x136] &= 0xBF;
+		 }
+		 else {
+			 nds.touchX=0;
+			 nds.touchY=0;
+			 nds.isTouch=0;
 
-		//if we are on the last frame, then pause the emulator if the player requested it
-		if(currFrameCounter == (int)currMovieData.records.size()-1)
-		{
-			/*if(FCEUD_PauseAfterPlayback())
-			{
-				FCEUI_ToggleEmulationPause();
-			}*/
-		}
+			 MMU.ARM7_REG[0x136] |= 0x40;
+		 }
+		 osd->addFixed(mr->touch.x, mr->touch.y, "%s", "X");
+	 }
+ }
 
-		//pause the movie at a specified frame 
-		//if(FCEUMOV_ShouldPause() && FCEUI_EmulationPaused()==0)
-		//{
-		//	FCEUI_ToggleEmulationPause();
-		//	FCEU_DispMessage("Paused at specified movie frame");
-		//}
-		
-	}
-	else if(movieMode == MOVIEMODE_RECORD)
-	{
-		MovieRecord mr;
+ //the main interaction point between the emulator and the movie system.
+ //either dumps the current joystick state or loads one state from the movie
+ void FCEUMOV_AddInputState()
+ {
+	 //todo - for tasedit, either dump or load depending on whether input recording is enabled
+	 //or something like that
+	 //(input recording is just like standard read+write movie recording with input taken from gamepad)
+	 //otherwise, it will come from the tasedit data.
 
-		mr.commands = 0;
-		mr.pad = nds.pad;
-		if(nds.isTouch) {
-			mr.touch.x = nds.touchX;
-			mr.touch.y = nds.touchY;
-			mr.touch.touch = 1;
-		} else {
-			mr.touch.x = 0;
-			mr.touch.y = 0;
-			mr.touch.touch = 0;
-		}
+	 if(movieMode == MOVIEMODE_PLAY)
+	 {
+		 //stop when we run out of frames
+		 if(currFrameCounter == (int)currMovieData.records.size())
+		 {
+			 StopPlayback();
+		 }
+		 else
+		 {
+			 MovieRecord* mr = &currMovieData.records[currFrameCounter];
 
-		mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
-		currMovieData.records.push_back(mr);
-	}
+			 //reset if necessary
+			 if(mr->command_reset())
+			 {}
+			 //ResetNES();
 
-	currFrameCounter++;
+			 NDS_setPadFromMovie(mr->pad);
+			 NDS_setTouchFromMovie();
+		 }
 
-	/*extern uint8 joy[4];
-	memcpy(&cur_input_display,joy,4);*/
-}
+		 //if we are on the last frame, then pause the emulator if the player requested it
+		 if(currFrameCounter == (int)currMovieData.records.size()-1)
+		 {
+			 /*if(FCEUD_PauseAfterPlayback())
+			 {
+			 FCEUI_ToggleEmulationPause();
+			 }*/
+		 }
+
+		 //pause the movie at a specified frame 
+		 //if(FCEUMOV_ShouldPause() && FCEUI_EmulationPaused()==0)
+		 //{
+		 //	FCEUI_ToggleEmulationPause();
+		 //	FCEU_DispMessage("Paused at specified movie frame");
+		 //}
+		 osd->addFixed(180, 176, "%s", "Playback");
+
+	 }
+	 else if(movieMode == MOVIEMODE_RECORD)
+	 {
+		 MovieRecord mr;
+
+		 mr.commands = 0;
+		 mr.pad = nds.pad;
+		 if(nds.isTouch) {
+			 mr.touch.x = nds.touchX >> 4;
+			 mr.touch.y = nds.touchY >> 4;
+			 mr.touch.touch = 1;
+		 } else {
+			 mr.touch.x = 0;
+			 mr.touch.y = 0;
+			 mr.touch.touch = 0;
+		 }
+
+		 mr.dump(&currMovieData, osRecordingMovie,currMovieData.records.size());
+		 currMovieData.records.push_back(mr);
+		 osd->addFixed(180, 176, "%s", "Recording");
+	 }
+
+	 currFrameCounter++;
+
+	 /*extern uint8 joy[4];
+	 memcpy(&cur_input_display,joy,4);*/
+ }
 
 
 //TODO 
@@ -570,38 +610,60 @@ static void FCEUMOV_AddCommand(int cmd)
 }
 
 
-static int FCEUMOV_WriteState(std::ostream* os)
+void mov_savestate(std::ostream* os)
 {
 	//we are supposed to dump the movie data into the savestate
+	//if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
+	//	return currMovieData.dump(os, true);
+	//else return 0;
 	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
-		return currMovieData.dump(os, true);
-	else return 0;
+	{
+		write32le('MOVI',os);
+		currMovieData.dump(os, true);
+	}
+	else
+	{
+		write32le('NOMO',os);
+	}
 }
 
 
-//TODO EVERYTHING BELOW
 
 static bool load_successful;
 
-static bool FCEUMOV_ReadState(std::istream* is, uint32 size)
+bool mov_loadstate(std::istream* is, int size)
 {
 	load_successful = false;
 
+	int cookie;
+	if(read32le(&cookie,is) != 1) return false;
+	if(cookie == 'NOMO')
+		return true;
+	else if(cookie != 'MOVI')
+		return false;
+
+	size -= 4;
+
+	if (!movie_readonly && autoMovieBackup && freshMovie) //If auto-backup is on, movie has not been altered this session and the movie is in read+write mode
+	{
+		FCEUI_MakeBackupMovie(false);	//Backup the movie before the contents get altered, but do not display messages						  
+	}
+
 	//a little rule: cant load states in read+write mode with a movie from an archive.
 	//so we are going to switch it to readonly mode in that case
-	if(!movie_readonly 
-		//*&& FCEU_isFileInArchive(curMovieFilename)*/
-		) {
-		FCEU_PrintError("Cannot loadstate in Read+Write with movie from archive. Movie is now Read-Only.");
-		movie_readonly = true;
-	}
+//	if(!movie_readonly 
+//		//*&& FCEU_isFileInArchive(curMovieFilename)*/
+//		) {
+//		FCEU_PrintError("Cannot loadstate in Read+Write with movie from archive. Movie is now Read-Only.");
+//		movie_readonly = true;
+//	}
 
 	MovieData tempMovieData = MovieData();
 	std::ios::pos_type curr = is->tellg();
 	if(!LoadFM2(tempMovieData, is, size, false)) {
 		
-		/*is->seekg((uint32)curr+size);
-		extern bool FCEU_state_loading_old_format;
+	//	is->seekg((uint32)curr+size);
+	/*	extern bool FCEU_state_loading_old_format;
 		if(FCEU_state_loading_old_format) {
 			if(movieMode == MOVIEMODE_PLAY || movieMode == MOVIEMODE_RECORD) {
 				FCEUI_StopMovie();			
@@ -652,12 +714,29 @@ static bool FCEUMOV_ReadState(std::istream* is, uint32 size)
 
 		if(movie_readonly)
 		{
+			//-------------------------------------------------------------
+			//this code would reload the movie from disk. allegedly it is helpful to hexers, but
+			//it is way too slow with dsm format. so it is only here as a reminder, and in case someone
+			//wants to play with it
+			//-------------------------------------------------------------
+			//{
+			//	fstream fs (curMovieFilename);
+			//	if(!LoadFM2(tempMovieData, &fs, INT_MAX, false))
+			//	{
+			//		FCEU_PrintError("Failed to reload DSM after loading savestate");
+			//	}
+			//	fs.close();
+			//	currMovieData = tempMovieData;
+			//}
+			//-------------------------------------------------------------
+
 			//if the frame counter is longer than our current movie, then error
 			if(currFrameCounter > (int)currMovieData.records.size())
 			{
 				FCEU_PrintError("Savestate is from a frame (%d) after the final frame in the movie (%d). This is not permitted.", currFrameCounter, currMovieData.records.size()-1);
 				return false;
 			}
+
 			movieMode = MOVIEMODE_PLAY;
 		}
 		else
@@ -666,10 +745,10 @@ static bool FCEUMOV_ReadState(std::istream* is, uint32 size)
 			tempMovieData.truncateAt(currFrameCounter);
 			currMovieData = tempMovieData;
 			
-			#ifdef _S9XLUA_H
-			if(!FCEU_LuaRerecordCountSkip())
+		//	#ifdef _S9XLUA_H
+		//	if(!FCEU_LuaRerecordCountSkip())
 				currRerecordCount++;
-			#endif
+		//	#endif
 			
 			currMovieData.rerecordCount = currRerecordCount;
 
@@ -680,6 +759,7 @@ static bool FCEUMOV_ReadState(std::istream* is, uint32 size)
 	}
 	
 	load_successful = true;
+	freshMovie = false;
 
 	//// Maximus: Show the last input combination entered from the
 	//// movie within the state
@@ -722,3 +802,137 @@ bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount)
 
 	return true;
 }
+
+bool MovieRecord::parseBinary(MovieData* md, std::istream* is)
+{
+	commands=is->get();
+	is->read((char *) &pad, sizeof pad);
+	is->read((char *) &touch.x, sizeof touch.x);
+	is->read((char *) &touch.y, sizeof touch.y);
+	is->read((char *) &touch.touch, sizeof touch.touch);
+	return true;
+}
+
+
+void MovieRecord::dumpBinary(MovieData* md, std::ostream* os, int index)
+{
+	os->put(md->records[index].commands);
+	os->write((char *) &md->records[index].pad, sizeof md->records[index].pad);
+	os->write((char *) &md->records[index].touch.x, sizeof md->records[index].touch.x);
+	os->write((char *) &md->records[index].touch.y, sizeof md->records[index].touch.y);
+	os->write((char *) &md->records[index].touch.touch, sizeof md->records[index].touch.touch);
+}
+
+void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size)
+{
+	int recordsize = 1; //1 for the command
+
+	recordsize = 6;
+
+	assert(size%6==0);
+
+	//find out how much remains in the file
+	int curr = fp->tellg();
+	fp->seekg(0,std::ios::end);
+	int end = fp->tellg();
+	int flen = end-curr;
+	fp->seekg(curr,std::ios::beg);
+
+	//the amount todo is the min of the limiting size we received and the remaining contents of the file
+	int todo = std::min(size, flen);
+
+	int numRecords = todo/recordsize;
+	movieData.records.resize(numRecords);
+	for(int i=0;i<numRecords;i++)
+	{
+		movieData.records[i].parseBinary(&movieData,fp);
+	}
+}
+
+#include <sstream>
+
+bool CheckFileExists(const char* filename)
+{
+	//This function simply checks to see if the given filename exists
+	string checkFilename; 
+
+	if (filename)
+		checkFilename = filename;
+			
+	//Check if this filename exists
+	fstream test;
+	test.open(checkFilename.c_str(),fstream::in);
+		
+	if (test.fail())
+	{
+		test.close();
+		return false; 
+	}
+	else
+	{
+		test.close();
+		return true; 
+	}
+}
+
+void FCEUI_MakeBackupMovie(bool dispMessage)
+{
+	//This function generates backup movie files
+	string currentFn;					//Current movie fillename
+	string backupFn;					//Target backup filename
+	string tempFn;						//temp used in back filename creation
+	stringstream stream;
+	int x;								//Temp variable for string manip
+	bool exist = false;					//Used to test if filename exists
+	bool overflow = false;				//Used for special situation when backup numbering exceeds limit
+
+	currentFn = curMovieFilename;		//Get current moviefilename
+	backupFn = curMovieFilename;		//Make backup filename the same as current moviefilename
+	x = backupFn.find_last_of(".");		 //Find file extension
+	backupFn = backupFn.substr(0,x);	//Remove extension
+	tempFn = backupFn;					//Store the filename at this point
+	for (unsigned int backNum=0;backNum<999;backNum++) //999 = arbituary limit to backup files
+	{
+		stream.str("");					 //Clear stream
+		if (backNum > 99)
+			stream << "-" << backNum;	 //assign backNum to stream
+		else if (backNum <=99 && backNum >= 10)
+			stream << "-0";				//Make it 010, etc if two digits
+		else
+			stream << "-00" << backNum;	 //Make it 001, etc if single digit
+		backupFn.append(stream.str());	 //add number to bak filename
+		backupFn.append(".bak");		 //add extension
+
+		exist = CheckFileExists(backupFn.c_str());	//Check if file exists
+		
+		if (!exist) 
+			break;						//Yeah yeah, I should use a do loop or something
+		else
+		{
+			backupFn = tempFn;			//Before we loop again, reset the filename
+			
+			if (backNum == 999)			//If 999 exists, we have overflowed, let's handle that
+			{
+				backupFn.append("-001.bak"); //We are going to simply overwrite 001.bak
+				overflow = true;		//Flag that we have exceeded limit
+				break;					//Just in case
+			}
+		}
+	}
+
+	MovieData md = currMovieData;								//Get current movie data
+	std::fstream* outf = new fstream(backupFn.c_str(),std::ios_base::out); //FCEUD_UTF8_fstream(backupFn, "wb");	//open/create file
+	md.dump(outf,false);										//dump movie data
+	delete outf;												//clean up, delete file object
+	
+	//TODO, decide if fstream successfully opened the file and print error message if it doesn't
+
+	if (dispMessage)	//If we should inform the user 
+	{
+//		if (overflow)
+//			FCEUI_DispMessage("Backup overflow, overwriting %s",backupFn.c_str()); //Inform user of overflow
+//		else
+//			FCEUI_DispMessage("%s created",backupFn.c_str()); //Inform user of backup filename
+	}
+}
+

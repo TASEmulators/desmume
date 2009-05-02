@@ -280,6 +280,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\movie.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\NDSSystem.cpp"
 					>
 				</File>
@@ -637,6 +641,18 @@
 					>
 				</File>
 				<File
+					RelativePath=".\ram_search.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\ramwatch.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\replay.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\snddx.cpp"
 					>
 				</File>
@@ -744,6 +760,18 @@
 				</File>
 				<File
 					RelativePath=".\palView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ram_search.h"
+					>
+				</File>
+				<File
+					RelativePath=".\ramwatch.h"
+					>
+				</File>
+				<File
+					RelativePath=".\replay.h"
 					>
 				</File>
 				<File
@@ -883,6 +911,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\movie.h"
+					>
+				</File>
+				<File
 					RelativePath="..\NDSSystem.h"
 					>
 				</File>
@@ -958,6 +990,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\bitmap1.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\DeSmuME.ico"
 				>
 			</File>
@@ -968,5 +1004,9 @@
 		</Filter>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="resources.rc"
+		/>
 	</Globals>
 </VisualStudioProject>

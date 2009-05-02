@@ -3230,7 +3230,7 @@ void gpu_savestate(std::ostream* os)
 	//version
 	write32le(0,os);
 	
-	os->write((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
+	os->write((char*)GPU_screen,sizeof(GPU_screen));
 	
 	write32le(MainScreen.gpu->affineInfo[0].x,os);
 	write32le(MainScreen.gpu->affineInfo[0].y,os);
@@ -3242,14 +3242,14 @@ void gpu_savestate(std::ostream* os)
 	write32le(SubScreen.gpu->affineInfo[1].y,os);
 }
 
-bool gpu_loadstate(std::istream* is)
+bool gpu_loadstate(std::istream* is, int size)
 {
 	//read version
 	int version;
 	if(read32le(&version,is) != 1) return false;
 	if(version != 0) return false;
 
-	is->read((char*)GPU_tempScreen,sizeof(GPU_tempScreen));
+	is->read((char*)GPU_screen,sizeof(GPU_screen));
 	read32le(&MainScreen.gpu->affineInfo[0].x,is);
 	read32le(&MainScreen.gpu->affineInfo[0].y,is);
 	read32le(&MainScreen.gpu->affineInfo[1].x,is);
