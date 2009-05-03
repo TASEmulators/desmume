@@ -47,6 +47,21 @@ extern u8	gba_header_data_0x04[156];
 	#define IDT_VIEW_LIGHTS                 		50011
 	#define IDM_EXEC								50112
 
+	#define IDM_RECENT_RESERVED0                    65500
+	#define IDM_RECENT_RESERVED1                    65501
+	#define IDM_RECENT_RESERVED2                    65502
+	#define IDM_RECENT_RESERVED3                    65503
+	#define IDM_RECENT_RESERVED4                    65504
+	#define IDM_RECENT_RESERVED5                    65505
+	#define IDM_RECENT_RESERVED6                    65506
+	#define IDM_RECENT_RESERVED7                    65507
+	#define IDM_RECENT_RESERVED8                    65508
+	#define IDM_RECENT_RESERVED9                    65509
+	#define IDM_RECENT_RESERVED10                   65510
+	#define IDM_RECENT_RESERVED11                   65511
+	#define IDM_RECENT_RESERVED12                   65512
+	#define IDM_RECENT_RESERVED13                   65513
+
 	#define CLASSNAME "DeSmuME"
 
 	extern HINSTANCE hAppInst;
