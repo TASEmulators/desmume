@@ -27,17 +27,17 @@ ICONDESMUME        ICON           "DeSmuME.ico"
 //
 LANGUAGE LANG_DANISH, SUBLANG_DANISH_DENMARK
 MENU_PRINCIPAL MENU
-{
+BEGIN
     POPUP "&Fil"
-    {
-        MENUITEM "&Åbn ROM...", IDM_OPEN
+    BEGIN
+        MENUITEM "&Åbn ROM...\tCtrl O", IDM_OPEN
         MENUITEM "Frisk ROM", ID_FILE_RECENTROM
         MENUITEM "ROM &Info", IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Gem Stadie Som...", IDM_STATE_SAVE
         MENUITEM "Indlæs Stadie Som...", IDM_STATE_LOAD
         POPUP "Gem Stadie"
-        {
+        BEGIN
             MENUITEM "1", IDM_STATE_SAVE_F1
             MENUITEM "2", IDM_STATE_SAVE_F2
             MENUITEM "3", IDM_STATE_SAVE_F3
@@ -48,9 +48,9 @@ MENU_PRINCIPAL MENU
             MENUITEM "8", IDM_STATE_SAVE_F8
             MENUITEM "9", IDM_STATE_SAVE_F9
             MENUITEM "10", IDM_STATE_SAVE_F10
-        }
+        END
         POPUP "Indlæs Stadie"
-        {
+        BEGIN
             MENUITEM "1", IDM_STATE_LOAD_F1
             MENUITEM "2", IDM_STATE_LOAD_F2
             MENUITEM "3", IDM_STATE_LOAD_F3
@@ -61,54 +61,53 @@ MENU_PRINCIPAL MENU
             MENUITEM "8", IDM_STATE_LOAD_F8
             MENUITEM "9", IDM_STATE_LOAD_F9
             MENUITEM "10", IDM_STATE_LOAD_F10
-        }
+        END
         MENUITEM SEPARATOR
         MENUITEM "Importere Backup Hukommelse", IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
         MENUITEM "Gem Skærmbillede &Som...", IDM_PRINTSCREEN
         MENUITEM "&Hurtigt Skærmbillede", IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
-        MENUITEM "Record &AVI...", IDM_FILE_RECORDAVI
+        MENUITEM "Record AVI", IDM_FILE_RECORDAVI
         MENUITEM "Stop AVI", IDM_FILE_STOPAVI
         MENUITEM SEPARATOR
         MENUITEM "&Afslut\tAlt F4", IDM_QUIT
-    }
+    END
     POPUP "&Emulation"
-    {
+    BEGIN
         MENUITEM "&Pause", IDM_PAUSE
         MENUITEM "&Genstart", IDM_RESET
         MENUITEM SEPARATOR
-        MENUITEM "&Clear Sound", IDM_SHUT_UP
         MENUITEM "GBA &slot", IDM_GBASLOT
         POPUP "&Cheats"
-        {
+        BEGIN
             MENUITEM "&List", IDM_CHEATS_LIST, INACTIVE
             MENUITEM "&Search", IDM_CHEATS_SEARCH, INACTIVE
-        }
-    }
+        END
+    END
     POPUP "&Vis"
-    {
+    BEGIN
         POPUP "&Rotation"
-        {
+        BEGIN
             MENUITEM " 0 Grader", IDC_ROTATE0
             MENUITEM " 90 Grader", IDC_ROTATE90
             MENUITEM "180 Grader", IDC_ROTATE180
             MENUITEM "270 Grader", IDC_ROTATE270
-        }
+        END
         POPUP "Vindue &Størrelse"
-        {
+        BEGIN
             MENUITEM "1x", IDC_WINDOW1X
             MENUITEM "1.5x", IDC_WINDOW1_5X
             MENUITEM "2x", IDC_WINDOW2X
             MENUITEM "3x", IDC_WINDOW3X
             MENUITEM "4x", IDC_WINDOW4X
-        }
+        END
         POPUP "Screen separation"
-        {
+        BEGIN
             MENUITEM "None\t(0 px)", IDM_SCREENSEP_NONE
             MENUITEM "Narrow border\t(5 px)", IDM_SCREENSEP_BORDER
             MENUITEM "DS\t(64 px)", IDM_SCREENSEP_NDSGAP
-        }
+        END
         MENUITEM "&Bevar Højde og Bredde", IDC_FORCERATIO
         MENUITEM "Default size", IDM_DEFSIZE
         MENUITEM SEPARATOR
@@ -118,18 +117,18 @@ MENU_PRINCIPAL MENU
         MENUITEM "Display Lag Counter", ID_VIEW_DISPLAYLAG
         MENUITEM "Display Microphone", ID_VIEW_DISPLAYMICROPHONE
         MENUITEM "HUD Editing Mode", ID_VIEW_HUDEDITOR
-    }
+    END
     POPUP "&Konfigure"
-    {
+    BEGIN
         POPUP "&Vælg Hukommelse Type"
-        {
+        BEGIN
             MENUITEM "Vælg Automatisk", IDC_SAVETYPE1
             MENUITEM "EEPROM 4kbit", IDC_SAVETYPE2
             MENUITEM "EEPROM 64kbit", IDC_SAVETYPE3
             MENUITEM "EEPROM 512kbit", IDC_SAVETYPE4
             MENUITEM "FRAM 256kbit", IDC_SAVETYPE5
             MENUITEM "FLASH 2mbit", IDC_SAVETYPE6
-        }
+        END
         MENUITEM "3D settings", IDM_3DCONFIG
         MENUITEM "Indput Indstillinger", IDM_CONFIG
         MENUITEM "Hotkey Config", IDM_HOTKEY_CONFIG
@@ -139,7 +138,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "Emulation settings", IDM_EMULATIONSETTINGS
         MENUITEM "Microphone Settings", IDM_MICROPHONESETTINGS
         POPUP "&Frame Skip"
-        {
+        BEGIN
             MENUITEM "Limit framerate", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
@@ -152,16 +151,16 @@ MENU_PRINCIPAL MENU
             MENUITEM "7", IDC_FRAMESKIP7
             MENUITEM "8", IDC_FRAMESKIP8
             MENUITEM "9", IDC_FRAMESKIP9
-        }
+        END
         POPUP "&Language"
-        {
+        BEGIN
             MENUITEM "English", IDC_LANGENGLISH
             MENUITEM "French", IDC_LANGFRENCH
             MENUITEM "Danish", IDC_LANGDANISH
-        }
-    }
+        END
+    END
     POPUP "&Værktøjer"
-    {
+    BEGIN
         MENUITEM "&Disassembler", IDM_DISASSEMBLER
         MENUITEM "Vis &Hukommelse", IDM_MEMORY
         MENUITEM "Vis &Register", IDM_IOREG
@@ -173,7 +172,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "Vis Lights", IDM_LIGHT_VIEWER
         MENUITEM SEPARATOR
         POPUP "&Vis &Lag"
-        {
+        BEGIN
             MENUITEM "Hoved Baggrund 0", IDM_MBG0, CHECKED
             MENUITEM "Hoved Baggrund 1", IDM_MBG1, CHECKED
             MENUITEM "Hoved Baggrund 2", IDM_MBG2, CHECKED
@@ -183,32 +182,32 @@ MENU_PRINCIPAL MENU
             MENUITEM "Under Baggrund 1", IDM_SBG1, CHECKED
             MENUITEM "Under Baggrund 2", IDM_SBG2, CHECKED
             MENUITEM "Under Baggrund 3", IDM_SBG3, CHECKED
-        }
-    }
+        END
+    END
     POPUP "&Hjælp"
-    {
+    BEGIN
         MENUITEM "&Hjemmeside", IDM_WEBSITE
         MENUITEM "&Forums", IDM_FORUM
         MENUITEM "&Indsend Fejl Rapport", IDM_SUBMITBUGREPORT
         MENUITEM "About", IDM_ABOUT
-    }
-}
+    END
+END
 
 
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 MENU_PRINCIPAL MENU
-{
+BEGIN
     POPUP "&File"
-    {
-        MENUITEM "&Open ROM...", IDM_OPEN
+    BEGIN
+        MENUITEM "&Open ROM...\tCtrl O", IDM_OPEN
         MENUITEM "&Recent ROM", ID_FILE_RECENTROM
         MENUITEM "ROM &Info", IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Save State As...", IDM_STATE_SAVE
         MENUITEM "Load State As...", IDM_STATE_LOAD
         POPUP "Save State"
-        {
+        BEGIN
             MENUITEM "1", IDM_STATE_SAVE_F1
             MENUITEM "2", IDM_STATE_SAVE_F2
             MENUITEM "3", IDM_STATE_SAVE_F3
@@ -219,9 +218,9 @@ MENU_PRINCIPAL MENU
             MENUITEM "8", IDM_STATE_SAVE_F8
             MENUITEM "9", IDM_STATE_SAVE_F9
             MENUITEM "10", IDM_STATE_SAVE_F10
-        }
+        END
         POPUP "Load State"
-        {
+        BEGIN
             MENUITEM "1", IDM_STATE_LOAD_F1
             MENUITEM "2", IDM_STATE_LOAD_F2
             MENUITEM "3", IDM_STATE_LOAD_F3
@@ -232,14 +231,14 @@ MENU_PRINCIPAL MENU
             MENUITEM "8", IDM_STATE_LOAD_F8
             MENUITEM "9", IDM_STATE_LOAD_F9
             MENUITEM "10", IDM_STATE_LOAD_F10
-        }
+        END
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory", IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
         MENUITEM "Save Screenshot &As...", IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot", IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
-        MENUITEM "Record &AVI...", IDM_FILE_RECORDAVI
+        MENUITEM "Record AVI", IDM_FILE_RECORDAVI
         MENUITEM "Stop AVI", IDM_FILE_STOPAVI
         MENUITEM SEPARATOR
         MENUITEM "&Record Movie...", IDM_RECORD_MOVIE
@@ -247,44 +246,44 @@ MENU_PRINCIPAL MENU
         MENUITEM "&Stop Movie", IDM_STOPMOVIE
         MENUITEM SEPARATOR
         MENUITEM "&Quit\tAlt F4", IDM_QUIT
-    }
+    END
     POPUP "&Emulation"
-    {
+    BEGIN
         MENUITEM "&Pause", IDM_PAUSE
         MENUITEM "&Reset", IDM_RESET
         MENUITEM SEPARATOR
-        MENUITEM "&Clear Sound", IDM_SHUT_UP
+        MENUITEM "Shut Up", IDM_SHUT_UP
         MENUITEM SEPARATOR
         MENUITEM "GBA &slot", IDM_GBASLOT
         POPUP "&Cheats"
-        {
+        BEGIN
             MENUITEM "&List", IDM_CHEATS_LIST, INACTIVE
             MENUITEM "&Search", IDM_CHEATS_SEARCH, INACTIVE
-        }
-    }
+        END
+    END
     POPUP "&View"
-    {
+    BEGIN
         POPUP "&Rotation"
-        {
+        BEGIN
             MENUITEM "  0", IDC_ROTATE0
             MENUITEM " 90", IDC_ROTATE90
             MENUITEM "180", IDC_ROTATE180
             MENUITEM "270", IDC_ROTATE270
-        }
+        END
         POPUP "Window &Size"
-        {
+        BEGIN
             MENUITEM "1x", IDC_WINDOW1X
             MENUITEM "1.5x", IDC_WINDOW1_5X
             MENUITEM "2x", IDC_WINDOW2X
             MENUITEM "3x", IDC_WINDOW3X
             MENUITEM "4x", IDC_WINDOW4X
-        }
+        END
         POPUP "Screen separation"
-        {
+        BEGIN
             MENUITEM "None\t(0 px)", IDM_SCREENSEP_NONE
             MENUITEM "Narrow border\t(5 px)", IDM_SCREENSEP_BORDER
             MENUITEM "DS\t(64 px)", IDM_SCREENSEP_NDSGAP
-        }
+        END
         MENUITEM "&Force Maintain Ratio", IDC_FORCERATIO
         MENUITEM "Default size", IDM_DEFSIZE
         MENUITEM SEPARATOR
@@ -296,11 +295,11 @@ MENU_PRINCIPAL MENU
         MENUITEM "HUD Editing Mode", ID_VIEW_HUDEDITOR
         MENUITEM "RAM Watch", ID_RAM_WATCH
         MENUITEM "RAM Search", ID_RAM_SEARCH
-    }
+    END
     POPUP "&Config"
-    {
+    BEGIN
         POPUP "&Save Type"
-        {
+        BEGIN
             MENUITEM "Autodetect", IDC_SAVETYPE1
             MENUITEM "EEPROM 4kbit", IDC_SAVETYPE2
             MENUITEM "EEPROM 64kbit", IDC_SAVETYPE3
@@ -308,7 +307,7 @@ MENU_PRINCIPAL MENU
             MENUITEM "FRAM 256kbit", IDC_SAVETYPE5
             MENUITEM "FLASH 2mbit", IDC_SAVETYPE6
             MENUITEM "FLASH 4mbit", IDC_SAVETYPE7
-        }
+        END
         MENUITEM "3D Settings", IDM_3DCONFIG
         MENUITEM "Control Config", IDM_CONFIG
         MENUITEM "Hotkey Config", IDM_HOTKEY_CONFIG
@@ -318,7 +317,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "Emulation Settings", IDM_EMULATIONSETTINGS
         MENUITEM "Microphone Settings", IDM_MICROPHONESETTINGS
         POPUP "&Frame Skip"
-        {
+        BEGIN
             MENUITEM "Limit framerate", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
@@ -331,16 +330,16 @@ MENU_PRINCIPAL MENU
             MENUITEM "7", IDC_FRAMESKIP7
             MENUITEM "8", IDC_FRAMESKIP8
             MENUITEM "9", IDC_FRAMESKIP9
-        }
+        END
         POPUP "&Language"
-        {
+        BEGIN
             MENUITEM "English", IDC_LANGENGLISH
             MENUITEM "French", IDC_LANGFRENCH
             MENUITEM "Danish", IDC_LANGDANISH
-        }
-    }
+        END
+    END
     POPUP "&Tools"
-    {
+    BEGIN
         MENUITEM "&Disassembler", IDM_DISASSEMBLER
         MENUITEM "View &Memory", IDM_MEMORY
         MENUITEM "View &Registers", IDM_IOREG
@@ -352,7 +351,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "View Lights", IDM_LIGHT_VIEWER
         MENUITEM SEPARATOR
         POPUP "&View Layers"
-        {
+        BEGIN
             MENUITEM "Main BG 0", IDM_MBG0, CHECKED
             MENUITEM "Main BG 1", IDM_MBG1, CHECKED
             MENUITEM "Main BG 2", IDM_MBG2, CHECKED
@@ -362,32 +361,32 @@ MENU_PRINCIPAL MENU
             MENUITEM "Sub BG 1", IDM_SBG1, CHECKED
             MENUITEM "Sub BG 2", IDM_SBG2, CHECKED
             MENUITEM "Sub BG 3", IDM_SBG3, CHECKED
-        }
-    }
+        END
+    END
     POPUP "&Help"
-    {
+    BEGIN
         MENUITEM "&Website", IDM_WEBSITE
         MENUITEM "&Forums", IDM_FORUM
         MENUITEM "&Submit a bug report", IDM_SUBMITBUGREPORT
         MENUITEM "&About", IDM_ABOUT
-    }
-}
+    END
+END
 
 
 
 LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
 MENU_PRINCIPAL MENU
-{
+BEGIN
     POPUP "&Fichier"
-    {
-        MENUITEM "&Ouvrir ROM...", IDM_OPEN
+    BEGIN
+        MENUITEM "&Ouvrir ROM...\tCtrl O", IDM_OPEN
         MENUITEM "ROMs récentes", ID_FILE_RECENTROM
         MENUITEM "&Info ROM", IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Save State As...", IDM_STATE_SAVE
         MENUITEM "Load State As...", IDM_STATE_LOAD
         POPUP "Save State"
-        {
+        BEGIN
             MENUITEM "1", IDM_STATE_SAVE_F1
             MENUITEM "2", IDM_STATE_SAVE_F2
             MENUITEM "3", IDM_STATE_SAVE_F3
@@ -398,9 +397,9 @@ MENU_PRINCIPAL MENU
             MENUITEM "8", IDM_STATE_SAVE_F8
             MENUITEM "9", IDM_STATE_SAVE_F9
             MENUITEM "10", IDM_STATE_SAVE_F10
-        }
+        END
         POPUP "Load State"
-        {
+        BEGIN
             MENUITEM "1", IDM_STATE_LOAD_F1
             MENUITEM "2", IDM_STATE_LOAD_F2
             MENUITEM "3", IDM_STATE_LOAD_F3
@@ -411,7 +410,7 @@ MENU_PRINCIPAL MENU
             MENUITEM "8", IDM_STATE_LOAD_F8
             MENUITEM "9", IDM_STATE_LOAD_F9
             MENUITEM "10", IDM_STATE_LOAD_F10
-        }
+        END
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory", IDM_IMPORTBACKUPMEMORY
         MENUITEM SEPARATOR
@@ -422,43 +421,42 @@ MENU_PRINCIPAL MENU
         MENUITEM "Arrêter l'enregistrement", IDM_FILE_STOPAVI
         MENUITEM SEPARATOR
         MENUITEM "&Quitter\tAlt F4", IDM_QUIT
-    }
+    END
     POPUP "&Emulation"
-    {
+    BEGIN
         MENUITEM "&Pause", IDM_PAUSE
         MENUITEM "&Reset", IDM_RESET
         MENUITEM SEPARATOR
-        MENUITEM "&Clear Sound", IDM_SHUT_UP
         MENUITEM "GBA &slot", IDM_GBASLOT
         POPUP "&Cheats"
-        {
+        BEGIN
             MENUITEM "&List", IDM_CHEATS_LIST, INACTIVE
             MENUITEM "&Search", IDM_CHEATS_SEARCH, INACTIVE
-        }
-    }
+        END
+    END
     POPUP "&View"
-    {
+    BEGIN
         POPUP "&Rotation"
-        {
+        BEGIN
             MENUITEM "  0", IDC_ROTATE0
             MENUITEM " 90", IDC_ROTATE90
             MENUITEM "180", IDC_ROTATE180
             MENUITEM "270", IDC_ROTATE270
-        }
+        END
         POPUP "Taille de la fenêtre"
-        {
+        BEGIN
             MENUITEM "1x", IDC_WINDOW1X
             MENUITEM "1.5x", IDC_WINDOW1_5X
             MENUITEM "2x", IDC_WINDOW2X
             MENUITEM "3x", IDC_WINDOW3X
             MENUITEM "4x", IDC_WINDOW4X
-        }
+        END
         POPUP "Séparation écrans"
-        {
+        BEGIN
             MENUITEM "Aucune\t(0 px)", IDM_SCREENSEP_NONE
             MENUITEM "Bordure fine\t(5 px)", IDM_SCREENSEP_BORDER
             MENUITEM "DS\t(64 px)", IDM_SCREENSEP_NDSGAP
-        }
+        END
         MENUITEM "Conserver le ratio", IDC_FORCERATIO
         MENUITEM "Taille par défaut", IDM_DEFSIZE
         MENUITEM SEPARATOR
@@ -468,18 +466,18 @@ MENU_PRINCIPAL MENU
         MENUITEM "Display Lag Counter", ID_VIEW_DISPLAYLAG
         MENUITEM "Display Microphone", ID_VIEW_DISPLAYMICROPHONE
         MENUITEM "HUD Editing Mode", ID_VIEW_HUDEDITOR
-    }
+    END
     POPUP "&Config"
-    {
+    BEGIN
         POPUP "Média de &sauvegarde"
-        {
+        BEGIN
             MENUITEM "Autodetect", IDC_SAVETYPE1
             MENUITEM "EEPROM 4kbit", IDC_SAVETYPE2
             MENUITEM "EEPROM 64kbit", IDC_SAVETYPE3
             MENUITEM "EEPROM 512kbit", IDC_SAVETYPE4
             MENUITEM "FRAM 256kbit", IDC_SAVETYPE5
             MENUITEM "FLASH 2mbit", IDC_SAVETYPE6
-        }
+        END
         MENUITEM "Config. 3D", IDM_3DCONFIG
         MENUITEM "Config. des contrôles", IDM_CONFIG
         MENUITEM "Hotkey Config", IDM_HOTKEY_CONFIG
@@ -489,7 +487,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "Config. d'émulation", IDM_EMULATIONSETTINGS
         MENUITEM "Microphone Settings", IDM_MICROPHONESETTINGS
         POPUP "&Frame Skip"
-        {
+        BEGIN
             MENUITEM "Limit framerate", IDC_FRAMELIMIT
             MENUITEM "Auto", IDC_FRAMESKIPAUTO
             MENUITEM "0", IDC_FRAMESKIP0
@@ -502,16 +500,16 @@ MENU_PRINCIPAL MENU
             MENUITEM "7", IDC_FRAMESKIP7
             MENUITEM "8", IDC_FRAMESKIP8
             MENUITEM "9", IDC_FRAMESKIP9
-        }
+        END
         POPUP "&Langage"
-        {
+        BEGIN
             MENUITEM "English", IDC_LANGENGLISH
             MENUITEM "French", IDC_LANGFRENCH
             MENUITEM "Danish", IDC_LANGDANISH
-        }
-    }
+        END
+    END
     POPUP "&Outils"
-    {
+    BEGIN
         MENUITEM "&Désassembleur", IDM_DISASSEMBLER
         MENUITEM "Visualiser la &memoire", IDM_MEMORY
         MENUITEM "Visualiser les &registres", IDM_IOREG
@@ -523,7 +521,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "Visualiser les lights", IDM_LIGHT_VIEWER
         MENUITEM SEPARATOR
         POPUP "&Visualiser les &couches"
-        {
+        BEGIN
             MENUITEM "Main BG 0", IDM_MBG0, CHECKED
             MENUITEM "Main BG 1", IDM_MBG1, CHECKED
             MENUITEM "Main BG 2", IDM_MBG2, CHECKED
@@ -533,24 +531,24 @@ MENU_PRINCIPAL MENU
             MENUITEM "Sub BG 1", IDM_SBG1, CHECKED
             MENUITEM "Sub BG 2", IDM_SBG2, CHECKED
             MENUITEM "Sub BG 3", IDM_SBG3, CHECKED
-        }
-    }
+        END
+    END
     POPUP "?"
-    {
+    BEGIN
         MENUITEM "Site &web", IDM_WEBSITE
         MENUITEM "&Forums", IDM_FORUM
         MENUITEM "&Soumettre un report de bug", IDM_SUBMITBUGREPORT
         MENUITEM "A propos", IDM_ABOUT
-    }
-}
+    END
+END
 
 
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 RAMWATCH_MENU MENU
-{
+BEGIN
     POPUP "File"
-    {
+    BEGIN
         MENUITEM "&New list\tCtrl N", RAMMENU_FILE_NEW
         MENUITEM "&Open...\tCtrl O", RAMMENU_FILE_OPEN
         MENUITEM "&Save\tCtrl S", RAMMENU_FILE_SAVE
@@ -562,9 +560,9 @@ RAMWATCH_MENU MENU
         MENUITEM "Save Window Position", RAMMENU_FILE_SAVEWINDOW
         MENUITEM SEPARATOR
         MENUITEM "&Close\tAlt F4", IDCANCEL
-    }
+    END
     POPUP "Watches"
-    {
+    BEGIN
         MENUITEM "&New Watch\tN", IDC_C_WATCH
         MENUITEM "&Edit Watch\tE", IDC_C_WATCH_EDIT
         MENUITEM "&Remove Watch\tR", IDC_C_WATCH_REMOVE
@@ -572,47 +570,47 @@ RAMWATCH_MENU MENU
         MENUITEM SEPARATOR
         MENUITEM "Move Up\tU", IDC_C_WATCH_UP
         MENUITEM "Move Down\tD", IDC_C_WATCH_DOWN
-    }
-}
+    END
+END
 
 
 
 LANGUAGE LANG_DANISH, SUBLANG_DANISH_DENMARK
 RECENTROMS MENU
-{
+BEGIN
     POPUP "Recent ROMs"
-    {
-        MENUITEM "None", 601, GRAYED
+    BEGIN
+        MENUITEM "None", 65501, GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "Clear", 600, GRAYED
-    }
-}
+        MENUITEM "Clear", 65500, GRAYED
+    END
+END
 
 
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 RECENTROMS MENU
-{
+BEGIN
     POPUP "Recent ROMs"
-    {
-        MENUITEM "None", 601, GRAYED
+    BEGIN
+        MENUITEM "None", 65501, GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "Clear", 600, GRAYED
-    }
-}
+        MENUITEM "Clear", 65500, GRAYED
+    END
+END
 
 
 
 LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
 RECENTROMS MENU
-{
+BEGIN
     POPUP "ROMs récentes"
-    {
-        MENUITEM "Aucune", 601, GRAYED
+    BEGIN
+        MENUITEM "Aucune", 65501, GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "Vider", 600, GRAYED
-    }
-}
+        MENUITEM "Vider", 65500, GRAYED
+    END
+END
 
 
 
@@ -624,7 +622,7 @@ IDD_3DSETTINGS DIALOG 0, 0, 174, 120
 STYLE DS_MODALFRAME | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "3D settings"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 62, 92, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 117, 92, 50, 14, BS_PUSHBUTTON
     PUSHBUTTON      "Default", IDC_DEFAULT, 7, 92, 50, 14, BS_PUSHBUTTON
@@ -632,7 +630,7 @@ FONT 8, "MS Sans Serif"
     COMBOBOX        IDC_3DCORE, 15, 23, 146, 138, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
     AUTOCHECKBOX    "Unrealistically High-Precision Color Interpolation", IDC_INTERPOLATECOLOR, 9, 55, 165, 10, BS_AUTOCHECKBOX
     LTEXT           "(Presently only effective for SoftRasterizer)", IDC_STATIC, 21, 65, 134, 8, SS_LEFT
-}
+END
 
 
 
@@ -641,7 +639,7 @@ IDD_3DSETTINGS DIALOGEX 0, 0, 174, 120
 STYLE DS_MODALFRAME | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "3D settings"
 FONT 8, "MS Sans Serif", 0, 0, 0
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 62, 92, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 117, 92, 50, 14, BS_PUSHBUTTON
     PUSHBUTTON      "Default", IDC_DEFAULT, 7, 92, 50, 14, BS_PUSHBUTTON
@@ -649,7 +647,7 @@ FONT 8, "MS Sans Serif", 0, 0, 0
     COMBOBOX        IDC_3DCORE, 15, 23, 146, 138, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
     AUTOCHECKBOX    "Unrealistically High-Precision Color Interpolation", IDC_INTERPOLATECOLOR, 9, 55, 165, 10, BS_AUTOCHECKBOX
     LTEXT           "(Presently only effective for SoftRasterizer)", IDC_STATIC, 21, 65, 134, 8, SS_LEFT
-}
+END
 
 
 
@@ -658,7 +656,7 @@ IDD_3DSETTINGS DIALOG 0, 0, 174, 120
 STYLE DS_MODALFRAME | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Configuration 3D"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 62, 92, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Annuler", IDCANCEL, 117, 92, 50, 14, BS_PUSHBUTTON
     PUSHBUTTON      "Par défaut", IDC_DEFAULT, 7, 92, 50, 14, BS_PUSHBUTTON
@@ -666,7 +664,7 @@ FONT 8, "MS Sans Serif"
     COMBOBOX        IDC_3DCORE, 15, 23, 146, 138, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
     AUTOCHECKBOX    "Unrealistically High-Precision Color Interpolation", IDC_INTERPOLATECOLOR, 9, 55, 165, 10, BS_AUTOCHECKBOX
     LTEXT           "(Presently only effective for SoftRasterizer)", IDC_STATIC, 21, 65, 134, 8, SS_LEFT
-}
+END
 
 
 
@@ -675,7 +673,7 @@ IDD_ABOUT_BOX DIALOGEX 0, 0, 212, 298
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP
 CAPTION "About DeSmuME..."
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CTEXT           "", IDC_AUTHORS_LIST, 7, 75, 198, 188, SS_CENTER, WS_EX_CLIENTEDGE
     DEFPUSHBUTTON   "Close", IDC_FERMER, 86, 277, 50, 14, BS_DEFPUSHBUTTON
     CTEXT           "DeSmuME", IDC_STATIC, 7, 7, 198, 10, SS_CENTER
@@ -684,7 +682,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     CTEXT           "Original author", IDC_STATIC, 7, 36, 198, 10, SS_CENTER
     CTEXT           "yopyop", IDC_STATIC, 9, 45, 196, 10, SS_CENTER
     CTEXT           "current team", IDC_STATIC, 8, 63, 198, 10, SS_CENTER
-}
+END
 
 
 
@@ -693,7 +691,7 @@ IDD_BGMAP_VIEWER DIALOG 0, 0, 495, 320
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "BG map viewer"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     PUSHBUTTON      "Close", IDCANCEL, 5, 301, 50, 14, BS_PUSHBUTTON
     GROUPBOX        "Map info", IDC_STATIC, 5, 23, 142, 230
     COMBOBOX        IDC_BGMAP_SEL, 5, 5, 142, 154, CBS_DROPDOWNLIST | CBS_HASSTRINGS
@@ -723,7 +721,7 @@ FONT 8, "MS Sans Serif"
     LTEXT           "mosaic here", IDC_BGMAP_MOSAIC, 75, 210, 68, 8, SS_LEFT
     LTEXT           "special effect here", IDC_BGMAP_SPECEFF, 75, 225, 68, 8, SS_LEFT
     LTEXT           "windows here", IDC_BGMAP_WINDOWS, 75, 240, 68, 8, SS_LEFT
-}
+END
 
 
 
@@ -732,7 +730,7 @@ IDD_CHEAT_ADD DIALOGEX 0, 0, 121, 192
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Add cheat"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     EDITTEXT        IDC_EDIT1, 26, 17, 88, 14, ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT2, 7, 42, 107, 14, ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT3, 7, 67, 107, 30, ES_MULTILINE
@@ -752,7 +750,24 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     LTEXT           "[0..65535]", IDC_STATIC_S2, 53, 134, 60, 8, SS_LEFT
     LTEXT           "[0..16777215]", IDC_STATIC_S3, 53, 145, 58, 8, SS_LEFT
     LTEXT           "[0..4294967295]", IDC_STATIC_S4, 53, 155, 59, 8, SS_LEFT
-}
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_CHEAT_ADD_BC_CODE DIALOGEX 0, 0, 121, 193
+STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
+CAPTION "Add Action Replay code"
+FONT 8, "MS Shell Dlg", 400, 0, 1
+BEGIN
+    EDITTEXT        IDC_EDIT2, 7, 17, 107, 97, ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT3, 7, 124, 107, 30, ES_MULTILINE
+    AUTOCHECKBOX    "turn on code", IDC_CHECK1, 47, 159, 67, 10, BS_AUTOCHECKBOX
+    DEFPUSHBUTTON   "Add", IDOK, 7, 172, 50, 14, BS_DEFPUSHBUTTON
+    PUSHBUTTON      "Cancel", IDCANCEL, 64, 172, 50, 14, BS_PUSHBUTTON
+    LTEXT           "Code:", -1, 7, 7, 20, 8, SS_LEFT
+    LTEXT           "Description:", -1, 9, 116, 39, 8, SS_LEFT
+END
 
 
 
@@ -761,7 +776,7 @@ IDD_CHEAT_ADD_XX_CODE DIALOGEX 0, 0, 121, 193
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Add Action Replay code"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     EDITTEXT        IDC_EDIT2, 7, 17, 107, 97, WS_VSCROLL | ES_AUTOVSCROLL | ES_UPPERCASE | ES_MULTILINE | ES_WANTRETURN
     EDITTEXT        IDC_EDIT3, 7, 124, 107, 30, ES_MULTILINE
     AUTOCHECKBOX    "turn on code", IDC_CHECK1, 47, 159, 67, 10, BS_AUTOCHECKBOX
@@ -769,7 +784,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     PUSHBUTTON      "Cancel", IDCANCEL, 64, 172, 50, 14, BS_PUSHBUTTON
     LTEXT           "Code:", -1, 7, 7, 20, 8, SS_LEFT
     LTEXT           "Description:", -1, 9, 116, 39, 8, SS_LEFT
-}
+END
 
 
 
@@ -778,7 +793,7 @@ IDD_CHEAT_LIST DIALOGEX 0, 0, 316, 177
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Cheats list"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CONTROL         "", IDC_LIST1, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_ALIGNLEFT | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | LVS_SINGLESEL | LVS_REPORT, 7, 7, 302, 103
     PUSHBUTTON      "internal", IDC_BADD, 10, 125, 50, 14, BS_PUSHBUTTON
     PUSHBUTTON      "Action Replay", IDC_BADD_AR, 66, 125, 67, 14, BS_PUSHBUTTON
@@ -788,7 +803,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     DEFPUSHBUTTON   "Save", IDOK, 109, 156, 50, 14, WS_DISABLED | BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 163, 156, 50, 14, BS_PUSHBUTTON
     GROUPBOX        " Add cheats code as... ", IDC_STATIC, 7, 114, 205, 31
-}
+END
 
 
 
@@ -797,11 +812,11 @@ IDD_CHEAT_SEARCH DIALOGEX 0, 0, 177, 211
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Cheat search"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     PUSHBUTTON      "Restart", IDC_BRESTART, 7, 190, 50, 14, WS_DISABLED | BS_PUSHBUTTON
     PUSHBUTTON      "View", IDC_BVIEW, 64, 190, 50, 14, WS_DISABLED | BS_PUSHBUTTON
     DEFPUSHBUTTON   "Search", IDC_BSEARCH, 120, 190, 50, 14, BS_DEFPUSHBUTTON
-}
+END
 
 
 
@@ -809,7 +824,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_CHEAT_SEARCH_COMP DIALOGEX 0, 0, 177, 184
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     RTEXT           "number of results: ", IDC_STATIC, 7, 169, 78, 8, SS_RIGHT
     LTEXT           "Static", IDC_SNUMBER, 92, 169, 78, 8, SS_LEFT
     GROUPBOX        " Select comparison ", IDC_STATIC, 7, 7, 163, 58
@@ -817,7 +832,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     AUTORADIOBUTTON "new value is < old value", IDC_RADIO2, 9, 28, 93, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "new value is = old value", IDC_RADIO3, 9, 39, 93, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "new value is != old value", IDC_RADIO4, 9, 50, 96, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
-}
+END
 
 
 
@@ -825,14 +840,14 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_CHEAT_SEARCH_EXACT DIALOGEX 0, 0, 177, 184
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     EDITTEXT        IDC_EVALUE, 7, 18, 163, 14, ES_AUTOHSCROLL
     LTEXT           "Enter value:", IDC_STATIC, 7, 7, 163, 8, SS_LEFT
     RTEXT           "Range value:", IDC_STATIC, 7, 36, 78, 8, SS_RIGHT
     LTEXT           "Static", IDC_STATIC_RANGE, 92, 36, 78, 8, SS_LEFT
     RTEXT           "number of results: ", IDC_STATIC, 7, 169, 78, 8, SS_RIGHT
     LTEXT           "Static", IDC_SNUMBER, 92, 169, 78, 8, SS_LEFT
-}
+END
 
 
 
@@ -840,7 +855,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_CHEAT_SEARCH_MAIN DIALOGEX 0, 0, 178, 185
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "1 byte", IDC_RADIO1, 9, 10, 37, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "2 bytes", IDC_RADIO2, 9, 20, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "3 bytes", IDC_RADIO3, 9, 31, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -852,11 +867,11 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     GROUPBOX        " Select search type ", IDC_STATIC, 7, 104, 164, 33
     AUTORADIOBUTTON "Exact value search", IDC_RADIO7, 9, 114, 77, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Comparative search", IDC_RADIO8, 9, 125, 80, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
-    LTEXT           "[0..255]", IDC_STATIC_S1, 53, 10, 115, 8, SS_LEFT
-    LTEXT           "[0..65535]", IDC_STATIC_S2, 53, 20, 116, 8, SS_LEFT
-    LTEXT           "[0..16777215]", IDC_STATIC_S3, 53, 31, 115, 8, SS_LEFT
-    LTEXT           "[0..4294967295]", IDC_STATIC_S4, 53, 41, 116, 8, SS_LEFT
-}
+    LTEXT           "[0..255]", IDC_STATIC_S1, 53, 10, 118, 8, SS_LEFT
+    LTEXT           "[0..65535]", IDC_STATIC_S2, 53, 20, 118, 8, SS_LEFT
+    LTEXT           "[0..16777215]", IDC_STATIC_S3, 53, 31, 118, 8, SS_LEFT
+    LTEXT           "[0..4294967295]", IDC_STATIC_S4, 53, 41, 118, 8, SS_LEFT
+END
 
 
 
@@ -864,11 +879,11 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_CHEAT_SEARCH_RESULT DIALOGEX 0, 0, 177, 184
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     LTEXT           "Now return to your game and come back when the next search should be processed", IDC_STATIC, 7, 7, 163, 20, SS_LEFT
     RTEXT           "number of results: ", IDC_STATIC, 7, 169, 78, 8, SS_RIGHT
     LTEXT           "Static", IDC_SNUMBER, 92, 169, 78, 8, SS_LEFT
-}
+END
 
 
 
@@ -877,11 +892,11 @@ IDD_CHEAT_SEARCH_VIEW DIALOGEX 0, 0, 177, 211
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Cheat search - Results"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CONTROL         "", IDC_LIST, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_ALIGNLEFT | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | LVS_SINGLESEL | LVS_REPORT, 7, 7, 163, 180
     PUSHBUTTON      "Return", IDCANCEL, 64, 190, 50, 14, BS_PUSHBUTTON
     DEFPUSHBUTTON   "Add", IDC_BADD, 120, 190, 50, 14, BS_DEFPUSHBUTTON
-}
+END
 
 
 
@@ -890,7 +905,7 @@ IDD_DESASSEMBLEUR_VIEWER7 DIALOGEX 0, 0, 380, 186
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Disassembler"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "Auto ", IDC_AUTO_DES, 10, 4, 35, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "ARM", IDC_ARM, 44, 4, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Thumb", IDC_THUMB, 82, 4, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -943,7 +958,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_SETPNUM, 5, 170, 34, 14, WS_GROUP | ES_AUTOHSCROLL | ES_NUMBER | ES_UPPERCASE
     PUSHBUTTON      "&Step", IDC_STEP, 41, 170, 50, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Autoupd asm", IDC_AUTOUPDATE_ASM, 94, 172, 57, 10, BS_AUTOCHECKBOX
-}
+END
 
 
 
@@ -952,7 +967,7 @@ IDD_DESASSEMBLEUR_VIEWER7 DIALOGEX 0, 0, 380, 186
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Disassembler"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "Auto ", IDC_AUTO_DES, 10, 4, 35, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "ARM", IDC_ARM, 44, 4, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Thumb", IDC_THUMB, 82, 4, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -1005,7 +1020,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_SETPNUM, 5, 170, 34, 14, WS_GROUP | ES_AUTOHSCROLL | ES_NUMBER | ES_UPPERCASE
     PUSHBUTTON      "&Step", IDC_STEP, 41, 170, 50, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Autoupd asm", IDC_AUTOUPDATE_ASM, 94, 172, 57, 10, BS_AUTOCHECKBOX
-}
+END
 
 
 
@@ -1014,7 +1029,7 @@ IDD_DESASSEMBLEUR_VIEWER7 DIALOGEX 0, 0, 380, 186
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Desassembleur"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "Auto ", IDC_AUTO_DES, 10, 4, 35, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "ARM", IDC_ARM, 44, 4, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Thumb", IDC_THUMB, 82, 4, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -1067,7 +1082,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_SETPNUM, 5, 170, 34, 14, WS_GROUP | ES_AUTOHSCROLL | ES_NUMBER | ES_UPPERCASE
     PUSHBUTTON      "&Step", IDC_STEP, 41, 170, 50, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Autoupd asm", IDC_AUTOUPDATE_ASM, 94, 172, 57, 10, BS_AUTOCHECKBOX
-}
+END
 
 
 
@@ -1076,7 +1091,7 @@ IDD_DESASSEMBLEUR_VIEWER9 DIALOGEX 0, 0, 380, 186
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Disassembler"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "Auto ", IDC_AUTO_DES, 10, 4, 35, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "ARM", IDC_ARM, 44, 4, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Thumb", IDC_THUMB, 82, 4, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -1129,7 +1144,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_SETPNUM, 5, 170, 34, 14, WS_GROUP | ES_AUTOHSCROLL | ES_NUMBER | ES_UPPERCASE
     PUSHBUTTON      "&Step", IDC_STEP, 41, 170, 50, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Autoupd asm", IDC_AUTOUPDATE_ASM, 94, 172, 57, 10, BS_AUTOCHECKBOX
-}
+END
 
 
 
@@ -1138,7 +1153,7 @@ IDD_DESASSEMBLEUR_VIEWER9 DIALOGEX 0, 0, 380, 186
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Disassembler"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "Auto ", IDC_AUTO_DES, 10, 4, 35, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "ARM", IDC_ARM, 44, 4, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Thumb", IDC_THUMB, 82, 4, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -1191,7 +1206,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     LTEXT           "frames", IDC_STATIC, 364, 5, 16, 8, SS_LEFT
     PUSHBUTTON      "&Refresh", IDC_REFRESH, 162, 170, 50, 14, BS_PUSHBUTTON | BS_ICON
     AUTOCHECKBOX    "Autoupd asm", IDC_AUTOUPDATE_ASM, 94, 172, 57, 10, BS_AUTOCHECKBOX
-}
+END
 
 
 
@@ -1200,7 +1215,7 @@ IDD_DESASSEMBLEUR_VIEWER9 DIALOGEX 0, 0, 380, 186
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Desassembleur"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "Auto ", IDC_AUTO_DES, 10, 4, 35, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "ARM", IDC_ARM, 44, 4, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "Thumb", IDC_THUMB, 82, 4, 40, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
@@ -1253,7 +1268,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_SETPNUM, 5, 170, 34, 14, WS_GROUP | ES_AUTOHSCROLL | ES_NUMBER | ES_UPPERCASE
     PUSHBUTTON      "&Step", IDC_STEP, 41, 170, 50, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Autoupd asm", IDC_AUTOUPDATE_ASM, 94, 172, 57, 10, BS_AUTOCHECKBOX
-}
+END
 
 
 
@@ -1262,7 +1277,7 @@ IDD_EDITWATCH DIALOGEX 0, 0, 181, 95
 STYLE DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION " Edit Watch"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CTEXT           "Address:", IDC_SPECIFICADDRESS, 18, 12, 35, 10, SS_CENTER
     EDITTEXT        IDC_EDIT_COMPAREADDRESS, 55, 10, 65, 12, ES_AUTOHSCROLL | ES_UPPERCASE
     CTEXT           "Notes:", IDC_PROMPT_TEXT, 18, 24, 45, 10, SS_CENTER
@@ -1277,7 +1292,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     AUTORADIOBUTTON "&4 bytes", IDC_4_BYTES, 98, 67, 61, 11, WS_TABSTOP | BS_AUTORADIOBUTTON
     DEFPUSHBUTTON   "&OK", IDOK, 66, 80, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "&Cancel", IDCANCEL, 120, 80, 50, 14, BS_PUSHBUTTON
-}
+END
 
 
 
@@ -1286,7 +1301,7 @@ IDD_EMULATIONSETTINGS DIALOG 0, 0, 241, 270
 STYLE DS_CENTER | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "Emulation settings"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 130, 250, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 185, 250, 50, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Use 8MB debugger mode when starting execution", IDC_CHECKBOX_DEBUGGERMODE, 15, 35, 182, 10, BS_AUTOCHECKBOX
@@ -1307,7 +1322,7 @@ FONT 8, "MS Sans Serif"
     PUSHBUTTON      "...", IDC_FIRMWAREBROWSE, 205, 205, 20, 14, BS_PUSHBUTTON
     AUTOCHECKBOX    "Boot from firmware (like the NDS)", IDC_FIRMWAREBOOT, 15, 225, 210, 10, BS_AUTOCHECKBOX
     GROUPBOX        "General", IDC_STATIC, 5, 5, 230, 45
-}
+END
 
 
 
@@ -1316,7 +1331,7 @@ IDD_FIRMSETTINGS DIALOG 0, 0, 161, 145
 STYLE DS_MODALFRAME | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Firmware Indstillinger"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     DEFPUSHBUTTON   "&OK", IDOK, 7, 124, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "&Fortryd", IDCANCEL, 104, 124, 50, 14, BS_PUSHBUTTON
     CONTROL         "Favorit Farve:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 55, 52, 12
@@ -1331,7 +1346,7 @@ FONT 8, "MS Sans Serif"
     EDITTEXT        IDC_EDIT1, 66, 14, 82, 14, WS_GROUP | ES_AUTOHSCROLL | ES_WANTRETURN
     CONTROL         "Besked:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 36, 52, 12
     EDITTEXT        IDC_EDIT2, 66, 33, 82, 14, WS_GROUP | ES_AUTOHSCROLL | ES_WANTRETURN
-}
+END
 
 
 
@@ -1340,7 +1355,7 @@ IDD_FIRMSETTINGS DIALOGEX 0, 0, 161, 145
 STYLE DS_CENTER | DS_MODALFRAME | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Firmware Settings"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     EDITTEXT        IDC_EDIT1, 66, 14, 82, 14, WS_GROUP | ES_AUTOHSCROLL | ES_WANTRETURN
     EDITTEXT        IDC_EDIT2, 66, 33, 82, 14, WS_GROUP | ES_AUTOHSCROLL | ES_WANTRETURN
     COMBOBOX        IDC_COMBO1, 66, 53, 84, 14, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWN
@@ -1355,7 +1370,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     CONTROL         "Language:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 106, 52, 12
     CONTROL         "Nickname:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 17, 52, 12
     CONTROL         "Message:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 36, 52, 12
-}
+END
 
 
 
@@ -1364,7 +1379,7 @@ IDD_FIRMSETTINGS DIALOG 0, 0, 161, 145
 STYLE DS_CENTER | DS_MODALFRAME | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Configuration du firmware"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     EDITTEXT        IDC_EDIT1, 66, 14, 82, 14, WS_GROUP | ES_AUTOHSCROLL | ES_WANTRETURN
     EDITTEXT        IDC_EDIT2, 66, 33, 82, 14, WS_GROUP | ES_AUTOHSCROLL | ES_WANTRETURN
     COMBOBOX        IDC_COMBO1, 66, 53, 84, 14, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWN
@@ -1379,7 +1394,7 @@ FONT 8, "MS Sans Serif"
     CONTROL         "Langage:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 106, 52, 12
     CONTROL         "Pseudonyme:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 17, 52, 12
     CONTROL         "Message:", IDC_STATIC, WC_STATIC, NOT WS_GROUP | SS_LEFTNOWORDWRAP, 9, 36, 52, 12
-}
+END
 
 
 
@@ -1388,7 +1403,7 @@ IDD_GAME_INFO DIALOG 0, 0, 366, 406
 STYLE DS_CENTER | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "ROM Information"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     PUSHBUTTON      "&Close", IDCANCEL, 310, 385, 50, 14, BS_PUSHBUTTON
     LTEXT           "Game title :", IDC_STATIC, 190, 20, 95, 8, SS_LEFT
     LTEXT           "", IDC_GI_GAMETITLE, 285, 20, 70, 8, SS_LEFT
@@ -1446,7 +1461,7 @@ FONT 8, "MS Sans Serif"
     LTEXT           "Spanish title :", IDC_STATIC, 15, 345, 65, 8, SS_LEFT
     LTEXT           "", IDC_GI_TITLESP, 15, 360, 150, 35, SS_LEFT
     CONTROL         "1", IDC_GI_ICON, "GInfo_IconBox", 0x50000000, 10, 15, 35, 30, 0x00000020
-}
+END
 
 
 
@@ -1455,7 +1470,7 @@ IDD_GAME_INFO DIALOG 0, 0, 366, 406
 STYLE DS_CENTER | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "ROM Info"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     PUSHBUTTON      "&Close", IDCANCEL, 310, 385, 50, 14, BS_PUSHBUTTON
     LTEXT           "Game title :", IDC_STATIC, 190, 20, 95, 8, SS_LEFT
     LTEXT           "", IDC_GI_GAMETITLE, 285, 20, 70, 8, SS_LEFT
@@ -1513,7 +1528,7 @@ FONT 8, "MS Sans Serif"
     LTEXT           "Spanish title :", IDC_STATIC, 15, 345, 65, 8, SS_LEFT
     LTEXT           "", IDC_GI_TITLESP, 15, 360, 150, 35, SS_LEFT
     CONTROL         "1", IDC_GI_ICON, "GInfo_IconBox", 0x50000000, 10, 15, 35, 30, 0x00000020
-}
+END
 
 
 
@@ -1522,7 +1537,7 @@ IDD_GAME_INFO DIALOG 0, 0, 366, 406
 STYLE DS_CENTER | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "Info ROM"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     PUSHBUTTON      "Fermer", IDCANCEL, 310, 385, 50, 14, BS_PUSHBUTTON
     LTEXT           "Titre du jeu :", IDC_STATIC, 190, 20, 95, 8, SS_LEFT
     LTEXT           "", IDC_GI_GAMETITLE, 285, 20, 70, 8, SS_LEFT
@@ -1580,7 +1595,7 @@ FONT 8, "MS Sans Serif"
     LTEXT           "Titre espagnol :", IDC_STATIC, 15, 345, 65, 8, SS_LEFT
     LTEXT           "", IDC_GI_TITLESP, 15, 360, 150, 35, SS_LEFT
     CONTROL         "1", IDC_GI_ICON, "GInfo_IconBox", 0x50000000, 10, 15, 35, 30, 0x00000020
-}
+END
 
 
 
@@ -1589,12 +1604,12 @@ IDD_GBASLOT DIALOGEX 0, 0, 316, 185
 STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP
 CAPTION "GBA slot"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_ADDONS_LIST, 7, 7, 302, 30, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
     DEFPUSHBUTTON   "OK", IDOK, 205, 164, 50, 14, WS_DISABLED | BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 259, 164, 50, 14, BS_PUSHBUTTON
     CTEXT           "Info", IDC_ADDONS_INFO, 7, 21, 302, 23, SS_CENTER
-}
+END
 
 
 
@@ -1602,7 +1617,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_GBASLOT_CFLASH DIALOGEX 7, 48, 302, 109
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     AUTORADIOBUTTON "file", IDC_RFILE, 16, 26, 25, 10, WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON
     AUTORADIOBUTTON "folder", IDC_RFOLDER, 16, 56, 35, 10, WS_TABSTOP | BS_AUTORADIOBUTTON
     EDITTEXT        IDC_PATHIMG, 14, 39, 223, 14, ES_AUTOHSCROLL | ES_READONLY
@@ -1612,7 +1627,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     AUTOCHECKBOX    "use rom folder", IDC_PATHDESMUME, 43, 82, 62, 10, BS_AUTOCHECKBOX
     CTEXT           "Select file name or folder for Compact Flash image:", IDC_STATIC, 7, 7, 288, 14, SS_CENTER
     GROUPBOX        "", IDC_STATIC, 7, 19, 288, 75
-}
+END
 
 
 
@@ -1620,11 +1635,11 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_GBASLOT_GBAGAME DIALOGEX 7, 48, 302, 109
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     EDITTEXT        IDC_PATHGAME, 7, 34, 236, 14, ES_AUTOHSCROLL | ES_READONLY
     PUSHBUTTON      "Browse...", IDC_BBROWSE, 245, 33, 50, 14, BS_PUSHBUTTON
     CTEXT           "Select file name for GBA game rom:\n(Please make save file matching name with extension .sav)", IDC_STATIC, 7, 7, 288, 21, SS_CENTER
-}
+END
 
 
 
@@ -1632,8 +1647,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_GBASLOT_NONE DIALOGEX 7, 48, 302, 110
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
-}
+BEGIN
+END
 
 
 
@@ -1641,9 +1656,9 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_GBASLOT_RUMBLEPAK DIALOGEX 7, 48, 302, 109
 STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CTEXT           "TODO", IDC_STATIC, 7, 7, 288, 26, SS_CENTER
-}
+END
 
 
 
@@ -1652,7 +1667,7 @@ IDD_INPUT DIALOGEX 0, 0, 325, 148
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Configure controls"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     EDITTEXT        IDC_EDIT01, 32, 69, 26, 14, ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN
     EDITTEXT        IDC_EDIT02, 7, 83, 26, 14, ES_CENTER | ES_AUTOHSCROLL | ES_READONLY
     EDITTEXT        IDC_EDIT03, 57, 83, 26, 14, ES_CENTER | ES_AUTOHSCROLL | ES_READONLY
@@ -1688,7 +1703,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     LTEXT           "open/close lid", IDC_STATIC, 36, 129, 44, 8, SS_LEFT
     CONTROL         "", IDC_STATIC, WC_STATIC, SS_ETCHEDFRAME, 95, 41, 141, 77
     LTEXT           "debug", IDC_STATIC, 123, 129, 21, 8, WS_DISABLED | SS_LEFT
-}
+END
 
 
 
@@ -1697,7 +1712,7 @@ IDD_INPUTCONFIG DIALOGEX 0, 0, 339, 148
 STYLE DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Control Config"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CONTROL         "WOG!", IDC_UP, "InputCustom", 0x50010000, 52, 15, 71, 12, 0x00000200
     CONTROL         "", IDC_LEFT, "InputCustom", 0x50010000, 52, 29, 71, 12, 0x00000200
     CONTROL         "", IDC_DOWN, "InputCustom", 0x50010000, 52, 42, 71, 12, 0x00000200
@@ -1739,7 +1754,863 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     RTEXT           "LID", IDC_LABEL_X2, 8, 121, 39, 8, SS_RIGHT
     RTEXT           "DEBUG", IDC_LABEL_X3, 127, 123, 29, 8, SS_RIGHT
     CONTROL         " ", IDC_DEBUG, "InputCustom", 0x58010000, 163, 120, 71, 12, 0x00000200
-}
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW DIALOG 0, 0, 625, 494
+STYLE DS_CENTER | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_CLIPSIBLINGS | WS_DLGFRAME | WS_SYSMENU
+CAPTION ""
+FONT 8, "Ms Shell Dlg"
+BEGIN
+    CONTROL         "", IDC_IOREG_TAB, WC_TABCONTROL, TCS_BUTTONS, 5, 5, 455, 15
+    PUSHBUTTON      "Close", IDC_CLOSE, 287, 475, 55, 15, BS_PUSHBUTTON
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_DMA DIALOG 0, 20, 625, 410
+STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "ARM9 DMA 0", IDC_STATIC, 5, 5, 150, 210
+    LTEXT           "DMA0SAD (ARM9 0x040000B0)", IDC_STATIC, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10100, 20, 30, 130, 10, SS_LEFT
+    LTEXT           "DMA0DAD (ARM9 0x040000B4)", IDC_STATIC, 10, 45, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10200, 20, 55, 130, 10, SS_LEFT
+    LTEXT           "DMA0CNT_L (ARM9 0x040000B8)", IDC_STATIC, 10, 70, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10300, 20, 80, 130, 10, SS_LEFT
+    LTEXT           "DMA0CNT_H (ARM9 0x040000BA)", IDC_STATIC, 10, 95, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10400, 20, 105, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 10401, 20, 115, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 10402, 20, 125, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 10403, 20, 135, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 10404, 20, 145, 130, 10, SS_LEFT
+    LTEXT           "(Bit11-13) DMA start :", 10405, 20, 155, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 10406, 20, 165, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 10407, 20, 175, 130, 10, SS_LEFT
+    LTEXT           "DMA0FILL (ARM9 0x040000E0)", IDC_STATIC, 10, 190, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10500, 20, 200, 130, 10, SS_LEFT
+    GROUPBOX        "ARM9 DMA 1", IDC_STATIC, 160, 5, 150, 210
+    LTEXT           "DMA1SAD (ARM9 0x040000BC)", IDC_STATIC, 165, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10600, 175, 30, 130, 10, SS_LEFT
+    LTEXT           "DMA1DAD (ARM9 0x040000C0)", IDC_STATIC, 165, 45, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10700, 175, 55, 130, 10, SS_LEFT
+    LTEXT           "DMA1CNT_L (ARM9 0x040000C4)", IDC_STATIC, 165, 70, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10800, 175, 80, 130, 10, SS_LEFT
+    LTEXT           "DMA1CNT_H (ARM9 0x040000C6)", IDC_STATIC, 165, 95, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10900, 175, 105, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 10901, 175, 115, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 10902, 175, 125, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 10903, 175, 135, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 10904, 175, 145, 130, 10, SS_LEFT
+    LTEXT           "(Bit11-13) DMA start :", 10905, 175, 155, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 10906, 175, 165, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 10907, 175, 175, 130, 10, SS_LEFT
+    LTEXT           "DMA1FILL (ARM9 0x040000E4)", IDC_STATIC, 165, 190, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11000, 175, 200, 130, 10, SS_LEFT
+    GROUPBOX        "ARM9 DMA 2", IDC_STATIC, 315, 5, 150, 210
+    LTEXT           "DMA2SAD (ARM9 0x040000C8)", IDC_STATIC, 320, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11100, 330, 30, 130, 10, SS_LEFT
+    LTEXT           "DMA2DAD (ARM9 0x040000CC)", IDC_STATIC, 320, 45, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11200, 330, 55, 130, 10, SS_LEFT
+    LTEXT           "DMA2CNT_L (ARM9 0x040000D0)", IDC_STATIC, 320, 70, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11300, 330, 80, 130, 10, SS_LEFT
+    LTEXT           "DMA2CNT_H (ARM9 0x040000D2)", IDC_STATIC, 320, 95, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11400, 330, 105, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 11401, 330, 115, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 11402, 330, 125, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 11403, 330, 135, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 11404, 330, 145, 130, 10, SS_LEFT
+    LTEXT           "(Bit11-13) DMA start :", 11405, 330, 155, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 11406, 330, 165, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 11407, 330, 175, 130, 10, SS_LEFT
+    LTEXT           "DMA2FILL (ARM9 0x040000E8)", IDC_STATIC, 320, 190, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11500, 330, 200, 130, 10, SS_LEFT
+    GROUPBOX        "ARM9 DMA 3", IDC_STATIC, 470, 5, 150, 210
+    LTEXT           "DMA3SAD (ARM9 0x040000D4)", IDC_STATIC, 475, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11600, 485, 30, 130, 10, SS_LEFT
+    LTEXT           "DMA3DAD (ARM9 0x040000D8)", IDC_STATIC, 475, 45, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11700, 485, 55, 130, 10, SS_LEFT
+    LTEXT           "DMA3CNT_L (ARM9 0x040000DC)", IDC_STATIC, 475, 70, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11800, 485, 80, 130, 10, SS_LEFT
+    LTEXT           "DMA3CNT_H (ARM9 0x040000DE)", IDC_STATIC, 475, 95, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11900, 485, 105, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 11901, 485, 115, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 11902, 485, 125, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 11903, 485, 135, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 11904, 485, 145, 130, 10, SS_LEFT
+    LTEXT           "(Bit11-13) DMA start :", 11905, 485, 155, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 11906, 485, 165, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 11907, 485, 175, 130, 10, SS_LEFT
+    LTEXT           "DMA3FILL (ARM9 0x040000EC)", IDC_STATIC, 475, 190, 140, 8, SS_LEFT
+    LTEXT           "Value :", 12000, 485, 200, 130, 10, SS_LEFT
+    GROUPBOX        "ARM7 DMA 0", IDC_STATIC, 5, 220, 150, 185
+    LTEXT           "DMA0SAD (ARM7 0x040000B0)", IDC_STATIC, 10, 235, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 12100, 20, 245, 130, 10, SS_LEFT
+    LTEXT           "DMA0DAD (ARM7 0x040000B4)", IDC_STATIC, 10, 260, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 12200, 20, 270, 130, 10, SS_LEFT
+    LTEXT           "DMA0CNT_L (ARM7 0x040000B8)", IDC_STATIC, 10, 285, 140, 8, SS_LEFT
+    LTEXT           "Value :", 12300, 20, 295, 130, 10, SS_LEFT
+    LTEXT           "DMA0CNT_H (ARM7 0x040000BA)", IDC_STATIC, 10, 310, 140, 8, SS_LEFT
+    LTEXT           "Value :", 12400, 20, 320, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 12401, 20, 330, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 12402, 20, 340, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 12403, 20, 350, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 12404, 20, 360, 130, 10, SS_LEFT
+    LTEXT           "(Bit12-13) DMA start :", 12405, 20, 370, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 12406, 20, 380, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 12407, 20, 390, 130, 10, SS_LEFT
+    GROUPBOX        "ARM7 DMA 1", IDC_STATIC, 160, 220, 150, 185
+    LTEXT           "DMA1SAD (ARM7 0x040000BC)", IDC_STATIC, 165, 235, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 12500, 175, 245, 130, 10, SS_LEFT
+    LTEXT           "DMA1DAD (ARM7 0x040000C0)", IDC_STATIC, 165, 260, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 12600, 175, 270, 130, 10, SS_LEFT
+    LTEXT           "DMA1CNT_L (ARM7 0x040000C4)", IDC_STATIC, 165, 285, 140, 8, SS_LEFT
+    LTEXT           "Value :", 12700, 175, 295, 130, 10, SS_LEFT
+    LTEXT           "DMA1CNT_H (ARM7 0x040000C6)", IDC_STATIC, 165, 310, 140, 8, SS_LEFT
+    LTEXT           "Value :", 12800, 175, 320, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 12801, 175, 330, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 12802, 175, 340, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 12803, 175, 350, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 12804, 175, 360, 130, 10, SS_LEFT
+    LTEXT           "(Bit12-13) DMA start :", 12805, 175, 370, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 12806, 175, 380, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 12807, 175, 390, 130, 10, SS_LEFT
+    GROUPBOX        "ARM7 DMA 2", IDC_STATIC, 315, 220, 150, 185
+    LTEXT           "DMA2SAD (ARM7 0x040000C8)", IDC_STATIC, 320, 235, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 12900, 330, 245, 130, 10, SS_LEFT
+    LTEXT           "DMA2DAD (ARM7 0x040000CC)", IDC_STATIC, 320, 260, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 13000, 330, 270, 130, 10, SS_LEFT
+    LTEXT           "DMA2CNT_L (ARM7 0x040000D0)", IDC_STATIC, 320, 285, 140, 8, SS_LEFT
+    LTEXT           "Value :", 13100, 330, 295, 130, 10, SS_LEFT
+    LTEXT           "DMA2CNT_H (ARM7 0x040000D2)", IDC_STATIC, 320, 310, 140, 8, SS_LEFT
+    LTEXT           "Value :", 13200, 330, 320, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 13201, 330, 330, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 13202, 330, 340, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 13203, 330, 350, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 13204, 330, 360, 130, 10, SS_LEFT
+    LTEXT           "(Bit12-13) DMA start :", 13205, 330, 370, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 13206, 330, 380, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 13207, 330, 390, 130, 10, SS_LEFT
+    GROUPBOX        "ARM7 DMA 3", IDC_STATIC, 470, 220, 150, 185
+    LTEXT           "DMA3SAD (ARM7 0x040000D4)", IDC_STATIC, 475, 235, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 13300, 485, 245, 130, 10, SS_LEFT
+    LTEXT           "DMA3DAD (ARM7 0x040000D8)", IDC_STATIC, 475, 260, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 13400, 485, 270, 130, 10, SS_LEFT
+    LTEXT           "DMA3CNT_L (ARM7 0x040000DC)", IDC_STATIC, 475, 285, 140, 8, SS_LEFT
+    LTEXT           "Value :", 13500, 485, 295, 130, 10, SS_LEFT
+    LTEXT           "DMA3CNT_H (ARM7 0x040000DE)", IDC_STATIC, 475, 310, 140, 8, SS_LEFT
+    LTEXT           "Value :", 13600, 485, 320, 130, 10, SS_LEFT
+    LTEXT           "(Bit5-6) Dst address :", 13601, 485, 330, 130, 10, SS_LEFT
+    LTEXT           "(Bit7-8) Src address :", 13602, 485, 340, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Repeat :", 13603, 485, 350, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Transfer type :", 13604, 485, 360, 130, 10, SS_LEFT
+    LTEXT           "(Bit12-13) DMA start :", 13605, 485, 370, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) IRQ upon completion :", 13606, 485, 380, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable DMA :", 13607, 485, 390, 130, 10, SS_LEFT
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_GPU_3D DIALOG 0, 20, 645, 290
+STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "DISP3DCNT (ARM9 0x04000060)", IDC_STATIC, 5, 5, 150, 155
+    LTEXT           "Value : ", 10100, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) Texture mapping : ", 10101, 10, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) Toon/highlight shading : ", 10102, 10, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) Alpha test : ", 10103, 10, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) Alpha blending : ", 10104, 10, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Anti-aliasing : ", 10105, 10, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Edge-marking : ", 10106, 10, 85, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Fog mode : ", 10107, 10, 95, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Fog master enable : ", 10108, 10, 105, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-11) Fog shift : ", 10109, 10, 115, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Color buffer underflow : ", 10110, 10, 125, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Polygon/vertex RAM overflow : ", 10111, 10, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit14) Rear-plane : ", 10112, 10, 145, 140, 8, SS_LEFT
+    GROUPBOX        "EDGE_COLOR", IDC_STATIC, 160, 5, 90, 110
+    LTEXT           "Color 0 : ", IDC_STATIC, 165, 30, 49, 8, SS_LEFT
+    LTEXT           "Color 1 : ", IDC_STATIC, 165, 40, 50, 8, SS_LEFT
+    LTEXT           "Color 2 : ", IDC_STATIC, 165, 50, 50, 8, SS_LEFT
+    LTEXT           "Color 3 : ", IDC_STATIC, 165, 60, 50, 8, SS_LEFT
+    LTEXT           "Color 4 : ", IDC_STATIC, 165, 70, 50, 8, SS_LEFT
+    LTEXT           "Color 5 : ", IDC_STATIC, 165, 80, 50, 8, SS_LEFT
+    LTEXT           "Color 6 : ", IDC_STATIC, 165, 90, 50, 8, SS_LEFT
+    LTEXT           "Color 7 : ", IDC_STATIC, 165, 100, 50, 8, SS_LEFT
+    LTEXT           "", 15001, 220, 30, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "(ARM9 0x04000330)", IDC_STATIC, 165, 15, 66, 8, SS_LEFT
+    LTEXT           "", 15002, 220, 40, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15003, 220, 50, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15004, 220, 60, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15005, 220, 70, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15006, 220, 80, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15007, 220, 90, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15008, 220, 100, 25, 10, WS_BORDER | SS_LEFT
+    GROUPBOX        "ALPHA_TEST_REF (ARM9 0x04000340)", IDC_STATIC, 5, 165, 150, 30
+    LTEXT           "Value : ", 10200, 10, 180, 138, 8, SS_LEFT
+    GROUPBOX        "TOON_TABLE", IDC_STATIC, 255, 5, 360, 110
+    LTEXT           "(ARM9 0x04000380)", IDC_STATIC, 260, 15, 80, 8, SS_LEFT
+    LTEXT           "Color 0 : ", IDC_STATIC, 260, 30, 50, 8, SS_LEFT
+    LTEXT           "", 15009, 315, 30, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15010, 315, 40, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15011, 315, 50, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15012, 315, 60, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15013, 315, 70, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15014, 315, 80, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15015, 315, 90, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15016, 315, 100, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15017, 405, 30, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15018, 405, 40, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "Color 1 : ", IDC_STATIC, 260, 40, 50, 8, SS_LEFT
+    LTEXT           "Color 2 : ", IDC_STATIC, 260, 50, 50, 8, SS_LEFT
+    LTEXT           "Color 3 : ", IDC_STATIC, 260, 60, 50, 8, SS_LEFT
+    LTEXT           "Color 4 : ", IDC_STATIC, 260, 70, 50, 8, SS_LEFT
+    LTEXT           "Color 5 : ", IDC_STATIC, 260, 80, 50, 8, SS_LEFT
+    LTEXT           "Color 6 : ", IDC_STATIC, 260, 90, 50, 8, SS_LEFT
+    LTEXT           "Color 7 : ", IDC_STATIC, 260, 100, 50, 8, SS_LEFT
+    LTEXT           "Color 8 : ", IDC_STATIC, 350, 30, 50, 8, SS_LEFT
+    LTEXT           "Color 9 : ", IDC_STATIC, 350, 40, 50, 8, SS_LEFT
+    LTEXT           "Color 10 : ", IDC_STATIC, 350, 50, 50, 8, SS_LEFT
+    LTEXT           "Color 11 : ", IDC_STATIC, 350, 60, 50, 8, SS_LEFT
+    LTEXT           "Color 12 : ", IDC_STATIC, 350, 70, 50, 8, SS_LEFT
+    LTEXT           "Color 13 : ", IDC_STATIC, 350, 80, 50, 8, SS_LEFT
+    LTEXT           "Color 14 : ", IDC_STATIC, 350, 90, 50, 8, SS_LEFT
+    LTEXT           "Color 15 : ", IDC_STATIC, 350, 100, 50, 8, SS_LEFT
+    LTEXT           "Color 16 : ", IDC_STATIC, 440, 30, 50, 8, SS_LEFT
+    LTEXT           "Color 17 : ", IDC_STATIC, 440, 40, 50, 8, SS_LEFT
+    LTEXT           "Color 18 : ", IDC_STATIC, 440, 50, 50, 8, SS_LEFT
+    LTEXT           "Color 19 : ", IDC_STATIC, 440, 60, 50, 8, SS_LEFT
+    LTEXT           "Color 20 : ", IDC_STATIC, 440, 70, 50, 8, SS_LEFT
+    LTEXT           "Color 21 : ", IDC_STATIC, 440, 80, 50, 8, SS_LEFT
+    LTEXT           "Color 22 : ", IDC_STATIC, 440, 90, 50, 8, SS_LEFT
+    LTEXT           "Color 23 : ", IDC_STATIC, 440, 100, 50, 8, SS_LEFT
+    LTEXT           "", 15019, 405, 50, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15020, 405, 60, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15021, 405, 70, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15022, 405, 80, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15023, 405, 90, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15024, 405, 100, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15025, 495, 30, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15026, 495, 40, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15027, 495, 50, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15028, 495, 60, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15029, 495, 70, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15030, 495, 80, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15031, 495, 90, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15032, 495, 100, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "Color 24 : ", IDC_STATIC, 530, 30, 50, 8, SS_LEFT
+    LTEXT           "", 15033, 585, 30, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "Color 25 : ", IDC_STATIC, 530, 40, 50, 8, SS_LEFT
+    LTEXT           "Color 26 : ", IDC_STATIC, 530, 50, 50, 8, SS_LEFT
+    LTEXT           "Color 27 : ", IDC_STATIC, 530, 60, 50, 8, SS_LEFT
+    LTEXT           "Color 28 : ", IDC_STATIC, 530, 70, 50, 8, SS_LEFT
+    LTEXT           "Color 29 : ", IDC_STATIC, 530, 80, 50, 8, SS_LEFT
+    LTEXT           "Color 30 : ", IDC_STATIC, 530, 90, 50, 8, SS_LEFT
+    LTEXT           "Color 31 : ", IDC_STATIC, 530, 100, 50, 8, SS_LEFT
+    LTEXT           "", 15034, 585, 40, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15035, 585, 50, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15036, 585, 60, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15037, 585, 70, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15038, 585, 80, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15039, 585, 90, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "", 15040, 585, 100, 25, 10, WS_BORDER | SS_LEFT
+    GROUPBOX        "CLEAR_COLOR (ARM9 0x04000350)", IDC_STATIC, 5, 200, 150, 75
+    LTEXT           "Value : ", 10300, 10, 215, 115, 8, SS_LEFT
+    LTEXT           "(Bit0-14) Clear color : ", 10301, 10, 230, 140, 8, SS_LEFT
+    LTEXT           "", 15041, 125, 215, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "(Bit15) Enable fog on rear-plane : ", 1032, 10, 240, 140, 8, SS_LEFT
+    LTEXT           "(Bit16-20) Clear alpha : ", 10303, 10, 250, 140, 8, SS_LEFT
+    LTEXT           "(Bit24-29) Clear polygon ID : ", 10304, 10, 260, 140, 8, SS_LEFT
+    GROUPBOX        "CLEAR_DEPTH", IDC_STATIC, 160, 120, 95, 50
+    LTEXT           "Value : ", 10400, 165, 145, 85, 8, SS_LEFT
+    LTEXT           "24-bit depth : FFFFFF", 10401, 165, 155, 85, 8, SS_LEFT
+    GROUPBOX        "CLRIMAGE_OFFSET", IDC_STATIC, 160, 175, 95, 65
+    LTEXT           "Value : ", 10500, 165, 200, 85, 8, SS_LEFT
+    LTEXT           "(Bit0-7) X offset : ", 10501, 165, 215, 85, 8, SS_LEFT
+    LTEXT           "(Bit8-15) Y offset : ", 10502, 165, 225, 85, 8, SS_LEFT
+    GROUPBOX        "FOG_COLOR (ARM9 0x04000358)", IDC_STATIC, 260, 225, 140, 55
+    LTEXT           "Value :", 10600, 265, 240, 100, 8, SS_LEFT
+    LTEXT           "", 15042, 370, 240, 25, 10, WS_BORDER | SS_LEFT
+    LTEXT           "(Bit0-14) Fog color :", 10601, 265, 255, 130, 8, SS_LEFT
+    LTEXT           "(Bit16-20) Fog alpha :", 10602, 265, 265, 130, 8, SS_LEFT
+    LTEXT           "Value : ", 10700, 165, 270, 85, 8, SS_LEFT
+    LTEXT           "Entry 0 : ", 15101, 265, 135, 50, 8, SS_LEFT
+    LTEXT           "Entry 1 : ", 15102, 265, 145, 50, 8, SS_LEFT
+    LTEXT           "Entry 2 : ", 15103, 265, 155, 50, 8, SS_LEFT
+    LTEXT           "Entry 3 : ", 15104, 265, 165, 50, 8, SS_LEFT
+    LTEXT           "Entry 4 : ", 15105, 265, 175, 50, 8, SS_LEFT
+    LTEXT           "Entry 5 : ", 15106, 265, 185, 50, 8, SS_LEFT
+    LTEXT           "Entry 6 : ", 15107, 265, 195, 50, 8, SS_LEFT
+    LTEXT           "Entry 7 : ", 15108, 265, 205, 50, 8, SS_LEFT
+    GROUPBOX        "FOG_OFFSET", IDC_STATIC, 160, 245, 95, 40
+    GROUPBOX        "FOG_TABLE (ARM9 0x04000360)", IDC_STATIC, 260, 120, 225, 100
+    LTEXT           "Entry 8 : ", 15109, 320, 135, 50, 8, SS_LEFT
+    LTEXT           "Entry 9 : ", 15110, 320, 145, 50, 8, SS_LEFT
+    LTEXT           "Entry 10 : ", 15111, 320, 155, 50, 8, SS_LEFT
+    LTEXT           "Entry 11 : ", 15112, 320, 165, 50, 8, SS_LEFT
+    LTEXT           "Entry 12 : ", 15113, 320, 175, 50, 8, SS_LEFT
+    LTEXT           "Entry 13 : ", 15114, 320, 185, 50, 8, SS_LEFT
+    LTEXT           "Entry 14 : ", 15115, 320, 195, 50, 8, SS_LEFT
+    LTEXT           "Entry 15 : ", 15116, 320, 205, 50, 8, SS_LEFT
+    LTEXT           "Entry 16 : ", 15117, 375, 135, 50, 8, SS_LEFT
+    LTEXT           "Entry 17 : ", 15118, 375, 145, 50, 8, SS_LEFT
+    LTEXT           "Entry 18 : ", 15119, 375, 155, 50, 8, SS_LEFT
+    LTEXT           "Entry 19 : ", 15120, 375, 165, 50, 8, SS_LEFT
+    LTEXT           "Entry 20 : ", 15121, 375, 175, 50, 8, SS_LEFT
+    LTEXT           "Entry 21 : ", 15122, 375, 185, 50, 8, SS_LEFT
+    LTEXT           "Entry 22 : ", 15123, 375, 195, 50, 8, SS_LEFT
+    LTEXT           "Entry 23 : ", 15124, 375, 205, 50, 8, SS_LEFT
+    LTEXT           "Entry 24 : ", 15125, 430, 135, 50, 8, SS_LEFT
+    LTEXT           "Entry 25 : ", 15126, 430, 145, 50, 8, SS_LEFT
+    LTEXT           "Entry 26 : ", 15127, 430, 155, 50, 8, SS_LEFT
+    LTEXT           "Entry 27 : ", 15128, 430, 165, 50, 8, SS_LEFT
+    LTEXT           "Entry 28 : ", 15129, 430, 175, 50, 8, SS_LEFT
+    LTEXT           "Entry 29 : ", 15130, 430, 185, 50, 8, SS_LEFT
+    LTEXT           "Entry 30 : ", 15131, 430, 195, 50, 8, SS_LEFT
+    LTEXT           "Entry 31 : ", 15132, 430, 205, 50, 8, SS_LEFT
+    GROUPBOX        "DISP_1DOT_DEPTH", IDC_STATIC, 405, 225, 80, 45
+    LTEXT           "Value : ", 10800, 410, 255, 65, 8, SS_LEFT
+    GROUPBOX        "GXSTAT (ARM9 0x04000600)", IDC_STATIC, 490, 120, 150, 165
+    LTEXT           "Value : ", 10900, 495, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) Box/Pos/Vec test busy : ", 10901, 495, 150, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) Box test result : ", 10902, 495, 160, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Pos&&vec matrix stack level : ", 10903, 495, 170, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Proj matrix stack level : ", 10904, 495, 180, 140, 8, SS_LEFT
+    LTEXT           "(Bit14) Matrix stack busy : ", 10905, 495, 190, 140, 8, SS_LEFT
+    LTEXT           "(Bit15) Matrix stack over/underflow : ", 10906, 495, 200, 140, 8, SS_LEFT
+    LTEXT           "(Bit16-24) GX FIFO level : ", 10907, 495, 210, 140, 8, SS_LEFT
+    LTEXT           "(Bit24) GX FIFO full : ", 10908, 495, 220, 140, 8, SS_LEFT
+    LTEXT           "(Bit25) GX FIFO less than half-full : ", 10909, 495, 230, 140, 8, SS_LEFT
+    LTEXT           "(Bit26) GX FIFO empty : ", 10910, 495, 240, 140, 8, SS_LEFT
+    LTEXT           "(Bit27) GE busy : ", 10911, 495, 250, 140, 8, SS_LEFT
+    LTEXT           "(Bit30-31) GX FIFO IRQ condition : ", 10912, 495, 260, 140, 20, SS_LEFT
+    LTEXT           "(ARM9 0x0400035C)", IDC_STATIC, 165, 255, 67, 8, SS_LEFT
+    LTEXT           "(ARM9 0x04000610)", IDC_STATIC, 410, 235, 66, 8, SS_LEFT
+    LTEXT           "(ARM9 0x04000356)", IDC_STATIC, 165, 185, 66, 8, SS_LEFT
+    LTEXT           "(ARM9 0x04000354)", IDC_STATIC, 165, 130, 66, 8, SS_LEFT
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_GPU_A DIALOG 0, 20, 625, 455
+STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "DISPCNT (ARM9 0x04000000)", IDC_STATIC, 5, 5, 150, 265
+    LTEXT           "Value : ", 10100, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-2) BG mode : ", 10101, 10, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) BG0 -> 3D : ", 10102, 10, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Tile OBJ mapping : ", 10103, 10, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Bitmap OBJ 2D size : ", 10104, 10, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Bitmap OBJ mapping : ", 10105, 10, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Forced blank : ", 10106, 10, 85, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) Enable BG0 : ", 10107, 10, 95, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) Enable BG1 : ", 10108, 10, 105, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) Enable BG2 : ", 10109, 10, 115, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) Enable BG3 : ", 10110, 10, 125, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Enable OBJ : ", 10111, 10, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Enable Win0 : ", 10112, 10, 145, 140, 8, SS_LEFT
+    LTEXT           "(Bit14) Enable Win1 : ", 10113, 10, 155, 140, 8, SS_LEFT
+    LTEXT           "(Bit15) Enable WinOBJ : ", 10114, 10, 165, 140, 8, SS_LEFT
+    LTEXT           "(Bit16-17) Display mode : ", 10115, 10, 175, 140, 8, SS_LEFT
+    LTEXT           "(Bit18-19) VRAM bank : ", 10116, 10, 185, 140, 8, SS_LEFT
+    LTEXT           "(Bit20-21) Tile OBJ 1D boundary : ", 10117, 10, 195, 140, 8, SS_LEFT
+    LTEXT           "(Bit22) Bitmap OBJ 1D boundary : ", 10118, 10, 205, 140, 8, SS_LEFT
+    LTEXT           "(Bit23) Process OBJ during HBlank : ", 10119, 10, 215, 140, 8, SS_LEFT
+    LTEXT           "(Bit24-26) Character base : ", 10120, 10, 225, 140, 8, SS_LEFT
+    LTEXT           "(Bit27-29) Screen base : ", 10121, 10, 235, 140, 8, SS_LEFT
+    LTEXT           "(Bit30) BG extended palettes : ", 10122, 10, 245, 140, 8, SS_LEFT
+    LTEXT           "(Bit31) OBJ extended palettes : ", 10123, 10, 255, 140, 8, SS_LEFT
+    GROUPBOX        "BG0CNT (ARM9 0x04000008)", IDC_STATIC, 160, 5, 150, 95
+    LTEXT           "Value : ", 10200, 165, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10201, 165, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10202, 165, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10203, 165, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10204, 165, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10205, 165, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10206, 165, 85, 140, 8, SS_LEFT
+    GROUPBOX        "BG2CNT (ARM9 0x0400000C)", IDC_STATIC, 160, 105, 150, 105
+    LTEXT           "Value : ", 10300, 165, 120, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10301, 165, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10302, 165, 145, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10303, 165, 155, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10304, 165, 165, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10305, 165, 175, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Display area overflow : ", 10306, 165, 185, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10307, 165, 195, 140, 8, SS_LEFT
+    GROUPBOX        "BG1CNT (ARM9 0x0400000A)", IDC_STATIC, 315, 5, 150, 95
+    LTEXT           "Value : ", 10400, 320, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10401, 320, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10402, 320, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10403, 320, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10404, 320, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10405, 320, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10406, 320, 85, 140, 8, SS_LEFT
+    GROUPBOX        "BG3CNT (ARM9 0x0400000E)", IDC_STATIC, 315, 105, 150, 105
+    LTEXT           "Value : ", 10500, 320, 120, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10501, 320, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10502, 320, 145, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10503, 320, 155, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10504, 320, 165, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10505, 320, 175, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Display area overflow : ", 10506, 320, 185, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10507, 320, 195, 140, 8, SS_LEFT
+    GROUPBOX        "BG scrolling (ARM9 0x04000010+)", IDC_STATIC, 470, 5, 150, 115
+    GROUPBOX        "BG rotation/scaling (ARM9 0x04000020+)", IDC_STATIC, 470, 125, 150, 145
+    LTEXT           "(16-bit) BG0HOFS : ", 10600, 475, 20, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG0VOFS : ", 10700, 475, 30, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG1HOFS : ", 10800, 475, 45, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG1VOFS : ", 10900, 475, 55, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2HOFS : ", 11000, 475, 70, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2VOFS : ", 11100, 475, 80, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3HOFS : ", 11200, 475, 95, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3VOFS : ", 11300, 475, 105, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG2X : ", 11400, 475, 180, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG2Y : ", 11500, 475, 190, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PA : ", 11600, 475, 140, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PB : ", 11700, 475, 150, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PC : ", 11800, 475, 160, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PD : ", 11900, 475, 170, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG3X : ", 12000, 475, 245, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG3Y : ", 12100, 475, 255, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PA : ", 12200, 475, 205, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PB : ", 12300, 475, 215, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PC : ", 12400, 475, 225, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PD : ", 12500, 475, 235, 140, 8, SS_LEFT
+    GROUPBOX        "Window coordinates (ARM9 0x04000040+)", IDC_STATIC, 5, 275, 150, 155
+    LTEXT           "(16-bit) WIN0H : ", 12600, 10, 290, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) X2 : ", 12601, 20, 300, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) X1 : ", 12602, 20, 310, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) WIN1H : ", 12700, 10, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) X2 : ", 12701, 20, 335, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) X1 : ", 12702, 20, 345, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) WIN0V : ", 12800, 10, 360, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) Y2 : ", 12801, 20, 370, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) Y1 : ", 12802, 20, 380, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) WIN1V : ", 12900, 10, 395, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) Y2 : ", 12901, 20, 405, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) Y1 : ", 12902, 20, 415, 130, 8, SS_LEFT
+    GROUPBOX        "WININ (ARM9 0x04000048)", IDC_STATIC, 160, 215, 150, 155
+    LTEXT           "Value : ", 13000, 165, 230, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) Enable Win0 for BG0 : ", 13001, 165, 245, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) Enable Win0 for BG1 : ", 13002, 165, 255, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) Enable Win0 for BG2 : ", 13003, 165, 265, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) Enable Win0 for BG3 : ", 13004, 165, 275, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Enable Win0 for OBJ : ", 13005, 165, 285, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Color effects for Win0 : ", 13006, 165, 295, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) Enable Win1 for BG0 : ", 13007, 165, 305, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) Enable Win1 for BG1 : ", 13008, 165, 315, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) Enable Win1 for BG2 : ", 13009, 165, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) Enable Win1 for BG3 : ", 13010, 165, 335, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Enable Win1 for OBJ : ", 13011, 165, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Color effects for Win1 : ", 13012, 165, 355, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 13100, 320, 230, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) Enable outside for BG0 : ", 13101, 320, 245, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) Enable outside for BG1 : ", 13102, 320, 255, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) Enable outside for BG2 : ", 13103, 320, 265, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) Enable outside for BG3 : ", 13104, 320, 275, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Enable outside for OBJ : ", 13105, 320, 285, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Color effects for outside : ", 13106, 320, 295, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) Enable WinOBJ for BG0 : ", 13107, 320, 305, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) Enable WinOBJ for BG1 : ", 13108, 320, 315, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) Enable WinOBJ for BG2 : ", 13109, 320, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) Enable WinOBJ for BG3 : ", 13110, 320, 335, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Enable WinOBJ for OBJ : ", 13111, 320, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Color effects for WinOBJ : ", 13112, 320, 355, 140, 8, SS_LEFT
+    GROUPBOX        "BLDCNT (ARM9 0x04000050)", IDC_STATIC, 470, 275, 150, 165
+    GROUPBOX        "MOSAIC (ARM9 0x0400004C)", IDC_STATIC, 160, 375, 150, 75
+    LTEXT           "Value : ", 13300, 475, 290, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) BG0 -> 1st target : ", 13301, 475, 305, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) BG1 -> 1st target : ", 13302, 475, 315, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) BG2 -> 1st target : ", 13303, 475, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) BG3 -> 1st target : ", 13304, 475, 335, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) OBJ -> 1st target : ", 13305, 475, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) backdrop -> 1st target : ", 13306, 475, 355, 140, 8, SS_LEFT
+    LTEXT           "(Bit6-7) Color effect : ", 13307, 475, 365, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) BG0 -> 2nd target : ", 13308, 475, 375, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) BG1 -> 2nd target : ", 13309, 475, 385, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) BG2 -> 2nd target : ", 13310, 475, 395, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) BG3 -> 2nd target : ", 13311, 475, 405, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) OBJ -> 2nd target : ", 13312, 475, 415, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) backdrop -> 2nd target : ", 13313, 475, 425, 140, 8, SS_LEFT
+    GROUPBOX        "WINOUT (ARM9 0x0400004A)", IDC_STATIC, 315, 215, 150, 155
+    LTEXT           "Value : ", 13200, 165, 390, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-3) BG mosaic width : ", 13201, 165, 405, 140, 8, SS_LEFT
+    LTEXT           "(Bit4-7) BG mosaic height : ", 13202, 165, 415, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-11) OBJ  mosaic width : ", 13203, 165, 425, 140, 8, SS_LEFT
+    LTEXT           "(Bit12-15) OBJ mosaic height : ", 13204, 165, 435, 140, 8, SS_LEFT
+    GROUPBOX        "Color effect coefs (ARM9 0x04000052+)", IDC_STATIC, 315, 375, 150, 65
+    LTEXT           "(16-bit) BLDALPHA : ", 13400, 320, 390, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-4) EVA coefficient : ", 13401, 330, 400, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-12) EVB coefficient : ", 13402, 330, 410, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) BLDY : ", 13500, 320, 425, 140, 8, SS_LEFT
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_GPU_B DIALOG 0, 20, 625, 455
+STYLE DS_SETFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "DISPCNT (ARM9 0x04001000)", IDC_STATIC, 5, 5, 150, 215
+    LTEXT           "Value : ", 10100, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-2) BG mode : ", 10101, 10, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Tile OBJ mapping : ", 10102, 10, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Bitmap OBJ 2D size : ", 10103, 10, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Bitmap OBJ mapping : ", 10104, 10, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Forced blank : ", 10105, 10, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) Enable BG0 : ", 10106, 10, 85, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) Enable BG1 : ", 10107, 10, 95, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) Enable BG2 : ", 10108, 10, 105, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) Enable BG3 : ", 10109, 10, 115, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Enable OBJ : ", 10110, 10, 125, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Enable Win0 : ", 10111, 10, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit14) Enable Win1 : ", 10112, 10, 145, 140, 8, SS_LEFT
+    LTEXT           "(Bit15) Enable WinOBJ : ", 10113, 10, 155, 140, 8, SS_LEFT
+    LTEXT           "(Bit16) Display mode : ", 10114, 10, 165, 140, 8, SS_LEFT
+    LTEXT           "(Bit20-21) Tile OBJ 1D boundary : ", 10115, 10, 175, 140, 8, SS_LEFT
+    LTEXT           "(Bit23) Process OBJ during HBlank : ", 10116, 10, 185, 140, 8, SS_LEFT
+    LTEXT           "(Bit30) BG extended palettes : ", 10117, 10, 195, 140, 8, SS_LEFT
+    LTEXT           "(Bit31) OBJ extended palettes : ", 10118, 10, 205, 140, 8, SS_LEFT
+    GROUPBOX        "BG0CNT (ARM9 0x04001008)", IDC_STATIC, 160, 5, 150, 95
+    LTEXT           "Value : ", 10200, 165, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10201, 165, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10202, 165, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10203, 165, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10204, 165, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10205, 165, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10206, 165, 85, 140, 8, SS_LEFT
+    GROUPBOX        "BG2CNT (ARM9 0x0400100C)", IDC_STATIC, 160, 105, 150, 105
+    LTEXT           "Value : ", 10300, 165, 120, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10301, 165, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10302, 165, 145, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10303, 165, 155, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10304, 165, 165, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10305, 165, 175, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Display area overflow : ", 10306, 165, 185, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10307, 165, 195, 140, 8, SS_LEFT
+    GROUPBOX        "BG1CNT (ARM9 0x0400100A)", IDC_STATIC, 315, 5, 150, 95
+    LTEXT           "Value : ", 10400, 320, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10401, 320, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10402, 320, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10403, 320, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10404, 320, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10405, 320, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10406, 320, 85, 140, 8, SS_LEFT
+    GROUPBOX        "BG3CNT (ARM9 0x0400100E)", IDC_STATIC, 315, 105, 150, 105
+    LTEXT           "Value : ", 10500, 320, 120, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Priority : ", 10501, 320, 135, 140, 8, SS_LEFT
+    LTEXT           "(Bit2-5) Character base : ", 10502, 320, 145, 140, 8, SS_LEFT
+    LTEXT           "(Bit6) Mosaic : ", 10503, 320, 155, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) Colors :", 10504, 320, 165, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) Screen base : ", 10505, 320, 175, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Display area overflow : ", 10506, 320, 185, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) BG size : ", 10507, 320, 195, 140, 8, SS_LEFT
+    GROUPBOX        "BG scrolling (ARM9 0x04001010+)", IDC_STATIC, 470, 5, 150, 115
+    GROUPBOX        "BG rotation/scaling (ARM9 0x04001020+)", IDC_STATIC, 470, 125, 150, 145
+    LTEXT           "(16-bit) BG0HOFS : ", 10600, 475, 20, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG0VOFS : ", 10700, 475, 30, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG1HOFS : ", 10800, 475, 45, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG1VOFS : ", 10900, 475, 55, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2HOFS : ", 11000, 475, 70, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2VOFS : ", 11100, 475, 80, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3HOFS : ", 11200, 475, 95, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3VOFS : ", 11300, 475, 105, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG2X : ", 11400, 475, 180, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG2Y : ", 11500, 475, 190, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PA : ", 11600, 475, 140, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PB : ", 11700, 475, 150, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PC : ", 11800, 475, 160, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG2PD : ", 11900, 475, 170, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG3X : ", 12000, 475, 245, 140, 8, SS_LEFT
+    LTEXT           "(32-bit) BG3Y : ", 12100, 475, 255, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PA : ", 12200, 475, 205, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PB : ", 12300, 475, 215, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PC : ", 12400, 475, 225, 140, 8, SS_LEFT
+    LTEXT           "(16-bit) BG3PD : ", 12500, 475, 235, 140, 8, SS_LEFT
+    GROUPBOX        "Window coordinates (ARM9 0x04001040+)", IDC_STATIC, 5, 225, 150, 155
+    LTEXT           "(16-bit) WIN0H : ", 12600, 10, 240, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) X2 : ", 12601, 20, 250, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) X1 : ", 12602, 20, 260, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) WIN1H : ", 12700, 10, 275, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) X2 : ", 12701, 20, 285, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) X1 : ", 12702, 20, 295, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) WIN0V : ", 12800, 10, 310, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) Y2 : ", 12801, 20, 320, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) Y1 : ", 12802, 20, 330, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) WIN1V : ", 12900, 10, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-7) Y2 : ", 12901, 20, 355, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-15) Y1 : ", 12902, 20, 365, 130, 8, SS_LEFT
+    GROUPBOX        "WININ (ARM9 0x04001048)", IDC_STATIC, 160, 215, 150, 155
+    LTEXT           "Value : ", 13000, 165, 230, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) Enable Win0 for BG0 : ", 13001, 165, 245, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) Enable Win0 for BG1 : ", 13002, 165, 255, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) Enable Win0 for BG2 : ", 13003, 165, 265, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) Enable Win0 for BG3 : ", 13004, 165, 275, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Enable Win0 for OBJ : ", 13005, 165, 285, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Color effects for Win0 : ", 13006, 165, 295, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) Enable Win1 for BG0 : ", 13007, 165, 305, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) Enable Win1 for BG1 : ", 13008, 165, 315, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) Enable Win1 for BG2 : ", 13009, 165, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) Enable Win1 for BG3 : ", 13010, 165, 335, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Enable Win1 for OBJ : ", 13011, 165, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Color effects for Win1 : ", 13012, 165, 355, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 13100, 320, 230, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) Enable outside for BG0 : ", 13101, 320, 245, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) Enable outside for BG1 : ", 13102, 320, 255, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) Enable outside for BG2 : ", 13103, 320, 265, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) Enable outside for BG3 : ", 13104, 320, 275, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Enable outside for OBJ : ", 13105, 320, 285, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Color effects for outside : ", 13106, 320, 295, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) Enable WinOBJ for BG0 : ", 13107, 320, 305, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) Enable WinOBJ for BG1 : ", 13108, 320, 315, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) Enable WinOBJ for BG2 : ", 13109, 320, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) Enable WinOBJ for BG3 : ", 13110, 320, 335, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) Enable WinOBJ for OBJ : ", 13111, 320, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) Color effects for WinOBJ : ", 13112, 320, 355, 140, 8, SS_LEFT
+    GROUPBOX        "BLDCNT (ARM9 0x04001050)", IDC_STATIC, 470, 275, 150, 165
+    GROUPBOX        "MOSAIC (ARM9 0x0400104C)", IDC_STATIC, 160, 375, 150, 75
+    LTEXT           "Value : ", 13300, 475, 290, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) BG0 -> 1st target : ", 13301, 475, 305, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) BG1 -> 1st target : ", 13302, 475, 315, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) BG2 -> 1st target : ", 13303, 475, 325, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) BG3 -> 1st target : ", 13304, 475, 335, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) OBJ -> 1st target : ", 13305, 475, 345, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) backdrop -> 1st target : ", 13306, 475, 355, 140, 8, SS_LEFT
+    LTEXT           "(Bit6-7) Color effect : ", 13307, 475, 365, 140, 8, SS_LEFT
+    LTEXT           "(Bit8) BG0 -> 2nd target : ", 13308, 475, 375, 140, 8, SS_LEFT
+    LTEXT           "(Bit9) BG1 -> 2nd target : ", 13309, 475, 385, 140, 8, SS_LEFT
+    LTEXT           "(Bit10) BG2 -> 2nd target : ", 13310, 475, 395, 140, 8, SS_LEFT
+    LTEXT           "(Bit11) BG3 -> 2nd target : ", 13311, 475, 405, 140, 8, SS_LEFT
+    LTEXT           "(Bit12) OBJ -> 2nd target : ", 13312, 475, 415, 140, 8, SS_LEFT
+    LTEXT           "(Bit13) backdrop -> 2nd target : ", 13313, 475, 425, 140, 8, SS_LEFT
+    GROUPBOX        "WINOUT (ARM9 0x0400104A)", IDC_STATIC, 315, 215, 150, 155
+    LTEXT           "Value : ", 13200, 165, 390, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-3) BG mosaic width : ", 13201, 165, 405, 140, 8, SS_LEFT
+    LTEXT           "(Bit4-7) BG mosaic height : ", 13202, 165, 415, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-11) OBJ  mosaic width : ", 13203, 165, 425, 140, 8, SS_LEFT
+    LTEXT           "(Bit12-15) OBJ mosaic height : ", 13204, 165, 435, 140, 8, SS_LEFT
+    GROUPBOX        "Color effect coefs (ARM9 0x04001052+)", IDC_STATIC, 315, 375, 150, 65
+    LTEXT           "(16-bit) BLDALPHA : ", 13400, 320, 390, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-4) EVA coefficient : ", 13401, 330, 400, 130, 8, SS_LEFT
+    LTEXT           "(Bit8-12) EVB coefficient : ", 13402, 330, 410, 130, 8, SS_LEFT
+    LTEXT           "(16-bit) BLDY : ", 13500, 320, 425, 140, 8, SS_LEFT
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_GPU_MISC DIALOG 0, 20, 470, 160
+STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "DISPSTAT (0x04000004)", IDC_STATIC, 5, 5, 150, 115
+    LTEXT           "Value : ", 10100, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0) VBlank : ", 10101, 10, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit1) HBlank : ", 10102, 10, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit2) VMatch : ", 10103, 10, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit3) Enable VBlank IRQ : ", 10104, 10, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit4) Enable HBlank IRQ : ", 10105, 10, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit5) Enable VMatch IRQ : ", 10106, 10, 85, 140, 8, SS_LEFT
+    LTEXT           "(Bit7) VMatch setting MSb : ", 10107, 10, 95, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-15) VMatch setting LSbs : ", 10108, 10, 105, 140, 8, SS_LEFT
+    GROUPBOX        "VCOUNT (0x04000006)", IDC_STATIC, 5, 125, 150, 30
+    LTEXT           "Value : ", 10200, 10, 140, 140, 8, SS_LEFT
+    GROUPBOX        "MASTER_BRIGHT(A) (ARM9 0x0400006C)", IDC_STATIC, 160, 5, 150, 55
+    LTEXT           "Value : ", 10300, 165, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-4) Factor : ", 10301, 165, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) Mode : ", 10302, 165, 45, 140, 8, SS_LEFT
+    GROUPBOX        "MASTER_BRIGHT(B) (ARM9 0x0400106C)", IDC_STATIC, 160, 65, 150, 55
+    LTEXT           "Value : ", 10400, 165, 80, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-4) Factor : ", 10401, 165, 95, 140, 8, SS_LEFT
+    LTEXT           "(Bit14-15) Mode : ", 10402, 165, 105, 140, 8, SS_LEFT
+    GROUPBOX        "DISPCAPCNT (ARM9 0x04000064)", IDC_STATIC, 315, 5, 150, 135
+    LTEXT           "Value : ", 10500, 320, 20, 140, 8, SS_LEFT
+    LTEXT           "(Bit0-4) EVA : ", 10501, 320, 35, 140, 8, SS_LEFT
+    LTEXT           "(Bit8-12) EVB : ", 10502, 320, 45, 140, 8, SS_LEFT
+    LTEXT           "(Bit16-17) VRAM write bank : ", 10503, 320, 55, 140, 8, SS_LEFT
+    LTEXT           "(Bit18-19) VRAM write offset : ", 10504, 320, 65, 140, 8, SS_LEFT
+    LTEXT           "(Bit20-21) Capture size : ", 10505, 320, 75, 140, 8, SS_LEFT
+    LTEXT           "(Bit24) Source A : ", 10506, 320, 85, 140, 8, SS_LEFT
+    LTEXT           "(Bit25) Source B : ", 10507, 320, 95, 140, 8, SS_LEFT
+    LTEXT           "(Bit26-27) VRAM read offset : ", 10508, 320, 105, 140, 8, SS_LEFT
+    LTEXT           "(Bit29-30) Capture source : ", 10509, 320, 115, 140, 8, SS_LEFT
+    LTEXT           "(Bit31) Enable capture : ", 10510, 320, 125, 140, 8, SS_LEFT
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_IPC_ROM DIALOG 0, 20, 465, 365
+STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "ARM9 IPC", IDC_STATIC, 5, 5, 150, 175
+    LTEXT           "IPCSYNC (ARM9 0x04000180)", IDC_STATIC, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10100, 20, 30, 130, 10, SS_LEFT
+    LTEXT           "(Bit0-3) Data input from remote :", 10101, 20, 40, 130, 10, SS_LEFT
+    LTEXT           "(Bit8-11) Data output to remote :", 10102, 20, 50, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) Enable IRQ from remote :", 10103, 20, 60, 130, 10, SS_LEFT
+    LTEXT           "IPCFIFOCNT (ARM9 0x04000184)", IDC_STATIC, 10, 75, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10200, 20, 85, 130, 10, SS_LEFT
+    LTEXT           "(Bit0) Send FIFO empty :", 10201, 20, 95, 130, 10, SS_LEFT
+    LTEXT           "(Bit1) Send FIFO full :", 10202, 20, 105, 130, 10, SS_LEFT
+    LTEXT           "(Bit2) Send FIFO empty :", 10203, 20, 115, 130, 10, SS_LEFT
+    LTEXT           "(Bit8) Recv FIFO empty :", 10204, 20, 125, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Recv FIFO full :", 10205, 20, 135, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Recv FIFO not empty IRQ :", 10206, 20, 145, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) Error : ", 10207, 20, 155, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable IPC FIFO :", 10208, 20, 165, 130, 10, SS_LEFT
+    GROUPBOX        "ARM7 IPC", IDC_STATIC, 5, 185, 150, 175
+    LTEXT           "IPCSYNC (ARM7 0x04000180)", IDC_STATIC, 10, 200, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10300, 20, 210, 130, 10, SS_LEFT
+    LTEXT           "(Bit0-3) Data input from remote :", 10301, 20, 220, 130, 10, SS_LEFT
+    LTEXT           "(Bit8-11) Data output to remote :", 10302, 20, 230, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) Enable IRQ from remote :", 10303, 20, 240, 130, 10, SS_LEFT
+    LTEXT           "IPCFIFOCNT (ARM7 0x04000184)", IDC_STATIC, 10, 255, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10400, 20, 265, 130, 10, SS_LEFT
+    LTEXT           "(Bit0) Send FIFO empty :", 10401, 20, 275, 130, 10, SS_LEFT
+    LTEXT           "(Bit1) Send FIFO full :", 10402, 20, 285, 130, 10, SS_LEFT
+    LTEXT           "(Bit2) Send FIFO empty :", 10403, 20, 295, 130, 10, SS_LEFT
+    LTEXT           "(Bit8) Recv FIFO empty :", 10404, 20, 305, 130, 10, SS_LEFT
+    LTEXT           "(Bit9) Recv FIFO full :", 10405, 20, 315, 130, 10, SS_LEFT
+    LTEXT           "(Bit10) Recv FIFO not empty IRQ :", 10406, 20, 325, 130, 10, SS_LEFT
+    LTEXT           "(Bit14) Error : ", 10407, 20, 335, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Enable IPC FIFO :", 10408, 20, 345, 130, 10, SS_LEFT
+    GROUPBOX        "ARM9 ROM", IDC_STATIC, 160, 5, 300, 140
+    LTEXT           "ROMCTRL (ARM9 0x040001A4)", IDC_STATIC, 165, 20, 140, 8, SS_LEFT
+    LTEXT           "Value :", 1050, 175, 30, 130, 10, SS_LEFT
+    LTEXT           "(Bit0-12) KEY1 length part 1 :", 10501, 175, 40, 130, 10, SS_LEFT
+    LTEXT           "(Bit13) KEY2 encr. for data :", 10502, 175, 50, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Apply KEY2 encr. seed : ", 10503, 175, 60, 130, 10, SS_LEFT
+    LTEXT           "(Bit16-21) KEY1 length part 2 : ", 10504, 175, 70, 130, 10, SS_LEFT
+    LTEXT           "(Bit22) KEY2 encr. for cmds :", 10505, 175, 80, 130, 10, SS_LEFT
+    LTEXT           "(Bit23) Data-Word status :", 10506, 175, 90, 130, 10, SS_LEFT
+    LTEXT           "(Bit24-26) Data block size :", 10507, 175, 100, 130, 10, SS_LEFT
+    LTEXT           "(Bit27) Transfer clock :", 10508, 175, 110, 130, 10, SS_LEFT
+    LTEXT           "(Bit28) Secure area mode :", 10509, 175, 120, 130, 10, SS_LEFT
+    LTEXT           "(Bit31) Transfer busy :", 10510, 175, 130, 130, 10, SS_LEFT
+    LTEXT           "Command out (ARM9 0x040001A8)", IDC_STATIC, 315, 20, 140, 10, SS_LEFT
+    LTEXT           "1st command byte : ", 10601, 325, 30, 130, 10, SS_LEFT
+    LTEXT           "2nd command byte : ", 10602, 325, 40, 130, 10, SS_LEFT
+    LTEXT           "3rd command byte : ", 10603, 325, 50, 130, 10, SS_LEFT
+    LTEXT           "4th command byte : ", 10604, 325, 60, 130, 10, SS_LEFT
+    LTEXT           "5th command byte : ", 10605, 325, 70, 130, 10, SS_LEFT
+    LTEXT           "6th command byte : ", 10606, 325, 80, 130, 10, SS_LEFT
+    LTEXT           "7th command byte : ", 10607, 325, 90, 130, 10, SS_LEFT
+    LTEXT           "8th command byte : ", 10608, 325, 100, 130, 10, SS_LEFT
+    GROUPBOX        "ARM7 ROM", IDC_STATIC, 160, 150, 300, 140
+    LTEXT           "ROMCTRL (ARM7 0x040001A4)", IDC_STATIC, 165, 165, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10700, 175, 175, 130, 10, SS_LEFT
+    LTEXT           "(Bit0-12) KEY1 length part 1 :", 10701, 175, 185, 130, 10, SS_LEFT
+    LTEXT           "(Bit13) KEY2 encr. for data :", 10702, 175, 195, 130, 10, SS_LEFT
+    LTEXT           "(Bit15) Apply KEY2 encr. seed : ", 10703, 175, 205, 130, 10, SS_LEFT
+    LTEXT           "(Bit16-21) KEY1 length part 2 : ", 10704, 175, 215, 130, 10, SS_LEFT
+    LTEXT           "(Bit22) KEY2 encr. for cmds :", 10705, 175, 225, 130, 10, SS_LEFT
+    LTEXT           "(Bit23) Data-Word status :", 10706, 175, 235, 130, 10, SS_LEFT
+    LTEXT           "(Bit24-26) Data block size :", 10707, 175, 245, 130, 10, SS_LEFT
+    LTEXT           "(Bit27) Transfer clock :", 10708, 175, 255, 130, 10, SS_LEFT
+    LTEXT           "(Bit28) Secure area mode :", 10709, 175, 265, 130, 10, SS_LEFT
+    LTEXT           "(Bit31) Transfer busy :", 10710, 175, 275, 130, 10, SS_LEFT
+    LTEXT           "Command out (ARM7 0x040001A8)", IDC_STATIC, 315, 165, 140, 10, SS_LEFT
+    LTEXT           "1st command byte : ", 10801, 325, 175, 130, 10, SS_LEFT
+    LTEXT           "2nd command byte : ", 10802, 325, 185, 130, 10, SS_LEFT
+    LTEXT           "3rd command byte : ", 10803, 325, 195, 130, 10, SS_LEFT
+    LTEXT           "4th command byte : ", 10804, 325, 205, 130, 10, SS_LEFT
+    LTEXT           "5th command byte : ", 10805, 325, 215, 130, 10, SS_LEFT
+    LTEXT           "6th command byte : ", 10806, 325, 225, 130, 10, SS_LEFT
+    LTEXT           "7th command byte : ", 10807, 325, 235, 130, 10, SS_LEFT
+    LTEXT           "8th command byte : ", 10808, 325, 245, 130, 10, SS_LEFT
+END
+
+
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDD_IOREG_VIEW_TIMERS DIALOG 0, 20, 625, 225
+STYLE DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "ARM9 timer 0", IDC_STATIC, 5, 5, 150, 105
+    LTEXT           "TM0CNT_L (ARM9 0x04000100)", IDC_STATIC, 10, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10100, 20, 30, 130, 10, SS_LEFT
+    LTEXT           "TM0CNT_H (ARM9 0x04000102)", IDC_STATIC, 10, 45, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10200, 20, 55, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 10201, 20, 65, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 10202, 20, 75, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 10203, 20, 85, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 10204, 20, 95, 130, 8, SS_LEFT
+    GROUPBOX        "ARM9 timer 1", IDC_STATIC, 160, 5, 150, 105
+    LTEXT           "TM1CNT_L (ARM9 0x04000104)", IDC_STATIC, 165, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10300, 175, 30, 130, 10, SS_LEFT
+    LTEXT           "TM1CNT_H (ARM9 0x04000106)", IDC_STATIC, 165, 45, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10400, 175, 55, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 10401, 175, 65, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 10402, 175, 75, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 10403, 175, 85, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 10404, 175, 95, 130, 8, SS_LEFT
+    GROUPBOX        "ARM9 timer 2", IDC_STATIC, 315, 5, 150, 105
+    LTEXT           "TM2CNT_L (ARM9 0x04000108)", IDC_STATIC, 320, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10500, 330, 30, 130, 10, SS_LEFT
+    LTEXT           "TM2CNT_H (ARM9 0x0400010A)", IDC_STATIC, 320, 45, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10600, 330, 55, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 10601, 330, 65, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 10602, 330, 75, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 10603, 330, 85, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 10604, 330, 95, 130, 8, SS_LEFT
+    GROUPBOX        "ARM9 timer 3", IDC_STATIC, 470, 5, 150, 105
+    LTEXT           "TM3CNT_L (ARM9 0x0400010C)", IDC_STATIC, 475, 20, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10700, 485, 30, 130, 10, SS_LEFT
+    LTEXT           "TM3CNT_H (ARM9 0x0400010E)", IDC_STATIC, 475, 45, 140, 8, SS_LEFT
+    LTEXT           "Value :", 10800, 485, 55, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 10801, 485, 65, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 10802, 485, 75, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 10803, 485, 85, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 10804, 485, 95, 130, 8, SS_LEFT
+    GROUPBOX        "ARM7 timer 0", IDC_STATIC, 5, 115, 150, 105
+    LTEXT           "TM0CNT_L (ARM7 0x04000100)", IDC_STATIC, 10, 130, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 10900, 20, 140, 130, 10, SS_LEFT
+    LTEXT           "TM0CNT_H (ARM7 0x04000102)", IDC_STATIC, 10, 155, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11000, 20, 165, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 11001, 20, 175, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 11002, 20, 185, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 11003, 20, 195, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 11004, 20, 205, 130, 8, SS_LEFT
+    GROUPBOX        "ARM7 timer 1", IDC_STATIC, 160, 115, 150, 105
+    LTEXT           "TM1CNT_L (ARM7 0x04000104)", IDC_STATIC, 165, 130, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11100, 175, 140, 130, 10, SS_LEFT
+    LTEXT           "TM1CNT_H (ARM7 0x04000106)", IDC_STATIC, 165, 155, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11200, 175, 165, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 11201, 175, 175, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 11202, 175, 185, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 11203, 175, 195, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 11204, 175, 205, 130, 8, SS_LEFT
+    GROUPBOX        "ARM7 timer 2", IDC_STATIC, 315, 115, 150, 105
+    LTEXT           "TM2CNT_L (ARM7 0x04000108)", IDC_STATIC, 320, 130, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11300, 330, 140, 130, 10, SS_LEFT
+    LTEXT           "TM2CNT_H (ARM7 0x0400010A)", IDC_STATIC, 320, 155, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11400, 330, 165, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 11401, 330, 175, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 11402, 330, 185, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 11403, 330, 195, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 11404, 330, 205, 130, 8, SS_LEFT
+    GROUPBOX        "ARM7 timer 3", IDC_STATIC, 470, 115, 150, 105
+    LTEXT           "TM3CNT_L (ARM7 0x0400010C)", IDC_STATIC, 475, 130, 140, 8, SS_LEFT
+    LTEXT           "Value : ", 11500, 485, 140, 130, 10, SS_LEFT
+    LTEXT           "TM3CNT_H (ARM7 0x0400010E)", IDC_STATIC, 475, 155, 140, 8, SS_LEFT
+    LTEXT           "Value :", 11600, 485, 165, 130, 8, SS_LEFT
+    LTEXT           "(Bit0-1) Prescaler :", 11601, 485, 175, 130, 8, SS_LEFT
+    LTEXT           "(Bit2) Count-up :", 11602, 485, 185, 130, 8, SS_LEFT
+    LTEXT           "(Bit6) IRQ upon timer overflow :", 11603, 485, 195, 130, 8, SS_LEFT
+    LTEXT           "(Bit7) Enable timer :", 11604, 485, 205, 130, 8, SS_LEFT
+END
 
 
 
@@ -1748,7 +2619,7 @@ IDD_IO_REG DIALOGEX 0, 0, 150, 200
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "IO registers"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     LTEXT           "Int Handler :", IDC_STATIC, 5, 13, 41, 8, SS_LEFT
     LTEXT           "", IDC_INTHAND9, 60, 14, 80, 8, SS_LEFT
     LTEXT           "IE :", IDC_STATIC, 5, 21, 41, 8, SS_LEFT
@@ -1788,7 +2659,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     LTEXT           "", IDC_IPCSYNC7, 60, 138, 78, 8, SS_LEFT
     LTEXT           "IPCFIFO :", IDC_STATIC, 5, 146, 41, 8, SS_LEFT
     LTEXT           "", IDC_IPCFIFO7, 60, 147, 79, 8, SS_LEFT
-}
+END
 
 
 
@@ -1797,7 +2668,7 @@ IDD_IO_REG DIALOGEX 0, 0, 150, 200
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "IO registers"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     LTEXT           "Int Handler :", IDC_STATIC, 5, 13, 41, 8, SS_LEFT
     LTEXT           "", IDC_INTHAND9, 60, 14, 80, 8, SS_LEFT
     LTEXT           "IE :", IDC_STATIC, 5, 21, 41, 8, SS_LEFT
@@ -1837,7 +2708,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     LTEXT           "", IDC_IPCSYNC7, 60, 138, 78, 8, SS_LEFT
     LTEXT           "IPCFIFO :", IDC_STATIC, 5, 146, 41, 8, SS_LEFT
     LTEXT           "", IDC_IPCFIFO7, 60, 147, 79, 8, SS_LEFT
-}
+END
 
 
 
@@ -1846,7 +2717,7 @@ IDD_IO_REG DIALOGEX 0, 0, 150, 200
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "IO registre"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     LTEXT           "Int Handler :", IDC_STATIC, 5, 13, 41, 8, SS_LEFT
     LTEXT           "", IDC_INTHAND9, 60, 14, 80, 8, SS_LEFT
     LTEXT           "IE :", IDC_STATIC, 5, 21, 41, 8, SS_LEFT
@@ -1886,7 +2757,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     LTEXT           "", IDC_IPCSYNC7, 60, 138, 78, 8, SS_LEFT
     LTEXT           "IPCFIFO :", IDC_STATIC, 5, 146, 41, 8, SS_LEFT
     LTEXT           "", IDC_IPCFIFO7, 60, 147, 79, 8, SS_LEFT
-}
+END
 
 
 
@@ -1895,7 +2766,7 @@ IDD_KEYCUSTOM DIALOGEX 0, 0, 382, 180
 STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_CLIPCHILDREN | WS_DLGFRAME | WS_POPUP
 CAPTION "Customize Special Keys"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     PUSHBUTTON      "OK", IDOK, 16, 159, 50, 14, BS_PUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 66, 159, 50, 14, BS_PUSHBUTTON
     RTEXT           "Item #01", IDC_LABEL_HK1, 2, 7, 80, 8, SS_RIGHT
@@ -1940,7 +2811,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     CONTROL         "", IDC_HOTKEY20, "InputCustomHot", 0x50010000, 276, 122, 98, 12, 0x00000200
     LTEXT           "Blue means the hotkey is already mapped.\nPink means it conflicts with a game button.\nRed means it's reserved by Windows.\nA hotkey can be disabled using Escape.", IDC_LABEL_BLUE, 238, 140, 136, 32, SS_LEFT
     COMBOBOX        IDC_HKCOMBO, 16, 141, 168, 60, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
-}
+END
 
 
 
@@ -1949,7 +2820,7 @@ IDD_LIGHT_VIEWER DIALOGEX 0, 0, 197, 89
 STYLE DS_CENTER | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Light Viewer"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 140, 68, 50, 14, BS_DEFPUSHBUTTON
     GROUPBOX        "Light0", IDC_LIGHT_VIWER_LIGHT0_GROUP, 7, 7, 90, 27
     EDITTEXT        IDC_LIGHT_VIEWER_LIGHT0VECTOR_EDIT, 58, 16, 35, 14, WS_GROUP | ES_AUTOHSCROLL | ES_READONLY
@@ -1971,7 +2842,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 68, 67, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 80, 67, 11, 14
     LTEXT           "frames", IDC_STATIC, 92, 70, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -1980,7 +2851,7 @@ IDD_MAP DIALOGEX 0, 0, 485, 320
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "MAP Fremviser"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_BG_SELECT, 4, 4, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Mode :", IDC_STATIC, 4, 20, 45, 8, SS_LEFT
     LTEXT           "Palette :", IDC_STATIC, 4, 30, 45, 8, SS_LEFT
@@ -2001,7 +2872,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 59, 93, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 71, 93, 11, 14
     LTEXT           "frames", IDC_STATIC, 83, 96, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2010,7 +2881,7 @@ IDD_MAP DIALOGEX 0, 0, 485, 320
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "MAP VIEW"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_BG_SELECT, 4, 4, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Mode :", IDC_STATIC, 4, 20, 45, 8, SS_LEFT
     LTEXT           "Palette :", IDC_STATIC, 4, 30, 45, 8, SS_LEFT
@@ -2033,7 +2904,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     LTEXT           "frames", IDC_STATIC, 83, 106, 16, 8, SS_LEFT
     LTEXT           "Visible :", IDC_STATIC, 4, 50, 38, 8, SS_LEFT
     LTEXT           "CHAR", IDC_CHAR, 47, 63, 85, 8, SS_LEFT
-}
+END
 
 
 
@@ -2042,7 +2913,7 @@ IDD_MAP DIALOGEX 0, 0, 485, 320
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "MAP VIEW"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_BG_SELECT, 4, 4, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Mode :", IDC_STATIC, 4, 20, 45, 8, SS_LEFT
     LTEXT           "Palette :", IDC_STATIC, 4, 30, 45, 8, SS_LEFT
@@ -2063,7 +2934,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 59, 93, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 71, 93, 11, 14
     LTEXT           "frames", IDC_STATIC, 83, 96, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2072,7 +2943,7 @@ IDD_MATRIX_VIEWER DIALOGEX 0, 0, 364, 177
 STYLE DS_CENTER | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "Matrix Viewer"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 307, 156, 50, 14, BS_DEFPUSHBUTTON
     GROUPBOX        "Projection", IDC_MATRIX_VIEWER_PROJ_GROUP, 7, 86, 173, 65
     EDITTEXT        IDC_MATRIX_VIEWER_PROJ_11_EDIT, 11, 95, 40, 12, ES_AUTOHSCROLL | ES_READONLY
@@ -2148,7 +3019,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 68, 155, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 80, 155, 11, 14
     LTEXT           "frames", IDC_STATIC, 92, 158, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2156,7 +3027,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 IDD_MEM_VIEW DIALOG 0, 0, 436, 231
 STYLE DS_CENTER | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     PUSHBUTTON      "Close", IDCANCEL, 188, 210, 60, 15, BS_PUSHBUTTON
     GROUPBOX        "View mode", IDC_STATIC, 5, 5, 145, 35
     RADIOBUTTON     "8-bit", IDC_8_BIT, 15, 20, 40, 10, WS_GROUP | WS_TABSTOP | BS_RADIOBUTTON
@@ -2169,7 +3040,7 @@ FONT 8, "MS Sans Serif"
     EDITTEXT        IDC_ADDRESS, 170, 20, 70, 14, ES_AUTOHSCROLL, WS_EX_TRANSPARENT
     PUSHBUTTON      "Raw dump", IDC_RAWDUMP, 360, 20, 60, 14, BS_PUSHBUTTON
     GROUPBOX        "View dump", IDC_STATIC, 285, 5, 145, 35
-}
+END
 
 
 
@@ -2178,7 +3049,7 @@ IDD_MICROPHONE DIALOG 0, 0, 241, 111
 STYLE DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "Microphone Simulation Settings"
 FONT 8, "MS Sans Serif"
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 130, 91, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 185, 91, 50, 14, BS_PUSHBUTTON
     GROUPBOX        "Microphone Sample", IDC_STATIC, 5, 6, 230, 75
@@ -2186,7 +3057,7 @@ FONT 8, "MS Sans Serif"
     LTEXT           "Sample:", IDC_STATIC, 15, 36, 110, 8, SS_LEFT
     EDITTEXT        IDC_MICSAMPLE, 15, 46, 190, 14, ES_AUTOHSCROLL
     PUSHBUTTON      "...", IDC_MICSAMPLEBROWSE, 205, 46, 20, 14, BS_PUSHBUTTON
-}
+END
 
 
 
@@ -2195,7 +3066,7 @@ IDD_OAM DIALOGEX 0, 0, 300, 200
 STYLE DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "OAM Fremviser"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_SCR_SELECT, 4, 4, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWNLIST
     SCROLLBAR       IDC_SCROLLER, 48, 20, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
     LTEXT           "Mode :", IDC_STATIC, 4, 36, 45, 8, SS_LEFT
@@ -2222,7 +3093,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 59, 162, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 71, 161, 11, 14
     LTEXT           "frames", IDC_STATIC, 83, 163, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2231,7 +3102,7 @@ IDD_OAM DIALOGEX 0, 0, 300, 200
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "OAM Viewer"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_SCR_SELECT, 4, 4, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWNLIST
     SCROLLBAR       IDC_SCROLLER, 48, 20, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
     LTEXT           "Mode :", IDC_STATIC, 4, 36, 45, 8, SS_LEFT
@@ -2258,7 +3129,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 59, 162, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 71, 161, 11, 14
     LTEXT           "frames", IDC_STATIC, 83, 163, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2267,7 +3138,7 @@ IDD_OAM DIALOGEX 0, 0, 300, 200
 STYLE DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "OAM Viewer"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_SCR_SELECT, 4, 4, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWNLIST
     SCROLLBAR       IDC_SCROLLER, 48, 20, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
     LTEXT           "Mode :", IDC_STATIC, 4, 36, 45, 8, SS_LEFT
@@ -2294,7 +3165,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 59, 162, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 71, 161, 11, 14
     LTEXT           "frames", IDC_STATIC, 83, 163, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2303,7 +3174,7 @@ IDD_PAL DIALOGEX 0, 0, 120, 190
 STYLE DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "Palette Fremvisning"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_PAL_SELECT, 15, 3, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Pal : 0", IDC_PALNUM, 3, 21, 25, 8, SS_LEFT
     SCROLLBAR       IDC_SCROLLER, 30, 18, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
@@ -2312,7 +3183,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 68, 151, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 80, 151, 11, 14
     LTEXT           "frames", IDC_STATIC, 92, 154, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2321,7 +3192,7 @@ IDD_PAL DIALOGEX 0, 0, 120, 184
 STYLE DS_CENTER | DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "PAL VIEW"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_PAL_SELECT, 15, 3, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Pal : 0", IDC_PALNUM, 3, 21, 25, 8, SS_LEFT
     SCROLLBAR       IDC_SCROLLER, 30, 18, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
@@ -2330,7 +3201,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 68, 151, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 80, 151, 11, 14
     LTEXT           "frames", IDC_STATIC, 92, 154, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2339,7 +3210,7 @@ IDD_PAL DIALOGEX 0, 0, 120, 194
 STYLE DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "PAL VIEW"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_PAL_SELECT, 15, 3, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Pal : 0", IDC_PALNUM, 3, 21, 25, 8, SS_LEFT
     SCROLLBAR       IDC_SCROLLER, 30, 18, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
@@ -2349,7 +3220,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 68, 151, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 80, 151, 11, 14
     LTEXT           "frames", IDC_STATIC, 92, 154, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2358,7 +3229,7 @@ IDD_RAMSEARCH DIALOGEX 0, 0, 287, 292
 STYLE DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_GROUP | WS_POPUP | WS_SYSMENU
 CAPTION " RAM Search"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CONTROL         "", IDC_RAMLIST, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_SHOWSELALWAYS | LVS_OWNERDATA | LVS_REPORT, 9, 9, 214, 151, WS_EX_CLIENTEDGE
     PUSHBUTTON      "&Search", IDC_C_SEARCH, 226, 9, 52, 16, BS_PUSHBUTTON
     PUSHBUTTON      "&Add Cheat", IDC_C_ADDCHEAT, 226, 145, 52, 16, WS_DISABLED | BS_PUSHBUTTON
@@ -2397,7 +3268,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     PUSHBUTTON      "&Clear Change Counts", IDC_C_RESET_CHANGES, 226, 46, 52, 20, BS_PUSHBUTTON | BS_MULTILINE
     PUSHBUTTON      "&Undo", IDC_C_UNDO, 226, 69, 52, 16, WS_DISABLED | BS_PUSHBUTTON
     LTEXT           "Is", IDC_STATIC, 92, 270, 12, 8, SS_LEFT
-}
+END
 
 
 
@@ -2407,7 +3278,7 @@ STYLE DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_G
 CAPTION " RAM Watch"
 MENU RAMWATCH_MENU
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     CONTROL         "", IDC_WATCHLIST, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_SHOWSELALWAYS | LVS_OWNERDATA | LVS_SINGLESEL | LVS_REPORT, 9, 9, 210, 279, WS_EX_CLIENTEDGE
     PUSHBUTTON      "Edit", IDC_C_WATCH_EDIT, 226, 66, 34, 14, BS_PUSHBUTTON
     PUSHBUTTON      "Remove", IDC_C_WATCH_REMOVE, 226, 83, 34, 14, BS_PUSHBUTTON
@@ -2416,7 +3287,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     PUSHBUTTON      "Add Cheat", IDC_C_ADDCHEAT, 222, 140, 42, 16, WS_DISABLED | BS_PUSHBUTTON
     GROUPBOX        "Watches", IDC_STATIC, 222, 11, 42, 125
     CONTROL         "", ID_WATCHES_UPDOWN, UPDOWN_CLASS, WS_TABSTOP, 232, 23, 19, 36
-}
+END
 
 
 
@@ -2425,7 +3296,7 @@ IDD_RECORDMOVIE DIALOGEX 0, 0, 301, 89
 STYLE DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Record movie"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 177, 62, 50, 14, BS_DEFPUSHBUTTON
     GROUPBOX        "", 65501, 11, 9, 269, 47
     PUSHBUTTON      "Cancel", IDCANCEL, 231, 62, 50, 14, BS_PUSHBUTTON
@@ -2434,7 +3305,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 1
     EDITTEXT        IDC_EDIT_AUTHOR, 49, 36, 189, 14, ES_AUTOHSCROLL
     LTEXT           "File:", IDC_STATIC, 31, 22, 14, 8, SS_LEFT
     LTEXT           "Author:", IDC_STATIC, 21, 38, 25, 8, SS_LEFT
-}
+END
 
 
 
@@ -2443,7 +3314,7 @@ IDD_REPLAYINP DIALOGEX 0, 0, 300, 79
 STYLE DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Play Movie"
 FONT 8, "MS Shell Dlg", 0, 0, 0
-{
+BEGIN
     DEFPUSHBUTTON   "OK", 1, 186, 60, 50, 14, BS_DEFPUSHBUTTON
     GROUPBOX        "", 65497, 3, 0, 293, 57
     RTEXT           "File:", 65498, 7, 14, 24, 10, NOT WS_GROUP | SS_RIGHT | SS_CENTERIMAGE
@@ -2451,7 +3322,7 @@ FONT 8, "MS Shell Dlg", 0, 0, 0
     AUTOCHECKBOX    "Open &Read-Only", IDC_CHECK_READONLY, 18, 33, 69, 10, BS_AUTOCHECKBOX
     PUSHBUTTON      "Browse...", ID_BROWSE, 224, 12, 50, 14, BS_PUSHBUTTON
     EDITTEXT        PM_FILENAME, 35, 12, 184, 14, ES_AUTOHSCROLL | ES_READONLY
-}
+END
 
 
 
@@ -2460,10 +3331,10 @@ IDD_REPLAY_METADATA DIALOGEX 0, 0, 325, 250
 STYLE DS_MODALFRAME | DS_SHELLFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Movie Metadata"
 FONT 8, "MS Shell Dlg", 400, 0, 1
-{
+BEGIN
     DEFPUSHBUTTON   "Close", IDCANCEL, 268, 229, 50, 14, BS_DEFPUSHBUTTON
     CONTROL         "", 1130, WC_LISTVIEW, WS_TABSTOP | WS_BORDER | LVS_ALIGNLEFT | LVS_REPORT, 7, 7, 311, 214
-}
+END
 
 
 
@@ -2472,7 +3343,7 @@ IDD_SOUNDSETTINGS DIALOGEX 0, 0, 174, 96
 STYLE DS_CENTER | DS_MODALFRAME | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Lyd Indstillinger"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     GROUPBOX        "Lyd Indstillinger", -1, 3, 2, 168, 28
     LTEXT           "Lyd Driver", -1, 10, 14, 40, 10, SS_LEFT
     COMBOBOX        IDC_SOUNDCORECB, 54, 13, 110, 33, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
@@ -2483,7 +3354,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     CONTROL         "", IDC_SLVOLUME, TRACKBAR_CLASS, 0, 40, 57, 128, 10
     DEFPUSHBUTTON   "&OK", IDOK, 82, 78, 40, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "&Fortryd", IDCANCEL, 127, 78, 40, 14, BS_PUSHBUTTON
-}
+END
 
 
 
@@ -2492,7 +3363,7 @@ IDD_SOUNDSETTINGS DIALOGEX 0, 0, 174, 96
 STYLE DS_CENTER | DS_MODALFRAME | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_POPUP | WS_SYSMENU
 CAPTION "Sound Settings"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     GROUPBOX        "Sound Core Settings", -1, 3, 2, 168, 28
     LTEXT           "Sound Core", -1, 10, 14, 40, 10, SS_LEFT
     COMBOBOX        IDC_SOUNDCORECB, 54, 13, 110, 33, WS_TABSTOP | WS_VSCROLL | WS_TABSTOP | CBS_DROPDOWNLIST
@@ -2503,7 +3374,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     CONTROL         "", IDC_SLVOLUME, TRACKBAR_CLASS, 0, 40, 57, 128, 10
     DEFPUSHBUTTON   "&OK", IDOK, 82, 78, 40, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "&Cancel", IDCANCEL, 127, 78, 40, 14, BS_PUSHBUTTON
-}
+END
 
 
 
@@ -2512,7 +3383,7 @@ IDD_TILE DIALOGEX 0, 0, 446, 180
 STYLE DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "TILE Fremvisning"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_PAL_SELECT, 4, 13, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Pal : 0", IDC_PALNUM, 4, 31, 25, 8, SS_LEFT
     SCROLLBAR       IDC_SCROLLER, 30, 28, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
@@ -2528,7 +3399,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 404, 165, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 416, 164, 11, 14
     LTEXT           "frames", IDC_STATIC, 428, 167, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2537,7 +3408,7 @@ IDD_TILE DIALOGEX 0, 0, 446, 180
 STYLE DS_CENTER | DS_SETFONT | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_DLGFRAME
 CAPTION "TILE VIEW"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_PAL_SELECT, 4, 13, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Pal : 0", IDC_PALNUM, 4, 31, 25, 8, SS_LEFT
     SCROLLBAR       IDC_SCROLLER, 30, 28, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
@@ -2553,7 +3424,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 404, 165, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 416, 164, 11, 14
     LTEXT           "frames", IDC_STATIC, 428, 167, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2562,7 +3433,7 @@ IDD_TILE DIALOGEX 0, 0, 446, 180
 STYLE DS_SETFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "TILE VIEW"
 FONT 8, "MS Sans Serif", 0, 0, 1
-{
+BEGIN
     COMBOBOX        IDC_PAL_SELECT, 4, 13, 90, 14, WS_TABSTOP | WS_TABSTOP | CBS_DROPDOWN
     LTEXT           "Pal : 0", IDC_PALNUM, 4, 31, 25, 8, SS_LEFT
     SCROLLBAR       IDC_SCROLLER, 30, 28, 20, 14, NOT WS_VISIBLE | NOT WS_VISIBLE
@@ -2578,7 +3449,7 @@ FONT 8, "MS Sans Serif", 0, 0, 1
     EDITTEXT        IDC_AUTO_UPDATE_SECS, 404, 165, 12, 14, WS_DISABLED | ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "", IDC_AUTO_UPDATE_SPIN, UPDOWN_CLASS, WS_DISABLED | UDS_ARROWKEYS | UDS_AUTOBUDDY | UDS_SETBUDDYINT, 416, 164, 11, 14
     LTEXT           "frames", IDC_STATIC, 428, 167, 16, 8, SS_LEFT
-}
+END
 
 
 
@@ -2587,11 +3458,11 @@ IDD_WIFISETTINGS DIALOG 0, 0, 331, 91
 STYLE DS_CENTER | DS_SHELLFONT | WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU
 CAPTION "Wifi settings"
 FONT 8, "Ms Shell Dlg"
-{
+BEGIN
     DEFPUSHBUTTON   "OK", IDOK, 220, 70, 50, 14, BS_DEFPUSHBUTTON
     PUSHBUTTON      "Cancel", IDCANCEL, 275, 70, 50, 14, BS_PUSHBUTTON
     GROUPBOX        "Network adapter settings", IDC_STATIC, 5, 5, 320, 60
     LTEXT           "Bridge network adapter:", IDC_STATIC, 15, 20, 76, 8, SS_LEFT
     COMBOBOX        IDC_BRIDGEADAPTER, 15, 30, 300, 45, CBS_DROPDOWNLIST | CBS_HASSTRINGS
     LTEXT           "(wifi emulation is not yet complete. this doesn't work.)", IDC_STATIC, 15, 48, 166, 8, SS_LEFT
-}
+END
