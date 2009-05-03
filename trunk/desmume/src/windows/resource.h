@@ -15,7 +15,6 @@
 #define IDC_AUTO_UPDATE                         108
 #define IDM_MEMORY                              109
 #define IDM_DISASSEMBLER                        110
-#define IDC_AUTO_UPDATE2                        111
 #define IDD_3DSETTINGS                          111
 #define IDM_GAME_INFO                           111
 #define IDD_GBASLOT                             113
