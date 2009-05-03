@@ -82,6 +82,7 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 {
 	u8 *buffer;
 	buffer = new u8[size];
+	memset(buffer,0,size);
 
 	mc->data = buffer;
 	if(!buffer) { return NULL; }
@@ -199,9 +200,9 @@ void mc_reset_com(memory_chip_t *mc)
 
 void mc_realloc(memory_chip_t *mc, int type, u32 size)
 {
-        if(mc->data) delete[] mc->data;
-        mc_init(mc, type);
-        mc_alloc(mc, size);     
+    if(mc->data) delete[] mc->data;
+    mc_init(mc, type);
+    mc_alloc(mc, size);     
 }
 
 void mc_load_file(memory_chip_t *mc, const char* filename)
@@ -213,7 +214,7 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
 
    if(movieMode != MOVIEMODE_INACTIVE) {
 	    mc->filename = strdup(filename);
-      return;
+		return;
    }
    else
 	   file = fopen(filename, "rb+");

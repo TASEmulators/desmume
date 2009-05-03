@@ -26,7 +26,7 @@
 
 #include <CoreServices/CoreServices.h>
 #include <AudioUnit/AudioUnit.h>
-#include <AudioToolbox/AudioToolBox.h>
+#include <AudioToolbox/AudioToolbox.h>
 
 //desmume includes
 #define OBJ_C
