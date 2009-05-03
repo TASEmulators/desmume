@@ -146,7 +146,6 @@
 #define IDC_SCR                                 806
 #define IDC_MSIZE                               807
 #define IDC_SCROLL                              808
-#define IDD_CHEAT_ADD_XX_CODE                   809
 #define IDD_OAM                                 900
 #define IDC_SCR_SELECT                          901
 #define IDC_TILE                                902
@@ -225,6 +224,7 @@
 #define IDC_BGMAP_BGXCNT                        1001
 #define IDC_CHECKBOX_DEBUGGERMODE               1001
 #define IDC_EDIT01                              1001
+#define IDC_IOREG_TAB                           1001
 #define IDC_SOUNDBUFFERET                       1001
 #define PM_FILENAME                             1001
 #define IDC_ARM9BIOS                            1002
@@ -447,6 +447,7 @@
 #define IDC_INTERPOLATECOLOR                    4464
 #define IDC_GI_FATSIZE                          4465
 #define IDC_GI_ICONTITLEOFS                     4466
+#define IDC_CLOSE                               4467
 #define IDC_GI_USEDROMSIZE                      4467
 #define IDC_GI_ICON                             4469
 #define IDC_GI_TITLE                            4470
@@ -473,6 +474,15 @@
 #define IDC_MICSAMPLEBROWSE                     5003
 #define IDC_MICSAMPLE                           5004
 #define IDC_USEMICSAMPLE                        5005
+#define IDD_IOREG_VIEW                          10000
+#define IDD_IOREG_VIEW_GPU_A                    10001
+#define IDD_IOREG_VIEW_GPU_B                    10002
+#define IDD_IOREG_VIEW_GPU_3D                   10003
+#define IDD_IOREG_VIEW_GPU_MISC                 10004
+#define IDD_CHEAT_ADD_XX_CODE                   10005
+#define IDD_IOREG_VIEW_DMA                      10006
+#define IDD_IOREG_VIEW_TIMERS                   10007
+#define IDD_IOREG_VIEW_IPC_ROM                  10008
 #define IDM_SCREENSEP_NONE                      40000
 #define IDM_SCREENSEP_BORDER                    40001
 #define IDM_SCREENSEP_NDSGAP                    40002
@@ -582,17 +592,3 @@
 #define IDC_HKCOMBO                             60077
 #define IDD_KEYCUSTOM                           60078
 #define IDM_HOTKEY_CONFIG                       60079
-#define IDM_RECENT_RESERVED0				    65500
-#define IDM_RECENT_RESERVED1				    65501
-#define IDM_RECENT_RESERVED2				    65502
-#define IDM_RECENT_RESERVED3					65503
-#define IDM_RECENT_RESERVED4					65504
-#define IDM_RECENT_RESERVED5					65505
-#define IDM_RECENT_RESERVED6					65506
-#define IDM_RECENT_RESERVED7					65507
-#define IDM_RECENT_RESERVED8					65508
-#define IDM_RECENT_RESERVED9					65509
-#define IDM_RECENT_RESERVED10					65510
-#define IDM_RECENT_RESERVED11					65511
-#define IDM_RECENT_RESERVED12					65512
-#define IDM_RECENT_RESERVED13					65513
