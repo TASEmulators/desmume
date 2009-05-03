@@ -884,6 +884,12 @@ void NDS_Reset(BOOL resetBySavestate)
 
 	if (!header) return ;
 
+	if (MMU.bupmem.fp)
+	{
+		fclose(MMU.bupmem.fp);
+		MMU.bupmem.fp = NULL;
+	}
+
 	lagframecounter=0;
 	LagFrameFlag=0;
 	lastLag=0;
