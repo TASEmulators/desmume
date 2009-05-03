@@ -882,6 +882,8 @@ void NDS_Reset(BOOL resetBySavestate)
 	FILE* inf = 0;
 	NDS_header * header = NDS_getROMHeader();
 
+	FCEUI_StopMovie();
+
 	if (!header) return ;
 
 	if (MMU.bupmem.fp)
