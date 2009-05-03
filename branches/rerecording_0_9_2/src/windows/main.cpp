@@ -1464,6 +1464,11 @@ class WinDriver : public Driver
 	{
 		return ::AVI_IsRecording();
 	}
+
+	virtual void USR_InfoMessage(const char *message)
+	{
+		SetMessageToDisplay(message);
+	}
 };
 
 int WINAPI WinMain (HINSTANCE hThisInstance,

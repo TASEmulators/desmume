@@ -22,7 +22,6 @@
 #include <assert.h>
 #include <limits.h>
 #include <fstream>
-#include "main.h"
 #include "utils/guid.h"
 #include "utils/xstring.h"
 #include "movie.h"
@@ -355,7 +354,7 @@ static void closeRecordingMovie()
 /// Stop movie playback.
 static void StopPlayback()
 {
-	SetMessageToDisplay("Movie playback stopped.");
+	driver->USR_InfoMessage("Movie playback stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 }
 
@@ -363,7 +362,7 @@ static void StopPlayback()
 /// Stop movie recording
 static void StopRecording()
 {
-	SetMessageToDisplay("Movie recording stopped.");
+	driver->USR_InfoMessage("Movie recording stopped.");
 	movieMode = MOVIEMODE_INACTIVE;
 	
 	closeRecordingMovie();
@@ -436,14 +435,14 @@ void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _paus
 	movieMode = MOVIEMODE_PLAY;
 	currRerecordCount = currMovieData.rerecordCount;
 	InitMovieTime();
-	MovieSRAM(backupmemorytype, backupmemorysize);
+	MovieSRAM();
 	freshMovie = true;
 	ClearAutoHold();
 
 	if(movie_readonly)
-		SetMessageToDisplay("Replay started Read-Only.");
+		driver->USR_InfoMessage("Replay started Read-Only.");
 	else
-		SetMessageToDisplay("Replay started Read+Write.");
+		driver->USR_InfoMessage("Replay started Read+Write.");
 }
 
 static void openRecordingMovie(const char* fname)
@@ -492,9 +491,9 @@ static void openRecordingMovie(const char* fname)
 	movie_readonly = false;
 	currRerecordCount = 0;
 	InitMovieTime();
-	MovieSRAM(backupmemorytype, backupmemorysize);
-	
-	SetMessageToDisplay("Movie recording started.");
+	MovieSRAM();
+
+	driver->USR_InfoMessage("Movie recording started.");
 }
 
  void NDS_setTouchFromMovie(void) {
@@ -609,6 +608,9 @@ static void FCEUMOV_AddCommand(int cmd)
 	//DoEncode((cmd>>3)&0x3,cmd&0x7,1);
 }
 
+//little endian 4-byte cookies
+static const int kMOVI = 0x49564F4D;
+static const int kNOMO = 0x4F4D4F4E;
 
 void mov_savestate(std::ostream* os)
 {
@@ -618,12 +620,12 @@ void mov_savestate(std::ostream* os)
 	//else return 0;
 	if(movieMode == MOVIEMODE_RECORD || movieMode == MOVIEMODE_PLAY)
 	{
-		write32le('MOVI',os);
+		write32le(kMOVI,os);
 		currMovieData.dump(os, true);
 	}
 	else
 	{
-		write32le('NOMO',os);
+		write32le(kNOMO,os);
 	}
 }
 
@@ -637,9 +639,9 @@ bool mov_loadstate(std::istream* is, int size)
 
 	int cookie;
 	if(read32le(&cookie,is) != 1) return false;
-	if(cookie == 'NOMO')
+	if(cookie == kNOMO)
 		return true;
-	else if(cookie != 'MOVI')
+	else if(cookie != kMOVI)
 		return false;
 
 	size -= 4;
@@ -851,7 +853,7 @@ void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size)
 
 #include <sstream>
 
-bool CheckFileExists(const char* filename)
+static bool CheckFileExists(const char* filename)
 {
 	//This function simply checks to see if the given filename exists
 	string checkFilename; 

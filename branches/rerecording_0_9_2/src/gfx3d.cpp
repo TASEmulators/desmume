@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 #include "armcpu.h"
 #include "debug.h"
 #include "gfx3d.h"

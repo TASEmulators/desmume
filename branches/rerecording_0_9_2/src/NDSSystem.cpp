@@ -845,7 +845,10 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	return ret;
 }
 
-void MovieSRAM(int bmtype, u32 bmsize) {
+void MovieSRAM()
+{
+	int bmtype = MMU.bupmem.type;
+	u32 bmsize = MMU.bupmem.size;
 
 	char buf[MAX_PATH];
 
@@ -859,7 +862,6 @@ void MovieSRAM(int bmtype, u32 bmsize) {
 
 	mc_realloc(&MMU.bupmem, bmtype, bmsize);
 	mc_load_file(&MMU.bupmem, buf);
-
 }
 
 void NDS_FreeROM(void)
@@ -881,6 +883,12 @@ void NDS_Reset( void)
 	NDS_header * header = NDS_getROMHeader();
 
 	if (!header) return ;
+
+	if (MMU.bupmem.fp)
+	{
+		fclose(MMU.bupmem.fp);
+		MMU.bupmem.fp = NULL;
+	}
 
 	lagframecounter=0;
 	LagFrameFlag=0;

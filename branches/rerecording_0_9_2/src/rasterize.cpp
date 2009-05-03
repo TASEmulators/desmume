@@ -1145,6 +1145,7 @@ static void SoftRastRender()
 {
 	Fragment clearFragment;
 	FragmentColor clearFragmentColor;
+	clearFragment.pad = 0;
 	clearFragmentColor.r = gfx3d.clearColor&0x1F;
 	clearFragmentColor.g = (gfx3d.clearColor>>5)&0x1F;
 	clearFragmentColor.b = (gfx3d.clearColor>>10)&0x1F;
