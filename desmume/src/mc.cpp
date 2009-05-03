@@ -213,7 +213,7 @@ void mc_load_file(memory_chip_t *mc, const char* filename)
 
    if(movieMode != MOVIEMODE_INACTIVE) {
 	    mc->filename = strdup(filename);
-      return;
+		file = fopen(filename, "wb+");
    }
    else
 	   file = fopen(filename, "rb+");
