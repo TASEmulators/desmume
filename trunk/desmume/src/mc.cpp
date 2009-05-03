@@ -82,6 +82,7 @@ u8 *mc_alloc(memory_chip_t *mc, u32 size)
 {
 	u8 *buffer;
 	buffer = new u8[size];
+	memset(buffer,0,size);
 
 	mc->data = buffer;
 	if(!buffer) { return NULL; }
