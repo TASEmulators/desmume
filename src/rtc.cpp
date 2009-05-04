@@ -79,33 +79,29 @@ struct movietime {
 
 struct movietime movie;
 
-int oldframeCounter;
-u64 totalcycles=2904024960000ULL;//noon
-int totalseconds;
 bool moviemode=false;
 
-
-void InitMovieTime(void) {
-
-		movie.year=9;
-		movie.month=1;
-		movie.monthday=1;
-		movie.weekday=4;
-		oldframeCounter=0;
-
-}
+void InitMovieTime(void)
+{
+	movie.year=9;
+	movie.month=1;
+	movie.monthday=1;
+	movie.weekday=4;
+}	
 
 #ifdef WIN32
 static void MovieTime(void) {
 
-	if(currFrameCounter > oldframeCounter) {
-		int difference;
-		difference=currFrameCounter-oldframeCounter;
-		oldframeCounter=currFrameCounter;
-		totalcycles+=((560190<<1)*difference);
-	}
+	//now, you might think it is silly to go through all these conniptions
+	//when we could just assume that there are 60fps and base the seconds on frameCounter/60
+	//but, we were imagining that one day we might need more precision
 
-	totalseconds=totalcycles / 67222800; //one second
+	const u32 arm9rate = 560190<<1;
+	const u64 noon = (u64)arm9rate * 60 * 60 * 12;
+	           
+	u64 frameCycles = (u64)arm9rate * currFrameCounter;
+	u64 totalcycles = frameCycles + noon;
+	u32 totalseconds=totalcycles/arm9rate;
 
 	movie.sec=totalseconds % 60;
 	movie.minute=totalseconds/60;
