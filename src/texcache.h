@@ -36,7 +36,7 @@ struct ALIGN(8) TextureCache
 
 };
 
-extern TextureCache	texcache[MAX_TEXTURE+1];
+extern TextureCache	*texcache;
 
 extern void (*TexCache_BindTexture)(u32 texnum);
 extern void (*TexCache_BindTextureData)(u32 texnum, u8* data);
@@ -48,7 +48,7 @@ void TexCache_SetTexture(u32 format, u32 texpal);
 
 void TexCache_Invalidate();
 
-extern u8 TexCache_texMAP[1024*2048*4]; 
+extern u8 *TexCache_texMAP;
 TextureCache* TexCache_Curr();
 
 #endif
