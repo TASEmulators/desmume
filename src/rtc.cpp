@@ -97,7 +97,7 @@ static void MovieTime(void) {
 	//but, we were imagining that one day we might need more precision
 
 	const u32 arm9rate_unitsperframe = 560190<<1;
-	const u32 arm9rate_unitspersecond = (u32)(arm9rate_unitspersecond * 59.8261);
+	const u32 arm9rate_unitspersecond = (u32)(arm9rate_unitsperframe * 59.8261);
 	const u64 noon = (u64)arm9rate_unitspersecond * 60 * 60 * 12;
 	           
 	u64 frameCycles = (u64)arm9rate_unitsperframe * currFrameCounter;
