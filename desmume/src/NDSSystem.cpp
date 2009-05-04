@@ -860,6 +860,13 @@ void MovieSRAM()
 		strcat(buf, "movie");
 	}
 
+	if (MMU.bupmem.fp)
+	{
+		fclose(MMU.bupmem.fp);
+		MMU.bupmem.fp = NULL;
+	}
+
+
 	mc_realloc(&MMU.bupmem, bmtype, bmsize);
 	mc_load_file(&MMU.bupmem, buf);
 }
@@ -885,12 +892,6 @@ void NDS_Reset(BOOL resetBySavestate)
 	FCEUI_StopMovie();
 
 	if (!header) return ;
-
-	if (MMU.bupmem.fp)
-	{
-		fclose(MMU.bupmem.fp);
-		MMU.bupmem.fp = NULL;
-	}
 
 	lagframecounter=0;
 	LagFrameFlag=0;
