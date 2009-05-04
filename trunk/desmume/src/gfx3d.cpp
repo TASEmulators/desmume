@@ -207,10 +207,10 @@ static CACHE_ALIGN float cacheHalfVector[4][4];
 
 
 //-------------poly and vertex lists and such things
-POLYLIST polylists[2];
-POLYLIST* polylist = &polylists[0];
-VERTLIST vertlists[2];
-VERTLIST* vertlist = &vertlists[0];
+POLYLIST* polylists = NULL;
+POLYLIST* polylist = NULL;
+VERTLIST* vertlists = NULL;
+VERTLIST* vertlist = NULL;
 
 int listTwiddle = 1;
 int triStripToggle;
@@ -278,6 +278,8 @@ static void makeTables() {
 
 void gfx3d_init()
 {
+	if(polylists == NULL) { polylists = new POLYLIST[2]; polylist = &polylists[0]; }
+	if(vertlists == NULL) { vertlists = new VERTLIST[2]; vertlist = &vertlists[0]; }
 	makeTables();
 	gfx3d_reset();
 }
@@ -2328,6 +2330,9 @@ SFORMAT SF_GFX3D[]={
 //-------------savestate
 void gfx3d_savestate(std::ostream* os)
 {
+	//version
+	write32le(1,os);
+
 	//dump the render lists
 	OSWRITE(vertlist->count);
 	for(int i=0;i<vertlist->count;i++)
@@ -2339,6 +2344,11 @@ void gfx3d_savestate(std::ostream* os)
 
 bool gfx3d_loadstate(std::istream* is, int size)
 {
+	int version;
+	if(read32le(&version,is) != 1) return false;
+	if(size==8) version = 0;
+
+
 	gfx3d_glPolygonAttrib_cache();
 	gfx3d_glTexImage_cache();
 	gfx3d_Control_cache();
@@ -2352,12 +2362,15 @@ bool gfx3d_loadstate(std::istream* is, int size)
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
 
-	OSREAD(vertlist->count);
-	for(int i=0;i<vertlist->count;i++)
-		vertlist->list[i].load(is);
-	OSREAD(polylist->count);
-	for(int i=0;i<polylist->count;i++)
-		polylist->list[i].load(is);
+	if(version==1)
+	{
+		OSREAD(vertlist->count);
+		for(int i=0;i<vertlist->count;i++)
+			vertlist->list[i].load(is);
+		OSREAD(polylist->count);
+		for(int i=0;i<polylist->count;i++)
+			polylist->list[i].load(is);
+	}
 
 	gfx3d.polylist = &polylists[listTwiddle^1];
 	gfx3d.vertlist = &vertlists[listTwiddle^1];

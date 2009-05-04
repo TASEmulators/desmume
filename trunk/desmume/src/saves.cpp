@@ -862,7 +862,10 @@ static bool savestate_load(std::istream* is)
 	//while the series of resets below should work,
 	//we are testing the robustness of the savestate system with this full reset.
 	//the full reset wipes more things, so we can make sure that they are being restored correctly
-	NDS_Reset(TRUE);
+	extern bool _HACK_DONT_STOPMOVIE;
+	_HACK_DONT_STOPMOVIE = true;
+	NDS_Reset();
+	_HACK_DONT_STOPMOVIE = false;
 
 	//reset some options to their old defaults which werent saved
 	nds.debugConsole = FALSE;

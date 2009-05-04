@@ -114,6 +114,7 @@ void DRV_AviVideoUpdate(const u16* buffer);
 DWORD hKeyInputTimer;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void InitRamSearch();
 
 
 CRITICAL_SECTION win_sync;
@@ -3139,6 +3140,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case ID_RAM_SEARCH:
 					if(!RamSearchHWnd)
 					{
+						InitRamSearch();
 						RamSearchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMSEARCH), hwnd, (DLGPROC) RamSearchProc);
 					}
 					else

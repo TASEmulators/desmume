@@ -69,6 +69,17 @@ static u8 decal_table[32][32][32];
 static u8 index_lookup_table[65];
 static u8 index_start_table[8];
 
+static struct TClippedPoly
+{
+	int type;
+	POLY* poly;
+	VERT clipVerts[MAX_CLIPPED_VERTS];
+} *clippedPolys = NULL;
+static int clippedPolyCounter;
+
+TClippedPoly tempClippedPoly;
+TClippedPoly outClippedPoly;
+
 ////optimized float floor useful in limited cases
 ////from http://www.stereopsis.com/FPU.html#convert
 ////(unfortunately, it relies on certain FPU register settings)
@@ -895,6 +906,9 @@ static char SoftRastInit(void)
 	if(!tables_generated)
 	{
 		tables_generated = true;
+
+		clippedPolys = new TClippedPoly[POLYLIST_SIZE*2];
+
 		for(int i=0;i<32;i++)
 		{
 			for(int j=0;j<32;j++)
@@ -968,16 +982,6 @@ static void SoftRastConvertFramebuffer()
 	}
 }
 
-static struct TClippedPoly
-{
-	int type;
-	POLY* poly;
-	VERT clipVerts[MAX_CLIPPED_VERTS];
-} clippedPolys[POLYLIST_SIZE*2];
-static int clippedPolyCounter;
-
-TClippedPoly tempClippedPoly;
-TClippedPoly outClippedPoly;
 
 template<typename T>
 static T interpolate(const float ratio, const T& x0, const T& x1) {

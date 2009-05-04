@@ -881,6 +881,7 @@ void NDS_FreeROM(void)
 	MMU.bupmem.fp = NULL;
 }
 
+bool _HACK_DONT_STOPMOVIE = false;
 void NDS_Reset(BOOL resetBySavestate)
 {
 	unsigned int i;
@@ -889,7 +890,8 @@ void NDS_Reset(BOOL resetBySavestate)
 	FILE* inf = 0;
 	NDS_header * header = NDS_getROMHeader();
 
-	FCEUI_StopMovie();
+	if(!_HACK_DONT_STOPMOVIE)
+		FCEUI_StopMovie();
 
 	if (!header) return ;
 

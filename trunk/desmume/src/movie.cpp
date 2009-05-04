@@ -477,8 +477,12 @@ static void openRecordingMovie(const char* fname)
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
 	//currMovieData.romChecksum = GameInfo->MD5;
 	//currMovieData.romFilename = FileBase;
-
+	
+	extern bool _HACK_DONT_STOPMOVIE;
+	_HACK_DONT_STOPMOVIE = true;
 	NDS_Reset();
+	_HACK_DONT_STOPMOVIE = false;
+
 	//todo ?
 	//poweron(true);
 	//else
@@ -755,6 +759,7 @@ bool mov_loadstate(std::istream* is, int size)
 			currMovieData.rerecordCount = currRerecordCount;
 
 			openRecordingMovie(curMovieFilename);
+			//printf("DUMPING MOVIE: %d FRAMES\n",currMovieData.records.size());
 			currMovieData.dump(osRecordingMovie, false);
 			movieMode = MOVIEMODE_RECORD;
 		}
@@ -844,6 +849,7 @@ void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size)
 	int todo = std::min(size, flen);
 
 	int numRecords = todo/recordsize;
+	//printf("LOADED MOVIE: %d records; currFrameCounter: %d\n",numRecords,currFrameCounter);
 	movieData.records.resize(numRecords);
 	for(int i=0;i<numRecords;i++)
 	{

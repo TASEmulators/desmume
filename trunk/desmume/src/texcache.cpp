@@ -132,10 +132,10 @@ static MemSpan MemSpan_TexPalette(u32 ofs, u32 len)
 	return ret;
 }
 
-TextureCache	texcache[MAX_TEXTURE+1];
-u32				texcache_start;
-u32				texcache_stop;
-u8 TexCache_texMAP[1024*2048*4]; 
+TextureCache *texcache;
+u32 texcache_start;
+u32 texcache_stop;
+u8 *TexCache_texMAP = NULL;
 
 
 #if defined (DEBUG_DUMP_TEXTURE) && defined (WIN32)
@@ -575,6 +575,9 @@ REJECT:
 
 void TexCache_Reset()
 {
+	if(TexCache_texMAP == NULL) TexCache_texMAP = new u8[1024*2048*4]; 
+	if(texcache == NULL) texcache = new TextureCache[MAX_TEXTURE+1];
+
 	memset(texcache,0,sizeof(texcache));
 
 	texcache_start=0;

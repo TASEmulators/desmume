@@ -63,10 +63,12 @@ struct MemoryRegion
 	unsigned int itemIndex; // index into listbox items, valid when s_itemIndicesInvalid is false
 };
 
-static unsigned char s_prevValues [MAX_RAM_SIZE+4] = {0}; // values at last search or reset
-static unsigned char s_curValues [MAX_RAM_SIZE+4] = {0}; // values at last frame update
-static unsigned short s_numChanges [MAX_RAM_SIZE+4] = {0}; // number of changes of the item starting at this virtual index address
-static MemoryRegion* s_itemIndexToRegionPointer [MAX_RAM_SIZE+4] = {0}; // used for random access into the memory list (trading memory size to get speed here, too bad it's so much memory), only valid when s_itemIndicesInvalid is false
+static struct Buffers {
+	unsigned char s_prevValues [MAX_RAM_SIZE+4]; // values at last search or reset
+	unsigned char s_curValues [MAX_RAM_SIZE+4]; // values at last frame update
+	unsigned short s_numChanges [MAX_RAM_SIZE+4]; // number of changes of the item starting at this virtual index address
+	MemoryRegion* s_itemIndexToRegionPointer [MAX_RAM_SIZE+4]; // used for random access into the memory list (trading memory size to get speed here, too bad it's so much memory), only valid when s_itemIndicesInvalid is false
+} *buffers = NULL;
 static BOOL s_itemIndicesInvalid = true; // if true, the link from listbox items to memory regions (s_itemIndexToRegionPointer) and the link from memory regions to list box items (MemoryRegion::itemIndex) both need to be recalculated
 static BOOL s_prevValuesNeedUpdate = true; // if true, the "prev" values should be updated using the "cur" values on the next frame update signaled
 static unsigned int s_maxItemIndex = 0; // max currently valid item index, the listbox sometimes tries to update things past the end of the list so we need to know this to ignore those attempts
@@ -91,6 +93,15 @@ static int s_undoType = 0; // 0 means can't undo, 1 means can undo, 2 means can 
 
 void RamSearchSaveUndoStateIfNotTooBig(HWND hDlg);
 static const int tooManyRegionsForUndo = 10000;
+
+void InitRamSearch()
+{
+	if(buffers == NULL)
+	{
+		buffers = new Buffers;
+		memset(buffers,0,sizeof(Buffers));
+	}
+}
 
 void ResetMemoryRegions()
 {
@@ -200,7 +211,7 @@ void CalculateItemIndices(int itemSize)
 		unsigned int start = startSkipSize;
 		unsigned int end = region.size;
 		for(unsigned int i = start; i < end; i += itemSize)
-			s_itemIndexToRegionPointer[itemIndex++] = &region;
+			buffers->s_itemIndexToRegionPointer[itemIndex++] = &region;
 	}
 	s_maxItemIndex = itemIndex;
 	s_itemIndicesInvalid = FALSE;
@@ -210,7 +221,7 @@ template<typename stepType, typename compareType, int swapXOR>
 void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr)
 {
 	if(s_prevValuesNeedUpdate)
-		memcpy(s_prevValues + region.virtualIndex, s_curValues + region.virtualIndex, region.size + sizeof(compareType) - sizeof(stepType));
+		memcpy(buffers->s_prevValues + region.virtualIndex, buffers->s_curValues + region.virtualIndex, region.size + sizeof(compareType) - sizeof(stepType));
 
 	unsigned int startSkipSize = ((unsigned int)(sizeof(stepType) - region.hardwareAddress)) % sizeof(stepType);
 
@@ -222,11 +233,11 @@ void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr
 	{
 		for(unsigned int i = indexStart; i < indexEnd; i++)
 		{
-			if(s_curValues[i] != sourceAddr[i^swapXOR]) // if value changed
+			if(buffers->s_curValues[i] != sourceAddr[i^swapXOR]) // if value changed
 			{
-				s_curValues[i] = sourceAddr[i^swapXOR]; // update value
+				buffers->s_curValues[i] = sourceAddr[i^swapXOR]; // update value
 				//if(s_numChanges[i] != 0xFFFF)
-					s_numChanges[i]++; // increase change count
+					buffers->s_numChanges[i]++; // increase change count
 			}
 		}
 	}
@@ -253,10 +264,10 @@ void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr
 
 		for(unsigned int i = indexStart, j = 0; i < lastIndexToRead; i++, j++)
 		{
-			if(s_curValues[i] != sourceAddr[i^swapXOR]) // if value of this byte changed
+			if(buffers->s_curValues[i] != sourceAddr[i^swapXOR]) // if value of this byte changed
 			{
 				if(i < lastIndexToCopy)
-					s_curValues[i] = sourceAddr[i^swapXOR]; // update value
+					buffers->s_curValues[i] = sourceAddr[i^swapXOR]; // update value
 				for(int k = 0; k < sizeof(compareType); k++) // loop through the previous entries that contain this byte
 				{
 					if(i >= indexEnd+k)
@@ -265,7 +276,7 @@ void UpdateRegionT(const MemoryRegion& region, const MemoryRegion* nextRegionPtr
 					if(nextValidChange[m]+sizeof(compareType) <= i+sizeof(compareType)) // if we didn't already increase the change count for this entry
 					{
 						//if(s_numChanges[i-k] != 0xFFFF)
-							s_numChanges[i-k]++; // increase the change count for this entry
+							buffers->s_numChanges[i-k]++; // increase the change count for this entry
 						nextValidChange[m] = i+sizeof(compareType); // and remember not to increase it again
 					}
 				}
@@ -333,7 +344,7 @@ void ItemIndexToVirtualRegion(unsigned int itemIndex, MemoryRegion& virtualRegio
 		return;
 	}
 
-	const MemoryRegion* regionPtr = s_itemIndexToRegionPointer[itemIndex];
+	const MemoryRegion* regionPtr = buffers->s_itemIndexToRegionPointer[itemIndex];
 	const MemoryRegion& region = *regionPtr;
 
 	int bytesWithinRegion = (itemIndex - region.itemIndex) * sizeof(stepType);
@@ -375,19 +386,19 @@ template<> unsigned char ReadBigEndian(const unsigned char* data) { return *data
 template<typename stepType, typename compareType>
 compareType GetPrevValueFromVirtualIndex(unsigned int virtualIndex)
 {
-	return ReadBigEndian<compareType>(s_prevValues + virtualIndex);
+	return ReadBigEndian<compareType>(buffers->s_prevValues + virtualIndex);
 	//return *(compareType*)(s_prevValues+virtualIndex);
 }
 template<typename stepType, typename compareType>
 compareType GetCurValueFromVirtualIndex(unsigned int virtualIndex)
 {
-	return ReadBigEndian<compareType>(s_curValues + virtualIndex);
+	return ReadBigEndian<compareType>(buffers->s_curValues + virtualIndex);
 //	return *(compareType*)(s_curValues+virtualIndex);
 }
 template<typename stepType, typename compareType>
 unsigned short GetNumChangesFromVirtualIndex(unsigned int virtualIndex)
 {
-	unsigned short num = s_numChanges[virtualIndex];
+	unsigned short num = buffers->s_numChanges[virtualIndex];
 	//for(unsigned int i = 1; i < sizeof(stepType); i++)
 	//	if(num < s_numChanges[virtualIndex+i])
 	//		num = s_numChanges[virtualIndex+i];
@@ -970,14 +981,14 @@ void CompactAddrs()
 void soft_reset_address_info ()
 {
 	ResetMemoryRegions();
-	memset(s_numChanges, 0, sizeof(s_numChanges));
+	memset(buffers->s_numChanges, 0, sizeof(buffers->s_numChanges));
 	CompactAddrs();
 }
 void reset_address_info ()
 {
 	SetRamSearchUndoType(RamSearchHWnd, 0);
 	s_activeMemoryRegionsBackup.clear(); // not necessary, but we'll take the time hit here instead of at the next thing that sets up an undo
-	memcpy(s_prevValues, s_curValues, sizeof(s_prevValues));
+	memcpy(buffers->s_prevValues, buffers->s_curValues, sizeof(buffers->s_prevValues));
 	s_prevValuesNeedUpdate = false;
 	ResetMemoryRegions();
 	if(!RamSearchHWnd)
@@ -992,7 +1003,7 @@ void reset_address_info ()
 		s_prevValuesNeedUpdate = true;
 		signal_new_frame();
 	}
-	memset(s_numChanges, 0, sizeof(s_numChanges));
+	memset(buffers->s_numChanges, 0, sizeof(buffers->s_numChanges));
 	CompactAddrs();
 }
 
@@ -1663,7 +1674,7 @@ LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					{rv = true; break;}
 				}
 				case IDC_C_RESET_CHANGES:
-					memset(s_numChanges, 0, sizeof(s_numChanges));
+					memset(buffers->s_numChanges, 0, sizeof(buffers->s_numChanges));
 					ListView_Update(GetDlgItem(hDlg,IDC_RAMLIST), -1);
 					//SetRamSearchUndoType(hDlg, 0);
 					{rv = true; break;}
