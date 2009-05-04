@@ -87,35 +87,35 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
         
 	hdc = BeginPaint(hDlg, &ps);
 
-	icontitleOffset = T1ReadLong(MMU_static.CART_ROM, 0x68);
+	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
 
 	if(icontitleOffset >= 0x8000)
 	{
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x240 + (0x100 * win_fw_config.language));
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x240 + (0x100 * win_fw_config.language));
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLE), text);
 
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x240);
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x240);
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEJP), text);
 
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x340);
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x340);
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEEN), text);
 
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x440);
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x440);
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEFR), text);
 
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x540);
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x540);
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEGE), text);
 
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x640);
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x640);
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLEIT), text);
 
-		utf16text = (wchar_t*)(MMU_static.CART_ROM + icontitleOffset + 0x740);
+		utf16text = (wchar_t*)(MMU.CART_ROM + icontitleOffset + 0x740);
 		sprintf(text, "%ws", utf16text);
 		SetWindowText(GetDlgItem(hDlg, IDC_GI_TITLESP), text);
 	}
@@ -132,69 +132,69 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	}
 
 
-	memcpy(text, MMU_static.CART_ROM, 12);
+	memcpy(text, MMU.CART_ROM, 12);
 	text[12] = '\0';
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMETITLE), text);
 
-	memcpy(text, (MMU_static.CART_ROM+0xC), 4);
+	memcpy(text, (MMU.CART_ROM+0xC), 4);
 	text[4] = '\0';
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_GAMECODE), text);
 
-	memcpy(text, (MMU_static.CART_ROM+0x10), 2);
+	memcpy(text, (MMU.CART_ROM+0x10), 2);
 	text[2] = '\0';
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_MAKERCODE), text);
 
-	val = T1ReadByte(MMU_static.CART_ROM, 0x14);
+	val = T1ReadByte(MMU.CART_ROM, 0x14);
 	sprintf(text, "%i kilobytes", (0x80 << val));
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_CHIPSIZE), text);
 
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x20);
+	val = T1ReadLong(MMU.CART_ROM, 0x20);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ROM), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x24);
+	val = T1ReadLong(MMU.CART_ROM, 0x24);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9ENTRY), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x28);
+	val = T1ReadLong(MMU.CART_ROM, 0x28);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9START), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x2C);
+	val = T1ReadLong(MMU.CART_ROM, 0x2C);
 	sprintf(text, "%i bytes", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM9SIZE), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x30);
+	val = T1ReadLong(MMU.CART_ROM, 0x30);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ROM), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x34);
+	val = T1ReadLong(MMU.CART_ROM, 0x34);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7ENTRY), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x38);
+	val = T1ReadLong(MMU.CART_ROM, 0x38);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7START), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x3C);
+	val = T1ReadLong(MMU.CART_ROM, 0x3C);
 	sprintf(text, "%i bytes", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ARM7SIZE), text);
 
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x40);
+	val = T1ReadLong(MMU.CART_ROM, 0x40);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTOFS), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x44);
+	val = T1ReadLong(MMU.CART_ROM, 0x44);
 	sprintf(text, "%i bytes", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_FNTSIZE), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x48);
+	val = T1ReadLong(MMU.CART_ROM, 0x48);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATOFS), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x4C);
+	val = T1ReadLong(MMU.CART_ROM, 0x4C);
 	sprintf(text, "%i bytes", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_FATSIZE), text);
 
@@ -202,7 +202,7 @@ LRESULT GInfo_Paint(HWND hDlg, WPARAM wParam, LPARAM lParam)
 	sprintf(text, "0x%08X", icontitleOffset);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_ICONTITLEOFS), text);
 
-	val = T1ReadLong(MMU_static.CART_ROM, 0x80);
+	val = T1ReadLong(MMU.CART_ROM, 0x80);
 	sprintf(text, "0x%08X", val);
 	SetWindowText(GetDlgItem(hDlg, IDC_GI_USEDROMSIZE), text);
 
@@ -279,7 +279,7 @@ LRESULT GInfo_IconBoxPaint(HWND hCtl, WPARAM wParam, LPARAM lParam)
 	bmph.bV4Width			 = 32;
 	bmph.bV4Height			 = -32;
 
-	icontitleOffset = T1ReadLong(MMU_static.CART_ROM, 0x68);
+	icontitleOffset = T1ReadLong(MMU.CART_ROM, 0x68);
 
 	if(icontitleOffset >= 0x8000)
 	{
@@ -292,14 +292,14 @@ LRESULT GInfo_IconBoxPaint(HWND hCtl, WPARAM wParam, LPARAM lParam)
 				int tiley = (y % 8);
 				int mapoffset = ((tilenum * 64) + (tiley * 8) + tilex);
 
-				u8 val = T1ReadByte(MMU_static.CART_ROM, (icontitleOffset + 0x20 + (mapoffset>>1)));
+				u8 val = T1ReadByte(MMU.CART_ROM, (icontitleOffset + 0x20 + (mapoffset>>1)));
 
 				if(mapoffset & 1)
 					val = ((val >> 4) & 0xF);
 				else
 					val = (val & 0xF);
 
-				icon[(y * 32) + x] = T1ReadWord(MMU_static.CART_ROM, (icontitleOffset + 0x220 + (val<<1)));
+				icon[(y * 32) + x] = T1ReadWord(MMU.CART_ROM, (icontitleOffset + 0x220 + (val<<1)));
 			}
 		}
 

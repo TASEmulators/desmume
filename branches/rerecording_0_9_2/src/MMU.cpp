@@ -97,19 +97,7 @@ static const int save_types[7][2] = {
 		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
 };
 
-//Card rom & ram
-
-u16 SPI_CNT;
-u16 SPI_CMD;
-u16 AUX_SPI_CNT;
-u16 AUX_SPI_CMD;
-
-u32 rom_mask = 0;
-
-u32 DMASrc[2][4];
-u32 DMADst[2][4];
-
-u16 partie;
+u16 partie = 1;
 u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 
 #define ROM_MASK 3
@@ -190,7 +178,6 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 #define DUP16(x) x, x, x, x,  x, x, x, x,  x, x, x, x,  x, x, x, x
 
 MMU_struct MMU;
-MMU_static_struct MMU_static;
 
 u8 * MMU_struct::MMU_MEM[2][256] = {
 	//arm9
@@ -371,15 +358,6 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 {
 	unmapped = false;
 
-	if(addr==0x6201dc0)
-	{
- 		int zzz=9;
-	}
-	if((addr&0x0F000000)==0x06000000 && PROCNUM==1)
-	{
-		printf("%08x\n",addr);
-	}
-
 	//in case the address is entirely outside of the interesting ranges
 	if(addr < 0x06000000) return addr;
 	if(addr >= 0x07000000) return addr;
@@ -549,7 +527,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 	u8 en = VRAMBankCnt & 0x80;
 	if(!en) return;
 
-	int mst,ofs=0;
+	int mst,ofs;
 	switch(bank) {
 		case VRAM_BANK_A:
 		case VRAM_BANK_B:
@@ -563,7 +541,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //AOBJ
@@ -571,7 +549,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				switch(ofs) {
 				case 0:
 				case 1:
-					//MMU_vram_lcdc(bank);
+					MMU_vram_lcdc(bank);
 					MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+ofs*8);
 					break;
 				default:
@@ -597,7 +575,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
 				break;
 			case 2: //arm7
@@ -619,7 +597,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
 			case 4: //BGB or BOBJ
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				if(bank == VRAM_BANK_C)  {
 					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 					MMU_vram_arm9(bank,VRAM_PAGE_BBG); //BBG
@@ -641,11 +619,11 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG);
 				break;
 			case 2: //AOBJ
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ);
 				break;
@@ -681,13 +659,13 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring (required by spyro eternal night)
 				break;
 			case 2: //AOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
 				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
 				break;
@@ -729,7 +707,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //BBG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG + 4); //unexpected mirroring
 				break;
@@ -754,13 +732,13 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				break;
 			case 1: //BBG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+2);
 				MMU_vram_arm9(bank,VRAM_PAGE_BBG+3); //unexpected mirroring
 				break;
 			case 2: //BOBJ
 				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
-				//MMU_vram_lcdc(bank);
+				MMU_vram_lcdc(bank);
 				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
 				break;
 			case 3: //B OBJ extended palette
@@ -914,20 +892,33 @@ void MMU_Init(void) {
 
 	LOG("MMU init\n");
 
-	MMU_clearMem();
+	memset(&MMU, 0, sizeof(MMU_struct));
 
-	MMU_static.CART_ROM = MMU.UNUSED_RAM;
+	MMU.CART_ROM = MMU.UNUSED_RAM;
 
     for(i = 0x80; i<0xA0; ++i)
     {
-		MMU_struct::MMU_MEM[0][i] = MMU_static.CART_ROM;
-		MMU_struct::MMU_MEM[1][i] = MMU_static.CART_ROM;
+		MMU_struct::MMU_MEM[0][i] = MMU.CART_ROM;
+		MMU_struct::MMU_MEM[1][i] = MMU.CART_ROM;
     }
 
-	mc_init(&MMU_static.fw, MC_TYPE_FLASH);  /* init fw device */
-	mc_alloc(&MMU_static.fw, NDS_FW_SIZE_V1);
-	MMU_static.fw.fp = NULL;
+	MMU.DTCMRegion = 0x027C0000;
+	MMU.ITCMRegion = 0x00000000;
 
+	IPC_FIFOinit(ARMCPU_ARM9);
+	IPC_FIFOinit(ARMCPU_ARM7);
+	GFX_FIFOclear();
+	DISP_FIFOinit();
+	
+	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
+	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
+	MMU.fw.fp = NULL;
+
+	// Init Backup Memory device, this should really be done when the rom is loaded
+	mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
+	mc_alloc(&MMU.bupmem, 1);
+	MMU.bupmem.fp = NULL;
+	rtcInit();
 	addonsInit();
 	if(Mic_Init() == FALSE)
 		INFO("Microphone init failed.\n");
@@ -937,51 +928,77 @@ void MMU_Init(void) {
 
 void MMU_DeInit(void) {
 	LOG("MMU deinit\n");
-	if (MMU_static.fw.fp)
-		fclose(MMU_static.fw.fp);
-	mc_free(&MMU_static.fw);      
-	if (MMU_static.bupmem.fp)
-		fclose(MMU_static.bupmem.fp);
-	mc_free(&MMU_static.bupmem);
+	if (MMU.fw.fp)
+		fclose(MMU.fw.fp);
+	mc_free(&MMU.fw);      
+	if (MMU.bupmem.fp)
+		fclose(MMU.bupmem.fp);
+	mc_free(&MMU.bupmem);
 	addonsClose();
 	Mic_DeInit();
 }
 
+//Card rom & ram
+
+u16 SPI_CNT = 0;
+u16 SPI_CMD = 0;
+u16 AUX_SPI_CNT = 0;
+u16 AUX_SPI_CMD = 0;
+
+u32 rom_mask = 0;
+
+u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
+u32 DMADst[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
+
 void MMU_clearMem()
 {
-	printf("-------------------------clear---\n");
+	memset(ARM9Mem.ARM9_DTCM, 0, sizeof(ARM9Mem.ARM9_DTCM));
+	memset(ARM9Mem.ARM9_ITCM, 0, sizeof(ARM9Mem.ARM9_ITCM));
+	memset(ARM9Mem.ARM9_LCD,  0, sizeof(ARM9Mem.ARM9_LCD));
+	memset(ARM9Mem.ARM9_OAM,  0, sizeof(ARM9Mem.ARM9_OAM));
+	memset(ARM9Mem.ARM9_REG,  0, sizeof(ARM9Mem.ARM9_REG));
+	memset(ARM9Mem.ARM9_VMEM, 0, sizeof(ARM9Mem.ARM9_VMEM));
+	memset(ARM9Mem.MAIN_MEM,  0, sizeof(ARM9Mem.MAIN_MEM));
 
-	partie = 1;
-
-	memset(&ARM9Mem,0,sizeof(ARM9Mem));
-	memset(&MMU,0,sizeof(MMU));
-
-	//things which used to be only static initialized, now cleared here
-	memset(DMASrc,0,sizeof(DMASrc));
-	memset(DMADst,0,sizeof(DMADst));
-	SPI_CNT = 0;
-	SPI_CMD = 0;
-	AUX_SPI_CNT = 0;
-	AUX_SPI_CMD = 0;
-
-	MMU_VRAM_unmap_all();
-
-	//reset gpu system
-	MainScreen.offset = 0;
-	SubScreen.offset  = 192;
-	if(osdA != NULL) osdA->setOffset(MainScreen.offset);
-	if(osdB != NULL) osdB->setOffset(SubScreen.offset);
+	memset(ARM9Mem.blank_memory,  0, sizeof(ARM9Mem.blank_memory));
 	
+	memset(MMU.ARM7_ERAM,     0, sizeof(MMU.ARM7_ERAM));
+	memset(MMU.ARM7_REG,      0, sizeof(MMU.ARM7_REG));
+
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
 	GFX_FIFOclear();
 	DISP_FIFOinit();
-
-	//-------
-	//setup non-zero registers
+	
 	MMU.DTCMRegion = 0x027C0000;
+	MMU.ITCMRegion = 0x00000000;
+	
+	memset(MMU.timer,         0, sizeof(u16) * 2 * 4);
+	memset(MMU.timerMODE,     0, sizeof(s32) * 2 * 4);
+	memset(MMU.timerON,       0, sizeof(u32) * 2 * 4);
+	memset(MMU.timerRUN,      0, sizeof(u32) * 2 * 4);
+	memset(MMU.timerReload,   0, sizeof(u16) * 2 * 4);
+	
+	memset(MMU.reg_IME,       0, sizeof(u32) * 2);
+	memset(MMU.reg_IE,        0, sizeof(u32) * 2);
+	memset(MMU.reg_IF,        0, sizeof(u32) * 2);
+	
+	memset(MMU.DMAStartTime,  0, sizeof(u32) * 2 * 4);
+	memset(MMU.DMACycle,      0, sizeof(s32) * 2 * 4);
+	memset(MMU.DMACrt,        0, sizeof(u32) * 2 * 4);
+	memset(MMU.DMAing,        0, sizeof(BOOL) * 2 * 4);
+	
+	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
+
 	// Enable the sound speakers
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
+	
+	MainScreen.offset = 0;
+	SubScreen.offset  = 192;
+	osdA->setOffset(MainScreen.offset);
+	osdB->setOffset(SubScreen.offset);
+	
+	MMU_VRAM_unmap_all();
 
 	MMU.powerMan_CntReg = 0x00;
 	MMU.powerMan_CntRegWritten = FALSE;
@@ -990,15 +1007,17 @@ void MMU_clearMem()
 	MMU.powerMan_Reg[2] = 0x01;
 	MMU.powerMan_Reg[3] = 0x00;
 
-	MMU.DTCMRegion = 0x027C0000;
-	MMU.ITCMRegion = 0x00000000;
+	rtcInit();
+	partie = 1;
+	addonsReset();
+	Mic_Reset();
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
 {
 	unsigned int i;
-	MMU_static.CART_ROM = rom;
-	MMU_static.CART_ROM_MASK = mask;
+	MMU.CART_ROM = rom;
+	MMU.CART_ROM_MASK = mask;
 	
 	for(i = 0x80; i<0xA0; ++i)
 	{
@@ -1013,7 +1032,7 @@ void MMU_setRom(u8 * rom, u32 mask)
 void MMU_unsetRom()
 {
 	unsigned int i;
-	MMU_static.CART_ROM=MMU.UNUSED_RAM;
+	MMU.CART_ROM=MMU.UNUSED_RAM;
 	
 	for(i = 0x80; i<0xA0; ++i)
 	{
@@ -2201,14 +2220,14 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				AUX_SPI_CNT = val;
 
 				if (val == 0)
-				   mc_reset_com(&MMU_static.bupmem);     /* reset backup memory device communication */
+				   mc_reset_com(&MMU.bupmem);     /* reset backup memory device communication */
 				return;
 				
 			case REG_AUXSPIDATA:
 				if(val!=0)
 				   AUX_SPI_CMD = val & 0xFF;
 
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU_static.bupmem, val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				return;
 			case REG_DISPA_BG0CNT :
 				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
@@ -3379,7 +3398,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 							{
 								MMU.dscard[ARMCPU_ARM9].address = (0x8000 + (MMU.dscard[ARMCPU_ARM9].address&0x1FF));
 							}
-							val = T1ReadLong(MMU_static.CART_ROM, MMU.dscard[ARMCPU_ARM9].address & MMU_static.CART_ROM_MASK);
+							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address & MMU.CART_ROM_MASK);
 						}
 						break;
 
@@ -3544,14 +3563,14 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				AUX_SPI_CNT = val;
 
 				if (val == 0)
-				   mc_reset_com(&MMU_static.bupmem);     // reset backup memory device communication
+				   mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
 			return;
 
 			case REG_AUXSPIDATA:
 				if(val!=0)
 				   AUX_SPI_CMD = val & 0xFF;
 
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU_static.bupmem, val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 			return;
 
 			case REG_SPICNT :
@@ -3570,11 +3589,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						}
 					}
 
-						//MMU_static.fw.com == 0; // reset fw device communication
+						//MMU.fw.com == 0; // reset fw device communication
 					if ( reset_firmware) 
 					{
 					  // reset fw device communication
-					  mc_reset_com(&MMU_static.fw);
+					  mc_reset_com(&MMU.fw);
 					}
 					SPI_CNT = val;
 					
@@ -3622,7 +3641,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 								T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
 								break;
 							}
-							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU_static.fw, val));
+							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, val));
 						return;
 						
 						case 2 :
@@ -4378,7 +4397,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 					case 0xB7:
 						{
 							/* TODO: prevent read if the address is out of range */
-							val = T1ReadLong(MMU_static.CART_ROM, MMU.dscard[ARMCPU_ARM7].address);
+							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM7].address);
 						}
 						break;
 
@@ -4497,5 +4516,5 @@ void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
     if (type<0 || type > 6) return;
     *bmemtype=save_types[type][0];
     *bmemsize=save_types[type][1];
-    mc_realloc(&MMU_static.bupmem, *bmemtype, *bmemsize);
+    mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }

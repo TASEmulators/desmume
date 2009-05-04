@@ -31,7 +31,6 @@
 #include "ramwatch.h"
 
 #include "ram_search.h"
-#include "main.h"
 #include <assert.h>
 #include <commctrl.h>
 #include "ramwatch.h"

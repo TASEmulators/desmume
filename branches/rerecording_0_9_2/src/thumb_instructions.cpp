@@ -893,9 +893,6 @@ TEMPLATE static  u32 FASTCALL OP_B_COND()
 
 TEMPLATE static  u32 FASTCALL OP_SWI_THUMB()
 {
-	if(cpu->proc_ID==0) {
-		int zzz=9;
-	}
 	if(cpu->swi_tab) {
 		 //zero 25-dec-2008 - in arm, we were masking to 0x1F. 
 		 //this is probably safer since an invalid opcode could crash the emu
