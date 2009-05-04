@@ -4,6 +4,7 @@
 #include "NDSSystem.h"
 #include "ramwatch.h"
 #include "ram_search.h"
+#include "main.h"
 #include <assert.h>
 #include <windows.h>
 #include <commctrl.h>

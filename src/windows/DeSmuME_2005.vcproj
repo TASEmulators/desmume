@@ -53,6 +53,7 @@
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;WANTPROGINFO;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="0"
 				FloatingPointModel="2"

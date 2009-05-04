@@ -41,6 +41,9 @@
 #include "debug.h"
 #include "cheatSystem.h"
 #include "movie.h"
+#include "rtc.h"
+#include "mic.h"
+#include "addons.h"
 
 #ifdef _WIN32
 #include "./windows/disView.h"
@@ -53,7 +56,7 @@ static Driver _stub_driver;
 Driver* driver = &_stub_driver;
 std::string InputDisplayString;
 
-static BOOL LidClosed = FALSE;
+static BOOL LidClosed;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];
 char pathFilenameToROMwithoutExt[MAX_PATH];
@@ -489,20 +492,16 @@ struct armcpu_ctrl_iface **arm7_ctrl_iface) {
 #else
 int NDS_Init( void) {
 #endif
-	nds.ARM9Cycle = 0;
-	nds.ARM7Cycle = 0;
-	nds.cycles = 0;
-	nds.idleFrameCounter = 0;
-	memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
 	MMU_Init();
-	nds.nextHBlank = 3168;
-	nds.VCount = 0;
-	nds.lignerendu = FALSE;
-
-	nds.sleeping = FALSE;
 
 	if (Screen_Init(GFXCORE_DUMMY) != 0)
 		return -1;
+
+	//reset gpu system
+	MainScreen.offset = 0;
+	SubScreen.offset  = 192;
+	osdA->setOffset(MainScreen.offset);
+	osdB->setOffset(SubScreen.offset);
 
 	gfx3d_init();
 
@@ -530,7 +529,7 @@ int NDS_Init( void) {
 }
 
 void NDS_DeInit(void) {
-	if(MMU.CART_ROM != MMU.UNUSED_RAM)
+	if(MMU_static.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
 	nds.nextHBlank = 3168;
@@ -556,45 +555,45 @@ NDS_header * NDS_getROMHeader(void)
 {
 	NDS_header * header = new NDS_header;
 
-	memcpy(header->gameTile, MMU.CART_ROM, 12);
-	memcpy(header->gameCode, MMU.CART_ROM + 12, 4);
-	header->makerCode = T1ReadWord(MMU.CART_ROM, 16);
-	header->unitCode = MMU.CART_ROM[18];
-	header->deviceCode = MMU.CART_ROM[19];
-	header->cardSize = MMU.CART_ROM[20];
-	memcpy(header->cardInfo, MMU.CART_ROM + 21, 8);
-	header->flags = MMU.CART_ROM[29];
-	header->ARM9src = T1ReadLong(MMU.CART_ROM, 32);
-	header->ARM9exe = T1ReadLong(MMU.CART_ROM, 36);
-	header->ARM9cpy = T1ReadLong(MMU.CART_ROM, 40);
-	header->ARM9binSize = T1ReadLong(MMU.CART_ROM, 44);
-	header->ARM7src = T1ReadLong(MMU.CART_ROM, 48);
-	header->ARM7exe = T1ReadLong(MMU.CART_ROM, 52);
-	header->ARM7cpy = T1ReadLong(MMU.CART_ROM, 56);
-	header->ARM7binSize = T1ReadLong(MMU.CART_ROM, 60);
-	header->FNameTblOff = T1ReadLong(MMU.CART_ROM, 64);
-	header->FNameTblSize = T1ReadLong(MMU.CART_ROM, 68);
-	header->FATOff = T1ReadLong(MMU.CART_ROM, 72);
-	header->FATSize = T1ReadLong(MMU.CART_ROM, 76);
-	header->ARM9OverlayOff = T1ReadLong(MMU.CART_ROM, 80);
-	header->ARM9OverlaySize = T1ReadLong(MMU.CART_ROM, 84);
-	header->ARM7OverlayOff = T1ReadLong(MMU.CART_ROM, 88);
-	header->ARM7OverlaySize = T1ReadLong(MMU.CART_ROM, 92);
-	header->unknown2a = T1ReadLong(MMU.CART_ROM, 96);
-	header->unknown2b = T1ReadLong(MMU.CART_ROM, 100);
-	header->IconOff = T1ReadLong(MMU.CART_ROM, 104);
-	header->CRC16 = T1ReadWord(MMU.CART_ROM, 108);
-	header->ROMtimeout = T1ReadWord(MMU.CART_ROM, 110);
-	header->ARM9unk = T1ReadLong(MMU.CART_ROM, 112);
-	header->ARM7unk = T1ReadLong(MMU.CART_ROM, 116);
-	memcpy(header->unknown3c, MMU.CART_ROM + 120, 8);
-	header->ROMSize = T1ReadLong(MMU.CART_ROM, 128);
-	header->HeaderSize = T1ReadLong(MMU.CART_ROM, 132);
-	memcpy(header->unknown5, MMU.CART_ROM + 136, 56);
-	memcpy(header->logo, MMU.CART_ROM + 192, 156);
-	header->logoCRC16 = T1ReadWord(MMU.CART_ROM, 348);
-	header->headerCRC16 = T1ReadWord(MMU.CART_ROM, 350);
-	memcpy(header->reserved, MMU.CART_ROM + 352, 160);
+	memcpy(header->gameTile, MMU_static.CART_ROM, 12);
+	memcpy(header->gameCode, MMU_static.CART_ROM + 12, 4);
+	header->makerCode = T1ReadWord(MMU_static.CART_ROM, 16);
+	header->unitCode = MMU_static.CART_ROM[18];
+	header->deviceCode = MMU_static.CART_ROM[19];
+	header->cardSize = MMU_static.CART_ROM[20];
+	memcpy(header->cardInfo, MMU_static.CART_ROM + 21, 8);
+	header->flags = MMU_static.CART_ROM[29];
+	header->ARM9src = T1ReadLong(MMU_static.CART_ROM, 32);
+	header->ARM9exe = T1ReadLong(MMU_static.CART_ROM, 36);
+	header->ARM9cpy = T1ReadLong(MMU_static.CART_ROM, 40);
+	header->ARM9binSize = T1ReadLong(MMU_static.CART_ROM, 44);
+	header->ARM7src = T1ReadLong(MMU_static.CART_ROM, 48);
+	header->ARM7exe = T1ReadLong(MMU_static.CART_ROM, 52);
+	header->ARM7cpy = T1ReadLong(MMU_static.CART_ROM, 56);
+	header->ARM7binSize = T1ReadLong(MMU_static.CART_ROM, 60);
+	header->FNameTblOff = T1ReadLong(MMU_static.CART_ROM, 64);
+	header->FNameTblSize = T1ReadLong(MMU_static.CART_ROM, 68);
+	header->FATOff = T1ReadLong(MMU_static.CART_ROM, 72);
+	header->FATSize = T1ReadLong(MMU_static.CART_ROM, 76);
+	header->ARM9OverlayOff = T1ReadLong(MMU_static.CART_ROM, 80);
+	header->ARM9OverlaySize = T1ReadLong(MMU_static.CART_ROM, 84);
+	header->ARM7OverlayOff = T1ReadLong(MMU_static.CART_ROM, 88);
+	header->ARM7OverlaySize = T1ReadLong(MMU_static.CART_ROM, 92);
+	header->unknown2a = T1ReadLong(MMU_static.CART_ROM, 96);
+	header->unknown2b = T1ReadLong(MMU_static.CART_ROM, 100);
+	header->IconOff = T1ReadLong(MMU_static.CART_ROM, 104);
+	header->CRC16 = T1ReadWord(MMU_static.CART_ROM, 108);
+	header->ROMtimeout = T1ReadWord(MMU_static.CART_ROM, 110);
+	header->ARM9unk = T1ReadLong(MMU_static.CART_ROM, 112);
+	header->ARM7unk = T1ReadLong(MMU_static.CART_ROM, 116);
+	memcpy(header->unknown3c, MMU_static.CART_ROM + 120, 8);
+	header->ROMSize = T1ReadLong(MMU_static.CART_ROM, 128);
+	header->HeaderSize = T1ReadLong(MMU_static.CART_ROM, 132);
+	memcpy(header->unknown5, MMU_static.CART_ROM + 136, 56);
+	memcpy(header->logo, MMU_static.CART_ROM + 192, 156);
+	header->logoCRC16 = T1ReadWord(MMU_static.CART_ROM, 348);
+	header->headerCRC16 = T1ReadWord(MMU_static.CART_ROM, 350);
+	memcpy(header->reserved, MMU_static.CART_ROM + 352, 160);
 
 	return header;
 } 
@@ -798,7 +797,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 	// Make sure old ROM is freed first(at least this way we won't be eating
 	// up a ton of ram before the old ROM is freed)
-	if(MMU.CART_ROM != MMU.UNUSED_RAM)
+	if(MMU_static.CART_ROM != MMU.UNUSED_RAM)
 		NDS_FreeROM();
 
 	data = new u8[mask + 1];
@@ -832,8 +831,8 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	strcpy(buf, pathFilenameToROMwithoutExt);
 	strcat(buf, ".sav");							// DeSmuME memory card	:)
 
-	mc_realloc(&MMU.bupmem, bmtype, bmsize);
-	mc_load_file(&MMU.bupmem, buf);
+	mc_realloc(&MMU_static.bupmem, bmtype, bmsize);
+	mc_load_file(&MMU_static.bupmem, buf);
 
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, pathFilenameToROMwithoutExt);
@@ -847,8 +846,8 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 void MovieSRAM()
 {
-	int bmtype = MMU.bupmem.type;
-	u32 bmsize = MMU.bupmem.size;
+	int bmtype = MMU_static.bupmem.type;
+	u32 bmsize = MMU_static.bupmem.size;
 
 	char buf[MAX_PATH];
 
@@ -860,18 +859,19 @@ void MovieSRAM()
 		strcat(buf, "movie");
 	}
 
-	mc_realloc(&MMU.bupmem, bmtype, bmsize);
-	mc_load_file(&MMU.bupmem, buf);
+	mc_realloc(&MMU_static.bupmem,MC_TYPE_AUTODETECT,0);
+	//mc_realloc(&MMU_static.bupmem, bmtype, bmsize);
+	mc_load_file(&MMU_static.bupmem, buf);
 }
 
 void NDS_FreeROM(void)
 {
-	if (MMU.CART_ROM != MMU.UNUSED_RAM)
-		delete [] MMU.CART_ROM;
+	if (MMU_static.CART_ROM != MMU.UNUSED_RAM)
+		delete [] MMU_static.CART_ROM;
 	MMU_unsetRom();
-	if (MMU.bupmem.fp)
-		fclose(MMU.bupmem.fp);
-	MMU.bupmem.fp = NULL;
+	if (MMU_static.bupmem.fp)
+		fclose(MMU_static.bupmem.fp);
+	MMU_static.bupmem.fp = NULL;
 }
 
 void NDS_Reset( void)
@@ -886,12 +886,12 @@ void NDS_Reset( void)
 
 	if (!header) return ;
 
-	if (MMU.bupmem.fp)
+	if (MMU_static.bupmem.fp)
 	{
-		fclose(MMU.bupmem.fp);
-		MMU.bupmem.fp = NULL;
+		fclose(MMU_static.bupmem.fp);
+		MMU_static.bupmem.fp = NULL;
 	}
-
+	
 	lagframecounter=0;
 	LagFrameFlag=0;
 	lastLag=0;
@@ -900,6 +900,11 @@ void NDS_Reset( void)
 	currFrameCounter=0;
 
 	MMU_clearMem();
+	//things formerly from MMU_clearMem before we changed it to do less:
+	rtcInit();
+	addonsReset();
+	Mic_Reset();
+	//------------
 
 	//ARM7 BIOS IRQ HANDLER
 	if(CommonSettings.UseExtBIOS == true)
@@ -988,7 +993,7 @@ void NDS_Reset( void)
 
 		for(i = 0; i < (header->ARM9binSize>>2); ++i)
 		{
-			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
+			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU_static.CART_ROM, src));
 			dst += 4;
 			src += 4;
 		}
@@ -998,7 +1003,7 @@ void NDS_Reset( void)
 
 		for(i = 0; i < (header->ARM7binSize>>2); ++i)
 		{
-			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
+			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU_static.CART_ROM, src));
 			dst += 4;
 			src += 4;
 		}
@@ -1010,6 +1015,8 @@ void NDS_Reset( void)
 	nds.ARM9Cycle = 0;
 	nds.ARM7Cycle = 0;
 	nds.cycles = 0;
+	nds.idleFrameCounter = 0;
+	memset(nds.runCycleCollector,0,sizeof(nds.runCycleCollector));
 	memset(nds.timerCycle, 0, sizeof(s32) * 2 * 4);
 	memset(nds.timerOver, 0, sizeof(BOOL) * 2 * 4);
 	nds.nextHBlank = 3168;
@@ -1017,6 +1024,7 @@ void NDS_Reset( void)
 	nds.old = 0;
 	nds.diff = 0;
 	nds.lignerendu = FALSE;
+	nds.sleeping = FALSE;
 	nds.touchX = nds.touchY = 0;
 	nds.isTouch = 0;
 	nds.debugConsole = CommonSettings.DebugConsole;
@@ -1037,7 +1045,7 @@ void NDS_Reset( void)
 		u8 temp_buffer[NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT];
 		int fw_index;
 
-		if ( copy_firmware_user_data( temp_buffer, MMU.fw.data)) {
+		if ( copy_firmware_user_data( temp_buffer, MMU_static.fw.data)) {
 			for ( fw_index = 0; fw_index < NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT; fw_index++)
 				_MMU_write08<ARMCPU_ARM9>(0x027FFC80 + fw_index, temp_buffer[fw_index]);
 		}
@@ -1046,11 +1054,11 @@ void NDS_Reset( void)
 	// Copy the whole header to Main RAM 0x27FFE00 on startup.
 	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
 	for (i = 0; i < ((0x170+0x90)/4); i++) {
-		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
+		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU_static.CART_ROM)[i]));
 	}
 
 	// Write the header checksum to memory (the firmware needs it to see the cart)
-	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU.CART_ROM, 0x15E));
+	_MMU_write16<ARMCPU_ARM9>(0x027FF808, T1ReadWord(MMU_static.CART_ROM, 0x15E));
 
 	MainScreen.offset = 0;
 	SubScreen.offset = 192;
@@ -1075,7 +1083,7 @@ void NDS_Reset( void)
 	}
 #endif
 
-	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);
+	memcpy(FW_Mac, (MMU_static.fw.data + 0x36), 6);
 }
 
 int NDS_ImportSave(const char *filename)
@@ -1084,7 +1092,7 @@ int NDS_ImportSave(const char *filename)
 		return 0;
 
 	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
-		return mc_load_duc(&MMU.bupmem, filename);
+		return mc_load_duc(&MMU_static.bupmem, filename);
 
 	return 0;
 }
@@ -1415,85 +1423,85 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings)
 	/*
 	* Create the firmware header
 	*/
-	memset( MMU.fw.data, 0, 0x40000);
+	memset( MMU_static.fw.data, 0, 0x40000);
 
 	/* firmware identifier */
-	MMU.fw.data[0x8] = 'M';
-	MMU.fw.data[0x8 + 1] = 'A';
-	MMU.fw.data[0x8 + 2] = 'C';
-	MMU.fw.data[0x8 + 3] = 'P';
+	MMU_static.fw.data[0x8] = 'M';
+	MMU_static.fw.data[0x8 + 1] = 'A';
+	MMU_static.fw.data[0x8 + 2] = 'C';
+	MMU_static.fw.data[0x8 + 3] = 'P';
 
 	/* DS type */
 	if ( user_settings->ds_type == NDS_FW_DS_TYPE_LITE)
-		MMU.fw.data[0x1d] = 0x20;
+		MMU_static.fw.data[0x1d] = 0x20;
 	else
-		MMU.fw.data[0x1d] = 0xff;
+		MMU_static.fw.data[0x1d] = 0xff;
 
 	/* User Settings offset 0x3fe00 / 8 */
-	MMU.fw.data[0x20] = 0xc0;
-	MMU.fw.data[0x21] = 0x7f;
+	MMU_static.fw.data[0x20] = 0xc0;
+	MMU_static.fw.data[0x21] = 0x7f;
 
 
 	/*
 	* User settings (at 0x3FE00 and 0x3FF00)
 	*/
-	fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FE00], 0);
-	fill_user_data_area( user_settings, &MMU.fw.data[ 0x3FF00], 1);
+	fill_user_data_area( user_settings, &MMU_static.fw.data[ 0x3FE00], 0);
+	fill_user_data_area( user_settings, &MMU_static.fw.data[ 0x3FF00], 1);
 
 	/* Wifi config length */
-	MMU.fw.data[0x2C] = 0x38;
-	MMU.fw.data[0x2D] = 0x01;
+	MMU_static.fw.data[0x2C] = 0x38;
+	MMU_static.fw.data[0x2D] = 0x01;
 
-	MMU.fw.data[0x2E] = 0x00;
+	MMU_static.fw.data[0x2E] = 0x00;
 
 	/* Wifi version */
-	MMU.fw.data[0x2F] = 0x00;
+	MMU_static.fw.data[0x2F] = 0x00;
 
 	/* MAC address */
-	memcpy((MMU.fw.data + 0x36), FW_Mac, sizeof(FW_Mac));
+	memcpy((MMU_static.fw.data + 0x36), FW_Mac, sizeof(FW_Mac));
 
 	/* Enabled channels */
-	MMU.fw.data[0x3C] = 0xFE;
-	MMU.fw.data[0x3D] = 0x3F;
+	MMU_static.fw.data[0x3C] = 0xFE;
+	MMU_static.fw.data[0x3D] = 0x3F;
 
-	MMU.fw.data[0x3E] = 0xFF;
-	MMU.fw.data[0x3F] = 0xFF;
+	MMU_static.fw.data[0x3E] = 0xFF;
+	MMU_static.fw.data[0x3F] = 0xFF;
 
 	/* RF related */
-	MMU.fw.data[0x40] = 0x02;
-	MMU.fw.data[0x41] = 0x18;
-	MMU.fw.data[0x42] = 0x0C;
+	MMU_static.fw.data[0x40] = 0x02;
+	MMU_static.fw.data[0x41] = 0x18;
+	MMU_static.fw.data[0x42] = 0x0C;
 
-	MMU.fw.data[0x43] = 0x01;
+	MMU_static.fw.data[0x43] = 0x01;
 
 	/* Wifi I/O init values */
-	memcpy((MMU.fw.data + 0x44), FW_WIFIInit, sizeof(FW_WIFIInit));
+	memcpy((MMU_static.fw.data + 0x44), FW_WIFIInit, sizeof(FW_WIFIInit));
 
 	/* Wifi BB init values */
-	memcpy((MMU.fw.data + 0x64), FW_BBInit, sizeof(FW_BBInit));
+	memcpy((MMU_static.fw.data + 0x64), FW_BBInit, sizeof(FW_BBInit));
 
 	/* Wifi RF init values */
-	memcpy((MMU.fw.data + 0xCE), FW_RFInit, sizeof(FW_RFInit));
+	memcpy((MMU_static.fw.data + 0xCE), FW_RFInit, sizeof(FW_RFInit));
 
 	/* Wifi channel-related init values */
-	memcpy((MMU.fw.data + 0xF2), FW_RFChannel, sizeof(FW_RFChannel));
-	memcpy((MMU.fw.data + 0x146), FW_BBChannel, sizeof(FW_BBChannel));
-	memset((MMU.fw.data + 0x154), 0x10, 0xE);
+	memcpy((MMU_static.fw.data + 0xF2), FW_RFChannel, sizeof(FW_RFChannel));
+	memcpy((MMU_static.fw.data + 0x146), FW_BBChannel, sizeof(FW_BBChannel));
+	memset((MMU_static.fw.data + 0x154), 0x10, 0xE);
 
 	/* WFC profiles */
-	memcpy((MMU.fw.data + 0x3FA40), &FW_WFCProfile1, sizeof(FW_WFCProfile));
-	memcpy((MMU.fw.data + 0x3FB40), &FW_WFCProfile2, sizeof(FW_WFCProfile));
-	memcpy((MMU.fw.data + 0x3FC40), &FW_WFCProfile3, sizeof(FW_WFCProfile));
-	(*(u16*)(MMU.fw.data + 0x3FAFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FA00), 0xFE);
-	(*(u16*)(MMU.fw.data + 0x3FBFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FB00), 0xFE);
-	(*(u16*)(MMU.fw.data + 0x3FCFE)) = (u16)calc_CRC16(0, (MMU.fw.data + 0x3FC00), 0xFE);
+	memcpy((MMU_static.fw.data + 0x3FA40), &FW_WFCProfile1, sizeof(FW_WFCProfile));
+	memcpy((MMU_static.fw.data + 0x3FB40), &FW_WFCProfile2, sizeof(FW_WFCProfile));
+	memcpy((MMU_static.fw.data + 0x3FC40), &FW_WFCProfile3, sizeof(FW_WFCProfile));
+	(*(u16*)(MMU_static.fw.data + 0x3FAFE)) = (u16)calc_CRC16(0, (MMU_static.fw.data + 0x3FA00), 0xFE);
+	(*(u16*)(MMU_static.fw.data + 0x3FBFE)) = (u16)calc_CRC16(0, (MMU_static.fw.data + 0x3FB00), 0xFE);
+	(*(u16*)(MMU_static.fw.data + 0x3FCFE)) = (u16)calc_CRC16(0, (MMU_static.fw.data + 0x3FC00), 0xFE);
 
 
-	MMU.fw.data[0x162] = 0x19;
-	memset((MMU.fw.data + 0x163), 0xFF, 0x9D);
+	MMU_static.fw.data[0x162] = 0x19;
+	memset((MMU_static.fw.data + 0x163), 0xFF, 0x9D);
 
 	/* Wifi settings CRC16 */
-	(*(u16*)(MMU.fw.data + 0x2A)) = calc_CRC16(0, (MMU.fw.data + 0x2C), 0x138);
+	(*(u16*)(MMU_static.fw.data + 0x2A)) = calc_CRC16(0, (MMU_static.fw.data + 0x2C), 0x138);
 
 	return TRUE ;
 }
@@ -1546,26 +1554,26 @@ int NDS_LoadFirmware(const char *filename)
 	unsigned long size;
 	//FILE *file;
 
-	if ((MMU.fw.fp = fopen(filename, "rb+")) == NULL)
+	if ((MMU_static.fw.fp = fopen(filename, "rb+")) == NULL)
 		return -1;
 
-	fseek(MMU.fw.fp, 0, SEEK_END);
-	size = ftell(MMU.fw.fp);
-	fseek(MMU.fw.fp, 0, SEEK_SET);
+	fseek(MMU_static.fw.fp, 0, SEEK_END);
+	size = ftell(MMU_static.fw.fp);
+	fseek(MMU_static.fw.fp, 0, SEEK_SET);
 
-	if(size > MMU.fw.size)
+	if(size > MMU_static.fw.size)
 	{
-		fclose(MMU.fw.fp);
+		fclose(MMU_static.fw.fp);
 		fw_success = FALSE;
 		return -1;
 	}
 
-	i = fread(MMU.fw.data, size, 1, MMU.fw.fp);
+	i = fread(MMU_static.fw.data, size, 1, MMU_static.fw.fp);
 	//fclose(file);
 
 	INFO("Firmware: decrypting NDS firmware %s...\n", filename);
 
-	if(decryptFirmware(MMU.fw.data) == FALSE)
+	if(decryptFirmware(MMU_static.fw.data) == FALSE)
 	{
 		INFO("Firmware: decryption failed.\n");
 		fw_success = FALSE;
@@ -1720,6 +1728,7 @@ u32 NDS_exec(s32 nb)
 		{
 			if(!nds.lignerendu)
 			{
+				printf("%04d %03d: %08X\n",currFrameCounter,nds.VCount,NDS_ARM9.instruct_adr);
 				T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
 				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
 				NDS_ARM9HBlankInt();
