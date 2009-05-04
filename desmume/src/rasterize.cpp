@@ -306,8 +306,8 @@ static struct Sampler
 	{
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
-		int iu = floorf(u);
-		int iv = floorf(v);
+		int iu = (int)floorf(u);
+		int iv = (int)floorf(v);
 		dowrap(iu,iv);
 
 		FragmentColor color;
@@ -446,12 +446,12 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	if(gfx3d.wbuffer) {
 		//not sure about this
 		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-		depth = (4096*w);
+		depth = (u32)(4096*w);
 	}
 	else
 	{
 		//depth = fastFloor(z*0x7FFF)>>8;
-		depth = z*0x7FFF;
+		depth = (u32)(z*0x7FFF);
 		//depth = z*0xFFFFFF;
 	}
 	if(polyAttr.decalMode)
@@ -623,13 +623,13 @@ inline void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod
 }
 
 inline fixed28_4 FloatToFixed28_4( float Value ) {
-	return Value * 16;
+	return (fixed28_4)(Value * 16);
 }
 inline float Fixed28_4ToFloat( fixed28_4 Value ) {
 	return Value / 16.0;
 }
 //inline fixed16_16 FloatToFixed16_16( float Value ) {
-//	return Value * 65536;
+//	return (fixed16_6)(Value * 65536);
 //}
 //inline float Fixed16_16ToFloat( fixed16_16 Value ) {
 //	return Value / 65536.0;
@@ -691,8 +691,8 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
 
 	if(Height)
 	{
-		long dN = verts[Bottom]->y - verts[Top]->y;
-		long dM = verts[Bottom]->x - verts[Top]->x;
+		long dN = long(verts[Bottom]->y - verts[Top]->y);
+		long dM = long(verts[Bottom]->x - verts[Top]->x);
 	
 		long InitialNumerator = dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16;
 		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm);
