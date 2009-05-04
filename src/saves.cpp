@@ -218,11 +218,11 @@ SFORMAT SF_MMU[]={
 	//we are skipping the firmware, because we really don't want to save the firmware to the savestate
 	//but, we will need to think about the philosophy of this.
 	//should we perhaps hash the current firmware and save it, so that we can match it against the loader's firmware?
-	{ "BUCO", 1, 1,       &MMU_static.bupmem.com},
-	{ "BUAD", 4, 1,       &MMU_static.bupmem.addr},
-	{ "BUAS", 1, 1,       &MMU_static.bupmem.addr_shift},
-	{ "BUAZ", 1, 1,       &MMU_static.bupmem.addr_size},
-	{ "BUWE", 4, 1,       &MMU_static.bupmem.write_enable},
+	{ "BUCO", 1, 1,       &MMU.bupmem.com},
+	{ "BUAD", 4, 1,       &MMU.bupmem.addr},
+	{ "BUAS", 1, 1,       &MMU.bupmem.addr_shift},
+	{ "BUAZ", 1, 1,       &MMU.bupmem.addr_size},
+	{ "BUWE", 4, 1,       &MMU.bupmem.write_enable},
 	//writeable_buffer ???
 	//end memory chips
 
@@ -257,9 +257,9 @@ static void mmu_savestate(std::ostream* os)
 	//version
 	write32le(1,os);
 
-	write32le(MMU_static.bupmem.type,os);
-	write32le(MMU_static.bupmem.size,os);
-	os->write((char*)MMU_static.bupmem.data,MMU_static.bupmem.size);
+	write32le(MMU.bupmem.type,os);
+	write32le(MMU.bupmem.size,os);
+	os->write((char*)MMU.bupmem.data,MMU.bupmem.size);
 }
 
 static bool mmu_loadstate(std::istream* is, int size)
@@ -277,8 +277,8 @@ static bool mmu_loadstate(std::istream* is, int size)
 		//it would silently fail if there was a size mismatch
 		SAV_silent_fail_flag = true;
 		if(read32le(&bupmem_size,is) != 1) return false;
-		//if(bupmem_size != MMU_static.bupmem.size) return false; //mismatch between current initialized and saved size
-		mc_realloc(&MMU_static.bupmem,MC_TYPE_AUTODETECT,bupmem_size);
+		//if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+		mc_realloc(&MMU.bupmem,MC_TYPE_AUTODETECT,bupmem_size);
 	}
 	else
 	{
@@ -286,10 +286,10 @@ static bool mmu_loadstate(std::istream* is, int size)
 		int bupmem_type;
 		if(read32le(&bupmem_type,is) != 1) return false;
 		if(read32le(&bupmem_size,is) != 1) return false;
-		mc_realloc(&MMU_static.bupmem,bupmem_type,bupmem_size);
+		mc_realloc(&MMU.bupmem,bupmem_type,bupmem_size);
 	}
 
-	is->read((char*)MMU_static.bupmem.data,bupmem_size);
+	is->read((char*)MMU.bupmem.data,bupmem_size);
 	if(is->fail()) return false;
 
 	return true;
