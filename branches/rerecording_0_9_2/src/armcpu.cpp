@@ -28,7 +28,7 @@
 #include "bios.h"
 #include "debug.h"
 #include "Disassembler.h"
-
+#include "ndssystem.h"
 
 template<u32> static u32 armcpu_prefetch();
 
@@ -179,6 +179,12 @@ int armcpu_new( armcpu_t *armcpu, u32 id,
 int armcpu_new( armcpu_t *armcpu, u32 id)
 #endif
 {
+	if(armcpu->initialized) return 0;
+	armcpu->initialized = true;
+
+	for(int i = 0; i < 16; ++i)
+		armcpu->coproc[i] = NULL;
+
 	armcpu->proc_ID = id;
 
 #ifdef GDB_STUB
@@ -208,6 +214,15 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 {
    u32 i;
 
+   //TODO - breaks gdb stub
+   	if(armcpu->coproc[15]) free(armcpu->coproc[15]);
+	u32 proc_ID = armcpu->proc_ID;
+	//memset(armcpu,0,sizeof(armcpu_t));
+	armcpu->initialized = true;
+	armcpu->proc_ID = proc_ID;
+
+	armcpu->coproc[15] = (armcp_t*)armcp15_new(armcpu);
+
 	armcpu->LDTBit = (armcpu->proc_ID==0); //Si ARM9 utiliser le syte v5 pour le load
 	armcpu->intVector = 0xFFFF0000 * (armcpu->proc_ID==0);
 	armcpu->waitIRQ = FALSE;
@@ -215,18 +230,10 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 
 	armcpu->newIrqFlags = 0;
 
-#ifdef GDB_STUB
-    armcpu->irq_flag = 0;
-#endif
+	#ifdef GDB_STUB
+		armcpu->irq_flag = 0;
+	#endif
 
-	if(armcpu->coproc[15]) free(armcpu->coproc[15]);
-	
-   for(i = 0; i < 15; ++i)
-	{
-		armcpu->R[i] = 0;
-		armcpu->coproc[i] = NULL;
-   }
-	
 	armcpu->CPSR.val = armcpu->SPSR.val = SYS;
 	
 	armcpu->R13_usr = armcpu->R14_usr = 0;
@@ -238,20 +245,18 @@ void armcpu_init(armcpu_t *armcpu, u32 adr)
 	
 	armcpu->SPSR_svc.val = armcpu->SPSR_abt.val = armcpu->SPSR_und.val = armcpu->SPSR_irq.val = armcpu->SPSR_fiq.val = 0;
 
-#ifdef GDB_STUB
-    armcpu->instruct_adr = adr;
-	armcpu->R[15] = adr + 8;
-#else
-	armcpu->R[15] = adr;
-#endif
+	#ifdef GDB_STUB
+	    armcpu->instruct_adr = adr;
+		armcpu->R[15] = adr + 8;
+	#else
+		armcpu->R[15] = adr;
+	#endif
 
 	armcpu->next_instruction = adr;
 	
-	armcpu->coproc[15] = (armcp_t*)armcp15_new(armcpu);
-
-#ifndef GDB_STUB
-	armcpu_prefetch(armcpu);
-#endif
+	#ifndef GDB_STUB
+		armcpu_prefetch(armcpu);
+	#endif
 }
 
 u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
@@ -480,6 +485,8 @@ BOOL armcpu_irqException(armcpu_t *armcpu)
 	return TRUE;
 }
 
+#define WANTASMLISTING
+
 BOOL
 armcpu_flagIrq( armcpu_t *armcpu) {
   if(armcpu->CPSR.bits.I) return FALSE;
@@ -524,9 +531,13 @@ u32 armcpu_exec()
 		{
 			if(PROCNUM==0) {
 #ifdef WANTASMLISTING
+				extern int currFrameCounter;
         			char txt[128];
-				des_arm_instructions_set[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruct_adr,ARMPROC.instruction,txt);
-				printf("%X: %X - %s\n", ARMPROC.instruct_adr,ARMPROC.instruction, txt);
+				if(currFrameCounter>26)
+				{
+				//	des_arm_instructions_set[INSTRUCTION_INDEX(ARMPROC.instruction)](ARMPROC.instruct_adr,ARMPROC.instruction,txt);
+				//	printf("%04d %03d %08d: %X: %X - %s\n", currFrameCounter,nds.VCount,nds.cycles, ARMPROC.instruct_adr,ARMPROC.instruction, txt);
+				}
 #endif
 				c += arm_instructions_set_0[INSTRUCTION_INDEX(ARMPROC.instruction)]();
                         }

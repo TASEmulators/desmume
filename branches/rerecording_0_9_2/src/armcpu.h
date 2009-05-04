@@ -156,8 +156,13 @@ struct armcpu_ctrl_iface {
 
 typedef void* armcp_t;
 
-typedef struct armcpu_t
+struct armcpu_t
 {
+	armcpu_t() 
+		: initialized(false)
+	{}
+
+	bool initialized;
         u32 proc_ID;
         u32 instruction; //4
         u32 instruct_adr; //8
@@ -207,7 +212,7 @@ typedef struct armcpu_t
   /** the ctrl interface */
   struct armcpu_ctrl_iface ctrl_iface;
 #endif
-} armcpu_t;
+};
 
 #ifdef GDB_STUB
 int armcpu_new( armcpu_t *armcpu, u32 id, struct armcpu_memory_iface *mem_if,
