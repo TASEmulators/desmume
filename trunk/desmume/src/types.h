@@ -138,17 +138,17 @@
 #endif
 #endif
 
-#ifndef _PREFETCH
-#if (defined(_MSC_VER) || defined(__INTEL_COMPILER)) && !defined(NOSSE2)
-#include <xmmintrin.h>
-#include <intrin.h>
-#define _PREFETCH(X) _mm_prefetch((char*)(X),_MM_HINT_T0);
-#define _PREFETCHNTA(X) _mm_prefetch((char*)(X),_MM_HINT_NTA);
-#else
+//#ifndef _PREFETCH
+//#if (defined(_MSC_VER) || defined(__INTEL_COMPILER)) && !defined(NOSSE2)
+//#include <xmmintrin.h>
+//#include <intrin.h>
+//#define _PREFETCH(X) _mm_prefetch((char*)(X),_MM_HINT_T0);
+//#define _PREFETCHNTA(X) _mm_prefetch((char*)(X),_MM_HINT_NTA);
+//#else
 #define _PREFETCH(X) {}
 #define _PREFETCHNTA(X) {}
-#endif
-#endif
+//#endif
+//#endif
 
 
 
