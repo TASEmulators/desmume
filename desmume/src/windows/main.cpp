@@ -1624,6 +1624,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	ShowMicrophone = GetPrivateProfileInt("Display","Display Microphone", 0, IniName);
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
+	
+	//Get Ram-Watch values
+	RWSaveWindowPos = GetPrivateProfileInt("RamWatch", "SaveWindowPos", 0, IniName);
+	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
+	ramw_y = GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName);
+
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -2577,6 +2583,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Save frame counter status
 			WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
 			WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
+
+			//Save Ram Watch information
+			WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
+			WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
+			WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
+
+			//TODO: save Auto-load bool value 
+			//TODO: save ram watch recent files
+
 			ExitRunLoop();
 			return 0;
 		}
