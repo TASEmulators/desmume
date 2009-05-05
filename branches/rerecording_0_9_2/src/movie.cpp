@@ -421,7 +421,10 @@ void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _paus
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
+	extern bool _HACK_DONT_STOPMOVIE;
+	_HACK_DONT_STOPMOVIE = true;
 	NDS_Reset();
+	_HACK_DONT_STOPMOVIE = false;
 	////WE NEED TO LOAD A SAVESTATE
 	//if(currMovieData.savestate.size() != 0)
 	//{
