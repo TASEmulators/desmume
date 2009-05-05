@@ -22,16 +22,27 @@
 #define MEM_H
 
 #include <stdlib.h>
+#include <assert.h>
 #include "types.h"
 
 /* Type 1 Memory, faster for byte (8 bits) accesses */
 
-static INLINE u8 T1ReadByte(u8 * mem, u32 addr)
+static INLINE u8 T1ReadByte(u8* const mem, const u32 addr)
 {
    return mem[addr];
 }
 
-static INLINE u16 T1ReadWord(void * mem, u32 addr)
+static INLINE u16 T1ReadWord_guaranteedAligned(void* const mem, const u32 addr)
+{
+	assert((addr&1)==0);
+#ifdef WORDS_BIGENDIAN
+   return (((u8*)mem)[addr + 1] << 8) | ((u8*)mem)[addr];
+#else
+   return *(u16*)((u8*)mem + addr);
+#endif
+}
+
+static INLINE u16 T1ReadWord(void* const mem, const u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
    return (((u8*)mem)[addr + 1] << 8) | ((u8*)mem)[addr];
@@ -40,7 +51,19 @@ static INLINE u16 T1ReadWord(void * mem, u32 addr)
 #endif
 }
 
-static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
+static INLINE u32 T1ReadLong_guaranteedAligned(u8* const  mem, const u32 addr)
+{
+	assert((addr&3)==0);
+#ifdef WORDS_BIGENDIAN
+   return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
+           mem[addr + 1] << 8 | mem[addr]);
+#else
+	return *(u32*)(mem + addr);
+#endif
+}
+
+
+static INLINE u32 T1ReadLong(u8* const  mem, const u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
    return (mem[addr + 3] << 24 | mem[addr + 2] << 16 |
@@ -50,7 +73,7 @@ static INLINE u32 T1ReadLong(u8 * mem, u32 addr)
 #endif
 }
 
-static INLINE u64 T1ReadQuad(u8 * mem, u32 addr)
+static INLINE u64 T1ReadQuad(u8* const mem, const u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
    return (u64(mem[addr + 7]) << 56 | u64(mem[addr + 6]) << 48 |
@@ -62,12 +85,12 @@ static INLINE u64 T1ReadQuad(u8 * mem, u32 addr)
 #endif
 }
 
-static INLINE void T1WriteByte(u8 * mem, u32 addr, u8 val)
+static INLINE void T1WriteByte(u8* const mem, const u32 addr, const u8 val)
 {
    mem[addr] = val;
 }
 
-static INLINE void T1WriteWord(u8 * mem, u32 addr, u16 val)
+static INLINE void T1WriteWord(u8* const mem, const u32 addr, const u16 val)
 {
 #ifdef WORDS_BIGENDIAN
    mem[addr + 1] = val >> 8;
@@ -77,7 +100,7 @@ static INLINE void T1WriteWord(u8 * mem, u32 addr, u16 val)
 #endif
 }
 
-static INLINE void T1WriteLong(u8 * mem, u32 addr, u32 val)
+static INLINE void T1WriteLong(u8* const mem, const u32 addr, const u32 val)
 {
 #ifdef WORDS_BIGENDIAN
    mem[addr + 3] = val >> 24;
@@ -91,7 +114,7 @@ static INLINE void T1WriteLong(u8 * mem, u32 addr, u32 val)
 
 /* Type 2 Memory, faster for word (16 bits) accesses */
 
-static INLINE u8 T2ReadByte(u8 * mem, u32 addr)
+static INLINE u8 T2ReadByte(u8* const  mem, const u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
    return mem[addr ^ 1];
@@ -100,12 +123,12 @@ static INLINE u8 T2ReadByte(u8 * mem, u32 addr)
 #endif
 }
 
-static INLINE u16 T2ReadWord(u8 * mem, u32 addr)
+static INLINE u16 T2ReadWord(u8* const mem, const u32 addr)
 {
    return *((u16 *) (mem + addr));
 }
 
-static INLINE u32 T2ReadLong(u8 * mem, u32 addr)
+static INLINE u32 T2ReadLong(u8* const mem, const u32 addr)
 {
 #ifdef WORDS_BIGENDIAN
    return *((u16 *) (mem + addr + 2)) << 16 | *((u16 *) (mem + addr));
@@ -114,7 +137,7 @@ static INLINE u32 T2ReadLong(u8 * mem, u32 addr)
 #endif
 }
 
-static INLINE void T2WriteByte(u8 * mem, u32 addr, u8 val)
+static INLINE void T2WriteByte(u8* const mem, const u32 addr, const u8 val)
 {
 #ifdef WORDS_BIGENDIAN
    mem[addr ^ 1] = val;
@@ -123,12 +146,12 @@ static INLINE void T2WriteByte(u8 * mem, u32 addr, u8 val)
 #endif
 }
 
-static INLINE void T2WriteWord(u8 * mem, u32 addr, u16 val)
+static INLINE void T2WriteWord(u8* const mem, const u32 addr, const u16 val)
 {
    *((u16 *) (mem + addr)) = val;
 }
 
-static INLINE void T2WriteLong(u8 * mem, u32 addr, u32 val)
+static INLINE void T2WriteLong(u8* const mem, const u32 addr, const u32 val)
 {
 #ifdef WORDS_BIGENDIAN
    *((u16 *) (mem + addr + 2)) = val >> 16;

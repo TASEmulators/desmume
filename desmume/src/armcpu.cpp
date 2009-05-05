@@ -365,7 +365,7 @@ template<u32 PROCNUM>
 static u32
 armcpu_prefetch()
 {
-	armcpu_t* armcpu = &ARMPROC;
+	armcpu_t* const armcpu = &ARMPROC;
 #ifdef GDB_STUB
 	u32 temp_instruction;
 #endif

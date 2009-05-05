@@ -274,10 +274,10 @@ FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
 	{
 		if ((addr & 0x0F000000) == 0x02000000)
-			return T1ReadWord( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadWord_guaranteedAligned( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 		if(addr<0x02000000) 
-			return T1ReadWord(ARM9Mem.ARM9_ITCM, addr&0x7FFF);
+			return T1ReadWord_guaranteedAligned(ARM9Mem.ARM9_ITCM, addr&0x7FFF);
 
 		goto dunno;
 	}
@@ -297,16 +297,16 @@ dunno:
 	else return _MMU_ARM7_read16(addr);
 }
 
-FORCEINLINE u32 _MMU_read32(int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) {
+FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) {
 
 	//special handling for execution from arm9, since we spend so much time in there
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
 	{
 		if ( (addr & 0x0F000000) == 0x02000000)
-			return T1ReadLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+			return T1ReadLong_guaranteedAligned( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
 
 		if(addr<0x02000000) 
-			return T1ReadLong(ARM9Mem.ARM9_ITCM, addr&0x7FFF);
+			return T1ReadLong_guaranteedAligned(ARM9Mem.ARM9_ITCM, addr&0x7FFF);
 
 		goto dunno;
 	}
