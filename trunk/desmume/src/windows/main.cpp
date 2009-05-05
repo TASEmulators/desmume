@@ -2563,36 +2563,40 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_CLOSE:
 		{
 			NDS_Pause();
-
-			//Save window size
-			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
-			if (windowSize==0)
+			if (AskSave())	//Ask Save comes from the Ram Watch dialog.  The dialog uses .wch files and this allows asks the user if he wants to save changes first, should he cancel, closing will not happen
 			{
-				//	 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
-				//	 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
-				RECT rc;
-				GetClientRect(hwnd, &rc);
-				WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
-				WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
+				//Save window size
+				WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+				if (windowSize==0)
+				{
+					//	 WritePrivateProfileInt("Video","Window width",MainWindowRect.right-MainWindowRect.left+widthTradeOff,IniName);
+					//	 WritePrivateProfileInt("Video","Window height",MainWindowRect.bottom-MainWindowRect.top+heightTradeOff,IniName);
+					RECT rc;
+					GetClientRect(hwnd, &rc);
+					WritePrivateProfileInt("Video", "Window width", (rc.right - rc.left), IniName);
+					WritePrivateProfileInt("Video", "Window height", (rc.bottom - rc.top), IniName);
+				}
+
+				//Save window position
+				WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
+				WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
+
+				//Save frame counter status
+				WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
+				WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
+
+				//Save Ram Watch information
+				WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
+				WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
+				WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
+
+				//TODO: save Auto-load bool value 
+				//TODO: save ram watch recent files
+
+				ExitRunLoop();
 			}
-
-			//Save window position
-			WritePrivateProfileInt("Video", "WindowPosX", WndX/*MainWindowRect.left*/, IniName);
-			WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
-
-			//Save frame counter status
-			WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
-			WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
-
-			//Save Ram Watch information
-			WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
-			WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
-			WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
-
-			//TODO: save Auto-load bool value 
-			//TODO: save ram watch recent files
-
-			ExitRunLoop();
+			else
+				NDS_UnPause();
 			return 0;
 		}
 	case WM_MOVING:
