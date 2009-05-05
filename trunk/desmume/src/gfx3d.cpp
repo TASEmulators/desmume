@@ -124,7 +124,9 @@ static float normalTable[1024];
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
 CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
-CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192];
+
+//this extra *2 is a HACK to salvage some savestates. remove me when the savestate format changes.
+CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2];
 
 // Matrix stack handling
 static CACHE_ALIGN MatrixStack	mtxStack[4] = {
@@ -1376,7 +1378,7 @@ void gfx3d_glFlush(u32 v)
 	gfx3d.wbuffer = BIT1(v);
 }
 
-static int _CDECL_ gfx3d_ysort_compare(const void * elem1, const void * elem2)
+static int _CDECL_ gfx3d_ysort_compare_old_qsort(const void * elem1, const void * elem2)
 {
 	int num1 = *(int*)elem1;
 	int num2 = *(int*)elem2;
@@ -1394,6 +1396,23 @@ static int _CDECL_ gfx3d_ysort_compare(const void * elem1, const void * elem2)
 		return -1;
 	else 
 		return 0;
+}
+
+static bool gfx3d_ysort_compare(int num1, int num2)
+{
+	const POLY &poly1 = polylist->list[num1];
+	const POLY &poly2 = polylist->list[num2];
+
+	if(poly1.maxy > poly2.maxy)
+		return true;
+	else if(poly1.maxy < poly2.maxy)
+		return false;
+	else if(poly1.miny < poly2.miny)
+		return true;
+	else if(poly1.miny > poly2.miny)
+		return false;
+	else 
+		return false; //equal should always return false "strict weak ordering"
 }
 
 
@@ -1448,16 +1467,21 @@ void gfx3d_VBlankSignal()
 			gfx3d.indexlist[ctr++] = i;
 	}
 
+	//========NOT SURE YET WHETHER I NEED A STABLE SORT========
+
 	//now we have to sort the opaque polys by y-value.
 	//should this be done after clipping??
+	//does this need to be a stable sort???
 	//test case: harvest moon island of happiness character cretor UI
-	qsort(gfx3d.indexlist, opaqueCount, 4, gfx3d_ysort_compare);
+	//std::stable_sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
+	qsort(gfx3d.indexlist, opaqueCount, 4, gfx3d_ysort_compare_old_qsort);
 
 	if(!gfx3d.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		qsort(gfx3d.indexlist + opaqueCount, polycount - opaqueCount, 4, gfx3d_ysort_compare);
+		//std::stable_sort(gfx3d.indexlist + opaqueCount, gfx3d.indexlist + polycount - opaqueCount, gfx3d_ysort_compare);
+		qsort(gfx3d.indexlist + opaqueCount, polycount - opaqueCount, 4, gfx3d_ysort_compare_old_qsort);
 	}
 
 	//switch to the new lists
@@ -2256,14 +2280,6 @@ SFORMAT SF_GFX3D[]={
 	{ "GMOD", 4, 1, &mode},
 	{ "GMTM", 4,16, mtxTemporal},
 	{ "GMCU", 4,64, mtxCurrent},
-	{ "GM0P", 4, 1, &mtxStack[0].position},
-	{ "GM0M", 4,16, mtxStack[0].matrix},
-	{ "GM1P", 4, 1, &mtxStack[1].position},
-	{ "GM1M", 4,496,mtxStack[1].matrix},
-	{ "GM2P", 4, 1, &mtxStack[2].position},
-	{ "GM2M", 4,496,mtxStack[2].matrix},
-	{ "GM3P", 4, 1, &mtxStack[3].position},
-	{ "GM3M", 4,16, mtxStack[3].matrix},
 	{ "ML4I", 1, 1, &ML4x4ind},
 	{ "ML3I", 1, 1, &ML4x3ind},
 	{ "MM4I", 1, 1, &MM4x4ind},
@@ -2289,8 +2305,8 @@ SFORMAT SF_GFX3D[]={
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLPC", 4, 4, PTcoords},
 	{ "GLF9", 4, 1, &gxFIFO.tail},
-	{ "GLF9", 1, 261, &gxFIFO.cmd},
-	{ "GLF9", 4, 261, &gxFIFO.param},
+	{ "GLF9", 1, 261, &gxFIFO.cmd[0]},
+	{ "GLF9", 4, 261, &gxFIFO.param[0]},
 	{ "GCOL", 1, 4, colorRGB},
 	{ "GLCO", 4, 4, lightColor},
 	{ "GLDI", 4, 4, lightDirection},
@@ -2323,7 +2339,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GTVM", 4, 4, tempVertInfo.map},
 	{ "GTVF", 4, 1, &tempVertInfo.first},
 	{ "G3CS", 2, 256*192, gfx3d_convertedScreen},
-	{ "G3CA", 2, 256*192, gfx3d_convertedAlpha},
+	{ "G3CA", 2, 256*192, gfx3d_convertedAlpha}, 
 	{ 0 }
 };
 
@@ -2331,7 +2347,7 @@ SFORMAT SF_GFX3D[]={
 void gfx3d_savestate(std::ostream* os)
 {
 	//version
-	write32le(1,os);
+	write32le(2,os);
 
 	//dump the render lists
 	OSWRITE(vertlist->count);
@@ -2340,6 +2356,13 @@ void gfx3d_savestate(std::ostream* os)
 	OSWRITE(polylist->count);
 	for(int i=0;i<polylist->count;i++)
 		polylist->list[i].save(os);
+
+	for(int i=0;i<4;i++)
+	{
+		OSWRITE(mtxStack[i].position);
+		for(int j=0;j<mtxStack[i].size*16+16;j++)
+			OSWRITE(mtxStack[i].matrix[j]);
+	}
 }
 
 bool gfx3d_loadstate(std::istream* is, int size)
@@ -2362,7 +2385,7 @@ bool gfx3d_loadstate(std::istream* is, int size)
 	polylist = &polylists[listTwiddle];
 	vertlist = &vertlists[listTwiddle];
 
-	if(version==1)
+	if(version>=1)
 	{
 		OSREAD(vertlist->count);
 		for(int i=0;i<vertlist->count;i++)
@@ -2370,6 +2393,16 @@ bool gfx3d_loadstate(std::istream* is, int size)
 		OSREAD(polylist->count);
 		for(int i=0;i<polylist->count;i++)
 			polylist->list[i].load(is);
+	}
+
+	if(version>=2)
+	{
+		for(int i=0;i<4;i++)
+		{
+			OSREAD(mtxStack[i].position);
+			for(int j=0;j<mtxStack[i].size*16+16;j++)
+				OSREAD(mtxStack[i].matrix[j]);
+		}
 	}
 
 	gfx3d.polylist = &polylists[listTwiddle^1];

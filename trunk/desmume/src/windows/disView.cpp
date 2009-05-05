@@ -710,7 +710,8 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
 	return FALSE;
 }
 
-void DisassemblerTools_Refresh(u8 proc)
+template<int proc>
+FORCEINLINE void DisassemblerTools_Refresh()
 {
 	if (DisViewWnd[proc] == NULL) return;
 	if (proc == 0)
@@ -726,3 +727,7 @@ void DisassemblerTools_Refresh(u8 proc)
 		DisView7->autogo=false;
 	}
 }
+
+//these templates needed to be instantiated manually
+template void DisassemblerTools_Refresh<0>();
+template void DisassemblerTools_Refresh<1>();

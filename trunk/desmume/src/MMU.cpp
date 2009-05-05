@@ -529,7 +529,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 	u8 en = VRAMBankCnt & 0x80;
 	if(!en) return;
 
-	int mst,ofs;
+	int mst,ofs=0;
 	switch(bank) {
 		case VRAM_BANK_A:
 		case VRAM_BANK_B:

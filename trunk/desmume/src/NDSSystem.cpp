@@ -1643,7 +1643,7 @@ u32 NDS_exec(s32 nb)
 				}
 #ifdef _WIN32
 #ifdef DEVELOPER
-				DisassemblerTools_Refresh(ARMCPU_ARM9);
+				DisassemblerTools_Refresh<ARMCPU_ARM9>();
 #endif
 #endif
 			}
@@ -1691,7 +1691,7 @@ u32 NDS_exec(s32 nb)
 				}
 #ifdef _WIN32
 #ifdef DEVELOPER
-				DisassemblerTools_Refresh(ARMCPU_ARM7);
+				DisassemblerTools_Refresh<ARMCPU_ARM7>();
 #endif
 #endif
 			}
