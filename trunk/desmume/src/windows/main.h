@@ -8,6 +8,7 @@ extern volatile BOOL execute, paused;
 void NDS_Pause();
 void NDS_UnPause();
 extern unsigned int lastSaveState;
+void LoadSaveStateInfo();
 void SaveStateMessages(int slotnum, int whichMessage);
 void Display();
 void Pause();
