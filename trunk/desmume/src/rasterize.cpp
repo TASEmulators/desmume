@@ -649,9 +649,9 @@ inline fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
 	// could make this asm to prevent overflow
 	return (A * B) / 16;	// 28.4 * 28.4 = 24.8 / 16 = 28.4
 }
-inline long Ceil28_4( fixed28_4 Value ) {
-	long ReturnValue;
-	long Numerator = Value - 1 + 16;
+inline int Ceil28_4( fixed28_4 Value ) {
+	int ReturnValue;
+	int Numerator = Value - 1 + 16;
 	if(Numerator >= 0) {
 		ReturnValue = Numerator/16;
 	} else {
