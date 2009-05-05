@@ -232,7 +232,7 @@ extern CACHE_ALIGN const u8 alpha_5bit_to_4bit[32];
 //these contain the 3d framebuffer converted into the most useful format
 //they are stored here instead of in the renderers in order to consolidate the buffers
 extern CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
-extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192];
+extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation of illogical *2
 
 //GE commands:
 void gfx3d_glViewPort(u32 v);
