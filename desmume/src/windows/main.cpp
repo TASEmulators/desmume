@@ -2824,6 +2824,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				}
 
 				savestate_save(SavName);
+				LoadSaveStateInfo();
 				NDS_UnPause();
 			}
 			return 0;
@@ -2838,7 +2839,6 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDM_STATE_SAVE_F9:
 		case IDM_STATE_SAVE_F10:
 				HK_StateSaveSlot( abs(IDM_STATE_SAVE_F1 - LOWORD(wParam)) +1);
-				LoadSaveStateInfo();
 				return 0;
 
 		case IDM_STATE_LOAD_F1:

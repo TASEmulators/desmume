@@ -118,6 +118,7 @@ void HK_StateSaveSlot(int num)
 	
 	lastSaveState = num;		//Set last savestate used
 	SaveStateMessages(num, 0);	//Display state loaded message
+	LoadSaveStateInfo();
 }
 
 void HK_StateLoadSlot(int num)
