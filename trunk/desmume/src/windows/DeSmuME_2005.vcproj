@@ -53,7 +53,8 @@
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
 				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
-				BufferSecurityCheck="false"
+				BasicRuntimeChecks="2"
+				BufferSecurityCheck="true"
 				EnableEnhancedInstructionSet="2"
 				FloatingPointModel="2"
 				WarningLevel="1"
@@ -145,6 +146,7 @@
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI"
 				StringPooling="true"
 				ExceptionHandling="1"
+				BasicRuntimeChecks="0"
 				StructMemberAlignment="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="false"
@@ -678,6 +680,10 @@
 		</File>
 		<File
 			RelativePath="..\debug.h"
+			>
+		</File>
+		<File
+			RelativePath=".\VTune\DeSmuME_VS2005.vpj"
 			>
 		</File>
 		<File

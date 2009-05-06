@@ -1855,77 +1855,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	if (lpszArgument[0] == '\"')
 		sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
 
-	// Reparse arguments to isolate the ROM filename in the command line
-	// This should allow for both a filename and a '--xyz' option to be present on the command line.
-	// If this is not done, loading the ROM fails as all supplied options are considered part of the filename.
 	if (lpszArgument[0])
 	{
-		BOOL filename_found = FALSE;
-		const char *delimiters = " ";
-		char *context = NULL;
-		char *arg_token = NULL;
-		char *dup_arglist = strdup(lpszArgument);
-
-		arg_token = strtok_s(dup_arglist, delimiters, &context);
-		while ( (filename_found == FALSE) & (arg_token != NULL) )
-		{
-			// A token was found. Its extension will be compared to the known extensions.
-			// We first must search for a dot, starting from the end of the token.
-			char *dot_position = NULL;
-			if ( (dot_position = strrchr(arg_token, '.')) != NULL )
-			{
-				// Look for a known extension
-				if ( !stricmp(dot_position, ".nds") )
-				{
-					filename_found = TRUE;
-				}
-				if ( !stricmp(dot_position, ".gba") )
-				{
-					// The name ends with ".gba", check if it actually ends with ".ds.gba"
-					if ( strlen(arg_token) > 7 )
-					{
-						if ( !stricmp(dot_position-3, ".ds.gba") )
-						{
-							filename_found = TRUE;
-						}
-					}
-				}
-			}
-			if ( filename_found == TRUE )
-			{
-				// Try to open the file in read-only mode
-				HANDLE test_file_open = CreateFile(arg_token, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-				if ( test_file_open == INVALID_HANDLE_VALUE )
-				{
-					// Cannot open the file, reset filename_found to continue iterating
-					filename_found = FALSE;
-				}
-				else
-				{
-					// The file can be opened and it ends with a plausible extension.
-					// This is probably the one that should be opened.
-					CloseHandle(test_file_open);
-					break;
-				}
-			}
-			// Find the next token in the argument list
-			arg_token = strtok_s(NULL, delimiters, &context);
-		}
-
-		if ( filename_found == TRUE )
-		{
 #ifdef EXPERIMENTAL_GBASLOT
-			if(LoadROM(arg_token))
+		if(LoadROM(lpszArgument))
 #else
-			if(LoadROM(arg_token, bad_glob_cflash_disk_image_file))
+		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
 #endif
-			{
-				romloaded = TRUE;
-				NDS_UnPause();
-			}
+		{
+			romloaded = TRUE;
+			NDS_UnPause();
 		}
-
-		free(dup_arglist);
 	}
 
 	MainWindow->Show(SW_NORMAL);
