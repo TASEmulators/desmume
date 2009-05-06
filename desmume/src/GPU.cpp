@@ -967,7 +967,8 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 		if (withinRect<0>(x))
 		{
 			//INFO("bg%i passed win0 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->currLine, gpu->WIN0H0, gpu->WIN0V0, gpu->WIN0H1, gpu->WIN0V1);
-			draw	= (WININ0 >> currBgNum)&1;
+			draw = (WININ0 >> currBgNum)&1;
+			if(currBgNum==5) draw = true; //backdrop must always be drawn. windows only control color effects.
 			effect = (WININ0_SPECIAL);
 			return;
 		}
@@ -983,6 +984,7 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 		{
 			//INFO("bg%i passed win1 : (%i %i) was within (%i %i)(%i %i)\n", bgnum, x, gpu->currLine, gpu->WIN1H0, gpu->WIN1V0, gpu->WIN1H1, gpu->WIN1V1);
 			draw	= (WININ1 >> currBgNum)&1;
+			if(currBgNum==5) draw = true; //backdrop must always be drawn. windows only control color effects.
 			effect = (WININ1_SPECIAL);
 			return;
 		}
@@ -996,6 +998,7 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 		if (sprWin[x])
 		{
 			draw	= (WINOBJ >> currBgNum)&1;
+			if(currBgNum==5) draw = true; //backdrop must always be drawn. windows only control color effects.
 			effect	= (WINOBJ_SPECIAL);
 			return;
 		}
@@ -2689,32 +2692,31 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	u8 sprPrio[256];
 	u8 prio;
 	u16 i16;
-	u32 c;
 	BOOL BG_enabled  = TRUE;
 
-	c = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
+	u16 backdrop_color = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
 
-	/* Apply fading to backdrop */
+	///* Apply fading to backdrop */
 	if((gpu->BLDCNT & 0x20) && (gpu->BLDY_EVY > 0))
 	{
 		switch(gpu->BLDCNT & 0xC0)
 		{
 		case 0x80:	/* Fade in */
-			c = fadeInColors[gpu->BLDY_EVY][c];
+			backdrop_color = fadeInColors[gpu->BLDY_EVY][backdrop_color];
 			break;
 		case 0xC0:	/* Fade out */
-			c = fadeOutColors[gpu->BLDY_EVY][c];
+			backdrop_color = fadeOutColors[gpu->BLDY_EVY][backdrop_color];
 			break;
 		default: break;
 		}
 	}
 
-	//n.b. - this is clearing the screen to the background color,
-	//but it has been changed to write u32 instead of u16 for a little speedup
-	for(int i = 0; i< 128; ++i) T2WriteLong(gpu->currDst, i << 2, c | (c<<16));
-
-	/* reset them to backdrop */
-	memset(gpu->bgPixels, 5, 256);
+	//we need to write backdrop colors in the same way as we do BG pixels in order to
+	//do correct window processing
+	gpu->currBgNum = 5;
+	for(int x=0;x<256;x++) {
+		gpu->__setFinalColorBck(backdrop_color,x,1);
+	}
 
 	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && 
 			!gpu->LayersEnable[2] && !gpu->LayersEnable[3] && 
@@ -2736,7 +2738,9 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	{
 		//n.b. - this is clearing the sprite line buffer to the background color,
 		//but it has been changed to write u32 instead of u16 for a little speedup
-		for(int i = 0; i< 128; ++i) T2WriteWord(spr, i << 2, c | (c<<16));
+		for(int i = 0; i< 128; ++i) T2WriteLong(spr, i << 2, backdrop_color | (backdrop_color<<16));
+		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
+		//how it interacts with this. I wish we knew why we needed this
 		
 
 		gpu->spriteRender(spr, sprAlpha, sprType, sprPrio);
