@@ -523,7 +523,7 @@ static void openRecordingMovie(const char* fname)
 
 			 MMU.ARM7_REG[0x136] |= 0x40;
 		 }
-		 osd->addFixed(mr->touch.x, mr->touch.y, "%s", "X");
+	//	 osd->addFixed(mr->touch.x, mr->touch.y, "%s %d %d", "X", mr->touch.x, mr->touch.y);
 	 }
  }
 
@@ -599,6 +599,10 @@ static void openRecordingMovie(const char* fname)
 
 	 /*extern uint8 joy[4];
 	 memcpy(&cur_input_display,joy,4);*/
+
+	 if(nds.isTouch)
+		osd->addFixed(nds.touchX >> 4, nds.touchY >> 4, "%s %d %d", "X", nds.touchX >> 4, nds.touchY >> 4);
+	
  }
 
 
