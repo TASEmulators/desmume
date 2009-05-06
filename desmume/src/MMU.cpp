@@ -967,6 +967,8 @@ void MMU_clearMem()
 	
 	memset(MMU.ARM7_ERAM,     0, sizeof(MMU.ARM7_ERAM));
 	memset(MMU.ARM7_REG,      0, sizeof(MMU.ARM7_REG));
+	memset(MMU.ARM7_WIRAM,	  0, sizeof(MMU.ARM7_WIRAM));
+	memset(MMU.SWIRAM,	  0, sizeof(MMU.SWIRAM));
 
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
@@ -1129,7 +1131,7 @@ void FASTCALL MMU_doDMA(u32 num)
 {
 	u32 src = DMASrc[PROCNUM][num];
 	u32 dst = DMADst[PROCNUM][num];
-        u32 taille;
+    u32 taille;
 
 	if(src==dst)
 	{
@@ -1146,8 +1148,9 @@ void FASTCALL MMU_doDMA(u32 num)
 	}
 	
 	
-	/* word count */
-	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFF);
+	//word count
+	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
+	if(taille == 0) taille = 0x200000; //according to gbatek..
 	
 	// If we are in "Main memory display" mode just copy an entire 
 	// screen (256x192 pixels). 
