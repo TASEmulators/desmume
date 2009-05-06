@@ -646,10 +646,10 @@ static void SetVertex()
 	{
 		last_s =((coord[0]*mtxCurrent[3][0] +
 					coord[1]*mtxCurrent[3][4] +
-					coord[2]*mtxCurrent[3][8]) + _s);
+					coord[2]*mtxCurrent[3][8]) + _s * 16.0f) / 16.0f;
 		last_t =((coord[0]*mtxCurrent[3][1] +
 					coord[1]*mtxCurrent[3][5] +
-					coord[2]*mtxCurrent[3][9]) + _t);
+					coord[2]*mtxCurrent[3][9]) + _t * 16.0f) / 16.0f;
 	}
 
 	//refuse to do anything if we have too many verts or polys
