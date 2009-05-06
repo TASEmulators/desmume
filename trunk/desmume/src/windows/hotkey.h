@@ -63,7 +63,7 @@ struct SCustomKeys
 	SCustomKey Save[10];
 	SCustomKey Load[10];
 	SCustomKey Slot[10];
-	SCustomKey QuickSave, QuickLoad;
+	SCustomKey QuickSave, QuickLoad, NextSaveSlot, PreviousSaveSlot;
 
 	SCustomKey OpenROM, Reset, Pause, FrameAdvance, FastForward, FastForwardToggle, IncreaseSpeed, DecreaseSpeed, Microphone;
 

@@ -215,6 +215,22 @@ void HK_TurboStartKeyUp(int) { Turbo.Start = false; }
 void HK_TurboSelectKeyDown(int) { Turbo.Select = true; }
 void HK_TurboSelectKeyUp(int) { Turbo.Select = false; }
 
+void HK_NextSaveSlot(int) { 
+	lastSaveState++; 
+	if(lastSaveState>9) 
+		lastSaveState=0; 
+	SaveStateMessages(lastSaveState,2);
+}
+
+void HK_PreviousSaveSlot(int) { 
+
+	if(lastSaveState==0) 
+		lastSaveState=9; 
+	else
+		lastSaveState--;
+	SaveStateMessages(lastSaveState,2); 
+}
+
 void HK_Pause(int) { Pause(); }
 void HK_FastForwardToggle(int) { FastForward ^=1; }
 void HK_FastForwardKeyDown(int) { FastForward = 1; }
@@ -466,12 +482,25 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.name = L"Turbo Start";
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
+
+	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
+	keys->NextSaveSlot.code = "NextSaveSlot";
+	keys->NextSaveSlot.name = L"Next Save Slot";
+	keys->NextSaveSlot.page = HOTKEY_PAGE_STATE_SLOTS;
+	keys->NextSaveSlot.key = NULL;
+
+	keys->PreviousSaveSlot.handleKeyDown = HK_PreviousSaveSlot;
+	keys->PreviousSaveSlot.code = "PreviousSaveSlot";
+	keys->PreviousSaveSlot.name = L"Previous Save Slot";
+	keys->PreviousSaveSlot.page = HOTKEY_PAGE_STATE_SLOTS;
+	keys->PreviousSaveSlot.key = NULL;
 	
 	keys->QuickSave.handleKeyDown = HK_StateQuickSaveSlot;
 	keys->QuickSave.code = "QuickSave";
 	keys->QuickSave.name = L"Quick Save";
 	keys->QuickSave.page = HOTKEY_PAGE_STATE_SLOTS;
 	keys->QuickSave.key = 'I';
+
 	keys->QuickLoad.handleKeyDown = HK_StateQuickLoadSlot;
 	keys->QuickLoad.code = "QuickLoad";
 	keys->QuickLoad.name = L"Quick Load";
