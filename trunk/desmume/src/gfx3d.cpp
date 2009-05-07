@@ -418,8 +418,9 @@ void gfx3d_glStoreMatrix(u32 v)
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
-	//for the projection matrix, the provided value is supposed to be reset to zero
-	if(mymode==0)
+	//limit height of these stacks.
+	//without the mymode==3 namco classics galaxian will try to use pos=1 and overrun the stack, corrupting emu
+	if(mymode==0 || mymode==3)
 		v = 0;
 
 	if(v==31) v=30; //? what should happen in this case?
@@ -434,8 +435,9 @@ void gfx3d_glRestoreMatrix(u32 v)
 	//this command always works on both pos and vector when either pos or pos-vector are the current mtx mode
 	short mymode = (mode==1?2:mode);
 
-	//for the projection matrix, the provided value is supposed to be reset to zero
-	if(mymode==0)
+	//limit height of these stacks
+	//without the mymode==3 namco classics galaxian will try to use pos=1 and overrun the stack, corrupting emu
+	if(mymode==0 || mymode==3)
 		v = 0;
 
 	if(v==31) v=30; //? what should happen in this case?
