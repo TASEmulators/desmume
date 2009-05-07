@@ -103,7 +103,9 @@ enum {
 
 /************************ CONFIG FILE *****************************/
 
-static void Open_Select();
+static void OpenNdsDialog();
+static void SaveStateDialog();
+static void LoadStateDialog();
 static void Launch();
 static void Pause();
 static void Printscreen();
@@ -125,8 +127,8 @@ static const char *ui_description =
 "  <menubar name='MainMenu'>"
 "    <menu action='FileMenu'>"
 "      <menuitem action='open'/>"
-//"      <menuitem action='savestateto'/>"
-//"      <menuitem action='loadstatefrom'/>"
+"      <menuitem action='savestateto'/>"
+"      <menuitem action='loadstatefrom'/>"
 "      <menu action='SavestateMenu'>"
 "        <menuitem action='savestate1'/>"
 "        <menuitem action='savestate2'/>"
@@ -227,13 +229,13 @@ static const char *ui_description =
   
 static const GtkActionEntry action_entries[] = {
     { "FileMenu", NULL, "_File" },
-      { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   Open_Select },
-//      { "savestateto",    NULL,         "S_ave state as ...",         NULL,  NULL,   Open_Select },
-//      { "loadstatefrom",  NULL,         "Load state f_rom ...",         NULL,  NULL,   Open_Select },
-      { "SavestateMenu", NULL, "Sa_ve state" },
+      { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
+      { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
+      { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
+      { "SavestateMenu", NULL, "_Save state" },
       { "LoadstateMenu", NULL, "_Load state" },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
-      { "loadfirmware","gtk-open",        "_Load Firmware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
+      { "loadfirmware","gtk-open",        "Load Firm_ware file", "<Ctrl>l",  NULL, SelectFirmwareFile },
 #endif
       { "printscreen","gtk-media-record", "Take a _screenshot",    "<Ctrl>s",  NULL,   Printscreen },
       { "quit",       "gtk-quit",         "_Quit",         "<Ctrl>q",  NULL,   gtk_main_quit },
@@ -622,8 +624,126 @@ static void Pause()
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
 }
 
-/* Choose a file then load it */
-static void Open_Select()
+static void LoadStateDialog()
+{
+    GtkFileFilter *pFilter_ds, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_ds = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_ds, "*.ds*");
+    gtk_file_filter_set_name(pFilter_ds, "DeSmuME binary (.ds*)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Save State To ...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            NULL);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+        if(savestate_load(sPath) == false ) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to save :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void SaveStateDialog()
+{
+    GtkFileFilter *pFilter_ds, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_ds = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_ds, "*.ds*");
+    gtk_file_filter_set_name(pFilter_ds, "DeSmuME binary (.ds*)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Save State To ...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_ds);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+        if(savestate_save(sPath) == false ) {
+            GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
+                    GTK_DIALOG_MODAL,
+                    GTK_MESSAGE_ERROR,
+                    GTK_BUTTONS_OK,
+                    "Unable to save :\n%s", sPath);
+            gtk_dialog_run(GTK_DIALOG(pDialog));
+            gtk_widget_destroy(pDialog);
+        } else {
+            gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+        }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void OpenNdsDialog()
 {
     GtkFileFilter *pFilter_nds, *pFilter_dsgba, *pFilter_any;
     GtkWidget *pFileSelection;
