@@ -1007,6 +1007,7 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 	if (WINOBJ_ENABLED | WIN1_ENABLED | WIN0_ENABLED)
 	{
 		draw	= (WINOUT >> currBgNum) & 1;
+		if(currBgNum==5) draw = true; //backdrop must always be drawn. windows only control color effects.
 		effect	= (WINOUT_SPECIAL);
 	}
 }
@@ -2713,6 +2714,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 
 	//we need to write backdrop colors in the same way as we do BG pixels in order to
 	//do correct window processing
+	//memset(gpu->bgPixels,6,256); //dont know whether we need this...
 	gpu->currBgNum = 5;
 	for(int x=0;x<256;x++) {
 		gpu->__setFinalColorBck(backdrop_color,x,1);
