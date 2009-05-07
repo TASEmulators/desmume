@@ -1630,6 +1630,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
 	ramw_y = GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName);
 
+	for(int i = 0; i < MAX_RECENT_WATCHES; i++)
+	{
+		char str[256];
+		sprintf(str, "Recent Watch %d", i+1);
+		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
+	}
+
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
@@ -2590,9 +2597,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
 				WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
 
+				for(int i = 0; i < MAX_RECENT_WATCHES; i++)
+				{
+					char str[256];
+					sprintf(str, "Recent Watch %d", i+1);
+					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
+				}
 				//TODO: save Auto-load bool value 
-				//TODO: save ram watch recent files
-
 				ExitRunLoop();
 			}
 			else

@@ -359,7 +359,7 @@ void UpdateRWRecentArray(const char* addString, unsigned int arrayLen, HMENU men
 
 void RWAddRecentFile(const char *filename)
 {
-//	UpdateRWRecentArray(filename, MAX_RECENT_WATCHES, rwrecentmenu, RAMMENU_FILE_RECENT, RW_MENU_FIRST_RECENT_FILE);
+	UpdateRWRecentArray(filename, MAX_RECENT_WATCHES, rwrecentmenu, RAMMENU_FILE_RECENT, RW_MENU_FIRST_RECENT_FILE);
 }
 
 void OpenRWRecentFile(int memwRFileNumber)
