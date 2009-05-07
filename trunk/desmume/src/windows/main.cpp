@@ -2610,9 +2610,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					sprintf(str, "Recent Watch %d", i+1);
 					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
 				}
-	
-
-				//TODO: save Auto-load bool value 
+ 
 				ExitRunLoop();
 			}
 			else
