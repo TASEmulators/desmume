@@ -940,7 +940,9 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 			// due to some bug in windows, the arrow button width from the resource gets ignored, so we have to set it here
 			SetWindowPos(GetDlgItem(hDlg,ID_WATCHES_UPDOWN), 0,0,0, 30,60, SWP_NOMOVE);
-
+			
+			if (AutoRWLoad) OpenRWRecentFile(0);
+			
 			Update_RAM_Watch();
 
 			DragAcceptFiles(hDlg, TRUE);
