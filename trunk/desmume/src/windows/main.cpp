@@ -2500,6 +2500,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			EnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        MF_BYCOMMAND | (romloaded && movieMode == MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_STOPMOVIE,         MF_BYCOMMAND | (romloaded && movieMode != MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
 
+			EnableMenuItem(mainMenu, ID_RAM_WATCH,          MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, ID_RAM_SEARCH,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
 			{
