@@ -74,6 +74,34 @@ public:
 		}
 		return done;
 	}
+
+	// this function does the same than dump
+	// but works for both little and big endian
+	// when buf is an u16 array
+	int dump16(void* buf, int size=-1)
+	{
+		if(size==-1) size = this->size;
+		size = min(this->size,size);
+		u16* bufptr = (u16*)buf;
+		int done = 0;
+		for(int i=0;i<numItems;i++)
+		{
+			Item item = items[i];
+			u8 * src = (u8 *) item.ptr;
+			int todo = min((int)item.len,size);
+			size -= todo;
+			done += todo;
+			for(int j = 0;j < todo / 2;j++)
+			{
+				u16 tmp;
+				tmp = *src++;
+				tmp |= *(src++) << 8;
+				*bufptr++ = tmp;
+			}
+			if(size==0) return done;
+		}
+		return done;
+	}
 };
 
 //creates a MemSpan in texture memory
@@ -218,7 +246,11 @@ void TexCache_SetTexture(u32 format, u32 texpal)
 	//dump the palette to a temp buffer, so that we don't have to worry about memory mapping.
 	//this isnt such a problem with texture memory, because we read sequentially from it.
 	//however, we read randomly from palette memory, so the mapping is more costly.
+#ifdef WORDS_BIGENDIAN
+	mspal.dump16(pal);
+#else
 	mspal.dump(pal);
+#endif
 
 
 	u32 tx=texcache_start;
