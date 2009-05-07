@@ -1368,6 +1368,9 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 		lagframecounter=0;
 		UpdateRecentRoms(filename);
 		osd->setRotate(GPU_rotation);
+		if (AutoRWLoad)		//Open Ram Watch if its auto-load setting is checked
+				RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), MainWindow->getHWnd(), (DLGPROC) RamWatchProc);
+		
 		return TRUE;		
 	}
 	INFO("Loading %s FAILED.\n",filename);
@@ -1629,7 +1632,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	RWSaveWindowPos = GetPrivateProfileInt("RamWatch", "SaveWindowPos", 0, IniName);
 	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
 	ramw_y = GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName);
-
+	AutoRWLoad = GetPrivateProfileInt("RamWatch", "Auto-load", 0, IniName);
 	for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 	{
 		char str[256];
@@ -2297,7 +2300,10 @@ LRESULT OpenFile()
 	if(!GetOpenFileName(&ofn))
 	{
 		if (romloaded)
+		{
 			NDS_UnPause(); //Restart emulation if no new rom chosen
+			
+		}
 		return 0;
 	}
 
@@ -2596,6 +2602,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
 				WritePrivateProfileInt("RamWatch", "RWWindowPosX", ramw_x, IniName);
 				WritePrivateProfileInt("RamWatch", "RWWindowPosY", ramw_y, IniName);
+				WritePrivateProfileInt("RamWatch", "Auto-load", AutoRWLoad, IniName);
 
 				for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 				{
@@ -2603,6 +2610,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					sprintf(str, "Recent Watch %d", i+1);
 					WritePrivateProfileString("Watches", str, &rw_recent_files[i][0], IniName);	
 				}
+	
+
 				//TODO: save Auto-load bool value 
 				ExitRunLoop();
 			}
