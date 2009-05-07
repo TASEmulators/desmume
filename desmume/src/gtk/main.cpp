@@ -114,6 +114,9 @@ static void Edit_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
 static void MenuLoad(GtkMenuItem *item, gpointer slot);
 static void About();
+static void ToggleMenuVisible();
+static void ToggleStatusbarVisible();
+static void ToggleToolbarVisible();
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
 static void desmume_gtk_mic_noise (GtkToggleAction *action);
 static void SetRotation (GtkAction *action, gpointer data);
@@ -211,6 +214,11 @@ static const char *ui_description =
 "        <menuitem action='interp_bilinear'/>"
 "      </menu>"
 "      <menuitem action='editctrls'/>"
+"      <menu action='ViewMenu'>"
+"        <menuitem action='view_menu'/>"
+"        <menuitem action='view_toolbar'/>"
+"        <menuitem action='view_statusbar'/>"
+"      </menu>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
 "      <menuitem action='ioregtool'/>"
@@ -256,6 +264,7 @@ static const GtkActionEntry action_entries[] = {
         { "rotate_180", "gtk-orientation-reverse-portrait",  "_180",NULL, NULL, G_CALLBACK(SetRotation) },
         { "rotate_270", "gtk-orientation-reverse-landscape", "_270",NULL, NULL, G_CALLBACK(SetRotation) },
       { "InterpolationMenu", NULL, "_Interpolation" },
+      { "ViewMenu", NULL, "_View" },
 
     { "ToolsMenu", NULL, "_Tools" },
 
@@ -265,7 +274,10 @@ static const GtkActionEntry action_entries[] = {
 
 static const GtkToggleActionEntry toggle_entries[] = {
     { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE},
-    { "micnoise", NULL, "Fake _mic noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE}
+    { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE},
+    { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
+    { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
+    { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE}//,
 };
 
 static const GtkRadioActionEntry interpolation_entries[] = {
@@ -593,6 +605,36 @@ static void About()//GtkWidget* widget, gpointer data)
     g_object_unref(pixbuf);
 }
 
+static void ToggleMenuVisible()
+{
+    GtkWidget *pMenuBar;
+    pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
+    if(GTK_WIDGET_VISIBLE(pMenuBar))
+      gtk_widget_hide(pMenuBar);
+    else
+      gtk_widget_show(pMenuBar);
+}
+
+static void ToggleToolbarVisible()
+{
+    GtkWidget *pToolBar;
+    pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
+    if(GTK_WIDGET_VISIBLE(pToolBar))
+      gtk_widget_hide(pToolBar);
+    else
+      gtk_widget_show(pToolBar);
+}
+
+static void ToggleStatusbarVisible()
+{
+    if(GTK_WIDGET_VISIBLE(pStatusBar))
+      gtk_widget_hide(pStatusBar);
+    else
+      gtk_widget_show(pStatusBar);
+}
+
+
+
 static int Open(const char *filename, const char *cflash_disk_image)
 {
     return NDS_LoadROM( filename, backupmemorytype, backupmemorysize, cflash_disk_image );
@@ -645,7 +687,7 @@ static void LoadStateDialog()
     gtk_file_filter_set_name(pFilter_any, "All files");
 
     /* Creating the selection window */
-    pFileSelection = gtk_file_chooser_dialog_new("Save State To ...",
+    pFileSelection = gtk_file_chooser_dialog_new("Load State From ...",
             GTK_WINDOW(pParent),
             GTK_FILE_CHOOSER_ACTION_OPEN,
             GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -668,7 +710,7 @@ static void LoadStateDialog()
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
                     GTK_BUTTONS_OK,
-                    "Unable to save :\n%s", sPath);
+                    "Unable to load :\n%s", sPath);
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         } else {
@@ -951,6 +993,12 @@ static gboolean Stylus_Press(GtkWidget * w, GdkEventButton * e,
 {
     GdkModifierType state;
     gint x, y;
+
+    if (e->button == 3) {
+        GtkWidget * pMenu = gtk_menu_item_get_submenu ( GTK_MENU_ITEM(
+                    gtk_ui_manager_get_widget (ui_manager, "/MainMenu/ConfigMenu/ViewMenu")));
+        gtk_menu_popup(GTK_MENU(pMenu), NULL, NULL, NULL, NULL, 3, e->time);
+    }
 
     if( !desmume_running()) 
         return TRUE;
@@ -1654,9 +1702,7 @@ common_gtk_main( struct configured_features *my_config)
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(pWindow), "Desmume");
-
     gtk_window_set_resizable(GTK_WINDOW (pWindow), TRUE);
-
     gtk_window_set_icon(GTK_WINDOW (pWindow), gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm));
 
     g_signal_connect(G_OBJECT(pWindow), "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -1709,6 +1755,7 @@ common_gtk_main( struct configured_features *my_config)
                                          0.5, /* center y */
                                          256.0/384.0, /* xsize/ysize */
                                          FALSE /* ignore child's aspect */));
+    gtk_frame_set_shadow_type (GTK_FRAME(pAspectFrame), GTK_SHADOW_NONE);
 
     gtk_container_add (GTK_CONTAINER (pVBox), GTK_WIDGET(pAspectFrame));
 
