@@ -194,6 +194,7 @@
 #define IDC_C_ADDCHEAT                          965
 #define ID_WATCHES_UPDOWN                       966
 #define IDD_RAMWATCH                            967
+#define IDR_ACCELERATOR1                        968
 #define IDC_C_WATCH_UP                          980
 #define IDD_EDITWATCH                           980
 #define IDC_C_WATCH_DOWN                        981
@@ -482,6 +483,7 @@
 #define IDD_IOREG_VIEW_DMA                      10006
 #define IDD_IOREG_VIEW_TIMERS                   10007
 #define IDD_IOREG_VIEW_IPC_ROM                  10008
+#define IDC_C_WATCHDUPLICATE                    40000
 #define IDM_SCREENSEP_NONE                      40000
 #define IDM_SCREENSEP_BORDER                    40001
 #define IDM_SCREENSEP_NDSGAP                    40002
