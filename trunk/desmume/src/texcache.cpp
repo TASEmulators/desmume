@@ -13,7 +13,7 @@ using std::min;
 using std::max;
 
 //only dump this from ogl renderer. for now, softrasterizer creates things in an incompatible pixel format
-//#define DEBUG_DUMP_TEXTURE
+#define DEBUG_DUMP_TEXTURE
 
 //This class represents a number of regions of memory which should be viewed as contiguous
 class MemSpan
@@ -553,7 +553,8 @@ REJECT:
 		{
 			for(int j=0;j<ms.numItems;j++) {
 				u16* map = (u16*)ms.items[j].ptr;
-				for(u32 x = 0; x < ms.items[j].len; ++x)
+				int len = ms.items[j].len>>1;
+				for(u32 x = 0; x < len; ++x)
 				{
 					u16 c = map[x];
 					int alpha = ((c&0x8000)?opaqueColor:0);
