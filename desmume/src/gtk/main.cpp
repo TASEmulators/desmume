@@ -1209,25 +1209,33 @@ static void Edit_Controls()
 static void SetRotation(GtkAction* action, gpointer data)
 {
     const gchar *angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
-    nds_screen_rotation_angle = atoi(angle);
-    int a = nds_screen_rotation_angle;
-    if( a != 0 && a != 90 && a != 180 && a != 270 ){
-        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s)", angle);
-        exit(1);
-    }
     gint H, W;
-    gfloat ratio;
-    if(a == 90 || a == 270){
-        W = 384; H = 256;
-    } else {
-        W = 256; H = 384;
+
+    nds_screen_rotation_angle = atoi(angle);
+    switch (nds_screen_rotation_angle) {
+    case 0:
+    case 180:
+        W = 256;
+        H = 384;
+        break;
+    case 90:
+    case 270:
+        W = 384;
+        H = 256;
+        break;
+    default:
+        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s), resetting angle to 0\n", angle);
+        nds_screen_rotation_angle = 0;
+        W = 256;
+        H = 384;
+        break;
     }
-    ratio = (gfloat) W / (gfloat) H;
+
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
     gtk_aspect_frame_set (pAspectFrame , 
                           0.5, /* center x */
                           0.5, /* center y */
-                          ratio, /* xsize/ysize */
+                          (gfloat) W / (gfloat) H, /* xsize/ysize */
                           FALSE /* ignore child's aspect */);
     
 }
