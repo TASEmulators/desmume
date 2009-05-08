@@ -125,13 +125,14 @@ void HK_StateSaveSlot(int num)
 
 void HK_StateLoadSlot(int num)
 {
-	Update_RAM_Watch();
-	Update_RAM_Search();
 	BOOL wasPaused = paused;
 	NDS_Pause();
 	loadstate_slot(num);		//Loadstate
 	lastSaveState = num;		//Set last savestate used
 	SaveStateMessages(num, 1);	//Display state loaded message
+
+	Update_RAM_Watch();
+	Update_RAM_Search();
 
 	if(!wasPaused)
 		NDS_UnPause();
