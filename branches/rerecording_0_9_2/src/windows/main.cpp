@@ -1712,7 +1712,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
-	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_SWRAST, IniName);
 	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileInt("3D", "HighResolutionInterpolateColor", 1, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
 
