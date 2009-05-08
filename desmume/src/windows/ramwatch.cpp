@@ -32,7 +32,6 @@ int WatchCount=0;
 
 bool QuickSaveWatches();
 bool ResetWatches();
-//extern "C" int Clear_Sound_Buffer(void);
 
 unsigned int GetCurrentValue(AddressWatcher& watch)
 {
@@ -103,14 +102,6 @@ LRESULT CALLBACK PromptWatchNameProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 	switch(uMsg)
 	{
 		case WM_INITDIALOG:
-//			Clear_Sound_Buffer();
-
-/*			if (Full_Screen)
-			{
-				while (ShowCursor(false) >= 0);
-				while (ShowCursor(true) < 0);
-			}*/
-
 			GetWindowRect(MainWindow->getHWnd(), &r);
 			dx1 = (r.right - r.left) / 2;
 			dy1 = (r.bottom - r.top) / 2;
@@ -119,12 +110,11 @@ LRESULT CALLBACK PromptWatchNameProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			dx2 = (r2.right - r2.left) / 2;
 			dy2 = (r2.bottom - r2.top) / 2;
 
-			//SetWindowPos(hDlg, NULL, max(0, r.left + (dx1 - dx2)), max(0, r.top + (dy1 - dy2)), NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
 			SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
 			strcpy(Str_Tmp,"Enter a name for this RAM address.");
-		//	SendDlgItemMessage(hDlg,IDC_PROMPT_TEXT,WM_SETTEXT,0,(LPARAM)Str_Tmp);
+			//SendDlgItemMessage(hDlg,IDC_PROMPT_TEXT,WM_SETTEXT,0,(LPARAM)Str_Tmp);
 			strcpy(Str_Tmp,"");
-		//	SendDlgItemMessage(hDlg,IDC_PROMPT_TEXT2,WM_SETTEXT,0,(LPARAM)Str_Tmp);
+			//SendDlgItemMessage(hDlg,IDC_PROMPT_TEXT2,WM_SETTEXT,0,(LPARAM)Str_Tmp);
 			return true;
 			break;
 
@@ -133,27 +123,14 @@ LRESULT CALLBACK PromptWatchNameProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			{
 				case IDOK:
 				{
-/*					if (Full_Screen)
-					{
-						while (ShowCursor(true) < 0);
-						while (ShowCursor(false) >= 0);
-					}*/
 					GetDlgItemText(hDlg,IDC_PROMPT_EDIT,Str_Tmp,80);
 					InsertWatch(rswatches[WatchCount],Str_Tmp);
-//					DialogsOpen--;
 					EndDialog(hDlg, true);
 					return true;
 					break;
 				}
-			//	case ID_CANCEL:
 				case IDCANCEL:
-/*					if (Full_Screen)
-					{
-						while (ShowCursor(true) < 0);
-						while (ShowCursor(false) >= 0);
-					}*/
 
-//					DialogsOpen--;
 					EndDialog(hDlg, false);
 					return false;
 					break;
@@ -161,12 +138,6 @@ LRESULT CALLBACK PromptWatchNameProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 			break;
 
 		case WM_CLOSE:
-/*			if (Full_Screen)
-			{
-				while (ShowCursor(true) < 0);
-				while (ShowCursor(false) >= 0);
-			}*/
-//			DialogsOpen--;
 			EndDialog(hDlg, false);
 			return false;
 			break;
@@ -413,13 +384,6 @@ void OpenRWRecentFile(int memwRFileNumber)
 	char mode;
 	fgets(Str_Tmp,1024,WatchFile);
 	sscanf(Str_Tmp,"%c%*s",&mode);
-/*	if ((mode == '1' && !(SegaCD_Started)) || (mode == '2' && !(_32X_Started)))
-	{
-		char Device[8];
-		strcpy(Device,(mode > '1')?"32X":"SegaCD");
-		sprintf(Str_Tmp,"Warning: %s not started. \nWatches for %s addresses will be ignored.",Device,Device);
-		MessageBox(MESSAGEBOXPARENT,Str_Tmp,"Possible Device Mismatch",MB_OK);
-	}*/
 	int WatchAdd;
 	fgets(Str_Tmp,1024,WatchFile);
 	sscanf(Str_Tmp,"%d%*s",&WatchAdd);
@@ -487,7 +451,6 @@ bool Save_Watches()
 	{
 		FILE *WatchFile = fopen(Str_Tmp,"r+b");
 		if (!WatchFile) WatchFile = fopen(Str_Tmp,"w+b");
-//		fputc(SegaCD_Started?'1':(_32X_Started?'2':'0'),WatchFile);
 		fputc('\n',WatchFile);
 		strcpy(currentWatch,Str_Tmp);
 		RWAddRecentFile(currentWatch);
@@ -502,7 +465,6 @@ bool Save_Watches()
 		
 		fclose(WatchFile);
 		RWfileChanged=false;
-		//TODO: Add to recent list function call here
 		return true;
 	}
 	return false;
@@ -511,7 +473,7 @@ bool Save_Watches()
 bool QuickSaveWatches()
 {
 if (RWfileChanged==false) return true; //If file has not changed, no need to save changes
-if (currentWatch[0] == NULL) //If there is no currently loaded file, run to Save as and then return
+if (currentWatch[0] == NULL)			//If there is no currently loaded file, run to Save as and then return
 	{
 		return Save_Watches();
 	}
@@ -519,7 +481,6 @@ if (currentWatch[0] == NULL) //If there is no currently loaded file, run to Save
 		strcpy(Str_Tmp,currentWatch);
 		FILE *WatchFile = fopen(Str_Tmp,"r+b");
 		if (!WatchFile) WatchFile = fopen(Str_Tmp,"w+b");
-//		fputc(SegaCD_Started?'1':(_32X_Started?'2':'0'),WatchFile);
 		fputc('\n',WatchFile);
 		sprintf(Str_Tmp,"%d\n",WatchCount);
 		fputs(Str_Tmp,WatchFile);
@@ -557,13 +518,6 @@ bool Load_Watches(bool clear, const char* filename)
 	char mode;
 	fgets(Str_Tmp,1024,WatchFile);
 	sscanf(Str_Tmp,"%c%*s",&mode);
-/*	if ((mode == '1' && !(SegaCD_Started)) || (mode == '2' && !(_32X_Started)))
-	{
-		char Device[8];
-		strcpy(Device,(mode > '1')?"32X":"SegaCD");
-		sprintf(Str_Tmp,"Warning: %s not started. \nWatches for %s addresses will be ignored.",Device,Device);
-		MessageBox(MESSAGEBOXPARENT,Str_Tmp,"Possible Device Mismatch",MB_OK);
-	}*/
 	int WatchAdd;
 	fgets(Str_Tmp,1024,WatchFile);
 	sscanf(Str_Tmp,"%d%*s",&WatchAdd);
@@ -658,13 +612,6 @@ void RemoveWatch(int watchIndex)
 		rswatches[i] = rswatches[i+1];
 	WatchCount--;
 }
-/*
-bool IsHardwareRAMAddressValid(unsigned int address) {
-
-	return true;
-	
-	
-};*/
 
 LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) //Gets info for a RAM Watch, and then inserts it into the Watch List
 {
@@ -677,14 +624,6 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 	switch(uMsg)
 	{
 		case WM_INITDIALOG:
-//			Clear_Sound_Buffer();
-			
-/*			if (Full_Screen)
-			{
-				while (ShowCursor(false) >= 0);
-				while (ShowCursor(true) < 0);
-			}*/
-
 			GetWindowRect(MainWindow->getHWnd(), &r);
 			dx1 = (r.right - r.left) / 2;
 			dy1 = (r.bottom - r.top) / 2;
@@ -693,7 +632,6 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			dx2 = (r2.right - r2.left) / 2;
 			dy2 = (r2.bottom - r2.top) / 2;
 
-			//SetWindowPos(hDlg, NULL, max(0, r.left + (dx1 - dx2)), max(0, r.top + (dy1 - dy2)), NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
 			SetWindowPos(hDlg, NULL, r.left, r.top, NULL, NULL, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
 			index = (int)lParam;
 			sprintf(Str_Tmp,"%08X",rswatches[index].Address);
@@ -759,11 +697,6 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					return true;
 				case IDOK:
 				{
-/*					if (Full_Screen)
-					{
-						while (ShowCursor(true) < 0);
-						while (ShowCursor(false) >= 0);
-					}*/
 					if (s && t)
 					{
 						AddressWatcher Temp;
@@ -788,7 +721,6 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 							{
 								ListView_SetItemCount(GetDlgItem(RamWatchHWnd,IDC_WATCHLIST),WatchCount);
 							}
-//							DialogsOpen--;
 							EndDialog(hDlg, true);
 						}
 						else
@@ -809,14 +741,7 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 					return true;
 					break;
 				}
-//				case ID_CANCEL:
 				case IDCANCEL:
-/*					if (Full_Screen)
-					{
-						while (ShowCursor(true) < 0);
-						while (ShowCursor(false) >= 0);
-					}*/
-//					DialogsOpen--;
 					EndDialog(hDlg, false);
 					return false;
 					break;
@@ -824,12 +749,6 @@ LRESULT CALLBACK EditWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			break;
 
 		case WM_CLOSE:
-/*			if (Full_Screen)
-			{
-				while (ShowCursor(true) < 0);
-				while (ShowCursor(false) >= 0);
-			}*/
-//			DialogsOpen--;
 			EndDialog(hDlg, false);
 			return false;
 			break;
@@ -855,8 +774,6 @@ void init_list_box(HWND Box, const char* Strs[], int numColumns, int *columnWidt
 	ListView_SetExtendedListViewStyle(Box, LVS_EX_FULLROWSELECT);
 }
 
-//int ResultCount = 0; //TODO make sure this isn't breaking anything
-
 LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	RECT r;
@@ -877,12 +794,6 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 			};
 			
 		case WM_INITDIALOG: {
-/*			if (Full_Screen)
-			{
-				while (ShowCursor(false) >= 0);
-				while (ShowCursor(true) < 0);
-			}*/
-
 			GetWindowRect(MainWindow->getHWnd(), &r);  //Ramwatch window
 			dx1 = (r.right - r.left) / 2;
 			dy1 = (r.bottom - r.top) / 2;
@@ -936,7 +847,7 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 //			if (!noMisalign) SendDlgItemMessage(hDlg, IDC_MISALIGN, BM_SETCHECK, BST_CHECKED, 0);
 //			if (littleEndian) SendDlgItemMessage(hDlg, IDC_ENDIAN, BM_SETCHECK, BST_CHECKED, 0);
 
-//TODO what?			RamWatchAccels = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_ACCELERATOR1));
+			RamWatchAccels = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
 			// due to some bug in windows, the arrow button width from the resource gets ignored, so we have to set it here
 			SetWindowPos(GetDlgItem(hDlg,ID_WATCHES_UPDOWN), 0,0,0, 30,60, SWP_NOMOVE);
@@ -954,7 +865,6 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 		case WM_MENUSELECT:
  		case WM_ENTERSIZEMOVE:
-//			Clear_Sound_Buffer();
 			break;
 
 		case WM_NOTIFY:
@@ -1019,15 +929,12 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					break;
 
 				case RAMMENU_FILE_SAVEAS:	
-				//case IDC_C_SAVE:
 					return Save_Watches();
 				case RAMMENU_FILE_OPEN:
 					return Load_Watches(true);
 				case RAMMENU_FILE_APPEND:
-				//case IDC_C_LOAD:
 					return Load_Watches(false);
 				case RAMMENU_FILE_NEW:
-				//case IDC_C_RESET:
 					ResetWatches();
 					return true;
 				case IDC_C_WATCH_REMOVE:
@@ -1111,17 +1018,10 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				case IDC_C_ADDCHEAT:
 				{
 					watchIndex = ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST)) | (1 << 24);
-//					DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) searchIndex);
+//					DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_EDITCHEAT), hDlg, (DLGPROC) EditCheatProc,(LPARAM) searchIndex);	//TODO: made a IDD_EDITCHEAT dialog, and EditCheatProc (are they in GENS?) and integrate into cheats system
 					break;
 				}
-				case IDOK:
-				case IDCANCEL: //TODO this immediately activates and closes the window if you uncomment it
-/*					if (Full_Screen)
-					{
-						while (ShowCursor(true) < 0);
-						while (ShowCursor(false) >= 0);
-					}*/
-//					DialogsOpen--;
+				case IDCANCEL:
 					RamWatchHWnd = NULL;
 					DragAcceptFiles(hDlg, FALSE);
 					EndDialog(hDlg, true);
@@ -1145,12 +1045,6 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 		}	break;
 
 		case WM_CLOSE:
-/*			if (Full_Screen)
-			{
-				while (ShowCursor(true) < 0);
-				while (ShowCursor(false) >= 0);
-			}*/
-//			DialogsOpen--;
 			RamWatchHWnd = NULL;
 			DragAcceptFiles(hDlg, FALSE);
 			EndDialog(hDlg, true);
