@@ -643,6 +643,7 @@ static int Open(const char *filename, const char *cflash_disk_image)
 
 static void Launch()
 {
+    GtkWidget *pause;
     desmume_resume();
 
     if(!regMainLoop) {
@@ -656,15 +657,22 @@ static void Launch()
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), TRUE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), TRUE);
+
+    pause = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/pause")));
+    gtk_widget_grab_focus(pause);
 }
 
 static void Pause()
 {
+    GtkWidget *run;
     desmume_pause();
     pStatusBar_Change("Paused");
 
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
+
+    run = gtk_bin_get_child(GTK_BIN(gtk_ui_manager_get_widget(ui_manager, "/ToolBar/run")));
+    gtk_widget_grab_focus(run);
 }
 
 static void LoadStateDialog()
