@@ -28,6 +28,8 @@
 #include "throttle.h"
 #include "../mic.h"
 #include "../movie.h"
+#include "ramwatch.h"
+#include "ram_search.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -127,7 +129,8 @@ void HK_StateLoadSlot(int num)
 	loadstate_slot(num);		//Loadstate
 	lastSaveState = num;		//Set last savestate used
 	SaveStateMessages(num, 1);	//Display state loaded message
-
+	Update_RAM_Watch();
+	Update_RAM_Search();
 	if(!wasPaused)
 		NDS_UnPause();
 	else
