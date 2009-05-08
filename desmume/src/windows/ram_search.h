@@ -1,3 +1,6 @@
+//RamSearch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
+//Authors: Upthorn, Nitsuja, adelikat
+
 #ifndef RAM_SEARCH_H
 #define RAM_SEARCH_H
 
