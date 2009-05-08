@@ -1,4 +1,5 @@
 
+#include "main.h"
 #include "resource.h"
 #include "common.h"
 #include "NDSSystem.h"
@@ -12,7 +13,7 @@
 HWND RamWatchHWnd;
 
 char Str_Tmp[1024];
-char Rom_Name[64] = "test";
+std::string Rom_Name;
 
 static HMENU ramwatchmenu;
 static HMENU rwrecentmenu;
@@ -445,7 +446,8 @@ int Change_File_S(char *Dest, char *Dir, char *Titre, char *Filter, char *Ext, H
 
 bool Save_Watches()
 {
-	strncpy(Str_Tmp,Rom_Name,512);
+	Rom_Name = GetRomName();
+	strncpy(Str_Tmp,Rom_Name.c_str(),512);
 	strcat(Str_Tmp,".wch");
 	if(Change_File_S(Str_Tmp, Gens_Path, "Save Watches", "GENs Watchlist\0*.wch\0All Files\0*.*\0\0", "wch", RamWatchHWnd))
 	{
@@ -578,7 +580,8 @@ int Change_File_L(char *Dest, char *Dir, char *Titre, char *Filter, char *Ext, H
 
 bool Load_Watches(bool clear)
 {
-	strncpy(Str_Tmp,Rom_Name,512);
+	Rom_Name = GetRomName();
+	strncpy(Str_Tmp,Rom_Name.c_str(),512);
 	strcat(Str_Tmp,".wch");
 	if(Change_File_L(Str_Tmp, Watch_Dir, "Load Watches", "GENs Watchlist\0*.wch\0All Files\0*.*\0\0", "wch", RamWatchHWnd))
 	{
