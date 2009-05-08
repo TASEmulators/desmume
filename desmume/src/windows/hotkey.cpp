@@ -131,8 +131,8 @@ void HK_StateLoadSlot(int num)
 	lastSaveState = num;		//Set last savestate used
 	SaveStateMessages(num, 1);	//Display state loaded message
 
-	Update_RAM_Watch();
-	Update_RAM_Search();
+	Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
+	Update_RAM_Search();		//main.cpp - case IDM_STATE_LOAD: also calls these functions
 
 	if(!wasPaused)
 		NDS_UnPause();
