@@ -798,12 +798,12 @@ static void OpenNdsDialog()
     pParent = GTK_WIDGET(pWindow);
 
     pFilter_nds = gtk_file_filter_new();
-    gtk_file_filter_add_pattern(pFilter_nds, "*.nds");
+    gtk_file_filter_add_pattern(pFilter_nds, "*.[nN][dD][sS]");
 #ifdef HAVE_LIBZ
-    gtk_file_filter_add_pattern(pFilter_nds, "*.nds.gz");
+    gtk_file_filter_add_pattern(pFilter_nds, "*.[nN][dD][sS].gz");
 #endif
 #ifdef HAVE_LIBZZIP
-    gtk_file_filter_add_pattern(pFilter_nds, "*.nds.zip");
+    gtk_file_filter_add_pattern(pFilter_nds, "*.[nN][dD][sS].zip");
 #endif
     gtk_file_filter_set_name(pFilter_nds, "Nds binary (.nds)");
 
