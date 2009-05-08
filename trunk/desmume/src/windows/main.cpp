@@ -100,6 +100,11 @@ const unsigned int baseid = IDM_RECENT_RESERVED1;			//Base identifier for the re
 static HMENU recentromsmenu;				//Handle to the recent ROMs submenu
 //--------------------------------------
 
+//----RomName---------------------------
+string RomName = "";				//Stores the name of the Rom currently loaded in memory
+void SetRomName(char *filename);
+//--------------------------------------
+
 void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding menu items
 
 static HMENU mainMenu; //Holds handle to the main DeSmuME menu
@@ -1374,7 +1379,7 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 			OpenRWRecentFile(0);	
 			RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), MainWindow->getHWnd(), (DLGPROC) RamWatchProc);
 		}
-		
+		SetRomName(filename);
 		return TRUE;		
 	}
 	INFO("Loading %s FAILED.\n",filename);
@@ -3986,4 +3991,37 @@ void UpdateHotkeyAssignments()
 HWND GetMainHWND()
 {
 	return MainWindow->getHWnd();
+}
+
+/***
+ * Author: adelikat
+ * Date Added: May 8, 2009
+ * Description: Sets the Global variable RomName
+ * Known Usage:
+ *				LoadRom
+ **/
+void SetRomName(char *filename)
+{
+	string str = filename;
+	
+	//Truncate the path from filename
+	int x = str.find_last_of("/\\");
+	if (x > 0)
+		str = str.substr(x+1);
+	RomName = str;
+	int y = 0;
+}
+
+/***
+ * Author: adelikat
+ * Date Added: May 8, 2009
+ * Description: Returns the Global variable RomName
+ * Known Usage:
+ *				included in main.h
+ *				ramwatch.cpp - SaveStrings
+ **/
+
+const char *GetRomName()
+{
+	return RomName.c_str();
 }
