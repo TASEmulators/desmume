@@ -611,7 +611,7 @@ void TexCache_Reset()
 	if(TexCache_texMAP == NULL) TexCache_texMAP = new u8[1024*2048*4]; 
 	if(texcache == NULL) texcache = new TextureCache[MAX_TEXTURE+1];
 
-	memset(texcache,0,sizeof(texcache));
+	memset(texcache,0,sizeof(TextureCache[MAX_TEXTURE+1]));
 
 	texcache_start=0;
 	texcache_stop=MAX_TEXTURE<<1;
