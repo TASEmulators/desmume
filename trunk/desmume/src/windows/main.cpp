@@ -4009,7 +4009,6 @@ void SetRomName(char *filename)
 	if (x > 0)
 		str = str.substr(x+1);
 	RomName = str;
-	int y = 0;
 }
 
 /***
