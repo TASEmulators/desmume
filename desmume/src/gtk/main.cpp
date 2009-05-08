@@ -868,14 +868,12 @@ static void Reset()
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
 #define SCREEN_BYTES_PER_PIXEL 3
-static inline void gpu_screen_to_rgb(u8 * rgb, int size)
+static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 {
     u16 gpu_pixel;
     int rot = nds_screen_rotation_angle;
-    int bytesize = size * SCREEN_BYTES_PER_PIXEL;
-    gint W, H;
-    gtk_widget_get_size_request(pDrawingArea, &W, &H);
-    memset(rgb, 0, bytesize);
+
+    memset(rgb, 0, size);
     for (int i = 0; i < 256; i++) {
         for (int j = 0; j < 384; j++) {
 
@@ -894,11 +892,11 @@ static inline void gpu_screen_to_rgb(u8 * rgb, int size)
                 break;
             case 180:
             case 90:
-                *(rgb + bytesize - offset - 3) =
+                *(rgb + size - offset - 3) =
                     ((gpu_pixel >> 0) & 0x1f) << 3;
-                *(rgb + bytesize - offset - 2) =
+                *(rgb + size - offset - 2) =
                     ((gpu_pixel >> 5) & 0x1f) << 3;
-                *(rgb + bytesize - offset - 1) =
+                *(rgb + size - offset - 1) =
                     ((gpu_pixel >> 10) & 0x1f) << 3;
                 break;
             }
@@ -918,7 +916,7 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
     nds_screen_size_ratio = W / (float)widget->allocation.width;
     ssize = 1 / (float)nds_screen_size_ratio;
 
-    gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE);
+    gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
     origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 0, 8, W, H, W*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
     if(nds_screen_size_ratio != 1.0) {
         resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*W, ssize*H, Interpolation);
