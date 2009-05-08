@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <SDL.h>
 
 #include "types.h"
@@ -41,6 +42,7 @@
 #include "rasterize.h"
 #include "saves.h"
 #include "mic.h"
+#include "dTool.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -57,7 +59,6 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
-#include <gdk/gdkkeysyms.h>
 
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
@@ -1409,8 +1410,6 @@ static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 }
 
 /////////////////////////////// TOOLS MANAGEMENT ///////////////////////////////
-
-#include "dTool.h"
 
 extern const dTool_t *dTools_list[];
 extern const int dTools_list_size;
