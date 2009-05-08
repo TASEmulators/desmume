@@ -28,6 +28,8 @@
 #include "throttle.h"
 #include "../mic.h"
 #include "../movie.h"
+#include "ramwatch.h"		//In order to call UpdateRamWatch (for loadstate functions)
+#include "ram_search.h"		//In order to call UpdateRamSearch (for loadstate functions)
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -123,6 +125,8 @@ void HK_StateSaveSlot(int num)
 
 void HK_StateLoadSlot(int num)
 {
+	Update_RAM_Watch();
+	Update_RAM_Search();
 	BOOL wasPaused = paused;
 	NDS_Pause();
 	loadstate_slot(num);		//Loadstate
