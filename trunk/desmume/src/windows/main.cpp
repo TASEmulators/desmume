@@ -2845,6 +2845,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				}
 
 				savestate_load(SavName);
+				Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
+				Update_RAM_Search();		//hotkey.cpp - HK_StateLoadSlot also calls these functions
 				NDS_UnPause();
 			}
 			return 0;
