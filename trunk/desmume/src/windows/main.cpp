@@ -1368,9 +1368,12 @@ BOOL LoadROM(char * filename, const char *cflash_disk_image)
 		lagframecounter=0;
 		UpdateRecentRoms(filename);
 		osd->setRotate(GPU_rotation);
-		if (AutoRWLoad)		//Open Ram Watch if its auto-load setting is checked
+		if (AutoRWLoad)
+		{
+			//Open Ram Watch if its auto-load setting is checked
 			OpenRWRecentFile(0);	
 			RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), MainWindow->getHWnd(), (DLGPROC) RamWatchProc);
+		}
 		
 		return TRUE;		
 	}
