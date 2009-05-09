@@ -4001,40 +4001,36 @@ void UpdateHotkeyAssignments()
 {
 	extern void TranslateKey(WORD keyz,char *out);	//adelikat: Yeah hackey
 	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
-	char itemText[255];	//To get the current text from a mnue item
+	char str[255];		//Temp string 
 	string text;		//Used to manipulate menu item text
 	string keyname;		//Used to hold the name of the hotkey
 	int truncate;		//Used to truncate the hotkey config from the menu item
-	char tempKey[100];	//Used to poss to TranslateKey
 	//-------------------------------FILE---------------------------------------
 	
 	
 	//Open ROM
-	GetMenuString(mainMenu,IDM_OPEN, itemText, 255, IDM_OPEN);	//Get menu item text
-	text = itemText;											//Store in string object
-	truncate = text.find("\t");									//Find the tab
-	if (truncate >= 1)											//Truncate if it exists
+	GetMenuString(mainMenu,IDM_OPEN, str, 255, IDM_OPEN);	//Get menu item text
+	text = str;												//Store in string object
+	truncate = text.find("\t");								//Find the tab
+	if (truncate >= 1)										//Truncate if it exists
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.OpenROM.key, tempKey);
-	keyname = tempKey;
+	TranslateKey(CustomKeys.OpenROM.key, str);
+	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.OpenROM.modifiers));
-	text.append("\t");
-	text.append(keyname);
+	text.append("\t" + keyname);
 	ChangeMenuItemText(IDM_OPEN, text);
 
 	//Save Screenshot As...
-	GetMenuString(mainMenu,IDM_PRINTSCREEN, itemText, 255, IDM_PRINTSCREEN);	//Get menu item text
-	text = itemText;											//Store in string object
-	truncate = text.find("\t");									//Find the tab
-	if (truncate >= 1)											//Truncate if it exists
+	GetMenuString(mainMenu,IDM_PRINTSCREEN, str, 255, IDM_PRINTSCREEN);	
+	text = str;
+	truncate = text.find("\t");
+	if (truncate >= 1)
 		text = text.substr(0,truncate);
-	TranslateKey(CustomKeys.PrintScreen.key, tempKey);
-	keyname = tempKey;							//Get key & modifiers
+	TranslateKey(CustomKeys.PrintScreen.key, str);
+	keyname = str;
 	keyname.insert(0,GetModifierString(CustomKeys.PrintScreen.modifiers));
-	text.append("\t");
-	text.append(keyname);
+	text.append("\t" + keyname);
 	ChangeMenuItemText(IDM_PRINTSCREEN, text);
-
 }
 
 
