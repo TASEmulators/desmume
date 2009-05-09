@@ -3999,21 +3999,24 @@ const char* GetModifierString(int num)
 //		     However, a Menu item in the Resource file must NOT have a /t (tab) in its caption.
 void UpdateHotkeyAssignments()
 {
+	extern void TranslateKey(WORD keyz,char *out);	//adelikat: Yeah hackey
 	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
 	char itemText[255];	//To get the current text from a mnue item
 	string text;		//Used to manipulate menu item text
 	string keyname;		//Used to hold the name of the hotkey
 	int truncate;		//Used to truncate the hotkey config from the menu item
-
+	char tempKey[100];	//Used to poss to TranslateKey
 	//-------------------------------FILE---------------------------------------
-
+	
+	
 	//Open ROM
 	GetMenuString(mainMenu,IDM_OPEN, itemText, 255, IDM_OPEN);	//Get menu item text
 	text = itemText;											//Store in string object
 	truncate = text.find("\t");									//Find the tab
 	if (truncate >= 1)											//Truncate if it exists
 		text = text.substr(0,truncate);
-	keyname = CustomKeys.OpenROM.key;							//Get key & modifiers
+	TranslateKey(CustomKeys.OpenROM.key, tempKey);
+	keyname = tempKey;
 	keyname.insert(0,GetModifierString(CustomKeys.OpenROM.modifiers));
 	text.append("\t");
 	text.append(keyname);
@@ -4025,11 +4028,13 @@ void UpdateHotkeyAssignments()
 	truncate = text.find("\t");									//Find the tab
 	if (truncate >= 1)											//Truncate if it exists
 		text = text.substr(0,truncate);
-	keyname = CustomKeys.PrintScreen.key;							//Get key & modifiers
+	TranslateKey(CustomKeys.PrintScreen.key, tempKey);
+	keyname = tempKey;							//Get key & modifiers
 	keyname.insert(0,GetModifierString(CustomKeys.PrintScreen.modifiers));
 	text.append("\t");
 	text.append(keyname);
 	ChangeMenuItemText(IDM_PRINTSCREEN, text);
+
 }
 
 
