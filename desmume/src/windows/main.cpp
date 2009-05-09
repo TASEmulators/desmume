@@ -4031,6 +4031,110 @@ void UpdateHotkeyAssignments()
 	keyname.insert(0,GetModifierString(CustomKeys.PrintScreen.modifiers));
 	text.append("\t" + keyname);
 	ChangeMenuItemText(IDM_PRINTSCREEN, text);
+
+	//adelikat: Why don't these work?  GetMenuString returns null for these IDs yet those are the valid ID numbers
+	/*
+	//Record AVI
+	GetMenuString(mainMenu,IDM_FILE_RECORDAVI, str, 255, IDM_FILE_RECORDAVI);	
+	text = str;
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.RecordAVI.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.RecordAVI.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(IDM_FILE_RECORDAVI, text);
+
+	//Stop AVI
+	GetMenuString(mainMenu,IDM_FILE_STOPAVI, str, 255, IDM_FILE_STOPAVI);	
+	text = str;
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.StopAVI.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.StopAVI.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(IDM_FILE_STOPAVI, text);
+*/
+	
+	//-------------------------------EMULATION----------------------------------
+
+	//Pause
+	GetMenuString(mainMenu,IDM_PAUSE, str, 255, IDM_PAUSE);	
+	text = str;								
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.Pause.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.Pause.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(IDM_PAUSE, text);
+
+	//Reset
+	GetMenuString(mainMenu,IDM_RESET, str, 255, IDM_RESET);
+	text = str;	
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.Reset.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.Reset.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(IDM_RESET, text);
+
+	//-------------------------------EMULATION----------------------------------
+/*
+	//Display Frame Counter
+	GetMenuString(mainMenu,ID_VIEW_FRAMECOUNTER, str, 255, ID_VIEW_FRAMECOUNTER);
+	text = str;	
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.ToggleFrameCounter.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.ToggleFrameCounter.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(ID_VIEW_FRAMECOUNTER, text);
+
+	//Display FPS
+	GetMenuString(mainMenu,ID_VIEW_DISPLAYFPS, str, 255, ID_VIEW_DISPLAYFPS);
+	text = str;	
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.ToggleFPS.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.ToggleFPS.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(ID_VIEW_DISPLAYFPS, text);
+
+	//Display Input
+	GetMenuString(mainMenu,ID_VIEW_DISPLAYINPUT, str, 255, ID_VIEW_DISPLAYINPUT);
+	text = str;	
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.ToggleInput.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.ToggleInput.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(ID_VIEW_DISPLAYINPUT, text);
+
+	//Display Lag Counter
+	GetMenuString(mainMenu,ID_VIEW_DISPLAYLAG, str, 255, ID_VIEW_DISPLAYLAG);
+	text = str;	
+	truncate = text.find("\t");
+	if (truncate >= 1)
+		text = text.substr(0,truncate);
+	TranslateKey(CustomKeys.ToggleLag.key, str);
+	keyname = str;
+	keyname.insert(0,GetModifierString(CustomKeys.ToggleLag.modifiers));
+	text.append("\t" + keyname);
+	ChangeMenuItemText(ID_VIEW_DISPLAYLAG, text);
+*/
 }
 
 
