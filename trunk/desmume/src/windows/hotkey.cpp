@@ -295,7 +295,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->Pause.code = "Pause";
 	keys->Pause.name = L"Pause";
 	keys->Pause.page = HOTKEY_PAGE_MAIN;
-	keys->Pause.key = VK_SPACE;
+	keys->Pause.key = VK_PAUSE;
 
 	keys->FrameAdvance.handleKeyDown = HK_FrameAdvanceKeyDown;
 	keys->FrameAdvance.handleKeyUp = HK_FrameAdvanceKeyUp;
