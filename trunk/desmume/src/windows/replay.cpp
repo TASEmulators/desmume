@@ -140,7 +140,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 //Show the play movie dialog and play a movie
 void Replay_LoadMovie()
 {
-	char* fn = (char*)DialogBoxParam(hAppInst, "IDD_REPLAYINP", GetMainHWND(), ReplayDialogProc, false);
+	char* fn = (char*)DialogBoxParam(hAppInst, "IDD_REPLAYINP", MainWindow->getHWnd(), ReplayDialogProc, false);
 
 	if(fn)
 	{
@@ -153,5 +153,5 @@ void Replay_LoadMovie()
 //Show the record movie dialog and record a movie.
 void MovieRecordTo()
 {
-	DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_RECORDMOVIE), GetMainHWND(), RecordDialogProc, (LPARAM)0);
+	DialogBoxParam(hAppInst, MAKEINTRESOURCE(IDD_RECORDMOVIE), MainWindow->getHWnd(), RecordDialogProc, (LPARAM)0);
 }

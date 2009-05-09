@@ -1,7 +1,7 @@
 //RamWatch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
 //Authors: Upthorn, Nitsuja, adelikat
 
-#include "main.h"
+//#include "main.h"
 #include "resource.h"
 #include "common.h"
 #include "NDSSystem.h"
@@ -217,7 +217,7 @@ bool AskSave()
 	//returns false only if a save was attempted but failed or was cancelled
 	if (RWfileChanged)
 	{
-		HWND Hwnd = GetMainHWND();
+		HWND Hwnd = MainWindow->getHWnd();
 		int answer = MessageBox(Hwnd, "Save Changes?", "Ram Watch", MB_YESNOCANCEL);
 		if(answer == IDYES)
 			if(!QuickSaveWatches())
