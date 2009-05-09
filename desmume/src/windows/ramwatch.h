@@ -1,3 +1,6 @@
+//RamWatch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
+//Authors: Upthorn, Nitsuja, adelikat
+
 #ifndef RAMWATCH_H
 #define RAMWATCH_H
 #include "windows.h"

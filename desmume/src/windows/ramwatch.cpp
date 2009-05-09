@@ -31,8 +31,6 @@ int ramw_x, ramw_y;			//Used to store ramwatch dialog window positions
 AddressWatcher rswatches[MAX_WATCH_COUNT];
 int WatchCount=0;
 
-#define MESSAGEBOXPARENT (RamWatchHWnd ? RamWatchHWnd : MainWindow->getHWnd())
-
 bool QuickSaveWatches();
 bool ResetWatches();
 
@@ -217,7 +215,8 @@ bool AskSave()
 	//returns false only if a save was attempted but failed or was cancelled
 	if (RWfileChanged)
 	{
-		int answer = MessageBox(MESSAGEBOXPARENT, "Save Changes?", "Ram Watch", MB_YESNOCANCEL);
+		HWND Hwnd = GetMainHWND();
+		int answer = MessageBox(Hwnd, "Save Changes?", "Ram Watch", MB_YESNOCANCEL);
 		if(answer == IDYES)
 			if(!QuickSaveWatches())
 				return false;

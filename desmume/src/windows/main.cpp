@@ -2587,7 +2587,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	case WM_CLOSE:
 		{
 			NDS_Pause();
-			if (AskSave())	//Ask Save comes from the Ram Watch dialog.  The dialog uses .wch files and this allows asks the user if he wants to save changes first, should he cancel, closing will not happen
+			if (true/*AskSave()*/)	//Ask Save comes from the Ram Watch dialog.  The dialog uses .wch files and this allows asks the user if he wants to save changes first, should he cancel, closing will not happen
 			{
 				//Save window size
 				WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
@@ -2812,7 +2812,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			if(SPU_user) SPU_user->ShutUp();
 			return 0;
 		case IDM_QUIT:
-			DestroyWindow(hwnd);
+			if (AskSave()) DestroyWindow(hwnd);
 			return 0;
 		case IDM_OPEN:
 			return OpenFile();
