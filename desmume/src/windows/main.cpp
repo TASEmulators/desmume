@@ -4018,6 +4018,18 @@ void UpdateHotkeyAssignments()
 	text.append("\t");
 	text.append(keyname);
 	ChangeMenuItemText(IDM_OPEN, text);
+
+	//Save Screenshot As...
+	GetMenuString(mainMenu,IDM_PRINTSCREEN, itemText, 255, IDM_PRINTSCREEN);	//Get menu item text
+	text = itemText;											//Store in string object
+	truncate = text.find("\t");									//Find the tab
+	if (truncate >= 1)											//Truncate if it exists
+		text = text.substr(0,truncate);
+	keyname = CustomKeys.PrintScreen.key;							//Get key & modifiers
+	keyname.insert(0,GetModifierString(CustomKeys.PrintScreen.modifiers));
+	text.append("\t");
+	text.append(keyname);
+	ChangeMenuItemText(IDM_PRINTSCREEN, text);
 }
 
 
