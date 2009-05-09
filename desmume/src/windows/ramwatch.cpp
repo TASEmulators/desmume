@@ -14,6 +14,8 @@
 
 HWND RamWatchHWnd;
 
+#define MESSAGEBOXPARENT (RamWatchHWnd ? RamWatchHWnd : MainWindow->getHWnd())
+
 char Str_Tmp[1024];
 std::string Rom_Name;
 
