@@ -3969,6 +3969,31 @@ void ChangeMenuItemText(int menuitem, string text)
 	SetMenuItemInfo(mainMenu, menuitem, FALSE, &moo);
 }
 
+const char* GetModifierString(int num)
+{
+	switch (num)
+	{
+	case 0:
+		return "";
+	case 1:
+		return "Alt+";
+	case 2:
+		return "Ctrl+";
+	case 3:
+		return "Ctrl+Alt+";
+	case 4:
+		return "Shift+";
+	case 5:
+		return "Alt+Shift+";
+	case 6:
+		return "Ctrl+Shift+";
+	case 7:
+		return "Ctrl+Alt+Shift+";
+	default:
+		return "";
+	}
+}
+
 //adelikat:  This function find the current hotkey assignments for corresponding menu items
 //			 and appends it to the menu item.  This function works correctly for all language menus
 //		     However, a Menu item in the Resource file must NOT have a /t (tab) in its caption.
@@ -3977,6 +4002,7 @@ void UpdateHotkeyAssignments()
 	//Update all menu items that can be called from a hotkey to include the current hotkey assignment
 	char itemText[255];	//To get the current text from a mnue item
 	string text;		//Used to manipulate menu item text
+	string keyname;		//Used to hold the name of the hotkey
 	int truncate;		//Used to truncate the hotkey config from the menu item
 
 	//-------------------------------FILE---------------------------------------
@@ -3986,10 +4012,16 @@ void UpdateHotkeyAssignments()
 	text = itemText;											//Store in string object
 	truncate = text.find("\t");									//Find the tab
 	if (truncate >= 1)											//Truncate if it exists
-		text = text.substr(0,truncate);
-	text.append("\tCtrl+O");	//TODO: Append actual hotkey assignment
+		text = text.substr(0,truncate+1);
+	keyname = CustomKeys.OpenROM.key;							//Get key & modifiers
+	keyname.insert(0,GetModifierString(CustomKeys.OpenROM.modifiers));
+	text.append(keyname);
 	ChangeMenuItemText(IDM_OPEN, text);		//Set Menu item text
+
+
 }
+
+
 
 /***
  * Author: adelikat
