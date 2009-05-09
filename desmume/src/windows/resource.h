@@ -484,7 +484,6 @@
 #define IDD_IOREG_VIEW_DMA                      10006
 #define IDD_IOREG_VIEW_TIMERS                   10007
 #define IDD_IOREG_VIEW_IPC_ROM                  10008
-#define IDC_C_WATCHDUPLICATE                    40000
 #define IDM_SCREENSEP_NONE                      40000
 #define IDM_SCREENSEP_BORDER                    40001
 #define IDM_SCREENSEP_NDSGAP                    40002

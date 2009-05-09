@@ -3988,11 +3988,6 @@ void UpdateHotkeyAssignments()
 	ChangeMenuItemText(IDM_OPEN, text);		//Set Menu item text
 }
 
-HWND GetMainHWND()
-{
-	return MainWindow->getHWnd();
-}
-
 /***
  * Author: adelikat
  * Date Added: May 8, 2009

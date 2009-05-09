@@ -31,8 +31,5 @@ extern bool ShowLagFrameCounter;
 extern int backupmemorytype;
 extern u32 backupmemorysize;
 
-HWND GetMainHWND();			//adelikat: returns the main window handle
-
-const char* GetRomName();	//adelikat: return the name of the Rom currently loaded
 
 #endif
