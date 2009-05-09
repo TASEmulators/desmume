@@ -4012,15 +4012,13 @@ void UpdateHotkeyAssignments()
 	text = itemText;											//Store in string object
 	truncate = text.find("\t");									//Find the tab
 	if (truncate >= 1)											//Truncate if it exists
-		text = text.substr(0,truncate+1);
+		text = text.substr(0,truncate);
 	keyname = CustomKeys.OpenROM.key;							//Get key & modifiers
 	keyname.insert(0,GetModifierString(CustomKeys.OpenROM.modifiers));
+	text.append("\t");
 	text.append(keyname);
-	ChangeMenuItemText(IDM_OPEN, text);		//Set Menu item text
-
-
+	ChangeMenuItemText(IDM_OPEN, text);
 }
-
 
 
 /***
