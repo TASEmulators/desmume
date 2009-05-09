@@ -1,3 +1,6 @@
+//RamSearch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
+//Authors: Upthorn, Nitsuja, adelikat
+
 // A few notes about this implementation of a RAM search window:
 //
 // Speed of update was one of the highest priories.
