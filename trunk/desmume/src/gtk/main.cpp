@@ -343,6 +343,7 @@ struct configured_features {
 
   const char *nds_file;
   const char *cflash_disk_image_file;
+  int timeout;
 };
 
 static void
@@ -363,6 +364,8 @@ init_configured_features( struct configured_features *config)
   config->savetype = 0;
 
   config->cflash_disk_image_file = NULL;
+
+  config->timeout = 0;
 
   /* use the default language */
   config->firmware_language = -1;
@@ -405,6 +408,7 @@ fill_configured_features( struct configured_features *config,
     { "arm7gdb", 0, 0, G_OPTION_ARG_INT, &config->arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
 #endif
     { "cflash", 0, 0, G_OPTION_ARG_FILENAME, &config->cflash_disk_image_file, "Enable disk image GBAMP compact flash emulation", "PATH_TO_DISK_IMAGE"},
+    { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit desmume after the specified seconds for testing purpose.", "SECONDS"},
     { NULL }
   };
   GOptionContext *ctx;
@@ -1617,6 +1621,14 @@ static void desmume_gtk_menu_tools (GtkActionGroup *ag)
     }
 }
 
+static gboolean timeout_exit_cb(gpointer data)
+{
+    gtk_main_quit();
+    INFO("Quit after %d seconds timeout\n", GPOINTER_TO_INT(data));
+
+    return FALSE;
+}
+
 static int
 common_gtk_main( struct configured_features *my_config)
 {
@@ -1852,6 +1864,10 @@ common_gtk_main( struct configured_features *my_config)
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         }
+    }
+
+    if (my_config->timeout > 0) {
+        g_timeout_add_seconds(my_config->timeout, timeout_exit_cb, GINT_TO_POINTER(my_config->timeout));
     }
 
     /* Main loop */
