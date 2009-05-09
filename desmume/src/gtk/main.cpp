@@ -1269,42 +1269,22 @@ static void Modify_Layer(GtkToggleAction* action, gpointer data)
     case MAIN_BG_1:
     case MAIN_BG_2:
     case MAIN_BG_3:
-        if(active == TRUE) {
-            if (!MainScreen.gpu->dispBG[Layer])
-                GPU_addBack(MainScreen.gpu, Layer);
-        } else {
-            if (MainScreen.gpu->dispBG[Layer])
-                 GPU_remove(MainScreen.gpu, Layer);
-        }
-        break;
     case MAIN_OBJ:
         if(active == TRUE) {
-            if (!MainScreen.gpu->dispOBJ)
-                GPU_addBack(MainScreen.gpu, Layer);
-        } else { 
-            if (MainScreen.gpu->dispOBJ)
-                GPU_remove(MainScreen.gpu, Layer);
+            GPU_addBack(MainScreen.gpu, Layer);
+        } else {
+            GPU_remove(MainScreen.gpu, Layer);
         }
         break;
     case SUB_BG_0:
     case SUB_BG_1:
     case SUB_BG_2:
     case SUB_BG_3:
-        if(active == TRUE) {
-            if (!SubScreen.gpu->dispBG[Layer-SUB_BG_0])
-                GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
-        } else { 
-            if (SubScreen.gpu->dispBG[Layer-SUB_BG_0])
-                GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
-        }
-        break;
     case SUB_OBJ:
         if(active == TRUE) {
-            if (!SubScreen.gpu->dispOBJ)
-                GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
+            GPU_addBack(SubScreen.gpu, Layer-SUB_BG_0);
         } else { 
-            if (SubScreen.gpu->dispOBJ)
-                GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
+            GPU_remove(SubScreen.gpu, Layer-SUB_BG_0);
         }
         break;
     default:
