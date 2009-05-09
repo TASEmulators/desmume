@@ -2659,7 +2659,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		//break;
 
 	case WM_KEYDOWN:
-		break;
+		if(wParam != VK_PAUSE)
+			break;
 	case WM_SYSKEYDOWN:
 	case WM_CUSTKEYDOWN:
 		{
@@ -2669,6 +2670,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		}
 	case WM_KEYUP:
+		if(wParam != VK_PAUSE)
+			break;
 	case WM_SYSKEYUP:
 	case WM_CUSTKEYUP:
 		{
