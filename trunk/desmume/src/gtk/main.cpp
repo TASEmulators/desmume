@@ -66,6 +66,7 @@ static u32 backupmemorysize=1;
 static const char *bad_glob_cflash_disk_image_file;
 
 #define SCREENS_PIXEL_SIZE (256*192*2)
+#define SCREEN_BYTES_PER_PIXEL 3
 
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
@@ -325,8 +326,14 @@ GPU3DInterface *core3DList[] = {
 #endif
 };
 
+struct modify_key_ctx {
+    gint mk_key_chosen;
+    GtkWidget *label;
+};
+
 static u16 Cur_Keypad = 0;
 static u16 gdk_shift_pressed = 0;
+u16 Keypad_Temp[NB_KEYS];
 
 struct configured_features {
   int load_slot;
@@ -503,7 +510,6 @@ joinThread_gdb( void *thread_handle) {
 #endif
 
 
-u16 Keypad_Temp[NB_KEYS];
 
 static int Write_ConfigFile(const gchar *config_file)
 {
@@ -880,7 +886,6 @@ static void Reset()
 
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
-#define SCREEN_BYTES_PER_PIXEL 3
 static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 {
     u16 gpu_pixel;
@@ -945,7 +950,7 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
 
 /////////////////////////////// KEYS AND STYLUS UPDATE ///////////////////////////////////////
 
-inline static void rotoscaled_touchpos(gint x, gint y)
+static inline void rotoscaled_touchpos(gint x, gint y)
 {
     int X, Y, rot, inv;
     u16 EmuX, EmuY;
@@ -1122,11 +1127,6 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
 
-struct modify_key_ctx {
-    gint mk_key_chosen;
-    GtkWidget *label;
-};
-
 static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e, struct modify_key_ctx *ctx)
 {
     gchar *YouPressed;
@@ -1217,8 +1217,6 @@ static void Edit_Controls()
 
 }
 
-/////////////////////////////// LAYER HIDING /////////////////////////////////
-
 static void SetRotation(GtkAction* action, gpointer data)
 {
     const gchar *angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
@@ -1292,8 +1290,6 @@ static void Modify_Layer(GtkToggleAction* action, gpointer data)
     }
 }
 
-/////////////////////////////// PRINTSCREEN /////////////////////////////////
-
 static void Printscreen()
 {
     GdkPixbuf *screenshot;
@@ -1330,8 +1326,6 @@ static void Printscreen()
     g_object_unref(screenshot);
     g_free(filename);
 }
-
-/////////////////////////////// DS CONFIGURATION //////////////////////////////////
 
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile()
@@ -1392,10 +1386,6 @@ static void Modify_Interpolation(GtkAction *action, GtkRadioAction *current)
     Interpolation = (i == 0 ? GDK_INTERP_NEAREST : GDK_INTERP_BILINEAR);
 }
 
-/////////////////////////////// FRAMESKIP /////////////////////////////////
-
-#define MAX_FRAMESKIP 10
-
 static void Modify_Frameskip(GtkAction *action, GtkRadioAction *current)
 {
     Frameskip = gtk_radio_action_get_current_value(current) ;
@@ -1427,7 +1417,6 @@ void dTool_CloseCallback(int tool)
     dTools_running[tool] = FALSE;
 }
 
-/////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
 static inline void _updateDTools()
 {
@@ -1438,6 +1427,8 @@ static inline void _updateDTools()
         if(dTools_running[i]) { dTools_list[i]->update(); }
     }
 }
+
+/////////////////////////////// MAIN EMULATOR LOOP ///////////////////////////////
 
 gboolean EmuLoop(gpointer data)
 {
