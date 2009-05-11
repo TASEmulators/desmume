@@ -389,14 +389,14 @@ template<> unsigned char ReadBigEndian(const unsigned char* data) { return *data
 template<typename stepType, typename compareType>
 compareType GetPrevValueFromVirtualIndex(unsigned int virtualIndex)
 {
-	return ReadBigEndian<compareType>(buffers->s_prevValues + virtualIndex);
-	//return *(compareType*)(s_prevValues+virtualIndex);
+//	return ReadBigEndian<compareType>(buffers->s_prevValues + virtualIndex);
+	return *(compareType*)(buffers->s_prevValues+virtualIndex);
 }
 template<typename stepType, typename compareType>
 compareType GetCurValueFromVirtualIndex(unsigned int virtualIndex)
 {
-	return ReadBigEndian<compareType>(buffers->s_curValues + virtualIndex);
-//	return *(compareType*)(s_curValues+virtualIndex);
+//	return ReadBigEndian<compareType>(buffers->s_curValues + virtualIndex);
+	return *(compareType*)(buffers->s_curValues+virtualIndex);
 }
 template<typename stepType, typename compareType>
 unsigned short GetNumChangesFromVirtualIndex(unsigned int virtualIndex)
