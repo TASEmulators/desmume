@@ -59,6 +59,7 @@ GKeyFile *desmume_config_read_file()
 
     g_free(config_file);
 
+    load_default_config(gtk_kb_cfg);
     desmume_config_read_keys(keyfile);
     desmume_config_read_joykeys(keyfile);
 
@@ -113,13 +114,8 @@ gboolean desmume_config_read_keys(GKeyFile *keyfile)
 {
     GError *error = NULL;
 
-    if (!g_key_file_has_group(keyfile, "KEYS")) {
-      for (int i = 0; i < NB_KEYS; i++) {
-        keyboard_cfg[i] = gtk_kb_cfg[i];
-      }
-      desmume_config_update_keys(keyfile);
-      return TRUE;
-    }
+    if (!g_key_file_has_group(keyfile, "KEYS"))
+        return TRUE;
 
     for (int i = 0; i < NB_KEYS; i++) {
         keyboard_cfg[i] = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
@@ -136,8 +132,8 @@ gboolean desmume_config_read_joykeys(GKeyFile *keyfile)
 {
     GError *error = NULL;
 
-    if (!g_key_file_has_group(keyfile, "KEYS"))
-      return FALSE;
+    if (!g_key_file_has_group(keyfile, "JOYKEYS"))
+        return TRUE;
 
     for (int i = 0; i < NB_KEYS; i++) {
         joypad_cfg[i] = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
