@@ -1,6 +1,6 @@
 /* main.c - this file is part of DeSmuME
  *
- * Copyright (C) 2006,2007 DeSmuME Team
+ * Copyright (C) 2006-2009 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
  *
  * This file is free software; you can redistribute it and/or modify
@@ -43,6 +43,7 @@
 #include "saves.h"
 #include "mic.h"
 #include "dTool.h"
+#include "desmume_config.h"
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -71,24 +72,6 @@ static const char *bad_glob_cflash_disk_image_file;
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
 static int gtk_fps_limiter_disabled;
-
-const u16 gtk_kb_cfg[NB_KEYS] =
-  {
-    GDK_x,         // A
-    GDK_z,         // B
-    GDK_Shift_R,   // select
-    GDK_Return,    // start
-    GDK_Right,     // Right
-    GDK_Left,      // Left
-    GDK_Up,        // Up
-    GDK_Down,      // Down       
-    GDK_w,         // R
-    GDK_q,         // L
-    GDK_s,         // X
-    GDK_a,         // Y
-    GDK_p,         // DEBUG
-    GDK_o          // BOOST
-  };    
 
 enum {
     MAIN_BG_0 = 0,
@@ -326,6 +309,8 @@ GPU3DInterface *core3DList[] = {
 #endif
 };
 
+GKeyFile *keyfile;
+
 struct modify_key_ctx {
     gint mk_key_chosen;
     GtkWidget *label;
@@ -508,70 +493,6 @@ joinThread_gdb( void *thread_handle) {
   g_thread_join( (GThread *)thread_handle);
 }
 #endif
-
-
-
-static int Write_ConfigFile(const gchar *config_file)
-{
-    int i;
-    GKeyFile * keyfile;
-    gchar *contents;
-    gboolean ret;
-
-    keyfile = g_key_file_new();
-
-    for(i = 0; i < NB_KEYS; i++) {
-        g_key_file_set_integer(keyfile, "KEYS", key_names[i], keyboard_cfg[i]);
-        g_key_file_set_integer(keyfile, "JOYKEYS", key_names[i], joypad_cfg[i]);
-    }
-
-    contents = g_key_file_to_data(keyfile, 0, 0);   
-    ret = g_file_set_contents(config_file, contents, -1, NULL);
-    if (!ret)
-        g_printerr("Failed to write to %s\n", config_file);
-    g_free (contents);
-
-    g_key_file_free(keyfile);
-
-    return 0;
-}
-
-static int Read_ConfigFile(const gchar *config_file)
-{
-    int i, tmp;
-    GKeyFile * keyfile = g_key_file_new();
-    GError * error = NULL;
-
-    load_default_config(gtk_kb_cfg);
-
-    g_key_file_load_from_file(keyfile, config_file, G_KEY_FILE_NONE, 0);
-
-    /* Load keyboard keys */
-    for(i = 0; i < NB_KEYS; i++) {
-        tmp = g_key_file_get_integer(keyfile, "KEYS", key_names[i], &error);
-        if (error != NULL) {
-                  g_error_free(error);
-                  error = NULL;
-        } else {
-                  keyboard_cfg[i] = tmp;
-        }
-    }
-
-    /* Load joystick keys */
-    for(i = 0; i < NB_KEYS; i++) {
-        tmp = g_key_file_get_integer(keyfile, "JOYKEYS", key_names[i], &error);
-        if (error != NULL) {
-                  g_error_free(error);
-                  error = NULL;
-        } else {
-                  joypad_cfg[i] = tmp;
-        }
-    }
-
-    g_key_file_free(keyfile);
-
-    return 0;
-}
 
 /************************ GTK *******************************/
 
@@ -1209,6 +1130,7 @@ static void Edit_Controls()
     switch (gtk_dialog_run(GTK_DIALOG(ecDialog))) {
     case GTK_RESPONSE_OK:
         memcpy(&keyboard_cfg, &Keypad_Temp, sizeof(keyboard_cfg));
+        desmume_config_update_keys(keyfile);
     case GTK_RESPONSE_CANCEL:
     case GTK_RESPONSE_NONE:
         break;
@@ -1600,11 +1522,11 @@ static gboolean timeout_exit_cb(gpointer data)
     return FALSE;
 }
 
+
 static int
 common_gtk_main( struct configured_features *my_config)
 {
     SDL_TimerID limiter_timer = NULL;
-    gchar *config_file;
 
     GtkAccelGroup * accel_group;
     GtkWidget *pVBox;
@@ -1694,8 +1616,7 @@ common_gtk_main( struct configured_features *my_config)
     if (dTools_running != NULL) 
       memset(dTools_running, FALSE, sizeof(BOOL) * dTools_list_size); 
 
-    config_file = g_build_filename(g_get_home_dir(), ".desmume.ini", NULL);
-    Read_ConfigFile(config_file);
+    keyfile = desmume_config_read_file();
 
     /* Create the window */
     pWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1861,8 +1782,7 @@ common_gtk_main( struct configured_features *my_config)
 
     SDL_Quit();
 
-    Write_ConfigFile(config_file);
-    g_free(config_file);
+    desmume_config_dispose(keyfile);
 
 #ifdef GDB_STUB
     if ( my_config->arm9_gdb_port != 0) {
