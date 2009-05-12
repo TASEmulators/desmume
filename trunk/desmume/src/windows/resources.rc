@@ -30,7 +30,7 @@ MENU_PRINCIPAL MENU
 {
     POPUP "&Fil"
     {
-        MENUITEM "&Åbn ROM...\tCtrl O", IDM_OPEN
+        MENUITEM "&Åbn ROM...", IDM_OPEN
         MENUITEM "Frisk ROM", ID_FILE_RECENTROM
         MENUITEM "ROM &Info", IDM_GAME_INFO
         MENUITEM SEPARATOR
@@ -200,7 +200,7 @@ MENU_PRINCIPAL MENU
 {
     POPUP "&File"
     {
-        MENUITEM "&Open ROM...\tCtrl O", IDM_OPEN
+        MENUITEM "&Open ROM...", IDM_OPEN
         MENUITEM "&Recent ROM", ID_FILE_RECENTROM
         MENUITEM "ROM &Info", IDM_GAME_INFO
         MENUITEM SEPARATOR
@@ -379,7 +379,7 @@ MENU_PRINCIPAL MENU
 {
     POPUP "&Fichier"
     {
-        MENUITEM "&Ouvrir ROM...\tCtrl O", IDM_OPEN
+        MENUITEM "&Ouvrir ROM...", IDM_OPEN
         MENUITEM "ROMs récentes", ID_FILE_RECENTROM
         MENUITEM "&Info ROM", IDM_GAME_INFO
         MENUITEM SEPARATOR
