@@ -46,7 +46,7 @@
    #include "stdint.h"
 #endif
 
-HWND RamSearchHWnd;
+HWND RamSearchHWnd = NULL;
 
 extern HWND RamWatchHWnd;
 
@@ -1175,7 +1175,7 @@ LRESULT CustomDraw (LPARAM lParam)
 //extern "C" int disableRamSearchUpdate;
 void Update_RAM_Search() //keeps RAM values up to date in the search and watch windows
 {
-
+	if (!RamSearchHWnd) return;
 //	if(disableRamSearchUpdate)
 //		return;
 
