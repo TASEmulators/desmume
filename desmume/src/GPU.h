@@ -35,6 +35,9 @@
 #include "GPU_osd.h"
 #include <iosfwd>
 
+//#undef FORCEINLINE
+//#define FORCEINLINE
+
 void gpu_savestate(std::ostream* os);
 bool gpu_loadstate(std::istream* is, int size);
 
@@ -621,7 +624,7 @@ struct GPU
 
 	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
 	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }
-	void modeRender(int layer);
+	template<bool MOSAIC> void modeRender(int layer);
 
 	DISPCAPCNT dispCapCnt;
 	BOOL LayersEnable[5];
@@ -705,6 +708,8 @@ struct GPU
 	u8	BLDALPHA_EVA;
 	u8	BLDALPHA_EVB;
 	u8	BLDY_EVY;
+	u16 *currentFadeInColors, *currentFadeOutColors;
+	bool blend2[8];
 
 	u8	MasterBrightMode;
 	u32 MasterBrightFactor;
@@ -748,6 +753,7 @@ struct GPU
 	typedef void (*Final3DColFunct)(GPU *gpu, int dstX, int srcX);
 
 	int setFinalColorBck_funcNum;
+	int bgFunc;
 	int setFinalColor3d_funcNum;
 	FinalOBJColFunct setFinalColorSpr;
 	//Final3DColFunct setFinalColor3D;
@@ -762,14 +768,14 @@ struct GPU
 	void setFinalColorBG(u16 color, u8 x);
 	void setFinalColor3d(int dstX, int srcX);
 
-	FORCEINLINE void setFinalBGColorSpecialNone(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialBlend(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialIncrease(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialDecrease(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialNoneWnd(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialBlendWnd(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialIncreaseWnd(u16 color, u8 x, bool blend1);
-	FORCEINLINE void setFinalBGColorSpecialDecreaseWnd(u16 color, u8 x, bool blend1);
+	FORCEINLINE void setFinalBGColorSpecialNone(u16 &color, u8 x);
+	FORCEINLINE void setFinalBGColorSpecialBlend(u16 &color, u8 x);
+	FORCEINLINE void setFinalBGColorSpecialIncrease(u16 &color, u8 x);
+	FORCEINLINE void setFinalBGColorSpecialDecrease(u16 &color, u8 x);
+	FORCEINLINE bool setFinalBGColorSpecialNoneWnd(u16 &color, u8 x);
+	FORCEINLINE bool setFinalBGColorSpecialBlendWnd(u16 &color, u8 x);
+	FORCEINLINE bool setFinalBGColorSpecialIncreaseWnd(u16 &color, u8 x);
+	FORCEINLINE bool setFinalBGColorSpecialDecreaseWnd(u16 &color, u8 x);
 	
 	FORCEINLINE void setFinal3DColorSpecialNone(int dstX, int srcX);
 	FORCEINLINE void setFinal3DColorSpecialBlend(int dstX, int srcX);
@@ -781,7 +787,7 @@ struct GPU
 	FORCEINLINE void setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX);
 
 
-	void __setFinalColorBck(u16 color, u8 x, bool opaque);
+	template<bool MOSAIC> void __setFinalColorBck(u16 color, u8 x, bool opaque);
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
 	u32 getAffineStart(int layer, int xy);
@@ -968,6 +974,9 @@ void SetupFinalPixelBlitter (GPU *gpu);
 // render
 void gpu_UpdateRender();
 void gpu_SetRotateScreen(u16 angle);
+
+//#undef FORCEINLINE
+//#define FORCEINLINE __forceinline
 
 #endif
 
