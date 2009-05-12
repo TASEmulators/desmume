@@ -79,7 +79,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "snddx.h"
 #include "ramwatch.h"
 #include "ram_search.h"
-
+#include "aviout.h"
 
 #include "directx/ddraw.h"
 
@@ -109,13 +109,6 @@ void UpdateHotkeyAssignments();				//Appends hotkey mappings to corresponding me
 
 static HMENU mainMenu; //Holds handle to the main DeSmuME menu
 
-//------todo move these into a generic driver api
-bool DRV_AviBegin(const char* fname);
-void DRV_AviEnd();
-void DRV_AviSoundUpdate(void* soundData, int soundLen);
-bool DRV_AviIsRecording();
-void DRV_AviVideoUpdate(const u16* buffer);
-//------
 DWORD hKeyInputTimer;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
