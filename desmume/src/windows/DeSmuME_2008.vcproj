@@ -691,6 +691,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\aviout.h"
+					>
+				</File>
+				<File
 					RelativePath=".\cheatsWin.h"
 					>
 				</File>
