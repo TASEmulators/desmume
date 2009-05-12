@@ -985,6 +985,13 @@ void CheckMessages()
 	{
 		if( GetMessage( &msg, 0,  0, 0)>0 )
 		{
+			if (RamWatchHWnd && IsDialogMessage(RamWatchHWnd, &msg))
+			{
+				if(msg.message == WM_KEYDOWN) // send keydown messages to the dialog (for accelerators, and also needed for the Alt key to work)
+					SendMessage(RamWatchHWnd, msg.message, msg.wParam, msg.lParam);
+				continue;
+			}
+			
 			if(!TranslateAccelerator(hwnd,hAccel,&msg))
 			{
 				TranslateMessage(&msg);
