@@ -674,12 +674,6 @@ static void GPU_resortBGs(GPU *gpu)
 	struct _DISPCNT * cnt = &gpu->dispx_st->dispx_DISPCNT.bits;
 	itemsForPriority_t * item;
 
-	//zero 29-dec-2008 - this really doesnt make sense to me.
-	//i changed the sprwin to be line by line,
-	//and resetting it here is pointless since line rendering is instantaneous
-	//and completely produces and consumes sprwin after which the contents of this buffer are useless
-	//memset(gpu->sprWin,0, 256*192);
-
 	// we don't need to check for windows here...
 // if we tick boxes, invisible layers become invisible & vice versa
 #define OP ^ !
@@ -1387,7 +1381,7 @@ FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
 
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
-template<bool MOSAIC> FORCEINLINE void GPU::__setFinalColorBck(u16 color, u8 x, bool opaque)
+template<bool MOSAIC> FORCEINLINE void GPU::__setFinalColorBck(u16 color, const u8 x, const bool opaque)
 {
 	//I commented out this line to make a point.
 	//indeed, since x is a u8 we cannot pass in anything >=256
@@ -1519,8 +1513,8 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 	u16 color;
 	u16 xoff;
 	u16 yoff;
-	u16 x      = 0;
-	u16 xfin;
+	u32 x      = 0;
+	u32 xfin;
 
 	s8 line_dir = 1;
 	u32 mapinfo;
@@ -2610,32 +2604,15 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 
 	u16 backdrop_color = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
 
-	///* Apply fading to backdrop */
-	if((gpu->BLDCNT & 0x20) && (gpu->BLDY_EVY > 0))
-	{
-		switch(gpu->BLDCNT & 0xC0)
-		{
-		case 0x80:	/* Fade in */
-			backdrop_color = fadeInColors[gpu->BLDY_EVY][backdrop_color];
-			break;
-		case 0xC0:	/* Fade out */
-			backdrop_color = fadeOutColors[gpu->BLDY_EVY][backdrop_color];
-			break;
-		default: break;
-		}
-	}
-
-	//we need to write backdrop colors in the same way as we do BG pixels in order to
-	//do correct window processing
-	//memset(gpu->bgPixels,6,256); //dont know whether we need this...
+	//we need to write backdrop colors in the same way as we do BG pixels in order to do correct window processing
+	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization. 
 	gpu->currBgNum = 5;
 	for(int x=0;x<256;x++) {
 		gpu->__setFinalColorBck<false>(backdrop_color,x,1);
 	}
 
-	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && 
-			!gpu->LayersEnable[2] && !gpu->LayersEnable[3] && 
-				!gpu->LayersEnable[4]) return;
+	//this check isnt really helpful. it just slows us down in the cases where we need the most speed
+	//if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && !gpu->LayersEnable[2] && !gpu->LayersEnable[3] && !gpu->LayersEnable[4]) return;
 
 	// init background color & priorities
 	memset(sprAlpha, 0, 256);

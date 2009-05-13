@@ -52,6 +52,8 @@
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
+//#undef INLINE
+//#define INLINE
 
 using std::min;
 using std::max;
@@ -252,6 +254,37 @@ FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
 
+//this function is an unreliable, inaccurate floor.
+//it should only be used for positive numbers
+//this isnt as fast as it could be if we used a visual c++ intrinsic, but those appear not to be universally available
+FORCEINLINE u32 u32floor(float f)
+{
+#ifndef NOSSE2
+	__asm cvttss2si eax, f;
+#else
+	return (u32)f;
+#endif
+}
+
+//same as above but works for negative values too.
+//be sure that the results are the same thing as floorf!
+FORCEINLINE s32 s32floor(float f)
+{
+#ifndef NOSSE2
+	static const float c = -0.5f;
+	__asm
+	{
+		movss xmm0, f;
+		addss xmm0, xmm0;
+		addss xmm0, c;
+		cvtss2si eax, xmm0
+		sar eax, 1
+	}
+#else
+	return (s32)floorf(f);
+#endif
+}
+
 static struct Sampler
 {
 	int width, height;
@@ -320,8 +353,8 @@ static struct Sampler
 	{
 		//finally, we can use floor here. but, it is slower than we want.
 		//the best solution is probably to wait until the pipeline is full of fixed point
-		int iu = (int)floorf(u);
-		int iv = (int)floorf(v);
+		s32 iu = s32floor(u);
+		s32 iv = s32floor(v);
 		dowrap(iu,iv);
 
 		FragmentColor color;
@@ -460,12 +493,15 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	if(gfx3d.wbuffer) {
 		//not sure about this
 		//this value was chosen to make the skybox, castle window decals, and water level render correctly in SM64
-		depth = (u32)(4096*w);
+		depth = u32floor(4096*w);
 	}
 	else
 	{
+		float test = -1.2f;
+		u32 test2 = u32floor(test);
 		//depth = fastFloor(z*0x7FFF)>>8;
-		depth = (u32)(z*0x7FFF);
+		//depth = (u32)(z*0x7FFF);
+		depth = u32floor(z*0x7FFF);
 		//depth = z*0xFFFFFF;
 	}
 	if(polyAttr.decalMode)
@@ -495,9 +531,9 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	//this is a HACK: 
 	//we are being very sloppy with our interpolation precision right now
 	//and rather than fix it, i just want to clamp it
-	shader.materialColor.r = max(0,min(31,(int)r));
-	shader.materialColor.g = max(0,min(31,(int)g));
-	shader.materialColor.b = max(0,min(31,(int)b));
+	shader.materialColor.r = max(0U,min(31U,u32floor(r)));
+	shader.materialColor.g = max(0U,min(31U,u32floor(g)));
+	shader.materialColor.b = max(0U,min(31U,u32floor(b)));
 
 	shader.materialColor.a = polyAttr.alpha;
 
@@ -600,12 +636,13 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	;
 }
 
+
 typedef int fixed28_4;
 
 static bool failure;
 
 // handle floor divides and mods correctly 
-inline void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod)
+INLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod)
 {
 	//These must be caused by invalid or degenerate shapes.. not sure yet.
 	//check it out in the mario face intro of SM64
@@ -636,10 +673,10 @@ inline void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod
 	}
 }
 
-inline fixed28_4 FloatToFixed28_4( float Value ) {
+INLINE fixed28_4 FloatToFixed28_4( float Value ) {
 	return (fixed28_4)(Value * 16);
 }
-inline float Fixed28_4ToFloat( fixed28_4 Value ) {
+INLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
 	return Value / 16.0;
 }
 //inline fixed16_16 FloatToFixed16_16( float Value ) {
@@ -648,11 +685,11 @@ inline float Fixed28_4ToFloat( fixed28_4 Value ) {
 //inline float Fixed16_16ToFloat( fixed16_16 Value ) {
 //	return Value / 65536.0;
 //}
-inline fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
+INLINE fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
 	// could make this asm to prevent overflow
 	return (A * B) / 16;	// 28.4 * 28.4 = 24.8 / 16 = 28.4
 }
-inline int Ceil28_4( fixed28_4 Value ) {
+INLINE int Ceil28_4( fixed28_4 Value ) {
 	int ReturnValue;
 	int Numerator = Value - 1 + 16;
 	if(Numerator >= 0) {
@@ -813,7 +850,7 @@ static void runscanlines(edge_fx_fl *left, edge_fx_fl *right)
 
 //rotates verts counterclockwise
 template<int type>
-inline static void rot_verts() {
+INLINE static void rot_verts() {
 	#define ROTSWAP(X) if(type>X) swap(verts[X-1],verts[X]);
 	ROTSWAP(1); ROTSWAP(2); ROTSWAP(3); ROTSWAP(4);
 	ROTSWAP(5); ROTSWAP(6); ROTSWAP(7);

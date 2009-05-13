@@ -787,7 +787,7 @@ struct GPU
 	FORCEINLINE void setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX);
 
 
-	template<bool MOSAIC> void __setFinalColorBck(u16 color, u8 x, bool opaque);
+	template<bool MOSAIC> void __setFinalColorBck(u16 color, const u8 x, const bool opaque);
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
 	u32 getAffineStart(int layer, int xy);

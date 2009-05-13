@@ -310,17 +310,31 @@ FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u
 
 		goto dunno;
 	}
-	
-	//for other cases, we have to check from dtcm first because it is patched on top of the main memory range
+
+	//special handling for execution from arm7. try reading from main memory first
+	if(PROCNUM==ARMCPU_ARM7)
+	{
+		if ( (addr & 0x0F000000) == 0x02000000)
+			return T1ReadLong_guaranteedAligned( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+		else if((addr & 0xFF800000) == 0x03800000)
+			return T1ReadLong_guaranteedAligned(MMU.ARM7_ERAM, addr&0xFFFF);
+		else if((addr & 0xFF800000) == 0x03000000)
+			return T1ReadLong_guaranteedAligned(MMU.SWIRAM, addr&0x7FFF);
+	}
+
+
+	//for other arm9 cases, we have to check from dtcm first because it is patched on top of the main memory range
 	if(PROCNUM==ARMCPU_ARM9)
+	{
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
 			//Returns data from DTCM (ARM9 only)
 			return T1ReadLong(ARM9Mem.ARM9_DTCM, addr & 0x3FFF);
 		}
-
-	if ( (addr & 0x0F000000) == 0x02000000)
-		return T1ReadLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+	
+		if ( (addr & 0x0F000000) == 0x02000000)
+			return T1ReadLong( ARM9Mem.MAIN_MEM, addr & _MMU_MAIN_MEM_MASK);
+	}
 
 dunno:
 	if(PROCNUM==ARMCPU_ARM9) return _MMU_ARM9_read32(addr);
