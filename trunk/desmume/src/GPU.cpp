@@ -2695,7 +2695,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					gpu->currBgNum = i16;
 					gpu->blend1 = gpu->BLDCNT & (1 << gpu->currBgNum);
 					for(int i=0;i<8;i++)
-						gpu->blend2[0] = (gpu->BLDCNT & (0x100 << i));
+						gpu->blend2[i] = (gpu->BLDCNT & (0x100 << i));
 					gpu->currentFadeInColors = &fadeInColors[gpu->BLDY_EVY][0];
 					gpu->currentFadeOutColors = &fadeOutColors[gpu->BLDY_EVY][0];
 					//gpu->bgFunc = gpu->setFinalColorBck_funcNum;
@@ -2732,7 +2732,10 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 							continue;
 						}
 					}
-					//if(gpu->core == 1 && i16 != 1) continue;
+
+					//useful for debugging individual layers
+					//if(gpu->core == 0 && i16 != 1) continue;
+
 					if(gpu->curr_mosaic_enabled)
 						gpu->modeRender<true>(i16);
 					else gpu->modeRender<false>(i16);
