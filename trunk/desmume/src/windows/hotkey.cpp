@@ -181,6 +181,15 @@ void HK_ToggleReadOnly(int) {
 	SetMessageToDisplay("Read+Write");
 }
 
+void HK_PlayMovie(int) {
+}
+
+void HK_RecordMovie(int) {
+}
+
+void HK_StopMovie(int) {
+}
+
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}
 void HK_AutoHoldKeyUp(int) {AutoHoldPressed = false;}
 
@@ -390,6 +399,24 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleReadOnly.name = L"Toggle Read Only";
 	keys->ToggleReadOnly.page = HOTKEY_PAGE_MOVIE;
 	keys->ToggleReadOnly.key = NULL;
+
+	keys->PlayMovie.handleKeyDown = HK_PlayMovie;
+	keys->PlayMovie.code = "PlayMovie";
+	keys->PlayMovie.name = L"Play Movie";
+	keys->PlayMovie.page = HOTKEY_PAGE_MOVIE;
+	keys->PlayMovie.key = NULL;
+
+	keys->RecordMovie.handleKeyDown = HK_RecordMovie;
+	keys->RecordMovie.code = "RecordMovie";
+	keys->RecordMovie.name = L"Record Movie";
+	keys->RecordMovie.page = HOTKEY_PAGE_MOVIE;
+	keys->RecordMovie.key = NULL;
+
+	keys->StopMovie.handleKeyDown = HK_StopMovie;
+	keys->StopMovie.code = "StopMovie";
+	keys->StopMovie.name = L"Stop Movie";
+	keys->StopMovie.page = HOTKEY_PAGE_MOVIE;
+	keys->StopMovie.key = NULL;
 
 	keys->RecordAVI.handleKeyDown = HK_RecordAVI;
 	keys->RecordAVI.code = "RecordAVI";
