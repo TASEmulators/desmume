@@ -42,6 +42,24 @@
 #include "readwrite.h"
 #include "FIFO.h"
 
+/*
+thoughts on flush timing:
+I think a flush is supposed to queue up and wait to happen during vblank sometime.
+But, we have some games that continue to do work after a flush but before a vblank.
+Since our timing is bad anyway, and we're not sure when the flush is really supposed to happen,
+then this leaves us in a bad situation.
+What makes it worse is that if flush is supposed to be deferred, then we have to queue these
+errant geometry commands. That would require a better gxfifo we have now, and some mechanism to block
+while the geometry engine is stalled (which doesnt exist).
+Since these errant games are nevertheless using flush command to represent the end of a frame, we deem this
+a good time to execute an actual flush.
+I think we originally didnt do this because we found some game that it glitched, but that may have been
+resolved since then by deferring actual rendering to the next vcount=0 (giving textures enough time to upload).
+But since we're not sure how we'll eventually want this, I am leaving it sort of reconfigurable, doing all the work
+in this function: */
+static void gfx3d_doFlush();
+
+
 using std::max;
 using std::min;
 
@@ -1366,7 +1384,7 @@ static void gfx3d_FlushFIFO()
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	for (int i=0; i < gxFIFO.tail; i++)
 	{
-		//INFO("3D execute command 0x%02X with param 0x%08X (pos %03i)\n", gxFIFO.cmd[i], gxFIFO.param[i], i);
+		//INFO("3D execute command 0x%02X with param 0x%08X (pos %03i)\n", gxFIFO.cmd[i], gxFIFO.param[i], i);	
 		gfx3d_execute(gxFIFO.cmd[i], gxFIFO.param[i]);
 	}
 #endif
@@ -1378,6 +1396,8 @@ void gfx3d_glFlush(u32 v)
 	flushPending = TRUE;
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
+	//see discussion at top of file
+	gfx3d_doFlush();
 }
 
 static int _CDECL_ gfx3d_ysort_compare_old_qsort(const void * elem1, const void * elem2)
@@ -1417,17 +1437,8 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 		return false; //equal should always return false "strict weak ordering"
 }
 
-
-void gfx3d_VBlankSignal()
+static void gfx3d_doFlush()
 {
-	//the 3d buffers are swapped when a vblank begins.
-	//so, if we have a redraw pending, now is a safe time to do it
-	if(!flushPending)
-	{
-		gfx3d_FlushFIFO();
-		return;
-	}
-
 	gfx3d.frameCtr++;
 
 	gfx3d_FlushFIFO();
@@ -1491,6 +1502,20 @@ void gfx3d_VBlankSignal()
 
 	flushPending = FALSE;
 	drawPending = TRUE;
+}
+
+void gfx3d_VBlankSignal()
+{
+	//the 3d buffers are swapped when a vblank begins.
+	//so, if we have a redraw pending, now is a safe time to do it
+	if(!flushPending)
+	{
+		gfx3d_FlushFIFO();
+		return;
+	}
+
+	//see discussion at top of file
+	//gfx3d_doFlush();
 }
 
 void gfx3d_VBlankEndSignal(bool skipFrame)
