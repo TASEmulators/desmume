@@ -99,9 +99,9 @@ static void Edit_Controls();
 static void MenuSave(GtkMenuItem *item, gpointer slot);
 static void MenuLoad(GtkMenuItem *item, gpointer slot);
 static void About();
-static void ToggleMenuVisible();
-static void ToggleStatusbarVisible();
-static void ToggleToolbarVisible();
+static void ToggleMenuVisible(GtkToggleAction *action);
+static void ToggleStatusbarVisible(GtkToggleAction *action);
+static void ToggleToolbarVisible(GtkToggleAction *action);
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
 static void desmume_gtk_mic_noise (GtkToggleAction *action);
 static void SetRotation (GtkAction *action, gpointer data);
@@ -537,32 +537,32 @@ static void About()//GtkWidget* widget, gpointer data)
     g_object_unref(pixbuf);
 }
 
-static void ToggleMenuVisible()
+static void ToggleMenuVisible(GtkToggleAction *action)
 {
-    GtkWidget *pMenuBar;
-    pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
-    if(GTK_WIDGET_VISIBLE(pMenuBar))
-      gtk_widget_hide(pMenuBar);
-    else
+    GtkWidget *pMenuBar = gtk_ui_manager_get_widget (ui_manager, "/MainMenu");
+
+    if (gtk_toggle_action_get_active(action) == TRUE)
       gtk_widget_show(pMenuBar);
+    else
+      gtk_widget_hide(pMenuBar);
 }
 
-static void ToggleToolbarVisible()
+static void ToggleToolbarVisible(GtkToggleAction *action)
 {
-    GtkWidget *pToolBar;
-    pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
-    if(GTK_WIDGET_VISIBLE(pToolBar))
-      gtk_widget_hide(pToolBar);
-    else
+    GtkWidget *pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
+
+    if (gtk_toggle_action_get_active(action) == TRUE)
       gtk_widget_show(pToolBar);
+    else
+      gtk_widget_hide(pToolBar);
 }
 
-static void ToggleStatusbarVisible()
+static void ToggleStatusbarVisible(GtkToggleAction *action)
 {
-    if(GTK_WIDGET_VISIBLE(pStatusBar))
-      gtk_widget_hide(pStatusBar);
-    else
+    if (gtk_toggle_action_get_active(action) == TRUE)
       gtk_widget_show(pStatusBar);
+    else
+      gtk_widget_hide(pStatusBar);
 }
 
 
