@@ -388,7 +388,7 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
 	keys->ToggleReadOnly.code = "ToggleReadOnly";
 	keys->ToggleReadOnly.name = L"Toggle Read Only";
-	keys->ToggleReadOnly.page = HOTKEY_PAGE_MAIN;
+	keys->ToggleReadOnly.page = HOTKEY_PAGE_MOVIE;
 	keys->ToggleReadOnly.key = NULL;
 
 	keys->RecordAVI.handleKeyDown = HK_RecordAVI;
