@@ -521,25 +521,24 @@ static FORCEINLINE void Fetch16BitData(channel_struct *chan, s32 *data)
 static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
 {
 	// No sense decoding, just return the last sample
-	if (chan->lastsampcnt == sputrunc(chan->sampcnt))
-		goto end;
+	if (chan->lastsampcnt != sputrunc(chan->sampcnt)){
 
-	const u32 endExclusive = sputrunc(chan->sampcnt+1);
-	for (u32 i = chan->lastsampcnt+1; i < endExclusive; i++)
-	{
-		const u32 shift = (i&1)<<2;
-		const u32 data4bit = (((u32)chan->buf8[i >> 1]) >> shift);
+	    const u32 endExclusive = sputrunc(chan->sampcnt+1);
+	    for (u32 i = chan->lastsampcnt+1; i < endExclusive; i++)
+	    {
+	    	const u32 shift = (i&1)<<2;
+	    	const u32 data4bit = (((u32)chan->buf8[i >> 1]) >> shift);
 
-		const s32 diff = precalcdifftbl[chan->index][data4bit & 0xF];
-		chan->index = precalcindextbl[chan->index][data4bit & 0x7];
+	    	const s32 diff = precalcdifftbl[chan->index][data4bit & 0xF];
+	    	chan->index = precalcindextbl[chan->index][data4bit & 0x7];
 
-		chan->pcm16b_last = chan->pcm16b;
-		chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
-	}
+	    	chan->pcm16b_last = chan->pcm16b;
+	    	chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
+	    }
 
-	chan->lastsampcnt = sputrunc(chan->sampcnt);
+	    chan->lastsampcnt = sputrunc(chan->sampcnt);
+    }
 
-end:
 #ifdef SPU_INTERPOLATE
 	*data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
 #else
