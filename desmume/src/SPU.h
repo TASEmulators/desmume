@@ -58,10 +58,12 @@ struct channel_struct
    u16 timer;
    u16 loopstart;
    u32 length;
-   s8 *buf8;
-   s16 *buf16;
-   double sampcnt;
-   double sampinc;
+   union {
+		s8 *buf8;
+		s16 *buf16;
+   };
+   float sampcnt;
+   float sampinc;
    // ADPCM specific
    int lastsampcnt;
    s16 pcm16b, pcm16b_last;
