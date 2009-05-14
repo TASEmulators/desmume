@@ -33,6 +33,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "readwrite.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
+#include "matrix.h"
+
+//#undef FORCEINLINE
+//#define FORCEINLINE
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
@@ -42,6 +46,8 @@ extern SoundInterface_struct *SNDCoreList[];
 
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
+
+static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
 
 const s8 indextbl[8] =
 {
@@ -81,7 +87,7 @@ FILE *spufp=NULL;
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-static INLINE T MinMax(T val, T min, T max)
+static FORCEINLINE T MinMax(T val, T min, T max)
 {
 	if (val < min)
 		return min;
@@ -269,7 +275,7 @@ void SPU_struct::KeyOn(int channel)
 {
 	channel_struct &thischan = channels[channel];
 
-	thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
+	thischan.sampinc = (16777216 / (0x10000 - (float)thischan.timer)) / 44100;
 
 	//   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
 	switch(thischan.format)
@@ -386,7 +392,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		break;
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
-		thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
+		thischan.sampinc = (16777216 / (0x10000 - (float)thischan.timer)) / 44100;
 		break;
 	case 0xA:
 		thischan.loopstart = val;
@@ -435,7 +441,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
 		thischan.loopstart = val >> 16;
-		thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
+		thischan.sampinc = (16777216 / (0x10000 - (float)thischan.timer)) / 44100;
 		break;
 	case 0xC:
 		thischan.length = val & 0x3FFFFF;
@@ -457,7 +463,7 @@ void SPU_WriteLong(u32 addr, u32 val)
 }
 
 #ifdef SPU_INTERPOLATE
-static s32 Interpolate(s32 a, s32 b, double ratio)
+static FORCEINLINE s32 Interpolate(s32 a, s32 b, float ratio)
 {
 	//ratio = ratio - (int)ratio;
 	//double ratio2 = ((1.0f - cos(ratio * 3.14f)) / 2.0f);
@@ -465,17 +471,17 @@ static s32 Interpolate(s32 a, s32 b, double ratio)
 	//return (((1-ratio2)*a) + (ratio2*b));
 	
 	//linear interpolation
-	ratio = ratio - (int)ratio;
+	ratio = ratio - sputrunc(ratio);
 	return (1-ratio)*a + ratio*b;
 }
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void Fetch8BitData(channel_struct *chan, s32 *data)
+static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 {
 #ifdef SPU_INTERPOLATE
-	int loc = (int)chan->sampcnt;
+	u32 loc = sputrunc(chan->sampcnt);
 	s32 a = (s32)(chan->buf8[loc] << 8);
 	if(loc < (chan->length << 2) - 1) {
 	/*	double ratio = chan->sampcnt-loc;*/
@@ -485,16 +491,16 @@ static INLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 	}
 	*data = a;
 #else
-	*data = (s32)chan->buf8[(int)chan->sampcnt] << 8;
+	*data = (s32)chan->buf8[sputrunc(chan->sampcnt)] << 8;
 #endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void Fetch16BitData(channel_struct *chan, s32 *data)
+static FORCEINLINE void Fetch16BitData(channel_struct *chan, s32 *data)
 {
 #ifdef SPU_INTERPOLATE
-	int loc = (int)chan->sampcnt;
+	int loc = sputrunc(chan->sampcnt);
 	s32 a = (s32)chan->buf16[loc];
 	if(loc < (chan->length << 1) - 1) {
 		//double ratio = chan->sampcnt-loc;
@@ -504,49 +510,36 @@ static INLINE void Fetch16BitData(channel_struct *chan, s32 *data)
 	}
 	*data = a;
 #else
-	*data = (s32)chan->buf16[(int)chan->sampcnt];
+	*data = (s32)chan->buf16[sputrunc(chan->sampcnt)];
 #endif
 }
 
+
+
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
+static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
 {
-	u8 data4bit;
-	int diff;
-	int i;
+	// No sense decoding, just return the last sample
+	if (chan->lastsampcnt == sputrunc(chan->sampcnt))
+		goto end;
 
-	if (chan->lastsampcnt == (int)chan->sampcnt)
+	const u32 endExclusive = sputrunc(chan->sampcnt+1);
+	for (u32 i = chan->lastsampcnt+1; i < endExclusive; i++)
 	{
-		// No sense decoding, just return the last sample
-#ifdef SPU_INTERPOLATE
-		*data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
-#else
-		*data = (s32)chan->pcm16b;
-#endif
-		return;
-	}
+		const u32 shift = (i&1)<<2;
+		const u32 data4bit = (((u32)chan->buf8[i >> 1]) >> shift);
 
-	for (i = chan->lastsampcnt+1; i < (int)chan->sampcnt+1; i++)
-	{
-		if (i & 0x1)
-			data4bit = (chan->buf8[i >> 1] >> 4) & 0xF;
-		else
-			data4bit = chan->buf8[i >> 1] & 0xF;
-
-		/*diff = ((data4bit & 0x7) * 2 + 1) * adpcmtbl[chan->index] / 8;
-		if (data4bit & 0x8)
-			diff = -diff;*/
-		diff = precalcdifftbl[chan->index][data4bit];
+		const s32 diff = precalcdifftbl[chan->index][data4bit & 0xF];
+		chan->index = precalcindextbl[chan->index][data4bit & 0x7];
 
 		chan->pcm16b_last = chan->pcm16b;
 		chan->pcm16b = MinMax(chan->pcm16b+diff, -0x8000, 0x7FFF);
-		//chan->index = MinMax(chan->index+indextbl[data4bit & 0x7], 0, 88);
-		chan->index = precalcindextbl[chan->index][data4bit & 0x7];
 	}
 
-	chan->lastsampcnt = (int)chan->sampcnt;
+	chan->lastsampcnt = sputrunc(chan->sampcnt);
 
+end:
 #ifdef SPU_INTERPOLATE
 	*data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
 #else
@@ -556,7 +549,7 @@ static INLINE void FetchADPCMData(channel_struct *chan, s32 *data)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
+static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 {
 	if(chan->num < 8)
 	{
@@ -564,17 +557,18 @@ static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
 	}
 	else if(chan->num < 14)
 	{
-		*data = (s32)wavedutytbl[chan->waveduty][((int)chan->sampcnt) & 0x7];
+		*data = (s32)wavedutytbl[chan->waveduty][(sputrunc(chan->sampcnt)) & 0x7];
 	}
 	else
 	{
-		if(chan->lastsampcnt == (int)chan->sampcnt)
+		if(chan->lastsampcnt == sputrunc(chan->sampcnt))
 		{
 			*data = (s32)chan->psgnoise_last;
 			return;
 		}
 
-		for(int i = chan->lastsampcnt; i < (int)chan->sampcnt; i++)
+		u32 max = sputrunc(chan->sampcnt);
+		for(u32 i = chan->lastsampcnt; i < max; i++)
 		{
 			if(chan->x & 0x1)
 			{
@@ -588,7 +582,7 @@ static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
 			}
 		}
 
-		chan->lastsampcnt = (int)chan->sampcnt;
+		chan->lastsampcnt = sputrunc(chan->sampcnt);
 
 		*data = (s32)chan->psgnoise_last;
 	}
@@ -596,51 +590,42 @@ static INLINE void FetchPSGData(channel_struct *chan, s32 *data)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
+static FORCEINLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	if (data)
-	{
-		data = (data * chan->vol / 127) >> chan->datashift;
-		SPU->sndbuf[SPU->bufpos<<1] += data;
-	}
+	data = (data * chan->vol / 127) >> chan->datashift;
+	SPU->sndbuf[SPU->bufpos<<1] += data;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
+static FORCEINLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	if (data)
-	{
-		data = (data * chan->vol / 127) >> chan->datashift;
-		SPU->sndbuf[(SPU->bufpos<<1)+1] += data;
-	}
+	data = (data * chan->vol / 127) >> chan->datashift;
+	SPU->sndbuf[(SPU->bufpos<<1)+1] += data;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
+static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	if (data)
-	{
-		data = ((data * chan->vol) / 127) >> chan->datashift;
-		SPU->sndbuf[SPU->bufpos<<1] += data * (127 - chan->pan) / 127;
-		SPU->sndbuf[(SPU->bufpos<<1)+1] += data * chan->pan / 127;
-	}
+	data = ((data * chan->vol) / 127) >> chan->datashift;
+	SPU->sndbuf[SPU->bufpos<<1] += data * (127 - chan->pan) / 127;
+	SPU->sndbuf[(SPU->bufpos<<1)+1] += data * chan->pan / 127;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
+static FORCEINLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
 {
 	int shift = (chan->format == 0 ? 2 : 1);
 
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << shift))
+	if (chan->sampcnt > (float)((chan->length + chan->loopstart) << shift))
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
-			chan->sampcnt = (double)(chan->loopstart << shift); // Is this correct?
+			chan->sampcnt = (float)(chan->loopstart << shift); // Is this correct?
 		else
 		{
 			chan->status = CHANSTAT_STOPPED;
@@ -654,16 +639,16 @@ static INLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static INLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
+static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 {
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << 3))
+	if (chan->sampcnt > (float)((chan->length + chan->loopstart) << 3))
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
-			chan->sampcnt = (double)(chan->loopstart << 3); // Is this correct?
+			chan->sampcnt = (float)(chan->loopstart << 3); // Is this correct?
 			chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
 			chan->index = chan->buf8[2] & 0x7F;
 			chan->lastsampcnt = 7;
@@ -1274,7 +1259,7 @@ void SNDFileSetVolume(int volume)
 void spu_savestate(std::ostream* os)
 {
 	//version
-	write32le(0,os);
+	write32le(1,os);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1293,8 +1278,8 @@ void spu_savestate(std::ostream* os)
 		write16le(chan.timer,os);
 		write16le(chan.loopstart,os);
 		write32le(chan.length,os);
-		write64le(double_to_u64(chan.sampcnt),os);
-		write64le(double_to_u64(chan.sampinc),os);
+		write32le(float_to_u32(chan.sampcnt),os);
+		write32le(float_to_u32(chan.sampinc),os);
 		write32le(chan.lastsampcnt,os);
 		write16le(chan.pcm16b,os);
 		write16le(chan.pcm16b_last,os);
@@ -1309,7 +1294,7 @@ bool spu_loadstate(std::istream* is, int size)
 	//read version
 	int version;
 	if(read32le(&version,is) != 1) return false;
-	if(version != 0) return false;
+	
 
 	SPU_struct *spu = SPU_core;
 
@@ -1328,9 +1313,17 @@ bool spu_loadstate(std::istream* is, int size)
 		read16le(&chan.timer,is);
 		read16le(&chan.loopstart,is);
 		read32le(&chan.length,is);
-		u64 temp; 
-		read64le(&temp,is); chan.sampcnt = u64_to_double(temp);
-		read64le(&temp,is); chan.sampinc = u64_to_double(temp);
+		if(version == 0)
+		{
+			u64 temp; 
+			read64le(&temp,is); chan.sampcnt = (float)u64_to_double(temp);
+			read64le(&temp,is); chan.sampinc = (float)u64_to_double(temp);
+		}
+		else
+		{
+			read32le((u32*)&chan.sampcnt,is);
+			read32le((u32*)&chan.sampinc,is);
+		}
 		read32le(&chan.lastsampcnt,is);
 		read16le(&chan.pcm16b,is);
 		read16le(&chan.pcm16b_last,is);
@@ -1340,7 +1333,6 @@ bool spu_loadstate(std::istream* is, int size)
 
 		//fixup the pointers which we had are supposed to keep cached
 		chan.buf8 = (s8*)&MMU.MMU_MEM[1][(chan.addr>>20)&0xFF][(chan.addr & MMU.MMU_MASK[1][(chan.addr >> 20) & 0xFF])];
-		chan.buf16 = (s16*)chan.buf8;
 	}
 
 	//copy the core spu (the more accurate) to the user spu

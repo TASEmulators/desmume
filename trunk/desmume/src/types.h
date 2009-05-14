@@ -320,6 +320,24 @@ inline double u64_to_double(u64 u) {
 	return fuxor.b;
 }
 
+inline u32 float_to_u32(float f) {
+	union {
+		u32 a;
+		float b;
+	} fuxor;
+	fuxor.b = f;
+	return fuxor.a;
+}
+
+inline float u32_to_float(u32 u) {
+	union {
+		u32 a;
+		float b;
+	} fuxor;
+	fuxor.a = u;
+	return fuxor.b;
+}
+
 
 ///stores a 32bit value into the provided byte array in guaranteed little endian form
 inline void en32lsb(u8 *buf, u32 morp)

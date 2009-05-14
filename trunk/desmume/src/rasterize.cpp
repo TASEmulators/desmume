@@ -254,36 +254,6 @@ FORCEINLINE int iround(float f) {
 	return (int)f; //lol
 }
 
-//this function is an unreliable, inaccurate floor.
-//it should only be used for positive numbers
-//this isnt as fast as it could be if we used a visual c++ intrinsic, but those appear not to be universally available
-FORCEINLINE u32 u32floor(float f)
-{
-#ifndef NOSSE2
-	__asm cvttss2si eax, f;
-#else
-	return (u32)f;
-#endif
-}
-
-//same as above but works for negative values too.
-//be sure that the results are the same thing as floorf!
-FORCEINLINE s32 s32floor(float f)
-{
-#ifndef NOSSE2
-	static const float c = -0.5f;
-	__asm
-	{
-		movss xmm0, f;
-		addss xmm0, xmm0;
-		addss xmm0, c;
-		cvtss2si eax, xmm0
-		sar eax, 1
-	}
-#else
-	return (s32)floorf(f);
-#endif
-}
 
 static struct Sampler
 {
