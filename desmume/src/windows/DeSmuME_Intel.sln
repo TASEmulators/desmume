@@ -1,35 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{EAF909A5-FA59-4C3D-9431-0FCC20D5BCF9}") = "DeSmuME_Intel", "DeSmuME_Intel.icproj", "{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}"
+Project("{EAF909A5-FA59-4C3D-9431-0FCC20D5BCF9}") = "DeSmuME_Intel", "DeSmuME_Intel.icproj", "{439F53E2-431F-4F28-9058-C6A9B00B503F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
-		Interim SSE2|Win32 = Interim SSE2|Win32
-		Interim|Win32 = Interim|Win32
-		Release (public)|Win32 = Release (public)|Win32
-		Release SSE2 (public)|Win32 = Release SSE2 (public)|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Debug|Win32.ActiveCfg = Debug|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Debug|Win32.Build.0 = Debug|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Interim SSE2|Win32.ActiveCfg = Interim SSE2|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Interim SSE2|Win32.Build.0 = Interim SSE2|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Interim|Win32.ActiveCfg = Interim|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Interim|Win32.Build.0 = Interim|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Release (public)|Win32.ActiveCfg = Release (public)|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Release (public)|Win32.Build.0 = Release (public)|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Release SSE2 (public)|Win32.ActiveCfg = Release SSE2 (public)|Win32
-		{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}.Release SSE2 (public)|Win32.Build.0 = Release SSE2 (public)|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release SSE2 (public)|Win32.Build.0 = Release SSE2 (public)|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release SSE2 (public)|Win32.ActiveCfg = Release SSE2 (public)|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release (public)|Win32.Build.0 = Release (public)|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release (public)|Win32.ActiveCfg = Release (public)|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Interim|Win32.Build.0 = Interim|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Interim|Win32.ActiveCfg = Interim|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Interim SSE2|Win32.Build.0 = Interim SSE2|Win32
-		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Interim SSE2|Win32.ActiveCfg = Interim SSE2|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Debug|Win32.Build.0 = Debug|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Release|Win32.ActiveCfg = Release|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Release|Win32.Build.0 = Release|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|Win32.Build.0 = Release|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|Win32.ActiveCfg = Release|Win32
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|Win32.Build.0 = Debug|Win32
 		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|Win32.ActiveCfg = Debug|Win32
 	EndGlobalSection

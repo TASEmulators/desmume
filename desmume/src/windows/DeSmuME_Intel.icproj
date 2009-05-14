@@ -3,9 +3,9 @@
 	ProjectType="Intel C++ Project"
 	Version="10.1"
 	Name="DeSmuME_Intel"
-	ProjectGUID="{3DA70B4E-4FE0-428C-9084-F6CE33810F6B}"
+	ProjectGUID="{439F53E2-431F-4F28-9058-C6A9B00B503F}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="2055535478"
+	VCNestedProjectCRC32="996184373"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -28,24 +28,25 @@
 				EnableIntrinsicFunctions="0"
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="0"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
+				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BufferSecurityCheck="0"
-				EnableEnhancedInstructionSet="0"
+				EnableEnhancedInstructionSet="2"
 				DebugInformationFormat="4"
-				CallingConvention="1"
+				CallingConvention="0"
 				CompileAs="0"/>
 			<Tool 
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="1"
 				GenerateMapFile="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				DelayImpLib=""/>
+				DelayImpLib="DelayImp.lib"/>
 			<Tool 
 				Name="LibrarianTool"/>
 			<Tool 
@@ -68,7 +69,7 @@
 				Name="MASM"/>
 		</Configuration>
 		<Configuration 
-			Name="Interim SSE2|Win32">
+			Name="Release|Win32">
 			<Tool 
 				Name="GeneralTool"
 				OutputDirectory="$(SolutionDir)\__bins"
@@ -87,194 +88,8 @@
 				OmitFramePointers="1"
 				EnableFiberSafeOptimizations="1"
 				OptimizeForWindowsApplication="1"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
-				StringPooling="1"
-				ExceptionHandling="1"
-				StructMemberAlignment="0"
-				BufferSecurityCheck="0"
-				EnableEnhancedInstructionSet="2"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="1"
-				CompileAs="0"
-				UseProcExt="5"
-				Parallelization="1"/>
-			<Tool 
-				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_interim_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
-				GenerateDebugInformation="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				Profile="0"
-				DelayImpLib=""/>
-			<Tool 
-				Name="LibrarianTool"/>
-			<Tool 
-				Name="ResCmplrTool"/>
-			<Tool 
-				Name="MidlCmplrTool"/>
-			<Tool 
-				Name="BscMakeTool"/>
-			<Tool 
-				Name="PreBuildEventTool"/>
-			<Tool 
-				Name="PreLinkEventTool"/>
-			<Tool 
-				Name="PostBuildEventTool"/>
-			<Tool 
-				Name="CustomTool"/>
-			<Tool 
-				Name="CustomNodeTool"/>
-			<Tool 
-				Name="MASM"/>
-		</Configuration>
-		<Configuration 
-			Name="Interim|Win32">
-			<Tool 
-				Name="GeneralTool"
-				OutputDirectory="$(SolutionDir)\__bins"
-				IntermediateDirectory="$(SolutionDir)\.Intel\$(ConfigurationName)\$(PlatformName)"
-				ConfigurationType="1"
-				WholeProgramOptimization="1"
-				InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"/>
-			<Tool 
-				Name="CppCmplrTool"
-				WholeProgramOptimization="1"
-				Optimization="1000"
-				GlobalOptimizations="1"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="1"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="1"
-				EnableFiberSafeOptimizations="1"
-				OptimizeForWindowsApplication="1"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX"
-				StringPooling="1"
-				ExceptionHandling="1"
-				BufferSecurityCheck="0"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="1"
-				CompileAs="0"
-				Parallelization="1"/>
-			<Tool 
-				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName)_interim.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
-				GenerateDebugInformation="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				Profile="1"
-				DelayImpLib=""/>
-			<Tool 
-				Name="LibrarianTool"/>
-			<Tool 
-				Name="ResCmplrTool"/>
-			<Tool 
-				Name="MidlCmplrTool"/>
-			<Tool 
-				Name="BscMakeTool"/>
-			<Tool 
-				Name="PreBuildEventTool"/>
-			<Tool 
-				Name="PreLinkEventTool"/>
-			<Tool 
-				Name="PostBuildEventTool"/>
-			<Tool 
-				Name="CustomTool"/>
-			<Tool 
-				Name="CustomNodeTool"/>
-			<Tool 
-				Name="MASM"/>
-		</Configuration>
-		<Configuration 
-			Name="Release (public)|Win32">
-			<Tool 
-				Name="GeneralTool"
-				OutputDirectory="$(SolutionDir)\__bins"
-				IntermediateDirectory="$(SolutionDir)\.Intel\$(ConfigurationName)\$(PlatformName)"
-				ConfigurationType="1"
-				WholeProgramOptimization="1"
-				InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"/>
-			<Tool 
-				Name="CppCmplrTool"
-				WholeProgramOptimization="1"
-				Optimization="1000"
-				GlobalOptimizations="1"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="1"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="1"
-				EnableFiberSafeOptimizations="1"
-				OptimizeForWindowsApplication="1"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;RELEASE"
-				StringPooling="1"
-				ExceptionHandling="1"
-				BufferSecurityCheck="0"
-				WarningLevel="1"
-				DebugInformationFormat="3"
-				CallingConvention="1"
-				CompileAs="0"
-				Parallelization="1"/>
-			<Tool 
-				Name="LinkerTool"
-				OutputFile="$(OutDir)\$(ProjectName).exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
-				GenerateDebugInformation="1"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
-				Profile="1"
-				DelayImpLib=""/>
-			<Tool 
-				Name="LibrarianTool"/>
-			<Tool 
-				Name="ResCmplrTool"/>
-			<Tool 
-				Name="MidlCmplrTool"/>
-			<Tool 
-				Name="BscMakeTool"/>
-			<Tool 
-				Name="PreBuildEventTool"/>
-			<Tool 
-				Name="PreLinkEventTool"/>
-			<Tool 
-				Name="PostBuildEventTool"/>
-			<Tool 
-				Name="CustomTool"/>
-			<Tool 
-				Name="CustomNodeTool"/>
-			<Tool 
-				Name="MASM"/>
-		</Configuration>
-		<Configuration 
-			Name="Release SSE2 (public)|Win32">
-			<Tool 
-				Name="GeneralTool"
-				OutputDirectory="$(SolutionDir)\__bins"
-				IntermediateDirectory="$(SolutionDir)\.Intel\$(ConfigurationName)\$(PlatformName)"
-				ConfigurationType="1"
-				WholeProgramOptimization="1"
-				InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"/>
-			<Tool 
-				Name="CppCmplrTool"
-				WholeProgramOptimization="1"
-				Optimization="1000"
-				GlobalOptimizations="1"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="1"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="1"
-				EnableFiberSafeOptimizations="1"
-				OptimizeForWindowsApplication="1"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE"
+				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE;EXPERIMENTAL_WIFI;NDEBUG"
 				StringPooling="1"
 				ExceptionHandling="1"
 				StructMemberAlignment="0"
@@ -289,13 +104,14 @@
 			<Tool 
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
-				AdditionalDependencies="gdiplus\gdiplus.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib shlwapi.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2008-x32.lib zziplib-2008-x32.lib shlwapi.lib"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap"
+				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				Profile="0"
-				DelayImpLib=""/>
+				DelayImpLib="DelayImp.lib"/>
 			<Tool 
 				Name="LibrarianTool"/>
 			<Tool 
@@ -374,6 +190,8 @@
 		<File 
 			RelativePath="..\MMU.h"/>
 		<File 
+			RelativePath="..\movie.h"/>
+		<File 
 			RelativePath="..\NDSSystem.h"/>
 		<File 
 			RelativePath="..\OGLRender.h"/>
@@ -392,6 +210,8 @@
 		<File 
 			RelativePath="..\saves.h"/>
 		<File 
+			RelativePath="..\shaders.h"/>
+		<File 
 			RelativePath="..\softrender.h"/>
 		<File 
 			RelativePath="..\softrender_config.h"/>
@@ -406,7 +226,11 @@
 		<File 
 			RelativePath="..\wifi.h"/>
 		<File 
+			RelativePath=".\userconfig\userconfig.h"/>
+		<File 
 			RelativePath=".\AboutBox.h"/>
+		<File 
+			RelativePath=".\aviout.h"/>
 		<File 
 			RelativePath=".\cheatsWin.h"/>
 		<File 
@@ -424,11 +248,15 @@
 		<File 
 			RelativePath=".\ginfo.h"/>
 		<File 
+			RelativePath=".\hotkey.h"/>
+		<File 
 			RelativePath=".\inputdx.h"/>
 		<File 
 			RelativePath=".\IORegView.h"/>
 		<File 
 			RelativePath=".\lightView.h"/>
+		<File 
+			RelativePath=".\main.h"/>
 		<File 
 			RelativePath=".\mapView.h"/>
 		<File 
@@ -439,6 +267,12 @@
 			RelativePath=".\oamView.h"/>
 		<File 
 			RelativePath=".\palView.h"/>
+		<File 
+			RelativePath=".\ram_search.h"/>
+		<File 
+			RelativePath=".\ramwatch.h"/>
+		<File 
+			RelativePath=".\replay.h"/>
 		<File 
 			RelativePath=".\resource.h"/>
 		<File 
@@ -453,6 +287,8 @@
 			RelativePath="..\instruction_tabdef.inc"/>
 		<File 
 			RelativePath="..\thumb_tabdef.inc"/>
+		<File 
+			RelativePath=".\bitmap1.bmp"/>
 		<File 
 			RelativePath=".\DeSmuME.ico"/>
 		<File 
@@ -478,40 +314,7 @@
 					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#xA;"/>
 			</FileConfiguration>
 			<FileConfiguration 
-				Name="Interim SSE2|Win32">
-				<Tool 
-					Name="GeneralTool"
-					ExcludedFromBuild="1"/>
-				<Tool 
-					Name="CustomTool"
-					Description="Assembling x64..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#xA;"
-					Outputs="$(IntDir)\$(InputName).obj"/>
-			</FileConfiguration>
-			<FileConfiguration 
-				Name="Interim|Win32">
-				<Tool 
-					Name="GeneralTool"
-					ExcludedFromBuild="1"/>
-				<Tool 
-					Name="CustomTool"
-					Description="Assembling x64..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#xA;"
-					Outputs="$(IntDir)\$(InputName).obj"/>
-			</FileConfiguration>
-			<FileConfiguration 
-				Name="Release (public)|Win32">
-				<Tool 
-					Name="GeneralTool"
-					ExcludedFromBuild="1"/>
-				<Tool 
-					Name="CustomTool"
-					Description="Assembling x64..."
-					CommandLine="ml64 /nologo /c /Zi /Fo&quot;$(IntDir)\$(InputName).obj&quot; &quot;$(InputPath)&quot;&#xA;"
-					Outputs="$(IntDir)\$(InputName).obj"/>
-			</FileConfiguration>
-			<FileConfiguration 
-				Name="Release SSE2 (public)|Win32">
+				Name="Release|Win32">
 				<Tool 
 					Name="GeneralTool"
 					ExcludedFromBuild="1"/>
@@ -523,26 +326,7 @@
 			</FileConfiguration>
 		</File>
 		<File 
-			RelativePath="..\matrix_sse2-x86.asm">
-			<FileConfiguration 
-				Name="Debug|Win32">
-				<Tool 
-					Name="GeneralTool"
-					ExcludedFromBuild="1"/>
-			</FileConfiguration>
-			<FileConfiguration 
-				Name="Interim|Win32">
-				<Tool 
-					Name="GeneralTool"
-					ExcludedFromBuild="1"/>
-			</FileConfiguration>
-			<FileConfiguration 
-				Name="Release (public)|Win32">
-				<Tool 
-					Name="GeneralTool"
-					ExcludedFromBuild="1"/>
-			</FileConfiguration>
-		</File>
+			RelativePath="..\matrix_sse2-x86.asm"/>
 		<File 
 			RelativePath="..\utils\decrypt\crc.cpp"/>
 		<File 
@@ -610,6 +394,8 @@
 		<File 
 			RelativePath="..\MMU.cpp"/>
 		<File 
+			RelativePath="..\movie.cpp"/>
+		<File 
 			RelativePath="..\NDSSystem.cpp"/>
 		<File 
 			RelativePath="..\OGLRender.cpp"/>
@@ -656,6 +442,8 @@
 		<File 
 			RelativePath=".\ginfo.cpp"/>
 		<File 
+			RelativePath=".\hotkey.cpp"/>
+		<File 
 			RelativePath=".\inputdx.cpp"/>
 		<File 
 			RelativePath=".\IORegView.cpp"/>
@@ -677,6 +465,12 @@
 			RelativePath=".\ogl.cpp"/>
 		<File 
 			RelativePath=".\palView.cpp"/>
+		<File 
+			RelativePath=".\ram_search.cpp"/>
+		<File 
+			RelativePath=".\ramwatch.cpp"/>
+		<File 
+			RelativePath=".\replay.cpp"/>
 		<File 
 			RelativePath=".\snddx.cpp"/>
 		<File 
