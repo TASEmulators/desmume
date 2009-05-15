@@ -30,6 +30,7 @@
 #include "../movie.h"
 #include "ramwatch.h"		//In order to call UpdateRamWatch (for loadstate functions)
 #include "ram_search.h"		//In order to call UpdateRamSearch (for loadstate functions)
+#include "replay.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -181,13 +182,29 @@ void HK_ToggleReadOnly(int) {
 	SetMessageToDisplay("Read+Write");
 }
 
-void HK_PlayMovie(int) {
+void HK_PlayMovie(int) 
+{
+	if (romloaded)
+	{
+		//NDS_Pause();
+		//Replay_LoadMovie();
+		//NDS_UnPause();
+	}
 }
 
-void HK_RecordMovie(int) {
+void HK_RecordMovie(int) 
+{
+	if (romloaded)
+	{
+		//NDS_Pause();
+		//MovieRecordTo();
+		//NDS_UnPause();
+	}
 }
 
-void HK_StopMovie(int) {
+void HK_StopMovie(int) 
+{
+	FCEUI_StopMovie();
 }
 
 void HK_AutoHoldKeyDown(int) {AutoHoldPressed = true;}

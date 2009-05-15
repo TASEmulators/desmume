@@ -372,9 +372,6 @@ static void StopRecording()
 
 void FCEUI_StopMovie()
 {
-	//if(suppressMovieStop)
-	//	return;
-	
 	if(movieMode == MOVIEMODE_PLAY)
 		StopPlayback();
 	else if(movieMode == MOVIEMODE_RECORD)
