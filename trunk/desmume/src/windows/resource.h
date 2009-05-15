@@ -492,6 +492,7 @@
 #define IDC_FRAMELIMIT                          40005
 #define IDC_WINDOW1_5X                          40006
 #define IDM_WIFISETTINGS                        40007
+#define IDM_ALWAYS_ON_TOP                       40008
 #define ID_VIEW_FRAMECOUNTER                    40009
 #define ID_VIEW_DISPLAYFPS                      40010
 #define ID_VIEW_DISPLAYINPUT                    40011
