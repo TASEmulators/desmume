@@ -47,7 +47,8 @@ extern SoundInterface_struct *SNDCoreList[];
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
-static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
+//static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
+static FORCEINLINE u32 sputrunc(double d) { return (int)d; }
 
 const s8 indextbl[8] =
 {
@@ -275,7 +276,7 @@ void SPU_struct::KeyOn(int channel)
 {
 	channel_struct &thischan = channels[channel];
 
-	thischan.sampinc = (16777216 / (0x10000 - (float)thischan.timer)) / 44100;
+	thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
 
 	//   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
 	switch(thischan.format)
@@ -392,7 +393,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		break;
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
-		thischan.sampinc = (16777216 / (0x10000 - (float)thischan.timer)) / 44100;
+		thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
 		break;
 	case 0xA:
 		thischan.loopstart = val;
@@ -441,7 +442,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
 		thischan.loopstart = val >> 16;
-		thischan.sampinc = (16777216 / (0x10000 - (float)thischan.timer)) / 44100;
+		thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
 		break;
 	case 0xC:
 		thischan.length = val & 0x3FFFFF;
