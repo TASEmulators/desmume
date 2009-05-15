@@ -62,8 +62,8 @@ struct channel_struct
 		s8 *buf8;
 		s16 *buf16;
    };
-   float sampcnt;
-   float sampinc;
+   double sampcnt;
+   double sampinc;
    // ADPCM specific
    int lastsampcnt;
    s16 pcm16b, pcm16b_last;
