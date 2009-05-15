@@ -3479,6 +3479,25 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ScaleScreen(1);
 			}
 			break;
+		case IDM_ALWAYS_ON_TOP:
+			{
+				LONG exStyle = GetWindowLong(MainWindow->getHWnd(), GWL_EXSTYLE);
+				UINT menuCheck = MF_BYCOMMAND;
+				HWND insertAfter = HWND_TOPMOST;
+
+	
+				if(exStyle & WS_EX_TOPMOST)
+				{
+					menuCheck |= MF_UNCHECKED;
+					insertAfter = HWND_NOTOPMOST;
+				}
+				else
+					menuCheck |= MF_CHECKED;
+				
+				CheckMenuItem(mainMenu, IDM_ALWAYS_ON_TOP, menuCheck);
+				SetWindowPos(MainWindow->getHWnd(), insertAfter, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE);
+			}
+			return 0;
 
 		}
 	}
