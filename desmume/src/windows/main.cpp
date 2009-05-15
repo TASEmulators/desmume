@@ -718,6 +718,29 @@ void UpdateRecentRoms(char* filename)
 	UpdateRecentRomsMenu();
 }
 
+void RemoveRecentRom(std::string filename)
+{
+
+	vector<string>::iterator x;
+	vector<string>::iterator theMatch;
+	bool match = false;
+	for (x = RecentRoms.begin(); x < RecentRoms.end(); ++x)
+	{
+		if (filename == *x)
+		{
+			//We have a match
+			match = true;	//Flag that we have a match
+			theMatch = x;	//Hold on to the iterator	(Note: the loop continues, so if for some reason we had a duplicate (which wouldn't happen under normal circumstances, it would pick the last one in the list)
+		}
+	}
+	//----------------------------------------------------------------
+	//If there was a match, remove it
+	if (match)
+		RecentRoms.erase(theMatch);
+
+	UpdateRecentRomsMenu();
+}
+
 void GetRecentRoms()
 {
 	//This function retrieves the recent ROMs stored in the .ini file
@@ -2258,6 +2281,17 @@ void OpenRecentROM(int listNum)
 #endif
 	{
 		romloaded = TRUE;
+	}
+	else
+	//Rom failed to load, ask the user how to handle it
+	{
+		string str = "Could not open ";
+		str.append(filename);
+		str.append("\n\nRemove from list?");
+		if (MessageBox(MainWindow->getHWnd(), str.c_str(), "File error", MB_YESNO) == IDYES)
+		{
+			RemoveRecentRom(RecentRoms[listNum]);
+		}
 	}
 
 	NDS_UnPause();
