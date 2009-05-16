@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
+#undef SPU_INTERPOLATE
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
@@ -690,7 +691,7 @@ template<bool ADPCM_CACHED> static FORCEINLINE void Fetch16BitData(const channel
 	}
 	*data = a;
 #else
-	*data = (s32)chan->buf16[sputrunc(chan->sampcnt)];
+	*data = (s32)buf16[sputrunc(chan->sampcnt)];
 #endif
 }
 
