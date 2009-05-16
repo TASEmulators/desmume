@@ -68,6 +68,7 @@ static const char *bad_glob_cflash_disk_image_file;
 
 #define SCREENS_PIXEL_SIZE (256*192*2)
 #define SCREEN_BYTES_PER_PIXEL 3
+#define GAP_SIZE 50
 
 #define FPS_LIMITER_FRAME_PERIOD 8
 static SDL_sem *fps_limiter_semaphore;
@@ -104,7 +105,8 @@ static void ToggleStatusbarVisible(GtkToggleAction *action);
 static void ToggleToolbarVisible(GtkToggleAction *action);
 static void desmume_gtk_disable_audio (GtkToggleAction *action);
 static void desmume_gtk_mic_noise (GtkToggleAction *action);
-static void SetRotation (GtkAction *action, gpointer data);
+static void ToggleGap (GtkToggleAction *action);
+static void SetRotation (GtkAction *action);
 static void Modify_Layer(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
@@ -198,6 +200,7 @@ static const char *ui_description =
 "        <menuitem action='interp_nearest'/>"
 "        <menuitem action='interp_bilinear'/>"
 "      </menu>"
+"      <menuitem action='gap'/>"
 "      <menuitem action='editctrls'/>"
 "      <menu action='ViewMenu'>"
 "        <menuitem action='view_menu'/>"
@@ -260,6 +263,7 @@ static const GtkActionEntry action_entries[] = {
 static const GtkToggleActionEntry toggle_entries[] = {
     { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE},
     { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE},
+    { "gap", NULL, "_Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
     { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
     { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
     { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE}//,
@@ -504,8 +508,8 @@ static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
 GtkActionGroup * action_group;
 GtkUIManager *ui_manager;
-GtkAspectFrame * pAspectFrame;
 
+guint nds_gap_size = 0;
 float nds_screen_size_ratio = 1.0f;
 int nds_screen_rotation_angle = 0.0f;
 
@@ -846,23 +850,66 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 /* Drawing callback */
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-    GdkPixbuf *origPixbuf, *resizedPixbuf;
+    GdkPixbuf *origPixbuf, *resizedPixbuf, *drawPixbuf;
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
-    float ssize;
-    gint W, H;
-    gtk_widget_get_size_request(pDrawingArea, &W, &H);
 
-    nds_screen_size_ratio = W / (float)widget->allocation.width;
-    ssize = 1 / (float)nds_screen_size_ratio;
+    float ssize, vratio, hratio;
+    gint daW, daH, imgH, imgW, xoff, yoff, xsize, ysize, xs, ys, xd, yd;
+    int rot = (nds_screen_rotation_angle % 180 == 90);
+  
+    gdk_drawable_get_size(
+            gtk_widget_get_window(GTK_WIDGET(pDrawingArea)), &daW, &daH);
+
+    if(!rot){
+        imgW = 256; imgH = 384;
+        daH -= nds_gap_size;
+    }else{
+        imgH = 256; imgW = 384;
+        daW -= nds_gap_size;
+    }
+
+    hratio = (float)daW / (float)imgW;
+    vratio = (float)daH / (float)imgH;
+    ssize = MIN(hratio, vratio);
+    xoff = (daW-ssize*imgW)/2;
+    yoff = (daH-ssize*imgH)/2;
+    if(!rot){
+        xsize = ssize*imgW;
+        ysize = ssize*imgH/2;
+        xs = 0;
+        ys = ysize;
+        xd = xoff;
+        yd = yoff+ysize+nds_gap_size;
+    } else {
+        xsize = ssize*imgW/2;
+        ysize = ssize*imgH;
+        xs = xsize;
+        ys = 0;
+        xd = xoff+xsize+nds_gap_size;
+        yd = yoff;
+    }
+    nds_screen_size_ratio = 1 / (float)ssize;
 
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
-    origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 0, 8, W, H, W*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
+    origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 
+            0, 8, imgW, imgH, imgW*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
+    drawPixbuf = origPixbuf;
+
     if(nds_screen_size_ratio != 1.0) {
-        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*W, ssize*H, Interpolation);
-        gdk_draw_pixbuf(widget->window, NULL, resizedPixbuf, 0,0,0,0, ssize*W, ssize*H, GDK_RGB_DITHER_NONE, 0,0);
+        resizedPixbuf = gdk_pixbuf_scale_simple (origPixbuf, ssize*imgW, ssize*imgH,
+                Interpolation);
+        drawPixbuf = resizedPixbuf;
+    }
+
+    gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, 0,0, xoff, yoff, xsize, ysize,
+            GDK_RGB_DITHER_NONE, 0,0);
+
+    gdk_draw_pixbuf(widget->window, NULL, drawPixbuf, xs, ys, xd, yd, xsize,ysize,
+            GDK_RGB_DITHER_NONE, 0,0);
+
+    drawPixbuf = NULL;
+    if(nds_screen_size_ratio != 1.0) {
         g_object_unref(resizedPixbuf);
-    } else {
-        gdk_draw_pixbuf(widget->window, NULL, origPixbuf, 0,0,0,0, ssize*W, ssize*H, GDK_RGB_DITHER_NONE, 0,0);
     }
     g_object_unref(origPixbuf);
 
@@ -873,15 +920,20 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
 
 static inline void rotoscaled_touchpos(gint x, gint y)
 {
-    int X, Y, rot, inv;
+    int X, Y, rot, inv, dah, daw, gap_corr;
     u16 EmuX, EmuY;
 
     rot = ( nds_screen_rotation_angle == 90 || nds_screen_rotation_angle == 270);
     inv = ( nds_screen_rotation_angle == 180 || nds_screen_rotation_angle == 90);
-    if(rot){
-        X = y; Y = x;
+    gap_corr = inv ? 0 : nds_gap_size;
+    dah = GTK_WIDGET(pDrawingArea)->allocation.height;
+    daw = GTK_WIDGET(pDrawingArea)->allocation.width;
+    if(!rot){
+        X = x - (daw-256/nds_screen_size_ratio)/2; 
+        Y = y - (dah-nds_gap_size-384/nds_screen_size_ratio)/2-gap_corr;
     } else {
-        X = x; Y = y;
+        X = y - (dah-256/nds_screen_size_ratio)/2; 
+        Y = x - (daw-nds_gap_size-384/nds_screen_size_ratio)/2-gap_corr;
     }
     X = int (X * nds_screen_size_ratio);
     Y = int (Y * nds_screen_size_ratio)-192;
@@ -1139,38 +1191,41 @@ static void Edit_Controls()
 
 }
 
-static void SetRotation(GtkAction* action, gpointer data)
+static void ToggleGap(GtkToggleAction* action)
 {
-    const gchar *angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
+    nds_gap_size = gtk_toggle_action_get_active(action) ? GAP_SIZE : 0;
+    SetRotation(NULL);
+}
+
+static void SetRotation(GtkAction* action)
+{
+    const gchar *angle;
     gint H, W;
 
-    nds_screen_rotation_angle = atoi(angle);
+    if(action){
+        angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
+        nds_screen_rotation_angle = atoi(angle);
+    }
     switch (nds_screen_rotation_angle) {
     case 0:
     case 180:
         W = 256;
-        H = 384;
+        H = 384 + nds_gap_size;
         break;
     case 90:
     case 270:
-        W = 384;
+        W = 384 + nds_gap_size;
         H = 256;
         break;
     default:
         g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s), resetting angle to 0\n", angle);
         nds_screen_rotation_angle = 0;
         W = 256;
-        H = 384;
+        H = 384 + nds_gap_size;
         break;
     }
 
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
-    gtk_aspect_frame_set (pAspectFrame , 
-                          0.5, /* center x */
-                          0.5, /* center y */
-                          (gfloat) W / (gfloat) H, /* xsize/ysize */
-                          FALSE /* ignore child's aspect */);
-    
 }
 
 static void Modify_Layer(GtkToggleAction* action, gpointer data)
@@ -1669,17 +1724,9 @@ common_gtk_main( struct configured_features *my_config)
     pToolBar = gtk_ui_manager_get_widget (ui_manager, "/ToolBar");
     gtk_box_pack_start (GTK_BOX(pVBox), pToolBar, FALSE, FALSE, 0);
 
-    pAspectFrame = GTK_ASPECT_FRAME(gtk_aspect_frame_new (NULL, /* label */
-                                         0.5, /* center x */
-                                         0.5, /* center y */
-                                         256.0/384.0, /* xsize/ysize */
-                                         FALSE /* ignore child's aspect */));
-    gtk_frame_set_shadow_type (GTK_FRAME(pAspectFrame), GTK_SHADOW_NONE);
-
-    gtk_container_add (GTK_CONTAINER (pVBox), GTK_WIDGET(pAspectFrame));
-
     /* Creating the place for showing DS screens */
     pDrawingArea = gtk_drawing_area_new();
+    gtk_container_add (GTK_CONTAINER (pVBox), pDrawingArea);
 
     gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), 256, 384);
 
@@ -1694,10 +1741,8 @@ common_gtk_main( struct configured_features *my_config)
                      G_CALLBACK(Stylus_Release), NULL);
     g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
                      G_CALLBACK(Stylus_Move), NULL);
-
     g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
                      G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
-    gtk_container_add (GTK_CONTAINER (pAspectFrame), pDrawingArea);
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
