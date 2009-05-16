@@ -195,7 +195,10 @@
 #define ID_WATCHES_UPDOWN                       966
 #define IDD_RAMWATCH                            967
 #define IDR_ACCELERATOR1                        968
-#define IDD_PROMPT                              970
+#define IDD_PROMPT                              969
+#define IDD_IOREG_VIEW_MEM_IRQ                  970
+#define IDD_IOREG_VIEW_SPI                      973
+#define IDD_IOREG_VIEW_CP15                     975
 #define IDC_C_WATCH_UP                          980
 #define IDD_EDITWATCH                           980
 #define IDC_C_WATCH_DOWN                        981
