@@ -455,14 +455,12 @@ void SPU_struct::KeyOn(int channel)
 	switch(thischan.format)
 	{
 	case 0: // 8-bit
-		printf("8\n",thischan.num);
 		thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 2;
 	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
 		thischan.sampcnt = 0;
 		break;
 	case 1: // 16-bit
-		printf("16 %d\n",thischan.num);
 		thischan.buf16 = (s16 *)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 1;
 	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
@@ -470,7 +468,6 @@ void SPU_struct::KeyOn(int channel)
 		break;
 	case 2: // ADPCM
 		{
-			printf("adpcm %d\n",thischan.num);
 			thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 			thischan.pcm16b = (s16)((thischan.buf8[1] << 8) | thischan.buf8[0]);
 			thischan.pcm16b_last = thischan.pcm16b;
