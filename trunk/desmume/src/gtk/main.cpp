@@ -850,7 +850,7 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 /* Drawing callback */
 static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-    GdkPixbuf *origPixbuf, *resizedPixbuf, *drawPixbuf;
+    GdkPixbuf *origPixbuf, *resizedPixbuf = NULL, *drawPixbuf;
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
 
     float ssize, vratio, hratio;
@@ -1218,7 +1218,8 @@ static void SetRotation(GtkAction* action)
         H = 256;
         break;
     default:
-        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s), resetting angle to 0\n", angle);
+        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s), resetting angle to 0\n", 
+                nds_screen_rotation_angle);
         nds_screen_rotation_angle = 0;
         W = 256;
         H = 384 + nds_gap_size;
