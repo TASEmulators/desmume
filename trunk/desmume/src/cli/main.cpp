@@ -60,8 +60,8 @@
 
 volatile BOOL execute = FALSE;
 
-int savetype=MC_TYPE_AUTODETECT;
-u32 savesize=1;
+int backupmemorytype=MC_TYPE_AUTODETECT;
+u32 backupmemorysize=1;
 
 static float nds_screen_size_ratio = 1.0f;
 
@@ -704,9 +704,9 @@ int main(int argc, char ** argv) {
 
   NDS_3D_ChangeCore(my_config.engine_3d);
 
-  mmu_select_savetype(my_config.savetype, &savetype, &savesize);
+  mmu_select_savetype(my_config.savetype, &backupmemorytype, &backupmemorysize);
 
-  if (NDS_LoadROM( my_config.nds_file, savetype, savesize, my_config.cflash_disk_image_file) < 0) {
+  if (NDS_LoadROM( my_config.nds_file, backupmemorytype, backupmemorysize, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
     exit(-1);
   }
