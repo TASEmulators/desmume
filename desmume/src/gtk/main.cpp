@@ -87,7 +87,7 @@ enum {
     SUB_OBJ
 };
 
-/************************ CONFIG FILE *****************************/
+gboolean EmuLoop(gpointer data);
 
 static void OpenNdsDialog();
 static void SaveStateDialog();
@@ -103,11 +103,11 @@ static void About();
 static void ToggleMenuVisible(GtkToggleAction *action);
 static void ToggleStatusbarVisible(GtkToggleAction *action);
 static void ToggleToolbarVisible(GtkToggleAction *action);
-static void desmume_gtk_disable_audio (GtkToggleAction *action);
-static void desmume_gtk_mic_noise (GtkToggleAction *action);
+static void ToggleAudio (GtkToggleAction *action);
+static void ToggleMicNoise (GtkToggleAction *action);
 static void ToggleGap (GtkToggleAction *action);
 static void SetRotation (GtkAction *action);
-static void Modify_Layer(GtkToggleAction* action, gpointer data);
+static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
 static void SelectFirmwareFile();
 #endif
@@ -261,12 +261,12 @@ static const GtkActionEntry action_entries[] = {
 };
 
 static const GtkToggleActionEntry toggle_entries[] = {
-    { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(desmume_gtk_disable_audio), TRUE},
-    { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(desmume_gtk_mic_noise), FALSE},
+    { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(ToggleAudio), TRUE},
+    { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(ToggleMicNoise), FALSE},
     { "gap", NULL, "_Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
     { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
     { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
-    { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE}//,
+    { "view_statusbar", NULL, "View _statusbar", NULL, NULL, G_CALLBACK(ToggleStatusbarVisible), TRUE}
 };
 
 static const GtkRadioActionEntry interpolation_entries[] = {
@@ -515,7 +515,7 @@ int nds_screen_rotation_angle = 0;
 
 static BOOL regMainLoop = FALSE;
 
-static inline void pStatusBar_Change (const char *message)
+static inline void UpdateStatusBar (const char *message)
 {
     gint pStatusBar_Ctx;
 
@@ -524,9 +524,7 @@ static inline void pStatusBar_Change (const char *message)
     gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, message);
 }
 
-gboolean EmuLoop(gpointer data);
-
-static void About()//GtkWidget* widget, gpointer data)
+static void About()
 {
     GdkPixbuf * pixbuf = gdk_pixbuf_new_from_xpm_data(DeSmuME_xpm);
 
@@ -586,7 +584,7 @@ static void Launch()
         regMainLoop = TRUE;
     }
 
-    pStatusBar_Change("Running ...");
+    UpdateStatusBar("Running ...");
 
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), TRUE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
@@ -601,7 +599,7 @@ static void Pause()
 {
     GtkWidget *run;
     desmume_pause();
-    pStatusBar_Change("Paused");
+    UpdateStatusBar("Paused");
 
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "pause"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
@@ -806,11 +804,57 @@ static void Reset()
     NDS_Reset();
     desmume_resume();
 
-    pStatusBar_Change("Running ...");
+    UpdateStatusBar("Running ...");
 }
 
 
 /////////////////////////////// DRAWING SCREEN //////////////////////////////////
+static void UpdateDrawingAreaAspect()
+{
+    gint H, W;
+    switch (nds_screen_rotation_angle) {
+    case 0:
+    case 180:
+        W = 256;
+        H = 384 + nds_gap_size;
+        break;
+    case 90:
+    case 270:
+        W = 384 + nds_gap_size;
+        H = 256;
+        break;
+    default:
+        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%d), resetting angle to 0\n", 
+                nds_screen_rotation_angle);
+        nds_screen_rotation_angle = 0;
+        W = 256;
+        H = 384 + nds_gap_size;
+        break;
+    }
+
+    gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
+}
+
+static void ToggleGap(GtkToggleAction* action)
+{
+    nds_gap_size = gtk_toggle_action_get_active(action) ? GAP_SIZE : 0;
+    UpdateDrawingAreaAspect();
+}
+
+static void SetRotation(GtkAction* action)
+{
+    const gchar *angle;
+
+    angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
+    nds_screen_rotation_angle = atoi(angle);
+    UpdateDrawingAreaAspect();
+}
+
+static int ConfigureDrawingArea(GtkWidget *widget, GdkEventConfigure *event, gpointer data)
+{
+    return TRUE;
+}
+
 static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 {
     u16 gpu_pixel;
@@ -848,7 +892,7 @@ static inline void gpu_screen_to_rgb(guchar * rgb, int size)
 }
 
 /* Drawing callback */
-static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpointer data)
+static int ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
     GdkPixbuf *origPixbuf, *resizedPixbuf = NULL, *drawPixbuf;
     guchar rgb[SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL];
@@ -871,6 +915,7 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
     hratio = (float)daW / (float)imgW;
     vratio = (float)daH / (float)imgH;
     ssize = MIN(hratio, vratio);
+    nds_screen_size_ratio = 1 / (float)ssize;
     xoff = (daW-ssize*imgW)/2;
     yoff = (daH-ssize*imgH)/2;
     if(!rot){
@@ -888,7 +933,6 @@ static int gtkFloatExposeEvent (GtkWidget *widget, GdkEventExpose *event, gpoint
         xd = xoff+xsize+nds_gap_size;
         yd = yoff;
     }
-    nds_screen_size_ratio = 1 / (float)ssize;
 
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
     origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 
@@ -1100,7 +1144,7 @@ static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 /////////////////////////////// CONTROLS EDIT //////////////////////////////////////
 
-static void Modify_Key_Press(GtkWidget *w, GdkEventKey *e, struct modify_key_ctx *ctx)
+static void AcceptNewInputKey(GtkWidget *w, GdkEventKey *e, struct modify_key_ctx *ctx)
 {
     gchar *YouPressed;
 
@@ -1132,7 +1176,7 @@ static void Modify_Key(GtkWidget* widget, gpointer data)
     g_free(Title);
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(mkDialog)->vbox), ctx.label, TRUE, FALSE, 0);
 
-    g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(Modify_Key_Press), &ctx);
+    g_signal_connect(G_OBJECT(mkDialog), "key_press_event", G_CALLBACK(AcceptNewInputKey), &ctx);
 
     gtk_widget_show_all(GTK_DIALOG(mkDialog)->vbox);
 
@@ -1191,45 +1235,7 @@ static void Edit_Controls()
 
 }
 
-static void ToggleGap(GtkToggleAction* action)
-{
-    nds_gap_size = gtk_toggle_action_get_active(action) ? GAP_SIZE : 0;
-    SetRotation(NULL);
-}
-
-static void SetRotation(GtkAction* action)
-{
-    const gchar *angle;
-    gint H, W;
-
-    if(action){
-        angle = gtk_action_get_name(GTK_ACTION(action)) + strlen("rotate_");
-        nds_screen_rotation_angle = atoi(angle);
-    }
-    switch (nds_screen_rotation_angle) {
-    case 0:
-    case 180:
-        W = 256;
-        H = 384 + nds_gap_size;
-        break;
-    case 90:
-    case 270:
-        W = 384 + nds_gap_size;
-        H = 256;
-        break;
-    default:
-        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%d), resetting angle to 0\n", 
-                nds_screen_rotation_angle);
-        nds_screen_rotation_angle = 0;
-        W = 256;
-        H = 384 + nds_gap_size;
-        break;
-    }
-
-    gtk_widget_set_size_request(GTK_WIDGET(pDrawingArea), W, H);
-}
-
-static void Modify_Layer(GtkToggleAction* action, gpointer data)
+static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data)
 {
     guint Layer = GPOINTER_TO_UINT(data);
     gboolean active;
@@ -1539,12 +1545,12 @@ static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
     for(i = 0; i< 10; i++){
         act = gtk_toggle_action_new(Layers_Menu[i][0],Layers_Menu[i][1],NULL,NULL);
         gtk_toggle_action_set_active(act, TRUE);
-        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Modify_Layer), GUINT_TO_POINTER(i));
+        g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(ToggleLayerVisibility), GUINT_TO_POINTER(i));
         gtk_action_group_add_action_with_accel(ag, GTK_ACTION(act), NULL);
     }
 }
 
-static void desmume_gtk_disable_audio (GtkToggleAction *action)
+static void ToggleAudio (GtkToggleAction *action)
 {
     if (gtk_toggle_action_get_active(action) == TRUE) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
@@ -1553,7 +1559,7 @@ static void desmume_gtk_disable_audio (GtkToggleAction *action)
     }
 }
 
-static void desmume_gtk_mic_noise (GtkToggleAction *action)
+static void ToggleMicNoise (GtkToggleAction *action)
 {
     Mic_DoNoise((BOOL)gtk_toggle_action_get_active(action));
 }
@@ -1743,12 +1749,14 @@ common_gtk_main( struct configured_features *my_config)
     g_signal_connect(G_OBJECT(pDrawingArea), "motion_notify_event",
                      G_CALLBACK(Stylus_Move), NULL);
     g_signal_connect(G_OBJECT(pDrawingArea), "expose_event",
-                     G_CALLBACK(gtkFloatExposeEvent), NULL ) ;
+                     G_CALLBACK(ExposeDrawingArea), NULL ) ;
+    g_signal_connect(G_OBJECT(pDrawingArea), "configure_event",
+                     G_CALLBACK(ConfigureDrawingArea), NULL ) ;
 
     /* Status bar */
     pStatusBar = gtk_statusbar_new();
     pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
-    pStatusBar_Change("Desmume");
+    UpdateStatusBar("Desmume");
     gtk_box_pack_end(GTK_BOX(pVBox), pStatusBar, FALSE, FALSE, 0);
 
     gtk_widget_show_all(pWindow);
