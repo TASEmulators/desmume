@@ -35,6 +35,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "NDSSystem.h"
 #include "matrix.h"
 
+//this is fundamentally a runtime option, so it could be dependent on an emulator option.
+//this define only determines whether the feature is available (and for now the runtime option is always enabled)
+#define USE_ADPCM_CACHING
+
 //#undef FORCEINLINE
 //#define FORCEINLINE
 
@@ -49,6 +53,10 @@ extern SoundInterface_struct *SNDCoreList[];
 
 //static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
 static FORCEINLINE u32 sputrunc(double d) { return (int)d; }
+static FORCEINLINE s32 spudivide(s32 val) { 
+	//return val / 127; //more accurate
+	return val >> 7; //faster
+}
 
 const s8 indextbl[8] =
 {
@@ -97,6 +105,154 @@ static FORCEINLINE T MinMax(T val, T min, T max)
 
 	return val;
 }
+
+//////////////////////////////////////////////////////////////////////////////
+
+class ADPCMCacheItem
+{
+public:
+	ADPCMCacheItem() 
+		: raw_copy(NULL)
+		, decoded(NULL)
+		, next(NULL)
+		, prev(NULL)
+		, lockCount(0)
+	{}
+	~ADPCMCacheItem() {
+		delete[] raw_copy;
+		delete[] decoded;
+	}
+	void unlock() { 
+		lockCount--;
+	}
+	void lock() { 
+		lockCount++;
+	}
+	int lockCount;
+	u32 addr;
+	s8* raw_copy; //for memcmp
+	u32 raw_len;
+	s16* decoded; //s16 decoded samples
+	ADPCMCacheItem *next, *prev; //double linked list
+};
+
+//notes on the cache:
+//I am really unhappy with the ref counting. this needs to be automatic.
+//We could do something better than a linear search through cache items, but it may not be worth it.
+//Also we may need to rescan more often (every time a sample loops)
+class ADPCMCache
+{
+public:
+	ADPCMCache()
+		: list_front(NULL)
+		, list_back(NULL)
+		, cache_size(0)
+	{}
+
+	ADPCMCacheItem *list_front, *list_back;
+
+	//this ought to be enough for anyone
+	static const int kMaxCacheSize = 16*1024*1024; 
+	//this is not really precise, it is off by a constant factor
+	u32 cache_size;
+
+	void evict(const int target = kMaxCacheSize) {
+		//evicts old cache items until it is less than the max cache size
+		//this means we actually can exceed the cache by the size of the next item.
+		//if we really wanted to hold ourselves to it, we could evict to kMaxCacheSize-nextItemSize
+		while(cache_size > target)
+		{
+			ADPCMCacheItem *oldest = list_back;
+			while(oldest && oldest->lockCount>0) oldest = oldest->prev; //find an unlocked one
+			if(!oldest) 
+			{
+				//nothing we can do, everything in the cache is locked. maybe we're leaking.
+				//just quit trying to evict
+				return;
+			}
+			list_remove(oldest);
+			cache_size -= oldest->raw_len*8;
+			//printf("evicting! totalsize:%d\n",cache_size);
+			delete oldest;
+		}
+	}
+	
+	//DO NOT USE THIS METHOD WITHOUT MAKING SURE YOU HAVE 
+	//FREED THE CURRENT ADPCMCacheItem FIRST!
+	//we should do this with some kind of smart pointers, but i am too lazy
+	ADPCMCacheItem* scan(channel_struct *chan)
+	{
+		u32 addr = chan->addr;
+		s8* raw = chan->buf8;
+		u32 raw_len = chan->length + chan->loopstart;
+		for(ADPCMCacheItem* curr = list_front;curr;curr=curr->next)
+		{
+			if(curr->addr != addr) continue;
+			if(curr->raw_len != raw_len) continue;
+			if(memcmp(curr->raw_copy,raw,raw_len)) 
+			{
+				//you might think that you could throw out this item now, to keep the cache tidy.
+				//maybe you could!
+				continue;
+			}
+			
+			curr->lock();
+			list_remove(curr);
+			list_push_front(curr);
+			return curr;
+		}
+		
+		//item was not found. recruit an existing one (the oldest), or create a new one
+		evict(); //reduce the size of the cache if necessary
+		ADPCMCacheItem* newitem = new ADPCMCacheItem();
+		newitem->lock();
+		newitem->addr = addr;
+		newitem->raw_len = raw_len;
+		newitem->raw_copy = new s8[raw_len];
+		memcpy(newitem->raw_copy,chan->buf8,raw_len);
+		u32 decode_len = raw_len*8;
+		cache_size += decode_len;
+		newitem->decoded = new s16[decode_len];
+			
+		int index = chan->buf8[2] & 0x7F;
+		s16 pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
+		s16 pcm16b_last = pcm16b;
+
+		for(u32 i = 8; i < decode_len; i++)
+	    {
+	    	const u32 shift = (i&1)<<2;
+	    	const u32 data4bit = (((u32)chan->buf8[i >> 1]) >> shift);
+
+	    	const s32 diff = precalcdifftbl[index][data4bit & 0xF];
+	    	index = precalcindextbl[index][data4bit & 0x7];
+
+	    	pcm16b_last = pcm16b;
+	    	pcm16b = MinMax(pcm16b+diff, -0x8000, 0x7FFF);
+			newitem->decoded[i] = pcm16b;
+	    }
+
+		//printf("new cacheitem! totalsize:%d\n",cache_size);
+		list_push_front(newitem);
+		return newitem;
+	}
+
+	void list_remove(ADPCMCacheItem* item) {
+		if(item->next) item->next->prev = item->prev;
+		if(item->prev) item->prev->next = item->next;
+		if(item == list_front) list_front = item->next;
+		if(item == list_back) list_back = item->prev;
+	}
+
+	void list_push_front(ADPCMCacheItem* item)
+	{
+		item->next = list_front;
+		if(list_front) list_front->prev = item;
+		else list_back = item;
+		item->prev = NULL;
+		list_front = item;
+	}
+
+} adpcmCache;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -221,6 +377,9 @@ void SPU_Reset(void)
 		//todo - check success?
 	}
 
+	//keep the cache tidy
+	adpcmCache.evict(0);
+
 	// Reset Registers
 	for (i = 0x400; i < 0x51D; i++)
 		T1WriteByte(MMU.ARM7_REG, i, 0);
@@ -228,12 +387,21 @@ void SPU_Reset(void)
 
 void SPU_struct::reset()
 {
-	memset((void *)channels, 0, sizeof(channel_struct) * 16);
 	memset(sndbuf,0,bufsize*2*4);
 	memset(outbuf,0,bufsize*2*2);
 
 	for(int i = 0; i < 16; i++)
+	{
+		if(channels[i].cacheItem) 
+			channels[i].cacheItem->unlock();
+	}
+
+	memset((void *)channels, 0, sizeof(channel_struct) * 16);
+
+	for(int i = 0; i < 16; i++)
+	{
 		channels[i].num = i;
+	}
 }
 
 SPU_struct::SPU_struct(int buffersize)
@@ -252,6 +420,11 @@ SPU_struct::~SPU_struct()
 {
 	if(sndbuf) delete[] sndbuf;
 	if(outbuf) delete[] outbuf;
+	for(int i = 0; i < 16; i++)
+	{
+		if(channels[i].cacheItem) 
+			channels[i].cacheItem->unlock();
+	}
 }
 
 void SPU_DeInit(void)
@@ -282,12 +455,14 @@ void SPU_struct::KeyOn(int channel)
 	switch(thischan.format)
 	{
 	case 0: // 8-bit
+		printf("8\n",thischan.num);
 		thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 2;
 	//	thischan.length = (thischan.length << 2) + thischan.loopstart;
 		thischan.sampcnt = 0;
 		break;
 	case 1: // 16-bit
+		printf("16 %d\n",thischan.num);
 		thischan.buf16 = (s16 *)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 	//	thischan.loopstart = thischan.loopstart << 1;
 	//	thischan.length = (thischan.length << 1) + thischan.loopstart;
@@ -295,6 +470,7 @@ void SPU_struct::KeyOn(int channel)
 		break;
 	case 2: // ADPCM
 		{
+			printf("adpcm %d\n",thischan.num);
 			thischan.buf8 = (s8*)&MMU.MMU_MEM[1][(thischan.addr>>20)&0xFF][(thischan.addr & MMU.MMU_MASK[1][(thischan.addr >> 20) & 0xFF])];
 			thischan.pcm16b = (s16)((thischan.buf8[1] << 8) | thischan.buf8[0]);
 			thischan.pcm16b_last = thischan.pcm16b;
@@ -303,6 +479,11 @@ void SPU_struct::KeyOn(int channel)
 			thischan.sampcnt = 8;
 		//	thischan.loopstart = thischan.loopstart << 3;
 		//	thischan.length = (thischan.length << 3) + thischan.loopstart;
+			if(thischan.cacheItem) thischan.cacheItem->unlock();
+		#ifdef USE_ADPCM_CACHING
+			if(this != SPU_core)
+				thischan.cacheItem = adpcmCache.scan(&thischan);
+		#endif
 			break;
 		}
 	case 3: // PSG
@@ -397,6 +578,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		break;
 	case 0xA:
 		thischan.loopstart = val;
+		thischan.totlength = thischan.length + thischan.loopstart;
 		break;
 
 	}
@@ -446,6 +628,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 		break;
 	case 0xC:
 		thischan.length = val & 0x3FFFFF;
+		thischan.totlength = thischan.length + thischan.loopstart;
 		break;
 	}
 }
@@ -484,10 +667,8 @@ static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 #ifdef SPU_INTERPOLATE
 	u32 loc = sputrunc(chan->sampcnt);
 	s32 a = (s32)(chan->buf8[loc] << 8);
-	if(loc < (chan->length << 2) - 1) {
-	/*	double ratio = chan->sampcnt-loc;*/
+	if(loc < (chan->totlength << 2) - 1) {
 		s32 b = (s32)(chan->buf8[loc + 1] << 8);
-	/*	a = (1-ratio)*a + ratio*b;*/
 		a = Interpolate(a, b, chan->sampcnt);
 	}
 	*data = a;
@@ -498,15 +679,16 @@ static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static FORCEINLINE void Fetch16BitData(channel_struct *chan, s32 *data)
+template<bool ADPCM_CACHED> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
 {
+	const s16* const buf16 = ADPCM_CACHED ? chan->cacheItem->decoded : chan->buf16;
+	const int shift = ADPCM_CACHED ? 3 : 1;
 #ifdef SPU_INTERPOLATE
 	int loc = sputrunc(chan->sampcnt);
-	s32 a = (s32)chan->buf16[loc];
-	if(loc < (chan->length << 1) - 1) {
-		//double ratio = chan->sampcnt-loc;
-		s32 b = (s32)chan->buf16[loc + 1];
-		//a = (1-ratio)*a + ratio*b;
+	s32 a = (s32)buf16[loc], b;
+	if(loc < (chan->totlength << shift) - 1)
+	{
+		s32 b = (s32)buf16[loc + 1];
 		a = Interpolate(a, b, chan->sampcnt);
 	}
 	*data = a;
@@ -519,8 +701,13 @@ static FORCEINLINE void Fetch16BitData(channel_struct *chan, s32 *data)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
+template<bool ADPCM_CACHED> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
 {
+	if(ADPCM_CACHED)
+	{
+		return Fetch16BitData<true>(chan, data);
+	}
+
 	// No sense decoding, just return the last sample
 	if (chan->lastsampcnt != sputrunc(chan->sampcnt)){
 
@@ -592,7 +779,7 @@ static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 
 static FORCEINLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	data = (data * chan->vol / 127) >> chan->datashift;
+	data = (spudivide(data * chan->vol)) >> chan->datashift;
 	SPU->sndbuf[SPU->bufpos<<1] += data;
 }
 
@@ -600,7 +787,7 @@ static FORCEINLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
 
 static FORCEINLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	data = (data * chan->vol / 127) >> chan->datashift;
+	data = (spudivide(data * chan->vol)) >> chan->datashift;
 	SPU->sndbuf[(SPU->bufpos<<1)+1] += data;
 }
 
@@ -608,24 +795,28 @@ static FORCEINLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
 
 static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	data = ((data * chan->vol) / 127) >> chan->datashift;
-	SPU->sndbuf[SPU->bufpos<<1] += data * (127 - chan->pan) / 127;
-	SPU->sndbuf[(SPU->bufpos<<1)+1] += data * chan->pan / 127;
+	data = (spudivide(data * chan->vol)) >> chan->datashift;
+	SPU->sndbuf[SPU->bufpos<<1] += spudivide(data * (127 - chan->pan));
+	SPU->sndbuf[(SPU->bufpos<<1)+1] += spudivide(data * chan->pan);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-static FORCEINLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
+template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channel_struct *chan)
 {
-	int shift = (chan->format == 0 ? 2 : 1);
+	const int shift = (FORMAT == 0 ? 2 : 1);
 
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (float)((chan->length + chan->loopstart) << shift))
+	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << shift))
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
-			chan->sampcnt = (float)(chan->loopstart << shift); // Is this correct?
+		{
+			chan->sampcnt = (double)(chan->loopstart << shift); // Is this correct?
+			//TODO: ADPCM RESCAN?
+			//this might would help in case streaming adpcm sounds arent working well
+		}
 		else
 		{
 			chan->status = CHANSTAT_STOPPED;
@@ -643,12 +834,12 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 {
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (float)((chan->length + chan->loopstart) << 3))
+	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << 3))
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
-			chan->sampcnt = (float)(chan->loopstart << 3); // Is this correct?
+			chan->sampcnt = (double)(chan->loopstart << 3); // Is this correct?
 			chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
 			chan->index = chan->buf8[2] & 0x7F;
 			chan->lastsampcnt = 7;
@@ -677,7 +868,7 @@ static void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
 		MixLR(SPU, chan, data);
 
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<0>(SPU, chan);
 	}
 }
 
@@ -688,7 +879,7 @@ static void SPU_ChanUpdate8NoMix(SPU_struct *SPU, channel_struct *chan)
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<0>(SPU, chan);
 	}
 }
 
@@ -704,7 +895,7 @@ static void SPU_ChanUpdate8L(SPU_struct *SPU, channel_struct *chan)
 		MixL(SPU, chan, data);
 
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<0>(SPU, chan);
 	}
 }
 
@@ -722,7 +913,7 @@ static void SPU_ChanUpdate8R(SPU_struct* SPU, channel_struct *chan)
 		MixR(SPU, chan, data);
 
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<0>(SPU, chan);
 	}
 }
 
@@ -733,7 +924,7 @@ static void SPU_ChanUpdate16NoMix(SPU_struct *SPU, channel_struct *chan)
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<1>(SPU, chan);
 	}
 }
 
@@ -745,12 +936,12 @@ static void SPU_ChanUpdate16LR(SPU_struct* SPU, channel_struct *chan)
 		s32 data;
 
 		// fetch data from source address
-		Fetch16BitData(chan, &data);
+		Fetch16BitData<false>(chan, &data);
 
 		MixLR(SPU, chan, data);
 
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<1>(SPU, chan);
 	}
 }
 
@@ -763,12 +954,12 @@ static void SPU_ChanUpdate16L(SPU_struct* SPU, channel_struct *chan)
 		s32 data;
 
 		// fetch data from source address
-		Fetch16BitData(chan, &data);
+		Fetch16BitData<false>(chan, &data);
 
 		MixL(SPU, chan, data);
 
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<1>(SPU, chan);
 	}
 }
 
@@ -781,12 +972,12 @@ static void SPU_ChanUpdate16R(SPU_struct* SPU, channel_struct *chan)
 		s32 data;
 
 		// fetch data from source address
-		Fetch16BitData(chan, &data);
+		Fetch16BitData<false>(chan, &data);
 
 		MixR(SPU, chan, data);
 
 		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop(SPU, chan);
+		TestForLoop<1>(SPU, chan);
 	}
 }
 
@@ -801,57 +992,42 @@ static void SPU_ChanUpdateADPCMNoMix(SPU_struct *SPU, channel_struct *chan)
 	}
 }
 
+template<int CHANNELS, bool CACHED> FORCEINLINE static void SPU_ChanUpdateADPCM_generic(SPU_struct* SPU, channel_struct *chan)
+{
+	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	{
+		s32 data;
+
+		FetchADPCMData<CACHED>(chan, &data);
+
+		switch(CHANNELS)
+		{
+			case 0: MixL(SPU, chan, data); break;
+			case 1: MixLR(SPU, chan, data); break;
+			case 2: MixR(SPU, chan, data); break;
+		}
+
+		// check to see if we're passed the length and need to loop, etc.
+		TestForLoop2(SPU, chan);
+	}
+}
 
 static void SPU_ChanUpdateADPCMLR(SPU_struct* SPU, channel_struct *chan)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		FetchADPCMData(chan, &data);
-
-		MixLR(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop2(SPU, chan);
-	}
+	if(chan->cacheItem) SPU_ChanUpdateADPCM_generic<1,true>(SPU,chan);
+	else SPU_ChanUpdateADPCM_generic<1,false>(SPU,chan);
 }
-
-//////////////////////////////////////////////////////////////////////////////
 
 static void SPU_ChanUpdateADPCML(SPU_struct* SPU, channel_struct *chan)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		FetchADPCMData(chan, &data);
-
-		MixL(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop2(SPU, chan);
-	}
+	if(chan->cacheItem) SPU_ChanUpdateADPCM_generic<0,true>(SPU,chan);
+	else SPU_ChanUpdateADPCM_generic<0,false>(SPU,chan);
 }
-
-//////////////////////////////////////////////////////////////////////////////
 
 static void SPU_ChanUpdateADPCMR(SPU_struct* SPU, channel_struct *chan)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		FetchADPCMData(chan, &data);
-
-		MixR(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop2(SPU, chan);
-	}
+	if(chan->cacheItem) SPU_ChanUpdateADPCM_generic<2,true>(SPU,chan);
+	else SPU_ChanUpdateADPCM_generic<2,false>(SPU,chan);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -993,7 +1169,7 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 		for (i = 0; i < length*2; i++)
 		{
 			// Apply Master Volume
-			SPU->sndbuf[i] = SPU->sndbuf[i] * vol / 127;
+			SPU->sndbuf[i] = spudivide(SPU->sndbuf[i] * vol);
 
 			if (SPU->sndbuf[i] > 0x7FFF)
 				SPU->outbuf[i] = 0x7FFF;
@@ -1259,7 +1435,7 @@ void SNDFileSetVolume(int volume)
 void spu_savestate(std::ostream* os)
 {
 	//version
-	write32le(1,os);
+	write32le(0,os);
 
 	SPU_struct *spu = SPU_core;
 
@@ -1278,8 +1454,8 @@ void spu_savestate(std::ostream* os)
 		write16le(chan.timer,os);
 		write16le(chan.loopstart,os);
 		write32le(chan.length,os);
-		write32le(float_to_u32(chan.sampcnt),os);
-		write32le(float_to_u32(chan.sampinc),os);
+		write64le(double_to_u64(chan.sampcnt),os);
+		write64le(double_to_u64(chan.sampinc),os);
 		write32le(chan.lastsampcnt,os);
 		write16le(chan.pcm16b,os);
 		write16le(chan.pcm16b_last,os);
@@ -1313,11 +1489,12 @@ bool spu_loadstate(std::istream* is, int size)
 		read16le(&chan.timer,is);
 		read16le(&chan.loopstart,is);
 		read32le(&chan.length,is);
+		chan.totlength = chan.length + chan.loopstart;
 		if(version == 0)
 		{
 			u64 temp; 
-			read64le(&temp,is); chan.sampcnt = (float)u64_to_double(temp);
-			read64le(&temp,is); chan.sampinc = (float)u64_to_double(temp);
+			read64le(&temp,is); chan.sampcnt = u64_to_double(temp);
+			read64le(&temp,is); chan.sampinc = u64_to_double(temp);
 		}
 		else
 		{
@@ -1337,7 +1514,22 @@ bool spu_loadstate(std::istream* is, int size)
 
 	//copy the core spu (the more accurate) to the user spu
 	if(SPU_user) {
+		for(int i=0;i<16;i++)
+		{
+			channel_struct &chan = SPU_user->channels[i];
+			if(chan.cacheItem) chan.cacheItem->unlock();
+		}
+		
 		memcpy(SPU_user->channels,SPU_core->channels,sizeof(SPU_core->channels));
+		
+		#ifdef USE_ADPCM_CACHING
+		for(int i=0;i<16;i++)
+		{
+			channel_struct &chan = SPU_user->channels[i];
+			if(chan.format == 2)
+				chan.cacheItem = adpcmCache.scan(&chan);
+		}
+		#endif
 	}
 
 	return true;

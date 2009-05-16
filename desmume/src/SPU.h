@@ -43,8 +43,13 @@ typedef struct
 extern SoundInterface_struct SNDDummy;
 extern SoundInterface_struct SNDFile;
 
+class ADPCMCacheItem;
+
 struct channel_struct
 {
+	channel_struct()
+		: cacheItem(NULL)
+	{}
 	int num;
    u8 vol;
    u8 datashift;
@@ -58,6 +63,7 @@ struct channel_struct
    u16 timer;
    u16 loopstart;
    u32 length;
+   u32 totlength;
    union {
 		s8 *buf8;
 		s16 *buf16;
@@ -70,6 +76,7 @@ struct channel_struct
    int index;
    u16 x;
    s16 psgnoise_last;
+   ADPCMCacheItem *cacheItem;
 } ;
 
 class SPU_struct
