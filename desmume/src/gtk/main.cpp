@@ -511,7 +511,7 @@ GtkUIManager *ui_manager;
 
 guint nds_gap_size = 0;
 float nds_screen_size_ratio = 1.0f;
-int nds_screen_rotation_angle = 0.0f;
+int nds_screen_rotation_angle = 0;
 
 static BOOL regMainLoop = FALSE;
 
@@ -1218,7 +1218,7 @@ static void SetRotation(GtkAction* action)
         H = 256;
         break;
     default:
-        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%s), resetting angle to 0\n", 
+        g_printerr("Congratulations, you've managed to set unsupported screen rotation angle (%d), resetting angle to 0\n", 
                 nds_screen_rotation_angle);
         nds_screen_rotation_angle = 0;
         W = 256;
