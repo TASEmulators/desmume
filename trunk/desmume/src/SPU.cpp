@@ -53,7 +53,7 @@ extern SoundInterface_struct *SNDCoreList[];
 #define CHANSTAT_PLAY             1
 
 //static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
-static FORCEINLINE u32 sputrunc(double d) { return (int)d; }
+static FORCEINLINE int sputrunc(double d) { return (int)d; }
 static FORCEINLINE s32 spudivide(s32 val) { 
 	//return val / 127; //more accurate
 	return val >> 7; //faster
@@ -129,12 +129,12 @@ public:
 	void lock() { 
 		lockCount++;
 	}
-	int lockCount;
 	u32 addr;
-	s8* raw_copy; //for memcmp
 	u32 raw_len;
+	s8* raw_copy; //for memcmp
 	s16* decoded; //s16 decoded samples
 	ADPCMCacheItem *next, *prev; //double linked list
+	int lockCount;
 };
 
 //notes on the cache:
@@ -153,11 +153,11 @@ public:
 	ADPCMCacheItem *list_front, *list_back;
 
 	//this ought to be enough for anyone
-	static const int kMaxCacheSize = 16*1024*1024; 
+	static const u32 kMaxCacheSize = 16*1024*1024; 
 	//this is not really precise, it is off by a constant factor
 	u32 cache_size;
 
-	void evict(const int target = kMaxCacheSize) {
+	void evict(const u32 target = kMaxCacheSize) {
 		//evicts old cache items until it is less than the max cache size
 		//this means we actually can exceed the cache by the size of the next item.
 		//if we really wanted to hold ourselves to it, we could evict to kMaxCacheSize-nextItemSize
@@ -680,13 +680,13 @@ static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
 template<bool ADPCM_CACHED> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
 {
 	const s16* const buf16 = ADPCM_CACHED ? chan->cacheItem->decoded : chan->buf16;
-	const int shift = ADPCM_CACHED ? 3 : 1;
 #ifdef SPU_INTERPOLATE
+	const int shift = ADPCM_CACHED ? 3 : 1;
 	int loc = sputrunc(chan->sampcnt);
 	s32 a = (s32)buf16[loc], b;
-	if(loc < (chan->totlength << shift) - 1)
+	if(loc < (int)(chan->totlength << shift) - 1)
 	{
-		s32 b = (s32)buf16[loc + 1];
+		b = (s32)buf16[loc + 1];
 		a = Interpolate(a, b, chan->sampcnt);
 	}
 	*data = a;
