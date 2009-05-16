@@ -27,7 +27,14 @@
 #define SNDCORE_DUMMY           0
 #define SNDCORE_FILEWRITE       1
 
-typedef struct
+enum SPUInterpolationMode
+{
+	SPUInterpolation_None = 0,
+	SPUInterpolation_Linear = 1,
+	SPUInterpolation_Cosine = 2
+};
+
+struct SoundInterface_struct
 {
    int id;
    const char *Name;
@@ -38,7 +45,7 @@ typedef struct
    void (*MuteAudio)();
    void (*UnMuteAudio)();
    void (*SetVolume)(int volume);
-} SoundInterface_struct;
+};
 
 extern SoundInterface_struct SNDDummy;
 extern SoundInterface_struct SNDFile;
@@ -64,6 +71,7 @@ struct channel_struct
    u16 loopstart;
    u32 length;
    u32 totlength;
+   double double_totlength_shifted;
    union {
 		s8 *buf8;
 		s16 *buf16;

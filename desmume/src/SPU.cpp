@@ -41,7 +41,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
-#undef SPU_INTERPOLATE
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
@@ -52,19 +51,24 @@ extern SoundInterface_struct *SNDCoreList[];
 #define CHANSTAT_STOPPED          0
 #define CHANSTAT_PLAY             1
 
-//static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
-static FORCEINLINE int sputrunc(double d) { return (int)d; }
+
+
+static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
+static FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
 static FORCEINLINE s32 spudivide(s32 val) { 
 	//return val / 127; //more accurate
 	return val >> 7; //faster
 }
 
-const s8 indextbl[8] =
+//const int shift = (FORMAT == 0 ? 2 : 1);
+static const int format_shift[] = { 2, 1, 3, 0 };
+
+static const s8 indextbl[8] =
 {
 	-1, -1, -1, -1, 2, 4, 6, 8
 };
 
-const u16 adpcmtbl[89] =
+static const u16 adpcmtbl[89] =
 {
 	0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x0010,
 	0x0011, 0x0013, 0x0015, 0x0017, 0x0019, 0x001C, 0x001F, 0x0022, 0x0025,
@@ -78,7 +82,7 @@ const u16 adpcmtbl[89] =
 	0x41B2, 0x4844, 0x4F7E, 0x5771, 0x602F, 0x69CE, 0x7462, 0x7FFF
 };
 
-const s16 wavedutytbl[8][8] = {
+static const s16 wavedutytbl[8][8] = {
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF },
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF },
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF },
@@ -89,10 +93,10 @@ const s16 wavedutytbl[8][8] = {
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF }
 };
 
-s32 precalcdifftbl[89][16];
-u8 precalcindextbl[89][8];
+static s32 precalcdifftbl[89][16];
+static u8 precalcindextbl[89][8];
 
-FILE *spufp=NULL;
+static FILE *spufp=NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -129,12 +133,12 @@ public:
 	void lock() { 
 		lockCount++;
 	}
+	int lockCount;
 	u32 addr;
-	u32 raw_len;
 	s8* raw_copy; //for memcmp
+	u32 raw_len;
 	s16* decoded; //s16 decoded samples
 	ADPCMCacheItem *next, *prev; //double linked list
-	int lockCount;
 };
 
 //notes on the cache:
@@ -577,6 +581,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 	case 0xA:
 		thischan.loopstart = val;
 		thischan.totlength = thischan.length + thischan.loopstart;
+		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 		break;
 
 	}
@@ -627,6 +632,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 	case 0xC:
 		thischan.length = val & 0x3FFFFF;
 		thischan.totlength = thischan.length + thischan.loopstart;
+		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 		break;
 	}
 }
@@ -644,66 +650,69 @@ void SPU_WriteLong(u32 addr, u32 val)
 	T1WriteLong(MMU.ARM7_REG, addr, val);
 }
 
-#ifdef SPU_INTERPOLATE
-static FORCEINLINE s32 Interpolate(s32 a, s32 b, float ratio)
-{
-	//ratio = ratio - (int)ratio;
-	//double ratio2 = ((1.0f - cos(ratio * 3.14f)) / 2.0f);
-	////double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
-	//return (((1-ratio2)*a) + (ratio2*b));
-	
-	//linear interpolation
-	ratio = ratio - sputrunc(ratio);
-	return (1-ratio)*a + ratio*b;
-}
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 
-static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
+template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpolate(s32 a, s32 b, double _ratio)
 {
-#ifdef SPU_INTERPOLATE
-	u32 loc = sputrunc(chan->sampcnt);
-	s32 a = (s32)(chan->buf8[loc] << 8);
-	if(loc < (chan->totlength << 2) - 1) {
-		s32 b = (s32)(chan->buf8[loc + 1] << 8);
-		a = Interpolate(a, b, chan->sampcnt);
+	float ratio = (float)_ratio;
+	if(INTERPOLATE_MODE == SPUInterpolation_Cosine)
+	{
+		//why did we change it away from the lookup table? somebody should research that
+		ratio = ratio - (int)ratio;
+		double ratio2 = ((1.0 - cos(ratio * 3.14)) * 0.5);
+		//double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
+		return (((1-ratio2)*a) + (ratio2*b));
 	}
-	*data = a;
-#else
-	*data = (s32)chan->buf8[sputrunc(chan->sampcnt)] << 8;
-#endif
+	else
+	{
+		//linear interpolation
+		ratio = ratio - sputrunc(ratio);
+		return s32floor((1-ratio)*a + ratio*b);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<bool ADPCM_CACHED> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
+template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE void Fetch8BitData(channel_struct *chan, s32 *data)
+{
+	u32 loc = sputrunc(chan->sampcnt);
+	if(INTERPOLATE_MODE != SPUInterpolation_None)
+	{
+		s32 a = (s32)(chan->buf8[loc] << 8);
+		if(loc < (chan->totlength << 2) - 1) {
+			s32 b = (s32)(chan->buf8[loc + 1] << 8);
+			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
+		}
+		*data = a;
+	}
+	else
+		*data = (s32)chan->buf8[loc] << 8;
+}
+
+template<SPUInterpolationMode INTERPOLATE_MODE, bool ADPCM_CACHED> static FORCEINLINE void Fetch16BitData(const channel_struct * const chan, s32 *data)
 {
 	const s16* const buf16 = ADPCM_CACHED ? chan->cacheItem->decoded : chan->buf16;
-#ifdef SPU_INTERPOLATE
 	const int shift = ADPCM_CACHED ? 3 : 1;
-	int loc = sputrunc(chan->sampcnt);
-	s32 a = (s32)buf16[loc], b;
-	if(loc < (int)(chan->totlength << shift) - 1)
+	if(INTERPOLATE_MODE != SPUInterpolation_None)
 	{
-		b = (s32)buf16[loc + 1];
-		a = Interpolate(a, b, chan->sampcnt);
+		u32 loc = sputrunc(chan->sampcnt);
+		s32 a = (s32)buf16[loc], b;
+		if(loc < (chan->totlength << shift) - 1)
+		{
+			s32 b = (s32)buf16[loc + 1];
+			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
+		}
+		*data = a;
 	}
-	*data = a;
-#else
-	*data = (s32)buf16[sputrunc(chan->sampcnt)];
-#endif
+	else
+		*data = (s32)buf16[sputrunc(chan->sampcnt)];
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-template<bool ADPCM_CACHED> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
+template<SPUInterpolationMode INTERPOLATE_MODE, bool ADPCM_CACHED> static FORCEINLINE void FetchADPCMData(channel_struct * const chan, s32 * const data)
 {
 	if(ADPCM_CACHED)
 	{
-		return Fetch16BitData<true>(chan, data);
+		return Fetch16BitData<INTERPOLATE_MODE,true>(chan, data);
 	}
 
 	// No sense decoding, just return the last sample
@@ -725,14 +734,11 @@ template<bool ADPCM_CACHED> static FORCEINLINE void FetchADPCMData(channel_struc
 	    chan->lastsampcnt = sputrunc(chan->sampcnt);
     }
 
-#ifdef SPU_INTERPOLATE
-	*data = Interpolate((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
-#else
-	*data = (s32)chan->pcm16b;
-#endif
+	if(INTERPOLATE_MODE != SPUInterpolation_None)
+		*data = Interpolate<INTERPOLATE_MODE>((s32)chan->pcm16b_last,(s32)chan->pcm16b,chan->sampcnt);
+	else
+		*data = (s32)chan->pcm16b;
 }
-
-//////////////////////////////////////////////////////////////////////////////
 
 static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 {
@@ -781,15 +787,11 @@ static FORCEINLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
 	SPU->sndbuf[SPU->bufpos<<1] += data;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
 static FORCEINLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
 	data = (spudivide(data * chan->vol)) >> chan->datashift;
 	SPU->sndbuf[(SPU->bufpos<<1)+1] += data;
 }
-
-//////////////////////////////////////////////////////////////////////////////
 
 static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
@@ -806,14 +808,12 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << shift))
+	if (chan->sampcnt > chan->double_totlength_shifted)
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
 			chan->sampcnt = (double)(chan->loopstart << shift); // Is this correct?
-			//TODO: ADPCM RESCAN?
-			//this might would help in case streaming adpcm sounds arent working well
 		}
 		else
 		{
@@ -826,13 +826,11 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
 static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 {
 	chan->sampcnt += chan->sampinc;
 
-	if (chan->sampcnt > (double)((chan->length + chan->loopstart) << 3))
+	if (chan->sampcnt > chan->double_totlength_shifted)
 	{
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
@@ -841,6 +839,8 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 			chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
 			chan->index = chan->buf8[2] & 0x7F;
 			chan->lastsampcnt = 7;
+			//TODO: ADPCM RESCAN?
+			//this might would help in case streaming adpcm sounds arent working well
 		}
 		else
 		{
@@ -852,272 +852,86 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdate8LR(SPU_struct* SPU, channel_struct *chan)
+template<int CHANNELS> FORCEINLINE static void SPU_Mix(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	switch(CHANNELS)
 	{
-		s32 data;
-
-		// fetch data from source address
-		Fetch8BitData(chan, &data);
-
-		MixLR(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<0>(SPU, chan);
+		case 0: MixL(SPU, chan, data); break;
+		case 1: MixLR(SPU, chan, data); break;
+		case 2: MixR(SPU, chan, data); break;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdate8NoMix(SPU_struct *SPU, channel_struct *chan)
+template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS, bool CACHED> 
+	FORCEINLINE static void _____SPU_ChanUpdate(SPU_struct* const SPU, channel_struct* const chan)
 {
 	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
 	{
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<0>(SPU, chan);
-	}
-}
-
-static void SPU_ChanUpdate8L(SPU_struct *SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		Fetch8BitData(chan, &data);
-
-		MixL(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<0>(SPU, chan);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdate8R(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		Fetch8BitData(chan, &data);
-
-		MixR(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<0>(SPU, chan);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdate16NoMix(SPU_struct *SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<1>(SPU, chan);
-	}
-}
-
-
-static void SPU_ChanUpdate16LR(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		Fetch16BitData<false>(chan, &data);
-
-		MixLR(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<1>(SPU, chan);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdate16L(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		Fetch16BitData<false>(chan, &data);
-
-		MixL(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<1>(SPU, chan);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdate16R(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		Fetch16BitData<false>(chan, &data);
-
-		MixR(SPU, chan, data);
-
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop<1>(SPU, chan);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdateADPCMNoMix(SPU_struct *SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop2(SPU, chan);
-	}
-}
-
-template<int CHANNELS, bool CACHED> FORCEINLINE static void SPU_ChanUpdateADPCM_generic(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		FetchADPCMData<CACHED>(chan, &data);
-
-		switch(CHANNELS)
+		if(CHANNELS != -1)
 		{
-			case 0: MixL(SPU, chan, data); break;
-			case 1: MixLR(SPU, chan, data); break;
-			case 2: MixR(SPU, chan, data); break;
+			s32 data;
+			switch(FORMAT)
+			{
+				case 0: Fetch8BitData<INTERPOLATE_MODE>(chan, &data); break;
+				case 1: Fetch16BitData<INTERPOLATE_MODE,false>(chan, &data); break;
+				case 2: FetchADPCMData<INTERPOLATE_MODE,CACHED>(chan, &data); break;
+				case 3: FetchPSGData(chan, &data); break;
+			}
+			SPU_Mix<CHANNELS>(SPU, chan, data);
 		}
 
-		// check to see if we're passed the length and need to loop, etc.
-		TestForLoop2(SPU, chan);
+		switch(FORMAT) {
+			case 0: case 1: TestForLoop<FORMAT>(SPU, chan); break;
+			case 2: TestForLoop2(SPU, chan); break;
+			case 3: chan->sampcnt += chan->sampinc; break;
+		}
 	}
 }
 
-static void SPU_ChanUpdateADPCMLR(SPU_struct* SPU, channel_struct *chan)
+template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS> 
+	FORCEINLINE static void ____SPU_ChanUpdate(SPU_struct* const SPU, channel_struct* const chan)
 {
-	if(chan->cacheItem) SPU_ChanUpdateADPCM_generic<1,true>(SPU,chan);
-	else SPU_ChanUpdateADPCM_generic<1,false>(SPU,chan);
+	if(FORMAT == 2 && chan->cacheItem)
+		_____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,CHANNELS,true>(SPU,chan);
+	else _____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,CHANNELS,false>(SPU,chan);
 }
 
-static void SPU_ChanUpdateADPCML(SPU_struct* SPU, channel_struct *chan)
+template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE> 
+	FORCEINLINE static void ___SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
-	if(chan->cacheItem) SPU_ChanUpdateADPCM_generic<0,true>(SPU,chan);
-	else SPU_ChanUpdateADPCM_generic<0,false>(SPU,chan);
+	if(!actuallyMix)
+		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,-1>(SPU,chan);
+	else if (chan->pan == 0)
+		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,0>(SPU,chan);
+	else if (chan->pan == 127)
+		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,2>(SPU,chan);
+	else
+		____SPU_ChanUpdate<FORMAT,INTERPOLATE_MODE,1>(SPU,chan);
 }
 
-static void SPU_ChanUpdateADPCMR(SPU_struct* SPU, channel_struct *chan)
+template<SPUInterpolationMode INTERPOLATE_MODE> 
+	FORCEINLINE static void __SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
-	if(chan->cacheItem) SPU_ChanUpdateADPCM_generic<2,true>(SPU,chan);
-	else SPU_ChanUpdateADPCM_generic<2,false>(SPU,chan);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdatePSGNoMix(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	switch(chan->format)
 	{
-		chan->sampcnt += chan->sampinc;
+		case 0: ___SPU_ChanUpdate<0,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
+		case 1: ___SPU_ChanUpdate<1,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
+		case 2: ___SPU_ChanUpdate<2,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
+		case 3: ___SPU_ChanUpdate<3,INTERPOLATE_MODE>(actuallyMix, SPU, chan); break;
+		default: assert(false);
 	}
 }
 
-
-static void SPU_ChanUpdatePSGLR(SPU_struct* SPU, channel_struct *chan)
+FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* const SPU, channel_struct* const chan)
 {
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
+	switch(CommonSettings.spuInterpolationMode)
 	{
-		s32 data;
-
-		// fetch data from source address
-		FetchPSGData(chan, &data);
-
-		MixLR(SPU, chan, data);
-
-		chan->sampcnt += chan->sampinc;
+	case SPUInterpolation_None: __SPU_ChanUpdate<SPUInterpolation_None>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_Linear: __SPU_ChanUpdate<SPUInterpolation_Linear>(actuallyMix, SPU, chan); break;
+	case SPUInterpolation_Cosine: __SPU_ChanUpdate<SPUInterpolation_Cosine>(actuallyMix, SPU, chan); break;
+	default: assert(false);
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdatePSGL(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		FetchPSGData(chan, &data);
-
-		MixL(SPU, chan, data);
-
-		chan->sampcnt += chan->sampinc;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-static void SPU_ChanUpdatePSGR(SPU_struct* SPU, channel_struct *chan)
-{
-	for (; SPU->bufpos < SPU->buflength; SPU->bufpos++)
-	{
-		s32 data;
-
-		// fetch data from source address
-		FetchPSGData(chan, &data);
-
-		MixR(SPU, chan, data);
-
-		chan->sampcnt += chan->sampinc;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void (*SPU_ChanUpdate[4][4])(SPU_struct* SPU, channel_struct *chan) = {
-	{ // 8-bit PCM
-		SPU_ChanUpdate8L,
-			SPU_ChanUpdate8LR,
-			SPU_ChanUpdate8R,
-			SPU_ChanUpdate8NoMix
-	},
-	{ // 16-bit PCM
-		SPU_ChanUpdate16L,
-			SPU_ChanUpdate16LR,
-			SPU_ChanUpdate16R,
-			SPU_ChanUpdate16NoMix,
-		},
-		{ // IMA-ADPCM
-			SPU_ChanUpdateADPCML,
-				SPU_ChanUpdateADPCMLR,
-				SPU_ChanUpdateADPCMR,
-				SPU_ChanUpdateADPCMNoMix
-		},
-		{ // PSG/White Noise
-			SPU_ChanUpdatePSGL,
-				SPU_ChanUpdatePSGLR,
-				SPU_ChanUpdatePSGR,
-				SPU_ChanUpdatePSGNoMix
-			}
-};
-
-//////////////////////////////////////////////////////////////////////////////
 
 template<bool actuallyMix> 
 static void SPU_MixAudio(SPU_struct *SPU, int length)
@@ -1152,14 +966,7 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 		SPU->buflength = length;
 
 		// Mix audio
-		if(!actuallyMix)
-			SPU_ChanUpdate[chan->format][3](SPU,chan);
-		else if (chan->pan == 0)
-			SPU_ChanUpdate[chan->format][0](SPU,chan);
-		else if (chan->pan == 127)
-			SPU_ChanUpdate[chan->format][2](SPU,chan);
-		else
-			SPU_ChanUpdate[chan->format][1](SPU,chan);
+		_SPU_ChanUpdate(actuallyMix, SPU, chan);
 	}
 
 	// convert from 32-bit->16-bit
@@ -1488,6 +1295,7 @@ bool spu_loadstate(std::istream* is, int size)
 		read16le(&chan.loopstart,is);
 		read32le(&chan.length,is);
 		chan.totlength = chan.length + chan.loopstart;
+		chan.double_totlength_shifted = (double)(chan.totlength << format_shift[chan.format]);
 		if(version == 0)
 		{
 			u64 temp; 

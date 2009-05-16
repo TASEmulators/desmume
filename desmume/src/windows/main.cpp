@@ -1833,6 +1833,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	LOG("Init sound core\n");
 	sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
 	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
+	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
 
 	EnterCriticalSection(&win_sync);
 	int spu_ret = SPU_ChangeSoundCore(sndcoretype, sndbuffersize);
@@ -3914,6 +3915,13 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 					SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_SETCURSEL, i, 0);
 			}
 
+			//setup interpolation combobox
+			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_RESETCONTENT, 0, 0);
+			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_ADDSTRING, 0, (LPARAM)"None (fastest, sounds bad)");
+			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_ADDSTRING, 0, (LPARAM)"Linear (typical, sounds good)");
+			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_ADDSTRING, 0, (LPARAM)"Cosine (slowest, sounds best)");
+			SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_SETCURSEL, (int)CommonSettings.spuInterpolationMode, 0);
+
 			// Setup Sound Buffer Size Edit Text
 			sprintf(tempstr, "%d", sndbuffersize);
 			SetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr);
@@ -3968,6 +3976,10 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 					sprintf(tempstr, "%d", sndvolume);
 					WritePrivateProfileString("Sound", "Volume", tempstr, IniName);
 					SPU_SetVolume(sndvolume);
+
+					//write interpolation type
+					CommonSettings.spuInterpolationMode = (SPUInterpolationMode)SendDlgItemMessage(hDlg, IDC_SPU_INTERPOLATION_CB, CB_GETCURSEL, 0, 0);
+					WritePrivateProfileInt("Sound","SPUInterpolation",(int)CommonSettings.spuInterpolationMode, IniName);
 
 					return TRUE;
 				}
