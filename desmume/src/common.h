@@ -28,6 +28,9 @@
 #include "types.h"
 
 extern u8	gba_header_data_0x04[156];
+const char* GetRomName();	//adelikat: return the name of the Rom currently loaded
+void SetRomName(char *filename);
+
 
 #ifdef WIN32
 
@@ -82,9 +85,6 @@ extern u8	gba_header_data_0x04[156];
 extern u8	reverseBitsInByte(u8 x);
 extern void	removeCR(char *buf);
 extern u32	strlen_ws(char *buf);
-
-const char* GetRomName();	//adelikat: return the name of the Rom currently loaded
-
 
 #endif
 
