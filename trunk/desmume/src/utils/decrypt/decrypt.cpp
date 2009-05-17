@@ -456,9 +456,6 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 
 	int romType = DetectRomType(*header,(char*)romdata);
 
-	unsigned char data[0x4000];
-	memcpy(data,romdata+0x4000,0x4000);
-
 	/*bool do_decrypt = (endecrypt_option == 'd');
 	bool do_encrypt = (endecrypt_option == 'e') || (endecrypt_option == 'E');
 	unsigned int rounds_offsets = (endecrypt_option == 'E') ? 0x2000 : 0x1600;
@@ -475,6 +472,8 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 	}
 	else if (romType >= ROMTYPE_ENCRSECURE)		// includes ROMTYPE_MASKROM
 	{
+		unsigned char data[0x4000];
+		memcpy(data,romdata+0x4000,0x4000);
 
 		decrypt_arm9(*(u32 *)header->gamecode, data);
 
