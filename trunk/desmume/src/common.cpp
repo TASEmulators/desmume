@@ -22,6 +22,7 @@
 */
 
 #include <string.h>
+#include <string>
 #include "common.h"
 
 u8	gba_header_data_0x04[156] = {
@@ -106,4 +107,38 @@ u32 strlen_ws(char *buf)		// length without last spaces
 		if (buf[i]!=32) return (i-1);		// space
 	}
 	return 0;
+}
+
+std::string RomName = "";				//Stores the name of the Rom currently loaded in memory
+
+/***
+ * Author: adelikat
+ * Date Added: May 8, 2009
+ * Description: Sets the Global variable RomName
+ * Known Usage:
+ *				LoadRom
+ **/
+void SetRomName(char *filename)
+{
+	std::string str = filename;
+	
+	//Truncate the path from filename
+	int x = str.find_last_of("/\\");
+	if (x > 0)
+		str = str.substr(x+1);
+	RomName = str;
+}
+
+/***
+ * Author: adelikat
+ * Date Added: May 8, 2009
+ * Description: Returns the Global variable RomName
+ * Known Usage:
+ *				included in main.h
+ *				ramwatch.cpp - SaveStrings
+ **/
+
+const char *GetRomName()
+{
+	return RomName.c_str();
 }
