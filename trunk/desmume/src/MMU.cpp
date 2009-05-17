@@ -995,6 +995,9 @@ void MMU_clearMem()
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 
+	SPI_CNT = 0;
+	AUX_SPI_CNT = 0;
+
 	// Enable the sound speakers
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
 	
@@ -2595,7 +2598,8 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 						default:
 							{
-								LOG("CARD command: %02X\n", MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT));
+								LOG("CARD command: %02X\t", MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT));
+								LOG("FROM: %08X\n", NDS_ARM9.instruct_adr);
 								MMU.dscard[ARMCPU_ARM9].address = 0;
 								MMU.dscard[ARMCPU_ARM9].transfer_count = 0;
 							}
