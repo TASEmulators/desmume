@@ -35,10 +35,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "NDSSystem.h"
 #include "matrix.h"
 
-//this is fundamentally a runtime option, so it could be dependent on an emulator option.
-//this define only determines whether the feature is available (and for now the runtime option is always enabled)
-#define USE_ADPCM_CACHING
-
 //#undef FORCEINLINE
 //#define FORCEINLINE
 
@@ -137,6 +133,7 @@ public:
 	u32 addr;
 	s8* raw_copy; //for memcmp
 	u32 raw_len;
+	u32 decode_len;
 	s16* decoded; //s16 decoded samples
 	ADPCMCacheItem *next, *prev; //double linked list
 };
@@ -157,7 +154,7 @@ public:
 	ADPCMCacheItem *list_front, *list_back;
 
 	//this ought to be enough for anyone
-	static const u32 kMaxCacheSize = 16*1024*1024; 
+	static const u32 kMaxCacheSize = 8*1024*1024; 
 	//this is not really precise, it is off by a constant factor
 	u32 cache_size;
 
@@ -176,7 +173,7 @@ public:
 				return;
 			}
 			list_remove(oldest);
-			cache_size -= oldest->raw_len*8;
+			cache_size -= oldest->raw_len*2;
 			//printf("evicting! totalsize:%d\n",cache_size);
 			delete oldest;
 		}
@@ -189,16 +186,18 @@ public:
 	{
 		u32 addr = chan->addr;
 		s8* raw = chan->buf8;
-		u32 raw_len = chan->length + chan->loopstart;
+		u32 raw_len = chan->totlength * 4;
 		for(ADPCMCacheItem* curr = list_front;curr;curr=curr->next)
 		{
 			if(curr->addr != addr) continue;
 			if(curr->raw_len != raw_len) continue;
 			if(memcmp(curr->raw_copy,raw,raw_len)) 
 			{
-				//you might think that you could throw out this item now, to keep the cache tidy.
-				//maybe you could!
-				continue;
+				//we found a cached item for the current address, but the data is stale.
+				//for a variety of complicated reasons, we need to throw it out right this instant.
+				list_remove(curr);
+				delete curr;
+				break;
 			}
 			
 			curr->lock();
@@ -215,8 +214,8 @@ public:
 		newitem->raw_len = raw_len;
 		newitem->raw_copy = new s8[raw_len];
 		memcpy(newitem->raw_copy,chan->buf8,raw_len);
-		u32 decode_len = raw_len*8;
-		cache_size += decode_len;
+		u32 decode_len = newitem->decode_len = raw_len*2;
+		cache_size += newitem->decode_len;
 		newitem->decoded = new s16[decode_len];
 			
 		int index = chan->buf8[2] & 0x7F;
@@ -482,10 +481,10 @@ void SPU_struct::KeyOn(int channel)
 		//	thischan.loopstart = thischan.loopstart << 3;
 		//	thischan.length = (thischan.length << 3) + thischan.loopstart;
 			if(thischan.cacheItem) thischan.cacheItem->unlock();
-		#ifdef USE_ADPCM_CACHING
-			if(this != SPU_core)
-				thischan.cacheItem = adpcmCache.scan(&thischan);
-		#endif
+			thischan.cacheItem = NULL;
+			if(CommonSettings.spuAdpcmCache)
+				if(this != SPU_core)
+					thischan.cacheItem = adpcmCache.scan(&thischan);
 			break;
 		}
 	case 3: // PSG
@@ -582,6 +581,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		thischan.loopstart = val;
 		thischan.totlength = thischan.length + thischan.loopstart;
 		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
+		printf("%d %d %d\n",thischan.num,thischan.length,thischan.loopstart);
 		break;
 
 	}
@@ -633,6 +633,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 		thischan.length = val & 0x3FFFFF;
 		thischan.totlength = thischan.length + thischan.loopstart;
 		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
+		printf("%d %d %d\n",thischan.num,thischan.length,thischan.loopstart);
 		break;
 	}
 }
@@ -839,8 +840,6 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 			chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
 			chan->index = chan->buf8[2] & 0x7F;
 			chan->lastsampcnt = 7;
-			//TODO: ADPCM RESCAN?
-			//this might would help in case streaming adpcm sounds arent working well
 		}
 		else
 		{
@@ -1328,14 +1327,13 @@ bool spu_loadstate(std::istream* is, int size)
 		
 		memcpy(SPU_user->channels,SPU_core->channels,sizeof(SPU_core->channels));
 		
-		#ifdef USE_ADPCM_CACHING
-		for(int i=0;i<16;i++)
-		{
-			channel_struct &chan = SPU_user->channels[i];
-			if(chan.format == 2)
-				chan.cacheItem = adpcmCache.scan(&chan);
-		}
-		#endif
+		if(CommonSettings.spuAdpcmCache)
+			for(int i=0;i<16;i++)
+			{
+				channel_struct &chan = SPU_user->channels[i];
+				if(chan.format == 2)
+					chan.cacheItem = adpcmCache.scan(&chan);
+			}
 	}
 
 	return true;
