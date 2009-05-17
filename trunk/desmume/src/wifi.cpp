@@ -1175,7 +1175,8 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 
 void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 {
-	PCAP::pcap_close(wifi->SoftAP.bridge);
+	if(wifi->SoftAP.bridge != NULL)
+		PCAP::pcap_close(wifi->SoftAP.bridge);
 }
 
 void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
