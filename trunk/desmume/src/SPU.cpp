@@ -698,7 +698,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE, bool ADPCM_CACHED> static FORCEI
 		s32 a = (s32)buf16[loc], b;
 		if(loc < (chan->totlength << shift) - 1)
 		{
-			s32 b = (s32)buf16[loc + 1];
+			b = (s32)buf16[loc + 1];
 			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
 		}
 		*data = a;
