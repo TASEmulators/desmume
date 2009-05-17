@@ -418,7 +418,10 @@ void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _paus
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
+	extern bool _HACK_DONT_STOPMOVIE;
+	_HACK_DONT_STOPMOVIE = true;
 	NDS_Reset();
+	_HACK_DONT_STOPMOVIE = false;
 	////WE NEED TO LOAD A SAVESTATE
 	//if(currMovieData.savestate.size() != 0)
 	//{
@@ -901,8 +904,8 @@ void FCEUI_MakeBackupMovie(bool dispMessage)
 		stream.str("");					 //Clear stream
 		if (backNum > 99)
 			stream << "-" << backNum;	 //assign backNum to stream
-		else if (backNum <=99 && backNum >= 10)
-			stream << "-0";				//Make it 010, etc if two digits
+		 else if (backNum <= 99 && backNum >= 10)
+			stream << "-0" << backNum;      //Make it 010, etc if two digits
 		else
 			stream << "-00" << backNum;	 //Make it 001, etc if single digit
 		backupFn.append(stream.str());	 //add number to bak filename
