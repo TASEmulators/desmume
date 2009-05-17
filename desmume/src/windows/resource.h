@@ -248,6 +248,7 @@
 #define IDC_ROTATE180                           1005
 #define IDC_EDIT12                              1006
 #define IDC_ROTATE270                           1006
+#define IDC_SPU_CACHE                           1006
 #define IDC_ARM7BIOSBROWSE                      1007
 #define IDC_EDIT06                              1007
 #define IDC_EDIT09                              1008

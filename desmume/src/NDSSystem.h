@@ -356,6 +356,7 @@ extern struct TCommonSettings {
 		, DebugConsole(false)
 		, wifiBridgeAdapterNum(0)
 		, spuInterpolationMode(SPUInterpolation_Linear)
+		, spuAdpcmCache(false)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -375,7 +376,9 @@ extern struct TCommonSettings {
 	bool DebugConsole;
 	
 	int wifiBridgeAdapterNum;
+	
 	SPUInterpolationMode spuInterpolationMode;
+	bool spuAdpcmCache;
 } CommonSettings;
 
 extern char ROMserial[20];
