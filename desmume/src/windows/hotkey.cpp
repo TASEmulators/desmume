@@ -31,6 +31,7 @@
 #include "ramwatch.h"		//In order to call UpdateRamWatch (for loadstate functions)
 #include "ram_search.h"		//In order to call UpdateRamSearch (for loadstate functions)
 #include "replay.h"
+#include "aviout.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -167,8 +168,7 @@ void HK_AutoHoldClearKeyDown(int) {
 
 void HK_Reset(int) {ResetGame();}
 
-void HK_RecordAVI(int) {AviRecordTo();}
-void HK_StopAVI(int) {AviEnd();}
+void HK_RecordAVI(int) { if (DRV_AviIsRecording()) AviEnd(); else AviRecordTo(); }
 
 void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
@@ -440,12 +440,6 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->RecordAVI.name = L"Record AVI";
 	keys->RecordAVI.page = HOTKEY_PAGE_MAIN;
 	keys->RecordAVI.key = NULL;
-
-	keys->StopAVI.handleKeyDown = HK_StopAVI;
-	keys->StopAVI.code = "StopAVI";
-	keys->StopAVI.name = L"Stop AVI";
-	keys->StopAVI.page = HOTKEY_PAGE_MAIN;
-	keys->StopAVI.key = NULL;
 
 	//Turbo Page---------------------------------------
 	keys->TurboRight.handleKeyDown = HK_TurboRightKeyDown;

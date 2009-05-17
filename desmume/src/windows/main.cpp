@@ -2514,21 +2514,24 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		{
 			UpdateHotkeyAssignments();	//Add current hotkey mappings to menu item names
 
+			MENUITEMINFO mii;
+			TCHAR menuItemString[256];
+			ZeroMemory(&mii, sizeof(MENUITEMINFO));
 			//Check if AVI is recording
-			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI, MF_BYCOMMAND | (!DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,   MF_BYCOMMAND | (DRV_AviIsRecording()) ? MF_ENABLED : MF_GRAYED);
+			mii.cbSize = sizeof(MENUITEMINFO);
+			mii.fMask = MIIM_STRING;
+			LoadString(hAppInst, !DRV_AviIsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
+			mii.dwTypeData = menuItemString;
+			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
 
 			//Menu items dependent on a ROM loaded
 			EnableMenuItem(mainMenu, IDM_GAME_INFO,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY,MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_STATE_SAVE,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_STATE_LOAD,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_STOPAVI,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_RESET,             MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_SHUT_UP,           MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
@@ -2859,10 +2862,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			return 0;
 		case IDM_FILE_RECORDAVI:
-			AviRecordTo();
-			break;
-		case IDM_FILE_STOPAVI:
-			AviEnd();
+			if (DRV_AviIsRecording())
+				AviEnd();
+			else
+				AviRecordTo();
 			break;
 		case IDM_STATE_LOAD:
 			{
