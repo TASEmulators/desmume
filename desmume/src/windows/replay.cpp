@@ -37,6 +37,12 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 	{
 	case WM_INITDIALOG:
 		SendDlgItemMessage(hwndDlg, IDC_CHECK_READONLY, BM_SETCHECK, replayreadonly?BST_CHECKED:BST_UNCHECKED, 0);			
+		
+		//Clear fields
+		SetWindowText(GetDlgItem(hwndDlg, IDC_MLENGTH), "");
+		SetWindowText(GetDlgItem(hwndDlg, IDC_MFRAMES), "");
+		SetWindowText(GetDlgItem(hwndDlg, IDC_MRERECORDCOUNT), "");
+		SetWindowText(GetDlgItem(hwndDlg, IDC_MROM), "");
 		return FALSE;
 
 	case WM_COMMAND:	

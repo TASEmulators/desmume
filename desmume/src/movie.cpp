@@ -476,7 +476,7 @@ static void openRecordingMovie(const char* fname)
 
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
 	//currMovieData.romChecksum = GameInfo->MD5;
-	//currMovieData.romFilename = FileBase;
+	currMovieData.romFilename = GetRomName();
 	
 	extern bool _HACK_DONT_STOPMOVIE;
 	_HACK_DONT_STOPMOVIE = true;
