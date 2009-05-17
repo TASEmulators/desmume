@@ -581,7 +581,6 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		thischan.loopstart = val;
 		thischan.totlength = thischan.length + thischan.loopstart;
 		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
-		LOG("%d %d %d\n",thischan.num,thischan.length,thischan.loopstart);
 		break;
 
 	}
@@ -633,7 +632,6 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 		thischan.length = val & 0x3FFFFF;
 		thischan.totlength = thischan.length + thischan.loopstart;
 		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
-		LOG("%d %d %d\n",thischan.num,thischan.length,thischan.loopstart);
 		break;
 	}
 }
