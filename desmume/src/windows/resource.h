@@ -242,7 +242,6 @@
 #define IDC_EDIT11                              1004
 #define IDC_GI_GAMECODE                         1004
 #define IDC_ROTATE90                            1004
-#define IDC_SPU_INTERPOLATION_CB                1004
 #define IDC_ARM7BIOS                            1005
 #define IDC_EDIT07                              1005
 #define IDC_ROTATE180                           1005
