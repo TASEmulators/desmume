@@ -409,15 +409,15 @@ BOOL CALLBACK ViewDisasm_ARM7Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              /* address to line correction */
                              switch (DisView7->mode) {
                                     case 0:    /* auto */
-                                         DisView7->curr_ligne = adr>>1;
+                                         DisView7->curr_ligne = adr>>2;
                                          if (DisView7->cpu->CPSR.bits.T) {
                                              DisView7->curr_ligne = adr>>1;
                                          }
                                          break ;
-                                    case 1:    /* thumb */
+                                    case 1:    /* arm */
                                          DisView7->curr_ligne = adr>>2;
                                          break ;
-                                    case 2:    /* arm */
+                                    case 2:    /* thumb */
                                          DisView7->curr_ligne = adr>>1;
                                          break ;
                              } ;
@@ -653,15 +653,15 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              /* address to line correction */
                              switch (DisView9->mode) {
                                     case 0:    /* auto */
-                                         DisView9->curr_ligne = adr>>1;
+                                         DisView9->curr_ligne = adr>>2;
                                          if (DisView9->cpu->CPSR.bits.T) {
                                              DisView9->curr_ligne = adr>>1;
                                          }
                                          break ;
-                                    case 1:    /* thumb */
+                                    case 1:    /* arm */
                                          DisView9->curr_ligne = adr>>2;
                                          break ;
-                                    case 2:    /* arm */
+                                    case 2:    /* thumb */
                                          DisView9->curr_ligne = adr>>1;
                                          break ;
                              } ;
