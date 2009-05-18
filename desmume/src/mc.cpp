@@ -550,7 +550,9 @@ bool BackupDevice::load_state(std::istream* is)
 		read32le(&com,is);
 		read32le(&addr_size,is);
 		read32le(&addr_counter,is);
-		read32le((u32*)&state,is);
+		u32 temp;
+		read32le(&temp,is);
+		state = (STATE)temp;
 		readbuffer(data,is);
 		readbuffer(data_autodetect,is);
 	}
