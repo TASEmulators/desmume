@@ -2585,6 +2585,22 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 							}
 							break;
 
+						/* Nand Init */
+						case 0x94:
+							{
+								MMU.dscard[ARMCPU_ARM9].address = 0;
+								MMU.dscard[ARMCPU_ARM9].transfer_count = 0x80;
+							}
+							break;
+
+						/* Nand Error? */
+						case 0xD6:
+							{
+								MMU.dscard[ARMCPU_ARM9].address = 0;
+								MMU.dscard[ARMCPU_ARM9].transfer_count = 1;
+							}
+							break;
+
 						/* Data read */
 						case 0x00:
 						case 0xB7:
@@ -2605,7 +2621,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 						default:
 							{
-								LOG("CARD command: %02X\t", MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT));
+								LOG("WRITE CARD command: %08X %08X\t", ((MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+1) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+2) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+3))),((MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+4) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+5) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+6) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+7))));
 								LOG("FROM: %08X\n", NDS_ARM9.instruct_adr);
 								MMU.dscard[ARMCPU_ARM9].address = 0;
 								MMU.dscard[ARMCPU_ARM9].transfer_count = 0;
@@ -2914,6 +2930,19 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 						}
 						break;
 
+					/* Nand Init? */
+					case 0x94:
+						{
+							val = 0; //Unsure what to return here to return 0 for now
+						}
+						break;
+					/* Nand Error? */
+					case 0xD6:
+						{
+							val = 0x80; //0x80 == ok?
+						}
+						break;
+
 					/* Data read */
 					case 0x00:
 					case 0xB7:
@@ -2936,6 +2965,11 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 							val = 0x00000000;
 						}
 						break;
+					default:
+						LOG("READ CARD command: %08X %08X\t", ((MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+1) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+2) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+3))),((MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+4) << 24) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+5) << 16) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+6) << 8) | (MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT+7))));
+						LOG("FROM: %08X\n", NDS_ARM9.instruct_adr);
+						break;
+
 				}
 
 				MMU.dscard[ARMCPU_ARM9].address += 4;	// increment address
@@ -3925,7 +3959,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 					case 0xB8:
 						{
 							/* TODO */
-							val = 0x00000000;
+							val = 0x00000FC2;
 						}
 						break;
 				}
