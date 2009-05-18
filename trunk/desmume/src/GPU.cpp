@@ -1744,7 +1744,6 @@ template<bool MOSAIC> FORCEINLINE void rotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s
 template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
 {
 	u8 num = gpu->currBgNum;
-	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[num].bits;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	
 	u8 *map, *tile, *pal;
@@ -1792,9 +1791,11 @@ template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA
 //			BACKGROUND RENDERING -HELPER FUNCTIONS-
 /*****************************************************************************/
 
-void lineNull(GPU * gpu)
+#if 0
+static void lineNull(GPU * gpu)
 {
 }
+#endif
 
 template<bool MOSAIC> void lineText(GPU * gpu)
 {
@@ -2671,8 +2672,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 				{
 					gpu->currBgNum = i16;
 					gpu->blend1 = gpu->BLDCNT & (1 << gpu->currBgNum);
-					for(int i=0;i<8;i++)
-						gpu->blend2[i] = (gpu->BLDCNT & (0x100 << i));
+					for(int j=0;j<8;j++)
+						gpu->blend2[j] = (gpu->BLDCNT & (0x100 << j));
 					gpu->currentFadeInColors = &fadeInColors[gpu->BLDY_EVY][0];
 					gpu->currentFadeOutColors = &fadeOutColors[gpu->BLDY_EVY][0];
 					//gpu->bgFunc = gpu->setFinalColorBck_funcNum;
