@@ -174,6 +174,7 @@ void mmu_log_debug_ARM7(u32 adr, const char *fmt, ...)
 #define DUP16(x) x, x, x, x,  x, x, x, x,  x, x, x, x,  x, x, x, x
 
 MMU_struct MMU;
+MMU_struct_new MMU_new;
 
 u8 * MMU_struct::MMU_MEM[2][256] = {
 	//arm9
@@ -1793,7 +1794,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 				if (val == 0)
 				   //mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
-				   MMU.backupDevice.reset_command();
+				   MMU_new.backupDevice.reset_command();
 				return;
 
 			case REG_AUXSPIDATA:
@@ -1801,7 +1802,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				   AUX_SPI_CMD = val & 0xFF;
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU.backupDevice.data_command(val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command(val));
 				return;
 
 			case REG_DISPA_BG0CNT :
@@ -3086,7 +3087,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 
 				if (val == 0)
 				   //mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
-				   MMU.backupDevice.reset_command();
+				   MMU_new.backupDevice.reset_command();
 			return;
 
 			case REG_AUXSPIDATA:
@@ -3094,7 +3095,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				   AUX_SPI_CMD = val & 0xFF;
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU.backupDevice.data_command(val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command(val));
 			return;
 
 			case REG_SPICNT :

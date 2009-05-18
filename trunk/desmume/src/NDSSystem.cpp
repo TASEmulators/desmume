@@ -834,7 +834,7 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 	//mc_realloc(&MMU.bupmem, bmtype, bmsize);
 	//mc_load_file(&MMU.bupmem, buf);
-	MMU.backupDevice.load_rom(buf);
+	MMU_new.backupDevice.load_rom(buf);
 
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, pathFilenameToROMwithoutExt);
@@ -904,7 +904,7 @@ void NDS_Reset(BOOL resetBySavestate)
 	currFrameCounter=0;
 
 	MMU_clearMem();
-	MMU.backupDevice.reset();
+	MMU_new.backupDevice.reset();
 
 	//ARM7 BIOS IRQ HANDLER
 	if(CommonSettings.UseExtBIOS == true)

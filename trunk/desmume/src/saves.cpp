@@ -258,7 +258,7 @@ static void mmu_savestate(std::ostream* os)
 	write32le(2,os);
 	
 	//newer savefile system:
-	MMU.backupDevice.save_state(os);
+	MMU_new.backupDevice.save_state(os);
 }
 
 static bool mmu_loadstate(std::istream* is, int size)
@@ -297,14 +297,14 @@ static bool mmu_loadstate(std::istream* is, int size)
 
 		u8* temp = new u8[bupmem_size];
 		is->read((char*)temp,bupmem_size);
-		MMU.backupDevice.load_old_state(addr_size,temp,bupmem_size);
+		MMU_new.backupDevice.load_old_state(addr_size,temp,bupmem_size);
 		delete[] temp;
 		if(is->fail()) return false;
 	}
 	else if(version == 2)
 	{
 		//newer savefile system:
-		MMU.backupDevice.load_state(is);
+		MMU_new.backupDevice.load_state(is);
 	}
 
 	return true;
