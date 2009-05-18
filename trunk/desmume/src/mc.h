@@ -97,7 +97,7 @@ private:
 	std::string filename;
 	std::vector<u8> data;
 	std::vector<u8> data_autodetect;
-	enum : u32 {
+	enum STATE {
 		DETECTING = 0, RUNNING = 1
 	} state;
 
