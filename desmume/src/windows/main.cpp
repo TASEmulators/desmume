@@ -1360,7 +1360,7 @@ void ResetSaveStateTimes()
 void LoadSaveStateInfo()
 {
 	scan_savestates();
-	char ntxt[22];
+	char ntxt[128];
 	for(int i = 0; i < NB_STATES; i++)
 	{
 		if(savestates[i].exists)
