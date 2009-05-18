@@ -998,7 +998,7 @@ void SPU_Emulate_core()
 	spu_core_samples = (int)(samples);
 	samples -= spu_core_samples;
 	
-	if(driver->AVI_IsRecording())
+	if(driver->AVI_IsRecording() || driver->WAV_IsRecording())
 		SPU_MixAudio<true>(SPU_core,spu_core_samples);
 	else 
 		SPU_MixAudio<false>(SPU_core,spu_core_samples);

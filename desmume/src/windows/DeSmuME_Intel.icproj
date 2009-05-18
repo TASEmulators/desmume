@@ -282,6 +282,8 @@
 		<File 
 			RelativePath=".\tileView.h"/>
 		<File 
+			RelativePath=".\wavout.h"/>
+		<File 
 			RelativePath="..\font_eng.inc"/>
 		<File 
 			RelativePath="..\instruction_tabdef.inc"/>
@@ -477,6 +479,8 @@
 			RelativePath=".\throttle.cpp"/>
 		<File 
 			RelativePath=".\tileView.cpp"/>
+		<File 
+			RelativePath=".\wavout.cpp"/>
 	</Files>
 </VisualStudioProject>
 

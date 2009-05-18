@@ -664,6 +664,10 @@
 					RelativePath=".\tileView.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\wavout.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -792,6 +796,10 @@
 				</File>
 				<File
 					RelativePath=".\tileView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\wavout.h"
 					>
 				</File>
 				<Filter

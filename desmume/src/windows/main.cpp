@@ -80,6 +80,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "ramwatch.h"
 #include "ram_search.h"
 #include "aviout.h"
+#include "wavout.h"
 
 #include "directx/ddraw.h"
 
@@ -1128,6 +1129,8 @@ DWORD WINAPI run()
 			//avi writing
 			DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
 			DRV_AviVideoUpdate((u16*)GPU_screen);
+			//wav writing
+			DRV_WavSoundUpdate(SPU_core->outbuf,spu_core_samples);
 
 			//    if (!skipnextframe)
 			//   {
@@ -1524,6 +1527,7 @@ static void ExitRunLoop()
 }
 
 BOOL AVI_IsRecording();
+BOOL WAV_IsRecording();
 class WinDriver : public Driver
 {
 	virtual BOOL WIFI_Host_InitSystem() {
@@ -1557,6 +1561,11 @@ class WinDriver : public Driver
 	virtual BOOL AVI_IsRecording()
 	{
 		return ::AVI_IsRecording();
+	}
+
+	virtual BOOL WAV_IsRecording()
+	{
+		return ::WAV_IsRecording();
 	}
 
 	virtual void USR_InfoMessage(const char *message)
@@ -1912,6 +1921,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	SaveRecentRoms();
 	NDS_DeInit();
 	DRV_AviEnd();
+	DRV_WavEnd();
 
 	//------SHUTDOWN
 
@@ -2265,6 +2275,62 @@ void AviRecordTo()
 	NDS_UnPause();
 }
 
+void WavEnd()
+{
+	NDS_Pause();
+	DRV_WavEnd();
+	NDS_UnPause();
+}
+
+//Shows an Open File menu and starts recording an WAV
+void WavRecordTo()
+{
+	NDS_Pause();
+
+	OPENFILENAME ofn;
+	char szChoice[MAX_PATH] = {0};
+
+	////if we are playing a movie, construct the filename from the current movie.
+	////else construct it from the filename.
+	//if(FCEUMOV_Mode(MOVIEMODE_PLAY|MOVIEMODE_RECORD))
+	//{
+	//	extern char curMovieFilename[];
+	//	strcpy(szChoice, curMovieFilename);
+	//	char* dot = strrchr(szChoice,'.');
+
+	//	if (dot)
+	//	{
+	//		*dot='\0';
+	//	}
+
+	//	strcat(szChoice, ".wav");
+	//}
+	//else
+	//{
+	//	extern char FileBase[];
+	//	sprintf(szChoice, "%s.wav", FileBase);
+	//}
+
+	// wav record file browser
+	memset(&ofn, 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = MainWindow->getHWnd();
+	ofn.lpstrFilter = "WAV Files (*.wav)\0*.wav\0\0";
+	ofn.lpstrFile = szChoice;
+	ofn.lpstrDefExt = "wav";
+	ofn.lpstrTitle = "Save WAV as";
+
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+
+	if(GetSaveFileName(&ofn))
+	{
+		DRV_WavBegin(szChoice);
+	}
+
+	NDS_UnPause();
+}
+
 void OpenRecentROM(int listNum)
 {
 	if (listNum > MAX_RECENT_ROMS) return; //Just in case
@@ -2523,6 +2589,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			LoadString(hAppInst, !DRV_AviIsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
 			mii.dwTypeData = menuItemString;
 			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
+			//Check if WAV is recording
+			LoadString(hAppInst, !DRV_WavIsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
+			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
 
 			//Menu items dependent on a ROM loaded
 			EnableMenuItem(mainMenu, IDM_GAME_INFO,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
@@ -2532,6 +2601,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_RESET,             MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_SHUT_UP,           MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
@@ -2866,6 +2936,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				AviEnd();
 			else
 				AviRecordTo();
+			break;
+		case IDM_FILE_RECORDWAV:
+			if (DRV_WavIsRecording())
+				WavEnd();
+			else
+				WavRecordTo();
 			break;
 		case IDM_STATE_LOAD:
 			{

@@ -78,7 +78,7 @@ struct SCustomKeys
 	SCustomKey ToggleRasterizer;
 	SCustomKey PrintScreen;	//Screenshot
 
-	SCustomKey RecordAVI;
+	SCustomKey RecordWAV, RecordAVI;
 
 	SCustomKey ToggleFrameCounter;
 	SCustomKey ToggleFPS;

@@ -239,6 +239,7 @@ MENU_PRINCIPAL MENU
         MENUITEM "Save Screenshot &As...", IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot", IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
+        MENUITEM "Record WAV", IDM_FILE_RECORDWAV
         MENUITEM "Record AVI", IDM_FILE_RECORDAVI
         MENUITEM SEPARATOR
         MENUITEM "&Record Movie...", IDM_RECORD_MOVIE
@@ -3685,6 +3686,8 @@ STRINGTABLE
 {
     IDM_FILE_RECORDAVI            "Record AVI"
     IDM_FILE_STOPAVI              "Stop AVI"
+    IDM_FILE_RECORDWAV            "Record WAV"
+    IDM_FILE_STOPWAV              "Stop WAV"
 }
 
 
