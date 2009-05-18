@@ -595,11 +595,12 @@ void BackupDevice::reset_command()
 		//we can now safely detect the save address size
 		u32 autodetect_size = data_autodetect.size();
 		addr_size = autodetect_size - 1;
-		if(autodetect_size==6) addr_size = 2; //castlevania dawn of sorrow 64kbit eeprom (EEPROM2 in the old system)
+		if(autodetect_size==6) addr_size = 2; //castlevania dawn of sorrow
 		if(autodetect_size==258) addr_size = 2; //warioware touched
-		if(autodetect_size==9) addr_size = 1; //star wars III (BM_CMD_READLOW)
-		if(autodetect_size==113) addr_size = 1; //space invaders revolution (BM_CMD_READLOW)
-		if(autodetect_size==33) addr_size = 1; //bomberman (BM_CMD_READLOW)
+		if(autodetect_size==9) addr_size = 1; //star wars III
+		if(autodetect_size==113) addr_size = 1; //space invaders revolution
+		if(autodetect_size==33) addr_size = 1; //bomberman
+		if(autodetect_size==66) addr_size = 2; //pokemon dash
 		if(addr_size>4)
 		{
 			LOG("Unexpected backup memory address size: %d\n",addr_size);
