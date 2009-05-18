@@ -255,11 +255,10 @@ SFORMAT SF_MOVIE[]={
 static void mmu_savestate(std::ostream* os)
 {
 	//version
-	write32le(1,os);
-
-	write32le(MMU.bupmem.type,os);
-	write32le(MMU.bupmem.size,os);
-	os->write((char*)MMU.bupmem.data,MMU.bupmem.size);
+	write32le(2,os);
+	
+	//newer savefile system:
+	MMU.backupDevice.save_state(os);
 }
 
 static bool mmu_loadstate(std::istream* is, int size)
@@ -268,29 +267,45 @@ static bool mmu_loadstate(std::istream* is, int size)
 	int version;
 	if(read32le(&version,is) != 1) return false;
 	
-
-	u32 bupmem_size;
-
-	if(version == 0)
+	if(version == 0 || version == 1)
 	{
-		//version 0 was buggy and didnt save the type. 
-		//it would silently fail if there was a size mismatch
-		SAV_silent_fail_flag = true;
-		if(read32le(&bupmem_size,is) != 1) return false;
-		//if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
-		mc_realloc(&MMU.bupmem,MC_TYPE_AUTODETECT,bupmem_size);
-	}
-	else
-	{
-		//version 1 reinitializes the save system with the type that was saved
-		int bupmem_type;
-		if(read32le(&bupmem_type,is) != 1) return false;
-		if(read32le(&bupmem_size,is) != 1) return false;
-		mc_realloc(&MMU.bupmem,bupmem_type,bupmem_size);
-	}
+		u32 bupmem_size;
+		u32 addr_size;
 
-	is->read((char*)MMU.bupmem.data,bupmem_size);
-	if(is->fail()) return false;
+		if(version == 0)
+		{
+			//version 0 was buggy and didnt save the type. 
+			//it would silently fail if there was a size mismatch
+			SAV_silent_fail_flag = true;
+			if(read32le(&bupmem_size,is) != 1) return false;
+			//if(bupmem_size != MMU.bupmem.size) return false; //mismatch between current initialized and saved size
+			addr_size = BackupDevice::addr_size_for_old_save_size(bupmem_size);
+		}
+		else if(version == 1)
+		{
+			//version 1 reinitializes the save system with the type that was saved
+			int bupmem_type;
+			if(read32le(&bupmem_type,is) != 1) return false;
+			if(read32le(&bupmem_size,is) != 1) return false;
+			addr_size = BackupDevice::addr_size_for_old_save_type(bupmem_type);
+			if(addr_size == 0xFFFFFFFF)
+				addr_size = BackupDevice::addr_size_for_old_save_size(bupmem_size);
+		}
+
+		if(addr_size == 0xFFFFFFFF)
+			return false;
+
+		u8* temp = new u8[bupmem_size];
+		is->read((char*)temp,bupmem_size);
+		MMU.backupDevice.load_old_state(addr_size,temp,bupmem_size);
+		delete[] temp;
+		if(is->fail()) return false;
+	}
+	else if(version == 2)
+	{
+		//newer savefile system:
+		MMU.backupDevice.load_state(is);
+	}
 
 	return true;
 }

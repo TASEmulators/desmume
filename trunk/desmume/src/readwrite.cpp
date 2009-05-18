@@ -155,3 +155,19 @@ int read32le(u32 *Bufo, std::istream *is)
 	return 1;
 }
 
+int readbuffer(std::vector<u8> &vec, std::istream* is)
+{
+	u32 size;
+	if(read32le(&size,is) != 1) return 0;
+	vec.resize(size);
+	if(size>0) is->read((char*)&vec[0],size);
+	return 1;
+}
+
+int writebuffer(std::vector<u8>& vec, std::ostream* os)
+{
+	u32 size = vec.size();
+	write32le(size,os);
+	if(size>0) os->write((char*)&vec[0],size);
+	return 1;
+}

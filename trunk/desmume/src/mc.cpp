@@ -24,6 +24,7 @@
 #include "types.h"
 #include "mc.h"
 #include "movie.h"
+#include "readwrite.h"
 
 #define FW_CMD_READ             0x3
 #define FW_CMD_WRITEDISABLE     0x4
@@ -49,6 +50,16 @@
 #define CARDFLASH_READ_BYTES_FAST	0x0B    /* Not used*/
 #define CARDFLASH_DEEP_POWDOWN		0xB9    /* Not used*/
 #define CARDFLASH_WAKEUP			0xAB    /* Not used*/
+
+//this should probably be 0xFF but we're using 0x00 until we find out otherwise
+//(no$ appears definitely to initialized to 0xFF)
+static const u8 kUninitializedSaveDataValue = 0x00; 
+
+static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
+
+static const u32 saveSizes[] = {512,8*1024,64*1024,256*1024,512*1024,32*1024};
+static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
+
 
 void mc_init(memory_chip_t *mc, int type)
 {
@@ -510,3 +521,342 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 	return data;
 }	
 
+
+bool BackupDevice::save_state(std::ostream* os)
+{
+	int version = 0;
+	write32le(version,os);
+//	write32le(0,os); //reserved for type if i need it later
+//	write32le(0,os); //reserved for size if i need it later
+	write32le(write_enable,os);
+	write32le(com,os);
+	write32le(addr_size,os);
+	write32le(addr_counter,os);
+	write32le((u32)state,os);
+	writebuffer(data,os);
+	writebuffer(data_autodetect,os);
+	return true;
+}
+
+bool BackupDevice::load_state(std::istream* is)
+{
+	int version;
+	if(read32le(&version,is)!=1) return false;
+	if(version==0) {
+		u32 size, type;
+//		read32le(&size,is);
+//		read32le(&type,is);
+		read32le(&write_enable,is);
+		read32le(&com,is);
+		read32le(&addr_size,is);
+		read32le(&addr_counter,is);
+		read32le((u32*)&state,is);
+		readbuffer(data,is);
+		readbuffer(data_autodetect,is);
+	}
+	return true;
+}
+
+//due to unfortunate shortcomings in the emulator architecture, 
+//at reset-time, we won't have a filename to the .sav file.
+//so the only difference between load_rom (init) and reset is that
+//one of them saves the filename
+void BackupDevice::load_rom(const char* filename)
+{
+	this->filename = filename;
+	reset();
+}
+
+void BackupDevice::reset()
+{
+	state = DETECTING;
+	data.resize(0);
+	data_autodetect.resize(0);
+	loadfile();
+	flushPending = false;
+}
+
+void BackupDevice::close_rom() {}
+
+void BackupDevice::reset_command()
+{
+	//for a performance hack, save files are only flushed after each reset command
+	//(hopefully, after each page)
+	if(flushPending)
+	{
+		flush();
+		flushPending = false;
+	}
+
+	if(state == DETECTING && data_autodetect.size()>0)
+	{
+		//we can now safely detect the save address size
+		u32 autodetect_size = data_autodetect.size();
+		addr_size = autodetect_size - 1;
+		if(autodetect_size==6) addr_size = 2; //castlevania dawn of sorrow 64kbit eeprom (EEPROM2 in the old system)
+		if(addr_size>4)
+		{
+			LOG("Unexpected backup memory address size: %d\n",addr_size);
+		}
+		state = RUNNING;
+		data_autodetect.resize(0);
+	}
+
+	com = 0;
+}
+u8 BackupDevice::data_command(u8 val)
+{
+	if(com == BM_CMD_READLOW || com == BM_CMD_WRITELOW)
+	{
+		//handle data or address
+		if(state == DETECTING)
+		{
+			if(com == BM_CMD_WRITELOW)
+			{
+				LOG("Unexpected backup device initialization sequence using writes!\n");
+			}
+
+			//just buffer the data until we're no longer detecting
+			data_autodetect.push_back(val);
+			val = 0;
+		}
+		else
+		{
+			if(addr_counter<addr_size)
+			{
+				//continue building address
+				addr <<= 8;
+				addr |= val;
+				addr_counter++;
+			}
+			else
+			{
+				//address is complete
+				ensure(addr);
+				if(com == BM_CMD_READLOW)
+				{
+					val = data[addr];
+					//printf("read: %08X\n",addr);
+				}
+				else 
+				{
+					data[addr] = val;
+					flushPending = true;
+					//printf("writ: %08X\n",addr);
+				}
+				addr++;
+
+			}
+		}
+	}
+	else if(com == BM_CMD_READSTATUS)
+	{
+		//handle request to read status
+		//LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
+		return (write_enable << 1);
+	}
+	else
+	{
+		//there is no current command. receive one
+		switch(val)
+		{
+			case 0: break; //??
+			
+			case BM_CMD_WRITEDISABLE:
+				write_enable = FALSE;
+				break;
+							
+			case BM_CMD_READSTATUS:
+				com = BM_CMD_READSTATUS;
+				break;
+
+			case BM_CMD_WRITEENABLE:
+				write_enable = TRUE;
+				break;
+
+			case BM_CMD_WRITELOW:
+			case BM_CMD_READLOW:
+				com = val;
+				addr_counter = 0;
+				addr = 0;
+				break;
+
+			case BM_CMD_WRITEHIGH:
+			case BM_CMD_READHIGH:
+				if(val == BM_CMD_WRITEHIGH) val = BM_CMD_WRITELOW;
+				if(val == BM_CMD_READHIGH) val = BM_CMD_READLOW;
+				com = val;
+				addr_counter = 0;
+				addr = 0;
+				if(addr_size==1) {
+					//"write command that's only available on ST M95040-W that I know of"
+					//this makes sense, since this device would only have a 256 bytes address space with writelow
+					//and writehigh would allow access to the upper 256 bytes
+					//but it was detected in pokemon diamond also during the main save process
+					addr = 0x1;
+				}
+				break;
+
+			default:
+				LOG("Unhandled Backup Memory command: %02X\n", val);
+				break;
+		}
+	}
+	return val;
+}
+
+//guarantees that the data buffer has room enough for a byte at the specified address
+void BackupDevice::ensure(u32 addr)
+{
+	u32 size = data.size();
+	if(size<addr+1)
+	{
+		data.resize(addr+1);
+	}
+	for(u32 i=size;i<=addr;i++)
+		data[i] = kUninitializedSaveDataValue;
+}
+
+
+void BackupDevice::loadfile()
+{
+	FILE* inf = fopen(filename.c_str(),"rb");
+	if(inf)
+	{
+		//scan for desmume save footer
+		const u32 cookieLen = strlen(kDesmumeSaveCookie);
+		char *sigbuf = new char[cookieLen];
+		fseek(inf, -cookieLen, SEEK_END);
+		fread(sigbuf,1,cookieLen,inf);
+		int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
+		delete[] sigbuf;
+		if(cmp)
+		{
+			//raw save file
+			fseek(inf, 0, SEEK_END);
+			int size = ftell(inf);
+			fseek(inf, 0, SEEK_SET);
+			data.resize(size);
+			fread(&data[0],1,size,inf);
+			fclose(inf);
+			return;
+		}
+		//desmume format
+		fseek(inf, -cookieLen, SEEK_END);
+		fseek(inf, -4, SEEK_CUR);
+		u32 version = 0xFFFFFFFF;
+		read32le(&version,inf);
+		if(version!=0) {
+			LOG("Unknown save file format\n");
+			return;
+		}
+		fseek(inf, -24, SEEK_CUR);
+		struct {
+			u32 size,padSize,type,addr_size,mem_size;
+		} info;
+		read32le(&info.size,inf);
+		read32le(&info.padSize,inf);
+		read32le(&info.type,inf);
+		read32le(&info.addr_size,inf);
+		read32le(&info.mem_size,inf);
+
+		//establish the save data
+		data.resize(info.size);
+		fseek(inf, 0, SEEK_SET);
+		fread(&data[0],1,info.size,inf); //read all the raw data we have
+		state = RUNNING;
+		addr_size = info.addr_size;
+		//none of the other fields are used right now
+
+		fclose(inf);
+	}
+	else
+	{
+		LOG("Missing save file %s\n",filename.c_str());
+	}
+}
+
+u32 BackupDevice::addr_size_for_old_save_size(int bupmem_size)
+{
+	switch(bupmem_size) {
+		case MC_SIZE_4KBITS: return 2; //1? hi command?
+		case MC_SIZE_64KBITS: 
+		case MC_SIZE_256KBITS:
+		case MC_SIZE_512KBITS:
+			return 2;
+		case MC_SIZE_1MBITS:
+		case MC_SIZE_2MBITS:
+		case MC_SIZE_4MBITS:
+		case MC_SIZE_8MBITS:
+		case MC_SIZE_16MBITS:
+		case MC_SIZE_64MBITS:
+			return 3;
+		default:
+			return 0xFFFFFFFF;
+	}
+}
+
+u32 BackupDevice::addr_size_for_old_save_type(int bupmem_type)
+{
+	switch(bupmem_type)
+	{
+		case MC_TYPE_EEPROM1:
+			return 1;
+		case MC_TYPE_EEPROM2:
+		case MC_TYPE_FRAM:
+              return 2;
+		case MC_TYPE_FLASH:
+			return 3;
+		default:
+			return 0xFFFFFFFF;
+	}
+}
+
+
+void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
+{
+	state = RUNNING;
+	this->addr_size = addr_size;
+	this->data.resize(datasize);
+	memcpy(&this->data[0],data,datasize);
+}
+
+void BackupDevice::flush()
+{
+	FILE* outf = fopen(filename.c_str(),"wb");
+	if(outf)
+	{
+		fwrite(&data[0],1,data.size(),outf);
+		
+		//write the footer. we use a footer so that we can maximize the chance of the
+		//save file being recognized as a raw save file by other emulators etc.
+		
+		//first, pad up to the next largest known save size.
+		u32 size = data.size();
+		int ctr=0;
+		while(ctr<saveSizes_count && size > saveSizes[ctr]) ctr++;
+		u32 padSize = saveSizes[ctr];
+
+		for(u32 i=size;i<padSize;i++)
+			fputc(kUninitializedSaveDataValue,outf);
+
+		//this is just for humans to read
+		fprintf(outf,"|<--Snip above here to create a raw sav by excluding this DeSmuME savedata footer:");
+
+		//and now the actual footer
+		write32le(size,outf); //the size of data that has actually been written
+		write32le(padSize,outf); //the size we padded it to
+		write32le(0,outf); //save memory type
+		write32le(addr_size,outf);
+		write32le(0,outf); //save memory size
+		write32le(0,outf); //version number
+		fprintf(outf,kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
+
+
+		fclose(outf);
+	}
+	else
+	{
+		LOG("Unable to open savefile %s\n",filename.c_str());
+	}
+}
