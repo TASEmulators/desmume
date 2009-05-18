@@ -52,7 +52,7 @@
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
-				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
+				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;HAVE_LIBZZIP"
 				ExceptionHandling="1"
 				BufferSecurityCheck="false"
 				EnableEnhancedInstructionSet="2"
