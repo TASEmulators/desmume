@@ -2933,7 +2933,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 					/* Nand Init? */
 					case 0x94:
 						{
-							val = 0; //Unsure what to return here to return 0 for now
+							val = 0; //Unsure what to return here so return 0 for now
 						}
 						break;
 					/* Nand Error? */

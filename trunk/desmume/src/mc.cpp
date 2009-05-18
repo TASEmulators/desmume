@@ -513,7 +513,7 @@ u8 bm_transfer(memory_chip_t *mc, u8 data)
 				break;
 
 			default:
-				LOG("Unhandled Backup Memory command: %02X\n", data);
+				LOG("TRANSFER: Unhandled Backup Memory command: %02X\n", data);
 				break;
 		}
 	}
@@ -596,6 +596,8 @@ void BackupDevice::reset_command()
 		u32 autodetect_size = data_autodetect.size();
 		addr_size = autodetect_size - 1;
 		if(autodetect_size==6) addr_size = 2; //castlevania dawn of sorrow
+		if(autodetect_size==7) addr_size = 3; //advance wars dual strike 2mbit flash
+		if(autodetect_size==31) addr_size = 3; //daigasso! band brothers  2mbit flash
 		if(autodetect_size==258) addr_size = 2; //warioware touched
 		if(autodetect_size==9) addr_size = 1; //star wars III
 		if(autodetect_size==113) addr_size = 1; //space invaders revolution
@@ -603,7 +605,7 @@ void BackupDevice::reset_command()
 		if(autodetect_size==66) addr_size = 2; //pokemon dash
 		if(addr_size>4)
 		{
-			LOG("Unexpected backup memory address size: %d\n",addr_size);
+			LOG("RESET: Unexpected backup memory address size: %d\n",addr_size);
 		}
 		state = RUNNING;
 		data_autodetect.resize(0);
@@ -705,7 +707,7 @@ u8 BackupDevice::data_command(u8 val)
 				break;
 
 			default:
-				LOG("Unhandled Backup Memory command: %02X\n", val);
+				LOG("COMMAND: Unhandled Backup Memory command: %02X\n", val);
 				break;
 		}
 	}
