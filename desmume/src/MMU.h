@@ -118,7 +118,6 @@ struct MMU_struct {
 	  
     memory_chip_t fw;
     memory_chip_t bupmem;
-	BackupDevice backupDevice;
 	  
     nds_dscard	dscard[2];
 	u32			CheckTimers;
@@ -126,7 +125,13 @@ struct MMU_struct {
 		  
 };
 
+struct MMU_struct_new
+{
+	BackupDevice backupDevice;
+};
+
 extern MMU_struct MMU;
+extern MMU_struct_new MMU_new;
 
 
 struct armcpu_memory_iface {
