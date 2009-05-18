@@ -599,6 +599,7 @@ void BackupDevice::reset_command()
 		if(autodetect_size==258) addr_size = 2; //warioware touched
 		if(autodetect_size==9) addr_size = 1; //star wars III (BM_CMD_READLOW)
 		if(autodetect_size==113) addr_size = 1; //space invaders revolution (BM_CMD_READLOW)
+		if(autodetect_size==33) addr_size = 1; //bomberman (BM_CMD_READLOW)
 		if(addr_size>4)
 		{
 			LOG("Unexpected backup memory address size: %d\n",addr_size);
