@@ -361,6 +361,9 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 	//shared wram mapping for arm7
 	if(PROCNUM==ARMCPU_ARM7)
 	{
+		//necessary? not sure
+		//addr &= 0x3FFFF;
+		//addr += 0x06000000;
 		u32 ofs = addr & 0x1FFFF;
 		u32 bank = (addr >> 17)&1;
 		if(vram_arm7_map[bank] == VRAM_PAGE_UNMAPPED)
@@ -918,9 +921,9 @@ void MMU_Init(void) {
 	MMU.fw.fp = NULL;
 
 	// Init Backup Memory device, this should really be done when the rom is loaded
-	mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
-	mc_alloc(&MMU.bupmem, 1);
-	MMU.bupmem.fp = NULL;
+	//mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
+	//mc_alloc(&MMU.bupmem, 1);
+	//MMU.bupmem.fp = NULL;
 	rtcInit();
 	addonsInit();
 	if(Mic_Init() == FALSE)
@@ -934,9 +937,9 @@ void MMU_DeInit(void) {
 	if (MMU.fw.fp)
 		fclose(MMU.fw.fp);
 	mc_free(&MMU.fw);      
-	if (MMU.bupmem.fp)
-		fclose(MMU.bupmem.fp);
-	mc_free(&MMU.bupmem);
+	//if (MMU.bupmem.fp)
+	//	fclose(MMU.bupmem.fp);
+	//mc_free(&MMU.bupmem);
 	addonsClose();
 	Mic_DeInit();
 }
@@ -1781,23 +1784,26 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				u16 oldval = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204);
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204, val);
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204, (val & 0xFF80) | (oldval & 0x7F));
+				return;
 			}
-			return;
 
 			case REG_AUXSPICNT:
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val);
 				AUX_SPI_CNT = val;
 
 				if (val == 0)
-				   mc_reset_com(&MMU.bupmem);     /* reset backup memory device communication */
+				   //mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
+				   MMU.backupDevice.reset_command();
 				return;
-				
+
 			case REG_AUXSPIDATA:
 				if(val!=0)
 				   AUX_SPI_CMD = val & 0xFF;
 
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
+				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU.backupDevice.data_command(val));
 				return;
+
 			case REG_DISPA_BG0CNT :
 				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
 				GPU_setBGProp(MainScreen.gpu, 0, val);
@@ -3079,14 +3085,16 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				AUX_SPI_CNT = val;
 
 				if (val == 0)
-				   mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
+				   //mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
+				   MMU.backupDevice.reset_command();
 			return;
 
 			case REG_AUXSPIDATA:
 				if(val!=0)
 				   AUX_SPI_CMD = val & 0xFF;
 
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
+				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU.backupDevice.data_command(val));
 			return;
 
 			case REG_SPICNT :
@@ -4019,10 +4027,10 @@ void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer)
 }
 
 void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
-    if (type<0 || type > 6) return;
-    *bmemtype=save_types[type][0];
-    *bmemsize=save_types[type][1];
-    mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
+    //if (type<0 || type > 6) return;
+    //*bmemtype=save_types[type][0];
+    //*bmemsize=save_types[type][1];
+    //mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }
 
 ////////////////////////////////////////////////////////////

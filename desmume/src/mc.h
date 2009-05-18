@@ -22,6 +22,8 @@
 #define __FW_H__
 
 #include <stdio.h>
+#include <vector>
+#include <string>
 #include "types.h"
 
 #define MC_TYPE_AUTODETECT      0x0
@@ -59,6 +61,52 @@ typedef struct
         u8 autodetectbuf[32768];
         int autodetectsize;
 } memory_chip_t;
+
+//the new backup system by zeromus
+class BackupDevice
+{
+public:
+	void load_rom(const char* filename);
+	void reset();
+	void close_rom();
+
+	bool save_state(std::ostream* os);
+	bool load_state(std::istream* is);
+	
+	//commands from mmu
+	void reset_command();
+	u8 data_command(u8);
+
+	//this info was saved before the last reset (used for savestate compatibility)
+	struct SavedInfo
+	{
+		u32 addr_size;
+	} savedInfo;
+
+	void load_old_state(u32 addr_size, u8* data, u32 datasize);
+
+	static u32 addr_size_for_old_save_size(int bupmem_size);
+	static u32 addr_size_for_old_save_type(int bupmem_type);
+
+private:
+	BOOL write_enable;	//is write enabled?
+	u32 com;	//persistent command actually handled
+	u32 addr_size, addr_counter;
+	u32 addr;
+
+	std::string filename;
+	std::vector<u8> data;
+	std::vector<u8> data_autodetect;
+	enum : u32 {
+		DETECTING = 0, RUNNING = 1
+	} state;
+
+	void loadfile();
+	void ensure(u32 addr);
+	void flush();
+
+	bool flushPending;
+};
 
 #define NDS_FW_SIZE_V1 (256 * 1024)		/* size of fw memory on nds v1 */
 #define NDS_FW_SIZE_V2 (512 * 1024)		/* size of fw memory on nds v2 */

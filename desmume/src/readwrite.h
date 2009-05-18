@@ -4,6 +4,7 @@
 #include "types.h"
 #include <iostream>
 #include <cstdio>
+#include <vector>
 
 //well. just for the sake of consistency
 int write8le(u8 b, FILE *fp);
@@ -20,5 +21,8 @@ int read32le(u32 *Bufo, FILE *fp);
 int read16le(u16 *Bufo, std::istream *is);
 inline int read16le(s16 *Bufo, std::istream* is) { return read16le((u16*)Bufo,is); }
 int read8le(u8 *Bufo, std::istream *is);
+
+int readbuffer(std::vector<u8> &vec, std::istream* is);
+int writebuffer(std::vector<u8>& vec, std::ostream* os);
 
 #endif

@@ -118,6 +118,7 @@ struct MMU_struct {
 	  
     memory_chip_t fw;
     memory_chip_t bupmem;
+	BackupDevice backupDevice;
 	  
     nds_dscard	dscard[2];
 	u32			CheckTimers;
