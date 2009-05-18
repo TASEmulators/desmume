@@ -32,6 +32,7 @@
 #include "ram_search.h"		//In order to call UpdateRamSearch (for loadstate functions)
 #include "replay.h"
 #include "aviout.h"
+#include "wavout.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -169,6 +170,7 @@ void HK_AutoHoldClearKeyDown(int) {
 void HK_Reset(int) {ResetGame();}
 
 void HK_RecordAVI(int) { if (DRV_AviIsRecording()) AviEnd(); else AviRecordTo(); }
+void HK_RecordWAV(int) { if (DRV_WavIsRecording()) WavEnd(); else WavRecordTo(); }
 
 void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
@@ -434,6 +436,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->StopMovie.name = L"Stop Movie";
 	keys->StopMovie.page = HOTKEY_PAGE_MOVIE;
 	keys->StopMovie.key = NULL;
+
+	keys->RecordWAV.handleKeyDown = HK_RecordWAV;
+	keys->RecordWAV.code = "RecordWAV";
+	keys->RecordWAV.name = L"Record WAV";
+	keys->RecordWAV.page = HOTKEY_PAGE_MAIN;
+	keys->RecordWAV.key = NULL;
 
 	keys->RecordAVI.handleKeyDown = HK_RecordAVI;
 	keys->RecordAVI.code = "RecordAVI";

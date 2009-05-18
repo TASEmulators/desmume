@@ -541,6 +541,14 @@
 				RelativePath=".\tileView.h"
 				>
 			</File>
+			<File
+				RelativePath=".\wavout.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\wavout.h"
+				>
+			</File>
 			<Filter
 				Name="userconfig"
 				>

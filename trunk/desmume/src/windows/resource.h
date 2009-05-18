@@ -510,6 +510,8 @@
 #define ID_VIEW_DISPLAYMICROPHONE               40014
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_FILE_STOPAVI                        40016
+#define IDM_FILE_RECORDWAV                      40017
+#define IDM_FILE_STOPWAV                        40018
 #define IDM_STOPMOVIE                           40019
 #define ID_FILE_RECENTROM                       40034
 #define IDC_SAVETYPE7                           40037

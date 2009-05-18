@@ -30,11 +30,11 @@
 
 #include "debug.h"
 
-void EMU_PrintError(const char* msg) {
+static void EMU_PrintError(const char* msg) {
 	LOG(msg);
 }
 
-void EMU_PrintMessage(const char* msg) {
+static void EMU_PrintMessage(const char* msg) {
 	LOG(msg);
 }
 
