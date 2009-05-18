@@ -206,8 +206,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release FastBuild|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\__bins"
+			IntermediateDirectory="$(SolutionDir)\.VS2005\$(ConfigurationName)\$(PlatformName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			WholeProgramOptimization="0"
@@ -267,7 +267,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib"
-				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
+				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
 				AdditionalLibraryDirectories=".\zlib123;.\zziplib"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
