@@ -60,6 +60,9 @@
 
 #define EMULOOP_PRIO (G_PRIORITY_HIGH_IDLE + 20)
 
+#if GTK_CHECK_VERSION(2,14,0)
+#define HAVE_TIMEOUT 1
+#endif
 
 static int backupmemorytype=MC_TYPE_AUTODETECT;
 static u32 backupmemorysize=1;
@@ -339,7 +342,9 @@ struct configured_features {
 
   const char *nds_file;
   const char *cflash_disk_image_file;
+#ifdef HAVE_TIMEOUT
   int timeout;
+#endif
 };
 
 static void
@@ -361,7 +366,9 @@ init_configured_features( struct configured_features *config)
 
   config->cflash_disk_image_file = NULL;
 
+#ifdef HAVE_TIMEOUT
   config->timeout = 0;
+#endif
 
   /* use the default language */
   config->firmware_language = -1;
@@ -404,7 +411,9 @@ fill_configured_features( struct configured_features *config,
     { "arm7gdb", 0, 0, G_OPTION_ARG_INT, &config->arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
 #endif
     { "cflash", 0, 0, G_OPTION_ARG_FILENAME, &config->cflash_disk_image_file, "Enable disk image GBAMP compact flash emulation", "PATH_TO_DISK_IMAGE"},
+#ifdef HAVE_TIMEOUT
     { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit desmume after the specified seconds for testing purpose.", "SECONDS"},
+#endif
     { NULL }
   };
   GOptionContext *ctx;
@@ -901,8 +910,13 @@ static int ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer
     gint daW, daH, imgH, imgW, xoff, yoff, xsize, ysize, xs, ys, xd, yd;
     int rot = (nds_screen_rotation_angle % 180 == 90);
   
+#if GTK_CHECK_VERSION(2,14,0)
     gdk_drawable_get_size(
             gtk_widget_get_window(GTK_WIDGET(pDrawingArea)), &daW, &daH);
+#else
+    gdk_drawable_get_size(
+            (GTK_WIDGET(pDrawingArea))->window, &daW, &daH);
+#endif
 
     if(!rot){
         imgW = 256; imgH = 384;
@@ -1576,6 +1590,7 @@ static void desmume_gtk_menu_tools (GtkActionGroup *ag)
     }
 }
 
+#ifdef HAVE_TIMEOUT
 static gboolean timeout_exit_cb(gpointer data)
 {
     gtk_main_quit();
@@ -1583,6 +1598,7 @@ static gboolean timeout_exit_cb(gpointer data)
 
     return FALSE;
 }
+#endif
 
 
 static int
@@ -1812,9 +1828,11 @@ common_gtk_main( struct configured_features *my_config)
         }
     }
 
+#ifdef HAVE_TIMEOUT
     if (my_config->timeout > 0) {
         g_timeout_add_seconds(my_config->timeout, timeout_exit_cb, GINT_TO_POINTER(my_config->timeout));
     }
+#endif
 
     /* Main loop */
 
