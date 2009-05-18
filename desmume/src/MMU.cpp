@@ -372,7 +372,7 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 			unmapped = true;
 			return 0;
 		}
-		return LCDC_HACKY_LOCATION + (vram_arm7_map[bank]<<17) + ofs;
+		return LCDC_HACKY_LOCATION + (vram_arm7_map[bank]<<14) + ofs;
 	}
 
 	//handle LCD memory mirroring
