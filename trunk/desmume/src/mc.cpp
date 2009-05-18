@@ -597,6 +597,7 @@ void BackupDevice::reset_command()
 		addr_size = autodetect_size - 1;
 		if(autodetect_size==6) addr_size = 2; //castlevania dawn of sorrow 64kbit eeprom (EEPROM2 in the old system)
 		if(autodetect_size==258) addr_size = 2; //warioware touched
+		if(autodetect_size==9) addr_size = 1; //star wars III
 		if(addr_size>4)
 		{
 			LOG("Unexpected backup memory address size: %d\n",addr_size);
