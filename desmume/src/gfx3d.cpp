@@ -959,9 +959,10 @@ void gfx3d_glTexCoord(u32 val)
 void gfx3d_glNormal(u32 v)
 {
 	int i,c;
-	ALIGN(16) float normal[3] = { normalTable[v&1023],
+	ALIGN(16) float normal[4] = { normalTable[v&1023],
 						normalTable[(v>>10)&1023],
-						normalTable[(v>>20)&1023]};
+						normalTable[(v>>20)&1023],
+						1};
 
 	if (texCoordinateTransform == 2)
 	{
