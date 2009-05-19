@@ -357,6 +357,7 @@ extern struct TCommonSettings {
 		, wifiBridgeAdapterNum(0)
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, spuAdpcmCache(false)
+		, gfx3d_flushMode(0)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -376,6 +377,9 @@ extern struct TCommonSettings {
 	bool DebugConsole;
 	
 	int wifiBridgeAdapterNum;
+
+	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
+	int gfx3d_flushMode;
 	
 	SPUInterpolationMode spuInterpolationMode;
 	bool spuAdpcmCache;

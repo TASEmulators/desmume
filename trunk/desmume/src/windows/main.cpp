@@ -1829,6 +1829,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
 	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileInt("3D", "HighResolutionInterpolateColor", 1, IniName);
+	CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
 
 #ifdef BETA_VERSION
@@ -3589,6 +3590,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			int i;
 
 			CheckDlgButton(hw,IDC_INTERPOLATECOLOR,CommonSettings.HighResolutionInterpolateColor?1:0);
+			CheckDlgButton(hw,IDC_ALTERNATEFLUSH,CommonSettings.gfx3d_flushMode);
 
 			for(i = 0; core3DList[i] != NULL; i++)
 			{
@@ -3608,6 +3610,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
 					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.HighResolutionInterpolateColor?1:0, IniName);
+					CommonSettings.gfx3d_flushMode = (IsDlgButtonChecked(hw,IDC_ALTERNATEFLUSH) == BST_CHECKED)?1:0;
+					WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
 			case IDCANCEL:
 				{
@@ -3620,6 +3624,8 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 					NDS_3D_ChangeCore(GPU3D_OPENGL);
 					ComboBox_SetCurSel(GetDlgItem(hw, IDC_3DCORE), GPU3D_OPENGL);
 					WritePrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
+					CommonSettings.gfx3d_flushMode = 0;
+					WritePrivateProfileInt("3D", "AlternateFlush", CommonSettings.gfx3d_flushMode, IniName);
 				}
 				return TRUE;
 			}
