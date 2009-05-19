@@ -378,11 +378,11 @@ extern struct TCommonSettings {
 	
 	int wifiBridgeAdapterNum;
 
-	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
-	int gfx3d_flushMode;
-	
 	SPUInterpolationMode spuInterpolationMode;
 	bool spuAdpcmCache;
+
+	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
+	int gfx3d_flushMode;
 } CommonSettings;
 
 extern char ROMserial[20];
