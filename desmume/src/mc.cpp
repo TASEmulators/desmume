@@ -543,9 +543,11 @@ bool BackupDevice::load_state(std::istream* is)
 	int version;
 	if(read32le(&version,is)!=1) return false;
 	if(version==0) {
+#if 0
 		u32 size, type;
-//		read32le(&size,is);
-//		read32le(&type,is);
+		read32le(&size,is);
+		read32le(&type,is);
+#endif
 		read32le(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
