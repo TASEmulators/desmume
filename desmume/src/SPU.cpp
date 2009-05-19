@@ -129,13 +129,13 @@ public:
 	void lock() { 
 		lockCount++;
 	}
-	int lockCount;
 	u32 addr;
 	s8* raw_copy; //for memcmp
 	u32 raw_len;
 	u32 decode_len;
 	s16* decoded; //s16 decoded samples
 	ADPCMCacheItem *next, *prev; //double linked list
+	int lockCount;
 };
 
 //notes on the cache:
