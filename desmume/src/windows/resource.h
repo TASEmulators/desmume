@@ -225,6 +225,7 @@
 #define IDC_SOUNDCORECB                         1000
 #define IDC_USEEXTBIOS                          1000
 #define ID_BROWSE                               1000
+#define IDC_ALTERNATEFLUSH                      1001
 #define IDC_BGMAP_BGXCNT                        1001
 #define IDC_CHECKBOX_DEBUGGERMODE               1001
 #define IDC_EDIT01                              1001

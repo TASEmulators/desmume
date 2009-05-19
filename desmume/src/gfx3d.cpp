@@ -39,6 +39,7 @@
 #include "mem.h"
 #include "types.h"
 #include "saves.h"
+#include "NDSSystem.h"
 #include "readwrite.h"
 #include "FIFO.h"
 
@@ -1397,8 +1398,10 @@ void gfx3d_glFlush(u32 v)
 	flushPending = TRUE;
 	gfx3d.sortmode = BIT0(v);
 	gfx3d.wbuffer = BIT1(v);
+
 	//see discussion at top of file
-	gfx3d_doFlush();
+	if(CommonSettings.gfx3d_flushMode == 0)
+		gfx3d_doFlush();
 }
 
 static int _CDECL_ gfx3d_ysort_compare_old_qsort(const void * elem1, const void * elem2)
@@ -1516,7 +1519,8 @@ void gfx3d_VBlankSignal()
 	}
 
 	//see discussion at top of file
-	//gfx3d_doFlush();
+	if(CommonSettings.gfx3d_flushMode == 1)
+		gfx3d_doFlush();
 }
 
 void gfx3d_VBlankEndSignal(bool skipFrame)
