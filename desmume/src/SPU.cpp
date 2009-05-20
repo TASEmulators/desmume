@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 SPU_struct *SPU_core = 0;
 SPU_struct *SPU_user = 0;
+int SPU_currentCoreNum = SNDCORE_DUMMY;
 
 static SoundInterface_struct *SNDCore=NULL;
 extern SoundInterface_struct *SNDCoreList[];
@@ -273,6 +274,8 @@ int SPU_ChangeSoundCore(int coreid, int buffersize)
 	// So which core do we want?
 	if (coreid == SNDCORE_DEFAULT)
 		coreid = 0; // Assume we want the first one
+
+	SPU_currentCoreNum = coreid;
 
 	// Go through core list and find the id
 	for (i = 0; SNDCoreList[i] != NULL; i++)

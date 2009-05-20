@@ -49,6 +49,7 @@ struct SoundInterface_struct
 
 extern SoundInterface_struct SNDDummy;
 extern SoundInterface_struct SNDFile;
+extern int SPU_currentCoreNum;
 
 class ADPCMCacheItem;
 
