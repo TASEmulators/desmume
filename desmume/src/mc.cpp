@@ -874,3 +874,39 @@ void BackupDevice::flush()
 		LOG("Unable to open savefile %s\n",filename.c_str());
 	}
 }
+
+bool BackupDevice::load_duc(const char* filename)
+{
+  long size;
+   char id[16];
+   FILE* file = fopen(filename, "rb");
+   size_t elems_read = 0;
+   if(file == NULL)
+      return false;
+
+   fseek(file, 0, SEEK_END);
+   size = ftell(file) - 500;
+   fseek(file, 0, SEEK_SET);
+
+   // Make sure we really have the right file
+   elems_read += fread((void *)id, sizeof(char), 16, file);
+
+   if (memcmp(id, "ARDS000000000001", 16) != 0)
+   {
+	   LOG("Not recognized as a valid DUC file\n");
+      fclose(file);
+      return false;
+   }
+   // Skip the rest of the header since we don't need it
+   fseek(file, 500, SEEK_SET);
+
+   ensure((u32)size);
+
+   fread(&data[0],1,size,file);
+   fclose(file);
+
+   flush();
+
+   return true;
+
+}

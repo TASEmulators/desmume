@@ -88,6 +88,8 @@ public:
 	static u32 addr_size_for_old_save_size(int bupmem_size);
 	static u32 addr_size_for_old_save_type(int bupmem_type);
 
+	bool load_duc(const char* filename);
+
 private:
 	BOOL write_enable;	//is write enabled?
 	u32 com;	//persistent command actually handled
