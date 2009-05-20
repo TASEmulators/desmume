@@ -601,6 +601,7 @@ void BackupDevice::reset_command()
 		if(autodetect_size==7) addr_size = 3; //advance wars dual strike 2mbit flash
 		if(autodetect_size==31) addr_size = 3; //daigasso! band brothers  2mbit flash
 		if(autodetect_size==258) addr_size = 2; //warioware touched
+		if(autodetect_size==257) addr_size = 1; //yoshi touch & go
 		if(autodetect_size==9) addr_size = 1; //star wars III
 		if(autodetect_size==113) addr_size = 1; //space invaders revolution
 		if(autodetect_size==33) addr_size = 1; //bomberman
