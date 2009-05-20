@@ -1090,7 +1090,7 @@ int NDS_ImportSave(const char *filename)
 		return 0;
 
 	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
-		return mc_load_duc(&MMU.bupmem, filename);
+		return MMU_new.backupDevice.load_duc(filename);
 
 	return 0;
 }
