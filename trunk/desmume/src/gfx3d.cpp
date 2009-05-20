@@ -1405,26 +1405,6 @@ void gfx3d_glFlush(u32 v)
 		gfx3d_doFlush();
 }
 
-static int _CDECL_ gfx3d_ysort_compare_old_qsort(const void * elem1, const void * elem2)
-{
-	int num1 = *(int*)elem1;
-	int num2 = *(int*)elem2;
-
-	POLY &poly1 = polylist->list[num1];
-	POLY &poly2 = polylist->list[num2];
-
-	if(poly1.maxy > poly2.maxy)
-		return 1;
-	else if(poly1.maxy < poly2.maxy)
-		return -1;
-	else if(poly1.miny < poly2.miny)
-		return 1;
-	else if(poly1.miny > poly2.miny)
-		return -1;
-	else 
-		return 0;
-}
-
 static bool gfx3d_ysort_compare(int num1, int num2)
 {
 	const POLY &poly1 = polylist->list[num1];
@@ -1485,21 +1465,17 @@ static void gfx3d_doFlush()
 			gfx3d.indexlist[ctr++] = i;
 	}
 
-	//========NOT SURE YET WHETHER I NEED A STABLE SORT========
-
 	//now we have to sort the opaque polys by y-value.
+	//(test case: harvest moon island of happiness character cretor UI)
 	//should this be done after clipping??
-	//does this need to be a stable sort???
-	//test case: harvest moon island of happiness character cretor UI
-	//std::stable_sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
-	qsort(gfx3d.indexlist, opaqueCount, 4, gfx3d_ysort_compare_old_qsort);
+	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
+	std::stable_sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
 
 	if(!gfx3d.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		//std::stable_sort(gfx3d.indexlist + opaqueCount, gfx3d.indexlist + polycount - opaqueCount, gfx3d_ysort_compare);
-		qsort(gfx3d.indexlist + opaqueCount, polycount - opaqueCount, 4, gfx3d_ysort_compare_old_qsort);
+		std::stable_sort(gfx3d.indexlist + opaqueCount, gfx3d.indexlist + polycount, gfx3d_ysort_compare);
 	}
 
 	//switch to the new lists
