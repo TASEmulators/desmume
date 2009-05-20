@@ -309,6 +309,7 @@ void gfx3d_reset()
 {
 	gfx3d = GFX3D();
 
+	drawPending = FALSE;
 	flushPending = FALSE;
 	listTwiddle = 1;
 	twiddleLists();
