@@ -1340,9 +1340,10 @@ static void setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 
 FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
 {
-	assert((color&0x8000)==0);
-	//in order to keep release builds from creating subtle errors which we will waste time tracking down,
-	//lets just go ahead and do this until we have proof that we dont have to
+	//It is not safe to assert this here.
+	//This is probably the best place to enforce it, since almost every single color that comes in here
+	//will be pulled from a palette that needs the top bit stripped off anyway.
+	//assert((color&0x8000)==0);
 	color &= 0x7FFF;
 
 	//if someone disagrees with these, they could be reimplemented as a function pointer easily
@@ -1582,6 +1583,11 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 					{
 						color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
 						gpu->__setFinalColorBck<MOSAIC>(color,x,currLine&0xF);
+
+						extern int currFrameCounter;
+						if(currFrameCounter == 0x20 && nds.VCount == 0x48) {
+							int zzz=9;
+						}
 
 						x++; xoff++;
 					}
