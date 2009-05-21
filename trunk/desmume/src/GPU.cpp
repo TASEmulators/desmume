@@ -1341,6 +1341,9 @@ static void setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
 {
 	assert((color&0x8000)==0);
+	//in order to keep release builds from creating subtle errors which we will waste time tracking down,
+	//lets just go ahead and do this until we have proof that we dont have to
+	color &= 0x7FFF;
 
 	//if someone disagrees with these, they could be reimplemented as a function pointer easily
 	bool draw=true;
