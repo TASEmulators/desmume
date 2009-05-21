@@ -610,6 +610,7 @@ void BackupDevice::reset_command()
 		if(autodetect_size==22) addr_size = 2; //puyo pop fever
 		if(autodetect_size==18) addr_size = 2; //lunar dragon song
 		if(autodetect_size==17) addr_size = 1; //shrek super slam
+		if(autodetect_size==109) addr_size = 1; //scooby-doo! unmasked
 		if(addr_size>4)
 		{
 			LOG("RESET: Unexpected backup memory address size: %d\n",addr_size);
