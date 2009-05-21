@@ -613,7 +613,7 @@ void BackupDevice::reset_command()
 		if(autodetect_size==109) addr_size = 1; //scooby-doo! unmasked
 		if(addr_size>4)
 		{
-			LOG("RESET: Unexpected backup memory address size: %d\n",addr_size);
+			INFO("RESET: Unexpected backup memory address size: %d\n",addr_size);
 		}
 		state = RUNNING;
 		data_autodetect.resize(0);
