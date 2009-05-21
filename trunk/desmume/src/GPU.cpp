@@ -1002,7 +1002,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 &color, const u8 x)
 		//If the layer we are drawing on is selected as 2nd source, we can blend
 		int bg_under = bgPixels[x];
 		if(blend2[bg_under])
-			color = blend(color,T2ReadWord(currDst, x<<1)) | 0x8000;
+			color = blend(color,T2ReadWord(currDst, x<<1));
 	}
 }
 
@@ -1010,7 +1010,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 &color, const u8 x)
 {
 	if(blend1)   // the bg to draw has a special color effect
 	{
-		color = (currentFadeInColors[color&0x7FFF] | 0x8000);
+		color = currentFadeInColors[color];
 	}
 }
 
@@ -1018,7 +1018,7 @@ FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 &color, const u8 x)
 {
 	if(blend1)   // the bg to draw has a special color effect
 	{
-		color = (currentFadeOutColors[color&0x7FFF] | 0x8000);
+		color = currentFadeOutColors[color];
 	}
 }
 
@@ -1056,7 +1056,7 @@ FORCEINLINE bool GPU::setFinalBGColorSpecialBlendWnd(u16 &color, const u8 x)
 
 			// If the layer we are drawing on is selected as 2nd source, we can blend
 			if(blend2[bg_under])
-				color = blend(color,T2ReadWord(currDst, x<<1))| 0x8000;
+				color = blend(color,T2ReadWord(currDst, x<<1));
 		}
 		return true;
 	}
@@ -1073,7 +1073,7 @@ FORCEINLINE bool GPU::setFinalBGColorSpecialIncreaseWnd(u16 &color, const u8 x)
 	{
 		if(blend1 && windowEffect)
 		{
-			color = currentFadeInColors[color&0x7FFF]| 0x8000;
+			color = currentFadeInColors[color];
 		}
 		return true;
 	}
@@ -1090,7 +1090,7 @@ FORCEINLINE bool GPU::setFinalBGColorSpecialDecreaseWnd(u16 &color, const u8 x)
 	{
 		if(blend1 && windowEffect)
 		{
-			color = currentFadeOutColors[color&0x7FFF]| 0x8000;
+			color = currentFadeOutColors[color];
 		}
 		return true;
 	}
@@ -1341,6 +1341,8 @@ static void setFinalOBJColorSpecialDecreaseWnd(GPU *gpu, u32 passing, u8 *dst, u
 
 FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
 {
+	assert((color&0x8000)==0);
+
 	//if someone disagrees with these, they could be reimplemented as a function pointer easily
 	bool draw=true;
 	switch(setFinalColorBck_funcNum)
@@ -1357,7 +1359,7 @@ FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
 
 	if(draw) 
 	{
-		T2WriteWord(currDst, x<<1, color);
+		T2WriteWord(currDst, x<<1, color | 0x8000);
 		bgPixels[x] = currBgNum;
 	}
 }
@@ -3074,13 +3076,6 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 	gpu->setup_windows<0>();
 	gpu->setup_windows<1>();
-
-
-
-	// initialize the scanline black
-	// not doing this causes invalid colors when all active BGs are prevented to draw at some place
-	// ZERO TODO - shouldnt this be BG palette color 0?
-	//memset(dst,0,256*2) ;
 
 	// This could almost be changed to use function pointers
 	switch (gpu->dispMode)
