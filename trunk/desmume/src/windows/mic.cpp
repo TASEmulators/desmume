@@ -23,16 +23,16 @@ int SampleLoaded=0;
 
 #define MIC_BUFSIZE 4096
 
-BOOL Mic_Inited = FALSE;
+static BOOL Mic_Inited = FALSE;
 
-u8 Mic_TempBuf[MIC_BUFSIZE];
-u8 Mic_Buffer[2][MIC_BUFSIZE];
-u16 Mic_BufPos;
-u8 Mic_WriteBuf;
-u8 Mic_PlayBuf;
+static u8 Mic_TempBuf[MIC_BUFSIZE];
+static u8 Mic_Buffer[2][MIC_BUFSIZE];
+static u16 Mic_BufPos;
+static u8 Mic_WriteBuf;
+static u8 Mic_PlayBuf;
 
-HWAVEIN waveIn;
-WAVEHDR waveHdr;
+static HWAVEIN waveIn;
+static WAVEHDR waveHdr;
 
 static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD param1, DWORD param2)
 {
@@ -57,9 +57,9 @@ static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD p
 	return 0;
 }
 
-char* samplebuffer;
-int samplebuffersize;
-FILE* fp;
+static char* samplebuffer;
+static int samplebuffersize;
+static FILE* fp;
 
 char* LoadSample(const char *name)
 {
@@ -148,11 +148,11 @@ void Mic_DeInit()
 	waveInClose(waveIn);
 }
 
-int random[32] = {0xB1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9, 0x70, 
+static const int random[32] = {0xB1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9, 0x70, 
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x28, 0x00, 0x00, 0x00, 
 0x00, 0x00, 0x20, 0xE1, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE9};
 
-int x=0;
+static int x=0;
 
 u8 Mic_ReadSample()
 {
@@ -161,32 +161,37 @@ u8 Mic_ReadSample()
 		return 0;
 
 	u8 ret;
-
-	if(MicButtonPressed)
-		if(SampleLoaded) {  //use a sample
+	u8 tmp;
+	if(MicButtonPressed) {
+		if(SampleLoaded) {  
+			//use a sample
+			tmp = samplebuffer[x >> 1];
 			x++;
-			if(x > samplebuffersize)
+			if(x == samplebuffersize*2) 
 				x=0;
-			ret=samplebuffer[x];
-		}
-		else {  //use the "random" values
+		} else {
+			//use the "random" values
+			tmp = random[x >> 1];
+			//tmp = rand()&0xFF;
 			x++;
-			if(x > ARRAY_SIZE(random))
+			if(x == ARRAY_SIZE(random)*2)
 				x=0;
-			ret = random[x];
 		}
-	else { //normal mic behavior
-		u8 tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
-
-		if(Mic_BufPos & 0x1)
-		{
-			ret = ((tmp & 0x1) << 7);
-		}
-		else
-		{
-			ret = ((tmp & 0xFE) >> 1);
-		}
+	} else {
+		//normal mic behavior
+		tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
 	}
+
+	if(Mic_BufPos & 0x1)
+	{
+		ret = ((tmp & 0x1) << 7);
+	}
+	else
+	{
+		ret = ((tmp & 0xFE) >> 1);
+	}
+
+	MicDisplay = tmp;
 
 	Mic_BufPos++;
 	if(Mic_BufPos >= (MIC_BUFSIZE << 1))
@@ -194,8 +199,6 @@ u8 Mic_ReadSample()
 		Mic_BufPos = 0;
 		Mic_PlayBuf ^= 1;
 	}
-
-	MicDisplay = ret;
 
 	return ret;
 }
