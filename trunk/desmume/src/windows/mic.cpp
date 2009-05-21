@@ -176,7 +176,7 @@ u8 Mic_ReadSample()
 			ret = random[x];
 		}
 	else { //normal mic behavior
-		u8 tmp = (u8)Mic_Buffer[Mic_BufPos >> 1];
+		u8 tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
 
 		if(Mic_BufPos & 0x1)
 		{
