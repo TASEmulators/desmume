@@ -71,8 +71,7 @@ GPU::MosaicLookup GPU::mosaicLookup;
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
 CACHE_ALIGN u8 GPU_tempScreen[4*256*192];
-CACHE_ALIGN u8 GPU_tempScanline[4*256]; //only one scanline
-bool GPU_tempScanline_valid; //whether GPU_tempScanline is valid (if not, fetch it from GPU_screen)
+CACHE_ALIGN u8 *GPU_tempScanline;
 
 CACHE_ALIGN u8 sprWin[256];
 
@@ -2790,10 +2789,7 @@ static void GPU_ligne_DispCapture(u16 l)
 									//INFO("Capture screen (BG + OBJ + 3D)\n");
 
 									u8 *src;
-									if(GPU_tempScanline_valid)
-										src = (u8*)(GPU_tempScanline);
-									else 
-										src = (u8 *)(GPU_tempScreen + (MainScreen.offset + l) * 512);
+									src = (u8*)(GPU_tempScanline);
 									CAPCOPY(src,cap_dst);
 								}
 							break;
@@ -2837,10 +2833,7 @@ static void GPU_ligne_DispCapture(u16 l)
 						if (gpu->dispCapCnt.srcA == 0)
 						{
 							// Capture screen (BG + OBJ + 3D)
-							if(GPU_tempScanline_valid)
-								srcA = (u16*)(GPU_tempScanline);
-							else 
-								srcA = (u16*)((u8 *)GPU_tempScreen + (MainScreen.offset + l) * 512);
+							srcA = (u16*)(GPU_tempScanline);
 						}
 						else
 						{
@@ -3039,7 +3032,6 @@ void GPU::update_winh(int WIN_NUM)
 void GPU_ligne(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
-	GPU_tempScanline_valid = false;
 
 	//here is some setup which is only done on line 0
 	if(l == 0) {
@@ -3077,7 +3069,17 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	gpu->setup_windows<0>();
 	gpu->setup_windows<1>();
 
-	// This could almost be changed to use function pointers
+	//always generate the 2d+3d, no matter what we're displaying, since we may need to capture it
+	//(if this seems inefficient in some cases, consider that the speed in those cases is not really a problem)
+	GPU_tempScanline = screen->gpu->currDst = (u8 *)(GPU_tempScreen) + (screen->offset + l) * 512;
+	GPU_ligne_layer(screen, l);
+
+	if (gpu->core == GPU_MAIN) 
+	{
+		GPU_ligne_DispCapture(l);
+		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
+	}
+
 	switch (gpu->dispMode)
 	{
 		case 0: // Display Off(Display white)
@@ -3090,8 +3092,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 
 		case 1: // Display BG and OBJ layers
-				screen->gpu->currDst = (u8 *)(GPU_tempScreen) + (screen->offset + l) * 512;
-				GPU_ligne_layer(screen, l);
+			//do nothing: it has already been generated into the right place
 			break;
 
 		case 2: // Display framebuffer
@@ -3110,22 +3111,8 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 	}
 
-	if (gpu->core == GPU_MAIN) 
-	{
-		//when not displaying the BG and OBJ, we might still need to generate it
-		//for purposes of capturing. therefore:
-		//TODO - LOW PRIORITY OPTIMIZATION - based on capture settings, selectively generate this
-		//we have already optimized it a tiny bit by putting it under the if(core is main)
-		if(gpu->dispMode != 1)
-		{
-			screen->gpu->currDst = (u8 *)(GPU_tempScanline);
-			GPU_ligne_layer(screen, l);
-			GPU_tempScanline_valid = true;
-		}
 
-		GPU_ligne_DispCapture(l);
-		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
-	}
+	
 	GPU_ligne_MasterBrightness(screen, l);
 }
 
