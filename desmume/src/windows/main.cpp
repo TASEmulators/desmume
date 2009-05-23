@@ -1160,11 +1160,14 @@ DWORD WINAPI run()
 			}
 
 
+			// TODO: make that thing properly threaded
+			// because, here, if the emu is slower, the tools will refresh less often
 			tools_frames++;
 			if(tools_frames == 10)
 			{
 				if(MemView_IsOpened(ARMCPU_ARM9)) MemView_Refresh(ARMCPU_ARM9);
 				if(MemView_IsOpened(ARMCPU_ARM7)) MemView_Refresh(ARMCPU_ARM7);
+			//	if(IORegView_IsOpened()) IORegView_Refresh();
 
 				tools_frames = 0;
 			}
@@ -1201,8 +1204,6 @@ DWORD WINAPI run()
 
 				if (framestoskip > 0)
 					skipnextframe = 1;
-
-				NDS_SkipFrame(false);
 			}
 			else
 			{
@@ -1215,8 +1216,9 @@ DWORD WINAPI run()
 
 				framesskipped++;
 
-				NDS_SkipFrame(true);
+				NDS_SkipNextFrame();
 			}
+
 			if(FastForward) {
 
 				if(framesskipped < 9)
@@ -1246,7 +1248,7 @@ DWORD WINAPI run()
 					QueryPerformanceCounter((LARGE_INTEGER *)&curticks);
 					diffticks = curticks-lastticks;
 
-					if(ThrottleIsBehind() && framesskipped < 9)
+					if(ThrottleIsBehind() && (framesskipped < 9))
 					{
 						skipnextframe = 1;
 						framestoskip = 1;
@@ -1934,6 +1936,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	MemView_DlgClose(ARMCPU_ARM9);
 	MemView_DlgClose(ARMCPU_ARM7);
+	//IORegView_DlgClose();
 
 	MemView_DeInit();
 
@@ -3103,6 +3106,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_IOREG:
 			ViewRegisters->open();
+			//IORegView_DlgOpen(HWND_DESKTOP, "I/O registers");
 			return 0;
 		case IDM_MEMORY:
 		/*	ViewMem_ARM7->regClass("MemViewBox7", ViewMem_ARM7BoxProc);
@@ -3111,8 +3115,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ViewMem_ARM9->regClass("MemViewBox9", ViewMem_ARM9BoxProc);
 			if (!ViewMem_ARM9->open())
 				ViewMem_ARM9->unregClass();*/
-			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(hwnd, "ARM9 memory", ARMCPU_ARM9);
-			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(hwnd, "ARM7 memory", ARMCPU_ARM7);
+			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);
+			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(HWND_DESKTOP, "ARM7 memory", ARMCPU_ARM7);
 			return 0;
 		case IDM_DISASSEMBLER:
 			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);
