@@ -1587,10 +1587,10 @@ int NDS_LoadFirmware(const char *filename)
 
 void NDS_Sleep() { nds.sleeping = TRUE; }
 
-bool skipThisFrame = false;
-bool skipThisFrame3D = false;
+bool SkipCur2DFrame = false, SkipNext2DFrame = false;
+bool SkipCur3DFrame = false;
 
-void NDS_SkipFrame(bool skip) { skipThisFrame = skip; }
+void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
@@ -1699,7 +1699,7 @@ u32 NDS_exec(s32 nb)
 			}
 
 #ifdef EXPERIMENTAL_WIFI
-			/* TODO: the wifi stuff isn't actually clocked by the ARM7 clock, */
+			/* FIXME: the wifi stuff isn't actually clocked by the ARM7 clock, */
 			/* but by a 22 mhz oscillator. */
 			if(nds7old < nds.ARM7Cycle)
 			{
@@ -1713,10 +1713,13 @@ u32 NDS_exec(s32 nb)
 				}
 			}
 #endif
-		}
+		} // for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
 
 		if(!nds.sleeping)
 		{
+
+		//	for(i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
+		//	{
 
 		nds.cycles = std::min(nds.ARM9Cycle,nds.ARM7Cycle);
 
@@ -1733,13 +1736,11 @@ u32 NDS_exec(s32 nb)
 
 				if(nds.VCount<192)
 				{
-					if(!skipThisFrame)
+					if(!SkipCur2DFrame)
 					{
 						GPU_ligne(&MainScreen, nds.VCount);
 						GPU_ligne(&SubScreen, nds.VCount);
 					}
-
-					skipThisFrame3D = skipThisFrame;
 
 					if(MMU.DMAStartTime[0][0] == 2)
 						MMU_doDMA<ARMCPU_ARM9>(0);
@@ -1819,6 +1820,14 @@ u32 NDS_exec(s32 nb)
 					//osdA->update();
 					gfx3d_VBlankSignal();
 
+					if(SkipNext2DFrame)
+					{
+						SkipCur2DFrame = true;
+						SkipNext2DFrame = false;
+					}
+					else
+						SkipCur2DFrame = false;
+
 					T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
 					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
 					NDS_ARM9VBlankInt();
@@ -1851,7 +1860,8 @@ u32 NDS_exec(s32 nb)
 				}
 				else if(nds.VCount==214)
 				{
-					gfx3d_VBlankEndSignal(false);
+					gfx3d_VBlankEndSignal(SkipCur3DFrame);
+					SkipCur3DFrame = false;
 				}
 				else if(nds.VCount==263)
 				{
@@ -1929,7 +1939,16 @@ u32 NDS_exec(s32 nb)
 				else
 					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
 			}
-		}
+		} // if(nds.cycles >= nds.nextHBlank)
+
+	/*	} // for(i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
+
+		} // if(!nds.sleeping)
+
+		} // for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
+
+		if(!nds.sleeping)
+		{*/
 
 		if(MMU.divRunning)
 		{

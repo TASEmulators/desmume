@@ -287,7 +287,8 @@ int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
 
 void NDS_Sleep();
 
-void NDS_SkipFrame(bool skip);
+void NDS_SkipNextFrame();
+#define NDS_SkipFrame(s) if(s) NDS_SkipNext2DFrame();
 
 template<bool FORCE>
 u32 NDS_exec(s32 nb);
