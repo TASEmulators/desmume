@@ -112,41 +112,50 @@ void HK_PrintScreen(int param)
 
 void HK_StateSaveSlot(int num)
 {
-	if (!paused)
+	if (romloaded)
 	{
-		NDS_Pause();
-		savestate_slot(num);	//Savestate
-		NDS_UnPause();
+		if (!paused)
+		{
+			NDS_Pause();
+			savestate_slot(num);	//Savestate
+			NDS_UnPause();
+		}
+		else
+			savestate_slot(num);	//Savestate
+		
+		lastSaveState = num;		//Set last savestate used
+		SaveStateMessages(num, 0);	//Display state loaded message
+		LoadSaveStateInfo();
 	}
-	else
-		savestate_slot(num);	//Savestate
-	
-	lastSaveState = num;		//Set last savestate used
-	SaveStateMessages(num, 0);	//Display state loaded message
-	LoadSaveStateInfo();
 }
 
 void HK_StateLoadSlot(int num)
 {
-	BOOL wasPaused = paused;
-	NDS_Pause();
-	loadstate_slot(num);		//Loadstate
-	lastSaveState = num;		//Set last savestate used
-	SaveStateMessages(num, 1);	//Display state loaded message
+	if (romloaded)
+	{
+		BOOL wasPaused = paused;
+		NDS_Pause();
+		loadstate_slot(num);		//Loadstate
+		lastSaveState = num;		//Set last savestate used
+		SaveStateMessages(num, 1);	//Display state loaded message
 
-	Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
-	Update_RAM_Search();		//main.cpp - case IDM_STATE_LOAD: also calls these functions
+		Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
+		Update_RAM_Search();		//main.cpp - case IDM_STATE_LOAD: also calls these functions
 
-	if(!wasPaused)
-		NDS_UnPause();
-	else
-		Display();
+		if(!wasPaused)
+			NDS_UnPause();
+		else
+			Display();
+	}
 }
 
 void HK_StateSetSlot(int num)
 {
-	lastSaveState = num;
-	SaveStateMessages(num,2);	
+	if (romloaded)
+	{
+		lastSaveState = num;
+		SaveStateMessages(num,2);
+	}
 }
 
 void HK_StateQuickSaveSlot(int)
