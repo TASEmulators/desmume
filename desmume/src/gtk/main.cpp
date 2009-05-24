@@ -1455,11 +1455,10 @@ gboolean EmuLoop(gpointer data)
     }
 
     desmume_cycle();    /* Emule ! */
-    NDS_SkipFrame(true);
     for (i = 0; i < Frameskip; i++) {
+        NDS_SkipNextFrame();
         desmume_cycle();
     }
-    NDS_SkipFrame(false);
 
     _updateDTools();
     gtk_widget_queue_draw( pDrawingArea );
