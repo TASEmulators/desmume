@@ -133,11 +133,9 @@ gboolean EmuLoop(gpointer data)
 {
 	if(desmume_running())	/* Si on est en train d'executer le programme ... */
 	{
-		if(Frameskip == 0)
-			NDS_SkipFrame(false);
-		else
-			NDS_SkipFrame(((fsFrameCount % (Frameskip+1)) == 0) ? false : true);
-		
+		if(Frameskip != 0 && (fsFrameCount % (Frameskip+1)) != 0)
+			NDS_SkipNextFrame();	
+	
 		fsFrameCount++;
 	  
 		fps_FrameCount++;
