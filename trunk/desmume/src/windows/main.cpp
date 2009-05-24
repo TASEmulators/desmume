@@ -93,6 +93,43 @@ using namespace std;
 #include <pcap.h>
 #include <remote-ext.h> //uh?
 
+//#define WX_STUB
+
+#ifdef WX_STUB
+
+// for compilers that support precompilation, includes "wx/wx.h".
+#include "wx/wxprec.h"
+
+class wxDesmumeApp : public wxApp
+{
+public:
+	//call me each frame or something.
+	//sort of an idle routine
+	static void frameUpdate()
+	{
+		if(!wxTheApp) return;
+		wxDesmumeApp* self = ((wxDesmumeApp*)wxTheApp);
+		self->DeletePendingObjects();
+	}
+};
+
+IMPLEMENT_APP_NO_MAIN( wxDesmumeApp )
+
+class wxTestModeless : public wxFrame
+{
+public:
+	wxTestModeless(const wxChar *title, int x, int y)
+       : wxFrame(NULL, wxID_ANY, title, wxPoint(x, y), wxSize(700, 450))    
+	{}
+};
+
+void wxTest() {
+    wxTestModeless *frame = new wxTestModeless(_T("Controls wxWidgets App"), 50, 50);
+    frame->Show(true);
+}
+
+#endif
+
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
@@ -1000,6 +1037,11 @@ void CheckMessages()
 {
 	MSG msg;
 	HWND hwnd = MainWindow->getHWnd();
+
+	#ifdef WX_STUB
+	wxDesmumeApp::frameUpdate();
+	#endif
+
 	while( PeekMessage( &msg, 0, 0, 0, PM_NOREMOVE ) )
 	{
 		if( GetMessage( &msg, 0,  0, 0)>0 )
@@ -1582,6 +1624,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
+#ifdef WX_STUB
+	wxInitialize();
+#endif
+
 	driver = new WinDriver();
 
 	InitializeCriticalSection(&win_sync);
@@ -3476,6 +3522,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDM_ABOUT:
 			{
+			#ifdef WX_STUB
+				wxTest();
+				return 0;
+			#endif
 				bool tpaused=false;
 				if (execute) 
 				{
