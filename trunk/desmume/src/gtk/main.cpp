@@ -1430,9 +1430,10 @@ static inline void _updateDTools()
 
 gboolean EmuLoop(gpointer data)
 {
-    static Uint32 fps, fps_SecStart, fps_FrameCount;
+    static Uint32 fps_SecStart, fps_FrameCount;
+    static int limiter_frame_counter;
     unsigned int i;
-    gchar *Title;
+    gchar Title[20];
 
     if (!desmume_running()) {
       regMainLoop = FALSE;
@@ -1440,18 +1441,16 @@ gboolean EmuLoop(gpointer data)
     }
 
     /* If desmume is currently running */
-    static int limiter_frame_counter = 0;
     fps_FrameCount += Frameskip + 1;
     if (!fps_SecStart)
       fps_SecStart = SDL_GetTicks();
+
     if (SDL_GetTicks() - fps_SecStart >= 1000) {
         fps_SecStart = SDL_GetTicks();
-        fps = fps_FrameCount;
-        fps_FrameCount = 0;
 
-        Title = g_strdup_printf("Desmume - %dfps", fps);
+        snprintf(Title, sizeof(Title), "Desmume - %dfps", fps_FrameCount);
         gtk_window_set_title(GTK_WINDOW(pWindow), Title);
-        g_free(Title);
+        fps_FrameCount = 0;
     }
 
     desmume_cycle();    /* Emule ! */
