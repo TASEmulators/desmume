@@ -70,7 +70,6 @@ void IPC_FIFOsend(u8 proc, u32 val)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-//	MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0400) << 8 );
 	setIF(proc_remote, ((cnt_l & 0x0400)<<8));
 }
 
@@ -112,7 +111,6 @@ u32 IPC_FIFOrecv(u8 proc)
 	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x184, cnt_l);
 	T1WriteWord(MMU.MMU_MEM[proc_remote][0x40], 0x184, cnt_r);
 
-	//MMU.reg_IF[proc_remote] |= ( (cnt_l & 0x0004) << 15);
 	setIF(proc_remote, ((cnt_l & 0x0004)<<15));
 
 	return (val);
@@ -147,7 +145,6 @@ void GFX_FIFOclear()
 
 	gxFIFO.tail = 0;
 	gxstat |= 0x06000000;
-	gxstat |= 0x00000002;					// this is hack (must be removed later)
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 }
 
@@ -158,7 +155,6 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	if (gxstat & 0x01000000) return;		// full
 
 	gxstat &= 0x0000FFFF;
-	gxstat |= 0x00000002;					// this is hack (must be removed later)
 
 	gxFIFO.cmd[gxFIFO.tail] = cmd;
 	gxFIFO.param[gxFIFO.tail] = param;
@@ -184,7 +180,6 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0xF000FFFF;
-	gxstat |= 0x00000002;					// this is hack (must be removed later)
 	if (!gxFIFO.tail)						// empty
 	{
 		//gxstat |= (0x01FF << 16);
@@ -234,8 +229,6 @@ void GFX_FIFOcnt(u32 val)
 	
 	if (gxstat & 0xC0000000)
 	{
-		//NDS_makeARM9Int(21);
-		//MMU.reg_IF[0] = (1<<21);
 		setIF(0, (1<<21));
 	}
 }

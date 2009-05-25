@@ -351,8 +351,9 @@ static void BindTexture(u32 tx)
 	glLoadIdentity ();
 	glScaled (texcache[tx].invSizeX, texcache[tx].invSizeY, 1.0f);
 
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (BIT16(texcache[tx].frm) ? (BIT18(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (BIT17(texcache[tx].frm) ? (BIT19(texcache[tx].frm)?GL_MIRRORED_REPEAT:GL_REPEAT) : GL_CLAMP));
 }
@@ -814,20 +815,20 @@ static void OGLRender()
 
 			glBegin(GL_TRIANGLES);
 
-			for(int j = 1; j < (type-1); j++)
-			{
-				VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
-				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
-				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
-
-				u8 alpha =	material_5bit_to_8bit[poly->getAlpha()];
-
-				u8 color0[4] = {
+			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
+			u8 alpha =	material_5bit_to_8bit[poly->getAlpha()];
+			u8 color0[4] = {
 					material_5bit_to_8bit[vert0->color[0]],
 					material_5bit_to_8bit[vert0->color[1]],
 					material_5bit_to_8bit[vert0->color[2]],
 					alpha
 				};
+
+			for(int j = 1; j < (type-1); j++)
+			{
+				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
+				VERT *vert2 = &gfx3d.vertlist->list[poly->vertIndexes[j+1]];
+				
 				u8 color1[4] = {
 					material_5bit_to_8bit[vert1->color[0]],
 					material_5bit_to_8bit[vert1->color[1]],
