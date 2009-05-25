@@ -867,7 +867,7 @@ void BackupDevice::flush()
 		write32le(addr_size,outf);
 		write32le(0,outf); //save memory size
 		write32le(0,outf); //version number
-		fprintf(outf,kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
+		fprintf(outf, "%s", kDesmumeSaveCookie); //this is what we'll use to recognize the desmume format save
 
 
 		fclose(outf);
