@@ -1313,7 +1313,7 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, sync_r);
 
 	if ((val & 0x2000) && (sync_r & 0x4000))
-		MMU.reg_IF[proc^1] |= ( 1 << 16 );
+		setIF(proc^1, ( 1 << 16 ));
 }
 
 //================================================================================================== ARM9 *
@@ -2255,6 +2255,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 
 			case 0x04000600:
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x600>>2] = val;
 				GFX_FIFOcnt(val);
 				return;
 			// Alpha test reference value - Parameters:1
@@ -2825,19 +2826,6 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	{
 		switch(adr)
 		{
-#ifndef USE_GEOMETRY_FIFO_EMULATION
-			case 0x04000600:	// Geometry Engine Status Register (R and R/W)
-			{
-				
-				u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20)], 
-								adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20)]);
-
-				// this is hack
-				//gxstat |= 0x00000002;
-				return gxstat;
-			}
-#endif
-
 			case 0x04000640:
 			case 0x04000644:
 			case 0x04000648:

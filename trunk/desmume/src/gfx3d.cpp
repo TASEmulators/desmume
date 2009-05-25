@@ -383,7 +383,7 @@ void gfx3d_glFogOffset (u32 v)
 void gfx3d_glClearDepth(u32 v)
 {
 	//formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
-	v &= 0x7FFFF;
+	v &= 0x7FFF;
 	gfx3d.clearDepth = (v*0x200)+((v+1)/0x8000)*0x01FF;
 }
 
@@ -1115,6 +1115,7 @@ void gfx3d_glAlphaFunc(u32 v)
 BOOL gfx3d_glBoxTest(u32 v)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat &= 0xFFFFFFFD;		// clear boxtest bit
 	gxstat |= 0x00000001;		// busy
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
@@ -1203,7 +1204,8 @@ faceInside:
 	gxstat |= 0x2;
 
 noFaceInside:*/
-	gxstat &= 0xFFFFFFFE;
+	gxstat &= 0xFFFFFFFE;		// clear busy bit
+	gxstat |= 0x00000002;		// hack
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 	return TRUE;
 }
@@ -1410,16 +1412,11 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	const POLY &poly1 = polylist->list[num1];
 	const POLY &poly2 = polylist->list[num2];
 
-	if(poly1.maxy > poly2.maxy)
-		return true;
-	else if(poly1.maxy < poly2.maxy)
-		return false;
-	else if(poly1.miny < poly2.miny)
-		return true;
-	else if(poly1.miny > poly2.miny)
-		return false;
-	else 
-		return false; //equal should always return false "strict weak ordering"
+	if (poly1.maxy > poly2.maxy) return true;
+	if (poly1.maxy < poly2.maxy) return false;
+	if (poly1.miny < poly2.miny) return true;
+	if (poly1.miny > poly2.miny) return false;
+	return false;  //equal should always return false "strict weak ordering"
 }
 
 static void gfx3d_doFlush()
@@ -1440,12 +1437,17 @@ static void gfx3d_doFlush()
 
 	//find the min and max y values for each poly.
 	//TODO - this could be a small waste of time if we are manual sorting the translucent polys
-	for(int i=0;i<polycount;i++) {
+	for(int i=0; i<polycount; i++)
+	{
 		POLY &poly = polylist->list[i];
-		for(int j=0;j<poly.type;j++) {
-			VERT &vert = vertlist->list[poly.vertIndexes[j]];
-			poly.miny = j==0?vert.y:min(poly.miny,vert.y);
-			poly.maxy = j==0?vert.y:max(poly.maxy,vert.y);
+		float verty = 0.0f; 
+		poly.miny = poly.maxy = vertlist->list[poly.vertIndexes[0]].y;
+
+		for(int j=1; j<poly.type; j++)
+		{
+			verty = vertlist->list[poly.vertIndexes[j]].y;
+			poly.miny = min(poly.miny, verty);
+			poly.maxy = max(poly.maxy, verty);
 		}
 	}
 
@@ -1470,7 +1472,7 @@ static void gfx3d_doFlush()
 	//should this be done after clipping??
 	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
 	std::stable_sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
-
+	
 	if(!gfx3d.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
