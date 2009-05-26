@@ -1117,7 +1117,6 @@ DWORD WINAPI run()
 	int fps=0;
 	int fpsframecount=0;
 	u64 fpsticks=0;
-	int tools_frames = 0;
 	int	res;
 	HWND	hwnd = MainWindow->getHWnd();
 
@@ -1206,15 +1205,15 @@ DWORD WINAPI run()
 
 
 			// TODO: make that thing properly threaded
-			// because, here, if the emu is slower, the tools will refresh less often
-			tools_frames++;
-			if(tools_frames == 10)
+			static DWORD tools_time_last = 0;
+			DWORD time_now = timeGetTime();
+			if((time_now - tools_time_last) >= 50)
 			{
 				if(MemView_IsOpened(ARMCPU_ARM9)) MemView_Refresh(ARMCPU_ARM9);
 				if(MemView_IsOpened(ARMCPU_ARM7)) MemView_Refresh(ARMCPU_ARM7);
 			//	if(IORegView_IsOpened()) IORegView_Refresh();
 
-				tools_frames = 0;
+				tools_time_last = time_now;
 			}
 			if(SoundView_IsOpened()) SoundView_Refresh();
 
