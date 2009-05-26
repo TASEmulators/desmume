@@ -90,7 +90,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 {
 	static struct CreateMovieParameters* p = NULL;
 	std::wstring author = L"";
-	std::string filename;	//temp variable
+	std::string fname;
 	int x;	//temp vairable
 	switch(uMsg)
 	{
@@ -102,7 +102,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 			{
 			case IDOK: {
 				author = GetDlgItemTextW<500>(hwndDlg,IDC_EDIT_AUTHOR);
-				std::string fname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_FILENAME);
+				fname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_FILENAME);
 				if (fname.length())
 				{
 					FCEUI_SaveMovie(fname.c_str(), author);
@@ -133,12 +133,12 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 				GetSaveFileName(&ofn);
 			
 				//If user did not specify an extension, add .dsm for them
-				filename = szChoice;
-				x = filename.find_last_of(".");
+				fname = szChoice;
+				x = fname.find_last_of(".");
 				if (x < 0)
-					filename.append(".dsm");
+					fname.append(".dsm");
 
-				SetDlgItemText(hwndDlg, IDC_EDIT_FILENAME, filename.c_str());
+				SetDlgItemText(hwndDlg, IDC_EDIT_FILENAME, fname.c_str());
 				//if(GetSaveFileName(&ofn))
 				//	UpdateRecordDialogPath(hwndDlg,szChoice);
 
