@@ -90,6 +90,8 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 {
 	static struct CreateMovieParameters* p = NULL;
 	std::wstring author = L"";
+	std::string filename;	//temp variable
+	int x;	//temp vairable
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
@@ -114,7 +116,6 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 			{
 				OPENFILENAME ofn;
 				char szChoice[MAX_PATH]={0};
-				char recordfilename[MAX_PATH];
 
 				// browse button
 				ZeroMemory(&ofn, sizeof(ofn));
@@ -127,8 +128,14 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 				ofn.nMaxFile = MAX_PATH;
 				ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 				GetSaveFileName(&ofn);
-				strcpy(recordfilename, szChoice);
-				SetDlgItemText(hwndDlg, IDC_EDIT_FILENAME, recordfilename);
+			
+				//If user did not specify an extension, add .dsm for them
+				filename = szChoice;
+				x = filename.find_last_of(".");
+				if (x < 0)
+					filename.append(".dsm");
+
+				SetDlgItemText(hwndDlg, IDC_EDIT_FILENAME, filename.c_str());
 				//if(GetSaveFileName(&ofn))
 				//	UpdateRecordDialogPath(hwndDlg,szChoice);
 
