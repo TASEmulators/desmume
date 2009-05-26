@@ -103,8 +103,11 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 			case IDOK: {
 				author = GetDlgItemTextW<500>(hwndDlg,IDC_EDIT_AUTHOR);
 				std::string fname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_FILENAME);
-				FCEUI_SaveMovie(fname.c_str(), author);
-				EndDialog(hwndDlg, 0);
+				if (fname.length())
+				{
+					FCEUI_SaveMovie(fname.c_str(), author);
+					EndDialog(hwndDlg, 0);
+				}
 				return true;
 				}
 
