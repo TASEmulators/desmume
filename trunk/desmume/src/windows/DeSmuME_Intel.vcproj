@@ -657,6 +657,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\soundView.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\throttle.cpp"
 					>
 				</File>
@@ -788,6 +792,10 @@
 				</File>
 				<File
 					RelativePath=".\snddx.h"
+					>
+				</File>
+				<File
+					RelativePath=".\soundView.h"
 					>
 				</File>
 				<File

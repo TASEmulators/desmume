@@ -52,9 +52,9 @@ extern SoundInterface_struct *SNDCoreList[];
 
 static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
 static FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
-static FORCEINLINE s32 spudivide(s32 val) { 
-	//return val / 127; //more accurate
-	return val >> 7; //faster
+static FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
+	assert(multiplier <= 127);
+	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
 }
 
 //const int shift = (FORMAT == 0 ? 2 : 1);
@@ -452,11 +452,17 @@ void SPU_struct::ShutUp()
 		 channels[i].status = CHANSTAT_STOPPED;
 }
 
+static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
+{
+	//chan->sampinc = (((double)33512000) / (44100 * 2)) / (double)(0x10000 - chan->timer);
+	chan->sampinc = (16777216 / (0x10000 - (double)chan->timer)) / 44100;
+}
+
 void SPU_struct::KeyOn(int channel)
 {
 	channel_struct &thischan = channels[channel];
 
-	thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
+	adjust_channel_timer(&thischan);
 
 	//   LOG("Channel %d key on: vol = %d, datashift = %d, hold = %d, pan = %d, waveduty = %d, repeat = %d, format = %d, source address = %07X, timer = %04X, loop start = %04X, length = %06X, MMU.ARM7_REG[0x501] = %02X\n", channel, chan->vol, chan->datashift, chan->hold, chan->pan, chan->waveduty, chan->repeat, chan->format, chan->addr, chan->timer, chan->loopstart, chan->length, T1ReadByte(MMU.ARM7_REG, 0x501));
 	switch(thischan.format)
@@ -580,7 +586,7 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		break;
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
-		thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
+		adjust_channel_timer(&thischan);
 		break;
 	case 0xA:
 		thischan.loopstart = val;
@@ -631,7 +637,7 @@ void SPU_struct::WriteLong(u32 addr, u32 val)
 	case 0x8:
 		thischan.timer = val & 0xFFFF;
 		thischan.loopstart = val >> 16;
-		thischan.sampinc = (16777216 / (0x10000 - (double)thischan.timer)) / 44100;
+		adjust_channel_timer(&thischan);
 		break;
 	case 0xC:
 		thischan.length = val & 0x3FFFFF;
@@ -787,21 +793,21 @@ static FORCEINLINE void FetchPSGData(channel_struct *chan, s32 *data)
 
 static FORCEINLINE void MixL(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	data = (spudivide(data * chan->vol)) >> chan->datashift;
+	data = spumuldiv7(data, chan->vol) >> chan->datashift;
 	SPU->sndbuf[SPU->bufpos<<1] += data;
 }
 
 static FORCEINLINE void MixR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	data = (spudivide(data * chan->vol)) >> chan->datashift;
+	data = spumuldiv7(data, chan->vol) >> chan->datashift;
 	SPU->sndbuf[(SPU->bufpos<<1)+1] += data;
 }
 
 static FORCEINLINE void MixLR(SPU_struct* SPU, channel_struct *chan, s32 data)
 {
-	data = (spudivide(data * chan->vol)) >> chan->datashift;
-	SPU->sndbuf[SPU->bufpos<<1] += spudivide(data * (127 - chan->pan));
-	SPU->sndbuf[(SPU->bufpos<<1)+1] += spudivide(data * chan->pan);
+	data = spumuldiv7(data, chan->vol) >> chan->datashift;
+	SPU->sndbuf[SPU->bufpos<<1] += spumuldiv7(data, 127 - chan->pan);
+	SPU->sndbuf[(SPU->bufpos<<1)+1] += spumuldiv7(data, chan->pan);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -976,7 +982,7 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 		for (i = 0; i < length*2; i++)
 		{
 			// Apply Master Volume
-			SPU->sndbuf[i] = spudivide(SPU->sndbuf[i] * vol);
+			SPU->sndbuf[i] = spumuldiv7(SPU->sndbuf[i], vol);
 
 			if (SPU->sndbuf[i] > 0x7FFF)
 				SPU->outbuf[i] = 0x7FFF;
