@@ -81,6 +81,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "ram_search.h"
 #include "aviout.h"
 #include "wavout.h"
+#include "soundView.h"
 
 #include "directx/ddraw.h"
 
@@ -1052,7 +1053,9 @@ void CheckMessages()
 					SendMessage(RamWatchHWnd, msg.message, msg.wParam, msg.lParam);
 				continue;
 			}
-			
+			if (SoundView_GetHWnd() && IsDialogMessage(SoundView_GetHWnd(), &msg))
+				continue;
+
 			if(!TranslateAccelerator(hwnd,hAccel,&msg))
 			{
 				TranslateMessage(&msg);
@@ -1213,7 +1216,7 @@ DWORD WINAPI run()
 
 				tools_frames = 0;
 			}
-
+			if(SoundView_IsOpened()) SoundView_Refresh();
 
 			Update_RAM_Watch();
 			Update_RAM_Search();
@@ -1801,6 +1804,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	GInfo_Init();
 
 	MemView_Init();
+	SoundView_Init();
 
 	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
 	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
@@ -1982,9 +1986,11 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	MemView_DlgClose(ARMCPU_ARM9);
 	MemView_DlgClose(ARMCPU_ARM7);
+	SoundView_DlgClose();
 	//IORegView_DlgClose();
 
 	MemView_DeInit();
+	SoundView_DeInit();
 
 	//if (input!=NULL) delete input;
 	if (ViewLights!=NULL) delete ViewLights;
@@ -3163,6 +3169,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ViewMem_ARM9->unregClass();*/
 			if(!MemView_IsOpened(ARMCPU_ARM9)) MemView_DlgOpen(HWND_DESKTOP, "ARM9 memory", ARMCPU_ARM9);
 			if(!MemView_IsOpened(ARMCPU_ARM7)) MemView_DlgOpen(HWND_DESKTOP, "ARM7 memory", ARMCPU_ARM7);
+			return 0;
+		case IDM_SOUND_VIEW:
+			if(!SoundView_IsOpened()) SoundView_DlgOpen(HWND_DESKTOP);
 			return 0;
 		case IDM_DISASSEMBLER:
 			ViewDisasm_ARM7->regClass("DesViewBox7",ViewDisasm_ARM7BoxProc);

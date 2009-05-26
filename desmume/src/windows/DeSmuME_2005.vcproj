@@ -526,6 +526,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\soundView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\soundView.h"
+				>
+			</File>
+			<File
 				RelativePath=".\throttle.cpp"
 				>
 			</File>
