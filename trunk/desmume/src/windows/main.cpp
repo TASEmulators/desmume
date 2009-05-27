@@ -2631,7 +2631,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			mii.dwTypeData = menuItemString;
 			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
 			//Check if WAV is recording
-			LoadString(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
+			LoadString(hAppInst, !WAV_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
 			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
 
 			//Menu items dependent on a ROM loaded
