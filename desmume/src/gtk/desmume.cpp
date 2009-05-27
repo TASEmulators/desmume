@@ -74,7 +74,6 @@ BOOL desmume_running( void)
 
 void desmume_cycle( void)
 {
-  static u32 desmume_last_cycle;
   u16 keypad;
 
   /* Joystick events */
@@ -85,8 +84,7 @@ void desmume_cycle( void)
   /* Update keypad value */
   update_keypad(keypad);
 
-  desmume_last_cycle = NDS_exec<false>((560190 << 1) - desmume_last_cycle);
+  NDS_exec<false>();
   SPU_Emulate_user();
-  SPU_Emulate_core();
 }
  

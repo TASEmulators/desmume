@@ -64,7 +64,7 @@ const u16 gtk_kb_cfg[NB_KEYS] =
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
-&SNDFile,
+&SNDDummy,
 &SNDSDL,
 NULL
 };

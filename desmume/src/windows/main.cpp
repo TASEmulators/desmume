@@ -1,25 +1,25 @@
-/*  Copyright (C) 2006 yopyop
-yopyop156@ifrance.com
-yopyop156.ifrance.com
+/*  aviout.cpp
 
-Copyright 2006 Theo Berkau
+	Copyright 2006 Theo Berkau
+    Copyright (C) 2006-2009 DeSmuME team
 
-This file is part of DeSmuME
+    This file is part of DeSmuME
 
-DeSmuME is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-DeSmuME is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with DeSmuME; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
+
 #include "windriver.h"
 #include <algorithm>
 #include <shellapi.h>
@@ -80,7 +80,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "ramwatch.h"
 #include "ram_search.h"
 #include "aviout.h"
-#include "wavout.h"
 #include "soundView.h"
 
 #include "directx/ddraw.h"
@@ -242,7 +241,6 @@ int sndvolume=100;
 
 SoundInterface_struct *SNDCoreList[] = {
 	&SNDDummy,
-	&SNDFile,
 	&SNDDIRECTX,
 	NULL
 };
@@ -1159,25 +1157,10 @@ DWORD WINAPI run()
 
 			{
 				Lock lock;
-				NDS_exec(0);
+				NDS_exec<false>();
 				win_sound_samplecounter = 735;
 			}
-
-			SPU_Emulate_core();
-
-			//we are driving the dsound output from another thread
-			//but there is no thread for the filewriter. so we need to do it here
-			if(sndcoretype == SNDCORE_FILEWRITE)
-				SPU_Emulate_user();
-
-			//avi writing
-			DRV_AviSoundUpdate(SPU_core->outbuf,spu_core_samples);
 			DRV_AviVideoUpdate((u16*)GPU_screen);
-			//wav writing
-			DRV_WavSoundUpdate(SPU_core->outbuf,spu_core_samples);
-
-			//    if (!skipnextframe)
-			//   {
 
 			static int fps3d = 0;
 
@@ -1192,7 +1175,7 @@ DWORD WINAPI run()
 					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d (no movie)",currFrameCounter);
 			}
 
-			if(!DRV_AviIsRecording()) osd->update();
+			if(!AVI_IsRecording()) osd->update();
 			Display();
 			osd->clear();
 
@@ -1572,11 +1555,9 @@ static void ExitRunLoop()
 	emu_halt();
 }
 
-BOOL AVI_IsRecording();
-BOOL WAV_IsRecording();
 class WinDriver : public Driver
 {
-	virtual BOOL WIFI_Host_InitSystem() {
+	virtual bool WIFI_Host_InitSystem() {
 		#ifdef EXPERIMENTAL_WIFI
 			//require winsock initialization
 			WSADATA wsaData ;
@@ -1584,18 +1565,18 @@ class WinDriver : public Driver
 			if (WSAStartup(version,&wsaData))
 			{
 				printf("Failed initializing WSAStartup - softAP support disabled\n");
-				return FALSE ;
+				return false ;
 			}
 			//require wpcap.dll
 			HMODULE temp = LoadLibrary("wpcap.dll");
 			if(temp == NULL) {
 				printf("Failed initializing wpcap.dll - softAP support disabled\n");
-				return FALSE;
+				return false;
 			}
 			FreeLibrary(temp);
-			return TRUE;
+			return true;
 		#else
-			return FALSE ;
+			return false ;
 		#endif
 	}
 	virtual void WIFI_Host_ShutdownSystem() {
@@ -1604,19 +1585,24 @@ class WinDriver : public Driver
 		#endif
 	}
 
-	virtual BOOL AVI_IsRecording()
+	virtual bool AVI_IsRecording()
 	{
 		return ::AVI_IsRecording();
 	}
 
-	virtual BOOL WAV_IsRecording()
+	virtual bool WAV_IsRecording()
 	{
 		return ::WAV_IsRecording();
 	}
 
 	virtual void USR_InfoMessage(const char *message)
 	{
+		LOG("%s\n", message);
 		SetMessageToDisplay(message);
+	}
+
+	virtual void AVI_SoundUpdate(void* soundData, int soundLen) { 
+		::DRV_AviSoundUpdate(soundData, soundLen);
 	}
 };
 
@@ -1887,7 +1873,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	EnableMenuItem (mainMenu, IDM_SUBMITBUGREPORT, MF_GRAYED);
 #endif
 	LOG("Init sound core\n");
-	sndcoretype = GetPrivateProfileInt("Sound","SoundCore", SNDCORE_DIRECTX, IniName);
+	sndcoretype = GetPrivateProfileInt("Sound","SoundCore2", SNDCORE_DIRECTX, IniName);
 	sndbuffersize = GetPrivateProfileInt("Sound","SoundBufferSize", 735 * 4, IniName);
 	CommonSettings.spuInterpolationMode = (SPUInterpolationMode)GetPrivateProfileInt("Sound","SPUInterpolation", 1, IniName);
 	CommonSettings.spuAdpcmCache = GetPrivateProfileInt("Sound","SPUAdpcmCache",0,IniName)!=0;
@@ -1973,7 +1959,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	SaveRecentRoms();
 	NDS_DeInit();
 	DRV_AviEnd();
-	DRV_WavEnd();
+	WAV_End();
 
 	//------SHUTDOWN
 
@@ -2333,7 +2319,7 @@ void AviRecordTo()
 void WavEnd()
 {
 	NDS_Pause();
-	DRV_WavEnd();
+	WAV_End();
 	NDS_UnPause();
 }
 
@@ -2380,7 +2366,7 @@ void WavRecordTo()
 
 	if(GetSaveFileName(&ofn))
 	{
-		DRV_WavBegin(szChoice);
+		WAV_Begin(szChoice);
 	}
 
 	NDS_UnPause();
@@ -2641,11 +2627,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Check if AVI is recording
 			mii.cbSize = sizeof(MENUITEMINFO);
 			mii.fMask = MIIM_STRING;
-			LoadString(hAppInst, !DRV_AviIsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
+			LoadString(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDAVI : IDM_FILE_STOPAVI, menuItemString, 256);
 			mii.dwTypeData = menuItemString;
 			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDAVI, FALSE, &mii);
 			//Check if WAV is recording
-			LoadString(hAppInst, !DRV_WavIsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
+			LoadString(hAppInst, !AVI_IsRecording() ? IDM_FILE_RECORDWAV : IDM_FILE_STOPWAV, menuItemString, 256);
 			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
 
 			//Menu items dependent on a ROM loaded
@@ -2987,14 +2973,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			return 0;
 		case IDM_FILE_RECORDAVI:
-			if (DRV_AviIsRecording())
+			if (AVI_IsRecording())
 				AviEnd();
 			else
 				AviRecordTo();
 			break;
 		case IDM_FILE_RECORDWAV:
-			if (DRV_WavIsRecording())
-				WavEnd();
+			if (WAV_IsRecording())
+				WAV_End();
 			else
 				WavRecordTo();
 			break;
@@ -4105,7 +4091,7 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 					// Write Sound core type
 					sndcoretype = SNDCoreList[SendDlgItemMessage(hDlg, IDC_SOUNDCORECB, CB_GETCURSEL, 0, 0)]->id;
 					sprintf(tempstr, "%d", sndcoretype);
-					WritePrivateProfileString("Sound", "SoundCore", tempstr, IniName);
+					WritePrivateProfileString("Sound", "SoundCore2", tempstr, IniName);
 
 					// Write Sound Buffer size
 					GetDlgItemText(hDlg, IDC_SOUNDBUFFERET, tempstr, 6);

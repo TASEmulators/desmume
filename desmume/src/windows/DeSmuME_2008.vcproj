@@ -772,10 +772,6 @@
 					RelativePath=".\tileView.cpp"
 					>
 				</File>
-				<File
-					RelativePath=".\wavout.cpp"
-					>
-				</File>
 			</Filter>
 		</Filter>
 		<Filter
@@ -910,10 +906,6 @@
 					RelativePath=".\tileView.h"
 					>
 				</File>
-				<File
-					RelativePath=".\wavout.h"
-					>
-				</File>
 				<Filter
 					Name="userconfig"
 					>
@@ -972,6 +964,10 @@
 				</File>
 				<File
 					RelativePath="..\Disassembler.h"
+					>
+				</File>
+				<File
+					RelativePath="..\driver.h"
 					>
 				</File>
 				<File

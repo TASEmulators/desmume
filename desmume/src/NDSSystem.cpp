@@ -1596,16 +1596,15 @@ void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 
 template<bool FORCE>
-u32 NDS_exec(s32 nb)
+void NDS_exec(s32 nb)
 {
 	int i, j;
-
-	nb = 560190<<1;
 
 	LagFrameFlag=1;
 
 	//increase this to execute more instructions in each batch (reducing overhead)
 	//the value of 4 seems to optimize speed.. do lower values increase precision? 
+	//answer: YES, MAYBE. and after 0.9.3 we need to study it (spider-man)
 	const int INSTRUCTIONS_PER_BATCH = 4;
 
 	//decreasing this should increase precision at the cost of speed
@@ -1733,7 +1732,9 @@ u32 NDS_exec(s32 nb)
 				T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 2);
 				NDS_ARM9HBlankInt();
 				NDS_ARM7HBlankInt();
-
+				SPU_Emulate_core();
+				driver->AVI_SoundUpdate(SPU_core->outbuf,spu_core_samples);
+				WAV_WavSoundUpdate(SPU_core->outbuf,spu_core_samples);
 				if(nds.VCount<192)
 				{
 					if(!SkipCur2DFrame)
@@ -2421,8 +2422,6 @@ u32 NDS_exec(s32 nb)
 		lastLag = lagframecounter;
 		lagframecounter = 0;
 	}
-
-	return nds.cycles;
 }
 
 static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {
@@ -2640,5 +2639,5 @@ void emu_halt() {
 }
 
 //these templates needed to be instantiated manually
-template u32 NDS_exec<FALSE>(s32 nb);
-template u32 NDS_exec<TRUE>(s32 nb);
+template void NDS_exec<FALSE>(s32 nb);
+template void NDS_exec<TRUE>(s32 nb);
