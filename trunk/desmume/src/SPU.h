@@ -1,4 +1,7 @@
-/*  Copyright (C) 2006 Theo Berkau
+/*  SPU.h
+
+	Copyright 2006 Theo Berkau
+    Copyright (C) 2006-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -14,7 +17,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #ifndef SPU_H
@@ -22,10 +25,10 @@
 
 #include "types.h"
 #include <iosfwd>
+#include <string>
 
 #define SNDCORE_DEFAULT         -1
 #define SNDCORE_DUMMY           0
-#define SNDCORE_FILEWRITE       1
 
 enum SPUInterpolationMode
 {
@@ -131,5 +134,23 @@ extern int spu_core_samples;
 
 void spu_savestate(std::ostream* os);
 bool spu_loadstate(std::istream* is, int size);
+
+class WavWriter
+{
+public:
+	WavWriter();
+	bool open(const std::string & fname);
+	void close();
+	void update(void* soundData, int numSamples);
+	bool isRecording() const;
+private:
+	FILE *spufp;
+};
+
+
+void WAV_End();
+bool WAV_Begin(const char* fname);
+bool WAV_IsRecording();
+void WAV_WavSoundUpdate(void* soundData, int numSamples);
 
 #endif

@@ -322,6 +322,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\aviout.h"
+				>
+			</File>
+			<File
 				RelativePath=".\buildconfig.h"
 				>
 			</File>
@@ -550,11 +554,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\wavout.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\wavout.h"
+				RelativePath=".\windriver.h"
 				>
 			</File>
 			<Filter
@@ -814,15 +814,15 @@
 			>
 		</File>
 		<File
-			RelativePath=".\VTune\DeSmuME_VS2005.vpj"
-			>
-		</File>
-		<File
 			RelativePath="..\Disassembler.cpp"
 			>
 		</File>
 		<File
 			RelativePath="..\Disassembler.h"
+			>
+		</File>
+		<File
+			RelativePath="..\driver.h"
 			>
 		</File>
 		<File

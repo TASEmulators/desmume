@@ -1,8 +1,8 @@
 /*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
-    yopyop156.ifrance.com 
+    yopyop156.ifrance.com
 
-	Copyright (C) 2008-2009 DeSmuME team
+    Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -23,7 +23,7 @@
 
 //This file implements the geometry engine hardware component.
 //This handles almost all of the work of 3d rendering, leaving the renderer
-// plugin responsible only for drawing primitives.
+//plugin responsible only for drawing primitives.
 
 #include <algorithm>
 #include <assert.h>

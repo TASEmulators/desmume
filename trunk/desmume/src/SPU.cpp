@@ -1,22 +1,26 @@
-/*  Copyright (C) 2006 Theo Berkau
+/*  Copyright (C) 2006 yopyop
+    yopyop156@ifrance.com
+    yopyop156.ifrance.com
+    Copyright (C) 2006 Theo Berkau
+    Copyright (C) 2008-2009 DeSmuME team
 
-Ideas borrowed from Stephane Dallongeville's SCSP core
+    Ideas borrowed from Stephane Dallongeville's SCSP core
 
-This file is part of DeSmuME
+    This file is part of DeSmuME
 
-DeSmuME is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-DeSmuME is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with DeSmuME; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #include <stdlib.h>
@@ -24,6 +28,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#ifndef M_PI
+#define M_PI 3.1415926535897932386
+#endif
 
 #include "debug.h"
 #include "ARM9.h"
@@ -93,7 +100,7 @@ static const s16 wavedutytbl[8][8] = {
 static s32 precalcdifftbl[89][16];
 static u8 precalcindextbl[89][8];
 
-static FILE *spufp=NULL;
+static const double ARM7_CLOCK = 33513982;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -454,8 +461,7 @@ void SPU_struct::ShutUp()
 
 static FORCEINLINE void adjust_channel_timer(channel_struct *chan)
 {
-	//chan->sampinc = (((double)33512000) / (44100 * 2)) / (double)(0x10000 - chan->timer);
-	chan->sampinc = (16777216 / (0x10000 - (double)chan->timer)) / 44100;
+	chan->sampinc = (((double)ARM7_CLOCK) / (44100 * 2)) / (double)(0x10000 - chan->timer);
 }
 
 void SPU_struct::KeyOn(int channel)
@@ -669,7 +675,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 	{
 		//why did we change it away from the lookup table? somebody should research that
 		ratio = ratio - (int)ratio;
-		double ratio2 = ((1.0 - cos(ratio * 3.14)) * 0.5);
+		double ratio2 = ((1.0 - cos(ratio * M_PI)) * 0.5);
 		//double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
 		return (((1-ratio2)*a) + (ratio2*b));
 	}
@@ -823,7 +829,9 @@ template<int FORMAT> static FORCEINLINE void TestForLoop(SPU_struct *SPU, channe
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
-			chan->sampcnt = (double)(chan->loopstart << shift); // Is this correct?
+			while (chan->sampcnt > chan->double_totlength_shifted)
+				chan->sampcnt -= chan->double_totlength_shifted - (double)(chan->loopstart << shift);
+			//chan->sampcnt = (double)(chan->loopstart << shift);
 		}
 		else
 		{
@@ -845,7 +853,9 @@ static FORCEINLINE void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 		// Do we loop? Or are we done?
 		if (chan->repeat == 1)
 		{
-			chan->sampcnt = (double)(chan->loopstart << 3); // Is this correct?
+			while (chan->sampcnt > chan->double_totlength_shifted)
+				chan->sampcnt -= chan->double_totlength_shifted - (double)(chan->loopstart << 3);
+			//chan->sampcnt = (double)(chan->loopstart << 3);
 			chan->pcm16b = (s16)((chan->buf8[1] << 8) | chan->buf8[0]);
 			chan->index = chan->buf8[2] & 0x7F;
 			chan->lastsampcnt = 7;
@@ -999,9 +1009,9 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 //emulates one frame of the cpu core.
 //this will produce a variable number of samples, calculated to keep a 44100hz output
 //in sync with the emulator framerate
-static float samples = 0;
-static const float time_per_frame = 1.0f/59.8261f;
-static const float samples_per_frame = time_per_frame * 44100;
+static double samples = 0;
+static const double time_per_frame = (double)1.0/((double)ARM7_CLOCK/6/355); //(double)1.0/(double)59.8261; // ((double)ARM7_CLOCK/6/355/263)
+static const double samples_per_frame = time_per_frame * 44100;
 int spu_core_samples = 0;
 void SPU_Emulate_core()
 {
@@ -1104,30 +1114,6 @@ void SNDDummySetVolume(int volume)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// WAV Write Interface
-//////////////////////////////////////////////////////////////////////////////
-
-int SNDFileInit(int buffersize);
-void SNDFileDeInit();
-void SNDFileUpdateAudio(s16 *buffer, u32 num_samples);
-u32 SNDFileGetAudioSpace();
-void SNDFileMuteAudio();
-void SNDFileUnMuteAudio();
-void SNDFileSetVolume(int volume);
-
-SoundInterface_struct SNDFile = {
-	SNDCORE_FILEWRITE,
-	"WAV Write Sound Interface",
-	SNDFileInit,
-	SNDFileDeInit,
-	SNDFileUpdateAudio,
-	SNDFileGetAudioSpace,
-	SNDFileMuteAudio,
-	SNDFileUnMuteAudio,
-	SNDFileSetVolume
-};
-
-//////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
 	char id[4];
@@ -1149,17 +1135,19 @@ typedef struct {
 	u16 bitspersample;
 } fmt_struct;
 
-//////////////////////////////////////////////////////////////////////////////
-
-int SNDFileInit(int buffersize)
+WavWriter::WavWriter() 
+: spufp(NULL)
+{
+}
+bool WavWriter::open(const std::string & fname)
 {
 	waveheader_struct waveheader;
 	fmt_struct fmt;
 	chunk_struct data;
 	size_t elems_written = 0;
 
-	if ((spufp = fopen("ndsaudio.wav", "wb")) == NULL)
-		return -1;
+	if ((spufp = fopen(fname.c_str(), "wb")) == NULL)
+		return false;
 
 	// Do wave header
 	memcpy(waveheader.riff.id, "RIFF", 4);
@@ -1183,65 +1171,70 @@ int SNDFileInit(int buffersize)
 	data.size = 0; // we'll fix this at the end
 	elems_written += fwrite((void *)&data, 1, sizeof(chunk_struct), spufp);
 
-	return 0;
+	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDFileDeInit()
+void WavWriter::close()
 {
+	if(!spufp) return;
 	size_t elems_written = 0;
-	if (spufp)
-	{
-		long length = ftell(spufp);
+	long length = ftell(spufp);
 
-		// Let's fix the riff chunk size and the data chunk size
-		fseek(spufp, sizeof(waveheader_struct)-0x8, SEEK_SET);
-		length -= 0x8;
-		elems_written += fwrite((void *)&length, 1, 4, spufp);
+	// Let's fix the riff chunk size and the data chunk size
+	fseek(spufp, sizeof(waveheader_struct)-0x8, SEEK_SET);
+	length -= 0x8;
+	elems_written += fwrite((void *)&length, 1, 4, spufp);
 
-		fseek(spufp, sizeof(waveheader_struct)+sizeof(fmt_struct)+0x4, SEEK_SET);
-		length -= sizeof(waveheader_struct)+sizeof(fmt_struct);
-		elems_written += fwrite((void *)&length, 1, 4, spufp);
-		fclose(spufp);
-	}
+	fseek(spufp, sizeof(waveheader_struct)+sizeof(fmt_struct)+0x4, SEEK_SET);
+	length -= sizeof(waveheader_struct)+sizeof(fmt_struct);
+	elems_written += fwrite((void *)&length, 1, 4, spufp);
+	fclose(spufp);
+	spufp = NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDFileUpdateAudio(s16 *buffer, u32 num_samples)
+void WavWriter::update(void* soundData, int numSamples)
 {
-	size_t elems_written;
-	if (spufp) {
-		elems_written = fwrite((void *)buffer, num_samples*2, 2, spufp);
-		//INFO("%i written\n", elems_written);
-	}
+	if(!spufp) return;
+	//TODO - big endian for the s16 samples??
+	size_t elems_written = fwrite(soundData, numSamples*2, 2, spufp);
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-u32 SNDFileGetAudioSpace()
+bool WavWriter::isRecording() const
 {
-	return 740;
+	return spufp != NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////////
 
-void SNDFileMuteAudio()
+static WavWriter wavWriter;
+
+void WAV_End()
 {
+	wavWriter.close();
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDFileUnMuteAudio()
+bool WAV_Begin(const char* fname)
 {
+	WAV_End();
+
+	if(!wavWriter.open(fname))
+		return false;
+
+	driver->USR_InfoMessage("WAV recording started.");
+
+	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void SNDFileSetVolume(int volume)
+bool WAV_IsRecording()
 {
+	return wavWriter.isRecording();
 }
+
+void WAV_WavSoundUpdate(void* soundData, int numSamples)
+{
+	wavWriter.update(soundData, numSamples);
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 

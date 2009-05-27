@@ -2,6 +2,8 @@
     yopyop156@ifrance.com
     yopyop156.ifrance.com
 
+    Copyright (C) 2008-2009 DeSmuME team
+
     This file is part of DeSmuME
 
     DeSmuME is free software; you can redistribute it and/or modify
@@ -16,7 +18,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #ifndef NDSSYSTEM_H
@@ -25,10 +27,9 @@
 #include <string.h>
 #include "armcpu.h"
 #include "MMU.h"
-
+#include "driver.h"
 #include "GPU.h"
 #include "SPU.h"
-
 #include "mem.h"
 #include "wifi.h"
 
@@ -290,12 +291,9 @@ void NDS_Sleep();
 void NDS_SkipNextFrame();
 #define NDS_SkipFrame(s) if(s) NDS_SkipNext2DFrame();
 
-template<bool FORCE>
-u32 NDS_exec(s32 nb);
+template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;
-
-inline u32 NDS_exec(s32 nb) { return NDS_exec<false>(nb); }
 
        static INLINE void NDS_ARM9HBlankInt(void)
        {
@@ -388,17 +386,7 @@ extern struct TCommonSettings {
 
 extern char ROMserial[20];
 
-//this should be moved to a driver.h later, but for now, here they are.
-//each platform needs to implement this, although it doesnt need to implement any functions
-class Driver {
-public:
-	virtual BOOL WIFI_Host_InitSystem() { return FALSE; }
-	virtual void WIFI_Host_ShutdownSystem() {}
-	virtual BOOL AVI_IsRecording() { return FALSE; }
-	virtual BOOL WAV_IsRecording() { return FALSE; }
-	virtual void USR_InfoMessage(const char *message) { printf("%s\n", message); }
-};
-extern Driver* driver;
+
 
 extern std::string InputDisplayString;
 extern int LagFrameFlag;

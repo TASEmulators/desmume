@@ -1,28 +1,30 @@
-/* aviout.cpp
- *
- * Copyright (C) 2006-2008 Zeromus
- *
- * This file is part of DeSmuME
- *
- * DeSmuME is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * DeSmuME is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with DeSmuME; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+/*  aviout.cpp
+
+    Copyright (C) 2006-2009 DeSmuME team
+
+    This file is part of DeSmuME
+
+    DeSmuME is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    DeSmuME is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DeSmuME; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-#include "main.h"		//I added this so that this file could gain access to SetMessageToDisplay.
+
+#include "main.h"
 #include "types.h"
 #include "windriver.h"
 #include "console.h"
 #include "gfx3d.h"
+#include "aviout.h"
 
 #include <assert.h>
 #include <vfw.h>
@@ -37,12 +39,6 @@ static void EMU_PrintError(const char* msg) {
 static void EMU_PrintMessage(const char* msg) {
 	LOG(msg);
 }
-
-bool DRV_AviBegin(const char* fname);
-void DRV_AviEnd();
-void DRV_AviSoundUpdate(void* soundData, int soundLen);
-bool DRV_AviIsRecording();
-void DRV_AviVideoUpdate(const u16* buffer);
 
 //extern PALETTEENTRY *color_palette;
 //extern WAVEFORMATEX wf;
@@ -414,7 +410,7 @@ void DRV_AviVideoUpdate(const u16* buffer)
 		AviNextSegment();
 }
 
-BOOL AVI_IsRecording()
+bool AVI_IsRecording()
 {
 	return avi_file && avi_file->valid;
 }
@@ -450,12 +446,4 @@ void DRV_AviEnd()
 	}
 
 	avi_destroy(&avi_file);
-}
-
-bool DRV_AviIsRecording()
-{
-	if(avi_file)
-		return true;
-
-	return false;
 }

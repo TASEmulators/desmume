@@ -81,7 +81,7 @@ static int sdl_videoFlags = 0;
 
 SoundInterface_struct *SNDCoreList[] = {
   &SNDDummy,
-  &SNDFile,
+  &SNDDummy,
   &SNDSDL,
   NULL
 };
@@ -618,7 +618,6 @@ Draw( void) {
 int main(int argc, char ** argv) {
   static unsigned short keypad = 0;
   struct my_config my_config;
-  u32 last_cycle = 0;
 #ifdef GDB_STUB
   gdbstub_handle_t arm9_gdb_stub;
   gdbstub_handle_t arm7_gdb_stub;
@@ -852,9 +851,8 @@ int main(int argc, char ** argv) {
       }
 
     update_keypad(keypad);     /* Update keypad */
-    last_cycle = NDS_exec<false>((560190 << 1) - last_cycle);
+    NDS_exec<false>();
     SPU_Emulate_user();
-	SPU_Emulate_core();
 
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {

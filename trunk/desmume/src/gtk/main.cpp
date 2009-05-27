@@ -302,7 +302,7 @@ static const GtkRadioActionEntry savet_entries[] = {
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
-&SNDFile,
+&SNDDummy,
 &SNDSDL,
 NULL
 };

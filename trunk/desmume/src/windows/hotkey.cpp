@@ -32,7 +32,7 @@
 #include "ram_search.h"		//In order to call UpdateRamSearch (for loadstate functions)
 #include "replay.h"
 #include "aviout.h"
-#include "wavout.h"
+#include "spu.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -178,8 +178,8 @@ void HK_AutoHoldClearKeyDown(int) {
 
 void HK_Reset(int) {ResetGame();}
 
-void HK_RecordAVI(int) { if (DRV_AviIsRecording()) AviEnd(); else AviRecordTo(); }
-void HK_RecordWAV(int) { if (DRV_WavIsRecording()) WavEnd(); else WavRecordTo(); }
+void HK_RecordAVI(int) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
+void HK_RecordWAV(int) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(); }
 
 void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
