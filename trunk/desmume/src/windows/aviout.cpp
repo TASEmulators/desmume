@@ -78,6 +78,9 @@ static struct AVIFile
 	int					end_scanline;
 	
 	long				tBytes, ByteBuffer;
+
+	u8					audio_buffer[44100*2*2]; // 1 second buffer
+	int					audio_buffer_pos;
 } *avi_file = NULL;
 
 struct VideoSystemInfo
@@ -112,6 +115,15 @@ static bool truncate_existing(const char* filename)
 	return 0;
 }
 
+static int avi_audiosegment_size(struct AVIFile* avi_out)
+{
+	if(!avi_out || !avi_out->valid || !avi_out->sound_added)
+		return 0;
+
+	assert(avi_out->wave_format.nAvgBytesPerSec <= sizeof(avi_out->audio_buffer));
+	return avi_out->wave_format.nAvgBytesPerSec;
+}
+
 static void avi_create(struct AVIFile** avi_out)
 {
 	*avi_out = (struct AVIFile*)malloc(sizeof(struct AVIFile));
@@ -128,6 +140,18 @@ static void avi_destroy(struct AVIFile** avi_out)
 	{
 		if((*avi_out)->compressed_streams[AUDIO_STREAM])
 		{
+			if ((*avi_out)->audio_buffer_pos > 0) {
+				if(FAILED(AVIStreamWrite(avi_file->compressed_streams[AUDIO_STREAM],
+				                         avi_file->sound_samples, (*avi_out)->audio_buffer_pos / (*avi_out)->wave_format.nBlockAlign,
+				                         (*avi_out)->audio_buffer, (*avi_out)->audio_buffer_pos, 0, NULL, &avi_file->ByteBuffer)))
+				{
+					avi_file->valid = 0;
+				}
+				(*avi_out)->sound_samples += (*avi_out)->audio_buffer_pos / (*avi_out)->wave_format.nBlockAlign;
+				(*avi_out)->tBytes += avi_file->ByteBuffer;
+				(*avi_out)->audio_buffer_pos = 0;
+			}
+
 			LONG test = AVIStreamClose((*avi_out)->compressed_streams[AUDIO_STREAM]);
 			(*avi_out)->compressed_streams[AUDIO_STREAM] = NULL;
 			(*avi_out)->streams[AUDIO_STREAM] = NULL;				// compressed_streams[AUDIO_STREAM] is just a copy of streams[AUDIO_STREAM]
@@ -268,6 +292,7 @@ static int avi_open(const char* filename, const BITMAPINFOHEADER* pbmih, const W
 		avi_file->sound_samples = 0;
 		avi_file->tBytes = 0;
 		avi_file->ByteBuffer = 0;
+		avi_file->audio_buffer_pos = 0;
 
 		// success
 		error = 0;
@@ -416,22 +441,31 @@ bool AVI_IsRecording()
 }
 void DRV_AviSoundUpdate(void* soundData, int soundLen)
 {
-	int nBytes;
-
 	if(!AVI_IsRecording() || !avi_file->sound_added)
 		return;
 
-	nBytes = soundLen * avi_file->wave_format.nBlockAlign;
-    if(FAILED(AVIStreamWrite(avi_file->compressed_streams[AUDIO_STREAM],
-                             avi_file->sound_samples, soundLen,
-                             soundData, nBytes, 0, NULL, &avi_file->ByteBuffer)))
-	{
-		avi_file->valid = 0;
-		return;
-	}
+	const int audioSegmentSize = avi_audiosegment_size(avi_file);
+	const int samplesPerSegment = audioSegmentSize / avi_file->wave_format.nBlockAlign;
+	const int soundSize = soundLen * avi_file->wave_format.nBlockAlign;
+	int nBytes = soundSize;
+	while (avi_file->audio_buffer_pos + nBytes > audioSegmentSize) {
+		const int bytesToTransfer = audioSegmentSize - avi_file->audio_buffer_pos;
+		memcpy(&avi_file->audio_buffer[avi_file->audio_buffer_pos], &((u8*)soundData)[soundSize - nBytes], bytesToTransfer);
+		nBytes -= bytesToTransfer;
 
-	avi_file->sound_samples += soundLen;
-	avi_file->tBytes += avi_file->ByteBuffer;
+		if(FAILED(AVIStreamWrite(avi_file->compressed_streams[AUDIO_STREAM],
+		                         avi_file->sound_samples, samplesPerSegment,
+		                         avi_file->audio_buffer, audioSegmentSize, 0, NULL, &avi_file->ByteBuffer)))
+		{
+			avi_file->valid = 0;
+			return;
+		}
+		avi_file->sound_samples += samplesPerSegment;
+		avi_file->tBytes += avi_file->ByteBuffer;
+		avi_file->audio_buffer_pos = 0;
+	}
+	memcpy(&avi_file->audio_buffer[avi_file->audio_buffer_pos], &((u8*)soundData)[soundSize - nBytes], nBytes);
+	avi_file->audio_buffer_pos += nBytes;
 }
 
 void DRV_AviEnd()
