@@ -44,7 +44,7 @@ private:
 	u32		lineText_color;
 	u8		lastLineText;
 	char	*lineText[OSD_MAX_LINES+1];
-	u8		lineTimer[OSD_MAX_LINES+1];
+	u16		lineTimer[OSD_MAX_LINES+1];
 	u32		lineColor[OSD_MAX_LINES+1];
 
 	bool	needUpdate;
