@@ -25,7 +25,7 @@
 #include "console.h"
 #include "gfx3d.h"
 #include "aviout.h"
-#include "../GPU_OSD.h"
+#include "../GPU_osd.h"
 
 #include <assert.h>
 #include <vfw.h>
