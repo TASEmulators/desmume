@@ -76,8 +76,6 @@ CACHE_ALIGN u8 *GPU_tempScanline;
 CACHE_ALIGN u8 sprWin[256];
 
 OSDCLASS	*osd = NULL;
-OSDCLASS	*osdA = NULL;
-OSDCLASS	*osdB = NULL;
 
 u16			gpu_angle = 0;
 
@@ -609,6 +607,8 @@ GPU * GPU_Init(u8 l)
 	g->setFinalColor3d_funcNum = 0;
 	g->setFinalColorSpr = setFinalOBJColorSpecialNone;
 
+	
+
 	return g;
 }
 
@@ -636,8 +636,6 @@ void GPU_Reset(GPU *g, u8 l)
 		g->sprMem = ARM9MEM_BOBJ;
 		// GPU core B
 		g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[REG_DISPB]);
-		delete osdB;
-		osdB = new OSDCLASS(1);
 	}
 	else
 	{
@@ -645,26 +643,12 @@ void GPU_Reset(GPU *g, u8 l)
 		g->sprMem = ARM9MEM_AOBJ;
 		// GPU core A
 		g->dispx_st = (REG_DISPx*)(&ARM9Mem.ARM9_REG[0]);
-		delete osdA;
-		osdA = new OSDCLASS(0);
 	}
-
-	delete osd;
-	osd = new OSDCLASS(-1);
-	//DISP_FIFOclear(&g->disp_fifo);
-	memset(GPU_screen, 0, sizeof(GPU_screen));
-	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
-
-	for(int i = 0; i < (256*192*2); i++)
-		((u16*)GPU_screen)[i] = 0x7FFF;
 }
 
 void GPU_DeInit(GPU * gpu)
 {
-	delete osd; osd=NULL;
-	delete osdA; osdA=NULL;
-	delete osdB; osdB=NULL;
-   free(gpu);
+	free(gpu);
 }
 
 static void GPU_resortBGs(GPU *gpu)
@@ -2439,24 +2423,44 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 //			SCREEN FUNCTIONS
 /*****************************************************************************/
 
-int Screen_Init(int coreid) {
-   MainScreen.gpu = GPU_Init(0);
-   SubScreen.gpu = GPU_Init(1);
+int Screen_Init(int coreid)
+{
+	MainScreen.gpu = GPU_Init(0);
+	SubScreen.gpu = GPU_Init(1);
 
-   return GPU_ChangeGraphicsCore(coreid);
+	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
+	for(int i = 0; i < (256*192*2); i++)
+		((u16*)GPU_screen)[i] = 0x7FFF;
+	disp_fifo.head = disp_fifo.tail = 0;
+
+	if (osd)  {delete osd; osd =NULL; }
+	osd  = new OSDCLASS(-1);
+
+	return GPU_ChangeGraphicsCore(coreid);
 }
 
-void Screen_Reset(void) {
-   GPU_Reset(MainScreen.gpu, 0);
-   GPU_Reset(SubScreen.gpu, 1);
+void Screen_Reset(void)
+{
+	GPU_Reset(MainScreen.gpu, 0);
+	GPU_Reset(SubScreen.gpu, 1);
+
+	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
+	for(int i = 0; i < (256*192*2); i++)
+		((u16*)GPU_screen)[i] = 0x7FFF;
+
+	disp_fifo.head = disp_fifo.tail = 0;
+	osd->clear();
 }
 
-void Screen_DeInit(void) {
-        GPU_DeInit(MainScreen.gpu);
-        GPU_DeInit(SubScreen.gpu);
+void Screen_DeInit(void)
+{
+	GPU_DeInit(MainScreen.gpu);
+	GPU_DeInit(SubScreen.gpu);
 
-        if (GFXCore)
-           GFXCore->DeInit();
+	if (GFXCore)
+		GFXCore->DeInit();
+
+	if (osd)  {delete osd; osd =NULL; }
 }
 
 /*****************************************************************************/

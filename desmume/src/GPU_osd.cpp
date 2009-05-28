@@ -41,31 +41,34 @@ OSDCLASS::OSDCLASS(u8 core)
 {
 	memset(screen, 0, sizeof(screen));
 	memset(name,0,7);
-	//memset(line, 0, sizeof(line));
-	memset(timer, 0, sizeof(timer));
-	memset(color, 0, sizeof(color));
 
-	old_msg = new char[512];
-	memset(old_msg, 0, 512);
-	
-	current_color = 0x8F;
 	mode=core;
 	offset=0;
-	startline=0;
-	lastline=0;
+
+	lastLineText=0;
+	lineText_x = 5;
+	lineText_y = 120;
+	lineText_color = render51.MakeColor(255, 255, 255);
+	for (int i=0; i < OSD_MAX_LINES+1; i++)
+	{
+		lineText[i] = new char[1024];
+		memset(lineText[i], 0, 1024);
+		lineTimer[i] = OSD_TIMER_SIZE;
+		lineColor[i] = lineText_color;
+	}
 
 	rotAngle = 0;
 
 	needUpdate = false;
 
 	if (core==0) 
-		memcpy(name,"Core A",6);
+		strcpy(name,"Core A");
 	else
 	if (core==1)
-		memcpy(name,"Core B",6);
+		strcpy(name,"Core B");
 	else
 	{
-		memcpy(name,"Main",6);
+		strcpy(name,"Main");
 		mode=255;
 	}
 
@@ -80,6 +83,8 @@ OSDCLASS::OSDCLASS(u8 core)
 	screenshell.cy1 = 0;
 	screenshell.cy2 = 384-1;
 
+	border(false);
+
 	LOG("OSD_Init (%s)\n",name);
 }
 
@@ -87,7 +92,12 @@ OSDCLASS::~OSDCLASS()
 {
 	LOG("OSD_Deinit (%s)\n",name);
 
-	delete[] old_msg;
+	for (int i=0; i < OSD_MAX_LINES+1; i++)
+	{
+		if (lineText[i]) 
+			delete [] lineText[i];
+		lineText[i] = NULL;
+	}
 }
 
 void OSDCLASS::setOffset(u16 ofs)
@@ -131,19 +141,52 @@ void OSDCLASS::setRotate(u16 angle)
 void OSDCLASS::clear()
 {
 	memset(screen, 0, sizeof(screen));
-	memset(line, 0, sizeof(line));
-	memset(timer, 0, sizeof(timer));
 	needUpdate=false;
 }
 
-void OSDCLASS::setColor(u16 col)
+bool OSDCLASS::checkTimers()
 {
-	current_color = col;
+	if (lastLineText == 0) return false;
+
+	for (int i=0; i < lastLineText; i++)
+	{
+		if (lineTimer[i] > 0) lineTimer[i]--;
+
+		if (lineTimer[i] == 0)
+		{
+			if (i < lastLineText)
+			{
+				for (int j=i; j < lastLineText; j++)
+				{
+					strcpy(lineText[j], lineText[j+1]);
+					lineTimer[j] = lineTimer[j+1];
+					lineColor[j] = lineColor[j+1];
+				}
+			}
+			lastLineText--;
+			if (lastLineText == 0) return false;
+		}
+	}
+	return true;
 }
 
-void OSDCLASS::update() // don't optimized
+void OSDCLASS::update()
 {
-	if (!needUpdate) return;	// don't update if buffer empty (speed up)
+	if ( (!needUpdate) && (!lastLineText) ) return;	// don't update if buffer empty (speed up)
+	if (lastLineText)
+	{
+		if (checkTimers())
+		{
+			for (int i=0; i < lastLineText; i++)
+			{
+				render51.PrintString<DesmumeFont>(1,lineText_x,lineText_y+(i*16),lineColor[i],lineText[i],&screenshell);
+			}
+		}
+		else
+		{
+			if (!needUpdate) return;
+		}
+	}
 
 	u16	*dst = (u16*)GPU_screen;
 
@@ -157,9 +200,45 @@ void OSDCLASS::update() // don't optimized
 	}
 }
 
+void OSDCLASS::setListCoord(u16 x, u16 y)
+{
+	lineText_x = x;
+	lineText_y = y;
+}
+
+void OSDCLASS::setLineColor(u8 r=255, u8 b=255, u8 g=255)
+{
+	lineText_color = render51.MakeColor(r, g, b);
+}
+
 void OSDCLASS::addLine(const char *fmt, ...)
 {
+	va_list list;
 
+	if (lastLineText > OSD_MAX_LINES) lastLineText = OSD_MAX_LINES;
+	if (lastLineText == OSD_MAX_LINES)	// full
+	{
+		lastLineText--;
+		for (int j=0; j < lastLineText; j++)
+		{
+			strcpy(lineText[j], lineText[j+1]);
+			lineTimer[j] = lineTimer[j+1];
+			lineColor[j] = lineColor[j+1];
+		}
+	}
+
+	va_start(list,fmt);
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+		_vsnprintf(lineText[lastLineText],1023,fmt,list);
+#else
+		vsnprintf(lineText[lastLineText],1023,fmt,list);
+#endif
+	va_end(list);
+	lineColor[lastLineText] = lineText_color;
+	lineTimer[lastLineText] = OSD_TIMER_SIZE;
+	needUpdate = true;
+
+	lastLineText++;
 }
 
 void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
@@ -167,24 +246,20 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 	va_list list;
 	char msg[1024];
 
-//	memset(msg,0,1024);
-
 	va_start(list,fmt);
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 		_vsnprintf(msg,1023,fmt,list);
 #else
 		vsnprintf(msg,1023,fmt,list);
 #endif
-
 	va_end(list);
 
-	if (strcmp(msg, old_msg) == 0) return;
-
-	render51.PrintString<DesmumeFont>(1,x-1,y-1,render51.MakeColor(0,0,0),msg,&screenshell);
-	render51.PrintString<DesmumeFont>(1,x+1,y-1,render51.MakeColor(0,0,0),msg,&screenshell);
-	render51.PrintString<DesmumeFont>(1,x-1,y+1,render51.MakeColor(0,0,0),msg,&screenshell);
-	render51.PrintString<DesmumeFont>(1,x+1,y+1,render51.MakeColor(0,0,0),msg,&screenshell);
 	render51.PrintString<DesmumeFont>(1,x,y,render51.MakeColor(255,255,255),msg,&screenshell);
 
 	needUpdate = true;
+}
+
+void OSDCLASS::border(bool enabled)
+{
+	render51.setTextBoxBorder(enabled);
 }

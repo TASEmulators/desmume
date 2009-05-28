@@ -978,5 +978,7 @@ void gpu_SetRotateScreen(u16 angle);
 //#undef FORCEINLINE
 //#define FORCEINLINE __forceinline
 
+extern OSDCLASS	*osd;
+
 #endif
 

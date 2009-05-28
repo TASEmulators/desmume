@@ -27,7 +27,8 @@
 #include <stdlib.h>
 #include "types.h"
 
-#define OSD_MAX_LINES	10
+#define OSD_MAX_LINES 4
+#define OSD_TIMER_SIZE 5000
 
 class OSDCLASS
 {
@@ -38,20 +39,18 @@ private:
 
 	u16		rotAngle;
 
-	u8		startline;
-	u8		lastline;
-
-	u8		*line[OSD_MAX_LINES];
-	u8		timer[OSD_MAX_LINES];
-	u8		color[OSD_MAX_LINES];
-
-	char	*old_msg;
-
-	u16		current_color;
+	u16		lineText_x;
+	u16		lineText_y;
+	u32		lineText_color;
+	u8		lastLineText;
+	char	*lineText[OSD_MAX_LINES+1];
+	u8		lineTimer[OSD_MAX_LINES+1];
+	u32		lineColor[OSD_MAX_LINES+1];
 
 	bool	needUpdate;
 
-	void printChar(u16 x, u16 y, u8 c);
+	//void	printChar(u16 x, u16 y, u8 c);
+	bool	checkTimers();
 public:
 	char	name[7];		// for debuging
 	OSDCLASS(u8 core);
@@ -61,13 +60,12 @@ public:
 	void	setRotate(u16 angle);
 	void	update();
 	void	clear();
-	void	setColor(u16 col);
+	void	setListCoord(u16 x, u16 y);
+	void	setLineColor(u8 r, u8 b, u8 g);
 	void	addLine(const char *fmt, ...);
 	void	addFixed(u16 x, u16 y, const char *fmt, ...);
+	void	border(bool enabled);
 };
 
 extern OSDCLASS	*osd;
-extern OSDCLASS	*osdA;
-extern OSDCLASS	*osdB;
-
 #endif

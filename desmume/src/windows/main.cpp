@@ -130,6 +130,7 @@ void wxTest() {
 
 #endif
 
+unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number
@@ -163,8 +164,6 @@ LPDIRECTDRAWCLIPPER		lpDDClipPrimary=NULL;
 LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 
 //===================== Input vars
-//INPUTCLASS				*input = NULL;
-
 #define WM_CUSTKEYDOWN	(WM_USER+50)
 #define WM_CUSTKEYUP	(WM_USER+51)
 
@@ -382,10 +381,6 @@ void ResetHud(HudStruct *hudstruct) {
 	SetHudDummy(&hudstruct->Dummy);
 }
 
-unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
-stringstream MessageToDisplay;		//temp variable to store message that will be displayed via DisplayMessage function
-int displayMessageCounter = 0;		//Counter to keep track with how long to display messages on screen
-bool NewMessageToDisplay = false;	//Flag to indicate a new message is in queue
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
 
@@ -1063,40 +1058,6 @@ void CheckMessages()
 	}
 }
 
-void DisplayMessage()
-{
-	if (displayMessageCounter)
-	{
-		//adelikat - By using stringstream, it leaves open the possibility to keep a series of message in queue
-		displayMessageCounter--;
-		osd->addFixed(0, 120, "%s",MessageToDisplay.str().c_str());
-		NewMessageToDisplay = false;
-	}
-}
-
-void SaveStateMessages(int slotnum, int whichMessage)
-{
-	MessageToDisplay.str("");	//Clear previous message
-	displayMessageCounter = 120;
-	switch (whichMessage)
-	{
-	case 0:		//State saved
-		MessageToDisplay << "State " << slotnum << " saved.";
-		NewMessageToDisplay = true;		//adelikat: TODO: make these call SetMessageToDisplay instead
-		break;
-	case 1:		//State loaded
-		MessageToDisplay << "State " << slotnum << " loaded.";
-		NewMessageToDisplay = true;
-		break;
-	case 2:		//Save slot selected
-		MessageToDisplay << "State " << slotnum << " selected.";
-		NewMessageToDisplay = true;
-	default:
-		break;
-	}
-	//DisplayMessage();
-}
-
 DWORD WINAPI run()
 {
 	char txt[80];
@@ -1164,7 +1125,7 @@ DWORD WINAPI run()
 
 			static int fps3d = 0;
 
-			if (FpsDisplay) osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "%02d Fps / %02d 3d", fps, fps3d);
+			if (FpsDisplay) osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d", fps, fps3d);
 			if (frameCounterDisplay) 
 			{
 				if (movieMode == MOVIEMODE_PLAY)
@@ -1301,13 +1262,6 @@ DWORD WINAPI run()
 				CheckMessages();
 		}
 
-		if (NewMessageToDisplay)
-		{
-			DisplayMessage();
-			osd->update();
-			Display();
-			osd->clear();
-		}
 		paused = TRUE;
 		CheckMessages();
 		Sleep(100);
@@ -1598,7 +1552,7 @@ class WinDriver : public Driver
 	virtual void USR_InfoMessage(const char *message)
 	{
 		LOG("%s\n", message);
-		SetMessageToDisplay(message);
+		osd->addLine(message);
 	}
 
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) { 
@@ -2714,6 +2668,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Language selection
 
+			//Save type
+			MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
+
 			return 0;
 		}
 		/*case WM_EXITMENULOOP:
@@ -2886,26 +2843,28 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
 			GetClientRect(hwnd,&r);
+			int defwidth = 256, defheight = (384+ScreenGap);
+			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
+
+			// translate from scaling (screen resolution to 256x384 or 512x192) 
+			switch (GPU_rotation)
+			{
+			case 0:
+			case 180:
+				x = (x*defwidth) / winwidth;
+				y = (y*defheight) / winheight;
+				break ;
+			case 90:
+			case 270:
+				x = (x*defheight) / winwidth;
+				y = (y*defwidth) / winheight;
+				break ;
+			}
+
 			if(HudEditorMode) {
 				EditHud(x,y, &Hud);
 			}
 			else {
-				int defwidth = 256, defheight = (384+ScreenGap);
-				int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
-				// translate from scaling (screen resolution to 256x384 or 512x192) 
-				switch (GPU_rotation)
-				{
-				case 0:
-				case 180:
-					x = (x*defwidth) / winwidth;
-					y = (y*defheight) / winheight;
-					break ;
-				case 90:
-				case 270:
-					x = (x*defheight) / winwidth;
-					y = (y*defwidth) / winheight;
-					break ;
-				}
 				//translate for rotation
 				if (GPU_rotation != 0)
 					translateXY(x,y);
@@ -3336,6 +3295,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			HudEditorMode ^= 1;
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode ? MF_CHECKED : MF_UNCHECKED);
 			osd->clear();
+			osd->border(HudEditorMode);
 			return 0;
 
 		case ID_VIEW_DISPLAYMICROPHONE:
@@ -4146,18 +4106,6 @@ void ResetGame()
 	CheatsSearchReset();
 	NDS_Reset();
 }
-
-//adelikat: This function allows another file to add a message to the screen
-void SetMessageToDisplay(const char *message)
-{
-	MessageToDisplay.str("");	//adelikat: Clear previous message //TODO set up a queue system, and/or a multiline system, instead of rudely cancelling out messages.
-								//adelikat: TODO: set up a function that does the clearing and setting of the counter, so this code doesn't have to be done all over the place
-								//				  make the function receive an int for the counter, but overload so that if no int, 120 is used
-	MessageToDisplay << message;
-	NewMessageToDisplay = true;
-	displayMessageCounter = 120;//				  
-}
-
 
 //adelikat: This function changes a menu item's text
 void ChangeMenuItemText(int menuitem, string text)

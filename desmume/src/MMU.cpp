@@ -1007,8 +1007,6 @@ void MMU_clearMem()
 	
 	MainScreen.offset = 0;
 	SubScreen.offset  = 192;
-	osdA->setOffset(MainScreen.offset);
-	osdB->setOffset(SubScreen.offset);
 	
 	MMU_VRAM_unmap_all();
 
@@ -1772,8 +1770,6 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 						MainScreen.offset = 192;
 						SubScreen.offset = 0;
 					}
-					osdA->setOffset(MainScreen.offset);
-					osdB->setOffset(SubScreen.offset);
 
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x304, val);
 				}

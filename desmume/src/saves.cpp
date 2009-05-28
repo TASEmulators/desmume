@@ -32,6 +32,7 @@
 #include "NDSSystem.h"
 #include "render3D.h"
 #include "cp15.h"
+#include "GPU_OSD.h"
 
 #include "memorystream.h"
 #include "readwrite.h"
@@ -471,7 +472,18 @@ void savestate_slot(int num)
    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);
-   savestate_save(filename);
+
+   if (savestate_save(filename))
+   {
+	   osd->setLineColor(255, 255, 255);
+	   osd->addLine("Saved to %i slot", num);
+   }
+   else
+   {
+	   osd->setLineColor(255, 0, 0);
+	   osd->addLine("Error save to %i slot", num);
+	   return;
+   }
 
    savestates[num-1].exists = TRUE;
    if( stat(filename,&sbuf) == -1 ) return;
@@ -484,7 +496,16 @@ void loadstate_slot(int num)
    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);
-   savestate_load(filename);
+   if (savestate_load(filename))
+   {
+	   osd->setLineColor(255, 255, 255);
+	   osd->addLine("Loaded from %i slot", num);
+   }
+   else
+   {
+	   osd->setLineColor(255, 0, 0);
+	   osd->addLine("Error from load %i slot", num);
+   }
 }
 
 u8 sram_read (u32 address) {
@@ -519,6 +540,9 @@ int sram_load (const char *file_name) {
 
 	fclose ( file );
 
+	osd->setLineColor(255, 255, 255);
+	osd->addLine("Loaded SRAM");
+
 	return 1;
 
 }
@@ -535,6 +559,9 @@ int sram_save (const char *file_name) {
 	elems_written = fwrite ( MMU.CART_RAM, SRAM_SIZE, 1, file );
 
 	fclose ( file );
+
+	osd->setLineColor(255, 255, 255);
+	osd->addLine("Saved SRAM");
 
 	return 1;
 

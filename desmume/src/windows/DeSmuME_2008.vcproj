@@ -780,10 +780,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\font_eng.inc"
-				>
-			</File>
-			<File
 				RelativePath="..\instruction_tabdef.inc"
 				>
 			</File>
@@ -1080,6 +1076,14 @@
 				</File>
 				<File
 					RelativePath="..\softrender_config.h"
+					>
+				</File>
+				<File
+					RelativePath="..\softrender_desmumefont.h"
+					>
+				</File>
+				<File
+					RelativePath="..\softrender_v3sysfont.h"
 					>
 				</File>
 				<File
