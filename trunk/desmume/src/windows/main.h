@@ -9,7 +9,6 @@ void NDS_Pause();
 void NDS_UnPause();
 extern unsigned int lastSaveState;
 void LoadSaveStateInfo();
-void SaveStateMessages(int slotnum, int whichMessage);
 void Display();
 void Pause();
 void FrameAdvance(bool state);
@@ -18,7 +17,6 @@ void AviRecordTo();
 void AviEnd();
 void WavRecordTo();
 void WavEnd();
-void SetMessageToDisplay(const char *message);	//For sending output to the main screen
 
 extern bool ShowInputDisplay;
 extern bool frameCounterDisplay;

@@ -63,23 +63,40 @@ public:
 	void GrabRegion(int sx1, int sy1, int sx2, int sy2, int dx, int dy, image *s, image *d);
 	
 private:
+	bool	textBoxBorder;
 	template<typename FONT>
 	void print_char(int scale, int x, int y, int color, char c, image *dest)
 	{
 		int height = FONT::height();
 		int width = FONT::width(c);
+		int ofs = FONT::haveContour()?1:0;
+
+		if (FONT::haveContour())
+		{
+			for (int yc=0; yc<height+2; yc++)
+				for (int xc=0; xc<width+2; xc++)
+				{
+					if(FONT::contour(c,xc,yc)) {
+						for(int xi=0;xi<scale;xi++)
+							for(int yi=0;yi<scale;yi++)
+								PutPixel((xc*scale+x)+xi,(yc*scale+y)+ yi,MakeColor(0,0,0), dest);
+					}
+				}
+		}
+
 		for (int yc=0; yc<height; yc++)
 			for (int xc=0; xc<width; xc++)
 			{
 				if(FONT::pixel(c,xc,yc)) {
 					for(int xi=0;xi<scale;xi++)
 						for(int yi=0;yi<scale;yi++)
-							PutPixel((xc*scale+x)+xi,(yc*scale+y)+ yi,color, dest);
+							PutPixel((xc*scale+x)+xi+ofs,(yc*scale+y)+ yi+ofs,color, dest);
 				}
 			}
 	}
 
 public:
+	void setTextBoxBorder(bool enabled) { textBoxBorder = enabled; }
 	template<typename FONT>
 	void PrintString(int scale, int x, int y, int color, char *str, image *dest)
 	{
@@ -87,6 +104,11 @@ public:
 		int yc = y;
 
 		int height = FONT::height();
+		int boxSize= 0;
+		if (FONT::haveContour()) 
+			boxSize = ((FONT::width(*str)*scale+scale+1)*strlen(str));
+		else
+			boxSize = ((FONT::width(*str)*scale+scale)*strlen(str));
 
 		int x1 = x;  // Remember where x where the line should start. -- Overkill 2005-12-28.
 		for (; *str; ++str)
@@ -108,8 +130,11 @@ public:
 			} else {
 				print_char<FONT>(scale, xc, yc, color, *str, dest);
 				xc += FONT::width(*str)*scale + scale;
+				if (FONT::haveContour()) xc += 1;
 			}
 		}
+		if (textBoxBorder)
+			Box(x, y, x+boxSize, y+height, MakeColor(0, 0, 0), dest);
 	}
 
 

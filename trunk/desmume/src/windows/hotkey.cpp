@@ -33,6 +33,7 @@
 #include "replay.h"
 #include "aviout.h"
 #include "spu.h"
+#include "../GPU.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -124,7 +125,6 @@ void HK_StateSaveSlot(int num)
 			savestate_slot(num);	//Savestate
 		
 		lastSaveState = num;		//Set last savestate used
-		SaveStateMessages(num, 0);	//Display state loaded message
 		LoadSaveStateInfo();
 	}
 }
@@ -137,7 +137,6 @@ void HK_StateLoadSlot(int num)
 		NDS_Pause();
 		loadstate_slot(num);		//Loadstate
 		lastSaveState = num;		//Set last savestate used
-		SaveStateMessages(num, 1);	//Display state loaded message
 
 		Update_RAM_Watch();			//adelikat: TODO this should be a single function call in main, that way we can expand as future dialogs need updating
 		Update_RAM_Search();		//main.cpp - case IDM_STATE_LOAD: also calls these functions
@@ -154,7 +153,7 @@ void HK_StateSetSlot(int num)
 	if (romloaded)
 	{
 		lastSaveState = num;
-		SaveStateMessages(num,2);
+		osd->addLine("State %i selected", num);
 	}
 }
 
@@ -188,9 +187,9 @@ void HK_ToggleLag(int) {ShowLagFrameCounter ^= true;}
 void HK_ToggleReadOnly(int) {
 	movie_readonly ^= true; 
 	if(movie_readonly)
-	SetMessageToDisplay("Read Only");
+		osd->addLine("Read Only");
 	else
-	SetMessageToDisplay("Read+Write");
+		osd->addLine("Read+Write");
 }
 
 void HK_PlayMovie(int) 
@@ -261,7 +260,7 @@ void HK_NextSaveSlot(int) {
 	lastSaveState++; 
 	if(lastSaveState>9) 
 		lastSaveState=0; 
-	SaveStateMessages(lastSaveState,2);
+	osd->addLine("State %i selected", lastSaveState);
 }
 
 void HK_PreviousSaveSlot(int) { 
@@ -270,7 +269,7 @@ void HK_PreviousSaveSlot(int) {
 		lastSaveState=9; 
 	else
 		lastSaveState--;
-	SaveStateMessages(lastSaveState,2); 
+	osd->addLine("State %i selected", lastSaveState);
 }
 
 void HK_Pause(int) { Pause(); }

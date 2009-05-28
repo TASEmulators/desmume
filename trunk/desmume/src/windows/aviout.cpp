@@ -25,6 +25,7 @@
 #include "console.h"
 #include "gfx3d.h"
 #include "aviout.h"
+#include "../GPU_OSD.h"
 
 #include <assert.h>
 #include <vfw.h>
@@ -397,7 +398,7 @@ bool DRV_AviBegin(const char* fname)
 	// Don't display at file splits
 	if(!avi_segnum) {
 		EMU_PrintMessage("AVI recording started.");
-		SetMessageToDisplay("AVI recording started.");
+		osd->addLine("AVI recording started.");
 	}
 
 	strncpy(saved_cur_avi_fnameandext,fname,MAX_PATH);
@@ -476,7 +477,7 @@ void DRV_AviEnd()
 	// Don't display if we're just starting another segment
 	if(avi_file->tBytes <= 2097152000) {
 		EMU_PrintMessage("AVI recording ended.");
-		SetMessageToDisplay("AVI recording ended.");
+		osd->addLine("AVI recording ended.");
 	}
 
 	avi_destroy(&avi_file);

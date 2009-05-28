@@ -11,6 +11,7 @@ namespace softrender {
 		static int width(char c) { return charByte(c,0); }
 		static int pixel(char c, int x, int y) { return charByte(c,width(c)*y+x+1); }
 		static bool valid(char c) { return c>=32; }
+		static bool haveContour() { return false; }
 
 		static char charByte(byte c, int i) {
 
