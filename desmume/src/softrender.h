@@ -12,6 +12,7 @@
 #ifndef SOFTRENDER_H
 #define SOFTRENDER_H
 
+#include <string.h>
 #include "softrender_config.h"
 
 namespace softrender {
