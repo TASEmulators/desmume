@@ -32,7 +32,7 @@
 #include "NDSSystem.h"
 #include "render3D.h"
 #include "cp15.h"
-#include "GPU_OSD.h"
+#include "GPU_osd.h"
 
 #include "memorystream.h"
 #include "readwrite.h"
