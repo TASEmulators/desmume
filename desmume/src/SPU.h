@@ -83,7 +83,7 @@ struct channel_struct
    double sampcnt;
    double sampinc;
    // ADPCM specific
-   int lastsampcnt;
+   u32 lastsampcnt;
    s16 pcm16b, pcm16b_last;
    int index;
    u16 x;

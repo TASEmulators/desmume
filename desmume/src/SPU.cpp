@@ -57,8 +57,8 @@ extern SoundInterface_struct *SNDCoreList[];
 
 
 
-static FORCEINLINE s32 sputrunc(float f) { return u32floor(f); }
-static FORCEINLINE s32 sputrunc(double d) { return u32floor(d); }
+static FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
+static FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
 static FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
 	assert(multiplier <= 127);
 	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
