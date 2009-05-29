@@ -5,7 +5,7 @@
 	Name="DeSmuME_Intel"
 	ProjectGUID="{439F53E2-431F-4F28-9058-C6A9B00B503F}"
 	VCNestedProjectGUID="{9F5F72A1-D3A5-4918-B460-E076B16D10A9}"
-	VCNestedProjectCRC32="996184373"
+	VCNestedProjectCRC32="2872662123"
 	VCNestedProjectFileName="DeSmuME_Intel.vcproj">
 	<Platforms>
 		<Platform 
@@ -28,7 +28,7 @@
 				EnableIntrinsicFunctions="0"
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="0"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
+				AdditionalIncludeDirectories=".;..;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
 				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BufferSecurityCheck="0"
@@ -39,8 +39,8 @@
 			<Tool 
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_debug.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib"
+				AdditionalDependencies="glib-2.20.1-x86.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="1"
 				GenerateMapFile="1"
@@ -88,7 +88,7 @@
 				OmitFramePointers="1"
 				EnableFiberSafeOptimizations="1"
 				OptimizeForWindowsApplication="1"
-				AdditionalIncludeDirectories=".;..;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
+				AdditionalIncludeDirectories=".;..;&quot;.\glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE;EXPERIMENTAL_WIFI;NDEBUG"
 				StringPooling="1"
 				ExceptionHandling="1"
@@ -104,8 +104,8 @@
 			<Tool 
 				Name="LinkerTool"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap"
-				AdditionalDependencies="vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib"
+				AdditionalDependencies="glib-2.20.1-x86.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="1"
 				RandomizedBaseAddress="1"
@@ -151,6 +151,8 @@
 			RelativePath="..\cflash.h"/>
 		<File 
 			RelativePath="..\cheatSystem.h"/>
+		<File 
+			RelativePath="..\commandline.h"/>
 		<File 
 			RelativePath="..\common.h"/>
 		<File 
@@ -278,6 +280,8 @@
 		<File 
 			RelativePath=".\snddx.h"/>
 		<File 
+			RelativePath=".\soundView.h"/>
+		<File 
 			RelativePath=".\throttle.h"/>
 		<File 
 			RelativePath=".\tileView.h"/>
@@ -371,6 +375,15 @@
 			RelativePath="..\cflash.cpp"/>
 		<File 
 			RelativePath="..\cheatSystem.cpp"/>
+		<File 
+			RelativePath="..\commandline.cpp">
+			<FileConfiguration 
+				Name="Release|Win32">
+				<Tool 
+					Name="CppCmplrTool"
+					CallingConvention="0"/>
+			</FileConfiguration>
+		</File>
 		<File 
 			RelativePath="..\common.cpp"/>
 		<File 
@@ -476,11 +489,11 @@
 		<File 
 			RelativePath=".\snddx.cpp"/>
 		<File 
+			RelativePath=".\soundView.cpp"/>
+		<File 
 			RelativePath=".\throttle.cpp"/>
 		<File 
 			RelativePath=".\tileView.cpp"/>
-		<File 
-			RelativePath=".\wavout.cpp"/>
 	</Files>
 </VisualStudioProject>
 
