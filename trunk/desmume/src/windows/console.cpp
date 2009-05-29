@@ -31,7 +31,7 @@
 ///////////////////////////////////////////////////////////////// Console
 #if !defined(PUBLIC_RELEASE) || defined(DEVELOPER)
 #define BUFFER_SIZE 100
-HANDLE hConsole;
+HANDLE hConsole = NULL;
 void printlog(const char *fmt, ...);
 
 void OpenConsole() 
@@ -41,8 +41,41 @@ void OpenConsole()
 	SMALL_RECT srect;
 	char buf[256];
 
+	//dont do anything if we're already attached
 	if (hConsole) return;
-	AllocConsole();
+
+	//attach to an existing console (if we can; this is circuitous because AttachConsole wasnt added until XP)
+	//remember to abstract this late bound function notion if we end up having to do this anywhere else
+	bool attached = false;
+	HMODULE lib = LoadLibrary("kernel32.dll");
+	if(lib)
+	{
+		typedef BOOL (WINAPI *_TAttachConsole)(DWORD dwProcessId);
+		_TAttachConsole _AttachConsole  = (_TAttachConsole)GetProcAddress(lib,"AttachConsole");
+		if(_AttachConsole)
+		{
+			if(_AttachConsole(-1))
+				attached = true;
+		}
+		FreeLibrary(lib);
+	}
+
+	//if we failed to attach, then alloc a new console
+	if(!attached)
+	{
+		AllocConsole();
+	}
+
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	//redirect stdio
+	long lStdHandle = (long)hConsole;
+	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+	FILE *fp = _fdopen( hConHandle, "w" );
+	*stdout = *fp;
+	//and stderr
+	*stderr = *fp;
+
 	memset(buf,0,256);
 	sprintf(buf,"%s OUTPUT", DESMUME_NAME_AND_VERSION);
 	SetConsoleTitle(TEXT(buf));
@@ -54,19 +87,13 @@ void OpenConsole()
 	srect.Right = srect.Left + 99;
 	srect.Bottom = srect.Top + 64;
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &srect);
-	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCP(GetACP());
 	SetConsoleOutputCP(GetACP());
+	if(attached) printlog("\n");
 	printlog("%s\n",DESMUME_NAME_AND_VERSION);
 	printlog("- compiled: %s %s\n\n",__DATE__,__TIME__);
 
-	//redirect stdio
-	long lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
-	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-	FILE *fp = _fdopen( hConHandle, "w" );
-	*stdout = *fp;
-	//and stderr
-	*stderr = *fp;
+
 }
 
 void CloseConsole() {
