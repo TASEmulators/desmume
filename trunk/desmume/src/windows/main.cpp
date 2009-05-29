@@ -81,6 +81,7 @@
 #include "ram_search.h"
 #include "aviout.h"
 #include "soundView.h"
+#include "commandline.h"
 
 #include "directx/ddraw.h"
 
@@ -496,92 +497,92 @@ init_configured_features( struct configured_features *config) {
 
 	config->cflash_disk_image_file = NULL;
 }
-
-
-static int
-fill_configured_features( struct configured_features *config, LPSTR lpszArgument) {
-	int good_args = 0;
-	LPTSTR cmd_line;
-	LPWSTR *argv;
-	int argc;
-
-	argv = CommandLineToArgvW( GetCommandLineW(), &argc);
-
-	if ( argv != NULL) {
-		int i;
-		good_args = 1;
-		for ( i = 1; i < argc && good_args; i++) {
-			if ( wcsncmp( argv[i], L"--arm9gdb=", 10) == 0) {
-				wchar_t *end_char;
-				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
-
-				if ( port_num > 0 && port_num < 65536) {
-					config->arm9_gdb_port = port_num;
-				}
-				else {
-					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
-					good_args = 0;
-				}
-			}
-			else if ( wcsncmp( argv[i], L"--arm7gdb=", 10) == 0) {
-				wchar_t *end_char;
-				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
-
-				if ( port_num > 0 && port_num < 65536) {
-					config->arm7_gdb_port = port_num;
-				}
-				else {
-					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
-					good_args = 0;
-				}
-			}
-
-#ifdef EXPERIMENTAL_GBASLOT
-			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) 
-			{
-				char buf[512];
-				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
-				if (convert_count > 0)
-				{
-					addon_type = NDS_ADDON_CFLASH;
-					CFlashUsePath = FALSE;
-					strcpy(CFlashName, buf);
-				}
-			}
-			else if ( wcsncmp( argv[i], L"--gbagame=", 10) == 0) 
-			{
-				char buf[512];
-				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
-				if (convert_count > 0)
-				{
-					addon_type = NDS_ADDON_GBAGAME;
-					strcpy(GBAgameName, buf);
-				}
-			}
-			else if ( wcsncmp( argv[i], L"--rumble", 8) == 0) 
-			{
-				addon_type = NDS_ADDON_RUMBLEPAK;
-			}
-#else
-			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) {
-				if ( config->cflash_disk_image_file == NULL) {
-					size_t convert_count = wcstombs( &cflash_filename_buffer[0], &argv[i][9], 512);
-					if ( convert_count > 0) {
-						config->cflash_disk_image_file = cflash_filename_buffer;
-					}
-				}
-				else {
-					MessageBox(NULL,"CFlash disk image file already set","Error",MB_OK);
-					good_args = 0;
-				}
-			}
-#endif
-		}
-		LocalFree( argv);
-	}
-
-	return good_args;
-}
+//
+//
+//static int
+//fill_configured_features( struct configured_features *config, LPSTR lpszArgument) {
+//	int good_args = 0;
+//	LPTSTR cmd_line;
+//	LPWSTR *argv;
+//	int argc;
+//
+//	argv = CommandLineToArgvW( GetCommandLineW(), &argc);
+//
+//	if ( argv != NULL) {
+//		int i;
+//		good_args = 1;
+//		for ( i = 1; i < argc && good_args; i++) {
+//			if ( wcsncmp( argv[i], L"--arm9gdb=", 10) == 0) {
+//				wchar_t *end_char;
+//				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
+//
+//				if ( port_num > 0 && port_num < 65536) {
+//					config->arm9_gdb_port = port_num;
+//				}
+//				else {
+//					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
+//					good_args = 0;
+//				}
+//			}
+//			else if ( wcsncmp( argv[i], L"--arm7gdb=", 10) == 0) {
+//				wchar_t *end_char;
+//				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
+//
+//				if ( port_num > 0 && port_num < 65536) {
+//					config->arm7_gdb_port = port_num;
+//				}
+//				else {
+//					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
+//					good_args = 0;
+//				}
+//			}
+//
+//#ifdef EXPERIMENTAL_GBASLOT
+//			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) 
+//			{
+//				char buf[512];
+//				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
+//				if (convert_count > 0)
+//				{
+//					addon_type = NDS_ADDON_CFLASH;
+//					CFlashUsePath = FALSE;
+//					strcpy(CFlashName, buf);
+//				}
+//			}
+//			else if ( wcsncmp( argv[i], L"--gbagame=", 10) == 0) 
+//			{
+//				char buf[512];
+//				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
+//				if (convert_count > 0)
+//				{
+//					addon_type = NDS_ADDON_GBAGAME;
+//					strcpy(GBAgameName, buf);
+//				}
+//			}
+//			else if ( wcsncmp( argv[i], L"--rumble", 8) == 0) 
+//			{
+//				addon_type = NDS_ADDON_RUMBLEPAK;
+//			}
+//#else
+//			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) {
+//				if ( config->cflash_disk_image_file == NULL) {
+//					size_t convert_count = wcstombs( &cflash_filename_buffer[0], &argv[i][9], 512);
+//					if ( convert_count > 0) {
+//						config->cflash_disk_image_file = cflash_filename_buffer;
+//					}
+//				}
+//				else {
+//					MessageBox(NULL,"CFlash disk image file already set","Error",MB_OK);
+//					good_args = 0;
+//				}
+//			}
+//#endif
+//		}
+//		LocalFree( argv);
+//	}
+//
+//	return good_args;
+//}
 
 // Rotation definitions
 short GPU_rotation      = 0;
@@ -707,7 +708,7 @@ void UpdateRecentRomsMenu()
 	DrawMenuBar(temp);
 }
 
-void UpdateRecentRoms(char* filename)
+void UpdateRecentRoms(const char* filename)
 {
 	//This function assumes filename is a ROM filename that was successfully loaded
 
@@ -1357,9 +1358,9 @@ void LoadSaveStateInfo()
 
 
 #ifdef EXPERIMENTAL_GBASLOT
-BOOL LoadROM(char * filename)
+static BOOL LoadROM(const char * filename)
 #else
-BOOL LoadROM(char * filename, const char *cflash_disk_image)
+static BOOL LoadROM(const char * filename, const char *cflash_disk_image)
 #endif
 {
 	ResetSaveStateTimes();
@@ -1560,12 +1561,10 @@ class WinDriver : public Driver
 	}
 };
 
-int WINAPI WinMain (HINSTANCE hThisInstance,
-					HINSTANCE hPrevInstance,
-					LPSTR lpszArgument,
-					int nFunsterStil)
 
+int _main()
 {
+
 #ifdef WX_STUB
 	wxInitialize();
 #endif
@@ -1589,7 +1588,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 
 	char text[80];
-	hAppInst=hThisInstance;
 
 	GetINIPath();
 #ifdef EXPERIMENTAL_GBASLOT
@@ -1627,10 +1625,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
 	init_configured_features( &my_config);
-	if ( !fill_configured_features( &my_config, lpszArgument)) {
+	/*if ( !fill_configured_features( &my_config, lpszArgument)) {
 		MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
 		return 0;
-	}
+	}*/
 	ColorCtrl_Register();
 
 	if (!RegClass(WindowProcedure, "DeSmuME"))
@@ -1638,8 +1636,6 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		MessageBox(NULL, "Error registering windows class", "DeSmuME", MB_OK);
 		exit(-1);
 	}
-
-	OpenConsole();			// Init debug console
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
@@ -1666,8 +1662,16 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 		GetPrivateProfileString("Watches", str, "", &rw_recent_files[i][0], 1024, IniName);
 	}
 
+	//i think we should override the ini file with anything from the commandline
+	CommandLine cmdline;
+	cmdline.loadCommonOptions();
+	if(!cmdline.parse(__argc,__argv)) {
+		cmdline.errorHelp(__argv[0]);
+		return 1;
+	}
+
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
-	MainWindow = new WINCLASS(CLASSNAME, hThisInstance);
+	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384+ScreenGap,
 		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
@@ -1691,6 +1695,8 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 #endif
 
 	//hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL)); //Now that we have a hotkey system we down need the Accel table.  Not deleting just yet though
+
+
 
 	if(MenuInit() == 0)
 	{
@@ -1745,17 +1751,17 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	MemView_Init();
 	SoundView_Init();
 
-	ViewDisasm_ARM7 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
-	ViewDisasm_ARM9 = new TOOLSCLASS(hThisInstance, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
-	//ViewMem_ARM7 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
-	//ViewMem_ARM9 = new TOOLSCLASS(hThisInstance, IDD_MEM_VIEWER9, (DLGPROC) ViewMem_ARM9Proc);
-	ViewRegisters = new TOOLSCLASS(hThisInstance, IDD_IO_REG, (DLGPROC) IoregView_Proc);
-	ViewPalette = new TOOLSCLASS(hThisInstance, IDD_PAL, (DLGPROC) ViewPalProc);
-	ViewTiles = new TOOLSCLASS(hThisInstance, IDD_TILE, (DLGPROC) ViewTilesProc);
-	ViewMaps = new TOOLSCLASS(hThisInstance, IDD_MAP, (DLGPROC) ViewMapsProc);
-	ViewOAM = new TOOLSCLASS(hThisInstance, IDD_OAM, (DLGPROC) ViewOAMProc);
-	ViewMatrices = new TOOLSCLASS(hThisInstance, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
-	ViewLights = new TOOLSCLASS(hThisInstance, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
+	ViewDisasm_ARM7 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER7, (DLGPROC) ViewDisasm_ARM7Proc);
+	ViewDisasm_ARM9 = new TOOLSCLASS(hAppInst, IDD_DESASSEMBLEUR_VIEWER9, (DLGPROC) ViewDisasm_ARM9Proc);
+	//ViewMem_ARM7 = new TOOLSCLASS(hAppInst, IDD_MEM_VIEWER7, (DLGPROC) ViewMem_ARM7Proc);
+	//ViewMem_ARM9 = new TOOLSCLASS(hAppInst, IDD_MEM_VIEWER9, (DLGPROC) ViewMem_ARM9Proc);
+	ViewRegisters = new TOOLSCLASS(hAppInst, IDD_IO_REG, (DLGPROC) IoregView_Proc);
+	ViewPalette = new TOOLSCLASS(hAppInst, IDD_PAL, (DLGPROC) ViewPalProc);
+	ViewTiles = new TOOLSCLASS(hAppInst, IDD_TILE, (DLGPROC) ViewTilesProc);
+	ViewMaps = new TOOLSCLASS(hAppInst, IDD_MAP, (DLGPROC) ViewMapsProc);
+	ViewOAM = new TOOLSCLASS(hAppInst, IDD_OAM, (DLGPROC) ViewOAMProc);
+	ViewMatrices = new TOOLSCLASS(hAppInst, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
+	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
 
 #ifdef GDB_STUB
 	if ( my_config.arm9_gdb_port != 0) {
@@ -1891,16 +1897,13 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 	// Create the dummy firmware
 	NDS_CreateDummyFirmware( &win_fw_config);
 
-	// Make sure any quotes from lpszArgument are removed
-	if (lpszArgument[0] == '\"')
-		sscanf(lpszArgument, "\"%[^\"]\"", lpszArgument);
 
-	if (lpszArgument[0])
+	if (cmdline.nds_file != "")
 	{
 #ifdef EXPERIMENTAL_GBASLOT
-		if(LoadROM(lpszArgument))
+		if(LoadROM(cmdline.nds_file.c_str()))
 #else
-		if(LoadROM(lpszArgument, bad_glob_cflash_disk_image_file))
+		if(LoadROM(cmdline.nds_file.c_str(), bad_glob_cflash_disk_image_file))
 #endif
 		{
 			romloaded = TRUE;
@@ -1946,9 +1949,23 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 	delete MainWindow;
 
-	CloseConsole();
-
 	return 0;
+}
+
+int WINAPI WinMain (HINSTANCE hThisInstance,
+					HINSTANCE hPrevInstance,
+					LPSTR lpszArgument,
+					int nFunsterStil)
+
+{
+	hAppInst=hThisInstance;
+	OpenConsole();			// Init debug console
+
+	int ret = _main();
+
+	CloseConsole();
+	
+	return ret;
 }
 
 void UpdateWndRects(HWND hwnd)

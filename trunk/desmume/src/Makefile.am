@@ -1,5 +1,7 @@
 include $(top_srcdir)/src/desmume.mk
 
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS)
+
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp \
 	matrix_sse2-x64.asm matrix_sse2-x86.asm
 if HAVE_GDB_STUB
@@ -14,8 +16,8 @@ libdesmume_a_SOURCES = \
         arm_instructions.cpp arm_instructions.h \
         bios.cpp bios.h bits.h cp15.cpp cp15.h \
         cflash.cpp cflash.h fs.h \
-	common.cpp common.h \
-	debug.cpp debug.h \
+	common.cpp common.h commandline.h commandline.cpp \
+	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
 	dscard.h fat.h FIFO.cpp FIFO.h \
 	GPU_osd.cpp GPU_osd.h \

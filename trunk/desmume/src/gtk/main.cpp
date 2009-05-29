@@ -45,6 +45,8 @@
 #include "dTool.h"
 #include "desmume_config.h"
 
+#include "commandline.h"
+
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
@@ -327,9 +329,9 @@ static u16 Cur_Keypad = 0;
 static u16 gdk_shift_pressed = 0;
 u16 Keypad_Temp[NB_KEYS];
 
-struct configured_features {
-  int load_slot;
-
+class configured_features : public CommandLine
+{
+public:
   int disable_sound;
   int engine_3d;
   int disable_limiter;
@@ -340,7 +342,6 @@ struct configured_features {
 
   int firmware_language;
 
-  const char *nds_file;
   const char *cflash_disk_image_file;
 #ifdef HAVE_TIMEOUT
   int timeout;
@@ -350,8 +351,6 @@ struct configured_features {
 static void
 init_configured_features( struct configured_features *config)
 {
-  config->load_slot = 0;
-
   config->arm9_gdb_port = 0;
   config->arm7_gdb_port = 0;
 
@@ -361,7 +360,6 @@ init_configured_features( struct configured_features *config)
 
   config->disable_limiter = 0;
 
-  config->nds_file = NULL;
   config->savetype = 0;
 
   config->cflash_disk_image_file = NULL;
@@ -379,7 +377,6 @@ fill_configured_features( struct configured_features *config,
                           int argc, char ** argv)
 {
   GOptionEntry options[] = {
-    { "load-slot", 0, 0, G_OPTION_ARG_INT, &config->load_slot, "Loads savegame from slot NUM", "NUM"},
     { "disable-sound", 0, 0, G_OPTION_ARG_NONE, &config->disable_sound, "Disables the sound emulation", NULL},
     { "disable-limiter", 0, 0, G_OPTION_ARG_NONE, &config->disable_limiter, "Disables the 60fps limiter", NULL},
     { "3d-engine", 0, 0, G_OPTION_ARG_INT, &config->engine_3d, "Select 3d rendering engine. Available engines:\n"
@@ -416,40 +413,25 @@ fill_configured_features( struct configured_features *config,
 #endif
     { NULL }
   };
-  GOptionContext *ctx;
-  GError *error = NULL;
 
-  ctx = g_option_context_new ("");
-  g_option_context_add_main_entries (ctx, options, "options");
-  g_option_context_add_group (ctx, gtk_get_option_group (TRUE));
-  g_option_context_parse (ctx, &argc, &argv, &error);
-  g_option_context_free (ctx);
+  config->loadCommonOptions();
+	g_option_context_add_main_entries (config->ctx, options, "options");
+	g_option_context_add_group (config->ctx, gtk_get_option_group (TRUE));
+	config->parse(argc,argv);
 
-  if (error) {
-    g_printerr("Error parsing command line arguments: %s\n", error->message);
-    g_error_free (error);
-    return 0;
-  }
+	if(!config->validate())
+		goto error;
 
-  if (argc == 2)
-    config->nds_file = argv[1];
-  if (argc > 2)
-    goto error;
-
-  if (config->savetype < 0 || config->savetype > 6) {
-    g_printerr("Accepted savetypes are from 0 to 6.\n");
-    goto error;
-  }
+	if (config->savetype < 0 || config->savetype > 6) {
+		g_printerr("Accepted savetypes are from 0 to 6.\n");
+		return false;
+	}
 
   if (config->firmware_language < -1 || config->firmware_language > 5) {
     g_printerr("Firmware language must be set to a value from 0 to 5.\n");
     goto error;
   }
 
-  if (config->load_slot < 0 || config->load_slot > 10) {
-    g_printerr("I only know how to load from slots 1-10, 0 means 'do not load savegame' and is default\n");
-    goto error;
-  }
 
   if (config->engine_3d != 0 && config->engine_3d != 1
 #if defined(HAVE_LIBOSMESA)
@@ -479,8 +461,8 @@ fill_configured_features( struct configured_features *config,
   return 1;
 
 error:
-    g_printerr("USAGE: %s [options] [nds-file]\n", argv[0]);
-    g_printerr("USAGE: %s --help    - for help\n", argv[0]);
+  config->errorHelp(argv[0]);
+
     return 0;
 }
 
@@ -1808,8 +1790,8 @@ common_gtk_main( struct configured_features *my_config)
     mmu_select_savetype(my_config->savetype, &backupmemorytype, &backupmemorysize);
 
     /* Command line arg */
-    if( my_config->nds_file != NULL) {
-        if(Open( my_config->nds_file, bad_glob_cflash_disk_image_file) >= 0) {
+    if( my_config->nds_file != "") {
+        if(Open( my_config->nds_file.c_str(), bad_glob_cflash_disk_image_file) >= 0) {
             if(my_config->load_slot){
               loadstate_slot(my_config->load_slot);
             }
@@ -1820,7 +1802,7 @@ common_gtk_main( struct configured_features *my_config)
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_INFO,
                     GTK_BUTTONS_OK,
-                    "Unable to load :\n%s", my_config->nds_file);
+                    "Unable to load :\n%s", my_config->nds_file.c_str());
             gtk_dialog_run(GTK_DIALOG(pDialog));
             gtk_widget_destroy(pDialog);
         }
@@ -1870,7 +1852,7 @@ common_gtk_main( struct configured_features *my_config)
 int
 main (int argc, char *argv[])
 {
-  struct configured_features my_config;
+  configured_features my_config;
 
   init_configured_features( &my_config);
 
