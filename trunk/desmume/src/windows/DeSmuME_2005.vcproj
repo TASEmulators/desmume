@@ -791,6 +791,14 @@
 			RelativePath="..\commandline.cpp"
 			>
 			<FileConfiguration
+				Name="Release|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					CallingConvention="0"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
 				Name="Release FastBuild|Win32"
 				>
 				<Tool
