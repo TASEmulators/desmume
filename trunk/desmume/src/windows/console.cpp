@@ -1,8 +1,8 @@
 /*  Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
     yopyop156.ifrance.com
-
     Copyright 2008 CrazyMax (mtabachenko)
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -65,6 +65,8 @@ void OpenConsole()
 	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
 	FILE *fp = _fdopen( hConHandle, "w" );
 	*stdout = *fp;
+	//and stderr
+	*stderr = *fp;
 }
 
 void CloseConsole() {
