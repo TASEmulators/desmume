@@ -19,6 +19,8 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+//windows note: make sure this file gets compiled with _cdecl
+
 #include <glib.h>
 
 #include <stdio.h>

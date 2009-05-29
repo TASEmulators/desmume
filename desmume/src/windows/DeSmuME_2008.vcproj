@@ -166,7 +166,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.20.1-x86.lib vfw32.lib winmm.lib comctl32.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib shlwapi.lib winpcap\wpcap.lib zlib-2008-x32.lib zziplib-2008-x32.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_sse2.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;.\winpcap;glib-2.20.1\lib"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
@@ -329,6 +329,14 @@
 				<File
 					RelativePath="..\commandline.cpp"
 					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CallingConvention="0"
+						/>
+					</FileConfiguration>
 					<FileConfiguration
 						Name="Release FastBuild|Win32"
 						>
