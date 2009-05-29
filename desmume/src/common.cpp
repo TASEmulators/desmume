@@ -118,7 +118,7 @@ std::string RomName = "";				//Stores the name of the Rom currently loaded in me
  * Known Usage:
  *				LoadRom
  **/
-void SetRomName(char *filename)
+void SetRomName(const char *filename)
 {
 	std::string str = filename;
 	
