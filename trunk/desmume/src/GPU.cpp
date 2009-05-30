@@ -163,9 +163,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialNone(int dstX, int srcX)
 				c1.val = color;
 				c2.val = T2ReadWord(dst, passing);
 
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+				cfinal.bits.red = ((c1.bits.red * alpha) + (c2.bits.red * (16 - alpha)))/16;
+				cfinal.bits.green = ((c1.bits.green * alpha) + (c2.bits.green * (16 - alpha)))/16;
+				cfinal.bits.blue = ((c1.bits.blue * alpha) + (c2.bits.blue * (16 - alpha)))/16;
 
 				final = cfinal.val;
 			}
@@ -201,9 +201,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialBlend(int dstX, int srcX)
 				c1.val = color;
 				c2.val = T2ReadWord(dst, passing);
 
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+				cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) )) / 16;
+				cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) )) / 16;
+				cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) )) / 16;
 
 				final = cfinal.val;
 			}
@@ -240,9 +240,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialIncrease(int dstX, int srcX)
 				c1.val = color;
 				c2.val = T2ReadWord(dst, passing);
 
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+				cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
+				cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
+				cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
 
 				final = cfinal.val;
 			}
@@ -288,9 +288,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialDecrease(int dstX, int srcX)
 				c1.val = color;
 				c2.val = T2ReadWord(dst, passing);
 
-				cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-				cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-				cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+				cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
+				cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
+				cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
 
 				final = cfinal.val;
 			}
@@ -339,9 +339,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialNoneWnd(int dstX, int srcX)
 					c1.val = color;
 					c2.val = T2ReadWord(dst, passing);
 
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
+					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
+					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
 
 					final = cfinal.val;
 				}
@@ -384,9 +384,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialBlendWnd(int dstX, int srcX)
 					c1.val = color;
 					c2.val = T2ReadWord(dst, passing);
 
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
+					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
+					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
 
 					final = cfinal.val;
 				}
@@ -430,9 +430,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialIncreaseWnd(int dstX, int srcX)
 					c1.val = color;
 					c2.val = T2ReadWord(dst, passing);
 
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
+					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
+					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
 
 					final = cfinal.val;
 				}
@@ -484,9 +484,9 @@ FORCEINLINE void GPU::setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX)
 					c1.val = color;
 					c2.val = T2ReadWord(dst, passing);
 
-					cfinal.bits.red = ((c1.bits.red * alpha / 16) + (c2.bits.red * (16 - alpha) / 16));
-					cfinal.bits.green = ((c1.bits.green * alpha / 16) + (c2.bits.green * (16 - alpha) / 16));
-					cfinal.bits.blue = ((c1.bits.blue * alpha / 16) + (c2.bits.blue * (16 - alpha) / 16));
+					cfinal.bits.red = ((c1.bits.red * alpha ) + (c2.bits.red * (16 - alpha) ))/16;
+					cfinal.bits.green = ((c1.bits.green * alpha ) + (c2.bits.green * (16 - alpha) ))/16;
+					cfinal.bits.blue = ((c1.bits.blue * alpha ) + (c2.bits.blue * (16 - alpha) ))/16;
 
 					final = cfinal.val;
 				}
