@@ -149,7 +149,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialNone(int dstX, int srcX)
 	DECL3D;
 
 	// We must blend if the 3D layer has the highest prio
-	if((alpha < 16) && bg0HasHighestPrio)
+	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
 	{
 		int bg_under = bgPixels[dstX];
 		u16 final = color;
@@ -187,7 +187,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialBlend(int dstX, int srcX)
 
 	// We can blend if the 3D layer is selected as 1st target,
 	//but also if the 3D layer has the highest prio.
-	if((alpha < 16) && ((BLDCNT & 0x1) || bg0HasHighestPrio))
+	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && ((BLDCNT & 0x1) || bg0HasHighestPrio))
 	{
 		int bg_under = bgPixels[x];
 		u16 final = color;
@@ -227,7 +227,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialIncrease(int dstX, int srcX)
 	// We must blend if the 3D layer has the highest prio
 	// But it doesn't seem to have priority over fading,
 	// unlike semi-transparent sprites
-	if((alpha < 16) && bg0HasHighestPrio)
+	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
 	{
 		int bg_under = bgPixels[x];
 
@@ -275,7 +275,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialDecrease(int dstX, int srcX)
 	// We must blend if the 3D layer has the highest prio
 	// But it doesn't seem to have priority over fading
 	// unlike semi-transparent sprites
-	if((alpha < 16) && bg0HasHighestPrio)
+	if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
 	{
 		int bg_under = bgPixels[x];
 
@@ -325,7 +325,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialNoneWnd(int dstX, int srcX)
 	if(windowDraw)
 	{
 		// We must blend if the 3D layer has the highest prio 
-		if((alpha < 16) && bg0HasHighestPrio)
+		if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
 		{
 			int bg_under = bgPixels[x];
 			u16 final = color;
@@ -370,7 +370,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialBlendWnd(int dstX, int srcX)
 	{
 		// We can blend if the 3D layer is selected as 1st target,
 		// but also if the 3D layer has the highest prio.
-		if((alpha < 16) && (((BLDCNT & 0x1) && windowEffect) || bg0HasHighestPrio))
+		if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && (((BLDCNT & 0x1) && windowEffect) || bg0HasHighestPrio))
 		{
 			int bg_under = bgPixels[x];
 			u16 final = color;
@@ -417,7 +417,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialIncreaseWnd(int dstX, int srcX)
 		// We must blend if the 3D layer has the highest prio 
 		// But it doesn't seem to have priority over fading, 
 		// unlike semi-transparent sprites 
-		if((alpha < 16) && bg0HasHighestPrio)
+		if((alpha < 16)) //zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
 		{
 			int bg_under = bgPixels[x];
 
@@ -471,7 +471,7 @@ FORCEINLINE void GPU::setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX)
 		// We must blend if the 3D layer has the highest prio 
 		// But it doesn't seem to have priority over fading, 
 		// unlike semi-transparent sprites 
-		if((alpha < 16) && bg0HasHighestPrio)
+		if((alpha < 16)) ////zero 30-may-09 - i think 3d always blends && bg0HasHighestPrio)
 		{
 			int bg_under = bgPixels[x];
 
