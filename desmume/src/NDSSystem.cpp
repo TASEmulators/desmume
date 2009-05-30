@@ -37,6 +37,7 @@
 #include "ROMReader.h"
 #include "gfx3d.h"
 #include "utils/decrypt/decrypt.h"
+#include "utils/decrypt/crc.h"
 #include "bios.h"
 #include "debug.h"
 #include "cheatSystem.h"
@@ -710,7 +711,7 @@ static void NDS_SetROMSerial()
 		memset(ROMserial+19, '\0', 1);
 	}
 	delete header;
-	INFO("\nROM serial: %s\n\n", ROMserial);
+	INFO("\nROM serial: %s\n", ROMserial);
 }
 
 #ifdef EXPERIMENTAL_GBASLOT
@@ -842,6 +843,10 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 	cheatsInit(buf);
 
 	NDS_SetROMSerial();
+	
+	uLong crc = crc32(0,data,size);
+	INFO("\nROM crc: %08X\n\n", crc);
+
 
 	return ret;
 }
