@@ -25,10 +25,11 @@
 #define __GPU_OSD_
 
 #include <stdlib.h>
+#include <time.h>
 #include "types.h"
 
 #define OSD_MAX_LINES 4
-#define OSD_TIMER_SIZE 5000
+#define OSD_TIMER_SECS 2
 
 class OSDCLASS
 {
@@ -44,12 +45,11 @@ private:
 	u32		lineText_color;
 	u8		lastLineText;
 	char	*lineText[OSD_MAX_LINES+1];
-	u16		lineTimer[OSD_MAX_LINES+1];
+	time_t	lineTimer[OSD_MAX_LINES+1];
 	u32		lineColor[OSD_MAX_LINES+1];
 
 	bool	needUpdate;
 
-	//void	printChar(u16 x, u16 y, u8 c);
 	bool	checkTimers();
 public:
 	char	name[7];		// for debuging

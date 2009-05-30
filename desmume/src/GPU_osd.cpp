@@ -26,6 +26,7 @@
 #include "mem.h"
 #include <string.h> //mem funcs
 #include <stdarg.h> //va_start, etc
+#include <time.h>
 #include "debug.h"
 
 #include "softrender.h"
@@ -53,7 +54,7 @@ OSDCLASS::OSDCLASS(u8 core)
 	{
 		lineText[i] = new char[1024];
 		memset(lineText[i], 0, 1024);
-		lineTimer[i] = OSD_TIMER_SIZE;
+		lineTimer[i] = 0;
 		lineColor[i] = lineText_color;
 	}
 
@@ -148,11 +149,11 @@ bool OSDCLASS::checkTimers()
 {
 	if (lastLineText == 0) return false;
 
+	time_t	tmp_time = time(NULL);
+
 	for (int i=0; i < lastLineText; i++)
 	{
-		if (lineTimer[i] > 0) lineTimer[i]--;
-
-		if (lineTimer[i] == 0)
+		if (tmp_time > (lineTimer[i] + OSD_TIMER_SECS) )
 		{
 			if (i < lastLineText)
 			{
@@ -163,6 +164,7 @@ bool OSDCLASS::checkTimers()
 					lineColor[j] = lineColor[j+1];
 				}
 			}
+			lineTimer[lastLineText] = 0;
 			lastLineText--;
 			if (lastLineText == 0) return false;
 		}
@@ -235,7 +237,7 @@ void OSDCLASS::addLine(const char *fmt, ...)
 #endif
 	va_end(list);
 	lineColor[lastLineText] = lineText_color;
-	lineTimer[lastLineText] = OSD_TIMER_SIZE;
+	lineTimer[lastLineText] = time(NULL);
 	needUpdate = true;
 
 	lastLineText++;
