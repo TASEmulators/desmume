@@ -520,8 +520,7 @@ int NDS_Init( void) {
 
 #ifdef EXPERIMENTAL_WIFI
 	WIFI_Init(&wifiMac) ;
-	if(wifiMac.netEnabled)
-		WIFI_SoftAP_Init(&wifiMac);
+	WIFI_SoftAP_Init(&wifiMac);
 #endif
 
 	nds.FW_ARM9BootCode = NULL;
@@ -541,8 +540,7 @@ void NDS_DeInit(void) {
 	gpu3D->NDS_3D_Close();
 
 #ifdef EXPERIMENTAL_WIFI
-	if(wifiMac.netEnabled)
-		WIFI_SoftAP_Shutdown(&wifiMac);
+	WIFI_SoftAP_Shutdown(&wifiMac);
 #endif
 }
 
@@ -1079,10 +1077,8 @@ void NDS_Reset(BOOL resetBySavestate)
 #ifdef EXPERIMENTAL_WIFI
 	WIFI_Init(&wifiMac);
 
-	if(wifiMac.netEnabled) {
-		WIFI_SoftAP_Shutdown(&wifiMac);
-		WIFI_SoftAP_Init(&wifiMac);
-	}
+	WIFI_SoftAP_Shutdown(&wifiMac);
+	WIFI_SoftAP_Init(&wifiMac);
 #endif
 
 	memcpy(FW_Mac, (MMU.fw.data + 0x36), 6);

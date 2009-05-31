@@ -483,9 +483,10 @@ static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 	{
 		u16 txLen ;
 		/* the address has to be somewhere in the circular buffer, so drop the other bits */
-		u16 address = (wifi->TXSlot[slot] & 0x7FFF) ;
+		u16 address = (wifi->TXSlot[slot] & 0x7FFF) ; //luigi: shouldnt this be 0xFFF (see W_TXBUF_LOC3  in gbatek)
 		/* is there even enough space for the header (6 hwords) in the tx buffer? */
-		if (address > 0x1000-6) return ; 
+		if (address > 0x1000-6) return ;  //luigi: you shouldnt do this. put assertions or LOG() calls in spots like this.
+		//when an emulation is in the state that wifi is at, silently swallowing errors will make it hard to debug
 
 		/* 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx */
 		txLen = /*ntohs*/(wifi->circularBuffer[address+5]) ;
@@ -1155,28 +1156,34 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
         SoftAP_CRC32Table[i] = reflect(SoftAP_CRC32Table[i],  32);
     }
 	
-	if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+	if(wifiMac.netEnabled)
 	{
-		printf("SoftAP: PCAP error with pcap_findalldevs_ex(): %s\n", errbuf);
-		return 0;
-	}
+		if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+		{
+			printf("SoftAP: PCAP error with pcap_findalldevs_ex(): %s\n", errbuf);
+			return 0;
+		}
 
-	wifi->SoftAP.bridge = PCAP::pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, NULL, errbuf);
-	if(wifi->SoftAP.bridge == NULL)
-	{
-		printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
-		return 0;
-	}
+		wifi->SoftAP.bridge = PCAP::pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, NULL, errbuf);
+		if(wifi->SoftAP.bridge == NULL)
+		{
+			printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
+			return 0;
+		}
 
-	PCAP::pcap_freealldevs(alldevs);
+		PCAP::pcap_freealldevs(alldevs);
+	}
 
 	return 1;
 }
 
 void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 {
+	if(wifiMac.netEnabled)
+	{
 	if(wifi->SoftAP.bridge != NULL)
 		PCAP::pcap_close(wifi->SoftAP.bridge);
+	}
 }
 
 void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
@@ -1334,7 +1341,8 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 			/* Checksum */
 			/* TODO ? */
 
-			PCAP::pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
+			if(wifi->netEnabled) //dont try to pcap out the packet unless network is enabled
+				PCAP::pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
 
 			delete ethernetframe;
 		}
