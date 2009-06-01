@@ -45,6 +45,8 @@
 #define IDM_SUBMITBUGREPORT                     134
 #define IDM_STATE_LOAD                          135
 #define IDM_STATE_SAVE                          136
+#define IDM_STATE_LOAD_POPUP                    137
+#define IDM_STATE_SAVE_POPUP                    138
 #define IDM_STATE_SAVE_F1                       140
 #define IDM_STATE_SAVE_F2                       141
 #define IDM_STATE_SAVE_F3                       142
@@ -620,6 +622,7 @@
 #define IDM_FILE_RECORDAVI                      40015
 #define IDM_SOUND_VIEW                          40016
 #define IDM_FILE_RECORDWAV                      40017
+#define IDM_EXPORTBACKUPMEMORY                  40018
 #define IDM_STOPMOVIE                           40019
 #define ID_FILE_RECENTROM                       40034
 #define IDC_SAVETYPE7                           40037

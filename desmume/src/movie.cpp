@@ -436,7 +436,7 @@ void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _paus
 	movieMode = MOVIEMODE_PLAY;
 	currRerecordCount = currMovieData.rerecordCount;
 	InitMovieTime();
-	MovieSRAM();
+	MMU_new.backupDevice.movie_mode();
 	freshMovie = true;
 	ClearAutoHold();
 
@@ -496,7 +496,7 @@ static void openRecordingMovie(const char* fname)
 	movie_readonly = false;
 	currRerecordCount = 0;
 	InitMovieTime();
-	MovieSRAM();
+	MMU_new.backupDevice.movie_mode();
 
 	driver->USR_InfoMessage("Movie recording started.");
 }
@@ -592,8 +592,6 @@ static void openRecordingMovie(const char* fname)
 		 currMovieData.records.push_back(mr);
 		 osd->addFixed(180, 176, "%s", "Recording");
 	 }
-
-	 currFrameCounter++;
 
 	 /*extern uint8 joy[4];
 	 memcpy(&cur_input_display,joy,4);*/

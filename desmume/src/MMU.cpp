@@ -86,17 +86,6 @@ static u64 isqrt (u64 x) {
    return root;
 }
 
-
-static const int save_types[7][2] = {
-        {MC_TYPE_AUTODETECT,1},
-        {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
-        {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
-        {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
-        {MC_TYPE_FRAM,MC_SIZE_256KBITS},
-        {MC_TYPE_FLASH,MC_SIZE_2MBITS},
-		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
-};
-
 u16 partie = 1;
 u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 
@@ -3136,7 +3125,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					if ( reset_firmware) 
 					{
 					  // reset fw device communication
-					  mc_reset_com(&MMU.fw);
+					  fw_reset_com(&MMU.fw);
 					}
 					SPI_CNT = val;
 					
@@ -4043,13 +4032,6 @@ void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer)
 	{
 		buffer[i] = T1ReadByte(MMU.MMU_MEM[proc][(curaddr >> 20) & 0xFF], (curaddr & MMU.MMU_MASK[proc][(curaddr >> 20) & 0xFF]));
 	}
-}
-
-void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize) {
-    //if (type<0 || type > 6) return;
-    //*bmemtype=save_types[type][0];
-    //*bmemsize=save_types[type][1];
-    //mc_realloc(&MMU.bupmem, *bmemtype, *bmemsize);
 }
 
 ////////////////////////////////////////////////////////////

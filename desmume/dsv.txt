@@ -1,4 +1,3 @@
-01234567890123456789012345678901234567890123456789012345678901234567890123456789
 The desmume save file format is merely a raw save file with a FOOTER.
 
 This was chosen in order to maximize compatibility with other emulators,
@@ -8,6 +7,9 @@ will pad the raw save file out to the next highest known length. Note that this
 may sometimes be incorrect if the savefile hasnt been written through to the end
 during initialization. This could cause other emulators to fail to recognize the
 save file.
+
+Additionally, the footer makes it easier to analyze save files, because the
+game's data will be at the correct addresses starting at offset 0x0000.
 
 The footer format can be identified by locating the 16Byte ascii string 
 "|-DESMUME SAVE-|"
