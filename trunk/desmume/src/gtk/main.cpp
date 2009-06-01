@@ -1515,8 +1515,7 @@ static void desmume_gtk_menu_file_saveload_slot (GtkActionGroup *ag)
 
 static void changesavetype(GtkAction *action, GtkRadioAction *current)
 {
-    mmu_select_savetype( gtk_radio_action_get_current_value(current), 
-            &backupmemorytype, &backupmemorysize);
+    backup_setManualBackupType( gtk_radio_action_get_current_value(current));
 }
 
 static void desmume_gtk_menu_emulation_layers (GtkActionGroup *ag)
@@ -1787,7 +1786,7 @@ common_gtk_main( struct configured_features *my_config)
                    "removing 3D support\n");
     }
 
-    mmu_select_savetype(my_config->savetype, &backupmemorytype, &backupmemorysize);
+    backup_setManualBackupType(my_config->savetype);
 
     /* Command line arg */
     if( my_config->nds_file != "") {

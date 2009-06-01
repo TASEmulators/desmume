@@ -703,7 +703,7 @@ int main(int argc, char ** argv) {
 
   NDS_3D_ChangeCore(my_config.engine_3d);
 
-  mmu_select_savetype(my_config.savetype, &backupmemorytype, &backupmemorysize);
+  backup_setManualBackupType(my_config.savetype);
 
   if (NDS_LoadROM( my_config.nds_file, backupmemorytype, backupmemorysize, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
