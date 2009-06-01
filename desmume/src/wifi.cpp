@@ -1120,7 +1120,7 @@ void WIFI_usTrigger(wifimac_t *wifi)
 
 u8 SoftAP_MACAddr[6] = {0x00, 0xF0, 0x1A, 0x2B, 0x3C, 0x4D};
 
-u8 SoftAP_Beacon[58] = {
+u8 SoftAP_Beacon[] = {
 	/* 802.11 header */
 	0x80, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1161,7 +1161,7 @@ u8 SoftAP_ProbeResponse[] = {
 	0x00, 0x00, 0x00, 0x00
 };
 
-u8 SoftAP_AuthFrame[34] = {
+u8 SoftAP_AuthFrame[] = {
 	/* 802.11 header */
 	0xB0, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1179,7 +1179,7 @@ u8 SoftAP_AuthFrame[34] = {
 	0x00, 0x00, 0x00, 0x00
 };
 
-u8 SoftAP_AssocResponse[38] = {
+u8 SoftAP_AssocResponse[] = {
 	/* 802.11 header */
 	0x10, 0x00,											// Frame control
 	0x00, 0x00,											// Duration ID
@@ -1247,6 +1247,9 @@ void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 	if(wifi->SoftAP.bridge != NULL)
 		PCAP::pcap_close(wifi->SoftAP.bridge);
 	}
+
+	if(wifi->SoftAP.curPacket)
+		delete wifi->SoftAP.curPacket;
 }
 
 void WIFI_SoftAP_MakeRXHeader(wifimac_t *wifi, u16 flags, u16 xferRate, u16 len, u8 maxRSSI, u8 minRSSI)
@@ -1287,7 +1290,6 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 					int packetLen = sizeof(SoftAP_ProbeResponse);
 					int totalLen = (packetLen + 12);
 
-					if(wifi->SoftAP.curPacket) delete wifi->SoftAP.curPacket;
 					wifi->SoftAP.curPacket = new u8[totalLen];
 
 					// Make the RX header
@@ -1322,33 +1324,26 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 
 			case 0xB:		// Authentication
 				{
-					u8 authframe[36];
+					int packetLen = sizeof(SoftAP_AuthFrame);
+					int totalLen = (packetLen + 12);
 
-					memcpy(authframe, SoftAP_AuthFrame, 34);
-					memcpy(&authframe[4], FW_Mac, 6);
-					u32 crc32 = WIFI_getCRC32(authframe, 30);
-					*(u32*)&authframe[32] = crc32;
+					wifi->SoftAP.curPacket = new u8[totalLen];
 
-					if(wifi->SoftAP.curPacket)
-						delete wifi->SoftAP.curPacket;
+					// Make the RX header
+					WIFI_SoftAP_MakeRXHeader(wifi, 0x0010, 20, packetLen, 0, 0);
 
-					wifi->SoftAP.curPacket = new u8[36+12];
+					// Copy the authentication frame template
+					memcpy(&wifi->SoftAP.curPacket[12], SoftAP_AuthFrame, packetLen);
 
-					wifi->SoftAP.curPacket[0] = 0x10;
-					wifi->SoftAP.curPacket[1] = 0x00;
-					wifi->SoftAP.curPacket[2] = 0x40;
-					wifi->SoftAP.curPacket[3] = 0x00;
-					wifi->SoftAP.curPacket[4] = 0x01;
-					wifi->SoftAP.curPacket[5] = 0x00;
-					wifi->SoftAP.curPacket[6] = 0x14;
-					wifi->SoftAP.curPacket[7] = 0x00;
-					wifi->SoftAP.curPacket[8] = 0x20;
-					wifi->SoftAP.curPacket[9] = 0x00;
-					wifi->SoftAP.curPacket[10] = 0x00;
-					wifi->SoftAP.curPacket[11] = 0x00;
+					// Add the MAC address
+					memcpy(&wifi->SoftAP.curPacket[12 + 4], FW_Mac, 6);
 
-					memcpy((wifi->SoftAP.curPacket+12), authframe, 36);
-					wifi->SoftAP.curPacketSize = 36+12;
+					// And the CRC32 (FCS)
+					u32 crc32 = WIFI_getCRC32(&wifi->SoftAP.curPacket[12], (packetLen - 4));
+					*(u32*)&wifi->SoftAP.curPacket[12 + packetLen - 4] = crc32;
+
+					// Let's prepare to send
+					wifi->SoftAP.curPacketSize = totalLen;
 					wifi->SoftAP.curPacketPos = 0;
 					wifi->SoftAP.curPacketSending = TRUE;
 				}
@@ -1356,33 +1351,26 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 
 			case 0x0:		// Association request
 				{
-					u8 assocres[40];
+					int packetLen = sizeof(SoftAP_AssocResponse);
+					int totalLen = (packetLen + 12);
 
-					memcpy(assocres, SoftAP_AssocResponse, 38);
-					memcpy(&assocres[4], FW_Mac, 6);
-					u32 crc32 = WIFI_getCRC32(assocres, 34);
-					*(u32*)&assocres[36] = crc32;
+					wifi->SoftAP.curPacket = new u8[totalLen];
 
-					if(wifi->SoftAP.curPacket)
-						delete wifi->SoftAP.curPacket;
+					// Make the RX header
+					WIFI_SoftAP_MakeRXHeader(wifi, 0x0010, 20, packetLen, 0, 0);
 
-					wifi->SoftAP.curPacket = new u8[40+12];
+					// Copy the association response template
+					memcpy(&wifi->SoftAP.curPacket[12], SoftAP_AssocResponse, packetLen);
 
-					wifi->SoftAP.curPacket[0] = 0x10;
-					wifi->SoftAP.curPacket[1] = 0x00;
-					wifi->SoftAP.curPacket[2] = 0x40;
-					wifi->SoftAP.curPacket[3] = 0x00;
-					wifi->SoftAP.curPacket[4] = 0x01;
-					wifi->SoftAP.curPacket[5] = 0x00;
-					wifi->SoftAP.curPacket[6] = 0x14;
-					wifi->SoftAP.curPacket[7] = 0x00;
-					wifi->SoftAP.curPacket[8] = 0x24;
-					wifi->SoftAP.curPacket[9] = 0x00;
-					wifi->SoftAP.curPacket[10] = 0x00;
-					wifi->SoftAP.curPacket[11] = 0x00;
+					// Add the MAC address
+					memcpy(&wifi->SoftAP.curPacket[12 + 4], FW_Mac, 6);
 
-					memcpy((wifi->SoftAP.curPacket+12), assocres, 40);
-					wifi->SoftAP.curPacketSize = 36+12;
+					// And the CRC32 (FCS)
+					u32 crc32 = WIFI_getCRC32(&wifi->SoftAP.curPacket[12], (packetLen - 4));
+					*(u32*)&wifi->SoftAP.curPacket[12 + packetLen - 4] = crc32;
+
+					// Let's prepare to send
+					wifi->SoftAP.curPacketSize = totalLen;
 					wifi->SoftAP.curPacketPos = 0;
 					wifi->SoftAP.curPacketSending = TRUE;
 				}
@@ -1393,12 +1381,12 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 
 	case 0x2:				// Data
 		{
-			/* We convert the packet into an Ethernet packet */
+			// We convert the packet into an Ethernet packet
 
 			int eflen = (alignedLen - 4 - 30 + 14);
 			u8 *ethernetframe = new u8[eflen];
 
-			/* Destination address */
+			// Destination address
 			ethernetframe[0] = packet[28];
 			ethernetframe[1] = packet[29];
 			ethernetframe[2] = packet[30];
@@ -1406,7 +1394,7 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 			ethernetframe[4] = packet[32];
 			ethernetframe[5] = packet[33];
 
-			/* Source address */
+			// Source address
 			ethernetframe[6] = packet[22];
 			ethernetframe[7] = packet[23];
 			ethernetframe[8] = packet[24];
@@ -1414,15 +1402,15 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 			ethernetframe[10] = packet[26];
 			ethernetframe[11] = packet[27];
 
-			/* EtherType */
+			// EtherType
 			ethernetframe[12] = packet[42];
 			ethernetframe[13] = packet[43];
 
-			/* Frame body */
+			// Frame body
 			memcpy((ethernetframe + 14), (packet + 44), (alignedLen - 30 - 4));
 
-			/* Checksum */
-			/* TODO ? */
+			// Checksum 
+			// TODO ?
 
 			if(wifi->netEnabled) //dont try to pcap out the packet unless network is enabled
 				PCAP::pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
@@ -1433,48 +1421,31 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 	}
 }
 
-void WIFI_SoftAP_SendToNetwork(wifimac_t *wifi)
-{
-	//
-}
-
-void WIFI_SoftAP_RecvFromNetwork(wifimac_t *wifi)
-{
-	//
-}
-
 void WIFI_SoftAP_SendBeacon(wifimac_t *wifi)
 {
-	u8 beacon[58];
+	int packetLen = sizeof(SoftAP_Beacon);
+	int totalLen = (packetLen + 12);
 
-	memcpy(beacon, SoftAP_Beacon, 58);
+	if(wifi->SoftAP.curPacket) delete wifi->SoftAP.curPacket;
+	wifi->SoftAP.curPacket = new u8[totalLen];
+
+	// Make the RX header
+	WIFI_SoftAP_MakeRXHeader(wifi, 0x0011, 20, packetLen, 0, 0);
+
+	// Copy the beacon template
+	memcpy(&wifi->SoftAP.curPacket[12], SoftAP_Beacon, packetLen);
+
+	// Add the timestamp
 	u64 timestamp = (wifi->SoftAP.usecCounter / 1000);		// FIXME: is it correct?
-	*(u64*)&beacon[24] = timestamp;
-	u32 crc32 = WIFI_getCRC32(beacon, 54);
-	*(u32*)&beacon[54] = crc32;
+	*(u64*)&wifi->SoftAP.curPacket[12 + 24] = timestamp;
 
-	if(wifi->SoftAP.curPacket)
-		delete wifi->SoftAP.curPacket;
+	// And the CRC32 (FCS)
+	u32 crc32 = WIFI_getCRC32(&wifi->SoftAP.curPacket[12], (packetLen - 4));
+	*(u32*)&wifi->SoftAP.curPacket[12 + packetLen - 4] = crc32;
 
-	wifi->SoftAP.curPacket = new u8[58+12];
-
-	wifi->SoftAP.curPacket[0] = 0x11;
-	wifi->SoftAP.curPacket[1] = 0x00;
-	wifi->SoftAP.curPacket[2] = 0x40;
-	wifi->SoftAP.curPacket[3] = 0x00;
-	wifi->SoftAP.curPacket[4] = 0x64;
-	wifi->SoftAP.curPacket[5] = 0x00;
-	wifi->SoftAP.curPacket[6] = 0x14;
-	wifi->SoftAP.curPacket[7] = 0x00;
-	wifi->SoftAP.curPacket[8] = 0x36;
-	wifi->SoftAP.curPacket[9] = 0x00;
-	wifi->SoftAP.curPacket[10] = 0x00;
-	wifi->SoftAP.curPacket[11] = 0x00;
-
-	memcpy((wifi->SoftAP.curPacket+12), beacon, 58);
-
-	wifi->SoftAP.curPacketSize = 58+12;
-	wifi->SoftAP.curPacketPos = -4;
+	// Let's prepare to send
+	wifi->SoftAP.curPacketSize = totalLen;
+	wifi->SoftAP.curPacketPos = 0;
 	wifi->SoftAP.curPacketSending = TRUE;
 }
 
@@ -1482,7 +1453,7 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 {
 	wifi->SoftAP.usecCounter++;
 
-/*	if(!wifi->SoftAP.curPacketSending)
+	if(!wifi->SoftAP.curPacketSending)
 	{
 		//if(wifi->ioMem[0xD0 >> 1] & 0x0400)
 		{
@@ -1491,7 +1462,7 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 				WIFI_SoftAP_SendBeacon(wifi);
 			}
 		}
-	}*/
+	}
 
 	/* Given a connection of 2 megabits per second, */
 	/* we take ~4 microseconds to transfer a byte, */
@@ -1534,6 +1505,8 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 			wifi->SoftAP.curPacketSize = 0;
 			wifi->SoftAP.curPacketPos = 0;
 			wifi->SoftAP.curPacketSending = FALSE;
+
+			delete wifi->SoftAP.curPacket;
 
 			wifi->RXHWWriteCursorReg = ((wifi->RXHWWriteCursor + 1) & (~1));
 
