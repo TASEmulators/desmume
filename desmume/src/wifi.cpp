@@ -1291,7 +1291,13 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 					wifi->SoftAP.curPacket = new u8[totalLen];
 
 					// Make the RX header
-					WIFI_SoftAP_MakeRXHeader(wifi, 0x0010, 20, (packetLen - 4), 0, 0);
+					// About the packet length: 
+					// GBATek says the length entry of the RX header is the length of the IEEE
+					// header and frame body, without including the FCS. But the Nintendo WFC
+					// config util expects this length to be the length of the IEEE header and
+					// the frame body AND the FCS. Actually, it expects WRCSR to be equal to
+					// (READCSR + 12 + packet_length).
+					WIFI_SoftAP_MakeRXHeader(wifi, 0x0010, 20, packetLen, 0, 0);
 
 					// Copy the probe response template
 					memcpy(&wifi->SoftAP.curPacket[12], SoftAP_ProbeResponse, packetLen);
@@ -1303,7 +1309,7 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 					u64 timestamp = (wifi->SoftAP.usecCounter / 1000);		// FIXME: is it correct?
 					*(u64*)&wifi->SoftAP.curPacket[12 + 24] = timestamp;
 
-					// And the CRC32
+					// And the CRC32 (FCS)
 					u32 crc32 = WIFI_getCRC32(&wifi->SoftAP.curPacket[12], (packetLen - 4));
 					*(u32*)&wifi->SoftAP.curPacket[12 + packetLen - 4] = crc32;
 
@@ -1529,9 +1535,7 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 			wifi->SoftAP.curPacketPos = 0;
 			wifi->SoftAP.curPacketSending = FALSE;
 
-			wifi->RXHWWriteCursor -= 2; // hax
 			wifi->RXHWWriteCursorReg = ((wifi->RXHWWriteCursor + 1) & (~1));
-			//wifi->RXReadCursor = ((wifi->RXHWWriteCursor + 1) & (~1));
 
 			WIFI_triggerIRQ(wifi, 0);
 
