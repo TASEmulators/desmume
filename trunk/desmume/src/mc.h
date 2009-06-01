@@ -66,7 +66,13 @@ typedef struct
 class BackupDevice
 {
 public:
+	BackupDevice();
+
+	//signals the save system that we are in our regular mode, loading up a rom. initializes for that case.
 	void load_rom(const char* filename);
+	//signals the save system that we are in MOVIE mode. doesnt load up a rom, and never saves it. initializes for that case.
+	void movie_mode();
+
 	void reset();
 	void close_rom();
 
@@ -83,18 +89,30 @@ public:
 		u32 addr_size;
 	} savedInfo;
 
+	//and these are used by old savestates
 	void load_old_state(u32 addr_size, u8* data, u32 datasize);
-
 	static u32 addr_size_for_old_save_size(int bupmem_size);
 	static u32 addr_size_for_old_save_type(int bupmem_type);
 
+	static u32 pad_up_size(u32 startSize);
+	void raw_applyUserSettings(u32& size);
+
 	bool load_duc(const char* filename);
+	bool load_raw(const char* filename);
+	bool save_raw(const char* filename);
+
+	//call me once a second or so to lazy flush the save data
+	//here's the reason for this system: we want to dump save files when theyre READ
+	//so that we have a better idea earlier on how large they are. but it slows things down
+	//way too much if we flush whenever we read.
+	void lazy_flush();
 
 private:
 	BOOL write_enable;	//is write enabled?
 	u32 com;	//persistent command actually handled
 	u32 addr_size, addr_counter;
 	u32 addr;
+	bool isMovieMode;
 
 	std::string filename;
 	std::vector<u8> data;
@@ -104,10 +122,11 @@ private:
 	} state;
 
 	void loadfile();
+	bool _loadfile(const char *fname);
 	void ensure(u32 addr);
 	void flush();
 
-	bool flushPending;
+	bool flushPending, lazyFlushPending;
 };
 
 #define NDS_FW_SIZE_V1 (256 * 1024)		/* size of fw memory on nds v1 */
@@ -117,11 +136,11 @@ void mc_init(memory_chip_t *mc, int type);    /* reset and init values for memor
 u8 *mc_alloc(memory_chip_t *mc, u32 size);  /* alloc mc memory */
 void mc_realloc(memory_chip_t *mc, int type, u32 size);      /* realloc mc memory */
 void mc_load_file(memory_chip_t *mc, const char* filename); /* load save file and setup fp */
-int mc_load_duc(memory_chip_t *mc, const char* filename); /* load Action Replay DS save file */
 void mc_free(memory_chip_t *mc);    /* delete mc memory */
-void mc_reset_com(memory_chip_t *mc);       /* reset communication with mc */
-u8 fw_transfer(memory_chip_t *mc, u8 data); /* transfer to, then receive data from firmware */
-u8 bm_transfer(memory_chip_t *mc, u8 data); /* transfer to, then receive data from backup memory */
+void fw_reset_com(memory_chip_t *mc);       /* reset communication with mc */
+u8 fw_transfer(memory_chip_t *mc, u8 data);
+
+void backup_setManualBackupType(int type);
 
 #endif /*__FW_H__*/
 

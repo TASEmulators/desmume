@@ -26,6 +26,12 @@
 #include "mc.h"
 #include "movie.h"
 #include "readwrite.h"
+#include "NDSSystem.h"
+
+//temporary hack until we have better error reporting facilities
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
 
 #define FW_CMD_READ             0x3
 #define FW_CMD_WRITEDISABLE     0x4
@@ -58,9 +64,24 @@ static const u8 kUninitializedSaveDataValue = 0x00;
 
 static const char* kDesmumeSaveCookie = "|-DESMUME SAVE-|";
 
-static const u32 saveSizes[] = {512,8*1024,64*1024,256*1024,512*1024,32*1024};
+static const u32 saveSizes[] = {512,8*1024,32*1024,64*1024,256*1024,512*1024,0xFFFFFFFF};
 static const u32 saveSizes_count = ARRAY_SIZE(saveSizes);
 
+//the lookup table from user save types to save parameters
+static const int save_types[7][2] = {
+        {MC_TYPE_AUTODETECT,1},
+        {MC_TYPE_EEPROM1,MC_SIZE_4KBITS},
+        {MC_TYPE_EEPROM2,MC_SIZE_64KBITS},
+        {MC_TYPE_EEPROM2,MC_SIZE_512KBITS},
+        {MC_TYPE_FRAM,MC_SIZE_256KBITS},
+        {MC_TYPE_FLASH,MC_SIZE_2MBITS},
+		{MC_TYPE_FLASH,MC_SIZE_4MBITS}
+};
+
+void backup_setManualBackupType(int type)
+{
+	CommonSettings.manualBackupType = type;
+}
 
 void mc_init(memory_chip_t *mc, int type)
 {
@@ -110,213 +131,10 @@ void mc_free(memory_chip_t *mc)
     mc_init(mc, 0);
 }
 
-void mc_reset_com(memory_chip_t *mc)
+void fw_reset_com(memory_chip_t *mc)
 {
-   size_t elems_written = 0;
-
-   if (mc->type == MC_TYPE_AUTODETECT && mc->com == BM_CMD_AUTODETECT)
-   {
-      u32 addr, size;
-
-	  LOG("autodetectsize = %d\n",mc->autodetectsize);
-
-      if (mc->autodetectsize == (32768+2))
-      {
-         // FRAM
-         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
-         mc->type = MC_TYPE_FRAM;
-         mc->size = MC_SIZE_256KBITS;
-      }
-	  else if (mc->autodetectsize == (512+3))
-      {
-         // Flash 4Mbit
-         addr = (mc->autodetectbuf[0] << 16) |
-                    (mc->autodetectbuf[1] << 8) |
-                     mc->autodetectbuf[2];
-         mc->type = MC_TYPE_FLASH;
-         mc->size = MC_SIZE_4MBITS;
-      }
-      else if (mc->autodetectsize == (256+3))
-      {
-         // Flash 2Mbit
-         addr = (mc->autodetectbuf[0] << 16) |
-                    (mc->autodetectbuf[1] << 8) |
-                     mc->autodetectbuf[2];
-         mc->type = MC_TYPE_FLASH;
-         mc->size = MC_SIZE_2MBITS;
-      }
-      else if ((mc->autodetectsize == (128+2)) || (mc->autodetectsize == (64+2)) || (mc->autodetectsize == (40+2)))
-      {
-         // 512 Kbit EEPROM
-         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
-         mc->type = MC_TYPE_EEPROM2;
-         mc->size = MC_SIZE_512KBITS;
-      }
-      else if ((mc->autodetectsize == (32+2)) || (mc->autodetectsize == (16+2)))
-      {
-         // 64 Kbit EEPROM
-         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
-         mc->type = MC_TYPE_EEPROM2;
-         mc->size = MC_SIZE_64KBITS;
-      }
-      else if (mc->autodetectsize == (16+1))
-      {
-         // 4 Kbit EEPROM
-         addr = mc->autodetectbuf[0];
-         mc->type = MC_TYPE_EEPROM1;
-         mc->size = MC_SIZE_4KBITS;
-      }
-      else
-      {
-		  /*
-         // Assume it's a Flash non-page write 
-         LOG("Flash detected(guessed). autodetectsize = %d\n", mc->autodetectsize);
-         addr = (mc->autodetectbuf[0] << 16) |
-                    (mc->autodetectbuf[1] << 8) |
-                     mc->autodetectbuf[2];
-         mc->type = MC_TYPE_FLASH;
-         mc->size = MC_SIZE_2MBITS;
-		 */
-	 // 64 Kbit EEPROM
-         addr = (mc->autodetectbuf[0] << 8) | mc->autodetectbuf[1];
-         mc->type = MC_TYPE_EEPROM2;
-         mc->size = MC_SIZE_64KBITS;
-      }
-
-      size = mc->autodetectsize;
-      mc_realloc(mc, mc->type, mc->size);
-      memcpy(mc->data+addr, mc->autodetectbuf+mc->addr_size, size-mc->addr_size);
-      mc->autodetectsize = 0;
-      mc->write_enable = FALSE;
-
-      // Generate file
-      if ((mc->fp = fopen(mc->filename, "wb+")) != NULL)
-         elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp);
-   }
-   else if ((mc->com == BM_CMD_WRITELOW) || (mc->com == FW_CMD_PAGEWRITE))
-   {      
-      if(!mc->fp)
-         mc->fp = fopen(mc->filename, "wb+");
-
-      if (mc->fp)
-      {
-         fseek(mc->fp, 0, SEEK_SET);
-         elems_written += fwrite((void *)mc->data, 1, mc->size, mc->fp); // FIXME
-      }
-      // FIXME: desmume silently ignores not having opened save-file
-      mc->write_enable = FALSE;
-   }
-
+	//not supporting writing back to the firmware right now, so nothing to be done here
    mc->com = 0;
-}
-
-void mc_realloc(memory_chip_t *mc, int type, u32 size)
-{
-    if(mc->data) delete[] mc->data;
-    mc_init(mc, type);
-    mc_alloc(mc, size);     
-}
-
-void mc_load_file(memory_chip_t *mc, const char* filename)
-{
-   long size;
-   int type = -1;
-   FILE* file;
-   size_t elems_read;
-
-   if(movieMode != MOVIEMODE_INACTIVE) {
-	    mc->filename = strdup(filename);
-		return;
-   }
-   else
-	   file = fopen(filename, "rb+");
-
-   if(file == NULL)
-   {
-      mc->filename = strdup(filename);
-      return;
-   }
-
-   fseek(file, 0, SEEK_END);
-   size = ftell(file);
-   fseek(file, 0, SEEK_SET);
-
-   if (mc->type == MC_TYPE_AUTODETECT)
-   {
-      if (size == MC_SIZE_4KBITS)
-         type = MC_TYPE_EEPROM1;
-      else if (size == MC_SIZE_64KBITS)
-         type = MC_TYPE_EEPROM2;
-      else if (size == MC_SIZE_256KBITS)
-         type = MC_TYPE_FRAM;
-      else if (size == MC_SIZE_512KBITS)
-         type = MC_TYPE_EEPROM2;
-      else if (size >= MC_SIZE_2MBITS)
-         type = MC_TYPE_FLASH;
-	  else if (size >= MC_SIZE_4MBITS)
-         type = MC_TYPE_FLASH;
-
-      if (type != -1)
-         mc_realloc(mc, type, size);
-   }
-
-   if ((u32)size > mc->size)
-      size = mc->size;
-   elems_read = fread (mc->data, 1, size, file);
-   mc->fp = file;
-}
-
-int mc_load_duc(memory_chip_t *mc, const char* filename)
-{
-   long size;
-   int type = -1;
-   char id[16];
-   FILE* file = fopen(filename, "rb");
-   size_t elems_read = 0;
-   if(file == NULL)
-      return 0;
-
-   fseek(file, 0, SEEK_END);
-   size = ftell(file) - 500;
-   fseek(file, 0, SEEK_SET);
-
-   // Make sure we really have the right file
-   elems_read += fread((void *)id, sizeof(char), 16, file);
-
-   if (memcmp(id, "ARDS000000000001", 16) != 0)
-   {
-      fclose(file);
-      return 0;
-   }
-
-   // Alright, it's time to load the file
-   if (mc->type == MC_TYPE_AUTODETECT)
-   {
-      if (size == MC_SIZE_4KBITS)
-         type = MC_TYPE_EEPROM1;
-      else if (size == MC_SIZE_64KBITS)
-         type = MC_TYPE_EEPROM2;
-      else if (size == MC_SIZE_256KBITS)
-         type = MC_TYPE_FRAM;
-      else if (size == MC_SIZE_512KBITS)
-         type = MC_TYPE_EEPROM2;
-      else if (size >= MC_SIZE_2MBITS)
-         type = MC_TYPE_FLASH;
-	  else if (size >= MC_SIZE_4MBITS)
-         type = MC_TYPE_FLASH;
-
-      if (type != -1)
-         mc_realloc(mc, type, size);
-   }
-
-   if ((u32)size > mc->size)
-      size = mc->size;
-   // Skip the rest of the header since we don't need it
-   fseek(file, 500, SEEK_SET);
-   elems_read += fread (mc->data, 1, size, file);
-   fclose(file);
-
-   return 1;
 }
 
 u8 fw_transfer(memory_chip_t *mc, u8 data)
@@ -390,145 +208,18 @@ u8 fw_transfer(memory_chip_t *mc, u8 data)
 				break;
 				
 			default:
-				LOG("Unhandled FW command: %02X\n", data);
+				printf("Unhandled FW command: %02X\n", data);
 				break;
 		}
 	}
 	
 	return data;
 }	
-
-u8 bm_transfer(memory_chip_t *mc, u8 data)
-{
-	if(mc->com == BM_CMD_READLOW || mc->com == BM_CMD_WRITELOW) /* check if we are in a command that needs multiple byte address */
-	{
-		if(mc->addr_shift > 0)   /* if we got a complete address */
-		{
-			mc->addr_shift--;
-			mc->addr |= data << (mc->addr_shift * 8); /* argument is a byte of address */
-		}
-		else    /* if we have received all bytes of address, proceed command */
-		{
-			switch(mc->com)
-			{
-				case BM_CMD_READLOW:
-					if(mc->addr < mc->size)  /* check if we can read */
-					{
-						//LOG("Read Backup Memory addr %08X(%02X)\n", mc->addr, mc->data[mc->addr]);
-						data = mc->data[mc->addr];       /* return byte */
-						mc->addr++;      /* then increment address */
-					}
-					break;
-					
-				case BM_CMD_WRITELOW:
-					if(mc->addr < mc->size)
-					{
-						//LOG("Write Backup Memory addr %08X with %02X\n", mc->addr, data);
-						mc->data[mc->addr] = data;       /* write byte */
-						mc->addr++;
-					}
-					break;
-			}
-			
-		}
-	}
-	else if(mc->com == BM_CMD_AUTODETECT)
-	{
-		// Store everything in a temporary
-		mc->autodetectbuf[mc->autodetectsize] = data;
-		mc->autodetectsize++;
-		return 0;
-	}
-	else if(mc->com == BM_CMD_READSTATUS)
-	{
-		//LOG("Backup Memory Read Status: %02X\n", mc->write_enable << 1);
-		return (mc->write_enable << 1);
-	}
-	else	/* finally, check if it's a new command */
-	{
-		switch(data)
-		{
-			case 0: break;	/* nothing */
-			
-			case BM_CMD_WRITELOW:       /* write command */
-				if(mc->write_enable)
-				{
-					if(mc->type == MC_TYPE_AUTODETECT)
-					{
-						mc->com = BM_CMD_AUTODETECT;
-						break;
-					}
-
-					mc->addr = 0;
-					mc->addr_shift = mc->addr_size;
-					mc->com = BM_CMD_WRITELOW;
-				}
-				else { data = 0; }
-				break;
-
-			case BM_CMD_READLOW:    /* read command */
-				mc->addr = 0;           
-				mc->addr_shift = mc->addr_size;
-				mc->com = BM_CMD_READLOW;
-				break;
-								
-			case BM_CMD_WRITEDISABLE:    /* disable writing */
-				mc->write_enable = FALSE;
-				break;
-							
-			case BM_CMD_READSTATUS:  /* status register command */
-				mc->com = BM_CMD_READSTATUS;
-				break;
-
-			case BM_CMD_WRITEENABLE:     /* enable writing */
-				if(mc->writeable_buffer) { mc->write_enable = TRUE; }
-				break;
-
-			case BM_CMD_WRITEHIGH:       /* write command that's only available on ST M95040-W that I know of */
-				if(mc->write_enable)
-				{
-					if(mc->type == MC_TYPE_AUTODETECT)
-					{
-						mc->com = BM_CMD_AUTODETECT;
-						break;
-					}
-
-					if (mc->type == MC_TYPE_EEPROM1)
-						mc->addr = 0x100;
-					else
-						mc->addr = 0;
-					mc->addr_shift = mc->addr_size;
-					mc->com = BM_CMD_WRITELOW;
-				}
-				else { data = 0; }
-				break;
-
-			case BM_CMD_READHIGH:    /* read command that's only available on ST M95040-W that I know of */
-				if (mc->type == MC_TYPE_EEPROM1)
-					mc->addr = 0x100;
-				else
-					mc->addr = 0;
-				mc->addr_shift = mc->addr_size;
-				mc->com = BM_CMD_READLOW;
-
-				break;
-
-			default:
-				LOG("TRANSFER: Unhandled Backup Memory command: %02X\n", data);
-				break;
-		}
-	}
-	
-	return data;
-}	
-
 
 bool BackupDevice::save_state(std::ostream* os)
 {
 	int version = 0;
 	write32le(version,os);
-//	write32le(0,os); //reserved for type if i need it later
-//	write32le(0,os); //reserved for size if i need it later
 	write32le(write_enable,os);
 	write32le(com,os);
 	write32le(addr_size,os);
@@ -544,11 +235,6 @@ bool BackupDevice::load_state(std::istream* is)
 	int version;
 	if(read32le(&version,is)!=1) return false;
 	if(version==0) {
-#if 0
-		u32 size, type;
-		read32le(&size,is);
-		read32le(&type,is);
-#endif
 		read32le(&write_enable,is);
 		read32le(&com,is);
 		read32le(&addr_size,is);
@@ -562,26 +248,57 @@ bool BackupDevice::load_state(std::istream* is)
 	return true;
 }
 
+BackupDevice::BackupDevice()
+{
+}
+
 //due to unfortunate shortcomings in the emulator architecture, 
-//at reset-time, we won't have a filename to the .sav file.
+//at reset-time, we won't have a filename to the .dsv file.
 //so the only difference between load_rom (init) and reset is that
 //one of them saves the filename
 void BackupDevice::load_rom(const char* filename)
 {
+	isMovieMode = false;
 	this->filename = filename;
+	reset();
+}
+
+void BackupDevice::movie_mode()
+{
+	isMovieMode = true;
 	reset();
 }
 
 void BackupDevice::reset()
 {
-	state = DETECTING;
+	com = 0;
+	addr = addr_counter = 0;
+	flushPending = false;
+	lazyFlushPending = false;
 	data.resize(0);
 	data_autodetect.resize(0);
+
+	state = DETECTING;
+	addr_size = 0;
 	loadfile();
-	flushPending = false;
+
+	//if the user has requested a manual choice for backup type, and we havent imported a raw save file, then apply it now
+	if(state == DETECTING && CommonSettings.manualBackupType != MC_TYPE_AUTODETECT)
+	{
+		state = RUNNING;
+		int savetype = save_types[CommonSettings.manualBackupType][0];
+		int savesize = save_types[CommonSettings.manualBackupType][1];
+		ensure((u32)savesize); //expand properly if necessary
+		data.resize(savesize); //truncate if necessary
+		addr_size = addr_size_for_old_save_type(savetype);
+		flush();
+	}
 }
 
-void BackupDevice::close_rom() {}
+void BackupDevice::close_rom()
+{
+	flush();
+}
 
 void BackupDevice::reset_command()
 {
@@ -591,33 +308,56 @@ void BackupDevice::reset_command()
 	{
 		flush();
 		flushPending = false;
+		lazyFlushPending = false;
 	}
 
 	if(state == DETECTING && data_autodetect.size()>0)
 	{
 		//we can now safely detect the save address size
 		u32 autodetect_size = data_autodetect.size();
-		addr_size = autodetect_size - 1;
-		if(autodetect_size==6) addr_size = 2; //castlevania dawn of sorrow
-		if(autodetect_size==7) addr_size = 3; //advance wars dual strike 2mbit flash
-		if(autodetect_size==31) addr_size = 3; //daigasso! band brothers  2mbit flash
-		if(autodetect_size==258) addr_size = 2; //warioware touched
-		if(autodetect_size==257) addr_size = 1; //yoshi touch & go
-		if(autodetect_size==9) addr_size = 1; //star wars III
-		if(autodetect_size==113) addr_size = 1; //space invaders revolution
-		if(autodetect_size==33) addr_size = 1; //bomberman
-		if(autodetect_size==65) addr_size = 1; //robots
-		if(autodetect_size==66) addr_size = 2; //pokemon dash
-		if(autodetect_size==22) addr_size = 2; //puyo pop fever
-		if(autodetect_size==18) addr_size = 2; //lunar dragon song
-		if(autodetect_size==17) addr_size = 1; //shrek super slam
-		if(autodetect_size==109) addr_size = 1; //scooby-doo! unmasked
-		if(addr_size>4)
+
+		printf("Autodetecting with autodetect_size=%d\n",autodetect_size);
+
+		const u8 sm64_sig[] = {0x01,0x80,0x00,0x00};
+		if(autodetect_size == 4 && !memcmp(&data_autodetect[0],sm64_sig,4))
 		{
-			INFO("RESET: Unexpected backup memory address size: %d\n",addr_size);
+			addr_size = 2;
 		}
+		else //detect based on rules
+			switch(autodetect_size)
+			{
+			case 0:
+			case 1:
+				printf("Catastrophic error while autodetecting save type.\nIt will need to be specified manually\n");
+				#ifdef _MSC_VER
+				MessageBox(0,"Catastrophic Error Code: Camel;\nyour save type has not been autodetected correctly;\nplease report to developers",0,0);
+				#endif
+				addr_size = 1; //choose 1 just to keep the busted savefile from growing too big
+				break;
+			case 2:
+				 //the modern typical case for small eeproms
+				addr_size = 1;
+				break;
+			case 3:
+				//another modern typical case..
+				//but unfortunately we select this case for spider-man 3, when what it meant to do was
+				//present the archaic 1+2 case
+				addr_size = 2;
+				break;
+			case 4:
+				//a modern typical case
+				addr_size = 3;
+				break;
+			default:
+				//the archaic case: write the address and then some modulo-4 number of bytes
+				//why modulo 4? who knows.
+				addr_size = autodetect_size & 3;
+				break;
+			}
+
 		state = RUNNING;
 		data_autodetect.resize(0);
+		flush();
 	}
 
 	com = 0;
@@ -631,7 +371,7 @@ u8 BackupDevice::data_command(u8 val)
 		{
 			if(com == BM_CMD_WRITELOW)
 			{
-				LOG("Unexpected backup device initialization sequence using writes!\n");
+				printf("Unexpected backup device initialization sequence using writes!\n");
 			}
 
 			//just buffer the data until we're no longer detecting
@@ -646,14 +386,20 @@ u8 BackupDevice::data_command(u8 val)
 				addr <<= 8;
 				addr |= val;
 				addr_counter++;
+				//if(addr_counter==addr_size) printf("ADR: %08X\n",addr);
+				//why does tomb raider underworld access 0x180 and go clear through to 0x280?
+				//should this wrap around at 0 or at 0x100?
+				//if(addr_size == 1) addr &= 0x1FF; 
 			}
 			else
 			{
 				//address is complete
-				ensure(addr);
+				ensure(addr+1);
 				if(com == BM_CMD_READLOW)
 				{
 					val = data[addr];
+					//flushPending = true; //is this a good idea? it may slow stuff down, but it is helpful for debugging
+					lazyFlushPending = true; //lets do this instead
 					//printf("read: %08X\n",addr);
 				}
 				else 
@@ -694,6 +440,7 @@ u8 BackupDevice::data_command(u8 val)
 
 			case BM_CMD_WRITELOW:
 			case BM_CMD_READLOW:
+				//printf("XLO: %08X\n",addr);
 				com = val;
 				addr_counter = 0;
 				addr = 0;
@@ -701,6 +448,7 @@ u8 BackupDevice::data_command(u8 val)
 
 			case BM_CMD_WRITEHIGH:
 			case BM_CMD_READHIGH:
+				//printf("XHI: %08X\n",addr);
 				if(val == BM_CMD_WRITEHIGH) val = BM_CMD_WRITELOW;
 				if(val == BM_CMD_READHIGH) val = BM_CMD_READLOW;
 				com = val;
@@ -716,88 +464,31 @@ u8 BackupDevice::data_command(u8 val)
 				break;
 
 			default:
-				LOG("COMMAND: Unhandled Backup Memory command: %02X\n", val);
+				printf("COMMAND: Unhandled Backup Memory command: %02X\n", val);
 				break;
 		}
 	}
 	return val;
 }
 
-//guarantees that the data buffer has room enough for a byte at the specified address
+//guarantees that the data buffer has room enough for the specified number of bytes
 void BackupDevice::ensure(u32 addr)
 {
 	u32 size = data.size();
-	if(size<addr+1)
+	if(size<addr)
 	{
-		data.resize(addr+1);
+		data.resize(addr);
 	}
-	for(u32 i=size;i<=addr;i++)
+	for(u32 i=size;i<addr;i++)
 		data[i] = kUninitializedSaveDataValue;
 }
 
 
-void BackupDevice::loadfile()
-{
-	FILE* inf = fopen(filename.c_str(),"rb");
-	if(inf)
-	{
-		//scan for desmume save footer
-		const u32 cookieLen = strlen(kDesmumeSaveCookie);
-		char *sigbuf = new char[cookieLen];
-		fseek(inf, -cookieLen, SEEK_END);
-		fread(sigbuf,1,cookieLen,inf);
-		int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
-		delete[] sigbuf;
-		if(cmp)
-		{
-			//raw save file
-			fseek(inf, 0, SEEK_END);
-			int size = ftell(inf);
-			fseek(inf, 0, SEEK_SET);
-			data.resize(size);
-			fread(&data[0],1,size,inf);
-			fclose(inf);
-			return;
-		}
-		//desmume format
-		fseek(inf, -cookieLen, SEEK_END);
-		fseek(inf, -4, SEEK_CUR);
-		u32 version = 0xFFFFFFFF;
-		read32le(&version,inf);
-		if(version!=0) {
-			LOG("Unknown save file format\n");
-			return;
-		}
-		fseek(inf, -24, SEEK_CUR);
-		struct {
-			u32 size,padSize,type,addr_size,mem_size;
-		} info;
-		read32le(&info.size,inf);
-		read32le(&info.padSize,inf);
-		read32le(&info.type,inf);
-		read32le(&info.addr_size,inf);
-		read32le(&info.mem_size,inf);
-
-		//establish the save data
-		data.resize(info.size);
-		fseek(inf, 0, SEEK_SET);
-		fread(&data[0],1,info.size,inf); //read all the raw data we have
-		state = RUNNING;
-		addr_size = info.addr_size;
-		//none of the other fields are used right now
-
-		fclose(inf);
-	}
-	else
-	{
-		LOG("Missing save file %s\n",filename.c_str());
-	}
-}
-
 u32 BackupDevice::addr_size_for_old_save_size(int bupmem_size)
 {
 	switch(bupmem_size) {
-		case MC_SIZE_4KBITS: return 2; //1? hi command?
+		case MC_SIZE_4KBITS: 
+			return 1;
 		case MC_SIZE_64KBITS: 
 		case MC_SIZE_256KBITS:
 		case MC_SIZE_512KBITS:
@@ -837,23 +528,142 @@ void BackupDevice::load_old_state(u32 addr_size, u8* data, u32 datasize)
 	this->addr_size = addr_size;
 	this->data.resize(datasize);
 	memcpy(&this->data[0],data,datasize);
+
+	//dump back out as a dsv, just to keep things sane
+	flush();
+}
+
+
+void BackupDevice::loadfile()
+{
+	//never use save files if we are in movie mode
+	if(isMovieMode) return;
+
+	FILE* inf = fopen(filename.c_str(),"rb");
+	if(!inf)
+	{
+		//no dsv found; we need to try auto-importing a file with .sav extension
+		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
+		
+		//change extension to sav
+		char tmp[MAX_PATH];
+		strcpy(tmp,filename.c_str());
+		tmp[strlen(tmp)-3] = 0;
+		strcat(tmp,"sav");
+
+		inf = fopen(tmp,"rb");
+		if(!inf)
+		{
+			printf("Missing save file %s\n",filename.c_str());
+			return;
+		}
+		fclose(inf);
+
+		load_raw(tmp);
+	}
+	else
+	{
+		//scan for desmume save footer
+		const u32 cookieLen = strlen(kDesmumeSaveCookie);
+		char *sigbuf = new char[cookieLen];
+		fseek(inf, -cookieLen, SEEK_END);
+		fread(sigbuf,1,cookieLen,inf);
+		int cmp = memcmp(sigbuf,kDesmumeSaveCookie,cookieLen);
+		delete[] sigbuf;
+		if(cmp)
+		{
+			//maybe it is a misnamed raw save file. try loading it that way
+			printf("Not a DeSmuME .dsv save file. Trying to load as raw.\n");
+			fclose(inf);
+			load_raw(filename.c_str());
+			return;
+		}
+		//desmume format
+		fseek(inf, -cookieLen, SEEK_END);
+		fseek(inf, -4, SEEK_CUR);
+		u32 version = 0xFFFFFFFF;
+		read32le(&version,inf);
+		if(version!=0) {
+			printf("Unknown save file format\n");
+			return;
+		}
+		fseek(inf, -24, SEEK_CUR);
+		struct {
+			u32 size,padSize,type,addr_size,mem_size;
+		} info;
+		read32le(&info.size,inf);
+		read32le(&info.padSize,inf);
+		read32le(&info.type,inf);
+		read32le(&info.addr_size,inf);
+		read32le(&info.mem_size,inf);
+
+		//establish the save data
+		data.resize(info.size);
+		fseek(inf, 0, SEEK_SET);
+		if(info.size>0)
+			fread(&data[0],1,info.size,inf); //read all the raw data we have
+		state = RUNNING;
+		addr_size = info.addr_size;
+		//none of the other fields are used right now
+
+		fclose(inf);
+	}
+}
+
+bool BackupDevice::save_raw(const char* filename)
+{
+	FILE* outf = fopen(filename,"wb");
+	if(!outf) return false;
+	u32 size = data.size();
+	u32 padSize = pad_up_size(size);
+	if(data.size()>0)
+		fwrite(&data[0],1,size,outf);
+	for(u32 i=size;i<padSize;i++)
+		fputc(kUninitializedSaveDataValue,outf);
+	fclose(outf);
+	return true;
+}
+
+u32 BackupDevice::pad_up_size(u32 startSize)
+{
+	u32 size = startSize;
+	int ctr=0;
+	while(ctr<saveSizes_count && size > saveSizes[ctr]) ctr++;
+	u32 padSize = saveSizes[ctr];
+	if(padSize == 0xFFFFFFFF)
+	{
+		printf("PANIC! Couldn't pad up save size. Refusing to pad.\n");
+		padSize = startSize;
+	}
+	return padSize;
+}
+
+void BackupDevice::lazy_flush()
+{
+	if(flushPending || lazyFlushPending)
+	{
+		lazyFlushPending = flushPending = false;
+		flush();
+	}
 }
 
 void BackupDevice::flush()
 {
+	//never use save files if we are in movie mode
+	if(isMovieMode) return;
+
 	FILE* outf = fopen(filename.c_str(),"wb");
 	if(outf)
 	{
-		fwrite(&data[0],1,data.size(),outf);
+		if(data.size()>0)
+			fwrite(&data[0],1,data.size(),outf);
 		
 		//write the footer. we use a footer so that we can maximize the chance of the
 		//save file being recognized as a raw save file by other emulators etc.
 		
 		//first, pad up to the next largest known save size.
 		u32 size = data.size();
-		int ctr=0;
-		while(ctr<saveSizes_count && size > saveSizes[ctr]) ctr++;
-		u32 padSize = saveSizes[ctr];
+		u32 padSize = pad_up_size(size);
 
 		for(u32 i=size;i<padSize;i++)
 			fputc(kUninitializedSaveDataValue,outf);
@@ -875,39 +685,79 @@ void BackupDevice::flush()
 	}
 	else
 	{
-		LOG("Unable to open savefile %s\n",filename.c_str());
+		printf("Unable to open savefile %s\n",filename.c_str());
 	}
 }
 
+void BackupDevice::raw_applyUserSettings(u32& size)
+{
+	//respect the user's choice of backup memory type
+	if(CommonSettings.manualBackupType == MC_TYPE_AUTODETECT)
+		addr_size = addr_size_for_old_save_size(size);
+	else
+	{
+		int savetype = save_types[CommonSettings.manualBackupType][0];
+		int savesize = save_types[CommonSettings.manualBackupType][1];
+		addr_size = addr_size_for_old_save_type(savetype);
+		if(savesize<size) size = savesize;
+	}
+
+	state = RUNNING;
+}
+
+
+bool BackupDevice::load_raw(const char* filename)
+{
+	FILE* inf = fopen(filename,"rb");
+	fseek(inf, 0, SEEK_END);
+	u32 size = (u32)ftell(inf);
+	fseek(inf, 0, SEEK_SET);
+	
+	raw_applyUserSettings(size);
+
+	data.resize(size);
+	fread(&data[0],1,size,inf);
+	fclose(inf);
+
+	//dump back out as a dsv, just to keep things sane
+	flush();
+
+	return true;
+}
+
+
 bool BackupDevice::load_duc(const char* filename)
 {
-  long size;
+  u32 size;
    char id[16];
    FILE* file = fopen(filename, "rb");
-   size_t elems_read = 0;
    if(file == NULL)
       return false;
 
    fseek(file, 0, SEEK_END);
-   size = ftell(file) - 500;
+   size = (u32)ftell(file) - 500;
    fseek(file, 0, SEEK_SET);
 
    // Make sure we really have the right file
-   elems_read += fread((void *)id, sizeof(char), 16, file);
+   fread((void *)id, sizeof(char), 16, file);
 
    if (memcmp(id, "ARDS000000000001", 16) != 0)
    {
-	   LOG("Not recognized as a valid DUC file\n");
+	   printf("Not recognized as a valid DUC file\n");
       fclose(file);
       return false;
    }
    // Skip the rest of the header since we don't need it
    fseek(file, 500, SEEK_SET);
 
+   raw_applyUserSettings(size);
+
    ensure((u32)size);
 
    fread(&data[0],1,size,file);
    fclose(file);
+
+   //choose 
 
    flush();
 

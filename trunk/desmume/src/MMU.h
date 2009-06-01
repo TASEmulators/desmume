@@ -159,7 +159,7 @@ struct armcpu_memory_iface {
 };
 
 
-void mmu_select_savetype(int type, int *bmemtype, u32 *bmemsize);
+void mmu_select_savetype(int type);
 
 void MMU_Init(void);
 void MMU_DeInit(void);

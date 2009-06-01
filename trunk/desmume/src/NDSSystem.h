@@ -281,6 +281,7 @@ int NDS_LoadROM(const char *filename, int bmtype, u32 bmsize,
 void NDS_FreeROM(void);
 void NDS_Reset(BOOL resetBySaveState = FALSE);
 int NDS_ImportSave(const char *filename);
+bool NDS_ExportSave(const char *filename);
 
 int NDS_WriteBMP(const char *filename);
 int NDS_LoadFirmware(const char *filename);
@@ -357,6 +358,7 @@ extern struct TCommonSettings {
 		, spuInterpolationMode(SPUInterpolation_Linear)
 		, spuAdpcmCache(false)
 		, gfx3d_flushMode(0)
+		, manualBackupType(0)
 	{
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
@@ -382,6 +384,10 @@ extern struct TCommonSettings {
 
 	//this is a temporary hack until we straighten out the flushing logic and/or gxfifo
 	int gfx3d_flushMode;
+
+	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
+	int manualBackupType;
+
 } CommonSettings;
 
 extern char ROMserial[20];

@@ -64,6 +64,7 @@ MENU_PRINCIPAL MENU
         }
         MENUITEM SEPARATOR
         MENUITEM "Importere Backup Hukommelse", IDM_IMPORTBACKUPMEMORY
+        MENUITEM "Export Backup Memory", IDM_EXPORTBACKUPMEMORY
         MENUITEM SEPARATOR
         MENUITEM "Gem Skærmbillede &Som...", IDM_PRINTSCREEN
         MENUITEM "&Hurtigt Skærmbillede", IDM_QUICK_PRINTSCREEN
@@ -235,6 +236,7 @@ MENU_PRINCIPAL MENU
         }
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory", IDM_IMPORTBACKUPMEMORY
+        MENUITEM "Export Backup Memory", IDM_EXPORTBACKUPMEMORY
         MENUITEM SEPARATOR
         MENUITEM "Save Screenshot &As...", IDM_PRINTSCREEN
         MENUITEM "&Quick Screenshot", IDM_QUICK_PRINTSCREEN
@@ -418,6 +420,7 @@ MENU_PRINCIPAL MENU
         }
         MENUITEM SEPARATOR
         MENUITEM "Import Backup Memory", IDM_IMPORTBACKUPMEMORY
+        MENUITEM "Export Backup Memory", IDM_EXPORTBACKUPMEMORY
         MENUITEM SEPARATOR
         MENUITEM "Capture d'écr&an...", IDM_PRINTSCREEN
         MENUITEM "Capture d'écran rapide", IDM_QUICK_PRINTSCREEN

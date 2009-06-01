@@ -1120,6 +1120,8 @@ DWORD WINAPI run()
 			{
 				Lock lock;
 				NDS_exec<false>();
+				if((currFrameCounter&63) == 0)
+					MMU_new.backupDevice.lazy_flush();
 				win_sound_samplecounter = 735;
 			}
 			DRV_AviVideoUpdate((u16*)GPU_screen);
@@ -1261,6 +1263,8 @@ DWORD WINAPI run()
 				if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 //				DisplayMessage();
 				CheckMessages();
+				
+				currFrameCounter++; //this needs to be moved into NDS_exec somehow
 		}
 
 		paused = TRUE;
@@ -2608,6 +2612,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Menu items dependent on a ROM loaded
 			EnableMenuItem(mainMenu, IDM_GAME_INFO,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY,MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, IDM_EXPORTBACKUPMEMORY,MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_STATE_SAVE,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_STATE_LOAD,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
 			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
@@ -2686,7 +2691,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Language selection
 
 			//Save type
-			MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_CHECKED);
+			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
+			for(int i=0;i<7;i++) MainWindow->checkMenu(savelist[i], MF_BYCOMMAND | MF_UNCHECKED);
+			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], MF_BYCOMMAND | MF_CHECKED);
+
 
 			return 0;
 		}
@@ -3058,7 +3066,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ZeroMemory(&ofn, sizeof(ofn));
 				ofn.lStructSize = sizeof(ofn);
 				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0DS-Xtreme Save (*.sav)\0*.sav\0\0";
+				ofn.lpstrFilter = "All supported types\0*.duc;*.sav\0Action Replay DS Save (*.duc)\0*.duc\0Raw Save format (*.sav)\0*.sav\0\0";
 				ofn.nFilterIndex = 1;
 				ofn.lpstrFile =  ImportSavName;
 				ofn.nMaxFile = MAX_PATH;
@@ -3075,6 +3083,31 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				NDS_UnPause();
 				return 0;
 			}
+		case IDM_EXPORTBACKUPMEMORY:
+			{
+				OPENFILENAME ofn;
+				NDS_Pause();
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = hwnd;
+				ofn.lpstrFilter = "Raw Save format (*.sav)\0*.sav\0\0";
+				ofn.nFilterIndex = 0;
+				ofn.lpstrFile =  ImportSavName;
+				ofn.nMaxFile = MAX_PATH;
+				ofn.lpstrDefExt = "sav";
+
+				if(!GetSaveFileName(&ofn))
+				{
+					NDS_UnPause();
+					return 0;
+				}
+
+				if (!NDS_ExportSave(ImportSavName))
+					MessageBox(hwnd,"Save was not successfully exported","Error",MB_OK);
+				NDS_UnPause();
+				return 0;
+			}
+		
 		
 		case IDM_CONFIG:
 			RunConfig(CONFIGSCREEN_INPUT);
@@ -3342,53 +3375,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				SetForegroundWindow(RamWatchHWnd);
 			return 0;
 
-#define clearsaver() \
-	MainWindow->checkMenu(IDC_SAVETYPE1, MF_BYCOMMAND | MF_UNCHECKED); \
-	MainWindow->checkMenu(IDC_SAVETYPE2, MF_BYCOMMAND | MF_UNCHECKED); \
-	MainWindow->checkMenu(IDC_SAVETYPE3, MF_BYCOMMAND | MF_UNCHECKED); \
-	MainWindow->checkMenu(IDC_SAVETYPE4, MF_BYCOMMAND | MF_UNCHECKED); \
-	MainWindow->checkMenu(IDC_SAVETYPE5, MF_BYCOMMAND | MF_UNCHECKED); \
-	MainWindow->checkMenu(IDC_SAVETYPE6, MF_BYCOMMAND | MF_UNCHECKED); \
-	MainWindow->checkMenu(IDC_SAVETYPE7, MF_BYCOMMAND | MF_UNCHECKED); 
-
-#define saver(one) \
-	MainWindow->checkMenu(one, MF_BYCOMMAND | MF_CHECKED); 
-
-		case IDC_SAVETYPE1:
-			clearsaver();
-			saver(IDC_SAVETYPE1);
-			mmu_select_savetype(0,&backupmemorytype,&backupmemorysize);
-			return 0;
-		case IDC_SAVETYPE2:
-			clearsaver();
-			saver(IDC_SAVETYPE2);
-			mmu_select_savetype(1,&backupmemorytype,&backupmemorysize);
-			return 0;   
-		case IDC_SAVETYPE3:
-			clearsaver();
-			saver(IDC_SAVETYPE3);
-			mmu_select_savetype(2,&backupmemorytype,&backupmemorysize);
-			return 0;   
-		case IDC_SAVETYPE4:
-			clearsaver();
-			saver(IDC_SAVETYPE4);
-			mmu_select_savetype(3,&backupmemorytype,&backupmemorysize);
-			return 0;
-		case IDC_SAVETYPE5:
-			clearsaver();
-			saver(IDC_SAVETYPE5);
-			mmu_select_savetype(4,&backupmemorytype,&backupmemorysize);
-			return 0; 
-		case IDC_SAVETYPE6:
-			clearsaver();
-			saver(IDC_SAVETYPE6);
-			mmu_select_savetype(5,&backupmemorytype,&backupmemorysize);
-			return 0; 
-		case IDC_SAVETYPE7:
-			clearsaver();
-			saver(IDC_SAVETYPE7);
-			mmu_select_savetype(6,&backupmemorytype,&backupmemorysize);
-			return 0; 
+		case IDC_SAVETYPE1: backup_setManualBackupType(0); return 0;
+		case IDC_SAVETYPE2: backup_setManualBackupType(1); return 0;   
+		case IDC_SAVETYPE3: backup_setManualBackupType(2); return 0;   
+		case IDC_SAVETYPE4: backup_setManualBackupType(3); return 0;
+		case IDC_SAVETYPE5: backup_setManualBackupType(4); return 0; 
+		case IDC_SAVETYPE6: backup_setManualBackupType(5); return 0; 
+		case IDC_SAVETYPE7: backup_setManualBackupType(6); return 0; 
 
 		case IDM_RESET:
 			ResetGame();

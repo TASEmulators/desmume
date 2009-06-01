@@ -829,10 +829,8 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 	memset(buf, 0, MAX_PATH);
 	strcpy(buf, pathFilenameToROMwithoutExt);
-	strcat(buf, ".sav");							// DeSmuME memory card	:)
+	strcat(buf, ".dsv");							// DeSmuME memory card	:)
 
-	//mc_realloc(&MMU.bupmem, bmtype, bmsize);
-	//mc_load_file(&MMU.bupmem, buf);
 	MMU_new.backupDevice.load_rom(buf);
 
 	memset(buf, 0, MAX_PATH);
@@ -847,32 +845,6 @@ int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
 
 
 	return ret;
-}
-
-void MovieSRAM()
-{
-	int bmtype = MMU.bupmem.type;
-	u32 bmsize = MMU.bupmem.size;
-
-	char buf[MAX_PATH];
-
-	memset(buf, 0, MAX_PATH);
-	strcpy(buf, pathFilenameToROMwithoutExt);
-	strcat(buf, ".sav");							// DeSmuME memory card	:)
-
-	if(movieMode != MOVIEMODE_INACTIVE) {
-		strcat(buf, "movie");
-	}
-
-	if (MMU.bupmem.fp)
-	{
-		fclose(MMU.bupmem.fp);
-		MMU.bupmem.fp = NULL;
-	}
-
-
-	mc_realloc(&MMU.bupmem, bmtype, bmsize);
-	mc_load_file(&MMU.bupmem, buf);
 }
 
 void NDS_FreeROM(void)
@@ -1091,8 +1063,21 @@ int NDS_ImportSave(const char *filename)
 
 	if (memcmp(filename+strlen(filename)-4, ".duc", 4) == 0)
 		return MMU_new.backupDevice.load_duc(filename);
+	else
+		return MMU_new.backupDevice.load_raw(filename);
 
 	return 0;
+}
+
+bool NDS_ExportSave(const char *filename)
+{
+	if (strlen(filename) < 4)
+		return false;
+
+	if (memcmp(filename+strlen(filename)-4, ".sav", 4) == 0)
+		return MMU_new.backupDevice.save_raw(filename);
+
+	return false;
 }
 
 static int WritePNGChunk(FILE *fp, uint32 size, const char *type, const uint8 *data)
