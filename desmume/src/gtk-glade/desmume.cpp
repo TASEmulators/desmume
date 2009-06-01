@@ -70,7 +70,7 @@ int desmume_open(const char *filename)
 }
 
 void desmume_savetype(int type) {
-	mmu_select_savetype(type, &savetype, &savesize);
+	backup_setManualBackupType(type);
 }
 
 
