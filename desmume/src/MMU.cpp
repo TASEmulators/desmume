@@ -533,6 +533,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			case 0: //LCDC
 				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
+				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
@@ -555,6 +556,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
 				ARM9Mem.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				break;
+			default: goto unsupported_mst;
 			}
 			break;
 
@@ -567,6 +569,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			case 0: //LCDC
 				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
+				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
@@ -600,6 +603,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 					vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
 					MMU_vram_arm9(bank,VRAM_PAGE_BOBJ); //BOBJ
 				}
+				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 				break;
 			default: goto unsupported_mst;
 			}
@@ -607,6 +611,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 
 		case VRAM_BANK_E:
 			mst = VRAMBankCnt & 7;
+			if(((VRAMBankCnt>>3)&3) != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 			switch(mst) {
 			case 0: //LCDC
 				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
@@ -651,6 +656,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 			case 0: //LCDC
 				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
 				MMU_vram_lcdc(bank);
+				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 				break;
 			case 1: //ABG
 				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
@@ -686,6 +692,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
 				ARM9Mem.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ObjExtPal[0][1] + ADDRESS_STEP_8KB;
+				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 				break;
 			default: goto unsupported_mst;
 			}
@@ -694,6 +701,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 
 		case VRAM_BANK_H:
 			mst = VRAMBankCnt & 3;
+			if(((VRAMBankCnt>>3)&3) != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 			switch(mst)
 			{
 			case 0: //LCDC
@@ -719,6 +727,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 
 		case VRAM_BANK_I:
 			mst = VRAMBankCnt & 3;
+			if(((VRAMBankCnt>>3)&3) != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
 			switch(mst)
 			{
 			case 0: //LCDC
@@ -741,6 +750,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				ARM9Mem.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ObjExtPal[1][1] = ARM9Mem.ObjExtPal[1][1] + ADDRESS_STEP_8KB;
 				break;
+			default: goto unsupported_mst;
 			}
 			break;
 
@@ -816,9 +826,8 @@ static inline void MMU_VRAMmapControl(u8 block, u8 VRAMBankCnt)
 	//if texInfo changed, trigger notifications
 	if(memcmp(&oldTexInfo,&ARM9Mem.texInfo,sizeof(ARM9_struct::TextureInfo)))
 	{
-		if(!nds.isIn3dVblank()) {
-			PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
- 		}
+		//if(!nds.isIn3dVblank())
+	//		PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
 		gpu3D->NDS_3D_VramReconfigureSignal();
 	}
 
@@ -2922,7 +2931,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 						{
 							/* TODO: prevent read if the address is out of range */
 							/* Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart */
-							if(MMU.dscard[ARMCPU_ARM9].address < 0x8000)
+							if((MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) == 0xB7) && (MMU.dscard[ARMCPU_ARM9].address < 0x8000))
 							{
 								MMU.dscard[ARMCPU_ARM9].address = (0x8000 + (MMU.dscard[ARMCPU_ARM9].address&0x1FF));
 							}
@@ -3056,8 +3065,9 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 	/* wifi mac access */
 	if ((adr>=0x04800000)&&(adr<0x05000000))
 	{
-		WIFI_write16(&wifiMac,adr,val) ;
-		return ;
+		WIFI_write16(&wifiMac,adr,val);
+		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
+		return;
 	}
 #else
 	//if ((adr>=0x04800000)&&(adr<0x05000000)) return ;
@@ -3487,7 +3497,8 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 		// return to not overwrite valid data
 		WIFI_write16(&wifiMac, adr, val & 0xFFFF);
 		WIFI_write16(&wifiMac, adr+2, val >> 16);
-		return ;
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
+		return;
 	}
 #endif
 
@@ -3923,7 +3934,12 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 					case 0xB7:
 						{
 							/* TODO: prevent read if the address is out of range */
-							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM7].address);
+							/* Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart */
+							if((MEM_8(MMU.MMU_MEM[ARMCPU_ARM7], REG_GCCMDOUT) == 0xB7) && (MMU.dscard[ARMCPU_ARM7].address < 0x8000))
+							{
+								MMU.dscard[ARMCPU_ARM7].address = (0x8000 + (MMU.dscard[ARMCPU_ARM7].address&0x1FF));
+							}
+							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM7].address & MMU.CART_ROM_MASK);
 						}
 						break;
 
