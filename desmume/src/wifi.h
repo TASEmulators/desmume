@@ -387,6 +387,10 @@ typedef struct
 	BOOL powerOn;
 	BOOL powerOnPending;
 
+	/* status */
+	u16 rfStatus;
+	u16 rfPins;
+
 	/* wifi interrupt handling */
     wifiirq_t   IE ;
     wifiirq_t   IF ;
