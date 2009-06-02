@@ -56,56 +56,56 @@ public:
 #if defined(DEBUG) || defined(GPUDEBUG) || defined(DIVDEBUG) || defined(SQRTDEBUG) || defined(DMADEBUG) || defined(DEVELOPER)
 #define LOGC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
 #else
-#define LOGC(...)
+#define LOGC(...) {}
 #endif
 
 #ifdef DEBUG
 #define LOG(...) LOGC(0, __VA_ARGS__)
 #else
-#define LOG(...)
+#define LOG(...) {}
 #endif
 
 #ifdef GPUDEBUG
 #define GPULOG(...) LOGC(1, __VA_ARGS__)
 #else
-#define GPULOG(...)
+#define GPULOG(...) {}
 #endif
 
 #ifdef DIVDEBUG
 #define DIVLOG(...) LOGC(2, __VA_ARGS__)
 #else
-#define DIVLOG(...)
+#define DIVLOG(...) {}
 #endif
 
 #ifdef SQRTDEBUG
 #define SQRTLOG(...) LOGC(3, __VA_ARGS__)
 #else
-#define SQRTLOG(...)
+#define SQRTLOG(...) {}
 #endif
 
 #ifdef DMADEBUG
 #define DMALOG(...) LOGC(4, __VA_ARGS__)
 #else
-#define DMALOG(...)
+#define DMALOG(...) {}
 #endif
 
 #ifdef CFLASHDEBUG
 #define CFLASHLOG(...) LOGC(5, __VA_ARGS__)
 #else
-#define CFLASHLOG(...)
+#define CFLASHLOG(...) {}
 #endif
 
 #ifdef UNTESTEDOPCODELOG
 #define UNTESTEDOPCODELOG(...) LOGC(6, __VA_ARGS__)
 #else
-#define UNTESTEDOPCODELOG(...)
+#define UNTESTEDOPCODELOG(...) {}
 #endif
 
 
 #ifdef DEVELOPER
 #define PROGINFO(...) LOGC(7, __VA_ARGS__)
 #else
-#define PROGINFO(...)
+#define PROGINFO(...) {}
 #endif
 
 
