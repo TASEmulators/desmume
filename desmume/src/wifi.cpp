@@ -679,14 +679,15 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 		case REG_WIFI_FORCEPS:
 			if((val & 0x8000) && (!wifi->powerOnPending))
 			{
-				BOOL newPower = ((val & 0x0001)?FALSE:TRUE);
+			/*	BOOL newPower = ((val & 0x0001)?FALSE:TRUE);
 				if(newPower != wifi->powerOn)
 				{
 					if(!newPower)
 						wifi->powerOn = FALSE;
 					else
 						wifi->powerOnPending = TRUE;
-				}
+				}*/
+				wifi->powerOn = ((val & 0x0001) ? FALSE : TRUE);
 			}
 			break;
 		case REG_WIFI_POWERACK:
