@@ -1518,14 +1518,6 @@ class WinDriver : public Driver
 {
 	virtual bool WIFI_Host_InitSystem() {
 		#ifdef EXPERIMENTAL_WIFI
-			//require winsock initialization
-			WSADATA wsaData ;
-			WORD version = MAKEWORD(1,1) ;
-			if (WSAStartup(version,&wsaData))
-			{
-				printf("Failed initializing WSAStartup - softAP support disabled\n");
-				return false ;
-			}
 			//require wpcap.dll
 			HMODULE temp = LoadLibrary("wpcap.dll");
 			if(temp == NULL) {
@@ -1539,9 +1531,6 @@ class WinDriver : public Driver
 		#endif
 	}
 	virtual void WIFI_Host_ShutdownSystem() {
-		#ifdef EXPERIMENTAL_WIFI
-			WSACleanup() ;
-		#endif
 	}
 
 	virtual bool AVI_IsRecording()

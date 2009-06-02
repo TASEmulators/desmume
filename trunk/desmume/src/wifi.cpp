@@ -22,17 +22,11 @@
 #include "wifi.h"
 #include "armcpu.h"
 #include "NDSSystem.h"
+#include "debug.h"
 
 #ifdef EXPERIMENTAL_WIFI
 
 wifimac_t wifiMac ;
-
-socket_t 	WIFI_Host_OpenChannel(u8 num) ;
-void 		WIFI_Host_CloseChannel(socket_t sock) ;
-void 		WIFI_Host_SendData(socket_t sock, u8 channel, u8 *data, u16 length) ;
-u16			WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength) ;
-BOOL 		WIFI_Host_InitSystem(void) ;
-void 		WIFI_Host_ShutdownSystem(void) ;
 
 #endif
 
@@ -191,6 +185,26 @@ FW_WFCProfile FW_WFCProfile3 = {"",
 							   } ;
 
 #ifdef EXPERIMENTAL_WIFI
+
+/*******************************************************************************
+
+	Logging
+
+ *******************************************************************************/
+
+// 0: disable logging
+// 1: lowest logging, shows most important messages such as errors
+// 2: low logging, shows things such as warnings
+// 3: medium logging, for debugging, shows lots of stuff
+// 4: high logging, for debugging, shows almost everything, may slow down
+// 5: highest logging, for debugging, shows everything, may slow down a lot
+#define WIFI_LOGGING_LEVEL 3
+
+#if (WIFI_LOGGING_LEVEL >= 1)
+#define WIFI_LOG(level, ...) if(level <= WIFI_LOGGING_LEVEL) LOGC(8, "WIFI: "__VA_ARGS__);
+#else
+#define WIFI_LOG(level, ...)
+#endif
 
 /*******************************************************************************
 
@@ -374,10 +388,6 @@ void WIFI_setRF_DATA(wifimac_t *wifi, u16 val, u8 part)
 								if (channelFreqN<0x00A2E8BA) return ;
 								/* substract base frequency (channel 1) */
 								channelFreqN -= 0x00A2E8BA ;
-								/* every channel is now ~3813000 steps further */
-								WIFI_Host_CloseChannel(wifi->udpSocket) ;
-								wifi->channel = (wifi->udpSocket,channelFreqN / 3813000)+1 ;
-								WIFI_Host_OpenChannel(wifi->channel) ;
 							}
 							return ;
 						case 13:
@@ -471,17 +481,6 @@ static void WIFI_triggerIRQ(wifimac_t *wifi, u8 irq)
 	WIFI_triggerIRQMask(wifi,1<<irq) ;
 }
 
-/*int WIFI_uSleep(socket_t sock, long usec)
-{
-    struct timeval tv;
-    fd_set dummy;
-    FD_ZERO(&dummy);
-    FD_SET(sock, &dummy);
-    tv.tv_sec = (usec / 1000000);
-    tv.tv_usec = (usec % 1000000);
-    return select(0, 0, 0, &dummy, &tv);
-}*/
-
 
 void WIFI_Init(wifimac_t *wifi)
 {
@@ -492,7 +491,6 @@ void WIFI_Init(wifimac_t *wifi)
 	if(driver->WIFI_Host_InitSystem())
 	{
 		wifi->netEnabled = true;
-		wifi->udpSocket = WIFI_Host_OpenChannel(1) ;
 	}
 	wifi->powerOn = FALSE;
 	wifi->powerOnPending = FALSE;
@@ -500,16 +498,6 @@ void WIFI_Init(wifimac_t *wifi)
 	wifi->rfStatus = 0x0000;
 	wifi->rfPins = 0x0004;
 }
-
-/*void WIFI_Thread(wifimac_t *wifi)
-{
-	for(;;)
-	{
-		WIFI_usTrigger(wifi);
-		WIFI_SoftAP_usTrigger(wifi);
-		WIFI_uSleep(wifi->udpSocket, 1);
-	}
-}*/
 
 static void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
 {
@@ -540,34 +528,46 @@ static void WIFI_RXPutWord(wifimac_t *wifi,u16 val)
 
 static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 {
-	//printf("wifi: send attempt on slot %i, txcnt=%04X, slotcnt=%04X\n", 
-	//	slot, wifi->TXCnt, wifi->TXSlot[slot]);
+	WIFI_LOG(3, "TX slot %i trying to send a packet: TXCnt = %04X, TXBufLoc = %04X\n", 
+		slot, wifi->TXCnt, wifi->TXSlot[slot]);
+
 	if (wifi->TXSlot[slot] & 0x8000)	/* is slot enabled? */
 	{
-		u16 txLen ;
+		u16 txLen;
 		/* the address has to be somewhere in the circular buffer, so drop the other bits */
-		u16 address = (wifi->TXSlot[slot] & 0x7FFF) ; //luigi: shouldnt this be 0xFFF (see W_TXBUF_LOC3  in gbatek)
+		u16 address = (wifi->TXSlot[slot] & 0x0FFF);
 		/* is there even enough space for the header (6 hwords) in the tx buffer? */
-		if (address > 0x1000-6) return ;  //luigi: you shouldnt do this. put assertions or LOG() calls in spots like this.
-		//when an emulation is in the state that wifi is at, silently swallowing errors will make it hard to debug
+		if (address > 0x1000-6)
+		{
+			WIFI_LOG(1, "TX slot %i trying to send a packet overflowing from the TX buffer (address %04X). Attempt ignored.\n", 
+				slot, (address << 1));
+			return;
+		}
 
 		/* 12 byte header TX Header: http://www.akkit.org/info/dswifi.htm#FmtTx */
-		txLen = /*ntohs*/(wifi->circularBuffer[address+5]) ;
+		txLen = wifi->circularBuffer[address+5];
 		/* zero length */
-		if (txLen==0) return ;
+		if (txLen == 0)
+		{
+			WIFI_LOG(1, "TX slot %i trying to send a packet with length field set to zero. Attempt ignored.\n", 
+				slot);
+			return;
+		}
 		/* unsupported txRate */
-		switch (/*ntohs*/(wifi->circularBuffer[address+4] & 0xFF))
+		switch (wifi->circularBuffer[address+4] & 0xFF)
 		{
 			case 10: /* 1 mbit */
 			case 20: /* 2 mbit */
-				break ;
+				break;
 			default: /* other rates */
-				return ;
+				WIFI_LOG(1, "TX slot %i trying to send a packet with transfer rate field set to an invalid value of %i. Attempt ignored.\n", 
+					slot, wifi->circularBuffer[address+4] & 0xFF);
+				return;
 		}
 
 		/* FIXME: calculate FCS */
 
-		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDSTART*/7) ;
+		WIFI_triggerIRQ(wifi, WIFI_IRQ_SENDSTART) ;
 
 		if(slot > wifi->txCurSlot)
 			wifi->txCurSlot = slot;
@@ -581,9 +581,8 @@ static void WIFI_TXStart(wifimac_t *wifi,u8 slot)
 		wifi->rfPins = 0x0046;
 
 #if 0
-		WIFI_Host_SendData(wifi->udpSocket,wifi->channel,(u8 *)&wifi->circularBuffer[address],txLen) ;
 		WIFI_SoftAP_RecvPacketFromDS(wifi, (u8*)&wifi->circularBuffer[address+6], txLen);
-		WIFI_triggerIRQ(wifi,/*WIFI_IRQ_SENDCOMPLETE*/1) ;
+		WIFI_triggerIRQ(wifi, WIFI_IRQ_SENDCOMPLETE) ;
 
 		wifi->circularBuffer[address] = 0x0001;
 		wifi->circularBuffer[address+4] &= 0x00FF;
@@ -595,7 +594,9 @@ void WIFI_write16(wifimac_t *wifi,u32 address, u16 val)
 {
 	BOOL action = FALSE ;
 	if (!(MMU_read32(ARMCPU_ARM7,REG_PWRCNT) & 0x0002)) return ;		/* access to wifi hardware was disabled */
-	if ((address & 0xFF800000) != 0x04800000) return ;      /* error: the address does not describe a wiifi register */
+	if ((address & 0xFF800000) != 0x04800000) return ;      /* error: the address does not describe a wifi register */
+
+	WIFI_LOG(5, "Write at address %08X, %04X\n", address, val);
 
 	/* the first 0x1000 bytes are mirrored at +0x1000,+0x2000,+0x3000,+06000,+0x7000 */
 	/* only the first mirror causes an special action */
@@ -860,7 +861,9 @@ u16 WIFI_read16(wifimac_t *wifi,u32 address)
 	BOOL action = FALSE ;
 	u16 temp ;
 	if (!(MMU_read32(ARMCPU_ARM7,REG_PWRCNT) & 0x0002)) return 0 ;		/* access to wifi hardware was disabled */
-	if ((address & 0xFF800000) != 0x04800000) return 0 ;      /* error: the address does not describe a wiifi register */
+	if ((address & 0xFF800000) != 0x04800000) return 0 ;      /* error: the address does not describe a wifi register */
+
+	WIFI_LOG(5, "Read at address %08X\n", address);
 
 	/* the first 0x1000 bytes are mirrored at +0x1000,+0x2000,+0x3000,+06000,+0x7000 */
 	/* only the first mirror causes an special action */
@@ -1055,28 +1058,9 @@ void WIFI_usTrigger(wifimac_t *wifi)
 	}
 	if ((wifi->ucmpEnable) && (wifi->ucmp == wifi->usec))
 	{
-			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_TIMEBEACON*/14) ;
+			WIFI_triggerIRQ(wifi, WIFI_IRQ_TIMEBEACON) ;
 	}
-	/* receive check, given a 2 mbit connection, 2 bits per usec can be transfered. */
-	/* for a packet of 32 Bytes, at least 128 usec passed, we will use the 32 byte accuracy to reduce load */
-#if 0
-	if (!(wifi->RXCheckCounter++ & 0x7F))
-	{
-		/* check if data arrived in the meantime */
-		rcvSize = WIFI_Host_RecvData(wifi->udpSocket,dataBuffer,0x2000) ;
-		if (rcvSize)
-		{
-			u16 i ;
-			/* process data, put it into mac memory */
-			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVSTART*/6) ;
-			for (i=0;i<(rcvSize+1) << 1;i++)
-			{
-				WIFI_RXPutWord(wifi,((u16 *)dataBuffer)[i]) ;
-			}
-			WIFI_triggerIRQ(wifi,/*WIFI_IRQ_RECVCOMPLETE*/0) ;
-		}
-	}
-#endif
+
 	if((wifi->usec & 3) == 0)
 	{
 		int slot = wifi->txCurSlot;
@@ -1098,15 +1082,15 @@ void WIFI_usTrigger(wifimac_t *wifi)
 
 				wifi->TXStat = (0x0001 | (slot << 12));
 
-				WIFI_triggerIRQ(wifi, 1);
+				WIFI_triggerIRQ(wifi, WIFI_IRQ_SENDCOMPLETE);
 				
 				//wifi->rfStatus = 0x0001;
 				//wifi->rfPins = 0x0084;
 				wifi->rfStatus = 0x0009;
 				wifi->rfPins = 0x0004;
 
-				//printf("wifi: finished sending packet on slot %i (addr=%04X, txstat=%04X)\n", 
-				//	slot, wifi->txSlotAddr[slot], wifi->TXStat);
+				WIFI_LOG(3, "TX slot %i finished sending its packet. Next is slot %i. TXStat = %04X\n", 
+					slot, wifi->txCurSlot, wifi->TXStat);
 			}
 		}
 	}
@@ -1277,7 +1261,8 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 	int alignedLen = WIFI_alignedLen(len);
 	u16 frameCtl = *(u16*)&packet[12];
 
-	//printf("wifi: packet arrived, len = %i (%i), frame ctl = %04X\n", len, alignedLen, frameCtl);
+	WIFI_LOG(3, "SoftAP: Received a packet of length %i bytes (%i aligned). Frame control = %04X\n",
+		len, alignedLen, frameCtl);
 
 	switch((frameCtl >> 2) & 0x3)
 	{
@@ -1469,15 +1454,11 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 	/* ie ~8 microseconds to transfer a word. */
 	if((wifi->SoftAP.curPacketSending) && !(wifi->SoftAP.usecCounter & 7))
 	{
-	/*	if(wifi->SoftAP.curPacketPos == -4)
-		{
-			WIFI_triggerIRQ(wifi, 6);
-		}
-		else*/ if(wifi->SoftAP.curPacketPos >= 0)
+		if(wifi->SoftAP.curPacketPos >= 0)
 		{
 			if(wifi->SoftAP.curPacketPos == 0)
 			{
-				WIFI_triggerIRQ(wifi, 6);
+				WIFI_triggerIRQ(wifi, WIFI_IRQ_RECVSTART);
 
 				wifi->rfStatus = 0x0009;
 				wifi->rfPins = 0x0004;
@@ -1492,10 +1473,6 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 			}
 
 			u16 word = (wifi->SoftAP.curPacket[wifi->SoftAP.curPacketPos] | (wifi->SoftAP.curPacket[wifi->SoftAP.curPacketPos+1] << 8));
-			//WIFI_SoftAP_SendWordToDS(wifi, word);
-		//	if(wifi->SoftAP.curPacketPos<12)
-		//		printf("wifi: writing word %i (%04X) of packet to %04X\n", 
-		//			wifi->SoftAP.curPacketPos, word, wifi->RXHWWriteCursor);
 			WIFI_RXPutWord(wifi, word);
 		}
 
@@ -1511,7 +1488,7 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 
 			wifi->RXHWWriteCursorReg = ((wifi->RXHWWriteCursor + 1) & (~1));
 
-			WIFI_triggerIRQ(wifi, 0);
+			WIFI_triggerIRQ(wifi, WIFI_IRQ_RECVCOMPLETE);
 
 			// hax
 			//packet_arrived=1;
@@ -1519,81 +1496,6 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 			//printf("wifi: softap: finished sending packet. end at %04X (aligned=%04X)\n", wifi->RXHWWriteCursor << 1, wifi->RXHWWriteCursorReg << 1);
 		}
 	}
-}
-
-/*******************************************************************************
-
-	Host system operations
-
- *******************************************************************************/
-
-socket_t WIFI_Host_OpenChannel(u8 num)
-{
-	sockaddr_t address ;
-	/* create a new socket */
-	socket_t channelSocket = socket(AF_INET,SOCK_DGRAM,0) ;
-	/* set the sockets address */
-	memset(&address,0,sizeof(sockaddr_t)) ;
-	address.sa_family = AF_INET ;
-	*(u32 *)&address.sa_data[2] = htonl(0) ; 				/* IP: any */
-	*(u16 *)&address.sa_data[0] = htons(BASEPORT + num-1) ; /* Port */
-	bind(channelSocket,&address,sizeof(sockaddr_t)) ;
-	return channelSocket ;
-}
-
-void WIFI_Host_CloseChannel(socket_t sock)
-{
-	if (sock!=INVALID_SOCKET)
-	{
-#ifdef WIN32
-		closesocket(sock) ;
-#else
-		close(sock) ;
-#endif
-	}
-}
-
-void WIFI_Host_SendData(socket_t sock, u8 channel, u8 *data, u16 length)
-{
-	//printf("wifi: sending packet of length %i on channel %i\n", length, channel);
-	sockaddr_t address ;
-	/* create the frame to validate data: "DSWIFI" string and a u16 constant of the payload length */
-	u8 *frame = (u8 *)malloc(length + 8) ;
-	sprintf((char *)frame,"DSWIFI") ;
-	*(u16 *)(frame+6) = htons(length) ;
-	memcpy(frame+8,data,length) ;
-	/* target address */
-	memset(&address,0,sizeof(sockaddr_t)) ;
-	address.sa_family = AF_INET ;
-	*(u32 *)&address.sa_data[2] = htonl(0xFFFFFFFF) ; 			/* IP: broadcast */
-	*(u16 *)&address.sa_data[0] = htons(BASEPORT + channel-1) ; /* Port */
-	/* send the data now */
-	sendto(sock,(const char *)frame,length+8,0,&address,sizeof(sockaddr_t)) ;
-	/* clean up frame buffer */
-	free(frame) ;
-}
-
-u16 WIFI_Host_RecvData(socket_t sock, u8 *data, u16 maxLength)
-{
-	fd_set dataCheck ;
-	struct timeval tv ;
-	FD_ZERO(&dataCheck) ;
-	FD_SET(sock,&dataCheck) ;
-	tv.tv_sec = 0 ;
-	tv.tv_usec = 0 ;
-	/* check if there is data, without blocking */
-	if (select(1,&dataCheck,0,0,&tv))
-	{
-		/* there is data available */
-		u32 receivedBytes = recv(sock,(char*)data,maxLength,0) ;
-		//printf("wifi: received %i bytes\n", receivedBytes);
-		if (receivedBytes < 8) return 0 ;			/* this cant be data for us, the header alone is 8 bytes */
-		if (memcmp(data,"DSWIFI",6)!=0) return 0 ;	/* this isnt data for us, as the tag is not our */
-		if (ntohs(*(u16 *)(data+6))+8 != receivedBytes) return 0 ; /* the datalen+headerlen is not what we received */
-		memmove(data,data+8,receivedBytes-8) ;
-		return receivedBytes-8 ;
-	}
-	return 0 ;
 }
 
 #endif

@@ -25,27 +25,9 @@
 
 #ifdef EXPERIMENTAL_WIFI
 
-/* standardize socket interface for linux and windows */
-/* TODO: get rid of the socket thing, as we're going to use libpcap */
 #ifdef WIN32
-	#include <winsock2.h>
-	#define socket_t 	SOCKET
-	#define sockaddr_t  SOCKADDR
 	#include "windriver.h"
-#else
-	#include <unistd.h>
-	#include <stdlib.h>
-	#include <string.h>
-	#include <arpa/inet.h>
-	#include <sys/socket.h>
-	#define socket_t 	int
-	#define sockaddr_t  struct sockaddr
 #endif
-#ifndef INVALID_SOCKET
-	#define INVALID_SOCKET  (socket_t)-1
-#endif
-#define BASEPORT        7000    		/* channel 1: 7000 ... channel 13: 7012 */
-										/* FIXME: make it configureable */
 
 #define HAVE_REMOTE
 #define WPCAP
@@ -345,17 +327,17 @@ typedef union
 	u16 val ;
 } bbIOCnt_t ;
 
-#define WIFI_IRQ_RECVCOMPLETE       	0x0001
-#define WIFI_IRQ_SENDCOMPLETE           0x0002
-#define WIFI_IRQ_COUNTUP                0x0004
-#define WIFI_IRQ_SENDERROR              0x0008
-#define WIFI_IRQ_STATCOUNTUP            0x0010
-#define WIFI_IRQ_STATACKUP              0x0020
-#define WIFI_IRQ_RECVSTART              0x0040
-#define WIFI_IRQ_SENDSTART              0x0080
-#define WIFI_IRQ_RFWAKEUP               0x0800
-#define WIFI_IRQ_TIMEBEACON             0x4000
-#define WIFI_IRQ_TIMEPREBEACON          0x8000
+#define WIFI_IRQ_RECVCOMPLETE       	0
+#define WIFI_IRQ_SENDCOMPLETE           1
+#define WIFI_IRQ_COUNTUP                2
+#define WIFI_IRQ_SENDERROR              3
+#define WIFI_IRQ_STATCOUNTUP            4
+#define WIFI_IRQ_STATACKUP              5
+#define WIFI_IRQ_RECVSTART              6
+#define WIFI_IRQ_SENDSTART              7
+#define WIFI_IRQ_RFWAKEUP               11
+#define WIFI_IRQ_TIMEBEACON             14
+#define WIFI_IRQ_TIMEPREBEACON          15
 
 /* definition of the irq bitfields for wifi irq's (cascaded at arm7 irq #24) */
 typedef union
@@ -498,16 +480,12 @@ typedef struct
 
 	/* desmume host communication */
 	bool		netEnabled;
-	socket_t    udpSocket ;
-	u8			channel ;
 
 } wifimac_t ;
 
 extern wifimac_t wifiMac ;
 
 void WIFI_Init(wifimac_t *wifi);
-
-//void WIFI_Thread(wifimac_t *wifi);
 
 /* subchip communication IO functions */
 void WIFI_setRF_CNT(wifimac_t *wifi, u16 val) ;
