@@ -31,8 +31,6 @@ static BOOL regMainLoop = FALSE;
 static BOOL noticed_3D=FALSE;
 volatile BOOL execute = FALSE;
 BOOL click = FALSE;
-int savetype=MC_TYPE_AUTODETECT;
-u32 savesize=1;
 
 void desmume_mem_init();
 
@@ -65,7 +63,7 @@ int desmume_open(const char *filename)
   int i;
   noticed_3D=FALSE;
   clear_savestates();
-  i = NDS_LoadROM(filename, savetype, savesize, NULL);
+  i = NDS_LoadROM(filename, NULL);
   return i;
 }
 

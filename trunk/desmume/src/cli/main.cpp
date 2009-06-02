@@ -60,9 +60,6 @@
 
 volatile BOOL execute = FALSE;
 
-int backupmemorytype=MC_TYPE_AUTODETECT;
-u32 backupmemorysize=1;
-
 static float nds_screen_size_ratio = 1.0f;
 
 #define DISPLAY_FPS 1
@@ -705,7 +702,7 @@ int main(int argc, char ** argv) {
 
   backup_setManualBackupType(my_config.savetype);
 
-  if (NDS_LoadROM( my_config.nds_file, backupmemorytype, backupmemorysize, my_config.cflash_disk_image_file) < 0) {
+  if (NDS_LoadROM( my_config.nds_file, my_config.cflash_disk_image_file) < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
     exit(-1);
   }
