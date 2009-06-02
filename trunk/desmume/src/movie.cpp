@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "rtc.h"
 #include "common.h"
+#include "mic.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -549,6 +550,10 @@ static void openRecordingMovie(const char* fname)
 			 if(mr->command_reset())
 			 {}
 			 //ResetNES();
+			 if(mr->command_microphone())
+				 MicButtonPressed=1;
+			 else
+				 MicButtonPressed=0;
 
 			 NDS_setPadFromMovie(mr->pad);
 			 NDS_setTouchFromMovie();
@@ -576,7 +581,10 @@ static void openRecordingMovie(const char* fname)
 	 {
 		 MovieRecord mr;
 
-		 mr.commands = 0;
+		 if(MicButtonPressed == 1)
+			 mr.commands=9;
+		 else
+			 mr.commands = 0;
 		 mr.pad = nds.pad;
 		 if(nds.isTouch) {
 			 mr.touch.x = nds.touchX >> 4;
