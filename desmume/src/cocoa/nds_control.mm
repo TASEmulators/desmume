@@ -68,9 +68,6 @@ SoundInterface_struct *SNDCoreList[] = {
 NULL
 };
 
-static int backupmemorytype=MC_TYPE_AUTODETECT;
-static u32 backupmemorysize=1;
-
 struct NDS_fw_config_data firmware;
 
 bool opengl_init()
@@ -380,7 +377,7 @@ bool opengl_init()
 		flash = NULL;
 
 	//load the rom
-	if(!NDS_LoadROM([filename cStringUsingEncoding:NSUTF8StringEncoding], backupmemorytype, backupmemorysize, flash) > 0)
+	if(!NDS_LoadROM([filename cStringUsingEncoding:NSUTF8StringEncoding], flash) > 0)
 	{
 		//if it didn't work give an error and dont unpause
 		messageDialog(NSLocalizedString(@"Error", nil), @"Could not open file");

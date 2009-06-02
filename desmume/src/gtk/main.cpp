@@ -66,9 +66,6 @@
 #define HAVE_TIMEOUT 1
 #endif
 
-static int backupmemorytype=MC_TYPE_AUTODETECT;
-static u32 backupmemorysize=1;
-
 static const char *bad_glob_cflash_disk_image_file;
 
 #define SCREENS_PIXEL_SIZE (256*192*2)
@@ -562,7 +559,7 @@ static void ToggleStatusbarVisible(GtkToggleAction *action)
 
 static int Open(const char *filename, const char *cflash_disk_image)
 {
-    return NDS_LoadROM( filename, backupmemorytype, backupmemorysize, cflash_disk_image );
+    return NDS_LoadROM( filename, cflash_disk_image );
 }
 
 static void Launch()

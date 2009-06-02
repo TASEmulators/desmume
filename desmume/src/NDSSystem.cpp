@@ -713,9 +713,9 @@ static void NDS_SetROMSerial()
 }
 
 #ifdef EXPERIMENTAL_GBASLOT
-int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize)
+int NDS_LoadROM( const char *filename)
 #else
-int NDS_LoadROM( const char *filename, int bmtype, u32 bmsize,
+int NDS_LoadROM( const char *filename,
 				const char *cflash_disk_image_file)
 #endif
 {

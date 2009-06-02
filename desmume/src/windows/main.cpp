@@ -255,8 +255,6 @@ GPU3DInterface *core3DList[] = {
 int autoframeskipenab=0;
 int frameskiprate=0;
 int emu_paused = 0;
-int backupmemorytype=MC_TYPE_AUTODETECT;
-u32 backupmemorysize=1;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
 bool FpsDisplay = false;
@@ -1372,9 +1370,9 @@ static BOOL LoadROM(const char * filename, const char *cflash_disk_image)
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
 #ifdef EXPERIMENTAL_GBASLOT
-	if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize) > 0)
+	if (NDS_LoadROM(filename) > 0)
 #else
-	if (NDS_LoadROM(filename, backupmemorytype, backupmemorysize, cflash_disk_image) > 0)
+	if (NDS_LoadROM(filename, cflash_disk_image) > 0)
 #endif
 	{
 		INFO("Loading %s was successful\n",filename);
