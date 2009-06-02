@@ -989,6 +989,7 @@ void NDS_Reset(BOOL resetBySavestate)
 	
 	nds.ARM9Cycle = 0;
 	nds.ARM7Cycle = 0;
+	nds.wifiCycle = 0;
 	nds.cycles = 0;
 	memset(nds.timerCycle, 0, sizeof(s32) * 2 * 4);
 	memset(nds.timerOver, 0, sizeof(BOOL) * 2 * 4);
@@ -1683,9 +1684,20 @@ void NDS_exec(s32 nb)
 			}
 
 #ifdef EXPERIMENTAL_WIFI
-			/* FIXME: the wifi stuff isn't actually clocked by the ARM7 clock, */
-			/* but by a 22 mhz oscillator. */
-			if(nds7old < nds.ARM7Cycle)
+			// FIXME: the wifi stuff isn't actually clocked by the ARM7 clock, 
+			// but by a 22 mhz oscillator.
+
+			//zeromus way: i did this in a rush and it is not perfect, but it is more like what it needs to be
+			nds.wifiCycle += (nds.ARM7Cycle-nds7old)<<16;
+			while(nds.wifiCycle > 0)
+			{
+				nds.wifiCycle -= 946453; //22*22000000*65536/ARM7_CLOCK;
+				WIFI_usTrigger(&wifiMac);
+				WIFI_SoftAP_usTrigger(&wifiMac);
+			}
+			
+			//luigi's way>
+			/*if(nds7old < nds.ARM7Cycle)
 			{
 				nds7old %= 67;
 				int nds7new = (nds.ARM7Cycle % 67);
@@ -1695,7 +1707,7 @@ void NDS_exec(s32 nb)
 					WIFI_usTrigger(&wifiMac);
 					WIFI_SoftAP_usTrigger(&wifiMac);
 				}
-			}
+			}*/
 #endif
 		} // for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
 

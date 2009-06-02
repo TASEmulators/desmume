@@ -171,6 +171,7 @@ typedef struct
 {
 	s32 ARM9Cycle;
 	s32 ARM7Cycle;
+	s32 wifiCycle;
 	s32 cycles;
 	s32 timerCycle[2][4];
 	BOOL timerOver[2][4];
