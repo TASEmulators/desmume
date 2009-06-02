@@ -1507,6 +1507,7 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 			wifi->SoftAP.curPacketSending = FALSE;
 
 			delete wifi->SoftAP.curPacket;
+			wifi->SoftAP.curPacket = NULL;
 
 			wifi->RXHWWriteCursorReg = ((wifi->RXHWWriteCursor + 1) & (~1));
 
