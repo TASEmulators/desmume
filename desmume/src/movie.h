@@ -59,6 +59,7 @@ public:
 	//the disk format will support up to 64bit if necessary
 	uint8 commands;
 	bool command_reset() { return (commands&MOVIECMD_RESET)!=0; }
+	bool command_microphone() { return (commands&9)!=0; }
 
 	void toggleBit(int bit)
 	{
