@@ -1,8 +1,9 @@
 #ifndef MIC_H
 #define MIC_H
 
-#ifdef WIN32
 extern int MicButtonPressed;
+
+#ifdef WIN32
 static char MicSampleName[256];
 char* LoadSample(const char *name);
 extern int MicDisplay;
