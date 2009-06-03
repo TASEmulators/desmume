@@ -3727,7 +3727,6 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 						if(romloaded)
 						{
-							CheatsSearchReset();
 							NDS_Reset();
 						}
 					}
@@ -3960,7 +3959,6 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
 						if(romloaded)
 						{
-							CheatsSearchReset();
 							NDS_Reset();
 						}
 					}
@@ -4100,7 +4098,6 @@ LRESULT CALLBACK SoundSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARA
 
 void ResetGame()
 {
-	CheatsSearchReset();
 	NDS_Reset();
 }
 
