@@ -538,6 +538,7 @@ void BackupDevice::loadfile()
 {
 	//never use save files if we are in movie mode
 	if(isMovieMode) return;
+	if(filename.length() ==0) return; //No sense crashing if no filename supplied
 
 	FILE* inf = fopen(filename.c_str(),"rb");
 	if(!inf)

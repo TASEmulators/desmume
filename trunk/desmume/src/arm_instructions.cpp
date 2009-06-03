@@ -224,7 +224,7 @@ extern volatile BOOL execute;
 
 TEMPLATE static u32 FASTCALL  OP_UND()
 {
-	LOG("Undefined instruction: %08X\n", cpu->instruction);
+	LOG("Undefined instruction: %08X from %08X\n", cpu->instruction, cpu->instruct_adr);
 	emu_halt();
 	LOG("Stopped (OP_UND)\n");
 	return 1;

@@ -2934,6 +2934,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 							if((MEM_8(MMU.MMU_MEM[ARMCPU_ARM9], REG_GCCMDOUT) == 0xB7) && (MMU.dscard[ARMCPU_ARM9].address < 0x8000))
 							{
 								MMU.dscard[ARMCPU_ARM9].address = (0x8000 + (MMU.dscard[ARMCPU_ARM9].address&0x1FF));
+								INFO("Read below 0x8000 from: %08X\n", NDS_ARM9.instruct_adr);
 							}
 							val = T1ReadLong(MMU.CART_ROM, MMU.dscard[ARMCPU_ARM9].address & MMU.CART_ROM_MASK);
 						}
