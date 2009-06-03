@@ -4,6 +4,7 @@
 #include "mic.h"
 
 static BOOL silence = TRUE;
+int MicButtonPressed;
 
 BOOL Mic_Init()
 {
