@@ -1915,7 +1915,9 @@ void NDS_exec(s32 nb)
 				}
 
 				T1WriteWord(ARM9Mem.ARM9_REG, 6, nds.VCount);
+				T1WriteWord(ARM9Mem.ARM9_REG, 0x1006, nds.VCount);
 				T1WriteWord(MMU.ARM7_REG, 6, nds.VCount);
+				T1WriteWord(MMU.ARM7_REG, 0x1006, nds.VCount);
 
 				vmatch = T1ReadWord(ARM9Mem.ARM9_REG, 4);
 				if(nds.VCount==((vmatch>>8)|((vmatch<<1)&(1<<8))))

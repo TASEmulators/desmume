@@ -541,7 +541,9 @@ static BOOL cflash_init()
 		{
 			file_size = LSEEK_FN( disk_image, 0, SEEK_END);
 			if (0 && file_size == -1)
+			{
 				CFLASHLOG( "Error when seeking to end of disk image" );
+			}
 			else
 			{
 				LSEEK_FN( disk_image, 0, SEEK_SET);

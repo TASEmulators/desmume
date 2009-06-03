@@ -587,7 +587,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                                    DisView9->curr_ligne <<= 1 ;
                              } else if (!(DisView9->cpu->CPSR.bits.T) && (DisView9->mode == 2)) {
                                   /* from thumb to arm, line / 2 */
-                                   DisView9->curr_ligne >>= 1 ;
+                                   DisView9->curr_ligne >>= 2 ;
                              }
                              DisView9->mode = 0;
                              InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
@@ -595,7 +595,7 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                         case IDC_ARM :
                              /* address to line correction */
                              if ((DisView9->mode==2) || ((DisView9->mode==0) && (DisView9->cpu->CPSR.bits.T))) {
-                                   DisView9->curr_ligne >>= 1 ;
+                                   DisView9->curr_ligne >>= 2 ;
                              } ;
                              DisView9->mode = 1;
                              InvalidateRect(GetDlgItem(hwnd, IDC_DES_BOX), NULL, FALSE);
@@ -626,9 +626,9 @@ BOOL CALLBACK ViewDisasm_ARM9Proc (HWND hwnd, UINT message, WPARAM wParam, LPARA
                              return 1;
                         case IDC_STEP :					// TODO: draw in DD
                              {
-                                  int ndstep;
-                                  ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
-                                  NDS_exec<TRUE>(ndstep);
+									int ndstep;
+									ndstep = GetDlgItemInt(hwnd, IDC_SETPNUM, NULL, FALSE);
+									NDS_exec<TRUE>(ndstep);
                              }
                              return 1;
                         case IDC_GO :
