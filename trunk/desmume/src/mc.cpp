@@ -133,8 +133,18 @@ void mc_free(memory_chip_t *mc)
 
 void fw_reset_com(memory_chip_t *mc)
 {
+	if(mc->com == FW_CMD_PAGEWRITE)
+	{
+		if (mc->fp)
+		{
+			fseek(mc->fp, 0, SEEK_SET);
+			fwrite(mc->data, mc->size, 1, mc->fp);
+		}
+
+		mc->write_enable = FALSE;
+	}
+
 	mc->com = 0;
-	fwrite(mc->data, 0x40000, 1, mc->fp);
 }
 
 u8 fw_transfer(memory_chip_t *mc, u8 data)
