@@ -133,8 +133,8 @@ void mc_free(memory_chip_t *mc)
 
 void fw_reset_com(memory_chip_t *mc)
 {
-	//not supporting writing back to the firmware right now, so nothing to be done here
-   mc->com = 0;
+	mc->com = 0;
+	fwrite(mc->data, 0x40000, 1, mc->fp);
 }
 
 u8 fw_transfer(memory_chip_t *mc, u8 data)
