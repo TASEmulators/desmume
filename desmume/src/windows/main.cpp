@@ -3680,6 +3680,10 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 				EnableWindow(cur, FALSE);
 				cur = GetDlgItem(hDlg, IDC_FIRMWAREBROWSE);
 				EnableWindow(cur, FALSE);
+			}
+
+			if((CommonSettings.UseExtBIOS == false) || (CommonSettings.UseExtFirmware == false))
+			{
 				cur = GetDlgItem(hDlg, IDC_FIRMWAREBOOT);
 				EnableWindow(cur, FALSE);
 			}
@@ -3697,38 +3701,35 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					if(romloaded)
 						val = MessageBox(hDlg, "The current ROM needs to be reset to apply changes.\nReset now ?", "DeSmuME", (MB_YESNO | MB_ICONQUESTION));
 
-					if((!romloaded) || (val == IDYES))
+					HWND cur;
+
+					CommonSettings.UseExtBIOS = IsDlgButtonChecked(hDlg, IDC_USEEXTBIOS);
+					cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
+					GetWindowText(cur, CommonSettings.ARM9BIOS, 256);
+					cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
+					GetWindowText(cur, CommonSettings.ARM7BIOS, 256);
+					CommonSettings.SWIFromBIOS = IsDlgButtonChecked(hDlg, IDC_BIOSSWIS);
+
+					CommonSettings.UseExtFirmware = IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE);
+					cur = GetDlgItem(hDlg, IDC_FIRMWARE);
+					GetWindowText(cur, CommonSettings.Firmware, 256);
+					CommonSettings.BootFromFirmware = IsDlgButtonChecked(hDlg, IDC_FIRMWAREBOOT);
+
+					CommonSettings.DebugConsole = IsDlgButtonChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
+
+					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
+					WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
+					WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
+					WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);
+					WritePrivateProfileInt("BIOS", "SWIFromBIOS", ((CommonSettings.SWIFromBIOS == true) ? 1 : 0), IniName);
+
+					WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
+					WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
+					WritePrivateProfileInt("Firmware", "BootFromFirmware", ((CommonSettings.BootFromFirmware == true) ? 1 : 0), IniName);
+
+					if(val == IDYES)
 					{
-						HWND cur;
-
-						CommonSettings.UseExtBIOS = IsDlgButtonChecked(hDlg, IDC_USEEXTBIOS);
-						cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
-						GetWindowText(cur, CommonSettings.ARM9BIOS, 256);
-						cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
-						GetWindowText(cur, CommonSettings.ARM7BIOS, 256);
-						CommonSettings.SWIFromBIOS = IsDlgButtonChecked(hDlg, IDC_BIOSSWIS);
-
-						CommonSettings.UseExtFirmware = IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE);
-						cur = GetDlgItem(hDlg, IDC_FIRMWARE);
-						GetWindowText(cur, CommonSettings.Firmware, 256);
-						CommonSettings.BootFromFirmware = IsDlgButtonChecked(hDlg, IDC_FIRMWAREBOOT);
-
-						CommonSettings.DebugConsole = IsDlgButtonChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
-
-						WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
-						WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
-						WritePrivateProfileString("BIOS", "ARM9BIOSFile", CommonSettings.ARM9BIOS, IniName);
-						WritePrivateProfileString("BIOS", "ARM7BIOSFile", CommonSettings.ARM7BIOS, IniName);
-						WritePrivateProfileInt("BIOS", "SWIFromBIOS", ((CommonSettings.SWIFromBIOS == true) ? 1 : 0), IniName);
-
-						WritePrivateProfileInt("Firmware", "UseExtFirmware", ((CommonSettings.UseExtFirmware == true) ? 1 : 0), IniName);
-						WritePrivateProfileString("Firmware", "FirmwareFile", CommonSettings.Firmware, IniName);
-						WritePrivateProfileInt("Firmware", "BootFromFirmware", ((CommonSettings.BootFromFirmware == true) ? 1 : 0), IniName);
-
-						if(romloaded)
-						{
-							NDS_Reset();
-						}
+						NDS_Reset();
 					}
 				}
 			case IDCANCEL:
