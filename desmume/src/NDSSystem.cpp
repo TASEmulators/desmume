@@ -759,9 +759,12 @@ int NDS_LoadROM( const char *filename,
 			break;
 		}
 
-	type = ROM_NDS;
-	if ( !strcmp(extROM, ".gba") && !strcmp(extROM2, ".ds")) 
-			type = ROM_DSGBA;
+	if ( !strcmp(extROM, ".nds"))
+		type = ROM_NDS;
+	else if ( !strcmp(extROM, ".gba") && !strcmp(extROM2, ".ds")) 
+		type = ROM_DSGBA;
+	else
+		return -1;
 
 	file = reader->Init(filename);
 	if (!file)
