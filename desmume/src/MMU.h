@@ -48,24 +48,24 @@
 typedef const u8 TWaitState;
 
 struct MMU_struct {
-    //ARM7 mem
-    u8 ARM7_BIOS[0x4000];
-    u8 ARM7_ERAM[0x10000];
-    u8 ARM7_REG[0x10000];
-    u8 ARM7_WIRAM[0x10000];
-        
-	// VRAM mapping
-	u8	VRAM_MAP[4][32];
-	u32	LCD_VRAM_ADDR[10];
-	u8	LCDCenable[10];
+	//ARM7 mem
+	u8 ARM7_BIOS[0x4000];
+	u8 ARM7_ERAM[0x10000];
+	u8 ARM7_REG[0x10000];
+	u8 ARM7_WIRAM[0x10000];
 
-    //Shared ram
-    u8 SWIRAM[0x8000];
-    
-    //Card rom & ram
-    u8 * CART_ROM;
+	// VRAM mapping
+	u8 VRAM_MAP[4][32];
+	u32 LCD_VRAM_ADDR[10];
+	u8 LCDCenable[10];
+
+	//Shared ram
+	u8 SWIRAM[0x8000];
+
+	//Card rom & ram
+	u8 * CART_ROM;
 	u32 CART_ROM_MASK;
-    u8 CART_RAM[0x10000];
+	u8 CART_RAM[0x10000];
 
 	//Unused ram
 	u8 UNUSED_RAM[4];
@@ -74,32 +74,32 @@ struct MMU_struct {
 	//which is accessing offsets 5,6,7 of unused ram due to unaligned accesses
 	//(also since the emulator doesn't prevent unaligned accesses)
 	u8 MORE_UNUSED_RAM[4];
-        
-    static u8 * MMU_MEM[2][256];
-    static u32 MMU_MASK[2][256];
-    
-    u8 ARM9_RW_MODE;
+
+	static u8 * MMU_MEM[2][256];
+	static u32 MMU_MASK[2][256];
+
+	u8 ARM9_RW_MODE;
 
 	static CACHE_ALIGN TWaitState MMU_WAIT16[2][16];
-    static CACHE_ALIGN TWaitState MMU_WAIT32[2][16];
+	static CACHE_ALIGN TWaitState MMU_WAIT32[2][16];
 
-    u32 DTCMRegion;
-    u32 ITCMRegion;
-    
-    u16 timer[2][4];
-    s32 timerMODE[2][4];
-    u32 timerON[2][4];
-    u32 timerRUN[2][4];
-    u16 timerReload[2][4];
-    
-    u32 reg_IME[2];
-    u32 reg_IE[2];
-    u32 reg_IF[2];
-    
-    u32 DMAStartTime[2][4];
-    s32 DMACycle[2][4];
-    u32 DMACrt[2][4];
-    BOOL DMAing[2][4];
+	u32 DTCMRegion;
+	u32 ITCMRegion;
+
+	u16 timer[2][4];
+	s32 timerMODE[2][4];
+	u32 timerON[2][4];
+	u32 timerRUN[2][4];
+	u16 timerReload[2][4];
+
+	u32 reg_IME[2];
+	u32 reg_IE[2];
+	u32 reg_IF[2];
+
+	u32 DMAStartTime[2][4];
+	s32 DMACycle[2][4];
+	u32 DMACrt[2][4];
+	BOOL DMAing[2][4];
 
 	BOOL divRunning;
 	s64 divResult;
@@ -115,14 +115,13 @@ struct MMU_struct {
 	u8 powerMan_CntReg;
 	BOOL powerMan_CntRegWritten;
 	u8 powerMan_Reg[4];
-	  
-    memory_chip_t fw;
-    memory_chip_t bupmem;
-	  
-    nds_dscard	dscard[2];
-	u32			CheckTimers;
-	u32			CheckDMAs;
-		  
+
+	memory_chip_t fw;
+	memory_chip_t bupmem;
+
+	nds_dscard dscard[2];
+	u32 CheckTimers;
+	u32 CheckDMAs;
 };
 
 struct MMU_struct_new
