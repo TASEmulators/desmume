@@ -18,7 +18,6 @@ void AviEnd();
 void WavRecordTo();
 void WavEnd();
 
-extern bool ShowInputDisplay;
 extern bool frameCounterDisplay;
 extern bool FpsDisplay;
 extern bool ShowInputDisplay;
