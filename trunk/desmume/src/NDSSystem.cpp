@@ -759,11 +759,11 @@ int NDS_LoadROM( const char *filename,
 			break;
 		}
 
-	if(!stricmp(extROM, ".zip"))
+	if(!strcasecmp(extROM, ".zip"))
 		type = ROM_NDS;
-	else if ( !stricmp(extROM, ".nds"))
+	else if ( !strcasecmp(extROM, ".nds"))
 		type = ROM_NDS;
-	else if ( !stricmp(extROM, ".gba") && !strcmp(extROM2, ".ds")) 
+	else if ( !strcasecmp(extROM, ".gba") && !strcasecmp(extROM2, ".ds")) 
 		type = ROM_DSGBA;
 	else
 		return -1;
