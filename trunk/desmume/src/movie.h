@@ -194,5 +194,6 @@ void mov_savestate(std::ostream* os);
 bool mov_loadstate(std::istream* is, int size);
 void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size);
 extern bool movie_readonly;
+extern bool ShowInputDisplay;
 void FCEUI_MakeBackupMovie(bool dispMessage);
 #endif

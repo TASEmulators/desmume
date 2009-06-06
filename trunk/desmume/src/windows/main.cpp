@@ -258,7 +258,6 @@ int emu_paused = 0;
 bool frameAdvance = false;
 bool frameCounterDisplay = false;
 bool FpsDisplay = false;
-bool ShowInputDisplay = false;
 bool ShowLagFrameCounter = false;
 bool ShowMicrophone = false;
 bool HudEditorMode = false;
@@ -3843,7 +3842,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 				{
 					int val = 0;
 
-					if((!romloaded) || (val == IDYES))
+					if((romloaded)) //|| (val == IDYES))
 					{
 						HWND cur;
 

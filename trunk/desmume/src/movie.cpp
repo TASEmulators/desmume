@@ -56,6 +56,7 @@ bool movie_readonly = true;
 char curMovieFilename[512] = {0};
 MovieData currMovieData;
 int currRerecordCount;
+bool ShowInputDisplay = false;
 
 //--------------
 
