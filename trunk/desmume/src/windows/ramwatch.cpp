@@ -877,53 +877,70 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 		case WM_NOTIFY:
 		{
-			LPNMHDR lP = (LPNMHDR) lParam;
-			switch (lP->code)
+			switch(wParam)
 			{
-				case LVN_GETDISPINFO:
+				case ID_WATCHES_UPDOWN:
 				{
-					LV_DISPINFO *Item = (LV_DISPINFO *)lParam;
-					Item->item.mask = LVIF_TEXT;
-					Item->item.state = 0;
-					Item->item.iImage = 0;
-					const unsigned int iNum = Item->item.iItem;
-					static char num[11];
-					switch (Item->item.iSubItem)
+					switch(((LPNMUPDOWN)lParam)->hdr.code)
 					{
-						case 0:
-							sprintf(num,"%08X",rswatches[iNum].Address);
-							Item->item.pszText = num;
-							return true;
-						case 1: {
-							int i = rswatches[iNum].CurValue;
-							int t = rswatches[iNum].Type;
-							int size = rswatches[iNum].Size;
-							const char* formatString = ((t=='s') ? "%d" : (t=='u') ? "%u" : (size=='d' ? "%08X" : size=='w' ? "%04X" : "%02X"));
-							switch (size)
-							{
-								case 'b':
-								default: sprintf(num, formatString, t=='s' ? (char)(i&0xff) : (unsigned char)(i&0xff)); break;
-								case 'w': sprintf(num, formatString, t=='s' ? (short)(i&0xffff) : (unsigned short)(i&0xffff)); break;
-								case 'd': sprintf(num, formatString, t=='s' ? (long)(i&0xffffffff) : (unsigned long)(i&0xffffffff)); break;
-							}
-
-							Item->item.pszText = num;
-						}	return true;
-						case 2:
-							Item->item.pszText = rswatches[iNum].comment ? rswatches[iNum].comment : "";
-							return true;
-
-						default:
-							return false;
+						case UDN_DELTAPOS:
+							int delta = ((LPNMUPDOWN)lParam)->iDelta;
+							SendMessage(hDlg, WM_COMMAND, delta<0 ? IDC_C_WATCH_UP : IDC_C_WATCH_DOWN,0);
+							break;
 					}
 				}
-				case LVN_ODFINDITEM:
-				{	
-					// disable search by keyboard typing,
-					// because it interferes with some of the accelerators
-					// and it isn't very useful here anyway
-					SetWindowLong(hDlg, DWL_MSGRESULT, ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST)));
-					return 1;
+
+				default:
+				{
+					LPNMHDR lP = (LPNMHDR) lParam;
+					switch (lP->code)
+					{
+						case LVN_GETDISPINFO:
+						{
+							LV_DISPINFO *Item = (LV_DISPINFO *)lParam;
+							Item->item.mask = LVIF_TEXT;
+							Item->item.state = 0;
+							Item->item.iImage = 0;
+							const unsigned int iNum = Item->item.iItem;
+							static char num[11];
+							switch (Item->item.iSubItem)
+							{
+								case 0:
+									sprintf(num,"%08X",rswatches[iNum].Address);
+									Item->item.pszText = num;
+									return true;
+								case 1: {
+									int i = rswatches[iNum].CurValue;
+									int t = rswatches[iNum].Type;
+									int size = rswatches[iNum].Size;
+									const char* formatString = ((t=='s') ? "%d" : (t=='u') ? "%u" : (size=='d' ? "%08X" : size=='w' ? "%04X" : "%02X"));
+									switch (size)
+									{
+										case 'b':
+										default: sprintf(num, formatString, t=='s' ? (char)(i&0xff) : (unsigned char)(i&0xff)); break;
+										case 'w': sprintf(num, formatString, t=='s' ? (short)(i&0xffff) : (unsigned short)(i&0xffff)); break;
+										case 'd': sprintf(num, formatString, t=='s' ? (long)(i&0xffffffff) : (unsigned long)(i&0xffffffff)); break;
+									}
+
+									Item->item.pszText = num;
+								}	return true;
+								case 2:
+									Item->item.pszText = rswatches[iNum].comment ? rswatches[iNum].comment : "";
+									return true;
+
+								default:
+									return false;
+							}
+						}
+						case LVN_ODFINDITEM:
+						{	
+							// disable search by keyboard typing,
+							// because it interferes with some of the accelerators
+							// and it isn't very useful here anyway
+							SetWindowLong(hDlg, DWL_MSGRESULT, ListView_GetSelectionMark(GetDlgItem(hDlg,IDC_WATCHLIST)));
+							return 1;
+						}
+					}
 				}
 			}
 			break;
@@ -1004,12 +1021,6 @@ LRESULT CALLBACK RamWatchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					ListView_SetItemCount(GetDlgItem(hDlg,IDC_WATCHLIST),WatchCount);
 					RWfileChanged=true;
 					return true;
-				}
-				case ID_WATCHES_UPDOWN:
-				{
-					int delta = ((LPNMUPDOWN)lParam)->iDelta;
-					SendMessage(hDlg, WM_COMMAND, delta<0 ? IDC_C_WATCH_UP : IDC_C_WATCH_DOWN,0);
-					break;
 				}
 				case RAMMENU_FILE_AUTOLOAD:
 				{
