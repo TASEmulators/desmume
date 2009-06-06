@@ -31,6 +31,7 @@
 #include "rtc.h"
 #include "common.h"
 #include "mic.h"
+#include "main.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -522,7 +523,7 @@ static void openRecordingMovie(const char* fname)
 
 			 MMU.ARM7_REG[0x136] |= 0x40;
 		 }
-		 osd->addFixed(mr->touch.x, mr->touch.y, "%s", "X");
+		 //osd->addFixed(mr->touch.x, mr->touch.y, "%s", "X");
 	 }
  }
 
@@ -603,6 +604,13 @@ static void openRecordingMovie(const char* fname)
 
 	 /*extern uint8 joy[4];
 	 memcpy(&cur_input_display,joy,4);*/
+
+	if(nds.isTouch) {
+		if (ShowInputDisplay)
+			osd->addFixed(nds.touchX >> 4, nds.touchY >> 4, "%s %d %d", "X", nds.touchX >> 4, nds.touchY >> 4);
+		else
+			osd->addFixed(nds.touchX >> 4, nds.touchY >> 4, "%s", "X");
+	}
  }
 
 
