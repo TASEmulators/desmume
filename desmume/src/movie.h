@@ -59,7 +59,7 @@ public:
 	//the disk format will support up to 64bit if necessary
 	uint8 commands;
 	bool command_reset() { return (commands&MOVIECMD_RESET)!=0; }
-	bool command_microphone() { return (commands&9)!=0; }
+	bool command_microphone() { return (commands&2)!=0; }
 
 	void toggleBit(int bit)
 	{
@@ -195,5 +195,6 @@ bool mov_loadstate(std::istream* is, int size);
 void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
+extern int MicButtonPressed;
 void FCEUI_MakeBackupMovie(bool dispMessage);
 #endif
