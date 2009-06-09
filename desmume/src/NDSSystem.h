@@ -389,6 +389,14 @@ extern struct TCommonSettings {
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
 	int manualBackupType;
 
+	struct _ShowGpu {
+		_ShowGpu() : main(true), sub(true) {}
+		union {
+			struct { bool main,sub; };
+			bool screens[2];
+		};
+	} showGpu;
+
 } CommonSettings;
 
 extern char ROMserial[20];
