@@ -1510,10 +1510,12 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	if(!drawPending) return;
 
 	drawPending = FALSE;
-	gpu3D->NDS_3D_Render();
+
+	if(CommonSettings.showGpu.main)
+		gpu3D->NDS_3D_Render();
 
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
-	if(gpu3D == &gpu3DNull)
+	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));

@@ -359,11 +359,13 @@ MENU_PRINCIPAL MENU
         MENUITEM SEPARATOR
         POPUP "&View Layers"
         {
+            MENUITEM "Main GPU", IDM_MGPU, CHECKED
             MENUITEM "Main BG 0", IDM_MBG0, CHECKED
             MENUITEM "Main BG 1", IDM_MBG1, CHECKED
             MENUITEM "Main BG 2", IDM_MBG2, CHECKED
             MENUITEM "Main BG 3", IDM_MBG3, CHECKED
             MENUITEM SEPARATOR
+            MENUITEM "Sub GPU", IDM_SGPU, CHECKED
             MENUITEM "Sub BG 0", IDM_SBG0, CHECKED
             MENUITEM "Sub BG 1", IDM_SBG1, CHECKED
             MENUITEM "Sub BG 2", IDM_SBG2, CHECKED

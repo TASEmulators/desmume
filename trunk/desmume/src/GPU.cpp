@@ -3062,6 +3062,14 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		gpu->refreshAffineStartRegs(-1,-1);
 	}
 
+	//blacken the screen if it is turned off by the user
+	if(!CommonSettings.showGpu.screens[gpu->core])
+	{
+		u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
+		memset(dst,0,512);
+		return;
+	}
+
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	gpu->currLine = (u8)l;
 	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);

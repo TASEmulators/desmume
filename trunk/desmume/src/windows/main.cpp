@@ -1639,6 +1639,9 @@ int _main()
 	ShowMicrophone = GetPrivateProfileInt("Display","Display Microphone", 0, IniName);
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
+	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
+	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
+
 	
 	//Get Ram-Watch values
 	RWSaveWindowPos = GetPrivateProfileInt("RamWatch", "SaveWindowPos", 0, IniName);
@@ -2674,6 +2677,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==8) ? MF_CHECKED:MF_UNCHECKED);
 			MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==9) ? MF_CHECKED:MF_UNCHECKED);
 
+			MainWindow->checkMenu(IDM_MGPU, MF_BYCOMMAND | CommonSettings.showGpu.main ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_SGPU, MF_BYCOMMAND | CommonSettings.showGpu.sub ? MF_CHECKED:MF_UNCHECKED);
+
 			//Language selection
 
 			//Save type
@@ -3179,6 +3185,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ViewLights->open();
 			return 0;
 			//========================================================== Tools end
+
+		case IDM_MGPU:
+			CommonSettings.showGpu.main = !CommonSettings.showGpu.main;
+			WritePrivateProfileInt("Display","MainGpu",CommonSettings.showGpu.main?1:0,IniName);
+			return 0;
+
+		case IDM_SGPU:
+			CommonSettings.showGpu.sub = !CommonSettings.showGpu.sub;
+			WritePrivateProfileInt("Display","SubGpu",CommonSettings.showGpu.sub?1:0,IniName);
+			return 0;
 
 		case IDM_MBG0 : 
 			if(MainScreen.gpu->dispBG[0])
