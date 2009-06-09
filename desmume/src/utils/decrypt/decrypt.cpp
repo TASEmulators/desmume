@@ -449,7 +449,7 @@ static void decrypt_arm9(u32 cardheader_gamecode, unsigned char *data)
 }
 
 
-void DecryptSecureArea(u8 *romdata, long romlen)
+bool DecryptSecureArea(u8 *romdata, long romlen)
 {
 	//this looks like it will only work on little endian hosts
 	Header* header = (Header*)romdata;
@@ -464,6 +464,9 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 	unsigned int rounds_offsets = 0x1600;
 	unsigned int sbox_offsets = 0x2800;
 #endif
+
+	if(romType == ROMTYPE_INVALID)
+		return false;
 
 	// check if ROM is already encrypted
 	if (romType == ROMTYPE_NDSDUMPED)
@@ -498,4 +501,6 @@ void DecryptSecureArea(u8 *romdata, long romlen)
 	{
 		printf("File doesn't appear to have a secure area.\n");
 	}
+
+	return true;
 }

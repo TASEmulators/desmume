@@ -1412,8 +1412,9 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	const POLY &poly1 = polylist->list[num1];
 	const POLY &poly2 = polylist->list[num2];
 
-	if (poly1.maxy > poly2.maxy) return true;
-	if (poly1.maxy < poly2.maxy) return false;
+	//this may be verified by checking the game create menus in harvest moon island of happiness
+	if (poly1.maxy > poly2.maxy) return false;
+	if (poly1.maxy < poly2.maxy) return true;
 	if (poly1.miny < poly2.miny) return true;
 	if (poly1.miny > poly2.miny) return false;
 	return false;  //equal should always return false "strict weak ordering"

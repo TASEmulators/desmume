@@ -129,5 +129,6 @@ unsigned short CalcSecureAreaCRC(bool encrypt);
 #define ROMTYPE_NDSDUMPED	2	// decrypted secure area
 #define ROMTYPE_ENCRSECURE	3
 #define ROMTYPE_MASKROM		4	// unknown layout
+#define ROMTYPE_INVALID		5	// rejected; can't be a supported rom
 
 #endif
