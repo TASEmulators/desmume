@@ -766,7 +766,7 @@ int NDS_LoadROM( const char *filename,
 	else if ( !strcasecmp(extROM, ".gba") && !strcasecmp(extROM2, ".ds")) 
 		type = ROM_DSGBA;
 	else
-		return -1;
+		type = ROM_NDS;
 
 	file = reader->Init(filename);
 	if (!file)
@@ -819,8 +819,14 @@ int NDS_LoadROM( const char *filename,
 	//decrypt if necessary..
 	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
 #ifndef WORDS_BIGENDIAN
-	DecryptSecureArea(data,size);
+	bool okRom = DecryptSecureArea(data,size);
+
+	if(!okRom) {
+		printf("Specified file is not a valid rom\n");
+		return -1;
+	}
 #endif
+
 
 	MMU_unsetRom();
 	NDS_SetROM(data, mask);
