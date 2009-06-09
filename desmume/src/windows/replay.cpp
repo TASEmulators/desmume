@@ -160,7 +160,7 @@ void Replay_LoadMovie()
 
 	if(fn)
 	{
-		FCEUI_LoadMovie(fn, movie_readonly, false, 100000);
+		FCEUI_LoadMovie(fn, movie_readonly, false, -1);
 
 		free(fn);
 	}

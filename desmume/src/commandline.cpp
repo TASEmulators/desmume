@@ -39,6 +39,9 @@ CommandLine::~CommandLine()
 	g_option_context_free (ctx);
 }
 
+static const char* _play_movie_file;
+static const char* _record_movie_file;
+
 void CommandLine::loadCommonOptions()
 {
 	//these options should be available in every port.
@@ -47,6 +50,8 @@ void CommandLine::loadCommonOptions()
 	//(you may need to use ifdefs to cause options to be entered in the desired order)
 	static const GOptionEntry options[] = {
 		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savegame from slot NUM", "NUM"},
+		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
+		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},
 		{ NULL }
 	};
 
@@ -62,6 +67,9 @@ bool CommandLine::parse(int argc,char **argv)
 		return false;
 	}
 
+	if(_play_movie_file) play_movie_file = _play_movie_file;
+	if(_record_movie_file) record_movie_file = _record_movie_file;
+
 	if (argc == 2)
 		nds_file = argv[1];
 	if (argc > 2)
@@ -74,6 +82,16 @@ bool CommandLine::validate()
 {
 	if (load_slot < 0 || load_slot > 10) {
 		g_printerr("I only know how to load from slots 1-10, 0 means 'do not load savegame' and is default\n");
+		return false;
+	}
+
+	if(play_movie_file != "" && record_movie_file != "") {
+		g_printerr("Cannot both play and record a movie.\n");
+		return false;
+	}
+
+	if(record_movie_file != "" && load_slot != 0) {
+		g_printerr("Cannot both record a movie and load a savestate.\n");
 		return false;
 	}
 

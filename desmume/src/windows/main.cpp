@@ -1904,6 +1904,20 @@ int _main()
 		}
 	}
 
+	if(cmdline.play_movie_file != "")
+	{
+		FCEUI_LoadMovie(cmdline.play_movie_file.c_str(),true,false,-1);
+	}
+	else if(cmdline.record_movie_file != "")
+	{
+		FCEUI_SaveMovie(cmdline.record_movie_file.c_str(), L"");
+	}
+	
+	if(cmdline.load_slot != 0)
+	{
+		HK_StateLoadSlot(cmdline.load_slot);
+	}
+
 	MainWindow->Show(SW_NORMAL);
 	run();
 	SaveRecentRoms();
