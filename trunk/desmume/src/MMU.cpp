@@ -1302,13 +1302,15 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 	u32 sync_l = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
 	u32 sync_r = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180) & 0xFFFF;
 
-	sync_l = ( sync_l & 0x600F ) | ( val & 0x0F00 );
+	sync_l = ( sync_l & 0x000F ) | ( val & 0x0F00 );
 	sync_r = ( sync_r & 0x6F00 ) | ( (val >> 8) & 0x000F );
+
+	sync_l |= val & 0x6000;
 
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, sync_l);
 	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, sync_r);
 
-	if ((val & 0x2000) && (sync_r & 0x4000))
+	if ((sync_l & 0x2000) && (sync_r & 0x4000))
 		setIF(proc^1, ( 1 << 16 ));
 }
 
