@@ -25,12 +25,14 @@
 
 #include <stdio.h>
 #include "commandline.h"
+#include "types.h"
 
 CommandLine::CommandLine()
 : error(NULL)
 , ctx(g_option_context_new (""))
 {
 	load_slot = 0;
+	arm9_gdb_port = arm7_gdb_port = 0;
 }
 
 CommandLine::~CommandLine()
@@ -52,6 +54,10 @@ void CommandLine::loadCommonOptions()
 		{ "load-slot", 0, 0, G_OPTION_ARG_INT, &load_slot, "Loads savegame from slot NUM", "NUM"},
 		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
 		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},
+		#ifdef GDB_STUB
+		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
+		{ "arm7gdb", 0, 0, G_OPTION_ARG_INT, &arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
+		#endif
 		{ NULL }
 	};
 

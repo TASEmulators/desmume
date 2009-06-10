@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="shift_jis"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
@@ -671,6 +671,14 @@
 					</File>
 					<File
 						RelativePath="..\addons\rumblepak.cpp"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="gdbstub"
+					>
+					<File
+						RelativePath="..\gdbstub\gdbstub.cpp"
 						>
 					</File>
 				</Filter>
