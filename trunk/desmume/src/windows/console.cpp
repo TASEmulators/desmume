@@ -71,6 +71,9 @@ void OpenConsole()
 	//redirect stdio
 	long lStdHandle = (long)hConsole;
 	int hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+	if(hConHandle == -1)
+		return; //this fails from a visual studio command prompt
+	
 	FILE *fp = _fdopen( hConHandle, "w" );
 	*stdout = *fp;
 	//and stderr
