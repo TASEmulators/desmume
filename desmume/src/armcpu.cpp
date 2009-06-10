@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include "types.h"
 #include "arm_instructions.h"
 #include "thumb_instructions.h"
 #include "cp15.h"

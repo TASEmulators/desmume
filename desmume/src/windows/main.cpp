@@ -407,12 +407,12 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-struct configured_features {
-	u16 arm9_gdb_port;
-	u16 arm7_gdb_port;
-
-	const char *cflash_disk_image_file;
-};
+//struct configured_features {
+//	u16 arm9_gdb_port;
+//	u16 arm7_gdb_port;
+//
+//	const char *cflash_disk_image_file;
+//};
 
 int KeyInDelayInCount=10;
 
@@ -487,13 +487,13 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 //	}
 }
 
-static void
-init_configured_features( struct configured_features *config) {
-	config->arm9_gdb_port = 0;
-	config->arm7_gdb_port = 0;
-
-	config->cflash_disk_image_file = NULL;
-}
+//static void
+//init_configured_features( struct configured_features *config) {
+//	config->arm9_gdb_port = 0;
+//	config->arm7_gdb_port = 0;
+//
+//	config->cflash_disk_image_file = NULL;
+//}
 //
 //
 //static int
@@ -1571,7 +1571,7 @@ int _main()
 	struct armcpu_ctrl_iface *arm9_ctrl_iface;
 	struct armcpu_ctrl_iface *arm7_ctrl_iface;
 #endif
-	struct configured_features my_config;
+//	struct configured_features my_config;
 
 	extern bool windows_opengl_init();
 	oglrender_init = windows_opengl_init;
@@ -1614,7 +1614,7 @@ int _main()
 	addonsChangePak(addon_type);
 #endif
 
-	init_configured_features( &my_config);
+	//init_configured_features( &my_config);
 	/*if ( !fill_configured_features( &my_config, lpszArgument)) {
 		MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
 		return 0;
@@ -1757,8 +1757,8 @@ int _main()
 	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
 
 #ifdef GDB_STUB
-	if ( my_config.arm9_gdb_port != 0) {
-		arm9_gdb_stub = createStub_gdb( my_config.arm9_gdb_port,
+	if ( cmdline.arm9_gdb_port != 0) {
+		arm9_gdb_stub = createStub_gdb( cmdline.arm9_gdb_port,
 			&arm9_memio, &arm9_direct_memory_iface);
 
 		if ( arm9_gdb_stub == NULL) {
@@ -1766,8 +1766,8 @@ int _main()
 			return -1;
 		}
 	}
-	if ( my_config.arm7_gdb_port != 0) {
-		arm7_gdb_stub = createStub_gdb( my_config.arm7_gdb_port,
+	if ( cmdline.arm7_gdb_port != 0) {
+		arm7_gdb_stub = createStub_gdb( cmdline.arm7_gdb_port,
 			&arm7_memio,
 			&arm7_base_memory_iface);
 
@@ -1788,10 +1788,10 @@ int _main()
 	* This has to come after the NDS_Init where the cpus are set up.
 	*/
 #ifdef GDB_STUB
-	if ( my_config.arm9_gdb_port != 0) {
+	if ( cmdline.arm9_gdb_port != 0) {
 		activateStub_gdb( arm9_gdb_stub, arm9_ctrl_iface);
 	}
-	if ( my_config.arm7_gdb_port != 0) {
+	if ( cmdline.arm7_gdb_port != 0) {
 		activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
 	}
 #endif

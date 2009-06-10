@@ -400,10 +400,6 @@ fill_configured_features( struct configured_features *config,
                                     "\t\t\t\t  4 = Italian\n"
                                     "\t\t\t\t  5 = Spanish\n",
                                     "LANG"},
-#ifdef GDB_STUB
-    { "arm9gdb", 0, 0, G_OPTION_ARG_INT, &config->arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
-    { "arm7gdb", 0, 0, G_OPTION_ARG_INT, &config->arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
-#endif
     { "cflash", 0, 0, G_OPTION_ARG_FILENAME, &config->cflash_disk_image_file, "Enable disk image GBAMP compact flash emulation", "PATH_TO_DISK_IMAGE"},
 #ifdef HAVE_TIMEOUT
     { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit desmume after the specified seconds for testing purpose.", "SECONDS"},
