@@ -510,6 +510,13 @@ void SPU_struct::KeyOn(int channel)
 	default: break;
 	}
 
+	if(thischan.double_totlength_shifted == 0)
+	{
+		printf("ERROR: Stopping channel %d due to zero length\n",channel);
+		thischan.status = CHANSTAT_STOPPED;
+		int zzz=9;
+	}
+	
 	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 }
 
@@ -599,7 +606,12 @@ void SPU_struct::WriteWord(u32 addr, u16 val)
 		thischan.totlength = thischan.length + thischan.loopstart;
 		thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
 		break;
-
+	case 0xC:
+		WriteLong(addr,((u32)T1ReadWord(MMU.ARM7_REG, addr+2) << 16) | val);
+		break;
+	case 0xE:
+		WriteLong(addr,((u32)T1ReadWord(MMU.ARM7_REG, addr-2)) | ((u32)val<<16));
+		break;
 	}
 }
 
