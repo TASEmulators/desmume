@@ -163,11 +163,11 @@ u8 Mic_ReadSample()
 	u8 ret;
 	u8 tmp;
 	if(MicButtonPressed) {
-		if(SampleLoaded) {  
+		if(SampleLoaded) {
 			//use a sample
 			tmp = samplebuffer[x >> 1];
 			x++;
-			if(x == samplebuffersize*2) 
+			if(x == samplebuffersize*2)
 				x=0;
 		} else {
 			//use the "random" values
@@ -177,9 +177,13 @@ u8 Mic_ReadSample()
 			if(x == ARRAY_SIZE(random)*2)
 				x=0;
 		}
-	} else {
+	} 
+	else {
 		//normal mic behavior
 		tmp = (u8)Mic_Buffer[Mic_PlayBuf][Mic_BufPos >> 1];
+
+		//reset mic button buffer pos if not pressed
+		x=0;
 	}
 
 	if(Mic_BufPos & 0x1)
