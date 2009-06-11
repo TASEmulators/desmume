@@ -1,4 +1,5 @@
 #include <io.h>
+#include <fstream>
 #include "resource.h"
 #include "replay.h"
 #include "common.h"
@@ -24,7 +25,33 @@ inline std::string GetDlgItemText(HWND hDlg, int nIDDlgItem) {
 }
 
 
-char playfilename[MAX_PATH] = "";
+static char playfilename[MAX_PATH] = "";
+
+void Describe(HWND hwndDlg)
+{
+	std::fstream fs (playfilename);
+	MovieData md;
+	LoadFM2(md, &fs, INT_MAX, false);
+	fs.close();
+
+	u32 num_frames = md.records.size();
+
+	u32 div = 60;
+	float tempCount = (num_frames % 60); //Get fraction of a second
+	float getTime = ((tempCount / div) * 100); //Convert to 2 digit number
+	int fraction = getTime; //Convert to 2 digit int
+	int seconds = (num_frames / div) % 60;
+	int minutes = (num_frames/(div*60))%60;
+	int hours = num_frames/(div*60*60);
+	char tmp[256];
+	sprintf(tmp, "%02d:%02d:%02d.%02d", hours, minutes, seconds, fraction);
+
+	SetDlgItemText(hwndDlg,IDC_MLENGTH,tmp);
+	SetDlgItemInt(hwndDlg,IDC_MFRAMES,num_frames,FALSE);
+	SetDlgItemText(hwndDlg, PM_FILENAME, playfilename);
+	SetDlgItemInt(hwndDlg,IDC_MRERECORDCOUNT,md.rerecordCount,FALSE);
+	SetDlgItemText(hwndDlg,IDC_MROM,md.romSerial.c_str());
+}
 
 //Replay movie dialog
 BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -62,7 +89,7 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 				ofn.lpstrDefExt = "dsm";
 				GetOpenFileName(&ofn);
 				strcpy(playfilename, filename);
-				SetDlgItemText(hwndDlg, PM_FILENAME, playfilename);
+				Describe(hwndDlg);
 				return true;
 		
 			case IDC_CHECK_READONLY:

@@ -267,6 +267,16 @@ NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config);
 
 BOOL NDS_SetROM(u8 * rom, u32 mask);
 NDS_header * NDS_getROMHeader(void);
+
+struct GameInfo
+{
+	u32 crc;
+	NDS_header header;
+	char ROMserial[20];
+	void populate();
+};
+
+extern GameInfo gameInfo;
  
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
@@ -398,9 +408,6 @@ extern struct TCommonSettings {
 	} showGpu;
 
 } CommonSettings;
-
-extern char ROMserial[20];
-
 
 
 extern std::string InputDisplayString;

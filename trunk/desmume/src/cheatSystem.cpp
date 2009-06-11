@@ -562,7 +562,7 @@ BOOL cheatsSave()
 	if (fcheat)
 	{
 		fprintf(fcheat, "; DeSmuME cheat file. VERSION %i.%03i\n", CHEAT_VERSION_MAJOR, CHEAT_VERSION_MINOR);
-		fprintf(fcheat, "Name=%s\n", ROMserial);
+		fprintf(fcheat, "Name=%s\n", gameInfo.ROMserial);
 		fputs("; cheats list\n", fcheat);
 		for (int i = 0;  i < cheatsNum; i++)
 		{

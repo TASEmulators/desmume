@@ -89,9 +89,6 @@ public:
 
 	void clear();
 	
-	//a waste of memory in lots of cases..  maybe make it a pointer later?
-	//std::vector<char> savestate;
-
 	void parse(MovieData* md, std::istream* is);
 	bool parseBinary(MovieData* md, std::istream* is);
 	void dump(MovieData* md, std::ostream* os, int index);
@@ -116,7 +113,8 @@ public:
 	int emuVersion;
 	//todo - somehow force mutual exclusion for poweron and reset (with an error in the parser)
 	
-	MD5DATA romChecksum;
+	u32 romChecksum;
+	std::string romSerial;
 	std::string romFilename;
 	std::vector<char> savestate;
 	std::vector<MovieRecord> records;
@@ -193,6 +191,7 @@ void NDS_setTouchFromMovie(void);
 void mov_savestate(std::ostream* os);
 bool mov_loadstate(std::istream* is, int size);
 void LoadFM2_binarychunk(MovieData& movieData, std::istream* fp, int size);
+bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHeader);
 extern bool movie_readonly;
 extern bool ShowInputDisplay;
 extern int MicButtonPressed;
