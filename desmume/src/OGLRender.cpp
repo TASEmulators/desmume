@@ -329,11 +329,18 @@ static void createShaders()
 
 //=================================================
 
-
 static void OGLReset()
 {
+	if(hasShaders)
+	{
+		glUniform1i(hasTexLoc, 0);
+		hasTexture = false;
+		glUniform1i(texBlendLoc, 0);
+		
+	}
+
 	TexCache_Reset();
-	
+
 	for (int i = 0; i < MAX_TEXTURE; i++)
 		texcache[i].id=oglTempTextureID[i];
 
@@ -362,6 +369,10 @@ static void BindTextureData(u32 tx, u8* data)
 {
 	BindTexture(tx);
 
+#if 0
+	for (int i=0; i < texcache[tx].sizeX * texcache[tx].sizeY*4; i++)
+		data[i] = 0xFF;
+#endif
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
 		texcache[tx].sizeX, texcache[tx].sizeY, 0, 
 		GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -370,7 +381,7 @@ static void BindTextureData(u32 tx, u8* data)
 
 static char OGLInit(void)
 {
-	GLuint loc;
+	GLuint loc = 0;
 
 	if(!oglrender_init)
 		return 0;
@@ -382,6 +393,7 @@ static char OGLInit(void)
 
 	TexCache_BindTexture = BindTexture;
 	TexCache_BindTextureData = BindTextureData;
+	glGenTextures (MAX_TEXTURE, &oglTempTextureID[0]);
 
 	glPixelStorei(GL_PACK_ALIGNMENT,8);
 
@@ -392,8 +404,6 @@ static char OGLInit(void)
 
 	glAlphaFunc		(GL_GREATER, 0);
 	xglEnable		(GL_ALPHA_TEST);
-
-	glGenTextures (MAX_TEXTURE, &oglTempTextureID[0]);
 
 	glViewport(0, 0, 256, 192);
 	if (glGetError() != GL_NO_ERROR)
@@ -432,7 +442,7 @@ static char OGLInit(void)
 
 	/* Create the shaders */
 	createShaders();
-	
+
 	/* Assign the texture units : 0 for main textures, 1 for toon table */
 	/* Also init the locations for some variables in the shaders */
 	if(hasShaders)
@@ -444,10 +454,8 @@ static char OGLInit(void)
 		glUniform1i(loc, 1);
 
 		hasTexLoc = glGetUniformLocation(shaderProgram, "hasTexture");
-		glUniform1i(hasTexLoc, 1);
 
 		texBlendLoc = glGetUniformLocation(shaderProgram, "texBlending");
-		glUniform1i(texBlendLoc, 0);
 	}
 
 	//we want to use alpha destination blending so we can track the last-rendered alpha value
