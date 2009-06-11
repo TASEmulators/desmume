@@ -397,12 +397,13 @@ u8 BackupDevice::data_command(u8 val)
 				addr |= val;
 				addr_counter++;
 				//if(addr_counter==addr_size) printf("ADR: %08X\n",addr);
-				//why does tomb raider underworld access 0x180 and go clear through to 0x280?
-				//should this wrap around at 0 or at 0x100?
-				//if(addr_size == 1) addr &= 0x1FF; 
 			}
 			else
 			{
+				//why does tomb raider underworld access 0x180 and go clear through to 0x280?
+				//should this wrap around at 0 or at 0x100?
+				if(addr_size == 1) addr &= 0x1FF; 
+
 				//address is complete
 				ensure(addr+1);
 				if(com == BM_CMD_READLOW)
