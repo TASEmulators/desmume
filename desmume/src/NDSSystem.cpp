@@ -58,7 +58,8 @@ static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
 char pathToROM[MAX_PATH];
 char pathFilenameToROMwithoutExt[MAX_PATH];
-char ROMserial[20];
+
+GameInfo gameInfo;
 
 /* the count of bytes copied from the firmware into memory */
 #define NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT 0x70
@@ -672,11 +673,12 @@ static u32 ones32(u32 x)
 }
 #endif
 
-static void NDS_SetROMSerial()
+void GameInfo::populate()
 {
-	NDS_header * header;
+	NDS_header * _header = NDS_getROMHeader();
+	header = *_header;
+	delete _header;
 
-	header = NDS_getROMHeader();
 	if (
 		// ??? in all Homebrews game title have is 2E0000EA
 		//(
@@ -686,15 +688,15 @@ static void NDS_SetROMSerial()
 		//(header->gameTile[3] == 0xEA)
 		//) &&
 		(
-			((header->gameCode[0] == 0x23) && 
-			(header->gameCode[1] == 0x23) && 
-			(header->gameCode[2] == 0x23) && 
-			(header->gameCode[3] == 0x23)
+			((header.gameCode[0] == 0x23) && 
+			(header.gameCode[1] == 0x23) && 
+			(header.gameCode[2] == 0x23) && 
+			(header.gameCode[3] == 0x23)
 			) || 
-			(header->gameCode[0] == 0x00) 
+			(header.gameCode[0] == 0x00) 
 		)
 		&&
-			header->makerCode == 0x0
+			header.makerCode == 0x0
 		)
 	{
 		memset(ROMserial, 0, sizeof(ROMserial));
@@ -703,13 +705,11 @@ static void NDS_SetROMSerial()
 	else
 	{
 		memset(ROMserial, '_', sizeof(ROMserial));
-		memcpy(ROMserial, header->gameTile, strlen(header->gameTile) < 12 ? strlen(header->gameTile) : 12);
-		memcpy(ROMserial+12+1, header->gameCode, 4);
-		memcpy(ROMserial+12+1+4, &header->makerCode, 2);
+		memcpy(ROMserial, header.gameTile, strlen(header.gameTile) < 12 ? strlen(header.gameTile) : 12);
+		memcpy(ROMserial+12+1, header.gameCode, 4);
+		memcpy(ROMserial+12+1+4, &header.makerCode, 2);
 		memset(ROMserial+19, '\0', 1);
 	}
-	delete header;
-	INFO("\nROM serial: %s\n", ROMserial);
 }
 
 #ifdef EXPERIMENTAL_GBASLOT
@@ -849,11 +849,10 @@ int NDS_LoadROM( const char *filename,
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheatsInit(buf);
 
-	NDS_SetROMSerial();
-	
-	uLong crc = crc32(0,data,size);
-	INFO("\nROM crc: %08X\n\n", crc);
-
+	gameInfo.populate();
+	gameInfo.crc = crc32(0,data,size);
+	INFO("\nROM crc: %08X\n\n", gameInfo.crc);
+	INFO("\nROM serial: %s\n", gameInfo.ROMserial);
 
 	return ret;
 }

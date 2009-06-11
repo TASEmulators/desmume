@@ -192,6 +192,13 @@ private:
 	unsigned char data[256];
 } Base64Table;
 
+std::string u32ToHexString(u32 val)
+{
+	char temp[16];
+	sprintf(temp,"%08X",val);
+	return temp;
+}
+
 ///Converts the provided data to a string in a standard, user-friendly, round-trippable format
 std::string BytesToString(const void* data, int len)
 {

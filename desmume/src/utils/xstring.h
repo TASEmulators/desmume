@@ -30,6 +30,7 @@ int str_replace(char *str, char *search, char *replace);
 
 int HexStringToBytesLength(const std::string& str);
 int Base64StringToBytesLength(const std::string& str);
+std::string u32ToHexString(u32 val);
 std::string BytesToString(const void* data, int len);
 bool StringToBytes(const std::string& str, void* data, int len);
 

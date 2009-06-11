@@ -241,8 +241,8 @@ char *md5_asciistr(MD5DATA& md5)
 
  for(x=0;x<16;x++)
  {
-  str[x*2]=trans[digest[x]&0x0F];
-  str[x*2+1]=trans[digest[x]>>4];
+  str[x*2]=trans[digest[x]>>4];
+  str[x*2+1]=trans[digest[x]&0x0F];
  }
  return(str);
 }

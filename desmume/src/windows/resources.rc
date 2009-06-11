@@ -3527,13 +3527,13 @@ FONT 8, "MS Shell Dlg", 0, 0, 0
     PUSHBUTTON      "Browse...", ID_BROWSE, 224, 12, 50, 14, BS_PUSHBUTTON
     EDITTEXT        PM_FILENAME, 35, 12, 184, 14, ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "Length:", IDC_STATIC, 38, 70, 25, 8, SS_LEFT
-    LTEXT           "Static", IDC_MLENGTH, 68, 70, 19, 8, SS_LEFT
+    LTEXT           "Static", IDC_MLENGTH, 68, 70, 60, 8, SS_LEFT
     LTEXT           "Frames:", IDC_STATIC, 37, 81, 26, 8, SS_LEFT
     LTEXT           "Static", IDC_MFRAMES, 68, 81, 19, 8, SS_LEFT
     LTEXT           "Rerecord Count:", IDC_STATIC, 10, 91, 53, 8, SS_LEFT
     LTEXT           "Static", IDC_MRERECORDCOUNT, 68, 92, 19, 8, SS_LEFT
     LTEXT           "ROM Used:", IDC_STATIC, 24, 102, 38, 8, SS_LEFT
-    LTEXT           "Static", IDC_MROM, 67, 103, 19, 8, SS_LEFT
+    LTEXT           "Static", IDC_MROM, 67, 103, 100, 8, SS_LEFT
 }
 
 

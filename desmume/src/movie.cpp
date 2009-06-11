@@ -167,9 +167,8 @@ MovieData::MovieData()
 	, emuVersion(DESMUME_VERSION_NUMERIC)
 	, rerecordCount(1)
 	, binaryFlag(false)
-	//, greenZoneCount(0)
+	, romChecksum(0)
 {
-	memset(&romChecksum,0,sizeof(MD5DATA));
 }
 
 void MovieData::truncateAt(int frame)
@@ -191,6 +190,8 @@ void MovieData::installValue(std::string& key, std::string& val)
 		romFilename = val;
 	else if(key == "romChecksum")
 		StringToBytes(val,&romChecksum,MD5DATA::size);
+	else if(key == "romSerial")
+		romSerial = val;
 	else if(key == "guid")
 		guid = Desmume_Guid::fromString(val);
 	else if(key == "comment")
@@ -217,7 +218,8 @@ int MovieData::dump(std::ostream *os, bool binary)
 	*os << "emuVersion " << emuVersion << endl;
 	*os << "rerecordCount " << rerecordCount << endl;
 	*os << "romFilename " << romFilename << endl;
-	*os << "romChecksum " << BytesToString(romChecksum.data,MD5DATA::size) << endl;
+	*os << "romChecksum " << u32ToHexString(gameInfo.crc) << endl;
+	*os << "romSerial " << romSerial << endl;
 	*os << "guid " << guid.toString() << endl;
 
 	for(uint32 i=0;i<comments.size();i++)
@@ -244,7 +246,7 @@ int MovieData::dump(std::ostream *os, bool binary)
 }
 
 //yuck... another custom text parser.
-static bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHeader)
+bool LoadFM2(MovieData& movieData, std::istream* fp, int size, bool stopAfterHeader)
 {
 	//TODO - start with something different. like 'desmume movie version 1"
 	std::ios::pos_type curr = fp->tellg();
@@ -478,7 +480,8 @@ static void openRecordingMovie(const char* fname)
 	currMovieData.guid.newGuid();
 
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
-	//currMovieData.romChecksum = GameInfo->MD5;
+	currMovieData.romChecksum = gameInfo.crc;
+	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = GetRomName();
 	
 	extern bool _HACK_DONT_STOPMOVIE;
