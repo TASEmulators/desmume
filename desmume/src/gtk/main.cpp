@@ -237,9 +237,9 @@ static const GtkActionEntry action_entries[] = {
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
-	  { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
-	  { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
-	  { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
+      { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
+      { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
+      { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
       { "SavestateMenu", NULL, "_Save state" },
       { "LoadstateMenu", NULL, "_Load state" },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
@@ -700,9 +700,7 @@ static void RecordMovieDialog()
     switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-
-		FCEUI_SaveMovie(sPath,L"");
-
+        FCEUI_SaveMovie(sPath,L"");
         g_free(sPath);
         break;
     default:
@@ -1899,8 +1897,7 @@ common_gtk_main( struct configured_features *my_config)
     /* Command line arg */
     if( my_config->nds_file != "") {
         if(Open( my_config->nds_file.c_str(), bad_glob_cflash_disk_image_file) >= 0) {
-
-			my_config->process_movieCommands();
+            my_config->process_movieCommands();
 
             if(my_config->load_slot){
               loadstate_slot(my_config->load_slot);
