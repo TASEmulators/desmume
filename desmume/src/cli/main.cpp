@@ -641,9 +641,49 @@ Draw( void) {
   return;
 }
 
+static void desmume_cycle(int *sdl_quit)
+{
+    static unsigned short keypad;
+    SDL_Event event;
+
+    /* Look for queued events and update keypad status */
+    /* IMPORTANT: Reenable joystick events iif needed. */
+    if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
+      SDL_JoystickEventState(SDL_ENABLE);
+
+    /* There's an event waiting to be processed? */
+    while ( !*sdl_quit && SDL_PollEvent(&event))
+      {
+        process_ctrls_event( event, &keypad, nds_screen_size_ratio);
+
+        switch (event.type)
+        {
+#ifdef INCLUDE_OPENGL_2D
+          case SDL_VIDEORESIZE:
+            resizeWindow( event.resize.w, event.resize.h);
+            break;
+#endif
+
+          case SDL_QUIT:
+            *sdl_quit = 1;
+            break;
+        }
+      }
+
+    /* Update mouse position and click */
+    if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
+    if(mouse.click)
+      { 
+        NDS_releaseTouch();
+        mouse.click = FALSE;
+      }
+
+    update_keypad(keypad);     /* Update keypad */
+    NDS_exec<false>();
+    SPU_Emulate_user();
+}
 
 int main(int argc, char ** argv) {
-  static unsigned short keypad = 0;
   struct my_config my_config;
 #ifdef GDB_STUB
   gdbstub_handle_t arm9_gdb_stub;
@@ -863,23 +903,7 @@ int main(int argc, char ** argv) {
   }
 
   while(!sdl_quit) {
-    /* Look for queued events and update keypad status */
-#ifdef INCLUDE_OPENGL_2D
-    sdl_quit = process_ctrls_events( &keypad, resizeWindow, nds_screen_size_ratio);
-#else
-    sdl_quit = process_ctrls_events( &keypad, NULL, nds_screen_size_ratio);
-#endif
-    /* Update mouse position and click */
-    if(mouse.down) NDS_setTouchPos(mouse.x, mouse.y);
-    if(mouse.click)
-      { 
-        NDS_releaseTouch();
-        mouse.click = FALSE;
-      }
-
-    update_keypad(keypad);     /* Update keypad */
-    NDS_exec<false>();
-    SPU_Emulate_user();
+    desmume_cycle(&sdl_quit);
 
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
@@ -889,11 +913,9 @@ int main(int argc, char ** argv) {
 #endif
       Draw();
 
-    /* FIXME: this may introduce some lag for input */
     for ( int i = 0; i < my_config.frameskip; i++ ) {
         NDS_SkipNextFrame();
-        NDS_exec<false>();
-        SPU_Emulate_user();
+        desmume_cycle(&sdl_quit);
     }
 
     if ( !my_config.disable_limiter) {
