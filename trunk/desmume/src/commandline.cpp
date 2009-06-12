@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "commandline.h"
 #include "types.h"
+#include "movie.h"
 
 CommandLine::CommandLine()
 : error(NULL)
@@ -111,7 +112,14 @@ void CommandLine::errorHelp(const char* binName)
 	g_printerr("USAGE: %s --help    - for help\n", binName);
 }
 
-void foo()
+void CommandLine::process_movieCommands()
 {
-	g_option_context_free(NULL);
+	if(play_movie_file != "")
+	{
+		FCEUI_LoadMovie(play_movie_file.c_str(),true,false,-1);
+	}
+	else if(record_movie_file != "")
+	{
+		FCEUI_SaveMovie(record_movie_file.c_str(), L"");
+	}
 }

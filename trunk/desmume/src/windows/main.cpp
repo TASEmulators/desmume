@@ -1,4 +1,4 @@
-/*  aviout.cpp
+/*  main.cpp
 
 	Copyright 2006 Theo Berkau
     Copyright (C) 2006-2009 DeSmuME team
@@ -1511,7 +1511,7 @@ static void ExitRunLoop()
 	emu_halt();
 }
 
-class WinDriver : public Driver
+class WinDriver : public BaseDriver
 {
 	virtual bool WIFI_Host_InitSystem() {
 		#ifdef EXPERIMENTAL_WIFI
@@ -1904,14 +1904,7 @@ int _main()
 		}
 	}
 
-	if(cmdline.play_movie_file != "")
-	{
-		FCEUI_LoadMovie(cmdline.play_movie_file.c_str(),true,false,-1);
-	}
-	else if(cmdline.record_movie_file != "")
-	{
-		FCEUI_SaveMovie(cmdline.record_movie_file.c_str(), L"");
-	}
+	cmdline.process_movieCommands();
 	
 	if(cmdline.load_slot != 0)
 	{

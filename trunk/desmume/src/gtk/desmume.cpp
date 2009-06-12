@@ -25,6 +25,7 @@
 #include "sndsdl.h"
 #include "ctrlssdl.h"
 #include "desmume.h"
+#include "movie.h"
 
 volatile BOOL execute = FALSE;
 BOOL click = FALSE;
@@ -84,7 +85,9 @@ void desmume_cycle( void)
   /* Update keypad value */
   update_keypad(keypad);
 
+  FCEUMOV_AddInputState();
   NDS_exec<false>();
   SPU_Emulate_user();
+  currFrameCounter++; //this needs to be moved into NDS_exec somehow
 }
  

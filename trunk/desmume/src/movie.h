@@ -183,8 +183,8 @@ extern EMOVIEMODE movieMode;		//adelikat: main needs this for frame counter disp
 extern MovieData currMovieData;		//adelikat: main needs this for frame counter display
 
 bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
-void FCEUI_SaveMovie(const char *fname, std::wstring author);
-void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe);
+void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author);
+void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe);
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();
 void NDS_setTouchFromMovie(void);

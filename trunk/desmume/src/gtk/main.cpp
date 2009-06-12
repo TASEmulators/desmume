@@ -1,4 +1,4 @@
-/* main.c - this file is part of DeSmuME
+/* main.cpp - this file is part of DeSmuME
  *
  * Copyright (C) 2006-2009 DeSmuME Team
  * Copyright (C) 2007 Pascal Giard (evilynux)
@@ -42,6 +42,7 @@
 #include "rasterize.h"
 #include "saves.h"
 #include "mic.h"
+#include "movie.h"
 #include "dTool.h"
 #include "desmume_config.h"
 
@@ -91,6 +92,9 @@ enum {
 
 gboolean EmuLoop(gpointer data);
 
+static void RecordMovieDialog();
+static void PlayMovieDialog();
+static void StopMovie();
 static void OpenNdsDialog();
 static void SaveStateDialog();
 static void LoadStateDialog();
@@ -121,6 +125,9 @@ static const char *ui_description =
 "      <menuitem action='open'/>"
 "      <menuitem action='savestateto'/>"
 "      <menuitem action='loadstatefrom'/>"
+"      <menuitem action='recordmovie'/>"
+"      <menuitem action='playmovie'/>"
+"      <menuitem action='stopmovie'/>"
 "      <menu action='SavestateMenu'>"
 "        <menuitem action='savestate1'/>"
 "        <menuitem action='savestate2'/>"
@@ -230,6 +237,9 @@ static const GtkActionEntry action_entries[] = {
       { "open",          "gtk-open",    "_Open",         "<Ctrl>o",  NULL,   OpenNdsDialog },
       { "savestateto",    NULL,         "Save state _to ...",         NULL,  NULL,   SaveStateDialog },
       { "loadstatefrom",  NULL,         "Load state _from ...",         NULL,  NULL,   LoadStateDialog },
+	  { "recordmovie",  NULL,         "Record movie _to ...",         NULL,  NULL,   RecordMovieDialog },
+	  { "playmovie",  NULL,         "Play movie _from ...",         NULL,  NULL,   PlayMovieDialog },
+	  { "stopmovie",  NULL,         "Stop movie", NULL,  NULL,   StopMovie },
       { "SavestateMenu", NULL, "_Save state" },
       { "LoadstateMenu", NULL, "_Load state" },
 #ifdef DESMUME_GTK_FIRMWARE_BROKEN
@@ -642,6 +652,111 @@ static void LoadStateDialog()
         } else {
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
         }
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void RecordMovieDialog()
+{
+ GtkFileFilter *pFilter_dsm, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_dsm = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
+    gtk_file_filter_set_name(pFilter_dsm, "DeSmuME movie file (.dsm*)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Save Movie To ...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_SAVE,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+		FCEUI_SaveMovie(sPath,L"");
+
+        g_free(sPath);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_destroy(pFileSelection);
+}
+
+static void StopMovie()
+{
+	FCEUI_StopMovie();
+}
+
+static void PlayMovieDialog()
+{
+   GtkFileFilter *pFilter_dsm, *pFilter_any;
+    GtkWidget *pFileSelection;
+    GtkWidget *pParent;
+    gchar *sPath;
+
+    if (desmume_running())
+        Pause();
+
+    pParent = GTK_WIDGET(pWindow);
+
+    pFilter_dsm = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_dsm, "*.dsm*");
+    gtk_file_filter_set_name(pFilter_dsm, "DeSmuME movie file (.dsm*)");
+
+    pFilter_any = gtk_file_filter_new();
+    gtk_file_filter_add_pattern(pFilter_any, "*");
+    gtk_file_filter_set_name(pFilter_any, "All files");
+
+    /* Creating the selection window */
+    pFileSelection = gtk_file_chooser_dialog_new("Play movie from...",
+            GTK_WINDOW(pParent),
+            GTK_FILE_CHOOSER_ACTION_OPEN,
+            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+            GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+            NULL);
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER (pFileSelection), TRUE);
+
+    /* Only the dialog window is accepting events: */
+    gtk_window_set_modal(GTK_WINDOW(pFileSelection), TRUE);
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_dsm);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(pFileSelection), pFilter_any);
+
+    /* Showing the window */
+    switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
+    case GTK_RESPONSE_OK:
+        sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
+
+		FCEUI_LoadMovie(sPath,true,false,-1);
 
         g_free(sPath);
         break;
@@ -1784,6 +1899,9 @@ common_gtk_main( struct configured_features *my_config)
     /* Command line arg */
     if( my_config->nds_file != "") {
         if(Open( my_config->nds_file.c_str(), bad_glob_cflash_disk_image_file) >= 0) {
+
+			my_config->process_movieCommands();
+
             if(my_config->load_slot){
               loadstate_slot(my_config->load_slot);
             }
@@ -1841,8 +1959,7 @@ common_gtk_main( struct configured_features *my_config)
 }
 
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   configured_features my_config;
 

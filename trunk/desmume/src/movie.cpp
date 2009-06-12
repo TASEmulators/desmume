@@ -388,7 +388,7 @@ void FCEUI_StopMovie()
 
 
 //begin playing an existing movie
-void FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
+void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe)
 {
 	//if(!tasedit && !FCEU_IsValidUI(FCEUI_PLAYMOVIE))
 	//	return;
@@ -462,7 +462,7 @@ static void openRecordingMovie(const char* fname)
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
- void FCEUI_SaveMovie(const char *fname, std::wstring author)
+ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -534,11 +534,6 @@ static void openRecordingMovie(const char* fname)
  //either dumps the current joystick state or loads one state from the movie
  void FCEUMOV_AddInputState()
  {
-	 //todo - for tasedit, either dump or load depending on whether input recording is enabled
-	 //or something like that
-	 //(input recording is just like standard read+write movie recording with input taken from gamepad)
-	 //otherwise, it will come from the tasedit data.
-
 	 if(movieMode == MOVIEMODE_PLAY)
 	 {
 		 //stop when we run out of frames
