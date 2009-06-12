@@ -134,6 +134,7 @@ struct my_config {
   int opengl_2d;
   int soft_colour_convert;
 #endif
+  int auto_pause;
   int disable_limiter;
   int frameskip;
   int fps_limiter_frame_period;
@@ -153,6 +154,7 @@ init_config( struct my_config *config) {
 
   config->disable_sound = 0;
 
+  config->auto_pause = 0;
   config->disable_limiter = 0;
   config->frameskip = 0;
   config->fps_limiter_frame_period = FPS_LIMITER_FRAME_PERIOD;
@@ -186,6 +188,7 @@ fill_config( struct my_config *config,
       printf( "USAGE: %s [options] <nds-file>\n", argv[0]);
       printf( "OPTIONS:\n");
       printf( "   --load-slot=NUM     Loads savegame from slot NUM\n");
+      printf( "   --auto-pause        Pause emulation of focus is lost.\n");
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
       printf( "   --frameskip=N       Set frameskip to N\n");
@@ -249,6 +252,9 @@ fill_config( struct my_config *config,
       config->soft_colour_convert = 1;
     }
 #endif
+    else if ( strcmp( argv[i], "--auto-pause") == 0) {
+      config->auto_pause = 1;
+    }
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
     }
@@ -641,9 +647,10 @@ Draw( void) {
   return;
 }
 
-static void desmume_cycle(int *sdl_quit)
+static void desmume_cycle(int *sdl_quit, struct my_config * my_config)
 {
     static unsigned short keypad;
+    static int focused = 1;
     SDL_Event event;
 
     /* Look for queued events and update keypad status */
@@ -652,7 +659,8 @@ static void desmume_cycle(int *sdl_quit)
       SDL_JoystickEventState(SDL_ENABLE);
 
     /* There's an event waiting to be processed? */
-    while ( !*sdl_quit && SDL_PollEvent(&event))
+    while ( !*sdl_quit &&
+        (SDL_PollEvent(&event) || (!focused && SDL_WaitEvent(&event))))
       {
         process_ctrls_event( event, &keypad, nds_screen_size_ratio);
 
@@ -663,7 +671,22 @@ static void desmume_cycle(int *sdl_quit)
             resizeWindow( event.resize.w, event.resize.h);
             break;
 #endif
-
+          case SDL_ACTIVEEVENT:
+            if (my_config->auto_pause && (event.active.state & SDL_APPINPUTFOCUS ))
+            {
+              if (event.active.gain)
+              {
+                focused = 1;
+                SPU_Pause(0);
+              }
+              else
+              {
+                focused = 0;
+                SPU_Pause(1);
+              }
+            }
+            break;
+ 
           case SDL_QUIT:
             *sdl_quit = 1;
             break;
@@ -903,7 +926,7 @@ int main(int argc, char ** argv) {
   }
 
   while(!sdl_quit) {
-    desmume_cycle(&sdl_quit);
+    desmume_cycle(&sdl_quit, &my_config);
 
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
@@ -915,7 +938,7 @@ int main(int argc, char ** argv) {
 
     for ( int i = 0; i < my_config.frameskip; i++ ) {
         NDS_SkipNextFrame();
-        desmume_cycle(&sdl_quit);
+        desmume_cycle(&sdl_quit, &my_config);
     }
 
     if ( !my_config.disable_limiter) {
