@@ -686,6 +686,17 @@ static void desmume_cycle(int *sdl_quit, struct my_config * my_config)
               }
             }
             break;
+
+          case SDL_KEYUP:
+            switch (event.key.keysym.sym)
+            {
+              case SDLK_ESCAPE:
+                *sdl_quit = 1;
+                break;
+              default:
+                break;
+            }
+            break;
  
           case SDL_QUIT:
             *sdl_quit = 1;
