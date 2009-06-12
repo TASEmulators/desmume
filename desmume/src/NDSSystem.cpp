@@ -50,8 +50,8 @@
 //#define USE_REAL_BIOS
 
 TCommonSettings CommonSettings;
-static Driver _stub_driver;
-Driver* driver = &_stub_driver;
+static BaseDriver _stub_driver;
+BaseDriver* driver = &_stub_driver;
 std::string InputDisplayString;
 
 static BOOL LidClosed = FALSE;

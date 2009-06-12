@@ -49,6 +49,9 @@ public:
 
 	//validate the common commandline options
 	bool validate();
+
+	//process movie play/record commands
+	void process_movieCommands();
 	
 	//print a little help message for cases when erroneous commandlines are entered
 	void errorHelp(const char* binName);

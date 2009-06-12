@@ -27,9 +27,8 @@
 #include "debug.h"
 #include <stdio.h>
 
-//this should be moved to a driver.h later, but for now, here they are.
 //each platform needs to implement this, although it doesnt need to implement any functions
-class Driver {
+class BaseDriver {
 public:
 	virtual bool WIFI_Host_InitSystem() { return FALSE; }
 	virtual void WIFI_Host_ShutdownSystem() {}
@@ -38,6 +37,6 @@ public:
 	virtual void USR_InfoMessage(const char *message) { LOG("%s\n", message); }
 	virtual void AVI_SoundUpdate(void* soundData, int soundLen) {}
 };
-extern Driver* driver;
+extern BaseDriver* driver;
 
 #endif //_DRIVER_H_

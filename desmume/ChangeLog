@@ -37,6 +37,7 @@ Gtk frontend:
  enh: switch all of menu/toolbar system to GtkAction + GtkUIManager
  enh: remove the gtglext 3d code
  enh: improve/speedup screen resize and final presentation logic in gtk frontend
+ enh: minimal rerecording hookups
 
 0.9.1 -> 0.9.2
 General/Core:

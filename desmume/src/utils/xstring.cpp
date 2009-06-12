@@ -589,7 +589,7 @@ namespace UtfConverter
         }
         else if (sizeof(wchar_t) == 4)
         {
-            wchar_t* widestringnative = new wchar_t[widesize];
+            wchar_t* widestringnative = new wchar_t[widesize+1];
             const UTF8* sourcestart = reinterpret_cast<const UTF8*>(utf8string.c_str());
             const UTF8* sourceend = sourcestart + widesize;
             UTF32* targetstart = reinterpret_cast<UTF32*>(widestringnative);
