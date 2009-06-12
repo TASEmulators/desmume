@@ -135,6 +135,8 @@ struct my_config {
   int soft_colour_convert;
 #endif
   int disable_limiter;
+  int frameskip;
+  int fps_limiter_frame_period;
 
   int firmware_language;
 
@@ -152,6 +154,8 @@ init_config( struct my_config *config) {
   config->disable_sound = 0;
 
   config->disable_limiter = 0;
+  config->frameskip = 0;
+  config->fps_limiter_frame_period = FPS_LIMITER_FRAME_PERIOD;
 
   config->nds_file = NULL;
 
@@ -184,6 +188,8 @@ fill_config( struct my_config *config,
       printf( "   --load-slot=NUM     Loads savegame from slot NUM\n");
       printf( "   --disable-sound     Disables the sound emulation\n");
       printf( "   --disable-limiter   Disables the 60 fps limiter\n");
+      printf( "   --frameskip=N       Set frameskip to N\n");
+      printf( "   --limiter-period=N  Set frame period of the fps limiter to N (default: %d)\n", FPS_LIMITER_FRAME_PERIOD);
       printf( "   --3d-engine=ENGINE  Select 3d rendering engine, available ENGINES:\n");
       printf( "                         0 = 3d disabled\n");
       printf( "                         1 = internal desmume software rasterizer (default)\n");
@@ -245,6 +251,30 @@ fill_config( struct my_config *config,
 #endif
     else if ( strcmp( argv[i], "--disable-limiter") == 0) {
       config->disable_limiter = 1;
+    }
+    else if ( strncmp( argv[i], "--frameskip=", 12) == 0) {
+            char *end_char;
+            int frameskip = strtoul(&argv[i][12], &end_char, 10);
+
+        if ( frameskip >= 0 ) {
+                config->frameskip = frameskip;
+        }
+        else {
+                fprintf(stderr, "frameskip must be >=0\n");
+                good_args = 0;
+        }
+    }
+    else if ( strncmp( argv[i], "--limiter-period=", 17) == 0) {
+            char *end_char;
+            int period = strtoul(&argv[i][17], &end_char, 10);
+
+        if ( period >= 0 && period <= 30 ) {
+                config->fps_limiter_frame_period = period;
+        }
+        else {
+                fprintf(stderr, "fps lmiter period must be >=0 and <= 30!\n");
+                good_args = 0;
+        }
     }
     else if ( strncmp( argv[i], "--3d-engine=", 12) == 0) {
       char *end_char;
@@ -813,7 +843,7 @@ int main(int argc, char ** argv) {
 
     /* start a SDL timer for every FPS_LIMITER_FRAME_PERIOD frames to keep us at 60 fps */
     if ( fps_limiter_semaphore != NULL) {
-      limiter_timer = SDL_AddTimer( 16 * FPS_LIMITER_FRAME_PERIOD,
+      limiter_timer = SDL_AddTimer( 16 * my_config.fps_limiter_frame_period,
                                   fps_limiter_fn, fps_limiter_semaphore);
     }
 
@@ -859,9 +889,16 @@ int main(int argc, char ** argv) {
 #endif
       Draw();
 
+    /* FIXME: this may introduce some lag for input */
+    for ( int i = 0; i < my_config.frameskip; i++ ) {
+        NDS_SkipNextFrame();
+        NDS_exec<false>();
+        SPU_Emulate_user();
+    }
+
     if ( !my_config.disable_limiter) {
-      limiter_frame_counter += 1;
-      if ( limiter_frame_counter >= FPS_LIMITER_FRAME_PERIOD) {
+      limiter_frame_counter += 1 + my_config.frameskip;
+      if ( limiter_frame_counter >= my_config.fps_limiter_frame_period) {
         limiter_frame_counter = 0;
 
         /* wait for the timer to expire */
