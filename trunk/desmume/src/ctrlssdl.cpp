@@ -394,120 +394,95 @@ process_joystick_events( u16 *keypad) {
 
 u16 shift_pressed;
 
-/* Manage input events */
-int
-process_ctrls_events( u16 *keypad,
-                      void (*external_videoResizeFn)( u16 width, u16 height),
+void
+process_ctrls_event( SDL_Event& event, u16 *keypad,
                       float nds_screen_size_ratio)
 {
   u16 key;
-  int cause_quit = 0;
-  SDL_Event event;
-
-  /* IMPORTANT: Reenable joystick events iif needed. */
-  if(SDL_JoystickEventState(SDL_QUERY) == SDL_IGNORE)
-    SDL_JoystickEventState(SDL_ENABLE);
-
-  /* There's an event waiting to be processed? */
-  while (SDL_PollEvent(&event))
+  if ( !do_process_joystick_events( keypad, &event)) {
+    switch (event.type)
     {
-      if ( !do_process_joystick_events( keypad, &event)) {
-        switch (event.type)
-          {
-          case SDL_VIDEORESIZE:
-            if ( external_videoResizeFn != NULL) {
-              external_videoResizeFn( event.resize.w, event.resize.h);
-            }
-            break;
-
-          case SDL_KEYDOWN:
-            switch(event.key.keysym.sym){
-                case SDLK_LSHIFT:
-                    shift_pressed |= 1;
-                    break;
-                case SDLK_RSHIFT:
-                    shift_pressed |= 2;
-                    break;
-                default:
-                    key = lookup_key(event.key.keysym.sym);
-                    ADD_KEY( *keypad, key );
-                    break;
-            }
-            break;
-
-          case SDL_KEYUP:
-            switch(event.key.keysym.sym){
-                case SDLK_LSHIFT:
-                    shift_pressed &= ~1;
-                    break;
-                case SDLK_RSHIFT:
-                    shift_pressed &= ~2;
-                    break;
-
-                case SDLK_F1:
-                case SDLK_F2:
-                case SDLK_F3:
-                case SDLK_F4:
-                case SDLK_F5:
-                case SDLK_F6:
-                case SDLK_F7:
-                case SDLK_F8:
-                case SDLK_F9:
-                case SDLK_F10:
-                    int prevexec;
-                    prevexec = execute;
-                    execute = FALSE;
-                    SPU_Pause(1);
-                    if(!shift_pressed){
-                        loadstate_slot(event.key.keysym.sym - SDLK_F1 + 1);
-                    }else{
-                        savestate_slot(event.key.keysym.sym - SDLK_F1 + 1);
-                    }
-                    execute = prevexec;
-                    SPU_Pause(!execute);
-                    break;
-                default:
-                    key = lookup_key(event.key.keysym.sym);
-                    RM_KEY( *keypad, key );
-                    break;
-            }
-            break;
-
-          case SDL_MOUSEBUTTONDOWN:
-            if(event.button.button==1)
-              mouse.down = TRUE;
-						
-          case SDL_MOUSEMOTION:
-            if(!mouse.down)
-              break;
-            else {
-              signed long scaled_x =
-                screen_to_touch_range_x( event.button.x,
-                                         nds_screen_size_ratio);
-              signed long scaled_y =
-                screen_to_touch_range_y( event.button.y,
-                                         nds_screen_size_ratio);
-
-              if( scaled_y >= 192)
-                set_mouse_coord( scaled_x, scaled_y - 192);
-            }
-            break;
-
-          case SDL_MOUSEBUTTONUP:
-            if(mouse.down) mouse.click = TRUE;
-            mouse.down = FALSE;
-            break;
-
-          case SDL_QUIT:
-            cause_quit = 1;
-            break;
-
-          default:
-            break;
-          }
+      case SDL_KEYDOWN:
+        switch(event.key.keysym.sym){
+            case SDLK_LSHIFT:
+                shift_pressed |= 1;
+                break;
+            case SDLK_RSHIFT:
+                shift_pressed |= 2;
+                break;
+            default:
+                key = lookup_key(event.key.keysym.sym);
+                ADD_KEY( *keypad, key );
+                break;
         }
-    }
+        break;
 
-  return cause_quit;
+      case SDL_KEYUP:
+        switch(event.key.keysym.sym){
+            case SDLK_LSHIFT:
+                shift_pressed &= ~1;
+                break;
+            case SDLK_RSHIFT:
+                shift_pressed &= ~2;
+                break;
+
+            case SDLK_F1:
+            case SDLK_F2:
+            case SDLK_F3:
+            case SDLK_F4:
+            case SDLK_F5:
+            case SDLK_F6:
+            case SDLK_F7:
+            case SDLK_F8:
+            case SDLK_F9:
+            case SDLK_F10:
+                int prevexec;
+                prevexec = execute;
+                execute = FALSE;
+                SPU_Pause(1);
+                if(!shift_pressed){
+                    loadstate_slot(event.key.keysym.sym - SDLK_F1 + 1);
+                }else{
+                    savestate_slot(event.key.keysym.sym - SDLK_F1 + 1);
+                }
+                execute = prevexec;
+                SPU_Pause(!execute);
+                break;
+            default:
+                key = lookup_key(event.key.keysym.sym);
+                RM_KEY( *keypad, key );
+                break;
+        }
+        break;
+
+      case SDL_MOUSEBUTTONDOWN:
+        if(event.button.button==1)
+          mouse.down = TRUE;
+                                            
+      case SDL_MOUSEMOTION:
+        if(!mouse.down)
+          break;
+        else {
+          signed long scaled_x =
+            screen_to_touch_range_x( event.button.x,
+                                     nds_screen_size_ratio);
+          signed long scaled_y =
+            screen_to_touch_range_y( event.button.y,
+                                     nds_screen_size_ratio);
+
+          if( scaled_y >= 192)
+            set_mouse_coord( scaled_x, scaled_y - 192);
+        }
+        break;
+
+      case SDL_MOUSEBUTTONUP:
+        if(mouse.down) mouse.click = TRUE;
+        mouse.down = FALSE;
+        break;
+
+      default:
+        break;
+    }
+  }
 }
 
