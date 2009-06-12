@@ -6,6 +6,7 @@
 #include <string>
 #include <ostream>
 #include <istream>
+#include <stdlib.h>
 
 #include "utils/guid.h"
 #include "utils/md5.h"
