@@ -266,7 +266,6 @@ static GtkWidget *cheat_list_create_ui()
 
 void CheatList ()
 {
-#ifdef DESMUME_GTK_CHEATS_BROKEN
     shouldBeRunning = desmume_running();
     Pause();
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -277,9 +276,6 @@ void CheatList ()
     cheat_list_create_ui();
 
     gtk_widget_show_all(win);
-#else
-    printf("cheats in gtk are broken currently\n");
-#endif
 }
 
 

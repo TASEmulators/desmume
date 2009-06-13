@@ -192,10 +192,12 @@ static const char *ui_description =
 "        <menuitem action='layersubbg3'/>"
 "        <menuitem action='layersubobj'/>"
 "      </menu>"
+#ifdef DESMUME_GTK_CHEAT_BROKEN
 "      <menu action='CheatMenu'>"
 "        <menuitem action='cheatsearch'/>"
 "        <menuitem action='cheatlist'/>"
 "      </menu>"
+#endif
 "    </menu>"
 "    <menu action='ConfigMenu'>"
 "      <menu action='ConfigSaveMenu'>"
@@ -262,9 +264,11 @@ static const GtkActionEntry action_entries[] = {
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "LayersMenu", NULL, "_Layers" },
+#ifdef DESMUME_GTK_CHEAT_BROKEN
       { "CheatMenu", NULL, "_Cheat" },
         { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
         { "cheatlist",       NULL,      "_List",        NULL,       NULL,   CheatList },
+#endif
 
     { "ConfigMenu", NULL, "_Config" },
       { "ConfigSaveMenu", NULL, "_Saves" },
@@ -578,8 +582,10 @@ static int Open(const char *filename, const char *cflash_disk_image)
 {
     int res;
     res = NDS_LoadROM( filename, cflash_disk_image );
+#ifdef DESMUME_GTK_CHEAT_BROKEN
     if(res > 0)
         gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), TRUE);
+#endif
     return res;
 }
 
@@ -1834,8 +1840,10 @@ common_gtk_main( struct configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
+#ifdef DESMUME_GTK_CHEAT_BROKEN
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
+#endif
 
     gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
     
