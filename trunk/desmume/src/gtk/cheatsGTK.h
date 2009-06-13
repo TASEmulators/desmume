@@ -22,8 +22,8 @@
 #ifndef __CHEATS_H__
 #define __CHEATS_H__
 
-extern void CheatSearch ();
-extern void CheatList ();
+void CheatSearch ();
+void CheatList ();
 
 #endif /*__CHEATS_H__*/
 
