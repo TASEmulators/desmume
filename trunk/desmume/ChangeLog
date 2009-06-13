@@ -39,6 +39,10 @@ Gtk frontend:
  enh: improve/speedup screen resize and final presentation logic in gtk frontend
  enh: minimal rerecording hookups
 
+Cli frontend:
+ enh: hooked the frameskip (szigor)
+ enh: misc usability improvements: auto pause switch for pausing when focus is lost and exit on escape pressing (szigor)
+
 0.9.1 -> 0.9.2
 General/Core:
  bug: fix error in SBCS/RSCS flags; fixes many odd behaviors and crashes [zeromus]
