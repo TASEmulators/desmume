@@ -124,11 +124,9 @@ static const char *ui_description =
 "  <menubar name='MainMenu'>"
 "    <menu action='FileMenu'>"
 "      <menuitem action='open'/>"
+"      <separator/>"
 "      <menuitem action='savestateto'/>"
 "      <menuitem action='loadstatefrom'/>"
-"      <menuitem action='recordmovie'/>"
-"      <menuitem action='playmovie'/>"
-"      <menuitem action='stopmovie'/>"
 "      <menu action='SavestateMenu'>"
 "        <menuitem action='savestate1'/>"
 "        <menuitem action='savestate2'/>"
@@ -156,7 +154,12 @@ static const char *ui_description =
 #ifdef GTK_DESMUME_FIRMWARE_BROKEN
 "      <menuitem action='loadfirmware'/>"
 #endif
+"      <separator/>"
+"      <menuitem action='recordmovie'/>"
+"      <menuitem action='playmovie'/>"
+"      <menuitem action='stopmovie'/>"
 "      <menuitem action='printscreen'/>"
+"      <separator/>"
 "      <menuitem action='quit'/>"
 "    </menu>"
 "    <menu action='EmulationMenu'>"
@@ -573,7 +576,11 @@ static void ToggleStatusbarVisible(GtkToggleAction *action)
 
 static int Open(const char *filename, const char *cflash_disk_image)
 {
-    return NDS_LoadROM( filename, cflash_disk_image );
+    int res;
+    res = NDS_LoadROM( filename, cflash_disk_image );
+    if(res > 0)
+        gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), TRUE);
+    return res;
 }
 
 void Launch()
@@ -1827,6 +1834,8 @@ common_gtk_main( struct configured_features *my_config)
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "reset"), FALSE);
     gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "printscreen"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), FALSE);
+    gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatsearch"), FALSE);
 
     gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
     
