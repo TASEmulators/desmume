@@ -45,6 +45,7 @@
 #include "movie.h"
 #include "dTool.h"
 #include "desmume_config.h"
+#include "cheatsGTK.h"
 
 #include "commandline.h"
 
@@ -98,8 +99,8 @@ static void StopMovie();
 static void OpenNdsDialog();
 static void SaveStateDialog();
 static void LoadStateDialog();
-static void Launch();
-static void Pause();
+void Launch();
+void Pause();
 static void Printscreen();
 static void Reset();
 static void Edit_Controls();
@@ -188,6 +189,10 @@ static const char *ui_description =
 "        <menuitem action='layersubbg3'/>"
 "        <menuitem action='layersubobj'/>"
 "      </menu>"
+"      <menu action='CheatMenu'>"
+"        <menuitem action='cheatsearch'/>"
+"        <menuitem action='cheatlist'/>"
+"      </menu>"
 "    </menu>"
 "    <menu action='ConfigMenu'>"
 "      <menu action='ConfigSaveMenu'>"
@@ -254,6 +259,9 @@ static const GtkActionEntry action_entries[] = {
       { "reset",      "gtk-refresh",      "Re_set",        NULL,       NULL,   Reset },
       { "FrameskipMenu", NULL, "_Frameskip" },
       { "LayersMenu", NULL, "_Layers" },
+      { "CheatMenu", NULL, "_Cheat" },
+        { "cheatsearch",     NULL,      "_Search",        NULL,       NULL,   CheatSearch },
+        { "cheatlist",       NULL,      "_List",        NULL,       NULL,   CheatList },
 
     { "ConfigMenu", NULL, "_Config" },
       { "ConfigSaveMenu", NULL, "_Saves" },
@@ -568,7 +576,7 @@ static int Open(const char *filename, const char *cflash_disk_image)
     return NDS_LoadROM( filename, cflash_disk_image );
 }
 
-static void Launch()
+void Launch()
 {
     GtkWidget *pause;
     desmume_resume();
@@ -589,7 +597,7 @@ static void Launch()
     gtk_widget_grab_focus(pause);
 }
 
-static void Pause()
+void Pause()
 {
     GtkWidget *run;
     desmume_pause();

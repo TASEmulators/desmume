@@ -17,7 +17,8 @@ desmume_SOURCES = \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
 	desmume_config.cpp \
-	main.cpp
+	cheatsGTK.h cheatsGTK.cpp \
+	main.cpp main.h
 desmume_LDADD = ../libdesmume.a \
 	$(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS)
 if HAVE_GDB_STUB
