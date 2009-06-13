@@ -59,8 +59,8 @@ public:
 	CommandLine();
 	~CommandLine();
 
-	GOptionContext *ctx;
 	GError *error;
+	GOptionContext *ctx;
 };
 
 #endif
