@@ -969,7 +969,7 @@ int main(int argc, char ** argv) {
     fps_previous_time = fps_temp_time;
 
     if ( fps_frame_counter == NUM_FRAMES_TO_TIME) {
-      char win_title[100];
+      char win_title[20];
       float fps = (float)fps_timing;
       fps /= NUM_FRAMES_TO_TIME * 1000.f;
       fps = 1.0f / fps;
@@ -978,7 +978,7 @@ int main(int argc, char ** argv) {
       fps_frame_counter = 0;
       fps_timing = 0;
 
-      sprintf( win_title, "Desmume %f", fps);
+      snprintf( win_title, sizeof(win_title), "Desmume %f", fps);
 
       SDL_WM_SetCaption( win_title, NULL);
     }
