@@ -73,9 +73,18 @@ static void cell_edited(GtkCellRendererText * cell,
     gtk_tree_model_get_iter(model, &iter, path);
 
     {
-        CHEATS_LIST cheat;
         u32 ii;
-        gtk_tree_model_get(model, &iter, COLUMN_POS, &ii, -1);
+        GtkTreePath *path1;
+        CHEATS_LIST cheat;
+
+        path1 = gtk_tree_model_get_path (model, &iter);
+
+        gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+        cheatsRemove(ii);
+
+        gtk_tree_path_free (path1);
+
+        ii = gtk_tree_path_get_indices (path)[0];
         cheatsGet(&cheat, ii);
         if (column == COLUMN_LO || column == COLUMN_HI
             || column == COLUMN_SIZE) {
@@ -172,9 +181,15 @@ static void cheat_list_remove_cheat(GtkWidget * widget, gpointer data)
 
     if (gtk_tree_selection_get_selected (selection, NULL, &iter)){
         u32 ii;
-        gtk_tree_model_get(model, &iter, COLUMN_POS, &ii, -1);
+        GtkTreePath *path;
+
+        path = gtk_tree_model_get_path (model, &iter);
+        ii = gtk_tree_path_get_indices (path)[0];
+
         gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
         cheatsRemove(ii);
+
+        gtk_tree_path_free (path);
     }
 }
 
@@ -227,6 +242,7 @@ static GtkWidget *cheat_list_create_ui()
 
 void CheatList ()
 {
+#ifdef BROKENCHEATS
     Pause();
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win),"Cheat List");
@@ -236,6 +252,9 @@ void CheatList ()
     cheat_list_create_ui();
 
     gtk_widget_show_all(win);
+#else
+    printf("cheats in gtk are broken currently\n");
+#endif
 }
 
 static void
@@ -269,4 +288,3 @@ void CheatSearch ()
 {
     printf("Cheat searching feature is not hooked up\n");
 }
-
