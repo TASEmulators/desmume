@@ -792,10 +792,6 @@ void cheatsSearchInit(u8 type, u8 size, u8 sign)
 
 void cheatsSearchClose()
 {
-#ifdef _MSC_VER
-	void CheatsSearchReset();
-	CheatsSearchReset();
-#endif
 	if (searchStatMem) delete [] searchStatMem;
 	searchStatMem = NULL;
 

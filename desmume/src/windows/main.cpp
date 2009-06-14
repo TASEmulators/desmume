@@ -2419,8 +2419,8 @@ LRESULT OpenFile()
 	{
 		if (romloaded)
 		{
+			CheatsSearchReset();
 			NDS_UnPause(); //Restart emulation if no new rom chosen
-			
 		}
 		return 0;
 	}

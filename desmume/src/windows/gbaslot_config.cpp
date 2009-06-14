@@ -39,6 +39,7 @@ char		tmp_gbagame_filename[MAX_PATH];
 u8			tmp_CFlashUsePath;
 u8			tmp_CFlashUseRomPath;
 HWND		OKbutton = NULL;
+bool		_OKbutton = false;
 
 BOOL CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
@@ -46,7 +47,7 @@ BOOL CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	{
 		case WM_INITDIALOG: 
 		{
-			EnableWindow(OKbutton, TRUE);
+			_OKbutton = TRUE;
 			return TRUE;
 		}
 	}
@@ -68,14 +69,13 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 					CheckDlgButton(dialog, IDC_PATHDESMUME, BST_CHECKED);
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
-					EnableWindow(OKbutton, TRUE);
+					_OKbutton = TRUE;
 				}
 				else
 				{
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
-					if (strlen(tmp_cflash_path))
-						EnableWindow(OKbutton, TRUE);
+					if (strlen(tmp_cflash_path)) _OKbutton = TRUE;
 				}
 				EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
 				EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
@@ -86,8 +86,7 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
 				EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), FALSE);
 				EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
-				if (strlen(tmp_cflash_filename))
-					EnableWindow(OKbutton, TRUE);
+				if (strlen(tmp_cflash_filename)) _OKbutton = TRUE;
 				CheckDlgButton(dialog, IDC_RFILE, BST_CHECKED);
 			}
 			return TRUE;
@@ -161,40 +160,46 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 				case IDC_RFILE:
 				{
-					tmp_CFlashUsePath = FALSE;
-					EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), TRUE);
-					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), TRUE);
+					if (HIWORD(wparam) == BN_CLICKED)
+					{
+						tmp_CFlashUsePath = FALSE;
+						EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), TRUE);
+						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), TRUE);
 
-					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
 
-					if (!strlen(tmp_cflash_filename))
-						EnableWindow(OKbutton, FALSE);
+						if (!strlen(tmp_cflash_filename))
+							EnableWindow(OKbutton, FALSE);
+					}
 					break;
 				}
 
 				case IDC_RFOLDER:
 				{
-					tmp_CFlashUsePath = TRUE;
-					EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
-					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
-
-					if (IsDlgButtonChecked(dialog, IDC_PATHDESMUME))
+					if (HIWORD(wparam) == BN_CLICKED)
 					{
-						tmp_CFlashUseRomPath = TRUE;
-						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
-						EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
-						EnableWindow(OKbutton, TRUE);
-					}
-					else
-					{
-						tmp_CFlashUseRomPath = FALSE;
-						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
-						EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
-					}
+						tmp_CFlashUsePath = TRUE;
+						EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
 
-					EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), TRUE);
+						if (IsDlgButtonChecked(dialog, IDC_PATHDESMUME))
+						{
+							tmp_CFlashUseRomPath = TRUE;
+							EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
+							EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
+							EnableWindow(OKbutton, TRUE);
+						}
+						else
+						{
+							tmp_CFlashUseRomPath = FALSE;
+							EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
+							EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
+						}
+
+						EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), TRUE);
+					}
 					break;
 				}
 
@@ -232,7 +237,7 @@ BOOL CALLBACK GbaSlotRumblePak(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam
 	{
 		case WM_INITDIALOG: 
 		{
-			EnableWindow(OKbutton, TRUE);
+			_OKbutton = TRUE;
 			return TRUE;
 		}
 	}
@@ -246,8 +251,7 @@ BOOL CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		case WM_INITDIALOG: 
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_PATHGAME), tmp_gbagame_filename);
-			if (!strlen(tmp_gbagame_filename))
-				EnableWindow(OKbutton, FALSE);
+			if (strlen(tmp_gbagame_filename) > 0) _OKbutton = true;
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -326,10 +330,13 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 			addonList[temp_type].info((char *)tmp_info);
 			SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
 
+			_OKbutton = false;
 			wndConfig=CreateDialog(hAppInst, MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), 
 										dialog, (DLGPROC)GBAslot_Procs[temp_type]);
-			if (temp_type == 0)
+			if ( (temp_type == 0) || (_OKbutton) )
 				EnableWindow(OKbutton, TRUE);
+			else
+				EnableWindow(OKbutton, FALSE);
 			return TRUE;
 		}
 	
@@ -365,9 +372,14 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 						if (temp_type != last_type)
 						{
 							if (wndConfig) DestroyWindow(wndConfig);
+							_OKbutton = false;
 							wndConfig=CreateDialog(hAppInst, 
 								MAKEINTRESOURCE(GBAslot_IDDs[temp_type]), dialog, 
 								(DLGPROC)GBAslot_Procs[temp_type]);
+							if ( (temp_type == 0) || (_OKbutton) )
+								EnableWindow(OKbutton, TRUE);
+							else
+								EnableWindow(OKbutton, FALSE);
 							u8 tmp_info[512];
 							addonList[temp_type].info((char *)tmp_info);
 							SetWindowText(GetDlgItem(dialog, IDC_ADDONS_INFO), (char *)tmp_info);
@@ -391,6 +403,7 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_gbagame_filename, GBAgameName);
 	tmp_CFlashUseRomPath = CFlashUseRomPath;
 	tmp_CFlashUsePath = CFlashUsePath;
+	_OKbutton = false;
 	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
 	{
