@@ -116,7 +116,7 @@ static void cheat_list_modify_cheat(GtkCellRendererText * cell,
             u32 v = atoi(new_text);
             switch (column) {
             case COLUMN_SIZE:
-                cheatsUpdate(v, cheat.hi[0], cheat.lo[0],
+                cheatsUpdate(v-1, cheat.hi[0], cheat.lo[0],
                              cheat.description, cheat.enabled, ii);
                 break;
             case COLUMN_HI:
