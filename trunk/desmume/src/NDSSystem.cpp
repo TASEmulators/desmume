@@ -543,6 +543,7 @@ void NDS_DeInit(void) {
 #ifdef EXPERIMENTAL_WIFI
 	WIFI_SoftAP_Shutdown(&wifiMac);
 #endif
+	cheatsSearchClose();
 }
 
 BOOL NDS_SetROM(u8 * rom, u32 mask)
@@ -828,6 +829,7 @@ int NDS_LoadROM( const char *filename,
 #endif
 
 
+	cheatsSearchClose();
 	MMU_unsetRom();
 	NDS_SetROM(data, mask);
 	NDS_Reset();
@@ -868,7 +870,7 @@ void NDS_FreeROM(void)
 }
 
 bool _HACK_DONT_STOPMOVIE = false;
-void NDS_Reset(BOOL resetBySavestate)
+void NDS_Reset()
 {
 	unsigned int i;
 	u32 src;
@@ -1054,8 +1056,6 @@ void NDS_Reset(BOOL resetBySavestate)
 	gfx3d_reset();
 	gpu3D->NDS_3D_Reset();
 	SPU_Reset();
-	if (!resetBySavestate)
-		cheatsSearchClose();
 
 #ifdef EXPERIMENTAL_WIFI
 	WIFI_Init(&wifiMac);

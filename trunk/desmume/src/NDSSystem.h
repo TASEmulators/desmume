@@ -290,7 +290,7 @@ int NDS_LoadROM(const char *filename,
                  const char *cflash_disk_image_file);
 #endif
 void NDS_FreeROM(void);
-void NDS_Reset(BOOL resetBySaveState = FALSE);
+void NDS_Reset();
 int NDS_ImportSave(const char *filename);
 bool NDS_ExportSave(const char *filename);
 
