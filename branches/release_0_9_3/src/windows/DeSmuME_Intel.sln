@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{EAF909A5-FA59-4C3D-9431-0FCC20D5BCF9}") = "DeSmuME_Intel", "DeSmuME_Intel.icproj", "{439F53E2-431F-4F28-9058-C6A9B00B503F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Debug|Win32.Build.0 = Debug|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Release|Win32.ActiveCfg = Release|Win32
+		{439F53E2-431F-4F28-9058-C6A9B00B503F}.Release|Win32.Build.0 = Release|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|Win32.Build.0 = Release|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Release|Win32.ActiveCfg = Release|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|Win32.Build.0 = Debug|Win32
+		{9F5F72A1-D3A5-4918-B460-E076B16D10A9}.Debug|Win32.ActiveCfg = Debug|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
