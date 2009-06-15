@@ -61,7 +61,6 @@ NULL
 
 SoundInterface_struct *SNDCoreList[] = {
 &SNDDummy,
-&SNDFile,
 #ifdef DESMUME_COCOA
 &SNDOSX,
 #endif
@@ -1325,8 +1324,6 @@ bool opengl_init()
 	CGLLockContext((CGLContextObj)[gl_context CGLContextObj]);
 #endif
 
-	u32 cycles = 0;
-
 	NSDate *frame_start_date, *frame_end_date, *ideal_frame_end_date;
 
 	int frames_to_skip = 0;
@@ -1349,7 +1346,7 @@ bool opengl_init()
 
 			[execution_lock lock];
 
-			cycles = NDS_exec<FALSE>((560190<<1)-cycles);
+			NDS_exec<false>();
 
 			[sound_lock lock];
 			int x;
