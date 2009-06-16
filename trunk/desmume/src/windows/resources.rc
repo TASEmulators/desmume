@@ -1,15 +1,13 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "resource.h"
+#include "resource1.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#define APSTUDIO_HIDDEN_SYMBOLS
-#include "windows.h"
-#undef APSTUDIO_HIDDEN_SYMBOLS
+#include "afxres.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -33,7 +31,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTI
 CAPTION "Play Movie"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    DEFPUSHBUTTON   "OK",1,186,118,50,14
+    DEFPUSHBUTTON   "OK",1,187,118,50,14
     GROUPBOX        "",65497,3,0,293,57
     RTEXT           "File:",65498,7,14,24,10,SS_CENTERIMAGE | NOT WS_GROUP
     PUSHBUTTON      "Cancel",2,246,118,50,14
@@ -62,191 +60,6 @@ END
 LANGUAGE LANG_DANISH, SUBLANG_DEFAULT
 #pragma code_page(1252)
 #endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-MENU_PRINCIPAL MENU
-BEGIN
-    POPUP "&Fil"
-    BEGIN
-        MENUITEM "&Åbn ROM...",                 IDM_OPEN
-        MENUITEM "Frisk ROM",                   ID_FILE_RECENTROM
-        MENUITEM "ROM &Info",                   IDM_GAME_INFO
-        MENUITEM SEPARATOR
-        MENUITEM "Gem Stadie Som...",           IDM_STATE_SAVE
-        MENUITEM "Indlæs Stadie Som...",        IDM_STATE_LOAD
-        POPUP "Gem Stadie"
-        BEGIN
-            MENUITEM "1",                           IDM_STATE_SAVE_F1
-            MENUITEM "2",                           IDM_STATE_SAVE_F2
-            MENUITEM "3",                           IDM_STATE_SAVE_F3
-            MENUITEM "4",                           IDM_STATE_SAVE_F4
-            MENUITEM "5",                           IDM_STATE_SAVE_F5
-            MENUITEM "6",                           IDM_STATE_SAVE_F6
-            MENUITEM "7",                           IDM_STATE_SAVE_F7
-            MENUITEM "8",                           IDM_STATE_SAVE_F8
-            MENUITEM "9",                           IDM_STATE_SAVE_F9
-            MENUITEM "10",                          IDM_STATE_SAVE_F10
-        END
-        POPUP "Indlæs Stadie"
-        BEGIN
-            MENUITEM "1",                           IDM_STATE_LOAD_F1
-            MENUITEM "2",                           IDM_STATE_LOAD_F2
-            MENUITEM "3",                           IDM_STATE_LOAD_F3
-            MENUITEM "4",                           IDM_STATE_LOAD_F4
-            MENUITEM "5",                           IDM_STATE_LOAD_F5
-            MENUITEM "6",                           IDM_STATE_LOAD_F6
-            MENUITEM "7",                           IDM_STATE_LOAD_F7
-            MENUITEM "8",                           IDM_STATE_LOAD_F8
-            MENUITEM "9",                           IDM_STATE_LOAD_F9
-            MENUITEM "10",                          IDM_STATE_LOAD_F10
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "Importere Backup Hukommelse", IDM_IMPORTBACKUPMEMORY
-        MENUITEM "Export Backup Memory",        IDM_EXPORTBACKUPMEMORY
-        MENUITEM SEPARATOR
-        MENUITEM "Gem Skærmbillede &Som...",    IDM_PRINTSCREEN
-        MENUITEM "&Hurtigt Skærmbillede",       IDM_QUICK_PRINTSCREEN
-        MENUITEM SEPARATOR
-        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
-        MENUITEM SEPARATOR
-        MENUITEM "&Afslut\tAlt F4",             IDM_QUIT
-    END
-    POPUP "&Emulation"
-    BEGIN
-        MENUITEM "&Pause",                      IDM_PAUSE
-        MENUITEM "&Genstart",                   IDM_RESET
-        MENUITEM SEPARATOR
-        MENUITEM "GBA &slot",                   IDM_GBASLOT
-        POPUP "&Cheats"
-        BEGIN
-            MENUITEM "&List",                       IDM_CHEATS_LIST, INACTIVE
-            MENUITEM "&Search",                     IDM_CHEATS_SEARCH, INACTIVE
-        END
-    END
-    POPUP "&Vis"
-    BEGIN
-        POPUP "&Rotation"
-        BEGIN
-            MENUITEM " 0 Grader",                   IDC_ROTATE0
-            MENUITEM " 90 Grader",                  IDC_ROTATE90
-            MENUITEM "180 Grader",                  IDC_ROTATE180
-            MENUITEM "270 Grader",                  IDC_ROTATE270
-        END
-        POPUP "Vindue &Størrelse"
-        BEGIN
-            MENUITEM "1x",                          IDC_WINDOW1X
-            MENUITEM "1.5x",                        IDC_WINDOW1_5X
-            MENUITEM "2x",                          IDC_WINDOW2X
-            MENUITEM "3x",                          IDC_WINDOW3X
-            MENUITEM "4x",                          IDC_WINDOW4X
-            MENUITEM SEPARATOR
-            MENUITEM "Always On Top",               IDM_ALWAYS_ON_TOP
-        END
-        POPUP "Screen separation"
-        BEGIN
-            MENUITEM "None\t(0 px)",                IDM_SCREENSEP_NONE
-            MENUITEM "Narrow border\t(5 px)",       IDM_SCREENSEP_BORDER
-            MENUITEM "DS\t(64 px)",                 IDM_SCREENSEP_NDSGAP
-        END
-        MENUITEM "&Bevar Højde og Bredde",      IDC_FORCERATIO
-        MENUITEM "Default size",                IDM_DEFSIZE
-        MENUITEM SEPARATOR
-        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
-        MENUITEM "Display Fps",                 ID_VIEW_DISPLAYFPS
-        MENUITEM "Display Input",               ID_VIEW_DISPLAYINPUT
-        MENUITEM "Display Lag Counter",         ID_VIEW_DISPLAYLAG
-        MENUITEM "Display Microphone",          ID_VIEW_DISPLAYMICROPHONE
-        MENUITEM "HUD Editing Mode",            ID_VIEW_HUDEDITOR
-    END
-    POPUP "&Konfigure"
-    BEGIN
-        POPUP "&Vælg Hukommelse Type"
-        BEGIN
-            MENUITEM "Vælg Automatisk",             IDC_SAVETYPE1
-            MENUITEM "EEPROM 4kbit",                IDC_SAVETYPE2
-            MENUITEM "EEPROM 64kbit",               IDC_SAVETYPE3
-            MENUITEM "EEPROM 512kbit",              IDC_SAVETYPE4
-            MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
-            MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
-        END
-        MENUITEM "3D settings",                 IDM_3DCONFIG
-        MENUITEM "Indput Indstillinger",        IDM_CONFIG
-        MENUITEM "Hotkey Config",               IDM_HOTKEY_CONFIG
-        MENUITEM "Lyd Indstillinger",           IDM_SOUNDSETTINGS
-        MENUITEM "Wifi settings",               IDM_WIFISETTINGS, GRAYED
-        MENUITEM "Firmware Indstillinger",      IDM_FIRMSETTINGS
-        MENUITEM "Emulation settings",          IDM_EMULATIONSETTINGS
-        MENUITEM "Microphone Settings",         IDM_MICROPHONESETTINGS
-        POPUP "&Frame Skip"
-        BEGIN
-            MENUITEM "Limit framerate",             IDC_FRAMELIMIT
-            MENUITEM "Auto",                        IDC_FRAMESKIPAUTO
-            MENUITEM "0",                           IDC_FRAMESKIP0
-            MENUITEM "1",                           IDC_FRAMESKIP1
-            MENUITEM "2",                           IDC_FRAMESKIP2
-            MENUITEM "3",                           IDC_FRAMESKIP3
-            MENUITEM "4",                           IDC_FRAMESKIP4
-            MENUITEM "5",                           IDC_FRAMESKIP5
-            MENUITEM "6",                           IDC_FRAMESKIP6
-            MENUITEM "7",                           IDC_FRAMESKIP7
-            MENUITEM "8",                           IDC_FRAMESKIP8
-            MENUITEM "9",                           IDC_FRAMESKIP9
-        END
-        POPUP "&Language"
-        BEGIN
-            MENUITEM "English",                     IDC_LANGENGLISH
-            MENUITEM "French",                      IDC_LANGFRENCH
-            MENUITEM "Danish",                      IDC_LANGDANISH
-        END
-    END
-    POPUP "&Værktøjer"
-    BEGIN
-        MENUITEM "&Disassembler",               IDM_DISASSEMBLER
-        MENUITEM "Vis &Hukommelse",             IDM_MEMORY
-        MENUITEM "Vis &Register",               IDM_IOREG
-        MENUITEM "Vis &Palette",                IDM_PAL
-        MENUITEM "Vis &Tiles",                  IDM_TILE
-        MENUITEM "Vis M&aps",                   IDM_MAP
-        MENUITEM "Vis &OAM",                    IDM_OAM
-        MENUITEM "Vis Matrices",                IDM_MATRIX_VIEWER
-        MENUITEM "Vis Lights",                  IDM_LIGHT_VIEWER
-        MENUITEM SEPARATOR
-        POPUP "&Vis &Lag"
-        BEGIN
-            MENUITEM "Hoved Baggrund 0",            IDM_MBG0, CHECKED
-            MENUITEM "Hoved Baggrund 1",            IDM_MBG1, CHECKED
-            MENUITEM "Hoved Baggrund 2",            IDM_MBG2, CHECKED
-            MENUITEM "Hoved Baggrund 3",            IDM_MBG3, CHECKED
-            MENUITEM SEPARATOR
-            MENUITEM "Under Baggrund 0",            IDM_SBG0, CHECKED
-            MENUITEM "Under Baggrund 1",            IDM_SBG1, CHECKED
-            MENUITEM "Under Baggrund 2",            IDM_SBG2, CHECKED
-            MENUITEM "Under Baggrund 3",            IDM_SBG3, CHECKED
-        END
-    END
-    POPUP "&Hjælp"
-    BEGIN
-        MENUITEM "&Hjemmeside",                 IDM_WEBSITE
-        MENUITEM "&Forums",                     IDM_FORUM
-        MENUITEM "&Indsend Fejl Rapport",       IDM_SUBMITBUGREPORT
-        MENUITEM "About",                       IDM_ABOUT
-    END
-END
-
-RECENTROMS MENU
-BEGIN
-    POPUP "Recent ROMs"
-    BEGIN
-        MENUITEM "None",                        65501, GRAYED
-        MENUITEM SEPARATOR
-        MENUITEM "Clear",                       65500, GRAYED
-    END
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -631,6 +444,191 @@ BEGIN
     LTEXT           "frames",IDC_STATIC,428,167,16,8
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+MENU_PRINCIPAL MENU
+BEGIN
+    POPUP "&Fil"
+    BEGIN
+        MENUITEM "&Åbn ROM...",                 IDM_OPEN
+        MENUITEM "Frisk ROM",                   ID_FILE_RECENTROM
+        MENUITEM "ROM &Info",                   IDM_GAME_INFO
+        MENUITEM SEPARATOR
+        MENUITEM "Gem Stadie Som...",           IDM_STATE_SAVE
+        MENUITEM "Indlæs Stadie Som...",        IDM_STATE_LOAD
+        POPUP "Gem Stadie"
+        BEGIN
+            MENUITEM "1",                           IDM_STATE_SAVE_F1
+            MENUITEM "2",                           IDM_STATE_SAVE_F2
+            MENUITEM "3",                           IDM_STATE_SAVE_F3
+            MENUITEM "4",                           IDM_STATE_SAVE_F4
+            MENUITEM "5",                           IDM_STATE_SAVE_F5
+            MENUITEM "6",                           IDM_STATE_SAVE_F6
+            MENUITEM "7",                           IDM_STATE_SAVE_F7
+            MENUITEM "8",                           IDM_STATE_SAVE_F8
+            MENUITEM "9",                           IDM_STATE_SAVE_F9
+            MENUITEM "10",                          IDM_STATE_SAVE_F10
+        END
+        POPUP "Indlæs Stadie"
+        BEGIN
+            MENUITEM "1",                           IDM_STATE_LOAD_F1
+            MENUITEM "2",                           IDM_STATE_LOAD_F2
+            MENUITEM "3",                           IDM_STATE_LOAD_F3
+            MENUITEM "4",                           IDM_STATE_LOAD_F4
+            MENUITEM "5",                           IDM_STATE_LOAD_F5
+            MENUITEM "6",                           IDM_STATE_LOAD_F6
+            MENUITEM "7",                           IDM_STATE_LOAD_F7
+            MENUITEM "8",                           IDM_STATE_LOAD_F8
+            MENUITEM "9",                           IDM_STATE_LOAD_F9
+            MENUITEM "10",                          IDM_STATE_LOAD_F10
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Importere Backup Hukommelse", IDM_IMPORTBACKUPMEMORY
+        MENUITEM "Export Backup Memory",        IDM_EXPORTBACKUPMEMORY
+        MENUITEM SEPARATOR
+        MENUITEM "Gem Skærmbillede &Som...",    IDM_PRINTSCREEN
+        MENUITEM "&Hurtigt Skærmbillede",       IDM_QUICK_PRINTSCREEN
+        MENUITEM SEPARATOR
+        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
+        MENUITEM SEPARATOR
+        MENUITEM "&Afslut\tAlt F4",             IDM_QUIT
+    END
+    POPUP "&Emulation"
+    BEGIN
+        MENUITEM "&Pause",                      IDM_PAUSE
+        MENUITEM "&Genstart",                   IDM_RESET
+        MENUITEM SEPARATOR
+        MENUITEM "GBA &slot",                   IDM_GBASLOT
+        POPUP "&Cheats"
+        BEGIN
+            MENUITEM "&List",                       IDM_CHEATS_LIST, INACTIVE
+            MENUITEM "&Search",                     IDM_CHEATS_SEARCH, INACTIVE
+        END
+    END
+    POPUP "&Vis"
+    BEGIN
+        POPUP "&Rotation"
+        BEGIN
+            MENUITEM " 0 Grader",                   IDC_ROTATE0
+            MENUITEM " 90 Grader",                  IDC_ROTATE90
+            MENUITEM "180 Grader",                  IDC_ROTATE180
+            MENUITEM "270 Grader",                  IDC_ROTATE270
+        END
+        POPUP "Vindue &Størrelse"
+        BEGIN
+            MENUITEM "1x",                          IDC_WINDOW1X
+            MENUITEM "1.5x",                        IDC_WINDOW1_5X
+            MENUITEM "2x",                          IDC_WINDOW2X
+            MENUITEM "3x",                          IDC_WINDOW3X
+            MENUITEM "4x",                          IDC_WINDOW4X
+            MENUITEM SEPARATOR
+            MENUITEM "Always On Top",               IDM_ALWAYS_ON_TOP
+        END
+        POPUP "Screen separation"
+        BEGIN
+            MENUITEM "None\t(0 px)",                IDM_SCREENSEP_NONE
+            MENUITEM "Narrow border\t(5 px)",       IDM_SCREENSEP_BORDER
+            MENUITEM "DS\t(64 px)",                 IDM_SCREENSEP_NDSGAP
+        END
+        MENUITEM "&Bevar Højde og Bredde",      IDC_FORCERATIO
+        MENUITEM "Default size",                IDM_DEFSIZE
+        MENUITEM SEPARATOR
+        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
+        MENUITEM "Display Fps",                 ID_VIEW_DISPLAYFPS
+        MENUITEM "Display Input",               ID_VIEW_DISPLAYINPUT
+        MENUITEM "Display Lag Counter",         ID_VIEW_DISPLAYLAG
+        MENUITEM "Display Microphone",          ID_VIEW_DISPLAYMICROPHONE
+        MENUITEM "HUD Editing Mode",            ID_VIEW_HUDEDITOR
+    END
+    POPUP "&Konfigure"
+    BEGIN
+        POPUP "&Vælg Hukommelse Type"
+        BEGIN
+            MENUITEM "Vælg Automatisk",             IDC_SAVETYPE1
+            MENUITEM "EEPROM 4kbit",                IDC_SAVETYPE2
+            MENUITEM "EEPROM 64kbit",               IDC_SAVETYPE3
+            MENUITEM "EEPROM 512kbit",              IDC_SAVETYPE4
+            MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
+            MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
+        END
+        MENUITEM "3D settings",                 IDM_3DCONFIG
+        MENUITEM "Indput Indstillinger",        IDM_CONFIG
+        MENUITEM "Hotkey Config",               IDM_HOTKEY_CONFIG
+        MENUITEM "Lyd Indstillinger",           IDM_SOUNDSETTINGS
+        MENUITEM "Wifi settings",               IDM_WIFISETTINGS, GRAYED
+        MENUITEM "Firmware Indstillinger",      IDM_FIRMSETTINGS
+        MENUITEM "Emulation settings",          IDM_EMULATIONSETTINGS
+        MENUITEM "Microphone Settings",         IDM_MICROPHONESETTINGS
+        POPUP "&Frame Skip"
+        BEGIN
+            MENUITEM "Limit framerate",             IDC_FRAMELIMIT
+            MENUITEM "Auto",                        IDC_FRAMESKIPAUTO
+            MENUITEM "0",                           IDC_FRAMESKIP0
+            MENUITEM "1",                           IDC_FRAMESKIP1
+            MENUITEM "2",                           IDC_FRAMESKIP2
+            MENUITEM "3",                           IDC_FRAMESKIP3
+            MENUITEM "4",                           IDC_FRAMESKIP4
+            MENUITEM "5",                           IDC_FRAMESKIP5
+            MENUITEM "6",                           IDC_FRAMESKIP6
+            MENUITEM "7",                           IDC_FRAMESKIP7
+            MENUITEM "8",                           IDC_FRAMESKIP8
+            MENUITEM "9",                           IDC_FRAMESKIP9
+        END
+        POPUP "&Language"
+        BEGIN
+            MENUITEM "English",                     IDC_LANGENGLISH
+            MENUITEM "French",                      IDC_LANGFRENCH
+            MENUITEM "Danish",                      IDC_LANGDANISH
+        END
+    END
+    POPUP "&Værktøjer"
+    BEGIN
+        MENUITEM "&Disassembler",               IDM_DISASSEMBLER
+        MENUITEM "Vis &Hukommelse",             IDM_MEMORY
+        MENUITEM "Vis &Register",               IDM_IOREG
+        MENUITEM "Vis &Palette",                IDM_PAL
+        MENUITEM "Vis &Tiles",                  IDM_TILE
+        MENUITEM "Vis M&aps",                   IDM_MAP
+        MENUITEM "Vis &OAM",                    IDM_OAM
+        MENUITEM "Vis Matrices",                IDM_MATRIX_VIEWER
+        MENUITEM "Vis Lights",                  IDM_LIGHT_VIEWER
+        MENUITEM SEPARATOR
+        POPUP "&Vis &Lag"
+        BEGIN
+            MENUITEM "Hoved Baggrund 0",            IDM_MBG0, CHECKED
+            MENUITEM "Hoved Baggrund 1",            IDM_MBG1, CHECKED
+            MENUITEM "Hoved Baggrund 2",            IDM_MBG2, CHECKED
+            MENUITEM "Hoved Baggrund 3",            IDM_MBG3, CHECKED
+            MENUITEM SEPARATOR
+            MENUITEM "Under Baggrund 0",            IDM_SBG0, CHECKED
+            MENUITEM "Under Baggrund 1",            IDM_SBG1, CHECKED
+            MENUITEM "Under Baggrund 2",            IDM_SBG2, CHECKED
+            MENUITEM "Under Baggrund 3",            IDM_SBG3, CHECKED
+        END
+    END
+    POPUP "&Hjælp"
+    BEGIN
+        MENUITEM "&Hjemmeside",                 IDM_WEBSITE
+        MENUITEM "&Forums",                     IDM_FORUM
+        MENUITEM "&Indsend Fejl Rapport",       IDM_SUBMITBUGREPORT
+        MENUITEM "About",                       IDM_ABOUT
+    END
+END
+
+RECENTROMS MENU
+BEGIN
+    POPUP "Recent ROMs"
+    BEGIN
+        MENUITEM "None",                        65501, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "Clear",                       65500, GRAYED
+    END
+END
+
 #endif    // Danish resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -664,240 +662,6 @@ ICONDESMUME             ICON                    "DeSmuME.ico"
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
 #endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_BGTILES             BITMAP                  "bitmap1.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Menu
-//
-
-MENU_PRINCIPAL MENU
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Open ROM...",                IDM_OPEN
-        MENUITEM "&Recent ROM",                 ID_FILE_RECENTROM
-        MENUITEM "ROM &Info",                   IDM_GAME_INFO
-        MENUITEM SEPARATOR
-        MENUITEM "Save State As...",            IDM_STATE_SAVE
-        MENUITEM "Load State As...",            IDM_STATE_LOAD
-        POPUP "Save State"
-        BEGIN
-            MENUITEM "1",                           IDM_STATE_SAVE_F1
-            MENUITEM "2",                           IDM_STATE_SAVE_F2
-            MENUITEM "3",                           IDM_STATE_SAVE_F3
-            MENUITEM "4",                           IDM_STATE_SAVE_F4
-            MENUITEM "5",                           IDM_STATE_SAVE_F5
-            MENUITEM "6",                           IDM_STATE_SAVE_F6
-            MENUITEM "7",                           IDM_STATE_SAVE_F7
-            MENUITEM "8",                           IDM_STATE_SAVE_F8
-            MENUITEM "9",                           IDM_STATE_SAVE_F9
-            MENUITEM "10",                          IDM_STATE_SAVE_F10
-        END
-        POPUP "Load State"
-        BEGIN
-            MENUITEM "1",                           IDM_STATE_LOAD_F1
-            MENUITEM "2",                           IDM_STATE_LOAD_F2
-            MENUITEM "3",                           IDM_STATE_LOAD_F3
-            MENUITEM "4",                           IDM_STATE_LOAD_F4
-            MENUITEM "5",                           IDM_STATE_LOAD_F5
-            MENUITEM "6",                           IDM_STATE_LOAD_F6
-            MENUITEM "7",                           IDM_STATE_LOAD_F7
-            MENUITEM "8",                           IDM_STATE_LOAD_F8
-            MENUITEM "9",                           IDM_STATE_LOAD_F9
-            MENUITEM "10",                          IDM_STATE_LOAD_F10
-        END
-        MENUITEM SEPARATOR
-        MENUITEM "Import Backup Memory",        IDM_IMPORTBACKUPMEMORY
-        MENUITEM "Export Backup Memory",        IDM_EXPORTBACKUPMEMORY
-        MENUITEM SEPARATOR
-        MENUITEM "Save Screenshot &As...",      IDM_PRINTSCREEN
-        MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
-        MENUITEM SEPARATOR
-        MENUITEM "Record WAV",                  IDM_FILE_RECORDWAV
-        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
-        MENUITEM SEPARATOR
-        MENUITEM "&Record Movie...",            IDM_RECORD_MOVIE
-        MENUITEM "&Play Movie...",              IDM_PLAY_MOVIE
-        MENUITEM "&Stop Movie",                 IDM_STOPMOVIE
-        MENUITEM SEPARATOR
-        MENUITEM "&Quit\tAlt F4",               IDM_QUIT
-    END
-    POPUP "&Emulation"
-    BEGIN
-        MENUITEM "&Pause",                      IDM_PAUSE
-        MENUITEM "&Reset",                      IDM_RESET
-        MENUITEM SEPARATOR
-        MENUITEM "Shut Up",                     IDM_SHUT_UP
-        MENUITEM SEPARATOR
-        MENUITEM "GBA &slot",                   IDM_GBASLOT
-        POPUP "&Cheats"
-        BEGIN
-            MENUITEM "&List",                       IDM_CHEATS_LIST, INACTIVE
-            MENUITEM "&Search",                     IDM_CHEATS_SEARCH, INACTIVE
-        END
-    END
-    POPUP "&View"
-    BEGIN
-        POPUP "&Rotation"
-        BEGIN
-            MENUITEM "  0",                         IDC_ROTATE0
-            MENUITEM " 90",                         IDC_ROTATE90
-            MENUITEM "180",                         IDC_ROTATE180
-            MENUITEM "270",                         IDC_ROTATE270
-        END
-        POPUP "Window &Size"
-        BEGIN
-            MENUITEM "1x",                          IDC_WINDOW1X
-            MENUITEM "1.5x",                        IDC_WINDOW1_5X
-            MENUITEM "2x",                          IDC_WINDOW2X
-            MENUITEM "3x",                          IDC_WINDOW3X
-            MENUITEM "4x",                          IDC_WINDOW4X
-            MENUITEM SEPARATOR
-            MENUITEM "Always On Top",               IDM_ALWAYS_ON_TOP
-        END
-        POPUP "Screen separation"
-        BEGIN
-            MENUITEM "None\t(0 px)",                IDM_SCREENSEP_NONE
-            MENUITEM "Narrow border\t(5 px)",       IDM_SCREENSEP_BORDER
-            MENUITEM "DS\t(64 px)",                 IDM_SCREENSEP_NDSGAP
-        END
-        MENUITEM "&Force Maintain Ratio",       IDC_FORCERATIO
-        MENUITEM "Default size",                IDM_DEFSIZE
-        MENUITEM SEPARATOR
-        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
-        MENUITEM "Display FPS",                 ID_VIEW_DISPLAYFPS
-        MENUITEM "Display Input",               ID_VIEW_DISPLAYINPUT
-        MENUITEM "Display Lag Counter",         ID_VIEW_DISPLAYLAG
-        MENUITEM "Display Microphone",          ID_VIEW_DISPLAYMICROPHONE
-        MENUITEM "HUD Editing Mode",            ID_VIEW_HUDEDITOR
-    END
-    POPUP "&Config"
-    BEGIN
-        POPUP "&Save Type"
-        BEGIN
-            MENUITEM "Autodetect",                  IDC_SAVETYPE1
-            MENUITEM "EEPROM 4kbit",                IDC_SAVETYPE2
-            MENUITEM "EEPROM 64kbit",               IDC_SAVETYPE3
-            MENUITEM "EEPROM 512kbit",              IDC_SAVETYPE4
-            MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
-            MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
-            MENUITEM "FLASH 4mbit",                 IDC_SAVETYPE7
-        END
-        MENUITEM "3D Settings",                 IDM_3DCONFIG
-        MENUITEM "Control Config",              IDM_CONFIG
-        MENUITEM "Hotkey Config",               IDM_HOTKEY_CONFIG
-        MENUITEM "Sound Settings",              IDM_SOUNDSETTINGS
-        MENUITEM "Wifi settings",               IDM_WIFISETTINGS
-        MENUITEM "Firmware Settings",           IDM_FIRMSETTINGS
-        MENUITEM "Emulation Settings",          IDM_EMULATIONSETTINGS
-        MENUITEM "Microphone Settings",         IDM_MICROPHONESETTINGS
-        POPUP "&Frame Skip"
-        BEGIN
-            MENUITEM "Limit framerate",             IDC_FRAMELIMIT
-            MENUITEM "Auto",                        IDC_FRAMESKIPAUTO
-            MENUITEM "0",                           IDC_FRAMESKIP0
-            MENUITEM "1",                           IDC_FRAMESKIP1
-            MENUITEM "2",                           IDC_FRAMESKIP2
-            MENUITEM "3",                           IDC_FRAMESKIP3
-            MENUITEM "4",                           IDC_FRAMESKIP4
-            MENUITEM "5",                           IDC_FRAMESKIP5
-            MENUITEM "6",                           IDC_FRAMESKIP6
-            MENUITEM "7",                           IDC_FRAMESKIP7
-            MENUITEM "8",                           IDC_FRAMESKIP8
-            MENUITEM "9",                           IDC_FRAMESKIP9
-        END
-        POPUP "&Language"
-        BEGIN
-            MENUITEM "English",                     IDC_LANGENGLISH
-            MENUITEM "French",                      IDC_LANGFRENCH
-            MENUITEM "Danish",                      IDC_LANGDANISH
-        END
-    END
-    POPUP "&Tools"
-    BEGIN
-        MENUITEM "&Disassembler",               IDM_DISASSEMBLER
-        MENUITEM "View &Memory",                IDM_MEMORY
-        MENUITEM "View &Registers",             IDM_IOREG
-        MENUITEM "View &Palette",               IDM_PAL
-        MENUITEM "View &Tiles",                 IDM_TILE
-        MENUITEM "View M&aps",                  IDM_MAP
-        MENUITEM "View &OAM",                   IDM_OAM
-        MENUITEM "View Matrices",               IDM_MATRIX_VIEWER
-        MENUITEM "View Lights",                 IDM_LIGHT_VIEWER
-        MENUITEM "View &Sound State",           IDM_SOUND_VIEW
-        MENUITEM SEPARATOR
-        MENUITEM "RAM Watch...",                ID_RAM_WATCH
-        MENUITEM "RAM Search...",               ID_RAM_SEARCH
-        MENUITEM SEPARATOR
-        POPUP "&View Layers"
-        BEGIN
-            MENUITEM "Main GPU",                    IDM_MGPU, CHECKED
-            MENUITEM "Main BG 0",                   IDM_MBG0, CHECKED
-            MENUITEM "Main BG 1",                   IDM_MBG1, CHECKED
-            MENUITEM "Main BG 2",                   IDM_MBG2, CHECKED
-            MENUITEM "Main BG 3",                   IDM_MBG3, CHECKED
-            MENUITEM SEPARATOR
-            MENUITEM "Sub GPU",                     IDM_SGPU, CHECKED
-            MENUITEM "Sub BG 0",                    IDM_SBG0, CHECKED
-            MENUITEM "Sub BG 1",                    IDM_SBG1, CHECKED
-            MENUITEM "Sub BG 2",                    IDM_SBG2, CHECKED
-            MENUITEM "Sub BG 3",                    IDM_SBG3, CHECKED
-        END
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&Website",                    IDM_WEBSITE
-        MENUITEM "&Forums",                     IDM_FORUM
-        MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
-        MENUITEM "&About",                      IDM_ABOUT
-    END
-END
-
-RAMWATCH_MENU MENU
-BEGIN
-    POPUP "File"
-    BEGIN
-        MENUITEM "&New list\tCtrl N",           RAMMENU_FILE_NEW
-        MENUITEM "&Open...\tCtrl O",            RAMMENU_FILE_OPEN
-        MENUITEM "&Save\tCtrl S",               RAMMENU_FILE_SAVE
-        MENUITEM "Sa&ve As...\tCtrl Shift S",   RAMMENU_FILE_SAVEAS
-        MENUITEM "&Append file...",             RAMMENU_FILE_APPEND
-        MENUITEM "Recent",                      RAMMENU_FILE_RECENT
-        MENUITEM SEPARATOR
-        MENUITEM "Auto-&load",                  RAMMENU_FILE_AUTOLOAD
-        MENUITEM "Save Window Position",        RAMMENU_FILE_SAVEWINDOW
-        MENUITEM SEPARATOR
-        MENUITEM "&Close\tAlt F4",              IDCANCEL
-    END
-    POPUP "Watches"
-    BEGIN
-        MENUITEM "&New Watch\tN",               IDC_C_WATCH
-        MENUITEM "&Edit Watch\tE",              IDC_C_WATCH_EDIT
-        MENUITEM "&Remove Watch\tR",            IDC_C_WATCH_REMOVE
-        MENUITEM "Duplicate Watch\tA",          IDC_C_WATCH_DUPLICATE
-        MENUITEM SEPARATOR
-        MENUITEM "Move Up\tU",                  IDC_C_WATCH_UP
-        MENUITEM "Move Down\tD",                IDC_C_WATCH_DOWN
-    END
-END
-
-RECENTROMS MENU
-BEGIN
-    POPUP "Recent ROMs"
-    BEGIN
-        MENUITEM "None",                        65501, GRAYED
-        MENUITEM SEPARATOR
-        MENUITEM "Clear",                       65500, GRAYED
-    END
-END
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2841,66 +2605,16 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Accelerator
-//
-
-IDR_ACCELERATOR1 ACCELERATORS
-BEGIN
-    "N",            RAMMENU_FILE_NEW,       VIRTKEY, CONTROL
-    "O",            RAMMENU_FILE_OPEN,      VIRTKEY, CONTROL
-    "S",            RAMMENU_FILE_SAVE,      VIRTKEY, CONTROL
-    "S",            RAMMENU_FILE_SAVEAS,    VIRTKEY, SHIFT, CONTROL
-    "A",            IDC_C_WATCH_DUPLICATE,  VIRTKEY 
-    "E",            IDC_C_WATCH_EDIT,       VIRTKEY 
-    "D",            IDC_C_WATCH_DOWN,       VIRTKEY 
-    "U",            IDC_C_WATCH_UP,         VIRTKEY 
-    "N",            IDC_C_WATCH,            VIRTKEY 
-    "R",            IDC_C_WATCH_REMOVE,     VIRTKEY 
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// String Table
-//
-
-STRINGTABLE
-BEGIN
-    IDM_FILE_STOPAVI        "Stop AVI"
-    IDM_FILE_STOPWAV        "Stop WAV"
-    IDM_FILE_RECORDAVI      "Record AVI"
-END
-
-STRINGTABLE
-BEGIN
-    IDM_FILE_RECORDWAV      "Record WAV"
-END
-
-#endif    // English (U.S.) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// French (France) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
-#ifdef _WIN32
-LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
-#pragma code_page(1252)
-#endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // Menu
 //
 
 MENU_PRINCIPAL MENU
 BEGIN
-    POPUP "&Fichier"
+    POPUP "&File"
     BEGIN
-        MENUITEM "&Ouvrir ROM...",              IDM_OPEN
-        MENUITEM "ROMs récentes",               ID_FILE_RECENTROM
-        MENUITEM "&Info ROM",                   IDM_GAME_INFO
+        MENUITEM "&Open ROM...",                IDM_OPEN
+        MENUITEM "&Recent ROM",                 ID_FILE_RECENTROM
+        MENUITEM "ROM &Info",                   IDM_GAME_INFO
         MENUITEM SEPARATOR
         MENUITEM "Save State As...",            IDM_STATE_SAVE
         MENUITEM "Load State As...",            IDM_STATE_LOAD
@@ -2934,17 +2648,24 @@ BEGIN
         MENUITEM "Import Backup Memory",        IDM_IMPORTBACKUPMEMORY
         MENUITEM "Export Backup Memory",        IDM_EXPORTBACKUPMEMORY
         MENUITEM SEPARATOR
-        MENUITEM "Capture d'écr&an...",         IDM_PRINTSCREEN
-        MENUITEM "Capture d'écran rapide",      IDM_QUICK_PRINTSCREEN
+        MENUITEM "Save Screenshot &As...",      IDM_PRINTSCREEN
+        MENUITEM "&Quick Screenshot",           IDM_QUICK_PRINTSCREEN
         MENUITEM SEPARATOR
-        MENUITEM "Enregistrer une vidéo",       IDM_FILE_RECORDAVI
+        MENUITEM "Record WAV",                  IDM_FILE_RECORDWAV
+        MENUITEM "Record AVI",                  IDM_FILE_RECORDAVI
         MENUITEM SEPARATOR
-        MENUITEM "&Quitter\tAlt F4",            IDM_QUIT
+        MENUITEM "&Record Movie...",            IDM_RECORD_MOVIE
+        MENUITEM "&Play Movie...",              IDM_PLAY_MOVIE
+        MENUITEM "&Stop Movie",                 IDM_STOPMOVIE
+        MENUITEM SEPARATOR
+        MENUITEM "&Quit\tAlt F4",               IDM_QUIT
     END
     POPUP "&Emulation"
     BEGIN
         MENUITEM "&Pause",                      IDM_PAUSE
         MENUITEM "&Reset",                      IDM_RESET
+        MENUITEM SEPARATOR
+        MENUITEM "Shut Up",                     IDM_SHUT_UP
         MENUITEM SEPARATOR
         MENUITEM "GBA &slot",                   IDM_GBASLOT
         POPUP "&Cheats"
@@ -2962,7 +2683,7 @@ BEGIN
             MENUITEM "180",                         IDC_ROTATE180
             MENUITEM "270",                         IDC_ROTATE270
         END
-        POPUP "Taille de la fenêtre"
+        POPUP "Window &Size"
         BEGIN
             MENUITEM "1x",                          IDC_WINDOW1X
             MENUITEM "1.5x",                        IDC_WINDOW1_5X
@@ -2972,17 +2693,17 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Always On Top",               IDM_ALWAYS_ON_TOP
         END
-        POPUP "Séparation écrans"
+        POPUP "Screen separation"
         BEGIN
-            MENUITEM "Aucune\t(0 px)",              IDM_SCREENSEP_NONE
-            MENUITEM "Bordure fine\t(5 px)",        IDM_SCREENSEP_BORDER
+            MENUITEM "None\t(0 px)",                IDM_SCREENSEP_NONE
+            MENUITEM "Narrow border\t(5 px)",       IDM_SCREENSEP_BORDER
             MENUITEM "DS\t(64 px)",                 IDM_SCREENSEP_NDSGAP
         END
-        MENUITEM "Conserver le ratio",          IDC_FORCERATIO
-        MENUITEM "Taille par défaut",           IDM_DEFSIZE
+        MENUITEM "&Force Maintain Ratio",       IDC_FORCERATIO
+        MENUITEM "Default size",                IDM_DEFSIZE
         MENUITEM SEPARATOR
-        MENUITEM "Compteur d'images",           ID_VIEW_FRAMECOUNTER
-        MENUITEM "Framerate",                   ID_VIEW_DISPLAYFPS
+        MENUITEM "Display Frame Counter",       ID_VIEW_FRAMECOUNTER
+        MENUITEM "Display FPS",                 ID_VIEW_DISPLAYFPS
         MENUITEM "Display Input",               ID_VIEW_DISPLAYINPUT
         MENUITEM "Display Lag Counter",         ID_VIEW_DISPLAYLAG
         MENUITEM "Display Microphone",          ID_VIEW_DISPLAYMICROPHONE
@@ -2990,7 +2711,7 @@ BEGIN
     END
     POPUP "&Config"
     BEGIN
-        POPUP "Média de &sauvegarde"
+        POPUP "&Save Type"
         BEGIN
             MENUITEM "Autodetect",                  IDC_SAVETYPE1
             MENUITEM "EEPROM 4kbit",                IDC_SAVETYPE2
@@ -2998,14 +2719,15 @@ BEGIN
             MENUITEM "EEPROM 512kbit",              IDC_SAVETYPE4
             MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
             MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
+            MENUITEM "FLASH 4mbit",                 IDC_SAVETYPE7
         END
-        MENUITEM "Config. 3D",                  IDM_3DCONFIG
-        MENUITEM "Config. des contrôles",       IDM_CONFIG
+        MENUITEM "3D Settings",                 IDM_3DCONFIG
+        MENUITEM "Control Config",              IDM_CONFIG
         MENUITEM "Hotkey Config",               IDM_HOTKEY_CONFIG
-        MENUITEM "Config. du son",              IDM_SOUNDSETTINGS
-        MENUITEM "Config. wifi",                IDM_WIFISETTINGS, GRAYED
-        MENUITEM "Config. du firmware",         IDM_FIRMSETTINGS
-        MENUITEM "Config. d'émulation",         IDM_EMULATIONSETTINGS
+        MENUITEM "Sound Settings",              IDM_SOUNDSETTINGS
+        MENUITEM "Wifi settings",               IDM_WIFISETTINGS
+        MENUITEM "Firmware Settings",           IDM_FIRMSETTINGS
+        MENUITEM "Emulation Settings",          IDM_EMULATIONSETTINGS
         MENUITEM "Microphone Settings",         IDM_MICROPHONESETTINGS
         POPUP "&Frame Skip"
         BEGIN
@@ -3022,57 +2744,174 @@ BEGIN
             MENUITEM "8",                           IDC_FRAMESKIP8
             MENUITEM "9",                           IDC_FRAMESKIP9
         END
-        POPUP "&Langage"
+        POPUP "&Language"
         BEGIN
             MENUITEM "English",                     IDC_LANGENGLISH
             MENUITEM "French",                      IDC_LANGFRENCH
             MENUITEM "Danish",                      IDC_LANGDANISH
         END
     END
-    POPUP "&Outils"
+    POPUP "&Tools"
     BEGIN
-        MENUITEM "&Désassembleur",              IDM_DISASSEMBLER
-        MENUITEM "Visualiser la &memoire",      IDM_MEMORY
-        MENUITEM "Visualiser les &registres",   IDM_IOREG
-        MENUITEM "Visualiser les &palettes",    IDM_PAL
-        MENUITEM "Visualiser les &tiles",       IDM_TILE
-        MENUITEM "Visualiser les m&aps",        IDM_MAP
-        MENUITEM "Visualiser les &oams",        IDM_OAM
-        MENUITEM "Visualiser les matrices",     IDM_MATRIX_VIEWER
-        MENUITEM "Visualiser les lights",       IDM_LIGHT_VIEWER
+        MENUITEM "&Disassembler",               IDM_DISASSEMBLER
+        MENUITEM "View &Memory",                IDM_MEMORY
+        MENUITEM "View &Registers",             IDM_IOREG
+        MENUITEM "View &Palette",               IDM_PAL
+        MENUITEM "View &Tiles",                 IDM_TILE
+        MENUITEM "View M&aps",                  IDM_MAP
+        MENUITEM "View &OAM",                   IDM_OAM
+        MENUITEM "View Matrices",               IDM_MATRIX_VIEWER
+        MENUITEM "View Lights",                 IDM_LIGHT_VIEWER
+        MENUITEM "View &Sound State",           IDM_SOUND_VIEW
         MENUITEM SEPARATOR
-        POPUP "&Visualiser les &couches"
+        MENUITEM "RAM Watch...",                ID_RAM_WATCH
+        MENUITEM "RAM Search...",               ID_RAM_SEARCH
+        MENUITEM SEPARATOR
+        POPUP "&View Layers"
         BEGIN
+            MENUITEM "Main GPU",                    IDM_MGPU, CHECKED
             MENUITEM "Main BG 0",                   IDM_MBG0, CHECKED
             MENUITEM "Main BG 1",                   IDM_MBG1, CHECKED
             MENUITEM "Main BG 2",                   IDM_MBG2, CHECKED
             MENUITEM "Main BG 3",                   IDM_MBG3, CHECKED
             MENUITEM SEPARATOR
+            MENUITEM "Sub GPU",                     IDM_SGPU, CHECKED
             MENUITEM "Sub BG 0",                    IDM_SBG0, CHECKED
             MENUITEM "Sub BG 1",                    IDM_SBG1, CHECKED
             MENUITEM "Sub BG 2",                    IDM_SBG2, CHECKED
             MENUITEM "Sub BG 3",                    IDM_SBG3, CHECKED
         END
     END
-    POPUP "?"
+    POPUP "&Help"
     BEGIN
-        MENUITEM "Site &web",                   IDM_WEBSITE
+        MENUITEM "&Website",                    IDM_WEBSITE
         MENUITEM "&Forums",                     IDM_FORUM
-        MENUITEM "&Soumettre un report de bug", IDM_SUBMITBUGREPORT
-        MENUITEM "A propos",                    IDM_ABOUT
+        MENUITEM "&Submit a bug report",        IDM_SUBMITBUGREPORT
+        MENUITEM "&About",                      IDM_ABOUT
+    END
+END
+
+RAMWATCH_MENU MENU
+BEGIN
+    POPUP "File"
+    BEGIN
+        MENUITEM "&New list\tCtrl N",           RAMMENU_FILE_NEW
+        MENUITEM "&Open...\tCtrl O",            RAMMENU_FILE_OPEN
+        MENUITEM "&Save\tCtrl S",               RAMMENU_FILE_SAVE
+        MENUITEM "Sa&ve As...\tCtrl Shift S",   RAMMENU_FILE_SAVEAS
+        MENUITEM "&Append file...",             RAMMENU_FILE_APPEND
+        MENUITEM "Recent",                      RAMMENU_FILE_RECENT
+        MENUITEM SEPARATOR
+        MENUITEM "Auto-&load",                  RAMMENU_FILE_AUTOLOAD
+        MENUITEM "Save Window Position",        RAMMENU_FILE_SAVEWINDOW
+        MENUITEM SEPARATOR
+        MENUITEM "&Close\tAlt F4",              IDCANCEL
+    END
+    POPUP "Watches"
+    BEGIN
+        MENUITEM "&New Watch\tN",               IDC_C_WATCH
+        MENUITEM "&Edit Watch\tE",              IDC_C_WATCH_EDIT
+        MENUITEM "&Remove Watch\tR",            IDC_C_WATCH_REMOVE
+        MENUITEM "Duplicate Watch\tA",          IDC_C_WATCH_DUPLICATE
+        MENUITEM SEPARATOR
+        MENUITEM "Move Up\tU",                  IDC_C_WATCH_UP
+        MENUITEM "Move Down\tD",                IDC_C_WATCH_DOWN
     END
 END
 
 RECENTROMS MENU
 BEGIN
-    POPUP "ROMs récentes"
+    POPUP "Recent ROMs"
     BEGIN
-        MENUITEM "Aucune",                      65501, GRAYED
+        MENUITEM "None",                        65501, GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "Vider",                       65500, GRAYED
+        MENUITEM "Clear",                       65500, GRAYED
     END
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BGTILES             BITMAP                  "bitmap1.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR1 ACCELERATORS
+BEGIN
+    "N",            RAMMENU_FILE_NEW,       VIRTKEY, CONTROL
+    "O",            RAMMENU_FILE_OPEN,      VIRTKEY, CONTROL
+    "S",            RAMMENU_FILE_SAVE,      VIRTKEY, CONTROL
+    "S",            RAMMENU_FILE_SAVEAS,    VIRTKEY, SHIFT, CONTROL
+    "A",            IDC_C_WATCH_DUPLICATE,  VIRTKEY 
+    "E",            IDC_C_WATCH_EDIT,       VIRTKEY 
+    "D",            IDC_C_WATCH_DOWN,       VIRTKEY 
+    "U",            IDC_C_WATCH_UP,         VIRTKEY 
+    "N",            IDC_C_WATCH,            VIRTKEY 
+    "R",            IDC_C_WATCH_REMOVE,     VIRTKEY 
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource1.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDM_FILE_STOPAVI        "Stop AVI"
+    IDM_FILE_STOPWAV        "Stop WAV"
+    IDM_FILE_RECORDAVI      "Record AVI"
+END
+
+STRINGTABLE
+BEGIN
+    IDM_FILE_RECORDWAV      "Record WAV"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// French (France) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
+#ifdef _WIN32
+LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
+#pragma code_page(1252)
+#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3705,29 +3544,189 @@ BEGIN
 END
 
 
-#ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
 //
-// TEXTINCLUDE
+// Menu
 //
 
-1 TEXTINCLUDE 
+MENU_PRINCIPAL MENU
 BEGIN
-    "resource.h\0"
+    POPUP "&Fichier"
+    BEGIN
+        MENUITEM "&Ouvrir ROM...",              IDM_OPEN
+        MENUITEM "ROMs récentes",               ID_FILE_RECENTROM
+        MENUITEM "&Info ROM",                   IDM_GAME_INFO
+        MENUITEM SEPARATOR
+        MENUITEM "Save State As...",            IDM_STATE_SAVE
+        MENUITEM "Load State As...",            IDM_STATE_LOAD
+        POPUP "Save State"
+        BEGIN
+            MENUITEM "1",                           IDM_STATE_SAVE_F1
+            MENUITEM "2",                           IDM_STATE_SAVE_F2
+            MENUITEM "3",                           IDM_STATE_SAVE_F3
+            MENUITEM "4",                           IDM_STATE_SAVE_F4
+            MENUITEM "5",                           IDM_STATE_SAVE_F5
+            MENUITEM "6",                           IDM_STATE_SAVE_F6
+            MENUITEM "7",                           IDM_STATE_SAVE_F7
+            MENUITEM "8",                           IDM_STATE_SAVE_F8
+            MENUITEM "9",                           IDM_STATE_SAVE_F9
+            MENUITEM "10",                          IDM_STATE_SAVE_F10
+        END
+        POPUP "Load State"
+        BEGIN
+            MENUITEM "1",                           IDM_STATE_LOAD_F1
+            MENUITEM "2",                           IDM_STATE_LOAD_F2
+            MENUITEM "3",                           IDM_STATE_LOAD_F3
+            MENUITEM "4",                           IDM_STATE_LOAD_F4
+            MENUITEM "5",                           IDM_STATE_LOAD_F5
+            MENUITEM "6",                           IDM_STATE_LOAD_F6
+            MENUITEM "7",                           IDM_STATE_LOAD_F7
+            MENUITEM "8",                           IDM_STATE_LOAD_F8
+            MENUITEM "9",                           IDM_STATE_LOAD_F9
+            MENUITEM "10",                          IDM_STATE_LOAD_F10
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Import Backup Memory",        IDM_IMPORTBACKUPMEMORY
+        MENUITEM "Export Backup Memory",        IDM_EXPORTBACKUPMEMORY
+        MENUITEM SEPARATOR
+        MENUITEM "Capture d'écr&an...",         IDM_PRINTSCREEN
+        MENUITEM "Capture d'écran rapide",      IDM_QUICK_PRINTSCREEN
+        MENUITEM SEPARATOR
+        MENUITEM "Enregistrer une vidéo",       IDM_FILE_RECORDAVI
+        MENUITEM SEPARATOR
+        MENUITEM "&Quitter\tAlt F4",            IDM_QUIT
+    END
+    POPUP "&Emulation"
+    BEGIN
+        MENUITEM "&Pause",                      IDM_PAUSE
+        MENUITEM "&Reset",                      IDM_RESET
+        MENUITEM SEPARATOR
+        MENUITEM "GBA &slot",                   IDM_GBASLOT
+        POPUP "&Cheats"
+        BEGIN
+            MENUITEM "&List",                       IDM_CHEATS_LIST, INACTIVE
+            MENUITEM "&Search",                     IDM_CHEATS_SEARCH, INACTIVE
+        END
+    END
+    POPUP "&View"
+    BEGIN
+        POPUP "&Rotation"
+        BEGIN
+            MENUITEM "  0",                         IDC_ROTATE0
+            MENUITEM " 90",                         IDC_ROTATE90
+            MENUITEM "180",                         IDC_ROTATE180
+            MENUITEM "270",                         IDC_ROTATE270
+        END
+        POPUP "Taille de la fenêtre"
+        BEGIN
+            MENUITEM "1x",                          IDC_WINDOW1X
+            MENUITEM "1.5x",                        IDC_WINDOW1_5X
+            MENUITEM "2x",                          IDC_WINDOW2X
+            MENUITEM "3x",                          IDC_WINDOW3X
+            MENUITEM "4x",                          IDC_WINDOW4X
+            MENUITEM SEPARATOR
+            MENUITEM "Always On Top",               IDM_ALWAYS_ON_TOP
+        END
+        POPUP "Séparation écrans"
+        BEGIN
+            MENUITEM "Aucune\t(0 px)",              IDM_SCREENSEP_NONE
+            MENUITEM "Bordure fine\t(5 px)",        IDM_SCREENSEP_BORDER
+            MENUITEM "DS\t(64 px)",                 IDM_SCREENSEP_NDSGAP
+        END
+        MENUITEM "Conserver le ratio",          IDC_FORCERATIO
+        MENUITEM "Taille par défaut",           IDM_DEFSIZE
+        MENUITEM SEPARATOR
+        MENUITEM "Compteur d'images",           ID_VIEW_FRAMECOUNTER
+        MENUITEM "Framerate",                   ID_VIEW_DISPLAYFPS
+        MENUITEM "Display Input",               ID_VIEW_DISPLAYINPUT
+        MENUITEM "Display Lag Counter",         ID_VIEW_DISPLAYLAG
+        MENUITEM "Display Microphone",          ID_VIEW_DISPLAYMICROPHONE
+        MENUITEM "HUD Editing Mode",            ID_VIEW_HUDEDITOR
+    END
+    POPUP "&Config"
+    BEGIN
+        POPUP "Média de &sauvegarde"
+        BEGIN
+            MENUITEM "Autodetect",                  IDC_SAVETYPE1
+            MENUITEM "EEPROM 4kbit",                IDC_SAVETYPE2
+            MENUITEM "EEPROM 64kbit",               IDC_SAVETYPE3
+            MENUITEM "EEPROM 512kbit",              IDC_SAVETYPE4
+            MENUITEM "FRAM 256kbit",                IDC_SAVETYPE5
+            MENUITEM "FLASH 2mbit",                 IDC_SAVETYPE6
+        END
+        MENUITEM "Config. 3D",                  IDM_3DCONFIG
+        MENUITEM "Config. des contrôles",       IDM_CONFIG
+        MENUITEM "Hotkey Config",               IDM_HOTKEY_CONFIG
+        MENUITEM "Config. du son",              IDM_SOUNDSETTINGS
+        MENUITEM "Config. wifi",                IDM_WIFISETTINGS, GRAYED
+        MENUITEM "Config. du firmware",         IDM_FIRMSETTINGS
+        MENUITEM "Config. d'émulation",         IDM_EMULATIONSETTINGS
+        MENUITEM "Microphone Settings",         IDM_MICROPHONESETTINGS
+        POPUP "&Frame Skip"
+        BEGIN
+            MENUITEM "Limit framerate",             IDC_FRAMELIMIT
+            MENUITEM "Auto",                        IDC_FRAMESKIPAUTO
+            MENUITEM "0",                           IDC_FRAMESKIP0
+            MENUITEM "1",                           IDC_FRAMESKIP1
+            MENUITEM "2",                           IDC_FRAMESKIP2
+            MENUITEM "3",                           IDC_FRAMESKIP3
+            MENUITEM "4",                           IDC_FRAMESKIP4
+            MENUITEM "5",                           IDC_FRAMESKIP5
+            MENUITEM "6",                           IDC_FRAMESKIP6
+            MENUITEM "7",                           IDC_FRAMESKIP7
+            MENUITEM "8",                           IDC_FRAMESKIP8
+            MENUITEM "9",                           IDC_FRAMESKIP9
+        END
+        POPUP "&Langage"
+        BEGIN
+            MENUITEM "English",                     IDC_LANGENGLISH
+            MENUITEM "French",                      IDC_LANGFRENCH
+            MENUITEM "Danish",                      IDC_LANGDANISH
+        END
+    END
+    POPUP "&Outils"
+    BEGIN
+        MENUITEM "&Désassembleur",              IDM_DISASSEMBLER
+        MENUITEM "Visualiser la &memoire",      IDM_MEMORY
+        MENUITEM "Visualiser les &registres",   IDM_IOREG
+        MENUITEM "Visualiser les &palettes",    IDM_PAL
+        MENUITEM "Visualiser les &tiles",       IDM_TILE
+        MENUITEM "Visualiser les m&aps",        IDM_MAP
+        MENUITEM "Visualiser les &oams",        IDM_OAM
+        MENUITEM "Visualiser les matrices",     IDM_MATRIX_VIEWER
+        MENUITEM "Visualiser les lights",       IDM_LIGHT_VIEWER
+        MENUITEM SEPARATOR
+        POPUP "&Visualiser les &couches"
+        BEGIN
+            MENUITEM "Main BG 0",                   IDM_MBG0, CHECKED
+            MENUITEM "Main BG 1",                   IDM_MBG1, CHECKED
+            MENUITEM "Main BG 2",                   IDM_MBG2, CHECKED
+            MENUITEM "Main BG 3",                   IDM_MBG3, CHECKED
+            MENUITEM SEPARATOR
+            MENUITEM "Sub BG 0",                    IDM_SBG0, CHECKED
+            MENUITEM "Sub BG 1",                    IDM_SBG1, CHECKED
+            MENUITEM "Sub BG 2",                    IDM_SBG2, CHECKED
+            MENUITEM "Sub BG 3",                    IDM_SBG3, CHECKED
+        END
+    END
+    POPUP "?"
+    BEGIN
+        MENUITEM "Site &web",                   IDM_WEBSITE
+        MENUITEM "&Forums",                     IDM_FORUM
+        MENUITEM "&Soumettre un report de bug", IDM_SUBMITBUGREPORT
+        MENUITEM "A propos",                    IDM_ABOUT
+    END
 END
 
-2 TEXTINCLUDE 
+RECENTROMS MENU
 BEGIN
-    "\0"
+    POPUP "ROMs récentes"
+    BEGIN
+        MENUITEM "Aucune",                      65501, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "Vider",                       65500, GRAYED
+    END
 END
-
-3 TEXTINCLUDE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
 
 #endif    // French (France) resources
 /////////////////////////////////////////////////////////////////////////////
