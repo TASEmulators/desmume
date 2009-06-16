@@ -581,7 +581,7 @@ static void openRecordingMovie(const char* fname)
 		 MovieRecord mr;
 
 		 if(MicButtonPressed == 1)
-			 mr.commands=9;
+			 mr.commands=1;
 		 else
 			 mr.commands = 0;
 		 mr.pad = nds.pad;
