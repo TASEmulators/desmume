@@ -591,7 +591,7 @@ static void openRecordingMovie(const char* fname)
 			 mr.commands=1;
 		 mr.pad = nds.pad;
 
-		 if(nds.pad & (1<<0) == 1)
+		 if((nds.pad & (1<<0)) == 1)
 			 mr.commands=4;
 
 		 if(nds.isTouch) {
