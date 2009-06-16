@@ -21,6 +21,8 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include <math.h>
+
 #include "types.h"
 
 extern "C" {
