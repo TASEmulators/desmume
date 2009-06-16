@@ -25,22 +25,15 @@
 	.code
 	
 @_sse2_MatrixMultVec4x4@8 PROC PUBLIC
-		movaps	xmm0, XMMWORD PTR [ecx]
-		movaps	xmm1, XMMWORD PTR [ecx+16]
-		movaps	xmm2, XMMWORD PTR [ecx+32]
-		movaps	xmm3, XMMWORD PTR [ecx+48]
 		movaps	xmm4, XMMWORD PTR [edx]
-		movaps	xmm5, xmm4
-		movaps	xmm6, xmm4
-		movaps	xmm7, xmm4
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
+		pshufd	xmm7, xmm4, 11111111b
 		shufps	xmm4, xmm4, 00000000b
-		shufps	xmm5, xmm5, 01010101b
-		shufps	xmm6, xmm6, 10101010b
-		shufps	xmm7, xmm7, 11111111b
-		mulps	xmm4, xmm0
-		mulps	xmm5, xmm1
-		mulps	xmm6, xmm2
-		mulps	xmm7, xmm3
+		mulps	xmm4, XMMWORD PTR [ecx]
+		mulps	xmm5, XMMWORD PTR [ecx+16]
+		mulps	xmm6, XMMWORD PTR [ecx+32]
+		mulps	xmm7, XMMWORD PTR [ecx+48]
 		addps	xmm4, xmm5
 		addps	xmm4, xmm6
 		addps	xmm4, xmm7
@@ -49,19 +42,13 @@
 @_sse2_MatrixMultVec4x4@8 ENDP
 
 @_sse2_MatrixMultVec3x3@8 PROC PUBLIC
-		movaps	xmm0, XMMWORD PTR [ecx]
-		movaps	xmm1, XMMWORD PTR [ecx+16]
-		movaps	xmm2, XMMWORD PTR [ecx+32]
 		movaps	xmm4, XMMWORD PTR [edx]
-		movaps	xmm5, xmm4
-		movaps	xmm6, xmm4
-		movaps	xmm7, xmm4
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
 		shufps	xmm4, xmm4, 00000000b
-		shufps	xmm5, xmm5, 01010101b
-		shufps	xmm6, xmm6, 10101010b
-		mulps	xmm4, xmm0
-		mulps	xmm5, xmm1
-		mulps	xmm6, xmm2
+		mulps	xmm4, XMMWORD PTR [ecx]
+		mulps	xmm5, XMMWORD PTR [ecx+16]
+		mulps	xmm6, XMMWORD PTR [ecx+32]
 		addps	xmm4, xmm5
 		addps	xmm4, xmm6
 		movaps	XMMWORD PTR [edx], xmm4
@@ -74,13 +61,10 @@
 		movaps	xmm2, XMMWORD PTR [ecx+32]
 		movaps	xmm3, XMMWORD PTR [ecx+48]
 		movaps	xmm4, XMMWORD PTR [edx]			; r00, r01, r02, r03
-		movaps	xmm5,xmm4
-		movaps	xmm6,xmm4
-		movaps	xmm7,xmm4
-		shufps	xmm4,xmm4,00000000b
-		shufps	xmm5,xmm5,01010101b
-		shufps	xmm6,xmm6,10101010b
-		shufps	xmm7,xmm7,11111111b
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
+		pshufd	xmm7, xmm4, 11111111b
+		shufps	xmm4, xmm4, 00000000b
 		mulps	xmm4,xmm0
 		mulps	xmm5,xmm1
 		mulps	xmm6,xmm2
@@ -89,14 +73,12 @@
 		addps	xmm4,xmm6
 		addps	xmm4,xmm7
 		movaps	XMMWORD PTR [ecx],xmm4
+
 		movaps	xmm4, XMMWORD PTR [edx+16]		; r04, r05, r06, r07
-		movaps	xmm5,xmm4
-		movaps	xmm6,xmm4
-		movaps	xmm7,xmm4
-		shufps	xmm4,xmm4,00000000b
-		shufps	xmm5,xmm5,01010101b
-		shufps	xmm6,xmm6,10101010b
-		shufps	xmm7,xmm7,11111111b
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
+		pshufd	xmm7, xmm4, 11111111b
+		shufps	xmm4, xmm4, 00000000b
 		mulps	xmm4,xmm0
 		mulps	xmm5,xmm1
 		mulps	xmm6,xmm2
@@ -105,14 +87,12 @@
 		addps	xmm4,xmm6
 		addps	xmm4,xmm7
 		movaps	XMMWORD PTR [ecx+16],xmm4
+
 		movaps	xmm4, XMMWORD PTR [edx+32]		; r08, r09, r10, r11
-		movaps	xmm5,xmm4
-		movaps	xmm6,xmm4
-		movaps	xmm7,xmm4
-		shufps	xmm4,xmm4,00000000b
-		shufps	xmm5,xmm5,01010101b
-		shufps	xmm6,xmm6,10101010b
-		shufps	xmm7,xmm7,11111111b
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
+		pshufd	xmm7, xmm4, 11111111b
+		shufps	xmm4, xmm4, 00000000b
 		mulps	xmm4,xmm0
 		mulps	xmm5,xmm1
 		mulps	xmm6,xmm2
@@ -121,14 +101,12 @@
 		addps	xmm4,xmm6
 		addps	xmm4,xmm7
 		movaps	XMMWORD PTR [ecx+32],xmm4
+
 		movaps	xmm4, XMMWORD PTR [edx+48]		; r12, r13, r14, r15
-		movaps	xmm5,xmm4
-		movaps	xmm6,xmm4
-		movaps	xmm7,xmm4
-		shufps	xmm4,xmm4,00000000b
-		shufps	xmm5,xmm5,01010101b
-		shufps	xmm6,xmm6,10101010b
-		shufps	xmm7,xmm7,11111111b
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
+		pshufd	xmm7, xmm4, 11111111b
+		shufps	xmm4, xmm4, 00000000b
 		mulps	xmm4,xmm0
 		mulps	xmm5,xmm1
 		mulps	xmm6,xmm2
@@ -137,47 +115,36 @@
 		addps	xmm4,xmm6
 		addps	xmm4,xmm7
 		movaps	XMMWORD PTR [ecx+48],xmm4
+
 		ret		0
 @_sse2_MatrixMultiply@8 ENDP
 
 @_sse2_MatrixTranslate@8 PROC PUBLIC
-		movaps	xmm0, XMMWORD PTR [ecx]
-		movaps	xmm1, XMMWORD PTR [ecx+16]
-		movaps	xmm2, XMMWORD PTR [ecx+32]
-		movaps	xmm3, XMMWORD PTR [ecx+48]
 		movaps	xmm4, XMMWORD PTR [edx]
-		movaps	xmm5, xmm4
-		movaps	xmm6, xmm4
-		movaps	xmm7, xmm4
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
 		shufps	xmm4, xmm4, 00000000b
-		shufps	xmm5, xmm5, 01010101b
-		shufps	xmm6, xmm6, 10101010b
-		mulps	xmm4, xmm0
-		mulps	xmm5, xmm1
-		mulps	xmm6, xmm2
+		mulps	xmm4, XMMWORD PTR [ecx]
+		mulps	xmm5, XMMWORD PTR [ecx+16]
+		mulps	xmm6, XMMWORD PTR [ecx+32]
 		addps	xmm4, xmm5
 		addps	xmm4, xmm6
-		addps	xmm4, xmm3
+		addps	xmm4, XMMWORD PTR [ecx+48]
 		movaps	XMMWORD PTR [ecx+48], xmm4
 		ret		0
 @_sse2_MatrixTranslate@8 ENDP
 
 @_sse2_MatrixScale@8 PROC PUBLIC
-		movaps	xmm0, XMMWORD PTR [ecx]
-		movaps	xmm1, XMMWORD PTR [ecx+16]
-		movaps	xmm2, XMMWORD PTR [ecx+32]
 		movaps	xmm4, XMMWORD PTR [edx]
-		movaps	xmm5, xmm4
-		movaps	xmm6, xmm4
+		pshufd	xmm5, xmm4, 01010101b
+		pshufd	xmm6, xmm4, 10101010b
 		shufps	xmm4, xmm4, 00000000b
-		shufps	xmm5, xmm5, 01010101b
-		shufps	xmm6, xmm6, 10101010b
-		mulps	xmm4, xmm0
-		mulps	xmm5, xmm1
-		mulps	xmm6, xmm2
-		movaps	XMMWORD PTR [ecx],xmm4
-		movaps	XMMWORD PTR [ecx+16],xmm5
-		movaps	XMMWORD PTR [ecx+32],xmm6
+		mulps	xmm4, XMMWORD PTR [ecx]
+		mulps	xmm5, XMMWORD PTR [ecx+16]
+		mulps	xmm6, XMMWORD PTR [ecx+32]
+		movaps	XMMWORD PTR [ecx], xmm4
+		movaps	XMMWORD PTR [ecx+16], xmm5
+		movaps	XMMWORD PTR [ecx+32], xmm6
 		ret		0
 @_sse2_MatrixScale@8 ENDP
 
