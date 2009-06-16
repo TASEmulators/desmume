@@ -2477,8 +2477,8 @@ void NDS_setPadFromMovie(u16 pad)
 		FIX(pad,3), //X
 		FIX(pad,2),
 		FIX(pad,1),
-		FIX(pad,0),
-		FIX(pad,13)
+		FIX(pad,13),
+		FIX(pad,0)
 		);
 #undef FIX
 }
@@ -2637,7 +2637,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		(FIX(y)<<4)|
 		(FIX(x)<<3)|
 		(FIX(w)<<2)|
-		(FIX(e)<<1);
+		(FIX(e)<<1)|
+		(FIX(f)<<0);
 
 	// TODO: low power IRQ
 }
