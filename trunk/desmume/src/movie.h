@@ -61,6 +61,7 @@ public:
 	uint8 commands;
 	bool command_reset() { return (commands&MOVIECMD_RESET)!=0; }
 	bool command_microphone() { return (commands&1)!=0; }
+	bool command_lid() { return (commands&4)!=0; }
 
 	void toggleBit(int bit)
 	{

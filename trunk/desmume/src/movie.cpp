@@ -554,6 +554,11 @@ static void openRecordingMovie(const char* fname)
 			 else
 				 MicButtonPressed=0;
 
+			 if(mr->command_lid())
+				 mr->pad |= (1 << 0);
+			 else
+				 mr->pad |= (0 << 0);
+
 			 NDS_setPadFromMovie(mr->pad);
 			 NDS_setTouchFromMovie();
 		 }
@@ -580,11 +585,15 @@ static void openRecordingMovie(const char* fname)
 	 {
 		 MovieRecord mr;
 
+		 mr.commands = 0;
+
 		 if(MicButtonPressed == 1)
 			 mr.commands=1;
-		 else
-			 mr.commands = 0;
 		 mr.pad = nds.pad;
+
+		 if(nds.pad & (1<<0) == 1)
+			 mr.commands=4;
+
 		 if(nds.isTouch) {
 			 mr.touch.x = nds.touchX >> 4;
 			 mr.touch.y = nds.touchY >> 4;
