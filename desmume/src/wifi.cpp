@@ -239,7 +239,7 @@ static u32 reflect(u32 ref, char ch)
 	return value;
 }
 
-u32 WIFI_getCRC32(u8 *data, int len)
+static u32 WIFI_getCRC32(u8 *data, int len)
 {
 	u32 crc = 0xFFFFFFFF;
 
@@ -249,7 +249,7 @@ u32 WIFI_getCRC32(u8 *data, int len)
 	return (crc ^ 0xFFFFFFFF);
 }
 
-void WIFI_initCRC32Table()
+static void WIFI_initCRC32Table()
 {
 	u32 polynomial = 0x04C11DB7;
 
@@ -1237,7 +1237,7 @@ void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 		delete wifi->SoftAP.curPacket;
 }
 
-void WIFI_SoftAP_MakeRXHeader(wifimac_t *wifi, u16 flags, u16 xferRate, u16 len, u8 maxRSSI, u8 minRSSI)
+static void WIFI_SoftAP_MakeRXHeader(wifimac_t *wifi, u16 flags, u16 xferRate, u16 len, u8 maxRSSI, u8 minRSSI)
 {
 	*(u16*)&wifi->SoftAP.curPacket[0] = flags;
 
@@ -1407,7 +1407,7 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 	}
 }
 
-void WIFI_SoftAP_SendBeacon(wifimac_t *wifi)
+static void WIFI_SoftAP_SendBeacon(wifimac_t *wifi)
 {
 	int packetLen = sizeof(SoftAP_Beacon);
 	int totalLen = (packetLen + 12);
