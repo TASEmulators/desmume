@@ -13,6 +13,10 @@ Integer keys (also used for booleans, with a 1 or 0) will have a value that is a
  - version (required) - the version of the movie file format; for now it is always 3
  - emuVersion (required) - the version of the emulator used to produce the movie
  - rerecordCount (optional) - the rerecord count
+ - romChecksum (optional) - the CRC32 of the rom used to make the movie. should match values specified on advanscene.com
+ - romSerial (optional) - a concatenation of other uniquely identifying information about the rom (name,gamecode,makercode)
+ 
+The rom identification information may be used at a later point to warn about mismatches between movies and roms, but is not right now.
 
 String keys have values that consist of the remainder of the key-value pair line. As a consequence, string values cannot contain newlines.
  - romFilename (required) - the name of the file used to record the movie
@@ -34,7 +38,10 @@ The fields are as follows, except as noted in note C.
 'R','L','D','U','T','S','B','A','Y','X','W','E','G'
 
 field c is a variable length decimal integer which is a bitfield corresponding to miscellaneous input states which are valid at the start of the frame.
-There are currently no valid values and so this should always be 0.
+Therefore, no miscellaneous commands is represented by a value of 0.
+Here are the currently defined bit values:
+0x01 - Microphone Noise (hardcoded; to be held through duration of frame)
+
 
 the format of the main section is as follows:
 
