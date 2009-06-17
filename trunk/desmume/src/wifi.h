@@ -26,7 +26,9 @@
 #ifdef EXPERIMENTAL_WIFI
 
 #ifdef WIN32
-	#include "windriver.h"
+#include "windriver.h"
+#else
+#include "pcap.h"
 #endif
 
 #define HAVE_REMOTE
