@@ -1,7 +1,7 @@
 //RamWatch dialog was copied and adapted from GENS11: http://code.google.com/p/gens-rerecording/
 //Authors: Upthorn, Nitsuja, adelikat
 
-//#include "main.h"
+#include "main.h"
 #include "resource.h"
 #include "common.h"
 #include "NDSSystem.h"
