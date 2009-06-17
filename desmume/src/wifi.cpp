@@ -226,7 +226,7 @@ static pcap_t *desmume_pcap_open(const char *source, int snaplen, int flags,
 
 static int desmume_pcap_findalldevs(pcap_if_t **alldevs, char *errbuf)
 {
-	return PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING,, NULL, alldevs, errbuf);
+	return PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, alldevs, errbuf);
 }
 
 static void desmume_pcap_freealldevs(pcap_if_t *alldevs)
