@@ -30,6 +30,7 @@
 #include "resource.h"
 
 #include "common.h"
+#include "main.h"
 #include "NDSSystem.h"
 #include "ramwatch.h"
 
