@@ -1898,7 +1898,8 @@ int _main()
 #endif
 		{
 			romloaded = TRUE;
-			NDS_UnPause();
+			if(!cmdline.start_paused)
+				NDS_UnPause();
 		}
 	}
 
