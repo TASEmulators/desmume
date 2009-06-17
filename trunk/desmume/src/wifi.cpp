@@ -217,6 +217,61 @@ INLINE u32 WIFI_alignedLen(u32 len)
 	return ((len + 3) & ~3);
 }
 
+#ifdef WIN32
+static pcap_t *desmume_pcap_open(const char *source, int snaplen, int flags,
+		int read_timeout, char *errbuf)
+{
+	return PCAP::pcap_open(source, snaplen, flags, read_timeout, NULL, errbuf);
+}
+
+static int desmume_pcap_findalldevs(pcap_if_t **alldevs, char *errbuf)
+{
+	return PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING,, NULL, alldevs, errbuf);
+}
+
+static void desmume_pcap_freealldevs(pcap_if_t *alldevs)
+{
+	return PCAP::pcap_freealldevs(alldevs);
+}
+
+static void desmume_pcap_close(pcap_t *p)
+{
+	return PCAP::pcap_close(p);
+}
+
+static int desmume_pcap_sendpacket(pcap_t *p, u_char *buf, int size)
+{
+	return PCAP::pcap_sendpacket(p, buf, size);
+}
+
+#else
+static pcap_t *desmume_pcap_open(const char *device, int snaplen, int promisc,
+		int to_ms, char *errbuf)
+{
+	return pcap_open_live(device, snaplen, promisc, to_ms, errbuf);
+}
+
+static int desmume_pcap_findalldevs(pcap_if_t **alldevs, char *errbuf)
+{
+	return pcap_findalldevs(alldevs, errbuf);
+}
+
+static void desmume_pcap_freealldevs(pcap_if_t *alldevs)
+{
+	return pcap_freealldevs(alldevs);
+}
+
+static void desmume_pcap_close(pcap_t *p)
+{
+	return pcap_close(p);
+}
+
+static int desmume_pcap_sendpacket(pcap_t *p, u_char *buf, int size)
+{
+	return pcap_sendpacket(p, buf, size);
+}
+#endif
+
 /*******************************************************************************
 
 	CRC32 (http://www.codeproject.com/KB/recipes/crc32_large.aspx)
@@ -1206,20 +1261,20 @@ int WIFI_SoftAP_Init(wifimac_t *wifi)
 	
 	if(wifiMac.netEnabled)
 	{
-		if(PCAP::pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+		if(desmume_pcap_findalldevs(&alldevs, errbuf) == -1)
 		{
 			printf("SoftAP: PCAP error with pcap_findalldevs_ex(): %s\n", errbuf);
 			return 0;
 		}
 
-		wifi->SoftAP.bridge = PCAP::pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, NULL, errbuf);
+		wifi->SoftAP.bridge = desmume_pcap_open(WIFI_index_device(alldevs,CommonSettings.wifiBridgeAdapterNum)->name, PACKET_SIZE, 0, 1, errbuf);
 		if(wifi->SoftAP.bridge == NULL)
 		{
 			printf("SoftAP: PCAP error with pcap_open(): %s\n", errbuf);
 			return 0;
 		}
 
-		PCAP::pcap_freealldevs(alldevs);
+		desmume_pcap_freealldevs(alldevs);
 	}
 
 	return 1;
@@ -1230,7 +1285,7 @@ void WIFI_SoftAP_Shutdown(wifimac_t *wifi)
 	if(wifiMac.netEnabled)
 	{
 	if(wifi->SoftAP.bridge != NULL)
-		PCAP::pcap_close(wifi->SoftAP.bridge);
+		desmume_pcap_close(wifi->SoftAP.bridge);
 	}
 
 	if(wifi->SoftAP.curPacket)
@@ -1399,7 +1454,7 @@ void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len)
 			// TODO ?
 
 			if(wifi->netEnabled) //dont try to pcap out the packet unless network is enabled
-				PCAP::pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
+				desmume_pcap_sendpacket(wifi->SoftAP.bridge, ethernetframe, eflen);
 
 			delete ethernetframe;
 		}

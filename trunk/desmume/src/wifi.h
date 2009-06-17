@@ -28,7 +28,7 @@
 #ifdef WIN32
 #include "windriver.h"
 #else
-#include "pcap.h"
+#include "pcap/pcap.h"
 #endif
 
 #define HAVE_REMOTE
