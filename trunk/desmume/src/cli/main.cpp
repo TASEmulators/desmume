@@ -22,7 +22,6 @@
 #include <SDL/SDL_thread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libgen.h>
 
 
 #ifndef VERSION
@@ -33,7 +32,7 @@
  * FIXME: Not sure how to detect OpenGL in a platform portable way.
  */
 #ifdef HAVE_GL_GL_H
-#define INCLUDE_OPENGL_2D 1
+#define INCLUDE_OPENGL_2D
 #endif
 
 #ifdef INCLUDE_OPENGL_2D
@@ -62,7 +61,7 @@ volatile BOOL execute = FALSE;
 
 static float nds_screen_size_ratio = 1.0f;
 
-#define DISPLAY_FPS 1
+#define DISPLAY_FPS
 
 #ifdef DISPLAY_FPS
 #define NUM_FRAMES_TO_TIME 60
@@ -74,7 +73,7 @@ static float nds_screen_size_ratio = 1.0f;
 static SDL_Surface * surface;
 
 /* Flags to pass to SDL_SetVideoMode */
-static int sdl_videoFlags = 0;
+static int sdl_videoFlags;
 
 SoundInterface_struct *SNDCoreList[] = {
   &SNDDummy,
@@ -259,28 +258,28 @@ fill_config( struct my_config *config,
       config->disable_limiter = 1;
     }
     else if ( strncmp( argv[i], "--frameskip=", 12) == 0) {
-            char *end_char;
-            int frameskip = strtoul(&argv[i][12], &end_char, 10);
+      char *end_char;
+      int frameskip = strtoul(&argv[i][12], &end_char, 10);
 
-        if ( frameskip >= 0 ) {
-                config->frameskip = frameskip;
-        }
-        else {
-                fprintf(stderr, "frameskip must be >=0\n");
-                good_args = 0;
-        }
+      if ( frameskip >= 0 ) {
+        config->frameskip = frameskip;
+      }
+      else {
+        fprintf(stderr, "frameskip must be >=0\n");
+        good_args = 0;
+      }
     }
     else if ( strncmp( argv[i], "--limiter-period=", 17) == 0) {
-            char *end_char;
-            int period = strtoul(&argv[i][17], &end_char, 10);
+      char *end_char;
+      int period = strtoul(&argv[i][17], &end_char, 10);
 
-        if ( period >= 0 && period <= 30 ) {
-                config->fps_limiter_frame_period = period;
-        }
-        else {
-                fprintf(stderr, "fps lmiter period must be >=0 and <= 30!\n");
-                good_args = 0;
-        }
+      if ( period >= 0 && period <= 30 ) {
+        config->fps_limiter_frame_period = period;
+      }
+      else {
+        fprintf(stderr, "fps lmiter period must be >=0 and <= 30!\n");
+        good_args = 0;
+      }
     }
     else if ( strncmp( argv[i], "--3d-engine=", 12) == 0) {
       char *end_char;
@@ -429,14 +428,9 @@ fps_limiter_fn( Uint32 interval, void *param) {
 static int
 initGL( GLuint *screen_texture) {
   GLenum errCode;
-  int init_good = 1;
-  int i;
   u16 blank_texture[256 * 512];
 
-  for ( i = 0; i < 256 * 512; i++) {
-    blank_texture[i] = 0x001f;
-  }
-
+  memset(blank_texture, 0x001f, sizeof(blank_texture));
 
   /* Enable Texture Mapping */
   glEnable( GL_TEXTURE_2D );
@@ -474,10 +468,10 @@ initGL( GLuint *screen_texture) {
     errString = gluErrorString(errCode);
     fprintf( stderr, "Failed to init GL: %s\n", errString);
 
-    init_good = 0;
+    return 0;
   }
 
-  return init_good;
+  return 1;
 }
 
 static void
@@ -541,12 +535,6 @@ resizeWindow( u16 width, u16 height) {
       left = 0.0;
       right = 256.0 * ((double)width / other_dimen);
     }
-
-    /*
-    printf("%d,%d\n", width, height);
-    printf("l %lf, r %lf, t %lf, b %lf, other dimen %lf\n",
-           left, right, top, bottom, other_dimen);
-    */
 
     /* get the area (0,0) to (256,384) into the middle of the viewport */
     gluOrtho2D( left, right, bottom, top);
@@ -824,12 +812,6 @@ int main(int argc, char ** argv) {
   }
 #endif
 
-  /*      // This has to get fixed yet
-          strncpy(szRomPath, dirname(argv[1]), ARRAY_SIZE(szRomPath));
-          cflash_close();
-          cflash_init();
-  */
-  
   execute = TRUE;
 
   if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1)
@@ -974,7 +956,6 @@ int main(int argc, char ** argv) {
       fps /= NUM_FRAMES_TO_TIME * 1000.f;
       fps = 1.0f / fps;
 
-      //printf("fps %f\n", fps);
       fps_frame_counter = 0;
       fps_timing = 0;
 
