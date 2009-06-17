@@ -53,6 +53,7 @@
 #include "../render3D.h"
 #include "../rasterize.h"
 #include "../saves.h"
+#include "../mic.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"
 #endif
@@ -101,6 +102,7 @@ const char * save_type_names[] = {
 
 
 /* Our keyboard config is different because of the directional keys */
+/* Please note that m is used for fake microphone */
 const u16 cli_kb_cfg[NB_KEYS] =
   { 
     SDLK_x,         // A
@@ -118,6 +120,8 @@ const u16 cli_kb_cfg[NB_KEYS] =
     SDLK_p,         // DEBUG
     SDLK_o          // BOOST
   };
+
+static BOOL enable_fake_mic;
 
 struct my_config {
   int load_slot;
@@ -680,6 +684,10 @@ static void desmume_cycle(int *sdl_quit, struct my_config * my_config)
             {
               case SDLK_ESCAPE:
                 *sdl_quit = 1;
+                break;
+              case SDLK_m:
+                enable_fake_mic = !enable_fake_mic;
+                Mic_DoNoise(enable_fake_mic);
                 break;
               default:
                 break;
