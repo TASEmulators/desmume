@@ -1598,6 +1598,9 @@ void NDS_exec(s32 nb)
 
 	LagFrameFlag=1;
 
+	if((currFrameCounter&63) == 0)
+		MMU_new.backupDevice.lazy_flush();
+
 	//increase this to execute more instructions in each batch (reducing overhead)
 	//the value of 4 seems to optimize speed.. do lower values increase precision? 
 	//answer: YES, MAYBE. and after 0.9.3 we need to study it (spider-man)
@@ -2477,8 +2480,8 @@ void NDS_setPadFromMovie(u16 pad)
 		FIX(pad,3), //X
 		FIX(pad,2),
 		FIX(pad,1),
-		FIX(pad,13),
-		FIX(pad,0)
+		FIX(pad,0),
+		FIX(pad,13)
 		);
 #undef FIX
 }
@@ -2637,8 +2640,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 		(FIX(y)<<4)|
 		(FIX(x)<<3)|
 		(FIX(w)<<2)|
-		(FIX(e)<<1)|
-		(FIX(f)<<0);
+		(FIX(e)<<1);
 
 	// TODO: low power IRQ
 }
