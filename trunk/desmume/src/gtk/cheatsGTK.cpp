@@ -39,8 +39,17 @@ enum {
     NUM_COL
 };
 
+enum
+{
+  COLUMN_SIZE_TEXT,
+  NUM_SIZE_COLUMNS
+};
+
+GtkTreeModel * size_model;
+
 enum {
     TYPE_TOGGLE,
+    TYPE_COMBO,
     TYPE_STRING
 };
 
@@ -50,7 +59,7 @@ static struct {
     gint column;
 } columnTable[]={
     { "Enabled", TYPE_TOGGLE, COLUMN_ENABLED},
-    { "Size", TYPE_STRING, COLUMN_SIZE},
+    { "Size", TYPE_COMBO, COLUMN_SIZE},
     { "Offset", TYPE_STRING, COLUMN_HI},
     { "Value", TYPE_STRING, COLUMN_LO},
     { "Description", TYPE_STRING, COLUMN_DESC}
@@ -177,7 +186,39 @@ static void cheat_list_add_cheat(GtkWidget * widget, gpointer data)
 #undef NEW_DESC
 }
 
-static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore *store)
+static GtkTreeModel *
+create_numbers_model (void)
+{
+#define N_NUMBERS 4
+  gint i = 0;
+  GtkListStore *model;
+  GtkTreeIter iter;
+
+  /* create list store */
+  model = gtk_list_store_new (NUM_SIZE_COLUMNS, G_TYPE_STRING, G_TYPE_INT);
+
+  /* add numbers */
+  for (i = 1; i < N_NUMBERS+1; i++)
+    {
+      char str[2];
+
+      str[0] = '0' + i;
+      str[1] = '\0';
+
+      gtk_list_store_append (model, &iter);
+
+      gtk_list_store_set (model, &iter,
+                          COLUMN_SIZE_TEXT, str,
+                          -1);
+    }
+
+  return GTK_TREE_MODEL (model);
+
+#undef N_NUMBERS
+}
+
+static void cheat_list_add_columns(GtkTreeView * tree,
+                                   GtkListStore * store)
 {
 
     GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
@@ -186,20 +227,40 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore *store)
         GtkCellRenderer *renderer;
         GtkTreeViewColumn *column;
         const gchar *attrib;
-        if (columnTable[ii].type == TYPE_TOGGLE) {
+        switch (columnTable[ii].type) {
+        case TYPE_TOGGLE:
             renderer = gtk_cell_renderer_toggle_new();
             g_signal_connect(renderer, "toggled",
                              G_CALLBACK(enabled_toggled), model);
             attrib = "active";
-        } else {
+            break;
+        case TYPE_STRING:
             renderer = gtk_cell_renderer_text_new();
-            g_object_set (renderer, "editable", TRUE, NULL);
-            g_signal_connect (renderer, "edited", G_CALLBACK (cheat_list_modify_cheat), store);
+            g_object_set(renderer, "editable", TRUE, NULL);
+            g_signal_connect(renderer, "edited",
+                             G_CALLBACK(cheat_list_modify_cheat), store);
             attrib = "text";
+            break;
+        case TYPE_COMBO:
+            renderer = gtk_cell_renderer_combo_new();
+            g_object_set(renderer,
+                         "model", size_model,
+                         "text-column", COLUMN_SIZE_TEXT,
+                         "editable", TRUE, 
+                         "has-entry", FALSE, 
+                         NULL);
+            g_signal_connect(renderer, "edited",
+                             G_CALLBACK(cheat_list_modify_cheat), store);
+            attrib = "text";
+            break;
         }
-        column = gtk_tree_view_column_new_with_attributes(columnTable[ii].caption,
-                                   renderer, attrib, columnTable[ii].column, NULL);
-        g_object_set_data (G_OBJECT (renderer), "column", GINT_TO_POINTER (columnTable[ii].column));
+        column =
+            gtk_tree_view_column_new_with_attributes(columnTable[ii].
+                                                     caption, renderer,
+                                                     attrib, columnTable[ii].column,
+                                                     NULL);
+        g_object_set_data(G_OBJECT(renderer), "column",
+                          GINT_TO_POINTER(columnTable[ii].column));
         gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column);
     }
 
@@ -254,6 +315,7 @@ static GtkWidget *cheat_list_create_ui()
     g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_remove_cheat), tree);
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
+    size_model = create_numbers_model();
     cheat_list_add_columns(GTK_TREE_VIEW(tree), store);
     
     /* Setup the selection handler */
