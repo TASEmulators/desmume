@@ -41,6 +41,7 @@ public:
 	std::string play_movie_file;
 	std::string record_movie_file;
 	int arm9_gdb_port, arm7_gdb_port;
+	int start_paused;
 
 	//load up the common commandline options
 	void loadCommonOptions();
