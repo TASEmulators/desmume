@@ -1117,8 +1117,6 @@ DWORD WINAPI run()
 			{
 				Lock lock;
 				NDS_exec<false>();
-				if((currFrameCounter&63) == 0)
-					MMU_new.backupDevice.lazy_flush();
 				win_sound_samplecounter = 735;
 			}
 			DRV_AviVideoUpdate((u16*)GPU_screen);
