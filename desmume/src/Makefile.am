@@ -16,7 +16,7 @@ libdesmume_a_SOURCES = \
         arm_instructions.cpp arm_instructions.h \
         bios.cpp bios.h bits.h cp15.cpp cp15.h \
         cflash.cpp cflash.h fs.h \
-	common.cpp common.h commandline.h commandline.cpp \
+	common.cpp common.h \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
 	dscard.h fat.h FIFO.cpp FIFO.h \
@@ -53,6 +53,9 @@ libdesmume_a_SOURCES = \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	version.h
+if HAVE_GLIB
+libdesmume_a_SOURCES += commandline.h commandline.cpp
+endif
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
