@@ -22,6 +22,9 @@
 #ifdef _MSC_VER
 #include "svnrev.h"
 #else
+#ifdef SVN_REV
+#define SVN_REV_STR SVN_REV
+#else
 #define SVN_REV_STR ""
 #endif
 
