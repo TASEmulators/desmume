@@ -51,7 +51,8 @@ libdesmume_a_SOURCES = \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp \
 	mic.cpp mic.h \
 	cheatSystem.cpp cheatSystem.h \
-	texcache.cpp texcache.h rasterize.cpp rasterize.h
+	texcache.cpp texcache.h rasterize.cpp rasterize.h \
+	version.h
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
 endif
