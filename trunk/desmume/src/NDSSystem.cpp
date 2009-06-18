@@ -42,12 +42,11 @@
 #include "debug.h"
 #include "cheatSystem.h"
 #include "movie.h"
+#include "disassembler.h"
 
 #ifdef _WIN32
 #include "./windows/disView.h"
 #endif
-
-//#define USE_REAL_BIOS
 
 TCommonSettings CommonSettings;
 static BaseDriver _stub_driver;
@@ -1590,6 +1589,10 @@ void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
+//#define LOG_ARM9
+//#define LOG_ARM7
+//static bool dolog = false;
+
 
 template<bool FORCE>
 void NDS_exec(s32 nb)
@@ -1616,19 +1619,6 @@ void NDS_exec(s32 nb)
 		{
 			if(nds.ARM9Cycle<=nds.cycles)
 			{
-#ifdef LOG_ARM9
-				if(logcount==3){
-					if(NDS_ARM9.CPSR.bits.T)
-						des_thumb_instructions_set[(NDS_ARM9.instruction)>>6](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, logbuf);
-					else
-						des_arm_instructions_set[INDEX(NDS_ARM9.instruction)](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, logbuf);
-					sprintf(logbuf + strlen(logbuf), "%s\t%08X\n\t R00: %08X, R01: %08X, R02: %08X, R03: %08X, R04: %08X, R05: %08X, R06: %08X, R07: %08X,\n\t R08: %08X, R09: %08X, R10: %08X, R11: %08X, R12: %08X, R13: %08X, R14: %08X, R15: %08X,\n\t CPSR: %08X , SPSR: %08X",
-						NDS_ARM9.instruction, NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
-						NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15],
-						NDS_ARM9.CPSR, NDS_ARM9.SPSR);  
-					LOG(logbuf);
-				}
-#endif
 				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
 					if(nds.sleeping) {
@@ -1638,8 +1628,29 @@ void NDS_exec(s32 nb)
 						nds.ARM9Cycle += CYCLES_TO_WAIT_FOR_IRQ;
 						nds.idleCycles += CYCLES_TO_WAIT_FOR_IRQ;
 						break; //it is rather pointless to do this more than once
-					} else
+					} else {
+						#ifdef LOG_ARM9
+						if(dolog)
+						{
+							char dasmbuf[1024];
+							char logbuf[4096];
+							if(NDS_ARM9.CPSR.bits.T)
+								des_thumb_instructions_set[((NDS_ARM9.instruction)>>6)&1023](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, dasmbuf);
+							else
+								des_arm_instructions_set[INDEX(NDS_ARM9.instruction)](NDS_ARM9.instruct_adr, NDS_ARM9.instruction, dasmbuf);
+		
+							printf("%05d %08d 9:%08X %08X %-30s %08X R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
+								currFrameCounter, nds.cycles, 
+								NDS_ARM9.instruct_adr,NDS_ARM9.instruction, dasmbuf, 
+								NDS_ARM9.R[0],  NDS_ARM9.R[1],  NDS_ARM9.R[2],  NDS_ARM9.R[3],  NDS_ARM9.R[4],  NDS_ARM9.R[5],  NDS_ARM9.R[6],  NDS_ARM9.R[7], 
+								NDS_ARM9.R[8],  NDS_ARM9.R[9],  NDS_ARM9.R[10],  NDS_ARM9.R[11],  NDS_ARM9.R[12],  NDS_ARM9.R[13],  NDS_ARM9.R[14],  NDS_ARM9.R[15]);  
+						}
+						#endif
+
+						bool r7zero = NDS_ARM9.R[7] == 0;
 						nds.ARM9Cycle += armcpu_exec<ARMCPU_ARM9>();
+						bool r7one = NDS_ARM9.R[7] == 1;
+					}
 				}
 #ifdef _WIN32
 #ifdef DEVELOPER
@@ -1663,19 +1674,6 @@ void NDS_exec(s32 nb)
 
 			if(nds.ARM7Cycle<=nds.cycles)
 			{
-#ifdef LOG_ARM7
-				if(logcount==1){
-					if(NDS_ARM7.CPSR.bits.T)
-						des_thumb_instructions_set[(NDS_ARM7.instruction)>>6](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, logbuf);
-					else
-						des_arm_instructions_set[INDEX(NDS_ARM7.instruction)](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, logbuf);
-					sprintf(logbuf + strlen(logbuf), "%s\n\t R00: %08X, R01: %08X, R02: %08X, R03: %08X, R04: %08X, R05: %08X, R06: %08X, R07: %08X,\n\t R08: %08X, R09: %08X, R10: %08X, R11: %08X, R12: %08X, R13: %08X, R14: %08X, R15: %08X,\n\t CPSR: %08X , SPSR: %08X",
-						NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
-						NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15],
-						NDS_ARM7.CPSR, NDS_ARM7.SPSR);  
-					LOG(logbuf);
-				}
-#endif
 				for (i = 0; i < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); i++)
 				{
 					if(nds.sleeping) {
@@ -1687,7 +1685,25 @@ void NDS_exec(s32 nb)
 						break; //it is rather pointless to do this more than once
 					}
 					else
+					{
+						#ifdef LOG_ARM7
+						if(dolog)
+						{
+							char dasmbuf[1024];
+							if(NDS_ARM7.CPSR.bits.T)
+								des_thumb_instructions_set[((NDS_ARM7.instruction)>>6)&1023](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, dasmbuf);
+							else
+								des_arm_instructions_set[INDEX(NDS_ARM7.instruction)](NDS_ARM7.instruct_adr, NDS_ARM7.instruction, dasmbuf);
+							printf("%05d %08d 7:%08X %08X %-30s %08X R00:%08X R01:%08X R02:%08X R03:%08X R04:%08X R05:%08X R06:%08X R07:%08X R08:%08X R09:%08X R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X\n",
+								currFrameCounter, nds.cycles, 
+								NDS_ARM7.instruct_adr,NDS_ARM7.instruction, dasmbuf, 
+								NDS_ARM7.R[0],  NDS_ARM7.R[1],  NDS_ARM7.R[2],  NDS_ARM7.R[3],  NDS_ARM7.R[4],  NDS_ARM7.R[5],  NDS_ARM7.R[6],  NDS_ARM7.R[7], 
+								NDS_ARM7.R[8],  NDS_ARM7.R[9],  NDS_ARM7.R[10],  NDS_ARM7.R[11],  NDS_ARM7.R[12],  NDS_ARM7.R[13],  NDS_ARM7.R[14],  NDS_ARM7.R[15],
+								NDS_ARM7.CPSR, NDS_ARM7.SPSR);  
+						}
+						#endif
 						nds.ARM7Cycle += (armcpu_exec<ARMCPU_ARM7>()<<1);
+					}
 				}
 #ifdef _WIN32
 #ifdef DEVELOPER
@@ -2434,6 +2450,8 @@ void NDS_exec(s32 nb)
 		lastLag = lagframecounter;
 		lagframecounter = 0;
 	}
+
+	currFrameCounter++;
 }
 
 static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {

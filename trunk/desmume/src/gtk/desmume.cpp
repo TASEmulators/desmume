@@ -88,6 +88,5 @@ void desmume_cycle( void)
   FCEUMOV_AddInputState();
   NDS_exec<false>();
   SPU_Emulate_user();
-  currFrameCounter++; //this needs to be moved into NDS_exec somehow
 }
  

@@ -4049,7 +4049,7 @@ void FASTCALL MMU_DumpMemBlock(u8 proc, u32 address, u32 size, u8 *buffer)
 
 	for(i = 0, curaddr = address; i < size; i++, curaddr++)
 	{
-		buffer[i] = T1ReadByte(MMU.MMU_MEM[proc][(curaddr >> 20) & 0xFF], (curaddr & MMU.MMU_MASK[proc][(curaddr >> 20) & 0xFF]));
+		buffer[i] = _MMU_read08(proc,MMU_AT_GPU,curaddr);
 	}
 }
 
