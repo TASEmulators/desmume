@@ -286,6 +286,7 @@ void BackupDevice::reset()
 	flushPending = false;
 	lazyFlushPending = false;
 	data.resize(0);
+	write_enable = FALSE;
 	data_autodetect.resize(0);
 
 	state = DETECTING;

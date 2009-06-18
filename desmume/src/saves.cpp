@@ -162,6 +162,7 @@ SFORMAT SF_NDS[]={
 	{ "_9CY", 4, 1, &nds.ARM9Cycle},
 	{ "_7CY", 4, 1, &nds.ARM7Cycle},
 	{ "_CYC", 4, 1, &nds.cycles},
+	{ "_WCY", 4, 1, &nds.wifiCycle},
 	{ "_TCY", 4, 8, nds.timerCycle},
 	{ "_TOV", 4, 8, nds.timerOver},
 	{ "_NHB", 4, 1, &nds.nextHBlank},
