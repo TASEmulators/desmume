@@ -27,6 +27,7 @@
 #else
 #define SVN_REV_STR ""
 #endif
+#endif
 
 #define DESMUME_NAME "DeSmuME"
 
