@@ -2208,6 +2208,8 @@ void input_process()
 	if(AutoHoldPressed && A) AutoHold.A      ^= true;
 	if(AutoHoldPressed && Y) AutoHold.Y      ^= true;
 	if(AutoHoldPressed && X) AutoHold.X      ^= true;
+	if(AutoHoldPressed && W) AutoHold.L      ^= true;
+	if(AutoHoldPressed && E) AutoHold.R      ^= true;
 
 	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
 

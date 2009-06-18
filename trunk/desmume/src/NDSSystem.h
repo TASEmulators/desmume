@@ -84,6 +84,8 @@ struct autohold {
 	bool A;
 	bool Y;
 	bool X;
+	bool L;
+	bool R;
 
 	bool &hold(int i) { return ((bool*)this)[i]; }
 };

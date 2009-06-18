@@ -2477,7 +2477,7 @@ static std::string MakeInputDisplayString(u16 pad, u16 padExt) {
 
 void ClearAutoHold(void) {
 	
-	for (int i=0; i < 10; i++) {
+	for (int i=0; i < 12; i++) {
 		AutoHold.hold(i)=false;
 	}
 }
@@ -2560,6 +2560,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	if(AutoHold.A)     A=!padarray[7];
 	if(AutoHold.Y)     Y=!padarray[8];
 	if(AutoHold.X)     X=!padarray[9];
+	if(AutoHold.L)     W=!padarray[10];
+	if(AutoHold.R)     E=!padarray[11];
 
 	//this macro is the opposite of what you would expect
 #define FIX(b) (b?0:0x80)
