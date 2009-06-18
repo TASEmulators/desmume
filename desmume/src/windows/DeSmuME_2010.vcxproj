@@ -336,6 +336,7 @@
     <ClInclude Include="..\utils\md5.h" />
     <ClInclude Include="..\utils\valuearray.h" />
     <ClInclude Include="..\utils\xstring.h" />
+    <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />
     <ClInclude Include="AboutBox.h" />
     <ClInclude Include="aviout.h" />

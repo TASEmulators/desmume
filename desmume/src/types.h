@@ -21,6 +21,11 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
+//todo - everyone will want to support this eventually, i suppose
+#ifdef _MSC_VER
+#include "config.h"
+#endif
+
 #ifndef _MSC_VER
 #define NOSSE2
 #endif
