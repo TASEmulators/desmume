@@ -42,7 +42,7 @@
 #include "debug.h"
 #include "cheatSystem.h"
 #include "movie.h"
-#include "disassembler.h"
+#include "Disassembler.h"
 
 #ifdef _WIN32
 #include "./windows/disView.h"
