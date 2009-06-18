@@ -24,6 +24,15 @@ AC_PROG_RANLIB
 dnl -- check for endianess
 AC_C_BIGENDIAN
 
+# took this from geany, hope it works
+REVISION="r0"
+SVN=`which svn 2>/dev/null`
+if test -d ".svn" -a "x${SVN}" != "x" -a -x "${SVN}" ; then
+  REVISION=r`$SVN info|grep 'Last Changed Rev'|cut -d' ' -f4`
+fi
+AC_DEFINE_UNQUOTED([SVN_REV], "$REVISION", [subversion revision number])
+
+
 dnl --- Other prerequisites ---
 dnl - Check for pkg-config macros
 m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
