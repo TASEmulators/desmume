@@ -1,4 +1,5 @@
 /*  Copyright (C) 2005 Guillaume Duhamel
+	Copyright (C) 2008-2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -14,7 +15,7 @@
 
     You should have received a copy of the GNU General Public License
     along with DeSmuME; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
 #ifndef TYPES_HPP
@@ -22,64 +23,14 @@
 
 //todo - everyone will want to support this eventually, i suppose
 #ifdef _MSC_VER
-#include "config.h"
+#include "svnrev.h"
+#else
+#define SVN_REV_STR ""
 #endif
 
 #ifndef _MSC_VER
 #define NOSSE2
 #endif
-
-#define DESMUME_NAME "DeSmuME"
-
-#ifdef _WIN64
-#define DESMUME_PLATFORM_STRING " x64"
-#else
-#ifdef _WIN32
-#define DESMUME_PLATFORM_STRING " x86"
-#else
-#define DESMUME_PLATFORM_STRING ""
-#endif
-#endif
-
-#ifdef NOSSE2
-#define DESMUME_CPUEXT_STRING " NOSSE2"
-#else
-#define DESMUME_CPUEXT_STRING ""
-#endif
-
-#ifdef DEVELOPER
-#define DESMUME_FEATURE_STRING " dev+"
-#else
-#define DESMUME_FEATURE_STRING ""
-#endif
-
-#ifdef DEBUG
-#define DESMUME_SUBVERSION_STRING " debug"
-#elif defined(PUBLIC_RELEASE)
-#define DESMUME_SUBVERSION_STRING ""
-#else
-#define DESMUME_SUBVERSION_STRING " svn"
-#endif
-
-#ifdef __INTEL_COMPILER
-#define DESMUME_COMPILER " (Intel) "
-#define DESMUME_COMPILER_DETAIL " (Intel) "
-#elif defined(_MSC_VER)
-#define DESMUME_COMPILER ""
-#define DESMUME_COMPILER_DETAIL " msvc " _Py_STRINGIZE(_MSC_VER)
-#define _Py_STRINGIZE(X) _Py_STRINGIZE1((X))
-#define _Py_STRINGIZE1(X) _Py_STRINGIZE2 ## X
-#define _Py_STRINGIZE2(X) #X
-//re: http://72.14.203.104/search?q=cache:HG-okth5NGkJ:mail.python.org/pipermail/python-checkins/2002-November/030704.html+_msc_ver+compiler+version+string&hl=en&gl=us&ct=clnk&cd=5
-#else
-// TODO: make for others compilers
-#define DESMUME_COMPILER ""
-#define DESMUME_COMPILER_DETAIL ""
-#endif
-
-#define DESMUME_VERSION_NUMERIC 90300
-#define DESMUME_VERSION_STRING " " "0.9.3" DESMUME_SUBVERSION_STRING DESMUME_FEATURE_STRING DESMUME_PLATFORM_STRING DESMUME_CPUEXT_STRING DESMUME_COMPILER
-#define DESMUME_NAME_AND_VERSION " " DESMUME_NAME DESMUME_VERSION_STRING
 
 #ifdef _WIN32
 #define strcasecmp(x,y) _stricmp(x,y)

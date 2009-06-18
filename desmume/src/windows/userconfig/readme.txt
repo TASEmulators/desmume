@@ -1,0 +1,1 @@
+see the defaultconfig directory for more information on what this is all about

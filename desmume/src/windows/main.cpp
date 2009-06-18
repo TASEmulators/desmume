@@ -34,6 +34,7 @@
 #include <vector>
 #include <sstream>
 #include <tchar.h>
+#include "version.h"
 #include "CWindow.h"
 #include "../MMU.h"
 #include "../armcpu.h"

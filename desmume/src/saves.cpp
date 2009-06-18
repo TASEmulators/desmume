@@ -33,6 +33,7 @@
 #include "render3D.h"
 #include "cp15.h"
 #include "GPU_osd.h"
+#include "version.h"
 
 #include "memorystream.h"
 #include "readwrite.h"
