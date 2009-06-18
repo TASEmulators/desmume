@@ -21,13 +21,6 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
-//todo - everyone will want to support this eventually, i suppose
-#ifdef _MSC_VER
-#include "svnrev.h"
-#else
-#define SVN_REV_STR ""
-#endif
-
 #ifndef _MSC_VER
 #define NOSSE2
 #endif
