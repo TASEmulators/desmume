@@ -31,6 +31,7 @@
 #include "rtc.h"
 #include "common.h"
 #include "mic.h"
+#include "version.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening

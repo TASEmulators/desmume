@@ -21,6 +21,7 @@
 
 
 #include "../common.h"
+#include "version.h"
 
 #include "AboutBox.h"
 #include "resource.h"

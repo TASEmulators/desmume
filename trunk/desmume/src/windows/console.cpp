@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <io.h>
-#include "types.h"
+#include "version.h"
 
 
 ///////////////////////////////////////////////////////////////// Console
