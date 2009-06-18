@@ -88,6 +88,7 @@ if test "x$osmesa" = "xyes" ; then
 fi
 
 dnl - Check for GTK and/or libglade
+FOUND_GLIB=no
 GLIB_VER=2.8
 GTK_VER=2.6
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
@@ -95,8 +96,8 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
   if test ! "x$HAVE_PKG" = "x" ; then
     PKG_CHECK_MODULES(GLIB,
                       glib-2.0 >= $GLIB_VER,
-                      HAVE_GLIB=yes,
-                      HAVE_GLIB=no)
+                      FOUND_GLIB=yes,
+                      FOUND_GLIB=no)
 
     PKG_CHECK_MODULES(GTK,
                       gtk+-2.0 >= $GTK_VER,
@@ -133,6 +134,9 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
 ],[
     echo "WARNING: pkg-config is not available therefore gtk and gtk-glade UIs are not available either."
 ])
+
+dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
+AM_CONDITIONAL([HAVE_GLIB], [test "${FOUND_GLIB}" = "yes"])
 
 dnl - If the gtkGLext package is available define the corresponding C macro
 if test "x$HAVE_GTKGLEXT" = "xyes"; then
