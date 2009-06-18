@@ -1258,8 +1258,7 @@ DWORD WINAPI run()
 				if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 //				DisplayMessage();
 				CheckMessages();
-				
-				currFrameCounter++; //this needs to be moved into NDS_exec somehow
+	
 		}
 
 		paused = TRUE;
