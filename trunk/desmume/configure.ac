@@ -176,6 +176,16 @@ if test "x$HAVE_SDL" = "xyes"; then
   fi
 fi
 
+dnl - wifi support
+AC_ARG_ENABLE(wifi,
+	      [AC_HELP_STRING(--enable-wifi, enable experimental wifi support)],
+	      [
+		AC_CHECK_LIB(pcap, main,[
+		  AC_DEFINE(EXPERIMENTAL_WIFI)
+		  LIBS="$LIBS -lpcap"
+		])
+	      ])
+
 dnl Set compiler library flags per target.
 case $target in
   *linux* | *bsd*)
