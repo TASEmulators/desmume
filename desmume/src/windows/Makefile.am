@@ -5,7 +5,7 @@ EXTRA_DIST = DeSmuME.ico \
 	resources.rc
 bin_PROGRAMS = desmume
 desmume_SOURCES = \
-	afxres.h \
+	afxres.h aviout.h config.h \
         CWindow.cpp CWindow.h \
         disView.cpp disView.h ginfo.cpp ginfo.h \
         IORegView.cpp IORegView.h \
@@ -24,6 +24,8 @@ desmume_SOURCES = \
 	throttle.cpp throttle.h windriver.h \
 	cheatsWin.cpp cheatsWin.h gbaslot_config.cpp gbaslot_config.h \
 	mic.cpp hotkey.cpp hotkey.h \
+	ram_search.cpp ram_search.h ramwatch.cpp ramwatch.h \
+	replay.cpp replay.h soundView.cpp soundView.h \
 	DeSmuME_2005.vcproj DeSmuME_2008.vcproj \
 	DeSmuME_Intel.icproj DeSmuME_Intel.vcproj DeSmuME_Intel.sln \
 	DeSmuME_x64.manifest DeSmuME_x86.manifest
