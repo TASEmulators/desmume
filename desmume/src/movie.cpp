@@ -166,9 +166,9 @@ void MovieRecord::dump(MovieData* md, std::ostream* os, int index)
 MovieData::MovieData()
 	: version(MOVIE_VERSION)
 	, emuVersion(DESMUME_VERSION_NUMERIC)
+	, romChecksum(0)
 	, rerecordCount(1)
 	, binaryFlag(false)
-	, romChecksum(0)
 {
 }
 
