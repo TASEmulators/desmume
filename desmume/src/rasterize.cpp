@@ -389,15 +389,26 @@ struct Shader
 			u = invu*w;
 			v = invv*w;
 			texColor = sampler.sample(u,v);
-			u32 toonColorVal; toonColorVal = gfx3d.rgbToonTable[materialColor.r];
+			u32 toonColorVal;
+			toonColorVal = gfx3d.rgbToonTable[materialColor.r];
 			FragmentColor toonColor;
 			toonColor.r = ((toonColorVal & 0x0000FF) >>  3);
 			toonColor.g = ((toonColorVal & 0x00FF00) >> 11);
 			toonColor.b = ((toonColorVal & 0xFF0000) >> 19);
-			dst.r = modulate_table[texColor.r][toonColor.r];
-			dst.g = modulate_table[texColor.g][toonColor.g];
-			dst.b = modulate_table[texColor.b][toonColor.b];
-			dst.a = modulate_table[texColor.a][materialColor.a];
+			if(sampler.texFormat == 0)
+			{
+				//if no texture is set then we dont need to modulate texture with toon 
+				//but rather just use toon directly
+				dst = toonColor;
+				dst.a = materialColor.a;
+			}
+			else
+			{
+				dst.r = modulate_table[texColor.r][toonColor.r];
+				dst.g = modulate_table[texColor.g][toonColor.g];
+				dst.b = modulate_table[texColor.b][toonColor.b];
+				dst.a = modulate_table[texColor.a][materialColor.a];
+			}
 			if(gfx3d.shading == GFX3D::HIGHLIGHT)
 			{
 				dst.r = min<u8>(31, (dst.r + toonColor.r));
