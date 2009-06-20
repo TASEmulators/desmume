@@ -233,6 +233,10 @@ int MovieData::dump(std::ostream *os, bool binary)
 	*os << "romChecksum " << u32ToHexString(gameInfo.crc) << endl;
 	*os << "romSerial " << romSerial << endl;
 	*os << "guid " << guid.toString() << endl;
+	*os << "useExtBios " << CommonSettings.UseExtBIOS << endl;
+
+	if(CommonSettings.UseExtBIOS)
+		*os << "swiFromBios " << CommonSettings.SWIFromBIOS << endl;
 
 	for(uint32 i=0;i<comments.size();i++)
 		*os << "comment " << wcstombs(comments[i]) << endl;
