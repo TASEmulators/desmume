@@ -364,17 +364,17 @@ struct Shader
 			dst.b = modulate_table[texColor.b][materialColor.b];
 			dst.a = modulate_table[texColor.a][materialColor.a];
 			//dst.color.components.a = 31;
-			//#ifdef _MSC_VER
-			//if(GetAsyncKeyState(VK_SHIFT)) {
-			//	//debugging tricks
-			//	dst = materialColor;
-			//	if(GetAsyncKeyState(VK_TAB)) {
-			//		u8 alpha = dst.a;
-			//		dst.color = polynum*8+8;
-			//		dst.a = alpha;
-			//	}
-			//}
-			//#endif
+			#ifdef _MSC_VER
+			if(GetAsyncKeyState(VK_SHIFT)) {
+				//debugging tricks
+				dst = materialColor;
+				if(GetAsyncKeyState(VK_TAB)) {
+					u8 alpha = dst.a;
+					dst.color = polynum*8+8;
+					dst.a = alpha;
+				}
+			}
+			#endif
 			break;
 		case 1: //decal
 			u = invu*w;
@@ -469,10 +469,8 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	{
 		float test = -1.2f;
 		u32 test2 = u32floor(test);
-		//depth = fastFloor(z*0x7FFF)>>8;
-		//depth = (u32)(z*0x7FFF);
-		depth = u32floor(z*0x7FFF);
-		//depth = z*0xFFFFFF;
+		//depth = u32floor(z*0x7FFF); //the traditional value
+		depth = u32floor(z*0xFFFFFF); //sonic chronicles uses depth clear and this makes it work
 	}
 	if(polyAttr.decalMode)
 	{
@@ -1173,8 +1171,48 @@ static void SoftRastRender()
 	clearFragment.stencil = 0;
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
-	for(int i=0;i<256*192;i++)
-		screenColor[i] = clearFragmentColor;
+
+	if(gfx3d.enableClearImage)
+	{
+		u16* clearImage = (u16*)ARM9Mem.texInfo.textureSlotAddr[2];
+		u16* clearDepth = (u16*)ARM9Mem.texInfo.textureSlotAddr[3];
+
+		//not emulated until we actually have a test case
+		//(since in the meantime it would just slow us down)
+		//(and when we find a case, it will be obvious that it isnt scrolling, instead of possibly obscured by a bug)
+		u16 scroll = T1ReadWord(ARM9Mem.ARM9_REG,0x356); //CLRIMAGE_OFFSET
+		u16 xscroll = scroll&0xFF;
+		u16 yscroll = (scroll>>8)&0xFF;
+
+		FragmentColor *dstColor = screenColor;
+		Fragment *dst = screen;
+
+		for(int y=0;y<192;y++)
+			for(int x=0;x<256;x++) {
+				
+				//this hasnt been tested
+				//TODO - dont do this if we are mapped to blank memory (such as in sonic chronicles)
+				//(or use a special zero fill in the bulk clearing above)
+				u16 col = *clearImage;
+				dstColor->color = RGB15TO32(255*(col>>15),col);
+				
+				//this is tested quite well in the sonic chronicles main map mode
+				//where depth values are used for trees etc you can walk behind
+				u32 depth = *clearDepth;
+				//masking off fog for now
+				depth &= 0x7FFF;
+				//TODO - might consider a lookup table for this
+				dst->depth = (depth*0x200)+((depth+1)>>15)*0x01FF;
+
+				clearDepth++;
+				clearImage++;
+				dstColor++;
+				dst++;
+			}
+	}
+	else 
+		for(int i=0;i<256*192;i++)
+			screenColor[i] = clearFragmentColor;
 
 	//convert colors to float to get more precision in case we need it
 	for(int i=0;i<gfx3d.vertlist->count;i++)
