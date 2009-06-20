@@ -175,6 +175,7 @@ struct GFX3D
 		, enableAlphaBlending(true)
 		, enableAntialiasing(false)
 		, enableEdgeMarking(false)
+		, enableClearImage(false)
 		, shading(TOON)
 		, polylist(0)
 		, vertlist(0)
@@ -187,7 +188,8 @@ struct GFX3D
 		fogColor[0] = fogColor[1] = fogColor[2] = fogColor[3] = 0;
 		fogOffset = 0;
 	}
-	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, enableAntialiasing, enableEdgeMarking;
+	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
+		enableAntialiasing, enableEdgeMarking, enableClearImage;
 
 	static const u32 TOON = 0;
 	static const u32 HIGHLIGHT = 1;

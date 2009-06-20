@@ -2215,23 +2215,15 @@ static void gfx3d_Control_cache()
 {
 	u32 v = control;
 
-	if(v&1) gfx3d.enableTexturing = TRUE;
-	else gfx3d.enableTexturing = FALSE;
-
-	if((v>>1)&1) gfx3d.shading = GFX3D::HIGHLIGHT;
+	if(BIT1(v)) gfx3d.shading = GFX3D::HIGHLIGHT;
 	else gfx3d.shading = GFX3D::TOON;
 
-	if((v>>2)&1) gfx3d.enableAlphaTest = TRUE;
-	else gfx3d.enableAlphaTest = FALSE;
-
-	if((v>>3)&1) gfx3d.enableAlphaBlending = TRUE;
-	else gfx3d.enableAlphaBlending = FALSE;
-
-	if((v>>4)&1) gfx3d.enableAntialiasing = TRUE;
-	else gfx3d.enableAntialiasing = FALSE;
-
-	if((v>>5)&1) gfx3d.enableEdgeMarking = TRUE;
-	else gfx3d.enableEdgeMarking = FALSE;
+	gfx3d.enableTexturing = BIT0(v);
+	gfx3d.enableAlphaTest = BIT2(v);
+	gfx3d.enableAlphaBlending = BIT3(v);
+	gfx3d.enableAntialiasing = BIT4(v);
+	gfx3d.enableEdgeMarking = BIT5(v);
+	gfx3d.enableClearImage = BIT14(v);
 
 	//other junk
 	if (v&(1<<14))
