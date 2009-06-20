@@ -639,7 +639,7 @@ Draw( void) {
   return;
 }
 
-static void desmume_cycle(int *sdl_quit, struct my_config * my_config)
+static void desmume_cycle(int *sdl_quit, int *boost, struct my_config * my_config)
 {
     static unsigned short keypad;
     static int focused = 1;
@@ -689,6 +689,9 @@ static void desmume_cycle(int *sdl_quit, struct my_config * my_config)
                 enable_fake_mic = !enable_fake_mic;
                 Mic_DoNoise(enable_fake_mic);
                 break;
+              case SDLK_o:
+                *boost = !(*boost);
+                break;
               default:
                 break;
             }
@@ -728,6 +731,7 @@ int main(int argc, char ** argv) {
   SDL_sem *fps_limiter_semaphore = NULL;
   SDL_TimerID limiter_timer = NULL;
   int sdl_quit = 0;
+  int boost = 0;
 
 #ifdef DISPLAY_FPS
   u32 fps_timing = 0;
@@ -927,7 +931,7 @@ int main(int argc, char ** argv) {
   }
 
   while(!sdl_quit) {
-    desmume_cycle(&sdl_quit, &my_config);
+    desmume_cycle(&sdl_quit, &boost, &my_config);
 
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
@@ -939,10 +943,10 @@ int main(int argc, char ** argv) {
 
     for ( int i = 0; i < my_config.frameskip; i++ ) {
         NDS_SkipNextFrame();
-        desmume_cycle(&sdl_quit, &my_config);
+        desmume_cycle(&sdl_quit, &boost, &my_config);
     }
 
-    if ( !my_config.disable_limiter) {
+    if ( !my_config.disable_limiter && !boost) {
       limiter_frame_counter += 1 + my_config.frameskip;
       if ( limiter_frame_counter >= my_config.fps_limiter_frame_period) {
         limiter_frame_counter = 0;
