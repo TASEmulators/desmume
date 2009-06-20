@@ -50,6 +50,11 @@
 //produce a 15bpp color from individual 5bit components
 #define R5G5B5TORGB15(r,g,b) ((r)|((g)<<5)|((b)<<10))
 
+inline u32 gfx3d_extendDepth_15_to_24(u32 depth)
+{
+	//formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
+	return (depth*0x200)+((depth+1)>>15)*0x01FF;
+}
 
 #define TEXMODE_NONE 0
 #define TEXMODE_A3I5 1
