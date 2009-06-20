@@ -14,7 +14,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>DeSmuME_VS2008</ProjectName>
+    <ProjectName>DeSmuME_VS2010</ProjectName>
     <ProjectGUID>{9F5F72A1-D3A5-4918-B460-E076B16D10A9}</ProjectGUID>
     <RootNamespace>DeSmuME</RootNamespace>
   </PropertyGroup>
