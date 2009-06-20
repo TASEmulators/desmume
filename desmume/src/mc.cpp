@@ -777,3 +777,41 @@ bool BackupDevice::load_duc(const char* filename)
    return true;
 
 }
+
+bool BackupDevice::load_movie(std::istream* is) {
+
+	const u32 cookieLen = strlen(kDesmumeSaveCookie);
+
+	is->seekg(-cookieLen, std::ios::end);
+	is->seekg(-4, std::ios::cur);
+
+	u32 version = 0xFFFFFFFF;
+	is->read((char*)&version,4);
+	if(version!=0) {
+		printf("Unknown save file format\n");
+		return false;
+	}
+	is->seekg(-24, std::ios::cur);
+
+	struct{
+		u32 size,padSize,type,addr_size,mem_size;
+	}info;
+
+	is->read((char*)&info.size,4);
+	is->read((char*)&info.padSize,4);
+	is->read((char*)&info.type,4);
+	is->read((char*)&info.addr_size,4);
+	is->read((char*)&info.mem_size,4);
+
+	//establish the save data
+	data.resize(info.size);
+	is->seekg(0, std::ios::beg);
+	if(info.size>0)
+		is->read((char*)&data[0],info.size);
+
+	state = RUNNING;
+	addr_size = info.addr_size;
+	//none of the other fields are used right now
+
+	return true;
+}

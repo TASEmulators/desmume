@@ -119,6 +119,7 @@ public:
 	std::string romSerial;
 	std::string romFilename;
 	std::vector<char> savestate;
+	std::vector<char> sram;
 	std::vector<MovieRecord> records;
 	std::vector<std::wstring> comments;
 	
@@ -166,6 +167,9 @@ public:
 	
 	static bool loadSavestateFrom(std::vector<char>* buf);
 	static void dumpSavestateTo(std::vector<char>* buf, int compressionLevel);
+
+	static bool loadSramFrom(std::vector<char>* buf);
+	static void dumpSramTo(std::vector<char>* buf, std::string sramfname);
 	//void TryDumpIncremental();
 
 private:
@@ -185,7 +189,7 @@ extern EMOVIEMODE movieMode;		//adelikat: main needs this for frame counter disp
 extern MovieData currMovieData;		//adelikat: main needs this for frame counter display
 
 bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
-void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author);
+void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname);
 void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, int _pauseframe);
 void FCEUI_StopMovie();
 void FCEUMOV_AddInputState();

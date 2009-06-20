@@ -203,6 +203,9 @@
 #define IDD_IOREG_VIEW_SPI                      973
 #define IDD_IOREG_VIEW_CP15                     975
 #define IDD_SOUND_VIEW                          977
+#define IDC_START_FROM_SRAM                     978
+#define IDC_EDIT_SRAMFILENAME                   979
+#define IDC_BUTTON_BROWSESRAM                   980
 #define IDC_C_WATCH_UP                          980
 #define IDD_EDITWATCH                           980
 #define IDC_C_WATCH_DOWN                        981
