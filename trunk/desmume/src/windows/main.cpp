@@ -1438,6 +1438,11 @@ void SetLanguage(int langid)
 
 	switch(langid)
 	{
+	case 0:
+		// English
+		setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
+		break;
 	case 1:
 		// French       
 		setLanguage(MAKELCID(MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH), SORT_DEFAULT));
@@ -1448,11 +1453,12 @@ void SetLanguage(int langid)
 		setLanguage(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
 		SetThreadLocale(MAKELCID(MAKELANGID(LANG_DANISH, SUBLANG_DEFAULT), SORT_DEFAULT));
 		break;
-	case 0:
-		// English
-		setLanguage(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
-		SetThreadLocale(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT));
+	case 3:
+		// Chinese
+		setLanguage(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
+		SetThreadLocale(MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT));
 		break;
+
 	default: break;
 		break;
 	}
@@ -1471,7 +1477,7 @@ void SaveLanguage(int langid)
 void CheckLanguage(UINT id)
 {
 	int i;
-	for (i = IDC_LANGENGLISH; i < IDC_LANGDANISH+1; i++)
+	for (i = IDC_LANGENGLISH; i < IDC_LANG_CHINESE_SIMPLIFIED+1; i++)
 		MainWindow->checkMenu(i, MF_BYCOMMAND | MF_UNCHECKED);
 
 	MainWindow->checkMenu(id, MF_BYCOMMAND | MF_CHECKED);
@@ -3447,11 +3453,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			ChangeLanguage(1);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
-		case IDC_LANGDANISH:
-			SaveLanguage(2);
-			ChangeLanguage(2);
+		case IDC_LANG_CHINESE_SIMPLIFIED:
+			SaveLanguage(3);
+			ChangeLanguage(3);
 			CheckLanguage(LOWORD(wParam));
 			return 0;
+
 		case IDC_FRAMELIMIT:
 			FrameLimit ^= 1;
 			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit ? MF_CHECKED : MF_UNCHECKED);
