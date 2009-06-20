@@ -27,7 +27,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.bat . &quot;.\defaultconfig\svnrev_template.h&quot; &quot;.\userconfig\svnrev.h&quot;"
+				CommandLine="defaultconfig\SubWCRev.bat"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -116,7 +116,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.bat . &quot;.\defaultconfig\svnrev_template.h&quot; &quot;.\userconfig\svnrev.h&quot;"
+				CommandLine="defaultconfig\SubWCRev.bat"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -209,7 +209,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.bat . &quot;.\defaultconfig\svnrev_template.h&quot; &quot;.\userconfig\svnrev.h&quot;"
+				CommandLine="defaultconfig\SubWCRev.bat"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"

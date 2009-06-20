@@ -1,2 +1,2 @@
-SubWCRev.exe %1 %2 %3 %4 %5
+defaultconfig\SubWCRev.exe ..\..\.. ".\defaultconfig\svnrev_template.h" ".\userconfig\svnrev.h"
 exit 0
