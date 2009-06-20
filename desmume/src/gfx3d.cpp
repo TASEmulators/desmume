@@ -382,9 +382,8 @@ void gfx3d_glFogOffset (u32 v)
 
 void gfx3d_glClearDepth(u32 v)
 {
-	//formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
 	v &= 0x7FFF;
-	gfx3d.clearDepth = (v*0x200)+((v+1)/0x8000)*0x01FF;
+	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(v);
 }
 
 void gfx3d_glMatrixMode(u32 v)

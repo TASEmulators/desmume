@@ -467,10 +467,19 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	}
 	else
 	{
-		float test = -1.2f;
-		u32 test2 = u32floor(test);
-		//depth = u32floor(z*0x7FFF); //the traditional value
-		depth = u32floor(z*0xFFFFFF); //sonic chronicles uses depth clear and this makes it work
+		//the traditional value
+		depth = u32floor(z*0x7FFF);
+
+		//this would work in sonic chronicles but break battles of prince of persia
+		//depth = u32floor(z*0xFFFFFF);
+
+		//so we have this compromise: 
+		depth = gfx3d_extendDepth_15_to_24(depth);
+
+		//some contemplation on the matter:
+		//it seems that everything in the ds uses 15 bit depths
+		//except that thedepth buffer is 24 bit. but nothing ever uses 24 bits!!!
+		//this makes no sense.
 	}
 	if(polyAttr.decalMode)
 	{
@@ -481,7 +490,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	}
 	else
 	{
-		if(depth>=destFragment.depth) 
+		if(depth>=destFragment.depth+1) 
 		{
 			goto depth_fail;
 		}
@@ -598,6 +607,8 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	{
 		destFragment.stencil = 1;
 	}*/
+
+	int zzz=9;
 
 	rejected_fragment:
 	done_with_pixel:
@@ -1202,7 +1213,7 @@ static void SoftRastRender()
 				//masking off fog for now
 				depth &= 0x7FFF;
 				//TODO - might consider a lookup table for this
-				dst->depth = (depth*0x200)+((depth+1)>>15)*0x01FF;
+				dst->depth = gfx3d_extendDepth_15_to_24(depth);
 
 				clearDepth++;
 				clearImage++;
