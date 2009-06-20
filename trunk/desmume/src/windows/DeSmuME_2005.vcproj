@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="shift_jis"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
@@ -26,7 +26,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.bat . &quot;.\defaultconfig\svnrev_template.h&quot; &quot;.\userconfig\svnrev.h&quot;"
+				CommandLine="defaultconfig\SubWCRev.bat"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -119,7 +119,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.exe . &quot;.\defaultconfig\svnrev_template.h&quot; &quot;.\userconfig\svnrev.h&quot;"
+				CommandLine="defaultconfig\SubWCRev.bat"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -217,7 +217,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
-				CommandLine="defaultconfig\SubWCRev.exe . &quot;.\defaultconfig\svnrev_template.h&quot; &quot;.\userconfig\svnrev.h&quot;"
+				CommandLine="defaultconfig\SubWCRev.bat"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
