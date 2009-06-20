@@ -715,7 +715,7 @@ static void RecordMovieDialog()
     switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-        FCEUI_SaveMovie(sPath,L"");
+        FCEUI_SaveMovie(sPath,L"",0,NULL);
         g_free(sPath);
         break;
     default:

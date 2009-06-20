@@ -27,9 +27,6 @@
 #include "main.h"
 #include "desmume.h"
 
-static GtkWidget *win;
-static BOOL shouldBeRunning;
-
 enum {
     COLUMN_ENABLED,
     COLUMN_SIZE,
@@ -44,8 +41,6 @@ enum
   COLUMN_SIZE_TEXT,
   NUM_SIZE_COLUMNS
 };
-
-GtkTreeModel * size_model;
 
 enum {
     TYPE_TOGGLE,
@@ -64,6 +59,14 @@ static struct {
     { "Value", TYPE_STRING, COLUMN_LO},
     { "Description", TYPE_STRING, COLUMN_DESC}
 };
+
+static GtkTreeModel * size_model = NULL;
+static GtkWidget *win = NULL;
+static BOOL shouldBeRunning = FALSE;
+
+// ---------------------------------------------------------------------------------
+// SEARCH
+// ---------------------------------------------------------------------------------
 
 static void
 enabled_toggled(GtkCellRendererToggle * cell,
@@ -186,8 +189,7 @@ static void cheat_list_add_cheat(GtkWidget * widget, gpointer data)
 #undef NEW_DESC
 }
 
-static GtkTreeModel *
-create_numbers_model (void)
+static GtkTreeModel * create_numbers_model (void)
 {
 #define N_NUMBERS 4
   gint i = 0;
@@ -217,8 +219,7 @@ create_numbers_model (void)
 #undef N_NUMBERS
 }
 
-static void cheat_list_add_columns(GtkTreeView * tree,
-                                   GtkListStore * store)
+static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
 {
 
     GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
@@ -243,12 +244,18 @@ static void cheat_list_add_columns(GtkTreeView * tree,
             break;
         case TYPE_COMBO:
             renderer = gtk_cell_renderer_combo_new();
+    if(!size_model){
+        printf("size model creation 1\n");
+        size_model = create_numbers_model();
+    }
             g_object_set(renderer,
                          "model", size_model,
                          "text-column", COLUMN_SIZE_TEXT,
                          "editable", TRUE, 
                          "has-entry", FALSE, 
                          NULL);
+            g_object_unref(size_model);
+            size_model = NULL;
             g_signal_connect(renderer, "edited",
                              G_CALLBACK(cheat_list_modify_cheat), store);
             attrib = "text";
@@ -307,7 +314,7 @@ static GtkWidget *cheat_list_create_ui()
     gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(hbbox));
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
 
-    button = gtk_button_new_with_label("Add cheat");
+    button = gtk_button_new_with_label("add cheat");
     g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_add_cheat), store);
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
@@ -315,7 +322,6 @@ static GtkWidget *cheat_list_create_ui()
     g_signal_connect (button, "clicked", G_CALLBACK (cheat_list_remove_cheat), tree);
     gtk_container_add(GTK_CONTAINER(hbbox),button);
 
-    size_model = create_numbers_model();
     cheat_list_add_columns(GTK_TREE_VIEW(tree), store);
     
     /* Setup the selection handler */
@@ -340,8 +346,73 @@ void CheatList ()
     gtk_widget_show_all(win);
 }
 
+// ---------------------------------------------------------------------------------
+// SEARCH
+// ---------------------------------------------------------------------------------
+
+static void cheat_search_create_ui()
+{
+    GtkWidget *button;
+    GtkWidget *w;
+    GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
+    GtkWidget *tophbox = gtk_hbox_new(FALSE, 1);
+    GtkWidget *hbbox = gtk_hbutton_box_new();
+    
+    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
+    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(tophbox));
+
+    w = gtk_label_new("size");
+    gtk_container_add(GTK_CONTAINER(tophbox), w);
+
+    if(!size_model){
+        printf("size model creation 2\n");
+        size_model = create_numbers_model();
+    }
+    w = gtk_combo_box_new_with_model(size_model);
+    g_object_unref(size_model);
+    GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+    gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (w), renderer, TRUE);
+    gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (w), renderer,
+                    "text", COLUMN_SIZE_TEXT,
+                    NULL);
+    gtk_combo_box_set_active (GTK_COMBO_BOX (w), 0);
+//    gtk_cell_layout_set_cell_data_func (GTK_CELL_LAYOUT (w),
+//                    renderer,
+//                    is_capital_sensitive,
+//                    NULL, NULL);
+   gtk_container_add(GTK_CONTAINER(tophbox), w);
+
+    // BUTTONS:
+
+    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(hbbox));
+
+    button = gtk_button_new_with_label("add cheats");
+//    g_signal_connect (button, "clicked", g_callback (cheat_list_add_cheat), store);
+    gtk_container_add(GTK_CONTAINER(hbbox),button);
+
+    button = gtk_button_new_with_label("search");
+//    g_signal_connect (button, "clicked", g_callback (cheat_list_add_cheat), store);
+    gtk_container_add(GTK_CONTAINER(hbbox),button);
+
+//    GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
+//    gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
+}
+
+static void cheatSearchEnd()
+{
+}
 
 void CheatSearch ()
 {
-    printf("Cheat searching feature is not hooked up\n");
+//    printf("Cheat searching feature is not hooked up\n");
+    shouldBeRunning = desmume_running();
+    Pause();
+    win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(win),"Cheat Search");
+    gtk_window_set_modal(GTK_WINDOW(win), TRUE);
+    g_signal_connect(G_OBJECT(win), "destroy", cheatSearchEnd, NULL);
+
+    cheat_search_create_ui();
+
+    gtk_widget_show_all(win);
 }
