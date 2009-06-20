@@ -608,8 +608,6 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		destFragment.stencil = 1;
 	}*/
 
-	int zzz=9;
-
 	rejected_fragment:
 	done_with_pixel:
 	;
