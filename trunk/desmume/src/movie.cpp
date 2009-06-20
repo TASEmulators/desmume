@@ -32,6 +32,7 @@
 #include "common.h"
 #include "mic.h"
 #include "version.h"
+#include "memorystream.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -209,6 +210,16 @@ void MovieData::installValue(std::string& key, std::string& val)
 			StringToBytes(val,&savestate[0],len); // decodes either base64 or hex
 		}
 	}
+	else if(key == "sram")
+	{
+		int len = Base64StringToBytesLength(val);
+		if(len == -1) len = HexStringToBytesLength(val); // wasn't base64, try hex
+		if(len >= 1)
+		{
+			sram.resize(len);
+			StringToBytes(val,&sram[0],len); // decodes either base64 or hex
+		}
+	}
 }
 
 
@@ -231,6 +242,8 @@ int MovieData::dump(std::ostream *os, bool binary)
 		
 	if(savestate.size() != 0)
 		*os << "savestate " << BytesToString(&savestate[0],savestate.size()) << endl;
+	if(sram.size() != 0)
+		*os << "sram " << BytesToString(&sram[0],sram.size()) << endl;
 	if(binary)
 	{
 		//put one | to start the binary dump
@@ -442,6 +455,11 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 	currRerecordCount = currMovieData.rerecordCount;
 	InitMovieTime();
 	MMU_new.backupDevice.movie_mode();
+	if(currMovieData.sram.size() != 0)
+	{
+		bool success = MovieData::loadSramFrom(&currMovieData.sram);
+		if(!success) return;
+	}
 	freshMovie = true;
 	ClearAutoHold();
 
@@ -460,10 +478,55 @@ static void openRecordingMovie(const char* fname)
 	strcpy(curMovieFilename, fname);
 }
 
+bool MovieData::loadSramFrom(std::vector<char>* buf)
+{
+	memorystream ms(buf);
+	MMU_new.backupDevice.load_movie(&ms);
+	return true;
+}
+
+bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
+{
+	//a temp memory stream. we'll dump some data here and then compress
+	//TODO - support dumping directly without compressing to save a buffer copy
+
+	memorystream ms;
+	std::ostream* os = (std::ostream*)&ms;
+
+	//size it
+    FILE * fp = fopen( fname.c_str(), "r" );
+	if(!fp)
+		return 0;
+	
+	fseek( fp, 0, SEEK_END );
+	int size = ftell(fp);
+	fclose(fp);
+
+	filebuf fb;
+	fb.open (fname.c_str(), ios::in | ios::binary);//ios::in
+	istream is(&fb);
+
+	char *buffer = new char[size];
+
+	is.read(buffer, size);
+
+	outstream->write((char*)buffer,size);
+
+	fb.close();
+
+	return true;
+}
+
+void MovieData::dumpSramTo(std::vector<char>* buf, std::string sramfname) {
+
+	memorystream ms(buf);
+	FCEUSS_SaveSRAM(&ms, sramfname);
+	ms.trim();
+}
 
 //begin recording a new movie
 //TODO - BUG - the record-from-another-savestate doesnt work.
- void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author)
+void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname)
 {
 	//if(!FCEU_IsValidUI(FCEUI_RECORDMOVIE))
 	//	return;
@@ -495,6 +558,9 @@ static void openRecordingMovie(const char* fname)
 	//else
 	//	MovieData::dumpSavestateTo(&currMovieData.savestate,Z_BEST_COMPRESSION);
 
+	if(flag == 1)
+		MovieData::dumpSramTo(&currMovieData.sram, sramfname);
+
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(osRecordingMovie, false);
 
@@ -503,6 +569,12 @@ static void openRecordingMovie(const char* fname)
 	currRerecordCount = 0;
 	InitMovieTime();
 	MMU_new.backupDevice.movie_mode();
+
+	if(currMovieData.sram.size() != 0)
+	{
+		bool success = MovieData::loadSramFrom(&currMovieData.sram);
+		if(!success) return;
+	}
 
 	driver->USR_InfoMessage("Movie recording started.");
 }

@@ -111,6 +111,8 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 
 	return false;
 }
+int flag=0;
+std::string sramfname;
 
 //Record movie dialog
 static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -122,6 +124,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 	switch(uMsg)
 	{
 	case WM_INITDIALOG:
+		CheckDlgButton(hwndDlg, IDC_START_FROM_SRAM, ((flag == 1) ? BST_CHECKED : BST_UNCHECKED));
 
 		return false;
 		case WM_COMMAND:
@@ -132,7 +135,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 				fname = GetDlgItemText<MAX_PATH>(hwndDlg,IDC_EDIT_FILENAME);
 				if (fname.length())
 				{
-					FCEUI_SaveMovie(fname.c_str(), author);
+					FCEUI_SaveMovie(fname.c_str(), author, flag, sramfname);
 					EndDialog(hwndDlg, 0);
 				}
 				return true;
@@ -171,11 +174,47 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 
 				return true;
 			}
+			case IDC_BUTTON_BROWSESRAM:
+			{
+				OPENFILENAME ofn;
+				char szChoice[MAX_PATH]={0};
 
+				// browse button
+				ZeroMemory(&ofn, sizeof(ofn));
+				ofn.lStructSize = sizeof(ofn);
+				ofn.hwndOwner = MainWindow->getHWnd();
+				ofn.lpstrFilter = "Desmume SRAM File (*.dsv)\0*.dsv\0All files(*.*)\0*.*\0\0";
+				ofn.lpstrFile = szChoice;
+				ofn.lpstrTitle = "Choose SRAM";
+				ofn.lpstrDefExt = "dsv";
+				ofn.nMaxFile = MAX_PATH;
+				ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+				GetOpenFileName(&ofn);
+			
+				//If user did not specify an extension, add .dsm for them
+				fname = szChoice;
+				x = fname.find_last_of(".");
+				if (x < 0)
+					fname.append(".dsv");
+
+				SetDlgItemText(hwndDlg, IDC_EDIT_SRAMFILENAME, fname.c_str());
+				sramfname=(std::string)fname;
+				//if(GetSaveFileName(&ofn))
+				//	UpdateRecordDialogPath(hwndDlg,szChoice);
+
+				return true;
+			}
 		}
-
 	}
+
+	HWND cur = GetDlgItem(hwndDlg, IDC_EDIT_SRAMFILENAME);
 	
+	IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM) ? flag=1 : flag=0;
+	IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM) ? EnableWindow(cur, TRUE) : EnableWindow(cur, FALSE);
+
+	cur = GetDlgItem(hwndDlg, IDC_BUTTON_BROWSESRAM);
+	IsDlgButtonChecked(hwndDlg, IDC_START_FROM_SRAM) ? EnableWindow(cur, TRUE) : EnableWindow(cur, FALSE);
+
 	return false;
 }
 

@@ -100,6 +100,7 @@ public:
 	bool load_duc(const char* filename);
 	bool load_raw(const char* filename);
 	bool save_raw(const char* filename);
+	bool load_movie(std::istream* is);
 
 	//call me once a second or so to lazy flush the save data
 	//here's the reason for this system: we want to dump save files when theyre READ
