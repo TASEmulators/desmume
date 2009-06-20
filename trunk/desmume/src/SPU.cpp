@@ -510,10 +510,13 @@ void SPU_struct::KeyOn(int channel)
 	default: break;
 	}
 
-	if(thischan.double_totlength_shifted == 0)
+	if(thischan.format != 3)
 	{
-		printf("INFO: Stopping channel %d due to zero length\n",channel);
-		thischan.status = CHANSTAT_STOPPED;
+		if(thischan.double_totlength_shifted == 0)
+		{
+			printf("INFO: Stopping channel %d due to zero length\n",channel);
+			thischan.status = CHANSTAT_STOPPED;
+		}
 	}
 	
 	thischan.double_totlength_shifted = (double)(thischan.totlength << format_shift[thischan.format]);
