@@ -501,7 +501,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	}
 	else
 	{
-		if(depth>=destFragment.depth+1) 
+		if(depth>=destFragment.depth) 
 		{
 			goto depth_fail;
 		}
