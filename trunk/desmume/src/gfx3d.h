@@ -222,7 +222,7 @@ struct GFX3D
 	//you can use this to track how many real frames passed, for comparing to frameCtr;
 	int frameCtrRaw;
 
-	u32 rgbToonTable[32];
+	u16 u16ToonTable[32];
 };
 extern GFX3D gfx3d;
 

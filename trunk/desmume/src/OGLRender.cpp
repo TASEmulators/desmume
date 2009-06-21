@@ -734,9 +734,15 @@ static void OGLRender()
 
 	if(hasShaders)
 	{
+		//TODO - maybe this should only happen if the toon table is stale (for a slight speedup)
+
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_1D, oglToonTableTextureID);
-		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, gfx3d.rgbToonTable);
+		
+		//generate a 8888 toon table from the ds format one and store it in a texture
+		u32 rgbToonTable[32];
+		for(int i=0;i<32;i++) rgbToonTable[i] = RGB15TO32(gfx3d.u16ToonTable[i], 255);
+		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbToonTable);
 	}
 
 	xglDepthMask(GL_TRUE);

@@ -909,13 +909,13 @@ BOOL gfx3d_glShininess (u32 val)
 
 void gfx3d_UpdateToonTable(u8 offset, u16 val)
 {
-	gfx3d.rgbToonTable[offset] =  RGB15TO32(val, 255);
+	gfx3d.u16ToonTable[offset] =  val;
 }
 
 void gfx3d_UpdateToonTable(u8 offset, u32 val)
 {
-	gfx3d.rgbToonTable[offset] =  RGB15TO32(val & 0xFFFF, 255);
-	gfx3d.rgbToonTable[offset+1] =  RGB15TO32(val >> 8, 255);
+	gfx3d.u16ToonTable[offset] = val & 0xFFFF;
+	gfx3d.u16ToonTable[offset+1] = val >> 8;
 }
 
 static void gfx3d_glTexImage_cache()
@@ -2335,7 +2335,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GSCD", 4, 1, &gfx3d.clearDepth},
 	{ "GSFC", 4, 4, gfx3d.fogColor},
 	{ "GSFO", 4, 1, &gfx3d.fogOffset},
-	{ "GSTT", 4, 32, gfx3d.rgbToonTable},
+	{ "GST2", 2, 32, gfx3d.u16ToonTable},
 	{ "GSST", 4, 128, shininessTable},
 	{ "GSSI", 4, 1, &shininessInd},
 	//------------------------
