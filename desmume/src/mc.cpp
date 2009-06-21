@@ -640,7 +640,7 @@ bool BackupDevice::save_raw(const char* filename)
 u32 BackupDevice::pad_up_size(u32 startSize)
 {
 	u32 size = startSize;
-	int ctr=0;
+	u32 ctr=0;
 	while(ctr<saveSizes_count && size > saveSizes[ctr]) ctr++;
 	u32 padSize = saveSizes[ctr];
 	if(padSize == 0xFFFFFFFF)
@@ -712,7 +712,7 @@ void BackupDevice::raw_applyUserSettings(u32& size)
 		int savetype = save_types[CommonSettings.manualBackupType][0];
 		int savesize = save_types[CommonSettings.manualBackupType][1];
 		addr_size = addr_size_for_old_save_type(savetype);
-		if(savesize<size) size = savesize;
+		if((u32)savesize<size) size = savesize;
 	}
 
 	state = RUNNING;
