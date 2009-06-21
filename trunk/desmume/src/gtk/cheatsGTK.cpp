@@ -60,7 +60,6 @@ static struct {
     { "Description", TYPE_STRING, COLUMN_DESC}
 };
 
-static GtkTreeModel * size_model = NULL;
 static GtkWidget *win = NULL;
 static BOOL shouldBeRunning = FALSE;
 
@@ -223,11 +222,12 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
 {
 
     GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
+    static GtkTreeModel * size_model;
 
     for (u32 ii = 0; ii < sizeof(columnTable) / sizeof(columnTable[0]); ii++) {
-        GtkCellRenderer *renderer;
+        GtkCellRenderer *renderer = NULL;
         GtkTreeViewColumn *column;
-        const gchar *attrib;
+        const gchar *attrib = NULL;
         switch (columnTable[ii].type) {
         case TYPE_TOGGLE:
             renderer = gtk_cell_renderer_toggle_new();
@@ -244,10 +244,7 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
             break;
         case TYPE_COMBO:
             renderer = gtk_cell_renderer_combo_new();
-    if(!size_model){
-        printf("size model creation 1\n");
-        size_model = create_numbers_model();
-    }
+            size_model = create_numbers_model();
             g_object_set(renderer,
                          "model", size_model,
                          "text-column", COLUMN_SIZE_TEXT,
@@ -255,7 +252,6 @@ static void cheat_list_add_columns(GtkTreeView * tree, GtkListStore * store)
                          "has-entry", FALSE, 
                          NULL);
             g_object_unref(size_model);
-            size_model = NULL;
             g_signal_connect(renderer, "edited",
                              G_CALLBACK(cheat_list_modify_cheat), store);
             attrib = "text";
@@ -353,34 +349,58 @@ void CheatList ()
 static void cheat_search_create_ui()
 {
     GtkWidget *button;
-    GtkWidget *w;
     GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
-    GtkWidget *tophbox = gtk_hbox_new(FALSE, 1);
     GtkWidget *hbbox = gtk_hbutton_box_new();
+    GtkWidget *b;
     
     gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
-    gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(tophbox));
 
-    w = gtk_label_new("size");
-    gtk_container_add(GTK_CONTAINER(tophbox), w);
+    {
+        b = gtk_hbox_new(FALSE, 1);
+        gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(b));
 
-    if(!size_model){
-        printf("size model creation 2\n");
-        size_model = create_numbers_model();
+        {
+            GtkTreeModel * size_model;
+            GtkWidget *w;
+            w = gtk_label_new("size");
+            gtk_container_add(GTK_CONTAINER(b), w);
+
+            size_model = create_numbers_model();
+
+            w = gtk_combo_box_new_with_model(size_model);
+            g_object_unref(size_model);
+            GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+            gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (w), renderer, TRUE);
+            gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (w), renderer,
+                            "text", COLUMN_SIZE_TEXT,
+                            NULL);
+            gtk_combo_box_set_active (GTK_COMBO_BOX (w), 0);
+            gtk_container_add(GTK_CONTAINER(b), w);
+        }
+
+        b = gtk_hbox_new(FALSE, 1);
+        gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(b));
+
+        {
+            GtkWidget *w;
+            w = gtk_label_new("signedness");
+            gtk_container_add(GTK_CONTAINER(b), w);
+
+//            m = create_sign_model();
+
+            w = gtk_combo_box_new();
+//            w = gtk_combo_box_new_with_model(size_model);
+//            g_object_unref(size_model);
+//            size_model = NULL;
+            GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+            gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (w), renderer, TRUE);
+//            gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (w), renderer,
+//                            "text", COLUMN_SIZE_TEXT,
+//                            NULL);
+            gtk_combo_box_set_active (GTK_COMBO_BOX (w), 0);
+            gtk_container_add(GTK_CONTAINER(b), w);
+        }
     }
-    w = gtk_combo_box_new_with_model(size_model);
-    g_object_unref(size_model);
-    GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
-    gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (w), renderer, TRUE);
-    gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (w), renderer,
-                    "text", COLUMN_SIZE_TEXT,
-                    NULL);
-    gtk_combo_box_set_active (GTK_COMBO_BOX (w), 0);
-//    gtk_cell_layout_set_cell_data_func (GTK_CELL_LAYOUT (w),
-//                    renderer,
-//                    is_capital_sensitive,
-//                    NULL, NULL);
-   gtk_container_add(GTK_CONTAINER(tophbox), w);
 
     // BUTTONS:
 
@@ -404,7 +424,6 @@ static void cheatSearchEnd()
 
 void CheatSearch ()
 {
-//    printf("Cheat searching feature is not hooked up\n");
     shouldBeRunning = desmume_running();
     Pause();
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
