@@ -248,6 +248,7 @@ INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 
 static Fragment screen[256*192];
 static FragmentColor screenColor[256*192];
+static FragmentColor toonTable[32];
 
 
 FORCEINLINE int iround(float f) {
@@ -386,34 +387,42 @@ struct Shader
 			dst.a = materialColor.a;
 			break;
 		case 2: //toon/highlight shading
-			u = invu*w;
-			v = invv*w;
-			texColor = sampler.sample(u,v);
-			u32 toonColorVal;
-			toonColorVal = gfx3d.rgbToonTable[materialColor.r];
-			FragmentColor toonColor;
-			toonColor.r = ((toonColorVal & 0x0000FF) >>  3);
-			toonColor.g = ((toonColorVal & 0x00FF00) >> 11);
-			toonColor.b = ((toonColorVal & 0xFF0000) >> 19);
-			if(sampler.texFormat == 0)
 			{
-				//if no texture is set then we dont need to modulate texture with toon 
-				//but rather just use toon directly
-				dst = toonColor;
-				dst.a = materialColor.a;
-			}
-			else
-			{
-				dst.r = modulate_table[texColor.r][toonColor.r];
-				dst.g = modulate_table[texColor.g][toonColor.g];
-				dst.b = modulate_table[texColor.b][toonColor.b];
-				dst.a = modulate_table[texColor.a][materialColor.a];
-			}
-			if(gfx3d.shading == GFX3D::HIGHLIGHT)
-			{
-				dst.r = min<u8>(31, (dst.r + toonColor.r));
-				dst.g = min<u8>(31, (dst.g + toonColor.g));
-				dst.b = min<u8>(31, (dst.b + toonColor.b));
+				u = invu*w;
+				v = invv*w;
+				texColor = sampler.sample(u,v);
+				if(texColor.r != 0x1f || texColor.g != 0x1f || texColor.b != 0x1f) {
+					int zzz=9;
+				}
+				FragmentColor toonColor = toonTable[materialColor.r];
+				if(sampler.texFormat == 0)
+				{
+					//if no texture is set then we dont need to modulate texture with toon 
+					//but rather just use toon directly
+					dst = toonColor;
+					dst.a = materialColor.a;
+				}
+				else
+				{
+					if(gfx3d.shading == GFX3D::HIGHLIGHT)
+					{
+						dst.r = modulate_table[texColor.r][materialColor.r];
+						dst.g = modulate_table[texColor.g][materialColor.r];
+						dst.b = modulate_table[texColor.b][materialColor.r];
+						dst.a = modulate_table[texColor.a][materialColor.a];
+
+						dst.r = min<u8>(31, (dst.r + toonColor.r));
+						dst.g = min<u8>(31, (dst.g + toonColor.g));
+						dst.b = min<u8>(31, (dst.b + toonColor.b));
+					}
+					else
+					{
+						dst.r = modulate_table[texColor.r][toonColor.r];
+						dst.g = modulate_table[texColor.g][toonColor.g];
+						dst.b = modulate_table[texColor.b][toonColor.b];
+						dst.a = modulate_table[texColor.a][materialColor.a];
+					}
+				}
 			}
 			break;
 		case 3: //shadows
@@ -1233,6 +1242,14 @@ static void SoftRastRender()
 	else 
 		for(int i=0;i<256*192;i++)
 			screenColor[i] = clearFragmentColor;
+
+	//convert the toon colors
+	//TODO for a slight speedup this could be cached in gfx3d (oglrenderer could benefit as well)
+	for(int i=0;i<32;i++) {
+		toonTable[i].r = gfx3d.u16ToonTable[i]&0x1F;
+		toonTable[i].g = (gfx3d.u16ToonTable[i]>>5)&0x1F;
+		toonTable[i].b = (gfx3d.u16ToonTable[i]>>10)&0x1F;
+	}
 
 	//convert colors to float to get more precision in case we need it
 	for(int i=0;i<gfx3d.vertlist->count;i++)
