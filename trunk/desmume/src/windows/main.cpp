@@ -593,6 +593,8 @@ void ScaleScreen(float factor)
 {
 	if(factor==65535)
 		factor = 1.5f;
+	else if(factor==65534)
+		factor = 2.5f;
 	if((GPU_rotation == 90) || (GPU_rotation == 270))
 	{
 		MainWindow->setClientSize(((384 + ScreenGap) * factor), (256 * factor));
@@ -2658,6 +2660,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND   | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND |((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND   | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW2_5X, MF_BYCOMMAND |((windowSize==65534)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND   | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND   | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 
@@ -2780,6 +2783,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND | MF_UNCHECKED);
 				MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND | MF_UNCHECKED);
 				MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDC_WINDOW2_5X, MF_BYCOMMAND | MF_UNCHECKED);
 				MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND | MF_UNCHECKED);
 				MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND | MF_UNCHECKED);
 			}
@@ -3538,11 +3542,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 
 		case IDC_WINDOW1_5X:
-			windowSize=-1;
+			windowSize=65535;
 			ScaleScreen(windowSize);
 			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
 			break;
-
+		case IDC_WINDOW2_5X:
+			windowSize=65534;
+			ScaleScreen(windowSize);
+			WritePrivateProfileInt("Video","Window Size",windowSize,IniName);
+			break;
 		case IDC_WINDOW1X:
 			windowSize=1;
 			ScaleScreen(windowSize);
