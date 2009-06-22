@@ -807,7 +807,7 @@ struct GPU
 	void setBLDALPHA(u16 val)
 	{
 		BLDALPHA_EVA = (val&0x1f) > 16 ? 16 : (val&0x1f); 
-		BLDALPHA_EVB = (val>>8&0x1f) > 16 ? 16 : (val>>8&0x1f);
+		BLDALPHA_EVB = ((val>>8)&0x1f) > 16 ? 16 : ((val>>8)&0x1f);
 		updateBLDALPHA();
 	}
 

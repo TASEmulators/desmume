@@ -713,13 +713,18 @@ static void GPU_resortBGs(GPU *gpu)
 #endif
 }
 
-FORCEINLINE u16 GPU::blend(u16 colA, u16 colB)
+static FORCEINLINE u16 _blend(u16 colA, u16 colB, GPU::TBlendTable* blendTable)
 {
 	u8 r = (*blendTable)[colA&0x1F][colB&0x1F];
 	u8 g = (*blendTable)[(colA>>5)&0x1F][(colB>>5)&0x1F];
 	u8 b = (*blendTable)[(colA>>10)&0x1F][(colB>>10)&0x1F];
 
 	return r|(g<<5)|(b<<10);
+}
+
+FORCEINLINE u16 GPU::blend(u16 colA, u16 colB)
+{
+	return _blend(colA, colB, blendTable);
 }
 
 
@@ -1105,6 +1110,15 @@ static void setFinalOBJColorSpecialNone(GPU *gpu, u32 passing, u8 *dst, u16 colo
 	}
 }
 
+static FORCEINLINE u16 blendSprite(GPU* gpu, u8 alpha, u16 sprColor, u16 backColor, u8 type)
+{
+	if(type == 3) 
+		//handle translucent bitmap sprite
+		return _blend(sprColor,backColor,&gpuBlendTable555[alpha+1][15-alpha]);
+	else 
+		return gpu->blend(sprColor,backColor);
+}
+
 static void setFinalOBJColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
 {
 	if((gpu->BLDCNT & 0x10) || (type == 1))
@@ -1114,7 +1128,10 @@ static void setFinalOBJColorSpecialBlend(GPU *gpu, u32 passing, u8 *dst, u16 col
 
 		//If the layer we are drawing on is selected as 2nd source, we can blend
 		if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
-			final = gpu->blend(color,T2ReadWord(dst, passing));
+		{
+			//bmp translucent handling tested by disgaea clock hud
+			final = blendSprite(gpu, alpha, color, T2ReadWord(dst, passing), type);
+		}
 		
 		T2WriteWord(dst, passing, (final | 0x8000));
 		gpu->bgPixels[x] = 4;
@@ -1232,7 +1249,9 @@ static void setFinalOBJColorSpecialBlendWnd(GPU *gpu, u32 passing, u8 *dst, u16 
 
 			// If the layer we are drawing on is selected as 2nd source, we can blend
 			if((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)))
+			{
 				final = gpu->blend(color,T2ReadWord(dst, passing));
+			}
 
 			T2WriteWord(dst, passing, (final | 0x8000));
 			gpu->bgPixels[x] = 4;
@@ -2342,6 +2361,10 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
 			{
+
+				//transparent (i think, dont bother to render?) if alpha is 0
+				if(spriteInfo->PaletteIndex == 0)
+					continue;
 
 				if (dispCnt->OBJ_BMP_mapping)
 				{
