@@ -1712,6 +1712,8 @@ void NDS_exec(s32 nb)
 #endif
 			}
 
+//this doesnt work anyway. why take a speed hit for public releases?
+#ifndef PUBLIC_RELEASE
 #ifdef EXPERIMENTAL_WIFI
 			// FIXME: the wifi stuff isn't actually clocked by the ARM7 clock, 
 			// but by a 22 mhz oscillator.
@@ -1737,6 +1739,7 @@ void NDS_exec(s32 nb)
 					WIFI_SoftAP_usTrigger(&wifiMac);
 				}
 			}*/
+#endif
 #endif
 		} // for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
 

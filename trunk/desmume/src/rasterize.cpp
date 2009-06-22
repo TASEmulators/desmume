@@ -487,19 +487,8 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 	}
 	else
 	{
-		//the traditional value
 		depth = u32floor(z*0x7FFF);
-
-		//this would work in sonic chronicles but break battles of prince of persia
-		//depth = u32floor(z*0xFFFFFF);
-
-		//so we have this compromise: 
-		depth = gfx3d_extendDepth_15_to_24(depth);
-
-		//some contemplation on the matter:
-		//it seems that everything in the ds uses 15 bit depths
-		//except that thedepth buffer is 24 bit. but nothing ever uses 24 bits!!!
-		//this makes no sense.
+		depth <<= 9;
 	}
 	if(polyAttr.decalMode)
 	{

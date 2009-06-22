@@ -54,9 +54,9 @@ inline u32 gfx3d_extendDepth_15_to_24(u32 depth)
 {
 	//formula from http://nocash.emubase.de/gbatek.htm#ds3drearplane
 	//return (depth*0x200)+((depth+1)>>15)*0x01FF;
-	//but this is identical for values 0..0x7FFF. prove it to yourself with brute force.
-	//i think this isnt right since we can't get up to 0x00FFFFFF
-	return depth<<9;
+	//I think this might be slightly faster
+	if(depth==0x7FFF) return 0x00FFFFFF;
+	else return depth<<9;
 }
 
 #define TEXMODE_NONE 0
