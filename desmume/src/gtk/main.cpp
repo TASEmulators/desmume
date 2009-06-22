@@ -577,7 +577,11 @@ static void ToggleStatusbarVisible(GtkToggleAction *action)
 static int Open(const char *filename, const char *cflash_disk_image)
 {
     int res;
+#ifdef EXPERIMENTAL_GBASLOT
+    res = NDS_LoadROM( filename );
+#else
     res = NDS_LoadROM( filename, cflash_disk_image );
+#endif
     if(res > 0)
         gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), TRUE);
     return res;

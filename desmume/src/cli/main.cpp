@@ -732,6 +732,7 @@ int main(int argc, char ** argv) {
   SDL_TimerID limiter_timer = NULL;
   int sdl_quit = 0;
   int boost = 0;
+  int error;
 
 #ifdef DISPLAY_FPS
   u32 fps_timing = 0;
@@ -806,7 +807,12 @@ int main(int argc, char ** argv) {
 
   backup_setManualBackupType(my_config.savetype);
 
-  if (NDS_LoadROM( my_config.nds_file, my_config.cflash_disk_image_file) < 0) {
+#ifdef EXPERIMENTAL_GBASLOT
+  error = NDS_LoadROM( my_config.nds_file );
+#else
+  error = NDS_LoadROM( my_config.nds_file, my_config.cflash_disk_image_file );
+#endif
+  if (error < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
     exit(-1);
   }
