@@ -199,7 +199,8 @@ int WndY = 0;
 
 int ScreenGap = 0;
 extern HWND RamSearchHWnd;
-
+static BOOL lostFocusPause = TRUE;
+static BOOL lastPauseFromLostFocus = FALSE;
 static int FrameLimit = 1;
 
 //=========================== view tools
@@ -1647,6 +1648,7 @@ int _main()
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
+	lostFocusPause = GetPrivateProfileInt("Focus", "BackgroundPause", 0, IniName);
 
 	
 	//Get Ram-Watch values
@@ -2501,8 +2503,16 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam, int modifiers)
 	return 1;
 }
 
+static void Unpause()
+{
+	lastPauseFromLostFocus = FALSE;
+	if (emu_paused) NDS_UnPause();
+	emu_paused = 0;
+}
+
 void Pause()
 {
+	lastPauseFromLostFocus = FALSE;
 	if (emu_paused) NDS_UnPause();
 	else NDS_Pause();
 	emu_paused ^= 1;
@@ -2697,6 +2707,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			//Language selection
 
+			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, MF_BYCOMMAND | ((lostFocusPause)?MF_CHECKED:MF_UNCHECKED));
+
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
 			for(int i=0;i<7;i++) MainWindow->checkMenu(savelist[i], MF_BYCOMMAND | MF_UNCHECKED);
@@ -2773,6 +2785,23 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		UpdateWndRects(hwnd);
 		return 0;
 	}
+
+	case WM_KILLFOCUS:
+		if(lostFocusPause) {
+			if(!emu_paused) {
+				Pause();
+				lastPauseFromLostFocus = TRUE;
+			}
+		}
+		return 0;
+	case WM_SETFOCUS:
+		if(lostFocusPause) {
+			if(lastPauseFromLostFocus) {
+				Unpause();
+			}
+		}
+		return 0;
+
 	case WM_SIZING:
 		{
 			InvalidateRect(hwnd, NULL, FALSE); UpdateWindow(hwnd);
@@ -3391,6 +3420,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			else
 				SetForegroundWindow(RamWatchHWnd);
+			return 0;
+
+		case IDC_BACKGROUNDPAUSE:
+			lostFocusPause = !lostFocusPause;
+			WritePrivateProfileInt("Focus", "BackgroundPause", (int)lostFocusPause, IniName);
 			return 0;
 
 		case IDC_SAVETYPE1: backup_setManualBackupType(0); return 0;

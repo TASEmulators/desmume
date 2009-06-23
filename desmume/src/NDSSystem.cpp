@@ -1719,14 +1719,14 @@ void NDS_exec(s32 nb)
 			// but by a 22 mhz oscillator.
 
 			//zeromus way: i did this in a rush and it is not perfect, but it is more like what it needs to be
-			nds.wifiCycle += (nds.ARM7Cycle-nds7old)<<16;
-			while(nds.wifiCycle > 0)
-			{
-				nds.wifiCycle -= 946453; //22*22000000*65536/ARM7_CLOCK;
-				WIFI_usTrigger(&wifiMac);
-				WIFI_SoftAP_usTrigger(&wifiMac);
-			}
-			
+			//nds.wifiCycle += (nds.ARM7Cycle-nds7old)<<16;
+			//while(nds.wifiCycle > 0)
+			//{
+			//	nds.wifiCycle -= 946453; //22*22000000*65536/ARM7_CLOCK;
+			//	WIFI_usTrigger(&wifiMac);
+			//	WIFI_SoftAP_usTrigger(&wifiMac);
+			//}
+			//
 			//luigi's way>
 			/*if(nds7old < nds.ARM7Cycle)
 			{
