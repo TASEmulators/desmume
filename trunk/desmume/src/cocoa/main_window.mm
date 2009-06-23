@@ -67,7 +67,7 @@ NSMenuItem *speed_limit_100_item = nil;
 NSMenuItem *speed_limit_200_item = nil;
 NSMenuItem *speed_limit_none_item = nil;
 NSMenuItem *speed_limit_custom_item = nil;
-+NSMenuItem *save_type_item[MAX_SAVE_TYPE] = { nil, nil, nil, nil, nil, nil, nil };
+NSMenuItem *save_type_item[MAX_SAVE_TYPE] = { nil, nil, nil, nil, nil, nil, nil };
 
 NSMenuItem *volume_item[10] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
 NSMenuItem *mute_item = nil;
