@@ -32,6 +32,18 @@
 
 #define MAX_FRAME_SKIP 10
 
+// Save types settings
+NSString *save_types[MAX_SAVE_TYPE] = { 
+	NSLocalizedString(@"Auto Detect", nil), // 0
+	NSLocalizedString(@"EEPROM 4kbit", nil),	// 1
+	NSLocalizedString(@"EEPROM 64kbit", nil),	// 2
+	NSLocalizedString(@"EEPROM 512kbit", nil),	// 3
+	NSLocalizedString(@"FRAM 256knit", nil),	// 4
+	NSLocalizedString(@"FLASH 2mbit", nil),	// 5
+	NSLocalizedString(@"FLASH 4mbit", nil),	// 6
+};
+
+
 #define DS_SCREEN_HEIGHT_COMBINED (192*2) /*height of the two screens*/
 #define DS_SCREEN_X_RATIO (256.0 / (192.0 * 2.0))
 #define DS_SCREEN_Y_RATIO ((192.0 * 2.0) / 256.0)
@@ -55,6 +67,7 @@ NSMenuItem *speed_limit_100_item = nil;
 NSMenuItem *speed_limit_200_item = nil;
 NSMenuItem *speed_limit_none_item = nil;
 NSMenuItem *speed_limit_custom_item = nil;
++NSMenuItem *save_type_item[MAX_SAVE_TYPE] = { nil, nil, nil, nil, nil, nil, nil };
 
 NSMenuItem *volume_item[10] = { nil, nil, nil, nil, nil, nil, nil, nil, nil, nil };
 NSMenuItem *mute_item = nil;
@@ -429,6 +442,33 @@ NSMenuItem *screenshot_to_file_item = nil;
 		[window_controller release];
 	}
 }
+
+- (void)setSaveType:(int)savetype
+{
+	[super setSaveType:savetype];
+	savetype = [super saveType];
+
+	int i;
+	for(i = 0; i < MAX_SAVE_TYPE; i++)
+		if([save_type_item[i] target] == self)
+			if(i == savetype)
+				[save_type_item[i] setState:NSOnState];
+			else
+				[save_type_item[i] setState:NSOffState];
+}
+
+- (void)setSaveTypeFromMenuItem:(id)sender
+{
+	// Find the culprit
+	int i;
+	for(i = 0; i < MAX_SAVE_TYPE; i++)
+		if(sender == save_type_item[i])
+		{
+			[self setSaveType:i];
+			return;
+		}
+}
+
 
 - (void)closeROM
 {
@@ -1137,6 +1177,11 @@ NSMenuItem *screenshot_to_file_item = nil;
 	[frame_skip_auto_item setTarget:self];
 	for(i = 0; i < MAX_FRAME_SKIP; i++)[frame_skip_item[i] setTarget:self];
 	[self setFrameSkip:[self frameSkip]]; //set the menu checkmarks correctly
+	
+	// Backup media type
+	for(i = 0; i < MAX_SAVE_TYPE; i++)[save_type_item[i] setTarget:self];
+	[self setSaveType:[self saveType]]; // initalize the menu
+		
 
 	[speed_limit_25_item setTarget:self];
 	[speed_limit_50_item setTarget:self];

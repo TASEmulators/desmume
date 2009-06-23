@@ -25,6 +25,10 @@
 @class InputHandler;
 //this is used internally by VideoOutputWindow
 
+// Backup media type array length
+#define MAX_SAVE_TYPE 7
+
+
 //This interface is to create and manaage the window
 //that displays DS video output and takes keyboard/mouse input
 //do not instanciate more than one of these
@@ -52,6 +56,7 @@
 - (void)pause;
 - (void)reset;
 - (void)setFrameSkip:(int)frameskip;
+- (void)setSaveType:(int)savetype;
 - (void)closeROM;
 
 //save features overloaded from nds class
