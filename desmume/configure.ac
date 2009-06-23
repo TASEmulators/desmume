@@ -197,6 +197,8 @@ case $target in
     ;;
   *darwin*)
     LIBS="$LIBS -framework OpenGL"
+    dnl - extra hackery needed for X includes
+    AC_PATH_XTRA
     ;;
 esac
 
