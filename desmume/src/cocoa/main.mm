@@ -74,6 +74,9 @@ extern NSMenuItem *reset_item;
 extern NSMenuItem *frame_skip_auto_item;
 extern NSMenuItem *frame_skip_item[];
 
+extern NSMenuItem *save_type_item[];
+extern NSString *save_types[];
+
 extern NSMenuItem *speed_limit_25_item;
 extern NSMenuItem *speed_limit_50_item;
 extern NSMenuItem *speed_limit_75_item;
@@ -283,7 +286,27 @@ void CreateMenu(AppDelegate *delegate)
 			[speed_limit_menu release];
 		}
 		
-		//
+		// Backup media type
+		temp = [emulation_menu addItemWithTitle:NSLocalizedString(@"Backup Media Type", nil) action:nil keyEquivalent:@""];
+		
+		NSMenu *save_type_menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Backup Media Type", nil)];
+		if(save_type_menu != nil)
+		{
+			[temp setSubmenu:save_type_menu];
+			
+			// Add autodetect apart from the others
+			save_type_item[0] = [save_type_menu addItemWithTitle:save_types[0] action:@selector(setSaveTypeFromMenuItem:) keyEquivalent:@""];
+			[save_type_menu addItem:[NSMenuItem separatorItem]];
+			
+			// Add the rest
+			for(i = 1; i < MAX_SAVE_TYPE; i++)
+			{
+				save_type_item[i] = [save_type_menu addItemWithTitle:save_types[i] action:@selector(setSaveTypeFromMenuItem:) keyEquivalent:@""];
+			}
+			
+			[save_type_menu release];
+		}
+		
 
 		[emulation_menu addItem:[NSMenuItem separatorItem]];
 	

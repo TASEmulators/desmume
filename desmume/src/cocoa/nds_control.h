@@ -61,6 +61,7 @@
 
 	volatile int frame_skip;
 	volatile int speed_limit;
+	volatile int save_type;
 
 	NSString *current_file;
 	NSString *flash_file;
@@ -113,6 +114,8 @@
 - (int)frameSkip; //defaults to -1
 - (void)setSpeedLimit:(int)percent; //0 is off, 1-1000 is the pertance speed it runs at, anything else does nothing
 - (int)speedLimit;
+- (void)setSaveType:(int)savetype; // see save_types in src/mmu.h
+- (int)saveType; // default is 0, which is autodetect
 
 //touch screen
 - (void)touch:(NSPoint)point;

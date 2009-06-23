@@ -624,6 +624,20 @@ bool opengl_init()
 	return speed_limit;
 }
 
+- (void)setSaveType:(int)savetype
+{
+	if(savetype < 0 || savetype > 6) savetype = 0;
+	
+	// Set the savetype
+	backup_setManualBackupType(savetype);
+}
+
+- (int)saveType
+{
+	return CommonSettings.manualBackupType;
+}
+
+
 - (void)touch:(NSPoint)point
 {
 	NDS_setTouchPos((unsigned short)point.x, (unsigned short)point.y);
