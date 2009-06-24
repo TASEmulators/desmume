@@ -1652,54 +1652,59 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 //			BACKGROUND RENDERING -ROTOSCALE-
 /*****************************************************************************/
 
-template<bool MOSAIC> FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * map, u8 * tile, u8 * pal, int i, u8 extPal) {
+template<bool MOSAIC> FORCEINLINE void rot_tiled_8bit_entry(GPU * gpu, s32 auxX, s32 auxY, int lg, u32 map, u32 tile, u8 * pal, int i, u8 extPal) {
 	u8 palette_entry;
 	u16 tileindex, x, y, color;
-	
-	tileindex = map[(auxX>>3) + (auxY>>3) * (lg>>3)];
-	x = (auxX&7); y = (auxY&7);
 
-	palette_entry = tile[(tileindex<<6)+(y<<3)+x];
+	tileindex = *(u8*)MMU_gpu_map(map + ((auxX>>3) + (auxY>>3) * (lg>>3)));
+
+	x = (auxX&7); 
+	y = (auxY&7);
+
+	palette_entry = *(u8*)MMU_gpu_map(tile + ((tileindex<<6)+(y<<3)+x));
 	color = T1ReadWord(pal, palette_entry << 1);
 	gpu->__setFinalColorBck<MOSAIC>(color,i,palette_entry);
 }
 
-template<bool MOSAIC> FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * map, u8 * tile, u8 * pal, int i, u8 extPal) {
+template<bool MOSAIC> FORCEINLINE void rot_tiled_16bit_entry(GPU * gpu, s32 auxX, s32 auxY, int lg, u32 map, u32 tile, u8 * pal, int i, u8 extPal) {
 	u8 palette_entry;
 	u16 x, y, color;
 	TILEENTRY tileentry;
 
-	if (!tile) return;
-	tileentry.val = T1ReadWord(map, ((auxX>>3) + (auxY>>3) * (lg>>3))<<1);
+	void* map_addr = MMU_gpu_map(map + (((auxX>>3) + (auxY>>3) * (lg>>3))<<1));
+	
+	tileentry.val = T1ReadWord(map_addr, 0);
+
 	x = (tileentry.bits.HFlip) ? 7 - (auxX&7) : (auxX&7);
 	y = (tileentry.bits.VFlip) ? 7 - (auxY&7) : (auxY&7);
 
-	palette_entry = tile[(tileentry.bits.TileNum<<6)+(y<<3)+x];
+	palette_entry = *(u8*)MMU_gpu_map(tile + ((tileentry.bits.TileNum<<6)+(y<<3)+x));
 	color = T1ReadWord(pal, (palette_entry + (extPal ? (tileentry.bits.Palette<<8) : 0)) << 1);
 	gpu->__setFinalColorBck<MOSAIC>(color, i, palette_entry);
 }
 
-template<bool MOSAIC> FORCEINLINE void rot_256_map(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * map, u8 * tile, u8 * pal, int i, u8 extPal) {
+template<bool MOSAIC> FORCEINLINE void rot_256_map(GPU * gpu, s32 auxX, s32 auxY, int lg, u32 map, u32 tile, u8 * pal, int i, u8 extPal) {
 	u8 palette_entry;
 	u16 color;
 
-	palette_entry = map[auxX + auxY * lg];
+	u8* adr = (u8*)MMU_gpu_map((map) + ((auxX + auxY * lg)));
+
+	palette_entry = *adr;
 	color = T1ReadWord(pal, palette_entry << 1);
 	gpu->__setFinalColorBck<MOSAIC>(color, i, palette_entry);
-
 }
 
-template<bool MOSAIC> FORCEINLINE void rot_BMP_map(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * map, u8 * tile, u8 * pal, int i, u8 extPal) {
+template<bool MOSAIC> FORCEINLINE void rot_BMP_map(GPU * gpu, s32 auxX, s32 auxY, int lg, u32 map, u32 tile, u8 * pal, int i, u8 extPal) {
 	u16 color;
-
-	color = T1ReadWord(map, (auxX + auxY * lg) << 1);
+	void* adr = MMU_gpu_map((map) + ((auxX + auxY * lg) << 1));
+	color = T1ReadWord(adr, 0);
 	gpu->__setFinalColorBck<MOSAIC>(color, i, color&0x8000);
 }
 
-typedef void (*rot_fun)(GPU * gpu, s32 auxX, s32 auxY, int lg, u8 * map, u8 * tile, u8 * pal , int i, u8 extPal);
+typedef void (*rot_fun)(GPU * gpu, s32 auxX, s32 auxY, int lg, u32 map, u32 tile, u8 * pal , int i, u8 extPal);
 
 template<rot_fun fun>
-FORCEINLINE void rot_scale_op(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, u8 * map, u8 * tile, u8 * pal, u8 extPal)
+FORCEINLINE void rot_scale_op(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, s32 wh, s32 ht, BOOL wrap, u32 map, u32 tile, u8 * pal, u8 extPal)
 {
 	ROTOCOORD x, y;
 	x.val = X;
@@ -1733,7 +1738,7 @@ FORCEINLINE void rot_scale_op(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s
 }
 
 template<rot_fun fun>
-FORCEINLINE void apply_rot_fun(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, u8 * map, u8 * tile, u8 * pal, u8 extPal)
+FORCEINLINE void apply_rot_fun(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG, u32 map, u32 tile, u8 * pal, u8 extPal)
 {
 	struct _BGxCNT * bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[gpu->currBgNum].bits;
 	s32 wh = gpu->BGSize[gpu->currBgNum][0];
@@ -1745,13 +1750,9 @@ FORCEINLINE void apply_rot_fun(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, 
 template<bool MOSAIC> FORCEINLINE void rotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, u16 LG)
 {
 	u8 num = gpu->currBgNum;
-	u8 * map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
-	if (!map) return;
-	u8 * tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
-	if (!tile) return;
 	u8 * pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 //	printf("rot mode\n");
-	apply_rot_fun<rot_tiled_8bit_entry<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, map, tile, pal, 0);
+	apply_rot_fun<rot_tiled_8bit_entry<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_map_ram[num], gpu->BG_tile_ram[num], pal, 0);
 }
 
 template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA, s16 PB, s16 PC, s16 PD, s16 LG)
@@ -1764,37 +1765,27 @@ template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA
 	switch(gpu->BGTypes[num])
 	{
 	case BGType_AffineExt_256x16:
-		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_map_ram[num]);
-		if (!map) return;
-		tile = (u8 *)MMU_RenderMapToLCD(gpu->BG_tile_ram[num]);
-		if (!tile) return;
 		if(dispCnt->ExBGxPalette_Enable)
 			pal = ARM9Mem.ExtPal[gpu->core][gpu->BGExtPalSlot[num]];
 		else
 			pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
 		if (!pal) return;
 		// 16  bit bgmap entries
-		apply_rot_fun<rot_tiled_16bit_entry<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, map, tile, pal, dispCnt->ExBGxPalette_Enable);
+		apply_rot_fun<rot_tiled_16bit_entry<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_map_ram[num], gpu->BG_tile_ram[num], pal, dispCnt->ExBGxPalette_Enable);
 		return;
 	case BGType_AffineExt_256x1:
 		// 256 colors 
-		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
-		if (!map) return;
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
+		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], NULL, pal, 0);
 		return;
 	case BGType_AffineExt_Direct:
 		// direct colors / BMP
-		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_ram[num]);
-		if (!map) return;
-		apply_rot_fun<rot_BMP_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, NULL, 0);
+		apply_rot_fun<rot_BMP_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_ram[num], NULL, NULL, 0);
 		return;
 	case BGType_Large8bpp:
 		// large screen 256 colors
-		map = (u8 *)MMU_RenderMapToLCD(gpu->BG_bmp_large_ram[num]);
-		if (!map) return;
 		pal = ARM9Mem.ARM9_VMEM + gpu->core * 0x400;
-		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, map, NULL, pal, 0);
+		apply_rot_fun<rot_256_map<MOSAIC> >(gpu,X,Y,PA,PB,PC,PD,LG, gpu->BG_bmp_large_ram[num], NULL, pal, 0);
 		return;
 	default: break;
 	}
