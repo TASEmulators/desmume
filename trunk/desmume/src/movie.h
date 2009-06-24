@@ -34,7 +34,7 @@ enum EMOVIEMODE
 
 enum EMOVIECMD
 {
-	MOVIECMD_RESET = 1,
+	MOVIECMD_RESET = 2,
 };
 
 //RLDUTSBAYXWEG
@@ -187,6 +187,9 @@ private:
 extern int currFrameCounter;
 extern EMOVIEMODE movieMode;		//adelikat: main needs this for frame counter display
 extern MovieData currMovieData;		//adelikat: main needs this for frame counter display
+
+extern bool movie_reset_command;
+extern bool movie_lid;
 
 bool FCEUI_MovieGetInfo(std::istream* fp, MOVIE_INFO& info, bool skipFrameCount);
 void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, std::string sramfname);

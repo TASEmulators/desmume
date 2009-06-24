@@ -58,7 +58,8 @@ char curMovieFilename[512] = {0};
 MovieData currMovieData;
 int currRerecordCount;
 bool ShowInputDisplay = false;
-
+bool movie_reset_command = false;
+bool movie_lid = false;
 //--------------
 
 
@@ -441,16 +442,18 @@ void _CDECL_ FCEUI_LoadMovie(const char *fname, bool _read_only, bool tasedit, i
 	//fully reload the game to reinitialize everything before playing any movie
 	//poweron(true);
 
-	extern bool _HACK_DONT_STOPMOVIE;
-	_HACK_DONT_STOPMOVIE = true;
 	NDS_Reset();
-	_HACK_DONT_STOPMOVIE = false;
+
 	////WE NEED TO LOAD A SAVESTATE
 	//if(currMovieData.savestate.size() != 0)
 	//{
 	//	bool success = MovieData::loadSavestateFrom(&currMovieData.savestate);
 	//	if(!success) return;
 	//}
+	lagframecounter=0;
+	LagFrameFlag=0;
+	lastLag=0;
+	TotalLagFrames=0;
 
 	currFrameCounter = 0;
 	pauseframe = _pauseframe;
@@ -552,10 +555,7 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	currMovieData.romSerial = gameInfo.ROMserial;
 	currMovieData.romFilename = GetRomName();
 	
-	extern bool _HACK_DONT_STOPMOVIE;
-	_HACK_DONT_STOPMOVIE = true;
 	NDS_Reset();
-	_HACK_DONT_STOPMOVIE = false;
 
 	//todo ?
 	//poweron(true);
@@ -567,6 +567,12 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 
 	//we are going to go ahead and dump the header. from now on we will only be appending frames
 	currMovieData.dump(osRecordingMovie, false);
+
+	currFrameCounter=0;
+	lagframecounter=0;
+	LagFrameFlag=0;
+	lastLag=0;
+	TotalLagFrames=0;
 
 	movieMode = MOVIEMODE_RECORD;
 	movie_readonly = false;
@@ -622,19 +628,13 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 		 {
 			 MovieRecord* mr = &currMovieData.records[currFrameCounter];
 
-			 //reset if necessary
-			 if(mr->command_reset())
-			 {}
-			 //ResetNES();
-			 if(mr->command_microphone())
-				 MicButtonPressed=1;
-			 else
-				 MicButtonPressed=0;
+			 if(mr->command_microphone()) MicButtonPressed=1;
+			 else MicButtonPressed=0;
 
-			 if(mr->command_lid())
-				 mr->pad |= (1 << 0);
-			 else
-				 mr->pad |= (0 << 0);
+			 if(mr->command_reset()) NDS_Reset();
+
+			 if(mr->command_lid()) movie_lid = true;
+			 else movie_lid = false;
 
 			 NDS_setPadFromMovie(mr->pad);
 			 NDS_setTouchFromMovie();
@@ -666,10 +666,18 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 
 		 if(MicButtonPressed == 1)
 			 mr.commands=1;
+
 		 mr.pad = nds.pad;
 
-		 if((nds.pad & (1<<0)) == 1)
+		 if(movie_lid) {
 			 mr.commands=4;
+			 movie_lid = false;
+		 }
+
+		 if(movie_reset_command) {
+			 mr.commands=2;
+			 movie_reset_command = false;
+		 }
 
 		 if(nds.isTouch) {
 			 mr.touch.x = nds.touchX >> 4;
