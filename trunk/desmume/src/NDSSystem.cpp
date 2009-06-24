@@ -1658,6 +1658,9 @@ void NDS_exec(s32 nb)
 			if((nds.ARM7Cycle % 0x3F03) == 0)
 			{
 				/* 3F03 arm7 cycles = ~1usec */
+				// WRONG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				// 1 usec = ~33 ARM7 cycles because ARM7 runs at 33.51 mhz
+				// 33.51 mhz = 33.51 million cycles per second = 33.51 cycles per usec
 				WIFI_usTrigger(&wifiMac) ;
 			}
 #endif
@@ -1706,10 +1709,16 @@ void NDS_exec(s32 nb)
 			}
 
 //this doesnt work anyway. why take a speed hit for public releases?
+// Luigi__: I don't agree. We should start include wifi emulation in public releases
+// because it already allows games to not hang during wifi operations
+// and thus games that perform wifi checks upon boot shouldn't hang with wifi
+// emulation turned on.
 #ifndef PUBLIC_RELEASE
 #ifdef EXPERIMENTAL_WIFI
 			// FIXME: the wifi stuff isn't actually clocked by the ARM7 clock, 
 			// but by a 22 mhz oscillator.
+			// But do we really care? while we're triggering wifi core every microsecond,
+			// everything is fine, isn't it?
 
 			//zeromus way: i did this in a rush and it is not perfect, but it is more like what it needs to be
 			//nds.wifiCycle += (nds.ARM7Cycle-nds7old)<<16;
@@ -1721,17 +1730,22 @@ void NDS_exec(s32 nb)
 			//}
 			//
 			//luigi's way>
-			/*if(nds7old < nds.ARM7Cycle)
+			// new one, more like zeromus way
+			// but I can't understand why it uses that value (22*22000000*65536/ARM7_CLOCK)
+			nds.wifiCycle += (nds.ARM7Cycle - nds7old) << 16;
+			while (nds.wifiCycle > 0)
 			{
-				nds7old %= 67;
-				int nds7new = (nds.ARM7Cycle % 67);
+				// 2196372 ~= (ARM7_CLOCK << 16) / 1000000
+				// This value makes more sense to me, because:
+				// ARM7_CLOCK   = 33.51 mhz
+				//				= 33513982 cycles per second
+				// 				= 33.513982 cycles per microsecond
+				// The value is left shifted by 16 for more precision.
+				nds.wifiCycle -= (2196372 << 1);
 
-				if(nds7old > nds7new)
-				{
-					WIFI_usTrigger(&wifiMac);
-					WIFI_SoftAP_usTrigger(&wifiMac);
-				}
-			}*/
+				WIFI_usTrigger(&wifiMac);
+				WIFI_SoftAP_usTrigger(&wifiMac);
+			}
 #endif
 #endif
 		} // for (j = 0; j < INSTRUCTIONS_PER_BATCH && (!FORCE) && (execute); j++)
