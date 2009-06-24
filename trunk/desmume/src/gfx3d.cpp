@@ -1418,7 +1418,8 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	if (poly1.maxy < poly2.maxy) return true;
 	if (poly1.miny < poly2.miny) return true;
 	if (poly1.miny > poly2.miny) return false;
-	return false;  //equal should always return false "strict weak ordering"
+	if (num1 < num2) return false; //make sure we respect the game's ordering in cases of complete ties
+	else return true;
 }
 
 static void gfx3d_doFlush()
