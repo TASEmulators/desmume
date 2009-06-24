@@ -492,7 +492,7 @@ bool MovieData::loadSramFrom(std::vector<char>* buf)
 	return true;
 }
 
-bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
+static bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
 {
 	//a temp memory stream. we'll dump some data here and then compress
 	//TODO - support dumping directly without compressing to save a buffer copy
@@ -501,7 +501,7 @@ bool FCEUSS_SaveSRAM(std::ostream* outstream, std:: string fname)
 	std::ostream* os = (std::ostream*)&ms;
 
 	//size it
-    FILE * fp = fopen( fname.c_str(), "r" );
+	FILE * fp = fopen( fname.c_str(), "r" );
 	if(!fp)
 		return 0;
 	
