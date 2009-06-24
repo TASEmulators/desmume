@@ -195,7 +195,7 @@ void MatrixStackSetStackPosition (MatrixStack *stack, int pos)
 	if (stack->position < 0)
 		stack->position = 0;
 	else if (stack->position > stack->size)	
-		stack->position = stack->size;
+		stack->position = stack->size+1;
 }
 
 void MatrixStackPushMatrix (MatrixStack *stack, const float *ptr)
