@@ -877,17 +877,10 @@ void NDS_Reset()
 	FILE* inf = 0;
 	NDS_header * header = NDS_getROMHeader();
 
-	if(!_HACK_DONT_STOPMOVIE)
-		FCEUI_StopMovie();
-
 	if (!header) return ;
 
-	lagframecounter=0;
-	LagFrameFlag=0;
-	lastLag=0;
-	TotalLagFrames=0;
-
-	currFrameCounter=0;
+	if(movieMode != MOVIEMODE_INACTIVE && !_HACK_DONT_STOPMOVIE)
+		movie_reset_command = true;
 
 	MMU_clearMem();
 	MMU_new.backupDevice.reset();
@@ -2502,9 +2495,10 @@ void NDS_setPadFromMovie(u16 pad)
 		FIX(pad,2),
 		FIX(pad,1),
 		FIX(pad,0),
-		FIX(pad,13)
+		movie_lid
 		);
 #undef FIX
+
 }
 
 turbo Turbo;
@@ -2650,6 +2644,8 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	g = FIX(G);
 	f = FIX(F);
 
+	if(f) movie_lid=true;
+	else movie_lid=false;
 
 	nds.pad =
 		(FIX(r)<<12)|
