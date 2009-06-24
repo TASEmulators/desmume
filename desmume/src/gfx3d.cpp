@@ -343,6 +343,8 @@ void gfx3d_reset()
 
 	memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
 	memset(gfx3d_convertedAlpha,0,sizeof(gfx3d_convertedAlpha));
+
+	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
 	
 	GFX_FIFOclear();
 }
