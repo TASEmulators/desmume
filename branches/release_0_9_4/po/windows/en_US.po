@@ -1,0 +1,270 @@
+# French translation for the desmume windows UI.
+# Copyright (C) 2007 The DeSmuME Team.
+# Luigi__, 2007.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-07-17 01:38-0400\n"
+"PO-Revision-Date: 2007-07-17 05:27-0400\n"
+"Last-Translator: Luigi__\n"
+"Language-Team: DeSmuME Team <desmume-devel@lists.sourceforge.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#, c-format
+
+#: File menu
+
+msgid "File"
+msgstr ""
+
+msgid "Open ROM..."
+msgstr ""
+
+msgid "Recent ROM"
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+msgid "Clear"
+msgstr ""
+
+msgid "ROM info"
+msgstr ""
+
+msgid "Save state as..."
+msgstr ""
+
+msgid "Load state as..."
+msgstr ""
+
+msgid "Save state"
+msgstr ""
+
+msgid "Load state"
+msgstr ""
+
+msgid "Import backup memory"
+msgstr ""
+
+msgid "Save screenshot as..."
+msgstr ""
+
+msgid "Quick screenshot"
+msgstr ""
+
+msgid "Record AVI"
+msgstr ""
+
+msgid "Stop AVI"
+msgstr ""
+
+msgid "Quit"
+msgstr ""
+
+#: Emulation menu
+
+msgid "Emulation"
+msgstr ""
+
+msgid "Pause"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "Shut up"
+msgstr ""
+
+msgid "GBA slot"
+msgstr ""
+
+msgid "Cheats"
+msgstr ""
+
+msgid "List"
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+#: View menu
+
+msgid "View"
+msgstr ""
+
+msgid "Rotation"
+msgstr ""
+
+msgid "Window size"
+msgstr ""
+
+msgid "Screen separation"
+msgstr ""
+
+msgid "None\t(0 px)"
+msgstr ""
+
+msgid "Narrow border\t(5 px)"
+msgstr ""
+
+msgid "DS\t(64 px)"
+msgstr ""
+
+msgid "Force maintain ratio"
+msgstr ""
+
+msgid "Default size"
+msgstr ""
+
+msgid "Display frame counter"
+msgstr ""
+
+msgid "Display FPS"
+msgstr ""
+
+msgid "Display input"
+msgstr ""
+
+msgid "Display lag counter"
+msgstr ""
+
+#: Config menu
+
+msgid "Config"
+msgstr ""
+
+msgid "Save type"
+msgstr ""
+
+msgid "Autodetect"
+msgstr ""
+
+msgid "EEPROM 4kbit"
+msgstr ""
+
+msgid "EEPROM 64kbit"
+msgstr ""
+
+msgid "EEPROM 512kbit"
+msgstr ""
+
+msgid "FRAM 256kbit"
+msgstr ""
+
+msgid "FLASH 2mbit"
+msgstr ""
+
+msgid "FLASH 4mbit"
+msgstr ""
+
+msgid "3D settings"
+msgstr ""
+
+msgid "Control config"
+msgstr ""
+
+msgid "Hotkey config"
+msgstr ""
+
+msgid "Sound settings"
+msgstr ""
+
+msgid "Wifi settings"
+msgstr ""
+
+msgid "Firmware settings"
+msgstr ""
+
+msgid "Emulation settings"
+msgstr ""
+
+msgid "Frameskip"
+msgstr ""
+
+msgid "Limit framerate"
+msgstr ""
+
+msgid "Auto"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+#: Tools menu
+
+msgid "Disassembler"
+msgstr ""
+
+msgid "View memory"
+msgstr ""
+
+msgid "View registers"
+msgstr ""
+
+msgid "View palettes"
+msgstr ""
+
+msgid "View tiles"
+msgstr ""
+
+msgid "View maps"
+msgstr ""
+
+msgid "View OAMs"
+msgstr ""
+
+msgid "View matrices"
+msgstr ""
+
+msgid "View lights"
+msgstr ""
+
+msgid "View layers"
+msgstr ""
+
+msgid "Main BG 0"
+msgstr ""
+
+msgid "Main BG 1"
+msgstr ""
+
+msgid "Main BG 2"
+msgstr ""
+
+msgid "Main BG 3"
+msgstr ""
+
+msgid "Sub BG 0"
+msgstr ""
+
+msgid "Sub BG 1"
+msgstr ""
+
+msgid "Sub BG 2"
+msgstr ""
+
+msgid "Sub BG 3"
+msgstr ""
+
+#: Help menu
+
+msgid "Help"
+msgstr ""
+
+msgid "Website"
+msgstr ""
+
+msgid "Forums"
+msgstr ""
+
+msgid "Submit a bug report"
+msgstr ""
+
+msgid "About"
+msgstr ""
