@@ -1418,8 +1418,12 @@ static bool gfx3d_ysort_compare(int num1, int num2)
 	if (poly1.maxy < poly2.maxy) return true;
 	if (poly1.miny < poly2.miny) return true;
 	if (poly1.miny > poly2.miny) return false;
-	if (num1 < num2) return false; //make sure we respect the game's ordering in cases of complete ties
-	else return true;
+	
+	//make sure we respect the game's ordering in cases of complete ties
+	//this makes it a stable sort.
+	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
+	if (num1 < num2) return true;
+	else return false;
 }
 
 static void gfx3d_doFlush()
@@ -1473,14 +1477,13 @@ static void gfx3d_doFlush()
 	//now we have to sort the opaque polys by y-value.
 	//(test case: harvest moon island of happiness character cretor UI)
 	//should this be done after clipping??
-	//this must be a stable sort or else advance wars DOR will flicker in the main map mode
-	std::stable_sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
+	std::sort(gfx3d.indexlist, gfx3d.indexlist + opaqueCount, gfx3d_ysort_compare);
 	
 	if(!gfx3d.sortmode)
 	{
 		//if we are autosorting translucent polys, we need to do this also
 		//TODO - this is unverified behavior. need a test case
-		std::stable_sort(gfx3d.indexlist + opaqueCount, gfx3d.indexlist + polycount, gfx3d_ysort_compare);
+		std::sort(gfx3d.indexlist + opaqueCount, gfx3d.indexlist + polycount, gfx3d_ysort_compare);
 	}
 
 	//switch to the new lists
