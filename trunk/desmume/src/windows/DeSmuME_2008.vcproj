@@ -376,6 +376,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lua-engine.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\matrix.cpp"
 					>
 				</File>
@@ -1027,6 +1031,10 @@
 				</File>
 				<File
 					RelativePath="..\GPU_osd.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lua-engine.h"
 					>
 				</File>
 				<File

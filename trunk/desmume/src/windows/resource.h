@@ -101,6 +101,9 @@
 #define IDC_16_BIT                      303
 #define IDC_32_BIT                      304
 #define IDC_BACKGROUNDPAUSE             305
+#define ID_FILE_RUNLUASCRIPT            306
+#define ID_FILE_STOPLUASCRIPT           307
+#define ID_FILE_RELOADLUASCRIPT         308
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
