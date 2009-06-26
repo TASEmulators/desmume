@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #endif
 
 extern "C"
@@ -1769,7 +1770,7 @@ int LUA_LoadLuaCode(const char *filename) {
                 //StopSound();//StopSound(); //mbg merge 7/23/08
 		MessageBox(NULL, lua_tostring(L,-1), "Lua load error", MB_OK | MB_ICONSTOP);
 #else
-		fprintf(stderr, "Failed to compile file: %s\n", lua_tostring(LUA,-1));
+		fprintf(stderr, "Failed to compile file: %s\n", lua_tostring(L,-1));
 #endif
 
 		// Wipe the stack. Our thread

@@ -130,10 +130,24 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     dnl uninstalled glade ui dir
     AC_DEFINE_UNQUOTED(GLADEUI_UNINSTALLED_DIR,"`pwd`/src/gtk-glade/glade/",[path to glade ui dir])
     AC_SUBST(GLADEUI_UNINSTALLED_DIR)
+
+    # Need check for both lua and lua5.1 to run on debian, see mysql bug #29945
+    PKG_CHECK_MODULES(LUA,
+                      $LUAPC >= 5.1,
+                      HAVE_LUA=yes,
+                      HAVE_LUA=no)
+    PKG_CHECK_MODULES(LUA,
+                      lua5.1 >= 5.1,
+                      HAVE_LUA=yes,
+                      HAVE_LUA=no)
+    AC_SUBST(LUA_CFLAGS)
+    AC_SUBST(LUA_LIBS)
   fi
 ],[
-    echo "WARNING: pkg-config is not available therefore gtk and gtk-glade UIs are not available either."
+    echo "WARNING: pkg-config is not available therefore gtk, gtk-glade UIs and lua scripting are not available either."
 ])
+
+AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}" = "yes"])
 
 dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
 AM_CONDITIONAL([HAVE_GLIB], [test "${FOUND_GLIB}" = "yes"])

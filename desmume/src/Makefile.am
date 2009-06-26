@@ -1,6 +1,6 @@
 include $(top_srcdir)/src/desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LUA_CFLAGS)
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp \
 	matrix_sse2-x64.asm matrix_sse2-x86.asm
@@ -55,6 +55,9 @@ libdesmume_a_SOURCES = \
 	version.h
 if HAVE_GLIB
 libdesmume_a_SOURCES += commandline.h commandline.cpp
+endif
+if HAVE_LUA
+libdesmume_a_SOURCES += lua-engine.cpp
 endif
 if HAVE_GDB_STUB
 libdesmume_a_SOURCES += gdbstub.h
