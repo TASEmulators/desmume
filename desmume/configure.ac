@@ -200,6 +200,13 @@ AC_ARG_ENABLE(wifi,
 		])
 	      ])
 
+dnl - gba slot support
+AC_ARG_ENABLE(gbaslot,
+	      [AC_HELP_STRING(--enable-gbaslot, enable experimental gba slot support)],
+	      [
+		AC_DEFINE(EXPERIMENTAL_GBASLOT)
+	      ])
+
 dnl Set compiler library flags per target.
 case $target in
   *linux* | *bsd*)

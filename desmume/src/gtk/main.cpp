@@ -49,6 +49,10 @@
 
 #include "commandline.h"
 
+#ifdef EXPERIMENTAL_GBASLOT
+#include "addons.h"
+#endif
+
 #ifdef GDB_STUB
 #include "gdbstub.h"
 #endif
@@ -1736,7 +1740,26 @@ common_gtk_main( struct configured_features *my_config)
         fw_config.language = my_config->firmware_language;
     }
 
+#ifdef EXPERIMENTAL_GBASLOT
+    addon_type = NDS_ADDON_CFLASH;
+    if (my_config->cflash_disk_image_file != NULL) {
+        strncpy(CFlashName, my_config->cflash_disk_image_file, MAX_PATH);
+    }
+
+    switch (addon_type) {
+    case NDS_ADDON_CFLASH:
+    case NDS_ADDON_RUMBLEPAK:
+    case NDS_ADDON_NONE:
+    case NDS_ADDON_GBAGAME:
+        break;
+    default:
+        addon_type = NDS_ADDON_NONE;
+        break;
+    }
+    addonsChangePak (addon_type);
+#else
     bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
+#endif
 
 #ifdef GDB_STUB
     if ( my_config->arm9_gdb_port != 0) {
@@ -1917,7 +1940,7 @@ common_gtk_main( struct configured_features *my_config)
 
     /* Command line arg */
     if( my_config->nds_file != "") {
-        if(Open( my_config->nds_file.c_str(), bad_glob_cflash_disk_image_file) >= 0) {
+        if(Open( my_config->nds_file.c_str(), my_config->cflash_disk_image_file) >= 0) {
             my_config->process_movieCommands();
 
             if(my_config->load_slot){
