@@ -913,6 +913,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\lua-engine.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\lua-engine.h"
+			>
+		</File>
+		<File
 			RelativePath="..\matrix.cpp"
 			>
 		</File>
