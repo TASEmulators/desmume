@@ -252,12 +252,14 @@
 #define IDC_GI_GAMETITLE                1003
 #define IDC_MFRAMES                     1003
 #define IDC_ROTATE0                     1003
+#define IDC_BUTTON2                     1003
 #define IDC_ARM9BIOSBROWSE              1004
 #define IDC_EDIT11                      1004
 #define IDC_GI_GAMECODE                 1004
 #define IDC_MRERECORDCOUNT              1004
 #define IDC_ROTATE90                    1004
 #define IDC_SPU_INTERPOLATION_CB        1004
+#define IDC_BUTTON_VOLMODE              1004
 #define IDC_ARM7BIOS                    1005
 #define IDC_EDIT07                      1005
 #define IDC_MROM                        1005
@@ -733,7 +735,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1001
+#define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
