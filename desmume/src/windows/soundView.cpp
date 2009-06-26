@@ -39,13 +39,16 @@ using namespace std;
 
 typedef struct SoundView_DataStruct
 {
-	SoundView_DataStruct() : viewFirst8Channels(TRUE)
+	SoundView_DataStruct() 
+		: viewFirst8Channels(TRUE)
+		, volModeAlternate(FALSE)
 	{
 	}
 
 	HWND hDlg;
 
 	BOOL viewFirst8Channels;
+	BOOL volModeAlternate;
 } SoundView_DataStruct;
 
 SoundView_DataStruct * SoundView_Data = NULL;
@@ -107,14 +110,6 @@ HWND SoundView_GetHWnd()
 	return SoundView_Data ? SoundView_Data->hDlg : NULL;
 }
 
-#define CHANSTAT_STOPPED          0
-#define CHANSTAT_PLAY             1
-static u32 sputrunc(float f) { return u32floor(f); }
-static u32 sputrunc(double d) { return u32floor(d); }
-static FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
-	assert(multiplier <= 127);
-	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
-}
 void SoundView_Refresh()
 {
 	if(SoundView_Data == NULL || SPU_core == NULL)
@@ -132,10 +127,14 @@ void SoundView_Refresh()
 		SendDlgItemMessage(hDlg, IDC_SOUND0PANBAR+chanId, PBM_SETPOS, (WPARAM)spumuldiv7(128, thischan.pan), (LPARAM)0);
 		if(thischan.status != CHANSTAT_STOPPED)
 		{
+			s32 vol = spumuldiv7(128, thischan.vol) >> thischan.datashift;
 			SendDlgItemMessage(hDlg, IDC_SOUND0VOLBAR+chanId, PBM_SETPOS,
-				(WPARAM)(spumuldiv7(128, thischan.vol) >> thischan.datashift), (LPARAM)0);
+				(WPARAM)vol, (LPARAM)0);
 
-			sprintf(buf, "%d/%d", thischan.vol, 1 << thischan.datashift);
+			if(SoundView_Data->volModeAlternate) 
+				sprintf(buf, "%d/%d", thischan.vol, 1 << thischan.datashift);
+			else
+				sprintf(buf, "%d", vol);
 			SetDlgItemText(hDlg, IDC_SOUND0VOL+chanId, buf);
 
 			if (thischan.pan == 0)
@@ -266,6 +265,9 @@ BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDOK:
 		case IDCANCEL:
 			SoundView_DlgClose();
+			return 1;
+		case IDC_BUTTON_VOLMODE:
+			data->volModeAlternate = IsDlgButtonChecked(hDlg, IDC_BUTTON_VOLMODE);
 			return 1;
 
 		case IDC_SOUNDVIEW_CHANSWITCH:
