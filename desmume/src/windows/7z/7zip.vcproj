@@ -19,13 +19,13 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
+			OutputDirectory="."
 			IntermediateDirectory=".\Release"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
-			WholeProgramOptimization="1"
+			WholeProgramOptimization="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -59,7 +59,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="CPP"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;EXTRACT_ONLY;_NO_CRYPTO"
 				StringPooling="true"
@@ -72,7 +72,8 @@
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
+				CallingConvention="0"
 				OmitDefaultLibName="true"
 			/>
 			<Tool
@@ -88,6 +89,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions=" /LTCG"
+				OutputFile="$(OutDir)\7zip.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -161,6 +163,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
+				CallingConvention="0"
 				OmitDefaultLibName="true"
 			/>
 			<Tool
@@ -2928,11 +2931,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CPP\Windows\Defs.h"
+				RelativePath=".\CPP\Common\Defs.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CPP\Common\Defs.h"
+				RelativePath=".\CPP\Windows\Defs.h"
 				>
 			</File>
 			<File
@@ -3468,11 +3471,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CPP\Common\Types.h"
+				RelativePath=".\C\Types.h"
 				>
 			</File>
 			<File
-				RelativePath=".\C\Types.h"
+				RelativePath=".\CPP\Common\Types.h"
 				>
 			</File>
 			<File
@@ -3834,22 +3837,6 @@
 			<File
 				RelativePath=".\CPP\7zip\Archive\DllExports2.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="2"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="2"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\CPP\7zip\Archive\GZip\GZipRegister.cpp"

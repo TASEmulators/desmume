@@ -32,20 +32,21 @@ static bool IsItWindowsNT()
 #endif
 #endif
 
-extern "C"
-BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
-{
-  if (dwReason == DLL_PROCESS_ATTACH)
-  {
-    g_hInstance = hInstance;
-    #ifndef _UNICODE
-    #ifdef _WIN32
-    g_IsNT = IsItWindowsNT();
-    #endif
-    #endif
-  }
-  return TRUE;
-}
+//desmume 27-jun-09 - dont want this in a static library
+//extern "C"
+//BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID /*lpReserved*/)
+//{
+//  if (dwReason == DLL_PROCESS_ATTACH)
+//  {
+//    g_hInstance = hInstance;
+//    #ifndef _UNICODE
+//    #ifdef _WIN32
+//    g_IsNT = IsItWindowsNT();
+//    #endif
+//    #endif
+//  }
+//  return TRUE;
+//}
 
 DEFINE_GUID(CLSID_CArchiveHandler,
 0x23170F69, 0x40C1, 0x278A, 0x10, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00, 0x00);
