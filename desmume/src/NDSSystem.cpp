@@ -1916,6 +1916,10 @@ void NDS_exec(s32 nb)
 					nds.ARM7Cycle -= (560190<<1);
 					nb -= (560190<<1);
 
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+					MMU.gfx3dCycles -= (560190 << 1);
+#endif
+
 					if(MMU.divRunning)
 					{
 						MMU.divCycles -= (560190 << 1);
@@ -1988,6 +1992,11 @@ void NDS_exec(s32 nb)
 
 		if(!nds.sleeping)
 		{*/
+
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+		if (nds.cycles > MMU.gfx3dCycles)
+			gfx3d_execute3D();
+#endif
 
 		if(MMU.divRunning)
 		{
@@ -2411,8 +2420,17 @@ void NDS_exec(s32 nb)
 			}
 		}
 
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+		// todo: hack - remove later
+		if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21))
+		{
+			NDS_makeARM9Int(21);		// GX geometry
+			//INFO("IRQ21\n");
+		}
+#else
 		if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21))
 			NDS_makeARM9Int(21);		// GX geometry
+#endif
 
 		if((MMU.reg_IF[0]&MMU.reg_IE[0]) && (MMU.reg_IME[0]))
 		{

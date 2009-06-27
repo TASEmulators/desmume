@@ -154,7 +154,7 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	if (gxstat & 0x01000000) return;		// full
 
-	gxstat &= 0x0000FFFF;
+	gxstat &= 0xF000FFFF;
 
 	gxFIFO.cmd[gxFIFO.tail] = cmd;
 	gxFIFO.param[gxFIFO.tail] = param;
@@ -163,12 +163,14 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 		gxFIFO.tail = 256;
 
 	// TODO: irq handle
-	if (gxFIFO.tail < 128)
-		gxstat |= 0x02000000;
+	//gxstat |= 0x08000000;		// set busy flag
 	gxstat |= (gxFIFO.tail << 16);
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-	gxstat |= 0x08000000;					// busy
+	// TODO irq21
+	gxstat |= 0x02000000;					// this is hack (must be removed later)
+	//if (gxFIFO.tail < 128)
+	//	gxstat |= 0x02000000;
 #else
 	gxstat |= 0x02000000;					// this is hack (must be removed later)
 #endif
@@ -180,7 +182,7 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	gxstat &= 0xF000FFFF;
-	if (!gxFIFO.tail)						// empty
+	if (gxFIFO.tail == 0)						// empty
 	{
 		//gxstat |= (0x01FF << 16);
 		gxstat |= 0x06000000;
@@ -196,16 +198,10 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 		gxFIFO.param[i] = gxFIFO.param[i+1];
 	}
 
-	if (gxFIFO.tail)			// not empty
-	{
-		gxstat |= (gxFIFO.tail << 16);
-		gxstat |= 0x08000000;
-	}
-	else
-	{
+	gxstat |= (gxFIFO.tail << 16);
+
+	if (gxFIFO.tail == 0)
 		gxstat |= 0x04000000;
-		return FALSE;
-	}
 
 	if (gxFIFO.tail < 128)
 		gxstat |= 0x02000000;
@@ -218,10 +214,9 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 void GFX_FIFOcnt(u32 val)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X)\n", val, gxstat);
+	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X) tail %i\n", val, gxstat, gxFIFO.tail);
 	if (val & (1<<29))		// clear? (homebrew)
 	{
-		// need to flush before???
 		GFX_FIFOclear();
 		return;
 	}
