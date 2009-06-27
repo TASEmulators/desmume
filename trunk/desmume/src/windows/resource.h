@@ -104,6 +104,16 @@
 #define ID_FILE_RUNLUASCRIPT            306
 #define ID_FILE_STOPLUASCRIPT           307
 #define ID_FILE_RELOADLUASCRIPT         308
+#define IDC_LUACONSOLE                  309
+#define IDC_EDIT_LUAPATH                310
+#define IDC_BUTTON_LUARUN               311
+#define IDC_BUTTON_LUASTOP              312
+#define IDC_BUTTON_LUABROWSE            313
+#define IDC_BUTTON_LUAEDIT              314
+#define IDC_NOTIFY_SUBSERVIENT          315
+#define IDD_ARCHIVEFILECHOOSER          316
+#define IDD_LUA                         317
+#define IDC_NEW_LUA_SCRIPT              318
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404

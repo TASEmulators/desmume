@@ -51,7 +51,7 @@ HWND RamSearchHWnd = NULL;
 
 extern HWND RamWatchHWnd;
 
-extern char Str_Tmp[1024];
+static char Str_Tmp[1024];
 
 int Rom_Size; //TODO
 unsigned char* Rom_Data; //TODO

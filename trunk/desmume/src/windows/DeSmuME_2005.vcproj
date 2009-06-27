@@ -243,7 +243,7 @@
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI;_NO_CRYPTO"
 				StringPooling="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="0"
@@ -268,9 +268,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib"
+				AdditionalDependencies="lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib 7zip.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_releaseFastBuild.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -312,6 +312,18 @@
 		<Filter
 			Name="windows"
 			>
+			<File
+				RelativePath=".\7zip.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\7zip.h"
+				>
+			</File>
+			<File
+				RelativePath=".\7zipstreams.h"
+				>
+			</File>
 			<File
 				RelativePath=".\AboutBox.cpp"
 				>
@@ -445,6 +457,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\luaconsole.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\main.cpp"
 				>
 			</File>
@@ -490,6 +506,14 @@
 			</File>
 			<File
 				RelativePath=".\ogl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OpenArchive.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\OpenArchive.h"
 				>
 			</File>
 			<File

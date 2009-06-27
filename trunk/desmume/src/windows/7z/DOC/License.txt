@@ -1,0 +1,57 @@
+NOTE: The 7-zip library source is available under the LGPL,
+however, this copy of it is distributed under the GPL 2.0.
+This license has been modified accordingly.
+
+
+  7-Zip source code
+  ~~~~~~~~~~~~~~~~~
+  License for use and distribution
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  7-Zip Copyright (C) 1999-2009 Igor Pavlov.
+
+  Licenses for files are:
+
+    1) The 8 files in CPP/7zip/Compress/Rar*:  GNU GPL 2.0 + unRAR restriction
+    2) All other files:  GNU GPL 2.0
+
+  The GNU GPL + unRAR restriction means that you must follow both 
+  GNU GPL rules and unRAR restriction rules.
+
+
+  GNU GPL information
+  --------------------
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 2
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+  unRAR restriction
+  -----------------
+
+    The decompression engine for RAR archives was developed using source 
+    code of unRAR program.
+    All copyrights to original unRAR code are owned by Alexander Roshal.
+
+    The license for original unRAR code has the following restriction:
+
+    The unRAR sources cannot be used to re-create the RAR compression algorithm, 
+    which is proprietary. Distribution of modified unRAR sources in separate form 
+    or as a part of other software is permitted, provided that it is clearly
+    stated in the documentation and source comments that the code may
+    not be used to develop a RAR (WinRAR) compatible archiver.
+
+
+  --
+  Igor Pavlov
