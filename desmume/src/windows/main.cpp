@@ -84,6 +84,7 @@
 #include "soundView.h"
 #include "commandline.h"
 #include "../lua-engine.h"
+#include "7zip.h"
 
 #include "directx/ddraw.h"
 
@@ -205,6 +206,9 @@ extern HWND RamSearchHWnd;
 static BOOL lostFocusPause = TRUE;
 static BOOL lastPauseFromLostFocus = FALSE;
 static int FrameLimit = 1;
+
+std::vector<HWND> LuaScriptHWnds;
+LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
 
 //=========================== view tools
 TOOLSCLASS	*ViewDisasm_ARM7 = NULL;
@@ -1924,6 +1928,8 @@ int _main()
 		HK_StateLoadSlot(cmdline.load_slot);
 	}
 
+	InitDecoder();
+
 	MainWindow->Show(SW_NORMAL);
 	run();
 	SaveRecentRoms();
@@ -2385,6 +2391,9 @@ void OpenRecentROM(int listNum)
 	NDS_UnPause();
 }
 
+#include "OpenArchive.h"
+#include "utils/xstring.h"
+
 LRESULT OpenFile()
 {
 	HWND hwnd = MainWindow->getHWnd();
@@ -2405,7 +2414,7 @@ LRESULT OpenFile()
 	// should be, and later transform prior assigning to the OPENFILENAME structure
 	strncpy (fileFilter, "NDS ROM file (*.nds)|*.nds|NDS/GBA ROM File (*.ds.gba)|*.ds.gba|",512);
 #ifdef HAVE_LIBZZIP
-	strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz)|*.nds;*.ds.gba;*.zip;*.gz|",512);
+	strncpy (fileFilter, "All Usable Files (*.nds, *.ds.gba, *.zip, *.gz, *.7z, *.rar, *.bz2)|*.nds;*.ds.gba;*.zip;*.gz;*.7z;*.rar;*.bz2|",512);
 #endif			
 
 #ifdef HAVE_LIBZZIP
@@ -2414,6 +2423,10 @@ LRESULT OpenFile()
 #ifdef HAVE_LIBZ
 	strncat (fileFilter, "GZipped NDS ROM file (*.gz)|*.gz|",512 - strlen(fileFilter));
 #endif
+	strncat (fileFilter, "7Zipped NDS ROM file (*.7z)|*.7z|",512 - strlen(fileFilter));
+	strncat (fileFilter, "RARed NDS ROM file (*.rar)|*.rar|",512 - strlen(fileFilter));
+	strncat (fileFilter, "BZipped NDS ROM file (*.bz2)|*.bz2|",512 - strlen(fileFilter));
+	
 	strncat (fileFilter, "Any file (*.*)|*.*||",512 - strlen(fileFilter));
 
 	filterSize = strlen(fileFilter);
@@ -2428,19 +2441,39 @@ LRESULT OpenFile()
 	ofn.lpstrDefExt = "nds";
 	ofn.Flags = OFN_NOCHANGEDIR;
 
-	if(!GetOpenFileName(&ofn))
-	{
-		if (romloaded)
-		{
-			CheatsSearchReset();
-			NDS_UnPause(); //Restart emulation if no new rom chosen
-		}
+	const char* s_nonRomExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "gmv", "gm2", "lua", "luasav", "sav", "srm", "brm", "cfg", "wch", "gs*"};
+
+	if (GetOpenFileName(&ofn) == NULL) {
+		NDS_UnPause();
 		return 0;
 	}
 
+	char LogicalName[1024], PhysicalName[1024];
+
+	if(!strcmp(getExtension(filename).c_str(), "gz")  || !strcmp(getExtension(filename).c_str(), "nds.gz")) {
+		if(LoadROM(filename)) {
+			NDS_UnPause();
+			return 0;
+		}
+	}
+
+	if(!ObtainFile(filename, LogicalName, PhysicalName, "rom", s_nonRomExtensions, sizeof(s_nonRomExtensions)/sizeof(*s_nonRomExtensions))) {
+		return 0;
+	}
+
+//	if(!GetOpenFileName(&ofn))
+//	{
+//		if (romloaded)
+//		{
+//			CheatsSearchReset();
+//			NDS_UnPause(); //Restart emulation if no new rom chosen
+//		}
+//		return 0;
+//	}
+
 	//LOG("%s\r\n", filename);
 #ifdef EXPERIMENTAL_GBASLOT
-	if(LoadROM(filename))
+	if(LoadROM(PhysicalName))
 #else
 	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
 #endif
@@ -3494,6 +3527,13 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				}
 			}
 			return 0;
+				case IDC_NEW_LUA_SCRIPT:
+					if(LuaScriptHWnds.size() < 16)
+					{
+						CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+					//	DialogsOpen++;
+					}
+					break;
 		case IDC_LANGENGLISH:
 			SaveLanguage(0);
 			ChangeLanguage(0);
@@ -4459,4 +4499,82 @@ void UpdateLuaMenus()
 	SetMenuItemInfo (mainMenu, ID_FILE_RUNLUASCRIPT, FALSE, &mii);
 	if (!LUA_LuaRunning()) mii.fState |= MFS_DISABLED;
 	SetMenuItemInfo (mainMenu, ID_FILE_STOPLUASCRIPT, FALSE, &mii);
+}
+
+static char Lua_Dir [1024];
+char Desmume_Path [1024];
+
+static const char* PathWithoutPrefixDotOrSlash(const char* path)
+{
+	while(*path &&
+	  ((*path == '.' && (path[1] == '\\' || path[1] == '/')) ||
+	  *path == '\\' || *path == '/' || *path == ' '))
+		path++;
+	return path;
+}
+
+const char* MakeScriptPathAbsolute(const char* filename, const char* extraDirToCheck)
+{
+	static char filename2 [1024];
+	if(filename[0] && filename[1] != ':')
+	{
+		char tempFile [1024], curDir [1024];
+		strncpy(tempFile, filename, 1024);
+		tempFile[1023] = 0;
+		const char* tempFilePtr = PathWithoutPrefixDotOrSlash(tempFile);
+		for(int i=0; i<=4; i++)
+		{
+			if((!*tempFilePtr || tempFilePtr[1] != ':') && i != 2)
+				strcpy(curDir, i!=1 ? ((i!=3||!extraDirToCheck) ? Lua_Dir : extraDirToCheck) : Desmume_Path);
+			else
+				curDir[0] = 0;
+			_snprintf(filename2, 1024, "%s%s", curDir, tempFilePtr);
+			char* bar = strchr(filename2, '|');
+			if(bar) *bar = 0;
+			FILE* file = fopen(filename2, "rb");
+			if(bar) *bar = '|';
+			if(file || i==4)
+				filename = filename2;
+			if(file)
+			{
+				fclose(file);
+				break;
+			}
+		}
+	}
+	return filename;
+}
+
+extern void RequestAbortLuaScript(int uid, const char* message);
+
+const char* OpenLuaScriptConsole(const char* filename, const char* extraDirToCheck)
+{
+	if(LuaScriptHWnds.size() < 16)
+	{
+		// make the filename absolute before loading
+		filename = MakeScriptPathAbsolute(filename, extraDirToCheck);
+
+		// now check if it's already open and load it if it isn't
+		HWND IsScriptFileOpen(const char* Path);
+		HWND scriptHWnd = IsScriptFileOpen(filename);
+		if(!scriptHWnd)
+		{
+			HWND prevWindow = GetActiveWindow();
+
+			HWND hDlg = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_LUA), MainWindow->getHWnd(), (DLGPROC) LuaScriptProc);
+			SendMessage(hDlg,WM_COMMAND,IDC_NOTIFY_SUBSERVIENT,TRUE);
+			SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)filename);
+//			DialogsOpen++;
+
+			SetActiveWindow(prevWindow);
+		}
+		else
+		{
+			RequestAbortLuaScript((int)scriptHWnd, "terminated to restart because of a call to gens.openscript");
+			SendMessage(scriptHWnd, WM_COMMAND, IDC_BUTTON_LUARUN, 0);
+		}
+	}
+	else return "Too many script windows are already open.";
+
+	return NULL;
 }

@@ -16,7 +16,7 @@ HWND RamWatchHWnd = NULL;
 
 #define MESSAGEBOXPARENT (RamWatchHWnd ? RamWatchHWnd : MainWindow->getHWnd())
 
-char Str_Tmp[1024];
+static char Str_Tmp[1024];
 std::string Rom_Name;
 
 static HMENU ramwatchmenu;
@@ -552,7 +552,7 @@ bool Load_Watches(bool clear, const char* filename)
 
 
 
-int Change_File_L(char *Dest, char *Dir, char *Titre, char *Filter, char *Ext, HWND hwnd)
+static int Change_File_L(char *Dest, char *Dir, char *Titre, char *Filter, char *Ext, HWND hwnd)
 {
 	OPENFILENAME ofn;
 
