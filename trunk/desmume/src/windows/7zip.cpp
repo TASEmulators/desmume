@@ -10,6 +10,8 @@
 
 #include "7zipstreams.h" // defines OutStream and InFileStream
 
+#define _NO_CRYPTO
+
 STDAPI GetNumberOfFormats(UINT32 *numFormats);
 STDAPI GetHandlerProperty2(UInt32 formatIndex, PROPID propID, PROPVARIANT *value);
 STDAPI CreateObject(const GUID *clsid, const GUID *iid, void **outObject);
