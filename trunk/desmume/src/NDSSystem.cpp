@@ -2420,14 +2420,7 @@ void NDS_exec(s32 nb)
 			}
 		}
 
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-		// todo: hack - remove later
-		if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21))
-		{
-			NDS_makeARM9Int(21);		// GX geometry
-			//INFO("IRQ21\n");
-		}
-#else
+#ifndef USE_GEOMETRY_FIFO_EMULATION
 		if(MMU.reg_IE[ARMCPU_ARM9]&(1<<21))
 			NDS_makeARM9Int(21);		// GX geometry
 #endif

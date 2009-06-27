@@ -162,16 +162,12 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	if (gxFIFO.tail > 256)
 		gxFIFO.tail = 256;
 
-	// TODO: irq handle
-	//gxstat |= 0x08000000;		// set busy flag
 	gxstat |= (gxFIFO.tail << 16);
 
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	// TODO irq21
-	gxstat |= 0x02000000;					// this is hack (must be removed later)
-	//if (gxFIFO.tail < 128)
-	//	gxstat |= 0x02000000;
-#else
+	if (gxFIFO.tail < 128)
+		gxstat |= 0x02000000;
+
+#ifndef USE_GEOMETRY_FIFO_EMULATION
 	gxstat |= 0x02000000;					// this is hack (must be removed later)
 #endif
 
@@ -181,6 +177,10 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	if (gxstat & 0xC0000000)
+	{
+		setIF(0, (1<<21));
+	}
 	gxstat &= 0xF000FFFF;
 	if (gxFIFO.tail == 0)						// empty
 	{
