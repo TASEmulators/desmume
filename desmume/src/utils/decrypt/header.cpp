@@ -71,7 +71,7 @@ int DetectRomType(const Header& header, char* romdata)
 	unsigned int * data = (unsigned int*)(romdata + 0x4000);
 
 	//this is attempting to check for an utterly invalid nds header
-	if(header.unitcode != 0) return ROMTYPE_INVALID;
+	if(header.unitcode != 0 && header.unitcode != 2) return ROMTYPE_INVALID;
 
 	if (header.arm9_rom_offset < 0x4000) return ROMTYPE_HOMEBREW;
 	if (data[0] == 0x00000000 && data[1] == 0x00000000) return ROMTYPE_MULTIBOOT;
