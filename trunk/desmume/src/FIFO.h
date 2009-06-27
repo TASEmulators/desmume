@@ -26,7 +26,7 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-//#define USE_GEOMETRY_FIFO_EMULATION
+//#define USE_GEOMETRY_FIFO_EMULATION //enables new experimental gxFIFO
 
 #include "types.h"
 

@@ -298,6 +298,9 @@ void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
 void gfx3d_Control(u32 v);
 u32 gfx3d_GetGXstatus();
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+void gfx3d_execute3D();
+#endif
 void gfx3d_sendCommandToFIFO(u32 val);
 void gfx3d_sendCommand(u32 cmd, u32 param);
 

@@ -112,6 +112,10 @@ struct MMU_struct {
 	u32 sqrtCnt;
 	s32 sqrtCycles;
 
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	s32 gfx3dCycles;
+#endif
+
 	u8 powerMan_CntReg;
 	BOOL powerMan_CntRegWritten;
 	u8 powerMan_Reg[4];

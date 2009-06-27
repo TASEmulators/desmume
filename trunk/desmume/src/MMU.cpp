@@ -1019,6 +1019,9 @@ void MMU_clearMem()
 	partie = 1;
 	addonsReset();
 	Mic_Reset();
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	MMU.gfx3dCycles = 0;
+#endif
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
@@ -2190,8 +2193,10 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x400041:
 			case 0x400042:
 			case 0x400043:		// FIFO Commands
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommandToFIFO(val);
 				return;
+				
 			case 0x400044:
 			case 0x400045:
 			case 0x400046:
@@ -2217,6 +2222,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 			case 0x40005A:
 			case 0x40005B:
 			case 0x40005C:		// Individual Commands
+				((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
 				gfx3d_sendCommand(adr, val);
 				return;
 			default:
