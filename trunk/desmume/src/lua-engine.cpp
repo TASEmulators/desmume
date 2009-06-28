@@ -25,6 +25,7 @@ extern "C"
 #include "saves.h"
 #include "NDSSystem.h"
 #include "movie.h"
+#include "gfx3d.h"
 
 #ifdef WIN32
 #include "common.h"
@@ -154,7 +155,10 @@ int LUA_LuaFrameSkip() {
 		return 0;
 	case SPEED_MAXIMUM:
 		return 1;
+	default:
+		assert(false);
 	}
+	return 0;
 }
 
 int LUA_CheatGetByte(int address) {
@@ -598,11 +602,15 @@ static int input_get(lua_State *L) {
 		
 //	extern void GetMouseData(uint32 (&md)[3]);
 
-	uint32 MouseData[3];
-//	GetMouseData (MouseData);
-	int x = MouseData[0];
-	int y = MouseData[1];
-	int click = MouseData[2];		///adelikat TODO: remove the ability to store the value 2?  Since 2 is right-clicking and not part of zapper input and is used for context menus
+//	uint32 MouseData[3];
+////	GetMouseData (MouseData);
+//	int x = MouseData[0];
+//	int y = MouseData[1];
+//	int click = MouseData[2];		///adelikat TODO: remove the ability to store the value 2?  Since 2 is right-clicking and not part of zapper input and is used for context menus
+
+	int x = 0;
+	int y = 0;
+	int click = 0;
 
 	lua_pushinteger(L, x);
 	lua_setfield(L, -2, "x");
@@ -839,30 +847,32 @@ static int hex2int(lua_State *L, char c) {
  * ourselves.
  */
 static uint8 gui_colour_rgb(uint8 r, uint8 g, uint8 b) {
-	static uint8 index_lookup[1 << (3+3+3)];
-        int k;
-	if (!gui_saw_current_palette)
-	{
-		memset(index_lookup, GUI_COLOUR_CLEAR, sizeof(index_lookup));
-		gui_saw_current_palette = TRUE;
-	}
+//	static uint8 index_lookup[1 << (3+3+3)];
+//        int k;
+//	if (!gui_saw_current_palette)
+//	{
+//		memset(index_lookup, GUI_COLOUR_CLEAR, sizeof(index_lookup));
+//		gui_saw_current_palette = TRUE;
+//	}
+//
+//	k = ((r & 0xE0) << 1) | ((g & 0xE0) >> 2) | ((b & 0xE0) >> 5);
+//	uint16 test, best = GUI_COLOUR_CLEAR;
+//	uint32 best_score = 0xffffffffu, test_score;
+//	if (index_lookup[k] != GUI_COLOUR_CLEAR) return index_lookup[k];
+//	for (test = 0; test < 0xff; test++)
+//	{
+//		uint8 tr, tg, tb;
+//		if (test == GUI_COLOUR_CLEAR) continue;
+////		LUA_GetPalette(test, &tr, &tg, &tb);
+//		test_score = abs(r - tr) *  66 +
+//		             abs(g - tg) * 129 +
+//		             abs(b - tb) *  25;
+//		if (test_score < best_score) best_score = test_score, best = test;
+//	}
+//	index_lookup[k] = best;
+//	return best;
 
-	k = ((r & 0xE0) << 1) | ((g & 0xE0) >> 2) | ((b & 0xE0) >> 5);
-	uint16 test, best = GUI_COLOUR_CLEAR;
-	uint32 best_score = 0xffffffffu, test_score;
-	if (index_lookup[k] != GUI_COLOUR_CLEAR) return index_lookup[k];
-	for (test = 0; test < 0xff; test++)
-	{
-		uint8 tr, tg, tb;
-		if (test == GUI_COLOUR_CLEAR) continue;
-//		LUA_GetPalette(test, &tr, &tg, &tb);
-		test_score = abs(r - tr) *  66 +
-		             abs(g - tg) * 129 +
-		             abs(b - tb) *  25;
-		if (test_score < best_score) best_score = test_score, best = test;
-	}
-	index_lookup[k] = best;
-	return best;
+	return R5G5B5TORGB15(r>>3,g>>3,b>>3);
 }
 
 void LUA_LuaUpdatePalette()
