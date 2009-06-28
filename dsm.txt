@@ -15,6 +15,8 @@ Integer keys (also used for booleans, with a 1 or 0) will have a value that is a
  - rerecordCount (optional) - the rerecord count
  - romChecksum (optional) - the CRC32 of the rom used to make the movie. should match values specified on advanscene.com
  - romSerial (optional) - a concatenation of other uniquely identifying information about the rom (name,gamecode,makercode)
+ - useExtBios (optional) - were bios files was used? defaults to false. 
+ - swiFromBios (optional) - were swi emulated by ExtBios? (alternative is internal HLE bios). defaults to false.
  
 The rom identification information may be used at a later point to warn about mismatches between movies and roms, but is not right now.
 
@@ -40,7 +42,9 @@ The fields are as follows, except as noted in note C.
 field c is a variable length decimal integer which is a bitfield corresponding to miscellaneous input states which are valid at the start of the frame.
 Therefore, no miscellaneous commands is represented by a value of 0.
 Here are the currently defined bit values:
-0x01 - Microphone Noise (hardcoded; to be held through duration of frame)
+0x01 - Microphone Noise (hardcoded noise sample; to be held through duration of frame)
+0x02 - Reset
+0x04 - Lid
 
 
 the format of the main section is as follows:
