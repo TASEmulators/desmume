@@ -84,6 +84,7 @@ struct SCustomKeys
 	SCustomKey ToggleFPS;
 	SCustomKey ToggleInput;
 	SCustomKey ToggleLag;
+	SCustomKey ResetLagCounter;
 	SCustomKey LastItem; // dummy, must be last
 
 	//--methods--
