@@ -184,6 +184,12 @@ void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
 void HK_ToggleFPS(int) {FpsDisplay ^= true;}
 void HK_ToggleInput(int) {ShowInputDisplay ^= true;}
 void HK_ToggleLag(int) {ShowLagFrameCounter ^= true;}
+void HK_ResetLagCounter(int) {
+	lagframecounter=0;
+	LagFrameFlag=0;
+	lastLag=0;
+	TotalLagFrames=0;
+}
 void HK_ToggleReadOnly(int) {
 	movie_readonly ^= true; 
 	if(movie_readonly)
@@ -420,6 +426,12 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->ToggleLag.name = L"Toggle Lag Display";
 	keys->ToggleLag.page = HOTKEY_PAGE_MAIN;
 	keys->ToggleLag.key = NULL;
+
+	keys->ResetLagCounter.handleKeyDown = HK_ResetLagCounter;
+	keys->ResetLagCounter.code = "ResetLagCounter";
+	keys->ResetLagCounter.name = L"Reset Lag Counter";
+	keys->ResetLagCounter.page = HOTKEY_PAGE_MAIN;
+	keys->ResetLagCounter.key = NULL;
 
 	keys->ToggleReadOnly.handleKeyDown = HK_ToggleReadOnly;
 	keys->ToggleReadOnly.code = "ToggleReadOnly";

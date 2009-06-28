@@ -1145,6 +1145,8 @@ DWORD WINAPI run()
 				else
 					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d (no movie)",currFrameCounter);
 			}
+			if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
+			if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 
 			if(!AVI_IsRecording()) osd->update();
 			Display();
@@ -1266,8 +1268,6 @@ DWORD WINAPI run()
 					emu_halt();
 					SPU_Pause(1);
 				}
-				if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
-				if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 //				DisplayMessage();
 				CheckMessages();
 	
