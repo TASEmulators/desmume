@@ -882,6 +882,8 @@ void NDS_Reset()
 	if(movieMode != MOVIEMODE_INACTIVE && !_HACK_DONT_STOPMOVIE)
 		movie_reset_command = true;
 
+	if(movieMode == MOVIEMODE_INACTIVE) currFrameCounter = 0; 
+
 	MMU_clearMem();
 	MMU_new.backupDevice.reset();
 
