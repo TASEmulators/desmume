@@ -945,11 +945,6 @@ void MMU_DeInit(void) {
 
 //Card rom & ram
 
-u16 SPI_CNT = 0;
-u16 SPI_CMD = 0;
-u16 AUX_SPI_CNT = 0;
-u16 AUX_SPI_CMD = 0;
-
 u32 rom_mask = 0;
 
 u32 DMASrc[2][4] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
@@ -997,8 +992,8 @@ void MMU_clearMem()
 	
 	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
 
-	SPI_CNT = 0;
-	AUX_SPI_CNT = 0;
+	MMU.SPI_CNT = 0;
+	MMU.AUX_SPI_CNT = 0;
 
 	// Enable the sound speakers
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
@@ -1317,6 +1312,28 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 		setIF(proc^1, ( 1 << 16 ));
 }
 
+static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
+{
+	//why val==0 to reset? is it a particular bit? its not bit 6...
+	switch(size) {
+		case 16:
+			MMU.AUX_SPI_CNT = val;
+			if (val == 0) MMU_new.backupDevice.reset_command();
+			break;
+		case 8:
+			switch(adr) {
+				case 0: 
+					T1WriteByte((u8*)&MMU.AUX_SPI_CNT,0,val); 
+					if (val == 0) MMU_new.backupDevice.reset_command();
+					break;
+				case 1: 
+					T1WriteByte((u8*)&MMU.AUX_SPI_CNT,1,val); 
+					break;
+			}
+	}
+}
+
+
 //================================================================================================== ARM9 *
 //=========================================================================================================
 //=========================================================================================================
@@ -1478,6 +1495,14 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 			case REG_DISPB_BLDY: 	 
 				GPU_setBLDY_EVY(SubScreen.gpu,val) ; 	 
 				break;
+
+			case REG_AUXSPICNT:
+				write_auxspicnt(9,8,0,val);
+				return;
+			case REG_AUXSPICNT+1:
+				write_auxspicnt(9,8,1,val);
+				return;
+
 
 			case 0x4000247:	
 				/* Update WRAMSTAT at the ARM7 side */
@@ -1788,17 +1813,12 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			}
 
 			case REG_AUXSPICNT:
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val);
-				AUX_SPI_CNT = val;
-
-				if (val == 0)
-				   //mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
-				   MMU_new.backupDevice.reset_command();
+				write_auxspicnt(9,16,0,val);
 				return;
 
 			case REG_AUXSPIDATA:
 				if(val!=0)
-				   AUX_SPI_CMD = val & 0xFF;
+				   MMU.AUX_SPI_CMD = val & 0xFF;
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command(val));
@@ -2784,6 +2804,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_TM3CNTL :
 				return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2];
 
+			case REG_AUXSPICNT:
+				return MMU.AUX_SPI_CNT;
+
 			case 0x04000130:
 			case 0x04000136:
 				//not sure whether these should trigger from byte reads
@@ -2974,7 +2997,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 					T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0x7F7FFFFF);
 	
 				// if needed, throw irq for the end of transfer
-				if(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A0) & 0x4000)
+				if(MMU.AUX_SPI_CNT & 0x4000)
 					NDS_makeInt(ARMCPU_ARM9, 19);
 
 				return val;
@@ -3021,6 +3044,8 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 		return;
     }
 
+	adr &= 0x0FFFFFFF;
+
 	if(adr == 0x04000301)
 	{
 		switch(val)
@@ -3039,7 +3064,22 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 	}
 #endif
 
-	if ( adr == REG_RTC ) rtcWrite(val);
+	if (adr >> 24 == 4)
+	{
+		switch(adr)
+		{
+		case REG_RTC:
+			rtcWrite(val);
+			return;
+
+		case REG_AUXSPICNT:
+			write_auxspicnt(9,8,0,val);
+			return;
+		case REG_AUXSPICNT+1:
+			write_auxspicnt(9,8,1,val);
+			return;
+		}
+	}
 
 	bool unmapped;
 	adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped);
@@ -3108,17 +3148,12 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			return;
 
 			case REG_AUXSPICNT:
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPICNT >> 20) & 0xff], REG_AUXSPICNT & 0xfff, val);
-				AUX_SPI_CNT = val;
-
-				if (val == 0)
-				   //mc_reset_com(&MMU.bupmem);     // reset backup memory device communication
-				   MMU_new.backupDevice.reset_command();
+				write_auxspicnt(7,16,0,val);
 			return;
 
 			case REG_AUXSPIDATA:
 				if(val!=0)
-				   AUX_SPI_CMD = val & 0xFF;
+				   MMU.AUX_SPI_CMD = val & 0xFF;
 
 				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command(val));
@@ -3128,11 +3163,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				{
 					int reset_firmware = 1;
 
-					if ( ((SPI_CNT >> 8) & 0x3) == 1) 
+					if ( ((MMU.SPI_CNT >> 8) & 0x3) == 1) 
 					{
 						if ( ((val >> 8) & 0x3) == 1) 
 						{
-							if ( BIT11(SPI_CNT)) 
+							if ( BIT11(MMU.SPI_CNT)) 
 							{
 								// select held
 								reset_firmware = 0;
@@ -3146,7 +3181,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					  // reset fw device communication
 					  fw_reset_com(&MMU.fw);
 					}
-					SPI_CNT = val;
+					MMU.SPI_CNT = val;
 					
 					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
 				}
@@ -3157,7 +3192,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 					u16 spicnt;
 
 					if(val!=0)
-						SPI_CMD = val;
+						MMU.SPI_CMD = val;
 			
 					spicnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
 
@@ -3196,14 +3231,14 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 						return;
 						
 						case 2 :
-							switch(SPI_CMD & 0x70)
+							switch(MMU.SPI_CMD & 0x70)
 							{
 								case 0x00 :
 									val = 0;
 									break;
 								case 0x10 :
 									//emu_halt();
-									if(SPI_CNT&(1<<11))
+									if(MMU.SPI_CNT&(1<<11))
 									{
 										if(partie)
 										{
@@ -3850,6 +3885,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_TM3CNTL :
 				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2];
 
+			case REG_AUXSPICNT:
+				return MMU.AUX_SPI_CNT;
 
 			case 0x04000130:
 			case 0x04000136:
@@ -3973,7 +4010,7 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 					T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0x7F7FFFFF);
 	
 				// if needed, throw irq for the end of transfer
-				if(T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A0) & 0x4000)
+				if(MMU.AUX_SPI_CNT & 0x4000)
 					NDS_makeInt(ARMCPU_ARM7, 19);
 	
 				return val;
