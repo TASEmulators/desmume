@@ -85,6 +85,7 @@
 #include "commandline.h"
 #include "../lua-engine.h"
 #include "7zip.h"
+#include "pathsettings.h"
 
 #include "directx/ddraw.h"
 
@@ -2263,7 +2264,6 @@ void AviRecordTo()
 	NDS_Pause();
 
 	OPENFILENAME ofn;
-	char szChoice[MAX_PATH] = {0};
 
 	////if we are playing a movie, construct the filename from the current movie.
 	////else construct it from the filename.
@@ -2291,16 +2291,32 @@ void AviRecordTo()
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
 	ofn.lpstrFilter = "AVI Files (*.avi)\0*.avi\0\0";
-	ofn.lpstrFile = szChoice;
 	ofn.lpstrDefExt = "avi";
 	ofn.lpstrTitle = "Save AVI as";
+
+	char folder[MAX_PATH];
+	ZeroMemory(folder, sizeof(folder));
+	GetPathFor(AVI_FILES, folder, MAX_PATH);
+
+	char file[MAX_PATH];
+	ZeroMemory(file, sizeof(file));
+	FormatName(file, MAX_PATH);
+
+	strcat(folder, file);
+	int len = strlen(folder);
+	if(len > MAX_PATH - 4)
+		folder[MAX_PATH - 4] = '\0';
+	
+	strcat(folder, ".avi");
+	ofn.lpstrFile = folder;
+
 
 	ofn.nMaxFile = MAX_PATH;
 	ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 
 	if(GetSaveFileName(&ofn))
 	{
-		DRV_AviBegin(szChoice);
+		DRV_AviBegin(folder);
 	}
 
 	NDS_UnPause();
@@ -2441,12 +2457,32 @@ LRESULT OpenFile()
 	ofn.lpstrDefExt = "nds";
 	ofn.Flags = OFN_NOCHANGEDIR;
 
+	char buffer[MAX_PATH];
+	ZeroMemory(buffer, sizeof(buffer));
+	GetPathFor(ROMS, buffer, MAX_PATH);
+	ofn.lpstrInitialDir = buffer;
+
+
 	const char* s_nonRomExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "gmv", "gm2", "lua", "luasav", "sav", "srm", "brm", "cfg", "wch", "gs*"};
 
 	if (GetOpenFileName(&ofn) == NULL) {
 		NDS_UnPause();
 		return 0;
 	}
+	else {
+	if(SavePathForRomVisit())
+	{
+		char *lchr, buffer[MAX_PATH];
+		ZeroMemory(buffer, sizeof(buffer));
+
+		lchr = strrchr(filename, '\\');
+		strncpy(buffer, filename, strlen(filename) - strlen(lchr));
+		
+		SetPathFor(ROMS, buffer);
+		WritePathSettings();
+	}
+	}
+
 
 	char LogicalName[1024], PhysicalName[1024];
 
@@ -2583,7 +2619,8 @@ enum CONFIGSCREEN
 	CONFIGSCREEN_WIFI,
 	CONFIGSCREEN_SOUND,
 	CONFIGSCREEN_EMULATION,
-	CONFIGSCREEN_MICROPHONE
+	CONFIGSCREEN_MICROPHONE,
+	CONFIGSCREEN_PATHSETTINGS
 };
 
 void RunConfig(CONFIGSCREEN which) 
@@ -2615,6 +2652,9 @@ void RunConfig(CONFIGSCREEN which)
 		break; 
 	case CONFIGSCREEN_MICROPHONE:
 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_MICROPHONE), hwnd, (DLGPROC)MicrophoneSettingsDlgProc);
+		break;
+	case CONFIGSCREEN_PATHSETTINGS:
+		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_PATHSETTINGS), hwnd, (DLGPROC)PathSettingsDlgProc);
 		break;
 	case CONFIGSCREEN_WIFI:
 #ifdef EXPERIMENTAL_WIFI
@@ -2762,6 +2802,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_CREATE:
 		{
+			ReadPathSettings();
 			pausedByMinimize = FALSE;
 			UpdateScreenRects();
 			return 0;
@@ -3027,7 +3068,33 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_QUICK_PRINTSCREEN:
 			{
-				NDS_WriteBMP("./printscreen.bmp");
+				char buffer[MAX_PATH];
+				ZeroMemory(buffer, sizeof(buffer));
+				GetPathFor(SCREENSHOTS, buffer, MAX_PATH);
+
+				char file[MAX_PATH];
+				ZeroMemory(file, sizeof(file));
+				FormatName(file, MAX_PATH);
+		
+				strcat(buffer, file);
+				if( strlen(buffer) > (MAX_PATH - 4))
+					buffer[MAX_PATH - 4] = '\0';
+
+				switch(GetImageFormatType())
+				{
+					case PNG:
+						{		
+							strcat(buffer, ".png");
+							NDS_WritePNG(buffer);
+						}
+						break;
+					case BMP:
+						{
+							strcat(buffer, ".bmp");
+							NDS_WriteBMP(buffer);
+						}
+						break;
+				}
 			}
 			return 0;
 		case IDM_FILE_RECORDAVI:
@@ -3055,6 +3122,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
 
+				char buffer[MAX_PATH];
+				ZeroMemory(buffer, sizeof(buffer));
+				GetPathFor(STATES, buffer, MAX_PATH);
+				ofn.lpstrInitialDir = buffer;
+
 				if(!GetOpenFileName(&ofn))
 				{
 					NDS_UnPause();
@@ -3079,6 +3151,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ofn.lpstrFile =  SavName;
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "dst";
+
+				char buffer[MAX_PATH];
+				ZeroMemory(buffer, sizeof(buffer));
+				GetPathFor(STATES, buffer, MAX_PATH);
+				ofn.lpstrInitialDir = buffer;
 
 				if(!GetSaveFileName(&ofn))
 				{
@@ -3156,6 +3233,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				ofn.nMaxFile = MAX_PATH;
 				ofn.lpstrDefExt = "duc";
 
+				char buffer[MAX_PATH];
+				ZeroMemory(buffer, sizeof(buffer));
+				GetPathFor(BATTERY, buffer, MAX_PATH);
+				ofn.lpstrInitialDir = buffer;
+
 				if(!GetOpenFileName(&ofn))
 				{
 					NDS_UnPause();
@@ -3213,6 +3295,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case IDM_MICROPHONESETTINGS:
 			RunConfig(CONFIGSCREEN_MICROPHONE);
+			return 0;
+		case IDM_PATHSETTINGS:
+			RunConfig(CONFIGSCREEN_PATHSETTINGS);
 			return 0;
 
 		case IDM_GAME_INFO:
@@ -3918,6 +4003,11 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 					ofn.lpstrDefExt = "bin";
 					ofn.Flags = OFN_NOCHANGEDIR;
 
+					char buffer[MAX_PATH];
+					ZeroMemory(buffer, sizeof(buffer));
+					GetPathFor(FIRMWARE, buffer, MAX_PATH);
+					ofn.lpstrInitialDir = buffer;
+
 					if(GetOpenFileName(&ofn))
 					{
 						HWND cur;
@@ -4017,6 +4107,11 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					ofn.nMaxFile = 256;
 					ofn.lpstrDefExt = "bin";
 					ofn.Flags = OFN_NOCHANGEDIR;
+
+					char buffer[MAX_PATH];
+					ZeroMemory(buffer, sizeof(buffer));
+					GetPathFor(SOUNDS, buffer, MAX_PATH);
+					ofn.lpstrInitialDir = buffer;
 
 					if(GetOpenFileName(&ofn))
 					{
