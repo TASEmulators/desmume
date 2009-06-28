@@ -55,14 +55,17 @@
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.exe</TargetExt>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\__bins\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)_sse2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)_release</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.exe</TargetExt>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">$(SolutionDir)\__bins\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">$(SolutionDir)\.VS2010\$(Configuration)\$(Platform)\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">$(ProjectName)_sse2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">$(ProjectName)_releaseFastBuild</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">.exe</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PreBuildEvent>
+      <Command>defaultconfig\SubWCRev.bat</Command>
+    </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
@@ -70,7 +73,7 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\lua-5.1.4\src;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;HAVE_LIBZ;HAVE_LIBZZIP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -82,8 +85,8 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;comctl32.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;shlwapi.lib;winpcap\wpcap.lib;zlib-2008-x32.lib;zziplib-2008-x32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;.\winpcap;glib-2.20.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
@@ -96,6 +99,9 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PreBuildEvent>
+      <Command>defaultconfig\SubWCRev.bat</Command>
+    </PreBuildEvent>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -104,7 +110,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\lua-5.1.4\src;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE;EXPERIMENTAL_WIFI;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -114,12 +120,12 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>FastCall</CallingConvention>
+      <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;comctl32.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;shlwapi.lib;winpcap\wpcap.lib;zlib-2008-x32.lib;zziplib-2008-x32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;.\winpcap;glib-2.20.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -133,6 +139,9 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release FastBuild|Win32'">
+    <PreBuildEvent>
+      <Command>defaultconfig\SubWCRev.bat</Command>
+    </PreBuildEvent>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -141,7 +150,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;lua\lua-5.1.4\src;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE;EXPERIMENTAL_WIFI;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -151,12 +160,12 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>FastCall</CallingConvention>
+      <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;comctl32.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;shlwapi.lib;winpcap\wpcap.lib;zlib-2008-x32.lib;zziplib-2008-x32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;.\winpcap;glib-2.20.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -192,9 +201,11 @@
     <ClCompile Include="..\Disassembler.cpp" />
     <ClCompile Include="..\FIFO.cpp" />
     <ClCompile Include="..\fs-windows.cpp" />
+    <ClCompile Include="..\gdbstub\gdbstub.cpp" />
     <ClCompile Include="..\gfx3d.cpp" />
     <ClCompile Include="..\GPU.cpp" />
     <ClCompile Include="..\GPU_OSD.cpp" />
+    <ClCompile Include="..\lua-engine.cpp" />
     <ClCompile Include="..\matrix.cpp" />
     <ClCompile Include="..\mc.cpp" />
     <ClCompile Include="..\MMU.cpp" />
@@ -219,6 +230,7 @@
     <ClCompile Include="..\utils\md5.cpp" />
     <ClCompile Include="..\utils\xstring.cpp" />
     <ClCompile Include="..\wifi.cpp" />
+    <ClCompile Include="7zip.cpp" />
     <ClCompile Include="AboutBox.cpp" />
     <ClCompile Include="aviout.cpp" />
     <ClCompile Include="cheatsWin.cpp" />
@@ -233,6 +245,7 @@
     <ClCompile Include="inputdx.cpp" />
     <ClCompile Include="IORegView.cpp" />
     <ClCompile Include="lightView.cpp" />
+    <ClCompile Include="luaconsole.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mapView.cpp" />
     <ClCompile Include="matrixView.cpp" />
@@ -240,6 +253,7 @@
     <ClCompile Include="mic.cpp" />
     <ClCompile Include="oamView.cpp" />
     <ClCompile Include="ogl.cpp" />
+    <ClCompile Include="OpenArchive.cpp" />
     <ClCompile Include="palView.cpp" />
     <ClCompile Include="ramwatch.cpp" />
     <ClCompile Include="ram_search.cpp" />
@@ -271,13 +285,13 @@
     <MASM Include="..\matrix_sse2-x86.asm" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
     <None Include="bitmap1.bmp" />
     <None Include="DeSmuME.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h" />
@@ -303,6 +317,7 @@
     <ClInclude Include="..\gl_vertex.h" />
     <ClInclude Include="..\GPU.h" />
     <ClInclude Include="..\GPU_osd.h" />
+    <ClInclude Include="..\lua-engine.h" />
     <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\mc.h" />
     <ClInclude Include="..\mem.h" />
@@ -338,6 +353,8 @@
     <ClInclude Include="..\utils\xstring.h" />
     <ClInclude Include="..\version.h" />
     <ClInclude Include="..\wifi.h" />
+    <ClInclude Include="7zip.h" />
+    <ClInclude Include="7zipstreams.h" />
     <ClInclude Include="AboutBox.h" />
     <ClInclude Include="aviout.h" />
     <ClInclude Include="cheatsWin.h" />
@@ -357,6 +374,7 @@
     <ClInclude Include="matrixView.h" />
     <ClInclude Include="memView.h" />
     <ClInclude Include="oamView.h" />
+    <ClInclude Include="OpenArchive.h" />
     <ClInclude Include="palView.h" />
     <ClInclude Include="ramwatch.h" />
     <ClInclude Include="ram_search.h" />
