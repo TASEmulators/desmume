@@ -2122,7 +2122,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 			clCmd >>= 8;
 		break;
 		default:
-			INFO("Unknown FIFO 3D command 0x%02X in cmd=0x%02X\n", clCmd&0xFF, val);
+			LOG("Unknown FIFO 3D command 0x%02X in cmd=0x%02X\n", clCmd&0xFF, val);
 			clCmd >>= 8;
 			break;
 	}
