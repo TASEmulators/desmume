@@ -840,13 +840,25 @@ int NDS_LoadROM( const char *filename,
 	free(noext);
 
 	memset(buf, 0, MAX_PATH);
+
+	#ifdef WIN32
+	GetFullPathNoExt(BATTERY, buf, MAX_PATH);
+	#else
 	strcpy(buf, pathFilenameToROMwithoutExt);
+	#endif
+	
 	strcat(buf, ".dsv");							// DeSmuME memory card	:)
 
 	MMU_new.backupDevice.load_rom(buf);
 
 	memset(buf, 0, MAX_PATH);
+
+	#ifdef WIN32
+	GetFullPathNoExt(CHEATS, buf, MAX_PATH);
+	#else
 	strcpy(buf, pathFilenameToROMwithoutExt);
+	#endif
+	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheatsInit(buf);
 

@@ -1007,6 +1007,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\pathsettings.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\pathsettings.h"
+			>
+		</File>
+		<File
 			RelativePath="..\rasterize.cpp"
 			>
 		</File>

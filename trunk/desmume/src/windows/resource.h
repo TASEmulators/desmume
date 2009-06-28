@@ -114,6 +114,17 @@
 #define IDD_ARCHIVEFILECHOOSER          316
 #define IDD_LUA                         317
 #define IDC_NEW_LUA_SCRIPT              318
+#define IDC_PATHEDIT                    319
+#define IDC_BROWSE                      320
+#define IDC_USELASTVISIT                321
+#define IDC_FORMATEDIT                  322
+#define IDC_PATHLIST                    323
+#define IDC_SAVEAS                      324
+#define IDC_PNG                         325
+#define IDC_BMP                         326
+#define IDC_FORMATSTATIC                327
+#define IDM_PATHSETTINGS                328
+#define IDD_PATHSETTINGS                229
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404

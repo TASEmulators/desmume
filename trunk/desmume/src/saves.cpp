@@ -460,7 +460,12 @@ void scan_savestates()
 
   for( i = 1; i <= NB_STATES; i++ )
     {
-      strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+    #ifdef WIN32
+    GetFullPathNoExt(STATES, filename, MAX_PATH);
+    #else
+    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+    #endif
+	  
 	  if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ >MAX_PATH) return ;
       sprintf(filename+strlen(filename), ".ds%d", i);
       if( stat(filename,&sbuf) == -1 ) continue;
@@ -476,7 +481,12 @@ void savestate_slot(int num)
    struct stat sbuf;
    char filename[MAX_PATH];
 
-   strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+    #ifdef WIN32
+    GetFullPathNoExt(STATES, filename, MAX_PATH);
+    #else
+    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+    #endif
+
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);
 
@@ -500,7 +510,13 @@ void savestate_slot(int num)
 void loadstate_slot(int num)
 {
    char filename[MAX_PATH];
-   strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+
+    #ifdef WIN32
+    GetFullPathNoExt(STATES, filename, MAX_PATH);
+    #else
+    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
+    #endif
+
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);
    if (savestate_load(filename))

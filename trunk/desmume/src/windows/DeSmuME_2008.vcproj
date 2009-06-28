@@ -806,6 +806,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\pathsettings.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\ram_search.cpp"
 					>
 				</File>
@@ -929,6 +933,10 @@
 				</File>
 				<File
 					RelativePath=".\palView.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pathsettings.h"
 					>
 				</File>
 				<File

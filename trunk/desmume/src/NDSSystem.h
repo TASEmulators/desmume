@@ -35,6 +35,10 @@
 
 #include <string>
 
+#ifdef WIN32
+#include "pathsettings.h"
+#endif
+
 struct turbo {
 	bool Right;
 	bool Left;

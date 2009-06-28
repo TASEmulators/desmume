@@ -34,6 +34,7 @@
 #include "aviout.h"
 #include "spu.h"
 #include "../GPU.h"
+#include "pathsettings.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -81,32 +82,58 @@ void HK_OpenROM(int) {OpenFile();}
 void HK_PrintScreen(int param)
 {
     OPENFILENAME ofn;
-	char * ptr;
-    char filename[MAX_PATH] = "";
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = MainWindow->getHWnd();
     ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
     ofn.nFilterIndex = 1;
-    ofn.lpstrFile =  filename;
 	ofn.lpstrTitle = "Print Screen Save As";
 	ofn.nMaxFile = MAX_PATH;
 	ofn.lpstrDefExt = "png";
 	ofn.Flags = OFN_OVERWRITEPROMPT;
 	GetSaveFileName(&ofn);
 
-	ptr = strrchr(filename,'.');//look for the last . in the filename
+	char folder[MAX_PATH];
+	ZeroMemory(folder, sizeof(folder));
+	GetPathFor(SCREENSHOTS, folder, MAX_PATH);
+
+	char file[MAX_PATH];
+	ZeroMemory(file, sizeof(file));
+	FormatName(file, MAX_PATH);
+
+	strcat(folder, file);
+	int len = strlen(folder);
+	if(len > MAX_PATH - 4)
+		folder[MAX_PATH - 4] = '\0';
+
+	ImageFormat format = GetImageFormatType();
+	if(format == PNG)
+	{
+		strcat(folder, ".png");
+		ofn.lpstrDefExt = "png";
+		ofn.nFilterIndex = 1;
+	}
+	else if(format == BMP)
+	{
+		strcat(folder, ".bmp");
+		ofn.lpstrDefExt = "bmp";
+		ofn.nFilterIndex = 2;
+	}
+	ofn.lpstrFile = folder;	
+ 	GetSaveFileName(&ofn);
+
+	char *ptr = strrchr(folder,'.');//look for the last . in the filename
 
 	if ( ptr != 0 ) {
 		if (( strcmp ( ptr, ".BMP" ) == 0 ) ||
 			( strcmp ( ptr, ".bmp" ) == 0 )) 
 		{
-			NDS_WriteBMP(filename);
+			NDS_WriteBMP(folder);
 		}
 		if (( strcmp ( ptr, ".PNG" ) == 0 ) ||
 			( strcmp ( ptr, ".png" ) == 0 )) 
 		{
-			NDS_WritePNG(filename);
+			NDS_WritePNG(folder);
 		}
 	}
 }
