@@ -198,6 +198,11 @@ SFORMAT SF_MMU[]={
 	{ "MIME", 4, 2,       MMU.reg_IME},
 	{ "MIE_", 4, 2,       MMU.reg_IE},
 	{ "MIF_", 4, 2,       MMU.reg_IF},
+	
+	{ "M_SX", 1, 2,       &MMU.SPI_CNT},
+	{ "M_SC", 1, 2,       &MMU.SPI_CMD},
+	{ "MASX", 1, 2,       &MMU.AUX_SPI_CNT},
+	{ "MASC", 1, 2,       &MMU.AUX_SPI_CMD},
 
 	{ "MDST", 4, 8,       MMU.DMAStartTime},
 	{ "MDCY", 4, 8,       MMU.DMACycle},

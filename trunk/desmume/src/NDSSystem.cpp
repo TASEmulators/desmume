@@ -1032,7 +1032,9 @@ void NDS_Reset()
 
 	// Copy the whole header to Main RAM 0x27FFE00 on startup.
 	//  Reference: http://nocash.emubase.de/gbatek.htm#dscartridgeheader
-	for (i = 0; i < ((0x170+0x90)/4); i++) {
+	//zero 27-jun-09 : why did this copy 0x90 more? gbatek says its not stored in ram.
+	//for (i = 0; i < ((0x170+0x90)/4); i++) {
+	for (i = 0; i < ((0x170)/4); i++) {
 		_MMU_write32<ARMCPU_ARM9>(0x027FFE00+i*4, LE_TO_LOCAL_32(((u32*)MMU.CART_ROM)[i]));
 	}
 

@@ -112,6 +112,11 @@ struct MMU_struct {
 	u32 sqrtCnt;
 	s32 sqrtCycles;
 
+	u16 SPI_CNT;
+	u16 SPI_CMD;
+	u16 AUX_SPI_CNT;
+	u16 AUX_SPI_CMD;
+
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	s32 gfx3dCycles;
 #endif
