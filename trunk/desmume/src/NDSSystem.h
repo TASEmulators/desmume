@@ -40,8 +40,8 @@ struct turbo {
 	bool Left;
 	bool Down;
 	bool Up;
-	bool Select;
 	bool Start;
+	bool Select;
 	bool B;
 	bool A;
 	bool Y;
@@ -59,8 +59,8 @@ struct turbotime {
 	int Left;
 	int Down;
 	int Up;
-	int Select;
 	int Start;
+	int Select;
 	int B;
 	int A;
 	int Y;
@@ -78,8 +78,8 @@ struct autohold {
 	bool Left;
 	bool Down;
 	bool Up;
-	bool Select;
 	bool Start;
+	bool Select;
 	bool B;
 	bool A;
 	bool Y;
