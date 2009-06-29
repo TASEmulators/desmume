@@ -55,6 +55,7 @@ char pathToCheats[MAX_PATH];
 char pathToSounds[MAX_PATH];
 char pathToFirmware[MAX_PATH];
 char pathToModule[MAX_PATH];
+char pathToLua[MAX_PATH];
 char screenshotFormat[MAX_FORMAT];
 
 char *currentSelection = 0;
@@ -117,7 +118,7 @@ BOOL BrowseForPath(char *pathToBrowse)
 	{
 		changed = true;
 		SHGetPathFromIDList(idList, pathToBrowse);
-		shMalloc->Free(&idList);
+//		shMalloc->Free(&idList);
 	}
 
 	return changed;
@@ -281,7 +282,6 @@ void FormatName(char *output, int maxCount)
 	tm *time_struct = localtime(&now);
 	srand(now);
   
-
 	for(int i = 0; i < MAX_FORMAT;i++) 
 	{		
 		char *c = &screenshotFormat[i];
@@ -343,7 +343,7 @@ BOOL SavePathForRomVisit()
 /*class functions*/
 
 void HideControls(HWND hDlg)
-{
+{/*
 	HWND h = GetDlgItem(hDlg, IDC_USELASTVISIT);
 	ShowWindow(h, SW_HIDE);
 	
@@ -360,12 +360,12 @@ void HideControls(HWND hDlg)
 	ShowWindow(h, SW_HIDE);
 
 	h = GetDlgItem(hDlg, IDC_FORMATEDIT);
-	ShowWindow(h, SW_HIDE);
+	ShowWindow(h, SW_HIDE);*/
 }
 
 void PathSettings_OnSelChange(HWND hDlg, HWND hwndCtl)
 {
-	HideControls(hDlg);
+/*	HideControls(hDlg);
 
 	switch(ComboBox_GetCurSel(hwndCtl))
 	{
@@ -431,7 +431,7 @@ void PathSettings_OnSelChange(HWND hDlg, HWND hwndCtl)
 			currentKey = FIRMWAREKEY;
 			break;
 	}
-	SetDlgItemText(hDlg, IDC_PATHEDIT, currentSelection);
+	SetDlgItemText(hDlg, IDC_PATHEDIT, currentSelection);*/
 
 }
 
@@ -439,16 +439,52 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 {
 	switch(id)
 	{
-		case IDC_BROWSE:
+		case IDC_BROWSEROMS:
 			{
-				if(BrowseForPath(currentSelection))
-					SetDlgItemText(hDlg, IDC_PATHEDIT, currentSelection);
+				if(BrowseForPath(pathToRoms))
+					SetDlgItemText(hDlg, IDC_ROMPATHEDIT, pathToRoms);
 			}
 			break;
-		case IDC_DEFAULT:
+		case IDC_BROWSESRAM:
 			{
-				GetDefaultPath(currentSelection, currentKey, MAX_PATH);
-				SetDlgItemText(hDlg, IDC_PATHEDIT, currentSelection);
+				if(BrowseForPath(pathToBattery))
+					SetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, pathToBattery);
+			}
+			break;
+		case IDC_BROWSESTATES:
+			{
+				if(BrowseForPath(pathToStates))
+					SetDlgItemText(hDlg, IDC_STATEPATHEDIT, pathToStates);
+			}
+			break;
+		case IDC_BROWSESCREENSHOTS:
+			{
+				if(BrowseForPath(pathToScreenshots))
+					SetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, pathToScreenshots);
+			}
+			break;
+		case IDC_BROWSEAVI:
+			{
+				if(BrowseForPath(pathToAviFiles))
+					SetDlgItemText(hDlg, IDC_AVIPATHEDIT, pathToAviFiles);
+			}
+			break;
+		case IDC_BROWSECHEATS:
+			{
+				if(BrowseForPath(pathToCheats))
+					SetDlgItemText(hDlg, IDC_CHEATPATHEDIT, pathToCheats);
+			}
+			break;
+		case IDC_BROWSELUA:
+			{
+				if(BrowseForPath(pathToLua))
+					SetDlgItemText(hDlg, IDC_LUAPATHEDIT, pathToLua);
+			}
+			break;
+		case IDC_PATHDEFAULTS:
+			{
+			/*	GetDefaultPath(currentSelection, currentKey, MAX_PATH);
+				SetDlgItemText(hDlg, IDC_PATHEDIT, currentSelection);*/
 			}
 			break;
 		case IDC_PNG:
@@ -485,6 +521,15 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 			}
 			break;
 		case IDOK:
+
+			GetDlgItemText(hDlg, IDC_ROMPATHEDIT, pathToRoms, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, pathToBattery, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_STATEPATHEDIT, pathToStates, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, pathToScreenshots, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_AVIPATHEDIT, pathToAviFiles, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_CHEATPATHEDIT, pathToCheats, MAX_PATH);
+			GetDlgItemText(hDlg, IDC_LUAPATHEDIT, pathToLua, MAX_PATH);
+
 			WritePathSettings();
 			EndDialog(hDlg, 0);
 			break;
@@ -499,7 +544,7 @@ void PathSettings_OnCommand(HWND hDlg, int id, HWND hwndCtl, UINT codeNotify)
 BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 {
 	HWND hwnd = GetDlgItem(hDlg, IDC_PATHLIST);
-	ComboBox_AddString(hwnd, ROMKEY);
+/*	ComboBox_AddString(hwnd, ROMKEY);
 	ComboBox_AddString(hwnd, BATTERYKEY);
 	ComboBox_AddString(hwnd, STATEKEY);
 	ComboBox_AddString(hwnd, SCREENSHOTKEY);
@@ -508,7 +553,7 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	ComboBox_AddString(hwnd, SOUNDKEY);
 	ComboBox_AddString(hwnd, FIRMWAREKEY);
 
-	ComboBox_SetCurSel(hwnd, 0);
+	ComboBox_SetCurSel(hwnd, 0);*/
 	PathSettings_OnSelChange(hDlg, NULL);
 
 	CheckDlgButton(hDlg, IDC_USELASTVISIT, (romsLastVisit) ? BST_CHECKED : BST_UNCHECKED);
@@ -530,6 +575,14 @@ BOOL PathSettings_OnInitDialog(HWND hDlg, HWND hwndFocus, LPARAM lParam)
 	SendMessage(toolTip, TTM_SETMAXTIPWIDTH, NULL, (LPARAM)330);
 
 	SetWindowPos(toolTip, HWND_TOPMOST, 0,0,0,0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+	SetDlgItemText(hDlg, IDC_ROMPATHEDIT, pathToRoms);
+	SetDlgItemText(hDlg, IDC_SAVERAMPATHEDIT, pathToBattery);
+	SetDlgItemText(hDlg, IDC_STATEPATHEDIT, pathToStates);
+	SetDlgItemText(hDlg, IDC_SCREENSHOTPATHEDIT, pathToScreenshots);
+	SetDlgItemText(hDlg, IDC_AVIPATHEDIT, pathToAviFiles);
+	SetDlgItemText(hDlg, IDC_CHEATPATHEDIT, pathToCheats);
+	SetDlgItemText(hDlg, IDC_LUAPATHEDIT, pathToLua);
 
 	TOOLINFO ti;
 	ZeroMemory(&ti, sizeof(ti));
