@@ -439,6 +439,25 @@ static int joypad_set(lua_State *L) {
 	return 0;
 }
 
+static int stylus_read(lua_State *L){
+	
+	lua_newtable(L);
+
+	lua_pushinteger(L, nds.touchX >> 4);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, nds.touchY >> 4);
+	lua_setfield(L, -2, "y");
+	lua_pushinteger(L, nds.isTouch);
+	lua_setfield(L, -2, "touch");	
+
+	return 1;
+}
+
+static int stylus_set(lua_State *L){
+
+	return 1;
+}
+
 #ifdef _WIN32
 const char* s_keyToName[256] =
 {
@@ -1625,6 +1644,13 @@ static const struct luaL_reg joypadlib[] = {
 	{NULL,NULL}
 };
 
+static const struct luaL_reg styluslib[] = {
+	{"read", stylus_read},
+	{"set", stylus_set},
+
+	{NULL,NULL}
+};
+
 static const struct luaL_reg inputlib[] = {
 	{"get", input_get},
 	{NULL,NULL}
@@ -1750,6 +1776,7 @@ int LUA_LoadLuaCode(const char *filename) {
 		luaL_register(L, "savestate", savestatelib);
 		luaL_register(L, "movie", movielib);
 		luaL_register(L, "gui", guilib);
+		luaL_register(L, "stylus", styluslib);
 
 		lua_pushcfunction(L, base_AND);
 		lua_setfield(L, LUA_GLOBALSINDEX, "AND");
