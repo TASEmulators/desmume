@@ -195,7 +195,7 @@ void OSDCLASS::update()
 	if (mode!=255)
 		dst+=offset*512;
 
-	for (int i=0; i<256*192; i++)
+	for (int i=0; i<256*192*2; i++)
 	{
 		if(screen[i]&0x8000)
 			T2WriteWord((u8*)dst,(i << 1), screen[i] );
