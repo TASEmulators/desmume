@@ -1,3 +1,3 @@
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#ifndef __GNUC__
 #pragma pack(pop)
 #endif

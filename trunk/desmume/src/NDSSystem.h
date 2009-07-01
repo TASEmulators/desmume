@@ -289,12 +289,7 @@ void NDS_releaseTouch(void);
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F);
 void NDS_setPadFromMovie(u16 pad);
 
-#ifdef EXPERIMENTAL_GBASLOT
 int NDS_LoadROM(const char *filename);
-#else
-int NDS_LoadROM(const char *filename,
-                 const char *cflash_disk_image_file);
-#endif
 void NDS_FreeROM(void);
 void NDS_Reset();
 int NDS_ImportSave(const char *filename);

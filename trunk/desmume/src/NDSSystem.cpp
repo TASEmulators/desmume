@@ -31,9 +31,6 @@
 #include "NDSSystem.h"
 #include "render3D.h"
 #include "MMU.h"
-#ifndef EXPERIMENTAL_GBASLOT
-#include "cflash.h"
-#endif
 #include "ROMReader.h"
 #include "gfx3d.h"
 #include "utils/decrypt/decrypt.h"
@@ -712,12 +709,7 @@ void GameInfo::populate()
 	}
 }
 
-#ifdef EXPERIMENTAL_GBASLOT
 int NDS_LoadROM( const char *filename)
-#else
-int NDS_LoadROM( const char *filename,
-				const char *cflash_disk_image_file)
-#endif
 {
 	int					ret;
 	int					type;
@@ -833,10 +825,6 @@ int NDS_LoadROM( const char *filename,
 	NDS_SetROM(data, mask);
 	NDS_Reset();
 
-#ifndef EXPERIMENTAL_GBASLOT
-	cflash_close();
-	cflash_init(cflash_disk_image_file);
-#endif
 	free(noext);
 
 	memset(buf, 0, MAX_PATH);

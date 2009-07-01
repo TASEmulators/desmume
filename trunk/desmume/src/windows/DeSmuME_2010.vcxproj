@@ -189,7 +189,6 @@
     <ClCompile Include="..\armcpu.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
     <ClCompile Include="..\bios.cpp" />
-    <ClCompile Include="..\cflash.cpp" />
     <ClCompile Include="..\cheatSystem.cpp" />
     <ClCompile Include="..\commandline.cpp">
       <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
@@ -300,7 +299,6 @@
     <ClInclude Include="..\arm_instructions.h" />
     <ClInclude Include="..\bios.h" />
     <ClInclude Include="..\bits.h" />
-    <ClInclude Include="..\cflash.h" />
     <ClInclude Include="..\cheatSystem.h" />
     <ClInclude Include="..\commandline.h" />
     <ClInclude Include="..\common.h" />

@@ -21,6 +21,10 @@
 #ifndef __GBASLOT_CONFIG_H_
 #define __GBASLOT_CONFIG_H_
 #include "../common.h"
+#include <string>
+
+extern std::string CFlashPath, CFlashName;
 
 extern void GBAslotDialog(HWND hwnd);
+
 #endif

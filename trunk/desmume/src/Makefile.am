@@ -15,7 +15,6 @@ libdesmume_a_SOURCES = \
         armcpu.cpp armcpu.h ARM9.h \
         arm_instructions.cpp arm_instructions.h \
         bios.cpp bios.h bits.h cp15.cpp cp15.h \
-        cflash.cpp cflash.h fs.h \
 	common.cpp common.h \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
@@ -48,7 +47,7 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/crc.cpp utils/decrypt/crc.h utils/decrypt/decrypt.cpp \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	addons.cpp addons.h \
-	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp \
+	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp fs.h \
 	mic.cpp mic.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \

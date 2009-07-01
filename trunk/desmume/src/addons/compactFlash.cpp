@@ -24,9 +24,8 @@
 */
 
 #include "../addons.h"
+#include <string>
 #include <string.h>
-#ifdef EXPERIMENTAL_GBASLOT
-
 #include "debug.h"
 #include <errno.h>
 #include <stdio.h>
@@ -102,7 +101,7 @@ static const int lfnPos[13] = {1,3,5,7,9,14,16,18,20,22,24,28,30};
 #define BYTESPERCLUS (512*SECPERCLUS)
 #define DIRENTSPERCLUS ((BYTESPERCLUS)/32)
 
-static BOOT_RECORD MBR;
+BOOT_RECORD MBR;
 static DIR_ENT *files,*dirEntries,**dirEntryPtr;
 static FILE_INFO *fileLink,*dirEntryLink;
 static u32 filesysFAT,filesysRootDir,filesysData;
@@ -112,7 +111,6 @@ static DIR_ENT *extraDirEntries[SECPERFAT*256];
 static int numFiles,maxLevel,numRootFiles;
 static int *dirEntriesInCluster, clusterNum, firstDirEntCluster,
   lastDirEntCluster, lastFileDataCluster;
-static char *sRomPath;
 static int activeDirEnt=-1;
 static u32 bufferStart;
 static u32 fileStartLBA,fileEndLBA;
@@ -120,6 +118,8 @@ static u16 freadBuffer[256];
 static FILE * hFile;
 static char fpath[255+1];
 static BOOL cflashDeviceEnabled = FALSE;
+
+static std::string sFlashPath;
 
 // ===========================
 BOOL	inited;
@@ -273,6 +273,7 @@ static void list_files(const char *filepath)
 	{
 		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
 		add_file(fname, &entry, fileLevel);
+		printf("cflash added %s\n",fname);
 
 		if (numFiles==MAXFILES-1) break;
 
@@ -281,7 +282,7 @@ static void list_files(const char *filepath)
 			if (strlen(fname)+strlen(filepath)+2 < 256) 
 			{
 				sprintf(SubDir, "%s%c%s", filepath, FS_SEPARATOR, fname);
-			list_files(SubDir);
+				list_files(SubDir);
 			}
 		}
 	}
@@ -298,7 +299,7 @@ static void list_files(const char *filepath)
 }
 
 // Set up the MBR, FAT and DIR_ENTs
-static BOOL cflash_build_fat( void)
+static BOOL cflash_build_fat()
 {
 	int i,j,k,l,
 	clust,numClusters,
@@ -308,12 +309,6 @@ static BOOL cflash_build_fat( void)
 	numFiles  = 0;
 	fileLevel = -1;
 	maxLevel  = -1;
-
-	if (CFlashUseRomPath)
-		sRomPath = pathToROM;
-	else
-		sRomPath = CFlashPath;
-		
 
 	files = (DIR_ENT *) malloc(MAXFILES*sizeof(DIR_ENT));
 	if (files == NULL) return FALSE;
@@ -336,8 +331,7 @@ static BOOL cflash_build_fat( void)
 		numExtraEntries[i] = 0;
 	}
 
-	//COMMENT OUT THIS LINE TO STOP THE IRRITATING FILESYSTEM SCANNING BEHAVIOR
-	list_files(sRomPath);
+	list_files(sFlashPath.c_str());
 
 	k            = 0;
 	clusterNum   = rootCluster = (SECRESV + SECPERFAT)/SECPERCLUS;
@@ -512,11 +506,21 @@ static BOOL cflash_init()
 	if (inited) return FALSE;
 	BOOL init_good = FALSE;
 
-	if (CFlashUsePath)
+	printf("CFlash_Mode: %d\n",CFlash_Mode);
+
+	if (CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
 	{
-		if (!strlen(CFlashPath)) CFlashUseRomPath = TRUE;
-		if (CFlashUseRomPath)
-			CFLASHLOG("Using CFlash directory of rom: %s\n", pathToROM);
+		sFlashPath = pathToROM;
+		printf("Using CFlash directory of rom: %s\n", sFlashPath.c_str());
+	}
+	else if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
+	{
+		sFlashPath = CFlash_Path;
+		printf("Using CFlash directory: %s\n", sFlashPath.c_str());
+	}
+
+	if(CFlash_IsUsingPath())
+	{
 		cflashDeviceEnabled = FALSE;
 		currLBA = 0;
 
@@ -524,8 +528,10 @@ static BOOL cflash_init()
 			fclose(hFile);
 		activeDirEnt = -1;
 		fileStartLBA = fileEndLBA = 0xFFFFFFFF;
-		if (!cflash_build_fat())
+		if (!cflash_build_fat()) {
+			printf("FAILED cflash_build_fat\n");
 			return FALSE;
+		}
 		cf_reg_sts = 0x58;	// READY
 
 		cflashDeviceEnabled = TRUE;
@@ -533,9 +539,9 @@ static BOOL cflash_init()
 	}
 	else
 	{
-		if (!strlen(CFlashName)) return FALSE;
-		CFLASHLOG("Using CFlash disk image file %s\n", CFlashName);
-		disk_image = OPEN_FN( CFlashName, OPEN_MODE);
+		sFlashPath = CFlash_Path;
+		printf("Using CFlash disk image file %s\n", sFlashPath.c_str());
+		disk_image = OPEN_FN( sFlashPath.c_str(), OPEN_MODE);
 
 		if ( disk_image != -1)
 		{
@@ -553,7 +559,7 @@ static BOOL cflash_init()
 		}
 		else
 			// TODO: create image if not exist
-			CFLASHLOG("Failed to open file %s: \"%s\"\n", CFlashName, strerror( errno));
+			CFLASHLOG("Failed to open file %s: \"%s\"\n", sFlashPath.c_str(), strerror( errno));
 	}
 
 	// READY
@@ -645,7 +651,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset)
 	if (activeDirEnt != -1)
 		fclose(hFile);
 
-	strncpy(fpath,sRomPath,ARRAY_SIZE(fpath));
+	strncpy(fpath,sFlashPath.c_str(),ARRAY_SIZE(fpath));
 	strncat(fpath,DIR_SEP,ARRAY_SIZE(fpath)-strlen(fpath));
 
 	resolve_path(dirent);
@@ -653,6 +659,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset)
 	fatstring_to_asciiz(dirent,fname,NULL);
 	strncat(fpath,fname,ARRAY_SIZE(fpath)-strlen(fpath));
 
+	printf("CFLASH Opening %s\n",fpath);
 	hFile = fopen(fpath, "rb");
 	if (!hFile) return 0;
 	bufferStart = offset;
@@ -686,7 +693,7 @@ static unsigned int cflash_read(unsigned int address)
 		case CF_REG_DATA:
 			if (cf_reg_cmd == CF_CMD_READ)
 			{
-				if (!CFlashUsePath)
+				if (!CFlash_IsUsingPath())
 				{
 					if ( disk_image != -1)
 					{
@@ -832,7 +839,7 @@ static void cflash_write(unsigned int address,unsigned int data)
 		case CF_REG_DATA:
 			if (cf_reg_cmd == CF_CMD_WRITE)
 			{
-				if (!CFlashUsePath) 
+				if (!CFlash_IsUsingPath()) 
 				{
 					sector_data[sector_write_index] = (data >> 0) & 0xff;
 					sector_data[sector_write_index + 1] = (data >> 8) & 0xff;
@@ -908,11 +915,11 @@ static void cflash_write(unsigned int address,unsigned int data)
 static void cflash_close( void) 
 {
 	if (!inited) return;
-	if (!CFlashUsePath)
+	if (!CFlash_IsUsingPath())
 	{
-		if ( disk_image != -1)
+		if (disk_image != -1)
 		{
-			CLOSE_FN( disk_image);
+			CLOSE_FN(disk_image);
 			disk_image = -1;
 		}
 	}
@@ -947,8 +954,8 @@ static void cflash_close( void)
 
 static BOOL CFlash_init(void)
 {
-	CFlashUseRomPath = TRUE;
-	CFlashUsePath = TRUE;
+	printf("CFlash_init\n");
+	cflash_init();
 	return TRUE;
 }
 
@@ -1001,23 +1008,6 @@ static void CFlash_info(char *info)
 {
 	strcpy(info, "Compact Flash memory in slot");
 }
-#else
-static BOOL CFlash_init(void) { return TRUE; }
-static void CFlash_reset(void) {}
-static void CFlash_close(void) {}
-static void CFlash_config(void){}
-static void CFlash_write08(u32 adr, u8 val){}
-static void CFlash_write16(u32 adr, u16 val){}
-static void CFlash_write32(u32 adr, u32 val){}
-static u8   CFlash_read08(u32 adr){return (0);}
-static u16  CFlash_read16(u32 adr){return (0);}
-static u32  CFlash_read32(u32 adr){return (0);}
-
-static void CFlash_info(char *info)
-{
-	strcpy(info, "Compact Flash memory in slot");
-}
-#endif
 
 ADDONINTERFACE addonCFlash = {
 				"Compact Flash",

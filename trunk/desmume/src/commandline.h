@@ -42,6 +42,8 @@ public:
 	std::string record_movie_file;
 	int arm9_gdb_port, arm7_gdb_port;
 	int start_paused;
+	std::string cflash_image;
+	std::string cflash_path;
 
 	//load up the common commandline options
 	void loadCommonOptions();
@@ -53,6 +55,9 @@ public:
 
 	//process movie play/record commands
 	void process_movieCommands();
+	//etc.
+	void process_addonCommands();
+	bool is_cflash_configured;
 	
 	//print a little help message for cases when erroneous commandlines are entered
 	void errorHelp(const char* binName);

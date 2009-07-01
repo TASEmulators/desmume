@@ -69,14 +69,19 @@ enum {
 	NDS_ADDON_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };
 
+enum ADDON_CFLASH_MODE
+{
+	ADDON_CFLASH_MODE_Path, ADDON_CFLASH_MODE_File, ADDON_CFLASH_MODE_RomPath
+};
+
+extern ADDON_CFLASH_MODE CFlash_Mode;
+extern std::string CFlash_Path;
+inline bool CFlash_IsUsingPath() { return CFlash_Mode==ADDON_CFLASH_MODE_Path || CFlash_Mode==ADDON_CFLASH_MODE_RomPath; }
+
 extern ADDONINTERFACE addon;						// current pak
 extern ADDONINTERFACE addonList[NDS_ADDON_COUNT];	// lists pointer on paks
 extern u8 addon_type;								// current type pak
 
-extern char CFlashName[MAX_PATH];					// path to compact flash img file
-extern char CFlashPath[MAX_PATH];					// path to compact flash directory
-extern u8	CFlashUsePath;							// true is used path from CFlashPath for cflash folder
-extern u8	CFlashUseRomPath;						// true is used path to rom file for cflash folder
 extern char GBAgameName[MAX_PATH];					// file name for GBA game (rom)
 extern void (*FeedbackON)(BOOL enable);				// feedback on/off
 

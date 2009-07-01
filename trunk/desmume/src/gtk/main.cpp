@@ -49,9 +49,7 @@
 
 #include "commandline.h"
 
-#ifdef EXPERIMENTAL_GBASLOT
 #include "addons.h"
-#endif
 
 #ifdef GDB_STUB
 #include "gdbstub.h"
@@ -71,8 +69,6 @@
 #if GTK_CHECK_VERSION(2,14,0)
 #define HAVE_TIMEOUT 1
 #endif
-
-static const char *bad_glob_cflash_disk_image_file;
 
 #define SCREENS_PIXEL_SIZE (256*192*2)
 #define SCREEN_BYTES_PER_PIXEL 3
@@ -425,7 +421,6 @@ fill_configured_features( struct configured_features *config,
                                     "\t\t\t\t  4 = Italian\n"
                                     "\t\t\t\t  5 = Spanish\n",
                                     "LANG"},
-    { "cflash", 0, 0, G_OPTION_ARG_FILENAME, &config->cflash_disk_image_file, "Enable disk image GBAMP compact flash emulation", "PATH_TO_DISK_IMAGE"},
 #ifdef HAVE_TIMEOUT
     { "timeout", 0, 0, G_OPTION_ARG_INT, &config->timeout, "Quit desmume after the specified seconds for testing purpose.", "SECONDS"},
 #endif
@@ -578,14 +573,10 @@ static void ToggleStatusbarVisible(GtkToggleAction *action)
 
 
 
-static int Open(const char *filename, const char *cflash_disk_image)
+static int Open(const char *filename)
 {
     int res;
-#ifdef EXPERIMENTAL_GBASLOT
     res = NDS_LoadROM( filename );
-#else
-    res = NDS_LoadROM( filename, cflash_disk_image );
-#endif
     if(res > 0)
         gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "cheatlist"), TRUE);
     return res;
@@ -897,7 +888,7 @@ static void OpenNdsDialog()
     switch(gtk_dialog_run(GTK_DIALOG(pFileSelection))) {
     case GTK_RESPONSE_OK:
         sPath = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(pFileSelection));
-        if(Open((const char*)sPath, bad_glob_cflash_disk_image_file) < 0) {
+        if(Open((const char*)sPath) < 0) {
             GtkWidget *pDialog = gtk_message_dialog_new(GTK_WINDOW(pFileSelection),
                     GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,
@@ -1740,12 +1731,14 @@ common_gtk_main( struct configured_features *my_config)
         fw_config.language = my_config->firmware_language;
     }
 
-#ifdef EXPERIMENTAL_GBASLOT
-    addon_type = NDS_ADDON_CFLASH;
-    if (my_config->cflash_disk_image_file != NULL) {
-        strncpy(CFlashName, my_config->cflash_disk_image_file, MAX_PATH);
-    }
+	//------------------addons----------
 
+	my_config->process_addonCommands();
+	addon_type = NDS_ADDON_NONE;
+	if(my_config->is_cflash_configured)
+	    addon_type = NDS_ADDON_CFLASH;
+
+	printf("addon_type: %d\n",addon_type);
     switch (addon_type) {
     case NDS_ADDON_CFLASH:
     case NDS_ADDON_RUMBLEPAK:
@@ -1757,9 +1750,6 @@ common_gtk_main( struct configured_features *my_config)
         break;
     }
     addonsChangePak (addon_type);
-#else
-    bad_glob_cflash_disk_image_file = my_config->cflash_disk_image_file;
-#endif
 
 #ifdef GDB_STUB
     if ( my_config->arm9_gdb_port != 0) {
@@ -1920,11 +1910,9 @@ common_gtk_main( struct configured_features *my_config)
         }
     }
 
-    /*
-     * Set the 3D emulation to use
-     */
+    //Set the 3D emulation to use
     unsigned core = my_config->engine_3d;
-    /* setup the gdk 3D emulation; */
+    // setup the gdk 3D emulation;
 #if defined(HAVE_LIBOSMESA)
     if(my_config->engine_3d == 2){
         core = init_osmesa_3Demu() ? 2 : GPU3D_NULL;
@@ -1938,9 +1926,9 @@ common_gtk_main( struct configured_features *my_config)
 
     backup_setManualBackupType(my_config->savetype);
 
-    /* Command line arg */
+    // Command line arg 
     if( my_config->nds_file != "") {
-        if(Open( my_config->nds_file.c_str(), my_config->cflash_disk_image_file) >= 0) {
+        if(Open( my_config->nds_file.c_str()) >= 0) {
             my_config->process_movieCommands();
 
             if(my_config->load_slot){

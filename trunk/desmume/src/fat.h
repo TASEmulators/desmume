@@ -21,43 +21,49 @@
 
 // Boot Sector - must be packed
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#pragma pack(push, 1)
 #define DIR_SEP "\\"
+#else
+#define DIR_SEP "/"
+#endif
+
+#include "PACKED.h"
 typedef struct
 {
-        u8      jmpBoot[3];
-        u8      OEMName[8];
+        u8      jmpBoot[3] __PACKED;
+        u8      OEMName[8] __PACKED;
 	// BIOS Parameter Block
-        u16     bytesPerSector;
-        u8      sectorsPerCluster;
-        u16     reservedSectors;
-        u8      numFATs;
-        u16     rootEntries;
-        u16     numSectorsSmall;
-        u8      mediaDesc;
-        u16     sectorsPerFAT;
-        u16     sectorsPerTrk;
-        u16     numHeads;
-        u32     numHiddenSectors;
-        u32     numSectors;
+        u16     bytesPerSector __PACKED;
+        u8      sectorsPerCluster __PACKED;
+        u16     reservedSectors __PACKED;
+        u8      numFATs __PACKED;
+        u16     rootEntries __PACKED;
+        u16     numSectorsSmall __PACKED;
+        u8      mediaDesc __PACKED;
+        u16     sectorsPerFAT __PACKED;
+        u16     sectorsPerTrk __PACKED;
+        u16     numHeads __PACKED;
+        u32     numHiddenSectors __PACKED;
+        u32     numSectors __PACKED;
+	
 	struct  
 	{
 		// Ext BIOS Parameter Block for FAT16
-                u8      driveNumber;
-                u8      reserved1;
-                u8      extBootSig;
-                u32     volumeID;
-                u8      volumeLabel[11];
-                u8      fileSysType[8];
+        u8      driveNumber __PACKED;
+        u8      reserved1 __PACKED;
+        u8      extBootSig __PACKED;
+        u32     volumeID __PACKED;
+        u8      volumeLabel[11] __PACKED;
+        u8      fileSysType[8] __PACKED;
 		// Bootcode
-                u8      bootCode[448];
-                u16 signature;
-	} fat16;
+        u8      bootCode[448] __PACKED;
+        u16		signature __PACKED;	
+	} __PACKED fat16;
+
 } __PACKED BOOT_RECORD;
-#pragma pack(pop)
+#include "PACKED_END.h"
 
 // Directory entry - must be packed
-#pragma pack(push, 1)
+#include "PACKED.h"
 typedef struct
 {
         u8      name[NAME_LEN];
@@ -74,58 +80,6 @@ typedef struct
         u16     startCluster;
         u32     fileSize;
 } __PACKED DIR_ENT;
-#pragma pack(pop)
-#else
-#define DIR_SEP "/"
-typedef struct
-{
-	u8	jmpBoot[3];
-	u8	OEMName[8];
-	// BIOS Parameter Block
-	u16	bytesPerSector;
-	u8	sectorsPerCluster;
-	u16	reservedSectors;
-	u8	numFATs;
-	u16	rootEntries;
-	u16	numSectorsSmall;
-	u8	mediaDesc;
-	u16	sectorsPerFAT;
-	u16	sectorsPerTrk;
-	u16	numHeads;
-	u32	numHiddenSectors;
-	u32	numSectors;
-	struct  
-	{
-		// Ext BIOS Parameter Block for FAT16
-		u8	driveNumber;
-		u8	reserved1;
-		u8	extBootSig;
-		u32	volumeID;
-		u8	volumeLabel[11];
-		u8	fileSysType[8];
-		// Bootcode
-		u8	bootCode[448];
-		u16 signature;
-	} fat16;
-} __PACKED BOOT_RECORD;
+#include "PACKED_END.h"
 
-// Directory entry - must be packed
-typedef struct
-{
- 	u8	name[NAME_LEN];
-	u8	ext[EXT_LEN];
-	u8	attrib;
-	u8	reserved;
-	u8	cTime_ms;
-	u16	cTime;
-	u16	cDate;
-	u16	aDate;
-	u16	startClusterHigh;
-	u16	mTime;
-	u16	mDate;
-	u16	startCluster;
-	u32	fileSize;
-} __PACKED DIR_ENT;
-#endif
-
-#endif
+#endif //

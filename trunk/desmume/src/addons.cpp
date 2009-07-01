@@ -23,11 +23,16 @@
 */
 
 #include "addons.h"
+#include <string>
 
-char CFlashName[MAX_PATH];
-char CFlashPath[MAX_PATH];
-u8	 CFlashUseRomPath = TRUE;
-u8	 CFlashUsePath = TRUE;
+std::string CFlash_Path;
+ADDON_CFLASH_MODE CFlash_Mode;
+
+
+//char CFlashName[MAX_PATH];
+//char CFlashPath[MAX_PATH];
+//u8	 CFlashUseRomPath = TRUE;
+//u8	 CFlashUsePath = TRUE;
 
 char GBAgameName[MAX_PATH];
 
@@ -63,6 +68,7 @@ void addonsReset()
 
 BOOL addonsChangePak(u8 type)
 {
+	printf("addonsChangePak\n");
 	if (type > NDS_ADDON_COUNT) return FALSE;
 	addon.close();
 	addon = addonList[type];
