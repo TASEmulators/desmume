@@ -63,11 +63,7 @@ int desmume_open(const char *filename)
   int i;
   noticed_3D=FALSE;
   clear_savestates();
-#ifdef EXPERIMENTAL_GBASLOT
   i = NDS_LoadROM(filename);
-#else
-  i = NDS_LoadROM(filename, NULL);
-#endif
   return i;
 }
 

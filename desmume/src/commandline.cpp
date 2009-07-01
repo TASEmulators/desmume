@@ -27,10 +27,12 @@
 #include "commandline.h"
 #include "types.h"
 #include "movie.h"
+#include "addons.h"
 
 CommandLine::CommandLine()
 : error(NULL)
 , ctx(g_option_context_new (""))
+, is_cflash_configured(false)
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
@@ -45,6 +47,8 @@ CommandLine::~CommandLine()
 
 static const char* _play_movie_file;
 static const char* _record_movie_file;
+static const char* _cflash_image;
+static const char* _cflash_path;
 
 void CommandLine::loadCommonOptions()
 {
@@ -57,6 +61,8 @@ void CommandLine::loadCommonOptions()
 		{ "play-movie", 0, 0, G_OPTION_ARG_FILENAME, &_play_movie_file, "Specifies a dsm format movie to play", "PATH_TO_PLAY_MOVIE"},
 		{ "record-movie", 0, 0, G_OPTION_ARG_FILENAME, &_record_movie_file, "Specifies a path to a new dsm format movie", "PATH_TO_RECORD_MOVIE"},
 		{ "start-paused", 0, 0, G_OPTION_ARG_NONE, &start_paused, "Indicates that emulation should start paused", "START_PAUSED"},
+		{ "cflash-image", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_image, "Requests cflash in gbaslot with fat image at this path", "CFLASH_IMAGE"},
+		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
 		#ifdef GDB_STUB
 		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
 		{ "arm7gdb", 0, 0, G_OPTION_ARG_INT, &arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},
@@ -78,6 +84,9 @@ bool CommandLine::parse(int argc,char **argv)
 
 	if(_play_movie_file) play_movie_file = _play_movie_file;
 	if(_record_movie_file) record_movie_file = _record_movie_file;
+	if(_cflash_image) cflash_image = _cflash_image;
+	if(_cflash_path) cflash_path = _cflash_path;
+
 
 	if (argc == 2)
 		nds_file = argv[1];
@@ -104,6 +113,11 @@ bool CommandLine::validate()
 		return false;
 	}
 
+	if(cflash_path != "" && cflash_image != "") {
+		g_printerr("Cannot specify both cflash-image and cflash-path.\n");
+		return false;
+	}
+
 	return true;
 }
 
@@ -125,3 +139,21 @@ void CommandLine::process_movieCommands()
 		FCEUI_SaveMovie(record_movie_file.c_str(), L"", 0, NULL);
 	}
 }
+
+void CommandLine::process_addonCommands()
+{
+    if (cflash_image != "")
+	{
+		CFlash_Mode = ADDON_CFLASH_MODE_File;
+        CFlash_Path = cflash_image;
+		is_cflash_configured = true;
+    }
+    if (cflash_path != "")
+	{
+		CFlash_Mode = ADDON_CFLASH_MODE_Path;
+        CFlash_Path = cflash_path;
+		is_cflash_configured = true;
+    }
+
+}
+

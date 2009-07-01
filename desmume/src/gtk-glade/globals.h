@@ -86,7 +86,6 @@ typedef union _callback_arg{
 #include "../registers.h"
 #include "../armcpu.h"
 #include "../NDSSystem.h"
-#include "../cflash.h"
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
 #include "../types.h"

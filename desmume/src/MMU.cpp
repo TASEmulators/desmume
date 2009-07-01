@@ -33,9 +33,6 @@
 #include "common.h"
 #include "debug.h"
 #include "NDSSystem.h"
-#ifndef EXPERIMENTAL_GBASLOT
-#include "cflash.h"
-#endif
 #include "cp15.h"
 #include "wifi.h"
 #include "registers.h"
@@ -1348,19 +1345,11 @@ void FASTCALL _MMU_ARM9_write08(u32 adr, u8 val)
 		return;
 	}
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write08(adr, val);
 		return;
 	}
-#else
-	// CFlash writing, Mic
-	if ((adr>=0x9000000)&&(adr<0x9900000)) {
-		cflash_write(adr,val);
-		return;
-	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -1564,20 +1553,11 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 		return;
 	}
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write16(adr, val);
 		return;
 	}
-#else
-	// CFlash writing, Mic
-	if ((adr>=0x08800000)&&(adr<0x09900000))
-	{
-		cflash_write(adr,val);
-		return;
-	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2158,19 +2138,11 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		//int zzz=9;
 	}
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write32(adr, val);
 		return;
 	}
-#else
-	// CFlash writing, Mic
-	if ((adr>=0x9000000) && (adr<0x9900000)) {
-	   cflash_write(adr,val);
-	   return;
-	}
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2735,14 +2707,8 @@ u8 FASTCALL _MMU_ARM9_read08(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadByte(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
-#else
-	// CFlash reading, Mic
-	if ((adr>=0x9000000)&&(adr<0x9900000))
-		return (unsigned char)cflash_read(adr);
-#endif
 
 	bool unmapped;	
 	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped);
@@ -2759,14 +2725,8 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 	if(adr<0x02000000)
 		return T1ReadWord(ARM9Mem.ARM9_ITCM, adr & 0x7FFF);	
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
-#else
-	// CFlash reading, Mic
-	if ((adr>=0x08800000) && (adr<0x09900000))
-	   return (unsigned short)cflash_read(adr);
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -2835,14 +2795,8 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 	if(adr<0x02000000) 
 		return T1ReadLong(ARM9Mem.ARM9_ITCM, adr&0x7FFF);
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
-#else
-	// CFlash reading, Mic
-	if ((adr>=0x9000000) && (adr<0x9900000))
-	   return (u32)cflash_read(adr);
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -3021,20 +2975,11 @@ void FASTCALL _MMU_ARM7_write08(u32 adr, u8 val)
 {
 	mmu_log_debug_ARM7(adr, "(write08) %0x%X", val);
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write08(adr, val);
 		return;
 	}
-#else
-	// CFlash writing, Mic
-	if ((adr>=0x9000000)&&(adr<0x9900000)) 
-	{
-		cflash_write(adr,val);
-		return;
-	}
-#endif
 
 	adr &= 0x0FFFFFFF;
     // This is bad, remove it
@@ -3094,20 +3039,11 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 {
 	mmu_log_debug_ARM7(adr, "(write16) %0x%X", val);
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write16(adr, val);
 		return;
 	}
-#else
-	// CFlash writing, Mic
-	if ((adr>=0x08800000)&&(adr<0x09900000))
-	{
-		cflash_write(adr,val);
-		return;
-	}
-#endif
 
 #ifdef EXPERIMENTAL_WIFI
 
@@ -3518,21 +3454,11 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 {
 	mmu_log_debug_ARM7(adr, "(write32) %0x%X", val);
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write32(adr, val);
 		return;
 	}
-#else
-	// CFlash writing, Mic
-	if ((adr>=0x9000000)&&(adr<0x9900000)) {
-	   cflash_write(adr,val);
-	   return;
-	}
-#endif
-
-	
 
 #ifdef EXPERIMENTAL_WIFI
 	if ((adr & 0xFF800000) == 0x04800000) 
@@ -3819,14 +3745,8 @@ u8 FASTCALL _MMU_ARM7_read08(u32 adr)
 	}
 #endif
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read08(adr);
-#else
-	// CFlash reading, Mic
-	if ((adr>=0x9000000)&&(adr<0x9900000))
-		return (unsigned char)cflash_read(adr);
-#endif
 
 	if (adr == REG_RTC) return (u8)rtcRead();
 
@@ -3847,14 +3767,8 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 		return WIFI_read16(&wifiMac,adr) ;
 #endif
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read16(adr);
-#else
-	// CFlash reading, Mic
-	if ((adr>=0x08800000)&&(adr<0x09900000))
-	   return (unsigned short)cflash_read(adr);
-#endif
 
 	adr &= 0x0FFFFFFF;
 
@@ -3919,14 +3833,8 @@ u32 FASTCALL _MMU_ARM7_read32(u32 adr)
 		return (WIFI_read16(&wifiMac,adr) | (WIFI_read16(&wifiMac,adr+2) << 16));
 #endif
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 		return addon.read32(adr);
-#else
-	// CFlash reading, Mic
-	if ((adr>=0x9000000)&&(adr<0x9900000))
-	   return (u32)cflash_read(adr);
-#endif
 
 	adr &= 0x0FFFFFFF;
 

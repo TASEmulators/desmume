@@ -41,11 +41,7 @@
 #include "../NDSSystem.h"
 #include "../debug.h"
 #include "../saves.h"
-#ifndef EXPERIMENTAL_GBASLOT
-#include "../cflash.h"
-#else
 #include "../addons.h"
-#endif
 #include "resource.h"
 #include "memView.h"
 #include "disView.h"
@@ -171,12 +167,6 @@ LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 //===================== Input vars
 #define WM_CUSTKEYDOWN	(WM_USER+50)
 #define WM_CUSTKEYUP	(WM_USER+51)
-
-#ifndef EXPERIMENTAL_GBASLOT
-/* The compact flash disk image file */
-static const char *bad_glob_cflash_disk_image_file;
-static char cflash_filename_buffer[512];
-#endif
 
 /*  Declare Windows procedure  */
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
@@ -496,100 +486,6 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 	//	lastTime = timeGetTime();
 //	}
 }
-
-//static void
-//init_configured_features( struct configured_features *config) {
-//	config->arm9_gdb_port = 0;
-//	config->arm7_gdb_port = 0;
-//
-//	config->cflash_disk_image_file = NULL;
-//}
-//
-//
-//static int
-//fill_configured_features( struct configured_features *config, LPSTR lpszArgument) {
-//	int good_args = 0;
-//	LPTSTR cmd_line;
-//	LPWSTR *argv;
-//	int argc;
-//
-//	argv = CommandLineToArgvW( GetCommandLineW(), &argc);
-//
-//	if ( argv != NULL) {
-//		int i;
-//		good_args = 1;
-//		for ( i = 1; i < argc && good_args; i++) {
-//			if ( wcsncmp( argv[i], L"--arm9gdb=", 10) == 0) {
-//				wchar_t *end_char;
-//				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
-//
-//				if ( port_num > 0 && port_num < 65536) {
-//					config->arm9_gdb_port = port_num;
-//				}
-//				else {
-//					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
-//					good_args = 0;
-//				}
-//			}
-//			else if ( wcsncmp( argv[i], L"--arm7gdb=", 10) == 0) {
-//				wchar_t *end_char;
-//				unsigned long port_num = wcstoul( &argv[i][10], &end_char, 10);
-//
-//				if ( port_num > 0 && port_num < 65536) {
-//					config->arm7_gdb_port = port_num;
-//				}
-//				else {
-//					MessageBox(NULL,"ARM9 GDB stub port must be in the range 1 to 65535","Error",MB_OK);
-//					good_args = 0;
-//				}
-//			}
-//
-//#ifdef EXPERIMENTAL_GBASLOT
-//			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) 
-//			{
-//				char buf[512];
-//				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
-//				if (convert_count > 0)
-//				{
-//					addon_type = NDS_ADDON_CFLASH;
-//					CFlashUsePath = FALSE;
-//					strcpy(CFlashName, buf);
-//				}
-//			}
-//			else if ( wcsncmp( argv[i], L"--gbagame=", 10) == 0) 
-//			{
-//				char buf[512];
-//				size_t convert_count = wcstombs(&buf[0], &argv[i][9], 512);
-//				if (convert_count > 0)
-//				{
-//					addon_type = NDS_ADDON_GBAGAME;
-//					strcpy(GBAgameName, buf);
-//				}
-//			}
-//			else if ( wcsncmp( argv[i], L"--rumble", 8) == 0) 
-//			{
-//				addon_type = NDS_ADDON_RUMBLEPAK;
-//			}
-//#else
-//			else if ( wcsncmp( argv[i], L"--cflash=", 9) == 0) {
-//				if ( config->cflash_disk_image_file == NULL) {
-//					size_t convert_count = wcstombs( &cflash_filename_buffer[0], &argv[i][9], 512);
-//					if ( convert_count > 0) {
-//						config->cflash_disk_image_file = cflash_filename_buffer;
-//					}
-//				}
-//				else {
-//					MessageBox(NULL,"CFlash disk image file already set","Error",MB_OK);
-//					good_args = 0;
-//				}
-//			}
-//#endif
-//		}
-//		LocalFree( argv);
-//	}
-//
-//	return good_args;
-//}
 
 // Rotation definitions
 short GPU_rotation      = 0;
@@ -1368,21 +1264,13 @@ void LoadSaveStateInfo()
 
 
 
-#ifdef EXPERIMENTAL_GBASLOT
 static BOOL LoadROM(const char * filename)
-#else
-static BOOL LoadROM(const char * filename, const char *cflash_disk_image)
-#endif
 {
 	ResetSaveStateTimes();
 	NDS_Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
-#ifdef EXPERIMENTAL_GBASLOT
 	if (NDS_LoadROM(filename) > 0)
-#else
-	if (NDS_LoadROM(filename, cflash_disk_image) > 0)
-#endif
 	{
 		INFO("Loading %s was successful\n",filename);
 		LoadSaveStateInfo();
@@ -1567,6 +1455,12 @@ class WinDriver : public BaseDriver
 	}
 };
 
+std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR lpDefault)
+{
+	static char buf[65536];
+	GetPrivateProfileString(lpAppName, lpKeyName, lpDefault, buf, 65536, IniName);
+	return buf;
+}
 
 int _main()
 {
@@ -1596,39 +1490,27 @@ int _main()
 	char text[80];
 
 	GetINIPath();
-#ifdef EXPERIMENTAL_GBASLOT
+
 	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
-	CFlashUsePath = GetPrivateProfileInt("GBAslot.CFlash", "usePath", 1, IniName);
-	CFlashUseRomPath = GetPrivateProfileInt("GBAslot.CFlash", "useRomPath", 1, IniName);
-	GetPrivateProfileString("GBAslot.CFlash", "path", "", CFlashPath, MAX_PATH, IniName);
-	GetPrivateProfileString("GBAslot.CFlash", "filename", "", CFlashName, MAX_PATH, IniName);
+	UINT CFlashUsePath = GetPrivateProfileInt("GBAslot.CFlash", "usePath", 1, IniName);
+	UINT CFlashUseRomPath = GetPrivateProfileInt("GBAslot.CFlash", "useRomPath", 1, IniName);
+	
+	CFlashPath = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
+	CFlashName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
 	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
 
-	switch (addon_type)
-	{
-	case NDS_ADDON_NONE:
-		break;
-	case NDS_ADDON_CFLASH:
-		if (!strlen(CFlashPath)) CFlashUseRomPath = TRUE;
-		if (!strlen(CFlashName)) CFlashUsePath = TRUE;
-		// TODO: check for file exist
-		break;
-	case NDS_ADDON_RUMBLEPAK:
-		break;
-	case NDS_ADDON_GBAGAME:
-		if (!strlen(GBAgameName))
-		{
-			addon_type = NDS_ADDON_NONE;
-			break;
-		}
-		// TODO: check for file exist
-		break;
-	default:
-		addon_type = NDS_ADDON_NONE;
-		break;
+	if(CFlashUsePath) {
+		CFlash_Mode = ADDON_CFLASH_MODE_Path;
+		CFlash_Path = CFlashPath;
 	}
-	addonsChangePak(addon_type);
-#endif
+	else if(CFlashUseRomPath) {
+		CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
+	} else {
+		CFlash_Path = CFlashName;
+		CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
+	}
+
+
 
 	//init_configured_features( &my_config);
 	/*if ( !fill_configured_features( &my_config, lpszArgument)) {
@@ -1700,13 +1582,7 @@ int _main()
 	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);
 	SetLanguage(atoi(text));
 
-#ifndef EXPERIMENTAL_GBASLOT
-	bad_glob_cflash_disk_image_file = my_config.cflash_disk_image_file;
-#endif
-
 	//hAccel = LoadAccelerators(hAppInst, MAKEINTRESOURCE(IDR_MAIN_ACCEL)); //Now that we have a hotkey system we down need the Accel table.  Not deleting just yet though
-
-
 
 	if(MenuInit() == 0)
 	{
@@ -1739,10 +1615,6 @@ int _main()
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
-#ifndef EXPERIMENTAL_GBASLOT
-	EnableMenuItem(mainMenu, IDM_GBASLOT, MF_GRAYED);
-#endif
-
 #ifdef EXPERIMENTAL_WIFI
 	EnableMenuItem(mainMenu, IDM_WIFISETTINGS, MF_ENABLED);
 #endif
@@ -1772,6 +1644,41 @@ int _main()
 	ViewOAM = new TOOLSCLASS(hAppInst, IDD_OAM, (DLGPROC) ViewOAMProc);
 	ViewMatrices = new TOOLSCLASS(hAppInst, IDD_MATRIX_VIEWER, (DLGPROC) ViewMatricesProc);
 	ViewLights = new TOOLSCLASS(hAppInst, IDD_LIGHT_VIEWER, (DLGPROC) ViewLightsProc);
+
+
+	cmdline.process_addonCommands();
+	if(cmdline.is_cflash_configured)
+	{
+	    addon_type = NDS_ADDON_CFLASH;
+		//push the commandline-provided options into the current config slots
+		if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
+			CFlashPath = CFlash_Path;
+		else 
+			CFlashName = CFlash_Path;
+	}
+
+
+	switch (addon_type)
+	{
+	case NDS_ADDON_NONE:
+		break;
+	case NDS_ADDON_CFLASH:
+		break;
+	case NDS_ADDON_RUMBLEPAK:
+		break;
+	case NDS_ADDON_GBAGAME:
+		if (!strlen(GBAgameName))
+		{
+			addon_type = NDS_ADDON_NONE;
+			break;
+		}
+		// TODO: check for file exist
+		break;
+	default:
+		addon_type = NDS_ADDON_NONE;
+		break;
+	}
+	addonsChangePak(addon_type);
 
 #ifdef GDB_STUB
 	if ( cmdline.arm9_gdb_port != 0) {
@@ -1910,11 +1817,7 @@ int _main()
 
 	if (cmdline.nds_file != "")
 	{
-#ifdef EXPERIMENTAL_GBASLOT
 		if(LoadROM(cmdline.nds_file.c_str()))
-#else
-		if(LoadROM(cmdline.nds_file.c_str(), bad_glob_cflash_disk_image_file))
-#endif
 		{
 			romloaded = TRUE;
 			if(!cmdline.start_paused)
@@ -2384,11 +2287,7 @@ void OpenRecentROM(int listNum)
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
 	//LOG("Attempting to load %s\n",filename);
-#ifdef EXPERIMENTAL_GBASLOT
 	if(LoadROM(filename))
-#else
-	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
-#endif
 	{
 		romloaded = TRUE;
 	}
@@ -2508,11 +2407,7 @@ LRESULT OpenFile()
 //	}
 
 	//LOG("%s\r\n", filename);
-#ifdef EXPERIMENTAL_GBASLOT
 	if(LoadROM(PhysicalName))
-#else
-	if(LoadROM(filename, bad_glob_cflash_disk_image_file))
-#endif
 	{
 		romloaded = TRUE;
 		NDS_UnPause();
@@ -2963,11 +2858,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			char filename[MAX_PATH] = "";
 			DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
 			DragFinish((HDROP)wParam);
-#ifdef EXPERIMENTAL_GBASLOT
 			if(LoadROM(filename))
-#else
-			if(LoadROM(filename, bad_glob_cflash_disk_image_file))
-#endif
 			{
 				romloaded = TRUE;
 			}

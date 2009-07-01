@@ -46,7 +46,6 @@
 
 #include "../MMU.h"
 #include "../NDSSystem.h"
-#include "../cflash.h"
 #include "../debug.h"
 #include "../sndsdl.h"
 #include "../ctrlssdl.h"
@@ -807,11 +806,7 @@ int main(int argc, char ** argv) {
 
   backup_setManualBackupType(my_config.savetype);
 
-#ifdef EXPERIMENTAL_GBASLOT
   error = NDS_LoadROM( my_config.nds_file );
-#else
-  error = NDS_LoadROM( my_config.nds_file, my_config.cflash_disk_image_file );
-#endif
   if (error < 0) {
     fprintf(stderr, "error while loading %s\n", my_config.nds_file);
     exit(-1);

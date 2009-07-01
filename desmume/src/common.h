@@ -75,7 +75,6 @@ void SetRomName(const char *filename);
 	extern void GetINIPath();
 	extern void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
 
-	#define EXPERIMENTAL_GBASLOT 1
 #else		// non Windows
 
 #define sscanf_s sscanf

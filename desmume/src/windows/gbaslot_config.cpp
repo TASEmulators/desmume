@@ -41,6 +41,8 @@ u8			tmp_CFlashUseRomPath;
 HWND		OKbutton = NULL;
 bool		_OKbutton = false;
 
+std::string CFlashPath, CFlashName;
+
 BOOL CALLBACK GbaSlotNone(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
 	switch(msg)
@@ -398,11 +400,11 @@ void GBAslotDialog(HWND hwnd)
 {
 	temp_type = addon_type;
 	last_type = temp_type;
-	strcpy(tmp_cflash_filename, CFlashName);
-	strcpy(tmp_cflash_path, CFlashPath);
+	strcpy(tmp_cflash_filename, CFlashName.c_str());
+	strcpy(tmp_cflash_path, CFlashPath.c_str());
 	strcpy(tmp_gbagame_filename, GBAgameName);
-	tmp_CFlashUseRomPath = CFlashUseRomPath;
-	tmp_CFlashUsePath = CFlashUsePath;
+	tmp_CFlashUseRomPath = (CFlash_Mode==ADDON_CFLASH_MODE_RomPath);
+	tmp_CFlashUsePath = (CFlash_Mode==ADDON_CFLASH_MODE_Path);
 	_OKbutton = false;
 	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
@@ -412,22 +414,22 @@ void GBAslotDialog(HWND hwnd)
 			case NDS_ADDON_NONE:
 				break;
 			case NDS_ADDON_CFLASH:
-				CFlashUsePath = tmp_CFlashUsePath;
-				WritePrivateProfileInt("GBAslot.CFlash","usePath",CFlashUsePath,IniName);
+				if(tmp_CFlashUsePath) CFlash_Mode=ADDON_CFLASH_MODE_Path;
+				WritePrivateProfileInt("GBAslot.CFlash","usePath",tmp_CFlashUsePath,IniName);
 				if (tmp_CFlashUsePath)
 				{
 					if (tmp_CFlashUseRomPath)
 					{
-						CFlashUseRomPath = tmp_CFlashUseRomPath;
-						WritePrivateProfileInt("GBAslot.CFlash","useRomPath",CFlashUseRomPath,IniName);
+						CFlash_Mode=ADDON_CFLASH_MODE_RomPath;
+						WritePrivateProfileInt("GBAslot.CFlash","useRomPath",tmp_CFlashUseRomPath,IniName);
 						break;
 					}
-					strcpy(CFlashPath, tmp_cflash_path);
-					WritePrivateProfileString("GBAslot.CFlash","path",CFlashPath,IniName);
+					CFlashPath = tmp_cflash_path;
+					WritePrivateProfileString("GBAslot.CFlash","path",tmp_cflash_path,IniName);
 					break;
 				}
-				strcpy(CFlashName, tmp_cflash_filename);
-				WritePrivateProfileString("GBAslot.CFlash","filename",CFlashName,IniName);
+				CFlashName = tmp_cflash_filename;
+				WritePrivateProfileString("GBAslot.CFlash","filename",tmp_cflash_filename,IniName);
 				break;
 			case NDS_ADDON_RUMBLEPAK:
 				break;
@@ -439,6 +441,15 @@ void GBAslotDialog(HWND hwnd)
 				return;
 		}
 		WritePrivateProfileInt("GBAslot","type",temp_type,IniName);
+
+		if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
+			CFlash_Path = CFlashPath;
+		else if(CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
+			CFlash_Path = "";
+		else
+			CFlash_Path = CFlashName;
+
+
 		addon_type = temp_type;
 		addonsChangePak(addon_type);
 		if (romloaded)
