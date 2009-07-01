@@ -39,6 +39,7 @@
 #define DEFAULTFORMATKEY "defaultFormat"
 #define NEEDSSAVINGKEY	"needsSaving"
 #define LASTVISITKEY	"lastVisit"
+#define LUAKEY "Lua"
 
 #define MAX_FORMAT		20
 

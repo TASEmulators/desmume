@@ -234,6 +234,7 @@ void WritePathSettings()
 	WritePrivateProfileString(SECTION, CHEATKEY, pathToCheats, IniName);
 	WritePrivateProfileString(SECTION, SOUNDKEY, pathToSounds, IniName);
 	WritePrivateProfileString(SECTION, FIRMWAREKEY, pathToFirmware, IniName);
+	WritePrivateProfileString(SECTION, LUAKEY, pathToLua, IniName);
 
 	WritePrivateProfileString(SECTION, FORMATKEY, screenshotFormat, IniName);
 
@@ -255,6 +256,7 @@ void ReadPathSettings()
 	ReadKey(pathToCheats, CHEATKEY);
 	ReadKey(pathToSounds, SOUNDKEY);
 	ReadKey(pathToFirmware, FIRMWAREKEY);
+	ReadKey(pathToLua, LUAKEY);
 	
 	GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
 
