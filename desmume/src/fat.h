@@ -66,19 +66,19 @@ typedef struct
 #include "PACKED.h"
 typedef struct
 {
-        u8      name[NAME_LEN];
-        u8      ext[EXT_LEN];
-        u8      attrib;
-        u8      reserved;
-        u8      cTime_ms;
-        u16     cTime;
-        u16     cDate;
-        u16     aDate;
-        u16     startClusterHigh;
-        u16     mTime;
-        u16     mDate;
-        u16     startCluster;
-        u32     fileSize;
+        u8      name[NAME_LEN] __PACKED;
+        u8      ext[EXT_LEN] __PACKED;
+        u8      attrib __PACKED;
+        u8      reserved __PACKED;
+        u8      cTime_ms __PACKED;
+        u16     cTime __PACKED;
+        u16     cDate __PACKED;
+        u16     aDate __PACKED;
+        u16     startClusterHigh __PACKED;
+        u16     mTime __PACKED;
+        u16     mDate __PACKED;
+        u16     startCluster __PACKED;
+        u32     fileSize __PACKED;
 } __PACKED DIR_ENT;
 #include "PACKED_END.h"
 
