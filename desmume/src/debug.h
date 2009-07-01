@@ -24,6 +24,8 @@
 #include <iostream>
 #include <cstdarg>
 
+struct armcpu_t;
+
 class Logger {
 protected:
 	void (*callback)(const Logger& logger, const char * format);
@@ -111,5 +113,7 @@ public:
 
 #define INFOC(channel, ...) Logger::log(channel, __FILE__, __LINE__, __VA_ARGS__)
 #define INFO(...) INFOC(10, __VA_ARGS__)
+
+void IdeasLog(armcpu_t* cpu);
 
 #endif

@@ -893,11 +893,20 @@ TEMPLATE static  u32 FASTCALL OP_B_COND()
 
 TEMPLATE static  u32 FASTCALL OP_SWI_THUMB()
 {
+	u32 swinum = cpu->instruction & 0xFF;
+
+	//ideas-style debug prints
+	if(swinum==0xFC) {
+		IdeasLog(cpu);
+		return 0;
+	}
+
 	if(cpu->swi_tab) {
 		 //zero 25-dec-2008 - in arm, we were masking to 0x1F. 
 		 //this is probably safer since an invalid opcode could crash the emu
+		 //zero 30-jun-2009 - but they say that the ideas 0xFF should crash the device...
 		 //u32 swinum = cpu->instruction & 0xFF;
-		u32 swinum = cpu->instruction & 0x1F;
+		swinum &= 0x1F;
         return cpu->swi_tab[swinum]() + 3;  
 	}
 	else {
