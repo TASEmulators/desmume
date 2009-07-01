@@ -52,7 +52,7 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         sprintf(text, "0x%08X", (int)MMU.reg_IF[ARMCPU_ARM9]);
         SetWindowText(GetDlgItem(hwnd, IDC_IF9), text);
 
-        sprintf(text, "0x%08X", (int)MMU.reg_IME[ARMCPU_ARM9]);
+		sprintf(text, "%s", ((int)(MMU.reg_IME[ARMCPU_ARM9]) & 0x01)?"enabled":"disabled");
         SetWindowText(GetDlgItem(hwnd, IDC_IME9), text);
 
         sprintf(text, "0x%08X", ((u16 *)ARM9Mem.ARM9_REG)[0x0000>>1]);
@@ -83,7 +83,7 @@ LRESULT Ioreg_OnPaint(HWND hwnd, WPARAM wParam, LPARAM lParam)
         sprintf(text, "0x%08X", (int)MMU.reg_IF[ARMCPU_ARM7]);
         SetWindowText(GetDlgItem(hwnd, IDC_IF7), text);
 
-        sprintf(text, "0x%08X", (int)MMU.reg_IME[ARMCPU_ARM7]);
+        sprintf(text, "%s", ((int)(MMU.reg_IME[ARMCPU_ARM7]) & 0x01)?"enabled":"disabled");
         SetWindowText(GetDlgItem(hwnd, IDC_IME7), text);
 
         sprintf(text, "0x%08X", (int)((u32 *)MMU.ARM7_REG)[0x180>>2]);

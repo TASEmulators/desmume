@@ -30,14 +30,13 @@
 #include <shlobj.h>
 
 WNDCLASSEX	wc;
-HWND		wndConfig;
+HWND		wndConfig = NULL;
 u8			temp_type = 0;
-u8			last_type;
-char		tmp_cflash_filename[MAX_PATH];
-char		tmp_cflash_path[MAX_PATH];
-char		tmp_gbagame_filename[MAX_PATH];
-u8			tmp_CFlashUsePath;
-u8			tmp_CFlashUseRomPath;
+u8			last_type = 0;
+char		tmp_cflash_filename[MAX_PATH] = { 0 };
+char		tmp_cflash_path[MAX_PATH] = { 0 };
+char		tmp_gbagame_filename[MAX_PATH] = { 0 };
+ADDON_CFLASH_MODE	tmp_CFlashMode = ADDON_CFLASH_MODE_RomPath;
 HWND		OKbutton = NULL;
 bool		_OKbutton = false;
 
@@ -64,32 +63,37 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 		{
 			SetWindowText(GetDlgItem(dialog, IDC_PATHIMG), tmp_cflash_filename);
 			SetWindowText(GetDlgItem(dialog, IDC_PATH), tmp_cflash_path);
-			if (tmp_CFlashUsePath)
+			switch (tmp_CFlashMode)
 			{
-				if (tmp_CFlashUseRomPath)
-				{
+				case ADDON_CFLASH_MODE_Path:
+					CheckDlgButton(dialog, IDC_RFOLDER, BST_CHECKED);
+					EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
+					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
+					EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
+					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
+					if (strlen(tmp_cflash_path)) _OKbutton = TRUE;
+				break;
+
+				case ADDON_CFLASH_MODE_File:
+					CheckDlgButton(dialog, IDC_RFILE, BST_CHECKED);
+					EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), TRUE);
+					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), TRUE);
+					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
+					EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
+					if (strlen(tmp_cflash_filename)) _OKbutton = TRUE;
+				break;
+
+				case ADDON_CFLASH_MODE_RomPath:
 					CheckDlgButton(dialog, IDC_PATHDESMUME, BST_CHECKED);
 					EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
 					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
+					EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
+					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
 					_OKbutton = TRUE;
-				}
-				else
-				{
-					EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
-					EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
-					if (strlen(tmp_cflash_path)) _OKbutton = TRUE;
-				}
-				EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
-				EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
-				CheckDlgButton(dialog, IDC_RFOLDER, BST_CHECKED);
-			}
-			else
-			{
-				EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
-				EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), FALSE);
-				EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
-				if (strlen(tmp_cflash_filename)) _OKbutton = TRUE;
-				CheckDlgButton(dialog, IDC_RFILE, BST_CHECKED);
+				break;
+				default:
+					return FALSE;
+
 			}
 			return TRUE;
 		}
@@ -164,12 +168,11 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				{
 					if (HIWORD(wparam) == BN_CLICKED)
 					{
-						tmp_CFlashUsePath = FALSE;
+						tmp_CFlashMode = ADDON_CFLASH_MODE_File;
 						EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), TRUE);
 						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), TRUE);
 
 						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
-						EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), FALSE);
 						EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
 
 						if (!strlen(tmp_cflash_filename))
@@ -182,47 +185,29 @@ BOOL CALLBACK GbaSlotCFlash(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				{
 					if (HIWORD(wparam) == BN_CLICKED)
 					{
-						tmp_CFlashUsePath = TRUE;
+						tmp_CFlashMode = ADDON_CFLASH_MODE_Path;
 						EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
 						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
 
-						if (IsDlgButtonChecked(dialog, IDC_PATHDESMUME))
-						{
-							tmp_CFlashUseRomPath = TRUE;
-							EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
-							EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
-							EnableWindow(OKbutton, TRUE);
-						}
-						else
-						{
-							tmp_CFlashUseRomPath = FALSE;
-							EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
-							EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
-						}
-
-						EnableWindow(GetDlgItem(dialog, IDC_PATHDESMUME), TRUE);
+						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
+						EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
+						if (!strlen(tmp_cflash_path))
+							EnableWindow(OKbutton, FALSE);
 					}
 					break;
 				}
 
 				case IDC_PATHDESMUME:
 				{
-					if (IsDlgButtonChecked(dialog, IDC_PATHDESMUME))
+					if (HIWORD(wparam) == BN_CLICKED)
 					{
-						tmp_CFlashUseRomPath = TRUE;
+						tmp_CFlashMode = ADDON_CFLASH_MODE_RomPath;
+						EnableWindow(GetDlgItem(dialog, IDC_PATHIMG), FALSE);
+						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE), FALSE);
+
 						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), FALSE);
 						EnableWindow(GetDlgItem(dialog, IDC_PATH), FALSE);
 						EnableWindow(OKbutton, TRUE);
-					}
-					else
-					{
-						tmp_CFlashUseRomPath = FALSE;
-						EnableWindow(GetDlgItem(dialog, IDC_BBROWSE2), TRUE);
-						EnableWindow(GetDlgItem(dialog, IDC_PATH), TRUE);
-						if (strlen(tmp_cflash_path))
-							EnableWindow(OKbutton, TRUE);
-						else
-							EnableWindow(OKbutton, FALSE);
 					}
 					break;
 				}
@@ -403,8 +388,7 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_cflash_filename, CFlashName.c_str());
 	strcpy(tmp_cflash_path, CFlashPath.c_str());
 	strcpy(tmp_gbagame_filename, GBAgameName);
-	tmp_CFlashUseRomPath = (CFlash_Mode==ADDON_CFLASH_MODE_RomPath);
-	tmp_CFlashUsePath = (CFlash_Mode==ADDON_CFLASH_MODE_Path);
+	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
 	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
@@ -414,22 +398,17 @@ void GBAslotDialog(HWND hwnd)
 			case NDS_ADDON_NONE:
 				break;
 			case NDS_ADDON_CFLASH:
-				if(tmp_CFlashUsePath) CFlash_Mode=ADDON_CFLASH_MODE_Path;
-				WritePrivateProfileInt("GBAslot.CFlash","usePath",tmp_CFlashUsePath,IniName);
-				if (tmp_CFlashUsePath)
-				{
-					if (tmp_CFlashUseRomPath)
-					{
-						CFlash_Mode=ADDON_CFLASH_MODE_RomPath;
-						WritePrivateProfileInt("GBAslot.CFlash","useRomPath",tmp_CFlashUseRomPath,IniName);
-						break;
-					}
-					CFlashPath = tmp_cflash_path;
-					WritePrivateProfileString("GBAslot.CFlash","path",tmp_cflash_path,IniName);
-					break;
-				}
-				CFlashName = tmp_cflash_filename;
+				CFlash_Mode = tmp_CFlashMode;
+				WritePrivateProfileInt("GBAslot.CFlash","fileMode",CFlash_Mode,IniName);
+				WritePrivateProfileString("GBAslot.CFlash","path",tmp_cflash_path,IniName);
 				WritePrivateProfileString("GBAslot.CFlash","filename",tmp_cflash_filename,IniName);
+				if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
+					CFlash_Path = tmp_cflash_path;
+				else if(CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
+					CFlash_Path = "";
+				else
+					CFlash_Path = tmp_cflash_filename;
+
 				break;
 			case NDS_ADDON_RUMBLEPAK:
 				break;
@@ -441,14 +420,6 @@ void GBAslotDialog(HWND hwnd)
 				return;
 		}
 		WritePrivateProfileInt("GBAslot","type",temp_type,IniName);
-
-		if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
-			CFlash_Path = CFlashPath;
-		else if(CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
-			CFlash_Path = "";
-		else
-			CFlash_Path = CFlashName;
-
 
 		addon_type = temp_type;
 		addonsChangePak(addon_type);

@@ -273,7 +273,7 @@ static void list_files(const char *filepath)
 	{
 		fname = (strlen(entry.cAlternateFileName)>0) ? entry.cAlternateFileName : entry.cFileName;
 		add_file(fname, &entry, fileLevel);
-		printf("cflash added %s\n",fname);
+		CFLASHLOG("cflash added %s\n",fname);
 
 		if (numFiles==MAXFILES-1) break;
 
@@ -506,17 +506,17 @@ static BOOL cflash_init()
 	if (inited) return FALSE;
 	BOOL init_good = FALSE;
 
-	printf("CFlash_Mode: %d\n",CFlash_Mode);
+	CFLASHLOG("CFlash_Mode: %d\n",CFlash_Mode);
 
 	if (CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
 	{
 		sFlashPath = pathToROM;
-		printf("Using CFlash directory of rom: %s\n", sFlashPath.c_str());
+		INFO("Using CFlash directory of rom: %s\n", sFlashPath.c_str());
 	}
 	else if(CFlash_Mode == ADDON_CFLASH_MODE_Path)
 	{
 		sFlashPath = CFlash_Path;
-		printf("Using CFlash directory: %s\n", sFlashPath.c_str());
+		INFO("Using CFlash directory: %s\n", sFlashPath.c_str());
 	}
 
 	if(CFlash_IsUsingPath())
@@ -529,7 +529,7 @@ static BOOL cflash_init()
 		activeDirEnt = -1;
 		fileStartLBA = fileEndLBA = 0xFFFFFFFF;
 		if (!cflash_build_fat()) {
-			printf("FAILED cflash_build_fat\n");
+			CFLASHLOG("FAILED cflash_build_fat\n");
 			return FALSE;
 		}
 		cf_reg_sts = 0x58;	// READY
@@ -540,7 +540,7 @@ static BOOL cflash_init()
 	else
 	{
 		sFlashPath = CFlash_Path;
-		printf("Using CFlash disk image file %s\n", sFlashPath.c_str());
+		INFO("Using CFlash disk image file %s\n", sFlashPath.c_str());
 		disk_image = OPEN_FN( sFlashPath.c_str(), OPEN_MODE);
 
 		if ( disk_image != -1)
@@ -659,7 +659,7 @@ static u16 fread_buffered(int dirent,u32 cluster,u32 offset)
 	fatstring_to_asciiz(dirent,fname,NULL);
 	strncat(fpath,fname,ARRAY_SIZE(fpath)-strlen(fpath));
 
-	printf("CFLASH Opening %s\n",fpath);
+	CFLASHLOG("CFLASH Opening %s\n",fpath);
 	hFile = fopen(fpath, "rb");
 	if (!hFile) return 0;
 	bufferStart = offset;
@@ -954,8 +954,6 @@ static void cflash_close( void)
 
 static BOOL CFlash_init(void)
 {
-	printf("CFlash_init\n");
-	cflash_init();
 	return TRUE;
 }
 
