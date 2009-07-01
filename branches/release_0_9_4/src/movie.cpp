@@ -698,7 +698,7 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	 memcpy(&cur_input_display,joy,4);*/
 
 	if (ShowInputDisplay && nds.isTouch)
-		osd->addFixed(nds.touchX >> 4, nds.touchY >> 4, "%s %d %d", "X", nds.touchX >> 4, nds.touchY >> 4);
+		osd->addFixed(nds.touchX >> 4, (nds.touchY >> 4) + 192 , "%s %d %d", "X", nds.touchX >> 4, nds.touchY >> 4);
  }
 
 
