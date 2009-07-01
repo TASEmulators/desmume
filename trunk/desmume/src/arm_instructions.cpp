@@ -7726,8 +7726,16 @@ TEMPLATE static u32 FASTCALL  OP_MRC()
 //--------------SWI-------------------------------
 TEMPLATE static u32 FASTCALL  OP_SWI()
 {
+	u32 swinum = (cpu->instruction>>16)&0xFF;
+	
+	//ideas-style debug prints
+	if(swinum==0xFC) {
+		IdeasLog(cpu);
+		return 0;
+	}
+	
 	if(cpu->swi_tab) {
-		u32 swinum = (cpu->instruction>>16)&0x1F;
+		swinum &= 0x1F;
 		return cpu->swi_tab[swinum]() + 3;
 	} else {
         /* TODO (#1#): translocated SWI vectors */

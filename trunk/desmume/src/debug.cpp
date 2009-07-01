@@ -21,6 +21,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include "MMU.h"
+#include "armcpu.h"
 
 std::vector<Logger *> Logger::channels;
 
@@ -99,3 +101,17 @@ void Logger::log(unsigned int channel, const char * file, unsigned int line, voi
 
 	channels[channel]->setCallback(callback);
 }
+
+void IdeasLog(armcpu_t* cpu)
+{
+	u32 adr = cpu->R[0];
+	printf("EMULOG%c: ",cpu->proc_ID==0?'9':'7');
+	for(;;) {
+		u8 c = MMU_read8(cpu->proc_ID,adr);
+		adr++;
+		if(!c) break;
+		printf("%c",c);
+	}
+	printf("\n");
+}
+
