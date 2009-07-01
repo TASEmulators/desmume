@@ -1492,23 +1492,28 @@ int _main()
 	GetINIPath();
 
 	addon_type = GetPrivateProfileInt("GBAslot", "type", NDS_ADDON_NONE, IniName);
-	UINT CFlashUsePath = GetPrivateProfileInt("GBAslot.CFlash", "usePath", 1, IniName);
-	UINT CFlashUseRomPath = GetPrivateProfileInt("GBAslot.CFlash", "useRomPath", 1, IniName);
+	UINT CFlashFileMode = GetPrivateProfileInt("GBAslot.CFlash", "fileMode", 2, IniName);
 	
 	CFlashPath = GetPrivateProfileStdString("GBAslot.CFlash", "path", "");
 	CFlashName = GetPrivateProfileStdString("GBAslot.CFlash", "filename", "");
 	GetPrivateProfileString("GBAslot.GBAgame", "filename", "", GBAgameName, MAX_PATH, IniName);
 
-	if(CFlashUsePath) {
+	if(CFlashFileMode==ADDON_CFLASH_MODE_Path) 
+	{
 		CFlash_Mode = ADDON_CFLASH_MODE_Path;
-		CFlash_Path = CFlashPath;
 	}
-	else if(CFlashUseRomPath) {
-		CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
-	} else {
-		CFlash_Path = CFlashName;
-		CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
-	}
+	else 
+		if(CFlashFileMode==ADDON_CFLASH_MODE_File)
+		{
+			CFlash_Path = CFlashName;
+			CFlash_Mode = ADDON_CFLASH_MODE_File;
+		}
+		else 
+			{
+				CFlash_Path = "";
+				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
+			}
+
 
 
 
