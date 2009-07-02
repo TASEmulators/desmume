@@ -82,6 +82,7 @@
 #include "../lua-engine.h"
 #include "7zip.h"
 #include "pathsettings.h"
+#include "utils/xstring.h"
 
 #include "directx/ddraw.h"
 
@@ -130,6 +131,8 @@ void wxTest() {
 }
 
 #endif
+
+static BOOL OpenCore(const char* filename);
 
 unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
 //----Recent ROMs menu globals----------
@@ -1264,18 +1267,22 @@ void LoadSaveStateInfo()
 
 
 
-static BOOL LoadROM(const char * filename)
+static BOOL LoadROM(const char * filename, const char * logicalName)
 {
 	ResetSaveStateTimes();
 	NDS_Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
+
+	//extract the internal part of the logical rom name
+	std::vector<std::string> parts = tokenize_str(logicalName,"|");
+	SetRomName(parts[parts.size()-1].c_str());
 
 	if (NDS_LoadROM(filename) > 0)
 	{
 		INFO("Loading %s was successful\n",filename);
 		LoadSaveStateInfo();
 		lagframecounter=0;
-		UpdateRecentRoms(filename);
+		UpdateRecentRoms(logicalName);
 		osd->setRotate(GPU_rotation);
 		if (AutoRWLoad)
 		{
@@ -1283,7 +1290,7 @@ static BOOL LoadROM(const char * filename)
 			OpenRWRecentFile(0);	
 			RamWatchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMWATCH), MainWindow->getHWnd(), (DLGPROC) RamWatchProc);
 		}
-		SetRomName(filename);
+
 		return TRUE;		
 	}
 	INFO("Loading %s FAILED.\n",filename);
@@ -1464,6 +1471,7 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 
 int _main()
 {
+	InitDecoder();
 
 #ifdef WX_STUB
 	wxInitialize();
@@ -1724,7 +1732,8 @@ int _main()
 		activateStub_gdb( arm7_gdb_stub, arm7_ctrl_iface);
 	}
 #endif
-	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	//================================================== ???
+	
+	GetPrivateProfileString("General", "Language", "0", text, 80, IniName);	
 	CheckLanguage(IDC_LANGENGLISH+atoi(text));
 
 	GetPrivateProfileString("Video", "FrameSkip", "0", text, 80, IniName);
@@ -1822,7 +1831,7 @@ int _main()
 
 	if (cmdline.nds_file != "")
 	{
-		if(LoadROM(cmdline.nds_file.c_str()))
+		if(OpenCore(cmdline.nds_file.c_str()))
 		{
 			romloaded = TRUE;
 			if(!cmdline.start_paused)
@@ -1836,8 +1845,6 @@ int _main()
 	{
 		HK_StateLoadSlot(cmdline.load_slot);
 	}
-
-	InitDecoder();
 
 	MainWindow->Show(SW_NORMAL);
 	run();
@@ -2292,7 +2299,7 @@ void OpenRecentROM(int listNum)
 	char filename[MAX_PATH];
 	strcpy(filename, RecentRoms[listNum].c_str());
 	//LOG("Attempting to load %s\n",filename);
-	if(LoadROM(filename))
+	if(OpenCore(filename))
 	{
 		romloaded = TRUE;
 	}
@@ -2313,6 +2320,31 @@ void OpenRecentROM(int listNum)
 
 #include "OpenArchive.h"
 #include "utils/xstring.h"
+
+static BOOL OpenCore(const char* filename)
+{
+	if(!strcmp(getExtension(filename).c_str(), "gz")  || !strcmp(getExtension(filename).c_str(), "nds.gz")) {
+		if(LoadROM(filename,filename)) {
+			NDS_UnPause();
+			return FALSE;
+		}
+	}
+
+	char LogicalName[1024], PhysicalName[1024];
+
+	const char* s_nonRomExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "gmv", "gm2", "lua", "luasav", "sav", "srm", "brm", "cfg", "wch", "gs*"};
+
+	if(!ObtainFile(filename, LogicalName, PhysicalName, "rom", s_nonRomExtensions, ARRAY_SIZE(s_nonRomExtensions)))
+		return FALSE;
+
+	if(LoadROM(PhysicalName, LogicalName))
+	{
+		romloaded = TRUE;
+		NDS_UnPause();
+		return TRUE;
+	}
+	else return FALSE;
+}
 
 LRESULT OpenFile()
 {
@@ -2367,8 +2399,6 @@ LRESULT OpenFile()
 	ofn.lpstrInitialDir = buffer;
 
 
-	const char* s_nonRomExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "gmv", "gm2", "lua", "luasav", "sav", "srm", "brm", "cfg", "wch", "gs*"};
-
 	if (GetOpenFileName(&ofn) == NULL) {
 		NDS_UnPause();
 		return 0;
@@ -2387,19 +2417,8 @@ LRESULT OpenFile()
 	}
 	}
 
-
-	char LogicalName[1024], PhysicalName[1024];
-
-	if(!strcmp(getExtension(filename).c_str(), "gz")  || !strcmp(getExtension(filename).c_str(), "nds.gz")) {
-		if(LoadROM(filename)) {
-			NDS_UnPause();
-			return 0;
-		}
-	}
-
-	if(!ObtainFile(filename, LogicalName, PhysicalName, "rom", s_nonRomExtensions, sizeof(s_nonRomExtensions)/sizeof(*s_nonRomExtensions))) {
+	if(!OpenCore(filename))
 		return 0;
-	}
 
 //	if(!GetOpenFileName(&ofn))
 //	{
@@ -2411,12 +2430,7 @@ LRESULT OpenFile()
 //		return 0;
 //	}
 
-	//LOG("%s\r\n", filename);
-	if(LoadROM(PhysicalName))
-	{
-		romloaded = TRUE;
-		NDS_UnPause();
-	}
+
 
 	return 0;
 }
@@ -2863,7 +2877,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			char filename[MAX_PATH] = "";
 			DragQueryFile((HDROP)wParam,0,filename,MAX_PATH);
 			DragFinish((HDROP)wParam);
-			if(LoadROM(filename))
+			if(OpenCore(filename))
 			{
 				romloaded = TRUE;
 			}
