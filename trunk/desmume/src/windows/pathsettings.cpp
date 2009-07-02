@@ -35,6 +35,7 @@ the default paths are saved on first load
 #include "NDSSystem.h"
 #include "pathSettings.h"
 #include "../debug.h"
+#include "common.h"
 
 /*macros to forward messages
 the dialog procedure was getting long and confusing for me
@@ -191,9 +192,7 @@ void SwitchPath(Action action, KnownPath path, char * buffer, int maxCount)
 //returns "filename"
 void GetFilename(char *buffer, int maxCount)
 {
-	char *lchr = strrchr(pathFilenameToROMwithoutExt, '\\');
-	lchr++;
-	strncpy(buffer, lchr, maxCount);
+	strcpy(buffer,GetRomNameWithoutExtension().c_str());
 }
 
 void GetFullPathNoExt(KnownPath path, char *buffer, int maxCount)

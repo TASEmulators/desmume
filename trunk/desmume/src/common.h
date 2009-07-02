@@ -26,9 +26,11 @@
 
 #include <stdio.h>
 #include "types.h"
+#include <string>
 
 extern u8	gba_header_data_0x04[156];
 const char* GetRomName();	//adelikat: return the name of the Rom currently loaded
+std::string GetRomNameWithoutExtension();
 void SetRomName(const char *filename);
 
 
