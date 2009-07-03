@@ -752,7 +752,7 @@ void SetupFinalPixelBlitter (GPU *gpu)
 	
 }
     
-/* Sets up LCD control variables for Display Engines A and B for quick reading */
+//Sets up LCD control variables for Display Engines A and B for quick reading
 void GPU_setVideoProp(GPU * gpu, u32 p)
 {
 	struct _DISPCNT * cnt;
@@ -1105,22 +1105,25 @@ static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, 
 			return;
 	}
 
-	//note that the fadein and fadeout is done here before blending, 
-	//so that a fade and blending can be applied at the same time
-	bool forceBlendingForNormal = false;
-	if(windowEffect)
-		switch(FUNC) 
-		{
-		case Increase: color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF]; break;
-		case Decrease: color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF]; break;
-
-		//only when blend color effect is selected, ordinarily opaque sprites are blended with the color effect params
-		case Blend: forceBlendingForNormal = (gpu->BLDCNT & 0x10)!=0; break;
-		}
-
 	//this inspects the layer beneath the sprite to see if the current blend flags make it a candidate for blending
 	int bg_under = gpu->bgPixels[x];
 	bool allowBlend = ((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)));
+
+	bool sourceEffectSelected = (gpu->BLDCNT & 0x10)!=0;
+
+	//note that the fadein and fadeout is done here before blending, 
+	//so that a fade and blending can be applied at the same time
+	bool forceBlendingForNormal = false;
+	if(windowEffect && sourceEffectSelected)
+		switch(FUNC) 
+		{
+		case Increase: if(!allowBlend) color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF]; break;
+		case Decrease: if(!allowBlend) color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF]; break;
+
+		//only when blend color effect is selected, ordinarily opaque sprites are blended with the color effect params
+		case Blend: forceBlendingForNormal = true; break;
+		}
+
 
 	if(allowBlend)
 	{
