@@ -675,7 +675,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				switch(ofs) {
 				case 0:
 				case 1:
-					vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
 					ARM9Mem.ExtPal[0][ofs*2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 					ARM9Mem.ExtPal[0][ofs*2+1] = ARM9Mem.ExtPal[0][ofs*2] + ADDRESS_STEP_8KB;
 					break;
@@ -686,7 +686,7 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 				}
 				break;
 			case 5: //A OBJ extended palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
+				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJEXTPAL;
 				ARM9Mem.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 				ARM9Mem.ObjExtPal[0][1] = ARM9Mem.ObjExtPal[0][1] + ADDRESS_STEP_8KB;
 				if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
