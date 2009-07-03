@@ -709,7 +709,7 @@ void GameInfo::populate()
 	}
 }
 
-int NDS_LoadROM( const char *filename)
+int NDS_LoadROM( const char *filename, const char *logicalFilename)
 {
 	int					ret;
 	int					type;
@@ -733,12 +733,24 @@ int NDS_LoadROM( const char *filename)
 	noext = strdup(filename);
 	reader = ROMReaderInit(&noext);
 	
-	for (int t = strlen(filename); t>0; t--)
-		if ( (filename[t] == '\\') || (filename[t] == '/') )
-		{
-			strncpy(pathToROM, filename, t+1);
-			break;
-		}
+	if(logicalFilename)
+	{
+		for (int t = strlen(logicalFilename); t>0; t--)
+			if ( (logicalFilename[t] == '\\') || (logicalFilename[t] == '/') )
+			{
+				strncpy(pathToROM, logicalFilename, t+1);
+				break;
+			}
+	}
+	else
+	{
+		for (int t = strlen(filename); t>0; t--)
+			if ( (filename[t] == '\\') || (filename[t] == '/') )
+			{
+				strncpy(pathToROM, filename, t+1);
+				break;
+			}
+	}
 	
 	for (int t = strlen(filename); t>0; t--)
 		if ( (filename[t] == '\\') || (filename[t] == '/') || (filename[t] == '.') )
