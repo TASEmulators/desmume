@@ -1731,14 +1731,12 @@ common_gtk_main( struct configured_features *my_config)
         fw_config.language = my_config->firmware_language;
     }
 
-	//------------------addons----------
+    //------------------addons----------
+    my_config->process_addonCommands();
+    addon_type = NDS_ADDON_NONE;
+    if (my_config->is_cflash_configured)
+        addon_type = NDS_ADDON_CFLASH;
 
-	my_config->process_addonCommands();
-	addon_type = NDS_ADDON_NONE;
-	if(my_config->is_cflash_configured)
-	    addon_type = NDS_ADDON_CFLASH;
-
-	printf("addon_type: %d\n",addon_type);
     switch (addon_type) {
     case NDS_ADDON_CFLASH:
     case NDS_ADDON_RUMBLEPAK:
