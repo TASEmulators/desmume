@@ -101,9 +101,6 @@
 #define IDC_16_BIT                      303
 #define IDC_32_BIT                      304
 #define IDC_BACKGROUNDPAUSE             305
-#define ID_FILE_RUNLUASCRIPT            306
-#define ID_FILE_STOPLUASCRIPT           307
-#define ID_FILE_RELOADLUASCRIPT         308
 #define IDC_LUACONSOLE                  309
 #define IDC_EDIT_LUAPATH                310
 #define IDC_BUTTON_LUARUN               311

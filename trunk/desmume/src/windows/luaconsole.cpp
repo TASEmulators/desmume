@@ -64,11 +64,6 @@ struct LuaPerWindowInfo {
 std::map<HWND, LuaPerWindowInfo> LuaWindowInfo;
 static char Lua_Dir[1024]="";
 
-void RequestAbortLuaScript(int uid, const char* message) {
-LUA_LuaStop();
-}
-
-
 int WINAPI FileSysWatcher (LPVOID arg)
 {
 	HWND hDlg = (HWND)arg;
@@ -354,13 +349,6 @@ void UpdateFileEntered(HWND hDlg)
 
 //extern "C" int Clear_Sound_Buffer(void);
 
-void RunLuaScriptFile(int uid, const char* filenameCStr) {
-LUA_LoadLuaCode(filenameCStr);
-}
-void StopLuaScript(int uid) {
-LUA_LuaStop();
-}
-
 static int Change_File_L(char *Dest, char *Dir, char *Titre, char *Filter, char *Ext, HWND hwnd)
 {
 	OPENFILENAME ofn;
@@ -459,7 +447,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			LuaWindowInfo[hDlg] = info;
 			RegisterWatcherThread(hDlg);
 
-//			OpenLuaContext((int)hDlg, PrintToWindowConsole, OnStart, OnStop);
+			OpenLuaContext((int)hDlg, PrintToWindowConsole, OnStart, OnStop);
 
 			DragAcceptFiles(hDlg, TRUE);
 
@@ -668,7 +656,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 						KillWatcherThread(hDlg);
 						LuaScriptHWnds.erase(remove(LuaScriptHWnds.begin(), LuaScriptHWnds.end(), hDlg), LuaScriptHWnds.end());
 						LuaWindowInfo.erase(hDlg);
-//						CloseLuaContext((int)hDlg);
+						CloseLuaContext((int)hDlg);
 //						Build_Main_Menu();
 						EndDialog(hDlg, true);
 					}
@@ -701,7 +689,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			KillWatcherThread(hDlg);
 			LuaScriptHWnds.erase(remove(LuaScriptHWnds.begin(), LuaScriptHWnds.end(), hDlg), LuaScriptHWnds.end());
 			LuaWindowInfo.erase(hDlg);
-//			CloseLuaContext((int)hDlg);
+			CloseLuaContext((int)hDlg);
 //			Build_Main_Menu();
 			EndDialog(hDlg, true);
 		}	return true;
@@ -714,6 +702,7 @@ LRESULT CALLBACK LuaScriptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			SendDlgItemMessage(hDlg,IDC_EDIT_LUAPATH,WM_SETTEXT,0,(LPARAM)Str_Tmp );
 			UpdateFileEntered(hDlg);
 		}	return true;
+
 	}
 
 	return false;
