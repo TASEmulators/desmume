@@ -222,7 +222,7 @@ FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
 
 enum MMU_ACCESS_TYPE
 {
-	MMU_AT_CODE, MMU_AT_DATA, MMU_AT_GPU
+	MMU_AT_CODE, MMU_AT_DATA, MMU_AT_GPU, MMU_AT_DMA
 };
 
 template<int PROCNUM, MMU_ACCESS_TYPE AT> u8 _MMU_read08(u32 addr);
@@ -265,7 +265,15 @@ inline void SetupMMU(bool debugConsole) {
     //T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
       //         adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
 
-FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) {
+FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
+{
+	//special handling for DMA: read 0 from TCM
+	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
+	{
+		if(addr<0x02000000) return 0; //itcm
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion) return 0; //dtcm
+	}
+
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
@@ -280,7 +288,14 @@ FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u3
 	else return _MMU_ARM7_read08(addr);
 }
 
-FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) {
+FORCEINLINE u16 _MMU_read16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) 
+{
+	//special handling for DMA: read 0 from TCM
+	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
+	{
+		if(addr<0x02000000) return 0; //itcm
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion) return 0; //dtcm
+	}
 
 	//special handling for execution from arm9, since we spend so much time in there
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
@@ -309,7 +324,14 @@ dunno:
 	else return _MMU_ARM7_read16(addr);
 }
 
-FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr) {
+FORCEINLINE u32 _MMU_read32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
+{
+	//special handling for DMA: read 0 from TCM
+	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
+	{
+		if(addr<0x02000000) return 0; //itcm
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion) return 0; //dtcm
+	}
 
 	//special handling for execution from arm9, since we spend so much time in there
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_CODE)
@@ -353,7 +375,15 @@ dunno:
 	else return _MMU_ARM7_read32(addr);
 }
 
-FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u8 val) {
+FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u8 val)
+{
+	//special handling for DMA: discard writes to TCM
+	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
+	{
+		if(addr<0x02000000) return; //itcm
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion) return; //dtcm
+	}
+
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
@@ -370,7 +400,15 @@ FORCEINLINE void _MMU_write08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	else _MMU_ARM7_write08(addr,val);
 }
 
-FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u16 val) {
+FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u16 val)
+{
+	//special handling for DMA: discard writes to TCM
+	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
+	{
+		if(addr<0x02000000) return; //itcm
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion) return; //dtcm
+	}
+
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{
@@ -387,7 +425,15 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 	else _MMU_ARM7_write16(addr,val);
 }
 
-FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u32 val) {
+FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u32 val)
+{
+	//special handling for DMA: discard writes to TCM
+	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
+	{
+		if(addr<0x02000000) return; //itcm
+		if((addr&(~0x3FFF)) == MMU.DTCMRegion) return; //dtcm
+	}
+
 	if(PROCNUM==ARMCPU_ARM9)
 		if((addr&(~0x3FFF)) == MMU.DTCMRegion)
 		{

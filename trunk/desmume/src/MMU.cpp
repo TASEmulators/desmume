@@ -1198,28 +1198,34 @@ void FASTCALL MMU_doDMA(u32 num)
 				return;
 		}
 
+		//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
+		//then danny phantom title screen will be filled with a garbage char which is made by
+		//dmaing from 0x00000000 to 0x06000000
 		if ((MMU.DMACrt[PROCNUM][num]>>26)&1)
 			for(; i < taille; ++i)
 			{
-				_MMU_write32<PROCNUM>(dst, _MMU_read32<PROCNUM>(src));
+				_MMU_write32<PROCNUM,MMU_AT_DMA>(dst, _MMU_read32<PROCNUM,MMU_AT_DMA>(src));
 				dst += dstinc;
 				src += srcinc;
 			}
 		else
 			for(; i < taille; ++i)
 			{
-				_MMU_write16<PROCNUM>(dst, _MMU_read16<PROCNUM>(src));
+				_MMU_write16<PROCNUM,MMU_AT_DMA>(dst, _MMU_read16<PROCNUM,MMU_AT_DMA>(src));
 				dst += dstinc;
 				src += srcinc;
 			}
 
-		//this is necessary for repeating DMA such as to scroll registers for NSMB level backdrop scrolling effect
-//#if 0
 		//write back the addresses
 		DMASrc[PROCNUM][num] = src;
 		if((u & 0x3)!=3) //but dont write back dst if we were supposed to reload
 			DMADst[PROCNUM][num] = dst;
-//#endif
+
+		//this is probably not the best place to do it, but the dma code in ndssystem is so bad i didnt want to touch it
+		//until it all gets rewritten. so this is here as a reminder, at least.
+		//(there is no proof for this code, but it is reasonable)
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB0+12*num, DMASrc[PROCNUM][num]);
+		T1WriteLong(MMU.MMU_MEM[PROCNUM][0x40], 0xB4+12*num, DMADst[PROCNUM][num]);
 	}
 }
 
