@@ -19,8 +19,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifdef GTKGLEXT_AVAILABLE
 #include "callbacks_dtools.h"
+#ifdef GTKGLEXT_AVAILABLE
 #include "../gdk_gl.h"
 
 void init_combo_memory(GtkComboBox *combo, u8 ** addresses) {
@@ -309,5 +309,21 @@ gboolean on_wDraw_Tile_expose_event       (GtkWidget * w, GdkEventExpose * e, gp
 	refresh();
 	return TRUE;
 }
-
+#else
+void     on_wtools_4_TileView_show         (GtkWidget *widget, gpointer data) {
+}
+gboolean on_wtools_4_TileView_close         (GtkWidget *widget, ...) {
+	return FALSE;
+}
+void     on_wtools_4_palette_changed      (GtkComboBox *combo,   gpointer user_data) {
+}
+void     on_wtools_4_palnum_value_changed (GtkSpinButton *spin, gpointer user_data) {
+}
+void     on_wtools_4_memory_changed (GtkComboBox *combo, gpointer user_data) {
+}
+void	 on_wtools_4_rXX_toggled (GtkToggleButton *togglebutton, gpointer user_data) {
+}
+gboolean on_wDraw_Tile_expose_event       (GtkWidget * w, GdkEventExpose * e, gpointer user_data) {
+	return FALSE;
+}
 #endif
