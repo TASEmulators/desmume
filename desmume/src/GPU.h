@@ -505,8 +505,14 @@ typedef union
 
 
 
-
-
+ // (00: Normal, 01: Transparent, 10: Object window, 11: Bitmap)
+enum GPU_OBJ_MODE
+{
+	GPU_OBJ_MODE_Normal = 0,
+	GPU_OBJ_MODE_Transparent = 1,
+	GPU_OBJ_MODE_Window = 2,
+	GPU_OBJ_MODE_Bitmap = 3
+};
 
 /*
 	this structure is for Sprite description,
@@ -515,7 +521,7 @@ typedef union
 ref: http://www.bottledlight.com/ds/index.php/Video/Sprites
 */
 
-typedef struct
+struct _OAM_
 {
 #ifdef WORDS_BIGENDIAN
 // attr0
@@ -558,7 +564,7 @@ typedef struct
 // attr3
 	unsigned attr3:16;
 #endif
-} _OAM_;
+};
 
 typedef struct
 {

@@ -1265,8 +1265,6 @@ void LoadSaveStateInfo()
 	}
 }
 
-
-
 static BOOL LoadROM(const char * filename, const char * logicalName)
 {
 	ResetSaveStateTimes();
@@ -1277,9 +1275,9 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 	std::vector<std::string> parts = tokenize_str(logicalName,"|");
 	SetRomName(parts[parts.size()-1].c_str());
 
-	if (NDS_LoadROM(filename) > 0)
+	if (NDS_LoadROM(filename, logicalName) > 0)
 	{
-		INFO("Loading %s was successful\n",filename);
+		INFO("Loading %s was successful\n",logicalName);
 		LoadSaveStateInfo();
 		lagframecounter=0;
 		UpdateRecentRoms(logicalName);
@@ -1293,7 +1291,7 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 
 		return TRUE;		
 	}
-	INFO("Loading %s FAILED.\n",filename);
+	INFO("Loading %s FAILED.\n",logicalName);
 	return FALSE;
 }
 
