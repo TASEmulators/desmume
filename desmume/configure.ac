@@ -147,7 +147,8 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     echo "WARNING: pkg-config is not available therefore gtk, gtk-glade UIs and lua scripting are not available either."
 ])
 
-AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}" = "yes"])
+dnl -- force lua disabled
+AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
 
 dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
 AM_CONDITIONAL([HAVE_GLIB], [test "${FOUND_GLIB}" = "yes"])
