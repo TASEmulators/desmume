@@ -254,6 +254,7 @@
     <ClCompile Include="ogl.cpp" />
     <ClCompile Include="OpenArchive.cpp" />
     <ClCompile Include="palView.cpp" />
+    <ClCompile Include="pathsettings.cpp" />
     <ClCompile Include="ramwatch.cpp" />
     <ClCompile Include="ram_search.cpp" />
     <ClCompile Include="replay.cpp" />
@@ -374,6 +375,7 @@
     <ClInclude Include="oamView.h" />
     <ClInclude Include="OpenArchive.h" />
     <ClInclude Include="palView.h" />
+    <ClInclude Include="pathsettings.h" />
     <ClInclude Include="ramwatch.h" />
     <ClInclude Include="ram_search.h" />
     <ClInclude Include="replay.h" />
