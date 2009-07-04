@@ -25,6 +25,7 @@
 
 #include "../MMU.h"
 
+#define SHORTNAME "ioregs"
 #define TOOL_NAME "IO regs view"
 
 BOOL CPUS [2] = {TRUE, TRUE};
@@ -472,6 +473,7 @@ static void open(int ID)
 
 dTool_t dTool_ioregsView =
 {
+	SHORTNAME,
 	TOOL_NAME,
 	&open,
 	&update,
