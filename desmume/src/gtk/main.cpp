@@ -226,7 +226,7 @@ static const char *ui_description =
 "      </menu>"
 "    </menu>"
 "    <menu action='ToolsMenu'>"
-"      <menuitem action='ioregtool'/>"
+"      <menuitem action='ioregs'/>"
 "    </menu>"
 "    <menu action='HelpMenu'>"
 "      <menuitem action='about'/>"
@@ -1682,8 +1682,7 @@ static void desmume_gtk_menu_tools (GtkActionGroup *ag)
     gint i;
     for(i = 0; i < dTools_list_size; i++) {
         GtkAction *act;
-        //FIXME: remove hardcoded 'ioregtool' from here and in ui_description
-        act = gtk_action_new("ioregtool", dTools_list[i]->name, NULL, NULL);
+        act = gtk_action_new(dTools_list[i]->shortname, dTools_list[i]->name, NULL, NULL);
         g_signal_connect(G_OBJECT(act), "activate", G_CALLBACK(Start_dTool), GINT_TO_POINTER(i));
         gtk_action_group_add_action(ag, GTK_ACTION(act));
     }
