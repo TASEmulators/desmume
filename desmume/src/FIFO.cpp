@@ -159,8 +159,10 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	gxFIFO.cmd[gxFIFO.tail] = cmd;
 	gxFIFO.param[gxFIFO.tail] = param;
 	gxFIFO.tail++;
-	if (gxFIFO.tail > 256)
-		gxFIFO.tail = 256;
+
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	gxstat |= 0x08000000;		// set busy flag
+#endif
 
 	gxstat |= (gxFIFO.tail << 16);
 
@@ -189,6 +191,7 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 		return FALSE;
 	}
+
 	*cmd = gxFIFO.cmd[0];
 	*param = gxFIFO.param[0];
 	gxFIFO.tail--;
@@ -198,10 +201,11 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 		gxFIFO.param[i] = gxFIFO.param[i+1];
 	}
 
-	gxstat |= (gxFIFO.tail << 16);
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+	gxstat |= 0x08000000;		// set busy flag
+#endif
 
-	if (gxFIFO.tail == 0)
-		gxstat |= 0x04000000;
+	gxstat |= (gxFIFO.tail << 16);
 
 	if (gxFIFO.tail < 128)
 		gxstat |= 0x02000000;

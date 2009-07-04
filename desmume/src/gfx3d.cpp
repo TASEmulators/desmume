@@ -146,6 +146,11 @@ static float float10Table[1024];
 static float float10RelTable[1024];
 static float normalTable[1024];
 
+#ifndef NOSSE2
+float ALIGN(16) _fix2float_divizor_mask[4] = { 4096.f, 4096.f, 4096.f, 4096.f };
+float ALIGN(16) _fix10_2float_divizor_mask[4] = { 512.f, 512.f, 512.f, 512.f };
+#endif
+
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
 
@@ -429,13 +434,21 @@ void gfx3d_glLoadIdentity()
 
 BOOL gfx3d_glLoadMatrix4x4(s32 v)
 {
+#ifdef NOSSE2
 	mtxCurrent[mode][ML4x4ind] = fix2float(v);
+#else
+	mtxCurrent[mode][ML4x4ind] = v;
+#endif
 
 	++ML4x4ind;
 	if(ML4x4ind<16) return FALSE;
 	ML4x4ind = 0;
 
 	GFX_DELAY(19);
+
+#ifndef NOSSE2
+	_sse2_fix2float_16(mtxCurrent[mode], _fix2float_divizor_mask);
+#endif
 
 	if (mode == 2)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
@@ -444,16 +457,24 @@ BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 BOOL gfx3d_glLoadMatrix4x3(s32 v)
 {
+#ifdef NOSSE2
 	mtxCurrent[mode][ML4x3ind] = fix2float(v);
+#else
+	mtxCurrent[mode][ML4x3ind] = v;
+#endif
 
 	ML4x3ind++;
 	if((ML4x3ind & 0x03) == 3) ML4x3ind++;
 	if(ML4x3ind<16) return FALSE;
 	ML4x3ind = 0;
 
+#ifndef NOSSE2
+	_sse2_fix2float_16(mtxCurrent[mode], _fix2float_divizor_mask);
+#endif
+
 	//fill in the unusued matrix values
-	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0;
-	mtxCurrent[mode][15] = 1;
+	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0.f;
+	mtxCurrent[mode][15] = 1.f;
 
 	GFX_DELAY(30);
 
@@ -604,7 +625,12 @@ BOOL gfx3d_glScale(s32 v)
 
 BOOL gfx3d_glMultMatrix3x3(s32 v)
 {
+#ifdef NOSSE2
 	mtxTemporal[MM3x3ind] = fix2float(v);
+#else
+	mtxTemporal[MM3x3ind] = v;
+#endif
+
 
 	MM3x3ind++;
 	if((MM3x3ind & 0x03) == 3) MM3x3ind++;
@@ -612,6 +638,10 @@ BOOL gfx3d_glMultMatrix3x3(s32 v)
 	MM3x3ind = 0;
 
 	GFX_DELAY(28);
+
+#ifndef NOSSE2
+	_sse2_fix2float_12(mtxTemporal, _fix2float_divizor_mask);
+#endif
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
@@ -633,7 +663,11 @@ BOOL gfx3d_glMultMatrix3x3(s32 v)
 
 BOOL gfx3d_glMultMatrix4x3(s32 v)
 {
+#ifdef NOSSE2
 	mtxTemporal[MM4x3ind] = fix2float(v);
+#else
+	mtxTemporal[MM4x3ind] = v;
+#endif
 
 	MM4x3ind++;
 	if((MM4x3ind & 0x03) == 3) MM4x3ind++;
@@ -642,9 +676,13 @@ BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 	GFX_DELAY(31);
 
+#ifndef NOSSE2
+	_sse2_fix2float_16(mtxTemporal, _fix2float_divizor_mask);
+#endif
+
 	//fill in the unusued matrix values
-	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
-	mtxTemporal[15] = 1;
+	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0.f;
+	mtxTemporal[15] = 1.f;
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
@@ -661,13 +699,21 @@ BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 BOOL gfx3d_glMultMatrix4x4(s32 v)
 {
+#ifdef NOSSE2
 	mtxTemporal[MM4x4ind] = fix2float(v);
+#else
+	mtxTemporal[MM4x4ind] = v;
+#endif
 
 	MM4x4ind++;
 	if(MM4x4ind<16) return FALSE;
 	MM4x4ind = 0;
 
 	GFX_DELAY(35);
+
+#ifndef NOSSE2
+	_sse2_fix2float_16(mtxTemporal, _fix2float_divizor_mask);
+#endif
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
@@ -747,11 +793,15 @@ static void SetVertex()
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
 	
+#ifdef NOSSE2
 	//apply modelview matrix
 	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
 
 	//apply projection matrix
 	MatrixMultVec4x4 (mtxCurrent[0], coordTransformed);
+#else
+	_sse2_MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
+#endif
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
@@ -924,13 +974,13 @@ void gfx3d_glSwapScreen(unsigned int screen)
 int gfx3d_GetNumPolys()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return 0;
+	return (polylists[listTwiddle].count);
 }
 
 int gfx3d_GetNumVertex()
 {
 	//so is this in the currently-displayed or currently-built list?
-	return 0;
+	return (vertlists[listTwiddle].count);
 }
 
 
@@ -1354,12 +1404,12 @@ unsigned short gfx3d_glGetVecRes(unsigned int index)
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 
-//#define _3D_LOG
+//#define _3D_LOG_EXEC
 void gfx3d_execute(u8 cmd, u32 param)
 {
-#ifdef _3D_LOG
+#ifdef _3D_LOG_EXEC
 	u32 gxstat2 = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	INFO("- execute GX FIFO cmd 0x%02X, gxstat 0x%08X (%03i): time %i/%i\n", cmd, gxstat2, gxFIFO.tail, nds.cycles, MMU.gfx3dCycles);
+	INFO("*** gxFIFO: exec 0x%02X, tail %03i, gxstat 0x%08X\n", cmd, gxFIFO.tail, gxstat2);
 #endif
 	switch (cmd)
 	{
@@ -1490,6 +1540,18 @@ void gfx3d_execute3D()
 	if (GFX_FIFOrecv(&cmd, &param))
 	{
 		gfx3d_execute(cmd, param);
+#if 0
+		for ( ;;)
+		{
+			if ( (cmd == 0x11) || (cmd==0x15) || (cmd==41) )
+			{
+				if (!GFX_FIFOrecv(&cmd, &param)) return;
+				gfx3d_execute(cmd, param);
+				continue;
+			}
+			break;
+		}
+#endif
 #if 0
 		if (bWaitForPolys)
 		{
@@ -1633,6 +1695,11 @@ void gfx3d_VBlankSignal()
 {
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	isVBlank = true;
+		if (isSwapBuffers)
+	{
+		isSwapBuffers = false;
+		GFX_DELAY(392);
+	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
 	//so, if we have a redraw pending, now is a safe time to do it
@@ -1668,12 +1735,6 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 				gpu3D->NDS_3D_Render();
 		}
 	}
-
-	if (isSwapBuffers)
-	{
-		isSwapBuffers = false;
-		GFX_DELAY(392);
-	}
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -1695,6 +1756,8 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 }
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
+//#define _3D_LOG
+
 static void NOPARAMS()
 {
 	for (;;)
@@ -1834,6 +1897,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 			clCmd >>= 8;
 			return;
 	}
+	NOPARAMS();
 }
 
 void gfx3d_sendCommand(u32 cmd, u32 param)

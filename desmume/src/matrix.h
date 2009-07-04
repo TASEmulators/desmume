@@ -53,6 +53,9 @@ void	MatrixInit				(float *matrix);
 #define MatrixMultiply _sse2_MatrixMultiply
 #define MatrixTranslate _sse2_MatrixTranslate
 #define MatrixScale _sse2_MatrixScale
+void	MATRIXFASTCALL _sse2_fix2float_16		(float* matrix, float* divizor_mask);
+void	MATRIXFASTCALL _sse2_fix2float_12		(float* matrix, float* divizor_mask);
+void	MATRIXFASTCALL _sse2_MatrixMultVec4x4_M2 (const float * matrix, float * vecPtr); // mode 2
 #else
 #define SSE2_FUNC(X) X
 #endif

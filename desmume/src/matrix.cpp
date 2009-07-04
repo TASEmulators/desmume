@@ -127,16 +127,11 @@ void MatrixTranspose(float *matrix)
 #undef swap
 }
 
-void MATRIXFASTCALL MatrixIdentity	(float *matrix) //============== TODO
+void MATRIXFASTCALL MatrixIdentity	(float *matrix)
 {
-	//memset (matrix, 0, sizeof(float)*16);
-	//this is fastest for SSE2 i think.
-	//study code generation and split into sse2 specific module later
-	for(int i=0;i<16;i++)
-		matrix[i] = 0.0f;
-	//matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0.0f;
-	//matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0.0f;
-	//matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0.0f;
+	matrix[1] = matrix[2] = matrix[3] = matrix[4] = 0.0f;
+	matrix[6] = matrix[7] = matrix[8] = matrix[9] = 0.0f;
+	matrix[11] = matrix[12] = matrix[13] = matrix[14] = 0.0f;
 	matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1.f;
 }
 
@@ -155,7 +150,23 @@ void MATRIXFASTCALL MatrixSet (float *matrix, int x, int y, float value)	// TODO
 
 void MATRIXFASTCALL MatrixCopy (float* matrixDST, const float* matrixSRC)
 {
-	memcpy ((void*)matrixDST, matrixSRC, sizeof(float)*16);
+	matrixDST[0] = matrixSRC[0];
+	matrixDST[1] = matrixSRC[1];
+	matrixDST[2] = matrixSRC[2];
+	matrixDST[3] = matrixSRC[3];
+	matrixDST[4] = matrixSRC[4];
+	matrixDST[5] = matrixSRC[5];
+	matrixDST[6] = matrixSRC[6];
+	matrixDST[7] = matrixSRC[7];
+	matrixDST[8] = matrixSRC[8];
+	matrixDST[9] = matrixSRC[9];
+	matrixDST[10] = matrixSRC[10];
+	matrixDST[11] = matrixSRC[11];
+	matrixDST[12] = matrixSRC[12];
+	matrixDST[13] = matrixSRC[13];
+	matrixDST[14] = matrixSRC[14];
+	matrixDST[15] = matrixSRC[15];
+
 }
 
 int MATRIXFASTCALL MatrixCompare (const float* matrixDST, const float* matrixSRC)
