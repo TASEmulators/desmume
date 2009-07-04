@@ -1891,7 +1891,6 @@ void NDS_exec(s32 nb)
 					T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) | 1);
 					NDS_ARM9VBlankInt();
 					NDS_ARM7VBlankInt();
-					cheatsProcess();
 
 					nds.runCycleCollector[nds.idleFrameCounter] = 1120380-nds.idleCycles;
 					nds.idleFrameCounter++;
@@ -2495,6 +2494,7 @@ void NDS_exec(s32 nb)
 	}
 
 	currFrameCounter++;
+	cheatsProcess();
 }
 
 static std::string MakeInputDisplayString(u16 pad, const std::string* Buttons, int count) {

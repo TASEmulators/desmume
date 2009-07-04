@@ -2743,9 +2743,9 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 		{
 			// ============================================= 3D
 			case 0x04000604:
-				return (gfx3d_GetNumPolys()&2047);
+				return (gfx3d_GetNumPolys());
 			case 0x04000606:
-				return (gfx3d_GetNumVertex()&8191);
+				return (gfx3d_GetNumVertex());
 			case 0x04000630:
 			case 0x04000632:
 			case 0x04000634:
@@ -2847,7 +2847,7 @@ u32 FASTCALL _MMU_ARM9_read32(u32 adr)
 
 			case 0x4000604:
 			{
-				return (gfx3d_GetNumPolys()&2047) & ((gfx3d_GetNumVertex()&8191) << 16);
+				return (gfx3d_GetNumPolys()) & ((gfx3d_GetNumVertex()) << 16);
 				//LOG ("read32 - RAM_COUNT -> 0x%X", ((u32 *)(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF])>>2]);
 			}
 
