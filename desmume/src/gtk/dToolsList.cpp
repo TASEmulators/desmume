@@ -27,5 +27,5 @@ dTool_t *dTools_list[] =
 	&dTool_ioregsView
 };
 
-int dTools_list_size = 1;
+int dTools_list_size = ARRAY_SIZE(dTools_list);
 
