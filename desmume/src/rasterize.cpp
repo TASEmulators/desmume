@@ -191,6 +191,7 @@ struct PolyAttr
 	u8 polyid;
 	u8 alpha;
 	bool backfacing;
+	bool translucent;
 
 	bool isVisible(bool backfacing) 
 	{
@@ -236,7 +237,7 @@ struct Fragment
 
 	u8 stencil;
 
-	u8 pad;
+	u8 isTranslucentPoly;
 };
 
 static VERT* verts[MAX_CLIPPED_VERTS];
@@ -440,26 +441,22 @@ struct Shader
 
 static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & src)
 {
+	u8 dstAlpha = dst.a;
 	if(gfx3d.enableAlphaBlending)
 	{
 		if(src.a == 0)
 		{
-			dst.a = max(src.a,dst.a);	
-		}
-		else if(src.a == 31 || dst.a == 0)
-		{
 			dst = src;
-			dst.a = max(src.a,dst.a);
 		}
 		else
 		{
-			u8 alpha = src.a+1;
-			u8 invAlpha = 32 - alpha;
-			dst.r = (alpha*src.r + invAlpha*dst.r)>>5;
-			dst.g = (alpha*src.g + invAlpha*dst.g)>>5;
-			dst.b = (alpha*src.b + invAlpha*dst.b)>>5;
-			dst.a = max(src.a,dst.a);
+			//TODO - check decal table for src.a = 0 case, maybe it is wrong for the shader also
+			dst.r = decal_table[src.a][src.r][dst.r];
+			dst.g = decal_table[src.a][src.g][dst.g];
+			dst.b = decal_table[src.a][src.b][dst.b];
 		}
+
+		dst.a = max(src.a,dst.a);
 	}
 	else
 	{
@@ -576,6 +573,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		if(isOpaquePixel)
 		{
 			destFragment.polyid.opaque = polyAttr.polyid;
+			destFragment.isTranslucentPoly = polyAttr.translucent?1:0;
 		}
 		else
 		{
@@ -979,6 +977,55 @@ static void SoftRastVramReconfigureSignal() {
 	TexCache_Invalidate();
 }
 
+static void SoftRastFramebufferProcess()
+{
+	//this is not very accurate, but it works roughly
+	if(gfx3d.enableEdgeMarking)
+	{ 
+		u8 clearPolyid = ((gfx3d.clearColor>>24)&0x3F)>>3;
+
+		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
+		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
+
+		//now, I am not entirely sure about this. I can't find any documentation about the high bit here but
+		//it doesnt seem plausible to me that its all or nothing. I think that only polyid groups with a color
+		//with the high bit set get edge marked.
+		u16 edgeMarkColors[8];
+		bool edgeMarkEnables[8];
+		for(int i=0;i<8;i++)
+		{
+			edgeMarkColors[i] = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x330+i*2);
+			edgeMarkEnables[i] = (edgeMarkColors[i]&0x8000)!=0;
+		}
+
+		for(int i=0,y=0;y<192;y++)
+		{
+			for(int x=0;x<256;x++,i++)
+			{
+				Fragment &destFragment = screen[i];
+				FragmentColor &destFragmentColor = screenColor[i];
+				u8 self = destFragment.polyid.opaque>>3;
+				if(!edgeMarkEnables[self]) continue;
+				if(destFragment.isTranslucentPoly) continue;
+
+				u8 left = x==0?clearPolyid:(screen[i-1].polyid.opaque>>3);
+				u8 right = x==255?clearPolyid:(screen[i+1].polyid.opaque>>3);
+				u8 top = y==0?clearPolyid:(screen[i-256].polyid.opaque>>3);
+				u8 bottom = y==191?clearPolyid:(screen[i+256].polyid.opaque>>3);
+
+				if(left != self || right != self || top != self || bottom != self)
+				{
+					destFragmentColor.color = edgeMarkColors[self];
+				}
+				
+
+			}
+		}
+
+	}
+
+}
+
 static void SoftRastConvertFramebuffer()
 {
 	FragmentColor* src = screenColor;
@@ -1175,7 +1222,7 @@ static void SoftRastRender()
 {
 	Fragment clearFragment;
 	FragmentColor clearFragmentColor;
-	clearFragment.pad = 0;
+	clearFragment.isTranslucentPoly = 0;
 	clearFragmentColor.r = gfx3d.clearColor&0x1F;
 	clearFragmentColor.g = (gfx3d.clearColor>>5)&0x1F;
 	clearFragmentColor.b = (gfx3d.clearColor>>10)&0x1F;
@@ -1314,6 +1361,7 @@ static void SoftRastRender()
 		if(i == 0 || lastPolyAttr != poly->polyAttr)
 		{
 			polyAttr.setup(poly->polyAttr);
+			polyAttr.translucent = poly->isTranslucent();
 			lastPolyAttr = poly->polyAttr;
 		}
 
@@ -1359,6 +1407,8 @@ static void SoftRastRender()
 
 		shape_engine(type,!polyAttr.backfacing);
 	}
+
+	SoftRastFramebufferProcess();
 
 	//	printf("rendered %d of %d polys after backface culling\n",gfx3d.polylist->count-culled,gfx3d.polylist->count);
 	SoftRastConvertFramebuffer();
