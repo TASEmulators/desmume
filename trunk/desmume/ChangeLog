@@ -1,4 +1,28 @@
-0.9.2 -> 0.9.3
+0.9.4 -> ??? (r2437-r???)
+
+Highlights:
+  * win32: lua engine, path configuration, 7z dearchiving support
+  
+General/Core:
+ bug: fix cflash directory support for non-windows
+ bug: fix freeze in cart irq
+ bug: correctly emulate dma to/from tcm
+ enh: ideas-style debugging prints
+
+Graphics:
+ bug: fixing of obj blending and bmp obj rendering
+ bug: swrast: add clear image emulation
+ bug: swrast: add edge marking
+ 
+Windows:
+ bug: improve map view tool
+
+0.9.2 -> 0.9.4 (r1844->r2352->r2437)
+
+0.9.3 was skipped due to emu news sites sneaking it out of our staging area and 
+releasing it prematurely while it still had bugs. I was going to curse them 
+individually, but then I decided that they would just like the publicity.
+
 Highlights:
  * New save autodetection and save file format
  * Full rerecording support
@@ -10,10 +34,12 @@ General/Core:
  bug: fix in ipc sync which broke devkitpro touch
  bug: screenshots now exclude hud and rotation
  bug: rewritten vram mapping (fixes corrupted or missing BG)
+ enh: add universal commandline system (same commandline options on every port)
  enh: cheats: added Action Replay code parser
  enh: more reliable and useful frameskipping
  enh: SPU: speedup: add adpcm caching
  enh: SPU: speedup: interpolation is now optional
+ enh: print svn build number so we can identify people's svn builds from screenshots
 
 Graphics:
  bug: add polygon y-sorting (fixes 3d guis)
@@ -21,9 +47,13 @@ Graphics:
  bug: display capture fixes
  bug: fix a number of OBJ modes
  bug: fixes to affine BG modes
+ bug: better emulate some translucent OBJ
  bug: more correct handling of color effect windows and backdrop colors
  bug: fix matrix stack overrun which crashed emulator
- enh: add alternate flush mode, fixes some entirely broken 3d games  
+ bug: swrast: add clear depth image emulation and other fixes to depth buffering
+ bug: swrast: fix some toon and highlight cases
+ bug: fix bug in matrix stack, fixes some broken models
+ enh: add alternate flush mode HACK 3d config toggle, fixes some entirely broken 3d games  
  
 Windows:
  bug: more robust cheats engine and dialog
@@ -32,6 +62,9 @@ Windows:
  enh: added tools: spu viewer, ram watch, ram search
  enh: change build configuration system
  enh: speedup: add gpu core disabling to hide useless screens
+ enh: add background pause feature (for when emulator loses focus)
+ enh: add missing autohold for L and R
+ enh: add chinese translation
 
 Gtk frontend:
  enh: switch all of menu/toolbar system to GtkAction + GtkUIManager
@@ -42,6 +75,7 @@ Gtk frontend:
 Cli frontend:
  enh: hooked the frameskip (szigor)
  enh: misc usability improvements: auto pause switch for pausing when focus is lost and exit on escape pressing (szigor)
+ enh: hook the fake noise mic; use m to toggle
 
 0.9.1 -> 0.9.2
 General/Core:
