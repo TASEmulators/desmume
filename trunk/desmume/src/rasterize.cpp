@@ -450,10 +450,11 @@ static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & sr
 		}
 		else
 		{
-			//TODO - check decal table for src.a = 0 case, maybe it is wrong for the shader also
-			dst.r = decal_table[src.a][src.r][dst.r];
-			dst.g = decal_table[src.a][src.g][dst.g];
-			dst.b = decal_table[src.a][src.b][dst.b];
+			u8 alpha = src.a+1;
+			u8 invAlpha = 32 - alpha;
+			dst.r = (alpha*src.r + invAlpha*dst.r)>>5;
+			dst.g = (alpha*src.g + invAlpha*dst.g)>>5;
+			dst.b = (alpha*src.b + invAlpha*dst.b)>>5;
 		}
 
 		dst.a = max(src.a,dst.a);
@@ -574,6 +575,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		{
 			destFragment.polyid.opaque = polyAttr.polyid;
 			destFragment.isTranslucentPoly = polyAttr.translucent?1:0;
+			destFragmentColor = shaderOutput;
 		}
 		else
 		{
@@ -595,10 +597,10 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 			//but, it looks bad in that game. this is actually correct
 			//if this isnt correct, then complex shape cart shadows in mario kart don't work right
 			destFragment.polyid.translucent = polyAttr.polyid;
-		}
 
-		//alpha blending and write color
-		alphaBlend(destFragmentColor, shaderOutput);
+			//alpha blending and write color
+			alphaBlend(destFragmentColor, shaderOutput);
+		}
 
 		//depth writing
 		if(isOpaquePixel || polyAttr.translucentDepthWrite)
