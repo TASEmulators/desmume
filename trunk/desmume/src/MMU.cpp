@@ -468,7 +468,7 @@ struct VramConfiguration {
 	std::string describe() {
 		std::stringstream ret;
 		for(int i=0;i<VRAM_BANKS;i++) {
-			ret << (char)(i+'A') << ": " << banks[0].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
+			ret << (char)(i+'A') << ": " << banks[i].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
 		}
 		return ret.str();
 	}

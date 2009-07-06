@@ -1385,12 +1385,6 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 					{
 						color = T1ReadWord(pal, ((currLine&0xF) + tilePalette) << 1);
 						gpu->__setFinalColorBck<MOSAIC>(color,x,currLine&0xF);
-
-						extern int currFrameCounter;
-						if(currFrameCounter == 0x20 && nds.VCount == 0x48) {
-							int zzz=9;
-						}
-
 						x++; xoff++;
 					}
 
@@ -2163,15 +2157,14 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				}
 				else
 				{
-					//NOT TESTED:
+					//2d mapping:
 
-					if (dispCnt->OBJ_BMP_2D_dim) // 256*256
-					{
-						//verified by heroes of mana FMV intro
+					if (dispCnt->OBJ_BMP_2D_dim)
+						//256*256, verified by heroes of mana FMV intro
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-					}
-					else // 128 * 512
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 8)) << 1));
+					else 
+						//128*512, verified by harry potter and the order of the phoenix conversation portraits
+						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1));
 				}
 				
 				if (!src) { 
