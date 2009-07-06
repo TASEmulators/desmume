@@ -622,11 +622,20 @@ enum BGType {
 	BGType_AffineExt=4, BGType_AffineExt_256x16=5, BGType_AffineExt_256x1=6, BGType_AffineExt_Direct=7
 };
 
+extern const BGType GPU_mode2type[8][4];
+
 struct GPU
 {
+	GPU()
+		: debug(false)
+	{}
+
 	// some structs are becoming redundant
 	// some functions too (no need to recopy some vars as it is done by MMU)
 	REG_DISPx * dispx_st;
+
+	//this indicates whether this gpu is handling debug tools
+	bool debug;
 
 	_BGxCNT & bgcnt(int num) { return (dispx_st)->dispx_BGxCNT[num].bits; }
 	_DISPCNT & dispCnt() { return dispx_st->dispx_DISPCNT.bits; }

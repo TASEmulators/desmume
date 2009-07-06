@@ -22,24 +22,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-// CONTENTS
-//	INITIALIZATION
-//	ENABLING / DISABLING LAYERS
-//	PARAMETERS OF BACKGROUNDS
-//	PARAMETERS OF ROTOSCALE
-//	PARAMETERS OF EFFECTS
-//	PARAMETERS OF WINDOWS
-//	ROUTINES FOR INSIDE / OUTSIDE WINDOW CHECKS
-//	PIXEL RENDERING
-//	BACKGROUND RENDERING -TEXT-
-//	BACKGROUND RENDERING -ROTOSCALE-
-//	BACKGROUND RENDERING -HELPER FUNCTIONS-
-//	SPRITE RENDERING -HELPER FUNCTIONS-
-//	SPRITE RENDERING
-//	SCREEN FUNCTIONS
-//	GRAPHICS CORE
-//	GPU_ligne
-
 #include <algorithm>
 #include <string.h>
 #include <stdlib.h>
@@ -89,7 +71,7 @@ const size sprSizeTab[4][4] =
 
 
 
-static const BGType mode2type[8][4] = 
+const BGType GPU_mode2type[8][4] = 
 {
       {BGType_Text, BGType_Text, BGType_Text, BGType_Text},
       {BGType_Text, BGType_Text, BGType_Text, BGType_Affine},
@@ -860,7 +842,7 @@ void GPU_setBGProp(GPU * gpu, u16 num, u16 p)
 			break;
 	}
 
-	BGType mode = mode2type[dispCnt->BG_Mode][num];
+	BGType mode = GPU_mode2type[dispCnt->BG_Mode][num];
 
 	//clarify affine ext modes 
 	if(mode == BGType_AffineExt)
@@ -1608,16 +1590,21 @@ template<bool MOSAIC> void lineRot(GPU * gpu)
 	} else {
 		parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
 	}
-     rotBG2<MOSAIC>(gpu, 
-              parms->BGxX,
-              parms->BGxY,
-              parms->BGxPA,
-              parms->BGxPB,
-              parms->BGxPC,
-              parms->BGxPD,
-              256);
-	 parms->BGxX += parms->BGxPB;
-	 parms->BGxY += parms->BGxPD;
+	if(gpu->debug)
+     rotBG2<MOSAIC>(gpu, 0, (s16)gpu->currLine*256, 256,0, -1,-1, 256);
+	else
+	{
+		 rotBG2<MOSAIC>(gpu, 
+				  parms->BGxX,
+				  parms->BGxY,
+				  parms->BGxPA,
+				  parms->BGxPB,
+				  parms->BGxPC,
+				  parms->BGxPD,
+				  256);
+		 parms->BGxX += parms->BGxPB;
+		 parms->BGxY += parms->BGxPD;
+	}
 }
 
 template<bool MOSAIC> void lineExtRot(GPU * gpu)
@@ -1628,7 +1615,12 @@ template<bool MOSAIC> void lineExtRot(GPU * gpu)
 	} else {
 		parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
 	}
-     extRotBG2<MOSAIC>(gpu, 
+
+	if(gpu->debug)
+     extRotBG2<MOSAIC>(gpu, 0, (s16)gpu->currLine*256, 256,0, -1,-1, 256);
+	else
+	{
+		extRotBG2<MOSAIC>(gpu,
               parms->BGxX,
               parms->BGxY,
               parms->BGxPA,
@@ -1636,41 +1628,8 @@ template<bool MOSAIC> void lineExtRot(GPU * gpu)
               parms->BGxPC,
               parms->BGxPD,
               256);
-	 parms->BGxX += parms->BGxPB;
-	 parms->BGxY += parms->BGxPD;
-}
-
-namespace GPU_EXT {
-	void textBG(GPU * gpu, u8 num, u8 * DST)
-	{
-		gpu->currBgNum = num;
-		for(u32 i = 0; i < gpu->BGSize[num][1]; ++i)
-		{
-			gpu->currDst = DST + i*gpu->BGSize[num][0]*2;
-			gpu->currLine = i;
-			renderline_textBG<false>(gpu, 0, i, gpu->BGSize[num][0]);
-		}
-	}
-
-	void rotBG(GPU * gpu, u8 num, u8 * DST)
-	{
-		gpu->currBgNum = num;
-		 for(u32 i = 0; i < gpu->BGSize[num][1]; ++i)
-		 {
-				gpu->currDst = DST + i*gpu->BGSize[num][0]*2;
-				gpu->currLine = i;
-			  rotBG2<false>(gpu, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
-		 }
-	}
-
-	void extRotBG(GPU * gpu, u8 num, u8 * DST)
-	{
-		 for(u32 i = 0; i < gpu->BGSize[num][1]; ++i)
-  		 {
-				gpu->currDst = DST + i*gpu->BGSize[num][0]*2;
-				gpu->currLine = i;
-				extRotBG2<false>(gpu, 0, 0, 256, 0, 0, 256, gpu->BGSize[num][0]);
-		 }
+		parms->BGxX += parms->BGxPB;
+		parms->BGxY += parms->BGxPD;
 	}
 }
 
@@ -3051,7 +3010,7 @@ void GPU::refreshAffineStartRegs(const int num, const int xy)
 
 template<bool MOSAIC> void GPU::modeRender(int layer)
 {
-	switch(mode2type[dispCnt().BG_Mode][layer])
+	switch(GPU_mode2type[dispCnt().BG_Mode][layer])
 	{
 		case BGType_Text: lineText<MOSAIC>(this); break;
 		case BGType_Affine: lineRot<MOSAIC>(this); break;

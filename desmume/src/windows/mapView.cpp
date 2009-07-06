@@ -30,7 +30,7 @@
 
 using namespace GPU_EXT;
 
-typedef struct
+struct mapview_struct
 {
    u32	autoup_secs;
    bool autoup;
@@ -38,9 +38,35 @@ typedef struct
    u16 map;
    u16 lcd;
    u16 bitmap[1024*1024];
-} mapview_struct;
+
+	void render()
+	{
+		//we're going to make a copy of the gpu so that we don't wreck affine scroll params
+		//hopefully we won't mess up anything else
+		GPU *realGpu;
+		if(lcd) realGpu = SubScreen.gpu;
+		else realGpu = MainScreen.gpu;
+		GPU &gpu = *realGpu;
+
+		//forgive the gyrations, some of this junk in here is to remind us of gyrations we might have to go
+		//through to avoid breaking the gpu struct
+
+		gpu.currBgNum = map;
+		gpu.debug = true;
+
+		for(u32 i = 0; i < gpu.BGSize[map][1]; ++i)
+		{
+			gpu.currDst = (u8 *)bitmap + i*gpu.BGSize[map][0]*2;
+			gpu.currLine = i;
+			gpu.modeRender<false>(map);
+		}
+		gpu.debug = false;
+
+	}
+};
 
 mapview_struct	*MapView = NULL;
+
 
 LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
@@ -135,94 +161,12 @@ LRESULT MapView_OnPaint(mapview_struct * win, HWND hwnd, WPARAM wParam, LPARAM l
         sprintf(text, "%d x %d", parms->BGxPC, parms->BGxPD);
         SetWindowText(GetDlgItem(hwnd, IDC_SCROLL), text);
         
-	//	memset(win->bitmap, 0, sizeof(win->bitmap));
 		for(int i = 0; i < (1024*1024); i++)
 			win->bitmap[i] = 0x7C1F;
-        if(win->lcd)
-		{
-			 switch(dispcnt & 7)
-			 {
-				case 0:
-					textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 1:
-					if (win->map < 3)
-						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						rotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 2:
-					if (win->map < 2)
-						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						rotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 3:
-					if (win->map < 3)
-						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						extRotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 4:
-					if (win->map < 2)
-						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					else if (win->map < 3)
-						rotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						extRotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 5:
-					if (win->map < 2)
-						textBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						extRotBG(SubScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-			 }
-		}
-        else
-		{
-			 switch(dispcnt & 7)
-			 {
-				case 0:
-					textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 1:
-					if (win->map < 3)
-						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						rotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 2:
-					if (win->map < 2)
-						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						rotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 3:
-					if (win->map < 3)
-						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						extRotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 4:
-					if (win->map < 2)
-						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					else if (win->map < 3)
-						rotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						extRotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-				case 5:
-					if (win->map < 2)
-						textBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					else
-						extRotBG(MainScreen.gpu, win->map, (u8 *)win->bitmap);
-					break;
-			 }
-		}
-        
+
+		win->render();
+
         SetDIBitsToDevice(hdc, 200, 4, lg, ht, 0, 0, 0, ht, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
-        //SetDIBitsToDevice(hdc, 200, 4, 256, 192, 0, 0, 0, 192, win->bitmap, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
         
         EndPaint(hwnd, &ps);
 
