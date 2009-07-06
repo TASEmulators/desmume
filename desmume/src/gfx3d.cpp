@@ -2350,12 +2350,6 @@ static void gfx3d_Control_cache()
 	gfx3d.enableAntialiasing = BIT4(v);
 	gfx3d.enableEdgeMarking = BIT5(v);
 	gfx3d.enableClearImage = BIT14(v);
-
-	//other junk
-	if (v&(1<<14))
-	{
-		LOG("Enabled BITMAP background mode\n");
-	}
 }
 
 void gfx3d_Control(u32 v)

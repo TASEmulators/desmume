@@ -1255,11 +1255,11 @@ static void SoftRastRender()
 		for(int y=0;y<192;y++)
 			for(int x=0;x<256;x++) {
 				
-				//this hasnt been tested
-				//TODO - dont do this if we are mapped to blank memory (such as in sonic chronicles)
+				//this is tested by harry potter and the order of the phoenix.
+				//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
 				//(or use a special zero fill in the bulk clearing above)
 				u16 col = *clearImage;
-				dstColor->color = RGB15TO32(255*(col>>15),col);
+				dstColor->color = RGB15TO5555(col,31*(col>>15));
 				
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
