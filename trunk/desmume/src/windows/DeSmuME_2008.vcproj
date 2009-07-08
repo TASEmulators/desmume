@@ -673,6 +673,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\addons\guitarGrip.cpp"
+						>
+					</File>
+					<File
 						RelativePath="..\addons\none.cpp"
 						>
 					</File>
