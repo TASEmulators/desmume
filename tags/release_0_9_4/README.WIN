@@ -1,0 +1,643 @@
+DeSmuME Manual for the Windows port
+Contents
+    * 1 Quick Getting Started Guide
+          o 1.1 Menu Layout
+                + 1.1.1 File Menu
+                      # 1.1.1.1 File | Open Rom
+                      # 1.1.1.2 File | Recent Rom
+                      # 1.1.1.3 File | Rom Info
+                      # 1.1.1.4 File | Save State As...
+                      # 1.1.1.5 File | Load State As...
+                      # 1.1.1.6 File | Save State
+                      # 1.1.1.7 File | Load State
+                      # 1.1.1.8 File | Import Backup Memory
+                      # 1.1.1.9 File | Export Backup Memory
+                      # 1.1.1.10 File | Save Screenshot As...
+                      # 1.1.1.11 File | Quick Screenshot
+                      # 1.1.1.12 File | Record AVI
+                      # 1.1.1.13 File | Stop AVI
+                      # 1.1.1.14 File | Record WAV
+                      # 1.1.1.15 File | Record Movie
+                      # 1.1.1.16 File | Play Movie
+                      # 1.1.1.17 File | Stop Movie
+                      # 1.1.1.18 File | Quit
+                + 1.1.2 Emulation Menu
+                      # 1.1.2.1 Emulation | Pause
+                      # 1.1.2.2 Emulation | Reset
+                      # 1.1.2.3 Emulation | Clear Sound
+                      # 1.1.2.4 Emulation | GBA Slot
+                      # 1.1.2.5 Emulation | Cheats
+                      # 1.1.2.6 Emulation | Cheats | List
+                      # 1.1.2.7 Emulation | Cheats | Search
+                + 1.1.3 View Menu
+                      # 1.1.3.1 View | Rotation
+                      # 1.1.3.2 View | Window size
+                      # 1.1.3.3 View | Screen Separation
+                      # 1.1.3.4 View | Force Maintain Ratio
+                      # 1.1.3.5 View | Display Frame Counter
+                      # 1.1.3.6 View | Display FPS
+                      # 1.1.3.7 View | Display Input
+                      # 1.1.3.8 View | Display Lag Counter
+                      # 1.1.3.9 View | HUD Editing Mode
+                + 1.1.4 Config Menu
+                      # 1.1.4.1 Config | Save Type
+                      # 1.1.4.2 Config | 3D Settings
+                      # 1.1.4.3 Config | Control Config
+                      # 1.1.4.4 Config | Hotkey Config
+                      # 1.1.4.5 Config | Sound Settings
+                      # 1.1.4.6 Config | WIFI Settings
+                      # 1.1.4.7 Config | Firmware Settings
+                      # 1.1.4.8 Config | Emulation Settings
+                      # 1.1.4.9 Config | Frame Skip
+                      # 1.1.4.10 Config | Language
+                      # 1.1.4.11 Config | Background Pause
+                + 1.1.5 Tools Menu
+                      # 1.1.5.1 Tools | Disassembler
+                      # 1.1.5.2 Tools | View Memory
+                      # 1.1.5.3 Tools | View Registers
+                      # 1.1.5.4 Tools | View Palette
+                      # 1.1.5.5 Tools | View Tiles
+                      # 1.1.5.6 Tools | View Maps
+                      # 1.1.5.7 Tools | View OAM
+                      # 1.1.5.8 Tools | View Matrices
+                      # 1.1.5.9 Tools | View Lights
+                      # 1.1.5.10 Tools | View Sound State
+                      # 1.1.5.11 View | RAM Watch
+                      # 1.1.5.12 View | RAM Search
+                      # 1.1.5.13 Tools | View Layers
+                + 1.1.6 Help Menu
+                      # 1.1.6.1 Help | Website
+                      # 1.1.6.2 Help | Forums
+                      # 1.1.6.3 Help | Submit a bug report
+                      # 1.1.6.4 Help | About
+
+
+= Quick Getting Started Guide =
+When you start the emulator for the first time, you probably just want to play a certain game. You can do this by going to 'File' in the menu, and selecting 'Open Rom'. This will open up an explorer window, within which you can browse to the rom (nds file) that you wish to play. Once the game has finished loading (and this should only take a few seconds at most), your game will automatically start running. But if you want, you can also compile from source. See the article [[Installing DeSmuME from source on Windows]] for details.
+
+== Menu Layout ==
+The rest of this manual will be spend on explaining all the other options in the menu.
+
+
+=== File Menu ===
+
+
+==== File | Open Rom ====
+
+This option is for loading games. A game is typically called a rom file. Just use the explorer window to browse to the file, and click on open. The game should just load and start. The desmume windows port is also able to load some compressed formats, like zip and gz. Just as long as there is a valid game (rom) file in the compressed archive ending with an .nds extension, it should load fine.
+
+==== File | Recent Rom ====
+This menu option contains a list of the roms that you have most recently loaded. You can quickly access a game that way, without having browse to the right directory with the 'Open Rom' option.
+
+==== File | Rom Info ====
+This option offers some information about the internals of the rom file, like name, code, manufacturer, and size. This should not concern the casual gamer, but may come in handy for developers.
+
+==== File | Save State As... ====
+Imagine you have gotten to a certian point in a game, and you need to do something else. The emulator let's you save the current state of the game, so that you can continue the game later at precisely the same point somewhere in the future.
+
+Please note that the use of SAVESTATES is discouraged, as these are likely to break between emulator versions. Instead use SAVE FILES. These are likely to survive between emulator versions. This means that you will have to use save points within the game. SAVE FILES are stored in .sav files.
+
+==== File | Load State As... ====
+Once you have saved a game's position, or 'state', you can load it again with this option.
+
+==== File | Save State ====
+This option works fairly similair to the 'Save As' option, altough it let's you save numbers instead os specifying a chosen name. Also, All the states saved via this option end up with a pre-determined name of 'game (rom) name'.dsx. So if the game is called MyGame, the first savefile will be called MyGame.ds0, the second one MyGame.ds1, etc.
+
+==== File | Load State ====
+This option let's you load the states that you saved via the 'File | Save State' option
+
+==== File | Import Backup Memory ====
+Backup Memory is the data the game uses to remember its own state. It is stored on the cart in a normal game. Desmume uses the .dsv extension and file format; other formats which can be imported are .duc and raw .sav. People use pro action replays to capture duc files from their card and post it online without using emulators. These are frequently found on gamefaqs.com. See the faq for details on how to use this function, where it has been documented better.
+
+==== File | Export Backup Memory ====
+This lets you export the game's state for use in other Nintendo DS Emulators. It will write a 'raw' sav file.
+
+==== File | Save Screenshot As... ====
+This lets you take a screenshot of the current view of the emulator, and specify it's name to save as a bitmap (.bmp) file.
+
+==== File | Quick Screenshot ====
+This option also dumps a screencapture, but it has a pre-determied filename and location. It will be called printscreen.bmp, and located in the current directory. In Windows, this is probably the same folder as where your desmume binary is located.
+
+==== File | Record AVI ====
+This option lets you capture what's going on in the emulator, and save it in an avi file.
+
+==== File | Stop AVI ====
+The 'Record AVI' option continues to record the game, untill you press the 'Stop Avi' option.
+
+==== File | Record WAV ====
+This option lets you capture the sound played in the emulator, and save it in a wav  file.
+
+==== File | Record Movie ====
+This option lets you record the gameplay in TAS format, see http://tasvideos.org for details on TAS (tool-assisted speedruns).
+
+==== File | Play Movie ====
+This option lets you playback a pre-recorded TAS movie.
+
+==== File | Stop Movie ====
+This options lets you stop recording a TAS movie.
+
+==== File | Quit ====
+Choosing this option exits the emulator.
+
+=== Emulation Menu ===
+
+
+==== Emulation | Pause ====
+This option will pause the emulation, freezing it at the current moment of execution. Selecting it again will resume the execution of the ROM at the exact moment where you paused it.
+
+==== Emulation | Reset ====
+This option will reset the ROM that is currently loaded to the very start of the ROM, just as if you chose 'File | Open Rom' again.
+
+==== Emulation | Clear Sound ====
+This option turns off all the sound.
+
+==== Emulation | GBA Slot ====
+This menu option pop-ups a new window, which lets you specirfy what to do with the GBA slot of the Nintendo DS. It has the following choices :
+NONE, Compact Flash, Rumble Pack, GBA Game. Rumble pack allows some games to use vibration. Memory extension... Extends memory. And some DS games can have bonuses, unlockable by GBA cart. For example in Megaman ZX you can fight some Megaman Zero Bosses when correct cartridge is inserted. There are also other GBA slot extensions, like... a Guitar hero controller. But these are currently not emulated by desmume. Flash Cartridge is used for homebrew software emulation, for example that uses DLDI ( Dynamically Linked Device Interface).
+
+==== Emulation | Cheats ====
+This option pulls down a drop-down menu, and presents the options list and search. Be aware though, that cheats are sort of half baked right now. If you are not having luck, wait for some news on an improved cheat system. Also, it is impossible yet to use "commercial" codes, such as Action Replay and Codebreaker, so what you'll have to do is manually search for, and alter the memory positions to your advantage. They are called 'raw' or 'internal' cheats. There's an excellent article in the wiki on [[Using Cheats in DeSmuMe ]]. In post-0.9.2 development builds, there is also the support for Action Replay cheat codes.
+
+==== Emulation | Cheats | List ====
+Choosing 'list' will list all the currently known cheats. Please refer to the article [[Using Cheats in DeSmuMe ]] for further details on how to use the cheat mechanism in desmume.
+
+==== Emulation | Cheats | Search ====
+Choosing 'search' will let you search for cheats. Please refer to the article [[Using Cheats in DeSmuMe ]] for further details on how to use the cheat mechanism in desmume.
+
+=== View Menu ===
+
+
+==== View | Rotation ====
+This option will let you rotate the screen a pre-determined amount of degrees in order to adjust the angle of the display. Some programs require that you normally turn the DS on its side. You can set it up in that manner using this. The options are 0 (no rotation),90 ,180, and 270.
+
+==== View | Window size ====
+This option will let you enlarge the windows a pre-determined size. The resize options are: 1x, 1.5x, 2x, 3x, and 4x the default size.  You can also adjust the  window size by clicking on the edge of the window, and dragging the mouse.
+
+==== View | Screen Separation ====
+This option controls how far the two windows should be apart of each other, in other words: how big the border between them should be. Valid choices are: None (which is the default), narrow border (which is slightly larger), DS (which is about the wsame amount of room there is on a real Nintendo DS).
+
+==== View | Force Maintain Ratio ====
+Here you can choose, when re-sizing the windows, if you wan to maintain the ratio of the windows. Sometimes when the window size is changed it doesn't look correct on the screen. This option forces the window to maintain a correct ratio so it looks correct. You can select or de-select this option.
+
+==== View | Display Frame Counter ====
+Selecting this option causes a counter to run, that counts all the frames that have been displayed.
+
+==== View | Display FPS ====
+Selecting this option causes the 'frames-per-second' (or 'fps', for short) to be displayed. It also displays an additional '3D' counter, which tells how frequently the game is updating its 3d graphics. But unlike the fps counter, the 3d counter has nothing to do with the power of your system. If it is low, then the game is running slow on a retail cart, and so it runs slow in an emulator.
+
+==== View | Display Input ====
+Selecting this option displays the keys you press on the keyboard, which is the  input
+
+==== View | Display Lag Counter ====
+This option causes a counter to display that counts frames where the game doesn't poll input.
+
+==== View | HUD Editing Mode ====
+This option will let you drag around hud elements to pick their position.
+
+=== Config Menu ===
+
+==== Config | Save Type ====
+This option lets you specify the save type of a particular game. The default is 'automatic'. However, this is not fail-safe in all cases, so you might need to manually select one of the other savetypes.
+
+==== Config | 3D Settings ====
+This option lets you select the method that is used to draw the screen. You can choose between OpenGL (an open standard) or SoftRasterizer (a desmume specific method). 
+
+Furthermore, you have two checkboxes that you can either enable or disable:
+
+* Unrealistically High-Precision Color Interpolation. Presently only effective for SoftRasterizer.
+* Alternate Flush Mode. This fixes some games with flickering graphics. This is apllicable to both the OpenGl and the SoftRasterizer.
+
+==== Config | Control Config ====
+This option lets you configure keyboard keys or a joystick. The joystick support is implemented using a DirectInput control interface.
+
+Here  are  the  default key mappings (they  may be  subject to
+change):
+
+  Up arrow             - Up
+  Left arrow           - Left
+  Down arrow           - Down
+  Right arrow          - Right
+  x                    - A button
+  z                    - B button
+  s                    - X button
+  a                    - Y button
+  q                    - Left Trigger
+  w                    - Right Trigger
+  Enter                - Start button
+  Right Shift          - Select button
+  Backspace            - Lid fold/unfold
+  
+  n                    - Frame advance
+  Space                - Pause/Unpause 
+  p                    - Load current state
+  1,2,3,4,5,6,7,8,9,0  - Select current state
+  F1-F10               - Load relevant state
+  Shift+F1-F10         - Save relevant state
+
+==== Config | Hotkey Config ====
+This menu option lets you define keys, that can be used to quickly select other options without having to go through the entire menu structure. Some examples are a hotkey for 'pause', or a hotkey for loading a specific savestate.
+
+==== Config | Sound Settings ====
+This option lets you choose between different sound generating methods, which currectly are 'Direct Sound Interface' and 'WAV Write sound Interface'. You can set the interpolation to choose between better quality and faster emulation. It also let's you specify the size of the buffer to buffer the sound.
+For performance improvements, you can turn on the sound option "ADPCM Caching". 'ADPCM' is a type of sound compression which is supposed to be fast to decode. This is new and experimental, and will break some things, but it should offer a substantial speedup in some cases. And lastly, you can also set the sound volume in this dialog.
+
+==== Config | WIFI Settings ====
+WIFI support is currently under heavy development, but it is not useful yet. Therefore, you may find this option missing, or simply 'greyed-out' for now. Even if you can fiddle with it, it won't do anything useful.
+
+==== Config | Firmware Settings ====
+This option provides you with the same set of options that a real Nintendo DS firmware does. The most important here is the language, because multi-lingual games will often look at how this option is set.
+
+==== Config | Emulation Settings ====
+These options let you boot from the extracted BIOS and Firmware of a real Nintendo DS. unless you have extracted/downloaded the firmware or bios from a Nintendo DS that you actually own yourself, these settings have no value for you qas desmume does not require them to run correctly.
+
+==== Config | Frame Skip ====
+This option lets you select how many frames should not be displayed, in order to gain speed improvements. The default is 'Auto'. If you have speed problems, you could decide to skip (not display) one or more frames in order to improve the speed. 'Limit Frameskip' let's you limit the frame rate to 60fps maximum. 60fps is essentially the speed that the game plays at on the actual console itself. So by selecting this option, you're limiting the framerate to the actual speed of the actual console.
+
+==== Config | Language ====
+This lets you set the langguage the emulator displays it's menu's and options in.
+
+==== Config | Background Pause ====
+Selecting this oiption will pause the emulation whenever you put desmume in the background, or the window loses focus.
+
+=== Tools Menu ===
+
+==== Tools | Disassembler ====
+This option displays the ARM9 and ARM7 disassembler. Be aware though, that the windows are drawn exactly on top of each other, so that you have to move  (drag n drop) the first windows before the second window shows.
+
+==== Tools | View Memory ====
+This tool displays the ARM7 and ARM9 memory. Be aware though, that the windows are drawn exactly on top of each other, so that you have to move (drag n drop) the first windows before the second window shows.
+
+The "View mode" radio buttons allow you to choose how the memory will be shown:
+* 8-bit : shows the memory as bytes
+* 16-bit : shows the memory as words
+* 32-bit : shows the memory as dwords
+
+The "View address" textbox and button allow you to jump to a different address:
+* Enter an hexadecimal address without 0x prefix, with up to 8 digits
+* Click "Go" to jump to the entered address
+
+The "View dump" buttons allow you to dump the current view:
+* Text dump : dumps the view to a text file, in an human-readable form
+* Raw dump : dumps the memory directly to a binary file which can be read with an hex editor
+Note that if you dump memory to a file already containing (a) dump(s), the new dump will be appended to the existing one(s).
+
+The scrollbar... well, you surely know how a scrollbar works.
+
+The viewers additionally allow to edit the memory. For it, click on the value you want to edit, then type the new value.
+The new value is applied only once you've entirely entered it.
+
+==== Tools | View Registers ====
+This option lets you view the ARM7 and ARM9 I/O registers.
+
+==== Tools | View Palette ====
+This option lets you view the palette in detail.
+
+==== Tools | View Tiles ====
+This option lets you view the tiles in detail.
+
+==== Tools | View Maps ====
+This option lets you view the maps in detail.
+
+==== Tools | View OAM ====
+This option lets you view the OAM layer in detail.
+
+==== Tools | View Matrices ====
+This option lets you view the matrices in detail.
+
+==== Tools | View Lights ====
+This option lets you view the lights in detail.
+
+==== Tools | View Sound State ====
+This option displays the sound output.
+
+==== View | RAM Watch ====
+This option will pop-up a new window, with extensive and advanced features to watch the emulated RAM memory.
+
+==== View | RAM Search ====
+This option will pop-up a new window, with extensive and advanced features to search through the emulated RAM memory.
+
+==== Tools |  View Layers ====
+This option lets you view the Layers one by one.
+
+
+=== Help Menu ===
+
+==== Help | Website ====
+This option directs your browser to the desmume homepage.
+
+==== Help | Forums ====
+This option directs your browser to the desmume forums.
+
+==== Help | Submit a bug report ====
+This option directs your browser to the SourceForge bugtracker for desmume.
+
+==== Help | About ====
+This option displays the authors of the emulator.
+
+Retrieved from "http://wiki.desmume.org/index.php?title=DeSmuME_Manual_for_the_Windows_port"
+This page was last modified on 26 June 2009, at 20:57.
+
+====================================================================
+
+DesMuMe Faq
+
+If the FAQ is unable to answer your question(s), then please make sure that you also consult the [[manual]].
+
+== General Questions ==
+=== What does desmume emulate and on what systems? ===
+Desmume attempts to emulate, as faithfully as possible, the Nintendo DS and Nintendo DS Lite handheld game consoles (nds). It currently runs on Windows, Linux, and mac OSX. DSi is not supported.
+
+=== What does DeSmuME mean? === 
+
+DeSmuME is a Nintendo DS emulator and the name is a play of words - DS Emu + ME (like FlashMe - firmware hack and PassMe mod-chip for DS)
+The name DeSmuME derives from the popular use of ME in Nintendo DS products by homebrew developers. So DeSmuME would equal DSemuMe. Other popular uses of ME include:
+* LoadMe - a generic patcher for commercial DS roms that works with any GBA Flash Card
+* PassMe - "mod-chip" using which takes authentication from an original DS card an allows execution of unauthenticated DS rom code -  from the GBA cartridge slot / GBA flash card.
+* FlashMe - a hacked firmware for DS that allows you to start code in DS mode from a flash card in the GBA slot.
+* WifiMe - are a set of a custom drivers and software by FireFly for RALink based wireless network cards enabling to boot homebrew code on DS via Nintendo Wireless Multiboot method.
+
+Its name is derived from emu which is short for emulator, DS and me. It's possibly supposed to mean "DS emulator for me".
+
+=== Under what license is desmume distributed ? ===
+Desmume is distributed under the Gnu General Public License, or GPL: http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+=== Can I freely copy desmume ? ===
+Yes you can, as long as you adhere to the license as specified in the GNU GPL.
+
+=== Why doesn't my desmume play this game? ===
+Go to desmume.org and make sure you are using the latest version. The latest version is 0.9.4. Hint: desmume 0.8 and 0.3.4 are very old, being numbers smaller than the latest version. Older versions will not be supported, under any circumstances.
+
+=== Why does this game fail to save? or, I get the error: "Data could not be accessed. Turn off the power and reinsert the DS card." ===
+Until version 0.9.4 desmume's save size autodetection was poor. With 0.9.4, autodetection should work almost all the time. In fact, here is the entire list of games we know of that fail to autodetect correctly:
+* Spider-Man 3
+If you find any other game for which automatic savetype detection does not work, please let the developers know by posting on the forum or submitting a bug.  If you want to fix it yourself, you may need to manually specify the correct save type for your game. Consult the manual for details on how to do this for your platform. You may also consult http://www.advanscene.com/ to easily identify the save type for your game.
+
+=== I get the error: "Unable to write data. Please turn off the power and reinsert the game card." ===
+Same problem and resolution as the previous question.
+
+=== Why did you change the save file format and extension from .sav to .dsv ? ===
+Because it is better now. These raw save files that everyone uses aren't good enough and were causing problems with autodetection. See our bug tracker or forum for more details; the dsv format has been documented in the svn source tree as dsv.txt and if you don't like the degree of interoperability with other emulators, then go tell the other emulators to support our format.
+
+=== Can I use my save states across versions ? ===
+Maybe, maybe not. Due to constant internal changes in desmume, it is possible that a save state created with one version may not work with another version of desmume. Savestate compatibility is preserved wherever possible, but it is not always possible. Please note that for easily confused gamers, the use of SAVESTATES is discouraged, as these are likely to break between emulator versions. Instead use SAVE FILES. These are likely to survive between emulator versions. This means that you will have to use save points within the game. SAVE FILES are stored in .dsv files. Also, see this article for further details : [[Savefile or savestate]]
+
+=== Can I convert an ideas or no$gba nocash .sav savefile to desmume .dsv ? ===
+1. Convert the save file using http://shunyweb.info/convert.php ; the target format should be "Acekard RPG | EZFlash V | RAW Format [Autodetection] (.sav)"
+2. Load the game. Let it get to the main menu
+3. Select the correct backup size*, as specified by advanscene.com (which is not always right, by the way)
+4. Use File > Import Backup Memory and pick the converted save file
+5. Reset the game
+*Step 3 is not always necessary, if you are smart, however, it will never hurt to do it. 
+
+=== Why can't I find a mac binary? ===
+Maybe we haven't made it yet. There arent a lot of people willing to compile mac software.  Just to be sure, go to https://sourceforge.net/project/showfiles.php?group_id=164579&package_id=186413
+
+=== Why does my mac binary say something about being unsupported? ===
+You have probably downloaded the i386 version of desmume for MAC, and are running on the PPC platform (or the other way around). Please verify if you're running on Intel (i386) hardware, or on PPC (G4, G5) hardware, and download the appropriate binary.
+
+=== Where can I report bugs? ===
+In the [http://sourceforge.net/tracker/?group_id=164579&atid=832291 official bug tracker]. Feel free to post to the bug tracker as long as you are willing to take ownership of testing that bug and letting the developers know when it is resolved to your satisfaction. Just don't submit a bug report and run. You may also request features around the same location, too, but in the other trackers.
+
+=== Can I attach files to bug reports I did not create myself ? ===
+SourceForge likes for folks to only respond on items they submit. If you see a ticket that represents something you are encountering, SourceForge doesn't necessarily want you commenting on that. The reasoning for this given by SourceForge is that they feel it is best to open your own ticket, which helps appreciate the extent of issues in many cases. The authors of desmume may or may not agree with this point of view from SourceForge.
+
+=== How do I get the latest svn code and build desmume myself? ===
+Please check out the instructions related to your platform, over at [[Installing DeSmuME from source]]
+
+=== Whats 'svn' ? ===
+[http://subversion.tigris.org/ svn] is a developers tool. It's used to let multiple developers work on the same codebase without conflicts. If youre an end-user, don't worry about it. And if you're a developer, see the question on how to get the latest svn code and build desmume yourself. See [http://en.wikipedia.org/wiki/Subversion_(software) wikipedia] for more info
+
+=== What compilers are supported for building desmume from source ? ===
+* At the moment, for Windows Microsoft Visual C++ 2005 and 2008 are the only supported compilers. Dev-c++ is not supported. Why won't you just download visual c++ express?
+* For Linux, any recent version of GCC and toolchain should work.
+
+=== Im Compiling using MSVC Express On Windows, and I get the error : "ml.exe" not found. ===
+ml.exe was not included in earlier downloads of MSVC++ 2008 Express Edition. Uninstall, redownload and install again.
+See http://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=326875 for details. ml.exe shoud be located in the "Microsoft Visual Studio 9.0\VC\bin" directory.
+
+=== Im a developer, and would like to contribute to the codebase. What can I do ? ===
+To start you off in the right direction, the best thing you can do is join the developer team on IRC and discuss your intentions with the developers.
+
+=== Im not a developer, but would like to help out anyway. What can I do ? ===
+The most helpful thing you can do is use desmume, learn its ins and outs, and learn how to compile svn builds. Then monitor it for regressions and report bugs. You can patrol the bug tracker for bugs which could use elucidation or which, based on your awareness of how the emulator is changing, might be fixed without us having specifically addressed the bug. Basically, be a super user. And hang out on irc. Also, adding to or perfecting the documentation in the wiki is useful. You could also watch for and answer questions placed on the desmume forum.
+
+=== What is this Lua stuff I see? ===
+It is sort of a macro language for interacting with the running game software. Here is an example of it working with an NES game in another emulator, and youtubing for "fceux lua" should suffice to explain it if you don't get the picture from this url: http://www.youtube.com/watch?v=1XNTjVScm_8
+
+=== What is 'TAS' ? ===
+TAS lets you record the gameplay in TAS format, see http://tasvideos.org for details on TAS (tool-assisted speedruns). 
+
+=== It is hard to zoom in on a widescreen display due to the weird aspect ratio of the DS. ===
+In fact it is hard to zoom in on a 4:3 screen, too. Proposals involve tearing apart windows and floating them side by side or separately or something. This may happen one day, in the form of side by side windows. 
+
+=== Why doesn't my openGL 3d work in linux? ===
+Blame nvidia and ati for putting out shoddy and/or closed source drivers. Then switch to software rasterizer.
+
+=== Why doesn't my openGL 3d work in windows? ===
+You are probably using an ATI video card. ATI driver support of OpenGL is known to be poor. Get an nvidia. Do not argue with that, we are professional programmers and know what we're talking about. Or, switch to software rasterizer
+
+=== Why doesn't a menu option or tool exist in my linux or mac build? ===
+Because making portable tools and platform harnesses are not our cup of tea and so a developer puts a feature into whichever ports he cares about. This policy is never going to change, although some features might migrate to other platforms over time. Better check the [http://wiki.desmume.org/index.php?title=Manual manual].
+
+=== Why does music and FMV sound bad sometimes? ===
+Most DS music is sequenced music, loaded from the cart entirely when the level loads. This works fine. Your music that doesn't work is probably streaming music, which loads from the cart on the fly and goes straight to the speakers, and possibly decoded along the way. This includes FMVs. This is much harder to emulate as it requires correct timing, which is not one of desmume's strengths right now. This may not be fixed for a while.
+
+=== Why doesn't my game boot or progress into the main game engine? ===
+Desmume is not perfect yet. Some games may fail due to wifi emulation. Apparently if you search the web correctly you can find ways to patch games to work better on emulators. Your mileage may vary. If it really doesn't boot up, you can submit a bug report for the game on the sourceforge bugtracker.
+
+=== What hardware features are emulated? ===
+* All known 2d graphics features are correct. Mosaics work but are imperfect. There may be small issues with colors as the correct color bit depths are not used at all points in the pipeline.
+
+* All 3d features are emulated, except for: tests, wireframes, edge marking, fog, and antialising. The opengl engine is near its limit and renders some things incorrectly. Eventually the software rasterizer (will support more features and be far more precise in the basic features.  Both engines have trouble with some shadows, but software rasterizer is better. Software rasterizer has some noticeable texturing issues right now, especially in 2d games. Software rasterizer supports more correct lighting interpolation than opengl ever will (e.g. glitches at the edge of the screen while scrolling.) In software rasterizer, there are issues similar to 2d with incorrect bit depth being used in the pipeline. There are inaccurate edge conditions in each renderer; in opengl, textures tend to get overdrawn; in software rasterizer, edges of textures tend to be jittery.
+
+One last thing -- if buttons and labels and menus rendering on the 3d screen are obscured (for example, a button but no label is on it) then you may need to use the software rasterizer. Or you may need to use openGL instead. Each renderer has strengths and weaknesses, which is why both are provided.
+
+* All sound features are emulated. The microphone support is new and the manual should be consulted, where you will find out, among other things, that it is only supported in windows right now.
+
+* Wifi is not supported. It is currently under slow and incomplete development. Therefore, you may find this option missing, or simply 'greyed-out' for now. Also, since WIFI support does not work yet, don't ask any questions about it's functioning because it still is unfinished and does not work yet.
+
+* We are unaware of any outstanding issues in the core system hardware (cpu, dma, mmu) but there are certainly still some. The instruction and memory timings are quite incorrect; however, this seems not to hurt most softwares.
+
+* DLDI (does anybody know if this still works?)
+Dynamically Linked Driver Interface, commonly known as DLDI, is a driver framework that allows NDS and GBA homebrew to easily read and write to any number of different devices, just by substituting a driver file.
+
+* RTC (real-time clock) works; If it didnt, then the time in your games stays at 00:00:00, and your random number values always come up the same.
+
+=== Does the GDB stub still work? ===
+It seems as if it works in 0.9.3, tested with the Insight GDB variant on windows with a recent devkitpro. This support has been compiled into the dev+ build.
+
+=== How do I enable the GDB stub on the Windows port ? ===
+Add #define GDB_STUB to src/windows/userconfig/userconfig.h which you have created according to the instructions in src/windows/defaultconfig/userconfig.h ; sorry for this confusing system, but that's how it is for now.
+
+=== Where/what is IRC? ===
+[http://en.wikipedia.org/wiki/IRC IRC] is an on-line communication system. 
+
+data you need:
+* server: irc.freenode.net
+* port: 6667
+* channel: #desmume
+
+what to use:
+* mIRC - windows
+* ChatZilla - FireFox add-on
+* xchat - X
+* plenty other, see [http://en.wikipedia.org/wiki/Comparison_of_Internet_Relay_Chat_clients wikipedia]
+
+=== Where is the manual? ===
+A manual for desmume is over at http://wiki.desmume.org/index.php?title=Manual. It may not have the information that other entries in this FAQ promised that it would.
+
+=== Where is release 0.9.3 ? ===
+Who cares? 0.9.4 is out now
+Desmume 0.9.3 does not exist. It was sneaked out of our staging area. It has bugs, which is why we hadn't released it yet. So we decided not to release it at all. Any release claiming to be 0.9.3 wont be supported. 
+
+=== How do I enter 'cheat codes' in desmume ? ===
+Action Replay and 'raw' or 'internal' cheats work as of 0.9.4. There are also cheat-finding facilities where you may manually search for and alter the memory positions which work to your advantage. There's an excellent article in the wiki on [[Using Cheats in DeSmuMe ]].
+
+=== Why is the emulator slow? ===
+Because nobody pays us to work on it full time and it runs fast enough for us to be happy. Well, almost. 
+
+0.9.4 May be a step backwards in some (or many) cases from 0.9.2 in terms of speed. The development between these versions focused on compatibility and bugfixes. Once we better understand how some things need to be emulated, then some speed can return.  However, in order to mitigate some of this backsliding, we have introduced a few speed hacks which you may find helpful.
+
+* The cheapest way to get 60fps is to buy the cart. 
+* If you are in Windows, make sure you have tried the SSE build which helps a little bit. 
+* If you are using someone else's unofficial "svn" build it probably is not fully optimized since we make our Windows releases using some profiler-guided optimization which helps by several FPS. For all I know they are also carriers of viruses, and lately they tend to crash on vista.
+* If you can handle it, turn off the sound.
+* Use frame skip. Even frameskipping 1 will help and many games will stay playable. Frameskipping was improved in 0.9.3 to get more bang for the buck, but beware that dual screen 3d games may not work well under frameskip.
+* (0.9.4+) In the sound options, set interpolation to none which should help a little bit.
+* (0.9.4+) Turn on the sound option "ADPCM Caching"; this is new and experimental, and will break some things, but it should offer a substantial speedup in some cases.
+* (0.9.4+) There is now the option of disabling an entire screen. (Tools > View Layers > Main GPU, etc) Consider disabling a screen which is useless in the game you are playing.
+* Try the software rasterizer. In many cases, especially games which make only light use of the 3d hardware, this will actually run faster, by as many as 10 FPS. But it might also run slower, again, by as many as 10 FPS.
+* Buying a newer, faster computer is somewhat more expensive, but it has other side benefits. 
+* A faster CPU is more helpful than a bleeding edge graphics card. Desmume is more CPU intensive than it is GPU intensive. It just needs a graphics card that is glitch-free, and currently the nvidia cards have a better track record. A newer graphics card has a slim possibility of increasing speed.
+
+=== Why does the emulator take a million years to start up and/or devastate my system or unarchiver when I run it? ===
+This is a problem with the desmume 0.9.2 that some people impolitely distribute themselves. Redownload 0.9.2 from sourceforge.net or get a newer version.  It isn't a virus or anything, it is a bug in the application that can just bring a system to its knees. It tries to allocate 1GB of virtual memory. This also crashes or freezes some virus scanners (I've seen it on AVG).
+
+=== What does the number/percentage in the desmume title bar mean ? === 
+* For the windows port, the percentage is the emulated arm9 CPU load average. The CPU in an actual Nintendo DS is an ARM9 CPU. The percentage shows us how busy the emulated CPU is. This number isnt really for you. We really ought to just take it out.
+* For the Linux GTK and Glade ports, it's frames per second (fps).
+
+=== What's the difference between the the Windows 'desmume' and 'desmume_nosse' versions ? ===
+desmume uses some SSE2 optimizations for 3D matrix calculations. If your CPU supports SSE2, better use this version. Otherwise use desmume_nosse. Any modern Intel CPU (AMD or intel) will support SSE2.
+
+=== Does desmume make use of multiple CPU's or multiple cores ? === 
+Currently, there are no multi core optimizations. Everything runs in a single thread. You benefit MUCH more from a single greater Ghz cpu than from multiple cores or from multiple CPU's.
+
+=== What are the minimum hardware requirements for desmume ? === 
+From a purely technical viewpoint, there are no minimum requirements. However, for 'real-world' playable speeds, you would need at least the following :
+
+* Windows OS: Windows XP or Vista
+* Linux OS: Any recent Linux distribution with a 2.6 kernel.
+* 2 GHz Processor
+* 512 MB Available System Memory
+* Available Hard Drive Space: A few MB for the emulator
+* 128 MB 3D Video Card (Nvidia GeForce 6800 or better), ATI cards are not recommended.
+* Optional: Sound Card, if you want sound support 
+* Optional: Microphone, if you wish to make use the Windows Microphone feature
+
+=== What are the recommended hardware requirements for desmume ? === 
+
+From a purely technical viewpoint, there are no recommended requirements. However, for 'real-world' playable speeds, the following gives you good performance:
+
+* Windows OS: Windows XP or Vista
+* Linux OS: Any recent Linux distribution with a 2.6 kernel.
+* 3 GHz Processor
+* 1 GB Available System Memory
+* Available Hard Drive Space: A few MB for desmume, 100MB or so for a bunch of savestates and savefiles.
+* 512 MB 3D Video Card (Nvidia GeForce), ATI cards are not recommended.
+* Sound Card.
+* Microphone.
+
+In general, the more Ghz, the better. The faster memory, the better. Desmume currently won't benefit from multiple cores. Desmume currently is, unfortunately, slower than no$gba.
+
+=== Does desmume support wifi ? ===
+Wifi is not supported. It is currently under slow and incomplete development. Therefore, you may find this option missing, or simply 'greyed-out' for now. Also, since WIFI support does not work yet, don't ask any questions about it's functioning because it still is unfinished and does not work yet. Furthermore, current development activities focus mainly on the Windows build.
+
+=== Why do I get an assert in wifi.cpp which keeps me from playing a game? ===
+This was a glitch in 0.9.2 release. Why arent you using 0.9.3?
+
+=== OK, then why does it make my firewall alert since 0.9.2 ? ===
+Your firewall is stupid, or winsock is stupid, (I am not sure which yet) for alerting just when winsock gets initialized. The emulator hasnt actually tried to connect to the internet yet. How could it? There isn't any wifi. All we are doing is some network initialization code. For those of you who are still not satisfied, then I will admit that there is actually some wifi code--but it doesnt actually do anything yet! Except alert your firewall. Sorry. Also, maybe that is actually a good, unobtrusive time for firewalls to alert. But I am not sorry for calling them stupid. They are hyperactive crybabies.
+
+=== OK, so then why did my build come with winpcap.dll? Or why do I get crashes when I run desmume on vista which mumble something about winpcap? ===
+Because you are running an unofficial build, from dubious origins, made by unknown people. The desmume team cannot support builds it did not create itself. Therefore, you are advised to stop using unofficial builds, as you can expect no support from the desmume team or on the desmume forums. Only use builds you downloaded from the desmume website.
+
+=== What is WFC / WIFI Connection ===
+See the article [[Nintendo wifi config utility]]
+
+=== Does desmume support the microphone ? ===
+Yes, but only on the Windows port. You do have to have an actual microphone attached to your PC, though. And perhaps somewhat confusing, the Linux ports do report 'Microphone successfully initialized' on startup of the emulator - but currently this is just a piece of stub (dummy) code used only to correctly start the emulator. In 0.9.2 the microphone in windows really only works for noise, but this was fixed in 0.9.3; it still hasn't been tested very well.
+
+=== Where can I find technical details on the Nintendo DS and GBA ? ===
+http://nocash.emubase.de/gbatek.htm
+
+=== Does the 'GBA slot' option let me play GBA games ? ===
+No. A 'real' DS can use the gba slot to play gba games, but desmume does not emulate this. But a 'real' DS can also use the gba slot to access gba roms and sram so that ds games can import savefiles, and that part is emulated by desmume. (please note that this is reportedly buggy for some games, including pokemon) If you are looking for a Game Boy Advance (GBA) emulator, perhaps you can try mednafen or visualboy advance. 
+
+=== How do I "Close the DS" ? ===
+We call this the 'lid' command or key.  You can do so with the key BACKSPACE (you can change the mapping on the control configuration)
+
+=== What is DLDI ? ===
+let me give you an overview on DLDI. You should know that there are many various flash cartridges for DS. They use different file allocation systems, different storage's, etc. They are used for launching homebrew. So to make one program run on all cards. You’d have to write support for each and every card so that it worked for everyone. But none needs support for other cards than their own.
+And then a genial solution was found. There was an universal IO unit made that’s just interface to IO operations. And compiled program does not know how to handle file system etc. And then user can append IO routines for his own card. “DLDI patch”. So, now when I have an M3 cart, I download rom, patch it with m3 DLDI patch, and it works on my cart. Say you had Supercard instead. You’d have to download very same rom and apply Supercart DLDI patch to it. DLDI patch is the same for all roms. So it’s easy for both developer and end user.
+
+=== How can I post a savefile or avi capture on the desmume forum ? ===
+After you created it, you can upload it to a free external service provider like MediaFire (http://www.mediafire.com/), and then put the provided links to the page in the message you post on the forum.
+
+=== How can I post a large log or other text file on the desmume IRC chat room ? ===
+Make use of the external service provider 'pastebin' (http://pastebin.com/), and post the url to it on the IRC channel.
+
+=== My display is incorrect or corrupted ===
+Try switching the 3D Renderer from opengl or SoftRasterizer, or vice versa, to see if that resolves the bug. In windows, the default hotkey to do this quickly is numpad minus.
+
+=== My display has flickering graphics in a certain game ===
+In the Windows port, you can choose 'Alternate Flush Mode' in the 'Config | 3D Settings' menu. This fixes some games with flickering graphics. 
+
+=== How do I easily capture the ASM code for troubleshooting purposes ? ===
+Savestate during the problem or just before your problem occurs, and #define WANTASMLISTING in armcpu.cpp. Recompile. Then redirect stdout to a file. I know it aint easy but its what we got for now.
+
+A newer, and possibly better way, is to search for LOG_ARM9 in ndssystem.cpp and uncomment it. You will also need to trigger the condition for logging by setting dolog=true. Beware that this is very verbose, on the order of 100MBytes per frame.
+
+=== How do I make pokemon save? ===
+Use 0.9.3 where this works correctly without you having to perform rituals beyond your capabilities or comprehension.
+
+=== I got a gameplay related question ===
+Please check a site like http://www.gamefaqs.com, and dont post gameplay related questions on the forum or IRC *unless* you believe there is a bug in the emulation of desmume.  
+
+=== What are the origins of DeSmuME ? ===
+
+DeSmuME is a freeware emulator for the Nintendo DS originally created by YopYop156. The original website was http://yopyop156.ifrance.com
+
+Due to change in French laws regarding emulation YopYop decided to stop development of DeSmuME. However, he released the source under the GPL, and other programmers have picked it up and kept it under active development.
+
+Yopyop said: 
+:It’s release under GPL. I have just removed the new 3D engine because it’s too much bugged. Hopefully it will be helpful for some of you.
+
+
+The latest statement heard from yopyop was :
+
+:DeSmuMe project is over.
+:You may don’t know but there are a new law in France that could put me in big trouble.
+:With DeSmuMe, I have closed the doors of game company but I can not offer to pay for it.
+
+:The worst thing is that I have found the bad coded instructions.
+:For those how have download the sources you have to look in sbc, rsbc instructions the Carry flag updating is wrong.
+:Sorry for the home brew programmers.
+
+:For the illegality the demonstration seemed to me convincing thus without proof clarify I prefer to stick to this decision.
+
+:It is also the fact that few people seem interested by the project. Put besides some people who sent demonstrations to me which did not go, I received only malls to wonder to make function such or such plays or to ask me why moved is in French .
+:Thus I will not do something of useless and illegal.
+
+:For the site it would not obstruct me if there were not the bond on the left which does nothing but add to confusion on the goal of the project.
+
+:And for the sources it is the same problem as for the project.
+
+:good week end
+
+:yopyop
+
+:edit the law relates to the royalties and the rights close, not?
+
+Retrieved from http://wiki.desmume.org/index.php?title=Faq
+This page was last modified on 2 July 2009, at 02:52.
