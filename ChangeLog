@@ -1,0 +1,415 @@
+0.9.2 -> 0.9.4 (r1844->r2352->r2437)
+
+0.9.3 was skipped due to emu news sites sneaking it out of our staging area and 
+releasing it prematurely while it still had bugs. I was going to curse them 
+individually, but then I decided that they would just like the publicity.
+
+Highlights:
+ * New save autodetection and save file format
+ * Full rerecording support
+ 
+General/Core:
+ bug: fix many 64 bit and endian issues
+ bug: fix mic input, which was nearly useless before
+ bug: fix failures of large dmas
+ bug: fix in ipc sync which broke devkitpro touch
+ bug: screenshots now exclude hud and rotation
+ bug: rewritten vram mapping (fixes corrupted or missing BG)
+ enh: add universal commandline system (same commandline options on every port)
+ enh: cheats: added Action Replay code parser
+ enh: more reliable and useful frameskipping
+ enh: SPU: speedup: add adpcm caching
+ enh: SPU: speedup: interpolation is now optional
+ enh: print svn build number so we can identify people's svn builds from screenshots
+
+Graphics:
+ bug: add polygon y-sorting (fixes 3d guis)
+ bug: fix texcoordgen mode 3; fixes some ortho sprites and some entirely broken games
+ bug: display capture fixes
+ bug: fix a number of OBJ modes
+ bug: fixes to affine BG modes
+ bug: better emulate some translucent OBJ
+ bug: more correct handling of color effect windows and backdrop colors
+ bug: fix matrix stack overrun which crashed emulator
+ bug: swrast: add clear depth image emulation and other fixes to depth buffering
+ bug: swrast: fix some toon and highlight cases
+ bug: fix bug in matrix stack, fixes some broken models
+ enh: add alternate flush mode HACK 3d config toggle, fixes some entirely broken 3d games  
+ 
+Windows:
+ bug: more robust cheats engine and dialog
+ enh: more solid avi and wav recording
+ enh: improved tools: memory viewer
+ enh: added tools: spu viewer, ram watch, ram search
+ enh: change build configuration system
+ enh: speedup: add gpu core disabling to hide useless screens
+ enh: add background pause feature (for when emulator loses focus)
+ enh: add missing autohold for L and R
+ enh: add chinese translation
+
+Gtk frontend:
+ enh: switch all of menu/toolbar system to GtkAction + GtkUIManager
+ enh: remove the gtglext 3d code
+ enh: improve/speedup screen resize and final presentation logic in gtk frontend
+ enh: minimal rerecording hookups
+
+Cli frontend:
+ enh: hooked the frameskip (szigor)
+ enh: misc usability improvements: auto pause switch for pausing when focus is lost and exit on escape pressing (szigor)
+ enh: hook the fake noise mic; use m to toggle
+
+0.9.1 -> 0.9.2
+General/Core:
+ bug: fix error in SBCS/RSCS flags; fixes many odd behaviors and crashes [zeromus]
+ bug: add support for sleep mode and power registers [luigi__]
+ bug: important fixes to RTC so correct time is actually told [luigi__]
+ bug: fix card reads below 0x8000; fixes some game freezes [normatt]
+ bug: fix 4 mbit save type; fix non-autodetect savefile dumping [zeromus, matusz]
+ enh: add sram to GBA game addon emulation for importing savefiles [zeromus]
+ enh: many improvements and feature hookups in linux ports [matusz, luigi__]
+ 
+Graphics:
+ bug: fix specular texture mapping mode [luigi__]
+ bug: repairs to some capture modes and vram mapping [zeromus, CrazyMax]
+ bug: viewports finally correctly handled [zeromus]
+ enh: add software rasterizer. quirky, but on par with opengl [zeromus]
+ 
+Windows:
+ bug: mitigate bad frameskipper; default to old frameskipping mode [zeromus]
+ bug: fixes with recent roms and zipfile loading [zeromus]
+ bug: fix window position memory [zeromus]
+ enh: bios and firmware may now be used and booted [luigi__]
+ enh: many display, OSD, and input enhancements [luigi__]
+ enh: brand new hotkey and controls binding system [zeromus]
+ enh: configurable screen separation [luigi__]
+ enh: fast forward key [pa__]
+ enh: improvements to mic [luigi__]
+ enh: faster updates in debug tools, up to once per frame [pa__]
+
+Mac OS X Port:
+ enh: added Italian translation thanks to Paolo Bernini [jeff]
+ enh: resurrection of GDB stub [sigmaris]
+
+0.9 -> 0.9.1
+General/Core:
+ enh: GBA slot emulation  [CrazyMax]
+  - Rumble support (windows only)
+  - GBA game
+ enh: Mic support (windows only?) [luigi__]
+ enh: Preliminary cheats system [CrazyMax]
+ enh: Savestates invalidated, as more variables have been added.
+ bug: Added PSG white noise [luigi__]
+ bug: fix arm/thumb ROR [zeromus]
+ bug: [ 2550645 ] Super Princess Peach: crash when starting a puzzle [zeromus]
+ bug: win32: fix spu wav file writer (regression from 0.8) [zeromus,luigi__]
+ bug: Much work on FIFOs, still not finished [CrazyMax]
+ bug: Many fixes to dma [zeromus, CrazyMax]
+ bug: bios WaitForVblank and WaitForInterrupt fixed [luigi__]
+
+Graphics:
+ bug: Added sprite blending [luigi__]
+ bug: more correct mosaic effects, still imperfect [zeromus]
+ bug: Many fixes to tile rendering; all graphics tests now pass [luigi__]
+ bug: fix crashes in some affine BG [zeromus]
+ bug: Implement some pos test function [luigi__]
+ bug: fix texture mapping across texture and palette banks and to unmapped banks [zeromus]
+ bug: fix texture handling for texels with MSB set (fixes some texture corruption) [zeromus]
+ bug: fix texture coordinate generation, including environment mapping [zeromus]
+ bug: texture cache invalidates when palettes change, prevents some texture corruption [zeromus]
+ bug: fix display capturing from 2d+3d source when display mode is display-vram [zeromus] 
+ bug: [ 2488334 ].1 fixes to layer compositing [luigi__]
+ bug: [ 2488334 ].3 fix bug in support for hdma affine bg parameters [zeromus]
+ bug: Improvements to 3d h-scrolling [luigi__]
+ bug: Fix some errors in rendering 512 tall BG [zeromus,CrazyMax] (still not fully resolved)
+ bug: Add optional fragment shading pipeline (more precision) [luigi__]
+ bug: Fix bug where some sprites got cut of on x=255 [zeromus]
+ bug: Implement GXSTAT register [CrazyMax]
+ 
+Windows:
+ bug: resizing and rotating work in vista [luigi__]
+ enh: 0 frameskip now lets emulator run at excess speed [zeromus]
+  
+Mac OS X Port:
+ bug: left key setting no longer gets confused with the right key [jeff]
+ enh: more keys can be mapped
+  
+0.8 -> 0.9
+ There have been so many changes that this list can hardly be considered complete.
+ For this release, we have formatted the list into a high level overview of big changes and bad bugs relative to the previous release. Hopefully what you're interested in.
+ This list does not include items which are solely performance boosts, for let us just say that virtually every system has been speeded up.
+  
+ * The savestate system is totally changed and incompatible with old savestates.
+ * The 3d system should be considered rewritten.
+ 
+General/Core:
+ enh: Convert to c++
+ enh: Add functions for a lid open/close. Holding key (default "Backspace" in Windows port) while game is freeze/non freeze. [CrazyMax]
+ enh: Add secure area decryption from ndstool [zeromus]
+ enh: Change savestate code to support loosely bound chunks and more easily other parts of the emu (GE, GPU).
+      The savestate format is changed, but from now on it is in principle more resilient 
+      (though it will continue to break as we tinker with the internals) [zeromus]
+ enh: Added SSE2 optimizations for matrices. Since we now make an SSE2 build, more optimizations can be made. [CrazyMax]
+ enh: Add a preliminary GUI hud system [CrazyMax,zeromus]
+
+CPU/MMU:
+ bug: Many fixes in IPC and GE FIFOs. Fixes freezes in NSMB, dsracing, and others. [CrazyMax,luigi__,shash]
+ bug: Fix ARM instructions SBC and RSC (likewise SBC in thumb) [normatt]
+ bug: Fixed Thumb LDMIA (fixes ingame Dead'n'Furious) [shash]
+ bug: Fix repeating DMA (fixes NSMB parallax BG) [zeromus]
+ bug: Proper handling for unaligned CPU accesses [luigi__]
+ bug: Proper handling for undefined instruction exceptions [Salva Peiró]
+ bug: correctly return vram control register values (fixes homebrew 3d games) [zeromus]
+ enh: Remove 16MB of WRAM at 0x01****** from arm9. Mapped to unused instead. Nobody knows what this was. [zeromus]
+ enh: Changed instruction execution to 16 at a time blocks (tested and stable) [shash]
+
+Hardware: 
+ bug: Newer and better sqrt and div emulation; makes SM64DS playable [luigi__,shash,zeromus]
+ bug: Add preliminary RTC implementations [CrazyMax]
+ enh: Add cosine interpolation in the SPU (conditionally compiled) [zeromus,luigi__]
+ enh: Experimental: always one silent non-mixing SPU core at 44.1khz synched with emu, for more precision.
+      The audible core runs with the host, causing music to slow down but not tear or pitch bend. [zeromus]
+
+Graphics:
+ - Overhaul 3d:
+  . Move entire GE to core emu.
+  . Move OpenGL renderer to emu core for optional use by platforms, removing ogl_collector. Now every platform shares the same 3d code.
+  . Reorganize 3d code to defer rendering to after 3d vblank. Eliminates tearing, and texturing artifacts. [zeromus]
+  . Add optional fragment shading pipeline (more precision) [luigi__]
+  . Move lighting model to software instead of using opengl's fixed function model [zeromus]
+  . Render shadow volumes; toon shading and highlight table [zeromus, luigi__]
+  . Added texture caching! big speed up. [CrazyMax]
+ 
+ bug: Many assorted tweaks and improvements to 3d and 2d precision [zeromus,CrazyMax,luigi__]
+ bug: Fixes to GE: command unpacking, projection and pos-vector mode matrix handling, mult and load commands [zeromus]
+ bug: Fix a bug in texture transformation mode 1 [zeromus]
+ bug: Fixed GPU rendering bugs in sprites and BG [CrazyMax]
+ bug: Fixes to texture conversion [CrazyMax,zeromus]
+ bug: Fixes in capture display (no blinking in many games with dual 3D) [CrazyMax]
+ bug: Fixes in master brightness (this fixes some games with black screens) [CrazyMax] 
+ bug: Fixes in screen, backdrop, and sprite blending [luigi__]
+ bug: Changed clear depths and how depth initial values are calculated (fixes SM64DS skybox, Castlevania) [shash,lugi__] 
+ bug: Add 3d layer h-scrolling [zeromus]
+ bug: Added transparency and fixed material alpha support and alpha testing on the 3D core [shash]
+ bug: Rewrite VRAM mapping control and rendering (more accurate) [CrazyMax,luigi__]
+
+ bug: convert colors to opengl better to prevent alpha=31 polys from being ever so slightly transparent [zeromus]
+ enh: Add MMU->GPU signal for when vram mappings change to function as a texture cache invalidate signal [zeromus]
+ enh: Make matrix 4x4 multiply routines use W-coordinate; carry w coord through pipeline [zeromus]
+  
+Mac OS X port:
+ bug: Fixed: Filenames and paths with unicode characters now work. [Jeff]
+ bug: Fixed: Load state from file button works again. [Jeff]
+ enh: Save State panel now pauses emulation while the file selection box is open. [Jeff]
+ bug: Fixed: Frozen video output (and/or messed 3d emulation) after loading a state. [Jeff]
+ bug: Added option to load the most recent file upon launching the program. [Jeff]
+ enh: Added French translation (thanks to Pierre Rudloff). [Jeff]
+ enh: Added basic key mapping configuration to application preferences (thanks to Julio GorgŽ). [Jeff]
+ enh: Added keyboard shortcuts for Execute, Pause and Reset command (thanks to Julio GorgŽ). [Jeff]
+ enh: Default key mappings are no longer case sensitive. [Jeff]
+ enh: Added ability to limit speed. [Jeff]
+ enh: Fixed: Video output should work on software-only 3D renderers. [Jeff]
+ 
+Windows port:
+ bug: Fix a race condition in NDS_3D_Reset and NDS_glInit [zeromus]
+ bug: Fix the buggy auto frameskip logic which made the emu slow to a crawl. Now it runs fast! [zeromus]
+ bug: Fix resizing, rotate & aspect ration of main window. [CrazyMax,_zeromus]
+ bug: Remove multithreading from user interface after finding several synchronization issues [zeromus]
+ enh: recent roms menu [luigi_]
+ enh: Changed graphics render core to DirectDraw (work faster) [CrazyMax]
+ enh: Add an arm9 cpu load average calculator similar to no$. but I dont think it works right. [zeromus]
+ enh: Rewrite all debug tools (autoupdate works now) [CrazyMax]
+ enh: Rewrite input core & replace config input dialog [CrazyMax]
+ enh: Add AVI output [zeromus]
+ enh: Add pause toggle and frame advance hotkeys [adelikat]
+ enh: Add frame counter display and hud messages framework [adelikat]
+ enh: Main window remembers position, size, and a few other emu preferences [adelikat]
+ enh: Removed directx sdk dependency for easier building. [zeromus]
+ enh: Savestate doesnt unpause emu if it is already paused [adelikat]
+
+0.7.3 -> 0.8
+ Cocoa:
+ - Save State As function now works. [Jeff B]
+ - Recent Items menu now works. [Jeff B]
+ - Opening NDS files from Finder now works. [Jeff B]
+ - Added screenshot feature. [Jeff B]
+ - Added preferences. [Jeff B]
+ - Many more strings are translatable now. [Jeff B]
+ - Default screen color is black (better represents being "off" and easier on eyes at night). [Jeff B]
+ - Added sound. [Jeff B]
+ - Now is a universal binary. [Jeff B]
+ - Leopard resolution icon added. [Jeff B]
+ - Added a Japanese translation. [Jeff B]
+ - Added an optional status bar (resize handle no longer overlaps screen). [Jeff B]
+ - New ROM Info and About DeSmuME windows have been added. [Jeff B]
+ - Fixed several bugs in window resizing. [Jeff B]
+ - Added FAT image support for homebrew games (thanks to TypeError). [Jeff B]
+ - Key config can be changed on the command line. Save/load hotkeys changed (so expose doesn't override). [Jeff B]
+ - Key bindings may work better on non-US keyboards now (needs testing). [Jeff B]
+ general:
+ - Encapsulate GDB debug stub to avoid certain problems [shash]
+ - Fixed CPU LD*/ST* bugs [shash]
+ - Fixed New SMB mini-games freeze [shash]
+ - Fixed possible segfault in ROMReader on ia64 and amd64. [evilynux]
+ - Fixed a crash bug with 2D background corrupting memory [shash]
+ - Flag check optimization [carlo_bramini]
+ - Applied some endian fixes in GPU (thanks to Phazz) [Jeff B]
+ gtk-glade:
+ - Added DeSmuME version in about dialog. [evilynux]
+ - Updated website url in about dialog. [evilynux]
+ - Added Brazilian Portuguese translation by Dreampeppers99. [evilynux]
+ - Better desktop menu entry following FreeDesktop specifications. [evilynux]
+ gtk:
+ - Updated website url in about dialog. [evilynux]
+ - Better desktop menu entry following FreeDesktop specifications. [evilynux]
+ windows port:
+ - Added an "about" box [shash]
+ - DirectInput control interface with joystick support [CrazyMax]
+ - Matrix and Light viewer [Acid Burn]
+	
+0.7.2 -> 0.7.3
+ gtk-glade:
+  - Full localization using intltool/gettext. [evilynux]
+ general:
+  - Added a README.TRANSLATION documenting the localization process. [evilynux]
+ MacOS X:
+  - Initial version of the Mac interface added. [Jeff B]
+
+0.7.1 -> 0.7.2
+ spu:
+  - big endian fixes. [cyberwarriorx]
+ gpu:
+  - big endian fixes. [marcus_c]
+ gtk-glade:
+  - opengl improvements. [masscat]
+ general:
+  - Added support for setting NDS firmware language value. [masscat]
+  - Function added for setting firmware language. [masscat]
+  - Mac/msys compilation fixes. [cyberwarriorx]
+  - Fix compilation when pkg-config macros are not available [evilynux]
+
+0.7.0 -> 0.7.1
+ general:
+  - Added GDB debugger stub [masscat]
+  - Added new/different GBAMP CFlash image reader/writer [masscat]
+ gpu:
+  - Major speedup to the 2D core [shash]
+ gtk-glade:
+  - Added command line options. [masscat]
+  - Added FPS limiter [masscat]
+ cli:
+  - Added command line options. [masscat]
+  - Added FPS limiter [masscat]
+  - Added option to use OpenGl to render window (allows resizing). [masscat]
+ windows port:
+  - Added command line options. [masscat]
+  - Added multiple language support [cyberwarriorx]
+  - Added Danish language translation [thomas-2007]
+
+0.6.0 -> 0.7.0
+ general:
+  - Added support for *.duc files [cyberwarriorx]
+ gpu:
+  - Added support for sprite rotation/scaling [shash]
+  - Added support for the 3D core (openGL and null plugins) [shash] 
+ windows port:
+  - A bunch of fixes [Dmitry Krutskih]
+  - Fixed a bug in sound that was causing it to still not work for some
+    people [cyberwarriorx]
+ gtk:
+  - Added 3D emulation
+  - Added command line options.
+  - Added option to use OpenGL to render window (allows resizing).
+ gtk-glade:
+  - Added 3D emulation
+
+0.5.0 -> 0.6.0
+ general:
+  - Added zipped (based on zziplib) and gzipped (based on zlib) rom support.
+ arm:
+  - Added relocation interrupt vector.
+  - Added region access right checks.
+  - Enabled LDC/STC instructions.
+  - Fixed powersave (cp15) IRQ wait.
+  - Fixed MOV instructions
+ gpu:
+  - Added special color effects.
+  - Added windowing feature.
+  - Fixed transparent direct color backgrounds.
+  - Fixed disabled sprites showing.
+  - Fixed 8/32 bit access to gpu registers.
+  - Fixed missing backgrounds
+  - Support for master brightness
+ wifi:
+  - Added RF chip interface.
+  - Added BB chip interface.
+ windows port:
+  - Fixed address calculation in disassembler.
+  - Added Force Maintain Ratio option for window stretching
+ linux port (cli, gtk and gtk-glade):
+  all:
+   - Added joystick support.
+   - Fixed X and Y buttons.
+  gtk-glade:
+   - Added joystick configuration.
+   - Improved I/O registers viewer tool.
+   - Added save and load states support.
+
+0.3.3 -> 0.5.0
+ arm:
+  - Fixed MSR with immediate value opcode.
+  - Fixed LSR_0 thumb opcode (C flag is correctly set now).
+  - Fixed LDR*/STR* opcodes.
+  - Fixed unaligned memory access on THUMB Core.
+  - Added relocating SWI routines.
+ bios:
+  - Added decompression functions.
+  - Added GetPitchTable function.
+  - Added GetVolumeTable function.
+  - Added GetCRC16 function.
+  - Added experimental SoundBias function.
+  - Added GetSineTable function.
+ cart:
+  - Added CompactFlash/FAT emulation.
+  - Added Get ROM chip ID Cartridge command.
+ gpu:
+  - Added framebuffer emulation.
+  - Fixed a bug in GPU (xfin could be greater than LG causing a segfault).
+  - Added support for Display Mode 0(Display Off).
+  - Added the basic framework for Display Mode 3(Display from Main RAM).
+ spu:
+  - Added sound emulation.
+  - Added sound core system.
+  - Added WAV write core.
+  - Added dummy core.
+  - Added Direct Sound core.
+ linux port:
+  - Added GTK+ GUI.
+  - Added command line interface.
+  - Added stylus and arm9 keypad support in CLI version.
+  - Added FPS display.
+  - Added basic frameskip.
+ windows port:
+  - Fixed a bug when displaying a ROM's information.
+  - Added key configuration.
+  - Removed the debug key.
+  - Added new experimental auto frameskip/frame limit code.
+  - Added sound settings dialog.
+  - Added a few menu options for accessing the website, forums, and for
+    submitting bugs.
+ general:
+  - Rewrote code in C.
+  - Fixed warnings.
+  - Used defines and typedef's to make things more portable and easier to
+    read.
+  - Added autotools stuff.
+  - Changes to logging system.
+  - Added screenshot function.
+  - Translated most french to english.
+  - Added savestate support.
+  - Added firmware reading support(needs work).
+  - Added Backup Memory support with autodetection.
+  - Fixed some endianess issues.
+  - Fixed things so Visual C++ can compile code.
+  - Added bsd support.
+  - Reworked ROM loading so you can load a different rom without any problems.
+  - Finished NDS_Reset. Now the emulation can be reset even while running.
