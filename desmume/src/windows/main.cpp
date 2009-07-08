@@ -1685,6 +1685,8 @@ int _main()
 		}
 		// TODO: check for file exist
 		break;
+	case NDS_ADDON_GUITARGRIP:
+		break;
 	default:
 		addon_type = NDS_ADDON_NONE;
 		break;

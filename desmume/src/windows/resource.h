@@ -297,13 +297,17 @@
 #define IDC_EDIT07                      1005
 #define IDC_MROM                        1005
 #define IDC_ROTATE180                   1005
+#define IDC_GGREEN                      1005
 #define IDC_EDIT12                      1006
 #define IDC_ROTATE270                   1006
 #define IDC_SPU_CACHE                   1006
+#define IDC_GRED                        1006
 #define IDC_ARM7BIOSBROWSE              1007
 #define IDC_EDIT06                      1007
+#define IDC_GYELLOW                     1007
 #define IDC_EDIT09                      1008
 #define IDC_MEMVIEWBOX                  1008
+#define IDC_GBLUE                       1008
 #define IDC_ADDRESS                     1009
 #define IDC_BIOSSWIS                    1009
 #define IDC_EDIT10                      1009
@@ -644,6 +648,7 @@
 #define IDD_IOREG_VIEW_DMA              10006
 #define IDD_IOREG_VIEW_TIMERS           10007
 #define IDD_IOREG_VIEW_IPC_ROM          10008
+#define IDD_GBASLOT_GUITARGRIP          10009
 #define IDM_FILE_STOPAVI                40000
 #define IDM_SCREENSEP_NONE              40000
 #define IDM_FILE_STOPWAV                40001

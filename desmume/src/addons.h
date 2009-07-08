@@ -65,6 +65,7 @@ enum {
 	NDS_ADDON_CFLASH,		// compact flash
 	NDS_ADDON_RUMBLEPAK,	// rumble pack
 	NDS_ADDON_GBAGAME,		// gba game in slot
+	NDS_ADDON_GUITARGRIP,	// Guitar Grip
 	//NDS_ADDON_EXTERNALMIC,
 	NDS_ADDON_COUNT		// use for counter addons - MUST TO BE LAST!!!
 };
@@ -89,5 +90,7 @@ extern BOOL addonsInit();							// Init addons
 extern void addonsClose();							// Shutdown addons
 extern void addonsReset();							// Reset addon
 extern BOOL addonsChangePak(u8 type);				// change current adddon
+
+extern void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue); // Guitar grip keys
 
 #endif

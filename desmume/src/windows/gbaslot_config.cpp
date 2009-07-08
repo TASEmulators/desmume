@@ -287,18 +287,33 @@ BOOL CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 	return FALSE;
 }
 
+BOOL CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	switch(msg)
+	{
+		case WM_INITDIALOG: 
+		{
+			_OKbutton = TRUE;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 u32		GBAslot_IDDs[NDS_ADDON_COUNT] = {
 	IDD_GBASLOT_NONE,
 	IDD_GBASLOT_CFLASH,
 	IDD_GBASLOT_RUMBLEPAK,
-	IDD_GBASLOT_GBAGAME
+	IDD_GBASLOT_GBAGAME,
+	IDD_GBASLOT_GUITARGRIP
 };
 
 DLGPROC GBAslot_Procs[NDS_ADDON_COUNT] = {
 	GbaSlotNone,
 	GbaSlotCFlash,
 	GbaSlotRumblePak,
-	GbaSlotGBAgame
+	GbaSlotGBAgame,
+	GbaSlotGuitarGrip
 };
 
 
@@ -415,6 +430,8 @@ void GBAslotDialog(HWND hwnd)
 			case NDS_ADDON_GBAGAME:
 				strcpy(GBAgameName, tmp_gbagame_filename);
 				WritePrivateProfileString("GBAslot.GBAgame","filename",GBAgameName,IniName);
+				break;
+			case NDS_ADDON_GUITARGRIP:
 				break;
 			default:
 				return;

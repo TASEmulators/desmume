@@ -40,13 +40,16 @@ extern ADDONINTERFACE addonNone;
 extern ADDONINTERFACE addonCFlash;
 extern ADDONINTERFACE addonRumblePak;
 extern ADDONINTERFACE addonGBAgame;
+extern ADDONINTERFACE addonGuitarGrip;
 //extern ADDONINTERFACE addonExternalMic;
 
 ADDONINTERFACE addonList[NDS_ADDON_COUNT] = {
 		addonNone,
 		addonCFlash,
 		addonRumblePak,
-		addonGBAgame};
+		addonGBAgame,
+		addonGuitarGrip
+};
 
 ADDONINTERFACE	addon = addonCFlash;		// default none pak
 u8				addon_type = NDS_ADDON_CFLASH;
