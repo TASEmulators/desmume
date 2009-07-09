@@ -763,6 +763,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\aggdraw.h"
+			>
+		</File>
+		<File
 			RelativePath="..\ARM9.h"
 			>
 		</File>
