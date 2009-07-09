@@ -214,6 +214,8 @@ void AGGDraw() {
 	aggDraw.target->set_font("verdana18_bold");
 	aggDraw.target->set_color(255, 0, 255, 255);
 	aggDraw.target->render_text(60,60, "testing testing testing");
+
+	aggDraw.target->line(60, 90, 100, 100, 4);
 	//
 	//agg_draw_line_pattern(64, 19, 14, 126, 118, 266, 19, 265, .76, 4.69, "C:\\7.bmp");
 }
