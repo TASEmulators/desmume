@@ -41,6 +41,9 @@ public:
 	virtual void set_color(int r, int g, int b, int a) = 0;
 	virtual void set_gamma(int gamma) = 0;
 	virtual void set_font(const std::string& name) = 0;
+
+	virtual void set_pixel(int x, int y) = 0;
+	virtual void clear() = 0;
 	
 	virtual void render_text(int x, int y, const std::string& str) = 0;
 	virtual void solid_ellipse(int x, int y, int rx, int ry) = 0;
@@ -50,10 +53,12 @@ public:
 	static const agg::int8u* lookupFont(const std::string& name);
 };
 
-template<typename pixfmt> 
+template<typename PIXFMT> 
 class AggDrawTargetImplementation : public AggDrawTarget
 {
 public:	
+	typedef PIXFMT pixfmt;
+
 	// The AGG base 
 	typedef agg::renderer_base<pixfmt> RendererBase;
 
@@ -95,6 +100,17 @@ public:
 	virtual void set_color(int r, int g, int b, int a) { renderState.color = color_type(r,g,b,a); }
 	virtual void set_gamma(int gamma) { renderState.gamma = gamma; }
 	virtual void set_font(const std::string& name) { renderState.font = lookupFont(name); }
+
+	virtual void set_pixel(int x, int y)
+	{
+		pixf.copy_pixel(x, y, renderState.color);
+	}
+
+	virtual void clear()
+	{
+		static color_type transparentBlack(0,0,0,0);
+		rbase.clear(transparentBlack);
+	}
 
 	virtual void render_text(int x, int y, const std::string& str)
 	{
@@ -154,9 +170,18 @@ public:
 	AggDrawTarget *target;
 };
 
+enum AggTarget
+{
+	AggTarget_Screen = 0,
+	AggTarget_Lua = 1
+};
+
 //specialized instance for desmume; should eventually move to another file
 class AggDraw_Desmume : public AggDraw
 {
+public:
+	void setTarget(AggTarget newTarget);
+	void composite(void* dest);
 };
 
 extern AggDraw_Desmume aggDraw;

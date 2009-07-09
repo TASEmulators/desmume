@@ -35,7 +35,13 @@
 #include "agg_path_storage.h"
 #include "agg_color_rgba.h"
 
+#include "agg_pixfmt_rgb.h"
+#include "agg_pixfmt_rgba.h"
+#include "agg_pixfmt_rgb_packed.h"
+
 #include "agg_rasterizer_scanline_aa.h"
+#include "agg_scanline_u.h"
+#include "agg_renderer_scanline.h"
 #include "agg_scanline_p.h"
 
 //raster text
@@ -48,6 +54,14 @@
 #include "agg_pattern_filters_rgba.h"
 #include "agg_renderer_outline_image.h"
 #include "agg_rasterizer_outline_aa.h"
+
+#include "agg_image_accessors.h"
+#include "agg_span_interpolator_linear.h"
+#include "agg_span_image_filter_rgb.h"
+#include "agg_span_image_filter_rgba.h"
+#include "agg_span_image_filter_gray.h"
+
+#include "agg_span_allocator.h"
 
 typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
 static TAgg_Font_Table font_table;
@@ -108,24 +122,87 @@ void Agg_init_fonts()
 		font_table[fonts[i].name] = fonts[i].font;
 }
 
-#include "agg_pixfmt_rgb.h"
-#include "agg_pixfmt_rgb_packed.h"
-
 AggDraw_Desmume aggDraw;
+
 typedef AggDrawTargetImplementation<agg::pixfmt_rgb555> T_AGG_RGB555;
-T_AGG_RGB555 agg_targetScreen(GPU_tempScreen, 256, 384, 512);
+typedef AggDrawTargetImplementation<agg::pixfmt_bgra32> T_AGG_RGBA;
+
+T_AGG_RGB555 agg_targetScreen(GPU_screen, 256, 384, 512);
+
+static u32 luaBuffer[256*192*2];
+T_AGG_RGBA agg_targetLua((u8*)luaBuffer, 256, 384, 1024);
+
+static AggDrawTarget* targets[] = {
+	&agg_targetScreen,
+	&agg_targetLua
+};
 
 void Agg_init()
 {
-	aggDraw.target = &agg_targetScreen;
 	Agg_init_fonts();
+	aggDraw.target = targets[0];
 }
+
+void AggDraw_Desmume::setTarget(AggTarget newTarget)
+{
+	target = targets[newTarget];
+}
+
+void AggDraw_Desmume::composite(void* dest)
+{
+	//!! oh what a mess !!
+
+	agg::rendering_buffer rBuf;
+	rBuf.attach((u8*)dest, 256, 384, 1024);
+
+	typedef agg::image_accessor_clip<T_AGG_RGBA::pixfmt> img_source_type;
+
+	img_source_type img_src(agg_targetLua.pixf, T_AGG_RGBA::pixfmt::color_type(0,255,0,0));
+
+	agg::trans_affine img_mtx;
+	typedef agg::span_interpolator_linear<> interpolator_type;
+	interpolator_type interpolator(img_mtx);
+	typedef agg::span_image_filter_rgba_nn<img_source_type,interpolator_type> span_gen_type;
+	span_gen_type sg(img_src, interpolator);
+
+	agg::rasterizer_scanline_aa<> ras;
+	//dont know whether this is necessary
+	//ras.clip_box(0, 0, 256,384);
+	agg::scanline_u8 sl;
+
+	//I can't believe we're using a polygon for a rectangle.
+	//there must be a better way
+	agg::path_storage path;
+	path.move_to(0, 0);
+	path.line_to(255, 0);
+	path.line_to(255, 383);
+	path.line_to(0, 383);
+	path.close_polygon();
+
+
+	T_AGG_RGBA::pixfmt pixf(rBuf);
+	T_AGG_RGBA::RendererBase rbase(pixf);
+	agg::span_allocator<T_AGG_RGBA::color_type> sa;
+
+	ras.add_path(path);
+	agg::render_scanlines_bin(ras, sl, rbase, sa, sg);
+
+}
+
+static int ctr=0;
 
 //temporary, just for testing the lib
 void AGGDraw() {
 
+	aggDraw.setTarget(AggTarget_Lua);
+
+	aggDraw.target->clear();
+
+	ctr++;
+
 	aggDraw.target->set_color(0, 255, 0, 128);
-	aggDraw.target->solid_rectangle(100, 100, 200, 200);
+	int add = (int)(40*cos((double)ctr/20.0f));
+	aggDraw.target->solid_rectangle(100 +add , 100, 200 + add, 200);
 
 	aggDraw.target->set_gamma(99999);
 	aggDraw.target->set_color(255, 64, 64, 128);
@@ -135,9 +212,9 @@ void AGGDraw() {
 	aggDraw.target->solid_ellipse(70, 80, 50, 50);
 	
 	aggDraw.target->set_font("verdana18_bold");
-	aggDraw.target->set_color(255, 0, 255, 128);
+	aggDraw.target->set_color(255, 0, 255, 255);
 	aggDraw.target->render_text(60,60, "testing testing testing");
-	
+	//
 	//agg_draw_line_pattern(64, 19, 14, 126, 118, 266, 19, 265, .76, 4.69, "C:\\7.bmp");
 }
 

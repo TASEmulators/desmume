@@ -83,8 +83,10 @@
 #include "7zip.h"
 #include "pathsettings.h"
 #include "utils/xstring.h"
-
 #include "directx/ddraw.h"
+
+#include "aggdraw.h"
+
 
 using namespace std;
 
@@ -774,6 +776,9 @@ void Display()
 	ddsd.dwFlags=DDSD_ALL;
 	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
 
+	extern void AGGDraw();
+	AGGDraw();
+
 	if (res == DD_OK)
 	{
 		char* buffer = (char*)ddsd.lpSurface;
@@ -828,6 +833,8 @@ void Display()
 					break;
 				}
 			}
+
+			//aggDraw.composite(ddsd.lpSurface);
 			break;
 
 		case 16:
@@ -1469,6 +1476,8 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 
 int _main()
 {
+	extern void Agg_init();
+	Agg_init();
 	InitDecoder();
 
 #ifdef WX_STUB
