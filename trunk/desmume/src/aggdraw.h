@@ -35,6 +35,9 @@
 #include "agg_renderer_scanline.h"
 #include "agg_bounding_rect.h"
 
+#include "agg_renderer_mclip.h"
+#include "agg_renderer_outline_aa.h"
+
 class AggDrawTarget
 {
 public:
@@ -49,6 +52,7 @@ public:
 	virtual void solid_ellipse(int x, int y, int rx, int ry) = 0;
 	virtual void solid_rectangle(int x1, int y1, int x2, int y2) = 0;
 	virtual void solid_triangle(int x1, int y1, int x2, int y2, int x3, int y3) = 0;
+	virtual void line(int x1, int y1, int x2, int y2, double w) = 0;
 
 	static const agg::int8u* lookupFont(const std::string& name);
 };
@@ -156,6 +160,27 @@ public:
 		m_ras.gamma(agg::gamma_power(renderState.gamma * 2.0));
 		m_ras.add_path(path);
 		agg::render_scanlines(m_ras, m_sl_p8, ren_aa);
+	}
+
+	virtual void line(int x1, int y1, int x2, int y2, double w){
+
+		agg::line_profile_aa profile;
+		profile.width(w);
+
+		typedef agg::renderer_mclip<pixfmt> base_ren_type;
+		typedef agg::renderer_outline_aa<base_ren_type> renderer_type;
+
+		base_ren_type r(pixf);
+		renderer_type ren(r, profile);
+
+		agg::rasterizer_outline_aa<renderer_type> ras(ren);
+		ras.round_cap(true);
+
+		ren.color(renderState.color);
+
+		ras.move_to_d(x1, y1);
+		ras.line_to_d(x2, y2);
+		ras.render(false);
 	}
 
 };
