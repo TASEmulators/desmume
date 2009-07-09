@@ -216,6 +216,9 @@ void AGGDraw() {
 	aggDraw.target->render_text(60,60, "testing testing testing");
 
 	aggDraw.target->line(60, 90, 100, 100, 4);
+
+	aggDraw.target->marker(200, 200, 40, 4);
+	aggDraw.target->marker(100, 300, 40, 3);
 	//
 	//agg_draw_line_pattern(64, 19, 14, 126, 118, 266, 19, 265, .76, 4.69, "C:\\7.bmp");
 }

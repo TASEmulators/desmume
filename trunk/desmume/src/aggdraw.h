@@ -37,6 +37,7 @@
 
 #include "agg_renderer_mclip.h"
 #include "agg_renderer_outline_aa.h"
+#include "agg_renderer_markers.h"
 
 class AggDrawTarget
 {
@@ -53,6 +54,7 @@ public:
 	virtual void solid_rectangle(int x1, int y1, int x2, int y2) = 0;
 	virtual void solid_triangle(int x1, int y1, int x2, int y2, int x3, int y3) = 0;
 	virtual void line(int x1, int y1, int x2, int y2, double w) = 0;
+	virtual void marker(int x, int y, int size, int type) = 0;
 
 	static const agg::int8u* lookupFont(const std::string& name);
 };
@@ -162,7 +164,8 @@ public:
 		agg::render_scanlines(m_ras, m_sl_p8, ren_aa);
 	}
 
-	virtual void line(int x1, int y1, int x2, int y2, double w){
+	virtual void line(int x1, int y1, int x2, int y2, double w)
+	{
 
 		agg::line_profile_aa profile;
 		profile.width(w);
@@ -181,6 +184,22 @@ public:
 		ras.move_to_d(x1, y1);
 		ras.line_to_d(x2, y2);
 		ras.render(false);
+	}
+
+	virtual void marker(int x, int y, int size, int type)
+	{
+
+		typedef agg::renderer_mclip<pixfmt> base_ren_type;
+
+		base_ren_type r(pixf);
+		agg::renderer_scanline_aa_solid<base_ren_type> rs(r);
+
+		agg::renderer_markers<base_ren_type> m(r);
+
+		m.line_color(renderState.color);
+		m.fill_color(renderState.color);
+
+		m.marker(x, y, size, agg::marker_e(type % agg::end_of_markers));
 	}
 
 };
