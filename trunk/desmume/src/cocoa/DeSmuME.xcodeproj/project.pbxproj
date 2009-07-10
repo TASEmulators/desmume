@@ -23,7 +23,6 @@
 		1EFD51870F892B1A00B029BB /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644A0E78E18100AEDC8B /* arm_instructions.cpp */; };
 		1EFD51880F892B1A00B029BB /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644B0E78E18100AEDC8B /* armcpu.cpp */; };
 		1EFD51890F892B1A00B029BB /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644C0E78E18100AEDC8B /* bios.cpp */; };
-		1EFD518A0F892B1A00B029BB /* cflash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644D0E78E18100AEDC8B /* cflash.cpp */; };
 		1EFD518B0F892B1A00B029BB /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644E0E78E18100AEDC8B /* cp15.cpp */; };
 		1EFD518C0F892B1A00B029BB /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644F0E78E18100AEDC8B /* debug.cpp */; };
 		1EFD518D0F892B1A00B029BB /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764500E78E18100AEDC8B /* Disassembler.cpp */; };
@@ -96,7 +95,6 @@
 		722764620E78E18100AEDC8B /* arm_instructions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644A0E78E18100AEDC8B /* arm_instructions.cpp */; };
 		722764630E78E18100AEDC8B /* armcpu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644B0E78E18100AEDC8B /* armcpu.cpp */; };
 		722764640E78E18100AEDC8B /* bios.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644C0E78E18100AEDC8B /* bios.cpp */; };
-		722764650E78E18100AEDC8B /* cflash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644D0E78E18100AEDC8B /* cflash.cpp */; };
 		722764660E78E18100AEDC8B /* cp15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644E0E78E18100AEDC8B /* cp15.cpp */; };
 		722764670E78E18100AEDC8B /* debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7227644F0E78E18100AEDC8B /* debug.cpp */; };
 		722764680E78E18100AEDC8B /* Disassembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722764500E78E18100AEDC8B /* Disassembler.cpp */; };
@@ -132,6 +130,8 @@
 		72D89DE50E83973A008D9B64 /* screen_state.m in Sources */ = {isa = PBXBuildFile; fileRef = 72D89DE40E83973A008D9B64 /* screen_state.m */; };
 		72D89E370E845C7E008D9B64 /* readwrite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 72D89E360E845C7E008D9B64 /* readwrite.cpp */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		95D5FE501007BC4500882BAE /* guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */; };
+		95D5FE751007EC0900882BAE /* guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -198,7 +198,6 @@
 		7227644A0E78E18100AEDC8B /* arm_instructions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arm_instructions.cpp; path = ../arm_instructions.cpp; sourceTree = SOURCE_ROOT; };
 		7227644B0E78E18100AEDC8B /* armcpu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = armcpu.cpp; path = ../armcpu.cpp; sourceTree = SOURCE_ROOT; };
 		7227644C0E78E18100AEDC8B /* bios.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = bios.cpp; path = ../bios.cpp; sourceTree = SOURCE_ROOT; };
-		7227644D0E78E18100AEDC8B /* cflash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cflash.cpp; path = ../cflash.cpp; sourceTree = SOURCE_ROOT; };
 		7227644E0E78E18100AEDC8B /* cp15.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cp15.cpp; path = ../cp15.cpp; sourceTree = SOURCE_ROOT; };
 		7227644F0E78E18100AEDC8B /* debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = debug.cpp; path = ../debug.cpp; sourceTree = SOURCE_ROOT; };
 		722764500E78E18100AEDC8B /* Disassembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Disassembler.cpp; path = ../Disassembler.cpp; sourceTree = SOURCE_ROOT; };
@@ -247,7 +246,6 @@
 		729BEC9E0D9D57AF00ED561B /* armcpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = armcpu.h; path = ../armcpu.h; sourceTree = SOURCE_ROOT; };
 		729BECA00D9D57AF00ED561B /* bios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bios.h; path = ../bios.h; sourceTree = SOURCE_ROOT; };
 		729BECA10D9D57AF00ED561B /* bits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bits.h; path = ../bits.h; sourceTree = SOURCE_ROOT; };
-		729BECA30D9D57AF00ED561B /* cflash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cflash.h; path = ../cflash.h; sourceTree = SOURCE_ROOT; };
 		729BECA60D9D57AF00ED561B /* cp15.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cp15.h; path = ../cp15.h; sourceTree = SOURCE_ROOT; };
 		729BECA80D9D57AF00ED561B /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = ../debug.h; sourceTree = SOURCE_ROOT; };
 		729BECAA0D9D57AF00ED561B /* Disassembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Disassembler.h; path = ../Disassembler.h; sourceTree = SOURCE_ROOT; };
@@ -277,6 +275,7 @@
 		72D89DE40E83973A008D9B64 /* screen_state.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = screen_state.m; sourceTree = "<group>"; };
 		72D89E360E845C7E008D9B64 /* readwrite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = readwrite.cpp; path = ../readwrite.cpp; sourceTree = SOURCE_ROOT; };
 		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = guitarGrip.cpp; path = ../addons/guitarGrip.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -453,7 +452,6 @@
 				7227644A0E78E18100AEDC8B /* arm_instructions.cpp */,
 				7227644B0E78E18100AEDC8B /* armcpu.cpp */,
 				7227644C0E78E18100AEDC8B /* bios.cpp */,
-				7227644D0E78E18100AEDC8B /* cflash.cpp */,
 				7227644E0E78E18100AEDC8B /* cp15.cpp */,
 				7227644F0E78E18100AEDC8B /* debug.cpp */,
 				722764500E78E18100AEDC8B /* Disassembler.cpp */,
@@ -478,7 +476,6 @@
 				729BEC9E0D9D57AF00ED561B /* armcpu.h */,
 				729BECA00D9D57AF00ED561B /* bios.h */,
 				729BECA10D9D57AF00ED561B /* bits.h */,
-				729BECA30D9D57AF00ED561B /* cflash.h */,
 				729BECA60D9D57AF00ED561B /* cp15.h */,
 				729BECA80D9D57AF00ED561B /* debug.h */,
 				729BECAA0D9D57AF00ED561B /* Disassembler.h */,
@@ -492,6 +489,7 @@
 				729BECB90D9D57AF00ED561B /* mem.h */,
 				729BECBB0D9D57AF00ED561B /* MMU.h */,
 				729BECBD0D9D57AF00ED561B /* NDSSystem.h */,
+				95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */,
 				729BECBE0D9D57AF00ED561B /* registers.h */,
 				729BECC00D9D57AF00ED561B /* render3D.h */,
 				729BECC20D9D57AF00ED561B /* ROMReader.h */,
@@ -673,7 +671,6 @@
 				1EFD51870F892B1A00B029BB /* arm_instructions.cpp in Sources */,
 				1EFD51880F892B1A00B029BB /* armcpu.cpp in Sources */,
 				1EFD51890F892B1A00B029BB /* bios.cpp in Sources */,
-				1EFD518A0F892B1A00B029BB /* cflash.cpp in Sources */,
 				1EFD518B0F892B1A00B029BB /* cp15.cpp in Sources */,
 				1EFD518C0F892B1A00B029BB /* debug.cpp in Sources */,
 				1EFD518D0F892B1A00B029BB /* Disassembler.cpp in Sources */,
@@ -717,6 +714,7 @@
 				1EFD51B30F892B1A00B029BB /* cheatSystem.cpp in Sources */,
 				1EFD51B40F892B1A00B029BB /* texcache.cpp in Sources */,
 				1EFD51B50F892B1A00B029BB /* gdbstub.cpp in Sources */,
+				95D5FE751007EC0900882BAE /* guitarGrip.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -737,7 +735,6 @@
 				722764620E78E18100AEDC8B /* arm_instructions.cpp in Sources */,
 				722764630E78E18100AEDC8B /* armcpu.cpp in Sources */,
 				722764640E78E18100AEDC8B /* bios.cpp in Sources */,
-				722764650E78E18100AEDC8B /* cflash.cpp in Sources */,
 				722764660E78E18100AEDC8B /* cp15.cpp in Sources */,
 				722764670E78E18100AEDC8B /* debug.cpp in Sources */,
 				722764680E78E18100AEDC8B /* Disassembler.cpp in Sources */,
@@ -780,6 +777,7 @@
 				1FB3727D0F1CBAB200F75A43 /* rumblepak.cpp in Sources */,
 				1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */,
 				1F4B54D90F538DFE00C8B514 /* texcache.cpp in Sources */,
+				95D5FE501007BC4500882BAE /* guitarGrip.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -815,8 +813,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
-				COPY_PHASE_STRIP = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				COPY_PHASE_STRIP = YES;
 				GCC_AUTO_VECTORIZATION = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -835,8 +834,9 @@
 				GCC_UNROLL_LOOPS = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = DeSmuME;
+				STRIP_INSTALLED_PRODUCT = YES;
 				VALID_ARCHS = "i386 ppc";
 			};
 			name = Debug;
@@ -845,7 +845,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_AUTO_VECTORIZATION = YES;
 				GCC_MODEL_TUNING = G5;
@@ -863,8 +865,9 @@
 				GCC_UNROLL_LOOPS = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = DeSmuME;
+				STRIP_INSTALLED_PRODUCT = YES;
 				VALID_ARCHS = "i386 ppc";
 			};
 			name = Release;
