@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="8.00"
 	Name="agg-2.5"
 	ProjectGUID="{887D5BD9-14EB-4B81-AABA-71E1E1063044}"
 	RootNamespace="agg-2.5"
@@ -80,9 +80,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
+			OutputDirectory="."
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
+			WholeProgramOptimization="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -107,6 +108,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories=".\;.\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;"
 				StringPooling="true"
@@ -116,7 +118,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 				OmitDefaultLibName="true"
 			/>
 			<Tool
