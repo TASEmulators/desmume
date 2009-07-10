@@ -1529,9 +1529,6 @@ int _main()
 				CFlash_Mode = ADDON_CFLASH_MODE_RomPath;
 			}
 
-
-
-
 	//init_configured_features( &my_config);
 	/*if ( !fill_configured_features( &my_config, lpszArgument)) {
 		MessageBox(NULL,"Unable to parse command line arguments","Error",MB_OK);
@@ -1645,6 +1642,8 @@ int _main()
 
 	void input_init();
 	input_init();
+
+	if (addon_type == NDS_ADDON_GUITARGRIP) Guitar.Enabled = true;
 
 	LOG("Init NDS\n");
 
