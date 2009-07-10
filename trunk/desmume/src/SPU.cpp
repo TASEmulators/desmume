@@ -956,7 +956,6 @@ FORCEINLINE static void _SPU_ChanUpdate(const bool actuallyMix, SPU_struct* cons
 template<bool actuallyMix> 
 static void SPU_MixAudio(SPU_struct *SPU, int length)
 {
-	int i;
 	u8 vol;
 
 	if(actuallyMix)
@@ -975,7 +974,7 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 
 	vol = T1ReadByte(MMU.ARM7_REG, 0x500) & 0x7F;
 
-	for(i=0;i<16;i++)
+	for(int i=0;i<16;i++)
 	{
 		channel_struct *chan = &SPU->channels[i];
 	
@@ -986,12 +985,12 @@ static void SPU_MixAudio(SPU_struct *SPU, int length)
 		SPU->buflength = length;
 
 		// Mix audio
-		_SPU_ChanUpdate(actuallyMix, SPU, chan);
+		_SPU_ChanUpdate(!CommonSettings.spu_muteChannels[i] && actuallyMix, SPU, chan);
 	}
 
 	// convert from 32-bit->16-bit
 	if(actuallyMix)
-		for (i = 0; i < length*2; i++)
+		for (int i = 0; i < length*2; i++)
 		{
 			// Apply Master Volume
 			SPU->sndbuf[i] = spumuldiv7(SPU->sndbuf[i], vol);

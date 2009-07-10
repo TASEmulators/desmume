@@ -375,6 +375,8 @@ extern struct TCommonSettings {
 		strcpy(ARM9BIOS, "biosnds9.bin");
 		strcpy(ARM7BIOS, "biosnds7.bin");
 		strcpy(Firmware, "firmware.bin");
+		for(int i=0;i<16;i++)
+			spu_muteChannels[i] = false;
 	}
 	bool HighResolutionInterpolateColor;
 
@@ -399,6 +401,8 @@ extern struct TCommonSettings {
 
 	//this is the user's choice of manual backup type, for cases when the autodetection can't be trusted
 	int manualBackupType;
+
+	bool spu_muteChannels[16];
 
 	struct _ShowGpu {
 		_ShowGpu() : main(true), sub(true) {}
