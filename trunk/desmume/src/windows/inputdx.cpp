@@ -198,9 +198,11 @@
 
 static TCHAR szClassName[] = _T("InputCustom");
 static TCHAR szHotkeysClassName[] = _T("InputCustomHot");
+static TCHAR szGuitarClassName[] = _T("InputCustomGuitar");
 
 static LRESULT CALLBACK InputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static LRESULT CALLBACK HotInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT CALLBACK GuitarInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 SJoyState Joystick [16];
 SJoyState JoystickF [16];
@@ -238,6 +240,11 @@ SJoypad DefaultJoypad[16] = {
 };
 
 SJoypad Joypad[16];
+
+SGuitar DefaultGuitar = { true, 'E', 'R', 'T', 'Y' };
+
+SGuitar Guitar;
+u8	guitarState = 0;
 
 extern volatile BOOL paused;
 
@@ -345,6 +352,15 @@ static void ReadHotkey(const char* name, WORD& output)
 	}
 }
 
+static void ReadGuitarControl(const char* name, WORD& output)
+{
+	UINT temp;
+	temp = GetPrivateProfileInt("GBAslot.GuitarGrip",name,-1,IniName);
+	if(temp != -1) {
+		output = temp;
+	}
+}
+
 static void LoadHotkeyConfig()
 {
 	SCustomKey *key = &CustomKeys.key(0);
@@ -367,6 +383,19 @@ static void SaveHotkeyConfig()
 		WritePrivateProfileInt("Hotkeys",(char*)modname.c_str(),key->modifiers,IniName);
 		key++;
 	}
+}
+
+static void LoadGuitarConfig()
+{
+	memcpy(&Guitar,&DefaultGuitar,sizeof(Guitar));
+
+	Guitar.Enabled = true;
+#define DO(X) ReadControl(#X,Guitar.X);
+	DO(GREEN);
+	DO(RED);
+	DO(YELLOW);
+	DO(BLUE);
+#undef DO
 }
 
 static void LoadInputConfig()
@@ -1140,6 +1169,21 @@ static void InitCustomControls()
 
     RegisterClassEx(&wc);
 
+	wc.cbSize         = sizeof(wc);
+    wc.lpszClassName  = szGuitarClassName;
+    wc.hInstance      = GetModuleHandle(0);
+    wc.lpfnWndProc    = GuitarInputCustomWndProc;
+    wc.hCursor        = LoadCursor (NULL, IDC_ARROW);
+    wc.hIcon          = 0;
+    wc.lpszMenuName   = 0;
+    wc.hbrBackground  = (HBRUSH)GetSysColorBrush(COLOR_BTNFACE);
+    wc.style          = 0;
+    wc.cbClsExtra     = 0;
+    wc.cbWndExtra     = sizeof(InputCust *);
+    wc.hIconSm        = 0;
+
+
+    RegisterClassEx(&wc);
 }
 
 InputCust * GetInputCustom(HWND hwnd)
@@ -1339,6 +1383,148 @@ static LRESULT CALLBACK InputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
     }
 
     return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK GuitarInputCustomWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+		// retrieve the custom structure POINTER for THIS window
+    InputCust *icp = GetInputCustom(hwnd);
+	HWND pappy = (HWND__ *)GetWindowLongPtr(hwnd,GWL_HWNDPARENT);
+	funky= hwnd;
+
+	static HWND selectedItem = NULL;
+
+	char temp[100];
+	COLORREF col;
+    switch(msg)
+    {
+
+	case WM_GETDLGCODE:
+		return DLGC_WANTARROWS|DLGC_WANTALLKEYS|DLGC_WANTCHARS;
+		break;
+
+
+    case WM_NCCREATE:
+
+        // Allocate a new CustCtrl structure for this window.
+        icp = (InputCust *) malloc( sizeof(InputCust) );
+
+        // Failed to allocate, stop window creation.
+        if(icp == NULL) return FALSE;
+
+        // Initialize the CustCtrl structure.
+        icp->hwnd      = hwnd;
+        icp->crForeGnd = GetSysColor(COLOR_WINDOWTEXT);
+        icp->crBackGnd = GetSysColor(COLOR_WINDOW);
+        icp->hFont     = (HFONT__ *) GetStockObject(DEFAULT_GUI_FONT);
+
+        // Assign the window text specified in the call to CreateWindow.
+        SetWindowText(hwnd, ((CREATESTRUCT *)lParam)->lpszName);
+
+        // Attach custom structure to this window.
+        SetInputCustom(hwnd, icp);
+
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+
+		selectedItem = NULL;
+
+		SetTimer(hwnd,777,125,NULL);
+
+        // Continue with window creation.
+        return TRUE;
+
+    // Clean up when the window is destroyed.
+    case WM_NCDESTROY:
+        free(icp);
+        break;
+	case WM_PAINT:
+		return InputCustom_OnPaint(icp,wParam,lParam);
+		break;
+	case WM_ERASEBKGND:
+		return 1;
+	case WM_USER+45:
+	case WM_KEYDOWN:
+		TranslateKey(wParam,temp);
+		col = CheckButtonKey(wParam);
+
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		SetWindowText(hwnd,temp);
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		SendMessage(pappy,WM_USER+43,wParam,(LPARAM)hwnd);
+
+		break;
+	case WM_USER+44:
+
+		TranslateKey(wParam,temp);
+		if(IsWindowEnabled(hwnd))
+		{
+			col = CheckButtonKey(wParam);
+		}
+		else
+		{
+			col = RGB( 192,192,192);
+		}
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		SetWindowText(hwnd,temp);
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+
+		break;
+
+	case WM_SETFOCUS:
+	{
+		selectedItem = hwnd;
+		col = RGB( 0,255,0);
+		icp->crForeGnd = ((~col) & 0x00ffffff);
+		icp->crBackGnd = col;
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+//		tid = wParam;
+
+		break;
+	}
+	case WM_KILLFOCUS:
+	{
+		selectedItem = NULL;
+		SendMessage(pappy,WM_USER+46,wParam,(LPARAM)hwnd); // refresh fields on deselect
+		break;
+	}
+
+	case WM_TIMER:
+		if(hwnd == selectedItem)
+		{
+			FunkyJoyStickTimer();
+		}
+		SetTimer(hwnd,777,125,NULL);
+		break;
+	case WM_LBUTTONDOWN:
+		SetFocus(hwnd);
+		break;
+	case WM_ENABLE:
+		COLORREF col;
+		if(wParam)
+		{
+			col = RGB( 255,255,255);
+			icp->crForeGnd = ((~col) & 0x00ffffff);
+			icp->crBackGnd = col;
+		}
+		else
+		{
+			col = RGB( 192,192,192);
+			icp->crForeGnd = ((~col) & 0x00ffffff);
+			icp->crBackGnd = col;
+		}
+		InvalidateRect(icp->hwnd, NULL, FALSE);
+		UpdateWindow(icp->hwnd);
+		return true;
+    default:
+        break;
+    }
+	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 static void TranslateKeyWithModifiers(int wParam, int modifiers, char * outStr)
@@ -2171,6 +2357,7 @@ void input_init()
 	
 	LoadInputConfig();
 	LoadHotkeyConfig();
+	LoadGuitarConfig();
 
 	di_init();
 	FeedbackON = input_feedback;
@@ -2213,6 +2400,14 @@ void input_process()
 
 	NDS_setPad( R, L, D, U, T, S, B, A, Y, X, W, E, G, F);
 
+	if (Guitar.Enabled)
+	{
+		bool gG=!S9xGetState(Guitar.GREEN);
+		bool gR=!S9xGetState(Guitar.RED);
+		bool gY=!S9xGetState(Guitar.YELLOW);
+		bool gB=!S9xGetState(Guitar.BLUE);
+		guitarGrip_setKey(gG, gR, gY, gB);
+	}
 }
 
 static void set_hotkeyinfo(HWND hDlg)
