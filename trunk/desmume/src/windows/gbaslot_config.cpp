@@ -456,7 +456,7 @@ void GBAslotDialog(HWND hwnd)
 	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
-	needReset == true;
+	needReset = true;
 	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
 	{
@@ -485,6 +485,7 @@ void GBAslotDialog(HWND hwnd)
 				break;
 			case NDS_ADDON_GUITARGRIP:
 				memcpy(&Guitar, &tmp_Guitar, sizeof(tmp_Guitar));
+				Guitar.Enabled = true;
 				WritePrivateProfileInt("GBAslot.GuitarGrip","green",Guitar.GREEN,IniName);
 				WritePrivateProfileInt("GBAslot.GuitarGrip","red",Guitar.RED,IniName);
 				WritePrivateProfileInt("GBAslot.GuitarGrip","yellow",Guitar.YELLOW,IniName);
@@ -493,6 +494,8 @@ void GBAslotDialog(HWND hwnd)
 			default:
 				return;
 		}
+		if (temp_type!=NDS_ADDON_GUITARGRIP) 
+			Guitar.Enabled = false;
 		WritePrivateProfileInt("GBAslot","type",temp_type,IniName);
 
 		addon_type = temp_type;

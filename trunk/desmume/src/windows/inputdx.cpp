@@ -241,7 +241,7 @@ SJoypad DefaultJoypad[16] = {
 
 SJoypad Joypad[16];
 
-SGuitar DefaultGuitar = { true, 'E', 'R', 'T', 'Y' };
+SGuitar DefaultGuitar = { false, 'E', 'R', 'T', 'Y' };
 
 SGuitar Guitar;
 u8	guitarState = 0;
@@ -389,7 +389,7 @@ static void LoadGuitarConfig()
 {
 	memcpy(&Guitar,&DefaultGuitar,sizeof(Guitar));
 
-	Guitar.Enabled = true;
+	//Guitar.Enabled = true;
 #define DO(X) ReadControl(#X,Guitar.X);
 	DO(GREEN);
 	DO(RED);
