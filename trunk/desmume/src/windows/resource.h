@@ -120,23 +120,23 @@
 #define IDC_PNG                         325
 #define IDC_BMP                         326
 #define IDC_FORMATSTATIC                327
-#define IDM_PATHSETTINGS 350
-#define IDC_ROMPATHEDIT 351
-#define IDC_BROWSEROMS 352
-#define IDC_PATHDEFAULTS 353
-#define IDC_SAVERAMPATHEDIT 354
-#define IDC_BROWSESRAM 355
-#define IDC_STATEPATHEDIT 356
-#define IDC_BROWSESTATES 357
-#define IDC_SCREENSHOTPATHEDIT 358
-#define IDC_BROWSESCREENSHOTS 359
-#define IDC_AVIPATHEDIT 360
-#define IDC_BROWSEAVI 361
-#define IDC_CHEATPATHEDIT 362
-#define IDC_BROWSECHEATS 363
-#define IDC_LUAPATHEDIT 364
-#define IDC_BROWSELUA 365
-#define IDD_PATHSETTINGS 366
+#define IDM_PATHSETTINGS                350
+#define IDC_ROMPATHEDIT                 351
+#define IDC_BROWSEROMS                  352
+#define IDC_PATHDEFAULTS                353
+#define IDC_SAVERAMPATHEDIT             354
+#define IDC_BROWSESRAM                  355
+#define IDC_STATEPATHEDIT               356
+#define IDC_BROWSESTATES                357
+#define IDC_SCREENSHOTPATHEDIT          358
+#define IDC_BROWSESCREENSHOTS           359
+#define IDC_AVIPATHEDIT                 360
+#define IDC_BROWSEAVI                   361
+#define IDC_CHEATPATHEDIT               362
+#define IDC_BROWSECHEATS                363
+#define IDC_LUAPATHEDIT                 364
+#define IDC_BROWSELUA                   365
+#define IDD_PATHSETTINGS                366
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
@@ -395,6 +395,15 @@
 #define IDC_LIST                        1069
 #define IDC_SNUMBER                     1071
 #define IDC_CHECK1                      1074
+#define IDC_CHECK2                      1075
+
+#define IDC_CHECK3                      1076
+
+#define IDC_CHECK4                      1077
+#define IDC_CHECK6                      1080
+#define IDC_CHECK7                      1082
+#define IDC_CHECK8                      1083
+#define IDC_CHECK9                      1088
 #define IDM_FIRMSETTINGS                1100
 #define IDD_FIRMSETTINGS                1101
 #define IDC_EDIT1                       1102
@@ -608,6 +617,14 @@
 #define IDC_SOUND5POSLEN                1451
 #define IDC_SOUND6POSLEN                1452
 #define IDC_SOUND7POSLEN                1453
+#define IDC_SOUND0MUTE                  2001
+#define IDC_SOUND1MUTE                  2002
+#define IDC_SOUND2MUTE                  2003
+#define IDC_SOUND3MUTE                  2004
+#define IDC_SOUND4MUTE                  2005
+#define IDC_SOUND5MUTE                  2006
+#define IDC_SOUND6MUTE                  2007
+#define IDC_SOUND7MUTE                  2008
 #define IDC_GI_FATOFS                   4464
 #define IDC_INTERPOLATECOLOR            4464
 #define IDC_GI_FATSIZE                  4465
@@ -773,7 +790,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40008
-#define _APS_NEXT_CONTROL_VALUE         1005
+#define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

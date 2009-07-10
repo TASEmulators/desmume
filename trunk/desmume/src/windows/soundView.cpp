@@ -25,6 +25,7 @@
 #include "../common.h"
 #include "../matrix.h"
 #include "resource.h"
+#include "NDSSystem.h"
 #include <algorithm>
 #include <windows.h>
 #include <windowsx.h>
@@ -65,6 +66,11 @@ void SoundView_DeInit()
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+inline int chanOfs()
+{
+	return SoundView_Data->viewFirst8Channels ? 0 : 8;
+}
 
 BOOL SoundView_DlgOpen(HWND hParentWnd)
 {
@@ -117,11 +123,10 @@ void SoundView_Refresh()
 
 	char buf[256];
 	HWND hDlg = SoundView_Data->hDlg;
-	int chanOfs = SoundView_Data->viewFirst8Channels ? 0 : 8;
 	static const int format_shift[] = { 2, 1, 3, 0 };
 	static const double ARM7_CLOCK = 33513982;
 	for(int chanId = 0; chanId < 8; chanId++) {
-		int chan = chanId + chanOfs;
+		int chan = chanId + chanOfs();
 		channel_struct &thischan = SPU_core->channels[chan];
 
 		SendDlgItemMessage(hDlg, IDC_SOUND0PANBAR+chanId, PBM_SETPOS, (WPARAM)spumuldiv7(128, thischan.pan), (LPARAM)0);
@@ -204,6 +209,20 @@ void SoundView_Refresh()
 
 //////////////////////////////////////////////////////////////////////////////
 
+
+static void updateMute_toSettings(HWND hDlg, int chan)
+{
+	for(int chanId = 0; chanId < 8; chanId++)
+		CommonSettings.spu_muteChannels[chanId+chanOfs()] = IsDlgButtonChecked(hDlg, IDC_SOUND0MUTE+chanId) == BST_CHECKED;
+}
+
+static void updateMute_fromSettings(HWND hDlg)
+{
+	for(int chanId = 0; chanId < 8; chanId++)
+			SendDlgItemMessage(hDlg, IDC_SOUND0MUTE+chanId, BM_SETCHECK, 
+				CommonSettings.spu_muteChannels[chanId+chanOfs()] ? TRUE : FALSE,
+				0);
+}
 static void SoundView_SwitchChanOfs(SoundView_DataStruct *data)
 {
 	if (data == NULL)
@@ -215,17 +234,19 @@ static void SoundView_SwitchChanOfs(SoundView_DataStruct *data)
 		data->viewFirst8Channels ? "V" : "^");
 
 	char buf[256];
-	int chanOfs = SoundView_Data->viewFirst8Channels ? 0 : 8;
 	for(int chanId = 0; chanId < 8; chanId++) {
-		int chan = chanId + chanOfs;
+		int chan = chanId + chanOfs();
 		sprintf(buf, "#%02d", chan);
 		SetDlgItemText(hDlg, IDC_SOUND0ID+chanId, buf);
 	}
 
+	updateMute_fromSettings(hDlg);
+
 	SoundView_Refresh();
 }
 
-BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+
+static BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	SoundView_DataStruct *data = (SoundView_DataStruct*)GetWindowLong(hDlg, DWL_USER);
 	if((data == NULL) && (uMsg != WM_INITDIALOG))
@@ -238,6 +259,11 @@ BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 			for(int chanId = 0; chanId < 8; chanId++) {
 				SendDlgItemMessage(hDlg, IDC_SOUND0VOLBAR+chanId, PBM_SETRANGE, (WPARAM)0, MAKELPARAM(0, 128));
 				SendDlgItemMessage(hDlg, IDC_SOUND0PANBAR+chanId, PBM_SETRANGE, (WPARAM)0, MAKELPARAM(0, 128));
+			}
+
+			for(int chanId = 0; chanId < 8; chanId++) {
+				if(CommonSettings.spu_muteChannels[chanId])
+					SendDlgItemMessage(hDlg, IDC_SOUND0MUTE+chanId, BM_SETCHECK, TRUE, 0);
 			}
 
 			if(data == NULL)
@@ -269,6 +295,18 @@ BOOL CALLBACK SoundView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case IDC_BUTTON_VOLMODE:
 			data->volModeAlternate = IsDlgButtonChecked(hDlg, IDC_BUTTON_VOLMODE);
 			return 1;
+
+		case IDC_SOUND0MUTE+0:
+		case IDC_SOUND0MUTE+1:
+		case IDC_SOUND0MUTE+2:
+		case IDC_SOUND0MUTE+3:
+		case IDC_SOUND0MUTE+4:
+		case IDC_SOUND0MUTE+5:
+		case IDC_SOUND0MUTE+6:
+		case IDC_SOUND0MUTE+7:
+			updateMute_toSettings(hDlg,LOWORD(wParam)-IDC_SOUND0MUTE);
+			return 1;
+
 
 		case IDC_SOUNDVIEW_CHANSWITCH:
 			{
