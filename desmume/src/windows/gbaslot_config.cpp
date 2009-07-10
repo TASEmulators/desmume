@@ -27,6 +27,7 @@
 #include "debug.h"
 #include "../addons.h"
 #include "../NDSSystem.h"
+#include "inputdx.h"
 #include <shlobj.h>
 
 WNDCLASSEX	wc;
@@ -39,6 +40,8 @@ char		tmp_gbagame_filename[MAX_PATH] = { 0 };
 ADDON_CFLASH_MODE	tmp_CFlashMode = ADDON_CFLASH_MODE_RomPath;
 HWND		OKbutton = NULL;
 bool		_OKbutton = false;
+SGuitar		tmp_Guitar;
+bool		needReset = true;
 
 std::string CFlashPath, CFlashName;
 
@@ -289,13 +292,60 @@ BOOL CALLBACK GbaSlotGBAgame(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 
 BOOL CALLBACK GbaSlotGuitarGrip(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 {
+	int which = 0;
+
 	switch(msg)
 	{
 		case WM_INITDIALOG: 
 		{
 			_OKbutton = TRUE;
+			SendDlgItemMessage(dialog,IDC_GGREEN,WM_USER+44,tmp_Guitar.GREEN,0);
+			SendDlgItemMessage(dialog,IDC_GRED,WM_USER+44,tmp_Guitar.RED,0);
+			SendDlgItemMessage(dialog,IDC_GYELLOW,WM_USER+44,tmp_Guitar.YELLOW,0);
+			SendDlgItemMessage(dialog,IDC_GBLUE,WM_USER+44,tmp_Guitar.BLUE,0);
+			if (temp_type != addon_type)
+				needReset = true;
+			else
+				needReset = false;
+
 			return TRUE;
 		}
+
+		case WM_USER+46:
+			SendDlgItemMessage(dialog,IDC_GGREEN,WM_USER+44,tmp_Guitar.GREEN,0);
+			SendDlgItemMessage(dialog,IDC_GRED,WM_USER+44,tmp_Guitar.RED,0);
+			SendDlgItemMessage(dialog,IDC_GYELLOW,WM_USER+44,tmp_Guitar.YELLOW,0);
+			SendDlgItemMessage(dialog,IDC_GBLUE,WM_USER+44,tmp_Guitar.BLUE,0);
+		return TRUE;
+
+		case WM_USER+43:
+			//MessageBox(hDlg,"USER+43 CAUGHT","moo",MB_OK);
+			which = GetDlgCtrlID((HWND)lparam);
+			switch(which)
+			{
+			case IDC_GGREEN:
+				tmp_Guitar.GREEN = wparam;
+
+				break;
+			case IDC_GRED:
+				tmp_Guitar.RED = wparam;
+
+				break;
+			case IDC_GYELLOW:
+				tmp_Guitar.YELLOW = wparam;
+
+				break;
+			case IDC_GBLUE:
+				tmp_Guitar.BLUE = wparam;
+				break;
+			}
+
+			SendDlgItemMessage(dialog,IDC_GGREEN,WM_USER+44,tmp_Guitar.GREEN,0);
+			SendDlgItemMessage(dialog,IDC_GRED,WM_USER+44,tmp_Guitar.RED,0);
+			SendDlgItemMessage(dialog,IDC_GYELLOW,WM_USER+44,tmp_Guitar.YELLOW,0);
+			SendDlgItemMessage(dialog,IDC_GBLUE,WM_USER+44,tmp_Guitar.BLUE,0);
+			PostMessage(dialog,WM_NEXTDLGCTL,0,0);
+		return true;
 	}
 	return FALSE;
 }
@@ -349,9 +399,9 @@ BOOL CALLBACK GbaSlotBox_Proc(HWND dialog, UINT msg,WPARAM wparam,LPARAM lparam)
 				case IDOK:
 					{
 						int Msg = IDYES;
-						if (romloaded)
+						if (romloaded && (needReset || (temp_type!=addon_type)) )
 						{
-							int Msg = MessageBox(dialog, 
+							Msg = MessageBox(dialog, 
 									"After change GBA slot pak game will reset!\nAre you sure to continue?", "DeSmuME",
 									MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2);
 						}
@@ -403,8 +453,10 @@ void GBAslotDialog(HWND hwnd)
 	strcpy(tmp_cflash_filename, CFlashName.c_str());
 	strcpy(tmp_cflash_path, CFlashPath.c_str());
 	strcpy(tmp_gbagame_filename, GBAgameName);
+	memcpy(&tmp_Guitar, &Guitar, sizeof(Guitar));
 	tmp_CFlashMode = CFlash_Mode;
 	_OKbutton = false;
+	needReset == true;
 	u32 res=DialogBox(hAppInst, MAKEINTRESOURCE(IDD_GBASLOT), hwnd, (DLGPROC) GbaSlotBox_Proc);
 	if (res)
 	{
@@ -432,6 +484,11 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileString("GBAslot.GBAgame","filename",GBAgameName,IniName);
 				break;
 			case NDS_ADDON_GUITARGRIP:
+				memcpy(&Guitar, &tmp_Guitar, sizeof(tmp_Guitar));
+				WritePrivateProfileInt("GBAslot.GuitarGrip","green",Guitar.GREEN,IniName);
+				WritePrivateProfileInt("GBAslot.GuitarGrip","red",Guitar.RED,IniName);
+				WritePrivateProfileInt("GBAslot.GuitarGrip","yellow",Guitar.YELLOW,IniName);
+				WritePrivateProfileInt("GBAslot.GuitarGrip","blue",Guitar.BLUE,IniName);
 				break;
 			default:
 				return;
@@ -440,7 +497,8 @@ void GBAslotDialog(HWND hwnd)
 
 		addon_type = temp_type;
 		addonsChangePak(addon_type);
-		if (romloaded)
+		if (romloaded && needReset)
 			NDS_Reset();
+		return;
 	}
 }

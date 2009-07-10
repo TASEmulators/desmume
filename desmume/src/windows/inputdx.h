@@ -112,6 +112,16 @@ void RunInputConfig();
 void RunHotkeyConfig();
 void input_process();
 
+struct SGuitar {
+    BOOL Enabled;
+    WORD GREEN;
+    WORD RED;
+    WORD YELLOW;
+    WORD BLUE;
+};
+
+extern SGuitar Guitar;
+
 #endif
 
 

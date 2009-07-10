@@ -57,7 +57,7 @@ static u32  guitarGrip_read32(u32 adr)
 	//INFO("GuitarGrip: read 32 at 0x%08X\n", adr);
 	return (0);
 }
-static void guitarGrip_info(char *info) { strcpy(info, "Guitar Grid for Guitar Hero games"); }
+static void guitarGrip_info(char *info) { strcpy(info, "Guitar Grip for Guitar Hero games"); }
 
 void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue)
 {
@@ -65,7 +65,7 @@ void guitarGrip_setKey(bool green, bool red, bool yellow, bool blue)
 }
 
 ADDONINTERFACE addonGuitarGrip = {
-				"Guitar Grid",
+				"Guitar Grip",
 				guitarGrip_init,
 				guitarGrip_reset,
 				guitarGrip_close,
