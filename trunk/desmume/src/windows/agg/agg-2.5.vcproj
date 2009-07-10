@@ -872,10 +872,6 @@
 				RelativePath=".\src\platform\win32\agg_win32_bmp.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\gpc\gpc.c"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>
