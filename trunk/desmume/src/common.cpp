@@ -145,7 +145,7 @@ const char *GetRomName()
 
 std::string GetRomNameWithoutExtension()
 {
-	int x = RomName.find_first_of(".");
+	int x = RomName.find_last_of(".");
 	if (x > 0)
 		return RomName.substr(0,x);
 	else return RomName;
