@@ -89,6 +89,7 @@ fi
 
 dnl - Check for GTK and/or libglade
 FOUND_GLIB=no
+HAVE_ALSA=no
 GLIB_VER=2.8
 GTK_VER=2.6
 AC_CHECK_TOOL(HAVE_PKG, pkg-config)
@@ -142,6 +143,10 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
                       HAVE_LUA=no)
     AC_SUBST(LUA_CFLAGS)
     AC_SUBST(LUA_LIBS)
+
+    PKG_CHECK_MODULES(ALSA, alsa >= 1.0, HAVE_ALSA=yes, HAVE_ALSA=no)
+    AC_SUBST(ALSA_CFLAGS)
+    AC_SUBST(ALSA_LIBS)
   fi
 ],[
     echo "WARNING: pkg-config is not available therefore gtk, gtk-glade UIs and lua scripting are not available either."
@@ -149,6 +154,11 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
 
 dnl -- force lua disabled
 AM_CONDITIONAL([HAVE_LUA], [test "${HAVE_LUA}x" = "yes"])
+
+AM_CONDITIONAL([HAVE_ALSA], [test "${HAVE_ALSA}" = "yes"])
+if test "x$HAVE_ALSA" = "xno"; then
+   AC_DEFINE([FAKE_MIC])
+fi
 
 dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
 AM_CONDITIONAL([HAVE_GLIB], [test "${FOUND_GLIB}" = "yes"])

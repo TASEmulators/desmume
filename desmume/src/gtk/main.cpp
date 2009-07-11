@@ -111,7 +111,9 @@ static void ToggleMenuVisible(GtkToggleAction *action);
 static void ToggleStatusbarVisible(GtkToggleAction *action);
 static void ToggleToolbarVisible(GtkToggleAction *action);
 static void ToggleAudio (GtkToggleAction *action);
+#ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action);
+#endif
 static void ToggleGap (GtkToggleAction *action);
 static void SetRotation (GtkAction *action);
 static void ToggleLayerVisibility(GtkToggleAction* action, gpointer data);
@@ -167,7 +169,9 @@ static const char *ui_description =
 "      <menuitem action='pause'/>"
 "      <menuitem action='reset'/>"
 "      <menuitem action='enableaudio'/>"
+#ifdef FAKE_MIC
 "      <menuitem action='micnoise'/>"
+#endif
 "      <menu action='FrameskipMenu'>"
 "        <menuitem action='frameskip0'/>"
 "        <menuitem action='frameskip1'/>"
@@ -285,7 +289,9 @@ static const GtkActionEntry action_entries[] = {
 
 static const GtkToggleActionEntry toggle_entries[] = {
     { "enableaudio", NULL, "_Enable audio", NULL, NULL, G_CALLBACK(ToggleAudio), TRUE},
+#ifdef FAKE_MIC
     { "micnoise", NULL, "Fake mic _noise", NULL, NULL, G_CALLBACK(ToggleMicNoise), FALSE},
+#endif
     { "gap", NULL, "_Gap", NULL, NULL, G_CALLBACK(ToggleGap), FALSE},
     { "view_menu", NULL, "View _menu", NULL, NULL, G_CALLBACK(ToggleMenuVisible), TRUE},
     { "view_toolbar", NULL, "View _toolbar", NULL, NULL, G_CALLBACK(ToggleToolbarVisible), TRUE},
@@ -1672,10 +1678,12 @@ static void ToggleAudio (GtkToggleAction *action)
     }
 }
 
+#ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action)
 {
     Mic_DoNoise((BOOL)gtk_toggle_action_get_active(action));
 }
+#endif
 
 static void desmume_gtk_menu_tools (GtkActionGroup *ag)
 {
