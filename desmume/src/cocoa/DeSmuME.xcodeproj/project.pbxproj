@@ -132,6 +132,7 @@
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		95D5FE501007BC4500882BAE /* guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */; };
 		95D5FE751007EC0900882BAE /* guitarGrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */; };
+		FC27E7FC100935F800A47A59 /* rasterize.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC27E7FB100935F800A47A59 /* rasterize.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -276,6 +277,7 @@
 		72D89E360E845C7E008D9B64 /* readwrite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = readwrite.cpp; path = ../readwrite.cpp; sourceTree = SOURCE_ROOT; };
 		8D1107320486CEB800E47090 /* DeSmuME.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeSmuME.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		95D5FE4F1007BC4500882BAE /* guitarGrip.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = guitarGrip.cpp; path = ../addons/guitarGrip.cpp; sourceTree = SOURCE_ROOT; };
+		FC27E7FB100935F800A47A59 /* rasterize.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rasterize.cpp; path = ../rasterize.cpp; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -408,6 +410,7 @@
 		29B97315FDCFA39411CA2CEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				FC27E7FB100935F800A47A59 /* rasterize.cpp */,
 				1EFD50B80F891CAA00B029BB /* gdbstub */,
 				1FB372750F1CBAB200F75A43 /* addons */,
 				1FDD29400F080DBD004021C9 /* decrypt */,
@@ -778,6 +781,7 @@
 				1F5577080F326E2000DCF447 /* cheatSystem.cpp in Sources */,
 				1F4B54D90F538DFE00C8B514 /* texcache.cpp in Sources */,
 				95D5FE501007BC4500882BAE /* guitarGrip.cpp in Sources */,
+				FC27E7FC100935F800A47A59 /* rasterize.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
