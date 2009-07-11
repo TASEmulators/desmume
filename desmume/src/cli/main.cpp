@@ -120,7 +120,9 @@ const u16 cli_kb_cfg[NB_KEYS] =
     SDLK_o          // BOOST
   };
 
+#ifdef FAKE_MIC
 static BOOL enable_fake_mic;
+#endif
 
 struct my_config {
   int load_slot;
