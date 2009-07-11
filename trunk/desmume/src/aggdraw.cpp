@@ -63,6 +63,66 @@
 
 #include "agg_span_allocator.h"
 
+
+typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
+static TAgg_Font_Table font_table;
+
+const agg::int8u* AggDrawTarget::lookupFont(const std::string& name)
+{ 
+	TAgg_Font_Table::iterator it(font_table.find(name));
+	if(it == font_table.end()) return NULL;
+	else return it->second;
+}
+
+static void Agg_init_fonts()
+{
+	struct font_type
+	{
+		const agg::int8u* font;
+		const char* name;
+	}
+	fonts[] =
+	{
+		{ agg::gse4x6, "gse4x6" },
+		{ agg::gse4x8, "gse4x8" },
+		{ agg::gse5x7, "gse5x7" },
+		{ agg::gse5x9, "gse5x9" },
+		{ agg::gse6x9, "gse6x9" },
+		{ agg::gse6x12, "gse6x12" },
+		{ agg::gse7x11, "gse7x11" },
+		{ agg::gse7x11_bold, "gse7x11_bold" },
+		{ agg::gse7x15, "gse7x15" },
+		{ agg::gse7x15_bold, "gse7x15_bold" },
+		{ agg::gse8x16, "gse8x16" },
+		{ agg::gse8x16_bold, "gse8x16_bold" },
+		{ agg::mcs11_prop, "mcs11_prop" },
+		{ agg::mcs11_prop_condensed, "mcs11_prop_condensed" },
+		{ agg::mcs12_prop, "mcs12_prop" },
+		{ agg::mcs13_prop, "mcs13_prop" },
+		{ agg::mcs5x10_mono, "mcs5x10_mono" },
+		{ agg::mcs5x11_mono, "mcs5x11_mono" },
+		{ agg::mcs6x10_mono, "mcs6x10_mono" },
+		{ agg::mcs6x11_mono, "mcs6x11_mono" },
+		{ agg::mcs7x12_mono_high, "mcs7x12_mono_high" },
+		{ agg::mcs7x12_mono_low, "mcs7x12_mono_low" },
+		{ agg::verdana12, "verdana12" },
+		{ agg::verdana12_bold, "verdana12_bold" },
+		{ agg::verdana13, "verdana13" },
+		{ agg::verdana13_bold, "verdana13_bold" },
+		{ agg::verdana14, "verdana14" },
+		{ agg::verdana14_bold, "verdana14_bold" },
+		{ agg::verdana16, "verdana16" },
+		{ agg::verdana16_bold, "verdana16_bold" },
+		{ agg::verdana17, "verdana17" },
+		{ agg::verdana17_bold, "verdana17_bold" },
+		{ agg::verdana18, "verdana18" },
+		{ agg::verdana18_bold, "verdana18_bold" },
+	};
+
+	for(int i=0;i<ARRAY_SIZE(fonts);i++)
+		font_table[fonts[i].name] = fonts[i].font;
+}
+
 AggDraw_Desmume aggDraw;
 
 typedef AggDrawTargetImplementation<PixFormatSet<agg::pixfmt_rgb555,agg::pixfmt_rgb555_pre> > T_AGG_RGB555;
@@ -84,6 +144,7 @@ static AggDrawTarget* targets[] = {
 
 void Agg_init()
 {
+	Agg_init_fonts();
 	aggDraw.target = targets[0];
 }
 
@@ -100,21 +161,21 @@ void AggDraw_Desmume::composite(void* dest)
 	if(!agg_targetLua.empty)
 	{
 		T_AGG_RGBA::MyImage luaImage(agg_targetLua.buf());
-		target.transformImage(luaImage, 0.5,0.5,256-0.5,384-0.5);
+		target.transformImage(luaImage, 0,0,256-1,384-1);
 	}
 
 	//if hud is nonempty, blend it
 	if(!agg_targetHud.empty)
 	{
 		T_AGG_RGBA::MyImage hudImage(agg_targetHud.buf());
-		target.transformImage(hudImage, 0.5,0.5,256-0.5,384-0.5);
+		target.transformImage(hudImage, 0,0,256-1,384-1);
 	}
 }
 
 //temporary, just for testing the lib
 void AGGDraw() {
 
-	aggDraw.setTarget(AggTarget_Lua);
+	aggDraw.setTarget(AggTarget_Hud);
 
 	aggDraw.target->clear();
 
@@ -123,6 +184,10 @@ void AGGDraw() {
 	//aggDraw.target->noFill();
 	aggDraw.target->lineWidth(1.0);
 	aggDraw.target->roundedRect(10,10,256-10,192-10,4);
+
+	aggDraw.target->setFont("verdana18_bold");
+	aggDraw.target->renderText(60,60, "testing testing testing");
+
 }
 
 
