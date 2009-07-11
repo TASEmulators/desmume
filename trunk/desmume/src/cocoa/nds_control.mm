@@ -37,6 +37,7 @@
 #include "../render3D.h"
 #include "../GPU.h"
 #include "../OGLRender.h"
+#include "../rasterize.h"
 #undef BOOL
 
 //this bool controls whether we will use a timer to constantly check for screen updates
@@ -53,6 +54,7 @@ volatile desmume_BOOL execute = true;
 
 GPU3DInterface *core3DList[] = {
 &gpu3DNull,
+&gpu3DRasterize,
 #ifdef HAVE_OPENGL
 &gpu3Dgl,
 #endif
