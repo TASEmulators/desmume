@@ -11,7 +11,6 @@ SUBDIRS = . $(UI_DIR)
 endif
 DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade windows
 noinst_LIBRARIES = libdesmume.a
-INCLUDES = -I@top_srcdir@/src/agg/include
 libdesmume_a_SOURCES = \
         armcpu.cpp armcpu.h ARM9.h \
         arm_instructions.cpp arm_instructions.h \
@@ -59,6 +58,9 @@ if HAVE_ALSA
 libdesmume_a_SOURCES += mic_alsa.cpp
 else
 libdesmume_a_SOURCES += mic.cpp
+endif
+if HAVE_LIBAGG
+libdesmume_a_SOURCES += aggdraw.cpp
 endif
 if HAVE_LUA
 libdesmume_a_SOURCES += lua-engine.cpp

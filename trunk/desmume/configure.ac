@@ -164,7 +164,8 @@ if test "x$HAVE_ALSA" = "xno"; then
    AC_DEFINE([FAKE_MIC])
 fi
 
-AM_CONDITIONAL([HAVE_LIBAGG], [test "${HAVE_LIBAGG}" = "yes"])
+dnl - disabled until it compiles
+AM_CONDITIONAL([HAVE_LIBAGG], [test "${HAVE_LIBAGG}x" = "yes"])
 
 dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
 AM_CONDITIONAL([HAVE_GLIB], [test "${FOUND_GLIB}" = "yes"])
