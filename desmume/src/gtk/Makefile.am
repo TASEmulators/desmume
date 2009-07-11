@@ -12,7 +12,7 @@ bin_PROGRAMS = desmume
 desmume_SOURCES = \
 	desmume.h desmume.cpp \
 	dTool.h dToolsList.cpp \
-	tools/ioregsView.cpp tools/ioregsView.h
+	tools/ioregsView.cpp tools/ioregsView.h \
 	../sndsdl.cpp \
 	../ctrlssdl.h ../ctrlssdl.cpp \
 	osmesa_3Demu.cpp osmesa_3Demu.h \
