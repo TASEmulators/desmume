@@ -44,40 +44,67 @@
 class AggDrawTarget
 {
 public:
+	AggDrawTarget()
+		: empty(true)
+	{
+	}
+
+protected:
+	void dirty() { empty = false; }
+	void undirty() { empty = true; }
+
+public:
+
+	bool empty;
+
+	virtual void clear() = 0;
+	
 	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a) = 0;
+	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a) = 0;
 	virtual void noFill() = 0;
+	virtual void noLine() = 0;
+	virtual void lineWidth(double w) = 0;
+	virtual double lineWidth() = 0;
+	
 	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,    double ry_top) = 0;
 	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) = 0;
     virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry) = 0;
 };
 
 
-template<typename PIXFMT> 
-class AggDrawTargetImplementation : public AggDrawTarget, public Agg2D<PIXFMT>
+template<typename PixFormatSet> 
+class AggDrawTargetImplementation : public AggDrawTarget, public Agg2D<PixFormatSet>
 {
 public:
-	typedef PIXFMT pixfmt;
+	typedef typename PixFormatSet::PixFormat pixfmt;
 	typedef typename pixfmt::color_type color_type;
 
-	typedef Agg2D<PIXFMT> BASE;
+	typedef Agg2D<PixFormatSet> BASE;
 	AggDrawTargetImplementation(agg::int8u* buf, int width, int height, int stride)
 	{
 		attach(buf,width,height,stride);
 
-		BASE::viewport(0, 0, 600, 600, 
-                            0, 0, width, height, 
-                            //TAGG2D::Anisotropic);
-                            XMidYMid);
+		BASE::viewport(0, 0, width-1, height-1, 0.5, 0.5, width-0.5, height-0.5, TAGG2D::Anisotropic);
+	}
+
+	virtual void clear() { 
+		if(!empty)
+		{
+			BASE::clearAll(0,0,0,0);
+			undirty();
+		}
 	}
 
 	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a) { BASE::lineColor(r,g,b,a); }
+	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a) { BASE::fillColor(r,g,b,a); }
 	virtual void noFill() { BASE::noFill(); }
-	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,double ry_top)
-	{
-		BASE::roundedRect(x1,y1,x2,y2,rx_bottom,ry_bottom,rx_top,ry_top);
-	}
-	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) { BASE::roundedRect(x1,y1,x2,y2,r); }
-    virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry)  { BASE::roundedRect(x1,y1,x2,y2,rx,ry); }
+	virtual void noLine() { BASE::noLine(); }
+	virtual void lineWidth(double w) { BASE::lineWidth(w); }
+	virtual double lineWidth() { return BASE::lineWidth(); }
+
+	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,double ry_top) { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx_bottom,ry_bottom,rx_top,ry_top); }
+	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) { dirty(); BASE::roundedRect(x1,y1,x2,y2,r); }
+    virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry)  { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx,ry); }
 };
 
 class AggDraw
@@ -92,7 +119,8 @@ public:
 enum AggTarget
 {
 	AggTarget_Screen = 0,
-	AggTarget_Lua = 1
+	AggTarget_Hud = 1,
+	AggTarget_Lua = 2,
 };
 
 //specialized instance for desmume; should eventually move to another file
