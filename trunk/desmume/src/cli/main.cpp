@@ -684,10 +684,12 @@ static void desmume_cycle(int *sdl_quit, int *boost, struct my_config * my_confi
               case SDLK_ESCAPE:
                 *sdl_quit = 1;
                 break;
+#ifdef FAKE_MIC
               case SDLK_m:
                 enable_fake_mic = !enable_fake_mic;
                 Mic_DoNoise(enable_fake_mic);
                 break;
+#endif
               case SDLK_o:
                 *boost = !(*boost);
                 break;

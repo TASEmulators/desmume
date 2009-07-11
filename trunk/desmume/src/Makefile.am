@@ -55,12 +55,16 @@ libdesmume_a_SOURCES = \
 	agg/src/agg_trans_affine.cpp agg/src/agg_trans_double_path.cpp agg/src/agg_trans_single_path.cpp agg/src/agg_trans_warp_magnifier.cpp \
 	agg/src/agg_vcgen_bspline.cpp agg/src/agg_vcgen_contour.cpp agg/src/agg_vcgen_dash.cpp agg/src/agg_vcgen_markers_term.cpp agg/src/agg_vcgen_smooth_poly1.cpp agg/src/agg_vcgen_stroke.cpp \
 	agg/src/agg_vpgen_clip_polygon.cpp agg/src/agg_vpgen_clip_polyline.cpp agg/src/agg_vpgen_segmentator \
-	mic.cpp mic.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	version.h
 if HAVE_GLIB
 libdesmume_a_SOURCES += commandline.h commandline.cpp
+endif
+if HAVE_ALSA
+libdesmume_a_SOURCES += mic_alsa.cpp
+else
+libdesmume_a_SOURCES += mic.cpp
 endif
 if HAVE_LUA
 libdesmume_a_SOURCES += lua-engine.cpp

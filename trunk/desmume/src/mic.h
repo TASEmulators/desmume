@@ -7,7 +7,9 @@ extern int MicButtonPressed;
 static char MicSampleName[256];
 char* LoadSample(const char *name);
 extern int MicDisplay;
-#else
+#endif
+
+#ifdef FAKE_MIC
 void Mic_DoNoise(BOOL);
 #endif
 
