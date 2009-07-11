@@ -30,7 +30,7 @@ desmume_glade_SOURCES =  \
 
 desmume_glade_LDADD = ../libdesmume.a \
 			$(SDL_LIBS) $(GTKGLEXT_LIBS) $(LIBGLADE_LIBS) \
-			$(GTHREAD_LIBS) $(ALSA_LIBS)
+			$(GTHREAD_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS)
 if HAVE_GDB_STUB
 desmume_glade_LDADD += ../gdbstub/libgdbstub.a
 endif

@@ -1,6 +1,6 @@
 include $(top_srcdir)/src/desmume.mk
 
-AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LUA_CFLAGS) $(ALSA_CFLAGS)
+AM_CPPFLAGS += $(SDL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(X_CFLAGS) $(LUA_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS)
 
 EXTRA_DIST = build.bat instruction_tabdef.inc thumb_tabdef.inc fs-linux.cpp fs-windows.cpp \
 	matrix_sse2-x64.asm matrix_sse2-x86.asm
@@ -49,12 +49,6 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	addons.cpp addons.h \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp fs.h \
-	agg/src/agg_arc.cpp agg/src/agg_arrowhead.cpp agg/src/agg_bezier_arc.cpp agg/src/agg_bspline.cpp agg/src/agg_curves.cpp \
-	agg/src/agg_embedded_raster_fonts.cpp agg/src/agg_gsv_text.cpp agg/src/agg_image_filters.cpp agg/src/agg_line_aa_basics.cpp agg/src/agg_line_profile_aa.cpp \
-	agg/src/agg_rounded_rect.cpp agg/src/agg_sqrt_tables.cpp \
-	agg/src/agg_trans_affine.cpp agg/src/agg_trans_double_path.cpp agg/src/agg_trans_single_path.cpp agg/src/agg_trans_warp_magnifier.cpp \
-	agg/src/agg_vcgen_bspline.cpp agg/src/agg_vcgen_contour.cpp agg/src/agg_vcgen_dash.cpp agg/src/agg_vcgen_markers_term.cpp agg/src/agg_vcgen_smooth_poly1.cpp agg/src/agg_vcgen_stroke.cpp \
-	agg/src/agg_vpgen_clip_polygon.cpp agg/src/agg_vpgen_clip_polyline.cpp agg/src/agg_vpgen_segmentator \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
 	version.h
