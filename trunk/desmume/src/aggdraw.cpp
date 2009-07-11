@@ -63,27 +63,27 @@
 
 #include "agg_span_allocator.h"
 
-typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
-static TAgg_Font_Table font_table;
-
 AggDraw_Desmume aggDraw;
 
-typedef AggDrawTargetImplementation<agg::pixfmt_rgb555> T_AGG_RGB555;
-typedef AggDrawTargetImplementation<agg::pixfmt_bgra32> T_AGG_RGBA;
+typedef AggDrawTargetImplementation<PixFormatSet<agg::pixfmt_rgb555,agg::pixfmt_rgb555_pre> > T_AGG_RGB555;
+typedef AggDrawTargetImplementation<PixFormatSet<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre> > T_AGG_RGBA;
 
 T_AGG_RGB555 agg_targetScreen(GPU_screen, 256, 384, 512);
 
 static u32 luaBuffer[256*192*2];
 T_AGG_RGBA agg_targetLua((u8*)luaBuffer, 256, 384, 1024);
 
+static u32 hudBuffer[256*192*2];
+T_AGG_RGBA agg_targetHud((u8*)hudBuffer, 256, 384, 1024);
+
 static AggDrawTarget* targets[] = {
 	&agg_targetScreen,
-	&agg_targetLua
+	&agg_targetHud,
+	&agg_targetLua,
 };
 
 void Agg_init()
 {
-	//Agg_init_fonts();
 	aggDraw.target = targets[0];
 }
 
@@ -94,81 +94,366 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 
 void AggDraw_Desmume::composite(void* dest)
 {
-	//!! oh what a mess !!
+	T_AGG_RGBA target((u8*)dest, 256, 384, 1024);
 
-	agg::rendering_buffer rBuf;
-	rBuf.attach((u8*)dest, 256, 384, 1024);
+	//if lua is nonempty, blend it
+	if(!agg_targetLua.empty)
+	{
+		T_AGG_RGBA::MyImage luaImage(agg_targetLua.buf());
+		target.transformImage(luaImage, 0.5,0.5,256-0.5,384-0.5);
+	}
 
-
-	typedef agg::image_accessor_clip<T_AGG_RGBA::pixfmt> img_source_type;
-
-	img_source_type img_src(agg_targetLua.pixFormat(), T_AGG_RGBA::pixfmt::color_type(0,255,0,0));
-
-	agg::trans_affine img_mtx;
-	typedef agg::span_interpolator_linear<> interpolator_type;
-	interpolator_type interpolator(img_mtx);
-	typedef agg::span_image_filter_rgba_nn<img_source_type,interpolator_type> span_gen_type;
-	span_gen_type sg(img_src, interpolator);
-
-	agg::rasterizer_scanline_aa<> ras;
-	//dont know whether this is necessary
-	//ras.clip_box(0, 0, 256,384);
-	agg::scanline_u8 sl;
-
-	//I can't believe we're using a polygon for a rectangle.
-	//there must be a better way
-	agg::path_storage path;
-	path.move_to(0, 0);
-	path.line_to(255, 0);
-	path.line_to(255, 383);
-	path.line_to(0, 383);
-	path.close_polygon();
-
-
-	T_AGG_RGBA::pixfmt pixf(rBuf);
-	T_AGG_RGBA::RendererBase rbase(pixf);
-	agg::span_allocator<T_AGG_RGBA::color_type> sa;
-
-	ras.add_path(path);
-	agg::render_scanlines_bin(ras, sl, rbase, sa, sg);
-
+	//if hud is nonempty, blend it
+	if(!agg_targetHud.empty)
+	{
+		T_AGG_RGBA::MyImage hudImage(agg_targetHud.buf());
+		target.transformImage(hudImage, 0.5,0.5,256-0.5,384-0.5);
+	}
 }
-//
-//static int ctr=0;
-//
-////temporary, just for testing the lib
-void AGGDraw() {
-//
-	aggDraw.setTarget(AggTarget_Lua);
-//
-//	aggDraw.target->clear();
-//
-//	ctr++;
-//
 
-	
+//temporary, just for testing the lib
+void AGGDraw() {
+
+	aggDraw.setTarget(AggTarget_Lua);
+
+	aggDraw.target->clear();
 
 	aggDraw.target->lineColor(0, 255, 0, 128);
-	aggDraw.target->noFill();
-//	int add = (int)(40*cos((double)ctr/20.0f));
-	aggDraw.target->roundedRect(0.5, 0.5, 600-0.5, 600-0.5, 20.0);
-//
-//	aggDraw.target->set_gamma(99999);
-//	aggDraw.target->set_color(255, 64, 64, 128);
-//	aggDraw.target->solid_triangle(0, 60, 200, 170, 100, 310);
-//
-//	aggDraw.target->set_color(255, 0, 0, 128);
-//	aggDraw.target->solid_ellipse(70, 80, 50, 50);
-//	
-//	aggDraw.target->set_font("verdana18_bold");
-//	aggDraw.target->set_color(255, 0, 255, 255);
-//	aggDraw.target->render_text(60,60, "testing testing testing");
-//
-//	aggDraw.target->line(60, 90, 100, 100, 4);
-//
-//	aggDraw.target->marker(200, 200, 40, 4);
-//	aggDraw.target->marker(100, 300, 40, 3);
-//	//
-//	//agg_draw_line_pattern(64, 19, 14, 126, 118, 266, 19, 265, .76, 4.69, "C:\\7.bmp");
+	aggDraw.target->fillColor(0, 255, 0, 128);
+	//aggDraw.target->noFill();
+	aggDraw.target->lineWidth(1.0);
+	aggDraw.target->roundedRect(10,10,256-10,192-10,4);
 }
 
+
+
+//
+////========================
+////testing stufff
+//
+//int width = 256;
+//int height = 384;
+//
+//Agg2D m_graphics;
+//
+//void AGGDraw(unsigned char * buffer)
+//    {
+//        m_graphics.attach(buffer, 
+//                          256, 
+//                          384,
+//                          512);
+//
+//        m_graphics.clearAll(255, 255, 255);
+//        //m_graphics.clearAll(0, 0, 0);
+//
+//        //m_graphics.blendMode(TAGG2D::BlendSub);
+//        //m_graphics.blendMode(TAGG2D::BlendAdd);
+//
+//        m_graphics.antiAliasGamma(1.4);
+//
+//        // Set flipText(true) if you have the Y axis upside down.
+//        //m_graphics.flipText(true);
+//
+//
+//        // ClipBox.
+//        //m_graphics.clipBox(50, 50, rbuf_window().width() - 50, rbuf_window().height() - 50);
+//
+//        // Transfornations - Rotate around (300,300) to 5 degree
+//        //m_graphics.translate(-300, -300);
+//        //m_graphics.rotate(TAGG2D::deg2Rad(5.0));
+//        //m_graphics.translate(300, 300);
+//
+//        // Viewport - set 0,0,600,600 to the actual window size 
+//        // preserving aspect ratio and placing the viewport in the center.
+//        // To ignore aspect ratio use TAGG2D::Anisotropic
+//        // Note that the viewport just adds transformations to the current
+//        // affine matrix. So that, set the viewport *after* all transformations!
+//        m_graphics.viewport(0, 0, 600, 600, 
+//                            0, 0, width, height, 
+//                            //TAGG2D::Anisotropic);
+//                            TAGG2D::XMidYMid);
+//
+//
+//        // Rounded Rect
+//        m_graphics.lineColor(0, 0, 0);
+//        m_graphics.noFill();
+//        m_graphics.roundedRect(0.5, 0.5, 600-0.5, 600-0.5, 20.0);
+///*
+//
+//        // Reglar Text
+//        m_graphics.font("Times New Roman", 14.0, false, false);
+//        m_graphics.fillColor(0, 0, 0);
+//        m_graphics.noLine();
+//        m_graphics.text(100, 20, "Regular Raster Text -- Fast, but can't be rotated");
+//
+//        // Outlined Text
+//        m_graphics.font("Times New Roman", 50.0, false, false, TAGG2D::VectorFontCache);
+//        m_graphics.lineColor(50, 0, 0);
+//        m_graphics.fillColor(180, 200, 100);
+//        m_graphics.lineWidth(1.0);
+//        m_graphics.text(100.5, 50.5, "Outlined Text");
+//
+//        // Text Alignment
+//        m_graphics.line(250.5-150, 150.5,    250.5+150, 150.5);
+//        m_graphics.line(250.5,     150.5-20, 250.5,     150.5+20);
+//        m_graphics.line(250.5-150, 200.5,    250.5+150, 200.5);
+//        m_graphics.line(250.5,     200.5-20, 250.5,     200.5+20);
+//        m_graphics.line(250.5-150, 250.5,    250.5+150, 250.5);
+//        m_graphics.line(250.5,     250.5-20, 250.5,     250.5+20);
+//        m_graphics.line(250.5-150, 300.5,    250.5+150, 300.5);
+//        m_graphics.line(250.5,     300.5-20, 250.5,     300.5+20);
+//        m_graphics.line(250.5-150, 350.5,    250.5+150, 350.5);
+//        m_graphics.line(250.5,     350.5-20, 250.5,     350.5+20);
+//        m_graphics.line(250.5-150, 400.5,    250.5+150, 400.5);
+//        m_graphics.line(250.5,     400.5-20, 250.5,     400.5+20);
+//        m_graphics.line(250.5-150, 450.5,    250.5+150, 450.5);
+//        m_graphics.line(250.5,     450.5-20, 250.5,     450.5+20);
+//        m_graphics.line(250.5-150, 500.5,    250.5+150, 500.5);
+//        m_graphics.line(250.5,     500.5-20, 250.5,     500.5+20);
+//        m_graphics.line(250.5-150, 550.5,    250.5+150, 550.5);
+//        m_graphics.line(250.5,     550.5-20, 250.5,     550.5+20);
+//*/
+///*
+//        m_graphics.fillColor(100, 50, 50);
+//        m_graphics.noLine();
+//        //m_graphics.textHints(false);
+//        m_graphics.font("Times New Roman", 40.0, false, false, TAGG2D::VectorFontCache);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignLeft, TAGG2D::AlignBottom);
+//        m_graphics.text(250.0,     150.0, "Left-Bottom", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignBottom);
+//        m_graphics.text(250.0,     200.0, "Center-Bottom", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignRight, TAGG2D::AlignBottom);
+//        m_graphics.text(250.0,     250.0, "Right-Bottom", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignLeft, TAGG2D::AlignCenter);
+//        m_graphics.text(250.0,     300.0, "Left-Center", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignCenter);
+//        m_graphics.text(250.0,     350.0, "Center-Center", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignRight, TAGG2D::AlignCenter);
+//        m_graphics.text(250.0,     400.0, "Right-Center", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignLeft, TAGG2D::AlignTop);
+//        m_graphics.text(250.0,     450.0, "Left-Top", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignTop);
+//        m_graphics.text(250.0,     500.0, "Center-Top", true, 0, 0);
+//
+//        m_graphics.textAlignment(TAGG2D::AlignRight, TAGG2D::AlignTop);
+//        m_graphics.text(250.0,     550.0, "Right-Top", true, 0, 0);
+//
+//*/
+//        // Gradients (Aqua Buttons)
+//        //=======================================
+//        m_graphics.font("Verdana", 20.0, false, false, TAGG2D::VectorFontCache);
+//        double xb1 = 400;
+//        double yb1 = 80;
+//        double xb2 = xb1 + 150;
+//        double yb2 = yb1 + 36;
+//
+//        m_graphics.fillColor(TAGG2D::Color(0,50,180,180));
+//        m_graphics.lineColor(TAGG2D::Color(0,0,80, 255));
+//        m_graphics.lineWidth(1.0);
+//        m_graphics.roundedRect(xb1, yb1, xb2, yb2, 12, 18);
+//
+//        m_graphics.lineColor(TAGG2D::Color(0,0,0,0));
+//        m_graphics.fillLinearGradient(xb1, yb1, xb1, yb1+30, 
+//                                      TAGG2D::Color(100,200,255,255), 
+//                                      TAGG2D::Color(255,255,255,0));
+//        m_graphics.roundedRect(xb1+3, yb1+2.5, xb2-3, yb1+30, 9, 18, 1, 1);
+//
+//        m_graphics.fillColor(TAGG2D::Color(0,0,50, 200));
+//        m_graphics.noLine();
+///*        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignCenter);
+//        m_graphics.text((xb1 + xb2) / 2.0, (yb1 + yb2) / 2.0, "Aqua Button", true, 0.0, 0.0);
+//*/
+//        m_graphics.fillLinearGradient(xb1, yb2-20, xb1, yb2-3, 
+//                                      TAGG2D::Color(0,  0,  255,0),
+//                                      TAGG2D::Color(100,255,255,255)); 
+//        m_graphics.roundedRect(xb1+3, yb2-20, xb2-3, yb2-2, 1, 1, 9, 18);
+//
+//
+//        // Aqua Button Pressed
+//        xb1 = 400;
+//        yb1 = 30;
+//        xb2 = xb1 + 150;
+//        yb2 = yb1 + 36;
+//
+//        m_graphics.fillColor(TAGG2D::Color(0,50,180,180));
+//        m_graphics.lineColor(TAGG2D::Color(0,0,0,  255));
+//        m_graphics.lineWidth(2.0);
+//        m_graphics.roundedRect(xb1, yb1, xb2, yb2, 12, 18);
+//
+//        m_graphics.lineColor(TAGG2D::Color(0,0,0,0));
+//        m_graphics.fillLinearGradient(xb1, yb1+2, xb1, yb1+25, 
+//                                      TAGG2D::Color(60, 160,255,255), 
+//                                      TAGG2D::Color(100,255,255,0));
+//        m_graphics.roundedRect(xb1+3, yb1+2.5, xb2-3, yb1+30, 9, 18, 1, 1);
+//
+//        m_graphics.fillColor(TAGG2D::Color(0,0,50, 255));
+//        m_graphics.noLine();
+///*        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignCenter);
+//        m_graphics.text((xb1 + xb2) / 2.0, (yb1 + yb2) / 2.0, "Aqua Pressed", 0.0, 0.0);
+//*/
+//        m_graphics.fillLinearGradient(xb1, yb2-25, xb1, yb2-5, 
+//                                      TAGG2D::Color(0,  180,255,0),
+//                                      TAGG2D::Color(0,  200,255,255)); 
+//        m_graphics.roundedRect(xb1+3, yb2-25, xb2-3, yb2-2, 1, 1, 9, 18);
+//
+//
+//
+//
+//        // Basic Shapes -- Ellipse
+//        //===========================================
+//        m_graphics.lineWidth(3.5);
+//        m_graphics.lineColor(20,  80,  80);
+//        m_graphics.fillColor(200, 255, 80, 200);
+//        m_graphics.ellipse(450, 200, 50, 90);
+//
+//
+//        // Paths
+//        //===========================================
+//        m_graphics.resetPath();
+//        m_graphics.fillColor(255, 0, 0, 100);
+//        m_graphics.lineColor(0, 0, 255, 100);
+//        m_graphics.lineWidth(2);
+//        m_graphics.moveTo(300/2, 200/2);
+//        m_graphics.horLineRel(-150/2);
+//        m_graphics.arcRel(150/2, 150/2, 0, 1, 0, 150/2, -150/2);
+//        m_graphics.closePolygon();
+//        m_graphics.drawPath();
+//
+//        m_graphics.resetPath();
+//        m_graphics.fillColor(255, 255, 0, 100);
+//        m_graphics.lineColor(0, 0, 255, 100);
+//        m_graphics.lineWidth(2);
+//        m_graphics.moveTo(275/2, 175/2);
+//        m_graphics.verLineRel(-150/2);
+//        m_graphics.arcRel(150/2, 150/2, 0, 0, 0, -150/2, 150/2);
+//        m_graphics.closePolygon();
+//        m_graphics.drawPath();
+//
+//
+//        m_graphics.resetPath();
+//        m_graphics.noFill();
+//        m_graphics.lineColor(127, 0, 0);
+//        m_graphics.lineWidth(5);
+//        m_graphics.moveTo(600/2, 350/2);
+//        m_graphics.lineRel(50/2, -25/2);
+//        m_graphics.arcRel(25/2, 25/2, TAGG2D::deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        m_graphics.lineRel(50/2, -25/2);
+//        m_graphics.arcRel(25/2, 50/2, TAGG2D::deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        m_graphics.lineRel(50/2, -25/2);
+//        m_graphics.arcRel(25/2, 75/2, TAGG2D::deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        m_graphics.lineRel(50, -25);
+//        m_graphics.arcRel(25/2, 100/2, TAGG2D::deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        m_graphics.lineRel(50/2, -25/2);
+//        m_graphics.drawPath();
+//
+//
+//        // Master Alpha. From now on everything will be translucent
+//        //===========================================
+//        m_graphics.masterAlpha(0.85);
+//
+//
+//        // Image Transformations
+//        //===========================================
+///*        TAGG2D::Image img(rbuf_img(0).buf(), 
+//                         rbuf_img(0).width(), 
+//                         rbuf_img(0).height(), 
+//                         rbuf_img(0).stride());
+//        m_graphics.imageFilter(TAGG2D::Bilinear);
+//
+//        //m_graphics.imageResample(TAGG2D::NoResample);
+//        //m_graphics.imageResample(TAGG2D::ResampleAlways);
+//        m_graphics.imageResample(TAGG2D::ResampleOnZoomOut);
+//
+//        // Set the initial image blending operation as BlendDst, that actually 
+//        // does nothing. 
+//        //-----------------
+//        m_graphics.imageBlendMode(TAGG2D::BlendDst);
+//
+//
+//        // Transform the whole image to the destination rectangle
+//        //-----------------
+//        //m_graphics.transformImage(img, 450, 200, 595, 350);
+//
+//        // Transform the rectangular part of the image to the destination rectangle
+//        //-----------------
+//        //m_graphics.transformImage(img, 60, 60, img.width()-60, img.height()-60,
+//        //                          450, 200, 595, 350);
+//
+//        // Transform the whole image to the destination parallelogram
+//        //-----------------
+//        //double parl[6] = { 450, 200, 595, 220, 575, 350 };
+//        //m_graphics.transformImage(img, parl);
+//
+//        // Transform the rectangular part of the image to the destination parallelogram
+//        //-----------------
+//        //double parl[6] = { 450, 200, 595, 220, 575, 350 };
+//        //m_graphics.transformImage(img, 60, 60, img.width()-60, img.height()-60, parl);
+//
+//        // Transform image to the destination path. The scale is determined by a rectangle
+//        //-----------------
+//        //m_graphics.resetPath();
+//        //m_graphics.moveTo(450, 200);
+//        //m_graphics.cubicCurveTo(595, 220, 575, 350, 595, 350);
+//        //m_graphics.lineTo(470, 340);
+//        //m_graphics.transformImagePath(img, 450, 200, 595, 350);
+//
+//
+//        // Transform image to the destination path.
+//        // The scale is determined by a rectangle
+//        //-----------------
+//        m_graphics.resetPath();
+//        m_graphics.moveTo(450, 200);
+//        m_graphics.cubicCurveTo(595, 220, 575, 350, 595, 350);
+//        m_graphics.lineTo(470, 340);
+//        m_graphics.transformImagePath(img, 60, 60, img.width()-60, img.height()-60,
+//                                      450, 200, 595, 350);
+//
+//        // Transform image to the destination path. 
+//        // The transformation is determined by a parallelogram
+//        //m_graphics.resetPath();
+//        //m_graphics.moveTo(450, 200);
+//        //m_graphics.cubicCurveTo(595, 220, 575, 350, 595, 350);
+//        //m_graphics.lineTo(470, 340);
+//        //double parl[6] = { 450, 200, 595, 220, 575, 350 };
+//        //m_graphics.transformImagePath(img, parl);
+//
+//        // Transform the rectangular part of the image to the destination path. 
+//        // The transformation is determined by a parallelogram
+//        //m_graphics.resetPath();
+//        //m_graphics.moveTo(450, 200);
+//        //m_graphics.cubicCurveTo(595, 220, 575, 350, 595, 350);
+//        //m_graphics.lineTo(470, 340);
+//        //double parl[6] = { 450, 200, 595, 220, 575, 350 };
+//        //m_graphics.transformImagePath(img, 60, 60, img.width()-60, img.height()-60, parl);
+//*/
+//
+//        // Add/Sub/Contrast Blending Modes
+//        m_graphics.noLine();
+//        m_graphics.fillColor(70, 70, 0);
+//        m_graphics.blendMode(TAGG2D::BlendAdd);
+//        m_graphics.ellipse(500, 280, 20, 40);
+//
+//        m_graphics.fillColor(255, 255, 255);
+//        m_graphics.blendMode(TAGG2D::BlendContrast);
+//        m_graphics.ellipse(500+40, 280, 20, 40);
+//
+//
+//
+//        // Radial gradient.
+//        m_graphics.blendMode(TAGG2D::BlendAlpha);
+//        m_graphics.fillRadialGradient(400, 500, 40, 
+//                                      TAGG2D::Color(255, 255, 0, 0),
+//                                      TAGG2D::Color(0, 0, 127),
+//                                      TAGG2D::Color(0, 255, 0, 0));
+//        m_graphics.ellipse(400, 500, 40, 40);
+//
+//    }
+//

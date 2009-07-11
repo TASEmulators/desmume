@@ -16,6 +16,7 @@
 //----------------------------------------------------------------------------
 //
 //	25 Jan 2007 - Ported to AGG 2.4 Jerry Evans (jerry@novadsp.com)
+//	11 Jul 2009 - significant refactors for introduction to desmume
 //
 //----------------------------------------------------------------------------
 
@@ -67,8 +68,21 @@
 //+ JME
 #include "agg_image_accessors.h"
 
-#define AGG2D_TEMPLATE template<typename PixFormat>
-#define AGG2D_TEMPLATE_ARG <PixFormat>
+#define AGG2D_TEMPLATE template<typename PixFormatSet>
+#define AGG2D_TEMPLATE_WITH_IMAGE template<typename PixFormatSet, typename ImagePixFormatSet>
+#define AGG2D_TEMPLATE_ARG <PixFormatSet>
+#define AGG2D_IMAGE_TEMPLATE template<typename ImagePixFormatSet>
+#define AGG2D_IMAGE_TEMPLATE_ARG <ImagePixFormatSet>
+#define TIMAGE Agg2DBase :: Image AGG2D_IMAGE_TEMPLATE_ARG
+
+
+template<typename Main, typename Pre>
+class PixFormatSet
+{
+public:
+	typedef Main PixFormat;
+	typedef Pre PixFormatPre;
+};
 
 class Agg2DBase
 {
@@ -137,11 +151,13 @@ public:
         double affineMatrix[6];
     };
 
-  struct Image
+  AGG2D_IMAGE_TEMPLATE struct Image
     {
         agg::rendering_buffer renBuf;
 
-        Image() {}
+		Image(const agg::rendering_buffer& srcBuf)
+			: renBuf(srcBuf)
+		{}
         Image(unsigned char* buf, unsigned width, unsigned height, int stride) :
             renBuf(buf, width, height, stride) {}
         void attach(unsigned char* buf, unsigned width, unsigned height, int stride)
@@ -150,8 +166,18 @@ public:
         }
         int width()  const { return renBuf.width(); }
         int height() const { return renBuf.height(); }
-        AGG2D_TEMPLATE void premultiply();
-        AGG2D_TEMPLATE void demultiply();
+        AGG2D_TEMPLATE void premultiply()
+{
+    PixFormat pixf(renBuf);
+    pixf.premultiply();
+}
+
+        AGG2D_TEMPLATE void demultiply()
+{
+    PixFormat pixf(renBuf);
+    pixf.demultiply();
+}
+
     };
 
     enum ImageFilter
@@ -219,9 +245,12 @@ public:
 
 };
 
-AGG2D_TEMPLATE class Agg2D : public Agg2DBase
+
+template<typename PixFormatSet> class Agg2D : public Agg2DBase
 {
 public:
+	typedef typename PixFormatSet::PixFormat PixFormat;
+	typedef Image<PixFormatSet> MyImage;
     typedef agg::order_bgra ComponentOrder; // Platform dependent!
 
     typedef agg::rgba8                                               ColorType;
@@ -238,7 +267,7 @@ public:
     typedef agg::pixfmt_custom_blend_rgba<BlenderComp,agg::rendering_buffer>             PixFormatComp;
 	// JME
     //typedef agg::pixel_formats_rgba<BlenderPre, agg::pixel32_type> PixFormatPre;
-    typedef agg::pixfmt_bgra32_pre PixFormatPre;
+	typedef typename PixFormatSet::PixFormatPre PixFormatPre;
     // JME
     //typedef agg::pixfmt_custom_blend_rgba<BlenderCompPre>          PixFormatCompPre;
     typedef agg::pixfmt_custom_blend_rgba<BlenderCompPre,agg::rendering_buffer>          PixFormatCompPre;
@@ -279,7 +308,7 @@ public:
     };
 
 public:
-	AGG2D_TEMPLATE friend class Agg2DRenderer;
+	AGG2D_TEMPLATE_WITH_IMAGE friend class Agg2DRenderer;
 
     typedef ColorType         Color;
 
@@ -337,7 +366,7 @@ public:
     // Setup
     //-----------------------
     void  attach(unsigned char* buf, unsigned width, unsigned height, int stride);
-    void  attach(Image& img);
+    void  attach(MyImage& img);
 
     void  clipBox(double x1, double y1, double x2, double y2);
     RectD clipBox() const;
@@ -402,7 +431,7 @@ public:
     void lineRadialGradient(double x, double y, double r);
 
     void lineWidth(double w);
-    double lineWidth(double w) const;
+    double lineWidth() const;
 
     void lineCap(LineCap cap);
     LineCap lineCap() const;
@@ -540,46 +569,155 @@ public:
     void imageResample(ImageResample f);
     ImageResample imageResample() const;
 
-    void transformImage(const Image& img,
+	//---------
+	//if anyone can figure out how to put these in the .inl file, theyre more than welcome to. I couldnt declare them correctly to match
+	//the .h file declaration
+
+    AGG2D_IMAGE_TEMPLATE void transformImage(const TIMAGE& img,
                            int imgX1,    int imgY1,    int imgX2,    int imgY2,
-                        double dstX1, double dstY1, double dstX2, double dstY2);
+                        double dstX1, double dstY1, double dstX2, double dstY2)
+	{
+		resetPath();
+		moveTo(dstX1, dstY1);
+		lineTo(dstX2, dstY1);
+		lineTo(dstX2, dstY2);
+		lineTo(dstX1, dstY2);
+		closePolygon();
+		double parallelogram[6] = { dstX1, dstY1, dstX2, dstY1, dstX2, dstY2 };
+		renderImage <ImagePixFormat> (img, imgX1, imgY1, imgX2, imgY2, parallelogram);
+	}
 
-    void transformImage(const Image& img,
-                        double dstX1, double dstY1, double dstX2, double dstY2);
+    AGG2D_IMAGE_TEMPLATE void transformImage(const TIMAGE& img,
+                        double dstX1, double dstY1, double dstX2, double dstY2)
+	{
+		resetPath();
+		moveTo(dstX1, dstY1);
+		lineTo(dstX2, dstY1);
+		lineTo(dstX2, dstY2);
+		lineTo(dstX1, dstY2);
+		closePolygon();
+		double parallelogram[6] = { dstX1, dstY1, dstX2, dstY1, dstX2, dstY2 };
+		renderImage(img, 0, 0, img.renBuf.width(), img.renBuf.height(), parallelogram);
+	}
 
-    void transformImage(const Image& img,
+
+    AGG2D_IMAGE_TEMPLATE void transformImage(const TIMAGE& img,
                         int imgX1, int imgY1, int imgX2, int imgY2,
-                        const double* parallelogram);
+                        const double* parallelogram)
+	{
+		resetPath();
+		moveTo(parallelogram[0], parallelogram[1]);
+		lineTo(parallelogram[2], parallelogram[3]);
+		lineTo(parallelogram[4], parallelogram[5]);
+		lineTo(parallelogram[0] + parallelogram[4] - parallelogram[2],
+			   parallelogram[1] + parallelogram[5] - parallelogram[3]);
+		closePolygon();
+		renderImage(img, imgX1, imgY1, imgX2, imgY2, parallelogram);
+	}
 
-    void transformImage(const Image& img, const double* parallelogram);
+
+    AGG2D_IMAGE_TEMPLATE void transformImage(const TIMAGE& img, const double* parallelogram)
+{
+    resetPath();
+    moveTo(parallelogram[0], parallelogram[1]);
+    lineTo(parallelogram[2], parallelogram[3]);
+    lineTo(parallelogram[4], parallelogram[5]);
+    lineTo(parallelogram[0] + parallelogram[4] - parallelogram[2],
+           parallelogram[1] + parallelogram[5] - parallelogram[3]);
+    closePolygon();
+    renderImage(img, 0, 0, img.renBuf.width(), img.renBuf.height(), parallelogram);
+}
 
 
-    void transformImagePath(const Image& img,
+
+    AGG2D_IMAGE_TEMPLATE void transformImagePath(const TIMAGE& img,
                             int imgX1,    int imgY1,    int imgX2,    int imgY2,
-                            double dstX1, double dstY1, double dstX2, double dstY2);
+                            double dstX1, double dstY1, double dstX2, double dstY2)
+							{
+    double parallelogram[6] = { dstX1, dstY1, dstX2, dstY1, dstX2, dstY2 };
+    renderImage(img, imgX1, imgY1, imgX2, imgY2, parallelogram);
+}
 
-    void transformImagePath(const Image& img,
-                            double dstX1, double dstY1, double dstX2, double dstY2);
 
-    void transformImagePath(const Image& img,
+    AGG2D_IMAGE_TEMPLATE void transformImagePath(const TIMAGE& img,
+                            double dstX1, double dstY1, double dstX2, double dstY2)
+{
+    double parallelogram[6] = { dstX1, dstY1, dstX2, dstY1, dstX2, dstY2 };
+    renderImage(img, 0, 0, img.renBuf.width(), img.renBuf.height(), parallelogram);
+}
+
+
+
+    AGG2D_IMAGE_TEMPLATE void transformImagePath(const TIMAGE& img,
                             int imgX1, int imgY1, int imgX2, int imgY2,
-                            const double* parallelogram);
+                            const double* parallelogram)
+	{
+    renderImage(img, imgX1, imgY1, imgX2, imgY2, parallelogram);
+}
 
-    void transformImagePath(const Image& img, const double* parallelogram);
+
+   AGG2D_IMAGE_TEMPLATE  void transformImagePath(const TIMAGE& img, const double* parallelogram)
+{
+    renderImage(img, 0, 0, img.renBuf.width(), img.renBuf.height(), parallelogram);
+}
+
 
 
     // Image Blending (no transformations available)
-    void blendImage(Image& img,
+    AGG2D_IMAGE_TEMPLATE void blendImage(TIMAGE& img,
                     int imgX1, int imgY1, int imgX2, int imgY2,
-                    double dstX, double dstY, unsigned alpha=255);
-    void blendImage(Image& img, double dstX, double dstY, unsigned alpha=255);
+                    double dstX, double dstY, unsigned alpha=255)
+{
+    worldToScreen(dstX, dstY);
+    PixFormat pixF(img.renBuf);
+    // JME
+    //agg::rect r(imgX1, imgY1, imgX2, imgY2);
+    Rect r(imgX1, imgY1, imgX2, imgY2);
+    if(m_blendMode == BlendAlpha)
+    {
+        m_renBasePre.blend_from(pixF, &r, int(dstX)-imgX1, int(dstY)-imgY1, alpha);
+    }
+    else
+    {
+        m_renBaseCompPre.blend_from(pixF, &r, int(dstX)-imgX1, int(dstY)-imgY1, alpha);
+    }
+}
+
+
+    AGG2D_IMAGE_TEMPLATE void blendImage(TIMAGE& img, double dstX, double dstY, unsigned alpha=255)
+{
+    worldToScreen(dstX, dstY);
+    PixFormat pixF(img.renBuf);
+    m_renBasePre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
+    if(m_blendMode == BlendAlpha)
+    {
+        m_renBasePre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
+    }
+    else
+    {
+        m_renBaseCompPre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
+    }
+}
+
 
 
     // Copy image directly, together with alpha-channel
-    void copyImage(Image& img,
+    AGG2D_IMAGE_TEMPLATE void copyImage(TIMAGE& img,
                    int imgX1, int imgY1, int imgX2, int imgY2,
-                   double dstX, double dstY);
-    void copyImage(Image& img, double dstX, double dstY);
+                   double dstX, double dstY)
+{
+    worldToScreen(dstX, dstY);
+    // JME
+    //agg::rect r(imgX1, imgY1, imgX2, imgY2);
+    Rect r(imgX1, imgY1, imgX2, imgY2);
+    m_renBase.copy_from(img.renBuf, &r, int(dstX)-imgX1, int(dstY)-imgY1);
+}
+
+    AGG2D_IMAGE_TEMPLATE void copyImage(TIMAGE& img, double dstX, double dstY)
+{
+    worldToScreen(dstX, dstY);
+    m_renBase.copy_from(img.renBuf, 0, int(dstX), int(dstY));
+}
 
     // State
     //-----------------------
@@ -596,6 +734,7 @@ public:
     static double rad2Deg(double v) { return v * 180.0 / agg::pi; }
 
 	PixFormat & pixFormat() { return m_pixFormat; }
+	agg::rendering_buffer & buf() { return m_rbuf; }
 
 private:
     void render(bool fillColor);
@@ -606,7 +745,33 @@ private:
 
     void addLine(double x1, double y1, double x2, double y2);
     void updateRasterizerGamma();
-    void renderImage(const Image& img, int x1, int y1, int x2, int y2, const double* parl);
+    AGG2D_IMAGE_TEMPLATE void renderImage(const TIMAGE& img, int x1, int y1, int x2, int y2, const double* parl)
+{
+    agg::trans_affine mtx((double)x1,
+                          (double)y1,
+                          (double)x2,
+                          (double)y2,
+                          parl);
+    mtx *= m_transform;
+    mtx.invert();
+
+    m_rasterizer.reset();
+    m_rasterizer.add_path(m_pathTransform);
+
+    typedef agg::span_interpolator_linear<agg::trans_affine> Interpolator;
+    Interpolator interpolator(mtx);
+
+    if(m_blendMode == BlendAlpha)
+    {
+		// JME audit -
+        Agg2DRenderer<PixFormatSet,ImagePixFormatSet>::renderImage(*this, img, m_renBasePre, interpolator);
+    }
+    else
+    {
+        Agg2DRenderer<PixFormatSet,ImagePixFormatSet>::renderImage(*this, img, m_renBaseCompPre, interpolator);
+    }
+}
+
 
     void updateTransformations();
 

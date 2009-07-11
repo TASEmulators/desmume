@@ -759,6 +759,14 @@
 			>
 		</File>
 		<File
+			RelativePath="..\agg2d.h"
+			>
+		</File>
+		<File
+			RelativePath="..\agg2d.inl"
+			>
+		</File>
+		<File
 			RelativePath="..\aggdraw.cpp"
 			>
 		</File>

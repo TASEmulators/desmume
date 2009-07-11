@@ -778,7 +778,7 @@ void Display()
 	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
 
 	//extern void AGGDraw(); AGGDraw();
-
+	//aggDraw.composite(GPU_screen);
 
 	if (res == DD_OK)
 	{
