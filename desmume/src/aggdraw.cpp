@@ -178,6 +178,7 @@ void AGGDraw() {
 	aggDraw.setTarget(AggTarget_Hud);
 
 	aggDraw.target->clear();
+	m_graphics.clipBox(50, 50, rbuf_window().width() - 50, rbuf_window().height() - 50);
 
 	aggDraw.target->lineColor(0, 255, 0, 128);
 	aggDraw.target->fillColor(0, 255, 0, 128);
@@ -261,6 +262,9 @@ void AGGDraw() {
         aggDraw.target->arcRel(25/2, 100/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
         aggDraw.target->lineRel(50/2, -25/2);
         aggDraw.target->drawPath();
+
+		aggDraw.target->line(5, 6, 40, 70);
+		aggDraw.target->star(60, 70, 4, 5, 4, 6);
 }
 
 
