@@ -25,7 +25,7 @@
 
 // With this define uncommented you can use FreeType font engine
 
-#ifdef UNDER_CE
+#if defined(UNDER_CE) || not defined(WIN32)
 #define AGG2D_USE_FREETYPE
 #endif
 
@@ -59,7 +59,11 @@
 #include "agg_font_cache_manager.h"
 
 #ifdef AGG2D_USE_FREETYPE
+#ifndef WIN32
+#include "agg_font_freetype.h"
+#else
 #include "../font_freetype/agg_font_freetype.h"
+#endif
 #else
 #include "../font_win32_tt/agg_font_win32_tt.h"
 #endif
