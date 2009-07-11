@@ -6,7 +6,6 @@
 	ProjectGUID="{887D5BD9-14EB-4B81-AABA-71E1E1063044}"
 	RootNamespace="agg-2.5"
 	Keyword="Win32Proj"
-	TargetFrameworkVersion="0"
 	>
 	<Platforms>
 		<Platform
@@ -80,7 +79,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="."
+			OutputDirectory="..\windows\agg"
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
 			WholeProgramOptimization="0"

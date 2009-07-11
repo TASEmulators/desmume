@@ -11,6 +11,7 @@ SUBDIRS = . $(UI_DIR)
 endif
 DIST_SUBDIRS = . gdbstub cli cocoa gtk gtk-glade windows
 noinst_LIBRARIES = libdesmume.a
+INCLUDES = -I@top_srcdir@/src/agg/include
 libdesmume_a_SOURCES = \
         armcpu.cpp armcpu.h ARM9.h \
         arm_instructions.cpp arm_instructions.h \
@@ -48,6 +49,12 @@ libdesmume_a_SOURCES = \
 	utils/decrypt/decrypt.h utils/decrypt/header.cpp utils/decrypt/header.h \
 	addons.cpp addons.h \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp fs.h \
+	agg/src/agg_arc.cpp agg/src/agg_arrowhead.cpp agg/src/agg_bezier_arc.cpp agg/src/agg_bspline.cpp agg/src/agg_curves.cpp \
+	agg/src/agg_embedded_raster_fonts.cpp agg/src/agg_gsv_text.cpp agg/src/agg_image_filters.cpp agg/src/agg_line_aa_basics.cpp agg/src/agg_line_profile_aa.cpp \
+	agg/src/agg_rounded_rect.cpp agg/src/agg_sqrt_tables.cpp \
+	agg/src/agg_trans_affine.cpp agg/src/agg_trans_double_path.cpp agg/src/agg_trans_single_path.cpp agg/src/agg_trans_warp_magnifier.cpp \
+	agg/src/agg_vcgen_bspline.cpp agg/src/agg_vcgen_contour.cpp agg/src/agg_vcgen_dash.cpp agg/src/agg_vcgen_markers_term.cpp agg/src/agg_vcgen_smooth_poly1.cpp agg/src/agg_vcgen_stroke.cpp \
+	agg/src/agg_vpgen_clip_polygon.cpp agg/src/agg_vpgen_clip_polyline.cpp agg/src/agg_vpgen_segmentator \
 	mic.cpp mic.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
