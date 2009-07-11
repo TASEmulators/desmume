@@ -65,12 +65,26 @@ public:
 	virtual void noLine() = 0;
 	virtual void lineWidth(double w) = 0;
 	virtual double lineWidth() = 0;
-	
-	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,    double ry_top) = 0;
-	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) = 0;
+
+    // Basic Shapes
+    virtual void line(double x1, double y1, double x2, double y2) = 0;
+    virtual void triangle(double x1, double y1, double x2, double y2, double x3, double y3) = 0;
+    virtual void rectangle(double x1, double y1, double x2, double y2) = 0;
+    virtual void roundedRect(double x1, double y1, double x2, double y2, double r) = 0;
     virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry) = 0;
+    virtual void roundedRect(double x1, double y1, double x2, double y2, double rxBottom, double ryBottom, double rxTop,    double ryTop) = 0;
+    virtual void ellipse(double cx, double cy, double rx, double ry) = 0;
+    virtual void arc(double cx, double cy, double rx, double ry, double start, double sweep) = 0;
+    virtual void star(double cx, double cy, double r1, double r2, double startAngle, int numRays) = 0;
+    virtual void curve(double x1, double y1, double x2, double y2, double x3, double y3) = 0;
+    virtual void curve(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) = 0;
+    virtual void polygon(double* xy, int numPoints) = 0;
+    virtual void polyline(double* xy, int numPoints) = 0;
+
+	
 	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, agg::rgba8 c1, agg::rgba8 c2, double profile=1.0) = 0;
-	virtual void ellipse(double cx, double cy, double rx, double ry) = 0;
+
+	// Path commands
     virtual void resetPath() = 0;
 
     virtual void moveTo(double x, double y)= 0;
@@ -146,11 +160,23 @@ public:
 	virtual void lineWidth(double w) { BASE::lineWidth(w); }
 	virtual double lineWidth() { return BASE::lineWidth(); }
 
-	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,double ry_top) { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx_bottom,ry_bottom,rx_top,ry_top); }
+	// Basic Shapes
+	virtual void line(double x1, double y1, double x2, double y2) {BASE::line(x1, y1, x2, y2);};
+	virtual void triangle(double x1, double y1, double x2, double y2, double x3, double y3) {BASE::triangle(x1, y1, x2, y2, x3, y3);};
+	virtual void rectangle(double x1, double y1, double x2, double y2) {BASE::rectangle(x1, y1, x2, y2);};
 	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) { dirty(); BASE::roundedRect(x1,y1,x2,y2,r); }
     virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry)  { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx,ry); }
-	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, Color c1, Color c2, double profile=1.0) {BASE::fillLinearGradient(x1, y1, x2, y2, c1, c2, profile); }
+	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,double ry_top) { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx_bottom,ry_bottom,rx_top,ry_top); }
 	virtual void ellipse(double cx, double cy, double rx, double ry) {BASE::ellipse(cx, cy, rx, ry);}
+	virtual void arc(double cx, double cy, double rx, double ry, double start, double sweep) {BASE::arc(cx, cy, rx, ry, start, sweep);};
+	virtual void star(double cx, double cy, double r1, double r2, double startAngle, int numRays) {BASE::star(cx, cy, r1, r2, startAngle, numRays);};
+	virtual void curve(double x1, double y1, double x2, double y2, double x3, double y3) {BASE::curve(x1, y1, x2, y2, x3, y3);};
+	virtual void curve(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {BASE::curve(x1, y1, x2, y2, x3, y3, x4, y4);};
+	virtual void polygon(double* xy, int numPoints) {BASE::polygon(xy, numPoints);};
+	virtual void polyline(double* xy, int numPoints) {BASE::polyline(xy, numPoints);};
+
+	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, Color c1, Color c2, double profile=1.0) {BASE::fillLinearGradient(x1, y1, x2, y2, c1, c2, profile); }
+
 	virtual void setFont(const std::string& name) { BASE::font(lookupFont(name)); }
 	virtual void renderText(double dstX, double dstY, const std::string& str) { dirty(); BASE::renderText(dstX, dstY, str); }
 
