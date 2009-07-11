@@ -39,171 +39,46 @@
 #include "agg_renderer_outline_aa.h"
 #include "agg_renderer_markers.h"
 
+#include "agg2d.h"
+
 class AggDrawTarget
 {
 public:
-	virtual void set_color(int r, int g, int b, int a) = 0;
-	virtual void set_gamma(int gamma) = 0;
-	virtual void set_font(const std::string& name) = 0;
-
-	virtual void set_pixel(int x, int y) = 0;
-	virtual void clear() = 0;
-	
-	virtual void render_text(int x, int y, const std::string& str) = 0;
-	virtual void solid_ellipse(int x, int y, int rx, int ry) = 0;
-	virtual void solid_rectangle(int x1, int y1, int x2, int y2) = 0;
-	virtual void solid_triangle(int x1, int y1, int x2, int y2, int x3, int y3) = 0;
-	virtual void line(int x1, int y1, int x2, int y2, double w) = 0;
-	virtual void marker(int x, int y, int size, int type) = 0;
-
-	static const agg::int8u* lookupFont(const std::string& name);
+	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a) = 0;
+	virtual void noFill() = 0;
+	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,    double ry_top) = 0;
+	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) = 0;
+    virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry) = 0;
 };
+
 
 template<typename PIXFMT> 
-class AggDrawTargetImplementation : public AggDrawTarget
+class AggDrawTargetImplementation : public AggDrawTarget, public Agg2D<PIXFMT>
 {
-public:	
+public:
 	typedef PIXFMT pixfmt;
-
-	// The AGG base 
-	typedef agg::renderer_base<pixfmt> RendererBase;
-
-	// The AGG primitives renderer
-	typedef agg::renderer_primitives<RendererBase> RendererPrimitives;
-
-	// The AGG solid renderer
-	typedef agg::renderer_scanline_aa_solid<RendererBase> RendererSolid;
-
-
-	//the order of declaration matters in order to make these variables get setup correctly
-	agg::rendering_buffer rBuf;
-	pixfmt pixf;
-	RendererBase rbase;
-	RendererPrimitives rprim;
-
-	AggDrawTargetImplementation(agg::int8u* buf, int width, int height, int stride)
-		: rBuf(buf,width,height,stride)
-		, pixf(rBuf)
-		, rbase(pixf)
-		, rprim(rbase)
-	{
-	}
-
 	typedef typename pixfmt::color_type color_type;
-	
-	struct TRenderState
-	{
-		TRenderState()
-			: color(0,0,0,255)
-			, gamma(99999)
-			, font(NULL)
-		{}
-		color_type color;
-		int gamma;
-		const agg::int8u* font;
-	} renderState;
 
-	virtual void set_color(int r, int g, int b, int a) { renderState.color = color_type(r,g,b,a); }
-	virtual void set_gamma(int gamma) { renderState.gamma = gamma; }
-	virtual void set_font(const std::string& name) { renderState.font = lookupFont(name); }
-
-	virtual void set_pixel(int x, int y)
+	typedef Agg2D<PIXFMT> BASE;
+	AggDrawTargetImplementation(agg::int8u* buf, int width, int height, int stride)
 	{
-		pixf.copy_pixel(x, y, renderState.color);
+		attach(buf,width,height,stride);
+
+		BASE::viewport(0, 0, 600, 600, 
+                            0, 0, width, height, 
+                            //TAGG2D::Anisotropic);
+                            XMidYMid);
 	}
 
-	virtual void clear()
+	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a) { BASE::lineColor(r,g,b,a); }
+	virtual void noFill() { BASE::noFill(); }
+	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,double ry_top)
 	{
-		static color_type transparentBlack(0,0,0,0);
-		rbase.clear(transparentBlack);
+		BASE::roundedRect(x1,y1,x2,y2,rx_bottom,ry_bottom,rx_top,ry_top);
 	}
-
-	virtual void render_text(int x, int y, const std::string& str)
-	{
-		typedef agg::renderer_base<pixfmt> ren_base;
-		typedef agg::glyph_raster_bin<agg::rgba8> glyph_gen;
-		glyph_gen glyph(0);
-
-		ren_base rb(pixf);
-		agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(rb, glyph);
-		rt.color(renderState.color);
-
-		glyph.font(renderState.font);
-		rt.render_text(x, y, str.c_str(), true); //flipy
-	}
-	
-	virtual void solid_ellipse(int x, int y, int rx, int ry)
-	{
-		rprim.fill_color(renderState.color);
-		rprim.solid_ellipse(x, y, rx, ry);
-	}
-
-	virtual void solid_rectangle(int x1, int y1, int x2, int y2)
-	{
-		rprim.fill_color(renderState.color);
-		rprim.solid_rectangle(x1, y1, x2, y2);
-	}
-
-	virtual void solid_triangle(int x1, int y1, int x2, int y2, int x3, int y3)
-	{
-		RendererSolid ren_aa(rbase);
-		agg::rasterizer_scanline_aa<> m_ras;
-		agg::scanline_p8 m_sl_p8;
-
-		agg::path_storage path;
-
-		path.move_to(x1, y1);
-		path.line_to(x2, y2);
-		path.line_to(x3, y3);
-		path.close_polygon();
-
-		ren_aa.color(renderState.color);
-
-		m_ras.gamma(agg::gamma_power(renderState.gamma * 2.0));
-		m_ras.add_path(path);
-		agg::render_scanlines(m_ras, m_sl_p8, ren_aa);
-	}
-
-	virtual void line(int x1, int y1, int x2, int y2, double w)
-	{
-
-		agg::line_profile_aa profile;
-		profile.width(w);
-
-		typedef agg::renderer_mclip<pixfmt> base_ren_type;
-		typedef agg::renderer_outline_aa<base_ren_type> renderer_type;
-
-		base_ren_type r(pixf);
-		renderer_type ren(r, profile);
-
-		agg::rasterizer_outline_aa<renderer_type> ras(ren);
-		ras.round_cap(true);
-
-		ren.color(renderState.color);
-
-		ras.move_to_d(x1, y1);
-		ras.line_to_d(x2, y2);
-		ras.render(false);
-	}
-
-	virtual void marker(int x, int y, int size, int type)
-	{
-
-		typedef agg::renderer_mclip<pixfmt> base_ren_type;
-
-		base_ren_type r(pixf);
-		agg::renderer_scanline_aa_solid<base_ren_type> rs(r);
-
-		agg::renderer_markers<base_ren_type> m(r);
-
-		m.line_color(renderState.color);
-		m.fill_color(renderState.color);
-
-		m.marker(x, y, size, agg::marker_e(type % agg::end_of_markers));
-	}
-
+	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) { BASE::roundedRect(x1,y1,x2,y2,r); }
+    virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry)  { BASE::roundedRect(x1,y1,x2,y2,rx,ry); }
 };
-
 
 class AggDraw
 {

@@ -86,6 +86,7 @@
 #include "directx/ddraw.h"
 
 #include "aggdraw.h"
+#include "agg2d.h"
 
 
 using namespace std;
@@ -776,8 +777,8 @@ void Display()
 	ddsd.dwFlags=DDSD_ALL;
 	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
 
-	extern void AGGDraw();
-	AGGDraw();
+	//extern void AGGDraw(); AGGDraw();
+
 
 	if (res == DD_OK)
 	{
@@ -892,6 +893,9 @@ void Display()
 			}
 			break;
 		}
+
+	//extern void AGGDraw(unsigned char * buffer); AGGDraw((unsigned char*) ddsd.lpSurface);
+
 
 		lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
 
