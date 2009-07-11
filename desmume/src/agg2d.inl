@@ -70,6 +70,7 @@ AGG2D_TEMPLATE inline TAGG2D::Agg2D() :
     m_masterAlpha(1.0),
     m_antiAliasGamma(1.0),
 
+	m_font(agg::gse4x6),
     m_fillColor(255, 255, 255),
     m_lineColor(0,   0,   0),
     m_fillGradient(),
@@ -146,6 +147,7 @@ AGG2D_TEMPLATE void Agg2D AGG2D_TEMPLATE_ARG ::saveStateTo(State& st)
   st.m_masterAlpha         = m_masterAlpha;
   st.m_antiAliasGamma      = m_antiAliasGamma;
 
+  st.m_font                = m_font;
   st.m_fillColor           = m_fillColor;
   st.m_lineColor           = m_lineColor;
   st.m_fillGradient        = m_fillGradient;
@@ -192,6 +194,7 @@ AGG2D_TEMPLATE void Agg2D AGG2D_TEMPLATE_ARG ::restoreStateFrom(const State& st)
   m_masterAlpha         = st.m_masterAlpha;
   m_antiAliasGamma      = st.m_antiAliasGamma;
 
+  m_font                = st.m_font;
   m_fillColor           = st.m_fillColor;
   m_lineColor           = st.m_lineColor;
   m_fillGradient        = st.m_fillGradient;

@@ -69,6 +69,10 @@ public:
 	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,    double ry_top) = 0;
 	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) = 0;
     virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry) = 0;
+
+	static const agg::int8u* lookupFont(const std::string& name);
+	virtual void setFont(const std::string& name) = 0;
+	virtual void renderText(double dstX, double dstY, const std::string& str) = 0;
 };
 
 
@@ -84,7 +88,7 @@ public:
 	{
 		attach(buf,width,height,stride);
 
-		BASE::viewport(0, 0, width-1, height-1, 0.5, 0.5, width-0.5, height-0.5, TAGG2D::Anisotropic);
+		BASE::viewport(0, 0, width-1, height-1, 0, 0, width-1, height-1, TAGG2D::Anisotropic);
 	}
 
 	virtual void clear() { 
@@ -105,6 +109,9 @@ public:
 	virtual void roundedRect(double x1, double y1, double x2, double y2,double rx_bottom, double ry_bottom,double rx_top,double ry_top) { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx_bottom,ry_bottom,rx_top,ry_top); }
 	virtual void roundedRect(double x1, double y1, double x2, double y2, double r) { dirty(); BASE::roundedRect(x1,y1,x2,y2,r); }
     virtual void roundedRect(double x1, double y1, double x2, double y2, double rx, double ry)  { dirty(); BASE::roundedRect(x1,y1,x2,y2,rx,ry); }
+
+	virtual void setFont(const std::string& name) { BASE::font(lookupFont(name)); }
+	virtual void renderText(double dstX, double dstY, const std::string& str) { dirty(); BASE::renderText(dstX, dstY, str); }
 };
 
 class AggDraw

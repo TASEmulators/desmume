@@ -325,6 +325,8 @@ public:
       double                          m_masterAlpha;
       double                          m_antiAliasGamma;
 
+	  const agg::int8u*               m_font;
+
       Color                           m_fillColor;
       Color                           m_lineColor;
       GradientArray                   m_fillGradient;
@@ -406,6 +408,8 @@ public:
 
     void antiAliasGamma(double g);
     double antiAliasGamma() const;
+
+	void font(const agg::int8u* font) { m_font = font; }
 
     void fillColor(Color c);
     void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255);
@@ -683,6 +687,36 @@ public:
     }
 }
 
+	
+    void renderText(double dstX, double dstY, const std::string& str)
+{
+    worldToScreen(dstX, dstY);
+    PixFormat pixF(m_rbuf);
+    //Rect r(imgX1, imgY1, imgX2, imgY2);
+
+	typedef agg::glyph_raster_bin<agg::rgba8> glyph_gen;
+	glyph_gen glyph(0);
+
+	if(m_blendMode == BlendAlpha)
+	{
+		typedef agg::renderer_base<PixFormatPre> ren_base;
+		agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(m_renBasePre,glyph);
+		rt.color(m_lineColor);
+		glyph.font(m_font);
+		rt.render_text(dstX, dstY, str.c_str(), true); //flipy
+	}
+	else
+	{
+		typedef agg::renderer_base<PixFormatCompPre> ren_base;
+		agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(m_renBaseCompPre,glyph);
+		rt.color(m_lineColor);
+		glyph.font(m_font);
+		rt.render_text(dstX, dstY, str.c_str(), true); //flipy
+	}
+
+
+}
+
 
     AGG2D_IMAGE_TEMPLATE void blendImage(TIMAGE& img, double dstX, double dstY, unsigned alpha=255)
 {
@@ -799,6 +833,8 @@ private:
 
       double                          m_masterAlpha;
       double                          m_antiAliasGamma;
+
+	  const agg::int8u*               m_font;
 
       Color                           m_fillColor;
       Color                           m_lineColor;
