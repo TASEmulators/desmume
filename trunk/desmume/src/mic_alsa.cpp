@@ -57,6 +57,7 @@ BOOL Mic_Init()
         return FALSE;
 
     Mic_Inited = TRUE;
+    Mic_Reset();
 
     return TRUE;
 }
@@ -66,10 +67,8 @@ void Mic_Reset()
     if (!Mic_Inited)
         return;
 
-    memset(Mic_Buffer[0], 0, MIC_BUFSIZE);
-    memset(Mic_Buffer[1], 0, MIC_BUFSIZE);
+    memset(Mic_Buffer, 0, MIC_BUFSIZE * 2);
     Mic_BufPos = 0;
-
     Mic_PlayBuf = 1;
 }
 
