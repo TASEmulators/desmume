@@ -188,6 +188,79 @@ void AGGDraw() {
 	aggDraw.target->setFont("verdana18_bold");
 	aggDraw.target->renderText(60,60, "testing testing testing");
 
+        // Gradients (Aqua Buttons)
+        //=======================================
+//        m_graphics.font("Verdana", 20.0, false, false, TAGG2D::VectorFontCache);
+        double xb1 = 10;
+        double yb1 = 80;
+        double xb2 = xb1 + 150;
+        double yb2 = yb1 + 36;
+
+        aggDraw.target->fillColor(0,50,180,180);
+        aggDraw.target->lineColor(0,0,80, 255);
+        aggDraw.target->lineWidth(1.0);
+        aggDraw.target->roundedRect(xb1, yb1, xb2, yb2, 12, 18);
+
+        aggDraw.target->lineColor(0,0,0,0);
+        aggDraw.target->fillLinearGradient(xb1, yb1, xb1, yb1+30, 
+                                      agg::rgba8(100,200,255,255), 
+                                      agg::rgba8(255,255,255,0));
+        aggDraw.target->roundedRect(xb1+3, yb1+2.5, xb2-3, yb1+30, 9, 18, 1, 1);
+
+		aggDraw.target->fillColor(0,0,50, 200);
+        aggDraw.target->noLine();
+/*        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignCenter);
+        m_graphics.text((xb1 + xb2) / 2.0, (yb1 + yb2) / 2.0, "Aqua Button", true, 0.0, 0.0);
+*/
+        aggDraw.target->fillLinearGradient(xb1, yb2-20, xb1, yb2-3, 
+                                      agg::rgba8(0,  0,  255,0),
+                                      agg::rgba8(100,255,255,255)); 
+        aggDraw.target->roundedRect(xb1+3, yb2-20, xb2-3, yb2-2, 1, 1, 9, 18);
+
+        // Basic Shapes -- Ellipse
+        //===========================================
+        aggDraw.target->lineWidth(3.5);
+        aggDraw.target->lineColor(20,  80,  80);
+        aggDraw.target->fillColor(200, 255, 80, 200);
+        aggDraw.target->ellipse(150, 200, 50, 90);
+
+        // Paths
+        //===========================================
+        aggDraw.target->resetPath();
+        aggDraw.target->fillColor(255, 0, 0, 100);
+        aggDraw.target->lineColor(0, 0, 255, 100);
+        aggDraw.target->lineWidth(2);
+        aggDraw.target->moveTo(300/2, 200/2);
+        aggDraw.target->horLineRel(-150/2);
+        aggDraw.target->arcRel(150/2, 150/2, 0, 1, 0, 150/2, -150/2);
+        aggDraw.target->closePolygon();
+        aggDraw.target->drawPath();
+
+        aggDraw.target->resetPath();
+        aggDraw.target->fillColor(255, 255, 0, 100);
+        aggDraw.target->lineColor(0, 0, 255, 100);
+        aggDraw.target->lineWidth(2);
+        aggDraw.target->moveTo(275/2, 175/2);
+        aggDraw.target->verLineRel(-150/2);
+        aggDraw.target->arcRel(150/2, 150/2, 0, 0, 0, -150/2, 150/2);
+        aggDraw.target->closePolygon();
+        aggDraw.target->drawPath();
+
+        aggDraw.target->resetPath();
+        aggDraw.target->noFill();
+        aggDraw.target->lineColor(127, 0, 0);
+        aggDraw.target->lineWidth(5);
+        aggDraw.target->moveTo(600/2, 350/2);
+        aggDraw.target->lineRel(50/2, -25/2);
+        aggDraw.target->arcRel(25/2, 25/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+        aggDraw.target->lineRel(50/2, -25/2);
+        aggDraw.target->arcRel(25/2, 50/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+        aggDraw.target->lineRel(50/2, -25/2);
+        aggDraw.target->arcRel(25/2, 75/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+        aggDraw.target->lineRel(50, -25);
+        aggDraw.target->arcRel(25/2, 100/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+        aggDraw.target->lineRel(50/2, -25/2);
+        aggDraw.target->drawPath();
 }
 
 
