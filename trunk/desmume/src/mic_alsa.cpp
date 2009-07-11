@@ -22,7 +22,7 @@ BOOL Mic_Init()
         return TRUE;
 
     // Open the default sound card in capture
-    if (snd_pcm_open(&pcm_handle, "default", SND_PCM_STREAM_CAPTURE, 0) < 0)
+    if (snd_pcm_open(&pcm_handle, "plughw:0,0", SND_PCM_STREAM_CAPTURE, 0) < 0)
         return FALSE;
 
     // Allocate the snd_pcm_hw_params_t structure and fill it.
@@ -37,9 +37,11 @@ BOOL Mic_Init()
     //dir 0 == exacte (Rate = 16K exacte)
     if (snd_pcm_hw_params_set_rate(pcm_handle, hwparams, 16000, 0) < 0)
         return FALSE;
+
     /* Set sample format */
     if (snd_pcm_hw_params_set_format(pcm_handle, hwparams, SND_PCM_FORMAT_S8) < 0)
         return FALSE;
+
     // Set one channel (mono)
     if (snd_pcm_hw_params_set_channels(pcm_handle, hwparams, 1) < 0)
         return FALSE;
@@ -85,6 +87,7 @@ void Mic_DeInit()
 
 u8 Mic_ReadSample()
 {
+    int error;
     u8 tmp;
     u8 ret;
 
@@ -102,7 +105,10 @@ u8 Mic_ReadSample()
     Mic_BufPos++;
     if (Mic_BufPos >= (MIC_BUFSIZE << 1)) {
         Mic_BufPos = 0;
-        snd_pcm_readi(pcm_handle, Mic_Buffer[Mic_PlayBuf], MIC_BUFSIZE);
+        error = snd_pcm_readi(pcm_handle, Mic_Buffer[Mic_PlayBuf], MIC_BUFSIZE);
+        if (error < 1) {
+            printf("snd_pcm_readi FAIL!: %s\n", snd_strerror(error));
+        }
         Mic_PlayBuf ^= 1;
     }
 
