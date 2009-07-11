@@ -20,7 +20,7 @@ desmume_SOURCES = \
 	cheatsGTK.h cheatsGTK.cpp \
 	main.cpp main.h
 desmume_LDADD = ../libdesmume.a \
-	$(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(ALSA_LIBS)
+	$(SDL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(ALSA_LIBS) $(LIBAGG_LIBS)
 if HAVE_GDB_STUB
 desmume_LDADD += ../gdbstub/libgdbstub.a
 endif
