@@ -27,6 +27,8 @@
 #define SRAM_SIZE	0x10000
 #define NB_STATES       10
 
+extern int lastSaveState;
+
 typedef struct 
 {
   BOOL exists;

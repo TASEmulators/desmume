@@ -138,7 +138,6 @@ void wxTest() {
 
 static BOOL OpenCore(const char* filename);
 
-unsigned int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
 //----Recent ROMs menu globals----------
 vector<string> RecentRoms;					//The list of recent ROM filenames
 const unsigned int MAX_RECENT_ROMS = 10;	//To change the recent rom max, simply change this number

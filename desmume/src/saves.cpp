@@ -39,10 +39,12 @@
 #include "readwrite.h"
 #include "gfx3d.h"
 #include "movie.h"
+
 #ifdef _MSC_VER
 #include "windows/main.h"
 #endif
 
+int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load functions
 
 //void*v is actually a void** which will be indirected before reading
 //since this isnt supported right now, it is declared in here to make things compile
@@ -481,6 +483,8 @@ void savestate_slot(int num)
    struct stat sbuf;
    char filename[MAX_PATH];
 
+	lastSaveState = num;		//Set last savestate used
+
     #ifdef WIN32
     GetFullPathNoExt(STATES, filename, MAX_PATH);
     #else
@@ -510,6 +514,8 @@ void savestate_slot(int num)
 void loadstate_slot(int num)
 {
    char filename[MAX_PATH];
+
+   lastSaveState = num;		//Set last savestate used
 
     #ifdef WIN32
     GetFullPathNoExt(STATES, filename, MAX_PATH);
