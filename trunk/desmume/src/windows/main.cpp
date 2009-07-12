@@ -651,6 +651,80 @@ int CreateDDrawBuffers()
 		return 1;
 }
 
+template<typename T, int bpp> static T convert(u16 val)
+{
+	switch(bpp)
+	{
+		case 24: case 32:
+			return RGB15TO24_REVERSE(val);
+		case 16: return RGB15TO16_REVERSE(val);
+		default:
+			return 0;
+	}
+}
+
+template<typename T, int bpp> static void doRotate(void* dst)
+{
+	u8* buffer = (u8*)dst;
+	switch(GPU_rotation)
+	{
+	case 0:
+	case 180:
+		{
+			if(ddsd.lPitch == 1024)
+			{
+				if(GPU_rotation==180)
+					for(int i = 0, j=98303; j>=0; i++,j--)
+						((T*)buffer)[i] = convert<T,bpp>(((u16*)GPU_screen)[j]);
+				else
+					for(int i = 0; i < 98304; i++)
+						((T*)buffer)[i] = convert<T,bpp>(((u16*)GPU_screen)[i]);
+			}
+			else
+			{
+				if(GPU_rotation==180)
+					for(int y = 0; y < 384; y++)
+					{
+						for(int x = 0; x < 256; x++)
+							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[384*256 - (y * 256) - x - 1]);
+
+						buffer += ddsd.lPitch;
+					}
+				else
+					for(int y = 0; y < 384; y++)
+					{
+						for(int x = 0; x < 256; x++)
+							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[(y * 256) + x]);
+
+						buffer += ddsd.lPitch;
+					}
+			}
+		}
+		break;
+	case 90:
+	case 270:
+		{
+			if(GPU_rotation == 90)
+				for(int y = 0; y < 256; y++)
+				{
+					for(int x = 0; x < 384; x++)
+						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[((383-x) * 256) + y]);
+
+					buffer += ddsd.lPitch;
+				}
+			else
+				for(int y = 0; y < 256; y++)
+				{
+					for(int x = 0; x < 384; x++)
+						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[((x) * 256) + 255 - y]);
+
+					buffer += ddsd.lPitch;
+				}
+		}
+		break;
+	}
+}
+
 void Display()
 {
 	int res;
@@ -669,107 +743,11 @@ void Display()
 
 	char* buffer = (char*)ddsd.lpSurface;
 
-	int i, j, sz=256*sizeof(u32);
 	switch(ddsd.ddpfPixelFormat.dwRGBBitCount)
 	{
-	case 24:
-	case 32:
-		{
-			switch(GPU_rotation)
-			{
-			case 0:
-			case 180:
-				{
-					if(ddsd.lPitch == 1024)
-					{
-						for(int i = 0; i < 98304; i++)
-							((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
-					}
-					else
-					{
-						for(int y = 0; y < 384; y++)
-						{
-							for(int x = 0; x < 256; x++)
-								((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
-
-							buffer += ddsd.lPitch;
-						}
-					}
-				}
-				break;
-			case 90:
-			case 270:
-				{
-					if(ddsd.lPitch == 1536)
-					{
-						for(int i = 0; i < 98304; i++)
-							((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
-					}
-					else
-					{
-						for(int y = 0; y < 256; y++)
-						{
-							for(int x = 0; x < 384; x++)
-								((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
-
-							buffer += ddsd.lPitch;
-						}
-					}
-				}
-				break;
-			}
-		}
-
-		break;
-
-	case 16:
-		{
-			switch(GPU_rotation)
-			{
-			case 0:
-			case 180:
-				{
-					if(ddsd.lPitch == 512)
-					{
-						for(int i = 0; i < 98304; i++)
-							((u16*)buffer)[i] = RGB15TO16_REVERSE(((u16*)GPU_screen)[i]);
-					}
-					else
-					{
-						for(int y = 0; y < 384; y++)
-						{
-							for(int x = 0; x < 256; x++)
-								((u16*)buffer)[x] = RGB15TO16_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
-
-							buffer += ddsd.lPitch;
-						}
-					}
-				}
-				break;
-			case 90:
-			case 270:
-				{
-					if(ddsd.lPitch == 768)
-					{
-						for(int i = 0; i < 98304; i++)
-							((u16*)buffer)[i] = RGB15TO16_REVERSE(((u16*)GPU_screen)[i]);
-					}
-					else
-					{
-						for(int y = 0; y < 256; y++)
-						{
-							for(int x = 0; x < 384; x++)
-								((u16*)buffer)[x] = RGB15TO16_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
-
-							buffer += ddsd.lPitch;
-						}
-					}
-				}
-				break;
-			}
-		}
-		break;
-
+	case 32: doRotate<u32,32>(ddsd.lpSurface); break;
+	case 24: doRotate<u32,24>(ddsd.lpSurface); break;
+	case 16: doRotate<u16,16>(ddsd.lpSurface); break;
 	default:
 		{
 			INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
