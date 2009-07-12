@@ -64,15 +64,60 @@ public:
 	virtual void  clipBox(double x1, double y1, double x2, double y2) = 0;
 	virtual Agg2DBase::RectD clipBox() const = 0;
 	
-	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
-	virtual void lineColor(AggColor color) { lineColor(color.r,color.g,color.b,color.a); }
-	virtual AggColor lineColor() = 0;
-	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
-	virtual AggColor fillColor() = 0;
-	virtual void noFill() = 0;
-	virtual void noLine() = 0;
-	virtual void lineWidth(double w) = 0;
-	virtual double lineWidth() = 0;
+    // General Attributes
+	virtual void blendMode(Agg2DBase::BlendMode m) = 0;
+	virtual Agg2DBase::BlendMode blendMode() = 0;
+
+    virtual void imageBlendMode(Agg2DBase::BlendMode m) = 0;
+    virtual Agg2DBase::BlendMode imageBlendMode() = 0;
+
+	virtual void imageBlendColor(AggColor c) = 0;
+    virtual void imageBlendColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+    virtual AggColor imageBlendColor() = 0;
+
+    virtual void masterAlpha(double a) = 0;
+    virtual double masterAlpha() = 0;
+
+    virtual void antiAliasGamma(double g) = 0;
+    virtual double antiAliasGamma() = 0;
+
+//	virtual void font(const agg::int8u* font) { m_font = font; }
+//	const agg::int8u* font() { return m_font; }
+
+    virtual void fillColor(AggColor c) = 0;
+    virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+    virtual void noFill() = 0;
+
+    virtual void lineColor(AggColor c) = 0;
+    virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+    virtual void noLine() = 0;
+
+    virtual AggColor fillColor() = 0;
+    virtual AggColor lineColor() = 0;
+
+    virtual void fillLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile=1.0) = 0;
+    virtual void lineLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile=1.0) = 0;
+
+    virtual void fillRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, double profile=1.0) = 0;
+    virtual void lineRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, double profile=1.0) = 0;
+
+    virtual void fillRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, AggColor c3) = 0;
+    virtual void lineRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, AggColor c3) = 0;
+
+    virtual void fillRadialGradient(double x, double y, double r) = 0;
+    virtual void lineRadialGradient(double x, double y, double r) = 0;
+
+    virtual void lineWidth(double w) = 0;
+    virtual double lineWidth() = 0;
+
+	virtual void lineCap(Agg2DBase::LineCap cap) = 0;
+    virtual Agg2DBase::LineCap lineCap() = 0;
+
+    virtual void lineJoin(Agg2DBase::LineJoin join) = 0;
+    virtual Agg2DBase::LineJoin lineJoin() = 0;
+
+    virtual void fillEvenOdd(bool evenOddFlag) = 0;
+    virtual bool fillEvenOdd() = 0;
 
     // Basic Shapes
     virtual void line(double x1, double y1, double x2, double y2) = 0;
@@ -88,9 +133,6 @@ public:
     virtual void curve(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) = 0;
     virtual void polygon(double* xy, int numPoints) = 0;
     virtual void polyline(double* xy, int numPoints) = 0;
-
-	
-	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, agg::rgba8 c1, agg::rgba8 c2, double profile=1.0) = 0;
 
 	// Path commands
     virtual void resetPath() = 0;
@@ -180,15 +222,59 @@ public:
 	virtual void  clipBox(double x1, double y1, double x2, double y2) { BASE::clipBox(x1,y1,x2,y2); }
 	virtual Agg2DBase::RectD clipBox() const { return BASE::clipBox(); }
 
-	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) { BASE::lineColor(r,g,b,a); }
-	virtual AggColor lineColor() { return BASE::lineColor(); }
-	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) { BASE::fillColor(r,g,b,a); }
-	virtual AggColor fillColor() { return BASE::fillColor(); }
+    // General Attributes
+	virtual void blendMode(Agg2DBase::BlendMode m) {BASE::blendMode(m);};
+	virtual Agg2DBase::BlendMode blendMode() {return BASE::blendMode();};
 
-	virtual void noFill() { BASE::noFill(); }
-	virtual void noLine() { BASE::noLine(); }
-	virtual void lineWidth(double w) { BASE::lineWidth(w); }
-	virtual double lineWidth() { return BASE::lineWidth(); }
+	virtual void imageBlendMode(Agg2DBase::BlendMode m) {BASE::imageBlendMode(m);};
+	virtual Agg2DBase::BlendMode imageBlendMode() {return BASE::imageBlendMode();};
+
+	virtual void imageBlendColor(AggColor c) {BASE::imageBlendColor(c);};
+	virtual void imageBlendColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) {BASE::imageBlendColor(r, g, b, a);};
+	virtual AggColor imageBlendColor() {return BASE::imageBlendColor();};
+
+	virtual void masterAlpha(double a) {BASE::masterAlpha(a);};
+	virtual double masterAlpha() {return BASE::masterAlpha();};
+
+	virtual void antiAliasGamma(double g) {BASE::antiAliasGamma(g);};
+	virtual double antiAliasGamma() {return BASE::antiAliasGamma();};
+
+//	virtual void font(const agg::int8u* font) { m_font = font; }
+//	const agg::int8u* font() { return m_font; }
+
+	virtual void fillColor(AggColor c) {BASE::fillColor(c);};
+	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) {BASE::fillColor(r,g,b,a);};
+	virtual void noFill() {BASE::noFill();};
+
+	virtual void lineColor(AggColor c) {BASE::lineColor(c);};
+	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) {BASE::lineColor(r,g,b,a);};
+	virtual void noLine() {BASE::noLine();};
+
+	virtual AggColor fillColor() {return BASE::fillColor();};
+	virtual AggColor lineColor() {return BASE::lineColor();};
+
+	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile=1.0) {BASE::fillLinearGradient(x1, y1, x2, y2, c1, c2, profile);};
+	virtual void lineLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile=1.0) {BASE::lineLinearGradient(x1, y1, x2, y2, c1, c2, profile);};
+
+	virtual void fillRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, double profile=1.0) {BASE::fillRadialGradient(x, y, r, c1, c2, profile);};
+	virtual void lineRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, double profile=1.0) {BASE::lineRadialGradient(x, y, r, c1, c2, profile);};
+
+	virtual void fillRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, AggColor c3) {BASE::fillRadialGradient(x, y, r, c1, c2, c3);};
+	virtual void lineRadialGradient(double x, double y, double r, AggColor c1, AggColor c2, AggColor c3) {BASE::lineRadialGradient(x, y, r, c1, c2, c3);};
+	virtual void fillRadialGradient(double x, double y, double r) {BASE::fillRadialGradient(x, y, r);};
+	virtual void lineRadialGradient(double x, double y, double r) {BASE::lineRadialGradient(x, y, r);};
+
+	virtual void lineWidth(double w) {BASE::lineWidth(w);};
+	virtual double lineWidth() {return BASE::lineWidth();};
+
+	virtual void lineCap(Agg2DBase::LineCap cap) {BASE::lineCap(cap);};
+	virtual Agg2DBase::LineCap lineCap() {return BASE::lineCap();};
+
+	virtual void lineJoin(Agg2DBase::LineJoin join) {BASE::lineJoin(join);};
+	virtual Agg2DBase::LineJoin lineJoin() {return BASE::lineJoin();};
+
+	virtual void fillEvenOdd(bool evenOddFlag) {BASE::fillEvenOdd(evenOddFlag);};
+	virtual bool fillEvenOdd() {return BASE::fillEvenOdd();};
 
 	// Basic Shapes
 	virtual void line(double x1, double y1, double x2, double y2) {BASE::line(x1, y1, x2, y2);};
@@ -204,8 +290,6 @@ public:
 	virtual void curve(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {BASE::curve(x1, y1, x2, y2, x3, y3, x4, y4);};
 	virtual void polygon(double* xy, int numPoints) {BASE::polygon(xy, numPoints);};
 	virtual void polyline(double* xy, int numPoints) {BASE::polyline(xy, numPoints);};
-
-	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile=1.0) {BASE::fillLinearGradient(x1, y1, x2, y2, c1, c2, profile); }
 
 	virtual void setFont(const std::string& name) { BASE::font(lookupFont(name)); }
 	virtual void renderText(double dstX, double dstY, const std::string& str) { 
