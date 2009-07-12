@@ -916,6 +916,7 @@ static void OpenNdsDialog()
         } else {
 #ifdef HAVE_RECENT_FILES
             GtkRecentData recentData;
+            gchar *uri;
             memset(&recentData, 0, sizeof(GtkRecentData));
             recentData.mime_type = "application/x-nintendo-ds-rom";
             recentData.app_name = (gchar *) g_get_application_name ();
@@ -923,8 +924,10 @@ static void OpenNdsDialog()
 
             GtkRecentManager *manager;
             manager = gtk_recent_manager_get_default ();
-            gtk_recent_manager_add_full (manager, g_filename_to_uri(sPath, NULL, NULL), &recentData);
+            uri = g_filename_to_uri (sPath, NULL, NULL);
+            gtk_recent_manager_add_full (manager, uri, &recentData);
 
+            g_free(uri);
             g_free(recentData.app_exec);
 #endif
             gtk_action_set_sensitive(gtk_action_group_get_action(action_group, "run"), TRUE);
