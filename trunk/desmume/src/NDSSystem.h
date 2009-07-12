@@ -308,55 +308,57 @@ template<bool FORCE> void NDS_exec(s32 nb = 560190<<1);
 
 extern int lagframecounter;
 
-       static INLINE void NDS_ARM9HBlankInt(void)
-       {
-            if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x10)
-            {
-                 //MMU.reg_IF[0] |= 2;// & (MMU.reg_IME[0] << 1);// (MMU.reg_IE[0] & (1<<1));
-				setIF(0, 2);
-                 NDS_ARM9.wIRQ = TRUE;
-            }
-       }
-       
-       static INLINE void NDS_ARM7HBlankInt(void)
-       {
-            if(T1ReadWord(MMU.ARM7_REG, 4) & 0x10)
-            {
-                // MMU.reg_IF[1] |= 2;// & (MMU.reg_IME[1] << 1);// (MMU.reg_IE[1] & (1<<1));
-				setIF(1, 2);
-                 NDS_ARM7.wIRQ = TRUE;
-            }
-       }
-       
-       static INLINE void NDS_ARM9VBlankInt(void)
-       {
-            if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x8)
-            {
-                // MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
-				setIF(0, 1);
-                 NDS_ARM9.wIRQ = TRUE;
-                      //emu_halt();
-                      /*logcount++;*/
-            }
-       }
-       
-       static INLINE void NDS_ARM7VBlankInt(void)
-       {
-            if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8)
-                // MMU.reg_IF[1] |= 1;// & (MMU.reg_IME[1]);// (MMU.reg_IE[1] & 1);
-				setIF(1, 1);
-                 NDS_ARM7.wIRQ = TRUE;
-                 //emu_halt();
-       }
-       
-       static INLINE void NDS_swapScreen(void)
-       {
-	       u16 tmp = MainScreen.offset;
-	       MainScreen.offset = SubScreen.offset;
-	       SubScreen.offset = tmp;
-       }
+static INLINE void NDS_ARM9HBlankInt(void)
+{
+    if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x10)
+    {
+         //MMU.reg_IF[0] |= 2;// & (MMU.reg_IME[0] << 1);// (MMU.reg_IE[0] & (1<<1));
+		setIF(0, 2);
+         NDS_ARM9.wIRQ = TRUE;
+    }
+}
 
-	int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
+static INLINE void NDS_ARM7HBlankInt(void)
+{
+    if(T1ReadWord(MMU.ARM7_REG, 4) & 0x10)
+    {
+        // MMU.reg_IF[1] |= 2;// & (MMU.reg_IME[1] << 1);// (MMU.reg_IE[1] & (1<<1));
+		setIF(1, 2);
+         NDS_ARM7.wIRQ = TRUE;
+    }
+}
+
+static INLINE void NDS_ARM9VBlankInt(void)
+{
+    if(T1ReadWord(ARM9Mem.ARM9_REG, 4) & 0x8)
+    {
+        // MMU.reg_IF[0] |= 1;// & (MMU.reg_IME[0]);// (MMU.reg_IE[0] & 1);
+		setIF(0, 1);
+         NDS_ARM9.wIRQ = TRUE;
+              //emu_halt();
+              /*logcount++;*/
+    }
+}
+
+static INLINE void NDS_ARM7VBlankInt(void)
+{
+    if(T1ReadWord(MMU.ARM7_REG, 4) & 0x8)
+        // MMU.reg_IF[1] |= 1;// & (MMU.reg_IME[1]);// (MMU.reg_IE[1] & 1);
+		setIF(1, 1);
+         NDS_ARM7.wIRQ = TRUE;
+         //emu_halt();
+}
+
+static INLINE void NDS_swapScreen(void)
+{
+   u16 tmp = MainScreen.offset;
+   MainScreen.offset = SubScreen.offset;
+   SubScreen.offset = tmp;
+}
+
+int NDS_WriteBMP_32bppBuffer(int width, int height, const void* buf, const char *filename);
+
+
 
 extern struct TCommonSettings {
 	TCommonSettings() 
@@ -411,6 +413,17 @@ extern struct TCommonSettings {
 			bool screens[2];
 		};
 	} showGpu;
+
+	struct _Hud {
+		_Hud() 
+			: ShowInputDisplay(false)
+			, FpsDisplay(false)
+			, FrameCounterDisplay(false)
+			, ShowLagFrameCounter(false)
+			, ShowMicrophone(false)
+		{}
+		bool ShowInputDisplay, FpsDisplay, FrameCounterDisplay, ShowLagFrameCounter, ShowMicrophone;
+	} hud;
 
 } CommonSettings;
 

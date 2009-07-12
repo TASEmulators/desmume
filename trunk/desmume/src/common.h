@@ -77,6 +77,9 @@ void SetRomName(const char *filename);
 	extern void GetINIPath();
 	extern void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file);
 
+	bool GetPrivateProfileBool(const char* appname, const char* keyname, bool defval, const char* filename);
+	void WritePrivateProfileBool(char* appname, char* keyname, bool val, char* file);
+
 #else		// non Windows
 
 #define sscanf_s sscanf

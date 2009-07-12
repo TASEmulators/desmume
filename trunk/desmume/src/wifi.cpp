@@ -1498,7 +1498,9 @@ void WIFI_SoftAP_usTrigger(wifimac_t *wifi)
 	{
 		//if(wifi->ioMem[0xD0 >> 1] & 0x0400)
 		{
-			if((wifi->SoftAP.usecCounter % 100000) == 0)
+			//zero sez: every 1/10 second? does it have to be precise? this is so costly..
+			//if((wifi->SoftAP.usecCounter % 100000) == 0)
+			if((wifi->SoftAP.usecCounter & 131071) == 0)
 			{
 				WIFI_SoftAP_SendBeacon(wifi);
 			}
