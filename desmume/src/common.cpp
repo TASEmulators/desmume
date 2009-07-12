@@ -66,6 +66,18 @@ void GetINIPath()
 	}
 }
 
+void WritePrivateProfileBool(char* appname, char* keyname, bool val, char* file)
+{
+	char temp[256] = "";
+	sprintf(temp, "%d", val?1:0);
+	WritePrivateProfileString(appname, keyname, temp, file);
+}
+
+bool GetPrivateProfileBool(const char* appname, const char* keyname, bool defval, const char* filename)
+{
+	return GetPrivateProfileInt(appname,keyname,defval?1:0,filename) != 0;
+}
+
 void WritePrivateProfileInt(char* appname, char* keyname, int val, char* file)
 {
 	char temp[256] = "";

@@ -988,7 +988,7 @@ int gfx3d_GetNumVertex()
 void gfx3d_glPolygonAttrib (u32 val)
 {
 	if(inBegin) {
-		PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
+		//PROGINFO("Set polyattr in the middle of a begin/end pair.\n  (This won't be activated until the next begin)\n");
 		//TODO - we need some some similar checking for teximageparam etc.
 	}
 	polyAttrPending = val;

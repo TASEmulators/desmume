@@ -261,128 +261,10 @@ int autoframeskipenab=0;
 int frameskiprate=0;
 int emu_paused = 0;
 bool frameAdvance = false;
-bool frameCounterDisplay = false;
-bool FpsDisplay = false;
-bool ShowLagFrameCounter = false;
-bool ShowMicrophone = false;
+
 bool HudEditorMode = false;
 bool UseMicSample = false;
 unsigned short windowSize = 0;
-
-struct HudCoordinates{
-	int x;
-	int y;
-	int xsize;
-	int ysize;
-	int storedx;
-	int storedy;
-	int clicked;
-};
-
-struct HudStruct {
-
-	HudCoordinates FpsDisplay;
-	HudCoordinates FrameCounter;
-	HudCoordinates InputDisplay;
-	HudCoordinates LagFrameCounter;
-	HudCoordinates Microphone;
-	HudCoordinates Dummy;
-
-	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
-};
-
-void SetHudDummy (HudCoordinates *hud)
-{
-	hud->x=666;
-	hud->y=666;
-}
-
-bool IsHudDummy (HudCoordinates *hud)
-{
-	return (hud->x == 666 && hud->y == 666);
-}
-
-HudStruct Hud;
-
-void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
-
-	UINT i = 0;
-
-	while (!IsHudDummy(&hudstruct->hud(i))) {
-		HudCoordinates &hud = hudstruct->hud(i);
-
-		//reset
-		if(!hud.clicked) {
-			hud.storedx=0;
-			hud.storedy=0;
-		}
-
-		if((x >= hud.x && x <= hud.x + hud.xsize) && 
-			(y >= hud.y && y <= hud.y + hud.ysize) && !hud.clicked ) {
-
-				hud.clicked=1;
-				hud.storedx = x - hud.x;
-				hud.storedy = y - hud.y;
-		}
-
-		if(hud.clicked) {
-			hud.x = x - hud.storedx;
-			hud.y = y - hud.storedy;
-		}
-
-		//sanity checks
-		if(hud.x < 0)  hud.x = 0;
-		if(hud.y < 0)  hud.y = 0;
-		if(hud.x > 245)hud.x = 245; //margins
-		if(hud.y > 180)hud.y = 180;
-
-		if(hud.clicked)
-			break;//prevent items from grouping together
-
-		i++;
-	}
-}
-
-void HudClickRelease(HudStruct *hudstruct) {
-
-	UINT i = 0;
-
-	while (!IsHudDummy(&hudstruct->hud(i))) {
-		HudCoordinates &hud = hudstruct->hud(i);
-		hud.clicked=0;
-		i++;
-	}
-}
-
-void ResetHud(HudStruct *hudstruct) {
-
-	hudstruct->FpsDisplay.x=0;
-	hudstruct->FpsDisplay.y=5;
-	hudstruct->FpsDisplay.xsize=120;
-	hudstruct->FpsDisplay.ysize=10;
-
-	hudstruct->FrameCounter.x=0;
-	hudstruct->FrameCounter.y=25;
-	hudstruct->FrameCounter.xsize=60;
-	hudstruct->FrameCounter.ysize=10;
-
-	hudstruct->InputDisplay.x=0;
-	hudstruct->InputDisplay.y=45;
-	hudstruct->InputDisplay.xsize=120;
-	hudstruct->InputDisplay.ysize=10;
-
-	hudstruct->LagFrameCounter.x=0;
-	hudstruct->LagFrameCounter.y=65;
-	hudstruct->LagFrameCounter.xsize=30;
-	hudstruct->LagFrameCounter.ysize=10;
-	
-	hudstruct->Microphone.x=0;
-	hudstruct->Microphone.y=85;
-	hudstruct->Microphone.xsize=20;
-	hudstruct->Microphone.ysize=10;
-
-	SetHudDummy(&hudstruct->Dummy);
-}
 
 /* the firmware settings */
 struct NDS_fw_config_data win_fw_config;
@@ -1024,8 +906,6 @@ DWORD WINAPI run()
 			CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
 			FCEUMOV_AddInputState();
 				
-			if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
-
 			{
 				Lock lock;
 				NDS_exec<false>();
@@ -1037,20 +917,11 @@ DWORD WINAPI run()
 
 			static int fps3d = 0;
 
-			if (FpsDisplay) osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d", fps, fps3d);
-			if (frameCounterDisplay) 
-			{
-				if (movieMode == MOVIEMODE_PLAY)
-					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d/%d",currFrameCounter,currMovieData.records.size());
-				else if(movieMode == MOVIEMODE_RECORD) 
-					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",currFrameCounter);
-				else
-					osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d (no movie)",currFrameCounter);
-			}
-			if (ShowLagFrameCounter) osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
-			if (ShowMicrophone) osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
+			Hud.fps = fps;
+			Hud.fps3d = fps3d;
 
-			if(!AVI_IsRecording()) osd->update();
+			osd->update();
+			DrawHUD();
 			Display();
 			osd->clear();
 
@@ -1540,13 +1411,15 @@ int _main()
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
-	FpsDisplay = GetPrivateProfileInt("Display","Display Fps", 0, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
-	frameCounterDisplay = GetPrivateProfileInt("Display","FrameCounter", 0, IniName);
-	ShowInputDisplay = GetPrivateProfileInt("Display","Display Input", 0, IniName);
-	ShowLagFrameCounter = GetPrivateProfileInt("Display","Display Lag Counter", 0, IniName);
-	ShowMicrophone = GetPrivateProfileInt("Display","Display Microphone", 0, IniName);
+	
+	CommonSettings.hud.FpsDisplay = GetPrivateProfileBool("Display","Display Fps", 0, IniName);
+	CommonSettings.hud.FrameCounterDisplay = GetPrivateProfileBool("Display","FrameCounter", 0, IniName);
+	CommonSettings.hud.ShowInputDisplay = GetPrivateProfileBool("Display","Display Input", 0, IniName);
+	CommonSettings.hud.ShowLagFrameCounter = GetPrivateProfileBool("Display","Display Lag Counter", 0, IniName);
+	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", 0, IniName);
+	
 	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
@@ -2674,11 +2547,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
 	
 			//Counters / Etc.
-			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, MF_BYCOMMAND | ((frameCounterDisplay)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, MF_BYCOMMAND   | ((FpsDisplay)         ?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, MF_BYCOMMAND | ((ShowInputDisplay)   ?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, MF_BYCOMMAND   | ((ShowLagFrameCounter)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((ShowMicrophone)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, MF_BYCOMMAND | ((CommonSettings.hud.FrameCounterDisplay)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, MF_BYCOMMAND   | ((CommonSettings.hud.FpsDisplay)         ?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, MF_BYCOMMAND | ((CommonSettings.hud.ShowInputDisplay)   ?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, MF_BYCOMMAND   | ((CommonSettings.hud.ShowLagFrameCounter)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((CommonSettings.hud.ShowMicrophone)?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND    | ((HudEditorMode)      ?MF_CHECKED:MF_UNCHECKED));
 			MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND       | ((FrameLimit)         ?MF_CHECKED:MF_UNCHECKED));
 			
@@ -2747,7 +2620,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WritePrivateProfileInt("Video", "WindowPosY", WndY/*MainWindowRect.top*/, IniName);
 
 				//Save frame counter status
-				WritePrivateProfileInt("Display", "FrameCounter", frameCounterDisplay, IniName);
+				WritePrivateProfileInt("Display", "FrameCounter", CommonSettings.hud.FrameCounterDisplay, IniName);
 				WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
 
 				//Save Ram Watch information
@@ -3398,28 +3271,29 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			FCEUI_StopMovie();
 			return 0;
 		case ID_VIEW_FRAMECOUNTER:
-			frameCounterDisplay ^= 1;
-			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, frameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
+			CommonSettings.hud.FrameCounterDisplay ^= true;
+			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, CommonSettings.hud.FrameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
 			return 0;
 
 		case ID_VIEW_DISPLAYFPS:
-			FpsDisplay ^= 1;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
-			WritePrivateProfileInt("Display", "Display Fps", FpsDisplay, IniName);
+			CommonSettings.hud.FpsDisplay ^= true;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, CommonSettings.hud.FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
 			osd->clear();
 			return 0;
 
 		case ID_VIEW_DISPLAYINPUT:
-			ShowInputDisplay ^= 1;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
-			WritePrivateProfileInt("Display", "Display Input", ShowInputDisplay, IniName);
+			CommonSettings.hud.ShowInputDisplay ^= true;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, CommonSettings.hud.ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileBool("Display", "Display Input", CommonSettings.hud.ShowInputDisplay, IniName);
 			osd->clear();
 			return 0;
 
 		case ID_VIEW_DISPLAYLAG:
-			ShowLagFrameCounter ^= 1;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
-			WritePrivateProfileInt("Display", "Display Lag Counter", ShowLagFrameCounter, IniName);
+			CommonSettings.hud.ShowLagFrameCounter ^= true;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, CommonSettings.hud.ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileBool("Display", "Display Lag Counter", CommonSettings.hud.ShowLagFrameCounter, IniName);
 			osd->clear();
 			return 0;
 
@@ -3431,9 +3305,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 
 		case ID_VIEW_DISPLAYMICROPHONE:
-			ShowMicrophone ^= 1;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
-			WritePrivateProfileInt("Display", "Display Microphone", ShowMicrophone, IniName);
+			CommonSettings.hud.ShowMicrophone ^= true;
+			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, CommonSettings.hud.ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
+			WritePrivateProfileBool("Display", "Display Microphone", CommonSettings.hud.ShowMicrophone, IniName);
 			osd->clear();
 			return 0;
 

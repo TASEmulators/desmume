@@ -208,10 +208,10 @@ void HK_Reset(int) {ResetGame();}
 void HK_RecordAVI(int) { if (AVI_IsRecording()) AviEnd(); else AviRecordTo(); }
 void HK_RecordWAV(int) { if (WAV_IsRecording()) WavEnd(); else WavRecordTo(); }
 
-void HK_ToggleFrame(int) {frameCounterDisplay ^= true;}
-void HK_ToggleFPS(int) {FpsDisplay ^= true;}
-void HK_ToggleInput(int) {ShowInputDisplay ^= true;}
-void HK_ToggleLag(int) {ShowLagFrameCounter ^= true;}
+void HK_ToggleFrame(int) {CommonSettings.hud.FrameCounterDisplay ^= true;}
+void HK_ToggleFPS(int) {CommonSettings.hud.FpsDisplay ^= true;}
+void HK_ToggleInput(int) {CommonSettings.hud.ShowInputDisplay ^= true;}
+void HK_ToggleLag(int) {CommonSettings.hud.ShowLagFrameCounter ^= true;}
 void HK_ResetLagCounter(int) {
 	lagframecounter=0;
 	LagFrameFlag=0;

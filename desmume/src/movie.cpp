@@ -58,7 +58,6 @@ bool movie_readonly = true;
 char curMovieFilename[512] = {0};
 MovieData currMovieData;
 int currRerecordCount;
-bool ShowInputDisplay = false;
 bool movie_reset_command = false;
 bool movie_lid = false;
 //--------------
@@ -697,9 +696,6 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 
 	 /*extern uint8 joy[4];
 	 memcpy(&cur_input_display,joy,4);*/
-
-	 osd->TouchDisplay();
-
  }
 
 

@@ -33,6 +33,45 @@
 #define OSD_MAX_LINES 4
 #define OSD_TIMER_SECS 2
 
+
+struct HudCoordinates{
+	int x;
+	int y;
+	int xsize;
+	int ysize;
+	int storedx;
+	int storedy;
+	int clicked;
+};
+
+struct HudStruct
+{
+public:
+	HudStruct()
+		: fps(0)
+		, fps3d(0)
+	{}
+
+	HudCoordinates FpsDisplay;
+	HudCoordinates FrameCounter;
+	HudCoordinates InputDisplay;
+	HudCoordinates LagFrameCounter;
+	HudCoordinates Microphone;
+	HudCoordinates Dummy;
+
+	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
+
+	int fps, fps3d;
+};
+
+void ResetHud(HudStruct *hudstruct);
+void EditHud(s32 x, s32 y, HudStruct *hudstruct);
+void HudClickRelease(HudStruct *hudstruct);
+
+void DrawHUD();
+
+extern HudStruct Hud;
+
 class OSDCLASS
 {
 private:
@@ -66,7 +105,6 @@ public:
 	void	addLine(const char *fmt, ...);
 	void	addFixed(u16 x, u16 y, const char *fmt, ...);
 	void	border(bool enabled);
-	void	TouchDisplay();
 };
 
 extern OSDCLASS	*osd;

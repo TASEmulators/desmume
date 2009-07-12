@@ -32,8 +32,179 @@
 #include "aggdraw.h"
 #include "movie.h"
 #include "NDSSystem.h"
+#include "mic.h"
 
 OSDCLASS	*osd = NULL;
+HudStruct Hud;
+
+void SetHudDummy (HudCoordinates *hud)
+{
+	hud->x=666;
+	hud->y=666;
+}
+
+bool IsHudDummy (HudCoordinates *hud)
+{
+	return (hud->x == 666 && hud->y == 666);
+}
+
+void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
+
+	UINT i = 0;
+
+	while (!IsHudDummy(&hudstruct->hud(i))) {
+		HudCoordinates &hud = hudstruct->hud(i);
+
+		//reset
+		if(!hud.clicked) {
+			hud.storedx=0;
+			hud.storedy=0;
+		}
+
+		if((x >= hud.x && x <= hud.x + hud.xsize) && 
+			(y >= hud.y && y <= hud.y + hud.ysize) && !hud.clicked ) {
+
+				hud.clicked=1;
+				hud.storedx = x - hud.x;
+				hud.storedy = y - hud.y;
+		}
+
+		if(hud.clicked) {
+			hud.x = x - hud.storedx;
+			hud.y = y - hud.storedy;
+		}
+
+		//sanity checks
+		if(hud.x < 0)  hud.x = 0;
+		if(hud.y < 0)  hud.y = 0;
+		if(hud.x > 245)hud.x = 245; //margins
+		if(hud.y > 180)hud.y = 180;
+
+		if(hud.clicked)
+			break;//prevent items from grouping together
+
+		i++;
+	}
+}
+
+void HudClickRelease(HudStruct *hudstruct) {
+
+	UINT i = 0;
+
+	while (!IsHudDummy(&hudstruct->hud(i))) {
+		HudCoordinates &hud = hudstruct->hud(i);
+		hud.clicked=0;
+		i++;
+	}
+}
+
+void ResetHud(HudStruct *hudstruct) {
+
+	hudstruct->FpsDisplay.x=0;
+	hudstruct->FpsDisplay.y=5;
+	hudstruct->FpsDisplay.xsize=120;
+	hudstruct->FpsDisplay.ysize=10;
+
+	hudstruct->FrameCounter.x=0;
+	hudstruct->FrameCounter.y=25;
+	hudstruct->FrameCounter.xsize=60;
+	hudstruct->FrameCounter.ysize=10;
+
+	hudstruct->InputDisplay.x=0;
+	hudstruct->InputDisplay.y=45;
+	hudstruct->InputDisplay.xsize=120;
+	hudstruct->InputDisplay.ysize=10;
+
+	hudstruct->LagFrameCounter.x=0;
+	hudstruct->LagFrameCounter.y=65;
+	hudstruct->LagFrameCounter.xsize=30;
+	hudstruct->LagFrameCounter.ysize=10;
+	
+	hudstruct->Microphone.x=0;
+	hudstruct->Microphone.y=85;
+	hudstruct->Microphone.xsize=20;
+	hudstruct->Microphone.ysize=10;
+
+	SetHudDummy(&hudstruct->Dummy);
+}
+
+
+struct TouchInfo{
+	u16 X;
+	u16 Y;
+};
+static int touchalpha[8]= {31, 63, 95, 127, 159, 191, 223, 255};
+static TouchInfo temptouch;
+bool touchshadow = true;
+static std::vector<TouchInfo> touch (8);
+
+
+static void TouchDisplay() {
+	aggDraw.hud->lineWidth(1.0);
+
+	temptouch.X = nds.touchX >> 4;
+	temptouch.Y = nds.touchY >> 4;
+	touch.push_back(temptouch);
+
+	if(touch.size() > 8) touch.erase(touch.begin());
+
+	if(touchshadow) {
+		for (int i = 0; i < 8; i++) {
+			temptouch = touch[i];
+			if(temptouch.X != 0 || temptouch.Y != 0) {
+				aggDraw.hud->lineColor(0, 255, 0, touchalpha[i]);
+				aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
+				aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+				aggDraw.hud->fillColor(0, 0, 0, touchalpha[i]);
+				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y-1 + 192, temptouch.X+1, temptouch.Y+1 + 192);
+			}
+		}
+	}
+	else
+		if(nds.isTouch) {
+			aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
+			aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+		}
+}
+
+
+
+
+void DrawHUD()
+{
+	if (CommonSettings.hud.ShowInputDisplay) 
+	{
+		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
+		TouchDisplay();
+	}
+
+	if (CommonSettings.hud.FpsDisplay) 
+	{
+		osd->addFixed(Hud.FpsDisplay.x, Hud.FpsDisplay.y, "Fps:%02d/%02d", Hud.fps, Hud.fps3d);
+	}
+
+	if (CommonSettings.hud.FrameCounterDisplay) 
+	{
+		if (movieMode == MOVIEMODE_PLAY)
+			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d/%d",currFrameCounter,currMovieData.records.size());
+		else if(movieMode == MOVIEMODE_RECORD) 
+			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d",currFrameCounter);
+		else
+			osd->addFixed(Hud.FrameCounter.x, Hud.FrameCounter.y, "%d (no movie)",currFrameCounter);
+	}
+
+	if (CommonSettings.hud.ShowLagFrameCounter) 
+	{
+		osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
+	}
+
+	if (CommonSettings.hud.ShowMicrophone) 
+	{
+		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
+	}
+}
+
+
 
 OSDCLASS::OSDCLASS(u8 core)
 {
@@ -208,45 +379,3 @@ void OSDCLASS::border(bool enabled)
 {
 	//render51.setTextBoxBorder(enabled);
 }
-
-struct TouchInfo{
-	u16 X;
-	u16 Y;
-};
-static int touchalpha[8]= {31, 63, 95, 127, 159, 191, 223, 255};
-static TouchInfo temptouch;
-bool touchshadow = true;
-static std::vector<TouchInfo> touch (8);
-
-void OSDCLASS::TouchDisplay(){
-
-	if(!ShowInputDisplay) return;
-
-	aggDraw.hud->lineWidth(1.0);
-
-	temptouch.X = nds.touchX >> 4;
-	temptouch.Y = nds.touchY >> 4;
-	touch.push_back(temptouch);
-
-	if(touch.size() > 8) touch.erase(touch.begin());
-
-	if(touchshadow) {
-		for (int i = 0; i < 8; i++) {
-			temptouch = touch[i];
-			if(temptouch.X != 0 || temptouch.Y != 0) {
-				aggDraw.hud->lineColor(0, 255, 0, touchalpha[i]);
-				aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
-				aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
-				aggDraw.hud->fillColor(0, 0, 0, touchalpha[i]);
-				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y-1 + 192, temptouch.X+1, temptouch.Y+1 + 192);
-			}
-		}
-	}
-	else
-		if(nds.isTouch) {
-			aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
-			aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
-		}
-}
-
-
