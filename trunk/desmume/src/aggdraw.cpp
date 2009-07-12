@@ -87,9 +87,9 @@ namespace agg
             calc_type b = (rgb >> 10) & 31;
             calc_type g = (rgb >> 5) & 31;
             calc_type r = (rgb ) & 31;
-			b = ((r+1)*(alpha+1) + (cb)*(cover)-1)>>8;
+			b = ((b+1)*(alpha+1) + (cb)*(cover)-1)>>8;
 			g = ((g+1)*(alpha+1) + (cg)*(cover)-1)>>8;
-			r = ((b+1)*(alpha+1) + (cr)*(cover)-1)>>8;
+			r = ((r+1)*(alpha+1) + (cr)*(cover)-1)>>8;
 			*p = (b<<10)|(g<<5)|r;
         }
 
