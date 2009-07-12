@@ -30,6 +30,8 @@
 #include "debug.h"
 
 #include "aggdraw.h"
+#include "movie.h"
+#include "NDSSystem.h"
 
 OSDCLASS	*osd = NULL;
 
@@ -206,4 +208,45 @@ void OSDCLASS::border(bool enabled)
 {
 	//render51.setTextBoxBorder(enabled);
 }
+
+struct TouchInfo{
+	u16 X;
+	u16 Y;
+};
+static int touchalpha[8]= {31, 63, 95, 127, 159, 191, 223, 255};
+static TouchInfo temptouch;
+bool touchshadow = true;
+static std::vector<TouchInfo> touch (8);
+
+void OSDCLASS::TouchDisplay(){
+
+	if(!ShowInputDisplay) return;
+
+	aggDraw.hud->lineWidth(1.0);
+
+	temptouch.X = nds.touchX >> 4;
+	temptouch.Y = nds.touchY >> 4;
+	touch.push_back(temptouch);
+
+	if(touch.size() > 8) touch.erase(touch.begin());
+
+	if(touchshadow) {
+		for (int i = 0; i < 8; i++) {
+			temptouch = touch[i];
+			if(temptouch.X != 0 || temptouch.Y != 0) {
+				aggDraw.hud->lineColor(0, 255, 0, touchalpha[i]);
+				aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
+				aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+				aggDraw.hud->fillColor(0, 0, 0, touchalpha[i]);
+				aggDraw.hud->rectangle(temptouch.X-1, temptouch.Y-1 + 192, temptouch.X+1, temptouch.Y+1 + 192);
+			}
+		}
+	}
+	else
+		if(nds.isTouch) {
+			aggDraw.hud->line(temptouch.X - 256, temptouch.Y + 192, temptouch.X + 256, temptouch.Y + 192); //horiz
+			aggDraw.hud->line(temptouch.X, temptouch.Y - 256, temptouch.X, temptouch.Y + 384); //vert
+		}
+}
+
 
