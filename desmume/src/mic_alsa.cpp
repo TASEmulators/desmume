@@ -8,6 +8,7 @@ BOOL Mic_Inited = FALSE;
 u8 Mic_Buffer[2][MIC_BUFSIZE];
 u16 Mic_BufPos;
 u8 Mic_PlayBuf;
+u8 Mic_WriteBuf;
 
 int MicButtonPressed;
 
@@ -72,6 +73,7 @@ void Mic_Reset()
     memset(Mic_Buffer, 0, MIC_BUFSIZE * 2);
     Mic_BufPos = 0;
     Mic_PlayBuf = 1;
+    Mic_WriteBuf = 0;
 }
 
 void Mic_DeInit()
@@ -105,11 +107,12 @@ u8 Mic_ReadSample()
     Mic_BufPos++;
     if (Mic_BufPos >= (MIC_BUFSIZE << 1)) {
         Mic_BufPos = 0;
-        error = snd_pcm_readi(pcm_handle, Mic_Buffer[Mic_PlayBuf], MIC_BUFSIZE);
+        error = snd_pcm_readi(pcm_handle, Mic_Buffer[Mic_WriteBuf], MIC_BUFSIZE);
         if (error < 1) {
             printf("snd_pcm_readi FAIL!: %s\n", snd_strerror(error));
         }
         Mic_PlayBuf ^= 1;
+        Mic_WriteBuf ^= 1;
     }
 
     return ret;
