@@ -33,6 +33,8 @@
 #include "movie.h"
 #include "NDSSystem.h"
 #include "mic.h"
+#include "saves.h"
+
 
 OSDCLASS	*osd = NULL;
 HudStruct Hud;
@@ -169,15 +171,9 @@ static void TouchDisplay() {
 
 static int yheight;
 static int xpos;
-static int previousslot;
+static int previousslot = 0;
 static int fadecounter;
 static char number[10];
-
-#ifdef WIN32
-#include "main.h"
-#else
-int lastSaveState = 0;
-#endif
 
 static void DrawStateSlots(){
 

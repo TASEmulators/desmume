@@ -152,7 +152,6 @@ void HK_StateSaveSlot(int num)
 		else
 			savestate_slot(num);	//Savestate
 		
-		lastSaveState = num;		//Set last savestate used
 		LoadSaveStateInfo();
 	}
 }
