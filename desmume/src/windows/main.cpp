@@ -1342,8 +1342,7 @@ std::string GetPrivateProfileStdString(LPCSTR lpAppName,LPCSTR lpKeyName,LPCSTR 
 
 int _main()
 {
-	extern void Agg_init();
-	Agg_init();
+	Desmume_InitOnce();
 	InitDecoder();
 
 #ifdef WX_STUB

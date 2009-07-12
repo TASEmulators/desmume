@@ -478,6 +478,15 @@ copy_firmware_user_data( u8 *dest_buffer, const u8 *fw_data) {
 	return copy_good;
 }
 
+void Desmume_InitOnce()
+{
+	static bool initOnce = false;
+	if(initOnce) return;
+	initOnce = true;
+
+	extern void Agg_init(); //no need to include just for this
+	Agg_init();
+}
 
 #ifdef GDB_STUB
 int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,

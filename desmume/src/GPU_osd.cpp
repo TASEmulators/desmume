@@ -50,7 +50,7 @@ bool IsHudDummy (HudCoordinates *hud)
 
 void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 
-	UINT i = 0;
+	u32 i = 0;
 
 	while (!IsHudDummy(&hudstruct->hud(i))) {
 		HudCoordinates &hud = hudstruct->hud(i);
@@ -89,7 +89,7 @@ void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 
 void HudClickRelease(HudStruct *hudstruct) {
 
-	UINT i = 0;
+	u32 i = 0;
 
 	while (!IsHudDummy(&hudstruct->hud(i))) {
 		HudCoordinates &hud = hudstruct->hud(i);
@@ -238,10 +238,12 @@ void DrawHUD()
 		osd->addFixed(Hud.LagFrameCounter.x, Hud.LagFrameCounter.y, "%d",TotalLagFrames);
 	}
 
+	#ifdef WIN32
 	if (CommonSettings.hud.ShowMicrophone) 
 	{
 		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 	}
+	#endif
 
 	DrawStateSlots();
 }

@@ -267,6 +267,8 @@ int NDS_Init( struct armcpu_memory_iface *arm9_mem_if,
 int NDS_Init ( void);
 #endif
 
+void Desmume_InitOnce();
+
 void NDS_DeInit(void);
 void
 NDS_FillDefaultFirmwareConfigData( struct NDS_fw_config_data *fw_config);
