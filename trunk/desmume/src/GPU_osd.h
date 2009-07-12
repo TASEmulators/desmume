@@ -66,6 +66,7 @@ public:
 	void	addLine(const char *fmt, ...);
 	void	addFixed(u16 x, u16 y, const char *fmt, ...);
 	void	border(bool enabled);
+	void	TouchDisplay();
 };
 
 extern OSDCLASS	*osd;
