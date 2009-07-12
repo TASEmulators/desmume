@@ -167,8 +167,48 @@ static void TouchDisplay() {
 		}
 }
 
+static int yheight;
+static int xpos;
+static int previousslot;
+static int fadecounter;
+static char number[10];
 
+#ifdef WIN32
+#include "main.h"
+#else
+int lastSaveState = 0;
+#endif
 
+static void DrawStateSlots(){
+
+	aggDraw.hud->lineWidth(1.0);
+	aggDraw.hud->lineColor(0, 0, 0, fadecounter);
+	aggDraw.hud->fillColor(255, 255, 255, fadecounter);
+
+	for ( int i = 0; i < 10; xpos=xpos+24) {
+
+		aggDraw.hud->fillLinearGradient(8 + xpos, 160 - yheight, 30 + xpos, 180 + yheight+20, agg::rgba8(100,200,255,fadecounter), agg::rgba8(255,255,255,0));
+		
+		if(lastSaveState == i) {
+			yheight = 5;
+			aggDraw.hud->fillLinearGradient(8 + xpos, 160 - yheight, 30 + xpos, 180 + yheight+20, agg::rgba8(100,255,255,fadecounter), agg::rgba8(255,255,255,0));
+		}
+
+		aggDraw.hud->rectangle(8 + xpos , 160 - yheight, 30 + xpos , 180 + yheight);
+		snprintf(number, 10, "%d", i);
+		aggDraw.hud->renderText(9 + xpos + 4, 164, std::string(number));
+		i++;
+		yheight=0;
+	}
+
+	if(lastSaveState != previousslot) fadecounter = 256;
+	previousslot = lastSaveState;
+	fadecounter--;
+
+	if(fadecounter < 1) fadecounter = 0;
+
+	xpos = 0;
+}
 
 void DrawHUD()
 {
@@ -202,6 +242,8 @@ void DrawHUD()
 	{
 		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 	}
+
+	DrawStateSlots();
 }
 
 
