@@ -1143,7 +1143,7 @@ int NDS_WritePNG(const char *fname)
 	int x, y;
 	int width=256;
 	int height=192*2;
-	u16 * bmp = (u16 *)GPU_tempScreen;
+	u16 * bmp = (u16 *)GPU_screen;
 	FILE *pp=NULL;
 	uint8 *compmem = NULL;
 	uLongf compmemsize = (uLongf)( (height * (width + 1) * 3 * 1.001 + 1) + 12 );
@@ -1269,7 +1269,7 @@ int NDS_WriteBMP(const char *filename)
 	bmpimgheader_struct imageheader;
 	FILE *file;
 	int i,j;
-	u16 * bmp = (u16 *)GPU_tempScreen;
+	u16 * bmp = (u16 *)GPU_screen;
 	size_t elems_written = 0;
 
 	memset(&fileheader, 0, sizeof(fileheader));

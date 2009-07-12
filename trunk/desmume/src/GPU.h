@@ -32,7 +32,6 @@
 #include "registers.h"
 #include "FIFO.h"
 #include "MMU.h"
-#include "GPU_osd.h"
 #include <iosfwd>
 
 //#undef FORCEINLINE
@@ -868,7 +867,6 @@ static void REG_DISPx_pack_test(GPU * gpu)
 #endif
 
 CACHE_ALIGN extern u8 GPU_screen[4*256*192];
-CACHE_ALIGN extern u8 GPU_tempScreen[4*256*192];
 
 
 GPU * GPU_Init(u8 l);
@@ -992,8 +990,6 @@ void gpu_SetRotateScreen(u16 angle);
 
 //#undef FORCEINLINE
 //#define FORCEINLINE __forceinline
-
-extern OSDCLASS	*osd;
 
 #endif
 

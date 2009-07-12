@@ -63,6 +63,53 @@
 
 #include "agg_span_allocator.h"
 
+namespace agg
+{
+	//this custom blender does more correct blending math than the default
+	//which is necessary or else drawing transparent pixels on (31,31,31) will yield (30,30,30)
+    struct my_blender_rgb555_pre
+    {
+        typedef rgba8 color_type;
+        typedef color_type::value_type value_type;
+        typedef color_type::calc_type calc_type;
+        typedef int16u pixel_type;
+
+        static AGG_INLINE void blend_pix(pixel_type* p, 
+                                         unsigned cr, unsigned cg, unsigned cb,
+                                         unsigned alpha, 
+                                         unsigned cover)
+        {
+			//not sure whether this is right...
+            alpha = color_type::base_mask - alpha;
+            pixel_type rgb = *p;
+            calc_type r = (rgb >> 10) & 31;
+            calc_type g = (rgb >> 5) & 31;
+            calc_type b = (rgb ) & 31;
+			r = ((r+1)*(alpha+1) + (cr)*(cover)-1)>>8;
+			g = ((g+1)*(alpha+1) + (cg)*(cover)-1)>>8;
+			b = ((b+1)*(alpha+1) + (cb)*(cover)-1)>>8;
+			*p = (r<<10)|(g<<5)|b;
+        }
+
+        static AGG_INLINE pixel_type make_pix(unsigned r, unsigned g, unsigned b)
+        {
+            return (pixel_type)(((r & 0xF8) << 7) | 
+                                ((g & 0xF8) << 2) | 
+                                 (b >> 3) | 0x8000);
+        }
+
+        static AGG_INLINE color_type make_color(pixel_type p)
+        {
+            return color_type((p >> 7) & 0xF8, 
+                              (p >> 2) & 0xF8, 
+                              (p << 3) & 0xF8);
+        }
+    };
+
+	typedef pixfmt_alpha_blend_rgb_packed<my_blender_rgb555_pre, rendering_buffer> my_pixfmt_rgb555_pre; //----pixfmt_rgb555_pre
+}
+
+
 
 typedef std::map<std::string, const agg::int8u*> TAgg_Font_Table;
 static TAgg_Font_Table font_table;
@@ -125,8 +172,9 @@ static void Agg_init_fonts()
 
 AggDraw_Desmume aggDraw;
 
-typedef AggDrawTargetImplementation<PixFormatSet<agg::pixfmt_rgb555,agg::pixfmt_rgb555_pre> > T_AGG_RGB555;
-typedef AggDrawTargetImplementation<PixFormatSet<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre> > T_AGG_RGBA;
+
+typedef AggDrawTargetImplementation<PixFormatSetDeclaration<agg::pixfmt_rgb555,agg::my_pixfmt_rgb555_pre> > T_AGG_RGB555;
+typedef AggDrawTargetImplementation<PixFormatSetDeclaration<agg::pixfmt_bgra32,agg::pixfmt_bgra32_pre> > T_AGG_RGBA;
 
 T_AGG_RGB555 agg_targetScreen(GPU_screen, 256, 384, 512);
 
@@ -138,7 +186,7 @@ T_AGG_RGBA agg_targetHud((u8*)hudBuffer, 256, 384, 1024);
 
 static AggDrawTarget* targets[] = {
 	&agg_targetScreen,
-	&agg_targetHud,
+	&agg_targetScreen, //THATS RIGHT! for now, hud maps to screen
 	&agg_targetLua,
 };
 
@@ -146,6 +194,11 @@ void Agg_init()
 {
 	Agg_init_fonts();
 	aggDraw.target = targets[0];
+	aggDraw.screen = targets[0];
+	aggDraw.hud = targets[1];
+	aggDraw.lua = targets[2];
+
+	aggDraw.hud->setFont("verdana18_bold");
 }
 
 void AggDraw_Desmume::setTarget(AggTarget newTarget)
@@ -153,120 +206,123 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 	target = targets[newTarget];
 }
 
-void AggDraw_Desmume::composite(void* dest)
-{
-	T_AGG_RGBA target((u8*)dest, 256, 384, 1024);
-
-	//if lua is nonempty, blend it
-	if(!agg_targetLua.empty)
-	{
-		T_AGG_RGBA::MyImage luaImage(agg_targetLua.buf());
-		target.transformImage(luaImage, 0,0,256-1,384-1);
-	}
-
-	//if hud is nonempty, blend it
-	if(!agg_targetHud.empty)
-	{
-		T_AGG_RGBA::MyImage hudImage(agg_targetHud.buf());
-		target.transformImage(hudImage, 0,0,256-1,384-1);
-	}
-}
+//this code would do compositing.. and maybe it will.. one day. but not for now.
+//void AggDraw_Desmume::composite(void* dest)
+//{
+//	T_AGG_RGB555 target((u8*)dest, 256, 384, 512);
+//
+//	ctr = 0;
+//
+//	//if lua is nonempty, blend it
+//	if(!agg_targetLua.empty)
+//	{
+//		T_AGG_RGBA::MyImage luaImage(agg_targetLua.buf());
+//		target.transformImage(luaImage, 0,40,256-1,384-1);
+//	}
+//
+//	int zzz=9;
+//
+//	//if hud is nonempty, blend it
+//	if(!agg_targetHud.empty)
+//	{
+//		T_AGG_RGBA::MyImage hudImage(agg_targetHud.buf());
+//		target.transformImage(hudImage, 0,0,256-1,384-1);
+//	}
+//}
 
 //temporary, just for testing the lib
-void AGGDraw() {
-
-	aggDraw.setTarget(AggTarget_Hud);
-
-	aggDraw.target->clear();
-	m_graphics.clipBox(50, 50, rbuf_window().width() - 50, rbuf_window().height() - 50);
-
-	aggDraw.target->lineColor(0, 255, 0, 128);
-	aggDraw.target->fillColor(0, 255, 0, 128);
-	//aggDraw.target->noFill();
-	aggDraw.target->lineWidth(1.0);
-	aggDraw.target->roundedRect(10,10,256-10,192-10,4);
-
-	aggDraw.target->setFont("verdana18_bold");
-	aggDraw.target->renderText(60,60, "testing testing testing");
-
-        // Gradients (Aqua Buttons)
-        //=======================================
-//        m_graphics.font("Verdana", 20.0, false, false, TAGG2D::VectorFontCache);
-        double xb1 = 10;
-        double yb1 = 80;
-        double xb2 = xb1 + 150;
-        double yb2 = yb1 + 36;
-
-        aggDraw.target->fillColor(0,50,180,180);
-        aggDraw.target->lineColor(0,0,80, 255);
-        aggDraw.target->lineWidth(1.0);
-        aggDraw.target->roundedRect(xb1, yb1, xb2, yb2, 12, 18);
-
-        aggDraw.target->lineColor(0,0,0,0);
-        aggDraw.target->fillLinearGradient(xb1, yb1, xb1, yb1+30, 
-                                      agg::rgba8(100,200,255,255), 
-                                      agg::rgba8(255,255,255,0));
-        aggDraw.target->roundedRect(xb1+3, yb1+2.5, xb2-3, yb1+30, 9, 18, 1, 1);
-
-		aggDraw.target->fillColor(0,0,50, 200);
-        aggDraw.target->noLine();
-/*        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignCenter);
-        m_graphics.text((xb1 + xb2) / 2.0, (yb1 + yb2) / 2.0, "Aqua Button", true, 0.0, 0.0);
-*/
-        aggDraw.target->fillLinearGradient(xb1, yb2-20, xb1, yb2-3, 
-                                      agg::rgba8(0,  0,  255,0),
-                                      agg::rgba8(100,255,255,255)); 
-        aggDraw.target->roundedRect(xb1+3, yb2-20, xb2-3, yb2-2, 1, 1, 9, 18);
-
-        // Basic Shapes -- Ellipse
-        //===========================================
-        aggDraw.target->lineWidth(3.5);
-        aggDraw.target->lineColor(20,  80,  80);
-        aggDraw.target->fillColor(200, 255, 80, 200);
-        aggDraw.target->ellipse(150, 200, 50, 90);
-
-        // Paths
-        //===========================================
-        aggDraw.target->resetPath();
-        aggDraw.target->fillColor(255, 0, 0, 100);
-        aggDraw.target->lineColor(0, 0, 255, 100);
-        aggDraw.target->lineWidth(2);
-        aggDraw.target->moveTo(300/2, 200/2);
-        aggDraw.target->horLineRel(-150/2);
-        aggDraw.target->arcRel(150/2, 150/2, 0, 1, 0, 150/2, -150/2);
-        aggDraw.target->closePolygon();
-        aggDraw.target->drawPath();
-
-        aggDraw.target->resetPath();
-        aggDraw.target->fillColor(255, 255, 0, 100);
-        aggDraw.target->lineColor(0, 0, 255, 100);
-        aggDraw.target->lineWidth(2);
-        aggDraw.target->moveTo(275/2, 175/2);
-        aggDraw.target->verLineRel(-150/2);
-        aggDraw.target->arcRel(150/2, 150/2, 0, 0, 0, -150/2, 150/2);
-        aggDraw.target->closePolygon();
-        aggDraw.target->drawPath();
-
-        aggDraw.target->resetPath();
-        aggDraw.target->noFill();
-        aggDraw.target->lineColor(127, 0, 0);
-        aggDraw.target->lineWidth(5);
-        aggDraw.target->moveTo(600/2, 350/2);
-        aggDraw.target->lineRel(50/2, -25/2);
-        aggDraw.target->arcRel(25/2, 25/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
-        aggDraw.target->lineRel(50/2, -25/2);
-        aggDraw.target->arcRel(25/2, 50/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
-        aggDraw.target->lineRel(50/2, -25/2);
-        aggDraw.target->arcRel(25/2, 75/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
-        aggDraw.target->lineRel(50, -25);
-        aggDraw.target->arcRel(25/2, 100/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
-        aggDraw.target->lineRel(50/2, -25/2);
-        aggDraw.target->drawPath();
-
-		aggDraw.target->line(5, 6, 40, 70);
-		aggDraw.target->star(60, 70, 4, 5, 4, 6);
-}
-
+//void AGGDraw() {
+//
+//	aggDraw.setTarget(AggTarget_Lua);
+//
+//	aggDraw.target->clear();
+//
+//	aggDraw.target->clipBox(0,0,255,383);
+//
+//	aggDraw.target->lineColor(0, 255, 0, 128);
+//	aggDraw.target->fillColor(0, 255, 0, 128);
+//	//aggDraw.target->noFill();
+//	aggDraw.target->lineWidth(1.0);
+//	aggDraw.target->roundedRect(10,30,256-10,192-10,4);
+//
+//	aggDraw.target->setFont("verdana18_bold");
+//	aggDraw.target->renderText(60,60, "testing testing testing");
+//
+//        // Gradients (Aqua Buttons)
+//        //=======================================
+////        m_graphics.font("Verdana", 20.0, false, false, TAGG2D::VectorFontCache);
+//        double xb1 = 10;
+//        double yb1 = 80;
+//        double xb2 = xb1 + 150;
+//        double yb2 = yb1 + 36;
+//
+//        aggDraw.target->fillColor(0,50,180,180);
+//        aggDraw.target->lineColor(0,0,80, 255);
+//        aggDraw.target->lineWidth(1.0);
+//        aggDraw.target->roundedRect(xb1, yb1, xb2, yb2, 12, 18);
+//
+//        aggDraw.target->lineColor(0,0,0,0);
+//        aggDraw.target->fillLinearGradient(xb1, yb1, xb1, yb1+30, 
+//                                      agg::rgba8(100,200,255,255), 
+//                                      agg::rgba8(255,255,255,0));
+//        aggDraw.target->roundedRect(xb1+3, yb1+2.5, xb2-3, yb1+30, 9, 18, 1, 1);
+//
+//		aggDraw.target->fillColor(0,0,50, 200);
+//        aggDraw.target->noLine();
+///*        m_graphics.textAlignment(TAGG2D::AlignCenter, TAGG2D::AlignCenter);
+//        m_graphics.text((xb1 + xb2) / 2.0, (yb1 + yb2) / 2.0, "Aqua Button", true, 0.0, 0.0);
+//*/
+//        aggDraw.target->fillLinearGradient(xb1, yb2-20, xb1, yb2-3, 
+//                                      agg::rgba8(0,  0,  255,0),
+//                                      agg::rgba8(100,255,255,255)); 
+//        aggDraw.target->roundedRect(xb1+3, yb2-20, xb2-3, yb2-2, 1, 1, 9, 18);
+//
+//        // Basic Shapes -- Ellipse
+//        //===========================================
+//        aggDraw.target->lineWidth(3.5);
+//        aggDraw.target->lineColor(20,  80,  80);
+//        aggDraw.target->fillColor(200, 255, 80, 200);
+//        aggDraw.target->ellipse(150, 200, 50, 90);
+//
+//        // Paths
+//        //===========================================
+//        aggDraw.target->resetPath();
+//        aggDraw.target->fillColor(255, 0, 0, 100);
+//        aggDraw.target->lineColor(0, 0, 255, 100);
+//        aggDraw.target->lineWidth(2);
+//        aggDraw.target->moveTo(300/2, 200/2);
+//        aggDraw.target->horLineRel(-150/2);
+//        aggDraw.target->arcRel(150/2, 150/2, 0, 1, 0, 150/2, -150/2);
+//        aggDraw.target->closePolygon();
+//        aggDraw.target->drawPath();
+//
+//        aggDraw.target->resetPath();
+//        aggDraw.target->fillColor(255, 255, 0, 100);
+//        aggDraw.target->lineColor(0, 0, 255, 100);
+//        aggDraw.target->lineWidth(2);
+//        aggDraw.target->moveTo(275/2, 175/2);
+//        aggDraw.target->verLineRel(-150/2);
+//        aggDraw.target->arcRel(150/2, 150/2, 0, 0, 0, -150/2, 150/2);
+//        aggDraw.target->closePolygon();
+//        aggDraw.target->drawPath();
+//
+//        aggDraw.target->resetPath();
+//        aggDraw.target->noFill();
+//        aggDraw.target->lineColor(127, 0, 0);
+//        aggDraw.target->lineWidth(5);
+//        aggDraw.target->moveTo(600/2, 350/2);
+//        aggDraw.target->lineRel(50/2, -25/2);
+//        aggDraw.target->arcRel(25/2, 25/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        aggDraw.target->lineRel(50/2, -25/2);
+//        aggDraw.target->arcRel(25/2, 50/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        aggDraw.target->lineRel(50/2, -25/2);
+//        aggDraw.target->arcRel(25/2, 75/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        aggDraw.target->lineRel(50, -25);
+//        aggDraw.target->arcRel(25/2, 100/2, aggDraw.target->deg2Rad(-30), 0, 1, 50/2, -25/2);
+//        aggDraw.target->lineRel(50/2, -25/2);
+//        aggDraw.target->drawPath();
+//}
+//
 
 
 //

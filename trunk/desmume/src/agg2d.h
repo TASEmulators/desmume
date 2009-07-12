@@ -23,10 +23,13 @@
 #ifndef AGG2D_INCLUDED
 #define AGG2D_INCLUDED
 
-// With this define uncommented you can use FreeType font engine
+//we're not using vector fonts right now.
+//#define AGG2D_USE_VECTORFONTS
 
+#ifdef AGG2D_USE_VECTORFONTS
 #if defined(UNDER_CE) || not defined(WIN32)
 #define AGG2D_USE_FREETYPE
+#endif
 #endif
 
 #pragma warning(disable: 4786)
@@ -45,7 +48,6 @@
 #include "agg_renderer_scanline.h"
 #include "agg_span_gradient.h"
 #include "agg_span_image_filter_rgba.h"
-//#include "agg_span_image_resample_rgba.h"
 
 //+ JME
 #include "agg_span_allocator.h"
@@ -58,6 +60,14 @@
 #include "agg_rounded_rect.h"
 #include "agg_font_cache_manager.h"
 
+#include "agg_glyph_raster_bin.h"
+#include "agg_renderer_raster_text.h"
+#include "agg_embedded_raster_fonts.h"
+
+
+#include <string>
+
+#ifdef AGG2D_USE_VECTORFONTS
 #ifdef AGG2D_USE_FREETYPE
 #ifndef WIN32
 #include "agg_font_freetype.h"
@@ -66,6 +76,7 @@
 #endif
 #else
 #include "../font_win32_tt/agg_font_win32_tt.h"
+#endif
 #endif
 
 #include "agg_pixfmt_rgba.h"
@@ -81,7 +92,7 @@
 
 
 template<typename Main, typename Pre>
-class PixFormatSet
+class PixFormatSetDeclaration
 {
 public:
 	typedef Main PixFormat;
@@ -170,17 +181,18 @@ public:
         }
         int width()  const { return renBuf.width(); }
         int height() const { return renBuf.height(); }
-        AGG2D_TEMPLATE void premultiply()
-{
-    PixFormat pixf(renBuf);
-    pixf.premultiply();
-}
+       
+		AGG2D_TEMPLATE void premultiply()
+		{
+			typename PixFormatSet::PixFormat pixf(renBuf);
+			pixf.premultiply();
+		}
 
         AGG2D_TEMPLATE void demultiply()
-{
-    PixFormat pixf(renBuf);
-    pixf.demultiply();
-}
+		{
+			typename PixFormatSet::PixFormat pixf(renBuf);
+			pixf.demultiply();
+		}
 
     };
 
@@ -249,6 +261,7 @@ public:
 
 };
 
+template<typename,typename> class Agg2DRenderer;
 
 template<typename PixFormatSet> class Agg2D : public Agg2DBase
 {
@@ -290,20 +303,22 @@ public:
     typedef agg::span_gradient<ColorType, agg::span_interpolator_linear<>, agg::gradient_x,      GradientArray> LinearGradientSpan;
     typedef agg::span_gradient<ColorType, agg::span_interpolator_linear<>, agg::gradient_circle, GradientArray> RadialGradientSpan;
 
+#ifdef AGG2D_USE_VECTORFONTS
 #ifdef AGG2D_USE_FREETYPE
     typedef agg::font_engine_freetype_int32       FontEngine;
 #else
     typedef agg::font_engine_win32_tt_int32       FontEngine;
 #endif
+
     typedef agg::font_cache_manager<FontEngine>   FontCacheManager;
     typedef FontCacheManager::gray8_adaptor_type  FontRasterizer;
     typedef FontCacheManager::gray8_scanline_type FontScanline;
+#endif
 
     typedef agg::conv_curve<agg::path_storage>    ConvCurve;
     typedef agg::conv_stroke<ConvCurve>           ConvStroke;
     typedef agg::conv_transform<ConvCurve>        PathTransform;
     typedef agg::conv_transform<ConvStroke>       StrokeTransform;
-
     enum Gradient
     {
         Solid,
@@ -312,7 +327,7 @@ public:
     };
 
 public:
-	AGG2D_TEMPLATE_WITH_IMAGE friend class Agg2DRenderer;
+	template<typename,typename> friend class Agg2DRenderer;
 
     typedef ColorType         Color;
 
@@ -414,6 +429,7 @@ public:
     double antiAliasGamma() const;
 
 	void font(const agg::int8u* font) { m_font = font; }
+	const agg::int8u* font() { return m_font; }
 
     void fillColor(Color c);
     void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255);
@@ -493,6 +509,7 @@ public:
 
     // Text
     //-----------------------
+	#ifdef AGG2D_USE_VECTORFONTS
     void   flipText(bool flip);
     void   font(const char* fileName, double height,
                 bool bold = false,
@@ -501,6 +518,7 @@ public:
                 double angle = 0.0);
     double fontHeight() const;
     double fontAscent() const;
+
     void   textAlignment(TextAlignment alignX, TextAlignment alignY);
     bool   textHints() const;
     void   textHints(bool hints);
@@ -511,7 +529,7 @@ public:
 
     double textWidth(const char* str);
     void   text(double x, double y, const char* str, bool roundOff=false, double dx=0.0, double dy=0.0);
-
+	#endif
 
     // Path commands
     //-----------------------
@@ -592,7 +610,7 @@ public:
 		lineTo(dstX1, dstY2);
 		closePolygon();
 		double parallelogram[6] = { dstX1, dstY1, dstX2, dstY1, dstX2, dstY2 };
-		renderImage <ImagePixFormat> (img, imgX1, imgY1, imgX2, imgY2, parallelogram);
+		renderImage <typename ImagePixFormatSet::ImagePixFormat> (img, imgX1, imgY1, imgX2, imgY2, parallelogram);
 	}
 
     AGG2D_IMAGE_TEMPLATE void transformImage(const TIMAGE& img,
@@ -693,49 +711,47 @@ public:
 
 	
     void renderText(double dstX, double dstY, const std::string& str)
-{
-    worldToScreen(dstX, dstY);
-    PixFormat pixF(m_rbuf);
-    //Rect r(imgX1, imgY1, imgX2, imgY2);
-
-	typedef agg::glyph_raster_bin<agg::rgba8> glyph_gen;
-	glyph_gen glyph(0);
-
-	if(m_blendMode == BlendAlpha)
 	{
-		typedef agg::renderer_base<PixFormatPre> ren_base;
-		agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(m_renBasePre,glyph);
-		rt.color(m_lineColor);
-		glyph.font(m_font);
-		rt.render_text(dstX, dstY, str.c_str(), true); //flipy
-	}
-	else
-	{
-		typedef agg::renderer_base<PixFormatCompPre> ren_base;
-		agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(m_renBaseCompPre,glyph);
-		rt.color(m_lineColor);
-		glyph.font(m_font);
-		rt.render_text(dstX, dstY, str.c_str(), true); //flipy
-	}
+		worldToScreen(dstX, dstY);
+		PixFormat pixF(m_rbuf);
+		//Rect r(imgX1, imgY1, imgX2, imgY2);
 
+		typedef agg::glyph_raster_bin<agg::rgba8> glyph_gen;
+		glyph_gen glyph(0);
 
-}
+		if(m_blendMode == BlendAlpha)
+		{
+			typedef agg::renderer_base<PixFormatPre> ren_base;
+			agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(m_renBasePre,glyph);
+			rt.color(m_lineColor);
+			glyph.font(m_font);
+			rt.render_text(dstX, dstY, str.c_str(), true); //flipy
+		}
+		else
+		{
+			typedef agg::renderer_base<PixFormatCompPre> ren_base;
+			agg::renderer_raster_htext_solid<ren_base, glyph_gen> rt(m_renBaseCompPre,glyph);
+			rt.color(m_lineColor);
+			glyph.font(m_font);
+			rt.render_text(dstX, dstY, str.c_str(), true); //flipy
+		}
+	}
 
 
     AGG2D_IMAGE_TEMPLATE void blendImage(TIMAGE& img, double dstX, double dstY, unsigned alpha=255)
-{
-    worldToScreen(dstX, dstY);
-    PixFormat pixF(img.renBuf);
-    m_renBasePre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
-    if(m_blendMode == BlendAlpha)
-    {
-        m_renBasePre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
-    }
-    else
-    {
-        m_renBaseCompPre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
-    }
-}
+	{
+		worldToScreen(dstX, dstY);
+		PixFormat pixF(img.renBuf);
+		m_renBasePre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
+		if(m_blendMode == BlendAlpha)
+		{
+			m_renBasePre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
+		}
+		else
+		{
+			m_renBaseCompPre.blend_from(pixF, 0, int(dstX), int(dstY), alpha);
+		}
+	}
 
 
 
@@ -777,38 +793,40 @@ public:
 private:
     void render(bool fillColor);
 
+#ifdef AGG2D_USE_VECTORFONTS
 #if !defined( UNDER_CE )
     void render(FontRasterizer& ras, FontScanline& sl);
+#endif
 #endif
 
     void addLine(double x1, double y1, double x2, double y2);
     void updateRasterizerGamma();
     AGG2D_IMAGE_TEMPLATE void renderImage(const TIMAGE& img, int x1, int y1, int x2, int y2, const double* parl)
-{
-    agg::trans_affine mtx((double)x1,
-                          (double)y1,
-                          (double)x2,
-                          (double)y2,
-                          parl);
-    mtx *= m_transform;
-    mtx.invert();
+	{
+		agg::trans_affine mtx((double)x1,
+							  (double)y1,
+							  (double)x2,
+							  (double)y2,
+							  parl);
+		mtx *= m_transform;
+		mtx.invert();
 
-    m_rasterizer.reset();
-    m_rasterizer.add_path(m_pathTransform);
+		m_rasterizer.reset();
+		m_rasterizer.add_path(m_pathTransform);
 
-    typedef agg::span_interpolator_linear<agg::trans_affine> Interpolator;
-    Interpolator interpolator(mtx);
+		typedef agg::span_interpolator_linear<agg::trans_affine> Interpolator;
+		Interpolator interpolator(mtx);
 
-    if(m_blendMode == BlendAlpha)
-    {
-		// JME audit -
-        Agg2DRenderer<PixFormatSet,ImagePixFormatSet>::renderImage(*this, img, m_renBasePre, interpolator);
-    }
-    else
-    {
-        Agg2DRenderer<PixFormatSet,ImagePixFormatSet>::renderImage(*this, img, m_renBaseCompPre, interpolator);
-    }
-}
+		if(m_blendMode == BlendAlpha)
+		{
+			// JME audit -
+			Agg2DRenderer<PixFormatSet,ImagePixFormatSet>::renderImage(*this, img, m_renBasePre, interpolator);
+		}
+		else
+		{
+			Agg2DRenderer<PixFormatSet,ImagePixFormatSet>::renderImage(*this, img, m_renBaseCompPre, interpolator);
+		}
+	}
 
 
     void updateTransformations();
@@ -894,12 +912,13 @@ private:
     PathTransform                   m_pathTransform;
     StrokeTransform                 m_strokeTransform;
 
+#ifdef AGG2D_USE_VECTORFONTS
 #ifndef AGG2D_USE_FREETYPE
     HDC                             m_fontDC;
 #endif
     FontEngine                      m_fontEngine;
     FontCacheManager                m_fontCacheManager;
-
+#endif
 };
 
 

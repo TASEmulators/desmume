@@ -43,6 +43,7 @@
 #include "../saves.h"
 #include "../addons.h"
 #include "resource.h"
+#include "GPU_osd.h"
 #include "memView.h"
 #include "disView.h"
 #include "ginfo.h"
@@ -777,171 +778,161 @@ void Display()
 	ddsd.dwFlags=DDSD_ALL;
 	res = lpBackSurface->Lock(NULL, &ddsd, DDLOCK_WAIT, NULL);
 
-	//extern void AGGDraw(); AGGDraw();
-	//aggDraw.composite(GPU_screen);
-
-	if (res == DD_OK)
+	if (res==DDERR_SURFACELOST)
 	{
-		char* buffer = (char*)ddsd.lpSurface;
+		LOG("DirectDraw buffers is lost\n");
+		if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
+			IDirectDrawSurface7_Restore(lpBackSurface);
+	} else if(res != DD_OK)
+		return;
 
-		int i, j, sz=256*sizeof(u32);
-		switch(ddsd.ddpfPixelFormat.dwRGBBitCount)
+	char* buffer = (char*)ddsd.lpSurface;
+
+	int i, j, sz=256*sizeof(u32);
+	switch(ddsd.ddpfPixelFormat.dwRGBBitCount)
+	{
+	case 24:
+	case 32:
 		{
-		case 24:
-		case 32:
+			switch(GPU_rotation)
 			{
-				switch(GPU_rotation)
+			case 0:
+			case 180:
 				{
-				case 0:
-				case 180:
+					if(ddsd.lPitch == 1024)
 					{
-						if(ddsd.lPitch == 1024)
+						for(int i = 0; i < 98304; i++)
+							((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
+					}
+					else
+					{
+						for(int y = 0; y < 384; y++)
 						{
-							for(int i = 0; i < 98304; i++)
-								((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
-						}
-						else
-						{
-							for(int y = 0; y < 384; y++)
-							{
-								for(int x = 0; x < 256; x++)
-									((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
+							for(int x = 0; x < 256; x++)
+								((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
 
-								buffer += ddsd.lPitch;
-							}
+							buffer += ddsd.lPitch;
 						}
 					}
-					break;
-				case 90:
-				case 270:
-					{
-						if(ddsd.lPitch == 1536)
-						{
-							for(int i = 0; i < 98304; i++)
-								((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
-						}
-						else
-						{
-							for(int y = 0; y < 256; y++)
-							{
-								for(int x = 0; x < 384; x++)
-									((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
-
-								buffer += ddsd.lPitch;
-							}
-						}
-					}
-					break;
 				}
-			}
-
-			//aggDraw.composite(ddsd.lpSurface);
-			break;
-
-		case 16:
-			{
-				switch(GPU_rotation)
+				break;
+			case 90:
+			case 270:
 				{
-				case 0:
-				case 180:
+					if(ddsd.lPitch == 1536)
 					{
-						if(ddsd.lPitch == 512)
+						for(int i = 0; i < 98304; i++)
+							((u32*)buffer)[i] = RGB15TO24_REVERSE(((u16*)GPU_screen)[i]);
+					}
+					else
+					{
+						for(int y = 0; y < 256; y++)
 						{
-							for(int i = 0; i < 98304; i++)
-								((u16*)buffer)[i] = RGB15TO16_REVERSE(((u16*)GPU_screen)[i]);
-						}
-						else
-						{
-							for(int y = 0; y < 384; y++)
-							{
-								for(int x = 0; x < 256; x++)
-									((u16*)buffer)[x] = RGB15TO16_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
+							for(int x = 0; x < 384; x++)
+								((u32*)buffer)[x] = RGB15TO24_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
 
-								buffer += ddsd.lPitch;
-							}
+							buffer += ddsd.lPitch;
 						}
 					}
-					break;
-				case 90:
-				case 270:
-					{
-						if(ddsd.lPitch == 768)
-						{
-							for(int i = 0; i < 98304; i++)
-								((u16*)buffer)[i] = RGB15TO16_REVERSE(((u16*)GPU_screen)[i]);
-						}
-						else
-						{
-							for(int y = 0; y < 256; y++)
-							{
-								for(int x = 0; x < 384; x++)
-									((u16*)buffer)[x] = RGB15TO16_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
-
-								buffer += ddsd.lPitch;
-							}
-						}
-					}
-					break;
 				}
+				break;
 			}
-			break;
+		}
 
-		default:
+		break;
+
+	case 16:
+		{
+			switch(GPU_rotation)
 			{
-				INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
-				emu_halt();
+			case 0:
+			case 180:
+				{
+					if(ddsd.lPitch == 512)
+					{
+						for(int i = 0; i < 98304; i++)
+							((u16*)buffer)[i] = RGB15TO16_REVERSE(((u16*)GPU_screen)[i]);
+					}
+					else
+					{
+						for(int y = 0; y < 384; y++)
+						{
+							for(int x = 0; x < 256; x++)
+								((u16*)buffer)[x] = RGB15TO16_REVERSE(((u16*)GPU_screen)[(y * 384) + x]);
+
+							buffer += ddsd.lPitch;
+						}
+					}
+				}
+				break;
+			case 90:
+			case 270:
+				{
+					if(ddsd.lPitch == 768)
+					{
+						for(int i = 0; i < 98304; i++)
+							((u16*)buffer)[i] = RGB15TO16_REVERSE(((u16*)GPU_screen)[i]);
+					}
+					else
+					{
+						for(int y = 0; y < 256; y++)
+						{
+							for(int x = 0; x < 384; x++)
+								((u16*)buffer)[x] = RGB15TO16_REVERSE(((u16*)GPU_screen)[(y * 256) + x]);
+
+							buffer += ddsd.lPitch;
+						}
+					}
+				}
+				break;
 			}
-			break;
 		}
+		break;
 
-	//extern void AGGDraw(unsigned char * buffer); AGGDraw((unsigned char*) ddsd.lpSurface);
-
-
-		lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
-
-		// Main screen
-		if(lpPrimarySurface->Blt(&MainScreenRect, lpBackSurface, &MainScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
+	default:
 		{
-			LOG("DirectDraw buffers is lost\n");
-			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
-				IDirectDrawSurface7_Restore(lpBackSurface);
+			INFO("Unsupported color depth: %i bpp\n", ddsd.ddpfPixelFormat.dwRGBBitCount);
+			emu_halt();
 		}
-
-		// Sub screen
-		if(lpPrimarySurface->Blt(&SubScreenRect, lpBackSurface, &SubScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
-		{
-			LOG("DirectDraw buffers is lost\n");
-			if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
-				IDirectDrawSurface7_Restore(lpBackSurface);
-		}
-
-		// Gap
-		if(ScreenGap > 0)
-		{
-			//u32 color = gapColors[win_fw_config.fav_colour];
-			//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
-			u32 color_rev = 0xFFFFFF;
-
-			HDC dc;
-			HBRUSH brush;
-
-			dc = GetDC(MainWindow->getHWnd());
-			brush = CreateSolidBrush(color_rev);
-
-			FillRect(dc, &GapRect, brush);
-
-			DeleteObject((HGDIOBJ)brush);
-			ReleaseDC(MainWindow->getHWnd(), dc);
-		}
+		break;
 	}
-	else
+
+
+	lpBackSurface->Unlock((LPRECT)ddsd.lpSurface);
+
+	// Main screen
+	if(lpPrimarySurface->Blt(&MainScreenRect, lpBackSurface, &MainScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
 	{
-		if (res==DDERR_SURFACELOST)
-		{
-			LOG("DirectDraw buffers is lost\n");
-			if (IDirectDrawSurface7_Restore(lpPrimarySurface)==DD_OK)
-				IDirectDrawSurface7_Restore(lpBackSurface);
-		}
+		LOG("DirectDraw buffers is lost\n");
+		if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
+			IDirectDrawSurface7_Restore(lpBackSurface);
+	}
+
+	// Sub screen
+	if(lpPrimarySurface->Blt(&SubScreenRect, lpBackSurface, &SubScreenSrcRect, DDBLT_WAIT, 0) == DDERR_SURFACELOST)
+	{
+		LOG("DirectDraw buffers is lost\n");
+		if(IDirectDrawSurface7_Restore(lpPrimarySurface) == DD_OK)
+			IDirectDrawSurface7_Restore(lpBackSurface);
+	}
+
+	// Gap
+	if(ScreenGap > 0)
+	{
+		//u32 color = gapColors[win_fw_config.fav_colour];
+		//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
+		u32 color_rev = 0xFFFFFF;
+
+		HDC dc;
+		HBRUSH brush;
+
+		dc = GetDC(MainWindow->getHWnd());
+		brush = CreateSolidBrush(color_rev);
+
+		FillRect(dc, &GapRect, brush);
+
+		DeleteObject((HGDIOBJ)brush);
+		ReleaseDC(MainWindow->getHWnd(), dc);
 	}
 }
 

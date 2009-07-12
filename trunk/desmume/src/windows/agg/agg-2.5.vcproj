@@ -17,7 +17,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
+			OutputDirectory="."
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
 			>
@@ -79,7 +79,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\windows\agg"
+			OutputDirectory="."
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
 			WholeProgramOptimization="0"

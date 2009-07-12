@@ -41,6 +41,8 @@
 
 #include "agg2d.h"
 
+typedef agg::rgba8 AggColor;
+
 class AggDrawTarget
 {
 public:
@@ -58,9 +60,15 @@ public:
 	bool empty;
 
 	virtual void clear() = 0;
+
+	virtual void  clipBox(double x1, double y1, double x2, double y2) = 0;
+	virtual Agg2DBase::RectD clipBox() const = 0;
 	
 	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+	virtual void lineColor(AggColor color) { lineColor(color.r,color.g,color.b,color.a); }
+	virtual AggColor lineColor() = 0;
 	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+	virtual AggColor fillColor() = 0;
 	virtual void noFill() = 0;
 	virtual void noLine() = 0;
 	virtual void lineWidth(double w) = 0;
@@ -122,6 +130,22 @@ public:
 	static const agg::int8u* lookupFont(const std::string& name);
 	virtual void setFont(const std::string& name) = 0;
 	virtual void renderText(double dstX, double dstY, const std::string& str) = 0;
+	virtual void renderTextDropshadowed(double dstX, double dstY, const std::string& str)
+	{
+		AggColor lineColorOld = lineColor();
+		lineColor(255-lineColorOld.r,255-lineColorOld.g,255-lineColorOld.b);
+		renderText(dstX-1,dstY-1,str);
+		renderText(dstX,dstY-1,str);
+		renderText(dstX+1,dstY-1,str);
+		renderText(dstX-1,dstY,str);
+		renderText(dstX+1,dstY,str);
+		renderText(dstX-1,dstY+1,str);
+		renderText(dstX,dstY+1,str);
+		renderText(dstX+1,dstY+1,str);
+		lineColor(lineColorOld);
+		renderText(dstX,dstY,str);
+	}
+
 
 	// Auxiliary
     virtual double pi() { return agg::pi; }
@@ -140,7 +164,7 @@ public:
 	typedef Agg2D<PixFormatSet> BASE;
 	AggDrawTargetImplementation(agg::int8u* buf, int width, int height, int stride)
 	{
-		attach(buf,width,height,stride);
+		BASE::attach(buf,width,height,stride);
 
 		BASE::viewport(0, 0, width-1, height-1, 0, 0, width-1, height-1, TAGG2D::Anisotropic);
 	}
@@ -153,8 +177,14 @@ public:
 		}
 	}
 
+	virtual void  clipBox(double x1, double y1, double x2, double y2) { BASE::clipBox(x1,y1,x2,y2); }
+	virtual Agg2DBase::RectD clipBox() const { return BASE::clipBox(); }
+
 	virtual void lineColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) { BASE::lineColor(r,g,b,a); }
+	virtual AggColor lineColor() { return BASE::lineColor(); }
 	virtual void fillColor(unsigned r, unsigned g, unsigned b, unsigned a = 255) { BASE::fillColor(r,g,b,a); }
+	virtual AggColor fillColor() { return BASE::fillColor(); }
+
 	virtual void noFill() { BASE::noFill(); }
 	virtual void noLine() { BASE::noLine(); }
 	virtual void lineWidth(double w) { BASE::lineWidth(w); }
@@ -175,10 +205,16 @@ public:
 	virtual void polygon(double* xy, int numPoints) {BASE::polygon(xy, numPoints);};
 	virtual void polyline(double* xy, int numPoints) {BASE::polyline(xy, numPoints);};
 
-	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, Color c1, Color c2, double profile=1.0) {BASE::fillLinearGradient(x1, y1, x2, y2, c1, c2, profile); }
+	virtual void fillLinearGradient(double x1, double y1, double x2, double y2, AggColor c1, AggColor c2, double profile=1.0) {BASE::fillLinearGradient(x1, y1, x2, y2, c1, c2, profile); }
 
 	virtual void setFont(const std::string& name) { BASE::font(lookupFont(name)); }
-	virtual void renderText(double dstX, double dstY, const std::string& str) { dirty(); BASE::renderText(dstX, dstY, str); }
+	virtual void renderText(double dstX, double dstY, const std::string& str) { 
+		dirty(); 
+		int height = BASE::font()[0];
+		int base = BASE::font()[1];
+		int offset = height-base*2;
+		BASE::renderText(dstX, dstY + offset, str);
+	}
 
     // Path commands
     virtual void resetPath() {BASE::resetPath();};
@@ -209,10 +245,10 @@ public:
 	virtual void cubicCurveTo(double xCtrl2, double yCtrl2, double xTo, double yTo) {BASE::cubicCurveTo(xCtrl2, yCtrl2, xTo, yTo);};
 	virtual void cubicCurveRel(double xCtrl2, double yCtrl2, double xTo, double yTo) {BASE::cubicCurveRel(xCtrl2, yCtrl2, xTo, yTo);};
 
-	virtual void addEllipse(double cx, double cy, double rx, double ry, Direction dir) {BASE::addEllipse(cx, cy, rx, ry, dir);};
+	virtual void addEllipse(double cx, double cy, double rx, double ry, Agg2DBase::Direction dir) {BASE::addEllipse(cx, cy, rx, ry, dir);};
 	virtual void closePolygon() {BASE::closePolygon();};
 
-	virtual void drawPath(DrawPathFlag flag = FillAndStroke) {BASE::drawPath(flag);};
+	virtual void drawPath(Agg2DBase::DrawPathFlag flag = Agg2DBase::FillAndStroke) {BASE::drawPath(flag);};
 //	virtual void drawPathNoTransform(DrawPathFlag flag = FillAndStroke) {BASE::drawPathNoTransform(flag);};
 
 	// Auxiliary
@@ -242,7 +278,9 @@ class AggDraw_Desmume : public AggDraw
 {
 public:
 	void setTarget(AggTarget newTarget);
-	void composite(void* dest);
+	//void composite(void* dest);
+
+	AggDrawTarget *screen, *hud, *lua;
 };
 
 extern AggDraw_Desmume aggDraw;

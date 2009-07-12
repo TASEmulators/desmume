@@ -51,7 +51,7 @@
 				FavorSizeOrSpeed="0"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;..\agg\include;..\agg\examples"
+				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
 				PreprocessorDefinitions="DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;SPU_INTERPOLATE;HAVE_LIBZ;HAVE_LIBZZIP;NOMINMAX;DEBUG;EXPERIMENTAL_WIFI"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="0"
@@ -145,7 +145,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;..\agg\include;..\agg\examples"
+				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -174,7 +174,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="agg-2.5.lib lua-5.1.4-x86.lib glib-2.20.1-x86.lib vfw32.lib winmm.lib opengl32.lib glu32.lib ws2_32.lib user32.lib gdi32.lib directx\dxguid.lib shell32.lib comdlg32.lib directx\dxerr8.lib directx\dsound.lib directx\dinput8.lib directx\ddraw.lib zlib-2005-x32.lib zziplib-2005-x32.lib shlwapi.lib  winpcap\wpcap.lib 7zip.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_release.exe"
-				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z"
+				AdditionalLibraryDirectories=".\zlib123;.\zziplib;glib-2.20.1\lib;.\lua\lib;.\7z;agg"
 				DelayLoadDLLs="wpcap.dll"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -243,7 +243,7 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;..\agg\include;..\agg\examples"
+				AdditionalIncludeDirectories=".;..;&quot;lua\lua-5.1.4\src&quot;;&quot;glib-2.20.1\build&quot;;&quot;glib-2.20.1\build\glib&quot;;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;.\agg\include;.\agg\examples"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SPU_INTERPOLATE;NOMINMAX;NDEBUG;RELEASE;EXPERIMENTAL_WIFI"
 				StringPooling="true"
 				ExceptionHandling="1"
@@ -1080,18 +1080,6 @@
 		</File>
 		<File
 			RelativePath="..\shaders.h"
-			>
-		</File>
-		<File
-			RelativePath="..\softrender.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\softrender.h"
-			>
-		</File>
-		<File
-			RelativePath="..\softrender_config.h"
 			>
 		</File>
 		<File
