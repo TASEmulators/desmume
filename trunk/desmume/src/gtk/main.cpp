@@ -46,6 +46,7 @@
 #include "dTool.h"
 #include "desmume_config.h"
 #include "cheatsGTK.h"
+#include "GPU_osd.h"
 
 #include "commandline.h"
 
@@ -1088,6 +1089,7 @@ static int ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer
         yd = yoff;
     }
 
+	DrawHUD();
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
     origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 
             0, 8, imgW, imgH, imgW*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
@@ -1742,6 +1744,7 @@ static gboolean timeout_exit_cb(gpointer data)
 static int
 common_gtk_main( struct configured_features *my_config)
 {
+	Desmume_InitOnce();
     SDL_TimerID limiter_timer = NULL;
 
     GtkAccelGroup * accel_group;
