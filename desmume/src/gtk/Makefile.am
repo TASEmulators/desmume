@@ -24,3 +24,17 @@ desmume_LDADD = ../libdesmume.a \
 if HAVE_GDB_STUB
 desmume_LDADD += ../gdbstub/libgdbstub.a
 endif
+
+UPDATE_DESKTOP = \
+  appsdir=$(DESTDIR)$(datadir)/applications ; \
+  if [ -f $$appsdir/mimeinfo.cache ] ; then \
+    if test ! "x$(UPDATEDESKTOP)" = "x" ; then \
+      $(UPDATEDESKTOP) $$appsdir ; \
+    fi \
+  fi
+
+install-data-hook:
+	$(UPDATE_DESKTOP)
+
+uninstall-hook:
+	$(UPDATE_DESKTOP) 

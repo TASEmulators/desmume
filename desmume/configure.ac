@@ -151,6 +151,8 @@ AC_PROVIDE_IFELSE([PKG_PROG_PKG_CONFIG], [
     PKG_CHECK_MODULES(LIBAGG, libagg >= 2.5.0, HAVE_LIBAGG=yes, HAVE_LIBAGG=no)
     AC_SUBST(LIBAGG_CFLAGS)
     AC_SUBST(LIBAGG_LIBS)
+
+    AC_PATH_PROG(UPDATEDESKTOP, [update-desktop-database])
   fi
 ],[
     echo "WARNING: pkg-config is not available therefore gtk, gtk-glade UIs and lua scripting are not available either."
