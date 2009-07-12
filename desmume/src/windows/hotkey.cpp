@@ -35,6 +35,7 @@
 #include "spu.h"
 #include "../GPU.h"
 #include "pathsettings.h"
+#include "GPU_osd.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 

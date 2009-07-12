@@ -21,6 +21,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaProjectFile = C:\svn\desmume\trunk\desmume\src\windows\CodeAnalyst\DeSmuME_2005.caw
+		AMDCaProjectFile = D:\svn\desmume\trunk\desmume\src\windows\CodeAnalyst\DeSmuME_2005.caw
 	EndGlobalSection
 EndGlobal

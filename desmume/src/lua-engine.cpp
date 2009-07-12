@@ -8,6 +8,7 @@
 #include "zlib.h"
 #include "NDSSystem.h"
 #include "movie.h"
+#include "GPU_osd.h"
 #ifdef WIN32
 #include "main.h"
 #include "windows.h"

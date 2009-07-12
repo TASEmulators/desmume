@@ -32,8 +32,8 @@
 #include "debug.h"
 #include "render3D.h"
 #include "gfx3d.h"
-#include "GPU_osd.h"
 #include "debug.h"
+#include "GPU_osd.h"
 #include "NDSSystem.h"
 #include "readwrite.h"
 
@@ -52,12 +52,10 @@ GPU::MosaicLookup GPU::mosaicLookup;
 //#define DEBUG_TRI
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
-CACHE_ALIGN u8 GPU_tempScreen[4*256*192];
 CACHE_ALIGN u8 *GPU_tempScanline;
 
 CACHE_ALIGN u8 sprWin[256];
 
-OSDCLASS	*osd = NULL;
 
 u16			gpu_angle = 0;
 
@@ -2193,7 +2191,7 @@ int Screen_Init(int coreid)
 	MainScreen.gpu = GPU_Init(0);
 	SubScreen.gpu = GPU_Init(1);
 
-	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
+	memset(GPU_screen, 0, sizeof(GPU_screen));
 	for(int i = 0; i < (256*192*2); i++)
 		((u16*)GPU_screen)[i] = 0x7FFF;
 	disp_fifo.head = disp_fifo.tail = 0;
@@ -2209,7 +2207,7 @@ void Screen_Reset(void)
 	GPU_Reset(MainScreen.gpu, 0);
 	GPU_Reset(SubScreen.gpu, 1);
 
-	memset(GPU_tempScreen, 0, sizeof(GPU_tempScreen));
+	memset(GPU_screen, 0, sizeof(GPU_screen));
 	for(int i = 0; i < (256*192*2); i++)
 		((u16*)GPU_screen)[i] = 0x7FFF;
 
@@ -2673,7 +2671,7 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
 
-	u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
+	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 	u16 i16;
 
 	//isn't it odd that we can set uselessly high factors here?
@@ -2830,7 +2828,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	//blacken the screen if it is turned off by the user
 	if(!CommonSettings.showGpu.screens[gpu->core])
 	{
-		u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
+		u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 		memset(dst,0,512);
 		return;
 	}
@@ -2857,7 +2855,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 	//always generate the 2d+3d, no matter what we're displaying, since we may need to capture it
 	//(if this seems inefficient in some cases, consider that the speed in those cases is not really a problem)
-	GPU_tempScanline = screen->gpu->currDst = (u8 *)(GPU_tempScreen) + (screen->offset + l) * 512;
+	GPU_tempScanline = screen->gpu->currDst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
 	GPU_ligne_layer(screen, l);
 
 	if (gpu->core == GPU_MAIN) 
@@ -2870,7 +2868,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	{
 		case 0: // Display Off(Display white)
 			{
-				u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
+				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 
 				for (int i=0; i<256; i++)
 					T2WriteWord(dst, i << 1, 0x7FFF);
@@ -2883,14 +2881,14 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 		case 2: // Display framebuffer
 			{
-				u8 * dst = GPU_tempScreen + (screen->offset + l) * 512;
+				u8 * dst = GPU_screen + (screen->offset + l) * 512;
 				u8 * src = gpu->VRAMaddr + (l*512);
 				memcpy (dst, src, 512);
 			}
 			break;
 		case 3: // Display memory FIFO
 			{
-				u8 * dst =  GPU_tempScreen + (screen->offset + l) * 512;
+				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 				for (int i=0; i < 128; i++)
 					T1WriteLong(dst, i << 2, DISP_FIFOrecv() & 0x7FFF7FFF);
 			}
@@ -3026,8 +3024,8 @@ template<bool MOSAIC> void GPU::modeRender(int layer)
 
 void gpu_UpdateRender()
 {
-	int x = 0, y = 0;
-	u16 *src = (u16*)GPU_tempScreen;
+	/*int x = 0, y = 0;
+	u16 *src = (u16*)GPU_screen;
 	u16	*dst = (u16*)GPU_screen;
 
 	switch (gpu_angle)
@@ -3064,7 +3062,7 @@ void gpu_UpdateRender()
 			}
 		default:
 			break;
-	}
+	}*/
 }
 
 void gpu_SetRotateScreen(u16 angle)

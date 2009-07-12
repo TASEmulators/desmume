@@ -28,13 +28,14 @@
 #include <time.h>
 #include "types.h"
 
+#include "aggdraw.h"
+
 #define OSD_MAX_LINES 4
 #define OSD_TIMER_SECS 2
 
 class OSDCLASS
 {
 private:
-	u16		screen[256*192*2];
 	u64		offset;
 	u8		mode;
 
@@ -42,11 +43,11 @@ private:
 
 	u16		lineText_x;
 	u16		lineText_y;
-	u32		lineText_color;
+	AggColor		lineText_color;
 	u8		lastLineText;
 	char	*lineText[OSD_MAX_LINES+1];
 	time_t	lineTimer[OSD_MAX_LINES+1];
-	u32		lineColor[OSD_MAX_LINES+1];
+	AggColor lineColor[OSD_MAX_LINES+1];
 
 	bool	needUpdate;
 

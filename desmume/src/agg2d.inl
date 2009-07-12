@@ -19,7 +19,6 @@
 //	11 Jul 2009 - significant refactors for introduction to desmume
 //
 //----------------------------------------------------------------------------
-#include "GPU.h"
 #include "agg2d.h"
 
 static const double g_approxScale = 2.0;
@@ -39,8 +38,10 @@ static const double g_approxScale = 2.0;
 
 AGG2D_TEMPLATE inline TAGG2D::~Agg2D()
 {
+#ifdef AGG2D_USE_VECTORFONTS
 #ifndef AGG2D_USE_FREETYPE
     ::ReleaseDC(0, m_fontDC);
+#endif
 #endif
 }
 
@@ -97,7 +98,8 @@ AGG2D_TEMPLATE inline TAGG2D::Agg2D() :
     m_fontDescent(0.0),
     m_fontCacheType(RasterFontCache),
 
-    m_imageFilter(Bilinear),
+    m_imageFilter(Bilinear), //less quality more speed
+	//m_imageFilter(NoFilter),
     m_imageResample(NoResample),
     m_imageFilterLut(agg::image_filter_bilinear(), true),
 
@@ -120,16 +122,17 @@ AGG2D_TEMPLATE inline TAGG2D::Agg2D() :
     m_convStroke(m_convCurve),
 
     m_pathTransform(m_convCurve, m_transform),
-    m_strokeTransform(m_convStroke, m_transform),
+    m_strokeTransform(m_convStroke, m_transform)
 
+#ifdef AGG2D_USE_VECTORFONTS
 #ifdef AGG2D_USE_FREETYPE
-    m_fontEngine(),
+    , m_fontEngine(),
 #else
     m_fontDC(::GetDC(0)),
     m_fontEngine(m_fontDC),
 #endif
-
     m_fontCacheManager(m_fontEngine)
+#endif
 {
     lineCap(m_lineCap);
     lineJoin(m_lineJoin);
@@ -241,16 +244,21 @@ AGG2D_TEMPLATE void Agg2D AGG2D_TEMPLATE_ARG ::attach(unsigned char* buf, unsign
     m_renBasePre.reset_clipping(true);
     m_renBaseCompPre.reset_clipping(true);
 
+	//why is all this reset here???? seems silly.
+
     resetTransformations();
     lineWidth(1.0),
     lineColor(0,0,0);
     fillColor(255,255,255);
-    textAlignment(AlignLeft, AlignBottom);
     clipBox(0, 0, width, height);
     lineCap(CAP_ROUND);
     lineJoin(JOIN_ROUND);
+	#ifdef AGG2D_USE_VECTORFONTS
+    textAlignment(AlignLeft, AlignBottom);
     flipText(false);
-    imageFilter(Bilinear);
+	#endif
+    imageFilter(Bilinear); //less quality more speed
+	//imageFilter(NoFilter);
     imageResample(NoResample);
     m_masterAlpha = 1.0;
     m_antiAliasGamma = 1.0;
@@ -1055,6 +1063,8 @@ AGG2D_TEMPLATE void TAGG2D::polyline(double* xy, int numPoints)
 
 
 //------------------------------------------------------------------------
+
+#ifdef AGG2D_USE_VECTORFONTS
 AGG2D_TEMPLATE void TAGG2D::flipText(bool flip)
 {
     m_fontEngine.flip_y(flip);
@@ -1118,6 +1128,7 @@ AGG2D_TEMPLATE void TAGG2D::textAlignment(TextAlignment alignX, TextAlignment al
 }
 
 //------------------------------------------------------------------------
+
 AGG2D_TEMPLATE double TAGG2D::textWidth(const char* str, unsigned int len)
 {
 #if defined( UNDER_CE )
@@ -1359,7 +1370,7 @@ AGG2D_TEMPLATE void TAGG2D::text(double x, double y, const wchar_t* str, unsigne
     }
 
 }
-
+#endif
 
 //------------------------------------------------------------------------
 AGG2D_TEMPLATE void TAGG2D::resetPath() { m_path.remove_all(); }
@@ -1643,18 +1654,18 @@ public:
         //- typedef agg::renderer_scanline_aa<BaseRenderer, TAGG2D::LinearGradientSpan> RendererLinearGradient;
         typedef agg::renderer_scanline_aa<BaseRenderer,
 										span_allocator_type,
-										TAGG2D::LinearGradientSpan> RendererLinearGradient;
+										typename TAGG2D::LinearGradientSpan> RendererLinearGradient;
         //- typedef agg::renderer_scanline_aa<BaseRenderer, TAGG2D::RadialGradientSpan> RendererRadialGradient;
 		typedef agg::renderer_scanline_aa<BaseRenderer,
 										span_allocator_type,
-										TAGG2D::RadialGradientSpan> RendererRadialGradient;
+										typename TAGG2D::RadialGradientSpan> RendererRadialGradient;
 
         if ((fillColor && gr.m_fillGradientFlag == TAGG2D::Linear) ||
            (!fillColor && gr.m_lineGradientFlag == TAGG2D::Linear))
         {
             if (fillColor)
             {
-                TAGG2D::LinearGradientSpan span(/*gr.m_allocator, */
+                typename TAGG2D::LinearGradientSpan span(/*gr.m_allocator, */
                                                gr.m_fillGradientInterpolator,
                                                gr.m_linearGradientFunction,
                                                gr.m_fillGradient,
@@ -1666,7 +1677,7 @@ public:
             }
             else
             {
-                TAGG2D::LinearGradientSpan span(/*gr.m_allocator,*/
+               typename  TAGG2D::LinearGradientSpan span(/*gr.m_allocator,*/
                                                gr.m_lineGradientInterpolator,
                                                gr.m_linearGradientFunction,
                                                gr.m_lineGradient,
@@ -1684,7 +1695,7 @@ public:
             {
                 if (fillColor)
                 {
-                    TAGG2D::RadialGradientSpan span(/*gr.m_allocator, */
+                    typename TAGG2D::RadialGradientSpan span(/*gr.m_allocator, */
                                                    gr.m_fillGradientInterpolator,
                                                    gr.m_radialGradientFunction,
                                                    gr.m_fillGradient,
@@ -1696,7 +1707,7 @@ public:
                 }
                 else
                 {
-                    TAGG2D::RadialGradientSpan span(/*gr.m_allocator,*/
+                    typename TAGG2D::RadialGradientSpan span(/*gr.m_allocator,*/
                                                    gr.m_lineGradientInterpolator,
                                                    gr.m_radialGradientFunction,
                                                    gr.m_lineGradient,
@@ -1727,20 +1738,20 @@ public:
         void convert(Color* span, int x, int y, unsigned len) const
         {
             unsigned l2;
-            TAGG2D::Color* s2;
+            typename TAGG2D::Color* s2;
             if(m_mode != TAGG2D::BlendDst)
             {
                 l2 = len;
                 s2 = span;
-                typedef agg::comp_op_adaptor_clip_to_dst_rgba_pre<TAGG2D::Color, agg::order_rgba> OpType;
+                typedef agg::comp_op_adaptor_clip_to_dst_rgba_pre<typename TAGG2D::Color, agg::order_rgba> OpType;
                 do
                 {
                     OpType::blend_pix(m_mode,
-                                      (TAGG2D::Color::value_type*)s2,
+                                      (typename TAGG2D::Color::value_type*)s2,
                                       m_color.r,
                                       m_color.g,
                                       m_color.b,
-                                      TAGG2D::Color::base_mask,
+                                     TAGG2D::Color::base_mask,
                                       agg::cover_full);
                     ++s2;
                 }
@@ -1777,12 +1788,12 @@ public:
     {
 		// JME
 		typedef agg::span_allocator<agg::rgba8> span_allocator_type;
-        typedef agg::renderer_scanline_aa<BaseRenderer,span_allocator_type,TAGG2D::LinearGradientSpan> RendererLinearGradient;
-        typedef agg::renderer_scanline_aa<BaseRenderer,span_allocator_type,TAGG2D::RadialGradientSpan> RendererRadialGradient;
+        typedef agg::renderer_scanline_aa<BaseRenderer,span_allocator_type,typename TAGG2D::LinearGradientSpan> RendererLinearGradient;
+        typedef agg::renderer_scanline_aa<BaseRenderer,span_allocator_type,typename TAGG2D::RadialGradientSpan> RendererRadialGradient;
 
         if(gr.m_fillGradientFlag == TAGG2D::Linear)
         {
-            TAGG2D::LinearGradientSpan span(
+            typename TAGG2D::LinearGradientSpan span(
                                            gr.m_fillGradientInterpolator,
                                            gr.m_linearGradientFunction,
                                            gr.m_fillGradient,
@@ -1795,7 +1806,7 @@ public:
         {
             if(gr.m_fillGradientFlag == TAGG2D::Radial)
             {
-                TAGG2D::RadialGradientSpan span(
+               typename  TAGG2D::RadialGradientSpan span(
                                                gr.m_fillGradientInterpolator,
                                                gr.m_radialGradientFunction,
                                                gr.m_fillGradient,
@@ -1823,20 +1834,23 @@ public:
 		//! JME - have not quite figured which part of this is not const-correct
 		// hence the cast.
 		Image& imgc = const_cast<Image&>(img);
-		ImagePixFormatSet::PixFormat img_pixf(imgc.renBuf);
-		typedef agg::image_accessor_clone<ImagePixFormatSet::PixFormat> img_source_type;
+		typename ImagePixFormatSet::PixFormat img_pixf(imgc.renBuf);
+		typedef agg::image_accessor_clone<typename ImagePixFormatSet::PixFormat> img_source_type;
 		img_source_type source(img_pixf);
 
         SpanConvImageBlend blend(gr.m_imageBlendMode, gr.m_imageBlendColor);
         if(gr.m_imageFilter == TAGG2D::NoFilter)
         {
 
+			//modifications less quality more speed
+
 			typedef agg::span_image_filter_rgba_nn<img_source_type,Interpolator> SpanGenType;
-			typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-			typedef agg::renderer_scanline_aa<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
+			//typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
+			typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
+			//typedef agg::renderer_scanline_bin<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
 			SpanGenType sg(source,interpolator);
-            SpanConvType sc(sg, blend);
+            //SpanConvType sc(sg, blend);
 			RendererType ri(renBase,gr.m_allocator,sg);
             agg::render_scanlines(gr.m_rasterizer, gr.m_scanline, ri);
         }
@@ -1857,7 +1871,7 @@ public:
             {
                 typedef agg::span_image_resample_rgba_affine<img_source_type> SpanGenType;
                 typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-                typedef agg::renderer_scanline_aa<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
+                typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
                 SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
                 SpanConvType sc(sg, blend);
@@ -1871,7 +1885,7 @@ public:
                 {
                     typedef agg::span_image_filter_rgba_bilinear<img_source_type,Interpolator> SpanGenType;
                     typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-					typedef agg::renderer_scanline_aa<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
+					typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
 					SpanGenType sg(source,interpolator);
                     SpanConvType sc(sg, blend);
@@ -1884,7 +1898,7 @@ public:
                     {
                         typedef agg::span_image_filter_rgba_2x2<img_source_type,Interpolator> SpanGenType;
                         typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-                        typedef agg::renderer_scanline_aa<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
+                        typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
 
                         SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
                         SpanConvType sc(sg, blend);
@@ -1895,7 +1909,7 @@ public:
                     {
                         typedef agg::span_image_filter_rgba<img_source_type,Interpolator> SpanGenType;
                         typedef agg::span_converter<SpanGenType,SpanConvImageBlend> SpanConvType;
-						typedef agg::renderer_scanline_aa<BaseRenderer,TAGG2D::SpanAllocator,SpanGenType> RendererType;
+						typedef agg::renderer_scanline_aa<BaseRenderer,typename TAGG2D::SpanAllocator,SpanGenType> RendererType;
                         SpanGenType sg(source,interpolator,gr.m_imageFilterLut);
                         SpanConvType sc(sg, blend);
 						RendererType ri(renBase,gr.m_allocator,sg);
@@ -1920,6 +1934,8 @@ AGG2D_TEMPLATE void TAGG2D::render(bool fillColor)
         TAGG2DRENDERER::render(*this, m_renBaseComp, m_renSolidComp, fillColor);
     }
 }
+
+#ifdef AGG2D_USE_VECTORFONTS
 #if !defined( UNDER_CE )
 
 //------------------------------------------------------------------------
@@ -1936,10 +1952,10 @@ AGG2D_TEMPLATE void TAGG2D::render(FontRasterizer& ras, FontScanline& sl)
 }
 
 #endif
-
+#endif 
 
 //------------------------------------------------------------------------
-AGG2D_TEMPLATE struct Agg2DRasterizerGamma
+struct Agg2DRasterizerGamma
 {
 
     Agg2DRasterizerGamma(double alpha, double gamma) :

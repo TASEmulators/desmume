@@ -32,6 +32,7 @@
 #include "common.h"
 #include "mic.h"
 #include "version.h"
+#include "GPU_osd.h"
 #include "memorystream.h"
 
 using namespace std;

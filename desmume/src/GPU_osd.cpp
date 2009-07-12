@@ -29,18 +29,12 @@
 #include <time.h>
 #include "debug.h"
 
-#include "softrender.h"
+#include "aggdraw.h"
 
-#include "softrender_v3sysfont.h"
-#include "softrender_desmumefont.h"
-
-using namespace softrender;
-
-image screenshell;
+OSDCLASS	*osd = NULL;
 
 OSDCLASS::OSDCLASS(u8 core)
 {
-	memset(screen, 0, sizeof(screen));
 	memset(name,0,7);
 
 	mode=core;
@@ -49,7 +43,7 @@ OSDCLASS::OSDCLASS(u8 core)
 	lastLineText=0;
 	lineText_x = 5;
 	lineText_y = 120;
-	lineText_color = render51.MakeColor(255, 255, 255);
+	lineText_color = AggColor(255, 255, 255);
 	for (int i=0; i < OSD_MAX_LINES+1; i++)
 	{
 		lineText[i] = new char[1024];
@@ -73,18 +67,7 @@ OSDCLASS::OSDCLASS(u8 core)
 		mode=255;
 	}
 
-	screenshell.shell = true;
-	screenshell.data = screen;
-	screenshell.bpp = 15;
-	screenshell.width = 256;
-	screenshell.height = 384;
-	screenshell.pitch = 256;
-	screenshell.cx1 = 0;
-	screenshell.cx2 = 256-1;
-	screenshell.cy1 = 0;
-	screenshell.cy2 = 384-1;
-
-	border(false);
+	//border(false);
 
 	LOG("OSD_Init (%s)\n",name);
 }
@@ -109,39 +92,10 @@ void OSDCLASS::setOffset(u16 ofs)
 void OSDCLASS::setRotate(u16 angle)
 {
 	rotAngle = angle;
-
-	switch(rotAngle)
-	{
-	case 0:
-	case 180:
-		{
-			screenshell.width = 256;
-			screenshell.height = 384;
-			screenshell.pitch = 256;
-			screenshell.cx1 = 0;
-			screenshell.cx2 = 255;
-			screenshell.cy1 = 0;
-			screenshell.cy2 = 383;
-		}
-		break;
-	case 90:
-	case 270:
-		{
-			screenshell.width = 384;
-			screenshell.height = 256;
-			screenshell.pitch = 384;
-			screenshell.cx1 = 0;
-			screenshell.cx2 = 383;
-			screenshell.cy1 = 0;
-			screenshell.cy2 = 255;
-		}
-		break;
-	}
 }
 
 void OSDCLASS::clear()
 {
-	memset(screen, 0, sizeof(screen));
 	needUpdate=false;
 }
 
@@ -181,24 +135,14 @@ void OSDCLASS::update()
 		{
 			for (int i=0; i < lastLineText; i++)
 			{
-				render51.PrintString<DesmumeFont>(1,lineText_x,lineText_y+(i*16),lineColor[i],lineText[i],&screenshell);
+				aggDraw.hud->lineColor(lineColor[i]);
+				aggDraw.hud->renderTextDropshadowed(lineText_x,lineText_y+(i*16),lineText[i]);
 			}
 		}
 		else
 		{
 			if (!needUpdate) return;
 		}
-	}
-
-	u16	*dst = (u16*)GPU_screen;
-
-	if (mode!=255)
-		dst+=offset*512;
-
-	for (int i=0; i<256*192*2; i++)
-	{
-		if(screen[i]&0x8000)
-			T2WriteWord((u8*)dst,(i << 1), screen[i] );
 	}
 }
 
@@ -210,7 +154,7 @@ void OSDCLASS::setListCoord(u16 x, u16 y)
 
 void OSDCLASS::setLineColor(u8 r=255, u8 b=255, u8 g=255)
 {
-	lineText_color = render51.MakeColor(r, g, b);
+	lineText_color = AggColor(r,g,b);
 }
 
 void OSDCLASS::addLine(const char *fmt, ...)
@@ -249,19 +193,17 @@ void OSDCLASS::addFixed(u16 x, u16 y, const char *fmt, ...)
 	char msg[1024];
 
 	va_start(list,fmt);
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-		_vsnprintf(msg,1023,fmt,list);
-#else
-		vsnprintf(msg,1023,fmt,list);
-#endif
+	vsnprintf(msg,1023,fmt,list);
 	va_end(list);
 
-	render51.PrintString<DesmumeFont>(1,x,y,render51.MakeColor(255,255,255),msg,&screenshell);
+	aggDraw.hud->lineColor(255,255,255);
+	aggDraw.hud->renderTextDropshadowed(x,y,msg);
 
 	needUpdate = true;
 }
 
 void OSDCLASS::border(bool enabled)
 {
-	render51.setTextBoxBorder(enabled);
+	//render51.setTextBoxBorder(enabled);
 }
+
