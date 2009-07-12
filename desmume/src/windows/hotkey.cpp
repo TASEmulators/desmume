@@ -82,59 +82,56 @@ void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
 void HK_OpenROM(int) {OpenFile();}
 void HK_PrintScreen(int param)
 {
-    OPENFILENAME ofn;
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = MainWindow->getHWnd();
-    ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
-    ofn.nFilterIndex = 1;
+	char filename[MAX_PATH];
+	OPENFILENAME ofn;
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = MainWindow->getHWnd();
+	ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
 	ofn.lpstrTitle = "Print Screen Save As";
 	ofn.nMaxFile = MAX_PATH;
-	ofn.lpstrDefExt = "png";
 	ofn.Flags = OFN_OVERWRITEPROMPT;
-	GetSaveFileName(&ofn);
 
-	char folder[MAX_PATH];
-	ZeroMemory(folder, sizeof(folder));
-	GetPathFor(SCREENSHOTS, folder, MAX_PATH);
+	ZeroMemory(filename, sizeof(filename));
+//	GetPathFor(SCREENSHOTS, filename, MAX_PATH);
 
 	char file[MAX_PATH];
 	ZeroMemory(file, sizeof(file));
 	FormatName(file, MAX_PATH);
-
-	strcat(folder, file);
-	int len = strlen(folder);
+	strcat(filename, file);
+	int len = strlen(filename);
 	if(len > MAX_PATH - 4)
-		folder[MAX_PATH - 4] = '\0';
+		filename[MAX_PATH - 4] = '\0';
 
 	ImageFormat format = GetImageFormatType();
 	if(format == PNG)
 	{
-		strcat(folder, ".png");
+		strcat(filename, ".png");
 		ofn.lpstrDefExt = "png";
 		ofn.nFilterIndex = 1;
 	}
 	else if(format == BMP)
 	{
-		strcat(folder, ".bmp");
+		strcat(filename, ".bmp");
 		ofn.lpstrDefExt = "bmp";
 		ofn.nFilterIndex = 2;
 	}
-	ofn.lpstrFile = folder;	
+
+	ofn.lpstrFile = filename;
  	GetSaveFileName(&ofn);
 
-	char *ptr = strrchr(folder,'.');//look for the last . in the filename
+	char *ptr = strrchr(filename,'.');//look for the last . in the filename
 
 	if ( ptr != 0 ) {
 		if (( strcmp ( ptr, ".BMP" ) == 0 ) ||
 			( strcmp ( ptr, ".bmp" ) == 0 )) 
 		{
-			NDS_WriteBMP(folder);
+			NDS_WriteBMP(filename);
 		}
 		if (( strcmp ( ptr, ".PNG" ) == 0 ) ||
 			( strcmp ( ptr, ".png" ) == 0 )) 
 		{
-			NDS_WritePNG(folder);
+			NDS_WritePNG(filename);
 		}
 	}
 }
