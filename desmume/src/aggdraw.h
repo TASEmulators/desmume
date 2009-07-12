@@ -119,6 +119,25 @@ public:
     virtual void fillEvenOdd(bool evenOddFlag) = 0;
     virtual bool fillEvenOdd() = 0;
 
+    // Transformations
+    virtual Agg2DBase::Transformations transformations() = 0;
+    virtual void transformations(const Agg2DBase::Transformations& tr) = 0;
+
+    virtual const Agg2DBase::Affine& affine() = 0;
+//    virtual void affine(const Agg2DBase::Affine&) = 0;
+
+    virtual void resetTransformations() = 0;
+    virtual void matrix(const Agg2DBase::Affine& tr) = 0;
+    virtual void matrix(const Agg2DBase::Transformations& tr) = 0;
+    virtual void rotate(double angle) = 0;
+    virtual void rotate(double angle, double cx, double cy) = 0;
+    virtual void scale(double s) = 0;
+    virtual void scale(double sx, double sy) = 0;
+    virtual void skew(double sx, double sy) = 0;
+    virtual void translate(double x, double y) = 0;
+    virtual void parallelogram(double x1, double y1, double x2, double y2, const double* para) = 0;
+    virtual void viewport(double worldX1,  double worldY1,  double worldX2,  double worldY2, double screenX1, double screenY1, double screenX2, double screenY2, Agg2DBase::ViewportOption opt=Agg2DBase::XMidYMid, Agg2DBase::WindowFitLogic fl = Agg2DBase::WindowFitLogic_meet) = 0;
+
     // Basic Shapes
     virtual void line(double x1, double y1, double x2, double y2) = 0;
     virtual void triangle(double x1, double y1, double x2, double y2, double x3, double y3) = 0;
@@ -275,6 +294,25 @@ public:
 
 	virtual void fillEvenOdd(bool evenOddFlag) {BASE::fillEvenOdd(evenOddFlag);};
 	virtual bool fillEvenOdd() {return BASE::fillEvenOdd();};
+
+    // Transformations
+	virtual Agg2DBase::Transformations transformations() {return BASE::transformations();};
+	virtual void transformations(const Agg2DBase::Transformations& tr) {BASE::transformations(tr);};
+
+	virtual const Agg2DBase::Affine& affine() {return BASE::affine();};
+//	virtual void affine(const Agg2DBase::Affine&) {BASE::affine();};
+
+	virtual void resetTransformations() {BASE::resetTransformations();};
+	virtual void matrix(const Agg2DBase::Affine& tr) {BASE::matrix(tr);};
+	virtual void matrix(const Agg2DBase::Transformations& tr) {BASE::matrix(tr);};
+	virtual void rotate(double angle) {BASE::rotate(angle);};
+	virtual void rotate(double angle, double cx, double cy) {BASE::rotate(angle, cx, cy);};
+	virtual void scale(double s) {BASE::scale(s);};
+	virtual void scale(double sx, double sy) {BASE::scale(sx, sy);};
+	virtual void skew(double sx, double sy) {BASE::skew(sx, sy);};
+	virtual void translate(double x, double y) {BASE::translate(x, y);};
+	virtual void parallelogram(double x1, double y1, double x2, double y2, const double* para) {BASE::parallelogram(x1, y1, x2, y2, para);};
+	virtual void viewport(double worldX1,  double worldY1,  double worldX2,  double worldY2, double screenX1, double screenY1, double screenX2, double screenY2, Agg2DBase::ViewportOption opt=Agg2DBase::XMidYMid, Agg2DBase::WindowFitLogic fl = Agg2DBase::WindowFitLogic_meet) {BASE::viewport(worldX1, worldY1, worldX2, worldY2, screenX1, screenY1, screenX2, screenY2, opt, fl);};
 
 	// Basic Shapes
 	virtual void line(double x1, double y1, double x2, double y2) {BASE::line(x1, y1, x2, y2);};
