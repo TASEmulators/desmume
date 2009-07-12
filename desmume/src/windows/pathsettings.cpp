@@ -173,7 +173,9 @@ void SwitchPath(Action action, KnownPath path, char * buffer, int maxCount)
 	if(action == GET)
 	{
 		strncpy(buffer, pathToCopy, maxCount);
-		strcat(buffer, "\\");
+		int len = strlen(buffer)-1;
+		if(buffer[len] != '\\') 
+			strcat(buffer, "\\");
 	}
 	else if(action == SET)
 	{
