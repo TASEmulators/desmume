@@ -7,3 +7,4 @@ TryExec=desmume
 Exec=desmume
 Icon=DeSmuME
 Categories=GNOME;GTK;Game;Emulator;
+MimeType=application/x-nintendo-ds-rom;
