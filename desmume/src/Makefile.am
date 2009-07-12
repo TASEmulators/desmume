@@ -19,7 +19,6 @@ libdesmume_a_SOURCES = \
 	debug.cpp debug.h driver.h \
 	Disassembler.cpp Disassembler.h \
 	dscard.h fat.h FIFO.cpp FIFO.h \
-	GPU_osd.cpp GPU_osd.h \
 	GPU.cpp GPU.h \
 	GPU_osd.cpp GPU_osd.h \
         mem.h mc.cpp mc.h \
@@ -48,8 +47,8 @@ libdesmume_a_SOURCES = \
 	addons/compactFlash.cpp addons/gbagame.cpp addons/none.cpp addons/rumblepak.cpp addons/guitarGrip.cpp fs.h \
 	cheatSystem.cpp cheatSystem.h \
 	texcache.cpp texcache.h rasterize.cpp rasterize.h \
-	version.h \
-	aggdraw.cpp
+	version.h
+
 if HAVE_GLIB
 libdesmume_a_SOURCES += commandline.h commandline.cpp
 endif
@@ -59,7 +58,7 @@ else
 libdesmume_a_SOURCES += mic.cpp
 endif
 if HAVE_LIBAGG
-
+libdesmume_a_SOURCES += aggdraw.cpp
 endif
 if HAVE_LUA
 libdesmume_a_SOURCES += lua-engine.cpp
