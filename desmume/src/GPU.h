@@ -779,17 +779,17 @@ struct GPU
 	void _spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 	void spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
 
-	void setFinalColorBG(u16 color, u8 x);
+	template<bool BACKDROP> void setFinalColorBG(u16 color, u8 x);
 	void setFinalColor3d(int dstX, int srcX);
 
-	FORCEINLINE void setFinalBGColorSpecialNone(u16 &color, u8 x);
-	FORCEINLINE void setFinalBGColorSpecialBlend(u16 &color, u8 x);
-	FORCEINLINE void setFinalBGColorSpecialIncrease(u16 &color, u8 x);
-	FORCEINLINE void setFinalBGColorSpecialDecrease(u16 &color, u8 x);
-	FORCEINLINE bool setFinalBGColorSpecialNoneWnd(u16 &color, u8 x);
-	FORCEINLINE bool setFinalBGColorSpecialBlendWnd(u16 &color, u8 x);
-	FORCEINLINE bool setFinalBGColorSpecialIncreaseWnd(u16 &color, u8 x);
-	FORCEINLINE bool setFinalBGColorSpecialDecreaseWnd(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialNone(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialBlend(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialIncrease(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialDecrease(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialNoneWnd(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialBlendWnd(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialIncreaseWnd(u16 &color, u8 x);
+	template<bool BACKDROP> FORCEINLINE bool setFinalBGColorSpecialDecreaseWnd(u16 &color, u8 x);
 	
 	FORCEINLINE void setFinal3DColorSpecialNone(int dstX, int srcX);
 	FORCEINLINE void setFinal3DColorSpecialBlend(int dstX, int srcX);
@@ -801,7 +801,7 @@ struct GPU
 	FORCEINLINE void setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX);
 
 
-	template<bool MOSAIC> void __setFinalColorBck(u16 color, const u8 x, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP> void __setFinalColorBck(u16 color, const u8 x, const bool opaque);
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
 	u32 getAffineStart(int layer, int xy);
