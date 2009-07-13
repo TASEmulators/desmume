@@ -1571,8 +1571,11 @@ void gfx3d_execute3D()
 void gfx3d_glFlush(u32 v)
 {
 	flushPending = TRUE;
-	gfx3d.sortmode = BIT0(v);
-	gfx3d.wbuffer = BIT1(v);
+	if(!flushPending)
+	{
+		gfx3d.sortmode = BIT0(v);
+		gfx3d.wbuffer = BIT1(v);
+	}
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 
@@ -1630,9 +1633,19 @@ static void gfx3d_doFlush()
 	clCmd = 0;
 #endif
 
-	//the renderer wil lget the lists we just built
+	//the renderer will get the lists we just built
 	gfx3d.polylist = polylist;
 	gfx3d.vertlist = vertlist;
+
+	//and also our current render state
+	if(BIT1(control)) gfx3d.shading = GFX3D::HIGHLIGHT;
+	else gfx3d.shading = GFX3D::TOON;
+	gfx3d.enableTexturing = BIT0(control);
+	gfx3d.enableAlphaTest = BIT2(control);
+	gfx3d.enableAlphaBlending = BIT3(control);
+	gfx3d.enableAntialiasing = BIT4(control);
+	gfx3d.enableEdgeMarking = BIT5(control);
+	gfx3d.enableClearImage = BIT14(control);
 
 	int polycount = polylist->count;
 
@@ -2337,26 +2350,9 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 }
 #endif
 
-static void gfx3d_Control_cache()
-{
-	u32 v = control;
-
-	if(BIT1(v)) gfx3d.shading = GFX3D::HIGHLIGHT;
-	else gfx3d.shading = GFX3D::TOON;
-
-	gfx3d.enableTexturing = BIT0(v);
-	gfx3d.enableAlphaTest = BIT2(v);
-	gfx3d.enableAlphaBlending = BIT3(v);
-	gfx3d.enableAntialiasing = BIT4(v);
-	gfx3d.enableEdgeMarking = BIT5(v);
-	gfx3d.enableClearImage = BIT14(v);
-}
-
 void gfx3d_Control(u32 v)
 {
 	control = v;
-	gfx3d_Control_cache();
-
 }
 
 //--------------
@@ -2500,7 +2496,6 @@ bool gfx3d_loadstate(std::istream* is, int size)
 
 	gfx3d_glPolygonAttrib_cache();
 	gfx3d_glTexImage_cache();
-	gfx3d_Control_cache();
 	gfx3d_glLightDirection_cache(0);
 	gfx3d_glLightDirection_cache(1);
 	gfx3d_glLightDirection_cache(2);
