@@ -61,8 +61,29 @@ public:
 
 	virtual void clear() = 0;
 
-	virtual void  clipBox(double x1, double y1, double x2, double y2) = 0;
+    // Setup
+	virtual void  attach(unsigned char* buf, unsigned width, unsigned height, int stride) = 0;
+//	virtual void  attach(Agg2DBase::Image& img) {attach(img);};
+
+    virtual void  clipBox(double x1, double y1, double x2, double y2) = 0;
 	virtual Agg2DBase::RectD clipBox() const = 0;
+
+	virtual void  clearAll(AggColor c) = 0;
+	virtual void  clearAll(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+
+	virtual void  clearClipBox(AggColor c) = 0;
+	virtual void  clearClipBox(unsigned r, unsigned g, unsigned b, unsigned a = 255) = 0;
+
+//	virtual unsigned width()  const { return Agg2DBase::m_rbuf.width();  }
+//  virtual unsigned height() const { return Agg2DBase::m_rbuf.height(); }
+
+    // Conversions
+	virtual void   worldToScreen(double& x, double& y) const = 0;
+	virtual void   screenToWorld(double& x, double& y) const = 0;
+	virtual double worldToScreen(double scalar) const = 0;
+	virtual double screenToWorld(double scalar) const = 0;
+	virtual void   alignPoint(double& x, double& y) const = 0;
+	virtual bool   inBox(double worldX, double worldY) const = 0;
 	
     // General Attributes
 	virtual void blendMode(Agg2DBase::BlendMode m) = 0;
@@ -188,6 +209,12 @@ public:
     virtual void drawPath(Agg2DBase::DrawPathFlag flag = Agg2DBase::FillAndStroke) = 0;
 //	virtual void drawPathNoTransform(Agg2DBase::DrawPathFlag flag = Agg2DBase::FillAndStroke) = 0;
 
+    // Image Transformations
+    virtual void imageFilter(Agg2DBase::ImageFilter f) = 0;
+    virtual Agg2DBase::ImageFilter imageFilter() = 0;
+
+    virtual void imageResample(Agg2DBase::ImageResample f) = 0;
+    virtual Agg2DBase::ImageResample imageResample() = 0;
 	static const agg::int8u* lookupFont(const std::string& name);
 	virtual void setFont(const std::string& name) = 0;
 	virtual void renderText(double dstX, double dstY, const std::string& str) = 0;
@@ -238,8 +265,29 @@ public:
 		}
 	}
 
-	virtual void  clipBox(double x1, double y1, double x2, double y2) { BASE::clipBox(x1,y1,x2,y2); }
-	virtual Agg2DBase::RectD clipBox() const { return BASE::clipBox(); }
+    // Setup
+	virtual void  attach(unsigned char* buf, unsigned width, unsigned height, int stride) {BASE::attach(buf, width, height, stride);};
+//	virtual void  attach(Agg2DBase::Image& img) {attach(img);};
+
+    virtual void  clipBox(double x1, double y1, double x2, double y2) { BASE::clipBox(x1,y1,x2,y2); }
+	virtual Agg2DBase::RectD clipBox() const {return BASE::clipBox();};
+
+	virtual void  clearAll(AggColor c) {BASE::clearAll(c);};
+	virtual void  clearAll(unsigned r, unsigned g, unsigned b, unsigned a = 255) {BASE::clearAll(r, g, b, a);};
+
+	virtual void  clearClipBox(AggColor c) {BASE::clearClipBox(c);};
+	virtual void  clearClipBox(unsigned r, unsigned g, unsigned b, unsigned a = 255) {BASE::clearClipBox(r, g, b, a);};
+
+//	virtual unsigned width()  const { return Agg2DBase::m_rbuf.width();  }
+//  virtual unsigned height() const { return Agg2DBase::m_rbuf.height(); }
+
+    // Conversions
+	virtual void   worldToScreen(double& x, double& y) const {BASE::worldToScreen(x, y);};
+	virtual void   screenToWorld(double& x, double& y) const {BASE::screenToWorld(x, y);};
+	virtual double worldToScreen(double scalar) const {return BASE::worldToScreen(scalar);};
+	virtual double screenToWorld(double scalar) const {return BASE::screenToWorld(scalar);};
+	virtual void   alignPoint(double& x, double& y) const {BASE::alignPoint(x, y);};
+	virtual bool   inBox(double worldX, double worldY) const {return BASE::inBox(worldX, worldY);};
 
     // General Attributes
 	virtual void blendMode(Agg2DBase::BlendMode m) {BASE::blendMode(m);};
@@ -372,6 +420,13 @@ public:
 
 	virtual void drawPath(Agg2DBase::DrawPathFlag flag = Agg2DBase::FillAndStroke) {BASE::drawPath(flag);};
 //	virtual void drawPathNoTransform(DrawPathFlag flag = FillAndStroke) {BASE::drawPathNoTransform(flag);};
+
+    // Image Transformations
+	virtual void imageFilter(Agg2DBase::ImageFilter f) {BASE::imageFilter(f);};
+	virtual Agg2DBase::ImageFilter imageFilter() {return BASE::imageFilter();};
+
+	virtual void imageResample(Agg2DBase::ImageResample f) {BASE::imageResample(f);};
+	virtual Agg2DBase::ImageResample imageResample() {return BASE::imageResample();};
 
 	// Auxiliary
     virtual double pi() { return agg::pi; }
