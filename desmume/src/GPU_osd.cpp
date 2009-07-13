@@ -205,7 +205,9 @@ static void DrawStateSlots(){
 
 	xpos = 0;
 }
-
+#ifdef WIN32
+#include "lua-engine.h"
+#endif
 void DrawHUD()
 {
 	if (CommonSettings.hud.ShowInputDisplay) 
@@ -240,7 +242,9 @@ void DrawHUD()
 		osd->addFixed(Hud.Microphone.x, Hud.Microphone.y, "%d",MicDisplay);
 	}
 	#endif
-
+#ifdef WIN32
+	CallRegisteredLuaFunctions(LUACALL_AFTEREMULATIONGUI);
+#endif
 	DrawStateSlots();
 }
 

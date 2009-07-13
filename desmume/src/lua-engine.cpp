@@ -3176,146 +3176,213 @@ int dontworry(LuaContextInfo& info)
 	return 0;
 }
 
-//start placeholder drawing funcs---------------------------------------------------
-//TODO a real drawing lib
+//agg basic shapes
+//TODO polygon and polyline, maybe the overloads for roundedRect and curve
 
-// I'm going to use this a lot in here
-#define swap(T, one, two) { \
-	T temp = one; \
-	one = two;    \
-	two = temp;   \
-}
+#include "aggdraw.h"
 
-
-// gui.drawbox(x1, y1, x2, y2, colour)
-static int gui_box(lua_State *L) {
+static int line(lua_State *L) {
 
 	int x1,y1,x2,y2;
-	uint8 colour;
-	int i;
-
 	x1 = luaL_checkinteger(L,1);
 	y1 = luaL_checkinteger(L,2);
 	x2 = luaL_checkinteger(L,3);
 	y2 = luaL_checkinteger(L,4);
-//	y1 += FSettings.FirstSLine;
-//	y2 += FSettings.FirstSLine;
-//	colour = gui_getcolour(L,5);
 
-//	if (x1 < 0 || x1 >= 256 || y1 < 0 || y1 > 384)
-//		luaL_error(L,"bad coordinates");
-
-//	if (x2 < 0 || x2 >= 256 || y2 < 0 || y2 > 384)
-//		luaL_error(L,"bad coordinates");
-
-
-//	gui_prepare();
-
-	// For simplicity, we mandate that x1,y1 be the upper-left corner
-	if (x1 > x2)
-		swap(int, x1, x2);
-	if (y1 > y2)
-		swap(int, y1, y2);
-
-	// top surface
-	for (i=x1; i <= x2; i++)
-//		gui_data[y1*256 + i] = colour;
-		osd->addFixed(i, y1, "%s", ".");
-
-	// bottom surface
-	for (i=x1; i <= x2; i++)
-//		gui_data[y2*256 + i] = colour;
-		osd->addFixed(i, y2, "%s", ".");
-
-	// left surface
-	for (i=y1; i <= y2; i++)
-//		gui_data[i*256+x1] = colour;
-		osd->addFixed(x1, i, "%s", ".");
-
-	// right surface
-	for (i=y1; i <= y2; i++)
-//		gui_data[i*256+x2] = colour;
-		osd->addFixed(x2, i, "%s", ".");
-
+	aggDraw.target->line(x1, y1, x2, y2);
 
 	return 0;
 }
 
-// gui.drawline(x1,y1,x2,y2,type colour)
-static int gui_line(lua_State *L) {
+static int triangle(lua_State *L) {
 
-	int x1,y1,x2,y2;
-	uint8 colour;
+	double x1,y1,x2,y2,x3,y3;
 	x1 = luaL_checkinteger(L,1);
 	y1 = luaL_checkinteger(L,2);
 	x2 = luaL_checkinteger(L,3);
 	y2 = luaL_checkinteger(L,4);
-//	y1 += FSettings.FirstSLine;
-//	y2 += FSettings.FirstSLine;
-//	colour = gui_getcolour(L,5);
+	x3 = luaL_checkinteger(L,5);
+	y3 = luaL_checkinteger(L,6);
 
-//	if (x1 < 0 || x1 >= 256 || y1 < FSettings.FirstSLine || y1 > FSettings.LastSLine)
-//		luaL_error(L,"bad coordinates");
-
-//	if (x2 < 0 || x2 >= 256 || y2 < FSettings.FirstSLine || y2 > FSettings.LastSLine)
-//		luaL_error(L,"bad coordinates");
-
-//	gui_prepare();
-
-
-	// Horizontal line?
-	if (y1 == y2) {
-		if (x1 > x2) 
-			swap(int, x1, x2);
-		int i;
-		for (i=x1; i <= x2; i++)
-			osd->addFixed(i, y1, "%s", ".");
-//			gui_data[y1*256+i] = colour;
-	} else if (x1 == x2) { // Vertical line?
-		if (y1 > y2)
-			swap(int, y1, y2);
-		int i;
-		for (i=y1; i < y2; i++)
-			osd->addFixed(x1, i, "%s", ".");
-//			gui_data[i*256+x1] = colour;
-	} else {
-		// Some very real slope. We want to increase along the x value, so we swap for that.
-		if (x1 > x2) {
-			swap(int, x1, x2);
-			swap(int, y1, y2);
-		}
-
-
-		double slope = ((double)y2-(double)y1) / ((double)x2-(double)x1);
-		int myX = x1, myY = y1;
-		double accum = 0;
-
-		while (myX <= x2) {
-			// Draw the current pixel
-			//gui_data[myY*256 + myX] = colour;
-			osd->addFixed(myX, myY, "%s", ".");
-
-			// If it's above 1, we knock 1 off it and go up 1 pixel
-			if (accum >= 1.0) {
-				myY += 1;
-				accum -= 1.0;
-			} else if (accum <= -1.0) {
-				myY -= 1;
-				accum += 1.0;
-			} else {
-				myX += 1;
-				accum += slope; // Step up
-
-			}
-		}
-
-
-	}
+	aggDraw.target->triangle(x1, y1, x2, y2, x3, y3);
 
 	return 0;
 }
 
-//end placeholder drawing funcs---------------------------------------------------
+static int rectangle(lua_State *L) {
+
+	int x1,y1,x2,y2;
+	x1 = luaL_checkinteger(L,1);
+	y1 = luaL_checkinteger(L,2);
+	x2 = luaL_checkinteger(L,3);
+	y2 = luaL_checkinteger(L,4);
+
+	aggDraw.target->rectangle(x1, y1, x2, y2);
+
+	return 0;
+}
+
+static int roundedRect(lua_State *L) {
+
+	double x1,y1,x2,y2,r;
+	x1 = luaL_checkinteger(L,1);
+	y1 = luaL_checkinteger(L,2);
+	x2 = luaL_checkinteger(L,3);
+	y2 = luaL_checkinteger(L,4);
+	r  = luaL_checkinteger(L,5);
+
+	aggDraw.target->roundedRect(x1, y1, x2, y2, r);
+
+	return 0;
+}
+
+static int ellipse(lua_State *L) {
+
+	int cx,cy,rx,ry;
+	cx = luaL_checkinteger(L,1);
+	cy = luaL_checkinteger(L,2);
+	rx = luaL_checkinteger(L,3);
+	ry = luaL_checkinteger(L,4);
+
+	aggDraw.target->ellipse(cx, cy, rx, ry);
+
+	return 0;
+}
+
+static int arc(lua_State *L) {
+
+	double cx,cy,rx,ry,start,sweep;
+	cx = luaL_checkinteger(L,1);
+	cy = luaL_checkinteger(L,2);
+	rx = luaL_checkinteger(L,3);
+	ry = luaL_checkinteger(L,4);
+	start = luaL_checkinteger(L,5);
+	sweep = luaL_checkinteger(L,6);
+
+	aggDraw.target->arc(cx, cy,rx, ry, start, sweep);
+
+	return 0;
+}
+
+static int star(lua_State *L) {
+
+	double cx,cy,r1,r2,startAngle,numRays;
+	cx = luaL_checkinteger(L,1);
+	cy = luaL_checkinteger(L,2);
+	r1 = luaL_checkinteger(L,3);
+	r2 = luaL_checkinteger(L,4);
+	startAngle = luaL_checkinteger(L,5);
+	numRays = luaL_checkinteger(L,6);
+
+	aggDraw.target->star(cx, cy, r1, r2, startAngle, numRays);
+
+	return 0;
+}
+
+static int curve(lua_State *L) {
+
+	double x1,y1,x2,y2,x3,y3;
+	x1 = luaL_checkinteger(L,1);
+	y1 = luaL_checkinteger(L,2);
+	x2 = luaL_checkinteger(L,3);
+	y2 = luaL_checkinteger(L,4);
+	x3 = luaL_checkinteger(L,5);
+	y3 = luaL_checkinteger(L,6);
+
+	aggDraw.target->curve(x1, y1, x2, y2, x3, y3);
+
+	return 0;
+}
+
+static const struct luaL_reg aggbasicshapes [] =
+{
+	{"line", line},
+	{"triangle", triangle},
+	{"rectangle", rectangle},
+	{"roundedRect", roundedRect},
+	{"ellipse", ellipse},
+	{"arc", arc},
+	{"star", star},
+	{"curve", curve},
+//	{"polygon", polygon},
+//	{"polyline", polyline},
+	{NULL, NULL}
+};
+
+//agg general attributes
+//TODO missing functions, maybe the missing overloads 
+
+static int fillColor(lua_State *L) {
+
+	double r,g,b,a;
+	r = luaL_checkinteger(L,1);
+	g = luaL_checkinteger(L,2);
+	b = luaL_checkinteger(L,3);
+	a = luaL_checkinteger(L,4);
+
+	aggDraw.target->fillColor(r, g, b, a);
+
+	return 0;
+}
+
+static int noFill(lua_State *L) {
+
+	aggDraw.target->noFill();
+	return 0;
+}
+
+static int lineColor(lua_State *L) {
+
+	double r,g,b,a;
+	r = luaL_checkinteger(L,1);
+	g = luaL_checkinteger(L,2);
+	b = luaL_checkinteger(L,3);
+	a = luaL_checkinteger(L,4);
+
+	aggDraw.target->lineColor(r, g, b, a);
+
+	return 0;
+}
+
+static int noLine(lua_State *L) {
+
+	aggDraw.target->noLine();
+	return 0;
+}
+
+static int lineWidth(lua_State *L) {
+
+	double w;
+	w = luaL_checkinteger(L,1);
+
+	aggDraw.target->lineWidth(w);
+
+	return 0;
+}
+
+static const struct luaL_reg agggeneralattributes [] =
+{
+//	{"blendMode", blendMode},
+//	{"imageBlendMode", imageBlendMode},
+//	{"imageBlendColor", imageBlendColor},
+//	{"masterAlpha", masterAlpha},
+//	{"antiAliasGamma", antiAliasGamma},
+//	{"font", font},
+	{"fillColor", fillColor},
+	{"noFill", noFill},
+	{"lineColor", lineColor},
+	{"noLine", noLine},
+//	{"fillLinearGradient", fillLinearGradient},
+//	{"lineLinearGradient", lineLinearGradient},
+//	{"fillRadialGradient", fillRadialGradient},
+//	{"lineRadialGradient", lineRadialGradient},
+	{"lineWidth", lineWidth},
+//	{"lineCap", lineCap},
+//	{"lineJoin", lineJoin},
+//	{"fillEvenOdd", fillEvenOdd},
+	{NULL, NULL}
+};
+
 
 // gui.text(int x, int y, string msg)
 //
@@ -3386,10 +3453,10 @@ static const struct luaL_reg emulib [] =
 };
 static const struct luaL_reg guilib [] =
 {
-//	{"register", gui_register},
+	{"register", gui_register},
 	{"text", gui_text},
-	{"box", gui_box},
-	{"line", gui_line},
+//	{"box", gui_box},
+//	{"line", gui_line},
 //	{"pixel", gui_pixel},
 //	{"getpixel", gui_getpixel},
 //	{"opacity", gui_setopacity},
@@ -3401,8 +3468,8 @@ static const struct luaL_reg guilib [] =
 //	{"redraw", emu_redraw}, // some people might think of this as more of a GUI function
 	// alternative names
 	{"drawtext", gui_text},
-	{"drawbox", gui_box},
-	{"drawline", gui_line},
+//	{"drawbox", gui_box},
+//	{"drawline", gui_line},
 //	{"drawpixel", gui_pixel},
 //	{"setpixel", gui_pixel},
 //	{"writepixel", gui_pixel},
@@ -3680,6 +3747,10 @@ void registerLibs(lua_State* L)
 	luaL_register(L, "input", inputlib); // for user input
 	luaL_register(L, "movie", movielib);
 	luaL_register(L, "sound", soundlib);
+
+	luaL_register(L, "agg", aggbasicshapes);
+	luaL_register(L, "agg", agggeneralattributes);
+	
 
 	lua_settop(L, 0); // clean the stack, because each call to luaL_register leaves a table on top
 	
