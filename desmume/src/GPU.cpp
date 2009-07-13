@@ -767,10 +767,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 
 	if(cnt->OBJ_Tile_mapping)
 	{
-		// 1-d sprite mapping 
-		// boundary :
-		// core A : 32k, 64k, 128k, 256k
-		// core B : 32k, 64k, 128k, 128k
+		//1-d sprite mapping boundaries:
+		//32k, 64k, 128k, 256k
 		gpu->sprBoundary = 5 + cnt->OBJ_Tile_1D_Bound ;
 		
 		//do not be deceived: even though a sprBoundary==8 (256KB region) is impossible to fully address
@@ -779,8 +777,8 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 
 		gpu->spriteRenderMode = GPU::SPRITE_1D;
 	} else {
-		// 2d sprite mapping
-		// boundary : 32k
+		//2d sprite mapping
+		//boundary : 32k
 		gpu->sprBoundary = 5;
 		gpu->spriteRenderMode = GPU::SPRITE_2D;
 	}
