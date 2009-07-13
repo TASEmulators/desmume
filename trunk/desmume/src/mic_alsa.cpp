@@ -21,6 +21,7 @@
 #include <alsa/asoundlib.h>
 #include "types.h"
 #include "mic.h"
+#include "debug.h"
 
 #define MIC_BUFSIZE 4096
 
@@ -43,7 +44,7 @@ BOOL Mic_Init()
         return TRUE;
 
     // Open the default sound card in capture
-    if (snd_pcm_open(&pcm_handle, "plughw:0,0", SND_PCM_STREAM_CAPTURE, 0) < 0)
+    if (snd_pcm_open(&pcm_handle, "plughw:0,0", SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK) < 0)
         return FALSE;
 
     // Allocate the snd_pcm_hw_params_t structure and fill it.
@@ -107,9 +108,19 @@ void Mic_DeInit()
     snd_pcm_close(pcm_handle);
 }
 
-u8 Mic_ReadSample()
+static void snd_pcm_read()
 {
     int error;
+
+    error = snd_pcm_readi(pcm_handle, Mic_Buffer[Mic_WriteBuf], MIC_BUFSIZE);
+    if (error < 0)
+        error = snd_pcm_recover(pcm_handle, error, 0);
+    if (error < 0)
+       LOG("snd_pcm_readi FAIL!: %s\n", snd_strerror(error));
+}
+
+u8 Mic_ReadSample()
+{
     u8 tmp;
     u8 ret;
 
@@ -122,15 +133,13 @@ u8 Mic_ReadSample()
         ret = ((tmp & 0x1) << 7);
     } else {
         ret = ((tmp & 0xFE) >> 1);
+        snd_pcm_read();
     }
 
     Mic_BufPos++;
     if (Mic_BufPos >= (MIC_BUFSIZE << 1)) {
+        snd_pcm_read();
         Mic_BufPos = 0;
-        error = snd_pcm_readi(pcm_handle, Mic_Buffer[Mic_WriteBuf], MIC_BUFSIZE);
-        if (error < 1) {
-            printf("snd_pcm_readi FAIL!: %s\n", snd_strerror(error));
-        }
         Mic_PlayBuf ^= 1;
         Mic_WriteBuf ^= 1;
     }
