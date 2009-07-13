@@ -64,6 +64,8 @@ template<typename T> T _max(T a, T b, T c) { return max(max(a,b),c); }
 template<typename T> T _min(T a, T b, T c, T d) { return min(_min(a,b,d),c); }
 template<typename T> T _max(T a, T b, T c, T d) { return max(_max(a,b,d),c); }
 
+static const int kUnsetTranslucentPolyID = 255;
+
 static int polynum;
 
 static u8 modulate_table[32][32];
@@ -392,9 +394,6 @@ struct Shader
 				u = invu*w;
 				v = invv*w;
 				texColor = sampler.sample(u,v);
-				if(texColor.r != 0x1f || texColor.g != 0x1f || texColor.b != 0x1f) {
-					int zzz=9;
-				}
 				FragmentColor toonColor = toonTable[materialColor.r];
 				if(sampler.texFormat == 0)
 				{
@@ -444,7 +443,7 @@ static FORCEINLINE void alphaBlend(FragmentColor & dst, const FragmentColor & sr
 	u8 dstAlpha = dst.a;
 	if(gfx3d.enableAlphaBlending)
 	{
-		if(src.a == 0)
+		if(src.a == 0 || dst.a == 0)
 		{
 			dst = src;
 		}
@@ -1233,7 +1232,7 @@ static void SoftRastRender()
 	//special value for uninitialized translucent polyid. without this, fires in spiderman2 dont display
 	//I am not sure whether it is right, though. previously this was cleared to 0, as a guess,
 	//but in spiderman2 some fires with polyid 0 try to render on top of the background
-	clearFragment.polyid.translucent = 255; 
+	clearFragment.polyid.translucent = kUnsetTranslucentPolyID; 
 	clearFragment.depth = gfx3d.clearDepth;
 	clearFragment.stencil = 0;
 	for(int i=0;i<256*192;i++)
