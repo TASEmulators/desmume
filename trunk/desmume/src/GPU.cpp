@@ -773,8 +773,9 @@ void GPU_setVideoProp(GPU * gpu, u32 p)
 		// core B : 32k, 64k, 128k, 128k
 		gpu->sprBoundary = 5 + cnt->OBJ_Tile_1D_Bound ;
 		
-		//zero 10-apr-09 - not sure whether this is right...
-		if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3)) gpu->sprBoundary = 7;
+		//do not be deceived: even though a sprBoundary==8 (256KB region) is impossible to fully address
+		//in GPU_SUB, it is still fully legal to address it with that granularity.
+		//so don't do this: //if((gpu->core == GPU_SUB) && (cnt->OBJ_Tile_1D_Bound == 3)) gpu->sprBoundary = 7;
 
 		gpu->spriteRenderMode = GPU::SPRITE_1D;
 	} else {
@@ -1932,10 +1933,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			if(spriteInfo->Depth)
 			{
 				//2d: src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex) << 5));
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex << block));
-				if (!src) { 
-					continue;
-				}
+				src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex << block));
 
 				// If extended palettes are set, use them
 				if (dispCnt->ExOBJPalette_Enable)
@@ -1979,15 +1977,11 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			else if(spriteInfo->Mode == 3)
 			{
 				if (dispCnt->OBJ_BMP_mapping)
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary));
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary));
 				else
 					//NOT TESTED
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
 				
-				if (!src) { 
-					continue;
-				}
-
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
@@ -2024,17 +2018,13 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			{
 				if(MODE == SPRITE_2D)
 				{
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<5));
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<5));
 					pal = ARM9Mem.ARM9_VMEM + 0x200 + (gpu->core*0x400 + (spriteInfo->PaletteIndex*32));
 				}
 				else
 				{
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary));
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBoundary));
 					pal = ARM9Mem.ARM9_VMEM + 0x200 + gpu->core*0x400 + (spriteInfo->PaletteIndex*32);
-				}
-
-				if (!src) { 
-					continue;
 				}
 
 				for(j = 0; j < lg; ++j, ++sprX)
@@ -2087,9 +2077,9 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				if(MODE == SPRITE_2D)
 				{
 					if (spriteInfo->Depth)
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
+						src = (u8 *)MMU_gpu_map(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
 					else
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
+						src = (u8 *)MMU_gpu_map(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
 				}
 				else
 				{
@@ -2097,9 +2087,6 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 					else
 						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
-				}
-				if (!src) { 
-					continue;
 				}
 
 				render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
@@ -2116,7 +2103,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				if (dispCnt->OBJ_BMP_mapping)
 				{
 					//tested by buffy sacrifice damage blood splatters in corner
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary) + (y*sprSize.x*2));
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary) + (y*sprSize.x*2));
 				}
 				else
 				{
@@ -2124,16 +2111,12 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 
 					if (dispCnt->OBJ_BMP_2D_dim)
 						//256*256, verified by heroes of mana FMV intro
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
+						src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
 					else 
 						//128*512, verified by harry potter and the order of the phoenix conversation portraits
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1));
+						src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1));
 				}
 				
-				if (!src) { 
-					continue;
-				}
-
 				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 				continue;
 			}
@@ -2141,14 +2124,10 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			if(spriteInfo->Depth)                   /* 256 colors */
 			{
 				if(MODE == SPRITE_2D)
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*8));
 				else
-					src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 				
-				if (!src) { 
-					continue;
-				}
-		
 				if (dispCnt->ExOBJPalette_Enable)
 					pal = (u16*)(ARM9Mem.ObjExtPal[gpu->core][0]+(spriteInfo->PaletteIndex*0x200));
 				else
@@ -2162,17 +2141,13 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			// 16 colors 
 			if(MODE == SPRITE_2D)
 			{
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
+				src = (u8 *)MMU_gpu_map(gpu->sprMem + ((spriteInfo->TileIndex)<<5) + ((y>>3)<<10) + ((y&0x7)*4));
 			}
 			else
 			{
-				src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+				src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
 			}
-			
-			if (!src) { 
-				continue;
-			}
-		
+				
 			pal = (u16*)(ARM9Mem.ARM9_VMEM + 0x200 + gpu->core * 0x400);
 			
 			pal += (spriteInfo->PaletteIndex<<4);
