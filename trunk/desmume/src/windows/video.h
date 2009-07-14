@@ -12,6 +12,10 @@ public:
 		return width*height;
 	}
 
+	int ratio() {
+		return width / 256;
+	}
+
 	int rotatedwidth() {
 		switch(rotation) {
 			case 0:

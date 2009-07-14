@@ -404,7 +404,7 @@ void translateXY(s32& x, s32& y)
 		y = (tx-192-video.screengap);
 		break;
 	}
-}  
+}
 // END Rotation definitions
 
 void UpdateRecentRomsMenu()
@@ -671,10 +671,10 @@ template<typename T, int bpp> static void doRotate(void* dst)
 						buffer += ddsd.lPitch;
 					}
 				else
-					for(int y = 0; y < 384; y++)
+					for(int y = 0; y < video.height; y++)
 					{
-						for(int x = 0; x < 256; x++)
-							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[(y * 256) + x]);
+						for(int x = 0; x < video.width; x++)
+							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[(y * video.width) + x]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -685,18 +685,18 @@ template<typename T, int bpp> static void doRotate(void* dst)
 	case 270:
 		{
 			if(video.rotation == 90)
-				for(int y = 0; y < 256; y++)
+				for(int y = 0; y < video.width; y++)
 				{
-					for(int x = 0; x < 384; x++)
-						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[((383-x) * 256) + y]);
+					for(int x = 0; x < video.height; x++)
+						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[(((video.height-1)-x) * video.width) + y]);
 
 					buffer += ddsd.lPitch;
 				}
 			else
-				for(int y = 0; y < 256; y++)
+				for(int y = 0; y < video.width; y++)
 				{
-					for(int x = 0; x < 384; x++)
-						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[((x) * 256) + 255 - y]);
+					for(int x = 0; x < video.height; x++)
+						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[((x) * video.width) + (video.width-1) - y]);
 
 					buffer += ddsd.lPitch;
 				}
@@ -1409,7 +1409,7 @@ int _main()
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384+video.screengap,
+	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, video.width,video.height+video.screengap,
 		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -1737,7 +1737,7 @@ void UpdateWndRects(HWND hwnd)
 	RECT rc;
 
 	int wndWidth, wndHeight;
-	int defHeight = (384 + video.screengap);
+	int defHeight = (video.height + video.screengap);
 	float ratio;
 	int oneScreenHeight, gapHeight;
 
@@ -1755,7 +1755,7 @@ void UpdateWndRects(HWND hwnd)
 	}
 
 	ratio = ((float)wndHeight / (float)defHeight);
-	oneScreenHeight = (192 * ratio);
+	oneScreenHeight = ((video.height/2) * ratio);
 	gapHeight = (wndHeight - (oneScreenHeight * 2));
 
 	if((video.rotation == 90) || (video.rotation == 270))
@@ -1837,28 +1837,28 @@ void UpdateScreenRects()
 		// Main screen
 		MainScreenSrcRect.left = 0;
 		MainScreenSrcRect.top = 0;
-		MainScreenSrcRect.right = 192;
-		MainScreenSrcRect.bottom = 256;
+		MainScreenSrcRect.right = video.height/2;
+		MainScreenSrcRect.bottom = video.width;
 
 		// Sub screen
-		SubScreenSrcRect.left = 192;
+		SubScreenSrcRect.left = video.height/2;
 		SubScreenSrcRect.top = 0;
-		SubScreenSrcRect.right = 384;
-		SubScreenSrcRect.bottom = 256;
+		SubScreenSrcRect.right = video.height;
+		SubScreenSrcRect.bottom = video.width;
 	}
 	else
 	{
 		// Main screen
 		MainScreenSrcRect.left = 0;
 		MainScreenSrcRect.top = 0;
-		MainScreenSrcRect.right = 256;
-		MainScreenSrcRect.bottom = 192;
+		MainScreenSrcRect.right = video.width;
+		MainScreenSrcRect.bottom = video.height/2;
 
 		// Sub screen
 		SubScreenSrcRect.left = 0;
-		SubScreenSrcRect.top = 192;
-		SubScreenSrcRect.right = 256;
-		SubScreenSrcRect.bottom = 384;
+		SubScreenSrcRect.top = video.height/2;
+		SubScreenSrcRect.right = video.width;
+		SubScreenSrcRect.bottom = video.height;
 	}
 }
 
@@ -2666,7 +2666,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
 			GetClientRect(hwnd,&r);
-			int defwidth = 256, defheight = (384+video.screengap);
+			int defwidth = video.width, defheight = (video.height+video.screengap);
 			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
 			// translate from scaling (screen resolution to 256x384 or 512x192) 
@@ -2684,6 +2684,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				break ;
 			}
 
+			x = x/video.ratio();
+			y = y/video.ratio();
+
 			if(HudEditorMode) {
 				EditHud(x,y, &Hud);
 			}
@@ -2693,6 +2696,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 					translateXY(x,y);
 				else 
 					y-=(192+video.screengap);
+
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
 				NDS_setTouchPos(x, y);
