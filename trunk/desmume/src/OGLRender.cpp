@@ -54,6 +54,10 @@ static void ENDGL() {
 #else
 	#include <GL/gl.h>
 	#include <GL/glext.h>
+	/* This is a workaround needed to compile against nvidia GL headers */
+	#ifndef GL_ALPHA_BLEND_EQUATION_ATI
+	#undef GL_VERSION_1_3
+	#endif
 #endif
 #endif
 
