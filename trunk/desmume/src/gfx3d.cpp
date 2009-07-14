@@ -1535,7 +1535,7 @@ void gfx3d_execute3D()
 	u8	cmd = 0;
 	u32	param = 0;
 
-	//if (isSwapBuffers) return;
+	if (isSwapBuffers) return;
 
 	if (GFX_FIFOrecv(&cmd, &param))
 	{
@@ -1570,16 +1570,12 @@ void gfx3d_execute3D()
 
 void gfx3d_glFlush(u32 v)
 {
-	flushPending = TRUE;
-	if(!flushPending)
-	{
-		gfx3d.sortmode = BIT0(v);
-		gfx3d.wbuffer = BIT1(v);
-	}
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-
+	gfx3d.sortmode = BIT0(v);
+	gfx3d.wbuffer = BIT1(v);
 #if 0
+	
 	if (polygonListCompleted == 2)
 	{
 		//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
@@ -1590,13 +1586,19 @@ void gfx3d_glFlush(u32 v)
 	}
 #endif
 
-	gfx3d_doFlush();
+	//gfx3d_doFlush();
 	isSwapBuffers = true;
 	
 	//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	//gxstat |= 0x08000000;		// set busy flag
 	//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 #else
+	if(!flushPending)
+	{
+		gfx3d.sortmode = BIT0(v);
+		gfx3d.wbuffer = BIT1(v);
+		flushPending = TRUE;
+	}
 	//see discussion at top of file
 	if(CommonSettings.gfx3d_flushMode == 0)
 		gfx3d_doFlush();
@@ -1708,8 +1710,10 @@ void gfx3d_VBlankSignal()
 {
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	isVBlank = true;
-		if (isSwapBuffers)
+	if (isSwapBuffers)
 	{
+		//if (bWaitForPolys) return;
+		gfx3d_doFlush();
 		isSwapBuffers = false;
 		GFX_DELAY(392);
 	}
@@ -1732,21 +1736,20 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 {
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	isVBlank = false;
-	if (drawPending)
-	{
-		drawPending = FALSE;
+	
+	if(skipFrame) return;
+	if (!drawPending) return;
+	drawPending = FALSE;
 
-		//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
-		if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
-		{
-			memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
-			memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
-		}
-		else
-		{
-			if(CommonSettings.showGpu.main)
-				gpu3D->NDS_3D_Render();
-		}
+	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
+	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
+	{
+		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
+		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
+	}
+	else
+	{
+		gpu3D->NDS_3D_Render();
 	}
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.

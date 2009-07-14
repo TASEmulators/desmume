@@ -179,19 +179,35 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+#if 0
 	if (gxstat & 0xC0000000)
 	{
 		setIF(0, (1<<21));
 	}
-	gxstat &= 0xF000FFFF;
+#endif
 	if (gxFIFO.tail == 0)						// empty
 	{
-		//gxstat |= (0x01FF << 16);
+		gxstat &= 0xF000FFFF;
 		gxstat |= 0x06000000;
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		if ((gxstat & 0x80000000))	// empty
+		{
+			setIF(0, (1<<21));
+		}
 		return FALSE;
 	}
 
+	if (gxstat & 0x40000000)	// IRQ: less half
+	{
+		if (gxstat & 0x02000000) setIF(0, (1<<21));
+	}
+
+	if ((gxstat & 0x80000000))	// IRQ: empty
+	{
+		if (gxstat & 0x04000000) setIF(0, (1<<21));
+	}
+
+	gxstat &= 0xF000FFFF;
 	*cmd = gxFIFO.cmd[0];
 	*param = gxFIFO.param[0];
 	gxFIFO.tail--;
@@ -226,10 +242,10 @@ void GFX_FIFOcnt(u32 val)
 	}
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 	
-	if (gxstat & 0xC0000000)
+	/*if (gxstat & 0xC0000000)
 	{
 		setIF(0, (1<<21));
-	}
+	}*/
 }
 
 // ========================================================= DISP FIFO
