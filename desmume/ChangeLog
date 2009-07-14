@@ -17,6 +17,9 @@ Graphics:
 Windows:
  bug: improve map view tool
 
+Linux:
+ enh: alsa microphone support
+
 0.9.2 -> 0.9.4 (r1844->r2352->r2437)
 
 0.9.3 was skipped due to emu news sites sneaking it out of our staging area and 
