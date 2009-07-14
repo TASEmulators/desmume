@@ -85,10 +85,10 @@
 #include "pathsettings.h"
 #include "utils/xstring.h"
 #include "directx/ddraw.h"
+#include "video.h"
 
 #include "aggdraw.h"
 #include "agg2d.h"
-
 
 using namespace std;
 
@@ -98,6 +98,8 @@ using namespace std;
 
 #include <pcap.h>
 #include <remote-ext.h> //uh?
+
+VideoInfo video;
 
 //#define WX_STUB
 
@@ -196,7 +198,6 @@ RECT MainScreenSrcRect, SubScreenSrcRect;
 int WndX = 0;
 int WndY = 0;
 
-int ScreenGap = 0;
 extern HWND RamSearchHWnd;
 static BOOL lostFocusPause = TRUE;
 static BOOL lastPauseFromLostFocus = FALSE;
@@ -373,33 +374,21 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 //	}
 }
 
-// Rotation definitions
-short GPU_rotation      = 0;
-DWORD GPU_width         = 256;
-DWORD GPU_height        = 192*2;
-DWORD rotationstartscan = 192;
-DWORD rotationscanlines = 192*2;
-
 void ScaleScreen(float factor)
 {
 	if(factor==65535)
 		factor = 1.5f;
 	else if(factor==65534)
 		factor = 2.5f;
-	if((GPU_rotation == 90) || (GPU_rotation == 270))
-	{
-		MainWindow->setClientSize(((384 + ScreenGap) * factor), (256 * factor));
-	}
-	else
-	{
-		MainWindow->setClientSize((256 * factor), ((384 + ScreenGap) * factor));
-	}
+
+		MainWindow->setClientSize((video.rotatedwidthgap() * factor), (video.rotatedheightgap() * factor));
+
 }
 
 void translateXY(s32& x, s32& y)
 {
 	s32 tx=x, ty=y;
-	switch(GPU_rotation)
+	switch(video.rotation)
 	{
 	case 90:
 		x = ty;
@@ -412,7 +401,7 @@ void translateXY(s32& x, s32& y)
 		break;
 	case 270:
 		x = 255-ty;
-		y = (tx-192-ScreenGap);
+		y = (tx-192-video.screengap);
 		break;
 	}
 }  
@@ -629,17 +618,8 @@ int CreateDDrawBuffers()
 	ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 	ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
 
-	if ( (GPU_rotation == 0) || (GPU_rotation == 180) )
-	{
-		ddsd.dwWidth         = 256;
-		ddsd.dwHeight        = 384;
-	}
-	else
-		if ( (GPU_rotation == 90) || (GPU_rotation == 270) )
-		{
-			ddsd.dwWidth         = 384;
-			ddsd.dwHeight        = 256;
-		}
+	ddsd.dwWidth         = video.rotatedwidth();
+	ddsd.dwHeight        = video.rotatedheight();
 
 		if (IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL) != DD_OK) return -2;
 
@@ -666,27 +646,27 @@ template<typename T, int bpp> static T convert(u16 val)
 template<typename T, int bpp> static void doRotate(void* dst)
 {
 	u8* buffer = (u8*)dst;
-	switch(GPU_rotation)
+	switch(video.rotation)
 	{
 	case 0:
 	case 180:
 		{
 			if(ddsd.lPitch == 1024)
 			{
-				if(GPU_rotation==180)
-					for(int i = 0, j=98303; j>=0; i++,j--)
+				if(video.rotation==180)
+					for(int i = 0, j=video.size()-1; j>=0; i++,j--)
 						((T*)buffer)[i] = convert<T,bpp>(((u16*)GPU_screen)[j]);
 				else
-					for(int i = 0; i < 98304; i++)
+					for(int i = 0; i < video.size(); i++)
 						((T*)buffer)[i] = convert<T,bpp>(((u16*)GPU_screen)[i]);
 			}
 			else
 			{
-				if(GPU_rotation==180)
-					for(int y = 0; y < 384; y++)
+				if(video.rotation==180)
+					for(int y = 0; y < video.height; y++)
 					{
-						for(int x = 0; x < 256; x++)
-							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[384*256 - (y * 256) - x - 1]);
+						for(int x = 0; x < video.width; x++)
+							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[video.height*video.width - (y * video.width) - x - 1]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -704,7 +684,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 	case 90:
 	case 270:
 		{
-			if(GPU_rotation == 90)
+			if(video.rotation == 90)
 				for(int y = 0; y < 256; y++)
 				{
 					for(int x = 0; x < 384; x++)
@@ -776,7 +756,7 @@ void Display()
 	}
 
 	// Gap
-	if(ScreenGap > 0)
+	if(video.screengap > 0)
 	{
 		//u32 color = gapColors[win_fw_config.fav_colour];
 		//u32 color_rev = (((color & 0xFF) << 16) | (color & 0xFF00) | ((color & 0xFF0000) >> 16));
@@ -851,7 +831,7 @@ DWORD WINAPI run()
 
 	InitSpeedThrottle();
 
-	osd->setRotate(GPU_rotation);
+	osd->setRotate(video.rotation);
 
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
 	{
@@ -1131,7 +1111,7 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 		LoadSaveStateInfo();
 		lagframecounter=0;
 		UpdateRecentRoms(logicalName);
-		osd->setRotate(GPU_rotation);
+		osd->setRotate(video.rotation);
 		if (AutoRWLoad)
 		{
 			//Open Ram Watch if its auto-load setting is checked
@@ -1322,6 +1302,9 @@ int _main()
 	Desmume_InitOnce();
 	InitDecoder();
 
+	video.height = 384;
+	video.width = 256;
+
 #ifdef WX_STUB
 	wxInitialize();
 #endif
@@ -1385,7 +1368,7 @@ int _main()
 	}
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
-	GPU_rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
+	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
@@ -1396,7 +1379,7 @@ int _main()
 	CommonSettings.hud.ShowLagFrameCounter = GetPrivateProfileBool("Display","Display Lag Counter", 0, IniName);
 	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", 0, IniName);
 	
-	ScreenGap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
+	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
 	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
@@ -1426,7 +1409,7 @@ int _main()
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
 	DWORD dwStyle = WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384+ScreenGap,
+	if (!MainWindow->create(DESMUME_NAME_AND_VERSION, WndX/*CW_USEDEFAULT*/, WndY/*CW_USEDEFAULT*/, 256,384+video.screengap,
 		WS_CAPTION| WS_SYSMENU | WS_SIZEBOX | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 
 		NULL))
 	{
@@ -1435,7 +1418,7 @@ int _main()
 		exit(-1);
 	}
 
-	gpu_SetRotateScreen(GPU_rotation);
+	gpu_SetRotateScreen(video.rotation);
 
 	/* default the firmware settings, they may get changed later */
 	NDS_FillDefaultFirmwareConfigData( &win_fw_config);
@@ -1452,14 +1435,7 @@ int _main()
 		exit(-1);
 	}
 
-	if((GPU_rotation == 90) || (GPU_rotation == 270))
-	{
-		MainWindow->setMinSize(384+ScreenGap, 256);
-	}
-	else
-	{
-		MainWindow->setMinSize(256, 384+ScreenGap);
-	}
+		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 
 	{
 		if(windowSize == 0)
@@ -1761,13 +1737,13 @@ void UpdateWndRects(HWND hwnd)
 	RECT rc;
 
 	int wndWidth, wndHeight;
-	int defHeight = (384 + ScreenGap);
+	int defHeight = (384 + video.screengap);
 	float ratio;
 	int oneScreenHeight, gapHeight;
 
 	GetClientRect(hwnd, &rc);
 
-	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	if((video.rotation == 90) || (video.rotation == 270))
 	{
 		wndWidth = (rc.bottom - rc.top);
 		wndHeight = (rc.right - rc.left);
@@ -1782,7 +1758,7 @@ void UpdateWndRects(HWND hwnd)
 	oneScreenHeight = (192 * ratio);
 	gapHeight = (wndHeight - (oneScreenHeight * 2));
 
-	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	if((video.rotation == 90) || (video.rotation == 270))
 	{
 		// Main screen
 		ptClient.x = rc.left;
@@ -1797,7 +1773,7 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.bottom = ptClient.y;
 
 		//if there was no specified screen gap, extend the top screen to cover the extra column
-		if(ScreenGap == 0) MainScreenRect.right += gapHeight;
+		if(video.screengap == 0) MainScreenRect.right += gapHeight;
 
 		// Sub screen
 		ptClient.x = (rc.left + oneScreenHeight + gapHeight);
@@ -1832,7 +1808,7 @@ void UpdateWndRects(HWND hwnd)
 		MainScreenRect.bottom = ptClient.y;
 
 		//if there was no specified screen gap, extend the top screen to cover the extra row
-		if(ScreenGap == 0) MainScreenRect.bottom += gapHeight;
+		if(video.screengap == 0) MainScreenRect.bottom += gapHeight;
 
 		// Sub screen
 		ptClient.x = rc.left;
@@ -1856,7 +1832,7 @@ void UpdateWndRects(HWND hwnd)
 
 void UpdateScreenRects()
 {
-	if((GPU_rotation == 90) || (GPU_rotation == 270))
+	if((video.rotation == 90) || (video.rotation == 270))
 	{
 		// Main screen
 		MainScreenSrcRect.left = 0;
@@ -1888,40 +1864,21 @@ void UpdateScreenRects()
 
 void SetScreenGap(int gap)
 {
-	RECT rc;
-	int height, width;
-	int oldgap, diff;
 
-	GetClientRect(MainWindow->getHWnd(), &rc);
-	width = (rc.right - rc.left);
-	height = (rc.bottom - rc.top);
-
-	oldgap = ScreenGap;
-	ScreenGap = gap;
-
-	if((GPU_rotation == 90) || (GPU_rotation == 270))
-	{
-		diff = ((gap - oldgap) * (height / 256.0f));
-		MainWindow->setMinSize((384 + gap), 256);
-		MainWindow->setClientSize(width+diff, height);
-	}
-	else
-	{
-		diff = ((gap - oldgap) * (width / 256.0f));
-		MainWindow->setMinSize(256, (384 + gap));
-		MainWindow->setClientSize(width, height+diff);
-	}
+	video.screengap = gap;
+	MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
+	MainWindow->setClientSize(video.rotatedwidthgap(), video.rotatedheightgap());
 }
 
 //========================================================================================
 void SetRotate(HWND hwnd, int rot)
 {
 	RECT rc;
-	int oldrot = GPU_rotation;
+	int oldrot = video.rotation;
 	int oldheight, oldwidth;
 	int newheight, newwidth;
 
-	GPU_rotation = rot;
+	video.rotation = rot;
 
 	GetClientRect(hwnd, &rc);
 	oldwidth = (rc.right - rc.left);
@@ -1956,43 +1913,7 @@ void SetRotate(HWND hwnd, int rot)
 
 	osd->setRotate(rot);
 
-	switch (rot)
-	{
-	case 0:
-		GPU_width    = 256;
-		GPU_height   = 192*2;
-		rotationstartscan = 192;
-		rotationscanlines = 192*2;
-		MainWindow->setMinSize(GPU_width, (GPU_height + ScreenGap));
-		break;
-
-	case 90:
-		GPU_rotation = 90;
-		GPU_width    = 192*2;
-		GPU_height   = 256;
-		rotationstartscan = 0;
-		rotationscanlines = 256;
-		MainWindow->setMinSize((GPU_width + ScreenGap), GPU_height);
-		break;
-
-	case 180:
-		GPU_rotation = 180;
-		GPU_width    = 256;
-		GPU_height   = 192*2;
-		rotationstartscan = 0;
-		rotationscanlines = 192*2;
-		MainWindow->setMinSize(GPU_width, (GPU_height + ScreenGap));
-		break;
-
-	case 270:
-		GPU_rotation = 270;
-		GPU_width    = 192*2;
-		GPU_height   = 256;
-		rotationstartscan = 0;
-		rotationscanlines = 256;
-		MainWindow->setMinSize((GPU_width + ScreenGap), GPU_height);
-		break;
-	}
+	MainWindow->setMinSize((video.rotatedwidthgap()), video.rotatedheightgap());
 
 	MainWindow->setClientSize(newwidth, newheight);
 
@@ -2005,15 +1926,15 @@ void SetRotate(HWND hwnd, int rot)
 		ddsd.dwSize          = sizeof(ddsd);
 		ddsd.dwFlags         = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
 		ddsd.ddsCaps.dwCaps  = DDSCAPS_OFFSCREENPLAIN;
-		ddsd.dwWidth         = GPU_width;
-		ddsd.dwHeight        = GPU_height;
+		ddsd.dwWidth         = video.rotatedwidth();
+		ddsd.dwHeight        = video.rotatedheight();
 
 		IDirectDraw7_CreateSurface(lpDDraw, &ddsd, &lpBackSurface, NULL);
 	}
 
-	WritePrivateProfileInt("Video","Window Rotate",GPU_rotation,IniName);
+	WritePrivateProfileInt("Video","Window Rotate",video.rotation,IniName);
 
-	gpu_SetRotateScreen(GPU_rotation);
+	gpu_SetRotateScreen(video.rotation);
 
 	UpdateScreenRects();
 }
@@ -2504,10 +2425,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Force Maintain Ratio
 			MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | ((ForceRatio)?MF_CHECKED:MF_UNCHECKED));
 			//Screen rotation
-			MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((GPU_rotation==0)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((GPU_rotation==90)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((GPU_rotation==180)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((GPU_rotation==270)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((video.rotation==0)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((video.rotation==90)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((video.rotation==180)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((video.rotation==270)?MF_CHECKED:MF_UNCHECKED));
 
 			//Window Size
 			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND   | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
@@ -2518,9 +2439,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND   | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
 
 			//Screen Separation
-			MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND |   ((ScreenGap==0)? MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((ScreenGap==5)? MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((ScreenGap==64)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND |   ((video.screengap==0)? MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((video.screengap==5)? MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((video.screengap==64)?MF_CHECKED:MF_UNCHECKED));
 	
 			//Counters / Etc.
 			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, MF_BYCOMMAND | ((CommonSettings.hud.FrameCounterDisplay)?MF_CHECKED:MF_UNCHECKED));
@@ -2597,7 +2518,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				//Save frame counter status
 				WritePrivateProfileInt("Display", "FrameCounter", CommonSettings.hud.FrameCounterDisplay, IniName);
-				WritePrivateProfileInt("Display", "ScreenGap", ScreenGap, IniName);
+				WritePrivateProfileInt("Display", "ScreenGap", video.screengap, IniName);
 
 				//Save Ram Watch information
 				WritePrivateProfileInt("RamWatch", "SaveWindowPos", RWSaveWindowPos, IniName);
@@ -2745,11 +2666,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
 			GetClientRect(hwnd,&r);
-			int defwidth = 256, defheight = (384+ScreenGap);
+			int defwidth = 256, defheight = (384+video.screengap);
 			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
 			// translate from scaling (screen resolution to 256x384 or 512x192) 
-			switch (GPU_rotation)
+			switch (video.rotation)
 			{
 			case 0:
 			case 180:
@@ -2768,10 +2689,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			}
 			else {
 				//translate for rotation
-				if (GPU_rotation != 0)
+				if (video.rotation != 0)
 					translateXY(x,y);
 				else 
-					y-=(192+ScreenGap);
+					y-=(192+video.screengap);
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
 				NDS_setTouchPos(x, y);
