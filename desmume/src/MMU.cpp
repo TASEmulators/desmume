@@ -2117,10 +2117,6 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 		return ;
 	}
 
-	if(adr>=0x02400000 && adr<0x03000000) {
-		//int zzz=9;
-	}
-
 	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
 	{
 		addon.write32(adr, val);

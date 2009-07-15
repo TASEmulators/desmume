@@ -439,10 +439,6 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 
 FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u32 val)
 {
-	if(addr == 0x022D7900)
-	{
-		int zzz=9;
-	}
 	//special handling for DMA: discard writes to TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{
