@@ -751,6 +751,10 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath=".\filter\2xsai.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\addons.cpp"
 			>
 		</File>
@@ -907,6 +911,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\filter\filter.h"
+			>
+		</File>
+		<File
 			RelativePath="..\fs-windows.cpp"
 			>
 		</File>
@@ -948,6 +956,10 @@
 		</File>
 		<File
 			RelativePath="..\GPU_osd.h"
+			>
+		</File>
+		<File
+			RelativePath=".\filter\hq2x.cpp"
 			>
 		</File>
 		<File
@@ -1076,6 +1088,10 @@
 		</File>
 		<File
 			RelativePath="..\saves.h"
+			>
+		</File>
+		<File
+			RelativePath=".\filter\scanline.cpp"
 			>
 		</File>
 		<File

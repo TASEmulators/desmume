@@ -162,6 +162,12 @@
 #define IDC_TMP                         424
 #define IDD_GAME_INFO                   501
 #define ID_RAM_WATCH                    550
+#define IDM_RENDER_NORMAL               551
+#define IDM_RENDER_HQ2X                 552
+#define IDM_RENDER_2XSAI                553
+#define IDM_RENDER_SUPER2XSAI           554
+#define IDM_RENDER_SUPEREAGLE			555
+#define IDM_RENDER_SCANLINE				556
 #define IDD_IO_REG                      601
 #define IDM_RECORD_MOVIE                602
 #define IDM_PLAY_MOVIE                  603
