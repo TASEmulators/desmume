@@ -26,7 +26,7 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-//#define USE_GEOMETRY_FIFO_EMULATION //enables new experimental gxFIFO
+//#define USE_GEOMETRY_FIFO_EMULATION //enable gxFIFO emulation
 
 #include "types.h"
 
@@ -47,16 +47,26 @@ extern void IPC_FIFOcnt(u8 proc, u16 val);
 //=================================================== GFX FIFO
 typedef struct
 {
-	u8		cmd[261];
-	u32		param[261];
+	u8		cmd[257];
+	u32		param[257];
 
 	u16		tail;		// tail
 } GFX_FIFO;
 
+typedef struct
+{
+	u8		cmd[5];
+	u32		param[5];
+
+	u8		tail;
+} GFX_PIPE;
+
+extern GFX_PIPE gxPIPE;
 extern GFX_FIFO gxFIFO;
+extern void GFX_PIPEclear();
 extern void GFX_FIFOclear();
 extern void GFX_FIFOsend(u8 cmd, u32 param);
-extern BOOL GFX_FIFOrecv(u8 *cmd, u32 *param);
+extern BOOL GFX_PIPErecv(u8 *cmd, u32 *param);
 extern void GFX_FIFOcnt(u32 val);
 
 //=================================================== Display memory FIFO

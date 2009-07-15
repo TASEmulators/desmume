@@ -61,10 +61,8 @@ in this function: */
 static void gfx3d_doFlush();
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-inline void GFX_DELAY(int x) { 
-	MMU.gfx3dCycles = nds_timer + (2*x); NDS_RescheduleGXFIFO(); }
-inline void GFX_DELAY_M2(int x) { 
-	MMU.gfx3dCycles += (2*x); NDS_RescheduleGXFIFO(); }
+#define GFX_DELAY(x) MMU.gfx3dCycles = nds_timer + (1*x);
+#define GFX_DELAY_M2(x) MMU.gfx3dCycles += (1*x);
 #else
 #define GFX_DELAY(x)
 #define GFX_DELAY_M2(x)
@@ -366,6 +364,7 @@ void gfx3d_reset()
 
 	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
 	
+	GFX_PIPEclear();
 	GFX_FIFOclear();
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
@@ -1528,8 +1527,9 @@ void gfx3d_execute(u8 cmd, u32 param)
 		break;
 		default:
 			INFO("Unknown execute FIFO 3D command 0x%02X with param 0x%08X\n", cmd, param);
-		break;
+		return;
 	}
+	NDS_RescheduleGXFIFO();
 }
 
 void gfx3d_execute3D()
@@ -1539,7 +1539,7 @@ void gfx3d_execute3D()
 
 	if (isSwapBuffers) return;
 
-	if (GFX_FIFOrecv(&cmd, &param))
+	if (GFX_PIPErecv(&cmd, &param))
 	{
 		gfx3d_execute(cmd, param);
 #if 0
@@ -1631,6 +1631,7 @@ static void gfx3d_doFlush()
 	gfx3d.frameCtr++;
 
 #ifndef USE_GEOMETRY_FIFO_EMULATION
+	GFX_PIPEclear();
 	GFX_FIFOclear();
 	// reset
 	clInd = 0;
@@ -1718,12 +1719,14 @@ void gfx3d_VBlankSignal()
 		gfx3d_doFlush();
 		isSwapBuffers = false;
 		GFX_DELAY(392);
+		NDS_RescheduleGXFIFO();
 	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
 	//so, if we have a redraw pending, now is a safe time to do it
 	if(!flushPending)
 	{
+		GFX_PIPEclear();
 		GFX_FIFOclear();
 		return;
 	}
@@ -1748,11 +1751,10 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	{
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedScreen));
 		memset(gfx3d_convertedScreen,0,sizeof(gfx3d_convertedAlpha));
+		return;
 	}
-	else
-	{
-		gpu3D->NDS_3D_Render();
-	}
+
+	gpu3D->NDS_3D_Render();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -2432,8 +2434,11 @@ SFORMAT SF_GFX3D[]={
 	{ "GLPT", 4, 1, &PTind},
 	{ "GLPC", 4, 4, PTcoords},
 	{ "GLF9", 4, 1, &gxFIFO.tail},
-	{ "GLF9", 1, 261, &gxFIFO.cmd[0]},
-	{ "GLF9", 4, 261, &gxFIFO.param[0]},
+	{ "GLF9", 1, 257, &gxFIFO.cmd[0]},
+	{ "GLF9", 4, 257, &gxFIFO.param[0]},
+	{ "GLP9", 4, 1, &gxPIPE.tail},
+	{ "GLP9", 1, 5, &gxPIPE.cmd[0]},
+	{ "GLP9", 4, 5, &gxPIPE.param[0]},
 	{ "GCOL", 1, 4, colorRGB},
 	{ "GLCO", 4, 4, lightColor},
 	{ "GLDI", 4, 4, lightDirection},
