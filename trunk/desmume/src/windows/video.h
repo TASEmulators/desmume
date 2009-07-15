@@ -1,3 +1,5 @@
+#include "filter/filter.h"
+
 class VideoInfo
 {
 public:
@@ -7,6 +9,81 @@ public:
 
 	int rotation;
 	int screengap;
+
+	int currentfilter;
+
+	CACHE_ALIGN u8 filteredbuffer[4*256*192*4];
+
+	enum {
+		NONE,
+		HQ2X,
+		_2XSAI,
+		SUPER2XSAI,
+		SUPEREAGLE,
+		SCANLINE
+	};
+
+
+	void reset() {
+		width = 256;
+		height = 384;
+
+	}
+
+	void setfilter(int filter) {
+
+		currentfilter = filter;
+
+		switch(filter) {
+
+			case NONE:
+				width = 256;
+				height = 384;
+				break;
+			default:
+				width = 512;
+				height = 768;
+				break;
+		}
+	}
+
+	SSurface src;
+	SSurface dst;
+
+	void filter() {
+
+		src.Height = 384;
+		src.Width = 256;
+		src.Pitch = 512;
+		src.Surface = (u8*)GPU_screen;
+
+		dst.Height = 768;
+		dst.Width = 512;
+		dst.Pitch = 1024;
+		dst.Surface = (u8*)filteredbuffer;
+
+		switch(currentfilter)
+		{
+			case NONE:
+				memcpy(filteredbuffer, GPU_screen, 256*192*4);
+				break;
+			case HQ2X:
+				RenderHQ2X(src, dst);
+				break;
+			case _2XSAI:
+				Render2xSaI (src, dst);
+				break;
+			case SUPER2XSAI:
+				RenderSuper2xSaI (src, dst);
+				break;
+			case SUPEREAGLE:
+				RenderSuperEagle (src, dst);
+				break;
+			case SCANLINE:
+				RenderScanline(src, dst);
+				break;
+		}
+	}
 
 	int size() {
 		return width*height;

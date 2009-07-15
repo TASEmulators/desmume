@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="shift_jis"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
@@ -694,6 +694,10 @@
 				Name="windows"
 				>
 				<File
+					RelativePath=".\filter\2xsai.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\7zip.cpp"
 					>
 				</File>
@@ -734,6 +738,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\filter\filter.h"
+					>
+				</File>
+				<File
 					RelativePath=".\FirmConfig.cpp"
 					>
 				</File>
@@ -747,6 +755,10 @@
 				</File>
 				<File
 					RelativePath=".\hotkey.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\hq2x.cpp"
 					>
 				</File>
 				<File
@@ -819,6 +831,10 @@
 				</File>
 				<File
 					RelativePath=".\replay.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\scanline.cpp"
 					>
 				</File>
 				<File

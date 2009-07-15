@@ -401,7 +401,7 @@ void translateXY(s32& x, s32& y)
 		break;
 	case 270:
 		x = 255-ty;
-		y = (tx-192-video.screengap);
+		y = (tx-192-(video.screengap/video.ratio()));
 		break;
 	}
 }
@@ -655,10 +655,10 @@ template<typename T, int bpp> static void doRotate(void* dst)
 			{
 				if(video.rotation==180)
 					for(int i = 0, j=video.size()-1; j>=0; i++,j--)
-						((T*)buffer)[i] = convert<T,bpp>(((u16*)GPU_screen)[j]);
+						((T*)buffer)[i] = convert<T,bpp>(((u16*)video.filteredbuffer)[j]);
 				else
 					for(int i = 0; i < video.size(); i++)
-						((T*)buffer)[i] = convert<T,bpp>(((u16*)GPU_screen)[i]);
+						((T*)buffer)[i] = convert<T,bpp>(((u16*)video.filteredbuffer)[i]);
 			}
 			else
 			{
@@ -666,7 +666,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 					for(int y = 0; y < video.height; y++)
 					{
 						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[video.height*video.width - (y * video.width) - x - 1]);
+							((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[video.height*video.width - (y * video.width) - x - 1]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -674,7 +674,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 					for(int y = 0; y < video.height; y++)
 					{
 						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[(y * video.width) + x]);
+							((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[(y * video.width) + x]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -688,7 +688,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 				for(int y = 0; y < video.width; y++)
 				{
 					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[(((video.height-1)-x) * video.width) + y]);
+						((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[(((video.height-1)-x) * video.width) + y]);
 
 					buffer += ddsd.lPitch;
 				}
@@ -696,7 +696,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 				for(int y = 0; y < video.width; y++)
 				{
 					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = convert<T,bpp>(((u16*)GPU_screen)[((x) * video.width) + (video.width-1) - y]);
+						((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[((x) * video.width) + (video.width-1) - y]);
 
 					buffer += ddsd.lPitch;
 				}
@@ -879,6 +879,7 @@ DWORD WINAPI run()
 
 			osd->update();
 			DrawHUD();
+			video.filter();
 			Display();
 			osd->clear();
 
@@ -2363,6 +2364,13 @@ void RunConfig(CONFIGSCREEN which)
 		NDS_UnPause();
 }
 
+void FilterUpdate (HWND hwnd){
+	UpdateScreenRects();
+	UpdateWndRects(hwnd);
+	SetScreenGap(video.screengap);
+	SetRotate(hwnd, video.rotation);
+}
+
 //========================================================================================
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 { 
@@ -2468,6 +2476,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			MainWindow->checkMenu(IDM_MGPU, MF_BYCOMMAND | CommonSettings.showGpu.main ? MF_CHECKED:MF_UNCHECKED);
 			MainWindow->checkMenu(IDM_SGPU, MF_BYCOMMAND | CommonSettings.showGpu.sub ? MF_CHECKED:MF_UNCHECKED);
+
+			//Filters
+
+			MainWindow->checkMenu(IDM_RENDER_NORMAL, MF_BYCOMMAND | video.currentfilter == video.NONE ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_RENDER_HQ2X, MF_BYCOMMAND | video.currentfilter == video.HQ2X ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_RENDER_2XSAI, MF_BYCOMMAND | video.currentfilter == video._2XSAI ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, MF_BYCOMMAND | video.currentfilter == video.SUPER2XSAI ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, MF_BYCOMMAND | video.currentfilter == video.SUPEREAGLE ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_RENDER_SCANLINE, MF_BYCOMMAND | video.currentfilter == video.SCANLINE ? MF_CHECKED:MF_UNCHECKED);
 
 			//Language selection
 
@@ -2695,7 +2712,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				if (video.rotation != 0)
 					translateXY(x,y);
 				else 
-					y-=(192+video.screengap);
+					y-=192+(video.screengap/video.ratio());
 
 				if(x<0) x = 0; else if(x>255) x = 255;
 				if(y<0) y = 0; else if(y>192) y = 192;
@@ -2795,6 +2812,30 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 				WAV_End();
 			else
 				WavRecordTo();
+			break;
+		case IDM_RENDER_NORMAL:
+			video.setfilter(video.NONE);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_HQ2X:
+			video.setfilter(video.HQ2X);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_2XSAI:
+			video.setfilter(video._2XSAI);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_SUPER2XSAI:
+			video.setfilter(video.SUPER2XSAI);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_SUPEREAGLE:
+			video.setfilter(video.SUPEREAGLE);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_SCANLINE:
+			video.setfilter(video.SCANLINE);
+			FilterUpdate(hwnd);
 			break;
 		case IDM_STATE_LOAD:
 			{
