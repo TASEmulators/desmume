@@ -2205,10 +2205,6 @@ void S9xWinScanJoypads ()
 			// auto-hold AND regular key/joystick presses
 			if(S9xGetState(Joypad[J+8].Left))
 			{
-				if(!S9xGetState(Joypad[J].Start))
-				{
-					int zzz=9;
-				}
 				PadState ^= (!S9xGetState(Joypad[J].R)||!S9xGetState(Joypad[J+8].R))      ?  R_MASK : 0;
 				PadState ^= (!S9xGetState(Joypad[J].L)||!S9xGetState(Joypad[J+8].L))      ?  L_MASK : 0;
 				PadState ^= (!S9xGetState(Joypad[J].X)||!S9xGetState(Joypad[J+8].X))      ?  X_MASK : 0;

@@ -264,8 +264,6 @@ void AggDraw_Desmume::setTarget(AggTarget newTarget)
 //		target.transformImage(luaImage, 0,40,256-1,384-1);
 //	}
 //
-//	int zzz=9;
-//
 //	//if hud is nonempty, blend it
 //	if(!agg_targetHud.empty)
 //	{
