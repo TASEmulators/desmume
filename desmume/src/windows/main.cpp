@@ -1303,9 +1303,6 @@ int _main()
 	Desmume_InitOnce();
 	InitDecoder();
 
-	video.height = 384;
-	video.width = 256;
-
 #ifdef WX_STUB
 	wxInitialize();
 #endif
@@ -1373,6 +1370,8 @@ int _main()
 	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
+	video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
+	video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
 	
 	CommonSettings.hud.FpsDisplay = GetPrivateProfileBool("Display","Display Fps", 0, IniName);
 	CommonSettings.hud.FrameCounterDisplay = GetPrivateProfileBool("Display","FrameCounter", 0, IniName);
@@ -1621,6 +1620,10 @@ int _main()
 	CommonSettings.BootFromFirmware = GetPrivateProfileInt("Firmware", "BootFromFirmware", FALSE, IniName);
 
 	CommonSettings.wifiBridgeAdapterNum = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
+
+	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
+	void FilterUpdate(HWND hwnd);
+	FilterUpdate(MainWindow->getHWnd());
 
 	/* Read the firmware settings from the init file */
 	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
@@ -2369,6 +2372,9 @@ void FilterUpdate (HWND hwnd){
 	UpdateWndRects(hwnd);
 	SetScreenGap(video.screengap);
 	SetRotate(hwnd, video.rotation);
+	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
+	WritePrivateProfileInt("Video", "Width", video.width, IniName);
+	WritePrivateProfileInt("Video", "Height", video.height, IniName);
 }
 
 //========================================================================================
