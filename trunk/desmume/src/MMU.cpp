@@ -1310,6 +1310,11 @@ static INLINE u16 read_timer(int proc, int timerIndex)
 	if(MMU.timerMODE[proc][timerIndex] == 0xFFFF)
 		return MMU.timer[proc][timerIndex];
 
+	//sometimes a timer will be read when it is not enabled.
+	//we should have the value cached
+	if(!MMU.timerON[proc][timerIndex])
+		return MMU.timer[proc][timerIndex];
+
 	//for unchained timers, we do not keep the timer up to date. its value will need to be calculated here
 	s32 diff = (s32)(nds.timerCycle[proc][timerIndex] - nds_timer);
 	assert(diff>=0);
@@ -1331,6 +1336,12 @@ static INLINE void write_timer(int proc, int timerIndex, u16 val)
 
 	if(val&0x80)
 		MMU.timer[proc][timerIndex] = MMU.timerReload[proc][timerIndex];
+	else
+	{
+		if(MMU.timerON[proc][timerIndex])
+			//read the timer value one last time
+			MMU.timer[proc][timerIndex] = read_timer(proc,timerIndex);
+	}
 
 	MMU.timerON[proc][timerIndex] = val & 0x80;
 
