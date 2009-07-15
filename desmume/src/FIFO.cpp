@@ -28,6 +28,7 @@
 #include "debug.h"
 #include "mem.h"
 #include "MMU.h"
+#include "NDSSystem.h"
 
 // ========================================================= IPC FIFO
 IPC_FIFO ipc_fifo[2];		// 0 - ARM9
@@ -174,6 +175,8 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 #endif
 
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
+	NDS_RescheduleGXFIFO();
 }
 
 BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
@@ -183,6 +186,7 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 	if (gxstat & 0xC0000000)
 	{
 		setIF(0, (1<<21));
+		//NDS_makeARM9Int(21);
 	}
 #endif
 	if (gxFIFO.tail == 0)						// empty
@@ -193,18 +197,23 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 		if ((gxstat & 0x80000000))	// empty
 		{
 			setIF(0, (1<<21));
+			//NDS_makeARM9Int(21);
 		}
 		return FALSE;
 	}
 
 	if (gxstat & 0x40000000)	// IRQ: less half
 	{
-		if (gxstat & 0x02000000) setIF(0, (1<<21));
+		if (gxstat & 0x02000000) 
+			setIF(0, (1<<21));
+			//NDS_makeARM9Int(21);
 	}
 
 	if ((gxstat & 0x80000000))	// IRQ: empty
 	{
-		if (gxstat & 0x04000000) setIF(0, (1<<21));
+		if (gxstat & 0x04000000) 
+			setIF(0, (1<<21));
+			//NDS_makeARM9Int(21);
 	}
 
 	gxstat &= 0xF000FFFF;
@@ -228,6 +237,8 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
+	NDS_RescheduleGXFIFO();
+
 	return TRUE;
 }
 
@@ -241,10 +252,13 @@ void GFX_FIFOcnt(u32 val)
 		return;
 	}
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
+	NDS_RescheduleGXFIFO();
 	
 	/*if (gxstat & 0xC0000000)
 	{
 		setIF(0, (1<<21));
+		//NDS_makeARM9Int(21);
 	}*/
 }
 

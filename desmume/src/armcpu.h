@@ -234,6 +234,8 @@ static INLINE void setIF(int PROCNUM, u32 flag)
 
 	if(ARMPROC.waitIRQ)
 		ARMPROC.newIrqFlags |= flag;
+	extern void NDS_Reschedule();
+	NDS_Reschedule();
 }
 
 static INLINE void NDS_makeARM9Int(u32 num)

@@ -1,21 +1,31 @@
 0.9.4 -> ??? (r2437-r???)
 
+??? introduces an entirely rewritten main emulation loop. 
+This totally changes the timing, and totally breaks old savestates.
+
 Highlights:
   * win32: lua engine, path configuration, 7z dearchiving support
+  * rewritten main emulation loop
   
 General/Core:
  bug: fix cflash directory support for non-windows
  bug: fix freeze in cart irq
  bug: correctly emulate dma to/from tcm
+ enh: add guitar grip emulation
+ enh: add more powerful antigrain-based drawing library and rewrite OSD system
  enh: ideas-style debugging prints
 
 Graphics:
  bug: fixing of obj blending and bmp obj rendering
+ bug: fix backdrop blending with garbage
+ bug: fix 256B granularity sprite addressing for sub gpu
  bug: swrast: add clear image emulation
  bug: swrast: add edge marking
- 
+  
 Windows:
- bug: improve map view tool
+ bug: improve map view tool to support more modes
+ enh: added 2x resizing filters (hq2x, 2xsai, supereagle, scanlines)
+ enh: soundview can now mute channels
 
 Linux:
  enh: alsa microphone support

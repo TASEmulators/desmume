@@ -594,6 +594,22 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="filter"
+				>
+				<File
+					RelativePath=".\filter\2xsai.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\hq2x.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\filter\scanline.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="utils"
@@ -750,10 +766,6 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\filter\2xsai.cpp"
-			>
-		</File>
 		<File
 			RelativePath="..\addons.cpp"
 			>
@@ -959,10 +971,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\filter\hq2x.cpp"
-			>
-		</File>
-		<File
 			RelativePath="..\lua-engine.cpp"
 			>
 		</File>
@@ -1088,10 +1096,6 @@
 		</File>
 		<File
 			RelativePath="..\saves.h"
-			>
-		</File>
-		<File
-			RelativePath=".\filter\scanline.cpp"
 			>
 		</File>
 		<File

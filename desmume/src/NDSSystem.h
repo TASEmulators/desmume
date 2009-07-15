@@ -173,19 +173,19 @@ struct NDS_header
 extern void debug();
 void emu_halt();
 
+extern u64 nds_timer;
+void NDS_Reschedule();
+void NDS_RescheduleGXFIFO();
+void NDS_RescheduleDMA();
+void NDS_RescheduleTimers();
+
 typedef struct
 {
-	s32 ARM9Cycle;
-	s32 ARM7Cycle;
 	s32 wifiCycle;
 	s32 cycles;
-	s32 timerCycle[2][4];
-	BOOL timerOver[2][4];
-	s32 nextHBlank;
+	u64 timerCycle[2][4];
 	u32 VCount;
 	u32 old;
-	s32 diff;
-	BOOL lignerendu;
 
 	u16 touchX;
 	u16 touchY;

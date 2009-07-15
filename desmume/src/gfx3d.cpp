@@ -61,8 +61,10 @@ in this function: */
 static void gfx3d_doFlush();
 
 #ifdef USE_GEOMETRY_FIFO_EMULATION
-#define GFX_DELAY(x) MMU.gfx3dCycles = nds.cycles + (2*x)
-#define GFX_DELAY_M2(x) MMU.gfx3dCycles += (2*x)
+inline void GFX_DELAY(int x) { 
+	MMU.gfx3dCycles = nds_timer + (2*x); NDS_RescheduleGXFIFO(); }
+inline void GFX_DELAY_M2(int x) { 
+	MMU.gfx3dCycles += (2*x); NDS_RescheduleGXFIFO(); }
 #else
 #define GFX_DELAY(x)
 #define GFX_DELAY_M2(x)
