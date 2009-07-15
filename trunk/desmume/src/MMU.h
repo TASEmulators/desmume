@@ -97,7 +97,7 @@ struct MMU_struct {
 	u32 reg_IF[2];
 
 	u32 DMAStartTime[2][4];
-	s32 DMACycle[2][4];
+	u64 DMACycle[2][4];
 	u32 DMACrt[2][4];
 	BOOL DMAing[2][4];
 
@@ -105,21 +105,19 @@ struct MMU_struct {
 	s64 divResult;
 	s64 divMod;
 	u32 divCnt;
-	s32 divCycles;
+	u64 divCycles;
 
 	BOOL sqrtRunning;
 	u32 sqrtResult;
 	u32 sqrtCnt;
-	s32 sqrtCycles;
+	u64 sqrtCycles;
 
 	u16 SPI_CNT;
 	u16 SPI_CMD;
 	u16 AUX_SPI_CNT;
 	u16 AUX_SPI_CMD;
 
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	s32 gfx3dCycles;
-#endif
+	u64 gfx3dCycles;
 
 	u8 powerMan_CntReg;
 	BOOL powerMan_CntRegWritten;
@@ -264,6 +262,20 @@ inline void SetupMMU(bool debugConsole) {
   //if ( (adr & 0x0f800000) == 0x03800000) {
     //T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr >> 20) & 0xFF],
       //         adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr >> 20) & 0xFF]); 
+
+enum EDMAMode
+{
+	EDMAMode_Immediate = 0,
+	EDMAMode_VBlank = 1,
+	EDMAMode_HBlank = 2,
+	EDMAMode_HStart = 3,
+	EDMAMode_MemDisplay = 4,
+	EDMAMode_Card = 5,
+	EDMAMode_GBASlot = 6,
+	EDMAMode_GXFifo = 7,
+	EDMAMode7_Wifi = 8,
+	EDMAMode7_GBASlot = 9,
+};
 
 FORCEINLINE u8 _MMU_read08(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr)
 {
@@ -427,6 +439,10 @@ FORCEINLINE void _MMU_write16(const int PROCNUM, const MMU_ACCESS_TYPE AT, const
 
 FORCEINLINE void _MMU_write32(const int PROCNUM, const MMU_ACCESS_TYPE AT, const u32 addr, u32 val)
 {
+	if(addr == 0x022D7900)
+	{
+		int zzz=9;
+	}
 	//special handling for DMA: discard writes to TCM
 	if(PROCNUM==ARMCPU_ARM9 && AT == MMU_AT_DMA)
 	{

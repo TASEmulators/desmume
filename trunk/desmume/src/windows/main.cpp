@@ -924,8 +924,8 @@ DWORD WINAPI run()
 				for(int i=0;i<16;i++)
 					load = load/8 + nds.runCycleCollector[(i+nds.idleFrameCounter)&15]*7/8;
 				load = std::min(100,std::max(0,(int)(load*100/1120380)));
-				sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
-				SetWindowText(hwnd, txt);
+				//sprintf(txt,"(%02d%%) %s", load, DESMUME_NAME_AND_VERSION);
+				SetWindowText(hwnd, DESMUME_NAME_AND_VERSION);
 			}
 
 			if(!skipnextframe)

@@ -318,7 +318,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 				
 			case FIQ :
 				{
-                                        u32 tmp;
+					u32 tmp;
 					SWAP(armcpu->R[8], armcpu->R8_fiq, tmp);
 					SWAP(armcpu->R[9], armcpu->R9_fiq, tmp);
 					SWAP(armcpu->R[10], armcpu->R10_fiq, tmp);

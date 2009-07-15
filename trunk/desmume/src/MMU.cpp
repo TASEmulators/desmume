@@ -410,22 +410,7 @@ u8 *MMU_RenderMapToLCD(u32 vram_addr)
 }
 
 
-template<u8 DMA_CHANNEL>
-void DMAtoVRAMmapping()
-{
-	//THIS IS ALSO DANGEROUS!!!!!!
-	//but i dont think it needs to be done
-
-	/*u32 dst = DMADst[ARMCPU_ARM9][DMA_CHANNEL];
-
-	bool unmapped;
-	dst = MMU_LCDmap(dst,unmapped);
-
-	DMADst[ARMCPU_ARM9][DMA_CHANNEL] = dst;*/
-}
-
 #define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
-
 
 struct VramConfiguration {
 
@@ -983,7 +968,7 @@ void MMU_clearMem()
 	memset(MMU.reg_IF,        0, sizeof(u32) * 2);
 	
 	memset(MMU.DMAStartTime,  0, sizeof(u32) * 2 * 4);
-	memset(MMU.DMACycle,      0, sizeof(s32) * 2 * 4);
+	memset(MMU.DMACycle,      0, sizeof(MMU.DMACycle));
 	memset(MMU.DMACrt,        0, sizeof(u32) * 2 * 4);
 	memset(MMU.DMAing,        0, sizeof(BOOL) * 2 * 4);
 	
@@ -1011,9 +996,7 @@ void MMU_clearMem()
 	partie = 1;
 	addonsReset();
 	Mic_Reset();
-#ifdef USE_GEOMETRY_FIFO_EMULATION
 	MMU.gfx3dCycles = 0;
-#endif
 }
 
 void MMU_setRom(u8 * rom, u32 mask)
@@ -1062,10 +1045,11 @@ static void execsqrt() {
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, 0);
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, cnt | 0x8000);
 
-	MMU.sqrtCycles = (nds.cycles + 26);
+	MMU.sqrtCycles = nds_timer + 26;
 	MMU.sqrtResult = ret;
 	MMU.sqrtCnt = (cnt & 0x7FFF);
 	MMU.sqrtRunning = TRUE;
+	NDS_Reschedule();
 }
 
 static void execdiv() {
@@ -1078,19 +1062,19 @@ static void execdiv() {
 	case 0:
 		num = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
-		MMU.divCycles = (nds.cycles + 36);
+		MMU.divCycles = nds_timer + 36;
 		break;
 	case 1:
 	case 3: //gbatek says this is same as mode 1
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) (s32) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
-		MMU.divCycles = (nds.cycles + 68);
+		MMU.divCycles = nds_timer + 68;
 		break;
 	case 2:
 	default:
 		num = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
 		den = (s64) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
-		MMU.divCycles = (nds.cycles + 68);
+		MMU.divCycles = nds_timer + 68;
 		break;
 	}
 
@@ -1122,6 +1106,7 @@ static void execdiv() {
 	MMU.divMod = mod;
 	MMU.divCnt = (cnt & 0x7FFF);
 	MMU.divRunning = TRUE;
+	NDS_Reschedule();
 }
 
 template<int PROCNUM> 
@@ -1150,19 +1135,21 @@ void FASTCALL MMU_doDMA(u32 num)
 	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
 	if(taille == 0) taille = 0x200000; //according to gbatek..
 	
+	//THIS IS A BIG HACK
 	// If we are in "Main memory display" mode just copy an entire 
 	// screen (256x192 pixels). 
 	//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
 	//       (under DISP_MMEM_FIFO)
-	if ((MMU.DMAStartTime[PROCNUM][num]==4) &&		// Must be in main memory display mode
+	if ((MMU.DMAStartTime[PROCNUM][num]==EDMAMode_MemDisplay) &&		// Must be in main memory display mode
 		(taille==4) &&							// Word must be 4
 		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
 		taille = 24576; //256*192/2;
 	
-	if(MMU.DMAStartTime[PROCNUM][num] == 5)
+	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_Card)
 		taille *= 0x80;
 	
-	MMU.DMACycle[PROCNUM][num] = taille + nds.cycles;
+	MMU.DMACycle[PROCNUM][num] = taille + nds_timer;  //TODO - surely this is a gross simplification
+
 	MMU.DMAing[PROCNUM][num] = TRUE;
 	MMU.CheckDMAs |= (1<<(num+(PROCNUM<<2)));
 	
@@ -1172,6 +1159,8 @@ void FASTCALL MMU_doDMA(u32 num)
 	
 	if(!(MMU.DMACrt[PROCNUM][num]&(1<<25)))
 		MMU.DMAStartTime[PROCNUM][num] = 0;
+
+	NDS_RescheduleDMA();
 	
 	// transfer
 	{
@@ -1313,6 +1302,97 @@ static INLINE void MMU_IPCSync(u8 proc, u32 val)
 
 	if ((sync_l & 0x2000) && (sync_r & 0x4000))
 		setIF(proc^1, ( 1 << 16 ));
+}
+
+static INLINE u16 read_timer(int proc, int timerIndex)
+{
+	//chained timers are always up to date
+	if(MMU.timerMODE[proc][timerIndex] == 0xFFFF)
+		return MMU.timer[proc][timerIndex];
+
+	//for unchained timers, we do not keep the timer up to date. its value will need to be calculated here
+	s32 diff = (s32)(nds.timerCycle[proc][timerIndex] - nds_timer);
+	assert(diff>=0);
+	if(diff<0) 
+		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ DIFF < 0 (%d) (%d) (%d)\n",diff,timerIndex,MMU.timerMODE[proc][timerIndex]);
+	
+	s32 units = diff / (1<<MMU.timerMODE[proc][timerIndex]);
+
+	s32 ret = 65535 - units;
+	assert(ret>=0);
+	if(ret<0) printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ RETURN < 0\n");
+	return ret;
+}
+
+static INLINE void write_timer(int proc, int timerIndex, u16 val)
+{
+	int mask		= ((val&0x80)>>7) << timerIndex;
+	//MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
+
+	if(val&0x80)
+		MMU.timer[proc][timerIndex] = MMU.timerReload[proc][timerIndex];
+
+	MMU.timerON[proc][timerIndex] = val & 0x80;
+
+	switch(val&7)
+	{
+		case 0 :
+			MMU.timerMODE[proc][timerIndex] = 0+1;
+			break;
+		case 1 :
+			MMU.timerMODE[proc][timerIndex] = 6+1;
+			break;
+		case 2 :
+			MMU.timerMODE[proc][timerIndex] = 8+1;
+			break;
+		case 3 :
+			MMU.timerMODE[proc][timerIndex] = 10+1;
+			break;
+		default :
+			MMU.timerMODE[proc][timerIndex] = 0xFFFF;
+			break;
+	}
+
+	int remain = 65536 - MMU.timerReload[proc][timerIndex];
+	nds.timerCycle[proc][timerIndex] = nds_timer + (remain<<MMU.timerMODE[proc][timerIndex]);
+
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x102+timerIndex*4, val);
+	NDS_RescheduleTimers();
+}
+
+template<int proc> static INLINE void write_dma_hictrl(const int dmanum, const u16 val)
+{
+	u32 baseAddr = 0xB0 + dmanum*12;
+
+	//write this control value
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], baseAddr+10, val);
+
+	//read back the src and dst addr
+	DMASrc[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr);
+	DMADst[proc][dmanum] = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+4);
+
+	//analyze the control value
+	u32 v = T1ReadLong(MMU.MMU_MEM[proc][0x40], baseAddr+8);
+	if(proc==ARMCPU_ARM9) MMU.DMAStartTime[proc][dmanum] = (v>>27) & 0x7;
+	else {
+		static const EDMAMode lookup[] = {EDMAMode_Immediate,EDMAMode_VBlank,EDMAMode_Card,EDMAMode7_Wifi};
+		MMU.DMAStartTime[proc][dmanum] = lookup[(v>>28) & 0x3];
+		if(MMU.DMAStartTime[proc][dmanum] == EDMAMode7_Wifi && (dmanum==1 || dmanum==3))
+			MMU.DMAStartTime[proc][dmanum] = EDMAMode7_GBASlot;
+	}
+	MMU.DMACrt[proc][dmanum] = v;
+	if(MMU.DMAStartTime[proc][dmanum] == EDMAMode_Immediate
+		//TODO HACK: I think this is a gxfifo hack:
+		|| MMU.DMAStartTime[proc][dmanum] == EDMAMode_GXFifo)
+	{
+		MMU_doDMA<proc>(dmanum);
+	}
+
+	//printf("dma ctrl %d %d\n",proc,dmanum);
+
+	//LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM9, 0, DMASrc[ARMCPU_ARM9][0], DMADst[ARMCPU_ARM9][0], (val&(1<<25))?"ON":"OFF");
+
+	NDS_RescheduleDMA();
 }
 
 static INLINE void write_auxspicnt(const int proc, const int size, const int adr, const int val)
@@ -1869,6 +1949,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 
 			case REG_IME:
 				{
+					NDS_Reschedule();
 					u32 old_val = MMU.reg_IME[ARMCPU_ARM9];
 					u32 new_val = val & 0x01;
 					MMU.reg_IME[ARMCPU_ARM9] = new_val;
@@ -1887,6 +1968,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
 				}
 			case REG_IE :
+				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF0000) | val;
 #ifndef NEW_IRQ
 				if ( MMU.reg_IME[ARMCPU_ARM9])
@@ -1901,6 +1983,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 #endif
 				return;
 			case REG_IE + 2 :
+				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF) | (((u32)val)<<16);
 #ifndef NEW_IRQ
 				if ( MMU.reg_IME[ARMCPU_ARM9])
@@ -1916,9 +1999,11 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				return;
 				
 			case REG_IF :
+				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~((u32)val)); 
 				return;
 			case REG_IF + 2 :
+				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~(((u32)val)<<16));
 				return;
 
@@ -1941,37 +2026,7 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 			case REG_TM3CNTH :
 			{
 				int timerIndex	= ((adr-2)>>2)&0x3;
-				int mask		= ((val&0x80)>>7) << timerIndex;
-				MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
-
-				if(val&0x80)
-					MMU.timer[ARMCPU_ARM9][timerIndex] = MMU.timerReload[ARMCPU_ARM9][((adr-2)>>2)&0x3];
-
-				MMU.timerON[ARMCPU_ARM9][((adr-2)>>2)&0x3] = val & 0x80;			
-
-				switch(val&7)
-				{
-					case 0 :
-						MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 0+1;//ARMCPU_ARM9;
-						break;
-					case 1 :
-						MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 6+1;//ARMCPU_ARM9; 
-						break;
-					case 2 :
-						MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 8+1;//ARMCPU_ARM9;
-						break;
-					case 3 :
-						MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 10+1;//ARMCPU_ARM9;
-						break;
-					default :
-						MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 0xFFFF;
-						break;
-				}
-
-				if(!(val & 0x80))
-					MMU.timerRUN[ARMCPU_ARM9][timerIndex] = FALSE;
-
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & 0xFFF, val);
+				write_timer(ARMCPU_ARM9, timerIndex, val);
 				return;
 			}
 
@@ -2021,95 +2076,17 @@ void FASTCALL _MMU_ARM9_write16(u32 adr, u16 val)
 				}
 
 			case REG_DMA0CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma0 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBA, val);
-					DMASrc[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB0);
-					DMADst[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB4);
-					DMAtoVRAMmapping<0>();
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8);
-					MMU.DMAStartTime[ARMCPU_ARM9][0] = (v>>27) & 0x7;
-					MMU.DMACrt[ARMCPU_ARM9][0] = v;
-					if(MMU.DMAStartTime[ARMCPU_ARM9][0] == 0)
-						MMU_doDMA<ARMCPU_ARM9>(0);
-					#ifdef LOG_DMA2
-					//else
-					{
-						LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM9, 0, DMASrc[ARMCPU_ARM9][0], DMADst[ARMCPU_ARM9][0], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM9>(0,val);
 				return;
 			case REG_DMA1CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma1 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC6, val);
-					DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBC);
-					DMADst[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC0);
-					DMAtoVRAMmapping<1>();
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4);
-					MMU.DMAStartTime[ARMCPU_ARM9][1] = (v>>27) & 0x7;
-					MMU.DMACrt[ARMCPU_ARM9][1] = v;
-					if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 0)
-						MMU_doDMA<ARMCPU_ARM9>(1);
-					#ifdef LOG_DMA2
-					//else
-					{
-						LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM9, 1, DMASrc[ARMCPU_ARM9][1], DMADst[ARMCPU_ARM9][1], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM9>(1,val);
 				return;
 			case REG_DMA2CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma2 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD2, val);
-					DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC8);
-					DMADst[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xCC);
-					DMAtoVRAMmapping<2>();
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0);
-					MMU.DMAStartTime[ARMCPU_ARM9][2] = (v>>27) & 0x7;
-					MMU.DMACrt[ARMCPU_ARM9][2] = v;
-					if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 0)
-						MMU_doDMA<ARMCPU_ARM9>(2);
-					#ifdef LOG_DMA2
-					//else
-					{
-						LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM9, 2, DMASrc[ARMCPU_ARM9][2], DMADst[ARMCPU_ARM9][2], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM9>(2,val);
 				return;
 			case REG_DMA3CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma3 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDE, val);
-					DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD4);
-					DMADst[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD8);
-					DMAtoVRAMmapping<3>();
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC);
-					MMU.DMAStartTime[ARMCPU_ARM9][3] = (v>>27) & 0x7;
-					MMU.DMACrt[ARMCPU_ARM9][3] = v;
-			
-					if(MMU.DMAStartTime[ARMCPU_ARM9][3] == 0)
-						MMU_doDMA<ARMCPU_ARM9>(3);
-					#ifdef LOG_DMA2
-					//else
-					{
-						LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM9, 3, DMASrc[ARMCPU_ARM9][3], DMADst[ARMCPU_ARM9][3], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM9>(3,val);
 				return;
-                        //case REG_AUXSPICNT : emu_halt();
 			case REG_DISPA_DISPMMEMFIFO:
 			{
 				DISP_FIFOsend(val);
@@ -2382,6 +2359,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 
 			case REG_IME : 
 				{
+					NDS_Reschedule();
 			        u32 old_val = MMU.reg_IME[ARMCPU_ARM9];
 					u32 new_val = val & 0x01;
 					MMU.reg_IME[ARMCPU_ARM9] = new_val;
@@ -2401,6 +2379,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 				
 			case REG_IE :
+				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = val;
 #ifndef NEW_IRQ
 				if ( MMU.reg_IME[ARMCPU_ARM9]) 
@@ -2416,6 +2395,7 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 			
 			case REG_IF :
+				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM9] &= (~val); 
 				return;
 
@@ -2425,36 +2405,9 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
             case REG_TM3CNTL:
 			{
 				int timerIndex = (adr>>2)&0x3;
-				int mask = ((val & 0x800000)>>(16+7)) << timerIndex;
-				MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
-
 				MMU.timerReload[ARMCPU_ARM9][timerIndex] = (u16)val;
-				if(val&0x800000)
-					MMU.timer[ARMCPU_ARM9][timerIndex] = MMU.timerReload[ARMCPU_ARM9][(adr>>2)&0x3];
-
-				MMU.timerON[ARMCPU_ARM9][timerIndex] = val & 0x800000;
-				switch((val>>16)&7)
-				{
-					case 0 :
-					MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 0+1;//ARMCPU_ARM9;
-					break;
-					case 1 :
-					MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 6+1;//ARMCPU_ARM9;
-					break;
-					case 2 :
-					MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 8+1;//ARMCPU_ARM9;
-					break;
-					case 3 :
-					MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 10+1;//ARMCPU_ARM9;
-					break;
-					default :
-					MMU.timerMODE[ARMCPU_ARM9][timerIndex] = 0xFFFF;
-					break;
-				}
-				if(!(val & 0x800000))
-					MMU.timerRUN[ARMCPU_ARM9][timerIndex] = FALSE;
-
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & 0xFFF, val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & 0xFFF, val);
+				write_timer(ARMCPU_ARM9, timerIndex, val>>16);
 				return;
 			}
 
@@ -2492,77 +2445,20 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
 				return;
 
 			case REG_DMA0CNTL :
-				//LOG("32 bit dma0 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB0);
-				DMADst[ARMCPU_ARM9][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB4);
-				DMAtoVRAMmapping<0>();
-				MMU.DMAStartTime[ARMCPU_ARM9][0] = (val>>27) & 0x7;
-				MMU.DMACrt[ARMCPU_ARM9][0] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8, val);
-				if( MMU.DMAStartTime[ARMCPU_ARM9][0] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM9][0] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM9>(0);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM9, 0, DMASrc[ARMCPU_ARM9][0], DMADst[ARMCPU_ARM9][0], 0, ((MMU.DMACrt[ARMCPU_ARM9][0]>>27)&7));
-				}
-				#endif
-				//emu_halt();
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xB8, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM9>(0,val>>16);
 				return;
 			case REG_DMA1CNTL:
-				//LOG("32 bit dma1 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xBC);
-				DMADst[ARMCPU_ARM9][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC0);
-				DMAtoVRAMmapping<1>();
-				MMU.DMAStartTime[ARMCPU_ARM9][1] = (val>>27) & 0x7;
-				MMU.DMACrt[ARMCPU_ARM9][1] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4, val);
-				if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM9][1] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM9>(1);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM9, 1, DMASrc[ARMCPU_ARM9][1], DMADst[ARMCPU_ARM9][1], 0, ((MMU.DMACrt[ARMCPU_ARM9][1]>>27)&7));
-				}
-				#endif
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC4, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM9>(1,val>>16);
 				return;
 			case REG_DMA2CNTL :
-				//LOG("32 bit dma2 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC8);
-				DMADst[ARMCPU_ARM9][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xCC);
-				DMAtoVRAMmapping<2>();
-				MMU.DMAStartTime[ARMCPU_ARM9][2] = (val>>27) & 0x7;
-				MMU.DMACrt[ARMCPU_ARM9][2] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0, val);
-				if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM9][2] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM9>(2);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM9, 2, DMASrc[ARMCPU_ARM9][2], DMADst[ARMCPU_ARM9][2], 0, ((MMU.DMACrt[ARMCPU_ARM9][2]>>27)&7));
-				}
-				#endif
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD0, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM9>(2,val>>16);
 				return;
 			case REG_DMA3CNTL :
-				//LOG("32 bit dma3 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD4);
-				DMADst[ARMCPU_ARM9][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xD8);
-				DMAtoVRAMmapping<3>();
-				MMU.DMAStartTime[ARMCPU_ARM9][3] = (val>>27) & 0x7;
-				MMU.DMACrt[ARMCPU_ARM9][3] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC, val);
-				if(	MMU.DMAStartTime[ARMCPU_ARM9][3] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM9][3] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM9>(3);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM9 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM9, 3, DMASrc[ARMCPU_ARM9][3], DMADst[ARMCPU_ARM9][3], 0, ((MMU.DMACrt[ARMCPU_ARM9][3]>>27)&7));
-				}
-				#endif
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xDC, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM9>(3,val>>16);
 				return;
              case REG_GCROMCTRL :
 				{
@@ -2640,23 +2536,11 @@ void FASTCALL _MMU_ARM9_write32(u32 adr, u32 val)
                     val |= 0x00800000;
                     T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4, val);
 										
-					/* launch DMA if start flag was set to "DS Cart" */
-					if(MMU.DMAStartTime[ARMCPU_ARM9][0] == 5)
-					{
-						MMU_doDMA<ARMCPU_ARM9>(0);
-					}
-					if(MMU.DMAStartTime[ARMCPU_ARM9][1] == 5)
-					{
-						MMU_doDMA<ARMCPU_ARM9>(1);
-					}
-					if(MMU.DMAStartTime[ARMCPU_ARM9][2] == 5)
-					{
-						MMU_doDMA<ARMCPU_ARM9>(2);
-					}
-					if(MMU.DMAStartTime[ARMCPU_ARM9][3] == 5)
-					{
-						MMU_doDMA<ARMCPU_ARM9>(3);
-					}
+					//launch DMA if start flag was set to "DS Cart"
+					if(MMU.DMAStartTime[ARMCPU_ARM9][0] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM9>(0);
+					if(MMU.DMAStartTime[ARMCPU_ARM9][1] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM9>(1);
+					if(MMU.DMAStartTime[ARMCPU_ARM9][2] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM9>(2);
+					if(MMU.DMAStartTime[ARMCPU_ARM9][3] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM9>(3);
 				}
 				return;
 			case REG_DISPA_DISPCAPCNT :
@@ -2768,7 +2652,7 @@ u16 FASTCALL _MMU_ARM9_read16(u32 adr)
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
-				return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2];
+				return read_timer(ARMCPU_ARM9,(adr&0xF)>>2);
 
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
@@ -3246,6 +3130,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				
 			case REG_IME : 
 				{
+					NDS_Reschedule();
 					u32 old_val = MMU.reg_IME[ARMCPU_ARM7];
 					u32 new_val = val & 1;
 					MMU.reg_IME[ARMCPU_ARM7] = new_val;
@@ -3264,6 +3149,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
 				}
 			case REG_IE :
+				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF0000) | val;
 #ifndef NEW_IRQ
 				if ( MMU.reg_IME[ARMCPU_ARM7]) 
@@ -3278,6 +3164,7 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 #endif
 				return;
 			case REG_IE + 2 :
+				NDS_Reschedule();
 				//emu_halt();
 				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF) | (((u32)val)<<16);
 #ifndef NEW_IRQ
@@ -3294,10 +3181,12 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 				return;
 				
 			case REG_IF :
+				NDS_Reschedule();
 				//emu_halt();
 				MMU.reg_IF[ARMCPU_ARM7] &= (~((u32)val)); 
 				return;
 			case REG_IF + 2 :
+				NDS_Reschedule();
 				//emu_halt();
 				MMU.reg_IF[ARMCPU_ARM7] &= (~(((u32)val)<<16));
 				return;
@@ -3321,127 +3210,22 @@ void FASTCALL _MMU_ARM7_write16(u32 adr, u16 val)
 			case REG_TM3CNTH :
 			{
 				int timerIndex	= ((adr-2)>>2)&0x3;
-				int mask		= ((val&0x80)>>7) << (timerIndex+(ARMCPU_ARM7<<2));
-				MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
-
-				if(val&0x80)
-					MMU.timer[ARMCPU_ARM7][timerIndex] = MMU.timerReload[ARMCPU_ARM7][((adr-2)>>2)&0x3];
-
-				MMU.timerON[ARMCPU_ARM7][((adr-2)>>2)&0x3] = val & 0x80;			
-
-				switch(val&7)
-				{
-					case 0 :
-						MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 0+1;//ARMCPU_ARM7;
-						break;
-					case 1 :
-						MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 6+1;//ARMCPU_ARM7; 
-						break;
-					case 2 :
-						MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 8+1;//ARMCPU_ARM7;
-						break;
-					case 3 :
-						MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 10+1;//ARMCPU_ARM7;
-						break;
-					default :
-						MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 0xFFFF;
-						break;
-				}
-
-				if(!(val & 0x80))
-					MMU.timerRUN[ARMCPU_ARM7][timerIndex] = FALSE;
-
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & 0xFFF, val);
+				write_timer(ARMCPU_ARM7, timerIndex, val);
 				return;
 			}
 
 			case REG_DMA0CNTH :
-				{
-					u32 v;
-
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma0 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xBA, val);
-					DMASrc[ARMCPU_ARM7][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB0);
-					DMADst[ARMCPU_ARM7][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB4);
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB8);
-					MMU.DMAStartTime[ARMCPU_ARM7][0] = (v>>28) & 0x3;
-					MMU.DMACrt[ARMCPU_ARM7][0] = v;
-					if(MMU.DMAStartTime[ARMCPU_ARM7][0] == 0)
-						MMU_doDMA<ARMCPU_ARM7>(0);
-					#ifdef LOG_DMA2
-					//else
-					{
-						LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM7, 0, DMASrc[ARMCPU_ARM7][0], DMADst[ARMCPU_ARM7][0], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM7>(0,val);
 				return;
 			case REG_DMA1CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma1 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC6, val);
-					DMASrc[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xBC);
-					DMADst[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC0);
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC4);
-					MMU.DMAStartTime[ARMCPU_ARM7][1] = (v>>28) & 0x3;
-					MMU.DMACrt[ARMCPU_ARM7][1] = v;
-					if(MMU.DMAStartTime[ARMCPU_ARM7][1] == 0)
-						MMU_doDMA<ARMCPU_ARM7>(1);
-					#ifdef LOG_DMA2
-					//else
-					{
-						LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM7, 1, DMASrc[ARMCPU_ARM7][1], DMADst[ARMCPU_ARM7][1], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM7>(1,val);
 				return;
 			case REG_DMA2CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma2 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD2, val);
-					DMASrc[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC8);
-					DMADst[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xCC);
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD0);
-					MMU.DMAStartTime[ARMCPU_ARM7][2] = (v>>28) & 0x3;
-					MMU.DMACrt[ARMCPU_ARM7][2] = v;
-					if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 0)
-						MMU_doDMA<ARMCPU_ARM7>(2);
-					#ifdef LOG_DMA2
-					//else
-					{
-					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM7, 2, DMASrc[ARMCPU_ARM7][2], DMADst[ARMCPU_ARM7][2], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM7>(2,val);
 				return;
 			case REG_DMA3CNTH :
-				{
-					u32 v;
-					//if(val&0x8000) emu_halt();
-					//LOG("16 bit dma3 %04X\r\n", val);
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDE, val);
-					DMASrc[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD4);
-					DMADst[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD8);
-					v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDC);
-					MMU.DMAStartTime[ARMCPU_ARM7][3] = (v>>28) & 0x3;
-					MMU.DMACrt[ARMCPU_ARM7][3] = v;
-
-					if(MMU.DMAStartTime[ARMCPU_ARM7][3] == 0)
-						MMU_doDMA<ARMCPU_ARM7>(3);
-					#ifdef LOG_DMA2
-					//else
-					{
-					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X %s\r\n", ARMCPU_ARM7, 3, DMASrc[ARMCPU_ARM7][3], DMADst[ARMCPU_ARM7][3], (val&(1<<25))?"ON":"OFF");
-					}
-					#endif
-				}
+				write_dma_hictrl<ARMCPU_ARM7>(3,val);
 				return;
-                        //case REG_AUXSPICNT : emu_halt();
 		}
 
 		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val); 
@@ -3497,6 +3281,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 
 			case REG_IME : 
 			{
+				NDS_Reschedule();
 				u32 old_val = MMU.reg_IME[ARMCPU_ARM7];
 				u32 new_val = val & 1;
 				MMU.reg_IME[ARMCPU_ARM7] = new_val;
@@ -3516,6 +3301,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			}
 				
 			case REG_IE :
+				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM7] = val;
 #ifndef NEW_IRQ
 				if ( MMU.reg_IME[ARMCPU_ARM7])
@@ -3531,6 +3317,7 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 				return;
 			
 			case REG_IF :
+				NDS_Reschedule();
 				MMU.reg_IF[ARMCPU_ARM7] &= (~val); 
 				return;
 
@@ -3540,37 +3327,12 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
             case REG_TM3CNTL:
 			{
 				int timerIndex = (adr>>2)&0x3;
-				int mask = ((val & 0x800000)>>(16+7)) << (timerIndex+(ARMCPU_ARM7<<2));
-				MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
-
 				MMU.timerReload[ARMCPU_ARM7][timerIndex] = (u16)val;
-				if(val&0x800000)
-					MMU.timer[ARMCPU_ARM7][timerIndex] = MMU.timerReload[ARMCPU_ARM7][(adr>>2)&0x3];
-
-				MMU.timerON[ARMCPU_ARM7][timerIndex] = val & 0x800000;
-				switch((val>>16)&7)
-				{
-					case 0 :
-					MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 0+1;//ARMCPU_ARM7;
-					break;
-					case 1 :
-					MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 6+1;//ARMCPU_ARM7;
-					break;
-					case 2 :
-					MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 8+1;//ARMCPU_ARM7;
-					break;
-					case 3 :
-					MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 10+1;//ARMCPU_ARM7;
-					break;
-					default :
-					MMU.timerMODE[ARMCPU_ARM7][timerIndex] = 0xFFFF;
-					break;
-				}
-				if(!(val & 0x800000))
-					MMU.timerRUN[ARMCPU_ARM7][timerIndex] = FALSE;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & 0xFFF, val);
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & 0xFFF, val);
+				write_timer(ARMCPU_ARM7, timerIndex, val>>16);
 				return;
 			}
+
 
 			case REG_IPCSYNC :
 					MMU_IPCSync(ARMCPU_ARM7, val);
@@ -3579,75 +3341,24 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
 			case REG_IPCFIFOSEND :
 					IPC_FIFOsend(ARMCPU_ARM7, val);
 				return;
+			
 			case REG_DMA0CNTL :
-				//LOG("32 bit dma0 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM7][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB0);
-				DMADst[ARMCPU_ARM7][0] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB4);
-				MMU.DMAStartTime[ARMCPU_ARM7][0] = (val>>28) & 0x3;
-				MMU.DMACrt[ARMCPU_ARM7][0] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB8, val);
-				if( MMU.DMAStartTime[ARMCPU_ARM7][0] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM7][0] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM7>(0);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM7, 0, DMASrc[ARMCPU_ARM7][0], DMADst[ARMCPU_ARM7][0], 0, ((MMU.DMACrt[ARMCPU_ARM7][0]>>27)&7));
-				}
-				#endif
-				//emu_halt();
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xB8, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM7>(0,val>>16);
 				return;
 			case REG_DMA1CNTL:
-				//LOG("32 bit dma1 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xBC);
-				DMADst[ARMCPU_ARM7][1] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC0);
-				MMU.DMAStartTime[ARMCPU_ARM7][1] = (val>>28) & 0x3;
-				MMU.DMACrt[ARMCPU_ARM7][1] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC4, val);
-				if(MMU.DMAStartTime[ARMCPU_ARM7][1] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM7][1] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM7>(1);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM7, 1, DMASrc[ARMCPU_ARM7][1], DMADst[ARMCPU_ARM7][1], 0, ((MMU.DMACrt[ARMCPU_ARM7][1]>>27)&7));
-				}
-				#endif
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC4, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM7>(1,val>>16);
 				return;
 			case REG_DMA2CNTL :
-				//LOG("32 bit dma2 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xC8);
-				DMADst[ARMCPU_ARM7][2] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xCC);
-				MMU.DMAStartTime[ARMCPU_ARM7][2] = (val>>28) & 0x3;
-				MMU.DMACrt[ARMCPU_ARM7][2] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD0, val);
-				if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM7][2] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM7>(2);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM7, 2, DMASrc[ARMCPU_ARM7][2], DMADst[ARMCPU_ARM7][2], 0, ((MMU.DMACrt[ARMCPU_ARM7][2]>>27)&7));
-				}
-				#endif
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD0, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM7>(2,val>>16);
 				return;
 			case REG_DMA3CNTL :
-				//LOG("32 bit dma3 %04X\r\n", val);
-				DMASrc[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD4);
-				DMADst[ARMCPU_ARM7][3] = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xD8);
-				MMU.DMAStartTime[ARMCPU_ARM7][3] = (val>>28) & 0x3;
-				MMU.DMACrt[ARMCPU_ARM7][3] = val;
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDC, val);
-				if(	MMU.DMAStartTime[ARMCPU_ARM7][3] == 0 ||
-					MMU.DMAStartTime[ARMCPU_ARM7][3] == 7)		// Start Immediately
-					MMU_doDMA<ARMCPU_ARM7>(3);
-				#ifdef LOG_DMA2
-				else
-				{
-					LOG("ARMCPU_ARM7 %d, dma %d src %08X dst %08X start taille %d %d\r\n", ARMCPU_ARM7, 3, DMASrc[ARMCPU_ARM7][3], DMADst[ARMCPU_ARM7][3], 0, ((MMU.DMACrt[ARMCPU_ARM7][3]>>27)&7));
-				}
-				#endif
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0xDC, val); //write the low word
+				write_dma_hictrl<ARMCPU_ARM7>(3,val>>16);
 				return;
+
 			case REG_GCROMCTRL :
 				{
 					if(!(val & 0x80000000))
@@ -3707,16 +3418,11 @@ void FASTCALL _MMU_ARM7_write32(u32 adr, u32 val)
                     val |= 0x00800000;
                     T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4, val);
 
-					/* launch DMA if start flag was set to "DS Cart" */
-
-					if(MMU.DMAStartTime[ARMCPU_ARM7][2] == 2)
-					{
-						MMU_doDMA<ARMCPU_ARM7>(2);
-					}
-					if(MMU.DMAStartTime[ARMCPU_ARM7][3] == 2)
-					{
-						MMU_doDMA<ARMCPU_ARM7>(3);
-					}
+					//launch DMA if start flag was set to "DS Cart"
+					if(MMU.DMAStartTime[ARMCPU_ARM7][0] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM7>(0);
+					if(MMU.DMAStartTime[ARMCPU_ARM7][1] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM7>(1);
+					if(MMU.DMAStartTime[ARMCPU_ARM7][2] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM7>(2);
+					if(MMU.DMAStartTime[ARMCPU_ARM7][3] == EDMAMode_Card) MMU_doDMA<ARMCPU_ARM7>(3);
 
 					return;
 
@@ -3803,7 +3509,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr)
 			case REG_TM1CNTL :
 			case REG_TM2CNTL :
 			case REG_TM3CNTL :
-				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2];
+				return read_timer(ARMCPU_ARM7,(adr&0xF)>>2);
 
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;

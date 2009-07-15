@@ -52,7 +52,7 @@ int lastSaveState = 0;		//Keeps track of last savestate used for quick save/load
 
 savestates_t savestates[NB_STATES];
 
-#define SAVESTATE_VERSION       11
+#define SAVESTATE_VERSION       12
 static const char* magic = "DeSmuME SState\0";
 
 //a savestate chunk loader can set this if it wants to permit a silent failure (for compatibility)
@@ -161,17 +161,10 @@ SFORMAT SF_MEM[]={
 };
 
 SFORMAT SF_NDS[]={
-	{ "_9CY", 4, 1, &nds.ARM9Cycle},
-	{ "_7CY", 4, 1, &nds.ARM7Cycle},
-	{ "_CYC", 4, 1, &nds.cycles},
 	{ "_WCY", 4, 1, &nds.wifiCycle},
-	{ "_TCY", 4, 8, nds.timerCycle},
-	{ "_TOV", 4, 8, nds.timerOver},
-	{ "_NHB", 4, 1, &nds.nextHBlank},
+	{ "_TCY", 8, 8, nds.timerCycle},
 	{ "_VCT", 4, 1, &nds.VCount},
 	{ "_OLD", 4, 1, &nds.old},
-	{ "_DIF", 4, 1, &nds.diff},
-	{ "_LIG", 4, 1, &nds.lignerendu},
 	{ "_TPX", 2, 1, &nds.touchX},
 	{ "_TPY", 2, 1, &nds.touchY},
 	{ "_TPB", 4, 1, &nds.isTouch},
@@ -200,6 +193,8 @@ SFORMAT SF_MMU[]={
 	{ "MIME", 4, 2,       MMU.reg_IME},
 	{ "MIE_", 4, 2,       MMU.reg_IE},
 	{ "MIF_", 4, 2,       MMU.reg_IF},
+
+	{ "MGXC", 8, 1,       &MMU.gfx3dCycles},
 	
 	{ "M_SX", 1, 2,       &MMU.SPI_CNT},
 	{ "M_SC", 1, 2,       &MMU.SPI_CMD},
@@ -207,7 +202,7 @@ SFORMAT SF_MMU[]={
 	{ "MASC", 1, 2,       &MMU.AUX_SPI_CMD},
 
 	{ "MDST", 4, 8,       MMU.DMAStartTime},
-	{ "MDCY", 4, 8,       MMU.DMACycle},
+	{ "MDCY", 8, 8,       MMU.DMACycle},
 	{ "MDCR", 4, 8,       MMU.DMACrt},
 	{ "MDMA", 4, 8,       MMU.DMAing},
 	{ "MDSR", 4, 8,       DMASrc},
@@ -217,12 +212,12 @@ SFORMAT SF_MMU[]={
 	{ "MDV2", 8, 1,       &MMU.divResult},
 	{ "MDV3", 8, 1,       &MMU.divMod},
 	{ "MDV4", 4, 1,       &MMU.divCnt},
-	{ "MDV5", 4, 1,       &MMU.divCycles},
+	{ "MDV5", 8, 1,       &MMU.divCycles},
 
 	{ "MSQ1", 4, 1,       &MMU.sqrtRunning},
 	{ "MSQ2", 4, 1,       &MMU.sqrtResult},
 	{ "MSQ3", 4, 1,       &MMU.sqrtCnt},
-	{ "MSQ4", 4, 1,       &MMU.sqrtCycles},
+	{ "MSQ4", 8, 1,       &MMU.sqrtCycles},
 	
 	//begin memory chips
 	//we are skipping the firmware, because we really don't want to save the firmware to the savestate
@@ -261,6 +256,9 @@ SFORMAT SF_MOVIE[]={
 	{ "LAGC", 4, 1, &TotalLagFrames},
 	{ 0 }
 };
+
+void nds_savestate(std::ostream* os);
+bool nds_loadstate(std::istream* is, int size);
 
 static void mmu_savestate(std::ostream* os)
 {
@@ -824,6 +822,7 @@ static void writechunks(std::ostream* os) {
 	savestate_WriteChunk(os,3,cp15_savestate);
 	savestate_WriteChunk(os,4,SF_MEM);
 	savestate_WriteChunk(os,5,SF_NDS);
+	savestate_WriteChunk(os,51,nds_savestate);
 	savestate_WriteChunk(os,60,SF_MMU);
 	savestate_WriteChunk(os,61,mmu_savestate);
 	savestate_WriteChunk(os,7,gpu_savestate);
@@ -852,6 +851,7 @@ static bool ReadStateChunks(std::istream* is, s32 totalsize)
 			case 3: if(!cp15_loadstate(is,size)) ret=false; break;
 			case 4: if(!ReadStateChunk(is,SF_MEM,size)) ret=false; break;
 			case 5: if(!ReadStateChunk(is,SF_NDS,size)) ret=false; break;
+			case 51: if(!nds_loadstate(is,size)) ret=false; break;
 			case 60: if(!ReadStateChunk(is,SF_MMU,size)) ret=false; break;
 			case 61: if(!mmu_loadstate(is,size)) ret=false; break;
 			case 7: if(!gpu_loadstate(is,size)) ret=false; break;

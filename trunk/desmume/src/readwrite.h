@@ -21,6 +21,8 @@ int read32le(u32 *Bufo, FILE *fp);
 int read16le(u16 *Bufo, std::istream *is);
 inline int read16le(s16 *Bufo, std::istream* is) { return read16le((u16*)Bufo,is); }
 int read8le(u8 *Bufo, std::istream *is);
+int readbool(bool *b, std::istream* is);
+void writebool(bool b, std::ostream* os);
 
 int readbuffer(std::vector<u8> &vec, std::istream* is);
 int writebuffer(std::vector<u8>& vec, std::ostream* os);

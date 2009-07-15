@@ -85,6 +85,8 @@ int write32le(u32 b, std::ostream* os)
 	return 4;
 }
 
+void writebool(bool b, std::ostream* os) { write32le(b?1:0,os); }
+
 int write64le(u64 b, std::ostream* os)
 {
 	u8 s[8];
@@ -153,6 +155,14 @@ int read32le(u32 *Bufo, std::istream *is)
 	*(u32*)Bufo=((buf&0xFF)<<24)|((buf&0xFF00)<<8)|((buf&0xFF0000)>>8)|((buf&0xFF000000)>>24);
 #endif
 	return 1;
+}
+
+int readbool(bool *b, std::istream* is)
+{
+	u32 temp;
+	int ret = read32le(&temp,is);
+	*b = (bool)temp;
+	return ret;
 }
 
 int readbuffer(std::vector<u8> &vec, std::istream* is)
