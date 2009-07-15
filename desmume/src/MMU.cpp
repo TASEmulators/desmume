@@ -894,6 +894,7 @@ void MMU_Init(void) {
 
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
+	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
 	
@@ -951,6 +952,7 @@ void MMU_clearMem()
 
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
+	GFX_PIPEclear();
 	GFX_FIFOclear();
 	DISP_FIFOinit();
 	

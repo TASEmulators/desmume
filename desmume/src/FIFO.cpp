@@ -137,7 +137,13 @@ void IPC_FIFOcnt(u8 proc, u16 val)
 }
 
 // ========================================================= GFX FIFO
+GFX_PIPE	gxPIPE;
 GFX_FIFO	gxFIFO;
+
+void GFX_PIPEclear()
+{
+	gxPIPE.tail = 0;
+}
 
 void GFX_FIFOclear()
 {
@@ -151,9 +157,30 @@ void GFX_FIFOclear()
 
 void GFX_FIFOsend(u8 cmd, u32 param)
 {
-	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO - 0x%08X (%03i/%02X)\n", cmd, param, gxFIFO.tail, gxFIFO.tail);
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	if (gxstat & 0x01000000) return;		// full
+
+	if (gxFIFO.tail == 0)			// FIFO empty
+	{
+		if (gxPIPE.tail < 4)			// pipe not full
+		{
+			gxPIPE.cmd[gxPIPE.tail] = cmd;
+			gxPIPE.param[gxPIPE.tail] = param;
+			gxPIPE.tail++;
+#ifdef USE_GEOMETRY_FIFO_EMULATION
+			gxstat |= 0x08000000;		// set busy flag
+			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+#endif
+			NDS_RescheduleGXFIFO();
+			return;
+		}
+	}
+
+	//INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO - 0x%08X (%03i/%02X)\n", cmd, param, gxFIFO.tail, gxFIFO.tail);
+	if (gxstat & 0x01000000)
+	{
+		//INFO("ERROR: gxFIFO is full\n");
+		return;		// full
+	}
 
 	gxstat &= 0xF000FFFF;
 
@@ -175,45 +202,29 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 #endif
 
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-
+	
 	NDS_RescheduleGXFIFO();
 }
 
 BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-#if 0
-	if (gxstat & 0xC0000000)
-	{
-		setIF(0, (1<<21));
-		//NDS_makeARM9Int(21);
-	}
-#endif
-	if (gxFIFO.tail == 0)						// empty
+
+	if (gxFIFO.tail == 0)			// empty
 	{
 		gxstat &= 0xF000FFFF;
 		gxstat |= 0x06000000;
 		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
-		if ((gxstat & 0x80000000))	// empty
+		if ((gxstat & 0x80000000))	// IRQ: empty
 		{
 			setIF(0, (1<<21));
-			//NDS_makeARM9Int(21);
 		}
 		return FALSE;
 	}
 
 	if (gxstat & 0x40000000)	// IRQ: less half
 	{
-		if (gxstat & 0x02000000) 
-			setIF(0, (1<<21));
-			//NDS_makeARM9Int(21);
-	}
-
-	if ((gxstat & 0x80000000))	// IRQ: empty
-	{
-		if (gxstat & 0x04000000) 
-			setIF(0, (1<<21));
-			//NDS_makeARM9Int(21);
+		if (gxstat & 0x02000000) setIF(0, (1<<21));
 	}
 
 	gxstat &= 0xF000FFFF;
@@ -226,20 +237,72 @@ BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 		gxFIFO.param[i] = gxFIFO.param[i+1];
 	}
 
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	gxstat |= 0x08000000;		// set busy flag
-#endif
-
 	gxstat |= (gxFIFO.tail << 16);
 
 	if (gxFIFO.tail < 128)
 		gxstat |= 0x02000000;
 
+	if (gxFIFO.tail == 0)		// empty
+		gxstat |= 0x04000000;
+	else
+		gxstat |= 0x08000000;	// set busy flag
+
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
 
-	NDS_RescheduleGXFIFO();
-
 	return TRUE;
+}
+
+BOOL GFX_PIPErecv(u8 *cmd, u32 *param)
+{
+	u8	tmp_cmd = 0;
+	u32	tmp_param = 0;
+	u32 gxstat = 0;
+
+	if (gxPIPE.tail > 0)
+	{
+		*cmd = gxPIPE.cmd[0];
+		*param = gxPIPE.param[0];
+		gxPIPE.tail--;
+		for (int i=0; i < gxPIPE.tail; i++)
+		{
+			gxPIPE.cmd[i] = gxPIPE.cmd[i+1];
+			gxPIPE.param[i] = gxPIPE.param[i+1];
+		}
+
+		if (gxPIPE.tail < 2) 
+		{
+			if (GFX_FIFOrecv(&tmp_cmd, &tmp_param))
+			{
+				gxPIPE.cmd[gxPIPE.tail] = tmp_cmd;
+				gxPIPE.param[gxPIPE.tail] = tmp_param;
+				gxPIPE.tail++;
+			
+
+				if (GFX_FIFOrecv(&tmp_cmd, &tmp_param))
+				{
+					gxPIPE.cmd[gxPIPE.tail] = tmp_cmd;
+					gxPIPE.param[gxPIPE.tail] = tmp_param;
+					gxPIPE.tail++;
+				}
+			}
+		}
+
+		if (gxPIPE.tail == 0)
+		{
+			gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+			gxstat &= 0xF7FFFFFF;		// clear busy flag
+			T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+		}
+		return (TRUE);
+	}
+	gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
+	gxstat &= 0xF7FFFFFF;		// clear busy flag
+	if ((gxstat & 0x80000000))	// IRQ: empty
+	{
+		if (gxFIFO.tail == 0) setIF(0, (1<<21));
+	}
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+	return FALSE;
 }
 
 void GFX_FIFOcnt(u32 val)
@@ -248,6 +311,7 @@ void GFX_FIFOcnt(u32 val)
 	//INFO("GFX FIFO: write context 0x%08X (prev 0x%08X) tail %i\n", val, gxstat, gxFIFO.tail);
 	if (val & (1<<29))		// clear? (homebrew)
 	{
+		GFX_PIPEclear();
 		GFX_FIFOclear();
 		return;
 	}
@@ -258,7 +322,6 @@ void GFX_FIFOcnt(u32 val)
 	/*if (gxstat & 0xC0000000)
 	{
 		setIF(0, (1<<21));
-		//NDS_makeARM9Int(21);
 	}*/
 }
 
