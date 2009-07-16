@@ -174,6 +174,15 @@ int MATRIXFASTCALL MatrixCompare (const float* matrixDST, const float* matrixSRC
 	return memcmp((void*)matrixDST, matrixSRC, sizeof(float)*16);
 }
 
+void MatrixStackInit(MatrixStack *stack)
+{
+	for (int i = 0; i < stack->size; i++)
+	{
+		MatrixInit(&stack->matrix[i]);
+	}
+	stack->position = 0;
+}
+
 void MatrixStackSetMaxSize (MatrixStack *stack, int size)
 {
 	int i;
