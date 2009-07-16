@@ -16,9 +16,10 @@ General/Core:
  enh: ideas-style debugging prints
 
 Graphics:
- bug: fixing of obj blending and bmp obj rendering
+ bug: fixing of obj blending, bmp obj rendering, and some obj window cases
  bug: fix backdrop blending with garbage
  bug: fix 256B granularity sprite addressing for sub gpu
+ bug: fix 128-wide captures
  bug: swrast: add clear image emulation
  bug: swrast: add edge marking
   

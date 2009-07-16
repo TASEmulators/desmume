@@ -2324,14 +2324,12 @@ void GPU_set_DISPCAPCNT(u32 val)
 	gpu->dispCapCnt.srcB = (val >> 25) & 0x01;
 	gpu->dispCapCnt.capSrc = (val >> 29) & 0x03;
 
-	gpu->dispCapCnt.dst = (ARM9Mem.ARM9_LCD + 
-							(gpu->dispCapCnt.writeBlock * 0x20000) +
-							(gpu->dispCapCnt.writeOffset * 0x8000)
-							);
-	gpu->dispCapCnt.src = (ARM9Mem.ARM9_LCD + 
-							(gpu->dispCapCnt.readBlock * 0x20000) +
-							(gpu->dispCapCnt.readOffset * 0x8000)
-							);
+	//gpu->dispCapCnt.dstBlock =  = (gpu->dispCapCnt.writeBlock * 0x20000) +
+	//						(gpu->dispCapCnt.writeOffset * 0x8000);
+	//						
+	//gpu->dispCapCnt.src =  (gpu->dispCapCnt.readBlock * 0x20000) +
+	//						(gpu->dispCapCnt.readOffset * 0x8000);
+	//						
 
 	switch((val >> 20) & 0x03)
 	{
@@ -2542,12 +2540,25 @@ static void GPU_ligne_DispCapture(u16 l)
 
 	if (gpu->dispCapCnt.enabled)
 	{
-		u8	*cap_dst = (u8 *)(gpu->dispCapCnt.dst) + (l * 512);
+		//128-wide captures should write linearly into memory, with no gaps
+		//this is tested by hotel dusk
+		u32 ofsmul = gpu->dispCapCnt.capy==128?256:512;
+		u32 cap_src_adr = gpu->dispCapCnt.readOffset * 0x8000 + (l * 512);
+		u32 cap_dst_adr = gpu->dispCapCnt.writeOffset * 0x8000 + (l * ofsmul);
+
+		//Read/Write block wrap to 00000h when exceeding 1FFFFh (128k)
+		//this has not been tested yet (I thought I needed it for hotel dusk, but it was fixed by the above)
+		cap_src_adr &= 0x1FFFF;
+		cap_dst_adr &= 0x1FFFF;
+
+		cap_src_adr += gpu->dispCapCnt.readBlock * 0x20000;
+		cap_dst_adr += gpu->dispCapCnt.writeBlock * 0x20000;
+
+		u8* cap_src = ARM9Mem.ARM9_LCD + cap_src_adr;
+		u8* cap_dst = ARM9Mem.ARM9_LCD + cap_dst_adr;
 
 		if (l < gpu->dispCapCnt.capy)
 		{
-			// TODO: Read/Write block wrap to 00000h when exceeding 1FFFFh (128k)
-
 			switch (gpu->dispCapCnt.capSrc)
 			{
 				case 0:		// Capture source is SourceA
@@ -2583,8 +2594,7 @@ static void GPU_ligne_DispCapture(u16 l)
 							case 0:			// Capture VRAM
 								{
 									//INFO("Capture VRAM\n");
-									u8 *src = (u8 *)(gpu->dispCapCnt.src) + (l * 512);
-									CAPCOPY(src,cap_dst);
+									CAPCOPY(cap_src,cap_dst);
 								}
 								break;
 							case 1:			// Capture Main Memory Display FIFO
@@ -2612,7 +2622,7 @@ static void GPU_ligne_DispCapture(u16 l)
 						}
 
 						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
-							srcB = (u16 *)((gpu->dispCapCnt.src) + (l * 512));
+							srcB = (u16 *)cap_src;
 						else
 							srcB = NULL; // DISP FIFOS
 
