@@ -1800,8 +1800,21 @@ void execHardware_hblank()
 	//this logic was formerly at hblank time. it was moved to the beginning of the scanline on a whim
 	if(nds.VCount<192)
 	{
-		//trigger hblank dmas.
-		//but should this happen for non-displayed scanlines??? not sure
+		//so, we have chosen to do the line drawing at hblank time.
+		//this is the traditional time for it in desmume.
+		//while it may seem more ruthlessly accurate to do it at hstart,
+		//in practice we need to be more forgiving, in case things have overrun the scanline start.
+		//this should be safe since games cannot do anything timing dependent until this next
+		//scanline begins, anyway (as this scanline was in the middle of drawing)
+		if(!SkipCur2DFrame)
+		{
+			GPU_ligne(&MainScreen, nds.VCount);
+			GPU_ligne(&SubScreen, nds.VCount);
+		}
+
+		//trigger hblank dmas
+		//but notice, we do that just after we finished drawing the line
+		//(values copied by this hdma should not be used until the next scanline)
 		execHardware_doAllDma(EDMAMode_HBlank);
 	}
 }
@@ -1889,23 +1902,14 @@ void execHardware_hstart()
 	//handle vcount status
 	execHardware_hstart_vcount();
 
-	//this logic was formerly at hblank time. it was moved to the beginning of the scanline on a whim
+	//trigger hstart dmas
+	execHardware_doAllDma(EDMAMode_HStart);
+
 	if(nds.VCount<192)
 	{
-		//trigger hstart dmas
-		//in an effort to more accurately mimic what might happen in cases where these are used
-		//to adjust the scanline which is just about to render,	the dma occurs before the scanline draw
-		execHardware_doAllDma(EDMAMode_HStart);
-
 		//this is hacky.
 		//there is a corresponding hack in doDMA
 		execHardware_doAllDma(EDMAMode_MemDisplay);
-
-		if(!SkipCur2DFrame)
-		{
-			GPU_ligne(&MainScreen, nds.VCount);
-			GPU_ligne(&SubScreen, nds.VCount);
-		}
 	}
 
 	//end of 3d vblank

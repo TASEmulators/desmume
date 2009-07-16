@@ -156,6 +156,7 @@ DWORD hKeyInputTimer;
 
 extern LRESULT CALLBACK RamSearchProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void InitRamSearch();
+void FilterUpdate(HWND hwnd, bool user=true);
 
 
 CRITICAL_SECTION win_sync;
@@ -1620,8 +1621,7 @@ int _main()
 	CommonSettings.wifiBridgeAdapterNum = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
 	video.currentfilter = GetPrivateProfileInt("Video", "Filter", video.NONE, IniName);
-	void FilterUpdate(HWND hwnd);
-	FilterUpdate(MainWindow->getHWnd());
+	FilterUpdate(MainWindow->getHWnd(),false);
 
 	/* Read the firmware settings from the init file */
 	win_fw_config.fav_colour = GetPrivateProfileInt("Firmware","favColor", 10, IniName);
@@ -2365,12 +2365,13 @@ void RunConfig(CONFIGSCREEN which)
 		NDS_UnPause();
 }
 
-void FilterUpdate (HWND hwnd){
+void FilterUpdate (HWND hwnd, bool user){
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
 	SetScreenGap(video.screengap);
 	SetRotate(hwnd, video.rotation);
-	ScaleScreen(windowSize);
+	if(user && windowSize==0) {}
+	else ScaleScreen(windowSize);
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);

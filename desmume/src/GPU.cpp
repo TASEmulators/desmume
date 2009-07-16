@@ -719,6 +719,8 @@ void GPU_setMasterBrightness (GPU *gpu, u16 val)
 	}
  	gpu->MasterBrightFactor = (val & 0x1F);
 	gpu->MasterBrightMode	= (val>>14);
+	//printf("MASTER BRIGHTNESS %d to %d at %d\n",gpu->core,gpu->MasterBrightFactor,nds.VCount);
+
 }
 
 void SetupFinalPixelBlitter (GPU *gpu)
@@ -958,11 +960,11 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 //			PIXEL RENDERING - BGS
 /*****************************************************************************/
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialNone(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialNone(u16 &color, const u32 x)
 {
 }
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 &color, const u32 x)
 {
 	//blend backdrop with what?? this doesn't make sense
 	if(BACKDROP) return;
@@ -975,7 +977,7 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 &c
 	}
 }
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 &color, const u32 x)
 {
 	if(blend1)   // the bg to draw has a special color effect
 	{
@@ -983,7 +985,7 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u1
 	}
 }
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 &color, const u32 x)
 {
 	if(blend1)   // the bg to draw has a special color effect
 	{
@@ -991,7 +993,7 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16
 	}
 }
 
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialNoneWnd(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialNoneWnd(u16 &color, const u32 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -1013,7 +1015,7 @@ template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialNoneWnd(u16 
 	return false;
 }
 
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialBlendWnd(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialBlendWnd(u16 &color, const u32 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -1036,7 +1038,7 @@ template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialBlendWnd(u16
 	return false;
 }
 
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialIncreaseWnd(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialIncreaseWnd(u16 &color, const u32 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -1055,7 +1057,7 @@ template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialIncreaseWnd(
 	return false;
 }
 
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialDecreaseWnd(u16 &color, const u8 x)
+template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialDecreaseWnd(u16 &color, const u32 x)
 {
 	bool windowDraw = true, windowEffect = true;
 	
@@ -1125,7 +1127,7 @@ static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, 
 	gpu->bgPixels[x] = 4;	
 }
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, u8 x)
+template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, const u32 x)
 {
 	//It is not safe to assert this here.
 	//This is probably the best place to enforce it, since almost every single color that comes in here
@@ -1173,13 +1175,12 @@ FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
 
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
-template<bool MOSAIC, bool BACKDROP> FORCEINLINE void GPU::__setFinalColorBck(u16 color, const u8 x, const bool opaque)
+template<bool MOSAIC, bool BACKDROP> FORCEINLINE void GPU::__setFinalColorBck(u16 color, const u32 x, const bool opaque)
 {
 	//I commented out this line to make a point.
-	//indeed, since x is a u8 we cannot pass in anything >=256
+	//under ordinary circumstances, nobody should pass in something >=256
 	//but in fact, someone is going to try. specifically, that is the map viewer debug tools
 	//which try to render the enter BG. in cases where that is large, it could be up to 1024 wide.
-	//I think it survives this truncation to 8bits.
 	//assert(x<256);
 
 	int x_int;
@@ -1582,7 +1583,20 @@ static void lineNull(GPU * gpu)
 template<bool MOSAIC> void lineText(GPU * gpu)
 {
 	BGxOFS * ofs = &gpu->dispx_st->dispx_BGxOFS[gpu->currBgNum];
-	renderline_textBG<MOSAIC>(gpu, T1ReadWord((u8 *)&ofs->BGxHOFS, 0), gpu->currLine + T1ReadWord((u8 *)&ofs->BGxVOFS, 0), 256);
+
+
+
+	if(gpu->debug)
+	{
+		const s32 wh = gpu->BGSize[gpu->currBgNum][0];
+		renderline_textBG<MOSAIC>(gpu, 0, gpu->currLine, wh);
+	}
+	else
+	{
+		const u16 vofs = T1ReadWord((u8 *)&ofs->BGxVOFS,0);
+		const u16 hofs = T1ReadWord((u8 *)&ofs->BGxHOFS,0);
+		renderline_textBG<MOSAIC>(gpu, hofs, gpu->currLine + vofs, 256);
+	}
 }
 
 template<bool MOSAIC> void lineRot(GPU * gpu)
@@ -1593,8 +1607,12 @@ template<bool MOSAIC> void lineRot(GPU * gpu)
 	} else {
 		parms = &(gpu->dispx_st)->dispx_BG3PARMS;		
 	}
+
 	if(gpu->debug)
-     rotBG2<MOSAIC>(gpu, 0, (s16)gpu->currLine*256, 256,0, -1,-1, 256);
+	{
+		s32 wh = gpu->BGSize[gpu->currBgNum][0];
+		rotBG2<MOSAIC>(gpu, 0, (s16)gpu->currLine*256, 256,0, 0,-77, wh);
+	}
 	else
 	{
 		 rotBG2<MOSAIC>(gpu, 
@@ -1620,7 +1638,10 @@ template<bool MOSAIC> void lineExtRot(GPU * gpu)
 	}
 
 	if(gpu->debug)
-     extRotBG2<MOSAIC>(gpu, 0, (s16)gpu->currLine*256, 256,0, -1,-1, 256);
+	{
+		s32 wh = gpu->BGSize[gpu->currBgNum][0];
+		extRotBG2<MOSAIC>(gpu, 0, (s16)gpu->currLine*256, 256,0, 0,-77, wh);
+	}
 	else
 	{
 		extRotBG2<MOSAIC>(gpu,
@@ -2468,7 +2489,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 					}
 
 					//useful for debugging individual layers
-					//if(gpu->core == 0 && i16 != 1) continue;
+					//if(gpu->core == 1 || i16 != 2) continue;
 
 					if(gpu->curr_mosaic_enabled)
 						gpu->modeRender<true>(i16);
@@ -2804,6 +2825,9 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		gpu->refreshAffineStartRegs(-1,-1);
 	}
 
+	//if(gpu->core == 1)
+	//	printf("%d\n",l);
+
 	//blacken the screen if it is turned off by the user
 	if(!CommonSettings.showGpu.screens[gpu->core])
 	{
@@ -2811,6 +2835,12 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		memset(dst,0,512);
 		return;
 	}
+
+	//{
+	//	extern int currFrameCounter;
+	//	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
+	//	memset(dst,currFrameCounter,512);
+	//}
 
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	gpu->currLine = (u8)l;
@@ -2874,8 +2904,6 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 			break;
 	}
 
-
-	
 	GPU_ligne_MasterBrightness(screen, l);
 }
 
