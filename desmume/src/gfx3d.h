@@ -245,59 +245,63 @@ extern CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
 extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation of illogical *2
 
 //GE commands:
-void gfx3d_glViewPort(u32 v);
-void gfx3d_glClearColor(u32 v);
-void gfx3d_glFogColor(u32 v);
-void gfx3d_glFogOffset (u32 v);
-void gfx3d_glClearDepth(u32 v);
+#ifdef USE_GEOMETRY_FIFO_EMULATION2
+#else
 void gfx3d_glMatrixMode(u32 v);
+void gfx3d_glPushMatrix(void);
+void gfx3d_glPopMatrix(s32 i);
+void gfx3d_glStoreMatrix(u32 v);
+void gfx3d_glRestoreMatrix(u32 v);
 void gfx3d_glLoadIdentity();
 BOOL gfx3d_glLoadMatrix4x4(s32 v);
 BOOL gfx3d_glLoadMatrix4x3(s32 v);
-void gfx3d_glStoreMatrix(u32 v);
-void gfx3d_glRestoreMatrix(u32 v);
-void gfx3d_glPushMatrix(void);
-void gfx3d_glPopMatrix(s32 i);
-BOOL gfx3d_glTranslate(s32 v);
-BOOL gfx3d_glScale(s32 v);
+BOOL gfx3d_glMultMatrix4x4(s32 v);
 BOOL gfx3d_glMultMatrix3x3(s32 v);
 BOOL gfx3d_glMultMatrix4x3(s32 v);
-BOOL gfx3d_glMultMatrix4x4(s32 v);
-void gfx3d_glBegin(u32 v);
-void gfx3d_glEnd(void);
+BOOL gfx3d_glScale(s32 v);
+BOOL gfx3d_glTranslate(s32 v);
 void gfx3d_glColor3b(u32 v);
+void gfx3d_glNormal(u32 v);
+void gfx3d_glTexCoord(u32 val);
 BOOL gfx3d_glVertex16b(u32 v);
 void gfx3d_glVertex10b(u32 v);
 void gfx3d_glVertex3_cord(u32 one, u32 two, u32 v);
 void gfx3d_glVertex_rel(u32 v);
-void gfx3d_glSwapScreen(u32 screen);
-int gfx3d_GetNumPolys();
-int gfx3d_GetNumVertex();
 void gfx3d_glPolygonAttrib (u32 val);
-void gfx3d_glMaterial0(u32 val);
-void gfx3d_glMaterial1(u32 val);
-BOOL gfx3d_glShininess (u32 val);
-void gfx3d_UpdateToonTable(u8 offset, u16 val);
-void gfx3d_UpdateToonTable(u8 offset, u32 val);
 void gfx3d_glTexImage(u32 val);
 void gfx3d_glTexPalette(u32 val);
-void gfx3d_glTexCoord(u32 val);
-void gfx3d_glNormal(u32 v);
-s32 gfx3d_GetClipMatrix (u32 index);
-s32 gfx3d_GetDirectionalMatrix (u32 index);
+void gfx3d_glMaterial0(u32 val);
+void gfx3d_glMaterial1(u32 val);
 void gfx3d_glLightDirection (u32 v);
 void gfx3d_glLightColor (u32 v);
-void gfx3d_glAlphaFunc(u32 v);
+BOOL gfx3d_glShininess (u32 val);
+void gfx3d_glBegin(u32 v);
+void gfx3d_glEnd(void);
+void gfx3d_glFlush(u32 v);
+void gfx3d_glViewPort(u32 v);
 BOOL gfx3d_glBoxTest(u32 v);
 BOOL gfx3d_glPosTest(u32 v);
 void gfx3d_glVecTest(u32 v);
+#endif
+// end GE commands
+
+void gfx3d_glClearColor(u32 v);
+void gfx3d_glFogColor(u32 v);
+void gfx3d_glFogOffset (u32 v);
+void gfx3d_glClearDepth(u32 v);
+void gfx3d_glSwapScreen(u32 screen);
+int gfx3d_GetNumPolys();
+int gfx3d_GetNumVertex();
+void gfx3d_UpdateToonTable(u8 offset, u16 val);
+void gfx3d_UpdateToonTable(u8 offset, u32 val);
+s32 gfx3d_GetClipMatrix (u32 index);
+s32 gfx3d_GetDirectionalMatrix (u32 index);
+void gfx3d_glAlphaFunc(u32 v);
 u32 gfx3d_glGetPosRes(u32 index);
 u16 gfx3d_glGetVecRes(u32 index);
-void gfx3d_glFlush(u32 v);
 void gfx3d_VBlankSignal();
 void gfx3d_VBlankEndSignal(bool skipFrame);
 void gfx3d_Control(u32 v);
-u32 gfx3d_GetGXstatus();
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 void gfx3d_execute3D();
 #endif
