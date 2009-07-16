@@ -602,6 +602,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\filter\bilinear.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\filter\hq2x.cpp"
 					>
 				</File>

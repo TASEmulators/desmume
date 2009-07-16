@@ -2491,6 +2491,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, MF_BYCOMMAND | video.currentfilter == video.SUPER2XSAI ? MF_CHECKED:MF_UNCHECKED);
 			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, MF_BYCOMMAND | video.currentfilter == video.SUPEREAGLE ? MF_CHECKED:MF_UNCHECKED);
 			MainWindow->checkMenu(IDM_RENDER_SCANLINE, MF_BYCOMMAND | video.currentfilter == video.SCANLINE ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDM_RENDER_BILINEAR, MF_BYCOMMAND | video.currentfilter == video.BILINEAR ? MF_CHECKED:MF_UNCHECKED);
 
 			//Language selection
 
@@ -2841,6 +2842,10 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		case IDM_RENDER_SCANLINE:
 			video.setfilter(video.SCANLINE);
+			FilterUpdate(hwnd);
+			break;
+		case IDM_RENDER_BILINEAR:
+			video.setfilter(video.BILINEAR);
 			FilterUpdate(hwnd);
 			break;
 		case IDM_STATE_LOAD:

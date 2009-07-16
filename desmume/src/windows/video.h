@@ -20,7 +20,8 @@ public:
 		_2XSAI,
 		SUPER2XSAI,
 		SUPEREAGLE,
-		SCANLINE
+		SCANLINE,
+		BILINEAR
 	};
 
 
@@ -81,6 +82,9 @@ public:
 				break;
 			case SCANLINE:
 				RenderScanline(src, dst);
+				break;
+			case BILINEAR:
+				RenderBilinear(src, dst);
 				break;
 		}
 	}

@@ -718,6 +718,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\filter\bilinear.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\cheatsWin.cpp"
 					>
 				</File>
