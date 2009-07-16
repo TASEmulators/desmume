@@ -376,13 +376,20 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 
 void ScaleScreen(float factor)
 {
-	if(factor==65535)
-		factor = 1.5f;
-	else if(factor==65534)
-		factor = 2.5f;
-
+	if(windowSize == 0)
+	{
+		int w = GetPrivateProfileInt("Video", "Window width", 256, IniName);
+		int h = GetPrivateProfileInt("Video", "Window height", 384, IniName);
+		MainWindow->setClientSize(w, h);
+	}
+	else
+	{
+		if(factor==65535)
+			factor = 1.5f;
+		else if(factor==65534)
+			factor = 2.5f;
 		MainWindow->setClientSize((video.rotatedwidthgap() * factor), (video.rotatedheightgap() * factor));
-
+	}
 }
 
 void translateXY(s32& x, s32& y)
@@ -1437,20 +1444,9 @@ int _main()
 		exit(-1);
 	}
 
-		MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
+	MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 
-	{
-		if(windowSize == 0)
-		{
-			int w = GetPrivateProfileInt("Video", "Window width", 256, IniName);
-			int h = GetPrivateProfileInt("Video", "Window height", 384, IniName);
-			MainWindow->setClientSize(w, h);
-		}
-		else
-		{
-			ScaleScreen(windowSize);
-		}
-	}
+	ScaleScreen(windowSize);
 
 	DragAcceptFiles(MainWindow->getHWnd(), TRUE);
 
@@ -2374,6 +2370,7 @@ void FilterUpdate (HWND hwnd){
 	UpdateWndRects(hwnd);
 	SetScreenGap(video.screengap);
 	SetRotate(hwnd, video.rotation);
+	ScaleScreen(windowSize);
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
