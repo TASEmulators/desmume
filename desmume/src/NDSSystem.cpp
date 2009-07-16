@@ -1539,12 +1539,12 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 		for(int i=num;i<4;i++)
 		{
 			//maybe too many checks if this is here, but we need it here for now
-			if(!MMU.timerON[procnum][num]) return;
+			if(!MMU.timerON[procnum][i]) return;
 
-			if(MMU.timerMODE[procnum][num] == 0xFFFF)
+			if(MMU.timerMODE[procnum][i] == 0xFFFF)
 			{
-				++(MMU.timer[procnum][num]);
-				over = !MMU.timer[procnum][num];
+				++(MMU.timer[procnum][i]);
+				over = !MMU.timer[procnum][i];
 			}
 			else
 			{
@@ -1552,10 +1552,10 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 				first = false;
 
 				over = true;
-				int remain = 65536 - MMU.timerReload[procnum][num];
+				int remain = 65536 - MMU.timerReload[procnum][i];
 				int ctr=0;
-				while(nds.timerCycle[procnum][num] <= nds_timer) {
-					nds.timerCycle[procnum][num] += (remain << MMU.timerMODE[procnum][num]);
+				while(nds.timerCycle[procnum][i] <= nds_timer) {
+					nds.timerCycle[procnum][i] += (remain << MMU.timerMODE[procnum][i]);
 					ctr++;
 				}
 				if(ctr>1) {
@@ -1565,11 +1565,11 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 
 			if(over)
 			{
-				MMU.timer[procnum][num] = MMU.timerReload[procnum][num];
-				if(T1ReadWord(regs, 0x102 + num*4) & 0x40) 
+				MMU.timer[procnum][i] = MMU.timerReload[procnum][i];
+				if(T1ReadWord(regs, 0x102 + i*4) & 0x40) 
 				{
-					if(procnum==0) NDS_makeARM9Int(3 + num);
-					else NDS_makeARM7Int(3 + num);
+					if(procnum==0) NDS_makeARM9Int(3 + i);
+					else NDS_makeARM7Int(3 + i);
 				}
 			}
 			else
