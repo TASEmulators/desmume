@@ -349,20 +349,18 @@ struct DISPCAPCNT
 	enum CAPX {
 		_128, _256
 	} capx;
-    u32		val;
-	BOOL	enabled;
-	u8		EVA;
-	u8		EVB;
-	u8		writeBlock;
-	u8		writeOffset;
-	u16		capy;
-	u8		srcA;
-	u8		srcB;
-	u8		readBlock;
-	u8		readOffset;
-	u8		capSrc;
-	u8		*dst;
-	u8		*src;
+    u32 val;
+	BOOL enabled;
+	u8 EVA;
+	u8 EVB;
+	u8 writeBlock;
+	u8 writeOffset;
+	u16 capy;
+	u8 srcA;
+	u8 srcB;
+	u8 readBlock;
+	u8 readOffset;
+	u8 capSrc;
 } ;
 
 /*******************************************************************************
