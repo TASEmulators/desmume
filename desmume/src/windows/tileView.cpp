@@ -83,7 +83,7 @@ LRESULT TileViewBox_Direct(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
 		if(win->target >= ARM9MEM_LCDC)
 			mem = ARM9Mem.ARM9_LCD + win->target - ARM9MEM_LCDC;
 		else
-			mem = MMU_RenderMapToLCD(win->target);
+			mem = (u8*)MMU_gpu_map(win->target);
 		if(mem)
 			SetDIBitsToDevice(mem_dc, 0, 0, 256, 256, 0, 0, 0, 256, mem, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
         
@@ -144,7 +144,7 @@ LRESULT TileViewBox_Pal256(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
 			if(win->target >= ARM9MEM_LCDC)
 				mem = ARM9Mem.ARM9_LCD + win->target - ARM9MEM_LCDC;
 			else
-				mem = MMU_RenderMapToLCD(win->target);
+				mem = (u8*)MMU_gpu_map(win->target);
 			 if(mem)
 			 {
 				 for(num2 = 0; num2<32; ++num2)
@@ -215,7 +215,7 @@ LRESULT TileViewBox_Pal16(HWND hwnd, tileview_struct * win, WPARAM wParam, LPARA
 			if(win->target >= ARM9MEM_LCDC)
 				mem = ARM9Mem.ARM9_LCD + win->target - ARM9MEM_LCDC;
 			else
-				mem = MMU_RenderMapToLCD(win->target);
+				mem = (u8*)MMU_gpu_map(win->target);
 
 			if(mem)
 				{

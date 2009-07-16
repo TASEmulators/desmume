@@ -190,8 +190,6 @@ extern struct armcpu_memory_iface arm9_base_memory_iface;
 extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
 
-extern u8 *MMU_RenderMapToLCD(u32 vram_addr);
-
 #define VRAM_ARM9_PAGES 512
 extern u8 vram_arm9_map[VRAM_ARM9_PAGES];
 FORCEINLINE void* MMU_gpu_map(u32 vram_addr)

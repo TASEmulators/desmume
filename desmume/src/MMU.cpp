@@ -396,20 +396,6 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 }
 
 
-u8 *MMU_RenderMapToLCD(u32 vram_addr)
-{
-	//THIS FUNCTION IS DANGEROUS!
-	//the very idea is heinous, since people are
-	//certainly reading several bytes which probably overrun a page or something
-	//this needs to go through a system like what is used for textures for mapping into chunks
-
-	bool unmapped;
-	vram_addr = MMU_LCDmap<0>(vram_addr,unmapped);
-	if(unmapped) return 0;
-	else return ARM9Mem.ARM9_LCD + (vram_addr - LCDC_HACKY_LOCATION);
-}
-
-
 #define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
 
 struct VramConfiguration {

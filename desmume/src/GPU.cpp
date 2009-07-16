@@ -1272,7 +1272,7 @@ template<bool MOSAIC> void lineLarge8bpp(GPU * gpu)
 	//TODO - handle wrapping / out of bounds correctly from rot_scale_op?
 
 	u32 tmp_map = gpu->BG_bmp_large_ram[num] + lg * YBG;
-	u8* map = MMU_RenderMapToLCD(tmp_map);
+	u8* map = MMU_gpu_map(tmp_map);
 
 	u8* pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
 
@@ -1317,12 +1317,8 @@ template<bool MOSAIC> INLINE void renderline_textBG(GPU * gpu, u16 XBG, u16 YBG,
 	if(tmp>31) 
 		tmp_map+= ADDRESS_STEP_512B << bgCnt->ScreenSize ;
 
-	//map = (u8*)MMU_RenderMapToLCD(tmp_map);
 	map = tmp_map;
-	//if(!map) return; 	// no map
-	
 	tile = gpu->BG_tile_ram[num];
-	//if(!tile) return; 	// no tiles
 
 	xoff = XBG;
 	pal = ARM9Mem.ARM9_VMEM + gpu->core * ADDRESS_STEP_1KB;
@@ -1951,7 +1947,6 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			// If we are using 1 palette of 256 colours
 			if(spriteInfo->Depth)
 			{
-				//2d: src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + ((spriteInfo->TileIndex) << 5));
 				src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex << block));
 
 				// If extended palettes are set, use them
@@ -2103,9 +2098,9 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				else
 				{
 					if (spriteInfo->Depth)
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
+						src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*8) + ((y&0x7)*8));
 					else
-						src = (u8 *)MMU_RenderMapToLCD(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
+						src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<block) + ((y>>3)*sprSize.x*4) + ((y&0x7)*4));
 				}
 
 				render_sprite_Win (gpu, l, src, spriteInfo->Depth, lg, sprX, x, xdir);
