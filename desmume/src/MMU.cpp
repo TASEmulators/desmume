@@ -1312,8 +1312,8 @@ static INLINE u16 read_timer(int proc, int timerIndex)
 	s32 units = diff / (1<<MMU.timerMODE[proc][timerIndex]);
 
 	s32 ret = 65535 - units;
-	assert(ret>=0);
-	if(ret<0) printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ RETURN < 0\n");
+	if(ret<0) printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ RETURN < 0: %d\n", ret);
+
 	return ret;
 }
 
