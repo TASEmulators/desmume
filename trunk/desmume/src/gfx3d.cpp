@@ -329,6 +329,8 @@ void gfx3d_reset()
 
 	drawPending = FALSE;
 	flushPending = FALSE;
+	memset(polylists, 0, sizeof(polylists));
+	memset(vertlists, 0, sizeof(vertlists));
 	listTwiddle = 1;
 	twiddleLists();
 
@@ -338,11 +340,13 @@ void gfx3d_reset()
 	MatrixInit (mtxCurrent[3]);
 	MatrixInit (mtxTemporal);
 
+	MatrixStackInit(&mtxStack[0]);
+	MatrixStackInit(&mtxStack[1]);
+	MatrixStackInit(&mtxStack[2]);
+	MatrixStackInit(&mtxStack[3]);
+
 	clCmd = 0;
 	clInd = 0;
-#ifdef USE_GEOMETRY_FIFO_EMULATION
-	clInd2 = 0;
-#endif
 
 	ML4x4ind = 0;
 	ML4x3ind = 0;
@@ -364,15 +368,15 @@ void gfx3d_reset()
 
 	gfx3d.clearDepth = gfx3d_extendDepth_15_to_24(0x7FFF);
 	
-	GFX_PIPEclear();
-	GFX_FIFOclear();
-
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	clInd2 = 0;
 	isSwapBuffers = false;
 	isVBlank = false;
 	bWaitForPolys = false;
 #endif
+
+	GFX_PIPEclear();
+	GFX_FIFOclear();
 }
 
 void gfx3d_glViewPort(u32 v)
@@ -1406,8 +1410,17 @@ unsigned short gfx3d_glGetVecRes(unsigned int index)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 
 //#define _3D_LOG_EXEC
+#if 0
+#define dEXEC(x) if (cmd != tmp_cmd)\
+					INFO("ERROR %s:  cmd old 0x%02X, new 0x%02X\n", x, cmd, tmp_cmd);
+#else
+#define dEXEC(x)
+#endif
+
 void gfx3d_execute(u8 cmd, u32 param)
 {
+	u8	tmp_cmd = 0;
+	u32	tmp_param = 0;
 #ifdef _3D_LOG_EXEC
 	u32 gxstat2 = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 	INFO("*** gxFIFO: exec 0x%02X, tail %03i, gxstat 0x%08X\n", cmd, gxFIFO.tail, gxstat2);
@@ -1434,24 +1447,81 @@ void gfx3d_execute(u8 cmd, u32 param)
 		break;
 		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
 			gfx3d_glLoadMatrix4x4(param);
+			for (int i=0; i < 15; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("load4x4");
+					gfx3d_glLoadMatrix4x4(tmp_param);
+				}
+			}
+
 		break;
 		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
 			gfx3d_glLoadMatrix4x3(param);
+			for (int i=0; i < 11; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("load4x3");
+					gfx3d_glLoadMatrix4x3(tmp_param);
+				}
+			}
 		break;
 		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
 			gfx3d_glMultMatrix4x4(param);
+			for (int i=0; i < 15; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("mult4x4");
+					gfx3d_glMultMatrix4x4(tmp_param);
+				}
+			}
 		break;
 		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
 			gfx3d_glMultMatrix4x3(param);
+			for (int i=0; i < 11; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("mult4x3");
+					gfx3d_glMultMatrix4x3(tmp_param);
+				}
+			}
 		break;
 		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
 			gfx3d_glMultMatrix3x3(param);
+			for (int i=0; i < 8; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("mult3x3");
+					gfx3d_glMultMatrix3x3(tmp_param);
+				}
+			}
 		break;
 		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
 			gfx3d_glScale(param);
+			for (int i=0; i < 2; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("scale");
+					gfx3d_glScale(tmp_param);
+				}
+			}
 		break;
 		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
 			gfx3d_glTranslate(param);
+			for (int i=0; i < 2; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("trans");
+					gfx3d_glTranslate(tmp_param);
+				}
+			}
 		break;
 		case 0x20:		// COLOR - Directly Set Vertex Color (W)
 			gfx3d_glColor3b(param);
@@ -1464,6 +1534,11 @@ void gfx3d_execute(u8 cmd, u32 param)
 		break;
 		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
 			gfx3d_glVertex16b(param);
+			if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+			{
+				dEXEC("vertex16b");
+				gfx3d_glVertex16b(tmp_param);
+			}
 		break;
 		case 0x24:		// VTX_10 - Set Vertex XYZ Coordinates (W)
 			gfx3d_glVertex10b(param);
@@ -1503,6 +1578,14 @@ void gfx3d_execute(u8 cmd, u32 param)
 		break;
 		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
 			gfx3d_glShininess(param);
+			for (int i=0; i < 31; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("shininess");
+					gfx3d_glShininess(tmp_param);
+				}
+			}
 		break;
 		case 0x40:		// BEGIN_VTXS - Start of Vertex List (W)
 			gfx3d_glBegin(param);
@@ -1518,9 +1601,23 @@ void gfx3d_execute(u8 cmd, u32 param)
 		break;
 		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
 			gfx3d_glBoxTest(param);
+			for (int i=0; i < 2; i++)
+			{
+				if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+				{
+					dEXEC("boxTest");
+					gfx3d_glBoxTest(tmp_param);
+				}
+			}
+
 		break;
 		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
 			gfx3d_glPosTest(param);
+			if (GFX_PIPErecv(&tmp_cmd, &tmp_param))
+			{
+				dEXEC("posTest");
+				gfx3d_glPosTest(tmp_param);
+			}
 		break;
 		case 0x72:		// VEC_TEST - Set Directional Vector for Test (W)
 			gfx3d_glVecTest(param);
@@ -1539,33 +1636,44 @@ void gfx3d_execute3D()
 
 	if (isSwapBuffers) return;
 
+	u16 size = gxPIPE.tail + gxFIFO.tail;
+	if (size == 0) return;
+
+	switch (gxPIPE.cmd[0])
+	{
+		case 0x34:		// SHININESS - Specular Reflection Shininess Table (W)
+			if (size < 32) return;
+		break;
+
+		case 0x16:		// MTX_LOAD_4x4 - Load 4x4 Matrix to Current Matrix (W)
+		case 0x18:		// MTX_MULT_4x4 - Multiply Current Matrix by 4x4 Matrix (W)
+			if (size < 16) return;
+		break;
+
+		case 0x17:		// MTX_LOAD_4x3 - Load 4x3 Matrix to Current Matrix (W)
+		case 0x19:		// MTX_MULT_4x3 - Multiply Current Matrix by 4x3 Matrix (W)
+			if (size < 12) return;
+		break;
+
+		case 0x1A:		// MTX_MULT_3x3 - Multiply Current Matrix by 3x3 Matrix (W)
+			if (size < 9) return;
+		break;
+
+		case 0x1B:		// MTX_SCALE - Multiply Current Matrix by Scale Matrix (W)
+		case 0x1C:		// MTX_TRANS - Mult. Curr. Matrix by Translation Matrix (W)
+		case 0x70:		// BOX_TEST - Test if Cuboid Sits inside View Volume (W)
+			if (size < 3) return;
+		break;
+
+		case 0x23:		// VTX_16 - Set Vertex XYZ Coordinates (W)
+		case 0x71:		// POS_TEST - Set Position Coordinates for Test (W)
+			if (size < 2) return;
+		break;
+	}
+
 	if (GFX_PIPErecv(&cmd, &param))
 	{
 		gfx3d_execute(cmd, param);
-#if 0
-		for ( ;;)
-		{
-			if ( (cmd == 0x11) || (cmd==0x15) || (cmd==41) )
-			{
-				if (!GFX_FIFOrecv(&cmd, &param)) return;
-				gfx3d_execute(cmd, param);
-				continue;
-			}
-			break;
-		}
-#endif
-#if 0
-		if (bWaitForPolys)
-		{
-			//INFO("Error: incompleted polylist\n");
-			if (polygonListCompleted == 1)
-			{
-				gfx3d_doFlush();
-				isSwapBuffers = true;
-				bWaitForPolys = false;
-			}
-		}
-#endif	
 	}
 }
 #endif
@@ -1587,13 +1695,8 @@ void gfx3d_glFlush(u32 v)
 		return;
 	}
 #endif
-
-	//gfx3d_doFlush();
 	isSwapBuffers = true;
-	
-	//u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
-	//gxstat |= 0x08000000;		// set busy flag
-	//T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
+
 #else
 	if(!flushPending)
 	{
@@ -1718,8 +1821,6 @@ void gfx3d_VBlankSignal()
 		//if (bWaitForPolys) return;
 		gfx3d_doFlush();
 		isSwapBuffers = false;
-		GFX_DELAY(392);
-		NDS_RescheduleGXFIFO();
 	}
 #else
 	//the 3d buffers are swapped when a vblank begins.
@@ -1742,10 +1843,14 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 #ifdef USE_GEOMETRY_FIFO_EMULATION
 	isVBlank = false;
 	
-	if(skipFrame) return;
 	if (!drawPending) return;
 	drawPending = FALSE;
-
+	if(skipFrame) 
+	{
+		GFX_DELAY(392);
+		NDS_RescheduleGXFIFO();
+		return;
+	}
 	//if the null 3d core is chosen, then we need to clear out the 3d buffers to keep old data from being rendered
 	if(gpu3D == &gpu3DNull || !CommonSettings.showGpu.main)
 	{
@@ -1755,6 +1860,9 @@ void gfx3d_VBlankEndSignal(bool skipFrame)
 	}
 
 	gpu3D->NDS_3D_Render();
+
+	GFX_DELAY(392);
+	NDS_RescheduleGXFIFO();
 #else
 	//if we are skipping 3d frames then the 3d rendering will get held up here.
 	//but, as soon as we quit skipping frames, the held-up 3d frame will render
@@ -1811,7 +1919,7 @@ void gfx3d_sendCommandToFIFO(u32 val)
 		return;
 	}
 #ifdef _3D_LOG
-		INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", clCmd & 0xFF, val);
+	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i\n", clCmd & 0xFF, val, gxPIPE.tail, gxFIFO.tail);
 #endif
 
 	NOPARAMS();
@@ -1924,7 +2032,7 @@ void gfx3d_sendCommand(u32 cmd, u32 param)
 {
 	cmd = (cmd & 0x01FF) >> 2;
 #ifdef _3D_LOG
-	INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X) - DIRECT (%i)\n", cmd, param, nds.cycles);
+	INFO("gxFIFO: send 0x%02X: val=0x%08X, pipe %02i, fifo %03i (direct)\n", cmd, param, gxPIPE.tail, gxFIFO.tail);
 #endif
 
 	switch (cmd)

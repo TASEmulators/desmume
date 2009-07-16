@@ -2198,6 +2198,10 @@ void NDS_Reset()
 
 	if (!header) return ;
 
+	nds_timer = 0;
+	nds_arm9_timer = 0;
+	nds_arm7_timer = 0;
+
 	if(movieMode != MOVIEMODE_INACTIVE && !_HACK_DONT_STOPMOVIE)
 		movie_reset_command = true;
 
