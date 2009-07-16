@@ -2126,7 +2126,7 @@ void NDS_exec(s32 nb)
 			}
 
 			//what we find here is dependent on the timing constants above
-			if(nds_timer>next && (nds_timer-next)>16)
+			if(nds_timer>next && (nds_timer-next)>18)
 				printf("curious. please report: over by %d\n",(int)(nds_timer-next));
 
 			//if we were waiting for an irq, don't wait too long:
