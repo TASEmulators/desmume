@@ -646,6 +646,8 @@ template<typename T, int bpp> static T convert(u16 val)
 template<typename T, int bpp> static void doRotate(void* dst)
 {
 	u8* buffer = (u8*)dst;
+	int size = video.size();
+	u16* src = video.finalBuffer();
 	switch(video.rotation)
 	{
 	case 0:
@@ -654,11 +656,11 @@ template<typename T, int bpp> static void doRotate(void* dst)
 			if(ddsd.lPitch == 1024)
 			{
 				if(video.rotation==180)
-					for(int i = 0, j=video.size()-1; j>=0; i++,j--)
-						((T*)buffer)[i] = convert<T,bpp>(((u16*)video.filteredbuffer)[j]);
+					for(int i = 0, j=size-1; j>=0; i++,j--)
+						((T*)buffer)[i] = convert<T,bpp>((src)[j]);
 				else
-					for(int i = 0; i < video.size(); i++)
-						((T*)buffer)[i] = convert<T,bpp>(((u16*)video.filteredbuffer)[i]);
+					for(int i = 0; i < size; i++)
+						((T*)buffer)[i] = convert<T,bpp>(src[i]);
 			}
 			else
 			{
@@ -666,7 +668,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 					for(int y = 0; y < video.height; y++)
 					{
 						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[video.height*video.width - (y * video.width) - x - 1]);
+							((T*)buffer)[x] = convert<T,bpp>(src[video.height*video.width - (y * video.width) - x - 1]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -674,7 +676,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 					for(int y = 0; y < video.height; y++)
 					{
 						for(int x = 0; x < video.width; x++)
-							((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[(y * video.width) + x]);
+							((T*)buffer)[x] = convert<T,bpp>(src[(y * video.width) + x]);
 
 						buffer += ddsd.lPitch;
 					}
@@ -688,7 +690,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 				for(int y = 0; y < video.width; y++)
 				{
 					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[(((video.height-1)-x) * video.width) + y]);
+						((T*)buffer)[x] = convert<T,bpp>(src[(((video.height-1)-x) * video.width) + y]);
 
 					buffer += ddsd.lPitch;
 				}
@@ -696,7 +698,7 @@ template<typename T, int bpp> static void doRotate(void* dst)
 				for(int y = 0; y < video.width; y++)
 				{
 					for(int x = 0; x < video.height; x++)
-						((T*)buffer)[x] = convert<T,bpp>(((u16*)video.filteredbuffer)[((x) * video.width) + (video.width-1) - y]);
+						((T*)buffer)[x] = convert<T,bpp>(src[((x) * video.width) + (video.width-1) - y]);
 
 					buffer += ddsd.lPitch;
 				}

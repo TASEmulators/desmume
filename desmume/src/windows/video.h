@@ -28,7 +28,6 @@ public:
 	void reset() {
 		width = 256;
 		height = 384;
-
 	}
 
 	void setfilter(int filter) {
@@ -51,6 +50,13 @@ public:
 	SSurface src;
 	SSurface dst;
 
+	u16* finalBuffer() const
+	{
+		if(currentfilter == NONE)
+			return (u16*)GPU_screen;
+		else return (u16*)filteredbuffer;
+	}
+
 	void filter() {
 
 		src.Height = 384;
@@ -66,7 +72,6 @@ public:
 		switch(currentfilter)
 		{
 			case NONE:
-				memcpy(filteredbuffer, GPU_screen, 256*192*4);
 				break;
 			case HQ2X:
 				RenderHQ2X(src, dst);
