@@ -632,6 +632,7 @@ void GPU_Reset(GPU *g, u8 l)
 
 void GPU_DeInit(GPU * gpu)
 {
+	if(gpu==&GPU_main || gpu==&GPU_sub) return;
 	free(gpu);
 }
 
