@@ -573,12 +573,14 @@ static void GPU_InitFadeColors()
 				}
 }
 
+static CACHE_ALIGN GPU GPU_main, GPU_sub;
+
 GPU * GPU_Init(u8 l)
 {
 	GPU * g;
 
-	if ((g = (GPU *) malloc(sizeof(GPU))) == NULL)
-		return NULL;
+	if(l==0) g = &GPU_main;
+	else g = &GPU_sub;
 
 	GPU_Reset(g, l);
 	GPU_InitFadeColors();
@@ -590,8 +592,6 @@ GPU * GPU_Init(u8 l)
 	g->setFinalColorBck_funcNum = 0;
 	g->setFinalColor3d_funcNum = 0;
 	g->setFinalColorSpr = _master_setFinalOBJColor<None,false>;
-
-	
 
 	return g;
 }
@@ -1133,9 +1133,8 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, const u
 	//This is probably the best place to enforce it, since almost every single color that comes in here
 	//will be pulled from a palette that needs the top bit stripped off anyway.
 	//assert((color&0x8000)==0);
-	color &= 0x7FFF;
+	if(!BACKDROP) color &= 0x7FFF; //but for the backdrop we can easily guarantee earlier that theres no bit here
 
-	//if someone disagrees with these, they could be reimplemented as a function pointer easily
 	bool draw=true;
 	switch(setFinalColorBck_funcNum)
 	{
@@ -1149,10 +1148,10 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, const u
 	case 0x7: draw=setFinalBGColorSpecialDecreaseWnd<BACKDROP>(color,x); break;
 	};
 
-	if(draw) 
+	if(BACKDROP || draw) //backdrop must always be drawn
 	{
 		T2WriteWord(currDst, x<<1, color | 0x8000);
-		bgPixels[x] = currBgNum;
+		if(!BACKDROP) bgPixels[x] = currBgNum; //lets do this in the backdrop drawing loop, should be faster
 	}
 }
 
@@ -2359,7 +2358,6 @@ void GPU_set_DISPCAPCNT(u32 val)
 }
 // #define BRIGHT_TABLES
 
-
 static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
 	GPU * gpu = screen->gpu;
@@ -2381,6 +2379,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	for(int x=0;x<256;x++) {
 		gpu->__setFinalColorBck<false,true>(backdrop_color,x,1);
 	}
+	memset(gpu->bgPixels,5,256);
 
 	//this check isnt really helpful. it just slows us down in the cases where we need the most speed
 	//if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && !gpu->LayersEnable[2] && !gpu->LayersEnable[3] && !gpu->LayersEnable[4]) return;
@@ -2395,7 +2394,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	for (int i=0; i<NB_PRIORITIES; i++) {
 		gpu->itemsForPriority[i].nbPixelsX = 0;
 	}
-	
+
 	// for all the pixels in the line
 	if (gpu->LayersEnable[4]) 
 	{

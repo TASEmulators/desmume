@@ -33,7 +33,7 @@
 
 template<u32> static u32 armcpu_prefetch();
 
-inline u32 armcpu_prefetch(armcpu_t *armcpu) { 
+FORCEINLINE u32 armcpu_prefetch(armcpu_t *armcpu) { 
 	if(armcpu->proc_ID==0) return armcpu_prefetch<0>();
 	else return armcpu_prefetch<1>();
 }
@@ -363,8 +363,7 @@ u32 armcpu_switchMode(armcpu_t *armcpu, u8 mode)
 }
 
 template<u32 PROCNUM>
-static u32
-armcpu_prefetch()
+FORCEINLINE static u32 armcpu_prefetch()
 {
 	armcpu_t* const armcpu = &ARMPROC;
 #ifdef GDB_STUB
@@ -521,7 +520,10 @@ u32 armcpu_exec()
 
 	if(ARMPROC.CPSR.bits.T == 0)
 	{
-        if((TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)))
+        if(
+			CONDITION(ARMPROC.instruction) == 0x0E  //fast path for unconditional instructions
+			|| (TEST_COND(CONDITION(ARMPROC.instruction), CODE(ARMPROC.instruction), ARMPROC.CPSR)) //handles any condition
+			)
 		{
 			if(PROCNUM==0) {
 #ifdef WANTASMLISTING

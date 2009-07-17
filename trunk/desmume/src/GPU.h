@@ -726,7 +726,7 @@ struct GPU
 	u8	MasterBrightMode;
 	u32 MasterBrightFactor;
 
-	u8 bgPixels[1024]; //yes indeed, this is oversized. map debug tools try to write to it
+	CACHE_ALIGN u8 bgPixels[1024]; //yes indeed, this is oversized. map debug tools try to write to it
 
 	u32 currLine;
 	u8 currBgNum;
