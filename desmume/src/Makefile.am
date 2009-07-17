@@ -23,6 +23,7 @@ libdesmume_a_SOURCES = \
 	GPU_osd.cpp GPU_osd.h \
         mem.h mc.cpp mc.h \
 	memorystream.h \
+	path.h \
 	readwrite.cpp readwrite.h \
 	wifi.cpp wifi.h \
         MMU.cpp MMU.h NDSSystem.cpp NDSSystem.h registers.h \

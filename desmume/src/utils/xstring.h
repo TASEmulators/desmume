@@ -28,6 +28,12 @@ int str_strip(char *str, int flags);
 int chr_replace(char *str, char search, char replace);
 int str_replace(char *str, char *search, char *replace);
 
+std::string strsub(const std::string& str, int pos, int len);
+std::string strmid(const std::string& str, int pos, int len);
+std::string strleft(const std::string& str, int len);
+std::string strright(const std::string& str, int len);
+std::string toupper(const std::string& str);
+
 int HexStringToBytesLength(const std::string& str);
 int Base64StringToBytesLength(const std::string& str);
 std::string u32ToHexString(u32 val);
