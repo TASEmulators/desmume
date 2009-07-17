@@ -731,7 +731,7 @@ void GameInfo::populate()
 	}
 }
 
-int NDS_LoadROM( const char *filename, const char *logicalFilename)
+int NDS_LoadROM(const char *filename, const char *logicalFilename)
 {
 	int					ret;
 	int					type;
@@ -748,7 +748,8 @@ int NDS_LoadROM( const char *filename, const char *logicalFilename)
 	noext = strdup(filename);
 	reader = ROMReaderInit(&noext);
 	
-	path.init(filename);
+	if(logicalFilename) path.init(logicalFilename);
+	else path.init(filename);
 	if(!strcasecmp(path.extension().c_str(), "zip"))		type = ROM_NDS;
 	else if ( !strcasecmp(path.extension().c_str(), "nds"))
 		type = ROM_NDS;
