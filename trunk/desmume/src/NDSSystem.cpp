@@ -46,6 +46,10 @@
 #include "./windows/disView.h"
 #endif
 
+#include "path.h"
+
+PathInfo path;
+
 //this doesnt work anyway. why take a speed hit for public releases?
 // Luigi__: I don't agree. We should start include wifi emulation in public releases
 // because it already allows games to not hang during wifi operations
@@ -65,8 +69,7 @@ std::string InputDisplayString;
 
 static BOOL LidClosed = FALSE;
 static u8	countLid = 0;
-char pathToROM[MAX_PATH];
-char pathFilenameToROMwithoutExt[MAX_PATH];
+
 
 GameInfo gameInfo;
 
@@ -738,55 +741,18 @@ int NDS_LoadROM( const char *filename, const char *logicalFilename)
 	u8					*data;
 	char				*noext;
 	char				buf[MAX_PATH];
-	char				extROM[MAX_PATH];
-	char				extROM2[5];
 
 	if (filename == NULL)
 		return -1;
 
-	memset(pathToROM, 0, MAX_PATH);
-	memset(pathFilenameToROMwithoutExt, 0, MAX_PATH);
-	memset(extROM, 0, MAX_PATH);
-	memset(extROM2, 0, 5);
-
 	noext = strdup(filename);
 	reader = ROMReaderInit(&noext);
 	
-	if(logicalFilename)
-	{
-		for (int t = strlen(logicalFilename); t>0; t--)
-			if ( (logicalFilename[t] == '\\') || (logicalFilename[t] == '/') )
-			{
-				strncpy(pathToROM, logicalFilename, t+1);
-				break;
-			}
-	}
-	else
-	{
-		for (int t = strlen(filename); t>0; t--)
-			if ( (filename[t] == '\\') || (filename[t] == '/') )
-			{
-				strncpy(pathToROM, filename, t+1);
-				break;
-			}
-	}
-	
-	for (int t = strlen(filename); t>0; t--)
-		if ( (filename[t] == '\\') || (filename[t] == '/') || (filename[t] == '.') )
-		{
-			if (filename[t] != '.') return -1;
-			strncpy(pathFilenameToROMwithoutExt, filename, t);
-			strncpy(extROM, filename+t, strlen(filename) - t);
-			if (t>4)
-				strncpy(extROM2, filename+(t-3), 3);
-			break;
-		}
-
-	if(!strcasecmp(extROM, ".zip"))
+	path.init(filename);
+	if(!strcasecmp(path.extension().c_str(), "zip"))		type = ROM_NDS;
+	else if ( !strcasecmp(path.extension().c_str(), "nds"))
 		type = ROM_NDS;
-	else if ( !strcasecmp(extROM, ".nds"))
-		type = ROM_NDS;
-	else if ( !strcasecmp(extROM, ".gba") && !strcasecmp(extROM2, ".ds")) 
+	else if ( path.isdsgba())
 		type = ROM_DSGBA;
 	else
 		type = ROM_NDS;
@@ -860,11 +826,7 @@ int NDS_LoadROM( const char *filename, const char *logicalFilename)
 
 	memset(buf, 0, MAX_PATH);
 
-	#ifdef WIN32
-	GetFullPathNoExt(BATTERY, buf, MAX_PATH);
-	#else
-	strcpy(buf, pathFilenameToROMwithoutExt);
-	#endif
+	path.getpathnoext(path.BATTERY, buf);
 	
 	strcat(buf, ".dsv");							// DeSmuME memory card	:)
 
@@ -872,11 +834,7 @@ int NDS_LoadROM( const char *filename, const char *logicalFilename)
 
 	memset(buf, 0, MAX_PATH);
 
-	#ifdef WIN32
-	GetFullPathNoExt(CHEATS, buf, MAX_PATH);
-	#else
-	strcpy(buf, pathFilenameToROMwithoutExt);
-	#endif
+	path.getpathnoext(path.CHEATS, buf);
 	
 	strcat(buf, ".dct");							// DeSmuME cheat		:)
 	cheatsInit(buf);

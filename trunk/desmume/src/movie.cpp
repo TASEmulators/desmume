@@ -34,6 +34,7 @@
 #include "version.h"
 #include "GPU_osd.h"
 #include "memorystream.h"
+#include "path.h"
 
 using namespace std;
 bool freshMovie = false;	  //True when a movie loads, false when movie is altered.  Used to determine if a movie has been altered since opening
@@ -553,7 +554,7 @@ void _CDECL_ FCEUI_SaveMovie(const char *fname, std::wstring author, int flag, s
 	if(author != L"") currMovieData.comments.push_back(L"author " + author);
 	currMovieData.romChecksum = gameInfo.crc;
 	currMovieData.romSerial = gameInfo.ROMserial;
-	currMovieData.romFilename = GetRomName();
+	currMovieData.romFilename = path.GetRomName();
 	
 	NDS_Reset();
 

@@ -36,6 +36,7 @@
 #include "../GPU.h"
 #include "pathsettings.h"
 #include "GPU_osd.h"
+#include "path.h"
 
 extern LRESULT OpenFile();	//adelikat: Made this an extern here instead of main.h  Seemed icky not to limit the scope of this function
 
@@ -93,24 +94,23 @@ void HK_PrintScreen(int param)
 	ofn.Flags = OFN_OVERWRITEPROMPT;
 
 	ZeroMemory(filename, sizeof(filename));
-//	GetPathFor(SCREENSHOTS, filename, MAX_PATH);
+	path.getpath(path.SCREENSHOTS, filename);
 
 	char file[MAX_PATH];
 	ZeroMemory(file, sizeof(file));
-	FormatName(file, MAX_PATH);
+	path.formatname(file);
 	strcat(filename, file);
 	int len = strlen(filename);
 	if(len > MAX_PATH - 4)
 		filename[MAX_PATH - 4] = '\0';
 
-	ImageFormat format = GetImageFormatType();
-	if(format == PNG)
+	if(path.imageformat() == path.PNG)
 	{
 		strcat(filename, ".png");
 		ofn.lpstrDefExt = "png";
 		ofn.nFilterIndex = 1;
 	}
-	else if(format == BMP)
+	else if(path.imageformat() == path.BMP)
 	{
 		strcat(filename, ".bmp");
 		ofn.lpstrDefExt = "bmp";
