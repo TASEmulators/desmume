@@ -40,6 +40,8 @@
 #include "gfx3d.h"
 #include "movie.h"
 
+#include "path.h"
+
 #ifdef _MSC_VER
 #include "windows/main.h"
 #endif
@@ -460,11 +462,7 @@ void scan_savestates()
 
   for( i = 1; i <= NB_STATES; i++ )
     {
-    #ifdef WIN32
-    GetFullPathNoExt(STATES, filename, MAX_PATH);
-    #else
-    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
-    #endif
+    path.getpathnoext(path.STATES, filename);
 	  
 	  if (strlen(filename) + strlen(".dst") + strlen("-2147483648") /* = biggest string for i */ >MAX_PATH) return ;
       sprintf(filename+strlen(filename), ".ds%d", i);
@@ -483,11 +481,7 @@ void savestate_slot(int num)
 
 	lastSaveState = num;		//Set last savestate used
 
-    #ifdef WIN32
-    GetFullPathNoExt(STATES, filename, MAX_PATH);
-    #else
-    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
-    #endif
+    path.getpathnoext(path.STATES, filename);
 
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);
@@ -515,11 +509,7 @@ void loadstate_slot(int num)
 
    lastSaveState = num;		//Set last savestate used
 
-    #ifdef WIN32
-    GetFullPathNoExt(STATES, filename, MAX_PATH);
-    #else
-    strncpy(filename, pathFilenameToROMwithoutExt, MAX_PATH);
-    #endif
+    path.getpathnoext(path.STATES, filename);
 
    if (strlen(filename) + strlen(".dsx") + strlen("-2147483648") /* = biggest string for num */ >MAX_PATH) return ;
    sprintf(filename+strlen(filename), ".ds%d", num);

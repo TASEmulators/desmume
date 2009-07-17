@@ -86,6 +86,7 @@
 #include "utils/xstring.h"
 #include "directx/ddraw.h"
 #include "video.h"
+#include "path.h"
 
 #include "aggdraw.h"
 #include "agg2d.h"
@@ -1111,10 +1112,6 @@ static BOOL LoadROM(const char * filename, const char * logicalName)
 	NDS_Pause();
 	//if (strcmp(filename,"")!=0) INFO("Attempting to load ROM: %s\n",filename);
 
-	//extract the internal part of the logical rom name
-	std::vector<std::string> parts = tokenize_str(logicalName,"|");
-	SetRomName(parts[parts.size()-1].c_str());
-
 	if (NDS_LoadROM(filename, logicalName) > 0)
 	{
 		INFO("Loading %s was successful\n",logicalName);
@@ -1985,11 +1982,11 @@ void AviRecordTo()
 
 	char folder[MAX_PATH];
 	ZeroMemory(folder, sizeof(folder));
-	GetPathFor(AVI_FILES, folder, MAX_PATH);
+	path.getpath(path.AVI_FILES, folder);
 
 	char file[MAX_PATH];
 	ZeroMemory(file, sizeof(file));
-	FormatName(file, MAX_PATH);
+	path.formatname(file);
 
 	strcat(folder, file);
 	int len = strlen(folder);
@@ -2169,7 +2166,7 @@ LRESULT OpenFile()
 
 	char buffer[MAX_PATH];
 	ZeroMemory(buffer, sizeof(buffer));
-	GetPathFor(ROMS, buffer, MAX_PATH);
+	path.getpath(path.ROMS, buffer);
 	ofn.lpstrInitialDir = buffer;
 
 
@@ -2178,7 +2175,7 @@ LRESULT OpenFile()
 		return 0;
 	}
 	else {
-	if(SavePathForRomVisit())
+	if(path.savelastromvisit)
 	{
 		char *lchr, buffer[MAX_PATH];
 		ZeroMemory(buffer, sizeof(buffer));
@@ -2186,7 +2183,7 @@ LRESULT OpenFile()
 		lchr = strrchr(filename, '\\');
 		strncpy(buffer, filename, strlen(filename) - strlen(lchr));
 		
-		SetPathFor(ROMS, buffer);
+		path.setpath(path.ROMS, buffer);
 		WritePathSettings();
 	}
 	}
@@ -2512,7 +2509,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_CREATE:
 		{
-			ReadPathSettings();
+			path.ReadPathSettings();
 			pausedByMinimize = FALSE;
 			UpdateScreenRects();
 			return 0;
@@ -2780,25 +2777,25 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			{
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
-				GetPathFor(SCREENSHOTS, buffer, MAX_PATH);
+				path.getpath(path.SCREENSHOTS, buffer);
 
 				char file[MAX_PATH];
 				ZeroMemory(file, sizeof(file));
-				FormatName(file, MAX_PATH);
+				path.formatname(file);
 		
 				strcat(buffer, file);
 				if( strlen(buffer) > (MAX_PATH - 4))
 					buffer[MAX_PATH - 4] = '\0';
 
-				switch(GetImageFormatType())
+				switch(path.imageformat())
 				{
-					case PNG:
+					case path.PNG:
 						{		
 							strcat(buffer, ".png");
 							NDS_WritePNG(buffer);
 						}
 						break;
-					case BMP:
+					case path.BMP:
 						{
 							strcat(buffer, ".bmp");
 							NDS_WriteBMP(buffer);
@@ -2862,7 +2859,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
-				GetPathFor(STATES, buffer, MAX_PATH);
+				path.getpath(path.STATES, buffer);
 				ofn.lpstrInitialDir = buffer;
 
 				if(!GetOpenFileName(&ofn))
@@ -2892,7 +2889,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
-				GetPathFor(STATES, buffer, MAX_PATH);
+				path.getpath(path.STATES, buffer);
 				ofn.lpstrInitialDir = buffer;
 
 				if(!GetSaveFileName(&ofn))
@@ -2963,7 +2960,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 				char buffer[MAX_PATH];
 				ZeroMemory(buffer, sizeof(buffer));
-				GetPathFor(BATTERY, buffer, MAX_PATH);
+				path.getpath(path.BATTERY, buffer);
 				ofn.lpstrInitialDir = buffer;
 
 				if(!GetOpenFileName(&ofn))
@@ -3734,7 +3731,7 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 					char buffer[MAX_PATH];
 					ZeroMemory(buffer, sizeof(buffer));
-					GetPathFor(FIRMWARE, buffer, MAX_PATH);
+					path.getpath(path.FIRMWARE, buffer);
 					ofn.lpstrInitialDir = buffer;
 
 					if(GetOpenFileName(&ofn))
@@ -3839,7 +3836,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 
 					char buffer[MAX_PATH];
 					ZeroMemory(buffer, sizeof(buffer));
-					GetPathFor(SOUNDS, buffer, MAX_PATH);
+					path.getpath(path.SOUNDS, buffer);
 					ofn.lpstrInitialDir = buffer;
 
 					if(GetOpenFileName(&ofn))

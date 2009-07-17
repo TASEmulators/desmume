@@ -58,6 +58,7 @@
 #include "../fs.h"
 #include "MMU.h"
 #include "NDSSystem.h"
+#include "../path.h"
 
 typedef struct {
 	int level,parent,filesInDir;
@@ -510,7 +511,7 @@ static BOOL cflash_init()
 
 	if (CFlash_Mode == ADDON_CFLASH_MODE_RomPath)
 	{
-		sFlashPath = pathToROM;
+		sFlashPath = path.pathToRoms;
 		INFO("Using CFlash directory of rom: %s\n", sFlashPath.c_str());
 	}
 	else if(CFlash_Mode == ADDON_CFLASH_MODE_Path)

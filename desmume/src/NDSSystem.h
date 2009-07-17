@@ -100,8 +100,6 @@ int NDS_WritePNG(const char *fname);
 
 extern volatile BOOL execute;
 extern BOOL click;
-extern char pathToROM[MAX_PATH];
-extern char pathFilenameToROMwithoutExt[MAX_PATH];
 
 /*
  * The firmware language values
@@ -285,7 +283,6 @@ struct GameInfo
 };
 
 extern GameInfo gameInfo;
- 
 void NDS_setTouchPos(u16 x, u16 y);
 void NDS_releaseTouch(void);
 void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,bool X,bool W,bool E,bool G, bool F);

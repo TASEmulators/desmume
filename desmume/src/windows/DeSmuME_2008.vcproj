@@ -1132,6 +1132,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\path.h"
+					>
+				</File>
+				<File
 					RelativePath="..\rasterize.h"
 					>
 				</File>
