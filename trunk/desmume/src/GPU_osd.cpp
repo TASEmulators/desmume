@@ -26,6 +26,7 @@
 #include "mem.h"
 #include <string.h> //mem funcs
 #include <stdarg.h> //va_start, etc
+#include <sstream>
 #include <time.h>
 #include "debug.h"
 
@@ -212,7 +213,10 @@ void DrawHUD()
 {
 	if (CommonSettings.hud.ShowInputDisplay) 
 	{
-		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
+		std::stringstream ss;
+		if(nds.isTouch)
+			ss << (nds.touchX >> 4) << " " << (nds.touchY >> 4); 
+		osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",(InputDisplayString += ss.str()).c_str());
 		TouchDisplay();
 	}
 
