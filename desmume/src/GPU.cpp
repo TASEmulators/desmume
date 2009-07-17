@@ -2510,8 +2510,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	}
 }
 
-// TODO: capture emulated not fully
-static void GPU_ligne_DispCapture(u16 l)
+template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 {
 	//this macro takes advantage of the fact that there are only two possible values for capx
 	#define CAPCOPY(SRC,DST) \
@@ -2557,110 +2556,111 @@ static void GPU_ligne_DispCapture(u16 l)
 		u8* cap_src = ARM9Mem.ARM9_LCD + cap_src_adr;
 		u8* cap_dst = ARM9Mem.ARM9_LCD + cap_dst_adr;
 
+		if(!SKIP)
 		if (l < gpu->dispCapCnt.capy)
-		{
-			switch (gpu->dispCapCnt.capSrc)
 			{
-				case 0:		// Capture source is SourceA
-					{
-						//INFO("Capture source is SourceA\n");
-						switch (gpu->dispCapCnt.srcA)
+				switch (gpu->dispCapCnt.capSrc)
+				{
+					case 0:		// Capture source is SourceA
 						{
-							case 0:			// Capture screen (BG + OBJ + 3D)
-								{
-									//INFO("Capture screen (BG + OBJ + 3D)\n");
-
-									u8 *src;
-									src = (u8*)(GPU_tempScanline);
-									CAPCOPY(src,cap_dst);
-								}
-							break;
-							case 1:			// Capture 3D
-								{
-									//INFO("Capture 3D\n");
-									u16* colorLine;
-									gfx3d_GetLineData(l, &colorLine, NULL);
-									CAPCOPY(((u8*)colorLine),cap_dst);
-								}
-							break;
-						}
-					}
-				break;
-				case 1:		// Capture source is SourceB
-					{
-						//INFO("Capture source is SourceB\n");
-						switch (gpu->dispCapCnt.srcB)
-						{
-							case 0:			// Capture VRAM
-								{
-									//INFO("Capture VRAM\n");
-									CAPCOPY(cap_src,cap_dst);
-								}
-								break;
-							case 1:			// Capture Main Memory Display FIFO
-								{
-									//INFO("Capture Main Memory Display FIFO\n");
-								}
-								break;
-						}
-					}
-				break;
-				default:	// Capture source is SourceA+B blended
-					{
-						//INFO("Capture source is SourceA+B blended\n");
-						u16 *srcA = NULL;
-						u16 *srcB = NULL;
-
-						if (gpu->dispCapCnt.srcA == 0)
-						{
-							// Capture screen (BG + OBJ + 3D)
-							srcA = (u16*)(GPU_tempScanline);
-						}
-						else
-						{
-							gfx3d_GetLineData(l, &srcA, NULL);
-						}
-
-						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
-							srcB = (u16 *)cap_src;
-						else
-							srcB = NULL; // DISP FIFOS
-
-						if ((srcA) && (srcB))
-						{
-							u16 a, r, g, b;
-							const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
-							for(u16 i = 0; i < todo; i++) 
+							//INFO("Capture source is SourceA\n");
+							switch (gpu->dispCapCnt.srcA)
 							{
-								a = r = g = b =0;
+								case 0:			// Capture screen (BG + OBJ + 3D)
+									{
+										//INFO("Capture screen (BG + OBJ + 3D)\n");
 
-								if (gpu->dispCapCnt.EVA && (srcA[i] & 0x8000))
-								{
-									a = 0x8000;
-									r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
-									g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
-									b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
-								}
-
-								if (gpu->dispCapCnt.EVB && (srcB[i] & 0x8000))
-								{
-									a = 0x8000;
-									r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
-									g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
-									b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
-								}
-
-								r >>= 4;
-								g >>= 4;
-								b >>= 4;
-
-								T2WriteWord(cap_dst, i << 1, (u16)(a | (b << 10) | (g << 5) | r));
+										u8 *src;
+										src = (u8*)(GPU_tempScanline);
+										CAPCOPY(src,cap_dst);
+									}
+								break;
+								case 1:			// Capture 3D
+									{
+										//INFO("Capture 3D\n");
+										u16* colorLine;
+										gfx3d_GetLineData(l, &colorLine, NULL);
+										CAPCOPY(((u8*)colorLine),cap_dst);
+									}
+								break;
 							}
 						}
-					}
-				break;
+					break;
+					case 1:		// Capture source is SourceB
+						{
+							//INFO("Capture source is SourceB\n");
+							switch (gpu->dispCapCnt.srcB)
+							{
+								case 0:			// Capture VRAM
+									{
+										//INFO("Capture VRAM\n");
+										CAPCOPY(cap_src,cap_dst);
+									}
+									break;
+								case 1:			// Capture Main Memory Display FIFO
+									{
+										//INFO("Capture Main Memory Display FIFO\n");
+									}
+									break;
+							}
+						}
+					break;
+					default:	// Capture source is SourceA+B blended
+						{
+							//INFO("Capture source is SourceA+B blended\n");
+							u16 *srcA = NULL;
+							u16 *srcB = NULL;
+
+							if (gpu->dispCapCnt.srcA == 0)
+							{
+								// Capture screen (BG + OBJ + 3D)
+								srcA = (u16*)(GPU_tempScanline);
+							}
+							else
+							{
+								gfx3d_GetLineData(l, &srcA, NULL);
+							}
+
+							if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
+								srcB = (u16 *)cap_src;
+							else
+								srcB = NULL; // DISP FIFOS
+
+							if ((srcA) && (srcB))
+							{
+								u16 a, r, g, b;
+								const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
+								for(u16 i = 0; i < todo; i++) 
+								{
+									a = r = g = b =0;
+
+									if (gpu->dispCapCnt.EVA && (srcA[i] & 0x8000))
+									{
+										a = 0x8000;
+										r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
+										g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
+										b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
+									}
+
+									if (gpu->dispCapCnt.EVB && (srcB[i] & 0x8000))
+									{
+										a = 0x8000;
+										r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
+										g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
+										b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
+									}
+
+									r >>= 4;
+									g >>= 4;
+									b >>= 4;
+
+									T2WriteWord(cap_dst, i << 1, (u16)(a | (b << 10) | (g << 5) | r));
+								}
+							}
+						}
+					break;
+				}
 			}
-		}
 
 		if (l>=191)
 		{
@@ -2810,7 +2810,7 @@ void GPU::update_winh(int WIN_NUM)
 	}
 }
 
-void GPU_ligne(NDS_Screen * screen, u16 l)
+void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 {
 	GPU * gpu = screen->gpu;
 
@@ -2828,6 +2828,17 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 		//NOTE:
 		//I am REALLY unsatisfied with this logic now. But it seems to be working..
 		gpu->refreshAffineStartRegs(-1,-1);
+	}
+
+	if(skip)
+	{
+		gpu->currLine = l;
+		if (gpu->core == GPU_MAIN) 
+		{
+			GPU_ligne_DispCapture<true>(l);
+			if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
+		}
+		return;
 	}
 
 	//if(gpu->core == 1)
@@ -2848,7 +2859,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 	//}
 
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
-	gpu->currLine = (u8)l;
+	gpu->currLine = l;
 	u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
 	u16 mosaic_width = (mosaic_control & 0xF);
 	u16 mosaic_height = ((mosaic_control>>4) & 0xF);
@@ -2874,7 +2885,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l)
 
 	if (gpu->core == GPU_MAIN) 
 	{
-		GPU_ligne_DispCapture(l);
+		GPU_ligne_DispCapture<false>(l);
 		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
 	}
 

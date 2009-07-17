@@ -1806,11 +1806,8 @@ void execHardware_hblank()
 		//in practice we need to be more forgiving, in case things have overrun the scanline start.
 		//this should be safe since games cannot do anything timing dependent until this next
 		//scanline begins, anyway (as this scanline was in the middle of drawing)
-		if(!SkipCur2DFrame)
-		{
-			GPU_ligne(&MainScreen, nds.VCount);
-			GPU_ligne(&SubScreen, nds.VCount);
-		}
+		GPU_ligne(&MainScreen, nds.VCount, SkipCur2DFrame);
+		GPU_ligne(&SubScreen, nds.VCount, SkipCur2DFrame);
 
 		//trigger hblank dmas
 		//but notice, we do that just after we finished drawing the line

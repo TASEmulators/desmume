@@ -940,7 +940,6 @@ DWORD WINAPI run()
 
 			if(!skipnextframe)
 			{
-
 				framesskipped = 0;
 
 				if (framestoskip > 0)
