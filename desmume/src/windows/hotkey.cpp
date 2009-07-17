@@ -86,6 +86,7 @@ void HK_PrintScreen(int param)
 	char outFilename[MAX_PATH];
 	
 	OPENFILENAME ofn;
+	ZeroMemory(&ofn,sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
 	ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
@@ -116,7 +117,10 @@ void HK_PrintScreen(int param)
 
 	strcpy(outFilename,filename.c_str());
  	if(!GetSaveFileName(&ofn))
+	{
+		MessageBox(0,"OHNO",0,0);
 		return;
+	}
 
 	if(toupper(strright(filename,4)) == ".BMP")
 		NDS_WriteBMP(filename.c_str());
