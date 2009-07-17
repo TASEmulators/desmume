@@ -117,10 +117,7 @@ void HK_PrintScreen(int param)
 
 	strcpy(outFilename,filename.c_str());
  	if(!GetSaveFileName(&ofn))
-	{
-		MessageBox(0,"OHNO",0,0);
 		return;
-	}
 
 	if(toupper(strright(filename,4)) == ".BMP")
 		NDS_WriteBMP(filename.c_str());
