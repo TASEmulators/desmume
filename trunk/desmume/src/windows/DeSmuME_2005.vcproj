@@ -1043,6 +1043,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\path.h"
+			>
+		</File>
+		<File
 			RelativePath=".\pathsettings.cpp"
 			>
 		</File>

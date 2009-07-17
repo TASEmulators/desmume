@@ -3,9 +3,40 @@
 #include "xstring.h"
 #include <string>
 
+//a vc-style substring operation (very kind and lenient)
+std::string strsub(const std::string& str, int pos, int len) {
+	int strlen = str.size();
+	
+	if(strlen==0) return str; //empty strings always return empty strings
+	if(pos>=strlen) return str; //if you start past the end of the string, return the entire string. this is unusual, but there you have it
+
+	//clipping
+	if(pos<0) {
+		len += pos;
+		pos = 0;
+	}
+
+	if (pos+len>=strlen)
+		len=strlen-pos+1;
+	
+	//return str.str().substr(pos,len);
+	return str.substr(pos,len);
+}
+
+std::string strmid(const std::string& str, int pos, int len) { return strsub(str,pos,len); }
+std::string strleft(const std::string& str, int len) { return strsub(str,0,len); }
+std::string strright(const std::string& str, int len) { return len ? strsub(str,str.size()-len,len) : ""; }
+std::string toupper(const std::string& str)
+{
+	std::string ret = str;
+	for(u32 i=0;i<str.size();i++)
+		ret[i] = toupper(ret[i]);
+	return ret;
+}
+
 ///Upper case routine. Returns number of characters modified
 int str_ucase(char *str) {
-	unsigned int i=0,j=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0,j=0;
 
 	while (i < strlen(str)) {
 		if ((str[i] >= 'a') && (str[i] <= 'z')) {
@@ -20,7 +51,7 @@ int str_ucase(char *str) {
 
 ///Lower case routine. Returns number of characters modified
 int str_lcase(char *str) {
-	unsigned int i=0,j=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0,j=0;
 
 	while (i < strlen(str)) {
 		if ((str[i] >= 'A') && (str[i] <= 'Z')) {
@@ -38,7 +69,7 @@ int str_lcase(char *str) {
 ///Removes whitespace from left side of string, depending on the flags set (See STRIP_x definitions in xstring.h)
 ///Returns number of characters removed
 int str_ltrim(char *str, int flags) {
-	unsigned int i=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0;
 
 	while (str[0]) {
 		if ((str[0] != ' ') || (str[0] != '\t') || (str[0] != '\r') || (str[0] != '\n')) break;
@@ -69,7 +100,7 @@ int str_ltrim(char *str, int flags) {
 ///Removes whitespace from right side of string, depending on the flags set (See STRIP_x definitions in xstring.h)
 ///Returns number of characters removed
 int str_rtrim(char *str, int flags) {
-	unsigned int i=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0;
 
 	while (strlen(str)) {
 		if ((str[strlen(str)-1] != ' ') ||
@@ -103,7 +134,7 @@ int str_rtrim(char *str, int flags) {
 ///Removes whitespace depending on the flags set (See STRIP_x definitions in xstring.h)
 ///Returns number of characters removed, or -1 on error
 int str_strip(char *str, int flags) {
-	unsigned int i=0,j=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0,j=0;
 	char *astr,chr;
 
 	if (!strlen(str)) return -1;
@@ -130,7 +161,7 @@ int str_strip(char *str, int flags) {
 ///Replaces all instances of 'search' with 'replace'
 ///Returns number of characters modified
 int chr_replace(char *str, char search, char replace) {
-	unsigned int i=0,j=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0,j=0;
 
 	while (i < strlen(str)) {
 		if (str[i] == search) {
@@ -148,7 +179,7 @@ int chr_replace(char *str, char search, char replace) {
 ///Replaces all instances of 'search' with 'replace'
 ///Returns number of sub-strings modified, or -1 on error
 int str_replace(char *str, char *search, char *replace) {
-	unsigned int i=0,j=0; //mbg merge 7/17/06 changed to unsigned int
+	u32 i=0,j=0;
 	int searchlen,replacelen;
 	char *astr;
 

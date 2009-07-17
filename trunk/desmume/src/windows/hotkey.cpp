@@ -83,57 +83,45 @@ void CopyCustomKeys (SCustomKeys *dst, const SCustomKeys *src)
 void HK_OpenROM(int) {OpenFile();}
 void HK_PrintScreen(int param)
 {
-	char filename[MAX_PATH];
+	char outFilename[MAX_PATH];
+	
 	OPENFILENAME ofn;
-	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = MainWindow->getHWnd();
 	ofn.lpstrFilter = "png file (*.png)\0*.png\0Bmp file (*.bmp)\0*.bmp\0Any file (*.*)\0*.*\0\0";
 	ofn.lpstrTitle = "Print Screen Save As";
 	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrFile = outFilename;
 	ofn.Flags = OFN_OVERWRITEPROMPT;
 
-	ZeroMemory(filename, sizeof(filename));
-	path.getpath(path.SCREENSHOTS, filename);
+	std::string filename = path.getpath(path.SCREENSHOTS);
 
 	char file[MAX_PATH];
 	ZeroMemory(file, sizeof(file));
 	path.formatname(file);
-	strcat(filename, file);
-	int len = strlen(filename);
-	if(len > MAX_PATH - 4)
-		filename[MAX_PATH - 4] = '\0';
+	filename += file;
 
 	if(path.imageformat() == path.PNG)
 	{
-		strcat(filename, ".png");
+		filename += ".png";
 		ofn.lpstrDefExt = "png";
 		ofn.nFilterIndex = 1;
 	}
 	else if(path.imageformat() == path.BMP)
 	{
-		strcat(filename, ".bmp");
+		filename += ".bmp";
 		ofn.lpstrDefExt = "bmp";
 		ofn.nFilterIndex = 2;
 	}
 
-	ofn.lpstrFile = filename;
- 	GetSaveFileName(&ofn);
+	strcpy(outFilename,filename.c_str());
+ 	if(!GetSaveFileName(&ofn))
+		return;
 
-	char *ptr = strrchr(filename,'.');//look for the last . in the filename
-
-	if ( ptr != 0 ) {
-		if (( strcmp ( ptr, ".BMP" ) == 0 ) ||
-			( strcmp ( ptr, ".bmp" ) == 0 )) 
-		{
-			NDS_WriteBMP(filename);
-		}
-		if (( strcmp ( ptr, ".PNG" ) == 0 ) ||
-			( strcmp ( ptr, ".png" ) == 0 )) 
-		{
-			NDS_WritePNG(filename);
-		}
-	}
+	if(toupper(strright(filename,4)) == ".BMP")
+		NDS_WriteBMP(filename.c_str());
+	else if(toupper(strright(filename,4)) == ".BMP")
+		NDS_WriteBMP(filename.c_str());
 }
 
 void HK_StateSaveSlot(int num)

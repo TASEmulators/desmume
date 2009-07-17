@@ -197,6 +197,13 @@ public:
 		}
 	}
 
+	std::string getpath(KnownPath path)
+	{
+		char temp[MAX_PATH];
+		SwitchPath(GET, path, temp);
+		return temp;
+	}
+
 	void getpath(KnownPath path, char *buffer)
 	{
 		SwitchPath(GET, path, buffer);
@@ -242,7 +249,7 @@ public:
 
 	void formatname(char *output)
 	{
-		char file[MAX_PATH];
+		std::string file;
 		time_t now = time(NULL);
 		tm *time_struct = localtime(&now);
 		srand(now);
@@ -250,7 +257,7 @@ public:
 		for(int i = 0; i < MAX_FORMAT;i++) 
 		{		
 			char *c = &screenshotFormat[i];
-			char tmp[MAX_PATH];
+			char tmp[MAX_PATH] = {0};
 
 			if(*c == '%')
 			{
@@ -294,9 +301,9 @@ public:
 						break;
 				tmp[j-i]='\0';
 			}
-			strcat(file, tmp);
+			file += tmp;
 		}
-		strncpy(output, file, MAX_PATH);
+		strncpy(output, file.c_str(), MAX_PATH);
 	}
 
 	enum ImageFormat
