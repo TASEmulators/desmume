@@ -1376,10 +1376,6 @@ void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
-//#define LOG_ARM9
-//#define LOG_ARM7
-//static bool dolog = false;
-
 void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
 {
 	if(MMU.DMAStartTime[procnum][chan] == modeNum)
@@ -1968,9 +1964,9 @@ bool nds_loadstate(std::istream* is, int size)
 	return sequencer.load(is);
 }
 
-#define LOG_ARM9
-#define LOG_ARM7
-static bool dolog = false;
+//#define LOG_ARM9
+//#define LOG_ARM7
+//static bool dolog = false;
 
 FORCEINLINE void arm9log()
 {
@@ -2059,29 +2055,38 @@ void NDS_exec(s32 nb)
 
 			sequencer.reschedule = false;
 
-			while(nds_timer<next && !sequencer.reschedule)
+			u64 nds_timer_base = nds_timer;
+			s32 arm9 = (s32)(nds_arm9_timer-nds_timer);
+			s32 arm7 = (s32)(nds_arm7_timer-nds_timer);
+			s32 timer = 0;
+			s32 s32next = (s32)(next-nds_timer);
+			while(timer<s32next && !sequencer.reschedule)
 			{
-				if(nds_arm9_timer<=nds_timer)
+				if(arm9<=timer)
 				{
-					if(NDS_ARM9.waitIRQ) nds_arm9_timer = min(next,nds_arm9_timer + kIrqWait);
+					if(NDS_ARM9.waitIRQ) arm9 = min(s32next,arm9+ kIrqWait);
 					else {
 						arm9log();
-						nds_arm9_timer += armcpu_exec<ARMCPU_ARM9>();
+						arm9 += armcpu_exec<ARMCPU_ARM9>();
 					}
 						
 				}
-				if(nds_arm7_timer<=nds_timer)
+				if(arm7<=timer)
 				{
 					if(NDS_ARM7.waitIRQ) 
-						nds_arm7_timer = min(next,nds_arm7_timer + kIrqWait);
+						arm7 = min(s32next,arm7 + kIrqWait);
 					else {
 						arm7log();
-						nds_arm7_timer += (armcpu_exec<ARMCPU_ARM7>()<<1);
+						arm7 += (armcpu_exec<ARMCPU_ARM7>()<<1);
 					}
 				}
 
-				nds_timer = min(nds_arm7_timer,nds_arm9_timer);
+				timer = min(arm7,arm9);
+				nds_timer = nds_timer_base+timer;
 			}
+
+			nds_arm7_timer = nds_timer_base+arm7;
+			nds_arm9_timer = nds_timer_base+arm9;
 
 			//what we find here is dependent on the timing constants above
 			if(nds_timer>next && (nds_timer-next)>22)
