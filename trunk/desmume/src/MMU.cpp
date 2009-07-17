@@ -1313,7 +1313,8 @@ static INLINE u16 read_timer(int proc, int timerIndex)
 	s32 ret;
 
 	if(units==65536)
-		ret = 0;
+		ret = 0; //I'm not sure why this is happening...
+		//whichever instruction setup this counter should advance nds_timer (I think?) and the division should truncate down to 65535 immediately
 	else if(units>65536) {
 		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: UNITS %d:%d = %d\n",proc,timerIndex,units);
 		ret = 0;
