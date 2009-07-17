@@ -245,8 +245,7 @@ extern CACHE_ALIGN u16 gfx3d_convertedScreen[256*192];
 extern CACHE_ALIGN u8 gfx3d_convertedAlpha[256*192*2]; //see cpp for explanation of illogical *2
 
 //GE commands:
-#ifdef USE_GEOMETRY_FIFO_EMULATION2
-#else
+#ifndef USE_GEOMETRY_FIFO_EMULATION
 void gfx3d_glMatrixMode(u32 v);
 void gfx3d_glPushMatrix(void);
 void gfx3d_glPopMatrix(s32 i);
@@ -277,12 +276,13 @@ void gfx3d_glLightColor (u32 v);
 BOOL gfx3d_glShininess (u32 val);
 void gfx3d_glBegin(u32 v);
 void gfx3d_glEnd(void);
-void gfx3d_glFlush(u32 v);
+// SwapBuffers see follow
 void gfx3d_glViewPort(u32 v);
 BOOL gfx3d_glBoxTest(u32 v);
 BOOL gfx3d_glPosTest(u32 v);
 void gfx3d_glVecTest(u32 v);
 #endif
+void gfx3d_glFlush(u32 v);
 // end GE commands
 
 void gfx3d_glClearColor(u32 v);
