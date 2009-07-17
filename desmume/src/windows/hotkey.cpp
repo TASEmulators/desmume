@@ -118,9 +118,10 @@ void HK_PrintScreen(int param)
 	strcpy(outFilename,filename.c_str());
  	if(!GetSaveFileName(&ofn))
 		return;
+	filename = outFilename;
 
-	if(toupper(strright(filename,4)) == ".BMP")
-		NDS_WriteBMP(filename.c_str());
+	if(toupper(strright(filename,4)) == ".PNG")
+		NDS_WritePNG(filename.c_str());
 	else if(toupper(strright(filename,4)) == ".BMP")
 		NDS_WriteBMP(filename.c_str());
 }
