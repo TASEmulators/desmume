@@ -463,6 +463,10 @@ void GBAslotDialog(HWND hwnd)
 		switch (temp_type)
 		{
 			case NDS_ADDON_NONE:
+				if (temp_type != addon_type)
+					needReset = true;
+				else
+					needReset = false;
 				break;
 			case NDS_ADDON_CFLASH:
 				CFlash_Mode = tmp_CFlashMode;
@@ -475,13 +479,18 @@ void GBAslotDialog(HWND hwnd)
 					CFlash_Path = "";
 				else
 					CFlash_Path = tmp_cflash_filename;
-
+				needReset = true;
 				break;
 			case NDS_ADDON_RUMBLEPAK:
+				if (temp_type != addon_type)
+					needReset = true;
+				else
+					needReset = false;
 				break;
 			case NDS_ADDON_GBAGAME:
 				strcpy(GBAgameName, tmp_gbagame_filename);
 				WritePrivateProfileString("GBAslot.GBAgame","filename",GBAgameName,IniName);
+				needReset = true;
 				break;
 			case NDS_ADDON_GUITARGRIP:
 				memcpy(&Guitar, &tmp_Guitar, sizeof(tmp_Guitar));
@@ -490,6 +499,10 @@ void GBAslotDialog(HWND hwnd)
 				WritePrivateProfileInt("GBAslot.GuitarGrip","red",Guitar.RED,IniName);
 				WritePrivateProfileInt("GBAslot.GuitarGrip","yellow",Guitar.YELLOW,IniName);
 				WritePrivateProfileInt("GBAslot.GuitarGrip","blue",Guitar.BLUE,IniName);
+				if (temp_type != addon_type)
+					needReset = true;
+				else
+					needReset = false;
 				break;
 			default:
 				return;
