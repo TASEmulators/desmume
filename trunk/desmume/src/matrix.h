@@ -22,6 +22,7 @@
 #define MATRIX_H
 
 #include <math.h>
+#include <string.h>
 
 #include "types.h"
 #include "mem.h"
