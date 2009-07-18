@@ -294,6 +294,9 @@ void NDS_Reset();
 int NDS_ImportSave(const char *filename);
 bool NDS_ExportSave(const char *filename);
 
+void nds_savestate(std::ostream* os);
+bool nds_loadstate(std::istream* is, int size);
+
 int NDS_WriteBMP(const char *filename);
 int NDS_LoadFirmware(const char *filename);
 int NDS_CreateDummyFirmware( struct NDS_fw_config_data *user_settings);
