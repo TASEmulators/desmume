@@ -943,8 +943,8 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
 FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 {
-	//no further analysis for no special effects. just draw it.
-	if(FUNC == None) return true;
+	//no further analysis for no special effects. on backdrops. just draw it.
+	if(FUNC==None && BACKDROP) return true;
 
 	//blend backdrop with what?? this doesn't make sense
 	if(FUNC==Blend && BACKDROP) return true;
@@ -2290,7 +2290,6 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	gpu->currBgNum = 5;
 	switch(gpu->setFinalColorBck_funcNum) {
 		case 0: case 1: //for backdrops, (even with window enabled) none and blend are both the same: just copy the color
-		case 4: case 5:
 			memset_u16_le<256>(gpu->currDst,backdrop_color); 
 			break;
 		case 2:
@@ -2303,6 +2302,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 			break;
 
 		//windowed fades need special treatment
+		case 4: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,4>(backdrop_color,x,1); break;
+		case 5: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,5>(backdrop_color,x,1); break;
 		case 6: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,6>(backdrop_color,x,1); break;
 		case 7: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,7>(backdrop_color,x,1); break;
 	}
