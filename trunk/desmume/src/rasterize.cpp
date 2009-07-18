@@ -539,33 +539,18 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		{
 			if(polyAttr.polyid == 0)
 			{
-				destFragment.stencil = 1;
 				goto rejected_fragment;
 			}
 			else
 			{
-				//some shadow volumes are rendering two-sided
-				//and this is the only way to fix them.
-				//rendering two-sided makes no sense, since the back side
-				//will clear the stencil bit and cause the shadow to get drawn in
-				//empty space.
-				//but yet, it is done, and gbatek even suggests that we should do it
-				if(polyAttr.backfacing)
-					goto rejected_fragment;
-
 				//now, if we arent supposed to draw shadow here, then bail out
-				if(destFragment.stencil == 1)
+				if(destFragment.stencil == 0)
 				{
-					destFragment.stencil = 0;
 					goto rejected_fragment;
 				}
 
 				destFragment.stencil = 0;
 			}
-
-			//reset the shadow flag to keep the shadow from getting drawn more than once
-			//if(polyAttr.polyid == 0)
-			//	destFragment.stencil = 1;
 		}
 
 		//handle polyids
@@ -611,10 +596,10 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 
 	depth_fail:
 	//handle stencil-writing in shadow mode
-/*	if((shader.mode == 3) && (polyAttr.polyid == 0))
+	if((shader.mode == 3) && (polyAttr.polyid == 0))
 	{
 		destFragment.stencil = 1;
-	}*/
+	}
 
 	rejected_fragment:
 	done_with_pixel:
