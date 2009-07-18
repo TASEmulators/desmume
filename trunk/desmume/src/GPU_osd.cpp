@@ -40,13 +40,13 @@
 OSDCLASS	*osd = NULL;
 HudStruct Hud;
 
-void SetHudDummy (HudCoordinates *hud)
+static void SetHudDummy (HudCoordinates *hud)
 {
 	hud->x=666;
 	hud->y=666;
 }
 
-bool IsHudDummy (HudCoordinates *hud)
+static bool IsHudDummy (HudCoordinates *hud)
 {
 	return (hud->x == 666 && hud->y == 666);
 }

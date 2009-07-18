@@ -206,7 +206,7 @@ void GFX_FIFOsend(u8 cmd, u32 param)
 	NDS_RescheduleGXFIFO();
 }
 
-BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
+static BOOL GFX_FIFOrecv(u8 *cmd, u32 *param)
 {
 	u32 gxstat = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600);
 
