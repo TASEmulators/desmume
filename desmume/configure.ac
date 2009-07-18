@@ -169,6 +169,8 @@ fi
 AM_CONDITIONAL([HAVE_LIBAGG], [test "${HAVE_LIBAGG}" = "yes"])
 if test "x$HAVE_LIBAGG" = "xyes"; then
    AC_DEFINE([HAVE_LIBAGG])
+else
+   AC_MSG_ERROR([Antigrain library is required to build desmume])
 fi
 
 dnl - set conditional for glib, needed to avoid commandline.cpp compilation for cli frontend since it depends on glib
