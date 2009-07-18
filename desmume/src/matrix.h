@@ -143,7 +143,7 @@ FORCEINLINE u32 u32floor(double d)
 FORCEINLINE s32 s32floor(float f)
 {
 #if defined(SSE2_INTRIN)
-	return _mm_cvttss_si32( _mm_add_ss(_mm_set_ss(-0.5f),_mm_add_ss(_mm_set_ss(f), _mm_set_ss(f))) ) >> 1;
+	return _mm_cvtss_si32( _mm_add_ss(_mm_set_ss(-0.5f),_mm_add_ss(_mm_set_ss(f), _mm_set_ss(f))) ) >> 1;
 #elif !defined(NOSSE2)
 	static const float c = -0.5f;
 	__asm
