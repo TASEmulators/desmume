@@ -259,9 +259,6 @@ SFORMAT SF_MOVIE[]={
 	{ 0 }
 };
 
-void nds_savestate(std::ostream* os);
-bool nds_loadstate(std::istream* is, int size);
-
 static void mmu_savestate(std::ostream* os)
 {
 	//version
