@@ -123,6 +123,10 @@ typedef union
 #define BGxENABLED(cnt,num)    ((num<8)? ((cnt.val>>8) & num):0)
 
 
+enum BlendFunc
+{
+	None, Blend, Increase, Decrease
+};
 
 
 /*******************************************************************************
@@ -601,10 +605,19 @@ typedef struct
 #define NB_BG		4
 typedef struct
 {
-	u8 BGs[NB_BG], nbBGs;
 	u8 PixelsX[256];
-	// doh ! yoda says : 256 pixels we can have...
+	u8 BGs[NB_BG], nbBGs;
+	u8 pad[1];
 	u16 nbPixelsX;
+	//256+8:
+	u8 pad2[248];
+
+	//things were slower when i organized this struct this way. whatever.
+	//u8 PixelsX[256];
+	//int BGs[NB_BG], nbBGs;
+	//int nbPixelsX;
+	////<-- 256 + 24
+	//u8 pad2[256-24];
 } itemsForPriority_t;
 #define ARM9MEM_ABG		0x06000000
 #define ARM9MEM_BBG		0x06200000
@@ -761,13 +774,13 @@ struct GPU
 
 	u16 blend(u16 colA, u16 colB);
 
-	typedef void (*FinalOBJColFunct)(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-	typedef void (*Final3DColFunct)(GPU *gpu, int dstX, int srcX);
+	template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
+	FORCEINLINE FASTCALL bool _master_setFinalBGColor(u16 &color, const u32 x);
 
 	int setFinalColorBck_funcNum;
 	int bgFunc;
 	int setFinalColor3d_funcNum;
-	FinalOBJColFunct setFinalColorSpr;
+	int setFinalColorSpr_funcNum;
 	//Final3DColFunct setFinalColor3D;
 	enum SpriteRenderMode {
 		SPRITE_1D, SPRITE_2D
@@ -775,9 +788,17 @@ struct GPU
 
 	template<GPU::SpriteRenderMode MODE>
 	void _spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
-	void spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab);
+	
+	inline void spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+	{
+		if(spriteRenderMode == SPRITE_1D)
+			_spriteRender<SPRITE_1D>(dst,dst_alpha,typeTab, prioTab);
+		else
+			_spriteRender<SPRITE_2D>(dst,dst_alpha,typeTab, prioTab);
+	}
 
-	template<bool BACKDROP> void setFinalColorBG(u16 color, const u32 x);
+
+	template<bool BACKDROP, int FUNCNUM> void setFinalColorBG(u16 color, const u32 x);
 	void setFinalColor3d(int dstX, int srcX);
 
 	template<bool BACKDROP> FORCEINLINE void setFinalBGColorSpecialNone(u16 &color, const u32 x);
@@ -799,7 +820,8 @@ struct GPU
 	FORCEINLINE void setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX);
 
 
-	template<bool MOSAIC, bool BACKDROP> void __setFinalColorBck(u16 color, const u32 x, const bool opaque);
+	template<bool MOSAIC, bool BACKDROP> FORCEINLINE void __setFinalColorBck(u16 color, const u32 x, const int opaque);
+	template<bool MOSAIC, bool BACKDROP, int FUNCNUM> FORCEINLINE void ___setFinalColorBck(u16 color, const u32 x, const int opaque);
 	void setAffineStart(int layer, int xy, u32 val);
 	void setAffineStartWord(int layer, int xy, u16 val, int word);
 	u32 getAffineStart(int layer, int xy);

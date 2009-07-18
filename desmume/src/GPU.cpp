@@ -39,6 +39,7 @@
 
 //#undef FORCEINLINE
 //#define FORCEINLINE
+//#define SSE2_NOINTRIN
 
 ARM9_struct ARM9Mem;
 
@@ -491,29 +492,6 @@ FORCEINLINE void GPU::setFinal3DColorSpecialDecreaseWnd(int dstX, int srcX)
 	}
 }
 
-
-enum OBJFunc
-{
-	None, Blend, Increase, Decrease
-};
-template<OBJFunc FUNC, bool WINDOW>
-static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-
-static void setFinalOBJColorSpecialNoneWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-static void setFinalOBJColorSpecialBlendWnd		(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-static void setFinalOBJColorSpecialIncreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-static void setFinalOBJColorSpecialDecreaseWnd	(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x);
-
-const GPU::FinalOBJColFunct pixelBlittersOBJ[8] = {
-									_master_setFinalOBJColor<None,false>,
-									_master_setFinalOBJColor<Blend,false>,
-									_master_setFinalOBJColor<Increase,false>,
-									_master_setFinalOBJColor<Decrease,false>,
-									_master_setFinalOBJColor<None,true>,
-									_master_setFinalOBJColor<Blend,true>,
-									_master_setFinalOBJColor<Increase,true>,
-									_master_setFinalOBJColor<Decrease,true> };
-
 /*****************************************************************************/
 //			INITIALIZATION
 /*****************************************************************************/
@@ -591,7 +569,7 @@ GPU * GPU_Init(u8 l)
 	g->need_update_winh[1] = true;
 	g->setFinalColorBck_funcNum = 0;
 	g->setFinalColor3d_funcNum = 0;
-	g->setFinalColorSpr = _master_setFinalOBJColor<None,false>;
+	g->setFinalColorSpr_funcNum = 0;
 
 	return g;
 }
@@ -602,7 +580,7 @@ void GPU_Reset(GPU *g, u8 l)
 
 	g->setFinalColorBck_funcNum = 0;
 	g->setFinalColor3d_funcNum = 0;
-	g->setFinalColorSpr = _master_setFinalOBJColor<None,false>;
+	g->setFinalColorSpr_funcNum = 0;
 	g->core = l;
 	g->BGSize[0][0] = g->BGSize[1][0] = g->BGSize[2][0] = g->BGSize[3][0] = 256;
 	g->BGSize[0][1] = g->BGSize[1][1] = g->BGSize[2][1] = g->BGSize[3][1] = 256;
@@ -729,7 +707,7 @@ void SetupFinalPixelBlitter (GPU *gpu)
 	u8 windowUsed = (gpu->WIN0_ENABLED | gpu->WIN1_ENABLED | gpu->WINOBJ_ENABLED);
 	u8 blendMode  = (gpu->BLDCNT >> 6)&3;
 
-	gpu->setFinalColorSpr = pixelBlittersOBJ[windowUsed*4 + blendMode];
+	gpu->setFinalColorSpr_funcNum = windowUsed*4 + blendMode;
 	gpu->setFinalColorBck_funcNum = windowUsed*4 + blendMode;
 	gpu->setFinalColor3d_funcNum = windowUsed*4 + blendMode;
 	
@@ -961,128 +939,47 @@ FORCEINLINE void GPU::renderline_checkWindows(u16 x, bool &draw, bool &effect) c
 //			PIXEL RENDERING - BGS
 /*****************************************************************************/
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialNone(u16 &color, const u32 x)
-{
-}
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialBlend(u16 &color, const u32 x)
+template<bool BACKDROP, BlendFunc FUNC, bool WINDOW>
+FORCEINLINE FASTCALL bool GPU::_master_setFinalBGColor(u16 &color, const u32 x)
 {
+	//no further analysis for no special effects. just draw it.
+	if(FUNC == None) return true;
+
 	//blend backdrop with what?? this doesn't make sense
-	if(BACKDROP) return;
-	if(blend1)
+	if(FUNC==Blend && BACKDROP) return true;
+
+	bool windowEffect = true;
+
+	if(WINDOW)
 	{
-		//If the layer we are drawing on is selected as 2nd source, we can blend
-		int bg_under = bgPixels[x];
-		if(blend2[bg_under])
-			color = blend(color,T2ReadWord(currDst, x<<1));
+		bool windowDraw;
+		renderline_checkWindows(x, windowDraw, windowEffect);
+
+		//backdrop must always be drawn
+		if(BACKDROP) windowDraw = true;
+
+		//we never have anything more to do if the window rejected us
+		if(!windowDraw) return false;
 	}
-}
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialIncrease (u16 &color, const u32 x)
-{
-	if(blend1)   // the bg to draw has a special color effect
-	{
-		color = currentFadeInColors[color];
-	}
-}
-
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalBGColorSpecialDecrease(u16 &color, const u32 x)
-{
-	if(blend1)   // the bg to draw has a special color effect
-	{
-		color = currentFadeOutColors[color];
-	}
-}
-
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialNoneWnd(u16 &color, const u32 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	
-	renderline_checkWindows(x, windowDraw, windowEffect);
-	
-	if(BACKDROP) windowDraw = true; //backdrop must always be drawn
-
-	if (blend1 && windowEffect)   // the bg to draw has a special color effect
-	{
+	//special effects rejected. just draw it.
+	if(!(blend1 && windowEffect))
 		return true;
+
+	const u8 bg_under = bgPixels[x];
+
+	//perform the special effect
+	switch(FUNC) {
+		case Blend: if(blend2[bg_under]) color = blend(color,T2ReadWord(currDst, x<<1)); break;
+		case Increase: color = currentFadeInColors[color]; break;
+		case Decrease: color = currentFadeOutColors[color]; break;
 	}
-	else
-	{
-		if ((windowEffect && (BLDCNT & (0x100 << currBgNum))) || windowDraw)
-		{
-			return true;
-		}
-	}
-	return false;
+	return true;
 }
 
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialBlendWnd(u16 &color, const u32 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	
-	renderline_checkWindows(x, windowDraw, windowEffect);
-
-	if(BACKDROP) windowDraw = true; //backdrop must always be drawn
-
-	if(windowDraw)
-	{
-		if(blend1 && windowEffect)
-		{
-			int bg_under = bgPixels[x];
-
-			// If the layer we are drawing on is selected as 2nd source, we can blend
-			if(blend2[bg_under])
-				color = blend(color,T2ReadWord(currDst, x<<1));
-		}
-		return true;
-	}
-	return false;
-}
-
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialIncreaseWnd(u16 &color, const u32 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	
-	renderline_checkWindows(x, windowDraw, windowEffect);
-
-	if(BACKDROP) windowDraw = true; //backdrop must always be drawn
-
-	if(windowDraw)
-	{
-		if(blend1 && windowEffect)
-		{
-			color = currentFadeInColors[color];
-		}
-		return true;
-	}
-	return false;
-}
-
-template<bool BACKDROP> FORCEINLINE bool GPU::setFinalBGColorSpecialDecreaseWnd(u16 &color, const u32 x)
-{
-	bool windowDraw = true, windowEffect = true;
-	
-	renderline_checkWindows(x, windowDraw, windowEffect);
-
-	if(BACKDROP) windowDraw = true; //backdrop must always be drawn
-
-	if(windowDraw)
-	{
-		if(blend1 && windowEffect)
-		{
-			color = currentFadeOutColors[color];
-		}
-		return true;
-	}
-	return false;
-}
-
-/*****************************************************************************/
-//			PIXEL RENDERING - OBJS
-/*****************************************************************************/
-
-template<OBJFunc FUNC, bool WINDOW>
-static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+template<BlendFunc FUNC, bool WINDOW>
+static FORCEINLINE void _master_setFinalOBJColor(GPU *gpu, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
 {
 	bool windowDraw = true, windowEffect = true;
 
@@ -1094,19 +991,19 @@ static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, 
 	}
 
 	//this inspects the layer beneath the sprite to see if the current blend flags make it a candidate for blending
-	int bg_under = gpu->bgPixels[x];
-	bool allowBlend = ((bg_under != 4) && (gpu->BLDCNT & (0x100 << bg_under)));
+	const int bg_under = gpu->bgPixels[x];
+	const bool allowBlend = (bg_under != 4) && gpu->blend2[bg_under];
 
-	bool sourceEffectSelected = (gpu->BLDCNT & 0x10)!=0;
+	const bool sourceEffectSelected = gpu->blend1;
 
 	//note that the fadein and fadeout is done here before blending, 
-	//so that a fade and blending can be applied at the same time
+	//so that a fade and blending can be applied at the same time (actually, I don't think that is legal..)
 	bool forceBlendingForNormal = false;
 	if(windowEffect && sourceEffectSelected)
 		switch(FUNC) 
 		{
-		case Increase: if(!allowBlend) color = fadeInColors[gpu->BLDY_EVY][color&0x7FFF]; break;
-		case Decrease: if(!allowBlend) color = fadeOutColors[gpu->BLDY_EVY][color&0x7FFF]; break;
+		case Increase: if(!allowBlend) color = gpu->currentFadeInColors[color&0x7FFF]; break;
+		case Decrease: if(!allowBlend) color = gpu->currentFadeOutColors[color&0x7FFF]; break;
 
 		//only when blend color effect is selected, ordinarily opaque sprites are blended with the color effect params
 		case Blend: forceBlendingForNormal = true; break;
@@ -1115,7 +1012,7 @@ static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, 
 
 	if(allowBlend)
 	{
-		u16 backColor = T2ReadWord(dst,passing);
+		u16 backColor = T2ReadWord(dst,x<<1);
 		//this hasn't been tested: this blending occurs without regard to the color effect,
 		//but rather purely from the sprite's alpha
 		if(type == GPU_OBJ_MODE_Bitmap)
@@ -1124,11 +1021,13 @@ static void _master_setFinalOBJColor(GPU *gpu, u32 passing, u8 *dst, u16 color, 
 			color = gpu->blend(color,backColor);
 	}
 
-	T2WriteWord(dst, passing, (color | 0x8000));
+	T2WriteWord(dst, x<<1, (color | 0x8000));
 	gpu->bgPixels[x] = 4;	
 }
 
-template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, const u32 x)
+//FUNCNUM is only set for backdrop, for an optimization of looking it up early
+template<bool BACKDROP, int FUNCNUM> 
+FORCEINLINE void GPU::setFinalColorBG(u16 color, const u32 x)
 {
 	//It is not safe to assert this here.
 	//This is probably the best place to enforce it, since almost every single color that comes in here
@@ -1136,17 +1035,19 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, const u
 	//assert((color&0x8000)==0);
 	if(!BACKDROP) color &= 0x7FFF; //but for the backdrop we can easily guarantee earlier that theres no bit here
 
-	bool draw=true;
-	switch(setFinalColorBck_funcNum)
+	bool draw;
+
+	const int test = BACKDROP?FUNCNUM:setFinalColorBck_funcNum;
+	switch(test)
 	{
-	case 0x0: setFinalBGColorSpecialNone<BACKDROP>(color,x); break;
-	case 0x1: setFinalBGColorSpecialBlend<BACKDROP>(color,x); break;
-	case 0x2: setFinalBGColorSpecialIncrease<BACKDROP>(color,x); break;
-	case 0x3: setFinalBGColorSpecialDecrease<BACKDROP>(color,x); break;
-	case 0x4: draw=setFinalBGColorSpecialNoneWnd<BACKDROP>(color,x); break;
-	case 0x5: draw=setFinalBGColorSpecialBlendWnd<BACKDROP>(color,x); break;
-	case 0x6: draw=setFinalBGColorSpecialIncreaseWnd<BACKDROP>(color,x); break;
-	case 0x7: draw=setFinalBGColorSpecialDecreaseWnd<BACKDROP>(color,x); break;
+		case 0: draw = _master_setFinalBGColor<BACKDROP,None,false>(color,x); break;
+		case 1: draw = _master_setFinalBGColor<BACKDROP,Blend,false>(color,x); break;
+		case 2: draw = _master_setFinalBGColor<BACKDROP,Increase,false>(color,x); break;
+		case 3: draw = _master_setFinalBGColor<BACKDROP,Decrease,false>(color,x); break;
+		case 4: draw = _master_setFinalBGColor<BACKDROP,None,true>(color,x); break;
+		case 5: draw = _master_setFinalBGColor<BACKDROP,Blend,true>(color,x); break;
+		case 6: draw = _master_setFinalBGColor<BACKDROP,Increase,true>(color,x); break;
+		case 7: draw = _master_setFinalBGColor<BACKDROP,Decrease,true>(color,x); break;
 	};
 
 	if(BACKDROP || draw) //backdrop must always be drawn
@@ -1159,7 +1060,6 @@ template<bool BACKDROP> FORCEINLINE void GPU::setFinalColorBG(u16 color, const u
 
 FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
 {
-	//if someone disagrees with these, they could be reimplemented as a function pointer easily
 	switch(setFinalColor3d_funcNum)
 	{
 	case 0x0: setFinal3DColorSpecialNone(dstX,srcX); break;
@@ -1173,9 +1073,31 @@ FORCEINLINE void GPU::setFinalColor3d(int dstX, int srcX)
 	};
 }
 
+FORCEINLINE void setFinalColorSpr(GPU* gpu, u8 *dst, u16 color, u8 alpha, u8 type, u16 x)
+{
+	switch(gpu->setFinalColorSpr_funcNum)
+	{
+	case 0x0: _master_setFinalOBJColor<None,false>(gpu, dst, color, alpha, type, x); break;
+	case 0x1: _master_setFinalOBJColor<Blend,false>(gpu, dst, color, alpha, type, x); break;
+	case 0x2: _master_setFinalOBJColor<Increase,false>(gpu, dst, color, alpha, type, x); break;
+	case 0x3: _master_setFinalOBJColor<Decrease,false>(gpu, dst, color, alpha, type, x); break;
+	case 0x4: _master_setFinalOBJColor<None,true>(gpu, dst, color, alpha, type, x); break;
+	case 0x5: _master_setFinalOBJColor<Blend,true>(gpu, dst, color, alpha, type, x); break;
+	case 0x6: _master_setFinalOBJColor<Increase,true>(gpu, dst, color, alpha, type, x); break;
+	case 0x7: _master_setFinalOBJColor<Decrease,true>(gpu, dst, color, alpha, type, x); break;
+	};
+}
+
+template<bool MOSAIC, bool BACKDROP>
+FORCEINLINE void GPU::__setFinalColorBck(u16 color, const u32 x, const int opaque)
+{
+	return ___setFinalColorBck<MOSAIC, BACKDROP, 0>(color,x,opaque);
+}
+
 //this was forced inline because most of the time it just falls through to setFinalColorBck() and the function call
 //overhead was ridiculous and terrible
-template<bool MOSAIC, bool BACKDROP> FORCEINLINE void GPU::__setFinalColorBck(u16 color, const u32 x, const bool opaque)
+template<bool MOSAIC, bool BACKDROP, int FUNCNUM>
+FORCEINLINE void GPU::___setFinalColorBck(u16 color, const u32 x, const int opaque)
 {
 	//I commented out this line to make a point.
 	//under ordinary circumstances, nobody should pass in something >=256
@@ -1206,7 +1128,7 @@ template<bool MOSAIC, bool BACKDROP> FORCEINLINE void GPU::__setFinalColorBck(u1
 	if(color != 0xFFFF)
 	{
 finish:
-		setFinalColorBG<BACKDROP>(color,x);
+		setFinalColorBG<BACKDROP,FUNCNUM>(color,x);
 	}
 }
 
@@ -1244,7 +1166,7 @@ static void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_al
 	if(!objColor.opaque) prioTab[x] = 0xFF;
 }
 
-static void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
+FORCEINLINE static void mosaicSpriteLine(GPU * gpu, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
 	//don't even try this unless the mosaic is effective
 	if(gpu->mosaicLookup.widthValue != 0 || gpu->mosaicLookup.heightValue != 0)
@@ -1281,7 +1203,7 @@ template<bool MOSAIC> void lineLarge8bpp(GPU * gpu)
 		XBG &= wmask;
 		u8 pixel = map[XBG];
 		u16 color = T1ReadWord(pal, pixel<<1);
-		gpu->__setFinalColorBck<MOSAIC,false>(color,x,color!=0);
+		gpu->__setFinalColorBck<MOSAIC,false>(color,x,color);
 	}
 	
 }
@@ -1821,14 +1743,6 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 //			SPRITE RENDERING
 /*****************************************************************************/
 
-void GPU::spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
-{
-	if(spriteRenderMode == SPRITE_1D)
-		_spriteRender<SPRITE_1D>(dst,dst_alpha,typeTab, prioTab);
-	else
-		_spriteRender<SPRITE_2D>(dst,dst_alpha,typeTab, prioTab);
-}
-
 //TODO - refactor this so there isnt as much duped code between rotozoomed and non-rotozoomed versions
 
 template<GPU::SpriteRenderMode MODE>
@@ -2324,13 +2238,6 @@ void GPU_set_DISPCAPCNT(u32 val)
 	gpu->dispCapCnt.srcB = (val >> 25) & 0x01;
 	gpu->dispCapCnt.capSrc = (val >> 29) & 0x03;
 
-	//gpu->dispCapCnt.dstBlock =  = (gpu->dispCapCnt.writeBlock * 0x20000) +
-	//						(gpu->dispCapCnt.writeOffset * 0x8000);
-	//						
-	//gpu->dispCapCnt.src =  (gpu->dispCapCnt.readBlock * 0x20000) +
-	//						(gpu->dispCapCnt.readOffset * 0x8000);
-	//						
-
 	switch((val >> 20) & 0x03)
 	{
 		case 0:
@@ -2357,33 +2264,48 @@ void GPU_set_DISPCAPCNT(u32 val)
 			gpu->dispCapCnt.capSrc, gpu->dispCapCnt.dst - ARM9Mem.ARM9_LCD, gpu->dispCapCnt.src - ARM9Mem.ARM9_LCD,
 			gpu->dispCapCnt.srcA, gpu->dispCapCnt.srcB);*/
 }
-// #define BRIGHT_TABLES
 
 static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 {
+	CACHE_ALIGN u8 spr[512];
+	CACHE_ALIGN u8 sprAlpha[256];
+	CACHE_ALIGN u8 sprType[256];
+	CACHE_ALIGN u8 sprPrio[256];
+
 	GPU * gpu = screen->gpu;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	itemsForPriority_t * item;
-	u8 spr[512];
-	u8 sprAlpha[256];
-	u8 sprType[256];
-	u8 sprPrio[256];
-	u8 prio;
 	u16 i16;
 	BOOL BG_enabled  = TRUE;
+
+	gpu->currentFadeInColors = &fadeInColors[gpu->BLDY_EVY][0];
+	gpu->currentFadeOutColors = &fadeOutColors[gpu->BLDY_EVY][0];
 
 	u16 backdrop_color = T1ReadWord(ARM9Mem.ARM9_VMEM, gpu->core * 0x400) & 0x7FFF;
 
 	//we need to write backdrop colors in the same way as we do BG pixels in order to do correct window processing
 	//this is currently eating up 2fps or so. it is a reasonable candidate for optimization. 
 	gpu->currBgNum = 5;
-	for(int x=0;x<256;x++) {
-		gpu->__setFinalColorBck<false,true>(backdrop_color,x,1);
-	}
-	memset(gpu->bgPixels,5,256);
+	switch(gpu->setFinalColorBck_funcNum) {
+		case 0: case 1: //for backdrops, (even with window enabled) none and blend are both the same: just copy the color
+		case 4: case 5:
+			memset_u16_le<256>(gpu->currDst,backdrop_color); 
+			break;
+		case 2:
+			//for non-windowed fade, we can just fade the color and fill
+			memset_u16_le<256>(gpu->currDst,gpu->currentFadeInColors[backdrop_color]);
+			break;
+		case 3:
+			//likewise for non-windowed fadeout
+			memset_u16_le<256>(gpu->currDst,gpu->currentFadeOutColors[backdrop_color]);
+			break;
 
-	//this check isnt really helpful. it just slows us down in the cases where we need the most speed
-	//if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && !gpu->LayersEnable[2] && !gpu->LayersEnable[3] && !gpu->LayersEnable[4]) return;
+		//windowed fades need special treatment
+		case 6: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,6>(backdrop_color,x,1); break;
+		case 7: for(int x=0;x<256;x++) gpu->___setFinalColorBck<false,true,7>(backdrop_color,x,1); break;
+	}
+	
+	memset(gpu->bgPixels,5,256);
 
 	// init background color & priorities
 	memset(sprAlpha, 0, 256);
@@ -2392,9 +2314,11 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	memset(sprWin, 0, 256);
 	
 	// init pixels priorities
-	for (int i=0; i<NB_PRIORITIES; i++) {
-		gpu->itemsForPriority[i].nbPixelsX = 0;
-	}
+	assert(NB_PRIORITIES==4);
+	gpu->itemsForPriority[0].nbPixelsX = 0;
+	gpu->itemsForPriority[1].nbPixelsX = 0;
+	gpu->itemsForPriority[2].nbPixelsX = 0;
+	gpu->itemsForPriority[3].nbPixelsX = 0;
 
 	// for all the pixels in the line
 	if (gpu->LayersEnable[4]) 
@@ -2405,7 +2329,6 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		//zero 06-may-09: I properly supported window color effects for backdrop, but I am not sure
 		//how it interacts with this. I wish we knew why we needed this
 		
-
 		gpu->spriteRender(spr, sprAlpha, sprType, sprPrio);
 		mosaicSpriteLine(gpu, l, spr, sprAlpha, sprType, sprPrio);
 
@@ -2413,7 +2336,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		for(int i = 0; i<256; i++) 
 		{
 			// assign them to the good priority item
-			prio = sprPrio[i];
+			int prio = sprPrio[i];
 			if (prio >=4) continue;
 			
 			item = &(gpu->itemsForPriority[prio]);
@@ -2426,9 +2349,12 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	if (!gpu->LayersEnable[0] && !gpu->LayersEnable[1] && !gpu->LayersEnable[2] && !gpu->LayersEnable[3])
 		BG_enabled = FALSE;
 
+	for(int j=0;j<8;j++)
+		gpu->blend2[j] = (gpu->BLDCNT & (0x100 << j));
+
 	// paint lower priorities fist
 	// then higher priorities on top
-	for(prio=NB_PRIORITIES; prio > 0; )
+	for(int prio=NB_PRIORITIES; prio > 0; )
 	{
 		prio--;
 		item = &(gpu->itemsForPriority[prio]);
@@ -2442,17 +2368,9 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 				{
 					gpu->currBgNum = i16;
 					gpu->blend1 = gpu->BLDCNT & (1 << gpu->currBgNum);
-					for(int j=0;j<8;j++)
-						gpu->blend2[j] = (gpu->BLDCNT & (0x100 << j));
-					gpu->currentFadeInColors = &fadeInColors[gpu->BLDY_EVY][0];
-					gpu->currentFadeOutColors = &fadeOutColors[gpu->BLDY_EVY][0];
-					//gpu->bgFunc = gpu->setFinalColorBck_funcNum;
 
 					struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[i16].bits;
 					gpu->curr_mosaic_enabled = bgCnt->Mosaic_Enable;
-
-					//mosaic test hacks
-					//gpu->curr_mosaic_enabled = true;
 
 					if (gpu->core == GPU_MAIN)
 					{
@@ -2495,16 +2413,12 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		if (gpu->LayersEnable[4])
 		{
 			gpu->currBgNum = 4;
-			////analyze mosaic configuration
-			//u16 mosaic_control = T1ReadWord((u8 *)&gpu->dispx_st->dispx_MISC.MOSAIC, 0);
-			//gpu->curr_mosaic_enabled
-
+			gpu->blend1 = gpu->BLDCNT & (1 << gpu->currBgNum);
+			
 			for (int i=0; i < item->nbPixelsX; i++)
 			{
 				i16=item->PixelsX[i];
-			//	T2WriteWord(dst, i16 << 1, T2ReadWord(spr, i16 << 1));
-			//	gpu->bgPixels[i16] = 4;
-				gpu->setFinalColorSpr(gpu, (i16<<1), gpu->currDst, T2ReadWord(spr, (i16<<1)), sprAlpha[i16], sprType[i16], i16);
+				setFinalColorSpr(gpu, gpu->currDst, T2ReadWord(spr, (i16<<1)), sprAlpha[i16], sprType[i16], i16);
 			}
 		}
 	}
@@ -2686,10 +2600,8 @@ static INLINE void GPU_ligne_MasterBrightness(NDS_Screen * screen, u16 l)
 	if(factor>16) factor=16;
 
 
-// Apply final brightness adjust (MASTER_BRIGHT)
-//  Reference: http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
-/* Mightymax> it should be more effective if the windowmanager applies brightness when drawing */
-/* it will most likly take acceleration, while we are stuck here with CPU power */
+	//Apply final brightness adjust (MASTER_BRIGHT)
+	//http://nocash.emubase.de/gbatek.htm#dsvideo (Under MASTER_BRIGHTNESS)
 	
 	switch (gpu->MasterBrightMode)
 	{
@@ -2841,9 +2753,6 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		return;
 	}
 
-	//if(gpu->core == 1)
-	//	printf("%d\n",l);
-
 	//blacken the screen if it is turned off by the user
 	if(!CommonSettings.showGpu.screens[gpu->core])
 	{
@@ -2851,12 +2760,6 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 		memset(dst,0,512);
 		return;
 	}
-
-	//{
-	//	extern int currFrameCounter;
-	//	u8 * dst =  GPU_screen + (screen->offset + l) * 512;
-	//	memset(dst,currFrameCounter,512);
-	//}
 
 	//cache some parameters which are assumed to be stable throughout the rendering of the entire line
 	gpu->currLine = l;
