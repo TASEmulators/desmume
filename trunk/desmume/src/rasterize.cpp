@@ -627,7 +627,7 @@ typedef int fixed28_4;
 static bool failure;
 
 // handle floor divides and mods correctly 
-INLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod)
+FORCEINLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod)
 {
 	//These must be caused by invalid or degenerate shapes.. not sure yet.
 	//check it out in the mario face intro of SM64
@@ -658,10 +658,10 @@ INLINE void FloorDivMod(long Numerator, long Denominator, long &Floor, long &Mod
 	}
 }
 
-INLINE fixed28_4 FloatToFixed28_4( float Value ) {
+FORCEINLINE fixed28_4 FloatToFixed28_4( float Value ) {
 	return (fixed28_4)(Value * 16);
 }
-INLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
+FORCEINLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
 	return Value / 16.0;
 }
 //inline fixed16_16 FloatToFixed16_16( float Value ) {
@@ -670,11 +670,11 @@ INLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
 //inline float Fixed16_16ToFloat( fixed16_16 Value ) {
 //	return Value / 65536.0;
 //}
-INLINE fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
+FORCEINLINE fixed28_4 Fixed28_4Mul( fixed28_4 A, fixed28_4 B ) {
 	// could make this asm to prevent overflow
 	return (A * B) / 16;	// 28.4 * 28.4 = 24.8 / 16 = 28.4
 }
-INLINE int Ceil28_4( fixed28_4 Value ) {
+FORCEINLINE int Ceil28_4( fixed28_4 Value ) {
 	int ReturnValue;
 	int Numerator = Value - 1 + 16;
 	if(Numerator >= 0) {
@@ -700,7 +700,7 @@ struct edge_fx_fl {
 		float curr, step, stepExtra;
 		FORCEINLINE void doStep() { curr += step; }
 		FORCEINLINE void doStepExtra() { curr += stepExtra; }
-		void initialize(float top, float bottom, float dx, float dy, long XStep, float XPrestep, float YPrestep) {
+		FORCEINLINE void initialize(float top, float bottom, float dx, float dy, long XStep, float XPrestep, float YPrestep) {
 			dx = 0;
 			dy *= (bottom-top);
 			curr = top + YPrestep * dy + XPrestep * dx;
@@ -764,7 +764,7 @@ FORCEINLINE int edge_fx_fl::Step() {
 }	
 
 //draws a single scanline
-static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
+FORCEINLINE static void drawscanline(edge_fx_fl *pLeft, edge_fx_fl *pRight)
 {
 	int XStart = pLeft->X;
 	int width = pRight->X - XStart;

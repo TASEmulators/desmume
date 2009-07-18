@@ -30,6 +30,11 @@
 #define NOSSE2
 #endif
 
+//if theres no sse2, also enforce no intrinsics
+#if defined(NOSSE2)
+#define SSE2_NOINTRIN
+#endif
+
 #ifdef _WIN32
 #define strcasecmp(x,y) _stricmp(x,y)
 #else
@@ -329,6 +334,32 @@ char (*BLAHBLAHBLAH( UNALIGNED T (&)[N] ))[N];
 
 #define ARRAY_SIZE(A) (sizeof(*BLAHBLAHBLAH(A)))
 #endif
+
+
+//fairly standard for loop macros
+#define MACRODO1(TRICK,TODO) { const int X = TRICK; TODO; }
+#define MACRODO2(X,TODO)   { MACRODO1((X),TODO)   MACRODO1(((X)+1),TODO) }
+#define MACRODO4(X,TODO)   { MACRODO2((X),TODO)   MACRODO2(((X)+2),TODO) }
+#define MACRODO8(X,TODO)   { MACRODO4((X),TODO)   MACRODO4(((X)+4),TODO) }
+#define MACRODO16(X,TODO)  { MACRODO8((X),TODO)   MACRODO8(((X)+8),TODO) }
+#define MACRODO32(X,TODO)  { MACRODO16((X),TODO)  MACRODO16(((X)+16),TODO) }
+#define MACRODO64(X,TODO)  { MACRODO32((X),TODO)  MACRODO32(((X)+32),TODO) }
+#define MACRODO128(X,TODO) { MACRODO64((X),TODO)  MACRODO64(((X)+64),TODO) }
+#define MACRODO256(X,TODO) { MACRODO128((X),TODO) MACRODO128(((X)+128),TODO) }
+
+//this one lets you loop any number of times (as long as N<256)
+#define MACRODO_N(N,TODO) {\
+	if((N)&0x100) MACRODO256(0,TODO); \
+	if((N)&0x080) MACRODO128((N)&(0x100),TODO); \
+	if((N)&0x040) MACRODO64((N)&(0x100|0x080),TODO); \
+	if((N)&0x020) MACRODO32((N)&(0x100|0x080|0x040),TODO); \
+	if((N)&0x010) MACRODO16((N)&(0x100|0x080|0x040|0x020),TODO); \
+	if((N)&0x008) MACRODO8((N)&(0x100|0x080|0x040|0x020|0x010),TODO); \
+	if((N)&0x004) MACRODO4((N)&(0x100|0x080|0x040|0x020|0x010|0x008),TODO); \
+	if((N)&0x002) MACRODO2((N)&(0x100|0x080|0x040|0x020|0x010|0x008|0x004),TODO); \
+	if((N)&0x001) MACRODO1((N)&(0x100|0x080|0x040|0x020|0x010|0x008|0x004|0x002),TODO); \
+}
+
 
 
 

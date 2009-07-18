@@ -8,6 +8,7 @@
 //#define NOSSE2 //disables SSE2 optimizations (better change it in the vc++ codegen options too)
 //#define DEVELOPER //enables dev+ features
 //#define GDB_STUB //enables the gdb stub. for some reason this is separate from dev+ for now
+//#define SSE2_NOINTRIN //indicates that you have a crippled compiler with no sse2 intrinsics (only relevant for SSE2 builds)
 
 
 #endif //_USERCONFIG_H
