@@ -1377,7 +1377,7 @@ void NDS_SkipNextFrame() { SkipNext2DFrame = true; SkipCur3DFrame = true; }
 
 #define INDEX(i) ((((i)>>16)&0xFF0)|(((i)>>4)&0xF))
 
-void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
+static void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
 {
 	if(MMU.DMAStartTime[procnum][chan] == modeNum)
 	{
@@ -1387,7 +1387,7 @@ void execHardware_doDma(int procnum, int chan, EDMAMode modeNum)
 	}
 }
 
-void execHardware_doAllDma(EDMAMode modeNum)
+static void execHardware_doAllDma(EDMAMode modeNum)
 {
 	for(int i=0;i<2;i++)
 		for(int j=0;j<4;j++)
@@ -1690,7 +1690,7 @@ void NDS_RescheduleDMA()
 	NDS_Reschedule();
 }
 
-void initSchedule()
+static void initSchedule()
 {
 	sequencer.init();
 
@@ -1736,7 +1736,7 @@ void Sequencer::init()
 }
 
 
-void execHardware_hblank()
+static void execHardware_hblank()
 {
 	//turn on hblank status bit
 	T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 2);
@@ -1771,7 +1771,7 @@ void execHardware_hblank()
 	}
 }
 
-void execHardware_hstart_vblankEnd()
+static void execHardware_hstart_vblankEnd()
 {
 	nds.VCount = 0;
 	sequencer.nds_vblankEnded = true;
@@ -1782,7 +1782,7 @@ void execHardware_hstart_vblankEnd()
 	T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFE);
 }
 
-void execHardware_hstart_vblankStart()
+static void execHardware_hstart_vblankStart()
 {
 	//turn on vblank status bit
 	T1WriteWord(ARM9Mem.ARM9_REG, 4, T1ReadWord(ARM9Mem.ARM9_REG, 4) | 1);
@@ -1829,7 +1829,7 @@ void execHardware_hstart_vcount()
 		T1WriteWord(MMU.ARM7_REG, 4, T1ReadWord(MMU.ARM7_REG, 4) & 0xFFFB);
 }
 
-void execHardware_hstart()
+static void execHardware_hstart()
 {
 	nds.VCount++;
 
@@ -2013,8 +2013,6 @@ template<bool FORCE>
 void NDS_exec(s32 nb)
 {
 	//TODO - singlestep is broken
-
-	int i, j;
 
 	LagFrameFlag=1;
 
