@@ -190,13 +190,52 @@ extern struct armcpu_memory_iface arm9_base_memory_iface;
 extern struct armcpu_memory_iface arm7_base_memory_iface;
 extern struct armcpu_memory_iface arm9_direct_memory_iface;	
 
+#define VRAM_BANKS 9
+#define VRAM_BANK_A 0
+#define VRAM_BANK_B 1
+#define VRAM_BANK_C 2
+#define VRAM_BANK_D 3
+#define VRAM_BANK_E 4
+#define VRAM_BANK_F 5
+#define VRAM_BANK_G 6
+#define VRAM_BANK_H 7
+#define VRAM_BANK_I 8
+
+#define VRAM_PAGE_ABG 0
+#define VRAM_PAGE_BBG 128
+#define VRAM_PAGE_AOBJ 256
+#define VRAM_PAGE_BOBJ 384
+
+
+struct VramConfiguration {
+
+	enum Purpose {
+		OFF, INVALID, ABG, BBG, AOBJ, BOBJ, LCDC, ARM7, TEX, TEXPAL, ABGEXTPAL, BBGEXTPAL, AOBJEXTPAL, BOBJEXTPAL
+	};
+
+	struct BankInfo {
+		Purpose purpose;
+		int ofs;
+	} banks[VRAM_BANKS];
+	
+	inline void clear() {
+		for(int i=0;i<VRAM_BANKS;i++) {
+			banks[i].ofs = 0;
+			banks[i].purpose = OFF;
+		}
+	}
+
+	std::string describePurpose(Purpose p);
+	std::string describe();
+};
+
+extern VramConfiguration vramConfiguration;
+
 #define VRAM_ARM9_PAGES 512
 extern u8 vram_arm9_map[VRAM_ARM9_PAGES];
 FORCEINLINE void* MMU_gpu_map(u32 vram_addr)
 {
-	//THIS FUNCTION IS NOT AS DANGEROUS!
-	//as an alternative to the above, use this:
-	//it is supposed to map a single gpu vram address to emulator host memory
+	//this is supposed to map a single gpu vram address to emulator host memory
 	//but it returns a pointer to some zero memory in case of accesses to unmapped memory.
 	//this correctly handles the case with tile accesses to unmapped memory.
 	//it could also potentially go through a different LUT than vram_arm9_map in case we discover

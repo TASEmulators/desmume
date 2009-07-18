@@ -2427,6 +2427,11 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	}
 }
 
+//NOTE : the 0x8000 flag is all jacked up. I think I want to get rid of it.
+//lately, this function does not respect the 0x8000 conventions because it
+//was necessary to fix hotel dusk
+//(i.e. do not write 0x8000 back for opaque black pixels because that data
+//buggily reused later as a BG clear tile and so should be 0x0000)
 template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 {
 	//this macro takes advantage of the fact that there are only two possible values for capx
@@ -2454,11 +2459,13 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 		}
 	}
 
+	bool skip = SKIP;
+
 	if (gpu->dispCapCnt.enabled)
 	{
 		//128-wide captures should write linearly into memory, with no gaps
 		//this is tested by hotel dusk
-		u32 ofsmul = gpu->dispCapCnt.capy==128?256:512;
+		u32 ofsmul = gpu->dispCapCnt.capx==DISPCAPCNT::_128?256:512;
 		u32 cap_src_adr = gpu->dispCapCnt.readOffset * 0x8000 + (l * 512);
 		u32 cap_dst_adr = gpu->dispCapCnt.writeOffset * 0x8000 + (l * ofsmul);
 
@@ -2473,111 +2480,123 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 		u8* cap_src = ARM9Mem.ARM9_LCD + cap_src_adr;
 		u8* cap_dst = ARM9Mem.ARM9_LCD + cap_dst_adr;
 
-		if(!SKIP)
+		//we must block captures when the capture dest is not mapped to LCDC
+		if(vramConfiguration.banks[gpu->dispCapCnt.writeBlock].purpose != VramConfiguration::LCDC)
+			skip = true;
+
+		//we must return zero from reads from memory not mapped to lcdc
+		if(vramConfiguration.banks[gpu->dispCapCnt.readBlock].purpose != VramConfiguration::LCDC)
+			cap_src = ARM9Mem.blank_memory;
+
+		if(!skip)
 		if (l < gpu->dispCapCnt.capy)
+		{
+			switch (gpu->dispCapCnt.capSrc)
 			{
-				switch (gpu->dispCapCnt.capSrc)
-				{
-					case 0:		// Capture source is SourceA
+				case 0:		// Capture source is SourceA
+					{
+						//INFO("Capture source is SourceA\n");
+						switch (gpu->dispCapCnt.srcA)
 						{
-							//INFO("Capture source is SourceA\n");
-							switch (gpu->dispCapCnt.srcA)
-							{
-								case 0:			// Capture screen (BG + OBJ + 3D)
-									{
-										//INFO("Capture screen (BG + OBJ + 3D)\n");
-
-										u8 *src;
-										src = (u8*)(GPU_tempScanline);
-										CAPCOPY(src,cap_dst);
-									}
-								break;
-								case 1:			// Capture 3D
-									{
-										//INFO("Capture 3D\n");
-										u16* colorLine;
-										gfx3d_GetLineData(l, &colorLine, NULL);
-										CAPCOPY(((u8*)colorLine),cap_dst);
-									}
-								break;
-							}
-						}
-					break;
-					case 1:		// Capture source is SourceB
-						{
-							//INFO("Capture source is SourceB\n");
-							switch (gpu->dispCapCnt.srcB)
-							{
-								case 0:			// Capture VRAM
-									{
-										//INFO("Capture VRAM\n");
-										CAPCOPY(cap_src,cap_dst);
-									}
-									break;
-								case 1:			// Capture Main Memory Display FIFO
-									{
-										//INFO("Capture Main Memory Display FIFO\n");
-									}
-									break;
-							}
-						}
-					break;
-					default:	// Capture source is SourceA+B blended
-						{
-							//INFO("Capture source is SourceA+B blended\n");
-							u16 *srcA = NULL;
-							u16 *srcB = NULL;
-
-							if (gpu->dispCapCnt.srcA == 0)
-							{
-								// Capture screen (BG + OBJ + 3D)
-								srcA = (u16*)(GPU_tempScanline);
-							}
-							else
-							{
-								gfx3d_GetLineData(l, &srcA, NULL);
-							}
-
-							if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
-								srcB = (u16 *)cap_src;
-							else
-								srcB = NULL; // DISP FIFOS
-
-							if ((srcA) && (srcB))
-							{
-								u16 a, r, g, b;
-								const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
-								for(u16 i = 0; i < todo; i++) 
+							case 0:			// Capture screen (BG + OBJ + 3D)
 								{
-									a = r = g = b =0;
+									//INFO("Capture screen (BG + OBJ + 3D)\n");
 
-									if (gpu->dispCapCnt.EVA && (srcA[i] & 0x8000))
-									{
-										a = 0x8000;
-										r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
-										g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
-										b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
-									}
-
-									if (gpu->dispCapCnt.EVB && (srcB[i] & 0x8000))
-									{
-										a = 0x8000;
-										r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
-										g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
-										b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
-									}
-
-									r >>= 4;
-									g >>= 4;
-									b >>= 4;
-
-									T2WriteWord(cap_dst, i << 1, (u16)(a | (b << 10) | (g << 5) | r));
+									u8 *src;
+									src = (u8*)(GPU_tempScanline);
+									CAPCOPY(src,cap_dst);
 								}
+							break;
+							case 1:			// Capture 3D
+								{
+									//INFO("Capture 3D\n");
+									u16* colorLine;
+									gfx3d_GetLineData(l, &colorLine, NULL);
+									CAPCOPY(((u8*)colorLine),cap_dst);
+								}
+							break;
+						}
+					}
+				break;
+				case 1:		// Capture source is SourceB
+					{
+						//INFO("Capture source is SourceB\n");
+						switch (gpu->dispCapCnt.srcB)
+						{
+							case 0:			// Capture VRAM
+								{
+									//INFO("Capture VRAM\n");
+									CAPCOPY(cap_src,cap_dst);
+								}
+								break;
+							case 1:			// Capture Main Memory Display FIFO
+								{
+									//INFO("Capture Main Memory Display FIFO\n");
+								}
+								break;
+						}
+					}
+				break;
+				default:	// Capture source is SourceA+B blended
+					{
+						//INFO("Capture source is SourceA+B blended\n");
+						u16 *srcA = NULL;
+						u16 *srcB = NULL;
+
+						if (gpu->dispCapCnt.srcA == 0)
+						{
+							// Capture screen (BG + OBJ + 3D)
+							srcA = (u16*)(GPU_tempScanline);
+						}
+						else
+						{
+							gfx3d_GetLineData(l, &srcA, NULL);
+						}
+
+						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
+							srcB = (u16 *)cap_src;
+						else
+							srcB = NULL; // DISP FIFOS
+
+						if ((srcA) && (srcB))
+						{
+							u16 a, r, g, b;
+							const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
+							for(u16 i = 0; i < todo; i++) 
+							{
+								a = r = g = b =0;
+
+								u16 a_alpha;
+								if(gpu->dispCapCnt.srcA == 0)
+									a_alpha = 1;
+								else a_alpha = srcA[i] & 0x8000;
+
+
+								if (gpu->dispCapCnt.EVA && a_alpha)
+								{
+									r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
+									g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
+									b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
+								}
+
+								if (gpu->dispCapCnt.EVB)
+								{
+									r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
+									g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
+									b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
+								}
+
+								r >>= 4;
+								g >>= 4;
+								b >>= 4;
+
+								T2WriteWord(cap_dst, i << 1, (b << 10) | (g << 5) | r);
 							}
 						}
-					break;
-				}
+					}
+				break;
 			}
+		}
 
 		if (l>=191)
 		{

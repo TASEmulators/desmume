@@ -295,21 +295,6 @@ u8 vram_arm7_map[2];
 
 //<---------
 
-#define VRAM_BANKS 9
-#define VRAM_BANK_A 0
-#define VRAM_BANK_B 1
-#define VRAM_BANK_C 2
-#define VRAM_BANK_D 3
-#define VRAM_BANK_E 4
-#define VRAM_BANK_F 5
-#define VRAM_BANK_G 6
-#define VRAM_BANK_H 7
-#define VRAM_BANK_I 8
-
-#define VRAM_PAGE_ABG 0
-#define VRAM_PAGE_BBG 128
-#define VRAM_PAGE_AOBJ 256
-#define VRAM_PAGE_BOBJ 384
 
 void MMU_VRAM_unmap_all();
 
@@ -398,53 +383,35 @@ static FORCEINLINE u32 MMU_LCDmap(u32 addr, bool& unmapped)
 
 #define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
 
-struct VramConfiguration {
+VramConfiguration vramConfiguration;
 
-	enum Purpose {
-		OFF, INVALID, ABG, BBG, AOBJ, BOBJ, LCDC, ARM7, TEX, TEXPAL, ABGEXTPAL, BBGEXTPAL, AOBJEXTPAL, BOBJEXTPAL
-	};
-
-	struct BankInfo {
-		Purpose purpose;
-		int ofs;
-	} banks[VRAM_BANKS];
-	
-	void clear() {
-		for(int i=0;i<VRAM_BANKS;i++) {
-			banks[i].ofs = 0;
-			banks[i].purpose = OFF;
-		}
+std::string VramConfiguration::describePurpose(Purpose p) {
+	switch(p) {
+		case OFF: return "OFF";
+		case INVALID: return "INVALID";
+		case ABG: return "ABG";
+		case BBG: return "BBG";
+		case AOBJ: return "AOBJ";
+		case BOBJ: return "BOBJ";
+		case LCDC: return "LCDC";
+		case ARM7: return "ARM7";
+		case TEX: return "TEX";
+		case TEXPAL: return "TEXPAL";
+		case ABGEXTPAL: return "ABGEXTPAL";
+		case BBGEXTPAL: return "BBGEXTPAL";
+		case AOBJEXTPAL: return "AOBJEXTPAL";
+		case BOBJEXTPAL: return "BOBJEXTPAL";
+		default: return "UNHANDLED CASE";
 	}
+}
 
-	std::string describePurpose(Purpose p) {
-		switch(p) {
-			case OFF: return "OFF";
-			case INVALID: return "INVALID";
-			case ABG: return "ABG";
-			case BBG: return "BBG";
-			case AOBJ: return "AOBJ";
-			case BOBJ: return "BOBJ";
-			case LCDC: return "LCDC";
-			case ARM7: return "ARM7";
-			case TEX: return "TEX";
-			case TEXPAL: return "TEXPAL";
-			case ABGEXTPAL: return "ABGEXTPAL";
-			case BBGEXTPAL: return "BBGEXTPAL";
-			case AOBJEXTPAL: return "AOBJEXTPAL";
-			case BOBJEXTPAL: return "BOBJEXTPAL";
-			default: return "UNHANDLED CASE";
-		}
+std::string VramConfiguration::describe() {
+	std::stringstream ret;
+	for(int i=0;i<VRAM_BANKS;i++) {
+		ret << (char)(i+'A') << ": " << banks[i].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
 	}
-
-	std::string describe() {
-		std::stringstream ret;
-		for(int i=0;i<VRAM_BANKS;i++) {
-			ret << (char)(i+'A') << ": " << banks[i].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
-		}
-		return ret.str();
-	}
-} vramConfiguration;
-
+	return ret.str();
+}
 
 //maps the specified bank to LCDC
 static inline void MMU_vram_lcdc(const int bank)
