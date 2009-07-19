@@ -2396,15 +2396,21 @@ static void gfx3d_doFlush()
 
 	//find the min and max y values for each poly.
 	//TODO - this could be a small waste of time if we are manual sorting the translucent polys
+	//TODO - this _MUST_ be moved later in the pipeline, after clipping.
+	//the w-division here is just an approximation to fix the shop in harvest moon island of happiness
 	for(int i=0; i<polycount; i++)
 	{
 		POLY &poly = polylist->list[i];
-		float verty = 0.0f; 
-		poly.miny = poly.maxy = vertlist->list[poly.vertIndexes[0]].y;
+		float verty = vertlist->list[poly.vertIndexes[0]].y;
+		float vertw = vertlist->list[poly.vertIndexes[0]].w;
+		verty = (verty+vertw)/(2*vertw);
+		poly.miny = poly.maxy = (verty+vertw)/(2*vertw);
 
 		for(int j=1; j<poly.type; j++)
 		{
 			verty = vertlist->list[poly.vertIndexes[j]].y;
+			vertw = vertlist->list[poly.vertIndexes[j]].w;
+			verty = (verty+vertw)/(2*vertw);
 			poly.miny = min(poly.miny, verty);
 			poly.maxy = max(poly.maxy, verty);
 		}
