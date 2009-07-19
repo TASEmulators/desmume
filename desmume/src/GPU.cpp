@@ -2427,11 +2427,6 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 	}
 }
 
-//NOTE : the 0x8000 flag is all jacked up. I think I want to get rid of it.
-//lately, this function does not respect the 0x8000 conventions because it
-//was necessary to fix hotel dusk
-//(i.e. do not write 0x8000 back for opaque black pixels because that data
-//buggily reused later as a BG clear tile and so should be 0x0000)
 template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 {
 	//this macro takes advantage of the fact that there are only two possible values for capx
@@ -2560,27 +2555,27 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 
 						if ((srcA) && (srcB))
 						{
-							u16 a, r, g, b;
 							const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
 							for(u16 i = 0; i < todo; i++) 
 							{
-								a = r = g = b =0;
+								u16 a,r,g,b;
 
-								u16 a_alpha;
-								if(gpu->dispCapCnt.srcA == 0)
-									a_alpha = 1;
-								else a_alpha = srcA[i] & 0x8000;
-
+								u16 a_alpha = srcA[i] & 0x8000;
+								u16 b_alpha = srcB[i] & 0x8000;
 
 								if (gpu->dispCapCnt.EVA && a_alpha)
 								{
+									a = 0x8000;
 									r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
 									g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
 									b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
-								}
+								} 
+								else
+									a = r = g = b = 0;
 
-								if (gpu->dispCapCnt.EVB)
+								if (gpu->dispCapCnt.EVB && b_alpha)
 								{
+									a = 0x8000;
 									r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
 									g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
 									b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
@@ -2590,7 +2585,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 								g >>= 4;
 								b >>= 4;
 
-								T2WriteWord(cap_dst, i << 1, (b << 10) | (g << 5) | r);
+								T2WriteWord(cap_dst, i << 1, a | (b << 10) | (g << 5) | r);
 							}
 						}
 					}
