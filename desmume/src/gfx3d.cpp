@@ -2770,21 +2770,17 @@ static void NOPARAMS()
 
 void gfx3d_sendCommandToFIFO(u32 val)
 {
+	//friendly reminder: be careful to handle the case where several unpacked noparams commands get sent in a row!
+
 	if (clCmd == 0)
 	{
 		clCmd = val;
+		NOPARAMS();
 		return;
 	}
 #ifdef _3D_LOG
 		INFO("GFX FIFO: Send GFX 3D cmd 0x%02X to FIFO (0x%08X)\n", clCmd & 0xFF, val);
 #endif
-
-	NOPARAMS();
-	if (clCmd == 0) 
-	{
-		clCmd = val;
-		return;
-	}
 
 	switch (clCmd & 0xFF)
 	{
