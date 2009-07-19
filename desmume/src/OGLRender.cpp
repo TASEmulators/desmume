@@ -706,10 +706,13 @@ static void GL_ReadFramebuffer()
 		#ifndef NOSSE2
 			//I dont know much about this kind of stuff, but this seems to help
 			//for some reason I couldnt make the intrinsics work 
-			u8* wanx =  (u8*)&((u32*)GPU_screen3D)[i];
-			#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
-			#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
-			PUNK(0); PUNK(1);
+			u8* u8screen3D =  (u8*)&((u32*)GPU_screen3D)[i];
+			#define PREFETCH32(X,Y) __asm { prefetchnta [u8screen3D+32*0x##X##Y] }
+			#define PREFETCH128(X) 	PREFETCH32(X,0) PREFETCH32(X,1) PREFETCH32(X,2) PREFETCH32(X,3) \
+									PREFETCH32(X,4) PREFETCH32(X,5) PREFETCH32(X,6) PREFETCH32(X,7) \
+									PREFETCH32(X,8) PREFETCH32(X,9) PREFETCH32(X,A) PREFETCH32(X,B) \
+									PREFETCH32(X,C) PREFETCH32(X,D) PREFETCH32(X,E) PREFETCH32(X,F) 
+			PREFETCH128(0); PREFETCH128(1);
 		#endif
 
 		for(int x=0;x<256;x++,i++)
