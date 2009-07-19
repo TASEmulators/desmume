@@ -2442,18 +2442,20 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 	W=padarray[10];
 	E=padarray[11];
 
-	if(AutoHold.Right) R=!padarray[0];
-	if(AutoHold.Left)  L=!padarray[1];
-	if(AutoHold.Down)  D=!padarray[2];
-	if(AutoHold.Up)    U=!padarray[3];
-	if(AutoHold.Select)T=!padarray[4];
-	if(AutoHold.Start) S=!padarray[5];
-	if(AutoHold.B)     B=!padarray[6];
-	if(AutoHold.A)     A=!padarray[7];
-	if(AutoHold.Y)     Y=!padarray[8];
-	if(AutoHold.X)     X=!padarray[9];
-	if(AutoHold.L)     W=!padarray[10];
-	if(AutoHold.R)     E=!padarray[11];
+	if (movieMode != MOVIEMODE_PLAY) {
+		if(AutoHold.Right) R=!padarray[0];
+		if(AutoHold.Left)  L=!padarray[1];
+		if(AutoHold.Down)  D=!padarray[2];
+		if(AutoHold.Up)    U=!padarray[3];
+		if(AutoHold.Select)T=!padarray[4];
+		if(AutoHold.Start) S=!padarray[5];
+		if(AutoHold.B)     B=!padarray[6];
+		if(AutoHold.A)     A=!padarray[7];
+		if(AutoHold.Y)     Y=!padarray[8];
+		if(AutoHold.X)     X=!padarray[9];
+		if(AutoHold.L)     W=!padarray[10];
+		if(AutoHold.R)     E=!padarray[11];
+	}
 
 	//this macro is the opposite of what you would expect
 #define FIX(b) (b?0:0x80)
