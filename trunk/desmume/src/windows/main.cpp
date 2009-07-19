@@ -2094,13 +2094,6 @@ void OpenRecentROM(int listNum)
 
 static BOOL OpenCore(const char* filename)
 {
-	if(!strcmp(getExtension(filename).c_str(), "gz")  || !strcmp(getExtension(filename).c_str(), "nds.gz")) {
-		if(LoadROM(filename,filename)) {
-			NDS_UnPause();
-			return FALSE;
-		}
-	}
-
 	char LogicalName[1024], PhysicalName[1024];
 
 	const char* s_nonRomExtensions [] = {"txt", "nfo", "htm", "html", "jpg", "jpeg", "png", "bmp", "gif", "mp3", "wav", "lnk", "exe", "bat", "gmv", "gm2", "lua", "luasav", "sav", "srm", "brm", "cfg", "wch", "gs*"};
@@ -2108,7 +2101,7 @@ static BOOL OpenCore(const char* filename)
 	if(!ObtainFile(filename, LogicalName, PhysicalName, "rom", s_nonRomExtensions, ARRAY_SIZE(s_nonRomExtensions)))
 		return FALSE;
 
-	if(LoadROM(PhysicalName, LogicalName))
+	if(LoadROM(filename, LogicalName))
 	{
 		romloaded = TRUE;
 		NDS_UnPause();

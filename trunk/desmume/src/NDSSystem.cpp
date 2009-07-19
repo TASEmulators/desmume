@@ -730,7 +730,136 @@ void GameInfo::populate()
 		memset(ROMserial+19, '\0', 1);
 	}
 }
+#ifdef WIN32
+#include "memorystream.h"
+#include <fstream>
 
+static std::vector<char> buffer;
+static std::vector<char> v;
+
+static void loadrom(std::vector<char>* buf, std::string fname) {
+
+	memorystream ms(buf);
+
+	std::ostream* os = (std::ostream*)&ms;
+
+	std::ifstream fl(fname.c_str());
+
+	if (!fl.is_open()) 
+		return;
+
+	fl.seekg( 0, std::ios::end );
+	int size = fl.tellg();
+
+	std::filebuf fb;
+	fb.open (fname.c_str(), std::ios::in | std::ios::binary);
+	std::istream is(&fb);
+
+	char *buffer = new char[size];
+	is.read(buffer, size);
+	ms.write((char*)buffer,size);
+
+	fb.close();
+
+	ms.trim();
+
+	gameInfo.romdata = &buffer[0];
+	
+}
+
+int NDS_LoadROM(const char *filename, const char *logicalFilename)
+{
+	int					type;
+	u32					 mask;
+	char				buf[MAX_PATH];
+
+	if (filename == NULL)
+		return -1;
+	
+    path.init(filename);
+
+	if ( path.isdsgba(path.path)) {
+		type = ROM_DSGBA;
+		loadrom(&buffer, path.path);
+		gameInfo.romsize = buffer.size();
+	}
+	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
+
+		loadrom(&buffer, path.path);
+		gameInfo.romsize = buffer.size();	
+		type = ROM_NDS;
+	}
+	//ds.gba in archives, it's already been loaded into memory at this point
+	else if (path.isdsgba(std::string(logicalFilename))) {
+
+		std::vector<char> v(gameInfo.romdata, gameInfo.romdata + gameInfo.romsize);
+		v.erase(v.begin(),v.begin()+DSGBA_LOADER_SIZE);
+		buffer.assign( v.begin(), v.end() );
+		gameInfo.romdata = &buffer[0];
+		gameInfo.romsize = buffer.size();
+	}
+
+	if(type == ROM_DSGBA)
+	{
+		buffer.erase(buffer.begin(),buffer.begin()+DSGBA_LOADER_SIZE);
+		gameInfo.romdata = &buffer[0];
+		gameInfo.romsize = buffer.size();
+	}
+
+	//check that size is at least the size of the header
+	if (gameInfo.romsize < 352+160) {
+		return -1;
+	}
+
+	//zero 25-dec-08 - this used to yield a mask which was 2x large
+	//mask = size; 
+	mask = gameInfo.romsize-1; 
+	mask |= (mask >>1);
+	mask |= (mask >>2);
+	mask |= (mask >>4);
+	mask |= (mask >>8);
+	mask |= (mask >>16);
+
+	//decrypt if necessary..
+	//but this is untested and suspected to fail on big endian, so lets not support this on big endian
+
+#ifndef WORDS_BIGENDIAN
+	bool okRom = DecryptSecureArea((u8*)gameInfo.romdata,gameInfo.romsize);
+
+	if(!okRom) {
+		printf("Specified file is not a valid rom\n");
+		return -1;
+	}
+#endif
+
+	cheatsSearchClose();
+	MMU_unsetRom();
+	NDS_SetROM((u8*)gameInfo.romdata, mask);
+	NDS_Reset();
+
+	memset(buf, 0, MAX_PATH);
+
+	path.getpathnoext(path.BATTERY, buf);
+	
+	strcat(buf, ".dsv");							// DeSmuME memory card	:)
+
+	MMU_new.backupDevice.load_rom(buf);
+
+	memset(buf, 0, MAX_PATH);
+
+	path.getpathnoext(path.CHEATS, buf);
+	
+	strcat(buf, ".dct");							// DeSmuME cheat		:)
+	cheatsInit(buf);
+
+	gameInfo.populate();
+	gameInfo.crc = crc32(0,(u8*)gameInfo.romdata,gameInfo.romsize);
+	INFO("\nROM crc: %08X\n\n", gameInfo.crc);
+	INFO("\nROM serial: %s\n", gameInfo.ROMserial);
+
+	return 1;
+}
+#else
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
 {
 	int					ret;
@@ -847,7 +976,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 
 	return ret;
 }
-
+#endif
 void NDS_FreeROM(void)
 {
 	if (MMU.CART_ROM != MMU.UNUSED_RAM)

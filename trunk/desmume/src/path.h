@@ -347,8 +347,7 @@ public:
 		else return RomName;
 	}
 
-	bool isdsgba() {
-		std::string str = path;
+	bool isdsgba(std::string str) {
 		int x = str.find_last_of(".");
 		if (x > 0)
 			str = str.substr(x-2);

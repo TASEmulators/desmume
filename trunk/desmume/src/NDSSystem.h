@@ -280,6 +280,8 @@ struct GameInfo
 	NDS_header header;
 	char ROMserial[20];
 	void populate();
+	char* romdata;
+	int romsize;
 };
 
 extern GameInfo gameInfo;
