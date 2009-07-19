@@ -1745,7 +1745,36 @@ FORCEINLINE BOOL compute_sprite_vars(_OAM_ * spriteInfo, u16 l,
 //			SPRITE RENDERING
 /*****************************************************************************/
 
+
 //TODO - refactor this so there isnt as much duped code between rotozoomed and non-rotozoomed versions
+
+static u8* bmp_sprite_address(GPU* gpu, _OAM_ * spriteInfo, size sprSize, s32 y)
+{
+	u8* src;
+	if (spriteInfo->Mode == 3) //sprite is in BMP format
+	{
+		if (gpu->dispCnt().OBJ_BMP_mapping)
+		{
+			//tested by buffy sacrifice damage blood splatters in corner
+			src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<gpu->sprBMPBoundary) + (y*sprSize.x*2));
+		}
+		else
+		{
+			//2d mapping:
+			//verified in rotozoomed mode by knights in the nightmare intro
+
+			if (gpu->dispCnt().OBJ_BMP_2D_dim)
+				//256*256, verified by heroes of mana FMV intro
+				src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
+			else 
+				//128*512, verified by harry potter and the order of the phoenix conversation portraits
+				src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1));
+		}
+	}
+
+	return src;
+}
+
 
 template<GPU::SpriteRenderMode MODE>
 void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
@@ -1785,6 +1814,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			continue;
 
 		prio = spriteInfo->Priority;
+
 
 		if (spriteInfo->RotScale & 1) 
 		{
@@ -1906,23 +1936,26 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 			// Rotozoomed direct color
 			else if(spriteInfo->Mode == 3)
 			{
-				if (dispCnt->OBJ_BMP_mapping)
-					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary));
-				else
-					//NOT TESTED
-					src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x03E0) * 8) + (spriteInfo->TileIndex&0x001F))*16);
-				
+				src = bmp_sprite_address(this,spriteInfo,sprSize,0);
+
 				for(j = 0; j < lg; ++j, ++sprX)
 				{
 					// Get the integer part of the fixed point 8.8, and check if it lies inside the sprite data
 					auxX = (realX>>8);
 					auxY = (realY>>8);
 
+					//this is all very slow, and so much dup code with other rotozoomed modes.
+					//dont bother fixing speed until this whole thing gets reworked
+
 					if (auxX >= 0 && auxY >= 0 && auxX < sprSize.x && auxY < sprSize.y)
 					{
-						//if(MODE == SPRITE_2D) //tested by buffy sacrifice damage blood splatters in corner
-						//else //tested by lego indiana jones
-						offset = auxX + (auxY*sprSize.x);
+						if(dispCnt->OBJ_BMP_2D_dim)
+							//tested by knights in the nightmare
+							offset = (bmp_sprite_address(this,spriteInfo,sprSize,auxY)-src)/2+auxX;
+						else //tested by lego indiana jones (somehow?)
+							//tested by buffy sacrifice damage blood splatters in corner
+							offset = auxX + (auxY*sprSize.x);
+
 
 						colour = T1ReadWord (src, offset<<1);
 
@@ -2023,29 +2056,13 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 				continue;
 			}
 
-			if (spriteInfo->Mode == 3)              /* sprite is in BMP format */
+			if (spriteInfo->Mode == 3)              //sprite is in BMP format
 			{
+				src = bmp_sprite_address(this,spriteInfo,sprSize, y);
 
 				//transparent (i think, dont bother to render?) if alpha is 0
 				if(spriteInfo->PaletteIndex == 0)
 					continue;
-
-				if (dispCnt->OBJ_BMP_mapping)
-				{
-					//tested by buffy sacrifice damage blood splatters in corner
-					src = (u8 *)MMU_gpu_map(gpu->sprMem + (spriteInfo->TileIndex<<sprBMPBoundary) + (y*sprSize.x*2));
-				}
-				else
-				{
-					//2d mapping:
-
-					if (dispCnt->OBJ_BMP_2D_dim)
-						//256*256, verified by heroes of mana FMV intro
-						src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3E0) * 64  + (spriteInfo->TileIndex&0x1F) *8 + ( y << 8)) << 1));
-					else 
-						//128*512, verified by harry potter and the order of the phoenix conversation portraits
-						src = (u8 *)MMU_gpu_map(gpu->sprMem + (((spriteInfo->TileIndex&0x3F0) * 64  + (spriteInfo->TileIndex&0x0F) *8 + ( y << 7)) << 1));
-				}
 				
 				render_sprite_BMP (gpu, i, l, dst, (u16*)src, dst_alpha, typeTab, prioTab, prio, lg, sprX, x, xdir, spriteInfo->PaletteIndex);
 				continue;
