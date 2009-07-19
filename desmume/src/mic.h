@@ -25,7 +25,7 @@ extern int MicButtonPressed;
 
 #ifdef WIN32
 static char MicSampleName[256];
-char* LoadSample(const char *name);
+bool LoadSample(const char *name);
 #endif
 
 extern int MicDisplay;
