@@ -351,7 +351,11 @@ int ArchiveFile::ExtractItem(int index, const char* outFilename) const
 			InFileStream* ifs = new InFileStream(m_filename);
 			if(SUCCEEDED(object->Open(ifs,0,0)))
 			{
-				OutStream* os = new OutStream(index, outFilename);
+				if(gameInfo.romdata != NULL)
+					delete[] gameInfo.romdata;
+				gameInfo.romdata = new char[rv];
+				gameInfo.romsize = rv;
+				OutStream* os = new OutStream(index, gameInfo.romdata, rv);
 				const UInt32 indices [1] = {index};
 				hr = object->Extract(indices, 1, 0, os);
 				object->Close();
