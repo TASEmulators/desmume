@@ -3798,7 +3798,14 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 		
 						WritePrivateProfileInt("Use Mic Sample", "UseMicSample", ((UseMicSample == true) ? 1 : 0), IniName);
 						WritePrivateProfileString("Use Mic Sample", "MicSampleFile", MicSampleName, IniName);
-						LoadSample(MicSampleName);
+
+						if (UseMicSample)
+						{
+							if (!LoadSample(MicSampleName))
+							{
+								MessageBox(hDlg, "Unable to read the sample", "DeSmuME", (MB_OK | MB_ICONEXCLAMATION));
+							}
+						}
 					}
 				}
 			case IDCANCEL:

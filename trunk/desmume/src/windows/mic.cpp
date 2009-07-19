@@ -57,23 +57,36 @@ static int CALLBACK waveInProc(HWAVEIN wavein, UINT msg, DWORD instance, DWORD p
 	return 0;
 }
 
-static char* samplebuffer;
-static int samplebuffersize;
-static FILE* fp;
+static char* samplebuffer = NULL;
+static int samplebuffersize = 0;
+static FILE* fp = NULL;
 
-char* LoadSample(const char *name)
+bool LoadSample(const char *name)
 {
-
 	std::ifstream fl(name);
+
+	if (!fl.is_open())
+	{
+		return false;
+	}
+
 	fl.seekg( 0, std::ios::end );
 	size_t len = fl.tellg();
-	samplebuffersize=len;
-	char *ret = new char[len];
+
+	// Avoid mem leaks
+	if (samplebuffer != NULL)
+		delete[] samplebuffer;
+
+	samplebuffersize = len;
+	samplebuffer = new char[len];
+
 	fl.seekg(0, std::ios::beg);
-	fl.read(ret, len);
-	samplebuffer=ret;
+	fl.read (samplebuffer, len);
+	fl.close();
+
 	SampleLoaded=1;
-	return ret;
+
+	return true;
 }
 
 BOOL Mic_Init() {
