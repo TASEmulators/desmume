@@ -276,6 +276,15 @@ NDS_header * NDS_getROMHeader(void);
 
 struct GameInfo
 {
+	GameInfo()
+		: romdata(NULL)
+	{}
+
+	void resize(int size) {
+		if(romdata != NULL) delete[] romdata;
+		romdata = new char[size];
+		romsize = size;
+	}
 	u32 crc;
 	NDS_header header;
 	char ROMserial[20];
