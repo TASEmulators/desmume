@@ -36,13 +36,12 @@ void Describe(HWND hwndDlg)
 
 	u32 num_frames = md.records.size();
 
-	u32 div = 60;
-	float tempCount = (num_frames % 60); //Get fraction of a second
-	float getTime = ((tempCount / div) * 100); //Convert to 2 digit number
-	int fraction = getTime; //Convert to 2 digit int
-	int seconds = (num_frames / div) % 60;
-	int minutes = (num_frames/(div*60))%60;
-	int hours = num_frames/(div*60*60);
+	double tempCount = num_frames / (33513982.0/6/355/263);
+	int num_seconds = tempCount;
+	int fraction = (tempCount - num_seconds) * 100;
+	int seconds = num_seconds % 60;
+	int minutes = (num_seconds / 60) % 60;
+	int hours = (num_seconds / 60 / 60) % 60;
 	char tmp[256];
 	sprintf(tmp, "%02d:%02d:%02d.%02d", hours, minutes, seconds, fraction);
 
