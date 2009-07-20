@@ -882,7 +882,7 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 	if(!strcasecmp(path.extension().c_str(), "zip"))		type = ROM_NDS;
 	else if ( !strcasecmp(path.extension().c_str(), "nds"))
 		type = ROM_NDS;
-	else if ( path.isdsgba())
+	else if ( path.isdsgba(path.path))
 		type = ROM_DSGBA;
 	else
 		type = ROM_NDS;
