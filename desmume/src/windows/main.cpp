@@ -226,8 +226,6 @@ volatile BOOL paused = TRUE;
 volatile BOOL pausedByMinimize = FALSE;
 u32 glock = 0;
 
-BOOL click = FALSE;
-
 BOOL finished = FALSE;
 BOOL romloaded = FALSE;
 
@@ -2679,6 +2677,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			s32 x = (s32)((s16)LOWORD(lParam));
 			s32 y = (s32)((s16)HIWORD(lParam));
 			GetClientRect(hwnd,&r);
+			SetCapture(hwnd);
 			int defwidth = video.width, defheight = (video.height+video.screengap);
 			int winwidth = (r.right-r.left), winheight = (r.bottom-r.top);
 
@@ -2720,8 +2719,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		return 0;
 
 	case WM_LBUTTONUP:
-		if(click)
-			ReleaseCapture();
+
+		ReleaseCapture();
 		NDS_releaseTouch();
 		HudClickRelease(&Hud);
 		return 0;
