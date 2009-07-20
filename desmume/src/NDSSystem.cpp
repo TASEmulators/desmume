@@ -739,22 +739,17 @@ static std::vector<char> v;
 
 static void loadrom(std::vector<char>* buf, std::string fname) {
 
-	std::ifstream fl(fname.c_str());
+	FILE* inf = fopen(fname.c_str(),"rb");
+	if(!inf) return;
 
-	if (!fl.is_open()) 
-		return;
-
-	fl.seekg( 0, std::ios::end );
-	int size = fl.tellg();
-
-	std::filebuf fb;
-	fb.open (fname.c_str(), std::ios::in | std::ios::binary);
-	std::istream is(&fb);
+	fseek(inf,0,SEEK_END);
+	int size = ftell(inf);
+	fseek(inf,0,SEEK_SET);
 
 	gameInfo.resize(size);
-	is.read(gameInfo.romdata,size);
+	fread(gameInfo.romdata,1,size,inf);
 	
-	fb.close();
+	fclose(inf);
 }
 
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
