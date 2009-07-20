@@ -1,3 +1,4 @@
+//2
 /*	Copyright (C) 2006 yopyop
     yopyop156@ifrance.com
     yopyop156.ifrance.com
@@ -145,11 +146,6 @@ static float float16table[65536];
 static float float10Table[1024];
 static float float10RelTable[1024];
 static float normalTable[1024];
-
-#ifndef NOSSE2
-float ALIGN(16) _fix2float_divizor_mask[4] = { 4096.f, 4096.f, 4096.f, 4096.f };
-float ALIGN(16) _fix10_2float_divizor_mask[4] = { 512.f, 512.f, 512.f, 512.f };
-#endif
 
 #define fix2float(v)    (((float)((s32)(v))) / (float)(1<<12))
 #define fix10_2float(v) (((float)((s32)(v))) / (float)(1<<9))
@@ -317,6 +313,20 @@ static void makeTables() {
 
 void gfx3d_init()
 {
+	//DWORD start = timeGetTime();
+	//for(int i=0;i<1000000000;i++)
+	//	MatrixMultVec4x4(mtxCurrent[0],mtxCurrent[1]);
+	//DWORD end = timeGetTime();
+	//DWORD diff = end-start;
+
+	//start = timeGetTime();
+	//for(int i=0;i<1000000000;i++)
+	//	MatrixMultVec4x4_b(mtxCurrent[0],mtxCurrent[1]);
+	//end = timeGetTime();
+	//DWORD diff2 = end-start;
+
+	//printf("SPEED TEST %d %d\n",diff,diff2);
+
 	if(polylists == NULL) { polylists = new POLYLIST[2]; polylist = &polylists[0]; }
 	if(vertlists == NULL) { vertlists = new VERTLIST[2]; vertlist = &vertlists[0]; }
 	makeTables();
@@ -409,15 +419,11 @@ static void SetVertex()
 	if(polylist->count >= POLYLIST_SIZE) 
 			return;
 	
-#ifdef NOSSE2
-	//apply modelview matrix
-	MatrixMultVec4x4 (mtxCurrent[1], coordTransformed);
-
-	//apply projection matrix
-	MatrixMultVec4x4 (mtxCurrent[0], coordTransformed);
-#else
-	_sse2_MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
-#endif
+	//TODO - think about keeping the clip matrix concatenated,
+	//so that we only have to multiply one matrix here
+	//(we could lazy cache the concatenated clip matrix and only generate it
+	//when we need to)
+	MatrixMultVec4x4_M2(mtxCurrent[0], coordTransformed);
 
 	//TODO - culling should be done here.
 	//TODO - viewport transform?
@@ -694,11 +700,7 @@ void FORCEINLINE gfx3d_glLoadIdentity()
 
 void FORCEINLINE gfx3d_glLoadMatrix4x4(s32 v)
 {
-#ifdef NOSSE2
-	mtxCurrent[mode][0] = fix2float(v);
-#else
 	mtxCurrent[mode][0] = v;
-#endif
 
 	for (int i = 1; i < 16; i++)
 	{
@@ -707,16 +709,10 @@ void FORCEINLINE gfx3d_glLoadMatrix4x4(s32 v)
 
 		if (!GFX_PIPErecv(&cmd, &param)) break;
 		dEXEC("glLoadMatrix4x4", 0x16, cmd);
-#ifdef NOSSE2
-		mtxCurrent[mode][i] = fix2float((s32)param);
-#else
 		mtxCurrent[mode][i] = (s32)param;
-#endif
 	}
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxCurrent[mode], _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	GFX_DELAY(19);
 
@@ -726,11 +722,7 @@ void FORCEINLINE gfx3d_glLoadMatrix4x4(s32 v)
 
 void FORCEINLINE gfx3d_glLoadMatrix4x3(s32 v)
 {
-#ifdef NOSSE2
-	mtxCurrent[mode][0] = fix2float(v);
-#else
 	mtxCurrent[mode][0] = v;
-#endif
 
 	for (int i = 1; i < 16; i++)
 	{
@@ -740,16 +732,10 @@ void FORCEINLINE gfx3d_glLoadMatrix4x3(s32 v)
 
 		if (!GFX_PIPErecv(&cmd, &param)) break;
 		dEXEC("glLoadMatrix4x3", 0x17, cmd);
-#ifdef NOSSE2
-		mtxCurrent[mode][i] = fix2float((s32)param);
-#else
 		mtxCurrent[mode][i] = (s32)param;
-#endif
 	}
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxCurrent[mode], _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	//fill in the unusued matrix values
 	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0.f;
@@ -763,11 +749,7 @@ void FORCEINLINE gfx3d_glLoadMatrix4x3(s32 v)
 
 void FORCEINLINE gfx3d_glMultMatrix4x4(s32 v)
 {
-#ifdef NOSSE2
-	mtxTemporal[0] = fix2float(v);
-#else
 	mtxTemporal[0] = v;
-#endif
 
 	for (int i = 1; i < 16; i++)
 	{
@@ -776,16 +758,10 @@ void FORCEINLINE gfx3d_glMultMatrix4x4(s32 v)
 
 		if (!GFX_PIPErecv(&cmd, &param)) break;
 		dEXEC("glMultMatrix4x4", 0x18, cmd);
-#ifdef NOSSE2
-		mtxTemporal[i] = fix2float((s32)param);
-#else
 		mtxTemporal[i] = (s32)param;
-#endif
 	}
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxTemporal, _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
@@ -802,11 +778,7 @@ void FORCEINLINE gfx3d_glMultMatrix4x4(s32 v)
 
 void FORCEINLINE gfx3d_glMultMatrix4x3(s32 v)
 {
-#ifdef NOSSE2
-	mtxTemporal[0] = fix2float(v);
-#else
 	mtxTemporal[0] = v;
-#endif
 
 	for (int i = 1; i < 16; i++)
 	{
@@ -816,16 +788,10 @@ void FORCEINLINE gfx3d_glMultMatrix4x3(s32 v)
 
 		if (!GFX_PIPErecv(&cmd, &param)) break;
 		dEXEC("glMultMatrix4x3", 0x19, cmd);
-#ifdef NOSSE2
-		mtxTemporal[i] = fix2float((s32)param);
-#else
 		mtxTemporal[i] = (s32)param;
-#endif
 	}
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxTemporal, _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0.f;
@@ -847,12 +813,7 @@ void FORCEINLINE gfx3d_glMultMatrix4x3(s32 v)
 
 void FORCEINLINE gfx3d_glMultMatrix3x3(s32 v)
 {
-#ifdef NOSSE2
-	mtxTemporal[0] = fix2float(v);
-#else
 	mtxTemporal[0] = v;
-#endif
-
 
 	for (int i = 1; i < 12; i++)
 	{
@@ -862,16 +823,10 @@ void FORCEINLINE gfx3d_glMultMatrix3x3(s32 v)
 
 		if (!GFX_PIPErecv(&cmd, &param)) break;
 		dEXEC("glMultMatrix3x3", 0x1A, cmd);
-#ifdef NOSSE2
-		mtxTemporal[i] = fix2float((s32)param);
-#else
 		mtxTemporal[i] = (s32)param;
-#endif
 	}
 
-#ifndef NOSSE2
-	_sse2_fix2float_12(mtxTemporal, _fix2float_divizor_mask);
-#endif
+	vector_fix2float<3>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;
@@ -1276,12 +1231,7 @@ void FORCEINLINE gfx3d_glPosTest(u32 v)
 	PTcoords[2] = float16table[param & 0xFFFF];
 	PTcoords[3] = 1.0f;
 
-#ifdef NOSSE2
-	MatrixMultVec4x4 (mtxCurrent[1], PTcoords);
-	MatrixMultVec4x4 (mtxCurrent[0], PTcoords);
-#else
-	_sse2_MatrixMultVec4x4_M2(mtxCurrent[0], PTcoords);
-#endif
+	MatrixMultVec4x4_M2(mtxCurrent[0], PTcoords);
 
 	gxstat &= 0xFFFFFFFE;		// cleay busy bit
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x600, gxstat);
@@ -1413,11 +1363,7 @@ void gfx3d_glLoadIdentity()
 
 BOOL gfx3d_glLoadMatrix4x4(s32 v)
 {
-#ifdef NOSSE2
-	mtxCurrent[mode][ML4x4ind] = fix2float(v);
-#else
 	mtxCurrent[mode][ML4x4ind] = v;
-#endif
 
 	++ML4x4ind;
 	if(ML4x4ind<16) return FALSE;
@@ -1425,9 +1371,7 @@ BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 	GFX_DELAY(19);
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxCurrent[mode], _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	if (mode == 2)
 		MatrixCopy (mtxCurrent[1], mtxCurrent[2]);
@@ -1436,20 +1380,14 @@ BOOL gfx3d_glLoadMatrix4x4(s32 v)
 
 BOOL gfx3d_glLoadMatrix4x3(s32 v)
 {
-#ifdef NOSSE2
-	mtxCurrent[mode][ML4x3ind] = fix2float(v);
-#else
 	mtxCurrent[mode][ML4x3ind] = v;
-#endif
 
 	ML4x3ind++;
 	if((ML4x3ind & 0x03) == 3) ML4x3ind++;
 	if(ML4x3ind<16) return FALSE;
 	ML4x3ind = 0;
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxCurrent[mode], _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxCurrent[mode], 4096.f);
 
 	//fill in the unusued matrix values
 	mtxCurrent[mode][3] = mtxCurrent[mode][7] = mtxCurrent[mode][11] = 0.f;
@@ -1464,11 +1402,7 @@ BOOL gfx3d_glLoadMatrix4x3(s32 v)
 
 BOOL gfx3d_glMultMatrix4x4(s32 v)
 {
-#ifdef NOSSE2
-	mtxTemporal[MM4x4ind] = fix2float(v);
-#else
 	mtxTemporal[MM4x4ind] = v;
-#endif
 
 	MM4x4ind++;
 	if(MM4x4ind<16) return FALSE;
@@ -1476,9 +1410,7 @@ BOOL gfx3d_glMultMatrix4x4(s32 v)
 
 	GFX_DELAY(35);
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxTemporal, _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	MatrixMultiply (mtxCurrent[mode], mtxTemporal);
 
@@ -1494,11 +1426,7 @@ BOOL gfx3d_glMultMatrix4x4(s32 v)
 
 BOOL gfx3d_glMultMatrix4x3(s32 v)
 {
-#ifdef NOSSE2
-	mtxTemporal[MM4x3ind] = fix2float(v);
-#else
 	mtxTemporal[MM4x3ind] = v;
-#endif
 
 	MM4x3ind++;
 	if((MM4x3ind & 0x03) == 3) MM4x3ind++;
@@ -1507,9 +1435,7 @@ BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 	GFX_DELAY(31);
 
-#ifndef NOSSE2
-	_sse2_fix2float_16(mtxTemporal, _fix2float_divizor_mask);
-#endif
+	vector_fix2float<4>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0.f;
@@ -1530,11 +1456,7 @@ BOOL gfx3d_glMultMatrix4x3(s32 v)
 
 BOOL gfx3d_glMultMatrix3x3(s32 v)
 {
-#ifdef NOSSE2
-	mtxTemporal[MM3x3ind] = fix2float(v);
-#else
 	mtxTemporal[MM3x3ind] = v;
-#endif
 
 
 	MM3x3ind++;
@@ -1544,9 +1466,7 @@ BOOL gfx3d_glMultMatrix3x3(s32 v)
 
 	GFX_DELAY(28);
 
-#ifndef NOSSE2
-	_sse2_fix2float_12(mtxTemporal, _fix2float_divizor_mask);
-#endif
+	vector_fix2float<3>(mtxTemporal, 4096.f);
 
 	//fill in the unusued matrix values
 	mtxTemporal[3] = mtxTemporal[7] = mtxTemporal[11] = 0;

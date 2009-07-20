@@ -26,13 +26,17 @@
 #include "config.h"
 #endif
 
-#ifndef _MSC_VER
-#define NOSSE2
+#ifdef _MSC_VER
+#define ENABLE_SSE
+#define ENABLE_SSE2
 #endif
 
-//if theres no sse2, also enforce no intrinsics
-#if defined(NOSSE2)
-#define SSE2_NOINTRIN
+#ifdef NOSSE
+#undef ENABLE_SSE
+#endif
+
+#ifdef NOSSE2
+#undef ENABLE_SSE2
 #endif
 
 #ifdef _WIN32
@@ -91,20 +95,6 @@
 #define MSC_FORCEINLINE
 #endif
 #endif
-
-//#ifndef _PREFETCH
-//#if (defined(_MSC_VER) || defined(__INTEL_COMPILER)) && !defined(NOSSE2)
-//#include <xmmintrin.h>
-//#include <intrin.h>
-//#define _PREFETCH(X) _mm_prefetch((char*)(X),_MM_HINT_T0);
-//#define _PREFETCHNTA(X) _mm_prefetch((char*)(X),_MM_HINT_NTA);
-//#else
-#define _PREFETCH(X) {}
-#define _PREFETCHNTA(X) {}
-//#endif
-//#endif
-
-
 
 #if defined(__LP64__)
 typedef unsigned char u8;
@@ -360,7 +350,45 @@ char (*BLAHBLAHBLAH( UNALIGNED T (&)[N] ))[N];
 	if((N)&0x001) MACRODO1((N)&(0x100|0x080|0x040|0x020|0x010|0x008|0x004|0x002),TODO); \
 }
 
+//---------------------------
+//Binary constant generator macro By Tom Torfs - donated to the public domain
 
+//turn a numeric literal into a hex constant
+//(avoids problems with leading zeroes)
+//8-bit constants max value 0x11111111, always fits in unsigned long
+#define HEX__(n) 0x##n##LU
 
+//8-bit conversion function 
+#define B8__(x) ((x&0x0000000FLU)?1:0) \
++((x&0x000000F0LU)?2:0) \
++((x&0x00000F00LU)?4:0) \
++((x&0x0000F000LU)?8:0) \
++((x&0x000F0000LU)?16:0) \
++((x&0x00F00000LU)?32:0) \
++((x&0x0F000000LU)?64:0) \
++((x&0xF0000000LU)?128:0)
+
+//for upto 8-bit binary constants
+#define B8(d) ((unsigned char)B8__(HEX__(d)))
+
+// for upto 16-bit binary constants, MSB first
+#define B16(dmsb,dlsb) (((unsigned short)B8(dmsb)<<8) \
++ B8(dlsb))
+
+// for upto 32-bit binary constants, MSB first */
+#define B32(dmsb,db2,db3,dlsb) (((unsigned long)B8(dmsb)<<24) \
++ ((unsigned long)B8(db2)<<16) \
++ ((unsigned long)B8(db3)<<8) \
++ B8(dlsb))
+
+//Sample usage:
+//B8(01010101) = 85
+//B16(10101010,01010101) = 43605
+//B32(10000000,11111111,10101010,01010101) = 2164238933
+//---------------------------
+
+#ifndef CTASSERT
+#define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
+#endif
 
 #endif

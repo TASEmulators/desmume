@@ -73,14 +73,7 @@ static void ENDGL() {
 #include "shaders.h"
 #include "texcache.h"
 
-
-
-#ifndef CTASSERT
-#define	CTASSERT(x)		typedef char __assert ## y[(x) ? 1 : -1]
-#endif
-
 static ALIGN(16) u8  GPU_screen3D			[256*192*4];
-
 
 static const unsigned short map3d_cull[4] = {GL_FRONT_AND_BACK, GL_FRONT, GL_BACK, 0};
 static const int texEnv[4] = { GL_MODULATE, GL_DECAL, GL_MODULATE, GL_MODULATE };
@@ -703,17 +696,15 @@ static void GL_ReadFramebuffer()
 		u16* dst = gfx3d_convertedScreen + (y<<8);
 		u8* dstAlpha = gfx3d_convertedAlpha + (y<<8);
 
-		#ifndef NOSSE2
 			//I dont know much about this kind of stuff, but this seems to help
 			//for some reason I couldnt make the intrinsics work 
-			u8* u8screen3D =  (u8*)&((u32*)GPU_screen3D)[i];
-			#define PREFETCH32(X,Y) __asm { prefetchnta [u8screen3D+32*0x##X##Y] }
+			//u8* u8screen3D =  (u8*)&((u32*)GPU_screen3D)[i];
+			/*#define PREFETCH32(X,Y) __asm { prefetchnta [u8screen3D+32*0x##X##Y] }
 			#define PREFETCH128(X) 	PREFETCH32(X,0) PREFETCH32(X,1) PREFETCH32(X,2) PREFETCH32(X,3) \
 									PREFETCH32(X,4) PREFETCH32(X,5) PREFETCH32(X,6) PREFETCH32(X,7) \
 									PREFETCH32(X,8) PREFETCH32(X,9) PREFETCH32(X,A) PREFETCH32(X,B) \
 									PREFETCH32(X,C) PREFETCH32(X,D) PREFETCH32(X,E) PREFETCH32(X,F) 
-			PREFETCH128(0); PREFETCH128(1);
-		#endif
+			PREFETCH128(0); PREFETCH128(1);*/
 
 		for(int x=0;x<256;x++,i++)
 		{

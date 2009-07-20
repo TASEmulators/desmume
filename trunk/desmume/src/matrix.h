@@ -1,5 +1,5 @@
-/*  
-	Copyright (C) 2006-2007 shash
+/*  Copyright (C) 2006-2007 shash
+	Copyright (C) 2009 DeSmuME team
 
     This file is part of DeSmuME
 
@@ -27,16 +27,13 @@
 #include "types.h"
 #include "mem.h"
 
-#if !defined(NOSSE2) && !defined(SSE2_NOINTRIN)
-#define SSE2_INTRIN
+#ifdef ENABLE_SSE
+#include <xmmintrin.h>
 #endif
 
-#ifdef SSE2_INTRIN
-#include <xmmintrin.h>
+#ifdef ENABLE_SSE2
 #include <emmintrin.h>
 #endif
-
-extern "C" {
 
 struct MatrixStack
 {
@@ -48,42 +45,15 @@ struct MatrixStack
 
 void	MatrixInit				(float *matrix);
 
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
-#define MATRIXFASTCALL __fastcall
-#else
-#define MATRIXFASTCALL
-#endif
-
 //In order to conditionally use these asm optimized functions in visual studio
 //without having to make new build types to exclude the assembly files.
 //a bit sloppy, but there aint much to it
-#ifndef NOSSE2
-#define SSE2_FUNC(X) _sse2_##X
-#define MatrixMultVec4x4 _sse2_MatrixMultVec4x4
-#define MatrixMultVec3x3 _sse2_MatrixMultVec3x3
-#define MatrixMultiply _sse2_MatrixMultiply
-#define MatrixTranslate _sse2_MatrixTranslate
-#define MatrixScale _sse2_MatrixScale
-void	MATRIXFASTCALL _sse2_fix2float_16		(float* matrix, float* divizor_mask);
-void	MATRIXFASTCALL _sse2_fix2float_12		(float* matrix, float* divizor_mask);
-void	MATRIXFASTCALL _sse2_MatrixMultVec4x4_M2 (const float * matrix, float * vecPtr); // mode 2
-#else
-#define SSE2_FUNC(X) X
-#endif
 
-void	MATRIXFASTCALL SSE2_FUNC(MatrixMultVec3x3)		(const float * matrix, float * vecPtr);
-void	MATRIXFASTCALL SSE2_FUNC(MatrixMultVec4x4)		(const float * matrix, float * vecPtr);
-void	MATRIXFASTCALL SSE2_FUNC(MatrixMultiply)		(float * matrix, const float * rightMatrix);
-void	MATRIXFASTCALL SSE2_FUNC(MatrixTranslate)		(float *matrix, const float *ptr);
-void	MATRIXFASTCALL SSE2_FUNC(MatrixScale)			(float * matrix, const float * ptr);
-
-
-
-float	MATRIXFASTCALL MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
-void	MATRIXFASTCALL MatrixSet				(float *matrix, int x, int y, float value);
-void	MATRIXFASTCALL MatrixCopy				(float * matrixDST, const float * matrixSRC);
-int		MATRIXFASTCALL MatrixCompare				(const float * matrixDST, const float * matrixSRC);
-void	MATRIXFASTCALL MatrixIdentity			(float *matrix);
+float	MatrixGetMultipliedIndex	(int index, float *matrix, float *rightMatrix);
+void	MatrixSet				(float *matrix, int x, int y, float value);
+void	MatrixCopy				(float * matrixDST, const float * matrixSRC);
+int		MatrixCompare				(const float * matrixDST, const float * matrixSRC);
+void	MatrixIdentity			(float *matrix);
 
 void	MatrixTranspose				(float *matrix);
 void	MatrixStackInit				(MatrixStack *stack);
@@ -112,27 +82,21 @@ void Vector3Normalize(float *dst);
 
 void Vector4Copy(float *dst, const float *src);
 
-} //extern "C"
-
 //these functions are an unreliable, inaccurate floor.
 //it should only be used for positive numbers
 //this isnt as fast as it could be if we used a visual c++ intrinsic, but those appear not to be universally available
 FORCEINLINE u32 u32floor(float f)
 {
-#if defined(SSE2_INTRIN)
-	return (u32)_mm_cvttss_si32(_mm_set_ss(f));
-#elif !defined(NOSSE2)
-	__asm cvttss2si eax, f;
+#ifdef ENABLE_SSE2
+	return (u32)_mm_cvtt_ss2si(_mm_set_ss(f));
 #else
 	return (u32)f;
 #endif
 }
 FORCEINLINE u32 u32floor(double d)
 {
-#if defined(SSE2_INTRIN)
+#ifdef ENABLE_SSE2
 	return (u32)_mm_cvttsd_si32(_mm_set_sd(d));
-#elif !defined(NOSSE2)
-	__asm cvttsd2si eax, d;
 #else
 	return (u32)d;
 #endif
@@ -142,66 +106,212 @@ FORCEINLINE u32 u32floor(double d)
 //be sure that the results are the same thing as floorf!
 FORCEINLINE s32 s32floor(float f)
 {
-#if defined(SSE2_INTRIN)
+#ifdef ENABLE_SSE2
 	return _mm_cvtss_si32( _mm_add_ss(_mm_set_ss(-0.5f),_mm_add_ss(_mm_set_ss(f), _mm_set_ss(f))) ) >> 1;
-#elif !defined(NOSSE2)
-	static const float c = -0.5f;
-	__asm
-	{
-		movss xmm0, f;
-		addss xmm0, xmm0;
-		addss xmm0, c;
-		cvtss2si eax, xmm0
-		sar eax, 1
-	}
 #else
 	return (s32)floorf(f);
 #endif
 }
 
-//now comes some sse2 functions coded solely with intrinsics. 
-//let's wait and see how many people this upsets.
-//they can always #define SSE2_NOINTRIN in their userconfig.h....
-
-#ifdef SSE2_INTRIN
+//switched SSE2 functions
+//-------------
+#ifdef ENABLE_SSE
 
 template<int NUM>
-static FORCEINLINE void memset_u16_le(void* dst, u16 val)
+FORCEINLINE void memset_u16_le(void* dst, u16 val)
 {
 	u32 u32val;
 	//just for the endian safety
 	T1WriteWord((u8*)&u32val,0,val);
 	T1WriteWord((u8*)&u32val,2,val);
-	const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
-	MACRODO_N(NUM/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
+	////const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
+	__m128 temp; temp.m128_i32[0] = u32val;
+	//MACRODO_N(NUM/8,_mm_store_si128((__m128i*)((u8*)dst+(X)*16), temp));
+	MACRODO_N(NUM/8,_mm_store_ps1((float*)((u8*)dst+(X)*16), temp));
 }
-#else
+
+#else //no sse2
+
 template<int NUM>
 static FORCEINLINE void memset_u16_le(void* dst, u16 val)
 {
 	for(int i=0;i<NUM;i++)
 		T1WriteWord((u8*)dst,i<<1,val);
 }
+
 #endif
+
+//---------------------------
+//switched SSE functions
+#ifdef ENABLE_SSE
+
+struct SSE_MATRIX
+{
+	SSE_MATRIX(const float *matrix)
+		: row0(_mm_load_ps(matrix))
+		, row1(_mm_load_ps(matrix+4))
+		, row2(_mm_load_ps(matrix+8))
+		, row3(_mm_load_ps(matrix+12))
+	{}
+
+	union {
+		__m128 rows[4];
+		struct { __m128 row0; __m128 row1; __m128 row2; __m128 row3; };
+	};
+		
+};
+
+FORCEINLINE __m128 _util_MatrixMultVec4x4_(const SSE_MATRIX &mat, __m128 vec)
+{
+	__m128 xmm5 = _mm_shuffle_ps(vec, vec, B8(01010101));
+	__m128 xmm6 = _mm_shuffle_ps(vec, vec, B8(10101010));
+	__m128 xmm7 = _mm_shuffle_ps(vec, vec, B8(11111111));
+	__m128 xmm4 = _mm_shuffle_ps(vec, vec, B8(00000000));
+
+	xmm4 = _mm_mul_ps(xmm4,mat.row0);
+	xmm5 = _mm_mul_ps(xmm5,mat.row1);
+	xmm6 = _mm_mul_ps(xmm6,mat.row2);
+	xmm7 = _mm_mul_ps(xmm7,mat.row3);
+	xmm4 = _mm_add_ps(xmm4,xmm5);
+	xmm4 = _mm_add_ps(xmm4,xmm6);
+	xmm4 = _mm_add_ps(xmm4,xmm7);
+	return xmm4;
+}
+
+FORCEINLINE void MatrixMultiply(float * matrix, const float * rightMatrix)
+{
+	//this seems to generate larger code, including many movaps, but maybe it is less harsh on the registers than the
+	//more hand-tailored approach
+	__m128 row0 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix)); 
+	__m128 row1 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix+4));
+	__m128 row2 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix+8)); 
+	__m128 row3 = _util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(rightMatrix+12));
+	_mm_store_ps(matrix,row0); 
+	_mm_store_ps(matrix+4,row1); 
+	_mm_store_ps(matrix+8,row2);
+	_mm_store_ps(matrix+12,row3);
+}
+
+
+
+FORCEINLINE void MatrixMultVec4x4(const float *matrix, float *vecPtr)
+{
+	_mm_store_ps(vecPtr,_util_MatrixMultVec4x4_((SSE_MATRIX)matrix,_mm_load_ps(vecPtr)));
+}
+
+FORCEINLINE void MatrixMultVec4x4_M2(const float *matrix, float *vecPtr)
+{
+	//there are hardly any gains from merging these manually
+	MatrixMultVec4x4(matrix+16,vecPtr);
+	MatrixMultVec4x4(matrix,vecPtr);
+}
+
+
+FORCEINLINE void MatrixMultVec3x3(const float * matrix, float * vecPtr)
+{
+	const __m128 vec = _mm_load_ps(vecPtr);
+
+	__m128 xmm5 = _mm_shuffle_ps(vec, vec, B8(01010101));
+	__m128 xmm6 = _mm_shuffle_ps(vec, vec, B8(10101010));
+	__m128 xmm4 = _mm_shuffle_ps(vec, vec, B8(00000000));
+
+	const SSE_MATRIX mat(matrix);
+
+	xmm4 = _mm_mul_ps(xmm4,mat.row0);
+	xmm5 = _mm_mul_ps(xmm5,mat.row1);
+	xmm6 = _mm_mul_ps(xmm6,mat.row2);
+	xmm4 = _mm_add_ps(xmm4,xmm5);
+	xmm4 = _mm_add_ps(xmm4,xmm6);
+
+	_mm_store_ps(vecPtr,xmm4);
+}
+
+FORCEINLINE void MatrixTranslate(float *matrix, const float *ptr)
+{
+	__m128 xmm4 = _mm_load_ps(ptr);
+	__m128 xmm5 = _mm_shuffle_ps(xmm4, xmm4, B8(01010101));
+	__m128 xmm6 = _mm_shuffle_ps(xmm4, xmm4, B8(10101010));
+	xmm4 = _mm_shuffle_ps(xmm4, xmm4, B8(00000000));
+	
+	xmm4 = _mm_mul_ps(xmm4,_mm_load_ps(matrix));
+	xmm5 = _mm_mul_ps(xmm5,_mm_load_ps(matrix+4));
+	xmm6 = _mm_mul_ps(xmm6,_mm_load_ps(matrix+8));
+	xmm4 = _mm_add_ps(xmm4,xmm5);
+	xmm4 = _mm_add_ps(xmm4,xmm6);
+	xmm4 = _mm_add_ps(xmm4,_mm_load_ps(matrix+12));
+	_mm_store_ps(matrix+12,xmm4);
+}
+
+FORCEINLINE void MatrixScale(float *matrix, const float *ptr)
+{
+	__m128 xmm4 = _mm_load_ps(ptr);
+	__m128 xmm5 = _mm_shuffle_ps(xmm4, xmm4, B8(01010101));
+	__m128 xmm6 = _mm_shuffle_ps(xmm4, xmm4, B8(10101010));
+	xmm4 = _mm_shuffle_ps(xmm4, xmm4, B8(00000000));
+	
+	xmm4 = _mm_mul_ps(xmm4,_mm_load_ps(matrix));
+	xmm5 = _mm_mul_ps(xmm5,_mm_load_ps(matrix+4));
+	xmm6 = _mm_mul_ps(xmm6,_mm_load_ps(matrix+8));
+	_mm_store_ps(matrix,xmm4);
+	_mm_store_ps(matrix+4,xmm5);
+	_mm_store_ps(matrix+8,xmm6);
+}
+
+template<int NUM_ROWS>
+FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
+{
+	CTASSERT(NUM_ROWS==3 || NUM_ROWS==4);
+
+	const __m128 val = _mm_set_ps1(divisor);
+
+	_mm_store_ps(matrix,_mm_div_ps(_mm_load_ps(matrix),val));
+	_mm_store_ps(matrix+4,_mm_div_ps(_mm_load_ps(matrix+4),val));
+	_mm_store_ps(matrix+8,_mm_div_ps(_mm_load_ps(matrix+8),val));
+	if(NUM_ROWS==4)
+		_mm_store_ps(matrix+12,_mm_div_ps(_mm_load_ps(matrix+12),val));
+}
 
 //WARNING: I do not think this is as fast as a memset, for some reason.
 //at least in vc2005 with sse enabled. better figure out why before using it
-#ifdef SSE2_INTRIN
 template<int NUM>
 static FORCEINLINE void memset_u8(void* _dst, u8 val)
 {
-	const u8* dst = (u8*)_dst;
-	u32 u32val = (val<<24)|(val<<16)|(val<<8)|val;
-	const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
-	MACRODO_N(NUM/16,_mm_store_si128((__m128i*)(dst+(X)*16), temp));
+	memset(_dst,val,NUM);
+	//const u8* dst = (u8*)_dst;
+	//u32 u32val = (val<<24)|(val<<16)|(val<<8)|val;
+	//const __m128i temp = _mm_set_epi32(u32val,u32val,u32val,u32val);
+	//MACRODO_N(NUM/16,_mm_store_si128((__m128i*)(dst+(X)*16), temp));
 }
-#else
+
+#else //no sse
+
+void MatrixMultVec4x4 (const float *matrix, float *vecPtr);
+void MatrixMultVec3x3(const float * matrix, float * vecPtr);
+void MatrixMultiply(float * matrix, const float * rightMatrix);
+void MatrixTranslate(float *matrix, const float *ptr);
+void MatrixScale(float * matrix, const float * ptr);
+
+FORCEINLINE void MatrixMultVec4x4_M2(const float *matrix, float *vecPtr)
+{
+	//there are hardly any gains from merging these manually
+	MatrixMultVec4x4(matrix+16,vecPtr);
+	MatrixMultVec4x4(matrix,vecPtr);
+}
+
+template<int NUM_ROWS>
+FORCEINLINE void vector_fix2float(float* matrix, const float divisor)
+{
+	for(int i=0;i<NUM_ROWS*4;i++)
+		matrix[i] /= divisor;
+}
+
 template<int NUM>
 static FORCEINLINE void memset_u8(void* dst, u8 val)
 {
 	memset(dst,val,NUM);
 }
-#endif
+
+#endif //switched SSE functions
 
 
 #endif
