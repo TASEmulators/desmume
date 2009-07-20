@@ -1022,12 +1022,10 @@ static void SoftRastConvertFramebuffer()
 
 	for(int i=0,y=0;y<192;y++)
 	{
-		#ifndef NOSSE2
-			u8* wanx = (u8*)&src[i];
-			#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
-			#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
-			PUNK(0); PUNK(1);
-		#endif
+		//	u8* wanx = (u8*)&src[i];
+		//	#define ASS(X,Y) __asm { prefetchnta [wanx+32*0x##X##Y] }
+		//	#define PUNK(X) ASS(X,0) ASS(X,1) ASS(X,2) ASS(X,3) ASS(X,4) ASS(X,5) ASS(X,6) ASS(X,7) ASS(X,8) ASS(X,9) ASS(X,A) ASS(X,B) ASS(X,C) ASS(X,D) ASS(X,E) ASS(X,F) 
+		//	PUNK(0); PUNK(1);
 
 		for(int x=0;x<256;x++,i++)
 		{

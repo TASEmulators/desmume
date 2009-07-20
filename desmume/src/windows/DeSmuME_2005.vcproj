@@ -711,42 +711,6 @@
 			</Filter>
 		</Filter>
 		<Filter
-			Name="asm"
-			>
-			<File
-				RelativePath="..\matrix_sse2-x64.asm"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release FastBuild|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="MASM"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\matrix_sse2-x86.asm"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="addons"
 			>
 			<File

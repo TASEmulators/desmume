@@ -10,11 +10,9 @@ enum TexCache_TexFormat
 };
 
 #define MAX_TEXTURE 500
-#ifndef NOSSE2
-struct ALIGN(16) TextureCache
-#else
-struct ALIGN(8) TextureCache
-#endif
+
+
+struct CACHE_ALIGN TextureCache
 {
 	u32					id;
 	u32					frm;
@@ -33,7 +31,6 @@ struct ALIGN(8) TextureCache
 
 	//set if this texture is suspected be invalid due to a vram reconfigure
 	bool				suspectedInvalid;
-
 };
 
 extern TextureCache	*texcache;
