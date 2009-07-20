@@ -739,10 +739,6 @@ static std::vector<char> v;
 
 static void loadrom(std::vector<char>* buf, std::string fname) {
 
-	memorystream ms(buf);
-
-	std::ostream* os = (std::ostream*)&ms;
-
 	std::ifstream fl(fname.c_str());
 
 	if (!fl.is_open()) 
@@ -755,16 +751,10 @@ static void loadrom(std::vector<char>* buf, std::string fname) {
 	fb.open (fname.c_str(), std::ios::in | std::ios::binary);
 	std::istream is(&fb);
 
-	char *buffer = new char[size];
-	is.read(buffer, size);
-	ms.write((char*)buffer,size);
-
-	fb.close();
-
-	ms.trim();
-
-	gameInfo.romdata = &buffer[0];
+	gameInfo.resize(size);
+	is.read(gameInfo.romdata,size);
 	
+	fb.close();
 }
 
 int NDS_LoadROM(const char *filename, const char *logicalFilename)
@@ -784,9 +774,8 @@ int NDS_LoadROM(const char *filename, const char *logicalFilename)
 		gameInfo.romsize = buffer.size();
 	}
 	else if ( !strcasecmp(path.extension().c_str(), "nds")) {
-
-		loadrom(&buffer, path.path);
-		gameInfo.romsize = buffer.size();	
+		loadrom(NULL, path.path); //n.b. this does nothing if the file can't be found (i.e. if it was an extracted tempfile)...
+		//...but since the data was extracted to gameInfo then it is ok
 		type = ROM_NDS;
 	}
 	//ds.gba in archives, it's already been loaded into memory at this point
