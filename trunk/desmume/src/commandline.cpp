@@ -36,6 +36,7 @@ CommandLine::CommandLine()
 {
 	load_slot = 0;
 	arm9_gdb_port = arm7_gdb_port = 0;
+	single_core = 0;
 	start_paused = FALSE;
 }
 
@@ -63,6 +64,9 @@ void CommandLine::loadCommonOptions()
 		{ "start-paused", 0, 0, G_OPTION_ARG_NONE, &start_paused, "Indicates that emulation should start paused", "START_PAUSED"},
 		{ "cflash-image", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_image, "Requests cflash in gbaslot with fat image at this path", "CFLASH_IMAGE"},
 		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
+#ifdef _MSC_VER
+		{ "single-core", 0, 0, G_OPTION_ARG_NONE, &single_core, "Limit execution to use approximately only one core", "NUM_CORES"},
+#endif
 		#ifdef GDB_STUB
 		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},
 		{ "arm7gdb", 0, 0, G_OPTION_ARG_INT, &arm7_gdb_port, "Enable the ARM7 GDB stub on the given port", "PORT_NUM"},

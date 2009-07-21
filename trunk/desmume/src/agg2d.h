@@ -400,6 +400,7 @@ public:
 
     unsigned width()  const { return m_rbuf.width();  }
     unsigned height() const { return m_rbuf.height(); }
+	unsigned stride() const { return m_rbuf.stride(); }
 
     // Conversions
     //-----------------------
