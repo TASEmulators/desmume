@@ -29,6 +29,8 @@
 #include "movie.h"
 #include "addons.h"
 
+int scanline_filter_a = 2, scanline_filter_b = 4;
+
 CommandLine::CommandLine()
 : error(NULL)
 , ctx(g_option_context_new (""))
@@ -66,6 +68,8 @@ void CommandLine::loadCommonOptions()
 		{ "cflash-path", 0, 0, G_OPTION_ARG_FILENAME, &_cflash_path, "Requests cflash in gbaslot with filesystem rooted at this path", "CFLASH_PATH"},
 #ifdef _MSC_VER
 		{ "single-core", 0, 0, G_OPTION_ARG_NONE, &single_core, "Limit execution to use approximately only one core", "NUM_CORES"},
+		{ "scanline-filter-a", 0, 0, G_OPTION_ARG_INT, &scanline_filter_a, "Intensity of fadeout for scanlines filter (edge) (default 2)", "SCANLINE_FILTER_A"},
+		{ "scanline-filter-b", 0, 0, G_OPTION_ARG_INT, &scanline_filter_b, "Intensity of fadeout for scanlines filter (corner) (default 4)", "SCANLINE_FILTER_B"},
 #endif
 		#ifdef GDB_STUB
 		{ "arm9gdb", 0, 0, G_OPTION_ARG_INT, &arm9_gdb_port, "Enable the ARM9 GDB stub on the given port", "PORT_NUM"},

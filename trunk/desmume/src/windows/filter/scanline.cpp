@@ -7,18 +7,20 @@ typedef u64 uint64;
 
 extern CACHE_ALIGN u16 fadeOutColors[17][0x8000];
 
+extern int scanline_filter_a, scanline_filter_b;
+
 // stretches a single line
 inline void DoubleLine16( uint16 *lpDst, uint16 *lpSrc, unsigned int Width){
 	while(Width--){
 		*lpDst++ = *lpSrc;
-		*lpDst++ = fadeOutColors[3][(*lpSrc++)];
+		*lpDst++ = fadeOutColors[scanline_filter_a][(*lpSrc++)];
 	}
 }
 
 inline void DoubleLine16_2( uint16 *lpDst, uint16 *lpSrc, unsigned int Width){
 	while(Width--){
-		*lpDst++ = fadeOutColors[3][(*lpSrc)];
-		*lpDst++ = fadeOutColors[6][(*lpSrc++)];
+		*lpDst++ = fadeOutColors[scanline_filter_a][(*lpSrc)];
+		*lpDst++ = fadeOutColors[scanline_filter_b][(*lpSrc++)];
 	}
 }
 
