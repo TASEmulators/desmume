@@ -300,6 +300,14 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="gthread"
+			>
+			<File
+				RelativePath="..\glib\gthread\gthread-impl.c"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\glib\garray.c"
 			>

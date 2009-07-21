@@ -34,6 +34,7 @@
 #include <vector>
 #include <sstream>
 #include <tchar.h>
+#include "gthread.h"
 #include "version.h"
 #include "CWindow.h"
 #include "../MMU.h"
@@ -1717,13 +1718,14 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
+	g_thread_init (NULL);
 	hAppInst=hThisInstance;
 	OpenConsole();			// Init debug console
 
 	int ret = _main();
 
 	CloseConsole();
-	
+
 	return ret;
 }
 
