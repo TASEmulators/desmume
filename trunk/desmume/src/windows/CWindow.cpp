@@ -137,7 +137,7 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio)
 		case WMSZ_BOTTOMRIGHT:
 			{
 				float ratio = ((rect->right - rect->left - xborder - xborder) / (float)minWidth);
-				rect->bottom = (rect->top + ycaption + yborder + ymenu + (minHeight * ratio) + yborder);
+				rect->bottom = (LONG)((rect->top + ycaption + yborder + ymenu + (minHeight * ratio) + yborder));
 			}
 			break;
 				
@@ -145,7 +145,7 @@ void WINCLASS::sizingMsg(WPARAM wParam, LPARAM lParam, BOOL keepRatio)
 		case WMSZ_BOTTOM:
 			{
 				float ratio = ((rect->bottom - rect->top - ycaption - yborder - ymenu - yborder) / (float)minHeight);
-				rect->right = (rect->left + xborder + (minWidth * ratio) + xborder);
+				rect->right = (LONG)((rect->left + xborder + (minWidth * ratio) + xborder));
 			}
 			break;
 		}
