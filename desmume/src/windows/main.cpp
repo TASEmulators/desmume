@@ -715,7 +715,8 @@ template<typename T, int bpp> static void doRotate(void* dst)
 	}
 }
 
-void Display()
+//the directdraw final presentation portion of display, including rotating
+static void DD_DoDisplay()
 {
 	int res;
 	memset(&ddsd, 0, sizeof(ddsd));
@@ -784,6 +785,94 @@ void Display()
 		ReleaseDC(MainWindow->getHWnd(), dc);
 	}
 }
+
+//tripple buffering logic
+u16 displayBuffers[3][256*192*4];
+int currDisplayBuffer=-1;
+int newestDisplayBuffer=-2;
+GMutex *display_mutex = NULL;
+GThread *display_thread = NULL;
+
+//does a single display work unit. only to be used from the display thread
+static void DoDisplay()
+{
+	osd->update();
+	DrawHUD();
+	video.filter();
+	DD_DoDisplay();
+	osd->clear();
+}
+
+void displayProc()
+{
+	g_mutex_lock(display_mutex);
+
+	//find a buffer to display
+	int todo = newestDisplayBuffer;
+	bool alreadyDisplayed = (todo == currDisplayBuffer);
+
+	g_mutex_unlock(display_mutex);
+	
+	//nothing to display. give up.
+	if(alreadyDisplayed) return;
+
+	//start displaying a new buffer
+	currDisplayBuffer = todo;
+
+	video.srcBuffer = (u8*)displayBuffers[currDisplayBuffer];
+
+	aggDraw.hud->attach(video.srcBuffer, 256, 384, 512);
+
+	DoDisplay();
+}
+
+
+void displayThread(void*)
+{
+	for(;;) {
+		displayProc();
+		Sleep(10); //don't be greedy and use a whole cpu core, but leave room for 60fps 
+	}
+}
+
+void Display()
+{
+	if(display_thread == NULL)
+	{
+		display_mutex = g_mutex_new();
+		display_thread = g_thread_create( (GThreadFunc)displayThread,
+                                         NULL,
+                                         TRUE,
+                                         NULL);
+	}
+
+	g_mutex_lock(display_mutex);
+
+	//huh... i wonder if there is a less ugly way to do this
+	if(currDisplayBuffer == 0)
+		if(newestDisplayBuffer == 1)
+			newestDisplayBuffer = 2;
+		else newestDisplayBuffer = 1;
+	else if(currDisplayBuffer == 1)
+		if(newestDisplayBuffer == 2)
+			newestDisplayBuffer = 0;
+		else newestDisplayBuffer = 2;
+	else //if(currDisplayBuffer == 1)
+		if(newestDisplayBuffer == 0)
+			newestDisplayBuffer = 1;
+		else newestDisplayBuffer = 0;
+
+	memcpy(displayBuffers[newestDisplayBuffer],GPU_screen,256*192*4);
+
+	g_mutex_unlock(display_mutex);
+
+	//the no-multithreading codepath
+	//but based on my research, this runs just fine on a single core system due to the generous
+	//sleep in the display loop
+	//video.srcBuffer = (u8*)GPU_screen;
+	//doDisplay();
+}
+
 
 void CheckMessages()
 {
@@ -887,11 +976,7 @@ DWORD WINAPI run()
 			Hud.fps = fps;
 			Hud.fps3d = fps3d;
 
-			osd->update();
-			DrawHUD();
-			video.filter();
 			Display();
-			osd->clear();
 
 			gfx3d.frameCtrRaw++;
 			if(gfx3d.frameCtrRaw == 60) {
@@ -1410,6 +1495,9 @@ int _main()
 		cmdline.errorHelp(__argv[0]);
 		return 1;
 	}
+
+	if(cmdline.single_core)
+		SetProcessAffinityMask(GetCurrentProcess(),1);
 
 	//sprintf(text, "%s", DESMUME_NAME_AND_VERSION);
 	MainWindow = new WINCLASS(CLASSNAME, hAppInst);
@@ -2651,9 +2739,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 			hdc = BeginPaint(hwnd, &ps);
 
-			osd->update();
 			Display();
-			osd->clear();
 
 			EndPaint(hwnd, &ps);
 		}

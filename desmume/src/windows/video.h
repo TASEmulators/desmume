@@ -12,6 +12,7 @@ public:
 
 	int currentfilter;
 
+	u8* srcBuffer;
 	CACHE_ALIGN u8 filteredbuffer[4*256*192*4];
 
 	enum {
@@ -53,7 +54,7 @@ public:
 	u16* finalBuffer() const
 	{
 		if(currentfilter == NONE)
-			return (u16*)GPU_screen;
+			return (u16*)srcBuffer;
 		else return (u16*)filteredbuffer;
 	}
 
@@ -62,7 +63,7 @@ public:
 		src.Height = 384;
 		src.Width = 256;
 		src.Pitch = 512;
-		src.Surface = (u8*)GPU_screen;
+		src.Surface = (u8*)srcBuffer;
 
 		dst.Height = 768;
 		dst.Width = 512;
