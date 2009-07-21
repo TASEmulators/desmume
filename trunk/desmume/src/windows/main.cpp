@@ -262,6 +262,7 @@ int autoframeskipenab=0;
 int frameskiprate=0;
 int emu_paused = 0;
 bool frameAdvance = false;
+bool staterewindingenabled = false;
 
 bool HudEditorMode = false;
 bool UseMicSample = false;
@@ -968,6 +969,18 @@ DWORD WINAPI run()
 				win_sound_samplecounter = 735;
 			}
 			DRV_AviVideoUpdate((u16*)GPU_screen);
+
+			extern void rewindsave();
+			extern bool rewinding;
+			extern void dorewind();
+
+			if (staterewindingenabled) {
+
+				if(rewinding)
+					dorewind();
+				else
+					rewindsave();
+			}
 
 			CallRegisteredLuaFunctions(LUACALL_AFTEREMULATION);
 
@@ -2570,6 +2583,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			MainWindow->checkMenu(IDM_RENDER_SCANLINE, MF_BYCOMMAND | video.currentfilter == video.SCANLINE ? MF_CHECKED:MF_UNCHECKED);
 			MainWindow->checkMenu(IDM_RENDER_BILINEAR, MF_BYCOMMAND | video.currentfilter == video.BILINEAR ? MF_CHECKED:MF_UNCHECKED);
 
+			MainWindow->checkMenu(IDC_STATEREWINDING, MF_BYCOMMAND | staterewindingenabled == 1 ? MF_CHECKED:MF_UNCHECKED);
+
 			//Language selection
 
 			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, MF_BYCOMMAND | ((lostFocusPause)?MF_CHECKED:MF_UNCHECKED));
@@ -2896,6 +2911,9 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			else
 				WavRecordTo();
 			break;
+		case IDC_STATEREWINDING:
+			if(staterewindingenabled) staterewindingenabled = false;
+			else staterewindingenabled = true;
 		case IDM_RENDER_NORMAL:
 			video.setfilter(video.NONE);
 			FilterUpdate(hwnd);

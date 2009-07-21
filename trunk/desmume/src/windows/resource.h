@@ -137,6 +137,7 @@
 #define IDC_LUAPATHEDIT                 364
 #define IDC_BROWSELUA                   365
 #define IDD_PATHSETTINGS                366
+#define IDC_STATEREWINDING              367
 #define IDC_DES_BOX                     402
 #define IDC_R0                          403
 #define IDC_R1                          404
