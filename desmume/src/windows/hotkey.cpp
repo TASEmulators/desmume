@@ -222,6 +222,12 @@ void HK_PlayMovie(int)
 	}
 }
 
+bool rewinding = false;
+
+void HK_RewindKeyDown(int) {rewinding = true;}
+
+void HK_RewindKeyUp(int){rewinding = false;}
+
 void HK_RecordMovie(int) 
 {
 	if (romloaded)
@@ -567,6 +573,13 @@ void InitCustomKeys (SCustomKeys *keys)
 	keys->TurboStart.name = L"Turbo Start";
 	keys->TurboStart.page = HOTKEY_PAGE_TURBO;
 	keys->TurboStart.key = NULL;
+
+	keys->Rewind.handleKeyDown = HK_RewindKeyDown;
+	keys->Rewind.handleKeyUp = HK_RewindKeyUp;
+	keys->Rewind.code = "Rewind";
+	keys->Rewind.name = L"Rewind";
+	keys->Rewind.page = HOTKEY_PAGE_MOVIE;
+	keys->Rewind.key = NULL;
 
 	keys->NextSaveSlot.handleKeyDown = HK_NextSaveSlot;
 	keys->NextSaveSlot.code = "NextSaveSlot";

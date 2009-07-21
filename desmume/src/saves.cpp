@@ -964,3 +964,60 @@ bool savestate_load(const char *file_name)
 
 	return savestate_load(&f);
 }
+
+static std::vector<std::vector <char>> rewindbuffer;
+
+int rewindstates = 16;
+int rewindinterval = 4;
+
+void rewindsave () {
+
+	if(currFrameCounter % rewindinterval)
+		return;
+
+	printf("rewindsave"); printf("%d%s", currFrameCounter, "\n");
+
+	memorystream ms;
+
+	if(!savestate_save(&ms, 0))
+		return;
+
+	ms.flush();
+
+	std::vector<char> v(ms.buf(), ms.buf() + ms.size());
+
+	//clip the header
+	v.erase(v.begin(),v.begin()+32);
+
+	rewindbuffer.push_back(v);
+	
+	if(rewindbuffer.size() > rewindstates) rewindbuffer.erase(rewindbuffer.begin());
+}
+
+void dorewind()
+{
+
+	if(currFrameCounter % rewindinterval)
+		return;
+
+	printf("rewind\n");
+
+	nds.debugConsole = FALSE;
+
+	int size = rewindbuffer.size();
+
+	if(size < 1) {
+		printf("rewind buffer empty\n");
+		return;
+	}
+
+	printf("%d", size);
+
+	memorystream mstemp(&rewindbuffer.at(size-1));
+
+	ReadStateChunks(&mstemp,(s32)mstemp.size());
+	loadstate();
+
+	rewindbuffer.pop_back();
+
+}

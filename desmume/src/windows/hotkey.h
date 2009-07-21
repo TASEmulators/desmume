@@ -80,6 +80,8 @@ struct SCustomKeys
 
 	SCustomKey RecordWAV, RecordAVI;
 
+	SCustomKey Rewind;
+
 	SCustomKey ToggleFrameCounter;
 	SCustomKey ToggleFPS;
 	SCustomKey ToggleInput;
