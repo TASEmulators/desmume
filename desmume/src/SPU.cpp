@@ -679,7 +679,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static FORCEINLINE s32 Interpola
 		ratio = ratio - (int)ratio;
 		double ratio2 = ((1.0 - cos(ratio * M_PI)) * 0.5);
 		//double ratio2 = (1.0f - cos_lut[((int)(ratio*256.0))&0xFF]) / 2.0f;
-		return (((1-ratio2)*a) + (ratio2*b));
+		return (s32)(((1-ratio2)*a) + (ratio2*b));
 	}
 	else
 	{

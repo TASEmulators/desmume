@@ -3266,7 +3266,7 @@ static int arc(lua_State *L) {
 
 static int star(lua_State *L) {
 
-	double cx,cy,r1,r2,startAngle,numRays;
+	lua_Integer cx,cy,r1,r2,startAngle,numRays;
 	cx = luaL_checkinteger(L,1);
 	cy = luaL_checkinteger(L,2);
 	r1 = luaL_checkinteger(L,3);
@@ -3314,7 +3314,7 @@ static const struct luaL_reg aggbasicshapes [] =
 
 static int fillColor(lua_State *L) {
 
-	double r,g,b,a;
+	lua_Integer r,g,b,a;
 	r = luaL_checkinteger(L,1);
 	g = luaL_checkinteger(L,2);
 	b = luaL_checkinteger(L,3);
@@ -3333,7 +3333,7 @@ static int noFill(lua_State *L) {
 
 static int lineColor(lua_State *L) {
 
-	double r,g,b,a;
+	lua_Integer r,g,b,a;
 	r = luaL_checkinteger(L,1);
 	g = luaL_checkinteger(L,2);
 	b = luaL_checkinteger(L,3);

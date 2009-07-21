@@ -390,7 +390,7 @@ void ScaleScreen(float factor)
 			factor = 1.5f;
 		else if(factor==65534)
 			factor = 2.5f;
-		MainWindow->setClientSize((video.rotatedwidthgap() * factor), (video.rotatedheightgap() * factor));
+		MainWindow->setClientSize((int)(video.rotatedwidthgap() * factor), (int)(video.rotatedheightgap() * factor));
 	}
 }
 
@@ -1854,7 +1854,7 @@ void UpdateWndRects(HWND hwnd)
 	}
 
 	ratio = ((float)wndHeight / (float)defHeight);
-	oneScreenHeight = ((video.height/2) * ratio);
+	oneScreenHeight = (int)((video.height/2) * ratio);
 	gapHeight = (wndHeight - (oneScreenHeight * 2));
 
 	if((video.rotation == 90) || (video.rotation == 270))

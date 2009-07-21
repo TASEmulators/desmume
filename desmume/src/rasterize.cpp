@@ -706,8 +706,8 @@ struct edge_fx_fl {
 };
 
 FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
-	Y = Ceil28_4(verts[Top]->y);
-	int YEnd = Ceil28_4(verts[Bottom]->y);
+	Y = Ceil28_4((fixed28_4)verts[Top]->y);
+	int YEnd = Ceil28_4((fixed28_4)verts[Bottom]->y);
 	Height = YEnd - Y;
 
 	if(Height)
@@ -715,13 +715,13 @@ FORCEINLINE edge_fx_fl::edge_fx_fl(int Top, int Bottom) {
 		long dN = long(verts[Bottom]->y - verts[Top]->y);
 		long dM = long(verts[Bottom]->x - verts[Top]->x);
 	
-		long InitialNumerator = dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16;
+		long InitialNumerator = (long)(dM*16*Y - dM*verts[Top]->y + dN*verts[Top]->x - 1 + dN*16);
 		FloorDivMod(InitialNumerator,dN*16,X,ErrorTerm);
 		FloorDivMod(dM*16,dN*16,XStep,Numerator);
 		Denominator = dN*16;
 	
-		float YPrestep = Fixed28_4ToFloat(Y*16 - verts[Top]->y);
-		float XPrestep = Fixed28_4ToFloat(X*16 - verts[Top]->x);
+		float YPrestep = Fixed28_4ToFloat((fixed28_4)(Y*16 - verts[Top]->y));
+		float XPrestep = Fixed28_4ToFloat((fixed28_4)(X*16 - verts[Top]->x));
 
 		float dy = 1/Fixed28_4ToFloat(dN);
 		float dx = 1/Fixed28_4ToFloat(dM);
@@ -1042,7 +1042,7 @@ static void SoftRastConvertFramebuffer()
 
 template<typename T>
 static T interpolate(const float ratio, const T& x0, const T& x1) {
-	return x0 + (float)(x1-x0) * (ratio);
+	return (T)(x0 + (float)(x1-x0) * (ratio));
 }
 
 
@@ -1381,7 +1381,7 @@ static void SoftRastRender()
 		//which is currently just a float
 		for(int j=0;j<type;j++)
 			for(int k=0;k<2;k++)
-				verts[j].coord[k] = iround(16.0f * verts[j].coord[k]);
+				verts[j].coord[k] = (float)iround(16.0f * verts[j].coord[k]);
 
 		//hmm... shader gets setup every time because it depends on sampler which may have just changed
 		shader.setup(poly->polyAttr);

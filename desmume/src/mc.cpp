@@ -577,7 +577,7 @@ void BackupDevice::loadfile()
 	else
 	{
 		//scan for desmume save footer
-		const u32 cookieLen = strlen(kDesmumeSaveCookie);
+		const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
 		char *sigbuf = new char[cookieLen];
 		fseek(inf, -cookieLen, SEEK_END);
 		fread(sigbuf,1,cookieLen,inf);
@@ -780,7 +780,7 @@ bool BackupDevice::load_duc(const char* filename)
 
 bool BackupDevice::load_movie(std::istream* is) {
 
-	const u32 cookieLen = strlen(kDesmumeSaveCookie);
+	const s32 cookieLen = (s32)strlen(kDesmumeSaveCookie);
 
 	is->seekg(-cookieLen, std::ios::end);
 	is->seekg(-4, std::ios::cur);

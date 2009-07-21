@@ -327,7 +327,7 @@ TEMPLATE static u32 divide()
      
      cpu->R[0] = (u32)(num / dnum);
      cpu->R[1] = (u32)(num % dnum);
-     cpu->R[3] = (u32) (((s32)cpu->R[0])<0 ? -cpu->R[0] : cpu->R[0]);
+     cpu->R[3] = (u32) (((s32)cpu->R[0])<0 ? -(s32)cpu->R[0] : cpu->R[0]);
      
      return 6;
 }
