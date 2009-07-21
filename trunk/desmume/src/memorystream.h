@@ -155,31 +155,6 @@ public:
 		myBuf = true;
 	}
 
-private:
-
-	void dosync(int c)
-	{
-		size_t wp = tellWrite();
-		size_t rp = tellRead();
-
-		//if we are supposed to insert a character..
-		if(c != -1)
-		{
-			buf[wp] = c;
-			wp++;
-		}
-
-		//the length is determined by the highest character that was ever inserted
-		length = std::max(length,wp);
-
-		//the write window advances to begin at the current write insertion point
-		ww = wp;
-
-		//set the new write and read windows
-		setp(buf+ww, buf + capacity);
-		setg(buf, buf+rp, buf + length);
-	}
-
 	void expand(size_t upto)
 	{
 		if(!myBuf && !usevec)
@@ -209,6 +184,31 @@ private:
 			capacity = newcapacity;
 			buf = newbuf;
 		}
+	}
+
+private:
+
+	void dosync(int c)
+	{
+		size_t wp = tellWrite();
+		size_t rp = tellRead();
+
+		//if we are supposed to insert a character..
+		if(c != -1)
+		{
+			buf[wp] = c;
+			wp++;
+		}
+
+		//the length is determined by the highest character that was ever inserted
+		length = std::max(length,wp);
+
+		//the write window advances to begin at the current write insertion point
+		ww = wp;
+
+		//set the new write and read windows
+		setp(buf+ww, buf + capacity);
+		setg(buf, buf+rp, buf + length);
 	}
 
 protected:
@@ -297,6 +297,8 @@ public:
 	void trim() { streambuf.trim(); }
 
 	void giveBuf() { streambuf.giveBuf(); }
+
+	memory_streambuf<char>& getStreambuf() { return streambuf; }
 };
 
 
