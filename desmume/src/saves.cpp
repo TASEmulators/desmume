@@ -22,6 +22,7 @@
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif
+#include <stack>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -738,23 +739,40 @@ static void writechunks(std::ostream* os);
 
 static bool savestate_save(std::ostream* outstream, int compressionLevel)
 {
-	//generate the savestate in memory first
+	#ifndef HAVE_LIBZ
+	compressionLevel = Z_NO_COMPRESSION;
+	#endif
+
 	memorystream ms;
-	std::ostream* os = (std::ostream*)&ms;
-	writechunks(os);
-	ms.flush();
+	std::ostream* os;
+	
+	if(compressionLevel != Z_NO_COMPRESSION)
+	{
+		//generate the savestate in memory first
+		std::ostream* os = (std::ostream*)&ms;
+		writechunks(os);
+		ms.flush();
+	}
+	else
+	{
+		os = outstream;
+		os->seekp(32); //skip the header
+		writechunks(os);
+	}
+
+	os->flush();
 
 	//save the length of the file
-	u32 len = ms.size();
+	u32 len = os->tellp();
 
 	u32 comprlen = 0xFFFFFFFF;
-	u8* cbuf = (u8*)ms.buf();
+	u8* cbuf;
 
-#ifdef HAVE_LIBZ
 	//compress the data
 	int error = Z_OK;
 	if(compressionLevel != Z_NO_COMPRESSION)
 	{
+		cbuf = (u8*)ms.buf();
 		uLongf comprlen2;
 		//worst case compression.
 		//zlib says "0.1% larger than sourceLen plus 12 bytes"
@@ -765,22 +783,23 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 		error = compress2(cbuf,&comprlen2,(u8*)ms.buf(),len,compressionLevel);
 		comprlen = (u32)comprlen2;
 	}
-#endif
 
 	//dump the header
+	outstream->seekp(0);
 	outstream->write(magic,16);
 	write32le(SAVESTATE_VERSION,outstream);
 	write32le(DESMUME_VERSION_NUMERIC,outstream); //desmume version
 	write32le(len,outstream); //uncompressed length
 	write32le(comprlen,outstream); //compressed length (-1 if it is not compressed)
+	outstream->flush();
 
-	outstream->write((char*)cbuf,comprlen==(u32)-1?len:comprlen);
-	if(cbuf != (uint8*)ms.buf()) delete[] cbuf;
-#ifdef HAVE_LIBZ
+	if(compressionLevel != Z_NO_COMPRESSION)
+	{
+		outstream->write((char*)cbuf,comprlen==(u32)-1?len:comprlen);
+		delete[] cbuf;
+	}
+
 	return error == Z_OK;
-#else
-	return true;
-#endif
 }
 
 bool savestate_save (const char *file_name)
@@ -965,7 +984,8 @@ bool savestate_load(const char *file_name)
 	return savestate_load(&f);
 }
 
-static std::vector<std::vector <char>> rewindbuffer;
+static std::stack<memorystream*> rewindFreeList;
+static std::vector<memorystream*> rewindbuffer;
 
 int rewindstates = 16;
 int rewindinterval = 4;
@@ -975,23 +995,30 @@ void rewindsave () {
 	if(currFrameCounter % rewindinterval)
 		return;
 
-	printf("rewindsave"); printf("%d%s", currFrameCounter, "\n");
+	//printf("rewindsave"); printf("%d%s", currFrameCounter, "\n");
 
-	memorystream ms;
+	
+	memorystream *ms;
+	if(!rewindFreeList.empty()) {
+		ms = rewindFreeList.top();
+		rewindFreeList.pop();
+	} else {
+		ms = new memorystream();
+	}
 
-	if(!savestate_save(&ms, 0))
+	ms->getStreambuf().expand(1024*1024*12);
+
+	if(!savestate_save(ms, Z_NO_COMPRESSION))
 		return;
 
-	ms.flush();
+	ms->sync();
 
-	std::vector<char> v(ms.buf(), ms.buf() + ms.size());
-
-	//clip the header
-	v.erase(v.begin(),v.begin()+32);
-
-	rewindbuffer.push_back(v);
+	rewindbuffer.push_back(ms);
 	
-	if(rewindbuffer.size() > rewindstates) rewindbuffer.erase(rewindbuffer.begin());
+	if(rewindbuffer.size() > rewindstates) {
+		delete *rewindbuffer.begin();
+		rewindbuffer.erase(rewindbuffer.begin());
+	}
 }
 
 void dorewind()
@@ -1000,7 +1027,7 @@ void dorewind()
 	if(currFrameCounter % rewindinterval)
 		return;
 
-	printf("rewind\n");
+	//printf("rewind\n");
 
 	nds.debugConsole = FALSE;
 
@@ -1013,11 +1040,16 @@ void dorewind()
 
 	printf("%d", size);
 
-	memorystream mstemp(&rewindbuffer.at(size-1));
+	memorystream* loadms = rewindbuffer[size-1];
+	loadms->seekg(32, std::ios::beg);
 
-	ReadStateChunks(&mstemp,(s32)mstemp.size());
+	ReadStateChunks(loadms,loadms->size()-32);
 	loadstate();
 
-	rewindbuffer.pop_back();
+	if(rewindbuffer.size()>1)
+	{
+		rewindFreeList.push(loadms);
+		rewindbuffer.pop_back();
+	}
 
 }
