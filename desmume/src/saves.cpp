@@ -749,7 +749,7 @@ static bool savestate_save(std::ostream* outstream, int compressionLevel)
 	if(compressionLevel != Z_NO_COMPRESSION)
 	{
 		//generate the savestate in memory first
-		std::ostream* os = (std::ostream*)&ms;
+		os = (std::ostream*)&ms;
 		writechunks(os);
 		ms.flush();
 	}
