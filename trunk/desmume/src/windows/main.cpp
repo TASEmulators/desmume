@@ -343,8 +343,13 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 		//		if((!GUI.InactivePause || !Settings.ForcedPause)
 		//				|| (GUI.BackgroundInput || !(Settings.ForcedPause & (PAUSE_INACTIVE_WINDOW | PAUSE_WINDOW_ICONISED))))
 		//		{
-		static uint32 joyState [256];
-		for(int i = 0 ; i < 255 ; i++)
+		static u32 joyState [256];
+		static bool initialized = false;
+		if(!initialized) {
+			memset(joyState,0,sizeof(joyState));
+			initialized = true;
+		}
+		for(int i = 0 ; i < 256 ; i++)
 		{
 			bool active = !S9xGetState(i);
 			if(active)
@@ -356,7 +361,7 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 					//TODO find something better
 				//	repeattime++;
 				//	if(repeattime % 10 == 0) {
-
+						joyState[i] = 1;
 						PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(NULL));
 						repeattime=0;
 				//	}
@@ -1819,6 +1824,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
+	timeBeginPeriod(1);
 	g_thread_init (NULL);
 	hAppInst=hThisInstance;
 	OpenConsole();			// Init debug console
