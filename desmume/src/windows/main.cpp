@@ -303,7 +303,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 //	const char *cflash_disk_image_file;
 //};
 
-int KeyInDelayInCount=10;
+int KeyInDelayInCount=30;
 
 static int lastTime = timeGetTime();
 int repeattime;
@@ -2385,9 +2385,6 @@ bool first;
 void FrameAdvance(bool state)
 {
 	if(state) {
-		if(emu_paused)
-			execute = TRUE;
-		else
 			if(first) {
 				execute = TRUE;
 				frameAdvance=true;
