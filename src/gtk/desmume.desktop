@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DeSmuME (Gtk)
+Comment=Nintento DS emulator
+TryExec=desmume
+Exec=desmume
+Icon=DeSmuME
+Categories=GNOME;GTK;Game;Emulator;
