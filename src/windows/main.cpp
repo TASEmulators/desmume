@@ -416,7 +416,7 @@ LRESULT CALLBACK WifiSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 //	const char *cflash_disk_image_file;
 //};
 
-int KeyInDelayInCount=10;
+int KeyInDelayInCount=30;
 
 static int lastTime = timeGetTime();
 int repeattime;
@@ -456,20 +456,30 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 		//		if((!GUI.InactivePause || !Settings.ForcedPause)
 		//				|| (GUI.BackgroundInput || !(Settings.ForcedPause & (PAUSE_INACTIVE_WINDOW | PAUSE_WINDOW_ICONISED))))
 		//		{
-		static uint32 joyState [256];
-		for(int i = 0 ; i < 255 ; i++)
+		static u32 joyState [256];
+		static bool initialized = false;
+		if(!initialized) {
+			memset(joyState,0,sizeof(joyState));
+			initialized = true;
+		}
+		for(int i = 0 ; i < 256 ; i++)
 		{
 			bool active = !S9xGetState(i);
 			if(active)
 			{
 				if(joyState[i] < ULONG_MAX) // 0xffffffffUL
 					joyState[i]++;
-				if(joyState[i] == 1 || joyState[i] >= (unsigned) KeyInDelayInCount) {
+				if(joyState[i] == 1 || joyState[i] == (unsigned) KeyInDelayInCount) {
+
+
+					//HEY HEY HEY! this only repeats once. this is what it needs to be like for frame advance.
+					//if anyone wants a different kind of repeat, then the whole setup will need to be redone
+
 					//sort of fix the auto repeating
 					//TODO find something better
 				//	repeattime++;
 				//	if(repeattime % 10 == 0) {
-
+					//printf("trigger %d\n",i);
 						PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(NULL));
 						repeattime=0;
 				//	}
@@ -1210,7 +1220,6 @@ DWORD WINAPI run()
 			}
 
 			if(FastForward) {
-
 				if(framesskipped < 9)
 				{
 					skipnextframe = 1;
@@ -1967,6 +1976,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 					int nFunsterStil)
 
 {
+	timeBeginPeriod(1);
 	hAppInst=hThisInstance;
 	OpenConsole();			// Init debug console
 
@@ -2523,18 +2533,25 @@ bool first;
 void FrameAdvance(bool state)
 {
 	if(state) {
-		if(first) {
-			frameAdvance=true;
-		}
-		else {
-			execute = TRUE;
-			first=false;
-		}
+			if(first) {
+				execute = TRUE;
+				frameAdvance=true;
+				first=false;
+			}
+			else {
+				execute = TRUE;
+			}
 	}
 	else {
-		emu_halt();
-		SPU_Pause(1);
-		emu_paused = 1;
+		first = true;
+		if(frameAdvance)
+		{}
+		else
+		{
+			emu_halt();
+			SPU_Pause(1);
+			emu_paused = 1;
+		}
 	}
 }
 
