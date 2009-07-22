@@ -1,0 +1,5 @@
+This package was modified for desmume from the official glib-2.20.1 release because I wasnt sure how else to get it running.
+search for //desmume: for differences
+
+Additionally, the entire build process was altered, because we believe in things that build in one step and we hate dlls.
+Hopefully we'll never have to upgrade this package.
