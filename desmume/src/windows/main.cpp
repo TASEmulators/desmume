@@ -356,12 +356,17 @@ VOID CALLBACK KeyInputTimer( UINT idEvent, UINT uMsg, DWORD_PTR dwUser, DWORD_PT
 			{
 				if(joyState[i] < ULONG_MAX) // 0xffffffffUL
 					joyState[i]++;
-				if(joyState[i] == 1 || joyState[i] >= (unsigned) KeyInDelayInCount) {
+				if(joyState[i] == 1 || joyState[i] == (unsigned) KeyInDelayInCount) {
+
+
+					//HEY HEY HEY! this only repeats once. this is what it needs to be like for frame advance.
+					//if anyone wants a different kind of repeat, then the whole setup will need to be redone
+
 					//sort of fix the auto repeating
 					//TODO find something better
 				//	repeattime++;
 				//	if(repeattime % 10 == 0) {
-						joyState[i] = 1;
+					//printf("trigger %d\n",i);
 						PostMessage(MainWindow->getHWnd(), WM_CUSTKEYDOWN, (WPARAM)(i),(LPARAM)(NULL));
 						repeattime=0;
 				//	}
@@ -1063,7 +1068,6 @@ DWORD WINAPI run()
 			}
 
 			if(FastForward) {
-
 				if(framesskipped < 9)
 				{
 					skipnextframe = 1;
@@ -2381,18 +2385,28 @@ bool first;
 void FrameAdvance(bool state)
 {
 	if(state) {
-		if(first) {
-			frameAdvance=true;
-		}
-		else {
+		if(emu_paused)
 			execute = TRUE;
-			first=false;
-		}
+		else
+			if(first) {
+				execute = TRUE;
+				frameAdvance=true;
+				first=false;
+			}
+			else {
+				execute = TRUE;
+			}
 	}
 	else {
-		emu_halt();
-		SPU_Pause(1);
-		emu_paused = 1;
+		first = true;
+		if(frameAdvance)
+		{}
+		else
+		{
+			emu_halt();
+			SPU_Pause(1);
+			emu_paused = 1;
+		}
 	}
 }
 
