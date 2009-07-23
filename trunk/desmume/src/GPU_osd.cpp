@@ -81,7 +81,7 @@ void EditHud(s32 x, s32 y, HudStruct *hudstruct) {
 		if(hud.x < 0)  hud.x = 0;
 		if(hud.y < 0)  hud.y = 0;
 		if(hud.x > 245)hud.x = 245; //margins
-		if(hud.y > 180)hud.y = 180;
+		if(hud.y > 384-16)hud.y = 384-16;
 
 		if(hud.clicked)
 			break;//prevent items from grouping together
