@@ -1,7 +1,7 @@
 SUBDIRS = doc
 include $(top_srcdir)/src/desmume.mk
 
-AM_CFLAGS += $(SDL_CFLAGS) $(ALSA_CFLAGS) 
+AM_CPPFLAGS += $(SDL_CFLAGS) $(ALSA_CFLAGS) $(LIBAGG_CFLAGS)
 
 bin_PROGRAMS = desmume-cli
 desmume_cli_SOURCES = main.cpp ../sndsdl.cpp ../ctrlssdl.h ../ctrlssdl.cpp
