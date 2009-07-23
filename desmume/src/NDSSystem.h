@@ -98,7 +98,7 @@ extern autohold AutoHold;
 
 int NDS_WritePNG(const char *fname);
 
-extern volatile BOOL execute;
+extern volatile bool execute;
 extern BOOL click;
 
 /*

@@ -289,7 +289,7 @@ u16 FASTCALL _MMU_ARM7_read16(u32 adr);
 u32 FASTCALL _MMU_ARM7_read32(u32 adr);
 
 extern u32 _MMU_MAIN_MEM_MASK;
-inline void SetupMMU(bool debugConsole) {
+inline void SetupMMU(BOOL debugConsole) {
 	if(debugConsole) _MMU_MAIN_MEM_MASK = 0x7FFFFF;
 	else _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 }

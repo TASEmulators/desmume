@@ -1194,7 +1194,7 @@ int NDS_WriteBMP(const char *filename)
 			pixel-=r<<10;
 			g = pixel>>5;
 			pixel-=g<<5;
-			b = pixel;
+			b = (u8)pixel;
 			r*=255/31;
 			g*=255/31;
 			b*=255/31;
@@ -2352,12 +2352,12 @@ void NDS_Reset()
 
 	if((CommonSettings.UseExtBIOS == true) && (CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
 	{
-		for(int i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
+		for(u32 i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
 		{
 			_MMU_write32<ARMCPU_ARM9>((nds.FW_ARM9BootCodeAddr + i), T1ReadLong(nds.FW_ARM9BootCode, i));
 		}
 
-		for(int i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
+		for(u32 i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
 		{
 			_MMU_write32<ARMCPU_ARM7>((nds.FW_ARM7BootCodeAddr + i), T1ReadLong(nds.FW_ARM7BootCode, i));
 		}
@@ -2372,7 +2372,7 @@ void NDS_Reset()
 		src = header->ARM9src;
 		dst = header->ARM9cpy;
 
-		for(int i = 0; i < (header->ARM9binSize>>2); ++i)
+		for(u32 i = 0; i < (header->ARM9binSize>>2); ++i)
 		{
 			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
 			dst += 4;
@@ -2382,7 +2382,7 @@ void NDS_Reset()
 		src = header->ARM7src;
 		dst = header->ARM7cpy;
 
-		for(int i = 0; i < (header->ARM7binSize>>2); ++i)
+		for(u32 i = 0; i < (header->ARM7binSize>>2); ++i)
 		{
 			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(MMU.CART_ROM, src));
 			dst += 4;

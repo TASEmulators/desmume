@@ -128,7 +128,7 @@ public:
 		ReadKey(pathToLua, LUAKEY);
 		#ifdef WIN32
 		GetPrivateProfileString(SECTION, FORMATKEY, "%f_%s_%r", screenshotFormat, MAX_FORMAT, IniName);
-		savelastromvisit	= GetPrivateProfileInt(SECTION, LASTVISITKEY, TRUE, IniName);
+		savelastromvisit	= GetPrivateProfileBool(SECTION, LASTVISITKEY, true, IniName);
 		currentimageformat	= (ImageFormat)GetPrivateProfileInt(SECTION, DEFAULTFORMATKEY, PNG, IniName);
 		#endif
 	/*
@@ -252,7 +252,7 @@ public:
 		std::string file;
 		time_t now = time(NULL);
 		tm *time_struct = localtime(&now);
-		srand(now);
+		srand((unsigned int)now);
 
 		for(int i = 0; i < MAX_FORMAT;i++) 
 		{		

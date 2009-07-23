@@ -362,7 +362,6 @@ BOOL CALLBACK MemView_DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				{
 					FILE *f;
 					u8 memory[0x100];
-					int line;
 
 					MMU_DumpMemBlock(data->cpu, data->address, 0x100, memory);
 

@@ -992,10 +992,10 @@ static void execsqrt() {
 
 	if (cnt&1) { 
 		u64 v = T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
-		ret = isqrt(v);
+		ret = (u32)isqrt(v);
 	} else {
 		u32 v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
-		ret = isqrt(v);
+		ret = (u32)isqrt(v);
 	}
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, 0);
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B0, cnt | 0x8000);

@@ -57,7 +57,7 @@
 #include "../gdbstub.h"
 #endif
 
-volatile BOOL execute = FALSE;
+volatile bool execute = false;
 
 static float nds_screen_size_ratio = 1.0f;
 
@@ -829,7 +829,7 @@ int main(int argc, char ** argv) {
   }
 #endif
 
-  execute = TRUE;
+  execute = true;
 
   if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == -1)
     {

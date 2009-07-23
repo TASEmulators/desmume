@@ -140,6 +140,10 @@ void wxTest() {
 
 #endif
 
+const int kGapNone = 0;
+const int kGapBorder = 5;
+const int kGapNDS = 64;
+
 static BOOL OpenCore(const char* filename);
 
 //----Recent ROMs menu globals----------
@@ -179,10 +183,15 @@ LPDIRECTDRAWCLIPPER		lpDDClipBack=NULL;
 #define WM_CUSTKEYDOWN	(WM_USER+50)
 #define WM_CUSTKEYUP	(WM_USER+51)
 
-/*  Declare Windows procedure  */
+
+inline bool IsDlgCheckboxChecked(HWND hDlg, int id)
+{
+	return IsDlgButtonChecked(hDlg,id) == BST_CHECKED;
+}
+
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
-/*  Make the class name into a global variable  */
+
 char SavName[MAX_PATH] = "";
 char ImportSavName[MAX_PATH] = "";
 char szClassName[ ] = "DeSmuME";
@@ -202,9 +211,9 @@ int WndX = 0;
 int WndY = 0;
 
 extern HWND RamSearchHWnd;
-static BOOL lostFocusPause = TRUE;
-static BOOL lastPauseFromLostFocus = FALSE;
-static int FrameLimit = 1;
+static bool lostFocusPause = true;
+static bool lastPauseFromLostFocus = false;
+static bool FrameLimit = true;
 
 std::vector<HWND> LuaScriptHWnds;
 LRESULT CALLBACK LuaScriptProc(HWND, UINT, WPARAM, LPARAM);
@@ -222,19 +231,19 @@ TOOLSCLASS	*ViewOAM = NULL;
 TOOLSCLASS	*ViewMatrices = NULL;
 TOOLSCLASS	*ViewLights = NULL;
 
-volatile BOOL execute = FALSE;
-volatile BOOL paused = TRUE;
+volatile bool execute = false;
+volatile bool paused = true;
 volatile BOOL pausedByMinimize = FALSE;
 u32 glock = 0;
 
 BOOL finished = FALSE;
-BOOL romloaded = FALSE;
+bool romloaded = false;
 
 void SetScreenGap(int gap);
 
 void SetRotate(HWND hwnd, int rot);
 
-BOOL ForceRatio = TRUE;
+bool ForceRatio = true;
 float DefaultWidth;
 float DefaultHeight;
 float widthTradeOff;
@@ -258,7 +267,7 @@ GPU3DInterface *core3DList[] = {
 	NULL
 };
 
-int autoframeskipenab=0;
+bool autoframeskipenab=0;
 int frameskiprate=0;
 int emu_paused = 0;
 bool frameAdvance = false;
@@ -603,7 +612,7 @@ void SaveRecentRoms()
 	{
 		temp.str("");
 		temp << "Recent Rom " << (x+1);
-		if (x < RecentRoms.size())	//If it exists in the array, save it
+		if (x < (int)RecentRoms.size())	//If it exists in the array, save it
 			WritePrivateProfileString("General",temp.str().c_str(),RecentRoms[x].c_str(),IniName);
 		else						//Else, make it empty
 			WritePrivateProfileString("General",temp.str().c_str(), "",IniName);
@@ -917,7 +926,6 @@ void CheckMessages()
 
 DWORD WINAPI run()
 {
-	char txt[80];
 	u32 cycles = 0;
 	int wait=0;
 	u64 freq;
@@ -933,10 +941,7 @@ DWORD WINAPI run()
 	int fps=0;
 	int fpsframecount=0;
 	u64 fpsticks=0;
-	int	res;
 	HWND	hwnd = MainWindow->getHWnd();
-
-	DDCAPS	hw_caps, sw_caps;
 
 	InitSpeedThrottle();
 
@@ -1325,9 +1330,9 @@ void CheckLanguage(UINT id)
 {
 	int i;
 	for (i = IDC_LANGENGLISH; i < IDC_LANG_CHINESE_SIMPLIFIED+1; i++)
-		MainWindow->checkMenu(i, MF_BYCOMMAND | MF_UNCHECKED);
+		MainWindow->checkMenu(i, false);
 
-	MainWindow->checkMenu(id, MF_BYCOMMAND | MF_CHECKED);
+	MainWindow->checkMenu(id, true);
 }
 
 void ChangeLanguage(int id)
@@ -1478,30 +1483,30 @@ int _main()
 
 	windowSize = GetPrivateProfileInt("Video","Window Size", 0, IniName);
 	video.rotation =  GetPrivateProfileInt("Video","Window Rotate", 0, IniName);
-	ForceRatio = GetPrivateProfileInt("Video","Window Force Ratio", 1, IniName);
+	ForceRatio = GetPrivateProfileBool("Video","Window Force Ratio", 1, IniName);
 	WndX = GetPrivateProfileInt("Video","WindowPosX", CW_USEDEFAULT, IniName);
 	WndY = GetPrivateProfileInt("Video","WindowPosY", CW_USEDEFAULT, IniName);
 	video.width = GetPrivateProfileInt("Video", "Width", 256, IniName);
 	video.height = GetPrivateProfileInt("Video", "Height", 384, IniName);
 	
-	CommonSettings.hud.FpsDisplay = GetPrivateProfileBool("Display","Display Fps", 0, IniName);
-	CommonSettings.hud.FrameCounterDisplay = GetPrivateProfileBool("Display","FrameCounter", 0, IniName);
-	CommonSettings.hud.ShowInputDisplay = GetPrivateProfileBool("Display","Display Input", 0, IniName);
-	CommonSettings.hud.ShowLagFrameCounter = GetPrivateProfileBool("Display","Display Lag Counter", 0, IniName);
-	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", 0, IniName);
+	CommonSettings.hud.FpsDisplay = GetPrivateProfileBool("Display","Display Fps", false, IniName);
+	CommonSettings.hud.FrameCounterDisplay = GetPrivateProfileBool("Display","FrameCounter", false, IniName);
+	CommonSettings.hud.ShowInputDisplay = GetPrivateProfileBool("Display","Display Input", false, IniName);
+	CommonSettings.hud.ShowLagFrameCounter = GetPrivateProfileBool("Display","Display Lag Counter", false, IniName);
+	CommonSettings.hud.ShowMicrophone = GetPrivateProfileBool("Display","Display Microphone", false, IniName);
 	
 	video.screengap = GetPrivateProfileInt("Display", "ScreenGap", 0, IniName);
-	FrameLimit = GetPrivateProfileInt("FrameLimit", "FrameLimit", 1, IniName);
+	FrameLimit = GetPrivateProfileBool("FrameLimit", "FrameLimit", true, IniName);
 	CommonSettings.showGpu.main = GetPrivateProfileInt("Display", "MainGpu", 1, IniName) != 0;
 	CommonSettings.showGpu.sub = GetPrivateProfileInt("Display", "SubGpu", 1, IniName) != 0;
-	lostFocusPause = GetPrivateProfileInt("Focus", "BackgroundPause", 0, IniName);
+	lostFocusPause = GetPrivateProfileBool("Focus", "BackgroundPause", false, IniName);
 
 	
 	//Get Ram-Watch values
-	RWSaveWindowPos = GetPrivateProfileInt("RamWatch", "SaveWindowPos", 0, IniName);
+	RWSaveWindowPos = GetPrivateProfileBool("RamWatch", "SaveWindowPos", false, IniName);
 	ramw_x = GetPrivateProfileInt("RamWatch", "RWWindowPosX", 0, IniName);
 	ramw_y = GetPrivateProfileInt("RamWatch", "RWWindowPosY", 0, IniName);
-	AutoRWLoad = GetPrivateProfileInt("RamWatch", "Auto-load", 0, IniName);
+	AutoRWLoad = GetPrivateProfileBool("RamWatch", "Auto-load", false, IniName);
 	for(int i = 0; i < MAX_RECENT_WATCHES; i++)
 	{
 		char str[256];
@@ -1673,13 +1678,13 @@ int _main()
 	{
 		autoframeskipenab=1;
 		frameskiprate=0;
-		MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | MF_CHECKED);
+		MainWindow->checkMenu(IDC_FRAMESKIPAUTO, true);
 	}
 	else
 	{
 		autoframeskipenab=0;
 		frameskiprate=atoi(text);
-		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, MF_BYCOMMAND | MF_CHECKED);
+		MainWindow->checkMenu(frameskiprate + IDC_FRAMESKIP0, true);
 	}
 
 	int KeyInRepeatMSec=20;
@@ -1687,7 +1692,7 @@ int _main()
 	hKeyInputTimer = timeSetEvent (KeyInRepeatMSec, 0, KeyInputTimer, 0, TIME_PERIODIC);
 
 	cur3DCore = GetPrivateProfileInt("3D", "Renderer", GPU3D_OPENGL, IniName);
-	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileInt("3D", "HighResolutionInterpolateColor", 1, IniName);
+	CommonSettings.HighResolutionInterpolateColor = GetPrivateProfileBool("3D", "HighResolutionInterpolateColor", 1, IniName);
 	CommonSettings.gfx3d_flushMode = GetPrivateProfileInt("3D", "AlternateFlush", 0, IniName);
 	NDS_3D_ChangeCore(cur3DCore);
 
@@ -1712,15 +1717,15 @@ int _main()
 	sndvolume = GetPrivateProfileInt("Sound","Volume",100, IniName);
 	SPU_SetVolume(sndvolume);
 
-	CommonSettings.DebugConsole = GetPrivateProfileInt("Emulation", "DebugConsole", FALSE, IniName);
-	CommonSettings.UseExtBIOS = GetPrivateProfileInt("BIOS", "UseExtBIOS", FALSE, IniName);
+	CommonSettings.DebugConsole = GetPrivateProfileBool("Emulation", "DebugConsole", FALSE, IniName);
+	CommonSettings.UseExtBIOS = GetPrivateProfileBool("BIOS", "UseExtBIOS", FALSE, IniName);
 	GetPrivateProfileString("BIOS", "ARM9BIOSFile", "bios9.bin", CommonSettings.ARM9BIOS, 256, IniName);
 	GetPrivateProfileString("BIOS", "ARM7BIOSFile", "bios7.bin", CommonSettings.ARM7BIOS, 256, IniName);
-	CommonSettings.SWIFromBIOS = GetPrivateProfileInt("BIOS", "SWIFromBIOS", FALSE, IniName);
+	CommonSettings.SWIFromBIOS = GetPrivateProfileBool("BIOS", "SWIFromBIOS", FALSE, IniName);
 
-	CommonSettings.UseExtFirmware = GetPrivateProfileInt("Firmware", "UseExtFirmware", FALSE, IniName);
+	CommonSettings.UseExtFirmware = GetPrivateProfileBool("Firmware", "UseExtFirmware", FALSE, IniName);
 	GetPrivateProfileString("Firmware", "FirmwareFile", "firmware.bin", CommonSettings.Firmware, 256, IniName);
-	CommonSettings.BootFromFirmware = GetPrivateProfileInt("Firmware", "BootFromFirmware", FALSE, IniName);
+	CommonSettings.BootFromFirmware = GetPrivateProfileBool("Firmware", "BootFromFirmware", FALSE, IniName);
 
 	CommonSettings.wifiBridgeAdapterNum = GetPrivateProfileInt("Wifi", "BridgeAdapter", 0, IniName);
 
@@ -1972,10 +1977,10 @@ void UpdateScreenRects()
 
 void SetScreenGap(int gap)
 {
-
 	video.screengap = gap;
 	MainWindow->setMinSize(video.rotatedwidthgap(), video.rotatedheightgap());
 	MainWindow->setClientSize(video.rotatedwidthgap(), video.rotatedheightgap());
+	UpdateWndRects(MainWindow->getHWnd());
 }
 
 //========================================================================================
@@ -2471,7 +2476,8 @@ void RunConfig(CONFIGSCREEN which)
 		NDS_UnPause();
 }
 
-void FilterUpdate (HWND hwnd, bool user){
+void FilterUpdate (HWND hwnd, bool user)
+{
 	UpdateScreenRects();
 	UpdateWndRects(hwnd);
 	SetScreenGap(video.screengap);
@@ -2481,6 +2487,11 @@ void FilterUpdate (HWND hwnd, bool user){
 	WritePrivateProfileInt("Video", "Filter", video.currentfilter, IniName);
 	WritePrivateProfileInt("Video", "Width", video.width, IniName);
 	WritePrivateProfileInt("Video", "Height", video.height, IniName);
+}
+
+void DesEnableMenuItem(HMENU hMenu, UINT uIDEnableItem, bool enable)
+{
+	EnableMenuItem(hMenu, uIDEnableItem, MF_BYCOMMAND | (enable?MF_ENABLED:MF_GRAYED));
 }
 
 //========================================================================================
@@ -2507,108 +2518,121 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			SetMenuItemInfo(mainMenu, IDM_FILE_RECORDWAV, FALSE, &mii);
 
 			//Menu items dependent on a ROM loaded
-			EnableMenuItem(mainMenu, IDM_GAME_INFO,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY,MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_EXPORTBACKUPMEMORY,MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_STATE_SAVE,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_STATE_LOAD,        MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_PRINTSCREEN,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_RESET,             MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_SHUT_UP,           MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_CHEATS_LIST,       MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_WIFISETTINGS,      MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			DesEnableMenuItem(mainMenu, IDM_GAME_INFO,         romloaded);
+			DesEnableMenuItem(mainMenu, IDM_IMPORTBACKUPMEMORY,romloaded);
+			DesEnableMenuItem(mainMenu, IDM_EXPORTBACKUPMEMORY,romloaded);
+			DesEnableMenuItem(mainMenu, IDM_STATE_SAVE,        romloaded);
+			DesEnableMenuItem(mainMenu, IDM_STATE_LOAD,        romloaded);
+			DesEnableMenuItem(mainMenu, IDM_PRINTSCREEN,       romloaded);
+			DesEnableMenuItem(mainMenu, IDM_QUICK_PRINTSCREEN, romloaded);
+			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDAVI,    romloaded);
+			DesEnableMenuItem(mainMenu, IDM_FILE_RECORDWAV,    romloaded);
+			DesEnableMenuItem(mainMenu, IDM_RESET,             romloaded);
+			DesEnableMenuItem(mainMenu, IDM_SHUT_UP,           romloaded);
+			DesEnableMenuItem(mainMenu, IDM_CHEATS_LIST,       romloaded);
+			DesEnableMenuItem(mainMenu, IDM_CHEATS_SEARCH,     romloaded);
+			DesEnableMenuItem(mainMenu, IDM_WIFISETTINGS,      romloaded);
 
-			EnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      MF_BYCOMMAND | (romloaded && movieMode == MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        MF_BYCOMMAND | (romloaded && movieMode == MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, IDM_STOPMOVIE,         MF_BYCOMMAND | (romloaded && movieMode != MOVIEMODE_INACTIVE) ? MF_ENABLED : MF_GRAYED);
+			DesEnableMenuItem(mainMenu, IDM_RECORD_MOVIE,      (romloaded && movieMode == MOVIEMODE_INACTIVE));
+			DesEnableMenuItem(mainMenu, IDM_PLAY_MOVIE,        (romloaded && movieMode == MOVIEMODE_INACTIVE));
+			DesEnableMenuItem(mainMenu, IDM_STOPMOVIE,         (romloaded && movieMode != MOVIEMODE_INACTIVE));
 
-			EnableMenuItem(mainMenu, ID_RAM_WATCH,          MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-			EnableMenuItem(mainMenu, ID_RAM_SEARCH,         MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+			DesEnableMenuItem(mainMenu, ID_RAM_WATCH,          romloaded);
+			DesEnableMenuItem(mainMenu, ID_RAM_SEARCH,         romloaded);
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
 			{
-				EnableMenuItem(mainMenu, IDM_STATE_SAVE_F1+x,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
-				EnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   MF_BYCOMMAND | (romloaded) ? MF_ENABLED : MF_GRAYED);
+				EnableMenuItem(mainMenu, IDM_STATE_SAVE_F1+x,   romloaded);
+				EnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   romloaded);
 			}
 			
 			//Gray the recent ROM menu item if there are no recent ROMs
-			EnableMenuItem(mainMenu, ID_FILE_RECENTROM,      MF_BYCOMMAND | (RecentRoms.size()) ? MF_ENABLED : MF_GRAYED);
+			EnableMenuItem(mainMenu, ID_FILE_RECENTROM,      (RecentRoms.size()));
 
 			//Updated Checked menu items
 			
 			//Pause
-			MainWindow->checkMenu(IDM_PAUSE, MF_BYCOMMAND | ((paused)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_PAUSE, ((paused)));
 			//Force Maintain Ratio
-			MainWindow->checkMenu(IDC_FORCERATIO, MF_BYCOMMAND | ((ForceRatio)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_FORCERATIO, ((ForceRatio)));
 			//Screen rotation
-			MainWindow->checkMenu(IDC_ROTATE0, MF_BYCOMMAND | ((video.rotation==0)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_ROTATE90, MF_BYCOMMAND | ((video.rotation==90)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_ROTATE180, MF_BYCOMMAND | ((video.rotation==180)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_ROTATE270, MF_BYCOMMAND | ((video.rotation==270)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_ROTATE0, ((video.rotation==0)));
+			MainWindow->checkMenu(IDC_ROTATE90, ((video.rotation==90)));
+			MainWindow->checkMenu(IDC_ROTATE180, ((video.rotation==180)));
+			MainWindow->checkMenu(IDC_ROTATE270, ((video.rotation==270)));
 
 			//Window Size
-			MainWindow->checkMenu(IDC_WINDOW1X, MF_BYCOMMAND   | ((windowSize==1)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW1_5X, MF_BYCOMMAND |((windowSize==65535)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW2X, MF_BYCOMMAND   | ((windowSize==2)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW2_5X, MF_BYCOMMAND |((windowSize==65534)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW3X, MF_BYCOMMAND   | ((windowSize==3)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_WINDOW4X, MF_BYCOMMAND   | ((windowSize==4)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_WINDOW1X, ((windowSize==1)));
+			MainWindow->checkMenu(IDC_WINDOW1_5X, ((windowSize==65535)));
+			MainWindow->checkMenu(IDC_WINDOW2X, ((windowSize==2)));
+			MainWindow->checkMenu(IDC_WINDOW2_5X, ((windowSize==65534)));
+			MainWindow->checkMenu(IDC_WINDOW3X, ((windowSize==3)));
+			MainWindow->checkMenu(IDC_WINDOW4X, ((windowSize==4)));
 
 			//Screen Separation
-			MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND |   ((video.screengap==0)? MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | ((video.screengap==5)? MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | ((video.screengap==64)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDM_SCREENSEP_NONE,   ((video.screengap==0)));
+			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, ((video.screengap==5)));
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, ((video.screengap==64)));
 	
 			//Counters / Etc.
-			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, MF_BYCOMMAND | ((CommonSettings.hud.FrameCounterDisplay)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, MF_BYCOMMAND   | ((CommonSettings.hud.FpsDisplay)         ?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, MF_BYCOMMAND | ((CommonSettings.hud.ShowInputDisplay)   ?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, MF_BYCOMMAND   | ((CommonSettings.hud.ShowLagFrameCounter)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, MF_BYCOMMAND | ((CommonSettings.hud.ShowMicrophone)?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, MF_BYCOMMAND    | ((HudEditorMode)      ?MF_CHECKED:MF_UNCHECKED));
-			MainWindow->checkMenu(IDC_FRAMELIMIT, MF_BYCOMMAND       | ((FrameLimit)         ?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER,CommonSettings.hud.FrameCounterDisplay);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS,CommonSettings.hud.FpsDisplay);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT,CommonSettings.hud.ShowInputDisplay);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG,CommonSettings.hud.ShowLagFrameCounter);
+			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE,CommonSettings.hud.ShowMicrophone);
+			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode);
+			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit);
 			
 			//Frame Skip
-			MainWindow->checkMenu(IDC_FRAMESKIPAUTO, MF_BYCOMMAND | ((autoframeskipenab)?MF_CHECKED:MF_UNCHECKED));
+			MainWindow->checkMenu(IDC_FRAMESKIPAUTO, ((autoframeskipenab)));
 
-			MainWindow->checkMenu(IDC_FRAMESKIP0, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==0) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP1, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==1) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP2, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==2) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP3, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==3) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP4, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==4) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP5, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==5) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP6, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==6) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP7, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==7) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP8, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==8) ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDC_FRAMESKIP9, MF_BYCOMMAND | (!autoframeskipenab && frameskiprate==9) ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_FRAMESKIP0, (!autoframeskipenab && frameskiprate==0) );
+			MainWindow->checkMenu(IDC_FRAMESKIP1, (!autoframeskipenab && frameskiprate==1) );
+			MainWindow->checkMenu(IDC_FRAMESKIP2, (!autoframeskipenab && frameskiprate==2) );
+			MainWindow->checkMenu(IDC_FRAMESKIP3, (!autoframeskipenab && frameskiprate==3) );
+			MainWindow->checkMenu(IDC_FRAMESKIP4, (!autoframeskipenab && frameskiprate==4) );
+			MainWindow->checkMenu(IDC_FRAMESKIP5, (!autoframeskipenab && frameskiprate==5) );
+			MainWindow->checkMenu(IDC_FRAMESKIP6, (!autoframeskipenab && frameskiprate==6) );
+			MainWindow->checkMenu(IDC_FRAMESKIP7, (!autoframeskipenab && frameskiprate==7) );
+			MainWindow->checkMenu(IDC_FRAMESKIP8, (!autoframeskipenab && frameskiprate==8) );
+			MainWindow->checkMenu(IDC_FRAMESKIP9, (!autoframeskipenab && frameskiprate==9) );
 
-			MainWindow->checkMenu(IDM_MGPU, MF_BYCOMMAND | CommonSettings.showGpu.main ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_SGPU, MF_BYCOMMAND | CommonSettings.showGpu.sub ? MF_CHECKED:MF_UNCHECKED);
+			//gpu visibility toggles
+			MainWindow->checkMenu(IDM_MGPU, CommonSettings.showGpu.main );
+			MainWindow->checkMenu(IDM_SGPU, CommonSettings.showGpu.sub );
+			//TODO - change how the gpu visibility flags work
 
 			//Filters
+			MainWindow->checkMenu(IDM_RENDER_NORMAL, video.currentfilter == video.NONE );
+			MainWindow->checkMenu(IDM_RENDER_HQ2X, video.currentfilter == video.HQ2X );
+			MainWindow->checkMenu(IDM_RENDER_2XSAI, video.currentfilter == video._2XSAI );
+			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, video.currentfilter == video.SUPER2XSAI );
+			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, video.currentfilter == video.SUPEREAGLE );
+			MainWindow->checkMenu(IDM_RENDER_SCANLINE, video.currentfilter == video.SCANLINE );
+			MainWindow->checkMenu(IDM_RENDER_BILINEAR, video.currentfilter == video.BILINEAR );
 
-			MainWindow->checkMenu(IDM_RENDER_NORMAL, MF_BYCOMMAND | video.currentfilter == video.NONE ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_RENDER_HQ2X, MF_BYCOMMAND | video.currentfilter == video.HQ2X ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_RENDER_2XSAI, MF_BYCOMMAND | video.currentfilter == video._2XSAI ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_RENDER_SUPER2XSAI, MF_BYCOMMAND | video.currentfilter == video.SUPER2XSAI ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_RENDER_SUPEREAGLE, MF_BYCOMMAND | video.currentfilter == video.SUPEREAGLE ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_RENDER_SCANLINE, MF_BYCOMMAND | video.currentfilter == video.SCANLINE ? MF_CHECKED:MF_UNCHECKED);
-			MainWindow->checkMenu(IDM_RENDER_BILINEAR, MF_BYCOMMAND | video.currentfilter == video.BILINEAR ? MF_CHECKED:MF_UNCHECKED);
-
-			MainWindow->checkMenu(IDC_STATEREWINDING, MF_BYCOMMAND | staterewindingenabled == 1 ? MF_CHECKED:MF_UNCHECKED);
+			MainWindow->checkMenu(IDC_STATEREWINDING, staterewindingenabled == 1 );
 
 			//Language selection
+			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, lostFocusPause);
 
-			MainWindow->checkMenu(IDC_BACKGROUNDPAUSE, MF_BYCOMMAND | ((lostFocusPause)?MF_CHECKED:MF_UNCHECKED));
+			//screen gaps
+			MainWindow->checkMenu(IDM_SCREENSEP_NONE, false);
+			MainWindow->checkMenu(IDM_SCREENSEP_BORDER, false);
+			MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, false);
+			if(video.screengap == kGapNone) 
+				MainWindow->checkMenu(IDM_SCREENSEP_NONE, true);
+			else if(video.screengap == kGapBorder)
+				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, true);
+			else if(video.screengap == kGapNDS)
+				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, true);
+
 
 			//Save type
 			const int savelist[] = {IDC_SAVETYPE1,IDC_SAVETYPE2,IDC_SAVETYPE3,IDC_SAVETYPE4,IDC_SAVETYPE5,IDC_SAVETYPE6,IDC_SAVETYPE7};
-			for(int i=0;i<7;i++) MainWindow->checkMenu(savelist[i], MF_BYCOMMAND | MF_UNCHECKED);
-			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], MF_BYCOMMAND | MF_CHECKED);
+			for(int i=0;i<7;i++) 
+				MainWindow->checkMenu(savelist[i], MF_UNCHECKED);
+			MainWindow->checkMenu(savelist[CommonSettings.manualBackupType], true);
 
 
 			return 0;
@@ -3216,96 +3240,96 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			if(MainScreen.gpu->dispBG[0])
 			{
 				GPU_remove(MainScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_MBG0, false);
 			}
 			else
 			{
 				GPU_addBack(MainScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_MBG0, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_MBG0, true);
 			}
 			return 0;
 		case IDM_MBG1 : 
 			if(MainScreen.gpu->dispBG[1])
 			{
 				GPU_remove(MainScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_MBG1, false);
 			}
 			else
 			{
 				GPU_addBack(MainScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_MBG1, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_MBG1, true);
 			}
 			return 0;
 		case IDM_MBG2 : 
 			if(MainScreen.gpu->dispBG[2])
 			{
 				GPU_remove(MainScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_MBG2, false);
 			}
 			else
 			{
 				GPU_addBack(MainScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_MBG2, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_MBG2, true);
 			}
 			return 0;
 		case IDM_MBG3 : 
 			if(MainScreen.gpu->dispBG[3])
 			{
 				GPU_remove(MainScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_MBG3, false);
 			}
 			else
 			{
 				GPU_addBack(MainScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_MBG3, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_MBG3, true);
 			}
 			return 0;
 		case IDM_SBG0 : 
 			if(SubScreen.gpu->dispBG[0])
 			{
 				GPU_remove(SubScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SBG0, false);
 			}
 			else
 			{
 				GPU_addBack(SubScreen.gpu, 0);
-				MainWindow->checkMenu(IDM_SBG0, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_SBG0, true);
 			}
 			return 0;
 		case IDM_SBG1 : 
 			if(SubScreen.gpu->dispBG[1])
 			{
 				GPU_remove(SubScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SBG1, false);
 			}
 			else
 			{
 				GPU_addBack(SubScreen.gpu, 1);
-				MainWindow->checkMenu(IDM_SBG1, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_SBG1, true);
 			}
 			return 0;
 		case IDM_SBG2 : 
 			if(SubScreen.gpu->dispBG[2])
 			{
 				GPU_remove(SubScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SBG2, false);
 			}
 			else
 			{
 				GPU_addBack(SubScreen.gpu, 2);
-				MainWindow->checkMenu(IDM_SBG2, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_SBG2, true);
 			}
 			return 0;
 		case IDM_SBG3 : 
 			if(SubScreen.gpu->dispBG[3])
 			{
 				GPU_remove(SubScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_UNCHECKED);
+				MainWindow->checkMenu(IDM_SBG3, false);
 			}
 			else
 			{
 				GPU_addBack(SubScreen.gpu, 3);
-				MainWindow->checkMenu(IDM_SBG3, MF_BYCOMMAND | MF_CHECKED);
+				MainWindow->checkMenu(IDM_SBG3, true);
 			}
 			return 0;
 
@@ -3335,54 +3359,48 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 		case ID_VIEW_FRAMECOUNTER:
 			CommonSettings.hud.FrameCounterDisplay ^= true;
-			MainWindow->checkMenu(ID_VIEW_FRAMECOUNTER, CommonSettings.hud.FrameCounterDisplay ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
 			return 0;
 
 		case ID_VIEW_DISPLAYFPS:
 			CommonSettings.hud.FpsDisplay ^= true;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYFPS, CommonSettings.hud.FpsDisplay ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileBool("Display", "Display Fps", CommonSettings.hud.FpsDisplay, IniName);
 			osd->clear();
 			return 0;
 
 		case ID_VIEW_DISPLAYINPUT:
 			CommonSettings.hud.ShowInputDisplay ^= true;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYINPUT, CommonSettings.hud.ShowInputDisplay ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileBool("Display", "Display Input", CommonSettings.hud.ShowInputDisplay, IniName);
 			osd->clear();
 			return 0;
 
 		case ID_VIEW_DISPLAYLAG:
 			CommonSettings.hud.ShowLagFrameCounter ^= true;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYLAG, CommonSettings.hud.ShowLagFrameCounter ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileBool("Display", "Display Lag Counter", CommonSettings.hud.ShowLagFrameCounter, IniName);
 			osd->clear();
 			return 0;
 
 		case ID_VIEW_HUDEDITOR:
 			HudEditorMode ^= true;
-			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode ? MF_CHECKED : MF_UNCHECKED);
 			osd->clear();
 			osd->border(HudEditorMode);
 			return 0;
 
 		case ID_VIEW_DISPLAYMICROPHONE:
 			CommonSettings.hud.ShowMicrophone ^= true;
-			MainWindow->checkMenu(ID_VIEW_DISPLAYMICROPHONE, CommonSettings.hud.ShowMicrophone ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileBool("Display", "Display Microphone", CommonSettings.hud.ShowMicrophone, IniName);
 			osd->clear();
 			return 0;
 
 		case ID_RAM_SEARCH:
-					if(!RamSearchHWnd)
-					{
-						InitRamSearch();
-						RamSearchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMSEARCH), hwnd, (DLGPROC) RamSearchProc);
-					}
-					else
-						SetForegroundWindow(RamSearchHWnd);
-					break;
+			if(!RamSearchHWnd)
+			{
+				InitRamSearch();
+				RamSearchHWnd = CreateDialog(hAppInst, MAKEINTRESOURCE(IDD_RAMSEARCH), hwnd, (DLGPROC) RamSearchProc);
+			}
+			else
+				SetForegroundWindow(RamSearchHWnd);
+			break;
 
 		case ID_RAM_WATCH:
 			if(!RamWatchHWnd)
@@ -3483,35 +3501,17 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 		case IDC_FRAMELIMIT:
 			FrameLimit ^= 1;
-			MainWindow->checkMenu(IDC_FRAMELIMIT, FrameLimit ? MF_CHECKED : MF_UNCHECKED);
 			WritePrivateProfileInt("FrameLimit", "FrameLimit", FrameLimit, IniName);
 			return 0;
+
 		case IDM_SCREENSEP_NONE:
-			{
-				SetScreenGap(0);
-				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_CHECKED);
-				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_UNCHECKED);
-				UpdateWndRects(hwnd);
-			}
+			SetScreenGap(kGapNone);
 			return 0;
 		case IDM_SCREENSEP_BORDER:
-			{
-				SetScreenGap(5);
-				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_CHECKED);
-				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_UNCHECKED);
-				UpdateWndRects(hwnd);
-			}
+			SetScreenGap(kGapBorder);
 			return 0;
 		case IDM_SCREENSEP_NDSGAP:
-			{
-				SetScreenGap(64);
-				MainWindow->checkMenu(IDM_SCREENSEP_NONE, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDM_SCREENSEP_BORDER, MF_BYCOMMAND | MF_UNCHECKED);
-				MainWindow->checkMenu(IDM_SCREENSEP_NDSGAP, MF_BYCOMMAND | MF_CHECKED);
-				UpdateWndRects(hwnd);
-			}
+			SetScreenGap(kGapNDS);
 			return 0;
 		case IDM_WEBSITE:
 			ShellExecute(NULL, "open", "http://desmume.sourceforge.net", NULL, NULL, SW_SHOWNORMAL);
@@ -3665,7 +3665,7 @@ LRESULT CALLBACK GFX3DSettingsDlgProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp)
 			{
 			case IDOK:
 				{
-					CommonSettings.HighResolutionInterpolateColor = IsDlgButtonChecked(hw,IDC_INTERPOLATECOLOR);
+					CommonSettings.HighResolutionInterpolateColor = IsDlgCheckboxChecked(hw,IDC_INTERPOLATECOLOR);
 					NDS_3D_ChangeCore(ComboBox_GetCurSel(GetDlgItem(hw, IDC_3DCORE)));
 					WritePrivateProfileInt("3D", "Renderer", cur3DCore, IniName);
 					WritePrivateProfileInt("3D", "HighResolutionInterpolateColor", CommonSettings.HighResolutionInterpolateColor?1:0, IniName);
@@ -3757,19 +3757,19 @@ LRESULT CALLBACK EmulationSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 					HWND cur;
 
-					CommonSettings.UseExtBIOS = IsDlgButtonChecked(hDlg, IDC_USEEXTBIOS);
+					CommonSettings.UseExtBIOS = IsDlgCheckboxChecked(hDlg, IDC_USEEXTBIOS);
 					cur = GetDlgItem(hDlg, IDC_ARM9BIOS);
 					GetWindowText(cur, CommonSettings.ARM9BIOS, 256);
 					cur = GetDlgItem(hDlg, IDC_ARM7BIOS);
 					GetWindowText(cur, CommonSettings.ARM7BIOS, 256);
-					CommonSettings.SWIFromBIOS = IsDlgButtonChecked(hDlg, IDC_BIOSSWIS);
+					CommonSettings.SWIFromBIOS = IsDlgCheckboxChecked(hDlg, IDC_BIOSSWIS);
 
-					CommonSettings.UseExtFirmware = IsDlgButtonChecked(hDlg, IDC_USEEXTFIRMWARE);
+					CommonSettings.UseExtFirmware = IsDlgCheckboxChecked(hDlg, IDC_USEEXTFIRMWARE);
 					cur = GetDlgItem(hDlg, IDC_FIRMWARE);
 					GetWindowText(cur, CommonSettings.Firmware, 256);
-					CommonSettings.BootFromFirmware = IsDlgButtonChecked(hDlg, IDC_FIRMWAREBOOT);
+					CommonSettings.BootFromFirmware = IsDlgCheckboxChecked(hDlg, IDC_FIRMWAREBOOT);
 
-					CommonSettings.DebugConsole = IsDlgButtonChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
+					CommonSettings.DebugConsole = IsDlgCheckboxChecked(hDlg, IDC_CHECKBOX_DEBUGGERMODE);
 
 					WritePrivateProfileInt("Emulation", "DebugConsole", ((CommonSettings.DebugConsole == true) ? 1 : 0), IniName);
 					WritePrivateProfileInt("BIOS", "UseExtBIOS", ((CommonSettings.UseExtBIOS == true) ? 1 : 0), IniName);
@@ -3879,7 +3879,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 		{
 			HWND cur;
 
-			UseMicSample = GetPrivateProfileInt("Use Mic Sample", "UseMicSample", FALSE, IniName);
+			UseMicSample = GetPrivateProfileBool("Use Mic Sample", "UseMicSample", false, IniName);
 			CheckDlgButton(hDlg, IDC_USEMICSAMPLE, ((UseMicSample == true) ? BST_CHECKED : BST_UNCHECKED));
 			GetPrivateProfileString("Use Mic Sample", "MicSampleFile", "micsample.raw", MicSampleName, MAX_PATH, IniName);
 			SetDlgItemText(hDlg, IDC_MICSAMPLE, MicSampleName);
@@ -3906,7 +3906,7 @@ LRESULT CALLBACK MicrophoneSettingsDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, 
 					{
 						HWND cur;
 
-						UseMicSample = IsDlgButtonChecked(hDlg, IDC_USEMICSAMPLE);
+						UseMicSample = IsDlgCheckboxChecked(hDlg, IDC_USEMICSAMPLE);
 						cur = GetDlgItem(hDlg, IDC_MICSAMPLE);
 						GetWindowText(cur, MicSampleName, 256);
 		

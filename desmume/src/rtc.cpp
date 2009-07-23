@@ -89,7 +89,6 @@ void InitMovieTime(void)
 	movie.weekday=4;
 }	
 
-#ifdef WIN32
 static void MovieTime(void) {
 
 	//now, you might think it is silly to go through all these conniptions
@@ -102,21 +101,16 @@ static void MovieTime(void) {
 	           
 	u64 frameCycles = (u64)arm9rate_unitsperframe * currFrameCounter;
 	u64 totalcycles = frameCycles + noon;
-	u32 totalseconds=totalcycles/arm9rate_unitspersecond;
+	u64 totalseconds=totalcycles/arm9rate_unitspersecond;
 
-	movie.sec=totalseconds % 60;
-	movie.minute=totalseconds/60;
+	movie.sec=(int)(totalseconds % 60);
+	movie.minute=(int)(totalseconds/60);
 	movie.hour=movie.minute/60;
 
 	//convert to sane numbers
 	movie.minute=movie.minute % 60;
 	movie.hour=movie.hour % 24;
 }
-#else
-static void MovieTime(void)
-{
-}
-#endif
 
 static void rtcRecv()
 {

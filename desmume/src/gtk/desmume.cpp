@@ -27,7 +27,7 @@
 #include "desmume.h"
 #include "movie.h"
 
-volatile BOOL execute = FALSE;
+volatile bool execute = false;
 BOOL click = FALSE;
 
 void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
@@ -45,30 +45,30 @@ void desmume_init( struct armcpu_memory_iface *arm9_mem_if,
         if ( !disable_sound) {
           SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
         }
-	execute = FALSE;
+	execute = false;
 }
 
 void desmume_free( void)
 {
-	execute = FALSE;
+	execute = false;
 	NDS_DeInit();
 }
 
 void desmume_pause( void)
 {
-	execute = FALSE;
+	execute = false;
 	SPU_Pause(1);
 }
 void desmume_resume( void)
 {
-	execute = TRUE;
+	execute = true;
 	SPU_Pause(0);
 }
 void desmume_toggle( void)
 {
-	execute = (execute) ? FALSE : TRUE;
+	execute ^= true;
 }
-BOOL desmume_running( void)
+bool desmume_running( void)
 {
 	return execute;
 }

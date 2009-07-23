@@ -586,7 +586,7 @@ REJECT:
 			for(int j=0;j<ms.numItems;j++) {
 				u16* map = (u16*)ms.items[j].ptr;
 				int len = ms.items[j].len>>1;
-				for(u32 x = 0; x < len; ++x)
+				for(int x = 0; x < len; ++x)
 				{
 					u16 c = map[x];
 					int alpha = ((c&0x8000)?opaqueColor:0);

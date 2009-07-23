@@ -21,12 +21,12 @@ Graphics:
  bug: fix 256B granularity sprite addressing for sub gpu
  bug: fix 128-wide captures
  bug: swrast: add clear image emulation
- bug: swrast: add edge marking
   
 Windows:
  bug: improve map view tool to support more modes
  enh: added 2x resizing filters (hq2x, 2xsai, supereagle, scanlines)
  enh: soundview can now mute channels
+ enh: multicore optimization for filters, rotation, OSD
 
 Linux:
  enh: alsa microphone support

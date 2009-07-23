@@ -35,7 +35,7 @@ struct mapview_struct
 	u32	autoup_secs;
 	bool autoup;
 
-	u16 map;
+	u8 map;
 	u16 lcd;
 	u16 bitmap[1024*1024];
 	bool clear;

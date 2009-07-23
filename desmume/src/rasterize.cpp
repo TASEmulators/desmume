@@ -647,7 +647,7 @@ FORCEINLINE fixed28_4 FloatToFixed28_4( float Value ) {
 	return (fixed28_4)(Value * 16);
 }
 FORCEINLINE float Fixed28_4ToFloat( fixed28_4 Value ) {
-	return Value / 16.0;
+	return Value / 16.0f;
 }
 //inline fixed16_16 FloatToFixed16_16( float Value ) {
 //	return (fixed16_6)(Value * 65536);
@@ -965,50 +965,50 @@ static void SoftRastVramReconfigureSignal() {
 
 static void SoftRastFramebufferProcess()
 {
-	//this is not very accurate, but it works roughly
-	if(gfx3d.enableEdgeMarking)
-	{ 
-		u8 clearPolyid = ((gfx3d.clearColor>>24)&0x3F)>>3;
+	//this is not very accurate. taking it out for now
+	//if(gfx3d.enableEdgeMarking)
+	//{ 
+	//	u8 clearPolyid = ((gfx3d.clearColor>>24)&0x3F)>>3;
 
-		//TODO - need to test and find out whether these get grabbed at flush time, or at render time
-		//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
+	//	//TODO - need to test and find out whether these get grabbed at flush time, or at render time
+	//	//we can do this by rendering a 3d frame and then freezing the system, but only changing the edge mark colors
 
-		//now, I am not entirely sure about this. I can't find any documentation about the high bit here but
-		//it doesnt seem plausible to me that its all or nothing. I think that only polyid groups with a color
-		//with the high bit set get edge marked.
-		u16 edgeMarkColors[8];
-		bool edgeMarkEnables[8];
-		for(int i=0;i<8;i++)
-		{
-			edgeMarkColors[i] = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x330+i*2);
-			edgeMarkEnables[i] = (edgeMarkColors[i]&0x8000)!=0;
-		}
+	//	//now, I am not entirely sure about this. I can't find any documentation about the high bit here but
+	//	//it doesnt seem plausible to me that its all or nothing. I think that only polyid groups with a color
+	//	//with the high bit set get edge marked.
+	//	u16 edgeMarkColors[8];
+	//	bool edgeMarkEnables[8];
+	//	for(int i=0;i<8;i++)
+	//	{
+	//		edgeMarkColors[i] = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x330+i*2);
+	//		edgeMarkEnables[i] = (edgeMarkColors[i]&0x8000)!=0;
+	//	}
 
-		for(int i=0,y=0;y<192;y++)
-		{
-			for(int x=0;x<256;x++,i++)
-			{
-				Fragment &destFragment = screen[i];
-				FragmentColor &destFragmentColor = screenColor[i];
-				u8 self = destFragment.polyid.opaque>>3;
-				if(!edgeMarkEnables[self]) continue;
-				if(destFragment.isTranslucentPoly) continue;
+	//	for(int i=0,y=0;y<192;y++)
+	//	{
+	//		for(int x=0;x<256;x++,i++)
+	//		{
+	//			Fragment &destFragment = screen[i];
+	//			FragmentColor &destFragmentColor = screenColor[i];
+	//			u8 self = destFragment.polyid.opaque>>3;
+	//			if(!edgeMarkEnables[self]) continue;
+	//			if(destFragment.isTranslucentPoly) continue;
 
-				u8 left = x==0?clearPolyid:(screen[i-1].polyid.opaque>>3);
-				u8 right = x==255?clearPolyid:(screen[i+1].polyid.opaque>>3);
-				u8 top = y==0?clearPolyid:(screen[i-256].polyid.opaque>>3);
-				u8 bottom = y==191?clearPolyid:(screen[i+256].polyid.opaque>>3);
+	//			u8 left = x==0?clearPolyid:(screen[i-1].polyid.opaque>>3);
+	//			u8 right = x==255?clearPolyid:(screen[i+1].polyid.opaque>>3);
+	//			u8 top = y==0?clearPolyid:(screen[i-256].polyid.opaque>>3);
+	//			u8 bottom = y==191?clearPolyid:(screen[i+256].polyid.opaque>>3);
 
-				if(left != self || right != self || top != self || bottom != self)
-				{
-					destFragmentColor.color = edgeMarkColors[self];
-				}
-				
+	//			if(left != self || right != self || top != self || bottom != self)
+	//			{
+	//				destFragmentColor.color = edgeMarkColors[self];
+	//			}
+	//			
 
-			}
-		}
+	//		}
+	//	}
 
-	}
+	//}
 
 }
 

@@ -31,7 +31,7 @@
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM> 
 
-extern volatile BOOL execute;
+extern volatile bool execute;
 
 #define LSL_IMM shift_op = cpu->R[REG_POS(i,0)]<<((i>>7)&0x1F);
 

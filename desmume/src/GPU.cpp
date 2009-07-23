@@ -874,8 +874,9 @@ void GPU_addBack(GPU * gpu, u8 num)
 /*****************************************************************************/
 
 template<int WIN_NUM>
-FORCEINLINE bool GPU::withinRect(u8 x) const
+FORCEINLINE u8 GPU::withinRect(u16 x) const
 {
+	assert(x<256); //only way to be >256 is in debug views, and mosaic shouldnt be enabled for those
 	return curr_win[WIN_NUM][x];
 }
 
@@ -1140,7 +1141,7 @@ finish:
 static void mosaicSpriteLinePixel(GPU * gpu, int x, u16 l, u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 {
 	int x_int;
-	u8 y = l;
+	int y = l;
 
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + gpu->sprNum[x]);
 	bool enabled = spriteInfo->Mosaic;
@@ -1459,7 +1460,7 @@ template<bool MOSAIC> FORCEINLINE void extRotBG2(GPU * gpu, s32 X, s32 Y, s16 PA
 	u8 num = gpu->currBgNum;
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	
-	u8 *map, *tile, *pal;
+	u8 *pal;
 
 	switch(gpu->BGTypes[num])
 	{
@@ -1785,7 +1786,7 @@ void GPU::_spriteRender(u8 * dst, u8 * dst_alpha, u8 * typeTab, u8 * prioTab)
 	struct _DISPCNT * dispCnt = &(gpu->dispx_st)->dispx_DISPCNT.bits;
 	_OAM_ * spriteInfo = (_OAM_ *)(gpu->oam + (nbShow-1));// + 127;
 	u8 block = gpu->sprBoundary;
-	u16 i;
+	u8 i;
 
 #ifdef WORDS_BIGENDIAN
 	*(((u16*)spriteInfo)+1) = (*(((u16*)spriteInfo)+1) >> 1) | *(((u16*)spriteInfo)+1) << 15;
@@ -2370,7 +2371,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		BG_enabled = FALSE;
 
 	for(int j=0;j<8;j++)
-		gpu->blend2[j] = (gpu->BLDCNT & (0x100 << j));
+		gpu->blend2[j] = (gpu->BLDCNT & (0x100 << j))!=0;
 
 	// paint lower priorities fist
 	// then higher priorities on top
@@ -2386,8 +2387,8 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 				i16 = item->BGs[i];
 				if (gpu->LayersEnable[i16])
 				{
-					gpu->currBgNum = i16;
-					gpu->blend1 = gpu->BLDCNT & (1 << gpu->currBgNum);
+					gpu->currBgNum = (u8)i16;
+					gpu->blend1 = (gpu->BLDCNT & (1 << gpu->currBgNum))!=0;
 
 					struct _BGxCNT *bgCnt = &(gpu->dispx_st)->dispx_BGxCNT[i16].bits;
 					gpu->curr_mosaic_enabled = bgCnt->Mosaic_Enable;
@@ -2433,7 +2434,7 @@ static void GPU_ligne_layer(NDS_Screen * screen, u16 l)
 		if (gpu->LayersEnable[4])
 		{
 			gpu->currBgNum = 4;
-			gpu->blend1 = gpu->BLDCNT & (1 << gpu->currBgNum);
+			gpu->blend1 = (gpu->BLDCNT & (1 << gpu->currBgNum))!=0;
 			
 			for (int i=0; i < item->nbPixelsX; i++)
 			{

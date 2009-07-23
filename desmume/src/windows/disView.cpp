@@ -102,7 +102,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
              
              
         
-             if(((win->cpu->instruct_adr&0x0FFFFFFF) >= win->curr_ligne<<2)&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+nbligne<<2)))
+             if(((win->cpu->instruct_adr&0x0FFFFFFF) >= (win->curr_ligne<<2))&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+(nbligne<<2))))
              {
                   HBRUSH brjaune = CreateSolidBrush(RGB(255, 255, 0));
                   SetBkColor(mem_dc, RGB(255, 255, 0));
@@ -134,7 +134,7 @@ LRESULT DisViewBox_OnPaint(HWND hwnd, disview_struct *win, WPARAM wParam, LPARAM
                   adr += 2;
              }
         
-             if(((win->cpu->instruct_adr&0x0FFFFFFF) >= win->curr_ligne<<1)&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+nbligne<<1)))
+             if(((win->cpu->instruct_adr&0x0FFFFFFF) >= (win->curr_ligne<<1))&&((win->cpu->instruct_adr&0x0FFFFFFF) <= (win->curr_ligne+(nbligne<<1))))
              {
                   HBRUSH brjaune = CreateSolidBrush(RGB(255, 255, 0));
                   SetBkColor(mem_dc, RGB(255, 255, 0));

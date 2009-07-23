@@ -32,7 +32,7 @@ extern void desmume_free( void);
 extern void desmume_pause( void);
 extern void desmume_resume( void);
 extern void desmume_toggle( void);
-extern BOOL desmume_running( void);
+extern bool desmume_running( void);
 
 extern void desmume_cycle( void);
 

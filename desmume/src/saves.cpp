@@ -1015,7 +1015,7 @@ void rewindsave () {
 
 	rewindbuffer.push_back(ms);
 	
-	if(rewindbuffer.size() > rewindstates) {
+	if((int)rewindbuffer.size() > rewindstates) {
 		delete *rewindbuffer.begin();
 		rewindbuffer.erase(rewindbuffer.begin());
 	}
