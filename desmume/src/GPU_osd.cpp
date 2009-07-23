@@ -36,7 +36,7 @@
 #include "mic.h"
 #include "saves.h"
 
-
+bool HudEditorMode = false;
 OSDCLASS	*osd = NULL;
 HudStruct Hud;
 
@@ -101,34 +101,39 @@ void HudClickRelease(HudStruct *hudstruct) {
 	}
 }
 
-void ResetHud(HudStruct *hudstruct) {
+void HudStruct::reset()
+{
+	FpsDisplay.x=0;
+	FpsDisplay.y=5;
+	FpsDisplay.xsize=120;
+	FpsDisplay.ysize=10;
 
-	hudstruct->FpsDisplay.x=0;
-	hudstruct->FpsDisplay.y=5;
-	hudstruct->FpsDisplay.xsize=120;
-	hudstruct->FpsDisplay.ysize=10;
+	FrameCounter.x=0;
+	FrameCounter.y=25;
+	FrameCounter.xsize=60;
+	FrameCounter.ysize=10;
 
-	hudstruct->FrameCounter.x=0;
-	hudstruct->FrameCounter.y=25;
-	hudstruct->FrameCounter.xsize=60;
-	hudstruct->FrameCounter.ysize=10;
+	InputDisplay.x=0;
+	InputDisplay.y=45;
+	InputDisplay.xsize=120;
+	InputDisplay.ysize=10;
 
-	hudstruct->InputDisplay.x=0;
-	hudstruct->InputDisplay.y=45;
-	hudstruct->InputDisplay.xsize=120;
-	hudstruct->InputDisplay.ysize=10;
-
-	hudstruct->LagFrameCounter.x=0;
-	hudstruct->LagFrameCounter.y=65;
-	hudstruct->LagFrameCounter.xsize=30;
-	hudstruct->LagFrameCounter.ysize=10;
+	LagFrameCounter.x=0;
+	LagFrameCounter.y=65;
+	LagFrameCounter.xsize=30;
+	LagFrameCounter.ysize=10;
 	
-	hudstruct->Microphone.x=0;
-	hudstruct->Microphone.y=85;
-	hudstruct->Microphone.xsize=20;
-	hudstruct->Microphone.ysize=10;
+	Microphone.x=0;
+	Microphone.y=85;
+	Microphone.xsize=20;
+	Microphone.ysize=10;
 
-	SetHudDummy(&hudstruct->Dummy);
+	SavestateSlots.x = 8;
+	SavestateSlots.y = 160;
+	SavestateSlots.xsize = 240;
+	SavestateSlots.ysize = 24;
+
+	SetHudDummy(&Dummy);
 }
 
 
@@ -170,32 +175,42 @@ static void TouchDisplay() {
 		}
 }
 
-static int yheight;
-static int xpos;
 static int previousslot = 0;
 static int fadecounter;
 static char number[10];
 
 static void DrawStateSlots(){
 
-	aggDraw.hud->lineWidth(1.0);
-	aggDraw.hud->lineColor(0, 0, 0, fadecounter);
-	aggDraw.hud->fillColor(255, 255, 255, fadecounter);
+	const int yloc = Hud.SavestateSlots.y; //160
+	const int xloc = Hud.SavestateSlots.x; //8
 
-	for ( int i = 0; i < 10; xpos=xpos+24) {
 
-		aggDraw.hud->fillLinearGradient(8 + xpos, 160 - yheight, 30 + xpos, 180 + yheight+20, agg::rgba8(100,200,255,fadecounter), agg::rgba8(255,255,255,0));
-		
-		if(lastSaveState == i) {
-			yheight = 5;
-			aggDraw.hud->fillLinearGradient(8 + xpos, 160 - yheight, 30 + xpos, 180 + yheight+20, agg::rgba8(100,255,255,fadecounter), agg::rgba8(255,255,255,0));
+	int alpha = fadecounter;
+	if(HudEditorMode)
+		alpha = 255;
+
+	if(alpha!=0)
+	{
+		aggDraw.hud->lineWidth(1.0);
+		aggDraw.hud->lineColor(0, 0, 0, alpha);
+		aggDraw.hud->fillColor(255, 255, 255, alpha);
+
+		for ( int i = 0, xpos=0; i < 10; xpos=xpos+24) {
+
+			int yheight=0;
+
+			aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, xloc + 22 + xpos, yloc + 20 + yheight+20, agg::rgba8(100,200,255,alpha), agg::rgba8(255,255,255,0));
+
+			if(lastSaveState == i) {
+				yheight = 5;
+				aggDraw.hud->fillLinearGradient(xloc + xpos, yloc - yheight, 22 + xloc + xpos, yloc + 20 + yheight+20, agg::rgba8(100,255,255,alpha), agg::rgba8(255,255,255,0));
+			}
+
+			aggDraw.hud->rectangle(xloc + xpos , yloc - yheight, xloc + 22 + xpos , yloc + 20 + yheight);
+			snprintf(number, 10, "%d", i);
+			aggDraw.hud->renderText(xloc + 1 + xpos + 4, yloc+4, std::string(number));
+			i++;
 		}
-
-		aggDraw.hud->rectangle(8 + xpos , 160 - yheight, 30 + xpos , 180 + yheight);
-		snprintf(number, 10, "%d", i);
-		aggDraw.hud->renderText(9 + xpos + 4, 164, std::string(number));
-		i++;
-		yheight=0;
 	}
 
 	if(lastSaveState != previousslot) fadecounter = 256;
@@ -203,8 +218,6 @@ static void DrawStateSlots(){
 	fadecounter--;
 
 	if(fadecounter < 1) fadecounter = 0;
-
-	xpos = 0;
 }
 #ifdef WIN32
 #include "lua-engine.h"
