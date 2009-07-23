@@ -52,6 +52,7 @@ public:
 		, fps3d(0)
 	{}
 
+	HudCoordinates SavestateSlots;
 	HudCoordinates FpsDisplay;
 	HudCoordinates FrameCounter;
 	HudCoordinates InputDisplay;
@@ -60,6 +61,7 @@ public:
 	HudCoordinates Dummy;
 
 	HudCoordinates &hud(int i) { return ((HudCoordinates*)this)[i]; }
+	void reset();
 
 	int fps, fps3d;
 };
@@ -71,6 +73,7 @@ void HudClickRelease(HudStruct *hudstruct);
 void DrawHUD();
 
 extern HudStruct Hud;
+extern bool HudEditorMode;
 
 class OSDCLASS
 {

@@ -264,7 +264,6 @@ int emu_paused = 0;
 bool frameAdvance = false;
 bool staterewindingenabled = false;
 
-bool HudEditorMode = false;
 bool UseMicSample = false;
 unsigned short windowSize = 0;
 
@@ -1562,7 +1561,7 @@ int _main()
 
 
 	InitCustomKeys(&CustomKeys);
-	ResetHud(&Hud);
+	Hud.reset();
 
 	void input_init();
 	input_init();
@@ -3362,7 +3361,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			return 0;
 
 		case ID_VIEW_HUDEDITOR:
-			HudEditorMode ^= 1;
+			HudEditorMode ^= true;
 			MainWindow->checkMenu(ID_VIEW_HUDEDITOR, HudEditorMode ? MF_CHECKED : MF_UNCHECKED);
 			osd->clear();
 			osd->border(HudEditorMode);
