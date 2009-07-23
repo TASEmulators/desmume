@@ -62,12 +62,12 @@ bool WINCLASS::createEx(LPSTR caption, int x, int y, int width, int height, int 
 bool WINCLASS::setMenu(HMENU menu)
 {
 	hmenu = menu;
-	return SetMenu(hwnd, hmenu);
+	return SetMenu(hwnd, hmenu)==TRUE;
 }
 
-DWORD WINCLASS::checkMenu(UINT idd, UINT check)
+DWORD WINCLASS::checkMenu(UINT idd, bool check)
 {
-	return CheckMenuItem(hmenu, idd, check);
+	return CheckMenuItem(hmenu, idd, MF_BYCOMMAND | (check?MF_CHECKED:MF_UNCHECKED));
 }
 
 HWND WINCLASS::getHWnd()

@@ -246,7 +246,7 @@ SGuitar DefaultGuitar = { false, 'E', 'R', 'T', 'Y' };
 SGuitar Guitar;
 u8	guitarState = 0;
 
-extern volatile BOOL paused;
+extern volatile bool paused;
 
 #define MAXKEYPAD 15
 
@@ -1889,8 +1889,6 @@ void EnableDisableKeyFields (int index, HWND hDlg)
 
 INT_PTR CALLBACK DlgInputConfig(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	char temp[256];
-	short C;
 	int i, which;
 	static int index=0;
 
@@ -2083,30 +2081,30 @@ switch(msg)
 		//	break;
 
 		}
-		switch(HIWORD(wParam))
-		{
-			//case CBN_SELCHANGE:
-			//	index = SendDlgItemMessage(hDlg,IDC_JPCOMBO,CB_GETCURSEL,0,0);
-			//	SendDlgItemMessage(hDlg,IDC_JPCOMBO,CB_SETCURSEL,(WPARAM)index,0);
-			//	if(index > 4) index += 3; // skip controllers 6, 7, and 8 in the input dialog
-			//	if(index < 8)
-			//	{
-			//		SendDlgItemMessage(hDlg,IDC_JPTOGGLE,BM_SETCHECK, Joypad[index].Enabled ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
-			//		EnableWindow(GetDlgItem(hDlg,IDC_JPTOGGLE),TRUE);
-			//	}
-			//	else
-			//	{
-			//		SendDlgItemMessage(hDlg,IDC_JPTOGGLE,BM_SETCHECK, Joypad[index-8].Enabled ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
-			//		EnableWindow(GetDlgItem(hDlg,IDC_JPTOGGLE),FALSE);
-			//	}
+		//switch(HIWORD(wParam))
+		//{
+		//	case CBN_SELCHANGE:
+		//		index = SendDlgItemMessage(hDlg,IDC_JPCOMBO,CB_GETCURSEL,0,0);
+		//		SendDlgItemMessage(hDlg,IDC_JPCOMBO,CB_SETCURSEL,(WPARAM)index,0);
+		//		if(index > 4) index += 3; // skip controllers 6, 7, and 8 in the input dialog
+		//		if(index < 8)
+		//		{
+		//			SendDlgItemMessage(hDlg,IDC_JPTOGGLE,BM_SETCHECK, Joypad[index].Enabled ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
+		//			EnableWindow(GetDlgItem(hDlg,IDC_JPTOGGLE),TRUE);
+		//		}
+		//		else
+		//		{
+		//			SendDlgItemMessage(hDlg,IDC_JPTOGGLE,BM_SETCHECK, Joypad[index-8].Enabled ? (WPARAM)BST_CHECKED : (WPARAM)BST_UNCHECKED, 0);
+		//			EnableWindow(GetDlgItem(hDlg,IDC_JPTOGGLE),FALSE);
+		//		}
 
-			//	set_buttoninfo(index,hDlg);
+		//		set_buttoninfo(index,hDlg);
 
-			//	EnableDisableKeyFields(index,hDlg);
+		//		EnableDisableKeyFields(index,hDlg);
 
-			//	break;
-		}
-		return FALSE;
+		//		break;
+		//}
+		//return FALSE;
 
 	}
 
@@ -2366,20 +2364,20 @@ void input_process()
 	//not appropriate right now in desmume
 	//if (paused) return;
 
-	bool R = joypads[0] & RIGHT_MASK;
-	bool L = joypads[0] & LEFT_MASK;
-	bool D = joypads[0] & DOWN_MASK;
-	bool U = joypads[0] & UP_MASK;
-	bool T = joypads[0] & START_MASK;
-	bool S = joypads[0] & SELECT_MASK;
-	bool B = joypads[0] & B_MASK;
-	bool A = joypads[0] & A_MASK;
-	bool Y = joypads[0] & Y_MASK;
-	bool X = joypads[0] & X_MASK;
-	bool W = joypads[0] & L_MASK;
-	bool E = joypads[0] & R_MASK;
-	bool G = joypads[0] & DEBUG_MASK;
-	bool F = joypads[0] & LID_MASK;
+	bool R = (joypads[0] & RIGHT_MASK)!=0;
+	bool L = (joypads[0] & LEFT_MASK)!=0;
+	bool D = (joypads[0] & DOWN_MASK)!=0;
+	bool U = (joypads[0] & UP_MASK)!=0;
+	bool T = (joypads[0] & START_MASK)!=0;
+	bool S = (joypads[0] & SELECT_MASK)!=0;
+	bool B = (joypads[0] & B_MASK)!=0;
+	bool A = (joypads[0] & A_MASK)!=0;
+	bool Y = (joypads[0] & Y_MASK)!=0;
+	bool X = (joypads[0] & X_MASK)!=0;
+	bool W = (joypads[0] & L_MASK)!=0;
+	bool E = (joypads[0] & R_MASK)!=0;
+	bool G = (joypads[0] & DEBUG_MASK)!=0;
+	bool F = (joypads[0] & LID_MASK)!=0;
 
 	if(AutoHoldPressed && R) AutoHold.Right  ^= true;
 	if(AutoHoldPressed && L) AutoHold.Left   ^= true;

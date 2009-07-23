@@ -393,7 +393,7 @@ static void cheats_ARparser(CHEATS_LIST cheat)
 
 static BOOL cheatsXXcodePreparser(CHEATS_LIST *cheat, char *code)
 {
-	u16		count = 0;
+	int		count = 0;
 	u16		t = 0;
 	char	tmp_buf[sizeof(cheat->hi)+sizeof(cheat->lo)];
 

@@ -90,7 +90,7 @@ waiter:
 			Sleep(100);
 			return 1;
 		}
-		Sleep(sleepy);
+		Sleep((DWORD)sleepy);
 		goto waiter;
 	}
 	if( (ttime-ltime) >= (tfreq*4/desiredfps))

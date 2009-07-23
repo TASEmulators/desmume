@@ -286,16 +286,16 @@ inline float u32_to_float(u32 u) {
 ///stores a 32bit value into the provided byte array in guaranteed little endian form
 inline void en32lsb(u8 *buf, u32 morp)
 { 
-	buf[0]=morp;
-	buf[1]=morp>>8;
-	buf[2]=morp>>16;
-	buf[3]=morp>>24;
+	buf[0]=(u8)(morp);
+	buf[1]=(u8)(morp>>8);
+	buf[2]=(u8)(morp>>16);
+	buf[3]=(u8)(morp>>24);
 } 
 
 inline void en16lsb(u8* buf, u16 morp)
 {
-	buf[0]=morp;
-	buf[1]=morp>>8;
+	buf[0]=(u8)morp;
+	buf[1]=(u8)(morp>>8);
 }
 
 ///unpacks a 64bit little endian value from the provided byte array into host byte order

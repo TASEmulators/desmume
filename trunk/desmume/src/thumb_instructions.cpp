@@ -35,7 +35,7 @@
 
 #define REG_NUM(i, n) (((i)>>n)&0x7)
 
-extern volatile BOOL execute;
+extern volatile bool execute;
 
 TEMPLATE static  u32 FASTCALL OP_UND_THUMB()
 {

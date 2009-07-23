@@ -47,8 +47,8 @@ int read8le(u8 *Bufo, std::istream *is)
 int write16le(u16 b, FILE *fp)
 {
 	u8 s[2];
-	s[0]=b;
-	s[1]=b>>8;
+	s[0]=(u8)b;
+	s[1]=(u8)(b>>8);
 	return((fwrite(s,1,2,fp)<2)?0:2);
 }
 
@@ -57,8 +57,8 @@ int write16le(u16 b, FILE *fp)
 int write16le(u16 b, std::ostream *os)
 {
 	u8 s[2];
-	s[0]=b;
-	s[1]=b>>8;
+	s[0]=(u8)b;
+	s[1]=(u8)(b>>8);
 	os->write((char*)&s,2);
 	return 2;
 }
@@ -67,20 +67,20 @@ int write16le(u16 b, std::ostream *os)
 int write32le(u32 b, FILE *fp)
 {
 	u8 s[4];
-	s[0]=b;
-	s[1]=b>>8;
-	s[2]=b>>16;
-	s[3]=b>>24;
+	s[0]=(u8)b;
+	s[1]=(u8)(b>>8);
+	s[2]=(u8)(b>>16);
+	s[3]=(u8)(b>>24);
 	return((fwrite(s,1,4,fp)<4)?0:4);
 }
 
 int write32le(u32 b, std::ostream* os)
 {
 	u8 s[4];
-	s[0]=b;
-	s[1]=b>>8;
-	s[2]=b>>16;
-	s[3]=b>>24;
+	s[0]=(u8)b;
+	s[1]=(u8)(b>>8);
+	s[2]=(u8)(b>>16);
+	s[3]=(u8)(b>>24);
 	os->write((char*)&s,4);
 	return 4;
 }
@@ -90,14 +90,14 @@ void writebool(bool b, std::ostream* os) { write32le(b?1:0,os); }
 int write64le(u64 b, std::ostream* os)
 {
 	u8 s[8];
-	s[0]=b;
-	s[1]=b>>8;
-	s[2]=b>>16;
-	s[3]=b>>24;
-	s[4]=b>>32;
-	s[5]=b>>40;
-	s[6]=b>>48;
-	s[7]=b>>56;
+	s[0]=(u8)b;
+	s[1]=(u8)(b>>8);
+	s[2]=(u8)(b>>16);
+	s[3]=(u8)(b>>24);
+	s[4]=(u8)(b>>32);
+	s[5]=(u8)(b>>40);
+	s[6]=(u8)(b>>48);
+	s[7]=(u8)(b>>56);
 	os->write((char*)&s,8);
 	return 8;
 }
@@ -161,7 +161,7 @@ int readbool(bool *b, std::istream* is)
 {
 	u32 temp;
 	int ret = read32le(&temp,is);
-	*b = (bool)temp;
+	*b = temp!=0;
 	return ret;
 }
 

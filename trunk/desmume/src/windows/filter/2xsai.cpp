@@ -239,9 +239,9 @@ void SuperEagle(uint8 *srcPtr, uint32 srcPitch,
 {
     uint32 *dP;
     uint16 *bP;
-    uint16 *xP;
 
 #ifdef MMX
+    uint16 *xP;
     if (mmx_cpu && width != 512)
     {
 	for (height; height; height-=1)
@@ -414,9 +414,9 @@ void _2xSaI(uint8 *srcPtr, uint32 srcPitch,
 {
     uint32 *dP;
     uint16 *bP;
-    uint16 *xP;
 
 #ifdef MMX
+    uint16 *xP;
     if (mmx_cpu && width != 512)
     {
 	for (height; height; height-=1)

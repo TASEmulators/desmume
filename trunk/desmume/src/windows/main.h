@@ -4,7 +4,7 @@
 #include "CWindow.h"
 extern WINCLASS	*MainWindow;
 
-extern volatile BOOL execute, paused;
+extern volatile bool execute, paused;
 void NDS_Pause();
 void NDS_UnPause();
 void LoadSaveStateInfo();

@@ -42,7 +42,7 @@ public:
 					HMENU menu);
 
 	bool setMenu(HMENU menu);
-	DWORD checkMenu(UINT idd, UINT check);
+	DWORD checkMenu(UINT idd, bool check);
 
 	void Show(int mode);
 	void Hide();

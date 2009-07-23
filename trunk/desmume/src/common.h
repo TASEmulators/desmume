@@ -66,7 +66,7 @@ extern u8	gba_header_data_0x04[156];
 
 	extern HINSTANCE hAppInst;
 
-	extern BOOL romloaded;
+	extern bool romloaded;
 
 	extern char IniName[MAX_PATH];
 	extern void GetINIPath();

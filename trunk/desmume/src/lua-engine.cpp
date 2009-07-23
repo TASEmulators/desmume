@@ -2859,8 +2859,7 @@ DEFINE_LUA_FUNCTION(movie_getlength, "")
 }
 DEFINE_LUA_FUNCTION(movie_isactive, "")
 {
-	if(movieMode != MOVIEMODE_INACTIVE);
-	lua_pushboolean(L, true);
+	lua_pushboolean(L, movieMode != MOVIEMODE_INACTIVE);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(movie_rerecordcount, "")

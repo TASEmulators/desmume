@@ -62,7 +62,7 @@ void LightView_OnPaintLight(HWND hwnd, int index)
 
 	unsigned int	color;
 	unsigned int	direction;
-	ColorCtrl*		colorCtrl;
+	//ColorCtrl*		colorCtrl;
 	char			buffer[128];
 
 	// Get necessary information from gfx3d module

@@ -716,14 +716,14 @@ struct GPU
 	u8 WIN1V1;
 
 	u8 WININ0;
-	u8 WININ0_SPECIAL;
+	bool WININ0_SPECIAL;
 	u8 WININ1;
-	u8 WININ1_SPECIAL;
+	bool WININ1_SPECIAL;
 
 	u8 WINOUT;
-	u8 WINOUT_SPECIAL;
+	bool WINOUT_SPECIAL;
 	u8 WINOBJ;
-	u8 WINOBJ_SPECIAL;
+	bool WINOBJ_SPECIAL;
 
 	u8 WIN0_ENABLED;
 	u8 WIN1_ENABLED;
@@ -836,7 +836,7 @@ struct GPU
 
 	// check whether (x,y) is within the rectangle (including wraparounds) 
 	template<int WIN_NUM>
-	bool withinRect(u8 x) const;
+	u8 withinRect(u16 x) const;
 
 	void setBLDALPHA(u16 val)
 	{
@@ -974,9 +974,9 @@ inline void GPU_setWIN1_V1(GPU* gpu, u8 val) { gpu->WIN1V1 = val; }
 
 inline void GPU_setWININ(GPU* gpu, u16 val) {
 	gpu->WININ0=val&0x1F;
-	gpu->WININ0_SPECIAL=(val>>5)&1;
+	gpu->WININ0_SPECIAL=((val>>5)&1)!=0;
 	gpu->WININ1=(val>>8)&0x1F;
-	gpu->WININ1_SPECIAL=(val>>13)&1;
+	gpu->WININ1_SPECIAL=((val>>13)&1)!=0;
 }
 
 inline void GPU_setWININ0(GPU* gpu, u8 val) { gpu->WININ0 = val&0x1F; gpu->WININ0_SPECIAL = (val>>5)&1; }
@@ -984,9 +984,9 @@ inline void GPU_setWININ1(GPU* gpu, u8 val) { gpu->WININ1 = val&0x1F; gpu->WININ
 
 inline void GPU_setWINOUT16(GPU* gpu, u16 val) {
 	gpu->WINOUT=val&0x1F;
-	gpu->WINOUT_SPECIAL=(val>>5)&1;
+	gpu->WINOUT_SPECIAL=((val>>5)&1)!=0;
 	gpu->WINOBJ=(val>>8)&0x1F;
-	gpu->WINOBJ_SPECIAL=(val>>13)&1;
+	gpu->WINOBJ_SPECIAL=((val>>13)&1)!=0;
 }
 inline void GPU_setWINOUT(GPU* gpu, u8 val) { gpu->WINOUT = val&0x1F; gpu->WINOUT_SPECIAL = (val>>5)&1; }
 inline void GPU_setWINOBJ(GPU* gpu, u8 val) { gpu->WINOBJ = val&0x1F; gpu->WINOBJ_SPECIAL = (val>>5)&1; }

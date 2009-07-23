@@ -138,7 +138,7 @@ LRESULT TileViewBox_Pal256(HWND hwnd, tileview_struct * win, WPARAM wParam, LPAR
         
         if(win->pal)
         {
-             u32 i, num2, num, y, x;
+             u32 num2, num, y, x;
 
             u8* mem;
 			if(win->target >= ARM9MEM_LCDC)
