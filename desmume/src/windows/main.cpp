@@ -2542,12 +2542,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 			//Update savestate slot items based on ROM loaded
 			for (int x = 0; x < 10; x++)
 			{
-				EnableMenuItem(mainMenu, IDM_STATE_SAVE_F1+x,   romloaded);
-				EnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   romloaded);
+				DesEnableMenuItem(mainMenu, IDM_STATE_SAVE_F1+x,   romloaded);
+				DesEnableMenuItem(mainMenu, IDM_STATE_LOAD_F1+x,   romloaded);
 			}
 			
 			//Gray the recent ROM menu item if there are no recent ROMs
-			EnableMenuItem(mainMenu, ID_FILE_RECENTROM,      (RecentRoms.size()));
+			DesEnableMenuItem(mainMenu, ID_FILE_RECENTROM,      RecentRoms.size()>0);
 
 			//Updated Checked menu items
 			
@@ -2954,6 +2954,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		case IDC_STATEREWINDING:
 			if(staterewindingenabled) staterewindingenabled = false;
 			else staterewindingenabled = true;
+			break;
 		case IDM_RENDER_NORMAL:
 			video.setfilter(video.NONE);
 			FilterUpdate(hwnd);
