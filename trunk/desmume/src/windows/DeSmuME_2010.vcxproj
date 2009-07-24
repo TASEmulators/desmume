@@ -73,7 +73,7 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\lua-5.1.4\src;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\windows;..\..\src;.\lua\lua-5.1.4\src;.\glib-2.20.1\build;.\glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;.\userconfig;.\defaultconfig;.\7z;.\%(AdditionalIncludeDirectories);.\agg\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;_CRT_SECURE_NO_DEPRECATE;WIN32;BETA_VERSION;SPU_INTERPOLATE;NOMINMAX;EXPERIMENTAL_WIFI;HAVE_LIBZ;HAVE_LIBZZIP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -86,7 +86,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;.\agg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
@@ -110,7 +110,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\lua-5.1.4\src;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\windows;..\..\src;.\lua\lua-5.1.4\src;.\glib-2.20.1\build;.\glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;.\userconfig;.\defaultconfig;.\%(AdditionalIncludeDirectories);.\agg\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE;EXPERIMENTAL_WIFI;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -125,7 +125,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;.\agg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -150,7 +150,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.;..;lua\lua-5.1.4\src;glib-2.20.1\build;glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;userconfig;defaultconfig;.\7z;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\windows;..\..\src;.\lua\lua-5.1.4\src;.\glib-2.20.1\build;.\glib-2.20.1\build\glib;.\zlib123;.\zziplib;.\winpcap;.\userconfig;.\defaultconfig;.\7z;.\%(AdditionalIncludeDirectories);.\agg\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;WIN32;HAVE_LIBZ;HAVE_LIBZZIP;SSE2;SPU_INTERPOLATE;NOMINMAX;RELEASE;EXPERIMENTAL_WIFI;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -164,8 +164,8 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua-5.1.4-x86.lib;glib-2.20.1-x86.lib;vfw32.lib;winmm.lib;opengl32.lib;glu32.lib;ws2_32.lib;user32.lib;gdi32.lib;directx\dxguid.lib;shell32.lib;comdlg32.lib;directx\dxerr8.lib;directx\dsound.lib;directx\dinput8.lib;directx\ddraw.lib;zlib-2005-x32.lib;zziplib-2005-x32.lib;shlwapi.lib;winpcap\wpcap.lib;7zip.lib;agg-2.5.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\zlib123;.\zziplib;glib-2.20.1\lib;lua\lib;.\7z;.\agg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>wpcap.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -184,8 +184,10 @@
     <ClCompile Include="..\addons.cpp" />
     <ClCompile Include="..\addons\compactFlash.cpp" />
     <ClCompile Include="..\addons\gbagame.cpp" />
+    <ClCompile Include="..\addons\guitarGrip.cpp" />
     <ClCompile Include="..\addons\none.cpp" />
     <ClCompile Include="..\addons\rumblepak.cpp" />
+    <ClCompile Include="..\aggdraw.cpp" />
     <ClCompile Include="..\armcpu.cpp" />
     <ClCompile Include="..\arm_instructions.cpp" />
     <ClCompile Include="..\bios.cpp" />
@@ -217,7 +219,6 @@
     <ClCompile Include="..\ROMReader.cpp" />
     <ClCompile Include="..\rtc.cpp" />
     <ClCompile Include="..\saves.cpp" />
-    <ClCompile Include="..\softrender.cpp" />
     <ClCompile Include="..\SPU.cpp" />
     <ClCompile Include="..\texcache.cpp" />
     <ClCompile Include="..\thumb_instructions.cpp" />
@@ -237,6 +238,10 @@
     <ClCompile Include="console.cpp" />
     <ClCompile Include="CWindow.cpp" />
     <ClCompile Include="disView.cpp" />
+    <ClCompile Include="filter\2xsai.cpp" />
+    <ClCompile Include="filter\bilinear.cpp" />
+    <ClCompile Include="filter\hq2x.cpp" />
+    <ClCompile Include="filter\scanline.cpp" />
     <ClCompile Include="FirmConfig.cpp" />
     <ClCompile Include="gbaslot_config.cpp" />
     <ClCompile Include="ginfo.cpp" />
@@ -282,12 +287,10 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="..\matrix_sse2-x86.asm" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\agg2d.inl" />
     <None Include="..\instruction_tabdef.inc" />
     <None Include="..\thumb_tabdef.inc" />
     <None Include="bitmap1.bmp" />
@@ -295,6 +298,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\addons.h" />
+    <ClInclude Include="..\agg2d.h" />
+    <ClInclude Include="..\aggdraw.h" />
     <ClInclude Include="..\ARM9.h" />
     <ClInclude Include="..\armcpu.h" />
     <ClInclude Include="..\arm_instructions.h" />
@@ -334,10 +339,6 @@
     <ClInclude Include="..\rtc.h" />
     <ClInclude Include="..\saves.h" />
     <ClInclude Include="..\shaders.h" />
-    <ClInclude Include="..\softrender.h" />
-    <ClInclude Include="..\softrender_config.h" />
-    <ClInclude Include="..\softrender_desmumefont.h" />
-    <ClInclude Include="..\softrender_v3sysfont.h" />
     <ClInclude Include="..\SPU.h" />
     <ClInclude Include="..\texcache.h" />
     <ClInclude Include="..\thumb_instructions.h" />
@@ -361,6 +362,7 @@
     <ClInclude Include="console.h" />
     <ClInclude Include="CWindow.h" />
     <ClInclude Include="disView.h" />
+    <ClInclude Include="filter\filter.h" />
     <ClInclude Include="FirmConfig.h" />
     <ClInclude Include="gbaslot_config.h" />
     <ClInclude Include="ginfo.h" />
