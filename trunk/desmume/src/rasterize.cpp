@@ -1226,9 +1226,8 @@ static void SoftRastRender()
 		u16* clearImage = (u16*)ARM9Mem.texInfo.textureSlotAddr[2];
 		u16* clearDepth = (u16*)ARM9Mem.texInfo.textureSlotAddr[3];
 
-		//not emulated until we actually have a test case
-		//(since in the meantime it would just slow us down)
-		//(and when we find a case, it will be obvious that it isnt scrolling, instead of possibly obscured by a bug)
+		//the lion, the witch, and the wardrobe (thats book 1, suck it you new-school numberers)
+		//uses the scroll registers in the main game engine
 		u16 scroll = T1ReadWord(ARM9Mem.ARM9_REG,0x356); //CLRIMAGE_OFFSET
 		u16 xscroll = scroll&0xFF;
 		u16 yscroll = (scroll>>8)&0xFF;
@@ -1236,28 +1235,30 @@ static void SoftRastRender()
 		FragmentColor *dstColor = screenColor;
 		Fragment *dst = screen;
 
-		for(int y=0;y<192;y++)
-			for(int x=0;x<256;x++) {
+		for(int iy=0;iy<192;iy++) {
+			int y = ((iy + yscroll)&255)<<8;
+			for(int ix=0;ix<256;ix++) {
+				int x = (ix + xscroll)&255;
+				int adr = y + x;
 				
 				//this is tested by harry potter and the order of the phoenix.
 				//TODO (optimization) dont do this if we are mapped to blank memory (such as in sonic chronicles)
 				//(or use a special zero fill in the bulk clearing above)
-				u16 col = *clearImage;
+				u16 col = clearImage[adr];
 				dstColor->color = RGB15TO5555(col,31*(col>>15));
 				
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
-				u32 depth = *clearDepth;
+				u32 depth = clearDepth[adr];
 				//masking off fog for now
 				depth &= 0x7FFF;
 				//TODO - might consider a lookup table for this
 				dst->depth = gfx3d_extendDepth_15_to_24(depth);
 
-				clearDepth++;
-				clearImage++;
 				dstColor++;
 				dst++;
 			}
+		}
 	}
 	else 
 		for(int i=0;i<256*192;i++)
