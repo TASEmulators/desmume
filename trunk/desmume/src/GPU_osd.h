@@ -66,7 +66,6 @@ public:
 	int fps, fps3d;
 };
 
-void ResetHud(HudStruct *hudstruct);
 void EditHud(s32 x, s32 y, HudStruct *hudstruct);
 void HudClickRelease(HudStruct *hudstruct);
 
