@@ -345,7 +345,8 @@ struct Shader
 	{
 		mode = (polyattr>>4)&0x3;
 		//if there is no texture set, then set to the mode which doesnt even use a texture
-		if(sampler.texFormat == 0 && mode == 0)
+		//unless we're in shadow 
+		if(sampler.texFormat == 0 && mode != 3)
 			mode = 4;
 	}
 

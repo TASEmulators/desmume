@@ -20,7 +20,9 @@ Graphics:
  bug: fix backdrop blending with garbage
  bug: fix 256B granularity sprite addressing for sub gpu
  bug: fix 128-wide captures
- bug: swrast: add clear image emulation
+ bug: fix color overflow in capture blending
+ bug: swrast: add clear image and scroll emulation
+ bug: swrast: fixes to shadow rendering
   
 Windows:
  bug: improve map view tool to support more modes

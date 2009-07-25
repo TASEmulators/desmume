@@ -545,7 +545,7 @@ static void GPU_InitFadeColors()
 			for(int eva=0;eva<=16;eva++)
 				for(int evb=0;evb<=16;evb++)
 				{
-					int blend = ((c0 * eva / 16) + (c1 * evb / 16) );
+					int blend = ((c0 * eva) + (c1 * evb) ) / 16;
 					int final = std::min<int>(31,blend);
 					gpuBlendTable555[eva][evb][c0][c1] = final;
 				}
@@ -2574,6 +2574,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 						if ((srcA) && (srcB))
 						{
 							const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
+
 							for(u16 i = 0; i < todo; i++) 
 							{
 								u16 a,r,g,b;
@@ -2581,7 +2582,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 								u16 a_alpha = srcA[i] & 0x8000;
 								u16 b_alpha = srcB[i] & 0x8000;
 
-								if (gpu->dispCapCnt.EVA && a_alpha)
+								if(a_alpha)
 								{
 									a = 0x8000;
 									r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
@@ -2591,7 +2592,7 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 								else
 									a = r = g = b = 0;
 
-								if (gpu->dispCapCnt.EVB && b_alpha)
+								if(b_alpha)
 								{
 									a = 0x8000;
 									r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
@@ -2602,6 +2603,10 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 								r >>= 4;
 								g >>= 4;
 								b >>= 4;
+
+								r = std::min((u16)31,r);
+								g = std::min((u16)31,g);
+								b = std::min((u16)31,b);
 
 								T2WriteWord(cap_dst, i << 1, a | (b << 10) | (g << 5) | r);
 							}
