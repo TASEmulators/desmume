@@ -1090,15 +1090,12 @@ void FASTCALL MMU_doDMA(u32 num)
 	taille = (MMU.DMACrt[PROCNUM][num]&0x1FFFFF);
 	if(taille == 0) taille = 0x200000; //according to gbatek..
 	
-	//THIS IS A BIG HACK
-	// If we are in "Main memory display" mode just copy an entire 
-	// screen (256x192 pixels). 
-	//    Reference:  http://nocash.emubase.de/gbatek.htm#dsvideocaptureandmainmemorydisplaymode
-	//       (under DISP_MMEM_FIFO)
-	if ((MMU.DMAStartTime[PROCNUM][num]==EDMAMode_MemDisplay) &&		// Must be in main memory display mode
-		(taille==4) &&							// Word must be 4
-		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))	// Transfer mode must be 32bit wide
-		taille = 24576; //256*192/2;
+	//for main memory display fifo dmas, check for normal conditions and then dma all 128 bytes at once
+	//(theyll get sent to the fifo, which can handle more than it ought to be able to)
+	if ((MMU.DMAStartTime[PROCNUM][num]==EDMAMode_MemDisplay) &&
+		(taille==4) &&
+		(((MMU.DMACrt[PROCNUM][num]>>26)&1) == 1))
+		taille = 128; 
 	
 	if(MMU.DMAStartTime[PROCNUM][num] == EDMAMode_Card)
 		taille *= 0x80;
