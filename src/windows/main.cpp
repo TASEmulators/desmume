@@ -1143,7 +1143,12 @@ DWORD WINAPI run()
 			CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
 			FCEUMOV_AddInputState();
 				
-			if (ShowInputDisplay) osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",InputDisplayString.c_str());
+			if (ShowInputDisplay) {
+				std::stringstream ss;
+				if(nds.isTouch)
+					ss << (nds.touchX >> 4) << " " << (nds.touchY >> 4); 
+				osd->addFixed(Hud.InputDisplay.x, Hud.InputDisplay.y, "%s",(InputDisplayString += ss.str()).c_str());
+			}
 
 			{
 				Lock lock;
