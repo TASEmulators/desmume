@@ -546,9 +546,6 @@ static void gfx3d_glPolygonAttrib_cache()
 
 	// back face culling
 	cullingMask = (polyAttr>>6)&3;
-
-	// Alpha value, actually not well handled, 0 should be wireframe
-	colorRGB[3] = colorAlpha = ((polyAttr>>16)&0x1F);
 }
 
 static void gfx3d_glTexImage_cache()

@@ -84,7 +84,8 @@ struct POLY {
 	bool isTranslucent()
 	{
 		//alpha != 31 -> translucent
-		if((polyAttr&0x001F0000) != 0x001F0000) 
+		//except for alpha 0 which is wireframe (unless it has a translucent tex)
+		if((polyAttr&0x001F0000) != 0x001F0000 && (polyAttr&0x001F0000) != 0)
 			return true;
 		int texFormat = (texParam>>26)&7;
 

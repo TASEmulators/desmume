@@ -829,6 +829,7 @@ static void OGLRender()
 
 			VERT *vert0 = &gfx3d.vertlist->list[poly->vertIndexes[0]];
 			u8 alpha =	material_5bit_to_8bit[poly->getAlpha()];
+			if(wireframe) alpha = 255;
 			u8 color0[4] = {
 					material_5bit_to_8bit[vert0->color[0]],
 					material_5bit_to_8bit[vert0->color[1]],
@@ -836,6 +837,9 @@ static void OGLRender()
 					alpha
 				};
 
+			//this draws things as a fan to prepare for the day when the clipping is done in gfx3d
+			//and funny shaped polys find their way into here.
+			//of course it could really be drawn as a fan, i suppose.. i dont remember why we did it this way
 			for(int j = 1; j < (type-1); j++)
 			{
 				VERT *vert1 = &gfx3d.vertlist->list[poly->vertIndexes[j]];
