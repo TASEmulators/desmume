@@ -631,8 +631,10 @@ static void openRecordingMovie(const char* fname)
 	 /*extern uint8 joy[4];
 	 memcpy(&cur_input_display,joy,4);*/
 
-	if (ShowInputDisplay && nds.isTouch)
-		osd->addFixed(nds.touchX >> 4, (nds.touchY >> 4) + 192 , "%s %d %d", "X", nds.touchX >> 4, nds.touchY >> 4);
+	if (ShowInputDisplay && nds.isTouch) {
+		osd->addFixed((nds.touchX >> 4) - 4, (nds.touchY >> 4) + 192 - 8, "X");
+//		osd->addFixed(nds.touchX >> 4, (nds.touchY >> 4) + 192 , "%s %d %d", "X", nds.touchX >> 4, nds.touchY >> 4);
+	}
  }
 
 
