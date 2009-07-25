@@ -53,6 +53,9 @@
 #include "../rasterize.h"
 #include "../saves.h"
 #include "../mic.h"
+#include "../GPU_osd.h"
+#include "../aggdraw.h"
+#include "../agg2d.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"
 #endif
@@ -671,6 +674,7 @@ static void desmume_cycle(int *sdl_quit, int *boost, struct my_config * my_confi
               {
                 focused = 1;
                 SPU_Pause(0);
+                osd->addLine("Auto pause disabled\n");
               }
               else
               {
@@ -690,10 +694,18 @@ static void desmume_cycle(int *sdl_quit, int *boost, struct my_config * my_confi
               case SDLK_m:
                 enable_fake_mic = !enable_fake_mic;
                 Mic_DoNoise(enable_fake_mic);
+                if (enable_fake_mic)
+                  osd->addLine("Fake mic enabled\n");
+                else
+                  osd->addLine("Fake mic disabled\n");
                 break;
 #endif
               case SDLK_o:
                 *boost = !(*boost);
+                if (*boost)
+                  osd->addLine("Boost mode enabled\n");
+                else
+                  osd->addLine("Boost mode disabled\n");
                 break;
               default:
                 break;
@@ -798,6 +810,7 @@ int main(int argc, char ** argv) {
 #else
         NDS_Init();
 #endif
+  Desmume_InitOnce();
 
   /* Create the dummy firmware */
   NDS_CreateDummyFirmware( &fw_config);
@@ -935,9 +948,14 @@ int main(int argc, char ** argv) {
     loadstate_slot(my_config.load_slot);
   }
 
+  Hud.reset();
+
   while(!sdl_quit) {
     desmume_cycle(&sdl_quit, &boost, &my_config);
 
+    aggDraw.hud->attach(GPU_screen, 256, 384, 256*2);
+    osd->update();
+    DrawHUD();
 #ifdef INCLUDE_OPENGL_2D
     if ( my_config.opengl_2d) {
       opengl_Draw( screen_texture, my_config.soft_colour_convert);
@@ -945,6 +963,7 @@ int main(int argc, char ** argv) {
     else
 #endif
       Draw();
+    osd->clear();
 
     for ( int i = 0; i < my_config.frameskip; i++ ) {
         NDS_SkipNextFrame();
