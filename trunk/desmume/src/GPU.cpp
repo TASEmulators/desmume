@@ -53,7 +53,8 @@ GPU::MosaicLookup GPU::mosaicLookup;
 //#define DEBUG_TRI
 
 CACHE_ALIGN u8 GPU_screen[4*256*192];
-CACHE_ALIGN u8 *GPU_tempScanline;
+u8 *GPU_tempScanline;
+CACHE_ALIGN u16 GPU_tempScanlineBuffer[256];
 
 CACHE_ALIGN u8 sprWin[256];
 
@@ -2536,16 +2537,15 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 						//INFO("Capture source is SourceB\n");
 						switch (gpu->dispCapCnt.srcB)
 						{
-							case 0:			// Capture VRAM
-								{
-									//INFO("Capture VRAM\n");
-									CAPCOPY(cap_src,cap_dst);
-								}
+							case 0:	
+								//Capture VRAM
+								CAPCOPY(cap_src,cap_dst);
 								break;
-							case 1:			// Capture Main Memory Display FIFO
-								{
-									//INFO("Capture Main Memory Display FIFO\n");
-								}
+							case 1:
+								//capture dispfifo
+								//(not yet tested)
+								for(int i=0; i < 128; i++)
+									T1WriteLong(cap_dst, i << 2, DISP_FIFOrecv());
 								break;
 						}
 					}
@@ -2566,50 +2566,56 @@ template<bool SKIP> static void GPU_ligne_DispCapture(u16 l)
 							gfx3d_GetLineData(l, &srcA, NULL);
 						}
 
+						static u16 fifoLine[256];
+
 						if (gpu->dispCapCnt.srcB == 0)			// VRAM screen
 							srcB = (u16 *)cap_src;
 						else
-							srcB = NULL; // DISP FIFOS
-
-						if ((srcA) && (srcB))
 						{
-							const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
+							//fifo - tested by splinter cell chaos theory thermal view
+							srcB = fifoLine;
+							for (int i=0; i < 128; i++)
+								T1WriteLong((u8*)srcB, i << 2, DISP_FIFOrecv());
+						}
 
-							for(u16 i = 0; i < todo; i++) 
+
+						const int todo = (gpu->dispCapCnt.capx==DISPCAPCNT::_128?128:256);
+
+						for(u16 i = 0; i < todo; i++) 
+						{
+							u16 a,r,g,b;
+
+							u16 a_alpha = srcA[i] & 0x8000;
+							u16 b_alpha = srcB[i] & 0x8000;
+
+							if(a_alpha)
 							{
-								u16 a,r,g,b;
+								a = 0x8000;
+								r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
+								g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
+								b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
+							} 
+							else
+								a = r = g = b = 0;
 
-								u16 a_alpha = srcA[i] & 0x8000;
-								u16 b_alpha = srcB[i] & 0x8000;
-
-								if(a_alpha)
-								{
-									a = 0x8000;
-									r = ((srcA[i] & 0x1F) * gpu->dispCapCnt.EVA);
-									g = (((srcA[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVA);
-									b = (((srcA[i] >>  10) & 0x1F) * gpu->dispCapCnt.EVA);
-								} 
-								else
-									a = r = g = b = 0;
-
-								if(b_alpha)
-								{
-									a = 0x8000;
-									r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
-									g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
-									b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
-								}
-
-								r >>= 4;
-								g >>= 4;
-								b >>= 4;
-
-								r = std::min((u16)31,r);
-								g = std::min((u16)31,g);
-								b = std::min((u16)31,b);
-
-								T2WriteWord(cap_dst, i << 1, a | (b << 10) | (g << 5) | r);
+							if(b_alpha)
+							{
+								a = 0x8000;
+								r += ((srcB[i] & 0x1F) * gpu->dispCapCnt.EVB);
+								g += (((srcB[i] >>  5) & 0x1F) * gpu->dispCapCnt.EVB);
+								b += (((srcB[i] >> 10) & 0x1F) * gpu->dispCapCnt.EVB);
 							}
+
+							r >>= 4;
+							g >>= 4;
+							b >>= 4;
+
+							//freedom wings sky will overflow while doing some fsaa/motionblur effect without this
+							r = std::min((u16)31,r);
+							g = std::min((u16)31,g);
+							b = std::min((u16)31,b);
+
+							T2WriteWord(cap_dst, i << 1, a | (b << 10) | (g << 5) | r);
 						}
 					}
 				break;
@@ -2821,16 +2827,16 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 	gpu->setup_windows<0>();
 	gpu->setup_windows<1>();
 
-	//always generate the 2d+3d, no matter what we're displaying, since we may need to capture it
-	//(if this seems inefficient in some cases, consider that the speed in those cases is not really a problem)
-	GPU_tempScanline = screen->gpu->currDst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
-	GPU_ligne_layer(screen, l);
-
-	if (gpu->core == GPU_MAIN) 
-	{
-		GPU_ligne_DispCapture<false>(l);
-		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
+	//generate the 2d engine output
+	if(gpu->dispMode == 1) {
+		//optimization: render straight to the output buffer when thats what we are going to end up displaying anyway
+		GPU_tempScanline = screen->gpu->currDst = (u8 *)(GPU_screen) + (screen->offset + l) * 512;
+	} else {
+		//otherwise, we need to go to a temp buffer
+		GPU_tempScanline = screen->gpu->currDst = (u8 *)GPU_tempScanlineBuffer;
 	}
+
+	GPU_ligne_layer(screen, l);
 
 	switch (gpu->dispMode)
 	{
@@ -2847,7 +2853,7 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 			//do nothing: it has already been generated into the right place
 			break;
 
-		case 2: // Display framebuffer
+		case 2: // Display vram framebuffer
 			{
 				u8 * dst = GPU_screen + (screen->offset + l) * 512;
 				u8 * src = gpu->VRAMaddr + (l*512);
@@ -2856,12 +2862,25 @@ void GPU_ligne(NDS_Screen * screen, u16 l, bool skip)
 			break;
 		case 3: // Display memory FIFO
 			{
+				//this has not been tested since the dma timing for dispfifo was changed around the time of
+				//newemuloop. it may not work.
 				u8 * dst =  GPU_screen + (screen->offset + l) * 512;
 				for (int i=0; i < 128; i++)
 					T1WriteLong(dst, i << 2, DISP_FIFOrecv() & 0x7FFF7FFF);
 			}
 			break;
 	}
+
+	//capture after displaying so that we can safely display vram before overwriting it here
+	if (gpu->core == GPU_MAIN) 
+	{
+		//BUG!!! if someone is capturing and displaying both from the fifo, then it will have been 
+		//consumed above by the display before we get here
+		//(is that even legal? i think so)
+		GPU_ligne_DispCapture<false>(l);
+		if (l == 191) { disp_fifo.head = disp_fifo.tail = 0; }
+	}
+
 
 	GPU_ligne_MasterBrightness(screen, l);
 }

@@ -1973,7 +1973,10 @@ static void execHardware_hstart()
 	if(nds.VCount<192)
 	{
 		//this is hacky.
-		//there is a corresponding hack in doDMA
+		//there is a corresponding hack in doDMA.
+		//it should be driven by a fifo (and generate just in time as the scanline is displayed)
+		//but that isnt even possible until we have some sort of sub-scanline timing.
+		//it may not be necessary.
 		execHardware_doAllDma(EDMAMode_MemDisplay);
 	}
 
