@@ -1284,11 +1284,9 @@ static void SoftRastRender()
 				//this is tested quite well in the sonic chronicles main map mode
 				//where depth values are used for trees etc you can walk behind
 				u32 depth = clearDepth[adr];
-				//masking off fog for now
-				depth &= 0x7FFF;
-				//TODO - might consider a lookup table for this
-				dst->depth = gfx3d_extendDepth_15_to_24(depth);
 				dst->fogged = BIT15(depth);
+				//TODO - might consider a lookup table for this
+				dst->depth = gfx3d_extendDepth_15_to_24(depth&0x7FFF);
 
 				dstColor++;
 				dst++;
@@ -1319,7 +1317,7 @@ static void SoftRastRender()
 				fogTable[i] = fogDensity[0];
 				continue;
 			}
-			for(int j=0;j<31;j++) {
+			for(int j=0;j<32;j++) {
 				u32 value = gfx3d.fogOffset + increment*(j+1);
 				if(i<=value) {
 					if(j==0) {
