@@ -1092,7 +1092,8 @@ static int ExposeDrawingArea (GtkWidget *widget, GdkEventExpose *event, gpointer
         yd = yoff;
     }
 
-	DrawHUD();
+    osd->update();
+    DrawHUD();
     gpu_screen_to_rgb(rgb, SCREENS_PIXEL_SIZE*SCREEN_BYTES_PER_PIXEL);
     origPixbuf = gdk_pixbuf_new_from_data(rgb, GDK_COLORSPACE_RGB, 
             0, 8, imgW, imgH, imgW*SCREEN_BYTES_PER_PIXEL, NULL, NULL);
@@ -1606,6 +1607,7 @@ gboolean EmuLoop(gpointer data)
 
     _updateDTools();
     gtk_widget_queue_draw( pDrawingArea );
+    osd->clear();
 
     if (!gtk_fps_limiter_disabled) {
         limiter_frame_counter += 1;
@@ -1710,15 +1712,23 @@ static void ToggleAudio (GtkToggleAction *action)
 {
     if (gtk_toggle_action_get_active(action) == TRUE) {
         SPU_ChangeSoundCore(SNDCORE_SDL, 735 * 4);
+        osd->addLine("Audio enabled\n");
     } else {
         SPU_ChangeSoundCore(0, 0);
+        osd->addLine("Audio disabled\n");
     }
 }
 
 #ifdef FAKE_MIC
 static void ToggleMicNoise (GtkToggleAction *action)
 {
-    Mic_DoNoise((BOOL)gtk_toggle_action_get_active(action));
+    BOOL doNoise = (BOOL)gtk_toggle_action_get_active(action);
+
+    Mic_DoNoise(doNoise);
+    if (doNoise)
+       osd->addLine("Fake mic enabled\n");
+    else
+       osd->addLine("Fake mic disabled\n");
 }
 #endif
 
@@ -1747,7 +1757,6 @@ static gboolean timeout_exit_cb(gpointer data)
 static int
 common_gtk_main( struct configured_features *my_config)
 {
-	Desmume_InitOnce();
     SDL_TimerID limiter_timer = NULL;
 
     GtkAccelGroup * accel_group;
@@ -1829,6 +1838,10 @@ common_gtk_main( struct configured_features *my_config)
     desmume_init( arm9_memio, &arm9_ctrl_iface,
                       arm7_memio, &arm7_ctrl_iface,
                       my_config->disable_sound);
+
+    /* Init the hud / osd stuff */
+    Desmume_InitOnce();
+    Hud.reset();
 
     /*
      * Activate the GDB stubs
