@@ -185,6 +185,9 @@ struct GFX3D
 		, enableAntialiasing(false)
 		, enableEdgeMarking(false)
 		, enableClearImage(false)
+		, enableFog(false)
+		, enableFogAlphaOnly(false)
+		, fogShift(0)
 		, shading(TOON)
 		, polylist(0)
 		, vertlist(0)
@@ -193,12 +196,14 @@ struct GFX3D
 		, clearColor(0)
 		, frameCtr(0)
 		, frameCtrRaw(0)
+		, fogOffset(0)
+		, fogColor(0)
 	{
-		fogColor[0] = fogColor[1] = fogColor[2] = fogColor[3] = 0;
-		fogOffset = 0;
 	}
 	BOOL enableTexturing, enableAlphaTest, enableAlphaBlending, 
-		enableAntialiasing, enableEdgeMarking, enableClearImage;
+		enableAntialiasing, enableEdgeMarking, enableClearImage, enableFog, enableFogAlphaOnly;
+
+	u32 fogShift;
 
 	static const u32 TOON = 0;
 	static const u32 HIGHLIGHT = 1;
@@ -214,8 +219,13 @@ struct GFX3D
 
 	u32 clearDepth;
 	u32 clearColor;
-	float fogColor[4];
-	float fogOffset;
+	#include "PACKED.h"
+	struct {
+		u32 fogColor;
+		u32 pad[3]; //for savestate compatibility as of 26-jul-09
+	};
+	#include "PACKED_END.h"
+	u32 fogOffset;
 
 	//ticks every time flush() is called
 	int frameCtr;

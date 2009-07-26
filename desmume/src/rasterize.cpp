@@ -194,6 +194,7 @@ struct PolyAttr
 	u8 alpha;
 	bool backfacing;
 	bool translucent;
+	u8 fogged;
 
 	bool isVisible(bool backfacing) 
 	{
@@ -214,6 +215,7 @@ struct PolyAttr
 		polyid = (polyAttr>>24)&0x3F;
 		alpha = (polyAttr>>16)&0x1F;
 		drawBackPlaneIntersectingPolys = BIT12(val);
+		fogged = BIT15(val);
 	}
 
 } polyAttr;
@@ -239,7 +241,10 @@ struct Fragment
 
 	u8 stencil;
 
-	u8 isTranslucentPoly;
+	struct {
+		u8 isTranslucentPoly:1;
+		u8 fogged:1;
+	};
 };
 
 static VERT* verts[MAX_CLIPPED_VERTS];
@@ -252,7 +257,7 @@ INLINE static void SubmitVertex(int vert_index, VERT& rawvert)
 static Fragment screen[256*192];
 static FragmentColor screenColor[256*192];
 static FragmentColor toonTable[32];
-
+static u8 fogTable[32768];
 
 FORCEINLINE int iround(float f) {
 	return (int)f; //lol
@@ -559,6 +564,7 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 		{
 			destFragment.polyid.opaque = polyAttr.polyid;
 			destFragment.isTranslucentPoly = polyAttr.translucent?1:0;
+			destFragment.fogged = polyAttr.fogged;
 			destFragmentColor = shaderOutput;
 		}
 		else
@@ -584,6 +590,8 @@ static FORCEINLINE void pixel(int adr,float r, float g, float b, float invu, flo
 
 			//alpha blending and write color
 			alphaBlend(destFragmentColor, shaderOutput);
+
+			destFragment.fogged &= polyAttr.fogged;
 		}
 
 		//depth writing
@@ -1010,6 +1018,30 @@ static void SoftRastFramebufferProcess()
 
 	//}
 
+	if(gfx3d.enableFog)
+	{
+		u32 r = gfx3d.fogColor&0x1F;
+		u32 g = (gfx3d.fogColor>>5)&0x1F;
+		u32 b = (gfx3d.fogColor>>10)&0x1F;
+		u32 a = (gfx3d.fogColor>>16)&0x1F;
+		for(int i=0;i<256*192;i++)
+		{
+			Fragment &destFragment = screen[i];
+			if(!destFragment.fogged) continue;
+			FragmentColor &destFragmentColor = screenColor[i];
+			u32 fogIndex = destFragment.depth>>9;
+			assert(fogIndex<32768);
+			u8 fog = fogTable[fogIndex];
+			if(fog==127) fog=128;
+			if(!gfx3d.enableFogAlphaOnly)
+			{
+				destFragmentColor.r = ((128-fog)*destFragmentColor.r + r*fog)>>7;
+				destFragmentColor.g = ((128-fog)*destFragmentColor.g + g*fog)>>7;
+				destFragmentColor.b = ((128-fog)*destFragmentColor.b + b*fog)>>7;
+			}
+			destFragmentColor.a = ((128-fog)*destFragmentColor.a + a*fog)>>7;
+		}
+	}
 }
 
 static void SoftRastConvertFramebuffer()
@@ -1218,6 +1250,8 @@ static void SoftRastRender()
 	clearFragment.polyid.translucent = kUnsetTranslucentPolyID; 
 	clearFragment.depth = gfx3d.clearDepth;
 	clearFragment.stencil = 0;
+	clearFragment.isTranslucentPoly = 0;
+	clearFragment.fogged = BIT15(gfx3d.clearColor);
 	for(int i=0;i<256*192;i++)
 		screen[i] = clearFragment;
 
@@ -1254,6 +1288,7 @@ static void SoftRastRender()
 				depth &= 0x7FFF;
 				//TODO - might consider a lookup table for this
 				dst->depth = gfx3d_extendDepth_15_to_24(depth);
+				dst->fogged = BIT15(depth);
 
 				dstColor++;
 				dst++;
@@ -1270,6 +1305,36 @@ static void SoftRastRender()
 		toonTable[i].r = gfx3d.u16ToonTable[i]&0x1F;
 		toonTable[i].g = (gfx3d.u16ToonTable[i]>>5)&0x1F;
 		toonTable[i].b = (gfx3d.u16ToonTable[i]>>10)&0x1F;
+	}
+
+	//setup fog variables (but only if fog is enabled)
+	if(gfx3d.enableFog)
+	{
+		u8* fogDensity = MMU.MMU_MEM[ARMCPU_ARM9][0x40] + 0x360;
+		//TODO - this might be a little slow; 
+		//we might need to hash all the variables and only recompute this when something changes
+		const int increment = (0x400 >> gfx3d.fogShift);
+		for(u32 i=0;i<32768;i++) {
+			if(i<gfx3d.fogOffset) {
+				fogTable[i] = fogDensity[0];
+				continue;
+			}
+			for(int j=0;j<31;j++) {
+				u32 value = gfx3d.fogOffset + increment*(j+1);
+				if(i<=value) {
+					if(j==0) {
+						fogTable[i] = fogDensity[0];
+						goto done;
+					} else {
+						int lastValue = value - increment;
+						fogTable[i] = ((value-i)*fogDensity[j-1] + (increment-(value-i))*fogDensity[j])/increment;
+						goto done;
+					}
+				}
+			}
+			fogTable[i] = fogDensity[31];
+			done: ;
+		}
 	}
 
 	//convert colors to float to get more precision in case we need it
