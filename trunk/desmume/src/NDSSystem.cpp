@@ -58,8 +58,10 @@ PathInfo path;
 //  zeromus: which games are these? I would like to see what happens.
 //  this is a substantial framerate hit. we should consider an emulation option 
 //  to indicate whether this whole system should be enabled
+#if 1
 #ifndef PUBLIC_RELEASE
 #undef EXPERIMENTAL_WIFI
+#endif
 #endif
 
 TCommonSettings CommonSettings;
@@ -2342,27 +2344,40 @@ void NDS_Reset()
 		_MMU_write32<ARMCPU_ARM9>(0xFFFF0040, 0xE25EF004);
 	}
 
-	/* Is it really needed ??? */
-	_MMU_write32<ARMCPU_ARM9>(0x0000004, 0xE3A0010E);
-	_MMU_write32<ARMCPU_ARM9>(0x0000008, 0xE3A01020);
-	// _MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02110);
-	_MMU_write32<ARMCPU_ARM9>(0x000000C, 0xE1B02040);
-	_MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE3B02020);
-	// _MMU_write32<ARMCPU_ARM9>(0x0000010, 0xE2100202);
-
 	if(CommonSettings.UseExtFirmware == true)
 		NDS_LoadFirmware(CommonSettings.Firmware);
 
 	if((CommonSettings.UseExtBIOS == true) && (CommonSettings.UseExtFirmware == true) && (CommonSettings.BootFromFirmware == true) && (fw_success == TRUE))
 	{
-		for(u32 i = 0; i < nds.FW_ARM9BootCodeSize; i += 4)
+		// Copy firmware boot codes to their respective locations
+
+		src = 0;
+		dst = nds.FW_ARM9BootCodeAddr;
+		for(u32 i = 0; i < (nds.FW_ARM9BootCodeSize >> 2); i++)
 		{
-			_MMU_write32<ARMCPU_ARM9>((nds.FW_ARM9BootCodeAddr + i), T1ReadLong(nds.FW_ARM9BootCode, i));
+			_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(nds.FW_ARM9BootCode, src));
+			src += 4; dst += 4;
 		}
 
-		for(u32 i = 0; i < nds.FW_ARM7BootCodeSize; i += 4)
+		src = 0;
+		dst = nds.FW_ARM7BootCodeAddr;
+		for(u32 i = 0; i < (nds.FW_ARM7BootCodeSize >> 2); i++)
 		{
-			_MMU_write32<ARMCPU_ARM7>((nds.FW_ARM7BootCodeAddr + i), T1ReadLong(nds.FW_ARM7BootCode, i));
+			_MMU_write32<ARMCPU_ARM7>(dst, T1ReadLong(nds.FW_ARM7BootCode, src));
+			src += 4; dst += 4;
+		}
+
+		// Copy secure area to memory if needed
+		if ((header->ARM9src >= 0x4000) && (header->ARM9src < 0x8000))
+		{
+			src = header->ARM9src;
+			dst = header->ARM9cpy;
+			u32 size = (0x8000 - src) >> 2;
+			for (u32 i = 0; i < size; i++)
+			{
+				_MMU_write32<ARMCPU_ARM9>(dst, T1ReadLong(MMU.CART_ROM, src));
+				src += 4; dst += 4;
+			}
 		}
 
 		armcpu_init(&NDS_ARM9, nds.FW_ARM9BootCodeAddr);
@@ -2679,6 +2694,7 @@ void NDS_setPad(bool R,bool L,bool D,bool U,bool T,bool S,bool B,bool A,bool Y,b
 
 
 void emu_halt() {
+	printf("halting emu: ARM9 PC=%08X/%08X, ARM7 PC=%08X/%08X\n", NDS_ARM9.R[15], NDS_ARM9.instruct_adr, NDS_ARM7.R[15], NDS_ARM7.instruct_adr);
 	execute = false;
 }
 
