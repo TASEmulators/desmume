@@ -54,8 +54,6 @@
 #include "../saves.h"
 #include "../mic.h"
 #include "../GPU_osd.h"
-#include "../aggdraw.h"
-#include "../agg2d.h"
 #ifdef GDB_STUB
 #include "../gdbstub.h"
 #endif
@@ -810,7 +808,6 @@ int main(int argc, char ** argv) {
 #else
         NDS_Init();
 #endif
-  Desmume_InitOnce();
 
   /* Create the dummy firmware */
   NDS_CreateDummyFirmware( &fw_config);
@@ -948,12 +945,12 @@ int main(int argc, char ** argv) {
     loadstate_slot(my_config.load_slot);
   }
 
+  Desmume_InitOnce();
   Hud.reset();
 
   while(!sdl_quit) {
     desmume_cycle(&sdl_quit, &boost, &my_config);
 
-    aggDraw.hud->attach(GPU_screen, 256, 384, 256*2);
     osd->update();
     DrawHUD();
 #ifdef INCLUDE_OPENGL_2D
