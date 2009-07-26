@@ -24,6 +24,7 @@ Graphics:
  bug: fix disp fifo capture
  bug: fix simultaneous vram display and capture via same bank
  bug: swrast: add clear image and scroll emulation
+ bug: swrast: add fog emulation
  bug: swrast: fixes to shadow rendering
   
 Windows:

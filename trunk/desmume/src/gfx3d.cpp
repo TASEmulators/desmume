@@ -1973,20 +1973,16 @@ void VIEWPORT::decode(u32 v)
 void gfx3d_glClearColor(u32 v)
 {
 	gfx3d.clearColor = v;
-
 }
 
 void gfx3d_glFogColor(u32 v)
 {
-	gfx3d.fogColor[0] = ((float)((v    )&0x1F))/31.0f;
-	gfx3d.fogColor[1] = ((float)((v>> 5)&0x1F))/31.0f;
-	gfx3d.fogColor[2] = ((float)((v>>10)&0x1F))/31.0f;
-	gfx3d.fogColor[3] = ((float)((v>>16)&0x1F))/31.0f;
+	gfx3d.fogColor = v;
 }
 
 void gfx3d_glFogOffset (u32 v)
 {
-	gfx3d.fogOffset = (float)(v&0xffff);
+	gfx3d.fogOffset = (v&0x7fff);
 }
 
 void gfx3d_glClearDepth(u32 v)
@@ -2307,7 +2303,10 @@ static void gfx3d_doFlush()
 	gfx3d.enableAlphaBlending = BIT3(control);
 	gfx3d.enableAntialiasing = BIT4(control);
 	gfx3d.enableEdgeMarking = BIT5(control);
+	gfx3d.enableFogAlphaOnly = BIT6(control);
+	gfx3d.enableFog = BIT7(control);
 	gfx3d.enableClearImage = BIT14(control);
+	gfx3d.fogShift = (control>>8)&0xF;
 
 	int polycount = polylist->count;
 
@@ -3123,6 +3122,10 @@ SFORMAT SF_GFX3D[]={
 	{ "GSEB", 4, 1, &gfx3d.enableAlphaBlending},
 	{ "GSEX", 4, 1, &gfx3d.enableAntialiasing},
 	{ "GSEE", 4, 1, &gfx3d.enableEdgeMarking},
+	{ "GSEC", 4, 1, &gfx3d.enableClearImage},
+	{ "GSEF", 4, 1, &gfx3d.enableFog},
+	{ "GSEO", 4, 1, &gfx3d.enableFogAlphaOnly},
+	{ "GFSH", 4, 1, &gfx3d.fogShift},
 	{ "GSSH", 4, 1, &gfx3d.shading},
 	{ "GSWB", 4, 1, &gfx3d.wbuffer},
 	{ "GSSM", 4, 1, &gfx3d.sortmode},
@@ -3130,7 +3133,7 @@ SFORMAT SF_GFX3D[]={
 	{ "GSVP", 4, 1, &viewport},
 	{ "GSCC", 4, 1, &gfx3d.clearColor},
 	{ "GSCD", 4, 1, &gfx3d.clearDepth},
-	{ "GSFC", 4, 4, gfx3d.fogColor},
+	{ "GSFC", 4, 4, &gfx3d.fogColor},
 	{ "GSFO", 4, 1, &gfx3d.fogOffset},
 	{ "GST2", 2, 32, gfx3d.u16ToonTable},
 	{ "GSST", 4, 128, shininessTable},
