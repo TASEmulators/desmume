@@ -32,11 +32,12 @@
 #include "pcap/pcap.h"
 #endif
 
-wifimac_t wifiMac;
 bool wifi_netEnabled = false;
 pcap_t *wifi_bridge = NULL;
 
 #endif
+
+wifimac_t wifiMac;
 
 /*******************************************************************************
 

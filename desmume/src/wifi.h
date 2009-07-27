@@ -30,6 +30,7 @@
 #define PACKET_SIZE 65535
 #define _INC_STDIO
 
+#endif
 
 #define		REG_WIFI_ID					0x000
 #define     REG_WIFI_MODE       		0x004
@@ -476,11 +477,12 @@ typedef struct
 
 } wifimac_t ;
 
-
 // desmume host communication
+#ifdef EXPERIMENTAL_WIFI
 typedef struct pcap pcap_t;
-extern bool wifi_netEnabled;
 extern pcap_t *wifi_bridge;
+#endif
+extern bool wifi_netEnabled;
 
 extern wifimac_t wifiMac;
 
@@ -520,8 +522,6 @@ int WIFI_SoftAP_Init(wifimac_t *wifi);
 void WIFI_SoftAP_Shutdown(wifimac_t *wifi);
 void WIFI_SoftAP_RecvPacketFromDS(wifimac_t *wifi, u8 *packet, int len);
 void WIFI_SoftAP_usTrigger(wifimac_t *wifi);
-
-#endif
 
 /* DS WFC profile data documented here : */
 /* http://dsdev.bigredpimp.com/2006/07/31/aoss-wfc-profile-data/ */
