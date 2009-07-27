@@ -83,7 +83,7 @@ static u64 isqrt (u64 x) {
    return root;
 }
 
-u16 partie = 1;
+u32 partie = 1;
 u32 _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 
 #define ROM_MASK 3

@@ -41,6 +41,7 @@
 
 #ifdef _WIN32
 #define strcasecmp(x,y) _stricmp(x,y)
+#define snprintf _snprintf
 #else
 #define WINAPI
 #endif

@@ -2458,7 +2458,7 @@ void RunConfig(CONFIGSCREEN which)
 		break;
 	case CONFIGSCREEN_WIFI:
 #ifdef EXPERIMENTAL_WIFI
-		if(wifiMac.netEnabled)
+		if(wifi_netEnabled)
 		{
 			DialogBox(hAppInst,MAKEINTRESOURCE(IDD_WIFISETTINGS), hwnd, (DLGPROC) WifiSettingsDlgProc);
 		}

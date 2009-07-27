@@ -2933,8 +2933,9 @@ bool gpu_loadstate(std::istream* is, int size)
 		read32le(&SubScreen.gpu->affineInfo[0].y,is);
 		read32le(&SubScreen.gpu->affineInfo[1].x,is);
 		read32le(&SubScreen.gpu->affineInfo[1].y,is);
-		MainScreen.gpu->refreshAffineStartRegs(-1,-1);
-		SubScreen.gpu->refreshAffineStartRegs(-1,-1);
+		//removed per nitsuja feedback. anyway, this same thing will happen almost immediately in gpu line=0
+		//MainScreen.gpu->refreshAffineStartRegs(-1,-1);
+		//SubScreen.gpu->refreshAffineStartRegs(-1,-1);
 	}
 
 	MainScreen.gpu->updateBLDALPHA();
