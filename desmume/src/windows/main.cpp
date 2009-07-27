@@ -543,7 +543,7 @@ void UpdateRecentRoms(const char* filename)
 	RecentRoms.insert(RecentRoms.begin(), newROM);	//Add to the array
 
 	//If over the max, we have too many, so remove the last entry
-	if (RecentRoms.size() == MAX_RECENT_ROMS)	
+	if (RecentRoms.size() > MAX_RECENT_ROMS)	
 		RecentRoms.pop_back();
 
 	//Debug
@@ -923,7 +923,7 @@ void CheckMessages()
 		}
 	}
 }
-
+int fps;
 DWORD WINAPI run()
 {
 	u32 cycles = 0;
@@ -938,13 +938,13 @@ DWORD WINAPI run()
 	u64 diffticks=0;
 	u32 framecount=0;
 	u64 onesecondticks=0;
-	int fps=0;
+	//int fps=0;
 	int fpsframecount=0;
 	u64 fpsticks=0;
 	HWND	hwnd = MainWindow->getHWnd();
 
 	InitSpeedThrottle();
-
+fps=0;
 	osd->setRotate(video.rotation);
 
 	if (DirectDrawCreateEx(NULL, (LPVOID*)&lpDDraw, IID_IDirectDraw7, NULL) != DD_OK)
